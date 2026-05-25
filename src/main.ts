@@ -41,6 +41,7 @@ import {
 import { clamp01 } from './automation/automation-painter';
 import { wireCopyNotesPanel } from './core/copy-notes';
 import { wireRandomizeUI } from './core/randomize-ui';
+import { wireSlotCopyPanel } from './save/slot-copy';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -1946,77 +1947,8 @@ recBtn.addEventListener('click', () => {
 // ── Demo: Minimal Techno — see src/demo-minimal-techno.ts ─────────────────
 // (functions moved to demo-minimal-techno.ts; called via demoDeps below)
 
-// ── Copy bars between slots ───────────────────────────────────────────────
-function wireCopyPanel() {
-  const fromSel = $<HTMLSelectElement>('copy-from');
-  const toSel   = $<HTMLSelectElement>('copy-to');
-  for (const sel of [fromSel, toSel]) {
-    for (let i = 0; i < bank.slots.length; i++) {
-      const opt = document.createElement('option');
-      opt.value = String(i);
-      opt.textContent = String.fromCharCode(65 + i); // A B C D
-      sel.appendChild(opt);
-    }
-  }
-  fromSel.value = '0';
-  toSel.value = '1';
-
-  $<HTMLButtonElement>('copy-go').addEventListener('click', () => {
-    const from = parseInt(fromSel.value, 10);
-    const to   = parseInt(toSel.value, 10);
-    if (from === to) return;
-    const copyBass   = $<HTMLInputElement>('copy-bass').checked;
-    const copyDrums  = $<HTMLInputElement>('copy-drums').checked;
-    const copyMelody = $<HTMLInputElement>('copy-melody').checked;
-    const copyAuto   = $<HTMLInputElement>('copy-auto').checked;
-
-    // If we're currently editing the source, snapshot live state into it first.
-    if (from === bank.current) bank.slots[from] = clonePattern(seq.pattern);
-
-    const src = bank.slots[from];
-    const dst = bank.slots[to];
-
-    // Resize destination if needed so the copy fits.
-    if (src.length !== dst.length) {
-      // Grow/shrink dst to match src for the tracks we're copying. Simplest:
-      // make dst length === src length (affects all its tracks but harmless).
-      const diff = src.length - dst.length;
-      if (diff > 0) {
-        for (let i = 0; i < diff; i++) {
-          dst.bass.push({ on: false, note: 36, accent: false, slide: false });
-          dst.melody.push({ on: false, notes: [60], accent: false, tie: false });
-          for (const lane of DRUM_LANES) dst.drums[lane].push({ on: false, accent: false });
-        }
-      } else if (diff < 0) {
-        dst.bass.length = src.length;
-        dst.melody.length = src.length;
-        for (const lane of DRUM_LANES) dst.drums[lane].length = src.length;
-      }
-      dst.length = src.length;
-    }
-
-    if (copyBass)   dst.bass   = src.bass.map((s) => ({ ...s }));
-    if (copyMelody) dst.melody = src.melody.map((s) => ({ ...s }));
-    if (copyDrums) {
-      dst.drums = Object.fromEntries(
-        DRUM_LANES.map((lane) => [lane, src.drums[lane].map((s) => ({ ...s }))]),
-      ) as typeof dst.drums;
-    }
-    if (copyAuto) {
-      dst.automation = src.automation.map((l) => ({ ...l, values: [...l.values] }));
-    }
-
-    // If we just overwrote the currently-playing/edited slot, re-render.
-    if (to === bank.current) {
-      seq.setPattern(bank.slots[to]);
-      barsSel.value = String(seq.length);
-      viewStart = 0;
-      rebuildTracks();
-      renderLanes();
-    }
-    flashButton($<HTMLButtonElement>('copy-go'), `${String.fromCharCode(65+from)}→${String.fromCharCode(65+to)} ✓`);
-  });
-}
+// ── Copy bars between slots — moved to src/save/slot-copy.ts ──────────────
+// wireSlotCopyPanel() is called at boot (see boot section below).
 
 setupInitialPattern();
 // All 4 slots are populated by setupInitialPattern; seq is already pointing at slot 0.
@@ -2071,7 +2003,14 @@ wirePresets();
 wirePolyControls(polySynthPresetsDeps);
 wirePolyMode(polyModeDeps);
 wirePolyTargetSelect();
-wireCopyPanel();
+wireSlotCopyPanel({
+  bank, seq, barsSel,
+  getViewStart: () => viewStart,
+  setViewStart: (v) => { viewStart = v; },
+  rebuildTracks,
+  renderLanes,
+  flashButton,
+});
 wireCopyNotesPanel({ seq, rebuildTracks });
 
 // ── Demo wiring (deps built here, functions live in demo-minimal-techno.ts) ─
