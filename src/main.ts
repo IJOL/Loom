@@ -9,7 +9,7 @@ import './engines/karplus';
 import { TB303, type Wave } from './core/synth';
 import { Sequencer, type DrumStep, type PolyStep } from './core/sequencer';
 import { DrumMachine, DRUM_LANES, type DrumVoice } from './core/drums';
-import { randomize, clearPattern, type ScaleName, type RandomizeOptions } from './core/random';
+import { clearPattern, type ScaleName } from './core/random';
 import { FxBus, ChannelStrip, FilterChain, MasterFilter, type ChannelState, type SyncDiv } from './core/fx';
 import { PatternBank, clonePattern, emptyPattern, AUTOMATION_SUB_RES, MAX_EXTRA_POLY_TRACKS, type PatternData, type PolyTrack, type AutomationLane } from './core/pattern';
 import { createKnob, type KnobHandle } from './core/knob';
@@ -40,6 +40,7 @@ import {
 } from './automation/automation-ui';
 import { clamp01 } from './automation/automation-painter';
 import { wireCopyNotesPanel } from './core/copy-notes';
+import { wireRandomizeUI } from './core/randomize-ui';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -1287,94 +1288,8 @@ $$('button.slot').forEach((b) => {
 // Pre-populate the bank's slot 0 with the sequencer's initial pattern (set up below)
 // Done after setupInitialPattern.
 
-// ── Randomize / Clear ──────────────────────────────────────────────────────
-function currentRandomBase(): RandomizeOptions {
-  return { scale: scaleSel.value as ScaleName, rootNote: parseInt(rootSel.value, 10) };
-}
-
-// ── Per-lane randomize helpers (replaces the old global toolbar) ──────────
-function randomizeBassNotes() {
-  const base = currentRandomBase();
-  randomize(seq, synth, { ...base, bassNotes: true, accents: true, slides: true });
-  refreshAllCellsFromState();
-  if (bassRollEntry) bassRollEntry.handle.redraw();
-}
-function randomizeBassSound() {
-  const base = currentRandomBase();
-  randomize(seq, synth, { ...base, mod: true });
-  refreshKnobsFromSynth();
-}
-function randomizeDrumsLane() {
-  const base = currentRandomBase();
-  randomize(seq, synth, { ...base, drums: true });
-  refreshAllCellsFromState();
-}
-// Random notes for a single poly lane: scale-aware, sparse, musical.
-function randomizePolyLaneNotes(laneId: string) {
-  const scale = scaleSel.value as ScaleName;
-  const root  = parseInt(rootSel.value, 10);
-  // Scale intervals; same set used by random.ts
-  const SCALE_INTERVALS: Record<string, number[]> = {
-    major:     [0,2,4,5,7,9,11],
-    minor:     [0,2,3,5,7,8,10],
-    pentMinor: [0,3,5,7,10],
-    phrygian:  [0,1,3,5,7,8,10],
-    chromatic: [0,1,2,3,4,5,6,7,8,9,10,11],
-  };
-  const intervals = SCALE_INTERVALS[scale] ?? SCALE_INTERVALS.pentMinor;
-  // Random note from scale around `root + 24` for poly range
-  const pickMidi = () => {
-    const oct = Math.floor(Math.random() * 3); // 0..2 octaves above root
-    const iv  = intervals[Math.floor(Math.random() * intervals.length)];
-    return root + 36 + oct * 12 + iv;
-  };
-  const len = seq.pattern.length;
-  if (laneId === 'main') {
-    if (seq.pattern.polyMode === 'piano') {
-      // Sparse piano-roll: ~30% step density, notes of 1-2 steps duration
-      const out: NoteEvent[] = [];
-      for (let i = 0; i < len; i++) {
-        if (Math.random() < 0.3) {
-          out.push({
-            start: i * TICKS_PER_STEP,
-            duration: TICKS_PER_STEP * (Math.random() < 0.3 ? 2 : 1),
-            midi: pickMidi(),
-            velocity: Math.random() < 0.25 ? 115 : 80,
-          });
-        }
-      }
-      seq.pattern.polyNotes = out;
-    } else {
-      // Step mode: fill melody[] array
-      for (let i = 0; i < len; i++) {
-        const on = Math.random() < 0.35;
-        seq.pattern.melody[i] = {
-          on,
-          notes: on ? [pickMidi()] : [60],
-          accent: on && Math.random() < 0.2,
-          tie: on && Math.random() < 0.1,
-        };
-      }
-    }
-  } else {
-    const track = seq.pattern.extraPolyTracks.find((t) => t.id === laneId);
-    if (!track) return;
-    const out: NoteEvent[] = [];
-    for (let i = 0; i < len; i++) {
-      if (Math.random() < 0.3) {
-        out.push({
-          start: i * TICKS_PER_STEP,
-          duration: TICKS_PER_STEP * (Math.random() < 0.3 ? 2 : 1),
-          midi: pickMidi(),
-          velocity: Math.random() < 0.25 ? 115 : 80,
-        });
-      }
-    }
-    track.notes = out;
-  }
-  rebuildPolyTrack();
-  rebuildRollsView();
-}
+// ── Randomize / Clear — moved to src/core/randomize-ui.ts ────────────────
+// wireRandomizeUI() is called at boot (see boot section below).
 
 // ── Save / Load (localStorage) ─────────────────────────────────────────────
 const STORE_KEY = 'tb303-state-v1';
@@ -2215,11 +2130,15 @@ function getActiveClassicTab(): string {
 document.getElementById('mode-classic')!.addEventListener('click', () => setAppMode('classic'));
 document.getElementById('mode-session')!.addEventListener('click', () => setAppMode('session'));
 
-// Per-lane randomize buttons (replaces the old global toolbar)
-$<HTMLButtonElement>('bass-random-sound').addEventListener('click', randomizeBassSound);
-$<HTMLButtonElement>('bass-random-notes').addEventListener('click', randomizeBassNotes);
-$<HTMLButtonElement>('drums-random').addEventListener('click', randomizeDrumsLane);
-$<HTMLButtonElement>('poly-random-notes').addEventListener('click', () => randomizePolyLaneNotes(_lehState.activeLaneId));
+wireRandomizeUI({
+  seq, synth, scaleSel, rootSel,
+  getBassRollEntry: () => bassRollEntry,
+  refreshAllCellsFromState,
+  refreshKnobsFromSynth,
+  rebuildPolyTrack,
+  rebuildRollsView,
+  getActiveEngineLaneId: () => _lehState.activeLaneId,
+});
 startAutomationTick();
 // Auto-load the minimal techno demo on first boot so the user lands on
 // something playable. Press the demo button again to reset, or just edit.
