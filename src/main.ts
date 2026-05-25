@@ -38,9 +38,9 @@ import {
   populateAutoParamSelect, type AutomationUIDeps,
 } from './automation/automation-ui';
 import { clamp01 } from './automation/automation-painter';
-import { wireCopyNotesPanel } from './core/copy-notes';
+import { wireCopyNotesPanel } from './copy/lane-copy';
+import { wireSlotCopyPanel } from './copy/slot-copy';
 import { wireRandomizeUI } from './core/randomize-ui';
-import { wireSlotCopyPanel } from './save/slot-copy';
 import {
   classicState,
   type ClassicDeps,

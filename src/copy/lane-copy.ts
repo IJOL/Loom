@@ -1,5 +1,5 @@
-import { stepsToNotes, bassStepsToNotes, notesToBassSteps, notesToPolySteps, type NoteEvent } from './notes';
-import type { Sequencer } from './sequencer';
+import { stepsToNotes, bassStepsToNotes, notesToBassSteps, notesToPolySteps, type NoteEvent } from '../core/notes';
+import type { Sequencer } from '../core/sequencer';
 
 // ── Copy notes between lanes (303 ↔ main poly ↔ extra polys) ─────────────
 
