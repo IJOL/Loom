@@ -1,4 +1,7 @@
-import { listEngines } from './engines/registry';
+import {
+  wireEngineSelector, rebuildEngineParamUI,
+  type EngineSelectorUIDeps,
+} from './engines/engine-selector-ui';
 import type { SynthEngine } from './engines/engine-types';
 import * as leh from './engines/lane-engine-host';
 import type { LaneEngineHostState, LaneEngineHostDeps } from './engines/lane-engine-host';
@@ -249,84 +252,8 @@ for (let m = 24; m <= 48; m++) {
   rootSel.appendChild(opt);
 }
 
-// Populate engine selector from registry
-function populateEngineSelect() {
-  engineSel.innerHTML = '';
-  for (const engine of listEngines('polyhost')) {
-    const opt = document.createElement('option');
-    opt.value = engine.id;
-    opt.textContent = engine.name;
-    if (engine.id === currentEngineId) opt.selected = true;
-    engineSel.appendChild(opt);
-  }
-}
-populateEngineSelect();
-
-// Engine-specific param knobs container
-const engineParamEl = document.createElement('div');
-engineParamEl.id = 'engine-params';
-engineParamEl.style.display = 'none';
-const polyPage = document.querySelector('[data-page="poly"]')!;
-const firstPolyRow = polyPage.querySelector('.poly-section')!;
-firstPolyRow.parentNode!.insertBefore(engineParamEl, firstPolyRow.nextSibling);
-
-function unregisterKnobsByPrefix(prefix: string) {
-  for (const id of Array.from(automationRegistry.keys())) {
-    if (id.startsWith(prefix)) automationRegistry.delete(id);
-  }
-}
-
-function rebuildEngineParamUI() {
-  engineParamEl.innerHTML = '';
-  // Drop any previously-registered knobs for this lane so we don't accumulate
-  // stale handles in the automation registry.
-  const activeLaneId = _lehState.activeLaneId;
-  unregisterKnobsByPrefix(`${activeLaneId}.`);
-
-  // Show/hide subtractive-specific rows based on the ACTIVE lane's engine
-  const engineId = getLaneEngineId(activeLaneId);
-  const subtractiveRows = polyPage.querySelectorAll<HTMLElement>('[data-engine="subtractive"]');
-  for (const row of subtractiveRows) {
-    row.style.display = engineId === 'subtractive' ? '' : 'none';
-  }
-  if (engineId === 'subtractive') {
-    engineParamEl.style.display = 'none';
-    populateAutoParamSelectWrapper();
-    return;
-  }
-  const instance = getLaneEngineInstance(activeLaneId);
-  if (!instance) return;
-  engineParamEl.style.display = '';
-  const ctx = {
-    laneId: activeLaneId,
-    idPrefix: activeLaneId,
-    registerKnob: (k: unknown) => registerKnob(k as KnobHandle),
-  };
-  instance.buildParamUI(engineParamEl, ctx);
-  if (engineParamEl.childElementCount === 0) {
-    const row = document.createElement('div');
-    row.className = 'row poly-section';
-    const knobRow = document.createElement('div');
-    knobRow.className = 'knob-row';
-    const eng = instance as unknown as { setParam?: (id: string, v: number) => void; getParam?: (id: string) => number };
-    for (const p of instance.params) {
-      const fullId = `${activeLaneId}.${p.id}`;
-      const k = createKnob({
-        id: fullId,
-        label: p.label, min: p.min, max: p.max,
-        value: eng.getParam?.(p.id) ?? p.default,
-        onChange: (v) => { eng.setParam?.(p.id, v); },
-      });
-      registerKnob(k);
-      knobRow.appendChild(k.el);
-    }
-    row.appendChild(knobRow);
-    engineParamEl.appendChild(row);
-  }
-  populateAutoParamSelectWrapper();
-}
-
 // ── Per-lane engines (Phase 1B) — state lives in lane-engine-host.ts ───────
+// Engine selector UI → src/engines/engine-selector-ui.ts (wireEngineSelector)
 const _lehState: LaneEngineHostState = leh.createLaneEngineState();
 // deps object is built after rebuildEngineParamUI is defined (further below).
 // We use a late-bound wrapper so the deps reference is stable even though
@@ -348,14 +275,6 @@ const setActiveEngineLane = (laneId: string) => leh.setActiveEngineLane(_lehStat
 const syncEngineToPattern = () => leh.syncEngineToPattern(_lehState, _lehDeps);
 const setSlotConfigurators = (cbs: Array<(() => void) | null>) => leh.setSlotConfigurators(_lehState, cbs);
 
-
-engineSel.addEventListener('change', () => {
-  const newId = engineSel.value;
-  leh.setLaneEngineIdInPattern(_lehDeps, _lehState.activeLaneId, newId);
-  ensureLaneEngine(_lehState.activeLaneId, newId);
-  if (_lehState.activeLaneId === 'main') currentEngineId = newId; // legacy mirror
-  rebuildEngineParamUI();
-});
 
 // ── Track rendering (with viewport) ────────────────────────────────────────
 const LANE_LABELS: Record<TrackId, string> = {
@@ -934,6 +853,21 @@ const automationDeps: AutomationUIDeps = {
 _automationDeps = automationDeps;
 renderLanes = () => renderLanesFromUI(automationDeps);
 populateAutoParamSelectWrapper = () => populateAutoParamSelect(automationDeps);
+
+// Engine selector UI (must come after populateAutoParamSelectWrapper is set)
+const engineSelectorDeps: EngineSelectorUIDeps = {
+  engineSel,
+  getActiveLaneId: () => _lehState.activeLaneId,
+  getLaneEngineId,
+  getLaneEngineInstance,
+  ensureLaneEngine,
+  setLaneEngineIdInPattern: (laneId, engineId) => leh.setLaneEngineIdInPattern(_lehDeps, laneId, engineId),
+  setCurrentEngineId: (id) => { currentEngineId = id; },
+  automationRegistry,
+  registerKnob,
+  populateAutoParamSelect: () => populateAutoParamSelectWrapper(),
+};
+wireEngineSelector(engineSelectorDeps, currentEngineId);
 
 const polySynthPresetsDeps: PolySynthPresetsDeps = {
   getActivePolyTarget: () => classicState.activePolyTarget ?? polysynth,
