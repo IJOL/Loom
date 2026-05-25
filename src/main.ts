@@ -1,5 +1,7 @@
-import { listEngines, getEngine, createEngineInstance } from './engines/registry';
+import { listEngines } from './engines/registry';
 import type { SynthEngine } from './engines/engine-types';
+import * as leh from './engines/lane-engine-host';
+import type { LaneEngineHostState, LaneEngineHostDeps } from './engines/lane-engine-host';
 import './engines/subtractive';
 import './engines/wavetable';
 import './engines/fm';
@@ -251,10 +253,11 @@ function rebuildEngineParamUI() {
   engineParamEl.innerHTML = '';
   // Drop any previously-registered knobs for this lane so we don't accumulate
   // stale handles in the automation registry.
-  unregisterKnobsByPrefix(`${activeEngineLaneId}.`);
+  const activeLaneId = _lehState.activeLaneId;
+  unregisterKnobsByPrefix(`${activeLaneId}.`);
 
   // Show/hide subtractive-specific rows based on the ACTIVE lane's engine
-  const engineId = getLaneEngineId(activeEngineLaneId);
+  const engineId = getLaneEngineId(activeLaneId);
   const subtractiveRows = polyPage.querySelectorAll<HTMLElement>('[data-engine="subtractive"]');
   for (const row of subtractiveRows) {
     row.style.display = engineId === 'subtractive' ? '' : 'none';
@@ -264,12 +267,12 @@ function rebuildEngineParamUI() {
     populateAutoParamSelectWrapper();
     return;
   }
-  const instance = getLaneEngineInstance(activeEngineLaneId);
+  const instance = getLaneEngineInstance(activeLaneId);
   if (!instance) return;
   engineParamEl.style.display = '';
   const ctx = {
-    laneId: activeEngineLaneId,
-    idPrefix: activeEngineLaneId,
+    laneId: activeLaneId,
+    idPrefix: activeLaneId,
     registerKnob: (k: unknown) => registerKnob(k as KnobHandle),
   };
   instance.buildParamUI(engineParamEl, ctx);
@@ -280,7 +283,7 @@ function rebuildEngineParamUI() {
     knobRow.className = 'knob-row';
     const eng = instance as unknown as { setParam?: (id: string, v: number) => void; getParam?: (id: string) => number };
     for (const p of instance.params) {
-      const fullId = `${activeEngineLaneId}.${p.id}`;
+      const fullId = `${activeLaneId}.${p.id}`;
       const k = createKnob({
         id: fullId,
         label: p.label, min: p.min, max: p.max,
@@ -296,94 +299,36 @@ function rebuildEngineParamUI() {
   populateAutoParamSelectWrapper();
 }
 
-// ── Per-lane engines (Phase 1B) ────────────────────────────────────────────
-// One independent SynthEngine instance per lane (main + each extra) whenever
-// the lane's engineId is non-subtractive. Subtractive lanes keep using their
-// existing PolySynth (polysynth or extraPolys[id]); no map entry needed.
-const polyEngineInstances = new Map<string, SynthEngine>();
-// Which lane the top engine selector + engine params UI is currently bound to.
-// Tracks the EDITING dropdown — switching EDITING also switches what these
-// controls operate on. 'main' or an ExtraId.
-let activeEngineLaneId: string = 'main';
+// ── Per-lane engines (Phase 1B) — state lives in lane-engine-host.ts ───────
+const _lehState: LaneEngineHostState = leh.createLaneEngineState();
+// deps object is built after rebuildEngineParamUI is defined (further below).
+// We use a late-bound wrapper so the deps reference is stable even though
+// rebuildEngineParamUI and LANE_LABELS are declared after this point.
+const _lehDeps: LaneEngineHostDeps = {
+  get seq() { return seq; },
+  get bank() { return bank; },
+  get engineSel() { return engineSel; },
+  get rebuildEngineParamUI() { return rebuildEngineParamUI; },
+  get laneLabels() { return LANE_LABELS as Record<string, string>; },
+  setCurrentEngineId: (id: string) => { currentEngineId = id; },
+};
 
-function getLaneEngineId(laneId: string): string {
-  if (laneId === 'main') return seq.pattern.engineId ?? 'subtractive';
-  const track = seq.pattern.extraPolyTracks.find((t) => t.id === laneId);
-  return track?.engineId ?? 'subtractive';
-}
+// Stable call-site wrappers (keep existing callsites in main.ts unchanged)
+const getLaneEngineId     = (laneId: string) => leh.getLaneEngineId(_lehState, _lehDeps, laneId);
+const getLaneEngineInstance = (laneId: string): SynthEngine | null => leh.getLaneEngineInstance(_lehState, laneId);
+const ensureLaneEngine    = (laneId: string, engineId: string) => leh.ensureLaneEngine(_lehState, laneId, engineId);
+const setActiveEngineLane = (laneId: string) => leh.setActiveEngineLane(_lehState, _lehDeps, laneId);
+const syncEngineToPattern = () => leh.syncEngineToPattern(_lehState, _lehDeps);
+const setSlotConfigurators = (cbs: Array<(() => void) | null>) => leh.setSlotConfigurators(_lehState, cbs);
 
-function setLaneEngineIdInPattern(laneId: string, id: string): void {
-  if (laneId === 'main') seq.pattern.engineId = id;
-  else {
-    const track = seq.pattern.extraPolyTracks.find((t) => t.id === laneId);
-    if (track) track.engineId = id;
-  }
-}
-
-// Reconcile the live instance map with the requested engineId for a lane.
-// Disposes/recreates as needed. Returns the instance or null (subtractive).
-function ensureLaneEngine(laneId: string, engineId: string): SynthEngine | null {
-  const existing = polyEngineInstances.get(laneId);
-  if (engineId === 'subtractive') {
-    if (existing) { existing.dispose(); polyEngineInstances.delete(laneId); }
-    return null;
-  }
-  if (existing && existing.id === engineId) return existing;
-  if (existing) existing.dispose();
-  const inst = createEngineInstance(engineId);
-  if (!inst) return null;
-  polyEngineInstances.set(laneId, inst);
-  return inst;
-}
-
-function getLaneEngineInstance(laneId: string): SynthEngine | null {
-  return polyEngineInstances.get(laneId) ?? null;
-}
 
 engineSel.addEventListener('change', () => {
   const newId = engineSel.value;
-  setLaneEngineIdInPattern(activeEngineLaneId, newId);
-  ensureLaneEngine(activeEngineLaneId, newId);
-  if (activeEngineLaneId === 'main') currentEngineId = newId; // legacy mirror
+  leh.setLaneEngineIdInPattern(_lehDeps, _lehState.activeLaneId, newId);
+  ensureLaneEngine(_lehState.activeLaneId, newId);
+  if (_lehState.activeLaneId === 'main') currentEngineId = newId; // legacy mirror
   rebuildEngineParamUI();
 });
-
-// Switch what the engine selector + engine-controls panel are editing.
-function setActiveEngineLane(laneId: string) {
-  activeEngineLaneId = laneId;
-  const id = getLaneEngineId(laneId);
-  engineSel.value = id;
-  if (laneId === 'main') currentEngineId = id;
-  ensureLaneEngine(laneId, id);
-  const laneLabel = document.getElementById('engine-lane-label');
-  if (laneLabel) {
-    laneLabel.textContent = laneId === 'main' ? 'MAIN' : LANE_LABELS[laneId as keyof typeof LANE_LABELS] ?? laneId.toUpperCase();
-  }
-  rebuildEngineParamUI();
-}
-
-// Optional per-slot hook: runs after engine instances are (re)created for the
-// active slot. The demo registers these so each slot's engines start with the
-// intended sound (otherwise newly-created instances would use defaults).
-let slotEngineConfigurators: Array<(() => void) | null> = [null, null, null, null];
-function setSlotConfigurators(cbs: Array<(() => void) | null>) { slotEngineConfigurators = cbs; }
-
-// Recreate engine instances for every lane to match the current pattern's
-// engineIds. Called after any slot/pattern swap.
-function syncEngineToPattern() {
-  ensureLaneEngine('main', getLaneEngineId('main'));
-  for (const track of seq.pattern.extraPolyTracks) {
-    ensureLaneEngine(track.id, track.engineId ?? 'subtractive');
-  }
-  // Apply per-slot engine configuration (if registered by demo, etc.)
-  const cb = slotEngineConfigurators[bank.current];
-  if (cb) cb();
-  // Refresh the active-lane UI bindings (engine selector + params panel)
-  const id = getLaneEngineId(activeEngineLaneId);
-  engineSel.value = id;
-  if (activeEngineLaneId === 'main') currentEngineId = id;
-  rebuildEngineParamUI();
-}
 
 // ── Track rendering (with viewport) ────────────────────────────────────────
 const LANE_LABELS: Record<TrackId, string> = {
@@ -2260,7 +2205,7 @@ populateAutoParamSelectWrapper = () => populateAutoParamSelect(automationDeps);
 
 const polySynthPresetsDeps: PolySynthPresetsDeps = {
   getActivePolyTarget: () => activePolyTarget,
-  getActiveEngineLaneId: () => activeEngineLaneId,
+  getActiveEngineLaneId: () => _lehState.activeLaneId,
   getLaneEngineId,
   getLaneEngineInstance,
   rebuildEngineParamUI,
@@ -2351,7 +2296,7 @@ document.getElementById('mode-session')!.addEventListener('click', () => setAppM
 $<HTMLButtonElement>('bass-random-sound').addEventListener('click', randomizeBassSound);
 $<HTMLButtonElement>('bass-random-notes').addEventListener('click', randomizeBassNotes);
 $<HTMLButtonElement>('drums-random').addEventListener('click', randomizeDrumsLane);
-$<HTMLButtonElement>('poly-random-notes').addEventListener('click', () => randomizePolyLaneNotes(activeEngineLaneId));
+$<HTMLButtonElement>('poly-random-notes').addEventListener('click', () => randomizePolyLaneNotes(_lehState.activeLaneId));
 startAutomationTick();
 // Auto-load the minimal techno demo on first boot so the user lands on
 // something playable. Press the demo button again to reset, or just edit.
