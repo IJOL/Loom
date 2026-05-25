@@ -1,0 +1,47 @@
+/* ── Session inspector ────────────────────────────────────────────────── */
+
+.session-inspector {
+  margin-top: 10px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 8px;
+}
+.session-inspector-row {
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+}
+.session-inspector-row label {
+  font-size: 11px; color: #888;
+  display: flex; align-items: center; gap: 4px;
+}
+.session-inspector-row input[type="text"] { width: 160px; }
+.session-inspector-row input[type="number"] { width: 60px; }
+.session-inspector-roll { margin-top: 8px; }
+
+.back-to-session {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 1000;
+  background: #4dd0e1;
+  color: #0a0a0a;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.back-to-session:hover { background: #80e6f4; }
+
+.session-mix-col {
+  background: #141414;
+  border-radius: 4px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.session-mix-col .knob { transform: scale(0.7); margin: -4px 0; }

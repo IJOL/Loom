@@ -1,0 +1,28 @@
+* { box-sizing: border-box; }
+
+body {
+  background: #1a1a1a;
+  color: #f7d000;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  margin: 0;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.synth {
+  max-width: 1400px;
+  margin: 0 auto;
+  background: linear-gradient(180deg, #c8c4b5, #b3ad9a);
+  color: #1a1a1a;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+
+h1 {
+  margin: 0 0 16px;
+  font-size: 26px;
+  letter-spacing: 8px;
+  color: #c0392b;
+  text-shadow: 1px 1px 0 #fff;
+}

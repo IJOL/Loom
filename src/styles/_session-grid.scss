@@ -1,0 +1,88 @@
+/* ── Mode toggle (Classic vs Session) ──────────────────────────────────── */
+
+.mode-toggle {
+  display: inline-flex;
+  border: 1px solid #333;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.mode-btn {
+  background: #1a1a1a;
+  color: #888;
+  border: none;
+  padding: 4px 12px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+.mode-btn:hover { color: #f7d000; }
+.mode-btn.active {
+  background: #4dd0e1;
+  color: #0a0a0a;
+}
+
+.session-view { padding: 8px; }
+.session-toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
+.session-grid {
+  background: #0a0a0a;
+  border-radius: 6px;
+  padding: 6px;
+  overflow: auto;
+}
+.session-table { display: flex; flex-direction: column; gap: 2px; min-width: 100%; }
+.session-row {
+  display: grid;
+  grid-template-columns: 24px repeat(var(--lane-count), 120px) 140px;
+  gap: 2px;
+  align-items: center;
+}
+.session-row-header, .session-row-stop { background: #161616; }
+.session-row-label { text-align: center; font-size: 10px; color: #555; }
+.session-spacer { min-height: 24px; }
+.session-lane-header {
+  display: flex; align-items: center; gap: 4px;
+  background: #1a1a1a; padding: 4px 6px; border-radius: 4px;
+}
+.session-lane-header.lane-kind-bass  { border-left: 3px solid #c0392b; }
+.session-lane-header.lane-kind-poly  { border-left: 3px solid #4dd0e1; }
+.session-lane-header.lane-kind-drum-bus { border-left: 3px solid #9b59b6; }
+.session-lane-name { flex: 1; font-size: 11px; letter-spacing: 1px; color: #ddd; }
+.session-lane-expand, .session-lane-edit {
+  background: transparent; border: 1px solid #333; color: #888;
+  font-size: 11px; padding: 2px 6px; cursor: pointer; border-radius: 3px;
+}
+.session-lane-expand:hover, .session-lane-edit:hover { color: #4dd0e1; border-color: #4dd0e1; }
+.session-cell {
+  height: 30px; border-radius: 3px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 6px; cursor: pointer; font-size: 11px; color: #ddd; user-select: none;
+}
+.session-cell-empty { background: #141414; border: 1px dashed #2a2a2a; }
+.session-cell-empty:hover { border-color: #4dd0e1; }
+.session-cell-filled { background: #2a2a2a; }
+.session-cell-filled:hover { filter: brightness(1.2); }
+.session-cell-playing { outline: 2px solid #42d27a; outline-offset: -2px; }
+.session-cell-queued { animation: queued-pulse 0.6s infinite alternate; }
+@keyframes queued-pulse {
+  from { outline: 2px solid #f7d000; outline-offset: -2px; }
+  to   { outline: 2px solid #c9a800; outline-offset: -2px; }
+}
+.session-cell-label { flex: 1; }
+.session-cell-play  { opacity: 0.6; }
+.session-scenes-header { text-align: center; font-size: 11px; color: #888; letter-spacing: 1px; }
+.session-scene-cell { display: flex; }
+.session-scene-launch {
+  flex: 1; background: #1a1a1a; color: #ddd; border: 1px solid #333; border-radius: 3px;
+  font-size: 11px; padding: 4px 6px; cursor: pointer;
+}
+.session-scene-launch:hover { background: #4dd0e1; color: #0a0a0a; }
+.session-lane-stop, .session-stop-all {
+  background: #1a1a1a; color: #c0392b; border: 1px solid #c0392b; border-radius: 3px;
+  font-size: 11px; padding: 4px 6px; cursor: pointer;
+}
+.session-lane-stop:hover, .session-stop-all:hover { background: #c0392b; color: #0a0a0a; }
+.session-add-scene {
+  background: transparent; color: #555; border: 1px dashed #333; cursor: pointer; border-radius: 3px;
+}
+.session-add-scene:hover { color: #4dd0e1; border-color: #4dd0e1; }

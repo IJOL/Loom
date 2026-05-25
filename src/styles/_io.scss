@@ -1,0 +1,49 @@
+/* ── Save/Load + visualizer ───────────────────────────────────────────── */
+
+.io {
+  background: #2a2a2a;
+  color: #f7d000;
+  border: 1px solid #555;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.io:hover { background: #3a3a3a; }
+.io:disabled { color: #2ecc71; border-color: #2ecc71; }
+
+#rec.armed {
+  background: #c0392b;
+  color: white;
+  border-color: #c0392b;
+  animation: rec-pulse 0.8s ease-in-out infinite alternate;
+}
+@keyframes rec-pulse {
+  from { box-shadow: 0 0 0 rgba(255,0,0,0); }
+  to   { box-shadow: 0 0 12px rgba(255,0,0,0.7); }
+}
+
+.copy-row {
+  font-size: 11px;
+  gap: 8px;
+}
+.copy-chk {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.copy-row select {
+  width: 50px;
+}
+
+#viz {
+  background: #0a0a0a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  margin-left: auto;
+}

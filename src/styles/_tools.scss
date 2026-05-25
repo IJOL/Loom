@@ -1,0 +1,54 @@
+/* ── Tools row ────────────────────────────────────────────────────────── */
+
+.tool-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-left: 2px solid #333;
+}
+.tool-group:first-child { border-left: none; padding-left: 0; }
+.tool-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  margin-right: 2px;
+}
+
+.rnd, .clr {
+  background: #2a2a2a;
+  color: #f7d000;
+  border: 1px solid #555;
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.rnd:hover, .clr:hover { background: #3a3a3a; }
+.rnd.primary { background: #c0392b; color: white; border-color: #c0392b; }
+.rnd.primary:hover { background: #e74c3c; }
+.clr { color: #888; border-color: #444; }
+.clr:hover { color: #f7d000; }
+
+.page-btn {
+  background: #2a2a2a;
+  color: #f7d000;
+  border: 1px solid #555;
+  width: 28px;
+  height: 28px;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.page-btn:hover { background: #3a3a3a; }
+.page-btn:disabled { color: #444; cursor: not-allowed; }
+#page-label {
+  font-size: 11px;
+  color: #f7d000;
+  min-width: 40px;
+  text-align: center;
+}

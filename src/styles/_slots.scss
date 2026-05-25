@@ -1,0 +1,31 @@
+/* ── Pattern slot buttons ─────────────────────────────────────────────── */
+
+.slot-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.slot {
+  background: #2a2a2a;
+  color: #888;
+  border: 1px solid #444;
+  width: 28px;
+  height: 28px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.slot:hover { background: #3a3a3a; color: #f7d000; }
+.slot.active { background: #c0392b; color: #fff; border-color: #c0392b; }
+.slot.pending {
+  background: #f7d000;
+  color: #1a1a1a;
+  border-color: #f7d000;
+  animation: slot-pulse 0.45s ease-in-out infinite alternate;
+}
+@keyframes slot-pulse {
+  from { opacity: 0.5; transform: scale(0.95); }
+  to   { opacity: 1;   transform: scale(1); }
+}

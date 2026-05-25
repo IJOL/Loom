@@ -1,0 +1,150 @@
+/* ── Mixer ────────────────────────────────────────────────────────────── */
+
+.mixer-panel {
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-top: 10px;
+  color: #f7d000;
+}
+.mixer-panel summary {
+  cursor: pointer;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 4px 0;
+}
+
+.mixer {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+/* Classic vertical channel strip mixer */
+.mixer-classic {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 6px;
+}
+.mix-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(180deg, #2a2a2a, #1f1f1f);
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 6px 4px;
+  min-width: 66px;
+  max-width: 66px;
+  flex: 0 0 66px;
+}
+.mix-col .mix-name {
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  color: #f7d000;
+  font-weight: bold;
+  text-align: center;
+  height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  width: 100%;
+  background: #0a0a0a;
+  border-radius: 3px;
+}
+.mix-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  border-top: 1px solid #333;
+  padding-top: 4px;
+  width: 100%;
+}
+.mix-sec-label {
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: #777;
+}
+.mix-ms { display: flex; gap: 4px; padding-top: 4px; }
+
+.mix-fader-wrap {
+  margin-top: 6px;
+  width: 100%;
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: #0a0a0a;
+  border-radius: 4px;
+  padding: 6px 0;
+}
+.mix-fader {
+  -webkit-appearance: slider-vertical;
+  appearance: slider-vertical;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 24px;
+  height: 110px;
+  accent-color: #f7d000;
+  cursor: ns-resize;
+}
+.mix-fader-val {
+  font-size: 9px;
+  color: #f7d000;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Old grid-based row layout kept as fallback for non-classic uses */
+.mix-row {
+  display: grid;
+  grid-template-columns: 70px 30px 30px repeat(6, 60px);
+  gap: 6px;
+  align-items: center;
+  padding: 4px 4px;
+}
+.mix-row.mix-header {
+  font-size: 9px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.mix-row.mix-track:nth-child(odd) {
+  background: #222;
+  border-radius: 3px;
+}
+.mix-name {
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: #f7d000;
+}
+.mix-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mix-cell input[type=range] {
+  width: 100%;
+  margin: 0;
+}
+.mix-btn {
+  background: #1a1a1a;
+  color: #555;
+  border: 1px solid #444;
+  width: 22px;
+  height: 22px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.mix-btn.mute.active { background: #c0392b; color: #fff; border-color: #c0392b; }
+.mix-btn.solo.active { background: #f7d000; color: #1a1a1a; border-color: #f7d000; }
+
+.mix-track.bass .mix-name { color: #f78000; }

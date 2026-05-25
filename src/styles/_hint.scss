@@ -1,0 +1,18 @@
+/* ── Hint ─────────────────────────────────────────────────────────────── */
+
+.hint {
+  color: #2a2a2a;
+  font-size: 11px;
+  margin: 12px 4px 0;
+}
+.hint .k {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  margin: 0 2px;
+}
+.hint .k.off    { background: #2a2a2a; color: #888; }
+.hint .k.on     { background: #c0392b; color: #fff; }
+.hint .k.accent { background: #f7d000; color: #1a1a1a; }
+.hint .k.slide  { background: #2ecc71; color: #fff; }

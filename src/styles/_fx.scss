@@ -1,0 +1,26 @@
+/* ── FX tab ───────────────────────────────────────────────────────────── */
+
+.fx-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  margin-top: 6px;
+}
+.fx-filter-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  padding: 8px;
+  background: #2a2a2a;
+  border-radius: 6px;
+}
+.fx-filter-row > .io {
+  align-self: center;
+  background: #c0392b;
+  color: white;
+  border-color: #c0392b;
+  margin-left: auto;
+}

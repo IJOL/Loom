@@ -1,0 +1,86 @@
+/* ── Piano roll ──────────────────────────────────────────────────────── */
+
+.piano-roll-wrap {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: 6px;
+  align-items: stretch;
+}
+.piano-roll-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: #0a0a0a;
+  border-radius: 4px;
+  min-width: 0;
+}
+.piano-roll-canvas {
+  background: #0a0a0a;
+  touch-action: none;
+  display: block;
+  image-rendering: crisp-edges;
+}
+
+.midi-panel {
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-top: 10px;
+  color: #f7d000;
+}
+.midi-panel summary {
+  cursor: pointer;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 4px 0;
+}
+.midi-import-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+.midi-import-row input[type=file] {
+  color: #f7d000;
+  font-size: 11px;
+}
+
+.active-edit-label {
+  background: #f7d000;
+  color: #1a1a1a;
+  padding: 4px 10px;
+  font-weight: bold;
+  border-radius: 3px;
+  letter-spacing: 1px;
+  font-size: 11px;
+}
+.track-label.active-edit {
+  background: #f7d000 !important;
+  color: #1a1a1a !important;
+  box-shadow: 0 0 8px rgba(247,208,0,0.5);
+}
+.track-label.triggered {
+  box-shadow: 0 0 14px rgba(46, 224, 192, 0.85), inset 0 0 10px rgba(46, 224, 192, 0.5);
+  transition: box-shadow 0.05s;
+}
+
+.midi-tracklist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: #1a1a1a;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #f7d000;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.midi-track-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  cursor: pointer;
+}
+.midi-track-row:hover { background: #2a2a2a; }

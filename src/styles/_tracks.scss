@@ -1,0 +1,149 @@
+/* ── Tracks grid ──────────────────────────────────────────────────────── */
+
+.tracks {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.track {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.track-label {
+  background: #0a0a0a;
+  color: #f7d000;
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 4px 6px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cells {
+  display: grid;
+  grid-template-columns: repeat(var(--steps, 16), minmax(0, 1fr));
+  gap: 2px;
+  min-width: 0;
+}
+
+/* ── Bass cells ───────────────────────────────────────────────────────── */
+
+.bass-track .track-label { background: #2a1010; color: #f78000; }
+.melody-track .track-label { background: #102a2a; color: #5ff0d0; }
+.mix-track.poly .mix-name { color: #5ff0d0; }
+.bcell.mcell.current {
+  border-color: #5ff0d0;
+  box-shadow: 0 0 12px rgba(95, 240, 208, 0.6);
+}
+
+.bcell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  padding: 3px;
+  background: #2a2a2a;
+  border-radius: 3px;
+  border: 2px solid transparent;
+  min-width: 0;
+}
+.bcell.current {
+  border-color: #f7d000;
+  box-shadow: 0 0 12px rgba(247, 208, 0, 0.6);
+}
+.bcell.seg-start { margin-left: 8px; }
+
+.note-sel {
+  width: 100%;
+  font-size: 9px;
+  background: #1a1a1a;
+  color: #f7d000;
+  border: 1px solid #333;
+  padding: 1px;
+  border-radius: 2px;
+}
+
+.toggle {
+  background: #1a1a1a;
+  color: #555;
+  border: 1px solid #333;
+  padding: 2px;
+  font-family: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.toggle.on.active     { background: #c0392b; color: #fff;    border-color: #c0392b; }
+.toggle.accent.active { background: #f7d000; color: #1a1a1a; border-color: #f7d000; }
+.toggle.slide.active  { background: #2ecc71; color: #fff;    border-color: #2ecc71; }
+
+.num { color: #555; font-size: 8px; text-align: center; line-height: 1; }
+
+/* ── Drum cells ───────────────────────────────────────────────────────── */
+
+.dcell {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  cursor: pointer;
+  border-radius: 3px;
+  height: 30px;
+  min-width: 0;
+  padding: 0;
+  position: relative;
+}
+.dcell.roll-2::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: repeating-linear-gradient(90deg, transparent 0 45%, rgba(0,0,0,0.5) 45% 50%);
+  pointer-events: none;
+  border-radius: 2px;
+}
+.dcell.roll-4::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: repeating-linear-gradient(90deg, transparent 0 20%, rgba(0,0,0,0.5) 20% 25%);
+  pointer-events: none;
+  border-radius: 2px;
+}
+.dcell.downbeat  { border-color: #444; }
+.dcell.seg-start { margin-left: 8px; }
+.dcell:hover     { background: #333; }
+.dcell.current   { box-shadow: 0 0 10px rgba(247, 208, 0, 0.5); outline: 2px solid #f7d000; }
+
+.dcell.kick.on        { background: #c0392b; border-color: #c0392b; }
+.dcell.kick.accent    { background: #ff5544; border-color: #ff5544; box-shadow: 0 0 6px #ff5544; }
+.dcell.snare.on       { background: #e67e22; border-color: #e67e22; }
+.dcell.snare.accent   { background: #ffaa44; border-color: #ffaa44; box-shadow: 0 0 6px #ffaa44; }
+.dcell.closedHat.on     { background: #16a085; border-color: #16a085; }
+.dcell.closedHat.accent { background: #2ee0c0; border-color: #2ee0c0; box-shadow: 0 0 6px #2ee0c0; }
+.dcell.openHat.on      { background: #1abc9c; border-color: #1abc9c; }
+.dcell.openHat.accent  { background: #5ff0d0; border-color: #5ff0d0; box-shadow: 0 0 6px #5ff0d0; }
+.dcell.clap.on         { background: #d63384; border-color: #d63384; }
+.dcell.clap.accent     { background: #ff66bb; border-color: #ff66bb; box-shadow: 0 0 6px #ff66bb; }
+.dcell.cowbell.on      { background: #f7d000; border-color: #f7d000; }
+.dcell.cowbell.accent  { background: #fff066; border-color: #fff066; box-shadow: 0 0 6px #fff066; }
+.dcell.tom.on          { background: #8e44ad; border-color: #8e44ad; }
+.dcell.tom.accent      { background: #b066dd; border-color: #b066dd; box-shadow: 0 0 6px #b066dd; }
+.dcell.ride.on         { background: #3498db; border-color: #3498db; }
+.dcell.ride.accent     { background: #66ccff; border-color: #66ccff; box-shadow: 0 0 6px #66ccff; }
+
+.drum-track.kick      .track-label { color: #ff6655; }
+.drum-track.snare     .track-label { color: #ffaa55; }
+.drum-track.closedHat .track-label { color: #2ee0c0; }
+.drum-track.openHat   .track-label { color: #5ff0d0; }
+.drum-track.clap      .track-label { color: #ff66bb; }
+.drum-track.cowbell   .track-label { color: #f7d000; }
+.drum-track.tom       .track-label { color: #b066dd; }
+.drum-track.ride      .track-label { color: #66ccff; }
