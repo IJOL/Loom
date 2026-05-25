@@ -551,6 +551,7 @@ const sessionHost = new SessionHost({
   polysynth,
   mixerDeps,
   getAppMode,
+  midiLabel,
 });
 sessionHost.init();
 

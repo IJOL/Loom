@@ -45,6 +45,7 @@ export interface SessionHostDeps {
   polysynth: PolySynth;
   mixerDeps: MixerColumnDeps;
   getAppMode: () => 'classic' | 'session';
+  midiLabel: (m: number) => string;
 }
 
 export class SessionHost {
@@ -65,6 +66,7 @@ export class SessionHost {
       state: this.state,
       laneStates: this.laneStates,
       renderWithMixer: () => this.renderWithMixer(),
+      midiLabel: this.deps.midiLabel,
     });
 
     this.deps.seq.sessionTick = (now, look) => {
