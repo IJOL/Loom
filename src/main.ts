@@ -69,6 +69,7 @@ import {
 import { rebuildRollsView as classicRebuildRollsView, rollsRollEntries } from './classic/rolls-view';
 import { setActivePolyTarget as classicSetActivePolyTarget } from './classic/poly-target';
 import { autoScrollRoll } from './classic/piano-roll-helper';
+import { startVisualizer } from './core/visualizer';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -460,29 +461,7 @@ function flashButton(b: HTMLButtonElement, msg: string) {
 
 // Save/Load buttons are wired in the Save Manager v2 section below.
 
-// ── Visualizer ─────────────────────────────────────────────────────────────
-function startVisualizer() {
-  const c = vizCanvas.getContext('2d');
-  if (!c) return;
-  const data = new Uint8Array(analyser.fftSize);
-  const draw = () => {
-    requestAnimationFrame(draw);
-    analyser.getByteTimeDomainData(data);
-    c.fillStyle = '#1a1a1a';
-    c.fillRect(0, 0, vizCanvas.width, vizCanvas.height);
-    c.lineWidth = 1.5;
-    c.strokeStyle = '#f7d000';
-    c.beginPath();
-    const slice = vizCanvas.width / data.length;
-    for (let i = 0; i < data.length; i++) {
-      const v = data[i] / 128.0;
-      const y = (v * vizCanvas.height) / 2;
-      if (i === 0) c.moveTo(0, y); else c.lineTo(i * slice, y);
-    }
-    c.stroke();
-  };
-  draw();
-}
+// ── Visualizer → src/core/visualizer.ts ───────────────────────────────────
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 // setupInitialPattern → src/demo/initial-pattern.ts
@@ -922,7 +901,7 @@ startAutomationTick();
 // Auto-load the minimal techno demo on first boot so the user lands on
 // something playable. Press the demo button again to reset, or just edit.
 applyMinimalTechnoDemo(demoDeps);
-startVisualizer();
+startVisualizer({ ctx, analyser, vizCanvas });
 
 // ── Save Manager v2 (see src/save-wiring.ts) ──────────────────────────────
 const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
