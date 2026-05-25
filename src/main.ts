@@ -19,7 +19,6 @@ import { createKnob, type KnobHandle } from './core/knob';
 import { PolySynth } from './polysynth/polysynth';
 import { scheduleArpForNote } from './arp/arp';
 import { stepsToNotes, bassStepsToNotes } from './core/notes';
-import { tickSessionEnvelopes } from './session/session-runtime';
 import { buildMixerColumn } from './core/mixer';
 import { SessionHost } from './session/session-host';
 import { applyMinimalTechnoDemo, wireDemoMinimalTechno } from './demo/demo-minimal-techno';
@@ -71,6 +70,10 @@ import { autoScrollRoll } from './classic/piano-roll-helper';
 import { startVisualizer } from './core/visualizer';
 import { wireDrumMasterUI } from './core/drum-master-ui';
 import { wirePresetLibrary } from './presets/preset-library-ui';
+import {
+  startAutomationTick, resetAutomationPosition, getAutoAbsSubIdx,
+  type AutomationTickDeps,
+} from './automation/automation-tick';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -192,7 +195,7 @@ function recordAutomationValue(paramId: string, value: number) {
     seq.pattern.automation.push(lane);
     renderLanes();
   }
-  const idx = autoAbsSubIdx % lane.values.length;
+  const idx = getAutoAbsSubIdx() % lane.values.length;
   lane.values[idx] = norm;
   // Smooth a 2-sub-step neighborhood so single fast moves still produce a
   // visible curve, not a single spike.
@@ -489,78 +492,10 @@ for (const t of $$<HTMLButtonElement>('button.tab')) {
 // Lane UI (renderLanes, wireAutomationTab, etc.) → automation-ui.ts
 // Painter helpers (drawLane, attachLanePainter, snap) → automation-painter.ts
 
-let autoCurrentSubIdx = 0;  // current sub-step index for the playhead overlay
-
 // ensureLaneSize, snapLaneToSteps, populateAutoParamSelect, addLane, removeLane,
 // renderLanes, drawLane, attachLanePainter → automation-ui.ts / automation-painter.ts
-
-// Continuous (sub-step) automation tick driven by rAF. Tracks an ABSOLUTE
-// play position (sub-steps since play started) so each lane can have its own
-// length and wraps independently of the pattern.
-let autoTickRunning = false;
-let autoAbsSubIdx = 0;        // monotonically growing while playing
-let autoLoopCount = 0;        // how many times the pattern has wrapped
-let autoPrevPlayPos = 0;
-function resetAutomationPosition() {
-  autoAbsSubIdx = 0;
-  autoLoopCount = 0;
-  autoPrevPlayPos = 0;
-  autoCurrentSubIdx = 0;
-}
-function startAutomationTick() {
-  if (autoTickRunning) return;
-  autoTickRunning = true;
-  const tick = () => {
-    if (!autoTickRunning) return;
-    requestAnimationFrame(tick);
-    if (!seq.isPlaying()) return;
-    const playPos = seq.currentPlayPosition();          // 0 .. pattern.length
-    // Detect pattern wrap (playPos jumps backwards) and bump the loop count.
-    if (playPos < autoPrevPlayPos - 1) autoLoopCount++;
-    autoPrevPlayPos = playPos;
-    const patternSubs = seq.length * AUTOMATION_SUB_RES;
-    autoAbsSubIdx = autoLoopCount * patternSubs + Math.floor(playPos * AUTOMATION_SUB_RES);
-    // For the playhead overlay (within-pattern), just use mod patternSubs.
-    const playheadIdx = autoAbsSubIdx % patternSubs;
-    if (playheadIdx !== autoCurrentSubIdx) {
-      autoCurrentSubIdx = playheadIdx;
-      redrawAllLanes();
-      // Keep all piano-roll playheads live (bass + main + extras + rolls view).
-      if (classicState.bassRollEntry) { classicState.bassRollEntry.handle.redraw(); autoScrollRoll(classicState.bassRollEntry, classicDeps); }
-      if (classicState.mainRollEntry) { classicState.mainRollEntry.handle.redraw(); autoScrollRoll(classicState.mainRollEntry, classicDeps); }
-      for (const e of classicState.extraRolls.values()) { e.handle.redraw(); autoScrollRoll(e, classicDeps); }
-      for (const e of rollsRollEntries) { e.handle.redraw(); autoScrollRoll(e, classicDeps); }
-      // Update activity indicators (track labels pulse when recently triggered)
-      const now = performance.now();
-      document.querySelectorAll<HTMLElement>('.track-label[data-track-id]').forEach((el) => {
-        const id = el.dataset.trackId ?? '';
-        const until = trackActiveUntil.get(id) ?? 0;
-        el.classList.toggle('triggered', now < until);
-      });
-    }
-    for (const lane of seq.pattern.automation) {
-      if (!lane.enabled) continue;
-      const entry = automationRegistry.get(lane.paramId);
-      if (!entry) continue;
-      const laneLen = lane.values.length;
-      if (laneLen === 0) continue;
-      const idx = autoAbsSubIdx % laneLen;
-      const v = lane.values[idx];
-      if (v == null) continue;
-      const denorm = entry.meta.min + clamp01(v) * (entry.meta.max - entry.meta.min);
-      entry.setValue(denorm);
-    }
-    if (appMode === 'session') {
-      tickSessionEnvelopes(sessionHost.laneStates, ctx.currentTime, seq.bpm, (paramId, normalised) => {
-        const k = automationRegistry.get(paramId);
-        if (!k) return;
-        const range = k.meta.max - k.meta.min;
-        k.setValue(k.meta.min + normalised * range);
-      });
-    }
-  };
-  requestAnimationFrame(tick);
-}
+// Automation tick state + resetAutomationPosition + startAutomationTick
+// → src/automation/automation-tick.ts
 
 // redrawAllLanes, clamp01, wireAutomationTab → imported from automation-ui/painter
 
@@ -662,7 +597,7 @@ const polySynthUIDeps: PolySynthUIDeps = {
 const automationDeps: AutomationUIDeps = {
   seq,
   automationRegistry,
-  getAutoAbsSubIdx: () => autoAbsSubIdx,
+  getAutoAbsSubIdx,
   extraIds: EXTRA_IDS,
   laneLabels: LANE_LABELS as Record<string, string>,
 };
@@ -830,7 +765,22 @@ wireRandomizeUI({
   rebuildRollsView,
   getActiveEngineLaneId: () => _lehState.activeLaneId,
 });
-startAutomationTick();
+const automationTickDeps: AutomationTickDeps = {
+  seq,
+  automationRegistry,
+  getAppMode,
+  getLaneStates: () => sessionHost.laneStates,
+  ctx,
+  redrawAllLanes,
+  getBassRollEntry: () => classicState.bassRollEntry,
+  getMainRollEntry: () => classicState.mainRollEntry,
+  getExtraRolls: () => classicState.extraRolls,
+  getRollsRollEntries: () => rollsRollEntries,
+  autoScrollRoll,
+  getClassicDeps: () => classicDeps,
+  trackActiveUntil,
+};
+startAutomationTick(automationTickDeps);
 // Auto-load the minimal techno demo on first boot so the user lands on
 // something playable. Press the demo button again to reset, or just edit.
 applyMinimalTechnoDemo(demoDeps);
