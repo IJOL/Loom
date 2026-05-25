@@ -267,10 +267,18 @@ export class SessionHost {
 
   private wireBackPill(): void {
     document.getElementById('back-to-session')!.addEventListener('click', () => {
-      document.getElementById('back-to-session')!.hidden = true;
-      document.getElementById('session-view')!.hidden = false;
-      document.querySelectorAll<HTMLElement>('.page').forEach((p) => { p.hidden = true; });
-      document.querySelector<HTMLElement>('.tab-bar')!.hidden = true;
+      // Delegate to main's mode-visibility helper so all Classic-only panels
+      // (mixer, copy-row, presets) get re-hidden and Session re-renders.
+      const w = window as unknown as { __reapplyModeVisibility?: () => void };
+      if (w.__reapplyModeVisibility) {
+        w.__reapplyModeVisibility();
+      } else {
+        // Fallback if the helper isn't installed yet (shouldn't happen post-boot).
+        document.getElementById('back-to-session')!.hidden = true;
+        document.getElementById('session-view')!.hidden = false;
+        document.querySelectorAll<HTMLElement>('.page').forEach((p) => { p.hidden = true; });
+        document.querySelector<HTMLElement>('.tab-bar')!.hidden = true;
+      }
     });
   }
 

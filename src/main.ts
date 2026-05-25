@@ -732,23 +732,42 @@ wireMidiImport({
 });
 
 // ── App mode toggle (Classic vs Session) ──────────────────────────────────
-function setAppMode(next: AppMode) {
-  if (next === appMode) return;
-  // Stop audio at every mode flip to avoid ambiguous state.
-  if (seq.isPlaying()) seq.stop();
-  appMode = next;
-  seq.sessionMode = appMode === 'session';
-  document.querySelectorAll<HTMLButtonElement>('.mode-btn').forEach((b) => {
-    b.classList.toggle('active', b.dataset.mode === appMode);
-  });
+function applyModeVisibility() {
   const tabBar      = document.querySelector<HTMLElement>('.tab-bar');
   const pages       = document.querySelectorAll<HTMLElement>('.page');
   const sessionView = document.getElementById('session-view');
+  const backPill    = document.getElementById('back-to-session');
+  const mixerPanel  = document.querySelector<HTMLElement>('.mixer-panel');
+  const arpPanel    = document.querySelector<HTMLElement>('.arp-panel');
+  const copyPanels  = document.querySelectorAll<HTMLElement>('.copy-row, .copy-track-panel, .presets-panel');
   const inClassic   = appMode === 'classic';
   if (tabBar)      tabBar.hidden      = !inClassic;
   for (const p of pages) p.hidden = !inClassic || p.dataset.page !== getActiveClassicTab();
   if (sessionView) sessionView.hidden = inClassic;
+  // Hide Classic-only panels in Session: mixer (per-column strips replace it),
+  // copy-pattern row, preset library. Keep ARP visible (it works in both modes).
+  if (mixerPanel) mixerPanel.hidden = !inClassic;
+  for (const p of copyPanels) p.hidden = !inClassic;
+  if (arpPanel) arpPanel.hidden = false;
+  // Back-pill only makes sense during Edit tab-swap, never on plain mode switch.
+  if (backPill) backPill.hidden = true;
+  document.querySelectorAll<HTMLButtonElement>('.mode-btn').forEach((b) => {
+    b.classList.toggle('active', b.dataset.mode === appMode);
+  });
+  if (!inClassic) sessionHost.renderWithMixer();
 }
+
+function setAppMode(next: AppMode) {
+  if (next === appMode) return;
+  if (seq.isPlaying()) seq.stop();
+  appMode = next;
+  seq.sessionMode = appMode === 'session';
+  applyModeVisibility();
+}
+
+// Exposed so the Session "Back to Session" pill (in session-host) can restore
+// proper visibility without re-toggling appMode.
+(window as unknown as { __reapplyModeVisibility?: () => void }).__reapplyModeVisibility = applyModeVisibility;
 function getActiveClassicTab(): string {
   const active = document.querySelector<HTMLButtonElement>('.tab.active');
   return active?.dataset.tab ?? '303';
