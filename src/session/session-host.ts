@@ -2,13 +2,13 @@
 // main.ts constructs this after the audio graph and trigger functions are ready,
 // then calls sessionHost.init() to activate it.
 
-import type { ChannelStrip } from './fx';
-import type { DrumMachine, DrumVoice } from './drums';
-import type { PatternBank } from './pattern';
-import type { PolySynth } from './polysynth';
-import type { Sequencer, DrumStep } from './sequencer';
-import type { SynthEngine } from './engines/engine-types';
-import type { MixerColumnDeps } from './mixer';
+import type { ChannelStrip } from '../core/fx';
+import type { DrumMachine, DrumVoice } from '../core/drums';
+import type { PatternBank } from '../core/pattern';
+import type { PolySynth } from '../polysynth/polysynth';
+import type { Sequencer, DrumStep } from '../core/sequencer';
+import type { SynthEngine } from '../engines/engine-types';
+import type { MixerColumnDeps } from '../core/mixer';
 import {
   emptySessionState, cloneSessionState,
   type SessionState, type SessionClip,
@@ -20,9 +20,9 @@ import {
 } from './session-runtime';
 import { importClassicToSession, expandDrumsLane, collapseDrumsLane } from './session-migration';
 import { renderSessionGrid, type SessionUICallbacks } from './session-ui';
-import { buildMixerColumn } from './mixer';
+import { buildMixerColumn } from '../core/mixer';
 import { scheduleClipStep } from './session-step-scheduler';
-import { DRUM_LANES } from './drums';
+import { DRUM_LANES } from '../core/drums';
 import { SessionInspector } from './session-inspector';
 
 export interface SessionHostDeps {

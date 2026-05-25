@@ -1,4 +1,4 @@
-import { createKnob, type KnobHandle } from './knob';
+import { createKnob, type KnobHandle } from '../core/knob';
 import { PolySynth, type PolySynthParams, type LfoTarget, type LfoSync } from './polysynth';
 
 // ── Formatters (local copies, shared with main.ts via caller) ──────────────

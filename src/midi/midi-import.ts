@@ -1,8 +1,8 @@
-import { DRUM_LANES, type DrumVoice } from './drums';
-import { MAX_EXTRA_POLY_TRACKS } from './pattern';
-import { TICKS_PER_STEP, type NoteEvent } from './notes';
-import type { Sequencer } from './sequencer';
-import type { PolySynth } from './polysynth';
+import { DRUM_LANES, type DrumVoice } from '../core/drums';
+import { MAX_EXTRA_POLY_TRACKS } from '../core/pattern';
+import { TICKS_PER_STEP, type NoteEvent } from '../core/notes';
+import type { Sequencer } from '../core/sequencer';
+import type { PolySynth } from '../polysynth/polysynth';
 
 type ExtraId =
   | 'poly1' | 'poly2' | 'poly3' | 'poly4' | 'poly5' | 'poly6' | 'poly7' | 'poly8'

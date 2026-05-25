@@ -1,7 +1,7 @@
 import { PolySynth, type PolySynthParams } from './polysynth';
 import { FACTORY_POLY_PRESETS } from './poly-presets';
-import { randomizePolySynth } from './random';
-import type { SynthEngine } from './engines/engine-types';
+import { randomizePolySynth } from '../core/random';
+import type { SynthEngine } from '../engines/engine-types';
 import { refreshPolyKnobsFromState } from './polysynth-ui';
 
 // ── PolySynth preset state ─────────────────────────────────────────────────
@@ -176,9 +176,9 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
 }
 
 export interface PolyModeDeps {
-  getSeqPattern: () => { polyMode: 'step' | 'piano'; polyNotes: import('./notes').NoteEvent[]; melody: import('./sequencer').PolyStep[] };
-  stepsToNotes: (steps: import('./sequencer').PolyStep[]) => import('./notes').NoteEvent[];
-  getMelodySteps: () => import('./sequencer').PolyStep[];
+  getSeqPattern: () => { polyMode: 'step' | 'piano'; polyNotes: import('../core/notes').NoteEvent[]; melody: import('../core/sequencer').PolyStep[] };
+  stepsToNotes: (steps: import('../core/sequencer').PolyStep[]) => import('../core/notes').NoteEvent[];
+  getMelodySteps: () => import('../core/sequencer').PolyStep[];
   setPolyPatternMode: (mode: 'step' | 'piano') => void;
   rebuildPolyTrack: () => void;
   setBassMode: (mode: 'step' | 'piano') => void;

@@ -1,7 +1,7 @@
 import type { SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, ParamDef, EngineUIContext } from './engine-types';
 import { registerEngine, registerEngineFactory } from './registry';
 import { createPeriodicWaves, WAVETABLES } from './wavetable-tables';
-import { createKnob } from '../knob';
+import { createKnob } from '../core/knob';
 
 const WAVETABLE_PARAMS: ParamDef[] = [
   { id: 'wt-morph',        label: 'Morph',     min: 0,     max: 1, default: 0.5 },

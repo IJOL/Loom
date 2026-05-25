@@ -1,8 +1,8 @@
 import type { TB303 } from './synth';
 import type { DrumMachine } from './drums';
 import { DRUM_LANES } from './drums';
-import type { PolySynth } from './polysynth';
-import type { EngineSequencer } from './engines/engine-types';
+import type { PolySynth } from '../polysynth/polysynth';
+import type { EngineSequencer } from '../engines/engine-types';
 import { emptyPattern, AUTOMATION_SUB_RES, type PatternData } from './pattern';
 import { TICKS_PER_STEP } from './notes';
 

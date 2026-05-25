@@ -6,7 +6,7 @@
 // the entire envelope at sample-accurate times and frees itself when the
 // release tail ends.
 
-import { type SyncDiv, syncDivToHz } from './fx';
+import { type SyncDiv, syncDivToHz } from '../core/fx';
 
 export type LfoTarget = 'off' | 'pitch' | 'cutoff' | 'amp';
 export type LfoSync   = 'free' | SyncDiv;

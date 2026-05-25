@@ -2,12 +2,12 @@
 // Called once per 16th-note step from the look-ahead scheduler in session-runtime.
 // Routes each clip step to the appropriate trigger function.
 
-import type { DrumMachine, DrumVoice } from './drums';
-import type { PolySynth } from './polysynth';
-import type { SynthEngine } from './engines/engine-types';
-import type { ChannelStrip } from './fx';
+import type { DrumMachine, DrumVoice } from '../core/drums';
+import type { PolySynth } from '../polysynth/polysynth';
+import type { SynthEngine } from '../engines/engine-types';
+import type { ChannelStrip } from '../core/fx';
 import type { SessionClip, SessionState } from './session';
-import { TICKS_PER_STEP } from './notes';
+import { TICKS_PER_STEP } from '../core/notes';
 
 export interface StepSchedulerDeps {
   ctx: AudioContext;

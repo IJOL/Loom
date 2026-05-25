@@ -1,7 +1,7 @@
 import type { TB303 } from './synth';
 import { DRUM_LANES, type DrumVoice } from './drums';
 import type { Sequencer } from './sequencer';
-import type { PolySynth, LfoTarget } from './polysynth';
+import type { PolySynth, LfoTarget } from '../polysynth/polysynth';
 
 export const SCALES = {
   pentMinor: [0, 3, 5, 7, 10],

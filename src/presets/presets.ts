@@ -2,8 +2,8 @@
 // Loaders are scale-agnostic and tile the preset to the current pattern length
 // (so a 16-step Amen tiles twice into 32, four times into 64, etc.).
 
-import { DRUM_LANES, type DrumVoice } from './drums';
-import type { Sequencer } from './sequencer';
+import { DRUM_LANES, type DrumVoice } from '../core/drums';
+import type { Sequencer } from '../core/sequencer';
 
 type DrumHit = { i: number; accent?: boolean };
 type BassNote   = { i: number; note: number; accent?: boolean; slide?: boolean };

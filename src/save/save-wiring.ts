@@ -4,16 +4,16 @@ import {
   downloadAsJson, loadFromFile,
   type SaveIndexEntry,
 } from './save-manager';
-import { clonePattern, type PatternData } from './pattern';
-import type { TB303 } from './synth';
-import type { Sequencer } from './sequencer';
-import type { DrumMachine } from './drums';
-import type { PolySynth } from './polysynth';
-import type { PatternBank } from './pattern';
-import type { FxBus, ChannelStrip, FilterChain } from './fx';
-import type { SessionHost } from './session-host';
-import type { AppMode } from './main';
-import type { SessionState } from './session';
+import { clonePattern, type PatternData } from '../core/pattern';
+import type { TB303 } from '../core/synth';
+import type { Sequencer } from '../core/sequencer';
+import type { DrumMachine } from '../core/drums';
+import type { PolySynth } from '../polysynth/polysynth';
+import type { PatternBank } from '../core/pattern';
+import type { FxBus, ChannelStrip, FilterChain } from '../core/fx';
+import type { SessionHost } from '../session/session-host';
+import type { AppMode } from '../main';
+import type { SessionState } from '../session/session';
 
 export interface SaveWiringDeps {
   seq: Sequencer;

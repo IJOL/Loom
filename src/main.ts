@@ -4,39 +4,39 @@ import './engines/subtractive';
 import './engines/wavetable';
 import './engines/fm';
 import './engines/karplus';
-import { TB303, type Wave } from './synth';
-import { Sequencer, type DrumStep, type PolyStep } from './sequencer';
-import { DrumMachine, DRUM_LANES, type DrumVoice } from './drums';
-import { randomize, clearPattern, type ScaleName, type RandomizeOptions } from './random';
-import { FxBus, ChannelStrip, FilterChain, MasterFilter, type ChannelState, type SyncDiv } from './fx';
-import { PatternBank, clonePattern, emptyPattern, AUTOMATION_SUB_RES, MAX_EXTRA_POLY_TRACKS, type PatternData, type PolyTrack, type AutomationLane } from './pattern';
-import { createKnob, type KnobHandle } from './knob';
-import { PolySynth, type PolySynthParams } from './polysynth';
-import { DRUM_PRESETS, BASS_PRESETS, MELODY_PRESETS, loadDrumPreset, loadBassPreset, loadMelodyPreset } from './presets';
-import { scheduleArpForNote } from './arp';
-import { stepsToNotes, bassStepsToNotes, notesToBassSteps, notesToPolySteps, TICKS_PER_STEP, patternTicks as ptTicks, type NoteEvent } from './notes';
-import { createPianoRoll, type PianoRollHandle } from './pianoroll';
-import { tickSessionEnvelopes } from './session-runtime';
-import { buildMixerColumn } from './mixer';
-import { SessionHost } from './session-host';
-import { applyMinimalTechnoDemo, wireDemoMinimalTechno } from './demo-minimal-techno';
-import { wireMidiImport } from './midi-import';
-import { wireSaveManager, bootRecoveryLoad } from './save-wiring';
+import { TB303, type Wave } from './core/synth';
+import { Sequencer, type DrumStep, type PolyStep } from './core/sequencer';
+import { DrumMachine, DRUM_LANES, type DrumVoice } from './core/drums';
+import { randomize, clearPattern, type ScaleName, type RandomizeOptions } from './core/random';
+import { FxBus, ChannelStrip, FilterChain, MasterFilter, type ChannelState, type SyncDiv } from './core/fx';
+import { PatternBank, clonePattern, emptyPattern, AUTOMATION_SUB_RES, MAX_EXTRA_POLY_TRACKS, type PatternData, type PolyTrack, type AutomationLane } from './core/pattern';
+import { createKnob, type KnobHandle } from './core/knob';
+import { PolySynth, type PolySynthParams } from './polysynth/polysynth';
+import { DRUM_PRESETS, BASS_PRESETS, MELODY_PRESETS, loadDrumPreset, loadBassPreset, loadMelodyPreset } from './presets/presets';
+import { scheduleArpForNote } from './arp/arp';
+import { stepsToNotes, bassStepsToNotes, notesToBassSteps, notesToPolySteps, TICKS_PER_STEP, patternTicks as ptTicks, type NoteEvent } from './core/notes';
+import { createPianoRoll, type PianoRollHandle } from './core/pianoroll';
+import { tickSessionEnvelopes } from './session/session-runtime';
+import { buildMixerColumn } from './core/mixer';
+import { SessionHost } from './session/session-host';
+import { applyMinimalTechnoDemo, wireDemoMinimalTechno } from './demo/demo-minimal-techno';
+import { wireMidiImport } from './midi/midi-import';
+import { wireSaveManager, bootRecoveryLoad } from './save/save-wiring';
 import {
   buildPolySynthUI, addPolyKnob, addPolySelect, refreshPolyKnobsFromState,
   WAVE_OPTS, type PolySynthUIDeps,
-} from './polysynth-ui';
+} from './polysynth/polysynth-ui';
 import {
   wirePolyControls, wirePolyMode, applyPolyParams, applyPresetByName,
   populatePolyPresetSelect, refreshPolyPresetSelect, polyPresetName,
   type PolySynthPresetsDeps, type PolyModeDeps,
-} from './polysynth-presets';
-import { arp, buildArpUI, type ArpUIDeps } from './arp-ui';
+} from './polysynth/polysynth-presets';
+import { arp, buildArpUI, type ArpUIDeps } from './arp/arp-ui';
 import {
   wireAutomationTab, renderLanes as renderLanesFromUI, redrawAllLanes,
   populateAutoParamSelect, type AutomationUIDeps,
-} from './automation-ui';
-import { clamp01 } from './automation-painter';
+} from './automation/automation-ui';
+import { clamp01 } from './automation/automation-painter';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -1169,7 +1169,7 @@ function refreshKnobsFromSynth() {
 // ── Mixer ──────────────────────────────────────────────────────────────────
 const fmtPan = (v: number) => v === 0 ? 'C' : v < 0 ? `L${Math.round(-v * 100)}` : `R${Math.round(v * 100)}`;
 
-const mixerDeps: import('./mixer').MixerColumnDeps = {
+const mixerDeps: import('./core/mixer').MixerColumnDeps = {
   stripFor: (t) => stripFor(t as TrackId),
   label:    (t) => LANE_LABELS[t as TrackId] ?? t,
   muteState: muteState as unknown as Record<string, boolean>,
@@ -2292,7 +2292,7 @@ wireCopyPanel();
 wireCopyTrackPanel();
 
 // ── Demo wiring (deps built here, functions live in demo-minimal-techno.ts) ─
-const demoDeps: import('./demo-minimal-techno').DemoDeps = {
+const demoDeps: import('./demo/demo-minimal-techno').DemoDeps = {
   seq, bank, bpmInput, barsSel,
   chainEnabled: () => chainEnabled,
   chainBtn,
@@ -2360,7 +2360,7 @@ rebuildSynthTabs();
 startVisualizer();
 
 // ── Save Manager v2 (see src/save-wiring.ts) ──────────────────────────────
-const saveWiringDeps: import('./save-wiring').SaveWiringDeps = {
+const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
   seq, synth, polysynth, drums, master,
   volInput, bpmInput, swingInput, kitSel, waveSel, scaleSel, rootSel,
   bank, barsSel,

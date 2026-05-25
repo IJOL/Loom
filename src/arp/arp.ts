@@ -4,7 +4,7 @@
 // the step's gate. The actual synth trigger is supplied by the caller, so the
 // same arp engine works for the polysynth, the TB-303 bass, or anything else.
 
-import { type SyncDiv, syncDivToHz } from './fx';
+import { type SyncDiv, syncDivToHz } from '../core/fx';
 
 export type ArpPattern = 'up' | 'down' | 'updown' | 'random' | 'cosmic';
 export type ArpScale   = 'major' | 'minor' | 'pentMinor' | 'phrygian' | 'chromatic';

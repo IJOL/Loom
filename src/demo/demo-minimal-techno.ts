@@ -1,9 +1,9 @@
-import { emptyPattern, AUTOMATION_SUB_RES, type PatternData, type AutomationLane } from './pattern';
-import { TICKS_PER_STEP } from './notes';
-import type { DrumVoice } from './drums';
-import type { Sequencer } from './sequencer';
-import type { PatternBank } from './pattern';
-import type { SynthEngine } from './engines/engine-types';
+import { emptyPattern, AUTOMATION_SUB_RES, type PatternData, type AutomationLane } from '../core/pattern';
+import { TICKS_PER_STEP } from '../core/notes';
+import type { DrumVoice } from '../core/drums';
+import type { Sequencer } from '../core/sequencer';
+import type { PatternBank } from '../core/pattern';
+import type { SynthEngine } from '../engines/engine-types';
 
 export interface DemoDeps {
   seq: Sequencer;

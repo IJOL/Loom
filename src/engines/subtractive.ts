@@ -3,7 +3,7 @@
 
 import type { SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, ParamDef } from './engine-types';
 import { registerEngine, registerEngineFactory } from './registry';
-import { PolySynth, POLY_DEFAULTS } from '../polysynth';
+import { PolySynth, POLY_DEFAULTS } from '../polysynth/polysynth';
 
 class SubtractiveVoice implements Voice {
   constructor(

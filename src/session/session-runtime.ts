@@ -171,7 +171,7 @@ export function tickSession(
   }
 }
 
-import { AUTOMATION_SUB_RES } from './pattern';
+import { AUTOMATION_SUB_RES } from '../core/pattern';
 
 export type ApplyParamFn = (paramId: string, normalised: number) => void;
 

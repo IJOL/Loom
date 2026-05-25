@@ -1,6 +1,6 @@
-import { createKnob } from './knob';
+import { createKnob } from '../core/knob';
 import { ARP_DEFAULTS, type ArpPattern, type ArpScale, type ArpSettings } from './arp';
-import type { PolyTrack } from './pattern';
+import type { PolyTrack } from '../core/pattern';
 
 // ── Mutable ARP singleton — imported by main.ts trigger handlers ───────────
 export const arp: ArpSettings = { ...ARP_DEFAULTS };

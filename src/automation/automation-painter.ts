@@ -1,6 +1,6 @@
 // Drawing helpers for automation lanes: canvas painter, lane drawing, snap.
-import { AUTOMATION_SUB_RES } from './pattern';
-import type { Sequencer } from './sequencer';
+import { AUTOMATION_SUB_RES } from '../core/pattern';
+import type { Sequencer } from '../core/sequencer';
 
 export type AutoBrush = 'line' | 'flat';
 

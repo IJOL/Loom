@@ -10,7 +10,7 @@
 
 import type { SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, ParamDef, EngineUIContext } from './engine-types';
 import { registerEngine, registerEngineFactory } from './registry';
-import { createKnob } from '../knob';
+import { createKnob } from '../core/knob';
 
 const KARPLUS_PARAMS: ParamDef[] = [
   { id: 'ks-damping',    label: 'Damping',    min: 0,    max: 1, default: 0.5 },

@@ -4,9 +4,9 @@
 
 import type { SessionState, SessionClip } from './session';
 import type { LanePlayState } from './session-runtime';
-import type { Sequencer } from './sequencer';
-import { createPianoRoll, type PianoRollHandle } from './pianoroll';
-import { TICKS_PER_STEP, type NoteEvent } from './notes';
+import type { Sequencer } from '../core/sequencer';
+import { createPianoRoll, type PianoRollHandle } from '../core/pianoroll';
+import { TICKS_PER_STEP, type NoteEvent } from '../core/notes';
 
 export interface InspectorDeps {
   ctx: AudioContext;

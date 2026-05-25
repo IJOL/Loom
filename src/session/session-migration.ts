@@ -2,13 +2,13 @@
 // builds a fresh SessionState with one scene per slot, one clip per
 // (lane, slot) pair.
 
-import type { PatternBank, PatternData } from './pattern';
+import type { PatternBank, PatternData } from '../core/pattern';
 import {
   emptyLane, emptyScene, emptySessionState,
   type SessionClip, type SessionLane, type SessionState,
 } from './session';
-import { DRUM_LANES, type DrumVoice } from './drums';
-import type { DrumStep } from './sequencer';
+import { DRUM_LANES, type DrumVoice } from '../core/drums';
+import type { DrumStep } from '../core/sequencer';
 
 function nextId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;

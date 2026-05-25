@@ -5,7 +5,7 @@
 
 import type { SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, ParamDef, EngineUIContext } from './engine-types';
 import { registerEngine, registerEngineFactory } from './registry';
-import { createKnob } from '../knob';
+import { createKnob } from '../core/knob';
 
 interface FMAlgorithm {
   id: number;

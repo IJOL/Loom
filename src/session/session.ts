@@ -1,9 +1,9 @@
 // Session view data model (Ableton-style clip grid).
 // Pure types and pure helpers only — no audio side effects.
 
-import type { BassStep, DrumStep, PolyStep } from './sequencer';
-import type { DrumVoice } from './drums';
-import type { NoteEvent } from './notes';
+import type { BassStep, DrumStep, PolyStep } from '../core/sequencer';
+import type { DrumVoice } from '../core/drums';
+import type { NoteEvent } from '../core/notes';
 
 export type LaneKind = 'bass' | 'poly' | 'drum-bus' | 'drum-lane';
 

@@ -1,6 +1,6 @@
-import { type KnobHandle } from './knob';
-import { AUTOMATION_SUB_RES } from './pattern';
-import type { Sequencer } from './sequencer';
+import { type KnobHandle } from '../core/knob';
+import { AUTOMATION_SUB_RES } from '../core/pattern';
+import type { Sequencer } from '../core/sequencer';
 import {
   type AutoBrush,
   type PainterDeps,
