@@ -39,6 +39,7 @@ import {
   populateAutoParamSelect, type AutomationUIDeps,
 } from './automation/automation-ui';
 import { clamp01 } from './automation/automation-painter';
+import { wireCopyNotesPanel } from './core/copy-notes';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -524,85 +525,7 @@ function updateBassModeButtons() {
 }
 
 // ── Copy notes between lanes (303 ↔ main poly ↔ extra polys) ──────────────
-interface CopyEndpoint { id: string; label: string; }
-
-function listCopyEndpoints(): CopyEndpoint[] {
-  const out: CopyEndpoint[] = [
-    { id: 'bass', label: `Bass 303 (${seq.pattern.bassMode})` },
-    { id: 'main', label: `Main Poly (${seq.pattern.polyMode})` },
-  ];
-  for (const t of seq.pattern.extraPolyTracks) {
-    out.push({ id: t.id, label: `${t.name || t.id} (piano)` });
-  }
-  return out;
-}
-
-// Read notes from any endpoint, converting from its native format.
-function readEndpointAsNotes(id: string): NoteEvent[] {
-  if (id === 'bass') {
-    return seq.pattern.bassMode === 'piano'
-      ? seq.pattern.bassNotes.map((n) => ({ ...n }))
-      : bassStepsToNotes(seq.pattern.bass);
-  }
-  if (id === 'main') {
-    return seq.pattern.polyMode === 'piano'
-      ? seq.pattern.polyNotes.map((n) => ({ ...n }))
-      : stepsToNotes(seq.pattern.melody);
-  }
-  const extra = seq.pattern.extraPolyTracks.find((t) => t.id === id);
-  return extra ? extra.notes.map((n) => ({ ...n })) : [];
-}
-
-// Write notes to an endpoint, converting to its native format if needed.
-function writeNotesToEndpoint(id: string, notes: NoteEvent[]): void {
-  const cloned = notes.map((n) => ({ ...n }));
-  if (id === 'bass') {
-    if (seq.pattern.bassMode === 'piano') seq.pattern.bassNotes = cloned;
-    else seq.pattern.bass = notesToBassSteps(cloned, seq.pattern.length);
-    return;
-  }
-  if (id === 'main') {
-    if (seq.pattern.polyMode === 'piano') seq.pattern.polyNotes = cloned;
-    else seq.pattern.melody = notesToPolySteps(cloned, seq.pattern.length);
-    return;
-  }
-  const extra = seq.pattern.extraPolyTracks.find((t) => t.id === id);
-  if (extra) extra.notes = cloned;
-}
-
-function refreshCopyTrackSelects() {
-  const fromSel = document.getElementById('copy-track-from') as HTMLSelectElement | null;
-  const toSel   = document.getElementById('copy-track-to')   as HTMLSelectElement | null;
-  if (!fromSel || !toSel) return;
-  const endpoints = listCopyEndpoints();
-  const prevFrom = fromSel.value || 'bass';
-  const prevTo   = toSel.value   || 'main';
-  fromSel.innerHTML = '';
-  toSel.innerHTML = '';
-  for (const e of endpoints) {
-    const a = document.createElement('option'); a.value = e.id; a.textContent = e.label; fromSel.appendChild(a);
-    const b = document.createElement('option'); b.value = e.id; b.textContent = e.label; toSel.appendChild(b);
-  }
-  if (endpoints.some((e) => e.id === prevFrom)) fromSel.value = prevFrom;
-  if (endpoints.some((e) => e.id === prevTo))   toSel.value   = prevTo;
-}
-
-function wireCopyTrackPanel() {
-  refreshCopyTrackSelects();
-  const panel = document.querySelector('.copy-track-panel') as HTMLDetailsElement | null;
-  // Refresh choices whenever the panel opens — extra polys can come and go.
-  panel?.addEventListener('toggle', () => { if (panel.open) refreshCopyTrackSelects(); });
-  const goBtn = document.getElementById('copy-track-go') as HTMLButtonElement | null;
-  goBtn?.addEventListener('click', () => {
-    const fromSel = document.getElementById('copy-track-from') as HTMLSelectElement | null;
-    const toSel   = document.getElementById('copy-track-to')   as HTMLSelectElement | null;
-    if (!fromSel || !toSel) return;
-    if (fromSel.value === toSel.value) return;
-    const notes = readEndpointAsNotes(fromSel.value);
-    writeNotesToEndpoint(toSel.value, notes);
-    rebuildTracks();
-  });
-}
+// Moved to src/core/copy-notes.ts — wired at boot via wireCopyNotesPanel()
 
 function setActivePolyTarget(target: PolySynth, labelText: string) {
   activePolyTarget = target;
@@ -2234,7 +2157,7 @@ wirePolyControls(polySynthPresetsDeps);
 wirePolyMode(polyModeDeps);
 wirePolyTargetSelect();
 wireCopyPanel();
-wireCopyTrackPanel();
+wireCopyNotesPanel({ seq, rebuildTracks });
 
 // ── Demo wiring (deps built here, functions live in demo-minimal-techno.ts) ─
 const demoDeps: import('./demo/demo-minimal-techno').DemoDeps = {
