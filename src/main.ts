@@ -7,7 +7,7 @@ import './engines/wavetable';
 import './engines/fm';
 import './engines/karplus';
 import { TB303, type Wave } from './core/synth';
-import { Sequencer, type DrumStep, type PolyStep } from './core/sequencer';
+import { Sequencer, type PolyStep } from './core/sequencer';
 import { DrumMachine, DRUM_LANES, type DrumVoice } from './core/drums';
 import { clearPattern, type ScaleName } from './core/random';
 import { FxBus, ChannelStrip, FilterChain, MasterFilter, type ChannelState, type SyncDiv } from './core/fx';
@@ -16,8 +16,7 @@ import { createKnob, type KnobHandle } from './core/knob';
 import { PolySynth, type PolySynthParams } from './polysynth/polysynth';
 import { DRUM_PRESETS, BASS_PRESETS, MELODY_PRESETS, loadDrumPreset, loadBassPreset, loadMelodyPreset } from './presets/presets';
 import { scheduleArpForNote } from './arp/arp';
-import { stepsToNotes, bassStepsToNotes, notesToBassSteps, notesToPolySteps, TICKS_PER_STEP, patternTicks as ptTicks, type NoteEvent } from './core/notes';
-import { createPianoRoll, type PianoRollHandle } from './core/pianoroll';
+import { stepsToNotes, bassStepsToNotes } from './core/notes';
 import { tickSessionEnvelopes } from './session/session-runtime';
 import { buildMixerColumn } from './core/mixer';
 import { SessionHost } from './session/session-host';
@@ -42,6 +41,25 @@ import { clamp01 } from './automation/automation-painter';
 import { wireCopyNotesPanel } from './core/copy-notes';
 import { wireRandomizeUI } from './core/randomize-ui';
 import { wireSlotCopyPanel } from './save/slot-copy';
+import {
+  classicState,
+  type ClassicDeps,
+} from './classic/classic-state';
+import {
+  rebuildTracks as classicRebuildTracks,
+  wireClassicUI,
+  updatePager as classicUpdatePager,
+  visibleRange as classicVisibleRange,
+} from './classic/classic-tracks';
+import { refreshAllCellsFromState as classicRefreshAllCells } from './classic/drum-cells';
+import { rebuildPolyTrack as classicRebuildPolyTrack } from './classic/poly-track-area';
+import {
+  rebuildSynthTabs as classicRebuildSynthTabs,
+  setCurrentSynthLane as classicSetCurrentSynthLane,
+} from './classic/synth-tabs';
+import { rebuildRollsView as classicRebuildRollsView, rollsRollEntries } from './classic/rolls-view';
+import { setActivePolyTarget as classicSetActivePolyTarget } from './classic/poly-target';
+import { autoScrollRoll } from './classic/piano-roll-helper';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -344,169 +362,18 @@ const LANE_LABELS: Record<TrackId, string> = {
   clap: 'CLAP', cowbell: 'COWBLL', tom: 'TOM', ride: 'RIDE',
 };
 
-let viewStart = 0;
+// viewStart, bassCells, melodyCells, drumCells, visibleRange, updatePager
+// → moved to src/classic/ (classicState + classicRebuildTracks etc.)
 
-interface BassCellRefs {
-  el: HTMLDivElement;
-  noteSel: HTMLSelectElement;
-  onBtn: HTMLButtonElement;
-  accentBtn: HTMLButtonElement;
-  slideBtn: HTMLButtonElement;
-}
-interface MelodyCellRefs {
-  el: HTMLDivElement;
-  noteSel: HTMLSelectElement;
-  onBtn: HTMLButtonElement;
-  accentBtn: HTMLButtonElement;
-  tieBtn: HTMLButtonElement;
-  chordBtn: HTMLButtonElement;
-}
-
-let bassCells: Record<number, BassCellRefs> = {};
-let melodyCells: Record<number, MelodyCellRefs> = {};
-let drumCells: Record<DrumVoice, Record<number, HTMLButtonElement>> = {
-  kick: {}, snare: {}, closedHat: {}, openHat: {}, clap: {}, cowbell: {}, tom: {}, ride: {},
-};
-
-function visibleRange(): { start: number; end: number } {
-  if (viewStart >= seq.length) viewStart = 0;
-  return { start: viewStart, end: Math.min(viewStart + VIEW_SIZE, seq.length) };
-}
-
-function updatePager() {
-  const totalPages = Math.max(1, Math.ceil(seq.length / VIEW_SIZE));
-  const currentPage = Math.floor(viewStart / VIEW_SIZE) + 1;
-  $('page-label').textContent = `${currentPage} / ${totalPages}`;
-  $<HTMLButtonElement>('page-prev').disabled = currentPage <= 1;
-  $<HTMLButtonElement>('page-next').disabled = currentPage >= totalPages;
-  $('pager').style.display = totalPages > 1 ? 'flex' : 'none';
-}
-
-function rebuildTracks() {
-  bassTracksEl.innerHTML = '';
-  drumTracksEl.innerHTML = '';
-  bassCells = {};
-  for (const k of Object.keys(drumCells) as DrumVoice[]) drumCells[k] = {};
-
-  const { start, end } = visibleRange();
-  const count = end - start;
-  bassTracksEl.style.setProperty('--steps', String(count));
-  drumTracksEl.style.setProperty('--steps', String(count));
-
-  // Bass: piano-roll mode renders a single piano-roll instead of the step grid.
-  if (seq.pattern.bassMode === 'piano') {
-    bassRollEntry = addPianoRollFor({
-      parent: bassTracksEl,
-      labelText: LANE_LABELS.bass,
-      getNotes: () => seq.pattern.bassNotes,
-      setNotes: (notes) => { seq.pattern.bassNotes = notes; },
-      trackId: 'bass',
-    });
-  } else {
-    bassRollEntry = null;
-    renderBassStepGrid(start, end);
-  }
-
-  // Drum rows
-  for (const lane of DRUM_LANES) {
-    const row = document.createElement('div');
-    row.className = `track drum-track ${lane}`;
-    const label = document.createElement('div');
-    label.className = 'track-label';
-    label.textContent = LANE_LABELS[lane];
-    row.appendChild(label);
-    const cellsEl = document.createElement('div');
-    cellsEl.className = 'cells drum-cells';
-    row.appendChild(cellsEl);
-
-    for (let i = start; i < end; i++) {
-      const step = seq.drums[lane][i];
-      const b = document.createElement('button');
-      b.className = `dcell ${lane}`;
-      if (i > start && (i - start) % 16 === 0) b.classList.add('seg-start');
-      if (i % 4 === 0) b.classList.add('downbeat');
-      applyDrumCellState(b, step);
-      b.addEventListener('click', (e) => {
-        if (e.shiftKey) cycleDrumRoll(step);
-        else cycleDrumStep(step);
-        applyDrumCellState(b, step);
-      });
-      b.title = 'Click: off → on → accent. Shift+click: roll x2 → x4';
-      cellsEl.appendChild(b);
-      drumCells[lane][i] = b;
-    }
-    drumTracksEl.appendChild(row);
-  }
-
-  rebuildPolyTrack();
-  updatePager();
-}
-
-function renderBassStepGrid(start: number, end: number) {
-  const bassRow = document.createElement('div');
-  bassRow.className = 'track bass-track';
-  const bassLabel = document.createElement('div');
-  bassLabel.className = 'track-label';
-  bassLabel.textContent = LANE_LABELS.bass;
-  bassRow.appendChild(bassLabel);
-  const bassCellsEl = document.createElement('div');
-  bassCellsEl.className = 'cells bass-cells';
-  bassRow.appendChild(bassCellsEl);
-
-  for (let i = start; i < end; i++) {
-    const step = seq.bass[i];
-    const cell = document.createElement('div');
-    cell.className = 'bcell';
-    if (i > start && (i - start) % 16 === 0) cell.classList.add('seg-start');
-
-    const noteSel = document.createElement('select');
-    noteSel.className = 'note-sel';
-    for (let m = 24; m <= 60; m++) {
-      const opt = document.createElement('option');
-      opt.value = String(m);
-      opt.textContent = midiLabel(m);
-      if (m === step.note) opt.selected = true;
-      noteSel.appendChild(opt);
-    }
-    noteSel.addEventListener('change', () => {
-      step.note = parseInt(noteSel.value, 10);
-    });
-
-    const mkToggle = (label: string, key: 'on' | 'accent' | 'slide') => {
-      const b = document.createElement('button');
-      b.className = `toggle ${key}`;
-      b.textContent = label;
-      if (step[key]) b.classList.add('active');
-      b.addEventListener('click', () => {
-        step[key] = !step[key];
-        b.classList.toggle('active', step[key]);
-      });
-      return b;
-    };
-
-    const onBtn = mkToggle('●', 'on');
-    const accentBtn = mkToggle('A', 'accent');
-    const slideBtn = mkToggle('S', 'slide');
-    cell.appendChild(noteSel);
-    cell.appendChild(onBtn);
-    cell.appendChild(accentBtn);
-    cell.appendChild(slideBtn);
-    const num = document.createElement('div');
-    num.className = 'num';
-    num.textContent = String(i + 1);
-    cell.appendChild(num);
-
-    bassCellsEl.appendChild(cell);
-    bassCells[i] = { el: cell, noteSel, onBtn, accentBtn, slideBtn };
-  }
-  bassTracksEl.appendChild(bassRow);
-}
-
-interface RollEntry { handle: PianoRollHandle; scrollEl: HTMLElement; canvasEl: HTMLCanvasElement; }
-let pianoRoll: PianoRollHandle | null = null;
-let mainRollEntry: RollEntry | null = null;
-let bassRollEntry: RollEntry | null = null;
-const extraRolls: Map<string, RollEntry> = new Map();
+// rebuildTracks, renderBassStepGrid, RollEntry, pianoRoll, mainRollEntry,
+// bassRollEntry, extraRolls → moved to src/classic/
+function rebuildTracks() { classicRebuildTracks(classicDeps); }
+function rebuildPolyTrack() { classicRebuildPolyTrack(classicDeps, () => classicUpdatePager(classicDeps)); }
+function rebuildSynthTabs() { classicRebuildSynthTabs(classicDeps, rebuildPolyTrack, rebuildMixer); }
+function setCurrentSynthLane(laneId: string) { classicSetCurrentSynthLane(laneId, classicDeps, rebuildPolyTrack); }
+function setActivePolyTarget(target: PolySynth, labelText: string) { classicSetActivePolyTarget(target, labelText, classicDeps); }
+function rebuildRollsView() { classicRebuildRollsView(classicDeps); }
+function refreshAllCellsFromState() { classicRefreshAllCells(classicDeps); }
 
 function setBassMode(mode: 'step' | 'piano') {
   if (seq.pattern.bassMode === mode) return;
@@ -528,509 +395,6 @@ function updateBassModeButtons() {
 
 // ── Copy notes between lanes (303 ↔ main poly ↔ extra polys) ──────────────
 // Moved to src/core/copy-notes.ts — wired at boot via wireCopyNotesPanel()
-
-function setActivePolyTarget(target: PolySynth, labelText: string) {
-  activePolyTarget = target;
-  $('poly-active-label').textContent = labelText;
-  refreshPolyKnobsFromState();
-  refreshPolyPresetSelect();
-  refreshPolyTargetSelect();
-  // Visual: highlight the active track header
-  document.querySelectorAll('.track-label.active-edit').forEach((el) => el.classList.remove('active-edit'));
-  const node = document.querySelector(`.track-label[data-poly-target="${labelText}"]`);
-  if (node) node.classList.add('active-edit');
-  // Switch engine selector + engine params panel to match this lane
-  let laneId: string = 'main';
-  if (target !== polysynth) {
-    for (const id of EXTRA_IDS) if (extraPolys[id] && extraPolys[id] === target) { laneId = id; break; }
-  }
-  setActiveEngineLane(laneId);
-}
-
-// Ensure an extra PolyTrack exists for the given slot id (creates an empty
-// one if missing) and returns it. Lets the user edit a slot's synth params
-// and start painting notes without first loading a MIDI.
-function ensureExtraTrack(id: ExtraId): PolyTrack {
-  let track = seq.pattern.extraPolyTracks.find((t) => t.id === id);
-  if (!track) {
-    track = { id, name: LANE_LABELS[id], enabled: true, notes: [] };
-    seq.pattern.extraPolyTracks.push(track);
-  }
-  ensureExtraPoly(id);
-  return track;
-}
-
-function refreshPolyTargetSelect() {
-  const sel = $<HTMLSelectElement>('poly-target-select');
-  if (!sel) return;
-  sel.innerHTML = '';
-  const opts: Array<{ value: string; label: string }> = [{ value: 'main', label: 'MAIN' }];
-  for (const id of EXTRA_IDS) {
-    const hasTrack = !!seq.pattern.extraPolyTracks.find((t) => t.id === id);
-    opts.push({ value: id, label: hasTrack ? `${LANE_LABELS[id]} ●` : `${LANE_LABELS[id]} (empty)` });
-  }
-  for (const o of opts) {
-    const opt = document.createElement('option');
-    opt.value = o.value;
-    opt.textContent = o.label;
-    sel.appendChild(opt);
-  }
-  // Match dropdown to currently active target
-  if (activePolyTarget === polysynth) {
-    sel.value = 'main';
-  } else {
-    for (const id of EXTRA_IDS) {
-      if (extraPolys[id] && extraPolys[id] === activePolyTarget) { sel.value = id; break; }
-    }
-  }
-}
-
-function wirePolyTargetSelect() {
-  const sel = $<HTMLSelectElement>('poly-target-select');
-  sel.addEventListener('change', () => {
-    const v = sel.value;
-    if (v === 'main') {
-      setActivePolyTarget(polysynth, 'MAIN');
-    } else {
-      const id = v as ExtraId;
-      // Create empty track if missing so user can immediately paint notes
-      const track = ensureExtraTrack(id);
-      setActivePolyTarget(ensureExtraPoly(id), track.name);
-      rebuildPolyTrack();
-      rebuildMixer();
-    }
-  });
-
-  $<HTMLButtonElement>('poly-add-track').addEventListener('click', () => {
-    // Find first ExtraId not already in use
-    const used = new Set(seq.pattern.extraPolyTracks.map((t) => t.id));
-    const free = EXTRA_IDS.find((id) => !used.has(id));
-    if (!free) { alert(`All ${EXTRA_IDS.length} extra polysynth slots are in use.`); return; }
-    const track = ensureExtraTrack(free);
-    setActivePolyTarget(ensureExtraPoly(free), track.name);
-    rebuildPolyTrack();
-    rebuildMixer();
-  });
-
-  refreshPolyTargetSelect();
-}
-
-function autoScrollRoll(entry: RollEntry) {
-  if (!seq.isPlaying()) return;
-  const playTick = seq.currentPlayPosition() * TICKS_PER_STEP;
-  const playX = (playTick / ptTicks(seq.length)) * entry.canvasEl.width;
-  const sw = entry.scrollEl;
-  const visW = sw.clientWidth;
-  // If playhead is past 70% of visible window, scroll so it sits at 30%.
-  if (playX > sw.scrollLeft + visW * 0.7 || playX < sw.scrollLeft) {
-    sw.scrollLeft = Math.max(0, playX - visW * 0.3);
-  }
-}
-
-function rangeForNotes(notes: NoteEvent[]): { lo: number; hi: number } {
-  if (notes.length === 0) return { lo: 48, hi: 72 };
-  let lo = Infinity, hi = -Infinity;
-  for (const n of notes) { if (n.midi < lo) lo = n.midi; if (n.midi > hi) hi = n.midi; }
-  // Pad +/-2 semitones and ensure at least 12 visible rows for legibility.
-  let pLo = Math.max(0, lo - 2);
-  let pHi = Math.min(127, hi + 2);
-  if (pHi - pLo < 12) {
-    const center = Math.floor((pLo + pHi) / 2);
-    pLo = Math.max(0, center - 6);
-    pHi = Math.min(127, pLo + 12);
-  }
-  return { lo: pLo, hi: pHi };
-}
-
-function addPianoRollFor(opts: {
-  parent: HTMLElement;
-  labelText: string;
-  height?: number;        // auto-computed when omitted
-  getNotes: () => NoteEvent[];
-  setNotes: (notes: NoteEvent[]) => void;
-  trailingControls?: HTMLElement;
-  onLabelClick?: () => void;
-  trackId?: string;       // used for the data attribute on the label
-}): RollEntry {
-  const wrap = document.createElement('div');
-  wrap.className = 'track melody-track piano-roll-wrap';
-  const label = document.createElement('div');
-  label.className = 'track-label';
-  label.dataset.polyTarget = opts.labelText;
-  if (opts.trackId) label.dataset.trackId = opts.trackId;
-  const labelText = document.createElement('span');
-  labelText.textContent = opts.labelText;
-  label.appendChild(labelText);
-  if (opts.onLabelClick) {
-    label.style.cursor = 'pointer';
-    label.title = 'Click to edit this synth';
-    label.addEventListener('click', () => opts.onLabelClick?.());
-  }
-  if (opts.trailingControls) {
-    label.style.display = 'flex';
-    label.style.flexDirection = 'column';
-    label.style.gap = '4px';
-    label.style.justifyContent = 'center';
-    label.appendChild(opts.trailingControls);
-  }
-  wrap.appendChild(label);
-
-  // Auto-fit the visible MIDI range to the notes this track actually uses, so
-  // the rows aren't 2px tall and invisible. ~10px/row keeps notes clickable.
-  const { lo, hi } = rangeForNotes(opts.getNotes());
-  const rows = hi - lo + 1;
-  const ROW_PX = 10;
-  const height = opts.height ?? Math.min(360, Math.max(140, rows * ROW_PX));
-
-  const PX_PER_STEP = 6;
-  const canvasWidth = Math.max(1024, seq.length * PX_PER_STEP);
-  const scrollWrap = document.createElement('div');
-  scrollWrap.className = 'piano-roll-scroll';
-  const canvas = document.createElement('canvas');
-  canvas.className = 'piano-roll-canvas';
-  canvas.width = canvasWidth;
-  canvas.height = height;
-  canvas.style.height = `${height}px`;
-  canvas.style.width = `${canvasWidth}px`;
-  scrollWrap.appendChild(canvas);
-  wrap.appendChild(scrollWrap);
-  opts.parent.appendChild(wrap);
-  const handle = createPianoRoll({
-    canvas,
-    patternTicks: ptTicks(seq.length),
-    getNotes: opts.getNotes,
-    setNotes: opts.setNotes,
-    minMidi: lo,
-    maxMidi: hi,
-    onChange: () => {},
-    getPlayheadTick: () => seq.isPlaying() ? seq.currentPlayPosition() * TICKS_PER_STEP : -1,
-  });
-  return { handle, scrollEl: scrollWrap, canvasEl: canvas };
-}
-
-// The synth tab the user is currently editing. The poly page renders only this
-// lane's controls + its single piano roll (or step grid for main).
-let currentSynthLane: string = 'main';
-
-function rebuildPolyTrack() {
-  polyTracksEl.innerHTML = '';
-  melodyCells = {};
-  pianoRoll = null;
-  extraRolls.clear();
-
-  if (currentSynthLane === 'main') {
-    if (seq.pattern.polyMode === 'piano') {
-      mainRollEntry = addPianoRollFor({
-        parent: polyTracksEl,
-        labelText: 'MAIN',
-        getNotes: () => seq.pattern.polyNotes,
-        setNotes: (notes) => { seq.pattern.polyNotes = notes; },
-        trackId: 'main',
-      });
-      pianoRoll = mainRollEntry.handle;
-    } else {
-      renderMainPolyStepRow();
-      mainRollEntry = null;
-    }
-  } else {
-    // Show only the active extra lane
-    const track = seq.pattern.extraPolyTracks.find((t) => t.id === currentSynthLane);
-    if (track) {
-      const ctrl = document.createElement('div');
-      ctrl.style.display = 'flex'; ctrl.style.gap = '4px';
-      const toggle = document.createElement('button');
-      toggle.className = 'enable' + (track.enabled ? ' active' : '');
-      toggle.textContent = track.enabled ? 'ON' : 'OFF';
-      toggle.style.fontSize = '9px'; toggle.style.padding = '2px 4px';
-      toggle.addEventListener('click', () => {
-        track.enabled = !track.enabled;
-        toggle.classList.toggle('active', track.enabled);
-        toggle.textContent = track.enabled ? 'ON' : 'OFF';
-      });
-      ctrl.appendChild(toggle);
-      const labelText = track.name.slice(0, 14);
-      const entry = addPianoRollFor({
-        parent: polyTracksEl,
-        labelText,
-        getNotes: () => track.notes,
-        setNotes: (notes) => { track.notes = notes; },
-        trailingControls: ctrl,
-        trackId: track.id,
-      });
-      extraRolls.set(track.id, entry);
-    }
-  }
-
-  // Re-apply active-edit highlight
-  const activeLabel = $('poly-active-label').textContent ?? 'MAIN';
-  document.querySelectorAll('.track-label.active-edit').forEach((el) => el.classList.remove('active-edit'));
-  const node = document.querySelector(`.track-label[data-poly-target="${activeLabel}"]`);
-  if (node) node.classList.add('active-edit');
-
-  // Sync the target dropdown so empty/non-empty slot labels stay accurate
-  refreshPolyTargetSelect();
-
-  updatePager();
-  rebuildRollsView();
-}
-
-// ── All Rolls view: stacked piano rolls of every lane ─────────────────────
-const rollsRollEntries: RollEntry[] = [];
-function rebuildRollsView() {
-  const stackEl = document.getElementById('rolls-stack') as HTMLDivElement | null;
-  if (!stackEl) return;
-  stackEl.innerHTML = '';
-  rollsRollEntries.length = 0;
-
-  // Bass 303 — piano-mode or step-mode (round-trip via converters)
-  const bassEntry = addPianoRollFor({
-    parent: stackEl,
-    labelText: seq.pattern.bassMode === 'piano' ? 'BASS' : 'BASS (step)',
-    trackId: 'bass',
-    getNotes: () => seq.pattern.bassMode === 'piano'
-      ? seq.pattern.bassNotes
-      : bassStepsToNotes(seq.pattern.bass),
-    setNotes: (n) => {
-      if (seq.pattern.bassMode === 'piano') seq.pattern.bassNotes = n;
-      else seq.pattern.bass = notesToBassSteps(n, seq.pattern.length);
-    },
-  });
-  rollsRollEntries.push(bassEntry);
-
-  // Main poly
-  const mainEntry = addPianoRollFor({
-    parent: stackEl,
-    labelText: seq.pattern.polyMode === 'piano' ? 'MAIN' : 'MAIN (step)',
-    trackId: 'main',
-    getNotes: () => seq.pattern.polyMode === 'piano'
-      ? seq.pattern.polyNotes
-      : stepsToNotes(seq.pattern.melody),
-    setNotes: (n) => {
-      if (seq.pattern.polyMode === 'piano') seq.pattern.polyNotes = n;
-      else seq.pattern.melody = notesToPolySteps(n, seq.pattern.length);
-    },
-  });
-  rollsRollEntries.push(mainEntry);
-
-  // Extras
-  for (const track of seq.pattern.extraPolyTracks) {
-    const entry = addPianoRollFor({
-      parent: stackEl,
-      labelText: track.name.slice(0, 14),
-      trackId: track.id,
-      getNotes: () => track.notes,
-      setNotes: (n) => { track.notes = n; },
-    });
-    rollsRollEntries.push(entry);
-  }
-}
-
-// ── Dynamic synth tabs (MAIN + each extra + "+") ──────────────────────────
-function rebuildSynthTabs() {
-  const host = document.getElementById('synth-tabs');
-  if (!host) return;
-  host.innerHTML = '';
-
-  const mkTab = (laneId: string, label: string) => {
-    const b = document.createElement('button');
-    b.className = 'tab synth-tab';
-    b.dataset.tab = 'poly';
-    b.dataset.synthLane = laneId;
-    b.textContent = label;
-    if (laneId === currentSynthLane) b.classList.add('active');
-    b.addEventListener('click', () => setCurrentSynthLane(laneId));
-    host.appendChild(b);
-  };
-  mkTab('main', 'MAIN');
-  for (const track of seq.pattern.extraPolyTracks) {
-    mkTab(track.id, track.name.slice(0, 12));
-  }
-
-  // Refresh ARP scope checkboxes (they depend on extras list)
-  if (document.getElementById('poly-arp-controls')?.childElementCount) {
-    buildArpUI({ getExtraPolyTracks: () => seq.pattern.extraPolyTracks });
-  }
-
-  const addBtn = document.createElement('button');
-  addBtn.className = 'tab synth-tab-add';
-  addBtn.textContent = '+ Synth';
-  addBtn.title = 'Add a new polysynth lane';
-  addBtn.addEventListener('click', () => {
-    const used = new Set(seq.pattern.extraPolyTracks.map((t) => t.id));
-    const free = EXTRA_IDS.find((id) => !used.has(id));
-    if (!free) { alert(`All ${EXTRA_IDS.length} extra polysynth slots are in use.`); return; }
-    ensureExtraTrack(free);
-    rebuildSynthTabs();
-    rebuildMixer();
-    setCurrentSynthLane(free);
-  });
-  host.appendChild(addBtn);
-}
-
-function setCurrentSynthLane(laneId: string) {
-  currentSynthLane = laneId;
-  // Switch the existing tab plumbing to show the poly page
-  document.querySelectorAll<HTMLButtonElement>('button.tab').forEach((t) => {
-    t.classList.toggle('active', t.dataset.tab === 'poly' && t.dataset.synthLane === laneId);
-  });
-  // Also flip the active 303/drums/fx/auto tabs off
-  document.querySelectorAll<HTMLButtonElement>('button.tab').forEach((t) => {
-    if (!t.dataset.synthLane && t.dataset.tab !== 'poly') t.classList.remove('active');
-  });
-  document.querySelectorAll<HTMLElement>('.page').forEach((p) => {
-    p.hidden = p.dataset.page !== 'poly';
-  });
-  // Move active edit to this lane's PolySynth + matching engine instance
-  if (laneId === 'main') {
-    setActivePolyTarget(polysynth, 'MAIN');
-  } else {
-    const id = laneId as ExtraId;
-    const track = ensureExtraTrack(id);
-    setActivePolyTarget(ensureExtraPoly(id), track.name);
-  }
-  rebuildPolyTrack();
-}
-
-function renderMainPolyStepRow() {
-
-  const { start, end } = visibleRange();
-  const count = end - start;
-  polyTracksEl.style.setProperty('--steps', String(count));
-
-  const row = document.createElement('div');
-  row.className = 'track melody-track';
-  const label = document.createElement('div');
-  label.className = 'track-label';
-  label.textContent = 'POLYSYNTH';
-  row.appendChild(label);
-  const cellsEl = document.createElement('div');
-  cellsEl.className = 'cells melody-cells';
-  row.appendChild(cellsEl);
-
-  for (let i = start; i < end; i++) {
-    const step = seq.melody[i];
-    const cell = document.createElement('div');
-    cell.className = 'bcell mcell';
-    if (i > start && (i - start) % 16 === 0) cell.classList.add('seg-start');
-
-    const noteSel = document.createElement('select');
-    noteSel.className = 'note-sel';
-    const rootNote = step.notes[0] ?? 60;
-    for (let m = 36; m <= 84; m++) {
-      const opt = document.createElement('option');
-      opt.value = String(m);
-      opt.textContent = midiLabel(m);
-      if (m === rootNote) opt.selected = true;
-      noteSel.appendChild(opt);
-    }
-    noteSel.addEventListener('change', () => {
-      const newRoot = parseInt(noteSel.value, 10);
-      const oldRoot = step.notes[0] ?? newRoot;
-      const delta = newRoot - oldRoot;
-      step.notes = step.notes.length === 0 ? [newRoot] : step.notes.map((n) => n + delta);
-    });
-
-    // Chord cycle button: mono (1) → triad (3) → tetrad (4) → mono. Triad shape
-    // is minor by default (root + minor 3rd + perfect 5th), tetrad adds minor 7th.
-    // When user changes the root note (above), all chord notes shift to keep the
-    // shape — so you build a chord once and modulate the root freely.
-    const chordBtn = document.createElement('button');
-    chordBtn.className = 'toggle chord';
-    const renderChordBtn = () => {
-      const n = step.notes.length === 4 ? 4 : step.notes.length === 3 ? 3 : 1;
-      chordBtn.textContent = n === 1 ? '♪1' : n === 3 ? '♪3' : '♪4';
-      chordBtn.classList.toggle('active', n > 1);
-    };
-    chordBtn.addEventListener('click', () => {
-      const root = step.notes[0] ?? 60;
-      const cur = step.notes.length === 4 ? 4 : step.notes.length === 3 ? 3 : 1;
-      const next = cur === 1 ? 3 : cur === 3 ? 4 : 1;
-      if (next === 1) step.notes = [root];
-      else if (next === 3) step.notes = [root, root + 3, root + 7];
-      else step.notes = [root, root + 3, root + 7, root + 10];
-      renderChordBtn();
-    });
-    renderChordBtn();
-
-    const mkToggle = (label: string, key: 'on' | 'accent' | 'tie') => {
-      const b = document.createElement('button');
-      b.className = `toggle ${key === 'tie' ? 'slide' : key}`;
-      b.textContent = label;
-      if (step[key]) b.classList.add('active');
-      b.addEventListener('click', () => {
-        step[key] = !step[key];
-        b.classList.toggle('active', step[key]);
-      });
-      return b;
-    };
-
-    const onBtn = mkToggle('●', 'on');
-    const accentBtn = mkToggle('A', 'accent');
-    const tieBtn = mkToggle('T', 'tie');
-    cell.appendChild(noteSel);
-    cell.appendChild(onBtn);
-    cell.appendChild(accentBtn);
-    cell.appendChild(tieBtn);
-    cell.appendChild(chordBtn);
-    const num = document.createElement('div');
-    num.className = 'num';
-    num.textContent = String(i + 1);
-    cell.appendChild(num);
-
-    cellsEl.appendChild(cell);
-    melodyCells[i] = { el: cell, noteSel, onBtn, accentBtn, tieBtn, chordBtn };
-  }
-  polyTracksEl.appendChild(row);
-}
-
-function cycleDrumStep(s: DrumStep) {
-  if (!s.on) { s.on = true; s.accent = false; }
-  else if (!s.accent) { s.accent = true; }
-  else { s.on = false; s.accent = false; s.roll = 0; }
-}
-
-function cycleDrumRoll(s: DrumStep) {
-  // Roll only makes sense on a hit; if cell is off, just turn it on first.
-  if (!s.on) { s.on = true; s.accent = false; }
-  const cur = s.roll ?? 0;
-  s.roll = cur === 0 ? 2 : cur === 2 ? 4 : 0;
-}
-
-function applyDrumCellState(b: HTMLButtonElement, s: DrumStep) {
-  b.classList.toggle('on', s.on && !s.accent);
-  b.classList.toggle('accent', s.on && s.accent);
-  b.classList.toggle('roll-2', !!s.on && s.roll === 2);
-  b.classList.toggle('roll-4', !!s.on && s.roll === 4);
-}
-
-function refreshAllCellsFromState() {
-  const { start, end } = visibleRange();
-  for (let i = start; i < end; i++) {
-    const c = bassCells[i];
-    if (c) {
-      const step = seq.bass[i];
-      c.noteSel.value = String(step.note);
-      c.onBtn.classList.toggle('active', step.on);
-      c.accentBtn.classList.toggle('active', step.accent);
-      c.slideBtn.classList.toggle('active', step.slide);
-    }
-    const mc = melodyCells[i];
-    if (mc) {
-      const mstep = seq.melody[i];
-      mc.noteSel.value = String(mstep.notes[0] ?? 60);
-      mc.onBtn.classList.toggle('active', mstep.on);
-      mc.accentBtn.classList.toggle('active', mstep.accent);
-      mc.tieBtn.classList.toggle('active', mstep.tie);
-      const n = mstep.notes.length === 4 ? 4 : mstep.notes.length === 3 ? 3 : 1;
-      mc.chordBtn.textContent = n === 1 ? '♪1' : n === 3 ? '♪3' : '♪4';
-      mc.chordBtn.classList.toggle('active', n > 1);
-    }
-    for (const lane of DRUM_LANES) {
-      const b = drumCells[lane][i];
-      if (b) applyDrumCellState(b, seq.drums[lane][i]);
-    }
-  }
-}
 
 function refreshKnobsFromSynth() {
   for (const id of KNOB_IDS) synthKnobs[id]?.setValue(synth.params[id]);
@@ -1062,9 +426,9 @@ playBtn.addEventListener('click', () => {
   if (seq.isPlaying()) {
     seq.stop();
     playBtn.textContent = '▶';
-    for (const i of Object.keys(bassCells)) bassCells[+i].el.classList.remove('current');
-    for (const i of Object.keys(melodyCells)) melodyCells[+i].el.classList.remove('current');
-    for (const lane of DRUM_LANES) for (const i of Object.keys(drumCells[lane])) drumCells[lane][+i].classList.remove('current');
+    for (const i of Object.keys(classicState.bassCells)) classicState.bassCells[+i].el.classList.remove('current');
+    for (const i of Object.keys(classicState.melodyCells)) classicState.melodyCells[+i].el.classList.remove('current');
+    for (const lane of DRUM_LANES) for (const i of Object.keys(classicState.drumCells[lane])) classicState.drumCells[lane][+i].classList.remove('current');
   } else {
     resetAutomationPosition();
     seq.start();
@@ -1074,14 +438,14 @@ playBtn.addEventListener('click', () => {
 
 seq.onStep = (i) => {
   // Highlight only cells in current view
-  const { start, end } = visibleRange();
+  const { start, end } = classicVisibleRange(classicDeps);
   for (let j = start; j < end; j++) {
-    const c = bassCells[j];
+    const c = classicState.bassCells[j];
     if (c) c.el.classList.toggle('current', i === j);
-    const mc = melodyCells[j];
+    const mc = classicState.melodyCells[j];
     if (mc) mc.el.classList.toggle('current', i === j);
     for (const lane of DRUM_LANES) {
-      const b = drumCells[lane][j];
+      const b = classicState.drumCells[lane][j];
       if (b) b.classList.toggle('current', i === j);
     }
   }
@@ -1192,7 +556,7 @@ waveSel.addEventListener('change', () => { synth.params.wave = waveSel.value as 
 
 barsSel.addEventListener('change', () => {
   seq.setLength(parseInt(barsSel.value, 10));
-  viewStart = 0;
+  classicState.viewStart = 0;
   rebuildTracks();
   renderLanes();
 });
@@ -1228,10 +592,10 @@ for (const def of SYNTH_KNOB_DEFS) {
 
 // ── Pager ──────────────────────────────────────────────────────────────────
 $('page-prev').addEventListener('click', () => {
-  if (viewStart >= VIEW_SIZE) { viewStart -= VIEW_SIZE; rebuildTracks(); }
+  if (classicState.viewStart >= VIEW_SIZE) { classicState.viewStart -= VIEW_SIZE; rebuildTracks(); }
 });
 $('page-next').addEventListener('click', () => {
-  if (viewStart + VIEW_SIZE < seq.length) { viewStart += VIEW_SIZE; rebuildTracks(); }
+  if (classicState.viewStart + VIEW_SIZE < seq.length) { classicState.viewStart += VIEW_SIZE; rebuildTracks(); }
 });
 
 // ── Pattern slots (musical queue: swap at next loop boundary) ──────────────
@@ -1246,7 +610,7 @@ function switchSlot(newIdx: number) {
     bank.current = newIdx;
     seq.setPattern(bank.slots[newIdx]);
     barsSel.value = String(seq.length);
-    viewStart = 0;
+    classicState.viewStart = 0;
     rebuildTracks();
     updateSlotButtons();
     renderLanes();
@@ -1272,7 +636,7 @@ seq.onPatternChange = () => {
     bank.current = pendingSlotIdx;
     pendingSlotIdx = null;
     barsSel.value = String(seq.length);
-    viewStart = 0;
+    classicState.viewStart = 0;
     rebuildTracks();
     updateSlotButtons();
     renderLanes();
@@ -1353,7 +717,7 @@ function loadAll() {
   bank.current = s.currentSlot;
   seq.setPattern(bank.slots[bank.current]);
   barsSel.value = String(seq.length);
-  viewStart = 0;
+  classicState.viewStart = 0;
 
   for (const t of activeTracks()) {
     const cs = s.channels[t];
@@ -1559,9 +923,7 @@ for (const t of $$<HTMLButtonElement>('button.tab')) {
 }
 
 // ── PolySynth knobs (target swappable for multi-poly editing) ─────────────
-// `activePolyTarget` is the polysynth currently being edited by the OSC /
-// FILTER / AMP / LFO knobs. Click a piano-roll track header to switch.
-let activePolyTarget: PolySynth = polysynth;
+// activePolyTarget lives in classicState.activePolyTarget — set at boot by wireClassicUI.
 
 // buildPolySynthUI is now in polysynth-ui.ts — see boot section for call.
 
@@ -1761,10 +1123,10 @@ function startAutomationTick() {
       autoCurrentSubIdx = playheadIdx;
       redrawAllLanes();
       // Keep all piano-roll playheads live (bass + main + extras + rolls view).
-      if (bassRollEntry) { bassRollEntry.handle.redraw(); autoScrollRoll(bassRollEntry); }
-      if (mainRollEntry) { mainRollEntry.handle.redraw(); autoScrollRoll(mainRollEntry); }
-      for (const e of extraRolls.values()) { e.handle.redraw(); autoScrollRoll(e); }
-      for (const e of rollsRollEntries) { e.handle.redraw(); autoScrollRoll(e); }
+      if (classicState.bassRollEntry) { classicState.bassRollEntry.handle.redraw(); autoScrollRoll(classicState.bassRollEntry, classicDeps); }
+      if (classicState.mainRollEntry) { classicState.mainRollEntry.handle.redraw(); autoScrollRoll(classicState.mainRollEntry, classicDeps); }
+      for (const e of classicState.extraRolls.values()) { e.handle.redraw(); autoScrollRoll(e, classicDeps); }
+      for (const e of rollsRollEntries) { e.handle.redraw(); autoScrollRoll(e, classicDeps); }
       // Update activity indicators (track labels pulse when recently triggered)
       const now = performance.now();
       document.querySelectorAll<HTMLElement>('.track-label[data-track-id]').forEach((el) => {
@@ -1956,7 +1318,7 @@ barsSel.value = String(seq.length);
 
 // ── Deps objects for extracted UI modules ─────────────────────────────────
 const polySynthUIDeps: PolySynthUIDeps = {
-  getActivePolyTarget: () => activePolyTarget,
+  getActivePolyTarget: () => classicState.activePolyTarget ?? polysynth,
   registerKnob,
 };
 
@@ -1974,7 +1336,7 @@ renderLanes = () => renderLanesFromUI(automationDeps);
 populateAutoParamSelectWrapper = () => populateAutoParamSelect(automationDeps);
 
 const polySynthPresetsDeps: PolySynthPresetsDeps = {
-  getActivePolyTarget: () => activePolyTarget,
+  getActivePolyTarget: () => classicState.activePolyTarget ?? polysynth,
   getActiveEngineLaneId: () => _lehState.activeLaneId,
   getLaneEngineId,
   getLaneEngineInstance,
@@ -1991,22 +1353,44 @@ const polyModeDeps: PolyModeDeps = {
   updateBassModeButtons,
 };
 
+// ── Classic-mode track rendering deps + thin wrappers ─────────────────────
+const classicDeps: ClassicDeps = {
+  seq,
+  bank,
+  polysynth,
+  extraPolys: extraPolys as Partial<Record<import('./classic/classic-state').ExtraId, PolySynth>>,
+  extraStrips: extraStrips as Partial<Record<import('./classic/classic-state').ExtraId, ChannelStrip>>,
+  ensureExtraPoly: ensureExtraPoly as (id: import('./classic/classic-state').ExtraId) => PolySynth,
+  extraPolyIds: EXTRA_IDS as import('./classic/classic-state').ExtraId[],
+  laneLabels: LANE_LABELS as Record<string, string>,
+  bassTracksEl,
+  drumTracksEl,
+  polyTracksEl,
+  VIEW_SIZE,
+  midiLabel,
+  setBassMode,
+  refreshPolyKnobsFromState,
+  refreshPolyPresetSelect,
+  setActiveEngineLane,
+  rebuildMixer,
+  buildArpUI: (opts) => buildArpUI(opts),
+};
+
 buildPolySynthUI(polySynthUIDeps);
 buildArpUI({ getExtraPolyTracks: () => seq.pattern.extraPolyTracks });
 buildFxUI();
 buildDrumMasterUI();
 applyDelaySync();
-rebuildTracks();
+wireClassicUI(classicDeps);
 rebuildMixer();
 wireAutomationTab(automationDeps);
 wirePresets();
 wirePolyControls(polySynthPresetsDeps);
 wirePolyMode(polyModeDeps);
-wirePolyTargetSelect();
 wireSlotCopyPanel({
   bank, seq, barsSel,
-  getViewStart: () => viewStart,
-  setViewStart: (v) => { viewStart = v; },
+  getViewStart: () => classicState.viewStart,
+  setViewStart: (v) => { classicState.viewStart = v; },
   rebuildTracks,
   renderLanes,
   flashButton,
@@ -2020,7 +1404,7 @@ const demoDeps: import('./demo/demo-minimal-techno').DemoDeps = {
   chainBtn,
   setSlotConfigurators,
   getLaneEngineInstance,
-  viewStart: { get value() { return viewStart; }, set value(v) { viewStart = v; } },
+  viewStart: { get value() { return classicState.viewStart; }, set value(v) { classicState.viewStart = v; } },
   rebuildTracks,
   updateSlotButtons,
   renderLanes,
@@ -2071,7 +1455,7 @@ document.getElementById('mode-session')!.addEventListener('click', () => setAppM
 
 wireRandomizeUI({
   seq, synth, scaleSel, rootSel,
-  getBassRollEntry: () => bassRollEntry,
+  getBassRollEntry: () => classicState.bassRollEntry,
   refreshAllCellsFromState,
   refreshKnobsFromSynth,
   rebuildPolyTrack,
@@ -2082,7 +1466,6 @@ startAutomationTick();
 // Auto-load the minimal techno demo on first boot so the user lands on
 // something playable. Press the demo button again to reset, or just edit.
 applyMinimalTechnoDemo(demoDeps);
-rebuildSynthTabs();
 startVisualizer();
 
 // ── Save Manager v2 (see src/save-wiring.ts) ──────────────────────────────
@@ -2090,7 +1473,7 @@ const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
   seq, synth, polysynth, drums, master,
   volInput, bpmInput, swingInput, kitSel, waveSel, scaleSel, rootSel,
   bank, barsSel,
-  viewStart: { get value() { return viewStart; }, set value(v) { viewStart = v; } },
+  viewStart: { get value() { return classicState.viewStart; }, set value(v) { classicState.viewStart = v; } },
   activeTracks: () => activeTracks() as string[],
   stripFor: (t) => stripFor(t as TrackId),
   muteState: muteState as Record<string, boolean>,
