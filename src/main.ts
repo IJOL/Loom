@@ -7,14 +7,13 @@ import './engines/karplus';
 import { TB303, type Wave } from './synth';
 import { Sequencer, type DrumStep, type PolyStep } from './sequencer';
 import { DrumMachine, DRUM_LANES, type DrumVoice } from './drums';
-import { randomize, randomizePolySynth, clearPattern, type ScaleName, type RandomizeOptions } from './random';
-import { FACTORY_POLY_PRESETS } from './poly-presets';
+import { randomize, clearPattern, type ScaleName, type RandomizeOptions } from './random';
 import { FxBus, ChannelStrip, FilterChain, MasterFilter, type ChannelState, type SyncDiv } from './fx';
 import { PatternBank, clonePattern, emptyPattern, AUTOMATION_SUB_RES, MAX_EXTRA_POLY_TRACKS, type PatternData, type PolyTrack, type AutomationLane } from './pattern';
 import { createKnob, type KnobHandle } from './knob';
-import { PolySynth, type PolySynthParams, type LfoTarget, type LfoSync } from './polysynth';
+import { PolySynth, type PolySynthParams } from './polysynth';
 import { DRUM_PRESETS, BASS_PRESETS, MELODY_PRESETS, loadDrumPreset, loadBassPreset, loadMelodyPreset } from './presets';
-import { ARP_DEFAULTS, scheduleArpForNote, type ArpPattern, type ArpScale, type ArpSettings } from './arp';
+import { scheduleArpForNote } from './arp';
 import { stepsToNotes, bassStepsToNotes, notesToBassSteps, notesToPolySteps, TICKS_PER_STEP, patternTicks as ptTicks, type NoteEvent } from './notes';
 import { createPianoRoll, type PianoRollHandle } from './pianoroll';
 import { tickSessionEnvelopes } from './session-runtime';
@@ -23,6 +22,21 @@ import { SessionHost } from './session-host';
 import { applyMinimalTechnoDemo, wireDemoMinimalTechno } from './demo-minimal-techno';
 import { wireMidiImport } from './midi-import';
 import { wireSaveManager, bootRecoveryLoad } from './save-wiring';
+import {
+  buildPolySynthUI, addPolyKnob, addPolySelect, refreshPolyKnobsFromState,
+  WAVE_OPTS, type PolySynthUIDeps,
+} from './polysynth-ui';
+import {
+  wirePolyControls, wirePolyMode, applyPolyParams, applyPresetByName,
+  populatePolyPresetSelect, refreshPolyPresetSelect, polyPresetName,
+  type PolySynthPresetsDeps, type PolyModeDeps,
+} from './polysynth-presets';
+import { arp, buildArpUI, type ArpUIDeps } from './arp-ui';
+import {
+  wireAutomationTab, renderLanes as renderLanesFromUI, redrawAllLanes,
+  populateAutoParamSelect, type AutomationUIDeps,
+} from './automation-ui';
+import { clamp01 } from './automation-painter';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -107,6 +121,11 @@ function activeTracks(): TrackId[] {
 // Automation param registry — populated as knobs are created throughout the file.
 const automationRegistry = new Map<string, KnobHandle>();
 let automationRecording = false;
+// Set in the boot section once automationDeps is constructed.
+let _automationDeps: AutomationUIDeps | null = null;
+// Stable call-site wrappers — set in boot section, after automationDeps is built.
+let renderLanes: () => void = () => { /* populated at boot */ };
+let populateAutoParamSelectWrapper: () => void = () => { /* populated at boot */ };
 function registerKnob(k: KnobHandle) {
   if (!k.meta.id) return;
   automationRegistry.set(k.meta.id, k);
@@ -242,7 +261,7 @@ function rebuildEngineParamUI() {
   }
   if (engineId === 'subtractive') {
     engineParamEl.style.display = 'none';
-    populateAutoParamSelect();
+    populateAutoParamSelectWrapper();
     return;
   }
   const instance = getLaneEngineInstance(activeEngineLaneId);
@@ -274,7 +293,7 @@ function rebuildEngineParamUI() {
     row.appendChild(knobRow);
     engineParamEl.appendChild(row);
   }
-  populateAutoParamSelect();
+  populateAutoParamSelectWrapper();
 }
 
 // ── Per-lane engines (Phase 1B) ────────────────────────────────────────────
@@ -959,7 +978,7 @@ function rebuildSynthTabs() {
 
   // Refresh ARP scope checkboxes (they depend on extras list)
   if (document.getElementById('poly-arp-controls')?.childElementCount) {
-    buildArpUI();
+    buildArpUI({ getExtraPolyTracks: () => seq.pattern.extraPolyTracks });
   }
 
   const addBtn = document.createElement('button');
@@ -1759,204 +1778,8 @@ for (const t of $$<HTMLButtonElement>('button.tab')) {
 // `activePolyTarget` is the polysynth currently being edited by the OSC /
 // FILTER / AMP / LFO knobs. Click a piano-roll track header to switch.
 let activePolyTarget: PolySynth = polysynth;
-const polyKnobs: KnobHandle[] = [];
-const refreshFns: Array<() => void> = [];
 
-function addPolyKnob(parent: HTMLElement, opts: Parameters<typeof createKnob>[0], getCurrent: () => number) {
-  // Auto-derive an automation id if not supplied: 'poly.<section>.<label>' from
-  // the parent container's id (e.g. 'poly-osc1-knobs') + the knob's label.
-  if (!opts.id && opts.label) {
-    const sec = parent.id.replace(/^poly-/, '').replace(/-knobs$/, '').replace('-', '');
-    const lab = opts.label.toLowerCase().replace(/[^a-z0-9]+/g, '');
-    opts.id = `poly.${sec}.${lab}`;
-  }
-  const k = createKnob(opts);
-  parent.appendChild(k.el);
-  polyKnobs.push(k);
-  refreshFns.push(() => k.setValue(getCurrent()));
-  registerKnob(k);
-  return k;
-}
-
-function addPolySelect(parent: HTMLElement, label: string, options: Array<{ value: string; label: string }>, getCurrent: () => string, onChange: (v: string) => void) {
-  const wrap = document.createElement('div');
-  wrap.className = 'knob';
-  const lab = document.createElement('div');
-  lab.className = 'knob-label';
-  lab.textContent = label;
-  wrap.appendChild(lab);
-  const sel = document.createElement('select');
-  sel.className = 'poly-wave-sel';
-  for (const o of options) {
-    const opt = document.createElement('option');
-    opt.value = o.value; opt.textContent = o.label;
-    if (o.value === getCurrent()) opt.selected = true;
-    sel.appendChild(opt);
-  }
-  sel.addEventListener('change', () => onChange(sel.value));
-  wrap.appendChild(sel);
-  parent.appendChild(wrap);
-  refreshFns.push(() => { sel.value = getCurrent(); });
-}
-
-function refreshPolyKnobsFromState() {
-  for (const fn of refreshFns) fn();
-}
-
-const WAVE_OPTS = [
-  { value: 'sawtooth', label: 'Saw' },
-  { value: 'square',   label: 'Sqr' },
-  { value: 'triangle', label: 'Tri' },
-  { value: 'sine',     label: 'Sin' },
-];
-
-function buildPolySynthUI() {
-  const osc1Row  = $<HTMLDivElement>('poly-osc1-knobs');
-  const osc2Row  = $<HTMLDivElement>('poly-osc2-knobs');
-  const subRow   = $<HTMLDivElement>('poly-sub-knobs');
-  const noiseRow = $<HTMLDivElement>('poly-noise-knobs');
-  const filtRow  = $<HTMLDivElement>('poly-filter-knobs');
-  const ampRow   = $<HTMLDivElement>('poly-amp-knobs');
-  const masterRow= $<HTMLDivElement>('poly-master-knobs');
-  const lfo1Row  = $<HTMLDivElement>('poly-lfo1-knobs');
-  const lfo2Row  = $<HTMLDivElement>('poly-lfo2-knobs');
-
-  const SIZE = 44;
-  const oscColor = '#e67e22';
-  const subColor = '#9b59b6';
-  const noiseColor = '#7f8c8d';
-  const filtColor = '#16a085';
-  const ampColor = '#2ecc71';
-  const lfoColor = '#3498db';
-  const masterColor = '#f7d000';
-
-  // OSC 1
-  addPolySelect(osc1Row, 'WAVE', WAVE_OPTS, () => activePolyTarget.params.osc1.wave,
-    (v) => { activePolyTarget.params.osc1.wave = v as OscillatorType; });
-  addPolyKnob(osc1Row, { min: 0, max: 1, step: 0.01, value: activePolyTarget.params.osc1.level, defaultValue: 0.6,
-    label: 'LEVEL', color: oscColor, size: SIZE, format: fmtPct,
-    onChange: (v) => { activePolyTarget.params.osc1.level = v; }, }, () => activePolyTarget.params.osc1.level);
-  addPolyKnob(osc1Row, { min: -2, max: 2, step: 1, value: activePolyTarget.params.osc1.octave, defaultValue: 0,
-    label: 'OCT', color: oscColor, size: SIZE, format: fmtOct,
-    onChange: (v) => { activePolyTarget.params.osc1.octave = v; }, }, () => activePolyTarget.params.osc1.octave);
-  addPolyKnob(osc1Row, { min: -12, max: 12, step: 1, value: activePolyTarget.params.osc1.semi, defaultValue: 0,
-    label: 'SEMI', color: oscColor, size: SIZE, format: fmtOct,
-    onChange: (v) => { activePolyTarget.params.osc1.semi = v; }, }, () => activePolyTarget.params.osc1.semi);
-  addPolyKnob(osc1Row, { min: -100, max: 100, step: 1, value: activePolyTarget.params.osc1.detune, defaultValue: 0,
-    label: 'DETUNE', color: oscColor, size: SIZE, format: fmtCents,
-    onChange: (v) => { activePolyTarget.params.osc1.detune = v; }, }, () => activePolyTarget.params.osc1.detune);
-
-  // OSC 2
-  addPolySelect(osc2Row, 'WAVE', WAVE_OPTS, () => activePolyTarget.params.osc2.wave,
-    (v) => { activePolyTarget.params.osc2.wave = v as OscillatorType; });
-  addPolyKnob(osc2Row, { min: 0, max: 1, step: 0.01, value: activePolyTarget.params.osc2.level, defaultValue: 0.4,
-    label: 'LEVEL', color: oscColor, size: SIZE, format: fmtPct,
-    onChange: (v) => { activePolyTarget.params.osc2.level = v; }, }, () => activePolyTarget.params.osc2.level);
-  addPolyKnob(osc2Row, { min: -2, max: 2, step: 1, value: activePolyTarget.params.osc2.octave, defaultValue: 0,
-    label: 'OCT', color: oscColor, size: SIZE, format: fmtOct,
-    onChange: (v) => { activePolyTarget.params.osc2.octave = v; }, }, () => activePolyTarget.params.osc2.octave);
-  addPolyKnob(osc2Row, { min: -12, max: 12, step: 1, value: activePolyTarget.params.osc2.semi, defaultValue: 0,
-    label: 'SEMI', color: oscColor, size: SIZE, format: fmtOct,
-    onChange: (v) => { activePolyTarget.params.osc2.semi = v; }, }, () => activePolyTarget.params.osc2.semi);
-  addPolyKnob(osc2Row, { min: -100, max: 100, step: 1, value: activePolyTarget.params.osc2.detune, defaultValue: 7,
-    label: 'DETUNE', color: oscColor, size: SIZE, format: fmtCents,
-    onChange: (v) => { activePolyTarget.params.osc2.detune = v; }, }, () => activePolyTarget.params.osc2.detune);
-
-  // SUB
-  addPolyKnob(subRow, { min: 0, max: 1, step: 0.01, value: activePolyTarget.params.sub.level, defaultValue: 0.3,
-    label: 'LEVEL', color: subColor, size: SIZE, format: fmtPct,
-    onChange: (v) => { activePolyTarget.params.sub.level = v; }, }, () => activePolyTarget.params.sub.level);
-  addPolyKnob(subRow, { min: -2, max: -1, step: 1, value: activePolyTarget.params.sub.octave, defaultValue: -1,
-    label: 'OCT', color: subColor, size: SIZE, format: fmtOct,
-    onChange: (v) => { activePolyTarget.params.sub.octave = v; }, }, () => activePolyTarget.params.sub.octave);
-
-  // NOISE
-  addPolyKnob(noiseRow, { min: 0, max: 1, step: 0.01, value: activePolyTarget.params.noise.level, defaultValue: 0,
-    label: 'LEVEL', color: noiseColor, size: SIZE, format: fmtPct,
-    onChange: (v) => { activePolyTarget.params.noise.level = v; }, }, () => activePolyTarget.params.noise.level);
-  addPolyKnob(noiseRow, { min: 0, max: 1, step: 0.01, value: activePolyTarget.params.noise.color, defaultValue: 0.6,
-    label: 'COLOR', color: noiseColor, size: SIZE, format: fmtPct,
-    onChange: (v) => { activePolyTarget.params.noise.color = v; }, }, () => activePolyTarget.params.noise.color);
-
-  // FILTER
-  addPolySelect(filtRow, 'TYPE',
-    [{ value: 'lowpass', label: 'LP' }, { value: 'highpass', label: 'HP' }, { value: 'bandpass', label: 'BP' }],
-    () => activePolyTarget.params.filter.type, (v) => { activePolyTarget.params.filter.type = v as 'lowpass' | 'highpass' | 'bandpass'; });
-  addPolyKnob(filtRow, { id: 'poly.filter.cutoff', min: 0, max: 1, step: 0.001, value: activePolyTarget.params.filter.cutoff, defaultValue: 0.55,
-    label: 'CUTOFF', color: filtColor, size: SIZE, format: fmtPct,
-    onChange: (v) => { activePolyTarget.params.filter.cutoff = v; }, }, () => activePolyTarget.params.filter.cutoff);
-  addPolyKnob(filtRow, { id: 'poly.filter.resonance', min: 0, max: 1, step: 0.001, value: activePolyTarget.params.filter.resonance, defaultValue: 0.25,
-    label: 'RES', color: filtColor, size: SIZE, format: fmtPct,
-    onChange: (v) => { activePolyTarget.params.filter.resonance = v; }, }, () => activePolyTarget.params.filter.resonance);
-  addPolyKnob(filtRow, { id: 'poly.filter.envAmount', min: 0, max: 1, step: 0.001, value: activePolyTarget.params.filter.envAmount, defaultValue: 0.45,
-    label: 'ENV', color: filtColor, size: SIZE, format: fmtPct,
-    onChange: (v) => { activePolyTarget.params.filter.envAmount = v; }, }, () => activePolyTarget.params.filter.envAmount);
-  addPolyKnob(filtRow, { min: 0, max: 1, step: 0.01, value: activePolyTarget.params.filter.keyTrack, defaultValue: 0,
-    label: 'KEY TRK', color: filtColor, size: SIZE, format: fmtPct,
-    onChange: (v) => { activePolyTarget.params.filter.keyTrack = v; }, }, () => activePolyTarget.params.filter.keyTrack);
-  addPolyKnob(filtRow, { id: 'poly.filter.drive', min: 0, max: 1, step: 0.01, value: activePolyTarget.params.filter.drive, defaultValue: 0,
-    label: 'DRIVE', color: '#c0392b', size: SIZE, format: fmtPct,
-    onChange: (v) => { activePolyTarget.params.filter.drive = v; }, }, () => activePolyTarget.params.filter.drive);
-  addPolyKnob(filtRow, { min: 0.001, max: 2, step: 0.001, value: activePolyTarget.params.filter.attack, defaultValue: 0.01,
-    label: 'ATK', color: filtColor, size: SIZE, format: fmtSec,
-    onChange: (v) => { activePolyTarget.params.filter.attack = v; }, }, () => activePolyTarget.params.filter.attack);
-  addPolyKnob(filtRow, { min: 0.001, max: 2, step: 0.001, value: activePolyTarget.params.filter.decay, defaultValue: 0.3,
-    label: 'DEC', color: filtColor, size: SIZE, format: fmtSec,
-    onChange: (v) => { activePolyTarget.params.filter.decay = v; }, }, () => activePolyTarget.params.filter.decay);
-  addPolyKnob(filtRow, { min: 0, max: 1, step: 0.01, value: activePolyTarget.params.filter.sustain, defaultValue: 0.4,
-    label: 'SUS', color: filtColor, size: SIZE, format: fmtPct,
-    onChange: (v) => { activePolyTarget.params.filter.sustain = v; }, }, () => activePolyTarget.params.filter.sustain);
-  addPolyKnob(filtRow, { min: 0.001, max: 3, step: 0.001, value: activePolyTarget.params.filter.release, defaultValue: 0.35,
-    label: 'REL', color: filtColor, size: SIZE, format: fmtSec,
-    onChange: (v) => { activePolyTarget.params.filter.release = v; }, }, () => activePolyTarget.params.filter.release);
-
-  // AMP
-  addPolyKnob(ampRow, { min: 0.001, max: 2, step: 0.001, value: activePolyTarget.params.amp.attack, defaultValue: 0.01,
-    label: 'ATK', color: ampColor, size: SIZE, format: fmtSec,
-    onChange: (v) => { activePolyTarget.params.amp.attack = v; }, }, () => activePolyTarget.params.amp.attack);
-  addPolyKnob(ampRow, { min: 0.001, max: 2, step: 0.001, value: activePolyTarget.params.amp.decay, defaultValue: 0.2,
-    label: 'DEC', color: ampColor, size: SIZE, format: fmtSec,
-    onChange: (v) => { activePolyTarget.params.amp.decay = v; }, }, () => activePolyTarget.params.amp.decay);
-  addPolyKnob(ampRow, { min: 0, max: 1, step: 0.01, value: activePolyTarget.params.amp.sustain, defaultValue: 0.7,
-    label: 'SUS', color: ampColor, size: SIZE, format: fmtPct,
-    onChange: (v) => { activePolyTarget.params.amp.sustain = v; }, }, () => activePolyTarget.params.amp.sustain);
-  addPolyKnob(ampRow, { min: 0.001, max: 3, step: 0.001, value: activePolyTarget.params.amp.release, defaultValue: 0.3,
-    label: 'REL', color: ampColor, size: SIZE, format: fmtSec,
-    onChange: (v) => { activePolyTarget.params.amp.release = v; }, }, () => activePolyTarget.params.amp.release);
-
-  // MASTER
-  addPolyKnob(masterRow, { id: 'poly.master.tune', min: -24, max: 24, step: 1, value: activePolyTarget.params.master.tune, defaultValue: 0,
-    label: 'TUNE', color: masterColor, size: SIZE, format: fmtOct,
-    onChange: (v) => { activePolyTarget.params.master.tune = v; }, }, () => activePolyTarget.params.master.tune);
-
-  // LFOs
-  const LFO_TARGET_OPTS = [
-    { value: 'off',    label: 'Off' },
-    { value: 'pitch',  label: 'Pitch' },
-    { value: 'cutoff', label: 'Cutoff' },
-    { value: 'amp',    label: 'Amp' },
-  ];
-  for (const idx of [1, 2] as const) {
-    const row = idx === 1 ? lfo1Row : lfo2Row;
-    const lfo = () => activePolyTarget.params[`lfo${idx}` as 'lfo1' | 'lfo2'];
-    addPolySelect(row, 'WAVE', WAVE_OPTS, () => lfo().wave, (v) => { lfo().wave = v as OscillatorType; });
-    addPolySelect(row, 'TARGET', LFO_TARGET_OPTS, () => lfo().target, (v) => { lfo().target = v as LfoTarget; });
-    addPolySelect(row, 'SYNC',
-      [{ value:'free',label:'Free' },
-       { value:'4/1',label:'4 bars' },{ value:'3/1',label:'3 bars' },{ value:'2/1',label:'2 bars' },{ value:'1/1',label:'1 bar' },
-       { value:'1/2',label:'1/2' },{ value:'1/4',label:'1/4' },
-       { value:'1/8.',label:'1/8.' },{ value:'1/8',label:'1/8' },{ value:'1/8t',label:'1/8t' },
-       { value:'1/16',label:'1/16' },{ value:'1/16t',label:'1/16t' },{ value:'1/32',label:'1/32' }],
-      () => lfo().sync ?? 'free', (v) => { lfo().sync = v as LfoSync; });
-    addPolyKnob(row, { id: `poly.lfo${idx}.rate`, min: 0.01, max: 200, step: 0.01, value: lfo().rate, defaultValue: idx === 1 ? 4 : 0.5,
-      label: 'RATE', color: lfoColor, size: SIZE,
-      format: (v) => v < 1 ? `${v.toFixed(2)}Hz` : v < 100 ? `${v.toFixed(1)}Hz` : `${Math.round(v)}Hz`,
-      onChange: (v) => { lfo().rate = v; }, }, () => lfo().rate);
-    addPolyKnob(row, { id: `poly.lfo${idx}.depth`, min: 0, max: 1, step: 0.01, value: lfo().depth, defaultValue: 0,
-      label: 'DEPTH', color: lfoColor, size: SIZE, format: fmtPct,
-      onChange: (v) => { lfo().depth = v; }, }, () => lfo().depth);
-  }
-}
+// buildPolySynthUI is now in polysynth-ui.ts — see boot section for call.
 
 // ── Master FX tab (reverb + delay + stackable filter chain) ────────────────
 const SYNC_OPTS: Array<{ value: SyncDiv; label: string }> = [
@@ -2114,332 +1937,13 @@ function appendFilterRow(mf: MasterFilter) {
 }
 
 // ── Automation tab ─────────────────────────────────────────────────────────
-// Each pattern carries a list of AutomationLanes. Each lane targets a
-// registered knob (by id) and stores one normalized value per step. During
-// playback we apply lane.values[step] → knob.setValue(denormalized).
+// Lane UI (renderLanes, wireAutomationTab, etc.) → automation-ui.ts
+// Painter helpers (drawLane, attachLanePainter, snap) → automation-painter.ts
 
-type AutoBrush = 'line' | 'flat';
-let autoBrush: AutoBrush = 'line';
 let autoCurrentSubIdx = 0;  // current sub-step index for the playhead overlay
-const laneCanvases: Array<{ paramId: string; draw: () => void }> = [];
 
-// Ensure a lane's values array matches its own `lengthBars * 16 * SUB_RES`.
-// Auto-migrates lanes saved in older formats (no lengthBars, or step-based).
-function ensureLaneSize(lane: { values: number[]; stepped?: boolean; lengthBars?: number }) {
-  // Old format had no lengthBars — derive from the data we have.
-  if (lane.lengthBars == null) {
-    if (lane.values.length === seq.length) {
-      // Step-per-value (very old): default to current pattern length.
-      lane.lengthBars = Math.max(1, seq.length / 16);
-    } else if (lane.values.length === seq.length * AUTOMATION_SUB_RES) {
-      // Sub-res-per-value (one revision ago): default to current pattern length.
-      lane.lengthBars = Math.max(1, seq.length / 16);
-    } else {
-      lane.lengthBars = Math.max(1, seq.length / 16);
-    }
-  }
-  const expected = lane.lengthBars * 16 * AUTOMATION_SUB_RES;
-  if (lane.values.length === expected) return;
-  // Step-per-value migration: expand to sub-res.
-  if (lane.values.length === seq.length) {
-    const expanded: number[] = [];
-    for (let s = 0; s < seq.length; s++) {
-      const v = lane.values[s];
-      for (let r = 0; r < AUTOMATION_SUB_RES; r++) expanded.push(v);
-    }
-    lane.values = expanded;
-  }
-  // Pad or truncate to expected length.
-  if (lane.values.length < expected) {
-    const last = lane.values[lane.values.length - 1] ?? 0.5;
-    while (lane.values.length < expected) lane.values.push(last);
-  } else if (lane.values.length > expected) {
-    lane.values.length = expected;
-  }
-}
-
-function snapLaneToSteps(lane: { values: number[]; lengthBars?: number }) {
-  const totalSteps = (lane.lengthBars ?? 1) * 16;
-  for (let s = 0; s < totalSteps; s++) {
-    const start = s * AUTOMATION_SUB_RES;
-    if (start >= lane.values.length) break;
-    const v = lane.values[start];
-    for (let i = 1; i < AUTOMATION_SUB_RES && start + i < lane.values.length; i++) {
-      lane.values[start + i] = v;
-    }
-  }
-}
-
-function populateAutoParamSelect() {
-  const sel = $<HTMLSelectElement>('auto-param-select');
-  sel.innerHTML = '';
-  // Group by id prefix.
-  const groups: Record<string, Array<{ id: string; label: string }>> = {};
-  for (const [id, k] of automationRegistry) {
-    const prefix = id.split('.')[0];
-    (groups[prefix] = groups[prefix] || []).push({ id, label: k.meta.label ?? id });
-  }
-  const groupOrder = ['tb303', 'poly', 'fx', 'mix', 'main', ...EXTRA_IDS];
-  const groupNames: Record<string, string> = {
-    tb303: 'TB-303', poly: 'PolySynth (subtractive)', fx: 'Master FX', mix: 'Mixer',
-    main: 'MAIN (engine)',
-  };
-  for (const id of EXTRA_IDS) groupNames[id] = `${LANE_LABELS[id]} (engine)`;
-  for (const g of groupOrder) {
-    if (!groups[g] || groups[g].length === 0) continue;
-    const og = document.createElement('optgroup');
-    og.label = groupNames[g] ?? g;
-    for (const { id, label } of groups[g]) {
-      const opt = document.createElement('option');
-      opt.value = id;
-      opt.textContent = `${id}  —  ${label}`;
-      og.appendChild(opt);
-    }
-    sel.appendChild(og);
-  }
-}
-
-function addLane(paramId: string) {
-  const entry = automationRegistry.get(paramId);
-  if (!entry) return;
-  // New lane defaults to the current pattern length in bars. User can grow it
-  // up to 32 bars from the lane header to get long, slow modulations.
-  const lengthBars = Math.max(1, seq.length / 16);
-  const total = lengthBars * 16 * AUTOMATION_SUB_RES;
-  seq.pattern.automation.push({
-    paramId,
-    enabled: true,
-    stepped: false,
-    lengthBars,
-    values: Array.from({ length: total }, () => 0.5),
-  });
-  renderLanes();
-}
-
-function removeLane(idx: number) {
-  seq.pattern.automation.splice(idx, 1);
-  renderLanes();
-}
-
-function renderLanes() {
-  const container = $<HTMLDivElement>('auto-lanes');
-  container.innerHTML = '';
-  laneCanvases.length = 0;
-
-  seq.pattern.automation.forEach((lane, idx) => {
-    const entry = automationRegistry.get(lane.paramId);
-    if (!entry) return;
-    ensureLaneSize(lane);
-    if (lane.stepped === undefined) lane.stepped = false;
-
-    const wrap = document.createElement('div');
-    wrap.className = 'auto-lane';
-
-    const header = document.createElement('div');
-    header.className = 'auto-lane-header';
-    const labelEl = document.createElement('div');
-    labelEl.className = 'label';
-    labelEl.textContent = `${lane.paramId}  —  ${entry.meta.label ?? ''}`;
-    const enableBtn = document.createElement('button');
-    enableBtn.className = 'enable' + (lane.enabled ? ' active' : '');
-    enableBtn.textContent = lane.enabled ? 'ON' : 'OFF';
-    enableBtn.addEventListener('click', () => {
-      lane.enabled = !lane.enabled;
-      enableBtn.classList.toggle('active', lane.enabled);
-      enableBtn.textContent = lane.enabled ? 'ON' : 'OFF';
-    });
-    const steppedBtn = document.createElement('button');
-    steppedBtn.className = 'enable' + (lane.stepped ? ' active' : '');
-    steppedBtn.textContent = lane.stepped ? 'Stepped' : 'Smooth';
-    steppedBtn.title = 'Toggle smooth/step-snapped editing';
-    steppedBtn.addEventListener('click', () => {
-      lane.stepped = !lane.stepped;
-      if (lane.stepped) snapLaneToSteps(lane);
-      steppedBtn.classList.toggle('active', lane.stepped);
-      steppedBtn.textContent = lane.stepped ? 'Stepped' : 'Smooth';
-      draw();
-    });
-    const barsSel = document.createElement('select');
-    barsSel.className = 'poly-wave-sel';
-    barsSel.style.maxWidth = '70px';
-    for (const b of [1, 2, 4, 8, 16, 32]) {
-      const opt = document.createElement('option');
-      opt.value = String(b);
-      opt.textContent = `${b} bar${b > 1 ? 's' : ''}`;
-      if (b === lane.lengthBars) opt.selected = true;
-      barsSel.appendChild(opt);
-    }
-    barsSel.title = 'Lane length (independent of pattern length)';
-    barsSel.addEventListener('change', () => {
-      const newBars = parseInt(barsSel.value, 10);
-      const newLen = newBars * 16 * AUTOMATION_SUB_RES;
-      if (newLen > lane.values.length) {
-        // Extend by repeating existing pattern so the new bars don't start empty.
-        const oldLen = lane.values.length;
-        while (lane.values.length < newLen) lane.values.push(lane.values[lane.values.length % oldLen]);
-      } else {
-        lane.values.length = newLen;
-      }
-      lane.lengthBars = newBars;
-      draw();
-    });
-
-    const rangeEl = document.createElement('div');
-    rangeEl.style.fontSize = '10px';
-    rangeEl.style.color = '#888';
-    rangeEl.textContent = `[${formatNum(entry.meta.min)} .. ${formatNum(entry.meta.max)}]`;
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'remove';
-    removeBtn.textContent = '×';
-    removeBtn.title = 'Remove lane';
-    removeBtn.addEventListener('click', () => removeLane(idx));
-
-    header.append(labelEl, enableBtn, steppedBtn, barsSel, rangeEl, removeBtn);
-    wrap.appendChild(header);
-
-    const canvas = document.createElement('canvas');
-    canvas.width = 1024;
-    canvas.height = 90;
-    wrap.appendChild(canvas);
-    container.appendChild(wrap);
-
-    const draw = () => drawLane(canvas, lane);
-    attachLanePainter(canvas, lane, draw);
-    draw();
-    laneCanvases.push({ paramId: lane.paramId, draw });
-  });
-}
-
-function drawLane(canvas: HTMLCanvasElement, lane: { values: number[]; enabled: boolean; stepped?: boolean }) {
-  const c = canvas.getContext('2d');
-  if (!c) return;
-  const w = canvas.width, h = canvas.height;
-  c.fillStyle = lane.enabled ? '#0a0a0a' : '#181818';
-  c.fillRect(0, 0, w, h);
-
-  const n = lane.values.length;
-  const subsPerStep = AUTOMATION_SUB_RES;
-  const stepCount = Math.max(1, Math.round(n / subsPerStep));
-
-  // Grid: step boundaries (faint) + bar boundaries (every 16 steps, bright)
-  for (let s = 0; s <= stepCount; s++) {
-    const x = (s / stepCount) * w;
-    if (s % 16 === 0 && s > 0) c.strokeStyle = '#555';
-    else if (s % 4 === 0) c.strokeStyle = '#2a2a2a';
-    else c.strokeStyle = '#1a1a1a';
-    c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke();
-  }
-  // Mid line at 0.5
-  c.strokeStyle = '#222';
-  c.beginPath(); c.moveTo(0, h * 0.5); c.lineTo(w, h * 0.5); c.stroke();
-
-  const xFor = (i: number) => (i / Math.max(1, n - 1)) * w;
-  const yFor = (v: number) => h - v * h;
-
-  // Filled area under curve.
-  c.fillStyle = lane.enabled ? 'rgba(52, 152, 219, 0.35)' : 'rgba(80, 80, 80, 0.25)';
-  c.beginPath();
-  c.moveTo(0, h);
-  for (let i = 0; i < n; i++) c.lineTo(xFor(i), yFor(lane.values[i]));
-  c.lineTo(w, h);
-  c.closePath();
-  c.fill();
-
-  // Curve line on top.
-  c.strokeStyle = lane.enabled ? '#3498db' : '#555';
-  c.lineWidth = 1.5;
-  c.beginPath();
-  for (let i = 0; i < n; i++) {
-    const x = xFor(i), y = yFor(lane.values[i]);
-    if (i === 0) c.moveTo(x, y);
-    else c.lineTo(x, y);
-  }
-  c.stroke();
-
-  // Playhead — position relative to THIS lane's length, not the pattern's.
-  if (seq.isPlaying()) {
-    const idxInLane = autoAbsSubIdx % n;
-    const x = xFor(idxInLane);
-    c.strokeStyle = '#f7d000';
-    c.lineWidth = 1;
-    c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke();
-  }
-}
-
-function attachLanePainter(
-  canvas: HTMLCanvasElement,
-  lane: { values: number[]; stepped?: boolean },
-  draw: () => void,
-) {
-  let dragging = false;
-  let lastIdx = -1;
-  let initialValue = 0;
-
-  const pointerToSubVal = (e: PointerEvent) => {
-    const rect = canvas.getBoundingClientRect();
-    const x = clamp01((e.clientX - rect.left) / rect.width);
-    const y = clamp01((e.clientY - rect.top) / rect.height);
-    const subIdx = Math.min(lane.values.length - 1, Math.floor(x * lane.values.length));
-    const value = 1 - y;
-    return { subIdx, value };
-  };
-
-  const paint = (fromIdx: number, toIdx: number, fromV: number, toV: number) => {
-    const lo = Math.min(fromIdx, toIdx);
-    const hi = Math.max(fromIdx, toIdx);
-    if (lo === hi) {
-      lane.values[lo] = autoBrush === 'flat' ? initialValue : toV;
-    } else {
-      const span = toIdx - fromIdx;
-      for (let i = lo; i <= hi; i++) {
-        if (autoBrush === 'flat') {
-          lane.values[i] = initialValue;
-        } else {
-          const t = span === 0 ? 1 : (i - fromIdx) / span;
-          lane.values[i] = clamp01(fromV + (toV - fromV) * t);
-        }
-      }
-    }
-    if (lane.stepped) snapLaneToSteps(lane);
-  };
-
-  canvas.addEventListener('pointerdown', (e) => {
-    dragging = true;
-    canvas.setPointerCapture(e.pointerId);
-    const { subIdx, value } = pointerToSubVal(e);
-    initialValue = value;
-    lastIdx = subIdx;
-    lane.values[subIdx] = value;
-    if (lane.stepped) snapLaneToSteps(lane);
-    draw();
-    e.preventDefault();
-  });
-  canvas.addEventListener('pointermove', (e) => {
-    if (!dragging) return;
-    const { subIdx, value } = pointerToSubVal(e);
-    paint(lastIdx, subIdx, lane.values[lastIdx], value);
-    lastIdx = subIdx;
-    draw();
-  });
-  const release = (e: PointerEvent) => {
-    if (!dragging) return;
-    dragging = false;
-    try { canvas.releasePointerCapture(e.pointerId); } catch {}
-  };
-  canvas.addEventListener('pointerup', release);
-  canvas.addEventListener('pointercancel', release);
-
-  canvas.addEventListener('dblclick', (e) => {
-    const { subIdx } = pointerToSubVal(e as unknown as PointerEvent);
-    // Reset the step containing this sub-point to 0.5.
-    const step = Math.floor(subIdx / AUTOMATION_SUB_RES);
-    const start = step * AUTOMATION_SUB_RES;
-    for (let i = 0; i < AUTOMATION_SUB_RES && start + i < lane.values.length; i++) {
-      lane.values[start + i] = 0.5;
-    }
-    draw();
-  });
-}
+// ensureLaneSize, snapLaneToSteps, populateAutoParamSelect, addLane, removeLane,
+// renderLanes, drawLane, attachLanePainter → automation-ui.ts / automation-painter.ts
 
 // Continuous (sub-step) automation tick driven by rAF. Tracks an ABSOLUTE
 // play position (sub-steps since play started) so each lane can have its own
@@ -2509,52 +2013,10 @@ function startAutomationTick() {
   requestAnimationFrame(tick);
 }
 
-function redrawAllLanes() {
-  for (const { draw } of laneCanvases) draw();
-}
-
-function clamp01(v: number): number { return Math.max(0, Math.min(1, v)); }
-function formatNum(v: number): string {
-  if (Math.abs(v) >= 100) return v.toFixed(0);
-  if (Math.abs(v) >= 10)  return v.toFixed(1);
-  return v.toFixed(2);
-}
-
-function wireAutomationTab() {
-  populateAutoParamSelect();
-  $<HTMLButtonElement>('auto-add').addEventListener('click', () => {
-    const sel = $<HTMLSelectElement>('auto-param-select');
-    if (sel.value) addLane(sel.value);
-  });
-  const setBrush = (b: AutoBrush) => {
-    autoBrush = b;
-    $$('button.rnd').forEach((btn) => {
-      if (btn.id === 'auto-brush-line') btn.classList.toggle('primary', b === 'line');
-      if (btn.id === 'auto-brush-flat') btn.classList.toggle('primary', b === 'flat');
-    });
-  };
-  $<HTMLButtonElement>('auto-brush-line').addEventListener('click', () => setBrush('line'));
-  $<HTMLButtonElement>('auto-brush-flat').addEventListener('click', () => setBrush('flat'));
-  $<HTMLButtonElement>('auto-fill-random').addEventListener('click', () => {
-    for (const lane of seq.pattern.automation) lane.values = lane.values.map(() => Math.random());
-    redrawAllLanes();
-  });
-  $<HTMLButtonElement>('auto-fill-ramp').addEventListener('click', () => {
-    for (const lane of seq.pattern.automation) {
-      const n = lane.values.length;
-      lane.values = lane.values.map((_, i) => i / Math.max(1, n - 1));
-    }
-    redrawAllLanes();
-  });
-  $<HTMLButtonElement>('auto-fill-half').addEventListener('click', () => {
-    for (const lane of seq.pattern.automation) lane.values = lane.values.map(() => 0.5);
-    redrawAllLanes();
-  });
-  setBrush('line');
-}
+// redrawAllLanes, clamp01, wireAutomationTab → imported from automation-ui/painter
 
 // ── Cosmic Arpeggiator ─────────────────────────────────────────────────────
-const arp: ArpSettings = { ...ARP_DEFAULTS };
+// arp singleton exported from arp-ui.ts (imported above)
 const midiToFreqLocal = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
 
 // Direct triggers (used when arp is off OR scope doesn't include the track).
@@ -2608,259 +2070,10 @@ const sessionHost = new SessionHost({
 });
 sessionHost.init();
 
-function buildArpUI() {
-  const row = $<HTMLDivElement>('poly-arp-controls');
-  row.innerHTML = '';
-  const SIZE = 44;
-  const arpColor = '#9b59b6';
+// buildArpUI moved to arp-ui.ts (imported above)
 
-  // ENABLE toggle (styled like a knob slot but as a button)
-  const enableWrap = document.createElement('div');
-  enableWrap.className = 'knob';
-  const enableLab = document.createElement('div');
-  enableLab.className = 'knob-label';
-  enableLab.textContent = 'ENABLE';
-  const enableBtn = document.createElement('button');
-  enableBtn.className = 'rnd';
-  enableBtn.textContent = arp.enabled ? 'ON' : 'OFF';
-  enableBtn.style.background = arp.enabled ? '#c0392b' : '#2a2a2a';
-  enableBtn.style.color = arp.enabled ? 'white' : '#888';
-  enableBtn.addEventListener('click', () => {
-    arp.enabled = !arp.enabled;
-    enableBtn.textContent = arp.enabled ? 'ON' : 'OFF';
-    enableBtn.style.background = arp.enabled ? '#c0392b' : '#2a2a2a';
-    enableBtn.style.color = arp.enabled ? 'white' : '#888';
-  });
-  enableWrap.append(enableLab, enableBtn);
-  row.appendChild(enableWrap);
-
-  const mkSel = (label: string, opts: { value: string; label: string }[], get: () => string, set: (v: string) => void) => {
-    const wrap = document.createElement('div');
-    wrap.className = 'knob';
-    const lab = document.createElement('div'); lab.className = 'knob-label'; lab.textContent = label;
-    const sel = document.createElement('select'); sel.className = 'poly-wave-sel';
-    for (const o of opts) {
-      const opt = document.createElement('option');
-      opt.value = o.value; opt.textContent = o.label;
-      if (o.value === get()) opt.selected = true;
-      sel.appendChild(opt);
-    }
-    sel.addEventListener('change', () => set(sel.value));
-    wrap.append(lab, sel);
-    row.appendChild(wrap);
-  };
-
-  // SCOPE — dynamic checkboxes, one per lane (303 + main + each extra).
-  const scopeWrap = document.createElement('div');
-  scopeWrap.className = 'knob arp-scope';
-  scopeWrap.style.display = 'flex';
-  scopeWrap.style.flexDirection = 'column';
-  scopeWrap.style.alignItems = 'flex-start';
-  const scopeLab = document.createElement('div');
-  scopeLab.className = 'knob-label';
-  scopeLab.textContent = 'SCOPE';
-  scopeWrap.appendChild(scopeLab);
-  const scopeBoxes = document.createElement('div');
-  scopeBoxes.style.display = 'grid';
-  scopeBoxes.style.gridTemplateColumns = 'repeat(2, auto)';
-  scopeBoxes.style.gap = '2px 6px';
-  scopeBoxes.style.fontSize = '10px';
-  const addScopeBox = (laneId: string, label: string) => {
-    const lab = document.createElement('label');
-    lab.style.display = 'flex'; lab.style.alignItems = 'center'; lab.style.gap = '3px';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.checked = arp.scope.includes(laneId);
-    cb.addEventListener('change', () => {
-      const set = new Set(arp.scope);
-      if (cb.checked) set.add(laneId); else set.delete(laneId);
-      arp.scope = Array.from(set);
-    });
-    lab.append(cb, document.createTextNode(label));
-    scopeBoxes.appendChild(lab);
-  };
-  addScopeBox('bass', '303');
-  addScopeBox('main', 'MAIN');
-  for (const track of seq.pattern.extraPolyTracks) {
-    addScopeBox(track.id, track.name.slice(0, 10));
-  }
-  scopeWrap.appendChild(scopeBoxes);
-  row.appendChild(scopeWrap);
-  mkSel('PATTERN',
-    [{ value:'up',label:'Up' },{ value:'down',label:'Down' },{ value:'updown',label:'Up-Down' },
-     { value:'random',label:'Random' },{ value:'cosmic',label:'Cosmic' }],
-    () => arp.pattern, (v) => { arp.pattern = v as ArpPattern; });
-  mkSel('SCALE',
-    [{ value:'major',label:'Major' },{ value:'minor',label:'Minor' },{ value:'pentMinor',label:'Penta Min' },
-     { value:'phrygian',label:'Phrygian' },{ value:'chromatic',label:'Chromatic' }],
-    () => arp.scale, (v) => { arp.scale = v as ArpScale; });
-  mkSel('RATE',
-    [{ value:'free',label:'Free' },
-     { value:'4/1',label:'4 bars' },{ value:'3/1',label:'3 bars' },{ value:'2/1',label:'2 bars' },{ value:'1/1',label:'1 bar' },
-     { value:'1/2',label:'1/2' },{ value:'1/4',label:'1/4' },
-     { value:'1/8.',label:'1/8.' },{ value:'1/8',label:'1/8' },{ value:'1/8t',label:'1/8t' },
-     { value:'1/16',label:'1/16' },{ value:'1/16t',label:'1/16t' },{ value:'1/32',label:'1/32' }],
-    () => arp.rate, (v) => { arp.rate = v as ArpSettings['rate']; });
-
-  // Free-rate Hz (used when RATE = Free)
-  const freeKnob = createKnob({
-    min: 0.5, max: 32, step: 0.1, value: arp.rateFreeHz, defaultValue: 8,
-    label: 'FREE Hz', color: arpColor, size: SIZE,
-    format: (v) => `${v.toFixed(1)}Hz`,
-    onChange: (v) => { arp.rateFreeHz = v; },
-  });
-  row.appendChild(freeKnob.el);
-  // OCTAVES
-  const octKnob = createKnob({
-    min: 1, max: 4, step: 1, value: arp.octaves, defaultValue: 2,
-    label: 'OCT', color: arpColor, size: SIZE, format: (v) => String(v),
-    onChange: (v) => { arp.octaves = v; },
-  });
-  row.appendChild(octKnob.el);
-  // GATE
-  const gateKnob = createKnob({
-    min: 0.05, max: 1, step: 0.01, value: arp.gate, defaultValue: 0.7,
-    label: 'GATE', color: arpColor, size: SIZE, format: fmtPct,
-    onChange: (v) => { arp.gate = v; },
-  });
-  row.appendChild(gateKnob.el);
-}
-
-// ── PolySynth randomize + presets ─────────────────────────────────────────
-const POLY_PRESETS_KEY = 'tb303-poly-presets-v1';
-
-function loadUserPolyPresets(): Record<string, PolySynthParams> {
-  const raw = localStorage.getItem(POLY_PRESETS_KEY);
-  if (!raw) return {};
-  try { return JSON.parse(raw); } catch { return {}; }
-}
-
-function saveUserPolyPresets(presets: Record<string, PolySynthParams>) {
-  localStorage.setItem(POLY_PRESETS_KEY, JSON.stringify(presets));
-}
-
-function applyPolyParams(params: PolySynthParams) {
-  // Preset / load / randomize → apply to the polysynth currently being edited.
-  const d = JSON.parse(JSON.stringify(activePolyTarget.params)) as PolySynthParams;
-  activePolyTarget.params = {
-    master: { ...d.master, ...params.master },
-    osc1:   { ...d.osc1,   ...params.osc1 },
-    osc2:   { ...d.osc2,   ...params.osc2 },
-    sub:    { ...d.sub,    ...params.sub },
-    noise:  { ...d.noise,  ...params.noise },
-    filter: { ...d.filter, ...params.filter },
-    amp:    { ...d.amp,    ...params.amp },
-    lfo1:   { ...d.lfo1,   ...params.lfo1 },
-    lfo2:   { ...d.lfo2,   ...params.lfo2 },
-  };
-  refreshPolyKnobsFromState();
-}
-
-function populatePolyPresetSelect() {
-  const sel = $<HTMLSelectElement>('poly-preset-select');
-  sel.innerHTML = '';
-
-  // Sentinel for synths with no preset applied (after randomize / manual tweak)
-  const custom = document.createElement('option');
-  custom.value = '__custom__';
-  custom.textContent = '(custom — no preset)';
-  sel.appendChild(custom);
-
-  const factoryGroup = document.createElement('optgroup');
-  factoryGroup.label = 'Factory';
-  for (const p of FACTORY_POLY_PRESETS) {
-    const opt = document.createElement('option');
-    opt.value = `factory:${p.name}`;
-    opt.textContent = p.name;
-    factoryGroup.appendChild(opt);
-  }
-  sel.appendChild(factoryGroup);
-
-  const user = loadUserPolyPresets();
-  const userNames = Object.keys(user).sort();
-  if (userNames.length > 0) {
-    const userGroup = document.createElement('optgroup');
-    userGroup.label = 'User';
-    for (const name of userNames) {
-      const opt = document.createElement('option');
-      opt.value = `user:${name}`;
-      opt.textContent = name;
-      userGroup.appendChild(opt);
-    }
-    sel.appendChild(userGroup);
-  }
-}
-
-function wirePolyControls() {
-  $<HTMLButtonElement>('poly-randomize').addEventListener('click', () => {
-    const engineId = getLaneEngineId(activeEngineLaneId);
-    if (engineId === 'subtractive') {
-      randomizePolySynth(activePolyTarget);
-      polyPresetName.delete(activePolyTarget);
-      refreshPolyKnobsFromState();
-      refreshPolyPresetSelect();
-      return;
-    }
-    // Non-subtractive: randomize the ACTIVE LANE's instance (not the singleton).
-    const instance = getLaneEngineInstance(activeEngineLaneId);
-    if (!instance) return;
-    const eng = instance as unknown as { randomize?: () => void; setParam?: (id: string, v: number) => void };
-    if (eng.randomize) {
-      eng.randomize();
-    } else {
-      for (const p of instance.params) {
-        const v = p.min + Math.random() * (p.max - p.min);
-        eng.setParam?.(p.id, v);
-      }
-    }
-    rebuildEngineParamUI();
-  });
-
-  populatePolyPresetSelect();
-
-  $<HTMLButtonElement>('poly-preset-load').addEventListener('click', () => {
-    const sel = $<HTMLSelectElement>('poly-preset-select');
-    const val = sel.value;
-    if (!val || val === '__custom__') return;
-    if (val.startsWith('factory:')) {
-      const name = val.slice('factory:'.length);
-      const p = FACTORY_POLY_PRESETS.find((x) => x.name === name);
-      if (p) { applyPolyParams(p.params); polyPresetName.set(activePolyTarget, val); }
-    } else if (val.startsWith('user:')) {
-      const name = val.slice('user:'.length);
-      const presets = loadUserPolyPresets();
-      if (presets[name]) { applyPolyParams(presets[name]); polyPresetName.set(activePolyTarget, val); }
-    }
-  });
-
-  $<HTMLButtonElement>('poly-preset-save').addEventListener('click', () => {
-    const name = prompt('Preset name:');
-    if (!name) return;
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    const presets = loadUserPolyPresets();
-    presets[trimmed] = JSON.parse(JSON.stringify(activePolyTarget.params)) as PolySynthParams;
-    saveUserPolyPresets(presets);
-    populatePolyPresetSelect();
-    polyPresetName.set(activePolyTarget, `user:${trimmed}`);
-    refreshPolyPresetSelect();
-  });
-
-  $<HTMLButtonElement>('poly-preset-delete').addEventListener('click', () => {
-    const sel = $<HTMLSelectElement>('poly-preset-select');
-    const val = sel.value;
-    if (!val.startsWith('user:')) {
-      alert('Solo se pueden borrar presets de usuario (no los Factory).');
-      return;
-    }
-    const name = val.slice('user:'.length);
-    if (!confirm(`Borrar preset "${name}"?`)) return;
-    const presets = loadUserPolyPresets();
-    delete presets[name];
-    saveUserPolyPresets(presets);
-    populatePolyPresetSelect();
-  });
-}
+// PolySynth presets (POLY_PRESETS_KEY, loadUserPolyPresets, applyPolyParams,
+// populatePolyPresetSelect, wirePolyControls) → polysynth-presets.ts
 
 // ── Drum master controls (drums tab) ──────────────────────────────────────
 function buildDrumMasterUI() {
@@ -2888,53 +2101,8 @@ function buildDrumMasterUI() {
     label: 'HI',  color: '#2ee0c0', format: fmtDb, onChange: (v) => drumBusStrip.setEqHigh(v) });
 }
 
-// ── Polysynth track: STEP vs PIANO mode + MIDI import ────────────────────
-function setPolyMode(mode: 'step' | 'piano') {
-  if (seq.pattern.polyMode === mode) return;
-  if (mode === 'piano' && seq.pattern.polyNotes.length === 0) {
-    // First switch into piano: convert existing step pattern to free notes
-    seq.pattern.polyNotes = stepsToNotes(seq.pattern.melody);
-  }
-  seq.pattern.polyMode = mode;
-  rebuildPolyTrack();
-  updatePolyModeButtons();
-}
-
-function updatePolyModeButtons() {
-  const stepBtn = $<HTMLButtonElement>('poly-mode-step');
-  const pianoBtn = $<HTMLButtonElement>('poly-mode-piano');
-  stepBtn.classList.toggle('primary', seq.pattern.polyMode === 'step');
-  pianoBtn.classList.toggle('primary', seq.pattern.polyMode === 'piano');
-}
-
-// Remembers which preset is currently applied to each polysynth so the
-// preset dropdown can reflect the active synth's choice when you switch.
-const polyPresetName = new Map<PolySynth, string>();
-
-function applyPresetByName(poly: PolySynth, name: string) {
-  const p = FACTORY_POLY_PRESETS.find((x) => x.name === name);
-  if (p) {
-    poly.params = JSON.parse(JSON.stringify(p.params)) as PolySynthParams;
-    polyPresetName.set(poly, `factory:${name}`);
-  }
-}
-
-function refreshPolyPresetSelect() {
-  const sel = $<HTMLSelectElement>('poly-preset-select');
-  const current = polyPresetName.get(activePolyTarget);
-  if (current) sel.value = current;
-  else sel.value = '__custom__';
-}
-
-function wirePolyMode() {
-  $<HTMLButtonElement>('poly-mode-step').addEventListener('click', () => setPolyMode('step'));
-  $<HTMLButtonElement>('poly-mode-piano').addEventListener('click', () => setPolyMode('piano'));
-  updatePolyModeButtons();
-  $<HTMLButtonElement>('bass-mode-step').addEventListener('click', () => setBassMode('step'));
-  $<HTMLButtonElement>('bass-mode-piano').addEventListener('click', () => setBassMode('piano'));
-  updateBassModeButtons();
-  // MIDI import UI wiring is handled in wireMidiImport() (called in the boot section below)
-}
+// setPolyMode, updatePolyModeButtons, polyPresetName, applyPresetByName,
+// refreshPolyPresetSelect, wirePolyMode → polysynth-presets.ts
 
 // ── Preset library (patterns) ─────────────────────────────────────────────
 function wirePresets() {
@@ -3071,17 +2239,54 @@ setupInitialPattern();
 // All 4 slots are populated by setupInitialPattern; seq is already pointing at slot 0.
 barsSel.value = String(seq.length);
 
-buildPolySynthUI();
-buildArpUI();
+// ── Deps objects for extracted UI modules ─────────────────────────────────
+const polySynthUIDeps: PolySynthUIDeps = {
+  getActivePolyTarget: () => activePolyTarget,
+  registerKnob,
+};
+
+const automationDeps: AutomationUIDeps = {
+  seq,
+  automationRegistry,
+  getAutoAbsSubIdx: () => autoAbsSubIdx,
+  extraIds: EXTRA_IDS,
+  laneLabels: LANE_LABELS as Record<string, string>,
+};
+
+// Wire stable wrappers now that deps are built.
+_automationDeps = automationDeps;
+renderLanes = () => renderLanesFromUI(automationDeps);
+populateAutoParamSelectWrapper = () => populateAutoParamSelect(automationDeps);
+
+const polySynthPresetsDeps: PolySynthPresetsDeps = {
+  getActivePolyTarget: () => activePolyTarget,
+  getActiveEngineLaneId: () => activeEngineLaneId,
+  getLaneEngineId,
+  getLaneEngineInstance,
+  rebuildEngineParamUI,
+};
+
+const polyModeDeps: PolyModeDeps = {
+  getSeqPattern: () => seq.pattern,
+  stepsToNotes,
+  getMelodySteps: () => seq.pattern.melody,
+  setPolyPatternMode: (mode) => { seq.pattern.polyMode = mode; },
+  rebuildPolyTrack,
+  setBassMode,
+  updateBassModeButtons,
+};
+
+buildPolySynthUI(polySynthUIDeps);
+buildArpUI({ getExtraPolyTracks: () => seq.pattern.extraPolyTracks });
 buildFxUI();
 buildDrumMasterUI();
 applyDelaySync();
 rebuildTracks();
 rebuildMixer();
-wireAutomationTab();
+wireAutomationTab(automationDeps);
 wirePresets();
-wirePolyControls();
-wirePolyMode();
+wirePolyControls(polySynthPresetsDeps);
+wirePolyMode(polyModeDeps);
 wirePolyTargetSelect();
 wireCopyPanel();
 wireCopyTrackPanel();
