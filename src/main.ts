@@ -10,13 +10,13 @@ import './engines/wavetable';
 import './engines/fm';
 import './engines/karplus';
 import { TB303, type Wave } from './core/synth';
-import { Sequencer, type PolyStep } from './core/sequencer';
+import { Sequencer } from './core/sequencer';
 import { DrumMachine, DRUM_LANES, type DrumVoice } from './core/drums';
-import { clearPattern, type ScaleName } from './core/random';
-import { FxBus, ChannelStrip, FilterChain, type ChannelState } from './core/fx';
-import { PatternBank, clonePattern, emptyPattern, AUTOMATION_SUB_RES, MAX_EXTRA_POLY_TRACKS, type PatternData, type PolyTrack, type AutomationLane } from './core/pattern';
+import { clearPattern } from './core/random';
+import { FxBus, ChannelStrip, FilterChain } from './core/fx';
+import { PatternBank, emptyPattern, AUTOMATION_SUB_RES, MAX_EXTRA_POLY_TRACKS, type PolyTrack, type AutomationLane } from './core/pattern';
 import { createKnob, type KnobHandle } from './core/knob';
-import { PolySynth, type PolySynthParams } from './polysynth/polysynth';
+import { PolySynth } from './polysynth/polysynth';
 import { DRUM_PRESETS, BASS_PRESETS, MELODY_PRESETS, loadDrumPreset, loadBassPreset, loadMelodyPreset } from './presets/presets';
 import { scheduleArpForNote } from './arp/arp';
 import { stepsToNotes, bassStepsToNotes } from './core/notes';
@@ -447,103 +447,9 @@ for (const def of SYNTH_KNOB_DEFS) {
 // ── Randomize / Clear — moved to src/core/randomize-ui.ts ────────────────
 // wireRandomizeUI() is called at boot (see boot section below).
 
-// ── Save / Load (localStorage) ─────────────────────────────────────────────
-const STORE_KEY = 'tb303-state-v1';
-
-interface SavedState {
-  bpm: number;
-  swing: number;
-  masterVol: number;
-  bars: number;
-  kit: string;
-  wave: Wave;
-  scale: ScaleName;
-  rootNote: number;
-  synthParams: typeof synth.params;
-  polyParams?: PolySynthParams;
-  currentSlot: number;
-  slots: PatternData[];
-  channels: Partial<Record<TrackId, ChannelState>>;
-  mutes: Partial<Record<TrackId, boolean>>;
-  solos: Partial<Record<TrackId, boolean>>;
-}
-
-function saveAll() {
-  // Make sure current edits are captured in the bank before serializing
-  bank.slots[bank.current] = clonePattern(seq.pattern);
-  const state: SavedState = {
-    bpm: seq.bpm,
-    swing: seq.swing,
-    masterVol: master.gain.value,
-    bars: seq.length,
-    kit: drums.kitId,
-    wave: synth.params.wave,
-    scale: scaleSel.value as ScaleName,
-    rootNote: parseInt(rootSel.value, 10),
-    synthParams: { ...synth.params },
-    polyParams: JSON.parse(JSON.stringify(polysynth.params)) as PolySynthParams,
-    currentSlot: bank.current,
-    slots: bank.slots.map(clonePattern),
-    channels: Object.fromEntries(activeTracks().map((t) => [t, stripFor(t).serialize()])) as Partial<Record<TrackId, ChannelState>>,
-    mutes: { ...muteState }, solos: { ...soloState },
-  };
-  localStorage.setItem(STORE_KEY, JSON.stringify(state));
-  flashButton($<HTMLButtonElement>('save'), 'Saved!');
-}
-
-function loadAll() {
-  const raw = localStorage.getItem(STORE_KEY);
-  if (!raw) { flashButton($<HTMLButtonElement>('load'), 'No save'); return; }
-  const s = JSON.parse(raw) as SavedState;
-
-  seq.bpm = s.bpm; bpmInput.value = String(s.bpm);
-  seq.swing = s.swing; swingInput.value = String(s.swing);
-  master.gain.value = s.masterVol; volInput.value = String(s.masterVol);
-  drums.setKit(s.kit); kitSel.value = s.kit;
-  synth.params = { ...s.synthParams }; waveSel.value = s.wave;
-  scaleSel.value = s.scale; rootSel.value = String(s.rootNote);
-
-  // Slots may come from older saves missing the melody field — patch them.
-  bank.slots = s.slots.map((p) => clonePattern(normalizePattern(p)));
-  bank.current = s.currentSlot;
-  seq.setPattern(bank.slots[bank.current]);
-  barsSel.value = String(seq.length);
-  classicState.viewStart = 0;
-
-  for (const t of activeTracks()) {
-    const cs = s.channels[t];
-    if (cs) stripFor(t).restore(cs);
-    muteState[t] = !!s.mutes[t];
-    soloState[t] = !!s.solos[t];
-  }
-  applyMuteSolo();
-
-  if (s.polyParams) {
-    polysynth.params = JSON.parse(JSON.stringify(s.polyParams)) as PolySynthParams;
-    refreshPolyKnobsFromState();
-  }
-
-  fx.setBpmSync(seq.bpm);
-  filterChain.updateBpm(seq.bpm);
-  rebuildTracks();
-  rebuildMixer();
-  refreshKnobsFromSynth();
-  renderLanes();
-  $$('button.slot').forEach((b) => b.classList.toggle('active', b.dataset.slot === String(bank.current)));
-  flashButton($<HTMLButtonElement>('load'), 'Loaded!');
-}
-
-function normalizePattern(p: PatternData): PatternData {
-  if (!p.melody) {
-    p.melody = Array.from({ length: p.length }, () => ({ on: false, notes: [60], accent: false, tie: false }));
-  }
-  // Migrate older saves: PolyStep used to have `note: number`; now it has `notes: number[]`.
-  for (const s of p.melody) {
-    const legacy = s as PolyStep & { note?: number };
-    if (!Array.isArray(s.notes)) s.notes = [legacy.note ?? 60];
-  }
-  return p;
-}
+// ── Save / Load ─────────────────────────────────────────────────────────────
+// v1 legacy saveAll/loadAll/normalizePattern removed (replaced by Save Manager v2
+// in src/save/save-wiring.ts which uses buildSavedStateV2 / applyLoadedState).
 
 function flashButton(b: HTMLButtonElement, msg: string) {
   const orig = b.textContent;
@@ -1038,7 +944,6 @@ const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
   renderLanes,
   fx,
   filterChain,
-  normalizePattern,
   flashButton,
 };
 wireSaveManager(saveWiringDeps);

@@ -5,6 +5,7 @@ import {
   type SaveIndexEntry,
 } from './save-manager';
 import { clonePattern, type PatternData } from '../core/pattern';
+import type { PolyStep } from '../core/sequencer';
 import type { TB303 } from '../core/synth';
 import type { Sequencer } from '../core/sequencer';
 import type { DrumMachine } from '../core/drums';
@@ -45,8 +46,19 @@ export interface SaveWiringDeps {
   renderLanes: () => void;
   fx: FxBus;
   filterChain: FilterChain;
-  normalizePattern: (p: PatternData) => PatternData;
   flashButton: (b: HTMLButtonElement, msg: string) => void;
+}
+
+function normalizePattern(p: PatternData): PatternData {
+  if (!p.melody) {
+    p.melody = Array.from({ length: p.length }, () => ({ on: false, notes: [60], accent: false, tie: false }));
+  }
+  // Migrate older saves: PolyStep used to have `note: number`; now it has `notes: number[]`.
+  for (const s of p.melody) {
+    const legacy = s as PolyStep & { note?: number };
+    if (!Array.isArray(s.notes)) s.notes = [legacy.note ?? 60];
+  }
+  return p;
 }
 
 function buildSavedStateV2(deps: SaveWiringDeps): Record<string, unknown> {
@@ -73,7 +85,7 @@ function buildSavedStateV2(deps: SaveWiringDeps): Record<string, unknown> {
 }
 
 function applyLoadedState(data: unknown, deps: SaveWiringDeps): void {
-  const { seq, synth, polysynth, drums, master, volInput, bpmInput, swingInput, kitSel, waveSel, scaleSel, rootSel, bank, barsSel, activeTracks, stripFor, muteState, soloState, sessionHost, setAppMode, rebuildTracks, rebuildMixer, refreshKnobsFromSynth, renderLanes, fx, filterChain, normalizePattern, applyMuteSolo } = deps;
+  const { seq, synth, polysynth, drums, master, volInput, bpmInput, swingInput, kitSel, waveSel, scaleSel, rootSel, bank, barsSel, activeTracks, stripFor, muteState, soloState, sessionHost, setAppMode, rebuildTracks, rebuildMixer, refreshKnobsFromSynth, renderLanes, fx, filterChain, applyMuteSolo } = deps;
 
   if (!data || typeof data !== 'object') { alert('Invalid save data'); return; }
   const s = data as Record<string, unknown>;
