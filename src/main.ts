@@ -43,6 +43,10 @@ import { wireSlotCopyPanel } from './copy/slot-copy';
 import { wireRandomizeUI } from './core/randomize-ui';
 import { wireFxUI, applyDelaySync as fxApplyDelaySync, type FxUIDeps } from './core/fx-ui';
 import {
+  wireTransport, switchSlot, updateSlotButtons, isChainEnabled, refreshLoopBtn,
+  type TransportDeps,
+} from './core/transport';
+import {
   classicState,
   type ClassicDeps,
 } from './classic/classic-state';
@@ -421,36 +425,7 @@ function rebuildMixer() {
   }
 }
 
-// ── Transport ──────────────────────────────────────────────────────────────
-playBtn.addEventListener('click', () => {
-  void ctx.resume();
-  if (seq.isPlaying()) {
-    seq.stop();
-    playBtn.textContent = '▶';
-    for (const i of Object.keys(classicState.bassCells)) classicState.bassCells[+i].el.classList.remove('current');
-    for (const i of Object.keys(classicState.melodyCells)) classicState.melodyCells[+i].el.classList.remove('current');
-    for (const lane of DRUM_LANES) for (const i of Object.keys(classicState.drumCells[lane])) classicState.drumCells[lane][+i].classList.remove('current');
-  } else {
-    resetAutomationPosition();
-    seq.start();
-    playBtn.textContent = '■';
-  }
-});
-
-seq.onStep = (i) => {
-  // Highlight only cells in current view
-  const { start, end } = classicVisibleRange(classicDeps);
-  for (let j = start; j < end; j++) {
-    const c = classicState.bassCells[j];
-    if (c) c.el.classList.toggle('current', i === j);
-    const mc = classicState.melodyCells[j];
-    if (mc) mc.el.classList.toggle('current', i === j);
-    for (const lane of DRUM_LANES) {
-      const b = classicState.drumCells[lane][j];
-      if (b) b.classList.toggle('current', i === j);
-    }
-  }
-};
+// ── Transport → moved to src/core/transport.ts (wireTransport) ────────────
 
 bpmInput.addEventListener('input', () => {
   const v = parseInt(bpmInput.value, 10);
@@ -500,53 +475,7 @@ seq.onExtraPolyTrigger = (trackIdx, note, time, gate, accent) => {
   markTrackActive(id, time);
 };
 
-// Chain mode: at end of pattern, advance to next slot (A→B→C→D→A...) and
-// keep playing. Overrides LOOP while active (loop is force-off internally).
-let chainEnabled = false;
-let chainSavedLoopState = true;
-
-// Loop toggle in transport
-const loopBtn = $<HTMLButtonElement>('loop-toggle');
-function refreshLoopBtn() {
-  loopBtn.classList.toggle('primary', seq.loopEnabled);
-  loopBtn.textContent = seq.loopEnabled ? '↻ LOOP' : '⤳ ONESHOT';
-  loopBtn.disabled = chainEnabled;
-  loopBtn.style.opacity = chainEnabled ? '0.4' : '';
-}
-loopBtn.addEventListener('click', () => {
-  seq.loopEnabled = !seq.loopEnabled;
-  refreshLoopBtn();
-});
-refreshLoopBtn();
-
-const chainBtn = $<HTMLButtonElement>('chain-toggle');
-function refreshChainBtn() {
-  chainBtn.classList.toggle('primary', chainEnabled);
-  chainBtn.textContent = chainEnabled ? '→ CHAIN' : '→ chain';
-}
-chainBtn.addEventListener('click', () => {
-  chainEnabled = !chainEnabled;
-  if (chainEnabled) {
-    chainSavedLoopState = seq.loopEnabled;
-    seq.loopEnabled = false;
-  } else {
-    seq.loopEnabled = chainSavedLoopState;
-  }
-  refreshChainBtn();
-  refreshLoopBtn();
-});
-refreshChainBtn();
-
-seq.onEnded = () => {
-  if (chainEnabled) {
-    const next = (bank.current + 1) % bank.slots.length;
-    switchSlot(next);
-    // switchSlot queues when playing — but we just stopped, so trigger it inline.
-    if (!seq.isPlaying()) seq.start();
-    return;
-  }
-  playBtn.textContent = '▶';
-};
+// chain/loop/slot/onEnded wired in wireTransport() (see boot section)
 
 swingInput.addEventListener('input', () => { seq.swing = parseFloat(swingInput.value); });
 
@@ -591,66 +520,7 @@ for (const def of SYNTH_KNOB_DEFS) {
   registerKnob(k);
 }
 
-// ── Pager ──────────────────────────────────────────────────────────────────
-$('page-prev').addEventListener('click', () => {
-  if (classicState.viewStart >= VIEW_SIZE) { classicState.viewStart -= VIEW_SIZE; rebuildTracks(); }
-});
-$('page-next').addEventListener('click', () => {
-  if (classicState.viewStart + VIEW_SIZE < seq.length) { classicState.viewStart += VIEW_SIZE; rebuildTracks(); }
-});
-
-// ── Pattern slots (musical queue: swap at next loop boundary) ──────────────
-let pendingSlotIdx: number | null = null;
-
-function switchSlot(newIdx: number) {
-  if (newIdx === bank.current && pendingSlotIdx === null) return;
-  // Save edits to current slot immediately (even if swap is queued)
-  bank.slots[bank.current] = clonePattern(seq.pattern);
-  if (!seq.isPlaying()) {
-    // Not playing — swap right now
-    bank.current = newIdx;
-    seq.setPattern(bank.slots[newIdx]);
-    barsSel.value = String(seq.length);
-    classicState.viewStart = 0;
-    rebuildTracks();
-    updateSlotButtons();
-    renderLanes();
-    syncEngineToPattern();
-  } else {
-    // Playing — queue the swap, it'll happen at the next loop start
-    pendingSlotIdx = newIdx;
-    seq.queuePattern(bank.slots[newIdx]);
-    updateSlotButtons();
-  }
-}
-
-function updateSlotButtons() {
-  $$('button.slot').forEach((b) => {
-    const idx = parseInt(b.dataset.slot ?? '0', 10);
-    b.classList.toggle('active', idx === bank.current);
-    b.classList.toggle('pending', idx === pendingSlotIdx);
-  });
-}
-
-seq.onPatternChange = () => {
-  if (pendingSlotIdx !== null) {
-    bank.current = pendingSlotIdx;
-    pendingSlotIdx = null;
-    barsSel.value = String(seq.length);
-    classicState.viewStart = 0;
-    rebuildTracks();
-    updateSlotButtons();
-    renderLanes();
-    updateBassModeButtons();
-    syncEngineToPattern();
-    rebuildSynthTabs();
-  }
-};
-
-$$('button.slot').forEach((b) => {
-  b.addEventListener('click', () => switchSlot(parseInt(b.dataset.slot ?? '0', 10)));
-});
-
+// pager/slots/onPatternChange wired in wireTransport() (see boot section)
 // Pre-populate the bank's slot 0 with the sequencer's initial pattern (set up below)
 // Done after setupInitialPattern.
 
@@ -1230,6 +1100,21 @@ const fxUIDeps: FxUIDeps = { fx, filterChain, getBpm: () => seq.bpm };
 wireFxUI(fxUIDeps);
 buildDrumMasterUI();
 fxApplyDelaySync(fxUIDeps);
+const transportDeps: TransportDeps = {
+  seq, bank, ctx, playBtn, barsSel,
+  resetAutomationPosition,
+  classicState,
+  getViewStart: () => classicState.viewStart,
+  setViewStart: (v) => { classicState.viewStart = v; },
+  VIEW_SIZE,
+  rebuildTracks,
+  renderLanes,
+  updateBassModeButtons,
+  syncEngineToPattern,
+  rebuildSynthTabs,
+  getClassicVisibleRange: () => classicVisibleRange(classicDeps),
+};
+wireTransport(transportDeps);
 wireClassicUI(classicDeps);
 rebuildMixer();
 wireAutomationTab(automationDeps);
@@ -1249,8 +1134,8 @@ wireCopyNotesPanel({ seq, rebuildTracks });
 // ── Demo wiring (deps built here, functions live in demo-minimal-techno.ts) ─
 const demoDeps: import('./demo/demo-minimal-techno').DemoDeps = {
   seq, bank, bpmInput, barsSel,
-  chainEnabled: () => chainEnabled,
-  chainBtn,
+  chainEnabled: () => isChainEnabled(),
+  chainBtn: $<HTMLButtonElement>('chain-toggle'),
   setSlotConfigurators,
   getLaneEngineInstance,
   viewStart: { get value() { return classicState.viewStart; }, set value(v) { classicState.viewStart = v; } },
