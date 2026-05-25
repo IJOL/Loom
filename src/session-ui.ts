@@ -187,36 +187,3 @@ function sceneLaunchCell(scene: { name?: string } | undefined, idx: number, cb: 
   return el;
 }
 
-import type { KnobHandle } from './knob';
-
-export interface MixerStripBindings {
-  laneIdToTrackId: (laneId: string) => string;
-  buildKnob: (paramId: string, label: string, container: HTMLElement) => KnobHandle | null;
-}
-
-export function renderSessionMixerStrip(
-  hostRow: HTMLElement,
-  state: SessionState,
-  bindings: MixerStripBindings,
-): void {
-  const sp = document.createElement('div');
-  sp.className = 'session-spacer';
-  hostRow.appendChild(sp);
-
-  for (const lane of state.lanes) {
-    const col = document.createElement('div');
-    col.className = 'session-mix-col';
-    const t = bindings.laneIdToTrackId(lane.id);
-    bindings.buildKnob(`mix.${t}.pan`,    'Pan', col);
-    bindings.buildKnob(`mix.${t}.rev`,    'Rev', col);
-    bindings.buildKnob(`mix.${t}.dly`,    'Dly', col);
-    bindings.buildKnob(`mix.${t}.eqhi`,   'Hi',  col);
-    bindings.buildKnob(`mix.${t}.eqmid`,  'Mid', col);
-    bindings.buildKnob(`mix.${t}.eqlow`,  'Lo',  col);
-    bindings.buildKnob(`mix.${t}.vol`,    'Vol', col);
-    hostRow.appendChild(col);
-  }
-  const sp2 = document.createElement('div');
-  sp2.className = 'session-spacer';
-  hostRow.appendChild(sp2);
-}
