@@ -17,17 +17,16 @@ import { DRUM_PRESETS, BASS_PRESETS, MELODY_PRESETS, loadDrumPreset, loadBassPre
 import { ARP_DEFAULTS, scheduleArpForNote, type ArpPattern, type ArpScale, type ArpSettings } from './arp';
 import { stepsToNotes, bassStepsToNotes, notesToBassSteps, notesToPolySteps, TICKS_PER_STEP, patternTicks as ptTicks, type NoteEvent } from './notes';
 import { createPianoRoll, type PianoRollHandle } from './pianoroll';
-import { emptySessionState, cloneSessionState, type SessionState, type SessionClip } from './session';
+import type { SessionState } from './session';
 import {
   saveNamedEntry, readIndex, loadEntry, loadAutosave,
   deleteEntry, renameEntry, clearAll, totalStorageKB,
   downloadAsJson, loadFromFile,
   type SaveIndexEntry,
 } from './save-manager';
-import { tickSession, tickSessionEnvelopes, type LanePlayState, launchScene, stopAll, launchClip, stopLane } from './session-runtime';
-import { importClassicToSession, expandDrumsLane, collapseDrumsLane } from './session-migration';
-import { renderSessionGrid, type SessionUICallbacks } from './session-ui';
+import { tickSessionEnvelopes } from './session-runtime';
 import { buildMixerColumn } from './mixer';
+import { SessionHost } from './session-host';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -55,8 +54,6 @@ const $$ = <T extends HTMLElement>(sel: string) => Array.from(document.querySele
 export type AppMode = 'classic' | 'session';
 let appMode: AppMode = 'classic';
 function getAppMode(): AppMode { return appMode; }
-const sessionState: SessionState = emptySessionState();
-const laneStates = new Map<string, LanePlayState>();
 
 // ── Audio graph ────────────────────────────────────────────────────────────
 const ctx = new AudioContext();
@@ -155,9 +152,6 @@ function recordAutomationValue(paramId: string, value: number) {
 }
 
 const seq = new Sequencer(ctx, synth, drums, polysynth, 32);
-seq.sessionTick = (now, look) => {
-  tickSession(laneStates, sessionState, now, look, seq.bpm, scheduleClipStep);
-};
 let currentEngineId = 'subtractive';
 const bank = new PatternBank(32);
 
@@ -2507,7 +2501,7 @@ function startAutomationTick() {
       entry.setValue(denorm);
     }
     if (appMode === 'session') {
-      tickSessionEnvelopes(laneStates, ctx.currentTime, seq.bpm, (paramId, normalised) => {
+      tickSessionEnvelopes(sessionHost.laneStates, ctx.currentTime, seq.bpm, (paramId, normalised) => {
         const k = automationRegistry.get(paramId);
         if (!k) return;
         const range = k.meta.max - k.meta.min;
@@ -2595,6 +2589,27 @@ seq.onBassTrigger = (note, time, gate, accent, slidingIn) => {
   else bassTriggerDirect(note, time, gate, accent, slidingIn);
   markTrackActive('bass', time);
 };
+
+// ── Session host ───────────────────────────────────────────────────────────
+const sessionHost = new SessionHost({
+  ctx, seq, bank, playBtn,
+  resetAutomationPosition,
+  bassTriggerDirect,
+  polyTriggerDirect,
+  drums,
+  drumLanes: DRUM_LANES,
+  markTrackActive,
+  ensureExtraPoly: ensureExtraPoly as (id: string) => PolySynth,
+  extraStrips: extraStrips as Partial<Record<string, ChannelStrip>>,
+  getLaneEngineId,
+  ensureLaneEngine,
+  setActivePolyTarget,
+  setCurrentSynthLane,
+  polysynth,
+  mixerDeps,
+  getAppMode,
+});
+sessionHost.init();
 
 function buildArpUI() {
   const row = $<HTMLDivElement>('poly-arp-controls');
@@ -3602,380 +3617,6 @@ applyMinimalTechnoDemo();
 rebuildSynthTabs();
 startVisualizer();
 
-// ── Session UI wiring ──────────────────────────────────────────────────────
-function renderSession() {
-  const hostEl = document.getElementById('session-grid');
-  if (!hostEl) return;
-  renderSessionGrid(hostEl, sessionState, laneStates, sessionCallbacks);
-}
-
-function laneToTrackId(laneId: string): string {
-  if (laneId === 'bass')  return 'bass';
-  if (laneId === 'drums') return 'drumBus';
-  if (laneId === 'main')  return 'poly';
-  return laneId; // extras: poly1, poly2, ...
-}
-
-function renderSessionWithMixer() {
-  renderSession();
-  const row = sessionCallbacks._mixerRow;
-  if (!row) return;
-  row.innerHTML = '';
-  // Lead spacer aligned with the row-number column.
-  const sp = document.createElement('div');
-  sp.className = 'session-spacer';
-  row.appendChild(sp);
-  // One real mixer column per lane — NO cloning. buildMixerColumn registers
-  // each knob into automationRegistry so they stay in sync with Classic.
-  for (const lane of sessionState.lanes) {
-    const trackId = laneToTrackId(lane.id);
-    // Lazy-instantiating channel strip happens inside stripFor for extras.
-    row.appendChild(buildMixerColumn(trackId, mixerDeps));
-  }
-  // Trailing spacer aligned with the scenes column.
-  const sp2 = document.createElement('div');
-  sp2.className = 'session-spacer';
-  row.appendChild(sp2);
-}
-
-let selectedClip: { laneId: string; clipIdx: number } | null = null;
-
-const sessionCallbacks: SessionUICallbacks = {
-  onClipClick: (laneId, clipIdx) => {
-    const lane = sessionState.lanes.find((l) => l.id === laneId);
-    const clip = lane?.clips[clipIdx];
-    if (!lane || !clip) return;
-    selectedClip = { laneId, clipIdx };
-    openInspector();
-    void ctx.resume();
-    launchClip(laneStates, sessionState, lane, clip, ctx.currentTime, seq.bpm);
-    if (!seq.isPlaying()) { resetAutomationPosition(); seq.start(); playBtn.textContent = '■'; }
-    renderSessionWithMixer();
-  },
-  onCellClick: (laneId, clipIdx) => {
-    const lane = sessionState.lanes.find((l) => l.id === laneId);
-    if (!lane) return;
-    const defaultLen = Math.max(1, Math.floor(seq.length / 16));
-    let clip: SessionClip;
-    if (lane.kind === 'drum-bus') {
-      const drumSteps: Record<DrumVoice, DrumStep[]> = {} as Record<DrumVoice, DrumStep[]>;
-      for (const l of DRUM_LANES) drumSteps[l] = Array.from({ length: defaultLen * 16 }, () => ({ on: false, accent: false }));
-      clip = { id: `clip-${Date.now().toString(36)}`, lengthBars: defaultLen, drumSteps };
-    } else if (lane.kind === 'bass') {
-      clip = { id: `clip-${Date.now().toString(36)}`, lengthBars: defaultLen, bassMode: 'piano', bassNotes: [] };
-    } else {
-      clip = { id: `clip-${Date.now().toString(36)}`, lengthBars: defaultLen, polyMode: 'piano', polyNotes: [] };
-    }
-    while (lane.clips.length <= clipIdx) lane.clips.push(null);
-    lane.clips[clipIdx] = clip;
-    selectedClip = { laneId, clipIdx };
-    openInspector();
-    renderSessionWithMixer();
-  },
-  onStopLane: (laneId) => { stopLane(laneStates, laneId); renderSessionWithMixer(); },
-  onLaunchScene: (idx) => {
-    const scene = sessionState.scenes[idx];
-    if (!scene) return;
-    void ctx.resume();
-    launchScene(laneStates, sessionState, scene, ctx.currentTime, seq.bpm);
-    if (!seq.isPlaying()) { resetAutomationPosition(); seq.start(); playBtn.textContent = '■'; }
-    renderSessionWithMixer();
-  },
-  onStopAll: () => { stopAll(laneStates); renderSessionWithMixer(); },
-  onAddScene: () => {
-    sessionState.scenes.push({
-      id: `scene-${Date.now().toString(36)}`,
-      name: `Scene ${sessionState.scenes.length + 1}`,
-      clipPerLane: {},
-    });
-    renderSessionWithMixer();
-  },
-  onAddSynthLane: () => { /* Task 13 */ },
-  onAddClipRow:   () => { /* Task 11 */ },
-  onEditLane: (laneId) => {
-    if (laneId === 'main') {
-      setActivePolyTarget(polysynth, 'MAIN');
-    } else if (laneId.startsWith('poly')) {
-      setActivePolyTarget(ensureExtraPoly(laneId as ExtraId), laneId.toUpperCase());
-    }
-    const targetTab =
-      laneId === 'bass'  ? '303' :
-      (laneId === 'drums' || laneId.startsWith('drum:')) ? 'drums' :
-      'poly';
-    document.querySelectorAll<HTMLButtonElement>('.tab').forEach((t) => {
-      t.classList.toggle('active', t.dataset.tab === targetTab && !t.classList.contains('synth-tab'));
-    });
-    if (laneId.startsWith('poly') || laneId === 'main') {
-      setCurrentSynthLane(laneId === 'main' ? 'main' : laneId);
-    } else {
-      document.querySelectorAll<HTMLElement>('.page').forEach((p) => {
-        p.hidden = p.dataset.page !== targetTab;
-      });
-    }
-    document.getElementById('session-view')!.hidden = true;
-    document.getElementById('back-to-session')!.hidden = false;
-    document.querySelector<HTMLElement>('.tab-bar')!.hidden = false;
-  },
-  onToggleDrumsExpanded: () => {
-    const drums = sessionState.lanes.find((l) => l.id === 'drums');
-    if (!drums) return;
-    if (drums.expanded) collapseDrumsLane(sessionState);
-    else expandDrumsLane(sessionState);
-    for (const lane of sessionState.lanes) {
-      if (!laneStates.has(lane.id)) {
-        laneStates.set(lane.id, {
-          laneId: lane.id, playing: null, queued: null,
-          queuedBoundary: 0, startTime: 0, nextStepIdx: 0, loopCount: 0,
-        });
-      }
-    }
-    renderSessionWithMixer();
-  },
-};
-
-let inspectorRoll: PianoRollHandle | null = null;
-
-function openInspector() {
-  const panel = document.getElementById('session-inspector');
-  if (!panel || !selectedClip) return;
-  const lane = sessionState.lanes.find((l) => l.id === selectedClip!.laneId);
-  const clip = lane?.clips[selectedClip.clipIdx];
-  if (!clip) { panel.hidden = true; return; }
-  panel.hidden = false;
-
-  const nameEl = document.getElementById('insp-name') as HTMLInputElement;
-  const lenEl  = document.getElementById('insp-length') as HTMLInputElement;
-  const qEl    = document.getElementById('insp-quantize') as HTMLSelectElement;
-
-  nameEl.value = clip.name ?? '';
-  lenEl.value  = String(clip.lengthBars);
-  qEl.value    = clip.launchQuantize ?? '';
-
-  nameEl.oninput = () => { clip.name = nameEl.value || undefined; renderSessionWithMixer(); };
-  lenEl.oninput  = () => { clip.lengthBars = Math.max(1, parseInt(lenEl.value, 10) || 1); };
-  qEl.onchange   = () => { clip.launchQuantize = (qEl.value || undefined) as import('./session').LaunchQuantize | undefined; };
-
-  document.getElementById('insp-duplicate')!.onclick = () => {
-    if (!selectedClip) return;
-    const ln = sessionState.lanes.find((l) => l.id === selectedClip!.laneId)!;
-    const dup: SessionClip = JSON.parse(JSON.stringify(clip));
-    dup.id = `clip-${Date.now().toString(36)}`;
-    dup.name = (clip.name ?? '') + ' copy';
-    ln.clips.push(dup);
-    renderSessionWithMixer();
-  };
-  document.getElementById('insp-delete')!.onclick = () => {
-    if (!selectedClip) return;
-    const ln = sessionState.lanes.find((l) => l.id === selectedClip!.laneId)!;
-    ln.clips[selectedClip.clipIdx] = null;
-    panel.hidden = true;
-    selectedClip = null;
-    renderSessionWithMixer();
-  };
-  document.getElementById('insp-open-roll')!.onclick = openPianoRollForSelected;
-}
-
-function openPianoRollForSelected() {
-  const host = document.getElementById('insp-roll-host');
-  if (!host || !selectedClip) return;
-  const lane = sessionState.lanes.find((l) => l.id === selectedClip!.laneId);
-  const clip = lane?.clips[selectedClip.clipIdx];
-  if (!lane || !clip) return;
-
-  host.innerHTML = '';
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.max(800, clip.lengthBars * 240);
-  canvas.height = 240;
-  canvas.style.height = '240px';
-  canvas.style.width = `${canvas.width}px`;
-  host.appendChild(canvas);
-
-  const isBass = lane.kind === 'bass';
-  const getNotes = () => isBass ? (clip.bassNotes ?? []) : (clip.polyNotes ?? []);
-  const setNotes = (notes: NoteEvent[]) => {
-    if (isBass) clip.bassNotes = notes;
-    else        clip.polyNotes = notes;
-  };
-
-  inspectorRoll = createPianoRoll({
-    canvas,
-    getNotes,
-    setNotes,
-    patternTicks: clip.lengthBars * 16 * TICKS_PER_STEP,
-    minMidi: isBass ? 24 : 36,
-    maxMidi: isBass ? 60 : 96,
-    onChange: () => {},
-    getPlayheadTick: () => {
-      const lp = laneStates.get(selectedClip!.laneId);
-      if (!lp || !lp.playing || lp.playing.id !== clip.id) return -1;
-      const now = ctx.currentTime;
-      const stepDur = 60 / seq.bpm / 4;
-      const stepsElapsed = Math.max(0, (now - lp.startTime) / stepDur);
-      const clipSteps = clip.lengthBars * 16;
-      const stepInClip = stepsElapsed % clipSteps;
-      return stepInClip * TICKS_PER_STEP;
-    },
-  });
-}
-
-// Repurpose the existing debug toolbar buttons (Import / Launch / Stop)
-document.getElementById('session-import-classic')!.addEventListener('click', () => {
-  const fresh = importClassicToSession(bank);
-  sessionState.lanes = fresh.lanes;
-  sessionState.scenes = fresh.scenes;
-  sessionState.globalQuantize = fresh.globalQuantize;
-  laneStates.clear();
-  for (const lane of sessionState.lanes) {
-    laneStates.set(lane.id, {
-      laneId: lane.id, playing: null, queued: null,
-      queuedBoundary: 0, startTime: 0, nextStepIdx: 0, loopCount: 0,
-    });
-  }
-  renderSessionWithMixer();
-});
-document.getElementById('session-launch-scene-1')!.addEventListener('click', () => sessionCallbacks.onLaunchScene(0));
-document.getElementById('session-stop-all')!.addEventListener('click',         () => sessionCallbacks.onStopAll());
-
-// Initial render
-renderSessionWithMixer();
-
-// rAF render tick: refresh the grid when playing/queued state changes
-function startSessionRenderTick() {
-  let lastSig = '';
-  const loop = () => {
-    requestAnimationFrame(loop);
-    if (appMode !== 'session') return;
-    if (inspectorRoll) inspectorRoll.redraw();
-    const sigParts: string[] = [];
-    for (const lp of laneStates.values()) {
-      sigParts.push(`${lp.laneId}:${lp.playing?.id ?? '-'}:${lp.queued?.id ?? '-'}`);
-    }
-    const next = sigParts.sort().join('|');
-    if (next !== lastSig) { lastSig = next; renderSessionWithMixer(); }
-  };
-  requestAnimationFrame(loop);
-}
-startSessionRenderTick();
-
-// ── Session: real per-clip step dispatch (connects clips to existing triggers) ──
-function scheduleClipStep(
-  laneId: string,
-  clip: SessionClip,
-  stepInClip: number,
-  stepTime: number,
-  stepDur: number,
-): void {
-  const lane = sessionState.lanes.find((l) => l.id === laneId);
-  if (!lane) return;
-
-  // BASS (303)
-  if (lane.kind === 'bass') {
-    if (clip.bassMode === 'piano' && clip.bassNotes) {
-      const stepStartTick = stepInClip * TICKS_PER_STEP;
-      const stepEndTick   = stepStartTick + TICKS_PER_STEP;
-      const tickToSec     = stepDur / TICKS_PER_STEP;
-      for (const n of clip.bassNotes) {
-        if (n.start < stepStartTick || n.start >= stepEndTick) continue;
-        const slidingIn = clip.bassNotes.some((m) =>
-          m !== n && m.start < n.start && (m.start + m.duration) > n.start + 1);
-        const offsetSec = (n.start - stepStartTick) * tickToSec;
-        const durSec = Math.max(0.01, n.duration * tickToSec);
-        const accent = n.velocity >= 100;
-        bassTriggerDirect(n.midi, stepTime + offsetSec, durSec, accent, slidingIn);
-      }
-    } else if (clip.bassSteps) {
-      const s = clip.bassSteps[stepInClip];
-      if (!s || !s.on) return;
-      const prev = clip.bassSteps[(stepInClip - 1 + clip.bassSteps.length) % clip.bassSteps.length];
-      const slidingIn = !!(prev && prev.on && prev.slide);
-      const dur = (s.slide ? stepDur * 1.5 : stepDur * 0.92);
-      bassTriggerDirect(s.note, stepTime, dur, s.accent, slidingIn);
-    }
-    markTrackActive('bass', stepTime);
-    return;
-  }
-
-  // DRUMS (collapsed bus)
-  if (lane.kind === 'drum-bus' && clip.drumSteps) {
-    for (const drumLane of DRUM_LANES) {
-      const arr = clip.drumSteps[drumLane];
-      if (!arr) continue;
-      const s = arr[stepInClip];
-      if (!s || !s.on) continue;
-      const div = s.roll && s.roll > 1 ? s.roll : 1;
-      if (div === 1) {
-        drums.trigger(drumLane, stepTime, s.accent);
-      } else {
-        const subDur = stepDur / div;
-        for (let r = 0; r < div; r++) drums.trigger(drumLane, stepTime + r * subDur, s.accent);
-      }
-    }
-    markTrackActive('drumBus', stepTime);
-    return;
-  }
-
-  // DRUMS (expanded single lane)
-  if (lane.kind === 'drum-lane' && clip.drumLane && clip.drumLaneSteps) {
-    const s = clip.drumLaneSteps[stepInClip];
-    if (!s || !s.on) return;
-    const div = s.roll && s.roll > 1 ? s.roll : 1;
-    if (div === 1) drums.trigger(clip.drumLane, stepTime, s.accent);
-    else {
-      const subDur = stepDur / div;
-      for (let r = 0; r < div; r++) drums.trigger(clip.drumLane, stepTime + r * subDur, s.accent);
-    }
-    markTrackActive(clip.drumLane, stepTime);
-    return;
-  }
-
-  // POLY (main + extras)
-  if (lane.kind === 'poly') {
-    const isMain = laneId === 'main';
-    const triggerFor = (n: number, t: number, g: number, a: boolean) => {
-      if (isMain) {
-        polyTriggerDirect(n, t, g, a);
-      } else {
-        const id = laneId as ExtraId;
-        const engineId = getLaneEngineId(id);
-        if (engineId === 'subtractive') ensureExtraPoly(id).trigger(n, t, g, a);
-        else {
-          const inst = ensureLaneEngine(id, engineId);
-          if (inst) {
-            const voice = inst.createVoice(ctx, extraStrips[id]!.input);
-            voice.trigger(n, t, { gateDuration: g, accent: a });
-          } else ensureExtraPoly(id).trigger(n, t, g, a);
-        }
-      }
-    };
-
-    if (clip.polyMode === 'piano' && clip.polyNotes) {
-      const stepStartTick = stepInClip * TICKS_PER_STEP;
-      const stepEndTick   = stepStartTick + TICKS_PER_STEP;
-      const tickToSec     = stepDur / TICKS_PER_STEP;
-      for (const n of clip.polyNotes) {
-        if (n.start < stepStartTick || n.start >= stepEndTick) continue;
-        const offsetSec = (n.start - stepStartTick) * tickToSec;
-        const durSec = Math.max(0.01, n.duration * tickToSec);
-        const accent = n.velocity >= 100;
-        triggerFor(n.midi, stepTime + offsetSec, durSec, accent);
-      }
-    } else if (clip.polySteps) {
-      const s = clip.polySteps[stepInClip];
-      if (!s || !s.on || s.notes.length === 0) return;
-      const gate = s.tie ? stepDur * 1.6 : stepDur * 0.9;
-      for (const midi of s.notes) triggerFor(midi, stepTime, gate, s.accent);
-    }
-    markTrackActive(laneId, stepTime);
-  }
-}
-
-document.getElementById('back-to-session')!.addEventListener('click', () => {
-  document.getElementById('back-to-session')!.hidden = true;
-  document.getElementById('session-view')!.hidden = false;
-  document.querySelectorAll<HTMLElement>('.page').forEach((p) => { p.hidden = true; });
-  document.querySelector<HTMLElement>('.tab-bar')!.hidden = true;
-});
-
 // ── Save Manager v2 ────────────────────────────────────────────────────────
 function buildSavedStateV2(): Record<string, unknown> {
   return {
@@ -3994,7 +3635,7 @@ function buildSavedStateV2(): Record<string, unknown> {
     channels: Object.fromEntries(activeTracks().map((t) => [t, stripFor(t).serialize()])),
     mutes: { ...muteState },
     solos: { ...soloState },
-    session: cloneSessionState(sessionState),
+    session: sessionHost.getStateForSave(),
     mode: appMode,
   };
 }
@@ -4027,23 +3668,13 @@ function applyLoadedState(data: unknown): void {
   if (s.mutes && typeof s.mutes === 'object') Object.assign(muteState, s.mutes);
   if (s.solos && typeof s.solos === 'object') Object.assign(soloState, s.solos);
   if (s.session && typeof s.session === 'object') {
-    const sess = s.session as SessionState;
-    sessionState.lanes = sess.lanes ?? [];
-    sessionState.scenes = sess.scenes ?? [];
-    sessionState.globalQuantize = sess.globalQuantize ?? '1/1';
-    laneStates.clear();
-    for (const lane of sessionState.lanes) {
-      laneStates.set(lane.id, {
-        laneId: lane.id, playing: null, queued: null,
-        queuedBoundary: 0, startTime: 0, nextStepIdx: 0, loopCount: 0,
-      });
-    }
+    sessionHost.applyLoadedSessionState(s.session as SessionState);
   }
   if (s.mode === 'session') setAppMode('session');
   else setAppMode('classic');
   rebuildTracks();
   rebuildMixer();
-  renderSessionWithMixer();
+  sessionHost.renderWithMixer();
   applyMuteSolo();
   refreshKnobsFromSynth();
   renderLanes();
