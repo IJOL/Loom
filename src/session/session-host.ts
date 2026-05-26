@@ -51,6 +51,7 @@ export interface SessionHostDeps {
   midiLabel: (m: number) => string;
   automationRegistry: Map<string, import('../core/knob').KnobHandle>;
   getAutoAbsSubIdx: () => number;
+  onActiveLaneChanged?: () => void;
 }
 
 export class SessionHost {
@@ -58,12 +59,12 @@ export class SessionHost {
   laneStates = new Map<string, LanePlayState>();
   private inspector!: SessionInspector;
   private callbacks!: SessionUICallbacks;
-  private activeEditLane: string | null = null;
+  activeEditLane: string | null = null;
 
   // Expose inspector roll for the automation tick in main.ts
   get inspectorRoll() { return this.inspector?.roll ?? null; }
 
-  constructor(private deps: SessionHostDeps) {}
+  constructor(public readonly deps: SessionHostDeps) {}
 
   init(): void {
     this.inspector = new SessionInspector({
@@ -268,6 +269,7 @@ export class SessionHost {
             t.classList.remove('active');
           });
           self.activeEditLane = null;
+          self.deps.onActiveLaneChanged?.();
           return;
         }
 
@@ -295,6 +297,7 @@ export class SessionHost {
           });
         }
         self.activeEditLane = laneId;
+        self.deps.onActiveLaneChanged?.();
       },
       onToggleDrumsExpanded() { /* drum-bus expand removed — drum-grid editor shows all voices */ },
     };

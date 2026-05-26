@@ -30,12 +30,16 @@ export const laneCanvases: Array<{ paramId: string; draw: () => void }> = [];
 
 // ── Param select ──────────────────────────────────────────────────────────
 
-export function populateAutoParamSelect(deps: AutomationUIDeps): void {
+export function populateAutoParamSelect(
+  deps: AutomationUIDeps,
+  filterPrefix?: string | null,
+): void {
   const sel = document.getElementById('auto-param-select') as HTMLSelectElement;
   sel.innerHTML = '';
   const groups: Record<string, Array<{ id: string; label: string }>> = {};
   for (const [id, k] of deps.automationRegistry) {
     const prefix = id.split('.')[0];
+    if (filterPrefix && prefix !== filterPrefix) continue;
     (groups[prefix] = groups[prefix] || []).push({ id, label: k.meta.label ?? id });
   }
   const groupOrder = ['tb303', 'poly', 'fx', 'mix', 'main', ...deps.extraIds];

@@ -53,9 +53,10 @@
       }
       body[data-pure-session="true"] .synth > .row.transport { order: 0; }
       body[data-pure-session="true"] .synth > .tab-bar      { order: 1; }
-      body[data-pure-session="true"] .synth > .session-view { order: 2; }
-      body[data-pure-session="true"] .synth > .page         { order: 3; }
-      body[data-pure-session="true"] .synth > .arp-panel    { order: 4; }
+      body[data-pure-session="true"] .synth > .synth-row    { order: 2; }
+      body[data-pure-session="true"] .synth > .session-view { order: 3; }
+      body[data-pure-session="true"] .synth > .page         { order: 4; }
+      body[data-pure-session="true"] .synth > .arp-panel    { order: 5; }
     </style>
   </head>
   <body data-pure-session="true">
@@ -161,10 +162,10 @@
       </details>
 
       <div class="tab-bar">
-        <span id="synth-tabs"></span>
         <button class="tab" data-tab="fx">Master FX</button>
         <button class="tab" data-tab="auto">Automation</button>
       </div>
+      <div class="synth-row" id="synth-tabs"></div>
 
       <div class="page" data-page="303" hidden>
         <div class="row knobs">
@@ -324,7 +325,7 @@
         <div id="session-inspector" class="session-inspector" hidden>
           <div class="session-inspector-row">
             <label>Name <input id="insp-name" type="text" /></label>
-            <label>Length (bars) <input id="insp-length" type="number" min="1" max="32" /></label>
+            <label>Length (bars) <input id="insp-length" type="number" min="1" step="1" /></label>
             <label>Quantize
               <select id="insp-quantize">
                 <option value="">Default (lane/global)</option>

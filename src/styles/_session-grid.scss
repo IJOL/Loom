@@ -140,3 +140,20 @@
   cursor: pointer;
 }
 .session-tabs-add-btn:hover { background: #80e6f4; }
+
+/* Second-row 'synths in this session' navigator. */
+.synth-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 8px 0;
+  padding: 4px 8px;
+  background: #161616;
+  border-radius: 4px;
+}
+.synth-row .session-lane-tab.active {
+  background: #4dd0e1;
+  color: #0a0a0a;
+  border-color: #4dd0e1;
+}

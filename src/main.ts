@@ -620,6 +620,7 @@ const sessionHost = new SessionHost({
   midiLabel,
   automationRegistry,
   getAutoAbsSubIdx,
+  onActiveLaneChanged: () => populateAutoParamSelectWrapper(),
 });
 sessionHost.init();
 
@@ -674,7 +675,26 @@ const automationDeps: AutomationUIDeps = {
 // Wire stable wrappers now that deps are built.
 _automationDeps = automationDeps;
 renderLanes = () => renderLanesFromUI(automationDeps);
-populateAutoParamSelectWrapper = () => populateAutoParamSelect(automationDeps);
+populateAutoParamSelectWrapper = () => {
+  const prefix = activeEnginePrefix();
+  populateAutoParamSelect(automationDeps, prefix);
+};
+
+function activeEnginePrefix(): string | null {
+  // Only filter in Session mode.
+  if (appMode !== 'session') return null;
+  const laneId = sessionHost.activeEditLane;
+  if (!laneId) return null;
+  const lane = sessionHost.state.lanes.find((l) => l.id === laneId);
+  if (!lane) return null;
+  // Param IDs are prefixed by engine/lane: 'tb303.cutoff', 'main.cutoff',
+  // 'poly1.cutoff'... 'fx.reverb' and 'mix.bass' are master-level and never
+  // filtered out — but we restrict to the engine's prefix where it's clear.
+  if (lane.engineId === 'tb303') return 'tb303';
+  if (lane.engineId === 'drums-machine') return null;  // Drums has no per-param automation yet — show all
+  // Poly engines: param prefix is the lane id itself ('main', 'poly1', etc.)
+  return laneId;
+}
 
 // Engine selector UI (must come after populateAutoParamSelectWrapper is set)
 const engineSelectorDeps: EngineSelectorUIDeps = {
@@ -811,6 +831,8 @@ function applyModeVisibility() {
   const inClassic   = appMode === 'classic';
 
   if (tabBar)      tabBar.hidden      = false;
+  const synthRow = document.querySelector<HTMLElement>('.synth-row');
+  if (synthRow) synthRow.hidden = inClassic;  // only show in Session mode
   // In Classic mode, the active synth tab's page shows. In Session mode the
   // synth pages stay hidden until the user clicks a lane tab (onEditLane in
   // session-host then unhides the matching page).
