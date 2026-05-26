@@ -16,8 +16,8 @@
 }
 .knob-label {
   font-size: 9px;
-  color: #f7d000;
-  letter-spacing: 1px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   margin-bottom: 2px;
 }
@@ -28,38 +28,38 @@
 }
 .knob-track {
   fill: none;
-  stroke: #2a2a2a;
+  stroke: var(--border);
   stroke-width: 3;
   stroke-linecap: round;
 }
 .knob-value {
   fill: none;
-  stroke: #f7d000;
+  stroke: var(--amber);
   stroke-width: 3;
   stroke-linecap: round;
   transition: filter 0.1s;
 }
 .knob-body {
-  fill: #2a2a2a;
-  stroke: #555;
+  fill: var(--surface-2);
+  stroke: var(--border);
   stroke-width: 1;
 }
 .knob-pointer {
-  stroke: #f7d000;
+  stroke: var(--amber);
   stroke-width: 2;
   stroke-linecap: round;
 }
 .knob.dragging .knob-value { filter: drop-shadow(0 0 4px currentColor); }
-.knob.dragging .knob-body  { fill: #333; }
+.knob.dragging .knob-body  { fill: var(--surface-3); }
 
 .knob-value-text {
   font-size: 9px;
-  color: #888;
+  color: var(--text-dim);
   min-width: 30px;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
-.knob.dragging .knob-value-text { color: #f7d000; }
+.knob.dragging .knob-value-text { color: var(--amber); }
 
 /* On the dark mixer rows the knob labels should stay legible */
 .mix-cell .knob-label,

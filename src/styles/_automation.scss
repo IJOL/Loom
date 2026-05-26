@@ -5,12 +5,14 @@
   flex-direction: column;
   gap: 8px;
   padding: 10px;
-  background: #1a1a1a;
-  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
 }
 .auto-lane {
-  background: #222;
-  border-radius: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
   padding: 8px;
   display: flex;
   flex-direction: column;
@@ -21,40 +23,50 @@
   align-items: center;
   gap: 10px;
   font-size: 11px;
-  color: #f7d000;
+  color: var(--text);
 }
 .auto-lane-header .label {
-  font-weight: bold;
-  letter-spacing: 1px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--amber);
   flex: 0 0 220px;
 }
 .auto-lane-header .enable {
-  background: #1a1a1a;
-  color: #555;
-  border: 1px solid #444;
-  font-family: inherit;
+  background: var(--surface);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  font-family: var(--mono);
   padding: 3px 8px;
   font-size: 10px;
-  border-radius: 3px;
+  border-radius: 2px;
   cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
-.auto-lane-header .enable.active { background: #2ecc71; color: white; border-color: #2ecc71; }
+.auto-lane-header .enable.active {
+  background: var(--amber);
+  color: var(--bg);
+  border-color: var(--amber);
+}
 .auto-lane-header .remove {
   margin-left: auto;
-  background: #c0392b;
-  color: white;
-  border: none;
+  background: transparent;
+  color: var(--red);
+  border: 1px solid var(--red);
   width: 24px;
   height: 24px;
-  border-radius: 3px;
+  border-radius: 2px;
   cursor: pointer;
-  font-family: inherit;
+  font-family: var(--mono);
 }
+.auto-lane-header .remove:hover { background: var(--red); color: var(--bg); }
 .auto-lane canvas {
   width: 100%;
   height: 80px;
-  background: #0a0a0a;
-  border-radius: 3px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 2px;
   cursor: crosshair;
   touch-action: none;
   display: block;

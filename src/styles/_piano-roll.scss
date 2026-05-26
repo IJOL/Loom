@@ -9,30 +9,33 @@
 .piano-roll-scroll {
   overflow-x: auto;
   overflow-y: hidden;
-  background: #0a0a0a;
-  border-radius: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 2px;
   min-width: 0;
 }
 .piano-roll-canvas {
-  background: #0a0a0a;
+  background: var(--bg);
   touch-action: none;
   display: block;
   image-rendering: crisp-edges;
 }
 
 .midi-panel {
-  background: #1a1a1a;
-  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
   padding: 8px 12px;
-  margin-top: 10px;
-  color: #f7d000;
+  margin-top: 8px;
+  color: var(--text);
 }
 .midi-panel summary {
   cursor: pointer;
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.1em;
   padding: 4px 0;
+  color: var(--text-dim);
 }
 .midi-import-row {
   display: flex;
@@ -41,26 +44,27 @@
   padding: 6px 0;
 }
 .midi-import-row input[type=file] {
-  color: #f7d000;
+  color: var(--text);
   font-size: 11px;
 }
 
 .active-edit-label {
-  background: #f7d000;
-  color: #1a1a1a;
+  background: var(--amber);
+  color: var(--bg);
   padding: 4px 10px;
-  font-weight: bold;
-  border-radius: 3px;
-  letter-spacing: 1px;
+  font-weight: 700;
+  border-radius: 2px;
+  letter-spacing: 0.1em;
   font-size: 11px;
+  text-transform: uppercase;
 }
 .track-label.active-edit {
-  background: #f7d000 !important;
-  color: #1a1a1a !important;
-  box-shadow: 0 0 8px rgba(247,208,0,0.5);
+  background: var(--amber) !important;
+  color: var(--bg) !important;
+  box-shadow: 0 0 8px var(--amber-soft);
 }
 .track-label.triggered {
-  box-shadow: 0 0 14px rgba(46, 224, 192, 0.85), inset 0 0 10px rgba(46, 224, 192, 0.5);
+  box-shadow: 0 0 12px var(--red-soft), inset 0 0 8px var(--red-soft);
   transition: box-shadow 0.05s;
 }
 
@@ -69,10 +73,11 @@
   flex-direction: column;
   gap: 2px;
   padding: 8px 10px;
-  background: #1a1a1a;
-  border-radius: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
   font-size: 11px;
-  color: #f7d000;
+  color: var(--text);
   max-height: 220px;
   overflow-y: auto;
 }
@@ -83,4 +88,4 @@
   padding: 2px 0;
   cursor: pointer;
 }
-.midi-track-row:hover { background: #2a2a2a; }
+.midi-track-row:hover { background: var(--surface-2); }

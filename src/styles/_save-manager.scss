@@ -1,24 +1,55 @@
 /* ── Save manager modal ───────────────────────────────────────────────── */
 
 .save-manager-modal { position: fixed; inset: 0; z-index: 2000; }
-.save-manager-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.6); }
+.save-manager-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.7); }
 .save-manager-dialog {
   position: relative; max-width: 720px; margin: 60px auto;
-  background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 16px;
-  color: #ddd;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 16px;
+  color: var(--text);
+  font-family: var(--mono);
 }
 .save-manager-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.save-manager-header h2 { margin: 0; font-size: 14px; letter-spacing: 1px; }
-.save-manager-close { background: transparent; color: #888; border: none; font-size: 20px; cursor: pointer; }
-.save-manager-list { max-height: 50vh; overflow: auto; border: 1px solid #2a2a2a; border-radius: 4px; }
+.save-manager-header h2 {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.save-manager-close {
+  background: transparent;
+  color: var(--text-dim);
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+.save-manager-close:hover { color: var(--amber); }
+.save-manager-list {
+  max-height: 50vh;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
 .save-manager-row {
   display: grid; grid-template-columns: 1fr 110px 60px 24px 24px 24px 24px;
-  gap: 6px; align-items: center; padding: 6px 8px; border-bottom: 1px solid #222;
+  gap: 6px; align-items: center; padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
   font-size: 11px;
 }
 .save-manager-row:last-child { border-bottom: none; }
-.save-manager-row.autosave { background: #0e1e22; }
-.save-manager-row button { background: transparent; color: #888; border: 1px solid #333; border-radius: 3px; cursor: pointer; font-size: 10px; padding: 2px 4px; }
-.save-manager-row button:hover { color: #4dd0e1; border-color: #4dd0e1; }
+.save-manager-row.autosave { background: var(--surface-2); }
+.save-manager-row button {
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 10px;
+  padding: 2px 4px;
+}
+.save-manager-row button:hover { color: var(--amber); border-color: var(--amber); }
 .save-manager-footer { display: flex; gap: 8px; margin-top: 12px; align-items: center; }
-.save-manager-size { margin-left: auto; color: #888; font-size: 11px; }
+.save-manager-size { margin-left: auto; color: var(--text-dim); font-size: 11px; }

@@ -2,14 +2,15 @@
 
 .row {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   flex-wrap: wrap;
   align-items: center;
-  padding: 12px;
-  background: #1a1a1a;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  color: #f7d000;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  margin-bottom: 8px;
+  color: var(--text);
 }
 
 .row label {
@@ -17,8 +18,9 @@
   flex-direction: column;
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.1em;
   gap: 5px;
+  color: var(--text-dim);
 }
 .row label.inline {
   flex-direction: row;
@@ -29,31 +31,11 @@
 .vert-divider {
   width: 1px;
   height: 30px;
-  background: #444;
+  background: var(--border);
   margin: 0 2px;
 }
 
-#play {
-  background: #c0392b;
-  color: white;
-  border: none;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  font-size: 20px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-#play:hover { background: #e74c3c; }
-
-input[type=range] { width: 110px; accent-color: #f7d000; }
-input[type=number], select {
-  background: #2a2a2a;
-  color: #f7d000;
-  border: 1px solid #444;
-  padding: 4px 8px;
-  font-family: inherit;
-  border-radius: 4px;
+input[type=range] {
+  width: 110px;
+  accent-color: var(--amber);
 }

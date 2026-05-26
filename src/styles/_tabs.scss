@@ -2,38 +2,40 @@
 
 .tab-bar {
   display: flex;
-  gap: 2px;
-  margin: 14px 0 0 0;
-  border-bottom: 2px solid #1a1a1a;
-  padding: 0 6px;
+  gap: 4px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 6px;
+  margin-bottom: 8px;
 }
 .tab {
-  background: #2a2a2a;
-  color: #888;
-  border: none;
-  border-radius: 8px 8px 0 0;
-  padding: 8px 18px;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: bold;
-  cursor: pointer;
-  letter-spacing: 1px;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid transparent;
+  border-radius: 2px;
+  padding: 6px 14px;
+  font-size: 11px;
+  font-family: var(--mono);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
 }
-.tab:hover { color: #f7d000; }
+.tab:hover { color: var(--amber); }
 .tab.active {
-  background: #1a1a1a;
-  color: #f7d000;
-  position: relative;
-  top: 1px;
+  color: var(--bg);
+  background: var(--amber);
+  border-color: var(--amber);
 }
 
 .page[hidden] { display: none !important; }
 
-.synth-tab { color: #4dd0e1; }
-.synth-tab.active { background: #0e1e22; color: #4dd0e1; border-bottom: 2px solid #4dd0e1; }
-.synth-tab-add { color: #888; font-size: 11px; }
-.synth-tab-add:hover { color: #4dd0e1; }
+.synth-tab { color: var(--amber); }
+.synth-tab.active { background: var(--surface-2); color: var(--amber); border-bottom: 2px solid var(--amber); }
+.synth-tab-add { color: var(--text-dim); font-size: 11px; }
+.synth-tab-add:hover { color: var(--amber); }
 
 .poly-section {
   display: flex;
@@ -43,24 +45,24 @@
 }
 .section-label {
   font-size: 11px;
-  letter-spacing: 2px;
-  color: #888;
-  font-weight: bold;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  font-weight: 700;
   text-transform: uppercase;
   padding: 4px 8px;
-  border-right: 1px solid #333;
+  border-right: 1px solid var(--border);
   align-self: stretch;
   display: flex;
   align-items: center;
 }
 
 .poly-wave-sel {
-  background: #2a2a2a;
-  color: #f7d000;
-  border: 1px solid #555;
+  background: var(--surface-2);
+  color: var(--amber);
+  border: 1px solid var(--border);
   padding: 4px 8px;
-  font-family: inherit;
+  font-family: var(--mono);
   font-size: 11px;
-  border-radius: 4px;
+  border-radius: 2px;
   min-width: 50px;
 }

@@ -1,28 +1,120 @@
 * { box-sizing: border-box; }
 
 body {
-  background: #1a1a1a;
-  color: #f7d000;
-  font-family: ui-monospace, "SF Mono", Consolas, monospace;
   margin: 0;
-  padding: 20px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.4;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
 
 .synth {
+  padding: 16px 20px;
   max-width: 1400px;
   margin: 0 auto;
-  background: linear-gradient(180deg, #c8c4b5, #b3ad9a);
-  color: #1a1a1a;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
 }
 
 h1 {
-  margin: 0 0 16px;
-  font-size: 26px;
-  letter-spacing: 8px;
-  color: #c0392b;
-  text-shadow: 1px 1px 0 #fff;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--amber);
+  text-shadow: 0 0 8px var(--amber-glow);
+  margin: 4px 0 16px;
 }
+
+.row.transport {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+}
+
+label {
+  font-size: 11px;
+  color: var(--text-dim);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+input[type="number"],
+input[type="text"],
+input[type="range"],
+select {
+  font-family: var(--mono);
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 4px 6px;
+  font-size: 11px;
+  outline: none;
+}
+input[type="number"]:focus,
+input[type="text"]:focus,
+select:focus { border-color: var(--amber); }
+
+/* Transport numeric inputs (BPM) — bigger, amber LCD style */
+input[type="number"]#bpm {
+  width: 60px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--amber);
+  text-shadow: 0 0 6px var(--amber-soft);
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
+button,
+.rnd {
+  font-family: var(--mono);
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 5px 12px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+}
+button:hover,
+.rnd:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+button:disabled,
+.rnd:disabled { opacity: 0.4; cursor: not-allowed; }
+
+button.primary,
+.rnd.primary {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+button.primary:hover,
+.rnd.primary:hover {
+  background: var(--amber);
+  color: var(--bg);
+}
+
+/* Play button is special — round-ish, prominent */
+#play {
+  width: 38px; height: 38px;
+  border-radius: 2px;
+  font-size: 16px;
+  color: var(--amber);
+  border-color: var(--amber);
+  background: var(--surface);
+}
+#play:hover { background: var(--amber); color: var(--bg); }
+
+.vert-divider { width: 1px; align-self: stretch; background: var(--border); margin: 0 4px; min-height: 24px; }
+.tool-label { font-size: 10px; color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; }

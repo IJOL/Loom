@@ -6,23 +6,27 @@
   gap: 4px;
 }
 .slot {
-  background: #2a2a2a;
-  color: #888;
-  border: 1px solid #444;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
   width: 28px;
   height: 28px;
-  font-family: inherit;
+  font-family: var(--mono);
   font-size: 12px;
-  font-weight: bold;
+  font-weight: 700;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 2px;
 }
-.slot:hover { background: #3a3a3a; color: #f7d000; }
-.slot.active { background: #c0392b; color: #fff; border-color: #c0392b; }
+.slot:hover { color: var(--amber); border-color: var(--amber); }
+.slot.active {
+  background: var(--amber);
+  color: var(--bg);
+  border-color: var(--amber);
+}
 .slot.pending {
-  background: #f7d000;
-  color: #1a1a1a;
-  border-color: #f7d000;
+  background: transparent;
+  color: var(--amber);
+  border-color: var(--amber);
   animation: slot-pulse 0.45s ease-in-out infinite alternate;
 }
 @keyframes slot-pulse {

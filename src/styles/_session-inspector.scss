@@ -2,16 +2,16 @@
 
 .session-inspector {
   margin-top: 10px;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 6px;
-  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 10px;
 }
 .session-inspector-row {
   display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
 }
 .session-inspector-row label {
-  font-size: 11px; color: #888;
+  font-size: 11px; color: var(--text-dim);
   display: flex; align-items: center; gap: 4px;
 }
 .session-inspector-row input[type="text"] { width: 160px; }
@@ -19,8 +19,9 @@
 .session-inspector-roll { margin-top: 8px; }
 
 .session-mix-col {
-  background: #141414;
-  border-radius: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
   padding: 4px;
   display: flex;
   flex-direction: column;
@@ -31,16 +32,20 @@
 
 /* ── Playhead cursor inside step-grid clip editors ─────────────────────── */
 #insp-roll-host .cells > .step-playhead {
-  outline: 2px solid #4dd0e1;
+  outline: 2px solid var(--amber);
   outline-offset: -2px;
-  box-shadow: 0 0 6px rgba(77, 208, 225, 0.7);
+  box-shadow: 0 0 6px var(--amber-soft);
   position: relative;
   z-index: 1;
 }
 
 /* Per-clip automation lanes (Session inspector). */
 .insp-editor-box { margin-bottom: 12px; }
-.insp-auto-box { margin-top: 12px; border-top: 1px solid #2a2a2a; padding-top: 8px; }
+.insp-auto-box {
+  margin-top: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
 .clip-auto-lanes {
   display: flex;
   flex-direction: column;
@@ -50,33 +55,46 @@
   display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
 }
 .clip-auto-param-select {
-  background: #1a1a1a; color: #ddd; border: 1px solid #333;
-  border-radius: 3px; padding: 4px 6px; font-size: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 4px 6px;
+  font-size: 12px;
 }
 .clip-auto-brush-bar { display: flex; gap: 4px; }
-.clip-auto-hint { color: #666; font-size: 12px; margin: 4px 0 0; }
-.clip-auto-range { font-size: 10px; color: #888; }
+.clip-auto-hint { color: var(--text-faint); font-size: 12px; margin: 4px 0 0; }
+.clip-auto-range { font-size: 10px; color: var(--text-dim); }
 .clip-auto-lane .auto-lane-canvas {
-  display: block; background: #141414; border-radius: 4px;
+  display: block;
+  background: var(--surface-2);
+  border-radius: 2px;
 }
 .clip-auto-lane .auto-lane-header {
-  display: flex; gap: 6px; align-items: center; font-size: 11px; color: #aaa;
+  display: flex; gap: 6px; align-items: center; font-size: 11px; color: var(--text-dim);
   margin-bottom: 4px;
 }
 .clip-auto-lane .auto-lane-header .label { flex: 1; }
 .clip-auto-lane .auto-lane-header button {
-  background: #222; color: #aaa; border: 1px solid #333;
-  border-radius: 3px; padding: 2px 6px; font-size: 11px; cursor: pointer;
+  background: var(--surface-3);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 2px 6px;
+  font-size: 11px;
+  cursor: pointer;
 }
 .clip-auto-lane .auto-lane-header button.active {
-  background: #4dd0e1; color: #0a0a0a; border-color: #4dd0e1;
+  background: var(--amber);
+  color: var(--bg);
+  border-color: var(--amber);
 }
 
 /* Roll badge on drum-grid cells: shows "×2"/"×3"/"×4" centred. */
 .dcell.roll {
   font-size: 9px;
-  font-weight: bold;
-  color: #0a0a0a;
+  font-weight: 700;
+  color: var(--bg);
   display: flex;
   align-items: center;
   justify-content: center;

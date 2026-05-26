@@ -1,28 +1,29 @@
 /* ── Save/Load + visualizer ───────────────────────────────────────────── */
 
 .io {
-  background: #2a2a2a;
-  color: #f7d000;
-  border: 1px solid #555;
-  padding: 6px 12px;
-  font-family: inherit;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  font-family: var(--mono);
   font-size: 11px;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 2px;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
-.io:hover { background: #3a3a3a; }
-.io:disabled { color: #2ecc71; border-color: #2ecc71; }
+.io:hover { color: var(--amber); border-color: var(--amber); }
+.io:disabled { color: var(--text-faint); border-color: var(--border); }
 
 #rec.armed {
-  background: #c0392b;
-  color: white;
-  border-color: #c0392b;
+  background: var(--red);
+  color: var(--bg);
+  border-color: var(--red);
   animation: rec-pulse 0.8s ease-in-out infinite alternate;
 }
 @keyframes rec-pulse {
-  from { box-shadow: 0 0 0 rgba(255,0,0,0); }
-  to   { box-shadow: 0 0 12px rgba(255,0,0,0.7); }
+  from { box-shadow: 0 0 0 rgba(229, 57, 53, 0); }
+  to   { box-shadow: 0 0 12px var(--red-soft); }
 }
 
 .copy-row {
@@ -35,15 +36,15 @@
   gap: 4px;
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.1em;
 }
 .copy-row select {
   width: 50px;
 }
 
 #viz {
-  background: #0a0a0a;
-  border: 1px solid #333;
-  border-radius: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 2px;
   margin-left: auto;
 }

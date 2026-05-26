@@ -5,50 +5,54 @@
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  border-left: 2px solid #333;
+  border-left: 1px solid var(--border);
 }
 .tool-group:first-child { border-left: none; padding-left: 0; }
 .tool-label {
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  color: #888;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
   margin-right: 2px;
 }
 
 .rnd, .clr {
-  background: #2a2a2a;
-  color: #f7d000;
-  border: 1px solid #555;
-  padding: 6px 10px;
-  font-family: inherit;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  font-family: var(--mono);
   font-size: 11px;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 2px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.08em;
 }
-.rnd:hover, .clr:hover { background: #3a3a3a; }
-.rnd.primary { background: #c0392b; color: white; border-color: #c0392b; }
-.rnd.primary:hover { background: #e74c3c; }
-.clr { color: #888; border-color: #444; }
-.clr:hover { color: #f7d000; }
+.rnd:hover, .clr:hover { color: var(--amber); border-color: var(--amber); }
+.rnd.primary {
+  background: var(--surface-2);
+  color: var(--amber);
+  border-color: var(--amber);
+}
+.rnd.primary:hover { background: var(--amber); color: var(--bg); }
+.clr { color: var(--text-dim); border-color: var(--border); }
+.clr:hover { color: var(--amber); }
 
 .page-btn {
-  background: #2a2a2a;
-  color: #f7d000;
-  border: 1px solid #555;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
   width: 28px;
   height: 28px;
-  font-family: inherit;
+  font-family: var(--mono);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 2px;
 }
-.page-btn:hover { background: #3a3a3a; }
-.page-btn:disabled { color: #444; cursor: not-allowed; }
+.page-btn:hover { color: var(--amber); border-color: var(--amber); }
+.page-btn:disabled { color: var(--text-faint); cursor: not-allowed; }
 #page-label {
   font-size: 11px;
-  color: #f7d000;
+  color: var(--amber);
   min-width: 40px;
   text-align: center;
 }

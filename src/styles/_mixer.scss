@@ -1,18 +1,20 @@
 /* ── Mixer ────────────────────────────────────────────────────────────── */
 
 .mixer-panel {
-  background: #1a1a1a;
-  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
   padding: 8px 12px;
-  margin-top: 10px;
-  color: #f7d000;
+  margin-top: 8px;
+  color: var(--text);
 }
 .mixer-panel summary {
   cursor: pointer;
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.1em;
   padding: 4px 0;
+  color: var(--text-dim);
 }
 
 .mixer {
@@ -35,9 +37,9 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  background: linear-gradient(180deg, #2a2a2a, #1f1f1f);
-  border: 1px solid #333;
-  border-radius: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
   padding: 6px 4px;
   min-width: 66px;
   max-width: 66px;
@@ -45,29 +47,29 @@
 }
 .mix-col .mix-name {
   font-size: 9px;
-  letter-spacing: 0.5px;
-  color: #f7d000;
-  font-weight: bold;
+  letter-spacing: 0.05em;
+  color: var(--amber);
+  font-weight: 700;
   text-align: center;
   height: 22px;
   display: flex; align-items: center; justify-content: center;
   width: 100%;
-  background: #0a0a0a;
-  border-radius: 3px;
+  background: var(--bg);
+  border-radius: 2px;
 }
 .mix-section {
   display: flex;
   flex-direction: column;
   gap: 4px;
   align-items: center;
-  border-top: 1px solid #333;
+  border-top: 1px solid var(--border);
   padding-top: 4px;
   width: 100%;
 }
 .mix-sec-label {
   font-size: 8px;
-  letter-spacing: 1px;
-  color: #777;
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
 }
 .mix-ms { display: flex; gap: 4px; padding-top: 4px; }
 
@@ -79,8 +81,8 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  background: #0a0a0a;
-  border-radius: 4px;
+  background: var(--bg);
+  border-radius: 2px;
   padding: 6px 0;
 }
 .mix-fader {
@@ -90,12 +92,12 @@
   direction: rtl;
   width: 24px;
   height: 110px;
-  accent-color: #f7d000;
+  accent-color: var(--amber);
   cursor: ns-resize;
 }
 .mix-fader-val {
   font-size: 9px;
-  color: #f7d000;
+  color: var(--amber);
   font-variant-numeric: tabular-nums;
 }
 
@@ -109,19 +111,19 @@
 }
 .mix-row.mix-header {
   font-size: 9px;
-  color: #666;
+  color: var(--text-faint);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.1em;
 }
 .mix-row.mix-track:nth-child(odd) {
-  background: #222;
-  border-radius: 3px;
+  background: var(--surface-2);
+  border-radius: 2px;
 }
 .mix-name {
   font-size: 11px;
-  font-weight: bold;
-  letter-spacing: 1px;
-  color: #f7d000;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--amber);
 }
 .mix-cell {
   display: flex;
@@ -133,18 +135,18 @@
   margin: 0;
 }
 .mix-btn {
-  background: #1a1a1a;
-  color: #555;
-  border: 1px solid #444;
+  background: var(--surface);
+  color: var(--text-faint);
+  border: 1px solid var(--border);
   width: 22px;
   height: 22px;
-  font-family: inherit;
+  font-family: var(--mono);
   font-size: 10px;
-  font-weight: bold;
+  font-weight: 700;
   cursor: pointer;
-  border-radius: 3px;
+  border-radius: 2px;
 }
-.mix-btn.mute.active { background: #c0392b; color: #fff; border-color: #c0392b; }
-.mix-btn.solo.active { background: #f7d000; color: #1a1a1a; border-color: #f7d000; }
+.mix-btn.mute.active { background: var(--red);   color: var(--bg); border-color: var(--red); }
+.mix-btn.solo.active { background: var(--amber); color: var(--bg); border-color: var(--amber); }
 
-.mix-track.bass .mix-name { color: #f78000; }
+.mix-track.bass .mix-name { color: var(--amber); }

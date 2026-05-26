@@ -2,31 +2,32 @@
 
 .mode-toggle {
   display: inline-flex;
-  border: 1px solid #333;
-  border-radius: 4px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
   overflow: hidden;
 }
 .mode-btn {
-  background: #1a1a1a;
-  color: #888;
+  background: var(--surface);
+  color: var(--text-dim);
   border: none;
   padding: 4px 12px;
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.08em;
   cursor: pointer;
 }
-.mode-btn:hover { color: #f7d000; }
+.mode-btn:hover { color: var(--amber); }
 .mode-btn.active {
-  background: #4dd0e1;
-  color: #0a0a0a;
+  background: var(--amber);
+  color: var(--bg);
 }
 
 .session-view { padding: 8px; }
 .session-toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
 .session-grid {
-  background: #0a0a0a;
-  border-radius: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 2px;
   padding: 6px;
   overflow: auto;
 }
@@ -37,66 +38,103 @@
   gap: 2px;
   align-items: center;
 }
-.session-row-header, .session-row-stop { background: #161616; }
-.session-row-label { text-align: center; font-size: 10px; color: #555; }
+.session-row-header, .session-row-stop { background: var(--surface); }
+.session-row-label { text-align: center; font-size: 10px; color: var(--text-faint); }
 .session-spacer { min-height: 24px; }
 .session-lane-header {
   display: flex; align-items: center; gap: 4px;
-  background: #1a1a1a; padding: 4px 6px; border-radius: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--amber);
+  padding: 4px 6px;
+  border-radius: 2px;
 }
-.session-lane-header.lane-kind-bass  { border-left: 3px solid #c0392b; }
-.session-lane-header.lane-kind-poly  { border-left: 3px solid #4dd0e1; }
-.session-lane-header.lane-kind-drum-bus { border-left: 3px solid #9b59b6; }
-.session-lane-name { flex: 1; font-size: 11px; letter-spacing: 1px; color: #ddd; }
+.session-lane-name {
+  flex: 1;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--text);
+}
 .session-lane-expand, .session-lane-edit {
-  background: transparent; border: 1px solid #333; color: #888;
-  font-size: 11px; padding: 2px 6px; cursor: pointer; border-radius: 3px;
+  background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+  font-size: 11px; padding: 2px 6px; cursor: pointer; border-radius: 2px;
 }
-.session-lane-expand:hover, .session-lane-edit:hover { color: #4dd0e1; border-color: #4dd0e1; }
+.session-lane-expand:hover, .session-lane-edit:hover { color: var(--amber); border-color: var(--amber); }
 .session-cell {
-  height: 30px; border-radius: 3px;
+  height: 30px; border-radius: 2px;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 6px; cursor: pointer; font-size: 11px; color: #ddd; user-select: none;
+  padding: 0 6px; cursor: pointer; font-size: 11px; color: var(--text); user-select: none;
 }
-.session-cell-empty { background: #141414; border: 1px dashed #2a2a2a; }
-.session-cell-empty:hover { border-color: #4dd0e1; }
-.session-cell-filled { background: #2a2a2a; }
-.session-cell-filled:hover { filter: brightness(1.2); }
-.session-cell-playing { outline: 2px solid #42d27a; outline-offset: -2px; }
+.session-cell-empty {
+  background: var(--surface);
+  border: 1px dashed var(--border-soft);
+}
+.session-cell-empty:hover { border-style: solid; border-color: var(--amber); }
+.session-cell-filled {
+  background: var(--surface-3);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.session-cell-filled:hover { background: var(--surface-2); border-color: var(--amber); }
+.session-cell-playing {
+  outline: 2px solid var(--red);
+  outline-offset: -2px;
+  box-shadow: 0 0 8px var(--red-soft);
+}
 .session-cell-queued { animation: queued-pulse 0.6s infinite alternate; }
 @keyframes queued-pulse {
-  from { outline: 2px solid #f7d000; outline-offset: -2px; }
-  to   { outline: 2px solid #c9a800; outline-offset: -2px; }
+  from { outline: 2px solid var(--amber); outline-offset: -2px; }
+  to   { outline: 2px solid #b07418; outline-offset: -2px; }
 }
 .session-cell-label { flex: 1; }
 .session-cell-play  { opacity: 0.6; }
-.session-scenes-header { text-align: center; font-size: 11px; color: #888; letter-spacing: 1px; }
+.session-scenes-header {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+}
 .session-scene-cell { display: flex; }
 .session-scene-launch {
-  flex: 1; background: #1a1a1a; color: #ddd; border: 1px solid #333; border-radius: 3px;
-  font-size: 11px; padding: 4px 6px; cursor: pointer;
+  flex: 1;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  font-size: 11px;
+  padding: 4px 6px;
+  cursor: pointer;
 }
-.session-scene-launch:hover { background: #4dd0e1; color: #0a0a0a; }
+.session-scene-launch:hover { background: var(--amber); color: var(--bg); border-color: var(--amber); }
 .session-lane-stop, .session-stop-all {
-  background: #1a1a1a; color: #c0392b; border: 1px solid #c0392b; border-radius: 3px;
-  font-size: 11px; padding: 4px 6px; cursor: pointer;
+  background: transparent;
+  color: var(--red);
+  border: 1px solid var(--red);
+  border-radius: 2px;
+  font-size: 11px;
+  padding: 4px 6px;
+  cursor: pointer;
 }
-.session-lane-stop:hover, .session-stop-all:hover { background: #c0392b; color: #0a0a0a; }
+.session-lane-stop:hover, .session-stop-all:hover { background: var(--red); color: var(--bg); }
 .session-add-scene {
-  background: transparent; color: #555; border: 1px dashed #333; cursor: pointer; border-radius: 3px;
+  background: transparent;
+  color: var(--text-faint);
+  border: 1px dashed var(--border);
+  cursor: pointer;
+  border-radius: 2px;
 }
-.session-add-scene:hover { color: #4dd0e1; border-color: #4dd0e1; }
+.session-add-scene:hover { color: var(--amber); border-color: var(--amber); }
 
 .session-add-engine-select {
-  background: #1a1a1a;
-  color: #ddd;
-  border: 1px solid #333;
-  border-radius: 3px;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 2px;
   padding: 4px 6px;
   font-size: 12px;
   cursor: pointer;
 }
-.session-add-engine-select:hover { border-color: #4dd0e1; }
+.session-add-engine-select:hover { border-color: var(--amber); }
 
 /* Session lane tabs (dynamic, populated by renderSessionTabBar). */
 #synth-tabs.session-tabs {
@@ -106,15 +144,22 @@
   flex-wrap: wrap;
 }
 .session-lane-tab {
-  background: #1a1a1a;
-  color: #ddd;
-  border: 1px solid #333;
-  border-radius: 3px;
-  padding: 4px 10px;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 5px 12px;
   font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   cursor: pointer;
 }
-.session-lane-tab:hover { color: #4dd0e1; border-color: #4dd0e1; }
+.session-lane-tab:hover { color: var(--amber); border-color: var(--amber); }
+.session-lane-tab.active {
+  background: var(--amber);
+  color: var(--bg);
+  border-color: var(--amber);
+}
 .session-tabs-add {
   display: inline-flex;
   gap: 4px;
@@ -122,24 +167,24 @@
   margin-left: 8px;
 }
 .session-tabs-engine {
-  background: #1a1a1a;
-  color: #ddd;
-  border: 1px solid #333;
-  border-radius: 3px;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 2px;
   padding: 3px 4px;
   font-size: 11px;
 }
 .session-tabs-add-btn {
-  background: #4dd0e1;
-  color: #0a0a0a;
-  border: none;
-  border-radius: 3px;
+  background: var(--amber);
+  color: var(--bg);
+  border: 1px solid var(--amber);
+  border-radius: 2px;
   padding: 4px 10px;
   font-size: 12px;
-  font-weight: bold;
+  font-weight: 700;
   cursor: pointer;
 }
-.session-tabs-add-btn:hover { background: #80e6f4; }
+.session-tabs-add-btn:hover { background: #ffb74d; }
 
 /* Second-row 'synths in this session' navigator. */
 .synth-row {
@@ -149,11 +194,12 @@
   gap: 4px;
   margin: 0 0 8px 0;
   padding: 4px 8px;
-  background: #161616;
-  border-radius: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
 }
 .synth-row .session-lane-tab.active {
-  background: #4dd0e1;
-  color: #0a0a0a;
-  border-color: #4dd0e1;
+  background: var(--amber);
+  color: var(--bg);
+  border-color: var(--amber);
 }
