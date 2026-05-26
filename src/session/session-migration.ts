@@ -9,18 +9,21 @@ import {
 } from './session';
 import { DRUM_LANES, type DrumVoice } from '../core/drums';
 import type { DrumStep } from '../core/sequencer';
+import { bassStepsToNotes, stepsToNotes } from '../core/notes';
 
 function nextId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function clipFromBass(pat: PatternData): SessionClip {
+  // Session is piano-roll-only: convert Classic step data to notes on import.
+  const fromSteps = pat.bassMode !== 'piano' ? bassStepsToNotes(pat.bass) : [];
+  const fromNotes = (pat.bassNotes ?? []).map((n) => ({ ...n }));
   return {
     id: nextId('clip'),
     lengthBars: Math.max(1, Math.floor(pat.length / 16)),
-    bassSteps: pat.bass.map((s) => ({ ...s })),
-    bassNotes: (pat.bassNotes ?? []).map((n) => ({ ...n })),
-    bassMode: pat.bassMode ?? 'step',
+    bassMode: 'piano',
+    bassNotes: fromNotes.length ? fromNotes : fromSteps,
   };
 }
 
@@ -37,12 +40,14 @@ function clipFromDrums(pat: PatternData): SessionClip {
 }
 
 function clipFromMainPoly(pat: PatternData): SessionClip {
+  // Session is piano-roll-only: convert Classic step data to notes on import.
+  const fromSteps = pat.polyMode !== 'piano' ? stepsToNotes(pat.melody) : [];
+  const fromNotes = (pat.polyNotes ?? []).map((n) => ({ ...n }));
   return {
     id: nextId('clip'),
     lengthBars: Math.max(1, Math.floor(pat.length / 16)),
-    polySteps: pat.melody.map((s) => ({ ...s, notes: [...s.notes] })),
-    polyNotes: (pat.polyNotes ?? []).map((n) => ({ ...n })),
-    polyMode: pat.polyMode ?? 'step',
+    polyMode: 'piano',
+    polyNotes: fromNotes.length ? fromNotes : fromSteps,
   };
 }
 

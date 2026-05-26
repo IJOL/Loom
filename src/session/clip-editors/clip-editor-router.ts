@@ -5,11 +5,9 @@ import type { SessionClip, SessionLane } from '../session';
 import type { Sequencer } from '../../core/sequencer';
 import type { LanePlayState } from '../session-runtime';
 import { createPianoRoll, type PianoRollHandle } from '../../core/pianoroll';
-import { TICKS_PER_STEP, type NoteEvent } from '../../core/notes';
+import { TICKS_PER_STEP, type NoteEvent, bassStepsToNotes, stepsToNotes } from '../../core/notes';
 import { renderDrumBusEditor } from './clip-editor-drum-bus';
 import { renderDrumLaneEditor } from './clip-editor-drum-lane';
-import { renderBassStepEditor } from './clip-editor-bass-step';
-import { renderPolyStepEditor } from './clip-editor-poly-step';
 
 export interface ClipEditorDeps {
   ctx: AudioContext;
@@ -39,25 +37,23 @@ export function renderClipEditor(
     return null;
   }
 
-  // ── Bass step ─────────────────────────────────────────────────────────────
-  if (lane.kind === 'bass' && clip.bassMode === 'step' && clip.bassSteps) {
-    renderBassStepEditor(host, clip, deps.midiLabel);
-    return null;
-  }
-
-  // ── Poly step ─────────────────────────────────────────────────────────────
-  if (lane.kind === 'poly' && clip.polyMode === 'step' && clip.polySteps) {
-    renderPolyStepEditor(host, clip, deps.midiLabel);
-    return null;
-  }
-
-  // ── Bass piano-roll ───────────────────────────────────────────────────────
-  if (lane.kind === 'bass' && (clip.bassMode === 'piano' || clip.bassNotes)) {
+  // ── Bass: always piano-roll. Convert legacy step data on the fly. ─────────
+  if (lane.kind === 'bass') {
+    if ((!clip.bassNotes || clip.bassNotes.length === 0) && clip.bassSteps && clip.bassSteps.length) {
+      clip.bassNotes = bassStepsToNotes(clip.bassSteps);
+    }
+    clip.bassMode = 'piano';
+    delete clip.bassSteps;
     return buildPianoRoll(host, lane, clip, deps, true);
   }
 
-  // ── Poly piano-roll ───────────────────────────────────────────────────────
-  if (lane.kind === 'poly' && (clip.polyMode === 'piano' || clip.polyNotes)) {
+  // ── Poly: always piano-roll. Convert legacy step data on the fly. ─────────
+  if (lane.kind === 'poly') {
+    if ((!clip.polyNotes || clip.polyNotes.length === 0) && clip.polySteps && clip.polySteps.length) {
+      clip.polyNotes = stepsToNotes(clip.polySteps);
+    }
+    clip.polyMode = 'piano';
+    delete clip.polySteps;
     return buildPianoRoll(host, lane, clip, deps, false);
   }
 
