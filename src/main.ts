@@ -559,10 +559,22 @@ const polyTriggerDirect = (note: number, time: number, gate: number, accent: boo
   const voice = inst.createVoice(ctx, polyStrip.input);
   voice.trigger(note, time, { gateDuration: gate, accent });
 };
-const bassTriggerDirect = (note: number, time: number, gate: number, accent: boolean, slidingIn: boolean) =>
-  synth.trigger({ freq: midiToFreqLocal(note), accent, slide: slidingIn, duration: gate }, time);
-const bassTriggerForArp = (note: number, time: number, gate: number, accent: boolean) =>
-  synth.trigger({ freq: midiToFreqLocal(note), accent, slide: false, duration: gate }, time);
+const bassTriggerDirect = (note: number, time: number, gate: number, accent: boolean, slidingIn: boolean) => {
+  const voice = ensureLaneVoice('bass', 'tb303');
+  if (!voice) {
+    synth.trigger({ freq: midiToFreqLocal(note), accent, slide: slidingIn, duration: gate }, time);
+    return;
+  }
+  voice.trigger(note, time, { gateDuration: gate, accent, slide: slidingIn });
+};
+const bassTriggerForArp = (note: number, time: number, gate: number, accent: boolean) => {
+  const voice = ensureLaneVoice('bass', 'tb303');
+  if (!voice) {
+    synth.trigger({ freq: midiToFreqLocal(note), accent, slide: false, duration: gate }, time);
+    return;
+  }
+  voice.trigger(note, time, { gateDuration: gate, accent, slide: false });
+};
 
 seq.onMelodyTrigger = (note, time, gate, accent) => {
   const useArp = arp.enabled && arp.scope.includes('main');
