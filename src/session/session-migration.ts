@@ -7,47 +7,38 @@ import {
   emptyLane, emptyScene, emptySessionState,
   type SessionClip, type SessionLane, type SessionState,
 } from './session';
-import { DRUM_LANES, type DrumVoice } from '../core/drums';
-import type { DrumStep } from '../core/sequencer';
-import { bassStepsToNotes, stepsToNotes } from '../core/notes';
+import { bassStepsToNotes, stepsToNotes, drumStepsToNotes } from '../core/notes';
+import type { NoteEvent } from '../core/notes';
 
 function nextId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function clipFromBass(pat: PatternData): SessionClip {
-  // Session is piano-roll-only: convert Classic step data to notes on import.
   const fromSteps = pat.bassMode !== 'piano' ? bassStepsToNotes(pat.bass) : [];
   const fromNotes = (pat.bassNotes ?? []).map((n) => ({ ...n }));
   return {
     id: nextId('clip'),
     lengthBars: Math.max(1, Math.floor(pat.length / 16)),
-    bassMode: 'piano',
-    bassNotes: fromNotes.length ? fromNotes : fromSteps,
+    notes: fromNotes.length ? fromNotes : fromSteps,
   };
 }
 
 function clipFromDrums(pat: PatternData): SessionClip {
-  const drumSteps: Record<DrumVoice, DrumStep[]> = {} as Record<DrumVoice, DrumStep[]>;
-  for (const lane of DRUM_LANES) {
-    drumSteps[lane] = (pat.drums[lane] ?? []).map((s) => ({ ...s }));
-  }
   return {
     id: nextId('clip'),
     lengthBars: Math.max(1, Math.floor(pat.length / 16)),
-    drumSteps,
+    notes: drumStepsToNotes(pat.drums),
   };
 }
 
 function clipFromMainPoly(pat: PatternData): SessionClip {
-  // Session is piano-roll-only: convert Classic step data to notes on import.
   const fromSteps = pat.polyMode !== 'piano' ? stepsToNotes(pat.melody) : [];
   const fromNotes = (pat.polyNotes ?? []).map((n) => ({ ...n }));
   return {
     id: nextId('clip'),
     lengthBars: Math.max(1, Math.floor(pat.length / 16)),
-    polyMode: 'piano',
-    polyNotes: fromNotes.length ? fromNotes : fromSteps,
+    notes: fromNotes.length ? fromNotes : fromSteps,
   };
 }
 
@@ -57,8 +48,7 @@ function clipFromExtra(pat: PatternData, extraId: string): SessionClip | null {
   return {
     id: nextId('clip'),
     lengthBars: Math.max(1, Math.floor(pat.length / 16)),
-    polyMode: 'piano',
-    polyNotes: track.notes.map((n) => ({ ...n })),
+    notes: track.notes.map((n) => ({ ...n })),
   };
 }
 
@@ -71,7 +61,7 @@ export function importClassicToSession(bank: PatternBank): SessionState {
     for (const t of slot.extraPolyTracks ?? []) extraIds.add(t.id);
   }
   for (const id of extraIds) {
-    state.lanes.push(emptyLane(id, 'poly'));
+    state.lanes.push(emptyLane(id, 'subtractive'));
   }
 
   // For every slot, create a scene + one clip per lane.
@@ -107,74 +97,49 @@ export function importClassicToSession(bank: PatternBank): SessionState {
   return state;
 }
 
-export function expandDrumsLane(state: SessionState): void {
-  const drums = state.lanes.find((l) => l.id === 'drums');
-  if (!drums || drums.expanded) return;
-  drums.expanded = true;
+// Apply to clips that came from older saves (still have legacy fields like
+// bassSteps/polySteps/drumSteps and no `notes`).
+export function migrateLoadedSessionState(s: SessionState): SessionState {
+  for (const lane of s.lanes) {
+    delete (lane as { kind?: unknown }).kind;
+    delete (lane as { expanded?: unknown }).expanded;
+    if (!lane.engineId) lane.engineId = guessEngineId(lane.id);
 
-  const subLanes = DRUM_LANES.map((d) => emptyLane(`drum:${d}`, 'drum-lane'));
-  drums.clips.forEach((clip, rowIdx) => {
-    if (!clip || !clip.drumSteps) {
-      for (const sl of subLanes) {
-        while (sl.clips.length <= rowIdx) sl.clips.push(null);
-        sl.clips[rowIdx] = null;
-      }
-      return;
-    }
-    for (let i = 0; i < subLanes.length; i++) {
-      const drumLane = DRUM_LANES[i];
-      const steps = clip.drumSteps[drumLane] ?? [];
-      while (subLanes[i].clips.length <= rowIdx) subLanes[i].clips.push(null);
-      subLanes[i].clips[rowIdx] = {
-        id: `clip-${Date.now().toString(36)}-${i}-${rowIdx}`,
-        name: clip.name,
-        lengthBars: clip.lengthBars,
-        drumLane,
-        drumLaneSteps: steps.map((s) => ({ ...s })),
-      };
-    }
-  });
-
-  const idx = state.lanes.indexOf(drums);
-  state.lanes.splice(idx + 1, 0, ...subLanes);
-  for (const scene of state.scenes) {
-    const row = scene.clipPerLane.drums;
-    delete scene.clipPerLane.drums;
-    for (const sl of subLanes) scene.clipPerLane[sl.id] = row ?? null;
+    lane.clips = lane.clips.map((c) => c ? migrateClip(c) : null);
   }
+  return s;
 }
 
-export function collapseDrumsLane(state: SessionState): void {
-  const drums = state.lanes.find((l) => l.id === 'drums');
-  if (!drums || !drums.expanded) return;
-  drums.expanded = false;
+function guessEngineId(laneId: string): string {
+  if (laneId === 'bass')  return 'tb303';
+  if (laneId === 'drums' || laneId.startsWith('drum:')) return 'drums-machine';
+  return 'subtractive';
+}
 
-  const subLanes = DRUM_LANES.map((d) => state.lanes.find((l) => l.id === `drum:${d}`)).filter(Boolean) as SessionLane[];
-
-  const rowCount = Math.max(0, ...subLanes.map((l) => l.clips.length));
-  drums.clips = Array.from({ length: rowCount }, (_, rowIdx) => {
-    const subClips = subLanes.map((l) => l.clips[rowIdx]).filter(Boolean) as SessionClip[];
-    if (subClips.length === 0) return null;
-    const lengthBars = Math.max(1, ...subClips.map((c) => c.lengthBars));
-    const drumSteps: Record<DrumVoice, DrumStep[]> = {} as Record<DrumVoice, DrumStep[]>;
-    for (let i = 0; i < DRUM_LANES.length; i++) {
-      const drumLane = DRUM_LANES[i];
-      const c = subLanes[i].clips[rowIdx];
-      drumSteps[drumLane] = c?.drumLaneSteps?.map((s) => ({ ...s })) ?? Array.from({ length: lengthBars * 16 }, () => ({ on: false, accent: false }));
-    }
-    return {
-      id: `clip-${Date.now().toString(36)}-bus-${rowIdx}`,
-      lengthBars,
-      drumSteps,
-    };
-  });
-
-  for (const sl of subLanes) {
-    const i = state.lanes.indexOf(sl);
-    if (i >= 0) state.lanes.splice(i, 1);
+function migrateClip(c: SessionClip): SessionClip {
+  if (c.notes && c.notes.length >= 0) return c;
+  type LegacyClip = SessionClip & {
+    bassNotes?: NoteEvent[];
+    polyNotes?: NoteEvent[];
+    bassSteps?: import('../core/sequencer').BassStep[];
+    polySteps?: import('../core/sequencer').PolyStep[];
+    drumSteps?: Partial<Record<import('../core/drums').DrumVoice, import('../core/sequencer').DrumStep[]>>;
+    drumLane?: import('../core/drums').DrumVoice;
+    drumLaneSteps?: import('../core/sequencer').DrumStep[];
+  };
+  const legacy = c as LegacyClip;
+  let notes: NoteEvent[] = [];
+  if      (legacy.bassNotes?.length) notes = legacy.bassNotes;
+  else if (legacy.polyNotes?.length) notes = legacy.polyNotes;
+  else if (legacy.bassSteps)         notes = bassStepsToNotes(legacy.bassSteps);
+  else if (legacy.polySteps)         notes = stepsToNotes(legacy.polySteps);
+  else if (legacy.drumSteps)         notes = drumStepsToNotes(legacy.drumSteps);
+  else if (legacy.drumLaneSteps && legacy.drumLane) {
+    notes = drumStepsToNotes({ [legacy.drumLane]: legacy.drumLaneSteps });
   }
-  for (const scene of state.scenes) {
-    for (const sl of subLanes) delete scene.clipPerLane[sl.id];
-    scene.clipPerLane.drums = scene.clipPerLane.drums ?? null;
-  }
+  return {
+    id: c.id, name: c.name, color: c.color,
+    lengthBars: c.lengthBars, launchQuantize: c.launchQuantize,
+    envelopes: c.envelopes, notes,
+  };
 }

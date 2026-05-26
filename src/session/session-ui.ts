@@ -110,20 +110,11 @@ export function renderSessionGrid(
 
 function laneHeader(lane: SessionLane, cb: SessionUICallbacks): HTMLElement {
   const el = document.createElement('div');
-  el.className = `session-lane-header lane-kind-${lane.kind}`;
+  el.className = `session-lane-header lane-engine-${lane.engineId}`;
   const name = document.createElement('div');
   name.className = 'session-lane-name';
   name.textContent = lane.id.toUpperCase();
   el.appendChild(name);
-
-  if (lane.kind === 'drum-bus') {
-    const tog = document.createElement('button');
-    tog.className = 'session-lane-expand';
-    tog.textContent = lane.expanded ? '▾' : '▸';
-    tog.title = 'Expand / collapse drum sub-lanes';
-    tog.addEventListener('click', cb.onToggleDrumsExpanded);
-    el.appendChild(tog);
-  }
 
   const edit = document.createElement('button');
   edit.className = 'session-lane-edit';

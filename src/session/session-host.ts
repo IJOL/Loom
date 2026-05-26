@@ -6,7 +6,7 @@ import type { ChannelStrip } from '../core/fx';
 import type { DrumMachine, DrumVoice } from '../core/drums';
 import type { PatternBank } from '../core/pattern';
 import type { PolySynth } from '../polysynth/polysynth';
-import type { Sequencer, DrumStep } from '../core/sequencer';
+import type { Sequencer } from '../core/sequencer';
 import type { SynthEngine } from '../engines/engine-types';
 import type { MixerColumnDeps } from '../core/mixer';
 import {
@@ -18,11 +18,10 @@ import {
   emptyLanePlayState,
   type LanePlayState,
 } from './session-runtime';
-import { importClassicToSession, expandDrumsLane, collapseDrumsLane } from './session-migration';
+import { importClassicToSession, migrateLoadedSessionState } from './session-migration';
 import { renderSessionGrid, type SessionUICallbacks } from './session-ui';
 import { buildMixerColumn } from '../core/mixer';
 import { scheduleClipStep } from './session-step-scheduler';
-import { DRUM_LANES } from '../core/drums';
 import { SessionInspector } from './session-inspector';
 
 export interface SessionHostDeps {
@@ -109,9 +108,10 @@ export class SessionHost {
   }
 
   applyLoadedSessionState(sess: SessionState): void {
-    this.state.lanes = sess.lanes ?? [];
-    this.state.scenes = sess.scenes ?? [];
-    this.state.globalQuantize = sess.globalQuantize ?? '1/1';
+    const migrated = migrateLoadedSessionState(sess);
+    this.state.lanes = migrated.lanes ?? [];
+    this.state.scenes = migrated.scenes ?? [];
+    this.state.globalQuantize = migrated.globalQuantize ?? '1/1';
     this.laneStates.clear();
     for (const lane of this.state.lanes) {
       this.laneStates.set(lane.id, emptyLanePlayState(lane.id));
@@ -175,16 +175,11 @@ export class SessionHost {
         const lane = self.state.lanes.find((l) => l.id === laneId);
         if (!lane) return;
         const defaultLen = Math.max(1, Math.floor(seq.length / 16));
-        let clip: SessionClip;
-        if (lane.kind === 'drum-bus') {
-          const drumSteps: Record<DrumVoice, DrumStep[]> = {} as Record<DrumVoice, DrumStep[]>;
-          for (const l of DRUM_LANES) drumSteps[l] = Array.from({ length: defaultLen * 16 }, () => ({ on: false, accent: false }));
-          clip = { id: `clip-${Date.now().toString(36)}`, lengthBars: defaultLen, drumSteps };
-        } else if (lane.kind === 'bass') {
-          clip = { id: `clip-${Date.now().toString(36)}`, lengthBars: defaultLen, bassMode: 'piano', bassNotes: [] };
-        } else {
-          clip = { id: `clip-${Date.now().toString(36)}`, lengthBars: defaultLen, polyMode: 'piano', polyNotes: [] };
-        }
+        const clip: SessionClip = {
+          id: `clip-${Date.now().toString(36)}`,
+          lengthBars: defaultLen,
+          notes: [],
+        };
         while (lane.clips.length <= clipIdx) lane.clips.push(null);
         lane.clips[clipIdx] = clip;
         self.inspector.setSelectedClip({ laneId, clipIdx });
@@ -210,7 +205,6 @@ export class SessionHost {
         self.renderWithMixer();
       },
       onAddSynthLane() {
-        // Find the next free poly id (poly1 .. poly16) not already used.
         const used = new Set(self.state.lanes.map((l) => l.id));
         let newId = '';
         for (let i = 1; i <= 16; i++) {
@@ -219,23 +213,18 @@ export class SessionHost {
         }
         if (!newId) { alert('Max 16 extra poly lanes reached.'); return; }
 
-        const lane = emptyLane(newId, 'poly');
-        // Pre-fill empty piano-roll clip slots for every existing scene row.
+        const lane = emptyLane(newId, 'subtractive');
         const rowCount = Math.max(self.state.scenes.length, 1);
         for (let r = 0; r < rowCount; r++) {
           lane.clips.push({
             id: `clip-${Date.now().toString(36)}-${r}`,
             lengthBars: Math.max(1, Math.floor(seq.length / 16)),
-            polyMode: 'piano',
-            polyNotes: [],
+            notes: [],
           });
         }
         self.state.lanes.push(lane);
         self.laneStates.set(newId, emptyLanePlayState(newId));
-
-        // Spin up the audio strip + polysynth for this lane so it plays sound.
         ensureExtraPoly(newId);
-
         self.renderWithMixer();
       },
       onAddClipRow()   { /* Task 11 */ },
@@ -263,18 +252,7 @@ export class SessionHost {
         document.getElementById('back-to-session')!.hidden = false;
         document.querySelector<HTMLElement>('.tab-bar')!.hidden = false;
       },
-      onToggleDrumsExpanded() {
-        const drumsLane = self.state.lanes.find((l) => l.id === 'drums');
-        if (!drumsLane) return;
-        if (drumsLane.expanded) collapseDrumsLane(self.state);
-        else expandDrumsLane(self.state);
-        for (const lane of self.state.lanes) {
-          if (!self.laneStates.has(lane.id)) {
-            self.laneStates.set(lane.id, emptyLanePlayState(lane.id));
-          }
-        }
-        self.renderWithMixer();
-      },
+      onToggleDrumsExpanded() { /* drum-bus expand removed — drum-grid editor shows all voices */ },
     };
   }
 

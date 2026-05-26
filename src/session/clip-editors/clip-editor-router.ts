@@ -1,13 +1,15 @@
 // src/session/clip-editors/clip-editor-router.ts
-// Detects the kind of clip and dispatches to the appropriate editor renderer.
+// Detects the engine assigned to the lane and dispatches to the matching
+// editor (piano-roll or drum-grid). Falls back to piano-roll if engine has
+// no explicit preference.
 
 import type { SessionClip, SessionLane } from '../session';
 import type { Sequencer } from '../../core/sequencer';
 import type { LanePlayState } from '../session-runtime';
 import { createPianoRoll, type PianoRollHandle } from '../../core/pianoroll';
-import { TICKS_PER_STEP, type NoteEvent, bassStepsToNotes, stepsToNotes } from '../../core/notes';
-import { renderDrumBusEditor } from './clip-editor-drum-bus';
-import { renderDrumLaneEditor } from './clip-editor-drum-lane';
+import { TICKS_PER_STEP, type NoteEvent } from '../../core/notes';
+import { getEngine } from '../../engines/registry';
+import { renderDrumGridEditor } from './clip-editor-drum-grid';
 
 export interface ClipEditorDeps {
   ctx: AudioContext;
@@ -16,7 +18,6 @@ export interface ClipEditorDeps {
   midiLabel: (m: number) => string;
 }
 
-/** Renders the appropriate editor into `host`, returns piano-roll handle if created (else null). */
 export function renderClipEditor(
   host: HTMLElement,
   lane: SessionLane,
@@ -24,45 +25,14 @@ export function renderClipEditor(
   deps: ClipEditorDeps,
 ): PianoRollHandle | null {
   host.innerHTML = '';
+  const engine = getEngine(lane.engineId);
 
-  // ── Drum-bus ──────────────────────────────────────────────────────────────
-  if (lane.kind === 'drum-bus' && clip.drumSteps) {
-    renderDrumBusEditor(host, clip);
+  if (engine?.editor === 'drum-grid') {
+    renderDrumGridEditor(host, clip);
     return null;
   }
 
-  // ── Drum-lane ─────────────────────────────────────────────────────────────
-  if (lane.kind === 'drum-lane' && clip.drumLane && clip.drumLaneSteps) {
-    renderDrumLaneEditor(host, clip);
-    return null;
-  }
-
-  // ── Bass: always piano-roll. Convert legacy step data on the fly. ─────────
-  if (lane.kind === 'bass') {
-    if ((!clip.bassNotes || clip.bassNotes.length === 0) && clip.bassSteps && clip.bassSteps.length) {
-      clip.bassNotes = bassStepsToNotes(clip.bassSteps);
-    }
-    clip.bassMode = 'piano';
-    delete clip.bassSteps;
-    return buildPianoRoll(host, lane, clip, deps, true);
-  }
-
-  // ── Poly: always piano-roll. Convert legacy step data on the fly. ─────────
-  if (lane.kind === 'poly') {
-    if ((!clip.polyNotes || clip.polyNotes.length === 0) && clip.polySteps && clip.polySteps.length) {
-      clip.polyNotes = stepsToNotes(clip.polySteps);
-    }
-    clip.polyMode = 'piano';
-    delete clip.polySteps;
-    return buildPianoRoll(host, lane, clip, deps, false);
-  }
-
-  // Fallback: nothing to render
-  const msg = document.createElement('p');
-  msg.style.cssText = 'color:#888;font-size:12px;padding:8px';
-  msg.textContent = 'No editor available for this clip type.';
-  host.appendChild(msg);
-  return null;
+  return buildPianoRoll(host, lane, clip, deps);
 }
 
 function buildPianoRoll(
@@ -70,29 +40,26 @@ function buildPianoRoll(
   lane: SessionLane,
   clip: SessionClip,
   deps: ClipEditorDeps,
-  isBass: boolean,
 ): PianoRollHandle {
   const canvas = document.createElement('canvas');
-  canvas.width = Math.max(800, clip.lengthBars * 240);
+  canvas.width  = Math.max(800, clip.lengthBars * 240);
   canvas.height = 240;
   canvas.style.height = '240px';
-  canvas.style.width = `${canvas.width}px`;
+  canvas.style.width  = `${canvas.width}px`;
   host.appendChild(canvas);
 
-  const getNotes = (): NoteEvent[] => isBass ? (clip.bassNotes ?? []) : (clip.polyNotes ?? []);
-  const setNotes = (notes: NoteEvent[]) => {
-    if (isBass) clip.bassNotes = notes;
-    else        clip.polyNotes = notes;
-  };
+  const getNotes = (): NoteEvent[] => clip.notes ?? [];
+  const setNotes = (notes: NoteEvent[]) => { clip.notes = notes; };
 
+  const isBassLikeEngine = lane.engineId === 'tb303';
   const { ctx, seq, laneStates } = deps;
   return createPianoRoll({
     canvas,
     getNotes,
     setNotes,
     patternTicks: clip.lengthBars * 16 * TICKS_PER_STEP,
-    minMidi: isBass ? 24 : 36,
-    maxMidi: isBass ? 60 : 96,
+    minMidi: isBassLikeEngine ? 24 : 36,
+    maxMidi: isBassLikeEngine ? 60 : 96,
     onChange: () => {},
     getPlayheadTick: () => {
       const lp = laneStates.get(lane.id);
