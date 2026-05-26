@@ -272,18 +272,21 @@ export class SessionHost {
 
   private wireBackPill(): void {
     document.getElementById('back-to-session')!.addEventListener('click', () => {
-      // Delegate to main's mode-visibility helper so all Classic-only panels
-      // (mixer, copy-row, presets) get re-hidden and Session re-renders.
+      // Always do explicit DOM restoration first — this guarantees that the
+      // back-pill works even if main.ts's __reapplyModeVisibility helper is
+      // missing (e.g. in the pure-session HTML route).
+      document.querySelectorAll<HTMLElement>('.page').forEach((p) => { p.hidden = true; });
+      const tabBar = document.querySelector<HTMLElement>('.tab-bar');
+      if (tabBar) tabBar.hidden = true;
+      const sessionView = document.getElementById('session-view');
+      if (sessionView) sessionView.hidden = false;
+      const backPill = document.getElementById('back-to-session');
+      if (backPill) backPill.hidden = true;
+      // Then let main re-hide any Classic-only panels (mixer, copy, presets)
+      // and re-render the mixer columns.
       const w = window as unknown as { __reapplyModeVisibility?: () => void };
-      if (w.__reapplyModeVisibility) {
-        w.__reapplyModeVisibility();
-      } else {
-        // Fallback if the helper isn't installed yet (shouldn't happen post-boot).
-        document.getElementById('back-to-session')!.hidden = true;
-        document.getElementById('session-view')!.hidden = false;
-        document.querySelectorAll<HTMLElement>('.page').forEach((p) => { p.hidden = true; });
-        document.querySelector<HTMLElement>('.tab-bar')!.hidden = true;
-      }
+      if (w.__reapplyModeVisibility) w.__reapplyModeVisibility();
+      this.renderWithMixer();
     });
   }
 
