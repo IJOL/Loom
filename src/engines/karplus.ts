@@ -175,7 +175,9 @@ class KarplusEngine implements SynthEngine {
   readonly id = 'karplus';
   readonly name = 'Karplus (Physical)';
   readonly type = 'polyhost' as const;
-  readonly polyphony = 8;
+  readonly polyphony = 'poly' as const;
+  readonly editor = 'piano-roll' as const;
+  readonly presets: import('./engine-types').EnginePreset[] = [];
   readonly params = KARPLUS_PARAMS;
 
   private paramValues: Record<string, number> = {};
@@ -187,6 +189,8 @@ class KarplusEngine implements SynthEngine {
 
   setParam(id: string, value: number): void { this.paramValues[id] = value; }
   getParam(id: string): number { return this.paramValues[id] ?? 0; }
+
+  applyPreset(_name: string): void {}
 
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
     return new KarplusVoice(ctx, output, (id) => this.getParam(id));
