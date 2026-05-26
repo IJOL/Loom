@@ -87,3 +87,13 @@
 .clip-auto-lane .auto-lane-header button.active {
   background: #4dd0e1; color: #0a0a0a; border-color: #4dd0e1;
 }
+
+/* Roll badge on drum-grid cells: shows "×2"/"×3"/"×4" centred. */
+.dcell.roll {
+  font-size: 9px;
+  font-weight: bold;
+  color: #0a0a0a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

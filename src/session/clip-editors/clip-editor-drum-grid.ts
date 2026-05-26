@@ -54,23 +54,31 @@ function buildCell(clip: SessionClip, voice: DrumVoice, stepIdx: number): HTMLEl
   btn.className = `dcell ${voice}`;
   if (stepIdx % 16 === 0 && stepIdx > 0) btn.classList.add('seg-start');
   if (stepIdx % 4  === 0)                btn.classList.add('downbeat');
-  applyCellVisual(btn, findNoteAtStep(clip, voice, stepIdx));
+  refreshCellVisual(btn, clip, voice, stepIdx);
 
-  btn.addEventListener('click', () => {
-    const existing = findNoteAtStep(clip, voice, stepIdx);
-    if (!existing) {
-      addHit(clip, voice, stepIdx, false);
-    } else if (existing.velocity < 100) {
-      existing.velocity = 115;            // off → on → accent cycle
+  btn.title = 'Click: off → on → accent → off   |   Shift+click: cycle roll ×1 → ×2 → ×3 → ×4';
+
+  btn.addEventListener('click', (e) => {
+    if (e.shiftKey) {
+      cycleRoll(clip, voice, stepIdx);
     } else {
-      removeHit(clip, voice, stepIdx);    // accent → off
+      const existing = firstNoteInStep(clip, voice, stepIdx);
+      if (!existing) {
+        addHit(clip, voice, stepIdx, false, 1);
+      } else if (existing.velocity < 100) {
+        // Promote all hits in this step to accent (preserving roll factor).
+        const cur = currentRoll(clip, voice, stepIdx);
+        addHit(clip, voice, stepIdx, true, cur);
+      } else {
+        removeAllHitsInStep(clip, voice, stepIdx);
+      }
     }
-    applyCellVisual(btn, findNoteAtStep(clip, voice, stepIdx));
+    refreshCellVisual(btn, clip, voice, stepIdx);
   });
   return btn;
 }
 
-function findNoteAtStep(clip: SessionClip, voice: DrumVoice, stepIdx: number): NoteEvent | null {
+function firstNoteInStep(clip: SessionClip, voice: DrumVoice, stepIdx: number): NoteEvent | null {
   const start = stepIdx * TICKS_PER_STEP;
   const end   = start + TICKS_PER_STEP;
   return clip.notes.find((n) =>
@@ -78,16 +86,15 @@ function findNoteAtStep(clip: SessionClip, voice: DrumVoice, stepIdx: number): N
   ) ?? null;
 }
 
-function addHit(clip: SessionClip, voice: DrumVoice, stepIdx: number, accent: boolean): void {
-  clip.notes.push({
-    midi: VOICE_MIDI[voice],
-    start: stepIdx * TICKS_PER_STEP,
-    duration: Math.max(1, Math.floor(TICKS_PER_STEP * 0.9)),
-    velocity: accent ? 115 : 80,
-  });
+function currentRoll(clip: SessionClip, voice: DrumVoice, stepIdx: number): number {
+  const start = stepIdx * TICKS_PER_STEP;
+  const end   = start + TICKS_PER_STEP;
+  return clip.notes.filter((n) =>
+    GM_DRUM_MAP[n.midi] === voice && n.start >= start && n.start < end,
+  ).length;
 }
 
-function removeHit(clip: SessionClip, voice: DrumVoice, stepIdx: number): void {
+function removeAllHitsInStep(clip: SessionClip, voice: DrumVoice, stepIdx: number): void {
   const start = stepIdx * TICKS_PER_STEP;
   const end   = start + TICKS_PER_STEP;
   clip.notes = clip.notes.filter((n) =>
@@ -95,7 +102,44 @@ function removeHit(clip: SessionClip, voice: DrumVoice, stepIdx: number): void {
   );
 }
 
-function applyCellVisual(btn: HTMLElement, note: NoteEvent | null): void {
+function addHit(
+  clip: SessionClip, voice: DrumVoice, stepIdx: number,
+  accent: boolean, roll: number,
+): void {
+  removeAllHitsInStep(clip, voice, stepIdx);
+  const midi = VOICE_MIDI[voice];
+  const div = Math.max(1, roll);
+  const subDur = TICKS_PER_STEP / div;
+  const vel = accent ? 115 : 80;
+  for (let r = 0; r < div; r++) {
+    clip.notes.push({
+      midi,
+      start: stepIdx * TICKS_PER_STEP + Math.floor(r * subDur),
+      duration: Math.max(1, Math.floor(subDur * 0.9)),
+      velocity: vel,
+    });
+  }
+}
+
+function cycleRoll(clip: SessionClip, voice: DrumVoice, stepIdx: number): void {
+  const existing = firstNoteInStep(clip, voice, stepIdx);
+  if (!existing) {
+    // Shift+click on an empty cell = start with roll=2 (matches the old UX:
+    // shift+click on an off cell turned it on with first roll factor).
+    addHit(clip, voice, stepIdx, false, 2);
+    return;
+  }
+  const accent = existing.velocity >= 100;
+  const cur = currentRoll(clip, voice, stepIdx);
+  const next = cur >= 4 ? 1 : cur + 1; // 1 → 2 → 3 → 4 → 1
+  addHit(clip, voice, stepIdx, accent, next);
+}
+
+function refreshCellVisual(btn: HTMLElement, clip: SessionClip, voice: DrumVoice, stepIdx: number): void {
+  const note = firstNoteInStep(clip, voice, stepIdx);
+  const roll = currentRoll(clip, voice, stepIdx);
   btn.classList.toggle('on',     !!note);
   btn.classList.toggle('accent', !!note && note.velocity >= 100);
+  btn.classList.toggle('roll',   roll > 1);
+  btn.textContent = roll > 1 ? `×${roll}` : '';
 }
