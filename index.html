@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Session — TB-303 + Drums + PolySynth</title>
+    <title>TB-303 + Drums + PolySynth</title>
     <link rel="stylesheet" href="/src/style.scss" />
     <style>
       /* ── Pure-Session chrome stripping ─────────────────────────────────
@@ -54,8 +54,8 @@
       body[data-pure-session="true"] .synth > .row.transport { order: 0; }
       body[data-pure-session="true"] .synth > .tab-bar      { order: 1; }
       body[data-pure-session="true"] .synth > .synth-row    { order: 2; }
-      body[data-pure-session="true"] .synth > .session-view { order: 3; }
-      body[data-pure-session="true"] .synth > .page         { order: 4; }
+      body[data-pure-session="true"] .synth > .page         { order: 3; }
+      body[data-pure-session="true"] .synth > .session-view { order: 4; }
       body[data-pure-session="true"] .synth > .arp-panel    { order: 5; }
     </style>
   </head>
@@ -71,10 +71,6 @@
         <label>Swing<input id="swing" type="range" min="0" max="0.6" step="0.01" value="0" /></label>
         <label>Volume<input id="volume" type="range" min="0" max="1" step="0.01" value="0.5" /></label>
         <div class="vert-divider"></div>
-        <div class="mode-toggle">
-          <button class="mode-btn"        id="mode-classic" data-mode="classic">Classic</button>
-          <button class="mode-btn active" id="mode-session" data-mode="session">Session</button>
-        </div>
         <div class="vert-divider"></div>
         <label>Bars
           <select id="bars">
