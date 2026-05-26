@@ -10,6 +10,8 @@ import './engines/wavetable';
 import './engines/fm';
 import './engines/karplus';
 import './engines/tb303';
+import './engines/drums-engine';
+import { configureDrumsEngineSharedFx } from './engines/drums-engine';
 import { TB303, type Wave } from './core/synth';
 import { Sequencer } from './core/sequencer';
 import { DrumMachine, DRUM_LANES, type DrumVoice } from './core/drums';
@@ -114,6 +116,7 @@ analyser.connect(ctx.destination);
 const filterChain = new FilterChain(ctx, master, analyser);
 
 const fx = new FxBus(ctx, master);
+configureDrumsEngineSharedFx(fx);
 const bassStrip = new ChannelStrip(ctx, master, fx);
 const polyStrip = new ChannelStrip(ctx, master, fx);
 // All drum voices route through this bus first, so a single level/EQ/sends
