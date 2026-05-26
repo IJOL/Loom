@@ -10,7 +10,7 @@ import './engines/subtractive';
 import './engines/wavetable';
 import './engines/fm';
 import './engines/karplus';
-import './engines/tb303';
+import { configureTB303EngineMainInstance } from './engines/tb303';
 import './engines/drums-engine';
 import { configureDrumsEngineSharedFx } from './engines/drums-engine';
 import { TB303, type Wave } from './core/synth';
@@ -124,6 +124,7 @@ const polyStrip = new ChannelStrip(ctx, master, fx);
 // controls the entire drum machine.
 const drumBusStrip = new ChannelStrip(ctx, master, fx);
 const synth = new TB303(ctx, bassStrip.input);
+configureTB303EngineMainInstance(bassStrip.input, synth);
 const drums = new DrumMachine(ctx, fx, drumBusStrip.input);
 const polysynth = new PolySynth(ctx, polyStrip.input);
 

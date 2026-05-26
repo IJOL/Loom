@@ -217,7 +217,7 @@ export class SessionHost {
           const candidate = `${prefix}${i + 1}`;
           if (!used.has(candidate)) { newId = candidate; break; }
         }
-        if (!newId) { alert('Max 16 lanes per type reached.'); return; }
+        if (!newId) { alert('No free lane id available for this engine (max 17 lanes per type).'); return; }
 
         const lane = emptyLane(newId, engineId);
         const rowCount = Math.max(self.state.scenes.length, 1);

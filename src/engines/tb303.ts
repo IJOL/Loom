@@ -76,6 +76,15 @@ export class TB303Engine implements SynthEngine {
     return new TB303Voice(tb);
   }
 
+  // Pre-register an externally-constructed TB303 so the singleton synth
+  // owned by main.ts (which Classic UI knobs and randomize() mutate) is
+  // the same instance this engine wraps. Without this, createVoice would
+  // build a separate orphan TB303 the knobs don't reach.
+  registerInstance(output: AudioNode, instance: TB303): void {
+    this.instances.set(output, instance);
+    this.lastInstance = instance;
+  }
+
   buildSequencer(_c: HTMLElement, _n: number): EngineSequencer {
     return new TB303Sequencer();
   }
@@ -105,3 +114,7 @@ export class TB303Engine implements SynthEngine {
 const tb303Engine = new TB303Engine();
 registerEngine(tb303Engine);
 registerEngineFactory('tb303', () => new TB303Engine());
+
+export function configureTB303EngineMainInstance(output: AudioNode, instance: TB303): void {
+  tb303Engine.registerInstance(output, instance);
+}

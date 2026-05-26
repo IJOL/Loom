@@ -117,7 +117,7 @@ function guessEngineId(laneId: string): string {
 }
 
 function migrateClip(c: SessionClip): SessionClip {
-  if (c.notes && c.notes.length >= 0) return c;
+  if (Array.isArray(c.notes)) return c;
   type LegacyClip = SessionClip & {
     bassNotes?: NoteEvent[];
     polyNotes?: NoteEvent[];
