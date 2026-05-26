@@ -3,7 +3,9 @@
 // boundaries. Conversion to/from step-based PolyStep is one-way (lossy in
 // the piano → step direction; lossless step → piano).
 
-import type { PolyStep, BassStep } from './sequencer';
+import type { PolyStep, BassStep, DrumStep } from './sequencer';
+import type { DrumVoice } from './drums';
+import { VOICE_MIDI } from '../engines/drum-gm-map';
 
 export const TICKS_PER_QUARTER = 96;
 export const TICKS_PER_STEP    = TICKS_PER_QUARTER / 4; // 24 (one 16th)
@@ -88,4 +90,36 @@ export function notesToPolySteps(notes: NoteEvent[], length: number): PolyStep[]
 
 export function patternTicks(steps: number): number {
   return steps * TICKS_PER_STEP;
+}
+
+// Convert a drum-bus step grid (Record<DrumVoice, DrumStep[]>) into a flat
+// note-event list using each voice's canonical GM midi. Roll factors expand
+// into multiple closely-spaced notes.
+export function drumStepsToNotes(steps: Partial<Record<DrumVoice, DrumStep[]>>): NoteEvent[] {
+  const out: NoteEvent[] = [];
+  for (const [voice, arr] of Object.entries(steps) as Array<[DrumVoice, DrumStep[] | undefined]>) {
+    if (!arr) continue;
+    const midi = VOICE_MIDI[voice];
+    if (midi == null) continue;
+    for (let i = 0; i < arr.length; i++) {
+      const s = arr[i];
+      if (!s || !s.on) continue;
+      const div = s.roll && s.roll > 1 ? s.roll : 1;
+      const subDur = TICKS_PER_STEP / div;
+      for (let r = 0; r < div; r++) {
+        out.push({
+          midi,
+          start: i * TICKS_PER_STEP + Math.floor(r * subDur),
+          duration: Math.max(1, Math.floor(subDur * 0.9)),
+          velocity: s.accent ? 115 : 80,
+        });
+      }
+    }
+  }
+  return out;
+}
+
+// Convert a single drum-lane (DrumVoice + DrumStep[]) to notes.
+export function drumLaneToNotes(voice: DrumVoice, steps: DrumStep[]): NoteEvent[] {
+  return drumStepsToNotes({ [voice]: steps } as Partial<Record<DrumVoice, DrumStep[]>>);
 }
