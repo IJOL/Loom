@@ -27,6 +27,7 @@ export interface StepSchedulerDeps {
   extraStrips: Partial<Record<string, ChannelStrip>>;
   getLaneEngineId: (laneId: string) => string;
   ensureLaneEngine: (laneId: string, engineId: string) => SynthEngine | null;
+  ensureLaneVoice: (laneId: string, engineId: string) => import('../engines/engine-types').Voice | null;
 }
 
 export function scheduleClipStep(
@@ -69,6 +70,20 @@ function routeNoteToEngine(
   const { ctx, bassTriggerDirect, bassTriggerForArp, polyTriggerDirect, drums,
           ensureExtraPoly, extraStrips, getLaneEngineId, ensureLaneEngine } = deps;
   const arpEnabled = arp.enabled && arp.scope.includes(laneId);
+
+  // Extra lanes (bass2, drums2, etc.) route through the engine's own voice.
+  // Built-in singletons (laneId === 'bass' / 'drums' / 'main') keep their
+  // existing direct triggers because Classic still uses them.
+  const isBuiltinLane = laneId === 'bass' || laneId === 'drums' || laneId === 'main';
+  if (!isBuiltinLane) {
+    const voice = deps.ensureLaneVoice(laneId, engineId);
+    if (!voice) return;
+    const slidingIn = engineId === 'tb303' &&
+      allNotes.some((m) => m !== thisNote && m.start < thisNote.start &&
+                            (m.start + m.duration) > thisNote.start + 1);
+    voice.trigger(midi, time, { gateDuration: gate, accent, slide: slidingIn });
+    return;
+  }
 
   if (engineId === 'tb303') {
     const slidingIn = allNotes.some((m) => m !== thisNote && m.start < thisNote.start &&

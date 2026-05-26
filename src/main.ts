@@ -5,6 +5,7 @@ import {
 import type { SynthEngine } from './engines/engine-types';
 import * as leh from './engines/lane-engine-host';
 import type { LaneEngineHostState, LaneEngineHostDeps } from './engines/lane-engine-host';
+import { getEngine } from './engines/registry';
 import './engines/subtractive';
 import './engines/wavetable';
 import './engines/fm';
@@ -130,6 +131,10 @@ const polysynth = new PolySynth(ctx, polyStrip.input);
 // instantiated until a track is actually added (via UI, MIDI import, or demo).
 const extraStrips: Partial<Record<ExtraId, ChannelStrip>> = {};
 const extraPolys: Partial<Record<ExtraId, PolySynth>> = {};
+
+// Generic per-lane strip cache (keyed by full lane id). Used for non-extra-
+// poly lanes like bass2, drums2, etc.
+const extraLaneStrips = new Map<string, ChannelStrip>();
 
 function ensureExtraPoly(id: ExtraId): PolySynth {
   let p = extraPolys[id];
@@ -284,6 +289,40 @@ const ensureLaneEngine    = (laneId: string, engineId: string) => leh.ensureLane
 const setActiveEngineLane = (laneId: string) => leh.setActiveEngineLane(_lehState, _lehDeps, laneId);
 const syncEngineToPattern = () => leh.syncEngineToPattern(_lehState, _lehDeps);
 const setSlotConfigurators = (cbs: Array<(() => void) | null>) => leh.setSlotConfigurators(_lehState, cbs);
+
+// Cache: laneId → engine voice. Mono engines reuse the same voice; poly
+// engines get a fresh voice per call but the strip is cached per lane.
+const laneVoices = new Map<string, import('./engines/engine-types').Voice>();
+
+function ensureLaneStrip(laneId: string): ChannelStrip {
+  // Built-in lanes use their dedicated strips.
+  if (laneId === 'bass')  return bassStrip;
+  if (laneId === 'drums') return drumBusStrip;
+  if (laneId === 'main')  return polyStrip;
+  // Existing extra-poly behaviour for poly1..poly16.
+  if ((EXTRA_IDS as readonly string[]).includes(laneId)) {
+    ensureExtraPoly(laneId as ExtraId);
+    return extraStrips[laneId as ExtraId]!;
+  }
+  // Generic extra lane (e.g. bass2, drums2): create a strip on demand.
+  let s = extraLaneStrips.get(laneId);
+  if (!s) {
+    s = new ChannelStrip(ctx, master, fx);
+    extraLaneStrips.set(laneId, s);
+  }
+  return s;
+}
+
+function ensureLaneVoice(laneId: string, engineId: string): import('./engines/engine-types').Voice | null {
+  const cached = laneVoices.get(laneId);
+  if (cached) return cached;
+  const engine = getEngine(engineId);
+  if (!engine) return null;
+  const strip = ensureLaneStrip(laneId);
+  const voice = engine.createVoice(ctx, strip.input);
+  laneVoices.set(laneId, voice);
+  return voice;
+}
 
 
 // ── Track rendering (with viewport) ────────────────────────────────────────
@@ -552,6 +591,7 @@ const sessionHost = new SessionHost({
   extraStrips: extraStrips as Partial<Record<string, ChannelStrip>>,
   getLaneEngineId,
   ensureLaneEngine,
+  ensureLaneVoice,
   setActivePolyTarget,
   setCurrentSynthLane,
   polysynth,

@@ -40,6 +40,7 @@ export interface SessionHostDeps {
   extraStrips: Partial<Record<string, ChannelStrip>>;
   getLaneEngineId: (laneId: string) => string;
   ensureLaneEngine: (laneId: string, engineId: string) => SynthEngine | null;
+  ensureLaneVoice: (laneId: string, engineId: string) => import('../engines/engine-types').Voice | null;
   setActivePolyTarget: (target: PolySynth, label: string) => void;
   setCurrentSynthLane: (laneId: string) => void;
   polysynth: PolySynth;
@@ -88,6 +89,7 @@ export class SessionHost {
               extraStrips: this.deps.extraStrips,
               getLaneEngineId: this.deps.getLaneEngineId,
               ensureLaneEngine: this.deps.ensureLaneEngine,
+              ensureLaneVoice: this.deps.ensureLaneVoice,
             },
             laneId, clip, stepInClip, stepTime, stepDur,
           ),
