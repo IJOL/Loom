@@ -21,6 +21,7 @@ import { scheduleArpForNote } from './arp/arp';
 import { stepsToNotes, bassStepsToNotes } from './core/notes';
 import { buildMixerColumn } from './core/mixer';
 import { SessionHost } from './session/session-host';
+import { importClassicToSession } from './session/session-migration';
 import { applyMinimalTechnoDemo, wireDemoMinimalTechno } from './demo/demo-minimal-techno';
 import { setupInitialPattern, type InitialPatternDeps } from './demo/initial-pattern';
 import { wireMidiImport } from './midi/midi-import';
@@ -774,8 +775,8 @@ function getActiveClassicTab(): string {
   const active = document.querySelector<HTMLButtonElement>('.tab.active');
   return active?.dataset.tab ?? '303';
 }
-document.getElementById('mode-classic')!.addEventListener('click', () => setAppMode('classic'));
-document.getElementById('mode-session')!.addEventListener('click', () => setAppMode('session'));
+document.getElementById('mode-classic')?.addEventListener('click', () => setAppMode('classic'));
+document.getElementById('mode-session')?.addEventListener('click', () => setAppMode('session'));
 
 wireRandomizeUI({
   seq, synth, scaleSel, rootSel,
@@ -831,3 +832,12 @@ const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
 };
 wireSaveManager(saveWiringDeps);
 bootRecoveryLoad(saveWiringDeps);
+
+// ── Pure-Session boot (session.html) ──────────────────────────────────────
+// When the host page sets data-pure-session, default to Session mode and
+// auto-import the freshly-loaded Classic demo so the user lands on a
+// playable grid without pressing "Import from Classic".
+if (document.body.dataset.pureSession === 'true') {
+  sessionHost.applyLoadedSessionState(importClassicToSession(bank));
+  setAppMode('session');
+}
