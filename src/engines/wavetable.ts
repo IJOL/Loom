@@ -127,8 +127,10 @@ class WavetableEngine implements SynthEngine {
   readonly id = 'wavetable';
   readonly name = 'Wavetable';
   readonly type = 'polyhost' as const;
-  readonly polyphony = 8;
+  readonly polyphony = 'poly' as const;
   readonly params = WAVETABLE_PARAMS;
+  readonly editor = 'piano-roll' as const;
+  readonly presets: import('./engine-types').EnginePreset[] = [];
 
   private waves: PeriodicWave[] = [];
   private paramValues: Record<string, number> = {};
@@ -149,6 +151,8 @@ class WavetableEngine implements SynthEngine {
   getParam(id: string): number {
     return this.paramValues[id] ?? 0;
   }
+
+  applyPreset(_name: string): void {}
 
   setWaveA(idx: number): void {
     this.waveAIndex = Math.max(0, Math.min(WAVETABLES.length - 1, idx));
