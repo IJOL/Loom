@@ -204,16 +204,20 @@ export class SessionHost {
         });
         self.renderWithMixer();
       },
-      onAddSynthLane() {
+      onAddLane(engineId: string) {
+        const prefix =
+          engineId === 'tb303'         ? 'bass'  :
+          engineId === 'drums-machine' ? 'drums' :
+                                         'poly';
         const used = new Set(self.state.lanes.map((l) => l.id));
         let newId = '';
         for (let i = 1; i <= 16; i++) {
-          const candidate = `poly${i}`;
+          const candidate = `${prefix}${i + 1}`;
           if (!used.has(candidate)) { newId = candidate; break; }
         }
-        if (!newId) { alert('Max 16 extra poly lanes reached.'); return; }
+        if (!newId) { alert('Max 16 lanes per type reached.'); return; }
 
-        const lane = emptyLane(newId, 'subtractive');
+        const lane = emptyLane(newId, engineId);
         const rowCount = Math.max(self.state.scenes.length, 1);
         for (let r = 0; r < rowCount; r++) {
           lane.clips.push({
@@ -224,7 +228,11 @@ export class SessionHost {
         }
         self.state.lanes.push(lane);
         self.laneStates.set(newId, emptyLanePlayState(newId));
-        ensureExtraPoly(newId);
+
+        if (engineId === 'subtractive') ensureExtraPoly(newId);
+        // tb303 + drums-machine lazy-create their instances on first trigger via
+        // the engine's createVoice path (Task 14 wires this end-to-end).
+
         self.renderWithMixer();
       },
       onAddClipRow()   { /* Task 11 */ },
@@ -274,8 +282,12 @@ export class SessionHost {
       () => this.callbacks.onLaunchScene(0));
     document.getElementById('session-stop-all')!.addEventListener('click',
       () => this.callbacks.onStopAll());
+    document.getElementById('session-add-tb303')?.addEventListener('click',
+      () => this.callbacks.onAddLane('tb303'));
+    document.getElementById('session-add-drums')?.addEventListener('click',
+      () => this.callbacks.onAddLane('drums-machine'));
     document.getElementById('session-add-synth')?.addEventListener('click',
-      () => this.callbacks.onAddSynthLane());
+      () => this.callbacks.onAddLane('subtractive'));
   }
 
   private wireBackPill(): void {

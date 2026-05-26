@@ -11,7 +11,7 @@ export interface SessionUICallbacks {
   onLaunchScene: (sceneIdx: number) => void;
   onStopAll:   () => void;
   onAddScene:  () => void;
-  onAddSynthLane: () => void;
+  onAddLane: (engineId: string) => void;
   onAddClipRow: () => void;
   onEditLane:  (laneId: string) => void;
   onToggleDrumsExpanded: () => void;
