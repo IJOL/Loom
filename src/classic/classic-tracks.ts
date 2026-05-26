@@ -5,7 +5,6 @@ import { renderBassStepGrid } from './bass-grid';
 import { cycleDrumStep, cycleDrumRoll, applyDrumCellState } from './drum-cells';
 import { rebuildPolyTrack } from './poly-track-area';
 import { rebuildSynthTabs } from './synth-tabs';
-import { wirePolyTargetSelect } from './poly-target';
 
 export function visibleRange(deps: ClassicDeps): { start: number; end: number } {
   const { seq, VIEW_SIZE } = deps;
@@ -100,7 +99,6 @@ export function rebuildTracks(deps: ClassicDeps): void {
  */
 export function wireClassicUI(deps: ClassicDeps): void {
   classicState.activePolyTarget = deps.polysynth;
-  wirePolyTargetSelect(deps, () => rebuildPolyTrack(deps, () => updatePager(deps)));
   rebuildSynthTabs(deps, () => rebuildPolyTrack(deps, () => updatePager(deps)), deps.rebuildMixer);
   rebuildTracks(deps);
 }

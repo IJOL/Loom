@@ -16,17 +16,6 @@ export function rangeForNotes(notes: NoteEvent[]): { lo: number; hi: number } {
   return { lo: pLo, hi: pHi };
 }
 
-export function autoScrollRoll(entry: RollEntry, deps: ClassicDeps) {
-  if (!deps.seq.isPlaying()) return;
-  const playTick = deps.seq.currentPlayPosition() * TICKS_PER_STEP;
-  const playX = (playTick / ptTicks(deps.seq.length)) * entry.canvasEl.width;
-  const sw = entry.scrollEl;
-  const visW = sw.clientWidth;
-  if (playX > sw.scrollLeft + visW * 0.7 || playX < sw.scrollLeft) {
-    sw.scrollLeft = Math.max(0, playX - visW * 0.3);
-  }
-}
-
 export function addPianoRollFor(
   opts: {
     parent: HTMLElement;

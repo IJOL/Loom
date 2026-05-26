@@ -63,15 +63,12 @@ import {
   updatePager as classicUpdatePager,
   visibleRange as classicVisibleRange,
 } from './classic/classic-tracks';
-import { refreshAllCellsFromState as classicRefreshAllCells } from './classic/drum-cells';
 import { rebuildPolyTrack as classicRebuildPolyTrack } from './classic/poly-track-area';
 import {
   rebuildSynthTabs as classicRebuildSynthTabs,
   setCurrentSynthLane as classicSetCurrentSynthLane,
 } from './classic/synth-tabs';
-import { rebuildRollsView as classicRebuildRollsView, rollsRollEntries } from './classic/rolls-view';
 import { setActivePolyTarget as classicSetActivePolyTarget } from './classic/poly-target';
-import { autoScrollRoll } from './classic/piano-roll-helper';
 import { startVisualizer } from './core/visualizer';
 import { wireDrumMasterUI } from './core/drum-master-ui';
 import { wirePresetLibrary } from './presets/preset-library-ui';
@@ -354,8 +351,6 @@ function rebuildPolyTrack() { classicRebuildPolyTrack(classicDeps, () => classic
 function rebuildSynthTabs() { classicRebuildSynthTabs(classicDeps, rebuildPolyTrack, rebuildMixer); }
 function setCurrentSynthLane(laneId: string) { classicSetCurrentSynthLane(laneId, classicDeps, rebuildPolyTrack); }
 function setActivePolyTarget(target: PolySynth, labelText: string) { classicSetActivePolyTarget(target, labelText, classicDeps); }
-function rebuildRollsView() { classicRebuildRollsView(classicDeps); }
-function refreshAllCellsFromState() { classicRefreshAllCells(classicDeps); }
 
 function setBassMode(mode: 'step' | 'piano') {
   if (seq.pattern.bassMode === mode) return;
@@ -529,7 +524,6 @@ for (const t of $$<HTMLButtonElement>('button.tab')) {
     const target = t.dataset.tab;
     document.querySelectorAll<HTMLButtonElement>('button.tab').forEach((x) => x.classList.toggle('active', x === t));
     pages.forEach((p) => { p.hidden = p.dataset.page !== target; });
-    if (target === 'rolls') rebuildRollsView();
   });
 }
 
@@ -776,7 +770,7 @@ wireTransport(transportDeps);
 wireClassicUI(classicDeps);
 rebuildMixer();
 wireAutomationTab(automationDeps);
-wirePresetLibrary({ seq, refreshAllCellsFromState });
+wirePresetLibrary({ seq });
 wirePolyControls(polySynthPresetsDeps);
 wirePolyMode(polyModeDeps);
 wireSlotCopyPanel({
@@ -871,10 +865,8 @@ document.getElementById('mode-session')?.addEventListener('click', () => setAppM
 wireRandomizeUI({
   seq, synth, scaleSel, rootSel,
   getBassRollEntry: () => classicState.bassRollEntry,
-  refreshAllCellsFromState,
   refreshKnobsFromSynth,
   rebuildPolyTrack,
-  rebuildRollsView,
   getActiveEngineLaneId: () => _lehState.activeLaneId,
 });
 const automationTickDeps: AutomationTickDeps = {
@@ -884,12 +876,6 @@ const automationTickDeps: AutomationTickDeps = {
   getLaneStates: () => sessionHost.laneStates,
   ctx,
   redrawAllLanes,
-  getBassRollEntry: () => classicState.bassRollEntry,
-  getMainRollEntry: () => classicState.mainRollEntry,
-  getExtraRolls: () => classicState.extraRolls,
-  getRollsRollEntries: () => rollsRollEntries,
-  autoScrollRoll,
-  getClassicDeps: () => classicDeps,
   trackActiveUntil,
 };
 startAutomationTick(automationTickDeps);

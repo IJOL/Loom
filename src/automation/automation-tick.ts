@@ -3,7 +3,6 @@ import { clamp01 } from './automation-painter';
 import { tickSessionEnvelopes } from '../session/session-runtime';
 import type { Sequencer } from '../core/sequencer';
 import type { KnobHandle } from '../core/knob';
-import type { ClassicDeps, RollEntry } from '../classic/classic-state';
 import type { LanePlayState } from '../session/session-runtime';
 import type { AppMode } from '../main';
 
@@ -14,12 +13,6 @@ export interface AutomationTickDeps {
   getLaneStates: () => Map<string, LanePlayState>;
   ctx: AudioContext;
   redrawAllLanes: () => void;
-  getBassRollEntry: () => RollEntry | null | undefined;
-  getMainRollEntry: () => RollEntry | null | undefined;
-  getExtraRolls: () => Map<string, RollEntry>;
-  getRollsRollEntries: () => RollEntry[];
-  autoScrollRoll: (entry: RollEntry, classicDeps: ClassicDeps) => void;
-  getClassicDeps: () => ClassicDeps;
   trackActiveUntil: Map<string, number>;
 }
 
@@ -46,8 +39,7 @@ export function startAutomationTick(deps: AutomationTickDeps): void {
   autoTickRunning = true;
   const {
     seq, automationRegistry, getAppMode, getLaneStates, ctx,
-    redrawAllLanes, getBassRollEntry, getMainRollEntry, getExtraRolls,
-    getRollsRollEntries, autoScrollRoll, getClassicDeps, trackActiveUntil,
+    redrawAllLanes, trackActiveUntil,
   } = deps;
 
   const tick = () => {
@@ -65,14 +57,6 @@ export function startAutomationTick(deps: AutomationTickDeps): void {
     if (playheadIdx !== autoCurrentSubIdx) {
       autoCurrentSubIdx = playheadIdx;
       redrawAllLanes();
-      // Keep all piano-roll playheads live (bass + main + extras + rolls view).
-      const classicDeps = getClassicDeps();
-      const bassRoll = getBassRollEntry();
-      if (bassRoll) { bassRoll.handle.redraw(); autoScrollRoll(bassRoll, classicDeps); }
-      const mainRoll = getMainRollEntry();
-      if (mainRoll) { mainRoll.handle.redraw(); autoScrollRoll(mainRoll, classicDeps); }
-      for (const e of getExtraRolls().values()) { e.handle.redraw(); autoScrollRoll(e, classicDeps); }
-      for (const e of getRollsRollEntries()) { e.handle.redraw(); autoScrollRoll(e, classicDeps); }
       // Update activity indicators (track labels pulse when recently triggered)
       const now = performance.now();
       document.querySelectorAll<HTMLElement>('.track-label[data-track-id]').forEach((el) => {

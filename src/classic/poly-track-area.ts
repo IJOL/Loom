@@ -2,7 +2,6 @@ import { classicState, type ClassicDeps, type ExtraId } from './classic-state';
 import { addPianoRollFor } from './piano-roll-helper';
 import { renderMainPolyStepRow } from './poly-step-row';
 import { refreshPolyTargetSelect } from './poly-target';
-import { rebuildRollsView } from './rolls-view';
 
 export function rebuildPolyTrack(deps: ClassicDeps, updatePagerFn: () => void): void {
   const { polyTracksEl } = deps;
@@ -75,5 +74,4 @@ export function rebuildPolyTrack(deps: ClassicDeps, updatePagerFn: () => void): 
 
   refreshPolyTargetSelect(deps);
   updatePagerFn();
-  rebuildRollsView(deps);
 }

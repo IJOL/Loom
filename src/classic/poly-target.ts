@@ -2,14 +2,10 @@ import { classicState, EXTRA_IDS, type ClassicDeps, type ExtraId } from './class
 import type { PolyTrack } from '../core/pattern';
 import type { PolySynth } from '../polysynth/polysynth';
 
-// Lazily imported at call time to avoid circular deps (rebuildPolyTrack etc.)
-type RebuildPolyTrack = () => void;
-
 export function setActivePolyTarget(
   target: PolySynth,
   labelText: string,
   deps: ClassicDeps,
-  rebuildPolyTrackFn?: RebuildPolyTrack,
 ): void {
   classicState.activePolyTarget = target;
   const labelEl = document.getElementById('poly-active-label');
@@ -72,39 +68,3 @@ export function refreshPolyTargetSelect(deps: ClassicDeps): void {
   }
 }
 
-export function wirePolyTargetSelect(
-  deps: ClassicDeps,
-  rebuildPolyTrackFn: RebuildPolyTrack,
-): void {
-  const sel = document.getElementById('poly-target-select') as HTMLSelectElement;
-  sel.addEventListener('change', () => {
-    const v = sel.value;
-    if (v === 'main') {
-      setActivePolyTarget(deps.polysynth, 'MAIN', deps, rebuildPolyTrackFn);
-    } else {
-      const id = v as ExtraId;
-      const track = ensureExtraTrack(id, deps);
-      setActivePolyTarget(deps.ensureExtraPoly(id), track.name, deps, rebuildPolyTrackFn);
-      rebuildPolyTrackFn();
-      deps.rebuildMixer();
-    }
-  });
-
-  const addBtn = document.getElementById('poly-add-track') as HTMLButtonElement | null;
-  if (addBtn) {
-    addBtn.addEventListener('click', () => {
-      const used = new Set(deps.seq.pattern.extraPolyTracks.map((t) => t.id));
-      const free = EXTRA_IDS.find((id) => !used.has(id));
-      if (!free) {
-        alert(`All ${EXTRA_IDS.length} extra polysynth slots are in use.`);
-        return;
-      }
-      const track = ensureExtraTrack(free, deps);
-      setActivePolyTarget(deps.ensureExtraPoly(free), track.name, deps, rebuildPolyTrackFn);
-      rebuildPolyTrackFn();
-      deps.rebuildMixer();
-    });
-  }
-
-  refreshPolyTargetSelect(deps);
-}

@@ -17,10 +17,8 @@ export interface RandomizeUIDeps {
   rootSel: HTMLSelectElement;
   /** Returns the current bassRollEntry (may be null). */
   getBassRollEntry: () => RollEntryRef | null;
-  refreshAllCellsFromState: () => void;
   refreshKnobsFromSynth: () => void;
   rebuildPolyTrack: () => void;
-  rebuildRollsView: () => void;
   /** Returns the currently-active engine lane id (e.g. 'main', 'poly1'). */
   getActiveEngineLaneId: () => string;
 }
@@ -35,7 +33,6 @@ function currentRandomBase(deps: RandomizeUIDeps): RandomizeOptions {
 function randomizeBassNotes(deps: RandomizeUIDeps): void {
   const base = currentRandomBase(deps);
   randomize(deps.seq, deps.synth, { ...base, bassNotes: true, accents: true, slides: true });
-  deps.refreshAllCellsFromState();
   deps.getBassRollEntry()?.handle.redraw();
 }
 
@@ -48,7 +45,6 @@ function randomizeBassSound(deps: RandomizeUIDeps): void {
 function randomizeDrumsLane(deps: RandomizeUIDeps): void {
   const base = currentRandomBase(deps);
   randomize(deps.seq, deps.synth, { ...base, drums: true });
-  deps.refreshAllCellsFromState();
 }
 
 // Scale intervals; same set used by random.ts
@@ -121,7 +117,6 @@ function randomizePolyLaneNotes(deps: RandomizeUIDeps, laneId: string): void {
   }
 
   deps.rebuildPolyTrack();
-  deps.rebuildRollsView();
 }
 
 /** Wire all per-lane randomize buttons. Call once at boot. */

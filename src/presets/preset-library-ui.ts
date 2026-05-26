@@ -6,11 +6,10 @@ import type { Sequencer } from '../core/sequencer';
 
 export interface PresetLibraryUIDeps {
   seq: Sequencer;
-  refreshAllCellsFromState: () => void;
 }
 
 export function wirePresetLibrary(deps: PresetLibraryUIDeps): void {
-  const { seq, refreshAllCellsFromState } = deps;
+  const { seq } = deps;
 
   const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -41,18 +40,15 @@ export function wirePresetLibrary(deps: PresetLibraryUIDeps): void {
     const p = DRUM_PRESETS.find((x) => x.id === drumSel.value);
     if (!p) return;
     loadDrumPreset(seq, p);
-    refreshAllCellsFromState();
   });
   $<HTMLButtonElement>('preset-bass-load').addEventListener('click', () => {
     const p = BASS_PRESETS.find((x) => x.id === bassSel.value);
     if (!p) return;
     loadBassPreset(seq, p);
-    refreshAllCellsFromState();
   });
   $<HTMLButtonElement>('preset-melody-load').addEventListener('click', () => {
     const p = MELODY_PRESETS.find((x) => x.id === melodySel.value);
     if (!p) return;
     loadMelodyPreset(seq, p);
-    refreshAllCellsFromState();
   });
 }
