@@ -148,15 +148,22 @@ function ensureExtraPoly(id: ExtraId): PolySynth {
   return p;
 }
 
-const stripFor = (t: TrackId): ChannelStrip => {
+const stripFor = (t: TrackId | string): ChannelStrip => {
   if (t === 'bass') return bassStrip;
   if (t === 'poly') return polyStrip;
   if (t === 'drumBus') return drumBusStrip;
-  if ((EXTRA_IDS as readonly string[]).includes(t)) {
+  if ((EXTRA_IDS as readonly string[]).includes(t as string)) {
     ensureExtraPoly(t as ExtraId); // creates strip lazily if missing
     return extraStrips[t as ExtraId]!;
   }
-  return drums.channels[t as DrumVoice];
+  // Per-voice drum channel strips (kick/snare/...).
+  if (t in drums.channels) {
+    const ch = drums.channels[t as DrumVoice];
+    if (ch) return ch;
+  }
+  // Generic extra Session lanes (bass2 / drums2 / poly3 / etc.) — share the
+  // same per-lane ChannelStrip cache used by ensureLaneVoice.
+  return ensureLaneStrip(t as string);
 };
 
 // Tracks that should appear in the mixer / be iterated for save / mute-solo.
