@@ -33,29 +33,29 @@ export interface EngineSequencer {
   dispose(): void;
 }
 
-// Optional context the host passes to engine.buildParamUI so engine knobs can
-// participate in the global automation registry. `idPrefix` should be unique
-// per lane (e.g. 'main', 'poly1') so concurrent lanes' knobs don't collide.
-// The registerKnob callback accepts a duck-typed shape; engines pass the
-// KnobHandle returned by createKnob and the host registers it.
 export interface EngineUIContext {
   laneId: string;
   idPrefix: string;
-  // Intentionally loose — engines pass createKnob() handles, host casts.
   registerKnob: (k: unknown) => void;
+}
+
+export interface EnginePreset {
+  name: string;
+  params: Record<string, number>;
 }
 
 export interface SynthEngine {
   readonly id: string;
   readonly name: string;
   readonly type: 'polyhost' | 'tab';
-  readonly polyphony: number | 'mono';
+  readonly polyphony: 'mono' | 'poly';
+  readonly editor: 'piano-roll' | 'drum-grid';
   readonly params: ParamDef[];
+  readonly presets: EnginePreset[];
   createVoice(ctx: AudioContext, output: AudioNode): Voice;
   buildSequencer(container: HTMLElement, stepCount: number): EngineSequencer;
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void;
-  /** Optional: randomize engine state. If omitted, host applies a generic
-   *  per-param uniform random over `params`. */
+  applyPreset(name: string): void;
   randomize?(): void;
   dispose(): void;
 }
