@@ -32,6 +32,7 @@ export interface SessionHostDeps {
   playBtn: HTMLButtonElement;
   resetAutomationPosition: () => void;
   bassTriggerDirect: (note: number, time: number, dur: number, accent: boolean, slidingIn: boolean) => void;
+  bassTriggerForArp: (note: number, time: number, gate: number, accent: boolean) => void;
   polyTriggerDirect: (note: number, time: number, gate: number, accent: boolean) => void;
   drums: DrumMachine;
   drumLanes: readonly DrumVoice[];
@@ -79,7 +80,9 @@ export class SessionHost {
               state: this.state,
               drums: this.deps.drums,
               drumLanes: this.deps.drumLanes,
+              bpm: () => this.deps.seq.bpm,
               bassTriggerDirect: this.deps.bassTriggerDirect,
+              bassTriggerForArp: this.deps.bassTriggerForArp,
               polyTriggerDirect: this.deps.polyTriggerDirect,
               markTrackActive: this.deps.markTrackActive,
               ensureExtraPoly: this.deps.ensureExtraPoly,

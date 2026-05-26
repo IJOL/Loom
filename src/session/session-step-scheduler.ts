@@ -8,13 +8,17 @@ import type { SynthEngine } from '../engines/engine-types';
 import type { ChannelStrip } from '../core/fx';
 import type { SessionClip, SessionState } from './session';
 import { TICKS_PER_STEP } from '../core/notes';
+import { arp } from '../arp/arp-ui';
+import { scheduleArpForNote } from '../arp/arp';
 
 export interface StepSchedulerDeps {
   ctx: AudioContext;
   state: SessionState;
   drums: DrumMachine;
   drumLanes: readonly DrumVoice[];
+  bpm: () => number;
   bassTriggerDirect: (note: number, time: number, dur: number, accent: boolean, slidingIn: boolean) => void;
+  bassTriggerForArp: (note: number, time: number, gate: number, accent: boolean) => void;
   polyTriggerDirect: (note: number, time: number, gate: number, accent: boolean) => void;
   markTrackActive: (trackId: string, time: number) => void;
   ensureExtraPoly: (id: string) => PolySynth;
@@ -31,12 +35,14 @@ export function scheduleClipStep(
   stepTime: number,
   stepDur: number,
 ): void {
-  const { state, drums, drumLanes, bassTriggerDirect, polyTriggerDirect,
-          markTrackActive, ensureExtraPoly, extraStrips,
-          getLaneEngineId, ensureLaneEngine, ctx } = deps;
+  const { state, drums, drumLanes, bassTriggerDirect, bassTriggerForArp,
+          polyTriggerDirect, markTrackActive, ensureExtraPoly, extraStrips,
+          getLaneEngineId, ensureLaneEngine, ctx, bpm } = deps;
 
   const lane = state.lanes.find((l) => l.id === laneId);
   if (!lane) return;
+
+  const arpEnabled = arp.enabled && arp.scope.includes(laneId);
 
   // BASS (303)
   if (lane.kind === 'bass') {
@@ -46,12 +52,16 @@ export function scheduleClipStep(
       const tickToSec     = stepDur / TICKS_PER_STEP;
       for (const n of clip.bassNotes) {
         if (n.start < stepStartTick || n.start >= stepEndTick) continue;
-        const slidingIn = clip.bassNotes.some((m) =>
-          m !== n && m.start < n.start && (m.start + m.duration) > n.start + 1);
         const offsetSec = (n.start - stepStartTick) * tickToSec;
         const durSec = Math.max(0.01, n.duration * tickToSec);
         const accent = n.velocity >= 100;
-        bassTriggerDirect(n.midi, stepTime + offsetSec, durSec, accent, slidingIn);
+        if (arpEnabled) {
+          scheduleArpForNote(bassTriggerForArp, arp, bpm(), n.midi, stepTime + offsetSec, durSec, accent);
+        } else {
+          const slidingIn = clip.bassNotes.some((m) =>
+            m !== n && m.start < n.start && (m.start + m.duration) > n.start + 1);
+          bassTriggerDirect(n.midi, stepTime + offsetSec, durSec, accent, slidingIn);
+        }
       }
     } else if (clip.bassSteps) {
       const s = clip.bassSteps[stepInClip];
@@ -59,7 +69,11 @@ export function scheduleClipStep(
       const prev = clip.bassSteps[(stepInClip - 1 + clip.bassSteps.length) % clip.bassSteps.length];
       const slidingIn = !!(prev && prev.on && prev.slide);
       const dur = (s.slide ? stepDur * 1.5 : stepDur * 0.92);
-      bassTriggerDirect(s.note, stepTime, dur, s.accent, slidingIn);
+      if (arpEnabled) {
+        scheduleArpForNote(bassTriggerForArp, arp, bpm(), s.note, stepTime, dur, s.accent);
+      } else {
+        bassTriggerDirect(s.note, stepTime, dur, s.accent, slidingIn);
+      }
     }
     markTrackActive('bass', stepTime);
     return;
@@ -116,6 +130,10 @@ export function scheduleClipStep(
         }
       }
     };
+    const triggerOrArp = (n: number, t: number, g: number, a: boolean) => {
+      if (arpEnabled) scheduleArpForNote(triggerFor, arp, bpm(), n, t, g, a);
+      else triggerFor(n, t, g, a);
+    };
 
     if (clip.polyMode === 'piano' && clip.polyNotes) {
       const stepStartTick = stepInClip * TICKS_PER_STEP;
@@ -126,13 +144,13 @@ export function scheduleClipStep(
         const offsetSec = (n.start - stepStartTick) * tickToSec;
         const durSec = Math.max(0.01, n.duration * tickToSec);
         const accent = n.velocity >= 100;
-        triggerFor(n.midi, stepTime + offsetSec, durSec, accent);
+        triggerOrArp(n.midi, stepTime + offsetSec, durSec, accent);
       }
     } else if (clip.polySteps) {
       const s = clip.polySteps[stepInClip];
       if (!s || !s.on || s.notes.length === 0) return;
       const gate = s.tie ? stepDur * 1.6 : stepDur * 0.9;
-      for (const midi of s.notes) triggerFor(midi, stepTime, gate, s.accent);
+      for (const midi of s.notes) triggerOrArp(midi, stepTime, gate, s.accent);
     }
     markTrackActive(laneId, stepTime);
   }

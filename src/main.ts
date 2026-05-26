@@ -538,6 +538,7 @@ const sessionHost = new SessionHost({
   ctx, seq, bank, playBtn,
   resetAutomationPosition,
   bassTriggerDirect,
+  bassTriggerForArp,
   polyTriggerDirect,
   drums,
   drumLanes: DRUM_LANES,
