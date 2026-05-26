@@ -173,15 +173,14 @@ export interface MidiImportDeps {
   muteState: Record<string, boolean>;
   applyMuteSolo: () => void;
   refreshLoopBtn: () => void;
-  rebuildPolyTrack: () => void;
-  rebuildMixer: () => void;
+  refresh?: () => void;
   flashButton: (b: HTMLButtonElement, msg: string) => void;
   ensureExtraPoly: (id: ExtraId) => PolySynth;
   applyPresetByName: (poly: PolySynth, name: string) => void;
 }
 
 export function wireMidiImport(deps: MidiImportDeps): void {
-  const { seq, muteState, applyMuteSolo, refreshLoopBtn, rebuildPolyTrack, rebuildMixer, flashButton, ensureExtraPoly, applyPresetByName } = deps;
+  const { seq, muteState, applyMuteSolo, refreshLoopBtn, flashButton, ensureExtraPoly, applyPresetByName } = deps;
 
   const fileInput = document.getElementById('poly-midi-file') as HTMLInputElement;
   const trackListEl = document.getElementById('poly-midi-tracklist') as HTMLDivElement;
@@ -306,8 +305,7 @@ export function wireMidiImport(deps: MidiImportDeps): void {
     seq.loopEnabled = false;
     refreshLoopBtn();
 
-    rebuildPolyTrack();
-    rebuildMixer();
+    deps.refresh?.();
     flashButton(loadBtn, `Loaded ${nextSlot} poly + ${drumTracks.length} drum, ${requiredSteps} steps, no loop`);
   });
 }

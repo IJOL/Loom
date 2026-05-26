@@ -9,10 +9,6 @@ export interface SlotCopyDeps {
   bank: PatternBank;
   seq: Sequencer;
   barsSel: HTMLSelectElement;
-  /** Returns the current viewStart offset (mutable ref via getter/setter). */
-  getViewStart: () => number;
-  setViewStart: (v: number) => void;
-  rebuildTracks: () => void;
   renderLanes: () => void;
   flashButton: (btn: HTMLButtonElement, msg: string) => void;
 }
@@ -83,8 +79,6 @@ export function wireSlotCopyPanel(deps: SlotCopyDeps): void {
     if (to === deps.bank.current) {
       deps.seq.setPattern(deps.bank.slots[to]);
       deps.barsSel.value = String(deps.seq.length);
-      deps.setViewStart(0);
-      deps.rebuildTracks();
       deps.renderLanes();
     }
     deps.flashButton(

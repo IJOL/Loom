@@ -43,8 +43,7 @@ export interface SessionHostDeps {
   getLaneEngineId: (laneId: string) => string;
   ensureLaneEngine: (laneId: string, engineId: string) => SynthEngine | null;
   ensureLaneVoice: (laneId: string, engineId: string) => import('../engines/engine-types').Voice | null;
-  setActivePolyTarget: (target: PolySynth, label: string) => void;
-  setCurrentSynthLane: (laneId: string) => void;
+  showPolyEditor: (laneId: string, target: PolySynth) => void;
   polysynth: PolySynth;
   mixerDeps: MixerColumnDeps;
   getAppMode: () => 'classic' | 'session';
@@ -177,7 +176,7 @@ export class SessionHost {
   private buildCallbacks(): void {
     const self = this;
     const { ctx, seq, playBtn, resetAutomationPosition,
-            ensureExtraPoly, setActivePolyTarget, setCurrentSynthLane,
+            ensureExtraPoly, showPolyEditor,
             polysynth } = this.deps;
 
     this.callbacks = {
@@ -273,11 +272,10 @@ export class SessionHost {
           return;
         }
 
-        if (laneId === 'main') {
-          setActivePolyTarget(polysynth, 'MAIN');
-        } else if (laneId.startsWith('poly')) {
-          setActivePolyTarget(ensureExtraPoly(laneId), laneId.toUpperCase());
-        }
+        let polyTarget: PolySynth | null = null;
+        if (laneId === 'main') polyTarget = polysynth;
+        else if (laneId.startsWith('poly')) polyTarget = ensureExtraPoly(laneId);
+
         const targetTab =
           laneId === 'bass'                                  ? '303'   :
           (laneId === 'drums' || laneId.startsWith('drum:')) ? 'drums' :
@@ -289,8 +287,8 @@ export class SessionHost {
             t.classList.toggle('active', t.dataset.tab === targetTab && !t.classList.contains('synth-tab'));
           }
         });
-        if (laneId.startsWith('poly') || laneId === 'main') {
-          setCurrentSynthLane(laneId === 'main' ? 'main' : laneId);
+        if (polyTarget) {
+          showPolyEditor(laneId === 'main' ? 'main' : laneId, polyTarget);
         } else {
           document.querySelectorAll<HTMLElement>('.page').forEach((p) => {
             p.hidden = p.dataset.page !== targetTab;

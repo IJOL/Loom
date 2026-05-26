@@ -5,7 +5,6 @@ import type { Sequencer } from '../core/sequencer';
 
 export interface CopyNotesDeps {
   seq: Sequencer;
-  rebuildTracks: () => void;
 }
 
 export interface CopyEndpoint { id: string; label: string; }
@@ -87,6 +86,5 @@ export function wireCopyNotesPanel(deps: CopyNotesDeps): void {
     if (fromSel.value === toSel.value) return;
     const notes = readEndpointAsNotes(deps, fromSel.value);
     writeNotesToEndpoint(deps, toSel.value, notes);
-    deps.rebuildTracks();
   });
 }

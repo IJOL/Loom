@@ -31,7 +31,6 @@ export interface SaveWiringDeps {
   rootSel: HTMLSelectElement;
   bank: PatternBank;
   barsSel: HTMLSelectElement;
-  viewStart: { value: number };
   activeTracks: () => string[];
   stripFor: (t: string) => ChannelStrip;
   muteState: Record<string, boolean>;
@@ -40,7 +39,6 @@ export interface SaveWiringDeps {
   sessionHost: SessionHost;
   setAppMode: (mode: AppMode) => void;
   getAppMode: () => AppMode;
-  rebuildTracks: () => void;
   rebuildMixer: () => void;
   refreshKnobsFromSynth: () => void;
   renderLanes: () => void;
@@ -85,7 +83,7 @@ function buildSavedStateV2(deps: SaveWiringDeps): Record<string, unknown> {
 }
 
 function applyLoadedState(data: unknown, deps: SaveWiringDeps): void {
-  const { seq, synth, polysynth, drums, master, volInput, bpmInput, swingInput, kitSel, waveSel, scaleSel, rootSel, bank, barsSel, activeTracks, stripFor, muteState, soloState, sessionHost, setAppMode, rebuildTracks, rebuildMixer, refreshKnobsFromSynth, renderLanes, fx, filterChain, applyMuteSolo } = deps;
+  const { seq, synth, polysynth, drums, master, volInput, bpmInput, swingInput, kitSel, waveSel, scaleSel, rootSel, bank, barsSel, activeTracks, stripFor, muteState, soloState, sessionHost, setAppMode, rebuildMixer, refreshKnobsFromSynth, renderLanes, fx, filterChain, applyMuteSolo } = deps;
 
   if (!data || typeof data !== 'object') { alert('Invalid save data'); return; }
   const s = data as Record<string, unknown>;
@@ -103,7 +101,6 @@ function applyLoadedState(data: unknown, deps: SaveWiringDeps): void {
     bank.current = typeof s.currentSlot === 'number' ? s.currentSlot : 0;
     seq.setPattern(bank.slots[bank.current]);
     barsSel.value = String(seq.length);
-    deps.viewStart.value = 0;
   }
   if (s.channels && typeof s.channels === 'object') {
     for (const t of activeTracks()) {
@@ -118,7 +115,6 @@ function applyLoadedState(data: unknown, deps: SaveWiringDeps): void {
   }
   if (s.mode === 'session') setAppMode('session');
   else setAppMode('classic');
-  rebuildTracks();
   rebuildMixer();
   sessionHost.renderWithMixer();
   applyMuteSolo();

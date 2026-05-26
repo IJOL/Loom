@@ -1,8 +1,6 @@
 import type { Sequencer } from './sequencer';
 import type { PatternBank } from './pattern';
 import { clonePattern } from './pattern';
-import { DRUM_LANES } from './drums';
-import type { classicState as ClassicStateType } from '../classic/classic-state';
 
 const $$ = <T extends HTMLElement>(sel: string) => Array.from(document.querySelectorAll<T>(sel));
 
@@ -13,16 +11,9 @@ export interface TransportDeps {
   playBtn: HTMLButtonElement;
   barsSel: HTMLSelectElement;
   resetAutomationPosition: () => void;
-  classicState: typeof ClassicStateType;
-  getViewStart: () => number;
-  setViewStart: (v: number) => void;
-  VIEW_SIZE: number;
-  rebuildTracks: () => void;
   renderLanes: () => void;
   updateBassModeButtons: () => void;
   syncEngineToPattern: () => void;
-  rebuildSynthTabs: () => void;
-  getClassicVisibleRange: () => { start: number; end: number };
 }
 
 // Mutable state owned by transport
@@ -50,8 +41,6 @@ export function switchSlot(newIdx: number): void {
     d.bank.current = newIdx;
     d.seq.setPattern(d.bank.slots[newIdx]);
     d.barsSel.value = String(d.seq.length);
-    d.setViewStart(0);
-    d.rebuildTracks();
     updateSlotButtons();
     d.renderLanes();
     d.syncEngineToPattern();
@@ -85,7 +74,7 @@ function refreshChainBtn(chainBtn: HTMLButtonElement): void {
 
 export function wireTransport(deps: TransportDeps): void {
   _deps = deps;
-  const { seq, bank, ctx, playBtn, barsSel, classicState } = deps;
+  const { seq, bank, ctx, playBtn, barsSel } = deps;
 
   // ── Play/Stop ──────────────────────────────────────────────────────────────
   playBtn.addEventListener('click', () => {
@@ -93,29 +82,12 @@ export function wireTransport(deps: TransportDeps): void {
     if (seq.isPlaying()) {
       seq.stop();
       playBtn.textContent = '▶';
-      for (const i of Object.keys(classicState.bassCells)) classicState.bassCells[+i].el.classList.remove('current');
-      for (const i of Object.keys(classicState.melodyCells)) classicState.melodyCells[+i].el.classList.remove('current');
-      for (const lane of DRUM_LANES) for (const i of Object.keys(classicState.drumCells[lane])) classicState.drumCells[lane][+i].classList.remove('current');
     } else {
       deps.resetAutomationPosition();
       seq.start();
       playBtn.textContent = '■';
     }
   });
-
-  seq.onStep = (i) => {
-    const { start, end } = deps.getClassicVisibleRange();
-    for (let j = start; j < end; j++) {
-      const c = classicState.bassCells[j];
-      if (c) c.el.classList.toggle('current', i === j);
-      const mc = classicState.melodyCells[j];
-      if (mc) mc.el.classList.toggle('current', i === j);
-      for (const lane of DRUM_LANES) {
-        const b = classicState.drumCells[lane][j];
-        if (b) b.classList.toggle('current', i === j);
-      }
-    }
-  };
 
   // ── Loop toggle ────────────────────────────────────────────────────────────
   const loopBtn = document.getElementById('loop-toggle') as HTMLButtonElement;
@@ -162,21 +134,10 @@ export function wireTransport(deps: TransportDeps): void {
       bank.current = _pendingSlotIdx;
       _pendingSlotIdx = null;
       barsSel.value = String(seq.length);
-      deps.setViewStart(0);
-      deps.rebuildTracks();
       updateSlotButtons();
       deps.renderLanes();
       deps.updateBassModeButtons();
       deps.syncEngineToPattern();
-      deps.rebuildSynthTabs();
     }
   };
-
-  // ── Pager ──────────────────────────────────────────────────────────────────
-  document.getElementById('page-prev')!.addEventListener('click', () => {
-    if (deps.getViewStart() >= deps.VIEW_SIZE) { deps.setViewStart(deps.getViewStart() - deps.VIEW_SIZE); deps.rebuildTracks(); }
-  });
-  document.getElementById('page-next')!.addEventListener('click', () => {
-    if (deps.getViewStart() + deps.VIEW_SIZE < seq.length) { deps.setViewStart(deps.getViewStart() + deps.VIEW_SIZE); deps.rebuildTracks(); }
-  });
 }

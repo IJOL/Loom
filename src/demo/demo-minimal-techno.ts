@@ -14,14 +14,11 @@ export interface DemoDeps {
   chainBtn: HTMLButtonElement;
   setSlotConfigurators: (cbs: Array<(() => void) | null>) => void;
   getLaneEngineInstance: (laneId: string) => SynthEngine | null;
-  viewStart: { value: number };
-  rebuildTracks: () => void;
   updateSlotButtons: () => void;
   renderLanes: () => void;
   updateBassModeButtons: () => void;
   syncEngineToPattern: () => void;
   rebuildMixer: () => void;
-  rebuildSynthTabs: () => void;
 }
 
 function buildMinimalTechnoDemo(): PatternData[] {
@@ -209,15 +206,12 @@ export function applyMinimalTechnoDemo(deps: DemoDeps): void {
   bank.current = 0;
   seq.setPattern(bank.slots[0]);
   seq.setLength(32);
-  deps.viewStart.value = 0;
-  deps.rebuildTracks();
   deps.updateSlotButtons();
   deps.renderLanes();
   deps.updateBassModeButtons();
   deps.syncEngineToPattern();
   deps.rebuildMixer();
   if (!deps.chainEnabled()) deps.chainBtn.click();
-  deps.rebuildSynthTabs();
 }
 
 export function wireDemoMinimalTechno(deps: DemoDeps): void {

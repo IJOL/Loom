@@ -54,21 +54,9 @@ import {
   type TransportDeps,
 } from './core/transport';
 import {
-  classicState,
-  type ClassicDeps,
-} from './classic/classic-state';
-import {
-  rebuildTracks as classicRebuildTracks,
-  wireClassicUI,
-  updatePager as classicUpdatePager,
-  visibleRange as classicVisibleRange,
-} from './classic/classic-tracks';
-import { rebuildPolyTrack as classicRebuildPolyTrack } from './classic/poly-track-area';
-import {
-  rebuildSynthTabs as classicRebuildSynthTabs,
-  setCurrentSynthLane as classicSetCurrentSynthLane,
-} from './classic/synth-tabs';
-import { setActivePolyTarget as classicSetActivePolyTarget } from './classic/poly-target';
+  showPolyEditor,
+  synthEditorState,
+} from './session/synth-editor-routing';
 import { startVisualizer } from './core/visualizer';
 import { wireDrumMasterUI } from './core/drum-master-ui';
 import { wirePresetLibrary } from './presets/preset-library-ui';
@@ -94,8 +82,6 @@ const EXTRA_IDS: ExtraId[] = [
 ];
 type TrackId = 'bass' | 'poly' | 'drumBus' | ExtraId | DrumVoice;
 const ALL_TRACKS: TrackId[] = ['bass', 'poly', ...EXTRA_IDS, 'drumBus', ...DRUM_LANES];
-const VIEW_SIZE = 32;
-
 const $  = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const $$ = <T extends HTMLElement>(sel: string) => Array.from(document.querySelectorAll<T>(sel));
 
@@ -341,17 +327,6 @@ const LANE_LABELS: Record<TrackId, string> = {
   clap: 'CLAP', cowbell: 'COWBLL', tom: 'TOM', ride: 'RIDE',
 };
 
-// viewStart, bassCells, melodyCells, drumCells, visibleRange, updatePager
-// → moved to src/classic/ (classicState + classicRebuildTracks etc.)
-
-// rebuildTracks, renderBassStepGrid, RollEntry, pianoRoll, mainRollEntry,
-// bassRollEntry, extraRolls → moved to src/classic/
-function rebuildTracks() { classicRebuildTracks(classicDeps); }
-function rebuildPolyTrack() { classicRebuildPolyTrack(classicDeps, () => classicUpdatePager(classicDeps)); }
-function rebuildSynthTabs() { classicRebuildSynthTabs(classicDeps, rebuildPolyTrack, rebuildMixer); }
-function setCurrentSynthLane(laneId: string) { classicSetCurrentSynthLane(laneId, classicDeps, rebuildPolyTrack); }
-function setActivePolyTarget(target: PolySynth, labelText: string) { classicSetActivePolyTarget(target, labelText, classicDeps); }
-
 function setBassMode(mode: 'step' | 'piano') {
   if (seq.pattern.bassMode === mode) return;
   // Convert step → piano so the user doesn't lose existing work on first switch.
@@ -359,7 +334,6 @@ function setBassMode(mode: 'step' | 'piano') {
     seq.pattern.bassNotes = bassStepsToNotes(seq.pattern.bass);
   }
   seq.pattern.bassMode = mode;
-  rebuildTracks();
   updateBassModeButtons();
 }
 function updateBassModeButtons() {
@@ -457,8 +431,6 @@ waveSel.addEventListener('change', () => { synth.params.wave = waveSel.value as 
 
 barsSel.addEventListener('change', () => {
   seq.setLength(parseInt(barsSel.value, 10));
-  classicState.viewStart = 0;
-  rebuildTracks();
   renderLanes();
 });
 
@@ -528,7 +500,7 @@ for (const t of $$<HTMLButtonElement>('button.tab')) {
 }
 
 // ── PolySynth knobs (target swappable for multi-poly editing) ─────────────
-// activePolyTarget lives in classicState.activePolyTarget — set at boot by wireClassicUI.
+// activePolyTarget lives in synthEditorState (src/session/synth-editor-routing.ts).
 
 // buildPolySynthUI is now in polysynth-ui.ts — see boot section for call.
 
@@ -592,6 +564,13 @@ seq.onBassTrigger = (note, time, gate, accent, slidingIn) => {
 };
 
 // ── Session host ───────────────────────────────────────────────────────────
+// synthEditorDeps is constructed later (after polySynthUIDeps + polySynthPresetsDeps
+// exist). showPolyEditorWrapper reads it lazily at call time.
+let synthEditorDeps: import('./session/synth-editor-routing').SetActivePolyTargetDeps | null = null;
+const showPolyEditorWrapper = (laneId: string, target: PolySynth) => {
+  if (!synthEditorDeps) return;
+  showPolyEditor(laneId, target, synthEditorDeps);
+};
 const sessionHost = new SessionHost({
   ctx, seq, bank, playBtn,
   resetAutomationPosition,
@@ -606,8 +585,7 @@ const sessionHost = new SessionHost({
   getLaneEngineId,
   ensureLaneEngine,
   ensureLaneVoice,
-  setActivePolyTarget,
-  setCurrentSynthLane,
+  showPolyEditor: showPolyEditorWrapper,
   polysynth,
   mixerDeps,
   getAppMode,
@@ -616,6 +594,7 @@ const sessionHost = new SessionHost({
   getAutoAbsSubIdx,
   onActiveLaneChanged: () => populateAutoParamSelectWrapper(),
 });
+synthEditorState.activePolyTarget = polysynth;
 sessionHost.init();
 
 // buildArpUI moved to arp-ui.ts (imported above)
@@ -654,7 +633,7 @@ barsSel.value = String(seq.length);
 
 // ── Deps objects for extracted UI modules ─────────────────────────────────
 const polySynthUIDeps: PolySynthUIDeps = {
-  getActivePolyTarget: () => classicState.activePolyTarget ?? polysynth,
+  getActivePolyTarget: () => synthEditorState.activePolyTarget ?? polysynth,
   registerKnob,
 };
 
@@ -706,7 +685,7 @@ const engineSelectorDeps: EngineSelectorUIDeps = {
 wireEngineSelector(engineSelectorDeps, currentEngineId);
 
 const polySynthPresetsDeps: PolySynthPresetsDeps = {
-  getActivePolyTarget: () => classicState.activePolyTarget ?? polysynth,
+  getActivePolyTarget: () => synthEditorState.activePolyTarget ?? polysynth,
   getActiveEngineLaneId: () => _lehState.activeLaneId,
   getLaneEngineId,
   getLaneEngineInstance,
@@ -718,32 +697,17 @@ const polyModeDeps: PolyModeDeps = {
   stepsToNotes,
   getMelodySteps: () => seq.pattern.melody,
   setPolyPatternMode: (mode) => { seq.pattern.polyMode = mode; },
-  rebuildPolyTrack,
+  rebuildPolyTrack: () => { /* Classic-only re-render — Session re-renders via sessionHost.renderWithMixer() */ },
   setBassMode,
   updateBassModeButtons,
 };
 
-// ── Classic-mode track rendering deps + thin wrappers ─────────────────────
-const classicDeps: ClassicDeps = {
-  seq,
-  bank,
-  polysynth,
-  extraPolys: extraPolys as Partial<Record<import('./classic/classic-state').ExtraId, PolySynth>>,
-  extraStrips: extraStrips as Partial<Record<import('./classic/classic-state').ExtraId, ChannelStrip>>,
-  ensureExtraPoly: ensureExtraPoly as (id: import('./classic/classic-state').ExtraId) => PolySynth,
-  extraPolyIds: EXTRA_IDS as import('./classic/classic-state').ExtraId[],
-  laneLabels: LANE_LABELS as Record<string, string>,
-  bassTracksEl,
-  drumTracksEl,
-  polyTracksEl,
-  VIEW_SIZE,
-  midiLabel,
-  setBassMode,
-  refreshPolyKnobsFromState,
-  refreshPolyPresetSelect,
-  setActiveEngineLane,
-  rebuildMixer,
-  buildArpUI: (opts) => buildArpUI(opts),
+// Now that polySynthUIDeps + polySynthPresetsDeps exist, wire synthEditorDeps
+// (referenced lazily by showPolyEditorWrapper above).
+synthEditorDeps = {
+  refreshPolyKnobsFromState: () => refreshPolyKnobsFromState(),
+  refreshPolyPresetSelect: () => refreshPolyPresetSelect(),
+  setActiveEngineLane: (laneId: string) => setActiveEngineLane(laneId),
 };
 
 buildPolySynthUI(polySynthUIDeps);
@@ -755,19 +719,11 @@ fxApplyDelaySync(fxUIDeps);
 const transportDeps: TransportDeps = {
   seq, bank, ctx, playBtn, barsSel,
   resetAutomationPosition,
-  classicState,
-  getViewStart: () => classicState.viewStart,
-  setViewStart: (v) => { classicState.viewStart = v; },
-  VIEW_SIZE,
-  rebuildTracks,
   renderLanes,
   updateBassModeButtons,
   syncEngineToPattern,
-  rebuildSynthTabs,
-  getClassicVisibleRange: () => classicVisibleRange(classicDeps),
 };
 wireTransport(transportDeps);
-wireClassicUI(classicDeps);
 rebuildMixer();
 wireAutomationTab(automationDeps);
 wirePresetLibrary({ seq });
@@ -775,13 +731,10 @@ wirePolyControls(polySynthPresetsDeps);
 wirePolyMode(polyModeDeps);
 wireSlotCopyPanel({
   bank, seq, barsSel,
-  getViewStart: () => classicState.viewStart,
-  setViewStart: (v) => { classicState.viewStart = v; },
-  rebuildTracks,
   renderLanes,
   flashButton,
 });
-wireCopyNotesPanel({ seq, rebuildTracks });
+wireCopyNotesPanel({ seq });
 
 // ── Demo wiring (deps built here, functions live in demo-minimal-techno.ts) ─
 const demoDeps: import('./demo/demo-minimal-techno').DemoDeps = {
@@ -790,14 +743,11 @@ const demoDeps: import('./demo/demo-minimal-techno').DemoDeps = {
   chainBtn: $<HTMLButtonElement>('chain-toggle'),
   setSlotConfigurators,
   getLaneEngineInstance,
-  viewStart: { get value() { return classicState.viewStart; }, set value(v) { classicState.viewStart = v; } },
-  rebuildTracks,
   updateSlotButtons,
   renderLanes,
   updateBassModeButtons,
   syncEngineToPattern,
   rebuildMixer,
-  rebuildSynthTabs,
 };
 wireDemoMinimalTechno(demoDeps);
 
@@ -807,8 +757,7 @@ wireMidiImport({
   muteState: muteState as Record<string, boolean>,
   applyMuteSolo,
   refreshLoopBtn,
-  rebuildPolyTrack,
-  rebuildMixer,
+  refresh: () => sessionHost.renderWithMixer(),
   flashButton,
   ensureExtraPoly: ensureExtraPoly as (id: Parameters<typeof ensureExtraPoly>[0]) => PolySynth,
   applyPresetByName,
@@ -864,9 +813,9 @@ document.getElementById('mode-session')?.addEventListener('click', () => setAppM
 
 wireRandomizeUI({
   seq, synth, scaleSel, rootSel,
-  getBassRollEntry: () => classicState.bassRollEntry,
+  getBassRollEntry: () => null,
   refreshKnobsFromSynth,
-  rebuildPolyTrack,
+  rebuildPolyTrack: () => { /* Classic-only — Session re-renders via sessionHost */ },
   getActiveEngineLaneId: () => _lehState.activeLaneId,
 });
 const automationTickDeps: AutomationTickDeps = {
@@ -889,7 +838,6 @@ const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
   seq, synth, polysynth, drums, master,
   volInput, bpmInput, swingInput, kitSel, waveSel, scaleSel, rootSel,
   bank, barsSel,
-  viewStart: { get value() { return classicState.viewStart; }, set value(v) { classicState.viewStart = v; } },
   activeTracks: () => activeTracks() as string[],
   stripFor: (t) => stripFor(t as TrackId),
   muteState: muteState as Record<string, boolean>,
@@ -898,7 +846,6 @@ const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
   sessionHost,
   setAppMode,
   getAppMode,
-  rebuildTracks,
   rebuildMixer,
   refreshKnobsFromSynth,
   renderLanes,
