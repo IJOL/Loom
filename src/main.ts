@@ -618,6 +618,8 @@ const sessionHost = new SessionHost({
   mixerDeps,
   getAppMode,
   midiLabel,
+  automationRegistry,
+  getAutoAbsSubIdx,
 });
 sessionHost.init();
 

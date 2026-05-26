@@ -6,6 +6,7 @@ import type { SessionState, SessionClip } from './session';
 import type { LanePlayState } from './session-runtime';
 import type { Sequencer } from '../core/sequencer';
 import { renderClipEditor, type ClipEditorDeps } from './clip-editors/clip-editor-router';
+import { renderClipAutomationLanes } from './clip-automation-lanes';
 import type { PianoRollHandle } from '../core/pianoroll';
 
 export interface InspectorDeps {
@@ -15,6 +16,8 @@ export interface InspectorDeps {
   laneStates: Map<string, LanePlayState>;
   renderWithMixer: () => void;
   midiLabel: (m: number) => string;
+  automationRegistry: Map<string, import('../core/knob').KnobHandle>;
+  getAutoAbsSubIdx: () => number;
 }
 
 export class SessionInspector {
@@ -99,14 +102,31 @@ export class SessionInspector {
     const clip = lane?.clips[this.selectedClip.clipIdx];
     if (!lane || !clip) return;
 
+    host.innerHTML = '';
+
+    // Editor area (piano-roll or drum-grid).
+    const editorBox = document.createElement('div');
+    editorBox.className = 'insp-editor-box';
+    host.appendChild(editorBox);
+
     const editorDeps: ClipEditorDeps = {
       ctx: this.deps.ctx,
       seq: this.deps.seq,
       laneStates: this.deps.laneStates,
       midiLabel: this.deps.midiLabel,
     };
+    this.roll = renderClipEditor(editorBox, lane, clip, editorDeps, editorOverride.get(clip.id));
 
-    this.roll = renderClipEditor(host, lane, clip, editorDeps, editorOverride.get(clip.id));
+    // Per-clip automation lanes below the editor.
+    const autoBox = document.createElement('div');
+    autoBox.className = 'insp-auto-box';
+    host.appendChild(autoBox);
+
+    renderClipAutomationLanes(autoBox, clip, {
+      seq: this.deps.seq,
+      getAutoAbsSubIdx: this.deps.getAutoAbsSubIdx,
+      automationRegistry: this.deps.automationRegistry,
+    });
   }
 
   // ── Copy / paste ───────────────────────────────────────────────────────────

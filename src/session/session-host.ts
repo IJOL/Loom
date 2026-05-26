@@ -48,6 +48,8 @@ export interface SessionHostDeps {
   mixerDeps: MixerColumnDeps;
   getAppMode: () => 'classic' | 'session';
   midiLabel: (m: number) => string;
+  automationRegistry: Map<string, import('../core/knob').KnobHandle>;
+  getAutoAbsSubIdx: () => number;
 }
 
 export class SessionHost {
@@ -69,6 +71,8 @@ export class SessionHost {
       laneStates: this.laneStates,
       renderWithMixer: () => this.renderWithMixer(),
       midiLabel: this.deps.midiLabel,
+      automationRegistry: this.deps.automationRegistry,
+      getAutoAbsSubIdx: this.deps.getAutoAbsSubIdx,
     });
 
     this.deps.seq.sessionTick = (now, look) => {

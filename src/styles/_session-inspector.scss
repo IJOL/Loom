@@ -53,3 +53,37 @@
   position: relative;
   z-index: 1;
 }
+
+/* Per-clip automation lanes (Session inspector). */
+.insp-editor-box { margin-bottom: 12px; }
+.insp-auto-box { margin-top: 12px; border-top: 1px solid #2a2a2a; padding-top: 8px; }
+.clip-auto-lanes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.clip-auto-header {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+}
+.clip-auto-param-select {
+  background: #1a1a1a; color: #ddd; border: 1px solid #333;
+  border-radius: 3px; padding: 4px 6px; font-size: 12px;
+}
+.clip-auto-brush-bar { display: flex; gap: 4px; }
+.clip-auto-hint { color: #666; font-size: 12px; margin: 4px 0 0; }
+.clip-auto-range { font-size: 10px; color: #888; }
+.clip-auto-lane .auto-lane-canvas {
+  display: block; background: #141414; border-radius: 4px;
+}
+.clip-auto-lane .auto-lane-header {
+  display: flex; gap: 6px; align-items: center; font-size: 11px; color: #aaa;
+  margin-bottom: 4px;
+}
+.clip-auto-lane .auto-lane-header .label { flex: 1; }
+.clip-auto-lane .auto-lane-header button {
+  background: #222; color: #aaa; border: 1px solid #333;
+  border-radius: 3px; padding: 2px 6px; font-size: 11px; cursor: pointer;
+}
+.clip-auto-lane .auto-lane-header button.active {
+  background: #4dd0e1; color: #0a0a0a; border-color: #4dd0e1;
+}

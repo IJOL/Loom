@@ -9,6 +9,8 @@ export type LaunchQuantize =
 export interface ClipEnvelope {
   paramId: string;
   values: number[];
+  enabled?: boolean;
+  stepped?: boolean;
 }
 
 export interface SessionClip {
