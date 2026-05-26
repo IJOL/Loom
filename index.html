@@ -3,24 +3,64 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TB-303 + Drums + PolySynth</title>
+    <title>Session — TB-303 + Drums + PolySynth</title>
     <link rel="stylesheet" href="/src/style.scss" />
+    <style>
+      /* ── Pure-Session chrome stripping ─────────────────────────────────
+         The whole app shares one main.ts boot, so every DOM id Classic
+         expects must still exist. We just hide everything that doesn't
+         belong in a session-first workflow. */
+      body[data-pure-session="true"] .mode-toggle,
+      body[data-pure-session="true"] .copy-row,
+      body[data-pure-session="true"] .copy-track-panel,
+      body[data-pure-session="true"] .presets-panel,
+      body[data-pure-session="true"] .mixer-panel,
+      body[data-pure-session="true"] .midi-panel,
+      body[data-pure-session="true"] .row.tools,
+      body[data-pure-session="true"] #loop-toggle,
+      body[data-pure-session="true"] #chain-toggle,
+      body[data-pure-session="true"] #rec,
+      body[data-pure-session="true"] .slot-group,
+      body[data-pure-session="true"] #pager,
+      body[data-pure-session="true"] label:has(> #bars),
+      body[data-pure-session="true"] .vert-divider,
+      body[data-pure-session="true"] #bass-tracks,
+      body[data-pure-session="true"] #drum-tracks,
+      body[data-pure-session="true"] #poly-tracks,
+      body[data-pure-session="true"] [data-page="rolls"],
+      body[data-pure-session="true"] button.tab[data-tab="rolls"],
+      body[data-pure-session="true"] button.tab[data-tab="303"],
+      body[data-pure-session="true"] button.tab[data-tab="drums"],
+      body[data-pure-session="true"] #bass-mode-step,
+      body[data-pure-session="true"] #bass-mode-piano,
+      body[data-pure-session="true"] #poly-mode-step,
+      body[data-pure-session="true"] #poly-mode-piano,
+      body[data-pure-session="true"] .synth > p.hint,
+      body[data-pure-session="true"] #session-import-classic {
+        display: none !important;
+      }
+      body[data-pure-session="true"] h1::after {
+        content: " — Session";
+        opacity: 0.5;
+        font-size: 0.6em;
+      }
+    </style>
   </head>
-  <body>
+  <body data-pure-session="true">
     <div class="synth">
       <h1>TB-303 + DRUMS + POLYSYNTH</h1>
 
       <div class="row transport">
         <button id="play" title="Play / Stop">&#9654;</button>
         <button class="io" id="loop-toggle" title="Loop on/off">↻ LOOP</button>
-        <button class="io" id="chain-toggle" title="Chain mode — at end of pattern, jump to next slot (A→B→C→D→A...)">→ CHAIN</button>
+        <button class="io" id="chain-toggle" title="Chain mode">→ CHAIN</button>
         <label>BPM<input id="bpm" type="number" value="130" min="40" max="240" /></label>
         <label>Swing<input id="swing" type="range" min="0" max="0.6" step="0.01" value="0" /></label>
         <label>Volume<input id="volume" type="range" min="0" max="1" step="0.01" value="0.5" /></label>
         <div class="vert-divider"></div>
         <div class="mode-toggle">
-          <button class="mode-btn active" id="mode-classic" data-mode="classic">Classic</button>
-          <button class="mode-btn"        id="mode-session" data-mode="session">Session</button>
+          <button class="mode-btn"        id="mode-classic" data-mode="classic">Classic</button>
+          <button class="mode-btn active" id="mode-session" data-mode="session">Session</button>
         </div>
         <div class="vert-divider"></div>
         <label>Bars
@@ -46,7 +86,7 @@
           <span id="page-label">1/2</span>
           <button class="page-btn" id="page-next">▶</button>
         </div>
-        <button class="io" id="rec" title="Record knob moves into automation lanes">● REC</button>
+        <button class="io" id="rec" title="Record knob moves">● REC</button>
         <button class="io" id="save">Save</button>
         <button class="io" id="load">Load</button>
         <canvas id="viz" width="200" height="40"></canvas>
@@ -65,7 +105,7 @@
       </div>
 
       <details class="midi-panel">
-        <summary>MIDI Import — load any .mid into the polysynth tracks + DrumMachine</summary>
+        <summary>MIDI Import</summary>
         <div class="midi-import-row">
           <input type="file" id="poly-midi-file" accept=".mid,.midi" />
           <button class="rnd primary" id="poly-midi-load" style="display:none;">Load selected → extras</button>
@@ -86,10 +126,10 @@
       </div>
 
       <details class="presets-panel">
-        <summary>Preset Library — drum breaks, acid bass, melodies</summary>
+        <summary>Preset Library</summary>
         <div class="preset-row">
           <span class="preset-label">Demo</span>
-          <button class="rnd primary" id="demo-minimal-techno">Load Minimal Techno (4 patterns A→D + automation + chain)</button>
+          <button class="rnd primary" id="demo-minimal-techno">Load Minimal Techno</button>
         </div>
         <div class="preset-row">
           <span class="preset-label">Drums</span>
@@ -109,15 +149,12 @@
       </details>
 
       <div class="tab-bar">
-        <button class="tab active" data-tab="303">TB-303</button>
-        <button class="tab"        data-tab="drums">Drums</button>
         <span id="synth-tabs"></span>
-        <button class="tab"        data-tab="rolls">All Rolls</button>
-        <button class="tab"        data-tab="fx">Master FX</button>
-        <button class="tab"        data-tab="auto">Automation</button>
+        <button class="tab" data-tab="fx">Master FX</button>
+        <button class="tab" data-tab="auto">Automation</button>
       </div>
 
-      <div class="page" data-page="303">
+      <div class="page" data-page="303" hidden>
         <div class="row knobs">
           <label>Wave<select id="wave">
               <option value="sawtooth">Saw</option>
@@ -129,8 +166,8 @@
           <button class="rnd" id="bass-mode-step">Step</button>
           <button class="rnd" id="bass-mode-piano">Piano Roll</button>
           <div class="vert-divider"></div>
-          <button class="rnd primary" id="bass-random-sound" title="Randomize 303 cutoff/resonance/env/decay/accent for inspiration">🎲 Sound</button>
-          <button class="rnd primary" id="bass-random-notes" title="Randomize bass notes in the current scale">🎲 Notes</button>
+          <button class="rnd primary" id="bass-random-sound">🎲 Sound</button>
+          <button class="rnd primary" id="bass-random-notes">🎲 Notes</button>
         </div>
         <div id="bass-tracks" class="tracks"></div>
       </div>
@@ -141,7 +178,7 @@
           <div class="vert-divider"></div>
           <div id="drum-master-knobs" class="knob-row"></div>
           <div class="vert-divider"></div>
-          <button class="rnd primary" id="drums-random" title="Randomize drum hits — musical placement (kicks on downbeats, snares on backbeats)">🎲 Pattern</button>
+          <button class="rnd primary" id="drums-random">🎲 Pattern</button>
         </div>
         <div id="drum-tracks" class="tracks"></div>
       </div>
@@ -152,8 +189,8 @@
           <span id="engine-lane-label" class="active-edit-label">MAIN</span>
           <select id="engine-select"></select>
           <div class="vert-divider"></div>
-          <button class="rnd primary" id="poly-randomize" title="Randomize the engine params on the active lane only">🎲 Sound</button>
-          <button class="rnd primary" id="poly-random-notes" title="Randomize notes on the active lane in the current scale">🎲 Notes</button>
+          <button class="rnd primary" id="poly-randomize">🎲 Sound</button>
+          <button class="rnd primary" id="poly-random-notes">🎲 Notes</button>
           <div class="vert-divider"></div>
           <span class="section-label">PRESET</span>
           <select id="poly-preset-select"></select>
@@ -204,7 +241,7 @@
       </div>
 
       <div class="page" data-page="rolls" hidden>
-        <p class="hint">Piano rolls de todos los lanes (303 + main + extras). Edición sobre la misma data — los cambios aquí se reflejan en cada tab de sinte.</p>
+        <p class="hint">Piano rolls de todos los lanes.</p>
         <div id="rolls-stack" class="tracks"></div>
       </div>
 
@@ -225,10 +262,6 @@
           </div>
         </div>
         <div id="auto-lanes" class="auto-lanes"></div>
-        <p class="hint">
-          Click + arrastra para pintar valores en cada step. Doble-click resetea el step a 50%.
-          Cada lane controla un parámetro registrado; el sequencer aplica el valor en cada step durante playback.
-        </p>
       </div>
 
       <div class="page" data-page="fx" hidden>
@@ -248,38 +281,30 @@
       </div>
 
       <details class="arp-panel">
-        <summary>Arpeggiator — applies to TB-303 bass and/or any PolySynth lane</summary>
+        <summary>Arpeggiator</summary>
         <div id="poly-arp-controls" class="knob-row"></div>
       </details>
 
       <details class="copy-track-panel">
-        <summary>Copy lane — clone notes from one instrument to another</summary>
+        <summary>Copy lane</summary>
         <div class="copy-track-row">
           From <select id="copy-track-from"></select>
           →
           To <select id="copy-track-to"></select>
           <button class="rnd primary" id="copy-track-go">Copy notes</button>
-          <span class="copy-track-hint">Lossy conversions where needed (mono flatten for 303, quantize to 16ths for step grids).</span>
         </div>
       </details>
 
-      <details class="mixer-panel" open>
-        <summary>Mixer (EQ + sends per track)</summary>
+      <details class="mixer-panel">
+        <summary>Mixer</summary>
         <div id="mixer" class="mixer"></div>
       </details>
 
-      <p class="hint">
-        Bass / Melody cell: dropdown nota, <span class="k on">&#9679;</span> on, <span class="k accent">A</span> accent,
-        <span class="k slide">S</span> slide (bass) / <span class="k slide">T</span> tie (melody).
-        Drum cell: click cycla <span class="k off">off</span> → <span class="k on">on</span> → <span class="k accent">accent</span>.
-        Knobs: drag vertical, scroll, doble click resetea, Shift = fine.
-      </p>
+      <p class="hint">Hidden in Session.</p>
 
-      <div class="session-view" id="session-view" hidden>
+      <div class="session-view" id="session-view">
         <div class="session-toolbar">
           <button class="rnd primary" id="session-import-classic">Import from Classic</button>
-          <select id="session-add-engine" class="session-add-engine-select" title="Engine for new lane"></select>
-          <button class="rnd primary" id="session-add-lane">+ Add</button>
           <button class="rnd" id="session-launch-scene-1">▶ Scene 1 (debug)</button>
           <button class="rnd" id="session-stop-all">⏹ All</button>
         </div>

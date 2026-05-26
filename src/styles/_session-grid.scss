@@ -97,3 +97,46 @@
   cursor: pointer;
 }
 .session-add-engine-select:hover { border-color: #4dd0e1; }
+
+/* Session lane tabs (dynamic, populated by renderSessionTabBar). */
+#synth-tabs.session-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.session-lane-tab {
+  background: #1a1a1a;
+  color: #ddd;
+  border: 1px solid #333;
+  border-radius: 3px;
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.session-lane-tab:hover { color: #4dd0e1; border-color: #4dd0e1; }
+.session-tabs-add {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  margin-left: 8px;
+}
+.session-tabs-engine {
+  background: #1a1a1a;
+  color: #ddd;
+  border: 1px solid #333;
+  border-radius: 3px;
+  padding: 3px 4px;
+  font-size: 11px;
+}
+.session-tabs-add-btn {
+  background: #4dd0e1;
+  color: #0a0a0a;
+  border: none;
+  border-radius: 3px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.session-tabs-add-btn:hover { background: #80e6f4; }

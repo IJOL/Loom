@@ -19,8 +19,9 @@ import {
   type LanePlayState,
 } from './session-runtime';
 import { importClassicToSession, migrateLoadedSessionState } from './session-migration';
-import { getEngine, listEngines } from '../engines/registry';
+import { getEngine } from '../engines/registry';
 import { renderSessionGrid, type SessionUICallbacks } from './session-ui';
+import { renderSessionTabBar } from './session-tab-bar';
 import { buildMixerColumn } from '../core/mixer';
 import { scheduleClipStep } from './session-step-scheduler';
 import { SessionInspector } from './session-inspector';
@@ -104,6 +105,7 @@ export class SessionHost {
     this.buildCallbacks();
     this.wireToolbar();
     this.wireBackPill();
+    this.refreshSynthTabs();
     this.startRenderTick();
     this.renderWithMixer();
   }
@@ -143,6 +145,7 @@ export class SessionHost {
 
   renderWithMixer(): void {
     this.render();
+    this.refreshSynthTabs();
     const row = this.callbacks?._mixerRow;
     if (!row) return;
     row.innerHTML = '';
@@ -156,6 +159,16 @@ export class SessionHost {
     const sp2 = document.createElement('div');
     sp2.className = 'session-spacer';
     row.appendChild(sp2);
+  }
+
+  private refreshSynthTabs(): void {
+    const host = document.getElementById('synth-tabs');
+    if (!host) return;
+    renderSessionTabBar(host, {
+      state: this.state,
+      onPickLane: (laneId) => this.callbacks.onEditLane(laneId),
+      onAddLane:  (engineId) => this.callbacks.onAddLane(engineId),
+    });
   }
 
   // ── Callbacks ────────────────────────────────────────────────────────────
@@ -293,27 +306,9 @@ export class SessionHost {
       () => this.callbacks.onLaunchScene(0));
     document.getElementById('session-stop-all')!.addEventListener('click',
       () => this.callbacks.onStopAll());
-    const populateEngineSelect = () => {
-      const sel = document.getElementById('session-add-engine') as HTMLSelectElement | null;
-      if (!sel) return null;
-      if (sel.options.length === 0) {
-        for (const engine of listEngines('polyhost')) {
-          const opt = document.createElement('option');
-          opt.value = engine.id;
-          opt.textContent = engine.name;
-          sel.appendChild(opt);
-        }
-        // Default to subtractive (matches the old '+ Synth' button's behaviour).
-        sel.value = 'subtractive';
-      }
-      return sel;
-    };
-    populateEngineSelect();
-    document.getElementById('session-add-lane')?.addEventListener('click', () => {
-      const sel = populateEngineSelect();
-      const id = sel?.value || 'subtractive';
-      this.callbacks.onAddLane(id);
-    });
+    // Lane creation moved into the dynamic tab bar (renderSessionTabBar); the
+    // duplicate '#session-add-engine' / '#session-add-lane' controls have been
+    // removed from the toolbar markup.
   }
 
   private wireBackPill(): void {

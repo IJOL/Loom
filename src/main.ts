@@ -810,7 +810,7 @@ function applyModeVisibility() {
   const arpPanel    = document.querySelector<HTMLElement>('.arp-panel');
   const copyPanels  = document.querySelectorAll<HTMLElement>('.copy-row, .copy-track-panel, .presets-panel');
   const inClassic   = appMode === 'classic';
-  if (tabBar)      tabBar.hidden      = !inClassic;
+  if (tabBar)      tabBar.hidden      = false;
   for (const p of pages) p.hidden = !inClassic || p.dataset.page !== getActiveClassicTab();
   if (sessionView) sessionView.hidden = inClassic;
   // Hide Classic-only panels in Session: mixer (per-column strips replace it),
