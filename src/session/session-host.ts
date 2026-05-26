@@ -19,6 +19,7 @@ import {
   type LanePlayState,
 } from './session-runtime';
 import { importClassicToSession, migrateLoadedSessionState } from './session-migration';
+import { listEngines } from '../engines/registry';
 import { renderSessionGrid, type SessionUICallbacks } from './session-ui';
 import { buildMixerColumn } from '../core/mixer';
 import { scheduleClipStep } from './session-step-scheduler';
@@ -284,12 +285,21 @@ export class SessionHost {
       () => this.callbacks.onLaunchScene(0));
     document.getElementById('session-stop-all')!.addEventListener('click',
       () => this.callbacks.onStopAll());
-    document.getElementById('session-add-tb303')?.addEventListener('click',
-      () => this.callbacks.onAddLane('tb303'));
-    document.getElementById('session-add-drums')?.addEventListener('click',
-      () => this.callbacks.onAddLane('drums-machine'));
-    document.getElementById('session-add-synth')?.addEventListener('click',
-      () => this.callbacks.onAddLane('subtractive'));
+    const engineSelect = document.getElementById('session-add-engine') as HTMLSelectElement | null;
+    if (engineSelect && engineSelect.options.length === 0) {
+      for (const engine of listEngines('polyhost')) {
+        const opt = document.createElement('option');
+        opt.value = engine.id;
+        opt.textContent = engine.name;
+        engineSelect.appendChild(opt);
+      }
+      // Default to subtractive (matches the old '+ Synth' button's behaviour).
+      engineSelect.value = 'subtractive';
+    }
+    document.getElementById('session-add-lane')?.addEventListener('click', () => {
+      const id = engineSelect?.value || 'subtractive';
+      this.callbacks.onAddLane(id);
+    });
   }
 
   private wireBackPill(): void {

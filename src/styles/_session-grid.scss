@@ -86,3 +86,14 @@
   background: transparent; color: #555; border: 1px dashed #333; cursor: pointer; border-radius: 3px;
 }
 .session-add-scene:hover { color: #4dd0e1; border-color: #4dd0e1; }
+
+.session-add-engine-select {
+  background: #1a1a1a;
+  color: #ddd;
+  border: 1px solid #333;
+  border-radius: 3px;
+  padding: 4px 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.session-add-engine-select:hover { border-color: #4dd0e1; }
