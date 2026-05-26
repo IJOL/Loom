@@ -10,7 +10,7 @@ import type { Sequencer, DrumStep } from '../core/sequencer';
 import type { SynthEngine } from '../engines/engine-types';
 import type { MixerColumnDeps } from '../core/mixer';
 import {
-  emptySessionState, cloneSessionState,
+  emptySessionState, cloneSessionState, emptyLane,
   type SessionState, type SessionClip,
 } from './session';
 import {
@@ -209,7 +209,35 @@ export class SessionHost {
         });
         self.renderWithMixer();
       },
-      onAddSynthLane() { /* Task 13 */ },
+      onAddSynthLane() {
+        // Find the next free poly id (poly1 .. poly16) not already used.
+        const used = new Set(self.state.lanes.map((l) => l.id));
+        let newId = '';
+        for (let i = 1; i <= 16; i++) {
+          const candidate = `poly${i}`;
+          if (!used.has(candidate)) { newId = candidate; break; }
+        }
+        if (!newId) { alert('Max 16 extra poly lanes reached.'); return; }
+
+        const lane = emptyLane(newId, 'poly');
+        // Pre-fill empty piano-roll clip slots for every existing scene row.
+        const rowCount = Math.max(self.state.scenes.length, 1);
+        for (let r = 0; r < rowCount; r++) {
+          lane.clips.push({
+            id: `clip-${Date.now().toString(36)}-${r}`,
+            lengthBars: Math.max(1, Math.floor(seq.length / 16)),
+            polyMode: 'piano',
+            polyNotes: [],
+          });
+        }
+        self.state.lanes.push(lane);
+        self.laneStates.set(newId, emptyLanePlayState(newId));
+
+        // Spin up the audio strip + polysynth for this lane so it plays sound.
+        ensureExtraPoly(newId);
+
+        self.renderWithMixer();
+      },
       onAddClipRow()   { /* Task 11 */ },
       onEditLane(laneId) {
         if (laneId === 'main') {
@@ -268,6 +296,8 @@ export class SessionHost {
       () => this.callbacks.onLaunchScene(0));
     document.getElementById('session-stop-all')!.addEventListener('click',
       () => this.callbacks.onStopAll());
+    document.getElementById('session-add-synth')?.addEventListener('click',
+      () => this.callbacks.onAddSynthLane());
   }
 
   private wireBackPill(): void {
