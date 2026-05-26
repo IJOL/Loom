@@ -805,12 +805,15 @@ function applyModeVisibility() {
   const tabBar      = document.querySelector<HTMLElement>('.tab-bar');
   const pages       = document.querySelectorAll<HTMLElement>('.page');
   const sessionView = document.getElementById('session-view');
-  const backPill    = document.getElementById('back-to-session');
   const mixerPanel  = document.querySelector<HTMLElement>('.mixer-panel');
   const arpPanel    = document.querySelector<HTMLElement>('.arp-panel');
   const copyPanels  = document.querySelectorAll<HTMLElement>('.copy-row, .copy-track-panel, .presets-panel');
   const inClassic   = appMode === 'classic';
+
   if (tabBar)      tabBar.hidden      = false;
+  // In Classic mode, the active synth tab's page shows. In Session mode the
+  // synth pages stay hidden until the user clicks a lane tab (onEditLane in
+  // session-host then unhides the matching page).
   for (const p of pages) p.hidden = !inClassic || p.dataset.page !== getActiveClassicTab();
   if (sessionView) sessionView.hidden = inClassic;
   // Hide Classic-only panels in Session: mixer (per-column strips replace it),
@@ -818,8 +821,7 @@ function applyModeVisibility() {
   if (mixerPanel) mixerPanel.hidden = !inClassic;
   for (const p of copyPanels) p.hidden = !inClassic;
   if (arpPanel) arpPanel.hidden = false;
-  // Back-pill only makes sense during Edit tab-swap, never on plain mode switch.
-  if (backPill) backPill.hidden = true;
+
   document.querySelectorAll<HTMLButtonElement>('.mode-btn').forEach((b) => {
     b.classList.toggle('active', b.dataset.mode === appMode);
   });

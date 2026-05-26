@@ -44,6 +44,18 @@
         opacity: 0.5;
         font-size: 0.6em;
       }
+      /* Session-first layout: synth editor pages, when active, render below the
+         session grid instead of above it. The HTML order is fixed but flexbox
+         ordering puts session-view first visually. */
+      body[data-pure-session="true"] .synth {
+        display: flex;
+        flex-direction: column;
+      }
+      body[data-pure-session="true"] .synth > .row.transport { order: 0; }
+      body[data-pure-session="true"] .synth > .tab-bar      { order: 1; }
+      body[data-pure-session="true"] .synth > .session-view { order: 2; }
+      body[data-pure-session="true"] .synth > .page         { order: 3; }
+      body[data-pure-session="true"] .synth > .arp-panel    { order: 4; }
     </style>
   </head>
   <body data-pure-session="true">
@@ -334,7 +346,6 @@
           <div id="insp-roll-host" class="session-inspector-roll"></div>
         </div>
       </div>
-      <button class="back-to-session" id="back-to-session" hidden>← Back to Session</button>
     </div>
 
     <div id="save-manager-modal" class="save-manager-modal" hidden>

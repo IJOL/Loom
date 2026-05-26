@@ -58,6 +58,7 @@ export class SessionHost {
   laneStates = new Map<string, LanePlayState>();
   private inspector!: SessionInspector;
   private callbacks!: SessionUICallbacks;
+  private activeEditLane: string | null = null;
 
   // Expose inspector roll for the automation tick in main.ts
   get inspectorRoll() { return this.inspector?.roll ?? null; }
@@ -104,7 +105,6 @@ export class SessionHost {
 
     this.buildCallbacks();
     this.wireToolbar();
-    this.wireBackPill();
     this.refreshSynthTabs();
     this.startRenderTick();
     this.renderWithMixer();
@@ -261,17 +261,31 @@ export class SessionHost {
       },
       onAddClipRow()   { /* Task 11 */ },
       onEditLane(laneId) {
+        // Toggle off when the user clicks the already-active lane tab.
+        if (self.activeEditLane === laneId) {
+          document.querySelectorAll<HTMLElement>('.page').forEach((p) => { p.hidden = true; });
+          document.querySelectorAll<HTMLButtonElement>('.session-lane-tab').forEach((t) => {
+            t.classList.remove('active');
+          });
+          self.activeEditLane = null;
+          return;
+        }
+
         if (laneId === 'main') {
           setActivePolyTarget(polysynth, 'MAIN');
         } else if (laneId.startsWith('poly')) {
           setActivePolyTarget(ensureExtraPoly(laneId), laneId.toUpperCase());
         }
         const targetTab =
-          laneId === 'bass'  ? '303' :
+          laneId === 'bass'                                  ? '303'   :
           (laneId === 'drums' || laneId.startsWith('drum:')) ? 'drums' :
-          'poly';
+                                                               'poly';
         document.querySelectorAll<HTMLButtonElement>('.tab').forEach((t) => {
-          t.classList.toggle('active', t.dataset.tab === targetTab && !t.classList.contains('synth-tab'));
+          if (t.classList.contains('session-lane-tab')) {
+            t.classList.toggle('active', t.dataset.laneId === laneId);
+          } else {
+            t.classList.toggle('active', t.dataset.tab === targetTab && !t.classList.contains('synth-tab'));
+          }
         });
         if (laneId.startsWith('poly') || laneId === 'main') {
           setCurrentSynthLane(laneId === 'main' ? 'main' : laneId);
@@ -280,15 +294,13 @@ export class SessionHost {
             p.hidden = p.dataset.page !== targetTab;
           });
         }
-        document.getElementById('session-view')!.hidden = true;
-        document.getElementById('back-to-session')!.hidden = false;
-        document.querySelector<HTMLElement>('.tab-bar')!.hidden = false;
+        self.activeEditLane = laneId;
       },
       onToggleDrumsExpanded() { /* drum-bus expand removed — drum-grid editor shows all voices */ },
     };
   }
 
-  // ── Toolbar / back-pill wiring ────────────────────────────────────────────
+  // ── Toolbar wiring ─────────────────────────────────────────────────────────
 
   private wireToolbar(): void {
     document.getElementById('session-import-classic')!.addEventListener('click', () => {
@@ -309,34 +321,6 @@ export class SessionHost {
     // Lane creation moved into the dynamic tab bar (renderSessionTabBar); the
     // duplicate '#session-add-engine' / '#session-add-lane' controls have been
     // removed from the toolbar markup.
-  }
-
-  private wireBackPill(): void {
-    // Reparent the back-pill into the tab-bar so it sits inline with the
-    // synth tabs (it used to be a floating fixed-position button that the
-    // user could easily miss).
-    const pill = document.getElementById('back-to-session');
-    const tabBar = document.querySelector<HTMLElement>('.tab-bar');
-    if (pill && tabBar && pill.parentElement !== tabBar) {
-      tabBar.insertBefore(pill, tabBar.firstChild);
-    }
-    document.getElementById('back-to-session')!.addEventListener('click', () => {
-      // Always do explicit DOM restoration first — this guarantees that the
-      // back-pill works even if main.ts's __reapplyModeVisibility helper is
-      // missing (e.g. in the pure-session HTML route).
-      document.querySelectorAll<HTMLElement>('.page').forEach((p) => { p.hidden = true; });
-      const tabBar = document.querySelector<HTMLElement>('.tab-bar');
-      if (tabBar) tabBar.hidden = true;
-      const sessionView = document.getElementById('session-view');
-      if (sessionView) sessionView.hidden = false;
-      const backPill = document.getElementById('back-to-session');
-      if (backPill) backPill.hidden = true;
-      // Then let main re-hide any Classic-only panels (mixer, copy, presets)
-      // and re-render the mixer columns.
-      const w = window as unknown as { __reapplyModeVisibility?: () => void };
-      if (w.__reapplyModeVisibility) w.__reapplyModeVisibility();
-      this.renderWithMixer();
-    });
   }
 
   // ── Render tick (rAF loop that re-renders when play state changes) ─────────

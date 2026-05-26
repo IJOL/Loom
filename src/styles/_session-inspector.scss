@@ -18,22 +18,6 @@
 .session-inspector-row input[type="number"] { width: 60px; }
 .session-inspector-roll { margin-top: 8px; }
 
-/* Inline back-pill — lives at the start of the tab-bar when editing a
-   synth so it sits exactly where the user is looking. */
-.back-to-session {
-  background: #4dd0e1;
-  color: #0a0a0a;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 14px;
-  margin-right: 8px;
-  font-size: 13px;
-  font-weight: bold;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(77, 208, 225, 0.4);
-}
-.back-to-session:hover { background: #80e6f4; }
-
 .session-mix-col {
   background: #141414;
   border-radius: 4px;
