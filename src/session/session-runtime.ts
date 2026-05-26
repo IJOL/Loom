@@ -66,27 +66,31 @@ export function launchScene(
   laneStates: Map<string, LanePlayState>,
   state: SessionState,
   scene: { clipPerLane: Record<string, number | null> },
+  sceneIdx: number,
   now: number,
   bpm: number,
 ): void {
-  // Scene launch ignores per-clip quantize: use the lane-or-global cascade
-  // so every lane lands on the same boundary.
-  let boundary = -1;
+  // Resolve each lane's target clip: explicit mapping wins, otherwise fall back
+  // to the scene's row index (Ableton model: scene N launches column N).
+  const resolved: { lane: SessionLane; clip: SessionClip }[] = [];
   for (const lane of state.lanes) {
-    const clipIdx = scene.clipPerLane[lane.id];
-    if (clipIdx == null) continue;
-    const clip = lane.clips[clipIdx];
+    const hasExplicit = Object.prototype.hasOwnProperty.call(scene.clipPerLane, lane.id);
+    const idx = hasExplicit ? scene.clipPerLane[lane.id] : sceneIdx;
+    if (idx == null) continue;
+    const clip = lane.clips[idx];
     if (!clip) continue;
+    resolved.push({ lane, clip });
+  }
+  if (resolved.length === 0) return;
+
+  // All lanes share the same boundary so they start aligned.
+  let boundary = -1;
+  for (const { lane } of resolved) {
     const q = lane.launchQuantize ?? state.globalQuantize;
     const b = nextBoundary(q, now, bpm);
     if (b > boundary) boundary = b;
   }
-  if (boundary < 0) return;
-  for (const lane of state.lanes) {
-    const clipIdx = scene.clipPerLane[lane.id];
-    if (clipIdx == null) continue;
-    const clip = lane.clips[clipIdx];
-    if (!clip) continue;
+  for (const { lane, clip } of resolved) {
     let lp = laneStates.get(lane.id);
     if (!lp) { lp = emptyLanePlayState(lane.id); laneStates.set(lane.id, lp); }
     lp.queued = clip;

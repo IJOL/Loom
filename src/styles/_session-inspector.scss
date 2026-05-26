@@ -45,3 +45,12 @@
   gap: 2px;
 }
 .session-mix-col .knob { transform: scale(0.7); margin: -4px 0; }
+
+/* ── Playhead cursor inside step-grid clip editors ─────────────────────── */
+#insp-roll-host .cells > .step-playhead {
+  outline: 2px solid #4dd0e1;
+  outline-offset: -2px;
+  box-shadow: 0 0 6px rgba(77, 208, 225, 0.7);
+  position: relative;
+  z-index: 1;
+}
