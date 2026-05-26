@@ -178,8 +178,12 @@ class FMEngine implements SynthEngine {
   readonly id = 'fm';
   readonly name = 'FM (4-op)';
   readonly type = 'polyhost' as const;
-  readonly polyphony = 8;
+  readonly polyphony = 'poly' as const;
   readonly params: ParamDef[] = [];
+  readonly editor = 'piano-roll' as const;
+  readonly presets: import('./engine-types').EnginePreset[] = [];
+
+  applyPreset(_name: string): void {}
 
   private algorithmIndex = 0;
   private feedback = 0;
