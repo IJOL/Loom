@@ -78,6 +78,14 @@ export class SessionInspector {
     };
     document.getElementById('insp-paste-replace')!.onclick = () => this.pasteReplace();
     document.getElementById('insp-paste-layer')!.onclick   = () => this.pasteLayer();
+    document.getElementById('insp-toggle-editor')!.onclick = () => {
+      if (!this.selectedClip) return;
+      const cur = editorOverride.get(clip.id) ?? null;
+      const next: 'piano-roll' | 'drum-grid' =
+        cur === 'piano-roll' ? 'drum-grid' : 'piano-roll';
+      editorOverride.set(clip.id, next);
+      this.renderEditor();
+    };
     updatePasteBtnState();
 
     // Auto-render editor
@@ -98,7 +106,7 @@ export class SessionInspector {
       midiLabel: this.deps.midiLabel,
     };
 
-    this.roll = renderClipEditor(host, lane, clip, editorDeps);
+    this.roll = renderClipEditor(host, lane, clip, editorDeps, editorOverride.get(clip.id));
   }
 
   // ── Copy / paste ───────────────────────────────────────────────────────────
@@ -129,6 +137,10 @@ export class SessionInspector {
 
 // ── Module-level clipboard ─────────────────────────────────────────────────
 let clipClipboard: SessionClip | null = null;
+
+// Drum clips can be edited as grid or piano-roll. This map stores the user's
+// per-clip preference. Default is the engine's editor (drum-grid for drums).
+const editorOverride = new Map<string, 'piano-roll' | 'drum-grid'>();
 
 function updatePasteBtnState(): void {
   const hasClip = clipClipboard !== null;

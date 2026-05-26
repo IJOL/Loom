@@ -23,15 +23,16 @@ export function renderClipEditor(
   lane: SessionLane,
   clip: SessionClip,
   deps: ClipEditorDeps,
+  override?: 'piano-roll' | 'drum-grid',
 ): PianoRollHandle | null {
   host.innerHTML = '';
   const engine = getEngine(lane.engineId);
+  const editor = override ?? engine?.editor ?? 'piano-roll';
 
-  if (engine?.editor === 'drum-grid') {
+  if (editor === 'drum-grid') {
     renderDrumGridEditor(host, clip);
     return null;
   }
-
   return buildPianoRoll(host, lane, clip, deps);
 }
 
