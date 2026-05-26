@@ -24,6 +24,7 @@ export interface SessionClip {
 export interface SessionLane {
   id: string;
   engineId: string;
+  name?: string;
   clips: (SessionClip | null)[];
   launchQuantize?: LaunchQuantize;
 }
@@ -62,9 +63,9 @@ export function emptyScene(name: string): SessionScene {
 export function emptySessionState(): SessionState {
   return {
     lanes: [
-      emptyLane('bass',  'tb303'),
-      emptyLane('drums', 'drums-machine'),
-      emptyLane('main',  'subtractive'),
+      { id: 'bass',  engineId: 'tb303',          name: 'TB-303 1',      clips: [] },
+      { id: 'drums', engineId: 'drums-machine',  name: 'Drums 1',       clips: [] },
+      { id: 'main',  engineId: 'subtractive',    name: 'Subtractive 1', clips: [] },
     ],
     scenes: [],
     globalQuantize: '1/1',

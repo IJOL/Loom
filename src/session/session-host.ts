@@ -19,7 +19,7 @@ import {
   type LanePlayState,
 } from './session-runtime';
 import { importClassicToSession, migrateLoadedSessionState } from './session-migration';
-import { listEngines } from '../engines/registry';
+import { getEngine, listEngines } from '../engines/registry';
 import { renderSessionGrid, type SessionUICallbacks } from './session-ui';
 import { buildMixerColumn } from '../core/mixer';
 import { scheduleClipStep } from './session-step-scheduler';
@@ -220,7 +220,11 @@ export class SessionHost {
         }
         if (!newId) { alert('No free lane id available for this engine (max 17 lanes per type).'); return; }
 
+        const engineDef = getEngine(engineId);
+        const sameKindCount = self.state.lanes.filter((l) => l.engineId === engineId).length;
+        const displayName = engineDef ? `${engineDef.name} ${sameKindCount + 1}` : newId;
         const lane = emptyLane(newId, engineId);
+        lane.name = displayName;
         const rowCount = Math.max(self.state.scenes.length, 1);
         for (let r = 0; r < rowCount; r++) {
           lane.clips.push({
@@ -285,19 +289,25 @@ export class SessionHost {
       () => this.callbacks.onLaunchScene(0));
     document.getElementById('session-stop-all')!.addEventListener('click',
       () => this.callbacks.onStopAll());
-    const engineSelect = document.getElementById('session-add-engine') as HTMLSelectElement | null;
-    if (engineSelect && engineSelect.options.length === 0) {
-      for (const engine of listEngines('polyhost')) {
-        const opt = document.createElement('option');
-        opt.value = engine.id;
-        opt.textContent = engine.name;
-        engineSelect.appendChild(opt);
+    const populateEngineSelect = () => {
+      const sel = document.getElementById('session-add-engine') as HTMLSelectElement | null;
+      if (!sel) return null;
+      if (sel.options.length === 0) {
+        for (const engine of listEngines('polyhost')) {
+          const opt = document.createElement('option');
+          opt.value = engine.id;
+          opt.textContent = engine.name;
+          sel.appendChild(opt);
+        }
+        // Default to subtractive (matches the old '+ Synth' button's behaviour).
+        sel.value = 'subtractive';
       }
-      // Default to subtractive (matches the old '+ Synth' button's behaviour).
-      engineSelect.value = 'subtractive';
-    }
+      return sel;
+    };
+    populateEngineSelect();
     document.getElementById('session-add-lane')?.addEventListener('click', () => {
-      const id = engineSelect?.value || 'subtractive';
+      const sel = populateEngineSelect();
+      const id = sel?.value || 'subtractive';
       this.callbacks.onAddLane(id);
     });
   }

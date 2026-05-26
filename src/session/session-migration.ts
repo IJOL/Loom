@@ -60,8 +60,12 @@ export function importClassicToSession(bank: PatternBank): SessionState {
   for (const slot of bank.slots) {
     for (const t of slot.extraPolyTracks ?? []) extraIds.add(t.id);
   }
+  let polyCount = 1; // 'main' lane already counts as poly 1
   for (const id of extraIds) {
-    state.lanes.push(emptyLane(id, 'subtractive'));
+    polyCount++;
+    const lane = emptyLane(id, 'subtractive');
+    lane.name = `Subtractive ${polyCount}`;
+    state.lanes.push(lane);
   }
 
   // For every slot, create a scene + one clip per lane.

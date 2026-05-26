@@ -113,7 +113,7 @@ function laneHeader(lane: SessionLane, cb: SessionUICallbacks): HTMLElement {
   el.className = `session-lane-header lane-engine-${lane.engineId}`;
   const name = document.createElement('div');
   name.className = 'session-lane-name';
-  name.textContent = lane.id.toUpperCase();
+  name.textContent = lane.name ?? lane.id.toUpperCase();
   el.appendChild(name);
 
   const edit = document.createElement('button');
