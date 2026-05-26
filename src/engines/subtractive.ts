@@ -52,8 +52,16 @@ class SubtractiveEngine implements SynthEngine {
   readonly id = 'subtractive';
   readonly name = 'Subtractive';
   readonly type = 'polyhost' as const;
-  readonly polyphony = 8;
+  readonly polyphony = 'poly' as const;
+  readonly editor = 'piano-roll' as const;
   readonly params = SUBTRACTIVE_PARAMS;
+  readonly presets: import('./engine-types').EnginePreset[] = [];
+
+  applyPreset(_name: string): void {
+    // Subtractive presets currently live in src/polysynth/poly-presets.ts and
+    // are applied via the existing polysynth preset wiring. This engine-level
+    // applyPreset is a no-op until that wiring moves here in a later phase.
+  }
 
   private polysynth: PolySynth | null = null;
 
