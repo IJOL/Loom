@@ -271,6 +271,14 @@ export class SessionHost {
   }
 
   private wireBackPill(): void {
+    // Reparent the back-pill into the tab-bar so it sits inline with the
+    // synth tabs (it used to be a floating fixed-position button that the
+    // user could easily miss).
+    const pill = document.getElementById('back-to-session');
+    const tabBar = document.querySelector<HTMLElement>('.tab-bar');
+    if (pill && tabBar && pill.parentElement !== tabBar) {
+      tabBar.insertBefore(pill, tabBar.firstChild);
+    }
     document.getElementById('back-to-session')!.addEventListener('click', () => {
       // Always do explicit DOM restoration first — this guarantees that the
       // back-pill works even if main.ts's __reapplyModeVisibility helper is
