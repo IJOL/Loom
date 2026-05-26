@@ -9,6 +9,7 @@ import './engines/subtractive';
 import './engines/wavetable';
 import './engines/fm';
 import './engines/karplus';
+import './engines/tb303';
 import { TB303, type Wave } from './core/synth';
 import { Sequencer } from './core/sequencer';
 import { DrumMachine, DRUM_LANES, type DrumVoice } from './core/drums';
