@@ -8,6 +8,10 @@ import type {
 } from './engine-types';
 import { registerEngine, registerEngineFactory } from './registry';
 import { TB303 } from '../core/synth';
+import { ModulationHostImpl, bindVoiceModulation } from '../modulation/modulation-host';
+import { makeDefaultLFO, type ModulatorVoice } from '../modulation/types';
+import { renderModulatorsPanel } from '../modulation/modulation-ui';
+import type { KnobHandle } from '../core/knob';
 
 const PARAMS: ParamDef[] = [
   { id: 'cutoff',    label: 'CUTOFF', min: 0, max: 1, default: 0.42 },
@@ -29,9 +33,17 @@ function midiToFreq(m: number): number {
 }
 
 class TB303Voice implements Voice {
-  constructor(private tb303: TB303) {}
+  constructor(
+    private tb303: TB303,
+    private voiceMods: Map<string, ModulatorVoice>,
+  ) {}
 
   trigger(midi: number, time: number, opts: VoiceTriggerOptions): void {
+    // Fire modulator voices first so their AudioParam contributions land
+    // before the trigger envelope writes the filter/amp curves.
+    for (const mv of this.voiceMods.values()) {
+      mv.trigger(time, { gateDuration: opts.gateDuration, accent: opts.accent });
+    }
     this.tb303.trigger({
       freq: midiToFreq(midi),
       accent: !!opts.accent,
@@ -40,9 +52,13 @@ class TB303Voice implements Voice {
     }, time);
   }
 
-  release(_time: number): void {}
+  release(time: number): void {
+    for (const mv of this.voiceMods.values()) mv.release(time);
+  }
   connect(_dest: AudioNode): void {}
-  dispose(): void {}
+  dispose(): void {
+    for (const mv of this.voiceMods.values()) mv.dispose();
+  }
 }
 
 class TB303Sequencer implements EngineSequencer {
@@ -63,6 +79,19 @@ export class TB303Engine implements SynthEngine {
   readonly params = PARAMS;
   readonly presets = TB303_PRESETS;
 
+  /** Tempo for LFO BPM sync. main.ts can update this at runtime. */
+  bpm = 120;
+
+  // LFO only — TB303's filter envelope is baked into trigger() and is part
+  // of the 303 character. A free LFO lets the user add dub-style cutoff
+  // wobbles or accent-shifting motion on top.
+  private modHost = new ModulationHostImpl([
+    makeDefaultLFO('lfo1'),
+  ]);
+
+  /** Persistence + cross-module access to modulator state. */
+  get modulators(): ModulationHostImpl { return this.modHost; }
+
   private instances = new WeakMap<AudioNode, TB303>();
   private lastInstance: TB303 | null = null;
 
@@ -73,7 +102,20 @@ export class TB303Engine implements SynthEngine {
       this.instances.set(output, tb);
     }
     this.lastInstance = tb;
-    return new TB303Voice(tb);
+
+    const voiceMods = this.modHost.spawnVoice(ctx, () => this.bpm);
+    const voiceParamMap: Record<string, AudioParam> = {
+      'tb-cutoff':    tb.cutoffParam,
+      'tb-resonance': tb.resonanceParam,
+      'tb-amp':       tb.ampParam,
+    };
+    const paramRanges: Record<string, { min: number; max: number }> = {
+      'tb-cutoff':    { min: 80,  max: 8000 },
+      'tb-resonance': { min: 0.5, max: 30   },
+      'tb-amp':       { min: 0,   max: 1    },
+    };
+    bindVoiceModulation(voiceMods, this.modHost.modulators, voiceParamMap, paramRanges, ctx);
+    return new TB303Voice(tb, voiceMods);
   }
 
   // Pre-register an externally-constructed TB303 so the singleton synth
@@ -89,23 +131,39 @@ export class TB303Engine implements SynthEngine {
     return new TB303Sequencer();
   }
 
-  buildParamUI(_container: HTMLElement, _ctx?: EngineUIContext): void {
+  buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
     // The Classic 303 page already renders the TB303 knobs against the
     // singleton synth. Per-lane UI binding moves into this method in
     // Phase 7 when the dedicated TB-303 tab is dismantled.
+    if (ctx) {
+      renderModulatorsPanel(container, {
+        engineId: this.id,
+        laneId: ctx.laneId,
+        host: this.modHost,
+        registry: ctx.registry as Map<string, KnobHandle>,
+        registerKnob: (k) => ctx.registerKnob(k),
+        onChange: () => {
+          container.innerHTML = '';
+          this.buildParamUI(container, ctx);
+        },
+      });
+    }
   }
 
   applyPreset(name: string): void {
     const p = this.presets.find((x) => x.name === name);
-    if (!p || !this.lastInstance) return;
-    const params = this.lastInstance.params as unknown as Record<string, number | string>;
-    for (const [k, v] of Object.entries(p.params)) {
-      if (k === 'wave') {
-        params.wave = v < 0.5 ? 'sawtooth' : 'square';
-      } else {
-        params[k] = v;
+    if (!p) return;
+    if (this.lastInstance) {
+      const params = this.lastInstance.params as unknown as Record<string, number | string>;
+      for (const [k, v] of Object.entries(p.params)) {
+        if (k === 'wave') {
+          params.wave = v < 0.5 ? 'sawtooth' : 'square';
+        } else {
+          params[k] = v;
+        }
       }
     }
+    if (p.modulators) this.modHost.deserialize(p.modulators);
   }
 
   dispose(): void {}

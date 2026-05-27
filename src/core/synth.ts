@@ -51,6 +51,13 @@ export class TB303 {
     this.osc.start();
   }
 
+  /** Filter cutoff AudioParam — exposed so the modulation host can sum into it. */
+  get cutoffParam(): AudioParam { return this.filter.frequency; }
+  /** Filter resonance AudioParam — exposed for modulation. */
+  get resonanceParam(): AudioParam { return this.filter.Q; }
+  /** Amp gain AudioParam — exposed for modulation (note: also written by trigger envelope). */
+  get ampParam(): AudioParam { return this.amp.gain; }
+
   trigger(note: Note, time: number) {
     const p = this.params;
     const baseCutoff = 80 * Math.pow(100, p.cutoff);
