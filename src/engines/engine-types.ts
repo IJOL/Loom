@@ -37,6 +37,9 @@ export interface EngineUIContext {
   laneId: string;
   idPrefix: string;
   registerKnob: (k: unknown) => void;
+  /** Read-only view of every automatable knob registered so far. Used by
+   *  the modulation panel to populate destination dropdowns. */
+  registry: Map<string, unknown>;
 }
 
 export interface EnginePreset {

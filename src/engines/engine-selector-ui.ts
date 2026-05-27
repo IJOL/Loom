@@ -54,6 +54,7 @@ export function rebuildEngineParamUI(): void {
     laneId: activeLaneId,
     idPrefix: activeLaneId,
     registerKnob: (k: unknown) => deps.registerKnob(k as KnobHandle),
+    registry: deps.automationRegistry as unknown as Map<string, unknown>,
   };
   instance.buildParamUI(engineParamEl, buildCtx);
   if (engineParamEl.childElementCount === 0) {
