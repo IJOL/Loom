@@ -21,8 +21,12 @@ export interface Note {
 // `trigger()` schedules a fresh envelope at sample-accurate `time`.
 export class TB303 {
   private osc: OscillatorNode;
-  private filter: BiquadFilterNode;
-  private amp: GainNode;
+  public readonly filter: BiquadFilterNode;
+  public readonly amp: GainNode;
+
+  private envCutoff!: ConstantSourceNode;
+  private envRes!: ConstantSourceNode;
+  private envAmp!: ConstantSourceNode;
 
   params: VoiceParams = {
     cutoff: 0.28,
@@ -49,14 +53,32 @@ export class TB303 {
     this.filter.connect(this.amp);
     this.amp.connect(destination);
     this.osc.start();
-  }
 
-  /** Filter cutoff AudioParam — exposed so the modulation host can sum into it. */
-  get cutoffParam(): AudioParam { return this.filter.frequency; }
-  /** Filter resonance AudioParam — exposed for modulation. */
-  get resonanceParam(): AudioParam { return this.filter.Q; }
-  /** Amp gain AudioParam — exposed for modulation (note: also written by trigger envelope). */
-  get ampParam(): AudioParam { return this.amp.gain; }
+    // Internal envelope sources: scheduling happens on these nodes' .offset, and
+    // they sum into the destination AudioParams. The destination filter.frequency
+    // / filter.Q / amp.gain are NEVER scheduled directly — that would clobber
+    // summed contributions from external modulators (LFOs, ADSRs).
+    this.envCutoff = ctx.createConstantSource();
+    this.envCutoff.offset.value = 0;
+    this.envCutoff.start();
+    this.envCutoff.connect(this.filter.frequency);
+
+    this.envRes = ctx.createConstantSource();
+    this.envRes.offset.value = 0;
+    this.envRes.start();
+    this.envRes.connect(this.filter.Q);
+
+    this.envAmp = ctx.createConstantSource();
+    this.envAmp.offset.value = 0;
+    this.envAmp.start();
+    this.envAmp.connect(this.amp.gain);
+
+    // Base values stay at 0 on the destination params — the env nodes contribute
+    // the actual values via summing. External modulators also sum here.
+    this.filter.frequency.value = 0;
+    this.filter.Q.value = 0;
+    this.amp.gain.value = 0;
+  }
 
   trigger(note: Note, time: number) {
     const p = this.params;
@@ -80,24 +102,24 @@ export class TB303 {
     }
 
     // Filter Q (accent adds extra bite).
-    this.filter.Q.cancelScheduledValues(time);
-    this.filter.Q.setValueAtTime(1 + p.resonance * 25 + accentBoost * 6, time);
+    this.envRes.offset.cancelScheduledValues(time);
+    this.envRes.offset.setValueAtTime(1 + p.resonance * 25 + accentBoost * 6, time);
 
     // Amp envelope: re-attack unless the previous note slid into this one.
-    this.amp.gain.cancelScheduledValues(time);
+    this.envAmp.offset.cancelScheduledValues(time);
     if (note.slide) {
-      this.amp.gain.setValueAtTime(peakAmp, time);
+      this.envAmp.offset.setValueAtTime(peakAmp, time);
     } else {
-      this.amp.gain.setValueAtTime(0, time);
-      this.amp.gain.linearRampToValueAtTime(peakAmp, time + 0.003);
+      this.envAmp.offset.setValueAtTime(0, time);
+      this.envAmp.offset.linearRampToValueAtTime(peakAmp, time + 0.003);
     }
-    this.amp.gain.setValueAtTime(peakAmp, time + note.duration - 0.02);
-    this.amp.gain.exponentialRampToValueAtTime(0.001, time + note.duration);
+    this.envAmp.offset.setValueAtTime(peakAmp, time + note.duration - 0.02);
+    this.envAmp.offset.exponentialRampToValueAtTime(0.001, time + note.duration);
 
     // Filter envelope: open immediately, decay to base.
-    this.filter.frequency.cancelScheduledValues(time);
-    this.filter.frequency.setValueAtTime(peakCutoff, time);
-    this.filter.frequency.exponentialRampToValueAtTime(
+    this.envCutoff.offset.cancelScheduledValues(time);
+    this.envCutoff.offset.setValueAtTime(peakCutoff, time);
+    this.envCutoff.offset.exponentialRampToValueAtTime(
       Math.max(baseCutoff, 40),
       time + decaySec * (note.accent ? 0.6 : 1),
     );
