@@ -47,6 +47,17 @@ export const POLY_DEFAULTS: PolySynthParams = {
   lfo2: { wave: 'sine', rate: 0.5, depth: 0, target: 'off', sync: 'free' },
 };
 
+/**
+ * Per-voice AudioParam handles exposed to the modulation host. Subtractive's
+ * modular ADSR / LFO connections write into these alongside PolySynth's own
+ * hardcoded envelope ramps (Web Audio sums contributions per AudioParam).
+ */
+export interface PolyVoiceParams {
+  amp: AudioParam;     // amp envelope gain
+  cutoff: AudioParam;  // filter frequency
+  pitch: AudioParam;   // osc1 detune (cents)
+}
+
 export class PolySynth {
   params: PolySynthParams;
   bpm = 130;  // updated externally; used when an LFO has a sync division set
@@ -57,7 +68,27 @@ export class PolySynth {
     this.noiseBuffer = makeWhiteNoise(ctx, 2);
   }
 
+  /**
+   * Trigger a voice and invoke `onVoice` with the freshly-allocated per-voice
+   * AudioParams BEFORE any envelope ramps are scheduled — this lets the
+   * modulation host bind external ADSR/LFO sources via Web Audio param summing.
+   * Existing internal envelope scheduling still runs (Option B from Task 14).
+   */
+  triggerWithBinding(
+    midi: number, time: number, gateDuration: number, accent = false,
+    onVoice?: (params: PolyVoiceParams) => void,
+  ) {
+    this.internalTrigger(midi, time, gateDuration, accent, onVoice);
+  }
+
   trigger(midi: number, time: number, gateDuration: number, accent = false) {
+    this.internalTrigger(midi, time, gateDuration, accent);
+  }
+
+  private internalTrigger(
+    midi: number, time: number, gateDuration: number, accent: boolean,
+    onVoice?: (params: PolyVoiceParams) => void,
+  ) {
     const ctx = this.ctx;
     const p = this.params;
     const noteFreq = 440 * Math.pow(2, (midi - 69 + p.master.tune) / 12);
@@ -129,13 +160,20 @@ export class PolySynth {
     const fd = Math.max(0.001, p.filter.decay);
     const fr = Math.max(0.001, p.filter.release);
 
+    // ── Amp gain node (envelope scheduled below) ─────────────────────────
+    const amp = ctx.createGain();
+    amp.gain.value = 0;
+
+    // Modulation host bind point: expose per-voice AudioParams BEFORE the
+    // hardcoded envelope ramps are scheduled. External ADSR/LFO outputs sum
+    // into these params via Web Audio's per-AudioParam summing.
+    if (onVoice) onVoice({ amp: amp.gain, cutoff: filter.frequency, pitch: osc1.detune });
+
     filter.frequency.setValueAtTime(baseCutoff, time);
     filter.frequency.linearRampToValueAtTime(peakCutoff, time + fa);
     filter.frequency.exponentialRampToValueAtTime(Math.max(sustainCutoff, 40), time + fa + fd);
 
     // ── Amp envelope ─────────────────────────────────────────────────────
-    const amp = ctx.createGain();
-    amp.gain.value = 0;
     const peakAmp = 0.4 * velMul;
     const sustainAmp = Math.max(0.0001, peakAmp * p.amp.sustain);
     const aa = Math.max(0.001, p.amp.attack);

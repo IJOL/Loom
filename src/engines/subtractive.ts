@@ -1,18 +1,50 @@
 // src/engines/subtractive.ts
-// Wraps the existing PolySynth as the default 'subtractive' engine.
+// Wraps the existing PolySynth as the default 'subtractive' engine, with the
+// modular ModulationHost layered on top (two ADSRs + two LFOs by default).
 
-import type { SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, ParamDef } from './engine-types';
+import type {
+  SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, ParamDef, EngineUIContext,
+} from './engine-types';
 import { registerEngine, registerEngineFactory } from './registry';
 import { PolySynth, POLY_DEFAULTS } from '../polysynth/polysynth';
+import { ModulationHostImpl, bindVoiceModulation } from '../modulation/modulation-host';
+import { makeDefaultLFO, makeDefaultADSR, type ModulatorVoice } from '../modulation/types';
+import { renderModulatorsPanel } from '../modulation/modulation-ui';
+import type { KnobHandle } from '../core/knob';
 
 class SubtractiveVoice implements Voice {
   constructor(
     private polysynth: PolySynth,
-    private output: AudioNode,
+    private modHost: ModulationHostImpl,
+    private ctx: AudioContext,
+    private getBpm: () => number,
   ) {}
 
   trigger(midi: number, time: number, options: VoiceTriggerOptions): void {
-    this.polysynth.trigger(midi, time, options.gateDuration, options.accent ?? false);
+    // Spawn modulator voices fresh per-trigger so each note gets its own
+    // envelope curve / LFO phase.
+    const voiceMods: Map<string, ModulatorVoice> = this.modHost.spawnVoice(this.ctx, this.getBpm);
+
+    this.polysynth.triggerWithBinding(
+      midi, time, options.gateDuration, options.accent ?? false,
+      (vp) => {
+        bindVoiceModulation(
+          voiceMods,
+          this.modHost.modulators,
+          { amp: vp.amp, cutoff: vp.cutoff, pitch: vp.pitch },
+          {
+            amp:    { min: 0,     max: 1     },
+            cutoff: { min: 20,    max: 12000 },
+            pitch:  { min: -1200, max: 1200  },
+          },
+          this.ctx,
+        );
+        // Fire all modulator voices at the same start time as the audio voice.
+        for (const mv of voiceMods.values()) {
+          mv.trigger(time, { gateDuration: options.gateDuration, accent: options.accent });
+        }
+      },
+    );
   }
 
   release(_time: number): void {
@@ -57,10 +89,32 @@ class SubtractiveEngine implements SynthEngine {
   readonly params = SUBTRACTIVE_PARAMS;
   readonly presets: import('./engine-types').EnginePreset[] = [];
 
-  applyPreset(_name: string): void {
-    // Subtractive presets currently live in src/polysynth/poly-presets.ts and
-    // are applied via the existing polysynth preset wiring. This engine-level
-    // applyPreset is a no-op until that wiring moves here in a later phase.
+  /** Tempo for LFO BPM sync. main.ts can update this at runtime. */
+  bpm = 120;
+
+  private modHost = new ModulationHostImpl([
+    {
+      ...makeDefaultADSR('adsr-amp'),
+      connections: [{ id: 'c-amp', paramId: 'amp', depth: 1.0 }],
+    },
+    {
+      ...makeDefaultADSR('adsr-filter'),
+      connections: [{ id: 'c-cutoff', paramId: 'cutoff', depth: 0.5 }],
+    },
+    makeDefaultLFO('lfo1'),
+    { ...makeDefaultLFO('lfo2'), rateHz: 2, waveform: 'triangle' },
+  ]);
+
+  /** Persistence + cross-module access to modulator state. */
+  get modulators(): ModulationHostImpl { return this.modHost; }
+
+  applyPreset(name: string): void {
+    const preset = this.presets.find((p) => p.name === name);
+    if (!preset) return;
+    // Preset.params currently map onto PolySynthParams flat-ish; the existing
+    // poly preset wiring in src/polysynth/poly-presets.ts owns full preset
+    // shape. This hook only carries the modulators payload.
+    if (preset.modulators) this.modHost.deserialize(preset.modulators);
   }
 
   private polysynth: PolySynth | null = null;
@@ -69,7 +123,7 @@ class SubtractiveEngine implements SynthEngine {
     if (!this.polysynth) {
       this.polysynth = new PolySynth(ctx, output);
     }
-    return new SubtractiveVoice(this.polysynth, output);
+    return new SubtractiveVoice(this.polysynth, this.modHost, ctx, () => this.bpm);
   }
 
   getPolySynth(): PolySynth | null {
@@ -84,8 +138,22 @@ class SubtractiveEngine implements SynthEngine {
     return new SubtractiveSequencer();
   }
 
-  buildParamUI(_container: HTMLElement): void {
-    // For subtractive, main.ts already builds the poly param UI
+  buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
+    // For subtractive, main.ts already builds the poly param UI. We only add
+    // the modulators panel here (when invoked via a per-lane engine host).
+    if (ctx) {
+      renderModulatorsPanel(container, {
+        engineId: this.id,
+        laneId: ctx.laneId,
+        host: this.modHost,
+        registry: ctx.registry as Map<string, KnobHandle>,
+        registerKnob: (k) => ctx.registerKnob(k),
+        onChange: () => {
+          container.innerHTML = '';
+          this.buildParamUI(container, ctx);
+        },
+      });
+    }
   }
 
   dispose(): void {
