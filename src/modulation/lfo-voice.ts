@@ -1,0 +1,68 @@
+// src/modulation/lfo-voice.ts
+// Web Audio LFO voice with a JS-mirrored phase so the rAF UI loop can
+// poll currentValue() for knob animation.
+
+import type { ModulatorState, ModulatorVoice } from './types';
+import { computeWaveform } from './waveform';
+import { effectiveRateHz } from './rate-sync';
+
+export class LFOVoice implements ModulatorVoice {
+  output: AudioNode;
+
+  private ctx: AudioContext;
+  private osc!: OscillatorNode;
+  private gain: GainNode;
+  private dc: ConstantSourceNode;
+  private state: ModulatorState;
+  private bpmGetter: () => number;
+  private startedAt: number;
+
+  constructor(ctx: AudioContext, state: ModulatorState, bpm: () => number) {
+    this.ctx = ctx;
+    this.state = state;
+    this.bpmGetter = bpm;
+    this.gain = ctx.createGain();
+    this.gain.gain.value = state.bipolar !== false ? 1 : 0.5;
+    this.dc = ctx.createConstantSource();
+    this.dc.offset.value = state.bipolar !== false ? 0 : 0.5;
+    this.dc.start();
+    this.dc.connect(this.gain);
+    this.startedAt = ctx.currentTime;
+    this.createOsc(this.startedAt);
+    this.output = this.gain;
+  }
+
+  private createOsc(time: number): void {
+    if (this.osc) {
+      try { this.osc.stop(); } catch { /* already stopped */ }
+      this.osc.disconnect();
+    }
+    this.osc = this.ctx.createOscillator();
+    this.osc.type = (this.state.waveform ?? 'sine') as OscillatorType;
+    this.osc.frequency.value = effectiveRateHz(this.state, this.bpmGetter());
+    this.osc.connect(this.gain);
+    this.osc.start(time);
+  }
+
+  trigger(time: number): void {
+    this.startedAt = time;
+    this.createOsc(time);
+  }
+
+  release(_time: number): void { /* LFOs free-run */ }
+
+  currentValue(): number {
+    const t = this.ctx.currentTime - this.startedAt;
+    const rate = effectiveRateHz(this.state, this.bpmGetter());
+    const phase = t * rate;
+    return computeWaveform(this.state.waveform ?? 'sine', phase, this.state.bipolar !== false);
+  }
+
+  dispose(): void {
+    try { this.osc.stop(); } catch { /* */ }
+    try { this.dc.stop(); } catch { /* */ }
+    this.osc.disconnect();
+    this.dc.disconnect();
+    this.gain.disconnect();
+  }
+}

@@ -7,6 +7,8 @@ import {
   type ModulatorKind, type ModulatorState, type ModulatorVoice,
   makeDefaultLFO, makeDefaultADSR,
 } from './types';
+import { LFOVoice } from './lfo-voice';
+import { ADSRVoice } from './adsr-voice';
 
 export class ModulationHostImpl implements ModulationHost {
   modulators: ModulatorState[];
@@ -54,8 +56,42 @@ export class ModulationHostImpl implements ModulationHost {
     this.modulators = state.map((m) => ({ ...m, connections: m.connections.map((c) => ({ ...c })) }));
   }
 
-  spawnVoice(_ctx: AudioContext, _bpm: () => number): Map<string, ModulatorVoice> {
-    // Filled in by Task 6 once LFOVoice + ADSRVoice exist.
-    return new Map();
+  spawnVoice(ctx: AudioContext, bpm: () => number): Map<string, ModulatorVoice> {
+    const out = new Map<string, ModulatorVoice>();
+    for (const m of this.modulators) {
+      if (!m.enabled) continue;
+      out.set(m.id, m.kind === 'lfo' ? new LFOVoice(ctx, m, bpm) : new ADSRVoice(ctx, m));
+    }
+    return out;
+  }
+}
+
+export interface ParamRange { min: number; max: number; }
+
+/**
+ * Wires each enabled modulator's connections through a GainNode (depth * range)
+ * into the matching AudioParam on the voice. Web Audio sums multiple modulator
+ * + automation contributions into the same AudioParam by design.
+ */
+export function bindVoiceModulation(
+  voiceMods: Map<string, ModulatorVoice>,
+  modulators: ModulatorState[],
+  voiceParamMap: Record<string, AudioParam>,
+  paramRanges: Record<string, ParamRange>,
+  ctx: AudioContext,
+): void {
+  for (const mod of modulators) {
+    if (!mod.enabled) continue;
+    const src = voiceMods.get(mod.id);
+    if (!src) continue;
+    for (const conn of mod.connections) {
+      const dest = voiceParamMap[conn.paramId];
+      const range = paramRanges[conn.paramId];
+      if (!dest || !range) continue;
+      const g = ctx.createGain();
+      g.gain.value = conn.depth * (range.max - range.min);
+      src.output.connect(g);
+      g.connect(dest);
+    }
   }
 }
