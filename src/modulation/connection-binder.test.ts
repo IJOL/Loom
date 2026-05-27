@@ -4,6 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { ConnectionBinder } from './connection-binder';
+import type { ParamRange } from './modulation-host';
 import type { ModulatorState, ModulatorVoice } from './types';
 
 // ── Minimal Web Audio mock ────────────────────────────────────────────────
@@ -56,6 +57,13 @@ function makeMockVoice(): ModulatorVoice {
   };
 }
 
+function paramMap(entries: [string, MockParam][]): Map<string, AudioParam> {
+  return new Map(entries.map(([k, v]) => [k, v as unknown as AudioParam]));
+}
+function rangeMap(entries: [string, ParamRange][]): Map<string, ParamRange> {
+  return new Map(entries);
+}
+
 // ── Tests ──────────────────────────────────────────────────────────────────
 
 describe('ConnectionBinder', () => {
@@ -78,8 +86,8 @@ describe('ConnectionBinder', () => {
     binder.apply(
       new Map([['lfo1', voice]]),
       mods,
-      { cutoff: dest as unknown as AudioParam },
-      { cutoff: { min: 0, max: 1 } },
+      paramMap([['cutoff', dest]]),
+      rangeMap([['cutoff', { min: 0, max: 1 }]]),
       ctx as unknown as AudioContext,
     );
 
@@ -98,14 +106,14 @@ describe('ConnectionBinder', () => {
     const ctx = makeMockCtx();
     const voice = makeMockVoice();
     const dest = makeMockParam('cutoff');
-    const paramMap = { cutoff: dest as unknown as AudioParam };
-    const ranges = { cutoff: { min: 0, max: 1 } };
+    const pm = paramMap([['cutoff', dest]]);
+    const rm = rangeMap([['cutoff', { min: 0, max: 1 }]]);
 
     const binder = new ConnectionBinder();
     const empty: ModulatorState[] = [{
       id: 'lfo1', kind: 'lfo', enabled: true, connections: [],
     }];
-    binder.apply(new Map([['lfo1', voice]]), empty, paramMap, ranges, ctx as unknown as AudioContext);
+    binder.apply(new Map([['lfo1', voice]]), empty, pm, rm, ctx as unknown as AudioContext);
     expect(binder.activeCount()).toBe(0);
     expect(ctx.createdGains).toHaveLength(0);
 
@@ -113,7 +121,7 @@ describe('ConnectionBinder', () => {
       id: 'lfo1', kind: 'lfo', enabled: true,
       connections: [{ id: 'c1', paramId: 'cutoff', depth: 1.0 }],
     }];
-    binder.apply(new Map([['lfo1', voice]]), withConn, paramMap, ranges, ctx as unknown as AudioContext);
+    binder.apply(new Map([['lfo1', voice]]), withConn, pm, rm, ctx as unknown as AudioContext);
 
     expect(binder.activeCount()).toBe(1);
     expect(ctx.createdGains).toHaveLength(1);
@@ -125,15 +133,15 @@ describe('ConnectionBinder', () => {
     const ctx = makeMockCtx();
     const voice = makeMockVoice();
     const dest = makeMockParam('cutoff');
-    const paramMap = { cutoff: dest as unknown as AudioParam };
-    const ranges = { cutoff: { min: 0, max: 1 } };
+    const pm = paramMap([['cutoff', dest]]);
+    const rm = rangeMap([['cutoff', { min: 0, max: 1 }]]);
 
     const binder = new ConnectionBinder();
     const withConn: ModulatorState[] = [{
       id: 'lfo1', kind: 'lfo', enabled: true,
       connections: [{ id: 'c1', paramId: 'cutoff', depth: 0.5 }],
     }];
-    binder.apply(new Map([['lfo1', voice]]), withConn, paramMap, ranges, ctx as unknown as AudioContext);
+    binder.apply(new Map([['lfo1', voice]]), withConn, pm, rm, ctx as unknown as AudioContext);
     expect(binder.activeCount()).toBe(1);
     const g = ctx.createdGains[0];
     expect(g.disconnected).toBe(false);
@@ -142,7 +150,7 @@ describe('ConnectionBinder', () => {
     const noConn: ModulatorState[] = [{
       id: 'lfo1', kind: 'lfo', enabled: true, connections: [],
     }];
-    binder.apply(new Map([['lfo1', voice]]), noConn, paramMap, ranges, ctx as unknown as AudioContext);
+    binder.apply(new Map([['lfo1', voice]]), noConn, pm, rm, ctx as unknown as AudioContext);
     expect(binder.activeCount()).toBe(0);
     expect(g.disconnected).toBe(true);
   });
@@ -151,26 +159,26 @@ describe('ConnectionBinder', () => {
     const ctx = makeMockCtx();
     const voice = makeMockVoice();
     const dest = makeMockParam('cutoff');
-    const paramMap = { cutoff: dest as unknown as AudioParam };
-    const ranges = { cutoff: { min: 0, max: 1 } };
+    const pm = paramMap([['cutoff', dest]]);
+    const rm = rangeMap([['cutoff', { min: 0, max: 1 }]]);
     const binder = new ConnectionBinder();
 
     binder.apply(
       new Map([['lfo1', voice]]),
       [{ id: 'lfo1', kind: 'lfo', enabled: true, connections: [{ id: 'c1', paramId: 'cutoff', depth: 0.2 }] }],
-      paramMap, ranges, ctx as unknown as AudioContext,
+      pm, rm, ctx as unknown as AudioContext,
     );
     binder.apply(
       new Map([['lfo1', voice]]),
       [{ id: 'lfo1', kind: 'lfo', enabled: true, connections: [{ id: 'c1', paramId: 'cutoff', depth: 0.9 }] }],
-      paramMap, ranges, ctx as unknown as AudioContext,
+      pm, rm, ctx as unknown as AudioContext,
     );
 
     expect(ctx.createdGains).toHaveLength(1);                // same node
     expect(ctx.createdGains[0].gain.value).toBeCloseTo(0.9); // updated
   });
 
-  it('resolves prefixed paramIds like "tb303.cutoff" against bare voiceParamMap keys', () => {
+  it('matches the full paramId in destMap exactly (no prefix-stripping)', () => {
     const ctx = makeMockCtx();
     const voice = makeMockVoice();
     const dest = makeMockParam('cutoff');
@@ -179,14 +187,32 @@ describe('ConnectionBinder', () => {
     binder.apply(
       new Map([['lfo1', voice]]),
       [{ id: 'lfo1', kind: 'lfo', enabled: true,
-         connections: [{ id: 'c1', paramId: 'tb303.cutoff', depth: 0.5 }] }],
-      { cutoff: dest as unknown as AudioParam },
-      { cutoff: { min: 0, max: 1 } },
+         connections: [{ id: 'c1', paramId: 'bass.filter.cutoff', depth: 0.5 }] }],
+      paramMap([['bass.filter.cutoff', dest]]),
+      rangeMap([['bass.filter.cutoff', { min: 0, max: 1 }]]),
       ctx as unknown as AudioContext,
     );
 
     expect(binder.activeCount()).toBe(1);
     expect(ctx.createdGains[0].connections).toContain(dest);
+  });
+
+  it('does NOT match if the key only exists in bare form (no auto-strip)', () => {
+    const ctx = makeMockCtx();
+    const voice = makeMockVoice();
+    const dest = makeMockParam('cutoff');
+    const binder = new ConnectionBinder();
+
+    binder.apply(
+      new Map([['lfo1', voice]]),
+      [{ id: 'lfo1', kind: 'lfo', enabled: true,
+         connections: [{ id: 'c1', paramId: 'bass.filter.cutoff', depth: 0.5 }] }],
+      paramMap([['cutoff', dest]]),       // bare key — should NOT match
+      rangeMap([['cutoff', { min: 0, max: 1 }]]),
+      ctx as unknown as AudioContext,
+    );
+
+    expect(binder.activeCount()).toBe(0);
   });
 
   it('skips disabled modulators (no gain created)', () => {
@@ -199,8 +225,8 @@ describe('ConnectionBinder', () => {
       new Map([['lfo1', voice]]),
       [{ id: 'lfo1', kind: 'lfo', enabled: false,
          connections: [{ id: 'c1', paramId: 'cutoff', depth: 0.5 }] }],
-      { cutoff: dest as unknown as AudioParam },
-      { cutoff: { min: 0, max: 1 } },
+      paramMap([['cutoff', dest]]),
+      rangeMap([['cutoff', { min: 0, max: 1 }]]),
       ctx as unknown as AudioContext,
     );
 

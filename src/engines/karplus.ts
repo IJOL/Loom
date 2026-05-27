@@ -19,7 +19,7 @@ import { renderModulatorsPanel } from '../modulation/modulation-ui';
 
 // Unified-param schema. Dot-namespaced ids that map consistently between
 // knob layer and voice AudioParam destinations (no more ks-* split between
-// knobs and voiceParamMap).
+// the knob layer and per-voice param map).
 const KARPLUS_PARAMS: EngineParamSpec[] = [
   // String resonator
   { id: 'string.damping',    label: 'Damping',    kind: 'continuous', min: 0,     max: 1,   default: 0.5 },

@@ -13,10 +13,6 @@ import type { ModulationHost, ModulatorState, Waveform } from './types';
 export interface ModulationUIDeps {
   engineId: string;
   laneId: string;                         // for param-id prefix matching destination dropdown
-  /** Additional id-prefixes the destination dropdown should match (e.g. the
-   *  engine-specific knob namespace: 'tb303', 'poly', 'wt-', 'fm.', 'ks-',
-   *  'mix.drumBus'). */
-  extraPrefixes?: string[];
   host: ModulationHost;
   registry: Map<string, KnobHandle>;
   registerKnob: (k: KnobHandle) => void;
@@ -202,8 +198,7 @@ function renderRoutingList(mod: ModulatorState, deps: ModulationUIDeps): HTMLEle
   const destSel = document.createElement('select');
   destSel.className = 'mod-dest-select';
   const used = new Set(mod.connections.map((c) => c.paramId));
-  const prefixes = [deps.laneId, ...(deps.extraPrefixes ?? [])];
-  for (const id of destinationIds(deps.registry, prefixes)) {
+  for (const id of destinationIds(deps.registry, deps.laneId)) {
     if (used.has(id)) continue;
     const opt = document.createElement('option');
     opt.value = id;
@@ -258,9 +253,7 @@ function renderConnectionRow(mod: ModulatorState, conn: import('./types').Modula
   return row;
 }
 
-function destinationIds(registry: Map<string, KnobHandle>, prefixes: string[]): string[] {
-  return [...registry.keys()].filter((id) => {
-    if (id.includes('.mod.')) return false;
-    return prefixes.some((p) => id.startsWith(`${p}.`));
-  });
+function destinationIds(registry: Map<string, KnobHandle>, laneId: string): string[] {
+  const prefix = `${laneId}.`;
+  return [...registry.keys()].filter((id) => id.startsWith(prefix) && !id.includes('.mod.'));
 }

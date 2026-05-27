@@ -7,16 +7,6 @@
 import type { ModulationConnection, ModulatorState, ModulatorVoice } from './types';
 import type { ParamRange } from './modulation-host';
 
-function lookupBare<T>(map: Record<string, T>, key: string): T | undefined {
-  if (map[key] !== undefined) return map[key];
-  const dot = key.indexOf('.');
-  if (dot >= 0) {
-    const tail = key.slice(dot + 1);
-    if (map[tail] !== undefined) return map[tail];
-  }
-  return undefined;
-}
-
 interface ActiveBinding {
   gain: GainNode;
   depth: number;
@@ -34,8 +24,8 @@ export class ConnectionBinder {
   apply(
     voiceMods: Map<string, ModulatorVoice>,
     modulators: ModulatorState[],
-    voiceParamMap: Record<string, AudioParam>,
-    paramRanges: Record<string, ParamRange>,
+    destMap: Map<string, AudioParam>,        // pre-keyed by full id like 'bass.filter.cutoff'
+    rangeMap: Map<string, ParamRange>,       // same keys
     ctx: AudioContext,
   ): void {
     const wanted = new Set<string>();
@@ -45,10 +35,10 @@ export class ConnectionBinder {
       const src = voiceMods.get(mod.id);
       if (!src) continue;
       for (const conn of mod.connections) {
-        const key = `${mod.id}.${conn.id}`;
-        const dest = lookupBare(voiceParamMap, conn.paramId);
-        const range = lookupBare(paramRanges, conn.paramId);
+        const dest = destMap.get(conn.paramId);
+        const range = rangeMap.get(conn.paramId);
         if (!dest || !range) continue;
+        const key = `${mod.id}.${conn.id}`;
         wanted.add(key);
 
         let active = this.bindings.get(key);
@@ -58,13 +48,10 @@ export class ConnectionBinder {
           src.output.connect(gain);
           gain.connect(dest);
           this.bindings.set(key, { gain, depth: conn.depth, range, paramId: conn.paramId });
-        } else {
+        } else if (active.depth !== conn.depth) {
           // Reuse the existing gain node — just update gain.value when depth changes.
-          const newVal = conn.depth * (range.max - range.min);
-          if (active.depth !== conn.depth) {
-            active.gain.gain.value = newVal;
-            active.depth = conn.depth;
-          }
+          active.gain.gain.value = conn.depth * (range.max - range.min);
+          active.depth = conn.depth;
         }
       }
     }
@@ -86,7 +73,5 @@ export class ConnectionBinder {
     this.bindings.clear();
   }
 }
-// Convenience export for the case where the caller manages its own
-// connection list (e.g. legacy bindVoiceModulation callers from before the
-// binder was introduced).
+
 export type { ModulationConnection };
