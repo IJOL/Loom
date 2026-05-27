@@ -99,3 +99,28 @@
   align-items: center;
   justify-content: center;
 }
+
+/* Modulators panel inside engine UI. */
+.mod-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 8px;
+  margin-top: 12px;
+}
+.mod-panel-header { display: flex; gap: 6px; margin-bottom: 6px; }
+.mod-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 8px;
+  margin-bottom: 6px;
+}
+.mod-card-header { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+.mod-card-title { flex: 1; font-size: 11px; letter-spacing: 0.1em; color: var(--amber); }
+.mod-card-config { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.mod-card-routing { display: flex; flex-direction: column; gap: 4px; }
+.mod-conn-row { display: flex; gap: 6px; align-items: center; }
+.mod-conn-target { flex: 1; font-size: 11px; color: var(--text-dim); }
+.mod-conn-adder { display: flex; gap: 6px; margin-top: 4px; }
+.mod-dest-select { flex: 1; }
