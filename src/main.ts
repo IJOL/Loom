@@ -6,7 +6,7 @@ import type { SynthEngine } from './engines/engine-types';
 import * as leh from './engines/lane-engine-host';
 import type { LaneEngineHostState, LaneEngineHostDeps } from './engines/lane-engine-host';
 import { getEngine } from './engines/registry';
-import './engines/subtractive';
+import { subtractiveEngine } from './engines/subtractive';
 import './engines/wavetable';
 import './engines/fm';
 import './engines/karplus';
@@ -31,10 +31,6 @@ import { applyMinimalTechnoDemo, wireDemoMinimalTechno } from './demo/demo-minim
 import { setupInitialPattern, type InitialPatternDeps } from './demo/initial-pattern';
 import { wireMidiImport } from './midi/midi-import';
 import { wireSaveManager, bootRecoveryLoad } from './save/save-wiring';
-import {
-  buildPolySynthUI, addPolyKnob, addPolySelect, refreshPolyKnobsFromState,
-  WAVE_OPTS, type PolySynthUIDeps,
-} from './polysynth/polysynth-ui';
 import {
   wirePolyControls, wirePolyMode, applyPolyParams, applyPresetByName,
   populatePolyPresetSelect, refreshPolyPresetSelect, polyPresetName,
@@ -110,6 +106,10 @@ const synth = new TB303(ctx, bassStrip.input);
 configureTB303EngineMainInstance(bassStrip.input, synth);
 const drums = new DrumMachine(ctx, fx, drumBusStrip.input);
 const polysynth = new PolySynth(ctx, polyStrip.input);
+// The singleton SubtractiveEngine for the 'main' lane reads/writes through
+// this PolySynth instance. (Per-lane subtractive engines for poly1/poly2…
+// get their own PolySynth attached via lane-engine-host.)
+subtractiveEngine.setPolySynth(polysynth);
 
 // Extra polyphonic voices are created LAZILY — no PolySynth/ChannelStrip is
 // instantiated until a track is actually added (via UI, MIDI import, or demo).
@@ -551,7 +551,8 @@ for (const t of $$<HTMLButtonElement>('button.tab')) {
 // ── PolySynth knobs (target swappable for multi-poly editing) ─────────────
 // activePolyTarget lives in synthEditorState (src/session/synth-editor-routing.ts).
 
-// buildPolySynthUI is now in polysynth-ui.ts — see boot section for call.
+// Subtractive knobs for the 'main' lane are mounted via wireLaneKnobs in the
+// boot section (replaces the old buildPolySynthUI / polysynth-ui.ts).
 
 // ── Master FX tab → moved to src/core/fx-ui.ts (wireFxUI) ─────────────────
 
@@ -683,10 +684,15 @@ setupInitialPattern(initialPatternDeps);
 barsSel.value = String(seq.length);
 
 // ── Deps objects for extracted UI modules ─────────────────────────────────
-const polySynthUIDeps: PolySynthUIDeps = {
-  getActivePolyTarget: () => synthEditorState.activePolyTarget ?? polysynth,
-  registerKnob,
-};
+/** After a preset / randomize mutates an engine's base state, push the new
+ *  values back into the lane's knob handles so the UI reflects them.
+ *  (onChange only fires on user drag, not on programmatic state changes.) */
+function refreshLaneKnobs(laneId: string, engine: SynthEngine): void {
+  for (const spec of engine.params) {
+    const handle = automationRegistry.get(`${laneId}.${spec.id}`);
+    handle?.setValue(engine.getBaseValue(spec.id));
+  }
+}
 
 const automationDeps: AutomationUIDeps = {
   seq,
@@ -741,6 +747,15 @@ const polySynthPresetsDeps: PolySynthPresetsDeps = {
   getLaneEngineId,
   getLaneEngineInstance,
   rebuildEngineParamUI,
+  refreshLaneKnobs: (laneId) => {
+    const engineId = getLaneEngineId(laneId);
+    if (engineId === 'subtractive' && laneId === 'main') {
+      refreshLaneKnobs('main', subtractiveEngine);
+    } else {
+      const inst = getLaneEngineInstance(laneId);
+      if (inst) refreshLaneKnobs(laneId, inst);
+    }
+  },
 };
 
 const polyModeDeps: PolyModeDeps = {
@@ -753,17 +768,46 @@ const polyModeDeps: PolyModeDeps = {
   updateBassModeButtons,
 };
 
-// Now that polySynthUIDeps + polySynthPresetsDeps exist, wire synthEditorDeps
+// Now that polySynthPresetsDeps exist, wire synthEditorDeps
 // (referenced lazily by showPolyEditorWrapper above).
 synthEditorDeps = {
-  refreshPolyKnobsFromState: () => refreshPolyKnobsFromState(),
+  refreshPolyKnobsFromState: () => refreshLaneKnobs(_lehState.activeLaneId, subtractiveEngine),
   refreshPolyPresetSelect: () => refreshPolyPresetSelect(),
   setActiveEngineLane: (laneId: string) => setActiveEngineLane(laneId),
 };
 
-buildPolySynthUI(polySynthUIDeps);
+// Build the Subtractive engine's knobs for the 'main' lane via the generic
+// lane-host loop. Replaces the old buildPolySynthUI() walker that mounted
+// 9 separate DOM rows under poly-osc1-knobs / poly-osc2-knobs / etc.
+{
+  const polyPage = document.querySelector<HTMLElement>('[data-page="poly"]');
+  // Clear the legacy per-section rows (they're now consolidated into a single
+  // wireLaneKnobs render under the first row's parent).
+  const legacyRowIds = [
+    'poly-osc1-knobs', 'poly-osc2-knobs', 'poly-sub-knobs', 'poly-noise-knobs',
+    'poly-filter-knobs', 'poly-amp-knobs', 'poly-master-knobs',
+    'poly-lfo1-knobs', 'poly-lfo2-knobs',
+  ];
+  for (const id of legacyRowIds) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  }
+  // Pick a single host: the first legacy knob-row, falling back to engine-params.
+  const polyKnobsParent =
+    document.getElementById('poly-osc1-knobs')
+    ?? document.getElementById('engine-params')
+    ?? polyPage?.querySelector<HTMLDivElement>('.knob-row')
+    ?? null;
+  if (polyKnobsParent) {
+    wireLaneKnobs({
+      laneId: 'main',
+      engine: subtractiveEngine,
+      parent: polyKnobsParent,
+    });
+  }
+}
 buildArpUI({ getExtraPolyTracks: () => seq.pattern.extraPolyTracks });
-const fxUIDeps: FxUIDeps = { fx, filterChain, getBpm: () => seq.bpm };
+const fxUIDeps: FxUIDeps = { fx, filterChain, getBpm: () => seq.bpm, registerKnob };
 wireFxUI(fxUIDeps);
 wireDrumMasterUI({ drumBusStrip, registerKnob, fmtPct, fmtDb });
 fxApplyDelaySync(fxUIDeps);

@@ -1,6 +1,52 @@
 import { type FxBus, type FilterChain, type MasterFilter, type SyncDiv } from './fx';
-import { addPolyKnob, addPolySelect, WAVE_OPTS } from '../polysynth/polysynth-ui';
-import { createKnob } from './knob';
+import { createKnob, type KnobHandle } from './knob';
+
+const WAVE_OPTS = [
+  { value: 'sawtooth', label: 'Saw' },
+  { value: 'square',   label: 'Sqr' },
+  { value: 'triangle', label: 'Tri' },
+  { value: 'sine',     label: 'Sin' },
+];
+
+/** Local replacement for the deleted addPolyKnob helper:
+ *  builds a knob, appends to parent, registers in the automation registry. */
+function appendKnob(
+  parent: HTMLElement,
+  opts: Parameters<typeof createKnob>[0],
+  registerKnob: (k: KnobHandle) => void,
+): KnobHandle {
+  const k = createKnob(opts);
+  parent.appendChild(k.el);
+  registerKnob(k);
+  return k;
+}
+
+/** Local replacement for the deleted addPolySelect helper. */
+function appendSelect(
+  parent: HTMLElement,
+  label: string,
+  options: Array<{ value: string; label: string }>,
+  getCurrent: () => string,
+  onChange: (v: string) => void,
+): void {
+  const wrap = document.createElement('div');
+  wrap.className = 'knob';
+  const lab = document.createElement('div');
+  lab.className = 'knob-label';
+  lab.textContent = label;
+  wrap.appendChild(lab);
+  const sel = document.createElement('select');
+  sel.className = 'poly-wave-sel';
+  for (const o of options) {
+    const opt = document.createElement('option');
+    opt.value = o.value; opt.textContent = o.label;
+    if (o.value === getCurrent()) opt.selected = true;
+    sel.appendChild(opt);
+  }
+  sel.addEventListener('change', () => onChange(sel.value));
+  wrap.appendChild(sel);
+  parent.appendChild(wrap);
+}
 
 // ── Formatters ──────────────────────────────────────────────────────────────
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
@@ -26,6 +72,7 @@ export interface FxUIDeps {
   fx: FxBus;
   filterChain: FilterChain;
   getBpm: () => number;
+  registerKnob: (k: KnobHandle) => void;
 }
 
 let _deps: FxUIDeps | null = null;
@@ -136,33 +183,33 @@ export function wireFxUI(deps: FxUIDeps): void {
   const dlyColor = '#3498db';
 
   // REVERB
-  addPolyKnob(revRow, { id: 'fx.reverb.wet', min: 0, max: 1, step: 0.01, value: deps.fx.getReverbWet(), defaultValue: 0.9,
+  appendKnob(revRow, { id: 'fx.reverb.wet', min: 0, max: 1, step: 0.01, value: deps.fx.getReverbWet(), defaultValue: 0.9,
     label: 'WET', color: revColor, size: SIZE, format: fmtPct,
-    onChange: (v) => deps.fx.setReverbWet(v) }, () => deps.fx.getReverbWet());
-  addPolyKnob(revRow, { id: 'fx.reverb.size', min: 0.1, max: 6, step: 0.1, value: deps.fx.getReverbSize(), defaultValue: 2.5,
+    onChange: (v) => deps.fx.setReverbWet(v) }, deps.registerKnob);
+  appendKnob(revRow, { id: 'fx.reverb.size', min: 0.1, max: 6, step: 0.1, value: deps.fx.getReverbSize(), defaultValue: 2.5,
     label: 'SIZE', color: revColor, size: SIZE, format: (v) => `${v.toFixed(1)}s`,
-    onChange: (v) => deps.fx.setReverbSize(v) }, () => deps.fx.getReverbSize());
-  addPolyKnob(revRow, { id: 'fx.reverb.decay', min: 0.5, max: 8, step: 0.1, value: deps.fx.getReverbDecay(), defaultValue: 3,
+    onChange: (v) => deps.fx.setReverbSize(v) }, deps.registerKnob);
+  appendKnob(revRow, { id: 'fx.reverb.decay', min: 0.5, max: 8, step: 0.1, value: deps.fx.getReverbDecay(), defaultValue: 3,
     label: 'DECAY', color: revColor, size: SIZE, format: (v) => v.toFixed(1),
-    onChange: (v) => deps.fx.setReverbDecay(v) }, () => deps.fx.getReverbDecay());
-  addPolyKnob(revRow, { id: 'fx.reverb.predly', min: 0, max: 0.5, step: 0.005, value: deps.fx.getReverbPredelay(), defaultValue: 0,
+    onChange: (v) => deps.fx.setReverbDecay(v) }, deps.registerKnob);
+  appendKnob(revRow, { id: 'fx.reverb.predly', min: 0, max: 0.5, step: 0.005, value: deps.fx.getReverbPredelay(), defaultValue: 0,
     label: 'PREDLY', color: revColor, size: SIZE, format: fmtSec,
-    onChange: (v) => deps.fx.setReverbPredelay(v) }, () => deps.fx.getReverbPredelay());
+    onChange: (v) => deps.fx.setReverbPredelay(v) }, deps.registerKnob);
 
   // DELAY
-  addPolySelect(dlyRow, 'SYNC', SYNC_OPTS, () => _delaySyncDiv, (v) => {
+  appendSelect(dlyRow, 'SYNC', SYNC_OPTS, () => _delaySyncDiv, (v) => {
     _delaySyncDiv = v as SyncDiv;
     applyDelaySync(deps);
   });
-  addPolyKnob(dlyRow, { id: 'fx.delay.feedback', min: 0, max: 0.95, step: 0.01, value: deps.fx.getDelayFeedback(), defaultValue: 0.45,
+  appendKnob(dlyRow, { id: 'fx.delay.feedback', min: 0, max: 0.95, step: 0.01, value: deps.fx.getDelayFeedback(), defaultValue: 0.45,
     label: 'FBACK', color: dlyColor, size: SIZE, format: fmtPct,
-    onChange: (v) => deps.fx.setDelayFeedback(v) }, () => deps.fx.getDelayFeedback());
-  addPolyKnob(dlyRow, { id: 'fx.delay.wet', min: 0, max: 1, step: 0.01, value: deps.fx.getDelayWet(), defaultValue: 0.8,
+    onChange: (v) => deps.fx.setDelayFeedback(v) }, deps.registerKnob);
+  appendKnob(dlyRow, { id: 'fx.delay.wet', min: 0, max: 1, step: 0.01, value: deps.fx.getDelayWet(), defaultValue: 0.8,
     label: 'WET', color: dlyColor, size: SIZE, format: fmtPct,
-    onChange: (v) => deps.fx.setDelayWet(v) }, () => deps.fx.getDelayWet());
-  addPolyKnob(dlyRow, { id: 'fx.delay.damp', min: 200, max: 16000, step: 50, value: deps.fx.getDelayDamping(), defaultValue: 4500,
+    onChange: (v) => deps.fx.setDelayWet(v) }, deps.registerKnob);
+  appendKnob(dlyRow, { id: 'fx.delay.damp', min: 200, max: 16000, step: 50, value: deps.fx.getDelayDamping(), defaultValue: 4500,
     label: 'DAMP', color: dlyColor, size: SIZE, format: (v) => `${Math.round(v)}Hz`,
-    onChange: (v) => deps.fx.setDelayDamping(v) }, () => deps.fx.getDelayDamping());
+    onChange: (v) => deps.fx.setDelayDamping(v) }, deps.registerKnob);
 
   // Add Filter button
   (document.getElementById('fx-add-filter') as HTMLButtonElement).addEventListener('click', () => {

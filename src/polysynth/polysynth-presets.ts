@@ -2,7 +2,6 @@ import { PolySynth, type PolySynthParams } from './polysynth';
 import { FACTORY_POLY_PRESETS } from './poly-presets';
 import { randomizePolySynth } from '../core/random';
 import type { SynthEngine } from '../engines/engine-types';
-import { refreshPolyKnobsFromState } from './polysynth-ui';
 
 // ── PolySynth preset state ─────────────────────────────────────────────────
 const POLY_PRESETS_KEY = 'tb303-poly-presets-v1';
@@ -27,6 +26,9 @@ export interface PolySynthPresetsDeps {
   getLaneEngineId: (laneId: string) => string;
   getLaneEngineInstance: (laneId: string) => SynthEngine | null;
   rebuildEngineParamUI: () => void;
+  /** Push current engine base values back into the lane's knob UI handles
+   *  after a preset or randomize mutates the underlying state. */
+  refreshLaneKnobs: (laneId: string) => void;
 }
 
 let _deps: PolySynthPresetsDeps | null = null;
@@ -45,7 +47,7 @@ export function applyPolyParams(params: PolySynthParams): void {
     lfo1:   { ...d.lfo1,   ...params.lfo1 },
     lfo2:   { ...d.lfo2,   ...params.lfo2 },
   };
-  refreshPolyKnobsFromState();
+  _deps!.refreshLaneKnobs(_deps!.getActiveEngineLaneId());
 }
 
 export function applyPresetByName(poly: PolySynth, name: string): void {
@@ -109,7 +111,7 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
       const target = deps.getActivePolyTarget();
       randomizePolySynth(target);
       polyPresetName.delete(target);
-      refreshPolyKnobsFromState();
+      deps.refreshLaneKnobs(deps.getActiveEngineLaneId());
       refreshPolyPresetSelect();
       return;
     }
