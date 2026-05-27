@@ -28,8 +28,6 @@
 | `src/modulation/lfo-voice.ts` | create | `LFOVoice` (Web Audio + currentValue mirror) |
 | `src/modulation/adsr-voice.ts` | create | `ADSRVoice` (Web Audio + currentValue mirror) |
 | `src/modulation/modulation-ui.ts` | create | `renderModulatorsPanel(container, deps)` |
-| `src/modulation/preset-migration.ts` | create | `migrateWavetablePreset`, `migrateSubtractivePreset`, idempotent |
-| `src/modulation/preset-migration.test.ts` | create | Tests for legacy → modulators |
 | `src/core/knob.ts` | modify | Add `KnobHandle.setModulationOffset(offsetNorm: number)` + ring SVG overlay; add `createSelectControl` for enum/toggle automatable params |
 | `src/core/select-control.ts` | create | `createSelectControl` (discrete-value automatable handle) |
 | `src/core/select-control.test.ts` | create | Discrete-value quantisation tests |
@@ -1502,116 +1500,18 @@ depths) register with the automation registry under
 
 ---
 
-# Phase 4 — Wavetable migration (first real engine adopter)
+# Phase 4 — Wavetable adopts ModulationHost
 
-## Task 11: Wavetable preset migrator + tests
+> No migration of any kind. This is a clean implementation: the wavetable engine drops its existing hardcoded ADSR params entirely and replaces them with a default ADSR modulator. Existing presets are rewritten by us in the engine source — we don't preserve any stored state, in-memory or persisted.
+
+## Task 11: Extend `EnginePreset` with optional modulators
 
 **Files:**
-- Create: `src/modulation/preset-migration.ts`
-- Create: `src/modulation/preset-migration.test.ts`
+- Modify: `src/engines/engine-types.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Add the optional field**
 
-Create `c:\Users\nacho\git\tb303-synth\src\modulation\preset-migration.test.ts`:
-
-```ts
-import { describe, it, expect } from 'vitest';
-import { migrateWavetablePreset } from './preset-migration';
-import type { EnginePreset } from '../engines/engine-types';
-
-describe('migrateWavetablePreset', () => {
-  it('passes through a modern preset with explicit modulators', () => {
-    const p: EnginePreset = {
-      name: 'P', params: { 'wt-pos': 0.5 },
-      modulators: [{ id: 'adsr1', kind: 'adsr', enabled: true, connections: [], attackSec: 0.5 }],
-    };
-    const out = migrateWavetablePreset(p);
-    expect(out.modulators).toBe(p.modulators);
-  });
-
-  it('converts wt-attack/decay/sustain/release into an ADSR connected to amp + cutoff', () => {
-    const p: EnginePreset = {
-      name: 'Legacy',
-      params: {
-        'wt-pos': 0.3,
-        'wt-attack': 0.05, 'wt-decay': 0.4, 'wt-sustain': 0.6, 'wt-release': 1.2,
-      },
-    };
-    const out = migrateWavetablePreset(p);
-    expect(out.params['wt-attack']).toBeUndefined();
-    expect(out.params['wt-pos']).toBe(0.3);
-    expect(out.modulators).toHaveLength(1);
-    const m = out.modulators![0];
-    expect(m.kind).toBe('adsr');
-    expect(m.attackSec).toBe(0.05);
-    expect(m.decaySec).toBe(0.4);
-    expect(m.sustain).toBe(0.6);
-    expect(m.releaseSec).toBe(1.2);
-    expect(m.connections.map(c => c.paramId).sort()).toEqual(['wt-amp', 'wt-cutoff']);
-  });
-
-  it('is idempotent (running twice yields the same result)', () => {
-    const legacy: EnginePreset = {
-      name: 'X', params: { 'wt-attack': 0.01, 'wt-decay': 0.3 },
-    };
-    const once = migrateWavetablePreset(legacy);
-    const twice = migrateWavetablePreset(once);
-    expect(twice).toEqual(once);
-  });
-});
-```
-
-- [ ] **Step 2: Run, verify failure**
-
-`npm test -- preset-migration`
-Expected: FAIL "Cannot find module".
-
-- [ ] **Step 3: Implement**
-
-Create `c:\Users\nacho\git\tb303-synth\src\modulation\preset-migration.ts`:
-
-```ts
-// src/modulation/preset-migration.ts
-// Converts legacy engine presets (with envelope params baked into params record)
-// into the modular form (params + modulators[]). Idempotent.
-
-import type { EnginePreset } from '../engines/engine-types';
-import type { ModulatorState } from './types';
-
-export function migrateWavetablePreset(preset: EnginePreset): EnginePreset {
-  if (preset.modulators && preset.modulators.length > 0) return preset;
-  const p = preset.params;
-  const a = p['wt-attack'], d = p['wt-decay'], s = p['wt-sustain'], r = p['wt-release'];
-  if (a == null && d == null && s == null && r == null) return preset;
-
-  const cleaned: Record<string, number> = {};
-  for (const [k, v] of Object.entries(p)) {
-    if (k === 'wt-attack' || k === 'wt-decay' || k === 'wt-sustain' || k === 'wt-release') continue;
-    cleaned[k] = v;
-  }
-
-  const adsr: ModulatorState = {
-    id: 'adsr1', kind: 'adsr', enabled: true,
-    attackSec: a ?? 0.01,
-    decaySec:  d ?? 0.3,
-    sustain:   s ?? 0.7,
-    releaseSec: r ?? 0.3,
-    connections: [
-      { id: 'c-amp',    paramId: 'wt-amp',    depth: 1.0 },
-      { id: 'c-cutoff', paramId: 'wt-cutoff', depth: 0.5 },
-    ],
-  };
-
-  return { ...preset, params: cleaned, modulators: [adsr] };
-}
-
-export function migrateSubtractivePreset(preset: EnginePreset): EnginePreset {
-  // Placeholder for Task 13. Returns preset unchanged for now.
-  return preset;
-}
-```
-
-Also extend `EnginePreset` in `src/engines/engine-types.ts` to add the optional field:
+Open `c:\Users\nacho\git\tb303-synth\src\engines\engine-types.ts`. Modify `EnginePreset`:
 
 ```ts
 export interface EnginePreset {
@@ -1621,19 +1521,18 @@ export interface EnginePreset {
 }
 ```
 
-- [ ] **Step 4: Run tests, verify they pass**
+- [ ] **Step 2: Typecheck + tests**
 
-`npm test -- preset-migration` — PASS, 3 cases.
+`npx tsc --noEmit && npm test` — clean.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
-git add src/modulation/preset-migration.ts src/modulation/preset-migration.test.ts src/engines/engine-types.ts
-git commit -m "feat(modulation): wavetable preset migrator (legacy ADSR params → modulator)
+git add src/engines/engine-types.ts
+git commit -m "feat(engines): EnginePreset.modulators? optional field
 
-Idempotent migrator that converts wt-attack/decay/sustain/release into
-an ADSR connected to wt-amp (depth 1) + wt-cutoff (depth 0.5). Modern
-presets pass through unchanged. EnginePreset gains optional modulators[]."
+Presets can now carry modulator state. Used by engines from Task 12
+onward to declare ADSR/LFO defaults in their preset list."
 ```
 
 ---
@@ -1703,24 +1602,21 @@ trigger: (midi, time, opts) => {
 
 Remove the existing hardcoded ampGain/filter envelope scheduling (lines around 80-95 of the current wavetable.ts that schedule the linearRampToValueAtTime curves). The ADSR voice now does it via the bound GainNode.
 
-- [ ] **Step 5: Apply preset migration at apply-time**
+- [ ] **Step 5: Update `applyPreset` to deserialize modulators**
 
-In `WavetableEngine.applyPreset(name)`, run the result through `migrateWavetablePreset` before applying:
+In `WavetableEngine.applyPreset(name)`:
 
 ```ts
-import { migrateWavetablePreset } from '../modulation/preset-migration';
-
 applyPreset(name: string): void {
-  const raw = this.presets.find((p) => p.name === name);
-  if (!raw) return;
-  const preset = migrateWavetablePreset(raw);
-  // Apply preset.params...
+  const preset = this.presets.find((p) => p.name === name);
+  if (!preset) return;
+  // Apply preset.params to engine paramValues.
+  for (const [k, v] of Object.entries(preset.params)) this.paramValues[k] = v;
   if (preset.modulators) this.modHost.deserialize(preset.modulators);
-  // ...
 }
 ```
 
-Also apply migration to the default presets list at module load if any of the existing wavetable presets has legacy params.
+Rewrite the existing wavetable presets in `src/engines/wavetable.ts` so each preset declares its modulators inline (no legacy `wt-attack/decay/sustain/release` params). If any existing preset still has those, delete them — this is a new app, no backwards compatibility.
 
 - [ ] **Step 6: Render the modulators panel**
 
@@ -1762,129 +1658,22 @@ renderModulatorsPanel(container, {
 git add src/engines/wavetable.ts
 git commit -m "feat(wavetable): adopt ModulationHost — drop hardcoded ADSR params
 
-wt-attack/decay/sustain/release params removed. Replaced by a default
-ADSR modulator pre-connected to wt-amp (depth 1) and wt-cutoff (depth
-0.5), plus a free LFO. Legacy presets are migrated on apply via
-migrateWavetablePreset. Per-voice instancing: each note spawns its
-own LFOVoice + ADSRVoice via spawnVoice."
+wt-attack/decay/sustain/release params removed. Default ADSR
+pre-connected to wt-amp (depth 1) and wt-cutoff (depth 0.5), plus a
+free LFO. Existing presets rewritten inline (no migration — new app).
+Per-voice instancing: each note spawns its own LFOVoice + ADSRVoice
+via spawnVoice."
 ```
 
 ---
 
-# Phase 5 — Subtractive migration
+# Phase 5 — Subtractive adopts ModulationHost
 
-## Task 13: Subtractive preset migrator + tests
+> Task 13 was a preset migrator — removed. New app, no migration. Subtractive's existing presets get rewritten inline in the engine source to use the modulator shape.
 
-**Files:**
-- Modify: `src/modulation/preset-migration.ts`
-- Modify: `src/modulation/preset-migration.test.ts`
+## Task 13: (removed — no migration)
 
-- [ ] **Step 1: Append tests**
-
-Add to `src/modulation/preset-migration.test.ts`:
-
-```ts
-import { migrateSubtractivePreset } from './preset-migration';
-
-describe('migrateSubtractivePreset', () => {
-  it('passes through modern presets with modulators', () => {
-    const p = {
-      name: 'P', params: { 'sub-pos': 0.5 },
-      modulators: [{ id: 'adsr1', kind: 'adsr' as const, enabled: true, connections: [] }],
-    };
-    expect(migrateSubtractivePreset(p)).toBe(p);
-  });
-
-  it('converts amp env params (ampAttack/Decay/Sustain/Release) into amp ADSR', () => {
-    const p = {
-      name: 'Legacy',
-      params: {
-        ampAttack: 0.02, ampDecay: 0.5, ampSustain: 0.8, ampRelease: 0.4,
-      },
-    };
-    const out = migrateSubtractivePreset(p);
-    const ampAdsr = out.modulators!.find((m) => m.connections.some((c) => c.paramId === 'amp'));
-    expect(ampAdsr).toBeDefined();
-    expect(ampAdsr!.attackSec).toBe(0.02);
-    expect(ampAdsr!.releaseSec).toBe(0.4);
-  });
-
-  it('converts filter env params (filterAttack/.../filterEnvAmount) into filter ADSR with depth', () => {
-    const p = {
-      name: 'Legacy',
-      params: {
-        filterAttack: 0.01, filterDecay: 0.2, filterSustain: 0.5, filterRelease: 0.3,
-        filterEnvAmount: 0.6,
-      },
-    };
-    const out = migrateSubtractivePreset(p);
-    const filtAdsr = out.modulators!.find((m) => m.connections.some((c) => c.paramId === 'cutoff'));
-    expect(filtAdsr).toBeDefined();
-    const cutoffConn = filtAdsr!.connections.find((c) => c.paramId === 'cutoff');
-    expect(cutoffConn!.depth).toBe(0.6);
-  });
-});
-```
-
-- [ ] **Step 2: Implement**
-
-In `src/modulation/preset-migration.ts`, replace the `migrateSubtractivePreset` stub:
-
-```ts
-export function migrateSubtractivePreset(preset: EnginePreset): EnginePreset {
-  if (preset.modulators && preset.modulators.length > 0) return preset;
-  const p = preset.params;
-  const hasAmp = ['ampAttack', 'ampDecay', 'ampSustain', 'ampRelease'].some((k) => p[k] != null);
-  const hasFilt = ['filterAttack', 'filterDecay', 'filterSustain', 'filterRelease'].some((k) => p[k] != null);
-  if (!hasAmp && !hasFilt) return preset;
-
-  const drop = new Set([
-    'ampAttack', 'ampDecay', 'ampSustain', 'ampRelease',
-    'filterAttack', 'filterDecay', 'filterSustain', 'filterRelease', 'filterEnvAmount',
-  ]);
-  const cleaned: Record<string, number> = {};
-  for (const [k, v] of Object.entries(p)) if (!drop.has(k)) cleaned[k] = v;
-
-  const modulators: import('./types').ModulatorState[] = [];
-  if (hasAmp) {
-    modulators.push({
-      id: 'adsr-amp', kind: 'adsr', enabled: true,
-      attackSec: p.ampAttack ?? 0.01,
-      decaySec:  p.ampDecay  ?? 0.3,
-      sustain:   p.ampSustain ?? 0.7,
-      releaseSec: p.ampRelease ?? 0.3,
-      connections: [{ id: 'c-amp', paramId: 'amp', depth: 1.0 }],
-    });
-  }
-  if (hasFilt) {
-    modulators.push({
-      id: 'adsr-filter', kind: 'adsr', enabled: true,
-      attackSec: p.filterAttack ?? 0.01,
-      decaySec:  p.filterDecay  ?? 0.3,
-      sustain:   p.filterSustain ?? 0.7,
-      releaseSec: p.filterRelease ?? 0.3,
-      connections: [{ id: 'c-cutoff', paramId: 'cutoff', depth: p.filterEnvAmount ?? 0.5 }],
-    });
-  }
-  return { ...preset, params: cleaned, modulators };
-}
-```
-
-- [ ] **Step 3: Tests pass**
-
-`npm test -- preset-migration` — 6 cases now.
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add src/modulation/preset-migration.ts src/modulation/preset-migration.test.ts
-git commit -m "feat(modulation): subtractive preset migrator
-
-Converts amp ADSR and filter ADSR (with filterEnvAmount) from legacy
-flat params into modular ADSR modulators on 'amp' and 'cutoff'."
-```
-
----
+Skipped. Renumbered tasks 14-20 stay where they are for traceability with the spec, but no code work happens for Task 13.
 
 ## Task 14: Subtractive adopts `ModulationHost`
 
@@ -1940,19 +1729,21 @@ for (const mv of voiceMods.values()) mv.trigger(time, { gateDuration, accent });
 
 Remove the existing hardcoded LFO classes/instances from PolySynth that were wired to fixed destinations. (If PolySynth's LFOs are tangled into the audio graph, leave them as a no-op disconnected oscillator for now — full removal is a follow-up cleanup.)
 
-- [ ] **Step 3: Wire `migrateSubtractivePreset` into `applyPreset`**
+- [ ] **Step 3: Update `applyPreset` to deserialize modulators**
 
 ```ts
-import { migrateSubtractivePreset } from '../modulation/preset-migration';
-
 applyPreset(name: string): void {
-  const raw = this.presets.find((p) => p.name === name);
-  if (!raw) return;
-  const preset = migrateSubtractivePreset(raw);
-  // Apply preset.params...
+  const preset = this.presets.find((p) => p.name === name);
+  if (!preset) return;
+  // Apply preset.params (write each to the active polysynth target's voice params)
+  for (const [k, v] of Object.entries(preset.params)) {
+    /* existing per-param application code */
+  }
   if (preset.modulators) this.modHost.deserialize(preset.modulators);
 }
 ```
+
+Rewrite the existing subtractive presets in `src/polysynth/poly-presets.ts` (or wherever they live) so each preset declares its modulators inline. If any preset still has legacy `ampAttack/filterAttack/...` flat params, delete them — new app, no migration.
 
 - [ ] **Step 4: Render the panel in `buildParamUI`**
 
@@ -1976,8 +1767,8 @@ git commit -m "feat(subtractive): adopt ModulationHost
 
 Two ADSRs (amp, filter) and two LFOs by default. The amp ADSR
 pre-connects to 'amp' (depth 1.0), the filter ADSR to 'cutoff' (depth
-0.5). Legacy presets are migrated on apply. PolySynth exposes
-getVoiceParams so the host can bind connections to the right
+0.5). Presets rewritten inline (no migration — new app). PolySynth
+exposes getVoiceParams so the host can bind connections to the right
 per-voice AudioParams."
 ```
 
@@ -2078,7 +1869,7 @@ lets the user drive dub-style cutoff wobbles or accent automation."
 
 **Files:**
 - Modify: `src/session/session.ts`
-- Modify: `src/session/session-migration.ts`
+- Modify: `src/session/session-host.ts`
 
 - [ ] **Step 1: Add the field**
 
@@ -2142,7 +1933,7 @@ In dev server: Session → add an LFO connection → Save (via the existing save
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/session/session.ts src/session/session-host.ts src/session/session-migration.ts
+git add src/session/session.ts src/session/session-host.ts
 git commit -m "feat(session): persist per-lane engine modulator state
 
 SessionLane.engineState.modulators round-trips through save/load.
@@ -2275,9 +2066,9 @@ setModulationOffset. The amber ring overlay animates in real time."
 - Spec §3 (core types) → Task 1
 - Spec §4 (LFOVoice + ADSRVoice + bindVoiceModulation) → Tasks 2, 3, 4, 5, 6
 - Spec §5 (UI panel + KnobHandle.setModulationOffset) → Tasks 7, 8, 9, 10
-- Spec §6 (per-engine integration) → Tasks 11–17
-- Spec §7 (save/load) → Task 18
+- Spec §6 (per-engine integration) → Tasks 11, 12, 14, 15, 16, 17 (Task 13 dropped — no migration)
+- Spec §7 (save/load) → Task 18 (round-trip only, no legacy migration)
 - Spec §8 (automation registry, discrete values, preset selector) → Tasks 9, 19, 20
-- Spec §10 (testing) → Tests in Tasks 2, 3, 4, 5, 9, 11, 13
+- Spec §10 (testing) → Tests in Tasks 2, 3, 4, 5, 9
 - All task code is self-contained; types defined in Task 1 are reused with consistent names through Task 20.
 - No placeholders / TBDs / "implement later" without code.
