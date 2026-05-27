@@ -23,6 +23,11 @@ export function renderModulatorsPanel(container: HTMLElement, deps: ModulationUI
   const box = document.createElement('div');
   box.className = 'mod-panel';
 
+  const title = document.createElement('div');
+  title.className = 'mod-panel-title';
+  title.textContent = 'MODULATORS';
+  box.appendChild(title);
+
   const header = document.createElement('div');
   header.className = 'mod-panel-header';
   header.appendChild(mkAddButton('+ LFO',  () => { deps.host.addModulator('lfo');  deps.onChange(); }));

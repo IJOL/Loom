@@ -60,6 +60,12 @@
       body[data-pure-session="true"] .synth > .page         { order: 3; }
       body[data-pure-session="true"] .synth > .session-view { order: 4; }
       body[data-pure-session="true"] .synth > .arp-panel    { order: 5; }
+      /* Hide legacy PolySynth LFO1/LFO2 knob sections in Session mode — the
+         per-lane modulators panel replaces them functionally. */
+      body[data-pure-session="true"] .row.poly-section:has(#poly-lfo1-knobs),
+      body[data-pure-session="true"] .row.poly-section:has(#poly-lfo2-knobs) {
+        display: none !important;
+      }
     </style>
   </head>
   <body data-pure-session="true">

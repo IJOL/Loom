@@ -319,10 +319,47 @@ export class SessionHost {
           });
         }
         self.activeEditLane = laneId;
+        self.injectEngineModulatorPanel(laneId, targetTab);
         self.deps.onActiveLaneChanged?.();
       },
       onToggleDrumsExpanded() { /* drum-bus expand removed — drum-grid editor shows all voices */ },
     };
+  }
+
+  // ── Engine modulator panel injection for non-poly built-in lanes ──────────
+
+  private injectEngineModulatorPanel(laneId: string, targetTab: string): void {
+    // Only for non-poly built-in lanes (bass, drums). Poly lanes already
+    // render the panel via rebuildEngineParamUI.
+    if (laneId !== 'bass' && laneId !== 'drums' && !laneId.startsWith('drum:')) return;
+
+    // Pick the engine for this lane.
+    const engineId = laneId === 'bass' ? 'tb303' :
+                     (laneId === 'drums' || laneId.startsWith('drum:')) ? 'drums-machine' :
+                     'subtractive';
+    const engine = getEngine(engineId);
+    if (!engine) return;
+
+    // Mount or reuse a container at the bottom of the active page.
+    const page = document.querySelector<HTMLElement>(`[data-page="${targetTab}"]`);
+    if (!page) return;
+    let host = page.querySelector<HTMLElement>('.engine-mod-host');
+    if (!host) {
+      host = document.createElement('div');
+      host.className = 'engine-mod-host';
+      page.appendChild(host);
+    }
+    host.innerHTML = '';
+
+    engine.buildParamUI(host, {
+      laneId,
+      idPrefix: laneId,
+      registerKnob: (k: unknown) => {
+        const handle = k as import('../core/knob').KnobHandle;
+        if (handle.meta?.id) this.deps.automationRegistry.set(handle.meta.id, handle);
+      },
+      registry: this.deps.automationRegistry as Map<string, unknown>,
+    });
   }
 
   // ── Toolbar wiring ─────────────────────────────────────────────────────────

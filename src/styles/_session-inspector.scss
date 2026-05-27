@@ -108,6 +108,14 @@
   padding: 8px;
   margin-top: 12px;
 }
+.mod-panel-title {
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--amber);
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
 .mod-panel-header { display: flex; gap: 6px; margin-bottom: 6px; }
 .mod-card {
   background: var(--surface-2);
