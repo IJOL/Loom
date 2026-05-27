@@ -4,10 +4,11 @@
 
 import type {
   SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer,
-  EngineUIContext, EnginePreset, ParamDef,
+  EngineUIContext, EnginePreset,
 } from './engine-types';
+import type { EngineParamSpec } from './engine-params';
 import { registerEngine, registerEngineFactory } from './registry';
-import { DrumMachine } from '../core/drums';
+import { DrumMachine, DRUM_LANES, type DrumVoice } from '../core/drums';
 import { FxBus } from '../core/fx';
 import { GM_DRUM_MAP } from './drum-gm-map';
 import { ModulationHostImpl } from '../modulation/modulation-host';
@@ -15,9 +16,22 @@ import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
 import type { KnobHandle } from '../core/knob';
 
-const PARAMS: ParamDef[] = [
-  { id: 'master-gain', label: 'LEVEL', min: 0,   max: 1.5, default: 1 },
-  { id: 'master-tune', label: 'TUNE',  min: -12, max: 12,  default: 0 },
+// Unified-param schema for the drums engine. Master controls live at the
+// engine level; per-voice `.level` ids map onto each DrumMachine channel
+// strip's `level.gain` AudioParam (see DrumsVoice.getAudioParams below).
+const DRUM_PARAMS: EngineParamSpec[] = [
+  // Kit-level master
+  { id: 'master.level', label: 'Level', kind: 'continuous', min: 0,   max: 1.5, default: 1 },
+  { id: 'master.tune',  label: 'Tune',  kind: 'continuous', min: -12, max: 12,  default: 0, unit: 'st' },
+  // Per-voice levels (one .level spec per DRUM_LANES entry)
+  { id: 'kick.level',      label: 'Kick',  kind: 'continuous', min: 0, max: 1.5, default: 1 },
+  { id: 'snare.level',     label: 'Snare', kind: 'continuous', min: 0, max: 1.5, default: 1 },
+  { id: 'closedHat.level', label: 'CHat',  kind: 'continuous', min: 0, max: 1.5, default: 1 },
+  { id: 'openHat.level',   label: 'OHat',  kind: 'continuous', min: 0, max: 1.5, default: 1 },
+  { id: 'clap.level',      label: 'Clap',  kind: 'continuous', min: 0, max: 1.5, default: 1 },
+  { id: 'cowbell.level',   label: 'Cwbll', kind: 'continuous', min: 0, max: 1.5, default: 1 },
+  { id: 'tom.level',       label: 'Tom',   kind: 'continuous', min: 0, max: 1.5, default: 1 },
+  { id: 'ride.level',      label: 'Ride',  kind: 'continuous', min: 0, max: 1.5, default: 1 },
 ];
 
 // Drum presets = the existing KITS. Their full per-voice param shapes live
@@ -32,6 +46,18 @@ const DRUM_PRESETS: EnginePreset[] = [
 
 class DrumsVoice implements Voice {
   constructor(private dm: DrumMachine) {}
+
+  /** Expose each drum voice's channel-strip level GainNode as an AudioParam
+   *  keyed by '<voice>.level'. The lane-host's modulator binder routes
+   *  enabled connections into these via depth-gains. */
+  getAudioParams(): Map<string, AudioParam> {
+    const m = new Map<string, AudioParam>();
+    for (const voice of DRUM_LANES) {
+      const ch = this.dm.channels[voice];
+      if (ch && ch.level) m.set(`${voice}.level`, ch.level.gain);
+    }
+    return m;
+  }
 
   trigger(midi: number, time: number, opts: VoiceTriggerOptions): void {
     const voice = GM_DRUM_MAP[midi];
@@ -59,11 +85,21 @@ export class DrumsEngine implements SynthEngine {
   readonly type = 'polyhost' as const;
   readonly polyphony = 'poly' as const;
   readonly editor = 'drum-grid' as const;
-  readonly params = PARAMS;
+  readonly params = DRUM_PARAMS;
   readonly presets = DRUM_PRESETS;
 
   private instances = new WeakMap<AudioNode, DrumMachine>();
   private lastInstance: DrumMachine | null = null;
+
+  /** Engine-level cache for scalar param values. Per-voice `.level` writes
+   *  push through to the matching ChannelStrip; master.* values are stored
+   *  here for now (no audio destination wired yet — modulators and the
+   *  knob UI still read/write them consistently). */
+  private paramValues: Record<string, number> = (() => {
+    const o: Record<string, number> = {};
+    for (const s of DRUM_PARAMS) o[s.id] = s.default;
+    return o;
+  })();
 
   // The drum machine constructor needs an FxBus reference for sends; the
   // host injects one shared FxBus via setSharedFx so lanes can share reverb/
@@ -78,6 +114,27 @@ export class DrumsEngine implements SynthEngine {
 
   get modulators() { return this.modHost; }
 
+  getBaseValue(id: string): number {
+    if (id in this.paramValues) return this.paramValues[id];
+    return DRUM_PARAMS.find(p => p.id === id)?.default ?? 0;
+  }
+
+  setBaseValue(id: string, v: number): void {
+    if (!(id in this.paramValues)) return;
+    this.paramValues[id] = v;
+    if (!this.lastInstance) return;
+
+    // Per-voice level: push to the channel strip's level gain.
+    const [scope, field] = id.split('.');
+    if (field === 'level' && scope !== 'master') {
+      const ch = this.lastInstance.channels[scope as DrumVoice];
+      if (ch && ch.level) ch.level.gain.value = v;
+    }
+    // master.* lives only in paramValues for now; future work can route
+    // master.level into a kit-bus VCA and master.tune into per-voice osc
+    // frequency offsets at trigger time.
+  }
+
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
     let dm = this.instances.get(output);
     if (!dm) {
@@ -88,6 +145,12 @@ export class DrumsEngine implements SynthEngine {
       this.instances.set(output, dm);
     }
     this.lastInstance = dm;
+    // Re-apply any per-voice levels that were set before the instance existed.
+    for (const voice of DRUM_LANES) {
+      const id = `${voice}.level`;
+      const ch = dm.channels[voice];
+      if (ch && ch.level) ch.level.gain.value = this.paramValues[id];
+    }
     return new DrumsVoice(dm);
   }
 
@@ -100,7 +163,6 @@ export class DrumsEngine implements SynthEngine {
     renderModulatorsPanel(container, {
       engineId: this.id,
       laneId: ctx.laneId,
-      extraPrefixes: ['drumBus', 'kick', 'snare', 'closedHat', 'openHat', 'clap', 'cowbell', 'tom', 'ride'],
       host: this.modHost,
       registry: ctx.registry as Map<string, KnobHandle>,
       registerKnob: (k) => ctx.registerKnob(k),
