@@ -1,6 +1,6 @@
 import { listEngines } from './registry';
 import type { SynthEngine } from './engine-types';
-import { createKnob, type KnobHandle } from '../core/knob';
+import type { KnobHandle } from '../core/knob';
 
 export interface EngineSelectorUIDeps {
   engineSel: HTMLSelectElement;
@@ -42,39 +42,10 @@ export function rebuildEngineParamUI(): void {
   for (const row of subtractiveRows) {
     row.style.display = engineId === 'subtractive' ? '' : 'none';
   }
-  const instance = deps.getLaneEngineInstance(activeLaneId);
-  if (!instance) return;
-  // For 'subtractive', main.ts already builds the legacy poly param UI elsewhere;
-  // we still let buildParamUI run so the engine's modulators panel renders into
-  // engine-params alongside it.
-  engineParamEl.style.display = '';
-  const buildCtx = {
-    laneId: activeLaneId,
-    idPrefix: activeLaneId,
-    registerKnob: (k: unknown) => deps.registerKnob(k as KnobHandle),
-    registry: deps.automationRegistry as unknown as Map<string, unknown>,
-  };
-  instance.buildParamUI(engineParamEl, buildCtx);
-  if (engineParamEl.childElementCount === 0) {
-    const row = document.createElement('div');
-    row.className = 'row poly-section';
-    const knobRow = document.createElement('div');
-    knobRow.className = 'knob-row';
-    const eng = instance as unknown as { setParam?: (id: string, v: number) => void; getParam?: (id: string) => number };
-    for (const p of instance.params) {
-      const fullId = `${activeLaneId}.${p.id}`;
-      const k = createKnob({
-        id: fullId,
-        label: p.label, min: p.min, max: p.max,
-        value: eng.getParam?.(p.id) ?? p.default,
-        onChange: (v) => { eng.setParam?.(p.id, v); },
-      });
-      deps.registerKnob(k);
-      knobRow.appendChild(k.el);
-    }
-    row.appendChild(knobRow);
-    engineParamEl.appendChild(row);
-  }
+  // The modulators panel is rendered via SessionHost.injectEngineModulatorPanel
+  // for ALL lanes (single source of truth). engine-params is no longer used by
+  // the modulators UI; hide it to avoid an empty container in the layout.
+  engineParamEl.style.display = 'none';
   deps.populateAutoParamSelect();
 }
 

@@ -263,6 +263,7 @@ class KarplusEngine implements SynthEngine {
       renderModulatorsPanel(container, {
         engineId: this.id,
         laneId: ctx.laneId,
+        extraPrefixes: ['ks'],
         host: this.modHost,
         registry: ctx.registry as Map<string, KnobHandle>,
         registerKnob: (k) => ctx.registerKnob(k),

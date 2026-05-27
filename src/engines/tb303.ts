@@ -141,6 +141,7 @@ export class TB303Engine implements SynthEngine {
       renderModulatorsPanel(container, {
         engineId: this.id,
         laneId: ctx.laneId,
+        extraPrefixes: ['tb303'],
         host: this.modHost,
         registry: ctx.registry as Map<string, KnobHandle>,
         registerKnob: (k) => ctx.registerKnob(k),

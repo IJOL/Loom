@@ -326,17 +326,17 @@ export class SessionHost {
     };
   }
 
-  // ── Engine modulator panel injection for non-poly built-in lanes ──────────
+  // ── Engine modulator panel injection ─────────────────────────────────────
+  // Single source of truth for the modulators UI: every editable lane (bass,
+  // drums, and every poly lane regardless of engine) gets its panel injected
+  // into the bottom of the currently-shown page.
 
   private injectEngineModulatorPanel(laneId: string, targetTab: string): void {
-    // Only for non-poly built-in lanes (bass, drums). Poly lanes already
-    // render the panel via rebuildEngineParamUI.
-    if (laneId !== 'bass' && laneId !== 'drums' && !laneId.startsWith('drum:')) return;
-
     // Pick the engine for this lane.
-    const engineId = laneId === 'bass' ? 'tb303' :
-                     (laneId === 'drums' || laneId.startsWith('drum:')) ? 'drums-machine' :
-                     'subtractive';
+    const engineId =
+      laneId === 'bass'                                    ? 'tb303' :
+      (laneId === 'drums' || laneId.startsWith('drum:'))   ? 'drums-machine' :
+                                                             this.deps.getLaneEngineId(laneId);
     const engine = getEngine(engineId);
     if (!engine) return;
 

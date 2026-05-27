@@ -155,6 +155,7 @@ class SubtractiveEngine implements SynthEngine {
       renderModulatorsPanel(container, {
         engineId: this.id,
         laneId: ctx.laneId,
+        extraPrefixes: ['poly', 'subtractive'],
         host: this.modHost,
         registry: ctx.registry as Map<string, KnobHandle>,
         registerKnob: (k) => ctx.registerKnob(k),
