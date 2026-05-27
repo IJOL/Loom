@@ -118,18 +118,6 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
   deps.registerKnob(rate);
   row.appendChild(rate.el);
 
-  const syncBtn = document.createElement('button');
-  const refreshSyncBtn = () => {
-    syncBtn.className = 'rnd' + (mod.syncToBpm ? ' primary' : '');
-    syncBtn.textContent = mod.syncToBpm ? 'SYNC' : 'FREE';
-  };
-  refreshSyncBtn();
-  syncBtn.addEventListener('click', () => {
-    mod.syncToBpm = !mod.syncToBpm;
-    refreshSyncBtn();
-  });
-  row.appendChild(syncBtn);
-
   const ratioOpts = Object.keys(SYNC_RATIO_MAP).map((k) => ({ value: k, label: k }));
   const ratio = createSelectControl({
     id: `${deps.laneId}.mod.${mod.id}.syncRatio`,
@@ -140,6 +128,20 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
   });
   deps.registerKnob(ratio.handle);
   row.appendChild(ratio.el);
+
+  const syncBtn = document.createElement('button');
+  const refreshSyncUI = () => {
+    syncBtn.className = 'rnd' + (mod.syncToBpm ? ' primary' : '');
+    syncBtn.textContent = mod.syncToBpm ? 'SYNC' : 'FREE';
+    rate.el.style.display      = mod.syncToBpm ? 'none' : '';
+    ratio.el.style.display     = mod.syncToBpm ? '' : 'none';
+  };
+  refreshSyncUI();
+  syncBtn.addEventListener('click', () => {
+    mod.syncToBpm = !mod.syncToBpm;
+    refreshSyncUI();
+  });
+  row.appendChild(syncBtn);
 
   const bipolar = createSelectControl({
     id: `${deps.laneId}.mod.${mod.id}.bipolar`,
