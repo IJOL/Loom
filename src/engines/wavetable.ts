@@ -1,18 +1,23 @@
-import type { SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, ParamDef, EngineUIContext } from './engine-types';
+import type { SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, EngineUIContext } from './engine-types';
+import type { EngineParamSpec } from './engine-params';
 import { registerEngine, registerEngineFactory } from './registry';
 import { createPeriodicWaves, WAVETABLES } from './wavetable-tables';
 import { createKnob, type KnobHandle } from '../core/knob';
-import { ModulationHostImpl, bindVoiceModulation } from '../modulation/modulation-host';
+import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
 import type { ModulatorVoice } from '../modulation/types';
 import { recordVoiceMods } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
 
-const WAVETABLE_PARAMS: ParamDef[] = [
-  { id: 'wt-morph',        label: 'Morph',     min: 0,     max: 1, default: 0.5 },
-  { id: 'wt-detune',       label: 'Detune',    min: 0,     max: 50, default: 0, unit: '¢' },
-  { id: 'wt-filterCutoff', label: 'Cutoff',    min: 0,     max: 1, default: 0.8 },
-  { id: 'wt-filterRes',    label: 'Resonance', min: 0,     max: 1, default: 0.1 },
+const WT_PARAMS: EngineParamSpec[] = [
+  { id: 'osc.morph',        label: 'Morph',     kind: 'continuous', min: 0,    max: 1,  default: 0.0 },
+  { id: 'osc.detune',       label: 'Detune',    kind: 'continuous', min: -50,  max: 50, default: 0, unit: '¢' },
+  { id: 'filter.cutoff',    label: 'Cutoff',    kind: 'continuous', min: 0,    max: 1,  default: 0.55 },
+  { id: 'filter.resonance', label: 'Res',       kind: 'continuous', min: 0,    max: 1,  default: 0.2 },
+  { id: 'amp.attack',       label: 'Attack',    kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's', curve: 'exponential' },
+  { id: 'amp.decay',        label: 'Decay',     kind: 'continuous', min: 0.001, max: 2, default: 0.3,  unit: 's', curve: 'exponential' },
+  { id: 'amp.sustain',      label: 'Sustain',   kind: 'continuous', min: 0,    max: 1,  default: 0.7 },
+  { id: 'amp.release',      label: 'Release',   kind: 'continuous', min: 0.005, max: 4, default: 0.3,  unit: 's', curve: 'exponential' },
 ];
 
 class WavetableVoice implements Voice {
@@ -20,8 +25,10 @@ class WavetableVoice implements Voice {
   private oscB: OscillatorNode;
   private gainA: GainNode;
   private gainB: GainNode;
-  private filter: BiquadFilterNode;
-  private amp: GainNode;
+  public readonly filter: BiquadFilterNode;
+  public readonly ampGain: GainNode;
+  private envAmp!: ConstantSourceNode;
+  private envCutoff!: ConstantSourceNode;
   private started = false;
   private stopScheduled = false;
 
@@ -40,18 +47,35 @@ class WavetableVoice implements Voice {
     this.gainB = ctx.createGain();
     this.filter = ctx.createBiquadFilter();
     this.filter.type = 'lowpass';
-    this.amp = ctx.createGain();
-    // Base value 0 — ADSR sums in via Web Audio param summing.
-    this.amp.gain.value = 0;
+    this.ampGain = ctx.createGain();
+
+    // Internal envelope sources — modulators sum on top of these via the
+    // destination AudioParams (ampGain.gain, filter.frequency).
+    this.envAmp = ctx.createConstantSource();
+    this.envAmp.offset.value = 0;
+    this.envAmp.start();
+    this.envAmp.connect(this.ampGain.gain);
+
+    this.envCutoff = ctx.createConstantSource();
+    this.envCutoff.offset.value = 0;
+    this.envCutoff.start();
+    this.envCutoff.connect(this.filter.frequency);
+
+    this.ampGain.gain.value = 0;
+    this.filter.frequency.value = 0;
 
     this.oscA.connect(this.gainA).connect(this.filter);
     this.oscB.connect(this.gainB).connect(this.filter);
-    this.filter.connect(this.amp).connect(output);
+    this.filter.connect(this.ampGain).connect(output);
   }
 
-  // Exposed so the engine can build the voiceParamMap before bind.
-  get ampParam(): AudioParam { return this.amp.gain; }
-  get cutoffParam(): AudioParam { return this.filter.frequency; }
+  getAudioParams(): Map<string, AudioParam> {
+    return new Map<string, AudioParam>([
+      ['amp.gain',         this.ampGain.gain],
+      ['filter.cutoff',    this.filter.frequency],
+      ['filter.resonance', this.filter.Q],
+    ]);
+  }
 
   trigger(midi: number, time: number, options: VoiceTriggerOptions): void {
     // Fire modulator voices first so their AudioParam contributions land
@@ -62,10 +86,10 @@ class WavetableVoice implements Voice {
 
     const freq = 440 * Math.pow(2, (midi - 69) / 12);
     const velMul = options.accent ? 1.3 : 1.0;
-    const morph = this.getParam('wt-morph');
-    const detune = this.getParam('wt-detune');
-    const cutoff = this.getParam('wt-filterCutoff');
-    const res = this.getParam('wt-filterRes');
+    const morph = this.getParam('osc.morph');
+    const detune = this.getParam('osc.detune');
+    const cutoff = this.getParam('filter.cutoff');
+    const res = this.getParam('filter.resonance');
 
     const aIdx = Math.max(0, Math.min(this.waves.length - 1, this.getWaveAIndex()));
     const bIdx = Math.max(0, Math.min(this.waves.length - 1, this.getWaveBIndex()));
@@ -83,12 +107,18 @@ class WavetableVoice implements Voice {
     this.gainA.gain.setValueAtTime(gA, time);
     this.gainB.gain.setValueAtTime(gB, time);
 
-    // Static cutoff base + Q. ADSR routed to wt-cutoff supplies envelope motion;
-    // LFOs routed to wt-cutoff (via UI) add wobble.
+    // Static cutoff base + Q. ADSR routed to filter.cutoff supplies envelope
+    // motion; LFOs routed to filter.cutoff add wobble. Base value is written
+    // onto envCutoff.offset so modulator sums stack cleanly on the destination.
     const baseHz = 60 * Math.pow(220, cutoff);
     this.filter.Q.setValueAtTime(0.5 + res * 20, time);
-    // Note: setting the base value, not scheduling a sweep.
-    this.filter.frequency.setValueAtTime(baseHz, time);
+    this.envCutoff.offset.setValueAtTime(baseHz, time);
+
+    // Amp base stays at 0; the modulator-driven amp envelope (or default ADSR
+    // routed to amp.gain) supplies gating. envAmp.offset is the internal env
+    // contribution slot — left at 0 here since wavetable's amp env is driven
+    // entirely by the ADSR modulator on amp.gain.
+    this.envAmp.offset.setValueAtTime(0, time);
 
     if (!this.started) {
       this.oscA.start(time);
@@ -109,10 +139,14 @@ class WavetableVoice implements Voice {
       try { this.oscB.stop(); } catch {}
       this.stopScheduled = true;
     }
+    try { this.envAmp.stop(); } catch {}
+    try { this.envCutoff.stop(); } catch {}
     this.oscA.disconnect();
     this.oscB.disconnect();
     this.filter.disconnect();
-    this.amp.disconnect();
+    this.ampGain.disconnect();
+    this.envAmp.disconnect();
+    this.envCutoff.disconnect();
     for (const mv of this.voiceMods.values()) mv.dispose();
   }
 }
@@ -126,12 +160,12 @@ class WavetableSequencer implements EngineSequencer {
   dispose(): void {}
 }
 
-class WavetableEngine implements SynthEngine {
+export class WavetableEngine implements SynthEngine {
   readonly id = 'wavetable';
   readonly name = 'Wavetable';
   readonly type = 'polyhost' as const;
   readonly polyphony = 'poly' as const;
-  readonly params = WAVETABLE_PARAMS;
+  readonly params = WT_PARAMS;
   readonly editor = 'piano-roll' as const;
   readonly presets: import('./engine-types').EnginePreset[] = [];
 
@@ -148,8 +182,8 @@ class WavetableEngine implements SynthEngine {
     {
       ...makeDefaultADSR('adsr1'),
       connections: [
-        { id: 'c-amp',    paramId: 'wt-amp',    depth: 1.0 },
-        { id: 'c-cutoff', paramId: 'wt-cutoff', depth: 0.5 },
+        { id: 'c-amp',    paramId: 'amp.gain',      depth: 1.0 },
+        { id: 'c-cutoff', paramId: 'filter.cutoff', depth: 0.5 },
       ],
     },
     makeDefaultLFO('lfo1'),
@@ -159,17 +193,17 @@ class WavetableEngine implements SynthEngine {
   get modulators(): ModulationHostImpl { return this.modHost; }
 
   constructor() {
-    for (const p of WAVETABLE_PARAMS) {
+    for (const p of WT_PARAMS) {
       this.paramValues[p.id] = p.default;
     }
   }
 
-  setParam(id: string, value: number): void {
-    this.paramValues[id] = value;
+  getBaseValue(id: string): number {
+    return this.paramValues[id] ?? WT_PARAMS.find(p => p.id === id)?.default ?? 0;
   }
 
-  getParam(id: string): number {
-    return this.paramValues[id] ?? 0;
+  setBaseValue(id: string, v: number): void {
+    this.paramValues[id] = v;
   }
 
   applyPreset(name: string): void {
@@ -201,20 +235,11 @@ class WavetableEngine implements SynthEngine {
       ctx,
       output,
       this.waves,
-      (id) => this.getParam(id),
+      (id) => this.getBaseValue(id),
       () => this.waveAIndex,
       () => this.waveBIndex,
       voiceMods,
     );
-    const voiceParamMap: Record<string, AudioParam> = {
-      'wt-amp':    voice.ampParam,
-      'wt-cutoff': voice.cutoffParam,
-    };
-    const paramRanges: Record<string, { min: number; max: number }> = {
-      'wt-amp':    { min: 0, max: 1 },
-      'wt-cutoff': { min: 20, max: 12000 },
-    };
-    bindVoiceModulation(voiceMods, this.modHost.modulators, voiceParamMap, paramRanges, ctx);
     recordVoiceMods(voiceMods);
     return voice;
   }
@@ -233,10 +258,10 @@ class WavetableEngine implements SynthEngine {
     this.waveAIndex = a;
     this.waveBIndex = b;
     // Musically-useful ranges (avoid extremes that produce silence/harshness)
-    this.paramValues['wt-morph']        = rnd(0.15, 0.85);
-    this.paramValues['wt-detune']       = rnd(0, 20);
-    this.paramValues['wt-filterCutoff'] = rnd(0.4, 0.95);
-    this.paramValues['wt-filterRes']    = rnd(0, 0.5);
+    this.paramValues['osc.morph']        = rnd(0.15, 0.85);
+    this.paramValues['osc.detune']       = rnd(0, 20);
+    this.paramValues['filter.cutoff']    = rnd(0.4, 0.95);
+    this.paramValues['filter.resonance'] = rnd(0, 0.5);
   }
 
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
@@ -251,7 +276,6 @@ class WavetableEngine implements SynthEngine {
       renderModulatorsPanel(container, {
         engineId: this.id,
         laneId: ctx.laneId,
-        extraPrefixes: ['wt'],
         host: this.modHost,
         registry: ctx.registry as Map<string, KnobHandle>,
         registerKnob: (k) => ctx.registerKnob(k),
@@ -308,8 +332,8 @@ class WavetableEngine implements SynthEngine {
     // Morph + Detune knobs
     const knobRow = document.createElement('div');
     knobRow.className = 'knob-row';
-    knobRow.appendChild(this.makeKnob('wt-morph', (v) => `A↔B ${Math.round(v * 100)}%`));
-    knobRow.appendChild(this.makeKnob('wt-detune', (v) => `${v.toFixed(0)}¢`));
+    knobRow.appendChild(this.makeKnob('osc.morph', (v) => `A↔B ${Math.round(v * 100)}%`));
+    knobRow.appendChild(this.makeKnob('osc.detune', (v) => `${v.toFixed(0)}¢`));
     row.appendChild(knobRow);
 
     return row;
@@ -326,25 +350,23 @@ class WavetableEngine implements SynthEngine {
 
     const knobRow = document.createElement('div');
     knobRow.className = 'knob-row';
-    knobRow.appendChild(this.makeKnob('wt-filterCutoff', (v) => `${Math.round(v * 100)}%`));
-    knobRow.appendChild(this.makeKnob('wt-filterRes',    (v) => `${Math.round(v * 100)}%`));
+    knobRow.appendChild(this.makeKnob('filter.cutoff',    (v) => `${Math.round(v * 100)}%`));
+    knobRow.appendChild(this.makeKnob('filter.resonance', (v) => `${Math.round(v * 100)}%`));
     row.appendChild(knobRow);
 
     return row;
   }
 
   private makeKnob(id: string, format: (v: number) => string): HTMLElement {
-    const p = WAVETABLE_PARAMS.find((x) => x.id === id)!;
-    const fullId = this.uiCtx?.idPrefix ? `${this.uiCtx.idPrefix}.${id}` : undefined;
+    const p = WT_PARAMS.find((x) => x.id === id)!;
     const k = createKnob({
-      id: fullId,
       label: p.label,
       min: p.min,
       max: p.max,
-      value: this.getParam(id),
+      value: this.getBaseValue(id),
       defaultValue: p.default,
       format,
-      onChange: (v) => this.setParam(id, v),
+      onChange: (v) => this.setBaseValue(id, v),
     });
     this.uiCtx?.registerKnob(k);
     return k.el;
