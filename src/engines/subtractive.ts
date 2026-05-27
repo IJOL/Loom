@@ -102,11 +102,14 @@ class SubtractiveEngine implements SynthEngine {
   private modHost = new ModulationHostImpl([
     {
       ...makeDefaultADSR('adsr-amp'),
-      connections: [{ id: 'c-amp', paramId: 'amp', depth: 1.0 }],
+      // depth=0: PolySynth's hardcoded amp envelope is authoritative; this
+      // modulator is visible/editable so users can dial in extra contribution.
+      connections: [{ id: 'c-amp', paramId: 'amp', depth: 0 }],
     },
     {
       ...makeDefaultADSR('adsr-filter'),
-      connections: [{ id: 'c-cutoff', paramId: 'cutoff', depth: 0.5 }],
+      // depth=0: PolySynth's hardcoded cutoff envelope is authoritative; see above.
+      connections: [{ id: 'c-cutoff', paramId: 'cutoff', depth: 0 }],
     },
     makeDefaultLFO('lfo1'),
     { ...makeDefaultLFO('lfo2'), rateHz: 2, waveform: 'triangle' },

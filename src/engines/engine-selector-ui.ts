@@ -42,13 +42,11 @@ export function rebuildEngineParamUI(): void {
   for (const row of subtractiveRows) {
     row.style.display = engineId === 'subtractive' ? '' : 'none';
   }
-  if (engineId === 'subtractive') {
-    engineParamEl.style.display = 'none';
-    deps.populateAutoParamSelect();
-    return;
-  }
   const instance = deps.getLaneEngineInstance(activeLaneId);
   if (!instance) return;
+  // For 'subtractive', main.ts already builds the legacy poly param UI elsewhere;
+  // we still let buildParamUI run so the engine's modulators panel renders into
+  // engine-params alongside it.
   engineParamEl.style.display = '';
   const buildCtx = {
     laneId: activeLaneId,
