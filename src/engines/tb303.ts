@@ -8,7 +8,8 @@ import type {
 } from './engine-types';
 import { registerEngine, registerEngineFactory } from './registry';
 import { TB303 } from '../core/synth';
-import { ModulationHostImpl, bindVoiceModulation } from '../modulation/modulation-host';
+import { ModulationHostImpl } from '../modulation/modulation-host';
+import { ConnectionBinder } from '../modulation/connection-binder';
 import { makeDefaultLFO, type ModulatorVoice } from '../modulation/types';
 import { recordVoiceMods } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
@@ -96,6 +97,16 @@ export class TB303Engine implements SynthEngine {
   private instances = new WeakMap<AudioNode, TB303>();
   private lastInstance: TB303 | null = null;
 
+  // One binder + bind context per live voice; rebindAll re-applies on
+  // structural state changes.
+  private binders: Array<{
+    ctx: AudioContext;
+    binder: ConnectionBinder;
+    voiceMods: Map<string, ModulatorVoice>;
+    voiceParamMap: Record<string, AudioParam>;
+    paramRanges: Record<string, { min: number; max: number }>;
+  }> = [];
+
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
     let tb = this.instances.get(output);
     if (!tb) {
@@ -115,9 +126,19 @@ export class TB303Engine implements SynthEngine {
       resonance: { min: 0.1, max: 25    },
       amp:       { min: 0,   max: 1     },
     };
-    bindVoiceModulation(voiceMods, this.modHost.modulators, voiceParamMap, paramRanges, ctx);
+    const binder = new ConnectionBinder();
+    binder.apply(voiceMods, this.modHost.modulators, voiceParamMap, paramRanges, ctx);
+    this.binders.push({ ctx, binder, voiceMods, voiceParamMap, paramRanges });
     recordVoiceMods(voiceMods);
     return new TB303Voice(tb, voiceMods);
+  }
+
+  /** Re-apply modulator connections on every live voice. Called by the
+   *  panel's onChange (structural changes like add/remove connection). */
+  rebindAll(): void {
+    for (const b of this.binders) {
+      b.binder.apply(b.voiceMods, this.modHost.modulators, b.voiceParamMap, b.paramRanges, b.ctx);
+    }
   }
 
   // Pre-register an externally-constructed TB303 so the singleton synth
@@ -146,8 +167,9 @@ export class TB303Engine implements SynthEngine {
         registry: ctx.registry as Map<string, KnobHandle>,
         registerKnob: (k) => ctx.registerKnob(k),
         onChange: () => {
+          this.rebindAll();                  // re-apply audio connections
           container.innerHTML = '';
-          this.buildParamUI(container, ctx);
+          this.buildParamUI(container, ctx); // rebuild panel DOM
         },
       });
     }

@@ -53,9 +53,10 @@ export const POLY_DEFAULTS: PolySynthParams = {
  * hardcoded envelope ramps (Web Audio sums contributions per AudioParam).
  */
 export interface PolyVoiceParams {
-  amp: AudioParam;     // amp envelope gain
-  cutoff: AudioParam;  // filter frequency
-  pitch: AudioParam;   // osc1 detune (cents)
+  amp: AudioParam;       // amp envelope gain
+  cutoff: AudioParam;    // filter frequency
+  resonance: AudioParam; // filter Q
+  pitch: AudioParam;     // osc1 detune (cents)
 }
 
 export class PolySynth {
@@ -167,7 +168,12 @@ export class PolySynth {
     // Modulation host bind point: expose per-voice AudioParams BEFORE the
     // hardcoded envelope ramps are scheduled. External ADSR/LFO outputs sum
     // into these params via Web Audio's per-AudioParam summing.
-    if (onVoice) onVoice({ amp: amp.gain, cutoff: filter.frequency, pitch: osc1.detune });
+    if (onVoice) onVoice({
+      amp: amp.gain,
+      cutoff: filter.frequency,
+      resonance: filter.Q,
+      pitch: osc1.detune,
+    });
 
     filter.frequency.setValueAtTime(baseCutoff, time);
     filter.frequency.linearRampToValueAtTime(peakCutoff, time + fa);
