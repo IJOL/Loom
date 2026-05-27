@@ -6,8 +6,10 @@ import type { KnobHandle } from '../core/knob';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
 import type { ModulatorVoice } from '../modulation/types';
-import { recordVoiceMods } from '../modulation/active-mods';
+import { recordVoiceMods, getCurrentLaneForVoice } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
+import { bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
+import { ConnectionBinder } from '../modulation/connection-binder';
 import { wireEngineParams } from './engine-ui';
 
 const WAVE_OPTIONS = WAVETABLES.map((w, i) => ({ value: String(i), label: w.name }));
@@ -36,6 +38,10 @@ class WavetableVoice implements Voice {
   private envCutoff!: ConstantSourceNode;
   private started = false;
   private stopScheduled = false;
+
+  /** Set by WavetableEngine.createVoice for dispose-time cleanup. */
+  laneId: string | null = null;
+  binder: ConnectionBinder | null = null;
 
   constructor(
     ctx: AudioContext,
@@ -139,6 +145,8 @@ class WavetableVoice implements Voice {
   connect(_dest: AudioNode): void {}
 
   dispose(): void {
+    if (this.binder) this.binder.disposeAll();
+    if (this.laneId) disposeLaneModulations(this.laneId);
     if (!this.stopScheduled && this.started) {
       try { this.oscA.stop(); } catch {}
       try { this.oscB.stop(); } catch {}
@@ -232,6 +240,9 @@ export class WavetableEngine implements SynthEngine {
   getWaveA(): number { return this.waveAIndex; }
   getWaveB(): number { return this.waveBIndex; }
 
+  /** Cached so the modulation-panel onChange callback can re-apply bindings. */
+  private currentLaneId: string | null = null;
+
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
     if (this.waves.length === 0) {
       this.waves = createPeriodicWaves(ctx);
@@ -247,6 +258,12 @@ export class WavetableEngine implements SynthEngine {
       voiceMods,
     );
     recordVoiceMods(voiceMods);
+    const laneId = getCurrentLaneForVoice();
+    if (laneId) {
+      voice.laneId = laneId;
+      voice.binder = bindVoiceModulators({ laneId, engine: this, voice, voiceMods, ctx });
+      this.currentLaneId = laneId;
+    }
     return voice;
   }
 
@@ -302,6 +319,7 @@ export class WavetableEngine implements SynthEngine {
       onChange: () => {
         container.innerHTML = '';
         this.buildParamUI(container, ctx);
+        if (this.currentLaneId) reapplyLaneModulations(this.currentLaneId);
       },
     });
   }

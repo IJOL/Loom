@@ -14,6 +14,9 @@ import { GM_DRUM_MAP } from './drum-gm-map';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
+import { getCurrentLaneForVoice } from '../modulation/active-mods';
+import { bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
+import { ConnectionBinder } from '../modulation/connection-binder';
 import type { KnobHandle } from '../core/knob';
 import { wireEngineParams } from './engine-ui';
 
@@ -46,6 +49,10 @@ const DRUM_PRESETS: EnginePreset[] = [
 ];
 
 class DrumsVoice implements Voice {
+  /** Set by DrumsEngine.createVoice for dispose-time cleanup. */
+  laneId: string | null = null;
+  binder: ConnectionBinder | null = null;
+
   constructor(private dm: DrumMachine) {}
 
   /** Expose each drum voice's channel-strip level GainNode as an AudioParam
@@ -68,7 +75,10 @@ class DrumsVoice implements Voice {
 
   release(_t: number): void {}
   connect(_d: AudioNode): void {}
-  dispose(): void {}
+  dispose(): void {
+    if (this.binder) this.binder.disposeAll();
+    if (this.laneId) disposeLaneModulations(this.laneId);
+  }
 }
 
 class DrumsSequencer implements EngineSequencer {
@@ -136,6 +146,16 @@ export class DrumsEngine implements SynthEngine {
     // frequency offsets at trigger time.
   }
 
+  /** Cached so the modulation-panel onChange callback can re-apply bindings. */
+  private currentLaneId: string | null = null;
+
+  /** Modulators are engine-wide on drums (one host, one binder bound across
+   *  all channel-strip level params). spawnVoice would normally return per-
+   *  note modulator voices; for drums we keep one set for the lifetime of the
+   *  engine instance — initialized lazily here so the host's currentValue()
+   *  drives all hits consistently. */
+  private engineModVoices: Map<string, import('../modulation/types').ModulatorVoice> | null = null;
+
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
     let dm = this.instances.get(output);
     if (!dm) {
@@ -152,7 +172,22 @@ export class DrumsEngine implements SynthEngine {
       const ch = dm.channels[voice];
       if (ch && ch.level) ch.level.gain.value = this.paramValues[id];
     }
-    return new DrumsVoice(dm);
+    const drumVoice = new DrumsVoice(dm);
+    if (!this.engineModVoices) {
+      // One-shot modulator spawn for the lifetime of this engine instance
+      // (drums share modulation across all hits — distinct from polyphonic
+      // engines that re-spawn per note).
+      this.engineModVoices = this.modHost.spawnVoice(ctx, () => 120);
+    }
+    const laneId = getCurrentLaneForVoice();
+    if (laneId) {
+      drumVoice.laneId = laneId;
+      drumVoice.binder = bindVoiceModulators({
+        laneId, engine: this, voice: drumVoice, voiceMods: this.engineModVoices, ctx,
+      });
+      this.currentLaneId = laneId;
+    }
+    return drumVoice;
   }
 
   buildSequencer(_c: HTMLElement, _n: number): EngineSequencer {
@@ -209,6 +244,7 @@ export class DrumsEngine implements SynthEngine {
       onChange: () => {
         container.innerHTML = '';
         this.buildParamUI(container, ctx);
+        if (this.currentLaneId) reapplyLaneModulations(this.currentLaneId);
       },
     });
   }

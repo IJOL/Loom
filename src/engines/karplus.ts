@@ -14,8 +14,10 @@ import { registerEngine, registerEngineFactory } from './registry';
 import type { KnobHandle } from '../core/knob';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR, type ModulatorVoice } from '../modulation/types';
-import { recordVoiceMods } from '../modulation/active-mods';
+import { recordVoiceMods, getCurrentLaneForVoice } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
+import { bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
+import { ConnectionBinder } from '../modulation/connection-binder';
 import { wireEngineParams } from './engine-ui';
 
 // Unified-param schema. Dot-namespaced ids that map consistently between
@@ -44,6 +46,10 @@ class KarplusVoice implements Voice {
   public readonly amp: GainNode;
   private envAmp!: ConstantSourceNode;
   private disposed = false;
+
+  /** Set by KarplusEngine.createVoice for dispose-time cleanup. */
+  laneId: string | null = null;
+  binder: ConnectionBinder | null = null;
 
   constructor(
     private ctx: AudioContext,
@@ -188,6 +194,8 @@ class KarplusVoice implements Voice {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    if (this.binder) this.binder.disposeAll();
+    if (this.laneId) disposeLaneModulations(this.laneId);
     try { this.noise.stop(); } catch {}
     try { this.envAmp.stop(); } catch {}
     this.noise.disconnect();
@@ -252,10 +260,19 @@ export class KarplusEngine implements SynthEngine {
     if (preset.modulators) this.modHost.deserialize(preset.modulators);
   }
 
+  /** Cached so the modulation-panel onChange callback can re-apply bindings. */
+  private currentLaneId: string | null = null;
+
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
     const voiceMods = this.modHost.spawnVoice(ctx, () => this.bpm);
     const voice = new KarplusVoice(ctx, output, (id) => this.getBaseValue(id), voiceMods);
     recordVoiceMods(voiceMods);
+    const laneId = getCurrentLaneForVoice();
+    if (laneId) {
+      voice.laneId = laneId;
+      voice.binder = bindVoiceModulators({ laneId, engine: this, voice, voiceMods, ctx });
+      this.currentLaneId = laneId;
+    }
     return voice;
   }
 
@@ -300,6 +317,7 @@ export class KarplusEngine implements SynthEngine {
       onChange: () => {
         container.innerHTML = '';
         this.buildParamUI(container, ctx);
+        if (this.currentLaneId) reapplyLaneModulations(this.currentLaneId);
       },
     });
   }

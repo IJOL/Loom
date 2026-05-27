@@ -9,8 +9,10 @@ import { registerEngine, registerEngineFactory } from './registry';
 import type { KnobHandle } from '../core/knob';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR, type ModulatorVoice } from '../modulation/types';
-import { recordVoiceMods } from '../modulation/active-mods';
+import { recordVoiceMods, getCurrentLaneForVoice } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
+import { bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
+import { ConnectionBinder } from '../modulation/connection-binder';
 import { wireEngineParams } from './engine-ui';
 
 interface FMAlgorithm {
@@ -98,6 +100,10 @@ class FMVoice implements Voice {
   private fbGain: GainNode | null = null;
   private fbDelay: DelayNode | null = null;
   private opEnvs!: ConstantSourceNode[];
+
+  /** Set by FMEngine.createVoice for dispose-time cleanup. */
+  laneId: string | null = null;
+  binder: ConnectionBinder | null = null;
 
   constructor(
     private ctx: AudioContext,
@@ -228,6 +234,8 @@ class FMVoice implements Voice {
   connect(_dest: AudioNode): void {}
 
   dispose(): void {
+    if (this.binder) this.binder.disposeAll();
+    if (this.laneId) disposeLaneModulations(this.laneId);
     for (const o of this.osc) { try { o.stop(); } catch {} o.disconnect(); }
     for (const g of this.envGain) g.disconnect();
     for (const g of this.outGain) g.disconnect();
@@ -342,6 +350,9 @@ export class FMEngine implements SynthEngine {
     if (preset.modulators) this.modHost.deserialize(preset.modulators);
   }
 
+  /** Cached so the modulation-panel onChange callback can re-apply bindings. */
+  private currentLaneId: string | null = null;
+
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
     const voiceMods = this.modHost.spawnVoice(ctx, () => this.bpm);
     const voice = new FMVoice(
@@ -353,6 +364,12 @@ export class FMEngine implements SynthEngine {
       voiceMods,
     );
     recordVoiceMods(voiceMods);
+    const laneId = getCurrentLaneForVoice();
+    if (laneId) {
+      voice.laneId = laneId;
+      voice.binder = bindVoiceModulators({ laneId, engine: this, voice, voiceMods, ctx });
+      this.currentLaneId = laneId;
+    }
     return voice;
   }
 
@@ -434,6 +451,7 @@ export class FMEngine implements SynthEngine {
       onChange: () => {
         container.innerHTML = '';
         this.buildParamUI(container, ctx);
+        if (this.currentLaneId) reapplyLaneModulations(this.currentLaneId);
       },
     });
   }

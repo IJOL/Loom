@@ -53,6 +53,10 @@ export interface SynthEngine {
   readonly editor: 'piano-roll' | 'drum-grid';
   readonly params: import('./engine-params').EngineParamSpec[];
   readonly presets: EnginePreset[];
+  /** Engine's modulation host — read by the voice-mod binder to enumerate
+   *  enabled modulators when (re)applying gain bridges. Each engine owns
+   *  exactly one host instance for its lifetime. */
+  readonly modulators: import('../modulation/types').ModulationHost;
   /** Read the engine's current scalar state for a param. */
   getBaseValue(id: string): number;
   /** Write the engine's scalar state. Knob (user drag) and automation

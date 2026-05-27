@@ -10,8 +10,10 @@ import { registerEngine, registerEngineFactory } from './registry';
 import { PolySynth } from '../polysynth/polysynth';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR, type ModulatorVoice } from '../modulation/types';
-import { recordVoiceMods } from '../modulation/active-mods';
+import { recordVoiceMods, getCurrentLaneForVoice } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
+import { bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
+import { ConnectionBinder } from '../modulation/connection-binder';
 import type { KnobHandle } from '../core/knob';
 
 const WAVE_OPTIONS = [
@@ -99,6 +101,15 @@ class SubtractiveVoice implements Voice {
     amp: AudioParam; cutoff: AudioParam; resonance: AudioParam; pitch: AudioParam;
   } | null = null;
 
+  /** Set by SubtractiveEngine.createVoice after construction so dispose() can
+   *  tear down the lane's connection bindings. Set on first onVoice fire
+   *  inside trigger() — that's when lastVoiceParams becomes available. */
+  laneId: string | null = null;
+  binder: ConnectionBinder | null = null;
+  /** Latched at construction by the engine so trigger() can call back into
+   *  the binder once the polysynth actually hands us a per-voice param set. */
+  rebind: (() => void) | null = null;
+
   constructor(
     private polysynth: PolySynth,
     private voiceMods: Map<string, ModulatorVoice>,
@@ -119,6 +130,9 @@ class SubtractiveVoice implements Voice {
       midi, time, options.gateDuration, options.accent ?? false,
       (vp) => {
         this.lastVoiceParams = vp;
+        // Now that getAudioParams() returns real params, (re)apply the binder
+        // so modulator outputs reach this freshly-allocated polysynth voice.
+        if (this.rebind) this.rebind();
         // Fire all modulator voices at the same start time as the audio voice.
         // The lane-host has already bound modulator outputs into the
         // destination AudioParams via getAudioParams() before this trigger.
@@ -138,6 +152,8 @@ class SubtractiveVoice implements Voice {
   }
 
   dispose(): void {
+    if (this.binder) this.binder.disposeAll();
+    if (this.laneId) disposeLaneModulations(this.laneId);
     for (const mv of this.voiceMods.values()) mv.dispose();
   }
 }
@@ -204,13 +220,28 @@ class SubtractiveEngine implements SynthEngine {
     writeDotPath(this.polysynth.params as unknown as Record<string, unknown>, id, v, spec);
   }
 
+  /** Cached so the modulation-panel onChange callback can re-apply bindings. */
+  private currentLaneId: string | null = null;
+
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
     if (!this.polysynth) {
       this.polysynth = new PolySynth(ctx, output);
     }
     const voiceMods = this.modHost.spawnVoice(ctx, () => this.bpm);
     recordVoiceMods(voiceMods);
-    return new SubtractiveVoice(this.polysynth, voiceMods);
+    const voice = new SubtractiveVoice(this.polysynth, voiceMods);
+    const laneId = getCurrentLaneForVoice();
+    if (laneId) {
+      voice.laneId = laneId;
+      this.currentLaneId = laneId;
+      // Subtractive can't bind until the polysynth allocates a per-note voice
+      // (lastVoiceParams arrives via triggerWithBinding's onVoice callback).
+      // Stash a closure the voice will call from that callback.
+      voice.rebind = () => {
+        voice.binder = bindVoiceModulators({ laneId, engine: this, voice, voiceMods, ctx });
+      };
+    }
+    return voice;
   }
 
   getPolySynth(): PolySynth | null {
@@ -238,6 +269,7 @@ class SubtractiveEngine implements SynthEngine {
         onChange: () => {
           container.innerHTML = '';
           this.buildParamUI(container, ctx);
+          if (this.currentLaneId) reapplyLaneModulations(this.currentLaneId);
         },
       });
     }

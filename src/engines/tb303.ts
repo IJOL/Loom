@@ -11,8 +11,10 @@ import { registerEngine, registerEngineFactory } from './registry';
 import { TB303 } from '../core/synth';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, type ModulatorVoice } from '../modulation/types';
-import { recordVoiceMods } from '../modulation/active-mods';
+import { recordVoiceMods, getCurrentLaneForVoice } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
+import { bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
+import { ConnectionBinder } from '../modulation/connection-binder';
 import type { KnobHandle } from '../core/knob';
 
 const PARAMS: EngineParamSpec[] = [
@@ -39,6 +41,11 @@ function midiToFreq(m: number): number {
 }
 
 class TB303Voice implements Voice {
+  /** Set by TB303Engine.createVoice immediately after construction so
+   *  dispose() can tear down the lane binding. */
+  laneId: string | null = null;
+  binder: ConnectionBinder | null = null;
+
   constructor(
     private tb303: TB303,
     private voiceMods: Map<string, ModulatorVoice>,
@@ -63,6 +70,8 @@ class TB303Voice implements Voice {
   }
   connect(_dest: AudioNode): void {}
   dispose(): void {
+    if (this.binder) this.binder.disposeAll();
+    if (this.laneId) disposeLaneModulations(this.laneId);
     for (const mv of this.voiceMods.values()) mv.dispose();
   }
 
@@ -119,8 +128,19 @@ export class TB303Engine implements SynthEngine {
 
     const voiceMods = this.modHost.spawnVoice(ctx, () => this.bpm);
     recordVoiceMods(voiceMods);
-    return new TB303Voice(tb, voiceMods);
+    const voice = new TB303Voice(tb, voiceMods);
+    const laneId = getCurrentLaneForVoice();
+    if (laneId) {
+      voice.laneId = laneId;
+      voice.binder = bindVoiceModulators({ laneId, engine: this, voice, voiceMods, ctx });
+      this.currentLaneId = laneId;
+    }
+    return voice;
   }
+
+  /** Cached so the modulation-panel onChange callback can re-apply bindings
+   *  without an extra plumbing path through ctx. */
+  private currentLaneId: string | null = null;
 
   getBaseValue(id: string): number {
     if (!this.lastInstance) return PARAMS.find(p => p.id === id)?.default ?? 0;
@@ -176,6 +196,7 @@ export class TB303Engine implements SynthEngine {
         onChange: () => {
           container.innerHTML = '';
           this.buildParamUI(container, ctx); // rebuild panel DOM
+          if (this.currentLaneId) reapplyLaneModulations(this.currentLaneId);
         },
       });
     }
