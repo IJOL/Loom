@@ -41,9 +41,18 @@ export function setActivePolyTarget(
  * onEditLane when the active lane uses a poly engine (subtractive / wavetable
  * / fm / karplus).
  */
-export function showPolyEditor(laneId: string, target: PolySynth, deps: SetActivePolyTargetDeps): void {
+export function showPolyEditor(
+  laneId: string,
+  target: PolySynth,
+  displayName: string,
+  deps: SetActivePolyTargetDeps,
+): void {
   document.querySelectorAll<HTMLElement>('.page').forEach((p) => {
     p.hidden = p.dataset.page !== 'poly';
   });
   setActivePolyTarget(target, laneId, deps);
+  const label = document.getElementById('engine-lane-label');
+  if (label) label.textContent = displayName;
+  const polyActive = document.getElementById('poly-active-label');
+  if (polyActive) polyActive.textContent = displayName;
 }

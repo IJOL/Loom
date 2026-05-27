@@ -10,6 +10,10 @@ import { registerEngine, registerEngineFactory } from './registry';
 import { DrumMachine } from '../core/drums';
 import { FxBus } from '../core/fx';
 import { GM_DRUM_MAP } from './drum-gm-map';
+import { ModulationHostImpl } from '../modulation/modulation-host';
+import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
+import { renderModulatorsPanel } from '../modulation/modulation-ui';
+import type { KnobHandle } from '../core/knob';
 
 const PARAMS: ParamDef[] = [
   { id: 'master-gain', label: 'LEVEL', min: 0,   max: 1.5, default: 1 },
@@ -67,6 +71,13 @@ export class DrumsEngine implements SynthEngine {
   private sharedFx: FxBus | null = null;
   setSharedFx(fx: FxBus): void { this.sharedFx = fx; }
 
+  private modHost = new ModulationHostImpl([
+    makeDefaultLFO('lfo1'),
+    makeDefaultADSR('adsr1'),
+  ]);
+
+  get modulators() { return this.modHost; }
+
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
     let dm = this.instances.get(output);
     if (!dm) {
@@ -84,9 +95,20 @@ export class DrumsEngine implements SynthEngine {
     return new DrumsSequencer();
   }
 
-  buildParamUI(_container: HTMLElement, _ctx?: EngineUIContext): void {
-    // Drum master knobs render via the existing drum-master-ui code path
-    // for now. Migration of that UI into this method happens in Phase 7.
+  buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
+    if (!ctx) return;
+    renderModulatorsPanel(container, {
+      engineId: this.id,
+      laneId: ctx.laneId,
+      extraPrefixes: ['drumBus', 'kick', 'snare', 'closedHat', 'openHat', 'clap', 'cowbell', 'tom', 'ride'],
+      host: this.modHost,
+      registry: ctx.registry as Map<string, KnobHandle>,
+      registerKnob: (k) => ctx.registerKnob(k),
+      onChange: () => {
+        container.innerHTML = '';
+        this.buildParamUI(container, ctx);
+      },
+    });
   }
 
   applyPreset(name: string): void {

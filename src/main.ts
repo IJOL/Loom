@@ -574,9 +574,9 @@ seq.onBassTrigger = (note, time, gate, accent, slidingIn) => {
 // synthEditorDeps is constructed later (after polySynthUIDeps + polySynthPresetsDeps
 // exist). showPolyEditorWrapper reads it lazily at call time.
 let synthEditorDeps: import('./session/synth-editor-routing').SetActivePolyTargetDeps | null = null;
-const showPolyEditorWrapper = (laneId: string, target: PolySynth) => {
+const showPolyEditorWrapper = (laneId: string, target: PolySynth, displayName: string) => {
   if (!synthEditorDeps) return;
-  showPolyEditor(laneId, target, synthEditorDeps);
+  showPolyEditor(laneId, target, displayName, synthEditorDeps);
 };
 const sessionHost = new SessionHost({
   ctx, seq, bank, playBtn,

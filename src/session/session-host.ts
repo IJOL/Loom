@@ -43,7 +43,7 @@ export interface SessionHostDeps {
   getLaneEngineId: (laneId: string) => string;
   ensureLaneEngine: (laneId: string, engineId: string) => SynthEngine | null;
   ensureLaneVoice: (laneId: string, engineId: string) => import('../engines/engine-types').Voice | null;
-  showPolyEditor: (laneId: string, target: PolySynth) => void;
+  showPolyEditor: (laneId: string, target: PolySynth, displayName: string) => void;
   polysynth: PolySynth;
   mixerDeps: MixerColumnDeps;
   getAppMode: () => 'classic' | 'session';
@@ -311,13 +311,21 @@ export class SessionHost {
             t.classList.toggle('active', t.dataset.tab === targetTab && !t.classList.contains('synth-tab'));
           }
         });
+        const lane = self.state.lanes.find((l) => l.id === laneId);
+        const displayName = lane?.name ?? laneId.toUpperCase();
         if (polyTarget) {
-          showPolyEditor(laneId === 'main' ? 'main' : laneId, polyTarget);
+          showPolyEditor(laneId === 'main' ? 'main' : laneId, polyTarget, displayName);
         } else {
           document.querySelectorAll<HTMLElement>('.page').forEach((p) => {
             p.hidden = p.dataset.page !== targetTab;
           });
         }
+        // Keep #engine-lane-label in sync for non-poly lanes too (no-op if the
+        // active page doesn't include it).
+        const laneLabelEl = document.getElementById('engine-lane-label');
+        if (laneLabelEl) laneLabelEl.textContent = displayName;
+        const polyActiveLabel = document.getElementById('poly-active-label');
+        if (polyActiveLabel) polyActiveLabel.textContent = displayName;
         self.activeEditLane = laneId;
         self.injectEngineModulatorPanel(laneId, targetTab);
         self.deps.onActiveLaneChanged?.();
@@ -337,17 +345,25 @@ export class SessionHost {
       laneId === 'bass'                                    ? 'tb303' :
       (laneId === 'drums' || laneId.startsWith('drum:'))   ? 'drums-machine' :
                                                              this.deps.getLaneEngineId(laneId);
-    const engine = getEngine(engineId);
+    // Built-in lanes (bass/drums/main) use the singleton engine instance the
+    // audio graph was wired to at boot. Extra lanes (poly2+, bass2+, etc.)
+    // use a factory-created instance owned by laneEngines — fall back to the
+    // singleton only if that lookup fails.
+    const isBuiltinLane = laneId === 'bass' || laneId === 'drums' || laneId === 'main';
+    const engine = isBuiltinLane
+      ? getEngine(engineId)
+      : (this.deps.ensureLaneEngine(laneId, engineId) ?? getEngine(engineId));
     if (!engine) return;
 
-    // Mount or reuse a container at the bottom of the active page.
+    // Mount or reuse a container — PREPEND so it's visible without scrolling
+    // (the poly page is tall and otherwise pushes this below the fold).
     const page = document.querySelector<HTMLElement>(`[data-page="${targetTab}"]`);
     if (!page) return;
     let host = page.querySelector<HTMLElement>('.engine-mod-host');
     if (!host) {
       host = document.createElement('div');
       host.className = 'engine-mod-host';
-      page.appendChild(host);
+      page.insertBefore(host, page.firstChild);
     }
     host.innerHTML = '';
 
