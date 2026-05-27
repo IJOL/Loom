@@ -201,7 +201,7 @@ export class TB303Engine implements SynthEngine {
   dispose(): void {}
 }
 
-const tb303Engine = new TB303Engine();
+export const tb303Engine = new TB303Engine();
 registerEngine(tb303Engine);
 registerEngineFactory('tb303', () => new TB303Engine());
 

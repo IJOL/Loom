@@ -369,7 +369,6 @@ export class SessionHost {
 
     engine.buildParamUI(host, {
       laneId,
-      idPrefix: laneId,
       registerKnob: (k: unknown) => {
         const handle = k as import('../core/knob').KnobHandle;
         if (handle.meta?.id) this.deps.automationRegistry.set(handle.meta.id, handle);

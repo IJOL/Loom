@@ -10,7 +10,8 @@ import './engines/subtractive';
 import './engines/wavetable';
 import './engines/fm';
 import './engines/karplus';
-import { configureTB303EngineMainInstance } from './engines/tb303';
+import { configureTB303EngineMainInstance, tb303Engine } from './engines/tb303';
+import { createSelectControl } from './core/select-control';
 import './engines/drums-engine';
 import { configureDrumsEngineSharedFx } from './engines/drums-engine';
 import { TB303, type Wave } from './core/synth';
@@ -72,8 +73,6 @@ const fmtSec = (v: number) => v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed
 const fmtCents = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(0)}¢`;
 const fmtOct = (v: number) => v === 0 ? '0' : `${v > 0 ? '+' : ''}${v}`;
 
-type KnobId = 'cutoff' | 'resonance' | 'envMod' | 'decay' | 'accent';
-const KNOB_IDS: KnobId[] = ['cutoff', 'resonance', 'envMod', 'decay', 'accent'];
 type ExtraId =
   | 'poly1' | 'poly2' | 'poly3' | 'poly4' | 'poly5' | 'poly6' | 'poly7' | 'poly8'
   | 'poly9' | 'poly10' | 'poly11' | 'poly12' | 'poly13' | 'poly14' | 'poly15' | 'poly16';
@@ -175,6 +174,51 @@ function registerKnob(k: KnobHandle) {
       recordAutomationValue(k.meta.id!, v);
     }
   };
+}
+
+interface LaneWiringDeps {
+  laneId: string;
+  engine: SynthEngine;
+  parent: HTMLElement;
+  formatter?: (id: string, v: number) => string;
+}
+
+/** Walks engine.params, builds the knob/select per param, registers each
+ *  under '<laneId>.<spec.id>'. Click/drag writes via engine.setBaseValue. */
+function wireLaneKnobs(deps: LaneWiringDeps): void {
+  for (const spec of deps.engine.params) {
+    const registryId = `${deps.laneId}.${spec.id}`;
+    if (spec.kind === 'continuous') {
+      const k = createKnob({
+        id: registryId,
+        label: spec.label,
+        min: spec.min,
+        max: spec.max,
+        value: deps.engine.getBaseValue(spec.id),
+        defaultValue: spec.default,
+        onChange: (v) => deps.engine.setBaseValue(spec.id, v),
+        format: deps.formatter ? (v) => deps.formatter!(spec.id, v) : undefined,
+      });
+      registerKnob(k);
+      deps.parent.appendChild(k.el);
+    } else {
+      const options = spec.options ?? [];
+      const idx = Math.round(deps.engine.getBaseValue(spec.id));
+      const initialValue = options[idx]?.value ?? options[0]?.value ?? '';
+      const { el, handle } = createSelectControl({
+        id: registryId,
+        label: spec.label,
+        options,
+        initialValue,
+        onChange: (v) => {
+          const i = options.findIndex((o) => o.value === v);
+          deps.engine.setBaseValue(spec.id, i);
+        },
+      });
+      registerKnob(handle);
+      deps.parent.appendChild(el);
+    }
+  }
 }
 
 function recordAutomationValue(paramId: string, value: number) {
@@ -351,7 +395,25 @@ function updateBassModeButtons() {
 // Moved to src/core/copy-notes.ts — wired at boot via wireCopyNotesPanel()
 
 function refreshKnobsFromSynth() {
-  for (const id of KNOB_IDS) synthKnobs[id]?.setValue(synth.params[id]);
+  // Param specs use 'filter.cutoff', 'env.amount', etc.; the runtime
+  // TB303.params still uses the legacy short ids ('cutoff', 'envMod'...).
+  // Map spec id → live value and push it back into the registered knob.
+  const liveValue = (specId: string): number | null => {
+    switch (specId) {
+      case 'filter.cutoff':    return synth.params.cutoff;
+      case 'filter.resonance': return synth.params.resonance;
+      case 'env.amount':       return synth.params.envMod;
+      case 'env.decay':        return synth.params.decay;
+      case 'env.accent':       return synth.params.accent;
+      case 'osc.wave':         return synth.params.wave === 'square' ? 1 : 0;
+    }
+    return null;
+  };
+  for (const spec of tb303Engine.params) {
+    const v = liveValue(spec.id);
+    if (v == null) continue;
+    automationRegistry.get(`bass.${spec.id}`)?.setValue(v);
+  }
 }
 
 // ── Mixer ──────────────────────────────────────────────────────────────────
@@ -441,32 +503,14 @@ barsSel.addEventListener('change', () => {
 
 kitSel.addEventListener('change', () => { drums.setKit(kitSel.value); });
 
-const synthKnobs: Record<KnobId, KnobHandle> = {} as Record<KnobId, KnobHandle>;
-const SYNTH_KNOB_DEFS: Array<{ id: KnobId; label: string; default: number; color: string }> = [
-  { id: 'cutoff',    label: 'CUTOFF', default: 0.42, color: '#c0392b' },
-  { id: 'resonance', label: 'RES',    default: 0.55, color: '#e67e22' },
-  { id: 'envMod',    label: 'ENV',    default: 0.5,  color: '#16a085' },
-  { id: 'decay',     label: 'DECAY',  default: 0.4,  color: '#2ecc71' },
-  { id: 'accent',    label: 'ACCENT', default: 0.6,  color: '#f7d000' },
-];
 const synthKnobsRow = $<HTMLDivElement>('synth-knobs');
-for (const def of SYNTH_KNOB_DEFS) {
-  synth.params[def.id] = def.default;
-  const k = createKnob({
-    id: `tb303.${def.id}`,
-    min: 0, max: 1, step: 0.001,
-    value: def.default,
-    defaultValue: def.default,
-    label: def.label,
-    color: def.color,
-    size: 48,
-    format: fmtPct,
-    onChange: (v) => { synth.params[def.id] = v; },
-  });
-  synthKnobsRow.appendChild(k.el);
-  synthKnobs[def.id] = k;
-  registerKnob(k);
-}
+synthKnobsRow.innerHTML = '';
+wireLaneKnobs({
+  laneId: 'bass',
+  engine: tb303Engine,
+  parent: synthKnobsRow,
+  formatter: (id, v) => id.includes('decay') ? `${(v * 1000).toFixed(0)}ms` : fmtPct(v),
+});
 
 // pager/slots/onPatternChange wired in wireTransport() (see boot section)
 // Pre-populate the bank's slot 0 with the sequencer's initial pattern (set up below)
