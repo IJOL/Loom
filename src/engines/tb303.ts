@@ -4,24 +4,28 @@
 
 import type {
   SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer,
-  EngineUIContext, EnginePreset, ParamDef,
+  EngineUIContext, EnginePreset,
 } from './engine-types';
+import type { EngineParamSpec } from './engine-params';
 import { registerEngine, registerEngineFactory } from './registry';
 import { TB303 } from '../core/synth';
 import { ModulationHostImpl } from '../modulation/modulation-host';
-import { ConnectionBinder } from '../modulation/connection-binder';
 import { makeDefaultLFO, type ModulatorVoice } from '../modulation/types';
 import { recordVoiceMods } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
 import type { KnobHandle } from '../core/knob';
 
-const PARAMS: ParamDef[] = [
-  { id: 'cutoff',    label: 'CUTOFF', min: 0, max: 1, default: 0.42 },
-  { id: 'resonance', label: 'RES',    min: 0, max: 1, default: 0.55 },
-  { id: 'envMod',    label: 'ENV',    min: 0, max: 1, default: 0.5  },
-  { id: 'decay',     label: 'DECAY',  min: 0, max: 1, default: 0.4  },
-  { id: 'accent',    label: 'ACCENT', min: 0, max: 1, default: 0.6  },
-  { id: 'wave',      label: 'WAVE',   min: 0, max: 1, default: 0    },
+const PARAMS: EngineParamSpec[] = [
+  { id: 'filter.cutoff',    label: 'Cutoff',    kind: 'continuous', min: 0, max: 1, default: 0.42 },
+  { id: 'filter.resonance', label: 'Resonance', kind: 'continuous', min: 0, max: 1, default: 0.55 },
+  { id: 'env.amount',       label: 'Env',       kind: 'continuous', min: 0, max: 1, default: 0.5  },
+  { id: 'env.decay',        label: 'Decay',     kind: 'continuous', min: 0, max: 1, default: 0.4  },
+  { id: 'env.accent',       label: 'Accent',    kind: 'continuous', min: 0, max: 1, default: 0.6  },
+  {
+    id: 'osc.wave', label: 'Wave', kind: 'discrete',
+    min: 0, max: 1, default: 0,
+    options: [{ value: 'sawtooth', label: 'Saw' }, { value: 'square', label: 'Sqr' }],
+  },
 ];
 
 const TB303_PRESETS: EnginePreset[] = [
@@ -61,6 +65,14 @@ class TB303Voice implements Voice {
   dispose(): void {
     for (const mv of this.voiceMods.values()) mv.dispose();
   }
+
+  getAudioParams(): Map<string, AudioParam> {
+    return new Map<string, AudioParam>([
+      ['filter.cutoff',    this.tb303.filter.frequency],
+      ['filter.resonance', this.tb303.filter.Q],
+      ['amp.gain',         this.tb303.amp.gain],
+    ]);
+  }
 }
 
 class TB303Sequencer implements EngineSequencer {
@@ -97,16 +109,6 @@ export class TB303Engine implements SynthEngine {
   private instances = new WeakMap<AudioNode, TB303>();
   private lastInstance: TB303 | null = null;
 
-  // One binder + bind context per live voice; rebindAll re-applies on
-  // structural state changes.
-  private binders: Array<{
-    ctx: AudioContext;
-    binder: ConnectionBinder;
-    voiceMods: Map<string, ModulatorVoice>;
-    voiceParamMap: Record<string, AudioParam>;
-    paramRanges: Record<string, { min: number; max: number }>;
-  }> = [];
-
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
     let tb = this.instances.get(output);
     if (!tb) {
@@ -116,28 +118,34 @@ export class TB303Engine implements SynthEngine {
     this.lastInstance = tb;
 
     const voiceMods = this.modHost.spawnVoice(ctx, () => this.bpm);
-    const voiceParamMap: Record<string, AudioParam> = {
-      cutoff:    tb.cutoffParam,
-      resonance: tb.resonanceParam,
-      amp:       tb.ampParam,
-    };
-    const paramRanges: Record<string, { min: number; max: number }> = {
-      cutoff:    { min: 20,  max: 12000 },
-      resonance: { min: 0.1, max: 25    },
-      amp:       { min: 0,   max: 1     },
-    };
-    const binder = new ConnectionBinder();
-    binder.apply(voiceMods, this.modHost.modulators, voiceParamMap, paramRanges, ctx);
-    this.binders.push({ ctx, binder, voiceMods, voiceParamMap, paramRanges });
     recordVoiceMods(voiceMods);
     return new TB303Voice(tb, voiceMods);
   }
 
-  /** Re-apply modulator connections on every live voice. Called by the
-   *  panel's onChange (structural changes like add/remove connection). */
-  rebindAll(): void {
-    for (const b of this.binders) {
-      b.binder.apply(b.voiceMods, this.modHost.modulators, b.voiceParamMap, b.paramRanges, b.ctx);
+  getBaseValue(id: string): number {
+    if (!this.lastInstance) return PARAMS.find(p => p.id === id)?.default ?? 0;
+    const p = this.lastInstance.params;
+    switch (id) {
+      case 'filter.cutoff':    return p.cutoff;
+      case 'filter.resonance': return p.resonance;
+      case 'env.amount':       return p.envMod;
+      case 'env.decay':        return p.decay;
+      case 'env.accent':       return p.accent;
+      case 'osc.wave':         return p.wave === 'square' ? 1 : 0;
+    }
+    return 0;
+  }
+
+  setBaseValue(id: string, v: number): void {
+    if (!this.lastInstance) return;
+    const p = this.lastInstance.params as unknown as Record<string, number | string>;
+    switch (id) {
+      case 'filter.cutoff':    p.cutoff = v;    return;
+      case 'filter.resonance': p.resonance = v; return;
+      case 'env.amount':       p.envMod = v;    return;
+      case 'env.decay':        p.decay = v;     return;
+      case 'env.accent':       p.accent = v;    return;
+      case 'osc.wave':         p.wave = v >= 0.5 ? 'square' : 'sawtooth'; return;
     }
   }
 
@@ -167,7 +175,6 @@ export class TB303Engine implements SynthEngine {
         registry: ctx.registry as Map<string, KnobHandle>,
         registerKnob: (k) => ctx.registerKnob(k),
         onChange: () => {
-          this.rebindAll();                  // re-apply audio connections
           container.innerHTML = '';
           this.buildParamUI(container, ctx); // rebuild panel DOM
         },
