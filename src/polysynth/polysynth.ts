@@ -165,6 +165,21 @@ export class PolySynth {
     const amp = ctx.createGain();
     amp.gain.value = 0;
 
+    // ── Internal envelope nodes ──────────────────────────────────────────
+    // Per-voice amp + filter envelopes route through ConstantSourceNodes so
+    // the destination AudioParams (amp.gain, filter.frequency) never receive
+    // cancelScheduledValues / setValueAtTime — external modulators sum cleanly.
+    const envAmp = ctx.createConstantSource();
+    envAmp.offset.value = 0;
+    envAmp.start();
+    envAmp.connect(amp.gain);
+
+    const envCutoff = ctx.createConstantSource();
+    envCutoff.offset.value = 0;
+    envCutoff.start();
+    envCutoff.connect(filter.frequency);
+    filter.frequency.value = 0;
+
     // Modulation host bind point: expose per-voice AudioParams BEFORE the
     // hardcoded envelope ramps are scheduled. External ADSR/LFO outputs sum
     // into these params via Web Audio's per-AudioParam summing.
@@ -175,9 +190,9 @@ export class PolySynth {
       pitch: osc1.detune,
     });
 
-    filter.frequency.setValueAtTime(baseCutoff, time);
-    filter.frequency.linearRampToValueAtTime(peakCutoff, time + fa);
-    filter.frequency.exponentialRampToValueAtTime(Math.max(sustainCutoff, 40), time + fa + fd);
+    envCutoff.offset.setValueAtTime(baseCutoff, time);
+    envCutoff.offset.linearRampToValueAtTime(peakCutoff, time + fa);
+    envCutoff.offset.exponentialRampToValueAtTime(Math.max(sustainCutoff, 40), time + fa + fd);
 
     // ── Amp envelope ─────────────────────────────────────────────────────
     const peakAmp = 0.4 * velMul;
@@ -186,9 +201,9 @@ export class PolySynth {
     const ad = Math.max(0.001, p.amp.decay);
     const ar = Math.max(0.005, p.amp.release);
 
-    amp.gain.setValueAtTime(0, time);
-    amp.gain.linearRampToValueAtTime(peakAmp, time + aa);
-    amp.gain.linearRampToValueAtTime(sustainAmp, time + aa + ad);
+    envAmp.offset.setValueAtTime(0, time);
+    envAmp.offset.linearRampToValueAtTime(peakAmp, time + aa);
+    envAmp.offset.linearRampToValueAtTime(sustainAmp, time + aa + ad);
 
     // Tremolo gain (LFO->amp target writes here; defaults to 1.0 passthrough)
     const tremolo = ctx.createGain();
@@ -196,10 +211,10 @@ export class PolySynth {
     filter.connect(amp).connect(tremolo).connect(this.destination);
 
     const releaseStart = Math.max(time + aa + ad, time + gateDuration);
-    amp.gain.setValueAtTime(sustainAmp, releaseStart);
-    amp.gain.exponentialRampToValueAtTime(0.001, releaseStart + ar);
-    filter.frequency.setValueAtTime(sustainCutoff, releaseStart);
-    filter.frequency.exponentialRampToValueAtTime(Math.max(baseCutoff, 40), releaseStart + fr);
+    envAmp.offset.setValueAtTime(sustainAmp, releaseStart);
+    envAmp.offset.exponentialRampToValueAtTime(0.001, releaseStart + ar);
+    envCutoff.offset.setValueAtTime(sustainCutoff, releaseStart);
+    envCutoff.offset.exponentialRampToValueAtTime(Math.max(baseCutoff, 40), releaseStart + fr);
 
     const stopTime = releaseStart + Math.max(ar, fr) + 0.05;
 
@@ -240,6 +255,7 @@ export class PolySynth {
 
     osc1.start(time); osc2.start(time); sub.start(time);
     osc1.stop(stopTime); osc2.stop(stopTime); sub.stop(stopTime);
+    envAmp.stop(stopTime); envCutoff.stop(stopTime);
     if (noise) { noise.start(time); noise.stop(stopTime); }
   }
 }
