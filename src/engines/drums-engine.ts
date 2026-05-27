@@ -15,6 +15,7 @@ import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
 import type { KnobHandle } from '../core/knob';
+import { wireEngineParams } from './engine-ui';
 
 // Unified-param schema for the drums engine. Master controls live at the
 // engine level; per-voice `.level` ids map onto each DrumMachine channel
@@ -159,7 +160,46 @@ export class DrumsEngine implements SynthEngine {
   }
 
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
+    container.innerHTML = '';
     if (!ctx) return;
+
+    const fmt = (id: string, v: number): string => {
+      if (id === 'master.tune') return `${v >= 0 ? '+' : ''}${v.toFixed(0)}st`;
+      return `${Math.round(v * 100)}%`;
+    };
+
+    // Master controls (level, tune).
+    const masterRow = document.createElement('div');
+    masterRow.className = 'row poly-section';
+    const masterLab = document.createElement('div');
+    masterLab.className = 'section-label';
+    masterLab.textContent = 'MASTER';
+    masterRow.appendChild(masterLab);
+    const masterKnobs = document.createElement('div');
+    masterKnobs.className = 'knob-row';
+    masterRow.appendChild(masterKnobs);
+    container.appendChild(masterRow);
+    wireEngineParams(this, ctx, masterKnobs, {
+      filter: (id) => id.startsWith('master.'),
+      formatter: fmt,
+    });
+
+    // Per-voice levels.
+    const voicesRow = document.createElement('div');
+    voicesRow.className = 'row poly-section';
+    const voicesLab = document.createElement('div');
+    voicesLab.className = 'section-label';
+    voicesLab.textContent = 'VOICES';
+    voicesRow.appendChild(voicesLab);
+    const voicesKnobs = document.createElement('div');
+    voicesKnobs.className = 'knob-row';
+    voicesRow.appendChild(voicesKnobs);
+    container.appendChild(voicesRow);
+    wireEngineParams(this, ctx, voicesKnobs, {
+      filter: (id) => !id.startsWith('master.'),
+      formatter: fmt,
+    });
+
     renderModulatorsPanel(container, {
       engineId: this.id,
       laneId: ctx.laneId,

@@ -2,14 +2,19 @@ import type { SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, EngineUI
 import type { EngineParamSpec } from './engine-params';
 import { registerEngine, registerEngineFactory } from './registry';
 import { createPeriodicWaves, WAVETABLES } from './wavetable-tables';
-import { createKnob, type KnobHandle } from '../core/knob';
+import type { KnobHandle } from '../core/knob';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
 import type { ModulatorVoice } from '../modulation/types';
 import { recordVoiceMods } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
+import { wireEngineParams } from './engine-ui';
+
+const WAVE_OPTIONS = WAVETABLES.map((w, i) => ({ value: String(i), label: w.name }));
 
 const WT_PARAMS: EngineParamSpec[] = [
+  { id: 'osc.waveA',        label: 'Wave A',    kind: 'discrete', min: 0, max: WAVE_OPTIONS.length - 1, default: 2, options: WAVE_OPTIONS },
+  { id: 'osc.waveB',        label: 'Wave B',    kind: 'discrete', min: 0, max: WAVE_OPTIONS.length - 1, default: 3, options: WAVE_OPTIONS },
   { id: 'osc.morph',        label: 'Morph',     kind: 'continuous', min: 0,    max: 1,  default: 0.0 },
   { id: 'osc.detune',       label: 'Detune',    kind: 'continuous', min: -50,  max: 50, default: 0, unit: '¢' },
   { id: 'filter.cutoff',    label: 'Cutoff',    kind: 'continuous', min: 0,    max: 1,  default: 0.55 },
@@ -173,7 +178,6 @@ export class WavetableEngine implements SynthEngine {
   private paramValues: Record<string, number> = {};
   private waveAIndex = 2; // Sawtooth
   private waveBIndex = 3; // Square
-  private waveSelectListeners: Array<() => void> = [];
 
   /** Tempo for LFO BPM sync. main.ts can update this at runtime. */
   bpm = 120;
@@ -199,10 +203,14 @@ export class WavetableEngine implements SynthEngine {
   }
 
   getBaseValue(id: string): number {
+    if (id === 'osc.waveA') return this.waveAIndex;
+    if (id === 'osc.waveB') return this.waveBIndex;
     return this.paramValues[id] ?? WT_PARAMS.find(p => p.id === id)?.default ?? 0;
   }
 
   setBaseValue(id: string, v: number): void {
+    if (id === 'osc.waveA') { this.setWaveA(Math.round(v)); return; }
+    if (id === 'osc.waveB') { this.setWaveB(Math.round(v)); return; }
     this.paramValues[id] = v;
   }
 
@@ -215,12 +223,10 @@ export class WavetableEngine implements SynthEngine {
 
   setWaveA(idx: number): void {
     this.waveAIndex = Math.max(0, Math.min(WAVETABLES.length - 1, idx));
-    this.waveSelectListeners.forEach((fn) => fn());
   }
 
   setWaveB(idx: number): void {
     this.waveBIndex = Math.max(0, Math.min(WAVETABLES.length - 1, idx));
-    this.waveSelectListeners.forEach((fn) => fn());
   }
 
   getWaveA(): number { return this.waveAIndex; }
@@ -266,115 +272,42 @@ export class WavetableEngine implements SynthEngine {
 
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
     container.innerHTML = '';
-    this.waveSelectListeners = [];
-    this.uiCtx = ctx;
+    if (!ctx) return;
 
-    container.appendChild(this.buildWavesSection());
-    container.appendChild(this.buildFilterSection());
-
-    if (ctx) {
-      renderModulatorsPanel(container, {
-        engineId: this.id,
-        laneId: ctx.laneId,
-        host: this.modHost,
-        registry: ctx.registry as Map<string, KnobHandle>,
-        registerKnob: (k) => ctx.registerKnob(k),
-        onChange: () => {
-          container.innerHTML = '';
-          this.buildParamUI(container, ctx);
-        },
-      });
-    }
-  }
-  private uiCtx?: EngineUIContext;
-
-  private buildWavesSection(): HTMLElement {
     const row = document.createElement('div');
     row.className = 'row poly-section';
-
-    const label = document.createElement('div');
-    label.className = 'section-label';
-    label.textContent = 'WAVES';
-    row.appendChild(label);
-
-    // Wave A selector
-    const waveAWrap = document.createElement('label');
-    waveAWrap.className = 'inline';
-    waveAWrap.textContent = 'Wave A ';
-    const waveASel = document.createElement('select');
-    WAVETABLES.forEach((w, i) => {
-      const opt = document.createElement('option');
-      opt.value = String(i);
-      opt.textContent = w.name;
-      if (i === this.waveAIndex) opt.selected = true;
-      waveASel.appendChild(opt);
-    });
-    waveASel.addEventListener('change', () => this.setWaveA(parseInt(waveASel.value, 10)));
-    waveAWrap.appendChild(waveASel);
-    row.appendChild(waveAWrap);
-
-    // Wave B selector
-    const waveBWrap = document.createElement('label');
-    waveBWrap.className = 'inline';
-    waveBWrap.textContent = 'Wave B ';
-    const waveBSel = document.createElement('select');
-    WAVETABLES.forEach((w, i) => {
-      const opt = document.createElement('option');
-      opt.value = String(i);
-      opt.textContent = w.name;
-      if (i === this.waveBIndex) opt.selected = true;
-      waveBSel.appendChild(opt);
-    });
-    waveBSel.addEventListener('change', () => this.setWaveB(parseInt(waveBSel.value, 10)));
-    waveBWrap.appendChild(waveBSel);
-    row.appendChild(waveBWrap);
-
-    // Morph + Detune knobs
     const knobRow = document.createElement('div');
     knobRow.className = 'knob-row';
-    knobRow.appendChild(this.makeKnob('osc.morph', (v) => `A↔B ${Math.round(v * 100)}%`));
-    knobRow.appendChild(this.makeKnob('osc.detune', (v) => `${v.toFixed(0)}¢`));
     row.appendChild(knobRow);
+    container.appendChild(row);
 
-    return row;
-  }
-
-  private buildFilterSection(): HTMLElement {
-    const row = document.createElement('div');
-    row.className = 'row poly-section';
-
-    const label = document.createElement('div');
-    label.className = 'section-label';
-    label.textContent = 'FILTER';
-    row.appendChild(label);
-
-    const knobRow = document.createElement('div');
-    knobRow.className = 'knob-row';
-    knobRow.appendChild(this.makeKnob('filter.cutoff',    (v) => `${Math.round(v * 100)}%`));
-    knobRow.appendChild(this.makeKnob('filter.resonance', (v) => `${Math.round(v * 100)}%`));
-    row.appendChild(knobRow);
-
-    return row;
-  }
-
-  private makeKnob(id: string, format: (v: number) => string): HTMLElement {
-    const p = WT_PARAMS.find((x) => x.id === id)!;
-    const k = createKnob({
-      label: p.label,
-      min: p.min,
-      max: p.max,
-      value: this.getBaseValue(id),
-      defaultValue: p.default,
-      format,
-      onChange: (v) => this.setBaseValue(id, v),
+    wireEngineParams(this, ctx, knobRow, {
+      formatter: (id, v) => {
+        if (id === 'osc.morph') return `${Math.round(v * 100)}%`;
+        if (id === 'osc.detune') return `${v.toFixed(0)}¢`;
+        if (id.startsWith('filter.')) return `${Math.round(v * 100)}%`;
+        if (id.startsWith('amp.') && (id.endsWith('.attack') || id.endsWith('.decay') || id.endsWith('.release'))) {
+          return v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed(2)}s`;
+        }
+        return `${Math.round(v * 100)}%`;
+      },
     });
-    this.uiCtx?.registerKnob(k);
-    return k.el;
+
+    renderModulatorsPanel(container, {
+      engineId: this.id,
+      laneId: ctx.laneId,
+      host: this.modHost,
+      registry: ctx.registry as Map<string, KnobHandle>,
+      registerKnob: (k) => ctx.registerKnob(k),
+      onChange: () => {
+        container.innerHTML = '';
+        this.buildParamUI(container, ctx);
+      },
+    });
   }
 
   dispose(): void {
     this.waves = [];
-    this.waveSelectListeners = [];
   }
 }
 

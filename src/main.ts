@@ -11,7 +11,7 @@ import './engines/wavetable';
 import './engines/fm';
 import './engines/karplus';
 import { configureTB303EngineMainInstance, tb303Engine } from './engines/tb303';
-import { createSelectControl } from './core/select-control';
+import { wireEngineParams } from './engines/engine-ui';
 import './engines/drums-engine';
 import { configureDrumsEngineSharedFx } from './engines/drums-engine';
 import { TB303, type Wave } from './core/synth';
@@ -20,7 +20,7 @@ import { DrumMachine, DRUM_LANES, type DrumVoice } from './core/drums';
 import { clearPattern } from './core/random';
 import { FxBus, ChannelStrip, FilterChain } from './core/fx';
 import { PatternBank, emptyPattern, AUTOMATION_SUB_RES, MAX_EXTRA_POLY_TRACKS, type PolyTrack, type AutomationLane } from './core/pattern';
-import { createKnob, type KnobHandle } from './core/knob';
+import { type KnobHandle } from './core/knob';
 import { PolySynth } from './polysynth/polysynth';
 import { scheduleArpForNote } from './arp/arp';
 import { stepsToNotes, bassStepsToNotes } from './core/notes';
@@ -184,41 +184,15 @@ interface LaneWiringDeps {
 }
 
 /** Walks engine.params, builds the knob/select per param, registers each
- *  under '<laneId>.<spec.id>'. Click/drag writes via engine.setBaseValue. */
+ *  under '<laneId>.<spec.id>'. Click/drag writes via engine.setBaseValue.
+ *  Delegates to the shared wireEngineParams helper used by engine.buildParamUI. */
 function wireLaneKnobs(deps: LaneWiringDeps): void {
-  for (const spec of deps.engine.params) {
-    const registryId = `${deps.laneId}.${spec.id}`;
-    if (spec.kind === 'continuous') {
-      const k = createKnob({
-        id: registryId,
-        label: spec.label,
-        min: spec.min,
-        max: spec.max,
-        value: deps.engine.getBaseValue(spec.id),
-        defaultValue: spec.default,
-        onChange: (v) => deps.engine.setBaseValue(spec.id, v),
-        format: deps.formatter ? (v) => deps.formatter!(spec.id, v) : undefined,
-      });
-      registerKnob(k);
-      deps.parent.appendChild(k.el);
-    } else {
-      const options = spec.options ?? [];
-      const idx = Math.round(deps.engine.getBaseValue(spec.id));
-      const initialValue = options[idx]?.value ?? options[0]?.value ?? '';
-      const { el, handle } = createSelectControl({
-        id: registryId,
-        label: spec.label,
-        options,
-        initialValue,
-        onChange: (v) => {
-          const i = options.findIndex((o) => o.value === v);
-          deps.engine.setBaseValue(spec.id, i);
-        },
-      });
-      registerKnob(handle);
-      deps.parent.appendChild(el);
-    }
-  }
+  const ctx: import('./engines/engine-types').EngineUIContext = {
+    laneId: deps.laneId,
+    registerKnob: (k) => registerKnob(k as KnobHandle),
+    registry: automationRegistry as unknown as Map<string, unknown>,
+  };
+  wireEngineParams(deps.engine, ctx, deps.parent, { formatter: deps.formatter });
 }
 
 function recordAutomationValue(paramId: string, value: number) {

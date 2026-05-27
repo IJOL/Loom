@@ -11,13 +11,17 @@ describe('WavetableEngine.params', () => {
     }
   });
 
-  it('has 8 declared params', () => {
-    expect(engine.params).toHaveLength(8);
+  it('has 10 declared params', () => {
+    expect(engine.params).toHaveLength(10);
   });
 
-  it('all params are continuous', () => {
+  it('wave selectors are discrete; the rest are continuous', () => {
     for (const spec of engine.params) {
-      expect(spec.kind).toBe('continuous');
+      if (spec.id === 'osc.waveA' || spec.id === 'osc.waveB') {
+        expect(spec.kind).toBe('discrete');
+      } else {
+        expect(spec.kind).toBe('continuous');
+      }
     }
   });
 });

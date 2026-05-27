@@ -20,9 +20,13 @@ describe('FMEngine.params', () => {
     expect(opIds.some(id => id.startsWith('op1.'))).toBe(true);
   });
 
-  it('all params are continuous', () => {
+  it('algorithm is the only discrete param; the rest are continuous', () => {
     for (const spec of engine.params) {
-      expect(spec.kind).toBe('continuous');
+      if (spec.id === 'algorithm') {
+        expect(spec.kind).toBe('discrete');
+      } else {
+        expect(spec.kind).toBe('continuous');
+      }
     }
   });
 });

@@ -6,11 +6,12 @@
 import type { SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, EngineUIContext } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
 import { registerEngine, registerEngineFactory } from './registry';
-import { createKnob, type KnobHandle } from '../core/knob';
+import type { KnobHandle } from '../core/knob';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR, type ModulatorVoice } from '../modulation/types';
 import { recordVoiceMods } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
+import { wireEngineParams } from './engine-ui';
 
 interface FMAlgorithm {
   id: number;
@@ -61,29 +62,30 @@ const OP_DEFAULTS: OpParams = {
   attack: 0.01, decay: 0.3, sustain: 0.7, release: 0.3,
 };
 
+const ALGO_OPTIONS = ALGORITHMS.map((a, i) => ({ value: String(i), label: `${a.id}. ${a.name}` }));
+
+// Helper to expand the 7 op params per operator.
+function opParamSpecs(n: number, defaults: { ratio: number; level: number }): EngineParamSpec[] {
+  return [
+    { id: `op${n}.ratio`,   label: `Op${n} Ratio`, kind: 'continuous', min: 0.1, max: 16, default: defaults.ratio, curve: 'exponential' },
+    { id: `op${n}.detune`,  label: `Op${n} Det`,   kind: 'continuous', min: -50, max: 50, default: 0, unit: '¢' },
+    { id: `op${n}.level`,   label: `Op${n} Lvl`,   kind: 'continuous', min: 0,   max: 1,  default: defaults.level },
+    { id: `op${n}.attack`,  label: `Op${n} Atk`,   kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's' },
+    { id: `op${n}.decay`,   label: `Op${n} Dec`,   kind: 'continuous', min: 0.001, max: 4, default: 0.3,  unit: 's' },
+    { id: `op${n}.sustain`, label: `Op${n} Sus`,   kind: 'continuous', min: 0,   max: 1,  default: 0.7 },
+    { id: `op${n}.release`, label: `Op${n} Rel`,   kind: 'continuous', min: 0.005, max: 4, default: 0.3,  unit: 's' },
+  ];
+}
+
 // Unified-param schema. Operator ids are 1-indexed everywhere (op1..op4),
 // matching the UI labels and disambiguating from the legacy 0-indexed knob ids.
 const FM_PARAMS: EngineParamSpec[] = [
-  // Operator 1 (carrier in most algorithms)
-  { id: 'op1.level',  label: 'Op1 Lvl',   kind: 'continuous', min: 0,    max: 1,  default: 0.9 },
-  { id: 'op1.ratio',  label: 'Op1 Ratio', kind: 'continuous', min: 0.25, max: 16, default: 1, curve: 'exponential' },
-  { id: 'op1.attack', label: 'Op1 Atk',   kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's' },
-  { id: 'op1.decay',  label: 'Op1 Dec',   kind: 'continuous', min: 0.001, max: 4, default: 0.3,  unit: 's' },
-  // Operator 2
-  { id: 'op2.level',  label: 'Op2 Lvl',   kind: 'continuous', min: 0,    max: 1,  default: 0.5 },
-  { id: 'op2.ratio',  label: 'Op2 Ratio', kind: 'continuous', min: 0.25, max: 16, default: 2, curve: 'exponential' },
-  { id: 'op2.attack', label: 'Op2 Atk',   kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's' },
-  { id: 'op2.decay',  label: 'Op2 Dec',   kind: 'continuous', min: 0.001, max: 4, default: 0.3,  unit: 's' },
-  // Operator 3
-  { id: 'op3.level',  label: 'Op3 Lvl',   kind: 'continuous', min: 0,    max: 1,  default: 0.4 },
-  { id: 'op3.ratio',  label: 'Op3 Ratio', kind: 'continuous', min: 0.25, max: 16, default: 3, curve: 'exponential' },
-  { id: 'op3.attack', label: 'Op3 Atk',   kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's' },
-  { id: 'op3.decay',  label: 'Op3 Dec',   kind: 'continuous', min: 0.001, max: 4, default: 0.3,  unit: 's' },
-  // Operator 4 (feedback source)
-  { id: 'op4.level',  label: 'Op4 Lvl',   kind: 'continuous', min: 0,    max: 1,  default: 0.6 },
-  { id: 'op4.ratio',  label: 'Op4 Ratio', kind: 'continuous', min: 0.25, max: 16, default: 1, curve: 'exponential' },
-  { id: 'op4.attack', label: 'Op4 Atk',   kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's' },
-  { id: 'op4.decay',  label: 'Op4 Dec',   kind: 'continuous', min: 0.001, max: 4, default: 0.3,  unit: 's' },
+  { id: 'algorithm', label: 'Algorithm', kind: 'discrete', min: 0, max: ALGO_OPTIONS.length - 1, default: 0, options: ALGO_OPTIONS },
+  { id: 'feedback',  label: 'FB (op4)', kind: 'continuous', min: 0, max: 1, default: 0 },
+  ...opParamSpecs(1, { ratio: 1, level: 0.9 }),
+  ...opParamSpecs(2, { ratio: 2, level: 0.5 }),
+  ...opParamSpecs(3, { ratio: 3, level: 0.4 }),
+  ...opParamSpecs(4, { ratio: 1, level: 0.6 }),
   // Mix / global
   { id: 'amp.mix',    label: 'Mix',       kind: 'continuous', min: 0, max: 1, default: 0.7 },
 ];
@@ -289,10 +291,13 @@ export class FMEngine implements SynthEngine {
   private syncOpParamsToValues(): void {
     for (let i = 0; i < this.opParams.length; i++) {
       const n = i + 1;
-      this.paramValues[`op${n}.level`]  = this.opParams[i].level;
-      this.paramValues[`op${n}.ratio`]  = this.opParams[i].ratio;
-      this.paramValues[`op${n}.attack`] = this.opParams[i].attack;
-      this.paramValues[`op${n}.decay`]  = this.opParams[i].decay;
+      this.paramValues[`op${n}.level`]   = this.opParams[i].level;
+      this.paramValues[`op${n}.ratio`]   = this.opParams[i].ratio;
+      this.paramValues[`op${n}.detune`]  = this.opParams[i].detune;
+      this.paramValues[`op${n}.attack`]  = this.opParams[i].attack;
+      this.paramValues[`op${n}.decay`]   = this.opParams[i].decay;
+      this.paramValues[`op${n}.sustain`] = this.opParams[i].sustain;
+      this.paramValues[`op${n}.release`] = this.opParams[i].release;
     }
   }
 
@@ -301,20 +306,30 @@ export class FMEngine implements SynthEngine {
       const n = i + 1;
       const lv = this.paramValues[`op${n}.level`];
       const rt = this.paramValues[`op${n}.ratio`];
+      const dt = this.paramValues[`op${n}.detune`];
       const at = this.paramValues[`op${n}.attack`];
       const dc = this.paramValues[`op${n}.decay`];
-      if (typeof lv === 'number') this.opParams[i].level  = lv;
-      if (typeof rt === 'number') this.opParams[i].ratio  = rt;
-      if (typeof at === 'number') this.opParams[i].attack = at;
-      if (typeof dc === 'number') this.opParams[i].decay  = dc;
+      const su = this.paramValues[`op${n}.sustain`];
+      const rl = this.paramValues[`op${n}.release`];
+      if (typeof lv === 'number') this.opParams[i].level   = lv;
+      if (typeof rt === 'number') this.opParams[i].ratio   = rt;
+      if (typeof dt === 'number') this.opParams[i].detune  = dt;
+      if (typeof at === 'number') this.opParams[i].attack  = at;
+      if (typeof dc === 'number') this.opParams[i].decay   = dc;
+      if (typeof su === 'number') this.opParams[i].sustain = su;
+      if (typeof rl === 'number') this.opParams[i].release = rl;
     }
   }
 
   getBaseValue(id: string): number {
+    if (id === 'algorithm') return this.algorithmIndex;
+    if (id === 'feedback')  return this.feedback;
     return this.paramValues[id] ?? FM_PARAMS.find(p => p.id === id)?.default ?? 0;
   }
 
   setBaseValue(id: string, v: number): void {
+    if (id === 'algorithm') { this.algorithmIndex = Math.max(0, Math.min(ALGORITHMS.length - 1, Math.round(v))); return; }
+    if (id === 'feedback')  { this.feedback = v; return; }
     this.paramValues[id] = v;
     // Keep the engine's per-op struct in sync so future triggers see the
     // new value.
@@ -347,27 +362,81 @@ export class FMEngine implements SynthEngine {
 
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
     container.innerHTML = '';
-    this.uiCtx = ctx;
-    container.appendChild(this.buildAlgoSection());
-    for (let i = 0; i < 4; i++) {
-      container.appendChild(this.buildOpSection(i));
-    }
+    if (!ctx) return;
 
-    if (ctx) {
-      renderModulatorsPanel(container, {
-        engineId: this.id,
-        laneId: ctx.laneId,
-        host: this.modHost,
-        registry: ctx.registry as Map<string, KnobHandle>,
-        registerKnob: (k) => ctx.registerKnob(k),
-        onChange: () => {
-          container.innerHTML = '';
-          this.buildParamUI(container, ctx);
+    const fmtSec = (v: number) => v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed(2)}s`;
+    const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
+
+    // Top section: Algorithm + Feedback
+    const topRow = document.createElement('div');
+    topRow.className = 'row poly-section';
+    const topLab = document.createElement('div');
+    topLab.className = 'section-label';
+    topLab.textContent = 'ALGORITHM';
+    topRow.appendChild(topLab);
+    const topKnobs = document.createElement('div');
+    topKnobs.className = 'knob-row';
+    topRow.appendChild(topKnobs);
+    container.appendChild(topRow);
+
+    wireEngineParams(this, ctx, topKnobs, {
+      filter: (id) => id === 'algorithm' || id === 'feedback',
+      formatter: (_id, v) => fmtPct(v),
+    });
+
+    // Per-op sections (op1..op4).
+    for (let i = 0; i < 4; i++) {
+      const n = i + 1;
+      const row = document.createElement('div');
+      row.className = 'row poly-section';
+      const lab = document.createElement('div');
+      lab.className = 'section-label';
+      lab.textContent = `OP ${n}`;
+      row.appendChild(lab);
+      const knobRow = document.createElement('div');
+      knobRow.className = 'knob-row';
+      row.appendChild(knobRow);
+      container.appendChild(row);
+
+      wireEngineParams(this, ctx, knobRow, {
+        filter: (id) => id.startsWith(`op${n}.`),
+        formatter: (id, v) => {
+          if (id.endsWith('.ratio'))   return v.toFixed(2);
+          if (id.endsWith('.detune'))  return `${v.toFixed(0)}¢`;
+          if (id.endsWith('.attack') || id.endsWith('.decay') || id.endsWith('.release')) return fmtSec(v);
+          return fmtPct(v);
         },
       });
     }
+
+    // Mix knob on its own.
+    const mixRow = document.createElement('div');
+    mixRow.className = 'row poly-section';
+    const mixLab = document.createElement('div');
+    mixLab.className = 'section-label';
+    mixLab.textContent = 'MIX';
+    mixRow.appendChild(mixLab);
+    const mixKnobs = document.createElement('div');
+    mixKnobs.className = 'knob-row';
+    mixRow.appendChild(mixKnobs);
+    container.appendChild(mixRow);
+    wireEngineParams(this, ctx, mixKnobs, {
+      filter: (id) => id === 'amp.mix',
+      formatter: (_id, v) => fmtPct(v),
+    });
+
+    renderModulatorsPanel(container, {
+      engineId: this.id,
+      laneId: ctx.laneId,
+      host: this.modHost,
+      registry: ctx.registry as Map<string, KnobHandle>,
+      registerKnob: (k) => ctx.registerKnob(k),
+      onChange: () => {
+        container.innerHTML = '';
+        this.buildParamUI(container, ctx);
+      },
+    });
   }
-  private uiCtx?: EngineUIContext;
 
   randomize(): void {
     const rnd = (a: number, b: number) => a + Math.random() * (b - a);
@@ -386,73 +455,6 @@ export class FMEngine implements SynthEngine {
       };
     }
     this.syncOpParamsToValues();
-  }
-
-  private buildAlgoSection(): HTMLElement {
-    const row = document.createElement('div');
-    row.className = 'row poly-section';
-
-    const lab = document.createElement('div');
-    lab.className = 'section-label';
-    lab.textContent = 'ALGORITHM';
-    row.appendChild(lab);
-
-    const sel = document.createElement('select');
-    ALGORITHMS.forEach((a, i) => {
-      const opt = document.createElement('option');
-      opt.value = String(i);
-      opt.textContent = `${a.id}. ${a.name}`;
-      if (i === this.algorithmIndex) opt.selected = true;
-      sel.appendChild(opt);
-    });
-    sel.addEventListener('change', () => { this.algorithmIndex = parseInt(sel.value, 10); });
-    row.appendChild(sel);
-
-    const knobRow = document.createElement('div');
-    knobRow.className = 'knob-row';
-    const k = createKnob({
-      label: 'FB (op4)',
-      min: 0, max: 1, value: this.feedback, defaultValue: 0,
-      format: (v) => `${Math.round(v * 100)}%`,
-      onChange: (v) => { this.feedback = v; },
-    });
-    this.uiCtx?.registerKnob(k);
-    knobRow.appendChild(k.el);
-    row.appendChild(knobRow);
-    return row;
-  }
-
-  private buildOpSection(idx: number): HTMLElement {
-    const row = document.createElement('div');
-    row.className = 'row poly-section';
-
-    const lab = document.createElement('div');
-    lab.className = 'section-label';
-    lab.textContent = `OP ${idx + 1}`;
-    row.appendChild(lab);
-
-    const knobRow = document.createElement('div');
-    knobRow.className = 'knob-row';
-    const p = this.opParams[idx];
-    const fmtSec = (v: number) => v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed(2)}s`;
-    const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
-
-    const mk = (label: string, min: number, max: number, val: number, def: number, fmt: (v: number) => string, set: (v: number) => void) => {
-      const k = createKnob({ label, min, max, value: val, defaultValue: def, format: fmt, onChange: set });
-      this.uiCtx?.registerKnob(k);
-      knobRow.appendChild(k.el);
-    };
-
-    const n = idx + 1;
-    mk('Ratio',   0.1,   16, p.ratio,   1,    (v) => v.toFixed(2),           (v) => { p.ratio = v;   this.paramValues[`op${n}.ratio`]  = v; });
-    mk('Detune', -50,    50, p.detune,  0,    (v) => `${v.toFixed(0)}¢`,     (v) => { p.detune = v; });
-    mk('Level',   0,      1, p.level,   0.5,  fmtPct,                        (v) => { p.level = v;   this.paramValues[`op${n}.level`]  = v; });
-    mk('A',       0.001,  2, p.attack,  0.01, fmtSec,                        (v) => { p.attack = v;  this.paramValues[`op${n}.attack`] = v; });
-    mk('D',       0.001,  2, p.decay,   0.3,  fmtSec,                        (v) => { p.decay = v;   this.paramValues[`op${n}.decay`]  = v; });
-    mk('S',       0,      1, p.sustain, 0.7,  fmtPct,                        (v) => { p.sustain = v; });
-    mk('R',       0.005,  4, p.release, 0.3,  fmtSec,                        (v) => { p.release = v; });
-    row.appendChild(knobRow);
-    return row;
   }
 
   dispose(): void {}

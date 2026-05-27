@@ -11,11 +11,12 @@
 import type { SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, EngineUIContext } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
 import { registerEngine, registerEngineFactory } from './registry';
-import { createKnob, type KnobHandle } from '../core/knob';
+import type { KnobHandle } from '../core/knob';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR, type ModulatorVoice } from '../modulation/types';
 import { recordVoiceMods } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
+import { wireEngineParams } from './engine-ui';
 
 // Unified-param schema. Dot-namespaced ids that map consistently between
 // knob layer and voice AudioParam destinations (no more ks-* split between
@@ -231,7 +232,6 @@ export class KarplusEngine implements SynthEngine {
   get modulators(): ModulationHostImpl { return this.modHost; }
 
   private paramValues: Record<string, number> = {};
-  private uiCtx?: EngineUIContext;
 
   constructor() {
     for (const p of KARPLUS_PARAMS) this.paramValues[p.id] = p.default;
@@ -265,25 +265,43 @@ export class KarplusEngine implements SynthEngine {
 
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
     container.innerHTML = '';
-    this.uiCtx = ctx;
+    if (!ctx) return;
 
-    container.appendChild(this.buildStringSection());
-    container.appendChild(this.buildExciteSection());
-    container.appendChild(this.buildAmpSection());
+    const fmt = (id: string, v: number): string => {
+      if (id === 'amp.release') return v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed(2)}s`;
+      if (id === 'excite.time' || id === 'amp.attack') return `${Math.round(v * 1000)}ms`;
+      return `${Math.round(v * 100)}%`;
+    };
 
-    if (ctx) {
-      renderModulatorsPanel(container, {
-        engineId: this.id,
-        laneId: ctx.laneId,
-        host: this.modHost,
-        registry: ctx.registry as Map<string, KnobHandle>,
-        registerKnob: (k) => ctx.registerKnob(k),
-        onChange: () => {
-          container.innerHTML = '';
-          this.buildParamUI(container, ctx);
-        },
-      });
-    }
+    const section = (label: string, filter: (id: string) => boolean): HTMLElement => {
+      const row = document.createElement('div');
+      row.className = 'row poly-section';
+      const lab = document.createElement('div');
+      lab.className = 'section-label';
+      lab.textContent = label;
+      row.appendChild(lab);
+      const knobRow = document.createElement('div');
+      knobRow.className = 'knob-row';
+      row.appendChild(knobRow);
+      wireEngineParams(this, ctx, knobRow, { filter, formatter: fmt });
+      return row;
+    };
+
+    container.appendChild(section('STRING', (id) => id.startsWith('string.')));
+    container.appendChild(section('EXCITE', (id) => id.startsWith('excite.')));
+    container.appendChild(section('AMP',    (id) => id.startsWith('amp.')));
+
+    renderModulatorsPanel(container, {
+      engineId: this.id,
+      laneId: ctx.laneId,
+      host: this.modHost,
+      registry: ctx.registry as Map<string, KnobHandle>,
+      registerKnob: (k) => ctx.registerKnob(k),
+      onChange: () => {
+        container.innerHTML = '';
+        this.buildParamUI(container, ctx);
+      },
+    });
   }
 
   randomize(): void {
@@ -295,66 +313,6 @@ export class KarplusEngine implements SynthEngine {
     this.paramValues['amp.attack']        = rnd(0.001, 0.02);
     this.paramValues['amp.release']       = rnd(0.3, 2.5);
     this.paramValues['amp.level']         = rnd(0.6, 0.9);
-  }
-
-  private buildStringSection(): HTMLElement {
-    const row = document.createElement('div');
-    row.className = 'row poly-section';
-    const lab = document.createElement('div');
-    lab.className = 'section-label';
-    lab.textContent = 'STRING';
-    row.appendChild(lab);
-    const knobRow = document.createElement('div');
-    knobRow.className = 'knob-row';
-    knobRow.appendChild(this.makeKnob('string.damping',    (v) => `${Math.round(v * 100)}%`));
-    knobRow.appendChild(this.makeKnob('string.brightness', (v) => `${Math.round(v * 100)}%`));
-    row.appendChild(knobRow);
-    return row;
-  }
-
-  private buildExciteSection(): HTMLElement {
-    const row = document.createElement('div');
-    row.className = 'row poly-section';
-    const lab = document.createElement('div');
-    lab.className = 'section-label';
-    lab.textContent = 'EXCITE';
-    row.appendChild(lab);
-    const knobRow = document.createElement('div');
-    knobRow.className = 'knob-row';
-    knobRow.appendChild(this.makeKnob('excite.time', (v) => `${Math.round(v * 1000)}ms`));
-    knobRow.appendChild(this.makeKnob('excite.tone', (v) => `${Math.round(v * 100)}%`));
-    row.appendChild(knobRow);
-    return row;
-  }
-
-  private buildAmpSection(): HTMLElement {
-    const row = document.createElement('div');
-    row.className = 'row poly-section';
-    const lab = document.createElement('div');
-    lab.className = 'section-label';
-    lab.textContent = 'AMP';
-    row.appendChild(lab);
-    const knobRow = document.createElement('div');
-    knobRow.className = 'knob-row';
-    knobRow.appendChild(this.makeKnob('amp.attack',  (v) => `${Math.round(v * 1000)}ms`));
-    knobRow.appendChild(this.makeKnob('amp.release', (v) => v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed(2)}s`));
-    knobRow.appendChild(this.makeKnob('amp.level',   (v) => `${Math.round(v * 100)}%`));
-    row.appendChild(knobRow);
-    return row;
-  }
-
-  private makeKnob(id: string, format: (v: number) => string): HTMLElement {
-    const p = KARPLUS_PARAMS.find((x) => x.id === id)!;
-    const k = createKnob({
-      label: p.label,
-      min: p.min, max: p.max,
-      value: this.getBaseValue(id),
-      defaultValue: p.default,
-      format,
-      onChange: (v) => this.setBaseValue(id, v),
-    });
-    this.uiCtx?.registerKnob(k);
-    return k.el;
   }
 
   dispose(): void {}
