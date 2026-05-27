@@ -10,7 +10,10 @@
 
 import type { SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, ParamDef, EngineUIContext } from './engine-types';
 import { registerEngine, registerEngineFactory } from './registry';
-import { createKnob } from '../core/knob';
+import { createKnob, type KnobHandle } from '../core/knob';
+import { ModulationHostImpl, bindVoiceModulation } from '../modulation/modulation-host';
+import { makeDefaultLFO, makeDefaultADSR, type ModulatorVoice } from '../modulation/types';
+import { renderModulatorsPanel } from '../modulation/modulation-ui';
 
 const KARPLUS_PARAMS: ParamDef[] = [
   { id: 'ks-damping',    label: 'Damping',    min: 0,    max: 1, default: 0.5 },
@@ -36,6 +39,7 @@ class KarplusVoice implements Voice {
     private ctx: AudioContext,
     output: AudioNode,
     private getParam: (id: string) => number,
+    private voiceMods: Map<string, ModulatorVoice>,
   ) {
     // Pre-generate a small burst of white noise; voice trims start/stop later.
     const burst = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
@@ -69,8 +73,21 @@ class KarplusVoice implements Voice {
     this.delay.connect(this.amp).connect(output);
   }
 
+  /** Final amp gain — most musical destination for LFO/ADSR. */
+  get ampParam(): AudioParam { return this.amp.gain; }
+  /** Loop-filter cutoff — drives damping/cutoff wobble (classic Karplus mod). */
+  get dampingParam(): AudioParam { return this.loopFilter.frequency; }
+  /** Noise excitation pre-filter cutoff — color the attack burst. */
+  get exciteToneParam(): AudioParam { return this.noiseFilter.frequency; }
+
   trigger(midi: number, time: number, options: VoiceTriggerOptions): void {
     if (this.disposed) return;
+    // Fire modulator voices first so their AudioParam contributions land
+    // before the pluck excitation.
+    for (const mv of this.voiceMods.values()) {
+      mv.trigger(time, { gateDuration: options.gateDuration, accent: options.accent });
+    }
+
     const freq = 440 * Math.pow(2, (midi - 69) / 12);
     const velMul = options.accent ? 1.4 : 1.0;
 
@@ -145,7 +162,9 @@ class KarplusVoice implements Voice {
     setTimeout(() => this.dispose(), delayMs);
   }
 
-  release(_time: number): void {}
+  release(time: number): void {
+    for (const mv of this.voiceMods.values()) mv.release(time);
+  }
   connect(_dest: AudioNode): void {}
 
   dispose(): void {
@@ -159,6 +178,7 @@ class KarplusVoice implements Voice {
     this.loopFilter.disconnect();
     this.loopGain.disconnect();
     this.amp.disconnect();
+    for (const mv of this.voiceMods.values()) mv.dispose();
   }
 }
 
@@ -180,6 +200,17 @@ class KarplusEngine implements SynthEngine {
   readonly presets: import('./engine-types').EnginePreset[] = [];
   readonly params = KARPLUS_PARAMS;
 
+  /** Tempo for LFO BPM sync. main.ts can update this at runtime. */
+  bpm = 120;
+
+  private modHost = new ModulationHostImpl([
+    makeDefaultLFO('lfo1'),
+    makeDefaultADSR('adsr1'),
+  ]);
+
+  /** Persistence + cross-module access to modulator state. */
+  get modulators(): ModulationHostImpl { return this.modHost; }
+
   private paramValues: Record<string, number> = {};
   private uiCtx?: EngineUIContext;
 
@@ -190,10 +221,28 @@ class KarplusEngine implements SynthEngine {
   setParam(id: string, value: number): void { this.paramValues[id] = value; }
   getParam(id: string): number { return this.paramValues[id] ?? 0; }
 
-  applyPreset(_name: string): void {}
+  applyPreset(name: string): void {
+    const preset = this.presets.find((p) => p.name === name);
+    if (!preset) return;
+    for (const [k, v] of Object.entries(preset.params)) this.paramValues[k] = v;
+    if (preset.modulators) this.modHost.deserialize(preset.modulators);
+  }
 
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
-    return new KarplusVoice(ctx, output, (id) => this.getParam(id));
+    const voiceMods = this.modHost.spawnVoice(ctx, () => this.bpm);
+    const voice = new KarplusVoice(ctx, output, (id) => this.getParam(id), voiceMods);
+    const voiceParamMap: Record<string, AudioParam> = {
+      'ks-amp':       voice.ampParam,
+      'ks-loop-cut':  voice.dampingParam,
+      'ks-excite-cut': voice.exciteToneParam,
+    };
+    const paramRanges: Record<string, { min: number; max: number }> = {
+      'ks-amp':        { min: 0,   max: 1     },
+      'ks-loop-cut':   { min: 100, max: 12000 },
+      'ks-excite-cut': { min: 100, max: 12000 },
+    };
+    bindVoiceModulation(voiceMods, this.modHost.modulators, voiceParamMap, paramRanges, ctx);
+    return voice;
   }
 
   buildSequencer(_c: HTMLElement, _n: number): EngineSequencer {
@@ -207,6 +256,20 @@ class KarplusEngine implements SynthEngine {
     container.appendChild(this.buildStringSection());
     container.appendChild(this.buildExciteSection());
     container.appendChild(this.buildAmpSection());
+
+    if (ctx) {
+      renderModulatorsPanel(container, {
+        engineId: this.id,
+        laneId: ctx.laneId,
+        host: this.modHost,
+        registry: ctx.registry as Map<string, KnobHandle>,
+        registerKnob: (k) => ctx.registerKnob(k),
+        onChange: () => {
+          container.innerHTML = '';
+          this.buildParamUI(container, ctx);
+        },
+      });
+    }
   }
 
   randomize(): void {
