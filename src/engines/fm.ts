@@ -3,10 +3,11 @@
 // 4 algorithms covering common topologies (serial, parallel mods, two pairs, all-additive).
 // Op4 self-feedback.
 
-import type { SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, ParamDef, EngineUIContext } from './engine-types';
+import type { SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, EngineUIContext } from './engine-types';
+import type { EngineParamSpec } from './engine-params';
 import { registerEngine, registerEngineFactory } from './registry';
 import { createKnob, type KnobHandle } from '../core/knob';
-import { ModulationHostImpl, bindVoiceModulation } from '../modulation/modulation-host';
+import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR, type ModulatorVoice } from '../modulation/types';
 import { recordVoiceMods } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
@@ -60,13 +61,41 @@ const OP_DEFAULTS: OpParams = {
   attack: 0.01, decay: 0.3, sustain: 0.7, release: 0.3,
 };
 
+// Unified-param schema. Operator ids are 1-indexed everywhere (op1..op4),
+// matching the UI labels and disambiguating from the legacy 0-indexed knob ids.
+const FM_PARAMS: EngineParamSpec[] = [
+  // Operator 1 (carrier in most algorithms)
+  { id: 'op1.level',  label: 'Op1 Lvl',   kind: 'continuous', min: 0,    max: 1,  default: 0.9 },
+  { id: 'op1.ratio',  label: 'Op1 Ratio', kind: 'continuous', min: 0.25, max: 16, default: 1, curve: 'exponential' },
+  { id: 'op1.attack', label: 'Op1 Atk',   kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's' },
+  { id: 'op1.decay',  label: 'Op1 Dec',   kind: 'continuous', min: 0.001, max: 4, default: 0.3,  unit: 's' },
+  // Operator 2
+  { id: 'op2.level',  label: 'Op2 Lvl',   kind: 'continuous', min: 0,    max: 1,  default: 0.5 },
+  { id: 'op2.ratio',  label: 'Op2 Ratio', kind: 'continuous', min: 0.25, max: 16, default: 2, curve: 'exponential' },
+  { id: 'op2.attack', label: 'Op2 Atk',   kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's' },
+  { id: 'op2.decay',  label: 'Op2 Dec',   kind: 'continuous', min: 0.001, max: 4, default: 0.3,  unit: 's' },
+  // Operator 3
+  { id: 'op3.level',  label: 'Op3 Lvl',   kind: 'continuous', min: 0,    max: 1,  default: 0.4 },
+  { id: 'op3.ratio',  label: 'Op3 Ratio', kind: 'continuous', min: 0.25, max: 16, default: 3, curve: 'exponential' },
+  { id: 'op3.attack', label: 'Op3 Atk',   kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's' },
+  { id: 'op3.decay',  label: 'Op3 Dec',   kind: 'continuous', min: 0.001, max: 4, default: 0.3,  unit: 's' },
+  // Operator 4 (feedback source)
+  { id: 'op4.level',  label: 'Op4 Lvl',   kind: 'continuous', min: 0,    max: 1,  default: 0.6 },
+  { id: 'op4.ratio',  label: 'Op4 Ratio', kind: 'continuous', min: 0.25, max: 16, default: 1, curve: 'exponential' },
+  { id: 'op4.attack', label: 'Op4 Atk',   kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's' },
+  { id: 'op4.decay',  label: 'Op4 Dec',   kind: 'continuous', min: 0.001, max: 4, default: 0.3,  unit: 's' },
+  // Mix / global
+  { id: 'amp.mix',    label: 'Mix',       kind: 'continuous', min: 0, max: 1, default: 0.7 },
+];
+
 class FMVoice implements Voice {
-  private osc: OscillatorNode[] = [];
+  public readonly osc: OscillatorNode[] = [];
   private envGain: GainNode[] = [];
-  private outGain: GainNode[] = [];
-  private finalMix: GainNode;
+  public readonly outGain: GainNode[] = [];
+  public readonly finalMix: GainNode;
   private fbGain: GainNode | null = null;
   private fbDelay: DelayNode | null = null;
+  private opEnvs!: ConstantSourceNode[];
 
   constructor(
     private ctx: AudioContext,
@@ -90,6 +119,19 @@ class FMVoice implements Voice {
       this.outGain.push(og);
     }
 
+    // Internal envelope sources — one per operator. Modulators sum on top of
+    // these via the destination AudioParam (envGain[i].gain) so the per-op
+    // amp envelope and external modulation stack cleanly.
+    this.opEnvs = [];
+    for (let i = 0; i < this.envGain.length; i++) {
+      const env = ctx.createConstantSource();
+      env.offset.value = 0;
+      env.start();
+      env.connect(this.envGain[i].gain);
+      this.envGain[i].gain.value = 0;
+      this.opEnvs.push(env);
+    }
+
     // Routing: modulators -> target's frequency AudioParam (a-rate FM).
     for (let target = 0; target < 4; target++) {
       const opDef = this.algo.ops[target];
@@ -102,14 +144,17 @@ class FMVoice implements Voice {
     }
   }
 
-  /** Final-mix output gain — useful destination for amp-style modulation. */
-  get mixGainParam(): AudioParam { return this.finalMix.gain; }
-  /** Op1 output level — useful destination for tremolo/level-mod on the main carrier. */
-  get op1LevelParam(): AudioParam { return this.outGain[0].gain; }
-  /** Op2 output level — useful destination for modulation-index wobble in serial/parallel algos. */
-  get op2LevelParam(): AudioParam { return this.outGain[1].gain; }
-  /** Op1 oscillator detune — useful destination for pitch vibrato. */
-  get op1DetuneParam(): AudioParam { return this.osc[0].detune; }
+  getAudioParams(): Map<string, AudioParam> {
+    const m = new Map<string, AudioParam>();
+    // 1-indexed operator ids matching FM_PARAMS.
+    for (let i = 0; i < this.outGain.length; i++) {
+      const n = i + 1;
+      m.set(`op${n}.level`, this.outGain[i].gain);
+      if (this.osc[i]) m.set(`op${n}.ratio`, this.osc[i].detune);
+    }
+    m.set('amp.mix', this.finalMix.gain);
+    return m;
+  }
 
   trigger(midi: number, time: number, options: VoiceTriggerOptions): void {
     // Fire modulator voices first so their AudioParam contributions land
@@ -131,9 +176,12 @@ class FMVoice implements Voice {
       const a = Math.max(0.001, p.attack);
       const d = Math.max(0.001, p.decay);
       const sus = Math.max(0.0001, p.sustain);
-      this.envGain[i].gain.setValueAtTime(0, time);
-      this.envGain[i].gain.linearRampToValueAtTime(1, time + a);
-      this.envGain[i].gain.linearRampToValueAtTime(sus, time + a + d);
+      // Per-op amp envelope is now written onto the internal ConstantSource's
+      // offset, which sums into envGain[i].gain alongside any modulators.
+      this.opEnvs[i].offset.cancelScheduledValues(time);
+      this.opEnvs[i].offset.setValueAtTime(0, time);
+      this.opEnvs[i].offset.linearRampToValueAtTime(1, time + a);
+      this.opEnvs[i].offset.linearRampToValueAtTime(sus, time + a + d);
 
       // Carriers go to mix at modest amplitude; modulators output in Hz of
       // frequency deviation, so we scale by (op freq * index multiplier).
@@ -161,8 +209,8 @@ class FMVoice implements Voice {
       const p = this.getOp(i);
       const r = Math.max(0.005, p.release);
       const sus = Math.max(0.0001, p.sustain);
-      this.envGain[i].gain.setValueAtTime(sus, gateEnd);
-      this.envGain[i].gain.exponentialRampToValueAtTime(0.0001, gateEnd + r);
+      this.opEnvs[i].offset.setValueAtTime(sus, gateEnd);
+      this.opEnvs[i].offset.exponentialRampToValueAtTime(0.0001, gateEnd + r);
     }
 
     const stopTime = gateEnd + maxRelease + 0.05;
@@ -181,6 +229,7 @@ class FMVoice implements Voice {
     for (const o of this.osc) { try { o.stop(); } catch {} o.disconnect(); }
     for (const g of this.envGain) g.disconnect();
     for (const g of this.outGain) g.disconnect();
+    for (const e of this.opEnvs) { try { e.stop(); } catch {} e.disconnect(); }
     if (this.fbGain) this.fbGain.disconnect();
     if (this.fbDelay) this.fbDelay.disconnect();
     this.finalMix.disconnect();
@@ -197,12 +246,12 @@ class FMSequencer implements EngineSequencer {
   dispose(): void {}
 }
 
-class FMEngine implements SynthEngine {
+export class FMEngine implements SynthEngine {
   readonly id = 'fm';
   readonly name = 'FM (4-op)';
   readonly type = 'polyhost' as const;
   readonly polyphony = 'poly' as const;
-  readonly params: ParamDef[] = [];
+  readonly params = FM_PARAMS;
   readonly editor = 'piano-roll' as const;
   readonly presets: import('./engine-types').EnginePreset[] = [];
 
@@ -217,12 +266,6 @@ class FMEngine implements SynthEngine {
   /** Persistence + cross-module access to modulator state. */
   get modulators(): ModulationHostImpl { return this.modHost; }
 
-  applyPreset(name: string): void {
-    const preset = this.presets.find((p) => p.name === name);
-    if (!preset) return;
-    if (preset.modulators) this.modHost.deserialize(preset.modulators);
-  }
-
   private algorithmIndex = 0;
   private feedback = 0;
   private opParams: OpParams[] = [
@@ -231,6 +274,58 @@ class FMEngine implements SynthEngine {
     { ...OP_DEFAULTS, ratio: 3, level: 0.4 },
     { ...OP_DEFAULTS, ratio: 1, level: 0.6 },
   ];
+
+  private paramValues: Record<string, number> = {};
+
+  constructor() {
+    for (const p of FM_PARAMS) {
+      this.paramValues[p.id] = p.default;
+    }
+    // Mirror the seeded opParams[] values into the unified store so reads via
+    // getBaseValue match what the voice will see when it triggers.
+    this.syncOpParamsToValues();
+  }
+
+  private syncOpParamsToValues(): void {
+    for (let i = 0; i < this.opParams.length; i++) {
+      const n = i + 1;
+      this.paramValues[`op${n}.level`]  = this.opParams[i].level;
+      this.paramValues[`op${n}.ratio`]  = this.opParams[i].ratio;
+      this.paramValues[`op${n}.attack`] = this.opParams[i].attack;
+      this.paramValues[`op${n}.decay`]  = this.opParams[i].decay;
+    }
+  }
+
+  private syncValuesToOpParams(): void {
+    for (let i = 0; i < this.opParams.length; i++) {
+      const n = i + 1;
+      const lv = this.paramValues[`op${n}.level`];
+      const rt = this.paramValues[`op${n}.ratio`];
+      const at = this.paramValues[`op${n}.attack`];
+      const dc = this.paramValues[`op${n}.decay`];
+      if (typeof lv === 'number') this.opParams[i].level  = lv;
+      if (typeof rt === 'number') this.opParams[i].ratio  = rt;
+      if (typeof at === 'number') this.opParams[i].attack = at;
+      if (typeof dc === 'number') this.opParams[i].decay  = dc;
+    }
+  }
+
+  getBaseValue(id: string): number {
+    return this.paramValues[id] ?? FM_PARAMS.find(p => p.id === id)?.default ?? 0;
+  }
+
+  setBaseValue(id: string, v: number): void {
+    this.paramValues[id] = v;
+    // Keep the engine's per-op struct in sync so future triggers see the
+    // new value.
+    this.syncValuesToOpParams();
+  }
+
+  applyPreset(name: string): void {
+    const preset = this.presets.find((p) => p.name === name);
+    if (!preset) return;
+    if (preset.modulators) this.modHost.deserialize(preset.modulators);
+  }
 
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
     const voiceMods = this.modHost.spawnVoice(ctx, () => this.bpm);
@@ -242,19 +337,6 @@ class FMEngine implements SynthEngine {
       this.feedback,
       voiceMods,
     );
-    const voiceParamMap: Record<string, AudioParam> = {
-      'fm-mix':      voice.mixGainParam,
-      'fm-op1-level': voice.op1LevelParam,
-      'fm-op2-level': voice.op2LevelParam,
-      'fm-op1-detune': voice.op1DetuneParam,
-    };
-    const paramRanges: Record<string, { min: number; max: number }> = {
-      'fm-mix':       { min: 0,    max: 1    },
-      'fm-op1-level': { min: 0,    max: 1    },
-      'fm-op2-level': { min: 0,    max: 1    },
-      'fm-op1-detune':{ min: -100, max: 100  },
-    };
-    bindVoiceModulation(voiceMods, this.modHost.modulators, voiceParamMap, paramRanges, ctx);
     recordVoiceMods(voiceMods);
     return voice;
   }
@@ -275,7 +357,6 @@ class FMEngine implements SynthEngine {
       renderModulatorsPanel(container, {
         engineId: this.id,
         laneId: ctx.laneId,
-        extraPrefixes: ['fm'],
         host: this.modHost,
         registry: ctx.registry as Map<string, KnobHandle>,
         registerKnob: (k) => ctx.registerKnob(k),
@@ -304,6 +385,7 @@ class FMEngine implements SynthEngine {
         release: rnd(0.1, 1.2),
       };
     }
+    this.syncOpParamsToValues();
   }
 
   private buildAlgoSection(): HTMLElement {
@@ -328,9 +410,7 @@ class FMEngine implements SynthEngine {
 
     const knobRow = document.createElement('div');
     knobRow.className = 'knob-row';
-    const fbId = this.uiCtx?.idPrefix ? `${this.uiCtx.idPrefix}.fm-feedback` : undefined;
     const k = createKnob({
-      id: fbId,
       label: 'FB (op4)',
       min: 0, max: 1, value: this.feedback, defaultValue: 0,
       format: (v) => `${Math.round(v * 100)}%`,
@@ -357,20 +437,20 @@ class FMEngine implements SynthEngine {
     const fmtSec = (v: number) => v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed(2)}s`;
     const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 
-    const mk = (paramId: string, label: string, min: number, max: number, val: number, def: number, fmt: (v: number) => string, set: (v: number) => void) => {
-      const fullId = this.uiCtx?.idPrefix ? `${this.uiCtx.idPrefix}.fm-op${idx}-${paramId}` : undefined;
-      const k = createKnob({ id: fullId, label, min, max, value: val, defaultValue: def, format: fmt, onChange: set });
+    const mk = (label: string, min: number, max: number, val: number, def: number, fmt: (v: number) => string, set: (v: number) => void) => {
+      const k = createKnob({ label, min, max, value: val, defaultValue: def, format: fmt, onChange: set });
       this.uiCtx?.registerKnob(k);
       knobRow.appendChild(k.el);
     };
 
-    mk('ratio',   'Ratio',   0.1,   16, p.ratio,   1,    (v) => v.toFixed(2),               (v) => { p.ratio = v; });
-    mk('detune',  'Detune', -50,    50, p.detune,  0,    (v) => `${v.toFixed(0)}¢`,         (v) => { p.detune = v; });
-    mk('level',   'Level',   0,      1, p.level,   0.5,  fmtPct,                            (v) => { p.level = v; });
-    mk('a',       'A',       0.001,  2, p.attack,  0.01, fmtSec,                            (v) => { p.attack = v; });
-    mk('d',       'D',       0.001,  2, p.decay,   0.3,  fmtSec,                            (v) => { p.decay = v; });
-    mk('s',       'S',       0,      1, p.sustain, 0.7,  fmtPct,                            (v) => { p.sustain = v; });
-    mk('r',       'R',       0.005,  4, p.release, 0.3,  fmtSec,                            (v) => { p.release = v; });
+    const n = idx + 1;
+    mk('Ratio',   0.1,   16, p.ratio,   1,    (v) => v.toFixed(2),           (v) => { p.ratio = v;   this.paramValues[`op${n}.ratio`]  = v; });
+    mk('Detune', -50,    50, p.detune,  0,    (v) => `${v.toFixed(0)}¢`,     (v) => { p.detune = v; });
+    mk('Level',   0,      1, p.level,   0.5,  fmtPct,                        (v) => { p.level = v;   this.paramValues[`op${n}.level`]  = v; });
+    mk('A',       0.001,  2, p.attack,  0.01, fmtSec,                        (v) => { p.attack = v;  this.paramValues[`op${n}.attack`] = v; });
+    mk('D',       0.001,  2, p.decay,   0.3,  fmtSec,                        (v) => { p.decay = v;   this.paramValues[`op${n}.decay`]  = v; });
+    mk('S',       0,      1, p.sustain, 0.7,  fmtPct,                        (v) => { p.sustain = v; });
+    mk('R',       0.005,  4, p.release, 0.3,  fmtSec,                        (v) => { p.release = v; });
     row.appendChild(knobRow);
     return row;
   }
