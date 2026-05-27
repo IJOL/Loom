@@ -10,6 +10,7 @@ import { registerEngine, registerEngineFactory } from './registry';
 import { TB303 } from '../core/synth';
 import { ModulationHostImpl, bindVoiceModulation } from '../modulation/modulation-host';
 import { makeDefaultLFO, type ModulatorVoice } from '../modulation/types';
+import { recordVoiceMods } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
 import type { KnobHandle } from '../core/knob';
 
@@ -115,6 +116,7 @@ export class TB303Engine implements SynthEngine {
       'tb-amp':       { min: 0,   max: 1    },
     };
     bindVoiceModulation(voiceMods, this.modHost.modulators, voiceParamMap, paramRanges, ctx);
+    recordVoiceMods(voiceMods);
     return new TB303Voice(tb, voiceMods);
   }
 

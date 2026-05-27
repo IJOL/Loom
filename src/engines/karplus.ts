@@ -13,6 +13,7 @@ import { registerEngine, registerEngineFactory } from './registry';
 import { createKnob, type KnobHandle } from '../core/knob';
 import { ModulationHostImpl, bindVoiceModulation } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR, type ModulatorVoice } from '../modulation/types';
+import { recordVoiceMods } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
 
 const KARPLUS_PARAMS: ParamDef[] = [
@@ -242,6 +243,7 @@ class KarplusEngine implements SynthEngine {
       'ks-excite-cut': { min: 100, max: 12000 },
     };
     bindVoiceModulation(voiceMods, this.modHost.modulators, voiceParamMap, paramRanges, ctx);
+    recordVoiceMods(voiceMods);
     return voice;
   }
 

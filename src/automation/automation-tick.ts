@@ -5,6 +5,8 @@ import type { Sequencer } from '../core/sequencer';
 import type { KnobHandle } from '../core/knob';
 import type { LanePlayState } from '../session/session-runtime';
 import type { AppMode } from '../main';
+import type { SynthEngine } from '../engines/engine-types';
+import type { ModulationHost, ModulatorVoice } from '../modulation/types';
 
 export interface AutomationTickDeps {
   seq: Sequencer;
@@ -14,6 +16,36 @@ export interface AutomationTickDeps {
   ctx: AudioContext;
   redrawAllLanes: () => void;
   trackActiveUntil: Map<string, number>;
+  getEngineForLane?: (laneId: string) => SynthEngine | undefined;
+  getActiveModVoice?: (laneId: string, modId: string) => ModulatorVoice | undefined;
+}
+
+function applyModulationToKnobs(deps: AutomationTickDeps): void {
+  const reg = deps.automationRegistry;
+  for (const [paramId, handle] of reg) {
+    if (paramId.includes('.mod.')) continue; // skip modulator's own knobs
+    const dotIdx = paramId.indexOf('.');
+    if (dotIdx < 0) continue;
+    const laneId = paramId.slice(0, dotIdx);
+    const localId = paramId.slice(dotIdx + 1);
+    const engine = deps.getEngineForLane?.(laneId);
+    const host = (engine as { modulators?: ModulationHost } | undefined)?.modulators;
+    if (!host) {
+      (handle as KnobHandle).setModulationOffset?.(0);
+      continue;
+    }
+    let offset = 0;
+    for (const mod of host.modulators) {
+      if (!mod.enabled) continue;
+      for (const conn of mod.connections) {
+        if (conn.paramId !== localId && conn.paramId !== paramId) continue;
+        const voice = deps.getActiveModVoice?.(laneId, mod.id);
+        if (!voice) continue;
+        offset += voice.currentValue() * conn.depth;
+      }
+    }
+    (handle as KnobHandle).setModulationOffset?.(Math.max(-1, Math.min(1, offset)));
+  }
 }
 
 // Module-level state — exported via getters so recordAutomationValue in main.ts
@@ -85,6 +117,7 @@ export function startAutomationTick(deps: AutomationTickDeps): void {
         k.setValue(k.meta.min + normalised * range);
       });
     }
+    applyModulationToKnobs(deps);
   };
   requestAnimationFrame(tick);
 }

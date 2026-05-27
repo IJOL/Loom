@@ -64,6 +64,7 @@ import {
   startAutomationTick, resetAutomationPosition, getAutoAbsSubIdx,
   type AutomationTickDeps,
 } from './automation/automation-tick';
+import { setCurrentLaneForVoice, getActiveModVoice } from './modulation/active-mods';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -310,7 +311,9 @@ function ensureLaneVoice(laneId: string, engineId: string): import('./engines/en
   const engine = getEngine(engineId);
   if (!engine) return null;
   const strip = ensureLaneStrip(laneId);
+  setCurrentLaneForVoice(laneId);
   const voice = engine.createVoice(ctx, strip.input);
+  setCurrentLaneForVoice(null);
   laneVoices.set(laneId, voice);
   return voice;
 }
@@ -407,7 +410,9 @@ seq.onExtraPolyTrigger = (trackIdx, note, time, gate, accent) => {
     } else {
       const inst = ensureLaneEngine(id, engineId);
       if (inst) {
+        setCurrentLaneForVoice(id);
         const voice = inst.createVoice(ctx, extraStrips[id]!.input);
+        setCurrentLaneForVoice(null);
         voice.trigger(n, t, { gateDuration: g, accent: a });
       } else {
         poly.trigger(n, t, g, a);
@@ -530,7 +535,9 @@ const polyTriggerDirect = (note: number, time: number, gate: number, accent: boo
   }
   const inst = ensureLaneEngine('main', engineId);
   if (!inst) { polysynth.trigger(note, time, gate, accent); return; }
+  setCurrentLaneForVoice('main');
   const voice = inst.createVoice(ctx, polyStrip.input);
+  setCurrentLaneForVoice(null);
   voice.trigger(note, time, { gateDuration: gate, accent });
 };
 const bassTriggerDirect = (note: number, time: number, gate: number, accent: boolean, slidingIn: boolean) => {
@@ -826,6 +833,11 @@ const automationTickDeps: AutomationTickDeps = {
   ctx,
   redrawAllLanes,
   trackActiveUntil,
+  getEngineForLane: (laneId) => {
+    const engId = getLaneEngineId(laneId);
+    return ensureLaneEngine(laneId, engId) ?? undefined;
+  },
+  getActiveModVoice: (laneId, modId) => getActiveModVoice(laneId, modId),
 };
 startAutomationTick(automationTickDeps);
 // Auto-load the minimal techno demo on first boot so the user lands on

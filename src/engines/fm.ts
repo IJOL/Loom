@@ -8,6 +8,7 @@ import { registerEngine, registerEngineFactory } from './registry';
 import { createKnob, type KnobHandle } from '../core/knob';
 import { ModulationHostImpl, bindVoiceModulation } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR, type ModulatorVoice } from '../modulation/types';
+import { recordVoiceMods } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
 
 interface FMAlgorithm {
@@ -254,6 +255,7 @@ class FMEngine implements SynthEngine {
       'fm-op1-detune':{ min: -100, max: 100  },
     };
     bindVoiceModulation(voiceMods, this.modHost.modulators, voiceParamMap, paramRanges, ctx);
+    recordVoiceMods(voiceMods);
     return voice;
   }
 

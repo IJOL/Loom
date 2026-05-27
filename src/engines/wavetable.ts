@@ -5,6 +5,7 @@ import { createKnob, type KnobHandle } from '../core/knob';
 import { ModulationHostImpl, bindVoiceModulation } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
 import type { ModulatorVoice } from '../modulation/types';
+import { recordVoiceMods } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
 
 const WAVETABLE_PARAMS: ParamDef[] = [
@@ -214,6 +215,7 @@ class WavetableEngine implements SynthEngine {
       'wt-cutoff': { min: 20, max: 12000 },
     };
     bindVoiceModulation(voiceMods, this.modHost.modulators, voiceParamMap, paramRanges, ctx);
+    recordVoiceMods(voiceMods);
     return voice;
   }
 

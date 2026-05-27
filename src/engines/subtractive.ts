@@ -9,6 +9,7 @@ import { registerEngine, registerEngineFactory } from './registry';
 import { PolySynth, POLY_DEFAULTS } from '../polysynth/polysynth';
 import { ModulationHostImpl, bindVoiceModulation } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR, type ModulatorVoice } from '../modulation/types';
+import { getCurrentLaneForVoice, setActiveModVoices, recordVoiceMods } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
 import type { KnobHandle } from '../core/knob';
 
@@ -18,12 +19,18 @@ class SubtractiveVoice implements Voice {
     private modHost: ModulationHostImpl,
     private ctx: AudioContext,
     private getBpm: () => number,
+    private laneId: string | null,
   ) {}
 
   trigger(midi: number, time: number, options: VoiceTriggerOptions): void {
     // Spawn modulator voices fresh per-trigger so each note gets its own
     // envelope curve / LFO phase.
     const voiceMods: Map<string, ModulatorVoice> = this.modHost.spawnVoice(this.ctx, this.getBpm);
+    // Re-record on every trigger so the rAF poll always sees the most-recent
+    // voice's mod envelopes. Snapshot the laneId from createVoice time since
+    // currentLaneForVoice may have moved on by now.
+    if (this.laneId) setActiveModVoices(this.laneId, voiceMods);
+    else recordVoiceMods(voiceMods);
 
     this.polysynth.triggerWithBinding(
       midi, time, options.gateDuration, options.accent ?? false,
@@ -123,7 +130,7 @@ class SubtractiveEngine implements SynthEngine {
     if (!this.polysynth) {
       this.polysynth = new PolySynth(ctx, output);
     }
-    return new SubtractiveVoice(this.polysynth, this.modHost, ctx, () => this.bpm);
+    return new SubtractiveVoice(this.polysynth, this.modHost, ctx, () => this.bpm, getCurrentLaneForVoice());
   }
 
   getPolySynth(): PolySynth | null {

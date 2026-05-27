@@ -12,6 +12,7 @@ import type { NoteEvent } from '../core/notes';
 import { arp } from '../arp/arp-ui';
 import { scheduleArpForNote } from '../arp/arp';
 import { GM_DRUM_MAP } from '../engines/drum-gm-map';
+import { setCurrentLaneForVoice } from '../modulation/active-mods';
 
 export interface StepSchedulerDeps {
   ctx: AudioContext;
@@ -108,7 +109,9 @@ function routeNoteToEngine(
       else {
         const inst = ensureLaneEngine(laneId, engId);
         if (inst) {
+          setCurrentLaneForVoice(laneId);
           const voice = inst.createVoice(ctx, extraStrips[laneId]!.input);
+          setCurrentLaneForVoice(null);
           voice.trigger(n, t, { gateDuration: g, accent: a });
         } else ensureExtraPoly(laneId).trigger(n, t, g, a);
       }
