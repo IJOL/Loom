@@ -35,15 +35,28 @@ class SubtractiveVoice implements Voice {
     this.polysynth.triggerWithBinding(
       midi, time, options.gateDuration, options.accent ?? false,
       (vp) => {
+        // bare keys for engine-shipped default connections, plus poly-knob-path
+        // aliases (post-strip-prefix) for user-added destinations from the
+        // registry dropdown (e.g. 'poly.filter.cutoff' → 'filter.cutoff').
+        const voiceParamMap: Record<string, AudioParam> = {
+          amp:             vp.amp,
+          cutoff:          vp.cutoff,
+          pitch:           vp.pitch,
+          'filter.cutoff': vp.cutoff,
+          'amp.gain':      vp.amp,
+        };
+        const paramRanges: Record<string, { min: number; max: number }> = {
+          amp:             { min: 0,     max: 1     },
+          cutoff:          { min: 20,    max: 12000 },
+          pitch:           { min: -1200, max: 1200  },
+          'filter.cutoff': { min: 20,    max: 12000 },
+          'amp.gain':      { min: 0,     max: 1     },
+        };
         bindVoiceModulation(
           voiceMods,
           this.modHost.modulators,
-          { amp: vp.amp, cutoff: vp.cutoff, pitch: vp.pitch },
-          {
-            amp:    { min: 0,     max: 1     },
-            cutoff: { min: 20,    max: 12000 },
-            pitch:  { min: -1200, max: 1200  },
-          },
+          voiceParamMap,
+          paramRanges,
           this.ctx,
         );
         // Fire all modulator voices at the same start time as the audio voice.

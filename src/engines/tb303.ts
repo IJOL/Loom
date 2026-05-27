@@ -106,14 +106,14 @@ export class TB303Engine implements SynthEngine {
 
     const voiceMods = this.modHost.spawnVoice(ctx, () => this.bpm);
     const voiceParamMap: Record<string, AudioParam> = {
-      'tb-cutoff':    tb.cutoffParam,
-      'tb-resonance': tb.resonanceParam,
-      'tb-amp':       tb.ampParam,
+      cutoff:    tb.cutoffParam,
+      resonance: tb.resonanceParam,
+      amp:       tb.ampParam,
     };
     const paramRanges: Record<string, { min: number; max: number }> = {
-      'tb-cutoff':    { min: 80,  max: 8000 },
-      'tb-resonance': { min: 0.5, max: 30   },
-      'tb-amp':       { min: 0,   max: 1    },
+      cutoff:    { min: 20,  max: 12000 },
+      resonance: { min: 0.1, max: 25    },
+      amp:       { min: 0,   max: 1     },
     };
     bindVoiceModulation(voiceMods, this.modHost.modulators, voiceParamMap, paramRanges, ctx);
     recordVoiceMods(voiceMods);

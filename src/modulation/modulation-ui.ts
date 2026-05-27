@@ -64,11 +64,14 @@ function renderModCard(mod: ModulatorState, deps: ModulationUIDeps): HTMLElement
   head.appendChild(title);
 
   const enableBtn = document.createElement('button');
-  enableBtn.className = 'rnd' + (mod.enabled ? ' primary' : '');
-  enableBtn.textContent = mod.enabled ? 'ON' : 'OFF';
+  const refreshEnableUI = () => {
+    enableBtn.className = 'rnd' + (mod.enabled ? ' primary' : '');
+    enableBtn.textContent = mod.enabled ? 'ON' : 'OFF';
+  };
+  refreshEnableUI();
   enableBtn.addEventListener('click', () => {
     mod.enabled = !mod.enabled;
-    deps.onChange();
+    refreshEnableUI();
   });
   head.appendChild(enableBtn);
 
@@ -98,7 +101,7 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
       { value: 'saw',      label: 'Saw'  },
     ],
     initialValue: mod.waveform ?? 'sine',
-    onChange: (v) => { mod.waveform = v as Waveform; deps.onChange(); },
+    onChange: (v) => { mod.waveform = v as Waveform; },
   });
   deps.registerKnob(wave.handle);
   row.appendChild(wave.el);
@@ -109,7 +112,7 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
     min: 0.01, max: 40, step: 0.01,
     value: mod.rateHz ?? 4,
     defaultValue: 4,
-    onChange: (v) => { mod.rateHz = v; deps.onChange(); },
+    onChange: (v) => { mod.rateHz = v; },
     format: (v) => v < 1 ? `${v.toFixed(2)}Hz` : `${v.toFixed(1)}Hz`,
   });
   deps.registerKnob(rate);
@@ -119,11 +122,11 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
     id: `${deps.laneId}.mod.${mod.id}.syncToBpm`,
     label: 'SYNC',
     options: [
-      { value: 'off', label: 'Off' },
-      { value: 'on',  label: 'On'  },
+      { value: 'off', label: 'Free' },
+      { value: 'on',  label: 'Sync' },
     ],
     initialValue: mod.syncToBpm ? 'on' : 'off',
-    onChange: (v) => { mod.syncToBpm = v === 'on'; deps.onChange(); },
+    onChange: (v) => { mod.syncToBpm = v === 'on'; },
   });
   deps.registerKnob(sync.handle);
   row.appendChild(sync.el);
@@ -134,7 +137,7 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
     label: 'RATIO',
     options: ratioOpts,
     initialValue: mod.syncRatio ?? '1/4',
-    onChange: (v) => { mod.syncRatio = v; deps.onChange(); },
+    onChange: (v) => { mod.syncRatio = v; },
   });
   deps.registerKnob(ratio.handle);
   row.appendChild(ratio.el);
@@ -147,7 +150,7 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
       { value: 'bi',  label: '-1..+1' },
     ],
     initialValue: (mod.bipolar !== false) ? 'bi' : 'uni',
-    onChange: (v) => { mod.bipolar = v === 'bi'; deps.onChange(); },
+    onChange: (v) => { mod.bipolar = v === 'bi'; },
   });
   deps.registerKnob(bipolar.handle);
   row.appendChild(bipolar.el);
@@ -169,7 +172,7 @@ function renderAdsrConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLElem
       label, min, max, step: 0.001,
       value: (mod[field] as number | undefined) ?? def,
       defaultValue: def,
-      onChange: (v) => { (mod as unknown as Record<string, unknown>)[field] = v; deps.onChange(); },
+      onChange: (v) => { (mod as unknown as Record<string, unknown>)[field] = v; },
       format: fmt,
     });
     deps.registerKnob(k);
@@ -239,7 +242,6 @@ function renderConnectionRow(mod: ModulatorState, conn: import('./types').Modula
     value: conn.depth, defaultValue: 0,
     onChange: (v) => {
       deps.host.setConnection(mod.id, { ...conn, depth: v });
-      deps.onChange();
     },
     format: (v) => v.toFixed(2),
   });
