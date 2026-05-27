@@ -5,7 +5,10 @@
 
 import type { SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, ParamDef, EngineUIContext } from './engine-types';
 import { registerEngine, registerEngineFactory } from './registry';
-import { createKnob } from '../core/knob';
+import { createKnob, type KnobHandle } from '../core/knob';
+import { ModulationHostImpl, bindVoiceModulation } from '../modulation/modulation-host';
+import { makeDefaultLFO, makeDefaultADSR, type ModulatorVoice } from '../modulation/types';
+import { renderModulatorsPanel } from '../modulation/modulation-ui';
 
 interface FMAlgorithm {
   id: number;
@@ -70,6 +73,7 @@ class FMVoice implements Voice {
     private getOp: (i: number) => OpParams,
     private algo: FMAlgorithm,
     private feedback: number,
+    private voiceMods: Map<string, ModulatorVoice>,
   ) {
     this.finalMix = ctx.createGain();
     this.finalMix.connect(output);
@@ -97,7 +101,22 @@ class FMVoice implements Voice {
     }
   }
 
+  /** Final-mix output gain — useful destination for amp-style modulation. */
+  get mixGainParam(): AudioParam { return this.finalMix.gain; }
+  /** Op1 output level — useful destination for tremolo/level-mod on the main carrier. */
+  get op1LevelParam(): AudioParam { return this.outGain[0].gain; }
+  /** Op2 output level — useful destination for modulation-index wobble in serial/parallel algos. */
+  get op2LevelParam(): AudioParam { return this.outGain[1].gain; }
+  /** Op1 oscillator detune — useful destination for pitch vibrato. */
+  get op1DetuneParam(): AudioParam { return this.osc[0].detune; }
+
   trigger(midi: number, time: number, options: VoiceTriggerOptions): void {
+    // Fire modulator voices first so their AudioParam contributions land
+    // before the oscillators start.
+    for (const mv of this.voiceMods.values()) {
+      mv.trigger(time, { gateDuration: options.gateDuration, accent: options.accent });
+    }
+
     const freq = 440 * Math.pow(2, (midi - 69) / 12);
     const velMul = options.accent ? 1.3 : 1.0;
 
@@ -152,7 +171,9 @@ class FMVoice implements Voice {
     }
   }
 
-  release(_time: number): void {}
+  release(time: number): void {
+    for (const mv of this.voiceMods.values()) mv.release(time);
+  }
   connect(_dest: AudioNode): void {}
 
   dispose(): void {
@@ -162,6 +183,7 @@ class FMVoice implements Voice {
     if (this.fbGain) this.fbGain.disconnect();
     if (this.fbDelay) this.fbDelay.disconnect();
     this.finalMix.disconnect();
+    for (const mv of this.voiceMods.values()) mv.dispose();
   }
 }
 
@@ -183,7 +205,22 @@ class FMEngine implements SynthEngine {
   readonly editor = 'piano-roll' as const;
   readonly presets: import('./engine-types').EnginePreset[] = [];
 
-  applyPreset(_name: string): void {}
+  /** Tempo for LFO BPM sync. main.ts can update this at runtime. */
+  bpm = 120;
+
+  private modHost = new ModulationHostImpl([
+    makeDefaultLFO('lfo1'),
+    makeDefaultADSR('adsr1'),
+  ]);
+
+  /** Persistence + cross-module access to modulator state. */
+  get modulators(): ModulationHostImpl { return this.modHost; }
+
+  applyPreset(name: string): void {
+    const preset = this.presets.find((p) => p.name === name);
+    if (!preset) return;
+    if (preset.modulators) this.modHost.deserialize(preset.modulators);
+  }
 
   private algorithmIndex = 0;
   private feedback = 0;
@@ -195,13 +232,29 @@ class FMEngine implements SynthEngine {
   ];
 
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
-    return new FMVoice(
+    const voiceMods = this.modHost.spawnVoice(ctx, () => this.bpm);
+    const voice = new FMVoice(
       ctx,
       output,
       (i) => this.opParams[i],
       ALGORITHMS[this.algorithmIndex],
       this.feedback,
+      voiceMods,
     );
+    const voiceParamMap: Record<string, AudioParam> = {
+      'fm-mix':      voice.mixGainParam,
+      'fm-op1-level': voice.op1LevelParam,
+      'fm-op2-level': voice.op2LevelParam,
+      'fm-op1-detune': voice.op1DetuneParam,
+    };
+    const paramRanges: Record<string, { min: number; max: number }> = {
+      'fm-mix':       { min: 0,    max: 1    },
+      'fm-op1-level': { min: 0,    max: 1    },
+      'fm-op2-level': { min: 0,    max: 1    },
+      'fm-op1-detune':{ min: -100, max: 100  },
+    };
+    bindVoiceModulation(voiceMods, this.modHost.modulators, voiceParamMap, paramRanges, ctx);
+    return voice;
   }
 
   buildSequencer(_c: HTMLElement, _n: number): EngineSequencer {
@@ -214,6 +267,20 @@ class FMEngine implements SynthEngine {
     container.appendChild(this.buildAlgoSection());
     for (let i = 0; i < 4; i++) {
       container.appendChild(this.buildOpSection(i));
+    }
+
+    if (ctx) {
+      renderModulatorsPanel(container, {
+        engineId: this.id,
+        laneId: ctx.laneId,
+        host: this.modHost,
+        registry: ctx.registry as Map<string, KnobHandle>,
+        registerKnob: (k) => ctx.registerKnob(k),
+        onChange: () => {
+          container.innerHTML = '';
+          this.buildParamUI(container, ctx);
+        },
+      });
     }
   }
   private uiCtx?: EngineUIContext;
