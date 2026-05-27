@@ -118,18 +118,17 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
   deps.registerKnob(rate);
   row.appendChild(rate.el);
 
-  const sync = createSelectControl({
-    id: `${deps.laneId}.mod.${mod.id}.syncToBpm`,
-    label: 'SYNC',
-    options: [
-      { value: 'off', label: 'Free' },
-      { value: 'on',  label: 'Sync' },
-    ],
-    initialValue: mod.syncToBpm ? 'on' : 'off',
-    onChange: (v) => { mod.syncToBpm = v === 'on'; },
+  const syncBtn = document.createElement('button');
+  const refreshSyncBtn = () => {
+    syncBtn.className = 'rnd' + (mod.syncToBpm ? ' primary' : '');
+    syncBtn.textContent = mod.syncToBpm ? 'SYNC' : 'FREE';
+  };
+  refreshSyncBtn();
+  syncBtn.addEventListener('click', () => {
+    mod.syncToBpm = !mod.syncToBpm;
+    refreshSyncBtn();
   });
-  deps.registerKnob(sync.handle);
-  row.appendChild(sync.el);
+  row.appendChild(syncBtn);
 
   const ratioOpts = Object.keys(SYNC_RATIO_MAP).map((k) => ({ value: k, label: k }));
   const ratio = createSelectControl({
