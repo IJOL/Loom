@@ -8,32 +8,40 @@
 // → GainNode (loop gain < 1) → back into the DelayNode. Output tapped after
 // the delay so the user hears the resonance, not just the excitation.
 
-import type { SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, ParamDef, EngineUIContext } from './engine-types';
+import type { SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, EngineUIContext } from './engine-types';
+import type { EngineParamSpec } from './engine-params';
 import { registerEngine, registerEngineFactory } from './registry';
 import { createKnob, type KnobHandle } from '../core/knob';
-import { ModulationHostImpl, bindVoiceModulation } from '../modulation/modulation-host';
+import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR, type ModulatorVoice } from '../modulation/types';
 import { recordVoiceMods } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
 
-const KARPLUS_PARAMS: ParamDef[] = [
-  { id: 'ks-damping',    label: 'Damping',    min: 0,    max: 1, default: 0.5 },
-  { id: 'ks-brightness', label: 'Brightness', min: 0,    max: 1, default: 0.65 },
-  { id: 'ks-excite',     label: 'Excite',     min: 0.001,max: 0.1, default: 0.01, unit: 's' },
-  { id: 'ks-noiseTone',  label: 'Noise Tone', min: 0,    max: 1, default: 0.5 },
-  { id: 'ks-attack',     label: 'Attack',     min: 0.001,max: 0.5, default: 0.005, unit: 's' },
-  { id: 'ks-release',    label: 'Release',    min: 0.05, max: 4, default: 0.5, unit: 's' },
-  { id: 'ks-level',      label: 'Level',      min: 0,    max: 1, default: 0.8 },
+// Unified-param schema. Dot-namespaced ids that map consistently between
+// knob layer and voice AudioParam destinations (no more ks-* split between
+// knobs and voiceParamMap).
+const KARPLUS_PARAMS: EngineParamSpec[] = [
+  // String resonator
+  { id: 'string.damping',    label: 'Damping',    kind: 'continuous', min: 0,     max: 1,   default: 0.5 },
+  { id: 'string.brightness', label: 'Brightness', kind: 'continuous', min: 0,     max: 1,   default: 0.65 },
+  // Excitation burst
+  { id: 'excite.time',       label: 'Excite',     kind: 'continuous', min: 0.001, max: 0.1, default: 0.01, unit: 's' },
+  { id: 'excite.tone',       label: 'Noise Tone', kind: 'continuous', min: 0,     max: 1,   default: 0.5 },
+  // Amp envelope
+  { id: 'amp.attack',        label: 'Attack',     kind: 'continuous', min: 0.001, max: 0.5, default: 0.005, unit: 's' },
+  { id: 'amp.release',       label: 'Release',    kind: 'continuous', min: 0.05,  max: 4,   default: 0.5,   unit: 's' },
+  { id: 'amp.level',         label: 'Level',      kind: 'continuous', min: 0,     max: 1,   default: 0.8 },
 ];
 
 class KarplusVoice implements Voice {
   private noise: AudioBufferSourceNode;
   private noiseGain: GainNode;
-  private noiseFilter: BiquadFilterNode;
+  public readonly noiseFilter: BiquadFilterNode;
   private delay: DelayNode;
-  private loopFilter: BiquadFilterNode;
+  public readonly loopFilter: BiquadFilterNode;
   private loopGain: GainNode;
-  private amp: GainNode;
+  public readonly amp: GainNode;
+  private envAmp!: ConstantSourceNode;
   private disposed = false;
 
   constructor(
@@ -66,6 +74,13 @@ class KarplusVoice implements Voice {
     this.amp = ctx.createGain();
     this.amp.gain.value = 0;
 
+    // Internal amp envelope source. Per-note envelope writes to envAmp.offset,
+    // and external modulators sum on top via getAudioParams().get('amp.level').
+    this.envAmp = ctx.createConstantSource();
+    this.envAmp.offset.value = 0;
+    this.envAmp.start();
+    this.envAmp.connect(this.amp.gain);
+
     // Excitation path: noise → noiseGain → noiseFilter → delay input
     this.noise.connect(this.noiseGain).connect(this.noiseFilter).connect(this.delay);
     // Feedback loop: delay → loopFilter → loopGain → delay (with implicit 1-sample delay)
@@ -74,12 +89,13 @@ class KarplusVoice implements Voice {
     this.delay.connect(this.amp).connect(output);
   }
 
-  /** Final amp gain — most musical destination for LFO/ADSR. */
-  get ampParam(): AudioParam { return this.amp.gain; }
-  /** Loop-filter cutoff — drives damping/cutoff wobble (classic Karplus mod). */
-  get dampingParam(): AudioParam { return this.loopFilter.frequency; }
-  /** Noise excitation pre-filter cutoff — color the attack burst. */
-  get exciteToneParam(): AudioParam { return this.noiseFilter.frequency; }
+  getAudioParams(): Map<string, AudioParam> {
+    const m = new Map<string, AudioParam>();
+    m.set('amp.level', this.amp.gain);
+    m.set('string.damping', this.loopFilter.frequency);
+    m.set('excite.tone', this.noiseFilter.frequency);
+    return m;
+  }
 
   trigger(midi: number, time: number, options: VoiceTriggerOptions): void {
     if (this.disposed) return;
@@ -92,13 +108,13 @@ class KarplusVoice implements Voice {
     const freq = 440 * Math.pow(2, (midi - 69) / 12);
     const velMul = options.accent ? 1.4 : 1.0;
 
-    const damping    = this.getParam('ks-damping');     // 0..1, 0 = ringy, 1 = dead
-    const brightness = this.getParam('ks-brightness');  // 0..1, loop LP cutoff scale
-    const exciteDur  = Math.max(0.001, this.getParam('ks-excite'));
-    const noiseTone  = this.getParam('ks-noiseTone');   // 0 = dark, 1 = bright
-    const attack     = Math.max(0.001, this.getParam('ks-attack'));
-    const release    = Math.max(0.05, this.getParam('ks-release'));
-    const level      = this.getParam('ks-level');
+    const damping    = this.getParam('string.damping');     // 0..1, 0 = ringy, 1 = dead
+    const brightness = this.getParam('string.brightness');  // 0..1, loop LP cutoff scale
+    const exciteDur  = Math.max(0.001, this.getParam('excite.time'));
+    const noiseTone  = this.getParam('excite.tone');        // 0 = dark, 1 = bright
+    const attack     = Math.max(0.001, this.getParam('amp.attack'));
+    const release    = Math.max(0.05, this.getParam('amp.release'));
+    const level      = this.getParam('amp.level');
 
     // Loop tuning: delay = 1/freq, plus 1-sample compensation handled by Web Audio
     const period = 1 / Math.max(20, freq);
@@ -134,19 +150,19 @@ class KarplusVoice implements Voice {
     this.noiseGain.gain.setValueAtTime(exciteAmp, time + exciteDur);
     this.noiseGain.gain.linearRampToValueAtTime(0, time + exciteDur + 0.001);
 
-    // Amp envelope. Karplus output (delay tap) is quieter than osc-based
-    // engines so we scale generously here — multiple voices can still mix
-    // without clipping because the loop now decays naturally.
+    // Amp envelope on the internal ConstantSource — modulators on amp.level
+    // sum into this same destination via getAudioParams().
     const peakAmp = 1.4 * level * velMul;
-    this.amp.gain.setValueAtTime(0, time);
-    this.amp.gain.linearRampToValueAtTime(peakAmp, time + attack);
+    this.envAmp.offset.cancelScheduledValues(time);
+    this.envAmp.offset.setValueAtTime(0, time);
+    this.envAmp.offset.linearRampToValueAtTime(peakAmp, time + attack);
 
-    // Release: ramp BOTH amp and loopGain to zero, so the internal loop dies
-    // instead of ringing silently and accumulating across rapid notes.
+    // Release: ramp BOTH amp env and loopGain to zero, so the internal loop
+    // dies instead of ringing silently and accumulating across rapid notes.
     const releaseStart = time + options.gateDuration;
-    this.amp.gain.cancelScheduledValues(releaseStart);
-    this.amp.gain.setValueAtTime(peakAmp, releaseStart);
-    this.amp.gain.exponentialRampToValueAtTime(0.0001, releaseStart + release);
+    this.envAmp.offset.cancelScheduledValues(releaseStart);
+    this.envAmp.offset.setValueAtTime(peakAmp, releaseStart);
+    this.envAmp.offset.exponentialRampToValueAtTime(0.0001, releaseStart + release);
     // Fast kill of the internal loop at release — under 200 ms regardless of
     // release length, so the string can't keep echoing under the muted amp
     // and accumulate with subsequent notes.
@@ -172,6 +188,7 @@ class KarplusVoice implements Voice {
     if (this.disposed) return;
     this.disposed = true;
     try { this.noise.stop(); } catch {}
+    try { this.envAmp.stop(); } catch {}
     this.noise.disconnect();
     this.noiseGain.disconnect();
     this.noiseFilter.disconnect();
@@ -179,6 +196,7 @@ class KarplusVoice implements Voice {
     this.loopFilter.disconnect();
     this.loopGain.disconnect();
     this.amp.disconnect();
+    this.envAmp.disconnect();
     for (const mv of this.voiceMods.values()) mv.dispose();
   }
 }
@@ -192,7 +210,7 @@ class KarplusSequencer implements EngineSequencer {
   dispose(): void {}
 }
 
-class KarplusEngine implements SynthEngine {
+export class KarplusEngine implements SynthEngine {
   readonly id = 'karplus';
   readonly name = 'Karplus (Physical)';
   readonly type = 'polyhost' as const;
@@ -219,8 +237,13 @@ class KarplusEngine implements SynthEngine {
     for (const p of KARPLUS_PARAMS) this.paramValues[p.id] = p.default;
   }
 
-  setParam(id: string, value: number): void { this.paramValues[id] = value; }
-  getParam(id: string): number { return this.paramValues[id] ?? 0; }
+  getBaseValue(id: string): number {
+    return this.paramValues[id] ?? KARPLUS_PARAMS.find(p => p.id === id)?.default ?? 0;
+  }
+
+  setBaseValue(id: string, v: number): void {
+    this.paramValues[id] = v;
+  }
 
   applyPreset(name: string): void {
     const preset = this.presets.find((p) => p.name === name);
@@ -231,18 +254,7 @@ class KarplusEngine implements SynthEngine {
 
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
     const voiceMods = this.modHost.spawnVoice(ctx, () => this.bpm);
-    const voice = new KarplusVoice(ctx, output, (id) => this.getParam(id), voiceMods);
-    const voiceParamMap: Record<string, AudioParam> = {
-      'ks-amp':       voice.ampParam,
-      'ks-loop-cut':  voice.dampingParam,
-      'ks-excite-cut': voice.exciteToneParam,
-    };
-    const paramRanges: Record<string, { min: number; max: number }> = {
-      'ks-amp':        { min: 0,   max: 1     },
-      'ks-loop-cut':   { min: 100, max: 12000 },
-      'ks-excite-cut': { min: 100, max: 12000 },
-    };
-    bindVoiceModulation(voiceMods, this.modHost.modulators, voiceParamMap, paramRanges, ctx);
+    const voice = new KarplusVoice(ctx, output, (id) => this.getBaseValue(id), voiceMods);
     recordVoiceMods(voiceMods);
     return voice;
   }
@@ -263,7 +275,6 @@ class KarplusEngine implements SynthEngine {
       renderModulatorsPanel(container, {
         engineId: this.id,
         laneId: ctx.laneId,
-        extraPrefixes: ['ks'],
         host: this.modHost,
         registry: ctx.registry as Map<string, KnobHandle>,
         registerKnob: (k) => ctx.registerKnob(k),
@@ -277,13 +288,13 @@ class KarplusEngine implements SynthEngine {
 
   randomize(): void {
     const rnd = (a: number, b: number) => a + Math.random() * (b - a);
-    this.paramValues['ks-damping']    = rnd(0.05, 0.55);   // mostly ringy
-    this.paramValues['ks-brightness'] = rnd(0.3, 0.9);
-    this.paramValues['ks-excite']     = rnd(0.002, 0.03);
-    this.paramValues['ks-noiseTone']  = rnd(0.2, 0.85);
-    this.paramValues['ks-attack']     = rnd(0.001, 0.02);
-    this.paramValues['ks-release']    = rnd(0.3, 2.5);
-    this.paramValues['ks-level']      = rnd(0.6, 0.9);
+    this.paramValues['string.damping']    = rnd(0.05, 0.55);   // mostly ringy
+    this.paramValues['string.brightness'] = rnd(0.3, 0.9);
+    this.paramValues['excite.time']       = rnd(0.002, 0.03);
+    this.paramValues['excite.tone']       = rnd(0.2, 0.85);
+    this.paramValues['amp.attack']        = rnd(0.001, 0.02);
+    this.paramValues['amp.release']       = rnd(0.3, 2.5);
+    this.paramValues['amp.level']         = rnd(0.6, 0.9);
   }
 
   private buildStringSection(): HTMLElement {
@@ -295,8 +306,8 @@ class KarplusEngine implements SynthEngine {
     row.appendChild(lab);
     const knobRow = document.createElement('div');
     knobRow.className = 'knob-row';
-    knobRow.appendChild(this.makeKnob('ks-damping',    (v) => `${Math.round(v * 100)}%`));
-    knobRow.appendChild(this.makeKnob('ks-brightness', (v) => `${Math.round(v * 100)}%`));
+    knobRow.appendChild(this.makeKnob('string.damping',    (v) => `${Math.round(v * 100)}%`));
+    knobRow.appendChild(this.makeKnob('string.brightness', (v) => `${Math.round(v * 100)}%`));
     row.appendChild(knobRow);
     return row;
   }
@@ -310,8 +321,8 @@ class KarplusEngine implements SynthEngine {
     row.appendChild(lab);
     const knobRow = document.createElement('div');
     knobRow.className = 'knob-row';
-    knobRow.appendChild(this.makeKnob('ks-excite',    (v) => `${Math.round(v * 1000)}ms`));
-    knobRow.appendChild(this.makeKnob('ks-noiseTone', (v) => `${Math.round(v * 100)}%`));
+    knobRow.appendChild(this.makeKnob('excite.time', (v) => `${Math.round(v * 1000)}ms`));
+    knobRow.appendChild(this.makeKnob('excite.tone', (v) => `${Math.round(v * 100)}%`));
     row.appendChild(knobRow);
     return row;
   }
@@ -325,24 +336,22 @@ class KarplusEngine implements SynthEngine {
     row.appendChild(lab);
     const knobRow = document.createElement('div');
     knobRow.className = 'knob-row';
-    knobRow.appendChild(this.makeKnob('ks-attack',  (v) => `${Math.round(v * 1000)}ms`));
-    knobRow.appendChild(this.makeKnob('ks-release', (v) => v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed(2)}s`));
-    knobRow.appendChild(this.makeKnob('ks-level',   (v) => `${Math.round(v * 100)}%`));
+    knobRow.appendChild(this.makeKnob('amp.attack',  (v) => `${Math.round(v * 1000)}ms`));
+    knobRow.appendChild(this.makeKnob('amp.release', (v) => v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed(2)}s`));
+    knobRow.appendChild(this.makeKnob('amp.level',   (v) => `${Math.round(v * 100)}%`));
     row.appendChild(knobRow);
     return row;
   }
 
   private makeKnob(id: string, format: (v: number) => string): HTMLElement {
     const p = KARPLUS_PARAMS.find((x) => x.id === id)!;
-    const fullId = this.uiCtx?.idPrefix ? `${this.uiCtx.idPrefix}.${id}` : undefined;
     const k = createKnob({
-      id: fullId,
       label: p.label,
       min: p.min, max: p.max,
-      value: this.getParam(id),
+      value: this.getBaseValue(id),
       defaultValue: p.default,
       format,
-      onChange: (v) => this.setParam(id, v),
+      onChange: (v) => this.setBaseValue(id, v),
     });
     this.uiCtx?.registerKnob(k);
     return k.el;
