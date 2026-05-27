@@ -1,12 +1,14 @@
 // Polyphonic subtractive synth — 2 oscillators + sub + noise → drive →
 // multimode filter (with ADSR + key tracking) → amp (with ADSR) → output.
-// Two LFOs are routable to pitch / cutoff / amp.
+// Modulation (LFOs, extra envelopes) is supplied externally by the
+// SubtractiveEngine's ModulationHost and summed into the per-voice
+// AudioParams exposed via `triggerWithBinding`.
 //
 // Each `trigger()` allocates a fresh per-note voice subgraph that schedules
 // the entire envelope at sample-accurate times and frees itself when the
 // release tail ends.
 
-import { type SyncDiv, syncDivToHz } from '../core/fx';
+import { type SyncDiv } from '../core/fx';
 
 export type LfoTarget = 'off' | 'pitch' | 'cutoff' | 'amp';
 export type LfoSync   = 'free' | SyncDiv;
@@ -61,7 +63,7 @@ export interface PolyVoiceParams {
 
 export class PolySynth {
   params: PolySynthParams;
-  bpm = 130;  // updated externally; used when an LFO has a sync division set
+  bpm = 130;  // updated externally; retained for downstream consumers (e.g. sync-aware modulators)
   private noiseBuffer: AudioBuffer;
 
   constructor(private ctx: AudioContext, private destination: AudioNode) {
@@ -205,10 +207,7 @@ export class PolySynth {
     envAmp.offset.linearRampToValueAtTime(peakAmp, time + aa);
     envAmp.offset.linearRampToValueAtTime(sustainAmp, time + aa + ad);
 
-    // Tremolo gain (LFO->amp target writes here; defaults to 1.0 passthrough)
-    const tremolo = ctx.createGain();
-    tremolo.gain.value = 1;
-    filter.connect(amp).connect(tremolo).connect(this.destination);
+    filter.connect(amp).connect(this.destination);
 
     const releaseStart = Math.max(time + aa + ad, time + gateDuration);
     envAmp.offset.setValueAtTime(sustainAmp, releaseStart);
@@ -218,40 +217,10 @@ export class PolySynth {
 
     const stopTime = releaseStart + Math.max(ar, fr) + 0.05;
 
-    // ── LFOs (per-voice, routed to chosen target) ────────────────────────
-    const lfoNodes: { osc: OscillatorNode; gain: GainNode }[] = [];
-    const setupLfo = (lp: PolySynthParams['lfo1']) => {
-      if (lp.target === 'off' || lp.depth === 0) return;
-      const lfo = ctx.createOscillator();
-      lfo.type = lp.wave;
-      // BPM-synced rate overrides the manual Hz when sync is set to anything but 'free'.
-      const syncHz = (lp.sync && lp.sync !== 'free') ? syncDivToHz(this.bpm, lp.sync) : 0;
-      lfo.frequency.value = syncHz > 0 ? syncHz : lp.rate;
-      const lfoGain = ctx.createGain();
-      lfo.connect(lfoGain);
-      switch (lp.target) {
-        case 'pitch':
-          // Modulate osc1/osc2 detune (cents) — sub is fixed pitch
-          lfoGain.gain.value = lp.depth * 1200;  // up to 1 octave
-          lfoGain.connect(osc1.detune);
-          lfoGain.connect(osc2.detune);
-          break;
-        case 'cutoff':
-          lfoGain.gain.value = lp.depth * 6000;  // Hz
-          lfoGain.connect(filter.frequency);
-          break;
-        case 'amp':
-          // Tremolo: oscillates tremolo.gain between (1-depth)..(1+depth)
-          lfoGain.gain.value = lp.depth;
-          lfoGain.connect(tremolo.gain);
-          break;
-      }
-      lfo.start(time);
-      lfo.stop(stopTime);
-      lfoNodes.push({ osc: lfo, gain: lfoGain });
-    };
-    setupLfo(p.lfo1);
-    setupLfo(p.lfo2);
+    // params.lfo1 / params.lfo2 state is retained for save/load compatibility
+    // but the engine no longer spawns oscillator nodes from it — modulation
+    // arrives via the SubtractiveEngine's ModulationHost and sums into the
+    // per-voice AudioParams exposed above (amp.gain, filter.frequency, etc.).
 
     osc1.start(time); osc2.start(time); sub.start(time);
     osc1.stop(stopTime); osc2.stop(stopTime); sub.stop(stopTime);
