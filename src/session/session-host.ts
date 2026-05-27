@@ -113,6 +113,7 @@ export class SessionHost {
   // ── Public API for save/load ─────────────────────────────────────────────
 
   getStateForSave(): SessionState {
+    this.collectEngineState();
     return cloneSessionState(this.state);
   }
 
@@ -125,7 +126,30 @@ export class SessionHost {
     for (const lane of this.state.lanes) {
       this.laneStates.set(lane.id, emptyLanePlayState(lane.id));
     }
+    this.applyEngineState();
     this.renderWithMixer();
+  }
+
+  private collectEngineState(): void {
+    for (const lane of this.state.lanes) {
+      const engine = this.deps.ensureLaneEngine?.(lane.id, lane.engineId);
+      const host = (engine as { modulators?: { serialize(): unknown[] } } | undefined)?.modulators;
+      if (host) {
+        lane.engineState = {
+          modulators: host.serialize() as import('../modulation/types').ModulatorState[],
+        };
+      }
+    }
+  }
+
+  private applyEngineState(): void {
+    for (const lane of this.state.lanes) {
+      const mods = lane.engineState?.modulators;
+      if (!mods) continue;
+      const engine = this.deps.ensureLaneEngine?.(lane.id, lane.engineId);
+      const host = (engine as { modulators?: { deserialize(s: unknown[]): void } } | undefined)?.modulators;
+      if (host) host.deserialize(mods);
+    }
   }
 
   // ── Rendering ────────────────────────────────────────────────────────────

@@ -29,6 +29,9 @@ export interface SessionLane {
   name?: string;
   clips: (SessionClip | null)[];
   launchQuantize?: LaunchQuantize;
+  engineState?: {
+    modulators?: import('../modulation/types').ModulatorState[];
+  };
 }
 
 export interface SessionScene {
