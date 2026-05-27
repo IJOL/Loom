@@ -32,6 +32,9 @@ export interface KnobHandle {
   // (drag/wheel/dblclick); false for programmatic setValue (automation, presets).
   // Used by the REC button to record only what the user touches.
   onValueChanged?: (v: number, fromUser: boolean) => void;
+  /** Sets the additive modulation offset in normalized -1..+1 (0 = no mod).
+   *  Renders as a thin amber ring overlay; does NOT change the base value. */
+  setModulationOffset: (offsetNorm: number) => void;
 }
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -70,6 +73,12 @@ export function createKnob(opts: KnobOpts): KnobHandle {
   if (opts.color) valArc.style.stroke = opts.color;
   svg.appendChild(valArc);
 
+  const modArc = document.createElementNS(SVG_NS, 'path');
+  modArc.setAttribute('class', 'knob-modulation');
+  modArc.style.stroke = '#ffa726';
+  modArc.style.opacity = '0';
+  svg.appendChild(modArc);
+
   const body = document.createElementNS(SVG_NS, 'circle');
   body.setAttribute('cx', String(cx));
   body.setAttribute('cy', String(cy));
@@ -93,10 +102,15 @@ export function createKnob(opts: KnobOpts): KnobHandle {
   wrap.appendChild(valDisp);
 
   let value = opts.value;
+  let lastModOffset = 0;
   const handle: KnobHandle = {
     el: wrap,
     setValue: (v) => setValue(v, true, false),
     meta: { id: opts.id, label: opts.label, min: opts.min, max: opts.max },
+    setModulationOffset: (offset: number) => {
+      lastModOffset = offset;
+      updateModArc(value, offset);
+    },
   };
 
   function render() {
@@ -107,11 +121,25 @@ export function createKnob(opts: KnobOpts): KnobHandle {
     valDisp.textContent = opts.format ? opts.format(value) : value.toFixed(2);
   }
 
+  function updateModArc(v: number, offset: number) {
+    if (Math.abs(offset) < 1e-4) {
+      modArc.style.opacity = '0';
+      return;
+    }
+    const range = opts.max - opts.min;
+    const modValue = Math.max(opts.min, Math.min(opts.max, v + offset * range));
+    const fromAng = -135 + 270 * (v - opts.min) / range;
+    const toAng   = -135 + 270 * (modValue - opts.min) / range;
+    modArc.setAttribute('d', arcPath(cx, cy, trackR + 2, Math.min(fromAng, toAng), Math.max(fromAng, toAng)));
+    modArc.style.opacity = '0.85';
+  }
+
   function setValue(v: number, fire = true, fromUser = false) {
     const clamped = clamp(v, opts.min, opts.max);
     const stepped = opts.step ? Math.round(clamped / opts.step) * opts.step : clamped;
     value = stepped;
     render();
+    updateModArc(value, lastModOffset);
     if (fire) opts.onChange(value);
     if (handle.onValueChanged) handle.onValueChanged(value, fromUser);
   }
