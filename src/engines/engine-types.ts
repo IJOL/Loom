@@ -45,6 +45,7 @@ export interface EngineUIContext {
 export interface EnginePreset {
   name: string;
   params: Record<string, number>;
+  modulators?: import('../modulation/types').ModulatorState[];
 }
 
 export interface SynthEngine {
