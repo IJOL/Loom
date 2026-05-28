@@ -173,7 +173,7 @@ const stripFor = (t: TrackId | string): ChannelStrip => {
   // Slug session lanes — single source of truth.
   const res = laneResources.get(t as string);
   if (res) return res.strip;
-  // Legacy mixer track ids still emitted by the classic step-grid mixer:
+  // Short alias track ids used by TrackId / muteState / soloState:
   // map them onto the canonical slug lane ids.
   if (t === 'bass')    return laneResources.get(LANE_ID_BASS)!.strip;
   if (t === 'poly')    return laneResources.get(LANE_ID_POLY)!.strip;
