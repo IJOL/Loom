@@ -12,8 +12,8 @@ export interface CopyEndpoint { id: string; label: string; }
 export function listCopyEndpoints(deps: CopyNotesDeps): CopyEndpoint[] {
   const { seq } = deps;
   const out: CopyEndpoint[] = [
-    { id: 'bass', label: `Bass 303 (${seq.pattern.bassMode})` },
-    { id: 'main', label: `Main Poly (${seq.pattern.polyMode})` },
+    { id: 'tb-303-1', label: `Bass 303 (${seq.pattern.bassMode})` },
+    { id: 'subtractive-1', label: `Main Poly (${seq.pattern.polyMode})` },
   ];
   for (const t of seq.pattern.extraPolyTracks) {
     out.push({ id: t.id, label: `${t.name || t.id} (piano)` });
@@ -24,12 +24,12 @@ export function listCopyEndpoints(deps: CopyNotesDeps): CopyEndpoint[] {
 /** Read notes from any endpoint, converting from its native format. */
 export function readEndpointAsNotes(deps: CopyNotesDeps, id: string): NoteEvent[] {
   const { seq } = deps;
-  if (id === 'bass') {
+  if (id === 'tb-303-1') {
     return seq.pattern.bassMode === 'piano'
       ? seq.pattern.bassNotes.map((n) => ({ ...n }))
       : bassStepsToNotes(seq.pattern.bass);
   }
-  if (id === 'main') {
+  if (id === 'subtractive-1') {
     return seq.pattern.polyMode === 'piano'
       ? seq.pattern.polyNotes.map((n) => ({ ...n }))
       : stepsToNotes(seq.pattern.melody);
@@ -42,12 +42,12 @@ export function readEndpointAsNotes(deps: CopyNotesDeps, id: string): NoteEvent[
 export function writeNotesToEndpoint(deps: CopyNotesDeps, id: string, notes: NoteEvent[]): void {
   const { seq } = deps;
   const cloned = notes.map((n) => ({ ...n }));
-  if (id === 'bass') {
+  if (id === 'tb-303-1') {
     if (seq.pattern.bassMode === 'piano') seq.pattern.bassNotes = cloned;
     else seq.pattern.bass = notesToBassSteps(cloned, seq.pattern.length);
     return;
   }
-  if (id === 'main') {
+  if (id === 'subtractive-1') {
     if (seq.pattern.polyMode === 'piano') seq.pattern.polyNotes = cloned;
     else seq.pattern.melody = notesToPolySteps(cloned, seq.pattern.length);
     return;
@@ -61,8 +61,8 @@ export function refreshCopyTrackSelects(deps: CopyNotesDeps): void {
   const toSel   = document.getElementById('copy-track-to')   as HTMLSelectElement | null;
   if (!fromSel || !toSel) return;
   const endpoints = listCopyEndpoints(deps);
-  const prevFrom = fromSel.value || 'bass';
-  const prevTo   = toSel.value   || 'main';
+  const prevFrom = fromSel.value || 'tb-303-1';
+  const prevTo   = toSel.value   || 'subtractive-1';
   fromSel.innerHTML = '';
   toSel.innerHTML = '';
   for (const e of endpoints) {

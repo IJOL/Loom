@@ -72,7 +72,7 @@ function randomizePolyLaneNotes(deps: RandomizeUIDeps, laneId: string): void {
   const { seq } = deps;
   const len = seq.pattern.length;
 
-  if (laneId === 'main') {
+  if (laneId === 'subtractive-1') {
     if (seq.pattern.polyMode === 'piano') {
       // Sparse piano-roll: ~30% step density, notes of 1-2 steps duration
       const out: NoteEvent[] = [];
