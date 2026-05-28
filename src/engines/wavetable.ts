@@ -112,9 +112,15 @@ class WavetableVoice implements Voice {
     this.oscA.detune.setValueAtTime(-detune, time);
     this.oscB.detune.setValueAtTime(detune, time);
 
-    // Equal-power crossfade so total energy stays roughly constant across morph
-    const gA = Math.cos(morph * Math.PI * 0.5) * velMul;
-    const gB = Math.sin(morph * Math.PI * 0.5) * velMul;
+    // Equal-power crossfade so total energy stays roughly constant across morph.
+    // OUTPUT_TRIM (0.6) holds the post-accent peak below 0 dBFS at C3 with
+    // accent + cutoff fully open + max resonance (Q=20.5), giving the filter
+    // room to ring without hard-clipping the engine output. This mirrors the
+    // carrier-level trim in fm.ts (* 0.25). Without it the engine relies on
+    // a downstream master trim to stay below unity.
+    const OUTPUT_TRIM = 0.6;
+    const gA = Math.cos(morph * Math.PI * 0.5) * velMul * OUTPUT_TRIM;
+    const gB = Math.sin(morph * Math.PI * 0.5) * velMul * OUTPUT_TRIM;
     this.gainA.gain.setValueAtTime(gA, time);
     this.gainB.gain.setValueAtTime(gB, time);
 
@@ -125,11 +131,26 @@ class WavetableVoice implements Voice {
     this.filter.Q.setValueAtTime(0.5 + res * 20, time);
     this.envCutoff.offset.setValueAtTime(baseHz, time);
 
-    // Amp base stays at 0; the modulator-driven amp envelope (or default ADSR
-    // routed to amp.gain) supplies gating. envAmp.offset is the internal env
-    // contribution slot — left at 0 here since wavetable's amp env is driven
-    // entirely by the ADSR modulator on amp.gain.
-    this.envAmp.offset.setValueAtTime(0, time);
+    // Amp envelope: when no external modulator binding is wired (i.e. no
+    // laneId set during createVoice, as in standalone/test renders), schedule
+    // a built-in ADSR onto envAmp.offset so the voice is audible. When a lane
+    // binder is present, the modulator ADSR on amp.gain drives the envelope
+    // and we leave envAmp.offset at 0 to avoid double-enveloping.
+    if (this.binder == null) {
+      // Standalone ADSR: oscillator gains already carry velMul, so the amp
+      // envelope peaks at unity (the modulator-bound path peaks at 1 too —
+      // modulator output is normalized 0..1 and connection depth scales it
+      // into the destination range).
+      const atk = this.getParam('amp.attack');
+      const dec = this.getParam('amp.decay');
+      const sus = this.getParam('amp.sustain');
+      this.envAmp.offset.cancelScheduledValues(time);
+      this.envAmp.offset.setValueAtTime(0, time);
+      this.envAmp.offset.linearRampToValueAtTime(1, time + Math.max(0.001, atk));
+      this.envAmp.offset.linearRampToValueAtTime(sus, time + Math.max(0.001, atk) + Math.max(0.001, dec));
+    } else {
+      this.envAmp.offset.setValueAtTime(0, time);
+    }
 
     if (!this.started) {
       this.oscA.start(time);
@@ -138,8 +159,18 @@ class WavetableVoice implements Voice {
     }
   }
 
-  release(_time: number): void {
-    for (const mv of this.voiceMods.values()) mv.release(_time);
+  release(time: number): void {
+    for (const mv of this.voiceMods.values()) mv.release(time);
+    // When running standalone (no binder), the internal ADSR scheduled in
+    // trigger() holds the sustain forever — cut it down here so release tests
+    // and normal note-off behavior work without a modulator binding.
+    if (this.binder == null) {
+      this.envAmp.offset.cancelScheduledValues(time);
+      // Short 5 ms ramp to silence — gate-cut, not a musical release. The
+      // engine's amp.release param is meant for the modulator ADSR; standalone
+      // mode is just a fallback.
+      this.envAmp.offset.linearRampToValueAtTime(0, time + 0.005);
+    }
   }
 
   connect(_dest: AudioNode): void {}
