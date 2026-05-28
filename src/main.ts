@@ -6,6 +6,7 @@ import type { SynthEngine } from './engines/engine-types';
 import * as leh from './engines/lane-engine-host';
 import type { LaneEngineHostState, LaneEngineHostDeps } from './engines/lane-engine-host';
 import { getEngine, createEngineInstance } from './engines/registry';
+import './engines/subtractive';
 import './engines/wavetable';
 import './engines/fm';
 import './engines/karplus';
