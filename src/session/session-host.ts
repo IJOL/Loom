@@ -32,9 +32,10 @@ export interface SessionHostDeps {
   bank: PatternBank;
   playBtn: HTMLButtonElement;
   resetAutomationPosition: () => void;
-  bassTriggerDirect: (note: number, time: number, dur: number, accent: boolean, slidingIn: boolean) => void;
-  bassTriggerForArp: (note: number, time: number, gate: number, accent: boolean) => void;
-  polyTriggerDirect: (note: number, time: number, gate: number, accent: boolean) => void;
+  /** Single per-lane trigger entry — encapsulates engineId dispatch +
+   *  laneResources lookup. Replaces the old bassTriggerDirect /
+   *  bassTriggerForArp / polyTriggerDirect trio. */
+  triggerForLane: (laneId: string, note: number, time: number, gate: number, accent: boolean, slidingIn: boolean) => void;
   drums: DrumMachine;
   drumLanes: readonly DrumVoice[];
   markTrackActive: (trackId: string, time: number) => void;
@@ -85,20 +86,11 @@ export class SessionHost {
         (laneId, clip, stepInClip, stepTime, stepDur) =>
           scheduleClipStep(
             {
-              ctx: this.deps.ctx,
               state: this.state,
-              drums: this.deps.drums,
               drumLanes: this.deps.drumLanes,
               bpm: () => this.deps.seq.bpm,
-              bassTriggerDirect: this.deps.bassTriggerDirect,
-              bassTriggerForArp: this.deps.bassTriggerForArp,
-              polyTriggerDirect: this.deps.polyTriggerDirect,
+              triggerForLane: this.deps.triggerForLane,
               markTrackActive: this.deps.markTrackActive,
-              ensureExtraPoly: this.deps.ensureExtraPoly,
-              extraStrips: this.deps.extraStrips,
-              getLaneEngineId: this.deps.getLaneEngineId,
-              ensureLaneEngine: this.deps.ensureLaneEngine,
-              ensureLaneVoice: this.deps.ensureLaneVoice,
             },
             laneId, clip, stepInClip, stepTime, stepDur,
           ),

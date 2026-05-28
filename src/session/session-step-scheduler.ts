@@ -1,34 +1,23 @@
 // Per-step audio dispatch for Session mode.
 // Called once per 16th-note step from the look-ahead scheduler in session-runtime.
-// Routes each clip step to the appropriate trigger function.
+// Routes each clip step to the lane's trigger callback.
 
-import type { DrumMachine, DrumVoice } from '../core/drums';
-import type { PolySynth } from '../polysynth/polysynth';
-import type { SynthEngine } from '../engines/engine-types';
-import type { ChannelStrip } from '../core/fx';
+import type { DrumVoice } from '../core/drums';
 import type { SessionClip, SessionState } from './session';
 import { TICKS_PER_STEP } from '../core/notes';
 import type { NoteEvent } from '../core/notes';
 import { arp } from '../arp/arp-ui';
 import { scheduleArpForNote } from '../arp/arp';
-import { GM_DRUM_MAP } from '../engines/drum-gm-map';
-import { setCurrentLaneForVoice } from '../modulation/active-mods';
 
 export interface StepSchedulerDeps {
-  ctx: AudioContext;
   state: SessionState;
-  drums: DrumMachine;
   drumLanes: readonly DrumVoice[];
   bpm: () => number;
-  bassTriggerDirect: (note: number, time: number, dur: number, accent: boolean, slidingIn: boolean) => void;
-  bassTriggerForArp: (note: number, time: number, gate: number, accent: boolean) => void;
-  polyTriggerDirect: (note: number, time: number, gate: number, accent: boolean) => void;
+  /** Single per-lane trigger entry point — encapsulates engineId dispatch,
+   *  laneResources lookup, and modulator wiring. Replaces the old triple
+   *  (bassTriggerDirect / bassTriggerForArp / polyTriggerDirect). */
+  triggerForLane: (laneId: string, note: number, time: number, gate: number, accent: boolean, slidingIn: boolean) => void;
   markTrackActive: (trackId: string, time: number) => void;
-  ensureExtraPoly: (id: string) => PolySynth;
-  extraStrips: Partial<Record<string, ChannelStrip>>;
-  getLaneEngineId: (laneId: string) => string;
-  ensureLaneEngine: (laneId: string, engineId: string) => SynthEngine | null;
-  ensureLaneVoice: (laneId: string, engineId: string) => import('../engines/engine-types').Voice | null;
 }
 
 export function scheduleClipStep(
@@ -68,56 +57,19 @@ function routeNoteToEngine(
   allNotes: NoteEvent[],
   thisNote: NoteEvent,
 ): void {
-  const { ctx, bassTriggerDirect, bassTriggerForArp, polyTriggerDirect, drums,
-          ensureExtraPoly, extraStrips, getLaneEngineId, ensureLaneEngine } = deps;
   const arpEnabled = arp.enabled && arp.scope.includes(laneId);
-
-  // Extra lanes route through the engine's own voice. Built-in singletons
-  // (`tb-303-1` / `drums-1` / `subtractive-1`) keep their existing direct
-  // triggers because Classic still uses them.
-  const isBuiltinLane =
-    laneId === 'tb-303-1' || laneId === 'drums-1' || laneId === 'subtractive-1';
-  if (!isBuiltinLane) {
-    const voice = deps.ensureLaneVoice(laneId, engineId);
-    if (!voice) return;
-    const slidingIn = engineId === 'tb303' &&
-      allNotes.some((m) => m !== thisNote && m.start < thisNote.start &&
-                            (m.start + m.duration) > thisNote.start + 1);
-    voice.trigger(midi, time, { gateDuration: gate, accent, slide: slidingIn });
-    return;
+  // TB-303-specific slide detection: a previous overlapping note from the
+  // same clip means slide INTO this trigger.
+  const slidingIn = engineId === 'tb303'
+    && allNotes.some((m) => m !== thisNote
+        && m.start < thisNote.start
+        && (m.start + m.duration) > thisNote.start + 1);
+  if (arpEnabled) {
+    scheduleArpForNote(
+      (n, t, g, a) => deps.triggerForLane(laneId, n, t, g, a, slidingIn),
+      arp, deps.bpm(), midi, time, gate, accent,
+    );
+  } else {
+    deps.triggerForLane(laneId, midi, time, gate, accent, slidingIn);
   }
-
-  if (engineId === 'tb303') {
-    const slidingIn = allNotes.some((m) => m !== thisNote && m.start < thisNote.start &&
-                                            (m.start + m.duration) > thisNote.start + 1);
-    if (arpEnabled) scheduleArpForNote(bassTriggerForArp, arp, deps.bpm(), midi, time, gate, accent);
-    else            bassTriggerDirect(midi, time, gate, accent, slidingIn);
-    return;
-  }
-  if (engineId === 'drums-machine') {
-    const voice = GM_DRUM_MAP[midi];
-    if (voice) drums.trigger(voice, time, accent);
-    return;
-  }
-  // Poly engines (subtractive/wavetable/fm/karplus)
-  const isMain = laneId === 'subtractive-1';
-  const fire = (n: number, t: number, g: number, a: boolean) => {
-    if (isMain) {
-      polyTriggerDirect(n, t, g, a);
-    } else {
-      const engId = getLaneEngineId(laneId);
-      if (engId === 'subtractive') ensureExtraPoly(laneId).trigger(n, t, g, a);
-      else {
-        const inst = ensureLaneEngine(laneId, engId);
-        if (inst) {
-          setCurrentLaneForVoice(laneId);
-          const voice = inst.createVoice(ctx, extraStrips[laneId]!.input);
-          setCurrentLaneForVoice(null);
-          voice.trigger(n, t, { gateDuration: g, accent: a });
-        } else ensureExtraPoly(laneId).trigger(n, t, g, a);
-      }
-    }
-  };
-  if (arpEnabled) scheduleArpForNote(fire, arp, deps.bpm(), midi, time, gate, accent);
-  else            fire(midi, time, gate, accent);
 }

@@ -691,9 +691,7 @@ const showPolyEditorWrapper = (laneId: string, target: PolySynth, displayName: s
 const sessionHost = new SessionHost({
   ctx, seq, bank, playBtn,
   resetAutomationPosition,
-  bassTriggerDirect,
-  bassTriggerForArp,
-  polyTriggerDirect,
+  triggerForLane,
   drums,
   drumLanes: DRUM_LANES,
   markTrackActive,
