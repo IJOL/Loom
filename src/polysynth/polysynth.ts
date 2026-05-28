@@ -59,6 +59,12 @@ export interface PolyVoiceParams {
   cutoff: AudioParam;    // filter frequency
   resonance: AudioParam; // filter Q
   pitch: AudioParam;     // osc1 detune (cents)
+  /**
+   * Cuts this voice's amp gate at `time` by cancelling the internal amp
+   * envelope's scheduled curve and ramping it to zero. Used by Voice.release
+   * to support live note-off, since trigger() pre-schedules the full envelope.
+   */
+  releaseGate: (time: number) => void;
 }
 
 export class PolySynth {
@@ -182,6 +188,16 @@ export class PolySynth {
     envCutoff.connect(filter.frequency);
     filter.frequency.value = 0;
 
+    // Per-voice gate cutter for Voice.release(). envAmp is the
+    // ConstantSourceNode driving amp.gain; cancelling and ramping its offset
+    // is what actually silences the voice (amp.gain.value stays 0).
+    // 5 ms linear ramp to silence avoids audible clicks. Mirrors TB303.releaseGate.
+    const releaseGate = (releaseTime: number) => {
+      envAmp.offset.cancelScheduledValues(releaseTime);
+      envAmp.offset.setValueAtTime(envAmp.offset.value, releaseTime);
+      envAmp.offset.linearRampToValueAtTime(0, releaseTime + 0.005);
+    };
+
     // Modulation host bind point: expose per-voice AudioParams BEFORE the
     // hardcoded envelope ramps are scheduled. External ADSR/LFO outputs sum
     // into these params via Web Audio's per-AudioParam summing.
@@ -190,6 +206,7 @@ export class PolySynth {
       cutoff: filter.frequency,
       resonance: filter.Q,
       pitch: osc1.detune,
+      releaseGate,
     });
 
     envCutoff.offset.setValueAtTime(baseCutoff, time);

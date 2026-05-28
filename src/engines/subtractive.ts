@@ -100,6 +100,10 @@ class SubtractiveVoice implements Voice {
   private lastVoiceParams: {
     amp: AudioParam; cutoff: AudioParam; resonance: AudioParam; pitch: AudioParam;
   } | null = null;
+  /** Per-voice release callback captured from triggerWithBinding's onVoice.
+   *  Lets Voice.release() cut the polysynth's amp gate, since trigger()
+   *  pre-schedules the full envelope. */
+  private lastReleaseGate: ((time: number) => void) | null = null;
 
   /** Set by SubtractiveEngine.createVoice after construction so dispose() can
    *  tear down the lane's connection bindings. Set on first onVoice fire
@@ -130,6 +134,7 @@ class SubtractiveVoice implements Voice {
       midi, time, options.gateDuration, options.accent ?? false,
       (vp) => {
         this.lastVoiceParams = vp;
+        this.lastReleaseGate = vp.releaseGate;
         // Now that getAudioParams() returns real params, (re)apply the binder
         // so modulator outputs reach this freshly-allocated polysynth voice.
         if (this.rebind) this.rebind();
@@ -144,6 +149,9 @@ class SubtractiveVoice implements Voice {
   }
 
   release(time: number): void {
+    // Cut the polysynth's pre-scheduled amp envelope so the voice goes silent
+    // — without this, trigger()'s full ADSR keeps holding regardless.
+    if (this.lastReleaseGate) this.lastReleaseGate(time);
     for (const mv of this.voiceMods.values()) mv.release(time);
   }
 
@@ -209,15 +217,31 @@ class SubtractiveEngine implements SynthEngine {
 
   private polysynth: PolySynth | null = null;
 
+  /** Caches setBaseValue calls made before the polysynth instance exists.
+   *  Flushed on the next createVoice() / setPolySynth() so callers don't lose
+   *  pre-configuration done at engine-creation time. */
+  private pendingBaseValues = new Map<string, number>();
+
   getBaseValue(id: string): number {
     if (!this.polysynth) return SUB_PARAMS.find(p => p.id === id)?.default ?? 0;
     return readDotPath(this.polysynth.params as unknown as Record<string, unknown>, id);
   }
 
   setBaseValue(id: string, v: number): void {
-    if (!this.polysynth) return;
+    if (!this.polysynth) {
+      this.pendingBaseValues.set(id, v);
+      return;
+    }
     const spec = SUB_PARAMS.find(p => p.id === id);
     writeDotPath(this.polysynth.params as unknown as Record<string, unknown>, id, v, spec);
+  }
+
+  private flushPendingBaseValues(): void {
+    if (!this.polysynth || this.pendingBaseValues.size === 0) return;
+    // Snapshot then clear so recursive setBaseValue writes go straight through.
+    const pending = [...this.pendingBaseValues];
+    this.pendingBaseValues.clear();
+    for (const [id, v] of pending) this.setBaseValue(id, v);
   }
 
   /** Cached so the modulation-panel onChange callback can re-apply bindings. */
@@ -226,6 +250,7 @@ class SubtractiveEngine implements SynthEngine {
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
     if (!this.polysynth) {
       this.polysynth = new PolySynth(ctx, output);
+      this.flushPendingBaseValues();
     }
     const voiceMods = this.modHost.spawnVoice(ctx, () => this.bpm);
     recordVoiceMods(voiceMods);
@@ -250,6 +275,7 @@ class SubtractiveEngine implements SynthEngine {
 
   setPolySynth(ps: PolySynth): void {
     this.polysynth = ps;
+    this.flushPendingBaseValues();
   }
 
   buildSequencer(_container: HTMLElement, _stepCount: number): EngineSequencer {
