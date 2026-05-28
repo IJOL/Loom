@@ -8,7 +8,6 @@ import type { PatternBank } from '../core/pattern';
 
 export interface LaneEngineHostState {
   activeLaneId: string;
-  slotConfigurators: Array<(() => void) | null>;
 }
 
 export interface LaneEngineHostDeps {
@@ -27,7 +26,6 @@ export interface LaneEngineHostDeps {
 export function createLaneEngineState(): LaneEngineHostState {
   return {
     activeLaneId: 'subtractive-1', // matches the default-active session lane
-    slotConfigurators: [null, null, null, null],
   };
 }
 
@@ -59,17 +57,3 @@ export function setActiveEngineLane(
   deps.rebuildEngineParamUI();
 }
 
-/** Replace all slot configurator callbacks (called from demo wiring). */
-export function setSlotConfigurators(
-  state: LaneEngineHostState,
-  cbs: Array<(() => void) | null>,
-): void {
-  state.slotConfigurators = cbs;
-}
-
-/** Invoke the configurator registered for a slot/scene index. No-op when
- *  there's no configurator for that index. Called on scene launch + at
- *  boot for slot 0 so the demo's preset selections actually take effect. */
-export function runSlotConfigurator(state: LaneEngineHostState, idx: number): void {
-  state.slotConfigurators[idx]?.();
-}

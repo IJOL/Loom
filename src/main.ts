@@ -27,7 +27,6 @@ import { stepsToNotes, bassStepsToNotes } from './core/notes';
 import { buildMixerColumn } from './core/mixer';
 import * as laneTrackHelpers from './core/lane-display';
 import { SessionHost } from './session/session-host';
-import { applyMinimalTechnoDemo, wireDemoMinimalTechno, buildMinimalTechnoDemoSession } from './demo/demo-minimal-techno';
 import { fetchDemoSession } from './demo/demo-loader';
 import { importClassicToSession } from './session/session-migration';
 import { setupInitialPattern, type InitialPatternDeps } from './demo/initial-pattern';
@@ -361,8 +360,6 @@ const getLaneEngineId     = (laneId: string) => leh.getLaneEngineId(_lehState, _
 const getLaneEngineInstance = (laneId: string): SynthEngine | null =>
   laneResources.get(laneId)?.engine ?? null;
 const setActiveEngineLane = (laneId: string) => leh.setActiveEngineLane(_lehState, _lehDeps, laneId);
-const setSlotConfigurators = (cbs: Array<(() => void) | null>) => leh.setSlotConfigurators(_lehState, cbs);
-const runSlotConfigurator = (idx: number) => leh.runSlotConfigurator(_lehState, idx);
 
 // Cache: laneId → engine voice. Mono engines reuse the same voice; poly
 // engines get a fresh voice per call but the strip is cached per lane.
@@ -692,7 +689,6 @@ const sessionHost = new SessionHost({
   onActiveLaneChanged: () => populateAutoParamSelectWrapper(),
   laneResources,
   ensureLaneResource,
-  runSlotConfigurator,
   applyPresetForLane: (laneId, presetName) => {
     // presetName is a prefixed value like the dropdown uses:
     //   factory:NAME → PolySynth FACTORY preset (subtractive lanes)
@@ -760,9 +756,6 @@ recBtn.addEventListener('click', () => {
   recBtn.classList.toggle('armed', automationRecording);
   recBtn.textContent = automationRecording ? '● REC ON' : '● REC';
 });
-
-// ── Demo: Minimal Techno — see src/demo-minimal-techno.ts ─────────────────
-// (functions moved to demo-minimal-techno.ts; called via demoDeps below)
 
 // ── Copy bars between slots — moved to src/save/slot-copy.ts ──────────────
 // wireSlotCopyPanel() is called at boot (see boot section below).
@@ -940,28 +933,6 @@ wireSlotCopyPanel({
 });
 wireCopyNotesPanel({ seq });
 
-// ── Demo wiring (deps built here, functions live in demo-minimal-techno.ts) ─
-const demoDeps: import('./demo/demo-minimal-techno').DemoDeps = {
-  seq, bank, bpmInput, barsSel,
-  chainEnabled: () => isChainEnabled(),
-  chainBtn: $<HTMLButtonElement>('chain-toggle'),
-  setSlotConfigurators,
-  getLaneEngineInstance,
-  applyPolyPresetForLane: (laneId, presetName) => {
-    const inst = getLaneEngineInstance(laneId);
-    const ps = (inst as { getPolySynth?(): PolySynth | null } | null)?.getPolySynth?.();
-    if (!ps) return;
-    applyPresetByName(ps, presetName);
-    // Refresh dropdown + knob handles so the UI mirrors the new preset values.
-    refreshPolyPresetSelect();
-    if (inst) refreshLaneKnobs(laneId, inst);
-  },
-  updateSlotButtons,
-  renderLanes,
-  updateBassModeButtons,
-};
-wireDemoMinimalTechno(demoDeps);
-
 // ── MIDI import wiring (see src/midi-import.ts) ───────────────────────────
 wireMidiImport({
   seq,
@@ -992,12 +963,6 @@ const automationTickDeps: AutomationTickDeps = {
   getActiveModVoice: (laneId, modId) => getActiveModVoice(laneId, modId),
 };
 startAutomationTick(automationTickDeps);
-// Phase E rollback: the user expects the multi-scene demo (4 scenes
-// A/B/C/D from the legacy minimal-techno pattern bank). The new
-// single-scene `buildMinimalTechnoDemoSession` exists for demonstrating
-// per-lane independent loops (Phase D), but auto-loading it at boot
-// hides the multi-scene experience the user is used to. Auto-apply the
-// PatternBank demo + import it into Session, same as before.
 // Boot demo: fetched as a static JSON asset rather than constructed
 // programmatically. The JSON drives both the SessionState and the
 // per-scene preset map; applyLoadedSessionState reads lane.enginePresetName
@@ -1027,5 +992,5 @@ const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
 wireSaveManager(saveWiringDeps);
 bootRecoveryLoad(saveWiringDeps);
 
-// Phase E: Boot always lands in Session mode (see buildMinimalTechnoDemoSession
-// call above). The data-pure-session guard is no longer needed.
+// Phase E: Boot always lands in Session mode (see fetchDemoSession call above).
+// The data-pure-session guard is no longer needed.
