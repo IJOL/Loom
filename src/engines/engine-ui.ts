@@ -12,6 +12,7 @@
 import type { SynthEngine, EngineUIContext } from './engine-types';
 import { createKnob, type KnobHandle } from '../core/knob';
 import { createSelectControl } from '../core/select-control';
+import { mirrorParamChange } from '../session/session-engine-state';
 
 export interface WireEngineParamsOptions {
   /** Optional value formatter, keyed by spec.id. */
@@ -44,7 +45,12 @@ export function wireEngineParams(
         max: spec.max,
         value: engine.getBaseValue(spec.id),
         defaultValue: spec.default,
-        onChange: (v) => engine.setBaseValue(spec.id, v),
+        onChange: (v) => {
+          engine.setBaseValue(spec.id, v);
+          if (ctx.sessionState) {
+            mirrorParamChange(ctx.sessionState, ctx.laneId, spec.id, v);
+          }
+        },
         format: opts.formatter ? (v) => opts.formatter!(spec.id, v) : undefined,
       });
       ctx.registerKnob(k);
@@ -61,6 +67,9 @@ export function wireEngineParams(
         onChange: (v) => {
           const i = options.findIndex((o) => o.value === v);
           engine.setBaseValue(spec.id, i);
+          if (ctx.sessionState) {
+            mirrorParamChange(ctx.sessionState, ctx.laneId, spec.id, i);
+          }
         },
       });
       ctx.registerKnob(handle);

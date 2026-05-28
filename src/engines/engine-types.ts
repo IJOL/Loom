@@ -49,6 +49,10 @@ export interface EngineUIContext {
    *  destination labels show the user-facing session lane name instead of
    *  the internal `main` / `bass` / `drums` / `poly1` ids. */
   lookupLaneDisplayName?: (laneId: string) => string | undefined;
+  /** Phase C: when present, knob mutations mirror into
+   *  `sessionState.lanes[laneId].engineState.params` so the lane's sound
+   *  persists across tab switches and save/load. */
+  sessionState?: import('../session/session').SessionState;
 }
 
 export interface EnginePreset {

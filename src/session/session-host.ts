@@ -368,6 +368,7 @@ export class SessionHost {
       registry: this.deps.automationRegistry as Map<string, unknown>,
       lookupLaneDisplayName: (id: string) =>
         this.state.lanes.find((l) => l.id === id)?.name,
+      sessionState: this.state,
     });
   }
 

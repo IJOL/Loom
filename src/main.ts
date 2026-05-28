@@ -228,6 +228,10 @@ interface LaneWiringDeps {
   formatter?: (id: string, v: number) => string;
 }
 
+// Phase C: late-bound ref so mountSubtractiveLaneKnobs (defined before
+// sessionHost) can still pass sessionState to the mirror once it is available.
+let _sessionStateForKnobs: import('./session/session').SessionState | undefined;
+
 /** Walks engine.params, builds the knob/select per param, registers each
  *  under '<laneId>.<spec.id>'. Click/drag writes via engine.setBaseValue.
  *  Delegates to the shared wireEngineParams helper used by engine.buildParamUI. */
@@ -236,6 +240,7 @@ function wireLaneKnobs(deps: LaneWiringDeps): void {
     laneId: deps.laneId,
     registerKnob: (k) => registerKnob(k as KnobHandle),
     registry: automationRegistry as unknown as Map<string, unknown>,
+    sessionState: _sessionStateForKnobs,
   };
   wireEngineParams(deps.engine, ctx, deps.parent, { formatter: deps.formatter });
 }
@@ -722,6 +727,10 @@ const sessionHost = new SessionHost({
 });
 synthEditorState.activePolyTarget = polysynth;
 sessionHost.init();
+// Phase C: bind sessionState into knob ctx so future knob changes mirror into
+// lane.engineState.params. Set AFTER sessionHost.init() so the initial
+// mountSubtractiveLaneKnobs('main') call (pre-sessionHost) stays no-op.
+_sessionStateForKnobs = sessionHost.state;
 // Now sessionHost is live — upgrade the lookupEngineId impl to use SessionState
 // as the source of truth (replaces the pattern-based fallback used at boot).
 _lookupEngineIdFn = (laneId: string) =>
@@ -874,6 +883,7 @@ function mountSubtractiveLaneKnobs(laneId: string): void {
     laneId,
     registerKnob: (k) => registerKnob(k as KnobHandle),
     registry: automationRegistry as unknown as Map<string, unknown>,
+    sessionState: _sessionStateForKnobs,
   };
   for (const [prefix, divId] of sectionMap) {
     const parent = document.getElementById(divId);
