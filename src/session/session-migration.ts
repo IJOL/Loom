@@ -14,6 +14,21 @@ function nextId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/** Carry pattern-level automation lanes into the per-clip envelope field,
+ *  filtered to entries whose paramId belongs to this clip's lane. The
+ *  automation registry uses the convention `<laneId>.<spec.id>`, so a
+ *  startsWith match on `<laneId>.` is the canonical routing rule. */
+function envelopesForLane(pat: PatternData, laneId: string): import('./session').ClipEnvelope[] | undefined {
+  const lanes = (pat.automation ?? []).filter((a) => a.paramId.startsWith(`${laneId}.`));
+  if (lanes.length === 0) return undefined;
+  return lanes.map((a) => ({
+    paramId: a.paramId,
+    values:  [...a.values],
+    enabled: a.enabled,
+    stepped: a.stepped,
+  }));
+}
+
 function clipFromBass(pat: PatternData): SessionClip {
   const fromSteps = pat.bassMode !== 'piano' ? bassStepsToNotes(pat.bass) : [];
   const fromNotes = (pat.bassNotes ?? []).map((n) => ({ ...n }));
@@ -21,6 +36,7 @@ function clipFromBass(pat: PatternData): SessionClip {
     id: nextId('clip'),
     lengthBars: Math.max(1, Math.floor(pat.length / 16)),
     notes: fromNotes.length ? fromNotes : fromSteps,
+    envelopes: envelopesForLane(pat, 'tb-303-1'),
   };
 }
 
@@ -29,6 +45,7 @@ function clipFromDrums(pat: PatternData): SessionClip {
     id: nextId('clip'),
     lengthBars: Math.max(1, Math.floor(pat.length / 16)),
     notes: drumStepsToNotes(pat.drums),
+    envelopes: envelopesForLane(pat, 'drums-1'),
   };
 }
 
@@ -39,6 +56,7 @@ function clipFromMainPoly(pat: PatternData): SessionClip {
     id: nextId('clip'),
     lengthBars: Math.max(1, Math.floor(pat.length / 16)),
     notes: fromNotes.length ? fromNotes : fromSteps,
+    envelopes: envelopesForLane(pat, 'subtractive-1'),
   };
 }
 
@@ -49,21 +67,28 @@ function clipFromExtra(pat: PatternData, extraId: string): SessionClip | null {
     id: nextId('clip'),
     lengthBars: Math.max(1, Math.floor(pat.length / 16)),
     notes: track.notes.map((n) => ({ ...n })),
+    envelopes: envelopesForLane(pat, extraId),
   };
 }
 
 export function importClassicToSession(bank: PatternBank): SessionState {
   const state = emptySessionState();
 
-  // Collect the union of extra-poly ids used across all slots.
-  const extraIds = new Set<string>();
+  // Collect the union of extra-poly ids used across all slots. Legacy ids
+  // (`poly1`, `poly2`, …) are mapped to the new slug scheme (`subtractive-2`,
+  // `subtractive-3`, …) so loaded state matches what the rest of the code
+  // expects.
+  const extraIdsLegacy = new Set<string>();
   for (const slot of bank.slots) {
-    for (const t of slot.extraPolyTracks ?? []) extraIds.add(t.id);
+    for (const t of slot.extraPolyTracks ?? []) extraIdsLegacy.add(t.id);
   }
-  let polyCount = 1; // 'main' lane already counts as poly 1
-  for (const id of extraIds) {
+  const extraIdMap = new Map<string, string>();
+  let polyCount = 1; // `subtractive-1` already counts as the first poly lane.
+  for (const legacy of extraIdsLegacy) {
     polyCount++;
-    const lane = emptyLane(id, 'subtractive');
+    const slug = `subtractive-${polyCount}`;
+    extraIdMap.set(legacy, slug);
+    const lane = emptyLane(slug, 'subtractive');
     lane.name = `Subtractive ${polyCount}`;
     state.lanes.push(lane);
   }
@@ -73,9 +98,9 @@ export function importClassicToSession(bank: PatternBank): SessionState {
     const scene = emptyScene(`Scene ${slotIdx + 1}`);
     state.scenes.push(scene);
 
-    const bassLane  = state.lanes.find((l) => l.id === 'bass')!;
-    const drumsLane = state.lanes.find((l) => l.id === 'drums')!;
-    const mainLane  = state.lanes.find((l) => l.id === 'main')!;
+    const bassLane  = state.lanes.find((l) => l.id === 'tb-303-1')!;
+    const drumsLane = state.lanes.find((l) => l.id === 'drums-1')!;
+    const mainLane  = state.lanes.find((l) => l.id === 'subtractive-1')!;
 
     const pushClip = (lane: SessionLane, clip: SessionClip | null): number | null => {
       if (!clip) return null;
@@ -84,12 +109,13 @@ export function importClassicToSession(bank: PatternBank): SessionState {
       return slotIdx;
     };
 
-    scene.clipPerLane.bass  = pushClip(bassLane,  clipFromBass(pat));
-    scene.clipPerLane.drums = pushClip(drumsLane, clipFromDrums(pat));
-    scene.clipPerLane.main  = pushClip(mainLane,  clipFromMainPoly(pat));
-    for (const id of extraIds) {
-      const lane = state.lanes.find((l) => l.id === id);
-      if (lane) scene.clipPerLane[id] = pushClip(lane, clipFromExtra(pat, id));
+    scene.clipPerLane['tb-303-1']      = pushClip(bassLane,  clipFromBass(pat));
+    scene.clipPerLane['drums-1']       = pushClip(drumsLane, clipFromDrums(pat));
+    scene.clipPerLane['subtractive-1'] = pushClip(mainLane,  clipFromMainPoly(pat));
+    for (const legacyId of extraIdsLegacy) {
+      const slug = extraIdMap.get(legacyId)!;
+      const lane = state.lanes.find((l) => l.id === slug);
+      if (lane) scene.clipPerLane[slug] = pushClip(lane, clipFromExtra(pat, legacyId));
     }
   });
 

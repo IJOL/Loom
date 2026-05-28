@@ -76,29 +76,68 @@ export function populatePolyPresetSelect(): void {
   custom.textContent = '(custom — no preset)';
   sel.appendChild(custom);
 
+  // Filter by the active lane's engine. Subtractive uses the PolySynth
+  // factory presets (nested params); other engines use their own SynthEngine
+  // .presets array (flat id → value map).
+  const engineId = _deps?.getLaneEngineId(_deps.getActiveEngineLaneId()) ?? 'subtractive';
+
+  if (engineId === 'subtractive') {
+    const factoryGroup = document.createElement('optgroup');
+    factoryGroup.label = 'Factory';
+    for (const p of FACTORY_POLY_PRESETS) {
+      const opt = document.createElement('option');
+      opt.value = `factory:${p.name}`;
+      opt.textContent = p.name;
+      factoryGroup.appendChild(opt);
+    }
+    sel.appendChild(factoryGroup);
+
+    const user = loadUserPolyPresets();
+    const userNames = Object.keys(user).sort();
+    if (userNames.length > 0) {
+      const userGroup = document.createElement('optgroup');
+      userGroup.label = 'User';
+      for (const name of userNames) {
+        const opt = document.createElement('option');
+        opt.value = `user:${name}`;
+        opt.textContent = name;
+        userGroup.appendChild(opt);
+      }
+      sel.appendChild(userGroup);
+    }
+    return;
+  }
+
+  // Non-subtractive engine: pull presets directly from the active lane's
+  // SynthEngine instance. Each preset's `params` is a flat id → value map.
+  const instance = _deps?.getLaneEngineInstance(_deps.getActiveEngineLaneId());
+  if (!instance) return;
+  const presets = instance.presets ?? [];
+  if (presets.length === 0) return;
   const factoryGroup = document.createElement('optgroup');
   factoryGroup.label = 'Factory';
-  for (const p of FACTORY_POLY_PRESETS) {
+  for (const p of presets) {
     const opt = document.createElement('option');
-    opt.value = `factory:${p.name}`;
+    opt.value = `engine:${p.name}`;
     opt.textContent = p.name;
     factoryGroup.appendChild(opt);
   }
   sel.appendChild(factoryGroup);
+}
 
-  const user = loadUserPolyPresets();
-  const userNames = Object.keys(user).sort();
-  if (userNames.length > 0) {
-    const userGroup = document.createElement('optgroup');
-    userGroup.label = 'User';
-    for (const name of userNames) {
-      const opt = document.createElement('option');
-      opt.value = `user:${name}`;
-      opt.textContent = name;
-      userGroup.appendChild(opt);
-    }
-    sel.appendChild(userGroup);
+/** Apply a non-subtractive engine preset by writing each flat param to the
+ *  active lane's engine instance, then refreshing the knob UI. */
+function applyEnginePreset(presetName: string): void {
+  const deps = _deps!;
+  const laneId = deps.getActiveEngineLaneId();
+  const instance = deps.getLaneEngineInstance(laneId);
+  if (!instance) return;
+  const preset = instance.presets.find((p) => p.name === presetName);
+  if (!preset) return;
+  for (const [id, value] of Object.entries(preset.params)) {
+    instance.setBaseValue(id, value);
   }
+  deps.refreshLaneKnobs(laneId);
 }
 
 export function wirePolyControls(deps: PolySynthPresetsDeps): void {
@@ -131,7 +170,7 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
 
   populatePolyPresetSelect();
 
-  (document.getElementById('poly-preset-load') as HTMLButtonElement).addEventListener('click', () => {
+  const loadCurrentPreset = () => {
     const sel = document.getElementById('poly-preset-select') as HTMLSelectElement;
     const val = sel.value;
     if (!val || val === '__custom__') return;
@@ -144,8 +183,19 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
       const name = val.slice('user:'.length);
       const presets = loadUserPolyPresets();
       if (presets[name]) { applyPolyParams(presets[name]); polyPresetName.set(target, val); }
+    } else if (val.startsWith('engine:')) {
+      const name = val.slice('engine:'.length);
+      applyEnginePreset(name);
     }
-  });
+  };
+
+  // Auto-load on change — selecting a preset applies it immediately, no Load
+  // button needed. The Load button stays as a no-op fallback for now (in case
+  // the user wants to re-apply the current selection).
+  const presetSel = document.getElementById('poly-preset-select') as HTMLSelectElement;
+  presetSel.addEventListener('change', loadCurrentPreset);
+  (document.getElementById('poly-preset-load') as HTMLButtonElement)
+    .addEventListener('click', loadCurrentPreset);
 
   (document.getElementById('poly-preset-save') as HTMLButtonElement).addEventListener('click', () => {
     const name = prompt('Preset name:');

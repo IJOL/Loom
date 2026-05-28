@@ -34,10 +34,14 @@ function buildMinimalTechnoDemo(): PatternData[] {
   const setPoly = (p: PatternData, i: number, notes: number[], accent = false, tie = false) => {
     p.melody[i] = { on: true, notes: [...notes], accent, tie };
   };
+  // Build a cutoff automation envelope on the main poly lane (becomes a
+  // clip envelope after the Classic → Session migration). The canonical
+  // paramId is `<laneId>.<spec.id>`; subtractive's filter cutoff is
+  // `main.filter.cutoff`.
   const autoCutoff = (curve: (t: number) => number): AutomationLane => {
     const len = LEN * AUTOMATION_SUB_RES;
     return {
-      paramId: 'tb303.cutoff', enabled: true, stepped: false, lengthBars: 2,
+      paramId: 'main.filter.cutoff', enabled: true, stepped: false, lengthBars: 2,
       values: new Array(len).fill(0).map((_, i) => Math.max(0, Math.min(1, curve(i / (len - 1))))),
     };
   };
@@ -161,41 +165,23 @@ function buildMinimalTechnoDemo(): PatternData[] {
 export function applyMinimalTechnoDemo(deps: DemoDeps): void {
   const { seq, bank, bpmInput, barsSel, getLaneEngineInstance } = deps;
 
-  // Per-slot configurators: applied each time the slot is activated, so the
-  // freshly-created engine instance starts with the intended sound.
+  // Per-slot configurators: applied each time the slot is activated. Each
+  // configurator looks up the lane's engine and applies a named factory
+  // preset (instead of poking private fields inline).
+  const applyPreset = (laneId: string, presetName: string) => {
+    const inst = getLaneEngineInstance(laneId);
+    if (!inst) return;
+    const preset = inst.presets.find((p) => p.name === presetName);
+    if (!preset) return;
+    for (const [id, value] of Object.entries(preset.params)) {
+      inst.setBaseValue(id, value);
+    }
+  };
   deps.setSlotConfigurators([
-    null,                  // A: subtractive
-    () => {               // B: wavetable on main
-      const inst = getLaneEngineInstance('main') as unknown as {
-        setWaveA?: (i: number) => void; setWaveB?: (i: number) => void;
-        setParam?: (id: string, v: number) => void;
-      } | null;
-      if (!inst) return;
-      inst.setWaveA?.(0);                                 // Sine
-      inst.setWaveB?.(5);                                 // Organ
-      inst.setParam?.('wt-morph',        0.6);
-      inst.setParam?.('wt-detune',       8);
-      inst.setParam?.('wt-attack',       0.02);
-      inst.setParam?.('wt-decay',        0.25);
-      inst.setParam?.('wt-sustain',      0.5);
-      inst.setParam?.('wt-release',      0.5);
-      inst.setParam?.('wt-filterCutoff', 0.7);
-      inst.setParam?.('wt-filterRes',    0.15);
-      inst.setParam?.('wt-filterEnv',    0.3);
-    },
-    () => {               // C: FM bells on main
-      const inst = getLaneEngineInstance('main') as unknown as {
-        algorithmIndex?: number;
-        opParams?: Array<{ ratio: number; detune: number; level: number; attack: number; decay: number; sustain: number; release: number }>;
-      } | null;
-      if (!inst || !inst.opParams) return;
-      inst.algorithmIndex = 0;
-      inst.opParams[0] = { ratio: 1,   detune: 0, level: 0.9, attack: 0.005, decay: 0.8, sustain: 0.0, release: 0.6 };
-      inst.opParams[1] = { ratio: 3.5, detune: 0, level: 0.6, attack: 0.005, decay: 0.4, sustain: 0.0, release: 0.3 };
-      inst.opParams[2] = { ratio: 7,   detune: 0, level: 0.4, attack: 0.005, decay: 0.3, sustain: 0.0, release: 0.2 };
-      inst.opParams[3] = { ratio: 1,   detune: 5, level: 0.3, attack: 0.005, decay: 0.4, sustain: 0.0, release: 0.2 };
-    },
-    null,                  // D: subtractive
+    null,                                             // A: subtractive defaults
+    () => applyPreset('main', 'Organ Stab'),          // B: wavetable
+    () => applyPreset('main', 'Bell'),                // C: FM
+    null,                                             // D: subtractive defaults
   ]);
 
   const patterns = buildMinimalTechnoDemo();
