@@ -22,7 +22,7 @@ import { getEngine } from '../engines/registry';
 import { renderSessionGrid, type SessionUICallbacks } from './session-ui';
 import { renderSessionTabBar } from './session-tab-bar';
 import { buildMixerColumn } from '../core/mixer';
-import { scheduleClipStep } from './session-step-scheduler';
+// session-step-scheduler is superseded by the note-based tickLane path (Phase D.3).
 import { SessionInspector } from './session-inspector';
 
 export interface SessionHostDeps {
@@ -81,17 +81,10 @@ export class SessionHost {
     this.deps.seq.sessionTick = (now, look) => {
       tickSession(
         this.laneStates, this.state, now, look, this.deps.seq.bpm,
-        (laneId, clip, stepInClip, stepTime, stepDur) =>
-          scheduleClipStep(
-            {
-              state: this.state,
-              drumLanes: this.deps.drumLanes,
-              bpm: () => this.deps.seq.bpm,
-              triggerForLane: this.deps.triggerForLane,
-              markTrackActive: this.deps.markTrackActive,
-            },
-            laneId, clip, stepInClip, stepTime, stepDur,
-          ),
+        (laneId, midi, scheduleTime, gateSec, accent, slidingIn) =>
+          this.deps.triggerForLane(laneId, midi, scheduleTime, gateSec, accent, slidingIn),
+        (laneId, _clipId, _stepInClip, stepTime) =>
+          this.deps.markTrackActive(laneId, stepTime),
       );
     };
 

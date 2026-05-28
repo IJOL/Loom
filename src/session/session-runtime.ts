@@ -2,6 +2,10 @@
 // queue, and the tick-side scheduler that is called from the main 25 ms loop.
 
 import type { SessionClip, SessionState, LaunchQuantize, SessionLane } from './session';
+import { tickLane } from '../core/lane-scheduler';
+import { TICKS_PER_STEP } from '../core/notes';
+import type { NoteEvent } from '../core/notes';
+import { AUTOMATION_SUB_RES } from '../core/pattern';
 
 export interface LanePlayState {
   laneId: string;
@@ -11,6 +15,10 @@ export interface LanePlayState {
   startTime: number;
   nextStepIdx: number;
   loopCount: number;
+  /** Absolute audio time when the current loop iteration began.
+   *  Used by tickLane to project note-tick positions onto the timeline.
+   *  Reset to startTime whenever a new clip is promoted from the queue. */
+  loopStartedAt: number;
 }
 
 export function emptyLanePlayState(laneId: string): LanePlayState {
@@ -22,6 +30,7 @@ export function emptyLanePlayState(laneId: string): LanePlayState {
     startTime: 0,
     nextStepIdx: 0,
     loopCount: 0,
+    loopStartedAt: 0,
   };
 }
 
@@ -114,19 +123,28 @@ export function stopAll(laneStates: Map<string, LanePlayState>): void {
 
 // ── Tick ───────────────────────────────────────────────────────────────────
 
-// Callback that schedules a single 16th step of a clip on a specific lane.
-// The host wires this up to the existing trigger functions (synth.trigger,
-// polysynth.trigger, drums.trigger, engine voice triggers). It is invoked
-// for every step that falls inside the look-ahead window.
-export type ScheduleClipStepFn = (
+/** Called for every note that falls in the look-ahead window. */
+export type LaneTriggerFn = (
   laneId: string,
-  clip: SessionClip,
-  stepInClip: number,
-  stepStartTime: number,
-  stepDur: number,
+  midi: number,
+  scheduleTime: number,
+  gateDuration: number,
+  accent: boolean,
+  slidingIn: boolean,
 ) => void;
 
-const MAX_CATCH_UP_SEC = 0.5;
+/** Called each time a step boundary fires (for visual playhead updates). */
+export type ClipStepFiredFn = (
+  laneId: string,
+  clipId: string,
+  stepInClip: number,
+  stepTime: number,
+) => void;
+
+/** Seconds per tick at the given bpm. 16 steps/bar × 24 ticks/step. */
+function secPerTick(bpm: number): number {
+  return (60 / bpm) / TICKS_PER_STEP;
+}
 
 export function tickSession(
   laneStates: Map<string, LanePlayState>,
@@ -134,10 +152,9 @@ export function tickSession(
   now: number,
   lookahead: number,
   bpm: number,
-  scheduleStep: ScheduleClipStepFn,
+  onLaneTrigger: LaneTriggerFn,
+  onClipStepFired: ClipStepFiredFn,
 ): void {
-  const stepDur = 60 / bpm / 4; // 16th-note duration
-
   for (const lane of state.lanes) {
     const lp = laneStates.get(lane.id);
     if (!lp) continue;
@@ -147,35 +164,54 @@ export function tickSession(
       lp.playing = lp.queued;
       lp.queued = null;
       lp.startTime = lp.queuedBoundary;
+      lp.loopStartedAt = lp.queuedBoundary;
       lp.nextStepIdx = 0;
       lp.loopCount = 0;
     }
 
     if (!lp.playing) continue;
     const clip = lp.playing;
-    const clipSteps = Math.max(1, clip.lengthBars * 16);
+    const tickSec = secPerTick(bpm);
+    // Capture the loop start before tickLane potentially advances it.
+    // onTrigger fires synchronously inside tickLane, so this value is valid
+    // for all triggers produced in this tick.
+    const currentLoopStart = lp.loopStartedAt;
 
-    // Background-tab catch-up safety: if we're way behind, jump the
-    // playhead to "now" instead of scheduling a backlog of triggers.
-    const expectedNextTime = lp.startTime + lp.nextStepIdx * stepDur;
-    if (now - expectedNextTime > MAX_CATCH_UP_SEC) {
-      const stepsAhead = Math.floor((now - lp.startTime) / stepDur);
-      lp.nextStepIdx = stepsAhead;
-    }
-
-    // Schedule any 16ths that fall in (now, now + lookahead]
-    while (true) {
-      const stepTime = lp.startTime + lp.nextStepIdx * stepDur;
-      if (stepTime >= now + lookahead) break;
-      const stepInClip = lp.nextStepIdx % clipSteps;
-      if (lp.nextStepIdx > 0 && stepInClip === 0) lp.loopCount++;
-      scheduleStep(lane.id, clip, stepInClip, stepTime, stepDur);
-      lp.nextStepIdx++;
-    }
+    const newLoopStart = tickLane(clip, {
+      bpm,
+      lookaheadSec: lookahead,
+      now,
+      loopStartedAt: currentLoopStart,
+      onTrigger: (note: { midi: number; duration: number; velocity: number }, scheduleTime: number) => {
+        const accent = note.velocity >= 100;
+        const gateSec = Math.max(0.01, note.duration * tickSec);
+        // Derive tick position within the clip from the schedule time and the
+        // current loop start.  tickLane always calls onTrigger with an absolute
+        // scheduleTime that is loopStart + (noteTick / TICKS_PER_BAR) * barSec.
+        // Back-computing gives us the same tick value the note was stored at
+        // (within 1 µs float tolerance, well inside TICKS_PER_STEP/2 gap).
+        const scheduledStartTick = Math.round((scheduleTime - currentLoopStart) / tickSec)
+          % (clip.lengthBars * 16 * TICKS_PER_STEP);
+        // TB-303 slide: a prior note whose end overlaps this note's start.
+        const slidingIn = lane.engineId === 'tb303'
+          && (clip.notes as NoteEvent[]).some(
+            (m) => m.start < scheduledStartTick
+              && (m.start + m.duration) > scheduledStartTick + 1,
+          );
+        onLaneTrigger(lane.id, note.midi, scheduleTime, gateSec, accent, slidingIn);
+        onClipStepFired(
+          lane.id, clip.id,
+          Math.floor(scheduledStartTick / TICKS_PER_STEP),
+          scheduleTime,
+        );
+      },
+      onAutomation: () => {
+        // Automation kept minimal in Phase D.3; refined in a later task.
+      },
+    });
+    lp.loopStartedAt = newLoopStart;
   }
 }
-
-import { AUTOMATION_SUB_RES } from '../core/pattern';
 
 export type ApplyParamFn = (paramId: string, normalised: number) => void;
 
