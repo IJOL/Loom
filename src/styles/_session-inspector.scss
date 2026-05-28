@@ -100,20 +100,27 @@
   justify-content: center;
 }
 
-/* Modulators panel inside engine UI. Compact layout — sits below the engine
- * editor in the active page, scaled down knobs + small typography so it
- * doesn't dominate the viewport. */
+/* Modulators panel inside engine UI. Compact one-row layout — sits below the
+ * main synth controls in the active page. Cards collapse to a single
+ * horizontal row (title • config knobs • on/×) with routing lines underneath. */
 .engine-mod-host {
-  max-width: 720px;
+  max-width: 960px;
   margin-top: 8px;
 }
+/* Mod cards arrange in a 2-column grid now that each card is compact —
+ * fits ADSR-AMP, ADSR-FILTER, LFO1, LFO2 in two rows. */
 .mod-panel {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 2px;
-  padding: 6px;
+  padding: 6px 8px;
   margin-top: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 6px;
 }
+.mod-panel-title,
+.mod-panel-header { grid-column: 1 / -1; }
 .mod-panel-title {
   font-size: 10px;
   letter-spacing: 0.15em;
@@ -122,27 +129,47 @@
   text-transform: uppercase;
   margin-bottom: 4px;
 }
-.mod-panel-header { display: flex; gap: 4px; margin-bottom: 4px; }
+.mod-panel-header { display: flex; gap: 4px; margin-bottom: 6px; }
+
 .mod-card {
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 2px;
-  padding: 6px;
+  padding: 4px 8px;
   margin-bottom: 4px;
 }
-.mod-card-header { display: flex; gap: 4px; align-items: center; margin-bottom: 4px; }
-.mod-card-title { flex: 1; font-size: 10px; letter-spacing: 0.1em; color: var(--amber); }
+.mod-card-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+.mod-card-title {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--amber);
+  font-weight: 700;
+  min-width: 84px;
+  flex: 0 0 auto;
+}
 .mod-card-config {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   flex-wrap: wrap;
-  margin-bottom: 4px;
   align-items: center;
+  flex: 1;
 }
-.mod-card-routing { display: flex; flex-direction: column; gap: 4px; }
+.mod-card-routing {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--border);
+}
 .mod-conn-row {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   align-items: center;
   font-size: 10px;
 }
@@ -175,19 +202,14 @@
   min-width: 60px;
 }
 
-/* Knobs inside the mod panel: scaled down so ADSR/LFO knobs don't dwarf the
- * panel like main-page knobs do. */
-.mod-card-config .knob,
-.mod-conn-row .knob {
-  transform: scale(0.7);
-  transform-origin: top left;
-  margin: 0 -8px 0 0;
-}
+/* Knobs inside the mod panel: standard size (same as the rest of the synth
+ * surface). The compact card layout comes from flex spacing + a narrower
+ * panel, not from shrinking the knobs themselves. */
 
 /* Small buttons inside the panel (add/remove/enable). */
 .mod-conn-adder button,
 .mod-panel-header button,
-.mod-card-header button {
+.mod-card-row button {
   font-size: 10px;
   padding: 2px 6px;
   height: 22px;

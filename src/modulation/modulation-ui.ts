@@ -8,6 +8,7 @@ import type { KnobHandle } from '../core/knob';
 import { createKnob } from '../core/knob';
 import { createSelectControl } from '../core/select-control';
 import { SYNC_RATIO_MAP } from './rate-sync';
+import { formatParamIdForDisplay } from '../core/lane-display';
 import type { ModulationHost, ModulatorState, Waveform } from './types';
 
 export interface ModulationUIDeps {
@@ -17,6 +18,11 @@ export interface ModulationUIDeps {
   registry: Map<string, KnobHandle>;
   registerKnob: (k: KnobHandle) => void;
   onChange: () => void;                   // engine re-renders or rebuilds voice
+  /** Resolves a session laneId (`bass`, `main`, `drums`, `poly1`…) to its
+   *  user-facing display name (`TB-303 1`, `Subtractive 1`…) so the dropdown
+   *  and connection labels can show the same name the session uses
+   *  everywhere else. Optional — if omitted, raw ids are shown. */
+  lookupLaneDisplayName?: (laneId: string) => string | undefined;
 }
 
 export function renderModulatorsPanel(container: HTMLElement, deps: ModulationUIDeps): void {
@@ -52,12 +58,16 @@ function renderModCard(mod: ModulatorState, deps: ModulationUIDeps): HTMLElement
   const card = document.createElement('div');
   card.className = `mod-card mod-${mod.kind}`;
 
-  const head = document.createElement('div');
-  head.className = 'mod-card-header';
+  // Single horizontal row: title • config knobs • on/× buttons.
+  const row = document.createElement('div');
+  row.className = 'mod-card-row';
+
   const title = document.createElement('div');
   title.className = 'mod-card-title';
   title.textContent = mod.id.toUpperCase();
-  head.appendChild(title);
+  row.appendChild(title);
+
+  row.appendChild(mod.kind === 'lfo' ? renderLfoConfig(mod, deps) : renderAdsrConfig(mod, deps));
 
   const enableBtn = document.createElement('button');
   const refreshEnableUI = () => {
@@ -69,16 +79,15 @@ function renderModCard(mod: ModulatorState, deps: ModulationUIDeps): HTMLElement
     mod.enabled = !mod.enabled;
     refreshEnableUI();
   });
-  head.appendChild(enableBtn);
+  row.appendChild(enableBtn);
 
   const rmBtn = document.createElement('button');
   rmBtn.className = 'rnd';
   rmBtn.textContent = '×';
   rmBtn.addEventListener('click', () => { deps.host.removeModulator(mod.id); deps.onChange(); });
-  head.appendChild(rmBtn);
-  card.appendChild(head);
+  row.appendChild(rmBtn);
 
-  card.appendChild(mod.kind === 'lfo' ? renderLfoConfig(mod, deps) : renderAdsrConfig(mod, deps));
+  card.appendChild(row);
   card.appendChild(renderRoutingList(mod, deps));
   return card;
 }
@@ -198,11 +207,15 @@ function renderRoutingList(mod: ModulatorState, deps: ModulationUIDeps): HTMLEle
   const destSel = document.createElement('select');
   destSel.className = 'mod-dest-select';
   const used = new Set(mod.connections.map((c) => c.paramId));
+  const fmt = (id: string) =>
+    deps.lookupLaneDisplayName
+      ? formatParamIdForDisplay(id, deps.lookupLaneDisplayName)
+      : id;
   for (const id of destinationIds(deps.registry, deps.laneId)) {
     if (used.has(id)) continue;
     const opt = document.createElement('option');
     opt.value = id;
-    opt.textContent = id;
+    opt.textContent = fmt(id);
     destSel.appendChild(opt);
   }
   const addBtn = document.createElement('button');
@@ -228,7 +241,9 @@ function renderConnectionRow(mod: ModulatorState, conn: import('./types').Modula
 
   const label = document.createElement('span');
   label.className = 'mod-conn-target';
-  label.textContent = conn.paramId;
+  label.textContent = deps.lookupLaneDisplayName
+    ? formatParamIdForDisplay(conn.paramId, deps.lookupLaneDisplayName)
+    : conn.paramId;
   row.appendChild(label);
 
   const depthKnob = createKnob({

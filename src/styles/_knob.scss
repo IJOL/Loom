@@ -75,3 +75,84 @@
   pointer-events: none;
   transition: opacity 80ms ease;
 }
+
+/* ── Radio strip (replaces dropdowns with ≤ 4 options) ──────────────────
+ * Used for waveform selection on LFOs and OSC, and any other small
+ * discrete control. Buttons render either a built-in waveform glyph (sine
+ * / triangle / square / saw) or a plain text label. */
+.radio-strip {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 1px;
+}
+.radio-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 22px;
+  padding: 0 6px;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid transparent;
+  border-radius: 2px;
+  font-family: var(--mono);
+  font-size: 10px;
+  cursor: pointer;
+}
+.radio-btn:hover {
+  color: var(--amber);
+  border-color: var(--border-soft);
+}
+.radio-btn.active {
+  color: var(--amber);
+  background: var(--surface-3);
+  border-color: var(--amber);
+  box-shadow: 0 0 4px var(--amber-glow);
+}
+.radio-glyph { display: block; }
+
+/* ── Per-section knob accent colors ──────────────────────────────────────
+ * Default knob stroke is amber. These scoped overrides reuse the palette
+ * already used by mixer / FX knobs (cyan / yellow / red / purple / blue /
+ * orange / teal) — no new colors invented. Colors are applied to the
+ * stroke only; labels and value text stay neutral. */
+
+@mixin knob-accent($color) {
+  .knob-value   { stroke: $color; }
+  .knob-pointer { stroke: $color; }
+}
+
+#poly-osc1-knobs   { @include knob-accent(var(--knob-cyan));   }
+#poly-osc2-knobs   { @include knob-accent(var(--knob-yellow)); }
+#poly-sub-knobs    { @include knob-accent(var(--knob-blue));   }
+#poly-noise-knobs  { @include knob-accent(var(--knob-purple)); }
+#poly-filter-knobs { @include knob-accent(var(--knob-orange)); }
+#poly-amp-knobs    { @include knob-accent(var(--knob-red));    }
+#poly-master-knobs { @include knob-accent(var(--knob-green));  }
+
+/* FILTER envelope subgroup (last four knobs F ATK / F DEC / F SUS / F REL)
+ * teal — distinct from the main filter controls in orange. */
+#poly-filter-knobs .knob:nth-last-child(-n+4) {
+  .knob-value   { stroke: var(--knob-teal); }
+  .knob-pointer { stroke: var(--knob-teal); }
+}
+
+/* Modulator cards: ADSR knobs red, LFO rate cyan. Depth knob in routing
+ * rows gets yellow so it's visually distinct from the default amber UI
+ * accent and reads as part of the connection block. */
+.mod-card.mod-adsr .mod-card-row {
+  .knob-value   { stroke: var(--knob-red); }
+  .knob-pointer { stroke: var(--knob-red); }
+}
+.mod-card.mod-lfo .mod-card-row {
+  .knob-value   { stroke: var(--knob-cyan); }
+  .knob-pointer { stroke: var(--knob-cyan); }
+}
+.mod-card .mod-conn-row {
+  .knob-value   { stroke: var(--knob-yellow); }
+  .knob-pointer { stroke: var(--knob-yellow); }
+}

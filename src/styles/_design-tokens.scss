@@ -20,6 +20,18 @@
 
   --green:        #7cb342; /* used sparingly for OK/active subtle */
 
+  /* Knob accent palette — same hex values already used by mixer / FX knobs,
+   * just centralised so per-section synth knobs can reuse the same palette
+   * without inventing new colors. */
+  --knob-cyan:    #2ee0c0;
+  --knob-yellow:  #f7d000;
+  --knob-red:     #c0392b;
+  --knob-purple:  #9b59b6;
+  --knob-blue:    #3498db;
+  --knob-orange:  #e67e22;
+  --knob-teal:    #16a085;
+  --knob-green:   #7cb342;
+
   --mono:         'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
