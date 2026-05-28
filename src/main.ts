@@ -25,6 +25,7 @@ import { PolySynth } from './polysynth/polysynth';
 import { scheduleArpForNote } from './arp/arp';
 import { stepsToNotes, bassStepsToNotes } from './core/notes';
 import { buildMixerColumn } from './core/mixer';
+import * as laneTrackHelpers from './core/lane-display';
 import { SessionHost } from './session/session-host';
 import { importClassicToSession } from './session/session-migration';
 import { applyMinimalTechnoDemo, wireDemoMinimalTechno } from './demo/demo-minimal-techno';
@@ -132,6 +133,11 @@ function ensureExtraPoly(id: ExtraId): PolySynth {
 }
 
 const stripFor = (t: TrackId | string): ChannelStrip => {
+  // Slug ids (session lanes use these — `tb-303-1`, `drums-1`, `subtractive-1`).
+  if (t === 'tb-303-1')      return bassStrip;
+  if (t === 'subtractive-1') return polyStrip;
+  if (t === 'drums-1')       return drumBusStrip;
+  // Legacy mixer track ids (still emitted by the classic step-grid mixer).
   if (t === 'bass') return bassStrip;
   if (t === 'poly') return polyStrip;
   if (t === 'drumBus') return drumBusStrip;
@@ -144,8 +150,8 @@ const stripFor = (t: TrackId | string): ChannelStrip => {
     const ch = drums.channels[t as DrumVoice];
     if (ch) return ch;
   }
-  // Generic extra Session lanes (bass2 / drums2 / poly3 / etc.) — share the
-  // same per-lane ChannelStrip cache used by ensureLaneVoice.
+  // Generic extra Session lanes (subtractive-2, subtractive-3, etc.) — share
+  // the same per-lane ChannelStrip cache used by ensureLaneVoice.
   return ensureLaneStrip(t as string);
 };
 
@@ -306,9 +312,9 @@ const laneVoices = new Map<string, import('./engines/engine-types').Voice>();
 
 function ensureLaneStrip(laneId: string): ChannelStrip {
   // Built-in lanes use their dedicated strips.
-  if (laneId === 'bass')  return bassStrip;
-  if (laneId === 'drums') return drumBusStrip;
-  if (laneId === 'main')  return polyStrip;
+  if (laneId === 'tb-303-1')      return bassStrip;
+  if (laneId === 'drums-1')       return drumBusStrip;
+  if (laneId === 'subtractive-1') return polyStrip;
   // Existing extra-poly behaviour for poly1..poly16.
   if ((EXTRA_IDS as readonly string[]).includes(laneId)) {
     ensureExtraPoly(laneId as ExtraId);
@@ -394,7 +400,15 @@ function refreshKnobsFromSynth() {
 
 const mixerDeps: import('./core/mixer').MixerColumnDeps = {
   stripFor: (t) => stripFor(t as TrackId),
-  label:    (t) => LANE_LABELS[t as TrackId] ?? t,
+  label:    (t) => {
+    // Resolve mixer track id → session lane id → display slug. Drum voices
+    // (`kick`, `snare`, …) don't have their own session lane; fall back to
+    // the static label.
+    const laneId = laneTrackHelpers.trackIdToLaneId(t);
+    const sessionLane = sessionHost.state.lanes.find((l) => l.id === laneId);
+    if (sessionLane?.name) return laneTrackHelpers.slugifyLaneName(sessionLane.name);
+    return LANE_LABELS[t as TrackId] ?? t;
+  },
   muteState: muteState as unknown as Record<string, boolean>,
   soloState: soloState as unknown as Record<string, boolean>,
   applyMuteSolo,
@@ -560,8 +574,15 @@ const midiToFreqLocal = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
 // Direct triggers (used when arp is off OR scope doesn't include the track).
 const polyTriggerDirect = (note: number, time: number, gate: number, accent: boolean) => {
   const engineId = getLaneEngineId('main');
+  // ALL engines (subtractive included) must trigger through createVoice so the
+  // modulation host gets a chance to bind LFO/ADSR outputs to the new voice's
+  // AudioParams. Direct `polysynth.trigger(...)` bypasses SubtractiveVoice
+  // (and its rebind hook) — modulator routings would silently drop.
   if (engineId === 'subtractive') {
-    polysynth.trigger(note, time, gate, accent);
+    setCurrentLaneForVoice('main');
+    const voice = subtractiveEngine.createVoice(ctx, polyStrip.input);
+    setCurrentLaneForVoice(null);
+    voice.trigger(note, time, { gateDuration: gate, accent });
     return;
   }
   const inst = ensureLaneEngine('main', engineId);
@@ -724,6 +745,7 @@ const engineSelectorDeps: EngineSelectorUIDeps = {
   automationRegistry,
   registerKnob,
   populateAutoParamSelect: () => populateAutoParamSelectWrapper(),
+  remountSubtractiveLaneKnobs: (laneId) => mountSubtractiveLaneKnobs(laneId),
 };
 wireEngineSelector(engineSelectorDeps, currentEngineId);
 
@@ -735,7 +757,7 @@ const polySynthPresetsDeps: PolySynthPresetsDeps = {
   rebuildEngineParamUI,
   refreshLaneKnobs: (laneId) => {
     const engineId = getLaneEngineId(laneId);
-    if (engineId === 'subtractive' && laneId === 'main') {
+    if (engineId === 'subtractive' && laneId === 'subtractive-1') {
       refreshLaneKnobs('main', subtractiveEngine);
     } else {
       const inst = getLaneEngineInstance(laneId);
@@ -762,36 +784,40 @@ synthEditorDeps = {
   setActiveEngineLane: (laneId: string) => setActiveEngineLane(laneId),
 };
 
-// Build the Subtractive engine's knobs for the 'main' lane via the generic
-// lane-host loop. Replaces the old buildPolySynthUI() walker that mounted
-// 9 separate DOM rows under poly-osc1-knobs / poly-osc2-knobs / etc.
-{
-  const polyPage = document.querySelector<HTMLElement>('[data-page="poly"]');
-  // Clear the legacy per-section rows (they're now consolidated into a single
-  // wireLaneKnobs render under the first row's parent).
-  const legacyRowIds = [
-    'poly-osc1-knobs', 'poly-osc2-knobs', 'poly-sub-knobs', 'poly-noise-knobs',
-    'poly-filter-knobs', 'poly-amp-knobs', 'poly-master-knobs',
-    'poly-lfo1-knobs', 'poly-lfo2-knobs',
+// Build the Subtractive engine's knobs into the per-section divs declared in
+// index.html. Each spec.id prefix routes to its matching container so the
+// OSC / FILTER / AMP / MASTER section grouping stays intact.
+//
+// Reusable as a function so rebuildEngineParamUI can re-mount the knobs
+// after `unregisterKnobsByPrefix` evicts them from the registry (otherwise
+// the modulator-panel destination dropdown comes up empty for Subtractive
+// lanes — the per-section knobs live permanently in the DOM but their
+// handles need to stay registered for destinationIds to enumerate them).
+function mountSubtractiveLaneKnobs(laneId: string): void {
+  const sectionMap: Array<[string, string]> = [
+    ['osc1.',   'poly-osc1-knobs'],
+    ['osc2.',   'poly-osc2-knobs'],
+    ['sub.',    'poly-sub-knobs'],
+    ['noise.',  'poly-noise-knobs'],
+    ['filter.', 'poly-filter-knobs'],
+    ['amp.',    'poly-amp-knobs'],
+    ['master.', 'poly-master-knobs'],
   ];
-  for (const id of legacyRowIds) {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = '';
-  }
-  // Pick a single host: the first legacy knob-row, falling back to engine-params.
-  const polyKnobsParent =
-    document.getElementById('poly-osc1-knobs')
-    ?? document.getElementById('engine-params')
-    ?? polyPage?.querySelector<HTMLDivElement>('.knob-row')
-    ?? null;
-  if (polyKnobsParent) {
-    wireLaneKnobs({
-      laneId: 'main',
-      engine: subtractiveEngine,
-      parent: polyKnobsParent,
+  const ctx: import('./engines/engine-types').EngineUIContext = {
+    laneId,
+    registerKnob: (k) => registerKnob(k as KnobHandle),
+    registry: automationRegistry as unknown as Map<string, unknown>,
+  };
+  for (const [prefix, divId] of sectionMap) {
+    const parent = document.getElementById(divId);
+    if (!parent) continue;
+    parent.innerHTML = '';
+    wireEngineParams(subtractiveEngine, ctx, parent, {
+      filter: (id) => id.startsWith(prefix),
     });
   }
 }
+mountSubtractiveLaneKnobs('main');
 buildArpUI({ getExtraPolyTracks: () => seq.pattern.extraPolyTracks });
 const fxUIDeps: FxUIDeps = { fx, filterChain, getBpm: () => seq.bpm, registerKnob };
 wireFxUI(fxUIDeps);

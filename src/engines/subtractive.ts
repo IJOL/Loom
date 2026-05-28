@@ -99,7 +99,11 @@ class SubtractiveVoice implements Voice {
   /** Per-voice AudioParams captured from polysynth.triggerWithBinding's onVoice.
    *  The lane-host modulator binder reads these via getAudioParams(). */
   private lastVoiceParams: {
-    amp: AudioParam; cutoff: AudioParam; resonance: AudioParam; pitch: AudioParam;
+    amp: AudioParam; cutoff: AudioParam; resonance: AudioParam;
+    pitch: AudioParam; pitch2: AudioParam;
+    osc1Level: AudioParam; osc2Level: AudioParam; subLevel: AudioParam;
+    noiseLevel: AudioParam; noiseColor: AudioParam;
+    envAmount: AudioParam; drive: AudioParam; keyTrack: AudioParam; tune: AudioParam;
   } | null = null;
   /** Per-voice release callback captured from triggerWithBinding's onVoice.
    *  Lets Voice.release() cut the polysynth's amp gate, since trigger()
@@ -122,12 +126,51 @@ class SubtractiveVoice implements Voice {
 
   getAudioParams(): Map<string, AudioParam> {
     if (!this.lastVoiceParams) return new Map();
+    const v = this.lastVoiceParams;
     return new Map<string, AudioParam>([
-      ['amp.gain',         this.lastVoiceParams.amp],
-      ['filter.cutoff',    this.lastVoiceParams.cutoff],
-      ['filter.resonance', this.lastVoiceParams.resonance],
-      ['osc1.detune',      this.lastVoiceParams.pitch],
+      ['amp.gain',         v.amp],
+      ['filter.cutoff',    v.cutoff],
+      ['filter.resonance', v.resonance],
+      ['filter.envAmount', v.envAmount],
+      ['filter.keyTrack',  v.keyTrack],
+      ['filter.drive',     v.drive],
+      ['osc1.detune',      v.pitch],
+      ['osc1.level',       v.osc1Level],
+      ['osc2.detune',      v.pitch2],
+      ['osc2.level',       v.osc2Level],
+      ['sub.level',        v.subLevel],
+      ['noise.level',      v.noiseLevel],
+      ['noise.color',      v.noiseColor],
+      ['master.tune',      v.tune],
     ]);
+  }
+
+  /** Declared AudioParam operating ranges (in their native units). Used by
+   *  the modulator binder so depth=1.0 produces a full-swing modulation. */
+  getAudioParamRange(shortId: string): { min: number; max: number } | undefined {
+    switch (shortId) {
+      // filter.frequency holds 0; ConstantSources sum Hz into it. ±4 kHz is
+      // a dramatic but musical sweep on a typical 1-3 kHz base cutoff.
+      case 'filter.cutoff':    return { min: -4000, max: 4000 };
+      // filter.Q. Native ~0.5..22.5; depth=1 with bipolar LFO sweeps ±10 Q.
+      case 'filter.resonance': return { min: -10,   max: 10   };
+      // Hz of envelope sweep contribution (envScaler.gain). ±8 kHz lets the
+      // env open the filter wide on big modulations.
+      case 'filter.envAmount': return { min: -8000, max: 8000 };
+      // Hz of key-tracking contribution per voice (already scaled by note delta).
+      case 'filter.keyTrack':  return { min: -4,    max: 4    };
+      // Pre-shaper input boost (×). 1×=no drive, 9×=max drive.
+      case 'filter.drive':     return { min: -8,    max: 8    };
+      // Cents on osc.detune. ±1200 = ±octave swing for pitch modulation.
+      case 'osc1.detune':
+      case 'osc2.detune':      return { min: -1200, max: 1200 };
+      // master.tune is a ConstantSource.offset in cents, summed into every osc
+      // detune. ±1200 = ±octave global tune sweep.
+      case 'master.tune':      return { min: -1200, max: 1200 };
+      // noise.color is filter cutoff (Hz). ±8 kHz hops the noise from sub to bright.
+      case 'noise.color':      return { min: -8000, max: 8000 };
+      default: return undefined; // amp.gain, *.level fall back to spec 0..1
+    }
   }
 
   trigger(midi: number, time: number, options: VoiceTriggerOptions): void {
@@ -282,6 +325,7 @@ class SubtractiveEngine implements SynthEngine {
         host: this.modHost,
         registry: ctx.registry as Map<string, KnobHandle>,
         registerKnob: (k) => ctx.registerKnob(k),
+        lookupLaneDisplayName: ctx.lookupLaneDisplayName,
         onChange: () => {
           container.innerHTML = '';
           this.buildParamUI(container, ctx);

@@ -1,4 +1,5 @@
 import { listEngines } from './registry';
+import { populatePolyPresetSelect, refreshPolyPresetSelect } from '../polysynth/polysynth-presets';
 import type { SynthEngine } from './engine-types';
 import type { KnobHandle } from '../core/knob';
 
@@ -13,6 +14,14 @@ export interface EngineSelectorUIDeps {
   automationRegistry: Map<string, KnobHandle>;
   registerKnob: (k: KnobHandle) => void;
   populateAutoParamSelect: () => void;
+  /** Called by `rebuildEngineParamUI` when the active engine is Subtractive
+   *  to re-mount the per-section knobs into the index.html divs and
+   *  re-register their handles in the automation registry. The Subtractive
+   *  knobs are stable in DOM but their registry entries get evicted by
+   *  `unregisterKnobsByPrefix` (which exists to clear knobs from other
+   *  engines), so this hook re-populates them so the modulator destination
+   *  dropdown isn't empty. */
+  remountSubtractiveLaneKnobs?: (laneId: string) => void;
 }
 
 let _deps: EngineSelectorUIDeps | null = null;
@@ -42,10 +51,19 @@ export function rebuildEngineParamUI(): void {
   for (const row of subtractiveRows) {
     row.style.display = engineId === 'subtractive' ? '' : 'none';
   }
+  // Re-mount Subtractive per-section knobs so their registry entries are
+  // alive again after the prefix unregister above. Without this the
+  // modulator destination dropdown comes up empty for Subtractive lanes.
+  if (engineId === 'subtractive') deps.remountSubtractiveLaneKnobs?.(activeLaneId);
   // The modulators panel is rendered via SessionHost.injectEngineModulatorPanel
   // for ALL lanes (single source of truth). engine-params is no longer used by
   // the modulators UI; hide it to avoid an empty container in the layout.
   engineParamEl.style.display = 'none';
+  // Refresh the preset dropdown so it reflects the active lane's engine —
+  // subtractive lanes show PolySynth factory + user presets; other engines
+  // show their own SynthEngine.presets array (filtered by engine).
+  populatePolyPresetSelect();
+  refreshPolyPresetSelect();
   deps.populateAutoParamSelect();
 }
 

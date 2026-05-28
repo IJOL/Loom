@@ -103,15 +103,24 @@ function applyBinder(
 
   for (const [shortId, param] of shortParams) {
     const fullId = `${laneId}.${shortId}`;
-    destMap.set(fullId, param);
     const spec = engine.params.find((p) => p.id === shortId);
-    // Fall back to a 0..1 range when the engine doesn't declare a spec for
-    // this AudioParam (some voices expose extra params not in the schema —
-    // e.g. amp.gain on engines that don't list it). 0..1 is the right default
-    // because modulator output is already normalized.
-    const min = spec ? spec.min : 0;
-    const max = spec ? spec.max : 1;
+    // Prefer the voice's declared AudioParam operating range when present —
+    // a spec might say `filter.cutoff` is 0..1 (normalized knob) while the
+    // actual AudioParam is `BiquadFilterNode.frequency` in Hz. Falling back
+    // to the spec range (or 0..1 when neither is available) keeps engines
+    // that don't override working as before.
+    const declared = voice.getAudioParamRange?.(shortId);
+    const min = declared ? declared.min : (spec ? spec.min : 0);
+    const max = declared ? declared.max : (spec ? spec.max : 1);
+    // Register both id forms. The UI dropdown adds new connections with the
+    // full `lane.id` form, but engines ship with default modulator
+    // connections keyed by the short id (e.g. ADSR-AMP → 'amp.gain') so the
+    // same state is reusable across lanes. Accept both so depth changes on
+    // default connections actually modulate the param.
+    destMap.set(fullId, param);
     rangeMap.set(fullId, { min, max });
+    destMap.set(shortId, param);
+    rangeMap.set(shortId, { min, max });
   }
 
   binder.apply(voiceMods, engine.modulators.modulators, destMap, rangeMap, ctx);

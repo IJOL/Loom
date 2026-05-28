@@ -13,6 +13,14 @@ export interface Voice {
    *  connects each enabled connection through a depth-gain into the matching
    *  entry. Discrete-only params may be absent. */
   getAudioParams(): Map<string, AudioParam>;
+  /** Optional: declare the AudioParam's operating range for modulation depth
+   *  scaling, when it differs from the spec range. E.g. a spec might say
+   *  `filter.cutoff` is 0..1 (a normalized knob value) while the underlying
+   *  AudioParam is `BiquadFilterNode.frequency` operating in Hz. The
+   *  modulator binder uses this range when building the depth gain so
+   *  depth=1.0 produces a full-swing modulation in the param's native units.
+   *  Returning undefined falls back to the spec range. */
+  getAudioParamRange?(shortId: string): { min: number; max: number } | undefined;
 }
 
 export interface VoiceTriggerOptions {
@@ -37,6 +45,10 @@ export interface EngineUIContext {
   /** Read-only view of every automatable knob registered so far. Used by
    *  the modulation panel to populate destination dropdowns. */
   registry: Map<string, unknown>;
+  /** Optional session-lane name resolver used by the modulators panel so
+   *  destination labels show the user-facing session lane name instead of
+   *  the internal `main` / `bass` / `drums` / `poly1` ids. */
+  lookupLaneDisplayName?: (laneId: string) => string | undefined;
 }
 
 export interface EnginePreset {

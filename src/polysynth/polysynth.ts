@@ -59,6 +59,16 @@ export interface PolyVoiceParams {
   cutoff: AudioParam;    // filter frequency
   resonance: AudioParam; // filter Q
   pitch: AudioParam;     // osc1 detune (cents)
+  pitch2: AudioParam;    // osc2 detune (cents)
+  osc1Level: AudioParam; // osc1 gain
+  osc2Level: AudioParam; // osc2 gain
+  subLevel:  AudioParam; // sub gain
+  noiseLevel: AudioParam; // noise gain (persistent — sounds whenever level>0)
+  noiseColor: AudioParam; // noise lowpass cutoff (Hz)
+  envAmount:  AudioParam; // filter env contribution gain (Hz of sweep)
+  drive:      AudioParam; // waveshaper input boost (pre-saturation gain)
+  keyTrack:   AudioParam; // filter key-tracking gain (Hz contribution per voice)
+  tune:       AudioParam; // master tune detune offset (cents) applied to all oscs
   /**
    * Cuts this voice's amp gate at `time` by cancelling the internal amp
    * envelope's scheduled curve and ramping it to zero. Used by Voice.release
@@ -100,14 +110,25 @@ export class PolySynth {
   ) {
     const ctx = this.ctx;
     const p = this.params;
-    const noteFreq = 440 * Math.pow(2, (midi - 69 + p.master.tune) / 12);
+    // Base note frequency excludes master.tune — that's applied as a
+    // modulatable detune offset (cents) on each oscillator below, so
+    // realtime LFO/ADSR on master.tune actually bends pitch.
+    const noteFreq = 440 * Math.pow(2, (midi - 69) / 12);
     const velMul = accent ? 1.3 : 1.0;
+
+    // master.tune in semitones → cents detune offset shared across oscs.
+    // Each osc.detune AudioParam receives `tune.offset` (cents) via a per-voice
+    // ConstantSourceNode, so modulating `tune` sweeps pitch on every osc.
+    const tune = ctx.createConstantSource();
+    tune.offset.value = p.master.tune * 100;
+    tune.start();
 
     // ── Oscillators ──────────────────────────────────────────────────────
     const osc1 = ctx.createOscillator();
     osc1.type = p.osc1.wave;
     osc1.frequency.value = noteFreq * Math.pow(2, p.osc1.octave + p.osc1.semi / 12);
     osc1.detune.value = p.osc1.detune;
+    tune.connect(osc1.detune);
     const g1 = ctx.createGain(); g1.gain.value = p.osc1.level;
     osc1.connect(g1);
 
@@ -115,78 +136,109 @@ export class PolySynth {
     osc2.type = p.osc2.wave;
     osc2.frequency.value = noteFreq * Math.pow(2, p.osc2.octave + p.osc2.semi / 12);
     osc2.detune.value = p.osc2.detune;
+    tune.connect(osc2.detune);
     const g2 = ctx.createGain(); g2.gain.value = p.osc2.level;
     osc2.connect(g2);
 
     const sub = ctx.createOscillator();
     sub.type = 'sine';
     sub.frequency.value = noteFreq * Math.pow(2, p.sub.octave);
+    tune.connect(sub.detune);
     const gs = ctx.createGain(); gs.gain.value = p.sub.level;
     sub.connect(gs);
 
-    // ── Noise (gated when level=0) ───────────────────────────────────────
-    let noise: AudioBufferSourceNode | null = null;
-    let gn: GainNode | null = null;
-    if (p.noise.level > 0) {
-      noise = ctx.createBufferSource();
-      noise.buffer = this.noiseBuffer;
-      noise.loop = true;
-      const nFilter = ctx.createBiquadFilter();
-      nFilter.type = 'lowpass';
-      nFilter.frequency.value = 200 + p.noise.color * 14800;
-      gn = ctx.createGain(); gn.gain.value = p.noise.level;
-      noise.connect(nFilter).connect(gn);
-    }
+    // ── Noise (always-on, gated via gn.gain so noise.level is modulatable) ─
+    const noise = ctx.createBufferSource();
+    noise.buffer = this.noiseBuffer;
+    noise.loop = true;
+    const nFilter = ctx.createBiquadFilter();
+    nFilter.type = 'lowpass';
+    nFilter.frequency.value = 200 + p.noise.color * 14800;
+    const gn = ctx.createGain();
+    gn.gain.value = p.noise.level;
+    noise.connect(nFilter).connect(gn);
 
     // ── Mix ──────────────────────────────────────────────────────────────
     const mix = ctx.createGain();
-    g1.connect(mix); g2.connect(mix); gs.connect(mix);
-    if (gn) gn.connect(mix);
+    g1.connect(mix); g2.connect(mix); gs.connect(mix); gn.connect(mix);
 
-    // ── Drive (waveshaper pre-filter) ────────────────────────────────────
-    let driveOut: AudioNode = mix;
-    if (p.filter.drive > 0) {
-      const shaper = ctx.createWaveShaper();
-      (shaper as { curve: Float32Array | null }).curve = makeDriveCurve(p.filter.drive);
-      shaper.oversample = '2x';
-      mix.connect(shaper);
-      driveOut = shaper;
-    }
+    // ── Drive (parallel dry/wet — `drive.gain` modulates wet level) ──────
+    // Dry path always-on; wet path sums a saturated copy proportional to
+    // `drivePre.gain` (which becomes the modulatable `drive` AudioParam).
+    // At drive=0 wet contributes nothing, so the signal stays clean. At
+    // drive=1 the wet path is fully saturated. Modulating drivePre swings
+    // distortion in real time.
+    const drivePre = ctx.createGain();
+    drivePre.gain.value = p.filter.drive;
+    const shaper = ctx.createWaveShaper();
+    (shaper as { curve: Float32Array | null }).curve = makeDriveCurve(1.0);
+    shaper.oversample = '2x';
+    // Dry: mix → filter. Wet: mix → shaper → drivePre → filter.
+    mix.connect(shaper);
+    shaper.connect(drivePre);
 
     // ── Filter ───────────────────────────────────────────────────────────
     const filter = ctx.createBiquadFilter();
     filter.type = p.filter.type;
     filter.Q.value = 0.5 + p.filter.resonance * 22;
-    driveOut.connect(filter);
+    mix.connect(filter);
+    drivePre.connect(filter);
 
-    // Filter envelope with key tracking. KT shifts the base cutoff by note.
+    // ── Cutoff path: split into BASE + KEY TRACK + ENVELOPE ─────────────
+    // baseCutoff (Hz, the steady-state filter freq absent envelope) sums
+    // with the envelope contribution into filter.frequency. KeyTrack lives
+    // as a Gain whose `.gain` is the modulatable AudioParam; the constant
+    // factor (semitone delta × 100 / 1200) is folded into a ConstantSource.
     const baseHz = 60 * Math.pow(220, p.filter.cutoff);  // 60..13200
-    const ktCents = p.filter.keyTrack * (midi - 60) * 100;
-    const baseCutoff = clamp(baseHz * Math.pow(2, ktCents / 1200), 40, 18000);
-    const peakCutoff = clamp(baseCutoff * Math.pow(8, p.filter.envAmount * velMul), 40, 18000);
-    const sustainCutoff = clamp(baseCutoff + (peakCutoff - baseCutoff) * p.filter.sustain, 40, 18000);
+    const baseCutoffSrc = ctx.createConstantSource();
+    baseCutoffSrc.offset.value = Math.min(baseHz, 18000);
+    baseCutoffSrc.start();
+    baseCutoffSrc.connect(filter.frequency);
+    filter.frequency.value = 0;
+
+    // KeyTrack: keyTrack × keySemiDelta × 100 cents of contribution. Linearise
+    // to Hz: contribution ≈ keyTrack × keySemiDelta × baseHz × (2^(1/12) - 1).
+    // Modulating `keyTrack.gain` sweeps how much the note's pitch pulls the
+    // filter cutoff up/down.
+    const keySemiDelta = midi - 60;
+    const keyTrackSrc = ctx.createConstantSource();
+    keyTrackSrc.offset.value = keySemiDelta * baseHz * (Math.pow(2, 1 / 12) - 1);
+    keyTrackSrc.start();
+    const keyTrack = ctx.createGain();
+    keyTrack.gain.value = p.filter.keyTrack;
+    keyTrackSrc.connect(keyTrack).connect(filter.frequency);
+
+    // EnvAmount: split env scheduling into a normalised 0..1 ConstantSource
+    // (`envCutoffNorm`) multiplied by a Gain (`envScaler`) whose .gain is the
+    // modulatable AudioParam. envScaler.gain = baseHz × 7 × envAmount gives
+    // a peak ≈ baseHz × 8 at envAmount=1 (matches the legacy multiplier shape
+    // linearly rather than exponentially — close enough for sweeping).
     const fa = Math.max(0.001, p.filter.attack);
     const fd = Math.max(0.001, p.filter.decay);
     const fr = Math.max(0.001, p.filter.release);
+
+    const envCutoffNorm = ctx.createConstantSource();
+    envCutoffNorm.offset.value = 0;
+    envCutoffNorm.start();
+    const envScaler = ctx.createGain();
+    // Cap the envelope sweep so a maxed-out cutoff knob doesn't push the
+    // filter freq into self-oscillation territory beyond Nyquist.
+    const envRange = Math.min(baseHz * 7, 16000);
+    envScaler.gain.value = envRange * p.filter.envAmount * velMul;
+    envCutoffNorm.connect(envScaler).connect(filter.frequency);
 
     // ── Amp gain node (envelope scheduled below) ─────────────────────────
     const amp = ctx.createGain();
     amp.gain.value = 0;
 
     // ── Internal envelope nodes ──────────────────────────────────────────
-    // Per-voice amp + filter envelopes route through ConstantSourceNodes so
-    // the destination AudioParams (amp.gain, filter.frequency) never receive
-    // cancelScheduledValues / setValueAtTime — external modulators sum cleanly.
+    // Per-voice amp envelope routes through a ConstantSourceNode so the
+    // destination AudioParam (amp.gain) never receives cancelScheduledValues
+    // / setValueAtTime — external modulators sum cleanly.
     const envAmp = ctx.createConstantSource();
     envAmp.offset.value = 0;
     envAmp.start();
     envAmp.connect(amp.gain);
-
-    const envCutoff = ctx.createConstantSource();
-    envCutoff.offset.value = 0;
-    envCutoff.start();
-    envCutoff.connect(filter.frequency);
-    filter.frequency.value = 0;
 
     // Per-voice gate cutter for Voice.release(). envAmp is the
     // ConstantSourceNode driving amp.gain; cancelling and ramping its offset
@@ -206,12 +258,23 @@ export class PolySynth {
       cutoff: filter.frequency,
       resonance: filter.Q,
       pitch: osc1.detune,
+      pitch2: osc2.detune,
+      osc1Level: g1.gain,
+      osc2Level: g2.gain,
+      subLevel:  gs.gain,
+      noiseLevel: gn.gain,
+      noiseColor: nFilter.frequency,
+      envAmount:  envScaler.gain,
+      drive:      drivePre.gain,
+      keyTrack:   keyTrack.gain,
+      tune:       tune.offset,
       releaseGate,
     });
 
-    envCutoff.offset.setValueAtTime(baseCutoff, time);
-    envCutoff.offset.linearRampToValueAtTime(peakCutoff, time + fa);
-    envCutoff.offset.exponentialRampToValueAtTime(Math.max(sustainCutoff, 40), time + fa + fd);
+    // Schedule the normalised envCutoff (0..1) — sustain knob clamps it.
+    envCutoffNorm.offset.setValueAtTime(0, time);
+    envCutoffNorm.offset.linearRampToValueAtTime(1, time + fa);
+    envCutoffNorm.offset.linearRampToValueAtTime(Math.max(p.filter.sustain, 0), time + fa + fd);
 
     // ── Amp envelope ─────────────────────────────────────────────────────
     const peakAmp = 0.4 * velMul;
@@ -229,8 +292,9 @@ export class PolySynth {
     const releaseStart = Math.max(time + aa + ad, time + gateDuration);
     envAmp.offset.setValueAtTime(sustainAmp, releaseStart);
     envAmp.offset.exponentialRampToValueAtTime(0.001, releaseStart + ar);
-    envCutoff.offset.setValueAtTime(sustainCutoff, releaseStart);
-    envCutoff.offset.exponentialRampToValueAtTime(Math.max(baseCutoff, 40), releaseStart + fr);
+    // Release the normalised cutoff envelope back to 0.
+    envCutoffNorm.offset.setValueAtTime(Math.max(p.filter.sustain, 0), releaseStart);
+    envCutoffNorm.offset.linearRampToValueAtTime(0, releaseStart + fr);
 
     const stopTime = releaseStart + Math.max(ar, fr) + 0.05;
 
@@ -240,9 +304,10 @@ export class PolySynth {
     // per-voice AudioParams exposed above (amp.gain, filter.frequency, etc.).
 
     osc1.start(time); osc2.start(time); sub.start(time);
-    osc1.stop(stopTime); osc2.stop(stopTime); sub.stop(stopTime);
-    envAmp.stop(stopTime); envCutoff.stop(stopTime);
-    if (noise) { noise.start(time); noise.stop(stopTime); }
+    noise.start(time);
+    osc1.stop(stopTime); osc2.stop(stopTime); sub.stop(stopTime); noise.stop(stopTime);
+    envAmp.stop(stopTime); envCutoffNorm.stop(stopTime);
+    tune.stop(stopTime); baseCutoffSrc.stop(stopTime); keyTrackSrc.stop(stopTime);
   }
 }
 
