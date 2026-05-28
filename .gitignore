@@ -9,3 +9,6 @@ dist
 
 # DSP test artifacts (regenerated on every test run)
 test/output/
+
+.playwright-mcp/
+short-names.png
