@@ -6,7 +6,6 @@ import type { SynthEngine } from './engines/engine-types';
 import * as leh from './engines/lane-engine-host';
 import type { LaneEngineHostState, LaneEngineHostDeps } from './engines/lane-engine-host';
 import { getEngine, createEngineInstance } from './engines/registry';
-import { subtractiveEngine } from './engines/subtractive';
 import './engines/wavetable';
 import './engines/fm';
 import './engines/karplus';
@@ -110,10 +109,14 @@ const synth = new TB303(ctx, bassStrip.input);
 configureTB303EngineMainInstance(bassStrip.input, synth);
 const drums = new DrumMachine(ctx, fx, drumBusStrip.input);
 const polysynth = new PolySynth(ctx, polyStrip.input);
-// The singleton SubtractiveEngine for the 'main' lane reads/writes through
-// this PolySynth instance. (Per-lane subtractive engines for poly1/poly2…
-// get their own PolySynth attached via lane-engine-host.)
-subtractiveEngine.setPolySynth(polysynth);
+// Retrieve the registry instance so we can wire polysynth into it.
+// (The singleton `subtractiveEngine` export has been removed; we go through
+// the registry, which holds the representative instance registered in
+// subtractive.ts at module load time.)
+const mainSubtractive = getEngine('subtractive');
+if (mainSubtractive) {
+  (mainSubtractive as unknown as { setPolySynth?(p: PolySynth): void }).setPolySynth?.(polysynth);
+}
 
 // Phase A: per-lane resources unified into a single Map. The objects are
 // the SAME instances as the existing globals (polysynth / bassStrip / etc.) —
@@ -121,10 +124,10 @@ subtractiveEngine.setPolySynth(polysynth);
 // global with a laneResources.get(id) lookup; Phase E deletes the globals.
 const laneResources = new LaneResourceMap();
 const drumsEngineInstance = getEngine('drums-machine');
-if (drumsEngineInstance) {
+if (drumsEngineInstance && mainSubtractive) {
   laneResources.set(LANE_ID_BASS,  { strip: bassStrip,    engine: tb303Engine });
   laneResources.set(LANE_ID_DRUMS, { strip: drumBusStrip, engine: drumsEngineInstance });
-  laneResources.set(LANE_ID_POLY,  { strip: polyStrip,    engine: subtractiveEngine });
+  laneResources.set(LANE_ID_POLY,  { strip: polyStrip,    engine: mainSubtractive });
 }
 
 // Extra polyphonic voices are created LAZILY — no PolySynth/ChannelStrip is
@@ -822,7 +825,7 @@ const polySynthPresetsDeps: PolySynthPresetsDeps = {
   refreshLaneKnobs: (laneId) => {
     const engineId = getLaneEngineId(laneId);
     if (engineId === 'subtractive' && laneId === 'subtractive-1') {
-      refreshLaneKnobs('main', subtractiveEngine);
+      if (mainSubtractive) refreshLaneKnobs('main', mainSubtractive);
     } else {
       const inst = getLaneEngineInstance(laneId);
       if (inst) refreshLaneKnobs(laneId, inst);
@@ -843,7 +846,7 @@ const polyModeDeps: PolyModeDeps = {
 // Now that polySynthPresetsDeps exist, wire synthEditorDeps
 // (referenced lazily by showPolyEditorWrapper above).
 synthEditorDeps = {
-  refreshPolyKnobsFromState: () => refreshLaneKnobs(_lehState.activeLaneId, subtractiveEngine),
+  refreshPolyKnobsFromState: () => { if (mainSubtractive) refreshLaneKnobs(_lehState.activeLaneId, mainSubtractive); },
   refreshPolyPresetSelect: () => refreshPolyPresetSelect(),
   setActiveEngineLane: (laneId: string) => setActiveEngineLane(laneId),
 };
@@ -876,7 +879,7 @@ function mountSubtractiveLaneKnobs(laneId: string): void {
     const parent = document.getElementById(divId);
     if (!parent) continue;
     parent.innerHTML = '';
-    wireEngineParams(subtractiveEngine, ctx, parent, {
+    if (mainSubtractive) wireEngineParams(mainSubtractive, ctx, parent, {
       filter: (id) => id.startsWith(prefix),
     });
   }

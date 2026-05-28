@@ -341,8 +341,10 @@ class SubtractiveEngine implements SynthEngine {
 }
 
 export { SubtractiveEngine };
-export const subtractiveEngine = new SubtractiveEngine();
-registerEngine(subtractiveEngine);
-// Factory: each per-lane subtractive needs its OWN PolySynth, which the caller
-// must attach via setPolySynth(...) before triggering (createVoice requires it).
+// Singleton export (`subtractiveEngine`) has been removed. Every consumer
+// now allocates via the factory through `createEngineInstance('subtractive')`
+// or reads its lane's instance from `laneResources`. A representative
+// instance is still registered into the engine registry so `getEngine('subtractive')`
+// keeps returning a SynthEngine (for code paths that don't have a laneId).
 registerEngineFactory('subtractive', () => new SubtractiveEngine());
+registerEngine(new SubtractiveEngine());
