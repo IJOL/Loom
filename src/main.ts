@@ -5,7 +5,7 @@ import {
 import type { SynthEngine } from './engines/engine-types';
 import * as leh from './engines/lane-engine-host';
 import type { LaneEngineHostState, LaneEngineHostDeps } from './engines/lane-engine-host';
-import { getEngine } from './engines/registry';
+import { getEngine, createEngineInstance } from './engines/registry';
 import { subtractiveEngine } from './engines/subtractive';
 import './engines/wavetable';
 import './engines/fm';
@@ -135,6 +135,12 @@ const extraPolys: Partial<Record<ExtraId, PolySynth>> = {};
 // poly lanes like bass2, drums2, etc.
 const extraLaneStrips = new Map<string, ChannelStrip>();
 
+// poly1 → subtractive-2, poly2 → subtractive-3, …
+function slugFromExtraId(id: ExtraId): string {
+  const n = parseInt(id.replace('poly', ''), 10) + 1;
+  return `subtractive-${n}`;
+}
+
 function ensureExtraPoly(id: ExtraId): PolySynth {
   let p = extraPolys[id];
   if (p) return p;
@@ -143,6 +149,17 @@ function ensureExtraPoly(id: ExtraId): PolySynth {
   p.bpm = seq.bpm;
   extraStrips[id] = strip;
   extraPolys[id] = p;
+  // Phase A: also seed laneResources so consumers can opt into the new path.
+  // Each extra subtractive lane gets its OWN SubtractiveEngine instance via
+  // the factory (no shared singleton modHost). The factory-created engine
+  // has setPolySynth on its prototype; we attach the freshly-allocated
+  // polysynth so its createVoice can route notes through it.
+  const engine = createEngineInstance('subtractive');
+  if (engine) {
+    const setPS = (engine as unknown as { setPolySynth?(p: PolySynth): void }).setPolySynth;
+    if (setPS) setPS.call(engine, p);
+    laneResources.set(slugFromExtraId(id), { strip, engine });
+  }
   return p;
 }
 
