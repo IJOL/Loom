@@ -1,0 +1,201 @@
+- generic [ref=e2]:
+  - heading "Loom" [level=1] [ref=e3]
+  - generic [ref=e4]:
+    - button "▶" [ref=e5] [cursor=pointer]
+    - generic [ref=e6]:
+      - text: BPM
+      - spinbutton "BPM" [ref=e7]: "130"
+    - generic [ref=e8]:
+      - text: Swing
+      - slider "Swing" [ref=e9]: "0"
+    - generic [ref=e10]:
+      - text: Volume
+      - slider "Volume" [ref=e11]: "0.5"
+    - button "Save" [ref=e12] [cursor=pointer]
+    - button "Load" [ref=e13] [cursor=pointer]
+  - generic [ref=e15]:
+    - button "Master FX" [ref=e16] [cursor=pointer]
+    - button "Automation" [ref=e17] [cursor=pointer]
+  - generic [ref=e18]:
+    - button "TB-303 1" [ref=e19] [cursor=pointer]
+    - button "Drums 1" [ref=e20] [cursor=pointer]
+    - button "Subtractive 1" [ref=e21] [cursor=pointer]
+    - generic [ref=e22]:
+      - combobox "Engine for new lane" [ref=e23]:
+        - option "Subtractive" [selected]
+        - option "Wavetable"
+        - option "FM (4-op)"
+        - option "Karplus (Physical)"
+        - option "TB-303"
+        - option "Drums"
+      - button "+" [ref=e24] [cursor=pointer]
+  - group [ref=e25]:
+    - generic "Arpeggiator" [ref=e26] [cursor=pointer]
+    - option "Up" [selected]
+    - option "Down"
+    - option "Up-Down"
+    - option "Random"
+    - option "Cosmic"
+    - option "Major"
+    - option "Minor"
+    - option "Penta Min" [selected]
+    - option "Phrygian"
+    - option "Chromatic"
+    - option "Free"
+    - option "4 bars"
+    - option "3 bars"
+    - option "2 bars"
+    - option "1 bar"
+    - option "1/2"
+    - option "1/4"
+    - option "1/8."
+    - option "1/8"
+    - option "1/8t"
+    - option "1/16" [selected]
+    - option "1/16t"
+    - option "1/32"
+  - generic [ref=e27]:
+    - generic [ref=e28]:
+      - button "▶ Scene 1 (debug)" [ref=e29] [cursor=pointer]
+      - button "⏹ All" [ref=e30] [cursor=pointer]
+    - generic [ref=e32]:
+      - generic [ref=e33]:
+        - generic [ref=e35]:
+          - generic [ref=e36]: TB-303 1
+          - button "⚙" [ref=e37] [cursor=pointer]
+        - generic [ref=e38]:
+          - generic [ref=e39]: Drums 1
+          - button "⚙" [ref=e40] [cursor=pointer]
+        - generic [ref=e41]:
+          - generic [ref=e42]: Subtractive 1
+          - button "⚙" [ref=e43] [cursor=pointer]
+        - generic [ref=e44]: Scenes
+      - generic [ref=e45]:
+        - generic [ref=e46]: "1"
+        - generic [ref=e47] [cursor=pointer]:
+          - generic [ref=e48]: "1"
+          - generic [ref=e49]: ▶
+        - generic [ref=e50] [cursor=pointer]:
+          - generic [ref=e51]: "1"
+          - generic [ref=e52]: ▶
+        - generic [ref=e53] [cursor=pointer]:
+          - generic [ref=e54]: "1"
+          - generic [ref=e55]: ▶
+        - button "▶ Demo" [ref=e57] [cursor=pointer]
+      - generic [ref=e58]:
+        - generic [ref=e59]: +
+        - button "+" [ref=e63] [cursor=pointer]
+      - generic [ref=e64]:
+        - button "⏹" [ref=e66] [cursor=pointer]
+        - button "⏹" [ref=e67] [cursor=pointer]
+        - button "⏹" [ref=e68] [cursor=pointer]
+        - button "⏹ all" [ref=e69] [cursor=pointer]
+      - generic [ref=e70]:
+        - generic [ref=e72]:
+          - generic [ref=e73]: tb-303-1
+          - generic [ref=e74]:
+            - generic [ref=e75]: EQ
+            - generic [ref=e76]:
+              - generic [ref=e77]: HI
+              - img [ref=e78]
+              - generic [ref=e82]: "+0.0"
+            - generic [ref=e83]:
+              - generic [ref=e84]: MID
+              - img [ref=e85]
+              - generic [ref=e89]: "+0.0"
+            - generic [ref=e90]:
+              - generic [ref=e91]: LO
+              - img [ref=e92]
+              - generic [ref=e96]: "+0.0"
+          - generic [ref=e97]:
+            - generic [ref=e98]: SEND
+            - generic [ref=e99]:
+              - generic [ref=e100]: REV
+              - img [ref=e101]
+              - generic [ref=e106]: 10%
+            - generic [ref=e107]:
+              - generic [ref=e108]: DLY
+              - img [ref=e109]
+              - generic [ref=e113]: 0%
+          - generic [ref=e115]:
+            - generic [ref=e116]: PAN
+            - img [ref=e117]
+            - generic [ref=e121]: C
+          - generic [ref=e122]:
+            - button "M" [ref=e123] [cursor=pointer]
+            - button "S" [ref=e124] [cursor=pointer]
+          - generic [ref=e125]:
+            - slider [ref=e126]: "1"
+            - generic [ref=e127]: 100%
+        - generic [ref=e128]:
+          - generic [ref=e129]: drums-1
+          - generic [ref=e130]:
+            - generic [ref=e131]: EQ
+            - generic [ref=e132]:
+              - generic [ref=e133]: HI
+              - img [ref=e134]
+              - generic [ref=e138]: "+0.0"
+            - generic [ref=e139]:
+              - generic [ref=e140]: MID
+              - img [ref=e141]
+              - generic [ref=e145]: "+0.0"
+            - generic [ref=e146]:
+              - generic [ref=e147]: LO
+              - img [ref=e148]
+              - generic [ref=e152]: "+0.0"
+          - generic [ref=e153]:
+            - generic [ref=e154]: SEND
+            - generic [ref=e155]:
+              - generic [ref=e156]: REV
+              - img [ref=e157]
+              - generic [ref=e161]: 0%
+            - generic [ref=e162]:
+              - generic [ref=e163]: DLY
+              - img [ref=e164]
+              - generic [ref=e168]: 0%
+          - generic [ref=e170]:
+            - generic [ref=e171]: PAN
+            - img [ref=e172]
+            - generic [ref=e176]: C
+          - generic [ref=e177]:
+            - button "M" [ref=e178] [cursor=pointer]
+            - button "S" [ref=e179] [cursor=pointer]
+          - generic [ref=e180]:
+            - slider [ref=e181]: "1"
+            - generic [ref=e182]: 100%
+        - generic [ref=e183]:
+          - generic [ref=e184]: subtractive-1
+          - generic [ref=e185]:
+            - generic [ref=e186]: EQ
+            - generic [ref=e187]:
+              - generic [ref=e188]: HI
+              - img [ref=e189]
+              - generic [ref=e193]: "+0.0"
+            - generic [ref=e194]:
+              - generic [ref=e195]: MID
+              - img [ref=e196]
+              - generic [ref=e200]: "+0.0"
+            - generic [ref=e201]:
+              - generic [ref=e202]: LO
+              - img [ref=e203]
+              - generic [ref=e207]: "+0.0"
+          - generic [ref=e208]:
+            - generic [ref=e209]: SEND
+            - generic [ref=e210]:
+              - generic [ref=e211]: REV
+              - img [ref=e212]
+              - generic [ref=e217]: 25%
+            - generic [ref=e218]:
+              - generic [ref=e219]: DLY
+              - img [ref=e220]
+              - generic [ref=e225]: 15%
+          - generic [ref=e227]:
+            - generic [ref=e228]: PAN
+            - img [ref=e229]
+            - generic [ref=e233]: C
+          - generic [ref=e234]:
+            - button "M" [ref=e235] [cursor=pointer]
+            - button "S" [ref=e236] [cursor=pointer]
+          - generic [ref=e237]:
+            - slider [ref=e238]: "1"
+            - generic [ref=e239]: 100%

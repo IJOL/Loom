@@ -85,10 +85,10 @@ const ALL_TRACKS: TrackId[] = ['bass', 'poly', ...EXTRA_IDS, 'drumBus', ...DRUM_
 const $  = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const $$ = <T extends HTMLElement>(sel: string) => Array.from(document.querySelectorAll<T>(sel));
 
-// ── App mode (Classic vs Session) ──────────────────────────────────────────
-export type AppMode = 'classic' | 'session';
-let appMode: AppMode = 'classic';
-function getAppMode(): AppMode { return appMode; }
+// The app is session-only. AppMode / getAppMode retained for consumers that
+// haven't been migrated yet (automation-tick); they always return 'session'.
+export type AppMode = 'session';
+function getAppMode(): AppMode { return 'session'; }
 
 // ── Audio graph ────────────────────────────────────────────────────────────
 const ctx = new AudioContext();
@@ -274,7 +274,7 @@ function recordAutomationValue(paramId: string, value: number) {
   if (idx + 1 < lane.values.length) lane.values[idx + 1] = (lane.values[idx + 1] + norm) / 2;
 }
 
-const seq = new Sequencer(ctx, synth, drums, polysynth, 32);
+const seq = new Sequencer(ctx, 32);
 let currentEngineId = 'subtractive';
 const bank = new PatternBank(32);
 
@@ -531,33 +531,6 @@ function markTrackActive(trackId: string, audioTime: number) {
   }, delayMs);
 }
 
-// Route extra track triggers to their dedicated polysynth instance + mark activity.
-seq.onExtraPolyTrigger = (trackIdx, note, time, gate, accent) => {
-  const id = EXTRA_IDS[trackIdx];
-  if (!id) return;
-  const engineId = getLaneEngineId(id);
-  const directTrigger = (n: number, t: number, g: number, a: boolean) => {
-    const poly = ensureExtraPoly(id);
-    if (engineId === 'subtractive') {
-      poly.trigger(n, t, g, a);
-    } else {
-      const inst = laneResources.get(slugFromExtraId(id))?.engine ?? null;
-      if (inst) {
-        setCurrentLaneForVoice(id);
-        const voice = inst.createVoice(ctx, extraStrips[id]!.input);
-        setCurrentLaneForVoice(null);
-        voice.trigger(n, t, { gateDuration: g, accent: a });
-      } else {
-        poly.trigger(n, t, g, a);
-      }
-    }
-  };
-  const useArp = arp.enabled && arp.scope.includes(id);
-  if (useArp) scheduleArpForNote(directTrigger, arp, seq.bpm, note, time, gate, accent);
-  else directTrigger(note, time, gate, accent);
-  markTrackActive(id, time);
-};
-
 // chain/loop/slot/onEnded wired in wireTransport() (see boot section)
 
 swingInput.addEventListener('input', () => { seq.swing = parseFloat(swingInput.value); });
@@ -690,31 +663,6 @@ const triggerForLane = (
   voice.trigger(note, time, { gateDuration: gate, accent });
 };
 
-// Direct triggers (used when arp is off OR scope doesn't include the track).
-// These are thin aliases over triggerForLane kept for backward compatibility.
-const polyTriggerDirect = (note: number, time: number, gate: number, accent: boolean) => {
-  triggerForLane(LANE_ID_POLY, note, time, gate, accent);
-};
-const bassTriggerDirect = (note: number, time: number, gate: number, accent: boolean, slidingIn: boolean) => {
-  triggerForLane(LANE_ID_BASS, note, time, gate, accent, slidingIn);
-};
-const bassTriggerForArp = (note: number, time: number, gate: number, accent: boolean) => {
-  triggerForLane(LANE_ID_BASS, note, time, gate, accent, false);
-};
-
-seq.onMelodyTrigger = (note, time, gate, accent) => {
-  const useArp = arp.enabled && arp.scope.includes('main');
-  if (useArp) scheduleArpForNote(polyTriggerDirect, arp, seq.bpm, note, time, gate, accent);
-  else polyTriggerDirect(note, time, gate, accent);
-  markTrackActive('main', time);
-};
-seq.onBassTrigger = (note, time, gate, accent, slidingIn) => {
-  const useArp = arp.enabled && arp.scope.includes('bass');
-  if (useArp) scheduleArpForNote(bassTriggerForArp, arp, seq.bpm, note, time, gate, accent);
-  else bassTriggerDirect(note, time, gate, accent, slidingIn);
-  markTrackActive('bass', time);
-};
-
 // ── Session host ───────────────────────────────────────────────────────────
 // synthEditorDeps is constructed later (after polySynthUIDeps + polySynthPresetsDeps
 // exist). showPolyEditorWrapper reads it lazily at call time.
@@ -737,7 +685,6 @@ const sessionHost = new SessionHost({
   showPolyEditor: showPolyEditorWrapper,
   polysynth,
   mixerDeps,
-  getAppMode,
   midiLabel,
   automationRegistry,
   getAutoAbsSubIdx,
@@ -818,8 +765,6 @@ populateAutoParamSelectWrapper = () => {
 };
 
 function activeEnginePrefix(): string | null {
-  // Only filter in Session mode.
-  if (appMode !== 'session') return null;
   const laneId = sessionHost.activeEditLane;
   if (!laneId) return null;
   const lane = sessionHost.state.lanes.find((l) => l.id === laneId);
@@ -968,54 +913,6 @@ wireMidiImport({
   applyPresetByName,
 });
 
-// ── App mode toggle (Classic vs Session) ──────────────────────────────────
-function applyModeVisibility() {
-  const tabBar      = document.querySelector<HTMLElement>('.tab-bar');
-  const pages       = document.querySelectorAll<HTMLElement>('.page');
-  const sessionView = document.getElementById('session-view');
-  const mixerPanel  = document.querySelector<HTMLElement>('.mixer-panel');
-  const arpPanel    = document.querySelector<HTMLElement>('.arp-panel');
-  const copyPanels  = document.querySelectorAll<HTMLElement>('.copy-row, .copy-track-panel, .presets-panel');
-  const inClassic   = appMode === 'classic';
-
-  if (tabBar)      tabBar.hidden      = false;
-  const synthRow = document.querySelector<HTMLElement>('.synth-row');
-  if (synthRow) synthRow.hidden = inClassic;  // only show in Session mode
-  // In Classic mode, the active synth tab's page shows. In Session mode the
-  // synth pages stay hidden until the user clicks a lane tab (onEditLane in
-  // session-host then unhides the matching page).
-  for (const p of pages) p.hidden = !inClassic || p.dataset.page !== getActiveClassicTab();
-  if (sessionView) sessionView.hidden = inClassic;
-  // Hide Classic-only panels in Session: mixer (per-column strips replace it),
-  // copy-pattern row, preset library. Keep ARP visible (it works in both modes).
-  if (mixerPanel) mixerPanel.hidden = !inClassic;
-  for (const p of copyPanels) p.hidden = !inClassic;
-  if (arpPanel) arpPanel.hidden = false;
-
-  document.querySelectorAll<HTMLButtonElement>('.mode-btn').forEach((b) => {
-    b.classList.toggle('active', b.dataset.mode === appMode);
-  });
-  if (!inClassic) sessionHost.renderWithMixer();
-}
-
-function setAppMode(next: AppMode) {
-  if (next === appMode) return;
-  if (seq.isPlaying()) seq.stop();
-  appMode = next;
-  seq.sessionMode = appMode === 'session';
-  applyModeVisibility();
-}
-
-// Exposed so the Session "Back to Session" pill (in session-host) can restore
-// proper visibility without re-toggling appMode.
-(window as unknown as { __reapplyModeVisibility?: () => void }).__reapplyModeVisibility = applyModeVisibility;
-function getActiveClassicTab(): string {
-  const active = document.querySelector<HTMLButtonElement>('.tab.active');
-  return active?.dataset.tab ?? '303';
-}
-document.getElementById('mode-classic')?.addEventListener('click', () => setAppMode('classic'));
-document.getElementById('mode-session')?.addEventListener('click', () => setAppMode('session'));
-
 wireRandomizeUI({
   seq, synth, scaleSel, rootSel,
   getBassRollEntry: () => null,
@@ -1026,7 +923,6 @@ wireRandomizeUI({
 const automationTickDeps: AutomationTickDeps = {
   seq,
   automationRegistry,
-  getAppMode,
   getLaneStates: () => sessionHost.laneStates,
   ctx,
   redrawAllLanes,
@@ -1043,7 +939,8 @@ startAutomationTick(automationTickDeps);
 // PatternBank demo + import it into Session, same as before.
 applyMinimalTechnoDemo(demoDeps);
 sessionHost.applyLoadedSessionState(importClassicToSession(bank));
-setAppMode('session');
+// App is always in session mode — seq.sessionMode must be true at boot.
+seq.sessionMode = true;
 startVisualizer({ ctx, analyser, vizCanvas });
 
 // ── Save Manager v2 (see src/save-wiring.ts) ──────────────────────────────

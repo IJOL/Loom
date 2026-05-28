@@ -4,14 +4,12 @@ import { tickSessionEnvelopes } from '../session/session-runtime';
 import type { Sequencer } from '../core/sequencer';
 import type { KnobHandle } from '../core/knob';
 import type { LanePlayState } from '../session/session-runtime';
-import type { AppMode } from '../main';
 import type { SynthEngine } from '../engines/engine-types';
 import type { ModulationHost, ModulatorVoice } from '../modulation/types';
 
 export interface AutomationTickDeps {
   seq: Sequencer;
   automationRegistry: Map<string, KnobHandle>;
-  getAppMode: () => AppMode;
   getLaneStates: () => Map<string, LanePlayState>;
   ctx: AudioContext;
   redrawAllLanes: () => void;
@@ -70,7 +68,7 @@ export function startAutomationTick(deps: AutomationTickDeps): void {
   if (autoTickRunning) return;
   autoTickRunning = true;
   const {
-    seq, automationRegistry, getAppMode, getLaneStates, ctx,
+    seq, automationRegistry, getLaneStates, ctx,
     redrawAllLanes, trackActiveUntil,
   } = deps;
 
@@ -109,14 +107,13 @@ export function startAutomationTick(deps: AutomationTickDeps): void {
       const denorm = entry.meta.min + clamp01(v) * (entry.meta.max - entry.meta.min);
       entry.setValue(denorm);
     }
-    if (getAppMode() === 'session') {
-      tickSessionEnvelopes(getLaneStates(), ctx.currentTime, seq.bpm, (paramId, normalised) => {
-        const k = automationRegistry.get(paramId);
-        if (!k) return;
-        const range = k.meta.max - k.meta.min;
-        k.setValue(k.meta.min + normalised * range);
-      });
-    }
+    // App is always session-only.
+    tickSessionEnvelopes(getLaneStates(), ctx.currentTime, seq.bpm, (paramId, normalised) => {
+      const k = automationRegistry.get(paramId);
+      if (!k) return;
+      const range = k.meta.max - k.meta.min;
+      k.setValue(k.meta.min + normalised * range);
+    });
     applyModulationToKnobs(deps);
   };
   requestAnimationFrame(tick);

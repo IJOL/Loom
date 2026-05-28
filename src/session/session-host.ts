@@ -67,7 +67,6 @@ export interface SessionHostDeps {
   showPolyEditor: (laneId: string, target: PolySynth, displayName: string) => void;
   polysynth: PolySynth;
   mixerDeps: MixerColumnDeps;
-  getAppMode: () => 'classic' | 'session';
   midiLabel: (m: number) => string;
   automationRegistry: Map<string, import('../core/knob').KnobHandle>;
   getAutoAbsSubIdx: () => number;
@@ -423,7 +422,6 @@ export class SessionHost {
     let lastSig = '';
     const loop = () => {
       requestAnimationFrame(loop);
-      if (this.deps.getAppMode() !== 'session') return;
       if (this.inspector.roll) this.inspector.roll.redraw();
       this.updateEditorPlayhead();
       const sigParts: string[] = [];
