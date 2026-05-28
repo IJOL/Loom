@@ -1048,18 +1048,9 @@ startVisualizer({ ctx, analyser, vizCanvas });
 
 // ── Save Manager v2 (see src/save-wiring.ts) ──────────────────────────────
 const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
-  seq, synth, polysynth, drums, master,
-  volInput, bpmInput, swingInput, kitSel, waveSel, scaleSel, rootSel,
-  bank, barsSel,
-  activeTracks: () => activeTracks() as string[],
-  stripFor: (t) => stripFor(t as TrackId),
-  muteState: muteState as Record<string, boolean>,
-  soloState: soloState as Record<string, boolean>,
-  applyMuteSolo,
+  seq, synth, drums, master,
+  volInput, bpmInput, swingInput, kitSel, waveSel,
   sessionHost,
-  setAppMode,
-  getAppMode,
-  rebuildMixer,
   refreshKnobsFromSynth,
   renderLanes,
   fx,

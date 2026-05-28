@@ -4,22 +4,16 @@ import {
   downloadAsJson, loadFromFile,
   type SaveIndexEntry,
 } from './save-manager';
-import { clonePattern, type PatternData } from '../core/pattern';
-import type { PolyStep } from '../core/sequencer';
-import type { TB303 } from '../core/synth';
 import type { Sequencer } from '../core/sequencer';
+import type { TB303 } from '../core/synth';
 import type { DrumMachine } from '../core/drums';
-import type { PolySynth } from '../polysynth/polysynth';
-import type { PatternBank } from '../core/pattern';
-import type { FxBus, ChannelStrip, FilterChain } from '../core/fx';
+import type { FxBus, FilterChain } from '../core/fx';
 import type { SessionHost } from '../session/session-host';
-import type { AppMode } from '../main';
 import type { SessionState } from '../session/session';
 
 export interface SaveWiringDeps {
   seq: Sequencer;
   synth: TB303;
-  polysynth: PolySynth;
   drums: DrumMachine;
   master: GainNode;
   volInput: HTMLInputElement;
@@ -27,19 +21,7 @@ export interface SaveWiringDeps {
   swingInput: HTMLInputElement;
   kitSel: HTMLSelectElement;
   waveSel: HTMLSelectElement;
-  scaleSel: HTMLSelectElement;
-  rootSel: HTMLSelectElement;
-  bank: PatternBank;
-  barsSel: HTMLSelectElement;
-  activeTracks: () => string[];
-  stripFor: (t: string) => ChannelStrip;
-  muteState: Record<string, boolean>;
-  soloState: Record<string, boolean>;
-  applyMuteSolo: () => void;
   sessionHost: SessionHost;
-  setAppMode: (mode: AppMode) => void;
-  getAppMode: () => AppMode;
-  rebuildMixer: () => void;
   refreshKnobsFromSynth: () => void;
   renderLanes: () => void;
   fx: FxBus;
@@ -47,82 +29,46 @@ export interface SaveWiringDeps {
   flashButton: (b: HTMLButtonElement, msg: string) => void;
 }
 
-function normalizePattern(p: PatternData): PatternData {
-  if (!p.melody) {
-    p.melody = Array.from({ length: p.length }, () => ({ on: false, notes: [60], accent: false, tie: false }));
-  }
-  // Migrate older saves: PolyStep used to have `note: number`; now it has `notes: number[]`.
-  for (const s of p.melody) {
-    const legacy = s as PolyStep & { note?: number };
-    if (!Array.isArray(s.notes)) s.notes = [legacy.note ?? 60];
-  }
-  return p;
-}
-
-function buildSavedStateV2(deps: SaveWiringDeps): Record<string, unknown> {
-  const { seq, synth, polysynth, drums, master, volInput, scaleSel, rootSel, bank, activeTracks, stripFor, muteState, soloState, sessionHost, getAppMode } = deps;
+function buildSavedStateV3(deps: SaveWiringDeps): Record<string, unknown> {
+  const { seq, synth, drums, master, volInput, sessionHost } = deps;
   return {
-    version: 2,
+    schemaVersion: 3,
     bpm: seq.bpm,
     swing: seq.swing,
     masterVol: parseFloat(volInput.value),
     kit: drums.kitId,
     wave: synth.params.wave,
-    scale: scaleSel.value,
-    rootNote: parseInt(rootSel.value, 10),
     synthParams: { ...synth.params },
-    polyParams: JSON.parse(JSON.stringify(polysynth.params)),
-    currentSlot: bank.current,
-    slots: bank.slots.map(clonePattern),
-    channels: Object.fromEntries(activeTracks().map((t) => [t, stripFor(t).serialize()])),
-    mutes: { ...muteState },
-    solos: { ...soloState },
-    session: sessionHost.getStateForSave(),
-    mode: getAppMode(),
+    sessionState: sessionHost.getStateForSave(),
   };
 }
 
 function applyLoadedState(data: unknown, deps: SaveWiringDeps): void {
-  const { seq, synth, polysynth, drums, master, volInput, bpmInput, swingInput, kitSel, waveSel, scaleSel, rootSel, bank, barsSel, activeTracks, stripFor, muteState, soloState, sessionHost, setAppMode, rebuildMixer, refreshKnobsFromSynth, renderLanes, fx, filterChain, applyMuteSolo } = deps;
+  const { seq, synth, drums, master, volInput, bpmInput, swingInput, kitSel, waveSel, sessionHost, refreshKnobsFromSynth, renderLanes, fx, filterChain } = deps;
 
   if (!data || typeof data !== 'object') { alert('Invalid save data'); return; }
   const s = data as Record<string, unknown>;
+
+  // Only accept schemaVersion 3 (session-only). Legacy saves (v1/v2) are dropped
+  // because Classic mode no longer exists and the bank/slots format is gone.
+  if (s.schemaVersion !== 3) {
+    console.warn('[SaveManager] Ignoring legacy save file (schemaVersion < 3). Classic mode no longer supported.');
+    return;
+  }
+
   if (typeof s.bpm === 'number') { seq.bpm = s.bpm; bpmInput.value = String(s.bpm); }
   if (typeof s.swing === 'number') { seq.swing = s.swing; swingInput.value = String(s.swing); }
   if (typeof s.masterVol === 'number') { master.gain.value = s.masterVol; volInput.value = String(s.masterVol); }
   if (typeof s.kit === 'string') { drums.setKit(s.kit); kitSel.value = s.kit; }
   if (s.wave) { synth.params.wave = s.wave as typeof synth.params.wave; waveSel.value = String(s.wave); }
-  if (s.scale) scaleSel.value = String(s.scale);
-  if (typeof s.rootNote === 'number') rootSel.value = String(s.rootNote);
   if (s.synthParams) synth.params = { ...synth.params, ...(s.synthParams as object) };
-  if (s.polyParams)  polysynth.params = JSON.parse(JSON.stringify(s.polyParams));
-  if (Array.isArray(s.slots)) {
-    bank.slots = s.slots.map((p) => clonePattern(normalizePattern(p as PatternData)));
-    bank.current = typeof s.currentSlot === 'number' ? s.currentSlot : 0;
-    seq.setPattern(bank.slots[bank.current]);
-    barsSel.value = String(seq.length);
+  if (s.sessionState && typeof s.sessionState === 'object') {
+    sessionHost.applyLoadedSessionState(s.sessionState as SessionState);
   }
-  if (s.channels && typeof s.channels === 'object') {
-    for (const t of activeTracks()) {
-      const cs = (s.channels as Record<string, unknown>)[t];
-      if (cs) stripFor(t).restore(cs as Parameters<ReturnType<typeof stripFor>['restore']>[0]);
-    }
-  }
-  if (s.mutes && typeof s.mutes === 'object') Object.assign(muteState, s.mutes);
-  if (s.solos && typeof s.solos === 'object') Object.assign(soloState, s.solos);
-  if (s.session && typeof s.session === 'object') {
-    sessionHost.applyLoadedSessionState(s.session as SessionState);
-  }
-  if (s.mode === 'session') setAppMode('session');
-  else setAppMode('classic');
-  rebuildMixer();
-  sessionHost.renderWithMixer();
-  applyMuteSolo();
   refreshKnobsFromSynth();
   renderLanes();
   fx.setBpmSync(seq.bpm);
   filterChain.updateBpm(seq.bpm);
-  document.querySelectorAll<HTMLButtonElement>('button.slot').forEach((b) => b.classList.toggle('active', b.dataset.slot === String(bank.current)));
 }
 
 function openSaveManager(deps: SaveWiringDeps, applyLoaded: (data: unknown) => void): void {
@@ -226,7 +172,7 @@ export function wireSaveManager(deps: SaveWiringDeps): void {
       const def = `Sesión ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
       const name = window.prompt('Save name:', def);
       if (!name) return;
-      const state = buildSavedStateV2(deps);
+      const state = buildSavedStateV3(deps);
       saveNamedEntry(name, state);
       downloadAsJson(`tb303-${name.replace(/[^\w-]+/g, '_')}.json`, state);
       deps.flashButton(newSave, 'Saved!');
