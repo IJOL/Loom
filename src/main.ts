@@ -394,6 +394,24 @@ function ensureLaneVoice(laneId: string, engineId: string): import('./engines/en
   return voice;
 }
 
+// Phase E: allocates a fresh ChannelStrip + engine instance for a dynamically
+// added lane and registers them in laneResources. This replaces the old
+// ensureExtraPoly(newId) call in onAddLane — the slug-keyed entry is now the
+// canonical path; the legacy poly1..poly16 ExtraId mechanism is unchanged.
+function ensureLaneResource(laneId: string, engineId: string): void {
+  if (laneResources.get(laneId)) return; // already allocated
+  const strip = new ChannelStrip(ctx, master, fx);
+  const engine = createEngineInstance(engineId);
+  if (!engine) return;
+  if (engineId === 'subtractive') {
+    // SubtractiveEngine needs a PolySynth wired to its audio output before it
+    // can schedule notes. Allocate a fresh one per lane.
+    const p = new PolySynth(ctx, strip.input);
+    p.bpm = seq.bpm;
+    (engine as unknown as { setPolySynth?(p: PolySynth): void }).setPolySynth?.(p);
+  }
+  laneResources.set(laneId, { strip, engine });
+}
 
 // ── Track rendering (with viewport) ────────────────────────────────────────
 const LANE_LABELS: Record<TrackId, string> = {
@@ -724,6 +742,7 @@ const sessionHost = new SessionHost({
   getAutoAbsSubIdx,
   onActiveLaneChanged: () => populateAutoParamSelectWrapper(),
   laneResources,
+  ensureLaneResource,
 });
 synthEditorState.activePolyTarget = polysynth;
 sessionHost.init();
