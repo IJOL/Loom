@@ -27,8 +27,7 @@ import { stepsToNotes, bassStepsToNotes } from './core/notes';
 import { buildMixerColumn } from './core/mixer';
 import * as laneTrackHelpers from './core/lane-display';
 import { SessionHost } from './session/session-host';
-import { importClassicToSession } from './session/session-migration';
-import { applyMinimalTechnoDemo, wireDemoMinimalTechno } from './demo/demo-minimal-techno';
+import { applyMinimalTechnoDemo, wireDemoMinimalTechno, buildMinimalTechnoDemoSession } from './demo/demo-minimal-techno';
 import { setupInitialPattern, type InitialPatternDeps } from './demo/initial-pattern';
 import { wireMidiImport } from './midi/midi-import';
 import { wireSaveManager, bootRecoveryLoad } from './save/save-wiring';
@@ -1016,9 +1015,14 @@ const automationTickDeps: AutomationTickDeps = {
   getActiveModVoice: (laneId, modId) => getActiveModVoice(laneId, modId),
 };
 startAutomationTick(automationTickDeps);
-// Auto-load the minimal techno demo on first boot so the user lands on
-// something playable. Press the demo button again to reset, or just edit.
-applyMinimalTechnoDemo(demoDeps);
+// Phase E: switch boot to the new SessionState-direct demo. The
+// PatternBank-based applyMinimalTechnoDemo path stays exported for
+// transitional reasons but is no longer auto-applied.
+{
+  const demoSession = buildMinimalTechnoDemoSession();
+  sessionHost.applyLoadedSessionState(demoSession);
+  setAppMode('session');
+}
 startVisualizer({ ctx, analyser, vizCanvas });
 
 // ── Save Manager v2 (see src/save-wiring.ts) ──────────────────────────────
@@ -1044,11 +1048,5 @@ const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
 wireSaveManager(saveWiringDeps);
 bootRecoveryLoad(saveWiringDeps);
 
-// ── Pure-Session boot (session.html) ──────────────────────────────────────
-// When the host page sets data-pure-session, default to Session mode and
-// auto-import the freshly-loaded Classic demo so the user lands on a
-// playable grid without pressing "Import from Classic".
-if (document.body.dataset.pureSession === 'true') {
-  sessionHost.applyLoadedSessionState(importClassicToSession(bank));
-  setAppMode('session');
-}
+// Phase E: Boot always lands in Session mode (see buildMinimalTechnoDemoSession
+// call above). The data-pure-session guard is no longer needed.
