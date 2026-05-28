@@ -12,6 +12,28 @@ import {
   emptySessionState, cloneSessionState, emptyLane,
   type SessionState, type SessionClip,
 } from './session';
+
+// ── Pure helper: slug id generation ────────────────────────────────────────
+/** Returns the next available slug id for a new lane of the given engineId.
+ *  The loop starts at 1, so for engines with no existing lane the first id is
+ *  e.g. "fm-4-op-1". For engines that boot with a default lane (tb303 → "tb-303-1",
+ *  subtractive → "subtractive-1", drums-machine → "drums-1"), the default is
+ *  already in `existingIds` so the first added extra will be "-2". */
+export function nextLaneSlug(existingIds: ReadonlySet<string>, engineId: string): string {
+  const prefix =
+    engineId === 'tb303'         ? 'tb-303'      :
+    engineId === 'drums-machine' ? 'drums'       :
+    engineId === 'subtractive'   ? 'subtractive' :
+    engineId === 'wavetable'     ? 'wavetable'   :
+    engineId === 'fm'            ? 'fm-4-op'     :
+    engineId === 'karplus'       ? 'karplus'     :
+                                   engineId;
+  for (let i = 1; i <= 99; i++) {
+    const candidate = `${prefix}-${i}`;
+    if (!existingIds.has(candidate)) return candidate;
+  }
+  return `${prefix}-overflow`;
+}
 import {
   tickSession, launchClip, launchScene, stopLane, stopAll,
   emptyLanePlayState,
@@ -52,6 +74,11 @@ export interface SessionHostDeps {
   onActiveLaneChanged?: () => void;
   /** Phase B: per-lane engine + strip map. Optional so test fixtures don't break. */
   laneResources?: import('../core/lane-resources').LaneResourceMap;
+  /** Phase E: allocate a fresh ChannelStrip + engine instance and register them
+   *  in laneResources under `laneId`. Called by onAddLane for every new lane so
+   *  triggerForLane can find the resource immediately. Optional so test fixtures
+   *  that don't construct an audio graph don't need to implement it. */
+  ensureLaneResource?: (laneId: string, engineId: string) => void;
 }
 
 export class SessionHost {
@@ -177,7 +204,7 @@ export class SessionHost {
   private buildCallbacks(): void {
     const self = this;
     const { ctx, seq, playBtn, resetAutomationPosition,
-            ensureExtraPoly, showPolyEditor,
+            showPolyEditor,
             polysynth } = this.deps;
 
     this.callbacks = {
@@ -226,17 +253,8 @@ export class SessionHost {
         self.renderWithMixer();
       },
       onAddLane(engineId: string) {
-        const prefix =
-          engineId === 'tb303'         ? 'bass'  :
-          engineId === 'drums-machine' ? 'drums' :
-                                         'poly';
         const used = new Set(self.state.lanes.map((l) => l.id));
-        let newId = '';
-        for (let i = 1; i <= 16; i++) {
-          const candidate = `${prefix}${i + 1}`;
-          if (!used.has(candidate)) { newId = candidate; break; }
-        }
-        if (!newId) { alert('No free lane id available for this engine (max 17 lanes per type).'); return; }
+        const newId = nextLaneSlug(used, engineId);
 
         const engineDef = getEngine(engineId);
         const sameKindCount = self.state.lanes.filter((l) => l.engineId === engineId).length;
@@ -254,9 +272,9 @@ export class SessionHost {
         self.state.lanes.push(lane);
         self.laneStates.set(newId, emptyLanePlayState(newId));
 
-        if (engineId === 'subtractive') ensureExtraPoly(newId);
-        // tb303 + drums-machine lazy-create their instances on first trigger via
-        // the engine's createVoice path (Task 14 wires this end-to-end).
+        // Allocate a fresh ChannelStrip + engine instance for the new lane so
+        // triggerForLane can find it via laneResources immediately.
+        self.deps.ensureLaneResource?.(newId, engineId);
 
         self.renderWithMixer();
       },
