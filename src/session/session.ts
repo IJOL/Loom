@@ -30,8 +30,12 @@ export interface SessionLane {
   clips: (SessionClip | null)[];
   launchQuantize?: LaunchQuantize;
   engineState?: {
+    params?: Record<string, number>;
     modulators?: import('../modulation/types').ModulatorState[];
   };
+  /** Currently applied preset name for this lane (`factory:Name` /
+   *  `user:Name` / `engine:Name` — same shape as `polyPresetName` values). */
+  enginePresetName?: string;
 }
 
 export interface SessionScene {
