@@ -42,6 +42,10 @@ export interface SessionScene {
   id: string;
   name?: string;
   clipPerLane: Record<string, number | null>;
+  /** Optional per-lane preset to apply when this scene is launched.
+   *  Keyed by laneId, value uses the same shape as `polyPresetName`
+   *  (`factory:Name` / `user:Name` / `engine:Name`). */
+  presetPerLane?: Record<string, string>;
 }
 
 export interface SessionState {
