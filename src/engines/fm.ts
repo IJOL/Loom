@@ -272,7 +272,7 @@ class FMSequencer implements EngineSequencer {
 
 export class FMEngine implements SynthEngine {
   readonly id = 'fm';
-  readonly name = 'FM (4-op)';
+  readonly name = 'FM';
   readonly type = 'polyhost' as const;
   readonly polyphony = 'poly' as const;
   readonly params = FM_PARAMS;

@@ -89,7 +89,7 @@ export function importClassicToSession(bank: PatternBank): SessionState {
     const slug = `subtractive-${polyCount}`;
     extraIdMap.set(legacy, slug);
     const lane = emptyLane(slug, 'subtractive');
-    lane.name = `Subtractive ${polyCount}`;
+    lane.name = `Sub ${polyCount}`;
     state.lanes.push(lane);
   }
 

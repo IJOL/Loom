@@ -206,7 +206,7 @@ class WavetableSequencer implements EngineSequencer {
 
 export class WavetableEngine implements SynthEngine {
   readonly id = 'wavetable';
-  readonly name = 'Wavetable';
+  readonly name = 'Wave';
   readonly type = 'polyhost' as const;
   readonly polyphony = 'poly' as const;
   readonly params = WT_PARAMS;

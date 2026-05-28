@@ -232,7 +232,7 @@ class KarplusSequencer implements EngineSequencer {
 
 export class KarplusEngine implements SynthEngine {
   readonly id = 'karplus';
-  readonly name = 'Karplus (Physical)';
+  readonly name = 'Karp';
   readonly type = 'polyhost' as const;
   readonly polyphony = 'poly' as const;
   readonly editor = 'piano-roll' as const;

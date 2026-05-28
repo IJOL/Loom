@@ -221,7 +221,7 @@ class SubtractiveSequencer implements EngineSequencer {
 
 class SubtractiveEngine implements SynthEngine {
   readonly id = 'subtractive';
-  readonly name = 'Subtractive';
+  readonly name = 'Sub';
   readonly type = 'polyhost' as const;
   readonly polyphony = 'poly' as const;
   readonly editor = 'piano-roll' as const;

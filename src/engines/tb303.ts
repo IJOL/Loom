@@ -97,7 +97,7 @@ class TB303Sequencer implements EngineSequencer {
 
 export class TB303Engine implements SynthEngine {
   readonly id = 'tb303';
-  readonly name = 'TB-303';
+  readonly name = '303';
   readonly type = 'polyhost' as const;
   readonly polyphony = 'mono' as const;
   readonly editor = 'piano-roll' as const;
