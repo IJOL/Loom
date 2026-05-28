@@ -278,11 +278,20 @@ const muteState: Record<TrackId, boolean> = Object.fromEntries(ALL_TRACKS.map((t
 const soloState: Record<TrackId, boolean> = Object.fromEntries(ALL_TRACKS.map((t) => [t, false])) as Record<TrackId, boolean>;
 
 function applyMuteSolo() {
-  const tracks = activeTracks();
-  const anySolo = tracks.some((t) => soloState[t]);
-  for (const t of tracks) {
-    const m = anySolo ? !soloState[t] : muteState[t];
-    stripFor(t).setMuted(m);
+  // The Session mixer columns are keyed by lane slug id (`tb-303-1`,
+  // `subtractive-1`, …), but the legacy MIDI-import code and historic
+  // tests still write into muteState using TrackId keys (`bass`, `poly`,
+  // `kick`, …). Build a unified id set that covers both schemes so an entry
+  // under either key takes effect on the matching strip.
+  const muteAsRecord = muteState as unknown as Record<string, boolean>;
+  const soloAsRecord = soloState as unknown as Record<string, boolean>;
+  const ids = new Set<string>();
+  for (const t of activeTracks()) ids.add(t);
+  for (const laneId of laneResources.ids()) ids.add(laneId);
+  const anySolo = [...ids].some((id) => soloAsRecord[id]);
+  for (const id of ids) {
+    const m = anySolo ? !soloAsRecord[id] : muteAsRecord[id];
+    stripFor(id as TrackId).setMuted(!!m);
   }
 }
 
@@ -457,7 +466,7 @@ function refreshKnobsFromSynth() {
   for (const spec of tb303Engine.params) {
     const v = liveValue(spec.id);
     if (v == null) continue;
-    automationRegistry.get(`bass.${spec.id}`)?.setValue(v);
+    automationRegistry.get(`${LANE_ID_BASS}.${spec.id}`)?.setValue(v);
   }
 }
 
@@ -536,7 +545,7 @@ kitSel.addEventListener('change', () => { drums.setKit(kitSel.value); });
 const synthKnobsRow = $<HTMLDivElement>('synth-knobs');
 synthKnobsRow.innerHTML = '';
 wireLaneKnobs({
-  laneId: 'bass',
+  laneId: LANE_ID_BASS,
   engine: tb303Engine,
   parent: synthKnobsRow,
   formatter: (id, v) => id.includes('decay') ? `${(v * 1000).toFixed(0)}ms` : fmtPct(v),
@@ -806,7 +815,20 @@ const polyModeDeps: PolyModeDeps = {
 // Now that polySynthPresetsDeps exist, wire synthEditorDeps
 // (referenced lazily by showPolyEditorWrapper above).
 synthEditorDeps = {
-  refreshPolyKnobsFromState: () => { if (mainSubtractive) refreshLaneKnobs(_lehState.activeLaneId, mainSubtractive); },
+  refreshPolyKnobsFromState: () => {
+    // Re-mount the section knobs under the active lane's id so the LFO/ADSR
+    // destination dropdown for *that* lane finds them in the registry. Only
+    // applies to subtractive lanes — other poly engines render their own UI
+    // inside engine-mod-host on every editLane click.
+    // Use synthEditorState.currentSynthLane because setActivePolyTarget sets
+    // it BEFORE invoking this callback (whereas _lehState.activeLaneId is
+    // updated by setActiveEngineLane which runs AFTER).
+    const activeLaneId = synthEditorState.currentSynthLane;
+    const engine = laneResources.get(activeLaneId)?.engine;
+    if (engine?.id === 'subtractive') {
+      mountSubtractiveLaneKnobs(activeLaneId);
+    }
+  },
   refreshPolyPresetSelect: () => refreshPolyPresetSelect(),
   setActiveEngineLane: (laneId: string) => setActiveEngineLane(laneId),
 };

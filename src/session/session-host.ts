@@ -136,6 +136,12 @@ export class SessionHost {
     this.laneStates.clear();
     for (const lane of this.state.lanes) {
       this.laneStates.set(lane.id, emptyLanePlayState(lane.id));
+      // Every lane needs an audio resource (strip + engine instance) — without
+      // it, triggerForLane finds nothing and automation knobs never get
+      // registered under the lane's id. Built-in lanes are pre-allocated at
+      // boot; lanes that arrive via loaded state (demos, save files) are
+      // allocated lazily here.
+      this.deps.ensureLaneResource?.(lane.id, lane.engineId);
     }
     this.applyEngineState();
     this.renderWithMixer();
