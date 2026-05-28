@@ -3,6 +3,43 @@ import { tickLane, type SchedulerContext } from './lane-scheduler';
 import type { SessionClip } from '../session/session';
 import { TICKS_PER_STEP } from './notes';
 
+describe('lane-scheduler tickLane regression: overlapping windows', () => {
+  it('a single note fires EXACTLY ONCE per loop iteration when tick=25ms, lookahead=120ms', () => {
+    // Real app uses 25ms tick + 120ms lookahead → each tick's window
+    // overlaps the previous by ~95ms. Without per-tick dedupe, every note
+    // inside the overlap region fires once per overlapping window — i.e.
+    // ~4-5× per loop iteration, which sounds like audio choppy / stuttering.
+    const clip: SessionClip = {
+      id: 'c1',
+      lengthBars: 1,
+      notes: [{ start: 0, duration: TICKS_PER_STEP, midi: 60, velocity: 100 }],
+    };
+    const triggered: Array<{ time: number }> = [];
+    let loopStart = 0;
+    let lastScheduledAt = -Infinity;
+    for (let now = 0; now < 4.0; now += 0.025) {
+      loopStart = tickLane(clip, {
+        bpm: 120, lookaheadSec: 0.12, now, loopStartedAt: loopStart,
+        lastScheduledAt,
+        onTrigger: (_n, t) => {
+          triggered.push({ time: t });
+          if (t > lastScheduledAt) lastScheduledAt = t;
+        },
+        onAutomation: () => {},
+      });
+    }
+    // 4 sec at 120 bpm with a 1-bar clip → 2 iterations within, plus the
+    // 3rd iteration's note at t=4.0 is scheduled by the 120ms lookahead
+    // from the last tick. So exactly 3 fires. Without the dedupe this is
+    // ~11 fires (one per overlapping window). Times must be strictly
+    // increasing and aligned to loop boundaries.
+    expect(triggered).toHaveLength(3);
+    expect(triggered[0].time).toBeCloseTo(0, 5);
+    expect(triggered[1].time).toBeCloseTo(2, 5);
+    expect(triggered[2].time).toBeCloseTo(4, 5);
+  });
+});
+
 describe('lane-scheduler tickLane', () => {
   it('a 1-bar clip with one note fires 4 times across 4 bars (120 bpm)', () => {
     const clip: SessionClip = {

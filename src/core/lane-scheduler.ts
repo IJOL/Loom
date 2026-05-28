@@ -17,6 +17,12 @@ export interface SchedulerContext {
    *  The function advances this past completed iterations and returns the
    *  updated value. */
   loopStartedAt: number;
+  /** Absolute audio time of the LAST note this scheduler already emitted
+   *  in a previous tick. tickLane only fires notes with `scheduleAt >
+   *  lastScheduledAt`, preventing duplicate fires when consecutive ticks
+   *  have overlapping look-ahead windows (the realistic 25ms/120ms case).
+   *  Default `-Infinity` means "no notes scheduled yet" (cold start). */
+  lastScheduledAt?: number;
   /** Called with the original note + the absolute audio time at which it
    *  should be scheduled. */
   onTrigger: (note: { midi: number; duration: number; velocity: number }, scheduleTime: number) => void;
@@ -74,7 +80,16 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
   // Symmetric DRIFT window: expand the lower bound to catch notes whose exact
   // time has been overtaken by a drifting `now`; shrink the upper bound to
   // prevent premature scheduling at the next loop boundary.
-  const windowStart = ctx.now - DRIFT;
+  //
+  // Per-tick dedupe: in real usage tick=25ms / lookahead=120ms → consecutive
+  // ticks have overlapping windows (~95ms overlap). Without the
+  // `lastScheduledAt` lower bound below, a note inside the overlap region
+  // fires once per tick — i.e. the same note triggers 4-5× per loop
+  // iteration, which sounds like glitchy/choppy audio. Bumping
+  // `windowStart` past the last scheduled note's absolute time guarantees
+  // each note fires exactly once.
+  const lastScheduled = ctx.lastScheduledAt ?? -Infinity;
+  const windowStart = Math.max(ctx.now - DRIFT, lastScheduled + DRIFT);
   const windowEnd   = ctx.now + ctx.lookaheadSec - DRIFT;
 
   // Compute the iteration range analytically.  An iteration k starts at

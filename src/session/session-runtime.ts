@@ -19,6 +19,11 @@ export interface LanePlayState {
    *  Used by tickLane to project note-tick positions onto the timeline.
    *  Reset to startTime whenever a new clip is promoted from the queue. */
   loopStartedAt: number;
+  /** Absolute audio time of the LAST note this lane has already scheduled.
+   *  Passed into tickLane so consecutive overlapping look-ahead windows
+   *  (25 ms tick × 120 ms lookahead → ~95 ms overlap) don't re-emit the
+   *  same note 4-5×. Reset to -Infinity when a new clip is promoted. */
+  lastScheduledAt: number;
 }
 
 export function emptyLanePlayState(laneId: string): LanePlayState {
@@ -31,6 +36,7 @@ export function emptyLanePlayState(laneId: string): LanePlayState {
     nextStepIdx: 0,
     loopCount: 0,
     loopStartedAt: 0,
+    lastScheduledAt: -Infinity,
   };
 }
 
@@ -167,6 +173,7 @@ export function tickSession(
       lp.loopStartedAt = lp.queuedBoundary;
       lp.nextStepIdx = 0;
       lp.loopCount = 0;
+      lp.lastScheduledAt = -Infinity;
     }
 
     if (!lp.playing) continue;
@@ -182,7 +189,9 @@ export function tickSession(
       lookaheadSec: lookahead,
       now,
       loopStartedAt: currentLoopStart,
+      lastScheduledAt: lp.lastScheduledAt,
       onTrigger: (note: { midi: number; duration: number; velocity: number }, scheduleTime: number) => {
+        if (scheduleTime > lp.lastScheduledAt) lp.lastScheduledAt = scheduleTime;
         const accent = note.velocity >= 100;
         const gateSec = Math.max(0.01, note.duration * tickSec);
         // Derive tick position within the clip from the schedule time and the
