@@ -229,6 +229,19 @@ class FMVoice implements Voice {
   }
 
   release(time: number): void {
+    // Cut the pre-scheduled per-op amp envelopes so the gate actually
+    // closes at `time` rather than running out the original gateDuration.
+    // Each opEnv is a ConstantSource summing into envGain[i].gain.
+    for (let i = 0; i < this.opEnvs.length; i++) {
+      const env = this.opEnvs[i];
+      const p = this.getOp(i);
+      const r = Math.max(0.005, p.release);
+      env.offset.cancelScheduledValues(time);
+      // Anchor the current value, then exponentially decay to near-zero.
+      // We can't read AudioParam.value reliably here, so we use setTargetAtTime
+      // for a smooth fall starting at `time`.
+      env.offset.setTargetAtTime(0, time, r / 3);
+    }
     for (const mv of this.voiceMods.values()) mv.release(time);
   }
   connect(_dest: AudioNode): void {}
