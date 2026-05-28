@@ -81,6 +81,11 @@ export interface SessionHostDeps {
   /** Invoke the slot configurator for a given index (used by the demo to
    *  apply per-scene presets). No-op when there's no configurator registered. */
   runSlotConfigurator?: (idx: number) => void;
+  /** Apply a preset to a lane by name. Called by applyLoadedSessionState
+   *  for every lane.enginePresetName, and by onLaunchScene for every
+   *  scene.presetPerLane entry. Optional so test fixtures without audio
+   *  can skip it. */
+  applyPresetForLane?: (laneId: string, presetName: string) => void;
 }
 
 export class SessionHost {
@@ -145,6 +150,9 @@ export class SessionHost {
       // boot; lanes that arrive via loaded state (demos, save files) are
       // allocated lazily here.
       this.deps.ensureLaneResource?.(lane.id, lane.engineId);
+      if (lane.enginePresetName) {
+        this.deps.applyPresetForLane?.(lane.id, lane.enginePresetName);
+      }
     }
     this.applyEngineState();
     this.renderWithMixer();

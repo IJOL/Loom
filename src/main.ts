@@ -692,6 +692,14 @@ const sessionHost = new SessionHost({
   laneResources,
   ensureLaneResource,
   runSlotConfigurator,
+  applyPresetForLane: (laneId, presetName) => {
+    const inst = getLaneEngineInstance(laneId);
+    const ps = (inst as { getPolySynth?(): PolySynth | null } | null)?.getPolySynth?.();
+    if (!ps) return;
+    applyPresetByName(ps, presetName);
+    refreshPolyPresetSelect();
+    if (inst) refreshLaneKnobs(laneId, inst);
+  },
 });
 synthEditorState.activePolyTarget = polysynth;
 sessionHost.init();
