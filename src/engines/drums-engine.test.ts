@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { DrumsEngine } from './drums-engine';
 import { validateSpec } from './engine-params';
 import { OfflineAudioContext } from 'node-web-audio-api';
-import { FxBus } from '../core/fx';
+import { ChannelStrip, FxBus } from '../core/fx';
 import type { ModulatorVoice } from '../modulation/types';
 
 describe('DrumsEngine.params', () => {
@@ -14,14 +14,17 @@ describe('DrumsEngine.params', () => {
     }
   });
 
-  it('has master + per-voice specs', () => {
+  it('has bus EQ + per-voice specs', () => {
     const ids = engine.params.map(p => p.id);
-    expect(ids).toContain('master.level');
-    expect(ids).toContain('master.tune');
+    expect(ids).toContain('bus.eq.low');
+    expect(ids).toContain('bus.eq.mid');
+    expect(ids).toContain('bus.eq.high');
     expect(ids).toContain('kick.level');
     expect(ids).toContain('snare.level');
     expect(ids).toContain('closedHat.level');
     expect(ids).toContain('openHat.level');
+    expect(ids).not.toContain('master.level');
+    expect(ids).not.toContain('master.tune');
   });
 
   it('all params are continuous', () => {
@@ -74,5 +77,33 @@ describe('DrumsEngine BPM sync for modulator voices', () => {
     expect(captured!()).toBe(96);
 
     voice.dispose();
+  });
+});
+
+describe('DrumsEngine bus EQ', () => {
+  it('exposes bus.eq.low/mid/high AudioParams once setBusStrip is called', async () => {
+    const ctx = new OfflineAudioContext(1, 128, 44100) as unknown as AudioContext;
+    const fx = new FxBus(ctx, ctx.destination);
+    const strip = new ChannelStrip(ctx, ctx.destination, fx);
+    const engine = new DrumsEngine();
+    engine.setSharedFx(fx);
+    engine.setBusStrip(strip);
+    const voice = engine.createVoice(ctx, strip.input);
+    const params = voice.getAudioParams();
+    expect(params.has('bus.eq.low')).toBe(true);
+    expect(params.has('bus.eq.mid')).toBe(true);
+    expect(params.has('bus.eq.high')).toBe(true);
+  });
+
+  it('setBaseValue("bus.eq.low", v) routes to the strip\'s EQ gain', async () => {
+    const ctx = new OfflineAudioContext(1, 128, 44100) as unknown as AudioContext;
+    const fx = new FxBus(ctx, ctx.destination);
+    const strip = new ChannelStrip(ctx, ctx.destination, fx);
+    const engine = new DrumsEngine();
+    engine.setSharedFx(fx);
+    engine.setBusStrip(strip);
+    engine.createVoice(ctx, strip.input);
+    engine.setBaseValue('bus.eq.low', 9);
+    expect(strip.getEqGainParam('low').value).toBeCloseTo(9, 5);
   });
 });

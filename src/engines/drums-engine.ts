@@ -24,10 +24,11 @@ import { wireEngineParams } from './engine-ui';
 // engine level; per-voice `.level` ids map onto each DrumMachine channel
 // strip's `level.gain` AudioParam (see DrumsVoice.getAudioParams below).
 const DRUM_PARAMS: EngineParamSpec[] = [
-  // Kit-level master
-  { id: 'master.level', label: 'Level', kind: 'continuous', min: 0,   max: 1.5, default: 1 },
-  { id: 'master.tune',  label: 'Tune',  kind: 'continuous', min: -12, max: 12,  default: 0, unit: 'st' },
-  // Per-voice levels (one .level spec per DRUM_LANES entry)
+  // Bus EQ — automatable via the lane's modulators.
+  { id: 'bus.eq.low',  label: 'EQ Lo',  kind: 'continuous', min: -18, max: 18, default: 0, unit: 'dB' },
+  { id: 'bus.eq.mid',  label: 'EQ Mid', kind: 'continuous', min: -18, max: 18, default: 0, unit: 'dB' },
+  { id: 'bus.eq.high', label: 'EQ Hi',  kind: 'continuous', min: -18, max: 18, default: 0, unit: 'dB' },
+  // Per-voice levels (one .level spec per DRUM_LANES entry).
   { id: 'kick.level',      label: 'Kick',  kind: 'continuous', min: 0, max: 1.5, default: 1 },
   { id: 'snare.level',     label: 'Snare', kind: 'continuous', min: 0, max: 1.5, default: 1 },
   { id: 'closedHat.level', label: 'CHat',  kind: 'continuous', min: 0, max: 1.5, default: 1 },
@@ -53,16 +54,26 @@ class DrumsVoice implements Voice {
   laneId: string | null = null;
   binder: ConnectionBinder | null = null;
 
-  constructor(private dm: DrumMachine) {}
+  constructor(
+    private dm: DrumMachine,
+    private busStrip: import('../core/fx').ChannelStrip | null,
+  ) {}
 
   /** Expose each drum voice's channel-strip level GainNode as an AudioParam
    *  keyed by '<voice>.level'. The lane-host's modulator binder routes
-   *  enabled connections into these via depth-gains. */
+   *  enabled connections into these via depth-gains. When a bus ChannelStrip
+   *  is wired in, also expose its three EQ band gains as `bus.eq.{low,mid,high}`
+   *  so lane modulators can drive bus tone-shaping. */
   getAudioParams(): Map<string, AudioParam> {
     const m = new Map<string, AudioParam>();
     for (const voice of DRUM_LANES) {
       const ch = this.dm.channels[voice];
       if (ch && ch.level) m.set(`${voice}.level`, ch.level.gain);
+    }
+    if (this.busStrip) {
+      m.set('bus.eq.low',  this.busStrip.getEqGainParam('low'));
+      m.set('bus.eq.mid',  this.busStrip.getEqGainParam('mid'));
+      m.set('bus.eq.high', this.busStrip.getEqGainParam('high'));
     }
     return m;
   }
@@ -118,6 +129,11 @@ export class DrumsEngine implements SynthEngine {
   private sharedFx: FxBus | null = null;
   setSharedFx(fx: FxBus): void { this.sharedFx = fx; }
 
+  private busStrip: import('../core/fx').ChannelStrip | null = null;
+  setBusStrip(strip: import('../core/fx').ChannelStrip): void {
+    this.busStrip = strip;
+  }
+
   private modHost = new ModulationHostImpl([
     makeDefaultLFO('lfo1'),
     makeDefaultADSR('adsr1'),
@@ -136,17 +152,15 @@ export class DrumsEngine implements SynthEngine {
   setBaseValue(id: string, v: number): void {
     if (!(id in this.paramValues)) return;
     this.paramValues[id] = v;
+    if (id === 'bus.eq.low'  && this.busStrip) { this.busStrip.setEqLow (v); return; }
+    if (id === 'bus.eq.mid'  && this.busStrip) { this.busStrip.setEqMid (v); return; }
+    if (id === 'bus.eq.high' && this.busStrip) { this.busStrip.setEqHigh(v); return; }
     if (!this.lastInstance) return;
-
-    // Per-voice level: push to the channel strip's level gain.
     const [scope, field] = id.split('.');
-    if (field === 'level' && scope !== 'master') {
+    if (field === 'level' && scope !== 'bus') {
       const ch = this.lastInstance.channels[scope as DrumVoice];
       if (ch && ch.level) ch.level.gain.value = v;
     }
-    // master.* lives only in paramValues for now; future work can route
-    // master.level into a kit-bus VCA and master.tune into per-voice osc
-    // frequency offsets at trigger time.
   }
 
   /** Cached so the modulation-panel onChange callback can re-apply bindings. */
@@ -175,7 +189,7 @@ export class DrumsEngine implements SynthEngine {
       const ch = dm.channels[voice];
       if (ch && ch.level) ch.level.gain.value = this.paramValues[id];
     }
-    const drumVoice = new DrumsVoice(dm);
+    const drumVoice = new DrumsVoice(dm, this.busStrip);
     if (!this.engineModVoices) {
       // One-shot modulator spawn for the lifetime of this engine instance
       // (drums share modulation across all hits — distinct from polyphonic
@@ -206,20 +220,20 @@ export class DrumsEngine implements SynthEngine {
       return `${Math.round(v * 100)}%`;
     };
 
-    // Master controls (level, tune).
-    const masterRow = document.createElement('div');
-    masterRow.className = 'row poly-section';
-    const masterLab = document.createElement('div');
-    masterLab.className = 'section-label';
-    masterLab.textContent = 'MASTER';
-    masterRow.appendChild(masterLab);
-    const masterKnobs = document.createElement('div');
-    masterKnobs.className = 'knob-row';
-    masterRow.appendChild(masterKnobs);
-    container.appendChild(masterRow);
-    wireEngineParams(this, ctx, masterKnobs, {
-      filter: (id) => id.startsWith('master.'),
-      formatter: fmt,
+    // Bus EQ (automatable from the lane's LFO/ADSR).
+    const busRow = document.createElement('div');
+    busRow.className = 'row poly-section';
+    const busLab = document.createElement('div');
+    busLab.className = 'section-label';
+    busLab.textContent = 'BUS EQ';
+    busRow.appendChild(busLab);
+    const busKnobs = document.createElement('div');
+    busKnobs.className = 'knob-row';
+    busRow.appendChild(busKnobs);
+    container.appendChild(busRow);
+    wireEngineParams(this, ctx, busKnobs, {
+      filter: (id) => id.startsWith('bus.eq.'),
+      formatter: (_id, v) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}dB`,
     });
 
     // Per-voice levels.
@@ -234,7 +248,7 @@ export class DrumsEngine implements SynthEngine {
     voicesRow.appendChild(voicesKnobs);
     container.appendChild(voicesRow);
     wireEngineParams(this, ctx, voicesKnobs, {
-      filter: (id) => !id.startsWith('master.'),
+      filter: (id) => !id.startsWith('bus.'),
       formatter: fmt,
     });
 
