@@ -6,3 +6,6 @@ dist
 
 # Brainstorming companion (visual mockups + state)
 .superpowers/
+
+# DSP test artifacts (regenerated on every test run)
+test/output/
