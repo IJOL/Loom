@@ -21,7 +21,7 @@ export interface DemoDeps {
   rebuildMixer: () => void;
 }
 
-function buildMinimalTechnoDemo(): PatternData[] {
+export function buildMinimalTechnoDemo(): PatternData[] {
   const LEN = 32; // 2 bars × 16 steps
 
   const newPat = () => emptyPattern(LEN);
@@ -36,12 +36,12 @@ function buildMinimalTechnoDemo(): PatternData[] {
   };
   // Build a cutoff automation envelope on the main poly lane (becomes a
   // clip envelope after the Classic → Session migration). The canonical
-  // paramId is `<laneId>.<spec.id>`; subtractive's filter cutoff is
-  // `main.filter.cutoff`.
+  // paramId is `<laneId>.<spec.id>`; the main subtractive lane's slug is
+  // `subtractive-1`, so the cutoff paramId is `subtractive-1.filter.cutoff`.
   const autoCutoff = (curve: (t: number) => number): AutomationLane => {
     const len = LEN * AUTOMATION_SUB_RES;
     return {
-      paramId: 'main.filter.cutoff', enabled: true, stepped: false, lengthBars: 2,
+      paramId: 'subtractive-1.filter.cutoff', enabled: true, stepped: false, lengthBars: 2,
       values: new Array(len).fill(0).map((_, i) => Math.max(0, Math.min(1, curve(i / (len - 1))))),
     };
   };
@@ -179,10 +179,10 @@ export function applyMinimalTechnoDemo(deps: DemoDeps): void {
     }
   };
   deps.setSlotConfigurators([
-    null,                                             // A: subtractive defaults
-    () => applyPreset('main', 'Organ Stab'),          // B: wavetable
-    () => applyPreset('main', 'Bell'),                // C: FM
-    null,                                             // D: subtractive defaults
+    null,                                                    // A: subtractive defaults
+    () => applyPreset('subtractive-1', 'Organ Stab'),        // B: wavetable
+    () => applyPreset('subtractive-1', 'Bell'),              // C: FM
+    null,                                                    // D: subtractive defaults
   ]);
 
   const patterns = buildMinimalTechnoDemo();
