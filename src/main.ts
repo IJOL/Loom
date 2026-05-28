@@ -65,6 +65,7 @@ import {
 import { setCurrentLaneForVoice, getActiveModVoice } from './modulation/active-mods';
 import { LaneResourceMap } from './core/lane-resources';
 import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from './core/lane-ids';
+import { GM_DRUM_MAP } from './engines/drum-gm-map';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -606,42 +607,64 @@ for (const t of $$<HTMLButtonElement>('button.tab')) {
 // arp singleton exported from arp-ui.ts (imported above)
 const midiToFreqLocal = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
 
-// Direct triggers (used when arp is off OR scope doesn't include the track).
-const polyTriggerDirect = (note: number, time: number, gate: number, accent: boolean) => {
-  const engineId = getLaneEngineId('main');
-  // ALL engines (subtractive included) must trigger through createVoice so the
-  // modulation host gets a chance to bind LFO/ADSR outputs to the new voice's
-  // AudioParams. Direct `polysynth.trigger(...)` bypasses SubtractiveVoice
-  // (and its rebind hook) — modulator routings would silently drop.
-  if (engineId === 'subtractive') {
-    setCurrentLaneForVoice('main');
-    const voice = subtractiveEngine.createVoice(ctx, polyStrip.input);
+// ── Single-entry-point trigger dispatch ───────────────────────────────────
+// triggerForLane consults laneResources to get the live engine instance for
+// the given lane and dispatches by engine.id. This is the Phase B canonical
+// trigger path; the named wrappers below are thin aliases kept so existing
+// callers don't need to change (Phase E will delete them).
+const triggerForLane = (
+  laneId: string,
+  note: number,
+  time: number,
+  gate: number,
+  accent: boolean,
+  slidingIn: boolean = false,
+): void => {
+  const res = laneResources.get(laneId);
+  if (!res) return;
+  const engineId = res.engine.id;
+
+  if (engineId === 'tb303') {
+    setCurrentLaneForVoice(laneId);
+    const voice = res.engine.createVoice(ctx, res.strip.input);
     setCurrentLaneForVoice(null);
-    voice.trigger(note, time, { gateDuration: gate, accent });
+    voice.trigger(note, time, { gateDuration: gate, accent, slide: slidingIn });
     return;
   }
-  const inst = ensureLaneEngine('main', engineId);
-  if (!inst) { polysynth.trigger(note, time, gate, accent); return; }
-  setCurrentLaneForVoice('main');
-  const voice = inst.createVoice(ctx, polyStrip.input);
+
+  if (engineId === 'drums-machine') {
+    // Drums route through the per-voice DrumMachine API rather than the
+    // engine's createVoice path. Map midi → DrumVoice via GM_DRUM_MAP and
+    // call drums.trigger directly.
+    // NOTE: This branch is not yet exercised by any caller in Phase B — drums
+    // still route through separate sequencer paths. Present for completeness
+    // so future callers (Phase C/D) can use triggerForLane for drums too.
+    const dv = GM_DRUM_MAP[note];
+    if (dv) drums.trigger(dv, time, accent);
+    return;
+  }
+
+  // Poly engines (subtractive / wavetable / fm / karplus).
+  // ALL engines must trigger through createVoice so the modulation host can
+  // bind LFO/ADSR outputs to the new voice's AudioParams. Direct
+  // polysynth.trigger(...) bypasses SubtractiveVoice and its rebind hook —
+  // modulator routings would silently drop.
+  setCurrentLaneForVoice(laneId);
+  const voice = res.engine.createVoice(ctx, res.strip.input);
   setCurrentLaneForVoice(null);
   voice.trigger(note, time, { gateDuration: gate, accent });
 };
+
+// Direct triggers (used when arp is off OR scope doesn't include the track).
+// These are thin aliases over triggerForLane kept for backward compatibility.
+const polyTriggerDirect = (note: number, time: number, gate: number, accent: boolean) => {
+  triggerForLane(LANE_ID_POLY, note, time, gate, accent);
+};
 const bassTriggerDirect = (note: number, time: number, gate: number, accent: boolean, slidingIn: boolean) => {
-  const voice = ensureLaneVoice('bass', 'tb303');
-  if (!voice) {
-    synth.trigger({ freq: midiToFreqLocal(note), accent, slide: slidingIn, duration: gate }, time);
-    return;
-  }
-  voice.trigger(note, time, { gateDuration: gate, accent, slide: slidingIn });
+  triggerForLane(LANE_ID_BASS, note, time, gate, accent, slidingIn);
 };
 const bassTriggerForArp = (note: number, time: number, gate: number, accent: boolean) => {
-  const voice = ensureLaneVoice('bass', 'tb303');
-  if (!voice) {
-    synth.trigger({ freq: midiToFreqLocal(note), accent, slide: false, duration: gate }, time);
-    return;
-  }
-  voice.trigger(note, time, { gateDuration: gate, accent, slide: false });
+  triggerForLane(LANE_ID_BASS, note, time, gate, accent, false);
 };
 
 seq.onMelodyTrigger = (note, time, gate, accent) => {
