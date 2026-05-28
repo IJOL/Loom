@@ -8,12 +8,15 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:wav-diff": "tsx scripts/wav-diff.ts",
+    "test:wav-bless": "tsx scripts/wav-bless.ts"
   },
   "devDependencies": {
     "@types/node": "^25.9.1",
     "node-web-audio-api": "^2.0.0",
     "sass": "^1.100.0",
+    "tsx": "^4.22.3",
     "typescript": "^5.4.5",
     "vite": "^5.2.11",
     "vitest": "^3.2.4"
