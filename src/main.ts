@@ -28,6 +28,7 @@ import { buildMixerColumn } from './core/mixer';
 import * as laneTrackHelpers from './core/lane-display';
 import { SessionHost } from './session/session-host';
 import { applyMinimalTechnoDemo, wireDemoMinimalTechno, buildMinimalTechnoDemoSession } from './demo/demo-minimal-techno';
+import { fetchDemoSession } from './demo/demo-loader';
 import { importClassicToSession } from './session/session-migration';
 import { setupInitialPattern, type InitialPatternDeps } from './demo/initial-pattern';
 import { wireMidiImport } from './midi/midi-import';
@@ -693,12 +694,37 @@ const sessionHost = new SessionHost({
   ensureLaneResource,
   runSlotConfigurator,
   applyPresetForLane: (laneId, presetName) => {
+    // presetName is a prefixed value like the dropdown uses:
+    //   factory:NAME → PolySynth FACTORY preset (subtractive lanes)
+    //   user:NAME    → PolySynth user-saved preset
+    //   engine:NAME  → SynthEngine.presets entry (flat id→value, used by
+    //                  tb303 / wavetable / fm / karplus etc.)
     const inst = getLaneEngineInstance(laneId);
-    const ps = (inst as { getPolySynth?(): PolySynth | null } | null)?.getPolySynth?.();
-    if (!ps) return;
-    applyPresetByName(ps, presetName);
+    if (!inst) return;
+    if (presetName.startsWith('factory:')) {
+      const bare = presetName.slice('factory:'.length);
+      const ps = (inst as { getPolySynth?(): PolySynth | null }).getPolySynth?.();
+      if (!ps) return;
+      applyPresetByName(ps, bare);
+    } else if (presetName.startsWith('user:')) {
+      // User presets live in localStorage; not relevant for JSON demos but
+      // supported for symmetry with the dropdown.
+      const bare = presetName.slice('user:'.length);
+      const ps = (inst as { getPolySynth?(): PolySynth | null }).getPolySynth?.();
+      if (!ps) return;
+      applyPresetByName(ps, bare);
+    } else if (presetName.startsWith('engine:')) {
+      const bare = presetName.slice('engine:'.length);
+      const preset = inst.presets.find((p) => p.name === bare);
+      if (!preset) return;
+      for (const [id, value] of Object.entries(preset.params)) {
+        (inst as unknown as { setBaseValue(id: string, v: number): void }).setBaseValue(id, value);
+      }
+    } else {
+      return;
+    }
     refreshPolyPresetSelect();
-    if (inst) refreshLaneKnobs(laneId, inst);
+    refreshLaneKnobs(laneId, inst);
   },
 });
 synthEditorState.activePolyTarget = polysynth;
@@ -972,13 +998,17 @@ startAutomationTick(automationTickDeps);
 // per-lane independent loops (Phase D), but auto-loading it at boot
 // hides the multi-scene experience the user is used to. Auto-apply the
 // PatternBank demo + import it into Session, same as before.
-applyMinimalTechnoDemo(demoDeps);
-sessionHost.applyLoadedSessionState(importClassicToSession(bank));
-buildArpUI(arpUIDeps);
-// Apply the demo's slot-0 preset configurator so the boot state has a real
-// preset selected (otherwise the dropdown shows "(custom)" until the user
-// launches a scene).
-runSlotConfigurator(0);
+// Boot demo: fetched as a static JSON asset rather than constructed
+// programmatically. The JSON drives both the SessionState and the
+// per-scene preset map; applyLoadedSessionState reads lane.enginePresetName
+// and onLaunchScene reads scene.presetPerLane.
+fetchDemoSession('/demos/minimal-techno.json').then((state) => {
+  sessionHost.applyLoadedSessionState(state);
+  buildArpUI(arpUIDeps);
+}).catch((err: unknown) => {
+  console.error('Demo load failed; falling back to empty session.', err);
+  buildArpUI(arpUIDeps);
+});
 // App is always in session mode — seq.sessionMode must be true at boot.
 seq.sessionMode = true;
 startVisualizer({ ctx, analyser, vizCanvas });

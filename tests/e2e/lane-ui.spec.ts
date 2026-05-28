@@ -46,6 +46,13 @@ test.describe('modulator destination dropdown', () => {
 test.describe('preset selection', () => {
   test('boot applies the demo slot-0 preset (PAD Warm)', async ({ page }) => {
     await page.goto('/');
+    // The demo SessionState is now fetched async from /demos/minimal-techno.json,
+    // so the dropdown stays at "__custom__" until the fetch resolves and
+    // applyLoadedSessionState runs. Wait until the active lane reports a real
+    // preset before clicking through.
+    await page.waitForFunction(
+      () => (document.querySelector('#poly-preset-select') as HTMLSelectElement | null)?.value !== '__custom__',
+    );
     await page.locator('button.session-lane-tab[data-lane-id="subtractive-1"]').click();
     const sel = page.locator('#poly-preset-select');
     await expect(sel).toHaveValue('factory:PAD Warm');
