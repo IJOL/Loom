@@ -164,25 +164,29 @@ function ensureExtraPoly(id: ExtraId): PolySynth {
 }
 
 const stripFor = (t: TrackId | string): ChannelStrip => {
-  // Slug ids (session lanes use these — `tb-303-1`, `drums-1`, `subtractive-1`).
-  if (t === 'tb-303-1')      return bassStrip;
-  if (t === 'subtractive-1') return polyStrip;
-  if (t === 'drums-1')       return drumBusStrip;
-  // Legacy mixer track ids (still emitted by the classic step-grid mixer).
-  if (t === 'bass') return bassStrip;
-  if (t === 'poly') return polyStrip;
-  if (t === 'drumBus') return drumBusStrip;
-  if ((EXTRA_IDS as readonly string[]).includes(t as string)) {
-    ensureExtraPoly(t as ExtraId); // creates strip lazily if missing
-    return extraStrips[t as ExtraId]!;
-  }
-  // Per-voice drum channel strips (kick/snare/...).
+  // Per-voice drum channel strips (kick/snare/...) — not session lanes, just
+  // sub-busses of the drum bus.
   if (t in drums.channels) {
     const ch = drums.channels[t as DrumVoice];
     if (ch) return ch;
   }
-  // Generic extra Session lanes (subtractive-2, subtractive-3, etc.) — share
-  // the same per-lane ChannelStrip cache used by ensureLaneVoice.
+  // Slug session lanes — single source of truth.
+  const res = laneResources.get(t as string);
+  if (res) return res.strip;
+  // Legacy mixer track ids still emitted by the classic step-grid mixer:
+  // map them onto the canonical slug lane ids.
+  if (t === 'bass')    return laneResources.get(LANE_ID_BASS)!.strip;
+  if (t === 'poly')    return laneResources.get(LANE_ID_POLY)!.strip;
+  if (t === 'drumBus') return laneResources.get(LANE_ID_DRUMS)!.strip;
+  // Lazy extras — `poly1`/`poly2`/... aren't in laneResources yet because
+  // ensureExtraPoly hasn't been called. Trigger the lazy alloc (which now
+  // registers under the slug id too).
+  if ((EXTRA_IDS as readonly string[]).includes(t as string)) {
+    ensureExtraPoly(t as ExtraId);
+    return extraStrips[t as ExtraId]!;
+  }
+  // Generic extra Session lanes (bass2 / drums2 / etc.) — share the
+  // same per-lane ChannelStrip cache used by ensureLaneVoice.
   return ensureLaneStrip(t as string);
 };
 
