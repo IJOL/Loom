@@ -10,6 +10,8 @@ import { createSelectControl } from '../core/select-control';
 import { SYNC_RATIO_MAP } from './rate-sync';
 import { formatParamIdForDisplay } from '../core/lane-display';
 import type { ModulationHost, ModulatorState, Waveform } from './types';
+import type { SessionState } from '../session/session';
+import { syncModulators } from '../session/session-engine-state';
 
 export interface ModulationUIDeps {
   engineId: string;
@@ -23,6 +25,15 @@ export interface ModulationUIDeps {
    *  and connection labels can show the same name the session uses
    *  everywhere else. Optional — if omitted, raw ids are shown. */
   lookupLaneDisplayName?: (laneId: string) => string | undefined;
+  /** Phase C: when present, every modulator mutation mirrors into
+   *  `sessionState.lanes[laneId].engineState.modulators`. */
+  sessionState?: SessionState;
+}
+
+function sync(deps: ModulationUIDeps): void {
+  if (deps.sessionState) {
+    syncModulators(deps.sessionState, deps.laneId, deps.host.modulators);
+  }
 }
 
 export function renderModulatorsPanel(container: HTMLElement, deps: ModulationUIDeps): void {
@@ -36,8 +47,8 @@ export function renderModulatorsPanel(container: HTMLElement, deps: ModulationUI
 
   const header = document.createElement('div');
   header.className = 'mod-panel-header';
-  header.appendChild(mkAddButton('+ LFO',  () => { deps.host.addModulator('lfo');  deps.onChange(); }));
-  header.appendChild(mkAddButton('+ ADSR', () => { deps.host.addModulator('adsr'); deps.onChange(); }));
+  header.appendChild(mkAddButton('+ LFO',  () => { deps.host.addModulator('lfo');  sync(deps); deps.onChange(); }));
+  header.appendChild(mkAddButton('+ ADSR', () => { deps.host.addModulator('adsr'); sync(deps); deps.onChange(); }));
   box.appendChild(header);
 
   for (const mod of deps.host.modulators) {
@@ -77,6 +88,7 @@ function renderModCard(mod: ModulatorState, deps: ModulationUIDeps): HTMLElement
   refreshEnableUI();
   enableBtn.addEventListener('click', () => {
     mod.enabled = !mod.enabled;
+    sync(deps);
     refreshEnableUI();
   });
   row.appendChild(enableBtn);
@@ -84,7 +96,7 @@ function renderModCard(mod: ModulatorState, deps: ModulationUIDeps): HTMLElement
   const rmBtn = document.createElement('button');
   rmBtn.className = 'rnd';
   rmBtn.textContent = '×';
-  rmBtn.addEventListener('click', () => { deps.host.removeModulator(mod.id); deps.onChange(); });
+  rmBtn.addEventListener('click', () => { deps.host.removeModulator(mod.id); sync(deps); deps.onChange(); });
   row.appendChild(rmBtn);
 
   card.appendChild(row);
@@ -106,7 +118,7 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
       { value: 'saw',      label: 'Saw'  },
     ],
     initialValue: mod.waveform ?? 'sine',
-    onChange: (v) => { mod.waveform = v as Waveform; },
+    onChange: (v) => { mod.waveform = v as Waveform; sync(deps); },
   });
   deps.registerKnob(wave.handle);
   row.appendChild(wave.el);
@@ -117,7 +129,7 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
     min: 0.01, max: 40, step: 0.01,
     value: mod.rateHz ?? 4,
     defaultValue: 4,
-    onChange: (v) => { mod.rateHz = v; },
+    onChange: (v) => { mod.rateHz = v; sync(deps); },
     format: (v) => v < 1 ? `${v.toFixed(2)}Hz` : `${v.toFixed(1)}Hz`,
   });
   deps.registerKnob(rate);
@@ -129,7 +141,7 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
     label: 'RATIO',
     options: ratioOpts,
     initialValue: mod.syncRatio ?? '1/4',
-    onChange: (v) => { mod.syncRatio = v; },
+    onChange: (v) => { mod.syncRatio = v; sync(deps); },
   });
   deps.registerKnob(ratio.handle);
   row.appendChild(ratio.el);
@@ -144,6 +156,7 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
   refreshSyncUI();
   syncBtn.addEventListener('click', () => {
     mod.syncToBpm = !mod.syncToBpm;
+    sync(deps);
     refreshSyncUI();
   });
   row.appendChild(syncBtn);
@@ -156,7 +169,7 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
       { value: 'bi',  label: '-1..+1' },
     ],
     initialValue: (mod.bipolar !== false) ? 'bi' : 'uni',
-    onChange: (v) => { mod.bipolar = v === 'bi'; },
+    onChange: (v) => { mod.bipolar = v === 'bi'; sync(deps); },
   });
   deps.registerKnob(bipolar.handle);
   row.appendChild(bipolar.el);
@@ -178,7 +191,7 @@ function renderAdsrConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLElem
       label, min, max, step: 0.001,
       value: (mod[field] as number | undefined) ?? def,
       defaultValue: def,
-      onChange: (v) => { (mod as unknown as Record<string, unknown>)[field] = v; },
+      onChange: (v) => { (mod as unknown as Record<string, unknown>)[field] = v; sync(deps); },
       format: fmt,
     });
     deps.registerKnob(k);
@@ -226,6 +239,7 @@ function renderRoutingList(mod: ModulatorState, deps: ModulationUIDeps): HTMLEle
     if (!paramId) return;
     const cid = `c-${Date.now().toString(36)}`;
     deps.host.setConnection(mod.id, { id: cid, paramId, depth: 0.5 });
+    sync(deps);
     deps.onChange();
   });
   adder.appendChild(destSel);
@@ -253,6 +267,7 @@ function renderConnectionRow(mod: ModulatorState, conn: import('./types').Modula
     value: conn.depth, defaultValue: 0,
     onChange: (v) => {
       deps.host.setConnection(mod.id, { ...conn, depth: v });
+      sync(deps);
     },
     format: (v) => v.toFixed(2),
   });
@@ -262,7 +277,7 @@ function renderConnectionRow(mod: ModulatorState, conn: import('./types').Modula
   const rmBtn = document.createElement('button');
   rmBtn.className = 'rnd';
   rmBtn.textContent = '×';
-  rmBtn.addEventListener('click', () => { deps.host.removeConnection(mod.id, conn.id); deps.onChange(); });
+  rmBtn.addEventListener('click', () => { deps.host.removeConnection(mod.id, conn.id); sync(deps); deps.onChange(); });
   row.appendChild(rmBtn);
 
   return row;

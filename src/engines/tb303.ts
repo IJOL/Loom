@@ -203,6 +203,7 @@ export class TB303Engine implements SynthEngine {
         registry: ctx.registry as Map<string, KnobHandle>,
         registerKnob: (k) => ctx.registerKnob(k),
         lookupLaneDisplayName: ctx.lookupLaneDisplayName,
+        sessionState: ctx.sessionState,
         onChange: () => {
           container.innerHTML = '';
           this.buildParamUI(container, ctx); // rebuild panel DOM
