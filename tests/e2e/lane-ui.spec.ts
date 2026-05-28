@@ -85,3 +85,38 @@ test.describe('mixer mutes', () => {
     await expect(muteBtn).not.toHaveClass(/active/);
   });
 });
+
+test.describe('demo JSON presets', () => {
+  // Wait for the async demo-loader to populate the dropdown before asserting.
+  async function waitForBoot(page: import('@playwright/test').Page): Promise<void> {
+    await page.waitForFunction(
+      () => (document.querySelector('#poly-preset-select') as HTMLSelectElement | null)?.value !== '__custom__',
+    );
+  }
+
+  test('every poly lane shows its boot preset in the dropdown', async ({ page }) => {
+    await page.goto('/');
+    await waitForBoot(page);
+
+    await page.locator('button.session-lane-tab[data-lane-id="subtractive-1"]').click();
+    await expect(page.locator('#poly-preset-select')).toHaveValue('factory:PAD Warm');
+
+    await page.locator('button.session-lane-tab[data-lane-id="subtractive-2"]').click();
+    await expect(page.locator('#poly-preset-select')).toHaveValue('factory:PAD Sweep');
+  });
+
+  test('launching scene B switches presets on every poly lane', async ({ page }) => {
+    await page.goto('/');
+    await waitForBoot(page);
+
+    // Scene-launch buttons are rendered by session-ui as `.session-scene-launch`.
+    // Index 1 = scene B.
+    await page.locator('.session-scene-launch').nth(1).click();
+
+    await page.locator('button.session-lane-tab[data-lane-id="subtractive-1"]').click();
+    await expect(page.locator('#poly-preset-select')).toHaveValue('factory:LEAD Bright Saw');
+
+    await page.locator('button.session-lane-tab[data-lane-id="subtractive-2"]').click();
+    await expect(page.locator('#poly-preset-select')).toHaveValue('factory:LEAD Soft Sine');
+  });
+});
