@@ -215,10 +215,7 @@ export class DrumsEngine implements SynthEngine {
     container.innerHTML = '';
     if (!ctx) return;
 
-    const fmt = (id: string, v: number): string => {
-      if (id === 'master.tune') return `${v >= 0 ? '+' : ''}${v.toFixed(0)}st`;
-      return `${Math.round(v * 100)}%`;
-    };
+    const fmt = (_id: string, v: number): string => `${Math.round(v * 100)}%`;
 
     // Bus EQ (automatable from the lane's LFO/ADSR).
     const busRow = document.createElement('div');
