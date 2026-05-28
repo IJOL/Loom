@@ -880,17 +880,20 @@ function mountSubtractiveLaneKnobs(laneId: string): void {
     ['amp.',    'poly-amp-knobs'],
     ['master.', 'poly-master-knobs'],
   ];
+  const engine = laneResources.get(laneId)?.engine;
+  if (!engine) return;
   const ctx: import('./engines/engine-types').EngineUIContext = {
     laneId,
     registerKnob: (k) => registerKnob(k as KnobHandle),
     registry: automationRegistry as unknown as Map<string, unknown>,
+    lookupLaneDisplayName: (id) => sessionHost?.state.lanes.find((l) => l.id === id)?.name,
     sessionState: _sessionStateForKnobs,
   };
   for (const [prefix, divId] of sectionMap) {
     const parent = document.getElementById(divId);
     if (!parent) continue;
     parent.innerHTML = '';
-    if (mainSubtractive) wireEngineParams(mainSubtractive, ctx, parent, {
+    wireEngineParams(engine, ctx, parent, {
       filter: (id) => id.startsWith(prefix),
     });
   }
