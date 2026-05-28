@@ -179,10 +179,10 @@ export function applyMinimalTechnoDemo(deps: DemoDeps): void {
     }
   };
   deps.setSlotConfigurators([
-    null,                                                    // A: subtractive defaults
-    () => applyPreset('subtractive-1', 'Organ Stab'),        // B: wavetable
-    () => applyPreset('subtractive-1', 'Bell'),              // C: FM
-    null,                                                    // D: subtractive defaults
+    null,                                                       // A: subtractive defaults
+    () => applyPreset('subtractive-1', 'Bright Stab'),          // B: bright stab
+    () => applyPreset('subtractive-1', 'Sub Bell'),             // C: sub-bell ping
+    null,                                                       // D: subtractive defaults
   ]);
 
   const patterns = buildMinimalTechnoDemo();

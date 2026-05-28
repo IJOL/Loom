@@ -226,7 +226,57 @@ class SubtractiveEngine implements SynthEngine {
   readonly polyphony = 'poly' as const;
   readonly editor = 'piano-roll' as const;
   readonly params = SUB_PARAMS;
-  readonly presets: import('./engine-types').EnginePreset[] = [];
+  readonly presets: import('./engine-types').EnginePreset[] = [
+    {
+      // Bright stab — saw + square mix, mid-open cutoff with moderate
+      // resonance, fast amp env. Good for syncopated chord stabs.
+      name: 'Bright Stab',
+      params: {
+        'osc1.level':       0.7,
+        'osc1.wave':        0,    // saw
+        'osc2.level':       0.5,
+        'osc2.detune':      7,
+        'osc2.wave':        1,    // square
+        'sub.level':        0.1,
+        'noise.level':      0,
+        'filter.cutoff':    0.7,
+        'filter.resonance': 0.4,
+        'filter.envAmount': 0.25,
+        'filter.drive':     0.15,
+        'filter.attack':    0.01,
+        'filter.decay':     0.20,
+        'filter.sustain':   0.30,
+        'amp.attack':       0.005,
+        'amp.decay':        0.15,
+        'amp.sustain':      0.40,
+        'amp.release':      0.20,
+      },
+    },
+    {
+      // Sub bell — sine osc + heavy sub + low cutoff with high resonance,
+      // creates a self-oscillating ping near the fundamental. Use for the
+      // "FM bell"-style C-slot in the demo.
+      name: 'Sub Bell',
+      params: {
+        'osc1.level':       0.4,
+        'osc1.wave':        3,    // sine
+        'osc2.level':       0.0,
+        'sub.level':        0.6,
+        'noise.level':      0,
+        'filter.cutoff':    0.4,
+        'filter.resonance': 0.85,
+        'filter.envAmount': 0.7,
+        'filter.drive':     0,
+        'filter.attack':    0.001,
+        'filter.decay':     0.6,
+        'filter.sustain':   0.05,
+        'amp.attack':       0.002,
+        'amp.decay':        0.45,
+        'amp.sustain':      0.15,
+        'amp.release':      0.35,
+      },
+    },
+  ];
 
   /** Tempo for LFO BPM sync. main.ts can update this at runtime. */
   bpm = 120;

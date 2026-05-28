@@ -15,6 +15,7 @@ import { describe, it, expect } from 'vitest';
 import { buildMinimalTechnoDemo } from './demo-minimal-techno';
 import { PatternBank } from '../core/pattern';
 import { importClassicToSession } from '../session/session-migration';
+import { SubtractiveEngine } from '../engines/subtractive';
 
 describe('minimal-techno demo', () => {
   it('builds 4 patterns', () => {
@@ -46,6 +47,31 @@ describe('minimal-techno demo', () => {
       expect(polyClip,  `poly clip in scene ${scene}`).toBeDefined();
       expect(drumsClip!.notes.length,
         `drums clip ${scene} should have drum hits`).toBeGreaterThan(0);
+    }
+  });
+
+  it('SubtractiveEngine ships with the demo presets used by slots B + C', () => {
+    // The demo's per-slot configurators must apply presets that exist in
+    // SubtractiveEngine.presets (because subtractive-1 is the only poly lane
+    // in the default 3-lane session). If a preset name doesn't resolve, the
+    // configurator is a silent no-op and slots A/B/C/D all sound the same —
+    // which defeats the whole point of the demo.
+    const engine = new SubtractiveEngine();
+    const names = engine.presets.map((p) => p.name);
+    expect(names).toContain('Bright Stab');
+    expect(names).toContain('Sub Bell');
+  });
+
+  it('demo presets differ from defaults (no-op preset guard)', () => {
+    // Pin: each preset must move at least filter.cutoff away from the
+    // engine's default 0.55, otherwise applying it is sonically pointless.
+    const engine = new SubtractiveEngine();
+    const defaultCutoff = engine.params.find((p) => p.id === 'filter.cutoff')!.default;
+    for (const presetName of ['Bright Stab', 'Sub Bell']) {
+      const preset = engine.presets.find((p) => p.name === presetName)!;
+      expect(preset.params['filter.cutoff'],
+        `preset '${presetName}' should set filter.cutoff to a non-default value`,
+      ).not.toBe(defaultCutoff);
     }
   });
 
