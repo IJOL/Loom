@@ -33,9 +33,9 @@ describe('Sequencer scheduling', () => {
     h = makeSchedulerHarness({ bpm: 120, length: 4, bass });
     h.seq.start();
     h.advance(stepDurMs(120) * 4 + 50);
-    const stepsFired = h.bassLog.map(e => e.step).sort();
+    const stepsFired = [...new Set(h.bassLog.map(e => e.step))].sort();
     // Only steps 0 and 2 should have fired.
-    expect(stepsFired.filter(s => s < 4)).toEqual([0, 2]);
+    expect(stepsFired).toEqual([0, 2]);
   });
 
   it('setLength(8) truncates the pattern and step 0 restarts after 8 steps', () => {

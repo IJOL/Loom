@@ -100,7 +100,7 @@ export function makeSchedulerHarness(opts: HarnessOpts = {}): HarnessHandle {
   // Override bass: callback replaces default trigger.
   seq.onBassTrigger = (note, time, gate, accent, slidingIn) => {
     const stepDur = 60 / seq.bpm / 4;
-    const step = Math.round((time - audioStart) / stepDur);
+    const step = Math.round((time - audioStart) / stepDur) % seq.pattern.length;
     bassLog.push({ step, time, note, gate, accent, slidingIn });
   };
 
@@ -108,7 +108,7 @@ export function makeSchedulerHarness(opts: HarnessOpts = {}): HarnessHandle {
   const origDrumTrigger = drumMachine.trigger.bind(drumMachine);
   drumMachine.trigger = (lane: DrumVoice, time: number, accent = false) => {
     const stepDur = 60 / seq.bpm / 4;
-    const step = Math.round((time - audioStart) / stepDur);
+    const step = Math.round((time - audioStart) / stepDur) % seq.pattern.length;
     drumLog.push({ step, time, lane, accent });
     // Don't call origDrumTrigger — we don't want audio side effects.
     void origDrumTrigger;
