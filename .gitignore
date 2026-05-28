@@ -12,3 +12,7 @@ test/output/
 
 .playwright-mcp/
 short-names.png
+
+# Playwright artifacts (regenerated on every e2e run)
+test-results/
+playwright-report/
