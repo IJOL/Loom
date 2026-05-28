@@ -66,3 +66,10 @@ export function setSlotConfigurators(
 ): void {
   state.slotConfigurators = cbs;
 }
+
+/** Invoke the configurator registered for a slot/scene index. No-op when
+ *  there's no configurator for that index. Called on scene launch + at
+ *  boot for slot 0 so the demo's preset selections actually take effect. */
+export function runSlotConfigurator(state: LaneEngineHostState, idx: number): void {
+  state.slotConfigurators[idx]?.();
+}

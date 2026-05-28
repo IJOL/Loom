@@ -78,6 +78,9 @@ export interface SessionHostDeps {
    *  triggerForLane can find the resource immediately. Optional so test fixtures
    *  that don't construct an audio graph don't need to implement it. */
   ensureLaneResource?: (laneId: string, engineId: string) => void;
+  /** Invoke the slot configurator for a given index (used by the demo to
+   *  apply per-scene presets). No-op when there's no configurator registered. */
+  runSlotConfigurator?: (idx: number) => void;
 }
 
 export class SessionHost {
@@ -245,6 +248,7 @@ export class SessionHost {
         if (!scene) return;
         void ctx.resume();
         launchScene(self.laneStates, self.state, scene, idx, ctx.currentTime, seq.bpm);
+        self.deps.runSlotConfigurator?.(idx);
         if (!seq.isPlaying()) { resetAutomationPosition(); seq.start(); playBtn.textContent = '■'; }
         self.renderWithMixer();
       },

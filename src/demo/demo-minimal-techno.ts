@@ -16,6 +16,9 @@ export interface DemoDeps {
   setSlotConfigurators: (cbs: Array<(() => void) | null>) => void;
   /** Returns the live SynthEngine instance for a lane, or null if none. */
   getLaneEngineInstance: (laneId: string) => SynthEngine | null;
+  /** Apply a FACTORY_POLY_PRESETS preset to the lane's PolySynth and update
+   *  polyPresetName so the dropdown reflects the selection. */
+  applyPolyPresetForLane?: (laneId: string, presetName: string) => void;
   updateSlotButtons: () => void;
   renderLanes: () => void;
   updateBassModeButtons: () => void;
@@ -166,23 +169,17 @@ export function applyMinimalTechnoDemo(deps: DemoDeps): void {
   const { seq, bank, bpmInput, barsSel } = deps;
   const getLaneEngineInstance = deps.getLaneEngineInstance;
 
-  // Per-slot configurators: applied each time the slot is activated. Each
-  // configurator looks up the lane's engine and applies a named factory
-  // preset (instead of poking private fields inline).
-  const applyPreset = (laneId: string, presetName: string) => {
-    const inst = getLaneEngineInstance(laneId);
-    if (!inst) return;
-    const preset = inst.presets.find((p) => p.name === presetName);
-    if (!preset) return;
-    for (const [id, value] of Object.entries(preset.params)) {
-      inst.setBaseValue(id, value);
-    }
-  };
+  // Per-slot configurators: applied each time the slot is activated. Use
+  // applyPolyPresetForLane so the preset dropdown reflects the active choice
+  // (it reads from polyPresetName, which only gets populated when a preset
+  // is applied through the canonical path).
+  const apply = (laneId: string, presetName: string) =>
+    deps.applyPolyPresetForLane?.(laneId, presetName);
   deps.setSlotConfigurators([
-    null,                                                       // A: subtractive defaults
-    () => applyPreset('subtractive-1', 'Bright Stab'),          // B: bright stab
-    () => applyPreset('subtractive-1', 'Sub Bell'),             // C: sub-bell ping
-    null,                                                       // D: subtractive defaults
+    () => apply('subtractive-1', 'PAD Warm'),         // A: warm pad default
+    () => apply('subtractive-1', 'LEAD Bright Saw'),  // B: bright saw lead
+    () => apply('subtractive-1', 'PAD Glass'),        // C: glassy bell
+    () => apply('subtractive-1', 'LEAD Soft Sine'),   // D: soft sine
   ]);
 
   const patterns = buildMinimalTechnoDemo();

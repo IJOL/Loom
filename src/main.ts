@@ -361,6 +361,7 @@ const getLaneEngineInstance = (laneId: string): SynthEngine | null =>
   laneResources.get(laneId)?.engine ?? null;
 const setActiveEngineLane = (laneId: string) => leh.setActiveEngineLane(_lehState, _lehDeps, laneId);
 const setSlotConfigurators = (cbs: Array<(() => void) | null>) => leh.setSlotConfigurators(_lehState, cbs);
+const runSlotConfigurator = (idx: number) => leh.runSlotConfigurator(_lehState, idx);
 
 // Cache: laneId → engine voice. Mono engines reuse the same voice; poly
 // engines get a fresh voice per call but the strip is cached per lane.
@@ -690,6 +691,7 @@ const sessionHost = new SessionHost({
   onActiveLaneChanged: () => populateAutoParamSelectWrapper(),
   laneResources,
   ensureLaneResource,
+  runSlotConfigurator,
 });
 synthEditorState.activePolyTarget = polysynth;
 sessionHost.init();
@@ -911,6 +913,15 @@ const demoDeps: import('./demo/demo-minimal-techno').DemoDeps = {
   chainBtn: $<HTMLButtonElement>('chain-toggle'),
   setSlotConfigurators,
   getLaneEngineInstance,
+  applyPolyPresetForLane: (laneId, presetName) => {
+    const inst = getLaneEngineInstance(laneId);
+    const ps = (inst as { getPolySynth?(): PolySynth | null } | null)?.getPolySynth?.();
+    if (!ps) return;
+    applyPresetByName(ps, presetName);
+    // Refresh dropdown + knob handles so the UI mirrors the new preset values.
+    refreshPolyPresetSelect();
+    if (inst) refreshLaneKnobs(laneId, inst);
+  },
   updateSlotButtons,
   renderLanes,
   updateBassModeButtons,
@@ -956,6 +967,10 @@ startAutomationTick(automationTickDeps);
 applyMinimalTechnoDemo(demoDeps);
 sessionHost.applyLoadedSessionState(importClassicToSession(bank));
 buildArpUI(arpUIDeps);
+// Apply the demo's slot-0 preset configurator so the boot state has a real
+// preset selected (otherwise the dropdown shows "(custom)" until the user
+// launches a scene).
+runSlotConfigurator(0);
 // App is always in session mode — seq.sessionMode must be true at boot.
 seq.sessionMode = true;
 startVisualizer({ ctx, analyser, vizCanvas });
