@@ -11,4 +11,10 @@ runStandardEngineBattery({
   createEngine: () => new KarplusEngine(),
   midi: 48,
   hasAccent: false,
+  maxOutParams: {
+    // peakAmp = 1.4 * level * velMul; with velMul=1.0 (no accent in battery),
+    // level=0.5 keeps the scheduled amp peak at 0.7, safely below 1.0 even
+    // after string resonance contributes a few percent of headroom.
+    'amp.level': 0.5,
+  },
 });
