@@ -40,7 +40,7 @@ export function getLaneEngineId(
   deps: LaneEngineHostDeps,
   laneId: string,
 ): string {
-  if (laneId === 'main') return deps.seq.pattern.engineId ?? 'subtractive';
+  if (laneId === 'subtractive-1') return deps.seq.pattern.engineId ?? 'subtractive';
   const track = deps.seq.pattern.extraPolyTracks.find((t) => t.id === laneId);
   return track?.engineId ?? 'subtractive';
 }
@@ -51,7 +51,7 @@ export function setLaneEngineIdInPattern(
   laneId: string,
   id: string,
 ): void {
-  if (laneId === 'main') {
+  if (laneId === 'subtractive-1') {
     deps.seq.pattern.engineId = id;
   } else {
     const track = deps.seq.pattern.extraPolyTracks.find((t) => t.id === laneId);
@@ -101,14 +101,11 @@ export function setActiveEngineLane(
   state.activeLaneId = laneId;
   const id = getLaneEngineId(state, deps, laneId);
   deps.engineSel.value = id;
-  if (laneId === 'main') deps.setCurrentEngineId(id);
+  if (laneId === 'subtractive-1') deps.setCurrentEngineId(id);
   ensureLaneEngine(state, laneId, id);
   const laneLabel = document.getElementById('engine-lane-label');
   if (laneLabel) {
-    laneLabel.textContent =
-      laneId === 'main'
-        ? 'MAIN'
-        : (deps.laneLabels[laneId] ?? laneId.toUpperCase());
+    laneLabel.textContent = deps.laneLabels[laneId] ?? laneId;
   }
   deps.rebuildEngineParamUI();
 }

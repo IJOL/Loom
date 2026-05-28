@@ -325,6 +325,7 @@ export class KarplusEngine implements SynthEngine {
       host: this.modHost,
       registry: ctx.registry as Map<string, KnobHandle>,
       registerKnob: (k) => ctx.registerKnob(k),
+      lookupLaneDisplayName: ctx.lookupLaneDisplayName,
       onChange: () => {
         container.innerHTML = '';
         this.buildParamUI(container, ctx);

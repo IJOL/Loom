@@ -68,9 +68,9 @@ export function emptyScene(name: string): SessionScene {
 export function emptySessionState(): SessionState {
   return {
     lanes: [
-      { id: 'bass',  engineId: 'tb303',          name: 'TB-303 1',      clips: [] },
-      { id: 'drums', engineId: 'drums-machine',  name: 'Drums 1',       clips: [] },
-      { id: 'main',  engineId: 'subtractive',    name: 'Subtractive 1', clips: [] },
+      { id: 'tb-303-1',      engineId: 'tb303',          name: 'TB-303 1',      clips: [] },
+      { id: 'drums-1',       engineId: 'drums-machine',  name: 'Drums 1',       clips: [] },
+      { id: 'subtractive-1', engineId: 'subtractive',    name: 'Subtractive 1', clips: [] },
     ],
     scenes: [],
     globalQuantize: '1/1',

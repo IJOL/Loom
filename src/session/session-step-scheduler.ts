@@ -72,10 +72,11 @@ function routeNoteToEngine(
           ensureExtraPoly, extraStrips, getLaneEngineId, ensureLaneEngine } = deps;
   const arpEnabled = arp.enabled && arp.scope.includes(laneId);
 
-  // Extra lanes (bass2, drums2, etc.) route through the engine's own voice.
-  // Built-in singletons (laneId === 'bass' / 'drums' / 'main') keep their
-  // existing direct triggers because Classic still uses them.
-  const isBuiltinLane = laneId === 'bass' || laneId === 'drums' || laneId === 'main';
+  // Extra lanes route through the engine's own voice. Built-in singletons
+  // (`tb-303-1` / `drums-1` / `subtractive-1`) keep their existing direct
+  // triggers because Classic still uses them.
+  const isBuiltinLane =
+    laneId === 'tb-303-1' || laneId === 'drums-1' || laneId === 'subtractive-1';
   if (!isBuiltinLane) {
     const voice = deps.ensureLaneVoice(laneId, engineId);
     if (!voice) return;
@@ -99,7 +100,7 @@ function routeNoteToEngine(
     return;
   }
   // Poly engines (subtractive/wavetable/fm/karplus)
-  const isMain = laneId === 'main';
+  const isMain = laneId === 'subtractive-1';
   const fire = (n: number, t: number, g: number, a: boolean) => {
     if (isMain) {
       polyTriggerDirect(n, t, g, a);

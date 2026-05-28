@@ -155,9 +155,8 @@ export class SessionHost {
   // ── Rendering ────────────────────────────────────────────────────────────
 
   private laneToTrackId(laneId: string): string {
-    if (laneId === 'bass')  return 'bass';
-    if (laneId === 'drums') return 'drumBus';
-    if (laneId === 'main')  return 'poly';
+    // Lane ids ARE the canonical slugs — no remap needed. Method kept as a
+    // single funnel point in case future lane kinds need translation.
     return laneId;
   }
 
@@ -297,13 +296,13 @@ export class SessionHost {
         }
 
         let polyTarget: PolySynth | null = null;
-        if (laneId === 'main') polyTarget = polysynth;
-        else if (laneId.startsWith('poly')) polyTarget = ensureExtraPoly(laneId);
+        if (laneId === 'subtractive-1') polyTarget = polysynth;
+        else if (laneId.startsWith('subtractive-')) polyTarget = ensureExtraPoly(laneId);
 
         const targetTab =
-          laneId === 'bass'                                  ? '303'   :
-          (laneId === 'drums' || laneId.startsWith('drum:')) ? 'drums' :
-                                                               'poly';
+          laneId === 'tb-303-1'                                  ? '303'   :
+          (laneId === 'drums-1' || laneId.startsWith('drum:'))   ? 'drums' :
+                                                                   'poly';
         document.querySelectorAll<HTMLButtonElement>('.tab').forEach((t) => {
           if (t.classList.contains('session-lane-tab')) {
             t.classList.toggle('active', t.dataset.laneId === laneId);
@@ -314,7 +313,7 @@ export class SessionHost {
         const lane = self.state.lanes.find((l) => l.id === laneId);
         const displayName = lane?.name ?? laneId.toUpperCase();
         if (polyTarget) {
-          showPolyEditor(laneId === 'main' ? 'main' : laneId, polyTarget, displayName);
+          showPolyEditor(laneId, polyTarget, displayName);
         } else {
           document.querySelectorAll<HTMLElement>('.page').forEach((p) => {
             p.hidden = p.dataset.page !== targetTab;
@@ -342,28 +341,33 @@ export class SessionHost {
   private injectEngineModulatorPanel(laneId: string, targetTab: string): void {
     // Pick the engine for this lane.
     const engineId =
-      laneId === 'bass'                                    ? 'tb303' :
-      (laneId === 'drums' || laneId.startsWith('drum:'))   ? 'drums-machine' :
-                                                             this.deps.getLaneEngineId(laneId);
-    // Built-in lanes (bass/drums/main) use the singleton engine instance the
-    // audio graph was wired to at boot. Extra lanes (poly2+, bass2+, etc.)
-    // use a factory-created instance owned by laneEngines — fall back to the
-    // singleton only if that lookup fails.
-    const isBuiltinLane = laneId === 'bass' || laneId === 'drums' || laneId === 'main';
+      laneId === 'tb-303-1'                                       ? 'tb303' :
+      (laneId === 'drums-1' || laneId.startsWith('drum:'))        ? 'drums-machine' :
+                                                                    this.deps.getLaneEngineId(laneId);
+    // Built-in lanes (tb-303-1 / drums-1 / subtractive-1) use the singleton
+    // engine instance the audio graph was wired to at boot. Extra lanes
+    // (subtractive-2+, etc.) use a factory-created instance owned by
+    // laneEngines — fall back to the singleton only if that lookup fails.
+    const isBuiltinLane =
+      laneId === 'tb-303-1' || laneId === 'drums-1' || laneId === 'subtractive-1';
     const engine = isBuiltinLane
       ? getEngine(engineId)
       : (this.deps.ensureLaneEngine(laneId, engineId) ?? getEngine(engineId));
     if (!engine) return;
 
-    // Mount or reuse a container — PREPEND so it's visible without scrolling
-    // (the poly page is tall and otherwise pushes this below the fold).
+    // Mount or reuse a container. Place the modulators panel BELOW the main
+    // synth controls — for poly we anchor on #poly-seq-mode-row so the panel
+    // sits between the engine controls and the SEQ MODE / tracks block. For
+    // other pages (drums, bass) we fall back to appending at the end.
     const page = document.querySelector<HTMLElement>(`[data-page="${targetTab}"]`);
     if (!page) return;
     let host = page.querySelector<HTMLElement>('.engine-mod-host');
     if (!host) {
       host = document.createElement('div');
       host.className = 'engine-mod-host';
-      page.insertBefore(host, page.firstChild);
+      const anchor = page.querySelector<HTMLElement>('#poly-seq-mode-row');
+      if (anchor) page.insertBefore(host, anchor);
+      else page.appendChild(host);
     }
     host.innerHTML = '';
 
@@ -374,6 +378,8 @@ export class SessionHost {
         if (handle.meta?.id) this.deps.automationRegistry.set(handle.meta.id, handle);
       },
       registry: this.deps.automationRegistry as Map<string, unknown>,
+      lookupLaneDisplayName: (id: string) =>
+        this.state.lanes.find((l) => l.id === id)?.name,
     });
   }
 
