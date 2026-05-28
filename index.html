@@ -9,55 +9,57 @@
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/style.scss" />
     <style>
-      /* ── Pure-Session chrome stripping ─────────────────────────────────
-         The whole app shares one main.ts boot, so every DOM id Classic
-         expects must still exist. We just hide everything that doesn't
-         belong in a session-first workflow. */
-      body[data-pure-session="true"] .mode-toggle,
-      body[data-pure-session="true"] .copy-row,
-      body[data-pure-session="true"] .copy-track-panel,
-      body[data-pure-session="true"] .presets-panel,
-      body[data-pure-session="true"] .mixer-panel,
-      body[data-pure-session="true"] .mixer-classic,
-      body[data-pure-session="true"] .midi-panel,
-      body[data-pure-session="true"] .row.tools,
-      body[data-pure-session="true"] #loop-toggle,
-      body[data-pure-session="true"] #chain-toggle,
-      body[data-pure-session="true"] #rec,
-      body[data-pure-session="true"] .slot-group,
-      body[data-pure-session="true"] #pager,
-      body[data-pure-session="true"] label:has(> #bars),
-      body[data-pure-session="true"] .vert-divider,
-      body[data-pure-session="true"] #bass-tracks,
-      body[data-pure-session="true"] #drum-tracks,
-      body[data-pure-session="true"] #poly-tracks,
-      body[data-pure-session="true"] button.tab[data-tab="303"],
-      body[data-pure-session="true"] button.tab[data-tab="drums"],
-      body[data-pure-session="true"] #bass-mode-step,
-      body[data-pure-session="true"] #bass-mode-piano,
-      body[data-pure-session="true"] #poly-mode-step,
-      body[data-pure-session="true"] #poly-mode-piano,
-      body[data-pure-session="true"] .synth > p.hint,
-      body[data-pure-session="true"] #session-import-classic {
+      /* ── Session-only chrome ───────────────────────────────────────────
+         Loom is session-only — the legacy Classic chrome below is hidden
+         because every DOM id main.ts expects must still exist (deletion is
+         a follow-up). The `data-pure-session` attribute is always true; the
+         scoping is left as a no-op marker until the Classic HTML is fully
+         deleted. */
+      .mode-toggle,
+      .copy-row,
+      .copy-track-panel,
+      .presets-panel,
+      .mixer-panel,
+      .mixer-classic,
+      .midi-panel,
+      .row.tools,
+      #loop-toggle,
+      #chain-toggle,
+      #rec,
+      .slot-group,
+      #pager,
+      label:has(> #bars),
+      .vert-divider,
+      #bass-tracks,
+      #drum-tracks,
+      #poly-tracks,
+      button.tab[data-tab="303"],
+      button.tab[data-tab="drums"],
+      #bass-mode-step,
+      #bass-mode-piano,
+      #poly-mode-step,
+      #poly-mode-piano,
+      .synth > p.hint,
+      #session-import-classic {
         display: none !important;
       }
       /* Session-first layout: synth editor pages, when active, render below the
          session grid instead of above it. The HTML order is fixed but flexbox
          ordering puts session-view first visually. */
-      body[data-pure-session="true"] .synth {
+      .synth {
         display: flex;
         flex-direction: column;
       }
-      body[data-pure-session="true"] .synth > .row.transport { order: 0; }
-      body[data-pure-session="true"] .synth > .tab-bar      { order: 1; }
-      body[data-pure-session="true"] .synth > .synth-row    { order: 2; }
-      body[data-pure-session="true"] .synth > .page         { order: 3; }
-      body[data-pure-session="true"] .synth > .session-view { order: 4; }
-      body[data-pure-session="true"] .synth > .arp-panel    { order: 5; }
-      /* Hide legacy PolySynth LFO1/LFO2 knob sections in Session mode — the
-         per-lane modulators panel replaces them functionally. */
-      body[data-pure-session="true"] .row.poly-section:has(#poly-lfo1-knobs),
-      body[data-pure-session="true"] .row.poly-section:has(#poly-lfo2-knobs) {
+      .synth > .row.transport { order: 0; }
+      .synth > .tab-bar      { order: 1; }
+      .synth > .synth-row    { order: 2; }
+      .synth > .page         { order: 3; }
+      .synth > .session-view { order: 4; }
+      .synth > .arp-panel    { order: 5; }
+      /* Hide legacy PolySynth LFO1/LFO2 knob sections — the per-lane
+         modulators panel replaces them functionally. */
+      .row.poly-section:has(#poly-lfo1-knobs),
+      .row.poly-section:has(#poly-lfo2-knobs) {
         display: none !important;
       }
     </style>

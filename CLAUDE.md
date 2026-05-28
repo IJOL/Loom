@@ -13,11 +13,13 @@ A browser-based **Roland TB-303 bass synth + drum machine** built with Web Audio
 - `npm run build` — typecheck + bundle to `dist/`
 - `npm run preview` — serve the production build locally
 - `npx tsc --noEmit` — typecheck without bundling
-- `npm test` — Vitest: 215 tests across four layers
-- `npm run test:fast` — everything except DSP renders (inner-loop TDD)
-- `npm run test:dsp` — only the real-DSP renders (slower, requires `node-web-audio-api`)
+- `npm test` — Vitest, colour-free (`NO_COLOR=1` via `cross-env`)
+- `npm run test:fast` — everything except DSP renders (inner-loop TDD), colour-free
+- `npm run test:dsp` — only the real-DSP renders (slower, requires `node-web-audio-api`), colour-free
 - `npm run test:wav-diff` — compares `test/output/*.wav` (last run) against `test/golden/*.wav` (committed reference) and prints peak/RMS/L2 deltas. Never fails CI — human inspection tool.
 - `npm run test:wav-bless` — overwrites `test/golden/` with the current `test/output/`. Deliberate action; commit the result.
+
+**Test colour convention:** every npm test script is wired with `cross-env NO_COLOR=1` so terminal output stays grayscale. When invoking vitest directly (e.g., a single file), prefer `NO_COLOR=1 npx vitest run path/to/file.test.ts`. Do NOT add `--reporter=...` to override — the npm scripts already do the right thing.
 
 No linter is configured.
 
