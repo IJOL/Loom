@@ -123,6 +123,7 @@ const drumsEngineInstance = getEngine('drums-machine');
 if (drumsEngineInstance && mainSubtractive) {
   laneResources.set(LANE_ID_BASS,  { strip: bassStrip,    engine: tb303Engine });
   laneResources.set(LANE_ID_DRUMS, { strip: drumBusStrip, engine: drumsEngineInstance });
+  (drumsEngineInstance as unknown as { setBusStrip?(s: ChannelStrip): void }).setBusStrip?.(drumBusStrip);
   laneResources.set(LANE_ID_POLY,  { strip: polyStrip,    engine: mainSubtractive });
 }
 
@@ -412,6 +413,9 @@ function ensureLaneResource(laneId: string, engineId: string): void {
     const p = new PolySynth(ctx, strip.input);
     p.bpm = seq.bpm;
     (engine as unknown as { setPolySynth?(p: PolySynth): void }).setPolySynth?.(p);
+  }
+  if (engineId === 'drums-machine') {
+    (engine as unknown as { setBusStrip?(s: ChannelStrip): void }).setBusStrip?.(strip);
   }
   laneResources.set(laneId, { strip, engine });
 }

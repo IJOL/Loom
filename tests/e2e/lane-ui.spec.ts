@@ -41,6 +41,23 @@ test.describe('modulator destination dropdown', () => {
     expect(counts.length).toBeGreaterThan(0);
     for (const c of counts) expect(c).toBeGreaterThanOrEqual(10);
   });
+
+  test('Drums lane LFO dropdown includes bus EQ destinations', async ({ page }) => {
+    await page.goto('/');
+    // Wait for the async fetch to populate laneResources (so drums-1 has its bus EQ wired).
+    await page.waitForFunction(
+      () => (document.querySelector('#poly-preset-select') as HTMLSelectElement | null)?.value !== '__custom__',
+    );
+    await page.locator('button.session-lane-tab[data-lane-id="drums-1"]').click();
+    const options = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLSelectElement>('.mod-dest-select')]
+        .filter((s) => s.offsetParent !== null)
+        .flatMap((s) => [...s.options].map((o) => o.value)),
+    );
+    expect(options).toContain('drums-1.bus.eq.low');
+    expect(options).toContain('drums-1.bus.eq.mid');
+    expect(options).toContain('drums-1.bus.eq.high');
+  });
 });
 
 test.describe('preset selection', () => {
