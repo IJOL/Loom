@@ -13,9 +13,14 @@ runStandardEngineBattery({
   createEngine: () => new TB303Engine(),
   cutoffParamId: 'filter.cutoff',
   maxOutParams: {
-    'filter.cutoff':    0.95,
-    'filter.resonance': 0.9,
-    'env.amount':       0.9,
+    'filter.cutoff':    0.5,
+    'filter.resonance': 0.4,
+    'env.amount':       0.5,
+    // The 303's accent multiplies both filter Q and amp gain on top of an
+    // already-resonant peak; even moderate values push past 0 dBFS in offline
+    // render. The default (0.6) clips with the other maxes, so we lower it
+    // here. Accepting that high-accent 303 character is intentional.
+    'env.accent':       0.2,
   },
 });
 

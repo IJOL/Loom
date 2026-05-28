@@ -66,6 +66,7 @@ class TB303Voice implements Voice {
   }
 
   release(time: number): void {
+    this.tb303.releaseGate(time);
     for (const mv of this.voiceMods.values()) mv.release(time);
   }
   connect(_dest: AudioNode): void {}
@@ -118,6 +119,11 @@ export class TB303Engine implements SynthEngine {
   private instances = new WeakMap<AudioNode, TB303>();
   private lastInstance: TB303 | null = null;
 
+  /** Caches setBaseValue calls made before lastInstance exists. Flushed
+   *  on the next createVoice() / registerInstance() so callers don't lose
+   *  pre-configuration. */
+  private pendingBaseValues = new Map<string, number>();
+
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
     let tb = this.instances.get(output);
     if (!tb) {
@@ -125,6 +131,7 @@ export class TB303Engine implements SynthEngine {
       this.instances.set(output, tb);
     }
     this.lastInstance = tb;
+    this.flushPendingBaseValues();
 
     const voiceMods = this.modHost.spawnVoice(ctx, () => this.bpm);
     recordVoiceMods(voiceMods);
@@ -157,7 +164,10 @@ export class TB303Engine implements SynthEngine {
   }
 
   setBaseValue(id: string, v: number): void {
-    if (!this.lastInstance) return;
+    if (!this.lastInstance) {
+      this.pendingBaseValues.set(id, v);
+      return;
+    }
     const p = this.lastInstance.params as unknown as Record<string, number | string>;
     switch (id) {
       case 'filter.cutoff':    p.cutoff = v;    return;
@@ -169,6 +179,15 @@ export class TB303Engine implements SynthEngine {
     }
   }
 
+  private flushPendingBaseValues(): void {
+    if (!this.lastInstance || this.pendingBaseValues.size === 0) return;
+    // Snapshot then clear so the recursive setBaseValue calls below see
+    // an empty map and write straight through to the instance.
+    const pending = [...this.pendingBaseValues];
+    this.pendingBaseValues.clear();
+    for (const [id, v] of pending) this.setBaseValue(id, v);
+  }
+
   // Pre-register an externally-constructed TB303 so the singleton synth
   // owned by main.ts (which Classic UI knobs and randomize() mutate) is
   // the same instance this engine wraps. Without this, createVoice would
@@ -176,6 +195,7 @@ export class TB303Engine implements SynthEngine {
   registerInstance(output: AudioNode, instance: TB303): void {
     this.instances.set(output, instance);
     this.lastInstance = instance;
+    this.flushPendingBaseValues();
   }
 
   buildSequencer(_c: HTMLElement, _n: number): EngineSequencer {

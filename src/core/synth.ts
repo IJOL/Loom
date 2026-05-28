@@ -124,4 +124,19 @@ export class TB303 {
       time + decaySec * (note.accent ? 0.6 : 1),
     );
   }
+
+  /**
+   * Cut the amp gate at `time`. Cancels pending amp envelope automation and
+   * ramps to silence quickly. Used by Voice.release() to support live note-off
+   * since `trigger()` pre-schedules the full envelope up front.
+   */
+  releaseGate(time: number): void {
+    this.envAmp.offset.cancelScheduledValues(time);
+    // Read the current value approximately — envAmp is a ConstantSourceNode
+    // whose offset is itself an AudioParam; we can't read its instantaneous
+    // value mid-ramp without an analyser, so we set a known floor and ramp
+    // from there. A 5 ms linear ramp avoids audible clicks.
+    this.envAmp.offset.setValueAtTime(this.envAmp.offset.value, time);
+    this.envAmp.offset.linearRampToValueAtTime(0, time + 0.005);
+  }
 }
