@@ -13,11 +13,11 @@ export interface DemoDeps {
   chainEnabled: () => boolean;
   chainBtn: HTMLButtonElement;
   setSlotConfigurators: (cbs: Array<(() => void) | null>) => void;
+  /** Returns the live SynthEngine instance for a lane, or null if none. */
   getLaneEngineInstance: (laneId: string) => SynthEngine | null;
   updateSlotButtons: () => void;
   renderLanes: () => void;
   updateBassModeButtons: () => void;
-  syncEngineToPattern: () => void;
   rebuildMixer: () => void;
 }
 
@@ -163,7 +163,8 @@ function buildMinimalTechnoDemo(): PatternData[] {
 }
 
 export function applyMinimalTechnoDemo(deps: DemoDeps): void {
-  const { seq, bank, bpmInput, barsSel, getLaneEngineInstance } = deps;
+  const { seq, bank, bpmInput, barsSel } = deps;
+  const getLaneEngineInstance = deps.getLaneEngineInstance;
 
   // Per-slot configurators: applied each time the slot is activated. Each
   // configurator looks up the lane's engine and applies a named factory
@@ -195,7 +196,6 @@ export function applyMinimalTechnoDemo(deps: DemoDeps): void {
   deps.updateSlotButtons();
   deps.renderLanes();
   deps.updateBassModeButtons();
-  deps.syncEngineToPattern();
   deps.rebuildMixer();
   if (!deps.chainEnabled()) deps.chainBtn.click();
 }

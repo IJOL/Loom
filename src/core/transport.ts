@@ -13,7 +13,6 @@ export interface TransportDeps {
   resetAutomationPosition: () => void;
   renderLanes: () => void;
   updateBassModeButtons: () => void;
-  syncEngineToPattern: () => void;
 }
 
 // Mutable state owned by transport
@@ -43,7 +42,6 @@ export function switchSlot(newIdx: number): void {
     d.barsSel.value = String(d.seq.length);
     updateSlotButtons();
     d.renderLanes();
-    d.syncEngineToPattern();
   } else {
     // Playing — queue the swap, it'll happen at the next loop start
     _pendingSlotIdx = newIdx;
@@ -137,7 +135,6 @@ export function wireTransport(deps: TransportDeps): void {
       updateSlotButtons();
       deps.renderLanes();
       deps.updateBassModeButtons();
-      deps.syncEngineToPattern();
     }
   };
 }

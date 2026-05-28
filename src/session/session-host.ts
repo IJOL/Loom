@@ -7,7 +7,6 @@ import type { DrumMachine, DrumVoice } from '../core/drums';
 import type { PatternBank } from '../core/pattern';
 import type { PolySynth } from '../polysynth/polysynth';
 import type { Sequencer } from '../core/sequencer';
-import type { SynthEngine } from '../engines/engine-types';
 import type { MixerColumnDeps } from '../core/mixer';
 import {
   emptySessionState, cloneSessionState, emptyLane,
@@ -42,7 +41,6 @@ export interface SessionHostDeps {
   ensureExtraPoly: (id: string) => PolySynth;
   extraStrips: Partial<Record<string, ChannelStrip>>;
   getLaneEngineId: (laneId: string) => string;
-  ensureLaneEngine: (laneId: string, engineId: string) => SynthEngine | null;
   ensureLaneVoice: (laneId: string, engineId: string) => import('../engines/engine-types').Voice | null;
   showPolyEditor: (laneId: string, target: PolySynth, displayName: string) => void;
   polysynth: PolySynth;
@@ -126,7 +124,7 @@ export class SessionHost {
 
   private collectEngineState(): void {
     for (const lane of this.state.lanes) {
-      const engine = this.deps.ensureLaneEngine?.(lane.id, lane.engineId);
+      const engine = this.deps.laneResources?.get(lane.id)?.engine;
       const host = (engine as { modulators?: { serialize(): unknown[] } } | undefined)?.modulators;
       if (host) {
         lane.engineState = {
@@ -140,7 +138,7 @@ export class SessionHost {
     for (const lane of this.state.lanes) {
       const mods = lane.engineState?.modulators;
       if (!mods) continue;
-      const engine = this.deps.ensureLaneEngine?.(lane.id, lane.engineId);
+      const engine = this.deps.laneResources?.get(lane.id)?.engine;
       const host = (engine as { modulators?: { deserialize(s: unknown[]): void } } | undefined)?.modulators;
       if (host) host.deserialize(mods);
     }

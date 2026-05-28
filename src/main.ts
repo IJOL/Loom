@@ -325,21 +325,29 @@ const _lehState: LaneEngineHostState = leh.createLaneEngineState();
 // deps object is built after rebuildEngineParamUI is defined (further below).
 // We use a late-bound wrapper so the deps reference is stable even though
 // rebuildEngineParamUI and LANE_LABELS are declared after this point.
+// Late-bound: set after sessionHost is constructed (sessionHost is const and
+// declared further below; this fn reference bridges the temporal gap).
+let _lookupEngineIdFn: (laneId: string) => string = (laneId) => {
+  // Fallback: consult the pattern for backward compat before sessionHost is ready.
+  if (laneId === 'subtractive-1') return seq.pattern.engineId ?? 'subtractive';
+  const track = seq.pattern.extraPolyTracks.find((t) => t.id === laneId);
+  return track?.engineId ?? 'subtractive';
+};
+
 const _lehDeps: LaneEngineHostDeps = {
   get seq() { return seq; },
   get bank() { return bank; },
   get engineSel() { return engineSel; },
   get rebuildEngineParamUI() { return rebuildEngineParamUI; },
   get laneLabels() { return LANE_LABELS as Record<string, string>; },
-  setCurrentEngineId: (id: string) => { currentEngineId = id; },
+  lookupEngineId: (laneId: string) => _lookupEngineIdFn(laneId),
 };
 
 // Stable call-site wrappers (keep existing callsites in main.ts unchanged)
 const getLaneEngineId     = (laneId: string) => leh.getLaneEngineId(_lehState, _lehDeps, laneId);
-const getLaneEngineInstance = (laneId: string): SynthEngine | null => leh.getLaneEngineInstance(_lehState, laneId);
-const ensureLaneEngine    = (laneId: string, engineId: string) => leh.ensureLaneEngine(_lehState, laneId, engineId);
+const getLaneEngineInstance = (laneId: string): SynthEngine | null =>
+  laneResources.get(laneId)?.engine ?? null;
 const setActiveEngineLane = (laneId: string) => leh.setActiveEngineLane(_lehState, _lehDeps, laneId);
-const syncEngineToPattern = () => leh.syncEngineToPattern(_lehState, _lehDeps);
 const setSlotConfigurators = (cbs: Array<(() => void) | null>) => leh.setSlotConfigurators(_lehState, cbs);
 
 // Cache: laneId → engine voice. Mono engines reuse the same voice; poly
@@ -506,7 +514,7 @@ seq.onExtraPolyTrigger = (trackIdx, note, time, gate, accent) => {
     if (engineId === 'subtractive') {
       poly.trigger(n, t, g, a);
     } else {
-      const inst = ensureLaneEngine(id, engineId);
+      const inst = laneResources.get(slugFromExtraId(id))?.engine ?? null;
       if (inst) {
         setCurrentLaneForVoice(id);
         const voice = inst.createVoice(ctx, extraStrips[id]!.input);
@@ -698,7 +706,6 @@ const sessionHost = new SessionHost({
   ensureExtraPoly: ensureExtraPoly as (id: string) => PolySynth,
   extraStrips: extraStrips as Partial<Record<string, ChannelStrip>>,
   getLaneEngineId,
-  ensureLaneEngine,
   ensureLaneVoice,
   showPolyEditor: showPolyEditorWrapper,
   polysynth,
@@ -712,6 +719,10 @@ const sessionHost = new SessionHost({
 });
 synthEditorState.activePolyTarget = polysynth;
 sessionHost.init();
+// Now sessionHost is live — upgrade the lookupEngineId impl to use SessionState
+// as the source of truth (replaces the pattern-based fallback used at boot).
+_lookupEngineIdFn = (laneId: string) =>
+  sessionHost.state.lanes.find((l) => l.id === laneId)?.engineId ?? 'subtractive';
 
 // buildArpUI moved to arp-ui.ts (imported above)
 
@@ -795,10 +806,6 @@ const engineSelectorDeps: EngineSelectorUIDeps = {
   engineSel,
   getActiveLaneId: () => _lehState.activeLaneId,
   getLaneEngineId,
-  getLaneEngineInstance,
-  ensureLaneEngine,
-  setLaneEngineIdInPattern: (laneId, engineId) => leh.setLaneEngineIdInPattern(_lehDeps, laneId, engineId),
-  setCurrentEngineId: (id) => { currentEngineId = id; },
   automationRegistry,
   registerKnob,
   populateAutoParamSelect: () => populateAutoParamSelectWrapper(),
@@ -885,7 +892,6 @@ const transportDeps: TransportDeps = {
   resetAutomationPosition,
   renderLanes,
   updateBassModeButtons,
-  syncEngineToPattern,
 };
 wireTransport(transportDeps);
 rebuildMixer();
@@ -910,7 +916,6 @@ const demoDeps: import('./demo/demo-minimal-techno').DemoDeps = {
   updateSlotButtons,
   renderLanes,
   updateBassModeButtons,
-  syncEngineToPattern,
   rebuildMixer,
 };
 wireDemoMinimalTechno(demoDeps);
@@ -990,10 +995,7 @@ const automationTickDeps: AutomationTickDeps = {
   ctx,
   redrawAllLanes,
   trackActiveUntil,
-  getEngineForLane: (laneId) => {
-    const engId = getLaneEngineId(laneId);
-    return ensureLaneEngine(laneId, engId) ?? undefined;
-  },
+  getEngineForLane: (laneId) => laneResources.get(laneId)?.engine ?? undefined,
   getActiveModVoice: (laneId, modId) => getActiveModVoice(laneId, modId),
 };
 startAutomationTick(automationTickDeps);
