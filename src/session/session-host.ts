@@ -51,6 +51,8 @@ export interface SessionHostDeps {
   automationRegistry: Map<string, import('../core/knob').KnobHandle>;
   getAutoAbsSubIdx: () => number;
   onActiveLaneChanged?: () => void;
+  /** Phase B: per-lane engine + strip map. Optional so test fixtures don't break. */
+  laneResources?: import('../core/lane-resources').LaneResourceMap;
 }
 
 export class SessionHost {
@@ -154,12 +156,6 @@ export class SessionHost {
 
   // ── Rendering ────────────────────────────────────────────────────────────
 
-  private laneToTrackId(laneId: string): string {
-    // Lane ids ARE the canonical slugs — no remap needed. Method kept as a
-    // single funnel point in case future lane kinds need translation.
-    return laneId;
-  }
-
   private render(): void {
     const hostEl = document.getElementById('session-grid');
     if (!hostEl) return;
@@ -176,8 +172,7 @@ export class SessionHost {
     sp.className = 'session-spacer';
     row.appendChild(sp);
     for (const lane of this.state.lanes) {
-      const trackId = this.laneToTrackId(lane.id);
-      row.appendChild(buildMixerColumn(trackId, this.deps.mixerDeps));
+      row.appendChild(buildMixerColumn(lane.id, this.deps.mixerDeps));
     }
     const sp2 = document.createElement('div');
     sp2.className = 'session-spacer';
@@ -295,14 +290,21 @@ export class SessionHost {
           return;
         }
 
+        const lane = self.state.lanes.find((l) => l.id === laneId);
+
         let polyTarget: PolySynth | null = null;
-        if (laneId === 'subtractive-1') polyTarget = polysynth;
-        else if (laneId.startsWith('subtractive-')) polyTarget = ensureExtraPoly(laneId);
+        if (lane?.engineId === 'subtractive') {
+          // Each subtractive lane owns its PolySynth instance — reach it via
+          // the engine stored in laneResources.
+          const engine = self.deps.laneResources?.get(laneId)?.engine;
+          const getPS = (engine as unknown as { getPolySynth?(): PolySynth | null })?.getPolySynth;
+          polyTarget = getPS ? getPS.call(engine) ?? null : null;
+        }
 
         const targetTab =
-          laneId === 'tb-303-1'                                  ? '303'   :
-          (laneId === 'drums-1' || laneId.startsWith('drum:'))   ? 'drums' :
-                                                                   'poly';
+          lane?.engineId === 'tb303'          ? '303'   :
+          (lane?.engineId === 'drums-machine' || laneId.startsWith('drum:')) ? 'drums' :
+                                                                               'poly';
         document.querySelectorAll<HTMLButtonElement>('.tab').forEach((t) => {
           if (t.classList.contains('session-lane-tab')) {
             t.classList.toggle('active', t.dataset.laneId === laneId);
@@ -310,7 +312,6 @@ export class SessionHost {
             t.classList.toggle('active', t.dataset.tab === targetTab && !t.classList.contains('synth-tab'));
           }
         });
-        const lane = self.state.lanes.find((l) => l.id === laneId);
         const displayName = lane?.name ?? laneId.toUpperCase();
         if (polyTarget) {
           showPolyEditor(laneId, polyTarget, displayName);
@@ -339,21 +340,18 @@ export class SessionHost {
   // into the bottom of the currently-shown page.
 
   private injectEngineModulatorPanel(laneId: string, targetTab: string): void {
-    // Pick the engine for this lane.
-    const engineId =
-      laneId === 'tb-303-1'                                       ? 'tb303' :
-      (laneId === 'drums-1' || laneId.startsWith('drum:'))        ? 'drums-machine' :
-                                                                    this.deps.getLaneEngineId(laneId);
-    // Built-in lanes (tb-303-1 / drums-1 / subtractive-1) use the singleton
-    // engine instance the audio graph was wired to at boot. Extra lanes
-    // (subtractive-2+, etc.) use a factory-created instance owned by
-    // laneEngines — fall back to the singleton only if that lookup fails.
-    const isBuiltinLane =
-      laneId === 'tb-303-1' || laneId === 'drums-1' || laneId === 'subtractive-1';
-    const engine = isBuiltinLane
-      ? getEngine(engineId)
-      : (this.deps.ensureLaneEngine(laneId, engineId) ?? getEngine(engineId));
-    if (!engine) return;
+    // Phase B: engine comes from laneResources (single source of truth). No
+    // more singleton/extra split — every lane has its own instance.
+    const lane = this.state.lanes.find((l) => l.id === laneId);
+    let engine = this.deps.laneResources?.get(laneId)?.engine;
+    if (!engine) {
+      // Fallback (e.g. drum sub-voice laneIds starting with `drum:` aren't in
+      // laneResources). Use the engine for the lane's declared engineId.
+      const engineId = lane?.engineId
+        ?? (laneId.startsWith('drum:') ? 'drums-machine' : 'subtractive');
+      engine = getEngine(engineId);
+      if (!engine) return;
+    }
 
     // Mount or reuse a container. Place the modulators panel BELOW the main
     // synth controls — for poly we anchor on #poly-seq-mode-row so the panel

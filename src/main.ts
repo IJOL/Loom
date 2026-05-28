@@ -710,6 +710,7 @@ const sessionHost = new SessionHost({
   automationRegistry,
   getAutoAbsSubIdx,
   onActiveLaneChanged: () => populateAutoParamSelectWrapper(),
+  laneResources,
 });
 synthEditorState.activePolyTarget = polysynth;
 sessionHost.init();
