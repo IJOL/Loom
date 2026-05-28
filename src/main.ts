@@ -894,7 +894,7 @@ function mountSubtractiveLaneKnobs(laneId: string): void {
     });
   }
 }
-mountSubtractiveLaneKnobs('main');
+mountSubtractiveLaneKnobs(LANE_ID_POLY);
 buildArpUI({ getExtraPolyTracks: () => seq.pattern.extraPolyTracks });
 const fxUIDeps: FxUIDeps = { fx, filterChain, getBpm: () => seq.bpm, registerKnob };
 wireFxUI(fxUIDeps);
