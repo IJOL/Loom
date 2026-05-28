@@ -40,6 +40,11 @@ export class Sequencer {
   onEnded?: () => void;  // fires once when a non-looping pattern reaches its end
   // Optional overrides for tonal tracks: let main.ts intercept (e.g. arpeggiator)
   // without changing the scheduler. When set, called instead of the default trigger.
+  // Phase D.4: These callbacks are only invoked from the classic-mode scheduleStep()
+  // path below. In session mode (sessionMode=true) scheduleStep() is never reached,
+  // so these are dead for session audio. They remain here because the Classic UI
+  // (main.ts lines ~687-698, sequencer-harness.ts) still wires them for playback.
+  // Phase E (Classic UI removal) will delete these fields and scheduleStep().
   onMelodyTrigger?: (note: number, time: number, gate: number, accent: boolean) => void;
   onBassTrigger?:   (note: number, time: number, gate: number, accent: boolean, slidingIn: boolean) => void;
   // Fires per note in extra poly tracks. trackIdx is the position in extraPolyTracks.
@@ -165,10 +170,15 @@ export class Sequencer {
     const lookahead = 0.12;
 
     if (this.sessionMode) {
-      // Session mode: host owns scheduling via sessionTick hook.
+      // Session mode: host owns scheduling via sessionTick → tickSession → tickLane.
+      // scheduleStep() is never reached in this branch; all pattern.* reads inside
+      // it are unreachable from the session audio path (Phase D.4).
       if (this.sessionTick) this.sessionTick(this.ctx.currentTime, lookahead);
     } else {
-      // Classic mode: existing look-ahead pattern scheduling.
+      // Classic mode: look-ahead pattern scheduling.
+      // Phase D.4: this branch remains live until Phase E (Classic UI removal).
+      // After Phase E this else-branch + scheduleStep() + onBassTrigger/onMelodyTrigger
+      // will be deleted.
       while (this.playing && this.nextStepTime < this.ctx.currentTime + lookahead) {
         // At the start of a new loop cycle, apply any queued pattern swap.
         if (this.currentStep === 0 && this.pendingPattern) {
