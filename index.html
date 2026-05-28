@@ -10,17 +10,11 @@
     <link rel="stylesheet" href="/src/style.scss" />
     <style>
       /* ── Session-only chrome ───────────────────────────────────────────
-         Loom is session-only — the legacy Classic chrome below is hidden
-         because every DOM id main.ts expects must still exist (deletion is
-         a follow-up). The `data-pure-session` attribute is always true; the
-         scoping is left as a no-op marker until the Classic HTML is fully
-         deleted. */
+         Loom is session-only. The legacy Classic chrome below is hidden. */
       .mode-toggle,
       .copy-row,
       .copy-track-panel,
       .presets-panel,
-      .mixer-panel,
-      .mixer-classic,
       .midi-panel,
       .row.tools,
       #loop-toggle,
@@ -295,11 +289,6 @@
           To <select id="copy-track-to"></select>
           <button class="rnd primary" id="copy-track-go">Copy notes</button>
         </div>
-      </details>
-
-      <details class="mixer-panel">
-        <summary>Mixer</summary>
-        <div id="mixer" class="mixer"></div>
       </details>
 
       <p class="hint">Hidden in Session.</p>
