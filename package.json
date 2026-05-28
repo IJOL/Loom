@@ -9,6 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:fast": "vitest run --exclude 'src/**/*.dsp.test.ts'",
+    "test:dsp": "vitest run .dsp.test.ts",
     "test:wav-diff": "tsx scripts/wav-diff.ts",
     "test:wav-bless": "tsx scripts/wav-bless.ts"
   },
