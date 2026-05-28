@@ -310,6 +310,17 @@ export class SessionHost {
             p.hidden = p.dataset.page !== targetTab;
           });
         }
+        // Hide Subtractive-only knob rows when the active poly lane's engine
+        // is NOT subtractive (FM / Wavetable / Karplus render their own
+        // controls inside engine-mod-host; the legacy `data-engine="subtractive"`
+        // rows shouldn't leak in on top). The toggle runs unconditionally so
+        // switching back to a subtractive lane re-shows them.
+        const polyPage = document.querySelector('[data-page="poly"]');
+        if (polyPage) {
+          const subRows = polyPage.querySelectorAll<HTMLElement>('[data-engine="subtractive"]');
+          const showSubRows = lane?.engineId === 'subtractive';
+          for (const row of subRows) row.style.display = showSubRows ? '' : 'none';
+        }
         // Keep #engine-lane-label in sync for non-poly lanes too (no-op if the
         // active page doesn't include it).
         const laneLabelEl = document.getElementById('engine-lane-label');
