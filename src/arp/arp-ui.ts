@@ -1,6 +1,5 @@
 import { createKnob } from '../core/knob';
 import { ARP_DEFAULTS, type ArpPattern, type ArpScale, type ArpSettings } from './arp';
-import type { PolyTrack } from '../core/pattern';
 
 // ── Mutable ARP singleton — imported by main.ts trigger handlers ───────────
 export const arp: ArpSettings = { ...ARP_DEFAULTS };
@@ -8,7 +7,9 @@ export const arp: ArpSettings = { ...ARP_DEFAULTS };
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 
 export interface ArpUIDeps {
-  getExtraPolyTracks: () => PolyTrack[];
+  /** Session lanes available as arp scope targets — typically every non-drum
+   *  lane. Returns lane id + display name pairs. */
+  getScopeLanes: () => Array<{ id: string; name: string }>;
 }
 
 export function buildArpUI(deps: ArpUIDeps): void {
@@ -87,10 +88,8 @@ export function buildArpUI(deps: ArpUIDeps): void {
     lab.append(cb, document.createTextNode(label));
     scopeBoxes.appendChild(lab);
   };
-  addScopeBox('bass', '303');
-  addScopeBox('main', 'MAIN');
-  for (const track of deps.getExtraPolyTracks()) {
-    addScopeBox(track.id, track.name.slice(0, 10));
+  for (const lane of deps.getScopeLanes()) {
+    addScopeBox(lane.id, lane.name.slice(0, 10));
   }
   scopeWrap.appendChild(scopeBoxes);
   row.appendChild(scopeWrap);

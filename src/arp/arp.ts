@@ -36,7 +36,7 @@ export interface ArpSettings {
 
 export const ARP_DEFAULTS: ArpSettings = {
   enabled: false,
-  scope: ['main'],
+  scope: [],
   pattern: 'up',
   rate: '1/16',
   rateFreeHz: 8,

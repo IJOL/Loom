@@ -627,35 +627,39 @@ const triggerForLane = (
   if (!res) return;
   const engineId = res.engine.id;
 
-  if (engineId === 'tb303') {
+  // Inner fire — does the actual engine trigger for a single note. Used both
+  // directly and as the per-note callback from scheduleArpForNote.
+  const fire = (m: number, t: number, g: number, a: boolean, sl: boolean) => {
+    if (engineId === 'tb303') {
+      setCurrentLaneForVoice(laneId);
+      const v = res.engine.createVoice(ctx, res.strip.input);
+      setCurrentLaneForVoice(null);
+      v.trigger(m, t, { gateDuration: g, accent: a, slide: sl });
+      return;
+    }
+    if (engineId === 'drums-machine') {
+      const dv = GM_DRUM_MAP[m];
+      if (dv) drums.trigger(dv, t, a);
+      return;
+    }
     setCurrentLaneForVoice(laneId);
-    const voice = res.engine.createVoice(ctx, res.strip.input);
+    const v = res.engine.createVoice(ctx, res.strip.input);
     setCurrentLaneForVoice(null);
-    voice.trigger(note, time, { gateDuration: gate, accent, slide: slidingIn });
+    v.trigger(m, t, { gateDuration: g, accent: a });
+  };
+
+  // Arp interception: when the lane is in scope, the input note becomes the
+  // root and scheduleArpForNote dispatches the pattern via `fire`. Drum lanes
+  // are skipped — arpeggiating drum hits would just be retriggers.
+  if (arp.enabled && arp.scope.includes(laneId) && engineId !== 'drums-machine') {
+    scheduleArpForNote(
+      (m, t, g, a) => fire(m, t, g, a, false),
+      arp, seq.bpm, note, time, gate, accent,
+    );
     return;
   }
 
-  if (engineId === 'drums-machine') {
-    // Drums route through the per-voice DrumMachine API rather than the
-    // engine's createVoice path. Map midi → DrumVoice via GM_DRUM_MAP and
-    // call drums.trigger directly.
-    // NOTE: This branch is not yet exercised by any caller in Phase B — drums
-    // still route through separate sequencer paths. Present for completeness
-    // so future callers (Phase C/D) can use triggerForLane for drums too.
-    const dv = GM_DRUM_MAP[note];
-    if (dv) drums.trigger(dv, time, accent);
-    return;
-  }
-
-  // Poly engines (subtractive / wavetable / fm / karplus).
-  // ALL engines must trigger through createVoice so the modulation host can
-  // bind LFO/ADSR outputs to the new voice's AudioParams. Direct
-  // polysynth.trigger(...) bypasses SubtractiveVoice and its rebind hook —
-  // modulator routings would silently drop.
-  setCurrentLaneForVoice(laneId);
-  const voice = res.engine.createVoice(ctx, res.strip.input);
-  setCurrentLaneForVoice(null);
-  voice.trigger(note, time, { gateDuration: gate, accent });
+  fire(note, time, gate, accent, slidingIn);
 };
 
 // ── Session host ───────────────────────────────────────────────────────────
@@ -871,7 +875,13 @@ function mountSubtractiveLaneKnobs(laneId: string): void {
   }
 }
 mountSubtractiveLaneKnobs(LANE_ID_POLY);
-buildArpUI({ getExtraPolyTracks: () => seq.pattern.extraPolyTracks });
+const arpUIDeps: ArpUIDeps = {
+  getScopeLanes: () => sessionHost.state.lanes
+    .filter((l) => l.engineId !== 'drums-machine')
+    .map((l) => ({ id: l.id, name: l.name ?? l.id })),
+};
+// First build with whatever lanes exist now (built-ins only); a second build
+// runs after the demo loads so dynamically-added lanes (Sub 2 etc.) show up.
 const fxUIDeps: FxUIDeps = { fx, filterChain, getBpm: () => seq.bpm, registerKnob };
 wireFxUI(fxUIDeps);
 wireDrumMasterUI({ drumBusStrip, registerKnob, fmtPct, fmtDb });
@@ -945,6 +955,7 @@ startAutomationTick(automationTickDeps);
 // PatternBank demo + import it into Session, same as before.
 applyMinimalTechnoDemo(demoDeps);
 sessionHost.applyLoadedSessionState(importClassicToSession(bank));
+buildArpUI(arpUIDeps);
 // App is always in session mode — seq.sessionMode must be true at boot.
 seq.sessionMode = true;
 startVisualizer({ ctx, analyser, vizCanvas });
