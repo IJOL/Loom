@@ -14,14 +14,14 @@ const EXTRA_IDS: ExtraId[] = [
 ];
 
 // Minimal SMF parser (matches scripts/parse-midi.mjs).
-interface ParsedTrack {
+export interface ParsedTrack {
   index: number;
   name: string;
   program: number;
   notes: { startTick: number; duration: number; midi: number; velocity: number; channel: number }[];
 }
 
-function parseMidiFile(buf: Uint8Array): { division: number; tracks: ParsedTrack[] } {
+export function parseMidiFile(buf: Uint8Array): { division: number; tracks: ParsedTrack[] } {
   let p = 0;
   const u8 = () => buf[p++];
   const u16 = () => (buf[p++] << 8) | buf[p++];
@@ -39,7 +39,9 @@ function parseMidiFile(buf: Uint8Array): { division: number; tracks: ParsedTrack
     const tlen = u32();
     const tend = p + tlen;
     let abs = 0; let lastStatus = 0; let name = ''; let program = -1;
-    const noteOn = new Map<number, number>();
+    // Store both start tick and the note-on velocity; the note-off message
+    // carries a release velocity that we don't currently use.
+    const noteOn = new Map<number, { start: number; velocity: number }>();
     const notes: ParsedTrack['notes'] = [];
     while (p < tend) {
       abs += vlq();
@@ -58,11 +60,11 @@ function parseMidiFile(buf: Uint8Array): { division: number; tracks: ParsedTrack
           const note = u8(); const vel = u8();
           const isOff = high === 0x80 || vel === 0;
           const key = (ch << 8) | note;
-          if (!isOff) noteOn.set(key, abs);
+          if (!isOff) noteOn.set(key, { start: abs, velocity: vel });
           else {
-            const start = noteOn.get(key);
-            if (start != null) {
-              notes.push({ startTick: start, duration: abs - start, midi: note, velocity: 80, channel: ch });
+            const onEvt = noteOn.get(key);
+            if (onEvt != null) {
+              notes.push({ startTick: onEvt.start, duration: abs - onEvt.start, midi: note, velocity: onEvt.velocity, channel: ch });
               noteOn.delete(key);
             }
           }

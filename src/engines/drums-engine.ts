@@ -125,6 +125,9 @@ export class DrumsEngine implements SynthEngine {
 
   get modulators() { return this.modHost; }
 
+  /** Tempo for LFO BPM sync. main.ts updates this when seq.bpm changes. */
+  bpm = 120;
+
   getBaseValue(id: string): number {
     if (id in this.paramValues) return this.paramValues[id];
     return DRUM_PARAMS.find(p => p.id === id)?.default ?? 0;
@@ -177,7 +180,7 @@ export class DrumsEngine implements SynthEngine {
       // One-shot modulator spawn for the lifetime of this engine instance
       // (drums share modulation across all hits — distinct from polyphonic
       // engines that re-spawn per note).
-      this.engineModVoices = this.modHost.spawnVoice(ctx, () => 120);
+      this.engineModVoices = this.modHost.spawnVoice(ctx, () => this.bpm);
     }
     const laneId = getCurrentLaneForVoice();
     if (laneId) {

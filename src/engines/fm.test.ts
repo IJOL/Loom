@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { FMEngine } from './fm';
 import { validateSpec } from './engine-params';
+import { OfflineAudioContext } from 'node-web-audio-api';
 
 describe('FMEngine.params', () => {
   const engine = new FMEngine();
@@ -49,5 +50,32 @@ describe('FMEngine getBaseValue/setBaseValue', () => {
   it('unknown id returns 0', () => {
     const engine = new FMEngine();
     expect(engine.getBaseValue('not.real')).toBe(0);
+  });
+});
+
+describe('FMVoice.getAudioParams', () => {
+  // Ratio is a per-trigger multiplier (`freq * p.ratio` at trigger time), not
+  // an audio-rate AudioParam. Exposing it caused modulator connections to
+  // silently land on osc.detune instead, modulating cents rather than ratio.
+  it('does not expose op{n}.ratio (trigger-time only, not audio-rate)', () => {
+    const engine = new FMEngine();
+    const ctx = new OfflineAudioContext(1, 128, 44100) as unknown as AudioContext;
+    const voice = engine.createVoice(ctx, ctx.destination);
+    const params = voice.getAudioParams();
+    for (let n = 1; n <= 4; n++) {
+      expect(params.has(`op${n}.ratio`)).toBe(false);
+    }
+    voice.dispose();
+  });
+
+  it('exposes op{n}.level as the operator gain AudioParam', () => {
+    const engine = new FMEngine();
+    const ctx = new OfflineAudioContext(1, 128, 44100) as unknown as AudioContext;
+    const voice = engine.createVoice(ctx, ctx.destination);
+    const params = voice.getAudioParams();
+    for (let n = 1; n <= 4; n++) {
+      expect(params.has(`op${n}.level`)).toBe(true);
+    }
+    voice.dispose();
   });
 });

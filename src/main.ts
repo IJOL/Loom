@@ -411,6 +411,16 @@ function rebuildMixer() {
 
 // ── Transport → moved to src/core/transport.ts (wireTransport) ────────────
 
+function propagateBpmToLaneEngines(bpm: number): void {
+  // Lane-host engines (fm, karplus, subtractive, wavetable, drums-machine)
+  // each carry their own `bpm` field for LFO sync. Push the global tempo
+  // through the registry so modulator voices follow tempo changes.
+  for (const id of ['fm', 'karplus', 'subtractive', 'wavetable', 'drums-machine']) {
+    const eng = getEngine(id) as unknown as { bpm?: number } | undefined;
+    if (eng && typeof eng.bpm === 'number') eng.bpm = bpm;
+  }
+}
+
 bpmInput.addEventListener('input', () => {
   const v = parseInt(bpmInput.value, 10);
   if (!isNaN(v)) {
@@ -419,11 +429,13 @@ bpmInput.addEventListener('input', () => {
     filterChain.updateBpm(seq.bpm);
     polysynth.bpm = seq.bpm;
     for (const id of EXTRA_IDS) { const p = extraPolys[id]; if (p) p.bpm = seq.bpm; }
+    propagateBpmToLaneEngines(seq.bpm);
   }
 });
 fx.setBpmSync(seq.bpm);
 polysynth.bpm = seq.bpm;
 for (const id of EXTRA_IDS) { const p = extraPolys[id]; if (p) p.bpm = seq.bpm; }
+propagateBpmToLaneEngines(seq.bpm);
 
 // Track activity timestamps for visual "triggered" pulse on track headers.
 const trackActiveUntil = new Map<string, number>();

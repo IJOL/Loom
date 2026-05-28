@@ -107,14 +107,20 @@ export class TB303 {
 
     // Amp envelope: re-attack unless the previous note slid into this one.
     this.envAmp.offset.cancelScheduledValues(time);
+    const attackEnd = note.slide ? time : time + 0.003;
     if (note.slide) {
       this.envAmp.offset.setValueAtTime(peakAmp, time);
     } else {
       this.envAmp.offset.setValueAtTime(0, time);
-      this.envAmp.offset.linearRampToValueAtTime(peakAmp, time + 0.003);
+      this.envAmp.offset.linearRampToValueAtTime(peakAmp, attackEnd);
     }
-    this.envAmp.offset.setValueAtTime(peakAmp, time + note.duration - 0.02);
-    this.envAmp.offset.exponentialRampToValueAtTime(0.001, time + note.duration);
+    // Hold peak until shortly before gate end, then ramp to silence. For very
+    // short notes the 20ms tail margin would land before the attack endpoint,
+    // producing out-of-order events (and a negative time when duration < 20ms),
+    // so we clamp the release anchor to never precede the attack ramp.
+    const releaseStart = Math.max(attackEnd, time + note.duration - 0.02);
+    this.envAmp.offset.setValueAtTime(peakAmp, releaseStart);
+    this.envAmp.offset.exponentialRampToValueAtTime(0.001, Math.max(releaseStart + 0.001, time + note.duration));
 
     // Filter envelope: open immediately, decay to base.
     this.envCutoff.offset.cancelScheduledValues(time);

@@ -154,11 +154,12 @@ class FMVoice implements Voice {
 
   getAudioParams(): Map<string, AudioParam> {
     const m = new Map<string, AudioParam>();
-    // 1-indexed operator ids matching FM_PARAMS.
+    // 1-indexed operator ids matching FM_PARAMS. Ratio is a trigger-time
+    // multiplier (`freq * p.ratio`), not an audio-rate AudioParam, so it is
+    // intentionally not exposed here.
     for (let i = 0; i < this.outGain.length; i++) {
       const n = i + 1;
       m.set(`op${n}.level`, this.outGain[i].gain);
-      if (this.osc[i]) m.set(`op${n}.ratio`, this.osc[i].detune);
     }
     m.set('amp.mix', this.finalMix.gain);
     return m;
