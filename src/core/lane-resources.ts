@@ -20,7 +20,7 @@ export class LaneResourceMap {
   set(laneId: string, res: LaneResources): void {
     const existing = this.inner.get(laneId);
     if (existing) {
-      existing.strip.dispose?.();
+      (existing.strip as { dispose?(): void }).dispose?.();
       existing.engine.dispose?.();
     }
     this.inner.set(laneId, res);
@@ -29,7 +29,7 @@ export class LaneResourceMap {
   dispose(laneId: string): void {
     const res = this.inner.get(laneId);
     if (!res) return;
-    res.strip.dispose?.();
+    (res.strip as { dispose?(): void }).dispose?.();
     res.engine.dispose?.();
     this.inner.delete(laneId);
   }

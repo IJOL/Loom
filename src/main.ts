@@ -63,6 +63,8 @@ import {
   type AutomationTickDeps,
 } from './automation/automation-tick';
 import { setCurrentLaneForVoice, getActiveModVoice } from './modulation/active-mods';
+import { LaneResourceMap } from './core/lane-resources';
+import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from './core/lane-ids';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -111,6 +113,18 @@ const polysynth = new PolySynth(ctx, polyStrip.input);
 // this PolySynth instance. (Per-lane subtractive engines for poly1/poly2…
 // get their own PolySynth attached via lane-engine-host.)
 subtractiveEngine.setPolySynth(polysynth);
+
+// Phase A: per-lane resources unified into a single Map. The objects are
+// the SAME instances as the existing globals (polysynth / bassStrip / etc.) —
+// reading either path returns identical state. Phase B will replace each
+// global with a laneResources.get(id) lookup; Phase E deletes the globals.
+const laneResources = new LaneResourceMap();
+const drumsEngineInstance = getEngine('drums-machine');
+if (drumsEngineInstance) {
+  laneResources.set(LANE_ID_BASS,  { strip: bassStrip,    engine: tb303Engine });
+  laneResources.set(LANE_ID_DRUMS, { strip: drumBusStrip, engine: drumsEngineInstance });
+  laneResources.set(LANE_ID_POLY,  { strip: polyStrip,    engine: subtractiveEngine });
+}
 
 // Extra polyphonic voices are created LAZILY — no PolySynth/ChannelStrip is
 // instantiated until a track is actually added (via UI, MIDI import, or demo).
