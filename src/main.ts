@@ -28,6 +28,7 @@ import { buildMixerColumn } from './core/mixer';
 import * as laneTrackHelpers from './core/lane-display';
 import { SessionHost } from './session/session-host';
 import { applyMinimalTechnoDemo, wireDemoMinimalTechno, buildMinimalTechnoDemoSession } from './demo/demo-minimal-techno';
+import { importClassicToSession } from './session/session-migration';
 import { setupInitialPattern, type InitialPatternDeps } from './demo/initial-pattern';
 import { wireMidiImport } from './midi/midi-import';
 import { wireSaveManager, bootRecoveryLoad } from './save/save-wiring';
@@ -1034,14 +1035,15 @@ const automationTickDeps: AutomationTickDeps = {
   getActiveModVoice: (laneId, modId) => getActiveModVoice(laneId, modId),
 };
 startAutomationTick(automationTickDeps);
-// Phase E: switch boot to the new SessionState-direct demo. The
-// PatternBank-based applyMinimalTechnoDemo path stays exported for
-// transitional reasons but is no longer auto-applied.
-{
-  const demoSession = buildMinimalTechnoDemoSession();
-  sessionHost.applyLoadedSessionState(demoSession);
-  setAppMode('session');
-}
+// Phase E rollback: the user expects the multi-scene demo (4 scenes
+// A/B/C/D from the legacy minimal-techno pattern bank). The new
+// single-scene `buildMinimalTechnoDemoSession` exists for demonstrating
+// per-lane independent loops (Phase D), but auto-loading it at boot
+// hides the multi-scene experience the user is used to. Auto-apply the
+// PatternBank demo + import it into Session, same as before.
+applyMinimalTechnoDemo(demoDeps);
+sessionHost.applyLoadedSessionState(importClassicToSession(bank));
+setAppMode('session');
 startVisualizer({ ctx, analyser, vizCanvas });
 
 // ── Save Manager v2 (see src/save-wiring.ts) ──────────────────────────────
