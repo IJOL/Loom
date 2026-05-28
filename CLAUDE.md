@@ -13,9 +13,12 @@ A browser-based **Roland TB-303 bass synth + drum machine** built with Web Audio
 - `npm run build` — typecheck + bundle to `dist/`
 - `npm run preview` — serve the production build locally
 - `npx tsc --noEmit` — typecheck without bundling
-- `npm test` — Vitest, colour-free (`NO_COLOR=1` via `cross-env`)
+- `npm test` — full suite: Vitest unit tests + Playwright e2e tests, colour-free (`NO_COLOR=1` via `cross-env`)
+- `npm run test:unit` — Vitest only (no browser)
 - `npm run test:fast` — everything except DSP renders (inner-loop TDD), colour-free
 - `npm run test:dsp` — only the real-DSP renders (slower, requires `node-web-audio-api`), colour-free
+- `npm run test:e2e` — Playwright tests in `tests/e2e/` against `vite preview` on port 4173
+- `npm run test:e2e:headed` — same but with a visible browser window for debugging
 - `npm run test:wav-diff` — compares `test/output/*.wav` (last run) against `test/golden/*.wav` (committed reference) and prints peak/RMS/L2 deltas. Never fails CI — human inspection tool.
 - `npm run test:wav-bless` — overwrites `test/golden/` with the current `test/output/`. Deliberate action; commit the result.
 
