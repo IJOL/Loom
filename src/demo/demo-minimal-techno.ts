@@ -19,7 +19,6 @@ export interface DemoDeps {
   updateSlotButtons: () => void;
   renderLanes: () => void;
   updateBassModeButtons: () => void;
-  rebuildMixer: () => void;
 }
 
 export function buildMinimalTechnoDemo(): PatternData[] {
@@ -197,7 +196,6 @@ export function applyMinimalTechnoDemo(deps: DemoDeps): void {
   deps.updateSlotButtons();
   deps.renderLanes();
   deps.updateBassModeButtons();
-  deps.rebuildMixer();
   if (!deps.chainEnabled()) deps.chainBtn.click();
 }
 

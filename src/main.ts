@@ -85,11 +85,6 @@ const ALL_TRACKS: TrackId[] = ['bass', 'poly', ...EXTRA_IDS, 'drumBus', ...DRUM_
 const $  = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const $$ = <T extends HTMLElement>(sel: string) => Array.from(document.querySelectorAll<T>(sel));
 
-// The app is session-only. AppMode / getAppMode retained for consumers that
-// haven't been migrated yet (automation-tick); they always return 'session'.
-export type AppMode = 'session';
-function getAppMode(): AppMode { return 'session'; }
-
 // ── Audio graph ────────────────────────────────────────────────────────────
 const ctx = new AudioContext();
 const master = ctx.createGain();
@@ -304,7 +299,6 @@ const rootSel  = $<HTMLSelectElement>('root');
 const bassTracksEl = $<HTMLDivElement>('bass-tracks');
 const drumTracksEl = $<HTMLDivElement>('drum-tracks');
 const polyTracksEl = $<HTMLDivElement>('poly-tracks');
-const mixerEl      = $<HTMLDivElement>('mixer');
 const vizCanvas    = $<HTMLCanvasElement>('viz');
 const engineSel    = $<HTMLSelectElement>('engine-select');
 
@@ -485,14 +479,6 @@ const mixerDeps: import('./core/mixer').MixerColumnDeps = {
   applyMuteSolo,
   registerKnob,
 };
-
-function rebuildMixer() {
-  mixerEl.innerHTML = '';
-  mixerEl.className = 'mixer mixer-classic';
-  for (const t of activeTracks()) {
-    mixerEl.appendChild(buildMixerColumn(t, mixerDeps));
-  }
-}
 
 // ── Transport → moved to src/core/transport.ts (wireTransport) ────────────
 
@@ -875,7 +861,6 @@ const transportDeps: TransportDeps = {
   updateBassModeButtons,
 };
 wireTransport(transportDeps);
-rebuildMixer();
 wireAutomationTab(automationDeps);
 wirePresetLibrary({ seq });
 wirePolyControls(polySynthPresetsDeps);
@@ -897,7 +882,6 @@ const demoDeps: import('./demo/demo-minimal-techno').DemoDeps = {
   updateSlotButtons,
   renderLanes,
   updateBassModeButtons,
-  rebuildMixer,
 };
 wireDemoMinimalTechno(demoDeps);
 
