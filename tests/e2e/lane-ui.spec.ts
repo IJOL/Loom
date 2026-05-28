@@ -1,0 +1,80 @@
+import { test, expect, type Page } from '@playwright/test';
+
+// End-to-end UI tests that codify the bugs we hit during the lane unification:
+// each one would have failed before the fix and passes after. They replace the
+// ad-hoc Playwright probing we used to confirm the fixes worked.
+
+async function destinationCountsForLane(page: Page, laneId: string): Promise<number[]> {
+  await page.locator(`button.session-lane-tab[data-lane-id="${laneId}"]`).click();
+  return page.evaluate(() =>
+    [...document.querySelectorAll<HTMLSelectElement>('.mod-dest-select')]
+      .filter((s) => s.offsetParent !== null)
+      .map((s) => s.options.length),
+  );
+}
+
+test.describe('modulator destination dropdown', () => {
+  test('TB-303 lane lists its 6 engine params', async ({ page }) => {
+    await page.goto('/');
+    const counts = await destinationCountsForLane(page, 'tb-303-1');
+    expect(counts.length).toBeGreaterThan(0);
+    for (const c of counts) expect(c).toBeGreaterThanOrEqual(6);
+  });
+
+  test('Subtractive lane 1 lists 22 destinations', async ({ page }) => {
+    await page.goto('/');
+    const counts = await destinationCountsForLane(page, 'subtractive-1');
+    expect(counts.length).toBeGreaterThan(0);
+    for (const c of counts) expect(c).toBeGreaterThanOrEqual(22);
+  });
+
+  test('Subtractive lane 2 (added by demo) also lists 22 destinations', async ({ page }) => {
+    await page.goto('/');
+    const counts = await destinationCountsForLane(page, 'subtractive-2');
+    expect(counts.length).toBeGreaterThan(0);
+    for (const c of counts) expect(c).toBeGreaterThanOrEqual(22);
+  });
+
+  test('Drums lane lists its master + per-voice levels (≥10)', async ({ page }) => {
+    await page.goto('/');
+    const counts = await destinationCountsForLane(page, 'drums-1');
+    expect(counts.length).toBeGreaterThan(0);
+    for (const c of counts) expect(c).toBeGreaterThanOrEqual(10);
+  });
+});
+
+test.describe('preset selection', () => {
+  test('boot applies the demo slot-0 preset (PAD Warm)', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('button.session-lane-tab[data-lane-id="subtractive-1"]').click();
+    const sel = page.locator('#poly-preset-select');
+    await expect(sel).toHaveValue('factory:PAD Warm');
+  });
+});
+
+test.describe('arpeggiator scope UI', () => {
+  test('lists active session lanes (no drum lanes), no legacy "MAIN"', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('button.session-lane-tab[data-lane-id="subtractive-1"]').click();
+    const labels = await page.evaluate(() =>
+      [...document.querySelectorAll('.arp-scope label')].map((l) => l.textContent?.trim()),
+    );
+    expect(labels).toContain('303 1');
+    expect(labels).toContain('Sub 1');
+    expect(labels).toContain('Sub 2');
+    expect(labels).not.toContain('MAIN');
+    expect(labels).not.toContain('Drums 1'); // drums excluded from arp
+  });
+});
+
+test.describe('mixer mutes', () => {
+  test('clicking the M button on the Sub 1 column toggles its active class', async ({ page }) => {
+    await page.goto('/');
+    const muteBtn = page.locator('.mix-col').nth(2).locator('button.mix-btn.mute');
+    await expect(muteBtn).not.toHaveClass(/active/);
+    await muteBtn.click();
+    await expect(muteBtn).toHaveClass(/active/);
+    await muteBtn.click();
+    await expect(muteBtn).not.toHaveClass(/active/);
+  });
+});
