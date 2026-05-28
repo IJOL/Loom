@@ -4,6 +4,7 @@ import type { DrumVoice } from '../core/drums';
 import type { Sequencer } from '../core/sequencer';
 import type { PatternBank } from '../core/pattern';
 import type { SynthEngine } from '../engines/engine-types';
+import { emptySessionState, type SessionState, type SessionClip } from '../session/session';
 
 export interface DemoDeps {
   seq: Sequencer;
@@ -198,6 +199,75 @@ export function applyMinimalTechnoDemo(deps: DemoDeps): void {
   deps.updateBassModeButtons();
   deps.rebuildMixer();
   if (!deps.chainEnabled()) deps.chainBtn.click();
+}
+
+export function buildMinimalTechnoDemoSession(): SessionState {
+  const state = emptySessionState();
+
+  // 1-bar drums clip on `drums-1`: kicks on 1/5/9/13 (4-on-the-floor) and
+  // closed hats on the offbeats 3/7/11/15. GM_DRUM_MAP: 36=kick, 42=ch hat.
+  const drumsClip: SessionClip = {
+    id: 'demo-drums-1',
+    lengthBars: 1,
+    notes: [
+      { start: 0,                   duration: TICKS_PER_STEP / 2, midi: 36, velocity: 110 },
+      { start: TICKS_PER_STEP * 4,  duration: TICKS_PER_STEP / 2, midi: 36, velocity: 110 },
+      { start: TICKS_PER_STEP * 8,  duration: TICKS_PER_STEP / 2, midi: 36, velocity: 110 },
+      { start: TICKS_PER_STEP * 12, duration: TICKS_PER_STEP / 2, midi: 36, velocity: 110 },
+      { start: TICKS_PER_STEP * 2,  duration: TICKS_PER_STEP / 2, midi: 42, velocity:  80 },
+      { start: TICKS_PER_STEP * 6,  duration: TICKS_PER_STEP / 2, midi: 42, velocity:  80 },
+      { start: TICKS_PER_STEP * 10, duration: TICKS_PER_STEP / 2, midi: 42, velocity:  80 },
+      { start: TICKS_PER_STEP * 14, duration: TICKS_PER_STEP / 2, midi: 42, velocity:  80 },
+    ],
+  };
+
+  // 2-bar acid bass on `tb-303-1`. Mix of accents + slides to show off the
+  // TB-303's character.
+  const bassClip: SessionClip = {
+    id: 'demo-bass-1',
+    lengthBars: 2,
+    notes: [
+      { start: 0,                   duration: Math.floor(TICKS_PER_STEP * 0.92), midi: 36, velocity: 115 },
+      { start: TICKS_PER_STEP * 3,  duration: Math.floor(TICKS_PER_STEP * 1.5),  midi: 36, velocity:  80 },
+      { start: TICKS_PER_STEP * 4,  duration: Math.floor(TICKS_PER_STEP * 0.92), midi: 39, velocity: 115 },
+      { start: TICKS_PER_STEP * 7,  duration: Math.floor(TICKS_PER_STEP * 0.92), midi: 39, velocity:  80 },
+      { start: TICKS_PER_STEP * 16, duration: Math.floor(TICKS_PER_STEP * 0.92), midi: 36, velocity: 115 },
+      { start: TICKS_PER_STEP * 19, duration: Math.floor(TICKS_PER_STEP * 1.5),  midi: 41, velocity:  80 },
+      { start: TICKS_PER_STEP * 22, duration: Math.floor(TICKS_PER_STEP * 0.92), midi: 43, velocity:  80 },
+      { start: TICKS_PER_STEP * 26, duration: Math.floor(TICKS_PER_STEP * 0.92), midi: 36, velocity:  80 },
+    ],
+  };
+
+  // 4-bar pad chord progression on `subtractive-1`. Cm7 → BbM7.
+  const padClip: SessionClip = {
+    id: 'demo-pad-1',
+    lengthBars: 4,
+    notes: [
+      { start: 0,                   duration: TICKS_PER_STEP * 32, midi: 48, velocity: 80 },
+      { start: 0,                   duration: TICKS_PER_STEP * 32, midi: 55, velocity: 80 },
+      { start: TICKS_PER_STEP * 32, duration: TICKS_PER_STEP * 32, midi: 46, velocity: 80 },
+      { start: TICKS_PER_STEP * 32, duration: TICKS_PER_STEP * 32, midi: 53, velocity: 80 },
+    ],
+  };
+
+  const bass  = state.lanes.find((l) => l.id === 'tb-303-1')!;
+  const drums = state.lanes.find((l) => l.id === 'drums-1')!;
+  const poly  = state.lanes.find((l) => l.id === 'subtractive-1')!;
+  bass.clips[0]  = bassClip;
+  drums.clips[0] = drumsClip;
+  poly.clips[0]  = padClip;
+
+  state.scenes.push({
+    id: 'demo-scene-1',
+    name: 'Demo',
+    clipPerLane: {
+      'tb-303-1':      0,
+      'drums-1':       0,
+      'subtractive-1': 0,
+    },
+  });
+
+  return state;
 }
 
 export function wireDemoMinimalTechno(deps: DemoDeps): void {
