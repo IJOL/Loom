@@ -128,6 +128,17 @@ export class ChannelStrip {
   setEqLow (db: number) { this.eqLow.gain.value  = db; }
   setEqMid (db: number) { this.eqMid.gain.value  = db; }
   setEqHigh(db: number) { this.eqHigh.gain.value = db; }
+
+  /** Return the BiquadFilterNode gain AudioParam for the requested EQ band.
+   *  Lets external code (modulation host, automation) write to the filter
+   *  gain with sample-accurate scheduling — `setEqLow`/`setEqMid`/`setEqHigh`
+   *  are convenience setters; `getEqGainParam` is the canonical handle. */
+  getEqGainParam(band: 'low' | 'mid' | 'high'): AudioParam {
+    if (band === 'low')  return this.eqLow.gain;
+    if (band === 'mid')  return this.eqMid.gain;
+    return this.eqHigh.gain;
+  }
+
   setLevel(g: number)        { this.level.gain.value       = g; }
   setReverbSend(g: number)   { this.reverbSend.gain.value  = g; }
   setDelaySend (g: number)   { this.delaySend.gain.value   = g; }
