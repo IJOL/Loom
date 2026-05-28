@@ -14,6 +14,7 @@ import { recordVoiceMods, getCurrentLaneForVoice } from '../modulation/active-mo
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
 import { bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
 import { ConnectionBinder } from '../modulation/connection-binder';
+import { PendingBaseValues } from './pending-base-values';
 import type { KnobHandle } from '../core/knob';
 
 const WAVE_OPTIONS = [
@@ -217,10 +218,7 @@ class SubtractiveEngine implements SynthEngine {
 
   private polysynth: PolySynth | null = null;
 
-  /** Caches setBaseValue calls made before the polysynth instance exists.
-   *  Flushed on the next createVoice() / setPolySynth() so callers don't lose
-   *  pre-configuration done at engine-creation time. */
-  private pendingBaseValues = new Map<string, number>();
+  private pending = new PendingBaseValues();
 
   getBaseValue(id: string): number {
     if (!this.polysynth) return SUB_PARAMS.find(p => p.id === id)?.default ?? 0;
@@ -229,19 +227,11 @@ class SubtractiveEngine implements SynthEngine {
 
   setBaseValue(id: string, v: number): void {
     if (!this.polysynth) {
-      this.pendingBaseValues.set(id, v);
+      this.pending.set(id, v);
       return;
     }
     const spec = SUB_PARAMS.find(p => p.id === id);
     writeDotPath(this.polysynth.params as unknown as Record<string, unknown>, id, v, spec);
-  }
-
-  private flushPendingBaseValues(): void {
-    if (!this.polysynth || this.pendingBaseValues.size === 0) return;
-    // Snapshot then clear so recursive setBaseValue writes go straight through.
-    const pending = [...this.pendingBaseValues];
-    this.pendingBaseValues.clear();
-    for (const [id, v] of pending) this.setBaseValue(id, v);
   }
 
   /** Cached so the modulation-panel onChange callback can re-apply bindings. */
@@ -250,7 +240,7 @@ class SubtractiveEngine implements SynthEngine {
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
     if (!this.polysynth) {
       this.polysynth = new PolySynth(ctx, output);
-      this.flushPendingBaseValues();
+      this.pending.flush((id, v) => this.setBaseValue(id, v));
     }
     const voiceMods = this.modHost.spawnVoice(ctx, () => this.bpm);
     recordVoiceMods(voiceMods);
@@ -275,7 +265,7 @@ class SubtractiveEngine implements SynthEngine {
 
   setPolySynth(ps: PolySynth): void {
     this.polysynth = ps;
-    this.flushPendingBaseValues();
+    this.pending.flush((id, v) => this.setBaseValue(id, v));
   }
 
   buildSequencer(_container: HTMLElement, _stepCount: number): EngineSequencer {

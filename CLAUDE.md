@@ -13,8 +13,24 @@ A browser-based **Roland TB-303 bass synth + drum machine** built with Web Audio
 - `npm run build` — typecheck + bundle to `dist/`
 - `npm run preview` — serve the production build locally
 - `npx tsc --noEmit` — typecheck without bundling
+- `npm test` — Vitest: 215 tests across four layers
+- `npm run test:fast` — everything except DSP renders (inner-loop TDD)
+- `npm run test:dsp` — only the real-DSP renders (slower, requires `node-web-audio-api`)
+- `npm run test:wav-diff` — compares `test/output/*.wav` (last run) against `test/golden/*.wav` (committed reference) and prints peak/RMS/L2 deltas. Never fails CI — human inspection tool.
+- `npm run test:wav-bless` — overwrites `test/golden/` with the current `test/output/`. Deliberate action; commit the result.
 
-There are no tests or linter configured.
+No linter is configured.
+
+## Testing layout
+
+Four layers, distinct technique per risk class:
+
+1. **Pure** — schemas, scales, migrations, pattern logic. `src/**/*.test.ts` (not `.dsp` or `.wiring`).
+2. **Scheduling (mocks)** — sequencer ↔ engines via a fake-clock harness. [src/core/sequencer.test.ts](src/core/sequencer.test.ts) driven by [test/sequencer-harness.ts](test/sequencer-harness.ts).
+3. **DSP real** — every engine + every drum kit rendered through `OfflineAudioContext` (via [node-web-audio-api](https://github.com/ircam-ismm/node-web-audio-api), globalized in [test/setup.ts](test/setup.ts)). Files end in `.dsp.test.ts`. Use the shared battery in [test/dsp-battery.ts](test/dsp-battery.ts). Each render writes a WAV to `test/output/` (gitignored) for audible inspection; `test/golden/` is the committed reference.
+4. **Modulation wiring** — LFO/ADSR voices connected through a depth bridge into a target `AudioParam`. Files end in `.wiring.test.ts`.
+
+Assertion rule: **always relative**. Use ratios (`>`, `<`, `> * 2`), never absolute magnitudes. Absolute thresholds are a brittleness smell; if you write one, justify it in a comment.
 
 ## Architecture
 
