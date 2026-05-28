@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TB-303 + Drums + PolySynth</title>
+    <title>Loom</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -30,8 +30,6 @@
       body[data-pure-session="true"] #bass-tracks,
       body[data-pure-session="true"] #drum-tracks,
       body[data-pure-session="true"] #poly-tracks,
-      body[data-pure-session="true"] [data-page="rolls"],
-      body[data-pure-session="true"] button.tab[data-tab="rolls"],
       body[data-pure-session="true"] button.tab[data-tab="303"],
       body[data-pure-session="true"] button.tab[data-tab="drums"],
       body[data-pure-session="true"] #bass-mode-step,
@@ -41,11 +39,6 @@
       body[data-pure-session="true"] .synth > p.hint,
       body[data-pure-session="true"] #session-import-classic {
         display: none !important;
-      }
-      body[data-pure-session="true"] h1::after {
-        content: " — Session";
-        opacity: 0.5;
-        font-size: 0.6em;
       }
       /* Session-first layout: synth editor pages, when active, render below the
          session grid instead of above it. The HTML order is fixed but flexbox
@@ -70,7 +63,7 @@
   </head>
   <body data-pure-session="true">
     <div class="synth">
-      <h1>TB-303 + DRUMS + POLYSYNTH</h1>
+      <h1>Loom</h1>
 
       <div class="row transport">
         <button id="play" title="Play / Stop">&#9654;</button>
@@ -249,11 +242,6 @@
           <button class="rnd" id="poly-add-track" style="display:none">+ Add Track</button>
         </div>
         <div id="poly-tracks" class="tracks"></div>
-      </div>
-
-      <div class="page" data-page="rolls" hidden>
-        <p class="hint">Piano rolls de todos los lanes.</p>
-        <div id="rolls-stack" class="tracks"></div>
       </div>
 
       <div class="page" data-page="auto" hidden>
