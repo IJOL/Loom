@@ -158,8 +158,10 @@ class KarplusVoice implements Voice {
     this.noiseGain.gain.linearRampToValueAtTime(0, time + exciteDur + 0.001);
 
     // Amp envelope on the internal ConstantSource — modulators on amp.level
-    // sum into this same destination via getAudioParams().
-    const peakAmp = 1.4 * level * velMul;
+    // sum into this same destination via getAudioParams(). Coefficient kept
+    // <=1.0 so accent (velMul 1.4) at full level (1.0) tops out at 1.0 peak
+    // amplitude and doesn't clip the offline render.
+    const peakAmp = 0.7 * level * velMul;
     this.envAmp.offset.cancelScheduledValues(time);
     this.envAmp.offset.setValueAtTime(0, time);
     this.envAmp.offset.linearRampToValueAtTime(peakAmp, time + attack);
@@ -187,6 +189,18 @@ class KarplusVoice implements Voice {
   }
 
   release(time: number): void {
+    if (this.disposed) return;
+    // Cut the pre-scheduled envelope: trigger() schedules amp + loopGain
+    // ramps based on gateDuration, so a manual release before that deadline
+    // would otherwise be ignored. Force a fast amp ramp-down (5 ms) and kill
+    // the internal feedback loop so the string stops resonating.
+    const RELEASE_MS = 0.005;
+    this.envAmp.offset.cancelScheduledValues(time);
+    this.envAmp.offset.setValueAtTime(this.envAmp.offset.value, time);
+    this.envAmp.offset.linearRampToValueAtTime(0, time + RELEASE_MS);
+    this.loopGain.gain.cancelScheduledValues(time);
+    this.loopGain.gain.setValueAtTime(this.loopGain.gain.value, time);
+    this.loopGain.gain.linearRampToValueAtTime(0, time + RELEASE_MS);
     for (const mv of this.voiceMods.values()) mv.release(time);
   }
   connect(_dest: AudioNode): void {}
