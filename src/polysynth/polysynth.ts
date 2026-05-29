@@ -91,7 +91,7 @@ export class PolySynth {
   retrig = true;  // mono-only; true = restart envelope per note, false = legato
   private monoSavedMax = 8;
   private monoVoice: { osc1: OscillatorNode; osc2: OscillatorNode; sub: OscillatorNode } | null = null;
-  private active: Array<{ allocatedAt: number; stop: (time: number) => void }> = [];
+  private active: Array<{ midi: number; allocatedAt: number; stop: (time: number) => void }> = [];
   private noiseBuffer: AudioBuffer;
 
   setMaxVoices(n: number): void {
@@ -160,6 +160,16 @@ export class PolySynth {
     // Skip when mono+legato — the legato fast-path below reuses the voice.
     const legatoSkipsSteal = this.mode === 'mono' && !this.retrig && this.monoVoice;
     if (!legatoSkipsSteal) {
+      // Same-note stealing first: a retrigger of the same pitch should
+      // replace the previous instance instead of accumulating. Without this,
+      // imported MIDI tracks that don't emit explicit note-off between
+      // close retriggers stack voices and pile amplitude / CPU.
+      for (let i = this.active.length - 1; i >= 0; i--) {
+        if (this.active[i].midi === midi) {
+          this.active[i].stop(time);
+          this.active.splice(i, 1);
+        }
+      }
       while (this.active.length >= this.maxVoices) {
         const oldest = this.active.shift();
         if (oldest) oldest.stop(time);
@@ -332,6 +342,7 @@ export class PolySynth {
     // trigger steals this slot, or by osc1.onended below when the natural
     // release tail finishes.
     const entry = {
+      midi,
       allocatedAt: time,
       stop: (t: number) => releaseGate(t),
     };
