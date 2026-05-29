@@ -24,6 +24,10 @@ export interface PianoRollOpts {
   /** Called at the end of the gesture (pointerup / pointercancel, or
    *  immediately after a single-shot mutation) to commit the undo entry. */
   onGestureEnd?: () => void;
+  /** Called when a started gesture ends without mutating (bare click on an
+   *  existing note, etc.) so the history layer can drop the pending snapshot
+   *  instead of pushing a no-op entry. */
+  onGestureCancel?: () => void;
 }
 
 export interface PianoRollHandle {
@@ -138,6 +142,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   // ── Interactions ───────────────────────────────────────────────────────
   type Interaction = { type: 'move' | 'resize'; note: NoteEvent; offsetTick: number };
   let interaction: Interaction | null = null;
+  let gestureMutated = false;
 
   const isResizeEdge = (n: NoteEvent, tick: number) => {
     const edgeRange = Math.max(snap / 3, 6);
@@ -183,8 +188,10 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
 
     // All drag gestures (move, resize, create-by-drag): snapshot once here
     // at the top of pointerdown before any branching. commitGesture fires in
-    // endDrag (pointerup / pointercancel).
+    // endDrag — but only when something actually changed, so a bare click on
+    // an existing note (no drag) leaves the undo stack untouched.
     opts.onGestureStart?.();
+    gestureMutated = false;
 
     const hit = findNoteAt(tick, midi);
     if (hit) {
@@ -198,6 +205,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       const newNote: NoteEvent = { start: snappedStart, duration: snap, midi, velocity: 80 };
       opts.getNotes().push(newNote);
       interaction = { type: 'resize', note: newNote, offsetTick: 0 };
+      gestureMutated = true;
       opts.onChange?.();
     }
     opts.canvas.setPointerCapture(e.pointerId);
@@ -224,6 +232,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       const newDur = Math.max(snap, Math.ceil((tick - interaction.note.start) / snap) * snap);
       interaction.note.duration = Math.min(opts.patternTicks - interaction.note.start, newDur);
     }
+    gestureMutated = true;
     draw();
     opts.onChange?.();
   });
@@ -232,7 +241,8 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     if (!interaction) return;
     interaction = null;
     try { opts.canvas.releasePointerCapture(e.pointerId); } catch {}
-    opts.onGestureEnd?.();
+    if (gestureMutated) opts.onGestureEnd?.();
+    else opts.onGestureCancel?.();
   };
   opts.canvas.addEventListener('pointerup', endDrag);
   opts.canvas.addEventListener('pointercancel', endDrag);

@@ -84,8 +84,9 @@ function buildPianoRoll(
       return (stepsElapsed % clipSteps) * TICKS_PER_STEP;
     },
     ...(historyDeps ? {
-      onGestureStart: () => historyDeps.history.beginGesture(historyDeps.snapshot()),
-      onGestureEnd:   () => historyDeps.history.commitGesture(),
+      onGestureStart:  () => historyDeps.history.beginGesture(historyDeps.snapshot()),
+      onGestureEnd:    () => historyDeps.history.commitGesture(),
+      onGestureCancel: () => historyDeps.history.cancelGesture(),
     } : {}),
   });
 }

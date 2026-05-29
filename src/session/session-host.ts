@@ -39,7 +39,7 @@ import {
   emptyLanePlayState,
   type LanePlayState,
 } from './session-runtime';
-import { importClassicToSession, migrateLoadedSessionState } from './session-migration';
+import { migrateLoadedSessionState } from './session-migration';
 import { getEngine } from '../engines/registry';
 import { renderSessionGrid, type SessionUICallbacks } from './session-ui';
 import { renderSessionTabBar } from './session-tab-bar';
@@ -152,6 +152,13 @@ export class SessionHost {
     this.state.scenes = migrated.scenes ?? [];
     this.state.globalQuantize = migrated.globalQuantize ?? '1/1';
     this.laneStates.clear();
+    // Free audio resources for lanes that vanished in the new state (e.g.
+    // undo of add-lane). Keeping orphans around accumulates ChannelStrips and
+    // engine instances each time the user cycles add → undo → add.
+    const keep = new Set(this.state.lanes.map((l) => l.id));
+    for (const id of this.deps.laneResources?.ids() ?? []) {
+      if (!keep.has(id)) this.deps.laneResources?.dispose(id);
+    }
     for (const lane of this.state.lanes) {
       this.laneStates.set(lane.id, emptyLanePlayState(lane.id));
       // Every lane needs an audio resource (strip + engine instance) — without
@@ -441,17 +448,6 @@ export class SessionHost {
   // ── Toolbar wiring ─────────────────────────────────────────────────────────
 
   private wireToolbar(): void {
-    document.getElementById('session-import-classic')!.addEventListener('click', () => {
-      const fresh = importClassicToSession(this.deps.bank);
-      this.state.lanes = fresh.lanes;
-      this.state.scenes = fresh.scenes;
-      this.state.globalQuantize = fresh.globalQuantize;
-      this.laneStates.clear();
-      for (const lane of this.state.lanes) {
-        this.laneStates.set(lane.id, emptyLanePlayState(lane.id));
-      }
-      this.renderWithMixer();
-    });
     document.getElementById('session-launch-scene-1')!.addEventListener('click',
       () => this.callbacks.onLaunchScene(0));
     document.getElementById('session-stop-all')!.addEventListener('click',
