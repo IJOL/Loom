@@ -55,9 +55,14 @@ export interface EngineUIContext {
   sessionState?: import('../session/session').SessionState;
 }
 
-export interface EnginePreset {
+export interface EnginePreset<P = Record<string, number>> {
   name: string;
-  params: Record<string, number>;
+  /** Loose mapping to GM program numbers (0-127). Optional during the
+   *  migration from inline-TS presets to JSON assets — JSON-sourced
+   *  presets will always provide it. Code that reads `gm` should treat
+   *  `undefined` as empty. */
+  gm?: number[];
+  params: P;
   modulators?: import('../modulation/types').ModulatorState[];
 }
 
