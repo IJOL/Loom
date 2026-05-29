@@ -5,7 +5,8 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
-  bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations,
+  bindVoiceModulators, bindEngineModulators,
+  reapplyLaneModulations, disposeLaneModulations,
   _resetLaneBindingsForTesting, _getLaneBindingForTesting,
 } from './voice-mod-binding';
 import type { ModulatorVoice, ModulatorState, ModulationHost } from './types';
@@ -84,7 +85,7 @@ describe('voice-mod-binding integration', () => {
     const dest = makeMockParam('Q');
     const voice = makeMockVoice(new Map([['filter.resonance', dest as unknown as AudioParam]]));
     const mods: ModulatorState[] = [{
-      id: 'lfo1', kind: 'lfo', enabled: true,
+      id: 'lfo1', kind: 'lfo', enabled: true, scope: 'per-voice',
       connections: [{ id: 'c1', paramId: 'bass.filter.resonance', depth: 0.5 }],
     }];
     const host = makeMockHost(mods);
@@ -106,7 +107,7 @@ describe('voice-mod-binding integration', () => {
     const dest = makeMockParam('Q');
     const voice = makeMockVoice(new Map([['filter.resonance', dest as unknown as AudioParam]]));
     const mods: ModulatorState[] = [{
-      id: 'lfo1', kind: 'lfo', enabled: true,
+      id: 'lfo1', kind: 'lfo', enabled: true, scope: 'per-voice',
       // Connection targets the 'poly' lane but the voice is on 'bass'.
       connections: [{ id: 'c1', paramId: 'poly.filter.resonance', depth: 0.5 }],
     }];
@@ -128,7 +129,7 @@ describe('voice-mod-binding integration', () => {
     const dest = makeMockParam('Q');
     const voice = makeMockVoice(new Map([['filter.resonance', dest as unknown as AudioParam]]));
     const mods: ModulatorState[] = [{
-      id: 'lfo1', kind: 'lfo', enabled: true, connections: [],
+      id: 'lfo1', kind: 'lfo', enabled: true, scope: 'per-voice', connections: [],
     }];
     const host = makeMockHost(mods);
     const engine = makeMockEngine(
@@ -154,7 +155,7 @@ describe('voice-mod-binding integration', () => {
     const dest = makeMockParam('Q');
     const voice = makeMockVoice(new Map([['filter.resonance', dest as unknown as AudioParam]]));
     const mods: ModulatorState[] = [{
-      id: 'lfo1', kind: 'lfo', enabled: true,
+      id: 'lfo1', kind: 'lfo', enabled: true, scope: 'per-voice',
       connections: [{ id: 'c1', paramId: 'bass.filter.resonance', depth: 0.5 }],
     }];
     const engine = makeMockEngine(
@@ -176,7 +177,7 @@ describe('voice-mod-binding integration', () => {
     const voice1 = makeMockVoice(new Map([['filter.resonance', dest as unknown as AudioParam]]));
     const voice2 = makeMockVoice(new Map([['filter.resonance', dest as unknown as AudioParam]]));
     const mods: ModulatorState[] = [{
-      id: 'lfo1', kind: 'lfo', enabled: true,
+      id: 'lfo1', kind: 'lfo', enabled: true, scope: 'per-voice',
       connections: [{ id: 'c1', paramId: 'bass.filter.resonance', depth: 0.5 }],
     }];
     const engine = makeMockEngine(
@@ -201,7 +202,7 @@ describe('voice-mod-binding integration', () => {
     const dest = makeMockParam('amp');
     const voice = makeMockVoice(new Map([['amp.gain', dest as unknown as AudioParam]]));
     const mods: ModulatorState[] = [{
-      id: 'lfo1', kind: 'lfo', enabled: true,
+      id: 'lfo1', kind: 'lfo', enabled: true, scope: 'per-voice',
       connections: [{ id: 'c1', paramId: 'bass.amp.gain', depth: 0.8 }],
     }];
     const engine = makeMockEngine([] /* no specs */, makeMockHost(mods));
@@ -211,5 +212,69 @@ describe('voice-mod-binding integration', () => {
     expect(binder.activeCount()).toBe(1);
     // depth * (max-min) = 0.8 * (1-0) = 0.8
     expect(dest.inputs[0].gain.value).toBeCloseTo(0.8);
+  });
+});
+
+describe('bindVoiceModulators — scope partitioning', () => {
+  beforeEach(() => { _resetLaneBindingsForTesting(); });
+
+  it('only wires modulators with scope=per-voice', () => {
+    const ctx = new AudioContext();
+    const dummyParam = ctx.createGain().gain;
+    const lfoOut = ctx.createConstantSource(); lfoOut.start();
+    const adsrOut = ctx.createConstantSource(); adsrOut.start();
+
+    const engine = {
+      modulators: { modulators: [
+        { id: 'lfo1', kind: 'lfo', enabled: true, connections: [
+          { id: 'c1', paramId: 'lane.filter.cutoff', depth: 0.5 },
+        ], scope: 'shared' },
+        { id: 'adsr1', kind: 'adsr', enabled: true, connections: [
+          { id: 'c2', paramId: 'lane.amp.gain', depth: 0.5 },
+        ], scope: 'per-voice' },
+      ]},
+      params: [
+        { id: 'filter.cutoff', min: 0, max: 1, kind: 'continuous', label: 'C', default: 0 },
+        { id: 'amp.gain',      min: 0, max: 1, kind: 'continuous', label: 'A', default: 0 },
+      ],
+    } as never;
+    const voice = {
+      getAudioParams: () => new Map<string, AudioParam>([
+        ['filter.cutoff', dummyParam],
+        ['amp.gain',      dummyParam],
+      ]),
+    } as never;
+    const voiceMods = new Map([['adsr1', { output: adsrOut, trigger(){}, release(){}, dispose(){}, currentValue(){return 0;} }]]);
+    const binder = bindVoiceModulators({ laneId: 'lane', engine, voice, voiceMods, ctx });
+    expect(binder.activeCount()).toBe(1);
+  });
+});
+
+describe('bindEngineModulators — scope partitioning', () => {
+  beforeEach(() => { _resetLaneBindingsForTesting(); });
+
+  it('only wires modulators with scope=shared', () => {
+    const ctx = new AudioContext();
+    const dummyParam = ctx.createGain().gain;
+    const lfoOut = ctx.createConstantSource(); lfoOut.start();
+
+    const engine = {
+      modulators: { modulators: [
+        { id: 'lfo1', kind: 'lfo', enabled: true, connections: [
+          { id: 'c1', paramId: 'lane.filter.cutoff', depth: 0.5 },
+        ], scope: 'shared' },
+        { id: 'adsr1', kind: 'adsr', enabled: true, connections: [
+          { id: 'c2', paramId: 'lane.amp.gain', depth: 0.5 },
+        ], scope: 'per-voice' },
+      ]},
+      params: [
+        { id: 'filter.cutoff', min: 0, max: 1, kind: 'continuous', label: 'C', default: 0 },
+        { id: 'amp.gain',      min: 0, max: 1, kind: 'continuous', label: 'A', default: 0 },
+      ],
+      getSharedAudioParams: () => new Map([['filter.cutoff', dummyParam]]),
+    } as never;
+    const sharedMods = new Map([['lfo1', { output: lfoOut, trigger(){}, release(){}, dispose(){}, currentValue(){return 0;} }]]);
+    const binder = bindEngineModulators({ laneId: 'lane', engine, voiceMods: sharedMods, ctx });
+    expect(binder.activeCount()).toBe(1);
   });
 });

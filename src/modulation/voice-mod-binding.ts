@@ -1,18 +1,21 @@
 // src/modulation/voice-mod-binding.ts
-// Wires a freshly-spawned voice's modulator outputs to its destination
-// AudioParams via a per-voice ConnectionBinder.
+// Wires modulator outputs to destination AudioParams via ConnectionBinder.
+// Modulators are partitioned by scope:
 //
-// Each engine calls bindVoiceModulators(...) once at voice-creation time. The
-// binder is stored alongside the voiceMods so a later modulator-state change
-// (add/remove connection, depth tweak) can call reapplyLaneModulations(laneId)
-// to diff and re-bind without recreating the voice or skipping a beat.
+//   bindEngineModulators — scope='shared' mods wired to the engine's
+//                          modulation-bus AudioParams (getSharedAudioParams).
+//                          Called once per engine instance.
 //
-// This is the missing link between ModulationHost.spawnVoice (which only
-// creates the modulator AudioNodes) and the real audio graph: without these
-// gain bridges, an LFO has output but no path into the destination param.
+//   bindVoiceModulators  — scope='per-voice' mods wired to a freshly-spawned
+//                          Voice's per-note AudioParams (getAudioParams).
+//                          Called per createVoice call.
+//
+// Both record into the lane bindings map so reapplyLaneModulations can refresh
+// both paths after a state change.
 
 import type { SynthEngine, Voice } from '../engines/engine-types';
-import type { ModulatorVoice } from './types';
+import type { ModulatorState, ModulatorVoice } from './types';
+import { defaultScopeFor } from './types';
 import type { ParamRange } from './modulation-host';
 import { ConnectionBinder } from './connection-binder';
 
@@ -24,116 +27,157 @@ export interface BindVoiceModulatorsOpts {
   ctx: AudioContext;
 }
 
-/** Records of the per-lane binding so onChange can re-apply later. */
-interface LaneBinding {
+export interface BindEngineModulatorsOpts {
   laneId: string;
   engine: SynthEngine;
-  voice: Voice;
   voiceMods: Map<string, ModulatorVoice>;
-  binder: ConnectionBinder;
   ctx: AudioContext;
 }
 
-const laneBindings = new Map<string, LaneBinding>();
-
-/**
- * Build the (destMap, rangeMap) keyed by canonical `${laneId}.${shortId}` ids
- * that ConnectionBinder + the modulator-UI destination dropdown both expect,
- * then call binder.apply() to (re)materialize the gain bridges.
- *
- * Side-effect: records the binding into a per-lane map so a subsequent
- * `reapplyLaneModulations(laneId)` call can update bridges without rebuilding
- * the voice.
- *
- * If a binding already exists for this lane (i.e. the previous voice hasn't
- * been disposed yet), its binder is torn down first to avoid leaking gain
- * nodes still connected from the old voice's modulator outputs.
- */
-export function bindVoiceModulators(opts: BindVoiceModulatorsOpts): ConnectionBinder {
-  const prev = laneBindings.get(opts.laneId);
-  if (prev) prev.binder.disposeAll();
-
-  const binder = new ConnectionBinder();
-  applyBinder(binder, opts.laneId, opts.engine, opts.voice, opts.voiceMods, opts.ctx);
-
-  laneBindings.set(opts.laneId, {
-    laneId: opts.laneId,
-    engine: opts.engine,
-    voice: opts.voice,
-    voiceMods: opts.voiceMods,
-    binder,
-    ctx: opts.ctx,
-  });
-  return binder;
+interface LaneBindings {
+  laneId: string;
+  ctx: AudioContext;
+  engineRef: SynthEngine;
+  /** Engine-wide binder for scope='shared' modulators. */
+  engineBinding?: { binder: ConnectionBinder; voiceMods: Map<string, ModulatorVoice> };
+  /** Per-voice binder + the latest voice. Replaced on every new Voice. */
+  voiceBinding?: { binder: ConnectionBinder; voice: Voice; voiceMods: Map<string, ModulatorVoice> };
 }
 
-/**
- * Re-apply the binder for `laneId` against the current modulator state. Used
- * by each engine's modulation-panel onChange callback so adding/removing a
- * connection or tweaking depth takes audible effect immediately on the
- * currently-held voice (when one exists).
- */
-export function reapplyLaneModulations(laneId: string): void {
-  const b = laneBindings.get(laneId);
-  if (!b) return;
-  applyBinder(b.binder, b.laneId, b.engine, b.voice, b.voiceMods, b.ctx);
+const laneBindings = new Map<string, LaneBindings>();
+
+function scopeOf(m: ModulatorState): 'shared' | 'per-voice' {
+  return m.scope ?? defaultScopeFor(m.kind);
 }
 
-/** Drops the lane's record (call when the voice is disposed). The binder
- *  itself is disposed too in case nothing else has. */
-export function disposeLaneModulations(laneId: string): void {
-  const b = laneBindings.get(laneId);
-  if (!b) return;
-  b.binder.disposeAll();
-  laneBindings.delete(laneId);
-}
-
-/** Internal: builds the canonical destMap + rangeMap and calls binder.apply. */
 function applyBinder(
   binder: ConnectionBinder,
   laneId: string,
   engine: SynthEngine,
-  voice: Voice,
   voiceMods: Map<string, ModulatorVoice>,
+  shortParams: Map<string, AudioParam>,
+  rangeLookup: (shortId: string) => ParamRange,
+  scope: 'shared' | 'per-voice',
   ctx: AudioContext,
 ): void {
-  const shortParams = voice.getAudioParams();
   const destMap = new Map<string, AudioParam>();
   const rangeMap = new Map<string, ParamRange>();
-
   for (const [shortId, param] of shortParams) {
     const fullId = `${laneId}.${shortId}`;
-    const spec = engine.params.find((p) => p.id === shortId);
-    // Prefer the voice's declared AudioParam operating range when present —
-    // a spec might say `filter.cutoff` is 0..1 (normalized knob) while the
-    // actual AudioParam is `BiquadFilterNode.frequency` in Hz. Falling back
-    // to the spec range (or 0..1 when neither is available) keeps engines
-    // that don't override working as before.
-    const declared = voice.getAudioParamRange?.(shortId);
-    const min = declared ? declared.min : (spec ? spec.min : 0);
-    const max = declared ? declared.max : (spec ? spec.max : 1);
-    // Register both id forms. The UI dropdown adds new connections with the
-    // full `lane.id` form, but engines ship with default modulator
-    // connections keyed by the short id (e.g. ADSR-AMP → 'amp.gain') so the
-    // same state is reusable across lanes. Accept both so depth changes on
-    // default connections actually modulate the param.
+    const r = rangeLookup(shortId);
     destMap.set(fullId, param);
-    rangeMap.set(fullId, { min, max });
+    rangeMap.set(fullId, r);
     destMap.set(shortId, param);
-    rangeMap.set(shortId, { min, max });
+    rangeMap.set(shortId, r);
   }
-
-  binder.apply(voiceMods, engine.modulators.modulators, destMap, rangeMap, ctx);
+  const scopeFilter = engine.modulators.modulators.filter((m) => scopeOf(m) === scope);
+  binder.apply(voiceMods, scopeFilter, destMap, rangeMap, ctx);
 }
 
-/** Test-only: clear the per-lane bindings map. */
-export function _resetLaneBindingsForTesting(): void {
-  for (const b of laneBindings.values()) b.binder.disposeAll();
+function rangeLookupForVoice(engine: SynthEngine, voice: Voice): (id: string) => ParamRange {
+  return (shortId: string): ParamRange => {
+    const declared = voice.getAudioParamRange?.(shortId);
+    if (declared) return declared;
+    const spec = engine.params.find((p) => p.id === shortId);
+    return { min: spec ? spec.min : 0, max: spec ? spec.max : 1 };
+  };
+}
+
+function rangeLookupForEngine(engine: SynthEngine): (id: string) => ParamRange {
+  return (shortId: string): ParamRange => {
+    const spec = engine.params.find((p) => p.id === shortId);
+    return { min: spec ? spec.min : 0, max: spec ? spec.max : 1 };
+  };
+}
+
+function getOrCreateLane(laneId: string, engine: SynthEngine, ctx: AudioContext): LaneBindings {
+  let lb = laneBindings.get(laneId);
+  if (!lb) {
+    lb = { laneId, ctx, engineRef: engine };
+    laneBindings.set(laneId, lb);
+  }
+  return lb;
+}
+
+export function bindEngineModulators(opts: BindEngineModulatorsOpts): ConnectionBinder {
+  const lb = getOrCreateLane(opts.laneId, opts.engine, opts.ctx);
+  if (lb.engineBinding) lb.engineBinding.binder.disposeAll();
+
+  const binder = new ConnectionBinder();
+  const shortParams = opts.engine.getSharedAudioParams?.(opts.ctx) ?? new Map<string, AudioParam>();
+  applyBinder(
+    binder, opts.laneId, opts.engine, opts.voiceMods,
+    shortParams, rangeLookupForEngine(opts.engine), 'shared', opts.ctx,
+  );
+  lb.engineBinding = { binder, voiceMods: opts.voiceMods };
+  return binder;
+}
+
+export function bindVoiceModulators(opts: BindVoiceModulatorsOpts): ConnectionBinder {
+  const lb = getOrCreateLane(opts.laneId, opts.engine, opts.ctx);
+  if (lb.voiceBinding) lb.voiceBinding.binder.disposeAll();
+
+  const binder = new ConnectionBinder();
+  applyBinder(
+    binder, opts.laneId, opts.engine, opts.voiceMods,
+    opts.voice.getAudioParams(),
+    rangeLookupForVoice(opts.engine, opts.voice),
+    'per-voice',
+    opts.ctx,
+  );
+  lb.voiceBinding = { binder, voice: opts.voice, voiceMods: opts.voiceMods };
+  return binder;
+}
+
+export function reapplyLaneModulations(laneId: string): void {
+  const lb = laneBindings.get(laneId);
+  if (!lb) return;
+  if (lb.engineBinding) {
+    const shortParams = lb.engineRef.getSharedAudioParams?.(lb.ctx) ?? new Map<string, AudioParam>();
+    applyBinder(
+      lb.engineBinding.binder, lb.laneId, lb.engineRef, lb.engineBinding.voiceMods,
+      shortParams, rangeLookupForEngine(lb.engineRef), 'shared', lb.ctx,
+    );
+  }
+  if (lb.voiceBinding) {
+    applyBinder(
+      lb.voiceBinding.binder, lb.laneId, lb.engineRef, lb.voiceBinding.voiceMods,
+      lb.voiceBinding.voice.getAudioParams(),
+      rangeLookupForVoice(lb.engineRef, lb.voiceBinding.voice),
+      'per-voice', lb.ctx,
+    );
+  }
+}
+
+export function disposeLaneModulations(laneId: string): void {
+  const lb = laneBindings.get(laneId);
+  if (!lb) return;
+  lb.engineBinding?.binder.disposeAll();
+  lb.voiceBinding?.binder.disposeAll();
+  laneBindings.delete(laneId);
+}
+
+export function clearLaneBindings(): void {
+  for (const lb of laneBindings.values()) {
+    lb.engineBinding?.binder.disposeAll();
+    lb.voiceBinding?.binder.disposeAll();
+  }
   laneBindings.clear();
 }
 
-/** Test-only inspector. */
+// ── Test-only back-compat aliases ─────────────────────────────────────────
+// Earlier tests imported these underscore-prefixed names. Keep them as thin
+// wrappers so existing test files (and dsp-render fixtures) keep compiling.
+
+/** Test-only: clear the per-lane bindings map. Alias for clearLaneBindings. */
+export function _resetLaneBindingsForTesting(): void {
+  clearLaneBindings();
+}
+
+/** Test-only inspector. Returns the per-voice binder for the lane (which is
+ *  what the historic single-binder tests probed). */
 export function _getLaneBindingForTesting(laneId: string): { binder: ConnectionBinder } | undefined {
-  const b = laneBindings.get(laneId);
-  return b ? { binder: b.binder } : undefined;
+  const lb = laneBindings.get(laneId);
+  if (!lb || !lb.voiceBinding) return undefined;
+  return { binder: lb.voiceBinding.binder };
 }
