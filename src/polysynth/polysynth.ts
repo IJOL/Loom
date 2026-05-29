@@ -87,12 +87,28 @@ export class PolySynth {
    *  playing voice via Web Audio summing. */
   readonly modBus: Record<string, ConstantSourceNode>;
   maxVoices = 8;
+  mode: 'mono' | 'poly' = 'poly';
+  retrig = true;  // mono-only; true = restart envelope per note, false = legato
+  private monoSavedMax = 8;
+  private monoVoice: { osc1: OscillatorNode; osc2: OscillatorNode; sub: OscillatorNode } | null = null;
   private active: Array<{ allocatedAt: number; stop: (time: number) => void }> = [];
   private noiseBuffer: AudioBuffer;
 
   setMaxVoices(n: number): void {
     this.maxVoices = Math.max(1, Math.min(16, Math.floor(n)));
   }
+
+  setMode(m: 'mono' | 'poly'): void {
+    if (m === 'mono' && this.mode !== 'mono') {
+      this.monoSavedMax = this.maxVoices;
+      this.maxVoices = 1;
+    } else if (m === 'poly' && this.mode === 'mono') {
+      this.maxVoices = this.monoSavedMax;
+    }
+    this.mode = m;
+  }
+
+  setRetrig(v: boolean): void { this.retrig = v; }
 
   activeVoiceCount(): number {
     return this.active.length;
@@ -141,9 +157,25 @@ export class PolySynth {
     // immediately so the new note can take its slot. shift() removes the
     // oldest entry from `this.active` synchronously; oldest.stop(time) starts
     // a release ramp so the stolen voice fades out without a click.
-    while (this.active.length >= this.maxVoices) {
-      const oldest = this.active.shift();
-      if (oldest) oldest.stop(time);
+    // Skip when mono+legato — the legato fast-path below reuses the voice.
+    const legatoSkipsSteal = this.mode === 'mono' && !this.retrig && this.monoVoice;
+    if (!legatoSkipsSteal) {
+      while (this.active.length >= this.maxVoices) {
+        const oldest = this.active.shift();
+        if (oldest) oldest.stop(time);
+      }
+    }
+    // Mono + legato: re-pitch the existing voice's oscillators in place;
+    // do not stop the voice or restart its envelope.
+    if (this.mode === 'mono' && !this.retrig && this.monoVoice) {
+      const noteFreq = 440 * Math.pow(2, (midi - 69) / 12);
+      this.monoVoice.osc1.frequency.setValueAtTime(
+        noteFreq * Math.pow(2, p.osc1.octave + p.osc1.semi / 12), time);
+      this.monoVoice.osc2.frequency.setValueAtTime(
+        noteFreq * Math.pow(2, p.osc2.octave + p.osc2.semi / 12), time);
+      this.monoVoice.sub.frequency.setValueAtTime(
+        noteFreq * Math.pow(2, p.sub.octave), time);
+      return;
     }
     // Base note frequency excludes master.tune — that's applied as a
     // modulatable detune offset (cents) on each oscillator below, so
@@ -181,6 +213,10 @@ export class PolySynth {
     tune.connect(sub.detune);
     const gs = ctx.createGain(); gs.gain.value = p.sub.level;
     sub.connect(gs);
+
+    if (this.mode === 'mono') {
+      this.monoVoice = { osc1, osc2, sub };
+    }
 
     // ── Noise (always-on, gated via gn.gain so noise.level is modulatable) ─
     const noise = ctx.createBufferSource();
@@ -366,6 +402,9 @@ export class PolySynth {
     osc1.onended = () => {
       const idx = this.active.indexOf(entry);
       if (idx >= 0) this.active.splice(idx, 1);
+      if (this.monoVoice && this.monoVoice.osc1 === osc1) {
+        this.monoVoice = null;
+      }
     };
   }
 }
