@@ -251,7 +251,9 @@ function wireClipDrag(cell: HTMLElement, source: ClipSlot, cb: SessionUICallback
       document.body.classList.toggle('drag-copy', e.ctrlKey);
       activeDrag.onKey = (k) => {
         if (k.key === 'Escape') cancelDrag();
-        else if (k.key === 'Control') document.body.classList.add('drag-copy');
+        else if (k.key === 'Control') {
+          document.body.classList.toggle('drag-copy', k.type === 'keydown');
+        }
       };
       document.addEventListener('keydown', activeDrag.onKey);
       document.addEventListener('keyup', activeDrag.onKey);

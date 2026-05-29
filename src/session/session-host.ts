@@ -9,7 +9,7 @@ import type { PolySynth } from '../polysynth/polysynth';
 import type { Sequencer } from '../core/sequencer';
 import type { MixerColumnDeps } from '../core/mixer';
 import {
-  emptySessionState, cloneSessionState, emptyLane,
+  emptySessionState, cloneSessionState, emptyLane, emptyClip,
   moveClip, copyClip,
   type SessionState, type SessionClip, type ClipSlot,
 } from './session';
@@ -295,11 +295,7 @@ export class SessionHost {
         const hd = self.deps.historyDeps;
         const run = () => {
           const defaultLen = Math.max(1, Math.floor(seq.length / 16));
-          const clip: SessionClip = {
-            id: `clip-${Date.now().toString(36)}`,
-            lengthBars: defaultLen,
-            notes: [],
-          };
+          const clip: SessionClip = emptyClip(defaultLen);
           while (lane.clips.length <= clipIdx) lane.clips.push(null);
           lane.clips[clipIdx] = clip;
           self.inspector.setSelectedClip({ laneId, clipIdx });
@@ -347,12 +343,9 @@ export class SessionHost {
           const lane = emptyLane(newId, engineId);
           lane.name = displayName;
           const rowCount = Math.max(self.state.scenes.length, 1);
+          const defaultLen = Math.max(1, Math.floor(seq.length / 16));
           for (let r = 0; r < rowCount; r++) {
-            lane.clips.push({
-              id: `clip-${Date.now().toString(36)}-${r}`,
-              lengthBars: Math.max(1, Math.floor(seq.length / 16)),
-              notes: [],
-            });
+            lane.clips.push(emptyClip(defaultLen));
           }
           self.state.lanes.push(lane);
           self.laneStates.set(newId, emptyLanePlayState(newId));
