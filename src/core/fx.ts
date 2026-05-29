@@ -9,6 +9,7 @@ import {
   type CompState,
   type SidechainState,
 } from './comp-state';
+import { DuckerSubgraph } from './ducker-subgraph';
 import { SidechainBus } from './sidechain-bus';
 
 export class FxBus {
@@ -111,6 +112,10 @@ export class ChannelStrip {
   delaySend: GainNode;
   comp: CompBlock;
   sidechainTap: GainNode;
+  private duckGain: GainNode;
+  private ducker: DuckerSubgraph | null = null;
+  private sidechainState: SidechainState | null = null;
+  private bus: SidechainBus | null = null;
   private eqLow: BiquadFilterNode;
   private eqMid: BiquadFilterNode;
   private eqHigh: BiquadFilterNode;
@@ -120,7 +125,7 @@ export class ChannelStrip {
   private busRegistration: { bus: SidechainBus; id: string } | null = null;
 
   constructor(
-    ctx: AudioContext,
+    private ctx: AudioContext,
     dry: AudioNode,
     fx: FxBus,
     opts: ChannelStripOptions = {},
@@ -150,17 +155,22 @@ export class ChannelStrip {
       .connect(this.level)
       .connect(this.panner)
       .connect(this.muteGain);
-    this.muteGain.connect(dry);
-    this.muteGain.connect(this.reverbSend).connect(fx.reverbInput);
-    this.muteGain.connect(this.delaySend ).connect(fx.delayInput);
+    this.duckGain = ctx.createGain();
+    this.duckGain.gain.value = 1;
+    this.muteGain.connect(this.duckGain);
+    this.duckGain.connect(dry);
+    this.duckGain.connect(this.reverbSend).connect(fx.reverbInput);
+    this.duckGain.connect(this.delaySend ).connect(fx.delayInput);
 
-    // Post-mute fan-out tap for sidechain consumers. Connected to the same
-    // signal that feeds master + sends, so muted lanes contribute nothing.
+    // Post-mute fan-out tap for sidechain consumers. Connected to muteGain
+    // (pre-duck) so a lane's outgoing tap reflects pre-duck signal — avoids
+    // a lane ducking itself via feedback.
     this.sidechainTap = ctx.createGain();
     this.muteGain.connect(this.sidechainTap);
 
     if (opts.sidechain) {
       opts.sidechain.bus.register(opts.sidechain.id, this.sidechainTap, opts.sidechain.label);
+      this.bus = opts.sidechain.bus;
       this.busRegistration = { bus: opts.sidechain.bus, id: opts.sidechain.id };
     }
   }
@@ -191,6 +201,26 @@ export class ChannelStrip {
   setCompState(s: Partial<CompState>) { this.comp.setState(s); }
   getCompState(): CompState { return this.comp.getState(); }
 
+  setSidechain(bus: SidechainBus, state: SidechainState | null): void {
+    if (this.ducker) {
+      this.ducker.dispose();
+      this.ducker = null;
+    }
+    this.sidechainState = state;
+    if (!state || !state.source) return;
+    const sourceTap = bus.getTap(state.source);
+    if (!sourceTap) {
+      // Unknown source lane — leave the ducker disabled but keep the state
+      // (it'll come online if the source registers later; caller re-applies).
+      return;
+    }
+    this.ducker = new DuckerSubgraph(this.ctx, {
+      sourceTap, duckGain: this.duckGain, state,
+    });
+  }
+
+  getSidechain(): SidechainState | null { return this.sidechainState; }
+
   setMuted(m: boolean) {
     this._muted = m;
     this.muteGain.gain.value = m ? 0 : 1;
@@ -198,14 +228,18 @@ export class ChannelStrip {
   isMuted() { return this._muted; }
 
   /**
-   * Release sidechain-side resources held by this strip: unregister from the
-   * SidechainBus and disconnect the sidechain tap. Does NOT tear down the
-   * strip's primary audio graph (input → EQ → comp → level → pan → mute → ...)
-   * — those nodes are garbage-collected when the strip becomes unreferenced.
-   * Task 7 extends this to also dispose the ducker subgraph.
+   * Release sidechain-side resources held by this strip: tear down the
+   * ducker subgraph (if any), unregister from the SidechainBus, and
+   * disconnect the sidechain tap. Does NOT tear down the strip's primary
+   * audio graph (input → EQ → comp → level → pan → mute → ...) — those
+   * nodes are garbage-collected when the strip becomes unreferenced.
    * Safe to call multiple times.
    */
   dispose(): void {
+    if (this.ducker) {
+      this.ducker.dispose();
+      this.ducker = null;
+    }
     if (this.busRegistration) {
       this.busRegistration.bus.unregister(this.busRegistration.id);
       this.busRegistration = null;
@@ -224,7 +258,7 @@ export class ChannelStrip {
       eqHigh: this.eqHigh.gain.value,
       muted: this._muted,
       comp: this.comp.getState(),
-      sidechain: null, // populated in Task 7
+      sidechain: this.sidechainState ? { ...this.sidechainState } : null,
     };
   }
 
@@ -238,7 +272,8 @@ export class ChannelStrip {
     this.setEqHigh(s.eqHigh);
     this.setMuted(s.muted);
     this.comp.setState(withCompDefaults(s.comp));
-    // sidechain restoration lives in Task 7
+    const sc = withSidechainDefaultsOrNull(s.sidechain);
+    if (this.bus) this.setSidechain(this.bus, sc);
   }
 }
 
