@@ -51,17 +51,59 @@ export interface SynthEngine {
 }
 ```
 
-### Engine preset modules
+### Engine preset assets (JSON)
 
-| Module | Engine | Min presets | Primary GM coverage |
+Presets ship as JSON assets under `public/presets/`, mirroring the pattern set by `public/demos/minimal-techno.json` (loaded via `fetch` at boot, parsed and validated). Rationale: editing/auditioning a preset does not require a TS rebuild; user presets in localStorage already share the POJO shape; future "preset packs" can be served by URL or drag-drop.
+
+| Asset | Engine | Min presets | Primary GM coverage |
 |---|---|---|---|
-| `src/polysynth/poly-presets.ts` (migrated) | `poly` | existing ~30 | 0-7 keys, 16-23 organs, 48-54 strings, 56-63 brass, 80-95 leads/pads |
-| `src/engines/tb303-presets.ts` (new) | `tb303` | 20 | 32-39 basses, 80-87 leads |
-| `src/engines/fm-presets.ts` (new) | `fm` | 20 | 4-7 EP/clav, 8-15 bells/chrom-perc, 88-95 pads, 96-103 FX |
-| `src/engines/wavetable-presets.ts` (new) | `wavetable` | 20 | 80-95 leads/pads, 96-103 FX, 51-54 synth strings |
-| `src/engines/karplus-presets.ts` (new) | `karplus` | 20 | 24-31 guitars, 32-33 ac/finger bass, 45-47 pizz/harp, 105-108 banjo/sitar |
-| `src/engines/subtractive-presets.ts` (new) | `subtractive` | 20 | 16-23 organs, 32-39 basses, 56-63 brass, 80-95 |
-| `src/engines/drums-presets.ts` (new) | `drums` | 8 | GM Drum Kits 0/8/16/24/25/33/41/49 |
+| `public/presets/poly.json` (migrated) | `poly` | existing ~30 | 0-7 keys, 16-23 organs, 48-54 strings, 56-63 brass, 80-95 leads/pads |
+| `public/presets/tb303.json` (new) | `tb303` | 20 | 32-39 basses, 80-87 leads |
+| `public/presets/fm.json` (new) | `fm` | 20 | 4-7 EP/clav, 8-15 bells/chrom-perc, 88-95 pads, 96-103 FX |
+| `public/presets/wavetable.json` (new) | `wavetable` | 20 | 80-95 leads/pads, 96-103 FX, 51-54 synth strings |
+| `public/presets/karplus.json` (new) | `karplus` | 20 | 24-31 guitars, 32-33 ac/finger bass, 45-47 pizz/harp, 105-108 banjo/sitar |
+| `public/presets/subtractive.json` (new) | `subtractive` | 20 | 16-23 organs, 32-39 basses, 56-63 brass, 80-95 |
+| `public/presets/drums.json` (new) | `drums` | 8 | GM Drum Kits 0/8/16/24/25/33/41/49 |
+
+#### JSON shape
+
+```json
+{
+  "engineId": "tb303",
+  "presets": [
+    { "name": "Acid 1", "gm": [32, 33, 38], "params": { "...": "..." } },
+    { "name": "Acid 2", "gm": [32, 39], "params": { "...": "..." } }
+  ]
+}
+```
+
+The top-level `engineId` is informational/self-describing; the runtime trusts the file path (`/presets/<engineId>.json`).
+
+#### Loading
+
+New module `src/presets/preset-loader.ts`:
+
+```ts
+export async function loadEnginePresets(engineId: string): Promise<EnginePreset[]>;
+export async function loadAllPresets(): Promise<void>; // Promise.all over all engines
+export function isPresetsReady(): boolean;            // sync gate for UI
+```
+
+On boot, [src/main.ts](../../../src/main.ts) calls `await loadAllPresets()` before wiring the MIDI import UI. Each engine's `presets` field is populated by the loader (writes into the engine instance after fetch). The MIDI import "Load" button is disabled until `isPresetsReady()` returns true.
+
+#### Validation
+
+Hand-rolled type guard in `preset-loader.ts`:
+
+- `name`: non-empty string, unique within file.
+- `gm`: array of integers in `[0, 128)`.
+- `params`: presence checked, contents trusted (each engine's preset-apply will fail loudly if a key is missing).
+
+Invalid presets are dropped with a `console.warn` (do not crash boot).
+
+#### TS types stay
+
+`EnginePreset<P>` remains as a TS interface (data lives in JSON, the type describes the in-memory shape after parse). Engine-specific param types (`PolySynthParams`, `TB303Params`, etc.) stay in TS and the loader returns `EnginePreset<EngineParamsFor<engineId>>`.
 
 **Coverage rule.** Every GM program 0-127 must resolve to at least one preset (no `poly/Init` fallback for common programs). Holes are closed either by a dedicated preset or by adding the program to the nearest existing preset's `gm` array. A test enforces this.
 
@@ -215,11 +257,12 @@ All tests live next to their module per existing convention.
   - `findGMMatches(g)` is non-empty for every `g ∈ [0,128)` — **the GM coverage gate**.
   - With a 2-match scenario and a mocked rng returning `0.0` / `0.5` / `0.99`, the picked preset is the expected one.
   - `pickDrumKitForGM` only returns matches with `engineId === 'drums'`.
+- `src/presets/preset-loader.test.ts` — validator drops malformed entries with warn (negative gm, missing name, duplicate name); valid file returns expected `EnginePreset[]`. Mocks `fetch` per existing demo-loader pattern.
 
 ### Sanity
 
-- `src/presets/preset-sanity.test.ts` — for every preset in every engine:
-  - `name` is unique within engine.
+- `src/presets/preset-sanity.test.ts` — loads each engine's JSON via `fs.readFileSync('public/presets/<engineId>.json')` (node side, no fetch), and for every preset asserts:
+  - `name` is unique within file.
   - `gm` is `number[]` with all entries integers in `[0,128)`.
   - `params` round-trips through `applyPresetToLane` without throwing.
 
@@ -234,20 +277,27 @@ All tests live next to their module per existing convention.
 |---|---|
 | 100+ curated presets is a lot of content work | Plan decomposes per engine (independent tasks). Each preset is auditioned in the dev server before commit — instruction lives in the plan. Loose GM tags can close coverage holes without dedicated presets. |
 | User saves session with `extraPolyTracks` between branches | Migration silently drops the field; no save-file breakage. |
-| Future preset addition forgets `gm` field | `gm` is required (not optional) on the type. TS catches it. Sanity test also asserts. |
+| JSON preset has typo or missing `gm` | `preset-loader` validator drops malformed entries with `console.warn`; sanity test fails CI before merge. |
+| Boot order: importer fires before presets loaded | `loadAllPresets()` is awaited in `main.ts` before wiring import UI; the Load button is also gated by `isPresetsReady()`. |
 | LocalStorage user presets predate `gm` | Loader injects `gm: []` on read. They never appear in importer lookup (intentional — user presets are not GM content). |
 | Drums lane absent at import time | Documented warning behaviour. User can re-add a drums lane and re-import. |
 
 ## File inventory
 
-**New files**
-- `src/engines/engine-types.ts` — add `EnginePreset` (file exists, additive change)
-- `src/engines/tb303-presets.ts`
-- `src/engines/fm-presets.ts`
-- `src/engines/wavetable-presets.ts`
-- `src/engines/karplus-presets.ts`
-- `src/engines/subtractive-presets.ts`
-- `src/engines/drums-presets.ts`
+### New files
+
+#### JSON assets
+
+- `public/presets/poly.json` (migrated from current `FACTORY_POLY_PRESETS` array, with `gm` tags added)
+- `public/presets/tb303.json`
+- `public/presets/fm.json`
+- `public/presets/wavetable.json`
+- `public/presets/karplus.json`
+- `public/presets/subtractive.json`
+- `public/presets/drums.json`
+
+#### TS modules
+
 - `src/midi/midi-parse.ts`
 - `src/midi/midi-parse.test.ts`
 - `src/midi/midi-to-session.ts`
@@ -256,17 +306,22 @@ All tests live next to their module per existing convention.
 - `src/midi/gm-lookup.test.ts`
 - `src/midi/midi-import-ui.ts`
 - `src/presets/preset-apply.ts`
+- `src/presets/preset-loader.ts`
+- `src/presets/preset-loader.test.ts`
 - `src/presets/preset-sanity.test.ts`
 
-**Modified**
-- `src/polysynth/poly-presets.ts` — migrate to `EnginePreset<PolySynthParams>`, add `gm` per preset
+### Modified
+
+- `src/engines/engine-types.ts` — add `EnginePreset<P>` interface and `SynthEngine.presets?: EnginePreset[]`
 - `src/polysynth/polysynth-presets.ts` — strip `applyPresetByName`, keep user-preset persistence
-- `src/engines/<each-engine>.ts` — wire `presets` array onto the engine
-- `src/main.ts` — call `applyPresetToLane`, drop `extraPolyTracks` references
+- `src/engines/<each-engine>.ts` (tb303/fm/wavetable/karplus/subtractive/drums + polysynth host) — accept loader-populated `presets` array
+- `src/main.ts` — await `loadAllPresets()` at boot; call `applyPresetToLane`; drop `extraPolyTracks` references
 - `src/session/session-migration.ts` — ignore `extraPolyTracks`
 - `src/core/pattern.ts` — remove `extraPolyTracks`, `MAX_EXTRA_POLY_TRACKS`
 - `src/core/randomize-ui.ts`, `src/copy/lane-copy.ts`, `src/save/save-manager.ts`, `src/demo/demo-minimal-techno.ts` — drop legacy refs
 
-**Deleted**
+### Deleted
+
+- `src/polysynth/poly-presets.ts` (data moves to `public/presets/poly.json`; the file is removed)
 - `src/midi/midi-import.ts` (split into three new modules)
 - `src/midi/midi-import.test.ts` (replaced by midi-parse.test.ts + midi-to-session.test.ts)
