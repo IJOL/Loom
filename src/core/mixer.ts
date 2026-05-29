@@ -11,9 +11,6 @@
 import type { ChannelStrip } from './fx';
 import { createKnob, type KnobHandle } from './knob';
 import { attachKnobUndo, type HistoryDeps } from '../save/history-wiring';
-import { createSelectControl } from './select-control';
-import { DEFAULT_SIDECHAIN_STATE } from './comp-state';
-import type { CompState, SidechainState } from './comp-state';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -27,7 +24,6 @@ export interface MixerColumnDeps {
   soloState:     Record<string, boolean>;
   applyMuteSolo: () => void;
   registerKnob:  (k: KnobHandle) => void;
-  sidechainBus:  import('./sidechain-bus').SidechainBus;
   /** Optional undo history deps. When present, knob drags/wheel/dblclick
    *  are bracketed as single undo entries. */
   historyDeps?:  HistoryDeps;
@@ -108,9 +104,6 @@ export function buildMixerColumn(trackId: string, deps: MixerColumnDeps): HTMLEl
   });
   col.appendChild(sendSec);
 
-  col.appendChild(buildCompSection(trackId, strip, deps));
-  col.appendChild(buildSidechainSection(trackId, strip, deps));
-
   // Pan
   const panSec = document.createElement('div');
   panSec.className = 'mix-section';
@@ -174,147 +167,4 @@ export function buildMixerColumn(trackId: string, deps: MixerColumnDeps): HTMLEl
   col.appendChild(faderWrap);
 
   return col;
-}
-
-const fmtRatio = (v: number) => `${v.toFixed(1)}:1`;
-
-function buildCompSection(
-  trackId: string,
-  strip: ChannelStrip,
-  deps: MixerColumnDeps,
-): HTMLElement {
-  const sec = document.createElement('div');
-  sec.className = 'mix-section mix-comp';
-  const lab = document.createElement('div');
-  lab.className = 'mix-sec-label';
-  lab.textContent = 'COMP';
-  sec.appendChild(lab);
-
-  const initial: CompState = strip.getCompState();
-  const color = '#1abc9c';
-
-  addKnob(sec, deps, {
-    id: `mix.${trackId}.comp.thr`, label: 'THR', min: -60, max: 0, step: 0.5,
-    value: initial.threshold, defaultValue: -24, color, format: fmtDb,
-    onChange: (v) => strip.setCompState({ threshold: v }),
-  });
-  addKnob(sec, deps, {
-    id: `mix.${trackId}.comp.rat`, label: 'RAT', min: 1, max: 20, step: 0.1,
-    value: initial.ratio, defaultValue: 4, color, format: fmtRatio,
-    onChange: (v) => strip.setCompState({ ratio: v }),
-  });
-  addKnob(sec, deps, {
-    id: `mix.${trackId}.comp.atk`, label: 'ATK', min: 0.001, max: 1, step: 0.001,
-    value: initial.attack, defaultValue: 0.003, color,
-    format: (v) => v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed(2)}s`,
-    onChange: (v) => strip.setCompState({ attack: v }),
-  });
-  addKnob(sec, deps, {
-    id: `mix.${trackId}.comp.rel`, label: 'REL', min: 0.001, max: 1, step: 0.001,
-    value: initial.release, defaultValue: 0.25, color,
-    format: (v) => v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed(2)}s`,
-    onChange: (v) => strip.setCompState({ release: v }),
-  });
-  addKnob(sec, deps, {
-    id: `mix.${trackId}.comp.knee`, label: 'KNEE', min: 0, max: 40, step: 0.5,
-    value: initial.knee, defaultValue: 30, color, format: fmtDb,
-    onChange: (v) => strip.setCompState({ knee: v }),
-  });
-  addKnob(sec, deps, {
-    id: `mix.${trackId}.comp.mkup`, label: 'MKUP', min: 0, max: 4, step: 0.01,
-    value: initial.makeup, defaultValue: 1, color, format: (v) => `${v.toFixed(2)}×`,
-    onChange: (v) => strip.setCompState({ makeup: v }),
-  });
-
-  const byp = document.createElement('button');
-  byp.className = 'mix-btn comp-bypass';
-  byp.textContent = 'BYP';
-  byp.classList.toggle('active', initial.bypass);
-  byp.addEventListener('click', () => {
-    const next = !strip.getCompState().bypass;
-    strip.setCompState({ bypass: next });
-    byp.classList.toggle('active', next);
-  });
-  sec.appendChild(byp);
-
-  return sec;
-}
-
-function buildSidechainSection(
-  trackId: string,
-  strip: ChannelStrip,
-  deps: MixerColumnDeps,
-): HTMLElement {
-  const sec = document.createElement('div');
-  sec.className = 'mix-section mix-sidechain';
-  const lab = document.createElement('div');
-  lab.className = 'mix-sec-label';
-  lab.textContent = 'SC';
-  sec.appendChild(lab);
-
-  const color = '#e74c3c';
-  const current = (): SidechainState | null => strip.getSidechain();
-
-  const buildOptions = () => [
-    { value: '', label: 'off' },
-    ...deps.sidechainBus.listSources(trackId).map((s) => ({ value: s.id, label: s.label })),
-  ];
-
-  // SRC options are baked at construction. The session host rebuilds the
-  // mixer row on lane add/remove, so a live `bus.subscribe()` here would
-  // leak across rebuilds without changing user-visible behavior.
-
-  const knobs = document.createElement('div');
-  knobs.className = 'mix-sc-knobs';
-
-  const reflectSource = () => {
-    knobs.style.display = current()?.source ? '' : 'none';
-  };
-
-  const initialSrc = current()?.source ?? '';
-  const sel = createSelectControl({
-    id: `mix.${trackId}.sc.src`,
-    label: 'SRC',
-    options: buildOptions(),
-    initialValue: initialSrc,
-    onChange: (v) => {
-      const cur = current() ?? { ...DEFAULT_SIDECHAIN_STATE };
-      if (v === '') strip.setSidechain(deps.sidechainBus, null);
-      else          strip.setSidechain(deps.sidechainBus, { ...cur, source: v });
-      reflectSource();
-    },
-  });
-  sec.appendChild(sel.el);
-  deps.registerKnob(sel.handle);
-
-  addKnob(knobs, deps, {
-    id: `mix.${trackId}.sc.depth`, label: 'DEPTH', min: 0, max: 1, step: 0.01,
-    value: current()?.depth ?? 0.6, defaultValue: 0.6, color, format: fmtPct,
-    onChange: (v) => {
-      const cur = current(); if (!cur) return;
-      strip.setSidechain(deps.sidechainBus, { ...cur, depth: v });
-    },
-  });
-  addKnob(knobs, deps, {
-    id: `mix.${trackId}.sc.atk`, label: 'ATK', min: 0.001, max: 0.5, step: 0.001,
-    value: current()?.attack ?? 0.005, defaultValue: 0.005, color,
-    format: (v) => `${Math.round(v * 1000)}ms`,
-    onChange: (v) => {
-      const cur = current(); if (!cur) return;
-      strip.setSidechain(deps.sidechainBus, { ...cur, attack: v });
-    },
-  });
-  addKnob(knobs, deps, {
-    id: `mix.${trackId}.sc.rel`, label: 'REL', min: 0.005, max: 1, step: 0.005,
-    value: current()?.release ?? 0.25, defaultValue: 0.25, color,
-    format: (v) => v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed(2)}s`,
-    onChange: (v) => {
-      const cur = current(); if (!cur) return;
-      strip.setSidechain(deps.sidechainBus, { ...cur, release: v });
-    },
-  });
-  sec.appendChild(knobs);
-  reflectSource();
-
-  return sec;
 }

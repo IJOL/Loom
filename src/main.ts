@@ -233,7 +233,6 @@ const mixerDeps: import('./core/mixer').MixerColumnDeps = {
   soloState: soloState as unknown as Record<string, boolean>,
   applyMuteSolo,
   registerKnob,
-  sidechainBus,
   // Late-bound via getter: _discreteHistoryDeps is assigned after historyDeps
   // is built (further below), but mixer columns are built at user-interaction
   // time so the getter always sees the final value.
