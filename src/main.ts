@@ -30,7 +30,8 @@ import { SessionHost } from './session/session-host';
 import { fetchDemoSession } from './demo/demo-loader';
 import { importClassicToSession } from './session/session-migration';
 import { setupInitialPattern, type InitialPatternDeps } from './demo/initial-pattern';
-import { wireMidiImport } from './midi/midi-import';
+import { wireMidiImportUI } from './midi/midi-import-ui';
+import { launchScene as launchSceneRuntime } from './session/session-runtime';
 import { wireSaveManager, bootRecoveryLoad } from './save/save-wiring';
 import {
   wirePolyControls, wirePolyMode, applyPolyParams, applyPresetByName,
@@ -977,16 +978,62 @@ wireSlotCopyPanel({
 });
 wireCopyNotesPanel({ seq });
 
-// ── MIDI import wiring (see src/midi-import.ts) ───────────────────────────
-wireMidiImport({
-  seq,
-  muteState: muteState as Record<string, boolean>,
-  applyMuteSolo,
-  refreshLoopBtn,
-  refresh: () => sessionHost.renderWithMixer(),
+// ── MIDI import wiring (see src/midi/midi-import-ui.ts) ───────────────────
+// Launches a scene by id from outside the session host. Mirrors the host's
+// internal onLaunchScene handler: resume context, run launchScene runtime,
+// apply per-lane presets, ensure transport is running, re-render.
+function launchSceneById(sceneId: string): void {
+  const idx = sessionHost.state.scenes.findIndex((s) => s.id === sceneId);
+  if (idx < 0) return;
+  const scene = sessionHost.state.scenes[idx];
+  void ctx.resume();
+  // Ensure resources exist for any freshly-imported lanes BEFORE launch — the
+  // host's normal path runs this in applyLoadedSessionState; importer-added
+  // lanes bypass that, so do it here.
+  for (const lane of sessionHost.state.lanes) {
+    ensureLaneResource(lane.id, lane.engineId);
+  }
+  launchSceneRuntime(sessionHost.laneStates, sessionHost.state, scene, idx, ctx.currentTime, seq.bpm);
+  if (scene.presetPerLane) {
+    for (const [laneId, presetName] of Object.entries(scene.presetPerLane)) {
+      const inst = getLaneEngineInstance(laneId);
+      if (!inst) continue;
+      if (presetName.startsWith('factory:')) {
+        const bare = presetName.slice('factory:'.length);
+        const ps = (inst as { getPolySynth?(): PolySynth | null }).getPolySynth?.();
+        if (ps) applyPresetByName(ps, bare);
+      } else if (presetName.startsWith('engine:')) {
+        const bare = presetName.slice('engine:'.length);
+        const preset = inst.presets.find((p) => p.name === bare);
+        if (preset) {
+          for (const [pid, value] of Object.entries(preset.params)) {
+            (inst as unknown as { setBaseValue(id: string, v: number): void }).setBaseValue(pid, value);
+          }
+        }
+      }
+    }
+  }
+  if (!seq.isPlaying()) { resetAutomationPosition(); seq.start(); playBtn.textContent = '■'; }
+  sessionHost.renderWithMixer();
+}
+
+wireMidiImportUI({
+  session: sessionHost.state,
+  setBpm: (bpm: number) => {
+    seq.bpm = Math.max(40, Math.min(240, Math.round(bpm)));
+    bpmInput.value = String(seq.bpm);
+    fx.setBpmSync(seq.bpm);
+    filterChain.updateBpm(seq.bpm);
+    polysynth.bpm = seq.bpm;
+    for (const id of EXTRA_IDS) { const p = extraPolys[id]; if (p) p.bpm = seq.bpm; }
+    propagateBpmToLaneEngines(seq.bpm);
+  },
+  drumLaneId: LANE_ID_DRUMS,
+  audioContext: ctx,
+  auditionOutput: master,
+  onSessionChanged: () => sessionHost.renderWithMixer(),
+  launchScene: (sceneId: string) => launchSceneById(sceneId),
   flashButton,
-  ensureExtraPoly: ensureExtraPoly as (id: Parameters<typeof ensureExtraPoly>[0]) => PolySynth,
-  applyPresetByName,
 });
 
 wireRandomizeUI({
