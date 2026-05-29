@@ -29,8 +29,6 @@ export interface SessionUICallbacks {
   _mixerRow?: HTMLElement;
 }
 
-let currentState: SessionState | null = null;
-
 const COLOR_IDLE = '#2a2a2a';
 
 export function renderSessionGrid(
@@ -39,7 +37,6 @@ export function renderSessionGrid(
   laneStates: Map<string, LanePlayState>,
   cb: SessionUICallbacks,
 ): void {
-  currentState = state;
   host.innerHTML = '';
   host.classList.add('session-grid-root');
 
@@ -65,7 +62,7 @@ export function renderSessionGrid(
     rowLabel.className = 'session-row-label';
     rowLabel.textContent = String(r + 1);
     row.appendChild(rowLabel);
-    for (const lane of state.lanes) row.appendChild(clipCell(lane, r, laneStates, cb));
+    for (const lane of state.lanes) row.appendChild(clipCell(lane, r, laneStates, cb, state));
     row.appendChild(sceneLaunchCell(state.scenes[r], r, cb));
     table.appendChild(row);
   }
@@ -145,6 +142,7 @@ function clipCell(
   rowIdx: number,
   laneStates: Map<string, LanePlayState>,
   cb: SessionUICallbacks,
+  state: SessionState,
 ): HTMLElement {
   const clip: SessionClip | null = lane.clips[rowIdx] ?? null;
   const cell = document.createElement('div');
@@ -176,7 +174,7 @@ function clipCell(
       cb.onClipPlayPause(lane.id, rowIdx);
     });
     cell.appendChild(playIcon);
-    wireClipDrag(cell, { laneId: lane.id, clipIdx: rowIdx }, cb);
+    wireClipDrag(cell, { laneId: lane.id, clipIdx: rowIdx }, cb, state);
   } else {
     cell.classList.add('session-cell-empty');
     cell.addEventListener('click', () => cb.onCellClick(lane.id, rowIdx));
@@ -217,7 +215,7 @@ interface DragState {
 
 let activeDrag: DragState | null = null;
 
-function wireClipDrag(cell: HTMLElement, source: ClipSlot, cb: SessionUICallbacks): void {
+function wireClipDrag(cell: HTMLElement, source: ClipSlot, cb: SessionUICallbacks, state: SessionState): void {
   cell.classList.add('session-cell-draggable');
 
   cell.addEventListener('pointerdown', (e) => {
@@ -260,7 +258,7 @@ function wireClipDrag(cell: HTMLElement, source: ClipSlot, cb: SessionUICallback
     }
     positionGhost(activeDrag.ghost!, e.clientX, e.clientY);
     document.body.classList.toggle('drag-copy', e.ctrlKey);
-    updateHover(e.clientX, e.clientY, activeDrag.source, cb);
+    updateHover(e.clientX, e.clientY, activeDrag.source, state);
   });
 
   const finish = (e: PointerEvent) => {
@@ -322,22 +320,21 @@ function positionGhost(g: HTMLElement, x: number, y: number): void {
   g.style.top  = `${y - g.offsetHeight / 2}px`;
 }
 
-function updateHover(x: number, y: number, source: ClipSlot, cb: SessionUICallbacks): void {
+function updateHover(x: number, y: number, source: ClipSlot, state: SessionState): void {
   const el = document.elementFromPoint(x, y);
   const cell = el?.closest('.session-cell') as HTMLElement | null;
   if (activeDrag!.hoverCell && activeDrag!.hoverCell !== cell) {
     activeDrag!.hoverCell.classList.remove('drop-valid', 'drop-invalid');
   }
   activeDrag!.hoverCell = cell;
-  if (!cell || !currentState) return;
+  if (!cell) return;
   const to: ClipSlot = {
     laneId:  cell.dataset.laneId ?? '',
     clipIdx: Number(cell.dataset.clipIdx ?? -1),
   };
   if (!to.laneId || to.clipIdx < 0) return;
-  const ok = canDropClip(currentState, source, to);
+  const ok = canDropClip(state, source, to);
   cell.classList.toggle('drop-valid', ok);
   cell.classList.toggle('drop-invalid', !ok);
-  void cb;
 }
 
