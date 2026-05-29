@@ -8,11 +8,24 @@ import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
 import type { ModulatorVoice } from '../modulation/types';
 import { recordVoiceMods, getCurrentLaneForVoice } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
-import { bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
+import { bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
 import { ConnectionBinder } from '../modulation/connection-binder';
 import { wireEngineParams } from './engine-ui';
 
 const WAVE_OPTIONS = WAVETABLES.map((w, i) => ({ value: String(i), label: w.name }));
+
+/** Operating ranges for the shared modBus AudioParams (ConstantSourceNode.offset
+ *  summed into each per-voice AudioParam). Native units: Hz for cutoff, Q for
+ *  resonance, gain for amp — so depth=1 on a shared LFO produces the same
+ *  audible swing as on a per-voice LFO bound to the same destination. */
+function sharedParamRange(shortId: string): { min: number; max: number } {
+  switch (shortId) {
+    case 'filter.cutoff':    return { min: -4000, max: 4000 };
+    case 'filter.resonance': return { min: -10,   max: 10   };
+    case 'amp.gain':         return { min: 0,     max: 1    };
+    default:                 return { min: 0,     max: 1    };
+  }
+}
 
 const WT_PARAMS: EngineParamSpec[] = [
   { id: 'osc.waveA',        label: 'Wave A',    kind: 'discrete', min: 0, max: WAVE_OPTIONS.length - 1, default: 2, options: WAVE_OPTIONS },
@@ -51,6 +64,7 @@ class WavetableVoice implements Voice {
     private getWaveAIndex: () => number,
     private getWaveBIndex: () => number,
     private voiceMods: Map<string, ModulatorVoice>,
+    modBus?: Record<string, ConstantSourceNode>,
   ) {
     this.oscA = ctx.createOscillator();
     this.oscB = ctx.createOscillator();
@@ -59,6 +73,15 @@ class WavetableVoice implements Voice {
     this.filter = ctx.createBiquadFilter();
     this.filter.type = 'lowpass';
     this.ampGain = ctx.createGain();
+
+    // Wire the engine-wide shared modulation bus → this voice's filter/amp
+    // AudioParams. Shared-scope LFOs write to modBus[*].offset and the
+    // contribution fans out here via Web Audio summing.
+    if (modBus) {
+      modBus['filter.cutoff'].connect(this.filter.frequency);
+      modBus['filter.resonance'].connect(this.filter.Q);
+      modBus['amp.gain'].connect(this.ampGain.gain);
+    }
 
     // Internal envelope sources — modulators sum on top of these via the
     // destination AudioParams (ampGain.gain, filter.frequency).
@@ -264,6 +287,17 @@ export class WavetableEngine implements SynthEngine {
   private waveAIndex = 2; // Sawtooth
   private waveBIndex = 3; // Square
 
+  /** Engine-wide shared modulation bus. ConstantSourceNodes whose .offset is
+   *  driven by scope='shared' modulators (via bindEngineModulators) and whose
+   *  output fans out to every voice's matching AudioParam in the constructor.
+   *  Lazy-init in createVoice because we need the AudioContext. */
+  readonly modBus?: Record<string, ConstantSourceNode>;
+
+  /** Cached engine-wide modulator voices for scope='shared' mods. Spawned
+   *  once on the first createVoice call and reused for every subsequent voice
+   *  so shared LFOs/ADSRs share phase + state across notes. */
+  private engineModVoices: Map<string, import('../modulation/types').ModulatorVoice> | null = null;
+
   /** Tempo for LFO BPM sync. main.ts can update this at runtime. */
   bpm = 120;
 
@@ -324,7 +358,48 @@ export class WavetableEngine implements SynthEngine {
     if (this.waves.length === 0) {
       this.waves = createPeriodicWaves(ctx);
     }
-    const voiceMods = this.modHost.spawnVoice(ctx, () => this.bpm);
+    // Lazy-init the shared modulation bus on the first createVoice call.
+    if (!this.modBus) {
+      const mk = () => {
+        const n = ctx.createConstantSource();
+        n.offset.value = 0;
+        n.start();
+        return n;
+      };
+      (this as { modBus: Record<string, ConstantSourceNode> }).modBus = {
+        'filter.cutoff':    mk(),
+        'filter.resonance': mk(),
+        'amp.gain':         mk(),
+      };
+    }
+    // 1. Lazy-init engine-wide modulator voices for SHARED mods and bind
+    //    them ONCE to the modulation bus AudioParams. The shared modBus
+    //    offsets are summed into per-voice AudioParams in their native
+    //    units (Hz for cutoff, Q for resonance, gain for amp), so we
+    //    use sharedParamRange here — depth=1 on a shared LFO must produce
+    //    the same swing magnitude as on a per-voice LFO bound to the same
+    //    destination.
+    if (!this.engineModVoices) {
+      this.engineModVoices = this.modHost.spawnVoiceFiltered(
+        ctx, () => this.bpm,
+        (m) => (m.scope ?? (m.kind === 'lfo' ? 'shared' : 'per-voice')) === 'shared',
+      );
+      const sharedLaneId = getCurrentLaneForVoice();
+      if (sharedLaneId) {
+        bindEngineModulators({
+          laneId: sharedLaneId,
+          engine: this,
+          voiceMods: this.engineModVoices,
+          ctx,
+          rangeLookup: (shortId) => sharedParamRange(shortId),
+        });
+      }
+    }
+    // 2. Per-voice modulators: spawn per call for this note.
+    const voiceMods = this.modHost.spawnVoiceFiltered(
+      ctx, () => this.bpm,
+      (m) => (m.scope ?? (m.kind === 'lfo' ? 'shared' : 'per-voice')) === 'per-voice',
+    );
     const voice = new WavetableVoice(
       ctx,
       output,
@@ -333,15 +408,32 @@ export class WavetableEngine implements SynthEngine {
       () => this.waveAIndex,
       () => this.waveBIndex,
       voiceMods,
+      this.modBus,
     );
     recordVoiceMods(voiceMods);
     const laneId = getCurrentLaneForVoice();
     if (laneId) {
       voice.laneId = laneId;
-      voice.binder = bindVoiceModulators({ laneId, engine: this, voice, voiceMods, ctx });
+      // Merge engine-shared mods into the per-voice binding map so a
+      // scope='shared' LFO targeting a per-voice-only param still gets a
+      // gain bridge. The voice-mod-binder skips shared-bus paramIds for
+      // shared-scope mods (see excludeSharedForSharedScope) so we don't
+      // double-route those — they're already on the bus.
+      const engineMods = this.engineModVoices ?? new Map();
+      const combinedMods = new Map<string, ModulatorVoice>([...engineMods, ...voiceMods]);
+      voice.binder = bindVoiceModulators({ laneId, engine: this, voice, voiceMods: combinedMods, ctx });
       this.currentLaneId = laneId;
     }
     return voice;
+  }
+
+  getSharedAudioParams(_ctx?: AudioContext): Map<string, AudioParam> {
+    if (!this.modBus) return new Map();
+    return new Map<string, AudioParam>([
+      ['filter.cutoff',    this.modBus['filter.cutoff'].offset],
+      ['filter.resonance', this.modBus['filter.resonance'].offset],
+      ['amp.gain',         this.modBus['amp.gain'].offset],
+    ]);
   }
 
   buildSequencer(_container: HTMLElement, _stepCount: number): EngineSequencer {
