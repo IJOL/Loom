@@ -10,12 +10,14 @@ import { createPianoRoll, type PianoRollHandle } from '../../core/pianoroll';
 import { TICKS_PER_STEP, type NoteEvent } from '../../core/notes';
 import { getEngine } from '../../engines/registry';
 import { renderDrumGridEditor } from './clip-editor-drum-grid';
+import type { HistoryDeps } from '../../save/history-wiring';
 
 export interface ClipEditorDeps {
   ctx: AudioContext;
   seq: Sequencer;
   laneStates: Map<string, LanePlayState>;
   midiLabel: (m: number) => string;
+  historyDeps?: HistoryDeps;
 }
 
 export function renderClipEditor(
@@ -30,7 +32,7 @@ export function renderClipEditor(
   const editor = override ?? engine?.editor ?? 'piano-roll';
 
   if (editor === 'drum-grid') {
-    renderDrumGridEditor(host, clip);
+    renderDrumGridEditor(host, clip, deps.historyDeps);
     return null;
   }
   return buildPianoRoll(host, lane, clip, deps);

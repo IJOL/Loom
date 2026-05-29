@@ -3,6 +3,7 @@ import { TICKS_PER_STEP, type NoteEvent } from './notes';
 import type { Sequencer } from './sequencer';
 import type { TB303 } from './synth';
 import type { PianoRollHandle } from './pianoroll';
+import { withUndo, type HistoryDeps } from '../save/history-wiring';
 
 // ── Per-lane randomize helpers ────────────────────────────────────────────
 
@@ -21,6 +22,7 @@ export interface RandomizeUIDeps {
   rebuildPolyTrack: () => void;
   /** Returns the currently-active engine lane id (e.g. 'main', 'poly1'). */
   getActiveEngineLaneId: () => string;
+  historyDeps: HistoryDeps;
 }
 
 function currentRandomBase(deps: RandomizeUIDeps): RandomizeOptions {
@@ -108,10 +110,18 @@ function randomizePolyLaneNotes(deps: RandomizeUIDeps, laneId: string): void {
 export function wireRandomizeUI(deps: RandomizeUIDeps): void {
   const $btn = (id: string) => document.getElementById(id) as HTMLButtonElement | null;
 
-  $btn('bass-random-sound')?.addEventListener('click', () => randomizeBassSound(deps));
-  $btn('bass-random-notes')?.addEventListener('click', () => randomizeBassNotes(deps));
-  $btn('drums-random')?.addEventListener('click', () => randomizeDrumsLane(deps));
-  $btn('poly-random-notes')?.addEventListener('click', () =>
-    randomizePolyLaneNotes(deps, deps.getActiveEngineLaneId()),
-  );
+  $btn('bass-random-sound')?.addEventListener('click', () => {
+    withUndo(deps.historyDeps, () => randomizeBassSound(deps));
+  });
+  $btn('bass-random-notes')?.addEventListener('click', () => {
+    withUndo(deps.historyDeps, () => randomizeBassNotes(deps));
+  });
+  $btn('drums-random')?.addEventListener('click', () => {
+    withUndo(deps.historyDeps, () => randomizeDrumsLane(deps));
+  });
+  $btn('poly-random-notes')?.addEventListener('click', () => {
+    withUndo(deps.historyDeps, () =>
+      randomizePolyLaneNotes(deps, deps.getActiveEngineLaneId()),
+    );
+  });
 }

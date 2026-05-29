@@ -8,6 +8,7 @@ import type { Sequencer } from '../core/sequencer';
 import { renderClipEditor, type ClipEditorDeps } from './clip-editors/clip-editor-router';
 import { renderClipAutomationLanes } from './clip-automation-lanes';
 import type { PianoRollHandle } from '../core/pianoroll';
+import type { HistoryDeps } from '../save/history-wiring';
 
 export interface InspectorDeps {
   ctx: AudioContext;
@@ -18,6 +19,7 @@ export interface InspectorDeps {
   midiLabel: (m: number) => string;
   automationRegistry: Map<string, import('../core/knob').KnobHandle>;
   getAutoAbsSubIdx: () => number;
+  historyDeps?: HistoryDeps;
 }
 
 export class SessionInspector {
@@ -25,6 +27,13 @@ export class SessionInspector {
   private selectedClip: { laneId: string; clipIdx: number } | null = null;
 
   constructor(private deps: InspectorDeps) {}
+
+  /** Called after historyDeps is available (it may be constructed after the
+   *  inspector is initialised, because the save-wiring deps close over
+   *  sessionHost itself). */
+  setHistoryDeps(hd: HistoryDeps): void {
+    this.deps = { ...this.deps, historyDeps: hd };
+  }
 
   getSelectedClip(): { laneId: string; clipIdx: number } | null {
     return this.selectedClip;
@@ -114,6 +123,7 @@ export class SessionInspector {
       seq: this.deps.seq,
       laneStates: this.deps.laneStates,
       midiLabel: this.deps.midiLabel,
+      historyDeps: this.deps.historyDeps,
     };
     this.roll = renderClipEditor(editorBox, lane, clip, editorDeps, editorOverride.get(clip.id));
 

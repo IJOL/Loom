@@ -8,13 +8,14 @@ import type { SessionClip } from '../session';
 import type { NoteEvent } from '../../core/notes';
 import { TICKS_PER_STEP } from '../../core/notes';
 import { GM_DRUM_MAP, VOICE_MIDI } from '../../engines/drum-gm-map';
+import { withUndo, type HistoryDeps } from '../../save/history-wiring';
 
 const LANE_LABELS: Record<DrumVoice, string> = {
   kick: 'KICK', snare: 'SNARE', closedHat: 'CH', openHat: 'OH',
   clap: 'CLAP', cowbell: 'COWBL', tom: 'TOM', ride: 'RIDE',
 };
 
-export function renderDrumGridEditor(host: HTMLElement, clip: SessionClip): void {
+export function renderDrumGridEditor(host: HTMLElement, clip: SessionClip, historyDeps?: HistoryDeps): void {
   host.innerHTML = '';
   const steps = clip.lengthBars * 16;
   if (!clip.notes) clip.notes = [];
@@ -24,12 +25,12 @@ export function renderDrumGridEditor(host: HTMLElement, clip: SessionClip): void
   container.style.setProperty('--steps', String(steps));
 
   for (const voice of DRUM_LANES) {
-    container.appendChild(buildVoiceRow(clip, voice, steps));
+    container.appendChild(buildVoiceRow(clip, voice, steps, historyDeps));
   }
   host.appendChild(container);
 }
 
-function buildVoiceRow(clip: SessionClip, voice: DrumVoice, totalSteps: number): HTMLElement {
+function buildVoiceRow(clip: SessionClip, voice: DrumVoice, totalSteps: number, historyDeps?: HistoryDeps): HTMLElement {
   const row = document.createElement('div');
   row.className = `track drum-track ${voice}`;
 
@@ -43,13 +44,13 @@ function buildVoiceRow(clip: SessionClip, voice: DrumVoice, totalSteps: number):
   cells.style.setProperty('--steps', String(totalSteps));
 
   for (let i = 0; i < totalSteps; i++) {
-    cells.appendChild(buildCell(clip, voice, i));
+    cells.appendChild(buildCell(clip, voice, i, historyDeps));
   }
   row.appendChild(cells);
   return row;
 }
 
-function buildCell(clip: SessionClip, voice: DrumVoice, stepIdx: number): HTMLElement {
+function buildCell(clip: SessionClip, voice: DrumVoice, stepIdx: number, historyDeps?: HistoryDeps): HTMLElement {
   const btn = document.createElement('button');
   btn.className = `dcell ${voice}`;
   if (stepIdx % 16 === 0 && stepIdx > 0) btn.classList.add('seg-start');
@@ -59,21 +60,28 @@ function buildCell(clip: SessionClip, voice: DrumVoice, stepIdx: number): HTMLEl
   btn.title = 'Click: off → on → accent → off   |   Shift+click: cycle roll ×1 → ×2 → ×3 → ×4';
 
   btn.addEventListener('click', (e) => {
-    if (e.shiftKey) {
-      cycleRoll(clip, voice, stepIdx);
-    } else {
-      const existing = firstNoteInStep(clip, voice, stepIdx);
-      if (!existing) {
-        addHit(clip, voice, stepIdx, false, 1);
-      } else if (existing.velocity < 100) {
-        // Promote all hits in this step to accent (preserving roll factor).
-        const cur = currentRoll(clip, voice, stepIdx);
-        addHit(clip, voice, stepIdx, true, cur);
+    const mutate = () => {
+      if (e.shiftKey) {
+        cycleRoll(clip, voice, stepIdx);
       } else {
-        removeAllHitsInStep(clip, voice, stepIdx);
+        const existing = firstNoteInStep(clip, voice, stepIdx);
+        if (!existing) {
+          addHit(clip, voice, stepIdx, false, 1);
+        } else if (existing.velocity < 100) {
+          // Promote all hits in this step to accent (preserving roll factor).
+          const cur = currentRoll(clip, voice, stepIdx);
+          addHit(clip, voice, stepIdx, true, cur);
+        } else {
+          removeAllHitsInStep(clip, voice, stepIdx);
+        }
       }
+      refreshCellVisual(btn, clip, voice, stepIdx);
+    };
+    if (historyDeps) {
+      withUndo(historyDeps, mutate);
+    } else {
+      mutate();
     }
-    refreshCellVisual(btn, clip, voice, stepIdx);
   });
   return btn;
 }

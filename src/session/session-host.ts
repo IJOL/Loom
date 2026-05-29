@@ -83,6 +83,9 @@ export interface SessionHostDeps {
    *  scene.presetPerLane entry. Optional so test fixtures without audio
    *  can skip it. */
   applyPresetForLane?: (laneId: string, presetName: string) => void;
+  /** Optional: when provided, cell-level edits in clip editors are wrapped
+   *  with withUndo so each step toggle becomes an undoable entry. */
+  historyDeps?: import('../save/history-wiring').HistoryDeps;
 }
 
 export class SessionHost {
@@ -94,6 +97,13 @@ export class SessionHost {
 
   // Expose inspector roll for the automation tick in main.ts
   get inspectorRoll() { return this.inspector?.roll ?? null; }
+
+  /** Wire historyDeps into the inspector after construction.
+   *  historyDeps closes over saveWiringDeps which closes over sessionHost,
+   *  so it can only be built after sessionHost.init() returns. */
+  setHistoryDeps(hd: import('../save/history-wiring').HistoryDeps): void {
+    this.inspector?.setHistoryDeps(hd);
+  }
 
   constructor(public readonly deps: SessionHostDeps) {}
 
@@ -107,6 +117,7 @@ export class SessionHost {
       midiLabel: this.deps.midiLabel,
       automationRegistry: this.deps.automationRegistry,
       getAutoAbsSubIdx: this.deps.getAutoAbsSubIdx,
+      historyDeps: this.deps.historyDeps,
     });
 
     this.deps.seq.sessionTick = (now, look) => {

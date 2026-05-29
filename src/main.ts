@@ -1016,13 +1016,6 @@ wireMidiImportUI({
   flashButton,
 });
 
-wireRandomizeUI({
-  seq, synth, scaleSel, rootSel,
-  getBassRollEntry: () => null,
-  refreshKnobsFromSynth,
-  rebuildPolyTrack: () => { /* Classic-only — Session re-renders via sessionHost */ },
-  getActiveEngineLaneId: () => _lehState.activeLaneId,
-});
 const automationTickDeps: AutomationTickDeps = {
   seq,
   automationRegistry,
@@ -1095,6 +1088,20 @@ const historyDeps: HistoryDeps = {
   restore: (s) => applyLoadedStateV3(s, savedStateDeps),
 };
 wireHistoryKeyboard(historyDeps);
+// Wire historyDeps into the session inspector so drum-grid cell clicks are
+// undoable. Must happen after historyDeps is built (it closes over sessionHost
+// via savedStateDeps → saveWiringDeps).
+sessionHost.setHistoryDeps(historyDeps);
+// wireRandomizeUI is here (not at its original boot position) because it needs
+// historyDeps, which closes over saveWiringDeps, which closes over sessionHost.
+wireRandomizeUI({
+  seq, synth, scaleSel, rootSel,
+  getBassRollEntry: () => null,
+  refreshKnobsFromSynth,
+  rebuildPolyTrack: () => { /* Classic-only — Session re-renders via sessionHost */ },
+  getActiveEngineLaneId: () => _lehState.activeLaneId,
+  historyDeps,
+});
 wireSaveManager(saveWiringDeps);
 bootRecoveryLoad(saveWiringDeps);
 
