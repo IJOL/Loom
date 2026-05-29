@@ -36,6 +36,29 @@ h1 {
   margin-bottom: 12px;
 }
 
+.transport-readout {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  line-height: 1.1;
+  padding: 2px 8px;
+  border-left: 1px solid var(--border);
+  margin-left: 4px;
+
+  .transport-position {
+    color: var(--text);
+    font-size: 12px;
+    letter-spacing: 0.5px;
+  }
+  .transport-time {
+    color: var(--text-dim);
+    font-size: 10px;
+    letter-spacing: 0.5px;
+  }
+}
+
 label {
   font-size: 11px;
   color: var(--text-dim);

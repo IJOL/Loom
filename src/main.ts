@@ -943,6 +943,15 @@ const transportDeps: TransportDeps = {
   updateBassModeButtons,
 };
 wireTransport(transportDeps);
+{
+  const positionEl = document.getElementById('transport-position');
+  const timeEl     = document.getElementById('transport-time');
+  if (positionEl && timeEl) {
+    void import('./core/transport-display').then(({ wireTransportDisplay }) => {
+      wireTransportDisplay({ seq, ctx, positionEl, timeEl });
+    });
+  }
+}
 wireAutomationTab(automationDeps);
 wirePresetLibrary({ seq });
 wirePolyControls(polySynthPresetsDeps);
