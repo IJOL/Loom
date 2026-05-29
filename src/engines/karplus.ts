@@ -16,7 +16,7 @@ import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR, type ModulatorVoice } from '../modulation/types';
 import { recordVoiceMods, getCurrentLaneForVoice } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
-import { bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
+import { bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
 import { ConnectionBinder } from '../modulation/connection-binder';
 import { wireEngineParams } from './engine-ui';
 
@@ -56,6 +56,7 @@ class KarplusVoice implements Voice {
     output: AudioNode,
     private getParam: (id: string) => number,
     private voiceMods: Map<string, ModulatorVoice>,
+    modBus?: Record<string, ConstantSourceNode>,
   ) {
     // Pre-generate a small burst of white noise; voice trims start/stop later.
     const burst = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
@@ -87,6 +88,15 @@ class KarplusVoice implements Voice {
     this.envAmp.offset.value = 0;
     this.envAmp.start();
     this.envAmp.connect(this.amp.gain);
+
+    // Shared modulation bus fan-out: scope='shared' modulators write to
+    // modBus[*].offset, and each voice sums those constants into its own
+    // AudioParams. Karplus only shares the output amp gain — the per-voice
+    // loop filter / noise filter stay per-voice because they depend on note
+    // freq at trigger time.
+    if (modBus) {
+      modBus['amp.level'].connect(this.amp.gain);
+    }
 
     // Excitation path: noise → noiseGain → noiseFilter → delay input
     this.noise.connect(this.noiseGain).connect(this.noiseFilter).connect(this.delay);
@@ -242,6 +252,19 @@ export class KarplusEngine implements SynthEngine {
   /** Tempo for LFO BPM sync. main.ts can update this at runtime. */
   bpm = 120;
 
+  /** Engine-wide shared modulation bus. ConstantSourceNodes whose .offset is
+   *  driven by scope='shared' modulators (via bindEngineModulators) and whose
+   *  output fans out to every voice's matching AudioParam in the constructor.
+   *  Lazy-init in createVoice because we need the AudioContext.
+   *  Karplus only shares the output amp gain — the loop/excite filters are
+   *  per-voice (their cutoff is freq-dependent at trigger time). */
+  readonly modBus?: Record<string, ConstantSourceNode>;
+
+  /** Cached engine-wide modulator voices for scope='shared' mods. Spawned
+   *  once on the first createVoice call and reused for every subsequent voice
+   *  so shared LFOs/ADSRs share phase + state across notes. */
+  private engineModVoices: Map<string, ModulatorVoice> | null = null;
+
   private modHost = new ModulationHostImpl([
     makeDefaultLFO('lfo1'),
     makeDefaultADSR('adsr1'),
@@ -275,16 +298,61 @@ export class KarplusEngine implements SynthEngine {
   private currentLaneId: string | null = null;
 
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
-    const voiceMods = this.modHost.spawnVoice(ctx, () => this.bpm);
-    const voice = new KarplusVoice(ctx, output, (id) => this.getBaseValue(id), voiceMods);
+    // Lazy-init the shared modulation bus on the first createVoice call.
+    if (!this.modBus) {
+      const n = ctx.createConstantSource();
+      n.offset.value = 0;
+      n.start();
+      (this as { modBus: Record<string, ConstantSourceNode> }).modBus = {
+        'amp.level': n,
+      };
+    }
+    // 1. Lazy-init engine-wide modulator voices for SHARED mods and bind
+    //    them ONCE to the modulation bus AudioParams. The amp.level paramId
+    //    is a 0..1 gain in both the spec and the AudioParam, so the default
+    //    rangeLookup (from engine.params) is correct — no override needed.
+    if (!this.engineModVoices) {
+      this.engineModVoices = this.modHost.spawnVoiceFiltered(
+        ctx, () => this.bpm,
+        (m) => (m.scope ?? (m.kind === 'lfo' ? 'shared' : 'per-voice')) === 'shared',
+      );
+      const sharedLaneId = getCurrentLaneForVoice();
+      if (sharedLaneId) {
+        bindEngineModulators({
+          laneId: sharedLaneId,
+          engine: this,
+          voiceMods: this.engineModVoices,
+          ctx,
+        });
+      }
+    }
+    // 2. Per-voice modulators: spawn per call for this note.
+    const voiceMods = this.modHost.spawnVoiceFiltered(
+      ctx, () => this.bpm,
+      (m) => (m.scope ?? (m.kind === 'lfo' ? 'shared' : 'per-voice')) === 'per-voice',
+    );
+    const voice = new KarplusVoice(ctx, output, (id) => this.getBaseValue(id), voiceMods, this.modBus);
     recordVoiceMods(voiceMods);
     const laneId = getCurrentLaneForVoice();
     if (laneId) {
       voice.laneId = laneId;
-      voice.binder = bindVoiceModulators({ laneId, engine: this, voice, voiceMods, ctx });
+      // Merge engine-shared mods into the per-voice binding map so a
+      // scope='shared' LFO targeting a per-voice-only param still gets a
+      // gain bridge. The voice-mod-binder skips shared-bus paramIds for
+      // shared-scope mods so we don't double-route.
+      const engineMods = this.engineModVoices ?? new Map<string, ModulatorVoice>();
+      const combinedMods = new Map<string, ModulatorVoice>([...engineMods, ...voiceMods]);
+      voice.binder = bindVoiceModulators({ laneId, engine: this, voice, voiceMods: combinedMods, ctx });
       this.currentLaneId = laneId;
     }
     return voice;
+  }
+
+  getSharedAudioParams(_ctx?: AudioContext): Map<string, AudioParam> {
+    if (!this.modBus) return new Map();
+    return new Map<string, AudioParam>([
+      ['amp.level', this.modBus['amp.level'].offset],
+    ]);
   }
 
   buildSequencer(_c: HTMLElement, _n: number): EngineSequencer {
