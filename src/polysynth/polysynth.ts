@@ -86,7 +86,17 @@ export class PolySynth {
    *  AudioParam in internalTrigger, so the modulation fans out to every
    *  playing voice via Web Audio summing. */
   readonly modBus: Record<string, ConstantSourceNode>;
+  maxVoices = 8;
+  private active: Array<{ allocatedAt: number; stop: (time: number) => void }> = [];
   private noiseBuffer: AudioBuffer;
+
+  setMaxVoices(n: number): void {
+    this.maxVoices = Math.max(1, Math.min(16, Math.floor(n)));
+  }
+
+  activeVoiceCount(): number {
+    return this.active.length;
+  }
 
   constructor(private ctx: AudioContext, private destination: AudioNode) {
     this.params = JSON.parse(JSON.stringify(POLY_DEFAULTS)) as PolySynthParams;
@@ -127,6 +137,14 @@ export class PolySynth {
   ) {
     const ctx = this.ctx;
     const p = this.params;
+    // Voice stealing: if we're at the cap, stop the oldest active voice
+    // immediately so the new note can take its slot. shift() removes the
+    // oldest entry from `this.active` synchronously; oldest.stop(time) starts
+    // a release ramp so the stolen voice fades out without a click.
+    while (this.active.length >= this.maxVoices) {
+      const oldest = this.active.shift();
+      if (oldest) oldest.stop(time);
+    }
     // Base note frequency excludes master.tune — that's applied as a
     // modulatable detune offset (cents) on each oscillator below, so
     // realtime LFO/ADSR on master.tune actually bends pitch.
@@ -273,6 +291,16 @@ export class PolySynth {
       envAmp.offset.linearRampToValueAtTime(0, releaseTime + 0.005);
     };
 
+    // Register this voice with the central allocator for voice-stealing.
+    // Removed synchronously by the stealing loop above (shift()) when a new
+    // trigger steals this slot, or by osc1.onended below when the natural
+    // release tail finishes.
+    const entry = {
+      allocatedAt: time,
+      stop: (t: number) => releaseGate(t),
+    };
+    this.active.push(entry);
+
     // Modulation host bind point: expose per-voice AudioParams BEFORE the
     // hardcoded envelope ramps are scheduled. External ADSR/LFO outputs sum
     // into these params via Web Audio's per-AudioParam summing.
@@ -331,6 +359,14 @@ export class PolySynth {
     osc1.stop(stopTime); osc2.stop(stopTime); sub.stop(stopTime); noise.stop(stopTime);
     envAmp.stop(stopTime); envCutoffNorm.stop(stopTime);
     tune.stop(stopTime); baseCutoffSrc.stop(stopTime); keyTrackSrc.stop(stopTime);
+
+    // When the voice's natural lifetime ends, drop it from the active list so
+    // the slot is available for new notes. If this voice was already stolen
+    // (shift()ed out of `active`), indexOf returns -1 and the splice is a no-op.
+    osc1.onended = () => {
+      const idx = this.active.indexOf(entry);
+      if (idx >= 0) this.active.splice(idx, 1);
+    };
   }
 }
 
