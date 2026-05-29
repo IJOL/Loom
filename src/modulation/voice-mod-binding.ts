@@ -62,8 +62,13 @@ function applyBinder(
   voiceMods: Map<string, ModulatorVoice>,
   shortParams: Map<string, AudioParam>,
   rangeLookup: (shortId: string) => ParamRange,
-  _scope: 'shared' | 'per-voice',
+  scope: 'shared' | 'per-voice',
   ctx: AudioContext,
+  /** Per-voice binder only: paramIds (short + lane-prefixed) that the engine
+   *  binder already handles via the shared modulation bus. Shared-scope mods
+   *  with connections to these params must be skipped here to avoid double
+   *  routing (engine binder → modBus fan-out AND voice binder → voice param). */
+  excludeSharedForSharedScope?: Set<string>,
 ): void {
   const destMap = new Map<string, AudioParam>();
   const rangeMap = new Map<string, ParamRange>();
@@ -80,7 +85,25 @@ function applyBinder(
   // mod whose id isn't in voiceMods. This also lets a shared-scope LFO bind
   // to a per-voice param when the SubtractiveEngine merges engineModVoices
   // into the per-voice binder's voiceMods.
-  binder.apply(voiceMods, engine.modulators.modulators, destMap, rangeMap, ctx);
+  let mods = engine.modulators.modulators;
+  if (scope === 'per-voice' && excludeSharedForSharedScope && excludeSharedForSharedScope.size > 0) {
+    // For shared-scope modulators iterated by the per-voice binder, strip any
+    // connections whose paramId is on the shared bus — the engine binder has
+    // already bound those via modBus fan-out, so re-binding here would
+    // double-modulate the latest voice. Per-voice scope mods keep all
+    // connections (their only routing path is the voice binder).
+    mods = mods.map((m) => {
+      const modScope = m.scope ?? (m.kind === 'lfo' ? 'shared' : 'per-voice');
+      if (modScope !== 'shared') return m;
+      const filtered = m.connections.filter((c) => {
+        const short = c.paramId.startsWith(`${laneId}.`) ? c.paramId.slice(laneId.length + 1) : c.paramId;
+        return !excludeSharedForSharedScope.has(short) && !excludeSharedForSharedScope.has(c.paramId);
+      });
+      if (filtered.length === m.connections.length) return m;
+      return { ...m, connections: filtered };
+    });
+  }
+  binder.apply(voiceMods, mods, destMap, rangeMap, ctx);
 }
 
 function rangeLookupForVoice(engine: SynthEngine, voice: Voice): (id: string) => ParamRange {
@@ -128,12 +151,22 @@ export function bindVoiceModulators(opts: BindVoiceModulatorsOpts): ConnectionBi
   if (lb.voiceBinding) lb.voiceBinding.binder.disposeAll();
 
   const binder = new ConnectionBinder();
+  // Build the set of shared-bus paramIds. The engine binder already wires
+  // scope='shared' mods to these via modBus fan-out. When the engine merges
+  // engineModVoices into the per-voice voiceMods map (so a shared LFO can
+  // reach per-voice-only params), we must NOT also bind those same shared
+  // mods' shared-bus connections here — that would produce double routing
+  // on the latest voice.
+  const sharedKeys = new Set<string>();
+  const sharedParams = opts.engine.getSharedAudioParams?.(opts.ctx);
+  if (sharedParams) for (const k of sharedParams.keys()) sharedKeys.add(k);
   applyBinder(
     binder, opts.laneId, opts.engine, opts.voiceMods,
     opts.voice.getAudioParams(),
     rangeLookupForVoice(opts.engine, opts.voice),
     'per-voice',
     opts.ctx,
+    sharedKeys,
   );
   lb.voiceBinding = { binder, voice: opts.voice, voiceMods: opts.voiceMods };
   return binder;
@@ -151,11 +184,15 @@ export function reapplyLaneModulations(laneId: string): void {
     );
   }
   if (lb.voiceBinding) {
+    const sharedKeys = new Set<string>();
+    const sharedParams = lb.engineRef.getSharedAudioParams?.(lb.ctx);
+    if (sharedParams) for (const k of sharedParams.keys()) sharedKeys.add(k);
     applyBinder(
       lb.voiceBinding.binder, lb.laneId, lb.engineRef, lb.voiceBinding.voiceMods,
       lb.voiceBinding.voice.getAudioParams(),
       rangeLookupForVoice(lb.engineRef, lb.voiceBinding.voice),
       'per-voice', lb.ctx,
+      sharedKeys,
     );
   }
 }
