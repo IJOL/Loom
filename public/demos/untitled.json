@@ -1,13 +1,13 @@
 {
   "lanes": [
     {
-      "id": "lane-mpr0lnf5-2",
+      "id": "lane-mpr2awpz-2",
       "engineId": "tb303",
-      "name": "Synth Pluck",
+      "name": "LEAD Sub Lead",
       "clips": [
         {
-          "id": "clip-mpr0lnf5-1",
-          "name": "Synth Pluck",
+          "id": "clip-mpr2awpz-1",
+          "name": "LEAD Sub Lead",
           "lengthBars": 32,
           "notes": [
             {
@@ -424,13 +424,13 @@
       "enginePresetName": "factory:LEAD Sub Lead"
     },
     {
-      "id": "lane-mpr0lnf5-4",
+      "id": "lane-mpr2awpz-4",
       "engineId": "karplus",
-      "name": "Jazz Guitar",
+      "name": "GTR Jazz Hollowbody",
       "clips": [
         {
-          "id": "clip-mpr0lnf5-3",
-          "name": "Jazz Guitar",
+          "id": "clip-mpr2awpz-3",
+          "name": "GTR Jazz Hollowbody",
           "lengthBars": 32,
           "notes": [
             {
@@ -1855,13 +1855,13 @@
       "enginePresetName": "factory:GTR Jazz Hollowbody"
     },
     {
-      "id": "lane-mpr0lnf5-6",
+      "id": "lane-mpr2awpz-6",
       "engineId": "karplus",
-      "name": "Concert Harp",
+      "name": "HARP Orchestral Concert",
       "clips": [
         {
-          "id": "clip-mpr0lnf5-5",
-          "name": "Concert Harp",
+          "id": "clip-mpr2awpz-5",
+          "name": "HARP Orchestral Concert",
           "lengthBars": 32,
           "notes": [
             {
@@ -2164,13 +2164,13 @@
       "enginePresetName": "factory:HARP Orchestral Concert"
     },
     {
-      "id": "lane-mpr0lnf5-8",
+      "id": "lane-mpr2awpz-8",
       "engineId": "karplus",
-      "name": "Pizzicato",
+      "name": "PLUCK Pizzicato Strings",
       "clips": [
         {
-          "id": "clip-mpr0lnf5-7",
-          "name": "Pizzicato",
+          "id": "clip-mpr2awpz-7",
+          "name": "PLUCK Pizzicato Strings",
           "lengthBars": 32,
           "notes": [
             {
@@ -2473,13 +2473,13 @@
       "enginePresetName": "factory:PLUCK Pizzicato Strings"
     },
     {
-      "id": "lane-mpr0lnf5-a",
+      "id": "lane-mpr2awpz-a",
       "engineId": "fm",
-      "name": "Xylophone",
+      "name": "KEY Marimba",
       "clips": [
         {
-          "id": "clip-mpr0lnf5-9",
-          "name": "Xylophone",
+          "id": "clip-mpr2awpz-9",
+          "name": "KEY Marimba",
           "lengthBars": 32,
           "notes": [
             {
@@ -3160,13 +3160,13 @@
       "enginePresetName": "factory:KEY Marimba"
     },
     {
-      "id": "lane-mpr0lnf5-c",
+      "id": "lane-mpr2awpz-c",
       "engineId": "karplus",
-      "name": "Muted E-Guitar",
+      "name": "GTR Muted Palm",
       "clips": [
         {
-          "id": "clip-mpr0lnf5-b",
-          "name": "Muted E-Guitar",
+          "id": "clip-mpr2awpz-b",
+          "name": "GTR Muted Palm",
           "lengthBars": 32,
           "notes": [
             {
@@ -3211,13 +3211,13 @@
       "enginePresetName": "factory:GTR Muted Palm"
     },
     {
-      "id": "lane-mpr0lnf5-e",
+      "id": "lane-mpr2awpz-e",
       "engineId": "fm",
-      "name": "Vibraphone",
+      "name": "KEY Vibes",
       "clips": [
         {
-          "id": "clip-mpr0lnf5-d",
-          "name": "Vibraphone",
+          "id": "clip-mpr2awpz-d",
+          "name": "KEY Vibes",
           "lengthBars": 32,
           "notes": [
             {
@@ -3634,13 +3634,13 @@
       "enginePresetName": "factory:KEY Vibes"
     },
     {
-      "id": "lane-mpr0lnf5-g",
+      "id": "lane-mpr2awpz-g",
       "engineId": "karplus",
-      "name": "Bass Guitar (Classic)",
+      "name": "BASS Fingered Electric",
       "clips": [
         {
-          "id": "clip-mpr0lnf5-f",
-          "name": "Bass Guitar (Classic)",
+          "id": "clip-mpr2awpz-f",
+          "name": "BASS Fingered Electric",
           "lengthBars": 32,
           "notes": [
             {
@@ -5083,13 +5083,13 @@
       "enginePresetName": "factory:BASS Fingered Electric"
     },
     {
-      "id": "lane-mpr0lnf6-i",
+      "id": "lane-mpr2awpz-i",
       "engineId": "karplus",
-      "name": "Acoustic Gtr (Classic)",
+      "name": "GTR Nylon Acoustic",
       "clips": [
         {
-          "id": "clip-mpr0lnf6-h",
-          "name": "Acoustic Gtr (Classic)",
+          "id": "clip-mpr2awpz-h",
+          "name": "GTR Nylon Acoustic",
           "lengthBars": 32,
           "notes": [
             {
@@ -5288,33 +5288,722 @@
         }
       ],
       "enginePresetName": "factory:GTR Nylon Acoustic"
+    },
+    {
+      "id": "lane-drums-untitled",
+      "engineId": "drums-machine",
+      "name": "KIT Electronic",
+      "clips": [
+        {
+          "id": "clip-mpr2awpz-j",
+          "name": "MIDI Drums",
+          "lengthBars": 32,
+          "notes": [
+            {
+              "start": 1536,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 1728,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 1920,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 2112,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 2304,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 2496,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 2688,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 2880,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 3072,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 3264,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 3456,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 3648,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 3840,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 4032,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 4224,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 4416,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 4440,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 4464,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 4464,
+              "duration": 24,
+              "midi": 76,
+              "velocity": 50
+            },
+            {
+              "start": 4488,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 4512,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 4512,
+              "duration": 24,
+              "midi": 77,
+              "velocity": 50
+            },
+            {
+              "start": 4536,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 4536,
+              "duration": 24,
+              "midi": 77,
+              "velocity": 50
+            },
+            {
+              "start": 4560,
+              "duration": 24,
+              "midi": 85,
+              "velocity": 50
+            },
+            {
+              "start": 4608,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 4608,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 4704,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 4704,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 4800,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 4800,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 4896,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 4896,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 4992,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 50
+            },
+            {
+              "start": 4992,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 4992,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 5088,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 50
+            },
+            {
+              "start": 5088,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 5088,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 5184,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 50
+            },
+            {
+              "start": 5184,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 5184,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 5280,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 50
+            },
+            {
+              "start": 5280,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 5280,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 5328,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 50
+            },
+            {
+              "start": 5376,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 50
+            },
+            {
+              "start": 5376,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 5376,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 5472,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 50
+            },
+            {
+              "start": 5472,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 5472,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 5568,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 5568,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 5664,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 5664,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 5760,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 5760,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 5856,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 5856,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 5952,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 5952,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 6048,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 6048,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 6144,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 6144,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 6240,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 6240,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 6336,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 6336,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 6432,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 6432,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 6912,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 6912,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 7008,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 7008,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 7104,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 7104,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 7200,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 7200,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 7296,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 7296,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 7392,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 7392,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 7488,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 7488,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 7584,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 7584,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 7680,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 7680,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 7776,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 7776,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 7872,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 7872,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 7968,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 7968,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 8064,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 8064,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 8160,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 8160,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 8256,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 8256,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 8352,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 8352,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 8448,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 8448,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 8544,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 8544,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 8640,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 8640,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            },
+            {
+              "start": 8736,
+              "duration": 24,
+              "midi": 35,
+              "velocity": 50
+            },
+            {
+              "start": 8736,
+              "duration": 48,
+              "midi": 36,
+              "velocity": 50
+            }
+          ]
+        }
+      ],
+      "enginePresetName": "factory:KIT Electronic"
     }
   ],
   "scenes": [
     {
-      "id": "scene-mpr0lnf6-k",
+      "id": "scene-mpr2awpz-k",
       "name": "MIDI Import",
       "clipPerLane": {
-        "lane-mpr0lnf5-2": 0,
-        "lane-mpr0lnf5-4": 0,
-        "lane-mpr0lnf5-6": 0,
-        "lane-mpr0lnf5-8": 0,
-        "lane-mpr0lnf5-a": 0,
-        "lane-mpr0lnf5-c": 0,
-        "lane-mpr0lnf5-e": 0,
-        "lane-mpr0lnf5-g": 0,
-        "lane-mpr0lnf6-i": 0
+        "lane-mpr2awpz-2": 0,
+        "lane-mpr2awpz-4": 0,
+        "lane-mpr2awpz-6": 0,
+        "lane-mpr2awpz-8": 0,
+        "lane-mpr2awpz-a": 0,
+        "lane-mpr2awpz-c": 0,
+        "lane-mpr2awpz-e": 0,
+        "lane-mpr2awpz-g": 0,
+        "lane-mpr2awpz-i": 0,
+        "lane-drums-untitled": 0
       },
       "presetPerLane": {
-        "lane-mpr0lnf5-2": "factory:LEAD Sub Lead",
-        "lane-mpr0lnf5-4": "factory:GTR Jazz Hollowbody",
-        "lane-mpr0lnf5-6": "factory:HARP Orchestral Concert",
-        "lane-mpr0lnf5-8": "factory:PLUCK Pizzicato Strings",
-        "lane-mpr0lnf5-a": "factory:KEY Marimba",
-        "lane-mpr0lnf5-c": "factory:GTR Muted Palm",
-        "lane-mpr0lnf5-e": "factory:KEY Vibes",
-        "lane-mpr0lnf5-g": "factory:BASS Fingered Electric",
-        "lane-mpr0lnf6-i": "factory:GTR Nylon Acoustic"
+        "lane-mpr2awpz-2": "factory:LEAD Sub Lead",
+        "lane-mpr2awpz-4": "factory:GTR Jazz Hollowbody",
+        "lane-mpr2awpz-6": "factory:HARP Orchestral Concert",
+        "lane-mpr2awpz-8": "factory:PLUCK Pizzicato Strings",
+        "lane-mpr2awpz-a": "factory:KEY Marimba",
+        "lane-mpr2awpz-c": "factory:GTR Muted Palm",
+        "lane-mpr2awpz-e": "factory:KEY Vibes",
+        "lane-mpr2awpz-g": "factory:BASS Fingered Electric",
+        "lane-mpr2awpz-i": "factory:GTR Nylon Acoustic",
+        "lane-drums-untitled": "factory:KIT Electronic"
       }
     }
   ],

@@ -1,13 +1,13 @@
 {
   "lanes": [
     {
-      "id": "lane-mpr0lmu9-2",
+      "id": "lane-mpr2aw3l-2",
       "engineId": "wavetable",
-      "name": "Pads 1",
+      "name": "PAD Sweep Wide",
       "clips": [
         {
-          "id": "clip-mpr0lmu9-1",
-          "name": "Pads 1",
+          "id": "clip-mpr2aw3l-1",
+          "name": "PAD Sweep Wide",
           "lengthBars": 48,
           "notes": [
             {
@@ -340,13 +340,13 @@
       "enginePresetName": "factory:PAD Sweep Wide"
     },
     {
-      "id": "lane-mpr0lmu9-4",
+      "id": "lane-mpr2aw3l-4",
       "engineId": "fm",
-      "name": "Pads 2",
+      "name": "PAD Halo Bright",
       "clips": [
         {
-          "id": "clip-mpr0lmu9-3",
-          "name": "Pads 2",
+          "id": "clip-mpr2aw3l-3",
+          "name": "PAD Halo Bright",
           "lengthBars": 48,
           "notes": [
             {
@@ -739,13 +739,13 @@
       "enginePresetName": "factory:PAD Halo Bright"
     },
     {
-      "id": "lane-mpr0lmu9-6",
+      "id": "lane-mpr2aw3l-6",
       "engineId": "tb303",
-      "name": "Sub Melody 1",
+      "name": "BASS Acid Classic",
       "clips": [
         {
-          "id": "clip-mpr0lmu9-5",
-          "name": "Sub Melody 1",
+          "id": "clip-mpr2aw3l-5",
+          "name": "BASS Acid Classic",
           "lengthBars": 48,
           "notes": [
             {
@@ -2674,13 +2674,13 @@
       "enginePresetName": "factory:BASS Acid Classic"
     },
     {
-      "id": "lane-mpr0lmu9-8",
+      "id": "lane-mpr2aw3l-8",
       "engineId": "subtractive",
-      "name": "Sub Melody 2",
+      "name": "LEAD Supersaw",
       "clips": [
         {
-          "id": "clip-mpr0lmu9-7",
-          "name": "Sub Melody 2",
+          "id": "clip-mpr2aw3l-7",
+          "name": "LEAD Supersaw",
           "lengthBars": 48,
           "notes": [
             {
@@ -4993,13 +4993,13 @@
       "enginePresetName": "factory:LEAD Supersaw"
     },
     {
-      "id": "lane-mpr0lmu9-a",
+      "id": "lane-mpr2aw3l-a",
       "engineId": "tb303",
-      "name": "Sub Melody 3",
+      "name": "BASS Hoover Sub",
       "clips": [
         {
-          "id": "clip-mpr0lmu9-9",
-          "name": "Sub Melody 3",
+          "id": "clip-mpr2aw3l-9",
+          "name": "BASS Hoover Sub",
           "lengthBars": 48,
           "notes": [
             {
@@ -6160,13 +6160,13 @@
       "enginePresetName": "factory:BASS Hoover Sub"
     },
     {
-      "id": "lane-mpr0lmu9-c",
+      "id": "lane-mpr2aw3l-c",
       "engineId": "karplus",
-      "name": "Guitar",
+      "name": "GTR Clean Electric",
       "clips": [
         {
-          "id": "clip-mpr0lmu9-b",
-          "name": "Guitar",
+          "id": "clip-mpr2aw3l-b",
+          "name": "GTR Clean Electric",
           "lengthBars": 48,
           "notes": [
             {
@@ -6343,13 +6343,13 @@
       "enginePresetName": "factory:GTR Clean Electric"
     },
     {
-      "id": "lane-mpr0lmu9-e",
+      "id": "lane-mpr2aw3l-e",
       "engineId": "tb303",
-      "name": "Bassline 1",
+      "name": "LEAD Sub Lead",
       "clips": [
         {
-          "id": "clip-mpr0lmu9-d",
-          "name": "Bassline 1",
+          "id": "clip-mpr2aw3l-d",
+          "name": "LEAD Sub Lead",
           "lengthBars": 48,
           "notes": [
             {
@@ -7894,13 +7894,13 @@
       "enginePresetName": "factory:LEAD Sub Lead"
     },
     {
-      "id": "lane-mpr0lmu9-g",
+      "id": "lane-mpr2aw3l-g",
       "engineId": "subtractive",
-      "name": "Bassline 2",
+      "name": "LEAD Square",
       "clips": [
         {
-          "id": "clip-mpr0lmu9-f",
-          "name": "Bassline 2",
+          "id": "clip-mpr2aw3l-f",
+          "name": "LEAD Square",
           "lengthBars": 48,
           "notes": [
             {
@@ -10215,27 +10215,27 @@
   ],
   "scenes": [
     {
-      "id": "scene-mpr0lmu9-h",
+      "id": "scene-mpr2aw3l-h",
       "name": "MIDI Import",
       "clipPerLane": {
-        "lane-mpr0lmu9-2": 0,
-        "lane-mpr0lmu9-4": 0,
-        "lane-mpr0lmu9-6": 0,
-        "lane-mpr0lmu9-8": 0,
-        "lane-mpr0lmu9-a": 0,
-        "lane-mpr0lmu9-c": 0,
-        "lane-mpr0lmu9-e": 0,
-        "lane-mpr0lmu9-g": 0
+        "lane-mpr2aw3l-2": 0,
+        "lane-mpr2aw3l-4": 0,
+        "lane-mpr2aw3l-6": 0,
+        "lane-mpr2aw3l-8": 0,
+        "lane-mpr2aw3l-a": 0,
+        "lane-mpr2aw3l-c": 0,
+        "lane-mpr2aw3l-e": 0,
+        "lane-mpr2aw3l-g": 0
       },
       "presetPerLane": {
-        "lane-mpr0lmu9-2": "factory:PAD Sweep Wide",
-        "lane-mpr0lmu9-4": "factory:PAD Halo Bright",
-        "lane-mpr0lmu9-6": "factory:BASS Acid Classic",
-        "lane-mpr0lmu9-8": "factory:LEAD Supersaw",
-        "lane-mpr0lmu9-a": "factory:BASS Hoover Sub",
-        "lane-mpr0lmu9-c": "factory:GTR Clean Electric",
-        "lane-mpr0lmu9-e": "factory:LEAD Sub Lead",
-        "lane-mpr0lmu9-g": "factory:LEAD Square"
+        "lane-mpr2aw3l-2": "factory:PAD Sweep Wide",
+        "lane-mpr2aw3l-4": "factory:PAD Halo Bright",
+        "lane-mpr2aw3l-6": "factory:BASS Acid Classic",
+        "lane-mpr2aw3l-8": "factory:LEAD Supersaw",
+        "lane-mpr2aw3l-a": "factory:BASS Hoover Sub",
+        "lane-mpr2aw3l-c": "factory:GTR Clean Electric",
+        "lane-mpr2aw3l-e": "factory:LEAD Sub Lead",
+        "lane-mpr2aw3l-g": "factory:LEAD Square"
       }
     }
   ],

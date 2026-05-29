@@ -1,13 +1,13 @@
 {
   "lanes": [
     {
-      "id": "lane-mpr0lm8r-2",
+      "id": "lane-mpr2avh6-2",
       "engineId": "fm",
-      "name": "Elec. Piano (Classic)",
+      "name": "EP Warm Rhodes",
       "clips": [
         {
-          "id": "clip-mpr0lm8r-1",
-          "name": "Elec. Piano (Classic)",
+          "id": "clip-mpr2avh6-1",
+          "name": "EP Warm Rhodes",
           "lengthBars": 20,
           "notes": [
             {
@@ -930,13 +930,13 @@
   ],
   "scenes": [
     {
-      "id": "scene-mpr0lm8r-3",
+      "id": "scene-mpr2avh6-3",
       "name": "MIDI Import",
       "clipPerLane": {
-        "lane-mpr0lm8r-2": 0
+        "lane-mpr2avh6-2": 0
       },
       "presetPerLane": {
-        "lane-mpr0lm8r-2": "factory:EP Warm Rhodes"
+        "lane-mpr2avh6-2": "factory:EP Warm Rhodes"
       }
     }
   ],
