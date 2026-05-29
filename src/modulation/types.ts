@@ -6,6 +6,7 @@ export type Waveform = 'sine' | 'triangle' | 'square' | 'saw';
 /** LFO phase behavior on note-on. 'free' = ignore notes (classic analog),
  *  'note' = reset phase on every trigger (retrigger / sync to note). */
 export type LfoTriggerMode = 'free' | 'note';
+export type ModulatorScope = 'shared' | 'per-voice';
 
 export interface ModulationConnection {
   id: string;          // unique within the modulator
@@ -18,6 +19,11 @@ export interface ModulatorState {
   kind: ModulatorKind;
   enabled: boolean;
   connections: ModulationConnection[];
+  /** Where the modulator's voice lives. 'shared' = engine-owned, one
+   *  instance for all notes (default for LFO). 'per-voice' = spawned per
+   *  createVoice call, lives for the duration of that note (default and
+   *  only valid value for ADSR). */
+  scope?: ModulatorScope;
 
   // LFO-only
   rateHz?: number;     // 0.01..40 (free rate)
@@ -60,6 +66,7 @@ export function makeDefaultLFO(id: string): ModulatorState {
     rateHz: 4, waveform: 'sine', bipolar: true,
     syncToBpm: false, syncRatio: '1/4',
     trigger: 'free',
+    scope: 'shared',
   };
 }
 
@@ -67,5 +74,19 @@ export function makeDefaultADSR(id: string): ModulatorState {
   return {
     id, kind: 'adsr', enabled: true, connections: [],
     attackSec: 0.01, decaySec: 0.3, sustain: 0.7, releaseSec: 0.3,
+    scope: 'per-voice',
   };
+}
+
+/** Default scope for a modulator kind. Used by normalizeModulator to fill in
+ *  the field on older saves that pre-date the scope concept. */
+export function defaultScopeFor(kind: ModulatorKind): ModulatorScope {
+  return kind === 'lfo' ? 'shared' : 'per-voice';
+}
+
+/** Return a shallow clone with `scope` populated from `defaultScopeFor(kind)`
+ *  when missing. Idempotent — calling twice is safe. */
+export function normalizeModulator(m: ModulatorState): ModulatorState {
+  if (m.scope) return m;
+  return { ...m, scope: defaultScopeFor(m.kind) };
 }
