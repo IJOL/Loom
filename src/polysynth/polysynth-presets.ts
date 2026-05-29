@@ -2,6 +2,7 @@ import { PolySynth, type PolySynthParams } from './polysynth';
 import { FACTORY_POLY_PRESETS } from './poly-presets';
 import { randomizePolySynth } from '../core/random';
 import type { SynthEngine } from '../engines/engine-types';
+import { getCachedPresets } from '../presets/preset-loader';
 
 // ── PolySynth preset state ─────────────────────────────────────────────────
 const POLY_PRESETS_KEY = 'tb303-poly-presets-v1';
@@ -51,7 +52,8 @@ export function applyPolyParams(params: PolySynthParams): void {
 }
 
 export function applyPresetByName(poly: PolySynth, name: string): void {
-  const p = FACTORY_POLY_PRESETS.find((x) => x.name === name);
+  const presets = getCachedPresets('poly');
+  const p = presets.find((x) => x.name === name);
   if (p) {
     poly.params = JSON.parse(JSON.stringify(p.params)) as PolySynthParams;
     polyPresetName.set(poly, `factory:${name}`);

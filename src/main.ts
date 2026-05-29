@@ -58,6 +58,7 @@ import {
 import { startVisualizer } from './core/visualizer';
 import { wireDrumMasterUI } from './core/drum-master-ui';
 import { wirePresetLibrary } from './presets/preset-library-ui';
+import { loadAllPresets } from './presets/preset-loader';
 import {
   startAutomationTick, resetAutomationPosition, getAutoAbsSubIdx,
   type AutomationTickDeps,
@@ -85,6 +86,15 @@ type TrackId = 'bass' | 'poly' | 'drumBus' | ExtraId | DrumVoice;
 const ALL_TRACKS: TrackId[] = ['bass', 'poly', ...EXTRA_IDS, 'drumBus', ...DRUM_LANES];
 const $  = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const $$ = <T extends HTMLElement>(sel: string) => Array.from(document.querySelectorAll<T>(sel));
+
+// ── Preset cache ───────────────────────────────────────────────────────────
+// We fire off the JSON preset loader at module init and AWAIT the resulting
+// promise BEFORE anything that might apply a preset (the demo loader chains
+// onto this — see bottom of file). Missing JSON files just log a warning —
+// only `poly.json` exists at this stage; the others are added in Phase C of
+// the GM-presets plan.
+const ENGINE_IDS_FOR_PRESETS = ['poly', 'tb303', 'fm', 'wavetable', 'karplus', 'subtractive', 'drums'];
+const presetsLoaded = loadAllPresets(ENGINE_IDS_FOR_PRESETS);
 
 // ── Audio graph ────────────────────────────────────────────────────────────
 const ctx = new AudioContext();
@@ -1002,13 +1012,19 @@ startAutomationTick(automationTickDeps);
 // programmatically. The JSON drives both the SessionState and the
 // per-scene preset map; applyLoadedSessionState reads lane.enginePresetName
 // and onLaunchScene reads scene.presetPerLane.
-fetchDemoSession('/demos/minimal-techno.json').then((state) => {
-  sessionHost.applyLoadedSessionState(state);
-  buildArpUI(arpUIDeps);
-}).catch((err: unknown) => {
-  console.error('Demo load failed; falling back to empty session.', err);
-  buildArpUI(arpUIDeps);
-});
+//
+// We gate the demo apply on `presetsLoaded` so the engine preset cache is
+// populated before applyLoadedSessionState calls applyPresetByName.
+presetsLoaded
+  .then(() => fetchDemoSession('/demos/minimal-techno.json'))
+  .then((state) => {
+    sessionHost.applyLoadedSessionState(state);
+    buildArpUI(arpUIDeps);
+  })
+  .catch((err: unknown) => {
+    console.error('Demo load failed; falling back to empty session.', err);
+    buildArpUI(arpUIDeps);
+  });
 // App is always in session mode — seq.sessionMode must be true at boot.
 seq.sessionMode = true;
 startVisualizer({ ctx, analyser, vizCanvas });
