@@ -16,6 +16,8 @@ import { bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disp
 import { ConnectionBinder } from '../modulation/connection-binder';
 import { PendingBaseValues } from './pending-base-values';
 import type { KnobHandle } from '../core/knob';
+import { createKnob } from '../core/knob';
+import { createSelectControl } from '../core/select-control';
 
 const WAVE_OPTIONS = [
   { value: 'sawtooth', label: 'Saw' },
@@ -431,24 +433,82 @@ class SubtractiveEngine implements SynthEngine {
   }
 
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
-    // For subtractive, main.ts already builds the poly param UI. We only add
-    // the modulators panel here (when invoked via a per-lane engine host).
-    if (ctx) {
-      renderModulatorsPanel(container, {
-        engineId: this.id,
-        laneId: ctx.laneId,
-        host: this.modHost,
-        registry: ctx.registry as Map<string, KnobHandle>,
-        registerKnob: (k) => ctx.registerKnob(k),
-        lookupLaneDisplayName: ctx.lookupLaneDisplayName,
-        sessionState: ctx.sessionState,
-        onChange: () => {
-          container.innerHTML = '';
-          this.buildParamUI(container, ctx);
-          if (this.currentLaneId) reapplyLaneModulations(this.currentLaneId);
+    if (!ctx) return;
+    container.innerHTML = '';
+
+    // Header row: MODE / RETRIG / VOICES. Lives at the top of the engine
+    // panel so the user can toggle polyphony without scrolling to the
+    // bottom of the modulators.
+    const header = document.createElement('div');
+    header.className = 'row poly-section';
+    const headerLab = document.createElement('div');
+    headerLab.className = 'section-label';
+    headerLab.textContent = 'POLY';
+    header.appendChild(headerLab);
+    const headerKnobs = document.createElement('div');
+    headerKnobs.className = 'knob-row';
+    header.appendChild(headerKnobs);
+
+    const ps = this.polysynth;
+    // Local for the retrig-visibility refresh closure to update.
+    let refreshRetrigVisibility: (() => void) | null = null;
+    if (ps) {
+      const mode = createSelectControl({
+        id: `${ctx.laneId}.poly.mode`,
+        label: 'MODE',
+        options: [{ value: 'poly', label: 'Poly' }, { value: 'mono', label: 'Mono' }],
+        initialValue: ps.mode,
+        onChange: (v) => {
+          ps.setMode(v as 'mono' | 'poly');
+          refreshRetrigVisibility?.();
         },
       });
+      ctx.registerKnob(mode.handle);
+      headerKnobs.appendChild(mode.el);
+
+      const retrig = createSelectControl({
+        id: `${ctx.laneId}.poly.retrig`,
+        label: 'RETRIG',
+        options: [{ value: 'legato', label: 'Legato' }, { value: 'retrig', label: 'Retrig' }],
+        initialValue: ps.retrig ? 'retrig' : 'legato',
+        onChange: (v) => { ps.setRetrig(v === 'retrig'); },
+      });
+      ctx.registerKnob(retrig.handle);
+      headerKnobs.appendChild(retrig.el);
+
+      const voices = createKnob({
+        id: `${ctx.laneId}.poly.voices`,
+        label: 'VOICES', min: 1, max: 16, step: 1, value: ps.maxVoices, defaultValue: 8,
+        format: (v) => String(v),
+        onChange: (v) => { ps.setMaxVoices(v); },
+      });
+      ctx.registerKnob(voices);
+      headerKnobs.appendChild(voices.el);
+
+      // RETRIG only matters in mono mode; hide it in poly.
+      refreshRetrigVisibility = () => {
+        retrig.el.style.display = ps.mode === 'mono' ? '' : 'none';
+      };
+      refreshRetrigVisibility();
     }
+
+    container.appendChild(header);
+
+    // Modulators panel (existing).
+    renderModulatorsPanel(container, {
+      engineId: this.id,
+      laneId: ctx.laneId,
+      host: this.modHost,
+      registry: ctx.registry as Map<string, KnobHandle>,
+      registerKnob: (k) => ctx.registerKnob(k),
+      lookupLaneDisplayName: ctx.lookupLaneDisplayName,
+      sessionState: ctx.sessionState,
+      onChange: () => {
+        container.innerHTML = '';
+        this.buildParamUI(container, ctx);
+        if (this.currentLaneId) reapplyLaneModulations(this.currentLaneId);
+      },
+    });
   }
 
   dispose(): void {
