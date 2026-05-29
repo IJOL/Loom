@@ -1,6 +1,7 @@
 import { listEngines } from './registry';
 import { populatePolyPresetSelect, refreshPolyPresetSelect } from '../polysynth/polysynth-presets';
 import type { KnobHandle } from '../core/knob';
+import { withUndo, type HistoryDeps } from '../save/history-wiring';
 
 export interface EngineSelectorUIDeps {
   engineSel: HTMLSelectElement;
@@ -17,6 +18,10 @@ export interface EngineSelectorUIDeps {
    *  engines), so this hook re-populates them so the modulator destination
    *  dropdown isn't empty. */
   remountSubtractiveLaneKnobs?: (laneId: string) => void;
+  /** When provided, user-initiated engine changes are wrapped with withUndo
+   *  so each selection becomes one undoable entry. Omit for programmatic/
+   *  session-load callers so those do not pollute the undo stack. */
+  historyDeps?: HistoryDeps;
 }
 
 let _deps: EngineSelectorUIDeps | null = null;
@@ -89,6 +94,7 @@ export function wireEngineSelector(deps: EngineSelectorUIDeps, initialEngineId: 
   populateEngineSelect(deps, initialEngineId);
 
   deps.engineSel.addEventListener('change', () => {
-    rebuildEngineParamUI();
+    const run = () => rebuildEngineParamUI();
+    if (deps.historyDeps) withUndo(deps.historyDeps, run); else run();
   });
 }

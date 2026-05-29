@@ -2,6 +2,7 @@ import { PolySynth, POLY_DEFAULTS, type PolySynthParams } from './polysynth';
 import { randomizePolySynth } from '../core/random';
 import type { SynthEngine } from '../engines/engine-types';
 import { getCachedPresets } from '../presets/preset-loader';
+import { withUndo, type HistoryDeps } from '../save/history-wiring';
 
 /** Convert a flat dot-path subtractive preset (e.g. `"osc1.wave": 0`,
  *  `"filter.cutoff": 0.55`) back into the nested PolySynthParams tree the
@@ -69,6 +70,10 @@ export interface PolySynthPresetsDeps {
   /** Push current engine base values back into the lane's knob UI handles
    *  after a preset or randomize mutates the underlying state. */
   refreshLaneKnobs: (laneId: string) => void;
+  /** When provided, user-initiated preset changes (dropdown select / Load
+   *  button click) are wrapped with withUndo so each becomes one undoable
+   *  entry. Omit for programmatic/session-load callers. */
+  historyDeps?: HistoryDeps;
 }
 
 let _deps: PolySynthPresetsDeps | null = null;
@@ -234,9 +239,15 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
   // button needed. The Load button stays as a no-op fallback for now (in case
   // the user wants to re-apply the current selection).
   const presetSel = document.getElementById('poly-preset-select') as HTMLSelectElement;
-  presetSel.addEventListener('change', loadCurrentPreset);
+  presetSel.addEventListener('change', () => {
+    if (deps.historyDeps) withUndo(deps.historyDeps, loadCurrentPreset);
+    else loadCurrentPreset();
+  });
   (document.getElementById('poly-preset-load') as HTMLButtonElement)
-    .addEventListener('click', loadCurrentPreset);
+    .addEventListener('click', () => {
+      if (deps.historyDeps) withUndo(deps.historyDeps, loadCurrentPreset);
+      else loadCurrentPreset();
+    });
 
   (document.getElementById('poly-preset-save') as HTMLButtonElement).addEventListener('click', () => {
     const name = prompt('Preset name:');

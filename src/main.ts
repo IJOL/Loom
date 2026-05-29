@@ -37,7 +37,7 @@ import { applyPresetToEngine } from './presets/preset-apply';
 import { wireSaveManager, bootRecoveryLoad } from './save/save-wiring';
 import { createHistory } from './core/history';
 import {
-  wireHistoryKeyboard, type HistoryDeps,
+  wireHistoryKeyboard, withUndo, type HistoryDeps,
 } from './save/history-wiring';
 import {
   buildSavedStateV3, applyLoadedStateV3, type SavedStateV3, type SavedStateV3Deps,
@@ -564,14 +564,25 @@ swingInput.addEventListener('input', () => { seq.swing = parseFloat(swingInput.v
 volInput.addEventListener('input', () => { master.gain.value = parseFloat(volInput.value); });
 master.gain.value = parseFloat(volInput.value);
 
-waveSel.addEventListener('change', () => { synth.params.wave = waveSel.value as Wave; });
+// Holder for historyDeps for discrete selectors. historyDeps is built later
+// (it closes over saveWiringDeps / sessionHost), but event handlers fire after
+// boot, so assigning _discreteHistoryDeps after construction works correctly.
+let _discreteHistoryDeps: HistoryDeps | undefined;
+
+waveSel.addEventListener('change', () => {
+  const run = () => { synth.params.wave = waveSel.value as Wave; };
+  if (_discreteHistoryDeps) withUndo(_discreteHistoryDeps, run); else run();
+});
 
 barsSel.addEventListener('change', () => {
   seq.setLength(parseInt(barsSel.value, 10));
   renderLanes();
 });
 
-kitSel.addEventListener('change', () => { drums.setKit(kitSel.value); });
+kitSel.addEventListener('change', () => {
+  const run = () => { drums.setKit(kitSel.value); };
+  if (_discreteHistoryDeps) withUndo(_discreteHistoryDeps, run); else run();
+});
 
 const synthKnobsRow = $<HTMLDivElement>('synth-knobs');
 synthKnobsRow.innerHTML = '';
@@ -833,6 +844,10 @@ const engineSelectorDeps: EngineSelectorUIDeps = {
   registerKnob,
   populateAutoParamSelect: () => populateAutoParamSelectWrapper(),
   remountSubtractiveLaneKnobs: (laneId) => mountSubtractiveLaneKnobs(laneId),
+  // Late-bound via getter: _discreteHistoryDeps is assigned after historyDeps
+  // is built (further below), but the change handler fires at user-interaction
+  // time, so the getter always sees the final value.
+  get historyDeps() { return _discreteHistoryDeps; },
 };
 wireEngineSelector(engineSelectorDeps, currentEngineId);
 
@@ -851,6 +866,8 @@ const polySynthPresetsDeps: PolySynthPresetsDeps = {
       if (inst) refreshLaneKnobs(laneId, inst);
     }
   },
+  // Late-bound via getter so historyDeps is resolved at event-fire time.
+  get historyDeps() { return _discreteHistoryDeps; },
 };
 
 const polyModeDeps: PolyModeDeps = {
@@ -960,7 +977,7 @@ wireTransport(transportDeps);
   }
 }
 wireAutomationTab(automationDeps);
-wirePresetLibrary({ seq });
+wirePresetLibrary({ seq, get historyDeps() { return _discreteHistoryDeps; } });
 wirePolyControls(polySynthPresetsDeps);
 wirePolyMode(polyModeDeps);
 wireSlotCopyPanel({
@@ -1092,6 +1109,9 @@ wireHistoryKeyboard(historyDeps);
 // undoable. Must happen after historyDeps is built (it closes over sessionHost
 // via savedStateDeps → saveWiringDeps).
 sessionHost.setHistoryDeps(historyDeps);
+// Activate undo for discrete selectors (kit, wave, engine, preset) now that
+// historyDeps is ready.
+_discreteHistoryDeps = historyDeps;
 // wireRandomizeUI is here (not at its original boot position) because it needs
 // historyDeps, which closes over saveWiringDeps, which closes over sessionHost.
 wireRandomizeUI({
