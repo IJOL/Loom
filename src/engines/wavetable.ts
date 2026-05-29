@@ -11,6 +11,7 @@ import { renderModulatorsPanel } from '../modulation/modulation-ui';
 import { bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
 import { ConnectionBinder } from '../modulation/connection-binder';
 import { wireEngineParams } from './engine-ui';
+import { getCachedPresets } from '../presets/preset-loader';
 
 const WAVE_OPTIONS = WAVETABLES.map((w, i) => ({ value: String(i), label: w.name }));
 
@@ -234,53 +235,9 @@ export class WavetableEngine implements SynthEngine {
   readonly polyphony = 'poly' as const;
   readonly params = WT_PARAMS;
   readonly editor = 'piano-roll' as const;
-  readonly presets: import('./engine-types').EnginePreset[] = [
-    {
-      name: 'Organ Stab',
-      params: {
-        'osc.waveA':        0,    // Sine
-        'osc.waveB':        5,    // Organ
-        'osc.morph':        0.6,
-        'osc.detune':       8,
-        'amp.attack':       0.02,
-        'amp.decay':        0.25,
-        'amp.sustain':      0.5,
-        'amp.release':      0.5,
-        'filter.cutoff':    0.7,
-        'filter.resonance': 0.15,
-      },
-    },
-    {
-      name: 'Soft Pad',
-      params: {
-        'osc.waveA':        0,    // Sine
-        'osc.waveB':        2,    // Sawtooth
-        'osc.morph':        0.5,
-        'osc.detune':       5,
-        'amp.attack':       0.6,
-        'amp.decay':        0.8,
-        'amp.sustain':      0.8,
-        'amp.release':      1.2,
-        'filter.cutoff':    0.55,
-        'filter.resonance': 0.1,
-      },
-    },
-    {
-      name: 'Wide Lead',
-      params: {
-        'osc.waveA':        2,    // Sawtooth
-        'osc.waveB':        3,    // Square
-        'osc.morph':        0.4,
-        'osc.detune':       15,
-        'amp.attack':       0.005,
-        'amp.decay':        0.4,
-        'amp.sustain':      0.6,
-        'amp.release':      0.4,
-        'filter.cutoff':    0.8,
-        'filter.resonance': 0.35,
-      },
-    },
-  ];
+  get presets(): import('./engine-types').EnginePreset[] {
+    return getCachedPresets('wavetable');
+  }
 
   private waves: PeriodicWave[] = [];
   private paramValues: Record<string, number> = {};
