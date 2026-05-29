@@ -9,7 +9,7 @@ import { renderClipEditor, type ClipEditorDeps } from './clip-editors/clip-edito
 import { renderClipAutomationLanes } from './clip-automation-lanes';
 import type { PianoRollHandle } from '../core/pianoroll';
 import type { HistoryDeps } from '../save/history-wiring';
-import { withUndo } from '../save/history-wiring';
+import { withUndo, isTextEditTarget } from '../save/history-wiring';
 
 export interface InspectorDeps {
   ctx: AudioContext;
@@ -27,7 +27,37 @@ export class SessionInspector {
   roll: PianoRollHandle | null = null;
   private selectedClip: { laneId: string; clipIdx: number } | null = null;
 
-  constructor(private deps: InspectorDeps) {}
+  constructor(private deps: InspectorDeps) {
+    this.wireKeyboardShortcuts();
+  }
+
+  /** Delete / Backspace on a selected clip removes it (one undo entry).
+   *  Skipped when typing in a text field so renaming a clip still works. */
+  private wireKeyboardShortcuts(): void {
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+      if (isTextEditTarget(e.target)) return;
+      if (!this.selectedClip) return;
+      e.preventDefault();
+      this.deleteSelectedClip();
+    });
+  }
+
+  private deleteSelectedClip(): void {
+    if (!this.selectedClip) return;
+    const sel = this.selectedClip;
+    const d = this.deps.historyDeps;
+    const run = () => {
+      const lane = this.deps.state.lanes.find((l) => l.id === sel.laneId);
+      if (!lane) return;
+      lane.clips[sel.clipIdx] = null;
+      const panel = document.getElementById('session-inspector');
+      if (panel) panel.hidden = true;
+      this.selectedClip = null;
+      this.deps.renderWithMixer();
+    };
+    if (d) withUndo(d, run); else run();
+  }
 
   /** Called after historyDeps is available (it may be constructed after the
    *  inspector is initialised, because the save-wiring deps close over
@@ -89,18 +119,7 @@ export class SessionInspector {
       };
       if (d) withUndo(d, run); else run();
     };
-    document.getElementById('insp-delete')!.onclick = () => {
-      if (!this.selectedClip) return;
-      const d = this.deps.historyDeps;
-      const run = () => {
-        const ln = this.deps.state.lanes.find((l) => l.id === this.selectedClip!.laneId)!;
-        ln.clips[this.selectedClip!.clipIdx] = null;
-        panel.hidden = true;
-        this.selectedClip = null;
-        this.deps.renderWithMixer();
-      };
-      if (d) withUndo(d, run); else run();
-    };
+    document.getElementById('insp-delete')!.onclick = () => this.deleteSelectedClip();
 
     // Copy / paste
     document.getElementById('insp-copy')!.onclick = () => {

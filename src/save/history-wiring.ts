@@ -30,7 +30,9 @@ export function wireHistoryKeyboard(d: HistoryDeps): void {
   });
 }
 
-function isTextEditTarget(t: EventTarget | null): boolean {
+/** True when a keydown target is a text input / textarea / contentEditable
+ *  region — used to skip global shortcuts so native text editing wins. */
+export function isTextEditTarget(t: EventTarget | null): boolean {
   if (!(t instanceof HTMLElement)) return false;
   if (t.isContentEditable) return true;
   const tag = t.tagName;
