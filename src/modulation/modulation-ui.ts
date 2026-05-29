@@ -187,6 +187,34 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
   deps.registerKnob(trigger.handle);
   row.appendChild(trigger.el);
 
+  // SCOPE control: shared (engine-wide LFO) vs per-voice (one LFO per
+  // note). Default 'shared' from makeDefaultLFO.
+  const scope = createSelectControl({
+    id: `${deps.laneId}.mod.${mod.id}.scope`,
+    label: 'SCOPE',
+    options: [
+      { value: 'shared',    label: 'Shared'   },
+      { value: 'per-voice', label: 'PerVoice' },
+    ],
+    initialValue: mod.scope ?? 'shared',
+    onChange: (v) => {
+      mod.scope = v as 'shared' | 'per-voice';
+      sync(deps);
+      // Re-render the panel so TRIG visibility updates and the engine can
+      // respawn modulator voices in the new scope.
+      deps.onChange();
+    },
+  });
+  deps.registerKnob(scope.handle);
+  row.appendChild(scope.el);
+
+  // Hide TRIG when scope=per-voice (per-voice LFOs are always fresh with
+  // the voice; the "free / note" distinction is meaningless).
+  const refreshTrigVisibility = () => {
+    trigger.el.style.display = (mod.scope ?? 'shared') === 'per-voice' ? 'none' : '';
+  };
+  refreshTrigVisibility();
+
   return row;
 }
 
