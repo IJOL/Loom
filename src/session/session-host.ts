@@ -46,6 +46,7 @@ import { renderSessionTabBar } from './session-tab-bar';
 import { buildMixerColumn } from '../core/mixer';
 // session-step-scheduler is superseded by the note-based tickLane path (Phase D.3).
 import { SessionInspector } from './session-inspector';
+import { withUndo } from '../save/history-wiring';
 
 export interface SessionHostDeps {
   ctx: AudioContext;
@@ -246,17 +247,21 @@ export class SessionHost {
       onCellClick(laneId, clipIdx) {
         const lane = self.state.lanes.find((l) => l.id === laneId);
         if (!lane) return;
-        const defaultLen = Math.max(1, Math.floor(seq.length / 16));
-        const clip: SessionClip = {
-          id: `clip-${Date.now().toString(36)}`,
-          lengthBars: defaultLen,
-          notes: [],
+        const hd = self.deps.historyDeps;
+        const run = () => {
+          const defaultLen = Math.max(1, Math.floor(seq.length / 16));
+          const clip: SessionClip = {
+            id: `clip-${Date.now().toString(36)}`,
+            lengthBars: defaultLen,
+            notes: [],
+          };
+          while (lane.clips.length <= clipIdx) lane.clips.push(null);
+          lane.clips[clipIdx] = clip;
+          self.inspector.setSelectedClip({ laneId, clipIdx });
+          self.inspector.openInspector();
+          self.renderWithMixer();
         };
-        while (lane.clips.length <= clipIdx) lane.clips.push(null);
-        lane.clips[clipIdx] = clip;
-        self.inspector.setSelectedClip({ laneId, clipIdx });
-        self.inspector.openInspector();
-        self.renderWithMixer();
+        if (hd) withUndo(hd, run); else run();
       },
       onStopLane(laneId) { stopLane(self.laneStates, laneId); self.renderWithMixer(); },
       onLaunchScene(idx) {
@@ -274,38 +279,46 @@ export class SessionHost {
       },
       onStopAll() { stopAll(self.laneStates); self.renderWithMixer(); },
       onAddScene() {
-        self.state.scenes.push({
-          id: `scene-${Date.now().toString(36)}`,
-          name: `Scene ${self.state.scenes.length + 1}`,
-          clipPerLane: {},
-        });
-        self.renderWithMixer();
+        const hd = self.deps.historyDeps;
+        const run = () => {
+          self.state.scenes.push({
+            id: `scene-${Date.now().toString(36)}`,
+            name: `Scene ${self.state.scenes.length + 1}`,
+            clipPerLane: {},
+          });
+          self.renderWithMixer();
+        };
+        if (hd) withUndo(hd, run); else run();
       },
       onAddLane(engineId: string) {
-        const used = new Set(self.state.lanes.map((l) => l.id));
-        const newId = nextLaneSlug(used, engineId);
+        const hd = self.deps.historyDeps;
+        const run = () => {
+          const used = new Set(self.state.lanes.map((l) => l.id));
+          const newId = nextLaneSlug(used, engineId);
 
-        const engineDef = getEngine(engineId);
-        const sameKindCount = self.state.lanes.filter((l) => l.engineId === engineId).length;
-        const displayName = engineDef ? `${engineDef.name} ${sameKindCount + 1}` : newId;
-        const lane = emptyLane(newId, engineId);
-        lane.name = displayName;
-        const rowCount = Math.max(self.state.scenes.length, 1);
-        for (let r = 0; r < rowCount; r++) {
-          lane.clips.push({
-            id: `clip-${Date.now().toString(36)}-${r}`,
-            lengthBars: Math.max(1, Math.floor(seq.length / 16)),
-            notes: [],
-          });
-        }
-        self.state.lanes.push(lane);
-        self.laneStates.set(newId, emptyLanePlayState(newId));
+          const engineDef = getEngine(engineId);
+          const sameKindCount = self.state.lanes.filter((l) => l.engineId === engineId).length;
+          const displayName = engineDef ? `${engineDef.name} ${sameKindCount + 1}` : newId;
+          const lane = emptyLane(newId, engineId);
+          lane.name = displayName;
+          const rowCount = Math.max(self.state.scenes.length, 1);
+          for (let r = 0; r < rowCount; r++) {
+            lane.clips.push({
+              id: `clip-${Date.now().toString(36)}-${r}`,
+              lengthBars: Math.max(1, Math.floor(seq.length / 16)),
+              notes: [],
+            });
+          }
+          self.state.lanes.push(lane);
+          self.laneStates.set(newId, emptyLanePlayState(newId));
 
-        // Allocate a fresh ChannelStrip + engine instance for the new lane so
-        // triggerForLane can find it via laneResources immediately.
-        self.deps.ensureLaneResource?.(newId, engineId);
+          // Allocate a fresh ChannelStrip + engine instance for the new lane so
+          // triggerForLane can find it via laneResources immediately.
+          self.deps.ensureLaneResource?.(newId, engineId);
 
-        self.renderWithMixer();
+          self.renderWithMixer();
+        };
+        if (hd) withUndo(hd, run); else run();
       },
       onAddClipRow()   { /* Task 11 */ },
       onEditLane(laneId) {

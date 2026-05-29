@@ -9,6 +9,7 @@ import { renderClipEditor, type ClipEditorDeps } from './clip-editors/clip-edito
 import { renderClipAutomationLanes } from './clip-automation-lanes';
 import type { PianoRollHandle } from '../core/pianoroll';
 import type { HistoryDeps } from '../save/history-wiring';
+import { withUndo } from '../save/history-wiring';
 
 export interface InspectorDeps {
   ctx: AudioContext;
@@ -62,25 +63,37 @@ export class SessionInspector {
     nameEl.oninput = () => { clip.name = nameEl.value || undefined; this.deps.renderWithMixer(); };
     lenEl.oninput  = () => { clip.lengthBars = Math.max(1, parseInt(lenEl.value, 10) || 1); };
     qEl.onchange   = () => {
-      clip.launchQuantize = (qEl.value || undefined) as import('./session').LaunchQuantize | undefined;
+      const d = this.deps.historyDeps;
+      const run = () => {
+        clip.launchQuantize = (qEl.value || undefined) as import('./session').LaunchQuantize | undefined;
+      };
+      if (d) withUndo(d, run); else run();
     };
 
     document.getElementById('insp-duplicate')!.onclick = () => {
       if (!this.selectedClip) return;
-      const ln = this.deps.state.lanes.find((l) => l.id === this.selectedClip!.laneId)!;
-      const dup: SessionClip = JSON.parse(JSON.stringify(clip));
-      dup.id = `clip-${Date.now().toString(36)}`;
-      dup.name = (clip.name ?? '') + ' copy';
-      ln.clips.push(dup);
-      this.deps.renderWithMixer();
+      const d = this.deps.historyDeps;
+      const run = () => {
+        const ln = this.deps.state.lanes.find((l) => l.id === this.selectedClip!.laneId)!;
+        const dup: SessionClip = JSON.parse(JSON.stringify(clip));
+        dup.id = `clip-${Date.now().toString(36)}`;
+        dup.name = (clip.name ?? '') + ' copy';
+        ln.clips.push(dup);
+        this.deps.renderWithMixer();
+      };
+      if (d) withUndo(d, run); else run();
     };
     document.getElementById('insp-delete')!.onclick = () => {
       if (!this.selectedClip) return;
-      const ln = this.deps.state.lanes.find((l) => l.id === this.selectedClip!.laneId)!;
-      ln.clips[this.selectedClip.clipIdx] = null;
-      panel.hidden = true;
-      this.selectedClip = null;
-      this.deps.renderWithMixer();
+      const d = this.deps.historyDeps;
+      const run = () => {
+        const ln = this.deps.state.lanes.find((l) => l.id === this.selectedClip!.laneId)!;
+        ln.clips[this.selectedClip!.clipIdx] = null;
+        panel.hidden = true;
+        this.selectedClip = null;
+        this.deps.renderWithMixer();
+      };
+      if (d) withUndo(d, run); else run();
     };
 
     // Copy / paste
@@ -146,9 +159,13 @@ export class SessionInspector {
     const lane = this.deps.state.lanes.find((l) => l.id === this.selectedClip!.laneId);
     const clip = lane?.clips[this.selectedClip.clipIdx];
     if (!lane || !clip) return;
-    clip.notes = JSON.parse(JSON.stringify(clipClipboard.notes ?? []));
-    this.renderEditor();
-    this.deps.renderWithMixer();
+    const d = this.deps.historyDeps;
+    const run = () => {
+      clip.notes = JSON.parse(JSON.stringify(clipClipboard!.notes ?? []));
+      this.renderEditor();
+      this.deps.renderWithMixer();
+    };
+    if (d) withUndo(d, run); else run();
   }
 
   private pasteLayer(): void {
@@ -156,12 +173,16 @@ export class SessionInspector {
     const lane = this.deps.state.lanes.find((l) => l.id === this.selectedClip!.laneId);
     const clip = lane?.clips[this.selectedClip.clipIdx];
     if (!lane || !clip) return;
-    clip.notes = [
-      ...(clip.notes ?? []),
-      ...JSON.parse(JSON.stringify(clipClipboard.notes ?? [])) as import('../core/notes').NoteEvent[],
-    ];
-    this.renderEditor();
-    this.deps.renderWithMixer();
+    const d = this.deps.historyDeps;
+    const run = () => {
+      clip.notes = [
+        ...(clip.notes ?? []),
+        ...JSON.parse(JSON.stringify(clipClipboard!.notes ?? [])) as import('../core/notes').NoteEvent[],
+      ];
+      this.renderEditor();
+      this.deps.renderWithMixer();
+    };
+    if (d) withUndo(d, run); else run();
   }
 }
 
