@@ -108,3 +108,43 @@ export function canDropClip(s: SessionState, from: ClipSlot, to: ClipSlot): bool
   const dstClip = dstLane.clips[to.clipIdx];
   return dstClip == null;
 }
+
+function padToIndex<T>(arr: (T | null)[], idx: number): (T | null)[] {
+  if (arr.length > idx) return arr;
+  return [...arr, ...Array(idx - arr.length + 1).fill(null)];
+}
+
+function reEvaluateEnvelopes(
+  clip: SessionClip,
+  destEngineParamIds: ReadonlySet<string>,
+): SessionClip {
+  if (!clip.envelopes || clip.envelopes.length === 0) return clip;
+  return {
+    ...clip,
+    envelopes: clip.envelopes.map((env) => ({
+      ...env,
+      enabled: destEngineParamIds.has(env.paramId),
+    })),
+  };
+}
+
+export function moveClip(
+  s: SessionState,
+  from: ClipSlot,
+  to: ClipSlot,
+  destEngineParamIds: ReadonlySet<string>,
+): SessionState {
+  if (!canDropClip(s, from, to)) {
+    throw new Error(`moveClip: invalid drop from ${from.laneId}:${from.clipIdx} to ${to.laneId}:${to.clipIdx}`);
+  }
+  const out = cloneSessionState(s);
+  const srcLane = out.lanes.find((l) => l.id === from.laneId)!;
+  const dstLane = out.lanes.find((l) => l.id === to.laneId)!;
+  const movingClip = srcLane.clips[from.clipIdx]!;
+  srcLane.clips[from.clipIdx] = null;
+  dstLane.clips = padToIndex(dstLane.clips, to.clipIdx);
+  dstLane.clips[to.clipIdx] = from.laneId === to.laneId
+    ? movingClip
+    : reEvaluateEnvelopes(movingClip, destEngineParamIds);
+  return out;
+}
