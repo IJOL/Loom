@@ -47,6 +47,7 @@ function makeMockHost(mods: ModulatorState[]): ModulationHost {
     setConnection() {},
     removeConnection() {},
     spawnVoice() { return new Map(); },
+    spawnVoiceFiltered() { return new Map(); },
     serialize() { return mods; },
     deserialize() {},
   };

@@ -63,4 +63,21 @@ describe('ModulationHostImpl', () => {
     h2.deserialize(snapshot);
     expect(h2.modulators).toEqual(snapshot);
   });
+
+  describe('ModulationHostImpl.spawnVoiceFiltered', () => {
+    it('only spawns modulators matching the predicate', () => {
+      const host = new ModulationHostImpl([
+        { id: 'lfo1',  kind: 'lfo',  enabled: true, connections: [], scope: 'shared'    },
+        { id: 'adsr1', kind: 'adsr', enabled: true, connections: [], scope: 'per-voice' },
+        { id: 'lfo2',  kind: 'lfo',  enabled: true, connections: [], scope: 'per-voice' },
+      ]);
+      const captured: string[] = [];
+      const fakeCtx = {} as unknown as AudioContext;
+      host.spawnVoiceFiltered(fakeCtx, () => 120, (m) => {
+        captured.push(m.id);
+        return false;  // returning false → no actual voices constructed
+      });
+      expect(captured).toEqual(['lfo1', 'adsr1', 'lfo2']);
+    });
+  });
 });

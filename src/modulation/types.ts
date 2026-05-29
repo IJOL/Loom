@@ -55,6 +55,11 @@ export interface ModulationHost {
   setConnection(modId: string, conn: ModulationConnection): void;
   removeConnection(modId: string, connId: string): void;
   spawnVoice(ctx: AudioContext, bpm: () => number): Map<string, ModulatorVoice>;
+  spawnVoiceFiltered(
+    ctx: AudioContext,
+    bpm: () => number,
+    predicate: (m: ModulatorState) => boolean,
+  ): Map<string, ModulatorVoice>;
   serialize(): ModulatorState[];
   deserialize(state: ModulatorState[]): void;
 }

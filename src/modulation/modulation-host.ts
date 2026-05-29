@@ -61,9 +61,18 @@ export class ModulationHostImpl implements ModulationHost {
   }
 
   spawnVoice(ctx: AudioContext, bpm: () => number): Map<string, ModulatorVoice> {
+    return this.spawnVoiceFiltered(ctx, bpm, () => true);
+  }
+
+  spawnVoiceFiltered(
+    ctx: AudioContext,
+    bpm: () => number,
+    predicate: (m: ModulatorState) => boolean,
+  ): Map<string, ModulatorVoice> {
     const out = new Map<string, ModulatorVoice>();
     for (const m of this.modulators) {
       if (!m.enabled) continue;
+      if (!predicate(m)) continue;
       out.set(m.id, m.kind === 'lfo' ? new LFOVoice(ctx, m, bpm) : new ADSRVoice(ctx, m));
     }
     return out;
