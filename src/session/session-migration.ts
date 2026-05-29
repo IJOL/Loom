@@ -4,7 +4,7 @@
 
 import type { PatternBank, PatternData } from '../core/pattern';
 import {
-  emptyScene, emptySessionState,
+  emptyScene, emptySessionState, CLIP_COLOR_PALETTE,
   type SessionClip, type SessionLane, type SessionState,
 } from './session';
 import { bassStepsToNotes, stepsToNotes, drumStepsToNotes } from '../core/notes';
@@ -105,6 +105,14 @@ export function migrateLoadedSessionState(s: SessionState): SessionState {
   return s;
 }
 
+/** Deterministic palette pick from a clip id — same id always yields the
+ *  same color, so demos load with stable colors across page reloads. */
+function colorForClipId(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
+  return CLIP_COLOR_PALETTE[Math.abs(hash) % CLIP_COLOR_PALETTE.length];
+}
+
 function guessEngineId(laneId: string): string {
   if (laneId === 'bass')  return 'tb303';
   if (laneId === 'drums' || laneId.startsWith('drum:')) return 'drums-machine';
@@ -112,7 +120,11 @@ function guessEngineId(laneId: string): string {
 }
 
 function migrateClip(c: SessionClip): SessionClip {
-  if (Array.isArray(c.notes)) return c;
+  // Modern clip: only backfill the color if it was missing (e.g. demo JSONs
+  // that predate the color field, or save files from before the palette).
+  if (Array.isArray(c.notes)) {
+    return c.color ? c : { ...c, color: colorForClipId(c.id) };
+  }
   type LegacyClip = SessionClip & {
     bassNotes?: NoteEvent[];
     polyNotes?: NoteEvent[];
@@ -133,7 +145,7 @@ function migrateClip(c: SessionClip): SessionClip {
     notes = drumStepsToNotes({ [legacy.drumLane]: legacy.drumLaneSteps });
   }
   return {
-    id: c.id, name: c.name, color: c.color,
+    id: c.id, name: c.name, color: c.color ?? colorForClipId(c.id),
     lengthBars: c.lengthBars, launchQuantize: c.launchQuantize,
     envelopes: c.envelopes, notes,
   };
