@@ -1,5 +1,6 @@
 import { wireEngineParams } from '../engines/engine-ui';
 import { wireDrumMasterUI } from '../core/drum-master-ui';
+import { mountLaneFxPanel as mountLaneFxPanelInner } from '../core/lane-fx-panel';
 import { tb303Engine } from '../engines/tb303';
 import { LANE_ID_BASS } from '../core/lane-ids';
 import type { KnobHandle } from '../core/knob';
@@ -18,6 +19,7 @@ export interface KnobMounterDeps {
   fmtDb(v: number): string;
   getSessionState(): SessionState | undefined;
   getLaneDisplayName(id: string): string | undefined;
+  sidechainBus: import('../core/sidechain-bus').SidechainBus;
   // Late-bound: _discreteHistoryDeps is assigned after createKnobMounter
   // runs, so the value must be read at use time (not at construction).
   getHistoryDeps?(): HistoryDeps | undefined;
@@ -34,6 +36,7 @@ export interface KnobMounter {
   wireLaneKnobs(opts: LaneWiringOpts): void;
   mountSubtractiveLaneKnobs(laneId: string): void;
   mountDrumMasterLaneKnobs(laneId: string): void;
+  mountLaneFxPanel(laneId: string): void;
   refreshKnobsFromSynth(): void;
   refreshLaneKnobs(laneId: string, engine: SynthEngine): void;
 }
@@ -87,6 +90,22 @@ export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
     });
   };
 
+  const mountLaneFxPanel = (laneId: string) => {
+    const strip = deps.laneResources.get(laneId)?.strip;
+    if (!strip) return;
+    const slot = document.querySelector('.page:not([hidden]) .lane-fx-knobs') as HTMLElement | null;
+    if (!slot) return;
+    mountLaneFxPanelInner({
+      laneId,
+      strip,
+      bus: deps.sidechainBus,
+      parent: slot,
+      registerKnob: (k) => deps.registerKnob(k),
+      historyDeps: deps.getHistoryDeps?.(),
+      lookupLabel: deps.getLaneDisplayName,
+    });
+  };
+
   const refreshKnobsFromSynth = () => {
     const liveValue = (specId: string): number | null => {
       switch (specId) {
@@ -114,7 +133,7 @@ export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
   };
 
   return {
-    wireLaneKnobs, mountSubtractiveLaneKnobs, mountDrumMasterLaneKnobs,
+    wireLaneKnobs, mountSubtractiveLaneKnobs, mountDrumMasterLaneKnobs, mountLaneFxPanel,
     refreshKnobsFromSynth, refreshLaneKnobs,
   };
 }

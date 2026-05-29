@@ -308,11 +308,13 @@ const knobs = createKnobMounter({
   fmtPct, fmtDb,
   getSessionState: () => sessionHost?.state,
   getLaneDisplayName: (id) => sessionHost?.state.lanes.find((l) => l.id === id)?.name,
+  sidechainBus,
   getHistoryDeps: () => _discreteHistoryDeps,
 });
 const wireLaneKnobs = knobs.wireLaneKnobs;
 const mountSubtractiveLaneKnobs = knobs.mountSubtractiveLaneKnobs;
 const mountDrumMasterLaneKnobs = knobs.mountDrumMasterLaneKnobs;
+const mountLaneFxPanel = knobs.mountLaneFxPanel;
 const refreshKnobsFromSynth = knobs.refreshKnobsFromSynth;
 const refreshLaneKnobs = knobs.refreshLaneKnobs;
 
@@ -392,6 +394,7 @@ const sessionHost = new SessionHost({
     if (active) {
       const engineId = sessionHost.state.lanes.find((l) => l.id === active)?.engineId;
       if (engineId === 'drums-machine') mountDrumMasterLaneKnobs(active);
+      mountLaneFxPanel(active);
     }
   },
   laneResources,
@@ -491,7 +494,10 @@ const engineSelectorDeps: EngineSelectorUIDeps = {
   automationRegistry,
   registerKnob,
   populateAutoParamSelect: () => populateAutoParamSelectWrapper(),
-  remountSubtractiveLaneKnobs: (laneId) => mountSubtractiveLaneKnobs(laneId),
+  remountSubtractiveLaneKnobs: (laneId) => {
+    mountSubtractiveLaneKnobs(laneId);
+    mountLaneFxPanel(laneId);
+  },
   // Late-bound via getter: _discreteHistoryDeps is assigned after historyDeps
   // is built (further below), but the change handler fires at user-interaction
   // time, so the getter always sees the final value.
@@ -543,6 +549,7 @@ synthEditorDeps = {
     const engine = laneResources.get(activeLaneId)?.engine;
     if (engine?.id === 'subtractive') {
       mountSubtractiveLaneKnobs(activeLaneId);
+      mountLaneFxPanel(activeLaneId);
     }
   },
   refreshPolyPresetSelect: () => refreshPolyPresetSelect(),
@@ -550,6 +557,7 @@ synthEditorDeps = {
 };
 
 mountSubtractiveLaneKnobs(LANE_ID_POLY);
+mountLaneFxPanel(LANE_ID_POLY);
 
 
 const arpUIDeps: ArpUIDeps = {
@@ -568,6 +576,8 @@ const fxUIDeps: FxUIDeps = {
 };
 wireFxUI(fxUIDeps);
 mountDrumMasterLaneKnobs(LANE_ID_DRUMS);
+mountLaneFxPanel(LANE_ID_DRUMS);
+mountLaneFxPanel(LANE_ID_BASS);
 fxApplyDelaySync(fxUIDeps);
 const transportDeps: TransportDeps = {
   seq, bank, ctx, playBtn, barsSel,
