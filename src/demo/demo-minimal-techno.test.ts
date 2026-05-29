@@ -11,11 +11,29 @@
 //      but `envelopesForLane(pat, 'subtractive-1')` filters by the new prefix.
 // This test pins both behaviours.
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { buildMinimalTechnoDemo } from './demo-minimal-techno';
 import { PatternBank } from '../core/pattern';
 import { importClassicToSession } from '../session/session-migration';
 import { SubtractiveEngine } from '../engines/subtractive';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { __resetPresetCache, loadEnginePresets } from '../presets/preset-loader';
+
+// SubtractiveEngine.presets is a getter over the JSON-loaded preset cache
+// (populated via /presets/subtractive.json at boot). Vitest doesn't run that
+// loader, so stub fetch with the on-disk JSON before any assertions.
+beforeAll(async () => {
+  __resetPresetCache();
+  const path = resolve(process.cwd(), 'public/presets/subtractive.json');
+  const body = JSON.parse(readFileSync(path, 'utf-8'));
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => body,
+  }));
+  await loadEnginePresets('subtractive');
+  vi.unstubAllGlobals();
+});
 
 describe('minimal-techno demo', () => {
   it('builds 4 patterns', () => {
