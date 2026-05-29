@@ -48,3 +48,28 @@ describe('history — commit / undo / redo basics', () => {
     expect(h.canRedo()).toBe(false);
   });
 });
+
+describe('history — maxSize', () => {
+  it('drops oldest past entry when commit overflows maxSize', () => {
+    const h = createHistory<number>({ maxSize: 3 });
+    h.commit(1);
+    h.commit(2);
+    h.commit(3);
+    h.commit(4); // pushes out 1
+    // 4 undos: 3 should succeed (returning 4,3,2), 4th returns null
+    expect(h.undo(99)).toBe(4);
+    expect(h.undo(99)).toBe(3);
+    expect(h.undo(99)).toBe(2);
+    expect(h.undo(99)).toBe(null);
+  });
+
+  it('default maxSize is 100', () => {
+    const h = createHistory<number>();
+    for (let i = 0; i < 150; i++) h.commit(i);
+    // Undo 100 times returns the most recent 100 (149..50)
+    let last: number | null = null;
+    for (let i = 0; i < 100; i++) last = h.undo(999);
+    expect(last).toBe(50);
+    expect(h.undo(999)).toBe(null);
+  });
+});
