@@ -10,6 +10,8 @@
 
 **Spec:** [docs/superpowers/specs/2026-05-28-undo-global-design.md](../specs/2026-05-28-undo-global-design.md)
 
+**Plan re-verified against HEAD on 2026-05-29.** Files cross-checked: `src/main.ts` bootstrap area (1074), `src/core/knob.ts` shape, `src/save/save-wiring.ts`, `src/session/session-host.ts`, `src/core/synth.ts`. Corrections from the initial draft: Task 8 routes randomize/clear changes to `src/core/randomize-ui.ts` (not `main.ts`); Task 10 adds `src/presets/preset-apply.ts` as an additional callsite and clarifies which `applyPresetByName` invocations must NOT be wrapped (the session/scene-launch path mutates state programmatically and is not a user action).
+
 ---
 
 ## Phase A — Pure history controller
@@ -711,11 +713,17 @@ Each task wraps existing mutation handlers with `withUndo` (discrete) or `attach
 
 **Files:**
 
-- Modify: `src/main.ts` (sequencer cell click handler, randomize button, clear button)
+- Modify: `src/main.ts` (sequencer cell click handlers — bass + drum step toggles inside `rebuildTracks`)
+- Modify: `src/core/randomize-ui.ts` (all 4 random-button handlers wired in `wireRandomizeUI`)
+- Modify: `src/main.ts` (Clear pattern button — `clearPattern` callsite)
 
 - [ ] **Step 1: Find the sites**
 
-Run: `grep -n "Randomize\|Random\|Clear\|onclick" src/main.ts | head -30` to locate the buttons. Also grep for the bass/drum cell click handlers (likely in `rebuildTracks` or similar).
+In `src/main.ts`, search for `rebuildTracks` and the bass-cell / drum-cell click handlers inside it. Search for `clearPattern(` to find the Clear button handler.
+
+In `src/core/randomize-ui.ts`, the four button handlers are at the bottom of the file inside `wireRandomizeUI` — `bass-random-sound`, `bass-random-notes`, `drums-random`, `poly-random-notes`. Each runs a `randomize*` function; wrap each `addEventListener('click', …)` body.
+
+`randomize-ui.ts` does not currently take a `historyDeps`. Add it to `RandomizeUIDeps` and pass from `main.ts` at the existing `wireRandomizeUI({ … })` call (around line 1003).
 
 - [ ] **Step 2: Wrap each handler**
 
@@ -777,8 +785,10 @@ git commit -m "feat(history): wrap session add/remove mutations"
 
 - Modify: `src/main.ts` (kitSel, waveSel)
 - Modify: `src/engines/engine-selector-ui.ts`
-- Modify: `src/presets/preset-library-ui.ts` (load handler)
-- Modify: `src/polysynth/polysynth-presets.ts` (`applyPresetByName`)
+- Modify: `src/presets/preset-library-ui.ts` (Load row click)
+- Modify: `src/presets/preset-apply.ts` (top-level apply entry point — wrap here)
+
+**Do NOT modify `applyPresetByName` itself** in `src/polysynth/polysynth-presets.ts`. It is also called programmatically from `src/session/clip-automation-lanes.ts` and from session/scene-launch paths inside `session-host.ts`; wrapping it there would snapshot on every scene change, which is not a user action. Wrap at the user-facing callsites only (preset library UI click, preset-apply.ts entry).
 
 - [ ] **Step 1: Identify each `change` event handler**
 
