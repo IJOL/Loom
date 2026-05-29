@@ -12,7 +12,7 @@ import { formatParamIdForDisplay } from '../core/lane-display';
 import type { ModulationHost, ModulatorState, Waveform } from './types';
 import type { SessionState } from '../session/session';
 import { syncModulators } from '../session/session-engine-state';
-import { attachKnobUndo, type HistoryDeps } from '../save/history-wiring';
+import { attachKnobUndo, withUndo, type HistoryDeps } from '../save/history-wiring';
 
 export interface ModulationUIDeps {
   engineId: string;
@@ -51,8 +51,14 @@ export function renderModulatorsPanel(container: HTMLElement, deps: ModulationUI
 
   const header = document.createElement('div');
   header.className = 'mod-panel-header';
-  header.appendChild(mkAddButton('+ LFO',  () => { deps.host.addModulator('lfo');  sync(deps); deps.onChange(); }));
-  header.appendChild(mkAddButton('+ ADSR', () => { deps.host.addModulator('adsr'); sync(deps); deps.onChange(); }));
+  header.appendChild(mkAddButton('+ LFO',  () => {
+    const run = () => { deps.host.addModulator('lfo');  sync(deps); deps.onChange(); };
+    if (deps.historyDeps) withUndo(deps.historyDeps, run); else run();
+  }));
+  header.appendChild(mkAddButton('+ ADSR', () => {
+    const run = () => { deps.host.addModulator('adsr'); sync(deps); deps.onChange(); };
+    if (deps.historyDeps) withUndo(deps.historyDeps, run); else run();
+  }));
   box.appendChild(header);
 
   for (const mod of deps.host.modulators) {
@@ -91,8 +97,8 @@ function renderModCard(mod: ModulatorState, deps: ModulationUIDeps): HTMLElement
   };
   refreshEnableUI();
   enableBtn.addEventListener('click', () => {
-    mod.enabled = !mod.enabled;
-    sync(deps);
+    const run = () => { mod.enabled = !mod.enabled; sync(deps); };
+    if (deps.historyDeps) withUndo(deps.historyDeps, run); else run();
     refreshEnableUI();
   });
   row.appendChild(enableBtn);
@@ -100,7 +106,10 @@ function renderModCard(mod: ModulatorState, deps: ModulationUIDeps): HTMLElement
   const rmBtn = document.createElement('button');
   rmBtn.className = 'rnd';
   rmBtn.textContent = '×';
-  rmBtn.addEventListener('click', () => { deps.host.removeModulator(mod.id); sync(deps); deps.onChange(); });
+  rmBtn.addEventListener('click', () => {
+    const run = () => { deps.host.removeModulator(mod.id); sync(deps); deps.onChange(); };
+    if (deps.historyDeps) withUndo(deps.historyDeps, run); else run();
+  });
   row.appendChild(rmBtn);
 
   card.appendChild(row);
@@ -122,7 +131,10 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
       { value: 'saw',      label: 'Saw'  },
     ],
     initialValue: mod.waveform ?? 'sine',
-    onChange: (v) => { mod.waveform = v as Waveform; sync(deps); },
+    onChange: (v) => {
+      const run = () => { mod.waveform = v as Waveform; sync(deps); };
+      if (deps.historyDeps) withUndo(deps.historyDeps, run); else run();
+    },
   });
   deps.registerKnob(wave.handle);
   row.appendChild(wave.el);
@@ -146,7 +158,10 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
     label: 'RATIO',
     options: ratioOpts,
     initialValue: mod.syncRatio ?? '1/4',
-    onChange: (v) => { mod.syncRatio = v; sync(deps); },
+    onChange: (v) => {
+      const run = () => { mod.syncRatio = v; sync(deps); };
+      if (deps.historyDeps) withUndo(deps.historyDeps, run); else run();
+    },
   });
   deps.registerKnob(ratio.handle);
   row.appendChild(ratio.el);
@@ -160,8 +175,8 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
   };
   refreshSyncUI();
   syncBtn.addEventListener('click', () => {
-    mod.syncToBpm = !mod.syncToBpm;
-    sync(deps);
+    const run = () => { mod.syncToBpm = !mod.syncToBpm; sync(deps); };
+    if (deps.historyDeps) withUndo(deps.historyDeps, run); else run();
     refreshSyncUI();
   });
   row.appendChild(syncBtn);
@@ -174,7 +189,10 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
       { value: 'bi',  label: '-1..+1' },
     ],
     initialValue: (mod.bipolar !== false) ? 'bi' : 'uni',
-    onChange: (v) => { mod.bipolar = v === 'bi'; sync(deps); },
+    onChange: (v) => {
+      const run = () => { mod.bipolar = v === 'bi'; sync(deps); };
+      if (deps.historyDeps) withUndo(deps.historyDeps, run); else run();
+    },
   });
   deps.registerKnob(bipolar.handle);
   row.appendChild(bipolar.el);
@@ -187,7 +205,10 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
       { value: 'note', label: 'Note' },
     ],
     initialValue: mod.trigger ?? 'free',
-    onChange: (v) => { mod.trigger = v as 'free' | 'note'; sync(deps); },
+    onChange: (v) => {
+      const run = () => { mod.trigger = v as 'free' | 'note'; sync(deps); };
+      if (deps.historyDeps) withUndo(deps.historyDeps, run); else run();
+    },
   });
   deps.registerKnob(trigger.handle);
   row.appendChild(trigger.el);
@@ -203,11 +224,14 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
     ],
     initialValue: mod.scope ?? 'shared',
     onChange: (v) => {
-      mod.scope = v as 'shared' | 'per-voice';
-      sync(deps);
-      // Re-render the panel so TRIG visibility updates and the engine can
-      // respawn modulator voices in the new scope.
-      deps.onChange();
+      const run = () => {
+        mod.scope = v as 'shared' | 'per-voice';
+        sync(deps);
+        // Re-render the panel so TRIG visibility updates and the engine can
+        // respawn modulator voices in the new scope.
+        deps.onChange();
+      };
+      if (deps.historyDeps) withUndo(deps.historyDeps, run); else run();
     },
   });
   deps.registerKnob(scope.handle);
@@ -284,10 +308,13 @@ function renderRoutingList(mod: ModulatorState, deps: ModulationUIDeps): HTMLEle
   addBtn.addEventListener('click', () => {
     const paramId = destSel.value;
     if (!paramId) return;
-    const cid = `c-${Date.now().toString(36)}`;
-    deps.host.setConnection(mod.id, { id: cid, paramId, depth: 0.5 });
-    sync(deps);
-    deps.onChange();
+    const run = () => {
+      const cid = `c-${Date.now().toString(36)}`;
+      deps.host.setConnection(mod.id, { id: cid, paramId, depth: 0.5 });
+      sync(deps);
+      deps.onChange();
+    };
+    if (deps.historyDeps) withUndo(deps.historyDeps, run); else run();
   });
   adder.appendChild(destSel);
   adder.appendChild(addBtn);
@@ -325,7 +352,10 @@ function renderConnectionRow(mod: ModulatorState, conn: import('./types').Modula
   const rmBtn = document.createElement('button');
   rmBtn.className = 'rnd';
   rmBtn.textContent = '×';
-  rmBtn.addEventListener('click', () => { deps.host.removeConnection(mod.id, conn.id); sync(deps); deps.onChange(); });
+  rmBtn.addEventListener('click', () => {
+    const run = () => { deps.host.removeConnection(mod.id, conn.id); sync(deps); deps.onChange(); };
+    if (deps.historyDeps) withUndo(deps.historyDeps, run); else run();
+  });
   row.appendChild(rmBtn);
 
   return row;
