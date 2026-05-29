@@ -10,6 +10,7 @@ import type { SidechainState } from './comp-state';
 //   sourceTap
 //     → WaveShaper (curve: y = |x|; full-wave rectify)
 //     → BiquadFilter (lowpass; freq from release time constant)
+//     → BiquadFilter (lowpass; freq from attack time constant; extra smoothing)
 //     → Gain (-depth)             ─┐
 //                                   ├──→ duckGain.gain (AudioParam)
 //   ConstantSourceNode(1.0)        ─┘
@@ -46,11 +47,13 @@ export class DuckerSubgraph {
   private scale: GainNode;
   private constOne: ConstantSourceNode;
   private duckGain: GainNode;
+  private duckGainRestoreValue: number;
 
   constructor(private ctx: BaseAudioContext, opts: DuckerOpts) {
     const { sourceTap, duckGain, state } = opts;
 
     this.duckGain = duckGain;
+    this.duckGainRestoreValue = duckGain.gain.value;
 
     this.rectify = ctx.createWaveShaper();
     this.rectify.curve = makeAbsCurve();
@@ -96,6 +99,6 @@ export class DuckerSubgraph {
     try { this.smoothLp.disconnect(); } catch { /* */ }
     try { this.scale.disconnect(); } catch { /* */ }
     try { this.constOne.disconnect(); } catch { /* */ }
-    this.duckGain.gain.value = 1;
+    this.duckGain.gain.value = this.duckGainRestoreValue;
   }
 }
