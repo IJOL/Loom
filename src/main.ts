@@ -1,29 +1,29 @@
+import { createAudioGraph } from './app/audio-graph';
+import { createBpmBroadcaster } from './app/bpm-broadcast';
+import { createMuteSolo } from './app/mute-solo';
+import { createLaneAllocator } from './app/lane-allocator';
+import { createAutomationRecorder } from './app/automation-recording';
+import { createTriggerForLane } from './app/trigger-dispatch';
+import { createKnobMounter } from './app/knob-mounting';
+import { createLaneHost } from './app/lane-host-wiring';
 import {
   wireEngineSelector, rebuildEngineParamUI,
   type EngineSelectorUIDeps,
 } from './engines/engine-selector-ui';
-import type { SynthEngine } from './engines/engine-types';
-import * as leh from './engines/lane-engine-host';
-import type { LaneEngineHostState, LaneEngineHostDeps } from './engines/lane-engine-host';
-import { getEngine, createEngineInstance } from './engines/registry';
 import './engines/subtractive';
 import './engines/wavetable';
 import './engines/fm';
 import './engines/karplus';
-import { configureTB303EngineMainInstance, tb303Engine } from './engines/tb303';
-import { wireEngineParams } from './engines/engine-ui';
+import { tb303Engine } from './engines/tb303';
 import './engines/drums-engine';
-import { configureDrumsEngineSharedFx } from './engines/drums-engine';
-import { TB303, type Wave } from './core/synth';
+import { type Wave } from './core/synth';
 import { Sequencer } from './core/sequencer';
-import { DrumMachine, DRUM_LANES, type DrumVoice } from './core/drums';
-import { FxBus, ChannelStrip, FilterChain } from './core/fx';
-import { PatternBank, emptyPattern, AUTOMATION_SUB_RES, type AutomationLane } from './core/pattern';
+import { DRUM_LANES, type DrumVoice } from './core/drums';
+import { ChannelStrip } from './core/fx';
+import { PatternBank } from './core/pattern';
 import { type KnobHandle } from './core/knob';
 import { PolySynth } from './polysynth/polysynth';
-import { scheduleArpForNote } from './arp/arp';
 import { stepsToNotes, bassStepsToNotes } from './core/notes';
-import { buildMixerColumn } from './core/mixer';
 import * as laneTrackHelpers from './core/lane-display';
 import { SessionHost } from './session/session-host';
 import { fetchDemoSession } from './demo/demo-loader';
@@ -41,8 +41,7 @@ import {
   buildSavedStateV3, applyLoadedStateV3, type SavedStateV3, type SavedStateV3Deps,
 } from './save/saved-state-v3';
 import {
-  wirePolyControls, wirePolyMode, applyPolyParams,
-  populatePolyPresetSelect, refreshPolyPresetSelect, polyPresetName,
+  wirePolyControls, wirePolyMode, refreshPolyPresetSelect,
   type PolySynthPresetsDeps, type PolyModeDeps,
 } from './polysynth/polysynth-presets';
 import { arp, buildArpUI, type ArpUIDeps } from './arp/arp-ui';
@@ -50,38 +49,27 @@ import {
   wireAutomationTab, renderLanes as renderLanesFromUI, redrawAllLanes,
   populateAutoParamSelect, type AutomationUIDeps,
 } from './automation/automation-ui';
-import { clamp01 } from './automation/automation-painter';
 import { wireCopyNotesPanel } from './copy/lane-copy';
 import { wireSlotCopyPanel } from './copy/slot-copy';
 import { wireRandomizeUI } from './core/randomize-ui';
 import { wireFxUI, applyDelaySync as fxApplyDelaySync, type FxUIDeps } from './core/fx-ui';
-import {
-  wireTransport, switchSlot, updateSlotButtons, isChainEnabled, refreshLoopBtn,
-  type TransportDeps,
-} from './core/transport';
+import { wireTransport, type TransportDeps } from './core/transport';
 import {
   showPolyEditor,
   synthEditorState,
 } from './session/synth-editor-routing';
 import { startVisualizer } from './core/visualizer';
-import { wireDrumMasterUI } from './core/drum-master-ui';
 import { wirePresetLibrary } from './presets/preset-library-ui';
 import { loadAllPresets } from './presets/preset-loader';
 import {
   startAutomationTick, resetAutomationPosition, getAutoAbsSubIdx,
   type AutomationTickDeps,
 } from './automation/automation-tick';
-import { setCurrentLaneForVoice, getActiveModVoice } from './modulation/active-mods';
-import { LaneResourceMap } from './core/lane-resources';
+import { getActiveModVoice } from './modulation/active-mods';
 import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from './core/lane-ids';
-import { computeStripMutes, type MuteSoloLane } from './core/mute-solo';
-import { GM_DRUM_MAP } from './engines/drum-gm-map';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
-const fmtSec = (v: number) => v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed(2)}s`;
-const fmtCents = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(0)}¢`;
-const fmtOct = (v: number) => v === 0 ? '0' : `${v > 0 ? '+' : ''}${v}`;
 
 type ExtraId =
   | 'poly1' | 'poly2' | 'poly3' | 'poly4' | 'poly5' | 'poly6' | 'poly7' | 'poly8'
@@ -105,225 +93,55 @@ const ENGINE_IDS_FOR_PRESETS = ['tb303', 'fm', 'wavetable', 'karplus', 'subtract
 const presetsLoaded = loadAllPresets(ENGINE_IDS_FOR_PRESETS);
 
 // ── Audio graph ────────────────────────────────────────────────────────────
-const ctx = new AudioContext();
-const master = ctx.createGain();
-const analyser = ctx.createAnalyser();
-analyser.fftSize = 2048;
-analyser.connect(ctx.destination);
-// Stackable master filters live between `master` and `analyser`.
-const filterChain = new FilterChain(ctx, master, analyser);
+const audio = createAudioGraph();
+const { ctx, master, analyser, filterChain, fx,
+        bassStrip, polyStrip, drumBusStrip,
+        synth, drums, polysynth,
+        mainSubtractive, drumsEngineInstance } = audio;
 
-const fx = new FxBus(ctx, master);
-configureDrumsEngineSharedFx(fx);
-const bassStrip = new ChannelStrip(ctx, master, fx);
-const polyStrip = new ChannelStrip(ctx, master, fx);
-// All drum voices route through this bus first, so a single level/EQ/sends
-// controls the entire drum machine.
-const drumBusStrip = new ChannelStrip(ctx, master, fx);
-const synth = new TB303(ctx, bassStrip.input);
-configureTB303EngineMainInstance(bassStrip.input, synth);
-const drums = new DrumMachine(ctx, fx, drumBusStrip.input);
-const polysynth = new PolySynth(ctx, polyStrip.input);
-// Retrieve the registry instance so we can wire polysynth into it.
-// (The singleton `subtractiveEngine` export has been removed; we go through
-// the registry, which holds the representative instance registered in
-// subtractive.ts at module load time.)
-const mainSubtractive = getEngine('subtractive');
-if (mainSubtractive) {
-  (mainSubtractive as unknown as { setPolySynth?(p: PolySynth): void }).setPolySynth?.(polysynth);
-}
 
-// Phase A: per-lane resources unified into a single Map. The objects are
-// the SAME instances as the existing globals (polysynth / bassStrip / etc.) —
-// reading either path returns identical state. Phase B will replace each
-// global with a laneResources.get(id) lookup; Phase E deletes the globals.
-const laneResources = new LaneResourceMap();
-const drumsEngineInstance = getEngine('drums-machine');
-if (drumsEngineInstance && mainSubtractive) {
-  laneResources.set(LANE_ID_BASS,  { strip: bassStrip,    engine: tb303Engine });
-  laneResources.set(LANE_ID_DRUMS, { strip: drumBusStrip, engine: drumsEngineInstance });
-  (drumsEngineInstance as unknown as { setBusStrip?(s: ChannelStrip): void }).setBusStrip?.(drumBusStrip);
-  laneResources.set(LANE_ID_POLY,  { strip: polyStrip,    engine: mainSubtractive });
-}
-
-// Extra polyphonic voices are created LAZILY — no PolySynth/ChannelStrip is
-// instantiated until a track is actually added (via UI, MIDI import, or demo).
-const extraStrips: Partial<Record<ExtraId, ChannelStrip>> = {};
-const extraPolys: Partial<Record<ExtraId, PolySynth>> = {};
-
-// Generic per-lane strip cache (keyed by full lane id). Used for non-extra-
-// poly lanes like bass2, drums2, etc.
-const extraLaneStrips = new Map<string, ChannelStrip>();
-
-// poly1 → subtractive-2, poly2 → subtractive-3, …
-function slugFromExtraId(id: ExtraId): string {
-  const n = parseInt(id.replace('poly', ''), 10) + 1;
-  return `subtractive-${n}`;
-}
-
-function ensureExtraPoly(id: ExtraId): PolySynth {
-  let p = extraPolys[id];
-  if (p) return p;
-  const strip = new ChannelStrip(ctx, master, fx);
-  p = new PolySynth(ctx, strip.input);
-  p.bpm = seq.bpm;
-  extraStrips[id] = strip;
-  extraPolys[id] = p;
-  // Phase A: also seed laneResources so consumers can opt into the new path.
-  // Each extra subtractive lane gets its OWN SubtractiveEngine instance via
-  // the factory (no shared singleton modHost). The factory-created engine
-  // has setPolySynth on its prototype; we attach the freshly-allocated
-  // polysynth so its createVoice can route notes through it.
-  const engine = createEngineInstance('subtractive');
-  if (engine) {
-    const setPS = (engine as unknown as { setPolySynth?(p: PolySynth): void }).setPolySynth;
-    if (setPS) setPS.call(engine, p);
-    laneResources.set(slugFromExtraId(id), { strip, engine });
-  }
-  return p;
-}
-
-const stripFor = (t: TrackId | string): ChannelStrip => {
-  // Per-voice drum channel strips (kick/snare/...) — not session lanes, just
-  // sub-busses of the drum bus.
-  if (t in drums.channels) {
-    const ch = drums.channels[t as DrumVoice];
-    if (ch) return ch;
-  }
-  // Slug session lanes — single source of truth.
-  const res = laneResources.get(t as string);
-  if (res) return res.strip;
-  // Short alias track ids used by TrackId / muteState / soloState:
-  // map them onto the canonical slug lane ids.
-  if (t === 'bass')    return laneResources.get(LANE_ID_BASS)!.strip;
-  if (t === 'poly')    return laneResources.get(LANE_ID_POLY)!.strip;
-  if (t === 'drumBus') return laneResources.get(LANE_ID_DRUMS)!.strip;
-  // Lazy extras — `poly1`/`poly2`/... aren't in laneResources yet because
-  // ensureExtraPoly hasn't been called. Trigger the lazy alloc (which now
-  // registers under the slug id too).
-  if ((EXTRA_IDS as readonly string[]).includes(t as string)) {
-    ensureExtraPoly(t as ExtraId);
-    return extraStrips[t as ExtraId]!;
-  }
-  // Generic extra Session lanes (bass2 / drums2 / etc.) — share the
-  // same per-lane ChannelStrip cache used by ensureLaneVoice.
-  return ensureLaneStrip(t as string);
-};
-
-// Tracks that should appear in the mixer / be iterated for save / mute-solo.
-// Excludes extra polys whose track hasn't been created yet (lazy lanes).
-function activeTracks(): TrackId[] {
-  return ALL_TRACKS.filter((t) => !(EXTRA_IDS as readonly string[]).includes(t));
-}
-
-// Automation param registry — populated as knobs are created throughout the file.
-const automationRegistry = new Map<string, KnobHandle>();
-let automationRecording = false;
-// Set in the boot section once automationDeps is constructed.
-let _automationDeps: AutomationUIDeps | null = null;
 // Stable call-site wrappers — set in boot section, after automationDeps is built.
 let renderLanes: () => void = () => { /* populated at boot */ };
 let populateAutoParamSelectWrapper: () => void = () => { /* populated at boot */ };
-function registerKnob(k: KnobHandle) {
-  if (!k.meta.id) return;
-  automationRegistry.set(k.meta.id, k);
-  // Wire knob → record bridge. Only user-driven changes during playback +
-  // armed REC actually write into a lane.
-  k.onValueChanged = (v, fromUser) => {
-    if (fromUser && automationRecording && seq.isPlaying()) {
-      recordAutomationValue(k.meta.id!, v);
-    }
-  };
-}
 
-interface LaneWiringDeps {
-  laneId: string;
-  engine: SynthEngine;
-  parent: HTMLElement;
-  formatter?: (id: string, v: number) => string;
-}
-
-// Phase C: late-bound ref so mountSubtractiveLaneKnobs (defined before
-// sessionHost) can still pass sessionState to the mirror once it is available.
-let _sessionStateForKnobs: import('./session/session').SessionState | undefined;
-
-/** Walks engine.params, builds the knob/select per param, registers each
- *  under '<laneId>.<spec.id>'. Click/drag writes via engine.setBaseValue.
- *  Delegates to the shared wireEngineParams helper used by engine.buildParamUI. */
-function wireLaneKnobs(deps: LaneWiringDeps): void {
-  const ctx: import('./engines/engine-types').EngineUIContext = {
-    laneId: deps.laneId,
-    registerKnob: (k) => registerKnob(k as KnobHandle),
-    registry: automationRegistry as unknown as Map<string, unknown>,
-    sessionState: _sessionStateForKnobs,
-    // Late-bound via getter so historyDeps is resolved at render time.
-    get historyDeps() { return _discreteHistoryDeps; },
-  };
-  wireEngineParams(deps.engine, ctx, deps.parent, { formatter: deps.formatter });
-}
-
-function recordAutomationValue(paramId: string, value: number) {
-  const entry = automationRegistry.get(paramId);
-  if (!entry) return;
-  const range = entry.meta.max - entry.meta.min;
-  if (range === 0) return;
-  const norm = clamp01((value - entry.meta.min) / range);
-  let lane = seq.pattern.automation.find((l) => l.paramId === paramId);
-  if (!lane) {
-    const lengthBars = Math.max(1, seq.length / 16);
-    const total = lengthBars * 16 * AUTOMATION_SUB_RES;
-    lane = {
-      paramId,
-      enabled: true,
-      stepped: false,
-      lengthBars,
-      values: Array.from({ length: total }, () => norm),
-    };
-    seq.pattern.automation.push(lane);
-    renderLanes();
-  }
-  const idx = getAutoAbsSubIdx() % lane.values.length;
-  lane.values[idx] = norm;
-  // Smooth a 2-sub-step neighborhood so single fast moves still produce a
-  // visible curve, not a single spike.
-  if (idx > 0) lane.values[idx - 1] = (lane.values[idx - 1] + norm) / 2;
-  if (idx + 1 < lane.values.length) lane.values[idx + 1] = (lane.values[idx + 1] + norm) / 2;
-}
 
 const seq = new Sequencer(ctx, 32);
-let currentEngineId = 'subtractive';
+const automation = createAutomationRecorder({
+  seq,
+  getAutoAbsSubIdx,
+  onLaneAdded: () => renderLanes(),
+});
+const automationRegistry = automation.registry;
+const registerKnob = (k: KnobHandle) => automation.registerKnob(k);
+const currentEngineId = 'subtractive';
 const bank = new PatternBank(32);
 
-// State for mute/solo (synced into the strips on every change)
-const muteState: Record<TrackId, boolean> = Object.fromEntries(ALL_TRACKS.map((t) => [t, false])) as Record<TrackId, boolean>;
-const soloState: Record<TrackId, boolean> = Object.fromEntries(ALL_TRACKS.map((t) => [t, false])) as Record<TrackId, boolean>;
+const lanes = createLaneAllocator({
+  ctx, master, fx,
+  bassStrip, polyStrip, drumBusStrip,
+  drums,
+  tb303Engine,
+  mainSubtractive,
+  drumsEngineInstance,
+  getBpm: () => seq.bpm,
+  extraIds: EXTRA_IDS,
+});
+const { resources: laneResources, extraStrips, extraPolys,
+        stripFor, ensureExtraPoly, ensureLaneVoice,
+        ensureLaneResource, getLaneEngineInstance } = lanes;
 
-function applyMuteSolo() {
-  // Each session lane owns one mixer column (M/S button keyed by the lane's
-  // slug id). The drum bus also owns its 8 per-voice strips and the legacy
-  // alias TrackIds — they must share the lane's mute/solo decision so SOLO
-  // on drums leaves the voices audible. computeStripMutes handles that
-  // arithmetic; this function just maps the result onto live strips.
-  const lanes: MuteSoloLane[] = [];
-  for (const laneId of laneResources.ids()) {
-    const ownedTrackIds: string[] = [];
-    if (laneId === LANE_ID_BASS)  ownedTrackIds.push('bass');
-    if (laneId === LANE_ID_POLY)  ownedTrackIds.push('poly');
-    if (laneId === LANE_ID_DRUMS) {
-      ownedTrackIds.push('drumBus');
-      for (const voice of DRUM_LANES) ownedTrackIds.push(voice);
-    }
-    lanes.push({ id: laneId, ownedTrackIds });
-  }
-  const mutes = computeStripMutes({
-    lanes,
-    muteState: muteState as unknown as Record<string, boolean>,
-    soloState: soloState as unknown as Record<string, boolean>,
-  });
-  for (const [id, muted] of Object.entries(mutes)) {
-    stripFor(id as TrackId).setMuted(muted);
-  }
-}
+const bpmBroadcast = createBpmBroadcaster({
+  seq, fx, filterChain, polysynth,
+  getExtraPolys: () => Object.values(extraPolys).filter((p): p is PolySynth => !!p),
+});
+
+// State for mute/solo (synced into the strips on every change)
+const muteSolo = createMuteSolo({
+  laneResources, stripFor,
+  allTrackIds: ALL_TRACKS as readonly string[],
+});
+const { muteState, soloState } = muteSolo as { muteState: Record<TrackId, boolean>; soloState: Record<TrackId, boolean>; apply(): void };
+const applyMuteSolo = () => muteSolo.apply();
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
 const playBtn  = $<HTMLButtonElement>('play');
@@ -335,9 +153,6 @@ const kitSel   = $<HTMLSelectElement>('kit-drums');
 const waveSel  = $<HTMLSelectElement>('wave');
 const scaleSel = $<HTMLSelectElement>('scale');
 const rootSel  = $<HTMLSelectElement>('root');
-const bassTracksEl = $<HTMLDivElement>('bass-tracks');
-const drumTracksEl = $<HTMLDivElement>('drum-tracks');
-const polyTracksEl = $<HTMLDivElement>('poly-tracks');
 const vizCanvas    = $<HTMLCanvasElement>('viz');
 const engineSel    = $<HTMLSelectElement>('engine-select');
 
@@ -361,93 +176,6 @@ for (let m = 24; m <= 48; m++) {
   rootSel.appendChild(opt);
 }
 
-// ── Per-lane engines (Phase 1B) — state lives in lane-engine-host.ts ───────
-// Engine selector UI → src/engines/engine-selector-ui.ts (wireEngineSelector)
-const _lehState: LaneEngineHostState = leh.createLaneEngineState();
-// deps object is built after rebuildEngineParamUI is defined (further below).
-// We use a late-bound wrapper so the deps reference is stable even though
-// rebuildEngineParamUI and LANE_LABELS are declared after this point.
-// Late-bound: set after sessionHost is constructed (sessionHost is const and
-// declared further below; this fn reference bridges the temporal gap).
-let _lookupEngineIdFn: (laneId: string) => string = (laneId) => {
-  // Fallback: consult the pattern for backward compat before sessionHost is ready.
-  if (laneId === 'subtractive-1') return seq.pattern.engineId ?? 'subtractive';
-  return 'subtractive';
-};
-
-const _lehDeps: LaneEngineHostDeps = {
-  get seq() { return seq; },
-  get bank() { return bank; },
-  get engineSel() { return engineSel; },
-  get rebuildEngineParamUI() { return rebuildEngineParamUI; },
-  get laneLabels() { return LANE_LABELS as Record<string, string>; },
-  lookupEngineId: (laneId: string) => _lookupEngineIdFn(laneId),
-};
-
-// Stable call-site wrappers (keep existing callsites in main.ts unchanged)
-const getLaneEngineId     = (laneId: string) => leh.getLaneEngineId(_lehState, _lehDeps, laneId);
-const getLaneEngineInstance = (laneId: string): SynthEngine | null =>
-  laneResources.get(laneId)?.engine ?? null;
-const setActiveEngineLane = (laneId: string) => leh.setActiveEngineLane(_lehState, _lehDeps, laneId);
-
-// Cache: laneId → engine voice. Mono engines reuse the same voice; poly
-// engines get a fresh voice per call but the strip is cached per lane.
-const laneVoices = new Map<string, import('./engines/engine-types').Voice>();
-
-function ensureLaneStrip(laneId: string): ChannelStrip {
-  // Built-in lanes use their dedicated strips.
-  if (laneId === 'tb-303-1')      return bassStrip;
-  if (laneId === 'drums-1')       return drumBusStrip;
-  if (laneId === 'subtractive-1') return polyStrip;
-  // Existing extra-poly behaviour for poly1..poly16.
-  if ((EXTRA_IDS as readonly string[]).includes(laneId)) {
-    ensureExtraPoly(laneId as ExtraId);
-    return extraStrips[laneId as ExtraId]!;
-  }
-  // Generic extra lane (e.g. bass2, drums2): create a strip on demand.
-  let s = extraLaneStrips.get(laneId);
-  if (!s) {
-    s = new ChannelStrip(ctx, master, fx);
-    extraLaneStrips.set(laneId, s);
-  }
-  return s;
-}
-
-function ensureLaneVoice(laneId: string, engineId: string): import('./engines/engine-types').Voice | null {
-  const cached = laneVoices.get(laneId);
-  if (cached) return cached;
-  const engine = getEngine(engineId);
-  if (!engine) return null;
-  const strip = ensureLaneStrip(laneId);
-  setCurrentLaneForVoice(laneId);
-  const voice = engine.createVoice(ctx, strip.input);
-  setCurrentLaneForVoice(null);
-  laneVoices.set(laneId, voice);
-  return voice;
-}
-
-// Phase E: allocates a fresh ChannelStrip + engine instance for a dynamically
-// added lane and registers them in laneResources. This replaces the old
-// ensureExtraPoly(newId) call in onAddLane — the slug-keyed entry is now the
-// canonical path; the legacy poly1..poly16 ExtraId mechanism is unchanged.
-function ensureLaneResource(laneId: string, engineId: string): void {
-  if (laneResources.get(laneId)) return; // already allocated
-  const strip = new ChannelStrip(ctx, master, fx);
-  const engine = createEngineInstance(engineId);
-  if (!engine) return;
-  if (engineId === 'subtractive') {
-    // SubtractiveEngine needs a PolySynth wired to its audio output before it
-    // can schedule notes. Allocate a fresh one per lane.
-    const p = new PolySynth(ctx, strip.input);
-    p.bpm = seq.bpm;
-    (engine as unknown as { setPolySynth?(p: PolySynth): void }).setPolySynth?.(p);
-  }
-  if (engineId === 'drums-machine') {
-    (engine as unknown as { setBusStrip?(s: ChannelStrip): void }).setBusStrip?.(strip);
-  }
-  laneResources.set(laneId, { strip, engine });
-}
-
 // ── Track rendering (with viewport) ────────────────────────────────────────
 const LANE_LABELS: Record<TrackId, string> = {
   bass: 'BASS', poly: 'POLY', drumBus: 'DRUM BUS',
@@ -458,6 +186,18 @@ const LANE_LABELS: Record<TrackId, string> = {
   kick: 'KICK', snare: 'SNARE', closedHat: 'CH HAT', openHat: 'OP HAT',
   clap: 'CLAP', cowbell: 'COWBLL', tom: 'TOM', ride: 'RIDE',
 };
+
+// ── Lane-engine host ──────────────────────────────────────────────────────
+const laneHost = createLaneHost({
+  getSeq: () => seq,
+  getBank: () => bank,
+  getEngineSel: () => engineSel,
+  rebuildEngineParamUI,
+  getLaneLabels: () => LANE_LABELS as Record<string, string>,
+});
+const getLaneEngineId     = (laneId: string) => laneHost.getLaneEngineId(laneId);
+const setActiveEngineLane = (laneId: string) => laneHost.setActiveEngineLane(laneId);
+const _lehState = laneHost.state; // kept for engineSelectorDeps (uses _lehState.activeLaneId)
 
 function setBassMode(mode: 'step' | 'piano') {
   if (seq.pattern.bassMode === mode) return;
@@ -474,31 +214,6 @@ function updateBassModeButtons() {
   if (!stepBtn || !pianoBtn) return;
   stepBtn.classList.toggle('primary',  seq.pattern.bassMode === 'step');
   pianoBtn.classList.toggle('primary', seq.pattern.bassMode === 'piano');
-}
-
-// ── Copy notes between lanes (303 ↔ main poly ↔ extra polys) ──────────────
-// Moved to src/core/copy-notes.ts — wired at boot via wireCopyNotesPanel()
-
-function refreshKnobsFromSynth() {
-  // Param specs use 'filter.cutoff', 'env.amount', etc.; the runtime
-  // TB303.params still uses the legacy short ids ('cutoff', 'envMod'...).
-  // Map spec id → live value and push it back into the registered knob.
-  const liveValue = (specId: string): number | null => {
-    switch (specId) {
-      case 'filter.cutoff':    return synth.params.cutoff;
-      case 'filter.resonance': return synth.params.resonance;
-      case 'env.amount':       return synth.params.envMod;
-      case 'env.decay':        return synth.params.decay;
-      case 'env.accent':       return synth.params.accent;
-      case 'osc.wave':         return synth.params.wave === 'square' ? 1 : 0;
-    }
-    return null;
-  };
-  for (const spec of tb303Engine.params) {
-    const v = liveValue(spec.id);
-    if (v == null) continue;
-    automationRegistry.get(`${LANE_ID_BASS}.${spec.id}`)?.setValue(v);
-  }
 }
 
 // ── Mixer ──────────────────────────────────────────────────────────────────
@@ -524,33 +239,11 @@ const mixerDeps: import('./core/mixer').MixerColumnDeps = {
   get historyDeps() { return _discreteHistoryDeps; },
 };
 
-// ── Transport → moved to src/core/transport.ts (wireTransport) ────────────
-
-function propagateBpmToLaneEngines(bpm: number): void {
-  // Lane-host engines (fm, karplus, subtractive, wavetable, drums-machine)
-  // each carry their own `bpm` field for LFO sync. Push the global tempo
-  // through the registry so modulator voices follow tempo changes.
-  for (const id of ['fm', 'karplus', 'subtractive', 'wavetable', 'drums-machine']) {
-    const eng = getEngine(id) as unknown as { bpm?: number } | undefined;
-    if (eng && typeof eng.bpm === 'number') eng.bpm = bpm;
-  }
-}
-
 bpmInput.addEventListener('input', () => {
   const v = parseInt(bpmInput.value, 10);
-  if (!isNaN(v)) {
-    seq.bpm = Math.max(40, Math.min(240, v));
-    fx.setBpmSync(seq.bpm);
-    filterChain.updateBpm(seq.bpm);
-    polysynth.bpm = seq.bpm;
-    for (const id of EXTRA_IDS) { const p = extraPolys[id]; if (p) p.bpm = seq.bpm; }
-    propagateBpmToLaneEngines(seq.bpm);
-  }
+  if (!isNaN(v)) bpmBroadcast.broadcast(Math.max(40, Math.min(240, v)));
 });
-fx.setBpmSync(seq.bpm);
-polysynth.bpm = seq.bpm;
-for (const id of EXTRA_IDS) { const p = extraPolys[id]; if (p) p.bpm = seq.bpm; }
-propagateBpmToLaneEngines(seq.bpm);
+bpmBroadcast.broadcast(seq.bpm);
 
 // Track activity timestamps for visual "triggered" pulse on track headers.
 const trackActiveUntil = new Map<string, number>();
@@ -607,6 +300,22 @@ kitSel.addEventListener('change', () => {
   if (_discreteHistoryDeps) withUndo(_discreteHistoryDeps, run); else run();
 });
 
+const knobs = createKnobMounter({
+  registerKnob,
+  registry: automationRegistry,
+  laneResources,
+  synth,
+  fmtPct, fmtDb,
+  getSessionState: () => sessionHost?.state,
+  getLaneDisplayName: (id) => sessionHost?.state.lanes.find((l) => l.id === id)?.name,
+  getHistoryDeps: () => _discreteHistoryDeps,
+});
+const wireLaneKnobs = knobs.wireLaneKnobs;
+const mountSubtractiveLaneKnobs = knobs.mountSubtractiveLaneKnobs;
+const mountDrumMasterLaneKnobs = knobs.mountDrumMasterLaneKnobs;
+const refreshKnobsFromSynth = knobs.refreshKnobsFromSynth;
+const refreshLaneKnobs = knobs.refreshLaneKnobs;
+
 const synthKnobsRow = $<HTMLDivElement>('synth-knobs');
 synthKnobsRow.innerHTML = '';
 wireLaneKnobs({
@@ -619,9 +328,6 @@ wireLaneKnobs({
 // pager/slots/onPatternChange wired in wireTransport() (see boot section)
 // Pre-populate the bank's slot 0 with the sequencer's initial pattern (set up below)
 // Done after setupInitialPattern.
-
-// ── Randomize / Clear — moved to src/core/randomize-ui.ts ────────────────
-// wireRandomizeUI() is called at boot (see boot section below).
 
 // ── Save / Load ─────────────────────────────────────────────────────────────
 // v1 legacy saveAll/loadAll/normalizePattern removed (replaced by Save Manager v2
@@ -636,11 +342,6 @@ function flashButton(b: HTMLButtonElement, msg: string) {
 
 // Save/Load buttons are wired in the Save Manager v2 section below.
 
-// ── Visualizer → src/core/visualizer.ts ───────────────────────────────────
-
-// ── Boot ───────────────────────────────────────────────────────────────────
-// setupInitialPattern → src/demo/initial-pattern.ts
-
 // ── Tab switching (static tabs only — synth tabs have their own handler) ───
 const pages = $$<HTMLElement>('.page');
 for (const t of $$<HTMLButtonElement>('button.tab')) {
@@ -652,80 +353,10 @@ for (const t of $$<HTMLButtonElement>('button.tab')) {
   });
 }
 
-// ── PolySynth knobs (target swappable for multi-poly editing) ─────────────
-// activePolyTarget lives in synthEditorState (src/session/synth-editor-routing.ts).
-
-// Subtractive knobs for the 'main' lane are mounted via wireLaneKnobs in the
-// boot section (replaces the old buildPolySynthUI / polysynth-ui.ts).
-
-// ── Master FX tab → moved to src/core/fx-ui.ts (wireFxUI) ─────────────────
-
-// ── Automation tab ─────────────────────────────────────────────────────────
-// Lane UI (renderLanes, wireAutomationTab, etc.) → automation-ui.ts
-// Painter helpers (drawLane, attachLanePainter, snap) → automation-painter.ts
-
-// ensureLaneSize, snapLaneToSteps, populateAutoParamSelect, addLane, removeLane,
-// renderLanes, drawLane, attachLanePainter → automation-ui.ts / automation-painter.ts
-// Automation tick state + resetAutomationPosition + startAutomationTick
-// → src/automation/automation-tick.ts
-
-// redrawAllLanes, clamp01, wireAutomationTab → imported from automation-ui/painter
-
-// ── Cosmic Arpeggiator ─────────────────────────────────────────────────────
-// arp singleton exported from arp-ui.ts (imported above)
-const midiToFreqLocal = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
-
-// ── Single-entry-point trigger dispatch ───────────────────────────────────
-// triggerForLane consults laneResources to get the live engine instance for
-// the given lane and dispatches by engine.id. This is the Phase B canonical
-// trigger path; the named wrappers below are thin aliases kept so existing
-// callers don't need to change (Phase E will delete them).
-const triggerForLane = (
-  laneId: string,
-  note: number,
-  time: number,
-  gate: number,
-  accent: boolean,
-  slidingIn: boolean = false,
-): void => {
-  const res = laneResources.get(laneId);
-  if (!res) return;
-  const engineId = res.engine.id;
-
-  // Inner fire — does the actual engine trigger for a single note. Used both
-  // directly and as the per-note callback from scheduleArpForNote.
-  const fire = (m: number, t: number, g: number, a: boolean, sl: boolean) => {
-    if (engineId === 'tb303') {
-      setCurrentLaneForVoice(laneId);
-      const v = res.engine.createVoice(ctx, res.strip.input);
-      setCurrentLaneForVoice(null);
-      v.trigger(m, t, { gateDuration: g, accent: a, slide: sl });
-      return;
-    }
-    if (engineId === 'drums-machine') {
-      const dv = GM_DRUM_MAP[m];
-      if (dv) drums.trigger(dv, t, a);
-      return;
-    }
-    setCurrentLaneForVoice(laneId);
-    const v = res.engine.createVoice(ctx, res.strip.input);
-    setCurrentLaneForVoice(null);
-    v.trigger(m, t, { gateDuration: g, accent: a });
-  };
-
-  // Arp interception: when the lane is in scope, the input note becomes the
-  // root and scheduleArpForNote dispatches the pattern via `fire`. Drum lanes
-  // are skipped — arpeggiating drum hits would just be retriggers.
-  if (arp.enabled && arp.scope.includes(laneId) && engineId !== 'drums-machine') {
-    scheduleArpForNote(
-      (m, t, g, a) => fire(m, t, g, a, false),
-      arp, seq.bpm, note, time, gate, accent,
-    );
-    return;
-  }
-
-  fire(note, time, gate, accent, slidingIn);
-};
+// Single-entry-point trigger dispatch — delegates by engine.id.
+const triggerForLane = createTriggerForLane({
+  ctx, laneResources, drums, arp, seq,
+});
 
 // ── Session host ───────────────────────────────────────────────────────────
 // synthEditorDeps is constructed later (after polySynthUIDeps + polySynthPresetsDeps
@@ -777,40 +408,18 @@ const sessionHost = new SessionHost({
 });
 synthEditorState.activePolyTarget = polysynth;
 sessionHost.init();
-// Phase C: bind sessionState into knob ctx so future knob changes mirror into
-// lane.engineState.params. Set AFTER sessionHost.init() so the initial
-// mountSubtractiveLaneKnobs('main') call (pre-sessionHost) stays no-op.
-_sessionStateForKnobs = sessionHost.state;
 // Now sessionHost is live — upgrade the lookupEngineId impl to use SessionState
 // as the source of truth (replaces the pattern-based fallback used at boot).
-_lookupEngineIdFn = (laneId: string) =>
-  sessionHost.state.lanes.find((l) => l.id === laneId)?.engineId ?? 'subtractive';
+laneHost.setLookupEngineId((laneId) =>
+  sessionHost.state.lanes.find((l) => l.id === laneId)?.engineId ?? 'subtractive');
 
-// buildArpUI moved to arp-ui.ts (imported above)
-
-// PolySynth presets (POLY_PRESETS_KEY, loadUserPolyPresets, applyPolyParams,
-// populatePolyPresetSelect, wirePolyControls) → polysynth-presets.ts
-
-// ── Drum master controls → src/core/drum-master-ui.ts ─────────────────────
-
-// setPolyMode, updatePolyModeButtons, polyPresetName, applyPresetByName,
-// refreshPolyPresetSelect, wirePolyMode → polysynth-presets.ts
-
-// ── Preset library → src/presets/preset-library-ui.ts ─────────────────────
 
 // onStep still fires for bass/drum/melody cell highlighting; the continuous
 // automation engine runs separately via rAF (see startAutomationTick).
 
 // ── REC button (arms knob → lane recording) ───────────────────────────────
 const recBtn = $<HTMLButtonElement>('rec');
-recBtn.addEventListener('click', () => {
-  automationRecording = !automationRecording;
-  recBtn.classList.toggle('armed', automationRecording);
-  recBtn.textContent = automationRecording ? '● REC ON' : '● REC';
-});
-
-// ── Copy bars between slots — moved to src/save/slot-copy.ts ──────────────
-// wireSlotCopyPanel() is called at boot (see boot section below).
+automation.wireRecButton(recBtn);
 
 const initialPatternDeps: InitialPatternDeps = { seq, bank, drums, bassStrip, polyStrip };
 setupInitialPattern(initialPatternDeps);
@@ -818,16 +427,6 @@ setupInitialPattern(initialPatternDeps);
 barsSel.value = String(seq.length);
 
 // ── Deps objects for extracted UI modules ─────────────────────────────────
-/** After a preset / randomize mutates an engine's base state, push the new
- *  values back into the lane's knob handles so the UI reflects them.
- *  (onChange only fires on user drag, not on programmatic state changes.) */
-function refreshLaneKnobs(laneId: string, engine: SynthEngine): void {
-  for (const spec of engine.params) {
-    const handle = automationRegistry.get(`${laneId}.${spec.id}`);
-    handle?.setValue(engine.getBaseValue(spec.id));
-  }
-}
-
 const automationDeps: AutomationUIDeps = {
   seq,
   automationRegistry,
@@ -837,7 +436,6 @@ const automationDeps: AutomationUIDeps = {
 };
 
 // Wire stable wrappers now that deps are built.
-_automationDeps = automationDeps;
 renderLanes = () => renderLanesFromUI(automationDeps);
 populateAutoParamSelectWrapper = () => {
   const prefix = activeEnginePrefix();
@@ -924,60 +522,9 @@ synthEditorDeps = {
   setActiveEngineLane: (laneId: string) => setActiveEngineLane(laneId),
 };
 
-// Build the Subtractive engine's knobs into the per-section divs declared in
-// index.html. Each spec.id prefix routes to its matching container so the
-// OSC / FILTER / AMP / MASTER section grouping stays intact.
-//
-// Reusable as a function so rebuildEngineParamUI can re-mount the knobs
-// after `unregisterKnobsByPrefix` evicts them from the registry (otherwise
-// the modulator-panel destination dropdown comes up empty for Subtractive
-// lanes — the per-section knobs live permanently in the DOM but their
-// handles need to stay registered for destinationIds to enumerate them).
-function mountSubtractiveLaneKnobs(laneId: string): void {
-  const sectionMap: Array<[string, string]> = [
-    ['osc1.',   'poly-osc1-knobs'],
-    ['osc2.',   'poly-osc2-knobs'],
-    ['sub.',    'poly-sub-knobs'],
-    ['noise.',  'poly-noise-knobs'],
-    ['filter.', 'poly-filter-knobs'],
-    ['amp.',    'poly-amp-knobs'],
-    ['master.', 'poly-master-knobs'],
-  ];
-  const engine = laneResources.get(laneId)?.engine;
-  if (!engine) return;
-  const ctx: import('./engines/engine-types').EngineUIContext = {
-    laneId,
-    registerKnob: (k) => registerKnob(k as KnobHandle),
-    registry: automationRegistry as unknown as Map<string, unknown>,
-    lookupLaneDisplayName: (id) => sessionHost?.state.lanes.find((l) => l.id === id)?.name,
-    sessionState: _sessionStateForKnobs,
-    // Late-bound via getter so historyDeps is resolved at render time.
-    get historyDeps() { return _discreteHistoryDeps; },
-  };
-  for (const [prefix, divId] of sectionMap) {
-    const parent = document.getElementById(divId);
-    if (!parent) continue;
-    parent.innerHTML = '';
-    wireEngineParams(engine, ctx, parent, {
-      filter: (id) => id.startsWith(prefix),
-    });
-  }
-}
 mountSubtractiveLaneKnobs(LANE_ID_POLY);
 
-/** Re-mount the drum-master strip UI bound to a given drum lane. Called at
- *  boot for the default `drums-1` lane and from `onActiveLaneChanged` so
- *  switching between drum lanes retargets the strip controls + registry ids
- *  (so the active drum lane's LFO/ADSR dropdown sees `drums-X.bus.*`). */
-function mountDrumMasterLaneKnobs(laneId: string): void {
-  const strip = laneResources.get(laneId)?.strip;
-  if (!strip) return;
-  wireDrumMasterUI({
-    laneId, drumBusStrip: strip, registerKnob, fmtPct, fmtDb,
-    // Late-bound via getter so historyDeps is resolved at call time.
-    get historyDeps() { return _discreteHistoryDeps; },
-  });
-}
+
 const arpUIDeps: ArpUIDeps = {
   getScopeLanes: () => sessionHost.state.lanes
     .filter((l) => l.engineId !== 'drums-machine')
@@ -1052,13 +599,9 @@ function launchSceneById(sceneId: string): void {
 wireMidiImportUI({
   session: sessionHost.state,
   setBpm: (bpm: number) => {
-    seq.bpm = Math.max(40, Math.min(240, Math.round(bpm)));
-    bpmInput.value = String(seq.bpm);
-    fx.setBpmSync(seq.bpm);
-    filterChain.updateBpm(seq.bpm);
-    polysynth.bpm = seq.bpm;
-    for (const id of EXTRA_IDS) { const p = extraPolys[id]; if (p) p.bpm = seq.bpm; }
-    propagateBpmToLaneEngines(seq.bpm);
+    const clamped = Math.max(40, Math.min(240, Math.round(bpm)));
+    bpmBroadcast.broadcast(clamped);
+    bpmInput.value = String(clamped);
   },
   drumLaneId: LANE_ID_DRUMS,
   audioContext: ctx,
@@ -1163,5 +706,4 @@ wireRandomizeUI({
 wireSaveManager(saveWiringDeps);
 bootRecoveryLoad(saveWiringDeps);
 
-// Phase E: Boot always lands in Session mode (see fetchDemoSession call above).
-// The data-pure-session guard is no longer needed.
+// App always boots in Session mode (see fetchDemoSession call above).
