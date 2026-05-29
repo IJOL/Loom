@@ -1,99 +1,12 @@
-// One-shot Classic → Session importer. Reads the current PatternBank and
-// builds a fresh SessionState with one scene per slot, one clip per
-// (lane, slot) pair.
+// Load-time normaliser for SessionState. Runs on every load (save file,
+// autosave, demo JSON) and backfills fields that older formats are
+// missing — engine ids, modern `notes` array from legacy step formats,
+// and a stable palette color.
 
-import type { PatternBank, PatternData } from '../core/pattern';
-import {
-  emptyScene, emptySessionState, CLIP_COLOR_PALETTE,
-  type SessionClip, type SessionLane, type SessionState,
-} from './session';
+import { CLIP_COLOR_PALETTE, type SessionClip, type SessionState } from './session';
 import { bassStepsToNotes, stepsToNotes, drumStepsToNotes } from '../core/notes';
 import type { NoteEvent } from '../core/notes';
 
-function nextId(prefix: string): string {
-  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-/** Carry pattern-level automation lanes into the per-clip envelope field,
- *  filtered to entries whose paramId belongs to this clip's lane. The
- *  automation registry uses the convention `<laneId>.<spec.id>`, so a
- *  startsWith match on `<laneId>.` is the canonical routing rule. */
-function envelopesForLane(pat: PatternData, laneId: string): import('./session').ClipEnvelope[] | undefined {
-  const lanes = (pat.automation ?? []).filter((a) => a.paramId.startsWith(`${laneId}.`));
-  if (lanes.length === 0) return undefined;
-  return lanes.map((a) => ({
-    paramId: a.paramId,
-    values:  [...a.values],
-    enabled: a.enabled,
-    stepped: a.stepped,
-  }));
-}
-
-function clipFromBass(pat: PatternData): SessionClip {
-  const fromSteps = pat.bassMode !== 'piano' ? bassStepsToNotes(pat.bass) : [];
-  const fromNotes = (pat.bassNotes ?? []).map((n) => ({ ...n }));
-  return {
-    id: nextId('clip'),
-    lengthBars: Math.max(1, Math.floor(pat.length / 16)),
-    notes: fromNotes.length ? fromNotes : fromSteps,
-    envelopes: envelopesForLane(pat, 'tb-303-1'),
-  };
-}
-
-function clipFromDrums(pat: PatternData): SessionClip {
-  return {
-    id: nextId('clip'),
-    lengthBars: Math.max(1, Math.floor(pat.length / 16)),
-    notes: drumStepsToNotes(pat.drums),
-    envelopes: envelopesForLane(pat, 'drums-1'),
-  };
-}
-
-function clipFromMainPoly(pat: PatternData): SessionClip {
-  const fromSteps = pat.polyMode !== 'piano' ? stepsToNotes(pat.melody) : [];
-  const fromNotes = (pat.polyNotes ?? []).map((n) => ({ ...n }));
-  return {
-    id: nextId('clip'),
-    lengthBars: Math.max(1, Math.floor(pat.length / 16)),
-    notes: fromNotes.length ? fromNotes : fromSteps,
-    envelopes: envelopesForLane(pat, 'subtractive-1'),
-  };
-}
-
-export function importClassicToSession(bank: PatternBank): SessionState {
-  const state = emptySessionState();
-
-  // For every slot, create a scene + one clip per default lane.
-  bank.slots.forEach((pat, slotIdx) => {
-    const scene = emptyScene(`Scene ${slotIdx + 1}`);
-    state.scenes.push(scene);
-
-    const bassLane  = state.lanes.find((l) => l.id === 'tb-303-1')!;
-    const drumsLane = state.lanes.find((l) => l.id === 'drums-1')!;
-    const mainLane  = state.lanes.find((l) => l.id === 'subtractive-1')!;
-
-    const pushClip = (lane: SessionLane, clip: SessionClip | null): number | null => {
-      if (!clip) return null;
-      while (lane.clips.length < slotIdx) lane.clips.push(null);
-      lane.clips[slotIdx] = clip;
-      return slotIdx;
-    };
-
-    scene.clipPerLane['tb-303-1']      = pushClip(bassLane,  clipFromBass(pat));
-    scene.clipPerLane['drums-1']       = pushClip(drumsLane, clipFromDrums(pat));
-    scene.clipPerLane['subtractive-1'] = pushClip(mainLane,  clipFromMainPoly(pat));
-  });
-
-  // Normalise: pad every lane to scenes.length so the grid renders uniformly.
-  for (const lane of state.lanes) {
-    while (lane.clips.length < state.scenes.length) lane.clips.push(null);
-  }
-
-  return state;
-}
-
-// Apply to clips that came from older saves (still have legacy fields like
-// bassSteps/polySteps/drumSteps and no `notes`).
 export function migrateLoadedSessionState(s: SessionState): SessionState {
   for (const lane of s.lanes) {
     delete (lane as { kind?: unknown }).kind;
