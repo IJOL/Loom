@@ -1,8 +1,14 @@
 import { PolySynth, type PolySynthParams } from './polysynth';
-import { FACTORY_POLY_PRESETS } from './poly-presets';
 import { randomizePolySynth } from '../core/random';
 import type { SynthEngine } from '../engines/engine-types';
 import { getCachedPresets } from '../presets/preset-loader';
+
+/** Typed view over the JSON-loaded poly preset cache. The loader returns
+ *  the loose `EnginePreset<Record<string, number>>` shape; poly presets
+ *  actually carry the nested `PolySynthParams` payload. */
+function getFactoryPolyPresets(): { name: string; params: PolySynthParams }[] {
+  return getCachedPresets('poly') as unknown as { name: string; params: PolySynthParams }[];
+}
 
 // ── PolySynth preset state ─────────────────────────────────────────────────
 const POLY_PRESETS_KEY = 'tb303-poly-presets-v1';
@@ -52,7 +58,7 @@ export function applyPolyParams(params: PolySynthParams): void {
 }
 
 export function applyPresetByName(poly: PolySynth, name: string): void {
-  const presets = getCachedPresets('poly');
+  const presets = getFactoryPolyPresets();
   const p = presets.find((x) => x.name === name);
   if (p) {
     poly.params = JSON.parse(JSON.stringify(p.params)) as PolySynthParams;
@@ -86,7 +92,7 @@ export function populatePolyPresetSelect(): void {
   if (engineId === 'subtractive') {
     const factoryGroup = document.createElement('optgroup');
     factoryGroup.label = 'Factory';
-    for (const p of FACTORY_POLY_PRESETS) {
+    for (const p of getFactoryPolyPresets()) {
       const opt = document.createElement('option');
       opt.value = `factory:${p.name}`;
       opt.textContent = p.name;
@@ -179,7 +185,7 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
     const target = deps.getActivePolyTarget();
     if (val.startsWith('factory:')) {
       const name = val.slice('factory:'.length);
-      const p = FACTORY_POLY_PRESETS.find((x) => x.name === name);
+      const p = getFactoryPolyPresets().find((x) => x.name === name);
       if (p) { applyPolyParams(p.params); polyPresetName.set(target, val); }
     } else if (val.startsWith('user:')) {
       const name = val.slice('user:'.length);

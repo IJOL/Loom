@@ -323,9 +323,9 @@ class SubtractiveEngine implements SynthEngine {
   applyPreset(name: string): void {
     const preset = this.presets.find((p) => p.name === name);
     if (!preset) return;
-    // Preset.params currently map onto PolySynthParams flat-ish; the existing
-    // poly preset wiring in src/polysynth/poly-presets.ts owns full preset
-    // shape. This hook only carries the modulators payload.
+    // Preset.params currently map onto PolySynthParams flat-ish; the full
+    // preset shape lives in public/presets/poly.json (loaded via the
+    // preset-loader cache). This hook only carries the modulators payload.
     if (preset.modulators) this.modHost.deserialize(preset.modulators);
   }
 
