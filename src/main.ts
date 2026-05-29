@@ -564,6 +564,25 @@ swingInput.addEventListener('input', () => { seq.swing = parseFloat(swingInput.v
 volInput.addEventListener('input', () => { master.gain.value = parseFloat(volInput.value); });
 master.gain.value = parseFloat(volInput.value);
 
+// ── Gesture brackets for continuous inputs (BPM / swing / volume) ──────────
+// One drag or keyboard-edit = one undo entry. pointerdown/focus opens the
+// gesture; pointerup/blur closes it. The existing 'input' handlers above keep
+// driving live audio and must NOT call beginGesture/commitGesture themselves.
+for (const el of [bpmInput, swingInput, volInput]) {
+  el.addEventListener('pointerdown', () => {
+    if (_discreteHistoryDeps) _discreteHistoryDeps.history.beginGesture(_discreteHistoryDeps.snapshot());
+  });
+  el.addEventListener('pointerup', () => {
+    if (_discreteHistoryDeps) _discreteHistoryDeps.history.commitGesture();
+  });
+  el.addEventListener('focus', () => {
+    if (_discreteHistoryDeps) _discreteHistoryDeps.history.beginGesture(_discreteHistoryDeps.snapshot());
+  });
+  el.addEventListener('blur', () => {
+    if (_discreteHistoryDeps) _discreteHistoryDeps.history.commitGesture();
+  });
+}
+
 // Holder for historyDeps for discrete selectors. historyDeps is built later
 // (it closes over saveWiringDeps / sessionHost), but event handlers fire after
 // boot, so assigning _discreteHistoryDeps after construction works correctly.
