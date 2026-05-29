@@ -4,7 +4,7 @@
 
 **Goal:** Unify how synth engines, insert FX, and modulators are declared and registered. Single SPI (`PluginManifest` + kind-discriminated `PluginFactory`), explicit `bootstrapPlugins()` replacing side-effect imports, master + per-lane insert chains, modulators discovered via the registry. Phase 2 (runtime loading from URL/file) explicitly deferred.
 
-**Architecture:** New `src/plugins/` module owns the SPI. Existing engines migrate via a temporary adapter so the cutover is incremental — one engine per commit. Master `FilterChain` in [src/app/audio-graph.ts](src/app/audio-graph.ts) is replaced by a generic `InsertChain` containing a `multifilter` plugin. `LaneResources` in [src/core/lane-resources.ts](src/core/lane-resources.ts) gains an `inserts: InsertChain` field. Persistence: `SessionLane.inserts` and `SessionState.masterInserts` added as optional fields (default `[]` for old v3 saves — no schema bump).
+**Architecture:** New `src/plugins/` module owns the SPI. Existing engines migrate via a temporary adapter so the cutover is incremental — one engine per commit. Master `FilterChain` in [src/app/audio-graph.ts](src/app/audio-graph.ts) is replaced by a generic `InsertChain` containing a `multifilter` plugin. After the boot-allocation collapse, `audio-graph.ts` returns ONLY the master signal chain (`master → masterInsertChain → masterComp → analyser → destination`) plus `FxBus` and `SidechainBus` — no boot strips, no boot instrument instances. `src/app/lane-allocator.ts`'s `ensureLaneResource(laneId, engineId)` becomes the SOLE allocation path for every lane, including the three legacy defaults (`tb-303-1`, `drums-1`, `subtractive-1`), driven by `sessionHost.applyLoadedSessionState(state)` reading the default boot session JSON. `LaneResources` in [src/core/lane-resources.ts](src/core/lane-resources.ts) gains an `inserts: InsertChain` field — uniform for all lanes, no boot-lane special case. Persistence: `SessionLane.inserts` and `SessionState.masterInserts` added as optional fields (default `[]` for old v3 saves — no schema bump).
 
 **Tech Stack:** TypeScript strict, Web Audio API, Vite, Vitest (node env — pure tests only). All work happens inside a git worktree branched from `main`; final merge after rebase.
 
@@ -24,7 +24,9 @@ These shape what's different from the original spec wording:
 4. **Bootstrap lives in `src/app/`, not `src/main.ts`.** The natural place is a new `src/app/plugin-bootstrap.ts` called from `src/main.ts` before `createAudioGraph()`.
 5. **Master signal chain:** today `master → FilterChain → MasterCompressor → analyser → destination`. Master inserts replace `FilterChain` at the same position: `master → MasterInsertChain → MasterCompressor → analyser → destination`. `MasterCompressor` and the analyser are not plugins in phase 1.
 6. **ChannelStrip internals (EQ, comp, sidechain, ducker) are NOT touched.** They stay inside the strip; the insert chain attaches upstream of `strip.input`. So a lane signal becomes: `voice.output → LaneInsertChain → strip.input → (strip internals) → master`.
-7. **`SaveManager`'s `SavedStateV3.sessionState` carries the new fields** as optional adds. No schemaVersion bump.
+7. **Boot-allocation collapse (Phase G).** Prior to this plan, [src/app/audio-graph.ts:44-68](src/app/audio-graph.ts#L44-L68) eagerly built three `ChannelStrip`s (`bassStrip`, `polyStrip`, `drumBusStrip`) and three instrument instances (`TB303`, `DrumMachine`, `PolySynth`), then called `configureTB303EngineMainInstance`, `configureDrumsEngineSharedFx`, and `setPolySynth` on the singleton engines. `lane-allocator.ts:47-52` then stuffed those three into `LaneResourceMap` keyed by `LANE_ID_BASS`/`LANE_ID_DRUMS`/`LANE_ID_POLY`, with special-case fallbacks at lines 79–81. Phase G collapses this: `audio-graph.ts` returns only the master signal chain (`ctx`, `master`, `analyser`, `masterInsertChain`, `masterComp`, `fx`, `sidechainBus`); `ensureLaneResource(laneId, engineId)` is the only path for ALL lanes (including the three defaults); the default boot session JSON drives initial allocation via `sessionHost.applyLoadedSessionState(state)`. Legacy configurators (`configureTB303EngineMainInstance`, `configureDrumsEngineSharedFx`) are deleted. The boot-lane carve-out in `ensureLaneStrip` disappears.
+8. **Phase H per-lane InsertChain has NO boot-lane special case.** Because Phase G already unified allocation, every lane gets an `InsertChain` between `voice.output` and `strip.input` — uniformly. The previous draft's "Inserts available on lanes added via +" limitation is gone.
+9. **`SaveManager`'s `SavedStateV3.sessionState` carries the new fields** as optional adds. No schemaVersion bump.
 
 ---
 
@@ -49,18 +51,20 @@ These shape what's different from the original spec wording:
 | `src/session/insert-slot.ts` | create | `InsertSlot` type + `applyInsertSlot` / `snapshotInsertSlot` helpers |
 | `src/session/insert-slot.test.ts` | create | Round-trip tests |
 | `src/session/lane-insert-ui.ts` | create | DOM panel for an insert chain (used by both lane inspector and master FX) |
-| `src/engines/tb303.ts` | modify | Add `export const tb303Plugin: PluginFactory`; keep `tb303Engine` singleton export (still used by `audio-graph.ts`) |
+| `src/engines/tb303.ts` | modify | Add `export const tb303Plugin: PluginFactory`; keep `tb303Engine` singleton + `registerInstance` method (used by tests). DELETE `configureTB303EngineMainInstance` export in Phase G — dead after collapse. |
 | `src/engines/subtractive.ts` | modify | Add `export const subtractivePlugin: PluginFactory` — must create fresh `SubtractiveEngine` since the singleton was dropped |
 | `src/engines/fm.ts` | modify | Add `export const fmPlugin` |
 | `src/engines/wavetable.ts` | modify | Add `export const wavetablePlugin` |
 | `src/engines/karplus.ts` | modify | Add `export const karplusPlugin` |
-| `src/engines/drums-engine.ts` | modify | Add `export const drumsPlugin` |
-| `src/main.ts` | modify | Remove the six bare `import './engines/xxx'` side-effect lines; call `bootstrapPlugins()` once before `createAudioGraph()` |
-| `src/app/audio-graph.ts` | modify | Replace `FilterChain` with `InsertChain`; expose it as `masterInsertChain` on the `AudioGraph` |
+| `src/engines/drums-engine.ts` | modify | Add `export const drumsPlugin`. DELETE `configureDrumsEngineSharedFx` export in Phase G; `setSharedFx` is called per-instance inside `ensureLaneResource`. |
+| `src/main.ts` | modify | Remove the six bare `import './engines/xxx'` side-effect lines; call `bootstrapPlugins()` once before `createAudioGraph()`. Phase G: drop destructuring of `bassStrip`/`polyStrip`/`drumBusStrip`/`synth`/`drums`/`polysynth`/`mainSubtractive`/`drumsEngineInstance` from the `createAudioGraph` return; pass only `ctx`/`master`/`fx`/`sidechainBus`/`getBpm`/`extraIds` to `createLaneAllocator`. |
+| `src/app/audio-graph.ts` | modify | Replace `FilterChain` with `InsertChain` (Phase E). Phase G: strip down to MASTER-ONLY — return only `{ ctx, master, analyser, masterInsertChain, masterComp, fx, sidechainBus }`. Delete all three `ChannelStrip` constructions, all three instrument instances, `configureTB303EngineMainInstance` + `configureDrumsEngineSharedFx` calls, `getEngine('subtractive')` / `setPolySynth` / `getEngine('drums-machine')` lookups, and the eight fields they returned. |
 | `src/core/fx.ts` | modify | `FilterChain` becomes internal to the `multifilter` plugin (the existing class can remain dead-code or be deleted after Phase F is done) |
 | `src/core/fx-ui.ts` | modify | Master FX UI section that drove `FilterChain` calls `buildLaneInsertUI` against `masterInsertChain` + `sessionState.masterInserts` |
 | `src/core/lane-resources.ts` | modify | `LaneResources` gains `inserts: InsertChain`; map dispose path disposes inserts too |
-| `src/app/lane-allocator.ts` | modify | `ensureLaneResource` builds the lane insert chain at allocation, splices it between `voice/engine.createVoice` output and `strip.input` |
+| `src/app/lane-allocator.ts` | modify | Phase G: `ensureLaneResource` becomes the SOLE allocation path for every lane. Shrink `LaneAllocatorDeps` to `{ ctx, master, fx, sidechainBus, getBpm, extraIds }`. Delete the boot-lane prefill block (lines 47–52) and the three `ensureLaneStrip` special cases (lines 79–81). Move `setSharedFx(deps.fx)` per-instance into the `drums-machine` branch of `ensureLaneResource` to fix the latent extra-drum-lane bug. Phase H: `ensureLaneResource` also builds the lane `InsertChain` at allocation and splices it between `engine.createVoice` output and `strip.input` — UNIFORM for all lanes. |
+| `src/demo/initial-pattern.ts` | modify | Phase G: drop `drums`/`bassStrip`/`polyStrip` from `InitialPatternDeps`. The FX-send defaults (`bassStrip.setReverbSend(0.1)` etc. at line 132) move into the demo session JSON (`/demos/new.json`) so `applyLoadedSessionState` reapplies them via the persisted lane bus state. |
+| `public/demos/new.json` (or current `minimal-techno.json`) | modify | Phase G: add explicit `engineId` for each of the three default lanes (`tb-303-1`/`tb303`, `drums-1`/`drums-machine`, `subtractive-1`/`subtractive`) plus any `bus.reverbSend`/`bus.delaySend` defaults previously hard-coded in `setupInitialPattern`. |
 | `src/session/session.ts` | modify | `SessionLane.inserts?: InsertSlot[]`; `SessionState.masterInserts?: InsertSlot[]` |
 | `src/session/session-host.ts` | modify | Surface lane `InsertChain`s to UI callers; on lane add, seed `lane.inserts = []`; on lane delete, the LaneResourceMap dispose handles the chain |
 | `src/session/session-inspector.ts` | modify | Mount `lane-insert-ui` panel for the active lane |
@@ -1220,7 +1224,30 @@ The master signal path today: `master → FilterChain → MasterCompressor → a
 
 ### Task 18: AudioGraph holds `masterInsertChain`
 
-**Files:** modify `src/app/audio-graph.ts`.
+**Files:** modify `src/app/audio-graph.ts`, add `src/app/audio-graph.test.ts`.
+
+- [ ] **Step 0: Write the failing test FIRST (TDD)**
+
+Add `src/app/audio-graph.test.ts` asserting the new shape and signal path:
+
+```ts
+import { describe, it, expect } from 'vitest';
+import { createAudioGraph } from './audio-graph';
+import { InsertChain } from '../plugins/fx/insert-chain';
+
+describe('AudioGraph master InsertChain', () => {
+  it('exposes masterInsertChain wired between master and masterComp.input', () => {
+    const g = createAudioGraph();
+    expect(g.masterInsertChain).toBeInstanceOf(InsertChain);
+    // No more filterChain field.
+    expect((g as any).filterChain).toBeUndefined();
+    // masterInsertChain.inputNode is the master GainNode.
+    expect(g.masterInsertChain.inputNode).toBe(g.master);
+  });
+});
+```
+
+Run `npx vitest run src/app/audio-graph.test.ts` and confirm it FAILS (today the graph has `filterChain`, not `masterInsertChain`). Only then proceed.
 
 - [ ] **Step 1: Refactor `createAudioGraph()`**
 
@@ -1488,16 +1515,553 @@ git commit -m "feat(plugins): generic insert-chain UI panel; master FX uses it"
 
 ---
 
-## Phase G — Per-lane InsertChain
+## Phase G — Collapse boot allocation
 
-### Task 20: LaneResources gains `inserts`
+This phase is refactor-only — no new inserts wiring. It strips `audio-graph.ts` down to the master signal chain, makes `ensureLaneResource(laneId, engineId)` the sole allocation path for every lane, fixes the latent extra-drum-lane `setSharedFx` bug, and migrates boot-eager consumers of `bassStrip`/`polyStrip`/`drumBusStrip` to lazy `laneResources` lookups. The default boot session JSON drives initial allocation via `sessionHost.applyLoadedSessionState`.
 
-**Files:** modify `src/core/lane-resources.ts`.
+### Phase G deferral rule (consumers of `lanes.resources`)
 
-- [ ] **Step 1: Extend the interface**
+After Phase G, every consumer that reads from `lanes.resources` MUST defer its access until `sessionHost.onStateApplied()` fires OR `applyLoadedSessionState()` has run. There is no boot pre-fill — the map is empty until the boot session JSON is applied.
+
+- Any consumer that calls `lanes.resources.get(LANE_ID_X)` during audio-graph construction or at app start will get `undefined` (or, after Task 22 Step 4, a thrown exception from `stripFor`).
+- Boot-eager UI (knob rows, mixer rows, inspector tabs) must subscribe via `sessionHost.onStateApplied(cb)` — see Task 23 Step 4.
+- Tests that constructed lanes by hand must either run `applyLoadedSessionState` as setup or call `ensureLaneResource(laneId, engineId)` explicitly.
+- Add a dedicated boot-order regression test in `src/session/session-host.test.ts` that asserts `lanes.resources.size === 0` immediately after `createLaneAllocator` and grows to the lane count only after `applyLoadedSessionState`. This locks in the invariant.
+
+A comment restating this invariant ships in `lane-allocator.ts` near `stripFor` (Task 22 Step 4).
+
+### Task 20: Delete legacy engine configurators
+
+**Files:** modify `src/engines/tb303.ts`, `src/engines/drums-engine.ts`, `src/engines/subtractive.ts`.
+
+The three exports `configureTB303EngineMainInstance` ([src/engines/tb303.ts:274](src/engines/tb303.ts#L274)), `configureDrumsEngineSharedFx` ([src/engines/drums-engine.ts:261](src/engines/drums-engine.ts#L261)), and the singleton-only `setPolySynth` call on `subtractive` ([src/engines/subtractive.ts:398](src/engines/subtractive.ts#L398) is the method — the export call is in `audio-graph.ts:58`) exist solely to register the three boot instances with the engine singletons at `audio-graph.ts` construction time. After Phase G these calls are gone; per-instance wiring moves into `ensureLaneResource`. The METHODS `registerInstance`, `setSharedFx`, `setPolySynth`, and `setBusStrip` STAY (tests + per-instance calls still use them). Only the exported configurator FUNCTIONS are deleted.
+
+- [ ] **Step 1: Delete the configurator exports**
+
+In [src/engines/tb303.ts](src/engines/tb303.ts), delete the entire function:
 
 ```ts
-// src/core/lane-resources.ts
+// DELETE: export function configureTB303EngineMainInstance(output: AudioNode, instance: TB303): void {
+//   tb303Engine.registerInstance(output, instance);
+// }
+```
+
+Keep `registerInstance` method on `TB303Engine` (line 209) — tests and per-lane wiring still use it.
+
+In [src/engines/drums-engine.ts](src/engines/drums-engine.ts), delete:
+
+```ts
+// DELETE: export function configureDrumsEngineSharedFx(fx: FxBus): void {
+//   drumsEngine.setSharedFx(fx);
+// }
+```
+
+Keep `setSharedFx` and `setBusStrip` methods on `DrumsEngine` — called per-instance from `ensureLaneResource` after Task 22.
+
+- [ ] **Step 2: Audit `createVoice` for self-provisioning**
+
+Verify each engine's `createVoice(ctx, output)` builds whatever internal resources it needs without needing a singleton-level configure call. Walk:
+- `TB303Engine.createVoice` — does it depend on `lastInstance` or `instances` map? It must NOT depend on `registerInstance` having been called; if it does, fix it to create a fresh `TB303(ctx, output)` and register it via `this.registerInstance(output, voice)` inside `createVoice` itself. **Decision rule:** if `TB303Engine.createVoice` depends on `registerInstance`, move the `registerInstance` call inside `createVoice` so it's self-contained (preferred — keeps the engine's invariant local). Otherwise, add the `registerInstance` call in `ensureLaneResource` (Task 22 Step 5, `tb303` branch) before the lane is returned. Pick exactly one site and document it in the engine source — do not split registration across both layers.
+- `DrumsEngine.createVoice` — line 170 throws when `sharedFx` is null. After Task 22 `ensureLaneResource` calls `setSharedFx(deps.fx)` BEFORE `createVoice`. Verify the throw path still exists for safety.
+- `SubtractiveEngine.createVoice` — does it depend on `polysynth` being pre-set? If yes, restructure so a fresh `PolySynth` is created and `setPolySynth` invoked inside `createVoice`. (Tasks 6–11 already moved this logic into the native plugin; double-check it lands cleanly with no boot dependency.)
+
+- [ ] **Step 3: Find dangling callers**
+
+```bash
+grep -rn "configureTB303EngineMainInstance\|configureDrumsEngineSharedFx" src/ test/
+```
+
+Expected: zero matches outside the now-deleted exports (consumers are migrated as part of Task 21).
+
+- [ ] **Step 4: Verify**
+
+```bash
+npx tsc --noEmit
+```
+
+Compilation will fail because `audio-graph.ts` still imports the deleted exports. That's expected — Task 21 fixes it. Do not commit yet.
+
+- [ ] **Step 5: Defer commit to Task 24**
+
+Phase G tasks 20–24 land as one or two commits because the intermediate states don't compile. Stage the edits, run final `tsc --noEmit` + `vitest` only after Task 24, commit once at the end.
+
+---
+
+### Task 21: Strip `audio-graph.ts` down to master-only
+
+**Files:** modify `src/app/audio-graph.ts`.
+
+`createAudioGraph()` returns ONLY the master signal chain plus `FxBus` and `SidechainBus`. No strips, no instruments, no configurators.
+
+- [ ] **Step 1: Rewrite the `AudioGraph` interface**
+
+Replace [src/app/audio-graph.ts:12-30](src/app/audio-graph.ts#L12-L30) with:
+
+```ts
+export interface AudioGraph {
+  ctx: AudioContext;
+  master: GainNode;
+  analyser: AnalyserNode;
+  masterInsertChain: InsertChain;
+  masterComp: MasterCompressor;
+  fx: FxBus;
+  sidechainBus: SidechainBus;
+}
+```
+
+Delete the eight fields: `bassStrip`, `polyStrip`, `drumBusStrip`, `synth`, `drums`, `polysynth`, `mainSubtractive`, `drumsEngineInstance`. (`filterChain` was already replaced by `masterInsertChain` in Phase E Task 18.)
+
+- [ ] **Step 2: Strip down `createAudioGraph()`**
+
+Replace the body (currently [src/app/audio-graph.ts:30-68](src/app/audio-graph.ts#L30-L68)) with:
+
+```ts
+import { FxBus, MasterCompressor } from '../core/fx';
+import { SidechainBus } from '../core/sidechain-bus';
+import { InsertChain } from '../plugins/fx/insert-chain';
+
+export function createAudioGraph(): AudioGraph {
+  const ctx = new AudioContext();
+  const master = ctx.createGain();
+  const analyser = ctx.createAnalyser();
+  analyser.connect(ctx.destination);
+
+  const masterComp = new MasterCompressor(ctx);
+  masterComp.output.connect(analyser);
+
+  const masterInsertChain = new InsertChain(master, masterComp.input);
+
+  const fx = new FxBus(ctx, master);
+  const sidechainBus = new SidechainBus(ctx);
+
+  return { ctx, master, analyser, masterInsertChain, masterComp, fx, sidechainBus };
+}
+```
+
+Deletions:
+- `const bassStrip / polyStrip / drumBusStrip = new ChannelStrip(...)` (lines 44–49).
+- `const synth = new TB303(ctx, bassStrip.input); configureTB303EngineMainInstance(...);` (lines 51–52).
+- `const drums = new DrumMachine(ctx, fx, drumBusStrip.input);` (line 53).
+- `const polysynth = new PolySynth(ctx, polyStrip.input);` (line 54).
+- `const mainSubtractive = getEngine('subtractive') ?? null; if (mainSubtractive) setPolySynth?.(polysynth);` (lines 56–59).
+- `const drumsEngineInstance = getEngine('drums-machine') ?? null;` (line 60).
+- `configureDrumsEngineSharedFx(fx);` (line 41).
+
+Drop the corresponding imports: `TB303`, `DrumMachine`, `PolySynth`, `configureTB303EngineMainInstance`, `configureDrumsEngineSharedFx`, `getEngine`, `LANE_ID_BASS`, `LANE_ID_DRUMS`, `LANE_ID_POLY`, `ChannelStrip`, `FilterChain`.
+
+- [ ] **Step 3: Verify (intermediate)**
+
+```bash
+npx tsc --noEmit
+```
+
+Many `main.ts` / `lane-allocator.ts` / `saved-state-v3.ts` errors will remain — fixed in Tasks 22 and 23.
+
+---
+
+### Task 22: `ensureLaneResource` becomes the sole allocation path
+
+**Files:** modify `src/app/lane-allocator.ts`.
+
+`ensureLaneResource(laneId, engineId)` becomes the ONLY way a `LaneResources` ever enters the map. No boot pre-fill, no boot-lane special cases. The drums-machine branch additionally calls `setSharedFx(deps.fx)` to fix the latent bug where extra drum lanes never receive a shared `FxBus` (currently `audio-graph.ts:41` wires only the singleton).
+
+- [ ] **Step 1: Shrink `LaneAllocatorDeps`**
+
+In [src/app/lane-allocator.ts:12-26](src/app/lane-allocator.ts#L12-L26):
+
+```ts
+export interface LaneAllocatorDeps {
+  ctx: AudioContext;
+  master: GainNode;
+  fx: FxBus;
+  sidechainBus: SidechainBus;
+  getBpm(): number;
+  extraIds: readonly string[];
+}
+```
+
+Deletions: `bassStrip`, `polyStrip`, `drumBusStrip`, `drums`, `tb303Engine`, `mainSubtractive`, `drumsEngineInstance`.
+
+- [ ] **Step 2: Delete the boot-lane prefill block**
+
+Delete lines 47–52 entirely:
+
+```ts
+// DELETE:
+// if (deps.drumsEngineInstance && deps.mainSubtractive) {
+//   resources.set(LANE_ID_BASS,  { strip: deps.bassStrip,    engine: deps.tb303Engine });
+//   resources.set(LANE_ID_DRUMS, { strip: deps.drumBusStrip, engine: deps.drumsEngineInstance });
+//   (deps.drumsEngineInstance as unknown as { setBusStrip?(s: ChannelStrip): void }).setBusStrip?.(deps.drumBusStrip);
+//   resources.set(LANE_ID_POLY,  { strip: deps.polyStrip,    engine: deps.mainSubtractive });
+// }
+```
+
+- [ ] **Step 3: Delete the boot-lane fallbacks in `ensureLaneStrip`**
+
+Delete lines 79–81:
+
+```ts
+// DELETE:
+// if (laneId === 'tb-303-1')      return deps.bassStrip;
+// if (laneId === 'drums-1')       return deps.drumBusStrip;
+// if (laneId === 'subtractive-1') return deps.polyStrip;
+```
+
+The remaining `ensureExtraPoly` logic still applies for extra-poly lanes.
+
+- [ ] **Step 4: Update `stripFor` to drop the singleton drum reference**
+
+Around [src/app/lane-allocator.ts:95-104](src/app/lane-allocator.ts#L95-L104), the function uses `deps.drums.channels` to detect drum-lane track ids. After collapse, `deps.drums` is gone. Replace with a lookup against the lane that owns drum voices:
+
+```ts
+const stripFor = (t: string): ChannelStrip => {
+  const res = resources.get(t);
+  if (res) return res.strip;
+  if (t === 'bass')    return resources.get(LANE_ID_BASS)!.strip;
+  if (t === 'poly')    return resources.get(LANE_ID_POLY)!.strip;
+  if (t === 'drumBus') return resources.get(LANE_ID_DRUMS)!.strip;
+  // Drum-voice track names ('kick', 'snare', etc.) → look up the drum lane.
+  const drumLane = resources.get(LANE_ID_DRUMS);
+  if (drumLane) return drumLane.strip;
+  throw new Error(`stripFor: no resource for track "${t}"`);
+};
+```
+
+Note the throw: if `stripFor` is called BEFORE `applyLoadedSessionState` populates the lane, it fails loudly instead of silently returning undefined. This forces ordering bugs to surface in tests.
+
+**Behavior change warning:** this is a deliberate move from silent-undefined to thrown-exception. Boot-ordering bugs that used to produce silent audio dropouts now surface as runtime errors. Tests that exercised `stripFor` before `applyLoadedSessionState` must be updated: either call `applyLoadedSessionState` (or `ensureLaneResource`) first as test setup, or stub `lanes.resources.get` with the expected `LaneResources`. Audit `src/**/*.test.ts` for direct `stripFor` callers as part of this step.
+
+- [ ] **Step 5: Patch `ensureLaneResource` to call `setSharedFx` per-instance**
+
+Replace [src/app/lane-allocator.ts:125-139](src/app/lane-allocator.ts#L125-L139) with:
+
+```ts
+const ensureLaneResource = (laneId: string, engineId: string): void => {
+  if (resources.get(laneId)) return;
+  const strip = new ChannelStrip(deps.ctx, deps.master, deps.fx,
+    { sidechain: { bus: deps.sidechainBus, id: laneId, label: laneId.toUpperCase() } });
+  const engine = createEngineInstance(engineId);
+  if (!engine) return;
+  if (engineId === 'subtractive') {
+    const p = new PolySynth(deps.ctx, strip.input);
+    p.bpm = deps.getBpm();
+    (engine as unknown as { setPolySynth?(p: PolySynth): void }).setPolySynth?.(p);
+  }
+  if (engineId === 'drums-machine') {
+    // Latent-bug fix: setSharedFx MUST be called before createVoice (drums-engine.ts:170).
+    (engine as unknown as { setSharedFx?(fx: FxBus): void }).setSharedFx?.(deps.fx);
+    (engine as unknown as { setBusStrip?(s: ChannelStrip): void }).setBusStrip?.(strip);
+  }
+  if (engineId === 'tb303') {
+    // Registration with TB303Engine.instances happens inside engine.createVoice
+    // per the decision in Task 20 Step 2 (createVoice self-registers). If Task 20
+    // instead chose to register here, call `(engine as TB303Engine).registerInstance(strip.input, voice)`
+    // after engine.createVoice runs (see ensureLaneVoice). Exactly one site, not both.
+  }
+  resources.set(laneId, { strip, engine });
+};
+```
+
+- [ ] **Step 6: Verify (intermediate)**
+
+```bash
+npx tsc --noEmit
+```
+
+`main.ts` / `initial-pattern.ts` / `saved-state-v3.ts` errors remain — fixed in Task 23.
+
+---
+
+### Task 23: Migrate boot-eager consumers of `bassStrip`/`polyStrip`/`drumBusStrip`
+
+**Files:** modify `src/main.ts`, `src/demo/initial-pattern.ts`, `src/save/saved-state-v3.ts`, and any other file whose destructured `audio.*` referenced the deleted fields.
+
+- [ ] **Step 1: Strip `main.ts` destructuring**
+
+Replace [src/main.ts:97-101](src/main.ts#L97-L101):
+
+```ts
+const audio = createAudioGraph();
+const { ctx, master, analyser, masterInsertChain, fx, masterComp, sidechainBus } = audio;
+// REMOVED: bassStrip, polyStrip, drumBusStrip, synth, drums, polysynth, mainSubtractive, drumsEngineInstance
+// All of these are now created on-demand via ensureLaneResource(); access via lanes.resources.get(laneId).
+```
+
+- [ ] **Step 2: Strip `createLaneAllocator` args**
+
+Replace [src/main.ts:119](src/main.ts#L119):
+
+```ts
+const lanes = createLaneAllocator({
+  ctx, master, fx, sidechainBus,
+  getBpm: () => seq.bpm,
+  extraIds: EXTRA_IDS,
+});
+```
+
+- [ ] **Step 3: Refactor `setupInitialPattern`**
+
+In [src/demo/initial-pattern.ts:105-109](src/demo/initial-pattern.ts#L105-L109), drop the strip + drums params:
+
+```ts
+export interface InitialPatternDeps {
+  seq: Sequencer;
+  bank: PatternBank;
+}
+```
+
+The FX-send defaults previously at [src/demo/initial-pattern.ts:132-134](src/demo/initial-pattern.ts#L132-L134) (`bassStrip.setReverbSend(0.1)`, `polyStrip.setReverbSend(0.25)`, `polyStrip.setDelaySend(0.15)`, plus the `drums.channels.snare.setReverbSend(0.25)` line at ~line 130) move into the boot session JSON (Task 24). Delete them from `setupInitialPattern`:
+
+```ts
+export function setupInitialPattern(deps: InitialPatternDeps): void {
+  const { seq, bank } = deps;
+  // ...populate seq.bass/seq.drums slots and bank patterns unchanged...
+  // DELETED: drums.channels.*.setReverbSend / setDelaySend calls
+  // DELETED: bassStrip.setReverbSend(0.1) / polyStrip.setReverbSend(0.25) / polyStrip.setDelaySend(0.15)
+  // FX-send defaults now ship in the boot session JSON (see /public/demos/new.json).
+}
+```
+
+Update [src/main.ts:452](src/main.ts#L452):
+
+```ts
+const initialPatternDeps: InitialPatternDeps = { seq, bank };
+setupInitialPattern(initialPatternDeps);
+```
+
+- [ ] **Step 4: Defer TB-303 knob wiring**
+
+[src/main.ts:320-327](src/main.ts#L320-L327) currently wires `wireLaneKnobs({ laneId: LANE_ID_BASS, engine: tb303Engine, ... })` at boot, but after collapse the `tb-303-1` lane's `ChannelStrip` does not exist until `applyLoadedSessionState` runs. Wrap the call in a post-load hook:
+
+```ts
+// Defer until sessionHost has allocated lanes from the boot session JSON.
+sessionHost.onStateApplied?.(() => {
+  const bassRes = lanes.resources.get(LANE_ID_BASS);
+  if (!bassRes) return;
+  const synthKnobsRow = $<HTMLDivElement>('synth-knobs');
+  synthKnobsRow.innerHTML = '';
+  wireLaneKnobs({
+    laneId: LANE_ID_BASS,
+    engine: bassRes.engine,
+    parent: synthKnobsRow,
+    // ...
+  });
+});
+```
+
+If `sessionHost.onStateApplied` does not exist yet, add it as a one-shot callback list in [src/session/session-host.ts](src/session/session-host.ts) — fire after `applyLoadedSessionState` completes. Same pattern for drum knobs, polysynth knobs, mixer rows, and any other boot-eager UI that depended on the deleted `audio.*` fields.
+
+- [ ] **Step 5: Patch `SavedStateV3Deps`**
+
+In [src/save/saved-state-v3.ts](src/save/saved-state-v3.ts), the `SavedStateV3Deps` interface today includes `synth`, `drums`, `polysynth`. After collapse these come from `lanes.resources.get(LANE_ID_BASS)?.engine` etc. Either:
+
+- Pass `lanes: LaneAllocator` into `SavedStateV3Deps` and resolve per-lane references inside `buildSavedStateV3` / `applyLoadedStateV3`, OR
+- Remove the synth/drums/polysynth references entirely (preferred: per-lane params already flow through `SessionState.lanes[i].engineState`).
+
+```ts
+export interface SavedStateV3Deps {
+  // ... existing fields minus synth/drums/polysynth ...
+  masterInsertChain: InsertChain;  // was filterChain, renamed in Phase E
+  master: GainNode;
+  // NEW: lane resources for per-lane param snapshot/restore.
+  lanes: LaneAllocator;
+}
+```
+
+`refreshKnobsFromSynth` (if it exists) is rewritten to iterate `lanes.resources` rather than touching the dropped singletons. Defer the actual refactor to fit existing code — the key invariant is "no more global `synth`/`drums`/`polysynth` references after Phase G".
+
+- [ ] **Step 6: Audit every remaining consumer**
+
+```bash
+grep -rn "bassStrip\|polyStrip\|drumBusStrip\|mainSubtractive\|drumsEngineInstance" src/
+```
+
+Expected after this task: only test files reference these names; no production file destructures them from `audio`. Migrate each remaining occurrence to `lanes.resources.get(LANE_ID_X)?.strip` or `?.engine`, or defer it via `sessionHost.onStateApplied`.
+
+- [ ] **Step 7: Verify (intermediate)**
+
+```bash
+npx tsc --noEmit
+```
+
+Compilation should now pass. `vitest run` may still fail on tests that constructed `LaneAllocatorDeps` with the deleted fields — fix those test fixtures in this step too.
+
+---
+
+### Task 24: Boot session JSON self-configures every lane
+
+**Files:** modify `public/demos/new.json` (or the current `public/demos/minimal-techno.json` if the rename hasn't landed).
+
+The default boot session must declare all three legacy lanes with explicit `id` + `engineId`, plus the FX-send defaults previously hard-coded in `setupInitialPattern`. After this task `applyLoadedSessionState` calls `ensureLaneResource` for each lane during boot and the app comes up identical to today.
+
+- [ ] **Step 1: Gap-analyze the current demo JSON**
+
+Read whichever file is in use:
+
+```bash
+cat public/demos/minimal-techno.json
+```
+
+Required top-level shape (matches `SessionState`):
+
+```json
+{
+  "lanes": [
+    {
+      "id": "tb-303-1",
+      "engineId": "tb303",
+      "clips": [/* … */],
+      "engineState": { "params": { /* … */ } },
+      "enginePresetName": "Default"
+    },
+    {
+      "id": "drums-1",
+      "engineId": "drums-machine",
+      "clips": [/* … */],
+      "engineState": { "params": { "bus.reverbSend": 0.25 } },
+      "enginePresetName": "808"
+    },
+    {
+      "id": "subtractive-1",
+      "engineId": "subtractive",
+      "clips": [/* … */],
+      "engineState": { "params": { "bus.reverbSend": 0.25, "bus.delaySend": 0.15 } },
+      "enginePresetName": "Default"
+    }
+  ],
+  "scenes": [/* unchanged */],
+  "globalQuantize": "1/1"
+}
+```
+
+If `id` and `engineId` are missing on any lane, add them. If `engineState.params` does not include the bus-send defaults previously set in [src/demo/initial-pattern.ts:130-134](src/demo/initial-pattern.ts#L130-L134) (`drums.channels.snare.setReverbSend(0.25)`, `bassStrip.setReverbSend(0.1)`, `polyStrip.setReverbSend(0.25)`, `polyStrip.setDelaySend(0.15)`), add them under the appropriate lane's `bus.*` namespace.
+
+- [ ] **Step 2: Verify `applyLoadedSessionState` calls `ensureLaneResource` per lane**
+
+Confirm [src/session/session-host.ts:179](src/session/session-host.ts#L179) iterates `this.state.lanes` and calls `this.deps.ensureLaneResource?.(lane.id, lane.engineId)`. If a lane has no `engineId`, log a warning and skip. (This is existing behavior — verify it still works.)
+
+- [ ] **Step 3: Verify boot end-to-end**
+
+```bash
+npm run build
+npm run dev
+```
+
+In the browser: load the default session; confirm the three lanes appear (`TB-303 1`, `Drums 1`, `Sub 1`). For EACH lane, trigger a note/drum hit independently and confirm audio plays correctly through the mixer/analyser — do not assume one passing lane implies the others work. Confirm reverb/delay sends on each lane match the pre-collapse behavior.
+
+Then add an extra `drums-machine` lane via `+`; trigger a kick on the new lane and confirm it plays AND that turning up its reverb/delay sends produces audible reverb/delay (not silence) — this is the explicit verification of the latent-bug fix from Task 22 Step 5 (`setSharedFx` must be called before `createVoice`, so the new lane's drum voices actually reach `FxBus`).
+
+Modulator regression check: if the boot session JSON includes any LFO or ADSR modulators wired to engine params, confirm they still modulate correctly after the collapse. This exercises the surface that Task 31 (modulation host on registry) will later touch.
+
+- [ ] **Step 4: Full regression**
+
+```bash
+npm test
+```
+
+If `session-add-lane.test.ts` or `lane-allocator` tests pass `bassStrip`/`drums` etc. into constructors, update those fixtures. Add a new regression test:
+
+```ts
+// src/app/lane-allocator.test.ts (add to existing suite)
+it('drums-machine lane gets sharedFx wired before createVoice', () => {
+  const ctx = new AudioContext();
+  const master = ctx.createGain();
+  const fx = new FxBus(ctx, master);
+  const sidechainBus = new SidechainBus(ctx);
+  // Spy on setSharedFx so we can assert it was called BEFORE createVoice.
+  const setSharedFxSpy = vi.spyOn(DrumsEngine.prototype as any, 'setSharedFx');
+  const createVoiceSpy = vi.spyOn(DrumsEngine.prototype as any, 'createVoice');
+  const lanes = createLaneAllocator({
+    ctx, master, fx, sidechainBus,
+    getBpm: () => 120,
+    extraIds: [],
+  });
+  lanes.ensureLaneResource('drums-2', 'drums-machine');
+  const res = lanes.resources.get('drums-2');
+  expect(res).toBeDefined();
+  // Latent-bug fix: setSharedFx must run before any createVoice call.
+  expect(setSharedFxSpy).toHaveBeenCalledWith(fx);
+  // Order check: the spy.mock.invocationCallOrder field is a monotonic counter.
+  if (createVoiceSpy.mock.calls.length > 0) {
+    expect(setSharedFxSpy.mock.invocationCallOrder[0])
+      .toBeLessThan(createVoiceSpy.mock.invocationCallOrder[0]);
+  }
+  // And the lane can actually create a voice without throwing.
+  expect(() => res!.engine.createVoice(ctx, res!.strip.input)).not.toThrow();
+});
+
+// SAVE/LOAD round-trip — guards the existing SaveManager snapshot path against
+// the collapsed LaneResourceMap shape before Phase I extends it with inserts.
+it('save → load round-trip survives the collapsed allocator shape', () => {
+  const lanes = createLaneAllocator({ /* …same fixture as above… */ });
+  // Boot lanes must come from applyLoadedSessionState, not pre-fill.
+  sessionHost.applyLoadedSessionState(bootSessionFixture);
+  const snapshot = saveManager.getStateForSave();
+
+  // Fresh allocator + fresh session host, rehydrate from the snapshot.
+  const lanes2 = createLaneAllocator({ /* …same fixture… */ });
+  const sessionHost2 = createSessionHost({ /* …deps2 wired to lanes2… */ });
+  sessionHost2.applyLoadedSessionState(snapshot.sessionState);
+
+  for (const id of ['tb-303-1', 'drums-1', 'subtractive-1']) {
+    const res = lanes2.resources.get(id);
+    expect(res).toBeDefined();
+    expect(() => res!.engine.createVoice(ctx2, res!.strip.input)).not.toThrow();
+  }
+});
+```
+
+This test must pass at the end of Phase G — BEFORE Phase H wires inserts and BEFORE Phase I adds the persistence layer. It validates that the existing `SaveManager` snapshot/restore path is compatible with the collapsed `LaneResourceMap`. If it fails, the collapse silently broke save/load and Phase H must wait until it's repaired.
+
+- [ ] **Step 5: Commit Phase G (Tasks 20–24)**
+
+```bash
+git add -A
+git commit -m "refactor(plugin-system): collapse boot allocation — audio-graph master-only, ensureLaneResource is the sole allocation path"
+```
+
+Single commit because Tasks 20–23 don't compile in isolation. Phase G ends here with the app behaviorally identical to before, but architecturally clean.
+
+---
+
+## Phase H — Per-lane InsertChain in LaneResources
+
+With Phase G done, every lane (including the three legacy defaults) flows through `ensureLaneResource`. Phase H wires an `InsertChain` between `engine.createVoice` output and `strip.input` for ALL lanes — uniformly. No boot-lane carve-out.
+
+### Task 25: `LaneResources` gains `inserts`; `InsertChain` exposes `inputNode`
+
+**Files:** modify `src/core/lane-resources.ts`, `src/core/lane-resources.test.ts`, `src/plugins/fx/insert-chain.ts`, `src/plugins/fx/insert-chain.test.ts`.
+
+- [ ] **Step 0: Write the failing test FIRST (TDD)**
+
+Add a test to `src/core/lane-resources.test.ts` that asserts `dispose(laneId)` cascades to the InsertChain:
+
+```ts
+it('LaneResourceMap.dispose(id) calls inserts.dispose() in addition to strip/engine', () => {
+  const map = new LaneResourceMap();
+  const stripDispose  = vi.fn();
+  const engineDispose = vi.fn();
+  const insertsDispose = vi.fn();
+  const fakeInserts = { dispose: insertsDispose } as unknown as InsertChain;
+  map.set('lane-1', {
+    strip:   { dispose: stripDispose }  as unknown as ChannelStrip,
+    engine:  { dispose: engineDispose } as unknown as SynthEngine,
+    inserts: fakeInserts,
+  });
+  map.dispose('lane-1');
+  expect(stripDispose).toHaveBeenCalledOnce();
+  expect(engineDispose).toHaveBeenCalledOnce();
+  expect(insertsDispose).toHaveBeenCalledOnce();
+});
+```
+
+Run `npx vitest run src/core/lane-resources.test.ts` and confirm it FAILS (today `LaneResources` has no `inserts` field and `dispose` doesn't call it). Only then proceed to Step 1.
+
+- [ ] **Step 1: Extend `LaneResources`**
+
+In [src/core/lane-resources.ts](src/core/lane-resources.ts):
+
+```ts
 import type { InsertChain } from '../plugins/fx/insert-chain';
 
 export interface LaneResources {
@@ -1507,67 +2071,151 @@ export interface LaneResources {
 }
 ```
 
-Update `LaneResourceMap.set` to dispose `existing.inserts` along with strip + engine. Update `dispose(laneId)` likewise.
+Update `LaneResourceMap.set` to dispose `existing.inserts` whenever a lane is replaced. Update `dispose(laneId)` to call `inserts.dispose()` alongside `strip.dispose()` / `engine.dispose()`.
 
-- [ ] **Step 2: Update the test** in `src/core/lane-resources.test.ts` if it asserts the shape; add a passing assertion that `inserts.size()` is callable.
+- [ ] **Step 2: Expose `InsertChain.inputNode`**
 
-- [ ] **Step 3: Verify** — `tsc` will fail in every caller that constructs `LaneResources` without `inserts`. That's expected; Task 21 fixes the callers.
-
-- [ ] **Step 4: Commit (deferred — Phase G tasks land together in Task 21's commit, since the intermediate state doesn't compile).**
-
-Actually: amending the type ALONE breaks the build. Either combine Task 20 + 21 in one commit or land them together. Recommended: keep them as separate edits in a single working session, run verification only after Task 21, commit once with both changes.
-
-### Task 21: lane-allocator builds and wires the lane InsertChain
-
-**Files:** modify `src/app/lane-allocator.ts`.
-
-Today the lane voice connects directly to `strip.input` ([src/app/lane-allocator.ts:119](src/app/lane-allocator.ts#L119) `const voice = engine.createVoice(deps.ctx, strip.input);`). After this task, an `InsertChain` sits between them: `voice → laneInsertIn → InsertChain → strip.input`.
-
-- [ ] **Step 1: Patch `ensureLaneResource` and the boot allocation block**
-
-Inside [src/app/lane-allocator.ts](src/app/lane-allocator.ts), where each `LaneResources` is constructed (lines 48–51 for the three boot lanes; line 73 for `ensureExtraPoly`; line 127–139 for `ensureLaneResource`), insert one `InsertChain` per lane:
-
-```ts
-import { InsertChain } from '../plugins/fx/insert-chain';
-
-// Per LaneResources creation:
-const laneInsertIn = deps.ctx.createGain();
-const inserts = new InsertChain(laneInsertIn, strip.input);
-resources.set(laneId, { strip, engine, inserts });
-```
-
-The boot allocations (lines 48–51) use the pre-existing strips (`bassStrip`, `polyStrip`, `drumBusStrip`) — the InsertChain attaches between a NEW `laneInsertIn` gain and `strip.input`. The voice/engine creation point needs to redirect its output target from `strip.input` to `laneInsertIn`.
-
-This requires sourcing the voice's `output` node from somewhere. The voice/engine factories today take `output: AudioNode` as the destination they `.connect()` into during `createVoice`. The simplest change: pass `laneInsertIn` to `createVoice` instead of `strip.input`. So `ensureLaneVoice` at line 119:
-
-```ts
-const voice = engine.createVoice(deps.ctx, /* was: strip.input */ resources.get(laneId)!.inserts /* needs to expose its input */ );
-```
-
-`InsertChain` needs to expose `input` for this. Add a getter to [src/plugins/fx/insert-chain.ts](src/plugins/fx/insert-chain.ts):
+In [src/plugins/fx/insert-chain.ts](src/plugins/fx/insert-chain.ts), add a getter so `ensureLaneResource` can hand the chain's input to `engine.createVoice`:
 
 ```ts
 get inputNode(): AudioNode { return this.input; }
 ```
 
-Update the test to call `.inputNode`. Then in lane-allocator:
+Update `src/plugins/fx/insert-chain.test.ts` with an assertion:
 
 ```ts
-const voice = engine.createVoice(deps.ctx, resources.get(laneId)!.inserts.inputNode);
+it('exposes inputNode for upstream wiring', () => {
+  const input = new FakeNode();
+  const output = new FakeNode();
+  const chain = new InsertChain(input as any, output as any);
+  expect(chain.inputNode).toBe(input);
+});
 ```
 
-For the boot lanes (TB-303 / drums / sub-1), the existing voice instances were already created against `strip.input` in [src/app/audio-graph.ts](src/app/audio-graph.ts) (e.g. `new TB303(ctx, bassStrip.input)` at line 51). Two options:
+- [ ] **Step 3: Verify (intermediate)**
 
-1. Move the existing `TB303` / `DrumMachine` / `PolySynth` allocation point from `audio-graph.ts` to `lane-allocator.ts` so the insert chain sits in between, OR
-2. Leave the legacy three (`bass`, `drums`, `subtractive-1`) connected directly to `strip.input` and only wire the `InsertChain` for new lanes added at runtime.
+```bash
+npx tsc --noEmit
+```
 
-Option 2 is much smaller. Choose it for phase 1: boot lanes' `inserts` exists in `LaneResources` but its `inputNode` is unwired (no voice connects to it). For consistency, keep `InsertChain` constructed but pass-through (no slots) so removing/adding inserts on the boot lanes is a follow-up. **Document this limitation in code comments.**
+Compilation fails inside `lane-allocator.ts` because `LaneResources` now requires `inserts`. Fixed by Task 26.
 
-Actually — for the goal of "per-lane inserts" to be useful, the three boot lanes need real wiring too. Better choice: redo audio-graph.ts boot to NOT pre-create voices, and let `lane-allocator.ts`'s `ensureLaneResource` be the only path. That's a larger surgery. Trade-off acceptable for phase 1?
+- [ ] **Step 4: Defer commit to Task 26.**
 
-**Decision for phase 1:** option 2 (limit per-lane inserts to lanes added via the `+` button). The three boot lanes get an `inserts` field but it's not wired into their audio path. This trade-off is documented in the lane-allocator code and surfaced in the lane inspector (the "Inserts" section is hidden for boot lanes). Phase 2 cleans this up alongside the audio-graph restructure.
+---
 
-- [ ] **Step 2: Verify**
+### Task 26: `ensureLaneResource` builds and wires the lane `InsertChain` uniformly
+
+**Files:** modify `src/app/lane-allocator.ts`.
+
+After Phase G, `ensureLaneResource` is the sole allocation path. This task splices an `InsertChain` between `engine.createVoice` output and `strip.input` for every lane. No special case — Task 22 already removed the boot-lane fallbacks.
+
+- [ ] **Step 0: Write the failing integration test FIRST (TDD)**
+
+Before any implementation, add a failing test to `src/app/lane-allocator.test.ts` that asserts the per-lane `InsertChain` is wired between the voice and the strip:
+
+```ts
+it('routes engine.createVoice output through the lane InsertChain', () => {
+  const lanes = createLaneAllocator({ /* …same fixture as Task 24… */ });
+  lanes.ensureLaneResource('tb-303-1', 'tb303');
+  const res = lanes.resources.get('tb-303-1')!;
+
+  // The chain has an input and an output node; verify they exist and the
+  // output is wired to strip.input.
+  expect(res.inserts).toBeDefined();
+  expect(res.inserts.inputNode).toBeDefined();
+
+  // Insert a tracking mock FX into the chain.
+  const mockFx: FxInstance = makeTrackingFxMock();
+  res.inserts.insert(mockFx);
+
+  // Trigger a voice; the audio path must pass through the chain.
+  const voice = lanes.ensureLaneVoice('tb-303-1');
+  voice.trigger(0, 60, 1);
+
+  // Assert the mock FX saw an upstream connection (i.e. the voice connected
+  // to inserts.inputNode, not directly to strip.input).
+  expect(mockFx.upstreamConnectCount).toBeGreaterThan(0);
+});
+```
+
+Run `npx vitest run src/app/lane-allocator.test.ts` and confirm it FAILS (today `LaneResources` has no `inserts` field and `createVoice` connects directly to `strip.input`). Only then proceed to Step 1.
+
+- [ ] **Step 1: Wire the chain inside `ensureLaneResource`**
+
+Update the body from Task 22 Step 5:
+
+```ts
+import { InsertChain } from '../plugins/fx/insert-chain';
+
+const ensureLaneResource = (laneId: string, engineId: string): void => {
+  if (resources.get(laneId)) return;
+  const strip = new ChannelStrip(deps.ctx, deps.master, deps.fx,
+    { sidechain: { bus: deps.sidechainBus, id: laneId, label: laneId.toUpperCase() } });
+  // The chain's input is a fresh GainNode (unconnected initially); engine.createVoice
+  // (or PolySynth / DrumsEngine setOutputTarget) connects upstream to inserts.inputNode.
+  // The chain's output is wired to strip.input. Final signal path:
+  //   voice → inserts.inputNode → [chain] → strip.input → strip → master.
+  const inserts = new InsertChain(deps.ctx.createGain(), strip.input);
+
+  const engine = createEngineInstance(engineId);
+  if (!engine) return;
+
+  if (engineId === 'subtractive') {
+    // PolySynth output → insert chain → strip.
+    const p = new PolySynth(deps.ctx, inserts.inputNode);
+    p.bpm = deps.getBpm();
+    (engine as unknown as { setPolySynth?(p: PolySynth): void }).setPolySynth?.(p);
+  }
+  if (engineId === 'drums-machine') {
+    (engine as unknown as { setSharedFx?(fx: FxBus): void }).setSharedFx?.(deps.fx);
+    (engine as unknown as { setBusStrip?(s: ChannelStrip): void }).setBusStrip?.(strip);
+    // DrumsEngine routes drum voices into busStrip directly today; replace with
+    // chain.inputNode by passing inserts.inputNode to setBusStripOutput or
+    // re-targeting drum voices in DrumsEngine.createVoice (see step 2).
+  }
+  // For tb303 + other voice-based engines, the wiring is via createVoice's
+  // `output` argument — handled by ensureLaneVoice below using inserts.inputNode.
+
+  resources.set(laneId, { strip, engine, inserts });
+};
+```
+
+- [ ] **Step 2: Redirect `ensureLaneVoice` to the chain input**
+
+[src/app/lane-allocator.ts:119](src/app/lane-allocator.ts#L119) currently calls `engine.createVoice(deps.ctx, strip.input)`. Change to `inserts.inputNode`:
+
+```ts
+const ensureLaneVoice = (laneId: string): Voice => {
+  const res = resources.get(laneId);
+  if (!res) throw new Error(`ensureLaneVoice: no resource for "${laneId}"`);
+  const voice = res.engine.createVoice(deps.ctx, res.inserts.inputNode);
+  return voice;
+};
+```
+
+- [ ] **Step 3: Handle drums-machine voice routing**
+
+`DrumsEngine` today connects each drum voice (kick/snare/hat/...) directly to `busStrip.input`. After this task, drum voices must connect to `inserts.inputNode` so the lane insert chain processes them.
+
+Either:
+- Pass `inserts.inputNode` to `DrumsEngine` via a new `setOutputTarget(node)` method, called inside `ensureLaneResource`, OR
+- Refactor `DrumsEngine.createVoice` to take an `output` argument like the other engines.
+
+Use the `setOutputTarget` approach for minimal blast radius:
+
+```ts
+// In src/engines/drums-engine.ts
+setOutputTarget(node: AudioNode): void { this.outputTarget = node; }
+// Inside createVoice, connect each drum voice to this.outputTarget instead of this.busStrip.input.
+```
+
+```ts
+// In lane-allocator.ts ensureLaneResource, drums-machine branch:
+(engine as unknown as { setOutputTarget?(n: AudioNode): void }).setOutputTarget?.(inserts.inputNode);
+```
+
+- [ ] **Step 4: Verify**
 
 ```bash
 npx vitest run
@@ -1575,43 +2223,63 @@ npx tsc --noEmit
 npm run build
 ```
 
-Browser: add a new Subtractive lane via `+`; the new lane's audio passes through its insert chain (currently empty). Existing three boot lanes unchanged.
+Browser: every lane plays through its (empty) insert chain. No audible difference yet.
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 5: Commit Phase H Tasks 25–26**
 
 ```bash
-git add src/core/lane-resources.ts src/plugins/fx/insert-chain.ts src/app/lane-allocator.ts
-git commit -m "feat(plugins): per-lane InsertChain in LaneResources (added lanes only)"
+git add src/core/lane-resources.ts src/plugins/fx/insert-chain.ts src/plugins/fx/insert-chain.test.ts src/app/lane-allocator.ts src/engines/drums-engine.ts
+git commit -m "feat(plugins): per-lane InsertChain wired uniformly for every lane"
 ```
 
 ---
 
-### Task 22: Lane inspector mounts the insert panel
+### Task 27: Lane inspector mounts the insert panel for ALL lanes
 
 **Files:** modify `src/session/session-inspector.ts`.
 
+Because Phase G + Task 26 give every lane a wired `InsertChain` with no carve-out, the inspector mounts `buildLaneInsertUI` for every active lane unconditionally.
+
 - [ ] **Step 1: Hook into the inspector**
 
-Find where the inspector renders the active lane. Add a section "Inserts" that, for non-boot lanes (lanes whose id is NOT in `['tb-303-1', 'drums-1', 'subtractive-1']`), calls `buildLaneInsertUI` against `LaneResources.inserts` and `lane.inserts`. For boot lanes, render a small notice "Inserts available on lanes added via +" (phase-1 limitation).
+Find where the inspector renders the active lane. Add a section "Inserts" that always calls:
 
-The active lane → its `LaneResources` lookup: the session host already exposes lane allocator state via deps. Look for `getLaneAllocator()` or similar in [src/session/session-host.ts](src/session/session-host.ts).
+```ts
+const laneRes = laneAllocator.resources.get(activeLaneId);
+const sessionLane = sessionState.lanes.find((l) => l.id === activeLaneId);
+if (laneRes && sessionLane) {
+  sessionLane.inserts ??= [];
+  const insertsPanel = document.createElement('div');
+  insertsPanel.className = 'lane-inserts';
+  buildLaneInsertUI({
+    ctx,
+    container: insertsPanel,
+    chain: laneRes.inserts,
+    slots: sessionLane.inserts,
+    onChange: () => deps.saveSession?.(),
+  });
+  inspectorBody.appendChild(insertsPanel);
+}
+```
+
+No boot-lane branch, no "added via +" notice — every lane gets the full UI.
 
 - [ ] **Step 2: Verify**
 
-Browser: click on TB-303 1 in lane inspector → see "Inserts available on lanes added via +". Add a Subtractive lane via `+`, switch to it, see the "+ Add insert" button. Add a Filter, drag knob, hear the filter on that lane only.
+Browser: click on any lane in the inspector (TB-303 1, Drums 1, Sub 1, or any added lane) → see the "+ Add insert" panel. Add a Filter to TB-303 1, drag freq, hear the sweep on the TB-303 only.
 
 - [ ] **Step 3: Commit**
 
 ```bash
 git add src/session/session-inspector.ts
-git commit -m "feat(plugins): lane inspector mounts insert-chain panel"
+git commit -m "feat(plugins): lane inspector mounts insert-chain panel for all lanes"
 ```
 
 ---
 
-## Phase H — Persistence
+## Phase I — Persistence
 
-### Task 23: SessionLane.inserts + SessionState.masterInserts
+### Task 28: SessionLane.inserts + SessionState.masterInserts
 
 **Files:** modify `src/session/session.ts`, `src/save/saved-state-v3.ts`.
 
@@ -1663,7 +2331,43 @@ When `lane-insert-ui` calls `onChange`, the session host's `saveSession` already
 
 - [ ] **Step 4: Apply on rehydrate**
 
-When a save is loaded, `lane.inserts[]` needs to be replayed onto the lane's `InsertChain`. Add a helper in [src/session/insert-slot.ts](src/session/insert-slot.ts):
+When a save is loaded, `lane.inserts[]` needs to be replayed onto the lane's `InsertChain`.
+
+**TDD: write the failing round-trip test first** in `src/session/insert-slot.test.ts`:
+
+```ts
+import { describe, it, expect } from 'vitest';
+import { InsertChain } from '../plugins/fx/insert-chain';
+import { applyInsertSlot, captureInsertSlot, rehydrateInsertChain } from './insert-slot';
+import type { InsertSlot } from './insert-slot';
+import { createInstance } from '../plugins/registry';
+
+describe('insert-slot rehydration', () => {
+  it('round-trips a multifilter slot through snapshot and rehydrate', () => {
+    const ctx = new AudioContext();
+    const sourceChain = new InsertChain(ctx.createGain(), ctx.createGain());
+    const inst = createInstance('fx', 'multifilter', ctx)!;
+    inst.setBaseValue('freq', 800);
+    inst.setBaseValue('q', 5);
+    sourceChain.insert(inst);
+    const slot: InsertSlot = captureInsertSlot(sourceChain.list()[0]);
+    slot.bypass = false;
+
+    const freshChain = new InsertChain(ctx.createGain(), ctx.createGain());
+    rehydrateInsertChain(ctx, freshChain, [slot]);
+
+    expect(freshChain.size()).toBe(1);
+    const restored = freshChain.list()[0];
+    expect(restored.fx.getBaseValue('freq')).toBe(800);
+    expect(restored.fx.getBaseValue('q')).toBe(5);
+    expect(restored.bypass).toBe(false);
+  });
+});
+```
+
+Run `npx vitest run src/session/insert-slot.test.ts` and confirm it FAILS (today `rehydrateInsertChain` does not exist). Only then implement the helper:
+
+Add a helper in [src/session/insert-slot.ts](src/session/insert-slot.ts):
 
 ```ts
 import { createInstance } from '../plugins/registry';
@@ -1708,9 +2412,9 @@ git commit -m "feat(plugins): persist lane and master inserts in SavedStateV3"
 
 ---
 
-## Phase I — Modulators as plugins + cross-kind destinations
+## Phase J — Modulators as plugins + cross-kind destinations
 
-### Task 24: LFO plugin
+### Task 29: LFO plugin
 
 **Files:** create `src/plugins/modulators/lfo.ts`; modify `src/app/plugin-bootstrap.ts`.
 
@@ -1754,18 +2458,18 @@ export const lfoPlugin: PluginFactory = {
 - [ ] **Step 3: Verify build.**
 - [ ] **Step 4: Commit:** `feat(plugins): lfo modulator plugin`.
 
-### Task 25: ADSR plugin
+### Task 30: ADSR plugin
 
 **Files:** create `src/plugins/modulators/adsr.ts`; modify `src/app/plugin-bootstrap.ts`.
 
-Same shape as Task 24, wrapping `ADSRVoice`. Use `makeDefaultADSR('adsr-tmp')`.
+Same shape as Task 29, wrapping `ADSRVoice`. Use `makeDefaultADSR('adsr-tmp')`.
 
 - [ ] Write the plugin.
 - [ ] Register in bootstrap.
 - [ ] Verify.
 - [ ] Commit: `feat(plugins): adsr modulator plugin`.
 
-### Task 26: Modulation host consults the registry
+### Task 31: Modulation host consults the registry
 
 **Files:** modify `src/modulation/modulation-host.ts`, `src/modulation/types.ts`.
 
@@ -1833,7 +2537,7 @@ git commit -m "feat(plugins): modulation host spawns modulator voices via regist
 
 ---
 
-### Task 27: Modulation destinations include FX params
+### Task 32: Modulation destinations include FX params
 
 **Files:** modify `src/modulation/modulation-ui.ts` (and the host helper that builds the destination map, if separate).
 
@@ -1876,9 +2580,9 @@ git commit -m "feat(plugins): modulation destinations include lane + master FX p
 
 ---
 
-## Phase J — Wrap-up
+## Phase K — Wrap-up
 
-### Task 28: Final regression sweep
+### Task 33: Final regression sweep
 
 - [ ] **Step 1: Full test suite**
 
@@ -1905,7 +2609,7 @@ git add -A
 git commit -m "fix(plugins): regression fixes from end-of-phase sweep"
 ```
 
-### Task 29: Rebase onto main, merge back
+### Task 34: Rebase onto main, merge back
 
 Per user convention (worktree + rebase before merge).
 
@@ -1968,23 +2672,23 @@ Spec coverage:
 - Explicit `bootstrapPlugins()` replacing side-effect imports → Tasks 3, 4, 5 (initial via adapter), Tasks 6–11 (per-engine native exports), Task 12 (adapter retired).
 - `InsertChain` (generic, bypass, reorder) → Task 13.
 - FX plugins (multifilter, distortion, reverb, delay) → Tasks 14, 15, 16, 17.
-- Master InsertChain replaces FilterChain in `audio-graph.ts` → Task 18.
-- Shared insert UI panel → Task 19; mounted on master in Task 19, on lane inspector in Task 22.
-- Per-lane InsertChain inside `LaneResources` → Tasks 20, 21.
-- Persistence (`SessionLane.inserts`, `SessionState.masterInserts`) → Task 23.
-- Modulator plugins (LFO, ADSR) → Tasks 24, 25.
-- Modulation host reads from registry → Task 26.
-- Modulation destinations include FX params (paridad total) → Task 27.
-- Final regression sweep + rebase + merge → Tasks 28, 29.
+- Master `InsertChain` replaces `FilterChain` in `audio-graph.ts` → Task 18.
+- Shared insert UI panel → Task 19; mounted on master in Task 19, on lane inspector in Task 27.
+- Boot-allocation collapse — `audio-graph.ts` master-only, `ensureLaneResource` is the sole allocation path, legacy configurators deleted, latent drums-shared-fx bug fixed, boot session JSON self-configures every lane → Tasks 20, 21, 22, 23, 24.
+- Per-lane `InsertChain` inside `LaneResources` — uniform for all lanes, no boot-lane special case (Phase G removed the asymmetry) → Tasks 25, 26, 27.
+- Persistence (`SessionLane.inserts`, `SessionState.masterInserts`) → Task 28.
+- Modulator plugins (LFO, ADSR) → Tasks 29, 30.
+- Modulation host reads from registry → Task 31.
+- Modulation destinations include FX params (parity across lane + master) → Task 32.
+- Final regression sweep + rebase + merge → Tasks 33, 34.
 
 Out-of-scope (deferred to phase 2, matches the spec):
 - Runtime / dynamic plugin loading.
-- FxBus internal refactor to use `reverbPlugin` / `delayPlugin` (they're registered but FxBus still uses inline DSP).
+- `FxBus` internal refactor to use `reverbPlugin` / `delayPlugin` (they're registered but `FxBus` still uses inline DSP).
 - Per-voice insert chains.
-- Per-lane inserts on the three boot lanes (`tb-303-1`, `drums-1`, `subtractive-1`) — limitation documented at Task 21.
-- Retirement of `src/engines/registry.ts` — `audio-graph.ts` still consumes `getEngine`.
-- Distortion/preset population for FX plugins.
+- Retirement of `src/engines/registry.ts` — `lane-allocator.ts` still consumes `createEngineInstance`.
+- Preset population for FX plugins.
 
-Type consistency check: `PluginManifest`, `PluginFactory`, `SynthInstance`, `FxInstance`, `ModulatorInstance`, `InsertSlot`, `InsertChain`, `LaneResources.inserts`, `createInstance`, `applyInsertSlot`, `snapshotInsertSlot`, `rehydrateInsertChain`, `buildLaneInsertUI`, `bootstrapPlugins` — names are consistent across tasks.
+Type consistency check: `PluginManifest`, `PluginFactory`, `SynthInstance`, `FxInstance`, `ModulatorInstance`, `InsertSlot`, `InsertChain`, `InsertChain.inputNode`, `LaneResources.inserts`, `LaneAllocatorDeps` (shrunken to `{ ctx, master, fx, sidechainBus, getBpm, extraIds }`), `AudioGraph` (master-only: `{ ctx, master, analyser, masterInsertChain, masterComp, fx, sidechainBus }`), `createInstance`, `applyInsertSlot`, `snapshotInsertSlot`, `rehydrateInsertChain`, `buildLaneInsertUI`, `bootstrapPlugins`, `ensureLaneResource` (sole allocation path) — names are consistent across tasks.
 
-Phase 0 establishes the worktree per the `superpowers:using-git-worktrees` skill, and Task 29 closes the loop with rebase + merge.
+Phase 0 establishes the worktree per the `superpowers:using-git-worktrees` skill, and Task 34 closes the loop with rebase + merge.
