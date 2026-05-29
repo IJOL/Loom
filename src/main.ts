@@ -996,6 +996,7 @@ const automationTickDeps: AutomationTickDeps = {
   getEngineForLane: (laneId) => laneResources.get(laneId)?.engine ?? undefined,
   getActiveModVoice: (laneId, modId) => getActiveModVoice(laneId, modId),
 };
+
 startAutomationTick(automationTickDeps);
 // Boot demo: fetched as a static JSON asset rather than constructed
 // programmatically. The JSON drives both the SessionState and the

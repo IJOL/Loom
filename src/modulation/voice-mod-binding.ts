@@ -175,6 +175,18 @@ export function bindVoiceModulators(opts: BindVoiceModulatorsOpts): ConnectionBi
 export function reapplyLaneModulations(laneId: string): void {
   const lb = laneBindings.get(laneId);
   if (!lb) return;
+  // Push live state mutations into running modulator voices — fixes the
+  // "rate knob doesn't change the audio LFO" regression. Each ModulatorVoice
+  // can opt into the hook by exposing a `syncFromState()` method (LFOVoice
+  // does; ADSRVoice rebuilds its envelope on every trigger and doesn't need
+  // one).
+  const sync = (voices: Map<string, ModulatorVoice>): void => {
+    for (const v of voices.values()) {
+      (v as unknown as { syncFromState?: () => void }).syncFromState?.();
+    }
+  };
+  if (lb.engineBinding) sync(lb.engineBinding.voiceMods);
+  if (lb.voiceBinding)  sync(lb.voiceBinding.voiceMods);
   if (lb.engineBinding) {
     const shortParams = lb.engineRef.getSharedAudioParams?.(lb.ctx) ?? new Map<string, AudioParam>();
     const rangeLookup = lb.engineBinding.rangeLookup ?? rangeLookupForEngine(lb.engineRef);

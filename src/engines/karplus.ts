@@ -332,7 +332,10 @@ export class KarplusEngine implements SynthEngine {
       (m) => (m.scope ?? (m.kind === 'lfo' ? 'shared' : 'per-voice')) === 'per-voice',
     );
     const voice = new KarplusVoice(ctx, output, (id) => this.getBaseValue(id), voiceMods, this.modBus);
-    recordVoiceMods(voiceMods);
+    // Record BOTH engine-shared and per-voice mods so the rAF tick can find
+    // the shared LFO via getActiveModVoice (whose currentValue() syncs the
+    // live OscillatorNode to state mutations).
+    recordVoiceMods(new Map([...(this.engineModVoices ?? new Map()), ...voiceMods]));
     const laneId = getCurrentLaneForVoice();
     if (laneId) {
       voice.laneId = laneId;

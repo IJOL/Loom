@@ -55,7 +55,23 @@ export class LFOVoice implements ModulatorVoice {
 
   release(_time: number): void { /* LFOs free-run */ }
 
+  /** Push the latest state.{rateHz, waveform, syncToBpm, syncRatio} into the
+   *  live OscillatorNode. Called from the engine's modulators-panel onChange
+   *  hook and as a side-effect of currentValue() so a rate tweak during
+   *  playback actually changes what you HEAR (not just the knob arc). */
+  syncFromState(): void {
+    const rate = effectiveRateHz(this.state, this.bpmGetter());
+    if (Math.abs(this.osc.frequency.value - rate) > 1e-4) {
+      this.osc.frequency.value = rate;
+    }
+    const wave = (this.state.waveform ?? 'sine') as OscillatorType;
+    if (this.osc.type !== wave) this.osc.type = wave;
+  }
+
   currentValue(): number {
+    // Side-effect: keep the live oscillator in sync with state mutations
+    // while the rAF modulation tick polls us each frame during playback.
+    this.syncFromState();
     const t = this.ctx.currentTime - this.startedAt;
     const rate = effectiveRateHz(this.state, this.bpmGetter());
     const phase = t * rate;

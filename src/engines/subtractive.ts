@@ -395,7 +395,10 @@ class SubtractiveEngine implements SynthEngine {
       ctx, () => this.bpm,
       (m) => (m.scope ?? (m.kind === 'lfo' ? 'shared' : 'per-voice')) === 'per-voice',
     );
-    recordVoiceMods(voiceMods);
+    // Record BOTH engine-shared and per-voice mods so the rAF tick can find
+    // the shared LFO via getActiveModVoice and poll currentValue() (which
+    // syncs the live OscillatorNode to state mutations).
+    recordVoiceMods(new Map([...(this.engineModVoices ?? new Map()), ...voiceMods]));
     const voice = new SubtractiveVoice(this.polysynth, voiceMods);
     const laneId = getCurrentLaneForVoice();
     if (laneId) {
