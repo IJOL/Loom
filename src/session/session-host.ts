@@ -10,7 +10,8 @@ import type { Sequencer } from '../core/sequencer';
 import type { MixerColumnDeps } from '../core/mixer';
 import {
   emptySessionState, cloneSessionState, emptyLane,
-  type SessionState, type SessionClip,
+  moveClip, copyClip,
+  type SessionState, type SessionClip, type ClipSlot,
 } from './session';
 
 // ── Pure helper: slug id generation ────────────────────────────────────────
@@ -40,7 +41,7 @@ import {
   type LanePlayState,
 } from './session-runtime';
 import { migrateLoadedSessionState } from './session-migration';
-import { getEngine } from '../engines/registry';
+import { getEngine, getEngineParamIds } from '../engines/registry';
 import { renderSessionGrid, type SessionUICallbacks } from './session-ui';
 import { renderSessionTabBar } from './session-tab-bar';
 import { buildMixerColumn } from '../core/mixer';
@@ -364,7 +365,22 @@ export class SessionHost {
         };
         if (hd) withUndo(hd, run); else run();
       },
-      onMoveClip(_from, _to, _copy) { /* wired in Task 8 */ },
+      onMoveClip(from: ClipSlot, to: ClipSlot, copy: boolean) {
+        const destLane = self.state.lanes.find((l) => l.id === to.laneId);
+        if (!destLane) return;
+        const paramIds = getEngineParamIds(destLane.engineId);
+        const hd = self.deps.historyDeps;
+        const run = () => {
+          const next = copy
+            ? copyClip(self.state, from, to, paramIds)
+            : moveClip(self.state, from, to, paramIds);
+          self.state.lanes = next.lanes;
+          self.state.scenes = next.scenes;
+          self.state.globalQuantize = next.globalQuantize;
+          self.renderWithMixer();
+        };
+        if (hd) withUndo(hd, run); else run();
+      },
       onAddClipRow()   { /* Task 11 */ },
       onEditLane(laneId) {
         // Toggle off when the user clicks the already-active lane tab.
