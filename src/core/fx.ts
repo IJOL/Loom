@@ -124,6 +124,8 @@ export class ChannelStrip {
 
   setPan(p: number) { this.panner.pan.setTargetAtTime(p, this.panner.context.currentTime, 0.01); }
   getPan(): number  { return this.panner.pan.value; }
+  /** Canonical StereoPanner pan AudioParam — for modulation routing. */
+  getPanParam(): AudioParam { return this.panner.pan; }
 
   setEqLow (db: number) { this.eqLow.gain.value  = db; }
   setEqMid (db: number) { this.eqMid.gain.value  = db; }

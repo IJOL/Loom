@@ -14,15 +14,17 @@ describe('DrumsEngine.params', () => {
     }
   });
 
-  it('has bus EQ + per-voice specs', () => {
+  it('exposes only bus.* specs (per-voice params live on the drum-grid, not here)', () => {
     const ids = engine.params.map(p => p.id);
+    expect(ids).toContain('bus.level');
+    expect(ids).toContain('bus.pan');
+    expect(ids).toContain('bus.reverbSend');
+    expect(ids).toContain('bus.delaySend');
     expect(ids).toContain('bus.eq.low');
     expect(ids).toContain('bus.eq.mid');
     expect(ids).toContain('bus.eq.high');
-    expect(ids).toContain('kick.level');
-    expect(ids).toContain('snare.level');
-    expect(ids).toContain('closedHat.level');
-    expect(ids).toContain('openHat.level');
+    expect(ids).not.toContain('kick.level');
+    expect(ids).not.toContain('snare.level');
     expect(ids).not.toContain('master.level');
     expect(ids).not.toContain('master.tune');
   });
@@ -37,16 +39,16 @@ describe('DrumsEngine.params', () => {
 describe('DrumsEngine getBaseValue (no instance) returns defaults', () => {
   const engine = new DrumsEngine();
 
-  it('returns default for kick.level', () => {
-    expect(engine.getBaseValue('kick.level')).toBe(1);
+  it('returns default for bus.level', () => {
+    expect(engine.getBaseValue('bus.level')).toBe(1);
   });
 
   it('returns 0 for unknown id', () => {
     expect(engine.getBaseValue('not.real')).toBe(0);
   });
 
-  it('setBaseValue without instance is a no-op (no throw)', () => {
-    expect(() => engine.setBaseValue('kick.level', 0.8)).not.toThrow();
+  it('setBaseValue without bus strip is a no-op (no throw)', () => {
+    expect(() => engine.setBaseValue('bus.level', 0.8)).not.toThrow();
   });
 });
 

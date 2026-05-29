@@ -35,11 +35,11 @@ test.describe('modulator destination dropdown', () => {
     for (const c of counts) expect(c).toBeGreaterThanOrEqual(22);
   });
 
-  test('Drums lane lists its master + per-voice levels (≥10)', async ({ page }) => {
+  test('Drums lane lists its bus destinations (level/pan/sends/EQ, ≥7)', async ({ page }) => {
     await page.goto('/');
     const counts = await destinationCountsForLane(page, 'drums-1');
     expect(counts.length).toBeGreaterThan(0);
-    for (const c of counts) expect(c).toBeGreaterThanOrEqual(10);
+    for (const c of counts) expect(c).toBeGreaterThanOrEqual(7);
   });
 
   test('Drums lane LFO dropdown includes bus EQ destinations', async ({ page }) => {

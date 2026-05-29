@@ -690,7 +690,17 @@ const sessionHost = new SessionHost({
   midiLabel,
   automationRegistry,
   getAutoAbsSubIdx,
-  onActiveLaneChanged: () => populateAutoParamSelectWrapper(),
+  onActiveLaneChanged: () => {
+    populateAutoParamSelectWrapper();
+    // Re-mount the drum-master strip UI for the active drum lane so its
+    // knobs control the right ChannelStrip + appear under the right
+    // registry prefix in the LFO/ADSR destination dropdown.
+    const active = sessionHost.activeEditLane;
+    if (active) {
+      const engineId = sessionHost.state.lanes.find((l) => l.id === active)?.engineId;
+      if (engineId === 'drums-machine') mountDrumMasterLaneKnobs(active);
+    }
+  },
   laneResources,
   ensureLaneResource,
   applyPresetForLane: (laneId, presetName) => {
@@ -908,6 +918,16 @@ function mountSubtractiveLaneKnobs(laneId: string): void {
   }
 }
 mountSubtractiveLaneKnobs(LANE_ID_POLY);
+
+/** Re-mount the drum-master strip UI bound to a given drum lane. Called at
+ *  boot for the default `drums-1` lane and from `onActiveLaneChanged` so
+ *  switching between drum lanes retargets the strip controls + registry ids
+ *  (so the active drum lane's LFO/ADSR dropdown sees `drums-X.bus.*`). */
+function mountDrumMasterLaneKnobs(laneId: string): void {
+  const strip = laneResources.get(laneId)?.strip;
+  if (!strip) return;
+  wireDrumMasterUI({ laneId, drumBusStrip: strip, registerKnob, fmtPct, fmtDb });
+}
 const arpUIDeps: ArpUIDeps = {
   getScopeLanes: () => sessionHost.state.lanes
     .filter((l) => l.engineId !== 'drums-machine')
@@ -917,7 +937,7 @@ const arpUIDeps: ArpUIDeps = {
 // runs after the demo loads so dynamically-added lanes (Sub 2 etc.) show up.
 const fxUIDeps: FxUIDeps = { fx, filterChain, getBpm: () => seq.bpm, registerKnob };
 wireFxUI(fxUIDeps);
-wireDrumMasterUI({ drumBusStrip, registerKnob, fmtPct, fmtDb });
+mountDrumMasterLaneKnobs(LANE_ID_DRUMS);
 fxApplyDelaySync(fxUIDeps);
 const transportDeps: TransportDeps = {
   seq, bank, ctx, playBtn, barsSel,
