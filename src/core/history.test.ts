@@ -73,3 +73,56 @@ describe('history — maxSize', () => {
     expect(h.undo(999)).toBe(null);
   });
 });
+
+describe('history — gestures', () => {
+  it('beginGesture does not push to past', () => {
+    const h = createHistory<number>();
+    h.beginGesture(1);
+    expect(h.canUndo()).toBe(false);
+  });
+
+  it('commitGesture pushes exactly one entry', () => {
+    const h = createHistory<number>();
+    h.beginGesture(1);
+    h.commitGesture();
+    expect(h.canUndo()).toBe(true);
+    expect(h.undo(2)).toBe(1);
+    expect(h.undo(2)).toBe(null);
+  });
+
+  it('repeated beginGesture during an active gesture is ignored', () => {
+    const h = createHistory<number>();
+    h.beginGesture(1);
+    h.beginGesture(2); // ignored
+    h.commitGesture();
+    expect(h.undo(99)).toBe(1);
+  });
+
+  it('cancelGesture discards without pushing', () => {
+    const h = createHistory<number>();
+    h.beginGesture(1);
+    h.cancelGesture();
+    h.commitGesture(); // no-op now
+    expect(h.canUndo()).toBe(false);
+  });
+
+  it('undo cancels any active gesture', () => {
+    const h = createHistory<number>();
+    h.commit(10);
+    h.beginGesture(20);
+    const restored = h.undo(30);
+    expect(restored).toBe(10);
+    h.commitGesture(); // no-op now
+    expect(h.canUndo()).toBe(false);
+  });
+
+  it('commitGesture clears the redo stack', () => {
+    const h = createHistory<number>();
+    h.commit(1);
+    h.undo(2);
+    expect(h.canRedo()).toBe(true);
+    h.beginGesture(3);
+    h.commitGesture();
+    expect(h.canRedo()).toBe(false);
+  });
+});
