@@ -48,3 +48,16 @@ export function withUndo<R>(d: HistoryDeps, fn: () => R): R {
   d.history.commit(d.snapshot());
   return fn();
 }
+
+/** Returns the gesture-bracket callbacks to spread into createKnob opts:
+ *  `createKnob({ …, ...attachKnobUndo(historyDeps) })`. Snapshots once at
+ *  pointerdown/wheel-burst-start and commits at pointerup/wheel-burst-end. */
+export function attachKnobUndo(d: HistoryDeps): {
+  onGestureStart: () => void;
+  onGestureEnd: () => void;
+} {
+  return {
+    onGestureStart: () => d.history.beginGesture(d.snapshot()),
+    onGestureEnd:   () => d.history.commitGesture(),
+  };
+}

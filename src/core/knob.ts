@@ -15,6 +15,10 @@ export interface KnobOpts {
   format?: (v: number) => string;
   onChange: (v: number) => void;
   id?: string;            // automation registry id (optional)
+  /** Fired on pointerdown (drag start). Use to snapshot pre-drag state. */
+  onGestureStart?: () => void;
+  /** Fired on pointerup, pointercancel, or end of wheel/dblclick burst. */
+  onGestureEnd?: () => void;
 }
 
 export interface KnobMeta {
@@ -153,6 +157,7 @@ export function createKnob(opts: KnobOpts): KnobHandle {
 
   svg.addEventListener('pointerdown', (e) => {
     dragging = true;
+    opts.onGestureStart?.();
     startY = e.clientY;
     startVal = value;
     svg.setPointerCapture(e.pointerId);
@@ -171,19 +176,35 @@ export function createKnob(opts: KnobOpts): KnobHandle {
     if (!dragging) return;
     dragging = false;
     try { svg.releasePointerCapture(e.pointerId); } catch {}
+    opts.onGestureEnd?.();
     wrap.classList.remove('dragging');
   };
   svg.addEventListener('pointerup', release);
   svg.addEventListener('pointercancel', release);
 
   svg.addEventListener('dblclick', () => {
-    if (opts.defaultValue !== undefined) setValue(opts.defaultValue, true, true);
+    if (opts.defaultValue === undefined) return;
+    opts.onGestureStart?.();
+    setValue(opts.defaultValue, true, true);
+    opts.onGestureEnd?.();
   });
+
+  let wheelGestureTimer: ReturnType<typeof setTimeout> | null = null;
+  let wheelGestureActive = false;
 
   svg.addEventListener('wheel', (e) => {
     e.preventDefault();
+    if (!wheelGestureActive) {
+      wheelGestureActive = true;
+      opts.onGestureStart?.();
+    }
+    if (wheelGestureTimer) clearTimeout(wheelGestureTimer);
     const sens = e.shiftKey ? 0.0008 : 0.005;
     setValue(value + -e.deltaY * sens * (opts.max - opts.min), true, true);
+    wheelGestureTimer = setTimeout(() => {
+      wheelGestureActive = false;
+      opts.onGestureEnd?.();
+    }, 250);
   }, { passive: false });
 
   return handle;
