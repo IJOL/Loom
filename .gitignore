@@ -16,3 +16,4 @@ short-names.png
 # Playwright artifacts (regenerated on every e2e run)
 test-results/
 playwright-report/
+drums-clean.png
