@@ -1,0 +1,33 @@
+{
+  "engineId": "tb303",
+  "presets": [
+    { "name": "BASS Acid Classic",   "gm": [32, 33, 38],     "params": { "cutoff": 0.35, "resonance": 0.70, "envMod": 0.60, "decay": 0.50, "accent": 0.70, "wave": 0 } },
+    { "name": "BASS Acid Dark",      "gm": [33, 35],         "params": { "cutoff": 0.25, "resonance": 0.80, "envMod": 0.70, "decay": 0.45, "accent": 0.75, "wave": 0 } },
+    { "name": "BASS Squelch",        "gm": [36, 37],         "params": { "cutoff": 0.45, "resonance": 0.85, "envMod": 0.75, "decay": 0.35, "accent": 0.80, "wave": 0 } },
+    { "name": "BASS Dub Sub",        "gm": [35, 39],         "params": { "cutoff": 0.20, "resonance": 0.40, "envMod": 0.30, "decay": 0.65, "accent": 0.45, "wave": 1 } },
+    { "name": "BASS Hoover Sub",     "gm": [38, 39],         "params": { "cutoff": 0.30, "resonance": 0.55, "envMod": 0.55, "decay": 0.60, "accent": 0.60, "wave": 1 } },
+    { "name": "BASS Mute",           "gm": [32, 34],         "params": { "cutoff": 0.18, "resonance": 0.35, "envMod": 0.25, "decay": 0.28, "accent": 0.50, "wave": 0 } },
+    { "name": "BASS Open",           "gm": [34, 37],         "params": { "cutoff": 0.55, "resonance": 0.45, "envMod": 0.40, "decay": 0.55, "accent": 0.55, "wave": 0 } },
+    { "name": "BASS Pluck",          "gm": [32, 36],         "params": { "cutoff": 0.40, "resonance": 0.60, "envMod": 0.65, "decay": 0.25, "accent": 0.65, "wave": 0 } },
+    { "name": "BASS Slap Saw",       "gm": [36, 37],         "params": { "cutoff": 0.50, "resonance": 0.65, "envMod": 0.70, "decay": 0.30, "accent": 0.85, "wave": 0 } },
+    { "name": "BASS Slap Sqr",       "gm": [34, 38],         "params": { "cutoff": 0.42, "resonance": 0.50, "envMod": 0.55, "decay": 0.32, "accent": 0.80, "wave": 1 } },
+    { "name": "BASS Resonant",       "gm": [33, 39],         "params": { "cutoff": 0.32, "resonance": 0.90, "envMod": 0.80, "decay": 0.55, "accent": 0.75, "wave": 0 } },
+    { "name": "BASS Closed Filter",  "gm": [35, 36],         "params": { "cutoff": 0.15, "resonance": 0.50, "envMod": 0.20, "decay": 0.40, "accent": 0.45, "wave": 1 } },
+    { "name": "BASS Driver",         "gm": [34, 38],         "params": { "cutoff": 0.38, "resonance": 0.75, "envMod": 0.65, "decay": 0.48, "accent": 0.70, "wave": 0 } },
+    { "name": "BASS Saw Pluck",      "gm": [32, 39],         "params": { "cutoff": 0.45, "resonance": 0.55, "envMod": 0.50, "decay": 0.28, "accent": 0.60, "wave": 0 } },
+    { "name": "BASS Wobble",         "gm": [37, 38],         "params": { "cutoff": 0.28, "resonance": 0.85, "envMod": 0.85, "decay": 0.70, "accent": 0.70, "wave": 0 } },
+    { "name": "BASS Sub Round",      "gm": [33, 35],         "params": { "cutoff": 0.22, "resonance": 0.30, "envMod": 0.30, "decay": 0.60, "accent": 0.40, "wave": 1 } },
+    { "name": "LEAD 303 Bright",     "gm": [80, 81],         "params": { "cutoff": 0.55, "resonance": 0.65, "envMod": 0.55, "decay": 0.45, "accent": 0.70, "wave": 0 } },
+    { "name": "LEAD 303 Dark",       "gm": [82, 83],         "params": { "cutoff": 0.30, "resonance": 0.70, "envMod": 0.60, "decay": 0.55, "accent": 0.65, "wave": 0 } },
+    { "name": "LEAD Acid Fast",      "gm": [81, 84],         "params": { "cutoff": 0.48, "resonance": 0.80, "envMod": 0.75, "decay": 0.30, "accent": 0.80, "wave": 0 } },
+    { "name": "LEAD Acid Slow",      "gm": [85, 86],         "params": { "cutoff": 0.35, "resonance": 0.75, "envMod": 0.70, "decay": 0.65, "accent": 0.60, "wave": 0 } },
+    { "name": "LEAD Square Lead",    "gm": [80, 87],         "params": { "cutoff": 0.50, "resonance": 0.40, "envMod": 0.45, "decay": 0.40, "accent": 0.60, "wave": 1 } },
+    { "name": "LEAD Saw Lead",       "gm": [81, 84],         "params": { "cutoff": 0.52, "resonance": 0.50, "envMod": 0.50, "decay": 0.42, "accent": 0.65, "wave": 0 } },
+    { "name": "LEAD Closed Filter",  "gm": [82, 85],         "params": { "cutoff": 0.20, "resonance": 0.60, "envMod": 0.35, "decay": 0.50, "accent": 0.55, "wave": 0 } },
+    { "name": "LEAD Open Filter",    "gm": [83, 86, 87],     "params": { "cutoff": 0.55, "resonance": 0.55, "envMod": 0.40, "decay": 0.45, "accent": 0.60, "wave": 0 } },
+    { "name": "LEAD Squelch",        "gm": [84, 86],         "params": { "cutoff": 0.42, "resonance": 0.88, "envMod": 0.80, "decay": 0.38, "accent": 0.78, "wave": 0 } },
+    { "name": "LEAD Hollow",         "gm": [85, 87],         "params": { "cutoff": 0.35, "resonance": 0.45, "envMod": 0.40, "decay": 0.50, "accent": 0.55, "wave": 1 } },
+    { "name": "LEAD Buzz",           "gm": [80, 81, 82],     "params": { "cutoff": 0.45, "resonance": 0.70, "envMod": 0.65, "decay": 0.55, "accent": 0.75, "wave": 0 } },
+    { "name": "LEAD Sub Lead",       "gm": [83, 87],         "params": { "cutoff": 0.25, "resonance": 0.35, "envMod": 0.30, "decay": 0.60, "accent": 0.50, "wave": 1 } }
+  ]
+}

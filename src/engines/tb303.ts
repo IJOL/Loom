@@ -8,6 +8,7 @@ import type {
 } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
 import { registerEngine, registerEngineFactory } from './registry';
+import { getCachedPresets } from '../presets/preset-loader';
 import { TB303 } from '../core/synth';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, type ModulatorVoice } from '../modulation/types';
@@ -29,12 +30,6 @@ const PARAMS: EngineParamSpec[] = [
     min: 0, max: 1, default: 0,
     options: [{ value: 'sawtooth', label: 'Saw' }, { value: 'square', label: 'Sqr' }],
   },
-];
-
-const TB303_PRESETS: EnginePreset[] = [
-  { name: 'Acid Classic', params: { cutoff: 0.35, resonance: 0.70, envMod: 0.60, decay: 0.50, accent: 0.70, wave: 0 } },
-  { name: 'Dub Sub',      params: { cutoff: 0.20, resonance: 0.40, envMod: 0.30, decay: 0.65, accent: 0.45, wave: 1 } },
-  { name: 'Squelch',      params: { cutoff: 0.45, resonance: 0.85, envMod: 0.75, decay: 0.35, accent: 0.80, wave: 0 } },
 ];
 
 function midiToFreq(m: number): number {
@@ -124,7 +119,7 @@ export class TB303Engine implements SynthEngine {
   readonly polyphony = 'mono' as const;
   readonly editor = 'piano-roll' as const;
   readonly params = PARAMS;
-  readonly presets = TB303_PRESETS;
+  get presets(): EnginePreset[] { return getCachedPresets('tb303'); }
 
   /** Tempo for LFO BPM sync. main.ts can update this at runtime. */
   bpm = 120;
