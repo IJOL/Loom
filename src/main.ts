@@ -35,6 +35,13 @@ import { wireMidiImportUI } from './midi/midi-import-ui';
 import { launchScene as launchSceneRuntime } from './session/session-runtime';
 import { applyPresetToEngine } from './presets/preset-apply';
 import { wireSaveManager, bootRecoveryLoad } from './save/save-wiring';
+import { createHistory } from './core/history';
+import {
+  wireHistoryKeyboard, type HistoryDeps,
+} from './save/history-wiring';
+import {
+  buildSavedStateV3, applyLoadedStateV3, type SavedStateV3, type SavedStateV3Deps,
+} from './save/saved-state-v3';
 import {
   wirePolyControls, wirePolyMode, applyPolyParams,
   populatePolyPresetSelect, refreshPolyPresetSelect, polyPresetName,
@@ -1080,6 +1087,14 @@ const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
   filterChain,
   flashButton,
 };
+const savedStateDeps: SavedStateV3Deps = saveWiringDeps;
+const history = createHistory<SavedStateV3>({ maxSize: 100 });
+const historyDeps: HistoryDeps = {
+  history,
+  snapshot: () => buildSavedStateV3(savedStateDeps),
+  restore: (s) => applyLoadedStateV3(s, savedStateDeps),
+};
+wireHistoryKeyboard(historyDeps);
 wireSaveManager(saveWiringDeps);
 bootRecoveryLoad(saveWiringDeps);
 
