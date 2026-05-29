@@ -1,0 +1,304 @@
+{
+  "engineId": "karplus",
+  "presets": [
+    {
+      "name": "GTR Nylon Acoustic",
+      "gm": [24],
+      "params": {
+        "string.damping": 0.55,
+        "string.brightness": 0.45,
+        "excite.time": 0.012,
+        "excite.tone": 0.35,
+        "amp.attack": 0.003,
+        "amp.release": 1.2,
+        "amp.level": 0.82
+      }
+    },
+    {
+      "name": "GTR Nylon Soft Fingerpick",
+      "gm": [24],
+      "params": {
+        "string.damping": 0.62,
+        "string.brightness": 0.38,
+        "excite.time": 0.018,
+        "excite.tone": 0.28,
+        "amp.attack": 0.005,
+        "amp.release": 1.4,
+        "amp.level": 0.78
+      }
+    },
+    {
+      "name": "GTR Steel Strum",
+      "gm": [25],
+      "params": {
+        "string.damping": 0.32,
+        "string.brightness": 0.72,
+        "excite.time": 0.008,
+        "excite.tone": 0.65,
+        "amp.attack": 0.002,
+        "amp.release": 1.6,
+        "amp.level": 0.85
+      }
+    },
+    {
+      "name": "GTR Steel Bright Pick",
+      "gm": [25],
+      "params": {
+        "string.damping": 0.25,
+        "string.brightness": 0.82,
+        "excite.time": 0.005,
+        "excite.tone": 0.78,
+        "amp.attack": 0.002,
+        "amp.release": 1.8,
+        "amp.level": 0.88
+      }
+    },
+    {
+      "name": "GTR Jazz Hollowbody",
+      "gm": [26],
+      "params": {
+        "string.damping": 0.42,
+        "string.brightness": 0.55,
+        "excite.time": 0.01,
+        "excite.tone": 0.45,
+        "amp.attack": 0.003,
+        "amp.release": 1.3,
+        "amp.level": 0.8
+      }
+    },
+    {
+      "name": "GTR Clean Electric",
+      "gm": [27],
+      "params": {
+        "string.damping": 0.3,
+        "string.brightness": 0.7,
+        "excite.time": 0.006,
+        "excite.tone": 0.6,
+        "amp.attack": 0.002,
+        "amp.release": 1.5,
+        "amp.level": 0.83
+      }
+    },
+    {
+      "name": "GTR Muted Palm",
+      "gm": [28],
+      "params": {
+        "string.damping": 0.78,
+        "string.brightness": 0.4,
+        "excite.time": 0.005,
+        "excite.tone": 0.5,
+        "amp.attack": 0.002,
+        "amp.release": 0.35,
+        "amp.level": 0.75
+      }
+    },
+    {
+      "name": "GTR Overdriven Bite",
+      "gm": [29],
+      "params": {
+        "string.damping": 0.2,
+        "string.brightness": 0.88,
+        "excite.time": 0.004,
+        "excite.tone": 0.85,
+        "amp.attack": 0.002,
+        "amp.release": 1.7,
+        "amp.level": 0.9
+      }
+    },
+    {
+      "name": "GTR Distortion Crunch",
+      "gm": [30],
+      "params": {
+        "string.damping": 0.18,
+        "string.brightness": 0.92,
+        "excite.time": 0.004,
+        "excite.tone": 0.9,
+        "amp.attack": 0.002,
+        "amp.release": 1.6,
+        "amp.level": 0.92
+      }
+    },
+    {
+      "name": "GTR Harmonics",
+      "gm": [31],
+      "params": {
+        "string.damping": 0.15,
+        "string.brightness": 0.95,
+        "excite.time": 0.003,
+        "excite.tone": 0.95,
+        "amp.attack": 0.002,
+        "amp.release": 2.2,
+        "amp.level": 0.78
+      }
+    },
+    {
+      "name": "BASS Acoustic Upright",
+      "gm": [32],
+      "params": {
+        "string.damping": 0.58,
+        "string.brightness": 0.32,
+        "excite.time": 0.02,
+        "excite.tone": 0.22,
+        "amp.attack": 0.004,
+        "amp.release": 1.1,
+        "amp.level": 0.85
+      }
+    },
+    {
+      "name": "BASS Fingered Electric",
+      "gm": [33],
+      "params": {
+        "string.damping": 0.4,
+        "string.brightness": 0.5,
+        "excite.time": 0.012,
+        "excite.tone": 0.4,
+        "amp.attack": 0.003,
+        "amp.release": 0.9,
+        "amp.level": 0.86
+      }
+    },
+    {
+      "name": "BASS Slap Pluck",
+      "gm": [33, 36],
+      "params": {
+        "string.damping": 0.35,
+        "string.brightness": 0.78,
+        "excite.time": 0.005,
+        "excite.tone": 0.72,
+        "amp.attack": 0.002,
+        "amp.release": 0.7,
+        "amp.level": 0.88
+      }
+    },
+    {
+      "name": "PLUCK Pizzicato Strings",
+      "gm": [45],
+      "params": {
+        "string.damping": 0.5,
+        "string.brightness": 0.6,
+        "excite.time": 0.006,
+        "excite.tone": 0.55,
+        "amp.attack": 0.002,
+        "amp.release": 0.5,
+        "amp.level": 0.82
+      }
+    },
+    {
+      "name": "PLUCK Pizz Soft Bowed",
+      "gm": [45],
+      "params": {
+        "string.damping": 0.55,
+        "string.brightness": 0.5,
+        "excite.time": 0.009,
+        "excite.tone": 0.45,
+        "amp.attack": 0.003,
+        "amp.release": 0.6,
+        "amp.level": 0.78
+      }
+    },
+    {
+      "name": "HARP Orchestral Concert",
+      "gm": [46],
+      "params": {
+        "string.damping": 0.22,
+        "string.brightness": 0.62,
+        "excite.time": 0.008,
+        "excite.tone": 0.5,
+        "amp.attack": 0.003,
+        "amp.release": 3.2,
+        "amp.level": 0.82
+      }
+    },
+    {
+      "name": "HARP Celtic Bright",
+      "gm": [46],
+      "params": {
+        "string.damping": 0.2,
+        "string.brightness": 0.7,
+        "excite.time": 0.006,
+        "excite.tone": 0.6,
+        "amp.attack": 0.002,
+        "amp.release": 3.5,
+        "amp.level": 0.85
+      }
+    },
+    {
+      "name": "PLUCK Timpani Mallet",
+      "gm": [47],
+      "params": {
+        "string.damping": 0.7,
+        "string.brightness": 0.28,
+        "excite.time": 0.025,
+        "excite.tone": 0.2,
+        "amp.attack": 0.004,
+        "amp.release": 0.8,
+        "amp.level": 0.85
+      }
+    },
+    {
+      "name": "WORLD Banjo Twang",
+      "gm": [105],
+      "params": {
+        "string.damping": 0.45,
+        "string.brightness": 0.85,
+        "excite.time": 0.004,
+        "excite.tone": 0.82,
+        "amp.attack": 0.002,
+        "amp.release": 0.7,
+        "amp.level": 0.85
+      }
+    },
+    {
+      "name": "WORLD Shamisen",
+      "gm": [106],
+      "params": {
+        "string.damping": 0.5,
+        "string.brightness": 0.72,
+        "excite.time": 0.006,
+        "excite.tone": 0.68,
+        "amp.attack": 0.002,
+        "amp.release": 0.85,
+        "amp.level": 0.83
+      }
+    },
+    {
+      "name": "WORLD Koto",
+      "gm": [107],
+      "params": {
+        "string.damping": 0.38,
+        "string.brightness": 0.65,
+        "excite.time": 0.008,
+        "excite.tone": 0.55,
+        "amp.attack": 0.003,
+        "amp.release": 1.4,
+        "amp.level": 0.82
+      }
+    },
+    {
+      "name": "WORLD Sitar Drone",
+      "gm": [104],
+      "params": {
+        "string.damping": 0.18,
+        "string.brightness": 0.78,
+        "excite.time": 0.012,
+        "excite.tone": 0.62,
+        "amp.attack": 0.003,
+        "amp.release": 2.8,
+        "amp.level": 0.85
+      }
+    },
+    {
+      "name": "PLUCK Music Box",
+      "gm": [10],
+      "params": {
+        "string.damping": 0.35,
+        "string.brightness": 0.8,
+        "excite.time": 0.004,
+        "excite.tone": 0.7,
+        "amp.attack": 0.002,
+        "amp.release": 1.1,
+        "amp.level": 0.78
+      }
+    }
+  ]
+}

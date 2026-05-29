@@ -19,6 +19,7 @@ import { renderModulatorsPanel } from '../modulation/modulation-ui';
 import { bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
 import { ConnectionBinder } from '../modulation/connection-binder';
 import { wireEngineParams } from './engine-ui';
+import { getCachedPresets } from '../presets/preset-loader';
 
 // Unified-param schema. Dot-namespaced ids that map consistently between
 // knob layer and voice AudioParam destinations (no more ks-* split between
@@ -246,7 +247,9 @@ export class KarplusEngine implements SynthEngine {
   readonly type = 'polyhost' as const;
   readonly polyphony = 'poly' as const;
   readonly editor = 'piano-roll' as const;
-  readonly presets: import('./engine-types').EnginePreset[] = [];
+  get presets(): import('./engine-types').EnginePreset[] {
+    return getCachedPresets('karplus');
+  }
   readonly params = KARPLUS_PARAMS;
 
   /** Tempo for LFO BPM sync. main.ts can update this at runtime. */
