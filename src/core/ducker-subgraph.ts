@@ -26,7 +26,7 @@ export interface DuckerOpts {
 }
 
 const ABS_CURVE_LEN = 2048;
-function makeAbsCurve(): Float32Array {
+function makeAbsCurve(): Float32Array<ArrayBuffer> {
   const c = new Float32Array(ABS_CURVE_LEN);
   for (let i = 0; i < ABS_CURVE_LEN; i++) {
     const x = (i / (ABS_CURVE_LEN - 1)) * 2 - 1;
