@@ -65,6 +65,7 @@ import {
 import { setCurrentLaneForVoice, getActiveModVoice } from './modulation/active-mods';
 import { LaneResourceMap } from './core/lane-resources';
 import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from './core/lane-ids';
+import { computeStripMutes, type MuteSoloLane } from './core/mute-solo';
 import { GM_DRUM_MAP } from './engines/drum-gm-map';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
@@ -279,20 +280,29 @@ const muteState: Record<TrackId, boolean> = Object.fromEntries(ALL_TRACKS.map((t
 const soloState: Record<TrackId, boolean> = Object.fromEntries(ALL_TRACKS.map((t) => [t, false])) as Record<TrackId, boolean>;
 
 function applyMuteSolo() {
-  // The Session mixer columns are keyed by lane slug id (`tb-303-1`,
-  // `subtractive-1`, …), but the legacy MIDI-import code and historic
-  // tests still write into muteState using TrackId keys (`bass`, `poly`,
-  // `kick`, …). Build a unified id set that covers both schemes so an entry
-  // under either key takes effect on the matching strip.
-  const muteAsRecord = muteState as unknown as Record<string, boolean>;
-  const soloAsRecord = soloState as unknown as Record<string, boolean>;
-  const ids = new Set<string>();
-  for (const t of activeTracks()) ids.add(t);
-  for (const laneId of laneResources.ids()) ids.add(laneId);
-  const anySolo = [...ids].some((id) => soloAsRecord[id]);
-  for (const id of ids) {
-    const m = anySolo ? !soloAsRecord[id] : muteAsRecord[id];
-    stripFor(id as TrackId).setMuted(!!m);
+  // Each session lane owns one mixer column (M/S button keyed by the lane's
+  // slug id). The drum bus also owns its 8 per-voice strips and the legacy
+  // alias TrackIds — they must share the lane's mute/solo decision so SOLO
+  // on drums leaves the voices audible. computeStripMutes handles that
+  // arithmetic; this function just maps the result onto live strips.
+  const lanes: MuteSoloLane[] = [];
+  for (const laneId of laneResources.ids()) {
+    const ownedTrackIds: string[] = [];
+    if (laneId === LANE_ID_BASS)  ownedTrackIds.push('bass');
+    if (laneId === LANE_ID_POLY)  ownedTrackIds.push('poly');
+    if (laneId === LANE_ID_DRUMS) {
+      ownedTrackIds.push('drumBus');
+      for (const voice of DRUM_LANES) ownedTrackIds.push(voice);
+    }
+    lanes.push({ id: laneId, ownedTrackIds });
+  }
+  const mutes = computeStripMutes({
+    lanes,
+    muteState: muteState as unknown as Record<string, boolean>,
+    soloState: soloState as unknown as Record<string, boolean>,
+  });
+  for (const [id, muted] of Object.entries(mutes)) {
+    stripFor(id as TrackId).setMuted(muted);
   }
 }
 
