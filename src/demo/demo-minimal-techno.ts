@@ -99,16 +99,6 @@ export function buildMinimalTechnoDemo(): PatternData[] {
   setPoly(C, 22, [82], true);       // Bb5 high
   setPoly(C, 27, [75]);
   setPoly(C, 30, [79]);
-  // Extra poly track — sustained subtractive pad layer (Cm7 → Bb)
-  C.extraPolyTracks.push({
-    id: 'poly1', name: 'PAD', enabled: true,
-    notes: [
-      { start: 0,  duration: TICKS_PER_STEP * 16, midi: 48, velocity: 70 },
-      { start: 0,  duration: TICKS_PER_STEP * 16, midi: 55, velocity: 70 },
-      { start: TICKS_PER_STEP * 16, duration: TICKS_PER_STEP * 16, midi: 46, velocity: 70 },
-      { start: TICKS_PER_STEP * 16, duration: TICKS_PER_STEP * 16, midi: 53, velocity: 70 },
-    ],
-  });
   C.automation.push(autoCutoff((t) => 0.55 + 0.25 * Math.sin(t * Math.PI * 4)));
 
   // ── D — Breakdown (subtractive): held bass, piano-roll poly chords, drama
@@ -128,16 +118,6 @@ export function buildMinimalTechnoDemo(): PatternData[] {
   const chord2: number[] = [58, 62, 65, 69]; // BbM7
   for (const n of chord1) D.polyNotes.push({ start: 0,  duration: TICKS_PER_STEP * 16, midi: n, velocity: 100 });
   for (const n of chord2) D.polyNotes.push({ start: TICKS_PER_STEP * 16, duration: TICKS_PER_STEP * 16, midi: n, velocity: 100 });
-  // Extra poly track — high lead motif
-  D.extraPolyTracks.push({
-    id: 'poly1', name: 'LEAD', enabled: true,
-    notes: [
-      { start: TICKS_PER_STEP * 4,  duration: TICKS_PER_STEP * 4, midi: 84, velocity: 100 },
-      { start: TICKS_PER_STEP * 12, duration: TICKS_PER_STEP * 4, midi: 82, velocity: 90  },
-      { start: TICKS_PER_STEP * 20, duration: TICKS_PER_STEP * 4, midi: 81, velocity: 100 },
-      { start: TICKS_PER_STEP * 28, duration: TICKS_PER_STEP * 4, midi: 79, velocity: 80  },
-    ],
-  });
   D.automation.push(autoCutoff((t) => 0.75 - 0.55 * t));
 
   return [A, B, C, D];

@@ -72,36 +72,10 @@ function randomizePolyLaneNotes(deps: RandomizeUIDeps, laneId: string): void {
   const { seq } = deps;
   const len = seq.pattern.length;
 
-  if (laneId === 'subtractive-1') {
-    if (seq.pattern.polyMode === 'piano') {
-      // Sparse piano-roll: ~30% step density, notes of 1-2 steps duration
-      const out: NoteEvent[] = [];
-      for (let i = 0; i < len; i++) {
-        if (Math.random() < 0.3) {
-          out.push({
-            start: i * TICKS_PER_STEP,
-            duration: TICKS_PER_STEP * (Math.random() < 0.3 ? 2 : 1),
-            midi: pickMidi(),
-            velocity: Math.random() < 0.25 ? 115 : 80,
-          });
-        }
-      }
-      seq.pattern.polyNotes = out;
-    } else {
-      // Step mode: fill melody[] array
-      for (let i = 0; i < len; i++) {
-        const on = Math.random() < 0.35;
-        seq.pattern.melody[i] = {
-          on,
-          notes: on ? [pickMidi()] : [60],
-          accent: on && Math.random() < 0.2,
-          tie: on && Math.random() < 0.1,
-        };
-      }
-    }
-  } else {
-    const track = seq.pattern.extraPolyTracks.find((t) => t.id === laneId);
-    if (!track) return;
+  if (laneId !== 'subtractive-1') return;
+
+  if (seq.pattern.polyMode === 'piano') {
+    // Sparse piano-roll: ~30% step density, notes of 1-2 steps duration
     const out: NoteEvent[] = [];
     for (let i = 0; i < len; i++) {
       if (Math.random() < 0.3) {
@@ -113,7 +87,18 @@ function randomizePolyLaneNotes(deps: RandomizeUIDeps, laneId: string): void {
         });
       }
     }
-    track.notes = out;
+    seq.pattern.polyNotes = out;
+  } else {
+    // Step mode: fill melody[] array
+    for (let i = 0; i < len; i++) {
+      const on = Math.random() < 0.35;
+      seq.pattern.melody[i] = {
+        on,
+        notes: on ? [pickMidi()] : [60],
+        accent: on && Math.random() < 0.2,
+        tie: on && Math.random() < 0.1,
+      };
+    }
   }
 
   deps.rebuildPolyTrack();

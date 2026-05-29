@@ -18,17 +18,6 @@ export interface AutomationLane {
 export type PolyTrackMode = 'step' | 'piano';
 export type BassMode = 'step' | 'piano';
 
-export const MAX_EXTRA_POLY_TRACKS = 16;
-
-export interface PolyTrack {
-  id: string;                       // 'poly1' .. 'poly9'
-  name: string;                     // display name (often from MIDI track name)
-  notes: NoteEvent[];
-  enabled: boolean;
-  engineId?: string;                // 'subtractive' | 'wavetable' | 'fm' | ...  (default 'subtractive')
-  // engineState reserved for Phase 1D serialization of engine knob values
-}
-
 export interface PatternData {
   length: number;
   bass: BassStep[];
@@ -38,7 +27,6 @@ export interface PatternData {
   melody: PolyStep[];               // used when polyMode === 'step' (main poly only)
   polyNotes: NoteEvent[];           // used when polyMode === 'piano' (main poly only)
   polyMode: PolyTrackMode;
-  extraPolyTracks: PolyTrack[];     // additional polyphonic tracks for MIDI imports
   automation: AutomationLane[];
   engineId: string;           // which engine is active for the poly host
   engineStepData: unknown;    // engine-specific sequencer state (serialized)
@@ -59,7 +47,6 @@ export function emptyPattern(length: number): PatternData {
     melody: Array.from({ length }, () => ({ on: false, notes: [60], accent: false, tie: false })),
     polyNotes: [],
     polyMode: 'piano',
-    extraPolyTracks: [],
     automation: [],
     engineId: 'subtractive',
     engineStepData: null,
@@ -78,7 +65,6 @@ export function clonePattern(p: PatternData): PatternData {
     melody: p.melody.map((s) => ({ ...s, notes: [...s.notes] })),
     polyNotes: (p.polyNotes ?? []).map((n) => ({ ...n })),
     polyMode: p.polyMode ?? 'step',
-    extraPolyTracks: (p.extraPolyTracks ?? []).map((t) => ({ ...t, notes: t.notes.map((n) => ({ ...n })), engineId: t.engineId ?? 'subtractive' })),
     automation: (p.automation ?? []).map((l) => ({ ...l, values: [...l.values] })),
     engineId: p.engineId,
     engineStepData: p.engineStepData ? JSON.parse(JSON.stringify(p.engineStepData)) : null,

@@ -19,7 +19,7 @@ import { Sequencer } from './core/sequencer';
 import { DrumMachine, DRUM_LANES, type DrumVoice } from './core/drums';
 import { clearPattern } from './core/random';
 import { FxBus, ChannelStrip, FilterChain } from './core/fx';
-import { PatternBank, emptyPattern, AUTOMATION_SUB_RES, MAX_EXTRA_POLY_TRACKS, type PolyTrack, type AutomationLane } from './core/pattern';
+import { PatternBank, emptyPattern, AUTOMATION_SUB_RES, type AutomationLane } from './core/pattern';
 import { type KnobHandle } from './core/knob';
 import { PolySynth } from './polysynth/polysynth';
 import { scheduleArpForNote } from './arp/arp';
@@ -208,8 +208,7 @@ const stripFor = (t: TrackId | string): ChannelStrip => {
 // Tracks that should appear in the mixer / be iterated for save / mute-solo.
 // Excludes extra polys whose track hasn't been created yet (lazy lanes).
 function activeTracks(): TrackId[] {
-  const used = new Set(seq.pattern.extraPolyTracks.map((t) => t.id));
-  return ALL_TRACKS.filter((t) => !(EXTRA_IDS as readonly string[]).includes(t) || used.has(t));
+  return ALL_TRACKS.filter((t) => !(EXTRA_IDS as readonly string[]).includes(t));
 }
 
 // Automation param registry — populated as knobs are created throughout the file.
@@ -366,8 +365,7 @@ const _lehState: LaneEngineHostState = leh.createLaneEngineState();
 let _lookupEngineIdFn: (laneId: string) => string = (laneId) => {
   // Fallback: consult the pattern for backward compat before sessionHost is ready.
   if (laneId === 'subtractive-1') return seq.pattern.engineId ?? 'subtractive';
-  const track = seq.pattern.extraPolyTracks.find((t) => t.id === laneId);
-  return track?.engineId ?? 'subtractive';
+  return 'subtractive';
 };
 
 const _lehDeps: LaneEngineHostDeps = {

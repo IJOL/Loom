@@ -1,7 +1,7 @@
 import { stepsToNotes, bassStepsToNotes, notesToBassSteps, notesToPolySteps, type NoteEvent } from '../core/notes';
 import type { Sequencer } from '../core/sequencer';
 
-// ── Copy notes between lanes (303 ↔ main poly ↔ extra polys) ─────────────
+// ── Copy notes between lanes (303 ↔ main poly) ───────────────────────────
 
 export interface CopyNotesDeps {
   seq: Sequencer;
@@ -11,14 +11,10 @@ export interface CopyEndpoint { id: string; label: string; }
 
 export function listCopyEndpoints(deps: CopyNotesDeps): CopyEndpoint[] {
   const { seq } = deps;
-  const out: CopyEndpoint[] = [
+  return [
     { id: 'tb-303-1', label: `Bass 303 (${seq.pattern.bassMode})` },
     { id: 'subtractive-1', label: `Main Poly (${seq.pattern.polyMode})` },
   ];
-  for (const t of seq.pattern.extraPolyTracks) {
-    out.push({ id: t.id, label: `${t.name || t.id} (piano)` });
-  }
-  return out;
 }
 
 /** Read notes from any endpoint, converting from its native format. */
@@ -34,8 +30,7 @@ export function readEndpointAsNotes(deps: CopyNotesDeps, id: string): NoteEvent[
       ? seq.pattern.polyNotes.map((n) => ({ ...n }))
       : stepsToNotes(seq.pattern.melody);
   }
-  const extra = seq.pattern.extraPolyTracks.find((t) => t.id === id);
-  return extra ? extra.notes.map((n) => ({ ...n })) : [];
+  return [];
 }
 
 /** Write notes to an endpoint, converting to its native format if needed. */
@@ -52,8 +47,6 @@ export function writeNotesToEndpoint(deps: CopyNotesDeps, id: string, notes: Not
     else seq.pattern.melody = notesToPolySteps(cloned, seq.pattern.length);
     return;
   }
-  const extra = seq.pattern.extraPolyTracks.find((t) => t.id === id);
-  if (extra) extra.notes = cloned;
 }
 
 export function refreshCopyTrackSelects(deps: CopyNotesDeps): void {
