@@ -47,7 +47,16 @@ function buildPianoRoll(
   canvas.height = 240;
   canvas.style.height = '240px';
   canvas.style.width  = `${canvas.width}px`;
-  host.appendChild(canvas);
+  // Wrap the canvas in a horizontally-scrollable container so very long clips
+  // (e.g. a 152-bar MIDI import) don't blow out the page width. The host stays
+  // pinned to the parent's width; the canvas scrolls inside it.
+  const scrollWrap = document.createElement('div');
+  scrollWrap.className = 'piano-roll-scroll';
+  scrollWrap.style.overflowX = 'auto';
+  scrollWrap.style.overflowY = 'hidden';
+  scrollWrap.style.maxWidth = '100%';
+  scrollWrap.appendChild(canvas);
+  host.appendChild(scrollWrap);
 
   const getNotes = (): NoteEvent[] => clip.notes ?? [];
   const setNotes = (notes: NoteEvent[]) => { clip.notes = notes; };
@@ -56,6 +65,7 @@ function buildPianoRoll(
   const { ctx, seq, laneStates } = deps;
   return createPianoRoll({
     canvas,
+    scrollContainer: scrollWrap,
     getNotes,
     setNotes,
     patternTicks: clip.lengthBars * 16 * TICKS_PER_STEP,

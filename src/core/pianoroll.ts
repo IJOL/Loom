@@ -14,6 +14,10 @@ export interface PianoRollOpts {
   snapTicks?: number;
   onChange?: () => void;
   getPlayheadTick?: () => number; // -1 when not playing
+  /** Optional scrolling wrapper. When the canvas is wider than this
+   *  element's clientWidth, the playhead is kept centered by scrolling
+   *  the wrapper underneath it (DAW-style "playhead follow"). */
+  scrollContainer?: HTMLElement;
 }
 
 export interface PianoRollHandle {
@@ -111,6 +115,17 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       ctx.strokeStyle = '#f7d000';
       ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+
+      // Follow the playhead: keep it centered in the visible viewport when
+      // the canvas is wider than the scroll container.
+      const sc = opts.scrollContainer;
+      if (sc && opts.canvas.width > sc.clientWidth) {
+        const rect = opts.canvas.getBoundingClientRect();
+        const scale = rect.width / opts.canvas.width; // CSS-px per canvas-px
+        const target = Math.max(0, x * scale - sc.clientWidth / 2);
+        // Skip tiny corrections to avoid scroll-jitter from sub-pixel drift.
+        if (Math.abs(sc.scrollLeft - target) > 2) sc.scrollLeft = target;
+      }
     }
   }
 
