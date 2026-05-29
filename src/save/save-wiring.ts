@@ -9,7 +9,6 @@ import type { TB303 } from '../core/synth';
 import type { DrumMachine } from '../core/drums';
 import type { FxBus, FilterChain } from '../core/fx';
 import type { SessionHost } from '../session/session-host';
-import type { SessionState } from '../session/session';
 import type { HistoryController } from '../core/history';
 import {
   buildSavedStateV3, applyLoadedStateV3, parseSavedStateV3,
