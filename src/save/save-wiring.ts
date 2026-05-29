@@ -10,6 +10,10 @@ import type { DrumMachine } from '../core/drums';
 import type { FxBus, FilterChain } from '../core/fx';
 import type { SessionHost } from '../session/session-host';
 import type { SessionState } from '../session/session';
+import {
+  buildSavedStateV3, applyLoadedStateV3, parseSavedStateV3,
+  type SavedStateV3, type SavedStateV3Deps,
+} from './saved-state-v3';
 
 export interface SaveWiringDeps {
   seq: Sequencer;
@@ -29,46 +33,17 @@ export interface SaveWiringDeps {
   flashButton: (b: HTMLButtonElement, msg: string) => void;
 }
 
-function buildSavedStateV3(deps: SaveWiringDeps): Record<string, unknown> {
-  const { seq, synth, drums, master, volInput, sessionHost } = deps;
-  return {
-    schemaVersion: 3,
-    bpm: seq.bpm,
-    swing: seq.swing,
-    masterVol: parseFloat(volInput.value),
-    kit: drums.kitId,
-    wave: synth.params.wave,
-    synthParams: { ...synth.params },
-    sessionState: sessionHost.getStateForSave(),
-  };
-}
-
 function applyLoadedState(data: unknown, deps: SaveWiringDeps): void {
-  const { seq, synth, drums, master, volInput, bpmInput, swingInput, kitSel, waveSel, sessionHost, refreshKnobsFromSynth, renderLanes, fx, filterChain } = deps;
-
-  if (!data || typeof data !== 'object') { alert('Invalid save data'); return; }
-  const s = data as Record<string, unknown>;
-
-  // Only accept schemaVersion 3 (session-only). Legacy saves (v1/v2) are dropped
-  // because Classic mode no longer exists and the bank/slots format is gone.
-  if (s.schemaVersion !== 3) {
-    console.warn('[SaveManager] Ignoring legacy save file (schemaVersion < 3). Classic mode no longer supported.');
+  const s = parseSavedStateV3(data);
+  if (!s) {
+    if (data && typeof data === 'object' && 'schemaVersion' in data) {
+      console.warn('[SaveManager] Ignoring legacy save file (schemaVersion < 3). Classic mode no longer supported.');
+    } else {
+      alert('Invalid save data');
+    }
     return;
   }
-
-  if (typeof s.bpm === 'number') { seq.bpm = s.bpm; bpmInput.value = String(s.bpm); }
-  if (typeof s.swing === 'number') { seq.swing = s.swing; swingInput.value = String(s.swing); }
-  if (typeof s.masterVol === 'number') { master.gain.value = s.masterVol; volInput.value = String(s.masterVol); }
-  if (typeof s.kit === 'string') { drums.setKit(s.kit); kitSel.value = s.kit; }
-  if (s.wave) { synth.params.wave = s.wave as typeof synth.params.wave; waveSel.value = String(s.wave); }
-  if (s.synthParams) synth.params = { ...synth.params, ...(s.synthParams as object) };
-  if (s.sessionState && typeof s.sessionState === 'object') {
-    sessionHost.applyLoadedSessionState(s.sessionState as SessionState);
-  }
-  refreshKnobsFromSynth();
-  renderLanes();
-  fx.setBpmSync(seq.bpm);
-  filterChain.updateBpm(seq.bpm);
+  applyLoadedStateV3(s, deps);
 }
 
 function openSaveManager(deps: SaveWiringDeps, applyLoaded: (data: unknown) => void): void {
