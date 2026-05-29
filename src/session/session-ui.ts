@@ -5,7 +5,13 @@ import type { SessionState, SessionLane, SessionClip } from './session';
 import type { LanePlayState } from './session-runtime';
 
 export interface SessionUICallbacks {
+  /** Click on the clip body (anywhere except the ▶ icon): open the clip in
+   *  the inspector and focus the editor. Does not affect transport. */
   onClipClick: (laneId: string, clipIdx: number) => void;
+  /** Click on the ▶ / ⏸ icon: launch the clip (or stop it if already
+   *  playing/queued). Respects launchQuantize when transport is running;
+   *  starts immediately if transport is idle. */
+  onClipPlayPause: (laneId: string, clipIdx: number) => void;
   onCellClick: (laneId: string, clipIdx: number) => void;
   onStopLane:  (laneId: string) => void;
   onLaunchScene: (sceneIdx: number) => void;
@@ -153,7 +159,12 @@ function clipCell(
     cell.appendChild(label);
     const playIcon = document.createElement('span');
     playIcon.className = 'session-cell-play';
-    playIcon.textContent = '▶';
+    playIcon.textContent = isPlaying ? '⏸' : '▶';
+    playIcon.title = isPlaying ? 'Stop' : (isQueued ? 'Queued — click to cancel' : 'Play');
+    playIcon.addEventListener('click', (e) => {
+      e.stopPropagation();
+      cb.onClipPlayPause(lane.id, rowIdx);
+    });
     cell.appendChild(playIcon);
     cell.addEventListener('click', () => cb.onClipClick(lane.id, rowIdx));
   } else {

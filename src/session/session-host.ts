@@ -247,9 +247,45 @@ export class SessionHost {
         if (!lane || !clip) return;
         self.inspector.setSelectedClip({ laneId, clipIdx });
         self.inspector.openInspector();
+        // Focus the inspector panel so the user sees where the editor opened
+        // (and so keyboard interactions land there, not on the just-clicked cell).
+        const panel = document.getElementById('session-inspector');
+        panel?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        self.renderWithMixer();
+      },
+      onClipPlayPause(laneId, clipIdx) {
+        const lane = self.state.lanes.find((l) => l.id === laneId);
+        const clip = lane?.clips[clipIdx];
+        if (!lane || !clip) return;
         void ctx.resume();
-        launchClip(self.laneStates, self.state, lane, clip, ctx.currentTime, seq.bpm);
-        if (!seq.isPlaying()) { resetAutomationPosition(); seq.start(); playBtn.textContent = '■'; }
+        const lp = self.laneStates.get(lane.id);
+        const isPlaying = !!(lp?.playing && lp.playing.id === clip.id);
+        const isQueued  = !!(lp?.queued  && lp.queued.id  === clip.id);
+        if (isPlaying || isQueued) {
+          stopLane(self.laneStates, lane.id);
+          self.renderWithMixer();
+          return;
+        }
+        // Launch. If the transport is idle there's no rhythmic grid to sync
+        // against — pretend the user picked 'immediate' so the clip starts
+        // coincident with the transport's first tick instead of waiting for
+        // a wall-clock boundary.
+        if (!seq.isPlaying()) {
+          let next = self.laneStates.get(lane.id);
+          if (!next) {
+            next = { laneId: lane.id, playing: null, queued: null, queuedBoundary: 0,
+                     startTime: 0, nextStepIdx: 0, loopCount: 0, loopStartedAt: 0,
+                     lastScheduledAt: -Infinity };
+            self.laneStates.set(lane.id, next);
+          }
+          next.queued = clip;
+          next.queuedBoundary = ctx.currentTime;
+          resetAutomationPosition();
+          seq.start();
+          playBtn.textContent = '■';
+        } else {
+          launchClip(self.laneStates, self.state, lane, clip, ctx.currentTime, seq.bpm);
+        }
         self.renderWithMixer();
       },
       onCellClick(laneId, clipIdx) {
