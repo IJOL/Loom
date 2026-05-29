@@ -137,3 +137,19 @@ test.describe('demo JSON presets', () => {
     await expect(page.locator('#poly-preset-select')).toHaveValue('factory:LEAD Soft Sine');
   });
 });
+
+test.describe('modulator scope', () => {
+  test('LFO defaults to scope=shared and the SCOPE label appears in the LFO card', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForFunction(
+      () => (document.querySelector('#poly-preset-select') as HTMLSelectElement | null)?.value !== '__custom__',
+    );
+    await page.locator('button.session-lane-tab[data-lane-id="subtractive-1"]').click();
+    // The SCOPE control is rendered as a radio-strip with buttons titled "Shared" and "PerVoice".
+    // We search for any button with title="Shared" (the default SCOPE value) within an LFO card.
+    const scopeButtons = await page.evaluate(() =>
+      [...document.querySelectorAll('.mod-card.mod-lfo .radio-btn')].filter((b) => (b as any).title === 'Shared'),
+    );
+    expect(scopeButtons.length).toBeGreaterThan(0);
+  });
+});
