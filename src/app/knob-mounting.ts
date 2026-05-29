@@ -44,8 +44,9 @@ export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
     registerKnob: (k) => deps.registerKnob(k as KnobHandle),
     registry: deps.registry as unknown as Map<string, unknown>,
     lookupLaneDisplayName: deps.getLaneDisplayName,
-    sessionState: deps.getSessionState(),
-    // Getter so wireEngineParams reads the live value when a knob fires onChange.
+    // Lazy getters so we can build ctx before sessionHost / history are
+    // initialized — consumers read them later, at knob-event time.
+    get sessionState() { return deps.getSessionState(); },
     get historyDeps() { return deps.getHistoryDeps?.(); },
   });
 
