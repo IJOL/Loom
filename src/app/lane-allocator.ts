@@ -7,11 +7,13 @@ import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from '../core/lane-ids';
 import { type DrumVoice, type DrumMachine } from '../core/drums';
 import type { SynthEngine, Voice } from '../engines/engine-types';
 import type { FxBus } from '../core/fx';
+import type { SidechainBus } from '../core/sidechain-bus';
 
 export interface LaneAllocatorDeps {
   ctx: AudioContext;
   master: GainNode;
   fx: FxBus;
+  sidechainBus: SidechainBus;
   bassStrip: ChannelStrip;
   polyStrip: ChannelStrip;
   drumBusStrip: ChannelStrip;
@@ -57,7 +59,9 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
   const ensureExtraPoly = (id: string): PolySynth => {
     let p = extraPolys[id];
     if (p) return p;
-    const strip = new ChannelStrip(deps.ctx, deps.master, deps.fx);
+    const slug = slugFromExtraId(id);
+    const strip = new ChannelStrip(deps.ctx, deps.master, deps.fx,
+      { sidechain: { bus: deps.sidechainBus, id: slug, label: id.toUpperCase() } });
     p = new PolySynth(deps.ctx, strip.input);
     p.bpm = deps.getBpm();
     extraStrips[id] = strip;
@@ -81,7 +85,8 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     }
     let s = extraLaneStrips.get(laneId);
     if (!s) {
-      s = new ChannelStrip(deps.ctx, deps.master, deps.fx);
+      s = new ChannelStrip(deps.ctx, deps.master, deps.fx,
+        { sidechain: { bus: deps.sidechainBus, id: laneId, label: laneId.toUpperCase() } });
       extraLaneStrips.set(laneId, s);
     }
     return s;
@@ -119,7 +124,8 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
 
   const ensureLaneResource = (laneId: string, engineId: string): void => {
     if (resources.get(laneId)) return;
-    const strip = new ChannelStrip(deps.ctx, deps.master, deps.fx);
+    const strip = new ChannelStrip(deps.ctx, deps.master, deps.fx,
+      { sidechain: { bus: deps.sidechainBus, id: laneId, label: laneId.toUpperCase() } });
     const engine = createEngineInstance(engineId);
     if (!engine) return;
     if (engineId === 'subtractive') {

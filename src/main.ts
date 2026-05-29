@@ -116,7 +116,7 @@ const currentEngineId = 'subtractive';
 const bank = new PatternBank(32);
 
 const lanes = createLaneAllocator({
-  ctx, master, fx,
+  ctx, master, fx, sidechainBus,
   bassStrip, polyStrip, drumBusStrip,
   drums,
   tb303Engine,
