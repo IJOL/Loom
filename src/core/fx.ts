@@ -2,6 +2,14 @@
 // Also a `FilterChain` of stackable filters on the master output, each with
 // optional BPM-synced LFO modulating its cutoff.
 
+import { CompBlock } from './comp-block';
+import {
+  withCompDefaults,
+  withSidechainDefaultsOrNull,
+  type CompState,
+  type SidechainState,
+} from './comp-state';
+
 export class FxBus {
   reverbInput: GainNode;
   delayInput: GainNode;
@@ -81,6 +89,8 @@ export interface ChannelState {
   eqMid: number;
   eqHigh: number;
   muted: boolean;
+  comp: CompState;
+  sidechain: SidechainState | null;
 }
 
 export class ChannelStrip {
@@ -88,6 +98,7 @@ export class ChannelStrip {
   level: GainNode;
   reverbSend: GainNode;
   delaySend: GainNode;
+  comp: CompBlock;
   private eqLow: BiquadFilterNode;
   private eqMid: BiquadFilterNode;
   private eqHigh: BiquadFilterNode;
@@ -109,11 +120,15 @@ export class ChannelStrip {
     this.reverbSend = ctx.createGain(); this.reverbSend.gain.value = 0;
     this.delaySend  = ctx.createGain(); this.delaySend.gain.value = 0;
 
-    // input → EQ → level → pan → mute → (dry, reverbSend, delaySend)
+    // EQ → comp → level → pan → mute → {dry, sends}
+    this.comp = new CompBlock(ctx);
+
     this.input
       .connect(this.eqLow)
       .connect(this.eqMid)
       .connect(this.eqHigh)
+      .connect(this.comp.input);
+    this.comp.output
       .connect(this.level)
       .connect(this.panner)
       .connect(this.muteGain);
@@ -145,6 +160,9 @@ export class ChannelStrip {
   setReverbSend(g: number)   { this.reverbSend.gain.value  = g; }
   setDelaySend (g: number)   { this.delaySend.gain.value   = g; }
 
+  setCompState(s: Partial<CompState>) { this.comp.setState(s); }
+  getCompState(): CompState { return this.comp.getState(); }
+
   setMuted(m: boolean) {
     this._muted = m;
     this.muteGain.gain.value = m ? 0 : 1;
@@ -161,6 +179,8 @@ export class ChannelStrip {
       eqMid:  this.eqMid.gain.value,
       eqHigh: this.eqHigh.gain.value,
       muted: this._muted,
+      comp: this.comp.getState(),
+      sidechain: null, // populated in Task 7
     };
   }
 
@@ -173,6 +193,9 @@ export class ChannelStrip {
     this.setEqMid(s.eqMid);
     this.setEqHigh(s.eqHigh);
     this.setMuted(s.muted);
+    this.comp.setState(withCompDefaults(s.comp));
+    // sidechain restoration lives in Task 7
+    void withSidechainDefaultsOrNull(s.sidechain);
   }
 }
 

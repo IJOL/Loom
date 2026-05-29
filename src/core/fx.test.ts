@@ -31,3 +31,34 @@ describe('ChannelStrip.getEqGainParam', () => {
     expect(strip.getEqGainParam('high')).toBeDefined();
   });
 });
+
+describe('ChannelStrip compressor block', () => {
+  let ctx: AudioContext;
+  let strip: ChannelStrip;
+
+  beforeAll(() => {
+    ctx = new AudioContext();
+    const fx = new FxBus(ctx, ctx.destination);
+    strip = new ChannelStrip(ctx, ctx.destination, fx);
+  });
+
+  it('starts bypassed by default', () => {
+    expect(strip.serialize().comp.bypass).toBe(true);
+  });
+
+  it('setCompState merges with current state and round-trips through serialize', () => {
+    strip.setCompState({ bypass: false, ratio: 6 });
+    const s = strip.serialize();
+    expect(s.comp.bypass).toBe(false);
+    expect(s.comp.ratio).toBe(6);
+  });
+
+  it('restore() with a state missing `comp` falls back to defaults (migration)', () => {
+    const fx2 = new FxBus(ctx, ctx.destination);
+    const fresh = new ChannelStrip(ctx, ctx.destination, fx2);
+    const legacy = fresh.serialize();
+    delete (legacy as unknown as Record<string, unknown>).comp;
+    fresh.restore(legacy as Parameters<ChannelStrip['restore']>[0]);
+    expect(fresh.serialize().comp.bypass).toBe(true);
+  });
+});
