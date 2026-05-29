@@ -60,6 +60,10 @@ const SUB_PARAMS: EngineParamSpec[] = [
 
   // Master
   { id: 'master.tune', label: 'Tune', kind: 'continuous', min: -12, max: 12, default: 0, unit: 'st' },
+
+  { id: 'poly.mode',   label: 'Mode',   kind: 'continuous', min: 0, max: 1,  default: 0 },
+  { id: 'poly.retrig', label: 'Retrig', kind: 'continuous', min: 0, max: 1,  default: 1 },
+  { id: 'poly.voices', label: 'Voices', kind: 'continuous', min: 1, max: 16, default: 8 },
 ];
 
 const WAVE_VALUES = WAVE_OPTIONS.map(o => o.value);
@@ -337,6 +341,9 @@ class SubtractiveEngine implements SynthEngine {
 
   getBaseValue(id: string): number {
     if (!this.polysynth) return SUB_PARAMS.find(p => p.id === id)?.default ?? 0;
+    if (id === 'poly.voices') return this.polysynth.maxVoices;
+    if (id === 'poly.mode')   return this.polysynth.mode === 'mono' ? 1 : 0;
+    if (id === 'poly.retrig') return this.polysynth.retrig ? 1 : 0;
     return readDotPath(this.polysynth.params as unknown as Record<string, unknown>, id);
   }
 
@@ -345,6 +352,9 @@ class SubtractiveEngine implements SynthEngine {
       this.pending.set(id, v);
       return;
     }
+    if (id === 'poly.voices') { this.polysynth.setMaxVoices(v); return; }
+    if (id === 'poly.mode')   { this.polysynth.setMode(v >= 0.5 ? 'mono' : 'poly'); return; }
+    if (id === 'poly.retrig') { this.polysynth.setRetrig(v >= 0.5); return; }
     const spec = SUB_PARAMS.find(p => p.id === id);
     writeDotPath(this.polysynth.params as unknown as Record<string, unknown>, id, v, spec);
   }
