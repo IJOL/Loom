@@ -195,7 +195,6 @@ export class ChannelStrip {
     this.setMuted(s.muted);
     this.comp.setState(withCompDefaults(s.comp));
     // sidechain restoration lives in Task 7
-    void withSidechainDefaultsOrNull(s.sidechain);
   }
 }
 
