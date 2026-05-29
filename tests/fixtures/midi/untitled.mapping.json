@@ -1,0 +1,17 @@
+{
+  "fixture": "untitled.mid",
+  "notes": "Untitled GM demo — variety pack: synth pluck, jazz guitar, harp, pizz, xylo, muted guitar, vibes, bass guitar, acoustic gtr + drum kit.",
+  "selectedTrackIndices": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+  "presetPerTrack": {
+    "0": { "engineId": "tb303", "presetName": "LEAD Sub Lead" },
+    "1": { "engineId": "karplus", "presetName": "GTR Jazz Hollowbody" },
+    "2": { "engineId": "karplus", "presetName": "HARP Orchestral Concert" },
+    "3": { "engineId": "karplus", "presetName": "PLUCK Pizzicato Strings" },
+    "5": { "engineId": "fm", "presetName": "KEY Marimba" },
+    "6": { "engineId": "karplus", "presetName": "GTR Muted Palm" },
+    "7": { "engineId": "fm", "presetName": "KEY Vibes" },
+    "8": { "engineId": "karplus", "presetName": "BASS Fingered Electric" },
+    "9": { "engineId": "karplus", "presetName": "GTR Nylon Acoustic" }
+  },
+  "drumKitMatch": { "engineId": "drums-machine", "presetName": "KIT Electronic" }
+}

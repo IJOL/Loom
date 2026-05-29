@@ -1,0 +1,16 @@
+{
+  "fixture": "sweet-dreams.mid",
+  "notes": "Eurythmics 'Sweet Dreams (Are Made Of This)'. Flagship demo. Iconic main hook is the square lead (track 7) + fat saw bass (track 8) doubling at octaves. Track 1 is the vocal refrain motif. Tracks 2-4 are pads/strings/voices. Drums on ch10 -> 808 kit.",
+  "selectedTrackIndices": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+  "presetPerTrack": {
+    "1": { "engineId": "subtractive", "presetName": "VOX Ooh" },
+    "2": { "engineId": "subtractive", "presetName": "STRINGS Ensemble" },
+    "3": { "engineId": "subtractive", "presetName": "STRINGS Ensemble" },
+    "4": { "engineId": "subtractive", "presetName": "PAD Choir Aah" },
+    "5": { "engineId": "wavetable", "presetName": "PAD Sweep Wide" },
+    "6": { "engineId": "subtractive", "presetName": "KEY E.Piano" },
+    "7": { "engineId": "subtractive", "presetName": "LEAD Square" },
+    "8": { "engineId": "subtractive", "presetName": "BASS Reese" }
+  },
+  "drumKitMatch": { "engineId": "drums-machine", "presetName": "KIT TR-808" }
+}

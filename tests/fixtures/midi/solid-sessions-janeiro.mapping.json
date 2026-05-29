@@ -1,0 +1,16 @@
+{
+  "fixture": "solid-sessions-janeiro.mid",
+  "notes": "Solid Sessions 'Janeiro' — trance/progressive instrumental. Pads + sub melodies + basslines. No drum track.",
+  "selectedTrackIndices": [1, 2, 3, 4, 5, 6, 7, 8],
+  "presetPerTrack": {
+    "1": { "engineId": "wavetable", "presetName": "PAD Sweep Wide" },
+    "2": { "engineId": "fm", "presetName": "PAD Halo Bright" },
+    "3": { "engineId": "tb303", "presetName": "BASS Acid Classic" },
+    "4": { "engineId": "subtractive", "presetName": "LEAD Supersaw" },
+    "5": { "engineId": "tb303", "presetName": "BASS Hoover Sub" },
+    "6": { "engineId": "karplus", "presetName": "GTR Clean Electric" },
+    "7": { "engineId": "tb303", "presetName": "LEAD Sub Lead" },
+    "8": { "engineId": "subtractive", "presetName": "LEAD Square" }
+  },
+  "drumKitMatch": null
+}

@@ -1,0 +1,9 @@
+{
+  "fixture": "mgmt-kids.mid",
+  "notes": "MGMT 'Kids' — single tonal track tagged Electric Piano (Classic). Use FM Rhodes for the iconic synth-piano feel.",
+  "selectedTrackIndices": [0],
+  "presetPerTrack": {
+    "0": { "engineId": "fm", "presetName": "EP Warm Rhodes" }
+  },
+  "drumKitMatch": null
+}
