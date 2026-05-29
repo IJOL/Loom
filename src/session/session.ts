@@ -123,6 +123,7 @@ function reEvaluateEnvelopes(
     ...clip,
     envelopes: clip.envelopes.map((env) => ({
       ...env,
+      values: [...env.values],
       enabled: destEngineParamIds.has(env.paramId),
     })),
   };
@@ -146,5 +147,34 @@ export function moveClip(
   dstLane.clips[to.clipIdx] = from.laneId === to.laneId
     ? movingClip
     : reEvaluateEnvelopes(movingClip, destEngineParamIds);
+  return out;
+}
+
+export function copyClip(
+  s: SessionState,
+  from: ClipSlot,
+  to: ClipSlot,
+  destEngineParamIds: ReadonlySet<string>,
+): SessionState {
+  if (!canDropClip(s, from, to)) {
+    throw new Error(`copyClip: invalid drop from ${from.laneId}:${from.clipIdx} to ${to.laneId}:${to.clipIdx}`);
+  }
+  const out = cloneSessionState(s);
+  const srcLane = out.lanes.find((l) => l.id === from.laneId)!;
+  const dstLane = out.lanes.find((l) => l.id === to.laneId)!;
+  const source = srcLane.clips[from.clipIdx]!;
+  // cloneSessionState already deep-cloned `source`; just give the copy a new id.
+  const clone: SessionClip = {
+    ...source,
+    id: nextId('clip'),
+    // Deep-clone envelopes to prevent edits to the copy affecting the source
+    envelopes: source.envelopes
+      ? source.envelopes.map((env) => ({ ...env, values: [...env.values] }))
+      : undefined,
+  };
+  dstLane.clips = padToIndex(dstLane.clips, to.clipIdx);
+  dstLane.clips[to.clipIdx] = from.laneId === to.laneId
+    ? clone
+    : reEvaluateEnvelopes(clone, destEngineParamIds);
   return out;
 }

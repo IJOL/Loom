@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  canDropClip, emptySessionState, emptyLane, emptyClip, moveClip,
+  canDropClip, emptySessionState, emptyLane, emptyClip, moveClip, copyClip,
   type SessionState, type ClipSlot,
 } from './session';
 import type { NoteEvent } from '../core/notes';
@@ -165,5 +165,74 @@ describe('moveClip — cross-lane envelopes', () => {
     expect(out.lanes[1].clips.length).toBeGreaterThanOrEqual(4);
     expect(out.lanes[1].clips[3]).toBeTruthy();
     expect(out.lanes[1].clips[0]).toBeFalsy();
+  });
+});
+
+describe('copyClip', () => {
+  it('leaves the source slot intact', () => {
+    const s = stateWithClip();
+    const out = copyClip(
+      s,
+      { laneId: 'lane-a', clipIdx: 0 },
+      { laneId: 'lane-a', clipIdx: 1 },
+      new Set(),
+    );
+    expect(out.lanes[0].clips[0]).toBeTruthy();
+    expect(out.lanes[0].clips[1]).toBeTruthy();
+  });
+
+  it('assigns the copy a fresh id but preserves color', () => {
+    const s = stateWithClip();
+    s.lanes[0].clips[0]!.color = '#cafefe';
+    const srcId = s.lanes[0].clips[0]!.id;
+    const out = copyClip(
+      s,
+      { laneId: 'lane-a', clipIdx: 0 },
+      { laneId: 'lane-a', clipIdx: 1 },
+      new Set(),
+    );
+    const copy = out.lanes[0].clips[1]!;
+    expect(copy.id).not.toBe(srcId);
+    expect(copy.color).toBe('#cafefe');
+  });
+
+  it('deep-clones notes and envelopes (copy edits do not affect source)', () => {
+    const s = stateWithClip();
+    s.lanes[0].clips[0] = clipWithEnvelopes([
+      { paramId: 'filter.cutoff', values: [0.5] },
+    ]);
+    const out = copyClip(
+      s,
+      { laneId: 'lane-a', clipIdx: 0 },
+      { laneId: 'lane-a', clipIdx: 1 },
+      new Set(['filter.cutoff']),
+    );
+    out.lanes[0].clips[1]!.envelopes![0].values[0] = 0.9;
+    expect(out.lanes[0].clips[0]!.envelopes![0].values[0]).toBe(0.5);
+  });
+
+  it('re-evaluates envelopes on cross-lane copy', () => {
+    const s = stateWithClip();
+    s.lanes[0].clips[0] = clipWithEnvelopes([
+      { paramId: 'tb303.envMod', values: [0.7] },
+    ]);
+    const out = copyClip(
+      s,
+      { laneId: 'lane-a', clipIdx: 0 },
+      { laneId: 'lane-b', clipIdx: 0 },
+      new Set(['filter.cutoff']),
+    );
+    expect(out.lanes[1].clips[0]!.envelopes![0].enabled).toBe(false);
+  });
+
+  it('throws on invalid drop (occupied destination)', () => {
+    const s = stateWithClip();
+    s.lanes[0].clips[1] = emptyClip(1);
+    expect(() => copyClip(
+      s,
+      { laneId: 'lane-a', clipIdx: 0 },
+      { laneId: 'lane-a', clipIdx: 1 },
+      new Set(),
+    )).toThrow();
   });
 });
