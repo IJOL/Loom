@@ -429,6 +429,26 @@ export class FilterChain {
   }
 }
 
+// ── Master compressor ────────────────────────────────────────────────────
+// A thin wrapper around CompBlock used at the tail of the master chain.
+// Stored separately from FilterChain so the FX page UI can address them
+// independently and so bypass/serialize remain isolated.
+
+export class MasterCompressor {
+  private block: CompBlock;
+
+  constructor(ctx: BaseAudioContext, initial?: Partial<CompState>) {
+    this.block = new CompBlock(ctx, initial);
+  }
+
+  get input(): AudioNode  { return this.block.input; }
+  get output(): AudioNode { return this.block.output; }
+
+  setState(s: Partial<CompState>) { this.block.setState(s); }
+  getState(): CompState           { return this.block.getState(); }
+  getReduction(): number          { return this.block.getReduction(); }
+}
+
 function makeImpulse(ctx: AudioContext, durationSec: number, decay: number): AudioBuffer {
   const length = Math.floor(ctx.sampleRate * Math.max(0.05, durationSec));
   const ir = ctx.createBuffer(2, length, ctx.sampleRate);
