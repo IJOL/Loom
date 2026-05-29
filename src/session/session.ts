@@ -94,3 +94,17 @@ export function clipRowCount(s: SessionState): number {
   for (const lane of s.lanes) maxClips = Math.max(maxClips, lane.clips.length);
   return Math.max(maxClips, s.scenes.length);
 }
+
+export interface ClipSlot { laneId: string; clipIdx: number; }
+
+export function canDropClip(s: SessionState, from: ClipSlot, to: ClipSlot): boolean {
+  if (from.laneId === to.laneId && from.clipIdx === to.clipIdx) return false;
+  const srcLane = s.lanes.find((l) => l.id === from.laneId);
+  if (!srcLane) return false;
+  const srcClip = srcLane.clips[from.clipIdx];
+  if (!srcClip) return false;
+  const dstLane = s.lanes.find((l) => l.id === to.laneId);
+  if (!dstLane) return false;
+  const dstClip = dstLane.clips[to.clipIdx];
+  return dstClip == null;
+}
