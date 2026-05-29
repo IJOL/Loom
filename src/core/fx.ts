@@ -9,6 +9,7 @@ import {
   type CompState,
   type SidechainState,
 } from './comp-state';
+import { SidechainBus } from './sidechain-bus';
 
 export class FxBus {
   reverbInput: GainNode;
@@ -80,6 +81,10 @@ export class FxBus {
   }
 }
 
+export interface ChannelStripOptions {
+  sidechain?: { bus: SidechainBus; id: string; label: string };
+}
+
 export interface ChannelState {
   level: number;
   pan: number;        // -1 (L) .. +1 (R)
@@ -99,14 +104,21 @@ export class ChannelStrip {
   reverbSend: GainNode;
   delaySend: GainNode;
   comp: CompBlock;
+  sidechainTap: GainNode;
   private eqLow: BiquadFilterNode;
   private eqMid: BiquadFilterNode;
   private eqHigh: BiquadFilterNode;
   private panner: StereoPannerNode;
   private muteGain: GainNode;
   private _muted = false;
+  private busRegistration: { bus: SidechainBus; id: string } | null = null;
 
-  constructor(ctx: AudioContext, dry: AudioNode, fx: FxBus) {
+  constructor(
+    ctx: AudioContext,
+    dry: AudioNode,
+    fx: FxBus,
+    opts: ChannelStripOptions = {},
+  ) {
     this.input = ctx.createGain();
     this.eqLow = ctx.createBiquadFilter();
     this.eqLow.type = 'lowshelf';  this.eqLow.frequency.value = 200;  this.eqLow.gain.value = 0;
@@ -135,6 +147,16 @@ export class ChannelStrip {
     this.muteGain.connect(dry);
     this.muteGain.connect(this.reverbSend).connect(fx.reverbInput);
     this.muteGain.connect(this.delaySend ).connect(fx.delayInput);
+
+    // Post-mute fan-out tap for sidechain consumers. Connected to the same
+    // signal that feeds master + sends, so muted lanes contribute nothing.
+    this.sidechainTap = ctx.createGain();
+    this.muteGain.connect(this.sidechainTap);
+
+    if (opts.sidechain) {
+      opts.sidechain.bus.register(opts.sidechain.id, this.sidechainTap, opts.sidechain.label);
+      this.busRegistration = { bus: opts.sidechain.bus, id: opts.sidechain.id };
+    }
   }
 
   setPan(p: number) { this.panner.pan.setTargetAtTime(p, this.panner.context.currentTime, 0.01); }
@@ -168,6 +190,14 @@ export class ChannelStrip {
     this.muteGain.gain.value = m ? 0 : 1;
   }
   isMuted() { return this._muted; }
+
+  dispose(): void {
+    if (this.busRegistration) {
+      this.busRegistration.bus.unregister(this.busRegistration.id);
+      this.busRegistration = null;
+    }
+    try { this.sidechainTap.disconnect(); } catch { /* */ }
+  }
 
   serialize(): ChannelState {
     return {

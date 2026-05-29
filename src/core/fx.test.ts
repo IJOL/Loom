@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import '../../test/setup';
 import { ChannelStrip, FxBus } from './fx';
+import { SidechainBus } from './sidechain-bus';
 
 describe('ChannelStrip.getEqGainParam', () => {
   let ctx: AudioContext;
@@ -60,5 +61,40 @@ describe('ChannelStrip compressor block', () => {
     delete (legacy as unknown as Record<string, unknown>).comp;
     fresh.restore(legacy as Parameters<ChannelStrip['restore']>[0]);
     expect(fresh.serialize().comp.bypass).toBe(true);
+  });
+});
+
+describe('ChannelStrip sidechain tap registration', () => {
+  let ctx: AudioContext;
+
+  beforeAll(() => {
+    ctx = new AudioContext();
+  });
+
+  it('registers itself with the bus on construction when a busId is given', () => {
+    const bus = new SidechainBus();
+    const fx = new FxBus(ctx, ctx.destination);
+    const strip = new ChannelStrip(ctx, ctx.destination, fx, {
+      sidechain: { bus, id: 'bass', label: 'BASS' },
+    });
+    expect(bus.getTap('bass')).toBe(strip.sidechainTap);
+  });
+
+  it('dispose() unregisters the lane id from the bus', () => {
+    const bus = new SidechainBus();
+    const fx = new FxBus(ctx, ctx.destination);
+    const strip = new ChannelStrip(ctx, ctx.destination, fx, {
+      sidechain: { bus, id: 'temp', label: 'TEMP' },
+    });
+    expect(bus.getTap('temp')).not.toBeNull();
+    strip.dispose();
+    expect(bus.getTap('temp')).toBeNull();
+  });
+
+  it('omitting the sidechain option leaves the strip un-registered (backward-compat)', () => {
+    const bus = new SidechainBus();
+    const fx = new FxBus(ctx, ctx.destination);
+    new ChannelStrip(ctx, ctx.destination, fx);
+    expect(bus.listSources()).toHaveLength(0);
   });
 });
