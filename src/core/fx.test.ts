@@ -91,10 +91,13 @@ describe('ChannelStrip sidechain tap registration', () => {
     expect(bus.getTap('temp')).toBeNull();
   });
 
-  it('omitting the sidechain option leaves the strip un-registered (backward-compat)', () => {
+  it('omitting the sidechain option keeps the strip off a bus a sibling registered with', () => {
     const bus = new SidechainBus();
     const fx = new FxBus(ctx, ctx.destination);
-    new ChannelStrip(ctx, ctx.destination, fx);
-    expect(bus.listSources()).toHaveLength(0);
+    new ChannelStrip(ctx, ctx.destination, fx); // no opts
+    new ChannelStrip(ctx, ctx.destination, fx, {
+      sidechain: { bus, id: 'sibling', label: 'SIBLING' },
+    });
+    expect(bus.listSources().map((s) => s.id)).toEqual(['sibling']);
   });
 });

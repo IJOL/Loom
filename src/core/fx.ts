@@ -81,8 +81,14 @@ export class FxBus {
   }
 }
 
+export interface SidechainRegistration {
+  bus: SidechainBus;
+  id: string;
+  label: string;
+}
+
 export interface ChannelStripOptions {
-  sidechain?: { bus: SidechainBus; id: string; label: string };
+  sidechain?: SidechainRegistration;
 }
 
 export interface ChannelState {
@@ -191,6 +197,14 @@ export class ChannelStrip {
   }
   isMuted() { return this._muted; }
 
+  /**
+   * Release sidechain-side resources held by this strip: unregister from the
+   * SidechainBus and disconnect the sidechain tap. Does NOT tear down the
+   * strip's primary audio graph (input → EQ → comp → level → pan → mute → ...)
+   * — those nodes are garbage-collected when the strip becomes unreferenced.
+   * Task 7 extends this to also dispose the ducker subgraph.
+   * Safe to call multiple times.
+   */
   dispose(): void {
     if (this.busRegistration) {
       this.busRegistration.bus.unregister(this.busRegistration.id);
