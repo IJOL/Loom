@@ -49,3 +49,20 @@ export function withSidechainDefaultsOrNull(
   if (s == null) return null;
   return { ...DEFAULT_SIDECHAIN_STATE, ...s };
 }
+
+export interface LaneLpState {
+  cutoff: number;        // Hz
+  resonance: number;     // BiquadFilter Q
+  bypass: boolean;
+}
+
+export const DEFAULT_LANE_LP_STATE: LaneLpState = {
+  cutoff: 20000,
+  resonance: 0.707,
+  bypass: false,
+};
+
+export function withLaneLpDefaults(s: Partial<LaneLpState> | undefined): LaneLpState {
+  if (!s) return { ...DEFAULT_LANE_LP_STATE };
+  return { ...DEFAULT_LANE_LP_STATE, ...s };
+}
