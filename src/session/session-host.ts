@@ -103,6 +103,7 @@ export class SessionHost {
    *  historyDeps closes over saveWiringDeps which closes over sessionHost,
    *  so it can only be built after sessionHost.init() returns. */
   setHistoryDeps(hd: import('../save/history-wiring').HistoryDeps): void {
+    this.deps.historyDeps = hd;
     this.inspector?.setHistoryDeps(hd);
   }
 
