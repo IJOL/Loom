@@ -3,6 +3,9 @@
 
 export type ModulatorKind = 'lfo' | 'adsr';
 export type Waveform = 'sine' | 'triangle' | 'square' | 'saw';
+/** LFO phase behavior on note-on. 'free' = ignore notes (classic analog),
+ *  'note' = reset phase on every trigger (retrigger / sync to note). */
+export type LfoTriggerMode = 'free' | 'note';
 
 export interface ModulationConnection {
   id: string;          // unique within the modulator
@@ -22,6 +25,7 @@ export interface ModulatorState {
   bipolar?: boolean;
   syncToBpm?: boolean;
   syncRatio?: string;  // '1/4', '1/8T', '1/4.', ...
+  trigger?: LfoTriggerMode;
 
   // ADSR-only
   attackSec?: number;
@@ -55,6 +59,7 @@ export function makeDefaultLFO(id: string): ModulatorState {
     id, kind: 'lfo', enabled: true, connections: [],
     rateHz: 4, waveform: 'sine', bipolar: true,
     syncToBpm: false, syncRatio: '1/4',
+    trigger: 'free',
   };
 }
 

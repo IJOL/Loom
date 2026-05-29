@@ -84,6 +84,18 @@ class TB303Voice implements Voice {
       ['amp.gain',         this.tb303.amp.gain],
     ]);
   }
+
+  /** Real AudioParam operating ranges for modulator depth scaling. The
+   *  knob/spec ranges are normalized 0..1 (because the engine internally
+   *  maps them with `80 * Math.pow(100, cutoff)` etc.) — but the
+   *  BiquadFilterNode.frequency / .Q AudioParams the binder writes to are
+   *  in Hz and Q units. Without this override an LFO at depth 0.5 would
+   *  contribute ±0.5 Hz to a 1 kHz filter — inaudible. */
+  getAudioParamRange(id: string): { min: number; max: number } | undefined {
+    if (id === 'filter.cutoff')    return { min: 80,  max: 18000 };
+    if (id === 'filter.resonance') return { min: 0,   max: 30    };
+    return undefined;
+  }
 }
 
 class TB303Sequencer implements EngineSequencer {

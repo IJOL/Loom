@@ -44,7 +44,11 @@ export class LFOVoice implements ModulatorVoice {
     this.osc.start(time);
   }
 
-  trigger(time: number): void {
+  trigger(time: number, _opts?: { gateDuration: number; accent?: boolean }): void {
+    // Free-run mode keeps the LFO's intrinsic phase across notes — the
+    // classic analog-synth behavior. 'note' mode resets the phase on every
+    // trigger so the LFO peak lands at note-on.
+    if ((this.state.trigger ?? 'free') !== 'note') return;
     this.startedAt = time;
     this.createOsc(time);
   }

@@ -174,6 +174,19 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
   deps.registerKnob(bipolar.handle);
   row.appendChild(bipolar.el);
 
+  const trigger = createSelectControl({
+    id: `${deps.laneId}.mod.${mod.id}.trigger`,
+    label: 'TRIG',
+    options: [
+      { value: 'free', label: 'Free' },
+      { value: 'note', label: 'Note' },
+    ],
+    initialValue: mod.trigger ?? 'free',
+    onChange: (v) => { mod.trigger = v as 'free' | 'note'; sync(deps); },
+  });
+  deps.registerKnob(trigger.handle);
+  row.appendChild(trigger.el);
+
   return row;
 }
 
