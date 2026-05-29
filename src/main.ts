@@ -94,7 +94,7 @@ const presetsLoaded = loadAllPresets(ENGINE_IDS_FOR_PRESETS);
 
 // ── Audio graph ────────────────────────────────────────────────────────────
 const audio = createAudioGraph();
-const { ctx, master, analyser, filterChain, fx,
+const { ctx, master, analyser, filterChain, fx, masterComp,
         bassStrip, polyStrip, drumBusStrip,
         synth, drums, polysynth,
         mainSubtractive, drumsEngineInstance } = audio;
