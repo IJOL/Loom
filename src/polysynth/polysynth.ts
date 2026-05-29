@@ -80,11 +80,28 @@ export interface PolyVoiceParams {
 export class PolySynth {
   params: PolySynthParams;
   bpm = 130;  // updated externally; retained for downstream consumers (e.g. sync-aware modulators)
+  /** Modulation bus — one ConstantSourceNode per shared-modulatable
+   *  AudioParam. .offset is the AudioParam external SHARED modulators write
+   *  to; the bus output is connected to each allocated voice's matching
+   *  AudioParam in internalTrigger, so the modulation fans out to every
+   *  playing voice via Web Audio summing. */
+  readonly modBus: Record<string, ConstantSourceNode>;
   private noiseBuffer: AudioBuffer;
 
   constructor(private ctx: AudioContext, private destination: AudioNode) {
     this.params = JSON.parse(JSON.stringify(POLY_DEFAULTS)) as PolySynthParams;
     this.noiseBuffer = makeWhiteNoise(ctx, 2);
+    const mkBus = (): ConstantSourceNode => {
+      const n = ctx.createConstantSource();
+      n.offset.value = 0;
+      n.start();
+      return n;
+    };
+    this.modBus = {
+      'filter.cutoff':    mkBus(),
+      'filter.resonance': mkBus(),
+      'amp.gain':         mkBus(),
+    };
   }
 
   /**
@@ -181,6 +198,11 @@ export class PolySynth {
     const filter = ctx.createBiquadFilter();
     filter.type = p.filter.type;
     filter.Q.value = 0.5 + p.filter.resonance * 22;
+    // Wire the shared modulation bus → this voice's filter/amp AudioParams.
+    // External shared LFOs write to modBus['filter.cutoff'].offset and the
+    // contribution fans out here via Web Audio summing.
+    this.modBus['filter.cutoff'].connect(filter.frequency);
+    this.modBus['filter.resonance'].connect(filter.Q);
     mix.connect(filter);
     drivePre.connect(filter);
 
@@ -230,6 +252,7 @@ export class PolySynth {
     // ── Amp gain node (envelope scheduled below) ─────────────────────────
     const amp = ctx.createGain();
     amp.gain.value = 0;
+    this.modBus['amp.gain'].connect(amp.gain);
 
     // ── Internal envelope nodes ──────────────────────────────────────────
     // Per-voice amp envelope routes through a ConstantSourceNode so the
