@@ -61,7 +61,13 @@ export class SessionInspector {
     qEl.value    = clip.launchQuantize ?? '';
 
     nameEl.oninput = () => { clip.name = nameEl.value || undefined; this.deps.renderWithMixer(); };
+    nameEl.onfocus = () => { this.deps.historyDeps?.history.beginGesture(this.deps.historyDeps.snapshot()); };
+    nameEl.onblur  = () => { this.deps.historyDeps?.history.commitGesture(); };
     lenEl.oninput  = () => { clip.lengthBars = Math.max(1, parseInt(lenEl.value, 10) || 1); };
+    lenEl.onfocus  = () => { this.deps.historyDeps?.history.beginGesture(this.deps.historyDeps.snapshot()); };
+    lenEl.onblur   = () => { this.deps.historyDeps?.history.commitGesture(); };
+    lenEl.onpointerdown = () => { this.deps.historyDeps?.history.beginGesture(this.deps.historyDeps.snapshot()); };
+    lenEl.onpointerup   = () => { this.deps.historyDeps?.history.commitGesture(); };
     qEl.onchange   = () => {
       const d = this.deps.historyDeps;
       const run = () => {

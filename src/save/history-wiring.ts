@@ -38,7 +38,8 @@ function isTextEditTarget(t: EventTarget | null): boolean {
   if (tag === 'INPUT') {
     const type = (t as HTMLInputElement).type;
     return type === 'text' || type === 'search' || type === 'email'
-        || type === 'url' || type === 'tel' || type === 'password' || type === '';
+        || type === 'url' || type === 'tel' || type === 'password'
+        || type === 'number' || type === '';
   }
   return false;
 }
