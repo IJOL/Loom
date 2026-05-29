@@ -94,11 +94,10 @@ const presetsLoaded = loadAllPresets(ENGINE_IDS_FOR_PRESETS);
 
 // ── Audio graph ────────────────────────────────────────────────────────────
 const audio = createAudioGraph();
-const { ctx, master, analyser, filterChain, fx, masterComp,
+const { ctx, master, analyser, filterChain, fx, masterComp, sidechainBus,
         bassStrip, polyStrip, drumBusStrip,
         synth, drums, polysynth,
         mainSubtractive, drumsEngineInstance } = audio;
-
 
 // Stable call-site wrappers — set in boot section, after automationDeps is built.
 let renderLanes: () => void = () => { /* populated at boot */ };
@@ -233,6 +232,7 @@ const mixerDeps: import('./core/mixer').MixerColumnDeps = {
   soloState: soloState as unknown as Record<string, boolean>,
   applyMuteSolo,
   registerKnob,
+  sidechainBus,
   // Late-bound via getter: _discreteHistoryDeps is assigned after historyDeps
   // is built (further below), but mixer columns are built at user-interaction
   // time so the getter always sees the final value.

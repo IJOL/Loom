@@ -1,4 +1,5 @@
 import { FxBus, ChannelStrip, FilterChain, MasterCompressor } from '../core/fx';
+import { SidechainBus } from '../core/sidechain-bus';
 import { TB303 } from '../core/synth';
 import { DrumMachine } from '../core/drums';
 import { PolySynth } from '../polysynth/polysynth';
@@ -6,6 +7,7 @@ import { configureTB303EngineMainInstance } from '../engines/tb303';
 import { configureDrumsEngineSharedFx } from '../engines/drums-engine';
 import { getEngine } from '../engines/registry';
 import type { SynthEngine } from '../engines/engine-types';
+import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from '../core/lane-ids';
 
 export interface AudioGraph {
   ctx: AudioContext;
@@ -14,6 +16,7 @@ export interface AudioGraph {
   filterChain: FilterChain;
   masterComp: MasterCompressor;
   fx: FxBus;
+  sidechainBus: SidechainBus;
   bassStrip: ChannelStrip;
   polyStrip: ChannelStrip;
   drumBusStrip: ChannelStrip;
@@ -37,9 +40,13 @@ export function createAudioGraph(): AudioGraph {
   const fx = new FxBus(ctx, master);
   configureDrumsEngineSharedFx(fx);
 
-  const bassStrip    = new ChannelStrip(ctx, master, fx);
-  const polyStrip    = new ChannelStrip(ctx, master, fx);
-  const drumBusStrip = new ChannelStrip(ctx, master, fx);
+  const sidechainBus = new SidechainBus();
+  const bassStrip    = new ChannelStrip(ctx, master, fx,
+    { sidechain: { bus: sidechainBus, id: LANE_ID_BASS,  label: 'BASS'  } });
+  const polyStrip    = new ChannelStrip(ctx, master, fx,
+    { sidechain: { bus: sidechainBus, id: LANE_ID_POLY,  label: 'POLY'  } });
+  const drumBusStrip = new ChannelStrip(ctx, master, fx,
+    { sidechain: { bus: sidechainBus, id: LANE_ID_DRUMS, label: 'DRUMS' } });
 
   const synth = new TB303(ctx, bassStrip.input);
   configureTB303EngineMainInstance(bassStrip.input, synth);
@@ -53,7 +60,7 @@ export function createAudioGraph(): AudioGraph {
   const drumsEngineInstance = getEngine('drums-machine') ?? null;
 
   return {
-    ctx, master, analyser, filterChain, masterComp, fx,
+    ctx, master, analyser, filterChain, masterComp, fx, sidechainBus,
     bassStrip, polyStrip, drumBusStrip,
     synth, drums, polysynth,
     mainSubtractive, drumsEngineInstance,
