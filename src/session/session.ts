@@ -56,13 +56,24 @@ export interface SessionState {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+export const CLIP_COLOR_PALETTE: readonly string[] = [
+  '#f4b8b8', '#f4c8a8', '#f4e0a8', '#d8e8a8',
+  '#a8e8b8', '#a8e0d8', '#a8c8e8', '#b8b8e8',
+  '#c8a8e0', '#e0a8d0', '#e0b8b8', '#c8c8a8',
+];
+
+export function pickRandomClipColor(rng: () => number = Math.random): string {
+  const i = Math.min(CLIP_COLOR_PALETTE.length - 1, Math.floor(rng() * CLIP_COLOR_PALETTE.length));
+  return CLIP_COLOR_PALETTE[i];
+}
+
 let nextIdCounter = 1;
 function nextId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${(nextIdCounter++).toString(36)}`;
 }
 
 export function emptyClip(lengthBars: number): SessionClip {
-  return { id: nextId('clip'), lengthBars, notes: [] };
+  return { id: nextId('clip'), lengthBars, notes: [], color: pickRandomClipColor() };
 }
 
 export function emptyLane(id: string, engineId: string): SessionLane {

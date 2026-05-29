@@ -236,3 +236,24 @@ describe('copyClip', () => {
     )).toThrow();
   });
 });
+
+import { CLIP_COLOR_PALETTE, pickRandomClipColor } from './session';
+
+describe('clip colors', () => {
+  it('CLIP_COLOR_PALETTE has 12 pastel hex strings', () => {
+    expect(CLIP_COLOR_PALETTE.length).toBe(12);
+    for (const c of CLIP_COLOR_PALETTE) expect(c).toMatch(/^#[0-9a-f]{6}$/i);
+  });
+
+  it('pickRandomClipColor with stub rng returns the palette entry at the indexed position', () => {
+    const rng = () => 0;
+    expect(pickRandomClipColor(rng)).toBe(CLIP_COLOR_PALETTE[0]);
+    const rng2 = () => 0.999;
+    expect(pickRandomClipColor(rng2)).toBe(CLIP_COLOR_PALETTE[CLIP_COLOR_PALETTE.length - 1]);
+  });
+
+  it('emptyClip() seeds a color from the palette', () => {
+    const c = emptyClip(2);
+    expect(CLIP_COLOR_PALETTE).toContain(c.color);
+  });
+});
