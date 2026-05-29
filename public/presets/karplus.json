@@ -263,7 +263,7 @@
     },
     {
       "name": "WORLD Koto",
-      "gm": [107],
+      "gm": [107, 108],
       "params": {
         "string.damping": 0.38,
         "string.brightness": 0.65,
