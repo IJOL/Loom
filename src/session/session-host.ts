@@ -433,6 +433,7 @@ export class SessionHost {
       lookupLaneDisplayName: (id: string) =>
         this.state.lanes.find((l) => l.id === id)?.name,
       sessionState: this.state,
+      historyDeps: this.deps.historyDeps,
     });
   }
 

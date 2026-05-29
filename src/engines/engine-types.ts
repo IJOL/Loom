@@ -53,6 +53,9 @@ export interface EngineUIContext {
    *  `sessionState.lanes[laneId].engineState.params` so the lane's sound
    *  persists across tab switches and save/load. */
   sessionState?: import('../session/session').SessionState;
+  /** Optional undo history deps. When present, every knob drag/wheel/dblclick
+   *  is bracketed as a single undo entry via attachKnobUndo. */
+  historyDeps?: import('../save/history-wiring').HistoryDeps;
 }
 
 export interface EnginePreset<P = Record<string, number>> {

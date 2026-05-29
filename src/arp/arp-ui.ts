@@ -1,5 +1,6 @@
 import { createKnob } from '../core/knob';
 import { ARP_DEFAULTS, type ArpPattern, type ArpScale, type ArpSettings } from './arp';
+import { attachKnobUndo, type HistoryDeps } from '../save/history-wiring';
 
 // ── Mutable ARP singleton — imported by main.ts trigger handlers ───────────
 export const arp: ArpSettings = { ...ARP_DEFAULTS };
@@ -10,6 +11,9 @@ export interface ArpUIDeps {
   /** Session lanes available as arp scope targets — typically every non-drum
    *  lane. Returns lane id + display name pairs. */
   getScopeLanes: () => Array<{ id: string; name: string }>;
+  /** Optional undo history deps. When present, knob drags/wheel/dblclick
+   *  are bracketed as single undo entries. */
+  historyDeps?: HistoryDeps;
 }
 
 export function buildArpUI(deps: ArpUIDeps): void {
@@ -110,12 +114,15 @@ export function buildArpUI(deps: ArpUIDeps): void {
      { value:'1/16',label:'1/16' },{ value:'1/16t',label:'1/16t' },{ value:'1/32',label:'1/32' }],
     () => arp.rate, (v) => { arp.rate = v as ArpSettings['rate']; });
 
+  const undoHooks = deps.historyDeps ? attachKnobUndo(deps.historyDeps) : {};
+
   // Free-rate Hz (used when RATE = Free)
   const freeKnob = createKnob({
     min: 0.5, max: 32, step: 0.1, value: arp.rateFreeHz, defaultValue: 8,
     label: 'FREE Hz', color: arpColor, size: SIZE,
     format: (v) => `${v.toFixed(1)}Hz`,
     onChange: (v) => { arp.rateFreeHz = v; },
+    ...undoHooks,
   });
   row.appendChild(freeKnob.el);
 
@@ -124,6 +131,7 @@ export function buildArpUI(deps: ArpUIDeps): void {
     min: 1, max: 4, step: 1, value: arp.octaves, defaultValue: 2,
     label: 'OCT', color: arpColor, size: SIZE, format: (v) => String(v),
     onChange: (v) => { arp.octaves = v; },
+    ...undoHooks,
   });
   row.appendChild(octKnob.el);
 
@@ -132,6 +140,7 @@ export function buildArpUI(deps: ArpUIDeps): void {
     min: 0.05, max: 1, step: 0.01, value: arp.gate, defaultValue: 0.7,
     label: 'GATE', color: arpColor, size: SIZE, format: fmtPct,
     onChange: (v) => { arp.gate = v; },
+    ...undoHooks,
   });
   row.appendChild(gateKnob.el);
 }

@@ -1,5 +1,6 @@
 import type { ChannelStrip } from './fx';
 import { createKnob, type KnobHandle } from './knob';
+import { attachKnobUndo, type HistoryDeps } from '../save/history-wiring';
 
 export interface DrumMasterUIDeps {
   /** Lane id whose ChannelStrip this UI binds to. Each knob is registered
@@ -10,6 +11,9 @@ export interface DrumMasterUIDeps {
   registerKnob: (k: KnobHandle) => void;
   fmtPct: (v: number) => string;
   fmtDb: (v: number) => string;
+  /** Optional undo history deps. When present, knob drags/wheel/dblclick
+   *  are bracketed as single undo entries. */
+  historyDeps?: HistoryDeps;
 }
 
 const fmtPan = (v: number) => v === 0 ? 'C' : v < 0 ? `L${Math.round(-v * 100)}` : `R${Math.round(v * 100)}`;
@@ -30,8 +34,9 @@ export function wireDrumMasterUI(deps: DrumMasterUIDeps): void {
   row.innerHTML = '';
   const SIZE = 42;
   const state = drumBusStrip.serialize();
+  const undoHooks = deps.historyDeps ? attachKnobUndo(deps.historyDeps) : {};
   const mk = (opts: Parameters<typeof createKnob>[0]) => {
-    const k = createKnob({ ...opts, size: SIZE });
+    const k = createKnob({ ...opts, size: SIZE, ...undoHooks });
     row.appendChild(k.el);
     registerKnob(k);
   };

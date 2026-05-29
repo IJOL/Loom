@@ -258,6 +258,8 @@ function wireLaneKnobs(deps: LaneWiringDeps): void {
     registerKnob: (k) => registerKnob(k as KnobHandle),
     registry: automationRegistry as unknown as Map<string, unknown>,
     sessionState: _sessionStateForKnobs,
+    // Late-bound via getter so historyDeps is resolved at render time.
+    get historyDeps() { return _discreteHistoryDeps; },
   };
   wireEngineParams(deps.engine, ctx, deps.parent, { formatter: deps.formatter });
 }
@@ -518,6 +520,10 @@ const mixerDeps: import('./core/mixer').MixerColumnDeps = {
   soloState: soloState as unknown as Record<string, boolean>,
   applyMuteSolo,
   registerKnob,
+  // Late-bound via getter: _discreteHistoryDeps is assigned after historyDeps
+  // is built (further below), but mixer columns are built at user-interaction
+  // time so the getter always sees the final value.
+  get historyDeps() { return _discreteHistoryDeps; },
 };
 
 // ── Transport → moved to src/core/transport.ts (wireTransport) ────────────
@@ -947,6 +953,8 @@ function mountSubtractiveLaneKnobs(laneId: string): void {
     registry: automationRegistry as unknown as Map<string, unknown>,
     lookupLaneDisplayName: (id) => sessionHost?.state.lanes.find((l) => l.id === id)?.name,
     sessionState: _sessionStateForKnobs,
+    // Late-bound via getter so historyDeps is resolved at render time.
+    get historyDeps() { return _discreteHistoryDeps; },
   };
   for (const [prefix, divId] of sectionMap) {
     const parent = document.getElementById(divId);
@@ -966,16 +974,26 @@ mountSubtractiveLaneKnobs(LANE_ID_POLY);
 function mountDrumMasterLaneKnobs(laneId: string): void {
   const strip = laneResources.get(laneId)?.strip;
   if (!strip) return;
-  wireDrumMasterUI({ laneId, drumBusStrip: strip, registerKnob, fmtPct, fmtDb });
+  wireDrumMasterUI({
+    laneId, drumBusStrip: strip, registerKnob, fmtPct, fmtDb,
+    // Late-bound via getter so historyDeps is resolved at call time.
+    get historyDeps() { return _discreteHistoryDeps; },
+  });
 }
 const arpUIDeps: ArpUIDeps = {
   getScopeLanes: () => sessionHost.state.lanes
     .filter((l) => l.engineId !== 'drums-machine')
     .map((l) => ({ id: l.id, name: l.name ?? l.id })),
+  // Late-bound via getter so historyDeps is resolved at event-fire time.
+  get historyDeps() { return _discreteHistoryDeps; },
 };
 // First build with whatever lanes exist now (built-ins only); a second build
 // runs after the demo loads so dynamically-added lanes (Sub 2 etc.) show up.
-const fxUIDeps: FxUIDeps = { fx, filterChain, getBpm: () => seq.bpm, registerKnob };
+const fxUIDeps: FxUIDeps = {
+  fx, filterChain, getBpm: () => seq.bpm, registerKnob,
+  // Late-bound via getter so historyDeps is resolved at event-fire time.
+  get historyDeps() { return _discreteHistoryDeps; },
+};
 wireFxUI(fxUIDeps);
 mountDrumMasterLaneKnobs(LANE_ID_DRUMS);
 fxApplyDelaySync(fxUIDeps);

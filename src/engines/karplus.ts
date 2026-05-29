@@ -401,6 +401,7 @@ export class KarplusEngine implements SynthEngine {
       registerKnob: (k) => ctx.registerKnob(k),
       lookupLaneDisplayName: ctx.lookupLaneDisplayName,
       sessionState: ctx.sessionState,
+      historyDeps: ctx.historyDeps,
       onChange: () => {
         container.innerHTML = '';
         this.buildParamUI(container, ctx);

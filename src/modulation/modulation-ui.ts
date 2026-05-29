@@ -12,6 +12,7 @@ import { formatParamIdForDisplay } from '../core/lane-display';
 import type { ModulationHost, ModulatorState, Waveform } from './types';
 import type { SessionState } from '../session/session';
 import { syncModulators } from '../session/session-engine-state';
+import { attachKnobUndo, type HistoryDeps } from '../save/history-wiring';
 
 export interface ModulationUIDeps {
   engineId: string;
@@ -28,6 +29,9 @@ export interface ModulationUIDeps {
   /** Phase C: when present, every modulator mutation mirrors into
    *  `sessionState.lanes[laneId].engineState.modulators`. */
   sessionState?: SessionState;
+  /** Optional undo history deps. When present, every modulator knob drag/wheel/
+   *  dblclick is bracketed as a single undo entry. */
+  historyDeps?: HistoryDeps;
 }
 
 function sync(deps: ModulationUIDeps): void {
@@ -131,6 +135,7 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
     defaultValue: 4,
     onChange: (v) => { mod.rateHz = v; sync(deps); },
     format: (v) => v < 1 ? `${v.toFixed(2)}Hz` : `${v.toFixed(1)}Hz`,
+    ...(deps.historyDeps ? attachKnobUndo(deps.historyDeps) : {}),
   });
   deps.registerKnob(rate);
   row.appendChild(rate.el);
@@ -234,6 +239,7 @@ function renderAdsrConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLElem
       defaultValue: def,
       onChange: (v) => { (mod as unknown as Record<string, unknown>)[field] = v; sync(deps); },
       format: fmt,
+      ...(deps.historyDeps ? attachKnobUndo(deps.historyDeps) : {}),
     });
     deps.registerKnob(k);
     row.appendChild(k.el);
@@ -311,6 +317,7 @@ function renderConnectionRow(mod: ModulatorState, conn: import('./types').Modula
       sync(deps);
     },
     format: (v) => v.toFixed(2),
+    ...(deps.historyDeps ? attachKnobUndo(deps.historyDeps) : {}),
   });
   deps.registerKnob(depthKnob);
   row.appendChild(depthKnob.el);

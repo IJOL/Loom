@@ -19,6 +19,7 @@ import type { KnobHandle } from '../core/knob';
 import { createKnob } from '../core/knob';
 import { createSelectControl } from '../core/select-control';
 import { getCachedPresets } from '../presets/preset-loader';
+import { attachKnobUndo } from '../save/history-wiring';
 
 const WAVE_OPTIONS = [
   { value: 'sawtooth', label: 'Saw' },
@@ -452,6 +453,7 @@ class SubtractiveEngine implements SynthEngine {
         label: 'VOICES', min: 1, max: 16, step: 1, value: ps.maxVoices, defaultValue: 8,
         format: (v) => String(v),
         onChange: (v) => { ps.setMaxVoices(v); },
+        ...(ctx.historyDeps ? attachKnobUndo(ctx.historyDeps) : {}),
       });
       ctx.registerKnob(voices);
       headerKnobs.appendChild(voices.el);
@@ -474,6 +476,7 @@ class SubtractiveEngine implements SynthEngine {
       registerKnob: (k) => ctx.registerKnob(k),
       lookupLaneDisplayName: ctx.lookupLaneDisplayName,
       sessionState: ctx.sessionState,
+      historyDeps: ctx.historyDeps,
       onChange: () => {
         container.innerHTML = '';
         this.buildParamUI(container, ctx);

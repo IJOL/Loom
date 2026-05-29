@@ -10,6 +10,7 @@
 
 import type { ChannelStrip } from './fx';
 import { createKnob, type KnobHandle } from './knob';
+import { attachKnobUndo, type HistoryDeps } from '../save/history-wiring';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -23,6 +24,9 @@ export interface MixerColumnDeps {
   soloState:     Record<string, boolean>;
   applyMuteSolo: () => void;
   registerKnob:  (k: KnobHandle) => void;
+  /** Optional undo history deps. When present, knob drags/wheel/dblclick
+   *  are bracketed as single undo entries. */
+  historyDeps?:  HistoryDeps;
 }
 
 interface KnobOpts {
@@ -39,7 +43,8 @@ interface KnobOpts {
 }
 
 function addKnob(parent: HTMLElement, deps: MixerColumnDeps, opts: KnobOpts): void {
-  const k = createKnob({ ...opts, size: 28 });
+  const undoHooks = deps.historyDeps ? attachKnobUndo(deps.historyDeps) : {};
+  const k = createKnob({ ...opts, size: 28, ...undoHooks });
   parent.appendChild(k.el);
   deps.registerKnob(k);
 }

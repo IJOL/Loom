@@ -13,6 +13,7 @@ import type { SynthEngine, EngineUIContext } from './engine-types';
 import { createKnob, type KnobHandle } from '../core/knob';
 import { createSelectControl } from '../core/select-control';
 import { mirrorParamChange } from '../session/session-engine-state';
+import { attachKnobUndo } from '../save/history-wiring';
 
 export interface WireEngineParamsOptions {
   /** Optional value formatter, keyed by spec.id. */
@@ -52,6 +53,7 @@ export function wireEngineParams(
           }
         },
         format: opts.formatter ? (v) => opts.formatter!(spec.id, v) : undefined,
+        ...(ctx.historyDeps ? attachKnobUndo(ctx.historyDeps) : {}),
       });
       ctx.registerKnob(k);
       parent.appendChild(k.el);

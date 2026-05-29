@@ -1,5 +1,6 @@
 import { type FxBus, type FilterChain, type MasterFilter, type SyncDiv } from './fx';
 import { createKnob, type KnobHandle } from './knob';
+import { attachKnobUndo, type HistoryDeps } from '../save/history-wiring';
 
 const WAVE_OPTS = [
   { value: 'sawtooth', label: 'Saw' },
@@ -14,8 +15,9 @@ function appendKnob(
   parent: HTMLElement,
   opts: Parameters<typeof createKnob>[0],
   registerKnob: (k: KnobHandle) => void,
+  undoHooks?: { onGestureStart: () => void; onGestureEnd: () => void },
 ): KnobHandle {
-  const k = createKnob(opts);
+  const k = createKnob({ ...opts, ...undoHooks });
   parent.appendChild(k.el);
   registerKnob(k);
   return k;
@@ -73,6 +75,9 @@ export interface FxUIDeps {
   filterChain: FilterChain;
   getBpm: () => number;
   registerKnob: (k: KnobHandle) => void;
+  /** Optional undo history deps. When present, knob drags/wheel/dblclick
+   *  are bracketed as single undo entries. */
+  historyDeps?: HistoryDeps;
 }
 
 let _deps: FxUIDeps | null = null;
@@ -95,6 +100,7 @@ function appendFilterRow(mf: MasterFilter, deps: FxUIDeps) {
   const container = document.getElementById('fx-filters') as HTMLDivElement;
   const row = document.createElement('div');
   row.className = 'fx-filter-row';
+  const undoHooks = deps.historyDeps ? attachKnobUndo(deps.historyDeps) : undefined;
 
   const typeSel = document.createElement('select');
   typeSel.className = 'poly-wave-sel';
@@ -114,6 +120,7 @@ function appendFilterRow(mf: MasterFilter, deps: FxUIDeps) {
     min: 40, max: 18000, step: 1, value: mf.state.cutoff, defaultValue: 8000,
     label: 'CUTOFF', color: '#16a085', size: 44, format: (v) => `${Math.round(v)}Hz`,
     onChange: (v) => mf.setCutoff(v),
+    ...undoHooks,
   });
   row.appendChild(cutoffKnob.el);
 
@@ -121,6 +128,7 @@ function appendFilterRow(mf: MasterFilter, deps: FxUIDeps) {
     min: 0.1, max: 30, step: 0.1, value: mf.state.q, defaultValue: 1,
     label: 'Q', color: '#16a085', size: 44, format: (v) => v.toFixed(1),
     onChange: (v) => mf.setQ(v),
+    ...undoHooks,
   });
   row.appendChild(qKnob.el);
 
@@ -155,6 +163,7 @@ function appendFilterRow(mf: MasterFilter, deps: FxUIDeps) {
     min: 0, max: 1, step: 0.01, value: mf.state.lfoDepth, defaultValue: 0,
     label: 'DEPTH', color: '#3498db', size: 44, format: fmtPct,
     onChange: (v) => mf.setLfo(lfoWaveSel.value as OscillatorType, syncSel.value as SyncDiv, v, deps.getBpm()),
+    ...undoHooks,
   });
   row.appendChild(depthKnob.el);
   lfoWaveSel.addEventListener('change', () => mf.setLfo(lfoWaveSel.value as OscillatorType, syncSel.value as SyncDiv, mf.state.lfoDepth, deps.getBpm()));
@@ -181,20 +190,21 @@ export function wireFxUI(deps: FxUIDeps): void {
   const SIZE = 44;
   const revColor = '#9b59b6';
   const dlyColor = '#3498db';
+  const undoHooks = deps.historyDeps ? attachKnobUndo(deps.historyDeps) : undefined;
 
   // REVERB
   appendKnob(revRow, { id: 'fx.reverb.wet', min: 0, max: 1, step: 0.01, value: deps.fx.getReverbWet(), defaultValue: 0.9,
     label: 'WET', color: revColor, size: SIZE, format: fmtPct,
-    onChange: (v) => deps.fx.setReverbWet(v) }, deps.registerKnob);
+    onChange: (v) => deps.fx.setReverbWet(v) }, deps.registerKnob, undoHooks);
   appendKnob(revRow, { id: 'fx.reverb.size', min: 0.1, max: 6, step: 0.1, value: deps.fx.getReverbSize(), defaultValue: 2.5,
     label: 'SIZE', color: revColor, size: SIZE, format: (v) => `${v.toFixed(1)}s`,
-    onChange: (v) => deps.fx.setReverbSize(v) }, deps.registerKnob);
+    onChange: (v) => deps.fx.setReverbSize(v) }, deps.registerKnob, undoHooks);
   appendKnob(revRow, { id: 'fx.reverb.decay', min: 0.5, max: 8, step: 0.1, value: deps.fx.getReverbDecay(), defaultValue: 3,
     label: 'DECAY', color: revColor, size: SIZE, format: (v) => v.toFixed(1),
-    onChange: (v) => deps.fx.setReverbDecay(v) }, deps.registerKnob);
+    onChange: (v) => deps.fx.setReverbDecay(v) }, deps.registerKnob, undoHooks);
   appendKnob(revRow, { id: 'fx.reverb.predly', min: 0, max: 0.5, step: 0.005, value: deps.fx.getReverbPredelay(), defaultValue: 0,
     label: 'PREDLY', color: revColor, size: SIZE, format: fmtSec,
-    onChange: (v) => deps.fx.setReverbPredelay(v) }, deps.registerKnob);
+    onChange: (v) => deps.fx.setReverbPredelay(v) }, deps.registerKnob, undoHooks);
 
   // DELAY
   appendSelect(dlyRow, 'SYNC', SYNC_OPTS, () => _delaySyncDiv, (v) => {
@@ -203,13 +213,13 @@ export function wireFxUI(deps: FxUIDeps): void {
   });
   appendKnob(dlyRow, { id: 'fx.delay.feedback', min: 0, max: 0.95, step: 0.01, value: deps.fx.getDelayFeedback(), defaultValue: 0.45,
     label: 'FBACK', color: dlyColor, size: SIZE, format: fmtPct,
-    onChange: (v) => deps.fx.setDelayFeedback(v) }, deps.registerKnob);
+    onChange: (v) => deps.fx.setDelayFeedback(v) }, deps.registerKnob, undoHooks);
   appendKnob(dlyRow, { id: 'fx.delay.wet', min: 0, max: 1, step: 0.01, value: deps.fx.getDelayWet(), defaultValue: 0.8,
     label: 'WET', color: dlyColor, size: SIZE, format: fmtPct,
-    onChange: (v) => deps.fx.setDelayWet(v) }, deps.registerKnob);
+    onChange: (v) => deps.fx.setDelayWet(v) }, deps.registerKnob, undoHooks);
   appendKnob(dlyRow, { id: 'fx.delay.damp', min: 200, max: 16000, step: 50, value: deps.fx.getDelayDamping(), defaultValue: 4500,
     label: 'DAMP', color: dlyColor, size: SIZE, format: (v) => `${Math.round(v)}Hz`,
-    onChange: (v) => deps.fx.setDelayDamping(v) }, deps.registerKnob);
+    onChange: (v) => deps.fx.setDelayDamping(v) }, deps.registerKnob, undoHooks);
 
   // Add Filter button
   (document.getElementById('fx-add-filter') as HTMLButtonElement).addEventListener('click', () => {
