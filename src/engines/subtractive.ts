@@ -12,7 +12,7 @@ import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR, type ModulatorVoice } from '../modulation/types';
 import { recordVoiceMods, getCurrentLaneForVoice } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
-import { bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
+import { bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
 import { ConnectionBinder } from '../modulation/connection-binder';
 import { PendingBaseValues } from './pending-base-values';
 import type { KnobHandle } from '../core/knob';
@@ -76,6 +76,20 @@ function readDotPath(obj: Record<string, unknown>, path: string): number {
     return i >= 0 ? i : 0;
   }
   return 0;
+}
+
+/** Operating ranges for the modBus AudioParams (ConstantSourceNode.offset
+ *  summed into each per-voice AudioParam). Must agree with the per-voice
+ *  ranges declared on SubtractiveVoice.getAudioParamRange so depth=1
+ *  produces the same audible swing whether the modulator is shared or
+ *  per-voice. */
+function sharedParamRange(shortId: string): { min: number; max: number } {
+  switch (shortId) {
+    case 'filter.cutoff':    return { min: -4000, max: 4000 };
+    case 'filter.resonance': return { min: -10,   max: 10   };
+    case 'amp.gain':         return { min: 0,     max: 1    };
+    default:                 return { min: 0,     max: 1    };
+  }
 }
 
 function writeDotPath(obj: Record<string, unknown>, path: string, v: number, spec?: EngineParamSpec): void {
@@ -313,6 +327,12 @@ class SubtractiveEngine implements SynthEngine {
 
   private pending = new PendingBaseValues();
 
+  /** Engine-wide voices for scope='shared' modulators. Lazy-init on the
+   *  first createVoice call, then REUSED forever — same pattern as drums
+   *  and TB-303 — so a shared LFO oscillator runs continuously across
+   *  notes and an actual sweep is audible. */
+  private engineModVoices: Map<string, import('../modulation/types').ModulatorVoice> | null = null;
+
   getBaseValue(id: string): number {
     if (!this.polysynth) return SUB_PARAMS.find(p => p.id === id)?.default ?? 0;
     return readDotPath(this.polysynth.params as unknown as Record<string, unknown>, id);
@@ -335,7 +355,34 @@ class SubtractiveEngine implements SynthEngine {
       this.polysynth = new PolySynth(ctx, output);
       this.pending.flush((id, v) => this.setBaseValue(id, v));
     }
-    const voiceMods = this.modHost.spawnVoice(ctx, () => this.bpm);
+    // 1. Lazy-init engine-wide modulator voices for SHARED mods and bind
+    //    them ONCE to the modulation bus AudioParams. The shared modBus
+    //    offsets are summed into per-voice AudioParams in their native
+    //    units (Hz for cutoff, Q for resonance, gain for amp), so we
+    //    reuse SubtractiveVoice's range schema here too — depth=1 on
+    //    a shared LFO must produce the same swing magnitude as on a
+    //    per-voice LFO bound to the same param.
+    if (!this.engineModVoices) {
+      this.engineModVoices = this.modHost.spawnVoiceFiltered(
+        ctx, () => this.bpm,
+        (m) => (m.scope ?? (m.kind === 'lfo' ? 'shared' : 'per-voice')) === 'shared',
+      );
+      const sharedLaneId = getCurrentLaneForVoice();
+      if (sharedLaneId) {
+        bindEngineModulators({
+          laneId: sharedLaneId,
+          engine: this,
+          voiceMods: this.engineModVoices,
+          ctx,
+          rangeLookup: (shortId) => sharedParamRange(shortId),
+        });
+      }
+    }
+    // 2. Per-voice modulators: spawn per call for this note.
+    const voiceMods = this.modHost.spawnVoiceFiltered(
+      ctx, () => this.bpm,
+      (m) => (m.scope ?? (m.kind === 'lfo' ? 'shared' : 'per-voice')) === 'per-voice',
+    );
     recordVoiceMods(voiceMods);
     const voice = new SubtractiveVoice(this.polysynth, voiceMods);
     const laneId = getCurrentLaneForVoice();
@@ -344,12 +391,30 @@ class SubtractiveEngine implements SynthEngine {
       this.currentLaneId = laneId;
       // Subtractive can't bind until the polysynth allocates a per-note voice
       // (lastVoiceParams arrives via triggerWithBinding's onVoice callback).
-      // Stash a closure the voice will call from that callback.
+      // Stash a closure the voice will call from that callback. We merge the
+      // engine-shared mods into the per-voice binding map so a scope='shared'
+      // LFO targeting a per-voice-only param (e.g. filter.envAmount, drive,
+      // master.tune) still gets a gain bridge — the connection-binder skips
+      // any mod whose paramId isn't present in the per-voice param map, so
+      // the merge is safe even when both binders see the same modulator.
+      const engineMods = this.engineModVoices ?? new Map();
+      const combinedMods = new Map<string, ModulatorVoice>([...engineMods, ...voiceMods]);
       voice.rebind = () => {
-        voice.binder = bindVoiceModulators({ laneId, engine: this, voice, voiceMods, ctx });
+        voice.binder = bindVoiceModulators({
+          laneId, engine: this, voice, voiceMods: combinedMods, ctx,
+        });
       };
     }
     return voice;
+  }
+
+  getSharedAudioParams(_ctx?: AudioContext): Map<string, AudioParam> {
+    if (!this.polysynth) return new Map();
+    return new Map<string, AudioParam>([
+      ['filter.cutoff',    this.polysynth.modBus['filter.cutoff'].offset],
+      ['filter.resonance', this.polysynth.modBus['filter.resonance'].offset],
+      ['amp.gain',         this.polysynth.modBus['amp.gain'].offset],
+    ]);
   }
 
   getPolySynth(): PolySynth | null {

@@ -14,8 +14,7 @@
 // both paths after a state change.
 
 import type { SynthEngine, Voice } from '../engines/engine-types';
-import type { ModulatorState, ModulatorVoice } from './types';
-import { defaultScopeFor } from './types';
+import type { ModulatorVoice } from './types';
 import type { ParamRange } from './modulation-host';
 import { ConnectionBinder } from './connection-binder';
 
@@ -32,6 +31,12 @@ export interface BindEngineModulatorsOpts {
   engine: SynthEngine;
   voiceMods: Map<string, ModulatorVoice>;
   ctx: AudioContext;
+  /** Optional override of the shared-param range lookup. Engines whose
+   *  shared bus AudioParams operate in a different unit than the engine
+   *  param spec (e.g. a ConstantSourceNode.offset summed into Hz) should
+   *  pass a Voice-style range lookup here so depth=1 produces full-swing
+   *  modulation. Falls back to the engine spec range when omitted. */
+  rangeLookup?: (shortId: string) => ParamRange;
 }
 
 interface LaneBindings {
@@ -39,16 +44,16 @@ interface LaneBindings {
   ctx: AudioContext;
   engineRef: SynthEngine;
   /** Engine-wide binder for scope='shared' modulators. */
-  engineBinding?: { binder: ConnectionBinder; voiceMods: Map<string, ModulatorVoice> };
+  engineBinding?: {
+    binder: ConnectionBinder;
+    voiceMods: Map<string, ModulatorVoice>;
+    rangeLookup?: (shortId: string) => ParamRange;
+  };
   /** Per-voice binder + the latest voice. Replaced on every new Voice. */
   voiceBinding?: { binder: ConnectionBinder; voice: Voice; voiceMods: Map<string, ModulatorVoice> };
 }
 
 const laneBindings = new Map<string, LaneBindings>();
-
-function scopeOf(m: ModulatorState): 'shared' | 'per-voice' {
-  return m.scope ?? defaultScopeFor(m.kind);
-}
 
 function applyBinder(
   binder: ConnectionBinder,
@@ -57,7 +62,7 @@ function applyBinder(
   voiceMods: Map<string, ModulatorVoice>,
   shortParams: Map<string, AudioParam>,
   rangeLookup: (shortId: string) => ParamRange,
-  scope: 'shared' | 'per-voice',
+  _scope: 'shared' | 'per-voice',
   ctx: AudioContext,
 ): void {
   const destMap = new Map<string, AudioParam>();
@@ -70,8 +75,12 @@ function applyBinder(
     destMap.set(shortId, param);
     rangeMap.set(shortId, r);
   }
-  const scopeFilter = engine.modulators.modulators.filter((m) => scopeOf(m) === scope);
-  binder.apply(voiceMods, scopeFilter, destMap, rangeMap, ctx);
+  // voiceMods is already scope-partitioned by the caller (spawnVoiceFiltered),
+  // so iterating ALL modulator states is safe — connection-binder skips any
+  // mod whose id isn't in voiceMods. This also lets a shared-scope LFO bind
+  // to a per-voice param when the SubtractiveEngine merges engineModVoices
+  // into the per-voice binder's voiceMods.
+  binder.apply(voiceMods, engine.modulators.modulators, destMap, rangeMap, ctx);
 }
 
 function rangeLookupForVoice(engine: SynthEngine, voice: Voice): (id: string) => ParamRange {
@@ -105,11 +114,12 @@ export function bindEngineModulators(opts: BindEngineModulatorsOpts): Connection
 
   const binder = new ConnectionBinder();
   const shortParams = opts.engine.getSharedAudioParams?.(opts.ctx) ?? new Map<string, AudioParam>();
+  const rangeLookup = opts.rangeLookup ?? rangeLookupForEngine(opts.engine);
   applyBinder(
     binder, opts.laneId, opts.engine, opts.voiceMods,
-    shortParams, rangeLookupForEngine(opts.engine), 'shared', opts.ctx,
+    shortParams, rangeLookup, 'shared', opts.ctx,
   );
-  lb.engineBinding = { binder, voiceMods: opts.voiceMods };
+  lb.engineBinding = { binder, voiceMods: opts.voiceMods, rangeLookup: opts.rangeLookup };
   return binder;
 }
 
@@ -134,9 +144,10 @@ export function reapplyLaneModulations(laneId: string): void {
   if (!lb) return;
   if (lb.engineBinding) {
     const shortParams = lb.engineRef.getSharedAudioParams?.(lb.ctx) ?? new Map<string, AudioParam>();
+    const rangeLookup = lb.engineBinding.rangeLookup ?? rangeLookupForEngine(lb.engineRef);
     applyBinder(
       lb.engineBinding.binder, lb.laneId, lb.engineRef, lb.engineBinding.voiceMods,
-      shortParams, rangeLookupForEngine(lb.engineRef), 'shared', lb.ctx,
+      shortParams, rangeLookup, 'shared', lb.ctx,
     );
   }
   if (lb.voiceBinding) {
