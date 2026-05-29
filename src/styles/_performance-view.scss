@@ -1,0 +1,67 @@
+.performance-view {
+  position: relative;
+  padding: 20px;
+  color: #ddd;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px;
+
+  .perf-playhead {
+    position: absolute; top: 26px; bottom: 0; width: 2px;
+    background: #ffd166; left: 90px; pointer-events: none;
+    box-shadow: 0 0 4px rgba(255, 209, 102, 0.5);
+  }
+
+  .perf-empty {
+    text-align: center;
+    padding: 40px;
+    color: #aaa;
+    button {
+      margin-top: 16px;
+      padding: 8px 16px;
+      background: #2e2e2e;
+      border: 1px solid #3a3a3a;
+      color: #ddd;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+  }
+
+  .perf-row {
+    display: grid; grid-template-columns: 90px 1fr;
+    border-bottom: 1px solid #222;
+  }
+  .perf-row.perf-ruler { background: #222; height: 26px; }
+  .perf-label {
+    padding: 6px 8px;
+    background: #1d1d1d; color: #aaa;
+    border-right: 1px solid #2a2a2a;
+    display: flex; align-items: center;
+    font-weight: 600;
+  }
+  .perf-track  { position: relative; height: 100%; overflow-x: auto; }
+  .perf-bar-mark {
+    position: absolute; top: 5px; color: #888; font-size: 10px; padding-left: 4px;
+  }
+  .perf-clip-band { position: relative; height: 38px; background: #161616; }
+  .perf-clip {
+    position: absolute; top: 4px; height: 30px;
+    border-radius: 4px; padding: 4px 6px;
+    color: #1a1a1a; font-weight: 600; font-size: 11px;
+    overflow: hidden; white-space: nowrap;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.4);
+    background: #888;
+    &.missing { background: repeating-linear-gradient(45deg, #555, #555 4px, #444 4px, #444 8px); color: #ccc; }
+  }
+  .perf-label.sub { font-weight: 400; color: #888; font-size: 11px; padding-left: 14px; }
+  .perf-master-header { background: #141414; }
+  .perf-auto-canvas { display: block; width: 100%; height: 32px; background: #181818; }
+}
+
+.perf-toast {
+  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+  background: #2a2a2a; color: #ffd166; border: 1px solid #ffd16655;
+  border-radius: 6px; padding: 8px 18px;
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px;
+  pointer-events: none; z-index: 9999;
+  opacity: 1; transition: opacity 0.3s;
+}

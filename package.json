@@ -21,6 +21,7 @@
     "@playwright/test": "^1.60.0",
     "@types/node": "^25.9.1",
     "cross-env": "^10.1.0",
+    "jsdom": "^27.0.1",
     "node-web-audio-api": "^2.0.0",
     "sass": "^1.100.0",
     "tsx": "^4.22.3",

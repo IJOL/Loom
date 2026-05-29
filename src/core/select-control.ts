@@ -85,6 +85,8 @@ function createRadioStrip(opts: SelectControlOpts): { el: HTMLElement; handle: K
       const idx = opts.options.findIndex((x) => x.value === next);
       const v = normaliseSelectIndex(Math.max(0, idx), opts.options.length);
       opts.onChange(next, true);
+      const norm = opts.options.length <= 1 ? 0 : Math.max(0, idx) / (opts.options.length - 1);
+      handle.el.setAttribute('data-value-norm', String(norm));
       handle.onValueChanged?.(v, true);
     });
     buttons.push(b);
@@ -107,9 +109,16 @@ function createRadioStrip(opts: SelectControlOpts): { el: HTMLElement; handle: K
         opts.onChange(next, false);
         handle.onValueChanged?.(v, false);
       }
+      const norm = opts.options.length <= 1 ? 0 : idx / (opts.options.length - 1);
+      handle.el.setAttribute('data-value-norm', String(norm));
     },
     setModulationOffset: () => { /* discrete controls don't show a ring */ },
   };
+
+  // Set initial data-value-norm
+  const initialIdx = opts.options.findIndex((o) => o.value === opts.initialValue);
+  const initialNorm = opts.options.length <= 1 ? 0 : Math.max(0, initialIdx) / (opts.options.length - 1);
+  wrap.setAttribute('data-value-norm', String(initialNorm));
 
   return { el: wrap, handle };
 }
@@ -137,14 +146,23 @@ function createNativeSelect(opts: SelectControlOpts): { el: HTMLElement; handle:
         opts.onChange(next, false);
         handle.onValueChanged?.(v, false);
       }
+      const norm = opts.options.length <= 1 ? 0 : idx / (opts.options.length - 1);
+      handle.el.setAttribute('data-value-norm', String(norm));
     },
     setModulationOffset: () => { /* discrete controls don't show a ring */ },
   };
+
+  // Set initial data-value-norm
+  const initialIdx = opts.options.findIndex((o) => o.value === opts.initialValue);
+  const initialNorm = opts.options.length <= 1 ? 0 : Math.max(0, initialIdx) / (opts.options.length - 1);
+  sel.setAttribute('data-value-norm', String(initialNorm));
 
   sel.addEventListener('change', () => {
     const idx = opts.options.findIndex((o) => o.value === sel.value);
     const v = normaliseSelectIndex(Math.max(0, idx), opts.options.length);
     opts.onChange(sel.value, true);
+    const norm = opts.options.length <= 1 ? 0 : Math.max(0, idx) / (opts.options.length - 1);
+    handle.el.setAttribute('data-value-norm', String(norm));
     handle.onValueChanged?.(v, true);
   });
 

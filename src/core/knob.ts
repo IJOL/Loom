@@ -118,11 +118,13 @@ export function createKnob(opts: KnobOpts): KnobHandle {
   };
 
   function render() {
-    const norm = clamp((value - opts.min) / (opts.max - opts.min), 0, 1);
+    const range = opts.max - opts.min;
+    const norm = range === 0 ? 0 : clamp((value - opts.min) / range, 0, 1);
     const angle = -135 + norm * 270;
     valArc.setAttribute('d', arcPath(cx, cy, trackR, -135, angle));
     ptr.setAttribute('transform', `rotate(${angle} ${cx} ${cy})`);
     valDisp.textContent = opts.format ? opts.format(value) : value.toFixed(2);
+    wrap.setAttribute('data-value-norm', String(norm));
   }
 
   function updateModArc(v: number, offset: number) {

@@ -88,6 +88,13 @@ export interface SessionHostDeps {
   /** Optional: when provided, cell-level edits in clip editors are wrapped
    *  with withUndo so each step toggle becomes an undoable entry. */
   historyDeps?: import('../save/history-wiring').HistoryDeps;
+  /** Performance view recording hooks. When present, tickSession appends
+   *  clip-launches to arrangement.lanes[*].clipEvents while rec.recording. */
+  recHooks?: import('./session-runtime').RecHooks;
+  /** Performance view per-tick callback. Called after tickSession on every
+   *  sequencer lookahead pulse. Used to drive tickRecAutomation and
+   *  tickArrangement. */
+  onAfterTick?: (now: number, lookahead: number) => void;
 }
 
 export class SessionHost {
@@ -130,7 +137,9 @@ export class SessionHost {
           this.deps.triggerForLane(laneId, midi, scheduleTime, gateSec, accent, slidingIn),
         (laneId, _clipId, _stepInClip, stepTime) =>
           this.deps.markTrackActive(laneId, stepTime),
+        this.deps.recHooks,
       );
+      if (this.deps.onAfterTick) this.deps.onAfterTick(now, look);
     };
 
     this.buildCallbacks();
@@ -263,7 +272,8 @@ export class SessionHost {
         const isPlaying = !!(lp?.playing && lp.playing.id === clip.id);
         const isQueued  = !!(lp?.queued  && lp.queued.id  === clip.id);
         if (isPlaying || isQueued) {
-          stopLane(self.laneStates, lane.id);
+          stopLane(self.laneStates, lane.id,
+            self.deps.recHooks ? { ...self.deps.recHooks, nowCtx: ctx.currentTime } : undefined);
           self.renderWithMixer();
           return;
         }
@@ -285,7 +295,8 @@ export class SessionHost {
           seq.start();
           playBtn.textContent = '■';
         } else {
-          launchClip(self.laneStates, self.state, lane, clip, ctx.currentTime, seq.bpm);
+          launchClip(self.laneStates, self.state, lane, clip, ctx.currentTime, seq.bpm,
+            self.deps.recHooks);
         }
         self.renderWithMixer();
       },
@@ -304,7 +315,11 @@ export class SessionHost {
         };
         if (hd) withUndo(hd, run); else run();
       },
-      onStopLane(laneId) { stopLane(self.laneStates, laneId); self.renderWithMixer(); },
+      onStopLane(laneId) {
+        stopLane(self.laneStates, laneId,
+          self.deps.recHooks ? { ...self.deps.recHooks, nowCtx: ctx.currentTime } : undefined);
+        self.renderWithMixer();
+      },
       onLaunchScene(idx) {
         const scene = self.state.scenes[idx];
         if (!scene) return;

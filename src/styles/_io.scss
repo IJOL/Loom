@@ -48,3 +48,18 @@
   border-radius: 2px;
   margin-left: auto;
 }
+
+.mode-toggle {
+  display: inline-flex;
+  border: 1px solid #3a3a3a;
+  border-radius: 4px;
+  overflow: hidden;
+  .mode-btn {
+    padding: 4px 12px;
+    background: #2e2e2e;
+    color: #aaa;
+    border: none;
+    cursor: pointer;
+    &.on { background: #4a6e4a; color: #fff; }
+  }
+}

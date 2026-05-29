@@ -6,6 +6,15 @@ import { tickLane } from '../core/lane-scheduler';
 import { TICKS_PER_STEP } from '../core/notes';
 import type { NoteEvent } from '../core/notes';
 import { AUTOMATION_SUB_RES } from '../core/pattern';
+import type { RecState } from '../performance/rec-state';
+import { arrangementNow } from '../performance/rec-state';
+import type { ArrangementState } from '../performance/performance';
+import { appendClipEvent, closePendingClipEvent } from '../performance/arrangement-ops';
+
+export interface RecHooks {
+  rec: RecState;
+  arrangement: ArrangementState;
+}
 
 export interface LanePlayState {
   laneId: string;
@@ -69,6 +78,7 @@ export function launchClip(
   clip: SessionClip,
   now: number,
   bpm: number,
+  _hooks?: RecHooks,
 ): void {
   let lp = laneStates.get(lane.id);
   if (!lp) { lp = emptyLanePlayState(lane.id); laneStates.set(lane.id, lp); }
@@ -113,11 +123,19 @@ export function launchScene(
   }
 }
 
-export function stopLane(laneStates: Map<string, LanePlayState>, laneId: string): void {
+export function stopLane(
+  laneStates: Map<string, LanePlayState>,
+  laneId: string,
+  hooks?: RecHooks & { nowCtx?: number },
+): void {
   const lp = laneStates.get(laneId);
   if (!lp) return;
   lp.playing = null;
   lp.queued = null;
+  if (hooks?.rec.recording) {
+    const at = arrangementNow(hooks.rec, hooks.nowCtx ?? hooks.rec.startedAtCtx);
+    closePendingClipEvent(hooks.arrangement, laneId, at);
+  }
 }
 
 export function stopAll(laneStates: Map<string, LanePlayState>): void {
@@ -160,6 +178,7 @@ export function tickSession(
   bpm: number,
   onLaneTrigger: LaneTriggerFn,
   onClipStepFired: ClipStepFiredFn,
+  hooks?: RecHooks,
 ): void {
   for (const lane of state.lanes) {
     const lp = laneStates.get(lane.id);
@@ -174,6 +193,10 @@ export function tickSession(
       lp.nextStepIdx = 0;
       lp.loopCount = 0;
       lp.lastScheduledAt = -Infinity;
+      if (hooks?.rec.recording) {
+        const at = arrangementNow(hooks.rec, lp.queuedBoundary);
+        appendClipEvent(hooks.arrangement, lane.id, lp.playing!.id, at);
+      }
     }
 
     if (!lp.playing) continue;

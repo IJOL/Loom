@@ -46,7 +46,7 @@ function applyModulationToKnobs(deps: AutomationTickDeps): void {
   }
 }
 
-// Module-level state — exported via getters so recordAutomationValue in main.ts
+// Module-level state — exported via getters so callers in main.ts
 // can read autoAbsSubIdx without coupling the tick internals.
 let autoCurrentSubIdx = 0;
 let autoTickRunning = false;

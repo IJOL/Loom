@@ -1,0 +1,227 @@
+// Performance view integration. Owns the RecState + ArrangementState lifecycle
+// and wires them into the live transport, the lookahead loop, the REC button,
+// and the mode toggle. main.ts builds this once at boot and threads the
+// resulting recHooks + mode/arrangement accessors where needed.
+
+import type { KnobHandle } from '../core/knob';
+import type { Sequencer } from '../core/sequencer';
+import type { SessionHost } from '../session/session-host';
+import {
+  createRecState, armRec, disarmRec, startRecording, stopRecording,
+  markParamTouched, tickRecAutomation,
+  type RecState,
+} from '../performance/rec-state';
+import {
+  emptyArrangementState,
+  type ArrangementState,
+} from '../performance/performance';
+import {
+  createArrangementPlayState, startArrangement, stopArrangement,
+  tickArrangement, arrangementPlayhead,
+  type ArrangementPlayState,
+} from '../performance/arrangement-runtime';
+import {
+  launchClip, stopLane,
+  type RecHooks,
+} from '../session/session-runtime';
+import { renderPerformanceView } from '../performance/performance-ui';
+
+export interface PerformanceFeatureDeps {
+  ctx: AudioContext;
+  seq: Sequencer;
+  sessionHost: SessionHost;
+  automationRegistry: Map<string, KnobHandle>;
+  /** Called by registerKnob — performance also wants the knob events. */
+  onRegisterKnob: (registerExtra: (k: KnobHandle) => void) => void;
+  recBtn: HTMLButtonElement;
+}
+
+export interface PerformanceFeature {
+  rec: RecState;
+  arrangement: ArrangementState;
+  arrangementPlayState: ArrangementPlayState;
+  recHooks: RecHooks;
+  getMode: () => 'session' | 'performance';
+  setMode: (m: 'session' | 'performance') => void;
+  setArrangement: (a: ArrangementState) => void;
+  refreshPerformanceView: () => void;
+  /** Called from inside the sequencer's session tick — also fires
+   *  tickRecAutomation and (when in performance mode) tickArrangement. */
+  onLookahead: (nowCtx: number, lookaheadSec: number) => void;
+  /** Called from the patched seq.start to decide if Performance owns Play. */
+  onPlay: () => boolean;
+  /** Called from the patched seq.stop. */
+  onStop: () => boolean;
+}
+
+export function createPerformanceFeature(deps: PerformanceFeatureDeps): PerformanceFeature {
+  const { ctx, seq, sessionHost, automationRegistry, onRegisterKnob, recBtn } = deps;
+
+  const rec = createRecState();
+  const arrangement = emptyArrangementState(seq.bpm);
+  const arrangementPlayState = createArrangementPlayState();
+  const recHooks: RecHooks = { rec, arrangement };
+  let mode: 'session' | 'performance' = 'session';
+
+  onRegisterKnob((k) => {
+    const prev = k.onValueChanged;
+    k.onValueChanged = (v, fromUser) => {
+      if (prev) prev(v, fromUser);
+      if (fromUser && rec.recording) markParamTouched(rec, k.meta.id!);
+    };
+  });
+
+  recBtn.replaceWith(recBtn.cloneNode(true));
+  const freshRec = document.getElementById('rec') as HTMLButtonElement;
+  freshRec.addEventListener('click', () => {
+    if (rec.armed) disarmRec(rec); else armRec(rec);
+    freshRec.classList.toggle('armed', rec.armed);
+    freshRec.textContent = rec.armed ? '● REC ON' : '● REC';
+    if (rec.armed && seq.isPlaying()) startRecording(rec, ctx.currentTime);
+  });
+
+  const flashToast = (msg: string) => {
+    const t = document.createElement('div');
+    t.className = 'perf-toast';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => { t.classList.add('fade'); }, 1700);
+    setTimeout(() => { t.remove(); }, 2200);
+  };
+
+  function refreshPerformanceView() {
+    const host = document.getElementById('performance-view-root');
+    if (!host) return;
+    const findClip = (id: string) => {
+      for (const lane of sessionHost.state.lanes)
+        for (const c of lane.clips) if (c?.id === id) return c;
+      return null;
+    };
+    renderPerformanceView(host, arrangement, {
+      onPlay: () => startArrangement(arrangementPlayState, ctx.currentTime),
+      onStop: () => stopArrangement(arrangementPlayState),
+      onGoToSession: () => setMode('session'),
+      resolveClipColor: (id) => findClip(id)?.color ?? '',
+      resolveClipName: (id) => findClip(id)?.name ?? findClip(id)?.id ?? 'missing',
+    });
+  }
+
+  function setMode(next: 'session' | 'performance') {
+    if (mode === next) return;
+    if (seq.isPlaying()) seq.stop();
+    if (arrangementPlayState.isPlaying) stopArrangement(arrangementPlayState);
+    mode = next;
+    document.querySelectorAll('#mode-toggle .mode-btn').forEach((b) => {
+      b.classList.toggle('on', (b as HTMLElement).dataset.mode === next);
+    });
+    const sessionRoot = document.getElementById('session-view-root');
+    const perfRoot = document.getElementById('performance-view-root');
+    if (sessionRoot) sessionRoot.hidden = next !== 'session';
+    if (perfRoot) perfRoot.hidden = next !== 'performance';
+    if (next === 'performance') refreshPerformanceView();
+  }
+  document.querySelectorAll('#mode-toggle .mode-btn').forEach((b) => {
+    b.addEventListener('click', () => {
+      setMode((b as HTMLElement).dataset.mode as 'session' | 'performance');
+    });
+  });
+
+  function setArrangement(a: ArrangementState) {
+    Object.assign(arrangement, a);
+    refreshPerformanceView();
+  }
+
+  function arrangementOnLaunchClip(laneId: string, clipId: string) {
+    const state = sessionHost.state;
+    const lane = state.lanes.find((l) => l.id === laneId);
+    if (!lane) return;
+    const clip = lane.clips.find((c) => c?.id === clipId);
+    if (!clip) return;
+    launchClip(sessionHost.laneStates, state, lane, clip, ctx.currentTime, seq.bpm, recHooks);
+  }
+  function arrangementOnStopLane(laneId: string) {
+    stopLane(sessionHost.laneStates, laneId, { ...recHooks, nowCtx: ctx.currentTime });
+  }
+  function arrangementApplyAutomation(paramId: string, valueNorm: number) {
+    const k = automationRegistry.get(paramId);
+    if (!k) return;
+    const v = k.meta.min + valueNorm * (k.meta.max - k.meta.min);
+    k.setValue(v);
+  }
+
+  function onLookahead(nowCtx: number, lookaheadSec: number) {
+    tickRecAutomation({
+      rec, state: arrangement, nowCtx, bpm: seq.bpm,
+      laneIds: sessionHost.state.lanes.map((l) => l.id),
+      readValue: (id) => {
+        const k = automationRegistry.get(id);
+        if (!k) return 0.5;
+        const range = k.meta.max - k.meta.min;
+        if (range === 0) return 0.5;
+        const dv = k.el.getAttribute('data-value-norm') ?? '';
+        const n = parseFloat(dv);
+        return Number.isFinite(n) ? n : 0.5;
+      },
+    });
+    if (mode === 'performance') {
+      tickArrangement({
+        ps: arrangementPlayState, state: arrangement, nowCtx, lookaheadSec,
+        bpm: arrangement.bpm || seq.bpm,
+        onLaunchClip: arrangementOnLaunchClip,
+        onStopLane: arrangementOnStopLane,
+        applyAutomation: arrangementApplyAutomation,
+      });
+    }
+  }
+
+  function onPlay(): boolean {
+    if (mode === 'performance') {
+      if (rec.armed) {
+        disarmRec(rec);
+        const btn = document.getElementById('rec') as HTMLButtonElement | null;
+        if (btn) { btn.classList.remove('armed'); btn.textContent = '● REC'; }
+        flashToast('REC desarmado: Performance está reproduciendo');
+      }
+      startArrangement(arrangementPlayState, ctx.currentTime);
+      return true;
+    }
+    if (rec.armed) startRecording(rec, ctx.currentTime);
+    return false;
+  }
+
+  function onStop(): boolean {
+    if (mode === 'performance') {
+      stopArrangement(arrangementPlayState);
+      return true;
+    }
+    if (rec.recording) stopRecording(rec);
+    return false;
+  }
+
+  const PX_PER_BAR = 80;
+  function rafPlayhead() {
+    if (mode === 'performance' && arrangementPlayState.isPlaying) {
+      const el = document.getElementById('perf-playhead');
+      if (el) {
+        const bars = arrangementPlayhead(arrangementPlayState, ctx.currentTime)
+          / ((60 / (arrangement.bpm || seq.bpm)) * 4);
+        el.style.left = `${90 + bars * PX_PER_BAR}px`;
+      }
+    }
+    requestAnimationFrame(rafPlayhead);
+  }
+  requestAnimationFrame(rafPlayhead);
+
+  refreshPerformanceView();
+
+  return {
+    rec, arrangement, arrangementPlayState, recHooks,
+    getMode: () => mode,
+    setMode,
+    setArrangement,
+    refreshPerformanceView,
+    onLookahead,
+    onPlay,
+    onStop,
+  };
+}

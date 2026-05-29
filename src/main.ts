@@ -6,6 +6,7 @@ import { createAutomationRecorder } from './app/automation-recording';
 import { createTriggerForLane } from './app/trigger-dispatch';
 import { createKnobMounter } from './app/knob-mounting';
 import { createLaneHost } from './app/lane-host-wiring';
+import { createPerformanceFeature } from './app/performance-feature';
 import {
   wireEngineSelector, rebuildEngineParamUI,
   type EngineSelectorUIDeps,
@@ -419,7 +420,34 @@ laneHost.setLookupEngineId((laneId) =>
 
 // ── REC button (arms knob → lane recording) ───────────────────────────────
 const recBtn = $<HTMLButtonElement>('rec');
-automation.wireRecButton(recBtn);
+
+// ── Performance view feature ──────────────────────────────────────────────
+// REC button is wired by the Performance feature (legacy automation.wireRecButton
+// is no longer attached — the Performance recorder owns REC behaviour now).
+// recHooks + onAfterTick are patched into sessionHost.deps after construction
+// because the feature needs sessionHost to resolve clip launches.
+const performanceFeature = createPerformanceFeature({
+  ctx, seq, sessionHost,
+  automationRegistry,
+  onRegisterKnob: (hook) => {
+    const origRegister = automation.registerKnob.bind(automation);
+    automation.registerKnob = (k: KnobHandle) => {
+      origRegister(k);
+      hook(k);
+    };
+    for (const k of automationRegistry.values()) hook(k);
+  },
+  recBtn,
+});
+(sessionHost.deps as { recHooks?: import('./session/session-runtime').RecHooks }).recHooks =
+  performanceFeature.recHooks;
+(sessionHost.deps as { onAfterTick?: (n: number, l: number) => void }).onAfterTick =
+  performanceFeature.onLookahead;
+
+const _origStart = seq.start.bind(seq);
+const _origStop = seq.stop.bind(seq);
+seq.start = () => { if (!performanceFeature.onPlay()) _origStart(); };
+seq.stop = () => { if (!performanceFeature.onStop()) _origStop(); };
 
 const initialPatternDeps: InitialPatternDeps = { seq, bank, drums, bassStrip, polyStrip };
 setupInitialPattern(initialPatternDeps);
