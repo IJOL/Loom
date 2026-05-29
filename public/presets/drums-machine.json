@@ -1,0 +1,13 @@
+{
+  "engineId": "drums-machine",
+  "presets": [
+    { "name": "KIT Standard",  "gm": [0],  "params": { "kitId": "909" } },
+    { "name": "KIT Room",      "gm": [8],  "params": { "kitId": "linn" } },
+    { "name": "KIT Power",     "gm": [16], "params": { "kitId": "909" } },
+    { "name": "KIT Electronic","gm": [24], "params": { "kitId": "606" } },
+    { "name": "KIT TR-808",    "gm": [25], "params": { "kitId": "808" } },
+    { "name": "KIT Jazz",      "gm": [33], "params": { "kitId": "78" } },
+    { "name": "KIT Brush",     "gm": [41], "params": { "kitId": "78" } },
+    { "name": "KIT Orchestra", "gm": [49], "params": { "kitId": "linn" } }
+  ]
+}

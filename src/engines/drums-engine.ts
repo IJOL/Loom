@@ -4,10 +4,11 @@
 
 import type {
   SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer,
-  EngineUIContext, EnginePreset,
+  EngineUIContext,
 } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
 import { registerEngine, registerEngineFactory } from './registry';
+import { getCachedPresets } from '../presets/preset-loader';
 import { DrumMachine } from '../core/drums';
 import { FxBus } from '../core/fx';
 import { GM_DRUM_MAP } from './drum-gm-map';
@@ -36,16 +37,6 @@ const DRUM_PARAMS: EngineParamSpec[] = [
   { id: 'bus.eq.low',      label: 'Lo',   kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
   { id: 'bus.eq.mid',      label: 'Mid',  kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
   { id: 'bus.eq.high',     label: 'Hi',   kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
-];
-
-// Drum presets = the existing KITS. Their full per-voice param shapes live
-// on the DrumMachine itself; this engine-level preset just stores the kit
-// id so applyPreset can call dm.setKit().
-const DRUM_PRESETS: EnginePreset[] = [
-  { name: '808',       params: { kitId: 0 } },
-  { name: '909',       params: { kitId: 1 } },
-  { name: 'Linn',      params: { kitId: 2 } },
-  { name: 'Acoustic',  params: { kitId: 3 } },
 ];
 
 class DrumsVoice implements Voice {
@@ -107,7 +98,7 @@ export class DrumsEngine implements SynthEngine {
   readonly polyphony = 'poly' as const;
   readonly editor = 'drum-grid' as const;
   readonly params = DRUM_PARAMS;
-  readonly presets = DRUM_PRESETS;
+  get presets() { return getCachedPresets('drums-machine'); }
 
   private instances = new WeakMap<AudioNode, DrumMachine>();
   private lastInstance: DrumMachine | null = null;
@@ -231,6 +222,15 @@ export class DrumsEngine implements SynthEngine {
 
   applyPreset(name: string): void {
     if (!this.lastInstance) return;
+    const preset = this.presets.find((p) => p.name === name);
+    if (preset) {
+      const kitId = (preset.params as { kitId?: string }).kitId;
+      if (typeof kitId === 'string') {
+        this.lastInstance.setKit(kitId);
+        return;
+      }
+    }
+    // Fallback: match against actual kit names (back-compat for direct kit selection).
     const kits = this.lastInstance.listKits();
     const kit = kits.find((k) => k.name === name);
     if (kit) this.lastInstance.setKit(kit.id);

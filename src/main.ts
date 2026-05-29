@@ -93,7 +93,7 @@ const $$ = <T extends HTMLElement>(sel: string) => Array.from(document.querySele
 // onto this — see bottom of file). Missing JSON files just log a warning.
 // The legacy 'poly' engineId was merged into 'subtractive' (the polysynth
 // host IS the subtractive engine's voice allocator).
-const ENGINE_IDS_FOR_PRESETS = ['tb303', 'fm', 'wavetable', 'karplus', 'subtractive', 'drums'];
+const ENGINE_IDS_FOR_PRESETS = ['tb303', 'fm', 'wavetable', 'karplus', 'subtractive', 'drums-machine'];
 const presetsLoaded = loadAllPresets(ENGINE_IDS_FOR_PRESETS);
 
 // ── Audio graph ────────────────────────────────────────────────────────────
