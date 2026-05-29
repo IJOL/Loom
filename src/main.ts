@@ -494,10 +494,8 @@ const engineSelectorDeps: EngineSelectorUIDeps = {
   automationRegistry,
   registerKnob,
   populateAutoParamSelect: () => populateAutoParamSelectWrapper(),
-  remountSubtractiveLaneKnobs: (laneId) => {
-    mountSubtractiveLaneKnobs(laneId);
-    mountLaneFxPanel(laneId);
-  },
+  remountSubtractiveLaneKnobs: (laneId) => mountSubtractiveLaneKnobs(laneId),
+  remountLaneFxPanel: (laneId) => mountLaneFxPanel(laneId),
   // Late-bound via getter: _discreteHistoryDeps is assigned after historyDeps
   // is built (further below), but the change handler fires at user-interaction
   // time, so the getter always sees the final value.
@@ -557,7 +555,6 @@ synthEditorDeps = {
 };
 
 mountSubtractiveLaneKnobs(LANE_ID_POLY);
-mountLaneFxPanel(LANE_ID_POLY);
 
 
 const arpUIDeps: ArpUIDeps = {
@@ -576,8 +573,6 @@ const fxUIDeps: FxUIDeps = {
 };
 wireFxUI(fxUIDeps);
 mountDrumMasterLaneKnobs(LANE_ID_DRUMS);
-mountLaneFxPanel(LANE_ID_DRUMS);
-mountLaneFxPanel(LANE_ID_BASS);
 fxApplyDelaySync(fxUIDeps);
 const transportDeps: TransportDeps = {
   seq, bank, ctx, playBtn, barsSel,

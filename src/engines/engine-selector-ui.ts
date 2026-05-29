@@ -18,6 +18,11 @@ export interface EngineSelectorUIDeps {
    *  engines), so this hook re-populates them so the modulator destination
    *  dropdown isn't empty. */
   remountSubtractiveLaneKnobs?: (laneId: string) => void;
+  /** Called UNCONDITIONALLY by `rebuildEngineParamUI` (for every engine) after
+   *  the prefix unregister, so the per-lane FX panel's knobs (which sit at
+   *  `<laneId>.fx.*` and would otherwise be lost across engine switches) get
+   *  re-registered. The hook also re-paints the FX panel DOM. */
+  remountLaneFxPanel?: (laneId: string) => void;
   /** When provided, user-initiated engine changes are wrapped with withUndo
    *  so each selection becomes one undoable entry. Omit for programmatic/
    *  session-load callers so those do not pollute the undo stack. */
@@ -51,6 +56,9 @@ export function rebuildEngineParamUI(): void {
   for (const row of subtractiveRows) {
     row.style.display = engineId === 'subtractive' ? '' : 'none';
   }
+  // Re-mount the per-lane FX panel unconditionally so its knobs (laneId.fx.*)
+  // are re-registered after the prefix unregister above, regardless of engine.
+  deps.remountLaneFxPanel?.(activeLaneId);
   // Re-mount Subtractive per-section knobs so their registry entries are
   // alive again after the prefix unregister above. Without this the
   // modulator destination dropdown comes up empty for Subtractive lanes.

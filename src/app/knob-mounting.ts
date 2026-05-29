@@ -41,6 +41,15 @@ export interface KnobMounter {
   refreshLaneKnobs(laneId: string, engine: SynthEngine): void;
 }
 
+function pageForLane(laneId: string): string {
+  // Map canonical lane ids to the corresponding `data-page` attribute.
+  // Bass (LANE_ID_BASS='tb-303-1') -> '303'; drums (LANE_ID_DRUMS='drums-1') -> 'drums';
+  // every other lane (subtractive-1, subtractive-2, …) -> 'poly'.
+  if (laneId === 'tb-303-1') return '303';
+  if (laneId === 'drums-1')  return 'drums';
+  return 'poly';
+}
+
 export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
   const buildCtx = (laneId: string): EngineUIContext => ({
     laneId,
@@ -93,7 +102,9 @@ export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
   const mountLaneFxPanel = (laneId: string) => {
     const strip = deps.laneResources.get(laneId)?.strip;
     if (!strip) return;
-    const slot = document.querySelector('.page:not([hidden]) .lane-fx-knobs') as HTMLElement | null;
+    const slot = document.querySelector(
+      `[data-page="${pageForLane(laneId)}"] .lane-fx-knobs`,
+    ) as HTMLElement | null;
     if (!slot) return;
     mountLaneFxPanelInner({
       laneId,
