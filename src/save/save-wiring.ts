@@ -10,6 +10,7 @@ import type { DrumMachine } from '../core/drums';
 import type { FxBus, FilterChain } from '../core/fx';
 import type { SessionHost } from '../session/session-host';
 import type { SessionState } from '../session/session';
+import type { HistoryController } from '../core/history';
 import {
   buildSavedStateV3, applyLoadedStateV3, parseSavedStateV3,
   type SavedStateV3, type SavedStateV3Deps,
@@ -31,6 +32,7 @@ export interface SaveWiringDeps {
   fx: FxBus;
   filterChain: FilterChain;
   flashButton: (b: HTMLButtonElement, msg: string) => void;
+  history: HistoryController<SavedStateV3>;
 }
 
 function applyLoadedState(data: unknown, deps: SaveWiringDeps): void {
@@ -44,6 +46,7 @@ function applyLoadedState(data: unknown, deps: SaveWiringDeps): void {
     return;
   }
   applyLoadedStateV3(s, deps);
+  deps.history.clear();
 }
 
 function openSaveManager(deps: SaveWiringDeps, applyLoaded: (data: unknown) => void): void {

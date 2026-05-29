@@ -1093,6 +1093,7 @@ presetsLoaded
   .then(() => fetchDemoSession('/demos/minimal-techno.json'))
   .then((state) => {
     sessionHost.applyLoadedSessionState(state);
+    history.clear();
     buildArpUI(arpUIDeps);
   })
   .catch((err: unknown) => {
@@ -1117,6 +1118,7 @@ if (demoPicker) {
       { label: 'Solid Sessions — Janeiro',  path: '/demos/solid-sessions-janeiro.json' },
       { label: 'Untitled MIDI',             path: '/demos/untitled.json' },
     ],
+    onLoaded: () => history.clear(),
   });
 }
 // App is always in session mode — seq.sessionMode must be true at boot.
@@ -1124,6 +1126,7 @@ seq.sessionMode = true;
 startVisualizer({ ctx, analyser, vizCanvas });
 
 // ── Save Manager v2 (see src/save-wiring.ts) ──────────────────────────────
+const history = createHistory<SavedStateV3>({ maxSize: 100 });
 const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
   seq, synth, drums, master,
   volInput, bpmInput, swingInput, kitSel, waveSel,
@@ -1133,9 +1136,9 @@ const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
   fx,
   filterChain,
   flashButton,
+  history,
 };
 const savedStateDeps: SavedStateV3Deps = saveWiringDeps;
-const history = createHistory<SavedStateV3>({ maxSize: 100 });
 const historyDeps: HistoryDeps = {
   history,
   snapshot: () => buildSavedStateV3(savedStateDeps),
