@@ -1,13 +1,46 @@
-import { PolySynth, type PolySynthParams } from './polysynth';
+import { PolySynth, POLY_DEFAULTS, type PolySynthParams } from './polysynth';
 import { randomizePolySynth } from '../core/random';
 import type { SynthEngine } from '../engines/engine-types';
 import { getCachedPresets } from '../presets/preset-loader';
 
-/** Typed view over the JSON-loaded poly preset cache. The loader returns
- *  the loose `EnginePreset<Record<string, number>>` shape; poly presets
- *  actually carry the nested `PolySynthParams` payload. */
+/** Convert a flat dot-path subtractive preset (e.g. `"osc1.wave": 0`,
+ *  `"filter.cutoff": 0.55`) back into the nested PolySynthParams tree the
+ *  polysynth UI still operates on. Wave indices are mapped back to their
+ *  OscillatorType string. Fields not present in the flat preset keep their
+ *  POLY_DEFAULTS value (so e.g. `osc1.octave`, `lfo1.*` survive). */
+function flatToPolyParams(flat: Record<string, number>): PolySynthParams {
+  const out = JSON.parse(JSON.stringify(POLY_DEFAULTS)) as PolySynthParams;
+  const WAVE_VALUES: OscillatorType[] = ['sawtooth', 'square', 'triangle', 'sine'];
+  for (const [k, v] of Object.entries(flat)) {
+    const parts = k.split('.');
+    let cur: Record<string, unknown> = out as unknown as Record<string, unknown>;
+    let bail = false;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const next = cur[parts[i]];
+      if (!next || typeof next !== 'object') { bail = true; break; }
+      cur = next as Record<string, unknown>;
+    }
+    if (bail) continue;
+    const leaf = parts[parts.length - 1];
+    if (leaf === 'wave' && typeof v === 'number') {
+      const idx = Math.max(0, Math.min(WAVE_VALUES.length - 1, Math.round(v)));
+      cur[leaf] = WAVE_VALUES[idx];
+    } else {
+      cur[leaf] = v;
+    }
+  }
+  return out;
+}
+
+/** Typed view over the JSON-loaded subtractive preset cache, materialised as
+ *  the nested `PolySynthParams` shape the polysynth UI consumes. Subtractive
+ *  presets are stored flat (dot-path id → value); we expand them on the fly. */
 function getFactoryPolyPresets(): { name: string; params: PolySynthParams }[] {
-  return getCachedPresets('poly') as unknown as { name: string; params: PolySynthParams }[];
+  const flat = getCachedPresets('subtractive');
+  return flat.map((p) => ({
+    name: p.name,
+    params: flatToPolyParams(p.params as unknown as Record<string, number>),
+  }));
 }
 
 // ── PolySynth preset state ─────────────────────────────────────────────────

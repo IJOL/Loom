@@ -90,10 +90,10 @@ const $$ = <T extends HTMLElement>(sel: string) => Array.from(document.querySele
 // ── Preset cache ───────────────────────────────────────────────────────────
 // We fire off the JSON preset loader at module init and AWAIT the resulting
 // promise BEFORE anything that might apply a preset (the demo loader chains
-// onto this — see bottom of file). Missing JSON files just log a warning —
-// only `poly.json` exists at this stage; the others are added in Phase C of
-// the GM-presets plan.
-const ENGINE_IDS_FOR_PRESETS = ['poly', 'tb303', 'fm', 'wavetable', 'karplus', 'subtractive', 'drums'];
+// onto this — see bottom of file). Missing JSON files just log a warning.
+// The legacy 'poly' engineId was merged into 'subtractive' (the polysynth
+// host IS the subtractive engine's voice allocator).
+const ENGINE_IDS_FOR_PRESETS = ['tb303', 'fm', 'wavetable', 'karplus', 'subtractive', 'drums'];
 const presetsLoaded = loadAllPresets(ENGINE_IDS_FOR_PRESETS);
 
 // ── Audio graph ────────────────────────────────────────────────────────────

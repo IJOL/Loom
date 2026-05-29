@@ -276,9 +276,14 @@ class SubtractiveEngine implements SynthEngine {
   applyPreset(name: string): void {
     const preset = this.presets.find((p) => p.name === name);
     if (!preset) return;
-    // Preset.params currently map onto PolySynthParams flat-ish; the full
-    // preset shape lives in public/presets/poly.json (loaded via the
-    // preset-loader cache). This hook only carries the modulators payload.
+    // Flat dot-path params (osc1.wave, filter.cutoff, …) are written via
+    // setBaseValue → writeDotPath into the PolySynth.params tree. Discrete
+    // params (e.g. osc1.wave) are converted from numeric index to string
+    // option by writeDotPath using the matching SUB_PARAMS spec.
+    for (const [paramId, value] of Object.entries(preset.params as Record<string, number>)) {
+      if (typeof value !== 'number') continue;
+      this.setBaseValue(paramId, value);
+    }
     if (preset.modulators) this.modHost.deserialize(preset.modulators);
   }
 
