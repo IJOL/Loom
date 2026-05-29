@@ -20,65 +20,56 @@
 
 ## Phase A — Foundations
 
-### Task A1: Add `gm` and generic `params` to `EnginePreset`
+### Task A1: Add `gm` and generic `params` to `EnginePreset` interface (type only)
+
+**Critical:** This task touches **only the TS interface**, never the inline preset arrays in `tb303.ts`, `fm.ts`, etc. Those inline arrays are deleted in Phases B/C when each engine migrates to its JSON asset. We do not "patch" code-resident presets with `gm: []` — the entire point of this refactor is that preset DATA lives in JSON, not TS.
 
 **Files:**
 - Modify: `src/engines/engine-types.ts` (current `EnginePreset` at ~line 58)
-- Modify: `src/engines/tb303.ts`, `src/engines/fm.ts`, `src/engines/wavetable.ts`, `src/engines/karplus.ts`, `src/engines/subtractive.ts`, `src/core/drums.ts` (any engine that declares inline `EnginePreset` arrays)
-- Modify: `src/polysynth/poly-presets.ts` if it implements `EnginePreset`
 
 - [ ] **Step 1: Re-read current `EnginePreset` interface**
 
-Open `src/engines/engine-types.ts` and locate `EnginePreset`. Note current shape. If it has already changed since the spec was written, adapt subsequent steps to that reality.
+Open `src/engines/engine-types.ts` and locate `EnginePreset`. Note current shape (it likely already exists with `name`, `params`, optional `modulators`).
 
-- [ ] **Step 2: Generalize the interface**
+- [ ] **Step 2: Generalize the interface and add optional `gm`**
 
-Edit `src/engines/engine-types.ts`:
+Edit `src/engines/engine-types.ts`. Replace the existing `EnginePreset` interface with:
 
 ```ts
 export interface EnginePreset<P = Record<string, number>> {
   name: string;
-  /** Loose mapping to GM program numbers (0-127). Empty array allowed for
-   *  presets that should not be picked by the MIDI importer. */
-  gm: number[];
+  /** Loose mapping to GM program numbers (0-127). Optional during the
+   *  migration from inline-TS presets to JSON assets — JSON-sourced
+   *  presets will always provide it. Code that reads `gm` should treat
+   *  `undefined` as empty. */
+  gm?: number[];
   params: P;
   modulators?: import('../modulation/types').ModulatorState[];
 }
 ```
 
-If `SynthEngine.presets` is declared as `EnginePreset[]`, leave it (the default generic keeps backward compatibility).
+`gm` is **optional** at this stage so existing inline preset arrays (which don't yet have `gm`) still typecheck. Once every engine's data has moved to JSON (end of Phase C), the field can be promoted to required.
 
-- [ ] **Step 3: Run typecheck — expect failures in engines that declare presets without `gm`**
+If `SynthEngine.presets` is declared as `EnginePreset[]`, leave it — the default generic and the optional `gm` keep full backward compatibility.
 
-Run: `npx tsc --noEmit`
-Expected: errors like `Property 'gm' is missing in type ...` at each preset literal in engines.
-
-- [ ] **Step 4: Add `gm: []` to every existing preset literal**
-
-For each engine that has inline presets (e.g. `TB303_PRESETS` in `src/engines/tb303.ts`), add `gm: []` to each preset object. Example:
-
-```ts
-{ name: 'Acid Classic', gm: [], params: { ... } },
-```
-
-Keep `gm: []` as a placeholder — real GM tags come in the content tasks (Phase C). For poly presets in `src/polysynth/poly-presets.ts`, do the same.
-
-- [ ] **Step 5: Re-run typecheck**
+- [ ] **Step 3: Run typecheck**
 
 Run: `npx tsc --noEmit`
-Expected: clean.
+Expected: clean — no engine code needs changes because `gm` is optional and `P` defaults to the previous `Record<string, number>`.
 
-- [ ] **Step 6: Run tests**
+- [ ] **Step 4: Run tests**
 
-Run: `NO_COLOR=1 npx vitest run`
-Expected: all green (the change is additive — existing tests don't read `gm`).
+Run: `NO_COLOR=1 npm run test:unit`
+Expected: all green.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add src/engines/engine-types.ts src/engines/*.ts src/polysynth/poly-presets.ts src/core/drums.ts
-git commit -m "feat(presets): add gm field to EnginePreset, generic params"
+git add src/engines/engine-types.ts
+git commit -m "feat(presets): EnginePreset generic over params + optional gm field"
 ```
+
+**Do not modify any engine .ts file** in this task. Inline preset arrays stay untouched until their owning engine migrates to JSON (Phase B for poly, Phase C for the rest).
 
 ---
 
