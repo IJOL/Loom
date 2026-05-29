@@ -79,3 +79,21 @@ describe('TB303Engine getBaseValue/setBaseValue (with instance) round-trip', () 
     expect(engine.getBaseValue('osc.wave')).toBe(0);
   });
 });
+
+describe('TB303Engine.getSharedAudioParams', () => {
+  it('returns the underlying TB303 filter+amp AudioParams after createVoice', () => {
+    const engine = new TB303Engine();
+    const ctx = new AudioContext();
+    engine.createVoice(ctx, ctx.destination);
+    const shared = engine.getSharedAudioParams?.() ?? new Map();
+    expect(shared.has('filter.cutoff')).toBe(true);
+    expect(shared.has('filter.resonance')).toBe(true);
+    expect(shared.has('amp.gain')).toBe(true);
+  });
+
+  it('returns an empty Map before any createVoice call', () => {
+    const engine = new TB303Engine();
+    const shared = engine.getSharedAudioParams?.() ?? new Map();
+    expect(shared.size).toBe(0);
+  });
+});

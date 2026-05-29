@@ -259,6 +259,15 @@ export class TB303Engine implements SynthEngine {
     if (p.modulators) this.modHost.deserialize(p.modulators);
   }
 
+  getSharedAudioParams(): Map<string, AudioParam> {
+    if (!this.lastInstance) return new Map();
+    return new Map<string, AudioParam>([
+      ['filter.cutoff',    this.lastInstance.filter.frequency],
+      ['filter.resonance', this.lastInstance.filter.Q],
+      ['amp.gain',         this.lastInstance.amp.gain],
+    ]);
+  }
+
   dispose(): void {}
 }
 

@@ -109,3 +109,19 @@ describe('DrumsEngine bus EQ', () => {
     expect(strip.getEqGainParam('low').value).toBeCloseTo(9, 5);
   });
 });
+
+describe('DrumsEngine.getSharedAudioParams', () => {
+  it('returns the bus EQ + level + sends after setBusStrip', async () => {
+    const ctx = new OfflineAudioContext(1, 128, 44100) as unknown as AudioContext;
+    const fx = new FxBus(ctx, ctx.destination);
+    const strip = new ChannelStrip(ctx, ctx.destination, fx);
+    const engine = new DrumsEngine();
+    engine.setSharedFx(fx);
+    engine.setBusStrip(strip);
+    engine.createVoice(ctx, strip.input);
+    const shared = engine.getSharedAudioParams?.() ?? new Map();
+    expect(shared.has('bus.eq.low')).toBe(true);
+    expect(shared.has('bus.level')).toBe(true);
+    expect(shared.has('bus.pan')).toBe(true);
+  });
+});

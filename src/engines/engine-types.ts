@@ -85,4 +85,10 @@ export interface SynthEngine {
   applyPreset(name: string): void;
   randomize?(): void;
   dispose(): void;
+  /** AudioParams that SHARED modulators write to. The voice manager's
+   *  modulation bus fans this out internally to every active per-voice
+   *  AudioParam, so the binder makes ONE connection regardless of how
+   *  many notes are playing. Returns an empty Map until the engine has
+   *  a voice manager instance (lazy after first createVoice). */
+  getSharedAudioParams?(ctx?: AudioContext): Map<string, AudioParam>;
 }

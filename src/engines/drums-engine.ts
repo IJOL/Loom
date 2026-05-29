@@ -236,6 +236,20 @@ export class DrumsEngine implements SynthEngine {
     if (kit) this.lastInstance.setKit(kit.id);
   }
 
+  getSharedAudioParams(): Map<string, AudioParam> {
+    const m = new Map<string, AudioParam>();
+    if (this.busStrip) {
+      m.set('bus.level',      this.busStrip.level.gain);
+      m.set('bus.pan',        this.busStrip.getPanParam());
+      m.set('bus.reverbSend', this.busStrip.reverbSend.gain);
+      m.set('bus.delaySend',  this.busStrip.delaySend.gain);
+      m.set('bus.eq.low',     this.busStrip.getEqGainParam('low'));
+      m.set('bus.eq.mid',     this.busStrip.getEqGainParam('mid'));
+      m.set('bus.eq.high',    this.busStrip.getEqGainParam('high'));
+    }
+    return m;
+  }
+
   dispose(): void {}
 }
 
