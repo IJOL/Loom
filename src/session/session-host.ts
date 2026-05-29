@@ -364,6 +364,7 @@ export class SessionHost {
         };
         if (hd) withUndo(hd, run); else run();
       },
+      onMoveClip(_from, _to, _copy) { /* wired in Task 8 */ },
       onAddClipRow()   { /* Task 11 */ },
       onEditLane(laneId) {
         // Toggle off when the user clicks the already-active lane tab.

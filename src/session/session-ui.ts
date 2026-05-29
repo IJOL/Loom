@@ -1,7 +1,8 @@
 // Session view grid rendering. Pure DOM construction — no audio.
 // Interactivity (click handlers) is wired by the host (main.ts) via callbacks.
 
-import type { SessionState, SessionLane, SessionClip } from './session';
+import type { SessionState, SessionLane, SessionClip, ClipSlot } from './session';
+import { canDropClip } from './session';
 import type { LanePlayState } from './session-runtime';
 
 export interface SessionUICallbacks {
@@ -13,6 +14,10 @@ export interface SessionUICallbacks {
    *  starts immediately if transport is idle. */
   onClipPlayPause: (laneId: string, clipIdx: number) => void;
   onCellClick: (laneId: string, clipIdx: number) => void;
+  /** Drop a clip onto another slot. `copy=true` when the user held Ctrl
+   *  during the drag (Ctrl=copy, plain drag=move). Caller is responsible
+   *  for wrapping the mutation in withUndo. */
+  onMoveClip: (from: ClipSlot, to: ClipSlot, copy: boolean) => void;
   onStopLane:  (laneId: string) => void;
   onLaunchScene: (sceneIdx: number) => void;
   onStopAll:   () => void;
@@ -24,6 +29,8 @@ export interface SessionUICallbacks {
   _mixerRow?: HTMLElement;
 }
 
+let currentState: SessionState | null = null;
+
 const COLOR_IDLE = '#2a2a2a';
 
 export function renderSessionGrid(
@@ -32,6 +39,7 @@ export function renderSessionGrid(
   laneStates: Map<string, LanePlayState>,
   cb: SessionUICallbacks,
 ): void {
+  currentState = state;
   host.innerHTML = '';
   host.classList.add('session-grid-root');
 
@@ -161,12 +169,14 @@ function clipCell(
     playIcon.className = 'session-cell-play';
     playIcon.textContent = isPlaying ? '⏸' : '▶';
     playIcon.title = isPlaying ? 'Stop' : (isQueued ? 'Queued — click to cancel' : 'Play');
+    playIcon.addEventListener('pointerdown', (e) => e.stopPropagation());
+    playIcon.addEventListener('pointerup',   (e) => e.stopPropagation());
     playIcon.addEventListener('click', (e) => {
       e.stopPropagation();
       cb.onClipPlayPause(lane.id, rowIdx);
     });
     cell.appendChild(playIcon);
-    cell.addEventListener('click', () => cb.onClipClick(lane.id, rowIdx));
+    wireClipDrag(cell, { laneId: lane.id, clipIdx: rowIdx }, cb);
   } else {
     cell.classList.add('session-cell-empty');
     cell.addEventListener('click', () => cb.onCellClick(lane.id, rowIdx));
@@ -187,5 +197,145 @@ function sceneLaunchCell(scene: { name?: string } | undefined, idx: number, cb: 
     el.classList.add('session-scene-cell-empty');
   }
   return el;
+}
+
+// ── Clip drag ──────────────────────────────────────────────────────────────
+
+const DRAG_THRESHOLD_PX = 4;
+
+interface DragState {
+  source: ClipSlot;
+  startX: number;
+  startY: number;
+  ghost: HTMLElement | null;
+  hoverCell: HTMLElement | null;
+  active: boolean;            // true once movement past threshold
+  cancelled: boolean;
+  pointerId: number;
+  onKey: (e: KeyboardEvent) => void;
+}
+
+let activeDrag: DragState | null = null;
+
+function wireClipDrag(cell: HTMLElement, source: ClipSlot, cb: SessionUICallbacks): void {
+  cell.classList.add('session-cell-draggable');
+
+  cell.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    if (activeDrag) return;
+    activeDrag = {
+      source,
+      startX: e.clientX,
+      startY: e.clientY,
+      ghost: null,
+      hoverCell: null,
+      active: false,
+      cancelled: false,
+      pointerId: e.pointerId,
+      onKey: () => {},
+    };
+  });
+
+  cell.addEventListener('pointermove', (e) => {
+    if (!activeDrag) return;
+    if (activeDrag.pointerId !== e.pointerId) return;
+    const dx = e.clientX - activeDrag.startX;
+    const dy = e.clientY - activeDrag.startY;
+    if (!activeDrag.active) {
+      if (Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
+      activeDrag.active = true;
+      cell.setPointerCapture(e.pointerId);
+      cell.classList.add('drop-source');
+      activeDrag.ghost = buildGhost(cell);
+      document.body.appendChild(activeDrag.ghost);
+      document.body.classList.toggle('drag-copy', e.ctrlKey);
+      activeDrag.onKey = (k) => {
+        if (k.key === 'Escape') cancelDrag();
+        else if (k.key === 'Control') document.body.classList.add('drag-copy');
+      };
+      document.addEventListener('keydown', activeDrag.onKey);
+      document.addEventListener('keyup', activeDrag.onKey);
+    }
+    positionGhost(activeDrag.ghost!, e.clientX, e.clientY);
+    document.body.classList.toggle('drag-copy', e.ctrlKey);
+    updateHover(e.clientX, e.clientY, activeDrag.source, cb);
+  });
+
+  const finish = (e: PointerEvent) => {
+    if (!activeDrag) return;
+    if (activeDrag.pointerId !== e.pointerId) return;
+    if (!activeDrag.active) {
+      // No drag happened — treat as a click (preserves the cell-body click semantics).
+      cb.onClipClick(source.laneId, source.clipIdx);
+      activeDrag = null;
+      return;
+    }
+    const target = activeDrag.hoverCell;
+    const valid = target?.classList.contains('drop-valid') ?? false;
+    if (valid && target && !activeDrag.cancelled) {
+      const to: ClipSlot = {
+        laneId:  target.dataset.laneId!,
+        clipIdx: Number(target.dataset.clipIdx),
+      };
+      cb.onMoveClip(activeDrag.source, to, e.ctrlKey);
+    }
+    teardownDrag();
+  };
+  cell.addEventListener('pointerup', finish);
+  cell.addEventListener('pointercancel', finish);
+}
+
+function cancelDrag(): void {
+  if (!activeDrag) return;
+  activeDrag.cancelled = true;
+  teardownDrag();
+}
+
+function teardownDrag(): void {
+  if (!activeDrag) return;
+  document.removeEventListener('keydown', activeDrag.onKey);
+  document.removeEventListener('keyup', activeDrag.onKey);
+  if (activeDrag.ghost) activeDrag.ghost.remove();
+  document.querySelectorAll('.session-cell.drop-valid, .session-cell.drop-invalid')
+    .forEach((el) => el.classList.remove('drop-valid', 'drop-invalid'));
+  document.querySelectorAll('.session-cell.drop-source')
+    .forEach((el) => el.classList.remove('drop-source'));
+  document.body.classList.remove('drag-copy');
+  activeDrag = null;
+}
+
+function buildGhost(cell: HTMLElement): HTMLElement {
+  const g = cell.cloneNode(true) as HTMLElement;
+  g.className = 'session-ghost';
+  g.style.position = 'fixed';
+  g.style.pointerEvents = 'none';
+  g.style.width  = `${cell.offsetWidth}px`;
+  g.style.height = `${cell.offsetHeight}px`;
+  g.style.zIndex = '9999';
+  return g;
+}
+
+function positionGhost(g: HTMLElement, x: number, y: number): void {
+  g.style.left = `${x - g.offsetWidth / 2}px`;
+  g.style.top  = `${y - g.offsetHeight / 2}px`;
+}
+
+function updateHover(x: number, y: number, source: ClipSlot, cb: SessionUICallbacks): void {
+  const el = document.elementFromPoint(x, y);
+  const cell = el?.closest('.session-cell') as HTMLElement | null;
+  if (activeDrag!.hoverCell && activeDrag!.hoverCell !== cell) {
+    activeDrag!.hoverCell.classList.remove('drop-valid', 'drop-invalid');
+  }
+  activeDrag!.hoverCell = cell;
+  if (!cell || !currentState) return;
+  const to: ClipSlot = {
+    laneId:  cell.dataset.laneId ?? '',
+    clipIdx: Number(cell.dataset.clipIdx ?? -1),
+  };
+  if (!to.laneId || to.clipIdx < 0) return;
+  const ok = canDropClip(currentState, source, to);
+  cell.classList.toggle('drop-valid', ok);
+  cell.classList.toggle('drop-invalid', !ok);
+  void cb;
 }
 
