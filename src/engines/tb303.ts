@@ -50,13 +50,22 @@ class TB303Voice implements Voice {
   constructor(
     private tb303: TB303,
     private voiceMods: Map<string, ModulatorVoice>,
+    private getModStates: () => import('../modulation/types').ModulatorState[],
   ) {}
 
   trigger(midi: number, time: number, opts: VoiceTriggerOptions): void {
-    // Fire modulator voices first so their AudioParam contributions land
-    // before the trigger envelope writes the filter/amp curves.
-    for (const mv of this.voiceMods.values()) {
-      mv.trigger(time, { gateDuration: opts.gateDuration, accent: opts.accent });
+    // Per-modulator trigger semantics:
+    //   ADSR → always re-triggered (envelope starts fresh per note).
+    //   LFO  → re-triggered only when state.trigger === 'note'; free mode
+    //          (the default) leaves the shared LFO oscillator running so
+    //          a 4/1 slow sweep is actually audible across a phrase.
+    const states = this.getModStates();
+    for (const [modId, mv] of this.voiceMods) {
+      const s = states.find((x) => x.id === modId);
+      if (!s) continue;
+      if (s.kind === 'adsr' || (s.kind === 'lfo' && s.trigger === 'note')) {
+        mv.trigger(time, { gateDuration: opts.gateDuration, accent: opts.accent });
+      }
     }
     this.tb303.trigger({
       freq: midiToFreq(midi),
@@ -74,7 +83,8 @@ class TB303Voice implements Voice {
   dispose(): void {
     if (this.binder) this.binder.disposeAll();
     if (this.laneId) disposeLaneModulations(this.laneId);
-    for (const mv of this.voiceMods.values()) mv.dispose();
+    // voiceMods are engine-owned; the engine disposes them on its own
+    // disposal path. Disposing here would tear down the shared LFO state.
   }
 
   getAudioParams(): Map<string, AudioParam> {
@@ -134,6 +144,12 @@ export class TB303Engine implements SynthEngine {
 
   private pending = new PendingBaseValues();
 
+  /** Engine-wide modulator voices. Spawned lazily on the first createVoice
+   *  call and REUSED across every subsequent trigger — the TB-303 is
+   *  monophonic and creating fresh LFO oscillators per note would reset
+   *  the phase every ~100 ms (see tb303-shared-mods.test.ts). */
+  private engineModVoices: Map<string, ModulatorVoice> | null = null;
+
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
     let tb = this.instances.get(output);
     if (!tb) {
@@ -143,13 +159,15 @@ export class TB303Engine implements SynthEngine {
     this.lastInstance = tb;
     this.pending.flush((id, v) => this.setBaseValue(id, v));
 
-    const voiceMods = this.modHost.spawnVoice(ctx, () => this.bpm);
-    recordVoiceMods(voiceMods);
-    const voice = new TB303Voice(tb, voiceMods);
+    if (!this.engineModVoices) {
+      this.engineModVoices = this.modHost.spawnVoice(ctx, () => this.bpm);
+    }
+    recordVoiceMods(this.engineModVoices);
+    const voice = new TB303Voice(tb, this.engineModVoices, () => this.modHost.modulators);
     const laneId = getCurrentLaneForVoice();
     if (laneId) {
       voice.laneId = laneId;
-      voice.binder = bindVoiceModulators({ laneId, engine: this, voice, voiceMods, ctx });
+      voice.binder = bindVoiceModulators({ laneId, engine: this, voice, voiceMods: this.engineModVoices, ctx });
       this.currentLaneId = laneId;
     }
     return voice;
