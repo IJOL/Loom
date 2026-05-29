@@ -535,7 +535,7 @@ const arpUIDeps: ArpUIDeps = {
 // First build with whatever lanes exist now (built-ins only); a second build
 // runs after the demo loads so dynamically-added lanes (Sub 2 etc.) show up.
 const fxUIDeps: FxUIDeps = {
-  fx, filterChain, getBpm: () => seq.bpm, registerKnob,
+  fx, filterChain, masterComp, getBpm: () => seq.bpm, registerKnob,
   // Late-bound via getter so historyDeps is resolved at event-fire time.
   get historyDeps() { return _discreteHistoryDeps; },
 };

@@ -73,6 +73,7 @@ export const SYNC_OPTS: Array<{ value: SyncDiv; label: string }> = [
 export interface FxUIDeps {
   fx: FxBus;
   filterChain: FilterChain;
+  masterComp: import('./fx').MasterCompressor;
   getBpm: () => number;
   registerKnob: (k: KnobHandle) => void;
   /** Optional undo history deps. When present, knob drags/wheel/dblclick
@@ -220,6 +221,44 @@ export function wireFxUI(deps: FxUIDeps): void {
   appendKnob(dlyRow, { id: 'fx.delay.damp', min: 200, max: 16000, step: 50, value: deps.fx.getDelayDamping(), defaultValue: 4500,
     label: 'DAMP', color: dlyColor, size: SIZE, format: (v) => `${Math.round(v)}Hz`,
     onChange: (v) => deps.fx.setDelayDamping(v) }, deps.registerKnob, undoHooks);
+
+  // MASTER COMP
+  const mcRow = document.getElementById('fx-master-comp-knobs') as HTMLDivElement;
+  const mcColor = '#1abc9c';
+  const fmtDbSigned = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
+  const fmtRatio = (v: number) => `${v.toFixed(1)}:1`;
+  const mc = deps.masterComp;
+  const init = mc.getState();
+
+  appendKnob(mcRow, { id: 'fx.mcomp.thr',  min: -60, max: 0,  step: 0.5,   value: init.threshold, defaultValue: -24,
+    label: 'THR',  color: mcColor, size: SIZE, format: fmtDbSigned,
+    onChange: (v) => mc.setState({ threshold: v }) }, deps.registerKnob, undoHooks);
+  appendKnob(mcRow, { id: 'fx.mcomp.rat',  min: 1,   max: 20, step: 0.1,   value: init.ratio,     defaultValue: 4,
+    label: 'RAT',  color: mcColor, size: SIZE, format: fmtRatio,
+    onChange: (v) => mc.setState({ ratio: v }) }, deps.registerKnob, undoHooks);
+  appendKnob(mcRow, { id: 'fx.mcomp.atk',  min: 0.001, max: 1, step: 0.001, value: init.attack,   defaultValue: 0.003,
+    label: 'ATK',  color: mcColor, size: SIZE, format: (v) => v < 1 ? `${Math.round(v*1000)}ms` : `${v.toFixed(2)}s`,
+    onChange: (v) => mc.setState({ attack: v }) }, deps.registerKnob, undoHooks);
+  appendKnob(mcRow, { id: 'fx.mcomp.rel',  min: 0.001, max: 1, step: 0.001, value: init.release,  defaultValue: 0.25,
+    label: 'REL',  color: mcColor, size: SIZE, format: (v) => v < 1 ? `${Math.round(v*1000)}ms` : `${v.toFixed(2)}s`,
+    onChange: (v) => mc.setState({ release: v }) }, deps.registerKnob, undoHooks);
+  appendKnob(mcRow, { id: 'fx.mcomp.knee', min: 0,   max: 40, step: 0.5,   value: init.knee,     defaultValue: 30,
+    label: 'KNEE', color: mcColor, size: SIZE, format: fmtDbSigned,
+    onChange: (v) => mc.setState({ knee: v }) }, deps.registerKnob, undoHooks);
+  appendKnob(mcRow, { id: 'fx.mcomp.mkup', min: 0,   max: 4,  step: 0.01,  value: init.makeup,   defaultValue: 1,
+    label: 'MKUP', color: mcColor, size: SIZE, format: (v) => `${v.toFixed(2)}×`,
+    onChange: (v) => mc.setState({ makeup: v }) }, deps.registerKnob, undoHooks);
+
+  const mcByp = document.createElement('button');
+  mcByp.className = 'rnd master-comp-bypass';
+  mcByp.textContent = 'BYP';
+  mcByp.classList.toggle('active', init.bypass);
+  mcByp.addEventListener('click', () => {
+    const next = !mc.getState().bypass;
+    mc.setState({ bypass: next });
+    mcByp.classList.toggle('active', next);
+  });
+  mcRow.appendChild(mcByp);
 
   // Add Filter button
   (document.getElementById('fx-add-filter') as HTMLButtonElement).addEventListener('click', () => {
