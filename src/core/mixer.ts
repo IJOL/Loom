@@ -12,6 +12,7 @@ import type { ChannelStrip } from './fx';
 import { createKnob, type KnobHandle } from './knob';
 import { attachKnobUndo, type HistoryDeps } from '../save/history-wiring';
 import { createSelectControl } from './select-control';
+import { DEFAULT_SIDECHAIN_STATE } from './comp-state';
 import type { CompState, SidechainState } from './comp-state';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
@@ -259,6 +260,17 @@ function buildSidechainSection(
     ...deps.sidechainBus.listSources(trackId).map((s) => ({ value: s.id, label: s.label })),
   ];
 
+  // SRC options are baked at construction. The session host rebuilds the
+  // mixer row on lane add/remove, so a live `bus.subscribe()` here would
+  // leak across rebuilds without changing user-visible behavior.
+
+  const knobs = document.createElement('div');
+  knobs.className = 'mix-sc-knobs';
+
+  const reflectSource = () => {
+    knobs.style.display = current()?.source ? '' : 'none';
+  };
+
   const initialSrc = current()?.source ?? '';
   const sel = createSelectControl({
     id: `mix.${trackId}.sc.src`,
@@ -266,32 +278,16 @@ function buildSidechainSection(
     options: buildOptions(),
     initialValue: initialSrc,
     onChange: (v) => {
-      const cur = current() ?? { source: '', depth: 0.6, attack: 0.005, release: 0.25, threshold: -40 };
+      const cur = current() ?? { ...DEFAULT_SIDECHAIN_STATE };
       if (v === '') strip.setSidechain(deps.sidechainBus, null);
       else          strip.setSidechain(deps.sidechainBus, { ...cur, source: v });
+      reflectSource();
     },
   });
   sec.appendChild(sel.el);
   deps.registerKnob(sel.handle);
 
-  // Subscribe to bus changes so newly-registered lanes show up live.
-  deps.sidechainBus.subscribe(() => {
-    const newOpts = buildOptions();
-    const nativeSel = sel.el as HTMLSelectElement;
-    if (nativeSel.tagName === 'SELECT') {
-      const keep = nativeSel.value;
-      nativeSel.innerHTML = '';
-      for (const o of newOpts) {
-        const optEl = document.createElement('option');
-        optEl.value = o.value;
-        optEl.textContent = o.label;
-        nativeSel.appendChild(optEl);
-      }
-      nativeSel.value = newOpts.some((o) => o.value === keep) ? keep : '';
-    }
-  });
-
-  addKnob(sec, deps, {
+  addKnob(knobs, deps, {
     id: `mix.${trackId}.sc.depth`, label: 'DEPTH', min: 0, max: 1, step: 0.01,
     value: current()?.depth ?? 0.6, defaultValue: 0.6, color, format: fmtPct,
     onChange: (v) => {
@@ -299,7 +295,7 @@ function buildSidechainSection(
       strip.setSidechain(deps.sidechainBus, { ...cur, depth: v });
     },
   });
-  addKnob(sec, deps, {
+  addKnob(knobs, deps, {
     id: `mix.${trackId}.sc.atk`, label: 'ATK', min: 0.001, max: 0.5, step: 0.001,
     value: current()?.attack ?? 0.005, defaultValue: 0.005, color,
     format: (v) => `${Math.round(v * 1000)}ms`,
@@ -308,7 +304,7 @@ function buildSidechainSection(
       strip.setSidechain(deps.sidechainBus, { ...cur, attack: v });
     },
   });
-  addKnob(sec, deps, {
+  addKnob(knobs, deps, {
     id: `mix.${trackId}.sc.rel`, label: 'REL', min: 0.005, max: 1, step: 0.005,
     value: current()?.release ?? 0.25, defaultValue: 0.25, color,
     format: (v) => v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed(2)}s`,
@@ -317,6 +313,8 @@ function buildSidechainSection(
       strip.setSidechain(deps.sidechainBus, { ...cur, release: v });
     },
   });
+  sec.appendChild(knobs);
+  reflectSource();
 
   return sec;
 }
