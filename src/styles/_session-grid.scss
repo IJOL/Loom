@@ -72,10 +72,12 @@
 .session-cell-empty:hover { border-style: solid; border-color: var(--amber); }
 .session-cell-filled {
   background: var(--surface-3);
-  color: var(--text);
+  // Text + play icon stay dark so they read against the pastel palette
+  // (`clip.color`) painted as inline backgroundColor.
+  color: #111;
   border: 1px solid var(--border);
 }
-.session-cell-filled:hover { background: var(--surface-2); border-color: var(--amber); }
+.session-cell-filled:hover { border-color: var(--amber); }
 .session-cell-playing {
   outline: 2px solid var(--red);
   outline-offset: -2px;
@@ -86,8 +88,8 @@
   from { outline: 2px solid var(--amber); outline-offset: -2px; }
   to   { outline: 2px solid #b07418; outline-offset: -2px; }
 }
-.session-cell-label { flex: 1; }
-.session-cell-play  { opacity: 0.6; }
+.session-cell-label { flex: 1; color: inherit; }
+.session-cell-play  { opacity: 0.85; color: inherit; }
 .session-scenes-header {
   text-align: center;
   font-size: 11px;
