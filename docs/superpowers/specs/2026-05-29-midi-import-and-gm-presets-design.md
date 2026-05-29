@@ -169,7 +169,13 @@ export function midiToSession(
   parsed: ParsedMidi,
   opts: {
     selectedTrackIndices: number[];
-    rng: () => number;
+    /** Caller-decided mapping per track index → engine+preset. The MIDI
+     *  importer no longer rolls the dice; the UI offers the user a default
+     *  (suggestDefaultMapping) and lets them override per track. */
+    presetPerTrack: Record<number, GMMatch>;
+    /** Drum-kit preset for the drums lane (from ch10 program change or
+     *  user pick). null means: leave the existing drum kit alone. */
+    drumKitMatch: GMMatch | null;
   }
 ): MidiImportResult;
 ```
@@ -178,24 +184,86 @@ Internal logic:
 - Compute `globalMinStart` across all selected tracks; subtract so tick 0 = song start.
 - Convert MIDI ticks to Session ticks via `TICKS_PER_QUARTER / parsed.division` (Session's `TICKS_PER_QUARTER` constant from [src/core/notes.ts](../../../src/core/notes.ts)).
 - Compute `lengthBars = ceil(songEndSessionTicks / TICKS_PER_BAR)`.
-- For each tonal track: pick `(engineId, presetName)` via `pickPresetForGM(track.program, rng)`. Build `SessionLane` with that engineId; build one `SessionClip` of `lengthBars` containing all the track's notes as `NoteEvent[]`.
-- Drum track(s): merge all ch10 notes from all selected tracks into one `SessionClip` of `lengthBars`. If any selected track has a program-change on ch10, call `pickDrumKitForGM` for it.
+- For each tonal track: look up `(engineId, presetName)` in `presetPerTrack[trackIndex]`. Build `SessionLane` with that engineId; build one `SessionClip` of `lengthBars` containing all the track's notes as `NoteEvent[]`.
+- Drum track(s): merge all ch10 notes from all selected tracks into one `SessionClip` of `lengthBars`. The kit comes from `drumKitMatch` (the UI fills this from program change or user override).
 - Build `SessionScene { clipPerLane, presetPerLane, name: 'MIDI: <filename>' }`. `presetPerLane` keyed by lane id, values `'factory:<presetName>'`.
 
-**`src/midi/midi-import-ui.ts`** — DOM glue:
-1. Wire file input: read file → `parseMidiFile` → render track checklist (current UX preserved).
-2. "Load" button → run `midiToSession` with selected indices and `Math.random` as rng.
-3. Show **Add / Replace / Cancel** modal.
-4. On Add:
-   - Append `newLanes` to `session.lanes`.
-   - Append `scene` to `session.scenes`.
-   - If `drumClip`: find existing drums lane → append `drumClip` to its `clips` array (do not overwrite existing drum clips); set `scene.clipPerLane[drumLaneId] = newClipIndex`. If no drums lane exists, skip drum content (warn in console).
-   - If `drumKitMatch`: apply that kit preset to the drums lane.
-5. On Replace:
-   - Preserve the existing drums lane reference, then set `session.lanes = [drumsLane, ...newLanes]` and `session.scenes = [scene]`. Existing drum clips on the preserved lane are kept; the new `drumClip` is appended as in Add.
+### Importer UI: per-track preset picker + audition
+
+`gm-lookup` also exposes:
+
+```ts
+/** Build a starting-point mapping for the UI: each tonal track's program
+ *  resolved to its first GM match (or poly/Init fallback). Drum-channel
+ *  tracks are routed through pickDrumKitForGM. The user can override
+ *  any entry in the UI before import. */
+export function suggestDefaultMapping(
+  parsed: ParsedMidi,
+  selectedTrackIndices: number[],
+): { presetPerTrack: Record<number, GMMatch>; drumKitMatch: GMMatch | null };
+```
+
+`src/midi/midi-import-ui.ts` — DOM glue:
+
+1. **Pick file** → `parseMidiFile` → render the track list.
+2. **Per-track row** shows: checkbox, track index/name, note count, MIDI range, original GM program. Plus two new controls:
+   - **Engine + preset dropdown** — pre-filled with the suggested default; the option list is built from `findGMMatches(track.program)` (every preset across all engines that covers that GM), with each option labelled `engineId / presetName`. A trailing entry `(other…)` opens a full list of *every* preset across engines for manual override.
+   - **Audition button** — plays a short 3-note arpeggio (C-E-G at MIDI 60-64-67) through a hidden, ephemeral voice created from the currently selected `(engineId, presetName)`. No session state is touched.
+3. **Import button** → call `midiToSession(parsed, { selectedTrackIndices, presetPerTrack, drumKitMatch })`. Then show the **Add / Replace / Cancel** modal.
+4. On Add: append `newLanes`, append `scene`, fold `drumClip` into the existing drums lane (append to its `clips`, update `scene.clipPerLane`). If no drums lane and the MIDI has drums, warn in console.
+5. On Replace: preserve drums lane, `session.lanes = [drumsLane, ...newLanes]`, `session.scenes = [scene]`. Fold `drumClip` as in Add.
 6. Apply BPM: `if (bpm) transport.setBpm(bpm)`.
 7. Apply preset on each new lane via `applyPresetToLane`.
 8. Auto-launch the new scene.
+
+#### Audition implementation sketch
+
+```ts
+async function auditionPreset(match: GMMatch, ctx: AudioContext, output: AudioNode): Promise<void> {
+  const engine = createEngineInstance(match.engineId);
+  if (!engine) return;
+  engine.applyPreset(match.presetName);
+  const voice = engine.createVoice(ctx, output);
+  const t0 = ctx.currentTime + 0.02;
+  const step = 0.18;
+  for (let i = 0; i < 3; i++) {
+    voice.trigger(60 + i * 2, t0 + i * step, { gateDuration: 0.15, velocity: 100 });
+    voice.release(t0 + i * step + 0.15);
+  }
+  setTimeout(() => { voice.dispose(); engine.dispose(); }, (3 * step + 0.3) * 1000);
+}
+```
+
+The audition keeps no global state: a fresh engine instance, a single voice, a short timed release, then dispose. The output node is the same destination the session uses (no extra mixing).
+
+### Pre-baked demos from fixture MIDIs
+
+`tests/fixtures/midi/` holds reference MIDIs used by tests and as the source of pre-baked demos:
+
+- `sweet-dreams.mid` — Eurythmics, the user's flagship demo, top priority for "sounds good" mapping.
+- `mgmt-kids.mid`
+- `solid-sessions-janeiro.mid`
+- `untitled.mid`
+
+A script `scripts/bake-midi-demo.mjs <fixture-name>` runs the importer in headless mode with a hand-curated mapping JSON next to each fixture (`tests/fixtures/midi/<name>.mapping.json`) and writes the resulting SessionState to `public/demos/<name>.json`. The existing `minimal-techno.json` demo stays; the new MIDI-derived demos appear next to it.
+
+The demo picker in the main UI (current implementation loads only `minimal-techno.json`) gets a small dropdown listing every `.json` under `public/demos/`. Selecting one calls `fetchDemoSession` and `applyLoadedSessionState`.
+
+#### Mapping JSON format
+
+```json
+{
+  "fixture": "sweet-dreams.mid",
+  "selectedTrackIndices": [1, 2, 3, 4],
+  "presetPerTrack": {
+    "1": { "engineId": "subtractive", "presetName": "LEAD Bright Saw" },
+    "2": { "engineId": "tb303", "presetName": "BASS Acid Dark" }
+  },
+  "drumKitMatch": { "engineId": "drums", "presetName": "KIT 909" }
+}
+```
+
+The `bake-midi-demo` script reads the mapping, parses the MIDI with `parseMidiFile`, runs `midiToSession`, and writes the resulting `SessionState` to `public/demos/<name>.json`. Re-running the script regenerates the demo from the same mapping (idempotent).
 
 ### Cleanup of legacy code
 

@@ -759,6 +759,7 @@ Expected: module-not-found failure.
 
 ```ts
 import { listEngines } from '../engines/registry';
+import type { ParsedMidi } from './midi-parse';
 
 export interface GMMatch {
   engineId: string;
@@ -769,16 +770,33 @@ export function findGMMatches(program: number): GMMatch[] {
   const out: GMMatch[] = [];
   for (const eng of listEngines()) {
     for (const p of eng.presets ?? []) {
-      if (p.gm.includes(program)) out.push({ engineId: eng.id, presetName: p.name });
+      if ((p.gm ?? []).includes(program)) out.push({ engineId: eng.id, presetName: p.name });
     }
   }
   return out;
 }
 
+/** First match for `program` across all engines, or poly/Init fallback.
+ *  Used as the default suggestion in the importer UI. */
+export function firstMatchForGM(program: number): GMMatch {
+  const matches = findGMMatches(program);
+  return matches[0] ?? { engineId: 'poly', presetName: 'Init' };
+}
+
+/** Random pick — retained for tests + headless baking, NOT used by the
+ *  importer UI (which uses firstMatchForGM as default and lets the user
+ *  override per track). */
 export function pickPresetForGM(program: number, rng: () => number): GMMatch {
   const matches = findGMMatches(program);
   if (matches.length === 0) return { engineId: 'poly', presetName: 'Init' };
   return matches[Math.floor(rng() * matches.length)];
+}
+
+/** First drum-engine match for the given program (GM Drum Kit number),
+ *  or KIT Standard fallback. */
+export function firstDrumKitForGM(program: number): GMMatch {
+  const matches = findGMMatches(program).filter((m) => m.engineId === 'drums');
+  return matches[0] ?? { engineId: 'drums', presetName: 'KIT Standard' };
 }
 
 export function pickDrumKitForGM(program: number, rng: () => number): GMMatch {
@@ -786,7 +804,33 @@ export function pickDrumKitForGM(program: number, rng: () => number): GMMatch {
   if (matches.length === 0) return { engineId: 'drums', presetName: 'KIT Standard' };
   return matches[Math.floor(rng() * matches.length)];
 }
+
+/** Build a starting-point mapping for the importer UI. Each selected
+ *  tonal track gets `firstMatchForGM(track.program)`; drum tracks
+ *  contribute `firstDrumKitForGM(program)`. The UI then lets the user
+ *  override per row before pressing Import. */
+export function suggestDefaultMapping(
+  parsed: ParsedMidi,
+  selectedTrackIndices: number[],
+): { presetPerTrack: Record<number, GMMatch>; drumKitMatch: GMMatch | null } {
+  const presetPerTrack: Record<number, GMMatch> = {};
+  let drumKitMatch: GMMatch | null = null;
+  for (const idx of selectedTrackIndices) {
+    const tr = parsed.tracks.find((t) => t.index === idx);
+    if (!tr) continue;
+    const isDrum = tr.notes.some((n) => n.channel === 9);
+    if (isDrum) {
+      if (tr.program >= 0 && drumKitMatch === null) drumKitMatch = firstDrumKitForGM(tr.program);
+    } else {
+      const prog = tr.program < 0 ? 0 : tr.program;
+      presetPerTrack[idx] = firstMatchForGM(prog);
+    }
+  }
+  return { presetPerTrack, drumKitMatch };
+}
 ```
+
+Add test cases for `firstMatchForGM`, `firstDrumKitForGM`, and `suggestDefaultMapping` (using the same `vi.mock('../engines/registry', ...)` setup as the random-pick tests).
 
 - [ ] **Step 4: Run tests — confirm pass**
 
@@ -1107,10 +1151,12 @@ git commit -m "feat(midi): pure SMF parser module with tempo extraction"
 
 Read `src/core/notes.ts` for `TICKS_PER_STEP`, `TICKS_PER_QUARTER` (or whichever names exist) and `src/session/session.ts` for `SessionLane`, `SessionClip`, `SessionScene`, `NoteEvent`. Use the current names.
 
+**Signature change vs spec v1:** `midiToSession` no longer takes `rng`. The caller (importer UI) builds a `presetPerTrack: Record<number, GMMatch>` mapping (one entry per selected tonal track index) and a `drumKitMatch: GMMatch | null`, then passes both. The UI gets default values from `suggestDefaultMapping` and lets the user override per track before calling.
+
 - [ ] **Step 2: Write failing test**
 
 ```ts
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { midiToSession } from './midi-to-session';
 import type { ParsedMidi } from './midi-parse';
 
@@ -1122,14 +1168,18 @@ vi.mock('../engines/registry', () => ({
 }));
 
 describe('midiToSession', () => {
-  it('creates one lane per selected tonal track with the GM-picked preset', () => {
+  it('creates one lane per selected tonal track using presetPerTrack', () => {
     const parsed: ParsedMidi = {
       division: 96, bpm: 128,
       tracks: [
         { index: 0, name: 'Bass', program: 33, notes: [{ startTick: 0, duration: 48, midi: 36, velocity: 90, channel: 0 }] },
       ],
     };
-    const result = midiToSession(parsed, { selectedTrackIndices: [0], rng: () => 0 });
+    const result = midiToSession(parsed, {
+      selectedTrackIndices: [0],
+      presetPerTrack: { 0: { engineId: 'tb303', presetName: 'BASS Acid Classic' } },
+      drumKitMatch: null,
+    });
     expect(result.newLanes).toHaveLength(1);
     expect(result.newLanes[0].engineId).toBe('tb303');
     expect(result.newLanes[0].clips).toHaveLength(1);
@@ -1149,28 +1199,34 @@ describe('midiToSession', () => {
           ] },
       ],
     };
-    const result = midiToSession(parsed, { selectedTrackIndices: [0], rng: () => 0 });
+    const result = midiToSession(parsed, {
+      selectedTrackIndices: [0],
+      presetPerTrack: {},
+      drumKitMatch: { engineId: 'drums', presetName: 'KIT 808' },
+    });
     expect(result.drumClip).not.toBeNull();
     expect(result.drumClip!.notes).toHaveLength(2);
     expect(result.newLanes).toHaveLength(0); // ch10 track does not create a new lane
+    expect(result.drumKitMatch).toEqual({ engineId: 'drums', presetName: 'KIT 808' });
   });
 
-  it('falls back to poly/Init when no GM match', () => {
+  it('honours an explicit override even when presetPerTrack contradicts GM', () => {
     const parsed: ParsedMidi = {
       division: 96, bpm: null,
       tracks: [
-        { index: 0, name: 'X', program: 127, notes: [{ startTick: 0, duration: 48, midi: 60, velocity: 80, channel: 0 }] },
+        { index: 0, name: 'X', program: 33, notes: [{ startTick: 0, duration: 48, midi: 60, velocity: 80, channel: 0 }] },
       ],
     };
-    const result = midiToSession(parsed, { selectedTrackIndices: [0], rng: () => 0 });
+    const result = midiToSession(parsed, {
+      selectedTrackIndices: [0],
+      presetPerTrack: { 0: { engineId: 'poly', presetName: 'Init' } },
+      drumKitMatch: null,
+    });
     expect(result.newLanes[0].engineId).toBe('poly');
     expect(result.scene.presetPerLane?.[result.newLanes[0].id]).toBe('factory:Init');
-    expect(result.unmatchedTracks).toEqual([{ name: 'X', program: 127 }]);
   });
 });
 ```
-
-(Add `import { vi } from 'vitest'` at the top.)
 
 - [ ] **Step 3: Run — confirm failure**
 
@@ -1184,7 +1240,7 @@ import type { ParsedMidi } from './midi-parse';
 import type { SessionLane, SessionClip, SessionScene } from '../session/session';
 import type { NoteEvent } from '../core/notes';
 import { TICKS_PER_STEP } from '../core/notes';
-import { pickPresetForGM, pickDrumKitForGM, findGMMatches, type GMMatch } from './gm-lookup';
+import { findGMMatches, type GMMatch } from './gm-lookup';
 
 export interface MidiImportResult {
   newLanes: SessionLane[];
@@ -1204,10 +1260,14 @@ function nextId(prefix: string): string {
 
 export function midiToSession(
   parsed: ParsedMidi,
-  opts: { selectedTrackIndices: number[]; rng: () => number },
+  opts: {
+    selectedTrackIndices: number[];
+    presetPerTrack: Record<number, GMMatch>;
+    drumKitMatch: GMMatch | null;
+  },
 ): MidiImportResult {
   const selected = parsed.tracks.filter((t) => opts.selectedTrackIndices.includes(t.index));
-  const scale = (TICKS_PER_STEP * 4) / parsed.division; // assumes TICKS_PER_STEP = 24-tick 16th
+  const scale = (TICKS_PER_STEP * 4) / parsed.division;
 
   let globalMinStart = Infinity;
   let globalMaxEnd = 0;
@@ -1227,12 +1287,10 @@ export function midiToSession(
   const unmatchedTracks: { name: string; program: number }[] = [];
 
   const drumNotes: NoteEvent[] = [];
-  let drumKitMatch: GMMatch | null = null;
 
   for (const tr of selected) {
     const isDrum = tr.notes.some((n) => n.channel === 9);
     if (isDrum) {
-      if (tr.program >= 0) drumKitMatch = pickDrumKitForGM(tr.program, opts.rng);
       for (const n of tr.notes) if (n.channel === 9) {
         drumNotes.push({
           start: Math.round((n.startTick - globalMinStart) * scale),
@@ -1245,7 +1303,7 @@ export function midiToSession(
     }
 
     const prog = tr.program < 0 ? 0 : tr.program;
-    const match = pickPresetForGM(prog, opts.rng);
+    const match = opts.presetPerTrack[tr.index] ?? { engineId: 'poly', presetName: 'Init' };
     if (findGMMatches(prog).length === 0) unmatchedTracks.push({ name: tr.name, program: prog });
 
     const clipNotes: NoteEvent[] = tr.notes
@@ -1289,7 +1347,13 @@ export function midiToSession(
     presetPerLane,
   };
 
-  return { newLanes, scene, bpm: parsed.bpm, drumClip, drumKitMatch, unmatchedTracks };
+  return {
+    newLanes, scene,
+    bpm: parsed.bpm,
+    drumClip,
+    drumKitMatch: opts.drumKitMatch,
+    unmatchedTracks,
+  };
 }
 ```
 
@@ -1307,58 +1371,172 @@ git commit -m "feat(midi): pure ParsedMidi → SessionLanes+Scene transform"
 
 ---
 
-### Task E3: `midi-import-ui` — file picker, modal, session mutations
+### Task E3: `midi-import-ui` — per-track preset picker + audition + Add/Replace
 
 **Files:**
 - Create: `src/midi/midi-import-ui.ts`
-- Modify: `src/main.ts` (replace wireMidiImport call with new one)
+- Create: `src/midi/audition.ts` (small helper)
+- Modify: `src/main.ts` (replace `wireMidiImport(...)` with `wireMidiImportUI(...)`)
+- Possibly modify: `index.html` if the existing track-row markup can't carry the new dropdowns (likely needs zero changes — we build the row contents in JS)
 
-- [ ] **Step 1: Re-read current `wireMidiImport` deps**
+The UX is a rebuild of the importer panel:
 
-In `src/midi/midi-import.ts` note the DOM ids it grabs (`poly-midi-file`, `poly-midi-tracklist`, `poly-midi-load`). Reuse the same DOM scaffolding so HTML doesn't need changing.
+1. Pick a MIDI file → track list renders. Each non-empty track gets a row with:
+   - Checkbox (include in import)
+   - Track number, name, note count, range, original GM program
+   - **Engine + preset dropdown** — options come from `findGMMatches(track.program)` with a trailing `(other…)` opener for any-preset selection. Default selection comes from `suggestDefaultMapping`.
+   - **Audition button** — plays C-E-G (MIDI 60-64-67) through the currently selected preset; no session mutation.
+2. Below the track list: an **Import** button and a kit picker for drums (only shown if MIDI has ch10 notes).
+3. Click Import → Add/Replace/Cancel modal (existing pattern, kept as-is).
 
-- [ ] **Step 2: Implement `midi-import-ui.ts`**
+#### Step 1: Re-read current UI scaffolding
+
+Read `src/midi/midi-import.ts` to confirm the DOM ids (`poly-midi-file`, `poly-midi-tracklist`, `poly-midi-load`). Check `index.html` to verify those exist. We'll keep the same anchor points — we just render richer children inside them.
+
+#### Step 2: Implement `audition.ts`
+
+```ts
+import { createEngineInstance } from '../engines/registry';
+import type { GMMatch } from './gm-lookup';
+
+export function auditionPreset(match: GMMatch, ctx: AudioContext, output: AudioNode): void {
+  const engine = createEngineInstance(match.engineId);
+  if (!engine) return;
+  engine.applyPreset(match.presetName);
+  const voice = engine.createVoice(ctx, output);
+  const t0 = ctx.currentTime + 0.02;
+  const step = 0.18;
+  const gate = 0.15;
+  for (let i = 0; i < 3; i++) {
+    voice.trigger(60 + i * 2, t0 + i * step, { gateDuration: gate, velocity: 100 });
+    voice.release(t0 + i * step + gate);
+  }
+  // Dispose after the last note's release tail (≈300 ms safety margin)
+  setTimeout(() => { voice.dispose(); engine.dispose(); }, (3 * step + 0.5) * 1000);
+}
+```
+
+#### Step 3: Implement `midi-import-ui.ts`
 
 ```ts
 import { parseMidiFile, type ParsedMidi } from './midi-parse';
 import { midiToSession } from './midi-to-session';
+import { findGMMatches, suggestDefaultMapping, type GMMatch } from './gm-lookup';
+import { auditionPreset } from './audition';
 import { applyPresetToLane } from '../presets/preset-apply';   // Task F1
-import { isPresetsReady } from '../presets/preset-loader';
+import { isPresetsReady, getCachedPresets } from '../presets/preset-loader';
+import { listEngines } from '../engines/registry';
 import type { SessionState } from '../session/session';
 import type { Transport } from '../core/transport';
 
 export interface MidiImportUiDeps {
   session: SessionState;
   transport: Transport;
-  drumLaneId: string | null;          // existing drums lane in the session, or null
-  onSessionChanged: () => void;       // refresh UI
+  drumLaneId: string | null;
+  audioContext: AudioContext;
+  auditionOutput: AudioNode;
+  onSessionChanged: () => void;
   launchScene: (sceneId: string) => void;
   flashButton: (b: HTMLButtonElement, msg: string) => void;
 }
 
 export function wireMidiImportUI(deps: MidiImportUiDeps): void {
-  const fileInput  = document.getElementById('poly-midi-file')     as HTMLInputElement;
-  const trackListEl= document.getElementById('poly-midi-tracklist')as HTMLDivElement;
-  const loadBtn    = document.getElementById('poly-midi-load')     as HTMLButtonElement;
+  const fileInput   = document.getElementById('poly-midi-file')      as HTMLInputElement;
+  const trackListEl = document.getElementById('poly-midi-tracklist') as HTMLDivElement;
+  const loadBtn     = document.getElementById('poly-midi-load')      as HTMLButtonElement;
+
   let parsed: ParsedMidi | null = null;
+  let presetPerTrack: Record<number, GMMatch> = {};
+  let drumKitMatch: GMMatch | null = null;
+
+  function buildAllPresetsList(): GMMatch[] {
+    const out: GMMatch[] = [];
+    for (const eng of listEngines()) {
+      for (const p of getCachedPresets(eng.id)) out.push({ engineId: eng.id, presetName: p.name });
+    }
+    return out;
+  }
+
+  function buildPresetSelect(track: { index: number; program: number }, current: GMMatch): HTMLSelectElement {
+    const sel = document.createElement('select');
+    sel.className = 'midi-preset-picker';
+    const matches = findGMMatches(track.program);
+    const seen = new Set<string>();
+    function addOption(m: GMMatch, prefix = '') {
+      const key = `${m.engineId}/${m.presetName}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = `${prefix}${m.engineId} / ${m.presetName}`;
+      sel.appendChild(opt);
+    }
+    for (const m of matches) addOption(m);
+    const divider = document.createElement('option');
+    divider.disabled = true; divider.textContent = '── any preset ──';
+    sel.appendChild(divider);
+    for (const m of buildAllPresetsList()) addOption(m);
+    sel.value = `${current.engineId}/${current.presetName}`;
+    sel.addEventListener('change', () => {
+      const [engineId, ...rest] = sel.value.split('/');
+      presetPerTrack[track.index] = { engineId, presetName: rest.join('/') };
+    });
+    return sel;
+  }
+
+  function buildAuditionButton(getMatch: () => GMMatch): HTMLButtonElement {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'midi-audition';
+    btn.textContent = '▶';
+    btn.title = 'Audition this preset';
+    btn.addEventListener('click', () => {
+      auditionPreset(getMatch(), deps.audioContext, deps.auditionOutput);
+    });
+    return btn;
+  }
 
   fileInput.addEventListener('change', async () => {
     const f = fileInput.files?.[0]; if (!f) return;
     const buf = new Uint8Array(await f.arrayBuffer());
     try { parsed = parseMidiFile(buf); }
     catch (err) { alert('Not a valid SMF: ' + (err as Error).message); return; }
+
+    const initialIndices = parsed.tracks.filter((t) => t.notes.length > 0).map((t) => t.index);
+    const defaults = suggestDefaultMapping(parsed, initialIndices);
+    presetPerTrack = defaults.presetPerTrack;
+    drumKitMatch = defaults.drumKitMatch;
+
     trackListEl.innerHTML = '';
     for (const tr of parsed.tracks) {
       if (tr.notes.length === 0) continue;
       const lo = Math.min(...tr.notes.map((n) => n.midi));
       const hi = Math.max(...tr.notes.map((n) => n.midi));
-      const lbl = document.createElement('label');
-      lbl.className = 'midi-track-row';
+      const isDrum = tr.notes.some((n) => n.channel === 9);
+
+      const row = document.createElement('div');
+      row.className = 'midi-track-row';
       const cb = document.createElement('input');
       cb.type = 'checkbox'; cb.dataset.idx = String(tr.index); cb.checked = true;
-      const txt = document.createElement('span');
-      txt.textContent = ` [${tr.index}] ${tr.name || 'untitled'} — ${tr.notes.length} notes, range ${lo}-${hi}, prog ${tr.program}`;
-      lbl.append(cb, txt); trackListEl.appendChild(lbl);
+      const label = document.createElement('span');
+      label.textContent = ` [${tr.index}] ${tr.name || 'untitled'} — ${tr.notes.length} notes, ${lo}-${hi}, prog ${tr.program}${isDrum ? ' (DRUMS)' : ''}`;
+      row.append(cb, label);
+
+      if (!isDrum) {
+        const current = presetPerTrack[tr.index] ?? { engineId: 'poly', presetName: 'Init' };
+        const sel = buildPresetSelect(tr, current);
+        const audition = buildAuditionButton(() => presetPerTrack[tr.index] ?? current);
+        row.append(sel, audition);
+      } else if (drumKitMatch) {
+        const sel = buildPresetSelect({ index: tr.index, program: tr.program }, drumKitMatch);
+        sel.addEventListener('change', () => {
+          const [engineId, ...rest] = sel.value.split('/');
+          drumKitMatch = { engineId, presetName: rest.join('/') };
+        });
+        const audition = buildAuditionButton(() => drumKitMatch!);
+        row.append(sel, audition);
+      }
+      trackListEl.appendChild(row);
     }
     trackListEl.style.display = '';
     loadBtn.style.display = '';
@@ -1370,15 +1548,14 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
     if (!isPresetsReady()) { alert('Presets still loading, retry in a moment'); return; }
     const checks = Array.from(trackListEl.querySelectorAll<HTMLInputElement>('input[type=checkbox]:checked'));
     const indices = checks.map((cb) => parseInt(cb.dataset.idx ?? '', 10));
-    const result = midiToSession(parsed, { selectedTrackIndices: indices, rng: Math.random });
+    const result = midiToSession(parsed, { selectedTrackIndices: indices, presetPerTrack, drumKitMatch });
 
     const choice = window.confirm(
       `MIDI parsed: ${result.newLanes.length} tonal tracks` +
       (result.drumClip ? ' + drum clip' : '') +
       (result.bpm ? ` @ ${Math.round(result.bpm)} BPM` : '') +
-      `\n\nOK = Add to current session.\nCancel = Replace session.\n(Use browser Back to abort.)`
+      `\n\nOK = Add to current session.\nCancel = Replace session.`
     );
-
     const doAdd = choice;
 
     if (doAdd) {
@@ -1417,19 +1594,30 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
 }
 ```
 
-- [ ] **Step 3: Wire into `main.ts`**
+#### Step 4: Wire into `main.ts`
 
-Replace the old `wireMidiImport(...)` call with `wireMidiImportUI({ session, transport, drumLaneId, onSessionChanged, launchScene, flashButton })`. The deps `drumLaneId` is the id of the existing drums lane in the boot session.
+Replace any old `wireMidiImport(...)` call with `wireMidiImportUI({ session, transport, drumLaneId, audioContext, auditionOutput, onSessionChanged, launchScene, flashButton })`. The `auditionOutput` should be the same output node that voice lanes connect to (e.g., the master gain or session output), so auditions sound the same as imports.
 
-- [ ] **Step 4: Typecheck + manual test**
+#### Step 5: Typecheck
 
-Run: `npx tsc --noEmit`. Then `npm run dev` and try loading the test MIDI under `assets/` if present (or any small SMF). Verify: lanes appear, presets are applied, scene auto-launches, BPM changes.
+Run: `npx tsc --noEmit`
+Expected: clean.
 
-- [ ] **Step 5: Commit**
+#### Step 6: Smoke test
+
+Run: `npm run dev` (background). Load `tests/fixtures/midi/sweet-dreams.mid` from the file picker. Verify:
+- Each track row shows a dropdown defaulting to a sensible engine/preset
+- Audition button plays a short arpeggio without writing to the session
+- Changing the dropdown updates the choice; auditioning again uses the new choice
+- Import button creates lanes + a scene; auto-launching plays the song
+
+If you're in headless mode, skip the smoke test and note it; FINAL covers the manual audition.
+
+#### Step 7: Commit
 
 ```bash
-git add src/midi/midi-import-ui.ts src/main.ts
-git commit -m "feat(midi): import UI writes lanes/clips/scene with Add/Replace modal"
+git add src/midi/midi-import-ui.ts src/midi/audition.ts src/main.ts
+git commit -m "feat(midi): per-track preset picker + audition + Add/Replace modal"
 ```
 
 ---
@@ -1460,6 +1648,229 @@ Expected: clean.
 ```bash
 git commit -m "refactor(midi): remove legacy midi-import.ts (split into parse/transform/ui)"
 ```
+
+---
+
+### Task E5: `bake-midi-demo` script + demo picker UI
+
+**Files:**
+- Create: `scripts/bake-midi-demo.mjs`
+- Create: `src/demo/demo-picker.ts`
+- Modify: `src/main.ts` (replace single demo-load with picker wiring)
+- Modify: `index.html` (add a `<select id="demo-picker">` near the existing demo button if any, or wherever the demo controls live)
+
+#### Step 1: Implement the bake script
+
+`scripts/bake-midi-demo.mjs` runs in node and uses `node-web-audio-api` (already installed for DSP tests). It loads a fixture MIDI + its mapping JSON, runs the same `midiToSession` transform the UI uses, and writes the resulting SessionState to `public/demos/<name>.json`.
+
+```js
+#!/usr/bin/env node
+// Usage: npx tsx scripts/bake-midi-demo.mjs <fixtureName>
+//   <fixtureName>  e.g. "sweet-dreams" (resolves to tests/fixtures/midi/sweet-dreams.mid)
+//
+// Reads tests/fixtures/midi/<name>.mapping.json for the per-track preset choices.
+// Writes public/demos/<name>.json (a SessionState).
+
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { parseMidiFile } from '../src/midi/midi-parse.ts';
+import { midiToSession } from '../src/midi/midi-to-session.ts';
+
+const name = process.argv[2];
+if (!name) { console.error('usage: bake-midi-demo <fixtureName>'); process.exit(1); }
+
+const midiBuf = new Uint8Array(readFileSync(resolve('tests/fixtures/midi', `${name}.mid`)));
+const mapping = JSON.parse(readFileSync(resolve('tests/fixtures/midi', `${name}.mapping.json`), 'utf8'));
+const parsed = parseMidiFile(midiBuf);
+const result = midiToSession(parsed, {
+  selectedTrackIndices: mapping.selectedTrackIndices,
+  presetPerTrack: mapping.presetPerTrack ?? {},
+  drumKitMatch: mapping.drumKitMatch ?? null,
+});
+
+const sessionState = {
+  lanes: result.newLanes,
+  scenes: [result.scene],
+  globalQuantize: '1/1',
+};
+
+mkdirSync('public/demos', { recursive: true });
+writeFileSync(resolve('public/demos', `${name}.json`), JSON.stringify(sessionState, null, 2));
+console.log(`wrote public/demos/${name}.json — ${result.newLanes.length} lanes, ${result.drumClip ? 'with drums' : 'no drums'}, bpm ${result.bpm ?? '(none)'}`);
+```
+
+Note: this script bakes the per-track lanes but does NOT include the drum lane (Add/Replace logic from the UI lives in `midi-import-ui.ts`, not in the pure transform). For demos we deliberately keep the baked output bare-Session (lanes + scene) — the demo loader applies it via `applyLoadedSessionState` and the existing drums lane stays untouched. If you want a baked demo to include drums in the scene, post-process the JSON to merge `result.drumClip` onto a pre-existing drums lane id.
+
+#### Step 2: Implement the demo picker
+
+`src/demo/demo-picker.ts`:
+
+```ts
+import { fetchDemoSession } from './demo-loader';
+import type { SessionHost } from '../session/session-host';
+
+export interface DemoPickerDeps {
+  sessionHost: SessionHost;
+  selectEl: HTMLSelectElement;
+  demos: { label: string; path: string }[];
+}
+
+export function wireDemoPicker(deps: DemoPickerDeps): void {
+  const { sessionHost, selectEl, demos } = deps;
+  selectEl.innerHTML = '';
+  const placeholder = document.createElement('option');
+  placeholder.value = ''; placeholder.textContent = '— load a demo —';
+  selectEl.appendChild(placeholder);
+  for (const d of demos) {
+    const o = document.createElement('option');
+    o.value = d.path; o.textContent = d.label;
+    selectEl.appendChild(o);
+  }
+  selectEl.addEventListener('change', async () => {
+    if (!selectEl.value) return;
+    const state = await fetchDemoSession(selectEl.value);
+    sessionHost.applyLoadedSessionState(state);
+  });
+}
+```
+
+#### Step 3: Wire into `main.ts`
+
+Replace the hardcoded `fetchDemoSession('/demos/minimal-techno.json')` with a picker. List demos statically (we know which ones exist):
+
+```ts
+import { wireDemoPicker } from './demo/demo-picker';
+const demoPicker = document.getElementById('demo-picker') as HTMLSelectElement;
+if (demoPicker) {
+  wireDemoPicker({
+    sessionHost,
+    selectEl: demoPicker,
+    demos: [
+      { label: 'Minimal Techno',     path: '/demos/minimal-techno.json' },
+      { label: 'Sweet Dreams',       path: '/demos/sweet-dreams.json' },
+      { label: 'MGMT — Kids',        path: '/demos/mgmt-kids.json' },
+      { label: 'Solid Sessions — Janeiro', path: '/demos/solid-sessions-janeiro.json' },
+      { label: 'Untitled MIDI',      path: '/demos/untitled.json' },
+    ],
+  });
+}
+```
+
+The original auto-load of minimal-techno at boot can stay (so the user sees something working immediately) OR move to a picker-only flow. Leave the auto-load and let the picker replace whatever's loaded.
+
+#### Step 4: Add `<select id="demo-picker">` to `index.html`
+
+Find where the existing demo button or session controls live in `index.html`. Add nearby:
+
+```html
+<select id="demo-picker" class="demo-picker"></select>
+```
+
+Plus a small CSS rule in `style.css` for consistency with other selects (border, padding, font matching the controls bar).
+
+#### Step 5: Typecheck
+
+Run: `npx tsc --noEmit`
+Expected: clean.
+
+#### Step 6: Commit
+
+```bash
+git add scripts/bake-midi-demo.mjs src/demo/demo-picker.ts src/main.ts index.html style.css
+git commit -m "feat(demo): bake-midi-demo script + demo picker UI"
+```
+
+---
+
+### Task E6: Mapping JSONs + baked demos for fixtures
+
+**Files:**
+- Create: `tests/fixtures/midi/sweet-dreams.mapping.json` (priority)
+- Create: `tests/fixtures/midi/mgmt-kids.mapping.json`
+- Create: `tests/fixtures/midi/solid-sessions-janeiro.mapping.json`
+- Create: `tests/fixtures/midi/untitled.mapping.json`
+- Create: `public/demos/sweet-dreams.json` (output of bake)
+- Create: `public/demos/mgmt-kids.json`
+- Create: `public/demos/solid-sessions-janeiro.json`
+- Create: `public/demos/untitled.json`
+
+#### Step 1: Inspect each fixture to choose tracks
+
+For each fixture, run a one-liner to print the tracks:
+
+```bash
+node -e "
+  const fs = require('node:fs');
+  (async () => {
+    const { parseMidiFile } = await import('./src/midi/midi-parse.ts');
+    const buf = new Uint8Array(fs.readFileSync('tests/fixtures/midi/sweet-dreams.mid'));
+    const m = parseMidiFile(buf);
+    console.log('bpm:', m.bpm);
+    for (const t of m.tracks) {
+      if (t.notes.length === 0) continue;
+      console.log(\`[\${t.index}] \${t.name} — \${t.notes.length} notes, prog \${t.program}\`);
+    }
+  })();
+"
+```
+
+(`tsx`-friendly variant: `npx tsx -e "..."`.)
+
+#### Step 2: Write `sweet-dreams.mapping.json` (PRIORITY)
+
+This is the flagship demo. Spend more time getting good preset choices here. Example shape:
+
+```json
+{
+  "fixture": "sweet-dreams.mid",
+  "selectedTrackIndices": [1, 2, 3, 4],
+  "presetPerTrack": {
+    "1": { "engineId": "subtractive", "presetName": "LEAD Bright Saw" },
+    "2": { "engineId": "tb303",       "presetName": "BASS Acid Dark" },
+    "3": { "engineId": "poly",        "presetName": "PAD Detuned Strings" },
+    "4": { "engineId": "poly",        "presetName": "KEY Rhodes" }
+  },
+  "drumKitMatch": { "engineId": "drums", "presetName": "KIT 909" }
+}
+```
+
+Adjust based on what's actually in the MIDI — choose presets that fit the song's character. Audition each in the dev server if running interactively. Iterate.
+
+#### Step 3: Write the other three mappings
+
+For `mgmt-kids`, `solid-sessions-janeiro`, `untitled` — pick reasonable defaults. They're not flagship demos so less iteration is needed; the GM-suggested defaults from `suggestDefaultMapping` are a fine starting point. If the user wants to polish them later, they edit the mapping JSON and re-bake.
+
+#### Step 4: Bake each demo
+
+```bash
+npx tsx scripts/bake-midi-demo.mjs sweet-dreams
+npx tsx scripts/bake-midi-demo.mjs mgmt-kids
+npx tsx scripts/bake-midi-demo.mjs solid-sessions-janeiro
+npx tsx scripts/bake-midi-demo.mjs untitled
+```
+
+Each command writes `public/demos/<name>.json` and prints a one-line summary.
+
+#### Step 5: Smoke test in dev server
+
+Run: `npm run dev` (background). Open http://localhost:5173, pick each demo from the dropdown, verify it sounds.
+
+For headless execution, skip the smoke test and verify each JSON parses:
+
+```bash
+for f in sweet-dreams mgmt-kids solid-sessions-janeiro untitled; do
+  node -e "console.log(JSON.parse(require('fs').readFileSync('public/demos/$f.json','utf8')).lanes.length, 'lanes')"
+done
+```
+
+#### Step 6: Commit
+
+```bash
+git add tests/fixtures/midi/*.mid tests/fixtures/midi/*.mapping.json public/demos/*.json
+git commit -m "feat(demo): MIDI fixtures + baked demos (sweet-dreams flagship)"
+```
+
+If you skipped the dev-server smoke test, note that in the commit body.
 
 ---
 
