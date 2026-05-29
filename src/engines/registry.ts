@@ -47,3 +47,13 @@ export function listEngines(type?: 'polyhost' | 'tab'): SynthEngine[] {
   const all = Array.from(engines.values());
   return type ? all.filter((e) => e.type === type) : all;
 }
+
+/** Returns the set of automatable paramIds the engine exposes. Used by the
+ *  clip-ops layer to decide which envelopes on a moved/copied clip remain
+ *  enabled after crossing into a different engine. Unknown engineIds yield
+ *  an empty set. */
+export function getEngineParamIds(engineId: string): ReadonlySet<string> {
+  const eng = getEngine(engineId);
+  if (!eng) return new Set();
+  return new Set(eng.params.map((p) => p.id));
+}
