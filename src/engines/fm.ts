@@ -14,6 +14,7 @@ import { renderModulatorsPanel } from '../modulation/modulation-ui';
 import { bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
 import { ConnectionBinder } from '../modulation/connection-binder';
 import { wireEngineParams } from './engine-ui';
+import { getCachedPresets } from '../presets/preset-loader';
 
 interface FMAlgorithm {
   id: number;
@@ -284,40 +285,9 @@ export class FMEngine implements SynthEngine {
   readonly polyphony = 'poly' as const;
   readonly params = FM_PARAMS;
   readonly editor = 'piano-roll' as const;
-  readonly presets: import('./engine-types').EnginePreset[] = [
-    {
-      name: 'Bell',
-      params: {
-        'algorithm':    0,
-        'feedback':     0,
-        'op1.ratio':    1,    'op1.detune': 0, 'op1.level':   0.9,
-        'op1.attack':   0.005, 'op1.decay': 0.8, 'op1.sustain': 0,  'op1.release': 0.6,
-        'op2.ratio':    3.5,  'op2.detune': 0, 'op2.level':   0.6,
-        'op2.attack':   0.005, 'op2.decay': 0.4, 'op2.sustain': 0,  'op2.release': 0.3,
-        'op3.ratio':    7,    'op3.detune': 0, 'op3.level':   0.4,
-        'op3.attack':   0.005, 'op3.decay': 0.3, 'op3.sustain': 0,  'op3.release': 0.2,
-        'op4.ratio':    1,    'op4.detune': 5, 'op4.level':   0.3,
-        'op4.attack':   0.005, 'op4.decay': 0.4, 'op4.sustain': 0,  'op4.release': 0.2,
-        'amp.mix':      0.7,
-      },
-    },
-    {
-      name: 'E-Piano',
-      params: {
-        'algorithm':    0,
-        'feedback':     0.2,
-        'op1.ratio':    1,    'op1.detune': 0, 'op1.level':   0.9,
-        'op1.attack':   0.002, 'op1.decay': 1.2, 'op1.sustain': 0.3, 'op1.release': 0.5,
-        'op2.ratio':    2,    'op2.detune': 0, 'op2.level':   0.5,
-        'op2.attack':   0.002, 'op2.decay': 0.8, 'op2.sustain': 0.2, 'op2.release': 0.4,
-        'op3.ratio':    4,    'op3.detune': 0, 'op3.level':   0.25,
-        'op3.attack':   0.002, 'op3.decay': 0.4, 'op3.sustain': 0,   'op3.release': 0.3,
-        'op4.ratio':    1,    'op4.detune': 0, 'op4.level':   0.3,
-        'op4.attack':   0.002, 'op4.decay': 0.6, 'op4.sustain': 0.4, 'op4.release': 0.4,
-        'amp.mix':      0.7,
-      },
-    },
-  ];
+  get presets(): import('./engine-types').EnginePreset[] {
+    return getCachedPresets('fm');
+  }
 
   /** Tempo for LFO BPM sync. main.ts can update this at runtime. */
   bpm = 120;
