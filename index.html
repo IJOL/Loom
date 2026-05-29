@@ -15,7 +15,6 @@
       .copy-row,
       .copy-track-panel,
       .presets-panel,
-      .midi-panel,
       .row.tools,
       #loop-toggle,
       #chain-toggle,
@@ -111,15 +110,6 @@
         <label class="copy-chk"><input type="checkbox" id="copy-auto"> Auto</label>
         <button class="rnd primary" id="copy-go">Copy →</button>
       </div>
-
-      <details class="midi-panel">
-        <summary>MIDI Import</summary>
-        <div class="midi-import-row">
-          <input type="file" id="poly-midi-file" accept=".mid,.midi" />
-          <button class="rnd primary" id="poly-midi-load" style="display:none;">Load selected → extras</button>
-        </div>
-        <div id="poly-midi-tracklist" class="midi-tracklist" style="display:none;"></div>
-      </details>
 
       <div class="row tools">
         <div class="tool-group">
@@ -299,6 +289,14 @@
           <button class="rnd" id="session-launch-scene-1">▶ Scene 1 (debug)</button>
           <button class="rnd" id="session-stop-all">⏹ All</button>
           <select id="demo-picker" class="demo-picker"></select>
+          <details class="midi-panel">
+            <summary>MIDI Import</summary>
+            <div class="midi-import-row">
+              <input type="file" id="poly-midi-file" accept=".mid,.midi" />
+              <button class="rnd primary" id="poly-midi-load" style="display:none;">Import MIDI</button>
+            </div>
+            <div id="poly-midi-tracklist" class="midi-tracklist" style="display:none;"></div>
+          </details>
         </div>
         <div id="session-grid" class="session-grid">Session grid will render here.</div>
         <div id="session-inspector" class="session-inspector" hidden>
