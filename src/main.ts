@@ -33,9 +33,10 @@ import { importClassicToSession } from './session/session-migration';
 import { setupInitialPattern, type InitialPatternDeps } from './demo/initial-pattern';
 import { wireMidiImportUI } from './midi/midi-import-ui';
 import { launchScene as launchSceneRuntime } from './session/session-runtime';
+import { applyPresetToEngine } from './presets/preset-apply';
 import { wireSaveManager, bootRecoveryLoad } from './save/save-wiring';
 import {
-  wirePolyControls, wirePolyMode, applyPolyParams, applyPresetByName,
+  wirePolyControls, wirePolyMode, applyPolyParams,
   populatePolyPresetSelect, refreshPolyPresetSelect, polyPresetName,
   type PolySynthPresetsDeps, type PolyModeDeps,
 } from './polysynth/polysynth-presets';
@@ -726,35 +727,11 @@ const sessionHost = new SessionHost({
   laneResources,
   ensureLaneResource,
   applyPresetForLane: (laneId, presetName) => {
-    // presetName is a prefixed value like the dropdown uses:
-    //   factory:NAME → PolySynth FACTORY preset (subtractive lanes)
-    //   user:NAME    → PolySynth user-saved preset
-    //   engine:NAME  → SynthEngine.presets entry (flat id→value, used by
-    //                  tb303 / wavetable / fm / karplus etc.)
+    // presetName is a prefixed value matching the dropdown vocabulary
+    // (factory: / user: / engine:). See src/presets/preset-apply.ts.
     const inst = getLaneEngineInstance(laneId);
     if (!inst) return;
-    if (presetName.startsWith('factory:')) {
-      const bare = presetName.slice('factory:'.length);
-      const ps = (inst as { getPolySynth?(): PolySynth | null }).getPolySynth?.();
-      if (!ps) return;
-      applyPresetByName(ps, bare);
-    } else if (presetName.startsWith('user:')) {
-      // User presets live in localStorage; not relevant for JSON demos but
-      // supported for symmetry with the dropdown.
-      const bare = presetName.slice('user:'.length);
-      const ps = (inst as { getPolySynth?(): PolySynth | null }).getPolySynth?.();
-      if (!ps) return;
-      applyPresetByName(ps, bare);
-    } else if (presetName.startsWith('engine:')) {
-      const bare = presetName.slice('engine:'.length);
-      const preset = inst.presets.find((p) => p.name === bare);
-      if (!preset) return;
-      for (const [id, value] of Object.entries(preset.params)) {
-        (inst as unknown as { setBaseValue(id: string, v: number): void }).setBaseValue(id, value);
-      }
-    } else {
-      return;
-    }
+    applyPresetToEngine(inst, presetName);
     refreshPolyPresetSelect();
     refreshLaneKnobs(laneId, inst);
   },
@@ -999,19 +976,7 @@ function launchSceneById(sceneId: string): void {
     for (const [laneId, presetName] of Object.entries(scene.presetPerLane)) {
       const inst = getLaneEngineInstance(laneId);
       if (!inst) continue;
-      if (presetName.startsWith('factory:')) {
-        const bare = presetName.slice('factory:'.length);
-        const ps = (inst as { getPolySynth?(): PolySynth | null }).getPolySynth?.();
-        if (ps) applyPresetByName(ps, bare);
-      } else if (presetName.startsWith('engine:')) {
-        const bare = presetName.slice('engine:'.length);
-        const preset = inst.presets.find((p) => p.name === bare);
-        if (preset) {
-          for (const [pid, value] of Object.entries(preset.params)) {
-            (inst as unknown as { setBaseValue(id: string, v: number): void }).setBaseValue(pid, value);
-          }
-        }
-      }
+      applyPresetToEngine(inst, presetName);
     }
   }
   if (!seq.isPlaying()) { resetAutomationPosition(); seq.start(); playBtn.textContent = '■'; }
