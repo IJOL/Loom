@@ -28,6 +28,7 @@ import { buildMixerColumn } from './core/mixer';
 import * as laneTrackHelpers from './core/lane-display';
 import { SessionHost } from './session/session-host';
 import { fetchDemoSession } from './demo/demo-loader';
+import { wireDemoPicker } from './demo/demo-picker';
 import { importClassicToSession } from './session/session-migration';
 import { setupInitialPattern, type InitialPatternDeps } from './demo/initial-pattern';
 import { wireMidiImportUI } from './midi/midi-import-ui';
@@ -1072,6 +1073,26 @@ presetsLoaded
     console.error('Demo load failed; falling back to empty session.', err);
     buildArpUI(arpUIDeps);
   });
+
+// Demo picker: lets the user swap in any baked demo session (the auto-loaded
+// minimal-techno above remains the safe default). The MIDI-baked demos
+// (sweet-dreams, mgmt-kids, etc.) are produced by scripts/bake-midi-demo.mjs;
+// if they aren't baked yet, selecting one will 404 and the picker surfaces an
+// alert via its catch block.
+const demoPicker = document.getElementById('demo-picker') as HTMLSelectElement | null;
+if (demoPicker) {
+  wireDemoPicker({
+    sessionHost,
+    selectEl: demoPicker,
+    demos: [
+      { label: 'Minimal Techno',            path: '/demos/minimal-techno.json' },
+      { label: 'Sweet Dreams',              path: '/demos/sweet-dreams.json' },
+      { label: 'MGMT — Kids',               path: '/demos/mgmt-kids.json' },
+      { label: 'Solid Sessions — Janeiro',  path: '/demos/solid-sessions-janeiro.json' },
+      { label: 'Untitled MIDI',             path: '/demos/untitled.json' },
+    ],
+  });
+}
 // App is always in session mode — seq.sessionMode must be true at boot.
 seq.sessionMode = true;
 startVisualizer({ ctx, analyser, vizCanvas });
