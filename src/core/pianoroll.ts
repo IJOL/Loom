@@ -18,6 +18,12 @@ export interface PianoRollOpts {
    *  element's clientWidth, the playhead is kept centered by scrolling
    *  the wrapper underneath it (DAW-style "playhead follow"). */
   scrollContainer?: HTMLElement;
+  /** Called at the start of a user gesture that may mutate notes (pointerdown
+   *  or single-shot delete). Pair with onGestureEnd for undo bracketing. */
+  onGestureStart?: () => void;
+  /** Called at the end of the gesture (pointerup / pointercancel, or
+   *  immediately after a single-shot mutation) to commit the undo entry. */
+  onGestureEnd?: () => void;
 }
 
 export interface PianoRollHandle {
@@ -162,15 +168,23 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     if (rawX < KEYS_W) return; // ignore clicks on the keyboard column
 
     if (e.altKey || e.button === 2) {
+      // Single-shot delete: bracket the mutation so it becomes one undo entry.
       const hit = findNoteAt(tick, midi);
       if (hit) {
+        opts.onGestureStart?.();
         opts.setNotes(opts.getNotes().filter((n) => n !== hit));
         opts.onChange?.();
         draw();
+        opts.onGestureEnd?.();
       }
       e.preventDefault();
       return;
     }
+
+    // All drag gestures (move, resize, create-by-drag): snapshot once here
+    // at the top of pointerdown before any branching. commitGesture fires in
+    // endDrag (pointerup / pointercancel).
+    opts.onGestureStart?.();
 
     const hit = findNoteAt(tick, midi);
     if (hit) {
@@ -218,6 +232,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     if (!interaction) return;
     interaction = null;
     try { opts.canvas.releasePointerCapture(e.pointerId); } catch {}
+    opts.onGestureEnd?.();
   };
   opts.canvas.addEventListener('pointerup', endDrag);
   opts.canvas.addEventListener('pointercancel', endDrag);

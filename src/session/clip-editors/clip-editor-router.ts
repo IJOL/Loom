@@ -64,7 +64,7 @@ function buildPianoRoll(
   const setNotes = (notes: NoteEvent[]) => { clip.notes = notes; };
 
   const isBassLikeEngine = lane.engineId === 'tb303';
-  const { ctx, seq, laneStates } = deps;
+  const { ctx, seq, laneStates, historyDeps } = deps;
   return createPianoRoll({
     canvas,
     scrollContainer: scrollWrap,
@@ -83,5 +83,9 @@ function buildPianoRoll(
       const clipSteps = clip.lengthBars * 16;
       return (stepsElapsed % clipSteps) * TICKS_PER_STEP;
     },
+    ...(historyDeps ? {
+      onGestureStart: () => historyDeps.history.beginGesture(historyDeps.snapshot()),
+      onGestureEnd:   () => historyDeps.history.commitGesture(),
+    } : {}),
   });
 }
