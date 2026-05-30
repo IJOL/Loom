@@ -21,7 +21,8 @@ patch por defecto del nuevo motor.
 
 | Decisión | Resolución |
 |---|---|
-| Alcance | Solo motores melódicos: `tb303`, `subtractive`, `fm`, `wavetable`, `karplus` (todos editor `piano-roll`). `drums-machine` (editor `drum-grid`) queda fuera. |
+| Alcance | Los 5 motores melódicos (editor `piano-roll`): `tb303`, `subtractive`, `fm`, `wavetable`, `karplus`. `drums-machine` queda fuera por su `editor: 'drum-grid'` (aunque siga creable como canal nuevo). Swap **simétrico**: tb303 incluido como origen y destino. |
+| Superficies de UI | Dos selectores, ambos apuntan al canal en edición: el `#engine-select` existente (página poly, para subtractive/FM/wavetable/karplus) y un **selector espejo nuevo `#engine-select-303`** en la página 303 (para tb303). Tras el swap, el editor se re-rutea a la página del motor nuevo. |
 | Sonido al cambiar | Reset al patch por defecto del motor nuevo. Se descartan params y moduladores del anterior. |
 | Clips/notas | Las notas se conservan (todos los motores melódicos comparten el modelo `NoteEvent[]`). Los `envelopes` de automatización por-clip se reconcilian: se podan los que apuntan a params ausentes del motor nuevo. |
 | Dónde | Reusar el `<select id="engine-select">` existente de la página poly. |
@@ -76,18 +77,34 @@ Nuevo método `replaceEngine(laneId, engine)`: desecha **solo** el motor viejo
   4. Liberar la nota sonando (si hay) e invalidar la voz cacheada:
      `laneVoices.delete(laneId)`. La próxima `ensureLaneVoice` crea voz nueva.
 
-### `src/engines/engine-selector-ui.ts`
-- `populateEngineSelect`: filtrar a motores melódicos (`editor === 'piano-roll'`),
-  excluyendo `drum-grid`. Drums desaparece de las opciones.
+### `src/engines/engine-selector-ui.ts` (selector página poly)
+- `populateEngineSelect`: filtrar a motores melódicos
+  (`getEngine(id)?.editor === 'piano-roll'`), excluyendo `drum-grid`. Drums
+  desaparece de las opciones. Resultado: tb303, subtractive, FM, wavetable,
+  karplus.
 - Handler `change`: en vez de solo `rebuildEngineParamUI()`, invocar
-  `swapLaneEngineFlow(activeLaneId, newId)` (sigue envuelto en `withUndo` cuando
-  hay `historyDeps`).
-- Si el lane activo usa un motor `drum-grid`, el `<select>` se deshabilita
-  (un canal de batería no se convierte a melódico).
+  `swapLaneEngineFlow(deps, activeLaneId, newId)` (sigue envuelto en `withUndo`
+  cuando hay `historyDeps` → una entrada de undo).
+
+### `index.html` + selector página 303
+- Añadir una fila ENGINE en la página 303 (antes de la fila PRESET) con
+  `#engine-lane-label-303` + `#engine-select-303`.
+- Nuevo `wireEngineSelector303`: puebla `#engine-select-303` con los mismos 5
+  motores melódicos y su `change` llama `swapLaneEngineFlow(deps, activeEditLane,
+  newId)`. El canal objetivo es `sessionHost.activeEditLane` (la lane en
+  edición), válido tanto para lanes poly como tb303.
 
 ### `swapLaneEngineFlow` (orquestador)
-Módulo nuevo `src/app/engine-swap.ts` (o función en `main.ts` con deps
-inyectadas). Ver "Flujo de datos".
+Módulo nuevo `src/app/engine-swap.ts`, función con deps inyectadas (para test
+unitario puro sin registry global ni DOM). Ver "Flujo de datos".
+
+### `SessionHost.onEditLane` — extraer `showLaneEditor`
+`onEditLane` hace dos cosas: si el lane ya está activo, lo apaga (toggle off);
+si no, **muestra su editor** (visibilidad de página, `setActiveEngineLane` para
+poly, labels, `injectEngineModulatorPanel`). Extraer el segundo bloque a un
+método público `showLaneEditor(laneId)` (sin el toggle) para que el re-ruteo
+post-swap pueda mostrar la página correcta sin apagar la lane. `onEditLane`
+conserva la rama de toggle-off y delega el resto en `showLaneEditor`.
 
 ### `SessionHost` — reconciliación de motor
 `applyLoadedSessionState` itera lanes y llama `ensureLaneResource(id, engineId)`,
@@ -113,26 +130,30 @@ correctamente.
    → podar (o deshabilitar) los que apunten a un paramId ausente del set del
    motor nuevo, reutilizando `getEngineParamIds(newId)` del registry (mismo
    criterio que la capa clip-ops usa al mover/copiar clips entre motores).
-4. **Audio:** `lanes.swapLaneEngine(laneId, newId)`.
-5. **Sonido por defecto:** aplicar el primer preset del motor nuevo si existe
-   (`applyPresetToEngine(engine, engine.presets[0]?.name)`); si no, quedan los
-   defaults de construcción del motor.
-6. **UI:**
-   - `engineSel.value = newId` → `rebuildEngineParamUI()` (lee el nuevo
-     engineId desde el estado).
-   - `injectEngineModulatorPanel(laneId)` (re-render del panel de moduladores).
-   - refrescar el dropdown de presets.
-   - re-renderizar el editor de clip del lane: el rango MIDI del piano-roll
-     cambia (`tb303` 24–60, resto 36–96).
-7. **Persistir:** disparar el autosave / save-manager existente.
-8. Los pasos 2–7 ocurren dentro del `withUndo` del handler → **una** entrada de
+4. **Audio:** `lanes.swapLaneEngine(laneId, newId)`. El motor nuevo se
+   construye fresco vía `createEngineInstance`, por lo que arranca con sus
+   **defaults de construcción** = el "patch por defecto". No se aplica preset.
+5. **UI (`onSwapped(laneId, newId)`):**
+   - `sessionHost.showLaneEditor(laneId)` → re-rutea a la página del motor nuevo
+     (poly o 303), reconstruye param UI + `injectEngineModulatorPanel` + labels.
+     Como `renderClipEditor` lee `lane.engineId` fresco, el rango MIDI correcto
+     (`tb303` 24–60, resto 36–96) se aplica al reabrir el clip.
+   - Sincronizar el valor de **ambos** selectores
+     (`#engine-select` y `#engine-select-303`) al `newId`.
+6. **Persistir:** disparar el autosave / save-manager existente (`saveSession`).
+7. Los pasos 2–6 ocurren dentro del `withUndo` del handler → **una** entrada de
    undo.
 
 ## Casos borde y manejo de errores
 
 - **Mismo motor:** no-op; no resetea el sonido.
-- **Lane de drums:** selector deshabilitado; drums fuera de las opciones; el
-  swap ignora targets `drum-grid`. Un canal de batería sigue siendo batería.
+- **Lane de drums:** drums fuera de ambos dropdowns (su `editor` es
+  `drum-grid`); un canal de drums se edita en la página `drum-grid`, que no
+  tiene selector de motor. La guarda de `swapLaneEngineFlow` además rechaza
+  origen o destino `drum-grid`. Un canal de batería sigue siendo batería.
+- **Swap a/desde tb303 (cambio de página):** poly → tb303 re-rutea a la página
+  303; tb303 → poly re-rutea a la página poly. `showLaneEditor` aplica la
+  visibilidad de página y reconstruye los paneles correctos.
 - **Mono↔poly:** `tb303` es mono; los demás poly. Las notas se conservan; las
   que solapen sonarán polifónicas en el motor nuevo. Aceptado.
 - **Swap durante playback:** se libera la nota sonando; el próximo step usa el
@@ -162,11 +183,15 @@ correctamente.
 4. **DSP real (`.dsp.test.ts`):** renderizar una clip con el motor A, hacer
    swap a B, re-renderizar la misma clip → el espectro/diff confirma cambio de
    motor (aserción **relativa**, nunca magnitud absoluta).
-5. **`engine-selector-ui`:** `drum-grid` excluido de las opciones; selector
-   deshabilitado en lane `drum-grid`.
+5. **`engine-selector-ui` — `populateEngineSelect`:** lista exactamente los 5
+   motores `piano-roll` (tb303, subtractive, FM, wavetable, karplus);
+   `drums-machine` (`drum-grid`) excluido.
 6. **Reconciliación de envelopes:** un clip con un envelope sobre un paramId
-   que no existe en el motor nuevo → tras el swap ese envelope se poda; un
-   envelope sobre un paramId compartido sobrevive.
+   que no existe en el motor nuevo → tras el swap ese envelope se poda
+   (`enabled=false`); un envelope sobre un paramId compartido sobrevive
+   (`enabled=true`).
+7. **Guardas de `swapLaneEngineFlow`:** origen `drum-grid` o destino `drum-grid`
+   → no-op (estado intacto); `newId === currentId` → no-op.
 
 ## Fuera de alcance (YAGNI)
 
