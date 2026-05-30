@@ -1,7 +1,7 @@
 // src/modulation/types.ts
 // Pure type definitions for the modular LFO + ADSR system.
 
-export type ModulatorKind = 'lfo' | 'adsr';
+export type ModulatorKind = string;
 export type Waveform = 'sine' | 'triangle' | 'square' | 'saw';
 /** LFO phase behavior on note-on. 'free' = ignore notes (classic analog),
  *  'note' = reset phase on every trigger (retrigger / sync to note). */

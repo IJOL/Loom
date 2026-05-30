@@ -10,6 +10,18 @@ import {
 } from './types';
 import { LFOVoice } from './lfo-voice';
 import { ADSRVoice } from './adsr-voice';
+import { createInstance } from '../plugins/registry';
+import type { ModulatorInstance } from '../plugins/types';
+
+function modulatorInstanceAsVoice(inst: ModulatorInstance, _m: ModulatorState): ModulatorVoice {
+  return {
+    output: inst.output,
+    trigger: (t, o) => inst.trigger?.(t, o),
+    release: (t)    => inst.release?.(t),
+    dispose: ()     => inst.dispose(),
+    currentValue: () => 0,
+  };
+}
 
 export class ModulationHostImpl implements ModulationHost {
   modulators: ModulatorState[];
@@ -73,7 +85,15 @@ export class ModulationHostImpl implements ModulationHost {
     for (const m of this.modulators) {
       if (!m.enabled) continue;
       if (!predicate(m)) continue;
-      out.set(m.id, m.kind === 'lfo' ? new LFOVoice(ctx, m, bpm) : new ADSRVoice(ctx, m));
+      const inst = createInstance('modulator', m.kind, ctx, bpm());
+      if (inst) {
+        out.set(m.id, modulatorInstanceAsVoice(inst, m));
+        continue;
+      }
+      // fallback: direct construction for built-in lfo/adsr kinds
+      out.set(m.id, m.kind === 'lfo'
+        ? new LFOVoice(ctx, m, bpm)
+        : new ADSRVoice(ctx, m));
     }
     return out;
   }
