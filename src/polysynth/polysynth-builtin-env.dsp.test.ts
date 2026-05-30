@@ -17,6 +17,8 @@ async function renderPoly(configure: (ps: PolySynth) => void): Promise<Float32Ar
 describe('PolySynth built-in envelope bypass', () => {
   it('amp envelope on (default) produces audible output', async () => {
     const buf = await renderPoly(() => { /* defaults */ });
+    // Audible-at-all sanity floor (default env peaks ≈ 0.4); the relative
+    // on-vs-off ratio is asserted in the next test.
     expect(rms(buf)).toBeGreaterThan(0.001);
   });
 
@@ -38,6 +40,9 @@ describe('PolySynth built-in envelope bypass', () => {
     };
     const onBuf  = await renderPoly((ps) => { cfg(ps); });
     const offBuf = await renderPoly((ps) => { cfg(ps); ps.filterEnvEnabled = false; });
+    // Sanity: turning OFF only the filter env must NOT silence the voice —
+    // the amp env still runs in both renders. (Relative, not an absolute floor.)
+    expect(rms(offBuf)).toBeGreaterThan(rms(onBuf) * 0.3);
     expect(spectralCentroid(onBuf, 44100)).toBeGreaterThan(spectralCentroid(offBuf, 44100) * 1.2);
   });
 });
