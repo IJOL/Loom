@@ -449,6 +449,8 @@ export class WavetableEngine implements SynthEngine {
       lookupLaneDisplayName: ctx.lookupLaneDisplayName,
       sessionState: ctx.sessionState,
       historyDeps: ctx.historyDeps,
+      laneInserts: ctx.laneInserts,
+      masterInserts: ctx.masterInserts,
       onChange: () => {
         container.innerHTML = '';
         this.buildParamUI(container, ctx);

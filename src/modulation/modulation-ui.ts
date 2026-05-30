@@ -32,6 +32,12 @@ export interface ModulationUIDeps {
   /** Optional undo history deps. When present, every modulator knob drag/wheel/
    *  dblclick is bracketed as a single undo entry. */
   historyDeps?: HistoryDeps;
+  /** Phase J: lane insert chain — FX params appear as "Lane FX" optgroup in
+   *  the destination dropdown. */
+  laneInserts?: import('../plugins/fx/insert-chain').InsertChain;
+  /** Phase J: master insert chain — FX params appear as "Master FX" optgroup
+   *  in the destination dropdown. */
+  masterInserts?: import('../plugins/fx/insert-chain').InsertChain;
 }
 
 function sync(deps: ModulationUIDeps): void {
@@ -295,13 +301,63 @@ function renderRoutingList(mod: ModulatorState, deps: ModulationUIDeps): HTMLEle
     deps.lookupLaneDisplayName
       ? formatParamIdForDisplay(id, deps.lookupLaneDisplayName)
       : id;
-  for (const id of destinationIds(deps.registry, deps.laneId)) {
-    if (used.has(id)) continue;
-    const opt = document.createElement('option');
-    opt.value = id;
-    opt.textContent = fmt(id);
-    destSel.appendChild(opt);
+
+  // Engine params — optgroup "Engine"
+  const engineIds = destinationIds(deps.registry, deps.laneId).filter((id) => !used.has(id));
+  if (engineIds.length > 0) {
+    const grp = document.createElement('optgroup');
+    grp.label = 'Engine';
+    for (const id of engineIds) {
+      const opt = document.createElement('option');
+      opt.value = id;
+      opt.textContent = fmt(id);
+      grp.appendChild(opt);
+    }
+    destSel.appendChild(grp);
   }
+
+  // Lane FX params — optgroup "Lane FX"
+  if (deps.laneInserts) {
+    const laneFxOpts: HTMLOptionElement[] = [];
+    deps.laneInserts.list().forEach((cs, idx) => {
+      for (const [paramId, _ap] of cs.fx.getAudioParams()) {
+        const key = `lane-insert-${idx}:${paramId}`;
+        if (used.has(key)) continue;
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = `FX${idx + 1}: ${paramId}`;
+        laneFxOpts.push(opt);
+      }
+    });
+    if (laneFxOpts.length > 0) {
+      const grp = document.createElement('optgroup');
+      grp.label = 'Lane FX';
+      for (const opt of laneFxOpts) grp.appendChild(opt);
+      destSel.appendChild(grp);
+    }
+  }
+
+  // Master FX params — optgroup "Master FX"
+  if (deps.masterInserts) {
+    const masterFxOpts: HTMLOptionElement[] = [];
+    deps.masterInserts.list().forEach((cs, idx) => {
+      for (const [paramId, _ap] of cs.fx.getAudioParams()) {
+        const key = `master-insert-${idx}:${paramId}`;
+        if (used.has(key)) continue;
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = `MFX${idx + 1}: ${paramId}`;
+        masterFxOpts.push(opt);
+      }
+    });
+    if (masterFxOpts.length > 0) {
+      const grp = document.createElement('optgroup');
+      grp.label = 'Master FX';
+      for (const opt of masterFxOpts) grp.appendChild(opt);
+      destSel.appendChild(grp);
+    }
+  }
+
   const addBtn = document.createElement('button');
   addBtn.className = 'rnd primary';
   addBtn.textContent = '+ Destination';

@@ -556,6 +556,10 @@ export class SessionHost {
         this.state.lanes.find((l) => l.id === id)?.name,
       sessionState: this.state,
       historyDeps: this.deps.historyDeps,
+      // Phase J: thread insert chains so the modulation destination dropdown
+      // can expose lane and master FX params.
+      laneInserts: this.deps.laneResources?.get(laneId)?.inserts,
+      masterInserts: this.deps.masterInsertChain,
     });
 
     // Phase H: mount the insert-chain panel below the engine controls.

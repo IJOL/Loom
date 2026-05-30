@@ -17,6 +17,7 @@ import type { SynthEngine, Voice } from '../engines/engine-types';
 import type { ModulatorVoice } from './types';
 import type { ParamRange } from './modulation-host';
 import { ConnectionBinder } from './connection-binder';
+import type { InsertChain } from '../plugins/fx/insert-chain';
 
 export interface BindVoiceModulatorsOpts {
   laneId: string;
@@ -24,6 +25,10 @@ export interface BindVoiceModulatorsOpts {
   voice: Voice;
   voiceMods: Map<string, ModulatorVoice>;
   ctx: AudioContext;
+  /** Phase J: optional insert chains — their AudioParams are added to the
+   *  destination map so modulators can target FX params. */
+  laneInserts?: InsertChain;
+  masterInserts?: InsertChain;
 }
 
 export interface BindEngineModulatorsOpts {
@@ -37,6 +42,10 @@ export interface BindEngineModulatorsOpts {
    *  pass a Voice-style range lookup here so depth=1 produces full-swing
    *  modulation. Falls back to the engine spec range when omitted. */
   rangeLookup?: (shortId: string) => ParamRange;
+  /** Phase J: optional insert chains — their AudioParams are added to the
+   *  destination map so modulators can target FX params. */
+  laneInserts?: InsertChain;
+  masterInserts?: InsertChain;
 }
 
 interface LaneBindings {
@@ -51,9 +60,34 @@ interface LaneBindings {
   };
   /** Per-voice binder + the latest voice. Replaced on every new Voice. */
   voiceBinding?: { binder: ConnectionBinder; voice: Voice; voiceMods: Map<string, ModulatorVoice> };
+  /** Phase J: insert chains whose AudioParams are routable as modulation
+   *  destinations. Stored so reapplyLaneModulations can re-include them. */
+  laneInserts?: InsertChain;
+  masterInserts?: InsertChain;
 }
 
 const laneBindings = new Map<string, LaneBindings>();
+
+/** Build the FX-chain entries for destMap/rangeMap.
+ *  Keys follow the pattern `lane-insert-N:paramId` / `master-insert-N:paramId`
+ *  matching what the modulation-ui destination dropdown produces. */
+function addInsertChainParams(
+  chain: InsertChain,
+  prefix: 'lane-insert' | 'master-insert',
+  destMap: Map<string, AudioParam>,
+  rangeMap: Map<string, ParamRange>,
+): void {
+  chain.list().forEach((cs, idx) => {
+    for (const [paramId, ap] of cs.fx.getAudioParams()) {
+      const key = `${prefix}-${idx}:${paramId}`;
+      destMap.set(key, ap);
+      // Default range 0..1 for FX params; individual FX plugins may expose
+      // tighter ranges via getAudioParamRange (not called here — not worth the
+      // complexity until a use-case demands it).
+      rangeMap.set(key, { min: 0, max: 1 });
+    }
+  });
+}
 
 function applyBinder(
   binder: ConnectionBinder,
@@ -69,6 +103,9 @@ function applyBinder(
    *  with connections to these params must be skipped here to avoid double
    *  routing (engine binder → modBus fan-out AND voice binder → voice param). */
   excludeSharedForSharedScope?: Set<string>,
+  /** Phase J: insert chains whose AudioParams should also be routable. */
+  laneInserts?: InsertChain,
+  masterInserts?: InsertChain,
 ): void {
   const destMap = new Map<string, AudioParam>();
   const rangeMap = new Map<string, ParamRange>();
@@ -80,6 +117,9 @@ function applyBinder(
     destMap.set(shortId, param);
     rangeMap.set(shortId, r);
   }
+  // Phase J: add FX-chain AudioParams.
+  if (laneInserts)   addInsertChainParams(laneInserts,   'lane-insert',   destMap, rangeMap);
+  if (masterInserts) addInsertChainParams(masterInserts, 'master-insert', destMap, rangeMap);
   // voiceMods is already scope-partitioned by the caller (spawnVoiceFiltered),
   // so iterating ALL modulator states is safe — connection-binder skips any
   // mod whose id isn't in voiceMods. This also lets a shared-scope LFO bind
@@ -134,6 +174,9 @@ function getOrCreateLane(laneId: string, engine: SynthEngine, ctx: AudioContext)
 export function bindEngineModulators(opts: BindEngineModulatorsOpts): ConnectionBinder {
   const lb = getOrCreateLane(opts.laneId, opts.engine, opts.ctx);
   if (lb.engineBinding) lb.engineBinding.binder.disposeAll();
+  // Store insert chains so reapplyLaneModulations can re-include them.
+  if (opts.laneInserts   !== undefined) lb.laneInserts   = opts.laneInserts;
+  if (opts.masterInserts !== undefined) lb.masterInserts = opts.masterInserts;
 
   const binder = new ConnectionBinder();
   const shortParams = opts.engine.getSharedAudioParams?.(opts.ctx) ?? new Map<string, AudioParam>();
@@ -141,6 +184,7 @@ export function bindEngineModulators(opts: BindEngineModulatorsOpts): Connection
   applyBinder(
     binder, opts.laneId, opts.engine, opts.voiceMods,
     shortParams, rangeLookup, 'shared', opts.ctx,
+    undefined, lb.laneInserts, lb.masterInserts,
   );
   lb.engineBinding = { binder, voiceMods: opts.voiceMods, rangeLookup: opts.rangeLookup };
   return binder;
@@ -149,6 +193,9 @@ export function bindEngineModulators(opts: BindEngineModulatorsOpts): Connection
 export function bindVoiceModulators(opts: BindVoiceModulatorsOpts): ConnectionBinder {
   const lb = getOrCreateLane(opts.laneId, opts.engine, opts.ctx);
   if (lb.voiceBinding) lb.voiceBinding.binder.disposeAll();
+  // Store insert chains so reapplyLaneModulations can re-include them.
+  if (opts.laneInserts   !== undefined) lb.laneInserts   = opts.laneInserts;
+  if (opts.masterInserts !== undefined) lb.masterInserts = opts.masterInserts;
 
   const binder = new ConnectionBinder();
   // Build the set of shared-bus paramIds. The engine binder already wires
@@ -167,6 +214,7 @@ export function bindVoiceModulators(opts: BindVoiceModulatorsOpts): ConnectionBi
     'per-voice',
     opts.ctx,
     sharedKeys,
+    lb.laneInserts, lb.masterInserts,
   );
   lb.voiceBinding = { binder, voice: opts.voice, voiceMods: opts.voiceMods };
   return binder;
@@ -193,6 +241,7 @@ export function reapplyLaneModulations(laneId: string): void {
     applyBinder(
       lb.engineBinding.binder, lb.laneId, lb.engineRef, lb.engineBinding.voiceMods,
       shortParams, rangeLookup, 'shared', lb.ctx,
+      undefined, lb.laneInserts, lb.masterInserts,
     );
   }
   if (lb.voiceBinding) {
@@ -205,6 +254,7 @@ export function reapplyLaneModulations(laneId: string): void {
       rangeLookupForVoice(lb.engineRef, lb.voiceBinding.voice),
       'per-voice', lb.ctx,
       sharedKeys,
+      lb.laneInserts, lb.masterInserts,
     );
   }
 }

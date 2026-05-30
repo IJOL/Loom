@@ -56,6 +56,12 @@ export interface EngineUIContext {
   /** Optional undo history deps. When present, every knob drag/wheel/dblclick
    *  is bracketed as a single undo entry via attachKnobUndo. */
   historyDeps?: import('../save/history-wiring').HistoryDeps;
+  /** Phase J: lane insert chain for this lane — used by the modulation
+   *  destination dropdown to expose FX params as targets. */
+  laneInserts?: import('../plugins/fx/insert-chain').InsertChain;
+  /** Phase J: master insert chain — used by the modulation destination
+   *  dropdown to expose master FX params as targets. */
+  masterInserts?: import('../plugins/fx/insert-chain').InsertChain;
 }
 
 export interface EnginePreset<P = Record<string, number>> {
