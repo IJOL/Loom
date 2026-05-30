@@ -158,46 +158,59 @@ class WavetableVoice implements Voice {
     this.filter.Q.setValueAtTime(0.5 + res * 20, time);
     this.envCutoff.offset.setValueAtTime(baseHz, time);
 
-    // Amp envelope: when no external modulator binding is wired (i.e. no
-    // laneId set during createVoice, as in standalone/test renders), schedule
-    // a built-in ADSR onto envAmp.offset so the voice is audible. When a lane
-    // binder is present, the modulator ADSR on amp.gain drives the envelope
-    // and we leave envAmp.offset at 0 to avoid double-enveloping.
-    if (this.binder == null) {
-      // Standalone ADSR: oscillator gains already carry velMul, so the amp
-      // envelope peaks at unity (the modulator-bound path peaks at 1 too —
-      // modulator output is normalized 0..1 and connection depth scales it
-      // into the destination range).
-      const atk = this.getParam('amp.attack');
-      const dec = this.getParam('amp.decay');
-      const sus = this.getParam('amp.sustain');
-      this.envAmp.offset.cancelScheduledValues(time);
-      this.envAmp.offset.setValueAtTime(0, time);
-      this.envAmp.offset.linearRampToValueAtTime(1, time + Math.max(0.001, atk));
-      this.envAmp.offset.linearRampToValueAtTime(sus, time + Math.max(0.001, atk) + Math.max(0.001, dec));
-    } else {
-      this.envAmp.offset.setValueAtTime(0, time);
-    }
+    // Amp envelope (per-voice, internal) + self-termination.
+    //
+    // The voice ALWAYS carries its own amp ADSR on envAmp.offset, in both
+    // standalone and lane-bound modes. This is the key to polyphony: each note
+    // is enveloped independently, so overlapping notes never cut each other.
+    // (The old design left envAmp at 0 in bound mode and rode the entire amp
+    // envelope on a per-voice modulator routed to amp.gain — but the lane keeps
+    // only ONE per-voice modulator binding, so starting a new note severed the
+    // previous note's amp drive and silenced it: "mono duro" choppiness.)
+    // Modulators routed to amp.gain still sum on top via the connection binder
+    // (optional tremolo etc.); the note's body lives here. Mirrors fm.ts
+    // (per-op envelopes) and karplus.ts (envAmp). Oscillator gains already
+    // carry velMul, so the amp envelope peaks at unity.
+    const gateEnd = time + options.gateDuration;
+    const atk = Math.max(0.001, this.getParam('amp.attack'));
+    const dec = Math.max(0.001, this.getParam('amp.decay'));
+    const sus = this.getParam('amp.sustain');
+    const rel = Math.max(0.001, this.getParam('amp.release'));
+    this.envAmp.offset.cancelScheduledValues(time);
+    this.envAmp.offset.setValueAtTime(0, time);
+    this.envAmp.offset.linearRampToValueAtTime(1, time + atk);
+    this.envAmp.offset.linearRampToValueAtTime(sus, time + atk + dec);
+    // Close the gate: hold sustain until the note ends, then ramp to silence
+    // over the release. release() can override this with an earlier cut.
+    const releaseAt = Math.max(time + atk + dec, gateEnd);
+    this.envAmp.offset.setValueAtTime(sus, releaseAt);
+    this.envAmp.offset.linearRampToValueAtTime(0, releaseAt + rel);
+    const ampZero = releaseAt + rel;
 
     if (!this.started) {
       this.oscA.start(time);
       this.oscB.start(time);
       this.started = true;
     }
+    // Schedule the natural end past the amp zero-crossing so the voice
+    // self-terminates without a truncation click. The 'ended' listener wired
+    // in createVoice prunes the voice from activeVoices once this fires —
+    // without it the oscillators run forever, voices pile up to maxVoices and
+    // never release CPU, and the only cleanup is a hard voice-steal.
+    const stopTime = ampZero + 0.05;
+    this.oscA.stop(stopTime);
+    this.oscB.stop(stopTime);
+    this.stopScheduled = true;
   }
 
   release(time: number): void {
     for (const mv of this.voiceMods.values()) mv.release(time);
-    // When running standalone (no binder), the internal ADSR scheduled in
-    // trigger() holds the sustain forever — cut it down here so release tests
-    // and normal note-off behavior work without a modulator binding.
-    if (this.binder == null) {
-      this.envAmp.offset.cancelScheduledValues(time);
-      // Short 5 ms ramp to silence — gate-cut, not a musical release. The
-      // engine's amp.release param is meant for the modulator ADSR; standalone
-      // mode is just a fallback.
-      this.envAmp.offset.linearRampToValueAtTime(0, time + 0.005);
-    }
+    // envAmp carries the amp envelope in every mode, so an explicit note-off
+    // cuts it here. Short 5 ms ramp to silence — a gate-cut, not a musical
+    // release (the scheduled release in trigger() handles the musical tail when
+    // no early release arrives).
+    this.envAmp.offset.cancelScheduledValues(time);
+    this.envAmp.offset.linearRampToValueAtTime(0, time + 0.005);
   }
 
   connect(_dest: AudioNode): void {}
@@ -280,11 +293,15 @@ export class WavetableEngine implements SynthEngine {
     }
   }
 
+  // The amp envelope is owned per-voice by WavetableVoice.envAmp (driven by the
+  // amp.* params), so adsr1 must NOT also route to amp.gain — doing so made the
+  // amp ride on the lane's single per-voice modulator binding, which a new note
+  // tears down, silencing the previous note ("mono duro"). adsr1 stays as a
+  // free modulator (default filter-cutoff route) the user can re-point.
   private modHost = new ModulationHostImpl([
     {
       ...makeDefaultADSR('adsr1'),
       connections: [
-        { id: 'c-amp',    paramId: 'amp.gain',      depth: 1.0 },
         { id: 'c-cutoff', paramId: 'filter.cutoff', depth: 0.5 },
       ],
     },
