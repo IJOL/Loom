@@ -8,11 +8,12 @@ import { karplusPlugin }     from '../engines/karplus';
 import { drumsPlugin }       from '../engines/drums-engine';
 import { multifilterPlugin } from '../plugins/fx/multifilter';
 import { distortionPlugin }  from '../plugins/fx/distortion';
+import { reverbPlugin }      from '../plugins/fx/reverb';
 import type { PluginFactory } from '../plugins/types';
 
 const BUILTIN: PluginFactory[] = [
   tb303Plugin, subtractivePlugin, fmPlugin, wavetablePlugin, karplusPlugin, drumsPlugin,
-  multifilterPlugin, distortionPlugin,
+  multifilterPlugin, distortionPlugin, reverbPlugin,
   // FX + modulator plugins appended in later phases.
 ];
 
