@@ -27,7 +27,6 @@ export interface SavedStateV3Deps {
   volInput: HTMLInputElement;
   bpmInput: HTMLInputElement;
   swingInput: HTMLInputElement;
-  kitSel: HTMLSelectElement;
   waveSel: HTMLSelectElement;
   sessionHost: SessionHost;
   refreshKnobsFromSynth: () => void;
@@ -67,7 +66,7 @@ export function buildSavedStateV3(deps: SavedStateV3Deps): SavedStateV3 {
 
 export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): void {
   const {
-    seq, volInput, bpmInput, swingInput, kitSel, waveSel,
+    seq, volInput, bpmInput, swingInput, waveSel,
     sessionHost, refreshKnobsFromSynth, renderLanes, fx, master,
   } = deps;
 
@@ -89,7 +88,6 @@ export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): voi
 
   if (typeof s.kit === 'string') {
     if (drums) { drums.setKit(s.kit); }
-    kitSel.value = s.kit;
   }
   if (s.wave) {
     if (synth) { synth.params.wave = s.wave; }

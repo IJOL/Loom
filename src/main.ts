@@ -15,7 +15,7 @@ import {
 } from './engines/engine-selector-ui';
 import { type Wave, type TB303 } from './core/synth';
 import { Sequencer } from './core/sequencer';
-import { DRUM_LANES, listDrumKits, type DrumMachine, type DrumVoice } from './core/drums';
+import { DRUM_LANES, type DrumMachine, type DrumVoice } from './core/drums';
 import { ChannelStrip } from './core/fx';
 import { PatternBank } from './core/pattern';
 import { type KnobHandle } from './core/knob';
@@ -161,7 +161,6 @@ const bpmInput = $<HTMLInputElement>('bpm');
 const swingInput = $<HTMLInputElement>('swing');
 const volInput = $<HTMLInputElement>('volume');
 const barsSel  = $<HTMLSelectElement>('bars');
-const kitSel   = $<HTMLSelectElement>('kit-drums');
 const waveSel  = $<HTMLSelectElement>('wave');
 const scaleSel = $<HTMLSelectElement>('scale');
 const rootSel  = $<HTMLSelectElement>('root');
@@ -169,15 +168,8 @@ const vizCanvas    = $<HTMLCanvasElement>('viz');
 const engineSel    = $<HTMLSelectElement>('engine-select');
 
 // ── Populate selects ───────────────────────────────────────────────────────
-// Phase G: listDrumKits() is used instead of drums.listKits() since the DrumMachine
-// instance doesn't exist yet at boot (allocated lazily via ensureLaneResource).
-// Default selection is deferred to sessionHost.onStateApplied (see boot section below).
-for (const k of listDrumKits()) {
-  const opt = document.createElement('option');
-  opt.value = k.id;
-  opt.textContent = `${k.name} — ${k.description}`;
-  kitSel.appendChild(opt);
-}
+// Drum kit selector removed: presets dropdown (drums-machine.json) covers
+// all 5 kits via the kitId param. Use Load preset to switch kit.
 
 const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const midiLabel = (m: number) => `${NOTE_NAMES[m % 12]}${Math.floor(m / 12) - 1}`;
@@ -310,14 +302,6 @@ waveSel.addEventListener('change', () => {
 barsSel.addEventListener('change', () => {
   seq.setLength(parseInt(barsSel.value, 10));
   renderLanes();
-});
-
-kitSel.addEventListener('change', () => {
-  const run = () => {
-    const drumsInst = getDrumsInstance();
-    if (drumsInst) drumsInst.setKit(kitSel.value);
-  };
-  if (_discreteHistoryDeps) withUndo(_discreteHistoryDeps, run); else run();
 });
 
 const knobs = createKnobMounter({
@@ -697,9 +681,6 @@ sessionHost.onStateApplied(() => {
   mountDrumMasterLaneKnobs(LANE_ID_DRUMS);
   // Subtractive poly lane knobs
   mountSubtractiveLaneKnobs(LANE_ID_POLY);
-  // Set kit selector to match the loaded kit
-  const drumsInst = getDrumsInstance();
-  if (drumsInst) kitSel.value = drumsInst.kitId;
   // Set wave selector to match the loaded synth wave
   const synthInst = getSynthInstance();
   if (synthInst) waveSel.value = String(synthInst.params.wave);
@@ -757,7 +738,7 @@ const history = createHistory<SavedStateV3>({ maxSize: 100 });
 // Phase G: synth/drums replaced by lanes (resolved lazily inside buildSavedStateV3).
 const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
   ctx, seq, lanes, master,
-  volInput, bpmInput, swingInput, kitSel, waveSel,
+  volInput, bpmInput, swingInput, waveSel,
   sessionHost,
   refreshKnobsFromSynth,
   renderLanes,

@@ -555,7 +555,11 @@ export class SessionHost {
     if (!host) {
       host = document.createElement('div');
       host.className = 'engine-mod-host';
-      const anchor = page.querySelector<HTMLElement>('#poly-seq-mode-row');
+      // Place engine body BEFORE the static FX row so non-subtractive engines
+      // (FM/Wave/Karp) render their controls above the compressor. For pages
+      // without the FX-row anchor (drums), append at the end as before.
+      const anchor = page.querySelector<HTMLElement>('#poly-fx-row')
+        ?? page.querySelector<HTMLElement>('#poly-seq-mode-row');
       if (anchor) page.insertBefore(host, anchor);
       else page.appendChild(host);
     }
