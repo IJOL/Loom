@@ -3,7 +3,7 @@
 // then calls sessionHost.init() to activate it.
 
 import type { ChannelStrip } from '../core/fx';
-import type { DrumMachine, DrumVoice } from '../core/drums';
+import type { DrumVoice } from '../core/drums';
 import type { PatternBank } from '../core/pattern';
 import type { PolySynth } from '../polysynth/polysynth';
 import type { Sequencer } from '../core/sequencer';
@@ -59,7 +59,8 @@ export interface SessionHostDeps {
    *  laneResources lookup. Replaces the old bassTriggerDirect /
    *  bassTriggerForArp / polyTriggerDirect trio. */
   triggerForLane: (laneId: string, note: number, time: number, gate: number, accent: boolean, slidingIn: boolean) => void;
-  drums: DrumMachine;
+  // Phase G: drums removed — triggerForLane now routes drums-machine via
+  // res.engine.createVoice() like every other engine.
   drumLanes: readonly DrumVoice[];
   markTrackActive: (trackId: string, time: number) => void;
   ensureExtraPoly: (id: string) => PolySynth;
@@ -67,7 +68,10 @@ export interface SessionHostDeps {
   getLaneEngineId: (laneId: string) => string;
   ensureLaneVoice: (laneId: string, engineId: string) => import('../engines/engine-types').Voice | null;
   showPolyEditor: (laneId: string, target: PolySynth, displayName: string) => void;
-  polysynth: PolySynth;
+  // Phase G: polysynth removed — per-lane PolySynth instances are reached
+  // via laneResources.get(laneId)?.engine.getPolySynth().
+  /** @deprecated Phase G removed the singleton polysynth field. */
+  polysynth?: PolySynth;
   mixerDeps: MixerColumnDeps;
   midiLabel: (m: number) => string;
   automationRegistry: Map<string, import('../core/knob').KnobHandle>;
@@ -103,6 +107,20 @@ export class SessionHost {
   private inspector!: SessionInspector;
   private callbacks!: SessionUICallbacks;
   activeEditLane: string | null = null;
+
+  // Phase G: one-shot callback list fired after applyLoadedSessionState
+  // completes. Consumers that need lane resources (e.g. boot-eager UI that
+  // previously relied on audio-graph.ts pre-allocating lanes) register here.
+  // The list is cleared after the first fire so registrations don't accumulate
+  // if applyLoadedSessionState is called multiple times (e.g. demo picker).
+  private _stateAppliedCallbacks: Array<() => void> = [];
+  onStateApplied(cb: () => void): void {
+    this._stateAppliedCallbacks.push(cb);
+  }
+  private _fireStateApplied(): void {
+    const cbs = this._stateAppliedCallbacks.splice(0);
+    for (const cb of cbs) cb();
+  }
 
   // Expose inspector roll for the automation tick in main.ts
   get inspectorRoll() { return this.inspector?.roll ?? null; }
@@ -183,6 +201,7 @@ export class SessionHost {
     }
     this.applyEngineState();
     this.renderWithMixer();
+    this._fireStateApplied();
   }
 
   private collectEngineState(): void {
@@ -199,11 +218,21 @@ export class SessionHost {
 
   private applyEngineState(): void {
     for (const lane of this.state.lanes) {
-      const mods = lane.engineState?.modulators;
-      if (!mods) continue;
       const engine = this.deps.laneResources?.get(lane.id)?.engine;
-      const host = (engine as { modulators?: { deserialize(s: unknown[]): void } } | undefined)?.modulators;
-      if (host) host.deserialize(mods);
+      if (!engine) continue;
+      // Apply per-param values (bus sends, EQ, etc.) from engineState.params.
+      const params = lane.engineState?.params;
+      if (params) {
+        for (const [id, v] of Object.entries(params)) {
+          if (typeof v === 'number') engine.setBaseValue(id, v);
+        }
+      }
+      // Restore modulator state.
+      const mods = lane.engineState?.modulators;
+      if (mods) {
+        const host = (engine as { modulators?: { deserialize(s: unknown[]): void } } | undefined)?.modulators;
+        if (host) host.deserialize(mods);
+      }
     }
   }
 
@@ -247,8 +276,7 @@ export class SessionHost {
   private buildCallbacks(): void {
     const self = this;
     const { ctx, seq, playBtn, resetAutomationPosition,
-            showPolyEditor,
-            polysynth } = this.deps;
+            showPolyEditor } = this.deps;
 
     this.callbacks = {
       onClipClick(laneId, clipIdx) {

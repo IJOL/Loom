@@ -6,15 +6,16 @@ import { LANE_ID_BASS } from '../core/lane-ids';
 import type { KnobHandle } from '../core/knob';
 import type { SynthEngine, EngineUIContext } from '../engines/engine-types';
 import type { LaneResourceMap } from '../core/lane-resources';
-import type { TB303 } from '../core/synth';
 import type { SessionState } from '../session/session';
 import type { HistoryDeps } from '../save/history-wiring';
+import type { TB303Engine } from '../engines/tb303';
 
 export interface KnobMounterDeps {
   registerKnob(k: KnobHandle): void;
   registry: Map<string, KnobHandle>;
   laneResources: LaneResourceMap;
-  synth: TB303;
+  // Phase G: synth field removed; refreshKnobsFromSynth now resolves the
+  // TB303 instance lazily from laneResources at call time.
   fmtPct(v: number): string;
   fmtDb(v: number): string;
   getSessionState(): SessionState | undefined;
@@ -118,14 +119,18 @@ export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
   };
 
   const refreshKnobsFromSynth = () => {
+    // Phase G: resolve the TB303 instance lazily from laneResources.
+    const engine = deps.laneResources.get(LANE_ID_BASS)?.engine;
+    const synth = (engine as TB303Engine | undefined)?.getInstance?.() ?? null;
+    if (!synth) return;
     const liveValue = (specId: string): number | null => {
       switch (specId) {
-        case 'filter.cutoff':    return deps.synth.params.cutoff;
-        case 'filter.resonance': return deps.synth.params.resonance;
-        case 'env.amount':       return deps.synth.params.envMod;
-        case 'env.decay':        return deps.synth.params.decay;
-        case 'env.accent':       return deps.synth.params.accent;
-        case 'osc.wave':         return deps.synth.params.wave === 'square' ? 1 : 0;
+        case 'filter.cutoff':    return synth.params.cutoff;
+        case 'filter.resonance': return synth.params.resonance;
+        case 'env.amount':       return synth.params.envMod;
+        case 'env.decay':        return synth.params.decay;
+        case 'env.accent':       return synth.params.accent;
+        case 'osc.wave':         return synth.params.wave === 'square' ? 1 : 0;
       }
       return null;
     };

@@ -90,6 +90,13 @@ const KITS: Kit[] = [
 
 const BY_ID: Record<string, Kit> = Object.fromEntries(KITS.map((k) => [k.id, k]));
 
+/** Returns the static kit list without needing a DrumMachine instance.
+ *  Phase G: used by main.ts to populate the kit selector at boot before
+ *  lane allocation (applyLoadedSessionState) has run. */
+export function listDrumKits(): Array<{ id: string; name: string; description: string }> {
+  return KITS.map((k) => ({ id: k.id, name: k.name, description: k.description }));
+}
+
 export class DrumMachine {
   private noiseBuffer: AudioBuffer;
   kitId: string = '909';

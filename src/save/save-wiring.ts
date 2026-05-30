@@ -5,21 +5,21 @@ import {
   type SaveIndexEntry,
 } from './save-manager';
 import type { Sequencer } from '../core/sequencer';
-import type { TB303 } from '../core/synth';
-import type { DrumMachine } from '../core/drums';
 import type { FxBus } from '../core/fx';
 import type { InsertChain } from '../plugins/fx/insert-chain';
 import type { SessionHost } from '../session/session-host';
 import type { HistoryController } from '../core/history';
+import type { LaneAllocator } from '../app/lane-allocator';
 import {
   buildSavedStateV3, applyLoadedStateV3, parseSavedStateV3,
   type SavedStateV3, type SavedStateV3Deps,
 } from './saved-state-v3';
 
+// Phase G: SaveWiringDeps no longer includes direct synth/drums refs.
+// They are resolved at save/load time from lanes.resources.
 export interface SaveWiringDeps {
   seq: Sequencer;
-  synth: TB303;
-  drums: DrumMachine;
+  lanes: LaneAllocator;
   master: GainNode;
   volInput: HTMLInputElement;
   bpmInput: HTMLInputElement;

@@ -8,7 +8,10 @@ export interface BpmBroadcasterDeps {
   seq: Sequencer;
   fx: FxBus;
   masterInsertChain: InsertChain;
-  polysynth: PolySynth;
+  // Phase G: polysynth is now a lazy getter — the boot poly lane isn't
+  // allocated until applyLoadedSessionState runs. BPM broadcast at boot
+  // (before lanes exist) skips null safely.
+  getPolysynth(): PolySynth | null;
   getExtraPolys(): Iterable<PolySynth>;
 }
 
@@ -31,7 +34,8 @@ export function createBpmBroadcaster(deps: BpmBroadcasterDeps): BpmBroadcaster {
       deps.fx.setBpmSync(bpm);
       // TODO: propagate BPM to masterInsertChain slots (Task 28 – serialize/sync)
       void deps.masterInsertChain;
-      deps.polysynth.bpm = bpm;
+      const poly = deps.getPolysynth();
+      if (poly) poly.bpm = bpm;
       for (const p of deps.getExtraPolys()) p.bpm = bpm;
       propagateToLaneEngines(bpm);
     },

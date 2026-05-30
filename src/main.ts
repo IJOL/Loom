@@ -12,10 +12,9 @@ import {
   wireEngineSelector, rebuildEngineParamUI,
   type EngineSelectorUIDeps,
 } from './engines/engine-selector-ui';
-import { tb303Engine } from './engines/tb303';
-import { type Wave } from './core/synth';
+import { type Wave, type TB303 } from './core/synth';
 import { Sequencer } from './core/sequencer';
-import { DRUM_LANES, type DrumVoice } from './core/drums';
+import { DRUM_LANES, listDrumKits, type DrumMachine, type DrumVoice } from './core/drums';
 import { ChannelStrip } from './core/fx';
 import { PatternBank } from './core/pattern';
 import { type KnobHandle } from './core/knob';
@@ -92,10 +91,10 @@ const presetsLoaded = loadAllPresets(ENGINE_IDS_FOR_PRESETS);
 // ── Audio graph ────────────────────────────────────────────────────────────
 bootstrapPlugins();
 const audio = createAudioGraph();
-const { ctx, master, analyser, masterInsertChain, fx, masterComp, sidechainBus,
-        bassStrip, polyStrip, drumBusStrip,
-        synth, drums, polysynth,
-        mainSubtractive, drumsEngineInstance } = audio;
+// Phase G: audio-graph.ts is now master-only. All per-lane strips, instrument
+// instances, and configurators were removed. Lane allocation happens lazily via
+// lanes.ensureLaneResource() when applyLoadedSessionState runs.
+const { ctx, master, analyser, masterInsertChain, fx, masterComp, sidechainBus } = audio;
 
 // Stable call-site wrappers — set in boot section, after automationDeps is built.
 let renderLanes: () => void = () => { /* populated at boot */ };
@@ -113,13 +112,11 @@ const registerKnob = (k: KnobHandle) => automation.registerKnob(k);
 const currentEngineId = 'subtractive';
 const bank = new PatternBank(32);
 
+// Phase G: LaneAllocatorDeps is master-only; all per-lane strip/engine deps
+// removed. Lanes are allocated lazily via ensureLaneResource() triggered by
+// applyLoadedSessionState when the boot session JSON is applied.
 const lanes = createLaneAllocator({
   ctx, master, fx, sidechainBus,
-  bassStrip, polyStrip, drumBusStrip,
-  drums,
-  tb303Engine,
-  mainSubtractive,
-  drumsEngineInstance,
   getBpm: () => seq.bpm,
   extraIds: EXTRA_IDS,
 });
@@ -127,8 +124,23 @@ const { resources: laneResources, extraStrips, extraPolys,
         stripFor, ensureExtraPoly, ensureLaneVoice,
         ensureLaneResource, getLaneEngineInstance } = lanes;
 
+// Phase G: lazy accessors — null before applyLoadedSessionState allocates lanes.
+const getSynthInstance = (): TB303 | null => {
+  const eng = laneResources.get(LANE_ID_BASS)?.engine as unknown as { getInstance?(): TB303 | null } | undefined;
+  return eng?.getInstance?.() ?? null;
+};
+const getDrumsInstance = (): DrumMachine | null => {
+  const eng = laneResources.get(LANE_ID_DRUMS)?.engine as unknown as { getInstance?(): DrumMachine | null } | undefined;
+  return eng?.getInstance?.() ?? null;
+};
+
+// Phase G: polysynth comes from lane resources lazily; null before boot session loads.
 const bpmBroadcast = createBpmBroadcaster({
-  seq, fx, masterInsertChain, polysynth,
+  seq, fx, masterInsertChain,
+  getPolysynth: () => {
+    const eng = laneResources.get(LANE_ID_POLY)?.engine;
+    return (eng as unknown as { getPolySynth?(): PolySynth | null } | undefined)?.getPolySynth?.() ?? null;
+  },
   getExtraPolys: () => Object.values(extraPolys).filter((p): p is PolySynth => !!p),
 });
 
@@ -154,11 +166,13 @@ const vizCanvas    = $<HTMLCanvasElement>('viz');
 const engineSel    = $<HTMLSelectElement>('engine-select');
 
 // ── Populate selects ───────────────────────────────────────────────────────
-for (const k of drums.listKits()) {
+// Phase G: listDrumKits() is used instead of drums.listKits() since the DrumMachine
+// instance doesn't exist yet at boot (allocated lazily via ensureLaneResource).
+// Default selection is deferred to sessionHost.onStateApplied (see boot section below).
+for (const k of listDrumKits()) {
   const opt = document.createElement('option');
   opt.value = k.id;
   opt.textContent = `${k.name} — ${k.description}`;
-  if (k.id === drums.kitId) opt.selected = true;
   kitSel.appendChild(opt);
 }
 
@@ -283,7 +297,10 @@ for (const el of [bpmInput, swingInput, volInput]) {
 let _discreteHistoryDeps: HistoryDeps | undefined;
 
 waveSel.addEventListener('change', () => {
-  const run = () => { synth.params.wave = waveSel.value as Wave; };
+  const run = () => {
+    const synthInst = getSynthInstance();
+    if (synthInst) synthInst.params.wave = waveSel.value as Wave;
+  };
   if (_discreteHistoryDeps) withUndo(_discreteHistoryDeps, run); else run();
 });
 
@@ -293,7 +310,10 @@ barsSel.addEventListener('change', () => {
 });
 
 kitSel.addEventListener('change', () => {
-  const run = () => { drums.setKit(kitSel.value); };
+  const run = () => {
+    const drumsInst = getDrumsInstance();
+    if (drumsInst) drumsInst.setKit(kitSel.value);
+  };
   if (_discreteHistoryDeps) withUndo(_discreteHistoryDeps, run); else run();
 });
 
@@ -301,7 +321,7 @@ const knobs = createKnobMounter({
   registerKnob,
   registry: automationRegistry,
   laneResources,
-  synth,
+  // Phase G: synth removed — refreshKnobsFromSynth resolves lazily from laneResources.
   fmtPct, fmtDb,
   getSessionState: () => sessionHost?.state,
   getLaneDisplayName: (id) => sessionHost?.state.lanes.find((l) => l.id === id)?.name,
@@ -316,13 +336,8 @@ const refreshKnobsFromSynth = knobs.refreshKnobsFromSynth;
 const refreshLaneKnobs = knobs.refreshLaneKnobs;
 
 const synthKnobsRow = $<HTMLDivElement>('synth-knobs');
-synthKnobsRow.innerHTML = '';
-wireLaneKnobs({
-  laneId: LANE_ID_BASS,
-  engine: tb303Engine,
-  parent: synthKnobsRow,
-  formatter: (id, v) => id.includes('decay') ? `${(v * 1000).toFixed(0)}ms` : fmtPct(v),
-});
+// Phase G: TB-303 knob row deferred until boot session JSON allocates the lane.
+// Wired in sessionHost.onStateApplied callback (see boot section below).
 
 // pager/slots/onPatternChange wired in wireTransport() (see boot section)
 // Pre-populate the bank's slot 0 with the sequencer's initial pattern (set up below)
@@ -353,8 +368,9 @@ for (const t of $$<HTMLButtonElement>('button.tab')) {
 }
 
 // Single-entry-point trigger dispatch — delegates by engine.id.
+// Phase G: drums removed from deps (drums-machine triggers via res.engine.createVoice).
 const triggerForLane = createTriggerForLane({
-  ctx, laneResources, drums, arp, seq,
+  ctx, laneResources, arp, seq,
 });
 
 // ── Session host ───────────────────────────────────────────────────────────
@@ -369,7 +385,7 @@ const sessionHost = new SessionHost({
   ctx, seq, bank, playBtn,
   resetAutomationPosition,
   triggerForLane,
-  drums,
+  // Phase G: drums removed — triggerForLane handles drums via engine.createVoice.
   drumLanes: DRUM_LANES,
   markTrackActive,
   ensureExtraPoly: ensureExtraPoly as (id: string) => PolySynth,
@@ -377,7 +393,7 @@ const sessionHost = new SessionHost({
   getLaneEngineId,
   ensureLaneVoice,
   showPolyEditor: showPolyEditorWrapper,
-  polysynth,
+  // Phase G: polysynth removed from SessionHostDeps.
   mixerDeps,
   midiLabel,
   automationRegistry,
@@ -406,7 +422,8 @@ const sessionHost = new SessionHost({
     refreshLaneKnobs(laneId, inst);
   },
 });
-synthEditorState.activePolyTarget = polysynth;
+// Phase G: synthEditorState.activePolyTarget initialized to null at boot;
+// set to the actual PolySynth instance in sessionHost.onStateApplied (see below).
 sessionHost.init();
 // Now sessionHost is live — upgrade the lookupEngineId impl to use SessionState
 // as the source of truth (replaces the pattern-based fallback used at boot).
@@ -448,7 +465,8 @@ const _origStop = seq.stop.bind(seq);
 seq.start = () => { if (!performanceFeature.onPlay()) _origStart(); };
 seq.stop = () => { if (!performanceFeature.onStop()) _origStop(); };
 
-const initialPatternDeps: InitialPatternDeps = { seq, bank, drums, bassStrip, polyStrip };
+// Phase G: InitialPatternDeps now only needs seq + bank.
+const initialPatternDeps: InitialPatternDeps = { seq, bank };
 setupInitialPattern(initialPatternDeps);
 // All 4 slots are populated by setupInitialPattern; seq is already pointing at slot 0.
 barsSel.value = String(seq.length);
@@ -501,19 +519,15 @@ const engineSelectorDeps: EngineSelectorUIDeps = {
 wireEngineSelector(engineSelectorDeps, currentEngineId);
 
 const polySynthPresetsDeps: PolySynthPresetsDeps = {
-  getActivePolyTarget: () => synthEditorState.activePolyTarget ?? polysynth,
+  // Phase G: polysynth removed; getActivePolyTarget uses synthEditorState only.
+  getActivePolyTarget: () => synthEditorState.activePolyTarget ?? null,
   getActiveEngineLaneId: () => _lehState.activeLaneId,
   getLaneEngineId,
   getLaneEngineInstance,
   rebuildEngineParamUI,
   refreshLaneKnobs: (laneId) => {
-    const engineId = getLaneEngineId(laneId);
-    if (engineId === 'subtractive' && laneId === 'subtractive-1') {
-      if (mainSubtractive) refreshLaneKnobs('main', mainSubtractive);
-    } else {
-      const inst = getLaneEngineInstance(laneId);
-      if (inst) refreshLaneKnobs(laneId, inst);
-    }
+    const inst = getLaneEngineInstance(laneId);
+    if (inst) refreshLaneKnobs(laneId, inst);
   },
   // Late-bound via getter so historyDeps is resolved at event-fire time.
   get historyDeps() { return _discreteHistoryDeps; },
@@ -551,7 +565,8 @@ synthEditorDeps = {
   setActiveEngineLane: (laneId: string) => setActiveEngineLane(laneId),
 };
 
-mountSubtractiveLaneKnobs(LANE_ID_POLY);
+// Phase G: deferred to sessionHost.onStateApplied (lane not allocated at boot).
+// mountSubtractiveLaneKnobs(LANE_ID_POLY) — see boot section below.
 
 
 const arpUIDeps: ArpUIDeps = {
@@ -569,7 +584,8 @@ const fxUIDeps: FxUIDeps = {
   get historyDeps() { return _discreteHistoryDeps; },
 };
 wireFxUI(fxUIDeps);
-mountDrumMasterLaneKnobs(LANE_ID_DRUMS);
+// Phase G: deferred to sessionHost.onStateApplied (lane not allocated at boot).
+// mountDrumMasterLaneKnobs(LANE_ID_DRUMS) — see boot section below.
 fxApplyDelaySync(fxUIDeps);
 const transportDeps: TransportDeps = {
   seq, bank, ctx, playBtn, barsSel,
@@ -652,6 +668,37 @@ const automationTickDeps: AutomationTickDeps = {
 };
 
 startAutomationTick(automationTickDeps);
+
+// Phase G: boot-eager UI deferred until applyLoadedSessionState allocates lanes.
+// Registers callbacks BEFORE the demo load so they fire on the first apply.
+sessionHost.onStateApplied(() => {
+  // TB-303 knob row
+  synthKnobsRow.innerHTML = '';
+  const bassRes = laneResources.get(LANE_ID_BASS);
+  if (bassRes) {
+    wireLaneKnobs({
+      laneId: LANE_ID_BASS,
+      engine: bassRes.engine,
+      parent: synthKnobsRow,
+      formatter: (id, v) => id.includes('decay') ? `${(v * 1000).toFixed(0)}ms` : fmtPct(v),
+    });
+  }
+  // Drum master knobs
+  mountDrumMasterLaneKnobs(LANE_ID_DRUMS);
+  // Subtractive poly lane knobs
+  mountSubtractiveLaneKnobs(LANE_ID_POLY);
+  // Set kit selector to match the loaded kit
+  const drumsInst = getDrumsInstance();
+  if (drumsInst) kitSel.value = drumsInst.kitId;
+  // Set wave selector to match the loaded synth wave
+  const synthInst = getSynthInstance();
+  if (synthInst) waveSel.value = String(synthInst.params.wave);
+  // Set active poly target for synth editor
+  const polyEng = laneResources.get(LANE_ID_POLY)?.engine;
+  const polyInst = (polyEng as unknown as { getPolySynth?(): PolySynth | null } | undefined)?.getPolySynth?.() ?? null;
+  if (polyInst) synthEditorState.activePolyTarget = polyInst;
+});
+
 // Boot demo: fetched as a static JSON asset rather than constructed
 // programmatically. The JSON drives both the SessionState and the
 // per-scene preset map; applyLoadedSessionState reads lane.enginePresetName
@@ -697,8 +744,9 @@ startVisualizer({ ctx, analyser, vizCanvas });
 
 // ── Save Manager v2 (see src/save-wiring.ts) ──────────────────────────────
 const history = createHistory<SavedStateV3>({ maxSize: 100 });
+// Phase G: synth/drums replaced by lanes (resolved lazily inside buildSavedStateV3).
 const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
-  seq, synth, drums, master,
+  seq, lanes, master,
   volInput, bpmInput, swingInput, kitSel, waveSel,
   sessionHost,
   refreshKnobsFromSynth,
@@ -725,7 +773,10 @@ _discreteHistoryDeps = historyDeps;
 // wireRandomizeUI is here (not at its original boot position) because it needs
 // historyDeps, which closes over saveWiringDeps, which closes over sessionHost.
 wireRandomizeUI({
-  seq, synth, scaleSel, rootSel,
+  seq,
+  // Phase G: synth resolved lazily from lane resources.
+  getSynth: getSynthInstance,
+  scaleSel, rootSel,
   getBassRollEntry: () => null,
   refreshKnobsFromSynth,
   rebuildPolyTrack: () => { /* Classic-only — Session re-renders via sessionHost */ },

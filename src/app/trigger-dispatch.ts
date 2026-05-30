@@ -1,8 +1,6 @@
 import { setCurrentLaneForVoice } from '../modulation/active-mods';
 import { scheduleArpForNote } from '../arp/arp';
-import { GM_DRUM_MAP } from '../engines/drum-gm-map';
 import type { LaneResourceMap } from '../core/lane-resources';
-import type { DrumMachine } from '../core/drums';
 import type { Sequencer } from '../core/sequencer';
 import type { arp as ArpSingleton } from '../arp/arp-ui';
 
@@ -14,7 +12,8 @@ export type TriggerForLane = (
 export interface TriggerDispatchDeps {
   ctx: AudioContext;
   laneResources: LaneResourceMap;
-  drums: DrumMachine;
+  // Phase G: drums: DrumMachine removed — drums-machine lanes trigger via
+  // res.engine.createVoice() just like every other engine.
   arp: typeof ArpSingleton;
   seq: Sequencer;
 }
@@ -26,22 +25,10 @@ export function createTriggerForLane(deps: TriggerDispatchDeps): TriggerForLane 
     const engineId = res.engine.id;
 
     const fire = (m: number, t: number, g: number, a: boolean, sl: boolean) => {
-      if (engineId === 'tb303') {
-        setCurrentLaneForVoice(laneId);
-        const v = res.engine.createVoice(deps.ctx, res.strip.input);
-        setCurrentLaneForVoice(null);
-        v.trigger(m, t, { gateDuration: g, accent: a, slide: sl });
-        return;
-      }
-      if (engineId === 'drums-machine') {
-        const dv = GM_DRUM_MAP[m];
-        if (dv) deps.drums.trigger(dv, t, a);
-        return;
-      }
       setCurrentLaneForVoice(laneId);
       const v = res.engine.createVoice(deps.ctx, res.strip.input);
       setCurrentLaneForVoice(null);
-      v.trigger(m, t, { gateDuration: g, accent: a });
+      v.trigger(m, t, { gateDuration: g, accent: a, slide: sl });
     };
 
     if (deps.arp.enabled && deps.arp.scope.includes(laneId) && engineId !== 'drums-machine') {

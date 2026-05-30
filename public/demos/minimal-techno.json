@@ -294,7 +294,8 @@
           ]
         }
       ],
-      "enginePresetName": "engine:Acid Classic"
+      "enginePresetName": "engine:Acid Classic",
+      "engineState": { "params": { "bus.reverbSend": 0.1 } }
     },
     {
       "id": "drums-1",
@@ -829,7 +830,8 @@
             }
           ]
         }
-      ]
+      ],
+      "engineState": { "params": { "bus.reverbSend": 0.25 } }
     },
     {
       "id": "subtractive-1",
@@ -3209,7 +3211,8 @@
           ]
         }
       ],
-      "enginePresetName": "factory:PAD Warm"
+      "enginePresetName": "factory:PAD Warm",
+      "engineState": { "params": { "bus.reverbSend": 0.25, "bus.delaySend": 0.15 } }
     },
     {
       "id": "subtractive-2",

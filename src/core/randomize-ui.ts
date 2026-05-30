@@ -13,7 +13,8 @@ export interface RollEntryRef {
 
 export interface RandomizeUIDeps {
   seq: Sequencer;
-  synth: TB303;
+  // Phase G: synth resolved lazily — null before boot lane is allocated.
+  getSynth: () => TB303 | null;
   scaleSel: HTMLSelectElement;
   rootSel: HTMLSelectElement;
   /** Returns the current bassRollEntry (may be null). */
@@ -33,20 +34,26 @@ function currentRandomBase(deps: RandomizeUIDeps): RandomizeOptions {
 }
 
 function randomizeBassNotes(deps: RandomizeUIDeps): void {
+  const synth = deps.getSynth();
+  if (!synth) return;
   const base = currentRandomBase(deps);
-  randomize(deps.seq, deps.synth, { ...base, bassNotes: true, accents: true, slides: true });
+  randomize(deps.seq, synth, { ...base, bassNotes: true, accents: true, slides: true });
   deps.getBassRollEntry()?.handle.redraw();
 }
 
 function randomizeBassSound(deps: RandomizeUIDeps): void {
+  const synth = deps.getSynth();
+  if (!synth) return;
   const base = currentRandomBase(deps);
-  randomize(deps.seq, deps.synth, { ...base, mod: true });
+  randomize(deps.seq, synth, { ...base, mod: true });
   deps.refreshKnobsFromSynth();
 }
 
 function randomizeDrumsLane(deps: RandomizeUIDeps): void {
+  const synth = deps.getSynth();
+  if (!synth) return;
   const base = currentRandomBase(deps);
-  randomize(deps.seq, deps.synth, { ...base, drums: true });
+  randomize(deps.seq, synth, { ...base, drums: true });
 }
 
 // Scale intervals; same set used by random.ts

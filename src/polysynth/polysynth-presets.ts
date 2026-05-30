@@ -62,7 +62,8 @@ export function saveUserPolyPresets(presets: Record<string, PolySynthParams>): v
 }
 
 export interface PolySynthPresetsDeps {
-  getActivePolyTarget: () => PolySynth;
+  // Phase G: may return null before boot lane is allocated.
+  getActivePolyTarget: () => PolySynth | null;
   getActiveEngineLaneId: () => string;
   getLaneEngineId: (laneId: string) => string;
   getLaneEngineInstance: (laneId: string) => SynthEngine | null;
@@ -80,6 +81,7 @@ let _deps: PolySynthPresetsDeps | null = null;
 
 export function applyPolyParams(params: PolySynthParams): void {
   const target = _deps!.getActivePolyTarget();
+  if (!target) return;
   const d = JSON.parse(JSON.stringify(target.params)) as PolySynthParams;
   target.params = {
     master: { ...d.master, ...params.master },
@@ -107,7 +109,8 @@ export function applyPresetByName(poly: PolySynth, name: string): void {
 export function refreshPolyPresetSelect(): void {
   const sel = document.getElementById('poly-preset-select') as HTMLSelectElement;
   if (!sel) return;
-  const current = polyPresetName.get(_deps!.getActivePolyTarget());
+  const target = _deps?.getActivePolyTarget();
+  const current = target ? polyPresetName.get(target) : undefined;
   if (current) sel.value = current;
   else sel.value = '__custom__';
 }
@@ -194,6 +197,7 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
     const engineId = deps.getLaneEngineId(deps.getActiveEngineLaneId());
     if (engineId === 'subtractive') {
       const target = deps.getActivePolyTarget();
+      if (!target) return;
       randomizePolySynth(target);
       polyPresetName.delete(target);
       deps.refreshLaneKnobs(deps.getActiveEngineLaneId());
@@ -221,6 +225,7 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
     const val = sel.value;
     if (!val || val === '__custom__') return;
     const target = deps.getActivePolyTarget();
+    if (!target) return;
     if (val.startsWith('factory:')) {
       const name = val.slice('factory:'.length);
       const p = getFactoryPolyPresets().find((x) => x.name === name);
@@ -255,6 +260,7 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
     const trimmed = name.trim();
     if (!trimmed) return;
     const target = deps.getActivePolyTarget();
+    if (!target) return;
     const presets = loadUserPolyPresets();
     presets[trimmed] = JSON.parse(JSON.stringify(target.params)) as PolySynthParams;
     saveUserPolyPresets(presets);

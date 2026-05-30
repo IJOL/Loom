@@ -125,6 +125,11 @@ export class DrumsEngine implements SynthEngine {
     this.busStrip = strip;
   }
 
+  /** Returns the most recently created DrumMachine instance.
+   *  Phase G: used by save/load path to access kitId without requiring a
+   *  pre-boot singleton. */
+  getInstance(): DrumMachine | null { return this.lastInstance; }
+
   private modHost = new ModulationHostImpl([
     makeDefaultLFO('lfo1'),
     makeDefaultADSR('adsr1'),
@@ -259,9 +264,10 @@ const drumsEngine = new DrumsEngine();
 registerEngine(drumsEngine);
 registerEngineFactory('drums-machine', () => new DrumsEngine());
 
-export function configureDrumsEngineSharedFx(fx: FxBus): void {
-  drumsEngine.setSharedFx(fx);
-}
+// configureDrumsEngineSharedFx deleted in Phase G — setSharedFx is now called
+// per-instance inside ensureLaneResource before createVoice runs. This fixes
+// the latent bug where extra drum lanes (created at runtime) never received
+// a sharedFx reference, causing createVoice to throw.
 
 export const drumsPlugin: PluginFactory = {
   kind: 'synth',

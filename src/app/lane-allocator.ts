@@ -1,26 +1,29 @@
 import { LaneResourceMap } from '../core/lane-resources';
 import { ChannelStrip } from '../core/fx';
 import { PolySynth } from '../polysynth/polysynth';
-import { getEngine, createEngineInstance } from '../engines/registry';
+import { createEngineInstance } from '../engines/registry';
 import { setCurrentLaneForVoice } from '../modulation/active-mods';
 import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from '../core/lane-ids';
-import { type DrumVoice, type DrumMachine } from '../core/drums';
 import type { SynthEngine, Voice } from '../engines/engine-types';
 import type { FxBus } from '../core/fx';
 import type { SidechainBus } from '../core/sidechain-bus';
 
+// Phase G: LaneAllocatorDeps is now master-only — no per-lane strips,
+// instrument singletons, or boot configurators. ensureLaneResource() is
+// the SOLE allocation path for every lane, including the three defaults
+// (tb-303-1, drums-1, subtractive-1) which are allocated lazily when
+// applyLoadedSessionState() iterates the boot session JSON.
+//
+// INVARIANT: lanes.resources is empty until applyLoadedSessionState runs.
+// Any consumer that reads from lanes.resources MUST either:
+//   (a) defer access until sessionHost.onStateApplied fires, OR
+//   (b) call ensureLaneResource(laneId, engineId) explicitly as test setup.
+// Accessing stripFor() before a lane is allocated now throws loudly (see below).
 export interface LaneAllocatorDeps {
   ctx: AudioContext;
   master: GainNode;
   fx: FxBus;
   sidechainBus: SidechainBus;
-  bassStrip: ChannelStrip;
-  polyStrip: ChannelStrip;
-  drumBusStrip: ChannelStrip;
-  drums: DrumMachine;
-  tb303Engine: SynthEngine;
-  mainSubtractive: SynthEngine | null;
-  drumsEngineInstance: SynthEngine | null;
   getBpm(): number;
   extraIds: readonly string[];
 }
@@ -44,12 +47,9 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
   const extraLaneStrips = new Map<string, ChannelStrip>();
   const laneVoices = new Map<string, Voice>();
 
-  if (deps.drumsEngineInstance && deps.mainSubtractive) {
-    resources.set(LANE_ID_BASS,  { strip: deps.bassStrip,    engine: deps.tb303Engine });
-    resources.set(LANE_ID_DRUMS, { strip: deps.drumBusStrip, engine: deps.drumsEngineInstance });
-    (deps.drumsEngineInstance as unknown as { setBusStrip?(s: ChannelStrip): void }).setBusStrip?.(deps.drumBusStrip);
-    resources.set(LANE_ID_POLY,  { strip: deps.polyStrip,    engine: deps.mainSubtractive });
-  }
+  // Phase G: No boot prefill block. The three default lanes (tb-303-1,
+  // drums-1, subtractive-1) are allocated via ensureLaneResource() when
+  // applyLoadedSessionState iterates the boot session JSON.
 
   const slugFromExtraId = (id: string): string => {
     const n = parseInt(id.replace('poly', ''), 10) + 1;
@@ -76,9 +76,11 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
   };
 
   const ensureLaneStrip = (laneId: string): ChannelStrip => {
-    if (laneId === 'tb-303-1')      return deps.bassStrip;
-    if (laneId === 'drums-1')       return deps.drumBusStrip;
-    if (laneId === 'subtractive-1') return deps.polyStrip;
+    // Phase G: no special-cased boot-lane fallbacks (those lanes are now
+    // allocated via ensureLaneResource). If the lane already has a resource,
+    // return its strip; otherwise create a standalone strip for extra poly ids.
+    const existing = resources.get(laneId);
+    if (existing) return existing.strip;
     if (deps.extraIds.includes(laneId)) {
       ensureExtraPoly(laneId);
       return extraStrips[laneId]!;
@@ -92,27 +94,33 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     return s;
   };
 
+  // Phase G: stripFor now throws if no resource exists for a given track id.
+  // This converts silent-undefined audio dropouts into loud runtime errors,
+  // surfacing boot-order bugs that used to go unnoticed.
   const stripFor = (t: string): ChannelStrip => {
-    if (t in deps.drums.channels) {
-      const ch = deps.drums.channels[t as DrumVoice];
-      if (ch) return ch;
-    }
     const res = resources.get(t);
     if (res) return res.strip;
     if (t === 'bass')    return resources.get(LANE_ID_BASS)!.strip;
     if (t === 'poly')    return resources.get(LANE_ID_POLY)!.strip;
     if (t === 'drumBus') return resources.get(LANE_ID_DRUMS)!.strip;
+    // Drum-voice track names ('kick', 'snare', etc.) → look up the drum lane.
+    const drumLane = resources.get(LANE_ID_DRUMS);
+    if (drumLane) return drumLane.strip;
     if (deps.extraIds.includes(t)) {
       ensureExtraPoly(t);
       return extraStrips[t]!;
     }
-    return ensureLaneStrip(t);
+    // Deliberate throw: forces ordering bugs to surface in tests.
+    // Access lanes.resources only AFTER applyLoadedSessionState has run.
+    throw new Error(`stripFor: no resource for track "${t}" — was applyLoadedSessionState called?`);
   };
 
   const ensureLaneVoice = (laneId: string, engineId: string): Voice | null => {
     const cached = laneVoices.get(laneId);
     if (cached) return cached;
-    const engine = getEngine(engineId);
+    // Ensure the lane resource exists (idempotent).
+    ensureLaneResource(laneId, engineId);
+    const engine = resources.get(laneId)?.engine ?? null;
     if (!engine) return null;
     const strip = ensureLaneStrip(laneId);
     setCurrentLaneForVoice(laneId);
@@ -134,8 +142,15 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
       (engine as unknown as { setPolySynth?(p: PolySynth): void }).setPolySynth?.(p);
     }
     if (engineId === 'drums-machine') {
+      // Phase G latent-bug fix: setSharedFx MUST be called before createVoice
+      // (DrumsEngine.createVoice throws if sharedFx is null). The old singleton
+      // configureDrumsEngineSharedFx only wired the boot instance; extra drum
+      // lanes added at runtime were never wired, causing createVoice to throw.
+      (engine as unknown as { setSharedFx?(fx: FxBus): void }).setSharedFx?.(deps.fx);
       (engine as unknown as { setBusStrip?(s: ChannelStrip): void }).setBusStrip?.(strip);
     }
+    // tb303: TB303Engine.createVoice is self-registering (creates TB303(ctx, output),
+    // stores it in instances WeakMap, sets lastInstance). No external call needed.
     resources.set(laneId, { strip, engine });
   };
 

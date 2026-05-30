@@ -1,8 +1,6 @@
 import { type PatternData, type PatternBank } from '../core/pattern';
 import { type Sequencer } from '../core/sequencer';
 import { DRUM_LANES } from '../core/drums';
-import type { DrumMachine } from '../core/drums';
-import type { ChannelStrip } from '../core/fx';
 
 // ── Sweet Dreams-inspired demo ─────────────────────────────────────────────
 // 4 slots × 4 bars (64 steps), key of C minor.
@@ -102,16 +100,17 @@ function fillSweetSlot(slot: PatternData, parts: {
   }
 }
 
+// Phase G: InitialPatternDeps no longer includes strips or DrumMachine.
+// The FX-send defaults (bassStrip.setReverbSend(0.1) etc.) have moved into
+// the boot session JSON (/public/demos/minimal-techno.json) under each lane's
+// engineState.params, applied via applyLoadedSessionState.
 export interface InitialPatternDeps {
   seq: Sequencer;
   bank: PatternBank;
-  drums: DrumMachine;
-  bassStrip: ChannelStrip;
-  polyStrip: ChannelStrip;
 }
 
 export function setupInitialPattern(deps: InitialPatternDeps): void {
-  const { seq, bank, drums, bassStrip, polyStrip } = deps;
+  const { seq, bank } = deps;
 
   // 4 slots × 4 bars each, all using the real Sweet Dreams bass + hook from MIDI.
   fillSweetSlot(bank.slots[0], { drum: 'silent',    bass: true, hook: 'none',   chord: false }); // A - intro: bass solo
@@ -123,13 +122,7 @@ export function setupInitialPattern(deps: InitialPatternDeps): void {
   bank.current = 1;
   seq.setPattern(bank.slots[1]);
 
-  // Sensible default sends
-  drums.channels.snare.setReverbSend(0.25);
-  drums.channels.clap.setReverbSend(0.35);
-  drums.channels.openHat.setReverbSend(0.2);
-  drums.channels.ride.setReverbSend(0.3);
-  drums.channels.tom.setReverbSend(0.2);
-  bassStrip.setReverbSend(0.1);
-  polyStrip.setReverbSend(0.25);
-  polyStrip.setDelaySend(0.15);
+  // FX-send defaults previously set here (drums.channels.*.setReverbSend, etc.)
+  // now ship in the boot session JSON under engineState.params, applied via
+  // applyLoadedSessionState when the demo loads.
 }

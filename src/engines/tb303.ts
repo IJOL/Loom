@@ -213,6 +213,11 @@ export class TB303Engine implements SynthEngine {
     this.pending.flush((id, v) => this.setBaseValue(id, v));
   }
 
+  /** Returns the most recently created/registered TB303 instance.
+   *  Phase G: used by save/load path and knob wiring to access the
+   *  underlying TB303 without requiring a pre-boot singleton. */
+  getInstance(): TB303 | null { return this.lastInstance; }
+
   buildSequencer(_c: HTMLElement, _n: number): EngineSequencer {
     return new TB303Sequencer();
   }
@@ -272,9 +277,10 @@ export const tb303Engine = new TB303Engine();
 registerEngine(tb303Engine);
 registerEngineFactory('tb303', () => new TB303Engine());
 
-export function configureTB303EngineMainInstance(output: AudioNode, instance: TB303): void {
-  tb303Engine.registerInstance(output, instance);
-}
+// configureTB303EngineMainInstance deleted in Phase G — TB303Engine.createVoice
+// is now self-contained: it creates a fresh TB303(ctx, output) and caches it
+// internally (instances WeakMap + lastInstance). Registration no longer needs
+// an external call site.
 
 export const tb303Plugin: PluginFactory = {
   kind: 'synth',
