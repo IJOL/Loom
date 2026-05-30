@@ -18,6 +18,7 @@ import {
 // Phase G: SaveWiringDeps no longer includes direct synth/drums refs.
 // They are resolved at save/load time from lanes.resources.
 export interface SaveWiringDeps {
+  ctx: AudioContext;
   seq: Sequencer;
   lanes: LaneAllocator;
   master: GainNode;

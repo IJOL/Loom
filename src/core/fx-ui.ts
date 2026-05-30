@@ -78,6 +78,10 @@ export interface FxUIDeps {
   historyDeps?: HistoryDeps;
   /** Called whenever the insert chain changes, so the session can be persisted. */
   saveSession?: () => void;
+  /** Optional: when provided, master insert slots are read from and written to
+   *  sessionState.masterInserts so they survive save/load. If absent, a local
+   *  array is used (not persisted). */
+  getSessionState?: () => import('../session/session').SessionState;
 }
 
 let _deps: FxUIDeps | null = null;
@@ -99,7 +103,7 @@ export function applyDelaySync(deps: FxUIDeps) {
 // TODO: Task 19 will replace appendFilterRow with InsertChain-based plugin UI.
 // The old MasterFilter row builder is stubbed out pending that task.
 
-export function wireFxUI(deps: FxUIDeps): void {
+export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void } {
   _deps = deps;
 
   const revRow = document.getElementById('fx-reverb-knobs') as HTMLDivElement;
@@ -176,19 +180,33 @@ export function wireFxUI(deps: FxUIDeps): void {
   });
   mcRow.appendChild(mcByp);
 
-  // Master insert chain UI (Task 19).
-  // masterInsertSlots is local for now; Task 23 will move it to sessionState.masterInserts.
-  const masterInsertSlots: InsertSlot[] = [];
   const masterFxContainer = document.getElementById('fx-filters') as HTMLDivElement;
   // Hide the static "Add Filter" button — buildLaneInsertUI provides its own.
   const addFilterBtn = document.getElementById('fx-add-filter');
   if (addFilterBtn) addFilterBtn.style.display = 'none';
 
-  buildLaneInsertUI({
-    ctx: deps.ctx,
-    container: masterFxContainer,
-    chain: deps.masterInsertChain,
-    slots: masterInsertSlots,
-    onChange: () => deps.saveSession?.(),
-  });
+  // Master insert chain UI (Task 28).
+  // Re-reads sessionState.masterInserts on each rebuild so the slots array
+  // stays in sync after applyLoadedSessionState replaces it.
+  // Falls back to a module-local array when getSessionState is not provided.
+  let _localMasterInsertSlots: InsertSlot[] = [];
+  const getMasterSlots = (): InsertSlot[] => {
+    const ss = deps.getSessionState?.();
+    if (ss) { ss.masterInserts ??= []; return ss.masterInserts; }
+    return _localMasterInsertSlots;
+  };
+
+  const rebuildMasterInserts = (): void => {
+    if (!masterFxContainer) return;
+    buildLaneInsertUI({
+      ctx: deps.ctx,
+      container: masterFxContainer,
+      chain: deps.masterInsertChain,
+      slots: getMasterSlots(),
+      onChange: () => deps.saveSession?.(),
+    });
+  };
+
+  rebuildMasterInserts();
+  return { rebuildMasterInserts };
 }

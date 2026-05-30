@@ -412,6 +412,7 @@ const sessionHost = new SessionHost({
   },
   laneResources,
   ensureLaneResource,
+  masterInsertChain,
   applyPresetForLane: (laneId, presetName) => {
     // presetName is a prefixed value matching the dropdown vocabulary
     // (factory: / user: / engine:). See src/presets/preset-apply.ts.
@@ -582,8 +583,13 @@ const fxUIDeps: FxUIDeps = {
   ctx, fx, masterInsertChain, masterComp, getBpm: () => seq.bpm, registerKnob,
   // Late-bound via getter so historyDeps is resolved at event-fire time.
   get historyDeps() { return _discreteHistoryDeps; },
+  // Task 28: expose session state so master insert slots are persisted.
+  getSessionState: () => sessionHost.state,
 };
-wireFxUI(fxUIDeps);
+const { rebuildMasterInserts } = wireFxUI(fxUIDeps);
+// Task 28: rebuild master insert UI after each session load so the slots
+// array reference stays in sync with sessionHost.state.masterInserts.
+sessionHost.onStateApplied(rebuildMasterInserts);
 // Phase G: deferred to sessionHost.onStateApplied (lane not allocated at boot).
 // mountDrumMasterLaneKnobs(LANE_ID_DRUMS) — see boot section below.
 fxApplyDelaySync(fxUIDeps);
@@ -746,7 +752,7 @@ startVisualizer({ ctx, analyser, vizCanvas });
 const history = createHistory<SavedStateV3>({ maxSize: 100 });
 // Phase G: synth/drums replaced by lanes (resolved lazily inside buildSavedStateV3).
 const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
-  seq, lanes, master,
+  ctx, seq, lanes, master,
   volInput, bpmInput, swingInput, kitSel, waveSel,
   sessionHost,
   refreshKnobsFromSynth,

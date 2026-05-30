@@ -1,5 +1,8 @@
-import { describe, it, expect } from 'vitest';
-import { applyInsertSlot, snapshotInsertSlot, type InsertSlot } from './insert-slot';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { applyInsertSlot, snapshotInsertSlot, rehydrateInsertChain, type InsertSlot } from './insert-slot';
+import { InsertChain } from '../plugins/fx/insert-chain';
+import { createInstance, registerPlugin, _resetRegistry } from '../plugins/registry';
+import { multifilterPlugin } from '../plugins/fx/multifilter';
 import type { FxInstance } from '../plugins/types';
 
 function fakeInst(init: Record<string, number>): FxInstance {
@@ -12,6 +15,35 @@ function fakeInst(init: Record<string, number>): FxInstance {
     applyPreset: () => {}, dispose: () => {},
   };
 }
+
+describe('insert-slot rehydration', () => {
+  beforeEach(() => {
+    _resetRegistry();
+    registerPlugin(multifilterPlugin);
+  });
+
+  it('round-trips a multifilter slot through snapshot and rehydrate', () => {
+    const ctx = new AudioContext();
+    const sourceChain = new InsertChain(ctx.createGain(), ctx.createGain());
+    const inst = createInstance('fx', 'multifilter', ctx)!;
+    inst.setBaseValue('freq', 800);
+    inst.setBaseValue('q', 5);
+    sourceChain.insert(inst);
+
+    // Build the slot manually since snapshotInsertSlot expects a fresh slot shape
+    const slot: InsertSlot = { pluginId: 'multifilter', params: {}, bypass: false };
+    const captured = snapshotInsertSlot(slot, inst, ['freq', 'q']);
+
+    const freshChain = new InsertChain(ctx.createGain(), ctx.createGain());
+    rehydrateInsertChain(ctx, freshChain, [captured]);
+
+    expect(freshChain.size()).toBe(1);
+    const restored = freshChain.list()[0];
+    expect(restored.fx.getBaseValue('freq')).toBe(800);
+    expect(restored.fx.getBaseValue('q')).toBe(5);
+    expect(restored.bypass).toBe(false);
+  });
+});
 
 describe('insert-slot helpers', () => {
   it('snapshot reads via getBaseValue', () => {

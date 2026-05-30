@@ -48,6 +48,7 @@ import { buildMixerColumn } from '../core/mixer';
 // session-step-scheduler is superseded by the note-based tickLane path (Phase D.3).
 import { SessionInspector } from './session-inspector';
 import { withUndo } from '../save/history-wiring';
+import { rehydrateInsertChain } from './insert-slot';
 
 export interface SessionHostDeps {
   ctx: AudioContext;
@@ -102,6 +103,9 @@ export interface SessionHostDeps {
   /** Phase H: called when the user edits an insert slot so the session can be
    *  autosaved. Optional — wired after save manager is set up. */
   saveSession?: () => void;
+  /** Task 28: master insert chain for rehydrating persisted master inserts on load.
+   *  Optional so test fixtures without audio don't need to wire it. */
+  masterInsertChain?: import('../plugins/fx/insert-chain').InsertChain;
 }
 
 export class SessionHost {
@@ -185,6 +189,7 @@ export class SessionHost {
     this.state.lanes = migrated.lanes ?? [];
     this.state.scenes = migrated.scenes ?? [];
     this.state.globalQuantize = migrated.globalQuantize ?? '1/1';
+    this.state.masterInserts = migrated.masterInserts ?? [];
     this.laneStates.clear();
     // Free audio resources for lanes that vanished in the new state (e.g.
     // undo of add-lane). Keeping orphans around accumulates ChannelStrips and
@@ -201,11 +206,25 @@ export class SessionHost {
       // boot; lanes that arrive via loaded state (demos, save files) are
       // allocated lazily here.
       this.deps.ensureLaneResource?.(lane.id, lane.engineId);
+      // Task 28: rehydrate persisted insert slots into the lane's chain.
+      if (lane.inserts && lane.inserts.length > 0) {
+        const laneRes = this.deps.laneResources?.get(lane.id);
+        if (laneRes?.inserts) {
+          rehydrateInsertChain(this.deps.ctx, laneRes.inserts, lane.inserts);
+        }
+      }
       if (lane.enginePresetName) {
         this.deps.applyPresetForLane?.(lane.id, lane.enginePresetName);
       }
     }
     this.applyEngineState();
+    // Task 28: rehydrate master insert chain before firing state-applied callbacks
+    // so the UI rebuild (rebuildMasterInserts) sees a populated chain.
+    const masterChain = this.deps.masterInsertChain;
+    if (masterChain && this.state.masterInserts && this.state.masterInserts.length > 0) {
+      while (masterChain.size() > 0) masterChain.remove(0);
+      rehydrateInsertChain(this.deps.ctx, masterChain, this.state.masterInserts);
+    }
     this.renderWithMixer();
     this._fireStateApplied();
   }

@@ -77,7 +77,12 @@ export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): voi
 
   // Session state is applied first so lane resources are allocated before
   // we try to get synth/drums instances from them.
-  if (s.sessionState) sessionHost.applyLoadedSessionState(s.sessionState);
+  if (s.sessionState) {
+    // Normalise optional arrays so downstream code can use ??= [] safely.
+    s.sessionState.masterInserts ??= [];
+    for (const lane of s.sessionState.lanes) lane.inserts ??= [];
+    sessionHost.applyLoadedSessionState(s.sessionState);
+  }
 
   const synth = getSynth(deps);
   const drums = getDrums(deps);
@@ -95,7 +100,6 @@ export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): voi
   refreshKnobsFromSynth();
   renderLanes();
   fx.setBpmSync(seq.bpm);
-  // TODO: serialize masterInsertChain (Task 28)
 }
 
 /** Runtime guard: untrusted JSON (file load, localStorage) → typed shape or null. */

@@ -56,6 +56,8 @@ export interface SessionState {
   lanes: SessionLane[];
   scenes: SessionScene[];
   globalQuantize: LaunchQuantize;
+  /** Master insert-chain slots. Persisted by Task 28. Defaults to [] when absent. */
+  masterInserts?: import('./insert-slot').InsertSlot[];
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
