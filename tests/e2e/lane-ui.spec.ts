@@ -46,7 +46,7 @@ test.describe('modulator destination dropdown', () => {
     await page.goto('/');
     // Wait for the async fetch to populate laneResources (so drums-1 has its bus EQ wired).
     await page.waitForFunction(
-      () => (document.querySelector('#poly-preset-select') as HTMLSelectElement | null)?.value !== '__custom__',
+      () => document.querySelectorAll('.session-cell-filled').length > 0,
     );
     await page.locator('button.session-lane-tab[data-lane-id="drums-1"]').click();
     const options = await page.evaluate(() =>
@@ -68,7 +68,7 @@ test.describe('preset selection', () => {
     // applyLoadedSessionState runs. Wait until the active lane reports a real
     // preset before clicking through.
     await page.waitForFunction(
-      () => (document.querySelector('#poly-preset-select') as HTMLSelectElement | null)?.value !== '__custom__',
+      () => document.querySelectorAll('.session-cell-filled').length > 0,
     );
     await page.locator('button.session-lane-tab[data-lane-id="subtractive-1"]').click();
     const sel = page.locator('#poly-preset-select');
@@ -107,7 +107,7 @@ test.describe('demo JSON presets', () => {
   // Wait for the async demo-loader to populate the dropdown before asserting.
   async function waitForBoot(page: import('@playwright/test').Page): Promise<void> {
     await page.waitForFunction(
-      () => (document.querySelector('#poly-preset-select') as HTMLSelectElement | null)?.value !== '__custom__',
+      () => document.querySelectorAll('.session-cell-filled').length > 0,
     );
   }
 
@@ -142,7 +142,7 @@ test.describe('modulator scope', () => {
   test('LFO defaults to scope=shared and the SCOPE label appears in the LFO card', async ({ page }) => {
     await page.goto('/');
     await page.waitForFunction(
-      () => (document.querySelector('#poly-preset-select') as HTMLSelectElement | null)?.value !== '__custom__',
+      () => document.querySelectorAll('.session-cell-filled').length > 0,
     );
     await page.locator('button.session-lane-tab[data-lane-id="subtractive-1"]').click();
     // The SCOPE control is rendered as a radio-strip with buttons titled "Shared" and "PerVoice".

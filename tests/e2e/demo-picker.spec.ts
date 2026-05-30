@@ -31,7 +31,7 @@ test.describe('demo picker', () => {
       // and the session state is in a known-good baseline.
       await page.waitForSelector('#demo-picker', { timeout: 10_000 });
       await page.waitForFunction(
-        () => (document.querySelector('#poly-preset-select') as HTMLSelectElement | null)?.value !== '__custom__',
+        () => document.querySelectorAll('.session-cell-filled').length > 0,
       );
 
       // Pick the demo — the option value is the demo path (see main.ts wireDemoPicker call).

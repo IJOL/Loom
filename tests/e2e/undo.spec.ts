@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test';
 
 async function waitForBoot(page: import('@playwright/test').Page): Promise<void> {
   await page.waitForFunction(
-    () => (document.querySelector('#poly-preset-select') as HTMLSelectElement | null)?.value !== '__custom__',
+    () => document.querySelectorAll('.session-cell-filled').length > 0,
     { timeout: 10_000 },
   );
 }
