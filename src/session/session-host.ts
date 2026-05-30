@@ -496,69 +496,75 @@ export class SessionHost {
           self.deps.onActiveLaneChanged?.();
           return;
         }
-
-        const lane = self.state.lanes.find((l) => l.id === laneId);
-
-        let polyTarget: PolySynth | null = null;
-        if (lane?.engineId === 'subtractive') {
-          // Each subtractive lane owns its PolySynth instance — reach it via
-          // the engine stored in laneResources.
-          const engine = self.deps.laneResources?.get(laneId)?.engine;
-          const getPS = (engine as unknown as { getPolySynth?(): PolySynth | null })?.getPolySynth;
-          polyTarget = getPS ? getPS.call(engine) ?? null : null;
-        }
-
-        const targetTab =
-          lane?.engineId === 'tb303'          ? '303'   :
-          (lane?.engineId === 'drums-machine' || laneId.startsWith('drum:')) ? 'drums' :
-                                                                               'poly';
-        document.querySelectorAll<HTMLButtonElement>('.tab').forEach((t) => {
-          if (t.classList.contains('session-lane-tab')) {
-            t.classList.toggle('active', t.dataset.laneId === laneId);
-          } else {
-            t.classList.toggle('active', t.dataset.tab === targetTab && !t.classList.contains('synth-tab'));
-          }
-        });
-        const displayName = lane?.name ?? laneId.toUpperCase();
-        if (polyTarget) {
-          showPolyEditor(laneId, polyTarget, displayName);
-        } else {
-          document.querySelectorAll<HTMLElement>('.page').forEach((p) => {
-            p.hidden = p.dataset.page !== targetTab;
-          });
-          // FM/Wavetable/Karplus poly lanes: no PolySynth target, so the
-          // showPolyEditor path above is skipped — but the preset dropdown,
-          // engine selector, and engine-mod-host all need to retarget to
-          // this lane. Calling setActiveEngineLane updates _lehState.activeLaneId
-          // so that getActiveEngineLaneId() inside polysynth-presets.ts
-          // resolves to the right lane when the user picks a preset.
-          if (targetTab === 'poly') {
-            self.deps.setActiveEngineLane?.(laneId);
-          }
-        }
-        // Hide Subtractive-only knob rows when the active poly lane's engine
-        // is NOT subtractive (FM / Wavetable / Karplus render their own
-        // controls inside engine-mod-host; the legacy `data-engine="subtractive"`
-        // rows shouldn't leak in on top). The toggle runs unconditionally so
-        // switching back to a subtractive lane re-shows them.
-        const polyPage = document.querySelector('[data-page="poly"]');
-        if (polyPage) {
-          const subRows = polyPage.querySelectorAll<HTMLElement>('[data-engine="subtractive"]');
-          const showSubRows = lane?.engineId === 'subtractive';
-          for (const row of subRows) row.style.display = showSubRows ? '' : 'none';
-        }
-        // Keep #engine-lane-label in sync for non-poly lanes too (no-op if the
-        // active page doesn't include it).
-        const laneLabelEl = document.getElementById('engine-lane-label');
-        if (laneLabelEl) laneLabelEl.textContent = displayName;
-        const polyActiveLabel = document.getElementById('poly-active-label');
-        if (polyActiveLabel) polyActiveLabel.textContent = displayName;
-        self.activeEditLane = laneId;
-        self.injectEngineModulatorPanel(laneId, targetTab);
-        self.deps.onActiveLaneChanged?.();
+        self.showLaneEditor(laneId);
       },
       onToggleDrumsExpanded() { /* drum-bus expand removed — drum-grid editor shows all voices */ },
     };
+  }
+
+  /** Show a lane's editor: route to its engine's page (poly / 303 / drums),
+   *  rebuild the engine param UI + modulator panel + labels. Does NOT toggle.
+   *  Used by onEditLane (non-toggle path) and by the post-engine-swap re-route. */
+  showLaneEditor(laneId: string): void {
+    const lane = this.state.lanes.find((l) => l.id === laneId);
+
+    let polyTarget: PolySynth | null = null;
+    if (lane?.engineId === 'subtractive') {
+      // Each subtractive lane owns its PolySynth instance — reach it via
+      // the engine stored in laneResources.
+      const engine = this.deps.laneResources?.get(laneId)?.engine;
+      const getPS = (engine as unknown as { getPolySynth?(): PolySynth | null })?.getPolySynth;
+      polyTarget = getPS ? getPS.call(engine) ?? null : null;
+    }
+
+    const targetTab =
+      lane?.engineId === 'tb303'          ? '303'   :
+      (lane?.engineId === 'drums-machine' || laneId.startsWith('drum:')) ? 'drums' :
+                                                                           'poly';
+    document.querySelectorAll<HTMLButtonElement>('.tab').forEach((t) => {
+      if (t.classList.contains('session-lane-tab')) {
+        t.classList.toggle('active', t.dataset.laneId === laneId);
+      } else {
+        t.classList.toggle('active', t.dataset.tab === targetTab && !t.classList.contains('synth-tab'));
+      }
+    });
+    const displayName = lane?.name ?? laneId.toUpperCase();
+    if (polyTarget) {
+      this.deps.showPolyEditor(laneId, polyTarget, displayName);
+    } else {
+      document.querySelectorAll<HTMLElement>('.page').forEach((p) => {
+        p.hidden = p.dataset.page !== targetTab;
+      });
+      // FM/Wavetable/Karplus poly lanes: no PolySynth target, so the
+      // showPolyEditor path above is skipped — but the preset dropdown,
+      // engine selector, and engine-mod-host all need to retarget to
+      // this lane. Calling setActiveEngineLane updates _lehState.activeLaneId
+      // so that getActiveEngineLaneId() inside polysynth-presets.ts
+      // resolves to the right lane when the user picks a preset.
+      if (targetTab === 'poly') {
+        this.deps.setActiveEngineLane?.(laneId);
+      }
+    }
+    // Hide Subtractive-only knob rows when the active poly lane's engine
+    // is NOT subtractive (FM / Wavetable / Karplus render their own
+    // controls inside engine-mod-host; the legacy `data-engine="subtractive"`
+    // rows shouldn't leak in on top). The toggle runs unconditionally so
+    // switching back to a subtractive lane re-shows them.
+    const polyPage = document.querySelector('[data-page="poly"]');
+    if (polyPage) {
+      const subRows = polyPage.querySelectorAll<HTMLElement>('[data-engine="subtractive"]');
+      const showSubRows = lane?.engineId === 'subtractive';
+      for (const row of subRows) row.style.display = showSubRows ? '' : 'none';
+    }
+    // Keep #engine-lane-label in sync for non-poly lanes too (no-op if the
+    // active page doesn't include it).
+    const laneLabelEl = document.getElementById('engine-lane-label');
+    if (laneLabelEl) laneLabelEl.textContent = displayName;
+    const polyActiveLabel = document.getElementById('poly-active-label');
+    if (polyActiveLabel) polyActiveLabel.textContent = displayName;
+    this.activeEditLane = laneId;
+    this.injectEngineModulatorPanel(laneId, targetTab);
+    this.deps.onActiveLaneChanged?.();
   }
 
   // ── Engine modulator panel injection ─────────────────────────────────────
