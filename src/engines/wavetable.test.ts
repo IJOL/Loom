@@ -11,13 +11,14 @@ describe('WavetableEngine.params', () => {
     }
   });
 
-  it('has 11 declared params (10 sound + poly.voices)', () => {
-    expect(engine.params).toHaveLength(11);
+  it('has 12 declared params (10 sound + poly.voices + amp.builtinEnv)', () => {
+    expect(engine.params).toHaveLength(12);
   });
 
-  it('wave selectors are discrete; the rest are continuous', () => {
+  it('wave selectors and amp.builtinEnv are discrete; the rest are continuous', () => {
+    const discreteIds = new Set(['osc.waveA', 'osc.waveB', 'amp.builtinEnv']);
     for (const spec of engine.params) {
-      if (spec.id === 'osc.waveA' || spec.id === 'osc.waveB') {
+      if (discreteIds.has(spec.id)) {
         expect(spec.kind).toBe('discrete');
       } else {
         expect(spec.kind).toBe('continuous');
@@ -44,5 +45,22 @@ describe('WavetableEngine getBaseValue/setBaseValue', () => {
   it('unknown id returns 0', () => {
     const engine = new WavetableEngine();
     expect(engine.getBaseValue('not.a.real.param')).toBe(0);
+  });
+});
+
+describe('WavetableEngine built-in amp env toggle', () => {
+  it('exposes amp.builtinEnv discrete param defaulting Off', () => {
+    const engine = new WavetableEngine();
+    const amp = engine.params.find(p => p.id === 'amp.builtinEnv');
+    expect(amp?.kind).toBe('discrete');
+    expect(amp?.options).toHaveLength(2);
+    expect(amp?.default).toBe(0);   // Off — lane is already modular-driven
+  });
+
+  it('round-trips through get/setBaseValue', () => {
+    const engine = new WavetableEngine();
+    expect(engine.getBaseValue('amp.builtinEnv')).toBe(0);
+    engine.setBaseValue('amp.builtinEnv', 1);
+    expect(engine.getBaseValue('amp.builtinEnv')).toBe(1);
   });
 });

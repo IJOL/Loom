@@ -36,6 +36,8 @@ const WT_PARAMS: EngineParamSpec[] = [
   { id: 'osc.detune',       label: 'Detune',    kind: 'continuous', min: -50,  max: 50, default: 0, unit: '¢' },
   { id: 'filter.cutoff',    label: 'Cutoff',    kind: 'continuous', min: 0,    max: 1,  default: 0.55 },
   { id: 'filter.resonance', label: 'Res',       kind: 'continuous', min: 0,    max: 1,  default: 0.2 },
+  { id: 'amp.builtinEnv',   label: 'Built-in Env', kind: 'discrete', min: 0, max: 1, default: 0,
+    options: [{ value: 'off', label: 'Off' }, { value: 'on', label: 'On' }] },
   { id: 'amp.attack',       label: 'Attack',    kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's', curve: 'exponential' },
   { id: 'amp.decay',        label: 'Decay',     kind: 'continuous', min: 0.001, max: 2, default: 0.3,  unit: 's', curve: 'exponential' },
   { id: 'amp.sustain',      label: 'Sustain',   kind: 'continuous', min: 0,    max: 1,  default: 0.7 },
@@ -160,32 +162,41 @@ class WavetableVoice implements Voice {
 
     // Amp envelope (per-voice, internal) + self-termination.
     //
-    // The voice ALWAYS carries its own amp ADSR on envAmp.offset, in both
-    // standalone and lane-bound modes. This is the key to polyphony: each note
-    // is enveloped independently, so overlapping notes never cut each other.
-    // (The old design left envAmp at 0 in bound mode and rode the entire amp
-    // envelope on a per-voice modulator routed to amp.gain — but the lane keeps
-    // only ONE per-voice modulator binding, so starting a new note severed the
-    // previous note's amp drive and silenced it: "mono duro" choppiness.)
-    // Modulators routed to amp.gain still sum on top via the connection binder
-    // (optional tremolo etc.); the note's body lives here. Mirrors fm.ts
-    // (per-op envelopes) and karplus.ts (envAmp). Oscillator gains already
-    // carry velMul, so the amp envelope peaks at unity.
+    // Built-in amp env runs when standalone (no lane binder, for audibility in
+    // tests/standalone) OR when the amp.builtinEnv flag is On in a lane. When
+    // Off in a lane, leave envAmp at 0 so the modular adsr1 drives amp alone.
+    //
+    // NOTE: The old design always ran the built-in env in every mode ("key to
+    // polyphony" approach), but this toggle allows A/B comparison against the
+    // pure modular path. When Off, overlapping notes rely on adsr1 voice
+    // envelopes for shaping instead. Modulators routed to amp.gain still sum
+    // on top via the connection binder (optional tremolo etc.).
+    const ampEnvOn = this.getParam('amp.builtinEnv') >= 0.5;
     const gateEnd = time + options.gateDuration;
     const atk = Math.max(0.001, this.getParam('amp.attack'));
     const dec = Math.max(0.001, this.getParam('amp.decay'));
     const sus = this.getParam('amp.sustain');
     const rel = Math.max(0.001, this.getParam('amp.release'));
-    this.envAmp.offset.cancelScheduledValues(time);
-    this.envAmp.offset.setValueAtTime(0, time);
-    this.envAmp.offset.linearRampToValueAtTime(1, time + atk);
-    this.envAmp.offset.linearRampToValueAtTime(sus, time + atk + dec);
-    // Close the gate: hold sustain until the note ends, then ramp to silence
-    // over the release. release() can override this with an earlier cut.
-    const releaseAt = Math.max(time + atk + dec, gateEnd);
-    this.envAmp.offset.setValueAtTime(sus, releaseAt);
-    this.envAmp.offset.linearRampToValueAtTime(0, releaseAt + rel);
-    const ampZero = releaseAt + rel;
+    if (this.binder == null || ampEnvOn) {
+      // Standalone/built-in ADSR: oscillator gains already carry velMul, so
+      // the amp envelope peaks at unity (the modulator-bound path peaks at 1
+      // too — modulator output is normalized 0..1 and depth scales it into the
+      // destination range).
+      this.envAmp.offset.cancelScheduledValues(time);
+      this.envAmp.offset.setValueAtTime(0, time);
+      this.envAmp.offset.linearRampToValueAtTime(1, time + atk);
+      this.envAmp.offset.linearRampToValueAtTime(sus, time + atk + dec);
+      // Close the gate: hold sustain until the note ends, then ramp to silence
+      // over the release. release() can override this with an earlier cut.
+      const releaseAt = Math.max(time + atk + dec, gateEnd);
+      this.envAmp.offset.setValueAtTime(sus, releaseAt);
+      this.envAmp.offset.linearRampToValueAtTime(0, releaseAt + rel);
+    } else {
+      this.envAmp.offset.setValueAtTime(0, time);
+    }
+    const ampZero = (this.binder == null || ampEnvOn)
+      ? Math.max(time + atk + dec, gateEnd) + rel
+      : gateEnd + rel;
 
     if (!this.started) {
       this.oscA.start(time);
@@ -205,12 +216,15 @@ class WavetableVoice implements Voice {
 
   release(time: number): void {
     for (const mv of this.voiceMods.values()) mv.release(time);
-    // envAmp carries the amp envelope in every mode, so an explicit note-off
-    // cuts it here. Short 5 ms ramp to silence — a gate-cut, not a musical
-    // release (the scheduled release in trigger() handles the musical tail when
-    // no early release arrives).
-    this.envAmp.offset.cancelScheduledValues(time);
-    this.envAmp.offset.linearRampToValueAtTime(0, time + 0.005);
+    // Cut the built-in amp env on release whenever it was scheduled in
+    // trigger() — standalone (no binder) or amp.builtinEnv On in a lane.
+    if (this.binder == null || this.getParam('amp.builtinEnv') >= 0.5) {
+      this.envAmp.offset.cancelScheduledValues(time);
+      // Short 5 ms ramp to silence — gate-cut, not a musical release. The
+      // engine's amp.release param is meant for the modulator ADSR; standalone
+      // mode is just a fallback.
+      this.envAmp.offset.linearRampToValueAtTime(0, time + 0.005);
+    }
   }
 
   connect(_dest: AudioNode): void {}
