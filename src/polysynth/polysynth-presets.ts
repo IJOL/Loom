@@ -395,6 +395,17 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
     const sel = document.getElementById('poly-preset-select') as HTMLSelectElement;
     const val = sel.value;
     if (!val || val === '__custom__') return;
+
+    // Handle engine-prefixed presets FIRST — they resolve via getLaneEngineInstance
+    // and do NOT need a PolySynth target. (FM, Wavetable, Karplus all reach this path.)
+    if (val.startsWith('engine:')) {
+      const name = val.slice('engine:'.length);
+      const laneId = deps.getActiveEngineLaneId();
+      applyEnginePresetForLane(name, laneId);
+      return;
+    }
+
+    // factory:/user: presets target the active subtractive PolySynth.
     const target = deps.getActivePolyTarget();
     if (!target) return;
     if (val.startsWith('factory:')) {
@@ -405,9 +416,6 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
       const name = val.slice('user:'.length);
       const presets = loadUserPolyPresets();
       if (presets[name]) { applyPolyParams(presets[name]); polyPresetName.set(target, val); }
-    } else if (val.startsWith('engine:')) {
-      const name = val.slice('engine:'.length);
-      applyEnginePreset(name);
     }
   };
 
