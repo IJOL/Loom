@@ -23,8 +23,8 @@ directly onto an internal `ConstantSourceNode` at trigger time:
 - **Wavetable** — hardcoded amp env that runs **only in standalone mode**
   (`binder == null`); in a lane the modular `adsr1` already drives amp+cutoff,
   so the `amp.attack/decay/sustain/release` knobs are effectively dead.
-- **Karplus** — hardcoded amp env (attack + release + a physical-model
-  `loopGain` string decay). The modular `adsr1` has no connections by default.
+- **Karplus** — hardcoded amp env (attack + release) on the offline-rendered
+  string buffer. The modular `adsr1` has no connections by default.
 
 We want to validate that the modular ADSR system can fully replace these
 built-ins before deleting the built-in code. That requires the ability to
@@ -116,9 +116,10 @@ Two flags: `amp.builtinEnv`, `filter.builtinEnv`. Both default **On**
 One flag: `amp.builtinEnv`, default **On**.
 
 - `KarplusVoice.trigger` reads `getParam('amp.builtinEnv')`. When Off, skip the
-  `envAmp` amp ramp scheduling (attack → peak → release). The physical-model
-  `loopGain` string-decay scheduling **stays** (it is the string, not the amp
-  envelope).
+  `envAmp` amp ramp scheduling (attack → peak → release), leaving `envAmp` at 0
+  so a modular ADSR on `amp.level` drives the voice alone. The pre-rendered
+  string buffer still plays (the timbre is baked offline per note) — only the
+  amp envelope is gated.
 - `KarplusEngine` stores the flag in `paramValues` like its other params.
 
 ### 4.3 Wavetable

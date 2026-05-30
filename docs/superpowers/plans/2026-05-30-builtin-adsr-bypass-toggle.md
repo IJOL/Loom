@@ -427,47 +427,44 @@ In `src/engines/karplus.ts`, insert immediately BEFORE the `amp.attack` line:
 
 - [ ] **Step 4: Guard the amp envelope in `KarplusVoice.trigger`**
 
-In `KarplusVoice.trigger`, the amp envelope is scheduled here:
+In the rewritten (offline-render) Karplus, `KarplusVoice.trigger` schedules the amp envelope here. The string itself is a finite pre-rendered buffer (`src`) — there is no live loop to preserve:
 
 ```ts
-    // Amp envelope on the internal ConstantSource — modulators on amp.level
-    // sum into this same destination via getAudioParams().
-    const peakAmp = 1.4 * level * velMul;
+    // Amp envelope on the internal ConstantSource — modulators on amp.level sum
+    // into this same destination via getAudioParams(). The buffer is already
+    // peak-normalized to 0.8, so peakAmp only needs the level + accent gain.
+    const peakAmp = Math.max(0.0001, level * velMul);
     this.envAmp.offset.cancelScheduledValues(time);
     this.envAmp.offset.setValueAtTime(0, time);
     this.envAmp.offset.linearRampToValueAtTime(peakAmp, time + attack);
 
-    // Release: ramp BOTH amp env and loopGain to zero, so the internal loop
-    // dies instead of ringing silently and accumulating across rapid notes.
+    // Release: fade the amp from gate-end over `release`. There is no loop to
+    // kill — the buffer simply finishes playing and is disposed.
     const releaseStart = time + options.gateDuration;
-    this.envAmp.offset.cancelScheduledValues(releaseStart);
     this.envAmp.offset.setValueAtTime(peakAmp, releaseStart);
     this.envAmp.offset.exponentialRampToValueAtTime(0.0001, releaseStart + release);
 ```
 
-Wrap **only the `envAmp` lines** in the flag guard, leaving the `loopGain` lines that follow (the physical string decay) unconditional. Replace the block above with:
+Wrap only the `envAmp` scheduling in the flag guard. `releaseStart` must stay declared **outside** the guard because the `src.stop(stopTime)` line below computes `stopTime = releaseStart + release + 0.1`. Replace the block above with:
 
 ```ts
-    // Amp envelope on the internal ConstantSource — modulators on amp.level
-    // sum into this same destination via getAudioParams(). Skipped when the
-    // built-in amp env is bypassed; envAmp stays at 0 so a modular ADSR on
-    // amp.level drives the voice alone.
+    // Amp envelope on the internal ConstantSource — modulators on amp.level sum
+    // into this same destination via getAudioParams(). Skipped when the built-in
+    // amp env is bypassed; envAmp stays at 0 so a modular ADSR on amp.level
+    // drives the voice alone (the string buffer still plays, but silently).
     const ampEnvOn = this.getParam('amp.builtinEnv') >= 0.5;
-    const peakAmp = 1.4 * level * velMul;
+    const peakAmp = Math.max(0.0001, level * velMul);
     const releaseStart = time + options.gateDuration;
     if (ampEnvOn) {
       this.envAmp.offset.cancelScheduledValues(time);
       this.envAmp.offset.setValueAtTime(0, time);
       this.envAmp.offset.linearRampToValueAtTime(peakAmp, time + attack);
-
-      // Release: ramp the amp env to zero (loopGain release stays below).
-      this.envAmp.offset.cancelScheduledValues(releaseStart);
       this.envAmp.offset.setValueAtTime(peakAmp, releaseStart);
       this.envAmp.offset.exponentialRampToValueAtTime(0.0001, releaseStart + release);
     }
 ```
 
-The subsequent `loopGain` release block (`this.loopGain.gain.cancelScheduledValues(releaseStart); ...`) is unchanged and stays outside the guard — `releaseStart` is now declared above it, so confirm there is no duplicate `const releaseStart` left further down (there is only the original one being replaced).
+The `src.start(time); const stopTime = releaseStart + release + 0.1; src.stop(stopTime);` lines that follow stay unchanged and outside the guard.
 
 - [ ] **Step 5: Write the failing DSP test**
 
