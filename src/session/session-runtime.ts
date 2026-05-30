@@ -1,7 +1,7 @@
 // Live performance state for Session mode. Holds per-lane play position,
 // queue, and the tick-side scheduler that is called from the main 25 ms loop.
 
-import type { SessionClip, SessionState, LaunchQuantize, SessionLane } from './session';
+import type { SessionClip, SessionState, LaunchQuantize, SessionLane, ClipSample } from './session';
 import { tickLane } from '../core/lane-scheduler';
 import { TICKS_PER_STEP } from '../core/notes';
 import type { NoteEvent } from '../core/notes';
@@ -155,6 +155,7 @@ export type LaneTriggerFn = (
   gateDuration: number,
   accent: boolean,
   slidingIn: boolean,
+  sample?: ClipSample,
 ) => void;
 
 /** Called each time a step boundary fires (for visual playhead updates). */
@@ -213,7 +214,7 @@ export function tickSession(
       now,
       loopStartedAt: currentLoopStart,
       lastScheduledAt: lp.lastScheduledAt,
-      onTrigger: (note: { midi: number; duration: number; velocity: number }, scheduleTime: number) => {
+      onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample }, scheduleTime: number) => {
         if (scheduleTime > lp.lastScheduledAt) lp.lastScheduledAt = scheduleTime;
         const accent = note.velocity >= 100;
         const gateSec = Math.max(0.01, note.duration * tickSec);
@@ -230,7 +231,7 @@ export function tickSession(
             (m) => m.start < scheduledStartTick
               && (m.start + m.duration) > scheduledStartTick + 1,
           );
-        onLaneTrigger(lane.id, note.midi, scheduleTime, gateSec, accent, slidingIn);
+        onLaneTrigger(lane.id, note.midi, scheduleTime, gateSec, accent, slidingIn, note.sample);
         onClipStepFired(
           lane.id, clip.id,
           Math.floor(scheduledStartTick / TICKS_PER_STEP),

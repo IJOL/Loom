@@ -4,7 +4,7 @@
 // in the (now, now + lookaheadSec) window, calling back through ctx.
 // It also advances the loop boundary when a full clip iteration completes.
 
-import type { SessionClip, ClipEnvelope } from '../session/session';
+import type { SessionClip, ClipEnvelope, ClipSample } from '../session/session';
 import { TICKS_PER_STEP } from './notes';
 
 export interface SchedulerContext {
@@ -25,7 +25,7 @@ export interface SchedulerContext {
   lastScheduledAt?: number;
   /** Called with the original note + the absolute audio time at which it
    *  should be scheduled. */
-  onTrigger: (note: { midi: number; duration: number; velocity: number }, scheduleTime: number) => void;
+  onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample }, scheduleTime: number) => void;
   /** Called for each clip envelope sample falling in the window. The
    *  `clipTimeNorm` is 0..1 within the clip iteration. */
   onAutomation: (env: ClipEnvelope, clipTimeNorm: number, scheduleTime: number) => void;
@@ -100,14 +100,26 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
 
   for (let k = kMin; k <= kMax; k++) {
     const iterStart = loopStart + k * clipDurSec;
-    for (const n of clip.notes) {
-      const clipTimeSec = (n.start / TICKS_PER_BAR) * 4 * secPerBeat;
-      const scheduleAt  = iterStart + clipTimeSec;
-      if (scheduleAt >= windowStart && scheduleAt < windowEnd) {
+    if (clip.sample) {
+      // Loop/song audio clip: one buffer trigger per iteration, gated to the
+      // full clip length. duration in ticks round-trips to clipDurSec via the
+      // runtime's secPerTick (= lengthBars * 4 * TICKS_PER_STEP).
+      if (iterStart >= windowStart && iterStart < windowEnd) {
         ctx.onTrigger(
-          { midi: n.midi, duration: n.duration, velocity: n.velocity },
-          scheduleAt,
+          { midi: 60, duration: clip.lengthBars * 4 * TICKS_PER_STEP, velocity: 100, sample: clip.sample },
+          iterStart,
         );
+      }
+    } else {
+      for (const n of clip.notes) {
+        const clipTimeSec = (n.start / TICKS_PER_BAR) * 4 * secPerBeat;
+        const scheduleAt  = iterStart + clipTimeSec;
+        if (scheduleAt >= windowStart && scheduleAt < windowEnd) {
+          ctx.onTrigger(
+            { midi: n.midi, duration: n.duration, velocity: n.velocity },
+            scheduleAt,
+          );
+        }
       }
     }
     for (const env of (clip.envelopes ?? [])) {

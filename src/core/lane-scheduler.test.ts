@@ -127,3 +127,55 @@ describe('lane-scheduler tickLane', () => {
     expect(fires).toEqual([{ midi: 60 }]);
   });
 });
+
+describe('lane-scheduler tickLane — audio (loop/song) clips', () => {
+  it('a loop clip fires exactly one trigger per iteration carrying the sample', () => {
+    const clip: SessionClip = {
+      id: 'c1', lengthBars: 1, notes: [],
+      sample: { sampleId: 's1', mode: 'loop', trimStart: 0, trimEnd: 1 },
+    };
+    const fires: Array<{ time: number; sampleId?: string; duration: number; midi: number }> = [];
+    let loopStart = 0;
+    for (let now = 0; now < 8.0; now += 0.2) {
+      loopStart = tickLane(clip, {
+        bpm: 120, lookaheadSec: 0.2, now, loopStartedAt: loopStart,
+        onTrigger: (n, t) => fires.push({ time: t, sampleId: n.sample?.sampleId, duration: n.duration, midi: n.midi }),
+        onAutomation: () => {},
+      });
+    }
+    // 1-bar clip = 2s at 120bpm → 4 iterations in 8s, one trigger each.
+    expect(fires).toHaveLength(4);
+    for (const f of fires) {
+      expect(f.sampleId).toBe('s1');
+      expect(f.midi).toBe(60);
+      // Gate ticks → seconds (× secPerTick) must equal the clip duration:
+      // lengthBars * 4 * TICKS_PER_STEP.
+      expect(f.duration).toBe(1 * 4 * TICKS_PER_STEP);
+    }
+    expect(fires[0].time).toBeCloseTo(0, 5);
+    expect(fires[1].time).toBeCloseTo(2, 5);
+  });
+
+  it('a clip with a sample ignores its notes (only the synthetic buffer trigger fires)', () => {
+    const clip: SessionClip = {
+      id: 'c2', lengthBars: 1,
+      notes: [
+        { start: 0, duration: TICKS_PER_STEP, midi: 64, velocity: 80 },
+        { start: TICKS_PER_STEP, duration: TICKS_PER_STEP, midi: 67, velocity: 80 },
+      ],
+      sample: { sampleId: 's2', mode: 'song', trimStart: 0, trimEnd: 1 },
+    };
+    const midis: number[] = [];
+    let loopStart = 0;
+    for (let now = 0; now < 2.0; now += 0.2) {
+      loopStart = tickLane(clip, {
+        bpm: 120, lookaheadSec: 0.2, now, loopStartedAt: loopStart,
+        onTrigger: (n) => midis.push(n.midi),
+        onAutomation: () => {},
+      });
+    }
+    // Never fires the 64/67 notes — only the synthetic sample trigger (midi 60).
+    expect(midis.length).toBeGreaterThan(0);
+    expect(midis.every((m) => m === 60)).toBe(true);
+  });
+});

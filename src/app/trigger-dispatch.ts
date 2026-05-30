@@ -7,6 +7,7 @@ import type { arp as ArpSingleton } from '../arp/arp-ui';
 export type TriggerForLane = (
   laneId: string, note: number, time: number, gate: number,
   accent: boolean, slidingIn?: boolean,
+  sample?: import('../session/session').ClipSample,
 ) => void;
 
 export interface TriggerDispatchDeps {
@@ -19,7 +20,7 @@ export interface TriggerDispatchDeps {
 }
 
 export function createTriggerForLane(deps: TriggerDispatchDeps): TriggerForLane {
-  return (laneId, note, time, gate, accent, slidingIn = false) => {
+  return (laneId, note, time, gate, accent, slidingIn = false, sample) => {
     const res = deps.laneResources.get(laneId);
     if (!res) return;
     const engineId = res.engine.id;
@@ -28,10 +29,11 @@ export function createTriggerForLane(deps: TriggerDispatchDeps): TriggerForLane 
       setCurrentLaneForVoice(laneId);
       const v = res.engine.createVoice(deps.ctx, res.strip.input);
       setCurrentLaneForVoice(null);
-      v.trigger(m, t, { gateDuration: g, accent: a, slide: sl });
+      v.trigger(m, t, { gateDuration: g, accent: a, slide: sl, sample });
     };
 
-    if (deps.arp.enabled && deps.arp.scope.includes(laneId) && engineId !== 'drums-machine') {
+    // Audio clips (loop/song) are not arpeggiated — fire the buffer directly.
+    if (sample == null && deps.arp.enabled && deps.arp.scope.includes(laneId) && engineId !== 'drums-machine') {
       scheduleArpForNote(
         (m, t, g, a) => fire(m, t, g, a, false),
         deps.arp, deps.seq.bpm, note, time, gate, accent,
