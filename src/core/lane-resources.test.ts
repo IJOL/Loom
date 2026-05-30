@@ -43,4 +43,30 @@ describe('LaneResourceMap', () => {
     expect(engineDispose).toHaveBeenCalledOnce();
     expect(insertsDispose).toHaveBeenCalledOnce();
   });
+
+  it('replaceEngine disposes the old engine but keeps strip + inserts', () => {
+    const m = new LaneResourceMap();
+    let oldEngineDisposed = false;
+    const strip = { dispose: () => {} } as unknown as import('./fx').ChannelStrip;
+    const inserts = { dispose: () => {} } as unknown as InsertChain;
+    const oldEngine = {
+      dispose: () => { oldEngineDisposed = true; },
+    } as unknown as import('../engines/engine-types').SynthEngine;
+    const newEngine = { dispose: () => {} } as unknown as import('../engines/engine-types').SynthEngine;
+
+    m.set('L', { strip, engine: oldEngine, inserts });
+    m.replaceEngine('L', newEngine);
+
+    expect(oldEngineDisposed).toBe(true);
+    expect(m.get('L')!.engine).toBe(newEngine);
+    expect(m.get('L')!.strip).toBe(strip);     // same strip reference
+    expect(m.get('L')!.inserts).toBe(inserts); // same inserts reference
+  });
+
+  it('replaceEngine is a no-op when the lane has no resource', () => {
+    const m = new LaneResourceMap();
+    const newEngine = { dispose: () => {} } as unknown as import('../engines/engine-types').SynthEngine;
+    expect(() => m.replaceEngine('missing', newEngine)).not.toThrow();
+    expect(m.get('missing')).toBeUndefined();
+  });
 });

@@ -29,6 +29,16 @@ export class LaneResourceMap {
     this.inner.set(laneId, res);
   }
 
+  /** Replace ONLY the engine for a lane, disposing the old engine but keeping
+   *  the existing strip + inserts (channel-level resources survive an engine
+   *  swap). No-op if the lane has no resource. */
+  replaceEngine(laneId: string, engine: SynthEngine): void {
+    const res = this.inner.get(laneId);
+    if (!res) return;
+    res.engine.dispose?.();
+    res.engine = engine;
+  }
+
   dispose(laneId: string): void {
     const res = this.inner.get(laneId);
     if (!res) return;
