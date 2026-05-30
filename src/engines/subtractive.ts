@@ -6,6 +6,7 @@ import type {
   SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, EngineUIContext,
 } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
+import type { PluginFactory } from '../plugins/types';
 import { registerEngine, registerEngineFactory } from './registry';
 import { PolySynth } from '../polysynth/polysynth';
 import { ModulationHostImpl } from '../modulation/modulation-host';
@@ -498,3 +499,32 @@ export { SubtractiveEngine };
 // keeps returning a SynthEngine (for code paths that don't have a laneId).
 registerEngineFactory('subtractive', () => new SubtractiveEngine());
 registerEngine(new SubtractiveEngine());
+
+const _subtractiveForMeta = new SubtractiveEngine();
+export const subtractivePlugin: PluginFactory = {
+  kind: 'synth',
+  manifest: {
+    id: 'subtractive',
+    name: 'Subtractive',
+    kind: 'synth',
+    version: '1.0.0',
+    params: _subtractiveForMeta.params,
+    presets: [],
+  },
+  create(ctx, output) {
+    const engine = new SubtractiveEngine();
+    const voice = engine.createVoice(ctx, output);
+    return {
+      trigger:                (m, t, o) => voice.trigger(m, t, o),
+      release:                (t)       => voice.release(t),
+      connect:                (d)       => voice.connect(d),
+      getAudioParams:         ()        => voice.getAudioParams(),
+      getAudioParamRange:     (id)      => voice.getAudioParamRange?.(id),
+      getSharedAudioParams:   (c)       => engine.getSharedAudioParams?.(c) ?? new Map(),
+      getBaseValue:           (id)      => engine.getBaseValue(id),
+      setBaseValue:           (id, v)   => engine.setBaseValue(id, v),
+      applyPreset:            (name)    => engine.applyPreset(name),
+      dispose:                ()        => { voice.dispose(); engine.dispose(); },
+    };
+  },
+};
