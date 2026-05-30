@@ -276,9 +276,13 @@ export class SessionHost {
       const engine = this.deps.laneResources?.get(lane.id)?.engine;
       const host = (engine as { modulators?: { serialize(): unknown[] } } | undefined)?.modulators;
       if (host) {
-        lane.engineState = {
-          modulators: host.serialize() as import('../modulation/types').ModulatorState[],
-        };
+        // Preserve params (mirrored live by mirrorParamChange on every knob
+        // change) and only refresh modulators from the live engine. Replacing
+        // the whole engineState object here dropped every per-lane knob value
+        // on save, so non-303 lanes loaded back with default sound params.
+        if (!lane.engineState) lane.engineState = {};
+        lane.engineState.modulators =
+          host.serialize() as import('../modulation/types').ModulatorState[];
       }
     }
   }
