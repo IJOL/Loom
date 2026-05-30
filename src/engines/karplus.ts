@@ -143,6 +143,8 @@ const KARPLUS_PARAMS: EngineParamSpec[] = [
   { id: 'excite.time',       label: 'Excite',     kind: 'continuous', min: 0.001, max: 0.1, default: 0.01, unit: 's' },
   { id: 'excite.tone',       label: 'Noise Tone', kind: 'continuous', min: 0,     max: 1,   default: 0.5 },
   // Amp envelope
+  { id: 'amp.builtinEnv',    label: 'Built-in Env', kind: 'discrete', min: 0, max: 1, default: 1,
+    options: [{ value: 'off', label: 'Off' }, { value: 'on', label: 'On' }] },
   { id: 'amp.attack',        label: 'Attack',     kind: 'continuous', min: 0.001, max: 0.5, default: 0.005, unit: 's' },
   { id: 'amp.release',       label: 'Release',    kind: 'continuous', min: 0.05,  max: 4,   default: 0.5,   unit: 's' },
   { id: 'amp.level',         label: 'Level',      kind: 'continuous', min: 0,     max: 1,   default: 0.8 },
@@ -239,18 +241,19 @@ class KarplusVoice implements Voice {
     this.src = src;
 
     // Amp envelope on the internal ConstantSource — modulators on amp.level sum
-    // into this same destination via getAudioParams(). The buffer is already
-    // peak-normalized to 0.8, so peakAmp only needs the level + accent gain.
+    // into this same destination via getAudioParams(). Skipped when the built-in
+    // amp env is bypassed; envAmp stays at 0 so a modular ADSR on amp.level
+    // drives the voice alone (the string buffer still plays, but silently).
+    const ampEnvOn = this.getParam('amp.builtinEnv') >= 0.5;
     const peakAmp = Math.max(0.0001, level * velMul);
-    this.envAmp.offset.cancelScheduledValues(time);
-    this.envAmp.offset.setValueAtTime(0, time);
-    this.envAmp.offset.linearRampToValueAtTime(peakAmp, time + attack);
-
-    // Release: fade the amp from gate-end over `release`. There is no loop to
-    // kill — the buffer simply finishes playing and is disposed.
     const releaseStart = time + options.gateDuration;
-    this.envAmp.offset.setValueAtTime(peakAmp, releaseStart);
-    this.envAmp.offset.exponentialRampToValueAtTime(0.0001, releaseStart + release);
+    if (ampEnvOn) {
+      this.envAmp.offset.cancelScheduledValues(time);
+      this.envAmp.offset.setValueAtTime(0, time);
+      this.envAmp.offset.linearRampToValueAtTime(peakAmp, time + attack);
+      this.envAmp.offset.setValueAtTime(peakAmp, releaseStart);
+      this.envAmp.offset.exponentialRampToValueAtTime(0.0001, releaseStart + release);
+    }
 
     src.start(time);
     const stopTime = releaseStart + release + 0.1;

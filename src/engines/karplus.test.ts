@@ -18,9 +18,12 @@ describe('KarplusEngine.params', () => {
     }
   });
 
-  it('all params are continuous', () => {
+  it('all params except discrete toggles are continuous', () => {
+    const discreteIds = ['amp.builtinEnv'];
     for (const spec of engine.params) {
-      expect(spec.kind).toBe('continuous');
+      if (!discreteIds.includes(spec.id)) {
+        expect(spec.kind).toBe('continuous');
+      }
     }
   });
 });
@@ -43,5 +46,23 @@ describe('KarplusEngine getBaseValue/setBaseValue', () => {
   it('unknown id returns 0', () => {
     const engine = new KarplusEngine();
     expect(engine.getBaseValue('not.real')).toBe(0);
+  });
+});
+
+describe('KarplusEngine built-in amp env toggle', () => {
+  it('exposes amp.builtinEnv discrete param defaulting On', () => {
+    const engine = new KarplusEngine();
+    const amp = engine.params.find(p => p.id === 'amp.builtinEnv');
+    expect(amp?.kind).toBe('discrete');
+    expect(amp?.options).toHaveLength(2);
+    expect(amp?.default).toBe(1);
+  });
+
+  it('round-trips through get/setBaseValue', () => {
+    const engine = new KarplusEngine();
+    engine.setBaseValue('amp.builtinEnv', 0);
+    expect(engine.getBaseValue('amp.builtinEnv')).toBe(0);
+    engine.setBaseValue('amp.builtinEnv', 1);
+    expect(engine.getBaseValue('amp.builtinEnv')).toBe(1);
   });
 });
