@@ -304,6 +304,11 @@ export class SessionHost {
         const host = (engine as { modulators?: { deserialize(s: unknown[]): void } } | undefined)?.modulators;
         if (host) host.deserialize(mods);
       }
+      // Restore sampler keymap (one-shot lanes).
+      const km = lane.engineState?.sampler?.keymap;
+      if (km && typeof (engine as { setKeymap?: unknown }).setKeymap === 'function') {
+        (engine as unknown as { setKeymap(k: typeof km): void }).setKeymap(km);
+      }
     }
   }
 
@@ -626,6 +631,8 @@ export class SessionHost {
       masterInserts: this.deps.masterInsertChain,
       // Option B2: thread FxBus so master send params appear in destination dropdown.
       fxBus: this.deps.fxBus,
+      // Live AudioContext for the sampler's audio import (decodeAudioData).
+      audioContext: this.deps.ctx,
     });
 
     // Phase H: mount the insert-chain panel below the engine controls.

@@ -66,6 +66,8 @@ export interface EngineUIContext {
    *  to expose master send (reverb/delay) AudioParams as targets. Hidden from
    *  the insert picker to prevent double-tail bugs. */
   fxBus?: import('../core/fx').FxBus;
+  /** Live AudioContext — sampler/UI code uses it to decode imported audio. */
+  audioContext?: AudioContext;
 }
 
 export interface EnginePreset<P = Record<string, number>> {
