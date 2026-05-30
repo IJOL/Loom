@@ -38,6 +38,10 @@ export interface ModulationUIDeps {
   /** Phase J: master insert chain — FX params appear as "Master FX" optgroup
    *  in the destination dropdown. */
   masterInserts?: import('../plugins/fx/insert-chain').InsertChain;
+  /** Option B2: FxBus master sends — reverb/delay plugin instances whose
+   *  AudioParams appear as "Master Sends" optgroup in the destination dropdown.
+   *  Hidden from the insert picker to prevent double-tail bugs. */
+  fxBus?: import('../core/fx').FxBus;
 }
 
 function sync(deps: ModulationUIDeps): void {
@@ -354,6 +358,34 @@ function renderRoutingList(mod: ModulatorState, deps: ModulationUIDeps): HTMLEle
       const grp = document.createElement('optgroup');
       grp.label = 'Master FX';
       for (const opt of masterFxOpts) grp.appendChild(opt);
+      destSel.appendChild(grp);
+    }
+  }
+
+  // Master Sends params — optgroup "Master Sends" (reverb + delay plugin instances in FxBus)
+  if (deps.fxBus) {
+    const sends = deps.fxBus.getMasterSendInstances();
+    const masterSendOpts: HTMLOptionElement[] = [];
+    for (const [paramId] of sends.reverb.getAudioParams()) {
+      const key = `master-send:reverb:${paramId}`;
+      if (used.has(key)) continue;
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = `Reverb: ${paramId}`;
+      masterSendOpts.push(opt);
+    }
+    for (const [paramId] of sends.delay.getAudioParams()) {
+      const key = `master-send:delay:${paramId}`;
+      if (used.has(key)) continue;
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = `Delay: ${paramId}`;
+      masterSendOpts.push(opt);
+    }
+    if (masterSendOpts.length > 0) {
+      const grp = document.createElement('optgroup');
+      grp.label = 'Master Sends';
+      for (const opt of masterSendOpts) grp.appendChild(opt);
       destSel.appendChild(grp);
     }
   }

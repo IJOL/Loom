@@ -62,6 +62,10 @@ export interface EngineUIContext {
   /** Phase J: master insert chain — used by the modulation destination
    *  dropdown to expose master FX params as targets. */
   masterInserts?: import('../plugins/fx/insert-chain').InsertChain;
+  /** Option B2: FxBus instance — used by the modulation destination dropdown
+   *  to expose master send (reverb/delay) AudioParams as targets. Hidden from
+   *  the insert picker to prevent double-tail bugs. */
+  fxBus?: import('../core/fx').FxBus;
 }
 
 export interface EnginePreset<P = Record<string, number>> {

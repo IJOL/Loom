@@ -106,6 +106,10 @@ export interface SessionHostDeps {
   /** Task 28: master insert chain for rehydrating persisted master inserts on load.
    *  Optional so test fixtures without audio don't need to wire it. */
   masterInsertChain?: import('../plugins/fx/insert-chain').InsertChain;
+  /** Option B2: FxBus instance for threading master send instances into the
+   *  modulation destination dropdown. Optional so test fixtures without audio
+   *  don't need to wire it. */
+  fxBus?: import('../core/fx').FxBus;
 }
 
 export class SessionHost {
@@ -560,6 +564,8 @@ export class SessionHost {
       // can expose lane and master FX params.
       laneInserts: this.deps.laneResources?.get(laneId)?.inserts,
       masterInserts: this.deps.masterInsertChain,
+      // Option B2: thread FxBus so master send params appear in destination dropdown.
+      fxBus: this.deps.fxBus,
     });
 
     // Phase H: mount the insert-chain panel below the engine controls.

@@ -4,7 +4,11 @@ import { applyInsertSlot, type InsertSlot } from './insert-slot';
 import type { InsertChain } from '../plugins/fx/insert-chain';
 import { createKnob } from '../core/knob';
 
-const SEND_ONLY_IN_PHASE_1 = new Set<string>();  // reverb/delay live in FxBus; pickable from inserts is fine but skipped in phase 1
+// Reverb/delay live in FxBus as sends. They're registered in the plugin catalog
+// so their params can be modulation destinations, but hidden from the insert
+// picker to prevent double-tail bugs (lane sends to FxBus AND has a reverb
+// insert = two reverb tails summed at master).
+const SEND_ONLY_IN_PHASE_1 = new Set<string>(['reverb', 'delay']);
 
 export interface LaneInsertUIDeps {
   ctx: AudioContext;

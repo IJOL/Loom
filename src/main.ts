@@ -413,6 +413,7 @@ const sessionHost = new SessionHost({
   laneResources,
   ensureLaneResource,
   masterInsertChain,
+  fxBus: fx,
   applyPresetForLane: (laneId, presetName) => {
     // presetName is a prefixed value matching the dropdown vocabulary
     // (factory: / user: / engine:). See src/presets/preset-apply.ts.

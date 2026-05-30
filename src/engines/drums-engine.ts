@@ -233,6 +233,7 @@ export class DrumsEngine implements SynthEngine {
       historyDeps: ctx.historyDeps,
       laneInserts: ctx.laneInserts,
       masterInserts: ctx.masterInserts,
+      fxBus: ctx.fxBus,
       onChange: () => {
         container.innerHTML = '';
         this.buildParamUI(container, ctx);
