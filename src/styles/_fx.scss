@@ -1,5 +1,17 @@
 /* ── FX tab ───────────────────────────────────────────────────────────── */
 
+/* Sends / Inserts zone wrappers */
+.fx-zone {
+  flex-direction: column;
+  gap: 6px;
+}
+.fx-zone-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-left: 12px;
+}
+
 .fx-filters {
   display: flex;
   flex-direction: column;

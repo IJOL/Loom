@@ -269,23 +269,36 @@
       </div>
 
       <div class="page" data-page="fx" hidden>
-        <div class="row poly-section">
-          <div class="section-label">REVERB</div>
-          <div id="fx-reverb-knobs" class="knob-row"></div>
+        <!-- SENDS zone: reverb + delay -->
+        <div class="row fx-zone">
+          <div class="section-label">SENDS</div>
+          <div class="fx-zone-content">
+            <div class="row poly-section">
+              <div class="section-label">REVERB</div>
+              <div id="fx-reverb-knobs" class="knob-row"></div>
+            </div>
+            <div class="row poly-section">
+              <div class="section-label">DELAY</div>
+              <div id="fx-delay-knobs" class="knob-row"></div>
+            </div>
+          </div>
         </div>
+        <!-- MASTER COMP: standalone -->
         <div class="row poly-section">
           <div class="section-label">MASTER COMP</div>
           <div id="fx-master-comp-knobs" class="knob-row"></div>
         </div>
-        <div class="row poly-section">
-          <div class="section-label">DELAY</div>
-          <div id="fx-delay-knobs" class="knob-row"></div>
+        <!-- INSERTS zone: master insert chain -->
+        <div class="row fx-zone">
+          <div class="section-label">INSERTS</div>
+          <div class="fx-zone-content">
+            <div class="row poly-section">
+              <div class="section-label">MASTER FILTERS</div>
+              <button class="rnd primary" id="fx-add-filter">+ Add Filter</button>
+            </div>
+            <div id="fx-filters" class="fx-filters"></div>
+          </div>
         </div>
-        <div class="row poly-section">
-          <div class="section-label">MASTER FILTERS</div>
-          <button class="rnd primary" id="fx-add-filter">+ Add Filter</button>
-        </div>
-        <div id="fx-filters" class="fx-filters"></div>
       </div>
 
       <details class="arp-panel">
