@@ -49,10 +49,16 @@ function renderKarplusString(opts: {
   // Loop low-pass coefficient from brightness (one-pole y += a·(x−y)):
   // 0.15 ≈ 1 kHz cutoff (dark) … 0.95 ≈ 20 kHz (open/metallic).
   const a = 0.15 + brightness * 0.80;
-  // Loop gain from damping: 0.992 (very long sustain) … 0.70 (muted). Values
-  // this close to 1 are safe because the loop only runs inside this offline
-  // render — there is no live feedback path to destabilize.
-  const g = 0.992 - damping * 0.29;
+  // Loop gain → decay time. A FIXED loop gain makes the 60 dB decay time
+  // T60 ∝ 1/freq (amp(t) = g^(freq·t)), so high notes die far too fast — C6
+  // collapses in ~0.1 s, which is both unmusical and left the top of the
+  // register near-silent. Instead choose g PER NOTE so T60 is set by `damping`
+  // and is ~constant across the register: solve g^(freq·T60) = 1e-3 for g.
+  //   damping 0 → T60 ≈ 4.0 s (long sustain)   damping 1 → T60 ≈ 0.12 s (muted)
+  // Clamped just below 1 for safety (the loop only runs offline, so there is no
+  // live feedback path to destabilize regardless).
+  const t60 = 4.0 * Math.pow(0.03, damping);
+  const g = Math.min(0.9995, Math.exp(Math.log(1e-3) / (Math.max(20, freq) * t60)));
 
   // Delay length = period minus the one-pole's low-frequency group delay
   // ((1−a)/a samples), so the filtered loop resonates at the true pitch.
