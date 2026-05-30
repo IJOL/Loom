@@ -22,6 +22,6 @@ describe('bootstrapPlugins', () => {
         applyPreset: () => {}, dispose: () => {},
       }),
     }]);
-    expect(listPlugins('fx').map((p) => p.manifest.id).sort()).toEqual(['distortion', 'multifilter', 'noop', 'reverb']);
+    expect(listPlugins('fx').map((p) => p.manifest.id).sort()).toEqual(['delay', 'distortion', 'multifilter', 'noop', 'reverb']);
   });
 });
