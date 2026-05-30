@@ -2,6 +2,8 @@ import { type FxBus, type SyncDiv } from './fx';
 import type { InsertChain } from '../plugins/fx/insert-chain';
 import { createKnob, type KnobHandle } from './knob';
 import { attachKnobUndo, type HistoryDeps } from '../save/history-wiring';
+import { buildLaneInsertUI } from '../session/lane-insert-ui';
+import type { InsertSlot } from '../session/insert-slot';
 
 /** Local replacement for the deleted addPolyKnob helper:
  *  builds a knob, appends to parent, registers in the automation registry. */
@@ -65,6 +67,7 @@ export const SYNC_OPTS: Array<{ value: SyncDiv; label: string }> = [
 ];
 
 export interface FxUIDeps {
+  ctx: AudioContext;
   fx: FxBus;
   masterInsertChain: InsertChain;
   masterComp: import('./fx').MasterCompressor;
@@ -73,6 +76,8 @@ export interface FxUIDeps {
   /** Optional undo history deps. When present, knob drags/wheel/dblclick
    *  are bracketed as single undo entries. */
   historyDeps?: HistoryDeps;
+  /** Called whenever the insert chain changes, so the session can be persisted. */
+  saveSession?: () => void;
 }
 
 let _deps: FxUIDeps | null = null;
@@ -171,6 +176,19 @@ export function wireFxUI(deps: FxUIDeps): void {
   });
   mcRow.appendChild(mcByp);
 
-  // TODO: Task 19 — wire masterInsertChain plugin add/remove UI here.
-  // The "Add Filter" button is intentionally disabled until Task 19 is complete.
+  // Master insert chain UI (Task 19).
+  // masterInsertSlots is local for now; Task 23 will move it to sessionState.masterInserts.
+  const masterInsertSlots: InsertSlot[] = [];
+  const masterFxContainer = document.getElementById('fx-filters') as HTMLDivElement;
+  // Hide the static "Add Filter" button — buildLaneInsertUI provides its own.
+  const addFilterBtn = document.getElementById('fx-add-filter');
+  if (addFilterBtn) addFilterBtn.style.display = 'none';
+
+  buildLaneInsertUI({
+    ctx: deps.ctx,
+    container: masterFxContainer,
+    chain: deps.masterInsertChain,
+    slots: masterInsertSlots,
+    onChange: () => deps.saveSession?.(),
+  });
 }
