@@ -10,9 +10,11 @@ import { createKnobMounter } from './app/knob-mounting';
 import { createLaneHost } from './app/lane-host-wiring';
 import { createPerformanceFeature } from './app/performance-feature';
 import {
-  wireEngineSelector, rebuildEngineParamUI,
+  wireEngineSelector, wireEngineSelector303, rebuildEngineParamUI,
   type EngineSelectorUIDeps,
 } from './engines/engine-selector-ui';
+import { getEngine, getEngineParamIds } from './engines/registry';
+import { swapLaneEngineFlow, type EngineSwapDeps } from './app/engine-swap';
 import { type Wave, type TB303 } from './core/synth';
 import { Sequencer } from './core/sequencer';
 import { DRUM_LANES, type DrumMachine, type DrumVoice } from './core/drums';
@@ -125,7 +127,7 @@ const lanes = createLaneAllocator({
 });
 const { resources: laneResources, extraStrips, extraPolys,
         stripFor, ensureExtraPoly, ensureLaneVoice,
-        ensureLaneResource, getLaneEngineInstance } = lanes;
+        ensureLaneResource, getLaneEngineInstance, swapLaneEngine } = lanes;
 
 // Phase G: lazy accessors — null before applyLoadedSessionState allocates lanes.
 const getSynthInstance = (): TB303 | null => {
@@ -166,6 +168,7 @@ const scaleSel = $<HTMLSelectElement>('scale');
 const rootSel  = $<HTMLSelectElement>('root');
 const vizCanvas    = $<HTMLCanvasElement>('viz');
 const engineSel    = $<HTMLSelectElement>('engine-select');
+const engineSel303 = $<HTMLSelectElement>('engine-select-303');
 
 // ── Populate selects ───────────────────────────────────────────────────────
 // Drum kit selector removed: presets dropdown (drums-machine.json) covers
@@ -395,11 +398,13 @@ const sessionHost = new SessionHost({
     if (active) {
       const engineId = sessionHost.state.lanes.find((l) => l.id === active)?.engineId;
       if (engineId === 'drums-machine') mountDrumMasterLaneKnobs(active);
+      if (engineId === 'tb303') engineSel303.value = 'tb303';
       mountLaneFxPanel(active);
     }
   },
   laneResources,
   ensureLaneResource,
+  swapLaneEngine,
   masterInsertChain,
   fxBus: fx,
   scaleSel,
@@ -421,6 +426,30 @@ sessionHost.init();
 // as the source of truth (replaces the pattern-based fallback used at boot).
 laneHost.setLookupEngineId((laneId) =>
   sessionHost.state.lanes.find((l) => l.id === laneId)?.engineId ?? 'subtractive');
+
+// Engine swap: change the engine of an existing lane in place.
+const engineSwapDeps: EngineSwapDeps = {
+  state: sessionHost.state,
+  getEngineEditor: (id) => getEngine(id)?.editor,
+  getEngineParamIds: (id) => getEngineParamIds(id),
+  swapLaneEngine,
+  onSwapped: (laneId, newId) => {
+    // Re-route the editor to the new engine's page + rebuild its panels, then
+    // keep both engine selectors in sync with the swapped lane.
+    sessionHost.showLaneEditor(laneId);
+    engineSel.value = newId;
+    engineSel303.value = newId;
+  },
+  // saveSession is intentionally omitted: SessionHost has no autosave callback
+  // wired here; the swap mutates SessionState (engineId/engineState), which is
+  // what serializes on save, and undo is the immediate safety net.
+};
+
+// One undoable entry per swap. Used by both engine selectors.
+const onEngineChangeUndoable = (laneId: string, newId: string) => {
+  const run = () => { swapLaneEngineFlow(engineSwapDeps, laneId, newId); };
+  if (_discreteHistoryDeps) withUndo(_discreteHistoryDeps, run); else run();
+};
 
 
 // onStep still fires for bass/drum/melody cell highlighting; the continuous
@@ -507,8 +536,17 @@ const engineSelectorDeps: EngineSelectorUIDeps = {
   // is built (further below), but the change handler fires at user-interaction
   // time, so the getter always sees the final value.
   get historyDeps() { return _discreteHistoryDeps; },
+  // Raw flow here — the poly selector's change handler already wraps in withUndo
+  // via historyDeps above.
+  onEngineChange: (laneId, newId) => { swapLaneEngineFlow(engineSwapDeps, laneId, newId); },
 };
 wireEngineSelector(engineSelectorDeps, currentEngineId);
+
+wireEngineSelector303({
+  engineSel303,
+  getActiveLaneId: () => sessionHost.activeEditLane,
+  onEngineChange: onEngineChangeUndoable,
+});
 
 const polySynthPresetsDeps: PolySynthPresetsDeps = {
   // Phase G: polysynth removed; getActivePolyTarget uses synthEditorState only.

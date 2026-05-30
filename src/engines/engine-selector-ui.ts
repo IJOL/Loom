@@ -28,6 +28,10 @@ export interface EngineSelectorUIDeps {
    *  so each selection becomes one undoable entry. Omit for programmatic/
    *  session-load callers so those do not pollute the undo stack. */
   historyDeps?: HistoryDeps;
+  /** When provided, a selection swaps the active lane's engine via this
+   *  callback. The change handler already wraps it in withUndo, so pass the
+   *  raw flow here. When omitted, the handler falls back to rebuildEngineParamUI. */
+  onEngineChange?: (laneId: string, newEngineId: string) => void;
 }
 
 /** EngineIds eligible for the swap dropdown: registered 'synth' plugins whose
@@ -148,7 +152,10 @@ export function wireEngineSelector(deps: EngineSelectorUIDeps, initialEngineId: 
   populateEngineSelect(deps, initialEngineId);
 
   deps.engineSel.addEventListener('change', () => {
-    const run = () => rebuildEngineParamUI();
+    const run = () => {
+      if (deps.onEngineChange) deps.onEngineChange(deps.getActiveLaneId(), deps.engineSel.value);
+      else rebuildEngineParamUI();
+    };
     if (deps.historyDeps) withUndo(deps.historyDeps, run); else run();
   });
 }
