@@ -22,6 +22,6 @@ describe('bootstrapPlugins', () => {
         applyPreset: () => {}, dispose: () => {},
       }),
     }]);
-    expect(listPlugins('fx').map((p) => p.manifest.id)).toEqual(['noop']);
+    expect(listPlugins('fx').map((p) => p.manifest.id).sort()).toEqual(['multifilter', 'noop']);
   });
 });

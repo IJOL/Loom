@@ -6,10 +6,12 @@ import { fmPlugin }          from '../engines/fm';
 import { wavetablePlugin }   from '../engines/wavetable';
 import { karplusPlugin }     from '../engines/karplus';
 import { drumsPlugin }       from '../engines/drums-engine';
+import { multifilterPlugin } from '../plugins/fx/multifilter';
 import type { PluginFactory } from '../plugins/types';
 
 const BUILTIN: PluginFactory[] = [
   tb303Plugin, subtractivePlugin, fmPlugin, wavetablePlugin, karplusPlugin, drumsPlugin,
+  multifilterPlugin,
   // FX + modulator plugins appended in later phases.
 ];
 
