@@ -100,6 +100,38 @@ export function populateEngineSelect(deps: EngineSelectorUIDeps, currentEngineId
   }
 }
 
+export interface EngineSelector303Deps {
+  engineSel303: HTMLSelectElement;
+  /** The lane currently being edited (sessionHost.activeEditLane). */
+  getActiveLaneId: () => string | null;
+  /** Wrap-in-undo swap entry point. Receives the lane id + chosen engine id. */
+  onEngineChange: (laneId: string, newEngineId: string) => void;
+}
+
+/** Populate a <select> with the 5 melodic engines (manifest labels). */
+export function populateEngineSelect303(sel: HTMLSelectElement, currentEngineId: string): void {
+  sel.innerHTML = '';
+  const melodic = new Set(melodicSynthEngineIds());
+  for (const plugin of listPlugins('synth')) {
+    if (!melodic.has(plugin.manifest.id)) continue;
+    const opt = document.createElement('option');
+    opt.value = plugin.manifest.id;
+    opt.textContent = plugin.manifest.name;
+    if (plugin.manifest.id === currentEngineId) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+/** Wire the 303-page engine selector: a change swaps the engine of the lane
+ *  currently in edit. */
+export function wireEngineSelector303(deps: EngineSelector303Deps): void {
+  populateEngineSelect303(deps.engineSel303, 'tb303');
+  deps.engineSel303.addEventListener('change', () => {
+    const laneId = deps.getActiveLaneId();
+    if (laneId) deps.onEngineChange(laneId, deps.engineSel303.value);
+  });
+}
+
 export function wireEngineSelector(deps: EngineSelectorUIDeps, initialEngineId: string): void {
   _deps = deps;
 
