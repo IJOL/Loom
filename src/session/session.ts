@@ -146,6 +146,22 @@ function reEvaluateEnvelopes(
   };
 }
 
+/** After a lane's engine changes, re-evaluate every clip's automation
+ *  envelopes against the new engine's param set: an envelope whose paramId
+ *  is absent from `paramIds` is disabled (kept, not deleted — mirrors
+ *  reEvaluateEnvelopes used by moveClip/copyClip). Mutates the lane in place. */
+export function reconcileLaneEnvelopes(
+  lane: SessionLane,
+  paramIds: ReadonlySet<string>,
+): void {
+  for (const clip of lane.clips) {
+    if (!clip?.envelopes) continue;
+    for (const env of clip.envelopes) {
+      env.enabled = paramIds.has(env.paramId);
+    }
+  }
+}
+
 export function moveClip(
   s: SessionState,
   from: ClipSlot,
