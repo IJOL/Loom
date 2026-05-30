@@ -108,13 +108,14 @@ describe('pianoroll-zoom math', () => {
   });
 
   it('zoomAroundAnchor keeps the point under the cursor fixed', () => {
-    // cursor at viewport px 100; content doubles in size -> scroll so the
-    // same content point stays under px 100.
+    // cursor at viewport px 100, scroll 0; content doubles (1000 -> 2000).
     const scroll = zoomAroundAnchor(0, 100, 1000, 2000);
     expect(scroll).toBe(100);
-    // content point under cursor before: (0+100)=100px of 1000 -> 10%.
-    // after: 10% of 2000 = 200px content; 200 - scroll(100) = 100 viewport px. fixed.
-    expect((100 - 0) / 1000).toBeCloseTo((200 - scroll) / 2000);
+    // The content pixel under the cursor stays the same FRACTION of the whole
+    // before and after the zoom (i.e. the cursor stays put):
+    //   before = (scrollBefore + anchor) / oldDim = (0 + 100) / 1000 = 0.1
+    //   after  = (scrollAfter  + anchor) / newDim = (100 + 100) / 2000 = 0.1
+    expect((0 + 100) / 1000).toBeCloseTo((scroll + 100) / 2000);
   });
 
   it('zoomAroundAnchor never returns a negative scroll', () => {
