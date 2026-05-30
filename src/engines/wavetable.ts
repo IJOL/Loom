@@ -183,6 +183,9 @@ class WavetableVoice implements Voice {
     const dec = Math.max(0.001, this.getParam('amp.decay'));
     const sus = this.getParam('amp.sustain');
     const rel = Math.max(0.001, this.getParam('amp.release'));
+    // Sustain hold-point, shared by the env schedule and the voice's natural
+    // stop time below so the two can't silently diverge.
+    const releaseAt = Math.max(time + atk + dec, gateEnd);
     if (this.binder == null || ampEnvOn) {
       // Standalone/built-in ADSR: oscillator gains already carry velMul, so
       // the amp envelope peaks at unity (the modulator-bound path peaks at 1
@@ -194,15 +197,14 @@ class WavetableVoice implements Voice {
       this.envAmp.offset.linearRampToValueAtTime(sus, time + atk + dec);
       // Close the gate: hold sustain until the note ends, then ramp to silence
       // over the release. release() can override this with an earlier cut.
-      const releaseAt = Math.max(time + atk + dec, gateEnd);
       this.envAmp.offset.setValueAtTime(sus, releaseAt);
       this.envAmp.offset.linearRampToValueAtTime(0, releaseAt + rel);
     } else {
       this.envAmp.offset.setValueAtTime(0, time);
     }
-    const ampZero = (this.binder == null || ampEnvOn)
-      ? Math.max(time + atk + dec, gateEnd) + rel
-      : gateEnd + rel;
+    // Off-in-lane has no built-in tail, so the voice only needs to outlast the
+    // gate by the release window (gives a user-routed modular amp ADSR runway).
+    const ampZero = (this.binder == null || ampEnvOn) ? releaseAt + rel : gateEnd + rel;
 
     if (!this.started) {
       this.oscA.start(time);
@@ -226,9 +228,9 @@ class WavetableVoice implements Voice {
     // trigger() — standalone (no binder) or amp.builtinEnv On in a lane.
     if (this.binder == null || this.getParam('amp.builtinEnv') >= 0.5) {
       this.envAmp.offset.cancelScheduledValues(time);
-      // Short 5 ms ramp to silence — gate-cut, not a musical release. The
-      // engine's amp.release param is meant for the modulator ADSR; standalone
-      // mode is just a fallback.
+      // Short 5 ms ramp to silence — a gate-cut applied here when release()
+      // fires before the scheduled tail in trigger(). This is NOT amp.release;
+      // that param governs the full ADSR tail scheduled in trigger().
       this.envAmp.offset.linearRampToValueAtTime(0, time + 0.005);
     }
   }

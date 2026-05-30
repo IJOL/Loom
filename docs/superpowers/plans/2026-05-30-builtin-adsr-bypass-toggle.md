@@ -551,6 +551,8 @@ describeWtBuiltin('WavetableEngine built-in amp env toggle', () => {
 
   itWtBuiltin('round-trips through get/setBaseValue', () => {
     const engine = new WtEngineForBuiltin();
+    expectWtBuiltin(engine.getBaseValue('amp.builtinEnv')).toBe(1);  // default On
+    engine.setBaseValue('amp.builtinEnv', 0);
     expectWtBuiltin(engine.getBaseValue('amp.builtinEnv')).toBe(0);
     engine.setBaseValue('amp.builtinEnv', 1);
     expectWtBuiltin(engine.getBaseValue('amp.builtinEnv')).toBe(1);
