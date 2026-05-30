@@ -46,3 +46,49 @@ describe('SubtractiveEngine getBaseValue/setBaseValue', () => {
     expect(engine.getBaseValue('not.real')).toBe(0);
   });
 });
+
+import { SubtractiveEngine as SubEngineForBuiltin } from './subtractive';
+
+describe('SubtractiveEngine built-in envelope toggles', () => {
+  it('exposes amp.builtinEnv and filter.builtinEnv as discrete params defaulting On', () => {
+    const engine = new SubEngineForBuiltin();
+    const amp = engine.params.find(p => p.id === 'amp.builtinEnv');
+    const filt = engine.params.find(p => p.id === 'filter.builtinEnv');
+    expect(amp?.kind).toBe('discrete');
+    expect(amp?.options).toHaveLength(2);
+    expect(amp?.default).toBe(1);   // On
+    expect(filt?.kind).toBe('discrete');
+    expect(filt?.default).toBe(1);  // On
+  });
+
+  it('setBaseValue flips the PolySynth bypass flags and getBaseValue reflects them', () => {
+    const sr = 44100;
+    const ctx = new OfflineAudioContext(1, sr, sr);
+    const engine = new SubEngineForBuiltin();
+    const out = (ctx as unknown as AudioContext).createGain();
+    engine.createVoice(ctx as unknown as AudioContext, out); // instantiate polysynth
+    const ps = engine.getPolySynth()!;
+
+    engine.setBaseValue('amp.builtinEnv', 0);
+    expect(ps.ampEnvEnabled).toBe(false);
+    expect(engine.getBaseValue('amp.builtinEnv')).toBe(0);
+
+    engine.setBaseValue('filter.builtinEnv', 0);
+    expect(ps.filterEnvEnabled).toBe(false);
+    expect(engine.getBaseValue('filter.builtinEnv')).toBe(0);
+
+    engine.setBaseValue('amp.builtinEnv', 1);
+    expect(ps.ampEnvEnabled).toBe(true);
+    expect(engine.getBaseValue('amp.builtinEnv')).toBe(1);
+  });
+
+  it('buffers the flag through pending when no polysynth exists yet, applying on createVoice', () => {
+    const sr = 44100;
+    const ctx = new OfflineAudioContext(1, sr, sr);
+    const engine = new SubEngineForBuiltin();
+    engine.setBaseValue('amp.builtinEnv', 0);  // before any polysynth
+    const out = (ctx as unknown as AudioContext).createGain();
+    engine.createVoice(ctx as unknown as AudioContext, out);
+    expect(engine.getPolySynth()!.ampEnvEnabled).toBe(false);
+  });
+});

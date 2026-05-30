@@ -50,12 +50,16 @@ const SUB_PARAMS: EngineParamSpec[] = [
   { id: 'filter.envAmount', label: 'Env Amt',   kind: 'continuous', min: 0, max: 1, default: 0.45 },
   { id: 'filter.drive',     label: 'Drive',     kind: 'continuous', min: 0, max: 1, default: 0 },
   { id: 'filter.keyTrack',  label: 'Key Track', kind: 'continuous', min: 0, max: 1, default: 0 },
+  { id: 'filter.builtinEnv', label: 'Built-in Env', kind: 'discrete', min: 0, max: 1, default: 1,
+    options: [{ value: 'off', label: 'Off' }, { value: 'on', label: 'On' }] },
   { id: 'filter.attack',    label: 'F Atk',     kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's' },
   { id: 'filter.decay',     label: 'F Dec',     kind: 'continuous', min: 0.001, max: 4, default: 0.3,  unit: 's' },
   { id: 'filter.sustain',   label: 'F Sus',     kind: 'continuous', min: 0, max: 1, default: 0.4 },
   { id: 'filter.release',   label: 'F Rel',     kind: 'continuous', min: 0.005, max: 4, default: 0.35, unit: 's' },
 
   // Amp env
+  { id: 'amp.builtinEnv', label: 'Built-in Env', kind: 'discrete', min: 0, max: 1, default: 1,
+    options: [{ value: 'off', label: 'Off' }, { value: 'on', label: 'On' }] },
   { id: 'amp.attack',  label: 'A Atk', kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's' },
   { id: 'amp.decay',   label: 'A Dec', kind: 'continuous', min: 0.001, max: 4, default: 0.2,  unit: 's' },
   { id: 'amp.sustain', label: 'A Sus', kind: 'continuous', min: 0, max: 1, default: 0.7 },
@@ -304,6 +308,8 @@ class SubtractiveEngine implements SynthEngine {
     if (id === 'poly.voices') return this.polysynth.maxVoices;
     if (id === 'poly.mode')   return this.polysynth.mode === 'mono' ? 1 : 0;
     if (id === 'poly.retrig') return this.polysynth.retrig ? 1 : 0;
+    if (id === 'amp.builtinEnv')    return this.polysynth.ampEnvEnabled ? 1 : 0;
+    if (id === 'filter.builtinEnv') return this.polysynth.filterEnvEnabled ? 1 : 0;
     return readDotPath(this.polysynth.params as unknown as Record<string, unknown>, id);
   }
 
@@ -315,6 +321,8 @@ class SubtractiveEngine implements SynthEngine {
     if (id === 'poly.voices') { this.polysynth.setMaxVoices(v); return; }
     if (id === 'poly.mode')   { this.polysynth.setMode(v >= 0.5 ? 'mono' : 'poly'); return; }
     if (id === 'poly.retrig') { this.polysynth.setRetrig(v >= 0.5); return; }
+    if (id === 'amp.builtinEnv')    { this.polysynth.ampEnvEnabled = v >= 0.5;    return; }
+    if (id === 'filter.builtinEnv') { this.polysynth.filterEnvEnabled = v >= 0.5; return; }
     const spec = SUB_PARAMS.find(p => p.id === id);
     writeDotPath(this.polysynth.params as unknown as Record<string, unknown>, id, v, spec);
   }
