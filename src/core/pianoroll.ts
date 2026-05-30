@@ -37,6 +37,78 @@ export interface PianoRollHandle {
 const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const BLACK_KEY_PCS = [1, 3, 6, 8, 10];
 
+// Frame geometry (CSS px).
+const KEYS_W = 42;
+const RULER_H = 26;
+const FRAME_H = 320; // total editor height; grid viewport gets FRAME_H - RULER_H
+
+export interface PianoRollFrame {
+  frame: HTMLDivElement;
+  rulerWrap: HTMLDivElement; keysWrap: HTMLDivElement; gridVp: HTMLDivElement;
+  rulerCanvas: HTMLCanvasElement; keysCanvas: HTMLCanvasElement; gridCanvas: HTMLCanvasElement;
+}
+
+/** Build the 2×2 editor frame (corner / ruler / keyboard / grid-viewport)
+ *  inside `host`. Ruler and keyboard live OUTSIDE the scroll viewport so they
+ *  can be pinned (repositioned via transform) as the grid scrolls. */
+export function buildEditorFrame(host: HTMLElement): PianoRollFrame {
+  host.innerHTML = '';
+
+  const frame = document.createElement('div');
+  frame.className = 'pr-frame';
+  Object.assign(frame.style, {
+    display: 'grid',
+    gridTemplateColumns: `${KEYS_W}px 1fr`,
+    gridTemplateRows: `${RULER_H}px 1fr`,
+    height: `${FRAME_H}px`,
+    background: '#141414',
+    border: '1px solid #2a2a2a',
+    borderRadius: '6px',
+    overflow: 'hidden',
+  } as Partial<CSSStyleDeclaration>);
+
+  const corner = document.createElement('div');
+  corner.className = 'pr-corner';
+  Object.assign(corner.style, { background: '#202020', borderRight: '1px solid #2a2a2a', borderBottom: '1px solid #2a2a2a' } as Partial<CSSStyleDeclaration>);
+
+  const mkWrap = (cls: string, cursor: string): HTMLDivElement => {
+    const d = document.createElement('div');
+    d.className = cls;
+    Object.assign(d.style, { overflow: 'hidden', position: 'relative', cursor } as Partial<CSSStyleDeclaration>);
+    return d;
+  };
+  const mkCanvas = (absolute: boolean): HTMLCanvasElement => {
+    const c = document.createElement('canvas');
+    if (absolute) Object.assign(c.style, { position: 'absolute', top: '0', left: '0', display: 'block' } as Partial<CSSStyleDeclaration>);
+    else c.style.display = 'block';
+    return c;
+  };
+
+  const rulerWrap = mkWrap('pr-ruler', 'ns-resize');
+  rulerWrap.style.borderBottom = '1px solid #2a2a2a';
+  rulerWrap.style.background = '#181818';
+  const rulerCanvas = mkCanvas(true);
+  rulerWrap.appendChild(rulerCanvas);
+
+  const keysWrap = mkWrap('pr-keys', 'ns-resize');
+  keysWrap.style.borderRight = '1px solid #2a2a2a';
+  keysWrap.style.background = '#1a1a1a';
+  const keysCanvas = mkCanvas(true);
+  keysWrap.appendChild(keysCanvas);
+
+  const gridVp = document.createElement('div');
+  gridVp.className = 'pr-grid-vp';
+  Object.assign(gridVp.style, { overflow: 'auto', position: 'relative', background: '#0a0a0a' } as Partial<CSSStyleDeclaration>);
+  const gridCanvas = mkCanvas(false);
+  gridVp.appendChild(gridCanvas);
+
+  // Auto-placement fills the grid row-major: corner, ruler, keys, grid.
+  frame.append(corner, rulerWrap, keysWrap, gridVp);
+  host.appendChild(frame);
+
+  return { frame, rulerWrap, keysWrap, gridVp, rulerCanvas, keysCanvas, gridCanvas };
+}
+
 export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   const minMidi = opts.minMidi ?? 36;   // C2
   const maxMidi = opts.maxMidi ?? 96;   // C7
