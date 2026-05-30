@@ -16,6 +16,8 @@ export class InsertChain {
   list(): readonly ChainSlot[] { return this.slots; }
   size(): number { return this.slots.length; }
 
+  get inputNode(): AudioNode { return this.input; }
+
   insert(fx: FxInstance, at?: number): void {
     const idx = at ?? this.slots.length;
     this.slots.splice(idx, 0, { fx, bypass: false });

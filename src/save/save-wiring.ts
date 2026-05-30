@@ -7,7 +7,8 @@ import {
 import type { Sequencer } from '../core/sequencer';
 import type { TB303 } from '../core/synth';
 import type { DrumMachine } from '../core/drums';
-import type { FxBus, FilterChain } from '../core/fx';
+import type { FxBus } from '../core/fx';
+import type { InsertChain } from '../plugins/fx/insert-chain';
 import type { SessionHost } from '../session/session-host';
 import type { HistoryController } from '../core/history';
 import {
@@ -29,7 +30,7 @@ export interface SaveWiringDeps {
   refreshKnobsFromSynth: () => void;
   renderLanes: () => void;
   fx: FxBus;
-  filterChain: FilterChain;
+  masterInsertChain: InsertChain;
   flashButton: (b: HTMLButtonElement, msg: string) => void;
   history: HistoryController<SavedStateV3>;
 }

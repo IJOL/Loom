@@ -92,7 +92,7 @@ const presetsLoaded = loadAllPresets(ENGINE_IDS_FOR_PRESETS);
 // ── Audio graph ────────────────────────────────────────────────────────────
 bootstrapPlugins();
 const audio = createAudioGraph();
-const { ctx, master, analyser, filterChain, fx, masterComp, sidechainBus,
+const { ctx, master, analyser, masterInsertChain, fx, masterComp, sidechainBus,
         bassStrip, polyStrip, drumBusStrip,
         synth, drums, polysynth,
         mainSubtractive, drumsEngineInstance } = audio;
@@ -128,7 +128,7 @@ const { resources: laneResources, extraStrips, extraPolys,
         ensureLaneResource, getLaneEngineInstance } = lanes;
 
 const bpmBroadcast = createBpmBroadcaster({
-  seq, fx, filterChain, polysynth,
+  seq, fx, masterInsertChain, polysynth,
   getExtraPolys: () => Object.values(extraPolys).filter((p): p is PolySynth => !!p),
 });
 
@@ -564,7 +564,7 @@ const arpUIDeps: ArpUIDeps = {
 // First build with whatever lanes exist now (built-ins only); a second build
 // runs after the demo loads so dynamically-added lanes (Sub 2 etc.) show up.
 const fxUIDeps: FxUIDeps = {
-  fx, filterChain, masterComp, getBpm: () => seq.bpm, registerKnob,
+  fx, masterInsertChain, masterComp, getBpm: () => seq.bpm, registerKnob,
   // Late-bound via getter so historyDeps is resolved at event-fire time.
   get historyDeps() { return _discreteHistoryDeps; },
 };
@@ -704,7 +704,7 @@ const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
   refreshKnobsFromSynth,
   renderLanes,
   fx,
-  filterChain,
+  masterInsertChain,
   flashButton,
   history,
 };

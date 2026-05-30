@@ -28,7 +28,7 @@ export interface SavedStateV3Deps {
   refreshKnobsFromSynth: () => void;
   renderLanes: () => void;
   fx: import('../core/fx').FxBus;
-  filterChain: import('../core/fx').FilterChain;
+  masterInsertChain: import('../plugins/fx/insert-chain').InsertChain;
   master: GainNode;
 }
 
@@ -49,7 +49,7 @@ export function buildSavedStateV3(deps: SavedStateV3Deps): SavedStateV3 {
 export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): void {
   const {
     seq, synth, drums, volInput, bpmInput, swingInput, kitSel, waveSel,
-    sessionHost, refreshKnobsFromSynth, renderLanes, fx, filterChain, master,
+    sessionHost, refreshKnobsFromSynth, renderLanes, fx, master,
   } = deps;
 
   if (typeof s.bpm === 'number') { seq.bpm = s.bpm; bpmInput.value = String(s.bpm); }
@@ -62,7 +62,7 @@ export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): voi
   refreshKnobsFromSynth();
   renderLanes();
   fx.setBpmSync(seq.bpm);
-  filterChain.updateBpm(seq.bpm);
+  // TODO: serialize masterInsertChain (Task 28)
 }
 
 /** Runtime guard: untrusted JSON (file load, localStorage) → typed shape or null. */

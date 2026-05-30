@@ -1,4 +1,5 @@
-import { FxBus, ChannelStrip, FilterChain, MasterCompressor } from '../core/fx';
+import { FxBus, ChannelStrip, MasterCompressor } from '../core/fx';
+import { InsertChain } from '../plugins/fx/insert-chain';
 import { SidechainBus } from '../core/sidechain-bus';
 import { TB303 } from '../core/synth';
 import { DrumMachine } from '../core/drums';
@@ -13,7 +14,7 @@ export interface AudioGraph {
   ctx: AudioContext;
   master: GainNode;
   analyser: AnalyserNode;
-  filterChain: FilterChain;
+  masterInsertChain: InsertChain;
   masterComp: MasterCompressor;
   fx: FxBus;
   sidechainBus: SidechainBus;
@@ -35,8 +36,8 @@ export function createAudioGraph(): AudioGraph {
   analyser.connect(ctx.destination);
   const masterComp = new MasterCompressor(ctx);
   masterComp.output.connect(analyser);
-  // master → FilterChain → masterComp → analyser → destination
-  const filterChain = new FilterChain(ctx, master, masterComp.input);
+  // master → InsertChain → masterComp → analyser → destination
+  const masterInsertChain = new InsertChain(master, masterComp.input);
   const fx = new FxBus(ctx, master);
   configureDrumsEngineSharedFx(fx);
 
@@ -60,7 +61,7 @@ export function createAudioGraph(): AudioGraph {
   const drumsEngineInstance = getEngine('drums-machine') ?? null;
 
   return {
-    ctx, master, analyser, filterChain, masterComp, fx, sidechainBus,
+    ctx, master, analyser, masterInsertChain, masterComp, fx, sidechainBus,
     bassStrip, polyStrip, drumBusStrip,
     synth, drums, polysynth,
     mainSubtractive, drumsEngineInstance,

@@ -1,12 +1,13 @@
 import { getEngine } from '../engines/registry';
-import type { FxBus, FilterChain } from '../core/fx';
+import type { FxBus } from '../core/fx';
 import type { Sequencer } from '../core/sequencer';
 import type { PolySynth } from '../polysynth/polysynth';
+import type { InsertChain } from '../plugins/fx/insert-chain';
 
 export interface BpmBroadcasterDeps {
   seq: Sequencer;
   fx: FxBus;
-  filterChain: FilterChain;
+  masterInsertChain: InsertChain;
   polysynth: PolySynth;
   getExtraPolys(): Iterable<PolySynth>;
 }
@@ -28,7 +29,8 @@ export function createBpmBroadcaster(deps: BpmBroadcasterDeps): BpmBroadcaster {
     broadcast(bpm: number) {
       deps.seq.bpm = bpm;
       deps.fx.setBpmSync(bpm);
-      deps.filterChain.updateBpm(bpm);
+      // TODO: propagate BPM to masterInsertChain slots (Task 28 – serialize/sync)
+      void deps.masterInsertChain;
       deps.polysynth.bpm = bpm;
       for (const p of deps.getExtraPolys()) p.bpm = bpm;
       propagateToLaneEngines(bpm);

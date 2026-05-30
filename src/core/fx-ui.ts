@@ -1,13 +1,7 @@
-import { type FxBus, type FilterChain, type MasterFilter, type SyncDiv } from './fx';
+import { type FxBus, type SyncDiv } from './fx';
+import type { InsertChain } from '../plugins/fx/insert-chain';
 import { createKnob, type KnobHandle } from './knob';
 import { attachKnobUndo, type HistoryDeps } from '../save/history-wiring';
-
-const WAVE_OPTS = [
-  { value: 'sawtooth', label: 'Saw' },
-  { value: 'square',   label: 'Sqr' },
-  { value: 'triangle', label: 'Tri' },
-  { value: 'sine',     label: 'Sin' },
-];
 
 /** Local replacement for the deleted addPolyKnob helper:
  *  builds a knob, appends to parent, registers in the automation registry. */
@@ -72,7 +66,7 @@ export const SYNC_OPTS: Array<{ value: SyncDiv; label: string }> = [
 
 export interface FxUIDeps {
   fx: FxBus;
-  filterChain: FilterChain;
+  masterInsertChain: InsertChain;
   masterComp: import('./fx').MasterCompressor;
   getBpm: () => number;
   registerKnob: (k: KnobHandle) => void;
@@ -97,91 +91,8 @@ export function applyDelaySync(deps: FxUIDeps) {
   deps.fx.setBpmSync(deps.getBpm(), frac);
 }
 
-function appendFilterRow(mf: MasterFilter, deps: FxUIDeps) {
-  const container = document.getElementById('fx-filters') as HTMLDivElement;
-  const row = document.createElement('div');
-  row.className = 'fx-filter-row';
-  const undoHooks = deps.historyDeps ? attachKnobUndo(deps.historyDeps) : undefined;
-
-  const typeSel = document.createElement('select');
-  typeSel.className = 'poly-wave-sel';
-  for (const t of ['lowpass', 'highpass', 'bandpass', 'notch'] as BiquadFilterType[]) {
-    const opt = document.createElement('option');
-    opt.value = t; opt.textContent = t.toUpperCase();
-    if (t === mf.state.type) opt.selected = true;
-    typeSel.appendChild(opt);
-  }
-  typeSel.addEventListener('change', () => mf.setType(typeSel.value as BiquadFilterType));
-  const typeWrap = document.createElement('div'); typeWrap.className = 'knob';
-  const typeLab = document.createElement('div'); typeLab.className = 'knob-label'; typeLab.textContent = 'TYPE';
-  typeWrap.append(typeLab, typeSel);
-  row.appendChild(typeWrap);
-
-  const cutoffKnob = createKnob({
-    min: 40, max: 18000, step: 1, value: mf.state.cutoff, defaultValue: 8000,
-    label: 'CUTOFF', color: '#16a085', size: 44, format: (v) => `${Math.round(v)}Hz`,
-    onChange: (v) => mf.setCutoff(v),
-    ...undoHooks,
-  });
-  row.appendChild(cutoffKnob.el);
-
-  const qKnob = createKnob({
-    min: 0.1, max: 30, step: 0.1, value: mf.state.q, defaultValue: 1,
-    label: 'Q', color: '#16a085', size: 44, format: (v) => v.toFixed(1),
-    onChange: (v) => mf.setQ(v),
-    ...undoHooks,
-  });
-  row.appendChild(qKnob.el);
-
-  // LFO sub-section for this filter
-  const lfoWaveSel = document.createElement('select');
-  lfoWaveSel.className = 'poly-wave-sel';
-  for (const o of WAVE_OPTS) {
-    const opt = document.createElement('option');
-    opt.value = o.value; opt.textContent = o.label;
-    if (o.value === mf.state.lfoWave) opt.selected = true;
-    lfoWaveSel.appendChild(opt);
-  }
-  const lwWrap = document.createElement('div'); lwWrap.className = 'knob';
-  const lwLab = document.createElement('div'); lwLab.className = 'knob-label'; lwLab.textContent = 'LFO';
-  lwWrap.append(lwLab, lfoWaveSel);
-  row.appendChild(lwWrap);
-
-  const syncSel = document.createElement('select');
-  syncSel.className = 'poly-wave-sel';
-  for (const s of SYNC_OPTS) {
-    const opt = document.createElement('option');
-    opt.value = s.value; opt.textContent = s.label;
-    if (s.value === mf.state.lfoSync) opt.selected = true;
-    syncSel.appendChild(opt);
-  }
-  const ssWrap = document.createElement('div'); ssWrap.className = 'knob';
-  const ssLab = document.createElement('div'); ssLab.className = 'knob-label'; ssLab.textContent = 'SYNC';
-  ssWrap.append(ssLab, syncSel);
-  row.appendChild(ssWrap);
-
-  const depthKnob = createKnob({
-    min: 0, max: 1, step: 0.01, value: mf.state.lfoDepth, defaultValue: 0,
-    label: 'DEPTH', color: '#3498db', size: 44, format: fmtPct,
-    onChange: (v) => mf.setLfo(lfoWaveSel.value as OscillatorType, syncSel.value as SyncDiv, v, deps.getBpm()),
-    ...undoHooks,
-  });
-  row.appendChild(depthKnob.el);
-  lfoWaveSel.addEventListener('change', () => mf.setLfo(lfoWaveSel.value as OscillatorType, syncSel.value as SyncDiv, mf.state.lfoDepth, deps.getBpm()));
-  syncSel.addEventListener('change', () => mf.setLfo(lfoWaveSel.value as OscillatorType, syncSel.value as SyncDiv, mf.state.lfoDepth, deps.getBpm()));
-
-  const removeBtn = document.createElement('button');
-  removeBtn.className = 'io';
-  removeBtn.textContent = '×';
-  removeBtn.title = 'Remove filter';
-  removeBtn.addEventListener('click', () => {
-    deps.filterChain.remove(mf);
-    row.remove();
-  });
-  row.appendChild(removeBtn);
-
-  container.appendChild(row);
-}
+// TODO: Task 19 will replace appendFilterRow with InsertChain-based plugin UI.
+// The old MasterFilter row builder is stubbed out pending that task.
 
 export function wireFxUI(deps: FxUIDeps): void {
   _deps = deps;
@@ -260,9 +171,6 @@ export function wireFxUI(deps: FxUIDeps): void {
   });
   mcRow.appendChild(mcByp);
 
-  // Add Filter button
-  (document.getElementById('fx-add-filter') as HTMLButtonElement).addEventListener('click', () => {
-    const mf = deps.filterChain.add();
-    appendFilterRow(mf, deps);
-  });
+  // TODO: Task 19 — wire masterInsertChain plugin add/remove UI here.
+  // The "Add Filter" button is intentionally disabled until Task 19 is complete.
 }
