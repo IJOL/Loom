@@ -699,26 +699,6 @@ sessionHost.onStateApplied(() => {
   if (polyInst) synthEditorState.activePolyTarget = polyInst;
 });
 
-// B1: Restore per-voice drum reverb sends after lane allocation.
-// ensureLaneVoice forces createVoice to run (idempotent after first call) so
-// the DrumMachine is instantiated and drumMachine getter returns non-null.
-// These values were previously hard-coded in setupInitialPattern and were
-// silently dropped by Phase G when the per-lane allocation path was introduced.
-// TODO: replace with per-voice params in DRUM_PARAMS when that feature lands.
-sessionHost.onStateApplied(() => {
-  ensureLaneVoice(LANE_ID_DRUMS, 'drums-machine');
-  const drumsEng = laneResources.get(LANE_ID_DRUMS)?.engine as unknown as
-    { drumMachine?: import('./core/drums').DrumMachine | null } | undefined;
-  const dm = drumsEng?.drumMachine;
-  if (dm) {
-    dm.channels.snare.setReverbSend(0.25);
-    dm.channels.clap.setReverbSend(0.35);
-    dm.channels.openHat.setReverbSend(0.2);
-    dm.channels.ride.setReverbSend(0.3);
-    dm.channels.tom.setReverbSend(0.2);
-  }
-});
-
 // Boot demo: fetched as a static JSON asset rather than constructed
 // programmatically. The JSON drives both the SessionState and the
 // per-scene preset map; applyLoadedSessionState reads lane.enginePresetName
