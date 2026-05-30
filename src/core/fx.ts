@@ -116,6 +116,7 @@ export class ChannelStrip {
   private muteGain: GainNode;
   private _muted = false;
   private busRegistration: { bus: SidechainBus; id: string } | null = null;
+  private _meterAnalyser: AnalyserNode | null = null;
 
   constructor(
     private ctx: AudioContext,
@@ -172,6 +173,25 @@ export class ChannelStrip {
   getPan(): number  { return this.panner.pan.value; }
   /** Canonical StereoPanner pan AudioParam — for modulation routing. */
   getPanParam(): AudioParam { return this.panner.pan; }
+
+  /**
+   * Lazy-allocate an AnalyserNode tapped from `muteGain` (post-pan, post-mute,
+   * pre-duck). The analyser is created on first call and reused thereafter.
+   * Suitable for driving a VU meter that shows what the listener hears without
+   * being affected by sidechain ducking feedback loops.
+   *
+   * fftSize = 512 (→ 256-sample time-domain buffer ≈ 5.8 ms @ 44.1 kHz).
+   * smoothingTimeConstant = 0 (RMS computed in RAF loop, not smoothed here).
+   */
+  getMeterAnalyser(): AnalyserNode {
+    if (!this._meterAnalyser) {
+      this._meterAnalyser = this.ctx.createAnalyser();
+      this._meterAnalyser.fftSize = 512;
+      this._meterAnalyser.smoothingTimeConstant = 0;
+      this.muteGain.connect(this._meterAnalyser);
+    }
+    return this._meterAnalyser;
+  }
 
   setEqLow (db: number) { this.eqLow.gain.value  = db; }
   setEqMid (db: number) { this.eqMid.gain.value  = db; }
@@ -238,6 +258,10 @@ export class ChannelStrip {
       this.busRegistration = null;
     }
     try { this.sidechainTap.disconnect(); } catch { /* */ }
+    if (this._meterAnalyser) {
+      try { this._meterAnalyser.disconnect(); } catch { /* */ }
+      this._meterAnalyser = null;
+    }
   }
 
   serialize(): ChannelState {

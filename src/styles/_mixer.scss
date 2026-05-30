@@ -1,3 +1,11 @@
+/* ── VU meter color tokens ────────────────────────────────────────────── */
+:root {
+  --vu-green:  #2ee06a;
+  --vu-yellow: #f7d000;
+  --vu-red:    #e74c3c;
+  --vu-off:    rgba(255, 255, 255, 0.06);
+}
+
 /* ── Mixer ────────────────────────────────────────────────────────────── */
 
 .mixer {
@@ -51,7 +59,6 @@
 .mix-fader-wrap {
   margin-top: 6px;
   width: 100%;
-  height: 140px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -60,6 +67,17 @@
   border-radius: 2px;
   padding: 6px 0;
 }
+
+/* Inner row: fader + VU meter side-by-side */
+.mix-fader-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 110px;
+}
+
 .mix-fader {
   -webkit-appearance: slider-vertical;
   appearance: slider-vertical;
@@ -75,6 +93,48 @@
   color: var(--amber);
   font-variant-numeric: tabular-nums;
 }
+
+/* ── VU Meter ──────────────────────────────────────────────────────────── */
+
+.mix-vu-host {
+  width: 10px;
+  height: 110px;
+  display: flex;
+  align-items: stretch;
+}
+
+.mix-vu {
+  width: 10px;
+  height: 100%;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 1px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 1px;
+  padding: 1px;
+  box-sizing: border-box;
+}
+
+.mix-vu-seg {
+  flex: 1 1 0;
+  background: var(--vu-off);
+  border-radius: 0.5px;
+  transition: background-color 40ms linear;
+}
+
+/* Lit states */
+.mix-vu-seg--green.lit  { background: var(--vu-green);  box-shadow: 0 0 2px var(--vu-green); }
+.mix-vu-seg--yellow.lit { background: var(--vu-yellow); box-shadow: 0 0 2px var(--vu-yellow); }
+.mix-vu-seg--red.lit    { background: var(--vu-red);    box-shadow: 0 0 2px var(--vu-red); }
+
+/* Peak-hold ghost: unlit segment in its zone color at half opacity */
+.mix-vu-seg--green.lit-peak  { background: var(--vu-green);  opacity: 0.45; }
+.mix-vu-seg--yellow.lit-peak { background: var(--vu-yellow); opacity: 0.45; }
+.mix-vu-seg--red.lit-peak    { background: var(--vu-red);    opacity: 0.45; }
+
+/* When a segment is both lit and peak (peak=topmost lit), keep full brightness */
+.mix-vu-seg.lit.lit-peak { opacity: 1; }
 
 /* Old grid-based row layout kept as fallback for non-classic uses */
 .mix-row {

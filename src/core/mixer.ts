@@ -11,6 +11,7 @@
 import type { ChannelStrip } from './fx';
 import { createKnob, type KnobHandle } from './knob';
 import { attachKnobUndo, type HistoryDeps } from '../save/history-wiring';
+import { createLevelMeter } from './level-meter';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -27,6 +28,13 @@ export interface MixerColumnDeps {
   /** Optional undo history deps. When present, knob drags/wheel/dblclick
    *  are bracketed as single undo entries. */
   historyDeps?:  HistoryDeps;
+  /**
+   * Optional teardown registration. When provided, the column calls
+   * `registerDisposable(handle)` with the VU meter handle so the caller can
+   * dispose meters when the column is rebuilt or torn down. If omitted the
+   * meter is still created but the caller must track disposal separately.
+   */
+  registerDisposable?: (d: { dispose(): void }) => void;
 }
 
 interface KnobOpts {
@@ -138,9 +146,21 @@ export function buildMixerColumn(trackId: string, deps: MixerColumnDeps): HTMLEl
   ms.append(m, s);
   col.appendChild(ms);
 
-  // Vertical fader (level)
+  // Vertical fader (level) + VU meter
+  //
+  // Layout: faderWrap (column) → faderRow (row: fader + vuHost) → faderVal
+  // The value readout sits below the fader/meter row so its 9px label stays
+  // outside the fixed-height 110 px row.
+  //
+  // IMPORTANT: callers must dispose the VU meter handle when removing the
+  // column (via deps.registerDisposable or manual tracking). Failing to do so
+  // will keep the meter's RAF registration alive and the analyser connected.
   const faderWrap = document.createElement('div');
   faderWrap.className = 'mix-fader-wrap';
+
+  const faderRow = document.createElement('div');
+  faderRow.className = 'mix-fader-row';
+
   const fader = document.createElement('input');
   fader.type = 'range';
   fader.className = 'mix-fader';
@@ -157,7 +177,14 @@ export function buildMixerColumn(trackId: string, deps: MixerColumnDeps): HTMLEl
     if (hd) hd.history.beginGesture(hd.snapshot());
   });
   fader.addEventListener('blur', () => deps.historyDeps?.history.commitGesture());
-  faderWrap.appendChild(fader);
+
+  const vuMeter = createLevelMeter({ analyser: strip.getMeterAnalyser() });
+  if (deps.registerDisposable) deps.registerDisposable(vuMeter);
+
+  faderRow.appendChild(fader);
+  faderRow.appendChild(vuMeter.el);
+  faderWrap.appendChild(faderRow);
+
   const faderVal = document.createElement('div');
   faderVal.className = 'mix-fader-val';
   const updateFaderText = () => { faderVal.textContent = fmtPct(parseFloat(fader.value)); };
