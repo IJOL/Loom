@@ -1,3 +1,4 @@
+import { bootstrapPlugins } from './app/plugin-bootstrap';
 import { createAudioGraph } from './app/audio-graph';
 import { createBpmBroadcaster } from './app/bpm-broadcast';
 import { createMuteSolo } from './app/mute-solo';
@@ -11,12 +12,7 @@ import {
   wireEngineSelector, rebuildEngineParamUI,
   type EngineSelectorUIDeps,
 } from './engines/engine-selector-ui';
-import './engines/subtractive';
-import './engines/wavetable';
-import './engines/fm';
-import './engines/karplus';
 import { tb303Engine } from './engines/tb303';
-import './engines/drums-engine';
 import { type Wave } from './core/synth';
 import { Sequencer } from './core/sequencer';
 import { DRUM_LANES, type DrumVoice } from './core/drums';
@@ -94,6 +90,7 @@ const ENGINE_IDS_FOR_PRESETS = ['tb303', 'fm', 'wavetable', 'karplus', 'subtract
 const presetsLoaded = loadAllPresets(ENGINE_IDS_FOR_PRESETS);
 
 // ── Audio graph ────────────────────────────────────────────────────────────
+bootstrapPlugins();
 const audio = createAudioGraph();
 const { ctx, master, analyser, filterChain, fx, masterComp, sidechainBus,
         bassStrip, polyStrip, drumBusStrip,
