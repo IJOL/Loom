@@ -111,6 +111,41 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
   const extraLaneStrips = new Map<string, ChannelStrip>();
   const laneVoices = new Map<string, Voice>();
 
+  /** Resolve an engine instance: legacy registry first, plugin registry as
+   *  fallback (plugin-only synths get wrapped via pluginSynthAsEngine). */
+  const createLaneEngine = (engineId: string, inserts: InsertChain): SynthEngine | null => {
+    let engine = createEngineInstance(engineId);
+    if (!engine) {
+      const factory = getPlugin('synth', engineId);
+      if (factory && factory.kind === 'synth') {
+        const inst = createInstance('synth', engineId, deps.ctx, inserts.inputNode);
+        if (inst) engine = pluginSynthAsEngine(factory.manifest, inst);
+      }
+    }
+    return engine ?? null;
+  };
+
+  /** Per-engine wiring against a lane's strip + inserts. Shared by
+   *  ensureLaneResource (initial alloc) and swapLaneEngine (in-place swap). */
+  const wireEngineIntoLane = (
+    engineId: string,
+    engine: SynthEngine,
+    strip: ChannelStrip,
+    inserts: InsertChain,
+  ): void => {
+    if (engineId === 'subtractive') {
+      const p = new PolySynth(deps.ctx, inserts.inputNode);
+      p.bpm = deps.getBpm();
+      (engine as unknown as { setPolySynth?(p: PolySynth): void }).setPolySynth?.(p);
+    }
+    if (engineId === 'drums-machine') {
+      (engine as unknown as { setSharedFx?(fx: FxBus): void }).setSharedFx?.(deps.fx);
+      (engine as unknown as { setBusStrip?(s: ChannelStrip): void }).setBusStrip?.(strip);
+      (engine as unknown as { setOutputTarget?(n: AudioNode): void }).setOutputTarget?.(inserts.inputNode);
+    }
+    // tb303: TB303Engine.createVoice is self-registering — no external call.
+  };
+
   // Phase G: No boot prefill block. The three default lanes (tb-303-1,
   // drums-1, subtractive-1) are allocated via ensureLaneResource() when
   // applyLoadedSessionState iterates the boot session JSON.
@@ -215,43 +250,12 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     const strip = new ChannelStrip(deps.ctx, deps.master, deps.fx,
       { sidechain: { bus: deps.sidechainBus, id: laneId, label: laneId.toUpperCase() } });
     // Phase H: every lane gets an InsertChain between the engine voice and the
-    // channel strip.  The chain's entry node is a GainNode (pass-through when
-    // empty); its output is strip.input.  Voice output is wired to
-    // inserts.inputNode by ensureLaneVoice (not directly to strip.input).
+    // channel strip. The chain's entry node is a GainNode (pass-through when
+    // empty); its output is strip.input.
     const inserts = new InsertChain(deps.ctx.createGain(), strip.input);
-
-    // --- Engine resolution: legacy registry first, plugin registry as fallback ---
-    let engine = createEngineInstance(engineId);
-
-    if (!engine) {
-      // Touchpoint 4: support plugin-only synths (no legacy SynthEngine class).
-      // If the plugin registry has a 'synth' entry for this id, create a
-      // SynthInstance and wrap it in a minimal SynthEngine adapter.
-      const factory = getPlugin('synth', engineId);
-      if (factory && factory.kind === 'synth') {
-        const inst = createInstance('synth', engineId, deps.ctx, inserts.inputNode);
-        if (inst) engine = pluginSynthAsEngine(factory.manifest, inst);
-      }
-    }
-
+    const engine = createLaneEngine(engineId, inserts);
     if (!engine) return;
-    if (engineId === 'subtractive') {
-      const p = new PolySynth(deps.ctx, inserts.inputNode);
-      p.bpm = deps.getBpm();
-      (engine as unknown as { setPolySynth?(p: PolySynth): void }).setPolySynth?.(p);
-    }
-    if (engineId === 'drums-machine') {
-      // Phase G latent-bug fix: setSharedFx MUST be called before createVoice
-      // (DrumsEngine.createVoice throws if sharedFx is null). The old singleton
-      // configureDrumsEngineSharedFx only wired the boot instance; extra drum
-      // lanes added at runtime were never wired, causing createVoice to throw.
-      (engine as unknown as { setSharedFx?(fx: FxBus): void }).setSharedFx?.(deps.fx);
-      (engine as unknown as { setBusStrip?(s: ChannelStrip): void }).setBusStrip?.(strip);
-      // Phase H: redirect drums output through the insert chain.
-      (engine as unknown as { setOutputTarget?(n: AudioNode): void }).setOutputTarget?.(inserts.inputNode);
-    }
-    // tb303: TB303Engine.createVoice is self-registering (creates TB303(ctx, output),
-    // stores it in instances WeakMap, sets lastInstance). No external call needed.
+    wireEngineIntoLane(engineId, engine, strip, inserts);
     resources.set(laneId, { strip, engine, inserts });
   };
 
