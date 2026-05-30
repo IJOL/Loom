@@ -1,12 +1,116 @@
 // Karplus-Strong physical-modeling engine.
 //
-// Classic pluck: short noise burst injected into a delay line of length
-// 1/freq seconds, with a low-pass filter in the feedback loop that gradually
-// damps the high harmonics — the wave decays into a plucked-string timbre.
+// ── Why this engine is NOT built from a Web Audio DelayNode feedback loop ──
+// The "obvious" realization (noise → DelayNode → LP → feedback gain → back into
+// the DelayNode) is fundamentally broken in Web Audio: a DelayNode that sits in
+// a cycle is clamped to a MINIMUM delay of one render quantum (128 samples ≈
+// 2.9 ms / ~344 Hz). Any note above ~344 Hz collapses to that same ~340 Hz
+// drone — every melody turns into a fixed, detuned howl that sounds exactly
+// like acoustic feedback ("acople"). The loop also clips on overlapping notes
+// and can only be kept stable with band-aids that kill the string's sustain.
 //
-// Web Audio realization: noise BufferSource → DelayNode → BiquadFilter (LP)
-// → GainNode (loop gain < 1) → back into the DelayNode. Output tapped after
-// the delay so the user hears the resonance, not just the excitation.
+// ── What we do instead: offline per-note synthesis ──
+// On each trigger we run the Karplus-Strong digital-waveguide recurrence
+// sample-by-sample in JS (see renderKarplusString) into an AudioBuffer, then
+// play that buffer through a GainNode that carries the amp envelope. Because
+// the whole note is a finite pre-rendered buffer with NO runtime feedback path:
+//   • pitch is exact at every note (fractional-delay line, no 128-sample floor),
+//   • the loop filter + DC-blocker shape a natural plucked-string decay,
+//   • cross-note coupling / runaway is structurally impossible,
+//   • the buffer is peak-normalized so a single note never clips.
+// Trade-off: string.damping / brightness / excite.* are "baked" at trigger time
+// (not continuously modulatable mid-note). amp.level stays a live AudioParam, so
+// LFO/ADSR on the amp still work. This matches how a plucked string behaves —
+// the timbre is set at the moment of the pluck.
+
+// ── Karplus-Strong string renderer (offline, per note) ────────────────────
+// Renders a full plucked-string decay into a Float32Array using a sample-
+// accurate waveguide loop:
+//   excitation[n] ─►(+)─► delay(L, fractional) ─► one-pole LP ─►(×g)─┐
+//                    ▲                                                │
+//                    └────────────────────────────────────────────────┘
+//   • L = sampleRate/freq, read with linear interpolation for fractional
+//     tuning → correct pitch at ALL frequencies. L is shortened by the loop
+//     filter's group delay so the resonance lands on the true fundamental.
+//   • one-pole LP (coefficient from `brightness`) damps high harmonics faster
+//     than low ones → the characteristic string timbre and its evolution.
+//   • loop gain g < 1 (from `damping`) sets the overall T60 decay length.
+//   • a DC-blocking high-pass on the output removes any offset the random
+//     excitation burst leaves behind.
+//   • output is peak-normalized so the amp GainNode is the only level control.
+function renderKarplusString(opts: {
+  sampleRate: number; freq: number; damping: number; brightness: number;
+  exciteDur: number; noiseTone: number; seconds: number;
+}): Float32Array {
+  const { sampleRate: fs, freq, damping, brightness, exciteDur, noiseTone } = opts;
+  const N = Math.max(1, Math.round(opts.seconds * fs));
+  const out = new Float32Array(N);
+
+  // Loop low-pass coefficient from brightness (one-pole y += a·(x−y)):
+  // 0.15 ≈ 1 kHz cutoff (dark) … 0.95 ≈ 20 kHz (open/metallic).
+  const a = 0.15 + brightness * 0.80;
+  // Loop gain from damping: 0.992 (very long sustain) … 0.70 (muted). Values
+  // this close to 1 are safe because the loop only runs inside this offline
+  // render — there is no live feedback path to destabilize.
+  const g = 0.992 - damping * 0.29;
+
+  // Delay length = period minus the one-pole's low-frequency group delay
+  // ((1−a)/a samples), so the filtered loop resonates at the true pitch.
+  const period = fs / Math.max(20, freq);
+  const Ldelay = Math.max(1, period - (1 - a) / a);
+  const Li = Math.floor(Ldelay);
+  const frac = Ldelay - Li;
+  const dlSize = Li + 2;
+  const dl = new Float32Array(dlSize);
+  let widx = 0;
+  let lp = 0;
+
+  // Excitation: a band-limited white-noise burst whose colour is set by
+  // noiseTone (200 Hz dark … 12 kHz bright), with a short raised-cosine
+  // fade-out so the burst's end doesn't click.
+  const exciteLen = Math.min(N, Math.max(4, Math.round(exciteDur * fs)));
+  const noiseHz = Math.min(fs * 0.45, 200 * Math.pow(60, noiseTone));
+  const na = 1 - Math.exp(-2 * Math.PI * noiseHz / fs);
+  let nlp = 0;
+  const FADE = 32;
+
+  for (let n = 0; n < N; n++) {
+    let exc = 0;
+    if (n < exciteLen) {
+      const w = Math.random() * 2 - 1;
+      nlp += na * (w - nlp);
+      exc = nlp;
+      if (n > exciteLen - FADE) {
+        exc *= 0.5 - 0.5 * Math.cos(Math.PI * (exciteLen - n) / FADE);
+      }
+    }
+    const i0 = (widx - Li + dlSize) % dlSize;
+    const i1 = (i0 - 1 + dlSize) % dlSize;
+    const read = dl[i0] * (1 - frac) + dl[i1] * frac;
+    lp += a * (read - lp);
+    const s = exc + g * lp;
+    out[n] = s;
+    dl[widx] = s;
+    widx = widx + 1 === dlSize ? 0 : widx + 1;
+  }
+
+  // DC blocker (one-pole high-pass, R≈0.997) so the random burst leaves no
+  // subsonic offset to thump the amp.
+  let xPrev = 0, yPrev = 0;
+  const R = 0.997;
+  for (let n = 0; n < N; n++) {
+    const x = out[n];
+    const y = x - xPrev + R * yPrev;
+    xPrev = x; yPrev = y; out[n] = y;
+  }
+
+  // Peak-normalize to fixed headroom: the output GainNode becomes the sole
+  // level control and a single note can never clip regardless of resonance.
+  let pk = 0;
+  for (let n = 0; n < N; n++) { const v = Math.abs(out[n]); if (v > pk) pk = v; }
+  if (pk > 1e-9) { const k = 0.8 / pk; for (let n = 0; n < N; n++) out[n] *= k; }
+  return out;
+}
 
 import type { SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, EngineUIContext } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
@@ -41,14 +145,10 @@ const KARPLUS_PARAMS: EngineParamSpec[] = [
 ];
 
 class KarplusVoice implements Voice {
-  private noise: AudioBufferSourceNode;
-  private noiseGain: GainNode;
-  public readonly noiseFilter: BiquadFilterNode;
-  private delay: DelayNode;
-  public readonly loopFilter: BiquadFilterNode;
-  private loopGain: GainNode;
   public readonly amp: GainNode;
   private envAmp!: ConstantSourceNode;
+  /** The pre-rendered string buffer for the current note. Created in trigger. */
+  private src: AudioBufferSourceNode | null = null;
   private disposed = false;
 
   /** Set by KarplusEngine.createVoice for dispose-time cleanup. */
@@ -66,27 +166,10 @@ class KarplusVoice implements Voice {
     private voiceMods: Map<string, ModulatorVoice>,
     modBus?: Record<string, ConstantSourceNode>,
   ) {
-    // Pre-generate a small burst of white noise; voice trims start/stop later.
-    const burst = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
-    const data = burst.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-    this.noise = ctx.createBufferSource();
-    this.noise.buffer = burst;
-    this.noise.loop = false;
-
-    this.noiseGain = ctx.createGain();
-    this.noiseGain.gain.value = 0;
-    this.noiseFilter = ctx.createBiquadFilter();
-    this.noiseFilter.type = 'lowpass';
-    this.noiseFilter.frequency.value = 8000;
-
-    this.delay = ctx.createDelay(0.1); // max ~10 Hz fundamental
-    this.loopFilter = ctx.createBiquadFilter();
-    this.loopFilter.type = 'lowpass';
-    this.loopFilter.frequency.value = 6000;
-    this.loopFilter.Q.value = 0.5;     // <1 to avoid resonance amplification in the loop
-    this.loopGain = ctx.createGain();
-    this.loopGain.gain.value = 0;      // stays at 0 until trigger sets it
+    // Output amp. The pre-rendered string buffer feeds this; its gain carries
+    // the amp envelope + amp.level modulation. The string itself is synthesized
+    // offline at trigger time (renderKarplusString), so the only live node
+    // graph is BufferSource → amp → output: no feedback path, no coupling.
     this.amp = ctx.createGain();
     this.amp.gain.value = 0;
 
@@ -98,34 +181,27 @@ class KarplusVoice implements Voice {
     this.envAmp.connect(this.amp.gain);
 
     // Shared modulation bus fan-out: scope='shared' modulators write to
-    // modBus[*].offset, and each voice sums those constants into its own
-    // AudioParams. Karplus only shares the output amp gain — the per-voice
-    // loop filter / noise filter stay per-voice because they depend on note
-    // freq at trigger time.
+    // modBus['amp.level'].offset, and each voice sums it into amp.gain. Karplus
+    // only shares the output amp gain — the string timbre params are baked per
+    // note inside renderKarplusString, so they aren't live AudioParams.
     if (modBus) {
       modBus['amp.level'].connect(this.amp.gain);
     }
 
-    // Excitation path: noise → noiseGain → noiseFilter → delay input
-    this.noise.connect(this.noiseGain).connect(this.noiseFilter).connect(this.delay);
-    // Feedback loop: delay → loopFilter → loopGain → delay (with implicit 1-sample delay)
-    this.delay.connect(this.loopFilter).connect(this.loopGain).connect(this.delay);
-    // Output: tap the delay output (post-filter is fine too)
-    this.delay.connect(this.amp).connect(output);
+    this.amp.connect(output);
   }
 
   getAudioParams(): Map<string, AudioParam> {
-    const m = new Map<string, AudioParam>();
-    m.set('amp.level', this.amp.gain);
-    m.set('string.damping', this.loopFilter.frequency);
-    m.set('excite.tone', this.noiseFilter.frequency);
-    return m;
+    // Only amp.level is a live AudioParam. string.damping / excite.tone are
+    // baked into the buffer at trigger time, so they are intentionally NOT
+    // exposed as modulation destinations (see file header trade-off note).
+    return new Map<string, AudioParam>([['amp.level', this.amp.gain]]);
   }
 
   trigger(midi: number, time: number, options: VoiceTriggerOptions): void {
     if (this.disposed) return;
     // Fire modulator voices first so their AudioParam contributions land
-    // before the pluck excitation.
+    // before the note starts.
     for (const mv of this.voiceMods.values()) {
       mv.trigger(time, { gateDuration: options.gateDuration, accent: options.accent });
     }
@@ -141,63 +217,38 @@ class KarplusVoice implements Voice {
     const release    = Math.max(0.05, this.getParam('amp.release'));
     const level      = this.getParam('amp.level');
 
-    // Loop tuning: delay = 1/freq, plus 1-sample compensation handled by Web Audio
-    const period = 1 / Math.max(20, freq);
-    this.delay.delayTime.setValueAtTime(period, time);
+    // Synthesize the whole plucked string into a buffer. Render long enough to
+    // cover the gate + release window; the amp envelope shapes what's audible,
+    // while the string's own g/brightness decay shapes the timbre within it.
+    const seconds = Math.min(8, Math.max(0.4, options.gateDuration + release + 0.3));
+    const data = renderKarplusString({
+      sampleRate: this.ctx.sampleRate, freq, damping, brightness,
+      exciteDur, noiseTone, seconds,
+    });
+    const audioBuf = this.ctx.createBuffer(1, data.length, this.ctx.sampleRate);
+    audioBuf.getChannelData(0).set(data);
+    const src = this.ctx.createBufferSource();
+    src.buffer = audioBuf;
+    src.connect(this.amp);
+    this.src = src;
 
-    // Loop filter cutoff: enough headroom over the fundamental for body.
-    const loopHz = Math.min(this.ctx.sampleRate * 0.45, freq * (3 + brightness * 15));
-    this.loopFilter.frequency.setValueAtTime(loopHz, time);
-
-    // Loop gain: SAFE range — 0.78 (very damped) to 0.93 (long sustain).
-    // Above 0.95 the loop stacks across notes and sounds like feedback.
-    const loopG = 0.78 + (1 - damping) * 0.15;   // 0.78 .. 0.93
-    // Physical-string decay: even during a sustained note, the string loses
-    // energy. Without this, holding a long gate makes the loop sit at peak
-    // forever and any second trigger superimposes on top, sounding like
-    // runaway feedback. Decay to ~70% of loopG over ~3 seconds.
-    this.loopGain.gain.setValueAtTime(loopG, time);
-    this.loopGain.gain.exponentialRampToValueAtTime(
-      Math.max(0.001, loopG * 0.7),
-      time + 3,
-    );
-
-    // Noise tone: dark (200 Hz) → bright (12 kHz)
-    const noiseHz = 200 * Math.pow(60, noiseTone);
-    this.noiseFilter.frequency.setValueAtTime(noiseHz, time);
-
-    // Excitation envelope (short burst with quick decay). Scaled below 1 so the
-    // delay doesn't get loaded with a huge initial impulse that takes seconds
-    // to damp out even after loopGain decay.
-    const exciteAmp = 1.0 * velMul;
-    this.noiseGain.gain.setValueAtTime(0, time);
-    this.noiseGain.gain.linearRampToValueAtTime(exciteAmp, time + 0.0005);
-    this.noiseGain.gain.setValueAtTime(exciteAmp, time + exciteDur);
-    this.noiseGain.gain.linearRampToValueAtTime(0, time + exciteDur + 0.001);
-
-    // Amp envelope on the internal ConstantSource — modulators on amp.level
-    // sum into this same destination via getAudioParams().
-    const peakAmp = 1.4 * level * velMul;
+    // Amp envelope on the internal ConstantSource — modulators on amp.level sum
+    // into this same destination via getAudioParams(). The buffer is already
+    // peak-normalized to 0.8, so peakAmp only needs the level + accent gain.
+    const peakAmp = Math.max(0.0001, level * velMul);
     this.envAmp.offset.cancelScheduledValues(time);
     this.envAmp.offset.setValueAtTime(0, time);
     this.envAmp.offset.linearRampToValueAtTime(peakAmp, time + attack);
 
-    // Release: ramp BOTH amp env and loopGain to zero, so the internal loop
-    // dies instead of ringing silently and accumulating across rapid notes.
+    // Release: fade the amp from gate-end over `release`. There is no loop to
+    // kill — the buffer simply finishes playing and is disposed.
     const releaseStart = time + options.gateDuration;
-    this.envAmp.offset.cancelScheduledValues(releaseStart);
     this.envAmp.offset.setValueAtTime(peakAmp, releaseStart);
     this.envAmp.offset.exponentialRampToValueAtTime(0.0001, releaseStart + release);
-    // Fast kill of the internal loop at release — under 200 ms regardless of
-    // release length, so the string can't keep echoing under the muted amp
-    // and accumulate with subsequent notes.
-    this.loopGain.gain.cancelScheduledValues(releaseStart);
-    this.loopGain.gain.setValueAtTime(0.001 + (loopG * 0.7), releaseStart);
-    this.loopGain.gain.linearRampToValueAtTime(0, releaseStart + Math.min(0.2, release));
 
+    src.start(time);
     const stopTime = releaseStart + release + 0.1;
-    this.noise.start(time);
-    this.noise.stop(time + Math.min(1, exciteDur + 0.05));
+    try { src.stop(stopTime); } catch {}
     // Schedule disposal via setTimeout (engines are voices-per-trigger; cleanup
     // prevents leaking AudioNodes that never get garbage-collected).
     const delayMs = Math.max(0, (stopTime - this.ctx.currentTime) * 1000);
@@ -206,7 +257,6 @@ class KarplusVoice implements Voice {
 
   release(time: number): void {
     if (this.disposed) return;
-    // Cancel pending envelopes and fade out the carrier + feedback loop.
     // cancelAndHoldAtTime snapshots the current value at `time` (handles
     // mid-ramp correctly — unlike reading param.value, which is unreliable
     // when automation is in flight). Then ramp linearly to 0 over 5 ms for
@@ -214,8 +264,6 @@ class KarplusVoice implements Voice {
     const RELEASE_S = 0.005;
     this.envAmp.offset.cancelAndHoldAtTime(time);
     this.envAmp.offset.linearRampToValueAtTime(0, time + RELEASE_S);
-    this.loopGain.gain.cancelAndHoldAtTime(time);
-    this.loopGain.gain.linearRampToValueAtTime(0, time + RELEASE_S);
     for (const mv of this.voiceMods.values()) mv.release(time);
   }
   connect(_dest: AudioNode): void {}
@@ -225,14 +273,9 @@ class KarplusVoice implements Voice {
     this.disposed = true;
     if (this.binder) this.binder.disposeAll();
     if (this.laneId) disposeLaneModulations(this.laneId);
-    try { this.noise.stop(); } catch {}
+    try { this.src?.stop(); } catch {}
     try { this.envAmp.stop(); } catch {}
-    this.noise.disconnect();
-    this.noiseGain.disconnect();
-    this.noiseFilter.disconnect();
-    this.delay.disconnect();
-    this.loopFilter.disconnect();
-    this.loopGain.disconnect();
+    this.src?.disconnect();
     this.amp.disconnect();
     this.envAmp.disconnect();
     for (const mv of this.voiceMods.values()) mv.dispose();
