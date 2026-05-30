@@ -12,8 +12,9 @@
 //   dropdown comes up empty.
 
 import { describe, it, expect } from 'vitest';
-import { unregisterKnobsByPrefix } from './engine-selector-ui';
+import { unregisterKnobsByPrefix, melodicSynthEngineIds } from './engine-selector-ui';
 import type { KnobHandle } from '../core/knob';
+import { bootstrapPlugins } from '../app/plugin-bootstrap';
 
 function makeKnobHandle(id: string): KnobHandle {
   return {
@@ -35,5 +36,16 @@ describe('engine-selector-ui — registry hygiene', () => {
     unregisterKnobsByPrefix('main.', reg);
 
     expect([...reg.keys()].sort()).toEqual(['bass.cutoff', 'mix.bass.eq.hi']);
+  });
+});
+
+describe('engine-selector-ui — melodic engine filter', () => {
+  it('lists the 5 piano-roll engines and excludes drums-machine', () => {
+    bootstrapPlugins(); // registers all builtin synth plugins + engines
+    const ids = melodicSynthEngineIds();
+    expect(ids).toEqual(
+      expect.arrayContaining(['tb303', 'subtractive', 'fm', 'wavetable', 'karplus']),
+    );
+    expect(ids).not.toContain('drums-machine');
   });
 });

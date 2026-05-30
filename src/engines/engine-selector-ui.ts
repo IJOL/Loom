@@ -1,4 +1,5 @@
 import { listPlugins } from '../plugins/registry';
+import { getEngine } from './registry';
 import { populatePolyPresetSelect, refreshPolyPresetSelect } from '../polysynth/polysynth-presets';
 import type { KnobHandle } from '../core/knob';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
@@ -27,6 +28,15 @@ export interface EngineSelectorUIDeps {
    *  so each selection becomes one undoable entry. Omit for programmatic/
    *  session-load callers so those do not pollute the undo stack. */
   historyDeps?: HistoryDeps;
+}
+
+/** EngineIds eligible for the swap dropdown: registered 'synth' plugins whose
+ *  engine uses the piano-roll editor. drum-grid engines (drums-machine) edit
+ *  on the drum-grid page and are excluded. */
+export function melodicSynthEngineIds(): string[] {
+  return listPlugins('synth')
+    .map((p) => p.manifest.id)
+    .filter((id) => getEngine(id)?.editor === 'piano-roll');
 }
 
 let _deps: EngineSelectorUIDeps | null = null;
@@ -77,13 +87,11 @@ export function rebuildEngineParamUI(): void {
 
 export function populateEngineSelect(deps: EngineSelectorUIDeps, currentEngineId: string): void {
   deps.engineSel.innerHTML = '';
-  // Populate from plugin registry so plugin-only synths appear without any
-  // hardcoded list — all registered 'synth' plugins drive the dropdown.
-  for (const plugin of listPlugins('synth')) {
+  for (const id of melodicSynthEngineIds()) {
     const opt = document.createElement('option');
-    opt.value = plugin.manifest.id;
-    opt.textContent = plugin.manifest.name;
-    if (plugin.manifest.id === currentEngineId) opt.selected = true;
+    opt.value = id;
+    opt.textContent = getEngine(id)?.name ?? id;
+    if (id === currentEngineId) opt.selected = true;
     deps.engineSel.appendChild(opt);
   }
 }
