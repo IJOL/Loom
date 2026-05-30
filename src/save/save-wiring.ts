@@ -140,21 +140,40 @@ export function wireSaveManager(deps: SaveWiringDeps): void {
     }
   });
 
+  // In-app save: a name field + "Save current" button live inside the modal.
+  // This replaces the old native `window.prompt`, which Chrome silently
+  // suppresses after a "prevent additional dialogs" dismissal — the toolbar
+  // Save click then no-ops with no visible dialog and nothing persisted (the
+  // reported "click Save, nothing happens, Load shows nothing" bug). The
+  // toolbar Save button now just opens this modal with the name field focused.
+  const nameInput = document.getElementById('save-manager-name') as HTMLInputElement | null;
+  const saveBtn = document.getElementById('save-manager-save') as HTMLButtonElement | null;
+  const defaultName = () => `Sesión ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
+  const commitSave = () => {
+    const name = nameInput?.value.trim() || defaultName();
+    const state = buildSavedStateV3(deps);
+    saveNamedEntry(name, state);
+    // Re-render the list so the new entry shows immediately; keeps modal open.
+    openSaveManager(deps, applyLoaded);
+    if (nameInput) nameInput.value = '';
+    if (saveBtn) deps.flashButton(saveBtn, 'Saved!');
+  };
+  saveBtn?.addEventListener('click', commitSave);
+  nameInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); commitSave(); }
+  });
+  const openManagerForSave = () => {
+    openManager();
+    if (nameInput) { nameInput.value = defaultName(); nameInput.focus(); nameInput.select(); }
+  };
+
   // Replace existing Save/Load button handlers
   const existingSaveBtn = document.getElementById('save');
   const existingLoadBtn = document.getElementById('load');
   if (existingSaveBtn) {
     const newSave = existingSaveBtn.cloneNode(true) as HTMLButtonElement;
     existingSaveBtn.parentNode!.replaceChild(newSave, existingSaveBtn);
-    newSave.addEventListener('click', () => {
-      const def = `Sesión ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
-      const name = window.prompt('Save name:', def);
-      if (!name) return;
-      const state = buildSavedStateV3(deps);
-      saveNamedEntry(name, state);
-      downloadAsJson(`tb303-${name.replace(/[^\w-]+/g, '_')}.json`, state);
-      deps.flashButton(newSave, 'Saved!');
-    });
+    newSave.addEventListener('click', openManagerForSave);
   }
   if (existingLoadBtn) {
     const newLoad = existingLoadBtn.cloneNode(true) as HTMLButtonElement;

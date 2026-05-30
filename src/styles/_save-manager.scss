@@ -53,3 +53,16 @@
 .save-manager-row button:hover { color: var(--amber); border-color: var(--amber); }
 .save-manager-footer { display: flex; gap: 8px; margin-top: 12px; align-items: center; }
 .save-manager-size { margin-left: auto; color: var(--text-dim); font-size: 11px; }
+.save-manager-newsave { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+.save-manager-name-input {
+  flex: 1;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 6px 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.save-manager-name-input::placeholder { color: var(--text-dim); }
+.save-manager-name-input:focus { outline: none; border-color: var(--amber); }
