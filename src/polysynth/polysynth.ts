@@ -81,6 +81,13 @@ export class PolySynth {
   maxVoices = 8;
   mode: 'mono' | 'poly' = 'poly';
   retrig = true;  // mono-only; true = restart envelope per note, false = legato
+  /** Built-in envelope bypass switches. When false, internalTrigger skips
+   *  scheduling that hardcoded envelope, leaving its ConstantSource at 0 so an
+   *  external modular ADSR (if any) drives the destination AudioParam alone.
+   *  Toggled by SubtractiveEngine via the amp.builtinEnv / filter.builtinEnv
+   *  discrete params. */
+  ampEnvEnabled = true;
+  filterEnvEnabled = true;
   private monoSavedMax = 8;
   private monoVoice: { osc1: OscillatorNode; osc2: OscillatorNode; sub: OscillatorNode } | null = null;
   private active: Array<{ midi: number; allocatedAt: number; stop: (time: number) => void }> = [];
@@ -362,9 +369,13 @@ export class PolySynth {
     });
 
     // Schedule the normalised envCutoff (0..1) — sustain knob clamps it.
-    envCutoffNorm.offset.setValueAtTime(0, time);
-    envCutoffNorm.offset.linearRampToValueAtTime(1, time + fa);
-    envCutoffNorm.offset.linearRampToValueAtTime(Math.max(p.filter.sustain, 0), time + fa + fd);
+    // Skipped when the built-in filter env is bypassed; envCutoffNorm then
+    // stays at 0 so the filter sits at its base cutoff (+ any modular ADSR).
+    if (this.filterEnvEnabled) {
+      envCutoffNorm.offset.setValueAtTime(0, time);
+      envCutoffNorm.offset.linearRampToValueAtTime(1, time + fa);
+      envCutoffNorm.offset.linearRampToValueAtTime(Math.max(p.filter.sustain, 0), time + fa + fd);
+    }
 
     // ── Amp envelope ─────────────────────────────────────────────────────
     const peakAmp = 0.4 * velMul;
@@ -374,17 +385,25 @@ export class PolySynth {
     const ar = Math.max(0.005, p.amp.release);
 
     envAmp.offset.setValueAtTime(0, time);
-    envAmp.offset.linearRampToValueAtTime(peakAmp, time + aa);
-    envAmp.offset.linearRampToValueAtTime(sustainAmp, time + aa + ad);
+    // Skipped when the built-in amp env is bypassed; envAmp stays at 0 so the
+    // voice is silent unless an external modular ADSR drives amp.gain.
+    if (this.ampEnvEnabled) {
+      envAmp.offset.linearRampToValueAtTime(peakAmp, time + aa);
+      envAmp.offset.linearRampToValueAtTime(sustainAmp, time + aa + ad);
+    }
 
     filter.connect(amp).connect(this.destination);
 
     const releaseStart = Math.max(time + aa + ad, time + gateDuration);
-    envAmp.offset.setValueAtTime(sustainAmp, releaseStart);
-    envAmp.offset.exponentialRampToValueAtTime(0.001, releaseStart + ar);
+    if (this.ampEnvEnabled) {
+      envAmp.offset.setValueAtTime(sustainAmp, releaseStart);
+      envAmp.offset.exponentialRampToValueAtTime(0.001, releaseStart + ar);
+    }
     // Release the normalised cutoff envelope back to 0.
-    envCutoffNorm.offset.setValueAtTime(Math.max(p.filter.sustain, 0), releaseStart);
-    envCutoffNorm.offset.linearRampToValueAtTime(0, releaseStart + fr);
+    if (this.filterEnvEnabled) {
+      envCutoffNorm.offset.setValueAtTime(Math.max(p.filter.sustain, 0), releaseStart);
+      envCutoffNorm.offset.linearRampToValueAtTime(0, releaseStart + fr);
+    }
 
     const stopTime = releaseStart + Math.max(ar, fr) + 0.05;
 
