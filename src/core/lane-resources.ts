@@ -4,10 +4,12 @@
 
 import type { ChannelStrip } from './fx';
 import type { SynthEngine } from '../engines/engine-types';
+import type { InsertChain } from '../plugins/fx/insert-chain';
 
 export interface LaneResources {
-  strip:  ChannelStrip;
-  engine: SynthEngine;
+  strip:   ChannelStrip;
+  engine:  SynthEngine;
+  inserts: InsertChain;
 }
 
 export class LaneResourceMap {
@@ -22,6 +24,7 @@ export class LaneResourceMap {
     if (existing) {
       (existing.strip as { dispose?(): void }).dispose?.();
       existing.engine.dispose?.();
+      existing.inserts.dispose();
     }
     this.inner.set(laneId, res);
   }
@@ -31,6 +34,7 @@ export class LaneResourceMap {
     if (!res) return;
     (res.strip as { dispose?(): void }).dispose?.();
     res.engine.dispose?.();
+    res.inserts.dispose();
     this.inner.delete(laneId);
   }
 

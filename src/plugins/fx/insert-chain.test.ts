@@ -83,4 +83,11 @@ describe('InsertChain', () => {
     chain.dispose();
     expect(chain.list().length).toBe(0);
   });
+
+  it('exposes inputNode for upstream wiring', () => {
+    const inp = new FakeNode();
+    const out = new FakeNode();
+    const chain2 = new InsertChain(inp as any, out as any);
+    expect(chain2.inputNode).toBe(inp);
+  });
 });

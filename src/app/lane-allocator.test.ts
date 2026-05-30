@@ -8,6 +8,7 @@ import { createLaneAllocator } from './lane-allocator';
 import { FxBus } from '../core/fx';
 import { SidechainBus } from '../core/sidechain-bus';
 import { OfflineAudioContext } from 'node-web-audio-api';
+import type { FxInstance } from '../plugins/types';
 
 function makeCtx() {
   return new OfflineAudioContext(1, 128, 44100) as unknown as AudioContext;
@@ -18,6 +19,24 @@ function makeDeps(ctx: AudioContext) {
   const fx = new FxBus(ctx, master);
   const sidechainBus = new SidechainBus();
   return { ctx, master, fx, sidechainBus };
+}
+
+/** Minimal FxInstance whose input/output are real GainNodes so they can
+ *  participate in the node-web-audio-api audio graph. Used to verify that
+ *  the InsertChain's rewire() actually connects the chain entry node to
+ *  this fx's input rather than jumping straight to strip.input. */
+function makeTrackingFxMock(ctx: AudioContext): FxInstance {
+  const input  = ctx.createGain();
+  const output = ctx.createGain();
+  return {
+    input:  input  as unknown as AudioNode,
+    output: output as unknown as AudioNode,
+    getAudioParams: () => new Map<string, AudioParam>(),
+    getBaseValue:   (_: string) => 0,
+    setBaseValue:   (_: string, __: number) => {},
+    applyPreset:    (_: string) => {},
+    dispose:        () => {},
+  };
 }
 
 describe('Phase G: ensureLaneResource is the sole allocation path', () => {
@@ -95,6 +114,52 @@ describe('Phase G latent-bug fix: drums-machine lane gets setSharedFx before cre
     expect(res).toBeDefined();
     // This threw before the fix because setSharedFx was never called for extra lanes.
     expect(() => res!.engine.createVoice(ctx, res!.strip.input)).not.toThrow();
+  });
+});
+
+describe('Phase H Task 26: ensureLaneResource wires InsertChain; ensureLaneVoice routes through it', () => {
+  it('res.inserts is defined after ensureLaneResource', () => {
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [] });
+    lanes.ensureLaneResource('tb-303-1', 'tb303');
+    const res = lanes.resources.get('tb-303-1')!;
+    expect(res.inserts).toBeDefined();
+    expect(res.inserts.inputNode).toBeDefined();
+  });
+
+  it('routes engine.createVoice output through the lane InsertChain', () => {
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [] });
+    lanes.ensureLaneResource('tb-303-1', 'tb303');
+    const res = lanes.resources.get('tb-303-1')!;
+    expect(res.inserts).toBeDefined();
+    expect(res.inserts.inputNode).toBeDefined();
+
+    // Intercept connect() on the chain's entry node so we know when rewire()
+    // wires something into the fx chain.  rewire() calls
+    //   chainEntry.connect(fx.input)
+    // when an fx is inserted.  If ensureLaneVoice were to pass strip.input
+    // (rather than inserts.inputNode) to createVoice, audio would skip the
+    // chain entirely and this count would still be > 0 only from the insert
+    // call — but the voice would not flow through the fx.
+    let upstreamConnectCount = 0;
+    const chainEntry = res.inserts.inputNode;
+    const origConnect = (chainEntry.connect as unknown as (...a: unknown[]) => unknown).bind(chainEntry);
+    (chainEntry as unknown as Record<string, unknown>).connect = (...args: unknown[]) => {
+      upstreamConnectCount++;
+      return origConnect(...args);
+    };
+
+    const mockFx = makeTrackingFxMock(ctx);
+    res.inserts.insert(mockFx);
+    // rewire() called chainEntry.connect(mockFx.input) → count incremented
+    expect(upstreamConnectCount).toBeGreaterThan(0);
+
+    // Voice must be creatable without throwing.
+    const voice = lanes.ensureLaneVoice('tb-303-1', 'tb303');
+    expect(voice).not.toBeNull();
   });
 });
 

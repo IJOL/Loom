@@ -1,6 +1,7 @@
 import { LaneResourceMap } from '../core/lane-resources';
 import { ChannelStrip } from '../core/fx';
 import { PolySynth } from '../polysynth/polysynth';
+import { InsertChain } from '../plugins/fx/insert-chain';
 import { createEngineInstance } from '../engines/registry';
 import { setCurrentLaneForVoice } from '../modulation/active-mods';
 import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from '../core/lane-ids';
@@ -62,7 +63,8 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     const slug = slugFromExtraId(id);
     const strip = new ChannelStrip(deps.ctx, deps.master, deps.fx,
       { sidechain: { bus: deps.sidechainBus, id: slug, label: id.toUpperCase() } });
-    p = new PolySynth(deps.ctx, strip.input);
+    const inserts = new InsertChain(deps.ctx.createGain(), strip.input);
+    p = new PolySynth(deps.ctx, inserts.inputNode);
     p.bpm = deps.getBpm();
     extraStrips[id] = strip;
     extraPolys[id] = p;
@@ -70,7 +72,7 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     if (engine) {
       const setPS = (engine as unknown as { setPolySynth?(p: PolySynth): void }).setPolySynth;
       if (setPS) setPS.call(engine, p);
-      resources.set(slugFromExtraId(id), { strip, engine });
+      resources.set(slugFromExtraId(id), { strip, engine, inserts });
     }
     return p;
   };
@@ -132,11 +134,14 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     if (cached) return cached;
     // Ensure the lane resource exists (idempotent).
     ensureLaneResource(laneId, engineId);
-    const engine = resources.get(laneId)?.engine ?? null;
+    const res = resources.get(laneId);
+    const engine = res?.engine ?? null;
     if (!engine) return null;
-    const strip = ensureLaneStrip(laneId);
+    // Route voice output through the lane InsertChain so any inserted FX
+    // sits between the engine's voice and the channel strip.
+    const voiceOutput = res?.inserts?.inputNode ?? ensureLaneStrip(laneId).input;
     setCurrentLaneForVoice(laneId);
-    const voice = engine.createVoice(deps.ctx, strip.input);
+    const voice = engine.createVoice(deps.ctx, voiceOutput);
     setCurrentLaneForVoice(null);
     laneVoices.set(laneId, voice);
     return voice;
@@ -146,10 +151,15 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     if (resources.get(laneId)) return;
     const strip = new ChannelStrip(deps.ctx, deps.master, deps.fx,
       { sidechain: { bus: deps.sidechainBus, id: laneId, label: laneId.toUpperCase() } });
+    // Phase H: every lane gets an InsertChain between the engine voice and the
+    // channel strip.  The chain's entry node is a GainNode (pass-through when
+    // empty); its output is strip.input.  Voice output is wired to
+    // inserts.inputNode by ensureLaneVoice (not directly to strip.input).
+    const inserts = new InsertChain(deps.ctx.createGain(), strip.input);
     const engine = createEngineInstance(engineId);
     if (!engine) return;
     if (engineId === 'subtractive') {
-      const p = new PolySynth(deps.ctx, strip.input);
+      const p = new PolySynth(deps.ctx, inserts.inputNode);
       p.bpm = deps.getBpm();
       (engine as unknown as { setPolySynth?(p: PolySynth): void }).setPolySynth?.(p);
     }
@@ -160,10 +170,12 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
       // lanes added at runtime were never wired, causing createVoice to throw.
       (engine as unknown as { setSharedFx?(fx: FxBus): void }).setSharedFx?.(deps.fx);
       (engine as unknown as { setBusStrip?(s: ChannelStrip): void }).setBusStrip?.(strip);
+      // Phase H: redirect drums output through the insert chain.
+      (engine as unknown as { setOutputTarget?(n: AudioNode): void }).setOutputTarget?.(inserts.inputNode);
     }
     // tb303: TB303Engine.createVoice is self-registering (creates TB303(ctx, output),
     // stores it in instances WeakMap, sets lastInstance). No external call needed.
-    resources.set(laneId, { strip, engine });
+    resources.set(laneId, { strip, engine, inserts });
   };
 
   const getLaneEngineInstance = (laneId: string): SynthEngine | null =>

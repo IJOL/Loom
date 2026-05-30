@@ -125,6 +125,13 @@ export class DrumsEngine implements SynthEngine {
     this.busStrip = strip;
   }
 
+  // Per-lane insert chain routing: when setOutputTarget is called, createVoice
+  // passes this node as the DrumMachine output instead of busStrip.input.
+  // This lets the lane InsertChain sit between the drum voices and the strip.
+  // Falls back to busStrip.input if never called (preserves legacy behavior).
+  private outputTarget: AudioNode | null = null;
+  setOutputTarget(n: AudioNode): void { this.outputTarget = n; }
+
   /** Returns the most recently created DrumMachine instance.
    *  Phase G: used by save/load path to access kitId without requiring a
    *  pre-boot singleton. */
@@ -171,13 +178,18 @@ export class DrumsEngine implements SynthEngine {
   private engineModVoices: Map<string, import('../modulation/types').ModulatorVoice> | null = null;
 
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
-    let dm = this.instances.get(output);
+    // When an insert chain is wired for this lane, use its inputNode as the
+    // routing target so audio flows through the chain before hitting the strip.
+    // If setOutputTarget was never called, fall back to the passed output node
+    // (which is busStrip.input in the legacy path).
+    const routingTarget = this.outputTarget ?? output;
+    let dm = this.instances.get(routingTarget);
     if (!dm) {
       if (!this.sharedFx) {
         throw new Error('DrumsEngine: setSharedFx must be called before createVoice');
       }
-      dm = new DrumMachine(ctx, this.sharedFx, output);
-      this.instances.set(output, dm);
+      dm = new DrumMachine(ctx, this.sharedFx, routingTarget);
+      this.instances.set(routingTarget, dm);
     }
     this.lastInstance = dm;
     const drumVoice = new DrumsVoice(dm, this.busStrip);
