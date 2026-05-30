@@ -108,18 +108,19 @@ export class SessionHost {
   private callbacks!: SessionUICallbacks;
   activeEditLane: string | null = null;
 
-  // Phase G: one-shot callback list fired after applyLoadedSessionState
-  // completes. Consumers that need lane resources (e.g. boot-eager UI that
+  // Callback list fired after every applyLoadedSessionState call (boot + demo
+  // switches). Consumers that need lane resources (e.g. boot-eager UI that
   // previously relied on audio-graph.ts pre-allocating lanes) register here.
-  // The list is cleared after the first fire so registrations don't accumulate
-  // if applyLoadedSessionState is called multiple times (e.g. demo picker).
+  // Callbacks PERSIST across multiple calls so kit/wave selectors and knob
+  // rows rebind correctly on each demo switch.
   private _stateAppliedCallbacks: Array<() => void> = [];
+  /** Callback fires every time `applyLoadedSessionState` runs (boot + demo
+   *  switches). Use this for UI that must rebind on lane allocation changes. */
   onStateApplied(cb: () => void): void {
     this._stateAppliedCallbacks.push(cb);
   }
   private _fireStateApplied(): void {
-    const cbs = this._stateAppliedCallbacks.splice(0);
-    for (const cb of cbs) cb();
+    for (const cb of this._stateAppliedCallbacks) cb();
   }
 
   // Expose inspector roll for the automation tick in main.ts

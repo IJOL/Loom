@@ -130,6 +130,11 @@ export class DrumsEngine implements SynthEngine {
    *  pre-boot singleton. */
   getInstance(): DrumMachine | null { return this.lastInstance; }
 
+  /** Public accessor for the active DrumMachine instance. Used by the Phase G
+   *  follow-up (B1) to restore per-voice reverb sends after lane allocation.
+   *  TODO: replace with per-voice params in DRUM_PARAMS once that lands. */
+  get drumMachine(): DrumMachine | null { return this.lastInstance; }
+
   private modHost = new ModulationHostImpl([
     makeDefaultLFO('lfo1'),
     makeDefaultADSR('adsr1'),

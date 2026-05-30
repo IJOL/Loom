@@ -100,9 +100,21 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
   const stripFor = (t: string): ChannelStrip => {
     const res = resources.get(t);
     if (res) return res.strip;
-    if (t === 'bass')    return resources.get(LANE_ID_BASS)!.strip;
-    if (t === 'poly')    return resources.get(LANE_ID_POLY)!.strip;
-    if (t === 'drumBus') return resources.get(LANE_ID_DRUMS)!.strip;
+    if (t === 'bass') {
+      const r = resources.get(LANE_ID_BASS);
+      if (!r) throw new Error(`stripFor: no resource for legacy alias 'bass' (LANE_ID_BASS not yet allocated)`);
+      return r.strip;
+    }
+    if (t === 'poly') {
+      const r = resources.get(LANE_ID_POLY);
+      if (!r) throw new Error(`stripFor: no resource for legacy alias 'poly' (LANE_ID_POLY not yet allocated)`);
+      return r.strip;
+    }
+    if (t === 'drumBus') {
+      const r = resources.get(LANE_ID_DRUMS);
+      if (!r) throw new Error(`stripFor: no resource for legacy alias 'drumBus' (LANE_ID_DRUMS not yet allocated)`);
+      return r.strip;
+    }
     // Drum-voice track names ('kick', 'snare', etc.) → look up the drum lane.
     const drumLane = resources.get(LANE_ID_DRUMS);
     if (drumLane) return drumLane.strip;
