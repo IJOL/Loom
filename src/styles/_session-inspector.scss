@@ -214,3 +214,41 @@
   padding: 2px 6px;
   height: 22px;
 }
+
+/* ── Sampler keymap editor (inside the engine inspector) ─────────────────── */
+.sampler-keymap {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sampler-dropzone {
+  border: 1px dashed #79c;
+  border-radius: 8px;
+  padding: 8px;
+  text-align: center;
+  font-size: 12px;
+  color: #9cf;
+}
+.sampler-dropzone.over {
+  background: rgba(120, 180, 255, 0.15);
+}
+.sampler-keymap-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.sampler-keymap-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sampler-keymap-root {
+  width: 48px;
+}
+.sampler-keymap-empty {
+  font-size: 11px;
+  opacity: 0.6;
+}

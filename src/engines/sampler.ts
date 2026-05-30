@@ -13,6 +13,11 @@ import type { KeymapEntry } from '../samples/types';
 import type { VoiceTriggerOptions } from './engine-types';
 import { sampleCache } from '../samples/sample-cache';
 import { keymapEntryFor, repitchRate } from '../samples/keymap';
+import { wireEngineParams } from './engine-ui';
+import { sampleStore } from '../samples/store-singleton';
+import { importFile } from '../samples/import';
+import { addSampleToKeymap, removeKeymapEntry, setEntryRoot } from '../samples/keymap-edit';
+import { mirrorKeymapChange } from '../session/session-engine-state';
 
 const SAMPLER_PARAMS: EngineParamSpec[] = [
   { id: 'gain',             label: 'Gain',    kind: 'continuous', min: 0,     max: 1.5, default: 1 },
@@ -173,7 +178,127 @@ export class SamplerEngine implements SynthEngine {
   }
 
   buildSequencer(_c: HTMLElement, _n: number): EngineSequencer { return new SamplerSequencer(); }
-  buildParamUI(_c: HTMLElement, _ctx?: EngineUIContext): void { /* keymap UI: later plan */ }
+  buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
+    container.innerHTML = '';
+    if (!ctx) return;
+
+    // Param knobs (gain/attack/release/pitch/cutoff/res/voices).
+    const knobRow = document.createElement('div');
+    knobRow.className = 'knob-row';
+    container.appendChild(knobRow);
+    wireEngineParams(this, ctx, knobRow, {
+      formatter: (id, v) => {
+        if (id === 'pitch') return `${v.toFixed(0)} st`;
+        if (id === 'poly.voices') return `${Math.round(v)}`;
+        if (id.endsWith('.attack') || id.endsWith('.release')) {
+          return v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed(2)}s`;
+        }
+        return `${Math.round(v * 100)}%`;
+      },
+    });
+
+    // Keymap editor.
+    const section = document.createElement('div');
+    section.className = 'sampler-keymap';
+    container.appendChild(section);
+
+    const rebuild = () => { container.innerHTML = ''; this.buildParamUI(container, ctx); };
+
+    const heading = document.createElement('div');
+    heading.className = 'label';
+    heading.textContent = 'Keymap';
+    section.appendChild(heading);
+
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'audio/*';
+    fileInput.className = 'sampler-load';
+    section.appendChild(fileInput);
+
+    const drop = document.createElement('div');
+    drop.className = 'sampler-dropzone';
+    drop.textContent = 'Drop an audio file, or use the picker above';
+    section.appendChild(drop);
+
+    const loadFile = async (file: File) => {
+      const audioCtx = ctx.audioContext;
+      if (!audioCtx) return;
+      try {
+        const asset = await importFile(file, audioCtx);
+        await sampleStore.put(asset);
+        const buf = await audioCtx.decodeAudioData(asset.bytes.slice(0));
+        sampleCache.put(asset.id, buf);
+        const km = addSampleToKeymap(this.getKeymap(), asset.id);
+        this.setKeymap(km);
+        if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, km);
+        rebuild();
+      } catch (err) {
+        drop.textContent = `Could not load: ${(err as Error).message}`;
+      }
+    };
+
+    fileInput.addEventListener('change', () => {
+      const f = fileInput.files?.[0];
+      if (f) void loadFile(f);
+    });
+    drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+    drop.addEventListener('drop', (e) => {
+      e.preventDefault();
+      drop.classList.remove('over');
+      const f = e.dataTransfer?.files?.[0];
+      if (f) void loadFile(f);
+    });
+
+    const list = document.createElement('div');
+    list.className = 'sampler-keymap-list';
+    section.appendChild(list);
+    const keymap = this.getKeymap();
+    keymap.forEach((entry, i) => {
+      const row = document.createElement('div');
+      row.className = 'sampler-keymap-row';
+
+      const name = document.createElement('span');
+      name.className = 'sampler-keymap-name';
+      name.textContent = entry.sampleId;
+      row.appendChild(name);
+
+      const rootLabel = document.createElement('label');
+      rootLabel.textContent = 'root ';
+      const root = document.createElement('input');
+      root.type = 'number';
+      root.min = '0'; root.max = '127';
+      root.value = String(entry.rootNote);
+      root.className = 'sampler-keymap-root';
+      root.addEventListener('change', () => {
+        const km = setEntryRoot(this.getKeymap(), i, Number(root.value));
+        this.setKeymap(km);
+        if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, km);
+      });
+      rootLabel.appendChild(root);
+      row.appendChild(rootLabel);
+
+      const del = document.createElement('button');
+      del.className = 'sampler-keymap-del';
+      del.textContent = '✕';
+      del.title = 'Remove';
+      del.addEventListener('click', () => {
+        const km = removeKeymapEntry(this.getKeymap(), i);
+        this.setKeymap(km);
+        if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, km);
+        rebuild();
+      });
+      row.appendChild(del);
+
+      list.appendChild(row);
+    });
+    if (keymap.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'sampler-keymap-empty';
+      empty.textContent = 'No samples loaded yet.';
+      list.appendChild(empty);
+    }
+  }
   dispose(): void { this.keymap = []; }
 }
 
