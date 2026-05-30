@@ -44,6 +44,11 @@ describe('SubtractiveEngine built-in envelope bypass (DSP)', () => {
     };
     const on  = await renderSub((e) => { cfg(e); e.setBaseValue('filter.builtinEnv', 1); });
     const off = await renderSub((e) => { cfg(e); e.setBaseValue('filter.builtinEnv', 0); });
+    // Sanity: only the filter env is bypassed — the amp env is On in both, so
+    // the Off render must still be audible (guards against a future refactor
+    // tying the two flags together, which would make the centroid assertion
+    // pass trivially against silence).
+    expect(rms(off)).toBeGreaterThan(rms(on) * 0.3);
     expect(spectralCentroid(on, SR)).toBeGreaterThan(spectralCentroid(off, SR) * 1.2);
   });
 });
