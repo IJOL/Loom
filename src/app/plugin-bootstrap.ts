@@ -7,6 +7,7 @@ import { tb303Plugin } from '../engines/tb303';
 import { subtractivePlugin } from '../engines/subtractive';
 import { fmPlugin } from '../engines/fm';
 import { wavetablePlugin } from '../engines/wavetable';
+import { karplusPlugin } from '../engines/karplus';
 
 // Force-evaluate engine modules so they self-register in the legacy engine
 // registry; bootstrapPlugins() then re-wraps them as plugins.
@@ -27,10 +28,11 @@ export function bootstrapPlugins(extras: PluginFactory[] = []): void {
   registerPlugin(subtractivePlugin);
   registerPlugin(fmPlugin);
   registerPlugin(wavetablePlugin);
+  registerPlugin(karplusPlugin);
 
   // Synth engines via the transitional adapter. Tasks 7–12 replace each
   // line with a native plugin export.
-  for (const id of ['karplus', 'drums-machine']) {
+  for (const id of ['drums-machine']) {
     const engine = getEngine(id);
     if (engine) registerPlugin(synthEngineAsPlugin(engine));
   }
