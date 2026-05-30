@@ -5,6 +5,7 @@
 
 import type { SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, EngineUIContext } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
+import type { PluginFactory } from '../plugins/types';
 import { registerEngine, registerEngineFactory } from './registry';
 import type { KnobHandle } from '../core/knob';
 import { ModulationHostImpl } from '../modulation/modulation-host';
@@ -569,3 +570,31 @@ export class FMEngine implements SynthEngine {
 export const fmEngine = new FMEngine();
 registerEngine(fmEngine);
 registerEngineFactory('fm', () => new FMEngine());
+
+export const fmPlugin: PluginFactory = {
+  kind: 'synth',
+  manifest: {
+    id: 'fm',
+    name: 'FM',
+    kind: 'synth',
+    version: '1.0.0',
+    params: fmEngine.params,
+    presets: [],
+  },
+  create(ctx, output) {
+    const engine = new FMEngine();
+    const voice = engine.createVoice(ctx, output);
+    return {
+      trigger:                (m, t, o) => voice.trigger(m, t, o),
+      release:                (t)       => voice.release(t),
+      connect:                (d)       => voice.connect(d),
+      getAudioParams:         ()        => voice.getAudioParams(),
+      getAudioParamRange:     (id)      => voice.getAudioParamRange?.(id),
+      getSharedAudioParams:   (c)       => engine.getSharedAudioParams?.(c) ?? new Map(),
+      getBaseValue:           (id)      => engine.getBaseValue(id),
+      setBaseValue:           (id, v)   => engine.setBaseValue(id, v),
+      applyPreset:            (name)    => engine.applyPreset(name),
+      dispose:                ()        => { voice.dispose(); engine.dispose(); },
+    };
+  },
+};
