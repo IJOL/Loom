@@ -3,6 +3,7 @@ import { registerPlugin } from '../plugins/registry';
 import { synthEngineAsPlugin } from '../plugins/synth-engine-adapter';
 import { getEngine } from '../engines/registry';
 import type { PluginFactory } from '../plugins/types';
+import { tb303Plugin } from '../engines/tb303';
 
 // Force-evaluate engine modules so they self-register in the legacy engine
 // registry; bootstrapPlugins() then re-wraps them as plugins.
@@ -18,9 +19,12 @@ import '../engines/drums-engine';
  *  during graph construction). The `extras` parameter is unused today —
  *  it's the seam where phase 2 (runtime-loaded plugins) hooks in. */
 export function bootstrapPlugins(extras: PluginFactory[] = []): void {
+  // Native plugin exports (phase 1).
+  registerPlugin(tb303Plugin);
+
   // Synth engines via the transitional adapter. Tasks 7–12 replace each
   // line with a native plugin export.
-  for (const id of ['tb303', 'subtractive', 'fm', 'wavetable', 'karplus', 'drums-machine']) {
+  for (const id of ['subtractive', 'fm', 'wavetable', 'karplus', 'drums-machine']) {
     const engine = getEngine(id);
     if (engine) registerPlugin(synthEngineAsPlugin(engine));
   }

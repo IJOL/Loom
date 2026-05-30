@@ -7,6 +7,7 @@ import type {
   EngineUIContext, EnginePreset,
 } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
+import type { PluginFactory } from '../plugins/types';
 import { registerEngine, registerEngineFactory } from './registry';
 import { getCachedPresets } from '../presets/preset-loader';
 import { TB303 } from '../core/synth';
@@ -274,3 +275,31 @@ registerEngineFactory('tb303', () => new TB303Engine());
 export function configureTB303EngineMainInstance(output: AudioNode, instance: TB303): void {
   tb303Engine.registerInstance(output, instance);
 }
+
+export const tb303Plugin: PluginFactory = {
+  kind: 'synth',
+  manifest: {
+    id: 'tb303',
+    name: 'TB-303',
+    kind: 'synth',
+    version: '1.0.0',
+    params: tb303Engine.params,
+    presets: [],
+  },
+  create(ctx, output) {
+    const engine = new TB303Engine();
+    const voice = engine.createVoice(ctx, output);
+    return {
+      trigger:                (m, t, o) => voice.trigger(m, t, o),
+      release:                (t)       => voice.release(t),
+      connect:                (d)       => voice.connect(d),
+      getAudioParams:         ()        => voice.getAudioParams(),
+      getAudioParamRange:     (id)      => voice.getAudioParamRange?.(id),
+      getSharedAudioParams:   ()        => engine.getSharedAudioParams() ?? new Map(),
+      getBaseValue:           (id)      => engine.getBaseValue(id),
+      setBaseValue:           (id, v)   => engine.setBaseValue(id, v),
+      applyPreset:            (name)    => engine.applyPreset(name),
+      dispose:                ()        => { voice.dispose(); engine.dispose(); },
+    };
+  },
+};
