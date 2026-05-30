@@ -28,6 +28,9 @@ export interface VoiceTriggerOptions {
   slide?: boolean;
   velocity?: number;
   gateDuration: number;
+  /** Loop/song audio clip to play directly (sampler). When present, the voice
+   *  plays this buffer for `gateDuration` instead of resolving the lane keymap. */
+  sample?: import('../session/session').ClipSample;
 }
 
 export interface EngineSequencer {

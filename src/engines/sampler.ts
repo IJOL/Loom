@@ -61,6 +61,7 @@ class SamplerVoice implements Voice {
   }
 
   trigger(midi: number, time: number, opts: VoiceTriggerOptions): void {
+    if (opts.sample) { this.triggerSample(time, opts); return; }
     const entry = keymapEntryFor(this.keymap, midi);
     if (!entry) return;
     const buf = sampleCache.get(entry.sampleId);
@@ -101,6 +102,52 @@ class SamplerVoice implements Voice {
 
     this.endTime = releaseAt + rel + 0.01;
     src.start(time, 0);
+    src.stop(this.endTime);
+    this.started = true;
+  }
+
+  /** Loop/song path: play the clip's buffer flat (no ADSR), repitched so a
+   *  loop fills the clip exactly; song plays at natural rate. ~5 ms anti-click
+   *  fades at the edges. Re-fired once per clip iteration by the scheduler. */
+  private triggerSample(time: number, opts: VoiceTriggerOptions): void {
+    const cs = opts.sample!;
+    const buf = sampleCache.get(cs.sampleId);
+    if (!buf) return;
+
+    if (this.src && this.started) {
+      try { this.src.stop(); } catch { /* already stopped */ }
+      this.src.disconnect();
+    }
+
+    const trimStart = Math.max(0, cs.trimStart);
+    const trimEnd = cs.trimEnd > trimStart ? Math.min(cs.trimEnd, buf.duration) : buf.duration;
+    const region = Math.max(0.001, trimEnd - trimStart);
+    const gate = Math.max(0.001, opts.gateDuration);
+
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    // loop → fill the clip exactly (repitch); song → natural pitch.
+    src.playbackRate.value = cs.mode === 'loop' ? region / gate : 1;
+    src.connect(this.filter);
+    this.src = src;
+
+    const cutoff = this.getParam('filter.cutoff');
+    const res = this.getParam('filter.resonance');
+    this.filter.frequency.setValueAtTime(60 * Math.pow(300, cutoff), time);
+    this.filter.Q.setValueAtTime(0.5 + res * 20, time);
+
+    // Flat gain with short anti-click fades — no amp envelope for audio clips.
+    const peak = this.getParam('gain') * (cs.gain ?? 1) * OUTPUT_TRIM;
+    const fade = Math.min(0.005, gate / 4);
+    const g = this.ampGain.gain;
+    g.cancelScheduledValues(time);
+    g.setValueAtTime(0, time);
+    g.linearRampToValueAtTime(peak, time + fade);
+    g.setValueAtTime(peak, Math.max(time + fade, time + gate - fade));
+    g.linearRampToValueAtTime(0, time + gate);
+
+    this.endTime = time + gate + 0.01;
+    src.start(time, trimStart);
     src.stop(this.endTime);
     this.started = true;
   }

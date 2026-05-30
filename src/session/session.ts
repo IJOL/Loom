@@ -13,6 +13,21 @@ export interface ClipEnvelope {
   stepped?: boolean;
 }
 
+/** Audio bound to a loop/song clip (each clip carries its own sample). Distinct
+ *  from the per-lane one-shot keymap: loop/song clips play this buffer directly
+ *  when the clip is launched, instead of sequencing notes against a keymap. */
+export interface ClipSample {
+  sampleId: string;
+  mode: 'loop' | 'song';
+  /** Loop: convenience metadata to suggest lengthBars on import. Song: optional. */
+  originalBpm?: number;
+  /** Future: time-stretch. Absent/false = repitch (varispeed). */
+  warp?: boolean;
+  trimStart: number;   // seconds into the buffer
+  trimEnd: number;     // seconds (buffer end if not trimmed)
+  gain?: number;       // linear, default 1
+}
+
 export interface SessionClip {
   id: string;
   name?: string;
@@ -21,6 +36,9 @@ export interface SessionClip {
   launchQuantize?: LaunchQuantize;
   notes: NoteEvent[];
   envelopes?: ClipEnvelope[];
+  /** Loop/song audio clip. When present, the scheduler fires one buffer
+   *  trigger per clip iteration instead of sequencing `notes`. */
+  sample?: ClipSample;
 }
 
 export interface SessionLane {

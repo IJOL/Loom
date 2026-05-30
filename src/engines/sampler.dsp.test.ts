@@ -112,4 +112,37 @@ describe('SamplerEngine — one-shot DSP', () => {
     const tail = buf.subarray(buf.length - Math.round(0.05 * SR));
     expect(rms(tail)).toBeLessThan(rms(head) * 0.1);
   });
+
+  it('loop-mode clip fills the clip gate then stops (repitch)', async () => {
+    // 0.5s buffer played as a loop into a 0.3s clip → audible during the gate,
+    // silent after (the source is stopped at gate end).
+    const buf = await renderSampler({
+      durationSec: 0.6,
+      act: (v) => v.trigger(60, 0, {
+        gateDuration: 0.3,
+        sample: { sampleId: 'test', mode: 'loop', trimStart: 0, trimEnd: 0.5 },
+      }),
+    });
+    writeWav(buf, wavPath('sampler__loop'), SR);
+    const duringGate = buf.subarray(0, Math.round(0.25 * SR));
+    const afterGate = buf.subarray(Math.round(0.4 * SR));
+    expect(peak(duringGate)).toBeGreaterThan(0.01);
+    expect(rms(duringGate)).toBeGreaterThan(rms(afterGate) * 5);
+  });
+
+  it('song-mode clip plays at natural rate', async () => {
+    // 0.5s buffer in song mode → ~0.5s of audio (rate 1), then silence.
+    const buf = await renderSampler({
+      durationSec: 0.7,
+      act: (v) => v.trigger(60, 0, {
+        gateDuration: 0.6,
+        sample: { sampleId: 'test', mode: 'song', trimStart: 0, trimEnd: 0.5 },
+      }),
+    });
+    writeWav(buf, wavPath('sampler__song'), SR);
+    const early = buf.subarray(0, Math.round(0.4 * SR));
+    const late = buf.subarray(Math.round(0.62 * SR));
+    expect(isSilent(early)).toBe(false);
+    expect(rms(early)).toBeGreaterThan(rms(late) * 5);
+  });
 });
