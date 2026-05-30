@@ -20,9 +20,11 @@ directly onto an internal `ConstantSourceNode` at trigger time:
 - **Subtractive (PolySynth)** — hardcoded amp env *and* filter env. The modular
   `adsr-amp` / `adsr-filter` modulators exist but sit at `depth=0` (the built-in
   is authoritative).
-- **Wavetable** — hardcoded amp env that runs **only in standalone mode**
-  (`binder == null`); in a lane the modular `adsr1` already drives amp+cutoff,
-  so the `amp.attack/decay/sustain/release` knobs are effectively dead.
+- **Wavetable** — hardcoded amp env (`envAmp`, driven by the `amp.*` knobs)
+  that runs in **every** mode and is the **only** `amp.gain` driver. The modular
+  `adsr1` routes to `filter.cutoff` only — it is deliberately NOT connected to
+  `amp.gain` (a prior attempt caused a "mono duro" polyphony bug where a new
+  note tore down the previous note's amp binding).
 - **Karplus** — hardcoded amp env (attack + release) on the offline-rendered
   string buffer. The modular `adsr1` has no connections by default.
 
@@ -31,8 +33,12 @@ built-ins before deleting the built-in code. That requires the ability to
 silence each built-in envelope independently and listen to whatever the modular
 system produces in its place.
 
-This spec also incidentally resolves the Wavetable "dead knobs" smell: turning
-its built-in toggle **On** makes the `amp.*` knobs functional again.
+Note on Wavetable: unlike Subtractive/Karplus, Wavetable has no modular amp
+ADSR to A/B against (its `adsr1` drives cutoff only, and routing an ADSR to
+`amp.gain` hits a known "mono duro" polyphony bug). Its toggle therefore
+defaults **On** and simply lets the user silence the built-in amp env if they
+manually wire a modular ADSR onto `amp.gain` — the full modular-amp path stays
+limited until that polyphony bug is fixed.
 
 ---
 
@@ -124,22 +130,25 @@ One flag: `amp.builtinEnv`, default **On**.
 
 ### 4.3 Wavetable
 
-One flag: `amp.builtinEnv`, default **Off** (asymmetric — see below).
+One flag: `amp.builtinEnv`, default **On**.
 
-- `WavetableVoice.trigger` currently runs the built-in amp env only when
-  `binder == null` (standalone). Change the condition so the built-in amp env
-  runs when **`ampEnvEnabled` OR `binder == null`**:
-  - `binder == null` (standalone / DSP tests) → built-in still runs, preserving
-    audibility without a lane binder.
-  - In a lane, the built-in runs only when the flag is On.
-- Default **Off** because lane Wavetable is already modular-driven today (the
-  modular `adsr1` drives amp at `depth=1.0`); Off preserves that exact behavior.
-- Turning it **On** re-enables the legacy built-in amp env, which makes the
-  `amp.attack/decay/sustain/release` knobs functional again. Caveat: with the
-  flag On *and* the modular `adsr1` still at `depth=1.0`, the two amp envelopes
-  sum — for a clean A/B the user lowers the modular connection depth manually
-  (consistent with the pure-bypass model).
-- `WavetableEngine` stores the flag in `paramValues`.
+- `WavetableVoice.trigger` runs the built-in amp env (on `envAmp`) when
+  **`binder == null` (standalone) OR the flag is On**. When Off in a lane,
+  `envAmp` stays at 0.
+- `WavetableVoice.release` cuts `envAmp` under the same condition.
+- Default **On**, not Off: the built-in amp env is the ONLY `amp.gain` driver in
+  a lane (`adsr1` routes to `filter.cutoff`; nothing routes to amp by default).
+  Defaulting Off would leave `amp.gain` at 0 and **silence all lane patches** —
+  so On preserves current behavior. The `binder == null` clause keeps standalone
+  / DSP-battery renders audible regardless of the flag, so the flag's effect is
+  observable only in lane mode (covered by unit tests + manual smoke, not a
+  standalone DSP render).
+- Turning it **Off** silences the built-in so the user can hear a modular ADSR
+  they have manually routed onto `amp.gain` — subject to the known "mono duro"
+  polyphony limitation. There is no default modular amp connection to compare
+  against, so Wavetable's A/B is opt-in and limited (see §1 note).
+- `WavetableEngine` stores the flag in `paramValues` (constructor seeds the
+  default; `get/setBaseValue` round-trip it with no special-casing).
 
 ---
 

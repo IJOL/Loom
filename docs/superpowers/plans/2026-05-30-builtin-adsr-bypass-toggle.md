@@ -530,7 +530,7 @@ git commit -m "feat(karplus): built-in amp env bypass toggle"
 - Modify: `src/engines/wavetable.ts` (`WT_PARAMS`; `WavetableVoice.trigger`; `WavetableVoice.release`)
 - Test: `src/engines/wavetable.test.ts` (append)
 
-**Note:** Wavetable's built-in amp env runs only as a `binder == null` standalone fallback today; in a lane the modular `adsr1` drives amp. The flag therefore defaults **Off** (preserves current lane sound) and only affects lane mode. Standalone renders always run the built-in (so the DSP battery stays green), which means the flag's lane effect is covered by unit tests here + manual smoke (Task 6), not a standalone DSP render.
+**Note (corrected during execution):** the real Wavetable runs the built-in amp env (`envAmp`) in EVERY mode and it is the ONLY `amp.gain` driver — the modular `adsr1` routes to `filter.cutoff`, not amp (routing it to amp hit a "mono duro" polyphony bug). So the flag defaults **On**: defaulting Off would silence all lane patches. The trigger/release conditions become "built-in runs when `binder == null` OR flag On". Standalone renders always run the built-in (DSP battery stays green), so the flag's lane effect is covered by unit tests + manual smoke (Task 6), not a standalone DSP render.
 
 - [ ] **Step 1: Write the failing unit test**
 
@@ -546,7 +546,7 @@ describeWtBuiltin('WavetableEngine built-in amp env toggle', () => {
     const amp = engine.params.find(p => p.id === 'amp.builtinEnv');
     expectWtBuiltin(amp?.kind).toBe('discrete');
     expectWtBuiltin(amp?.options).toHaveLength(2);
-    expectWtBuiltin(amp?.default).toBe(0);   // Off — lane is already modular-driven
+    expectWtBuiltin(amp?.default).toBe(1);   // On — built-in is the only amp.gain driver; Off would silence lanes
   });
 
   itWtBuiltin('round-trips through get/setBaseValue', () => {
@@ -570,7 +570,7 @@ Expected: FAIL — `amp.builtinEnv` spec does not exist.
 In `src/engines/wavetable.ts`, insert immediately BEFORE the `amp.attack` line:
 
 ```ts
-  { id: 'amp.builtinEnv',   label: 'Built-in Env', kind: 'discrete', min: 0, max: 1, default: 0,
+  { id: 'amp.builtinEnv',   label: 'Built-in Env', kind: 'discrete', min: 0, max: 1, default: 1,
     options: [{ value: 'off', label: 'Off' }, { value: 'on', label: 'On' }] },
   { id: 'amp.attack',       label: 'Attack',    kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's', curve: 'exponential' },
 ```
@@ -698,5 +698,5 @@ git commit -m "test: adjust param-count expectations for built-in env toggles"
 
 - **Assertions stay relative** (ratios), never absolute magnitudes — project convention.
 - **Pure bypass only:** never auto-seed or alter modular connection depths from the flag. The flag gates exactly one thing: whether the built-in envelope ramps are scheduled.
-- **Default state is sound-preserving:** Subtractive/Karplus default On (built-in authoritative, as today); Wavetable defaults Off (lane already modular-driven). Do not change existing modular connection-depth defaults.
+- **Default state is sound-preserving:** all three default On (built-in authoritative, as today). For Wavetable this is mandatory — the built-in is the only amp.gain driver, so Off would silence lanes. Do not change existing modular connection-depth defaults.
 - **FM and TB303 are intentionally out of scope** (see spec §2).
