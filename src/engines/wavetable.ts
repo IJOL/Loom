@@ -1,5 +1,6 @@
 import type { SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, EngineUIContext } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
+import type { PluginFactory } from '../plugins/types';
 import { registerEngine, registerEngineFactory } from './registry';
 import { createPeriodicWaves, WAVETABLES } from './wavetable-tables';
 import type { KnobHandle } from '../core/knob';
@@ -464,3 +465,31 @@ export class WavetableEngine implements SynthEngine {
 export const wavetableEngine = new WavetableEngine();
 registerEngine(wavetableEngine);
 registerEngineFactory('wavetable', () => new WavetableEngine());
+
+export const wavetablePlugin: PluginFactory = {
+  kind: 'synth',
+  manifest: {
+    id: 'wavetable',
+    name: 'Wavetable',
+    kind: 'synth',
+    version: '1.0.0',
+    params: wavetableEngine.params,
+    presets: [],
+  },
+  create(ctx, output) {
+    const engine = new WavetableEngine();
+    const voice = engine.createVoice(ctx, output);
+    return {
+      trigger:                (m, t, o) => voice.trigger(m, t, o),
+      release:                (t)       => voice.release(t),
+      connect:                (d)       => voice.connect(d),
+      getAudioParams:         ()        => voice.getAudioParams(),
+      getAudioParamRange:     (id)      => voice.getAudioParamRange?.(id),
+      getSharedAudioParams:   (c)       => engine.getSharedAudioParams?.(c) ?? new Map(),
+      getBaseValue:           (id)      => engine.getBaseValue(id),
+      setBaseValue:           (id, v)   => engine.setBaseValue(id, v),
+      applyPreset:            (name)    => engine.applyPreset(name),
+      dispose:                ()        => { voice.dispose(); engine.dispose(); },
+    };
+  },
+};
