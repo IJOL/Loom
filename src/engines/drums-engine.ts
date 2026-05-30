@@ -7,6 +7,7 @@ import type {
   EngineUIContext,
 } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
+import type { PluginFactory } from '../plugins/types';
 import { registerEngine, registerEngineFactory } from './registry';
 import { getCachedPresets } from '../presets/preset-loader';
 import { DrumMachine } from '../core/drums';
@@ -261,3 +262,31 @@ registerEngineFactory('drums-machine', () => new DrumsEngine());
 export function configureDrumsEngineSharedFx(fx: FxBus): void {
   drumsEngine.setSharedFx(fx);
 }
+
+export const drumsPlugin: PluginFactory = {
+  kind: 'synth',
+  manifest: {
+    id: 'drums-machine',
+    name: 'Drums',
+    kind: 'synth',
+    version: '1.0.0',
+    params: drumsEngine.params,
+    presets: [],
+  },
+  create(ctx, output) {
+    const engine = new DrumsEngine();
+    const voice = engine.createVoice(ctx, output);
+    return {
+      trigger:                (m, t, o) => voice.trigger(m, t, o),
+      release:                (t)       => voice.release(t),
+      connect:                (d)       => voice.connect(d),
+      getAudioParams:         ()        => voice.getAudioParams(),
+      getAudioParamRange:     (id)      => voice.getAudioParamRange?.(id),
+      getSharedAudioParams:   ()        => engine.getSharedAudioParams?.() ?? new Map(),
+      getBaseValue:           (id)      => engine.getBaseValue(id),
+      setBaseValue:           (id, v)   => engine.setBaseValue(id, v),
+      applyPreset:            (name)    => engine.applyPreset(name),
+      dispose:                ()        => { voice.dispose(); engine.dispose(); },
+    };
+  },
+};
