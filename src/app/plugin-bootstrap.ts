@@ -1,23 +1,56 @@
 // src/app/plugin-bootstrap.ts
+//
+// Plugin file convention:
+//   - Synth engines:   src/engines/<name>.ts          (may also export a legacy SynthEngine)
+//   - FX plugins:      src/plugins/fx/<name>.ts
+//   - Modulator plugs: src/plugins/modulators/<name>.ts
+//   - New standalone:  src/plugins/synths/<name>.plugin.ts
+//
+// Every plugin module must export AT LEAST ONE value that satisfies the
+// PluginFactory shape: { kind, manifest, create }.  This file uses
+// import.meta.glob (Vite build-time scan) so adding a new file in the
+// directories above is the ONLY step required — no imports here needed.
+
 import { registerPlugin } from '../plugins/registry';
-import { tb303Plugin }       from '../engines/tb303';
-import { subtractivePlugin } from '../engines/subtractive';
-import { fmPlugin }          from '../engines/fm';
-import { wavetablePlugin }   from '../engines/wavetable';
-import { karplusPlugin }     from '../engines/karplus';
-import { drumsPlugin }       from '../engines/drums-engine';
-import { multifilterPlugin } from '../plugins/fx/multifilter';
-import { distortionPlugin }  from '../plugins/fx/distortion';
-import { delayPlugin }       from '../plugins/fx/delay';
-import { reverbPlugin }      from '../plugins/fx/reverb';
-import { lfoPlugin }         from '../plugins/modulators/lfo';
-import { adsrPlugin }        from '../plugins/modulators/adsr';
 import type { PluginFactory } from '../plugins/types';
 
+// Eagerly import every module in the engine + plugin directories.
+// Vite resolves the glob at build time; tree-shaking keeps only what's used.
+// Test files are explicitly excluded so they don't pollute the plugin registry.
+const _engineModules = import.meta.glob<Record<string, unknown>>(
+  ['../engines/*.ts', '!../engines/*.test.ts'],
+  { eager: true },
+);
+const _pluginModules = import.meta.glob<Record<string, unknown>>(
+  ['../plugins/**/*.ts', '!../plugins/**/*.test.ts'],
+  { eager: true },
+);
+
+function isPluginFactory(v: unknown): v is PluginFactory {
+  if (v === null || typeof v !== 'object') return false;
+  const o = v as Record<string, unknown>;
+  return (
+    (o['kind'] === 'synth' || o['kind'] === 'fx' || o['kind'] === 'modulator') &&
+    typeof o['manifest'] === 'object' && o['manifest'] !== null &&
+    typeof (o['manifest'] as Record<string, unknown>)['id'] === 'string' &&
+    typeof o['create'] === 'function'
+  );
+}
+
+/** Collect all PluginFactory values exported from the scanned modules. */
+function collectFactories(modules: Record<string, Record<string, unknown>>): PluginFactory[] {
+  const out: PluginFactory[] = [];
+  for (const mod of Object.values(modules)) {
+    for (const val of Object.values(mod)) {
+      if (isPluginFactory(val)) out.push(val);
+    }
+  }
+  return out;
+}
+
 const BUILTIN: PluginFactory[] = [
-  tb303Plugin, subtractivePlugin, fmPlugin, wavetablePlugin, karplusPlugin, drumsPlugin,
-  multifilterPlugin, distortionPlugin, delayPlugin, reverbPlugin,
-  lfoPlugin, adsrPlugin,
+  ...collectFactories(_engineModules),
+  ...collectFactories(_pluginModules),
 ];
 
 /** Register every built-in plugin. Call once at app start, BEFORE

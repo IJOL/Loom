@@ -1,4 +1,4 @@
-import { listEngines } from './registry';
+import { listPlugins } from '../plugins/registry';
 import { populatePolyPresetSelect, refreshPolyPresetSelect } from '../polysynth/polysynth-presets';
 import type { KnobHandle } from '../core/knob';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
@@ -77,11 +77,13 @@ export function rebuildEngineParamUI(): void {
 
 export function populateEngineSelect(deps: EngineSelectorUIDeps, currentEngineId: string): void {
   deps.engineSel.innerHTML = '';
-  for (const engine of listEngines('polyhost')) {
+  // Populate from plugin registry so plugin-only synths appear without any
+  // hardcoded list — all registered 'synth' plugins drive the dropdown.
+  for (const plugin of listPlugins('synth')) {
     const opt = document.createElement('option');
-    opt.value = engine.id;
-    opt.textContent = engine.name;
-    if (engine.id === currentEngineId) opt.selected = true;
+    opt.value = plugin.manifest.id;
+    opt.textContent = plugin.manifest.name;
+    if (plugin.manifest.id === currentEngineId) opt.selected = true;
     deps.engineSel.appendChild(opt);
   }
 }

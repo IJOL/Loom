@@ -3,9 +3,12 @@ import { ChannelStrip } from '../core/fx';
 import { PolySynth } from '../polysynth/polysynth';
 import { InsertChain } from '../plugins/fx/insert-chain';
 import { createEngineInstance } from '../engines/registry';
+import { getPlugin, createInstance } from '../plugins/registry';
 import { setCurrentLaneForVoice } from '../modulation/active-mods';
+import { ModulationHostImpl } from '../modulation/modulation-host';
 import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from '../core/lane-ids';
 import type { SynthEngine, Voice } from '../engines/engine-types';
+import type { SynthInstance, PluginManifest } from '../plugins/types';
 import type { FxBus } from '../core/fx';
 import type { SidechainBus } from '../core/sidechain-bus';
 
@@ -39,6 +42,66 @@ export interface LaneAllocator {
   ensureLaneVoice(laneId: string, engineId: string): Voice | null;
   ensureLaneResource(laneId: string, engineId: string): void;
   getLaneEngineInstance(laneId: string): SynthEngine | null;
+}
+
+/**
+ * Wraps a SynthInstance (plugin interface) in a minimal SynthEngine adapter
+ * so it can be stored in LaneResourceMap and used by the rest of the audio
+ * graph without a separate legacy SynthEngine registration.
+ *
+ * The adapter is intentionally thin: buildSequencer / buildParamUI return no-op
+ * stubs because plugin-only synths manage their own UI through the plugin panel.
+ */
+function pluginSynthAsEngine(manifest: PluginManifest, inst: SynthInstance): SynthEngine {
+  const modHost = new ModulationHostImpl([]);
+  return {
+    id:         manifest.id,
+    name:       manifest.name,
+    type:       'polyhost' as const,
+    polyphony:  'mono' as const,
+    editor:     'piano-roll' as const,
+    params:     manifest.params,
+    presets:    [],
+    modulators: modHost,
+
+    getBaseValue(id: string): number  { return inst.getBaseValue(id); },
+    setBaseValue(id: string, v: number): void { inst.setBaseValue(id, v); },
+
+    createVoice(_ctx: AudioContext, _output: AudioNode): Voice {
+      return {
+        trigger:        (m, t, o) => inst.trigger(m, t, o),
+        release:        (t)       => inst.release(t),
+        connect:        (d)       => inst.connect(d),
+        getAudioParams: ()        => inst.getAudioParams(),
+        getAudioParamRange: (id)  => inst.getAudioParamRange?.(id),
+        dispose:        ()        => { /* instance is shared per lane; disposal handled in engine.dispose */ },
+      };
+    },
+
+    getSharedAudioParams(ctx?: AudioContext): Map<string, AudioParam> {
+      return inst.getSharedAudioParams?.(ctx) ?? new Map();
+    },
+
+    applyPreset(name: string): void { inst.applyPreset(name); },
+
+    buildSequencer(_container: HTMLElement, _stepCount: number) {
+      // Plugin-only synths use the default piano-roll sequencer wired by session-host.
+      return {
+        getStepAt: () => null,
+        setLength:  () => { /* no-op */ },
+        highlight:  () => { /* no-op */ },
+        serialize:  () => ({}),
+        deserialize: () => { /* no-op */ },
+        dispose:    () => { /* no-op */ },
+      };
+    },
+
+    buildParamUI(_container: HTMLElement): void {
+      // Plugin-only synths manage their param UI through the plugin panel.
+    },
+
+    dispose(): void { inst.dispose(); },
+  };
 }
 
 export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
@@ -156,7 +219,21 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     // empty); its output is strip.input.  Voice output is wired to
     // inserts.inputNode by ensureLaneVoice (not directly to strip.input).
     const inserts = new InsertChain(deps.ctx.createGain(), strip.input);
-    const engine = createEngineInstance(engineId);
+
+    // --- Engine resolution: legacy registry first, plugin registry as fallback ---
+    let engine = createEngineInstance(engineId);
+
+    if (!engine) {
+      // Touchpoint 4: support plugin-only synths (no legacy SynthEngine class).
+      // If the plugin registry has a 'synth' entry for this id, create a
+      // SynthInstance and wrap it in a minimal SynthEngine adapter.
+      const factory = getPlugin('synth', engineId);
+      if (factory && factory.kind === 'synth') {
+        const inst = createInstance('synth', engineId, deps.ctx, inserts.inputNode);
+        if (inst) engine = pluginSynthAsEngine(factory.manifest, inst);
+      }
+    }
+
     if (!engine) return;
     if (engineId === 'subtractive') {
       const p = new PolySynth(deps.ctx, inserts.inputNode);

@@ -1,4 +1,5 @@
 import { bootstrapPlugins } from './app/plugin-bootstrap';
+import { listPlugins } from './plugins/registry';
 import { createAudioGraph } from './app/audio-graph';
 import { createBpmBroadcaster } from './app/bpm-broadcast';
 import { createMuteSolo } from './app/mute-solo';
@@ -79,17 +80,19 @@ const ALL_TRACKS: TrackId[] = ['bass', 'poly', ...EXTRA_IDS, 'drumBus', ...DRUM_
 const $  = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const $$ = <T extends HTMLElement>(sel: string) => Array.from(document.querySelectorAll<T>(sel));
 
+// ── Plugin bootstrap (must run BEFORE preset cache + audio graph) ─────────
+bootstrapPlugins();
+
 // ── Preset cache ───────────────────────────────────────────────────────────
-// We fire off the JSON preset loader at module init and AWAIT the resulting
-// promise BEFORE anything that might apply a preset (the demo loader chains
-// onto this — see bottom of file). Missing JSON files just log a warning.
+// Derived from the plugin registry so adding a new synth plugin automatically
+// triggers its JSON preset file load (if /public/presets/<id>.json exists).
+// Missing JSON files log a warning but never throw.
 // The legacy 'poly' engineId was merged into 'subtractive' (the polysynth
 // host IS the subtractive engine's voice allocator).
-const ENGINE_IDS_FOR_PRESETS = ['tb303', 'fm', 'wavetable', 'karplus', 'subtractive', 'drums-machine'];
+const ENGINE_IDS_FOR_PRESETS = listPlugins('synth').map((p) => p.manifest.id);
 const presetsLoaded = loadAllPresets(ENGINE_IDS_FOR_PRESETS);
 
 // ── Audio graph ────────────────────────────────────────────────────────────
-bootstrapPlugins();
 const audio = createAudioGraph();
 // Phase G: audio-graph.ts is now master-only. All per-lane strips, instrument
 // instances, and configurators were removed. Lane allocation happens lazily via
