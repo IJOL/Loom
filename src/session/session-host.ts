@@ -98,6 +98,10 @@ export interface SessionHostDeps {
    *  triggerForLane can find the resource immediately. Optional so test fixtures
    *  that don't construct an audio graph don't need to implement it. */
   ensureLaneResource?: (laneId: string, engineId: string) => void;
+  /** Replace the live engine for an already-allocated lane (allocator
+   *  .swapLaneEngine). Used to reconcile a lane whose engineId changed via
+   *  undo/redo or a loaded session. Optional so test fixtures can skip it. */
+  swapLaneEngine?: (laneId: string, newEngineId: string) => void;
   /** Apply a preset to a lane by name. Called by applyLoadedSessionState
    *  for every lane.enginePresetName, and by onLaunchScene for every
    *  scene.presetPerLane entry. Optional so test fixtures without audio
@@ -234,7 +238,16 @@ export class SessionHost {
       // registered under the lane's id. Built-in lanes are pre-allocated at
       // boot; lanes that arrive via loaded state (demos, save files) are
       // allocated lazily here.
-      this.deps.ensureLaneResource?.(lane.id, lane.engineId);
+      // Allocate lazily, OR reconcile a lane whose engineId changed (undo/redo
+      // or a loaded session): if a resource exists but its live engine differs
+      // from the lane's engineId, swap it in place rather than skip (the
+      // idempotent ensureLaneResource would otherwise leave the old engine).
+      const existing = this.deps.laneResources?.get(lane.id);
+      if (existing && existing.engine.id !== lane.engineId) {
+        this.deps.swapLaneEngine?.(lane.id, lane.engineId);
+      } else {
+        this.deps.ensureLaneResource?.(lane.id, lane.engineId);
+      }
       // Task 28: rehydrate persisted insert slots into the lane's chain.
       if (lane.inserts && lane.inserts.length > 0) {
         const laneRes = this.deps.laneResources?.get(lane.id);
