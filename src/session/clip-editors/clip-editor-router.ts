@@ -8,6 +8,7 @@ import type { Sequencer } from '../../core/sequencer';
 import type { LanePlayState } from '../session-runtime';
 import { createPianoRoll, type PianoRollHandle } from '../../core/pianoroll';
 import { TICKS_PER_STEP, type NoteEvent } from '../../core/notes';
+import { resolveViewState, type ViewState } from '../../core/pianoroll-zoom';
 import { getEngine } from '../../engines/registry';
 import { renderDrumGridEditor } from './clip-editor-drum-grid';
 import type { HistoryDeps } from '../../save/history-wiring';
@@ -19,6 +20,10 @@ export interface ClipEditorDeps {
   midiLabel: (m: number) => string;
   historyDeps?: HistoryDeps;
 }
+
+// In-memory per-clip zoom/scroll. Mirrors the editorOverride map: persists for
+// the session, resets on reload. No saved-state schema change.
+const viewStateByClip = new Map<string, ViewState>();
 
 export function renderClipEditor(
   host: HTMLElement,
@@ -44,30 +49,13 @@ function buildPianoRoll(
   clip: SessionClip,
   deps: ClipEditorDeps,
 ): PianoRollHandle {
-  const canvas = document.createElement('canvas');
-  canvas.width  = Math.max(800, clip.lengthBars * 240);
-  canvas.height = 240;
-  canvas.style.height = '240px';
-  canvas.style.width  = `${canvas.width}px`;
-  // Wrap the canvas in a horizontally-scrollable container so very long clips
-  // (e.g. a 152-bar MIDI import) don't blow out the page width. The host stays
-  // pinned to the parent's width; the canvas scrolls inside it.
-  const scrollWrap = document.createElement('div');
-  scrollWrap.className = 'piano-roll-scroll';
-  scrollWrap.style.overflowX = 'auto';
-  scrollWrap.style.overflowY = 'hidden';
-  scrollWrap.style.maxWidth = '100%';
-  scrollWrap.appendChild(canvas);
-  host.appendChild(scrollWrap);
-
   const getNotes = (): NoteEvent[] => clip.notes ?? [];
   const setNotes = (notes: NoteEvent[]) => { clip.notes = notes; };
 
   const isBassLikeEngine = lane.engineId === 'tb303';
   const { ctx, seq, laneStates, historyDeps } = deps;
   return createPianoRoll({
-    canvas,
-    scrollContainer: scrollWrap,
+    host,
     getNotes,
     setNotes,
     patternTicks: clip.lengthBars * 16 * TICKS_PER_STEP,
@@ -83,6 +71,8 @@ function buildPianoRoll(
       const clipSteps = clip.lengthBars * 16;
       return (stepsElapsed % clipSteps) * TICKS_PER_STEP;
     },
+    viewState: resolveViewState(viewStateByClip, clip.id),
+    onViewChange: (v) => { viewStateByClip.set(clip.id, v); },
     ...(historyDeps ? {
       onGestureStart:  () => historyDeps.history.beginGesture(historyDeps.snapshot()),
       onGestureEnd:    () => historyDeps.history.commitGesture(),
