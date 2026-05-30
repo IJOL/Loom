@@ -159,6 +159,13 @@
       <div class="synth-row" id="synth-tabs"></div>
 
       <div class="page" data-page="303" hidden>
+        <div class="row poly-section">
+          <span class="section-label">PRESET</span>
+          <select id="bass-preset-select" class="engine-preset-select"></select>
+          <button class="rnd" id="bass-preset-load">Load</button>
+          <button class="rnd" id="bass-preset-save">Save As…</button>
+          <button class="rnd" id="bass-preset-delete">Delete</button>
+        </div>
         <div class="row knobs">
           <label>Wave<select id="wave">
               <option value="sawtooth">Saw</option>
@@ -181,6 +188,11 @@
       </div>
 
       <div class="page" data-page="drums" hidden>
+        <div class="row poly-section">
+          <span class="section-label">PRESET</span>
+          <select id="drums-preset-select" class="engine-preset-select"></select>
+          <button class="rnd" id="drums-preset-load">Load</button>
+        </div>
         <div class="row knobs">
           <label>Drum Kit<select id="kit-drums"></select></label>
           <div class="vert-divider"></div>

@@ -115,7 +115,11 @@ export function refreshPolyPresetSelect(): void {
   else sel.value = '__custom__';
 }
 
-export function populatePolyPresetSelect(): void {
+/** Core implementation: populate #poly-preset-select using an explicit laneId.
+ *  Exposed as a separate helper so injectEngineModulatorPanel can call it for
+ *  FM/Wavetable/Karplus poly lanes without relying on getActiveEngineLaneId()
+ *  (which is only updated for subtractive via the showPolyEditor path). */
+export function populatePolyPresetSelectForLane(laneId: string): void {
   const sel = document.getElementById('poly-preset-select') as HTMLSelectElement;
   if (!sel) return;
   sel.innerHTML = '';
@@ -125,10 +129,9 @@ export function populatePolyPresetSelect(): void {
   custom.textContent = '(custom — no preset)';
   sel.appendChild(custom);
 
-  // Filter by the active lane's engine. Subtractive uses the PolySynth
-  // factory presets (nested params); other engines use their own SynthEngine
-  // .presets array (flat id → value map).
-  const engineId = _deps?.getLaneEngineId(_deps.getActiveEngineLaneId()) ?? 'subtractive';
+  const deps = _deps;
+  if (!deps) return;
+  const engineId = deps.getLaneEngineId(laneId);
 
   if (engineId === 'subtractive') {
     const factoryGroup = document.createElement('optgroup');
@@ -157,9 +160,9 @@ export function populatePolyPresetSelect(): void {
     return;
   }
 
-  // Non-subtractive engine: pull presets directly from the active lane's
-  // SynthEngine instance. Each preset's `params` is a flat id → value map.
-  const instance = _deps?.getLaneEngineInstance(_deps.getActiveEngineLaneId());
+  // Non-subtractive poly engine (FM, Wavetable, Karplus): pull presets
+  // directly from the lane's SynthEngine instance.
+  const instance = deps.getLaneEngineInstance(laneId);
   if (!instance) return;
   const presets = instance.presets ?? [];
   if (presets.length === 0) return;
@@ -172,6 +175,12 @@ export function populatePolyPresetSelect(): void {
     factoryGroup.appendChild(opt);
   }
   sel.appendChild(factoryGroup);
+}
+
+export function populatePolyPresetSelect(): void {
+  const deps = _deps;
+  if (!deps) return;
+  populatePolyPresetSelectForLane(deps.getActiveEngineLaneId());
 }
 
 /** Apply a non-subtractive engine preset by writing each flat param to the
@@ -187,6 +196,151 @@ function applyEnginePreset(presetName: string): void {
     instance.setBaseValue(id, value);
   }
   deps.refreshLaneKnobs(laneId);
+}
+
+/** Apply a non-subtractive engine preset by id to a specific named lane,
+ *  refreshing the knob UI. Used by the per-page preset controls for 303
+ *  and drums lanes (which are not "active poly" lanes). */
+function applyEnginePresetForLane(presetName: string, laneId: string): void {
+  const deps = _deps;
+  if (!deps) return;
+  const instance = deps.getLaneEngineInstance(laneId);
+  if (!instance) return;
+  const preset = instance.presets.find((p) => p.name === presetName);
+  if (!preset) return;
+  for (const [id, value] of Object.entries(preset.params)) {
+    instance.setBaseValue(id, value);
+  }
+  deps.refreshLaneKnobs(laneId);
+}
+
+// ── Per-page preset controls (TB-303, Drums) ──────────────────────────────
+
+/** Tracks which preset is selected on each per-page select by laneId.
+ *  Used by refreshPagePresetSelect to restore the correct selection on
+ *  lane re-activation. */
+const pagePresetName = new Map<string, string>();
+
+/** Mutable active-lane holder per select element id. Shared between
+ *  populate (writes) and the change listener (reads) so the listener always
+ *  targets the lane that is currently displayed, even when two different
+ *  lanes of the same engine type share the same static select element. */
+const pageSelectActiveLane = new Map<string, { laneId: string }>();
+
+/** Populate the preset <select> identified by `selectId` with presets for
+ *  the given engineId. Adds a leading "(custom — no preset)" option, then
+ *  a Factory optgroup. */
+export function populateEnginePresetSelectById(
+  selectId: string,
+  engineId: string,
+  laneId: string,
+): void {
+  const sel = document.getElementById(selectId) as HTMLSelectElement | null;
+  if (!sel) return;
+
+  // Update the mutable active-lane holder so the pre-wired listener targets
+  // the newly activated lane.
+  let holder = pageSelectActiveLane.get(selectId);
+  if (!holder) {
+    holder = { laneId };
+    pageSelectActiveLane.set(selectId, holder);
+  } else {
+    holder.laneId = laneId;
+  }
+
+  sel.innerHTML = '';
+
+  const custom = document.createElement('option');
+  custom.value = '__custom__';
+  custom.textContent = '(custom — no preset)';
+  sel.appendChild(custom);
+
+  const deps = _deps;
+  if (!deps) return;
+  const instance = deps.getLaneEngineInstance(laneId);
+  if (!instance) return;
+  const presets = instance.presets ?? [];
+  if (presets.length === 0) return;
+
+  const factoryGroup = document.createElement('optgroup');
+  factoryGroup.label = 'Factory';
+  for (const p of presets) {
+    const opt = document.createElement('option');
+    opt.value = `engine:${p.name}`;
+    opt.textContent = p.name;
+    factoryGroup.appendChild(opt);
+  }
+  sel.appendChild(factoryGroup);
+
+  // Restore previous selection if any.
+  const prev = pagePresetName.get(laneId);
+  if (prev) sel.value = prev;
+  else sel.value = '__custom__';
+}
+
+/** Wire the change + Load button listeners for a per-page preset select.
+ *  Safe to call multiple times — guards against double-wiring with a data
+ *  attribute on the element. The listener reads from the shared active-lane
+ *  holder (set by populateEnginePresetSelectById) so it always applies to
+ *  the currently displayed lane even if two lanes share the same element. */
+export function wireEnginePresetSelectById(
+  selectId: string,
+  loadBtnId: string,
+): void {
+  const sel = document.getElementById(selectId) as HTMLSelectElement | null;
+  if (!sel) return;
+  // Guard: only wire the element once across all lane activations.
+  if (sel.dataset.presetWired === '1') return;
+  sel.dataset.presetWired = '1';
+
+  const applySelected = () => {
+    const holder = pageSelectActiveLane.get(selectId);
+    if (!holder) return;
+    const activeLaneId = holder.laneId;
+    const val = sel.value;
+    if (!val || val === '__custom__') return;
+    if (val.startsWith('engine:')) {
+      const name = val.slice('engine:'.length);
+      applyEnginePresetForLane(name, activeLaneId);
+      pagePresetName.set(activeLaneId, val);
+    }
+  };
+
+  sel.addEventListener('change', () => {
+    if (_deps?.historyDeps) withUndo(_deps.historyDeps, applySelected);
+    else applySelected();
+  });
+
+  const loadBtn = document.getElementById(loadBtnId) as HTMLButtonElement | null;
+  if (loadBtn) {
+    loadBtn.addEventListener('click', () => {
+      if (_deps?.historyDeps) withUndo(_deps.historyDeps, applySelected);
+      else applySelected();
+    });
+  }
+}
+
+/** Refresh the selection indicator on a per-page preset select after an
+ *  external change (e.g. session load). */
+export function refreshEnginePresetSelectById(selectId: string, laneId: string): void {
+  const sel = document.getElementById(selectId) as HTMLSelectElement | null;
+  if (!sel) return;
+  const prev = pagePresetName.get(laneId);
+  sel.value = prev ?? '__custom__';
+}
+
+/** Called by injectEngineModulatorPanel when the 303 page is activated for
+ *  a TB-303 lane. Populates + wires (on first visit) the bass preset select. */
+export function mountBassPresetSelect(laneId: string): void {
+  populateEnginePresetSelectById('bass-preset-select', 'tb303', laneId);
+  wireEnginePresetSelectById('bass-preset-select', 'bass-preset-load');
+}
+
+/** Called by injectEngineModulatorPanel when the drums page is activated for
+ *  a drums-machine lane. Populates + wires the drums preset select. */
+export function mountDrumsPresetSelect(laneId: string): void {
+  populateEnginePresetSelectById('drums-preset-select', 'drums-machine', laneId);
+  wireEnginePresetSelectById('drums-preset-select', 'drums-preset-load');
 }
 
 export function wirePolyControls(deps: PolySynthPresetsDeps): void {

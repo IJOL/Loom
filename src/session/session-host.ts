@@ -49,6 +49,12 @@ import { buildMixerColumn } from '../core/mixer';
 import { SessionInspector } from './session-inspector';
 import { withUndo } from '../save/history-wiring';
 import { rehydrateInsertChain } from './insert-slot';
+import {
+  mountBassPresetSelect,
+  mountDrumsPresetSelect,
+  populatePolyPresetSelectForLane,
+  refreshPolyPresetSelect,
+} from '../polysynth/polysynth-presets';
 
 export interface SessionHostDeps {
   ctx: AudioContext;
@@ -578,6 +584,19 @@ export class SessionHost {
     // Every active lane has an InsertChain (allocated in ensureLaneResource)
     // so there is no boot-lane special case.
     this.inspector.mountLaneInserts(laneId, host);
+
+    // Populate the correct preset dropdown for each page type.
+    // The poly page's #poly-preset-select is populated here for ALL poly-engine
+    // lanes (subtractive, fm, wavetable, karplus). For subtractive, the existing
+    // showPolyEditor → rebuildEngineParamUI path also populates it (harmless
+    // double call). For FM/Wavetable/Karplus, showPolyEditor is NOT called so
+    // without this call those engines would show stale Subtractive presets.
+    if (targetTab === 'poly') {
+      populatePolyPresetSelectForLane(laneId);
+      refreshPolyPresetSelect();
+    }
+    if (targetTab === '303') mountBassPresetSelect(laneId);
+    if (targetTab === 'drums') mountDrumsPresetSelect(laneId);
   }
 
   // ── Toolbar wiring ─────────────────────────────────────────────────────────
