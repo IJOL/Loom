@@ -33,6 +33,9 @@ export interface InspectorDeps {
 export class SessionInspector {
   roll: PianoRollHandle | null = null;
   private selectedClip: { laneId: string; clipIdx: number } | null = null;
+  /** Aborted (and replaced) each time openInspector() is called so stale
+   *  field-level listeners from the previous clip don't accumulate. */
+  private _fieldAc: AbortController = new AbortController();
 
   constructor(private deps: InspectorDeps) {
     this.wireKeyboardShortcuts();
@@ -97,21 +100,27 @@ export class SessionInspector {
     lenEl.value  = String(clip.lengthBars);
     qEl.value    = clip.launchQuantize ?? '';
 
-    nameEl.oninput = () => { clip.name = nameEl.value || undefined; this.deps.renderWithMixer(); };
-    nameEl.onfocus = () => { this.deps.historyDeps?.history.beginGesture(this.deps.historyDeps.snapshot()); };
-    nameEl.onblur  = () => { this.deps.historyDeps?.history.commitGesture(); };
-    lenEl.oninput  = () => { clip.lengthBars = Math.max(1, parseInt(lenEl.value, 10) || 1); };
-    lenEl.onfocus  = () => { this.deps.historyDeps?.history.beginGesture(this.deps.historyDeps.snapshot()); };
-    lenEl.onblur   = () => { this.deps.historyDeps?.history.commitGesture(); };
-    lenEl.onpointerdown = () => { this.deps.historyDeps?.history.beginGesture(this.deps.historyDeps.snapshot()); };
-    lenEl.onpointerup   = () => { this.deps.historyDeps?.history.commitGesture(); };
-    qEl.onchange   = () => {
+    // Abort previous field listeners so re-opening the inspector for a
+    // different clip never accumulates stale handlers.
+    this._fieldAc.abort();
+    this._fieldAc = new AbortController();
+    const sig = this._fieldAc.signal;
+
+    nameEl.addEventListener('input',  () => { clip.name = nameEl.value || undefined; this.deps.renderWithMixer(); }, { signal: sig });
+    nameEl.addEventListener('focus',  () => { this.deps.historyDeps?.history.beginGesture(this.deps.historyDeps.snapshot()); }, { signal: sig });
+    nameEl.addEventListener('blur',   () => { this.deps.historyDeps?.history.commitGesture(); }, { signal: sig });
+    lenEl.addEventListener('input',   () => { clip.lengthBars = Math.max(1, parseInt(lenEl.value, 10) || 1); }, { signal: sig });
+    lenEl.addEventListener('focus',   () => { this.deps.historyDeps?.history.beginGesture(this.deps.historyDeps.snapshot()); }, { signal: sig });
+    lenEl.addEventListener('blur',    () => { this.deps.historyDeps?.history.commitGesture(); }, { signal: sig });
+    lenEl.addEventListener('pointerdown', () => { this.deps.historyDeps?.history.beginGesture(this.deps.historyDeps.snapshot()); }, { signal: sig });
+    lenEl.addEventListener('pointerup',   () => { this.deps.historyDeps?.history.commitGesture(); }, { signal: sig });
+    qEl.addEventListener('change', () => {
       const d = this.deps.historyDeps;
       const run = () => {
         clip.launchQuantize = (qEl.value || undefined) as import('./session').LaunchQuantize | undefined;
       };
       if (d) withUndo(d, run); else run();
-    };
+    }, { signal: sig });
 
     document.getElementById('insp-duplicate')!.onclick = () => {
       if (!this.selectedClip) return;

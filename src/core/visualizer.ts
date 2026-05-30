@@ -4,13 +4,14 @@ export interface VisualizerDeps {
   vizCanvas: HTMLCanvasElement;
 }
 
-export function startVisualizer(deps: VisualizerDeps): void {
+export function startVisualizer(deps: VisualizerDeps): () => void {
   const { analyser, vizCanvas } = deps;
   const c = vizCanvas.getContext('2d');
-  if (!c) return;
+  if (!c) return () => { /* no-op: canvas context unavailable */ };
   const data = new Uint8Array(analyser.fftSize);
+  let rafId = 0;
   const draw = () => {
-    requestAnimationFrame(draw);
+    rafId = requestAnimationFrame(draw);
     analyser.getByteTimeDomainData(data);
     c.fillStyle = '#1a1a1a';
     c.fillRect(0, 0, vizCanvas.width, vizCanvas.height);
@@ -26,4 +27,5 @@ export function startVisualizer(deps: VisualizerDeps): void {
     c.stroke();
   };
   draw();
+  return () => { cancelAnimationFrame(rafId); };
 }

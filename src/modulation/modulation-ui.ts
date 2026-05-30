@@ -271,7 +271,7 @@ function renderAdsrConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLElem
       label, min, max, step: 0.001,
       value: (mod[field] as number | undefined) ?? def,
       defaultValue: def,
-      onChange: (v) => { (mod as unknown as Record<string, unknown>)[field] = v; sync(deps); },
+      onChange: (v) => { mod[field] = v; sync(deps); },
       format: fmt,
       ...(deps.historyDeps ? attachKnobUndo(deps.historyDeps) : {}),
     });

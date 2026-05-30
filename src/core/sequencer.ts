@@ -1,6 +1,8 @@
 import type { EngineSequencer } from '../engines/engine-types';
 import { emptyPattern, AUTOMATION_SUB_RES, type PatternData } from './pattern';
 import { DRUM_LANES } from './drums';
+import { midiToFreq } from './notes';
+export { midiToFreq };
 
 export interface BassStep {
   on: boolean;
@@ -157,6 +159,3 @@ export class Sequencer {
   };
 }
 
-export function midiToFreq(midi: number): number {
-  return 440 * Math.pow(2, (midi - 69) / 12);
-}

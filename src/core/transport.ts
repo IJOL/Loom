@@ -23,7 +23,6 @@ let _deps: TransportDeps | null = null;
 let _loopBtn: HTMLButtonElement | null = null;
 
 export function isChainEnabled(): boolean { return _chainEnabled; }
-export function getPendingSlotIdx(): number | null { return _pendingSlotIdx; }
 
 /** Re-refresh the loop button (e.g. after MIDI import changes seq.loopEnabled). */
 export function refreshLoopBtn(): void {
@@ -70,9 +69,11 @@ function refreshChainBtn(chainBtn: HTMLButtonElement): void {
   chainBtn.textContent = _chainEnabled ? '→ CHAIN' : '→ chain';
 }
 
-export function wireTransport(deps: TransportDeps): void {
+export function wireTransport(deps: TransportDeps): () => void {
   _deps = deps;
   const { seq, bank, ctx, playBtn, barsSel } = deps;
+  const ac = new AbortController();
+  const { signal } = ac;
 
   // ── Play/Stop ──────────────────────────────────────────────────────────────
   playBtn.addEventListener('click', () => {
@@ -85,7 +86,7 @@ export function wireTransport(deps: TransportDeps): void {
       seq.start();
       playBtn.textContent = '■';
     }
-  });
+  }, { signal });
 
   // ── Loop toggle ────────────────────────────────────────────────────────────
   const loopBtn = document.getElementById('loop-toggle') as HTMLButtonElement;
@@ -93,7 +94,7 @@ export function wireTransport(deps: TransportDeps): void {
   loopBtn.addEventListener('click', () => {
     seq.loopEnabled = !seq.loopEnabled;
     refreshLoopBtnEl(loopBtn);
-  });
+  }, { signal });
   refreshLoopBtnEl(loopBtn);
 
   // ── Chain toggle ───────────────────────────────────────────────────────────
@@ -108,7 +109,7 @@ export function wireTransport(deps: TransportDeps): void {
     }
     refreshChainBtn(chainBtn);
     refreshLoopBtnEl(loopBtn);
-  });
+  }, { signal });
   refreshChainBtn(chainBtn);
 
   seq.onEnded = () => {
@@ -124,7 +125,7 @@ export function wireTransport(deps: TransportDeps): void {
 
   // ── Pattern slot buttons ───────────────────────────────────────────────────
   $$('button.slot').forEach((b) => {
-    b.addEventListener('click', () => switchSlot(parseInt(b.dataset.slot ?? '0', 10)));
+    b.addEventListener('click', () => switchSlot(parseInt(b.dataset.slot ?? '0', 10)), { signal });
   });
 
   seq.onPatternChange = () => {
@@ -137,4 +138,6 @@ export function wireTransport(deps: TransportDeps): void {
       deps.updateBassModeButtons();
     }
   };
+
+  return () => { ac.abort(); };
 }

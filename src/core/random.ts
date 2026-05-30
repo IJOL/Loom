@@ -1,7 +1,7 @@
 import type { TB303 } from './synth';
 import { DRUM_LANES, type DrumVoice } from './drums';
 import type { Sequencer } from './sequencer';
-import type { PolySynth, LfoTarget } from '../polysynth/polysynth';
+import type { PolySynth } from '../polysynth/polysynth';
 
 export const SCALES = {
   pentMinor: [0, 3, 5, 7, 10],
@@ -104,10 +104,9 @@ export function randomize(seq: Sequencer, synth: TB303, opts: RandomizeOptions) 
 
 // Randomize the polysynth settings to a musically reasonable starting point.
 // Biased to avoid extreme/unusable values: low resonance most of the time,
-// moderate filter ranges, LFOs usually 'off' (sometimes pitch/cutoff/amp).
+// moderate filter ranges. Modulation (LFOs/ADSRs) is handled by the
+// ModulationHost and is not touched here.
 const POLY_WAVES: OscillatorType[] = ['sawtooth', 'square', 'triangle', 'sine'];
-const LFO_TARGET_POOL: LfoTarget[] = ['off', 'off', 'off', 'pitch', 'cutoff', 'amp'];
-
 function randRange(min: number, max: number): number {
   return min + Math.random() * (max - min);
 }
@@ -153,14 +152,6 @@ export function randomizePolySynth(poly: PolySynth) {
   p.amp.decay   = randRange(0.1, 0.5);
   p.amp.sustain = randRange(0.5, 0.9);
   p.amp.release = randRange(0.2, 1.5);
-
-  for (const k of ['lfo1', 'lfo2'] as const) {
-    const lfo = p[k];
-    lfo.wave   = pick(POLY_WAVES);
-    lfo.rate   = randRange(0.2, 8);
-    lfo.target = pick(LFO_TARGET_POOL);
-    lfo.depth  = lfo.target === 'off' ? 0 : randRange(0.1, 0.5);
-  }
 }
 
 export function clearPattern(

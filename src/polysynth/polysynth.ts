@@ -8,10 +8,6 @@
 // the entire envelope at sample-accurate times and frees itself when the
 // release tail ends.
 
-import { type SyncDiv } from '../core/fx';
-
-export type LfoTarget = 'off' | 'pitch' | 'cutoff' | 'amp';
-export type LfoSync   = 'free' | SyncDiv;
 export type FilterType = 'lowpass' | 'highpass' | 'bandpass';
 
 export interface PolySynthParams {
@@ -28,8 +24,6 @@ export interface PolySynthParams {
     attack: number; decay: number; sustain: number; release: number;
   };
   amp: { attack: number; decay: number; sustain: number; release: number; };
-  lfo1: { wave: OscillatorType; rate: number; depth: number; target: LfoTarget; sync?: LfoSync; };
-  lfo2: { wave: OscillatorType; rate: number; depth: number; target: LfoTarget; sync?: LfoSync; };
 }
 
 export const POLY_DEFAULTS: PolySynthParams = {
@@ -45,8 +39,6 @@ export const POLY_DEFAULTS: PolySynthParams = {
     attack: 0.01, decay: 0.3, sustain: 0.4, release: 0.35,
   },
   amp:  { attack: 0.01, decay: 0.2, sustain: 0.7, release: 0.3 },
-  lfo1: { wave: 'sine', rate: 4,   depth: 0, target: 'off', sync: 'free' },
-  lfo2: { wave: 'sine', rate: 0.5, depth: 0, target: 'off', sync: 'free' },
 };
 
 /**
@@ -395,11 +387,6 @@ export class PolySynth {
     envCutoffNorm.offset.linearRampToValueAtTime(0, releaseStart + fr);
 
     const stopTime = releaseStart + Math.max(ar, fr) + 0.05;
-
-    // params.lfo1 / params.lfo2 state is retained for save/load compatibility
-    // but the engine no longer spawns oscillator nodes from it — modulation
-    // arrives via the SubtractiveEngine's ModulationHost and sums into the
-    // per-voice AudioParams exposed above (amp.gain, filter.frequency, etc.).
 
     osc1.start(time); osc2.start(time); sub.start(time);
     noise.start(time);

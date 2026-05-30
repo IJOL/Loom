@@ -8,7 +8,7 @@ import { withUndo, type HistoryDeps } from '../save/history-wiring';
  *  `"filter.cutoff": 0.55`) back into the nested PolySynthParams tree the
  *  polysynth UI still operates on. Wave indices are mapped back to their
  *  OscillatorType string. Fields not present in the flat preset keep their
- *  POLY_DEFAULTS value (so e.g. `osc1.octave`, `lfo1.*` survive). */
+ *  POLY_DEFAULTS value (so e.g. `osc1.octave` survives). */
 function flatToPolyParams(flat: Record<string, number>): PolySynthParams {
   const out = JSON.parse(JSON.stringify(POLY_DEFAULTS)) as PolySynthParams;
   const WAVE_VALUES: OscillatorType[] = ['sawtooth', 'square', 'triangle', 'sine'];
@@ -91,8 +91,6 @@ export function applyPolyParams(params: PolySynthParams): void {
     noise:  { ...d.noise,  ...params.noise },
     filter: { ...d.filter, ...params.filter },
     amp:    { ...d.amp,    ...params.amp },
-    lfo1:   { ...d.lfo1,   ...params.lfo1 },
-    lfo2:   { ...d.lfo2,   ...params.lfo2 },
   };
   _deps!.refreshLaneKnobs(_deps!.getActiveEngineLaneId());
 }

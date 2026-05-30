@@ -55,7 +55,6 @@ let autoLoopCount = 0;
 let autoPrevPlayPos = 0;
 
 export function getAutoAbsSubIdx(): number { return autoAbsSubIdx; }
-export function getAutoCurrentSubIdx(): number { return autoCurrentSubIdx; }
 
 export function resetAutomationPosition(): void {
   autoAbsSubIdx = 0;

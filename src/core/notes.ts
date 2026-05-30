@@ -10,6 +10,11 @@ import { VOICE_MIDI } from '../engines/drum-gm-map';
 export const TICKS_PER_QUARTER = 96;
 export const TICKS_PER_STEP    = TICKS_PER_QUARTER / 4; // 24 (one 16th)
 
+/** Equal-temperament MIDI note → Hz. A4 = 440 Hz (MIDI 69). */
+export function midiToFreq(midi: number): number {
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
 export interface NoteEvent {
   start: number;     // ticks from pattern start
   duration: number;  // ticks (min 1, snap suggested to TICKS_PER_STEP/2)

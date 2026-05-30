@@ -19,6 +19,7 @@ import { bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } f
 import { ConnectionBinder } from '../modulation/connection-binder';
 import { PendingBaseValues } from './pending-base-values';
 import type { KnobHandle } from '../core/knob';
+import { midiToFreq } from '../core/notes';
 
 const PARAMS: EngineParamSpec[] = [
   { id: 'filter.cutoff',    label: 'Cutoff',    kind: 'continuous', min: 0, max: 1, default: 0.42 },
@@ -32,10 +33,6 @@ const PARAMS: EngineParamSpec[] = [
     options: [{ value: 'sawtooth', label: 'Saw' }, { value: 'square', label: 'Sqr' }],
   },
 ];
-
-function midiToFreq(m: number): number {
-  return 440 * Math.pow(2, (m - 69) / 12);
-}
 
 class TB303Voice implements Voice {
   /** Set by TB303Engine.createVoice immediately after construction so
