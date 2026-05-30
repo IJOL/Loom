@@ -1,6 +1,8 @@
+import 'fake-indexeddb/auto';
 import { describe, it, expect } from 'vitest';
 import { MemSampleStore } from './sample-store-mem';
 import type { SampleAsset } from './types';
+import { IdbSampleStore } from './sample-store';
 
 function asset(id: string): SampleAsset {
   return {
@@ -22,5 +24,28 @@ describe('MemSampleStore', () => {
     await store.delete('smp-a');
     expect(await store.get('smp-a')).toBeUndefined();
     expect((await store.list()).map((a) => a.id)).toEqual(['smp-b']);
+  });
+});
+
+describe('IdbSampleStore', () => {
+  it('round-trips put/get/list/delete through IndexedDB', async () => {
+    const store = new IdbSampleStore('tb303-samples-test');
+    await store.put(asset('smp-1'));
+    await store.put(asset('smp-2'));
+
+    expect((await store.get('smp-1'))?.name).toBe('smp-1.wav');
+    expect((await store.list()).map((a) => a.id).sort()).toEqual(['smp-1', 'smp-2']);
+
+    await store.delete('smp-1');
+    expect(await store.get('smp-1')).toBeUndefined();
+    expect((await store.list()).map((a) => a.id)).toEqual(['smp-2']);
+  });
+
+  it('preserves the bytes ArrayBuffer through a round-trip', async () => {
+    const store = new IdbSampleStore('tb303-samples-test2');
+    const a = asset('smp-bytes');
+    await store.put(a);
+    const got = await store.get('smp-bytes');
+    expect(new Uint8Array(got!.bytes)).toEqual(new Uint8Array([1, 2, 3, 4]));
   });
 });
