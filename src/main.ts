@@ -380,6 +380,7 @@ const sessionHost = new SessionHost({
   getLaneEngineId,
   ensureLaneVoice,
   showPolyEditor: showPolyEditorWrapper,
+  setActiveEngineLane,
   // Phase G: polysynth removed from SessionHostDeps.
   mixerDeps,
   midiLabel,

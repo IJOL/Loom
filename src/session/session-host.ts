@@ -75,6 +75,13 @@ export interface SessionHostDeps {
   getLaneEngineId: (laneId: string) => string;
   ensureLaneVoice: (laneId: string, engineId: string) => import('../engines/engine-types').Voice | null;
   showPolyEditor: (laneId: string, target: PolySynth, displayName: string) => void;
+  /** Update the active-engine-lane tracker (lane-engine-host state). Called
+   *  for FM/Wavetable/Karplus when the user opens their inspector — those
+   *  engines have no PolySynth so showPolyEditor's path doesn't fire
+   *  setActiveEngineLane, which leaves the preset dropdown applying changes
+   *  to a stale (typically subtractive-1) lane. Optional so test fixtures
+   *  without the lane-host don't need to implement it. */
+  setActiveEngineLane?: (laneId: string) => void;
   // Phase G: polysynth removed — per-lane PolySynth instances are reached
   // via laneResources.get(laneId)?.engine.getPolySynth().
   /** @deprecated Phase G removed the singleton polysynth field. */
@@ -506,6 +513,15 @@ export class SessionHost {
           document.querySelectorAll<HTMLElement>('.page').forEach((p) => {
             p.hidden = p.dataset.page !== targetTab;
           });
+          // FM/Wavetable/Karplus poly lanes: no PolySynth target, so the
+          // showPolyEditor path above is skipped — but the preset dropdown,
+          // engine selector, and engine-mod-host all need to retarget to
+          // this lane. Calling setActiveEngineLane updates _lehState.activeLaneId
+          // so that getActiveEngineLaneId() inside polysynth-presets.ts
+          // resolves to the right lane when the user picks a preset.
+          if (targetTab === 'poly') {
+            self.deps.setActiveEngineLane?.(laneId);
+          }
         }
         // Hide Subtractive-only knob rows when the active poly lane's engine
         // is NOT subtractive (FM / Wavetable / Karplus render their own
