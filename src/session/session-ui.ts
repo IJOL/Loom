@@ -14,6 +14,9 @@ export interface SessionUICallbacks {
    *  starts immediately if transport is idle. */
   onClipPlayPause: (laneId: string, clipIdx: number) => void;
   onCellClick: (laneId: string, clipIdx: number) => void;
+  /** An audio file was dropped onto an EMPTY clip cell of a sampler lane. The
+   *  host imports it and creates a loop clip carrying clip.sample. */
+  onCellDropAudio?: (laneId: string, clipIdx: number, file: File) => void;
   /** Drop a clip onto another slot. `copy=true` when the user held Ctrl
    *  during the drag (Ctrl=copy, plain drag=move). Caller is responsible
    *  for wrapping the mutation in withUndo. */
@@ -178,6 +181,27 @@ function clipCell(
   } else {
     cell.classList.add('session-cell-empty');
     cell.addEventListener('click', () => cb.onCellClick(lane.id, rowIdx));
+  }
+  // Sampler lanes accept an audio file dropped onto ANY cell (empty or filled)
+  // → create/replace a loop clip. Guarded to file drags so it does not interfere
+  // with the internal clip-move drag (wireClipDrag) on filled cells.
+  if (lane.engineId === 'sampler' && cb.onCellDropAudio) {
+    const onDrop = cb.onCellDropAudio;
+    const isFileDrag = (e: DragEvent) =>
+      !!e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files');
+    cell.addEventListener('dragover', (e) => {
+      if (!isFileDrag(e)) return;
+      e.preventDefault();
+      cell.classList.add('session-cell-drop');
+    });
+    cell.addEventListener('dragleave', () => cell.classList.remove('session-cell-drop'));
+    cell.addEventListener('drop', (e) => {
+      if (!isFileDrag(e)) return;
+      e.preventDefault();
+      cell.classList.remove('session-cell-drop');
+      const file = e.dataTransfer!.files[0];
+      if (file) onDrop(lane.id, rowIdx, file);
+    });
   }
   return cell;
 }

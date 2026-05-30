@@ -70,6 +70,12 @@
   border: 1px dashed var(--border-soft);
 }
 .session-cell-empty:hover { border-style: solid; border-color: var(--amber); }
+/* Drag an audio file over a sampler-lane empty cell → highlight as a drop target. */
+.session-cell-drop {
+  border-style: solid !important;
+  border-color: #5ad !important;
+  background: rgba(90, 170, 221, 0.18) !important;
+}
 .session-cell-filled {
   background: var(--surface-3);
   // Text + play icon stay dark so they read against the pastel palette

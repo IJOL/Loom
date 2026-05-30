@@ -9,10 +9,13 @@ import type { PolySynth } from '../polysynth/polysynth';
 import type { Sequencer } from '../core/sequencer';
 import type { MixerColumnDeps } from '../core/mixer';
 import {
-  emptySessionState, cloneSessionState, emptyLane, emptyClip,
+  emptySessionState, cloneSessionState, emptyLane, emptyClip, audioClip,
   moveClip, copyClip,
   type SessionState, type SessionClip, type ClipSlot,
 } from './session';
+import { importFile } from '../samples/import';
+import { sampleStore } from '../samples/store-singleton';
+import { sampleCache } from '../samples/sample-cache';
 
 // ── Pure helper: slug id generation ────────────────────────────────────────
 /** Returns the next available slug id for a new lane of the given engineId.
@@ -417,6 +420,32 @@ export class SessionHost {
           self.renderWithMixer();
         };
         if (hd) withUndo(hd, run); else run();
+      },
+      onCellDropAudio(laneId, clipIdx, file) {
+        const lane = self.state.lanes.find((l) => l.id === laneId);
+        if (!lane || lane.engineId !== 'sampler') return;
+        void ctx.resume();
+        void (async () => {
+          try {
+            const asset = await importFile(file, ctx);
+            await sampleStore.put(asset);
+            const buf = await ctx.decodeAudioData(asset.bytes.slice(0));
+            sampleCache.put(asset.id, buf);
+            const name = file.name.replace(/\.[^.]+$/, '');
+            const clip = audioClip({ name, sampleId: asset.id, durationSec: buf.duration, bpm: seq.bpm });
+            const hd = self.deps.historyDeps;
+            const run = () => {
+              while (lane.clips.length <= clipIdx) lane.clips.push(null);
+              lane.clips[clipIdx] = clip;
+              self.inspector.setSelectedClip({ laneId, clipIdx });
+              self.inspector.openInspector();
+              self.renderWithMixer();
+            };
+            if (hd) withUndo(hd, run); else run();
+          } catch (err) {
+            console.warn('Sampler: could not load dropped audio:', err);
+          }
+        })();
       },
       onStopLane(laneId) {
         stopLane(self.laneStates, laneId,

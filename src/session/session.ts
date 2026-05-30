@@ -101,6 +101,33 @@ export function emptyClip(lengthBars: number): SessionClip {
   return { id: nextId('clip'), lengthBars, notes: [], color: pickRandomClipColor() };
 }
 
+/** Build a loop/song audio clip (carries clip.sample). lengthBars is derived so
+ *  the clip spans roughly the sample's natural length at the given bpm — a loop
+ *  then plays near its natural speed; the user refines it in the clip editor. */
+export function audioClip(opts: {
+  name: string;
+  sampleId: string;
+  durationSec: number;
+  bpm: number;
+  mode?: 'loop' | 'song';
+}): SessionClip {
+  const barSec = (4 * 60) / opts.bpm;
+  const lengthBars = Math.max(1, Math.round(opts.durationSec / barSec));
+  return {
+    id: nextId('clip'),
+    name: opts.name,
+    color: pickRandomClipColor(),
+    lengthBars,
+    notes: [],
+    sample: {
+      sampleId: opts.sampleId,
+      mode: opts.mode ?? 'loop',
+      trimStart: 0,
+      trimEnd: opts.durationSec,
+    },
+  };
+}
+
 export function emptyLane(id: string, engineId: string): SessionLane {
   return { id, engineId, clips: [] };
 }
