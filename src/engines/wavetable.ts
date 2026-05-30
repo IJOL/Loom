@@ -36,7 +36,11 @@ const WT_PARAMS: EngineParamSpec[] = [
   { id: 'osc.detune',       label: 'Detune',    kind: 'continuous', min: -50,  max: 50, default: 0, unit: '¢' },
   { id: 'filter.cutoff',    label: 'Cutoff',    kind: 'continuous', min: 0,    max: 1,  default: 0.55 },
   { id: 'filter.resonance', label: 'Res',       kind: 'continuous', min: 0,    max: 1,  default: 0.2 },
-  { id: 'amp.builtinEnv',   label: 'Built-in Env', kind: 'discrete', min: 0, max: 1, default: 0,
+  // Default On: the built-in amp env is the ONLY amp.gain driver in a lane
+  // (adsr1 routes to filter.cutoff, not amp — see modHost note). Defaulting Off
+  // would leave nothing driving amp.gain and silence lane patches. Turning it
+  // Off is opt-in for users who manually route a modular ADSR onto amp.gain.
+  { id: 'amp.builtinEnv',   label: 'Built-in Env', kind: 'discrete', min: 0, max: 1, default: 1,
     options: [{ value: 'off', label: 'Off' }, { value: 'on', label: 'On' }] },
   { id: 'amp.attack',       label: 'Attack',    kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's', curve: 'exponential' },
   { id: 'amp.decay',        label: 'Decay',     kind: 'continuous', min: 0.001, max: 2, default: 0.3,  unit: 's', curve: 'exponential' },
@@ -163,8 +167,10 @@ class WavetableVoice implements Voice {
     // Amp envelope (per-voice, internal) + self-termination.
     //
     // Built-in amp env runs when standalone (no lane binder, for audibility in
-    // tests/standalone) OR when the amp.builtinEnv flag is On in a lane. When
-    // Off in a lane, leave envAmp at 0 so the modular adsr1 drives amp alone.
+    // tests/standalone) OR when the amp.builtinEnv flag is On in a lane (the
+    // default). When Off in a lane, envAmp stays at 0 and ONLY a user-routed
+    // modular ADSR on amp.gain drives the voice — adsr1 routes to cutoff, not
+    // amp, so nothing drives amp by default until the user wires it.
     //
     // NOTE: The old design always ran the built-in env in every mode ("key to
     // polyphony" approach), but this toggle allows A/B comparison against the

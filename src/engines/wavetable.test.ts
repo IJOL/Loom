@@ -49,16 +49,20 @@ describe('WavetableEngine getBaseValue/setBaseValue', () => {
 });
 
 describe('WavetableEngine built-in amp env toggle', () => {
-  it('exposes amp.builtinEnv discrete param defaulting Off', () => {
+  it('exposes amp.builtinEnv discrete param defaulting On', () => {
     const engine = new WavetableEngine();
     const amp = engine.params.find(p => p.id === 'amp.builtinEnv');
     expect(amp?.kind).toBe('discrete');
     expect(amp?.options).toHaveLength(2);
-    expect(amp?.default).toBe(0);   // Off — lane is already modular-driven
+    // On: the built-in env is the only amp.gain driver in a lane (adsr1 routes
+    // to cutoff), so Off would silence lane patches — On preserves the sound.
+    expect(amp?.default).toBe(1);
   });
 
   it('round-trips through get/setBaseValue', () => {
     const engine = new WavetableEngine();
+    expect(engine.getBaseValue('amp.builtinEnv')).toBe(1);  // default On
+    engine.setBaseValue('amp.builtinEnv', 0);
     expect(engine.getBaseValue('amp.builtinEnv')).toBe(0);
     engine.setBaseValue('amp.builtinEnv', 1);
     expect(engine.getBaseValue('amp.builtinEnv')).toBe(1);
