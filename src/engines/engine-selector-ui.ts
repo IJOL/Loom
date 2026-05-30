@@ -87,11 +87,15 @@ export function rebuildEngineParamUI(): void {
 
 export function populateEngineSelect(deps: EngineSelectorUIDeps, currentEngineId: string): void {
   deps.engineSel.innerHTML = '';
-  for (const id of melodicSynthEngineIds()) {
+  // Keep the original plugin manifest labels (e.g. "TB-303", "Subtractive");
+  // only the melodic-engine filter changes vs. the legacy behavior.
+  const melodic = new Set(melodicSynthEngineIds());
+  for (const plugin of listPlugins('synth')) {
+    if (!melodic.has(plugin.manifest.id)) continue;
     const opt = document.createElement('option');
-    opt.value = id;
-    opt.textContent = getEngine(id)?.name ?? id;
-    if (id === currentEngineId) opt.selected = true;
+    opt.value = plugin.manifest.id;
+    opt.textContent = plugin.manifest.name;
+    if (plugin.manifest.id === currentEngineId) opt.selected = true;
     deps.engineSel.appendChild(opt);
   }
 }
