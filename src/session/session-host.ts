@@ -342,8 +342,7 @@ export class SessionHost {
 
   private buildCallbacks(): void {
     const self = this;
-    const { ctx, seq, playBtn, resetAutomationPosition,
-            showPolyEditor } = this.deps;
+    const { ctx, seq, playBtn, resetAutomationPosition } = this.deps;
 
     this.callbacks = {
       onClipClick(laneId, clipIdx) {
