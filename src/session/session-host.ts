@@ -178,7 +178,13 @@ export class SessionHost {
     this.wireToolbar();
     this.refreshSynthTabs();
     this.startRenderTick();
-    this.renderWithMixer();
+    // Phase G deferral rule: lane resources don't exist until
+    // applyLoadedSessionState runs (post-demo-fetch). renderWithMixer calls
+    // stripFor() for every lane, which throws if the lane isn't allocated.
+    // Defer the first mixer render until lanes are populated. Subsequent
+    // applyLoadedSessionState calls (demo picker) re-fire this callback
+    // because onStateApplied is repeating.
+    this.onStateApplied(() => this.renderWithMixer());
   }
 
   // ── Public API for save/load ─────────────────────────────────────────────
