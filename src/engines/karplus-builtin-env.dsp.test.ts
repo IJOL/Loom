@@ -32,6 +32,9 @@ describe('KarplusEngine built-in amp env bypass (DSP)', () => {
     const on  = await renderKarp((e) => e.setBaseValue('amp.builtinEnv', 1));
     const off = await renderKarp((e) => e.setBaseValue('amp.builtinEnv', 0));
     expect(rms(on)).toBeGreaterThan(0.001);
+    // Wider silence margin than the subtractive test (*0.02): Karplus sums the
+    // shared modBus['amp.level'] ConstantSource (at 0) into amp.gain, which can
+    // contribute a hair of fp-noise — still essentially silent.
     expect(rms(off)).toBeLessThan(rms(on) * 0.05);
   });
 });

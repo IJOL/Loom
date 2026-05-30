@@ -266,13 +266,19 @@ class KarplusVoice implements Voice {
 
   release(time: number): void {
     if (this.disposed) return;
+    // Cut the built-in amp env only if it actually ran this note. When
+    // amp.builtinEnv is Off, envAmp was never scheduled (stays at 0), so this
+    // would be a no-op — guarding it keeps the bypass semantics symmetric with
+    // trigger() and explicit for future readers.
     // cancelAndHoldAtTime snapshots the current value at `time` (handles
     // mid-ramp correctly — unlike reading param.value, which is unreliable
     // when automation is in flight). Then ramp linearly to 0 over 5 ms for
     // a quick perceptual gate cut.
-    const RELEASE_S = 0.005;
-    this.envAmp.offset.cancelAndHoldAtTime(time);
-    this.envAmp.offset.linearRampToValueAtTime(0, time + RELEASE_S);
+    if (this.getParam('amp.builtinEnv') >= 0.5) {
+      const RELEASE_S = 0.005;
+      this.envAmp.offset.cancelAndHoldAtTime(time);
+      this.envAmp.offset.linearRampToValueAtTime(0, time + RELEASE_S);
+    }
     for (const mv of this.voiceMods.values()) mv.release(time);
   }
   connect(_dest: AudioNode): void {}
