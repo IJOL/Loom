@@ -47,11 +47,9 @@ describe('SubtractiveEngine getBaseValue/setBaseValue', () => {
   });
 });
 
-import { SubtractiveEngine as SubEngineForBuiltin } from './subtractive';
-
 describe('SubtractiveEngine built-in envelope toggles', () => {
   it('exposes amp.builtinEnv and filter.builtinEnv as discrete params defaulting On', () => {
-    const engine = new SubEngineForBuiltin();
+    const engine = new SubtractiveEngine();
     const amp = engine.params.find(p => p.id === 'amp.builtinEnv');
     const filt = engine.params.find(p => p.id === 'filter.builtinEnv');
     expect(amp?.kind).toBe('discrete');
@@ -64,7 +62,7 @@ describe('SubtractiveEngine built-in envelope toggles', () => {
   it('setBaseValue flips the PolySynth bypass flags and getBaseValue reflects them', () => {
     const sr = 44100;
     const ctx = new OfflineAudioContext(1, sr, sr);
-    const engine = new SubEngineForBuiltin();
+    const engine = new SubtractiveEngine();
     const out = (ctx as unknown as AudioContext).createGain();
     engine.createVoice(ctx as unknown as AudioContext, out); // instantiate polysynth
     const ps = engine.getPolySynth()!;
@@ -85,7 +83,7 @@ describe('SubtractiveEngine built-in envelope toggles', () => {
   it('buffers the flag through pending when no polysynth exists yet, applying on createVoice', () => {
     const sr = 44100;
     const ctx = new OfflineAudioContext(1, sr, sr);
-    const engine = new SubEngineForBuiltin();
+    const engine = new SubtractiveEngine();
     engine.setBaseValue('amp.builtinEnv', 0);  // before any polysynth
     const out = (ctx as unknown as AudioContext).createGain();
     engine.createVoice(ctx as unknown as AudioContext, out);
