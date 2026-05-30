@@ -41,6 +41,7 @@ export interface LaneAllocator {
   ensureLaneStrip(laneId: string): ChannelStrip;
   ensureLaneVoice(laneId: string, engineId: string): Voice | null;
   ensureLaneResource(laneId: string, engineId: string): void;
+  swapLaneEngine(laneId: string, newEngineId: string): void;
   getLaneEngineInstance(laneId: string): SynthEngine | null;
 }
 
@@ -259,12 +260,26 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     resources.set(laneId, { strip, engine, inserts });
   };
 
+  /** Replace the live engine of an already-allocated lane, reusing its strip
+   *  and inserts. The old engine (and its cached voice) is disposed. No-op if
+   *  the lane isn't allocated or the new engineId can't be resolved. */
+  const swapLaneEngine = (laneId: string, newEngineId: string): void => {
+    const res = resources.get(laneId);
+    if (!res) return;
+    const engine = createLaneEngine(newEngineId, res.inserts);
+    if (!engine) return; // unknown engine → leave the lane intact
+    wireEngineIntoLane(newEngineId, engine, res.strip, res.inserts);
+    laneVoices.delete(laneId);                  // drop the old engine's cached voice
+    resources.replaceEngine(laneId, engine);    // disposes old engine, keeps strip+inserts
+  };
+
   const getLaneEngineInstance = (laneId: string): SynthEngine | null =>
     resources.get(laneId)?.engine ?? null;
 
   return {
     resources, extraStrips, extraPolys,
     stripFor, ensureExtraPoly, ensureLaneStrip, ensureLaneVoice, ensureLaneResource,
+    swapLaneEngine,
     getLaneEngineInstance,
   };
 }

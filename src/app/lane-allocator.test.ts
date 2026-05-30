@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import '../engines/tb303';
 import '../engines/drums-engine';
 import '../engines/subtractive';
+import '../engines/fm';
+import '../engines/wavetable';
 import { DrumsEngine } from '../engines/drums-engine';
 import { createLaneAllocator } from './lane-allocator';
 import { FxBus } from '../core/fx';
@@ -185,5 +187,45 @@ describe('Phase G save → load round-trip with collapsed allocator shape', () =
       // And createVoice must not throw for any of them.
       expect(() => res!.engine.createVoice(ctx, res!.strip.input)).not.toThrow();
     }
+  });
+});
+
+describe('swapLaneEngine replaces the engine in place', () => {
+  it('keeps the same strip + inserts and swaps the engine instance', () => {
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [] });
+    lanes.ensureLaneResource('L', 'subtractive');
+    const before = lanes.resources.get('L')!;
+    const stripRef = before.strip;
+    const insertsRef = before.inserts;
+    expect(before.engine.id).toBe('subtractive');
+
+    lanes.swapLaneEngine('L', 'fm');
+
+    const after = lanes.resources.get('L')!;
+    expect(after.engine.id).toBe('fm');
+    expect(after.strip).toBe(stripRef);     // strip preserved
+    expect(after.inserts).toBe(insertsRef); // inserts preserved
+  });
+
+  it('invalidates the cached voice so the next ensureLaneVoice builds a fresh one', () => {
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [] });
+    lanes.ensureLaneResource('L', 'fm');
+    const v1 = lanes.ensureLaneVoice('L', 'fm');
+    lanes.swapLaneEngine('L', 'wavetable');
+    const v2 = lanes.ensureLaneVoice('L', 'wavetable');
+    expect(v1).not.toBeNull();
+    expect(v2).not.toBe(v1); // fresh voice from the new engine
+  });
+
+  it('is a no-op when the lane has no resource', () => {
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [] });
+    expect(() => lanes.swapLaneEngine('nope', 'fm')).not.toThrow();
+    expect(lanes.resources.get('nope')).toBeUndefined();
   });
 });
