@@ -92,6 +92,8 @@ const FM_PARAMS: EngineParamSpec[] = [
   ...opParamSpecs(4, { ratio: 1, level: 0.6 }),
   // Mix / global
   { id: 'amp.mix',    label: 'Mix',       kind: 'continuous', min: 0, max: 1, default: 0.7 },
+  // Polyphony cap — shown as a knob in the FM inspector.
+  { id: 'poly.voices', label: 'Voices',   kind: 'continuous', min: 1, max: 16, default: 6 },
 ];
 
 class FMVoice implements Voice {
@@ -313,6 +315,25 @@ export class FMEngine implements SynthEngine {
   /** Persistence + cross-module access to modulator state. */
   get modulators(): ModulationHostImpl { return this.modHost; }
 
+  /** Maximum simultaneous voices. Oldest voice is stolen when exceeded. */
+  maxVoices = 6;
+
+  /** Ordered list of active voices (oldest first). */
+  private activeVoices: FMVoice[] = [];
+
+  /** How many voices are currently tracked as active. */
+  activeVoiceCount(): number {
+    return this.activeVoices.length;
+  }
+
+  /** Steal (dispose + remove) the N oldest voices. */
+  private stealOldest(n: number): void {
+    const toSteal = this.activeVoices.splice(0, n);
+    for (const v of toSteal) {
+      v.dispose();
+    }
+  }
+
   private algorithmIndex = 0;
   private feedback = 0;
   private opParams: OpParams[] = [
@@ -375,6 +396,16 @@ export class FMEngine implements SynthEngine {
   setBaseValue(id: string, v: number): void {
     if (id === 'algorithm') { this.algorithmIndex = Math.max(0, Math.min(ALGORITHMS.length - 1, Math.round(v))); return; }
     if (id === 'feedback')  { this.feedback = v; return; }
+    if (id === 'poly.voices') {
+      const newCap = Math.max(1, Math.min(16, Math.round(v)));
+      this.maxVoices = newCap;
+      this.paramValues[id] = newCap;
+      // Steal excess voices immediately if the new cap is below the current count.
+      if (this.activeVoices.length > newCap) {
+        this.stealOldest(this.activeVoices.length - newCap);
+      }
+      return;
+    }
     this.paramValues[id] = v;
     // Keep the engine's per-op struct in sync so future triggers see the
     // new value.
@@ -449,6 +480,22 @@ export class FMEngine implements SynthEngine {
       voice.binder = bindVoiceModulators({ laneId, engine: this, voice, voiceMods: combinedMods, ctx });
       this.currentLaneId = laneId;
     }
+
+    // Polyphony cap: track the new voice, then steal oldest if over limit.
+    this.activeVoices.push(voice);
+    if (this.activeVoices.length > this.maxVoices) {
+      this.stealOldest(this.activeVoices.length - this.maxVoices);
+    }
+
+    // Self-pruning: when the last oscillator fires its 'ended' event the voice
+    // has finished naturally — remove it from activeVoices so the slot is freed
+    // without waiting for a steal on overflow.
+    const lastOsc = voice.osc[voice.osc.length - 1];
+    lastOsc.addEventListener('ended', () => {
+      const idx = this.activeVoices.indexOf(voice);
+      if (idx !== -1) this.activeVoices.splice(idx, 1);
+    });
+
     return voice;
   }
 
@@ -524,8 +571,8 @@ export class FMEngine implements SynthEngine {
     mixRow.appendChild(mixKnobs);
     container.appendChild(mixRow);
     wireEngineParams(this, ctx, mixKnobs, {
-      filter: (id) => id === 'amp.mix',
-      formatter: (_id, v) => fmtPct(v),
+      filter: (id) => id === 'amp.mix' || id === 'poly.voices',
+      formatter: (id, v) => id === 'poly.voices' ? String(Math.round(v)) : fmtPct(v),
     });
 
     renderModulatorsPanel(container, {

@@ -11,8 +11,8 @@ describe('WavetableEngine.params', () => {
     }
   });
 
-  it('has 10 declared params', () => {
-    expect(engine.params).toHaveLength(10);
+  it('has 11 declared params (10 sound + poly.voices)', () => {
+    expect(engine.params).toHaveLength(11);
   });
 
   it('wave selectors are discrete; the rest are continuous', () => {

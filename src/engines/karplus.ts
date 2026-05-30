@@ -36,6 +36,8 @@ const KARPLUS_PARAMS: EngineParamSpec[] = [
   { id: 'amp.attack',        label: 'Attack',     kind: 'continuous', min: 0.001, max: 0.5, default: 0.005, unit: 's' },
   { id: 'amp.release',       label: 'Release',    kind: 'continuous', min: 0.05,  max: 4,   default: 0.5,   unit: 's' },
   { id: 'amp.level',         label: 'Level',      kind: 'continuous', min: 0,     max: 1,   default: 0.8 },
+  // Polyphony cap — shown as a knob in the Karplus inspector.
+  { id: 'poly.voices',       label: 'Voices',     kind: 'continuous', min: 1,     max: 16,  default: 8 },
 ];
 
 class KarplusVoice implements Voice {
@@ -52,6 +54,10 @@ class KarplusVoice implements Voice {
   /** Set by KarplusEngine.createVoice for dispose-time cleanup. */
   laneId: string | null = null;
   binder: ConnectionBinder | null = null;
+
+  /** Called by the engine after each natural dispose so it can prune the
+   *  voice from its activeVoices list. Assigned by createVoice. */
+  onDisposed: (() => void) | null = null;
 
   constructor(
     private ctx: AudioContext,
@@ -230,6 +236,8 @@ class KarplusVoice implements Voice {
     this.amp.disconnect();
     this.envAmp.disconnect();
     for (const mv of this.voiceMods.values()) mv.dispose();
+    // Notify the engine so it can prune this voice from activeVoices.
+    if (this.onDisposed) this.onDisposed();
   }
 }
 
@@ -279,6 +287,25 @@ export class KarplusEngine implements SynthEngine {
 
   private paramValues: Record<string, number> = {};
 
+  /** Maximum simultaneous voices. Oldest voice is stolen when exceeded. */
+  maxVoices = 8;
+
+  /** Ordered list of active voices (oldest first). */
+  private activeVoices: KarplusVoice[] = [];
+
+  /** How many voices are currently tracked as active. */
+  activeVoiceCount(): number {
+    return this.activeVoices.length;
+  }
+
+  /** Steal (dispose + remove) the N oldest voices. */
+  private stealOldest(n: number): void {
+    const toSteal = this.activeVoices.splice(0, n);
+    for (const v of toSteal) {
+      v.dispose();
+    }
+  }
+
   constructor() {
     for (const p of KARPLUS_PARAMS) this.paramValues[p.id] = p.default;
   }
@@ -288,6 +315,16 @@ export class KarplusEngine implements SynthEngine {
   }
 
   setBaseValue(id: string, v: number): void {
+    if (id === 'poly.voices') {
+      const newCap = Math.max(1, Math.min(16, Math.round(v)));
+      this.maxVoices = newCap;
+      this.paramValues[id] = newCap;
+      // Steal excess voices immediately if the new cap is below the current count.
+      if (this.activeVoices.length > newCap) {
+        this.stealOldest(this.activeVoices.length - newCap);
+      }
+      return;
+    }
     this.paramValues[id] = v;
   }
 
@@ -352,6 +389,21 @@ export class KarplusEngine implements SynthEngine {
       voice.binder = bindVoiceModulators({ laneId, engine: this, voice, voiceMods: combinedMods, ctx });
       this.currentLaneId = laneId;
     }
+
+    // Polyphony cap: track the new voice, then steal oldest if over limit.
+    this.activeVoices.push(voice);
+    if (this.activeVoices.length > this.maxVoices) {
+      this.stealOldest(this.activeVoices.length - this.maxVoices);
+    }
+
+    // Self-pruning: KarplusVoice already schedules its own dispose() via
+    // setTimeout when the note finishes naturally. Wire a callback so that
+    // natural completion also removes the voice from activeVoices.
+    voice.onDisposed = () => {
+      const idx = this.activeVoices.indexOf(voice);
+      if (idx !== -1) this.activeVoices.splice(idx, 1);
+    };
+
     return voice;
   }
 

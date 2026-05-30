@@ -40,10 +40,12 @@ const WT_PARAMS: EngineParamSpec[] = [
   { id: 'amp.decay',        label: 'Decay',     kind: 'continuous', min: 0.001, max: 2, default: 0.3,  unit: 's', curve: 'exponential' },
   { id: 'amp.sustain',      label: 'Sustain',   kind: 'continuous', min: 0,    max: 1,  default: 0.7 },
   { id: 'amp.release',      label: 'Release',   kind: 'continuous', min: 0.005, max: 4, default: 0.3,  unit: 's', curve: 'exponential' },
+  // Polyphony cap — shown as a knob in the Wavetable inspector.
+  { id: 'poly.voices',      label: 'Voices',    kind: 'continuous', min: 1, max: 16, default: 8 },
 ];
 
 class WavetableVoice implements Voice {
-  private oscA: OscillatorNode;
+  readonly oscA: OscillatorNode;
   private oscB: OscillatorNode;
   private gainA: GainNode;
   private gainB: GainNode;
@@ -259,6 +261,25 @@ export class WavetableEngine implements SynthEngine {
   /** Tempo for LFO BPM sync. main.ts can update this at runtime. */
   bpm = 120;
 
+  /** Maximum simultaneous voices. Oldest voice is stolen when exceeded. */
+  maxVoices = 8;
+
+  /** Ordered list of active voices (oldest first). */
+  private activeVoices: WavetableVoice[] = [];
+
+  /** How many voices are currently tracked as active. */
+  activeVoiceCount(): number {
+    return this.activeVoices.length;
+  }
+
+  /** Steal (dispose + remove) the N oldest voices. */
+  private stealOldest(n: number): void {
+    const toSteal = this.activeVoices.splice(0, n);
+    for (const v of toSteal) {
+      v.dispose();
+    }
+  }
+
   private modHost = new ModulationHostImpl([
     {
       ...makeDefaultADSR('adsr1'),
@@ -288,6 +309,16 @@ export class WavetableEngine implements SynthEngine {
   setBaseValue(id: string, v: number): void {
     if (id === 'osc.waveA') { this.setWaveA(Math.round(v)); return; }
     if (id === 'osc.waveB') { this.setWaveB(Math.round(v)); return; }
+    if (id === 'poly.voices') {
+      const newCap = Math.max(1, Math.min(16, Math.round(v)));
+      this.maxVoices = newCap;
+      this.paramValues[id] = newCap;
+      // Steal excess voices immediately if the new cap is below the current count.
+      if (this.activeVoices.length > newCap) {
+        this.stealOldest(this.activeVoices.length - newCap);
+      }
+      return;
+    }
     this.paramValues[id] = v;
   }
 
@@ -385,6 +416,21 @@ export class WavetableEngine implements SynthEngine {
       voice.binder = bindVoiceModulators({ laneId, engine: this, voice, voiceMods: combinedMods, ctx });
       this.currentLaneId = laneId;
     }
+
+    // Polyphony cap: track the new voice, then steal oldest if over limit.
+    this.activeVoices.push(voice);
+    if (this.activeVoices.length > this.maxVoices) {
+      this.stealOldest(this.activeVoices.length - this.maxVoices);
+    }
+
+    // Self-pruning: when oscA fires its 'ended' event the voice has finished
+    // naturally — remove it from activeVoices so the slot is freed without
+    // waiting for a steal on overflow.
+    voice.oscA.addEventListener('ended', () => {
+      const idx = this.activeVoices.indexOf(voice);
+      if (idx !== -1) this.activeVoices.splice(idx, 1);
+    });
+
     return voice;
   }
 
