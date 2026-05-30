@@ -36,6 +36,10 @@ export interface SessionLane {
   /** Currently applied preset name for this lane (`factory:Name` /
    *  `user:Name` / `engine:Name` — same shape as `polyPresetName` values). */
   enginePresetName?: string;
+  /** Per-lane insert-chain slots. Added by Task 27 (formally persisted in
+   *  Task 28). Defaults to [] when absent so consumers can write `??= []`
+   *  and then push to the same array without losing the reference. */
+  inserts?: import('./insert-slot').InsertSlot[];
 }
 
 export interface SessionScene {

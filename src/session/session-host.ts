@@ -99,6 +99,9 @@ export interface SessionHostDeps {
    *  sequencer lookahead pulse. Used to drive tickRecAutomation and
    *  tickArrangement. */
   onAfterTick?: (now: number, lookahead: number) => void;
+  /** Phase H: called when the user edits an insert slot so the session can be
+   *  autosaved. Optional — wired after save manager is set up. */
+  saveSession?: () => void;
 }
 
 export class SessionHost {
@@ -147,6 +150,8 @@ export class SessionHost {
       automationRegistry: this.deps.automationRegistry,
       getAutoAbsSubIdx: this.deps.getAutoAbsSubIdx,
       historyDeps: this.deps.historyDeps,
+      laneResources: this.deps.laneResources,
+      saveSession: this.deps.saveSession,
     });
 
     this.deps.seq.sessionTick = (now, look) => {
@@ -533,6 +538,11 @@ export class SessionHost {
       sessionState: this.state,
       historyDeps: this.deps.historyDeps,
     });
+
+    // Phase H: mount the insert-chain panel below the engine controls.
+    // Every active lane has an InsertChain (allocated in ensureLaneResource)
+    // so there is no boot-lane special case.
+    this.inspector.mountLaneInserts(laneId, host);
   }
 
   // ── Toolbar wiring ─────────────────────────────────────────────────────────

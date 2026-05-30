@@ -10,6 +10,8 @@ import { renderClipAutomationLanes } from './clip-automation-lanes';
 import type { PianoRollHandle } from '../core/pianoroll';
 import type { HistoryDeps } from '../save/history-wiring';
 import { withUndo, isTextEditTarget } from '../save/history-wiring';
+import type { LaneResourceMap } from '../core/lane-resources';
+import { buildLaneInsertUI } from './lane-insert-ui';
 
 export interface InspectorDeps {
   ctx: AudioContext;
@@ -21,6 +23,11 @@ export interface InspectorDeps {
   automationRegistry: Map<string, import('../core/knob').KnobHandle>;
   getAutoAbsSubIdx: () => number;
   historyDeps?: HistoryDeps;
+  /** Phase H: per-lane resource map — provides the InsertChain for each lane.
+   *  Optional so test fixtures without an audio graph still compile. */
+  laneResources?: LaneResourceMap;
+  /** Phase H: persist the session after the user edits an insert slot. */
+  saveSession?: () => void;
 }
 
 export class SessionInspector {
@@ -175,6 +182,29 @@ export class SessionInspector {
       getAutoAbsSubIdx: this.deps.getAutoAbsSubIdx,
       automationRegistry: this.deps.automationRegistry,
     });
+  }
+
+  // ── Lane inserts panel ────────────────────────────────────────────────────
+
+  /** Mount the insert-chain panel for `laneId` into `host`.
+   *  Called from SessionHost.injectEngineModulatorPanel after the engine
+   *  controls are placed so the insert strip appears below them for every
+   *  active lane (no boot-lane carve-out). */
+  mountLaneInserts(laneId: string, host: HTMLElement): void {
+    const laneRes = this.deps.laneResources?.get(laneId);
+    const sessionLane = this.deps.state.lanes.find((l) => l.id === laneId);
+    if (!laneRes || !sessionLane) return;
+    sessionLane.inserts ??= [];
+    const insertsPanel = document.createElement('div');
+    insertsPanel.className = 'lane-inserts';
+    buildLaneInsertUI({
+      ctx: this.deps.ctx,
+      container: insertsPanel,
+      chain: laneRes.inserts,
+      slots: sessionLane.inserts,
+      onChange: () => this.deps.saveSession?.(),
+    });
+    host.appendChild(insertsPanel);
   }
 
   // ── Copy / paste ───────────────────────────────────────────────────────────
