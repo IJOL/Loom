@@ -5,6 +5,7 @@
 
 import type { SessionState } from './session';
 import type { ModulatorState } from '../modulation/types';
+import type { KeymapEntry } from '../samples/types';
 
 /** Writes a deep-cloned copy of the modulator array into
  *  `state.lanes[laneId].engineState.modulators`. No-op if lane is unknown.
@@ -34,4 +35,22 @@ export function mirrorParamChange(
   if (!lane.engineState) lane.engineState = {};
   if (!lane.engineState.params) lane.engineState.params = {};
   lane.engineState.params[paramId] = value;
+}
+
+/** Mirror the lane's one-shot keymap into engineState so it survives tab
+ *  switches and save/load. No-op if the lane is unknown. */
+export function mirrorKeymapChange(
+  state: SessionState,
+  laneId: string,
+  keymap: KeymapEntry[],
+): void {
+  const lane = state.lanes.find((l) => l.id === laneId);
+  if (!lane) return;
+  if (!lane.engineState) lane.engineState = {};
+  lane.engineState.sampler = { keymap };
+}
+
+/** Read a lane's persisted keymap (empty array if none). */
+export function readLaneKeymap(state: SessionState, laneId: string): KeymapEntry[] {
+  return state.lanes.find((l) => l.id === laneId)?.engineState?.sampler?.keymap ?? [];
 }

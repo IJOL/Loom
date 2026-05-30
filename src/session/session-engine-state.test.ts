@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { emptySessionState } from './session';
-import { mirrorParamChange, syncModulators } from './session-engine-state';
+import { mirrorParamChange, syncModulators, mirrorKeymapChange, readLaneKeymap } from './session-engine-state';
+import type { KeymapEntry } from '../samples/types';
 
 describe('per-lane engineState persistence', () => {
   it('mirrorParamChange writes to lane.engineState.params', () => {
@@ -61,5 +62,27 @@ describe('per-lane engineState persistence', () => {
     syncModulators(state, 'does-not-exist', []);
     // No exception, no lane mutated.
     expect(state.lanes.every((l) => !l.engineState?.modulators)).toBe(true);
+  });
+
+  it('mirrorKeymapChange writes the keymap onto lane.engineState.sampler.keymap', () => {
+    const state = emptySessionState();
+    const km: KeymapEntry[] = [{ sampleId: 'a', rootNote: 60, loNote: 0, hiNote: 127 }];
+    mirrorKeymapChange(state, 'subtractive-1', km);
+    const lane = state.lanes.find((l) => l.id === 'subtractive-1')!;
+    expect(lane.engineState?.sampler?.keymap).toEqual(km);
+  });
+
+  it('readLaneKeymap round-trips and returns [] when absent', () => {
+    const state = emptySessionState();
+    expect(readLaneKeymap(state, 'subtractive-1')).toEqual([]);
+    const km: KeymapEntry[] = [{ sampleId: 'b', rootNote: 48, loNote: 0, hiNote: 127 }];
+    mirrorKeymapChange(state, 'subtractive-1', km);
+    expect(readLaneKeymap(state, 'subtractive-1')).toEqual(km);
+  });
+
+  it('mirrorKeymapChange is a no-op for unknown laneId', () => {
+    const state = emptySessionState();
+    mirrorKeymapChange(state, 'does-not-exist', [{ sampleId: 'x', rootNote: 60, loNote: 0, hiNote: 127 }]);
+    expect(state.lanes.every((l) => !l.engineState?.sampler)).toBe(true);
   });
 });

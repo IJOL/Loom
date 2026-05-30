@@ -32,6 +32,7 @@ export interface SessionLane {
   engineState?: {
     params?: Record<string, number>;
     modulators?: import('../modulation/types').ModulatorState[];
+    sampler?: { keymap: import('../samples/types').KeymapEntry[] };
   };
   /** Currently applied preset name for this lane (`factory:Name` /
    *  `user:Name` / `engine:Name` — same shape as `polyPresetName` values). */
