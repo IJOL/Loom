@@ -401,6 +401,8 @@ const sessionHost = new SessionHost({
   ensureLaneResource,
   masterInsertChain,
   fxBus: fx,
+  scaleSel,
+  rootSel,
   applyPresetForLane: (laneId, presetName) => {
     // presetName is a prefixed value matching the dropdown vocabulary
     // (factory: / user: / engine:). See src/presets/preset-apply.ts.
@@ -767,6 +769,9 @@ wireRandomizeUI({
   seq,
   // Phase G: synth resolved lazily from lane resources.
   getSynth: getSynthInstance,
+  getDrums: getDrumsInstance,
+  getBassLaneId: () => LANE_ID_BASS,
+  getDrumsLaneId: () => LANE_ID_DRUMS,
   scaleSel, rootSel,
   getBassRollEntry: () => null,
   refreshKnobsFromSynth,

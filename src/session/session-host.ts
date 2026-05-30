@@ -116,6 +116,10 @@ export interface SessionHostDeps {
    *  modulation destination dropdown. Optional so test fixtures without audio
    *  don't need to wire it. */
   fxBus?: import('../core/fx').FxBus;
+  /** Scale + root selectors — forwarded to SessionInspector so the 🎲 Notes
+   *  button in the clip editor can produce scale-aware randomization. */
+  scaleSel?: HTMLSelectElement;
+  rootSel?: HTMLSelectElement;
 }
 
 export class SessionHost {
@@ -166,6 +170,8 @@ export class SessionHost {
       historyDeps: this.deps.historyDeps,
       laneResources: this.deps.laneResources,
       saveSession: this.deps.saveSession,
+      scaleSel: this.deps.scaleSel,
+      rootSel: this.deps.rootSel,
     });
 
     this.deps.seq.sessionTick = (now, look) => {

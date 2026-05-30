@@ -165,6 +165,7 @@
           <button class="rnd" id="bass-preset-load">Load</button>
           <button class="rnd" id="bass-preset-save">Save As…</button>
           <button class="rnd" id="bass-preset-delete">Delete</button>
+          <button class="rnd primary" id="bass-random-sound" title="Randomize sound (sets preset to Custom)">🎲 Sound</button>
         </div>
         <div class="row knobs">
           <label>Wave<select id="wave">
@@ -176,9 +177,6 @@
           <div class="section-label">SEQ MODE</div>
           <button class="rnd" id="bass-mode-step">Step</button>
           <button class="rnd" id="bass-mode-piano">Piano Roll</button>
-          <div class="vert-divider"></div>
-          <button class="rnd primary" id="bass-random-sound">🎲 Sound</button>
-          <button class="rnd primary" id="bass-random-notes">🎲 Notes</button>
         </div>
         <div class="row poly-section">
           <div class="section-label">FX</div>
@@ -192,11 +190,10 @@
           <span class="section-label">PRESET</span>
           <select id="drums-preset-select" class="engine-preset-select"></select>
           <button class="rnd" id="drums-preset-load">Load</button>
+          <button class="rnd primary" id="drums-random-sound" title="Randomize drum kit (sets preset to Custom)">🎲 Sound</button>
         </div>
         <div class="row knobs">
           <div id="drum-master-knobs" class="knob-row"></div>
-          <div class="vert-divider"></div>
-          <button class="rnd primary" id="drums-random">🎲 Pattern</button>
         </div>
         <div class="row poly-section">
           <div class="section-label">FX</div>
@@ -211,14 +208,12 @@
           <span id="engine-lane-label" class="active-edit-label">MAIN</span>
           <select id="engine-select"></select>
           <div class="vert-divider"></div>
-          <button class="rnd primary" id="poly-randomize">🎲 Sound</button>
-          <button class="rnd primary" id="poly-random-notes">🎲 Notes</button>
-          <div class="vert-divider"></div>
           <span class="section-label">PRESET</span>
           <select id="poly-preset-select"></select>
           <button class="rnd" id="poly-preset-load">Load</button>
           <button class="rnd" id="poly-preset-save">Save As…</button>
           <button class="rnd" id="poly-preset-delete">Delete</button>
+          <button class="rnd primary" id="poly-randomize" title="Randomize sound (sets preset to Custom)">🎲 Sound</button>
         </div>
         <div class="row poly-section" data-engine="subtractive">
           <div class="section-label">OSC 1</div>
@@ -363,6 +358,7 @@
             <button class="rnd" id="insp-paste-layer" disabled>Paste (Layer)</button>
             <button class="rnd" id="insp-duplicate">Duplicate</button>
             <button class="rnd" id="insp-toggle-editor" title="Toggle drum-grid / piano-roll">↔ Editor</button>
+            <button class="rnd primary" id="insp-random-notes" title="Randomize clip notes">🎲 Notes</button>
             <button class="rnd" id="insp-delete">Delete</button>
           </div>
           <div id="insp-roll-host" class="session-inspector-roll"></div>

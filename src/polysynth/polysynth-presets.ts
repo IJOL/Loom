@@ -318,6 +318,24 @@ export function wireEnginePresetSelectById(
   }
 }
 
+/** Mark a per-page preset select as "custom" (no preset). Called after a
+ *  sound-randomize action so the dropdown reflects that the current sound
+ *  no longer matches any saved preset. */
+export function markPagePresetCustom(selectId: string, laneId: string): void {
+  pagePresetName.delete(laneId);
+  const sel = document.getElementById(selectId) as HTMLSelectElement | null;
+  if (sel) sel.value = '__custom__';
+}
+
+/** Mark the poly preset select as "custom" and forget the lane's preset
+ *  binding. Called after sound-randomize on poly engines. */
+export function markPolyPresetCustom(): void {
+  const target = _deps?.getActivePolyTarget();
+  if (target) polyPresetName.delete(target);
+  const sel = document.getElementById('poly-preset-select') as HTMLSelectElement | null;
+  if (sel) sel.value = '__custom__';
+}
+
 /** Refresh the selection indicator on a per-page preset select after an
  *  external change (e.g. session load). */
 export function refreshEnginePresetSelectById(selectId: string, laneId: string): void {
@@ -368,6 +386,7 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
       }
     }
     deps.rebuildEngineParamUI();
+    markPolyPresetCustom();
   });
 
   populatePolyPresetSelect();

@@ -12,6 +12,7 @@ import type { HistoryDeps } from '../save/history-wiring';
 import { withUndo, isTextEditTarget } from '../save/history-wiring';
 import type { LaneResourceMap } from '../core/lane-resources';
 import { buildLaneInsertUI } from './lane-insert-ui';
+import { randomizeClipNotes } from './clip-randomize';
 
 export interface InspectorDeps {
   ctx: AudioContext;
@@ -28,6 +29,10 @@ export interface InspectorDeps {
   laneResources?: LaneResourceMap;
   /** Phase H: persist the session after the user edits an insert slot. */
   saveSession?: () => void;
+  /** Scale + root for scale-aware clip-note randomization. Optional so test
+   *  fixtures without a global scale picker still compile. */
+  scaleSel?: HTMLSelectElement;
+  rootSel?: HTMLSelectElement;
 }
 
 export class SessionInspector {
@@ -151,6 +156,20 @@ export class SessionInspector {
         cur === 'piano-roll' ? 'drum-grid' : 'piano-roll';
       editorOverride.set(clip.id, next);
       this.renderEditor();
+    };
+    document.getElementById('insp-random-notes')!.onclick = () => {
+      if (!this.selectedClip) return;
+      const d = this.deps.historyDeps;
+      const run = () => {
+        const scaleSel = this.deps.scaleSel;
+        const rootSel  = this.deps.rootSel;
+        randomizeClipNotes(clip, lane!, {
+          scale: scaleSel?.value ?? 'pentMinor',
+          rootMidi: parseInt(rootSel?.value ?? '36', 10) || 36,
+        });
+        this.renderEditor();
+      };
+      if (d) withUndo(d, run); else run();
     };
     updatePasteBtnState();
 

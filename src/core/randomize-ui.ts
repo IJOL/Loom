@@ -2,8 +2,10 @@ import { randomize, type ScaleName, type RandomizeOptions } from './random';
 import { TICKS_PER_STEP, type NoteEvent } from './notes';
 import type { Sequencer } from './sequencer';
 import type { TB303 } from './synth';
+import type { DrumMachine } from './drums';
 import type { PianoRollHandle } from './pianoroll';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
+import { markPagePresetCustom, markPolyPresetCustom } from '../polysynth/polysynth-presets';
 
 // ── Per-lane randomize helpers ────────────────────────────────────────────
 
@@ -15,6 +17,12 @@ export interface RandomizeUIDeps {
   seq: Sequencer;
   // Phase G: synth resolved lazily — null before boot lane is allocated.
   getSynth: () => TB303 | null;
+  /** Phase G: drum instance resolved lazily — null before drums lane allocated. */
+  getDrums: () => DrumMachine | null;
+  /** Active bass lane id (for marking its preset select as custom). */
+  getBassLaneId: () => string;
+  /** Active drums lane id (for marking its preset select as custom). */
+  getDrumsLaneId: () => string;
   scaleSel: HTMLSelectElement;
   rootSel: HTMLSelectElement;
   /** Returns the current bassRollEntry (may be null). */
@@ -47,13 +55,17 @@ function randomizeBassSound(deps: RandomizeUIDeps): void {
   const base = currentRandomBase(deps);
   randomize(deps.seq, synth, { ...base, mod: true });
   deps.refreshKnobsFromSynth();
+  markPagePresetCustom('bass-preset-select', deps.getBassLaneId());
 }
 
-function randomizeDrumsLane(deps: RandomizeUIDeps): void {
-  const synth = deps.getSynth();
-  if (!synth) return;
-  const base = currentRandomBase(deps);
-  randomize(deps.seq, synth, { ...base, drums: true });
+function randomizeDrumsSound(deps: RandomizeUIDeps): void {
+  const drums = deps.getDrums();
+  if (!drums) return;
+  const kits = drums.listKits();
+  if (kits.length === 0) return;
+  const pick = kits[Math.floor(Math.random() * kits.length)];
+  drums.setKit(pick.id);
+  markPagePresetCustom('drums-preset-select', deps.getDrumsLaneId());
 }
 
 // Scale intervals; same set used by random.ts
@@ -123,12 +135,24 @@ export function wireRandomizeUI(deps: RandomizeUIDeps): void {
   $btn('bass-random-notes')?.addEventListener('click', () => {
     withUndo(deps.historyDeps, () => randomizeBassNotes(deps));
   });
-  $btn('drums-random')?.addEventListener('click', () => {
-    withUndo(deps.historyDeps, () => randomizeDrumsLane(deps));
+  $btn('drums-random-sound')?.addEventListener('click', () => {
+    withUndo(deps.historyDeps, () => randomizeDrumsSound(deps));
+  });
+  $btn('drums-random-notes')?.addEventListener('click', () => {
+    withUndo(deps.historyDeps, () => randomizeDrumsNotes(deps));
   });
   $btn('poly-random-notes')?.addEventListener('click', () => {
     withUndo(deps.historyDeps, () =>
       randomizePolyLaneNotes(deps, deps.getActiveEngineLaneId()),
     );
   });
+}
+
+/** Random drum notes — was the legacy `drums-random` Pattern action.
+ *  Triggered from the clip-editor toolbar 🎲 Notes button. */
+function randomizeDrumsNotes(deps: RandomizeUIDeps): void {
+  const synth = deps.getSynth();
+  if (!synth) return;
+  const base = currentRandomBase(deps);
+  randomize(deps.seq, synth, { ...base, drums: true });
 }
