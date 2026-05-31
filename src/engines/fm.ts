@@ -415,6 +415,13 @@ export class FMEngine implements SynthEngine {
   applyPreset(name: string): void {
     const preset = this.presets.find((p) => p.name === name);
     if (!preset) return;
+    // Apply the preset's params via setBaseValue (paramValues[id]=v) so the
+    // sound AND the knobs (getBaseValue) reflect the preset. Previously this
+    // only restored modulators and dropped params entirely — so the FM preset
+    // dropdown changed nothing.
+    for (const [id, value] of Object.entries(preset.params)) {
+      if (typeof value === 'number') this.setBaseValue(id, value);
+    }
     if (preset.modulators) this.modHost.deserialize(preset.modulators);
   }
 
