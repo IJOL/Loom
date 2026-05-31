@@ -1,34 +1,20 @@
 # Remaining work
 
-Audit of 2026-05-31 against the codebase. Every plan/spec under `archive/` was verified
-**done in code** (not just by commit message). The items below are the gaps that survived;
-the plans/specs still in `plans/` + `specs/` (currently just `performance-view`) are the ones
-with real outstanding work.
+Audit of 2026-05-31 against the codebase. Implemented design docs are removed from the
+tree (recover from git history). The items below are what's left.
 
-## High — Performance view is captured but never surfaces (`performance-view`)
+## ✅ Closed since the audit
 
-The record path and playback path are both live and wired, but the feature is **not usable
-end-to-end through the UI** because of one missing computation:
-
-- **`arrangement.durationSec` is never set.** Nothing in [src/performance/rec-state.ts](../../src/performance/rec-state.ts),
-  [src/app/performance-feature.ts](../../src/app/performance-feature.ts), or the stop path ever
-  computes it (spec §3 = "max `untilSec` across lanes"). It stays `0`, so
-  `renderPerformanceView` always takes the `durationSec === 0` empty-state branch — recorded
-  clips/automation live in the data model but never render as timeline bands, and the
-  ruler/playhead never appear. The user always sees "Sin grabación." even after a good take.
-- **No save persistence (Task 19).** [src/save/saved-state-v3.ts](../../src/save/saved-state-v3.ts)
-  never serializes/restores `mode` or `arrangement`; the feature's `getMode`/`setArrangement`
-  accessors are wired to nothing in save-wiring. `saved-state-v3.performance.test.ts` only
-  passes because `parseSavedStateV3` casts through unknown extra fields.
-- **No e2e for the round-trip (Task 22).** `tests/e2e/performance-view.spec.ts` covers only the
-  mode toggle, empty-state, and REC button class; the record→switch→assert-`.perf-clip` loop was
-  deliberately skipped as "too brittle."
-
-What works: arming REC + Session Play sets `rec.recording`; clip launches append
-`ArrangementClipEvent`s at promote time; knob moves are sampled into automation curves every
-25 ms; in Performance mode `tickArrangement` replays launches/stops and applies automation back
-onto knobs with an rAF playhead. The missing `durationSec` is the single blocker between
-"data captured" and "user can see/replay it."
+- **Performance view now surfaces *and* persists takes** (was the only High item; plan +
+  spec deleted). `finalizeArrangement` ([src/performance/arrangement-ops.ts](../../src/performance/arrangement-ops.ts))
+  clamps open clip events on stop and computes `durationSec`, so a recorded take renders as
+  timeline bands instead of the ever-empty `durationSec === 0` state; it's wired into
+  `performance-feature`'s stop/disarm paths. `mode` + `arrangement` now persist in v3 saves
+  ([src/save/saved-state-v3.ts](../../src/save/saved-state-v3.ts)) — save/load only, **not**
+  undo/redo (so a take survives undoing an unrelated session edit). A round-trip e2e
+  (record → switch → assert `.perf-clip`) replaces the old empty-state-only coverage.
+  Verified in the real app (record → save → reload → load → the take re-renders). Commits
+  `dced8d9` + `e77fd5c`.
 
 ## Low — minor, isolated
 
