@@ -2,7 +2,6 @@ import { describe, it, expect, afterEach } from 'vitest';
 import '../../test/setup';
 import { ModulationHostImpl } from './modulation-host';
 import { makeDefaultLFO } from './types';
-import { LFOVoice } from './lfo-voice';
 import { registerPlugin, _resetRegistry } from '../plugins/registry';
 import { lfoPlugin } from '../plugins/modulators/lfo';
 
@@ -34,18 +33,21 @@ describe('ModulationHostImpl.spawnVoice with the LFO plugin registered (app pari
     const voice = voices.get('lfo1');
     expect(voice).toBeDefined();
 
-    // The voice must be the real LFOVoice bound to `state`, not the stub.
-    expect(voice).toBeInstanceOf(LFOVoice);
-
-    const osc = (voice as unknown as { osc: OscillatorNode }).osc;
-    expect(osc).toBeDefined();
+    // Assert the BEHAVIOURAL contract the regression broke, not `instanceof`
+    // (brittle here: Vitest can load lfo-voice.ts twice across the serial test
+    // process, so the constructor identity differs even for a genuine
+    // LFOVoice). The stateless registry stub fails every check below: it has
+    // no oscillator and its currentValue() is a constant 0.
+    const v = voice as unknown as { osc?: OscillatorNode; syncFromState?: () => void };
+    expect(typeof v.syncFromState).toBe('function');   // real LFOVoice, not the stub
+    expect(v.osc).toBeDefined();
     // Constructed from the live state's rate (7 Hz), not the plugin's
-    // throwaway default (4 Hz).
-    expect(osc.frequency.value).toBeCloseTo(7, 3);
+    // throwaway 'lfo-tmp' default (4 Hz).
+    expect(v.osc!.frequency.value).toBeCloseTo(7, 3);
 
     // Mutating the state and polling (what the rAF tick does) must propagate.
     state.rateHz = 0.5;
     voice!.currentValue();
-    expect(osc.frequency.value).toBeCloseTo(0.5, 3);
+    expect(v.osc!.frequency.value).toBeCloseTo(0.5, 3);
   });
 });
