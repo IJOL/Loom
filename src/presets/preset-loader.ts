@@ -70,9 +70,3 @@ export function __resetPresetCache(): void {
 export function __seedPresetCache(engineId: string, presets: EnginePreset[]): void {
   cache.set(engineId, presets);
 }
-
-/** Test-only — seed the cache directly so engine.presets is non-empty without
- *  a fetch round-trip. Mirrors what loadEnginePresets caches at runtime. */
-export function __seedPresetCache(engineId: string, presets: EnginePreset[]): void {
-  cache.set(engineId, presets);
-}
