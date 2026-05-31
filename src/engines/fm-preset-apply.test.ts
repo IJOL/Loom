@@ -1,7 +1,8 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import '../../test/setup';
 import { FMEngine } from './fm';
 import { __seedPresetCache, __resetPresetCache } from '../presets/preset-loader';
+import type { EnginePreset } from './engine-types';
 
 // Regression: changing an FM preset did nothing — applyPreset only restored
 // modulators and dropped preset.params entirely, so neither the sound nor the
@@ -9,10 +10,13 @@ import { __seedPresetCache, __resetPresetCache } from '../presets/preset-loader'
 //
 // FM preset JSON keys ARE the engine's paramValues ids (op1.ratio, op3.level,
 // algorithm, feedback…), so applying them through setBaseValue is correct.
+//
+// engine.presets reads getCachedPresets('fm'); seed + reset per test so this
+// file is isolated from the rest of the suite.
 
-const PRESET = {
+const PRESET: EnginePreset = {
   name: 'TEST Bell',
-  gm: [] as number[],
+  gm: [],
   params: {
     algorithm: 2, feedback: 0.42,
     'op1.ratio': 1, 'op1.level': 0.9,
@@ -22,10 +26,9 @@ const PRESET = {
 };
 
 describe('FMEngine preset application (live-UI regression)', () => {
-  afterEach(() => { __resetPresetCache(); });
+  beforeEach(() => { __resetPresetCache(); __seedPresetCache('fm', [PRESET]); });
 
   it('applyPreset writes params so getBaseValue (and the knobs) follow', () => {
-    __seedPresetCache('fm', [PRESET]);
     const engine = new FMEngine();
 
     expect(engine.getBaseValue('op3.ratio')).not.toBeCloseTo(4, 5);

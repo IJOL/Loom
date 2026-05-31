@@ -64,6 +64,13 @@ export function __resetPresetCache(): void {
   ready = false;
 }
 
+/** Test-only — seed the cache directly so engine.presets (which reads
+ *  getCachedPresets) is non-empty without a fetch. Pair with
+ *  beforeEach(__resetPresetCache) to stay isolated from other test files. */
+export function __seedPresetCache(engineId: string, presets: EnginePreset[]): void {
+  cache.set(engineId, presets);
+}
+
 /** Test-only — seed the cache directly so engine.presets is non-empty without
  *  a fetch round-trip. Mirrors what loadEnginePresets caches at runtime. */
 export function __seedPresetCache(engineId: string, presets: EnginePreset[]): void {
