@@ -4,13 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A browser-based **Roland TB-303 bass synth + drum machine** built with Web Audio + TypeScript + Vite. All sound is synthesized live in the browser — no samples, no DAW required.
+**Loom** — a browser-based, session-based music workstation built on Web Audio + TypeScript + Vite. It grew out of a Roland TB-303 bass synth + drum machine and still has those at its core, but is now a multi-engine instrument host: **5 melodic engines (TB-303, Subtractive, FM, Wavetable, Karplus) + a Sampler + a Drum machine**, arranged as **lanes** that play **clips** in **scenes**, with per-lane modulation, inserts/FX, a mixer with sidechain compression, MIDI import, and global undo. All synthesis is live in the browser; the Sampler is the only thing that loads audio (into IndexedDB).
+
+Everything is a **plugin behind a registry** — engines, FX, and modulators are discovered at build time, so adding one means dropping a file, not editing the core.
 
 ## Commands
 
 - `npm install` — install dependencies
 - `npm run dev` — start Vite dev server (hot reload) at <http://localhost:5173>
-- `npm run build` — typecheck + bundle to `dist/`
+- `npm run build` — typecheck (`tsc`) + bundle to `dist/`
 - `npm run preview` — serve the production build locally
 - `npx tsc --noEmit` — typecheck without bundling
 - `npm test` — full suite: Vitest unit tests + Playwright e2e tests, colour-free (`NO_COLOR=1` via `cross-env`)
@@ -26,50 +28,122 @@ A browser-based **Roland TB-303 bass synth + drum machine** built with Web Audio
 
 No linter is configured.
 
+## Gotchas (read before running tests / shipping)
+
+- **`test:e2e` / `npm test` serve `dist/` with NO build step.** Playwright boots `vite preview`, which serves the last production build. If you changed `src/` and didn't `npm run build`, the e2e suite tests a **stale bundle** — the newest features fail with "element not found" and it looks like a regression. Always `npm run build` before `npm run test:e2e`.
+- **`test:unit` has a flaky teardown.** It occasionally exits non-zero with `ERR_IPC_CHANNEL_CLOSED` (tinypool / `node-web-audio-api` worker shutdown) **after all tests pass**. Vitest is configured to run files serially because `node-web-audio-api` is unsafe under parallel forks; the teardown error is not a test failure — re-run to confirm green.
+- **Live param tweaks apply to the *next* trigger, not the held note** — engine params are read at trigger time.
+
 ## Testing layout
 
 Four layers, distinct technique per risk class:
 
-1. **Pure** — schemas, scales, migrations, pattern logic. `src/**/*.test.ts` (not `.dsp` or `.wiring`).
-2. **Scheduling (mocks)** — sequencer ↔ engines via a fake-clock harness. [src/core/sequencer.test.ts](src/core/sequencer.test.ts) driven by [test/sequencer-harness.ts](test/sequencer-harness.ts).
-3. **DSP real** — every engine + every drum kit rendered through `OfflineAudioContext` (via [node-web-audio-api](https://github.com/ircam-ismm/node-web-audio-api), globalized in [test/setup.ts](test/setup.ts)). Files end in `.dsp.test.ts`. Use the shared battery in [test/dsp-battery.ts](test/dsp-battery.ts). Each render writes a WAV to `test/output/` (gitignored) for audible inspection; `test/golden/` is the committed reference.
+1. **Pure** — schemas, scales, migrations, pattern/session/arrangement logic, modulation math. `src/**/*.test.ts` (not `.dsp` or `.wiring`).
+2. **Scheduling (mocks)** — the per-lane look-ahead scheduler and session runtime via a fake clock. [src/core/lane-scheduler.test.ts](src/core/lane-scheduler.test.ts) and [src/session/session-runtime.test.ts](src/session/session-runtime.test.ts).
+3. **DSP real** — every engine + every drum kit rendered through `OfflineAudioContext` (via [node-web-audio-api](https://github.com/ircam-ismm/node-web-audio-api), globalized in [test/setup.ts](test/setup.ts)). Files end in `.dsp.test.ts`. Use the shared battery in [test/dsp-battery.ts](test/dsp-battery.ts) (`runStandardEngineBattery`). Each render writes a WAV to `test/output/` (gitignored) for audible inspection; `test/golden/` is the committed reference.
 4. **Modulation wiring** — LFO/ADSR voices connected through a depth bridge into a target `AudioParam`. Files end in `.wiring.test.ts`.
 
 Assertion rule: **always relative**. Use ratios (`>`, `<`, `> * 2`), never absolute magnitudes. Absolute thresholds are a brittleness smell; if you write one, justify it in a comment.
 
 ## Architecture
 
-Five files under `src/`, each with a single responsibility:
+Source is organised into subsystems under `src/`. The spine: a **registry of engine/fx/modulator plugins**, a **`SessionState`** data model (lanes → clips → scenes), and a **`LaneResourceMap`** that owns the live audio nodes for each lane.
 
-1. **[src/synth.ts](src/synth.ts) — `TB303` class.** Monophonic bass voice: one persistent `OscillatorNode` → `BiquadFilterNode` (LP) → `GainNode` → destination. `trigger(note, time)` schedules a fresh per-note envelope using AudioParam automation at sample-accurate times.
-
-2. **[src/drums.ts](src/drums.ts) — `DrumMachine` class + kit definitions.** All voices (kick, snare, hats, clap, cowbell) are synthesized from oscillators/noise/filters; **kits are bags of parameters** (`KITS` array) that drive the same DSP primitives. Adding a new kit = adding an entry to that array — no new synthesis code.
-
-3. **[src/sequencer.ts](src/sequencer.ts) — `Sequencer` class.** Multi-track look-ahead scheduler (Chris Wilson "A Tale of Two Clocks"): a `setTimeout` "tick" every 25 ms schedules any 16th-note steps in the next 120 ms onto `synth.trigger(..., time)` and `drumMachine.trigger(...)`. One `bass` track + one `drums[lane]` track per drum voice; all share the same length and clock.
-
-4. **[src/random.ts](src/random.ts) — `randomize()` and `clearPattern()`.** Pure functions that mutate sequencer state. Randomization is fine-grained: `{ notes, accents, slides, drums, mod }` flags let the user randomize one dimension at a time. Bass note randomization is scale-aware (`SCALES` map). Drum randomization is biased toward musical placement (kicks on downbeats, snares on backbeats).
-
-5. **[src/main.ts](src/main.ts) — DOM glue.** Builds the UI on boot, wires controls to model/state, calls `ctx.resume()` on first play.
+- **[src/core/](src/core/)** — shared DSP primitives and pure logic. `synth.ts` (the original monophonic `TB303` voice), `drums.ts` (`DrumMachine` + the `KITS` parameter bags), `sequencer.ts` (the master clock + `sessionTick`/`onLookahead`), `lane-scheduler.ts` (`tickLane` note-based look-ahead), `lane-resources.ts` (`LaneResourceMap`: per-lane strip + engine + insert chain), `fx.ts` (`ChannelStrip`, `CompBlock`, `MasterCompressor`, EQ params), `sidechain-bus.ts`, `history.ts` (undo/redo controller), `knob.ts` + `select-control.ts` (automatable UI controls), `pianoroll.ts` (+ zoom/frame), `notes.ts`, `comp-state.ts`, `transport-state.ts`.
+- **[src/engines/](src/engines/)** — the `SynthEngine` abstraction ([engine-types.ts](src/engines/engine-types.ts)) + [registry.ts](src/engines/registry.ts). One file per engine: `tb303`, `subtractive`, `fm`, `wavetable`, `karplus`, `sampler`, `drums-engine`. Params are declared as `EngineParamSpec[]` ([engine-params.ts](src/engines/engine-params.ts)); voices expose their continuous params via `Voice.getAudioParams()` and engines expose shared ones via `getSharedAudioParams()`. The lane engine selector lives in [engine-selector-ui.ts](src/engines/engine-selector-ui.ts).
+- **[src/session/](src/session/)** — the session model and its UI. [session.ts](src/session/session.ts) (`SessionState`/`SessionLane`/`SessionClip`/`SessionScene`; clips hold a unified `notes: NoteEvent[]`; `moveClip`/`copyClip`/clip colors), [session-runtime.ts](src/session/session-runtime.ts) (launch/scene/quantize/`tickSession`), `session-host.ts` (the UI controller that owns lanes), `session-ui.ts` (clip grid + drag), `session-inspector.ts`, `clip-editors/` (router → `piano-roll` or `drum-grid`), `session-engine-state.ts` (mirrors knob/modulator/sampler-keymap edits into `lane.engineState`), `session-migration.ts` (load-time normaliser).
+- **[src/modulation/](src/modulation/)** — LFO/ADSR modulators, `ModulationHost`, `ModulatorScope` (shared vs per-voice), and the connection binder that routes a modulator into a target `AudioParam` by id.
+- **[src/plugins/](src/plugins/)** — plugin SPI + registry; `fx/` (`multifilter`, `distortion`, `reverb`, `delay`, plus the generic `InsertChain`) and `modulators/` (`lfo`, `adsr`). Discovery is a build-time `import.meta.glob` scan of `src/engines/*` + `src/plugins/**` (`plugin-bootstrap`).
+- **[src/presets/](src/presets/)** — presets are **JSON assets** in `public/presets/*.json` (20+ per engine, GM-tagged), loaded/validated by `preset-loader.ts` and applied via `preset-apply.ts`.
+- **[src/midi/](src/midi/)** — pure SMF parser (`midi-parse.ts`) → `midi-to-session.ts` transform, GM matching (`gm-lookup.ts`), plus the import UI + audition.
+- **[src/samples/](src/samples/)** — sample types, IndexedDB store + decoded-buffer cache, keymap resolution + repitch, import metadata.
+- **[src/performance/](src/performance/)** — the arrangement/record model: `rec-state`, `arrangement-ops`, `arrangement-runtime` (record clip-launches + knob automation, replay them). ⚠️ The record/playback logic is wired but the **UI never surfaces a take** — see [docs/superpowers/REMAINING-WORK.md](docs/superpowers/REMAINING-WORK.md).
+- **[src/polysynth/](src/polysynth/)** — `PolySynth` (the poly voice host used by Subtractive): voice stealing, mono mode w/ legato/retrig, a modulation bus fanned per voice.
+- **[src/app/](src/app/)** — `main.ts` was decomposed into factories here: `audio-graph` (master bus → insert chain → master compressor → analyser + `SidechainBus`), `lane-allocator` (`ensureLaneResource`/`swapLaneEngine` — the sole allocation path), `trigger-dispatch`, `knob-mounting`, `mute-solo`, `bpm-broadcast`, `automation-recording`, `engine-swap`, `performance-feature`, `plugin-bootstrap`, `lane-host-wiring`.
+- **[src/save/](src/save/)** — `SaveManager` persists **session-only** state as `schemaVersion: 3` (`saved-state-v3.ts`); `history-wiring.ts` (`withUndo`/`attachKnobUndo`/keyboard) bolts undo onto every mutation site.
+- **[src/main.ts](src/main.ts)** — boot + remaining DOM glue: builds the UI, allocates lanes, wires controls, resumes the `AudioContext` on first play.
+- Also: `automation/`, `arp/`, `copy/`, `demo/` (baked MIDI demos + picker), `styles/` (SCSS).
 
 ## TB-303 behaviors that drive the design
 
-- **Slide** bleeds across `synth.ts` and `sequencer.ts`. A step's `slide` flag means "slide INTO the next step." When [src/sequencer.ts](src/sequencer.ts) schedules step N it looks at step **N-1**'s slide flag — if set, it passes `slide: true` to `synth.trigger`, which tells the voice to ramp pitch and *skip the amp re-attack* so the previous gate keeps holding. Sliding-out steps also get an extended duration (1.5× step) so their gate overlaps with the next trigger.
-- **Accent** is per-step on both bass and drums: brightens the filter envelope + bumps Q + raises gain on bass; raises velocity on drums.
-- Synth params on `synth.params` are read at trigger time, so live tweaks during a held note do not change the currently sounding envelope — only the next trigger.
+These live in the TB-303 engine ([src/core/synth.ts](src/core/synth.ts) + the lane scheduler) and shaped the slide/accent model now shared more broadly:
 
-## When changing the sequencer
+- **Slide** — a step's `slide` flag means "slide INTO the next step." When the scheduler emits step N it consults step **N-1**'s slide flag; if set it passes `slide: true` to the voice, which ramps pitch and *skips the amp re-attack* so the previous gate keeps holding. Sliding-out steps get an extended duration (1.5× step) so the gate overlaps the next trigger.
+- **Accent** — per-step: brightens the filter envelope + bumps Q + raises gain on bass; raises velocity on drums.
 
-- `bpm` and `length` are mutable at runtime. The next scheduled step uses the new values; no restart needed for tempo. `setLength()` resizes all track arrays in place.
-- Step duration is `60 / bpm / 4` (16th notes).
-- The UI "current step" highlight is driven by a separate `setTimeout` matched to the scheduled audio time — visual sync may drift under heavy tab throttling but audio scheduling is unaffected.
+## When adding/changing things
 
-## When changing the drum machine
+- **Add an engine** — drop a file in [src/engines/](src/engines/) that implements `SynthEngine` and calls `registerEngine` + `registerEngineFactory`. The build-time glob discovers it; it appears in the lane engine selector automatically. Declare params as `EngineParamSpec[]` and expose voice/shared `AudioParam`s so modulation + automation work for free.
+- **Add an FX or modulator** — drop a file in [src/plugins/fx/](src/plugins/fx/) or [src/plugins/modulators/](src/plugins/modulators/) and `registerPlugin`. Inserts mount per-lane and on master; modulators appear in the modulation panel.
+- **Add a drum kit** — append an object to the `KITS` array in [src/core/drums.ts](src/core/drums.ts); kits are parameter bags over the same DSP primitives. Add a new drum *voice* by extending the `DrumVoice` union + `DRUM_LANES` + every kit + a `play<Voice>()` method + a `trigger()` case.
+- **Add a preset** — add an entry to the relevant `public/presets/<engine>.json` (with an optional `gm` program tag). JSON is the source of truth.
+- **Scheduling** — `bpm`/`length` are mutable at runtime; the next scheduled step uses the new values. Step duration is `60 / bpm / 4` (16th notes). The visual playhead is a separate timer matched to the scheduled audio time and may drift under tab throttling, but audio scheduling is unaffected.
+- **Session UI** — the clip grid and inspector are rebuilt by `session-host`; clip cells cycle/launch and the inspector auto-renders the engine editor. Don't hand-roll a parallel render path — go through `session-host`.
 
-- Add a kit: append an object to the `KITS` array in [src/drums.ts](src/drums.ts) with the same shape as existing kits (kick/snare/hat/clap/cowbell parameter blocks). It will appear in the kit dropdown automatically.
-- Add a new drum voice: extend the `DrumVoice` union + `DRUM_LANES` array + every kit's parameter set + add a `play<Voice>()` method + add a case in `trigger()`. The UI builds rows from `DRUM_LANES`, so the new lane appears automatically; only style.css needs new color rules.
+## Design history
 
-## When changing the UI
+Implemented design docs are intentionally **not kept in the tree** — they drift from the code and pollute context; recover them from git history if you need the rationale. Only **outstanding** design work stays under [docs/superpowers/](docs/superpowers/): the `plans/`/`specs/` still present describe unfinished features, summarised in [docs/superpowers/REMAINING-WORK.md](docs/superpowers/REMAINING-WORK.md).
 
-- The full track grid is rebuilt by `rebuildTracks()` whenever pattern length changes. Cell references are stored in `bassCells` and `drumCells` so randomize/clear can re-render visual state without rebuilding the DOM.
-- Drum cells use a single button that cycles **off → on → on+accent** on click; bass cells have separate note/on/accent/slide controls.
-- `--steps` CSS custom property on `.tracks` is set from `seq.length` so grid columns match the pattern length.
+<!-- gitnexus:start -->
+# GitNexus — Code Intelligence
+
+This project is indexed by GitNexus as **tb303-synth** (6993 symbols, 15306 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+
+> If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
+
+## Always Do
+
+- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `gitnexus_impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
+- **MUST run `gitnexus_detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows.
+- **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
+- When exploring unfamiliar code, use `gitnexus_query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
+- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `gitnexus_context({name: "symbolName"})`.
+
+## Never Do
+
+- NEVER edit a function, class, or method without first running `gitnexus_impact` on it.
+- NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
+- NEVER rename symbols with find-and-replace — use `gitnexus_rename` which understands the call graph.
+- NEVER commit changes without running `gitnexus_detect_changes()` to check affected scope.
+
+## Resources
+
+| Resource | Use for |
+|----------|---------|
+| `gitnexus://repo/tb303-synth/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/tb303-synth/clusters` | All functional areas |
+| `gitnexus://repo/tb303-synth/processes` | All execution flows |
+| `gitnexus://repo/tb303-synth/process/{name}` | Step-by-step execution trace |
+
+## CLI
+
+| Task | Read this skill file |
+|------|---------------------|
+| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
+| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
+| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
+| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
+| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
+| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+| Work in the Engines area (361 symbols) | `.claude/skills/generated/engines/SKILL.md` |
+| Work in the App area (118 symbols) | `.claude/skills/generated/app/SKILL.md` |
+| Work in the Session area (116 symbols) | `.claude/skills/generated/session/SKILL.md` |
+| Work in the Modulation area (65 symbols) | `.claude/skills/generated/modulation/SKILL.md` |
+| Work in the Polysynth area (45 symbols) | `.claude/skills/generated/polysynth/SKILL.md` |
+| Work in the Save area (33 symbols) | `.claude/skills/generated/save/SKILL.md` |
+| Work in the Automation area (32 symbols) | `.claude/skills/generated/automation/SKILL.md` |
+| Work in the Performance area (31 symbols) | `.claude/skills/generated/performance/SKILL.md` |
+| Work in the Plugins area (27 symbols) | `.claude/skills/generated/plugins/SKILL.md` |
+| Work in the Clip-editors area (24 symbols) | `.claude/skills/generated/clip-editors/SKILL.md` |
+| Work in the Midi area (23 symbols) | `.claude/skills/generated/midi/SKILL.md` |
+| Work in the Arp area (22 symbols) | `.claude/skills/generated/arp/SKILL.md` |
+| Work in the Copy area (21 symbols) | `.claude/skills/generated/copy/SKILL.md` |
+| Work in the Fx area (19 symbols) | `.claude/skills/generated/fx/SKILL.md` |
+| Work in the Samples area (17 symbols) | `.claude/skills/generated/samples/SKILL.md` |
+| Work in the Test area (9 symbols) | `.claude/skills/generated/test/SKILL.md` |
+| Work in the Presets area (9 symbols) | `.claude/skills/generated/presets/SKILL.md` |
+| Work in the Cluster_121 area (8 symbols) | `.claude/skills/generated/cluster-121/SKILL.md` |
+| Work in the Cluster_71 area (7 symbols) | `.claude/skills/generated/cluster-71/SKILL.md` |
+| Work in the Scripts area (6 symbols) | `.claude/skills/generated/scripts/SKILL.md` |
+
+<!-- gitnexus:end -->

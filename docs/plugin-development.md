@@ -25,7 +25,7 @@ Los tipos viven en [`src/plugins/types.ts`](../src/plugins/types.ts). El registr
 
 ### 1. El archivo
 
-Crea `src/plugins/synths/my-synth.ts` (o donde quieras dentro de `src/`).
+Crea `src/plugins/synths/my-synth.ts`. Tiene que vivir bajo `src/engines/` o `src/plugins/**` para que el auto-discovery del bootstrap lo escanee.
 
 ```ts
 import type { PluginFactory, SynthInstance } from '../plugins/types';
@@ -118,21 +118,18 @@ export const mySynthPlugin: PluginFactory = {
 };
 ```
 
-### 2. Registrar en bootstrap
+### 2. Auto-discovery (no se registra a mano)
 
-[`src/app/plugin-bootstrap.ts`](../src/app/plugin-bootstrap.ts):
+El bootstrap ([`src/app/plugin-bootstrap.ts`](../src/app/plugin-bootstrap.ts)) escanea con `import.meta.glob` (resuelto por Vite en build) **todos** los módulos en:
 
-```ts
-import { mySynthPlugin } from '../plugins/synths/my-synth';
+- `src/engines/*.ts`
+- `src/plugins/**/*.ts`
 
-const BUILTIN: PluginFactory[] = [
-  tb303Plugin, subtractivePlugin, fmPlugin, wavetablePlugin,
-  karplusPlugin, drumsPlugin,
-  multifilterPlugin, distortionPlugin, reverbPlugin, delayPlugin,
-  lfoPlugin, adsrPlugin,
-  mySynthPlugin,   // ← aquí
-];
-```
+(los `*.test.ts` se excluyen). De cada módulo recoge **cualquier export con forma de `PluginFactory`** (`{ kind, manifest, create }`) y lo registra. El array `BUILTIN` se construye solo del glob — **no edites `plugin-bootstrap.ts` ni mantengas ninguna lista**.
+
+Único paso: **deja el archivo en una de esas carpetas exportando tu `PluginFactory`.**
+
+> Para **synths**, registrarse en el plugin registry no basta para que sean instanciables como engine de lane hoy — mira «Estado actual: wrapper vs native» más abajo. Para FX y modulators, soltar el archivo es suficiente.
 
 ### 3. (Opcional) Presets JSON
 
@@ -156,22 +153,20 @@ Crea `public/presets/my-synth.json`:
 }
 ```
 
-Y registra el id en [`src/main.ts`](../src/main.ts) `ENGINE_IDS_FOR_PRESETS` para que el preset loader lo lea al boot:
+No hay que registrar el id en ningún sitio: [`src/main.ts`](../src/main.ts) deriva la lista de los synths ya registrados —
 
 ```ts
-const ENGINE_IDS_FOR_PRESETS = [
-  'tb303', 'fm', 'wavetable', 'karplus', 'subtractive', 'drums-machine',
-  'my-synth',   // ← aquí
-];
+const ENGINE_IDS_FOR_PRESETS = listPlugins('synth').map((p) => p.manifest.id);
 ```
 
-El campo `gm` mapea presets a GM program numbers para el MIDI import.
+— así que en cuanto tu synth está registrado (paso 2) y existe `public/presets/<id>.json`, el preset loader lo lee al boot. El campo `gm` mapea presets a GM program numbers para el MIDI import.
 
 ### 4. UI
 
-El sinte aparece automáticamente:
-- En el dropdown "engine for new lane" si lo añades a `index.html` `<select>` `#new-lane-engine-select` (busca el otro `<option>` y añade el tuyo)
-- En el inspector de lane con preset dropdown unificado (sale gratis después del refactor de unificación)
+El sinte aparece **automáticamente**, sin tocar `index.html`:
+
+- En el selector de engine de lane, que se puebla dinámicamente desde el registry ([`src/engines/engine-selector-ui.ts`](../src/engines/engine-selector-ui.ts), `melodicSynthEngineIds`)
+- En el inspector de lane con preset dropdown unificado
 - Sus continuous params como destinos de modulación
 
 ### 5. Listo
@@ -413,11 +408,9 @@ Mira [`src/engines/tb303.ts`](../src/engines/tb303.ts) bottom — los 3 last lin
 
 ## Checklist para añadir un plugin
 
-- [ ] `src/plugins/<kind>s/<my-thing>.ts` con `PluginFactory` exportado
-- [ ] Añadir al array `BUILTIN` de `src/app/plugin-bootstrap.ts`
-- [ ] (Synth) Añadir engineId a `ENGINE_IDS_FOR_PRESETS` en `src/main.ts` si vas a tener presets JSON
-- [ ] (Synth) Crear `public/presets/<engineId>.json` con factory presets
-- [ ] (Synth) Añadir `<option>` al dropdown "engine for new lane" en `index.html`
+- [ ] `src/engines/<name>.ts` o `src/plugins/{fx,modulators,synths}/<name>.ts` con un `PluginFactory` exportado (el glob lo descubre — no se registra a mano)
+- [ ] (Synth, opcional) Crear `public/presets/<engineId>.json` con factory presets — se lee solo al boot
+- [ ] (Synth nativo) Si no es wrapper de un `SynthEngine` legacy, añadir el path en `lane-allocator.ts` (ver «wrapper vs native»)
 - [ ] Verificar tests + tsc + build
 - [ ] Smoke test en navegador: añadir lane, cargar preset, modular un param, guardar y reload
 
@@ -444,5 +437,4 @@ Mira [`src/plugins/registry.test.ts`](../src/plugins/registry.test.ts) y [`src/p
 - **Preset loader**: [`src/presets/preset-loader.ts`](../src/presets/preset-loader.ts)
 - **Modulation host**: [`src/modulation/modulation-host.ts`](../src/modulation/modulation-host.ts)
 - **Lane allocator**: [`src/app/lane-allocator.ts`](../src/app/lane-allocator.ts)
-- **Plan original**: [`docs/superpowers/plans/2026-05-29-plugin-system.md`](superpowers/plans/2026-05-29-plugin-system.md)
-- **Spec**: [`docs/superpowers/specs/2026-05-27-plugin-system-design.md`](superpowers/specs/2026-05-27-plugin-system-design.md)
+- **Plan/spec originales del plugin-system**: en el historial de git (se eliminaron del árbol por estar ya implementados)
