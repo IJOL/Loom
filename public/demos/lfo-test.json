@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "bpm": 120,
+  "swing": 0,
+  "lanes": [
+    {
+      "id": "subtractive-1",
+      "name": "LFO Test",
+      "engineId": "subtractive",
+      "clips": [
+        {
+          "id": "c1",
+          "name": "Drone",
+          "lengthSteps": 16,
+          "notes": [
+            { "step": 0, "pitch": 36, "velocity": 112, "slide": false, "accent": false, "durationSteps": 16 },
+            { "step": 0, "pitch": 43, "velocity": 100, "slide": false, "accent": false, "durationSteps": 16 }
+          ],
+          "steps": [],
+          "color": "#7cf"
+        }
+      ],
+      "engineState": {
+        "modulators": [
+          {
+            "id": "lfo1",
+            "kind": "lfo",
+            "enabled": true,
+            "scope": "shared",
+            "rateHz": 5,
+            "waveform": "triangle",
+            "bipolar": true,
+            "syncToBpm": false,
+            "syncRatio": "1/4",
+            "trigger": "free",
+            "connections": [
+              { "id": "cn1", "paramId": "cutoff", "depth": 0.9 }
+            ]
+          }
+        ]
+      },
+      "inserts": []
+    }
+  ],
+  "scenes": [
+    { "id": "s1", "name": "Scene 1", "clipIds": ["c1"] }
+  ],
+  "masterInserts": [],
+  "sceneIndex": 0
+}
