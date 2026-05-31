@@ -11,9 +11,14 @@ dist
 test/output/
 
 .playwright-mcp/
-short-names.png
 
 # Playwright artifacts (regenerated on every e2e run)
 test-results/
 playwright-report/
-drums-clean.png
+
+# Ad-hoc dev screenshots & captured command output dropped in the repo root
+/*.png
+/*.txt
+
+# Claude Code transient worktrees
+.claude/worktrees/
