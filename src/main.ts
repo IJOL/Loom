@@ -44,10 +44,6 @@ import {
   type PolySynthPresetsDeps,
 } from './polysynth/polysynth-presets';
 import { arp, buildArpUI, type ArpUIDeps } from './arp/arp-ui';
-import {
-  wireAutomationTab, renderLanes as renderLanesFromUI, redrawAllLanes,
-  populateAutoParamSelect, type AutomationUIDeps,
-} from './automation/automation-ui';
 import { wireRandomizeUI } from './core/randomize-ui';
 import { wireFxUI, applyDelaySync as fxApplyDelaySync, type FxUIDeps } from './core/fx-ui';
 import { wireTransport, type TransportDeps } from './core/transport';
@@ -104,11 +100,7 @@ let populateAutoParamSelectWrapper: () => void = () => { /* populated at boot */
 
 
 const seq = new Sequencer(ctx, 32);
-const automation = createAutomationRecorder({
-  seq,
-  getAutoAbsSubIdx,
-  onLaneAdded: () => renderLanes(),
-});
+const automation = createAutomationRecorder();
 const automationRegistry = automation.registry;
 const registerKnob = (k: KnobHandle) => automation.registerKnob(k);
 const currentEngineId = 'subtractive';
@@ -473,21 +465,6 @@ setupInitialPattern(initialPatternDeps);
 barsSel.value = String(seq.length);
 
 // ── Deps objects for extracted UI modules ─────────────────────────────────
-const automationDeps: AutomationUIDeps = {
-  seq,
-  automationRegistry,
-  getAutoAbsSubIdx,
-  extraIds: EXTRA_IDS,
-  laneLabels: LANE_LABELS as Record<string, string>,
-};
-
-// Wire stable wrappers now that deps are built.
-renderLanes = () => renderLanesFromUI(automationDeps);
-populateAutoParamSelectWrapper = () => {
-  const prefix = activeEnginePrefix();
-  populateAutoParamSelect(automationDeps, prefix);
-};
-
 function activeEnginePrefix(): string | null {
   const laneId = sessionHost.activeEditLane;
   if (!laneId) return null;
@@ -607,7 +584,6 @@ wireTransport(transportDeps);
     });
   }
 }
-wireAutomationTab(automationDeps);
 wirePolyControls(polySynthPresetsDeps);
 
 // ── MIDI import wiring (see src/midi/midi-import-ui.ts) ───────────────────
@@ -657,8 +633,6 @@ const automationTickDeps: AutomationTickDeps = {
   automationRegistry,
   getLaneStates: () => sessionHost.laneStates,
   ctx,
-  redrawAllLanes,
-  trackActiveUntil,
   getEngineForLane: (laneId) => laneResources.get(laneId)?.engine ?? undefined,
   getActiveModVoice: (laneId, modId) => getActiveModVoice(laneId, modId),
 };
