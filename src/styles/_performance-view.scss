@@ -55,6 +55,31 @@
   .perf-label.sub { font-weight: 400; color: #888; font-size: 11px; padding-left: 14px; }
   .perf-master-header { background: #141414; }
   .perf-auto-canvas { display: block; width: 100%; height: 32px; background: #181818; }
+
+  // ── Spec 1: draw-able automation lanes ──────────────────────────────────
+  .perf-toolbar {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 6px 0 10px; margin-bottom: 6px;
+    border-bottom: 1px solid #222; color: #ccc;
+    .perf-length-input { width: 56px; }
+    .perf-zoom { width: 160px; vertical-align: middle; }
+    .perf-readout { color: #888; }
+  }
+  .perf-auto-header {
+    display: flex; gap: 6px; align-items: center; padding: 6px 0 6px 90px;
+    .perf-auto-param-select { max-width: 260px; }
+  }
+  .perf-auto-lane {
+    padding-left: 90px; overflow-x: auto; border-bottom: 1px solid #1c1c1c;
+    &.missing { opacity: 0.5; }
+    .perf-auto-lane-header {
+      display: flex; gap: 6px; align-items: center; font-size: 11px; color: #aaa; padding: 2px 0;
+      .label { min-width: 160px; }
+      button.active { color: #ffd166; }
+      .perf-auto-range { color: #666; }
+    }
+    .perf-auto-canvas { cursor: crosshair; width: auto; height: 64px; }
+  }
 }
 
 .perf-toast {
