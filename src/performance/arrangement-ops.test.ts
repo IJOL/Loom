@@ -97,15 +97,15 @@ describe('writeAutomationSample', () => {
     const lane = s.lanes[0];
     const curve = lane.automation[0];
     expect(curve.paramId).toBe('tb-303-1.cutoff');
-    expect(curve.samples.length).toBeGreaterThanOrEqual(4);
-    expect(curve.samples[3]).toBe(0.42);
+    expect(curve.values.length).toBeGreaterThanOrEqual(4);
+    expect(curve.values[3]).toBe(0.42);
   });
 
   it('global paramIds go to globalAutomation', () => {
     const s = emptyArrangementState(120);
     writeAutomationSample(s, 'fx.reverb.wet', 0.8, 1, ['tb-303-1']);
     expect(s.globalAutomation).toHaveLength(1);
-    expect(s.globalAutomation[0].samples[1]).toBe(0.8);
+    expect(s.globalAutomation[0].values[1]).toBe(0.8);
     expect(s.lanes).toHaveLength(0);
   });
 
@@ -113,7 +113,7 @@ describe('writeAutomationSample', () => {
     const s = emptyArrangementState(120);
     writeAutomationSample(s, 'tb-303-1.cutoff', 0.2, 5, ['tb-303-1']);
     writeAutomationSample(s, 'tb-303-1.cutoff', 0.9, 5, ['tb-303-1']);
-    expect(s.lanes[0].automation[0].samples[5]).toBe(0.9);
+    expect(s.lanes[0].automation[0].values[5]).toBe(0.9);
   });
 });
 

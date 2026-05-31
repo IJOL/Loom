@@ -49,16 +49,16 @@ function getOrCreateCurve(
 ): AutomationCurve {
   let c = list.find((x) => x.paramId === paramId);
   if (!c) {
-    c = { paramId, samples: [] };
+    c = { paramId, values: [], enabled: true, stepped: false };
     list.push(c);
   }
   return c;
 }
 
-function holdExtend(samples: number[], idx: number): void {
-  if (idx < samples.length) return;
-  const last = samples.length > 0 ? samples[samples.length - 1] : 0.5;
-  while (samples.length <= idx) samples.push(last);
+function holdExtend(values: number[], idx: number): void {
+  if (idx < values.length) return;
+  const last = values.length > 0 ? values[values.length - 1] : 0.5;
+  while (values.length <= idx) values.push(last);
 }
 
 export function writeAutomationSample(
@@ -73,19 +73,19 @@ export function writeAutomationSample(
     ? getOrCreateLane(s, route.laneId).automation
     : s.globalAutomation;
   const curve = getOrCreateCurve(list, paramId);
-  holdExtend(curve.samples, subIdx);
-  curve.samples[subIdx] = valueNorm;
+  holdExtend(curve.values, subIdx);
+  curve.values[subIdx] = valueNorm;
 }
 
 export function sampleAutomationAt(curve: AutomationCurve, subIdx: number): number {
-  if (curve.samples.length === 0) return 0.5;
-  const i = Math.min(subIdx, curve.samples.length - 1);
-  return curve.samples[i];
+  if (curve.values.length === 0) return 0.5;
+  const i = Math.min(subIdx, curve.values.length - 1);
+  return curve.values[i];
 }
 
 /** Seconds covered by an automation curve at the arrangement's bpm. */
 function automationEndSec(curve: AutomationCurve, bpm: number): number {
-  return curve.samples.length / (stepsPerSec(bpm) * AUTOMATION_SUB_RES);
+  return curve.values.length / (stepsPerSec(bpm) * AUTOMATION_SUB_RES);
 }
 
 /**

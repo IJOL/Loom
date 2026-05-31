@@ -10,9 +10,13 @@ export interface ArrangementClipEvent {
 
 export interface AutomationCurve {
   paramId: string;
-  /** Samples at AUTOMATION_SUB_RES per 16th-step at the arrangement's bpm.
-   *  Length = ceil(durationSec * stepsPerSec * AUTOMATION_SUB_RES). */
-  samples: number[];
+  /** Normalized 0..1 per sub-step at AUTOMATION_SUB_RES at the arrangement's
+   *  bpm. Length = ceil(effectiveDurationSec * stepsPerSec * AUTOMATION_SUB_RES). */
+  values: number[];
+  /** undefined/true = applied during playback; false = muted. */
+  enabled?: boolean;
+  /** snap-to-step while drawing (mirrors clip envelopes / global tab). */
+  stepped?: boolean;
 }
 
 export interface ArrangementLaneRec {
@@ -24,12 +28,15 @@ export interface ArrangementLaneRec {
 export interface ArrangementState {
   bpm: number;
   durationSec: number;
+  /** User-set length in bars (toolbar). 0 = unset. Render/curve sizing use
+   *  effectiveDurationSec = max(durationSec, lengthBars * barSec). */
+  lengthBars: number;
   lanes: ArrangementLaneRec[];
   globalAutomation: AutomationCurve[];
 }
 
 export function emptyArrangementState(bpm: number): ArrangementState {
-  return { bpm, durationSec: 0, lanes: [], globalAutomation: [] };
+  return { bpm, durationSec: 0, lengthBars: 0, lanes: [], globalAutomation: [] };
 }
 
 export function emptyLaneRec(laneId: string): ArrangementLaneRec {

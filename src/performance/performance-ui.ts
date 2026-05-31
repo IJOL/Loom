@@ -93,7 +93,7 @@ function makeAutomationBand(
   for (let x = 0; x < width; x++) {
     const t = (x / width) * durationSec;
     const subIdx = Math.floor(t * stepsPerSec(bpm) * AUTOMATION_SUB_RES);
-    const v = curve.samples[Math.min(subIdx, curve.samples.length - 1)] ?? 0.5;
+    const v = curve.values[Math.min(subIdx, curve.values.length - 1)] ?? 0.5;
     const y = (1 - v) * (canvas.height - 4) + 2;
     if (x === 0) cx.moveTo(x, y); else cx.lineTo(x, y);
   }
