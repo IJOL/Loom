@@ -1,14 +1,10 @@
 import { test, expect } from '@playwright/test';
 
-// Exercises the Performance View mode toggle and the empty-state path.
-// The full record-and-play loop (arm REC → launch clips → switch to Performance
-// → assert .perf-clip) is a stretch goal: it requires the audio context to
-// complete a real-time boundary cycle in headless Chromium, which is too brittle
-// for a smoke suite. The tests here prove:
-//   1. The app loads and Session is the default view.
-//   2. The mode toggle shows the Performance empty-state when no take exists.
-//   3. Returning to Session hides the empty-state and shows the session grid.
-//   4. Arming REC toggles the button class; disarming removes it.
+// Exercises the Performance View: mode toggle, empty-state path, REC arming,
+// and the full record→surface round-trip (arm REC → launch a scene → stop →
+// switch to Performance → the recorded take renders as clip bands). The
+// round-trip drives a real audio-context boundary cycle, so it uses a
+// generous wait for the launched clips to promote and get captured.
 
 async function waitForBoot(page: import('@playwright/test').Page): Promise<void> {
   await page.waitForFunction(
@@ -75,4 +71,29 @@ test('arming and disarming REC toggles the .armed class on the button', async ({
   // Disarm it.
   await recBtn.click();
   await expect(recBtn).not.toHaveClass(/armed/);
+});
+
+test('record a take → Performance surfaces the recorded clip bands', async ({ page }) => {
+  await page.goto('/');
+  await waitForBoot(page);
+
+  // Start the transport (a trusted click resumes the AudioContext), then arm REC.
+  // Armed + already playing → recording starts immediately.
+  await page.locator('#play').click();
+  await page.locator('#rec').click();
+  await expect(page.locator('#rec')).toHaveClass(/armed/);
+
+  // Launch a scene so its clips get captured as they promote on the next boundary.
+  await page.locator('#session-launch-scene-1').click();
+  await page.waitForTimeout(3000);
+
+  // Disarm REC — this finalizes the take (clamps open clip events, sets durationSec).
+  await page.locator('#rec').click();
+
+  // Switch to Performance: the take must now render, NOT the empty-state.
+  await page.locator('[data-mode="performance"]').click();
+  await expect(page.locator('#performance-view-root')).toBeVisible();
+  await expect(page.locator('.perf-empty')).toHaveCount(0);
+  await expect(page.locator('.perf-clip').first()).toBeVisible({ timeout: 3_000 });
+  expect(await page.locator('.perf-clip').count()).toBeGreaterThan(0);
 });

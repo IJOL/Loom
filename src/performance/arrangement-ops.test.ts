@@ -134,3 +134,40 @@ describe('sampleAutomationAt', () => {
     expect(sampleAutomationAt(curve, 99)).toBe(0.5);
   });
 });
+
+import { finalizeArrangement } from './arrangement-ops';
+import { stepsPerSec } from './performance';
+
+describe('finalizeArrangement', () => {
+  it('sets durationSec to the max finite untilSec across lanes', () => {
+    const s = emptyArrangementState(120);
+    appendClipEvent(s, 'lane-a', 'c1', 0); closePendingClipEvent(s, 'lane-a', 4);
+    appendClipEvent(s, 'lane-b', 'c2', 0); closePendingClipEvent(s, 'lane-b', 6);
+    finalizeArrangement(s, 10);
+    expect(s.durationSec).toBe(6);
+  });
+
+  it('closes any still-open clip event at atSec, then counts it toward duration', () => {
+    const s = emptyArrangementState(120);
+    appendClipEvent(s, 'lane-a', 'c1', 1); // untilSec = Infinity (still playing)
+    finalizeArrangement(s, 7);
+    expect(s.lanes[0].clipEvents[0].untilSec).toBe(7);
+    expect(s.durationSec).toBe(7);
+  });
+
+  it('leaves durationSec at 0 for an empty arrangement (nothing recorded)', () => {
+    const s = emptyArrangementState(120);
+    finalizeArrangement(s, 12);
+    expect(s.durationSec).toBe(0);
+  });
+
+  it('extends durationSec to cover automation written past the last clip', () => {
+    const s = emptyArrangementState(120);
+    appendClipEvent(s, 'lane-a', 'c1', 0); closePendingClipEvent(s, 'lane-a', 2);
+    const subIdxAt5s = Math.floor(5 * stepsPerSec(120) * AUTOMATION_SUB_RES);
+    writeAutomationSample(s, 'lane-a.cutoff', 0.5, subIdxAt5s, ['lane-a']);
+    finalizeArrangement(s, 10);
+    // automation ends ~5s, well past the clip's 2s end
+    expect(s.durationSec).toBeGreaterThan(2);
+  });
+});

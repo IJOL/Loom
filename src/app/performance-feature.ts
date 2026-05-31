@@ -8,13 +8,14 @@ import type { Sequencer } from '../core/sequencer';
 import type { SessionHost } from '../session/session-host';
 import {
   createRecState, armRec, disarmRec, startRecording, stopRecording,
-  markParamTouched, tickRecAutomation,
+  markParamTouched, tickRecAutomation, arrangementNow,
   type RecState,
 } from '../performance/rec-state';
 import {
   emptyArrangementState,
   type ArrangementState,
 } from '../performance/performance';
+import { finalizeArrangement } from '../performance/arrangement-ops';
 import {
   createArrangementPlayState, startArrangement, stopArrangement,
   tickArrangement, arrangementPlayhead,
@@ -74,7 +75,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   recBtn.replaceWith(recBtn.cloneNode(true));
   const freshRec = document.getElementById('rec') as HTMLButtonElement;
   freshRec.addEventListener('click', () => {
-    if (rec.armed) disarmRec(rec); else armRec(rec);
+    if (rec.armed) { finishRecordingIfActive(); disarmRec(rec); } else armRec(rec);
     freshRec.classList.toggle('armed', rec.armed);
     freshRec.textContent = rec.armed ? '● REC ON' : '● REC';
     if (rec.armed && seq.isPlaying()) startRecording(rec, ctx.currentTime);
@@ -189,12 +190,22 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     return false;
   }
 
+  /** Close the take: clamp open clip events, compute durationSec, refresh the
+   *  view so a recorded take actually surfaces. (durationSec staying 0 → the UI
+   *  keeps the empty-state forever, which was the bug.) */
+  function finishRecordingIfActive(): void {
+    if (!rec.recording) return;
+    finalizeArrangement(arrangement, arrangementNow(rec, ctx.currentTime));
+    stopRecording(rec);
+    refreshPerformanceView();
+  }
+
   function onStop(): boolean {
     if (mode === 'performance') {
       stopArrangement(arrangementPlayState);
       return true;
     }
-    if (rec.recording) stopRecording(rec);
+    finishRecordingIfActive();
     return false;
   }
 

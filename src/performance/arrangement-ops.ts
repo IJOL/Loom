@@ -1,4 +1,4 @@
-import { emptyLaneRec, type ArrangementLaneRec, type ArrangementState } from './performance';
+import { emptyLaneRec, stepsPerSec, type ArrangementLaneRec, type ArrangementState } from './performance';
 import { AUTOMATION_SUB_RES } from '../core/pattern';
 import type { AutomationCurve } from './performance';
 
@@ -81,4 +81,31 @@ export function sampleAutomationAt(curve: AutomationCurve, subIdx: number): numb
   if (curve.samples.length === 0) return 0.5;
   const i = Math.min(subIdx, curve.samples.length - 1);
   return curve.samples[i];
+}
+
+/** Seconds covered by an automation curve at the arrangement's bpm. */
+function automationEndSec(curve: AutomationCurve, bpm: number): number {
+  return curve.samples.length / (stepsPerSec(bpm) * AUTOMATION_SUB_RES);
+}
+
+/**
+ * Close out a recording: clamp any still-open clip event to `atSec` (the stop
+ * time) and set `durationSec` to the end of the last recorded content (clips +
+ * automation). Stays 0 when nothing was recorded, so the UI keeps its
+ * empty-state. Pure — operates on `s` in place.
+ */
+export function finalizeArrangement(s: ArrangementState, atSec: number): void {
+  for (const lane of s.lanes) {
+    const last = lane.clipEvents[lane.clipEvents.length - 1];
+    if (last && last.untilSec === Infinity) last.untilSec = atSec;
+  }
+  let dur = 0;
+  for (const lane of s.lanes) {
+    for (const ev of lane.clipEvents) {
+      if (Number.isFinite(ev.untilSec)) dur = Math.max(dur, ev.untilSec);
+    }
+    for (const c of lane.automation) dur = Math.max(dur, automationEndSec(c, s.bpm));
+  }
+  for (const c of s.globalAutomation) dur = Math.max(dur, automationEndSec(c, s.bpm));
+  s.durationSec = dur;
 }
