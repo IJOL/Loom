@@ -17,7 +17,7 @@ import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
 import { getCurrentLaneForVoice } from '../modulation/active-mods';
-import { bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
+import { bindEngineModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
 import { ConnectionBinder } from '../modulation/connection-binder';
 import type { KnobHandle } from '../core/knob';
 
@@ -202,8 +202,16 @@ export class DrumsEngine implements SynthEngine {
     const laneId = getCurrentLaneForVoice();
     if (laneId) {
       drumVoice.laneId = laneId;
-      drumVoice.binder = bindVoiceModulators({
-        laneId, engine: this, voice: drumVoice, voiceMods: this.engineModVoices, ctx,
+      // Drums has no per-note voices — every modulator targets the shared bus
+      // strip AudioParams (bus.pan/level/sends/eq from getSharedAudioParams).
+      // Use the ENGINE binder: it has NO shared-scope exclusion, so a shared
+      // LFO (the makeDefaultLFO default scope) actually reaches bus.pan. The
+      // per-voice binder used here previously stripped every shared-scope→
+      // shared-bus connection (it assumes an engine binder owns them), so the
+      // LFO→bus.* connections were silently dropped — "LFO on drums pan does
+      // nothing".
+      drumVoice.binder = bindEngineModulators({
+        laneId, engine: this, voiceMods: this.engineModVoices, ctx,
       });
       this.currentLaneId = laneId;
     }
