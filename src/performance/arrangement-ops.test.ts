@@ -171,3 +171,60 @@ describe('finalizeArrangement', () => {
     expect(s.durationSec).toBeGreaterThan(2);
   });
 });
+
+import {
+  effectiveDurationSec, setArrangementLengthBars,
+  addAutomationCurve, removeAutomationCurve,
+} from './arrangement-ops';
+
+describe('arrangement length', () => {
+  it('effectiveDurationSec is max(durationSec, lengthBars*barSec)', () => {
+    const s = emptyArrangementState(120);          // barSec = 2s at 120bpm
+    s.durationSec = 3;
+    s.lengthBars = 4;                               // 4 bars * 2s = 8s
+    expect(effectiveDurationSec(s)).toBe(8);
+    s.lengthBars = 1;                               // 2s < 3s recorded
+    expect(effectiveDurationSec(s)).toBe(3);
+  });
+
+  it('setArrangementLengthBars grows curves by hold and truncates on shrink', () => {
+    const s = emptyArrangementState(120);
+    s.globalAutomation.push({ paramId: 'fx.reverb.wet', values: [0.2, 0.9], enabled: true });
+    setArrangementLengthBars(s, 1);                 // 1 bar -> 16*SUB_RES samples
+    const curve = s.globalAutomation[0];
+    const expected = 1 * 16 * AUTOMATION_SUB_RES;
+    expect(curve.values.length).toBe(expected);
+    expect(curve.values[curve.values.length - 1]).toBe(0.9);   // held last value
+    expect(s.lengthBars).toBe(1);
+  });
+});
+
+describe('addAutomationCurve', () => {
+  const laneIds = ['tb-303-1', 'subtractive-1'];
+
+  it('routes a lane-prefixed param into that lane and sizes to the arrangement', () => {
+    const s = emptyArrangementState(120);
+    s.lengthBars = 1;
+    addAutomationCurve(s, 'tb-303-1.cutoff', laneIds);
+    const lane = s.lanes.find((l) => l.laneId === 'tb-303-1')!;
+    expect(lane.automation[0].paramId).toBe('tb-303-1.cutoff');
+    expect(lane.automation[0].values.every((v) => v === 0.5)).toBe(true);
+    expect(lane.automation[0].values.length).toBe(1 * 16 * AUTOMATION_SUB_RES);
+  });
+
+  it('routes a non-lane param into globalAutomation and is idempotent', () => {
+    const s = emptyArrangementState(120);
+    s.lengthBars = 1;
+    addAutomationCurve(s, 'fx.reverb.wet', laneIds);
+    addAutomationCurve(s, 'fx.reverb.wet', laneIds);   // no duplicate
+    expect(s.globalAutomation.length).toBe(1);
+  });
+
+  it('removeAutomationCurve removes by paramId from the routed list', () => {
+    const s = emptyArrangementState(120);
+    s.lengthBars = 1;
+    addAutomationCurve(s, 'fx.reverb.wet', laneIds);
+    removeAutomationCurve(s, 'fx.reverb.wet', laneIds);
+    expect(s.globalAutomation.length).toBe(0);
+  });
+});
