@@ -1,8 +1,8 @@
 import type { ArrangementState } from './performance';
-import { stepsPerSec } from './performance';
-import { AUTOMATION_SUB_RES } from '../core/pattern';
-
-const PX_PER_BAR = 80;
+import type { KnobHandle } from '../core/knob';
+import type { AutoBrush, PainterDeps } from '../automation/automation-painter';
+import { effectiveDurationSec } from './arrangement-ops';
+import { buildAutomationHeader, buildAutomationLane, type PerfAutoDeps } from './performance-automation-ui';
 
 function makeLabel(text: string, cls = ''): HTMLElement {
   const el = document.createElement('div');
@@ -11,19 +11,21 @@ function makeLabel(text: string, cls = ''): HTMLElement {
   return el;
 }
 
-function makeRuler(durationSec: number, bpm: number): HTMLElement {
-  const barSec = (60 / bpm) * 4;
+function barSecOf(bpm: number): number { return (60 / bpm) * 4; }
+
+function makeRuler(durationSec: number, bpm: number, pxPerBar: number): HTMLElement {
+  const barSec = barSecOf(bpm);
   const bars = Math.ceil(durationSec / barSec);
   const ruler = document.createElement('div');
   ruler.className = 'perf-row perf-ruler';
   ruler.appendChild(makeLabel('bars'));
   const track = document.createElement('div');
   track.className = 'perf-track';
-  track.style.width = `${bars * PX_PER_BAR}px`;
+  track.style.width = `${bars * pxPerBar}px`;
   for (let b = 0; b < bars; b++) {
     const m = document.createElement('span');
     m.className = 'perf-bar-mark';
-    m.style.left = `${b * PX_PER_BAR}px`;
+    m.style.left = `${b * pxPerBar}px`;
     m.textContent = String(b + 1);
     track.appendChild(m);
   }
@@ -35,10 +37,11 @@ function makeClipBand(
   laneRec: import('./performance').ArrangementLaneRec,
   durationSec: number,
   bpm: number,
+  pxPerBar: number,
   resolveClipColor: (clipId: string) => string,
-  resolveClipName:  (clipId: string) => string,
+  resolveClipName: (clipId: string) => string,
 ): HTMLElement {
-  const barSec = (60 / bpm) * 4;
+  const barSec = barSecOf(bpm);
   const totalBars = Math.ceil(durationSec / barSec);
 
   const row = document.createElement('div');
@@ -46,16 +49,16 @@ function makeClipBand(
   row.appendChild(makeLabel(laneRec.laneId));
   const track = document.createElement('div');
   track.className = 'perf-track';
-  track.style.width = `${totalBars * PX_PER_BAR}px`;
+  track.style.width = `${totalBars * pxPerBar}px`;
   const band = document.createElement('div');
   band.className = 'perf-clip-band';
 
   for (const ev of laneRec.clipEvents) {
-    const x = (ev.atSec / barSec) * PX_PER_BAR;
-    const w = (Math.min(ev.untilSec, durationSec) - ev.atSec) / barSec * PX_PER_BAR;
+    const x = (ev.atSec / barSec) * pxPerBar;
+    const w = (Math.min(ev.untilSec, durationSec) - ev.atSec) / barSec * pxPerBar;
     const el = document.createElement('div');
     el.className = 'perf-clip';
-    el.style.left  = `${x}px`;
+    el.style.left = `${x}px`;
     el.style.width = `${Math.max(8, w)}px`;
     const color = resolveClipColor(ev.clipId);
     if (color) el.style.background = color;
@@ -68,87 +71,126 @@ function makeClipBand(
   return row;
 }
 
-function makeAutomationBand(
-  curve: import('./performance').AutomationCurve,
-  durationSec: number,
-  bpm: number,
-): HTMLElement {
-  const totalBars = Math.ceil(durationSec / ((60 / bpm) * 4));
-  const row = document.createElement('div');
-  row.className = 'perf-row';
-  row.appendChild(makeLabel(curve.paramId, 'sub'));
-  const track = document.createElement('div');
-  track.className = 'perf-track';
-  const width = totalBars * PX_PER_BAR;
-  track.style.width = `${width}px`;
-
-  const canvas = document.createElement('canvas');
-  canvas.className = 'perf-auto-canvas';
-  canvas.width  = width;
-  canvas.height = 32;
-  const cx = canvas.getContext('2d')!;
-  cx.strokeStyle = '#f4c8a8';
-  cx.lineWidth = 1.5;
-  cx.beginPath();
-  for (let x = 0; x < width; x++) {
-    const t = (x / width) * durationSec;
-    const subIdx = Math.floor(t * stepsPerSec(bpm) * AUTOMATION_SUB_RES);
-    const v = curve.values[Math.min(subIdx, curve.values.length - 1)] ?? 0.5;
-    const y = (1 - v) * (canvas.height - 4) + 2;
-    if (x === 0) cx.moveTo(x, y); else cx.lineTo(x, y);
-  }
-  cx.stroke();
-  track.appendChild(canvas);
-  row.appendChild(track);
-  return row;
-}
-
 export interface PerfUICallbacks {
   onPlay: () => void;
   onStop: () => void;
   onGoToSession: () => void;
   resolveClipColor: (clipId: string) => string;
-  resolveClipName:  (clipId: string) => string;
+  resolveClipName: (clipId: string) => string;
+  registry: Map<string, KnobHandle>;
+  laneIds: readonly string[];
+  pxPerBar: number;
+  getBrush: () => AutoBrush;
+  setBrush: (b: AutoBrush) => void;
+  painterDeps: PainterDeps;
+  onSetLengthBars: (bars: number) => void;
+  onZoom: (pxPerBar: number) => void;
+  onAddCurve: (paramId: string) => void;
+  onRemoveCurve: (paramId: string) => void;
+  onEdited: () => void;
 }
 
-export function renderPerformanceView(
-  host: HTMLElement,
-  state: ArrangementState,
-  cb: PerfUICallbacks,
-): void {
+function makeToolbar(state: ArrangementState, cb: PerfUICallbacks): HTMLElement {
+  const bar = document.createElement('div');
+  bar.className = 'perf-toolbar';
+
+  const lenWrap = document.createElement('label');
+  lenWrap.className = 'perf-length';
+  lenWrap.append('Length: ');
+  const len = document.createElement('input');
+  len.type = 'number'; len.min = '1'; len.value = String(state.lengthBars || 0);
+  len.className = 'perf-length-input';
+  len.addEventListener('change', () => cb.onSetLengthBars(parseInt(len.value, 10) || 0));
+  lenWrap.append(len, ' bars');
+
+  const zoom = document.createElement('input');
+  zoom.type = 'range'; zoom.min = '16'; zoom.max = '400'; zoom.step = '1';
+  zoom.value = String(cb.pxPerBar);
+  zoom.className = 'perf-zoom';
+  zoom.addEventListener('input', () => cb.onZoom(parseInt(zoom.value, 10)));
+
+  const brushBar = document.createElement('span');
+  brushBar.className = 'perf-brush-bar';
+  const mkBrush = (b: AutoBrush, label: string) => {
+    const btn = document.createElement('button');
+    btn.className = 'rnd' + (cb.getBrush() === b ? ' primary' : '');
+    btn.textContent = label;
+    btn.addEventListener('click', () => {
+      cb.setBrush(b);
+      brushBar.querySelectorAll('button').forEach((x) => x.classList.remove('primary'));
+      btn.classList.add('primary');
+    });
+    return btn;
+  };
+  brushBar.append(mkBrush('line', 'Line'), mkBrush('flat', 'Flat'));
+
+  const bars = Math.ceil(effectiveDurationSec(state) / barSecOf(state.bpm));
+  const readout = document.createElement('span');
+  readout.className = 'perf-readout';
+  readout.textContent = `${bars} bars · ${state.bpm} BPM`;
+
+  bar.append(lenWrap, ' · Zoom ', zoom, ' · ', brushBar, ' · ', readout);
+  return bar;
+}
+
+function attachWheelZoom(host: HTMLElement, cb: PerfUICallbacks): void {
+  host.addEventListener('wheel', (e) => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+    const next = Math.max(16, Math.min(400, cb.pxPerBar * factor));
+    cb.onZoom(Math.round(next));
+  }, { passive: false });
+}
+
+export function renderPerformanceView(host: HTMLElement, state: ArrangementState, cb: PerfUICallbacks): void {
   host.innerHTML = '';
   host.classList.add('performance-view');
 
-  if (state.durationSec === 0) {
+  host.appendChild(makeToolbar(state, cb));
+  const dur = effectiveDurationSec(state);
+
+  if (dur === 0) {
     const empty = document.createElement('div');
     empty.className = 'perf-empty';
     empty.innerHTML = `
-      <p>Sin grabación.</p>
-      <p>Arma <b>REC</b>, vuelve a Session, lanza clips y mueve knobs.</p>
-      <button class="perf-empty-back">Volver a Session</button>
-    `;
+      <p>Sin grabación. Fija una <b>longitud</b> arriba para empezar a dibujar automatización,</p>
+      <p>o arma <b>REC</b>, vuelve a Session, lanza clips y mueve knobs.</p>
+      <button class="perf-empty-back">Volver a Session</button>`;
     empty.querySelector('.perf-empty-back')!.addEventListener('click', cb.onGoToSession);
     host.appendChild(empty);
     return;
   }
 
-  host.appendChild(makeRuler(state.durationSec, state.bpm));
+  attachWheelZoom(host, cb);
+
+  const totalBars = Math.ceil(dur / barSecOf(state.bpm));
+  const autoDeps: PerfAutoDeps = {
+    registry: cb.registry,
+    laneWidthPx: totalBars * cb.pxPerBar,
+    getBrush: cb.getBrush,
+    painterDeps: cb.painterDeps,
+    onAdd: cb.onAddCurve,
+    onRemove: cb.onRemoveCurve,
+    onEdited: cb.onEdited,
+  };
+
+  host.appendChild(makeRuler(dur, state.bpm, cb.pxPerBar));
+  // Single "+ Automation" control; the chosen param's prefix routes it into a
+  // lane section or the master section (arrangement-ops.routeParamId).
+  host.appendChild(buildAutomationHeader(autoDeps));
+
   for (const lane of state.lanes) {
-    host.appendChild(makeClipBand(lane, state.durationSec, state.bpm,
-      cb.resolveClipColor, cb.resolveClipName));
-    for (const curve of lane.automation) {
-      host.appendChild(makeAutomationBand(curve, state.durationSec, state.bpm));
-    }
+    host.appendChild(makeClipBand(lane, dur, state.bpm, cb.pxPerBar, cb.resolveClipColor, cb.resolveClipName));
+    for (const curve of lane.automation) host.appendChild(buildAutomationLane(curve, autoDeps));
   }
+
   if (state.globalAutomation.length > 0) {
     const masterLabel = document.createElement('div');
     masterLabel.className = 'perf-row perf-master-header';
     masterLabel.appendChild(makeLabel('MASTER'));
-    masterLabel.appendChild(document.createElement('div'));
     host.appendChild(masterLabel);
-    for (const curve of state.globalAutomation) {
-      host.appendChild(makeAutomationBand(curve, state.durationSec, state.bpm));
-    }
+    for (const curve of state.globalAutomation) host.appendChild(buildAutomationLane(curve, autoDeps));
   }
 
   const playhead = document.createElement('div');
