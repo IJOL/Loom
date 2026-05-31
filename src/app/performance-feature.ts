@@ -15,7 +15,11 @@ import {
   emptyArrangementState,
   type ArrangementState,
 } from '../performance/performance';
-import { finalizeArrangement } from '../performance/arrangement-ops';
+import {
+  finalizeArrangement, setArrangementLengthBars,
+  addAutomationCurve, removeAutomationCurve,
+} from '../performance/arrangement-ops';
+import type { AutoBrush } from '../automation/automation-painter';
 import {
   createArrangementPlayState, startArrangement, stopArrangement,
   tickArrangement, arrangementPlayhead,
@@ -35,6 +39,9 @@ export interface PerformanceFeatureDeps {
   /** Called by registerKnob — performance also wants the knob events. */
   onRegisterKnob: (registerExtra: (k: KnobHandle) => void) => void;
   recBtn: HTMLButtonElement;
+  /** Optional: snapshot current state for undo after a performance edit
+   *  (length/zoom/add/remove/draw). Undefined keeps edits working without undo. */
+  onPerformanceEdited?: () => void;
 }
 
 export interface PerformanceFeature {
@@ -56,13 +63,16 @@ export interface PerformanceFeature {
 }
 
 export function createPerformanceFeature(deps: PerformanceFeatureDeps): PerformanceFeature {
-  const { ctx, seq, sessionHost, automationRegistry, onRegisterKnob, recBtn } = deps;
+  const { ctx, seq, sessionHost, automationRegistry, onRegisterKnob, recBtn, onPerformanceEdited } = deps;
 
   const rec = createRecState();
   const arrangement = emptyArrangementState(seq.bpm);
   const arrangementPlayState = createArrangementPlayState();
   const recHooks: RecHooks = { rec, arrangement };
   let mode: 'session' | 'performance' = 'session';
+  let pxPerBar = 80;
+  let brush: AutoBrush = 'line';
+  const laneIds = () => sessionHost.state.lanes.map((l) => l.id);
 
   onRegisterKnob((k) => {
     const prev = k.onValueChanged;
@@ -104,6 +114,17 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       onGoToSession: () => setMode('session'),
       resolveClipColor: (id) => findClip(id)?.color ?? '',
       resolveClipName: (id) => findClip(id)?.name ?? findClip(id)?.id ?? 'missing',
+      registry: automationRegistry,
+      laneIds: laneIds(),
+      pxPerBar,
+      getBrush: () => brush,
+      setBrush: (b) => { brush = b; },
+      painterDeps: { seq, getAutoAbsSubIdx: () => 0 },
+      onSetLengthBars: (bars) => { setArrangementLengthBars(arrangement, bars); onPerformanceEdited?.(); refreshPerformanceView(); },
+      onZoom: (px) => { pxPerBar = px; refreshPerformanceView(); },
+      onAddCurve: (paramId) => { addAutomationCurve(arrangement, paramId, laneIds()); onPerformanceEdited?.(); refreshPerformanceView(); },
+      onRemoveCurve: (paramId) => { removeAutomationCurve(arrangement, paramId, laneIds()); onPerformanceEdited?.(); refreshPerformanceView(); },
+      onEdited: () => { onPerformanceEdited?.(); },
     });
   }
 
@@ -209,14 +230,13 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     return false;
   }
 
-  const PX_PER_BAR = 80;
   function rafPlayhead() {
     if (mode === 'performance' && arrangementPlayState.isPlaying) {
       const el = document.getElementById('perf-playhead');
       if (el) {
         const bars = arrangementPlayhead(arrangementPlayState, ctx.currentTime)
           / ((60 / (arrangement.bpm || seq.bpm)) * 4);
-        el.style.left = `${90 + bars * PX_PER_BAR}px`;
+        el.style.left = `${90 + bars * pxPerBar}px`;
       }
     }
     requestAnimationFrame(rafPlayhead);
