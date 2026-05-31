@@ -11,6 +11,13 @@ export class PendingBaseValues {
     this.map.set(id, value);
   }
 
+  /** Read back a value queued before the instance existed (undefined if none).
+   *  Lets getBaseValue surface a pre-instance preset/knob edit so the UI knobs
+   *  reflect it instead of snapping to the spec default. */
+  get(id: string): number | undefined {
+    return this.map.get(id);
+  }
+
   /** Snapshot, clear, then apply each entry via `write`. Snapshot-first
    *  means re-entrant setBaseValue calls (which the write callback typically
    *  triggers) find an empty map and write straight through to the instance. */

@@ -34,6 +34,18 @@ const PARAMS: EngineParamSpec[] = [
   },
 ];
 
+// TB-303 preset JSON keys are the TB303 synth's internal field names; map them
+// to the EngineParamSpec ids that getBaseValue / setBaseValue speak so a preset
+// can be applied through the same (instance-or-pending) path the knobs use.
+const PRESET_KEY_TO_SPEC: Record<string, string> = {
+  cutoff:    'filter.cutoff',
+  resonance: 'filter.resonance',
+  envMod:    'env.amount',
+  decay:     'env.decay',
+  accent:    'env.accent',
+  wave:      'osc.wave',
+};
+
 class TB303Voice implements Voice {
   /** Set by TB303Engine.createVoice immediately after construction so
    *  dispose() can tear down the lane binding. */
@@ -171,7 +183,14 @@ export class TB303Engine implements SynthEngine {
   private currentLaneId: string | null = null;
 
   getBaseValue(id: string): number {
-    if (!this.lastInstance) return PARAMS.find(p => p.id === id)?.default ?? 0;
+    if (!this.lastInstance) {
+      // No TB303 yet (the instance is created lazily on the first note). Surface
+      // any value applied instance-less — a preset load or knob edit before the
+      // first trigger lands in `pending` — so the inspector knobs reflect it
+      // instead of snapping back to the spec default.
+      const pending = this.pending.get(id);
+      return pending ?? PARAMS.find(p => p.id === id)?.default ?? 0;
+    }
     const p = this.lastInstance.params;
     switch (id) {
       case 'filter.cutoff':    return p.cutoff;
@@ -248,15 +267,16 @@ export class TB303Engine implements SynthEngine {
   applyPreset(name: string): void {
     const p = this.presets.find((x) => x.name === name);
     if (!p) return;
-    if (this.lastInstance) {
-      const params = this.lastInstance.params as unknown as Record<string, number | string>;
-      for (const [k, v] of Object.entries(p.params)) {
-        if (k === 'wave') {
-          params.wave = v < 0.5 ? 'sawtooth' : 'square';
-        } else {
-          params[k] = v;
-        }
-      }
+    // Route every preset param through setBaseValue so it applies whether or
+    // not a TB303 instance exists yet: setBaseValue writes the live instance
+    // when present and otherwise stashes into `pending` (flushed on the first
+    // createVoice). The old code wrote `this.lastInstance.params` directly and
+    // silently no-oped when no voice had played — which froze the 303 preset
+    // dropdown and the boot preset on a lane whose clip wasn't running.
+    for (const [k, v] of Object.entries(p.params)) {
+      if (typeof v !== 'number') continue;
+      const specId = PRESET_KEY_TO_SPEC[k];
+      if (specId) this.setBaseValue(specId, v);
     }
     if (p.modulators) this.modHost.deserialize(p.modulators);
   }

@@ -3,58 +3,66 @@ import '../../test/setup';
 import { TB303Engine } from './tb303';
 import { __seedPresetCache, __resetPresetCache } from '../presets/preset-loader';
 
-// Regression: changing a TB-303 preset in the live UI did nothing to the
-// sound or the knobs.
+// Regression: changing a TB-303 preset in the live UI did nothing — the knobs
+// stayed on the spec defaults (Cutoff 42% = 0.42) and the sound didn't change.
 //
-// Root cause: the per-page preset dropdown applied presets by looping
-// `instance.setBaseValue(jsonKey, value)` over the preset's params. But the
-// TB-303 preset JSON keys are the synth's INTERNAL field names
-// (`cutoff`, `resonance`, `envMod`, `decay`, `accent`, `wave`) — NOT the
-// engine's EngineParamSpec ids (`filter.cutoff`, `env.amount`, `osc.wave`).
-// setBaseValue only recognises the spec ids, so every write silently no-oped.
+// Two compounding root causes, both in TB303Engine:
 //
-// engine.applyPreset() owns the correct JSON-key→state mapping (it's the path
-// the session/scene loader already used). The fix routes the UI through it.
-// This test locks both halves of the contract.
+//   1. applyPreset() only wrote when `this.lastInstance` existed and otherwise
+//      silently no-oped. But the TB303 instance is created LAZILY on the first
+//      note trigger — so a lane whose clip isn't currently playing has
+//      lastInstance === null, and every preset apply (boot AND live dropdown)
+//      did nothing.
+//   2. getBaseValue() returned the static spec default whenever lastInstance
+//      was null, ignoring any pending/applied values. refreshLaneKnobs reads
+//      getBaseValue to redraw the knobs, so the knobs were frozen on defaults.
+//
+// The contract a working engine must satisfy: applyPreset followed by
+// getBaseValue must reflect the preset EVEN BEFORE a voice exists, because the
+// inspector mounts (and the dropdown applies) without playback. This test runs
+// instance-less on purpose.
 
 const PRESET = {
   name: 'TEST Squelch',
   gm: [] as number[],
+  // TB-303 preset JSON keys are the synth's internal field names.
   params: { cutoff: 0.9, resonance: 0.8, envMod: 0.7, decay: 0.3, accent: 0.65, wave: 1 },
 };
 
 describe('TB303Engine preset application (live-UI regression)', () => {
   afterEach(() => { __resetPresetCache(); });
 
-  it('applyPreset maps the JSON keys onto engine state (sound + knobs change)', () => {
+  it('applyPreset is reflected by getBaseValue WITHOUT a voice (knobs follow)', () => {
     __seedPresetCache('tb303', [PRESET]);
     const engine = new TB303Engine();
-    const ctx = new AudioContext();
-    engine.createVoice(ctx, ctx.destination); // establishes lastInstance
+    // NO createVoice — mirrors opening the 303 inspector / changing the preset
+    // dropdown before any note has played. lastInstance is null here.
 
-    // Baseline: NOT the preset values yet (read from the live TB303 instance,
-    // whose defaults differ from the preset — exact value is irrelevant here).
+    // Baseline: spec defaults, not the preset.
     expect(engine.getBaseValue('filter.cutoff')).not.toBeCloseTo(0.9, 5);
-    expect(engine.getBaseValue('osc.wave')).toBe(0);
 
     engine.applyPreset('TEST Squelch');
 
-    // getBaseValue is what refreshLaneKnobs reads → knobs reflect the preset.
+    // getBaseValue is exactly what refreshLaneKnobs reads → the knobs.
     expect(engine.getBaseValue('filter.cutoff')).toBeCloseTo(0.9, 5);
     expect(engine.getBaseValue('filter.resonance')).toBeCloseTo(0.8, 5);
     expect(engine.getBaseValue('env.amount')).toBeCloseTo(0.7, 5);
+    expect(engine.getBaseValue('env.decay')).toBeCloseTo(0.3, 5);
+    expect(engine.getBaseValue('env.accent')).toBeCloseTo(0.65, 5);
     expect(engine.getBaseValue('osc.wave')).toBe(1); // wave:1 → 'square'
   });
 
-  it('the OLD path (setBaseValue with raw preset keys) is a silent no-op', () => {
+  it('a preset applied instance-less survives into the first voice (sound follows)', () => {
+    __seedPresetCache('tb303', [PRESET]);
     const engine = new TB303Engine();
-    const ctx = new AudioContext();
-    engine.createVoice(ctx, ctx.destination);
+    engine.applyPreset('TEST Squelch');     // before any voice
 
-    const before = engine.getBaseValue('filter.cutoff');
-    // Preset JSON key — NOT a setBaseValue spec id. This is exactly what the
-    // buggy loop did; it must change nothing, proving why the UI was dead.
-    engine.setBaseValue('cutoff', 0.123);
-    expect(engine.getBaseValue('filter.cutoff')).toBeCloseTo(before, 5);
+    const ctx = new AudioContext();
+    engine.createVoice(ctx, ctx.destination); // now the TB303 is built + flushed
+
+    // After the voice exists, getBaseValue still reflects the preset (the
+    // pending values flushed into the live instance, not the spec defaults).
+    expect(engine.getBaseValue('filter.cutoff')).toBeCloseTo(0.9, 5);
+    expect(engine.getBaseValue('osc.wave')).toBe(1);
   });
 });
