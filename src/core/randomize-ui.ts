@@ -1,59 +1,29 @@
-import { randomize, type ScaleName, type RandomizeOptions } from './random';
-import { TICKS_PER_STEP, type NoteEvent } from './notes';
-import type { Sequencer } from './sequencer';
+import { randomizeBassParams } from './random';
 import type { TB303 } from './synth';
 import type { DrumMachine } from './drums';
-import type { PianoRollHandle } from './pianoroll';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
-import { markPagePresetCustom, markPolyPresetCustom } from '../polysynth/polysynth-presets';
+import { markPagePresetCustom } from '../polysynth/polysynth-presets';
 
-// ── Per-lane randomize helpers ────────────────────────────────────────────
-
-export interface RollEntryRef {
-  handle: PianoRollHandle;
-}
+// ── Per-lane "🎲 Sound" randomize ─────────────────────────────────────────
+// Randomizes the engine's *sound* (params / kit). Note randomization is per
+// Session clip and lives in the clip inspector (see clip-randomize.ts).
 
 export interface RandomizeUIDeps {
-  seq: Sequencer;
-  // Phase G: synth resolved lazily — null before boot lane is allocated.
+  // Phase G: synth/drums resolved lazily — null before boot lane is allocated.
   getSynth: () => TB303 | null;
-  /** Phase G: drum instance resolved lazily — null before drums lane allocated. */
   getDrums: () => DrumMachine | null;
   /** Active bass lane id (for marking its preset select as custom). */
   getBassLaneId: () => string;
   /** Active drums lane id (for marking its preset select as custom). */
   getDrumsLaneId: () => string;
-  scaleSel: HTMLSelectElement;
-  rootSel: HTMLSelectElement;
-  /** Returns the current bassRollEntry (may be null). */
-  getBassRollEntry: () => RollEntryRef | null;
   refreshKnobsFromSynth: () => void;
-  rebuildPolyTrack: () => void;
-  /** Returns the currently-active engine lane id (e.g. 'main', 'poly1'). */
-  getActiveEngineLaneId: () => string;
   historyDeps: HistoryDeps;
-}
-
-function currentRandomBase(deps: RandomizeUIDeps): RandomizeOptions {
-  return {
-    scale: deps.scaleSel.value as ScaleName,
-    rootNote: parseInt(deps.rootSel.value, 10),
-  };
-}
-
-function randomizeBassNotes(deps: RandomizeUIDeps): void {
-  const synth = deps.getSynth();
-  if (!synth) return;
-  const base = currentRandomBase(deps);
-  randomize(deps.seq, synth, { ...base, bassNotes: true, accents: true, slides: true });
-  deps.getBassRollEntry()?.handle.redraw();
 }
 
 function randomizeBassSound(deps: RandomizeUIDeps): void {
   const synth = deps.getSynth();
   if (!synth) return;
-  const base = currentRandomBase(deps);
-  randomize(deps.seq, synth, { ...base, mod: true });
+  randomizeBassParams(synth);
   deps.refreshKnobsFromSynth();
   markPagePresetCustom('bass-preset-select', deps.getBassLaneId());
 }
@@ -68,91 +38,14 @@ function randomizeDrumsSound(deps: RandomizeUIDeps): void {
   markPagePresetCustom('drums-preset-select', deps.getDrumsLaneId());
 }
 
-// Scale intervals; same set used by random.ts
-const SCALE_INTERVALS: Record<string, number[]> = {
-  major:     [0, 2, 4, 5, 7, 9, 11],
-  minor:     [0, 2, 3, 5, 7, 8, 10],
-  pentMinor: [0, 3, 5, 7, 10],
-  phrygian:  [0, 1, 3, 5, 7, 8, 10],
-  chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-};
-
-/** Random notes for a single poly lane: scale-aware, sparse, musical. */
-function randomizePolyLaneNotes(deps: RandomizeUIDeps, laneId: string): void {
-  const scale = deps.scaleSel.value as ScaleName;
-  const root  = parseInt(deps.rootSel.value, 10);
-  const intervals = SCALE_INTERVALS[scale] ?? SCALE_INTERVALS.pentMinor;
-
-  // Random note from scale around `root + 24` for poly range
-  const pickMidi = () => {
-    const oct = Math.floor(Math.random() * 3); // 0..2 octaves above root
-    const iv  = intervals[Math.floor(Math.random() * intervals.length)];
-    return root + 36 + oct * 12 + iv;
-  };
-
-  const { seq } = deps;
-  const len = seq.pattern.length;
-
-  if (laneId !== 'subtractive-1') return;
-
-  if (seq.pattern.polyMode === 'piano') {
-    // Sparse piano-roll: ~30% step density, notes of 1-2 steps duration
-    const out: NoteEvent[] = [];
-    for (let i = 0; i < len; i++) {
-      if (Math.random() < 0.3) {
-        out.push({
-          start: i * TICKS_PER_STEP,
-          duration: TICKS_PER_STEP * (Math.random() < 0.3 ? 2 : 1),
-          midi: pickMidi(),
-          velocity: Math.random() < 0.25 ? 115 : 80,
-        });
-      }
-    }
-    seq.pattern.polyNotes = out;
-  } else {
-    // Step mode: fill melody[] array
-    for (let i = 0; i < len; i++) {
-      const on = Math.random() < 0.35;
-      seq.pattern.melody[i] = {
-        on,
-        notes: on ? [pickMidi()] : [60],
-        accent: on && Math.random() < 0.2,
-        tie: on && Math.random() < 0.1,
-      };
-    }
-  }
-
-  deps.rebuildPolyTrack();
-}
-
-/** Wire all per-lane randomize buttons. Call once at boot. */
+/** Wire the "🎲 Sound" buttons. Call once at boot. */
 export function wireRandomizeUI(deps: RandomizeUIDeps): void {
   const $btn = (id: string) => document.getElementById(id) as HTMLButtonElement | null;
 
   $btn('bass-random-sound')?.addEventListener('click', () => {
     withUndo(deps.historyDeps, () => randomizeBassSound(deps));
   });
-  $btn('bass-random-notes')?.addEventListener('click', () => {
-    withUndo(deps.historyDeps, () => randomizeBassNotes(deps));
-  });
   $btn('drums-random-sound')?.addEventListener('click', () => {
     withUndo(deps.historyDeps, () => randomizeDrumsSound(deps));
   });
-  $btn('drums-random-notes')?.addEventListener('click', () => {
-    withUndo(deps.historyDeps, () => randomizeDrumsNotes(deps));
-  });
-  $btn('poly-random-notes')?.addEventListener('click', () => {
-    withUndo(deps.historyDeps, () =>
-      randomizePolyLaneNotes(deps, deps.getActiveEngineLaneId()),
-    );
-  });
-}
-
-/** Random drum notes — was the legacy `drums-random` Pattern action.
- *  Triggered from the clip-editor toolbar 🎲 Notes button. */
-function randomizeDrumsNotes(deps: RandomizeUIDeps): void {
-  const synth = deps.getSynth();
-  if (!synth) return;
-  const base = currentRandomBase(deps);
-  randomize(deps.seq, synth, { ...base, drums: true });
 }

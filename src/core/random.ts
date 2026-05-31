@@ -1,105 +1,15 @@
 import type { TB303 } from './synth';
-import { DRUM_LANES, type DrumVoice } from './drums';
-import type { Sequencer } from './sequencer';
 import type { PolySynth } from '../polysynth/polysynth';
 
-export const SCALES = {
-  pentMinor: [0, 3, 5, 7, 10],
-  minor:     [0, 2, 3, 5, 7, 8, 10],
-  phrygian:  [0, 1, 3, 5, 7, 8, 10],
-  chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-} as const;
-export type ScaleName = keyof typeof SCALES;
-
-const DRUM_DENSITY: Record<DrumVoice, number> = {
-  kick: 0.35, snare: 0.2, closedHat: 0.6, openHat: 0.12,
-  clap: 0.12, cowbell: 0.1, tom: 0.1, ride: 0.15,
-};
-
-export interface RandomizeOptions {
-  bassNotes?: boolean;   // bass pitches + on/off
-  melodyNotes?: boolean; // melody pitches + on/off
-  accents?: boolean;     // accents on bass, drums, melody
-  slides?: boolean;      // bass slide flags + melody tie
-  drums?: boolean;
-  mod?: boolean;         // TB-303 filter/env params
-  scale?: ScaleName;
-  rootNote?: number;
-  noteDensity?: number;
-}
-
-export function randomize(seq: Sequencer, synth: TB303, opts: RandomizeOptions) {
-  const scale = SCALES[opts.scale ?? 'pentMinor'];
-  const root = opts.rootNote ?? 36;
-  const density = opts.noteDensity ?? 0.55;
-
-  if (opts.bassNotes) {
-    for (const step of seq.bass) {
-      step.on = Math.random() < density;
-      const interval = scale[Math.floor(Math.random() * scale.length)];
-      const octRoll = Math.random();
-      const octave = octRoll < 0.7 ? 0 : (octRoll < 0.92 ? 12 : 24);
-      step.note = root + interval + octave;
-    }
-  }
-
-  if (opts.melodyNotes) {
-    const melRoot = root + 24;
-    for (const step of seq.melody) {
-      step.on = Math.random() < density * 0.7;
-      const interval = scale[Math.floor(Math.random() * scale.length)];
-      const octRoll = Math.random();
-      const octave = octRoll < 0.6 ? 0 : (octRoll < 0.9 ? 12 : -12);
-      const root = melRoot + interval + octave;
-      // Preserve chord shape: shift all notes by the new root delta
-      if (step.notes.length === 0) step.notes = [root];
-      else {
-        const oldRoot = step.notes[0];
-        const delta = root - oldRoot;
-        step.notes = step.notes.map((n) => n + delta);
-      }
-    }
-  }
-
-  if (opts.accents) {
-    for (const step of seq.bass)   step.accent = step.on && Math.random() < 0.25;
-    for (const step of seq.melody) step.accent = step.on && Math.random() < 0.2;
-    for (const lane of DRUM_LANES) {
-      for (const step of seq.drums[lane]) step.accent = step.on && Math.random() < 0.2;
-    }
-  }
-
-  if (opts.slides) {
-    for (const step of seq.bass)   step.slide = step.on && Math.random() < 0.2;
-    for (const step of seq.melody) step.tie   = step.on && Math.random() < 0.15;
-  }
-
-  if (opts.drums) {
-    for (const lane of DRUM_LANES) {
-      const baseP = DRUM_DENSITY[lane];
-      const steps = seq.drums[lane];
-      for (let i = 0; i < steps.length; i++) {
-        const onBeat   = i % 4 === 0;
-        const backbeat = i % 8 === 4;
-        let p = baseP;
-        if (lane === 'kick'      && onBeat)       p = 0.85;
-        if (lane === 'snare'     && backbeat)     p = 0.9;
-        if (lane === 'closedHat')                  p = 0.7;
-        if (lane === 'openHat'   && i % 8 === 6)  p = 0.5;
-        if (lane === 'ride'      && i % 2 === 0)  p = 0.6;
-        steps[i].on = Math.random() < p;
-        steps[i].accent = steps[i].on && Math.random() < 0.18;
-      }
-    }
-  }
-
-  if (opts.mod) {
-    synth.params.cutoff    = 0.1 + Math.random() * 0.45;
-    synth.params.resonance = 0.5 + Math.random() * 0.5;
-    synth.params.envMod    = 0.3 + Math.random() * 0.6;
-    synth.params.decay     = 0.2 + Math.random() * 0.6;
-    synth.params.accent    = 0.4 + Math.random() * 0.5;
-  }
+/** Randomize the TB-303 bass *sound* params (filter/env) to a musical-ish
+ *  starting point. Notes are not touched here — note randomization is per
+ *  Session clip (see src/session/clip-randomize.ts). */
+export function randomizeBassParams(synth: TB303): void {
+  synth.params.cutoff    = 0.1 + Math.random() * 0.45;
+  synth.params.resonance = 0.5 + Math.random() * 0.5;
+  synth.params.envMod    = 0.3 + Math.random() * 0.6;
+  synth.params.decay     = 0.2 + Math.random() * 0.6;
+  synth.params.accent    = 0.4 + Math.random() * 0.5;
 }
 
 // Randomize the polysynth settings to a musically reasonable starting point.
@@ -152,21 +62,4 @@ export function randomizePolySynth(poly: PolySynth) {
   p.amp.decay   = randRange(0.1, 0.5);
   p.amp.sustain = randRange(0.5, 0.9);
   p.amp.release = randRange(0.2, 1.5);
-}
-
-export function clearPattern(
-  seq: Sequencer,
-  opts: { bass?: boolean; drums?: boolean; melody?: boolean },
-) {
-  if (opts.bass) {
-    for (const step of seq.bass) { step.on = false; step.accent = false; step.slide = false; }
-  }
-  if (opts.drums) {
-    for (const lane of DRUM_LANES) {
-      for (const step of seq.drums[lane]) { step.on = false; step.accent = false; }
-    }
-  }
-  if (opts.melody) {
-    for (const step of seq.melody) { step.on = false; step.accent = false; step.tie = false; }
-  }
 }
