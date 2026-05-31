@@ -40,16 +40,14 @@ import {
   buildSavedStateV3, applyLoadedStateV3, type SavedStateV3, type SavedStateV3Deps,
 } from './save/saved-state-v3';
 import {
-  wirePolyControls, wirePolyMode, refreshPolyPresetSelect,
-  type PolySynthPresetsDeps, type PolyModeDeps,
+  wirePolyControls, refreshPolyPresetSelect,
+  type PolySynthPresetsDeps,
 } from './polysynth/polysynth-presets';
 import { arp, buildArpUI, type ArpUIDeps } from './arp/arp-ui';
 import {
   wireAutomationTab, renderLanes as renderLanesFromUI, redrawAllLanes,
   populateAutoParamSelect, type AutomationUIDeps,
 } from './automation/automation-ui';
-import { wireCopyNotesPanel } from './copy/lane-copy';
-import { wireSlotCopyPanel } from './copy/slot-copy';
 import { wireRandomizeUI } from './core/randomize-ui';
 import { wireFxUI, applyDelaySync as fxApplyDelaySync, type FxUIDeps } from './core/fx-ui';
 import { wireTransport, type TransportDeps } from './core/transport';
@@ -58,7 +56,6 @@ import {
   synthEditorState,
 } from './session/synth-editor-routing';
 import { startVisualizer } from './core/visualizer';
-import { wirePresetLibrary } from './presets/preset-library-ui';
 import { loadAllPresets } from './presets/preset-loader';
 import {
   startAutomationTick, resetAutomationPosition, getAutoAbsSubIdx,
@@ -207,23 +204,6 @@ const laneHost = createLaneHost({
 const getLaneEngineId     = (laneId: string) => laneHost.getLaneEngineId(laneId);
 const setActiveEngineLane = (laneId: string) => laneHost.setActiveEngineLane(laneId);
 const _lehState = laneHost.state; // kept for engineSelectorDeps (uses _lehState.activeLaneId)
-
-function setBassMode(mode: 'step' | 'piano') {
-  if (seq.pattern.bassMode === mode) return;
-  // Convert step → piano so the user doesn't lose existing work on first switch.
-  if (mode === 'piano' && seq.pattern.bassNotes.length === 0) {
-    seq.pattern.bassNotes = bassStepsToNotes(seq.pattern.bass);
-  }
-  seq.pattern.bassMode = mode;
-  updateBassModeButtons();
-}
-function updateBassModeButtons() {
-  const stepBtn  = document.getElementById('bass-mode-step')  as HTMLButtonElement | null;
-  const pianoBtn = document.getElementById('bass-mode-piano') as HTMLButtonElement | null;
-  if (!stepBtn || !pianoBtn) return;
-  stepBtn.classList.toggle('primary',  seq.pattern.bassMode === 'step');
-  pianoBtn.classList.toggle('primary', seq.pattern.bassMode === 'piano');
-}
 
 // ── Mixer ──────────────────────────────────────────────────────────────────
 
@@ -563,16 +543,6 @@ const polySynthPresetsDeps: PolySynthPresetsDeps = {
   get historyDeps() { return _discreteHistoryDeps; },
 };
 
-const polyModeDeps: PolyModeDeps = {
-  getSeqPattern: () => seq.pattern,
-  stepsToNotes,
-  getMelodySteps: () => seq.pattern.melody,
-  setPolyPatternMode: (mode) => { seq.pattern.polyMode = mode; },
-  rebuildPolyTrack: () => { /* Classic-only re-render — Session re-renders via sessionHost.renderWithMixer() */ },
-  setBassMode,
-  updateBassModeButtons,
-};
-
 // Now that polySynthPresetsDeps exist, wire synthEditorDeps
 // (referenced lazily by showPolyEditorWrapper above).
 synthEditorDeps = {
@@ -626,7 +596,6 @@ const transportDeps: TransportDeps = {
   seq, bank, ctx, playBtn, barsSel,
   resetAutomationPosition,
   renderLanes,
-  updateBassModeButtons,
 };
 wireTransport(transportDeps);
 {
@@ -639,15 +608,7 @@ wireTransport(transportDeps);
   }
 }
 wireAutomationTab(automationDeps);
-wirePresetLibrary({ seq, get historyDeps() { return _discreteHistoryDeps; } });
 wirePolyControls(polySynthPresetsDeps);
-wirePolyMode(polyModeDeps);
-wireSlotCopyPanel({
-  bank, seq, barsSel,
-  renderLanes,
-  flashButton,
-});
-wireCopyNotesPanel({ seq });
 
 // ── MIDI import wiring (see src/midi/midi-import-ui.ts) ───────────────────
 // Launches a scene by id from outside the session host. Mirrors the host's

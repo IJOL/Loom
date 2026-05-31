@@ -12,7 +12,6 @@ export interface TransportDeps {
   barsSel: HTMLSelectElement;
   resetAutomationPosition: () => void;
   renderLanes: () => void;
-  updateBassModeButtons: () => void;
 }
 
 // Mutable state owned by transport
@@ -135,7 +134,6 @@ export function wireTransport(deps: TransportDeps): () => void {
       barsSel.value = String(seq.length);
       updateSlotButtons();
       deps.renderLanes();
-      deps.updateBassModeButtons();
     }
   };
 
