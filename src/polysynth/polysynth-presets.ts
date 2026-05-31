@@ -181,19 +181,19 @@ export function populatePolyPresetSelect(): void {
   populatePolyPresetSelectForLane(deps.getActiveEngineLaneId());
 }
 
-/** Apply a non-subtractive engine preset by writing each flat param to the
- *  active lane's engine instance, then refreshing the knob UI. */
+/** Apply a non-subtractive engine preset to the active lane's engine
+ *  instance, then refresh the knob UI.
+ *
+ *  Delegates to `engine.applyPreset(name)` — the SAME path the session/scene
+ *  loader uses (preset-apply.ts::applyPresetToEngine). Each engine owns the
+ *  mapping from its preset JSON keys to its internal state; a generic
+ *  `setBaseValue(jsonKey, value)` loop here is WRONG because some engines'
+ *  preset keys are not setBaseValue ids (tb303: `cutoff`/`envMod`… vs
+ *  `filter.cutoff`/`env.amount`; drums: `kitId`) — those silently no-op,
+ *  which is why changing a 303 preset did nothing. */
 function applyEnginePreset(presetName: string): void {
   const deps = _deps!;
-  const laneId = deps.getActiveEngineLaneId();
-  const instance = deps.getLaneEngineInstance(laneId);
-  if (!instance) return;
-  const preset = instance.presets.find((p) => p.name === presetName);
-  if (!preset) return;
-  for (const [id, value] of Object.entries(preset.params)) {
-    instance.setBaseValue(id, value);
-  }
-  deps.refreshLaneKnobs(laneId);
+  applyEnginePresetForLane(presetName, deps.getActiveEngineLaneId());
 }
 
 /** Apply a non-subtractive engine preset by id to a specific named lane,
@@ -204,11 +204,7 @@ function applyEnginePresetForLane(presetName: string, laneId: string): void {
   if (!deps) return;
   const instance = deps.getLaneEngineInstance(laneId);
   if (!instance) return;
-  const preset = instance.presets.find((p) => p.name === presetName);
-  if (!preset) return;
-  for (const [id, value] of Object.entries(preset.params)) {
-    instance.setBaseValue(id, value);
-  }
+  instance.applyPreset(presetName);
   deps.refreshLaneKnobs(laneId);
 }
 
