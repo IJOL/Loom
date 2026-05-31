@@ -97,3 +97,34 @@ test('record a take → Performance surfaces the recorded clip bands', async ({ 
   await expect(page.locator('.perf-clip').first()).toBeVisible({ timeout: 3_000 });
   expect(await page.locator('.perf-clip').count()).toBeGreaterThan(0);
 });
+
+test('set length → add an automation lane → draw → it persists', async ({ page }) => {
+  await page.goto('/');
+  await waitForBoot(page);
+  await page.locator('[data-mode="performance"]').click();
+
+  // Leave the empty-state by setting a length (no recording needed).
+  const len = page.locator('.perf-length-input');
+  await len.fill('4');
+  await len.dispatchEvent('change');
+
+  // Toolbar present; pick a param and add a lane.
+  await expect(page.locator('.perf-toolbar')).toBeVisible();
+  const sel = page.locator('.perf-auto-param-select').first();
+  await sel.selectOption({ index: 0 });
+  await page.locator('.perf-auto-header .rnd.primary').first().click();
+
+  // An editable lane canvas should now exist; draw on it.
+  const canvas = page.locator('.perf-auto-canvas').first();
+  await expect(canvas).toBeVisible();
+  const box = (await canvas.boundingBox())!;
+  await page.mouse.move(box.x + 10, box.y + 10);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width - 10, box.y + box.height - 10, { steps: 8 });
+  await page.mouse.up();
+
+  // The lane survives a re-render (zoom change).
+  await page.locator('.perf-zoom').fill('120');
+  await page.locator('.perf-zoom').dispatchEvent('input');
+  await expect(page.locator('.perf-auto-canvas').first()).toBeVisible();
+});
