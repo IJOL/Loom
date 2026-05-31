@@ -64,8 +64,6 @@
           <span id="transport-position" class="transport-position">1.1.1</span>
           <span id="transport-time" class="transport-time">00:00:00</span>
         </div>
-        <button class="io" id="loop-toggle" title="Loop on/off">↻ LOOP</button>
-        <button class="io" id="chain-toggle" title="Chain mode">→ CHAIN</button>
         <label>BPM<input id="bpm" type="number" value="130" min="40" max="240" /></label>
         <label>Swing<input id="swing" type="range" min="0" max="0.6" step="0.01" value="0" /></label>
         <label>Volume<input id="volume" type="range" min="0" max="1" step="0.01" value="0.5" /></label>
@@ -80,13 +78,6 @@
           </select>
         </label>
         <div class="vert-divider"></div>
-        <div class="slot-group">
-          <span class="tool-label">Pattern</span>
-          <button class="slot active" data-slot="0">A</button>
-          <button class="slot"        data-slot="1">B</button>
-          <button class="slot"        data-slot="2">C</button>
-          <button class="slot"        data-slot="3">D</button>
-        </div>
         <div class="vert-divider"></div>
         <div class="tool-group" id="pager">
           <span class="tool-label">View</span>
@@ -135,26 +126,10 @@
           <span class="preset-label">Demo</span>
           <button class="rnd primary" id="demo-minimal-techno">Load Minimal Techno</button>
         </div>
-        <div class="preset-row">
-          <span class="preset-label">Drums</span>
-          <select id="preset-drums"></select>
-          <button class="rnd primary" id="preset-drums-load">Load</button>
-        </div>
-        <div class="preset-row">
-          <span class="preset-label">Bass</span>
-          <select id="preset-bass"></select>
-          <button class="rnd primary" id="preset-bass-load">Load</button>
-        </div>
-        <div class="preset-row">
-          <span class="preset-label">Polysynth</span>
-          <select id="preset-melody"></select>
-          <button class="rnd primary" id="preset-melody-load">Load</button>
-        </div>
       </details>
 
       <div class="tab-bar">
         <button class="tab" data-tab="fx">Master FX</button>
-        <button class="tab" data-tab="auto">Automation</button>
       </div>
       <div class="synth-row" id="synth-tabs"></div>
 
@@ -178,10 +153,6 @@
               <option value="square">Square</option>
             </select></label>
           <div id="synth-knobs" class="knob-row"></div>
-          <div class="vert-divider"></div>
-          <div class="section-label">SEQ MODE</div>
-          <button class="rnd" id="bass-mode-step">Step</button>
-          <button class="rnd" id="bass-mode-piano">Piano Roll</button>
         </div>
         <div class="row poly-section">
           <div class="section-label">FX</div>
@@ -249,9 +220,6 @@
           <div class="lane-fx-knobs knob-row"></div>
         </div>
         <div class="row poly-section" id="poly-seq-mode-row">
-          <div class="section-label">SEQ MODE</div>
-          <button class="rnd" id="poly-mode-step">Step</button>
-          <button class="rnd" id="poly-mode-piano">Piano Roll</button>
           <span id="poly-active-label" class="active-edit-label" style="display:none">MAIN</span>
           <select id="poly-target-select" style="display:none"></select>
           <button class="rnd" id="poly-add-track" style="display:none">+ Add Track</button>
@@ -259,24 +227,6 @@
         <div id="poly-tracks" class="tracks"></div>
       </div>
 
-      <div class="page" data-page="auto" hidden>
-        <div class="row tools">
-          <div class="tool-group">
-            <span class="tool-label">Add lane</span>
-            <select id="auto-param-select"></select>
-            <button class="rnd primary" id="auto-add">+ Add</button>
-          </div>
-          <div class="tool-group">
-            <span class="tool-label">Brush</span>
-            <button class="rnd" id="auto-brush-line">Line</button>
-            <button class="rnd" id="auto-brush-flat">Flat</button>
-            <button class="rnd" id="auto-fill-random">Random</button>
-            <button class="rnd" id="auto-fill-ramp">Ramp</button>
-            <button class="rnd" id="auto-fill-half">50%</button>
-          </div>
-        </div>
-        <div id="auto-lanes" class="auto-lanes"></div>
-      </div>
 
       <div class="page" data-page="fx" hidden>
         <!-- SENDS zone: reverb + delay -->
