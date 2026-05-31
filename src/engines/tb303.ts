@@ -15,7 +15,7 @@ import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, type ModulatorVoice } from '../modulation/types';
 import { recordVoiceMods, getCurrentLaneForVoice } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
-import { bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
+import { bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
 import { ConnectionBinder } from '../modulation/connection-binder';
 import { PendingBaseValues } from './pending-base-values';
 import type { KnobHandle } from '../core/knob';
@@ -45,6 +45,16 @@ const PRESET_KEY_TO_SPEC: Record<string, string> = {
   accent:    'env.accent',
   wave:      'osc.wave',
 };
+
+/** Native operating ranges for the TB-303's shared AudioParams, mirroring
+ *  TB303Voice.getAudioParamRange. The engine binder writes shared-scope
+ *  modulation into BiquadFilterNode.frequency (Hz) / .Q — NOT the normalized
+ *  0..1 spec range — so depth=1 produces a full sweep instead of ±1 Hz. */
+function tb303SharedRange(shortId: string): { min: number; max: number } {
+  if (shortId === 'filter.cutoff')    return { min: 80, max: 18000 };
+  if (shortId === 'filter.resonance') return { min: 0,  max: 30 };
+  return { min: 0, max: 1 };
+}
 
 class TB303Voice implements Voice {
   /** Set by TB303Engine.createVoice immediately after construction so
@@ -172,8 +182,28 @@ export class TB303Engine implements SynthEngine {
     const laneId = getCurrentLaneForVoice();
     if (laneId) {
       voice.laneId = laneId;
-      voice.binder = bindVoiceModulators({ laneId, engine: this, voice, voiceMods: this.engineModVoices, ctx });
       this.currentLaneId = laneId;
+      // Shared-scope modulators (the default LFO is scope='shared') target the
+      // synth's shared AudioParams (filter.frequency/Q/amp.gain). The per-voice
+      // binder below EXCLUDES shared→shared connections — it assumes an engine
+      // binder owns them — so without this call an LFO→filter.cutoff was
+      // silently dropped ("LFO on the 303 does nothing", same shape as the
+      // drums bug). rangeLookup maps the normalized spec range to the param's
+      // native units (Hz/Q) so depth=1 is a full sweep.
+      const sharedMods = new Map(
+        [...this.engineModVoices].filter(([id]) => {
+          const m = this.modHost.modulators.find((x) => x.id === id);
+          return (m?.scope ?? (m?.kind === 'lfo' ? 'shared' : 'per-voice')) === 'shared';
+        }),
+      );
+      bindEngineModulators({
+        laneId, engine: this, voiceMods: sharedMods, ctx,
+        rangeLookup: tb303SharedRange,
+      });
+      // Per-voice mods (e.g. a user-added ADSR) still bind through the voice
+      // binder; shared-scope connections are excluded here to avoid double
+      // routing with the engine binder above.
+      voice.binder = bindVoiceModulators({ laneId, engine: this, voice, voiceMods: this.engineModVoices, ctx });
     }
     return voice;
   }
