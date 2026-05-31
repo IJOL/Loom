@@ -45,8 +45,11 @@ describe('ModulationHostImpl.spawnVoice with the LFO plugin registered (app pari
     // throwaway 'lfo-tmp' default (4 Hz).
     expect(v.osc!.frequency.value).toBeCloseTo(7, 3);
 
-    // Mutating the state and polling (what the rAF tick does) must propagate.
-    state.rateHz = 0.5;
+    // Mutating the modulator the host owns (what the rate knob does) and
+    // polling (what the rAF tick does) must propagate to the oscillator.
+    // Note: the host clones its defaults, so the live modulator is
+    // host.modulators[0], not the `state` object passed to the constructor.
+    host.modulators[0].rateHz = 0.5;
     voice!.currentValue();
     expect(v.osc!.frequency.value).toBeCloseTo(0.5, 3);
   });
