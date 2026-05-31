@@ -148,3 +148,20 @@ describe('backToArrangement', () => {
     expect(launches).toContain('tb-303-1:c2');
   });
 });
+
+describe('tickArrangement respects curve.enabled', () => {
+  it('does not apply a disabled global automation curve', () => {
+    const state = emptyArrangementState(120);
+    state.durationSec = 4;
+    state.globalAutomation.push({ paramId: 'fx.reverb.wet', values: [0.9, 0.9, 0.9, 0.9], enabled: false });
+    const ps = createArrangementPlayState();
+    startArrangement(ps, 0);
+    const applied: string[] = [];
+    tickArrangement({
+      ps, state, nowCtx: 0.01, lookaheadSec: 0.1, bpm: 120,
+      onLaunchClip: () => {}, onStopLane: () => {},
+      applyAutomation: (id) => applied.push(id),
+    });
+    expect(applied).not.toContain('fx.reverb.wet');
+  });
+});

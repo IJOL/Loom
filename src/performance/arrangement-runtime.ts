@@ -83,10 +83,12 @@ export function tickArrangement(args: TickArrangementArgs): void {
   for (const lane of state.lanes) {
     if (isLaneOverridden(ps, lane.laneId)) continue;
     for (const curve of lane.automation) {
+      if (curve.enabled === false) continue;
       applyAutomation(curve.paramId, sampleAutomationAt(curve, subIdx));
     }
   }
   for (const curve of state.globalAutomation) {
+    if (curve.enabled === false) continue;
     applyAutomation(curve.paramId, sampleAutomationAt(curve, subIdx));
   }
 }
