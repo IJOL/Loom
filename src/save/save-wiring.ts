@@ -14,6 +14,7 @@ import {
   buildSavedStateV3, applyLoadedStateV3, parseSavedStateV3,
   type SavedStateV3, type SavedStateV3Deps,
 } from './saved-state-v3';
+import type { ArrangementState } from '../performance/performance';
 
 // Phase G: SaveWiringDeps no longer includes direct synth/drums refs.
 // They are resolved at save/load time from lanes.resources.
@@ -33,6 +34,12 @@ export interface SaveWiringDeps {
   masterInsertChain: InsertChain;
   flashButton: (b: HTMLButtonElement, msg: string) => void;
   history: HistoryController<SavedStateV3>;
+  /** Performance view persistence (optional). Wired for save/load only — NOT
+   *  for undo/redo snapshots (recording a take is not an undoable session edit). */
+  getMode?: () => 'session' | 'performance';
+  getArrangement?: () => ArrangementState;
+  setMode?: (m: 'session' | 'performance') => void;
+  setArrangement?: (a: ArrangementState) => void;
 }
 
 function applyLoadedState(data: unknown, deps: SaveWiringDeps): void {

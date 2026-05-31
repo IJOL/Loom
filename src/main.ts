@@ -777,7 +777,7 @@ startVisualizer({ ctx, analyser, vizCanvas });
 // ── Save Manager v2 (see src/save-wiring.ts) ──────────────────────────────
 const history = createHistory<SavedStateV3>({ maxSize: 100 });
 // Phase G: synth/drums replaced by lanes (resolved lazily inside buildSavedStateV3).
-const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
+const saveBaseDeps = {
   ctx, seq, lanes, master,
   volInput, bpmInput, swingInput, waveSel,
   sessionHost,
@@ -788,7 +788,17 @@ const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
   flashButton,
   history,
 };
-const savedStateDeps: SavedStateV3Deps = saveWiringDeps;
+// Save/load persists the Performance take + mode via the feature accessors.
+const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
+  ...saveBaseDeps,
+  getMode: () => performanceFeature.getMode(),
+  getArrangement: () => performanceFeature.arrangement,
+  setMode: (m) => performanceFeature.setMode(m),
+  setArrangement: (a) => performanceFeature.setArrangement(a),
+};
+// History (undo/redo) snapshots session state only — no perf accessors, so a
+// recorded take is never wiped by undoing an unrelated session edit.
+const savedStateDeps: SavedStateV3Deps = saveBaseDeps;
 const historyDeps: HistoryDeps = {
   history,
   snapshot: () => buildSavedStateV3(savedStateDeps),

@@ -6,6 +6,7 @@ import type { LaneAllocator } from '../app/lane-allocator';
 import { LANE_ID_BASS, LANE_ID_DRUMS } from '../core/lane-ids';
 import type { TB303Engine } from '../engines/tb303';
 import type { DrumsEngine } from '../engines/drums-engine';
+import type { ArrangementState } from '../performance/performance';
 
 export interface SavedStateV3 {
   schemaVersion: 3;
@@ -16,6 +17,9 @@ export interface SavedStateV3 {
   wave: Wave;
   synthParams: import('../core/synth').TB303['params'];
   sessionState: SessionState;
+  /** Performance view — optional, absent in older saves. */
+  mode?: 'session' | 'performance';
+  arrangement?: ArrangementState;
 }
 
 // Phase G: SavedStateV3Deps no longer holds direct synth/drums/polysynth
@@ -34,6 +38,12 @@ export interface SavedStateV3Deps {
   fx: import('../core/fx').FxBus;
   masterInsertChain: import('../plugins/fx/insert-chain').InsertChain;
   master: GainNode;
+  /** Performance view persistence — optional; when absent the take is not
+   *  saved/restored (older callers keep working unchanged). */
+  getMode?: () => 'session' | 'performance';
+  getArrangement?: () => ArrangementState;
+  setMode?: (m: 'session' | 'performance') => void;
+  setArrangement?: (a: ArrangementState) => void;
 }
 
 /** Resolve the TB303 instance from the bass lane (null before first allocation). */
@@ -52,7 +62,7 @@ export function buildSavedStateV3(deps: SavedStateV3Deps): SavedStateV3 {
   const { seq, volInput, sessionHost } = deps;
   const synth = getSynth(deps);
   const drums = getDrums(deps);
-  return {
+  const state: SavedStateV3 = {
     schemaVersion: 3,
     bpm: seq.bpm,
     swing: seq.swing,
@@ -62,6 +72,9 @@ export function buildSavedStateV3(deps: SavedStateV3Deps): SavedStateV3 {
     synthParams: synth?.params ? { ...synth.params } : {} as import('../core/synth').TB303['params'],
     sessionState: sessionHost.getStateForSave(),
   };
+  if (deps.getMode) state.mode = deps.getMode();
+  if (deps.getArrangement) state.arrangement = deps.getArrangement();
+  return state;
 }
 
 export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): void {
@@ -98,6 +111,11 @@ export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): voi
   refreshKnobsFromSynth();
   renderLanes();
   fx.setBpmSync(seq.bpm);
+
+  // Performance view (optional — older saves omit these). Restore the take
+  // first so the view has content, then switch to the saved mode.
+  if (s.arrangement && deps.setArrangement) deps.setArrangement(s.arrangement);
+  if (s.mode && deps.setMode) deps.setMode(s.mode);
 }
 
 /** Runtime guard: untrusted JSON (file load, localStorage) → typed shape or null. */
