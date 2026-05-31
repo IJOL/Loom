@@ -1,5 +1,4 @@
 import type { Sequencer } from '../core/sequencer';
-import type { PatternBank } from '../core/pattern';
 
 // ── Per-lane engine management ────────────────────────────────────────────
 // After Phase B every lane already has a SynthEngine in `laneResources`.
@@ -12,7 +11,6 @@ export interface LaneEngineHostState {
 
 export interface LaneEngineHostDeps {
   seq: Sequencer;
-  bank: PatternBank;
   engineSel: HTMLSelectElement;
   /** Called after the engine param panel needs to be re-built. */
   rebuildEngineParamUI: () => void;

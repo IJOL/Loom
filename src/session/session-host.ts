@@ -4,7 +4,6 @@
 
 import type { ChannelStrip } from '../core/fx';
 import type { DrumVoice } from '../core/drums';
-import type { PatternBank } from '../core/pattern';
 import type { PolySynth } from '../polysynth/polysynth';
 import type { Sequencer } from '../core/sequencer';
 import type { MixerColumnDeps } from '../core/mixer';
@@ -62,7 +61,6 @@ import {
 export interface SessionHostDeps {
   ctx: AudioContext;
   seq: Sequencer;
-  bank: PatternBank;
   playBtn: HTMLButtonElement;
   resetAutomationPosition: () => void;
   /** Single per-lane trigger entry — encapsulates engineId dispatch +

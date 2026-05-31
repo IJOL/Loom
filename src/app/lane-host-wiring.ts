@@ -3,7 +3,6 @@ import type { LaneEngineHostState } from '../engines/lane-engine-host';
 
 export interface LaneHostDeps {
   getSeq(): import('../core/sequencer').Sequencer;
-  getBank(): import('../core/pattern').PatternBank;
   getEngineSel(): HTMLSelectElement;
   rebuildEngineParamUI: () => void;
   getLaneLabels(): Record<string, string>;
@@ -22,7 +21,6 @@ export function createLaneHost(deps: LaneHostDeps): LaneHost {
 
   const hostDeps: import('../engines/lane-engine-host').LaneEngineHostDeps = {
     get seq() { return deps.getSeq(); },
-    get bank() { return deps.getBank(); },
     get engineSel() { return deps.getEngineSel(); },
     get rebuildEngineParamUI() { return deps.rebuildEngineParamUI; },
     get laneLabels() { return deps.getLaneLabels(); },

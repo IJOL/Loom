@@ -19,7 +19,6 @@ import { type Wave, type TB303 } from './core/synth';
 import { Sequencer } from './core/sequencer';
 import { DRUM_LANES, type DrumMachine, type DrumVoice } from './core/drums';
 import { ChannelStrip } from './core/fx';
-import { PatternBank } from './core/pattern';
 import { type KnobHandle } from './core/knob';
 import { PolySynth } from './polysynth/polysynth';
 import { stepsToNotes, bassStepsToNotes } from './core/notes';
@@ -27,7 +26,6 @@ import * as laneTrackHelpers from './core/lane-display';
 import { SessionHost } from './session/session-host';
 import { fetchDemoSession } from './demo/demo-loader';
 import { wireDemoPicker } from './demo/demo-picker';
-import { setupInitialPattern, type InitialPatternDeps } from './demo/initial-pattern';
 import { wireMidiImportUI } from './midi/midi-import-ui';
 import { launchScene as launchSceneRuntime } from './session/session-runtime';
 import { applyPresetToEngine } from './presets/preset-apply';
@@ -104,7 +102,6 @@ const automation = createAutomationRecorder();
 const automationRegistry = automation.registry;
 const registerKnob = (k: KnobHandle) => automation.registerKnob(k);
 const currentEngineId = 'subtractive';
-const bank = new PatternBank(32);
 
 // Phase G: LaneAllocatorDeps is master-only; all per-lane strip/engine deps
 // removed. Lanes are allocated lazily via ensureLaneResource() triggered by
@@ -188,7 +185,6 @@ const LANE_LABELS: Record<TrackId, string> = {
 // ── Lane-engine host ──────────────────────────────────────────────────────
 const laneHost = createLaneHost({
   getSeq: () => seq,
-  getBank: () => bank,
   getEngineSel: () => engineSel,
   rebuildEngineParamUI,
   getLaneLabels: () => LANE_LABELS as Record<string, string>,
@@ -344,7 +340,7 @@ const showPolyEditorWrapper = (laneId: string, target: PolySynth, displayName: s
   showPolyEditor(laneId, target, displayName, synthEditorDeps);
 };
 const sessionHost = new SessionHost({
-  ctx, seq, bank, playBtn,
+  ctx, seq, playBtn,
   resetAutomationPosition,
   triggerForLane,
   // Phase G: drums removed — triggerForLane handles drums via engine.createVoice.
@@ -458,10 +454,6 @@ const _origStop = seq.stop.bind(seq);
 seq.start = () => { if (!performanceFeature.onPlay()) _origStart(); };
 seq.stop = () => { if (!performanceFeature.onStop()) _origStop(); };
 
-// Phase G: InitialPatternDeps now only needs seq + bank.
-const initialPatternDeps: InitialPatternDeps = { seq, bank };
-setupInitialPattern(initialPatternDeps);
-// All 4 slots are populated by setupInitialPattern; seq is already pointing at slot 0.
 barsSel.value = String(seq.length);
 
 // ── Deps objects for extracted UI modules ─────────────────────────────────
@@ -570,9 +562,8 @@ sessionHost.onStateApplied(rebuildMasterInserts);
 // mountDrumMasterLaneKnobs(LANE_ID_DRUMS) — see boot section below.
 fxApplyDelaySync(fxUIDeps);
 const transportDeps: TransportDeps = {
-  seq, bank, ctx, playBtn, barsSel,
+  seq, ctx, playBtn,
   resetAutomationPosition,
-  renderLanes,
 };
 wireTransport(transportDeps);
 {
