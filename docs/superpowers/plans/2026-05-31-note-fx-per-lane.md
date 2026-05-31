@@ -691,49 +691,85 @@ git commit -m "feat(notefx): per-lane chain registry + load-on-demo helper"
 
 ---
 
-### Task 7: Wire load-on-demo into lane allocation
+### Task 7: Wire note-FX into the session save + restore paths
 
-This is the fix for "the arp stays on the initial demo's config." The lane allocator already deserializes `engineState.modulators` into the engine's mod host when a lane is (re)allocated on demo load. Add the note-FX equivalent right next to it.
+This is the fix for "the arp stays on the initial demo's config." `SessionHost`
+already (a) serializes each lane's modulators into `engineState.modulators` on
+save in `collectEngineState()` and (b) restores `engineState.modulators` into the
+live engine on demo/session load in `applyLoadedSessionState()`. Add the note-FX
+equivalent in BOTH places, reading/writing the per-lane `NoteFxChain` from the
+registry.
 
 **Files:**
-- Modify: `src/app/lane-allocator.ts` (next to the existing `engineState?.modulators` → `res.engine.modulators.deserialize(...)` block — **confirm exact line; it was ~L220** at spec time)
+- Modify: `src/session/session-host.ts`
+  - `collectEngineState()` — currently `src/session/session-host.ts:276-291`; the
+    modulators-serialize block is at `:287-289`.
+  - `applyLoadedSessionState()` restore loop — the modulators-restore block is at
+    `src/session/session-host.ts:302-307`
+    (`const mods = lane.engineState?.modulators; … host.deserialize(mods)`).
+  - **Locate by content, not line** — quoted below.
 
-- [ ] **Step 1: Locate the modulators deserialize block**
+- [ ] **Step 1: Add the import**
 
-Run: `NO_COLOR=1 npx vitest run` is not needed yet. Open `src/app/lane-allocator.ts` and find:
-
-```ts
-const modulators = engineState?.modulators;
-if (modulators && Array.isArray(modulators)) {
-  res.engine.modulators.deserialize(modulators);
-}
-```
-
-- [ ] **Step 2: Add the note-FX load immediately after it**
+At the top of `src/session/session-host.ts`, add:
 
 ```ts
-// Load the lane's note-FX chain from saved state so it follows the demo
-// (fixes the global-arp bug where note-FX kept the first demo's config).
-loadNoteFxForLane(laneId, engineState?.noteFx);
+import { getNoteFxChain, loadNoteFxForLane } from '../notefx/notefx-registry';
 ```
 
-Add the import at the top of `src/app/lane-allocator.ts`:
+- [ ] **Step 2: Save side — mirror the chain in `collectEngineState()`**
+
+Find this block in `collectEngineState()`:
 
 ```ts
-import { loadNoteFxForLane } from '../notefx/notefx-registry';
+        if (!lane.engineState) lane.engineState = {};
+        lane.engineState.modulators =
+          host.serialize() as import('../modulation/types').ModulatorState[];
+      }
 ```
 
-- [ ] **Step 3: Typecheck + full suite**
+Immediately after the closing `}` of the `if (host)` block (still inside the
+`for (const lane of this.state.lanes)` loop), add:
+
+```ts
+      // Mirror the lane's note-FX chain so it persists on save.
+      if (!lane.engineState) lane.engineState = {};
+      lane.engineState.noteFx = getNoteFxChain(lane.id).serialize();
+```
+
+- [ ] **Step 3: Restore side — load the chain in `applyLoadedSessionState()`**
+
+Find this block in the restore loop:
+
+```ts
+      // Restore modulator state.
+      const mods = lane.engineState?.modulators;
+      if (mods) {
+        const host = (engine as { modulators?: { deserialize(s: unknown[]): void } } | undefined)?.modulators;
+        if (host) host.deserialize(mods);
+      }
+```
+
+Immediately after it, add:
+
+```ts
+      // Restore the lane's note-FX chain so it follows the loaded demo
+      // (fixes the global-arp bug where note-FX kept the first demo's config).
+      loadNoteFxForLane(lane.id, lane.engineState?.noteFx);
+```
+
+- [ ] **Step 4: Typecheck + full suite**
 
 Run: `npx tsc --noEmit`
 Run: `NO_COLOR=1 npx vitest run`
-Expected: PASS, PASS (no behavior change yet — nothing reads the chain in the trigger path until Task 8).
+Expected: PASS, PASS (no audible change yet — nothing reads the chain in the
+trigger path until Task 8).
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add src/app/lane-allocator.ts
-git commit -m "feat(notefx): load per-lane note-FX chain on lane allocation"
+git add src/session/session-host.ts
+git commit -m "feat(notefx): persist + restore per-lane note-FX chain across demo loads"
 ```
 
 ---
