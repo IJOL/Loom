@@ -114,7 +114,10 @@ export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): voi
 
   // Performance view (optional — older saves omit these). Restore the take
   // first so the view has content, then switch to the saved mode.
-  if (s.arrangement && deps.setArrangement) deps.setArrangement(s.arrangement);
+  if (s.arrangement && deps.setArrangement) {
+    migrateArrangementCurves(s.arrangement);
+    deps.setArrangement(s.arrangement);
+  }
   if (s.mode && deps.setMode) deps.setMode(s.mode);
 }
 
@@ -124,4 +127,21 @@ export function parseSavedStateV3(raw: unknown): SavedStateV3 | null {
   const r = raw as Record<string, unknown>;
   if (r.schemaVersion !== 3) return null;
   return r as unknown as SavedStateV3;
+}
+
+/** Older performance takes stored automation as `samples` with no flags.
+ *  Normalize to the painter-compatible `{ values, enabled, stepped }` shape and
+ *  backfill `lengthBars`. Mutates in place. */
+export function migrateArrangementCurves(arr: ArrangementState): void {
+  if (typeof (arr as { lengthBars?: number }).lengthBars !== 'number') {
+    (arr as { lengthBars: number }).lengthBars = 0;
+  }
+  const fix = (c: { samples?: number[]; values?: number[]; enabled?: boolean; stepped?: boolean }) => {
+    if (!c.values && Array.isArray(c.samples)) { c.values = c.samples; delete c.samples; }
+    if (!c.values) c.values = [];
+    if (c.enabled === undefined) c.enabled = true;
+    if (c.stepped === undefined) c.stepped = false;
+  };
+  for (const lane of arr.lanes ?? []) for (const c of lane.automation ?? []) fix(c);
+  for (const c of arr.globalAutomation ?? []) fix(c);
 }

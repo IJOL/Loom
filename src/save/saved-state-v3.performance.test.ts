@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseSavedStateV3 } from './saved-state-v3';
+import { parseSavedStateV3, migrateArrangementCurves } from './saved-state-v3';
 
 describe('parseSavedStateV3 with arrangement + mode', () => {
   it('accepts a v3 save that includes the new arrangement and mode fields', () => {
@@ -86,5 +86,21 @@ describe('SavedStateV3 persists mode + arrangement', () => {
     applyLoadedStateV3(save, deps);
     expect(appliedMode).toBe('performance');
     expect(appliedArr?.durationSec).toBe(4);
+  });
+});
+
+describe('arrangement curve migration', () => {
+  it('renames legacy samples->values and defaults flags', () => {
+    const arr: any = {
+      bpm: 120, durationSec: 4, lengthBars: 0,
+      lanes: [{ laneId: 'tb-303-1', clipEvents: [], automation: [{ paramId: 'tb-303-1.cutoff', samples: [0.1, 0.2] }] }],
+      globalAutomation: [{ paramId: 'fx.reverb.wet', samples: [0.3] }],
+    };
+    migrateArrangementCurves(arr);
+    expect(arr.lanes[0].automation[0].values).toEqual([0.1, 0.2]);
+    expect(arr.lanes[0].automation[0].samples).toBeUndefined();
+    expect(arr.lanes[0].automation[0].enabled).toBe(true);
+    expect(arr.globalAutomation[0].values).toEqual([0.3]);
+    expect(arr.lengthBars).toBe(0);
   });
 });
