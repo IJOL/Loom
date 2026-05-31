@@ -85,15 +85,18 @@ export class ModulationHostImpl implements ModulationHost {
     for (const m of this.modulators) {
       if (!m.enabled) continue;
       if (!predicate(m)) continue;
+      // Built-in modulators MUST be constructed with the live `m` state so the
+      // UI's rate/waveform edits and the rAF currentValue() poll reach the
+      // actual oscillator/envelope. The plugin registry's create(ctx, bpm)
+      // signature can't receive `m`, so a registry-made instance is a
+      // stateless stub (its LFOVoice uses a throwaway state and the wrapper's
+      // currentValue() returns 0) — never route lfo/adsr through it.
+      if (m.kind === 'lfo')  { out.set(m.id, new LFOVoice(ctx, m, bpm)); continue; }
+      if (m.kind === 'adsr') { out.set(m.id, new ADSRVoice(ctx, m));     continue; }
+      // Unknown/custom kinds: best-effort via the plugin registry. Live state
+      // sync is unsupported until the modulator SPI carries `state`.
       const inst = createInstance('modulator', m.kind, ctx, bpm());
-      if (inst) {
-        out.set(m.id, modulatorInstanceAsVoice(inst, m));
-        continue;
-      }
-      // fallback: direct construction for built-in lfo/adsr kinds
-      out.set(m.id, m.kind === 'lfo'
-        ? new LFOVoice(ctx, m, bpm)
-        : new ADSRVoice(ctx, m));
+      if (inst) out.set(m.id, modulatorInstanceAsVoice(inst, m));
     }
     return out;
   }
