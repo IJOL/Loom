@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **tb303-synth** (6993 symbols, 15306 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **tb303-synth** (6059 symbols, 14364 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -39,25 +39,5 @@ This project is indexed by GitNexus as **tb303-synth** (6993 symbols, 15306 rela
 | Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
 | Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
-| Work in the Engines area (361 symbols) | `.claude/skills/generated/engines/SKILL.md` |
-| Work in the App area (118 symbols) | `.claude/skills/generated/app/SKILL.md` |
-| Work in the Session area (116 symbols) | `.claude/skills/generated/session/SKILL.md` |
-| Work in the Modulation area (65 symbols) | `.claude/skills/generated/modulation/SKILL.md` |
-| Work in the Polysynth area (45 symbols) | `.claude/skills/generated/polysynth/SKILL.md` |
-| Work in the Save area (33 symbols) | `.claude/skills/generated/save/SKILL.md` |
-| Work in the Automation area (32 symbols) | `.claude/skills/generated/automation/SKILL.md` |
-| Work in the Performance area (31 symbols) | `.claude/skills/generated/performance/SKILL.md` |
-| Work in the Plugins area (27 symbols) | `.claude/skills/generated/plugins/SKILL.md` |
-| Work in the Clip-editors area (24 symbols) | `.claude/skills/generated/clip-editors/SKILL.md` |
-| Work in the Midi area (23 symbols) | `.claude/skills/generated/midi/SKILL.md` |
-| Work in the Arp area (22 symbols) | `.claude/skills/generated/arp/SKILL.md` |
-| Work in the Copy area (21 symbols) | `.claude/skills/generated/copy/SKILL.md` |
-| Work in the Fx area (19 symbols) | `.claude/skills/generated/fx/SKILL.md` |
-| Work in the Samples area (17 symbols) | `.claude/skills/generated/samples/SKILL.md` |
-| Work in the Test area (9 symbols) | `.claude/skills/generated/test/SKILL.md` |
-| Work in the Presets area (9 symbols) | `.claude/skills/generated/presets/SKILL.md` |
-| Work in the Cluster_121 area (8 symbols) | `.claude/skills/generated/cluster-121/SKILL.md` |
-| Work in the Cluster_71 area (7 symbols) | `.claude/skills/generated/cluster-71/SKILL.md` |
-| Work in the Scripts area (6 symbols) | `.claude/skills/generated/scripts/SKILL.md` |
 
 <!-- gitnexus:end -->
