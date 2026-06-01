@@ -29,8 +29,13 @@ const SCALE_INTERVALS: Record<ArpScale, number[]> = {
 function buildPool(root: number, scale: ArpScale, octaves: number): number[] {
   const intervals = SCALE_INTERVALS[scale];
   const pool: number[] = [];
-  for (let oct = 0; oct < octaves; oct++) {
-    for (const iv of intervals) pool.push(root + iv + oct * 12);
+  // Octave-FIRST ordering: for each scale degree, emit it across ALL octaves
+  // before moving to the next degree. This makes the OCT control audible even
+  // on short notes (which only emit a few arp steps) — with the old
+  // octave-LAST ordering the first steps never left octave 0, so OCT 1 vs 2+
+  // sounded identical. For octaves === 1 this is the plain scale walk (no change).
+  for (const iv of intervals) {
+    for (let oct = 0; oct < octaves; oct++) pool.push(root + iv + oct * 12);
   }
   return pool;
 }
