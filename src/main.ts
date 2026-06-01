@@ -41,7 +41,6 @@ import {
   wirePolyControls, refreshPolyPresetSelect,
   type PolySynthPresetsDeps,
 } from './polysynth/polysynth-presets';
-import { buildArpUI, type ArpUIDeps } from './arp/arp-ui';
 import { wireRandomizeUI } from './core/randomize-ui';
 import { wireFxUI, applyDelaySync as fxApplyDelaySync, type FxUIDeps } from './core/fx-ui';
 import { wireTransport, type TransportDeps } from './core/transport';
@@ -538,15 +537,6 @@ synthEditorDeps = {
 // mountSubtractiveLaneKnobs(LANE_ID_POLY) — see boot section below.
 
 
-const arpUIDeps: ArpUIDeps = {
-  getScopeLanes: () => sessionHost.state.lanes
-    .filter((l) => l.engineId !== 'drums-machine')
-    .map((l) => ({ id: l.id, name: l.name ?? l.id })),
-  // Late-bound via getter so historyDeps is resolved at event-fire time.
-  get historyDeps() { return _discreteHistoryDeps; },
-};
-// First build with whatever lanes exist now (built-ins only); a second build
-// runs after the demo loads so dynamically-added lanes (Sub 2 etc.) show up.
 const fxUIDeps: FxUIDeps = {
   ctx, fx, masterInsertChain, masterComp, getBpm: () => seq.bpm, registerKnob,
   // Late-bound via getter so historyDeps is resolved at event-fire time.
@@ -669,11 +659,9 @@ presetsLoaded
   .then((state) => {
     sessionHost.applyLoadedSessionState(state);
     history.clear();
-    buildArpUI(arpUIDeps);
   })
   .catch((err: unknown) => {
     console.error('Demo load failed; falling back to empty session.', err);
-    buildArpUI(arpUIDeps);
   });
 
 // Demo picker: lets the user swap in any baked demo session (the auto-loaded

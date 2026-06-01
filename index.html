@@ -45,7 +45,6 @@
       .synth > .synth-row    { order: 2; }
       .synth > .page         { order: 3; }
       .synth > .session-view { order: 4; }
-      .synth > .arp-panel    { order: 5; }
       /* Hide legacy PolySynth LFO1/LFO2 knob sections — the per-lane
          modulators panel replaces them functionally. */
       .row.poly-section:has(#poly-lfo1-knobs),
@@ -260,11 +259,6 @@
           </div>
         </div>
       </div>
-
-      <details class="arp-panel">
-        <summary>Arpeggiator</summary>
-        <div id="poly-arp-controls" class="knob-row"></div>
-      </details>
 
       <details class="copy-track-panel">
         <summary>Copy lane</summary>

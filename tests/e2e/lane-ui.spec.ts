@@ -76,21 +76,6 @@ test.describe('preset selection', () => {
   });
 });
 
-test.describe('arpeggiator scope UI', () => {
-  test('lists active session lanes (no drum lanes), no legacy "MAIN"', async ({ page }) => {
-    await page.goto('/');
-    await page.locator('button.session-lane-tab[data-lane-id="subtractive-1"]').click();
-    const labels = await page.evaluate(() =>
-      [...document.querySelectorAll('.arp-scope label')].map((l) => l.textContent?.trim()),
-    );
-    expect(labels).toContain('303 1');
-    expect(labels).toContain('Sub 1');
-    expect(labels).toContain('Sub 2');
-    expect(labels).not.toContain('MAIN');
-    expect(labels).not.toContain('Drums 1'); // drums excluded from arp
-  });
-});
-
 test.describe('mixer mutes', () => {
   test('clicking the M button on the Sub 1 column toggles its active class', async ({ page }) => {
     await page.goto('/');
