@@ -1224,15 +1224,162 @@ Expected: ~8 commits listed; working tree clean (only `build/` untracked, which 
 
 ---
 
+### Task 10: Bootstrap LoomN as a self-sufficient Claude Code project (the "move")
+
+This is the **handoff task**. After it, a Claude Code session opened in `C:/Users/nacho/git/LoomN`
+has everything it needs — project instructions, the spec, every plan, and the seeded memories — so
+Phase 2 onward continues from inside LoomN. The live chat transcript stays in the `tb303-synth`
+project as a historical record (Claude Code has no "move session"; the portable context is the
+spec + plans + CLAUDE.md + memories, which this task installs into LoomN).
+
+**Files:**
+- Create: `C:/Users/nacho/git/LoomN/CLAUDE.md`
+- Create: `C:/Users/nacho/git/LoomN/docs/superpowers/specs/2026-06-01-cpp-juce-migration-design.md` (copied)
+- Create: `C:/Users/nacho/git/LoomN/docs/superpowers/plans/2026-06-01-loomn-foundation-core-model.md` (copied)
+- Create: `C:/Users/nacho/.claude/projects/c--Users-nacho-git-LoomN/memory/MEMORY.md` (fresh index)
+- Create: `C:/Users/nacho/.claude/projects/c--Users-nacho-git-LoomN/memory/project-migration-status.md` (seeded fact)
+
+- [ ] **Step 1: Copy the spec and this plan into LoomN's docs tree**
+
+Run:
+```powershell
+New-Item -ItemType Directory -Force 'C:/Users/nacho/git/LoomN/docs/superpowers/specs' | Out-Null
+New-Item -ItemType Directory -Force 'C:/Users/nacho/git/LoomN/docs/superpowers/plans' | Out-Null
+Copy-Item 'C:/Users/nacho/git/tb303-synth/docs/superpowers/specs/2026-06-01-cpp-juce-migration-design.md' 'C:/Users/nacho/git/LoomN/docs/superpowers/specs/'
+Copy-Item 'C:/Users/nacho/git/tb303-synth/docs/superpowers/plans/2026-06-01-loomn-foundation-core-model.md' 'C:/Users/nacho/git/LoomN/docs/superpowers/plans/'
+```
+Expected: both files exist under `LoomN/docs/superpowers/`. Confirm with
+`Get-ChildItem -Recurse 'C:/Users/nacho/git/LoomN/docs'`.
+
+- [ ] **Step 2: Write `LoomN/CLAUDE.md`**
+
+Create `C:/Users/nacho/git/LoomN/CLAUDE.md`:
+```markdown
+# CLAUDE.md — LoomN
+
+## What this is
+
+**LoomN** — the native (C++/JUCE) port of **Loom** (the browser-based Web Audio workstation that
+lives in the sibling repo `../tb303-synth`). One codebase targets a standalone Windows `.exe` and a
+VST3 plugin. Synthesis runs on the real-time audio thread; the UI is native JUCE.
+
+This repo was bootstrapped from the `tb303-synth` Claude Code session on 2026-06-01 after Phase 1.
+The migration spec and all implementation plans live under `docs/superpowers/`.
+
+## Migration ground rules (decided during brainstorming — do not relitigate)
+
+- **Stack:** C++17 / JUCE 8 / CMake. Toolchain: **MSVC (VS Build Tools 2022)**, Visual Studio
+  generator — **ninja is NOT installed**, always pass `--config Debug`/`-C Debug`.
+- **Delivery:** vertical slice first (TB-303 + drums sequenced, sample-accurate, sounds), then
+  engines/FX/mods ported one-by-one behind a registry.
+- **Data:** reuse the web project's formats 1:1 — session JSON (`schemaVersion 3`),
+  `public/presets/<engine>.json`, MIDI demos. The web repo `../tb303-synth` is the asset source
+  and reference; there is NO build dependency back onto it.
+- **DSP:** lean on libraries (JUCE `dsp` + STK/etc.) behind thin wrappers.
+- **Sound parity is NOT a goal** — sounding different from the web version is expected and fine.
+  No golden-WAV target, no re-tuning pass. Only the TB-303 *behaviour* (slide skips re-attack,
+  accent bumps env+Q+gain) is ported deliberately.
+
+## Architecture (target)
+
+`core/` (pure model + timing + JSON, no JUCE, unit-tested) · `registry/` (compile-time
+auto-registration) · `engine/` · `modulation/` · `fx/` · `mix/` · `transport/` ·
+`app/` (one `juce::AudioProcessor` = standalone AND VST3) · `ui/` (JUCE `LookAndFeel`).
+
+## Commands
+
+```powershell
+cmake -S . -B build
+cmake --build build --config Debug
+ctest --test-dir build -C Debug --output-on-failure
+```
+
+`loom_core` is JUCE-free and unit-tested in isolation (Catch2). JSON via nlohmann/json.
+
+## Status
+
+- **Phase 1 DONE** (this repo's initial history): scaffold + JUCE de-risk + `loom_core` JSON model.
+- **Next: Phase 2** — Transport + LaneScheduler (sample-accurate, slide/accent), still JUCE-free.
+  Write the Phase 2 plan with `superpowers:writing-plans`, reading the spec in `docs/superpowers/`.
+```
+
+- [ ] **Step 3: Seed LoomN's Claude Code memory directory**
+
+Run (pre-creates the project memory dir Claude Code will use when opened in LoomN):
+```powershell
+New-Item -ItemType Directory -Force 'C:/Users/nacho/.claude/projects/c--Users-nacho-git-LoomN/memory' | Out-Null
+```
+
+Create `C:/Users/nacho/.claude/projects/c--Users-nacho-git-LoomN/memory/project-migration-status.md`:
+```markdown
+---
+name: project-migration-status
+description: LoomN is the C++/JUCE native port of Loom; Phase 1 done, Phase 2 (transport/scheduler) next
+metadata:
+  type: project
+---
+
+LoomN = native C++/JUCE port of Loom (web repo at `../tb303-synth`). Bootstrapped from the
+tb303-synth Claude Code session on 2026-06-01 after Phase 1. Spec + plans live in
+`docs/superpowers/`. Ground rules (locked, see CLAUDE.md): JUCE 8 / CMake / MSVC (VS generator,
+NO ninja — always `--config Debug`); vertical-slice delivery; reuse web JSON/preset/MIDI 1:1;
+library DSP; **sound parity NOT a goal**. JSON = nlohmann/json, tests = Catch2 v3 (both FetchContent).
+
+Phase 1 (scaffold + JUCE de-risk + JUCE-free `loom_core` that parses session JSON to typed structs)
+is this repo's initial commit history. **Next: Phase 2 — Transport + LaneScheduler (sample-accurate,
+slide/accent), still JUCE-free, unit-tested with a simulated block clock.** Write the Phase 2 plan
+via `superpowers:writing-plans` from the spec.
+```
+
+Create `C:/Users/nacho/.claude/projects/c--Users-nacho-git-LoomN/memory/MEMORY.md`:
+```markdown
+- [Migration status](project-migration-status.md) — LoomN = C++/JUCE native port of Loom; Phase 1 (scaffold+loom_core JSON model) done, Phase 2 (transport/scheduler) next. Ground rules in CLAUDE.md: JUCE/CMake/MSVC no-ninja, reuse web JSON 1:1, parity NOT a goal.
+```
+
+- [ ] **Step 4: Commit the docs + CLAUDE.md into the LoomN repo**
+
+Run:
+```powershell
+git -C C:/Users/nacho/git/LoomN add CLAUDE.md docs
+git -C C:/Users/nacho/git/LoomN commit -m @'
+docs: bootstrap LoomN as a standalone project (CLAUDE.md + spec + plan)
+
+Installs the portable context (project instructions, migration spec, Phase 1
+plan) so a Claude Code session opened in LoomN can continue from Phase 2.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+'@
+```
+Expected: commit created. (The seeded `~/.claude/.../memory/` files live outside the repo and are
+not committed — they are Claude Code session state, not project source.)
+
+- [ ] **Step 5: Verify the handoff is complete**
+
+Run:
+```powershell
+Test-Path 'C:/Users/nacho/git/LoomN/CLAUDE.md'
+Test-Path 'C:/Users/nacho/git/LoomN/docs/superpowers/specs/2026-06-01-cpp-juce-migration-design.md'
+Test-Path 'C:/Users/nacho/git/LoomN/docs/superpowers/plans/2026-06-01-loomn-foundation-core-model.md'
+Test-Path 'C:/Users/nacho/.claude/projects/c--Users-nacho-git-LoomN/memory/MEMORY.md'
+```
+Expected: all four print `True`.
+
+> **After this task:** open a new Claude Code session rooted in `C:/Users/nacho/git/LoomN` (or via
+> the `loom.code-workspace` with LoomN focused) and invoke `superpowers:writing-plans` to author
+> the Phase 2 plan. This `tb303-synth` session's work on LoomN is complete.
+
+---
+
 ## Phase exit criteria (the "done" definition for Phase 1)
 
 - `C:/Users/nacho/git/LoomN` is its own git repo with a clean history of small commits.
 - `cmake -S … -B … && cmake --build … --config Debug && ctest -C Debug` is green from a clean checkout.
 - JUCE 8 is proven to compile under MSVC (the `juce_check` target builds and runs).
 - `loom_core` (JUCE-free) parses the real `minimal-techno.json` demo into typed structs: lanes, clips, notes, engineState params, preset names, envelopes, scenes.
-- The `loom.code-workspace` joins both repos with `tb303-synth` primary.
+- The `loom.code-workspace` joins both repos.
+- **LoomN is a self-sufficient Claude Code project:** `CLAUDE.md` + the spec + this plan live in the repo, and LoomN's Claude Code memory dir is seeded. Development moves into LoomN for Phase 2.
 
-**Next phase (separate plan):** Phase 2 — Transport + LaneScheduler (sample-accurate, slide/accent), still JUCE-free and unit-tested with a simulated block clock. Then Phase 3 (DSP engines), Phase 4 (JUCE AudioProcessor + WASAPI + VST3), Phase 5 (native UI).
+**Next phase (separate plan, authored from inside LoomN):** Phase 2 — Transport + LaneScheduler (sample-accurate, slide/accent), still JUCE-free and unit-tested with a simulated block clock. Then Phase 3 (DSP engines), Phase 4 (JUCE AudioProcessor + WASAPI + VST3), Phase 5 (native UI).
 
 ---
 
@@ -1241,9 +1388,10 @@ Expected: ~8 commits listed; working tree clean (only `build/` untracked, which 
 **1. Spec coverage (Section 0 + the parts of Sections 1/3 this phase touches):**
 - Section 0 "new separate repo LoomN" → Task 1. ✓
 - Section 0 "own git repository (git init)" → Task 1 Step 1. ✓
-- Section 0 "VS Code multi-root workspace, tb303-synth primary" → Task 9. ✓
-- Section 0 "Claude Code driven from tb303-synth via absolute paths + git -C" → every command. ✓
+- Section 0 "VS Code multi-root workspace" → Task 9. ✓
+- Section 0 "Phase 1 driven from tb303-synth via absolute paths + git -C" → every command. ✓
 - Section 0 "first task = scaffold LoomN" → Task 1. ✓
+- Section 0 "last task bootstraps LoomN as a standalone Claude Code project (CLAUDE.md + copy spec/plans + seed memory dir), then development moves into LoomN" → Task 10. ✓
 - Section 1 "registry compile-time" / Section 3 "transport/scheduler" / DSP / UI → explicitly deferred to later phases (stated in exit criteria). ✓ (intentional phase boundary, not a gap)
 - Section 3 "core/ pure model mirroring SessionState, no JUCE, unit-tested" → Tasks 4–8. ✓
 - Section 5 "loom_core static lib, no JUCE; Catch2; CMake; MSVC" → Tasks 2, 4. ✓

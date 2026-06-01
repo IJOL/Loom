@@ -45,32 +45,45 @@ The native app lives in a **new, separate project** — not a branch or worktree
 
 - **New project:** `C:\Users\nacho\git\LoomN` ("N" for native). Its **own git repository**
   (`git init`), independent history, C++/JUCE/CMake from scratch.
-- **The web project stays put:** `C:\Users\nacho\git\tb303-synth` is untouched. It remains both
-  (a) the source of session JSON, `public/presets/<engine>.json`, and MIDI demos that LoomN
-  reuses 1:1, and (b) — the actual reason for the shared workspace — **the Claude Code project
-  root**, so the assistant's session transcripts and accumulated project memories are not lost.
-- **Claude Code session/memory continuity (the meaning of "para no perder las sesiones"):**
-  Claude Code keys its transcripts and memory by project path
-  (`~/.claude/projects/c--Users-nacho-git-tb303-synth/`). Opening Claude Code directly inside
-  `LoomN` would create a *different* project with none of this history. Therefore **all LoomN
-  development is driven from this `tb303-synth`-rooted session**: LoomN files are created/edited
-  via absolute paths and its commits use `git -C C:\Users\nacho\git\LoomN …`. The session history
-  and `memory/` carry forward unchanged.
+- **The web project stays put:** `C:\Users\nacho\git\tb303-synth` is untouched and remains the
+  source of session JSON, `public/presets/<engine>.json`, and MIDI demos that LoomN reuses 1:1.
+
+### Claude Code session: bootstrap-and-move (the meaning of "no perder las sesiones")
+
+Claude Code keys its transcripts and memory by project path
+(`~/.claude/projects/c--Users-nacho-git-tb303-synth/`). Opening Claude Code inside `LoomN` would
+start a *fresh* project with none of this history. There is **no built-in "move session"**, and
+the live chat transcript cannot reliably follow the assistant to another project. What *is*
+portable is the distilled context: the **spec, the plans, the CLAUDE.md, and the project
+memories**. So the strategy is **bootstrap-then-move**, not "stay rooted forever":
+
+1. **Phase 1 runs from this `tb303-synth`-rooted session.** During Phase 1, having the web TS
+   source and the demo/preset JSON at hand is genuinely useful (copying fixtures, comparing
+   shapes). LoomN files are created via absolute paths; commits use `git -C C:\Users\nacho\git\LoomN …`.
+2. **The final task of Phase 1 bootstraps LoomN as a self-sufficient Claude Code project:** it
+   writes a `LoomN/CLAUDE.md`, copies the spec + all plans into `LoomN/docs/superpowers/`, and
+   seeds LoomN's Claude Code memory directory
+   (`~/.claude/projects/c--Users-nacho-git-LoomN/memory/`) with the migration memories + a fresh
+   `MEMORY.md` index.
+3. **From Phase 2 onward (pure C++), work moves into a Claude Code session opened in `LoomN`.**
+   This conversation stays here as the historical record; the new session picks up from the
+   spec/plans/memories now living in LoomN.
+
 - **VS Code multi-root workspace** at a stable path (e.g.
-  `C:\Users\nacho\git\loom.code-workspace`) with two folders: `tb303-synth` (primary/root) and
-  `LoomN`. Both open together; the primary folder keeps the Claude Code project rooted in
-  `tb303-synth` while LoomN code stays visible and editable.
+  `C:\Users\nacho\git\loom.code-workspace`) with two folders: `tb303-synth` and `LoomN`. Both stay
+  visible regardless of which one Claude Code is rooted in, so the web source remains a reference
+  while porting.
 - **Asset reuse, not duplication (initially):** LoomN reads presets/sessions/demos from the
   `tb303-synth` tree during development via a configurable path; productionizing how assets are
   packaged into the binary (`BinaryData` vs copied-on-build) is decided during planning. The two
   repos stay decoupled — no build dependency from LoomN back onto `tb303-synth`.
-- **Tooling note:** GitNexus stays rooted at `tb303-synth` and indexes the TypeScript source only;
-  it will not track LoomN's C++. That is fine — it remains useful for referencing the web source
-  while porting, but is not a code-intelligence layer for LoomN.
+- **Tooling note:** GitNexus indexes the `tb303-synth` TypeScript source only; it will not track
+  LoomN's C++. It remains useful for referencing the web source while porting, but is not a
+  code-intelligence layer for LoomN.
 
-The implementation plan's **first task** is scaffolding `LoomN` (git init + CMake skeleton +
-JUCE dependency + the `.code-workspace`) so every later task has a home — all executed from this
-`tb303-synth`-rooted session.
+The implementation plan's **first task** is scaffolding `LoomN` (git init + CMake skeleton + JUCE
+dependency); its **last task** bootstraps LoomN as a standalone Claude Code project and the
+shared `.code-workspace`, after which development continues from within `LoomN`.
 
 ---
 
