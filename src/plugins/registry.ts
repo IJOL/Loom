@@ -15,6 +15,8 @@ export function getPlugin(kind: PluginKind, id: string): PluginFactory | undefin
   return plugins.get(key(kind, id));
 }
 
+export function listPlugins<K extends PluginKind>(kind: K): Extract<PluginFactory, { kind: K }>[];
+export function listPlugins(): PluginFactory[];
 export function listPlugins(kind?: PluginKind): PluginFactory[] {
   const all = Array.from(plugins.values());
   return kind ? all.filter((p) => p.kind === kind) : all;

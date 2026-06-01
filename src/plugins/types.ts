@@ -2,7 +2,7 @@ import type { EngineParamSpec } from '../engines/engine-params';
 import type { VoiceTriggerOptions } from '../engines/engine-types';
 import type { ModulatorState } from '../modulation/types';
 
-export type PluginKind = 'synth' | 'fx' | 'modulator';
+export type PluginKind = 'synth' | 'fx' | 'modulator' | 'notefx';
 
 /** Alias the unified param spec under a kind-neutral name. EngineParamSpec
  *  stays the canonical type. */
@@ -62,10 +62,19 @@ export interface ModulatorInstance {
   dispose(): void;
 }
 
+export interface NoteFxManifest { id: string; name: string; kind: 'notefx'; version: string; }
+export interface NoteFxFactory {
+  kind: 'notefx';
+  manifest: NoteFxManifest;
+  /** Returns default params for a fresh instance of this note-FX. */
+  defaultParams(): Record<string, number | string>;
+}
+
 export type PluginFactory =
   | { kind: 'synth';     manifest: PluginManifest;
       create(ctx: AudioContext, output: AudioNode): SynthInstance }
   | { kind: 'fx';        manifest: PluginManifest;
       create(ctx: AudioContext): FxInstance }
   | { kind: 'modulator'; manifest: PluginManifest;
-      create(ctx: AudioContext, bpm: number): ModulatorInstance };
+      create(ctx: AudioContext, bpm: number): ModulatorInstance }
+  | NoteFxFactory;
