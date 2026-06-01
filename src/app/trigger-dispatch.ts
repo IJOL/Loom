@@ -1,8 +1,7 @@
 import { setCurrentLaneForVoice } from '../modulation/active-mods';
-import { scheduleArpForNote } from '../arp/arp';
+import { getNoteFxChain } from '../notefx/notefx-registry';
 import type { LaneResourceMap } from '../core/lane-resources';
 import type { Sequencer } from '../core/sequencer';
-import type { arp as ArpSingleton } from '../arp/arp-ui';
 
 export type TriggerForLane = (
   laneId: string, note: number, time: number, gate: number,
@@ -13,9 +12,6 @@ export type TriggerForLane = (
 export interface TriggerDispatchDeps {
   ctx: AudioContext;
   laneResources: LaneResourceMap;
-  // Phase G: drums: DrumMachine removed — drums-machine lanes trigger via
-  // res.engine.createVoice() just like every other engine.
-  arp: typeof ArpSingleton;
   seq: Sequencer;
 }
 
@@ -32,12 +28,14 @@ export function createTriggerForLane(deps: TriggerDispatchDeps): TriggerForLane 
       v.trigger(m, t, { gateDuration: g, accent: a, slide: sl, sample });
     };
 
-    // Audio clips (loop/song) are not arpeggiated — fire the buffer directly.
-    if (sample == null && deps.arp.enabled && deps.arp.scope.includes(laneId) && engineId !== 'drums-machine') {
-      scheduleArpForNote(
-        (m, t, g, a) => fire(m, t, g, a, false),
-        deps.arp, deps.seq.bpm, note, time, gate, accent,
-      );
+    // Audio clips bypass note-FX; drums lanes are not note-transformed.
+    const chain = sample == null && engineId !== 'drums-machine'
+      ? getNoteFxChain(laneId)
+      : null;
+
+    if (chain && chain.noteFx.some((s) => s.enabled)) {
+      const events = chain.process([{ note, time, gate, accent }], { bpm: deps.seq.bpm });
+      for (const e of events) fire(e.note, e.time, e.gate, e.accent, false);
       return;
     }
     fire(note, time, gate, accent, slidingIn);

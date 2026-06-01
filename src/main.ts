@@ -41,7 +41,7 @@ import {
   wirePolyControls, refreshPolyPresetSelect,
   type PolySynthPresetsDeps,
 } from './polysynth/polysynth-presets';
-import { arp, buildArpUI, type ArpUIDeps } from './arp/arp-ui';
+import { buildArpUI, type ArpUIDeps } from './arp/arp-ui';
 import { wireRandomizeUI } from './core/randomize-ui';
 import { wireFxUI, applyDelaySync as fxApplyDelaySync, type FxUIDeps } from './core/fx-ui';
 import { wireTransport, type TransportDeps } from './core/transport';
@@ -328,7 +328,7 @@ for (const t of $$<HTMLButtonElement>('button.tab')) {
 // Single-entry-point trigger dispatch — delegates by engine.id.
 // Phase G: drums removed from deps (drums-machine triggers via res.engine.createVoice).
 const triggerForLane = createTriggerForLane({
-  ctx, laneResources, arp, seq,
+  ctx, laneResources, seq,
 });
 
 // ── Session host ───────────────────────────────────────────────────────────
