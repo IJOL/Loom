@@ -681,6 +681,7 @@ export class SessionHost {
         laneId,
         chain: getNoteFxChain(laneId),
         onChange: (noteFx) => syncNoteFx(this.state, laneId, noteFx),
+        historyDeps: this.deps.historyDeps,
       });
     }
 

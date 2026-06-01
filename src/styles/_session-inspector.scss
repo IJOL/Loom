@@ -215,6 +215,78 @@
   height: 22px;
 }
 
+/* ── Per-lane NOTE FX panel (mirrors the modulators panel above it) ──────── */
+.lane-notefx-panel-host {
+  max-width: 960px;
+}
+.notefx-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 6px 8px;
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 6px;
+}
+.notefx-panel .mod-panel-title,
+.notefx-panel .mod-panel-header { grid-column: 1 / -1; }
+
+.notefx-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 4px 8px;
+  margin-bottom: 4px;
+}
+.notefx-card-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+.notefx-card-row span {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--amber);
+  font-weight: 700;
+  flex: 1;
+}
+.notefx-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+.notefx-field select {
+  background: var(--surface-3);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 2px 4px;
+  font-size: 10px;
+  font-family: var(--mono);
+  height: 22px;
+  min-width: 60px;
+  margin-left: auto;
+}
+.notefx-field input[type='range'] {
+  flex: 1;
+  margin-left: auto;
+}
+
+/* Compact buttons inside note-FX cards (add/remove/enable) — the
+ * `.mod-card-row button` rule does not reach `.notefx-card-row`. */
+.notefx-panel .mod-panel-header button,
+.notefx-card-row button {
+  font-size: 10px;
+  padding: 2px 6px;
+  height: 22px;
+}
+
 /* ── Sampler keymap editor (inside the engine inspector) ─────────────────── */
 .sampler-keymap {
   margin-top: 10px;

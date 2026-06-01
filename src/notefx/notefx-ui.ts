@@ -1,12 +1,23 @@
 // src/notefx/notefx-ui.ts
 import type { NoteFxChain } from './notefx-chain';
 import type { NoteFxState } from './notefx-types';
+import { withUndo, type HistoryDeps } from '../save/history-wiring';
 
 export interface NoteFxUIDeps {
   laneId: string;
   chain: NoteFxChain;
   /** Mirror chain state into the session so it persists + loads with demos. */
   onChange: (noteFx: NoteFxState[]) => void;
+  /** Optional undo history deps. When present, every note-FX add/remove/
+   *  enable-toggle/param edit is bracketed as a single undo entry — matching
+   *  the modulators panel this mirrors. */
+  historyDeps?: HistoryDeps;
+}
+
+/** Run `fn`, bracketed as one undo entry when history deps are present. */
+function withMaybeUndo(deps: NoteFxUIDeps, fn: () => void): void {
+  if (deps.historyDeps) withUndo(deps.historyDeps, fn);
+  else fn();
 }
 
 const ARP_PATTERNS = ['up', 'down', 'updown', 'random', 'cosmic'];
@@ -31,7 +42,10 @@ export function renderNoteFxPanel(container: HTMLElement, deps: NoteFxUIDeps): v
     const b = document.createElement('button');
     b.className = 'rnd';
     b.textContent = `+ ${kind === 'arp' ? 'Arp' : 'Chord'}`;
-    b.addEventListener('click', () => { deps.chain.addNoteFx(kind); sync(); rerender(); });
+    b.addEventListener('click', () => {
+      withMaybeUndo(deps, () => { deps.chain.addNoteFx(kind); sync(); });
+      rerender();
+    });
     header.appendChild(b);
   }
   box.appendChild(header);
@@ -73,17 +87,25 @@ function renderCard(
   const enable = document.createElement('button');
   enable.className = 'rnd' + (fx.enabled ? ' primary' : '');
   enable.textContent = fx.enabled ? 'ON' : 'OFF';
-  enable.addEventListener('click', () => { fx.enabled = !fx.enabled; sync(); rerender(); });
+  enable.addEventListener('click', () => {
+    withMaybeUndo(deps, () => { fx.enabled = !fx.enabled; sync(); });
+    rerender();
+  });
   row.appendChild(enable);
 
   const rm = document.createElement('button');
   rm.className = 'rnd';
   rm.textContent = '×';
-  rm.addEventListener('click', () => { deps.chain.removeNoteFx(fx.id); sync(); rerender(); });
+  rm.addEventListener('click', () => {
+    withMaybeUndo(deps, () => { deps.chain.removeNoteFx(fx.id); sync(); });
+    rerender();
+  });
   row.appendChild(rm);
   card.appendChild(row);
 
-  const set = (k: string, v: string | number) => { fx.params[k] = v; sync(); };
+  const set = (k: string, v: string | number) => {
+    withMaybeUndo(deps, () => { fx.params[k] = v; sync(); });
+  };
 
   if (fx.kind === 'arp') {
     card.appendChild(mkSelect('PATTERN', ARP_PATTERNS, String(fx.params.pattern ?? 'up'), (v) => set('pattern', v)));
