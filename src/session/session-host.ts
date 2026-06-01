@@ -15,6 +15,7 @@ import {
 import { importFile } from '../samples/import';
 import { sampleStore } from '../samples/store-singleton';
 import { sampleCache } from '../samples/sample-cache';
+import { getNoteFxChain, loadNoteFxForLane } from '../notefx/notefx-registry';
 
 // ── Pure helper: slug id generation ────────────────────────────────────────
 /** Returns the next available slug id for a new lane of the given engineId.
@@ -285,6 +286,9 @@ export class SessionHost {
         lane.engineState.modulators =
           host.serialize() as import('../modulation/types').ModulatorState[];
       }
+      // Mirror the lane's note-FX chain so it persists on save.
+      if (!lane.engineState) lane.engineState = {};
+      lane.engineState.noteFx = getNoteFxChain(lane.id).serialize();
     }
   }
 
@@ -305,6 +309,9 @@ export class SessionHost {
         const host = (engine as { modulators?: { deserialize(s: unknown[]): void } } | undefined)?.modulators;
         if (host) host.deserialize(mods);
       }
+      // Restore the lane's note-FX chain so it follows the loaded demo
+      // (fixes the global-arp bug where note-FX kept the first demo's config).
+      loadNoteFxForLane(lane.id, lane.engineState?.noteFx);
       // Restore sampler keymap (one-shot lanes).
       const km = lane.engineState?.sampler?.keymap;
       if (km && typeof (engine as { setKeymap?: unknown }).setKeymap === 'function') {
