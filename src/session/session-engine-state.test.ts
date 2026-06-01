@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { emptySessionState } from './session';
 import { mirrorParamChange, syncModulators, mirrorKeymapChange, readLaneKeymap } from './session-engine-state';
 import type { KeymapEntry } from '../samples/types';
+import { syncNoteFx } from './session-engine-state';
+import type { NoteFxState } from '../notefx/notefx-types';
 
 describe('per-lane engineState persistence', () => {
   it('mirrorParamChange writes to lane.engineState.params', () => {
@@ -84,5 +86,22 @@ describe('per-lane engineState persistence', () => {
     const state = emptySessionState();
     mirrorKeymapChange(state, 'does-not-exist', [{ sampleId: 'x', rootNote: 60, loNote: 0, hiNote: 127 }]);
     expect(state.lanes.every((l) => !l.engineState?.sampler)).toBe(true);
+  });
+});
+
+describe('syncNoteFx', () => {
+  it('writes a deep-cloned note-FX array into lane.engineState.noteFx', () => {
+    const state = { lanes: [{ id: 'sub-1', engineId: 'subtractive', clips: [] }], scenes: [], globalQuantize: '1/1' } as any;
+    const fx: NoteFxState[] = [{ id: 'arp1', kind: 'arp', enabled: true, params: { octaves: 2 } }];
+    syncNoteFx(state, 'sub-1', fx);
+    expect(state.lanes[0].engineState.noteFx).toEqual(fx);
+    // deep clone — mutating source does not leak
+    fx[0].params.octaves = 4;
+    expect(state.lanes[0].engineState.noteFx[0].params.octaves).toBe(2);
+  });
+
+  it('is a no-op for an unknown lane', () => {
+    const state = { lanes: [], scenes: [], globalQuantize: '1/1' } as any;
+    expect(() => syncNoteFx(state, 'nope', [])).not.toThrow();
   });
 });

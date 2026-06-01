@@ -6,6 +6,7 @@
 import type { SessionState } from './session';
 import type { ModulatorState } from '../modulation/types';
 import type { KeymapEntry } from '../samples/types';
+import type { NoteFxState } from '../notefx/notefx-types';
 
 /** Writes a deep-cloned copy of the modulator array into
  *  `state.lanes[laneId].engineState.modulators`. No-op if lane is unknown.
@@ -53,4 +54,17 @@ export function mirrorKeymapChange(
 /** Read a lane's persisted keymap (empty array if none). */
 export function readLaneKeymap(state: SessionState, laneId: string): KeymapEntry[] {
   return state.lanes.find((l) => l.id === laneId)?.engineState?.sampler?.keymap ?? [];
+}
+
+/** Writes a deep-cloned copy of the note-FX array into
+ *  `state.lanes[laneId].engineState.noteFx`. No-op if lane is unknown. */
+export function syncNoteFx(
+  state: SessionState,
+  laneId: string,
+  noteFx: NoteFxState[],
+): void {
+  const lane = state.lanes.find((l) => l.id === laneId);
+  if (!lane) return;
+  if (!lane.engineState) lane.engineState = {};
+  lane.engineState.noteFx = JSON.parse(JSON.stringify(noteFx));
 }

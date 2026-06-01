@@ -50,6 +50,7 @@ export interface SessionLane {
   engineState?: {
     params?: Record<string, number>;
     modulators?: import('../modulation/types').ModulatorState[];
+    noteFx?: import('../notefx/notefx-types').NoteFxState[];
     sampler?: { keymap: import('../samples/types').KeymapEntry[] };
   };
   /** Currently applied preset name for this lane (`factory:Name` /
