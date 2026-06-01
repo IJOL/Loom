@@ -16,6 +16,8 @@ import { importFile } from '../samples/import';
 import { sampleStore } from '../samples/store-singleton';
 import { sampleCache } from '../samples/sample-cache';
 import { getNoteFxChain, loadNoteFxForLane } from '../notefx/notefx-registry';
+import { renderNoteFxPanel } from '../notefx/notefx-ui';
+import { syncNoteFx } from './session-engine-state';
 
 // ── Pure helper: slug id generation ────────────────────────────────────────
 /** Returns the next available slug id for a new lane of the given engineId.
@@ -668,6 +670,19 @@ export class SessionHost {
       // Live AudioContext for the sampler's audio import (decodeAudioData).
       audioContext: this.deps.ctx,
     });
+
+    // Per-lane NOTE FX panel — mounted next to MODULATORS (which buildParamUI
+    // rendered into `host`). Drum lanes are not note-transformed, so skip them.
+    if (engine.id !== 'drums-machine') {
+      const nfHost = document.createElement('div');
+      nfHost.className = 'lane-notefx-panel-host';
+      host.appendChild(nfHost);
+      renderNoteFxPanel(nfHost, {
+        laneId,
+        chain: getNoteFxChain(laneId),
+        onChange: (noteFx) => syncNoteFx(this.state, laneId, noteFx),
+      });
+    }
 
     // Phase H: mount the insert-chain panel below the engine controls.
     // Every active lane has an InsertChain (allocated in ensureLaneResource)
