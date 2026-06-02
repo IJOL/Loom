@@ -84,7 +84,7 @@ function opParamSpecs(n: number, defaults: { ratio: number; level: number }): En
 // Unified-param schema. Operator ids are 1-indexed everywhere (op1..op4),
 // matching the UI labels and disambiguating from the legacy 0-indexed knob ids.
 const FM_PARAMS: EngineParamSpec[] = [
-  { id: 'algorithm', label: 'Algorithm', kind: 'discrete', min: 0, max: ALGO_OPTIONS.length - 1, default: 0, options: ALGO_OPTIONS },
+  { id: 'algorithm', label: 'Algorithm', kind: 'discrete', min: 0, max: ALGO_OPTIONS.length - 1, default: 0, options: ALGO_OPTIONS, selectStyle: 'dropdown' },
   { id: 'feedback',  label: 'FB (op4)', kind: 'continuous', min: 0, max: 1, default: 0 },
   ...opParamSpecs(1, { ratio: 1, level: 0.9 }),
   ...opParamSpecs(2, { ratio: 2, level: 0.5 }),

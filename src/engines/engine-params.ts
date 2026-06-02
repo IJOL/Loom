@@ -13,6 +13,10 @@ export interface EngineParamSpec {
   curve?: 'linear' | 'exponential' | 'log';
   unit?: string;
   options?: Array<{ value: string; label: string }>;   // only when kind === 'discrete'
+  /** Discrete only: 'dropdown' forces a native <select> instead of the default
+   *  radio-button strip — for many or long-labelled options (e.g. the FM
+   *  algorithm) so the control stays compact. Default: radio strip when ≤4. */
+  selectStyle?: 'radio' | 'dropdown';
 }
 
 export function isContinuous(s: EngineParamSpec): boolean {

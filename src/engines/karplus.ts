@@ -491,23 +491,34 @@ export class KarplusEngine implements SynthEngine {
       return `${Math.round(v * 100)}%`;
     };
 
-    const section = (label: string, filter: (id: string) => boolean): HTMLElement => {
+    // A row can host one or more labelled knob groups, separated by a vertical
+    // divider — STRING + EXCITE share a row (like the poly ENGINE/PRESET row).
+    const section = (...groups: Array<[string, (id: string) => boolean]>): HTMLElement => {
       const row = document.createElement('div');
       row.className = 'row poly-section';
-      const lab = document.createElement('div');
-      lab.className = 'section-label';
-      lab.textContent = label;
-      row.appendChild(lab);
-      const knobRow = document.createElement('div');
-      knobRow.className = 'knob-row';
-      row.appendChild(knobRow);
-      wireEngineParams(this, ctx, knobRow, { filter, formatter: fmt });
+      groups.forEach(([label, filter], i) => {
+        if (i > 0) {
+          const divider = document.createElement('div');
+          divider.className = 'vert-divider';
+          row.appendChild(divider);
+        }
+        const lab = document.createElement('div');
+        lab.className = 'section-label';
+        lab.textContent = label;
+        row.appendChild(lab);
+        const knobRow = document.createElement('div');
+        knobRow.className = 'knob-row';
+        row.appendChild(knobRow);
+        wireEngineParams(this, ctx, knobRow, { filter, formatter: fmt });
+      });
       return row;
     };
 
-    container.appendChild(section('STRING', (id) => id.startsWith('string.')));
-    container.appendChild(section('EXCITE', (id) => id.startsWith('excite.')));
-    container.appendChild(section('AMP',    (id) => id.startsWith('amp.')));
+    container.appendChild(section(
+      ['STRING', (id) => id.startsWith('string.')],
+      ['EXCITE', (id) => id.startsWith('excite.')],
+    ));
+    container.appendChild(section(['AMP', (id) => id.startsWith('amp.')]));
 
     renderModulatorsPanel(container, {
       engineId: this.id,

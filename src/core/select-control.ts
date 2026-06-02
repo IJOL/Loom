@@ -17,6 +17,9 @@ export interface SelectControlOpts {
   options: Array<{ value: string; label: string }>;
   initialValue: string;
   onChange: (value: string, fromUser: boolean) => void;
+  /** Force the native <select> rendering even with ≤4 options (used for
+   *  long-labelled option sets like the FM algorithm). */
+  forceSelect?: boolean;
 }
 
 export function quantiseSelectValue(norm: number, optionCount: number): number {
@@ -170,5 +173,6 @@ function createNativeSelect(opts: SelectControlOpts): { el: HTMLElement; handle:
 }
 
 export function createSelectControl(opts: SelectControlOpts): { el: HTMLElement; handle: KnobHandle } {
-  return opts.options.length <= 4 ? createRadioStrip(opts) : createNativeSelect(opts);
+  const useStrip = !opts.forceSelect && opts.options.length <= 4;
+  return useStrip ? createRadioStrip(opts) : createNativeSelect(opts);
 }
