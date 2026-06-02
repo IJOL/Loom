@@ -25,6 +25,13 @@ export interface BindVoiceModulatorsOpts {
   voice: Voice;
   voiceMods: Map<string, ModulatorVoice>;
   ctx: AudioContext;
+  /** Polyphony cap for the per-voice binding pool. A polyphonic engine passes
+   *  its live voice count so each chord voice keeps its OWN modulator→param
+   *  bridges (e.g. a per-voice ADSR driving amp.gain) instead of the latest
+   *  note tearing down the previous note's binding — which collapsed chords to
+   *  their last note. Omitted / 1 = the historical single-slot behavior
+   *  (replace-previous), correct for monophonic engines (TB-303) and drums. */
+  voicePool?: number;
   /** Phase J: optional insert chains — their AudioParams are added to the
    *  destination map so modulators can target FX params. */
   laneInserts?: InsertChain;
@@ -58,8 +65,15 @@ interface LaneBindings {
     voiceMods: Map<string, ModulatorVoice>;
     rangeLookup?: (shortId: string) => ParamRange;
   };
-  /** Per-voice binder + the latest voice. Replaced on every new Voice. */
-  voiceBinding?: { binder: ConnectionBinder; voice: Voice; voiceMods: Map<string, ModulatorVoice> };
+  /** Per-voice binders — one entry per live voice, in trigger order (oldest
+   *  first). A new note APPENDS; the oldest is disposed only when the pool
+   *  exceeds `voicePool`, so a chord keeps every voice's modulator→param
+   *  bridges alive instead of the latest note tearing down the previous one. */
+  voiceBindings: { binder: ConnectionBinder; voice: Voice; voiceMods: Map<string, ModulatorVoice> }[];
+  /** Max simultaneous per-voice bindings to retain (parity with the engine's
+   *  voice-stealing cap). Defaults to 1 — single-slot, replace-previous — for
+   *  monophonic engines and any caller that doesn't declare polyphony. */
+  voicePool: number;
   /** Phase J: insert chains whose AudioParams are routable as modulation
    *  destinations. Stored so reapplyLaneModulations can re-include them. */
   laneInserts?: InsertChain;
@@ -165,7 +179,7 @@ function rangeLookupForEngine(engine: SynthEngine): (id: string) => ParamRange {
 function getOrCreateLane(laneId: string, engine: SynthEngine, ctx: AudioContext): LaneBindings {
   let lb = laneBindings.get(laneId);
   if (!lb) {
-    lb = { laneId, ctx, engineRef: engine };
+    lb = { laneId, ctx, engineRef: engine, voiceBindings: [], voicePool: 1 };
     laneBindings.set(laneId, lb);
   }
   return lb;
@@ -192,7 +206,10 @@ export function bindEngineModulators(opts: BindEngineModulatorsOpts): Connection
 
 export function bindVoiceModulators(opts: BindVoiceModulatorsOpts): ConnectionBinder {
   const lb = getOrCreateLane(opts.laneId, opts.engine, opts.ctx);
-  if (lb.voiceBinding) lb.voiceBinding.binder.disposeAll();
+  // Update the polyphony cap (latest caller wins, so a live VOICES-knob change
+  // is honored). NOT disposing the previous binding here is the fix: each note
+  // gets its own binder appended below; the previous note's bridges live on.
+  lb.voicePool = Math.max(1, Math.floor(opts.voicePool ?? lb.voicePool ?? 1));
   // Store insert chains so reapplyLaneModulations can re-include them.
   if (opts.laneInserts   !== undefined) lb.laneInserts   = opts.laneInserts;
   if (opts.masterInserts !== undefined) lb.masterInserts = opts.masterInserts;
@@ -216,7 +233,14 @@ export function bindVoiceModulators(opts: BindVoiceModulatorsOpts): ConnectionBi
     sharedKeys,
     lb.laneInserts, lb.masterInserts,
   );
-  lb.voiceBinding = { binder, voice: opts.voice, voiceMods: opts.voiceMods };
+  lb.voiceBindings.push({ binder, voice: opts.voice, voiceMods: opts.voiceMods });
+  // Evict the oldest binding(s) once the pool overflows — parity with the
+  // engine's own voice stealing (the oldest voice is the one being replaced).
+  // disposeAll() only tears down THAT binding's gain bridges, leaving the
+  // surviving voices' bridges intact.
+  while (lb.voiceBindings.length > lb.voicePool) {
+    lb.voiceBindings.shift()?.binder.disposeAll();
+  }
   return binder;
 }
 
@@ -234,7 +258,7 @@ export function reapplyLaneModulations(laneId: string): void {
     }
   };
   if (lb.engineBinding) sync(lb.engineBinding.voiceMods);
-  if (lb.voiceBinding)  sync(lb.voiceBinding.voiceMods);
+  for (const vb of lb.voiceBindings) sync(vb.voiceMods);
   if (lb.engineBinding) {
     const shortParams = lb.engineRef.getSharedAudioParams?.(lb.ctx) ?? new Map<string, AudioParam>();
     const rangeLookup = lb.engineBinding.rangeLookup ?? rangeLookupForEngine(lb.engineRef);
@@ -244,18 +268,20 @@ export function reapplyLaneModulations(laneId: string): void {
       undefined, lb.laneInserts, lb.masterInserts,
     );
   }
-  if (lb.voiceBinding) {
+  if (lb.voiceBindings.length > 0) {
     const sharedKeys = new Set<string>();
     const sharedParams = lb.engineRef.getSharedAudioParams?.(lb.ctx);
     if (sharedParams) for (const k of sharedParams.keys()) sharedKeys.add(k);
-    applyBinder(
-      lb.voiceBinding.binder, lb.laneId, lb.engineRef, lb.voiceBinding.voiceMods,
-      lb.voiceBinding.voice.getAudioParams(),
-      rangeLookupForVoice(lb.engineRef, lb.voiceBinding.voice),
-      'per-voice', lb.ctx,
-      sharedKeys,
-      lb.laneInserts, lb.masterInserts,
-    );
+    for (const vb of lb.voiceBindings) {
+      applyBinder(
+        vb.binder, lb.laneId, lb.engineRef, vb.voiceMods,
+        vb.voice.getAudioParams(),
+        rangeLookupForVoice(lb.engineRef, vb.voice),
+        'per-voice', lb.ctx,
+        sharedKeys,
+        lb.laneInserts, lb.masterInserts,
+      );
+    }
   }
 }
 
@@ -263,14 +289,14 @@ export function disposeLaneModulations(laneId: string): void {
   const lb = laneBindings.get(laneId);
   if (!lb) return;
   lb.engineBinding?.binder.disposeAll();
-  lb.voiceBinding?.binder.disposeAll();
+  for (const vb of lb.voiceBindings) vb.binder.disposeAll();
   laneBindings.delete(laneId);
 }
 
 export function clearLaneBindings(): void {
   for (const lb of laneBindings.values()) {
     lb.engineBinding?.binder.disposeAll();
-    lb.voiceBinding?.binder.disposeAll();
+    for (const vb of lb.voiceBindings) vb.binder.disposeAll();
   }
   laneBindings.clear();
 }
@@ -288,8 +314,9 @@ export function _resetLaneBindingsForTesting(): void {
  *  what the historic single-binder tests probed). */
 export function _getLaneBindingForTesting(laneId: string): { binder: ConnectionBinder } | undefined {
   const lb = laneBindings.get(laneId);
-  if (!lb || !lb.voiceBinding) return undefined;
-  return { binder: lb.voiceBinding.binder };
+  if (!lb || lb.voiceBindings.length === 0) return undefined;
+  // The latest voice's binder — what the historic single-slot tests probed.
+  return { binder: lb.voiceBindings[lb.voiceBindings.length - 1].binder };
 }
 
 /** Test-only inspector. Returns the engine-wide (shared-scope) binder for the

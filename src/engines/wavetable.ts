@@ -452,7 +452,12 @@ export class WavetableEngine implements SynthEngine {
       // double-route those — they're already on the bus.
       const engineMods = this.engineModVoices ?? new Map();
       const combinedMods = new Map<string, ModulatorVoice>([...engineMods, ...voiceMods]);
-      voice.binder = bindVoiceModulators({ laneId, engine: this, voice, voiceMods: combinedMods, ctx });
+      voice.binder = bindVoiceModulators({
+        laneId, engine: this, voice, voiceMods: combinedMods, ctx,
+        // One per-voice binding per live voice so a chord driven by a modular
+        // ADSR (sole amp driver) stays polyphonic (cap = voice-stealing limit).
+        voicePool: this.maxVoices,
+      });
       this.currentLaneId = laneId;
     }
 

@@ -444,7 +444,12 @@ export class KarplusEngine implements SynthEngine {
       // shared-scope mods so we don't double-route.
       const engineMods = this.engineModVoices ?? new Map<string, ModulatorVoice>();
       const combinedMods = new Map<string, ModulatorVoice>([...engineMods, ...voiceMods]);
-      voice.binder = bindVoiceModulators({ laneId, engine: this, voice, voiceMods: combinedMods, ctx });
+      voice.binder = bindVoiceModulators({
+        laneId, engine: this, voice, voiceMods: combinedMods, ctx,
+        // One per-voice binding per live voice so a chord driven by a modular
+        // ADSR (sole amp driver) stays polyphonic (cap = voice-stealing limit).
+        voicePool: this.maxVoices,
+      });
       this.currentLaneId = laneId;
     }
 

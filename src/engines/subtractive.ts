@@ -385,6 +385,10 @@ class SubtractiveEngine implements SynthEngine {
       voice.rebind = () => {
         voice.binder = bindVoiceModulators({
           laneId, engine: this, voice, voiceMods: combinedMods, ctx,
+          // Keep one per-voice binding per live voice so a chord driven by a
+          // modular ADSR stays polyphonic (mono mode → maxVoices=1 → the old
+          // single-slot, replace-previous behavior).
+          voicePool: this.polysynth?.maxVoices ?? 8,
         });
       };
     }
