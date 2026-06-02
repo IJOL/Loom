@@ -15,6 +15,7 @@ import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, type ModulatorVoice } from '../modulation/types';
 import { recordVoiceMods, getCurrentLaneForVoice } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
+import { wireEngineParams } from './engine-ui';
 import { bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
 import { ConnectionBinder } from '../modulation/connection-binder';
 import { PendingBaseValues } from './pending-base-values';
@@ -269,10 +270,20 @@ export class TB303Engine implements SynthEngine {
   }
 
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
-    // The Classic 303 page already renders the TB303 knobs against the
-    // singleton synth. Per-lane UI binding moves into this method in
-    // Phase 7 when the dedicated TB-303 tab is dismantled.
-    if (ctx) {
+    if (!ctx) return;
+    // Engine param knobs (Wave / Cutoff / Resonance / Env / Decay / Accent),
+    // wired per-lane under `<laneId>.<spec.id>` — exactly like FM/Karplus/
+    // Wavetable. Replaces the legacy static `data-page="303"` knob row that
+    // only ever bound the canonical bass lane id `tb-303-1`, leaving every
+    // other TB-303 lane (e.g. a MIDI-imported `lane-…`) with no controls.
+    const knobs = document.createElement('div');
+    knobs.className = 'row knobs';
+    wireEngineParams(this, ctx, knobs, {
+      formatter: (id, v) => (id.includes('decay') ? `${(v * 1000).toFixed(0)}ms` : `${Math.round(v * 100)}%`),
+    });
+    container.appendChild(knobs);
+
+    {
       renderModulatorsPanel(container, {
         engineId: this.id,
         laneId: ctx.laneId,

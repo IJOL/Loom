@@ -26,7 +26,6 @@ export interface SaveWiringDeps {
   volInput: HTMLInputElement;
   bpmInput: HTMLInputElement;
   swingInput: HTMLInputElement;
-  waveSel: HTMLSelectElement;
   sessionHost: SessionHost;
   refreshKnobsFromSynth: () => void;
   renderLanes: () => void;

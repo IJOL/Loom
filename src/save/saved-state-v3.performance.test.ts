@@ -69,7 +69,7 @@ describe('SavedStateV3 persists mode + arrangement', () => {
     let appliedArr: { durationSec?: number } | undefined;
     const deps = {
       seq: { bpm: 0 }, volInput: { value: '' }, bpmInput: { value: '' },
-      swingInput: { value: '' }, waveSel: { value: '' },
+      swingInput: { value: '' },
       sessionHost: { applyLoadedSessionState: () => {} },
       lanes: { resources: new Map() },
       refreshKnobsFromSynth: () => {}, renderLanes: () => {},

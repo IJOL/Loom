@@ -640,11 +640,12 @@ export class SessionHost {
     if (!host) {
       host = document.createElement('div');
       host.className = 'engine-mod-host';
-      // Place engine body BEFORE the static FX row so non-subtractive engines
-      // (FM/Wave/Karp) render their controls above the compressor. For pages
-      // without the FX-row anchor (drums), append at the end as before.
+      // Place engine body BEFORE the FX row so the engine knobs render above
+      // the compressor on every page: poly anchors on #poly-fx-row, while the
+      // 303 / drums pages fall back to the FX row that hosts .lane-fx-knobs.
       const anchor = page.querySelector<HTMLElement>('#poly-fx-row')
-        ?? page.querySelector<HTMLElement>('#poly-seq-mode-row');
+        ?? page.querySelector<HTMLElement>('#poly-seq-mode-row')
+        ?? page.querySelector<HTMLElement>('.lane-fx-knobs')?.closest<HTMLElement>('.row');
       if (anchor) page.insertBefore(host, anchor);
       else page.appendChild(host);
     }

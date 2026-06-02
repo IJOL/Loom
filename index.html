@@ -146,13 +146,9 @@
           <button class="rnd" id="bass-preset-delete">Delete</button>
           <button class="rnd primary" id="bass-random-sound" title="Randomize sound (sets preset to Custom)">🎲 Sound</button>
         </div>
-        <div class="row knobs">
-          <label>Wave<select id="wave">
-              <option value="sawtooth">Saw</option>
-              <option value="square">Square</option>
-            </select></label>
-          <div id="synth-knobs" class="knob-row"></div>
-        </div>
+        <!-- Engine knobs (Wave / Cutoff / Resonance / Env / Decay / Accent) are
+             rendered per-lane by TB303Engine.buildParamUI into .engine-mod-host
+             (like FM/Karplus/Wavetable) — no static, tb-303-1-only knob row. -->
         <div class="row poly-section">
           <div class="section-label">FX</div>
           <div class="lane-fx-knobs knob-row"></div>

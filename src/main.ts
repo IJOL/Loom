@@ -15,7 +15,7 @@ import {
 } from './engines/engine-selector-ui';
 import { getEngine, getEngineParamIds } from './engines/registry';
 import { swapLaneEngineFlow, type EngineSwapDeps } from './app/engine-swap';
-import { type Wave, type TB303 } from './core/synth';
+import { type TB303 } from './core/synth';
 import { Sequencer } from './core/sequencer';
 import { DRUM_LANES, type DrumMachine, type DrumVoice } from './core/drums';
 import { ChannelStrip } from './core/fx';
@@ -148,7 +148,6 @@ const bpmInput = $<HTMLInputElement>('bpm');
 const swingInput = $<HTMLInputElement>('swing');
 const volInput = $<HTMLInputElement>('volume');
 const barsSel  = $<HTMLSelectElement>('bars');
-const waveSel  = $<HTMLSelectElement>('wave');
 const scaleSel = $<HTMLSelectElement>('scale');
 const rootSel  = $<HTMLSelectElement>('root');
 const vizCanvas    = $<HTMLCanvasElement>('viz');
@@ -261,13 +260,8 @@ for (const el of [bpmInput, swingInput, volInput]) {
 // boot, so assigning _discreteHistoryDeps after construction works correctly.
 let _discreteHistoryDeps: HistoryDeps | undefined;
 
-waveSel.addEventListener('change', () => {
-  const run = () => {
-    const synthInst = getSynthInstance();
-    if (synthInst) synthInst.params.wave = waveSel.value as Wave;
-  };
-  if (_discreteHistoryDeps) withUndo(_discreteHistoryDeps, run); else run();
-});
+// Legacy global wave selector removed — TB-303 wave is a per-lane engine param
+// (osc.wave) rendered by TB303Engine.buildParamUI, like every other engine.
 
 barsSel.addEventListener('change', () => {
   seq.setLength(parseInt(barsSel.value, 10));
@@ -285,16 +279,14 @@ const knobs = createKnobMounter({
   sidechainBus,
   getHistoryDeps: () => _discreteHistoryDeps,
 });
-const wireLaneKnobs = knobs.wireLaneKnobs;
 const mountSubtractiveLaneKnobs = knobs.mountSubtractiveLaneKnobs;
 const mountDrumMasterLaneKnobs = knobs.mountDrumMasterLaneKnobs;
 const mountLaneFxPanel = knobs.mountLaneFxPanel;
 const refreshKnobsFromSynth = knobs.refreshKnobsFromSynth;
 const refreshLaneKnobs = knobs.refreshLaneKnobs;
 
-const synthKnobsRow = $<HTMLDivElement>('synth-knobs');
-// Phase G: TB-303 knob row deferred until boot session JSON allocates the lane.
-// Wired in sessionHost.onStateApplied callback (see boot section below).
+// TB-303 engine knobs are rendered per-lane by TB303Engine.buildParamUI
+// (into .engine-mod-host) — no boot-wired static `#synth-knobs` row anymore.
 
 // pager/slots/onPatternChange wired in wireTransport() (see boot section)
 // Pre-populate the bank's slot 0 with the sequencer's initial pattern (set up below)
@@ -623,24 +615,10 @@ startAutomationTick(automationTickDeps);
 // Phase G: boot-eager UI deferred until applyLoadedSessionState allocates lanes.
 // Registers callbacks BEFORE the demo load so they fire on the first apply.
 sessionHost.onStateApplied(() => {
-  // TB-303 knob row
-  synthKnobsRow.innerHTML = '';
-  const bassRes = laneResources.get(LANE_ID_BASS);
-  if (bassRes) {
-    wireLaneKnobs({
-      laneId: LANE_ID_BASS,
-      engine: bassRes.engine,
-      parent: synthKnobsRow,
-      formatter: (id, v) => id.includes('decay') ? `${(v * 1000).toFixed(0)}ms` : fmtPct(v),
-    });
-  }
   // Drum master knobs
   mountDrumMasterLaneKnobs(LANE_ID_DRUMS);
   // Subtractive poly lane knobs
   mountSubtractiveLaneKnobs(LANE_ID_POLY);
-  // Set wave selector to match the loaded synth wave
-  const synthInst = getSynthInstance();
-  if (synthInst) waveSel.value = String(synthInst.params.wave);
   // Set active poly target for synth editor
   const polyEng = laneResources.get(LANE_ID_POLY)?.engine;
   const polyInst = (polyEng as unknown as { getPolySynth?(): PolySynth | null } | undefined)?.getPolySynth?.() ?? null;
@@ -694,7 +672,7 @@ const history = createHistory<SavedStateV3>({ maxSize: 100 });
 // Phase G: synth/drums replaced by lanes (resolved lazily inside buildSavedStateV3).
 const saveBaseDeps = {
   ctx, seq, lanes, master,
-  volInput, bpmInput, swingInput, waveSel,
+  volInput, bpmInput, swingInput,
   sessionHost,
   refreshKnobsFromSynth,
   renderLanes,
