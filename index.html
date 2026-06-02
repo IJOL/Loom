@@ -91,6 +91,16 @@
         <button class="io" id="rec" title="Record knob moves">● REC</button>
         <button class="io" id="save">Save</button>
         <button class="io" id="load">Load</button>
+        <div class="vert-divider"></div>
+        <select id="demo-picker" class="demo-picker"></select>
+        <details class="midi-panel">
+          <summary>MIDI Import</summary>
+          <div class="midi-import-row">
+            <input type="file" id="poly-midi-file" accept=".mid,.midi" />
+            <button class="rnd primary" id="poly-midi-load" style="display:none;">Import MIDI</button>
+          </div>
+          <div id="poly-midi-tracklist" class="midi-tracklist" style="display:none;"></div>
+        </details>
         <canvas id="viz" width="200" height="40"></canvas>
       </div>
 
@@ -265,21 +275,10 @@
         </div>
       </details>
 
-      <p class="hint">Hidden in Session.</p>
-
       <div class="session-view" id="session-view">
         <div class="session-toolbar">
           <button class="rnd" id="session-launch-scene-1">▶ Scene 1 (debug)</button>
           <button class="rnd" id="session-stop-all">⏹ All</button>
-          <select id="demo-picker" class="demo-picker"></select>
-          <details class="midi-panel">
-            <summary>MIDI Import</summary>
-            <div class="midi-import-row">
-              <input type="file" id="poly-midi-file" accept=".mid,.midi" />
-              <button class="rnd primary" id="poly-midi-load" style="display:none;">Import MIDI</button>
-            </div>
-            <div id="poly-midi-tracklist" class="midi-tracklist" style="display:none;"></div>
-          </details>
         </div>
         <div id="session-grid" class="session-grid">Session grid will render here.</div>
         <div id="session-inspector" class="session-inspector" hidden>

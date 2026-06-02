@@ -658,7 +658,6 @@ if (demoPicker) {
       { label: 'MGMT — Kids',               path: '/demos/mgmt-kids.json' },
       { label: 'Solid Sessions — Janeiro',  path: '/demos/solid-sessions-janeiro.json' },
       { label: 'Untitled MIDI',             path: '/demos/untitled.json' },
-      { label: 'LFO Test',                  path: '/demos/lfo-test.json' },
     ],
     onLoaded: () => history.clear(),
   });
