@@ -17,6 +17,7 @@ async function renderLane(kitId: string, lane: DrumVoice, accent = false): Promi
   const fx = new FxBus(ctx as unknown as AudioContext, dest);
   const dm = new DrumMachine(ctx as unknown as AudioContext, fx, dest);
   dm.setKit(kitId);
+  dm.loadKitDefaults(kitId);
   dm.trigger(lane, 0, accent);
   const ab = await ctx.startRendering();
   return new Float32Array(ab.getChannelData(0));

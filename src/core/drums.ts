@@ -181,42 +181,38 @@ export class DrumMachine {
   }
 
   trigger(voice: DrumVoice, time: number, accent = false) {
-    const kit = BY_ID[this.kitId];
     const vel = accent ? 1.0 : 0.65;
     switch (voice) {
-      case 'kick':      this.playKick(kit.kick, time, vel); break;
-      case 'snare':     this.playSnare(kit.snare, time, vel); break;
-      case 'closedHat': this.playHat(kit.hat, time, vel, false, 'closedHat'); break;
-      case 'openHat':   this.playHat(kit.hat, time, vel, true,  'openHat'); break;
-      case 'clap':      this.playClap(kit.clap, time, vel); break;
-      case 'cowbell':   this.playCowbell(kit.cowbell, time, vel); break;
-      case 'tom':       this.playTom(kit.tom, time, vel); break;
-      case 'ride':      this.playRide(kit.ride, time, vel); break;
+      case 'kick':      this.playKick(time, vel); break;
+      case 'snare':     this.playSnare(time, vel); break;
+      case 'closedHat': this.playHat('closedHat', time, vel); break;
+      case 'openHat':   this.playHat('openHat', time, vel); break;
+      case 'clap':      this.playClap(time, vel); break;
+      case 'cowbell':   this.playCowbell(time, vel); break;
+      case 'tom':       this.playTom(time, vel); break;
+      case 'ride':      this.playRide(time, vel); break;
     }
   }
 
-  private playKick(p: KickParams, time: number, vel: number) {
+  private playKick(time: number, vel: number) {
+    const s = this.synth.kick;
     const dest = this.channels.kick.input;
-
     const osc = this.ctx.createOscillator();
-    osc.type = p.tone;
-    osc.frequency.setValueAtTime(p.startFreq, time);
-    osc.frequency.exponentialRampToValueAtTime(p.endFreq, time + p.pitchDecay);
-
+    osc.type = WAVE_TYPES[Math.round(s.wave)] ?? 'sine';
+    osc.frequency.setValueAtTime(s.startFreq * s.tune, time);
+    osc.frequency.exponentialRampToValueAtTime(s.endFreq * s.tune, time + s.sweep);
     const amp = this.ctx.createGain();
     amp.gain.setValueAtTime(vel * 1.2, time);
-    amp.gain.exponentialRampToValueAtTime(0.001, time + p.ampDecay);
-
+    amp.gain.exponentialRampToValueAtTime(0.001, time + s.decay);
     osc.connect(amp).connect(dest);
     osc.start(time);
-    osc.stop(time + p.ampDecay + 0.05);
-
-    if (p.clickAmount > 0) {
+    osc.stop(time + s.decay + 0.05);
+    if (s.attack > 0) {
       const click = this.ctx.createOscillator();
       click.type = 'square';
       click.frequency.value = 1500;
       const clickAmp = this.ctx.createGain();
-      clickAmp.gain.setValueAtTime(vel * p.clickAmount * 0.5, time);
+      clickAmp.gain.setValueAtTime(vel * s.attack * 0.5, time);
       clickAmp.gain.exponentialRampToValueAtTime(0.001, time + 0.008);
       click.connect(clickAmp).connect(dest);
       click.start(time);
@@ -224,68 +220,63 @@ export class DrumMachine {
     }
   }
 
-  private playSnare(p: SnareParams, time: number, vel: number) {
+  private playSnare(time: number, vel: number) {
+    const s = this.synth.snare;
     const dest = this.channels.snare.input;
-
     const osc1 = this.ctx.createOscillator();
     const osc2 = this.ctx.createOscillator();
     osc1.type = 'triangle'; osc2.type = 'triangle';
-    osc1.frequency.value = p.tone1;
-    osc2.frequency.value = p.tone2;
+    osc1.frequency.value = s.tone1 * s.tune;
+    osc2.frequency.value = s.tone2 * s.tune;
     const toneAmp = this.ctx.createGain();
-    toneAmp.gain.setValueAtTime(vel * p.toneAmount, time);
-    toneAmp.gain.exponentialRampToValueAtTime(0.001, time + p.toneDecay);
-    osc1.connect(toneAmp);
-    osc2.connect(toneAmp);
-    toneAmp.connect(dest);
+    toneAmp.gain.setValueAtTime(vel * s.tone, time);
+    toneAmp.gain.exponentialRampToValueAtTime(0.001, time + s.bodyDecay);
+    osc1.connect(toneAmp); osc2.connect(toneAmp); toneAmp.connect(dest);
     osc1.start(time); osc2.start(time);
-    osc1.stop(time + p.toneDecay + 0.05);
-    osc2.stop(time + p.toneDecay + 0.05);
+    osc1.stop(time + s.bodyDecay + 0.05);
+    osc2.stop(time + s.bodyDecay + 0.05);
 
     const noise = this.ctx.createBufferSource();
     noise.buffer = this.noiseBuffer;
     const hp = this.ctx.createBiquadFilter();
     hp.type = 'highpass';
-    hp.frequency.value = p.noiseFilter;
+    hp.frequency.value = s.noiseTone;
     const noiseAmp = this.ctx.createGain();
-    noiseAmp.gain.setValueAtTime(vel * p.noiseAmount, time);
-    noiseAmp.gain.exponentialRampToValueAtTime(0.001, time + p.noiseDecay);
+    noiseAmp.gain.setValueAtTime(vel * s.snap, time);
+    noiseAmp.gain.exponentialRampToValueAtTime(0.001, time + s.noiseDecay);
     noise.connect(hp).connect(noiseAmp).connect(dest);
     noise.start(time);
-    noise.stop(time + p.noiseDecay + 0.05);
+    noise.stop(time + s.noiseDecay + 0.05);
   }
 
   // Six square waves at inharmonic ratios — classic TR-808/909 hat recipe.
-  private playHat(p: HatParams, time: number, vel: number, open: boolean, voice: 'closedHat' | 'openHat') {
+  private playHat(voice: 'closedHat' | 'openHat', time: number, vel: number) {
+    const s = this.synth[voice];
     const dest = this.channels[voice].input;
     const baseFreqs = [205, 304, 369, 522, 540, 800];
-    const decay = open ? p.openDecay : p.decay;
-
+    const decay = s.decay;
     const merger = this.ctx.createGain();
     merger.gain.value = 0.25;
     for (const f of baseFreqs) {
       const osc = this.ctx.createOscillator();
       osc.type = 'square';
-      osc.frequency.value = f * p.tune;
+      osc.frequency.value = f * s.tune;
       osc.connect(merger);
       osc.start(time);
       osc.stop(time + decay + 0.05);
     }
-
     const bp = this.ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.value = 10000;
-    bp.Q.value = 0.6;
+    bp.type = 'bandpass'; bp.frequency.value = 10000; bp.Q.value = 0.6;
     const hp = this.ctx.createBiquadFilter();
-    hp.type = 'highpass';
-    hp.frequency.value = 7000;
+    hp.type = 'highpass'; hp.frequency.value = s.filter;
     const amp = this.ctx.createGain();
     amp.gain.setValueAtTime(vel, time);
     amp.gain.exponentialRampToValueAtTime(0.001, time + decay);
     merger.connect(bp).connect(hp).connect(amp).connect(dest);
   }
 
-  private playClap(p: ClapParams, time: number, vel: number) {
+  private playClap(time: number, vel: number) {
+    const s = this.synth.clap;
     const dest = this.channels.clap.input;
     const offsets = [0, 0.011, 0.022, 0.033];
     for (let i = 0; i < offsets.length; i++) {
@@ -295,11 +286,11 @@ export class DrumMachine {
       noise.buffer = this.noiseBuffer;
       const bp = this.ctx.createBiquadFilter();
       bp.type = 'bandpass';
-      bp.frequency.value = p.filterFreq;
-      bp.Q.value = p.filterQ;
+      bp.frequency.value = s.tone;
+      bp.Q.value = s.sharp;
       const amp = this.ctx.createGain();
       const v = isLast ? vel : vel * 0.6;
-      const d = isLast ? p.decay : 0.008;
+      const d = isLast ? s.decay : 0.008;
       amp.gain.setValueAtTime(v, time + off);
       amp.gain.exponentialRampToValueAtTime(0.001, time + off + d);
       noise.connect(bp).connect(amp).connect(dest);
@@ -308,46 +299,48 @@ export class DrumMachine {
     }
   }
 
-  private playCowbell(p: CowbellParams, time: number, vel: number) {
+  private playCowbell(time: number, vel: number) {
+    const s = this.synth.cowbell;
     const dest = this.channels.cowbell.input;
+    const f1 = s.freq1 * s.tune;
+    const f2 = s.freq2 * s.tune * s.detune;
     const osc1 = this.ctx.createOscillator();
     const osc2 = this.ctx.createOscillator();
     osc1.type = 'square'; osc2.type = 'square';
-    osc1.frequency.value = p.freq1;
-    osc2.frequency.value = p.freq2;
+    osc1.frequency.value = f1; osc2.frequency.value = f2;
     const merger = this.ctx.createGain();
     merger.gain.value = 0.4;
     const bp = this.ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.value = (p.freq1 + p.freq2) / 2;
-    bp.Q.value = 1.5;
+    bp.type = 'bandpass'; bp.frequency.value = (f1 + f2) / 2; bp.Q.value = 1.5;
     const amp = this.ctx.createGain();
     amp.gain.setValueAtTime(vel * 0.45, time);
     amp.gain.linearRampToValueAtTime(vel * 0.55, time + 0.005);
-    amp.gain.exponentialRampToValueAtTime(0.001, time + p.decay);
+    amp.gain.exponentialRampToValueAtTime(0.001, time + s.decay);
     osc1.connect(merger); osc2.connect(merger);
     merger.connect(bp).connect(amp).connect(dest);
     osc1.start(time); osc2.start(time);
-    osc1.stop(time + p.decay + 0.05);
-    osc2.stop(time + p.decay + 0.05);
+    osc1.stop(time + s.decay + 0.05);
+    osc2.stop(time + s.decay + 0.05);
   }
 
-  private playTom(p: TomParams, time: number, vel: number) {
+  private playTom(time: number, vel: number) {
+    const s = this.synth.tom;
     const dest = this.channels.tom.input;
     const osc = this.ctx.createOscillator();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(p.startFreq, time);
-    osc.frequency.exponentialRampToValueAtTime(p.endFreq, time + p.pitchDecay);
+    osc.frequency.setValueAtTime(s.startFreq * s.tune, time);
+    osc.frequency.exponentialRampToValueAtTime(s.end * s.tune, time + s.sweep);
     const amp = this.ctx.createGain();
     amp.gain.setValueAtTime(vel * 1.0, time);
-    amp.gain.exponentialRampToValueAtTime(0.001, time + p.ampDecay);
+    amp.gain.exponentialRampToValueAtTime(0.001, time + s.decay);
     osc.connect(amp).connect(dest);
     osc.start(time);
-    osc.stop(time + p.ampDecay + 0.05);
+    osc.stop(time + s.decay + 0.05);
   }
 
   // Ride: shimmering metallic — like a long open hat with different inharmonic freqs
-  private playRide(p: RideParams, time: number, vel: number) {
+  private playRide(time: number, vel: number) {
+    const s = this.synth.ride;
     const dest = this.channels.ride.input;
     const freqs = [284, 372, 504, 712, 858, 1057];
     const merger = this.ctx.createGain();
@@ -355,21 +348,18 @@ export class DrumMachine {
     for (const f of freqs) {
       const osc = this.ctx.createOscillator();
       osc.type = 'square';
-      osc.frequency.value = f * p.tune;
+      osc.frequency.value = f * s.tune;
       osc.connect(merger);
       osc.start(time);
-      osc.stop(time + p.decay + 0.05);
+      osc.stop(time + s.decay + 0.05);
     }
     const bp = this.ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.value = 5500;
-    bp.Q.value = 0.5;
+    bp.type = 'bandpass'; bp.frequency.value = 5500; bp.Q.value = 0.5;
     const hp = this.ctx.createBiquadFilter();
-    hp.type = 'highpass';
-    hp.frequency.value = 3000;
+    hp.type = 'highpass'; hp.frequency.value = 3000;
     const amp = this.ctx.createGain();
     amp.gain.setValueAtTime(vel * 0.7, time);
-    amp.gain.exponentialRampToValueAtTime(0.001, time + p.decay);
+    amp.gain.exponentialRampToValueAtTime(0.001, time + s.decay);
     merger.connect(bp).connect(hp).connect(amp).connect(dest);
   }
 }
