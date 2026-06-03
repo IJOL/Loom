@@ -839,7 +839,8 @@
         "params": {
           "bus.reverbSend": 0.25
         }
-      }
+      },
+      "enginePresetName": "factory:KIT Power"
     },
     {
       "id": "subtractive-1",
