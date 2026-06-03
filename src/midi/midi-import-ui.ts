@@ -219,9 +219,11 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
         console.warn('MIDI drums dropped — no drums lane in session');
       }
     } else {
-      // Replace: a fresh session from the import. Clear a preserved drum lane's
-      // stale clips so the first column isn't full of the previous session.
-      const preservedDrumLane = deps.drumLaneId
+      // Replace: a fresh session from JUST the import. Only keep a drums lane
+      // when the import actually has drums — otherwise a melodic MIDI leaves an
+      // empty "Drums" lane sitting as a pointless first column. When kept, its
+      // stale clips are cleared so it isn't full of the previous session.
+      const preservedDrumLane = (result.drumClip && deps.drumLaneId)
         ? deps.session.lanes.find((l) => l.id === deps.drumLaneId) ?? null
         : null;
       if (preservedDrumLane) preservedDrumLane.clips = [];
