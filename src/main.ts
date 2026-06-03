@@ -564,9 +564,10 @@ wireTransport(transportDeps);
 wirePolyControls(polySynthPresetsDeps);
 
 // ── MIDI import wiring (see src/midi/midi-import-ui.ts) ───────────────────
-// Launches a scene by id from outside the session host. Mirrors the host's
-// internal onLaunchScene handler: resume context, run launchScene runtime,
-// apply per-lane presets, ensure transport is running, re-render.
+// Launches a scene by id from outside the session host. Resumes the audio
+// context, ensures resources for any freshly-imported lanes (applying each
+// new lane's preset once, when its resource is first allocated), runs the
+// launch runtime, and starts the transport if stopped.
 function launchSceneById(sceneId: string): void {
   const idx = sessionHost.state.scenes.findIndex((s) => s.id === sceneId);
   if (idx < 0) return;

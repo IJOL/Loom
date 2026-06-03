@@ -107,9 +107,8 @@ export interface SessionHostDeps {
    *  undo/redo or a loaded session. Optional so test fixtures can skip it. */
   swapLaneEngine?: (laneId: string, newEngineId: string) => void;
   /** Apply a preset to a lane by name. Called by applyLoadedSessionState
-   *  for every lane.enginePresetName, and by onLaunchScene for every
-   *  scene.presetPerLane entry. Optional so test fixtures without audio
-   *  can skip it. */
+   *  for every lane.enginePresetName. Optional so test fixtures without
+   *  audio can skip it. */
   applyPresetForLane?: (laneId: string, presetName: string) => void;
   /** Optional: when provided, cell-level edits in clip editors are wrapped
    *  with withUndo so each step toggle becomes an undoable entry. */
