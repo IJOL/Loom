@@ -107,6 +107,16 @@ export function applyPresetByName(poly: PolySynth, name: string): void {
 export function refreshPolyPresetSelect(): void {
   const sel = document.getElementById('poly-preset-select') as HTMLSelectElement;
   if (!sel) return;
+  // FM / Wavetable / Karplus poly lanes have no PolySynth instance to key
+  // polyPresetName by, so fall back to the lane-keyed memory (engine:<name>,
+  // filled by recordPagePresetForLane on load + on preset change). Subtractive
+  // keeps the PolySynth-keyed factory:/user: path.
+  const laneId = _deps?.getActiveEngineLaneId();
+  const engineId = laneId ? _deps?.getLaneEngineId(laneId) : undefined;
+  if (engineId && engineId !== 'subtractive') {
+    sel.value = (laneId && pagePresetName.get(laneId)) || '__custom__';
+    return;
+  }
   const target = _deps?.getActivePolyTarget();
   const current = target ? polyPresetName.get(target) : undefined;
   if (current) sel.value = current;
@@ -321,6 +331,25 @@ export function markPagePresetCustom(selectId: string, laneId: string): void {
   pagePresetName.delete(laneId);
   const sel = document.getElementById(selectId) as HTMLSelectElement | null;
   if (sel) sel.value = '__custom__';
+}
+
+/** Record a lane's per-page (303 / drums) preset selection so the dropdown
+ *  reflects it after a session/demo load — applyPresetForLane applies the
+ *  sound, but nothing sets pagePresetName otherwise, so the select came up
+ *  "(custom — no preset)". Normalizes any prefix to the dropdown's
+ *  `engine:<name>` option vocabulary and live-updates a currently-shown
+ *  select. Harmless for poly-page engines (their dropdown is
+ *  poly-preset-select, which never reads pagePresetName). */
+export function recordPagePresetForLane(laneId: string, presetName: string): void {
+  const bare = presetName.replace(/^(factory:|user:|engine:)/, '');
+  const value = `engine:${bare}`;
+  pagePresetName.set(laneId, value);
+  for (const [selectId, holder] of pageSelectActiveLane) {
+    if (holder.laneId === laneId) {
+      const sel = document.getElementById(selectId) as HTMLSelectElement | null;
+      if (sel) sel.value = value;
+    }
+  }
 }
 
 /** Mark the poly preset select as "custom" and forget the lane's preset

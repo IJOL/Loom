@@ -23,18 +23,20 @@ import type { SynthEngine } from '../engines/engine-types';
 import type { PolySynth } from '../polysynth/polysynth';
 import { applyPresetByName } from '../polysynth/polysynth-presets';
 
-/** Apply a prefix-tagged preset name to an engine instance. No-op if the
- *  preset name has no recognized prefix or the engine doesn't expose the
- *  matching path (e.g. `factory:` on a non-subtractive engine that has no
- *  PolySynth). Unknown preset NAMES silently no-op inside the engine. */
+/** Apply a prefix-tagged preset name to an engine instance. Unknown preset
+ *  NAMES silently no-op inside the engine. */
 export function applyPresetToEngine(engine: SynthEngine, presetName: string): void {
   if (presetName.startsWith('factory:') || presetName.startsWith('user:')) {
     const bare = presetName.startsWith('factory:')
       ? presetName.slice('factory:'.length)
       : presetName.slice('user:'.length);
     const ps = (engine as { getPolySynth?(): PolySynth | null }).getPolySynth?.();
-    if (!ps) return;
-    applyPresetByName(ps, bare);
+    if (ps) { applyPresetByName(ps, bare); return; }
+    // Non-PolySynth engine (tb303 / karplus / fm / wavetable / drums): its
+    // "factory" presets ARE the engine's own JSON preset list. Without this
+    // fallback, every non-Subtractive demo lane loaded as "(custom — no
+    // preset)" because factory:/user: silently no-op'd here.
+    engine.applyPreset(bare);
     return;
   }
   if (presetName.startsWith('engine:')) {

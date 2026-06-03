@@ -38,7 +38,7 @@ import {
   buildSavedStateV3, applyLoadedStateV3, type SavedStateV3, type SavedStateV3Deps,
 } from './save/saved-state-v3';
 import {
-  wirePolyControls, refreshPolyPresetSelect,
+  wirePolyControls, refreshPolyPresetSelect, recordPagePresetForLane,
   type PolySynthPresetsDeps,
 } from './polysynth/polysynth-presets';
 import { wireRandomizeUI } from './core/randomize-ui';
@@ -374,6 +374,10 @@ const sessionHost = new SessionHost({
     const inst = getLaneEngineInstance(laneId);
     if (!inst) return;
     applyPresetToEngine(inst, presetName);
+    // Mark the per-page (303/drums) preset dropdown so it reflects the
+    // recalled preset on load (subtractive/poly are handled by
+    // refreshPolyPresetSelect via polyPresetName).
+    recordPagePresetForLane(laneId, presetName);
     refreshPolyPresetSelect();
     refreshLaneKnobs(laneId, inst);
   },
