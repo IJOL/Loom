@@ -128,6 +128,36 @@ const DRUM_PARAMS: EngineParamSpec[] = [
   ...buildPerVoiceSpecs(),
 ];
 
+function writeMixer(dm: DrumMachine, voice: DrumVoice, leaf: string, v: number): void {
+  const st = dm.channels[voice];
+  switch (leaf) {
+    case 'level':   st.setLevel(v);      break;
+    case 'pan':     st.setPan(v);        break;
+    case 'rev':     st.setReverbSend(v); break;
+    case 'dly':     st.setDelaySend(v);  break;
+    case 'eq.low':  st.setEqLow(v);      break;
+    case 'eq.mid':  st.setEqMid(v);      break;
+    case 'eq.high': st.setEqHigh(v);     break;
+  }
+}
+
+function readMixer(dm: DrumMachine, voice: DrumVoice, leaf: string): number {
+  const s = dm.channels[voice].serialize();
+  switch (leaf) {
+    case 'level':   return s.level;
+    case 'pan':     return s.pan;
+    case 'rev':     return s.reverbSend;
+    case 'dly':     return s.delaySend;
+    case 'eq.low':  return s.eqLow;
+    case 'eq.mid':  return s.eqMid;
+    case 'eq.high': return s.eqHigh;
+  }
+  return 0;
+}
+
+// Note: getSharedAudioParams stays bus-only (do NOT add per-voice params) so
+// the LFO/ADSR destination dropdown is not flooded with 56 per-voice entries.
+
 class DrumsVoice implements Voice {
   /** Set by DrumsEngine.createVoice for dispose-time cleanup. */
   laneId: string | null = null;
@@ -192,13 +222,14 @@ export class DrumsEngine implements SynthEngine {
   private instances = new WeakMap<AudioNode, DrumMachine>();
   private lastInstance: DrumMachine | null = null;
 
-  /** Engine-level cache for scalar param values. Per-voice `.level` writes
-   *  push through to the matching ChannelStrip; master.* values are stored
-   *  here for now (no audio destination wired yet — modulators and the
-   *  knob UI still read/write them consistently). */
+  /** Engine-level cache for scalar param values. Only bus.* params are cached
+   *  here; per-voice values live in the DrumMachine synth store and are read
+   *  from there by getBaseValue. This avoids a stale mirror for the 56+
+   *  per-voice params and ensures the live kit default is always returned for
+   *  untouched params. */
   private paramValues: Record<string, number> = (() => {
     const o: Record<string, number> = {};
-    for (const s of DRUM_PARAMS) o[s.id] = s.default;
+    for (const s of BUS_PARAMS) o[s.id] = s.default;
     return o;
   })();
 
@@ -235,24 +266,49 @@ export class DrumsEngine implements SynthEngine {
   /** Tempo for LFO BPM sync. main.ts updates this when seq.bpm changes. */
   bpm = 120;
 
+  private specDefault(id: string): number {
+    return DRUM_PARAMS.find((p) => p.id === id)?.default ?? 0;
+  }
+
   getBaseValue(id: string): number {
-    if (id in this.paramValues) return this.paramValues[id];
-    return DRUM_PARAMS.find(p => p.id === id)?.default ?? 0;
+    if (id.startsWith('bus.')) {
+      return id in this.paramValues ? this.paramValues[id] : this.specDefault(id);
+    }
+    const dot = id.indexOf('.');
+    const voice = id.slice(0, dot) as DrumVoice;
+    const leaf = id.slice(dot + 1);
+    const dm = this.lastInstance;
+    if (DRUM_LANES.includes(voice) && dm) {
+      if (MIXER_LEAVES.has(leaf)) return readMixer(dm, voice, leaf);
+      const v = dm.getVoiceParam(voice, leaf);
+      if (typeof v === 'number') return v;
+    }
+    return id in this.paramValues ? this.paramValues[id] : this.specDefault(id);
   }
 
   setBaseValue(id: string, v: number): void {
-    if (!(id in this.paramValues)) return;
     this.paramValues[id] = v;
-    if (!this.busStrip) return;
-    switch (id) {
-      case 'bus.level':       this.busStrip.setLevel(v);       return;
-      case 'bus.pan':         this.busStrip.setPan(v);         return;
-      case 'bus.reverbSend':  this.busStrip.setReverbSend(v);  return;
-      case 'bus.delaySend':   this.busStrip.setDelaySend(v);   return;
-      case 'bus.eq.low':      this.busStrip.setEqLow(v);       return;
-      case 'bus.eq.mid':      this.busStrip.setEqMid(v);       return;
-      case 'bus.eq.high':     this.busStrip.setEqHigh(v);      return;
+    if (id.startsWith('bus.')) {
+      if (!this.busStrip) return;
+      switch (id) {
+        case 'bus.level':      this.busStrip.setLevel(v);      return;
+        case 'bus.pan':        this.busStrip.setPan(v);        return;
+        case 'bus.reverbSend': this.busStrip.setReverbSend(v); return;
+        case 'bus.delaySend':  this.busStrip.setDelaySend(v);  return;
+        case 'bus.eq.low':     this.busStrip.setEqLow(v);      return;
+        case 'bus.eq.mid':     this.busStrip.setEqMid(v);      return;
+        case 'bus.eq.high':    this.busStrip.setEqHigh(v);     return;
+      }
+      return;
     }
+    const dot = id.indexOf('.');
+    const voice = id.slice(0, dot) as DrumVoice;
+    const leaf = id.slice(dot + 1);
+    if (!DRUM_LANES.includes(voice)) return;
+    const dm = this.lastInstance;
+    if (!dm) return; // pre-instance: cached in paramValues; restored once an instance exists
+    if (MIXER_LEAVES.has(leaf)) { writeMixer(dm, voice, leaf, v); return; }
+    dm.setVoiceParam(voice, leaf, v);
   }
 
   /** Cached so the modulation-panel onChange callback can re-apply bindings. */
