@@ -464,11 +464,6 @@ export class SessionHost {
         if (!scene) return;
         void ctx.resume();
         launchScene(self.laneStates, self.state, scene, idx, ctx.currentTime, seq.bpm);
-        if (scene.presetPerLane) {
-          for (const [laneId, presetName] of Object.entries(scene.presetPerLane)) {
-            self.deps.applyPresetForLane?.(laneId, presetName);
-          }
-        }
         if (!seq.isPlaying()) { resetAutomationPosition(); seq.start(); playBtn.textContent = '■'; }
         self.renderWithMixer();
       },

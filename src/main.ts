@@ -574,18 +574,19 @@ function launchSceneById(sceneId: string): void {
   void ctx.resume();
   // Ensure resources exist for any freshly-imported lanes BEFORE launch — the
   // host's normal path runs this in applyLoadedSessionState; importer-added
-  // lanes bypass that, so do it here.
+  // lanes bypass that, so do it here. Apply each lane's preset once, when its
+  // resource is first allocated, so imported tracks play their matched GM
+  // preset. Launching a scene never re-applies a preset to an already-allocated
+  // lane — the sound is a per-channel property.
   for (const lane of sessionHost.state.lanes) {
+    const isNew = !laneResources.get(lane.id);
     ensureLaneResource(lane.id, lane.engineId);
-  }
-  launchSceneRuntime(sessionHost.laneStates, sessionHost.state, scene, idx, ctx.currentTime, seq.bpm);
-  if (scene.presetPerLane) {
-    for (const [laneId, presetName] of Object.entries(scene.presetPerLane)) {
-      const inst = getLaneEngineInstance(laneId);
-      if (!inst) continue;
-      applyPresetToEngine(inst, presetName);
+    if (isNew && lane.enginePresetName) {
+      const inst = getLaneEngineInstance(lane.id);
+      if (inst) applyPresetToEngine(inst, lane.enginePresetName);
     }
   }
+  launchSceneRuntime(sessionHost.laneStates, sessionHost.state, scene, idx, ctx.currentTime, seq.bpm);
   if (!seq.isPlaying()) { resetAutomationPosition(); seq.start(); playBtn.textContent = '■'; }
   sessionHost.renderWithMixer();
 }
@@ -630,9 +631,8 @@ sessionHost.onStateApplied(() => {
 });
 
 // Boot demo: fetched as a static JSON asset rather than constructed
-// programmatically. The JSON drives both the SessionState and the
-// per-scene preset map; applyLoadedSessionState reads lane.enginePresetName
-// and onLaunchScene reads scene.presetPerLane.
+// programmatically. The JSON drives the SessionState; applyLoadedSessionState
+// reads each lane.enginePresetName to set that channel's sound.
 //
 // We gate the demo apply on `presetsLoaded` so the engine preset cache is
 // populated before applyLoadedSessionState calls applyPresetByName.
