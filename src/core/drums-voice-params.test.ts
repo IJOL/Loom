@@ -8,7 +8,6 @@ function makeDM(kit = '909'): DrumMachine {
   const dest = ctx.createGain();
   const fx = new FxBus(ctx, dest);
   const dm = new DrumMachine(ctx, fx, dest);
-  dm.setKit(kit);
   dm.loadKitDefaults(kit);
   return dm;
 }
@@ -51,5 +50,10 @@ describe('DrumMachine per-voice synth store', () => {
     dm.loadKitDefaults('808');
     expect(dm.channels.kick.serialize().reverbSend).toBe(0);
     expect(dm.channels.kick.serialize().level).toBe(1);
+  });
+
+  it('getVoiceParam returns undefined for an unknown leaf', () => {
+    const dm = makeDM('909');
+    expect(dm.getVoiceParam('kick', 'nonexistent')).toBeUndefined();
   });
 });

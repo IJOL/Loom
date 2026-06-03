@@ -37,6 +37,7 @@ interface Kit {
 
 export const WAVE_TYPES: OscillatorType[] = ['sine', 'triangle', 'square'];
 const WAVE_INDEX: Record<string, number> = { sine: 0, triangle: 1, square: 2 };
+const HAT_FILTER_DEFAULT = 7000;
 
 /** Live, editable per-voice synthesis params. Seeded from the active kit by
  *  loadKitDefaults; read at trigger time by each play* method. Keys are the
@@ -56,15 +57,15 @@ function seedSynthState(kit: Kit): DrumSynthState {
       bodyDecay: kit.snare.toneDecay, noiseDecay: kit.snare.noiseDecay,
       noiseTone: kit.snare.noiseFilter, tone1: kit.snare.tone1, tone2: kit.snare.tone2,
     },
-    closedHat: { tune: kit.hat.tune, decay: kit.hat.decay,    filter: 7000 },
-    openHat:   { tune: kit.hat.tune, decay: kit.hat.openDecay, filter: 7000 },
+    closedHat: { tune: kit.hat.tune, decay: kit.hat.decay,    filter: HAT_FILTER_DEFAULT },
+    openHat:   { tune: kit.hat.tune, decay: kit.hat.openDecay, filter: HAT_FILTER_DEFAULT },
     clap: { tone: kit.clap.filterFreq, decay: kit.clap.decay, sharp: kit.clap.filterQ },
     tom: {
       tune: 1, decay: kit.tom.ampDecay, sweep: kit.tom.pitchDecay,
       startFreq: kit.tom.startFreq, end: kit.tom.endFreq,
     },
     cowbell: {
-      tune: 1, decay: kit.cowbell.decay, detune: 1,
+      tune: 1, decay: kit.cowbell.decay, detune: 1, // new param, no kit field — neutral default
       freq1: kit.cowbell.freq1, freq2: kit.cowbell.freq2,
     },
     ride: { tune: kit.ride.tune, decay: kit.ride.decay },
@@ -137,7 +138,7 @@ export class DrumMachine {
   private noiseBuffer: AudioBuffer;
   kitId: string = '909';
   channels: Record<DrumVoice, ChannelStrip>;
-  synth: DrumSynthState;
+  private synth: DrumSynthState;
 
   constructor(private ctx: AudioContext, fx: FxBus, dryDest: AudioNode) {
     this.noiseBuffer = makeWhiteNoise(ctx, 2);
@@ -159,8 +160,9 @@ export class DrumMachine {
    *  AND reset every per-voice mixer strip to neutral. Distinct from setKit,
    *  which only changes the active id. */
   loadKitDefaults(id: string): void {
-    const kit = BY_ID[id] ?? BY_ID[this.kitId];
-    if (BY_ID[id]) this.kitId = id;
+    const kit = BY_ID[id];
+    if (!kit) return;          // unknown id — caller's mistake, don't mutate state
+    this.kitId = id;
     this.synth = seedSynthState(kit);
     for (const v of DRUM_LANES) {
       const st = this.channels[v];
