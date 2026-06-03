@@ -1,0 +1,46 @@
+{
+  "id": "tr808",
+  "name": "TR-808 (samples)",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "tr808/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "tr808/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "tr808/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "tr808/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "tr808/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "tr808/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "tr808/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "tr808/ride.wav"
+    }
+  ]
+}

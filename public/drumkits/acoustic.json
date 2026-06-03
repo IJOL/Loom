@@ -1,0 +1,46 @@
+{
+  "id": "acoustic",
+  "name": "Acoustic / Dirt (samples)",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "acoustic/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "acoustic/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "acoustic/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "acoustic/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "acoustic/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "acoustic/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "acoustic/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "acoustic/ride.wav"
+    }
+  ]
+}

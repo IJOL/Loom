@@ -25,3 +25,8 @@ playwright-report/
 
 # Claude Code personal/local settings (not shared with the team)
 .claude/settings.local.json
+
+# Harvested raw assets (mixed-license / copyright) — not committed; loaded from public/ at runtime
+drum-samples/
+midi-library/
+public/drumkits/**/*.wav
