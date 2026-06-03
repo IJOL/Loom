@@ -26,8 +26,14 @@ export function midiToSession(
     selectedTrackIndices: number[];
     presetPerTrack: Record<number, GMMatch>;
     drumKitMatch: GMMatch | null;
+    /** Clip-slot/row this import's scene occupies. The grid couples row r ↔
+     *  scene r ↔ clip slot r, so a scene appended at index N must place its
+     *  clips at slot N to render on the same row as its launch button. Default
+     *  0 (a fresh/Replace session whose only scene is row 0). */
+    sceneRow?: number;
   },
 ): MidiImportResult {
+  const sceneRow = Math.max(0, Math.floor(opts.sceneRow ?? 0));
   const selected = parsed.tracks.filter((t) => opts.selectedTrackIndices.includes(t.index));
   const scale = (TICKS_PER_STEP * 4) / parsed.division;
 
@@ -82,15 +88,19 @@ export function midiToSession(
       lengthBars,
       notes: clipNotes,
     };
+    // Pad with empty slots so the clip sits at `sceneRow`, aligning with the
+    // scene's launch button (otherwise imported clips pile into row 0).
+    const clips: (SessionClip | null)[] =
+      sceneRow > 0 ? [...Array<SessionClip | null>(sceneRow).fill(null), clip] : [clip];
     const lane: SessionLane = {
       id: nextId('lane'),
       engineId: match.engineId,
       name: tr.name || `Track ${tr.index}`,
-      clips: [clip],
+      clips,
       enginePresetName: `factory:${match.presetName}`,
     };
     newLanes.push(lane);
-    clipPerLane[lane.id] = 0;
+    clipPerLane[lane.id] = sceneRow;
   }
 
   const drumClip: SessionClip | null = drumNotes.length === 0 ? null : {

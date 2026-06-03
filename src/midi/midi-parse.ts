@@ -44,7 +44,10 @@ export function parseMidiFile(buf: Uint8Array): ParsedMidi {
       if (status === 0xff) {
         const type = u8(); const len = vlq();
         if (type === 0x03) {
-          name = String.fromCharCode(...buf.slice(p, p + len));
+          // Strip null terminators / control chars (0x00-0x1f) some exporters leave
+          // in the track-name meta so lane + clip names are clean.
+          name = String.fromCharCode(...buf.slice(p, p + len))
+            .split('').filter((c) => c.charCodeAt(0) >= 0x20).join('').trim();
         } else if (type === 0x51 && len === 3 && bpm === null) {
           const us = (buf[p] << 16) | (buf[p+1] << 8) | buf[p+2];
           bpm = 60_000_000 / us;

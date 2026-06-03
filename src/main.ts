@@ -24,6 +24,7 @@ import { PolySynth } from './polysynth/polysynth';
 import { stepsToNotes, bassStepsToNotes } from './core/notes';
 import * as laneTrackHelpers from './core/lane-display';
 import { SessionHost } from './session/session-host';
+import { emptySessionState } from './session/session';
 import { fetchDemoSession } from './demo/demo-loader';
 import { wireDemoPicker } from './demo/demo-picker';
 import { wireMidiImportUI } from './midi/midi-import-ui';
@@ -605,6 +606,7 @@ wireMidiImportUI({
   onSessionChanged: () => sessionHost.renderWithMixer(),
   launchScene: (sceneId: string) => launchSceneById(sceneId),
   flashButton,
+  presetsReady: presetsLoaded,
 });
 
 const automationTickDeps: AutomationTickDeps = {
@@ -647,26 +649,29 @@ presetsLoaded
     console.error('Demo load failed; falling back to empty session.', err);
   });
 
-// Demo picker: lets the user swap in any baked demo session (the auto-loaded
-// minimal-techno above remains the safe default). The MIDI-baked demos
-// (sweet-dreams, mgmt-kids, etc.) are produced by scripts/bake-midi-demo.mjs;
-// if they aren't baked yet, selecting one will 404 and the picker surfaces an
-// alert via its catch block.
+// Demo picker: just the hand-built Minimal Techno showcase (also the boot
+// default). MIDI content is loaded live via the transport MIDI Import — there
+// are no pre-baked MIDI demos.
 const demoPicker = document.getElementById('demo-picker') as HTMLSelectElement | null;
 if (demoPicker) {
   wireDemoPicker({
     sessionHost,
     selectEl: demoPicker,
     demos: [
-      { label: 'Minimal Techno',            path: '/demos/minimal-techno.json' },
-      { label: 'Sweet Dreams',              path: '/demos/sweet-dreams.json' },
-      { label: 'MGMT — Kids',               path: '/demos/mgmt-kids.json' },
-      { label: 'Solid Sessions — Janeiro',  path: '/demos/solid-sessions-janeiro.json' },
-      { label: 'Untitled MIDI',             path: '/demos/untitled.json' },
+      { label: 'Minimal Techno', path: '/demos/minimal-techno.json' },
     ],
     onLoaded: () => history.clear(),
   });
 }
+
+// New: wipe to a fresh empty session (default 303/drums/sub lanes, no clips).
+const newSessionBtn = document.getElementById('new-session');
+newSessionBtn?.addEventListener('click', () => {
+  if (!window.confirm('Start a new empty session? Unsaved changes will be lost.')) return;
+  sessionHost.applyLoadedSessionState(emptySessionState());
+  history.clear();
+});
+
 // App is always in session mode — seq.sessionMode must be true at boot.
 seq.sessionMode = true;
 startVisualizer({ ctx, analyser, vizCanvas });

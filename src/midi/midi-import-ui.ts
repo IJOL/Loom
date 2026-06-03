@@ -16,7 +16,7 @@ import { findGMMatches, suggestDefaultMapping, type GMMatch } from './gm-lookup'
 import { auditionPreset } from './audition';
 import { isPresetsReady, getCachedPresets } from '../presets/preset-loader';
 import { listEngines } from '../engines/registry';
-import type { SessionState } from '../session/session';
+import type { SessionState, SessionLane } from '../session/session';
 
 export interface MidiImportUiDeps {
   session: SessionState;
@@ -35,6 +35,10 @@ export interface MidiImportUiDeps {
   /** Switch to the freshly-created scene by id (host resolves index). */
   launchScene: (sceneId: string) => void;
   flashButton: (b: HTMLButtonElement, msg: string) => void;
+  /** Resolves when engine presets finish loading. Used to re-enable the Import
+   *  button if a file was picked before presets were ready (boot race) — the
+   *  button is gated on isPresetsReady() and would otherwise stay stuck. */
+  presetsReady?: Promise<unknown>;
 }
 
 export function wireMidiImportUI(deps: MidiImportUiDeps): void {
@@ -160,6 +164,11 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
     trackListEl.style.display = '';
     loadBtn.style.display = '';
     loadBtn.disabled = !isPresetsReady();
+    if (loadBtn.disabled && deps.presetsReady) {
+      // Picked a file before presets finished loading (boot race) — re-enable
+      // once they resolve instead of leaving the button permanently disabled.
+      void deps.presetsReady.then(() => { if (parsed) loadBtn.disabled = false; });
+    }
   });
 
   loadBtn.addEventListener('click', () => {
@@ -170,47 +179,58 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
     }
     const checks = Array.from(trackListEl.querySelectorAll<HTMLInputElement>('input[type=checkbox]:checked'));
     const indices = checks.map((cb) => parseInt(cb.dataset.idx ?? '', 10));
+
+    // Confirm BEFORE building the session: Add places the import on a NEW row
+    // (= the current scene count) so its clips align with their scene's launch
+    // button; Replace builds a fresh session at row 0. (`confirm` is binary.)
+    const sel = parsed.tracks.filter((t) => indices.includes(t.index));
+    const tonalCount = sel.filter((t) => !t.notes.some((n) => n.channel === 9)).length;
+    const hasDrums = sel.some((t) => t.notes.some((n) => n.channel === 9));
+    const doAdd = window.confirm(
+      `MIDI parsed: ${tonalCount} tonal tracks` +
+      (hasDrums ? ' + drum clip' : '') +
+      (parsed.bpm ? ` @ ${Math.round(parsed.bpm)} BPM` : '') +
+      `\n\nOK = Add to current session.\nCancel = Replace session.`,
+    );
+
+    const sceneRow = doAdd ? deps.session.scenes.length : 0;
     const result = midiToSession(parsed, {
       selectedTrackIndices: indices,
       presetPerTrack,
       drumKitMatch,
+      sceneRow,
     });
 
-    // OK = Add, Cancel = Replace. (`confirm` is binary; the spec uses the
-    // window confirm prompt to keep the UI footprint minimal.)
-    const doAdd = window.confirm(
-      `MIDI parsed: ${result.newLanes.length} tonal tracks` +
-      (result.drumClip ? ' + drum clip' : '') +
-      (result.bpm ? ` @ ${Math.round(result.bpm)} BPM` : '') +
-      `\n\nOK = Add to current session.\nCancel = Replace session.`,
-    );
+    // Place the drum clip on `lane` at the same row as the rest of the import.
+    const placeDrum = (lane: SessionLane) => {
+      while (lane.clips.length < sceneRow) lane.clips.push(null);
+      lane.clips[sceneRow] = result.drumClip!;
+      result.scene.clipPerLane[lane.id] = sceneRow;
+    };
 
     if (doAdd) {
       deps.session.lanes.push(...result.newLanes);
       deps.session.scenes.push(result.scene);
       if (result.drumClip && deps.drumLaneId) {
         const drumLane = deps.session.lanes.find((l) => l.id === deps.drumLaneId);
-        if (drumLane) {
-          const idx = drumLane.clips.push(result.drumClip) - 1;
-          result.scene.clipPerLane[drumLane.id] = idx;
-        }
+        if (drumLane) placeDrum(drumLane);
+        else console.warn('MIDI drums dropped — no drums lane in session');
       } else if (result.drumClip) {
         console.warn('MIDI drums dropped — no drums lane in session');
       }
     } else {
+      // Replace: a fresh session from the import. Clear a preserved drum lane's
+      // stale clips so the first column isn't full of the previous session.
       const preservedDrumLane = deps.drumLaneId
         ? deps.session.lanes.find((l) => l.id === deps.drumLaneId) ?? null
         : null;
+      if (preservedDrumLane) preservedDrumLane.clips = [];
       deps.session.lanes = preservedDrumLane
         ? [preservedDrumLane, ...result.newLanes]
         : [...result.newLanes];
       deps.session.scenes = [result.scene];
-      if (result.drumClip && preservedDrumLane) {
-        const idx = preservedDrumLane.clips.push(result.drumClip) - 1;
-        result.scene.clipPerLane[preservedDrumLane.id] = idx;
-      } else if (result.drumClip) {
-        console.warn('MIDI drums dropped — no drums lane in session');
-      }
+      if (result.drumClip && preservedDrumLane) placeDrum(preservedDrumLane);
+      else if (result.drumClip) console.warn('MIDI drums dropped — no drums lane in session');
     }
 
     if (result.bpm) deps.setBpm(result.bpm);

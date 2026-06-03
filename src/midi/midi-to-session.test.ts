@@ -31,6 +31,28 @@ describe('midiToSession', () => {
     expect(result.newLanes[0].enginePresetName).toBe('factory:BASS Acid Classic');
   });
 
+  it('places clips at sceneRow so they align with the scene launch row', () => {
+    const parsed: ParsedMidi = {
+      division: 96, bpm: 128,
+      tracks: [
+        { index: 0, name: 'Bass', program: 33, notes: [{ startTick: 0, duration: 48, midi: 36, velocity: 90, channel: 0 }] },
+      ],
+    };
+    const result = midiToSession(parsed, {
+      selectedTrackIndices: [0],
+      presetPerTrack: { 0: { engineId: 'tb303', presetName: 'BASS Acid Classic' } },
+      drumKitMatch: null,
+      sceneRow: 2,
+    });
+    const lane = result.newLanes[0];
+    // slots 0,1 empty; the clip at slot 2 (the scene's row)
+    expect(lane.clips).toHaveLength(3);
+    expect(lane.clips[0]).toBeNull();
+    expect(lane.clips[1]).toBeNull();
+    expect(lane.clips[2]?.notes[0].midi).toBe(36);
+    expect(result.scene.clipPerLane[lane.id]).toBe(2);
+  });
+
   it('merges all ch10 notes into a single drumClip', () => {
     const parsed: ParsedMidi = {
       division: 96, bpm: null,
