@@ -35,6 +35,42 @@ interface Kit {
   ride: RideParams;
 }
 
+export const WAVE_TYPES: OscillatorType[] = ['sine', 'triangle', 'square'];
+const WAVE_INDEX: Record<string, number> = { sine: 0, triangle: 1, square: 2 };
+
+/** Live, editable per-voice synthesis params. Seeded from the active kit by
+ *  loadKitDefaults; read at trigger time by each play* method. Keys are the
+ *  canonical leaf names documented in the plan. */
+export type VoiceSynthState = Record<string, number>;
+export type DrumSynthState = Record<DrumVoice, VoiceSynthState>;
+
+function seedSynthState(kit: Kit): DrumSynthState {
+  return {
+    kick: {
+      tune: 1, attack: kit.kick.clickAmount, decay: kit.kick.ampDecay,
+      startFreq: kit.kick.startFreq, endFreq: kit.kick.endFreq,
+      sweep: kit.kick.pitchDecay, wave: WAVE_INDEX[kit.kick.tone] ?? 0,
+    },
+    snare: {
+      tune: 1, tone: kit.snare.toneAmount, snap: kit.snare.noiseAmount,
+      bodyDecay: kit.snare.toneDecay, noiseDecay: kit.snare.noiseDecay,
+      noiseTone: kit.snare.noiseFilter, tone1: kit.snare.tone1, tone2: kit.snare.tone2,
+    },
+    closedHat: { tune: kit.hat.tune, decay: kit.hat.decay,    filter: 7000 },
+    openHat:   { tune: kit.hat.tune, decay: kit.hat.openDecay, filter: 7000 },
+    clap: { tone: kit.clap.filterFreq, decay: kit.clap.decay, sharp: kit.clap.filterQ },
+    tom: {
+      tune: 1, decay: kit.tom.ampDecay, sweep: kit.tom.pitchDecay,
+      startFreq: kit.tom.startFreq, end: kit.tom.endFreq,
+    },
+    cowbell: {
+      tune: 1, decay: kit.cowbell.decay, detune: 1,
+      freq1: kit.cowbell.freq1, freq2: kit.cowbell.freq2,
+    },
+    ride: { tune: kit.ride.tune, decay: kit.ride.decay },
+  };
+}
+
 const KITS: Kit[] = [
   {
     id: '808', name: 'TR-808', description: 'Warm, boomy — hip hop / electro',
@@ -101,12 +137,14 @@ export class DrumMachine {
   private noiseBuffer: AudioBuffer;
   kitId: string = '909';
   channels: Record<DrumVoice, ChannelStrip>;
+  synth: DrumSynthState;
 
   constructor(private ctx: AudioContext, fx: FxBus, dryDest: AudioNode) {
     this.noiseBuffer = makeWhiteNoise(ctx, 2);
     this.channels = Object.fromEntries(
       DRUM_LANES.map((lane) => [lane, new ChannelStrip(ctx, dryDest, fx)]),
     ) as Record<DrumVoice, ChannelStrip>;
+    this.synth = seedSynthState(BY_ID[this.kitId]);
   }
 
   listKits() {
@@ -115,6 +153,29 @@ export class DrumMachine {
 
   setKit(id: string) {
     if (BY_ID[id]) this.kitId = id;
+  }
+
+  /** Reload all per-voice synth params from a kit (the "preset of departure")
+   *  AND reset every per-voice mixer strip to neutral. Distinct from setKit,
+   *  which only changes the active id. */
+  loadKitDefaults(id: string): void {
+    const kit = BY_ID[id] ?? BY_ID[this.kitId];
+    if (BY_ID[id]) this.kitId = id;
+    this.synth = seedSynthState(kit);
+    for (const v of DRUM_LANES) {
+      const st = this.channels[v];
+      st.setLevel(1); st.setPan(0); st.setReverbSend(0); st.setDelaySend(0);
+      st.setEqLow(0); st.setEqMid(0); st.setEqHigh(0);
+    }
+  }
+
+  setVoiceParam(voice: DrumVoice, leaf: string, value: number): void {
+    const v = this.synth[voice];
+    if (v) v[leaf] = value;
+  }
+
+  getVoiceParam(voice: DrumVoice, leaf: string): number | undefined {
+    return this.synth[voice]?.[leaf];
   }
 
   trigger(voice: DrumVoice, time: number, accent = false) {
