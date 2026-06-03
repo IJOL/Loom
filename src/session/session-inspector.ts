@@ -44,6 +44,12 @@ export class SessionInspector {
 
   constructor(private deps: InspectorDeps) {
     this.wireKeyboardShortcuts();
+    // When a lane's engine UI changes its editor kind (e.g. the sampler loads a
+    // drumkit → drum-grid), re-render the editor if that lane's clip is open.
+    document.addEventListener('loom:lane-engine-ui-changed', (e) => {
+      const laneId = (e as CustomEvent<{ laneId: string }>).detail?.laneId;
+      if (laneId && this.selectedClip && laneId === this.selectedClip.laneId) this.renderEditor();
+    });
   }
 
   /** Delete / Backspace on a selected clip removes it (one undo entry).

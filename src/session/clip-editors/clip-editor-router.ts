@@ -25,6 +25,21 @@ export interface ClipEditorDeps {
 // the session, resets on reload. No saved-state schema change.
 const viewStateByClip = new Map<string, ViewState>();
 
+/** Decide which editor a lane's clip uses. Precedence: an explicit per-clip
+ *  override → a drumkit-loaded sampler (8-pad grid) → the engine's native
+ *  editor → piano-roll. Pure so it can be unit-tested without the DOM. */
+export function chooseClipEditor(
+  lane: SessionLane,
+  engineEditor: 'piano-roll' | 'drum-grid' | undefined,
+  override?: 'piano-roll' | 'drum-grid',
+): 'piano-roll' | 'drum-grid' {
+  // A sampler lane that has loaded a drumkit edits on the 8-pad drum grid;
+  // a plain sampler stays on the piano roll. drumkitId is the single source
+  // of truth (set by the sampler kit picker, persisted in engineState).
+  const isDrumkitSampler = lane.engineId === 'sampler' && !!lane.engineState?.sampler?.drumkitId;
+  return override ?? (isDrumkitSampler ? 'drum-grid' : undefined) ?? engineEditor ?? 'piano-roll';
+}
+
 export function renderClipEditor(
   host: HTMLElement,
   lane: SessionLane,
@@ -34,7 +49,7 @@ export function renderClipEditor(
 ): PianoRollHandle | null {
   host.innerHTML = '';
   const engine = getEngine(lane.engineId);
-  const editor = override ?? engine?.editor ?? 'piano-roll';
+  const editor = chooseClipEditor(lane, engine?.editor, override);
 
   if (editor === 'drum-grid') {
     renderDrumGridEditor(host, clip, deps.historyDeps);

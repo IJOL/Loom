@@ -17,7 +17,8 @@ import { wireEngineParams } from './engine-ui';
 import { sampleStore } from '../samples/store-singleton';
 import { importFile } from '../samples/import';
 import { addSampleToKeymap, removeKeymapEntry, setEntryRoot } from '../samples/keymap-edit';
-import { mirrorKeymapChange } from '../session/session-engine-state';
+import { mirrorKeymapChange, mirrorDrumkitId } from '../session/session-engine-state';
+import { listDrumkits, fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
 
 const SAMPLER_PARAMS: EngineParamSpec[] = [
   { id: 'gain',             label: 'Gain',    kind: 'continuous', min: 0,     max: 1.5, default: 1 },
@@ -255,6 +256,74 @@ export class SamplerEngine implements SynthEngine {
     heading.className = 'label';
     heading.textContent = 'Keymap';
     section.appendChild(heading);
+
+    // Bundled drumkit picker: load a kit (single-note pads at the GM drum
+    // notes) into this lane. Selecting a kit flips the lane to the drum-grid
+    // editor (drumkitId is mirrored into the session); '— none —' detaches it.
+    const kitRow = document.createElement('div');
+    kitRow.className = 'sampler-drumkit-row';
+    const kitLabel = document.createElement('label');
+    kitLabel.textContent = 'Drumkit ';
+    const kitSel = document.createElement('select');
+    kitSel.className = 'sampler-drumkit-select';
+    const noneOpt = document.createElement('option');
+    noneOpt.value = '';
+    noneOpt.textContent = '— none (melodic) —';
+    kitSel.appendChild(noneOpt);
+    kitLabel.appendChild(kitSel);
+    kitRow.appendChild(kitLabel);
+    const kitStatus = document.createElement('span');
+    kitStatus.className = 'sampler-drumkit-status';
+    kitRow.appendChild(kitStatus);
+    section.appendChild(kitRow);
+
+    const currentKit =
+      ctx.sessionState?.lanes.find((l) => l.id === ctx.laneId)?.engineState?.sampler?.drumkitId ?? '';
+    void listDrumkits().then((kits) => {
+      for (const k of kits) {
+        const opt = document.createElement('option');
+        opt.value = k.id;
+        opt.textContent = k.name;
+        kitSel.appendChild(opt);
+      }
+      kitSel.value = currentKit;
+    });
+
+    const fireEditorReroute = () =>
+      document.dispatchEvent(new CustomEvent('loom:lane-engine-ui-changed', { detail: { laneId: ctx.laneId } }));
+
+    kitSel.addEventListener('change', () => {
+      const id = kitSel.value;
+      if (!id) {
+        if (ctx.sessionState) mirrorDrumkitId(ctx.sessionState, ctx.laneId, undefined);
+        fireEditorReroute();
+        return;
+      }
+      const audioCtx = ctx.audioContext;
+      if (!audioCtx) {
+        kitStatus.textContent = ' audio not ready — press play once, then pick';
+        kitSel.value = currentKit;
+        return;
+      }
+      void (async () => {
+        kitSel.disabled = true;
+        kitStatus.textContent = ' loading…';
+        try {
+          const manifest = await fetchDrumkitManifest(id);
+          const km = await loadDrumkit(manifest, audioCtx);
+          this.setKeymap(km);
+          if (ctx.sessionState) {
+            mirrorKeymapChange(ctx.sessionState, ctx.laneId, km);
+            mirrorDrumkitId(ctx.sessionState, ctx.laneId, id);
+          }
+          fireEditorReroute();
+          rebuild();
+        } catch (err) {
+          kitStatus.textContent = ` failed: ${(err as Error).message}`;
+          kitSel.disabled = false;
+        }
+      })();
+    });
 
     const fileInput = document.createElement('input');
     fileInput.type = 'file';

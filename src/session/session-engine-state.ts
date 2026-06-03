@@ -48,12 +48,30 @@ export function mirrorKeymapChange(
   const lane = state.lanes.find((l) => l.id === laneId);
   if (!lane) return;
   if (!lane.engineState) lane.engineState = {};
-  lane.engineState.sampler = { keymap };
+  // Spread the existing sampler sub-state so a keymap edit doesn't drop a
+  // lane's drumkitId (and vice-versa in mirrorDrumkitId).
+  lane.engineState.sampler = { ...lane.engineState.sampler, keymap };
 }
 
 /** Read a lane's persisted keymap (empty array if none). */
 export function readLaneKeymap(state: SessionState, laneId: string): KeymapEntry[] {
   return state.lanes.find((l) => l.id === laneId)?.engineState?.sampler?.keymap ?? [];
+}
+
+/** Mirror which bundled drumkit a sampler lane uses (undefined = a plain
+ *  melodic sampler). Stored alongside the keymap so the lane re-loads the kit
+ *  by id on session/demo load. No-op if the lane is unknown. */
+export function mirrorDrumkitId(state: SessionState, laneId: string, drumkitId: string | undefined): void {
+  const lane = state.lanes.find((l) => l.id === laneId);
+  if (!lane) return;
+  if (!lane.engineState) lane.engineState = {};
+  const keymap = lane.engineState.sampler?.keymap ?? [];
+  lane.engineState.sampler = { keymap, ...(drumkitId ? { drumkitId } : {}) };
+}
+
+/** Read which bundled drumkit a sampler lane uses, if any. */
+export function readLaneDrumkitId(state: SessionState, laneId: string): string | undefined {
+  return state.lanes.find((l) => l.id === laneId)?.engineState?.sampler?.drumkitId;
 }
 
 /** Writes a deep-cloned copy of the note-FX array into

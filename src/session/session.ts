@@ -51,7 +51,7 @@ export interface SessionLane {
     params?: Record<string, number>;
     modulators?: import('../modulation/types').ModulatorState[];
     noteFx?: import('../notefx/notefx-types').NoteFxState[];
-    sampler?: { keymap: import('../samples/types').KeymapEntry[] };
+    sampler?: { keymap: import('../samples/types').KeymapEntry[]; drumkitId?: string };
   };
   /** Currently applied preset name for this lane (`factory:Name` /
    *  `user:Name` / `engine:Name` — same shape as `polyPresetName` values). */

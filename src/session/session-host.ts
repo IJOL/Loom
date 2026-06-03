@@ -17,7 +17,9 @@ import { sampleStore } from '../samples/store-singleton';
 import { sampleCache } from '../samples/sample-cache';
 import { getNoteFxChain, loadNoteFxForLane } from '../notefx/notefx-registry';
 import { renderNoteFxPanel } from '../notefx/notefx-ui';
-import { syncNoteFx } from './session-engine-state';
+import { syncNoteFx, mirrorKeymapChange } from './session-engine-state';
+import { fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
+import type { KeymapEntry } from '../samples/types';
 
 // ── Pure helper: slug id generation ────────────────────────────────────────
 /** Returns the next available slug id for a new lane of the given engineId.
@@ -318,6 +320,33 @@ export class SessionHost {
       if (km && typeof (engine as { setKeymap?: unknown }).setKeymap === 'function') {
         (engine as unknown as { setKeymap(k: typeof km): void }).setKeymap(km);
       }
+      // Sample drumkits: if this sampler lane is a kit, re-load it from its
+      // manifest. The decoded-sample cache is never serialised, so the
+      // persisted keymap ids would be silent after a reload — reloading by id
+      // regenerates the samples + cache. Self-healing across reload + demo swap.
+      const drumkitId = lane.engineState?.sampler?.drumkitId;
+      if (drumkitId && typeof (engine as { setKeymap?: unknown }).setKeymap === 'function') {
+        void this.reloadDrumkit(lane.id, drumkitId, engine as unknown as { setKeymap(k: KeymapEntry[]): void });
+      }
+    }
+  }
+
+  /** Re-load a bundled drumkit by id into a sampler lane (fresh sampleIds +
+   *  decoded cache), then re-mirror the resolved keymap. Fire-and-forget from
+   *  applyEngineState; the drum-grid editor renders its 8 rows regardless and
+   *  audio comes alive once the fetch/decode completes. */
+  private async reloadDrumkit(
+    laneId: string,
+    kitId: string,
+    engine: { setKeymap(k: KeymapEntry[]): void },
+  ): Promise<void> {
+    try {
+      const manifest = await fetchDrumkitManifest(kitId);
+      const km = await loadDrumkit(manifest, this.deps.ctx);
+      engine.setKeymap(km);
+      mirrorKeymapChange(this.state, laneId, km);
+    } catch (err) {
+      console.warn(`[drumkit] failed to reload '${kitId}' for ${laneId}:`, err);
     }
   }
 
