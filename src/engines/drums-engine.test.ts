@@ -15,24 +15,23 @@ describe('DrumsEngine.params', () => {
     }
   });
 
-  it('exposes only bus.* specs (per-voice params live on the drum-grid, not here)', () => {
+  it('exposes bus.* AND per-voice specs', () => {
     const ids = engine.params.map(p => p.id);
     expect(ids).toContain('bus.level');
-    expect(ids).toContain('bus.pan');
-    expect(ids).toContain('bus.reverbSend');
-    expect(ids).toContain('bus.delaySend');
-    expect(ids).toContain('bus.eq.low');
-    expect(ids).toContain('bus.eq.mid');
-    expect(ids).toContain('bus.eq.high');
-    expect(ids).not.toContain('kick.level');
-    expect(ids).not.toContain('snare.level');
-    expect(ids).not.toContain('master.level');
-    expect(ids).not.toContain('master.tune');
+    expect(ids).toContain('kick.tune');
+    expect(ids).toContain('kick.decay');
+    expect(ids).toContain('kick.rev');
+    expect(ids).toContain('snare.snap');
+    expect(ids).toContain('closedHat.tune');
+    expect(ids).toContain('openHat.tune');
+    expect(ids).toContain('ride.decay');
+    expect(ids).toContain('kick.eq.low');
   });
 
-  it('all params are continuous', () => {
+  it('kick.wave is the only discrete spec; the rest are continuous', () => {
     for (const spec of engine.params) {
-      expect(spec.kind).toBe('continuous');
+      if (spec.id === 'kick.wave') expect(spec.kind).toBe('discrete');
+      else expect(spec.kind).toBe('continuous');
     }
   });
 });

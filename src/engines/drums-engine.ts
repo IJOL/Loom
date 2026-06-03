@@ -10,7 +10,7 @@ import type { EngineParamSpec } from './engine-params';
 import type { PluginFactory } from '../plugins/types';
 import { registerEngine, registerEngineFactory } from './registry';
 import { getCachedPresets } from '../presets/preset-loader';
-import { DrumMachine } from '../core/drums';
+import { DrumMachine, DRUM_LANES, type DrumVoice } from '../core/drums';
 import { FxBus } from '../core/fx';
 import { GM_DRUM_MAP } from './drum-gm-map';
 import { ModulationHostImpl } from '../modulation/modulation-host';
@@ -30,7 +30,7 @@ import type { KnobHandle } from '../core/knob';
 // ids registered there. Per-voice levels are NOT exposed as engine params:
 // volume is controlled via the static drum-grid editor + accents at trigger
 // time, and the drum-master strip's DRUM VOL handles overall bus gain.
-const DRUM_PARAMS: EngineParamSpec[] = [
+const BUS_PARAMS: EngineParamSpec[] = [
   { id: 'bus.level',       label: 'Vol',  kind: 'continuous', min: 0,   max: 1.5, default: 1 },
   { id: 'bus.pan',         label: 'Pan',  kind: 'continuous', min: -1,  max: 1,   default: 0 },
   { id: 'bus.reverbSend',  label: 'Rev',  kind: 'continuous', min: 0,   max: 1,   default: 0 },
@@ -38,6 +38,94 @@ const DRUM_PARAMS: EngineParamSpec[] = [
   { id: 'bus.eq.low',      label: 'Lo',   kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
   { id: 'bus.eq.mid',      label: 'Mid',  kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
   { id: 'bus.eq.high',     label: 'Hi',   kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
+];
+
+const WAVE_OPTIONS = [
+  { value: 'sine', label: 'Sin' },
+  { value: 'triangle', label: 'Tri' },
+  { value: 'square', label: 'Sqr' },
+];
+
+// Per-voice synth specs (leaf ids; prefixed with `<voice>.` below). Defaults
+// are the 909 representative values used for cold fallback + knob double-click
+// reset; the live value always comes from the DrumMachine store via getBaseValue.
+const VOICE_SYNTH_SPECS: Record<DrumVoice, EngineParamSpec[]> = {
+  kick: [
+    { id: 'tune',      label: 'TUNE',   kind: 'continuous', min: 0.5, max: 2,   default: 1 },
+    { id: 'attack',    label: 'ATTACK', kind: 'continuous', min: 0,   max: 1,   default: 0.7 },
+    { id: 'decay',     label: 'DECAY',  kind: 'continuous', min: 0.05, max: 1.5, default: 0.4 },
+    { id: 'startFreq', label: 'START',  kind: 'continuous', min: 40,  max: 400, default: 220, unit: 'Hz' },
+    { id: 'endFreq',   label: 'END',    kind: 'continuous', min: 30,  max: 150, default: 55,  unit: 'Hz' },
+    { id: 'sweep',     label: 'SWEEP',  kind: 'continuous', min: 0.005, max: 0.3, default: 0.03 },
+    { id: 'wave',      label: 'WAVE',   kind: 'discrete',   min: 0,   max: 2,   default: 0, options: WAVE_OPTIONS },
+  ],
+  snare: [
+    { id: 'tune',       label: 'TUNE', kind: 'continuous', min: 0.5, max: 2,    default: 1 },
+    { id: 'tone',       label: 'TONE', kind: 'continuous', min: 0,   max: 1,    default: 0.35 },
+    { id: 'snap',       label: 'SNAP', kind: 'continuous', min: 0,   max: 1,    default: 0.75 },
+    { id: 'bodyDecay',  label: 'BODY', kind: 'continuous', min: 0.01, max: 0.3, default: 0.04 },
+    { id: 'noiseDecay', label: 'NDEC', kind: 'continuous', min: 0.02, max: 0.5, default: 0.18 },
+    { id: 'noiseTone',  label: 'NTONE', kind: 'continuous', min: 1000, max: 12000, default: 7000, unit: 'Hz' },
+  ],
+  closedHat: [
+    { id: 'tune',   label: 'TUNE',   kind: 'continuous', min: 0.5, max: 2, default: 1.2 },
+    { id: 'decay',  label: 'DECAY',  kind: 'continuous', min: 0.01, max: 0.3, default: 0.06 },
+    { id: 'filter', label: 'FILTER', kind: 'continuous', min: 3000, max: 12000, default: 7000, unit: 'Hz' },
+  ],
+  openHat: [
+    { id: 'tune',   label: 'TUNE',   kind: 'continuous', min: 0.5, max: 2, default: 1.2 },
+    { id: 'decay',  label: 'DECAY',  kind: 'continuous', min: 0.05, max: 1.0, default: 0.35 },
+    { id: 'filter', label: 'FILTER', kind: 'continuous', min: 3000, max: 12000, default: 7000, unit: 'Hz' },
+  ],
+  clap: [
+    { id: 'tone',  label: 'TONE',  kind: 'continuous', min: 500, max: 4000, default: 1500, unit: 'Hz' },
+    { id: 'decay', label: 'DECAY', kind: 'continuous', min: 0.05, max: 0.5, default: 0.16 },
+    { id: 'sharp', label: 'SHARP', kind: 'continuous', min: 0.3, max: 8,    default: 2.0 },
+  ],
+  tom: [
+    { id: 'tune',  label: 'TUNE',  kind: 'continuous', min: 0.5, max: 2, default: 1 },
+    { id: 'decay', label: 'DECAY', kind: 'continuous', min: 0.05, max: 1.0, default: 0.5 },
+    { id: 'sweep', label: 'SWEEP', kind: 'continuous', min: 0.01, max: 0.3, default: 0.08 },
+    { id: 'end',   label: 'END',   kind: 'continuous', min: 40, max: 200, default: 95, unit: 'Hz' },
+  ],
+  cowbell: [
+    { id: 'tune',   label: 'TUNE',   kind: 'continuous', min: 0.5, max: 2, default: 1 },
+    { id: 'decay',  label: 'DECAY',  kind: 'continuous', min: 0.05, max: 0.6, default: 0.25 },
+    { id: 'detune', label: 'DETUNE', kind: 'continuous', min: 0.5, max: 2, default: 1 },
+  ],
+  ride: [
+    { id: 'tune',  label: 'TUNE',  kind: 'continuous', min: 0.5, max: 2, default: 1.5 },
+    { id: 'decay', label: 'DECAY', kind: 'continuous', min: 0.2, max: 3, default: 1.2 },
+  ],
+};
+
+const VOICE_MIXER_SPECS: Array<Omit<EngineParamSpec, 'id'> & { leaf: string }> = [
+  { leaf: 'level',   label: 'LEVEL', kind: 'continuous', min: 0,   max: 1.5, default: 1 },
+  { leaf: 'rev',     label: 'REV',   kind: 'continuous', min: 0,   max: 1,   default: 0 },
+  { leaf: 'dly',     label: 'DLY',   kind: 'continuous', min: 0,   max: 1,   default: 0 },
+  { leaf: 'pan',     label: 'PAN',   kind: 'continuous', min: -1,  max: 1,   default: 0 },
+  { leaf: 'eq.low',  label: 'LO',    kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
+  { leaf: 'eq.mid',  label: 'MID',   kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
+  { leaf: 'eq.high', label: 'HI',    kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
+];
+
+const MIXER_LEAVES = new Set(VOICE_MIXER_SPECS.map((s) => s.leaf));
+
+function buildPerVoiceSpecs(): EngineParamSpec[] {
+  const out: EngineParamSpec[] = [];
+  for (const voice of DRUM_LANES) {
+    for (const s of VOICE_SYNTH_SPECS[voice]) out.push({ ...s, id: `${voice}.${s.id}` });
+    for (const m of VOICE_MIXER_SPECS) {
+      const { leaf, ...rest } = m;
+      out.push({ ...rest, id: `${voice}.${leaf}` });
+    }
+  }
+  return out;
+}
+
+const DRUM_PARAMS: EngineParamSpec[] = [
+  ...BUS_PARAMS,
+  ...buildPerVoiceSpecs(),
 ];
 
 class DrumsVoice implements Voice {
