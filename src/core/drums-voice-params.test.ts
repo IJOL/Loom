@@ -57,3 +57,20 @@ describe('DrumMachine per-voice synth store', () => {
     expect(dm.getVoiceParam('kick', 'nonexistent')).toBeUndefined();
   });
 });
+
+describe('closed/open hat are independent', () => {
+  it('editing closedHat.tune does not change openHat.tune', () => {
+    const dm = makeDM('909');
+    const before = dm.getVoiceParam('openHat', 'tune');
+    dm.setVoiceParam('closedHat', 'tune', 0.5);
+    expect(dm.getVoiceParam('closedHat', 'tune')).toBe(0.5);
+    expect(dm.getVoiceParam('openHat', 'tune')).toBe(before);
+  });
+
+  it('closed and open carry independent decay', () => {
+    const dm = makeDM('909');
+    // 909 hat: closed decay 0.06, open decay 0.35
+    expect(dm.getVoiceParam('closedHat', 'decay')).toBe(0.06);
+    expect(dm.getVoiceParam('openHat', 'decay')).toBe(0.35);
+  });
+});
