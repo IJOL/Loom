@@ -10226,16 +10226,6 @@
         "lane-mpr2aw3l-c": 0,
         "lane-mpr2aw3l-e": 0,
         "lane-mpr2aw3l-g": 0
-      },
-      "presetPerLane": {
-        "lane-mpr2aw3l-2": "factory:PAD Sweep Wide",
-        "lane-mpr2aw3l-4": "factory:PAD Halo Bright",
-        "lane-mpr2aw3l-6": "factory:BASS Acid Classic",
-        "lane-mpr2aw3l-8": "factory:LEAD Supersaw",
-        "lane-mpr2aw3l-a": "factory:BASS Hoover Sub",
-        "lane-mpr2aw3l-c": "factory:GTR Clean Electric",
-        "lane-mpr2aw3l-e": "factory:LEAD Sub Lead",
-        "lane-mpr2aw3l-g": "factory:LEAD Square"
       }
     }
   ],

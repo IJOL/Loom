@@ -31416,17 +31416,6 @@
         "lane-mpr2auvs-e": 0,
         "lane-mpr2auvs-g": 0,
         "lane-drums-sweet-dreams": 0
-      },
-      "presetPerLane": {
-        "lane-mpr2auvs-2": "factory:VOX Ooh",
-        "lane-mpr2auvs-4": "factory:STRINGS Ensemble",
-        "lane-mpr2auvs-6": "factory:STRINGS Ensemble",
-        "lane-mpr2auvs-8": "factory:PAD Choir Aah",
-        "lane-mpr2auvs-a": "factory:PAD Sweep Wide",
-        "lane-mpr2auvs-c": "factory:KEY E.Piano",
-        "lane-mpr2auvs-e": "factory:LEAD Square",
-        "lane-mpr2auvs-g": "factory:BASS Reese",
-        "lane-drums-sweet-dreams": "factory:KIT TR-808"
       }
     }
   ],

@@ -5992,18 +5992,6 @@
         "lane-mpr2awpz-g": 0,
         "lane-mpr2awpz-i": 0,
         "lane-drums-untitled": 0
-      },
-      "presetPerLane": {
-        "lane-mpr2awpz-2": "factory:LEAD Sub Lead",
-        "lane-mpr2awpz-4": "factory:GTR Jazz Hollowbody",
-        "lane-mpr2awpz-6": "factory:HARP Orchestral Concert",
-        "lane-mpr2awpz-8": "factory:PLUCK Pizzicato Strings",
-        "lane-mpr2awpz-a": "factory:KEY Marimba",
-        "lane-mpr2awpz-c": "factory:GTR Muted Palm",
-        "lane-mpr2awpz-e": "factory:KEY Vibes",
-        "lane-mpr2awpz-g": "factory:BASS Fingered Electric",
-        "lane-mpr2awpz-i": "factory:GTR Nylon Acoustic",
-        "lane-drums-untitled": "factory:KIT Electronic"
       }
     }
   ],
