@@ -61,8 +61,6 @@ if (result.drumClip) {
   };
   lanes.push(drumLane);
   result.scene.clipPerLane[drumLane.id] = 0;
-  result.scene.presetPerLane = result.scene.presetPerLane ?? {};
-  result.scene.presetPerLane[drumLane.id] = `factory:${drumKit.presetName}`;
 }
 
 const sessionState = {
