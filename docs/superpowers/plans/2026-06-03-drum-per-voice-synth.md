@@ -8,6 +8,8 @@
 
 **Tech Stack:** TypeScript, Web Audio API, Vite, Vitest (+ `node-web-audio-api` for DSP renders), SCSS.
 
+**Scope clarification (two drum systems now exist on `main`):** this plan targets ONLY the **synthesized** drum machine — the `drums-machine` engine (`DrumsEngine`) backed by `DrumMachine` in `src/core/drums.ts`. `main` also has **sample drumkits** that load audio through the **Sampler** engine (`lane.engineState.sampler.drumkitId`, `src/samples/drumkit-loader.ts`) — a separate, orthogonal path. Do NOT touch it; every edit here is to the synthesized voices.
+
 **Pre-flight (advisory):** Per CLAUDE.md, run `gitnexus_impact({target: "trigger", direction: "upstream"})` and on `DrumsEngine.setBaseValue` before editing and report blast radius. Note (memory): GitNexus indexes the main repo path and is worktree-blind, so `detect_changes` will see nothing from this worktree — treat its output as advisory only.
 
 **Reference spec:** [docs/superpowers/specs/2026-06-03-drum-per-voice-synth-design.md](../specs/2026-06-03-drum-per-voice-synth-design.md)
