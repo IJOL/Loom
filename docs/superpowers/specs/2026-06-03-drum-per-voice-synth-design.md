@@ -207,6 +207,48 @@ rack. Each column:
   params (if any) are applied **after**, so a saved session restores the user's
   tweaks on top of the kit baseline.
 
+## Presets
+
+A drum preset becomes a **full patch = kit + per-voice overrides**, reusing the
+existing flat `EnginePreset.params` map (same pattern as tb303/fm/karplus). This
+is backward compatible: today's `params` is already a free `id→value` object
+([public/presets/drums-machine.json](../../../public/presets/drums-machine.json)),
+so the current 8 kit-only presets keep working untouched.
+
+Preset shape:
+
+```json
+{ "name": "Techno Punch", "gm": [24],
+  "params": { "kitId": "909", "kick.tune": 0.9, "kick.decay": 0.6,
+              "kick.attack": 0.8, "closedHat.decay": 0.04, "snare.snap": 0.8 } }
+```
+
+`DrumsEngine.applyPreset(name)` ([src/engines/drums-engine.ts:253](../../../src/engines/drums-engine.ts)):
+1. If `params.kitId` is present → `DrumMachine.loadKitDefaults(kitId)` sets the
+   **departure point** (kit defaults + neutral per-voice mixer).
+2. Apply every remaining `params["<voice>.<param>"]` via `setBaseValue` — the
+   overrides baked into the preset, layered on top.
+3. The caller (session-host preset wiring) re-reads `getBaseValue` for each rack
+   knob to reposition it and mirrors the resulting values into `engineState`
+   (identical to how the master strip + other engines refresh after a preset).
+
+Compatibility / ordering:
+- A kit-only preset (`{ "kitId": "808" }`) applies step 1 and zero overrides →
+  identical to today.
+- The existing 8 factory presets are left **unchanged**; the schema now *permits*
+  richer character presets, which can be added later as plain JSON.
+
+**No user "Save As" for drums in this scope.** The drums page keeps `Load` + 🎲
+only. The per-voice sound is still fully persisted **with the project** via
+`lane.engineState.params` (session save/load) — it is just not separately
+reusable as a named user preset. A drums Save As (user presets in localStorage,
+like the poly page) is a deferred follow-up.
+
+**Discrete params:** `WAVE` (sine/triangle/square) is non-numeric. In a preset
+it is stored as a key/index; `setBaseValue` (currently `number`-only) needs a
+small encoding for discrete ids (e.g. an index into the wave list) so presets and
+the `select-control` agree. Flagged for the implementation plan.
+
 ## Testing
 
 Following the four-layer convention:
