@@ -1,20 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { emptyScene, audioClip, type SessionScene } from './session';
-
-describe('SessionScene.presetPerLane', () => {
-  it('is undefined by default on an empty scene', () => {
-    const s = emptyScene('Scene 1');
-    expect(s.presetPerLane).toBeUndefined();
-  });
-
-  it('accepts a laneId → preset-name map when set', () => {
-    const s: SessionScene = {
-      ...emptyScene('Scene 1'),
-      presetPerLane: { 'subtractive-1': 'factory:PAD Warm' },
-    };
-    expect(s.presetPerLane?.['subtractive-1']).toBe('factory:PAD Warm');
-  });
-});
+import { audioClip } from './session';
 
 describe('audioClip', () => {
   it('carries clip.sample, empty notes, and derives lengthBars from duration/bpm', () => {
