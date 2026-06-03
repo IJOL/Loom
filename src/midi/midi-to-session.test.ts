@@ -28,7 +28,7 @@ describe('midiToSession', () => {
     expect(result.newLanes[0].clips).toHaveLength(1);
     expect(result.newLanes[0].clips[0]?.notes[0].midi).toBe(36);
     expect(result.bpm).toBeCloseTo(128, 0);
-    expect(result.scene.presetPerLane?.[result.newLanes[0].id]).toBe('factory:BASS Acid Classic');
+    expect(result.newLanes[0].enginePresetName).toBe('factory:BASS Acid Classic');
   });
 
   it('merges all ch10 notes into a single drumClip', () => {
@@ -66,7 +66,7 @@ describe('midiToSession', () => {
       drumKitMatch: null,
     });
     expect(result.newLanes[0].engineId).toBe('subtractive');
-    expect(result.scene.presetPerLane?.[result.newLanes[0].id]).toBe('factory:Init');
+    expect(result.newLanes[0].enginePresetName).toBe('factory:Init');
   });
 
   it('falls back to poly/Init when presetPerTrack lacks an entry', () => {
@@ -82,7 +82,7 @@ describe('midiToSession', () => {
       drumKitMatch: null,
     });
     expect(result.newLanes[0].engineId).toBe('poly');
-    expect(result.scene.presetPerLane?.[result.newLanes[0].id]).toBe('factory:Init');
+    expect(result.newLanes[0].enginePresetName).toBe('factory:Init');
   });
 
   it('shifts notes to start at tick 0 of the lengthBars', () => {

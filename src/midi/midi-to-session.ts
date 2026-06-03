@@ -45,7 +45,6 @@ export function midiToSession(
 
   const newLanes: SessionLane[] = [];
   const clipPerLane: Record<string, number | null> = {};
-  const presetPerLane: Record<string, string> = {};
   const unmatchedTracks: { name: string; program: number }[] = [];
 
   const drumNotes: NoteEvent[] = [];
@@ -92,7 +91,6 @@ export function midiToSession(
     };
     newLanes.push(lane);
     clipPerLane[lane.id] = 0;
-    presetPerLane[lane.id] = `factory:${match.presetName}`;
   }
 
   const drumClip: SessionClip | null = drumNotes.length === 0 ? null : {
@@ -106,7 +104,6 @@ export function midiToSession(
     id: nextId('scene'),
     name: 'MIDI Import',
     clipPerLane,
-    presetPerLane,
   };
 
   return {
