@@ -33,13 +33,21 @@ export class RealtimeSceneRecorder implements SceneRecorder {
       channelInterpretation: 'speakers',
     });
 
-    const done = new Promise<RenderedAudio>((resolve) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const done = new Promise<RenderedAudio>((resolve, reject) => {
       node.port.onmessage = (e: MessageEvent) => {
         const d = e.data as { type: string; left: Float32Array; right: Float32Array; sampleRate: number };
         if (d && d.type === 'done') {
           resolve({ channels: [d.left, d.right], sampleRate: d.sampleRate });
         }
       };
+      // Guard against a worklet that never reports done (crash, suspended
+      // context): reject after the expected window plus a grace period so the
+      // caller's error path can recover the UI instead of hanging forever.
+      timer = setTimeout(
+        () => reject(new Error('scene export timed out')),
+        (leadSec + totalSec + 5) * 1000,
+      );
     });
 
     // Tap into the master output; the node emits silence to destination so it
@@ -57,6 +65,7 @@ export class RealtimeSceneRecorder implements SceneRecorder {
     try {
       return await done;
     } finally {
+      if (timer !== undefined) clearTimeout(timer);
       try { tap.disconnect(node); } catch { /* already torn down */ }
       try { node.disconnect(); } catch { /* already torn down */ }
     }
