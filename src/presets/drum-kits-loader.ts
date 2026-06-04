@@ -48,9 +48,11 @@ export function loadDrumKits(fetchFn: typeof fetch = fetch): Promise<DrumKitPres
       cache = out;
       return out;
     } catch (err) {
+      // Do NOT cache on error: leave `cache` null so a later loadDrumKits() /
+      // the populator's empty-list self-heal can re-fetch a transient failure
+      // (matches preset-loader.ts, which never caches a failed load).
       console.warn('[drum-kits] failed to load drum-kits.json:', err);
-      cache = [];
-      return cache;
+      return [];
     } finally {
       inflight = null;
     }

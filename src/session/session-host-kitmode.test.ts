@@ -29,4 +29,28 @@ describe('SessionHost.applyEngineState — kitMode restore', () => {
     (host as unknown as { applyEngineState(): void }).applyEngineState();
     expect(calls).toContain('sample');
   });
+
+  it('resets a reused façade to synth when the loaded lane omits kitMode', () => {
+    // The DrumsEngine façade is reused across loads; after a sample-kit session,
+    // loading a lane with NO kitMode (New Session / synth session) must RESET to
+    // 'synth', not leave the engine stuck in sample mode.
+    const calls: string[] = [];
+    const engine = {
+      id: 'drums-machine',
+      setKitMode: (m: string) => calls.push(m),
+      setBaseValue: () => {},
+      getBaseValue: () => 0,
+    };
+    const laneResources = {
+      get: (id: string) => (id === 'drums-1' ? { engine } : undefined),
+      ids: () => ['drums-1'],
+      dispose: () => {},
+    };
+    const host = new SessionHost({ laneResources } as unknown as ConstructorParameters<typeof SessionHost>[0]);
+    host.state.lanes = [
+      { id: 'drums-1', engineId: 'drums-machine', clips: [], engineState: {} }, // no kitMode
+    ];
+    (host as unknown as { applyEngineState(): void }).applyEngineState();
+    expect(calls).toEqual(['synth']);
+  });
 });

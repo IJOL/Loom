@@ -1,6 +1,5 @@
 import { randomizeBassParams } from './random';
 import type { TB303 } from './synth';
-import type { DrumMachine } from './drums';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
 import { markPagePresetCustom, recordPagePresetForLane } from '../polysynth/polysynth-presets';
 import { getDrumKits } from '../presets/drum-kits-loader';
@@ -10,18 +9,17 @@ import { getDrumKits } from '../presets/drum-kits-loader';
 // Session clip and lives in the clip inspector (see clip-randomize.ts).
 
 export interface RandomizeUIDeps {
-  // Phase G: synth/drums resolved lazily — null before boot lane is allocated.
+  // Phase G: synth resolved lazily — null before boot lane is allocated.
   getSynth: () => TB303 | null;
-  getDrums: () => DrumMachine | null;
   /** Active bass lane id (for marking its preset select as custom). */
   getBassLaneId: () => string;
   /** Active drums lane id (for marking its preset select as custom). */
   getDrumsLaneId: () => string;
   refreshKnobsFromSynth: () => void;
-  /** Apply a unified drum-kit preset by name (session-host.applyDrumPreset). */
+  /** Apply a unified drum-kit preset by name (session-host.applyDrumPreset).
+   *  The orchestrator handles the rack/panel rebuild, so the drums path no
+   *  longer needs getDrums()/refreshDrumsRack(). */
   applyDrumKitPreset?: (laneId: string, name: string) => void;
-  /** Re-reads the per-voice rack knob handles after a kit change (set in main.ts). */
-  refreshDrumsRack?: () => void;
   historyDeps: HistoryDeps;
 }
 

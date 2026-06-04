@@ -306,8 +306,12 @@ export class SessionHost {
       // Restore which drum source the Drums lane plays BEFORE keymap/padStore/
       // mute restore, so the façade's active() points at the right source.
       const kitMode = lane.engineState?.kitMode;
-      if (kitMode && typeof (engine as { setKitMode?: unknown }).setKitMode === 'function') {
-        (engine as unknown as { setKitMode(m: 'synth' | 'sample'): void }).setKitMode(kitMode);
+      // Restore unconditionally with the documented default: the DrumsEngine
+      // façade is REUSED across loads, so an absent kitMode must RESET a stale
+      // 'sample' back to 'synth' (New Session / a synth-only session), not leave
+      // the engine stuck in sample mode.
+      if (typeof (engine as { setKitMode?: unknown }).setKitMode === 'function') {
+        (engine as unknown as { setKitMode(m: 'synth' | 'sample'): void }).setKitMode(kitMode ?? 'synth');
       }
       // Apply per-param values (bus sends, EQ, etc.) from engineState.params.
       const params = lane.engineState?.params;
@@ -405,6 +409,16 @@ export class SessionHost {
     const lane = this.state.lanes.find((l) => l.id === laneId);
     if (lane) {
       if (!lane.engineState) lane.engineState = {};
+      const prevMode = lane.engineState.kitMode;
+      if (prevMode && prevMode !== entry.kind && lane.engineState.params) {
+        // Per-voice ids (e.g. 'kick.tune') mean different things + ranges in
+        // synth vs sample mode; bus.* is mode-agnostic. Drop the per-voice keys
+        // so a kit-mode switch doesn't replay stale cross-mode values into the
+        // other source on the next load.
+        for (const id of Object.keys(lane.engineState.params)) {
+          if (!id.startsWith('bus.')) delete lane.engineState.params[id];
+        }
+      }
       lane.engineState.kitMode = entry.kind;
       lane.enginePresetName = `engine:${name}`;
     }

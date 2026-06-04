@@ -277,4 +277,33 @@ describe('bindEngineModulators — scope partitioning', () => {
     const binder = bindEngineModulators({ laneId: 'lane', engine, voiceMods: sharedMods, ctx });
     expect(binder.activeCount()).toBe(1);
   });
+
+  it('honours an explicit rangeLookup for a bus param missing from engine.params (drums sample-mode fix)', () => {
+    // Regression: in sample mode the DrumsEngine façade's `params` getter returns
+    // the sampler specs (no bus.*), so the default rangeLookupForEngine would fall
+    // back to span 1 and mis-scale bus EQ/pan/level modulation depth. The fix
+    // passes an explicit rangeLookup (DrumsEngine.busRangeLookup) so bus.pan keeps
+    // its true -1..1 span (2) regardless of kitMode.
+    const ctx = makeMockCtx();
+    const pan = makeMockParam('pan');
+    const mods: ModulatorState[] = [{
+      id: 'lfo1', kind: 'lfo', enabled: true, scope: 'shared',
+      connections: [{ id: 'c1', paramId: 'drums-1.bus.pan', depth: 0.5 }],
+    }];
+    const host = makeMockHost(mods);
+    const engine = {
+      ...makeMockEngine([] /* no bus.* spec — simulates sample mode */, host),
+      getSharedAudioParams: () => new Map([['bus.pan', pan as unknown as AudioParam]]),
+    } as unknown as SynthEngine;
+    const voiceMods = new Map<string, ModulatorVoice>([['lfo1', makeMockModulatorVoice()]]);
+
+    bindEngineModulators({
+      laneId: 'drums-1', engine, voiceMods, ctx,
+      rangeLookup: (id) => (id === 'bus.pan' ? { min: -1, max: 1 } : { min: 0, max: 1 }),
+    });
+
+    expect(pan.inputs).toHaveLength(1);
+    // depth 0.5 * span 2 = 1.0 — NOT 0.5 (which the buggy span-1 fallback gave).
+    expect(pan.inputs[0].gain.value).toBeCloseTo(1.0);
+  });
 });

@@ -316,8 +316,19 @@ export class DrumsEngine implements SynthEngine {
     return DRUM_PARAMS.find((p) => p.id === id)?.default ?? 0;
   }
 
+  /** bus.* ranges resolve from DRUM_PARAMS regardless of kitMode — the `params`
+   *  getter returns the sampler's specs in sample mode (which lack bus.*), so a
+   *  bus modulator's range-lookup would otherwise fall back to span 1 and
+   *  mis-scale bus EQ/pan/level modulation depth. */
+  private busRangeLookup = (id: string): { min: number; max: number } => {
+    const s = DRUM_PARAMS.find((p) => p.id === id);
+    return { min: s?.min ?? 0, max: s?.max ?? 1 };
+  };
+
   getBaseValue(id: string): number {
-    if (this.kitMode === 'sample') return this.sampler.getBaseValue(id);
+    // bus.* stays on the façade in both modes (the bus strip is shared); only
+    // non-bus ids delegate to the embedded sampler.
+    if (this.kitMode === 'sample' && !id.startsWith('bus.')) return this.sampler.getBaseValue(id);
     if (id.startsWith('bus.')) {
       return id in this.paramValues ? this.paramValues[id] : this.specDefault(id);
     }
@@ -334,7 +345,7 @@ export class DrumsEngine implements SynthEngine {
   }
 
   setBaseValue(id: string, v: number): void {
-    if (this.kitMode === 'sample') { this.sampler.setBaseValue(id, v); return; }
+    if (this.kitMode === 'sample' && !id.startsWith('bus.')) { this.sampler.setBaseValue(id, v); return; }
     // bus.* is read back from this cache, so always store it; per-voice ids are
     // sourced live from the DrumMachine once an instance exists, so only cache
     // them before the instance appears (a transient boot window).
@@ -390,7 +401,7 @@ export class DrumsEngine implements SynthEngine {
       const laneId = getCurrentLaneForVoice();
       let binder: ConnectionBinder | null = null;
       if (laneId) {
-        binder = bindEngineModulators({ laneId, engine: this, voiceMods: this.engineModVoices, ctx });
+        binder = bindEngineModulators({ laneId, engine: this, voiceMods: this.engineModVoices, ctx, rangeLookup: this.busRangeLookup });
         this.currentLaneId = laneId;
       }
       return {
@@ -436,6 +447,7 @@ export class DrumsEngine implements SynthEngine {
       // nothing".
       drumVoice.binder = bindEngineModulators({
         laneId, engine: this, voiceMods: this.engineModVoices, ctx,
+        rangeLookup: this.busRangeLookup,
       });
       this.currentLaneId = laneId;
     }

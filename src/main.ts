@@ -18,7 +18,7 @@ import { swapLaneEngineFlow, type EngineSwapDeps } from './app/engine-swap';
 import { type TB303 } from './core/synth';
 import { Sequencer } from './core/sequencer';
 import { COMMON_METERS, formatMeter, meterFromLabel, stepsPerBar } from './core/meter';
-import { DRUM_LANES, type DrumMachine, type DrumVoice } from './core/drums';
+import { DRUM_LANES, type DrumVoice } from './core/drums';
 import { ChannelStrip } from './core/fx';
 import { type KnobHandle } from './core/knob';
 import { PolySynth } from './polysynth/polysynth';
@@ -123,10 +123,6 @@ const { resources: laneResources, extraStrips, extraPolys,
 // Phase G: lazy accessors — null before applyLoadedSessionState allocates lanes.
 const getSynthInstance = (): TB303 | null => {
   const eng = laneResources.get(LANE_ID_BASS)?.engine as unknown as { getInstance?(): TB303 | null } | undefined;
-  return eng?.getInstance?.() ?? null;
-};
-const getDrumsInstance = (): DrumMachine | null => {
-  const eng = laneResources.get(LANE_ID_DRUMS)?.engine as unknown as { getInstance?(): DrumMachine | null } | undefined;
   return eng?.getInstance?.() ?? null;
 };
 
@@ -751,17 +747,11 @@ _discreteHistoryDeps = historyDeps;
 // wireRandomizeUI is here (not at its original boot position) because it needs
 // historyDeps, which closes over saveWiringDeps, which closes over sessionHost.
 wireRandomizeUI({
-  // Phase G: synth/drums resolved lazily from lane resources.
+  // Phase G: synth resolved lazily from lane resources.
   getSynth: getSynthInstance,
-  getDrums: getDrumsInstance,
   getBassLaneId: () => LANE_ID_BASS,
   getDrumsLaneId: () => LANE_ID_DRUMS,
   refreshKnobsFromSynth,
-  refreshDrumsRack: () => {
-    const laneId = LANE_ID_DRUMS;
-    const inst = getLaneEngineInstance(laneId);
-    if (inst) refreshLaneKnobs(laneId, inst);
-  },
   applyDrumKitPreset: (laneId, name) => { void sessionHost.applyDrumPreset(laneId, name); },
   historyDeps,
 });
