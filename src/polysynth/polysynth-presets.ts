@@ -427,6 +427,11 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
       const name = val.slice('engine:'.length);
       const laneId = deps.getActiveEngineLaneId();
       applyEnginePresetForLane(name, laneId);
+      // Record the selection so refreshPolyPresetSelect restores it when the
+      // lane is re-activated (tab switch). Without this, FM/Wavetable/Karplus
+      // lanes always came back showing "(custom — no preset)". `val` is already
+      // the `engine:<name>` dropdown vocabulary pagePresetName is keyed by.
+      pagePresetName.set(laneId, val);
       return;
     }
 
