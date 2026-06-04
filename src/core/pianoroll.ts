@@ -249,6 +249,12 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
         if (Math.abs(f.gridVp.scrollLeft - target) > 2) f.gridVp.scrollLeft = target;
       }
     }
+    {
+      const cx = xForTick(cursorTick);
+      gctx.strokeStyle = '#39d98a'; gctx.setLineDash([2, 2]);
+      gctx.beginPath(); gctx.moveTo(cx, 0); gctx.lineTo(cx, gridH); gctx.stroke();
+      gctx.setLineDash([]);
+    }
   }
 
   function drawRuler(): void {
@@ -361,6 +367,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   // HERE — before the initial-mount layoutAll()/drawGrid() — because Task 6 makes
   // drawGrid read it; a later declaration would hit its TDZ on first render.
   let cursorTick = 0;
+  const heldKeys = new Map<string, { midi: number; startTick: number }>();
 
   const isResizeEdge = (n: NoteEvent, tick: number) => {
     const edgeRange = Math.max(snap / 3, 6);
@@ -548,6 +555,53 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     // Clear selection
     if (e.key === 'Escape') { selection.clear(); drawGrid(); e.preventDefault(); return; }
 
+    // Octave shift
+    if (!cmd && (e.key === 'z' || e.key === 'x')) {
+      octaveBase = Math.max(minMidi, Math.min(maxMidi - 12, octaveBase + (e.key === 'x' ? 12 : -12)));
+      refreshToolbar(); e.preventDefault(); return;
+    }
+    // Move insertion cursor when nothing is selected
+    if (selection.size === 0 && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      cursorTick = Math.max(0, Math.min(opts.patternTicks - snap, cursorTick + (e.key === 'ArrowRight' ? snap : -snap)));
+      drawGrid(); e.preventDefault(); return;
+    }
+
+    if (!cmd) {
+      const midi = midiForKey(e.key, octaveBase);
+      if (midi !== null && midi >= minMidi && midi <= maxMidi) {
+        e.preventDefault();
+        if (e.repeat || heldKeys.has(e.key.toLowerCase())) return;
+        opts.auditionNote?.(midi);
+        const playing = (opts.getPlayheadTick?.() ?? -1) >= 0;
+        if (playing) {
+          // Real-time record: remember the start; the note is written + wrapped
+          // in its own undo gesture on keyup (avoids nesting gestures when
+          // several keys are held at once).
+          const startTick = opts.getPlayheadTick?.() ?? 0;
+          heldKeys.set(e.key.toLowerCase(), { midi, startTick });
+        } else {
+          // Step input: write at the cursor, advance after all keys release.
+          heldKeys.set(e.key.toLowerCase(), { midi, startTick: cursorTick });
+          opts.onGestureStart?.();
+          opts.getNotes().push({ start: cursorTick, duration: snap, midi, velocity: 80 });
+          opts.onChange?.(); drawGrid(); opts.onGestureEnd?.();
+        }
+        return;
+      }
+      // Step-input backspace: delete last inserted note + step back (no selection)
+      if (e.key === 'Backspace' && selection.size === 0) {
+        const notes = opts.getNotes();
+        const atCursor = notes.filter((n) => n.start === Math.max(0, cursorTick - snap));
+        if (atCursor.length) {
+          opts.onGestureStart?.();
+          opts.setNotes(notes.filter((n) => n.start !== Math.max(0, cursorTick - snap)));
+          cursorTick = Math.max(0, cursorTick - snap);
+          opts.onChange?.(); drawGrid(); opts.onGestureEnd?.();
+        }
+        e.preventDefault(); return;
+      }
+    }
+
     // Delete selection
     if ((e.key === 'Delete' || e.key === 'Backspace') && selection.size > 0) {
       opts.onGestureStart?.();
@@ -569,6 +623,25 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
         opts.onChange?.(); drawGrid(); opts.onGestureEnd?.();
       }
       e.preventDefault(); return;
+    }
+  });
+
+  f.wrap.addEventListener('keyup', (e) => {
+    const k = e.key.toLowerCase();
+    const held = heldKeys.get(k);
+    if (!held) return;
+    heldKeys.delete(k);
+    const playing = (opts.getPlayheadTick?.() ?? -1) >= 0;
+    if (playing) {
+      const endTick = opts.getPlayheadTick?.() ?? held.startTick;
+      const q = quantizeRecorded(held.startTick, endTick < held.startTick ? held.startTick + snap : endTick, snap);
+      opts.onGestureStart?.();
+      opts.getNotes().push({ start: q.start, duration: q.duration, midi: held.midi, velocity: 80 });
+      opts.onChange?.(); drawGrid(); opts.onGestureEnd?.();
+    } else if (heldKeys.size === 0) {
+      // All step-input keys released → advance the cursor one step (chord = one advance).
+      cursorTick = Math.min(opts.patternTicks - snap, cursorTick + snap);
+      drawGrid();
     }
   });
 
