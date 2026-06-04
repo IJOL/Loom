@@ -95,6 +95,11 @@ class SamplerVoice implements Voice {
     src.buffer = buf;
     // repitch by key distance + per-pad TUNE semitones.
     src.playbackRate.value = repitchRate(midi, entry.rootNote, pad.tune);
+    if (pad.loop > 0.5) {
+      src.loop = true;
+      src.loopStart = Math.min(pad.loopStart, 0.999) * buf.duration;
+      src.loopEnd = buf.duration;
+    }
     src.connect(this.filter);
     this.src = src;
 
