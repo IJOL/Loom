@@ -11,6 +11,7 @@ Loom grew out of a Roland TB-303 bass synth + drum machine and still has those a
 ## Features
 
 - **7 instrument engines** — TB-303, Subtractive, FM, Wavetable, Karplus-Strong, a **Sampler**, and a **Drum machine** (synth kits *and* sample kits).
+- **Tempo-locked loops & slicing** — drop an audio loop into the Sampler and it's auto-sliced and locked to the project tempo **without changing pitch**: slices retrigger on the grid REX-style (pitch-perfect, free-following the tempo), with an optional pitch-preserving time-stretch for sustained material. Tempo and slice points are read from embedded **Acid / `cue` / AIFF** markers when present, or estimated by onset + beat detection. Tweak it all in a unified **waveform + slice-grid editor**.
 - **Session workflow** — arrange **lanes** that play **clips** in **scenes**, with per-clip piano-roll and drum-rack editors.
 - **TB-303 behaviors** — authentic slide (glide into the next step) and per-step accent, shared across engines.
 - **Per-lane modulation** — LFO and ADSR modulators routable to any parameter.
