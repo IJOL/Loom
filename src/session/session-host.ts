@@ -6,6 +6,7 @@ import type { ChannelStrip } from '../core/fx';
 import type { DrumVoice } from '../core/drums';
 import type { PolySynth } from '../polysynth/polysynth';
 import type { Sequencer } from '../core/sequencer';
+import { stepsPerBar } from '../core/meter';
 import type { MixerColumnDeps } from '../core/mixer';
 import {
   emptySessionState, cloneSessionState, emptyLane, emptyClip, audioClip,
@@ -452,7 +453,7 @@ export class SessionHost {
         if (!lane) return;
         const hd = self.deps.historyDeps;
         const run = () => {
-          const defaultLen = Math.max(1, Math.floor(seq.length / 16));
+          const defaultLen = Math.max(1, Math.floor(seq.length / stepsPerBar(seq.meter)));
           const clip: SessionClip = emptyClip(defaultLen);
           while (lane.clips.length <= clipIdx) lane.clips.push(null);
           lane.clips[clipIdx] = clip;
@@ -526,7 +527,7 @@ export class SessionHost {
           const lane = emptyLane(newId, engineId);
           lane.name = displayName;
           const rowCount = Math.max(self.state.scenes.length, 1);
-          const defaultLen = Math.max(1, Math.floor(seq.length / 16));
+          const defaultLen = Math.max(1, Math.floor(seq.length / stepsPerBar(seq.meter)));
           for (let r = 0; r < rowCount; r++) {
             lane.clips.push(emptyClip(defaultLen));
           }
@@ -779,7 +780,7 @@ export class SessionHost {
     }
     const stepDur = 60 / this.deps.seq.bpm / 4;
     const stepsElapsed = Math.max(0, (this.deps.ctx.currentTime - lp!.startTime) / stepDur);
-    const clipSteps = clip.lengthBars * 16;
+    const clipSteps = clip.lengthBars * stepsPerBar(this.deps.seq.meter);
     const curStep = Math.floor(stepsElapsed) % clipSteps;
     host.querySelectorAll<HTMLElement>('.cells').forEach((cellsEl) => {
       const kids = cellsEl.children;

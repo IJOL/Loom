@@ -17,6 +17,7 @@ import { getEngine, getEngineParamIds } from './engines/registry';
 import { swapLaneEngineFlow, type EngineSwapDeps } from './app/engine-swap';
 import { type TB303 } from './core/synth';
 import { Sequencer } from './core/sequencer';
+import { COMMON_METERS, formatMeter, meterFromLabel, stepsPerBar } from './core/meter';
 import { DRUM_LANES, type DrumMachine, type DrumVoice } from './core/drums';
 import { ChannelStrip } from './core/fx';
 import { type KnobHandle } from './core/knob';
@@ -149,6 +150,7 @@ const bpmInput = $<HTMLInputElement>('bpm');
 const swingInput = $<HTMLInputElement>('swing');
 const volInput = $<HTMLInputElement>('volume');
 const barsSel  = $<HTMLSelectElement>('bars');
+const meterSel = $<HTMLSelectElement>('meter');
 const scaleSel = $<HTMLSelectElement>('scale');
 const rootSel  = $<HTMLSelectElement>('root');
 const vizCanvas    = $<HTMLCanvasElement>('viz');
@@ -169,6 +171,14 @@ for (let m = 24; m <= 48; m++) {
   if (m === 36) opt.selected = true;
   rootSel.appendChild(opt);
 }
+
+for (const m of COMMON_METERS) {
+  const o = document.createElement('option');
+  o.value = formatMeter(m);
+  o.textContent = formatMeter(m);
+  meterSel.appendChild(o);
+}
+meterSel.value = formatMeter(seq.meter);
 
 // ── Track rendering (with viewport) ────────────────────────────────────────
 const LANE_LABELS: Record<TrackId, string> = {
@@ -265,7 +275,17 @@ let _discreteHistoryDeps: HistoryDeps | undefined;
 // (osc.wave) rendered by TB303Engine.buildParamUI, like every other engine.
 
 barsSel.addEventListener('change', () => {
-  seq.setLength(parseInt(barsSel.value, 10));
+  seq.setLength(parseInt(barsSel.value, 10) * stepsPerBar(seq.meter));
+  renderLanes();
+});
+
+meterSel.addEventListener('change', () => {
+  seq.meter = meterFromLabel(meterSel.value);
+  seq.setLength(parseInt(barsSel.value, 10) * stepsPerBar(seq.meter));
+  // The scheduler + transport read seq.meter / seq.length live on the next step.
+  // renderLanes() is a no-op stub in main.ts (kept only for parity with the Bars
+  // handler); an open clip editor picks up the new meter when it is reopened via
+  // the session host (rebuilding a live-open editor is a Spec-2 concern).
   renderLanes();
 });
 
@@ -450,7 +470,7 @@ const _origStop = seq.stop.bind(seq);
 seq.start = () => { if (!performanceFeature.onPlay()) _origStart(); };
 seq.stop = () => { if (!performanceFeature.onStop()) _origStop(); };
 
-barsSel.value = String(seq.length);
+barsSel.value = String(Math.max(1, Math.round(seq.length / stepsPerBar(seq.meter))));
 
 // ── Deps objects for extracted UI modules ─────────────────────────────────
 function activeEnginePrefix(): string | null {
@@ -681,7 +701,7 @@ const history = createHistory<SavedStateV3>({ maxSize: 100 });
 // Phase G: synth/drums replaced by lanes (resolved lazily inside buildSavedStateV3).
 const saveBaseDeps = {
   ctx, seq, lanes, master,
-  volInput, bpmInput, swingInput,
+  volInput, bpmInput, swingInput, meterSel,
   sessionHost,
   refreshKnobsFromSynth,
   renderLanes,
