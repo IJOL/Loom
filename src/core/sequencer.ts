@@ -1,5 +1,6 @@
 import type { EngineSequencer } from '../engines/engine-types';
 import { midiToFreq } from './notes';
+import { DEFAULT_METER, type TimeSignature } from './meter';
 export { midiToFreq };
 
 // Step types retained for the load-time migration of old saves (notes.ts
@@ -32,6 +33,9 @@ export interface PolyStep {
 export class Sequencer {
   bpm = 130;
   swing = 0;             // 0..0.6, applied to odd 16ths
+  /** Global time signature (like bpm). Read at schedule/draw time so a change
+   *  takes effect on the next loop cycle. Persisted in SavedStateV3. */
+  meter: TimeSignature = { ...DEFAULT_METER };
   length: number;        // master/default length in 16th steps (bars * 16)
 
   /** Session-mode tick hook. Called every scheduler tick with (currentTime,
