@@ -22,7 +22,11 @@ export interface ClipEditorDeps {
   laneStates: Map<string, LanePlayState>;
   midiLabel: (m: number) => string;
   historyDeps?: HistoryDeps;
-  triggerForLane?: (laneId: string, note: number, time: number, gate: number, accent: boolean, slidingIn: boolean) => void;
+  triggerForLane?: (
+    laneId: string, note: number, time: number, gate: number, accent: boolean, slidingIn: boolean,
+    sample?: import('../session').ClipSample,
+    slice?: { sampleId: string; start: number; end: number },
+  ) => void;
 }
 
 const AUDITION_GATE = 0.25; // seconds — short preview blip, shared by both editors
@@ -63,8 +67,14 @@ export function renderClipEditor(
   const editor = chooseClipEditor(lane, engine?.editor, override);
 
   if (isSliceLoopClip(clip)) {
+    // Audition must carry the slice region (the lane keymap is empty for a slice
+    // loop), otherwise previewing a row in the editor would be silent.
     const audition = deps.triggerForLane
-      ? (midi: number) => deps.triggerForLane!(lane.id, midi, deps.ctx.currentTime, AUDITION_GATE, false, false)
+      ? (midi: number) => {
+          const s = clip.sample!.slices!.find((x) => x.note === midi);
+          const slice = s ? { sampleId: clip.sample!.sampleId, start: s.start, end: s.end } : undefined;
+          deps.triggerForLane!(lane.id, midi, deps.ctx.currentTime, AUDITION_GATE, false, false, undefined, slice);
+        }
       : undefined;
     const getPlayheadTick = (): number => {
       const lp = deps.laneStates.get(lane.id);

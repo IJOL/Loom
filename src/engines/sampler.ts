@@ -13,6 +13,7 @@ import type { KeymapEntry } from '../samples/types';
 import type { VoiceTriggerOptions } from './engine-types';
 import { sampleCache } from '../samples/sample-cache';
 import { stretchCache } from '../samples/stretch-cache';
+import { stretchBuffer } from '../samples/timestretch';
 import { keymapEntryFor, repitchRate } from '../samples/keymap';
 import { wireEngineParams } from './engine-ui';
 import { sampleStore } from '../samples/store-singleton';
@@ -176,6 +177,12 @@ class SamplerVoice implements Voice {
       src.buffer = buf;
       // loop → varispeed fill (also the stretch-miss fallback); song → natural.
       src.playbackRate.value = cs.mode === 'loop' ? region / gate : 1;
+      // Self-heal: on a stretch cache miss, render the stretched buffer in the
+      // background so the next loop iteration plays pitch-preserved — this makes
+      // 'stretch' mode work on first play even if the BPM is never changed.
+      if (wantStretch) {
+        void stretchCache.ensure(cs.sampleId, ratio, () => stretchBuffer(this.ctx, buf, ratio));
+      }
     }
     src.connect(this.filter);
     this.src = src;
