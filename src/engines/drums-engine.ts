@@ -21,6 +21,7 @@ import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
 import { renderDrumVoiceRack } from './drum-voice-rack';
 import { getCurrentLaneForVoice } from '../modulation/active-mods';
+import { findDrumKit } from '../presets/drum-kits-loader';
 import { bindEngineModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
 import { ConnectionBinder } from '../modulation/connection-binder';
 import type { KnobHandle } from '../core/knob';
@@ -482,7 +483,21 @@ export class DrumsEngine implements SynthEngine {
   }
 
   applyPreset(name: string): void {
-    if (!this.lastInstance) return;
+    // 1) Unified drum-kits.json entry (the drums-page picker vocabulary).
+    const unified = findDrumKit(name);
+    if (unified) {
+      this.kitMode = unified.kind;
+      if (unified.kind === 'synth' && unified.kitId && this.lastInstance) {
+        this.lastInstance.loadKitDefaults(unified.kitId);
+      }
+      // sample kit: kitMode is set; the async decode + engineState mirror is
+      // owned by the orchestrator (live) / the drumkitId self-heal (load).
+      // applyPreset is sync + ctx-less, so it does NOT fetch/decode here.
+      return;
+    }
+    // 2) Legacy back-compat: a GM-tagged drums-machine.json preset ("KIT *",
+    //    used by MIDI import / demos / drumFallback) → kitId → synth kit.
+    this.kitMode = 'synth';
     const preset = this.presets.find((p) => p.name === name);
     let kitId: string | undefined;
     let overrides: Array<[string, number]> = [];
@@ -492,13 +507,11 @@ export class DrumsEngine implements SynthEngine {
       overrides = Object.entries(params)
         .filter(([k, v]) => k !== 'kitId' && typeof v === 'number') as Array<[string, number]>;
     }
-    // Fallback: a bare kit *name* (back-compat for direct kit selection).
-    if (!kitId) {
-      const kit = this.lastInstance.listKits().find((k) => k.name === name);
-      kitId = kit?.id;
+    // 3) Bare kit *name* fallback (direct DrumMachine kit selection).
+    if (!kitId && this.lastInstance) {
+      kitId = this.lastInstance.listKits().find((k) => k.name === name)?.id;
     }
-    if (kitId) this.lastInstance.loadKitDefaults(kitId);
-    // Keep the engine param cache + the live instance in sync.
+    if (kitId && this.lastInstance) this.lastInstance.loadKitDefaults(kitId);
     for (const [id, v] of overrides) this.setBaseValue(id, v);
   }
 

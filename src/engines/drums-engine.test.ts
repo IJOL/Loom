@@ -1,10 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { DrumsEngine } from './drums-engine';
 import { validateSpec } from './engine-params';
 import { OfflineAudioContext } from 'node-web-audio-api';
 import { ChannelStrip, FxBus } from '../core/fx';
 import { setCurrentLaneForVoice } from '../modulation/active-mods';
 import type { ModulatorVoice } from '../modulation/types';
+import { loadDrumKits, __resetDrumKitsCache } from '../presets/drum-kits-loader';
+import { __seedPresetCache, __resetPresetCache } from '../presets/preset-loader';
 
 describe('DrumsEngine.params', () => {
   const engine = new DrumsEngine();
@@ -220,5 +222,45 @@ describe('DrumsEngine façade — mode-aware surface', () => {
     const v = e.createVoice(ctx, ctx.destination);
     expect(typeof v.trigger).toBe('function');
     expect(() => v.trigger(36, ctx.currentTime, { gateDuration: 0.1, accent: false } as never)).not.toThrow();
+  });
+});
+
+async function seedDrumKits() {
+  __resetDrumKitsCache();
+  await loadDrumKits((async () => ({ ok: true, json: async () => ({ presets: [
+    { name: 'TR-909', group: 'Synth', kind: 'synth', kitId: '909' },
+    { name: 'TR-808 (samples)', group: 'Samples', kind: 'sample', drumkitId: 'tr808' },
+  ] }) })) as unknown as typeof fetch);
+}
+
+describe('DrumsEngine.applyPreset — unified + back-compat', () => {
+  beforeEach(async () => { await seedDrumKits(); });
+
+  it('sets kitMode=sample without an instance (no early-return)', () => {
+    const e = new DrumsEngine();              // NO createVoice → lastInstance is null
+    e.applyPreset('TR-808 (samples)');
+    expect(e.getKitMode()).toBe('sample');
+  });
+
+  it('sets kitMode=synth for a unified synth kit', () => {
+    const e = new DrumsEngine();
+    e.applyPreset('TR-909');
+    expect(e.getKitMode()).toBe('synth');
+  });
+
+  it('back-compat: a legacy GM-tagged KIT name still resolves to a synth kit', () => {
+    __resetPresetCache();
+    __seedPresetCache('drums-machine', [
+      { name: 'KIT Power', gm: [16], params: { kitId: '909' } } as never,
+    ]);
+    const e = new DrumsEngine();
+    const ctx = new AudioContext();
+    e.setSharedFx({ reverbInput: ctx.createGain(), delayInput: ctx.createGain() } as never);
+    setCurrentLaneForVoice('drums-1');
+    e.createVoice(ctx, ctx.destination);      // builds lastInstance
+    setCurrentLaneForVoice(null);
+    e.applyPreset('KIT Power');
+    expect(e.getKitMode()).toBe('synth');
+    expect(e.getInstance()?.kitId).toBe('909');
   });
 });
