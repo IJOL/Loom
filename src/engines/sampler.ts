@@ -383,7 +383,9 @@ export class SamplerEngine implements SynthEngine {
     knobRow.className = 'knob-row';
     container.appendChild(knobRow);
     wireEngineParams(this, ctx, knobRow, {
-      filter: (id) => !id.includes('.'),
+      // Globals only. NOT `!id.includes('.')` — `poly.voices` contains a dot
+      // and would be wrongly dropped; match the global spec ids explicitly.
+      filter: (id) => SAMPLER_PARAMS.some((p) => p.id === id),
       formatter: (id, v) => {
         if (id === 'poly.voices') return `${Math.round(v)}`;
         if (id.endsWith('.attack') || id.endsWith('.release')) {
