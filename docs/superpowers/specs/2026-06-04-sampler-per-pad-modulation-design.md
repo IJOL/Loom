@@ -28,10 +28,19 @@ The synthesized drum machine (`drums-machine`) just got a full **per-voice rack*
 
 ## Decisions (from brainstorm)
 
-- Param set per pad: **standard drum set** — TUNE, CUTOFF, RES, ATTACK, DECAY, LEVEL, PAN, REV, DLY.
+- Param set per pad: **standard drum set** — TUNE, CUTOFF, RES, ATTACK, DECAY, LEVEL, PAN, REV, DLY — **plus playback: LOOP (on/off), LOOP START, RETRIGGER (mono on/off)**.
 - Scope: **per keymap entry** — applies to drumkits AND melodic (UI adapts).
 - Modulators: **one shared LFO/ADSR host per lane → per-pad destinations**; amp env is a per-pad param.
 - UI: **reuse `drum-voice-rack` for drumkits**; per-zone inline for melodic.
+
+### Plan split: A1 (now) + A2 (later)
+
+Discovered during planning: true **per-pad LFO/ADSR modulation** needs the modulator binding to run at **trigger time** (the existing per-voice binding runs at `createVoice`, before the pad/note is known, so it produces *uniform* modulation, not per-pad). That is a non-trivial extension of a binding subsystem with a delicate bug history. So this spec ships in two plans:
+
+- **Plan A1 (this one):** per-pad **params** (incl. the per-pad amp envelope = "decay per pad") + per-pad **mixer** + **loop/retrigger** + **rack reuse** + **persistence**. No LFO/ADSR panel. Delivers the bulk of the value ("shape each pad, not just root key").
+- **Plan A2 (deferred):** the shared LFO/ADSR modulator panel with **per-pad destinations** (trigger-time binding). Separate plan.
+
+`PadParams` gains `loop: 0|1`, `loopStart: 0..1`, `retrig: 0|1`. Loop uses `AudioBufferSourceNode.loop`/`loopStart`; retrig=mono cuts the previous voice of the same pad and restarts (the base for a future CHOKE).
 
 ## Architecture
 
