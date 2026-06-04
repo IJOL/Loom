@@ -31,6 +31,8 @@ const ADVANCED_MIXER = ['pan', 'eq.low', 'eq.mid', 'eq.high'];
 
 const KNOB = 34;
 
+// Precondition: the caller clears `host` first (e.g. buildParamUI sets container.innerHTML='');
+// this appends a fresh `.drum-voice-rack`.
 export function renderDrumVoiceRack(
   engine: SynthEngine,
   ctx: EngineUIContext,
@@ -39,9 +41,10 @@ export function renderDrumVoiceRack(
   const rack = document.createElement('div');
   rack.className = 'drum-voice-rack';
 
-  // Precompute which spec ids exist for the engine so we can split synth vs mixer.
-  const idsForVoice = (voice: DrumVoice) =>
-    engine.params.map((p) => p.id).filter((id) => id.startsWith(`${voice}.`));
+  // Precompute which spec ids exist for each voice so we can split synth vs mixer.
+  const idsByVoice = new Map<DrumVoice, string[]>(
+    DRUM_LANES.map((v) => [v, engine.params.map((p) => p.id).filter((id) => id.startsWith(`${v}.`))]),
+  );
 
   for (const voice of DRUM_LANES) {
     const col = document.createElement('div');
@@ -52,25 +55,24 @@ export function renderDrumVoiceRack(
     head.textContent = VOICE_LABELS[voice];
     col.appendChild(head);
 
-    const all = idsForVoice(voice);
-    const curatedSynth = CURATED_SYNTH[voice].map((l) => `${voice}.${l}`);
-    const curatedMixer = CURATED_MIXER.map((l) => `${voice}.${l}`);
-    const advancedMixer = ADVANCED_MIXER.map((l) => `${voice}.${l}`);
-    const curatedSet = new Set([...curatedSynth, ...curatedMixer, ...advancedMixer]);
-    const advancedSynth = all.filter((id) => !curatedSet.has(id));
+    const all = idsByVoice.get(voice)!;
+    const curatedSynth = new Set(CURATED_SYNTH[voice].map((l) => `${voice}.${l}`));
+    const curatedMixer = new Set(CURATED_MIXER.map((l) => `${voice}.${l}`));
+    const advancedMixer = new Set(ADVANCED_MIXER.map((l) => `${voice}.${l}`));
+    const advancedSynth = new Set(all.filter((id) => !curatedSynth.has(id) && !curatedMixer.has(id) && !advancedMixer.has(id)));
 
     const synthBlock = document.createElement('div');
     synthBlock.className = 'dv-synth';
     col.appendChild(synthBlock);
     wireEngineParams(engine, ctx, synthBlock, {
-      knobSize: KNOB, filter: (id) => curatedSynth.includes(id),
+      knobSize: KNOB, filter: (id) => curatedSynth.has(id),
     });
 
     const mixBlock = document.createElement('div');
     mixBlock.className = 'dv-mix';
     col.appendChild(mixBlock);
     wireEngineParams(engine, ctx, mixBlock, {
-      knobSize: KNOB, filter: (id) => curatedMixer.includes(id),
+      knobSize: KNOB, filter: (id) => curatedMixer.has(id),
     });
 
     const toggle = document.createElement('button');
@@ -83,7 +85,7 @@ export function renderDrumVoiceRack(
     adv.className = 'dv-advanced';
     col.appendChild(adv);
     wireEngineParams(engine, ctx, adv, {
-      knobSize: KNOB, filter: (id) => advancedSynth.includes(id) || advancedMixer.includes(id),
+      knobSize: KNOB, filter: (id) => advancedSynth.has(id) || advancedMixer.has(id),
     });
 
     toggle.addEventListener('click', () => {
