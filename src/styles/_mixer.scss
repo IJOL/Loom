@@ -16,17 +16,20 @@
 }
 
 .mix-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
+  // Two columns inside the strip: EQ on the left, SEND on the right; the name,
+  // PAN, mute/solo and fader span both. Fills the session lane column (120px),
+  // giving wider, shorter strips that still align under their clip.
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 4px;
+  row-gap: 4px;
+  align-items: start;
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 2px;
   padding: 6px 4px;
-  min-width: 66px;
-  max-width: 66px;
-  flex: 0 0 66px;
+  min-width: 0;
+  width: 100%;
 }
 .mix-col .mix-name {
   font-size: 9px;
@@ -36,27 +39,32 @@
   text-align: center;
   height: 22px;
   display: flex; align-items: center; justify-content: center;
+  grid-column: 1 / -1;
   width: 100%;
   background: var(--bg);
   border-radius: 2px;
 }
 .mix-section {
+  // Each section is a vertical stack (label + its knobs). EQ and SEND sit in
+  // the strip's two columns; PAN (no section label) spans both, centred.
   display: flex;
   flex-direction: column;
   gap: 4px;
   align-items: center;
   border-top: 1px solid var(--border);
   padding-top: 4px;
-  width: 100%;
 }
+// PAN is the only section without a label → centre it across both columns.
+.mix-section:not(:has(.mix-sec-label)) { grid-column: 1 / -1; }
 .mix-sec-label {
   font-size: 8px;
   letter-spacing: 0.1em;
   color: var(--text-faint);
 }
-.mix-ms { display: flex; gap: 4px; padding-top: 4px; }
+.mix-ms { grid-column: 1 / -1; display: flex; gap: 4px; padding-top: 4px; justify-content: center; }
 
 .mix-fader-wrap {
+  grid-column: 1 / -1;
   margin-top: 6px;
   width: 100%;
   display: flex;

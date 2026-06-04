@@ -13,8 +13,10 @@ body {
 
 .synth {
   padding: 16px 20px;
-  max-width: 1400px;
-  margin: 0 auto;
+  // Full-width: use the entire viewport — only the physical screen limits us.
+  // The flex layout below already reflows responsively; the old 1400px cap
+  // just froze it into a narrow centred column on wide displays.
+  width: 100%;
 }
 
 h1 {

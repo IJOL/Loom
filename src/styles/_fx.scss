@@ -3,13 +3,19 @@
 /* Sends / Inserts zone wrappers */
 .fx-zone {
   flex-direction: column;
+  // Override .row's align-items:center so the content fills width from the left
+  // instead of floating centred on wide screens.
+  align-items: stretch;
   gap: 6px;
 }
 .fx-zone-content {
+  // Effects / inserts flow like the modulator cards: left-aligned, side by side,
+  // wrapping to the next line when the screen is narrow.
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: 6px;
-  margin-left: 12px;
 }
 
 .fx-filters {

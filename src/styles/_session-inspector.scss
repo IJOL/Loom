@@ -84,11 +84,11 @@
  * main synth controls in the active page. Cards collapse to a single
  * horizontal row (title • config knobs • on/×) with routing lines underneath. */
 .engine-mod-host {
-  max-width: 960px;
   margin-top: 8px;
 }
-/* Mod cards arrange in a 2-column grid now that each card is compact —
- * fits ADSR-AMP, ADSR-FILTER, LFO1, LFO2 in two rows. */
+/* Mod cards are a fixed width and auto-flow into as many columns as fit:
+ * 4 across on a wide monitor, 3 at 1920, 2 on a laptop — adapts to the
+ * screen without stretching each card (giant dropdowns / floating knobs). */
 .mod-panel {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -96,8 +96,9 @@
   padding: 6px 8px;
   margin-top: 8px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fill, 460px);
   column-gap: 6px;
+  row-gap: 6px;
 }
 .mod-panel-title,
 .mod-panel-header { grid-column: 1 / -1; }
@@ -196,9 +197,6 @@
 }
 
 /* ── Per-lane NOTE FX panel (mirrors the modulators panel above it) ──────── */
-.lane-notefx-panel-host {
-  max-width: 960px;
-}
 .notefx-panel {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -206,8 +204,9 @@
   padding: 6px 8px;
   margin-top: 8px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fill, 460px);
   column-gap: 6px;
+  row-gap: 6px;
 }
 .notefx-panel .mod-panel-title,
 .notefx-panel .mod-panel-header { grid-column: 1 / -1; }
