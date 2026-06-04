@@ -13,6 +13,9 @@ function hann(n: number): Float32Array {
 }
 
 export function stretchBuffer(ctx: BaseAudioContext, buffer: AudioBuffer, ratio: number): AudioBuffer {
+  // Clamp to a musical range so a pathological ratio (e.g. from a bad trim)
+  // can't request a multi-GB output buffer or freeze the render loop.
+  ratio = Math.max(0.1, Math.min(10, Number.isFinite(ratio) && ratio > 0 ? ratio : 1));
   const sr = buffer.sampleRate;
   const win = Math.max(8, Math.round(WIN_SEC * sr));
   const synHop = Math.floor(win / 2);          // 50% overlap on output

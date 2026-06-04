@@ -70,6 +70,9 @@ function autocorrTempo(onset: Float32Array, rate: number): { bpm: number; conf: 
 /** Snap a rough BPM to the exact value implied by a whole number of bars over
  *  the loop's duration, keeping the result inside [MIN_BPM, MAX_BPM]. */
 function snapToWholeBars(roughBpm: number, durationSec: number, meter: TimeSignature): number {
+  // Guard degenerate input (empty/zero-length buffer) so the clamp loops below
+  // can't spin on Infinity/NaN.
+  if (!(durationSec > 0) || !Number.isFinite(roughBpm) || roughBpm <= 0) return 120;
   const qpb = quartersPerBar(meter);
   const barSecAtRough = qpb * (60 / roughBpm);
   const bars = Math.max(1, Math.round(durationSec / barSecAtRough));
