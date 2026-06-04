@@ -57,6 +57,8 @@ export interface SessionLane {
     sampler?: { keymap: import('../samples/types').KeymapEntry[]; drumkitId?: string; padParams?: Record<number, Record<string, number>> };
     /** Per-voice drum mute flags (drums-machine). Solo is live-only, not saved. */
     drumMutes?: Record<string, boolean>;
+    /** Which drum source the Drums lane plays. Absent ⇒ 'synth' (façade default). */
+    kitMode?: 'synth' | 'sample';
   };
   /** Currently applied preset name for this lane (`factory:Name` /
    *  `user:Name` / `engine:Name` — same shape as `polyPresetName` values). */

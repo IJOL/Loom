@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { audioClip } from './session';
+import { audioClip, cloneSessionState } from './session';
 
 describe('audioClip', () => {
   it('carries clip.sample, empty notes, and derives lengthBars from duration/bpm', () => {
@@ -15,5 +15,17 @@ describe('audioClip', () => {
     const c = audioClip({ name: 'stab', sampleId: 'smp-2', durationSec: 0.2, bpm: 120, mode: 'song' });
     expect(c.lengthBars).toBe(1);
     expect(c.sample?.mode).toBe('song');
+  });
+});
+
+describe('engineState.kitMode persistence', () => {
+  it('round-trips kitMode through cloneSessionState', () => {
+    const state = {
+      lanes: [{ id: 'drums-1', engineId: 'drums-machine', clips: [], engineState: { kitMode: 'sample' as const } }],
+      scenes: [],
+      globalQuantize: 'immediate' as const,
+    };
+    const clone = cloneSessionState(state);
+    expect(clone.lanes[0].engineState?.kitMode).toBe('sample');
   });
 });
