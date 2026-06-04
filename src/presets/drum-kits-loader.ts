@@ -32,7 +32,9 @@ export function loadDrumKits(fetchFn: typeof fetch = fetch): Promise<DrumKitPres
   if (inflight) return inflight;
   inflight = (async () => {
     try {
-      const res = await fetchFn('/presets/drum-kits.json');
+      // Base-aware so the fetch resolves under the deploy sub-path (e.g. GitHub
+      // Pages `/Loom/`); BASE_URL is `/` in dev + the standard build.
+      const res = await fetchFn(`${import.meta.env.BASE_URL}presets/drum-kits.json`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = (await res.json()) as { presets?: unknown[] };
       const seen = new Set<string>();

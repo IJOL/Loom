@@ -62,14 +62,16 @@ export function buildDrumkitKeymap(samples: DrumkitSample[], sampleIds: string[]
 
 /** Read the bundled kit index. Returns [] if it is missing. */
 export async function listDrumkits(fetchFn: typeof fetch = fetch): Promise<DrumkitIndexEntry[]> {
-  const res = await fetchFn('/drumkits/index.json');
+  // Base-aware so it resolves under the deploy sub-path (GitHub Pages `/Loom/`);
+  // BASE_URL is `/` in dev + the standard build.
+  const res = await fetchFn(`${import.meta.env.BASE_URL}drumkits/index.json`);
   if (!res.ok) return [];
   return (await res.json()) as DrumkitIndexEntry[];
 }
 
 /** Read one kit manifest by id. */
 export async function fetchDrumkitManifest(id: string, fetchFn: typeof fetch = fetch): Promise<DrumkitManifest> {
-  const res = await fetchFn(`/drumkits/${id}.json`);
+  const res = await fetchFn(`${import.meta.env.BASE_URL}drumkits/${id}.json`);
   if (!res.ok) throw new Error(`drumkit '${id}' manifest not found (${res.status})`);
   return (await res.json()) as DrumkitManifest;
 }
@@ -88,7 +90,7 @@ export async function loadDrumkit(
 
   const ids: string[] = [];
   for (const s of manifest.samples) {
-    const res = await fetchFn(`/drumkits/${s.file}`);
+    const res = await fetchFn(`${import.meta.env.BASE_URL}drumkits/${s.file}`);
     const bytes = await res.arrayBuffer();
     // decodeAudioData detaches its input — decode a copy, keep the original bytes.
     const buffer = await ctx.decodeAudioData(bytes.slice(0));
