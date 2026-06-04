@@ -7,10 +7,14 @@ export interface DemoPickerDeps {
   demos: { label: string; path: string }[];
   /** Called after every successful demo load — use to clear the undo stack. */
   onLoaded?: () => void;
+  /** Apply a demo's optional transport tempo (clamped + reflected in the BPM
+   *  input). Called after the session is applied, only when the demo carries a
+   *  `bpm`. Demos without one keep the current transport tempo. */
+  applyBpm?: (bpm: number) => void;
 }
 
 export function wireDemoPicker(deps: DemoPickerDeps): void {
-  const { sessionHost, selectEl, demos, onLoaded } = deps;
+  const { sessionHost, selectEl, demos, onLoaded, applyBpm } = deps;
   selectEl.innerHTML = '';
   const placeholder = document.createElement('option');
   placeholder.value = '';
@@ -27,6 +31,7 @@ export function wireDemoPicker(deps: DemoPickerDeps): void {
     try {
       const state = await fetchDemoSession(selectEl.value);
       sessionHost.applyLoadedSessionState(state);
+      if (typeof state.bpm === 'number') applyBpm?.(state.bpm);
       onLoaded?.();
     } catch (err) {
       alert(`Demo load failed: ${(err as Error).message}`);

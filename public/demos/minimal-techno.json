@@ -1,4 +1,5 @@
 {
+  "bpm": 130,
   "lanes": [
     {
       "id": "tb-303-1",
@@ -3220,7 +3221,7 @@
           ]
         }
       ],
-      "enginePresetName": "factory:PAD Warm",
+      "enginePresetName": "factory:LEAD Square",
       "engineState": {
         "params": {
           "bus.reverbSend": 0.25,

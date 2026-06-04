@@ -231,6 +231,15 @@ bpmInput.addEventListener('input', () => {
 });
 bpmBroadcast.broadcast(seq.bpm);
 
+// Programmatic tempo set (MIDI import, demo load): clamp, broadcast and reflect
+// it in the visible BPM input. Distinct from the 'input' handler above, which
+// must NOT write the input back while the user is mid-type.
+function setTransportBpm(bpm: number): void {
+  const clamped = Math.max(40, Math.min(240, Math.round(bpm)));
+  bpmBroadcast.broadcast(clamped);
+  bpmInput.value = String(clamped);
+}
+
 // Track activity timestamps for visual "triggered" pulse on track headers.
 const trackActiveUntil = new Map<string, number>();
 function markTrackActive(trackId: string, audioTime: number) {
@@ -615,11 +624,7 @@ function launchSceneById(sceneId: string): void {
 
 wireMidiImportUI({
   session: sessionHost.state,
-  setBpm: (bpm: number) => {
-    const clamped = Math.max(40, Math.min(240, Math.round(bpm)));
-    bpmBroadcast.broadcast(clamped);
-    bpmInput.value = String(clamped);
-  },
+  setBpm: setTransportBpm,
   audioContext: ctx,
   auditionOutput: master,
   onSessionChanged: () => sessionHost.renderWithMixer(),
@@ -662,6 +667,7 @@ presetsLoaded
   .then(() => fetchDemoSession(`${import.meta.env.BASE_URL}demos/minimal-techno.json`))
   .then((state) => {
     sessionHost.applyLoadedSessionState(state);
+    if (typeof state.bpm === 'number') setTransportBpm(state.bpm);
     history.clear();
   })
   .catch((err: unknown) => {
@@ -678,7 +684,11 @@ if (demoPicker) {
     selectEl: demoPicker,
     demos: [
       { label: 'Minimal Techno', path: `${import.meta.env.BASE_URL}demos/minimal-techno.json` },
+      { label: 'Acid Rain', path: `${import.meta.env.BASE_URL}demos/acid-rain.json` },
+      { label: 'Cordillera', path: `${import.meta.env.BASE_URL}demos/cordillera.json` },
+      { label: 'Neon Drive', path: `${import.meta.env.BASE_URL}demos/neon-drive.json` },
     ],
+    applyBpm: setTransportBpm,
     onLoaded: () => history.clear(),
   });
 }

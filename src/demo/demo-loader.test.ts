@@ -20,6 +20,16 @@ describe('fetchDemoSession', () => {
     vi.unstubAllGlobals();
   });
 
+  it('exposes an optional bpm when the demo carries one', async () => {
+    const fake = {
+      lanes: [], scenes: [], globalQuantize: '1/1', bpm: 132,
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => fake }));
+    const result = await fetchDemoSession('/demos/acid-rain.json');
+    expect(result.bpm).toBe(132);
+    vi.unstubAllGlobals();
+  });
+
   it('throws when the response is not ok', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }));
     await expect(fetchDemoSession('/missing.json')).rejects.toThrow(/404/);
