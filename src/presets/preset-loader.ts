@@ -22,8 +22,12 @@ let ready = false;
 
 export async function loadEnginePresets(engineId: string): Promise<EnginePreset[]> {
   if (cache.has(engineId)) return cache.get(engineId)!;
-  const res = await fetch(`/presets/${engineId}.json`);
-  if (!res.ok) throw new Error(`Failed to load /presets/${engineId}.json: ${res.status}`);
+  // Prefix with Vite's BASE_URL so the fetch resolves under the deploy sub-path
+  // (e.g. GitHub Pages `/Loom/`). BASE_URL ends in `/`, and is `/` in dev and
+  // the standard build, so the resolved path is unchanged there.
+  const url = `${import.meta.env.BASE_URL}presets/${engineId}.json`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to load ${url}: ${res.status}`);
   const body = (await res.json()) as PresetFile;
   const seen = new Set<string>();
   const out: EnginePreset[] = [];

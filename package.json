@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:pages": "tsc && vite build --base=/Loom/",
     "preview": "vite preview",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "cross-env NO_COLOR=1 vitest run",

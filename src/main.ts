@@ -659,7 +659,7 @@ sessionHost.onStateApplied(() => {
 // We gate the demo apply on `presetsLoaded` so the engine preset cache is
 // populated before applyLoadedSessionState calls applyPresetByName.
 presetsLoaded
-  .then(() => fetchDemoSession('/demos/minimal-techno.json'))
+  .then(() => fetchDemoSession(`${import.meta.env.BASE_URL}demos/minimal-techno.json`))
   .then((state) => {
     sessionHost.applyLoadedSessionState(state);
     history.clear();
@@ -677,7 +677,7 @@ if (demoPicker) {
     sessionHost,
     selectEl: demoPicker,
     demos: [
-      { label: 'Minimal Techno', path: '/demos/minimal-techno.json' },
+      { label: 'Minimal Techno', path: `${import.meta.env.BASE_URL}demos/minimal-techno.json` },
     ],
     onLoaded: () => history.clear(),
   });
