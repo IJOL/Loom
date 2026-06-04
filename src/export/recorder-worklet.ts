@@ -65,14 +65,19 @@ class LoomSceneRecorder extends AudioWorkletProcessor {
 registerProcessor('${RECORDER_PROCESSOR_NAME}', LoomSceneRecorder);
 `;
 
-let modulePromise: Promise<void> | null = null;
+// Cache the addModule promise per context — a processor name is registered in
+// one specific context, so a second context (e.g. an OfflineAudioContext for a
+// future render path) must load the module independently.
+const moduleCache = new WeakMap<BaseAudioContext, Promise<void>>();
 
-/** Loads the recorder worklet module into `ctx` (once, cached via Blob URL). */
+/** Loads the recorder worklet module into `ctx` (once per context, via Blob URL). */
 export function ensureRecorderWorklet(ctx: BaseAudioContext): Promise<void> {
-  if (!modulePromise) {
+  let p = moduleCache.get(ctx);
+  if (!p) {
     const blob = new Blob([RECORDER_WORKLET_SOURCE], { type: 'application/javascript' });
     const url = URL.createObjectURL(blob);
-    modulePromise = ctx.audioWorklet.addModule(url).finally(() => URL.revokeObjectURL(url));
+    p = ctx.audioWorklet.addModule(url).finally(() => URL.revokeObjectURL(url));
+    moduleCache.set(ctx, p);
   }
-  return modulePromise;
+  return p;
 }
