@@ -29,7 +29,7 @@ export interface SchedulerContext {
   meter?: TimeSignature;
   /** Called with the original note + the absolute audio time at which it
    *  should be scheduled. */
-  onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample }, scheduleTime: number) => void;
+  onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample; slice?: { sampleId: string; start: number; end: number } }, scheduleTime: number) => void;
   /** Called for each clip envelope sample falling in the window. The
    *  `clipTimeNorm` is 0..1 within the clip iteration. */
   onAutomation: (env: ClipEnvelope, clipTimeNorm: number, scheduleTime: number) => void;
@@ -102,9 +102,10 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
 
   for (let k = kMin; k <= kMax; k++) {
     const iterStart = loopStart + k * clipDurSec;
-    if (clip.sample) {
-      // Loop/song audio clip: one buffer trigger per iteration, gated to the
-      // full clip length. duration is the clip length in TICKS_PER_QUARTER
+    const sliceMode = !!clip.sample && !!clip.sample.slices?.length && clip.sample.warpMode !== 'stretch';
+    if (clip.sample && !sliceMode) {
+      // Loop/song or stretch audio clip: one buffer trigger per iteration, gated
+      // to the full clip length. duration is the clip length in TICKS_PER_QUARTER
       // ticks (= lengthBars × ticksPerBar) so it round-trips back to clipDurSec
       // through the runtime's secPerTick (which divides by TICKS_PER_QUARTER).
       if (iterStart >= windowStart && iterStart < windowEnd) {
@@ -114,14 +115,20 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
         );
       }
     } else {
+      // Note clip (incl. slice-mode loops): each note fires at its grid time. In
+      // slice mode the matching slice region is attached so the sampler plays it.
+      const slices = clip.sample?.slices;
+      const sampleId = clip.sample?.sampleId;
       for (const n of clip.notes) {
         const clipTimeSec = (n.start / TICKS_PER_QUARTER) * secPerBeat;
         const scheduleAt  = iterStart + clipTimeSec;
         if (scheduleAt >= windowStart && scheduleAt < windowEnd) {
-          ctx.onTrigger(
-            { midi: n.midi, duration: n.duration, velocity: n.velocity },
-            scheduleAt,
-          );
+          let slice: { sampleId: string; start: number; end: number } | undefined;
+          if (sliceMode && slices && sampleId) {
+            const s = slices.find((x) => x.note === n.midi);
+            if (s) slice = { sampleId, start: s.start, end: s.end };
+          }
+          ctx.onTrigger({ midi: n.midi, duration: n.duration, velocity: n.velocity, slice }, scheduleAt);
         }
       }
     }
