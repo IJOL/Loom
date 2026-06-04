@@ -3,6 +3,10 @@ import type { FxBus } from '../core/fx';
 import type { Sequencer } from '../core/sequencer';
 import type { PolySynth } from '../polysynth/polysynth';
 import type { InsertChain } from '../plugins/fx/insert-chain';
+import { collectStretchJobs } from './stretch-resync';
+import { stretchCache } from '../samples/stretch-cache';
+import { stretchBuffer } from '../samples/timestretch';
+import { sampleCache } from '../samples/sample-cache';
 
 export interface BpmBroadcasterDeps {
   seq: Sequencer;
@@ -13,6 +17,11 @@ export interface BpmBroadcasterDeps {
   // (before lanes exist) skips null safely.
   getPolysynth(): PolySynth | null;
   getExtraPolys(): Iterable<PolySynth>;
+  /** Optional: live AudioContext + session-state getter, used to re-render
+   *  stretch-mode loop buffers when the tempo changes. When absent, the resync
+   *  is a no-op. */
+  ctx?: AudioContext;
+  getSessionState?: () => import('../session/session').SessionState | null | undefined;
 }
 
 export interface BpmBroadcaster {
@@ -28,6 +37,21 @@ export function createBpmBroadcaster(deps: BpmBroadcasterDeps): BpmBroadcaster {
       if (eng && typeof eng.bpm === 'number') eng.bpm = bpm;
     }
   };
+  let resyncTimer: ReturnType<typeof setTimeout> | null = null;
+  const resyncStretches = (bpm: number): void => {
+    if (!deps.ctx || !deps.getSessionState) return;
+    if (resyncTimer) clearTimeout(resyncTimer);
+    resyncTimer = setTimeout(() => {
+      const state = deps.getSessionState?.();
+      if (!state) return;
+      const jobs = collectStretchJobs(state, bpm, deps.seq.meter);
+      for (const job of jobs) {
+        const buf = sampleCache.get(job.sampleId);
+        if (!buf) continue;
+        void stretchCache.ensure(job.sampleId, job.ratio, () => stretchBuffer(deps.ctx!, buf, job.ratio));
+      }
+    }, 120);
+  };
   return {
     broadcast(bpm: number) {
       deps.seq.bpm = bpm;
@@ -38,6 +62,7 @@ export function createBpmBroadcaster(deps: BpmBroadcasterDeps): BpmBroadcaster {
       if (poly) poly.bpm = bpm;
       for (const p of deps.getExtraPolys()) p.bpm = bpm;
       propagateToLaneEngines(bpm);
+      resyncStretches(bpm);
     },
   };
 }
