@@ -762,6 +762,7 @@ wireRandomizeUI({
     const inst = getLaneEngineInstance(laneId);
     if (inst) refreshLaneKnobs(laneId, inst);
   },
+  applyDrumKitPreset: (laneId, name) => { void sessionHost.applyDrumPreset(laneId, name); },
   historyDeps,
 });
 wireSaveManager(saveWiringDeps);
