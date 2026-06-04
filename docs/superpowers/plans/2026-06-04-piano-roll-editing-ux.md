@@ -86,8 +86,8 @@ describe('keyboard map', () => {
 describe('notesInRect', () => {
   it('selects notes whose body intersects the rect (order-independent corners)', () => {
     const notes = [N(0, 60), N(48, 64), N(120, 72)];
-    const hit = notesInRect(notes, { tick0: 40, tick1: 10, midi0: 66, midi1: 58 });
-    expect(hit).toEqual([notes[0], notes[1]]); // 60 and 64 within 58..66 and ticks 10..40
+    const hit = notesInRect(notes, { tick0: 60, tick1: 10, midi0: 66, midi1: 58 });
+    expect(hit).toEqual([notes[0], notes[1]]); // midi 58..66 and ticks 10..60 — note[1] starts at 48, inside
   });
   it('excludes notes outside the pitch band', () => {
     const notes = [N(0, 60), N(0, 90)];
@@ -366,6 +366,7 @@ import {
   notesInRect, translateGroup, serializeClipboard, pasteTranslate, midiForKey,
   quantizeRecorded, type ClipboardNote,
 } from './piano-roll-editing';
+import { isTextEditTarget } from '../save/history-wiring';
 
 type Tool = 'draw' | 'select';
 // Module-level so the tool choice + clipboard persist across clip re-opens and clips.
@@ -486,6 +487,10 @@ Declare `marquee` near the other interaction state (after `let interaction ...`)
   let marquee: { tick0: number; midi0: number; tick1: number; midi1: number } | null = null;
   let groupDrag: { lastTick: number; lastMidi: number } | null = null;
   let lastMouse: { tick: number; midi: number } | null = null;
+  // Insertion cursor (ticks): paste fallback (Task 5) + step input (Task 6). Declared
+  // HERE — before the initial-mount layoutAll()/drawGrid() — because Task 6 makes
+  // drawGrid read it; a later declaration would hit its TDZ on first render.
+  let cursorTick = 0;
 ```
 
 - [ ] **Step 5: Branch the grid pointer handlers by tool**
@@ -595,7 +600,14 @@ text-edit targets, consumes keys it handles, and (for now) implements selection 
   const bounds = () => ({ patternTicks: opts.patternTicks, minMidi, maxMidi });
 
   f.wrap.addEventListener('keydown', (e) => {
+    if (isTextEditTarget(e.target)) return; // per spec §6: native text editing wins
     const cmd = e.metaKey || e.ctrlKey;
+
+    // Contain Delete/Backspace to the editor so a stray one can NEVER bubble to the
+    // inspector's document-level clip-delete (session-inspector wireKeyboardShortcuts).
+    // The branches below act on notes/cursor when there's something to do; otherwise
+    // this makes the key a no-op here instead of deleting the whole clip.
+    if (e.key === 'Delete' || e.key === 'Backspace') e.stopPropagation();
 
     // Tool toggle
     if (!cmd && e.key === '1') { currentTool = 'draw'; refreshToolbar(); e.preventDefault(); return; }
@@ -691,12 +703,9 @@ Inside the `f.wrap` keydown handler from Task 4, add these branches (place them 
     }
 ```
 
-This references `cursorTick` (the insertion cursor, declared in Task 6). Add the declaration now near
-the other state so Tasks 5 and 6 share it:
-
-```ts
-  let cursorTick = 0; // insertion cursor (ticks), used by paste fallback + step input
-```
+This references `cursorTick` (the insertion cursor) and `bounds()`. `cursorTick` is already declared
+in **Task 3 Step 4** (with `marquee`/`groupDrag`/`lastMouse`, before the initial-mount `layoutAll()`);
+`bounds()` is declared in Task 4 Step 1. No new declaration is needed here.
 
 - [ ] **Step 2: Typecheck + build**
 
@@ -750,7 +759,7 @@ branch in Step 2):
 Add the note state near the other state declarations:
 
 ```ts
-  const heldKeys = new Map<string, { midi: number; startTick: number; startTime: number }>();
+  const heldKeys = new Map<string, { midi: number; startTick: number }>();
 ```
 
 Then add the musical-note branches to the `f.wrap` keydown handler (after the octave branch). Note:
@@ -769,10 +778,10 @@ guard `e.repeat` so auto-repeat doesn't spam:
           // in its own undo gesture on keyup (avoids nesting gestures when
           // several keys are held at once).
           const startTick = opts.getPlayheadTick?.() ?? 0;
-          heldKeys.set(e.key.toLowerCase(), { midi, startTick, startTime: 0 });
+          heldKeys.set(e.key.toLowerCase(), { midi, startTick });
         } else {
           // Step input: write at the cursor, advance after all keys release.
-          heldKeys.set(e.key.toLowerCase(), { midi, startTick: cursorTick, startTime: 0 });
+          heldKeys.set(e.key.toLowerCase(), { midi, startTick: cursorTick });
           opts.onGestureStart?.();
           opts.getNotes().push({ start: cursorTick, duration: snap, midi, velocity: 80 });
           opts.onChange?.(); drawGrid(); opts.onGestureEnd?.();
@@ -878,7 +887,11 @@ Then `ExitWorktree`. (The merge/cleanup is the operator's final step — see Exe
 - Keyboard input: standard layout, z/x octave, audition, step-input + cursor, real-time record, chord → Tasks 2 (audition wiring) + 6. ✓
 - Pure testable logic in `piano-roll-editing.ts` → Task 1. ✓
 - No saved-state change → confirmed (all state is module/instance-level). ✓
-- Key scoping vs global undo / clip-delete → Task 4 Step 1 note (`stopPropagation` on Delete; musical keys are bare letters, undo is Ctrl+Z). ✓
+- Key scoping vs global undo / clip-delete → Task 4 Step 1, top of the `f.wrap` keydown handler: an
+  `isTextEditTarget` guard (spec §6) **and** an unconditional `stopPropagation` for ALL
+  Delete/Backspace, so neither selection-delete, step-input Backspace, nor a stray empty-selection
+  Delete can bubble to the inspector's document-level clip-delete. Musical keys are bare letters;
+  undo stays Ctrl+Z (not stopped). ✓
 
 **Type consistency:** `Tool`, `currentTool`, `clipboard: ClipboardNote[] | null`, `selection:
 Set<NoteEvent>`, `marquee`, `groupDrag`, `lastMouse`, `cursorTick`, `octaveBase`, `heldKeys` are each
@@ -887,10 +900,27 @@ declared once and reused. `notesInRect`/`translateGroup`/`serializeClipboard`/`p
 `PianoRollOpts` gains `auditionNote?`; `ClipEditorDeps`/`InspectorDeps` gain optional
 `triggerForLane` — all additive/optional so existing callers and tests compile unchanged.
 
-**Placeholder scan:** Task 3 Step 6 contains an explicitly-labelled illustrative block with a
-"simplest correct body" replacement called out immediately below it — the executor uses the simple
-version. No other placeholders; every code step is complete.
+**Placeholder scan:** none — every code step is complete (the earlier illustrative endDrag block in
+Task 3 Step 6 was replaced with the clean version).
 
-**Ordering note:** `cursorTick` is declared in Task 5 Step 1 (used by paste fallback) and reused by
-Task 6; `octaveBase`/`selection` are declared in Task 3 Step 3. If executing strictly in order, each
-symbol exists before use.
+**Ordering note:** `cursorTick` is declared in **Task 3 Step 4** (with `marquee`/`groupDrag`/
+`lastMouse`), which lands it BEFORE the initial-mount `layoutAll()`/`drawGrid()` at
+`pianoroll.ts:391` — required because Task 6 makes `drawGrid` read it (a later `let` would hit its
+TDZ on first render). `octaveBase`/`selection` are in Task 3 Step 3; `bounds()` in Task 4 Step 1;
+`heldKeys` in Task 6 Step 2. Executing strictly in order, each symbol exists before use.
+
+## Post-review hardening (adversarial workflow, 8 findings → 6 real)
+
+A 4-dimension adversarial review (+ per-finding verification against the real source) caught these,
+now folded in above:
+
+- **[blocker]** Task 1's first `notesInRect` test asserted two notes but the (correct) impl returns
+  one — the note at tick 48 lay outside the rect's 10..40 span. Fixed: widened the rect to ticks
+  10..60 so the two-note intent holds.
+- **[major×2]** A focused-editor `Delete` with an empty selection, and step-input `Backspace`, both
+  fell through and bubbled to the inspector's document-level handler → **whole-clip deletion**. Fixed:
+  one top-of-handler `if (Delete||Backspace) stopPropagation()` guard.
+- **[minor]** Spec §6's `isTextEditTarget` guard was missing → added (import + first line).
+- **[minor]** `cursorTick` declaration ordering vs the initial-mount `drawGrid` (TDZ) → pinned to
+  Task 3 Step 4.
+- **[nit]** dead `startTime` field on `heldKeys` → removed.
