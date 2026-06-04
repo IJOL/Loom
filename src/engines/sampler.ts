@@ -19,15 +19,12 @@ import { importFile } from '../samples/import';
 import { addSampleToKeymap, removeKeymapEntry, setEntryRoot } from '../samples/keymap-edit';
 import { mirrorKeymapChange, mirrorDrumkitId } from '../session/session-engine-state';
 import { listDrumkits, fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
+import { PAD_DEFAULTS, PAD_LEAF_SPECS, padKeyForNote, noteForPadKey, type PadParams } from './sampler-pad-params';
+import type { FxBus } from '../core/fx';
 
 const SAMPLER_PARAMS: EngineParamSpec[] = [
-  { id: 'gain',             label: 'Gain',    kind: 'continuous', min: 0,     max: 1.5, default: 1 },
-  { id: 'amp.attack',       label: 'Attack',  kind: 'continuous', min: 0.001, max: 2,   default: 0.005, unit: 's', curve: 'exponential' },
-  { id: 'amp.release',      label: 'Release', kind: 'continuous', min: 0.005, max: 4,   default: 0.08,  unit: 's', curve: 'exponential' },
-  { id: 'pitch',            label: 'Pitch',   kind: 'continuous', min: -24,   max: 24,  default: 0,     unit: 'st' },
-  { id: 'filter.cutoff',    label: 'Cutoff',  kind: 'continuous', min: 0,     max: 1,   default: 1 },
-  { id: 'filter.resonance', label: 'Res',     kind: 'continuous', min: 0,     max: 1,   default: 0 },
-  { id: 'poly.voices',      label: 'Voices',  kind: 'continuous', min: 1,     max: 16,  default: 8 },
+  { id: 'gain',        label: 'Gain',   kind: 'continuous', min: 0, max: 1.5, default: 1 },
+  { id: 'poly.voices', label: 'Voices', kind: 'continuous', min: 1, max: 16,  default: 8 },
 ];
 
 class SamplerSequencer implements EngineSequencer {
@@ -41,6 +38,12 @@ class SamplerSequencer implements EngineSequencer {
 
 const OUTPUT_TRIM = 0.7; // headroom so a full-scale sample + resonance stays < 0 dBFS
 
+interface SamplerVoiceApi {
+  getPad: (note: number) => PadParams;
+  getGlobal: (id: string) => number;
+  fx: FxBus | null;
+}
+
 class SamplerVoice implements Voice {
   private src: AudioBufferSourceNode | null = null;
   private readonly filter: BiquadFilterNode;
@@ -52,7 +55,7 @@ class SamplerVoice implements Voice {
     private ctx: AudioContext,
     output: AudioNode,
     private keymap: KeymapEntry[],
-    private getParam: (id: string) => number,
+    private api: SamplerVoiceApi,
   ) {
     this.filter = ctx.createBiquadFilter();
     this.filter.type = 'lowpass';
@@ -67,6 +70,7 @@ class SamplerVoice implements Voice {
     if (!entry) return;
     const buf = sampleCache.get(entry.sampleId);
     if (!buf) return;
+    const pad = this.api.getPad(entry.rootNote);
 
     // Defensive: if this voice is re-triggered, stop + disconnect the previous
     // source before replacing it so the old node doesn't leak. The poly host
@@ -78,27 +82,25 @@ class SamplerVoice implements Voice {
 
     const src = this.ctx.createBufferSource();
     src.buffer = buf;
-    src.playbackRate.value = repitchRate(midi, entry.rootNote, this.getParam('pitch'));
+    // repitch by key distance + per-pad TUNE semitones.
+    src.playbackRate.value = repitchRate(midi, entry.rootNote, pad.tune);
     src.connect(this.filter);
     this.src = src;
 
-    // Static lowpass: cutoff knob 0..1 → 60..18000 Hz (exp), open by default.
-    const cutoff = this.getParam('filter.cutoff');
-    const res = this.getParam('filter.resonance');
-    this.filter.frequency.setValueAtTime(60 * Math.pow(300, cutoff), time);
-    this.filter.Q.setValueAtTime(0.5 + res * 20, time);
+    // Per-pad lowpass.
+    this.filter.frequency.setValueAtTime(60 * Math.pow(300, pad.cutoff), time);
+    this.filter.Q.setValueAtTime(0.5 + pad.res * 20, time);
 
-    // Amp envelope: attack → hold at peak until gate end → release to 0.
-    const peakLevel =
-      this.getParam('gain') * (entry.gain ?? 1) * (opts.accent ? 1.0 : 0.8) * OUTPUT_TRIM;
-    const atk = Math.max(0.001, this.getParam('amp.attack'));
-    const rel = Math.max(0.005, this.getParam('amp.release'));
+    // Per-pad amp envelope.
+    const peak = this.api.getGlobal('gain') * (entry.gain ?? 1) * (opts.accent ? 1.0 : 0.8) * OUTPUT_TRIM * pad.level;
+    const atk = Math.max(0.001, pad.attack);
+    const rel = Math.max(0.005, pad.decay);
     const g = this.ampGain.gain;
     g.cancelScheduledValues(time);
     g.setValueAtTime(0, time);
-    g.linearRampToValueAtTime(peakLevel, time + atk);
+    g.linearRampToValueAtTime(peak, time + atk);
     const releaseAt = Math.max(time + atk, time + opts.gateDuration);
-    g.setValueAtTime(peakLevel, releaseAt);
+    g.setValueAtTime(peak, releaseAt);
     g.linearRampToValueAtTime(0, releaseAt + rel);
 
     this.endTime = releaseAt + rel + 0.01;
@@ -132,13 +134,12 @@ class SamplerVoice implements Voice {
     src.connect(this.filter);
     this.src = src;
 
-    const cutoff = this.getParam('filter.cutoff');
-    const res = this.getParam('filter.resonance');
-    this.filter.frequency.setValueAtTime(60 * Math.pow(300, cutoff), time);
-    this.filter.Q.setValueAtTime(0.5 + res * 20, time);
+    // Audio clips: use neutral defaults (filter wide open, flat gain).
+    this.filter.frequency.setValueAtTime(60 * Math.pow(300, PAD_DEFAULTS.cutoff), time);
+    this.filter.Q.setValueAtTime(0.5 + PAD_DEFAULTS.res * 20, time);
 
     // Flat gain with short anti-click fades — no amp envelope for audio clips.
-    const peak = this.getParam('gain') * (cs.gain ?? 1) * OUTPUT_TRIM;
+    const peak = this.api.getGlobal('gain') * (cs.gain ?? 1) * OUTPUT_TRIM;
     const fade = Math.min(0.005, gate / 4);
     const g = this.ampGain.gain;
     g.cancelScheduledValues(time);
@@ -186,12 +187,40 @@ export class SamplerEngine implements SynthEngine {
   readonly type = 'polyhost' as const;
   readonly polyphony = 'poly' as const;
   readonly editor = 'piano-roll' as const;
-  readonly params = SAMPLER_PARAMS;
   readonly presets: import('./engine-types').EnginePreset[] = [];
 
+  // dynamic: globals + one <padKey>.<leaf> spec per keymap entry.
+  get params(): EngineParamSpec[] {
+    const out: EngineParamSpec[] = [...SAMPLER_PARAMS];
+    for (const entry of this.keymap) {
+      const key = padKeyForNote(entry.rootNote);
+      for (const s of PAD_LEAF_SPECS) {
+        const { leaf, ...rest } = s;
+        out.push({ ...rest, id: `${key}.${leaf}` });
+      }
+    }
+    return out;
+  }
+
   private paramValues: Record<string, number> = {};
+  private padStore: Record<number, Partial<PadParams>> = {};
+  private fx: FxBus | null = null;
   private keymap: KeymapEntry[] = [];
   private modHost = new ModulationHostImpl([]);
+
+  setSharedFx(fx: FxBus): void { this.fx = fx; }
+
+  /** Resolved pad params for a note (defaults merged with stored overrides). */
+  getPad(note: number): PadParams {
+    return { ...PAD_DEFAULTS, ...(this.padStore[note] ?? {}) };
+  }
+
+  /** Full per-pad override store — for persistence. */
+  getPadStore(): Record<number, Partial<PadParams>> { return this.padStore; }
+  setPadStore(store: Record<number, Partial<PadParams>>): void {
+    this.padStore = {};
+    for (const [k, v] of Object.entries(store)) this.padStore[Number(k)] = { ...v };
+  }
 
   get modulators(): ModulationHostImpl { return this.modHost; }
 
@@ -200,10 +229,32 @@ export class SamplerEngine implements SynthEngine {
   }
 
   getBaseValue(id: string): number {
-    return this.paramValues[id] ?? SAMPLER_PARAMS.find((p) => p.id === id)?.default ?? 0;
+    if (id in this.paramValues) return this.paramValues[id];
+    const dot = id.indexOf('.');
+    if (dot > 0) {
+      const key = id.slice(0, dot);
+      const leaf = id.slice(dot + 1) as keyof PadParams;
+      if (leaf in PAD_DEFAULTS) {
+        const note = noteForPadKey(key);
+        const stored = this.padStore[note]?.[leaf];
+        return typeof stored === 'number' ? stored : PAD_DEFAULTS[leaf];
+      }
+    }
+    return SAMPLER_PARAMS.find((p) => p.id === id)?.default ?? 0;
   }
+
   setBaseValue(id: string, v: number): void {
-    this.paramValues[id] = v;
+    if (id in this.paramValues || SAMPLER_PARAMS.some((p) => p.id === id)) {
+      this.paramValues[id] = v;
+      return;
+    }
+    const dot = id.indexOf('.');
+    if (dot <= 0) return;
+    const key = id.slice(0, dot);
+    const leaf = id.slice(dot + 1) as keyof PadParams;
+    if (!(leaf in PAD_DEFAULTS)) return;
+    const note = noteForPadKey(key);
+    (this.padStore[note] ??= {})[leaf] = v;
   }
 
   /** Replace the lane's one-shot keymap. Phase-3 UI calls this; tests call it
@@ -222,7 +273,11 @@ export class SamplerEngine implements SynthEngine {
   }
 
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
-    return new SamplerVoice(ctx, output, this.keymap, (id) => this.getBaseValue(id));
+    return new SamplerVoice(ctx, output, this.keymap, {
+      getPad: (note) => this.getPad(note),
+      getGlobal: (id) => this.getBaseValue(id),
+      fx: this.fx,
+    });
   }
 
   buildSequencer(_c: HTMLElement, _n: number): EngineSequencer { return new SamplerSequencer(); }
