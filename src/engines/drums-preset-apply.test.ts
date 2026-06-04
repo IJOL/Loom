@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { OfflineAudioContext } from 'node-web-audio-api';
 import { DrumsEngine } from './drums-engine';
 import { ChannelStrip, FxBus } from '../core/fx';
@@ -16,6 +16,8 @@ function makeEngine() {
 }
 
 describe('DrumsEngine.applyPreset (kit + per-voice overrides)', () => {
+  afterEach(() => { vi.restoreAllMocks(); });
+
   it('loads the kit baseline then layers per-voice overrides', () => {
     const engine = makeEngine();
     vi.spyOn(loader, 'getCachedPresets').mockReturnValue([
