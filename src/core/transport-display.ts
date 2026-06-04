@@ -13,9 +13,7 @@
 // transport indicator).
 
 import type { Sequencer } from './sequencer';
-
-const STEPS_PER_BAR = 16;
-const STEPS_PER_BEAT = 4;
+import { stepsPerBar, stepsPerBeat } from './meter';
 
 export interface TransportDisplayDeps {
   seq: Sequencer;
@@ -24,10 +22,10 @@ export interface TransportDisplayDeps {
   timeEl: HTMLElement;
 }
 
-function formatPosition(step: number): string {
-  const bar = Math.floor(step / STEPS_PER_BAR) + 1;
-  const beat = Math.floor((step % STEPS_PER_BAR) / STEPS_PER_BEAT) + 1;
-  const sub = Math.floor(step % STEPS_PER_BEAT) + 1;
+export function formatPosition(step: number, barSteps: number, beatSteps: number): string {
+  const bar = Math.floor(step / barSteps) + 1;
+  const beat = Math.floor((step % barSteps) / beatSteps) + 1;
+  const sub = Math.floor(step % beatSteps) + 1;
   return `${bar}.${beat}.${sub}`;
 }
 
@@ -56,7 +54,8 @@ export function wireTransportDisplay(deps: TransportDisplayDeps): void {
       // step = elapsed_seconds / step_duration, where step_duration = 60/bpm/4
       // (16ths). Equivalent: elapsed * bpm * 4 / 60.
       const step = elapsed * seq.bpm * 4 / 60;
-      positionEl.textContent = formatPosition(step);
+      const m = seq.meter;
+      positionEl.textContent = formatPosition(step, stepsPerBar(m), stepsPerBeat(m));
       timeEl.textContent = formatElapsed(elapsed);
     } else if (wasPlaying) {
       // Just stopped — freeze the readout so the user can read the final position.
