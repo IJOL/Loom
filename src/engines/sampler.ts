@@ -12,6 +12,7 @@ import { ModulationHostImpl } from '../modulation/modulation-host';
 import type { KeymapEntry } from '../samples/types';
 import type { VoiceTriggerOptions } from './engine-types';
 import { sampleCache } from '../samples/sample-cache';
+import { stretchCache } from '../samples/stretch-cache';
 import { keymapEntryFor, repitchRate } from '../samples/keymap';
 import { wireEngineParams } from './engine-ui';
 import { sampleStore } from '../samples/store-singleton';
@@ -159,9 +160,17 @@ class SamplerVoice implements Voice {
     const gate = Math.max(0.001, opts.gateDuration);
 
     const src = this.ctx.createBufferSource();
-    src.buffer = buf;
-    // loop → fill the clip exactly (repitch); song → natural pitch.
-    src.playbackRate.value = cs.mode === 'loop' ? region / gate : 1;
+    const wantStretch = cs.mode === 'loop' && cs.warp && cs.warpMode === 'stretch';
+    const ratio = gate / region;
+    const stretched = wantStretch ? stretchCache.get(cs.sampleId, ratio) : undefined;
+    if (stretched) {
+      src.buffer = stretched;
+      src.playbackRate.value = 1; // pitch preserved; buffer already fills the gate
+    } else {
+      src.buffer = buf;
+      // loop → varispeed fill (also the stretch-miss fallback); song → natural.
+      src.playbackRate.value = cs.mode === 'loop' ? region / gate : 1;
+    }
     src.connect(this.filter);
     this.src = src;
 
@@ -180,7 +189,7 @@ class SamplerVoice implements Voice {
     g.linearRampToValueAtTime(0, time + gate);
 
     this.endTime = time + gate + 0.01;
-    src.start(time, trimStart);
+    src.start(time, stretched ? 0 : trimStart);
     src.stop(this.endTime);
     this.started = true;
   }
