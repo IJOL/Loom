@@ -32,7 +32,11 @@ export interface SessionUICallbacks {
   _mixerRow?: HTMLElement;
 }
 
-const COLOR_IDLE = '#2a2a2a';
+// Fallback fill for a filled clip that carries no `clip.color`. Filled cells force
+// dark text (`color: #111`, see _session-grid.scss) so it reads against the light
+// pastel palette — so this fallback MUST also be light, or the label goes
+// black-on-dark-grey and unreadable.
+const COLOR_IDLE = '#c9c9c9';
 
 export function renderSessionGrid(
   host: HTMLElement,

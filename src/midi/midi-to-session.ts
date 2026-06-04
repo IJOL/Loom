@@ -1,5 +1,5 @@
 import type { ParsedMidi } from './midi-parse';
-import type { SessionLane, SessionClip, SessionScene } from '../session/session';
+import { CLIP_COLOR_PALETTE, type SessionLane, type SessionClip, type SessionScene } from '../session/session';
 import type { NoteEvent } from '../core/notes';
 import { TICKS_PER_STEP } from '../core/notes';
 import { findGMMatches, type GMMatch } from './gm-lookup';
@@ -66,6 +66,10 @@ export function midiToSession(
     const clip: SessionClip = {
       id: nextId('clip'),
       name: tr.name || `Track ${tr.index}`,
+      // Auto-assign a palette colour, rotating by lane index so adjacent imported
+      // lanes differ. Without a colour the cell falls back to a dark fill and the
+      // (dark) clip text becomes unreadable.
+      color: CLIP_COLOR_PALETTE[newLanes.length % CLIP_COLOR_PALETTE.length],
       lengthBars,
       notes: clipNotes,
     };
@@ -76,7 +80,9 @@ export function midiToSession(
     const lane: SessionLane = {
       id: nextId('lane'),
       engineId: match.engineId,
-      name: tr.name || `Track ${tr.index}`,
+      // The channel is titled after the assigned preset (the MIDI track names are
+      // often junk metadata); the clip keeps the original track name as its label.
+      name: match.presetName,
       clips,
       enginePresetName: `factory:${match.presetName}`,
     };

@@ -28,6 +28,12 @@ describe('midiToSession', () => {
     expect(result.newLanes[0].clips[0]?.notes[0].midi).toBe(36);
     expect(result.bpm).toBeCloseTo(128, 0);
     expect(result.newLanes[0].enginePresetName).toBe('factory:BASS Acid Classic');
+    // The lane (channel) is titled after the assigned preset, not the MIDI track.
+    expect(result.newLanes[0].name).toBe('BASS Acid Classic');
+    // The clip keeps the original MIDI track name as its label.
+    expect(result.newLanes[0].clips[0]?.name).toBe('Bass');
+    // Every imported clip gets an auto-assigned colour so it renders readably.
+    expect(result.newLanes[0].clips[0]?.color).toMatch(/^#[0-9a-f]{6}$/i);
   });
 
   it('places clips at sceneRow so they align with the scene launch row', () => {
@@ -92,7 +98,14 @@ describe('midiToSession', () => {
       },
     });
     expect(result.newLanes).toHaveLength(2);
-    expect(result.newLanes.map((l) => l.name)).toEqual(['Bass', 'Drums']);
+    // Lane titles come from the presets; clip labels keep the MIDI track names.
+    expect(result.newLanes.map((l) => l.name)).toEqual(['BASS Acid Classic', 'Init']);
+    expect(result.newLanes.map((l) => l.clips[0]?.name)).toEqual(['Bass', 'Drums']);
+    // Adjacent imported lanes get distinct colours (rotating palette).
+    const colors = result.newLanes.map((l) => l.clips[0]?.color);
+    expect(colors[0]).toMatch(/^#[0-9a-f]{6}$/i);
+    expect(colors[1]).toMatch(/^#[0-9a-f]{6}$/i);
+    expect(colors[0]).not.toBe(colors[1]);
   });
 
   it('honours an explicit override even when presetPerTrack contradicts GM', () => {
