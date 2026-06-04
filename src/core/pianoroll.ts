@@ -18,6 +18,9 @@ export interface PianoRollOpts {
   minMidi?: number;
   maxMidi?: number;
   snapTicks?: number;
+  /** Grid geometry from the session meter; default to 4/4 (16 / 4). */
+  stepsPerBar?: number;
+  stepsPerBeat?: number;
   onChange?: () => void;
   getPlayheadTick?: () => number; // -1 when not playing
   /** Initial zoom/scroll for this clip (defaults to fit). */
@@ -121,6 +124,8 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   const minMidi = opts.minMidi ?? 36;
   const maxMidi = opts.maxMidi ?? 96;
   const snap = opts.snapTicks ?? TICKS_PER_STEP;
+  const barSteps = opts.stepsPerBar ?? 16;
+  const beatSteps = opts.stepsPerBeat ?? 4;
   const noteCount = maxMidi - minMidi + 1;
 
   const f = buildEditorFrame(opts.host);
@@ -165,8 +170,8 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     const steps = opts.patternTicks / TICKS_PER_STEP;
     for (let s = 0; s <= steps; s++) {
       const x = s * TICKS_PER_STEP * pxPerTick;
-      if (s % 16 === 0) gctx.strokeStyle = '#555';
-      else if (s % 4 === 0) gctx.strokeStyle = '#2f2f2f';
+      if (s % barSteps === 0) gctx.strokeStyle = '#555';
+      else if (s % beatSteps === 0) gctx.strokeStyle = '#2f2f2f';
       else gctx.strokeStyle = '#1c1c1c';
       gctx.beginPath(); gctx.moveTo(x, 0); gctx.lineTo(x, h); gctx.stroke();
     }
@@ -196,12 +201,12 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     const steps = opts.patternTicks / TICKS_PER_STEP;
     for (let s = 0; s <= steps; s++) {
       const x = s * TICKS_PER_STEP * pxPerTick;
-      if (s % 16 === 0) {
+      if (s % barSteps === 0) {
         rctx.strokeStyle = '#6a6a6a';
         rctx.beginPath(); rctx.moveTo(x, 4); rctx.lineTo(x, RULER_H); rctx.stroke();
         rctx.fillStyle = '#c8c8c8'; rctx.font = '11px ui-monospace, monospace'; rctx.textBaseline = 'middle';
-        rctx.fillText(String(s / 16 + 1), x + 4, RULER_H / 2);
-      } else if (s % 4 === 0) {
+        rctx.fillText(String(s / barSteps + 1), x + 4, RULER_H / 2);
+      } else if (s % beatSteps === 0) {
         rctx.strokeStyle = '#333';
         rctx.beginPath(); rctx.moveTo(x, RULER_H - 8); rctx.lineTo(x, RULER_H); rctx.stroke();
       }

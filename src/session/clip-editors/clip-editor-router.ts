@@ -8,6 +8,7 @@ import type { Sequencer } from '../../core/sequencer';
 import type { LanePlayState } from '../session-runtime';
 import { createPianoRoll, type PianoRollHandle } from '../../core/pianoroll';
 import { TICKS_PER_STEP, type NoteEvent } from '../../core/notes';
+import { ticksPerBar, stepsPerBar, stepsPerBeat } from '../../core/meter';
 import { resolveViewState, type ViewState } from '../../core/pianoroll-zoom';
 import { getEngine } from '../../engines/registry';
 import { renderDrumGridEditor } from './clip-editor-drum-grid';
@@ -73,7 +74,9 @@ function buildPianoRoll(
     host,
     getNotes,
     setNotes,
-    patternTicks: clip.lengthBars * 16 * TICKS_PER_STEP,
+    patternTicks: clip.lengthBars * ticksPerBar(seq.meter),
+    stepsPerBar: stepsPerBar(seq.meter),
+    stepsPerBeat: stepsPerBeat(seq.meter),
     minMidi: isBassLikeEngine ? 24 : 36,
     maxMidi: isBassLikeEngine ? 60 : 96,
     onChange: () => {},
@@ -83,7 +86,7 @@ function buildPianoRoll(
       const now = ctx.currentTime;
       const stepDur = 60 / seq.bpm / 4;
       const stepsElapsed = Math.max(0, (now - lp.startTime) / stepDur);
-      const clipSteps = clip.lengthBars * 16;
+      const clipSteps = clip.lengthBars * stepsPerBar(seq.meter);
       return (stepsElapsed % clipSteps) * TICKS_PER_STEP;
     },
     viewState: resolveViewState(viewStateByClip, clip.id),
