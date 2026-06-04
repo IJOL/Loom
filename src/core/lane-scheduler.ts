@@ -5,7 +5,8 @@
 // It also advances the loop boundary when a full clip iteration completes.
 
 import type { SessionClip, ClipEnvelope, ClipSample } from '../session/session';
-import { TICKS_PER_STEP } from './notes';
+import { TICKS_PER_QUARTER, TICKS_PER_STEP } from './notes';
+import { quartersPerBar, DEFAULT_METER, type TimeSignature } from './meter';
 
 export interface SchedulerContext {
   bpm: number;
@@ -23,6 +24,9 @@ export interface SchedulerContext {
    *  have overlapping look-ahead windows (the realistic 25ms/120ms case).
    *  Default `-Infinity` means "no notes scheduled yet" (cold start). */
   lastScheduledAt?: number;
+  /** Global time signature; absent ⇒ 4/4. Controls loop (bar) duration only —
+   *  individual note tick positions are absolute time, meter-independent. */
+  meter?: TimeSignature;
   /** Called with the original note + the absolute audio time at which it
    *  should be scheduled. */
   onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample }, scheduleTime: number) => void;
@@ -30,9 +34,6 @@ export interface SchedulerContext {
    *  `clipTimeNorm` is 0..1 within the clip iteration. */
   onAutomation: (env: ClipEnvelope, clipTimeNorm: number, scheduleTime: number) => void;
 }
-
-/** TICKS_PER_BAR for the SessionClip note coordinate space (16 steps/bar). */
-const TICKS_PER_BAR = TICKS_PER_STEP * 16;
 
 /**
  * Per-note schedule-time drift tolerance (1 µs).  Applied symmetrically:
@@ -65,8 +66,9 @@ const DRIFT = 1e-6;
  * The updated loopStartedAt is returned; the caller writes it back.
  */
 export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
+  const meter = ctx.meter ?? DEFAULT_METER;
   const secPerBeat = 60 / ctx.bpm;
-  const clipDurSec = clip.lengthBars * 4 * secPerBeat;
+  const clipDurSec = clip.lengthBars * quartersPerBar(meter) * secPerBeat;
   if (clipDurSec <= 0) return ctx.loopStartedAt;
 
   // Derive how many full iterations have completed since the original anchor.
@@ -106,13 +108,13 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
       // runtime's secPerTick (= lengthBars * 4 * TICKS_PER_STEP).
       if (iterStart >= windowStart && iterStart < windowEnd) {
         ctx.onTrigger(
-          { midi: 60, duration: clip.lengthBars * 4 * TICKS_PER_STEP, velocity: 100, sample: clip.sample },
+          { midi: 60, duration: clip.lengthBars * quartersPerBar(meter) * TICKS_PER_STEP, velocity: 100, sample: clip.sample },
           iterStart,
         );
       }
     } else {
       for (const n of clip.notes) {
-        const clipTimeSec = (n.start / TICKS_PER_BAR) * 4 * secPerBeat;
+        const clipTimeSec = (n.start / TICKS_PER_QUARTER) * secPerBeat;
         const scheduleAt  = iterStart + clipTimeSec;
         if (scheduleAt >= windowStart && scheduleAt < windowEnd) {
           ctx.onTrigger(

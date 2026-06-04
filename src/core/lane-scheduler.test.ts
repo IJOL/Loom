@@ -126,6 +126,26 @@ describe('lane-scheduler tickLane', () => {
     });
     expect(fires).toEqual([{ midi: 60 }]);
   });
+
+  it('a 7/8 clip loops at 7/8 the duration of a 4/4 clip (120 bpm)', () => {
+    const clip: SessionClip = {
+      id: '78', lengthBars: 1,
+      notes: [{ start: 0, duration: TICKS_PER_STEP, midi: 60, velocity: 100 }],
+    };
+    const fires: number[] = [];
+    let loopStart = 0;
+    for (let now = 0; now < 4.0; now += 0.2) {
+      loopStart = tickLane(clip, {
+        bpm: 120, lookaheadSec: 0.2, now, loopStartedAt: loopStart,
+        meter: { num: 7, den: 8 },
+        onTrigger: (_n, t) => fires.push(t),
+        onAutomation: () => {},
+      });
+    }
+    // 1 bar of 7/8 at 120 bpm = 7 eighth-notes; an eighth = (60/120)/2 = 0.25 s
+    // → 1.75 s per loop (vs 2.0 s in 4/4).
+    expect(fires[1] - fires[0]).toBeCloseTo(1.75, 2);
+  });
 });
 
 describe('lane-scheduler tickLane — audio (loop/song) clips', () => {

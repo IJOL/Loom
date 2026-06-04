@@ -198,6 +198,7 @@ export class SessionHost {
         (laneId, _clipId, _stepInClip, stepTime) =>
           this.deps.markTrackActive(laneId, stepTime),
         this.deps.recHooks,
+        this.deps.seq.meter,
       );
       if (this.deps.onAfterTick) this.deps.onAfterTick(now, look);
     };

@@ -5,6 +5,7 @@ import type { SessionClip, SessionState, LaunchQuantize, SessionLane, ClipSample
 import { tickLane } from '../core/lane-scheduler';
 import { TICKS_PER_STEP } from '../core/notes';
 import type { NoteEvent } from '../core/notes';
+import { ticksPerBar, DEFAULT_METER, type TimeSignature } from '../core/meter';
 import { AUTOMATION_SUB_RES } from '../core/pattern';
 import type { RecState } from '../performance/rec-state';
 import { arrangementNow } from '../performance/rec-state';
@@ -180,6 +181,7 @@ export function tickSession(
   onLaneTrigger: LaneTriggerFn,
   onClipStepFired: ClipStepFiredFn,
   hooks?: RecHooks,
+  meter: TimeSignature = DEFAULT_METER,
 ): void {
   for (const lane of state.lanes) {
     const lp = laneStates.get(lane.id);
@@ -213,6 +215,7 @@ export function tickSession(
       lookaheadSec: lookahead,
       now,
       loopStartedAt: currentLoopStart,
+      meter,
       lastScheduledAt: lp.lastScheduledAt,
       onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample }, scheduleTime: number) => {
         if (scheduleTime > lp.lastScheduledAt) lp.lastScheduledAt = scheduleTime;
@@ -224,7 +227,7 @@ export function tickSession(
         // Back-computing gives us the same tick value the note was stored at
         // (within 1 µs float tolerance, well inside TICKS_PER_STEP/2 gap).
         const scheduledStartTick = Math.round((scheduleTime - currentLoopStart) / tickSec)
-          % (clip.lengthBars * 16 * TICKS_PER_STEP);
+          % (clip.lengthBars * ticksPerBar(meter));
         // TB-303 slide: a prior note whose end overlaps this note's start.
         const slidingIn = lane.engineId === 'tb303'
           && (clip.notes as NoteEvent[]).some(
