@@ -61,7 +61,7 @@ test.describe('modulator destination dropdown', () => {
 });
 
 test.describe('preset selection', () => {
-  test('boot applies the demo slot-0 preset (PAD Warm)', async ({ page }) => {
+  test('boot applies the demo slot-0 preset (LEAD Square)', async ({ page }) => {
     await page.goto('/');
     // The demo SessionState is now fetched async from /demos/minimal-techno.json,
     // so the dropdown stays at "__custom__" until the fetch resolves and
@@ -72,7 +72,7 @@ test.describe('preset selection', () => {
     );
     await page.locator('button.session-lane-tab[data-lane-id="subtractive-1"]').click();
     const sel = page.locator('#poly-preset-select');
-    await expect(sel).toHaveValue('factory:PAD Warm');
+    await expect(sel).toHaveValue('factory:LEAD Square');
   });
 });
 
@@ -101,25 +101,25 @@ test.describe('demo JSON presets', () => {
     await waitForBoot(page);
 
     await page.locator('button.session-lane-tab[data-lane-id="subtractive-1"]').click();
-    await expect(page.locator('#poly-preset-select')).toHaveValue('factory:PAD Warm');
+    await expect(page.locator('#poly-preset-select')).toHaveValue('factory:LEAD Square');
 
     await page.locator('button.session-lane-tab[data-lane-id="subtractive-2"]').click();
     await expect(page.locator('#poly-preset-select')).toHaveValue('factory:PAD Sweep');
   });
 
-  test('launching scene B switches presets on every poly lane', async ({ page }) => {
+  test('launching a scene does not change per-lane presets', async ({ page }) => {
     await page.goto('/');
     await waitForBoot(page);
 
-    // Scene-launch buttons are rendered by session-ui as `.session-scene-launch`.
+    // Presets are a per-lane property: launching a scene swaps clips, not sounds.
     // Index 1 = scene B.
     await page.locator('.session-scene-launch').nth(1).click();
 
     await page.locator('button.session-lane-tab[data-lane-id="subtractive-1"]').click();
-    await expect(page.locator('#poly-preset-select')).toHaveValue('factory:LEAD Bright Saw');
+    await expect(page.locator('#poly-preset-select')).toHaveValue('factory:LEAD Square');
 
     await page.locator('button.session-lane-tab[data-lane-id="subtractive-2"]').click();
-    await expect(page.locator('#poly-preset-select')).toHaveValue('factory:LEAD Soft Sine');
+    await expect(page.locator('#poly-preset-select')).toHaveValue('factory:PAD Sweep');
   });
 });
 
