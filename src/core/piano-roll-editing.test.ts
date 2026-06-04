@@ -1,0 +1,76 @@
+import { describe, it, expect } from 'vitest';
+import {
+  keyToSemitone, midiForKey, notesInRect, translateGroup,
+  serializeClipboard, pasteTranslate, quantizeRecorded,
+} from './piano-roll-editing';
+import type { NoteEvent } from './notes';
+
+const N = (start: number, midi: number, duration = 24, velocity = 80): NoteEvent => ({ start, midi, duration, velocity });
+const BOUNDS = { patternTicks: 384, minMidi: 36, maxMidi: 96 };
+
+describe('keyboard map', () => {
+  it('maps home row to white keys and upper row to black keys', () => {
+    expect(keyToSemitone('a')).toBe(0);
+    expect(keyToSemitone('w')).toBe(1);
+    expect(keyToSemitone('k')).toBe(12);
+    expect(keyToSemitone('A')).toBe(0); // case-insensitive
+    expect(keyToSemitone('q')).toBeNull(); // unused
+    expect(keyToSemitone('1')).toBeNull();
+  });
+  it('midiForKey adds the octave base', () => {
+    expect(midiForKey('a', 60)).toBe(60);
+    expect(midiForKey('w', 60)).toBe(61);
+    expect(midiForKey('k', 60)).toBe(72);
+    expect(midiForKey('z', 60)).toBeNull(); // z/x are octave shifts, not notes
+  });
+});
+
+describe('notesInRect', () => {
+  it('selects notes whose body intersects the rect (order-independent corners)', () => {
+    const notes = [N(0, 60), N(48, 64), N(120, 72)];
+    const hit = notesInRect(notes, { tick0: 60, tick1: 10, midi0: 66, midi1: 58 });
+    expect(hit).toEqual([notes[0], notes[1]]); // midi 58..66 and ticks 10..60 — note[1] starts at 48, inside
+  });
+  it('excludes notes outside the pitch band', () => {
+    const notes = [N(0, 60), N(0, 90)];
+    expect(notesInRect(notes, { tick0: 0, tick1: 24, midi0: 58, midi1: 62 })).toEqual([notes[0]]);
+  });
+});
+
+describe('translateGroup clamp', () => {
+  it('clamps a leftward move so the earliest note stops at tick 0', () => {
+    const g = [N(24, 60), N(48, 64)];
+    expect(translateGroup(g, -100, 0, BOUNDS).dTick).toBe(-24);
+  });
+  it('clamps pitch so the top note stops at maxMidi', () => {
+    const g = [N(0, 90), N(0, 84)];
+    expect(translateGroup(g, 0, 100, BOUNDS).dMidi).toBe(6); // 96 - 90
+  });
+  it('passes a delta through when it stays in bounds', () => {
+    expect(translateGroup([N(48, 60)], 24, 2, BOUNDS)).toEqual({ dTick: 24, dMidi: 2 });
+  });
+});
+
+describe('clipboard round-trip', () => {
+  it('serializes relative to the earliest start and pastes anchored to the mouse', () => {
+    const sel = [N(48, 60), N(72, 67)];
+    const clip = serializeClipboard(sel);
+    expect(clip[0].dStart).toBe(0);
+    expect(clip[1].dStart).toBe(24);
+    const pasted = pasteTranslate(clip, 100, 62, BOUNDS);
+    expect(pasted[0]).toMatchObject({ start: 100, midi: 62 });
+    expect(pasted[1]).toMatchObject({ start: 124, midi: 69 }); // +24 tick, +7 semitone preserved
+  });
+  it('clamps a paste that runs past the pattern end back inside', () => {
+    const clip = serializeClipboard([N(0, 60, 48)]);
+    const pasted = pasteTranslate(clip, 380, 60, BOUNDS); // 380+48 = 428 > 384
+    expect(pasted[0].start).toBe(336); // 384 - 48
+  });
+});
+
+describe('quantizeRecorded', () => {
+  it('snaps start and rounds duration to at least one snap', () => {
+    expect(quantizeRecorded(50, 60, 24)).toEqual({ start: 48, duration: 24 });
+    expect(quantizeRecorded(0, 60, 24)).toEqual({ start: 0, duration: 72 }); // 60→round(2.5)=72? see note
+  });
+});
