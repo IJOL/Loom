@@ -46,4 +46,25 @@ describe('encodeWavPcm16', () => {
     expect(wavEncoder.mimeType).toBe('audio/wav');
     expect(wavEncoder.encode([Float32Array.of(0)], 48000)).toBeInstanceOf(Blob);
   });
+
+  it('encodes a mono (single-channel) WAV', async () => {
+    const mono = Float32Array.from([1, -1, 0.5]);
+    const buf = await encodeWavPcm16([mono], 48000).arrayBuffer();
+    const view = new DataView(buf);
+    expect(view.getUint16(22, true)).toBe(1);   // numChannels = 1
+    expect(view.getUint16(32, true)).toBe(2);   // blockAlign = 1ch * 2 bytes
+    expect(view.getUint32(40, true)).toBe(6);   // dataSize = 3 frames * 2 bytes
+    expect(buf.byteLength).toBe(50);            // 44 header + 6 data
+    expect(view.getInt16(44, true)).toBe(32767);
+    expect(view.getInt16(46, true)).toBe(-32768);
+    expect(view.getInt16(48, true)).toBe(16384); // round(0.5 * 32767)
+  });
+
+  it('produces a valid empty WAV when given no channels', async () => {
+    const buf = await encodeWavPcm16([], 48000).arrayBuffer();
+    const view = new DataView(buf);
+    expect(buf.byteLength).toBe(44);            // header only, no data
+    expect(view.getUint16(22, true)).toBe(1);   // numChannels clamped to 1
+    expect(view.getUint32(40, true)).toBe(0);   // dataSize = 0
+  });
 });
