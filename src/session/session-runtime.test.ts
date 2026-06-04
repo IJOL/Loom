@@ -14,8 +14,8 @@ import {
   emptyLanePlayState,
   type LanePlayState,
 } from './session-runtime';
-import type { SessionState, SessionClip } from './session';
-import { TICKS_PER_STEP } from '../core/notes';
+import type { SessionState, SessionClip, ClipSample } from './session';
+import { TICKS_PER_STEP, TICKS_PER_QUARTER } from '../core/notes';
 
 // ── Constants ─────────────────────────────────────────────────────────────
 
@@ -206,15 +206,19 @@ describe('tickSession (note-based, Phase D.3)', () => {
   });
 
   describe('gate duration', () => {
-    it('converts note.duration ticks to seconds correctly', () => {
-      // At 120 BPM: secPerTick = (60/120)/24 = 0.020833... s
-      const SEC_PER_TICK = (60 / BPM) / TICKS_PER_STEP;
-      const noteDurTicks = 20;
-      const expectedGate = noteDurTicks * SEC_PER_TICK;
+    it('gates a one-beat note for exactly one beat (TICKS_PER_QUARTER grid)', () => {
+      // Note durations live on the TICKS_PER_QUARTER (96) grid, same as note
+      // starts (meter.ts). A one-beat note (96 ticks) must gate for one beat =
+      // 60/bpm seconds. Asserting the musical intent — a beat — rather than the
+      // implementation formula, so a tick→seconds unit regression is caught
+      // (the old test mirrored the buggy /TICKS_PER_STEP divisor and so was
+      // tautological: it produced a 4×-too-long gate yet still "passed").
+      const oneBeatTicks = TICKS_PER_QUARTER;
+      const expectedGate = 60 / BPM; // one beat in seconds
 
       const clip: SessionClip = {
         id: 'g1', lengthBars: 1,
-        notes: [{ midi: 55, start: 0, duration: noteDurTicks, velocity: 80 }],
+        notes: [{ midi: 55, start: 0, duration: oneBeatTicks, velocity: 80 }],
       };
       const state: SessionState = {
         lanes: [{ id: 'gl', engineId: 'subtractive', clips: [clip] }],
@@ -255,6 +259,32 @@ describe('tickSession (note-based, Phase D.3)', () => {
 
       expect(gates).toHaveLength(1);
       expect(gates[0]).toBeGreaterThanOrEqual(0.01);
+    });
+
+    it('gates an audio-loop clip for its full length (round-trips through secPerTick)', () => {
+      // The sample-clip path in tickLane encodes the clip's duration in ticks
+      // specifically so it round-trips back to the full clip length through
+      // secPerTick. This pins that coupling: the tick→seconds unit and the
+      // sample-clip duration formula must change together or loops shorten.
+      const BARS = 2;
+      const sample: ClipSample = { sampleId: 'smp-1', mode: 'loop', trimStart: 0, trimEnd: 1 };
+      const clip: SessionClip = { id: 'loopc', lengthBars: BARS, notes: [], sample };
+      const state: SessionState = {
+        lanes: [{ id: 'll', engineId: 'sampler', clips: [clip] }],
+        scenes: [],
+        globalQuantize: 'immediate',
+      };
+      const lp: LanePlayState = { ...emptyLanePlayState('ll'), playing: clip, startTime: 0, loopStartedAt: 0 };
+      const laneStates = new Map([['ll', lp]]);
+
+      const gates: number[] = [];
+      tickSession(laneStates, state, 0, LOOK, BPM,
+        (_id, _midi, _t, gate) => gates.push(gate),
+        () => {},
+      );
+
+      expect(gates).toHaveLength(1);
+      expect(gates[0]).toBeCloseTo(BARS * SEC_PER_BAR, 5);
     });
   });
 

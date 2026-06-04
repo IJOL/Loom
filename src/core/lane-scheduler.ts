@@ -5,7 +5,7 @@
 // It also advances the loop boundary when a full clip iteration completes.
 
 import type { SessionClip, ClipEnvelope, ClipSample } from '../session/session';
-import { TICKS_PER_QUARTER, TICKS_PER_STEP } from './notes';
+import { TICKS_PER_QUARTER } from './notes';
 import { quartersPerBar, DEFAULT_METER, type TimeSignature } from './meter';
 
 export interface SchedulerContext {
@@ -104,11 +104,12 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
     const iterStart = loopStart + k * clipDurSec;
     if (clip.sample) {
       // Loop/song audio clip: one buffer trigger per iteration, gated to the
-      // full clip length. duration in ticks round-trips to clipDurSec via the
-      // runtime's secPerTick (= lengthBars * 4 * TICKS_PER_STEP).
+      // full clip length. duration is the clip length in TICKS_PER_QUARTER
+      // ticks (= lengthBars × ticksPerBar) so it round-trips back to clipDurSec
+      // through the runtime's secPerTick (which divides by TICKS_PER_QUARTER).
       if (iterStart >= windowStart && iterStart < windowEnd) {
         ctx.onTrigger(
-          { midi: 60, duration: clip.lengthBars * quartersPerBar(meter) * TICKS_PER_STEP, velocity: 100, sample: clip.sample },
+          { midi: 60, duration: clip.lengthBars * quartersPerBar(meter) * TICKS_PER_QUARTER, velocity: 100, sample: clip.sample },
           iterStart,
         );
       }

@@ -3,7 +3,7 @@
 
 import type { SessionClip, SessionState, LaunchQuantize, SessionLane, ClipSample } from './session';
 import { tickLane } from '../core/lane-scheduler';
-import { TICKS_PER_STEP } from '../core/notes';
+import { TICKS_PER_STEP, TICKS_PER_QUARTER } from '../core/notes';
 import type { NoteEvent } from '../core/notes';
 import { ticksPerBar, DEFAULT_METER, type TimeSignature } from '../core/meter';
 import { AUTOMATION_SUB_RES } from '../core/pattern';
@@ -167,9 +167,13 @@ export type ClipStepFiredFn = (
   stepTime: number,
 ) => void;
 
-/** Seconds per tick at the given bpm. 16 steps/bar × 24 ticks/step. */
+/** Seconds per tick at the given bpm. Note timing lives on the
+ *  TICKS_PER_QUARTER (96) grid — the same resolution as note `start`/`duration`
+ *  and `ticksPerBar` (meter.ts) — so a quarter note = TICKS_PER_QUARTER ticks =
+ *  one beat = 60/bpm s. (Dividing by TICKS_PER_STEP here was a unit bug that
+ *  made every note gate 4× too long, only audible on sustained presets.) */
 function secPerTick(bpm: number): number {
-  return (60 / bpm) / TICKS_PER_STEP;
+  return (60 / bpm) / TICKS_PER_QUARTER;
 }
 
 export function tickSession(

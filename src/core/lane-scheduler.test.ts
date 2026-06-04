@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { tickLane, type SchedulerContext } from './lane-scheduler';
 import type { SessionClip } from '../session/session';
 import { TICKS_PER_STEP } from './notes';
+import { ticksPerBar, DEFAULT_METER } from './meter';
 
 describe('lane-scheduler tickLane regression: overlapping windows', () => {
   it('a single note fires EXACTLY ONCE per loop iteration when tick=25ms, lookahead=120ms', () => {
@@ -168,9 +169,10 @@ describe('lane-scheduler tickLane — audio (loop/song) clips', () => {
     for (const f of fires) {
       expect(f.sampleId).toBe('s1');
       expect(f.midi).toBe(60);
-      // Gate ticks → seconds (× secPerTick) must equal the clip duration:
-      // lengthBars * 4 * TICKS_PER_STEP.
-      expect(f.duration).toBe(1 * 4 * TICKS_PER_STEP);
+      // The synthetic buffer trigger is gated to the FULL clip length, encoded
+      // in TICKS_PER_QUARTER ticks (= lengthBars × ticksPerBar) so it round-
+      // trips back to clipDurSec through the runtime's secPerTick.
+      expect(f.duration).toBe(ticksPerBar(DEFAULT_METER) * clip.lengthBars);
     }
     expect(fires[0].time).toBeCloseTo(0, 5);
     expect(fires[1].time).toBeCloseTo(2, 5);
