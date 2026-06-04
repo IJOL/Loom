@@ -51,7 +51,7 @@ export interface SessionLane {
     params?: Record<string, number>;
     modulators?: import('../modulation/types').ModulatorState[];
     noteFx?: import('../notefx/notefx-types').NoteFxState[];
-    sampler?: { keymap: import('../samples/types').KeymapEntry[]; drumkitId?: string };
+    sampler?: { keymap: import('../samples/types').KeymapEntry[]; drumkitId?: string; padParams?: Record<number, Record<string, number>> };
     /** Per-voice drum mute flags (drums-machine). Solo is live-only, not saved. */
     drumMutes?: Record<string, boolean>;
   };

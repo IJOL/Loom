@@ -330,6 +330,12 @@ export class SessionHost {
       if (drumkitId && typeof (engine as { setKeymap?: unknown }).setKeymap === 'function') {
         void this.reloadDrumkit(lane.id, drumkitId, engine as unknown as { setKeymap(k: KeymapEntry[]): void });
       }
+      // Restore per-pad param overrides (sampler). Feature-detected so only
+      // the sampler responds; independent of the async drumkit reload.
+      const padParams = lane.engineState?.sampler?.padParams;
+      if (padParams && typeof (engine as { setPadStore?: unknown }).setPadStore === 'function') {
+        (engine as unknown as { setPadStore(s: Record<number, Record<string, number>>): void }).setPadStore(padParams);
+      }
       // Restore per-voice drum mutes (drums-machine). Solo is live-only.
       const drumMutes = lane.engineState?.drumMutes;
       if (drumMutes && typeof (engine as { setDrumVoiceMutes?: unknown }).setDrumVoiceMutes === 'function') {

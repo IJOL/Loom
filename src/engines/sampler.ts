@@ -17,7 +17,7 @@ import { wireEngineParams } from './engine-ui';
 import { sampleStore } from '../samples/store-singleton';
 import { importFile } from '../samples/import';
 import { addSampleToKeymap, removeKeymapEntry, setEntryRoot } from '../samples/keymap-edit';
-import { mirrorKeymapChange, mirrorDrumkitId } from '../session/session-engine-state';
+import { mirrorKeymapChange, mirrorDrumkitId, mirrorPadParams } from '../session/session-engine-state';
 import { listDrumkits, fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
 import { PAD_DEFAULTS, PAD_LEAF_SPECS, padKeyForNote, noteForPadKey, type PadParams } from './sampler-pad-params';
 import type { FxBus } from '../core/fx';
@@ -265,6 +265,9 @@ export class SamplerEngine implements SynthEngine {
   getDrumVoiceMutes(): Record<string, boolean> { return { ...this.voiceMute }; }
   setDrumVoiceMutes(m: Record<string, boolean>): void { this.voiceMute = { ...m }; }
 
+  private onPadEdit: (() => void) | null = null;
+  setPadEditHook(fn: (() => void) | null): void { this.onPadEdit = fn; }
+
   getRackLayout() {
     return {
       curatedSynth: ['tune', 'cutoff', 'decay'],
@@ -335,6 +338,7 @@ export class SamplerEngine implements SynthEngine {
     if (!(leaf in PAD_DEFAULTS)) return;
     const note = noteForPadKey(key);
     (this.padStore[note] ??= {})[leaf] = v;
+    this.onPadEdit?.();
   }
 
   /** Replace the lane's one-shot keymap. Phase-3 UI calls this; tests call it
@@ -367,6 +371,12 @@ export class SamplerEngine implements SynthEngine {
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
     container.innerHTML = '';
     if (!ctx) return;
+
+    // Install the per-pad edit hook so any per-pad setBaseValue call mirrors
+    // the pad store into the session state (if one is present).
+    this.setPadEditHook(ctx.sessionState
+      ? () => mirrorPadParams(ctx.sessionState!, ctx.laneId, this.getPadStore() as Record<number, Record<string, number>>)
+      : null);
 
     // Drumkit: render the per-pad rack FIRST (reuses drum-voice-rack with
     // the sampler's own getRackLayout + getDrumVoice* contract).

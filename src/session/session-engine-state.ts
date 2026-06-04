@@ -88,6 +88,24 @@ export function readLaneDrumkitId(state: SessionState, laneId: string): string |
   return state.lanes.find((l) => l.id === laneId)?.engineState?.sampler?.drumkitId;
 }
 
+/** Mirror the sampler's per-pad param overrides (keyed by note) so per-pad
+ *  edits persist + survive a drumkit reload-by-id. */
+export function mirrorPadParams(
+  state: SessionState,
+  laneId: string,
+  padParams: Record<number, Record<string, number>>,
+): void {
+  const lane = state.lanes.find((l) => l.id === laneId);
+  if (!lane) return;
+  if (!lane.engineState) lane.engineState = {};
+  const keymap = lane.engineState.sampler?.keymap ?? [];
+  lane.engineState.sampler = {
+    ...lane.engineState.sampler,
+    keymap,
+    padParams: JSON.parse(JSON.stringify(padParams)),
+  };
+}
+
 /** Writes a deep-cloned copy of the note-FX array into
  *  `state.lanes[laneId].engineState.noteFx`. No-op if lane is unknown. */
 export function syncNoteFx(
