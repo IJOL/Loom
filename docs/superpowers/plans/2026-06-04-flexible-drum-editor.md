@@ -2,22 +2,30 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace the fixed-16th drum button matrix with a canvas drum-rack editor: selectable resolution (1/4…1/32 + triplets + free), free off-grid placement, and selection/copy-paste/group-move — with the resolution persisted per clip.
+**Goal:** Replace the fixed-16th drum button matrix with a canvas drum-rack editor: selectable resolution (1/4…1/32 + triplets + free), free off-grid placement, and selection/copy-paste/group-move — with the resolution persisted per clip and the moving playhead preserved.
 
-**Architecture:** All non-canvas logic goes in a new pure module `src/core/drum-grid-editing.ts` (resolution↔snap, per-cell hit lookup, marquee row×tick hit-test, **row-based** group-move and clipboard — drum rows are non-contiguous GM midis, so this is row-indexed, not midi-indexed). `src/session/clip-editors/clip-editor-drum-grid.ts` is rewritten as a fit-to-width canvas (8 voice rows, no zoom) that is thin glue over that module; it keeps the same exported `renderDrumGridEditor` signature so the router and the sampler-drumkit path are unchanged. Resolution is an additive optional `SessionClip.gridResolution?`. No top-level schema change.
+**Architecture:** Non-canvas logic lives in a new pure module `src/core/drum-grid-editing.ts` (resolution↔snap, per-cell hit lookup, marquee row×tick hit-test, **row-based** group-move and clipboard — drum rows are non-contiguous GM midis, so this is row-indexed). `src/session/clip-editors/clip-editor-drum-grid.ts` is rewritten as a fit-to-width canvas (8 voice rows) that is thin glue over that module and **returns a `{ redraw }` handle** so the existing session-host RAF drives its per-frame width-reflow and the canvas playhead (exactly like the piano-roll). Resolution is an additive optional `SessionClip.gridResolution?`. No top-level schema change.
 
 **Tech Stack:** TypeScript, Vite, Vitest, Canvas 2D. Tests colour-free (`NO_COLOR=1`).
 
 **Spec:** [docs/superpowers/specs/2026-06-04-flexible-drum-editor-design.md](../specs/2026-06-04-flexible-drum-editor-design.md)
 
+> **This plan was hardened after an adversarial review** (10 confirmed findings). Folded in:
+> the canvas now keeps a moving **playhead** (returns a `{redraw}` handle driven by the host RAF,
+> which also fixes the resize-on-mount glitch); the Pencil cycle clears the **whole cell cluster**
+> (legacy rolls); the bogus width clamp, the `free`-mode 1-tick gridline storm, the dead
+> `TICKS_PER_STEP` import and the `require()` wart are all fixed; dead drum CSS + the now-defunct
+> `updateEditorPlayhead` are removed; `AUDITION_GATE` is shared; the spec's pencil-drag aside is
+> scoped to Select mode.
+
 ---
 
 ## Execution notes (read first)
 
-- **Worktree:** already on branch `feat/flexible-drum-editor` (spec commit `acfe768`). Commit each task here. On green: `git rebase main` (literal) → `git merge --ff-only feat/flexible-drum-editor` → `ExitWorktree`.
+- **Worktree:** already on branch `feat/flexible-drum-editor` (spec/plan committed). Commit each task here. On green: `git rebase main` (literal) → `git merge --ff-only feat/flexible-drum-editor` → `ExitWorktree`.
 - **Commits** end with: `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`. Stage only the task's files.
-- **Tests:** `NO_COLOR=1 npx vitest run <file>`; `npm run test:unit` for all (re-run once if `ERR_IPC_CHANNEL_CLOSED` teardown after the summary shows green). The `src/samples/drumkit-loader.dsp.test.ts` ENOENT on `public/drumkits/**/*.wav` is a gitignored-fixture env failure unrelated to this work — ignore it (or copy the WAVs from the main checkout).
-- **Canvas reality:** the canvas editor (Task 3) is verified by tsc/build + existing tests + Task 5 smoke; the tested logic is all in Task 1.
+- **Tests:** `NO_COLOR=1 npx vitest run <file>`; `npm run test:unit` for all (re-run once if `ERR_IPC_CHANNEL_CLOSED` teardown after the summary shows green). `src/samples/drumkit-loader.dsp.test.ts` ENOENT on `public/drumkits/**/*.wav` is a gitignored-fixture env failure unrelated to this work — ignore it (or copy the WAVs from the main checkout).
+- **Canvas reality:** the canvas editor (Task 3) is verified by tsc/build + existing tests + Task 6 smoke; the tested logic is all in Task 1.
 
 ## File structure
 
@@ -27,11 +35,13 @@
 
 **Modified:**
 - `src/session/session.ts` — `SessionClip.gridResolution?`.
-- `src/session/clip-editors/clip-editor-drum-grid.ts` — **rewritten** as the canvas editor.
-- `src/session/clip-editors/clip-editor-router.ts` — pass `auditionNote` (+ existing meter) to the drum editor.
+- `src/session/clip-editors/clip-editor-drum-grid.ts` — **rewritten** as the canvas editor (returns a redraw handle).
+- `src/session/clip-editors/clip-editor-router.ts` — pass `auditionNote` + `getPlayheadTick`; return the drum handle; hoist `AUDITION_GATE`.
 - `src/session/clip-editors/clip-editor-drum-grid.test.ts` — adjust to the canvas API (keep data-shape asserts).
+- `src/session/session-host.ts` — remove the now-defunct `.cells` `updateEditorPlayhead`.
+- `src/styles/_tracks.scss` + `src/styles/_session-inspector.scss` — delete dead drum-grid CSS.
 
-**No** top-level `SavedStateV3` / `schemaVersion` change. **No** `session-migration.ts` change needed — `migrateClip`'s modern path preserves unknown fields, and the editor clamps `gridResolution` on read (`clampResolution`), so an invalid persisted value is corrected at render without a migration pass.
+**No** top-level `SavedStateV3` / `schemaVersion` change. **No** `session-migration.ts` change — `migrateClip`'s modern path preserves unknown fields and the editor clamps `gridResolution` on read.
 
 ---
 
@@ -49,7 +59,7 @@ Create `src/core/drum-grid-editing.test.ts`:
 import { describe, it, expect } from 'vitest';
 import {
   RESOLUTIONS, resolutionToSnap, clampResolution, DEFAULT_RESOLUTION,
-  snapTickToRes, hitInCell, rowsInRect, rowMove,
+  snapTickToRes, hitInCell, hitsInCell, rowsInRect, rowMove,
   serializeDrumClipboard, pasteDrumClipboard, clampGroupTick,
 } from './drum-grid-editing';
 import type { NoteEvent } from './notes';
@@ -57,7 +67,6 @@ import { DRUM_LANES } from './drums';
 
 const VOICES = DRUM_LANES;
 const rowOf = (v: typeof VOICES[number]) => VOICES.indexOf(v);
-// kick=36 (row 0), snare=38 (row 1), closedHat=42 (row 2)
 const kick = (start: number, vel = 80): NoteEvent => ({ start, midi: 36, duration: 12, velocity: vel });
 const snare = (start: number): NoteEvent => ({ start, midi: 38, duration: 12, velocity: 80 });
 
@@ -83,20 +92,24 @@ describe('resolution', () => {
   });
 });
 
-describe('hitInCell', () => {
+describe('hitInCell / hitsInCell', () => {
   it('finds a hit of the voice within [cell, cell+snap)', () => {
     const notes = [kick(0), kick(24), snare(24)];
     expect(hitInCell(notes, 'kick', 24, 24)).toBe(notes[1]);
     expect(hitInCell(notes, 'kick', 48, 24)).toBeNull();
     expect(hitInCell(notes, 'snare', 24, 24)).toBe(notes[2]);
   });
+  it('hitsInCell returns every hit in the cell (legacy roll cluster)', () => {
+    const roll = [kick(0), kick(8), kick(16), snare(0)]; // 3 kicks in one 1/16 cell
+    expect(hitsInCell(roll, 'kick', 0, 24)).toEqual([roll[0], roll[1], roll[2]]);
+    expect(hitsInCell(roll, 'snare', 0, 24)).toEqual([roll[3]]);
+  });
 });
 
 describe('rowsInRect', () => {
   it('selects hits by row index and tick span', () => {
     const notes = [kick(0), snare(48), kick(120)];
-    const hit = rowsInRect(notes, { row0: 0, row1: 1, tick0: 60, tick1: -1 }, rowOf);
-    // rows 0..1, ticks 0..60 → kick@0 and snare@48
+    const hit = rowsInRect(notes, { row0: 0, row1: 1, tick0: 0, tick1: 60 }, rowOf);
     expect(hit).toEqual([notes[0], notes[1]]);
   });
 });
@@ -177,6 +190,11 @@ export function hitInCell(notes: readonly NoteEvent[], voice: DrumVoice, cellTic
   return null;
 }
 
+/** ALL hits of `voice` in the cell (covers legacy roll clusters + finer-res dupes). */
+export function hitsInCell(notes: readonly NoteEvent[], voice: DrumVoice, cellTick: number, snap: number): NoteEvent[] {
+  return notes.filter((n) => GM_DRUM_MAP[n.midi] === voice && n.start >= cellTick && n.start < cellTick + snap);
+}
+
 export interface DrumRect { row0: number; row1: number; tick0: number; tick1: number; }
 
 /** Hits whose voice-row ∈ [row0,row1] and body intersects [tick0,tick1). */
@@ -231,7 +249,7 @@ export function serializeDrumClipboard(selected: readonly NoteEvent[], rowOfVoic
 }
 
 /** Anchor the earliest clipboard hit to (anchorTick, anchorRow); preserve relative
- *  tick + row; clamp ticks to [0,patternTicks] and rows to the voice list. */
+ *  tick + row; clamp ticks to [0,patternTicks) and rows to the voice list. */
 export function pasteDrumClipboard(
   clip: readonly DrumClipNote[], anchorTick: number, anchorRow: number,
   patternTicks: number, voicesInOrder: readonly DrumVoice[],
@@ -260,8 +278,6 @@ export function clampGroupTick(selected: readonly NoteEvent[], dTick: number, pa
 Run: `NO_COLOR=1 npx vitest run src/core/drum-grid-editing.test.ts`
 Expected: PASS.
 
-> Recompute check for the reviewer: `pasteDrumClipboard` test — `serializeDrumClipboard([kick@48 row0, snare@72 row1])` → `[{dStart:0,row:0},{dStart:24,row:1}]`, ref.row=0; paste anchorRow=2 → rows 2 and 3 → `VOICE_MIDI[closedHat]=42`, `VOICE_MIDI[openHat]=46`; ticks 96 and 120. Matches the asserts.
-
 - [ ] **Step 5: Commit**
 
 ```bash
@@ -274,7 +290,7 @@ git commit -m "feat(drums): pure canvas drum-editor logic + tests"
 ## Task 2: `SessionClip.gridResolution?` field
 
 **Files:**
-- Modify: `src/session/session.ts:31-42` (`SessionClip`)
+- Modify: `src/session/session.ts` (`SessionClip`)
 
 - [ ] **Step 1: Add the field**
 
@@ -289,7 +305,7 @@ In `src/session/session.ts`, in `SessionClip` (after `sample?: ClipSample;`), ad
 - [ ] **Step 2: Typecheck**
 
 Run: `npx tsc --noEmit`
-Expected: no errors (additive optional field; nothing reads it yet).
+Expected: no errors (additive optional; nothing reads it yet).
 
 - [ ] **Step 3: Commit**
 
@@ -305,9 +321,9 @@ git commit -m "feat(drums): persist per-clip gridResolution on SessionClip"
 **Files:**
 - Rewrite: `src/session/clip-editors/clip-editor-drum-grid.ts`
 
-Full file replacement. Fit-to-width canvas (8 voice rows, no zoom). Pencil = click-cycle
-off→on→accent→off at the snapped cell + audition; Select = marquee/click/group-move/clipboard;
-resolution `<select>` persists to `clip.gridResolution`. Verified by tsc/build + Task 5.
+Full file replacement. Fit-to-width canvas (8 voice rows). Returns a `{ redraw }` handle so the
+host RAF drives width-reflow + the playhead. Pencil = click-cycle off→on→accent→off over the whole
+cell cluster + audition; Select = marquee/click/group-move/clipboard. Verified by tsc/build + Task 6.
 
 - [ ] **Step 1: Replace the file contents**
 
@@ -315,20 +331,20 @@ Replace the entire contents of `src/session/clip-editors/clip-editor-drum-grid.t
 
 ```ts
 // Canvas drum-rack editor (Spec 3): 8 voice rows × time, variable resolution +
-// free off-grid placement, selection/clipboard/group-move. Replaces the button
-// matrix. Same NoteEvent + GM-midi data model; serves synth-drums and the
-// sampler drumkit (rows are always DRUM_LANES). Pure logic in core/drum-grid-editing.ts.
+// free off-grid placement, selection/clipboard/group-move, and a canvas playhead.
+// Replaces the button matrix. Same NoteEvent + GM-midi data model; serves
+// synth-drums and the sampler drumkit (rows are always DRUM_LANES). Returns a
+// { redraw } handle driven by the session-host RAF. Pure logic in core/drum-grid-editing.ts.
 
 import { DRUM_LANES, type DrumVoice } from '../../core/drums';
 import type { SessionClip } from '../session';
 import type { NoteEvent } from '../../core/notes';
-import { VOICE_MIDI } from '../../engines/drum-gm-map';
+import { GM_DRUM_MAP, VOICE_MIDI } from '../../engines/drum-gm-map';
 import { withUndo, isTextEditTarget, type HistoryDeps } from '../../save/history-wiring';
 import { ticksPerBar, stepsPerBar, stepsPerBeat, DEFAULT_METER, type TimeSignature } from '../../core/meter';
-import { TICKS_PER_STEP } from '../../core/notes';
 import {
   RESOLUTIONS, resolutionToSnap, clampResolution, DEFAULT_RESOLUTION, snapTickToRes,
-  hitInCell, rowsInRect, rowMove, serializeDrumClipboard, pasteDrumClipboard, clampGroupTick,
+  hitInCell, hitsInCell, rowsInRect, rowMove, serializeDrumClipboard, pasteDrumClipboard, clampGroupTick,
   type ResolutionKey, type DrumClipNote,
 } from '../../core/drum-grid-editing';
 
@@ -339,23 +355,26 @@ const LANE_LABELS: Record<DrumVoice, string> = {
 const ROWS = DRUM_LANES;
 const rowOfVoice = (v: DrumVoice): number => ROWS.indexOf(v);
 
-// Layout (CSS px)
 const LABEL_W = 54;
 const RULER_H = 20;
 const ROW_H = 26;
-const FRAME_H = RULER_H + ROW_H * 8; // 8 voices
+const FRAME_H = RULER_H + ROW_H * 8;
 
 type Tool = 'draw' | 'select';
-let currentTool: Tool = 'draw';            // persists across clips (session)
+let currentTool: Tool = 'draw';          // persists across clips (session)
 let clipboard: DrumClipNote[] | null = null;
 
-export interface DrumEditorDeps { auditionNote?: (midi: number) => void; }
+export interface DrumEditorDeps {
+  auditionNote?: (midi: number) => void;
+  getPlayheadTick?: () => number;        // -1 when not playing
+}
+export interface DrumEditorHandle { redraw: () => void; }
 
 export function renderDrumGridEditor(
   host: HTMLElement, clip: SessionClip,
   historyDeps?: HistoryDeps, meter: TimeSignature = DEFAULT_METER,
   deps: DrumEditorDeps = {},
-): void {
+): DrumEditorHandle {
   host.innerHTML = '';
   if (!clip.notes) clip.notes = [];
   const notes = (): NoteEvent[] => clip.notes;
@@ -368,18 +387,19 @@ export function renderDrumGridEditor(
 
   const patternTicks = Math.max(1, clip.lengthBars * ticksPerBar(meter));
   const barTicks = ticksPerBar(meter);
-  const beatTicks = barTicks / (stepsPerBar(meter) / stepsPerBeat(meter)); // ticks per beat-pulse
+  const beatsPerBar = stepsPerBar(meter) / stepsPerBeat(meter);
+  const beatTicks = barTicks / beatsPerBar;
 
   const selection = new Set<NoteEvent>();
   let marquee: { row0: number; tick0: number; row1: number; tick1: number } | null = null;
   let groupDrag: { lastTick: number; lastRow: number } | null = null;
   let lastMouse: { row: number; tick: number } | null = null;
   let mutated = false;
+  let playheadTick = -1;
 
-  // ── DOM: toolbar + frame ──────────────────────────────────────────────────
+  // ── DOM: toolbar + canvas ─────────────────────────────────────────────────
   const wrap = document.createElement('div');
   wrap.tabIndex = 0; wrap.style.outline = 'none';
-
   const toolbar = document.createElement('div');
   Object.assign(toolbar.style, { display: 'flex', gap: '6px', alignItems: 'center', padding: '4px 2px' } as Partial<CSSStyleDeclaration>);
   const drawBtn = document.createElement('button'); drawBtn.textContent = '✏ Draw';
@@ -398,8 +418,7 @@ export function renderDrumGridEditor(
   refreshToolbar();
 
   const canvas = document.createElement('canvas');
-  canvas.style.display = 'block';
-  canvas.style.cursor = 'crosshair';
+  canvas.style.display = 'block'; canvas.style.cursor = 'crosshair';
   wrap.append(toolbar, canvas);
   host.appendChild(wrap);
 
@@ -424,7 +443,6 @@ export function renderDrumGridEditor(
 
   function draw(): void {
     ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, canvas.width, FRAME_H);
-    // voice labels + row bands
     for (let r = 0; r < 8; r++) {
       const y = yForRow(r);
       ctx.fillStyle = r % 2 ? '#121212' : '#161616'; ctx.fillRect(LABEL_W, y, gridW, ROW_H);
@@ -432,27 +450,26 @@ export function renderDrumGridEditor(
       ctx.fillStyle = '#9a9a9a'; ctx.font = '10px ui-monospace, monospace'; ctx.textBaseline = 'middle';
       ctx.fillText(LANE_LABELS[ROWS[r]], 4, y + ROW_H / 2);
     }
-    // snap + bar/beat columns
-    const s = snap();
-    for (let t = 0; t <= patternTicks; t += s) {
+    // gridlines: in free mode draw only bar/beat reference lines (snap=1 would draw one per tick).
+    const lineStep = resolution === 'free' ? beatTicks : snap();
+    for (let t = 0; t <= patternTicks; t += lineStep) {
       const x = xForTick(t);
       ctx.strokeStyle = (t % barTicks === 0) ? '#555' : (t % beatTicks === 0) ? '#2f2f2f' : '#1c1c1c';
       ctx.beginPath(); ctx.moveTo(x, RULER_H); ctx.lineTo(x, FRAME_H); ctx.stroke();
     }
-    // hits
     for (const n of notes()) {
-      const v = (Object.keys(LANE_LABELS) as DrumVoice[]).find((vv) => VOICE_MIDI[vv] === n.midi) ?? rowsVoiceOf(n);
+      const v = GM_DRUM_MAP[n.midi];
       const r = v ? rowOfVoice(v) : -1;
       if (r < 0) continue;
       const x = xForTick(n.start);
-      const w = Math.max(4, n.duration * pxPerTick);
+      const maxW = (LABEL_W + gridW) - x;
+      const w = Math.max(3, Math.min(n.duration * pxPerTick, maxW));
       const y = yForRow(r) + 3;
       const sel = selection.has(n);
       ctx.fillStyle = sel ? '#7fd4ff' : (n.velocity >= 100 ? '#ffaa44' : '#3498db');
-      ctx.fillRect(x, y, Math.min(w, ROW_H - 6 + w), ROW_H - 6);
+      ctx.fillRect(x, y, w, ROW_H - 6);
       ctx.strokeStyle = sel ? '#fff' : '#0a0a0a'; ctx.strokeRect(x + 0.5, y + 0.5, Math.max(3, w - 1), ROW_H - 7);
     }
-    // marquee
     if (marquee) {
       const x0 = xForTick(Math.min(marquee.tick0, marquee.tick1));
       const x1 = xForTick(Math.max(marquee.tick0, marquee.tick1));
@@ -462,28 +479,29 @@ export function renderDrumGridEditor(
       ctx.strokeRect(x0 + 0.5, y0 + 0.5, Math.max(1, x1 - x0), Math.max(1, y1 - y0));
       ctx.setLineDash([]);
     }
+    if (playheadTick >= 0) {
+      const x = xForTick(playheadTick);
+      ctx.strokeStyle = '#f7d000'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, RULER_H); ctx.lineTo(x, FRAME_H); ctx.stroke();
+    }
   }
 
-  // map a note's GM midi back to a voice via GM_DRUM_MAP (covers non-canonical midis)
-  function rowsVoiceOf(n: NoteEvent): DrumVoice | undefined {
-    return (require('../../engines/drum-gm-map') as typeof import('../../engines/drum-gm-map')).GM_DRUM_MAP[n.midi];
-  }
-
-  // ── Pencil: click-cycle off → normal → accent → off ───────────────────────
+  // ── Pencil: click-cycle off → normal → accent → off over the whole cell ───
   function pencilClick(row: number, rawTick: number): void {
     const voice = ROWS[row];
     const cell = snapTickToRes(rawTick, snap());
-    const hit = hitInCell(notes(), voice, cell, snap());
+    const cluster = hitsInCell(notes(), voice, cell, snap());
     const run = () => {
-      if (!hit) {
+      if (cluster.length === 0) {
         const dur = Math.max(1, Math.floor(snap() * 0.9));
         notes().push({ midi: VOICE_MIDI[voice], start: cell, duration: dur, velocity: 80 });
         audition?.(VOICE_MIDI[voice]);
-      } else if (hit.velocity < 100) {
-        hit.velocity = 115;
-        audition?.(hit.midi);
+      } else if (cluster.every((n) => n.velocity < 100)) {
+        for (const n of cluster) n.velocity = 115;
+        audition?.(VOICE_MIDI[voice]);
       } else {
-        setNotes(notes().filter((n) => n !== hit));
+        const set = new Set(cluster);
+        setNotes(notes().filter((n) => !set.has(n)));
       }
       draw();
     };
@@ -493,38 +511,36 @@ export function renderDrumGridEditor(
   // ── Pointer handling ──────────────────────────────────────────────────────
   const pos = (e: PointerEvent) => {
     const rect = canvas.getBoundingClientRect();
-    return { row: rowFromY(e.clientY - rect.top), tick: tickFromX(e.clientX - rect.left) };
+    const x = e.clientX - rect.left;
+    return { row: rowFromY(e.clientY - rect.top), x, tick: tickFromX(x) };
   };
 
   canvas.addEventListener('pointerdown', (e) => {
-    const { row, tick } = pos(e); wrap.focus();
-    if (e.clientX - canvas.getBoundingClientRect().left < LABEL_W) return; // label gutter
-    if (currentTool === 'draw' || e.altKey || e.button === 2) {
-      if (e.altKey || e.button === 2) {
-        const v = ROWS[row]; const cell = snapTickToRes(tick, snap());
-        const hit = hitInCell(notes(), v, cell, snap());
-        if (hit) { const run = () => { setNotes(notes().filter((n) => n !== hit)); draw(); }; historyDeps ? withUndo(historyDeps, run) : run(); }
-        e.preventDefault(); return;
-      }
-      pencilClick(row, tick); e.preventDefault(); return;
+    const p = pos(e); wrap.focus();
+    if (p.x < LABEL_W) return; // label gutter
+    if (e.altKey || e.button === 2) {
+      const v = ROWS[p.row]; const cell = snapTickToRes(p.tick, snap());
+      const cluster = hitsInCell(notes(), v, cell, snap());
+      if (cluster.length) { const set = new Set(cluster); const run = () => { setNotes(notes().filter((n) => !set.has(n))); draw(); }; historyDeps ? withUndo(historyDeps, run) : run(); }
+      e.preventDefault(); return;
     }
-    // select mode
-    const v = ROWS[row]; const cell = snapTickToRes(tick, snap());
+    if (currentTool === 'draw') { pencilClick(p.row, p.tick); e.preventDefault(); return; }
+    const v = ROWS[p.row]; const cell = snapTickToRes(p.tick, snap());
     const hit = hitInCell(notes(), v, cell, snap());
     if (hit) {
       if (e.shiftKey) { selection.has(hit) ? selection.delete(hit) : selection.add(hit); }
       else if (!selection.has(hit)) { selection.clear(); selection.add(hit); }
-      groupDrag = { lastTick: snapTickToRes(tick, snap()), lastRow: row };
+      groupDrag = { lastTick: snapTickToRes(p.tick, snap()), lastRow: p.row };
       historyDeps?.history.beginGesture(historyDeps.snapshot()); mutated = false;
     } else {
       if (!e.shiftKey) selection.clear();
-      marquee = { row0: row, tick0: tick, row1: row, tick1: tick };
+      marquee = { row0: p.row, tick0: p.tick, row1: p.row, tick1: p.tick };
     }
     canvas.setPointerCapture(e.pointerId); draw(); e.preventDefault();
   });
 
   canvas.addEventListener('pointermove', (e) => {
-    const p = pos(e); lastMouse = p;
+    const p = pos(e); lastMouse = { row: p.row, tick: p.tick };
     if (marquee) { marquee.row1 = p.row; marquee.tick1 = p.tick; draw(); return; }
     if (groupDrag) {
       const wantTick = snapTickToRes(p.tick, snap());
@@ -556,38 +572,34 @@ export function renderDrumGridEditor(
   canvas.addEventListener('pointercancel', endPointer);
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
-  // ── Keyboard (focus-scoped): tool, select-all, esc, delete, clipboard, nudge ─
+  // ── Keyboard (focus-scoped) ───────────────────────────────────────────────
   wrap.addEventListener('keydown', (e) => {
     if (isTextEditTarget(e.target)) return;
     const cmd = e.metaKey || e.ctrlKey;
     if (e.key === 'Delete' || e.key === 'Backspace') e.stopPropagation();
-
     if (!cmd && e.key === '1') { currentTool = 'draw'; refreshToolbar(); e.preventDefault(); return; }
     if (!cmd && e.key === '2') { currentTool = 'select'; refreshToolbar(); e.preventDefault(); return; }
     if (cmd && e.key.toLowerCase() === 'a') { selection.clear(); for (const n of notes()) selection.add(n); draw(); e.preventDefault(); return; }
     if (e.key === 'Escape') { selection.clear(); draw(); e.preventDefault(); return; }
-
     if ((e.key === 'Delete' || e.key === 'Backspace') && selection.size) {
-      const run = () => { setNotes(notes().filter((n) => !selection.has(n))); selection.clear(); draw(); };
-      historyDeps ? withUndo(historyDeps, run) : run();
-      e.preventDefault(); return;
+      const set = new Set(selection);
+      const run = () => { setNotes(notes().filter((n) => !set.has(n))); selection.clear(); draw(); };
+      historyDeps ? withUndo(historyDeps, run) : run(); e.preventDefault(); return;
     }
     if (cmd && e.key.toLowerCase() === 'c' && selection.size) { clipboard = serializeDrumClipboard([...selection], rowOfVoice); e.preventDefault(); return; }
     if (cmd && e.key.toLowerCase() === 'x' && selection.size) {
       clipboard = serializeDrumClipboard([...selection], rowOfVoice);
-      const run = () => { setNotes(notes().filter((n) => !selection.has(n))); selection.clear(); draw(); };
-      historyDeps ? withUndo(historyDeps, run) : run();
-      e.preventDefault(); return;
+      const set = new Set(selection);
+      const run = () => { setNotes(notes().filter((n) => !set.has(n))); selection.clear(); draw(); };
+      historyDeps ? withUndo(historyDeps, run) : run(); e.preventDefault(); return;
     }
     if (cmd && e.key.toLowerCase() === 'v' && clipboard && clipboard.length) {
       const anchorTick = snapTickToRes(lastMouse?.tick ?? 0, snap());
       const anchorRow = lastMouse?.row ?? 0;
       const pasted = pasteDrumClipboard(clipboard, anchorTick, anchorRow, patternTicks, ROWS);
       const run = () => { for (const n of pasted) notes().push(n); selection.clear(); for (const n of pasted) selection.add(n); draw(); };
-      historyDeps ? withUndo(historyDeps, run) : run();
-      e.preventDefault(); return;
+      historyDeps ? withUndo(historyDeps, run) : run(); e.preventDefault(); return;
     }
-    // nudge
     if (selection.size && (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
       const run = () => {
         if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
@@ -599,68 +611,59 @@ export function renderDrumGridEditor(
         }
         draw();
       };
-      historyDeps ? withUndo(historyDeps, run) : run();
-      e.preventDefault(); return;
+      historyDeps ? withUndo(historyDeps, run) : run(); e.preventDefault(); return;
     }
   });
 
-  // ── Mount + resize tracking via the host RAF (no window listener) ──────────
+  // ── Mount + the host-RAF redraw handle (per-frame width check + playhead) ──
   resize();
   let lastW = wrap.clientWidth;
-  const ro = () => { const w = wrap.clientWidth; if (w !== lastW) { lastW = w; resize(); } };
-  // session-host drives a RAF that calls roll.redraw(); for the drum editor we
-  // expose nothing, so attach a cheap resize check to pointer focus instead.
-  wrap.addEventListener('pointerenter', ro);
+  function redraw(): void {
+    const w = wrap.clientWidth;
+    if (w && w !== lastW) { lastW = w; resize(); }            // reflow on panel/window resize
+    const ph = deps.getPlayheadTick?.() ?? -1;
+    if (ph !== playheadTick) { playheadTick = ph; draw(); }    // animate the playhead
+  }
+  return { redraw };
 }
 ```
 
-> Implementation note for the reviewer/executor: the `rowsVoiceOf`/`require(...)` line is a stylistic
-> wart — replace it with a top-level `import { GM_DRUM_MAP } from '../../engines/drum-gm-map';` and
-> `const v = GM_DRUM_MAP[n.midi];` in `draw()`. `require` is not available in this ESM/Vite codebase
-> and will fail at runtime; use the static import. (Kept visible here so the executor fixes it.)
+- [ ] **Step 2: Typecheck + build**
 
-- [ ] **Step 2: Fix the GM_DRUM_MAP import (apply the note above)**
+Run: `npx tsc --noEmit`
+Expected: errors only at `clip-editor-router.ts` (still returns the old `void`-typed call / no handle) — fixed in Task 4. The drum-grid file itself is error-free.
+Run: `npm run build` — defer until Task 4 (the router must return the handle first).
 
-Add `GM_DRUM_MAP` to the existing drum-gm-map import:
-
-```ts
-import { GM_DRUM_MAP, VOICE_MIDI } from '../../engines/drum-gm-map';
-```
-
-Replace the hit-drawing voice lookup in `draw()`:
-
-```ts
-    for (const n of notes()) {
-      const v = GM_DRUM_MAP[n.midi];
-      const r = v ? rowOfVoice(v) : -1;
-      if (r < 0) continue;
-```
-
-and delete the `rowsVoiceOf` function entirely.
-
-- [ ] **Step 3: Typecheck + build**
-
-Run: `npx tsc --noEmit` → no errors.
-Run: `npm run build` → success.
-
-- [ ] **Step 4: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
 git add src/session/clip-editors/clip-editor-drum-grid.ts
-git commit -m "feat(drums): canvas drum-rack editor (resolution, free placement, selection)"
+git commit -m "feat(drums): canvas drum-rack editor (resolution, free placement, selection, playhead)"
 ```
 
 ---
 
-## Task 4: Router wiring (audition) + test update
+## Task 4: Router wiring (audition + playhead + handle) + test
 
 **Files:**
-- Modify: `src/session/clip-editors/clip-editor-router.ts:55-57`
+- Modify: `src/session/clip-editors/clip-editor-router.ts`
 - Modify: `src/session/clip-editors/clip-editor-drum-grid.test.ts`
 
-- [ ] **Step 1: Pass `auditionNote` to the drum editor**
+- [ ] **Step 1: Hoist `AUDITION_GATE` to module scope**
 
-In `clip-editor-router.ts`, the drum-grid branch currently is:
+In `clip-editor-router.ts`, `AUDITION_GATE` is currently declared inside `buildPianoRoll`. Move it to
+module scope so both editors share it. Add near the top (just below the imports):
+
+```ts
+const AUDITION_GATE = 0.25; // seconds — short preview blip, shared by both editors
+```
+
+and delete the `const AUDITION_GATE = 0.25; ...` line inside `buildPianoRoll` (its existing usage
+there now references the module constant).
+
+- [ ] **Step 2: Return the drum handle with audition + playhead**
+
+In `renderClipEditor`, replace the drum-grid branch:
 
 ```ts
   if (editor === 'drum-grid') {
@@ -669,46 +672,97 @@ In `clip-editor-router.ts`, the drum-grid branch currently is:
   }
 ```
 
-Replace with (build the same audition closure the piano-roll uses; `deps.triggerForLane` and
-`deps.ctx` exist on `ClipEditorDeps` from Spec 2):
+with (build the same playhead math `buildPianoRoll` uses; `deps.laneStates`/`deps.ctx`/`deps.seq`/
+`deps.triggerForLane` are all on `ClipEditorDeps`; `stepsPerBar` and `TICKS_PER_STEP` are already
+imported in this file):
 
 ```ts
   if (editor === 'drum-grid') {
     const audition = deps.triggerForLane
-      ? (midi: number) => deps.triggerForLane!(lane.id, midi, deps.ctx.currentTime, 0.25, false, false)
+      ? (midi: number) => deps.triggerForLane!(lane.id, midi, deps.ctx.currentTime, AUDITION_GATE, false, false)
       : undefined;
-    renderDrumGridEditor(host, clip, deps.historyDeps, deps.seq.meter, { auditionNote: audition });
-    return null;
+    const getPlayheadTick = (): number => {
+      const lp = deps.laneStates.get(lane.id);
+      if (!lp || !lp.playing || lp.playing.id !== clip.id) return -1;
+      const stepDur = 60 / deps.seq.bpm / 4;
+      const stepsElapsed = Math.max(0, (deps.ctx.currentTime - lp.startTime) / stepDur);
+      const clipSteps = clip.lengthBars * stepsPerBar(deps.seq.meter);
+      return (stepsElapsed % clipSteps) * TICKS_PER_STEP;
+    };
+    return renderDrumGridEditor(host, clip, deps.historyDeps, deps.seq.meter, { auditionNote: audition, getPlayheadTick });
   }
 ```
 
-- [ ] **Step 2: Update the existing drum-grid test to the canvas API**
+(`renderClipEditor`'s declared return type `PianoRollHandle | null` is satisfied: `DrumEditorHandle`
+is structurally `{ redraw(): void }` = `PianoRollHandle`. The inspector stores it in `this.roll`, and
+session-host's RAF `if (this.inspector.roll) this.inspector.roll.redraw()` now drives the drum editor.)
+
+- [ ] **Step 3: Update the existing drum-grid test**
 
 The existing `clip-editor-drum-grid.test.ts` calls `renderDrumGridEditor(makeHost(), clip)` and
-expects `clip.notes` to be initialised. The canvas version still does `if (!clip.notes) clip.notes = []`
-before any DOM work, so that test stays valid. Confirm it still passes; no edit needed unless it
-imports something removed. Run it:
+expects `clip.notes` init. The canvas version still does `if (!clip.notes) clip.notes = []` before any
+DOM work, so that assertion holds (the renderer then throws on `document` in the node env, caught by
+the test's try/catch). Run it:
 
 Run: `NO_COLOR=1 npx vitest run src/session/clip-editors/clip-editor-drum-grid.test.ts`
-Expected: PASS (the `clip.notes` init test + the data-shape roll test both still hold).
+Expected: PASS (the `clip.notes` init test + the data-shape roll test still hold). If it fails to
+compile on a removed import, fix only that line; keep the assertions.
 
-If the test fails to compile because it referenced a now-removed helper, update only the broken
-import/line; keep the two assertions.
-
-- [ ] **Step 3: Typecheck**
+- [ ] **Step 4: Typecheck + build**
 
 Run: `npx tsc --noEmit` → no errors.
+Run: `npm run build` → success.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add src/session/clip-editors/clip-editor-router.ts src/session/clip-editors/clip-editor-drum-grid.test.ts
-git commit -m "feat(drums): wire auditionNote into the canvas drum editor"
+git commit -m "feat(drums): wire audition + canvas playhead; return the drum editor handle"
 ```
 
 ---
 
-## Task 5: Final gate + manual smoke
+## Task 5: Remove the dead button-grid CSS + the defunct DOM playhead
+
+**Files:**
+- Modify: `src/session/session-host.ts` (`updateEditorPlayhead`)
+- Modify: `src/styles/_tracks.scss`, `src/styles/_session-inspector.scss`
+
+The canvas now draws its own playhead (Task 3) and the piano-roll already drew its own, so
+`updateEditorPlayhead` (which toggled `.step-playhead` on the old `.cells` DOM) matches nothing and is
+dead. The `.tracks/.track/.cells/.dcell/.seg-start/.downbeat` CSS is now produced by no JS.
+
+- [ ] **Step 1: Remove `updateEditorPlayhead` and its call**
+
+In `src/session/session-host.ts`, delete the `updateEditorPlayhead(...)` method and the line in the
+render-tick loop that calls it (search `updateEditorPlayhead`). The RAF loop keeps its
+`if (this.inspector.roll) this.inspector.roll.redraw();` line — that now drives BOTH editors'
+playheads (piano-roll and the new drum canvas).
+
+- [ ] **Step 2: Delete the dead drum-grid CSS**
+
+In `src/styles/_session-inspector.scss`, delete the rules `#insp-roll-host .cells > .step-playhead`
+and `.dcell.roll` (search `.cells` / `.dcell`). In `src/styles/_tracks.scss`, delete the drum-grid
+rules (`.tracks`, `.track`, `.track-label`, `.cells`, `.dcell`, `.seg-start`, `.downbeat`,
+`.drum-track.*`). If `_tracks.scss` becomes empty, also remove its `@use`/`@import` from the SCSS
+entry (`src/styles/*.scss` index). Grep `.dcell`/`.cells` across `src/` first to confirm no remaining
+JS produces them (only the now-replaced editor did).
+
+- [ ] **Step 3: Typecheck + build**
+
+Run: `npx tsc --noEmit` → no errors.
+Run: `npm run build` → success (Vite compiles the SCSS).
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add src/session/session-host.ts src/styles/_tracks.scss src/styles/_session-inspector.scss
+git commit -m "chore(drums): drop dead button-grid CSS + the defunct DOM step-playhead"
+```
+
+---
+
+## Task 6: Final gate + manual smoke
 
 **Files:** none.
 
@@ -722,12 +776,14 @@ Run: `npm run test:unit` → green (re-run once if `ERR_IPC_CHANNEL_CLOSED`; ign
 - [ ] **Step 2: Manual smoke (dev server)**
 
 `npm run dev`, open <http://localhost:5173>, open a **drums** clip:
-1. The editor is a canvas with 8 voice rows + a resolution `<select>` + Draw/Select buttons.
-2. Draw mode: click a cell → hit (audible); click again → accent (colour); again → off. Switch resolution to **1/8T** (triplets) and **1/32**; columns change; placing lands on the new grid.
-3. **free** resolution: place hits between grid lines (off-grid) and hear them; reload-independent because notes are in ticks.
-4. Select (key `2`): marquee selects hits; drag the group horizontally (time) and vertically (changes voice); **Delete** removes selection (NOT the clip); **Ctrl/Cmd+C** then move the mouse and **Ctrl/Cmd+V** pastes at the mouse; works across two drum clips.
-5. Set resolution to 1/8, reload the page, reload the save → the clip opens at **1/8** (persisted).
-6. A **sampler drumkit** clip still edits (same canvas).
+1. Canvas with 8 voice rows + a resolution `<select>` + Draw/Select buttons.
+2. Draw: click a cell → hit (audible); again → accent (colour); again → off. Switch to **1/8T** and **1/32**; columns change; placement lands on the new grid.
+3. **free**: place hits between grid lines (off-grid) and hear them.
+4. **Playhead**: press play → an amber playhead sweeps the canvas and wraps with the loop (this is the regression the review caught — confirm it moves).
+5. Select (key `2`): marquee selects; drag the group horizontally (time) and vertically (voice); **Delete** removes selection (NOT the clip); **Ctrl/Cmd+C** then move the mouse + **Ctrl/Cmd+V** pastes at the mouse; works across two drum clips.
+6. Set resolution to 1/8, reload the page + load the save → clip opens at **1/8** (persisted).
+7. A **sampler drumkit** clip still edits (same canvas). Resize the window → the grid reflows.
+8. A clip that contained a legacy **roll** (multiple hits in one 1/16 cell): one Pencil click on that cell clears the whole cluster (no orphan hits).
 
 - [ ] **Step 3: Finish the branch**
 
@@ -735,33 +791,27 @@ When green + smoke-verified: `git rebase main` → (from main) `git merge --ff-o
 
 ---
 
-## Self-review (completed by plan author)
+## Self-review (completed by plan author, post adversarial review)
 
-**Spec coverage:**
-- Canvas drum-rack (8 voice rows), replaces button matrix, same data model → Task 3. ✓
-- Resolution selector (7 keys incl. triplets + free), per-clip persisted → Tasks 1 (snap map), 2 (field), 3 (select + read/write `clip.gridResolution`). ✓
-- Free off-grid placement → `free` snap=1 in Task 1 + Pencil/free in Task 3. ✓
-- Pencil click-cycle off→on→accent→off + audition; rolls dropped → Task 3 `pencilClick`. ✓
-- Select: marquee (row×tick), click/shift, group move (H=tick clamp, V=row), delete, copy/cut/paste-at-mouse, nudge, tool toggle → Tasks 1 (rowsInRect/rowMove/clipboard/clampGroupTick) + 3. ✓
-- Audition wiring → Task 4. ✓
-- Persistence (no schema bump; editor clamps on read; migration untouched) → Task 2 + note. ✓
-- Delete scoping vs inspector clip-delete → Task 3 keydown `stopPropagation` on Delete/Backspace. ✓
-- Sampler drumkit unaffected → same `renderDrumGridEditor` signature + DRUM_LANES rows. ✓
+**Spec coverage:** canvas drum-rack (Task 3); resolution 7 keys + persistence (Tasks 1/2/3); free
+off-grid (Task 1 snap=1 + Task 3); Pencil cluster cycle + audition (Tasks 1 `hitsInCell` + 3);
+Select marquee/move/clipboard/delete/nudge (Tasks 1+3); audition + **playhead** wiring (Task 4);
+dead-code cleanup (Task 5); persistence without schema bump (Task 2 + read-clamp). ✓
 
-**Placeholder scan:** Task 3 Step 1 ships a deliberately-flagged `require(...)` wart that **Step 2
-fixes** with a static import — the executor must apply Step 2 (it is a real step, not a TODO). No
-other placeholders.
+**Findings folded in (10 confirmed):** playhead regression → canvas playhead + `{redraw}` handle
+driven by the host RAF (Tasks 3+4); resize-on-mount glitch → same handle's per-frame width check;
+Pencil only removed first hit → `hitsInCell` cluster removal + accent-all (Tasks 1+3); bogus width
+clamp → `Math.min(n.duration*pxPerTick, maxW)`; `free` 1-tick gridline storm → `lineStep =
+beatTicks` in free; dead `TICKS_PER_STEP` import dropped + `require()` wart removed (static
+`GM_DRUM_MAP` import); dead CSS + `updateEditorPlayhead` removed (Task 5); `AUDITION_GATE` shared
+(Task 4); spec pencil-drag aside scoped to Select mode (spec edit).
 
 **Type consistency:** `ResolutionKey`/`RESOLUTIONS`/`resolutionToSnap`/`clampResolution`/
-`DEFAULT_RESOLUTION`/`snapTickToRes`/`hitInCell`/`rowsInRect`/`rowMove`/`serializeDrumClipboard`/
-`pasteDrumClipboard`/`clampGroupTick`/`DrumClipNote` are defined once in Task 1 and consumed with
-those exact names in Task 3. `renderDrumGridEditor`'s signature gains a trailing optional
-`deps: DrumEditorDeps` (router passes it in Task 4; the existing 4-arg test call still compiles).
-`SessionClip.gridResolution?` (Task 2) is the type used by `clip.gridResolution` reads/writes in Task 3.
+`DEFAULT_RESOLUTION`/`snapTickToRes`/`hitInCell`/`hitsInCell`/`rowsInRect`/`rowMove`/
+`serializeDrumClipboard`/`pasteDrumClipboard`/`clampGroupTick`/`DrumClipNote` defined once (Task 1),
+consumed by Task 3. `renderDrumGridEditor` returns `DrumEditorHandle` ({redraw}); the router returns
+it where it used to return `null`, satisfying `PianoRollHandle | null` structurally.
+`SessionClip.gridResolution?` (Task 2) is the type read/written in Task 3.
 
-**Known weak spots for the adversarial review to probe:** (1) the canvas has no zoom/scroll —
-long clips at 1/32 get cramped (acceptable, matches the old grid); (2) resize handling is a cheap
-`pointerenter` check rather than the piano-roll's RAF path — confirm the editor lays out on first
-mount and after a panel resize; (3) verify `deps.ctx`/`deps.triggerForLane` are actually on
-`ClipEditorDeps` (added in Spec 2) before Task 4 relies on them.
-```
+**Placeholder scan:** none — the previous `require()`/Step-2 wart is gone; Task 3 ships a single
+correct file. Every code step is complete.

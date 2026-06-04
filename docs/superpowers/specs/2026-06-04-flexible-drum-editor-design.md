@@ -70,10 +70,12 @@ at any tick — the off-grid path. `1/8T`/`1/16T` draw triplet columns (32 / 16 
 
 ### 3. Pencil mode
 
-Click at `(voiceRow, tick)`: snap the tick to the resolution; find the hit for that voice in
-`[snapTick, snapTick + snap)`; cycle **none → normal (vel 80) → accent (vel 115) → none**. In `free`
-mode the placement tick is exact (snap = 1) and an existing hit can be dragged. Every add/cycle calls
-`auditionNote(voiceMidi)`. Undo wraps each mutation (`withUndo`/gesture hooks, already available).
+Click at `(voiceRow, tick)`: snap the tick to the resolution; find the hits for that voice in
+`[snapTick, snapTick + snap)`; cycle **none → normal (vel 80) → accent (vel 115) → none** over the
+whole cell cluster (so legacy roll clusters and finer-res duplicates clear in one click). In `free`
+mode the placement tick is exact (snap = 1). **Repositioning** an existing hit is done in **Select**
+mode (its horizontal move is snapped to the current resolution, so in `free` it moves tick-exact) —
+the Pencil only cycles. Every add/accent calls `auditionNote(voiceMidi)`. Undo wraps each mutation.
 
 ### 4. Select mode
 
