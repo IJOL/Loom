@@ -437,6 +437,25 @@ export class DrumsEngine implements SynthEngine {
     for (const [id, v] of overrides) this.setBaseValue(id, v);
   }
 
+  getRackLayout() {
+    return {
+      // The union ['tune','attack','decay','tone','snap'] reproduces the OLD per-voice
+      // curated split exactly because each leaf only exists on some voices:
+      //   kick    ∩ union = {tune, attack, decay}
+      //   snare   ∩ union = {tune, tone, snap}
+      //   hats    ∩ union = {tune, decay}
+      //   clap    ∩ union = {tone, decay}
+      //   tom     ∩ union = {tune, decay}
+      //   cowbell ∩ union = {tune, decay}
+      //   ride    ∩ union = {tune, decay}
+      // NOTE: 'sweep' is intentionally NOT included — it would wrongly promote
+      // kick/tom SWEEP from advanced to curated.
+      curatedSynth: ['tune', 'attack', 'decay', 'tone', 'snap'],
+      curatedMixer: ['level', 'rev', 'dly'],
+      advancedMixer: ['pan', 'eq.low', 'eq.mid', 'eq.high'],
+    };
+  }
+
   getSharedAudioParams(): Map<string, AudioParam> {
     const m = new Map<string, AudioParam>();
     if (this.busStrip) {

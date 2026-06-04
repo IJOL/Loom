@@ -24,20 +24,19 @@ const VOICE_LABELS: Record<DrumVoice, string> = {
   clap: 'CLAP', cowbell: 'COWBL', tom: 'TOM', ride: 'RIDE',
 };
 
-// Curated synth leaves shown up-front per voice; everything else for that
-// voice (minus mixer) drops into ▸advanced.
-const CURATED_SYNTH: Record<DrumVoice, string[]> = {
-  kick: ['tune', 'attack', 'decay'],
-  snare: ['tune', 'tone', 'snap'],
-  closedHat: ['tune', 'decay'],
-  openHat: ['tune', 'decay'],
-  clap: ['tone', 'decay'],
-  tom: ['tune', 'decay'],
-  cowbell: ['tune', 'decay'],
-  ride: ['tune', 'decay'],
+export interface RackLayout {
+  curatedSynth: string[];   // leaf names shown up-front per voice
+  curatedMixer: string[];   // mixer leaves shown up-front
+  advancedMixer: string[];  // mixer leaves collapsed into ▸advanced
+}
+
+// Default layout for engines that do NOT implement getRackLayout.
+// curatedSynth is empty so all synth leaves fall through to advanced.
+const DEFAULT_LAYOUT: RackLayout = {
+  curatedSynth: [],
+  curatedMixer: ['level', 'rev', 'dly'],
+  advancedMixer: ['pan', 'eq.low', 'eq.mid', 'eq.high'],
 };
-const CURATED_MIXER = ['level', 'rev', 'dly'];
-const ADVANCED_MIXER = ['pan', 'eq.low', 'eq.mid', 'eq.high'];
 
 const KNOB = 34;
 
@@ -47,23 +46,26 @@ export function renderDrumVoiceRack(
   engine: SynthEngine,
   ctx: EngineUIContext,
   host: HTMLElement,
+  voices: string[] = DRUM_LANES as unknown as string[],
 ): void {
+  const layout = (engine as unknown as { getRackLayout?: () => RackLayout }).getRackLayout?.() ?? DEFAULT_LAYOUT;
+
   const rack = document.createElement('div');
   rack.className = 'drum-voice-rack';
 
   // Precompute which spec ids exist for each voice so we can split synth vs mixer.
-  const idsByVoice = new Map<DrumVoice, string[]>(
-    DRUM_LANES.map((v) => [v, engine.params.map((p) => p.id).filter((id) => id.startsWith(`${v}.`))]),
+  const idsByVoice = new Map<string, string[]>(
+    voices.map((v) => [v, engine.params.map((p) => p.id).filter((id) => id.startsWith(`${v}.`))]),
   );
   const ms = engine as unknown as DrumMuteSoloEngine;
 
-  for (const voice of DRUM_LANES) {
+  for (const voice of voices) {
     const col = document.createElement('div');
     col.className = `dv-col ${voice}`;
 
     const head = document.createElement('div');
     head.className = 'dv-head';
-    head.textContent = VOICE_LABELS[voice];
+    head.textContent = VOICE_LABELS[voice as DrumVoice] ?? voice.toUpperCase();
     col.appendChild(head);
 
     // Per-voice mute/solo. Mute persists (mirrored to engineState); solo is
@@ -75,31 +77,31 @@ export function renderDrumVoiceRack(
     muteBtn.className = 'dv-mute';
     muteBtn.textContent = 'M';
     muteBtn.title = 'Mute this voice';
-    muteBtn.classList.toggle('on', ms.getDrumVoiceMute(voice));
+    muteBtn.classList.toggle('on', ms.getDrumVoiceMute(voice as DrumVoice));
     const soloBtn = document.createElement('button');
     soloBtn.type = 'button';
     soloBtn.className = 'dv-solo';
     soloBtn.textContent = 'S';
     soloBtn.title = 'Solo this voice (within the kit)';
-    soloBtn.classList.toggle('on', ms.getDrumVoiceSolo(voice));
+    soloBtn.classList.toggle('on', ms.getDrumVoiceSolo(voice as DrumVoice));
     muteBtn.addEventListener('click', () => {
-      const next = !ms.getDrumVoiceMute(voice);
-      ms.setDrumVoiceMute(voice, next);
+      const next = !ms.getDrumVoiceMute(voice as DrumVoice);
+      ms.setDrumVoiceMute(voice as DrumVoice, next);
       muteBtn.classList.toggle('on', next);
       if (ctx.sessionState) mirrorDrumMutes(ctx.sessionState, ctx.laneId, ms.getDrumVoiceMutes());
     });
     soloBtn.addEventListener('click', () => {
-      ms.toggleDrumVoiceSolo(voice);
-      soloBtn.classList.toggle('on', ms.getDrumVoiceSolo(voice));
+      ms.toggleDrumVoiceSolo(voice as DrumVoice);
+      soloBtn.classList.toggle('on', ms.getDrumVoiceSolo(voice as DrumVoice));
     });
     msRow.appendChild(muteBtn);
     msRow.appendChild(soloBtn);
     col.appendChild(msRow);
 
     const all = idsByVoice.get(voice)!;
-    const curatedSynth = new Set(CURATED_SYNTH[voice].map((l) => `${voice}.${l}`));
-    const curatedMixer = new Set(CURATED_MIXER.map((l) => `${voice}.${l}`));
-    const advancedMixer = new Set(ADVANCED_MIXER.map((l) => `${voice}.${l}`));
+    const curatedSynth = new Set(layout.curatedSynth.map((l) => `${voice}.${l}`));
+    const curatedMixer = new Set(layout.curatedMixer.map((l) => `${voice}.${l}`));
+    const advancedMixer = new Set(layout.advancedMixer.map((l) => `${voice}.${l}`));
     const advancedSynth = new Set(all.filter((id) => !curatedSynth.has(id) && !curatedMixer.has(id) && !advancedMixer.has(id)));
 
     const synthBlock = document.createElement('div');

@@ -80,4 +80,24 @@ describe('renderDrumVoiceRack', () => {
     expect(dm.channels.closedHat.isMuted()).toBe(true);   // silenced by the solo
     expect(snareSolo.classList.contains('on')).toBe(true);
   });
+
+  it('uses the engine getRackLayout for curated/advanced ids when present', () => {
+    const host = document.createElement('div');
+    const ids: string[] = [];
+    const fakeEngine = {
+      params: [
+        { id: 'kick.tune', label: 'TUNE', kind: 'continuous', min: 0, max: 1, default: 0 },
+        { id: 'kick.weird', label: 'W', kind: 'continuous', min: 0, max: 1, default: 0 },
+        { id: 'kick.level', label: 'L', kind: 'continuous', min: 0, max: 1, default: 0 },
+      ],
+      getBaseValue: () => 0, setBaseValue: () => {},
+      getRackLayout: () => ({ curatedSynth: ['tune'], curatedMixer: ['level'], advancedMixer: [] }),
+      getDrumVoiceMute: () => false, setDrumVoiceMute: () => {},
+      getDrumVoiceSolo: () => false, toggleDrumVoiceSolo: () => {}, getDrumVoiceMutes: () => ({}),
+    } as unknown as import('./engine-types').SynthEngine;
+    renderDrumVoiceRack(fakeEngine, makeCtx(ids), host, ['kick']);
+    expect(ids).toContain('drums-1.kick.tune');   // curated synth
+    expect(ids).toContain('drums-1.kick.level');  // curated mixer
+    expect(ids).toContain('drums-1.kick.weird');  // falls into advanced
+  });
 });
