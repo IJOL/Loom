@@ -43,6 +43,8 @@ interface SamplerVoiceApi {
   getGlobal: (id: string) => number;
   /** Shared FX bus — used by the per-pad reverb/delay sends (next task). */
   fx: FxBus | null;
+  onTrigger: (note: number, voice: SamplerVoice, time: number) => void;
+  onDispose: (note: number, voice: SamplerVoice) => void;
 }
 
 class SamplerVoice implements Voice {
@@ -54,6 +56,7 @@ class SamplerVoice implements Voice {
   private readonly dlySend: GainNode;
   private started = false;
   private endTime = Infinity;
+  private note = -1;
 
   constructor(
     private ctx: AudioContext,
@@ -90,6 +93,9 @@ class SamplerVoice implements Voice {
       try { this.src.stop(); } catch { /* already stopped */ }
       this.src.disconnect();
     }
+
+    this.note = entry.rootNote;
+    this.api.onTrigger(entry.rootNote, this, time);
 
     const src = this.ctx.createBufferSource();
     src.buffer = buf;
@@ -194,6 +200,7 @@ class SamplerVoice implements Voice {
   }
 
   dispose(): void {
+    if (this.note >= 0) this.api.onDispose(this.note, this);
     if (this.src) { try { this.src.stop(); } catch { /* */ } this.src.disconnect(); }
     this.filter.disconnect();
     this.ampGain.disconnect();
@@ -229,6 +236,20 @@ export class SamplerEngine implements SynthEngine {
   private fx: FxBus | null = null;
   private keymap: KeymapEntry[] = [];
   private modHost = new ModulationHostImpl([]);
+  private activeByNote = new Map<number, SamplerVoice>();
+
+  // Mono retrig: if a new voice triggers a note whose pad is mono, release the
+  // previous voice for that note, then register the new one.
+  private retrigRegister(note: number, voice: SamplerVoice, time: number): void {
+    if (this.getPad(note).retrig > 0.5) {
+      const prev = this.activeByNote.get(note);
+      if (prev && prev !== voice) prev.release(time);
+    }
+    this.activeByNote.set(note, voice);
+  }
+  private retrigUnregister(note: number, voice: SamplerVoice): void {
+    if (this.activeByNote.get(note) === voice) this.activeByNote.delete(note);
+  }
 
   setSharedFx(fx: FxBus): void { this.fx = fx; }
 
@@ -300,6 +321,8 @@ export class SamplerEngine implements SynthEngine {
       getPad: (note) => this.getPad(note),
       getGlobal: (id) => this.getBaseValue(id),
       fx: this.fx,
+      onTrigger: (note, voice, time) => this.retrigRegister(note, voice, time),
+      onDispose: (note, voice) => this.retrigUnregister(note, voice),
     });
   }
 
