@@ -17,7 +17,6 @@
 .session-inspector-row input[type="text"] { width: 160px; }
 .session-inspector-row input[type="number"] { width: 60px; }
 .session-inspector-roll { margin-top: 8px; }
-
 .session-mix-col {
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -29,15 +28,6 @@
   gap: 2px;
 }
 .session-mix-col .knob { transform: scale(0.7); margin: -4px 0; }
-
-/* ── Playhead cursor inside step-grid clip editors ─────────────────────── */
-#insp-roll-host .cells > .step-playhead {
-  outline: 2px solid var(--amber);
-  outline-offset: -2px;
-  box-shadow: 0 0 6px var(--amber-soft);
-  position: relative;
-  z-index: 1;
-}
 
 /* Per-clip automation lanes (Session inspector). */
 .insp-editor-box { margin-bottom: 12px; }
@@ -88,16 +78,6 @@
   background: var(--amber);
   color: var(--bg);
   border-color: var(--amber);
-}
-
-/* Roll badge on drum-grid cells: shows "×2"/"×3"/"×4" centred. */
-.dcell.roll {
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 /* Modulators panel inside engine UI. Compact one-row layout — sits below the

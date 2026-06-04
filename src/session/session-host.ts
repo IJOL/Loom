@@ -761,7 +761,6 @@ export class SessionHost {
     const loop = () => {
       requestAnimationFrame(loop);
       if (this.inspector.roll) this.inspector.roll.redraw();
-      this.updateEditorPlayhead();
       const sigParts: string[] = [];
       for (const lp of this.laneStates.values()) {
         sigParts.push(`${lp.laneId}:${lp.playing?.id ?? '-'}:${lp.queued?.id ?? '-'}`);
@@ -770,30 +769,5 @@ export class SessionHost {
       if (next !== lastSig) { lastSig = next; this.renderWithMixer(); }
     };
     requestAnimationFrame(loop);
-  }
-
-  private updateEditorPlayhead(): void {
-    const host = document.getElementById('insp-roll-host');
-    if (!host) return;
-    const sel = this.inspector.getSelectedClip();
-    const lane = sel ? this.state.lanes.find((l) => l.id === sel.laneId) : null;
-    const clip = lane && sel ? lane.clips[sel.clipIdx] : null;
-    const lp = lane ? this.laneStates.get(lane.id) : null;
-    const playing = !!(lp && clip && lp.playing && lp.playing.id === clip.id);
-
-    if (!playing || !clip) {
-      host.querySelectorAll('.step-playhead').forEach((el) => el.classList.remove('step-playhead'));
-      return;
-    }
-    const stepDur = 60 / this.deps.seq.bpm / 4;
-    const stepsElapsed = Math.max(0, (this.deps.ctx.currentTime - lp!.startTime) / stepDur);
-    const clipSteps = clip.lengthBars * stepsPerBar(this.deps.seq.meter);
-    const curStep = Math.floor(stepsElapsed) % clipSteps;
-    host.querySelectorAll<HTMLElement>('.cells').forEach((cellsEl) => {
-      const kids = cellsEl.children;
-      for (let i = 0; i < kids.length; i++) {
-        kids[i].classList.toggle('step-playhead', i === curStep);
-      }
-    });
   }
 }
