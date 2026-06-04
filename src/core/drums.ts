@@ -240,7 +240,9 @@ export class DrumMachine {
     noise.buffer = this.noiseBuffer;
     const hp = this.ctx.createBiquadFilter();
     hp.type = 'highpass';
-    hp.frequency.value = s.noiseTone;
+    // TUNE scales the noise high-pass too (not just the masked tonal body), so
+    // tuning audibly brightens/darkens the whole snare instead of doing nothing.
+    hp.frequency.value = s.noiseTone * s.tune;
     const noiseAmp = this.ctx.createGain();
     noiseAmp.gain.setValueAtTime(vel * s.snap, time);
     noiseAmp.gain.exponentialRampToValueAtTime(0.001, time + s.noiseDecay);

@@ -32,6 +32,15 @@ describe('per-voice synth params shape the sound', () => {
     expect(rms(snap)).toBeGreaterThan(rms(dry));
   });
 
+  it('snare TUNE shifts the noise brightness (audible centroid change)', async () => {
+    // Regression: snare TUNE only retuned the masked tonal body, so it was
+    // inaudible. TUNE now also scales the noise high-pass cutoff, so tuning
+    // up audibly brightens the whole snare.
+    const dark   = await render((dm) => dm.setVoiceParam('snare', 'tune', 0.5), 'snare');
+    const bright = await render((dm) => dm.setVoiceParam('snare', 'tune', 2.0), 'snare');
+    expect(spectralCentroid(bright, SR)).toBeGreaterThan(spectralCentroid(dark, SR) * 1.1);
+  });
+
   it('kick DECAY longer raises tail energy', async () => {
     const tailWin = (b: Float32Array) => b.subarray(Math.round(0.2 * SR));
     const shortD = await render((dm) => dm.setVoiceParam('kick', 'decay', 0.15), 'kick');
