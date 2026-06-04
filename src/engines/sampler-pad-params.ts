@@ -4,8 +4,7 @@
 // name for drumkit pads (so a drumkit reuses drum-voice-rack), else `zone<note>`.
 
 import type { EngineParamSpec } from './engine-params';
-import { GM_DRUM_MAP } from './drum-gm-map';
-import { VOICE_MIDI } from './drum-gm-map';
+import { GM_DRUM_MAP, VOICE_MIDI } from './drum-gm-map';
 
 export interface PadParams {
   tune: number;      // semitones, -24..24
@@ -41,8 +40,8 @@ export const PAD_LEAF_SPECS: Array<Omit<EngineParamSpec, 'id'> & { leaf: keyof P
   { leaf: 'pan',       label: 'PAN',    kind: 'continuous', min: -1,    max: 1,   default: 0 },
   { leaf: 'rev',       label: 'REV',    kind: 'continuous', min: 0,     max: 1,   default: 0 },
   { leaf: 'dly',       label: 'DLY',    kind: 'continuous', min: 0,     max: 1,   default: 0 },
-  { leaf: 'loopStart', label: 'LSTART', kind: 'continuous', min: 0,     max: 1,   default: 0 },
   { leaf: 'loop',      label: 'LOOP',   kind: 'discrete',   min: 0,     max: 1,   default: 0, options: ON_OFF },
+  { leaf: 'loopStart', label: 'LSTART', kind: 'continuous', min: 0,     max: 1,   default: 0 },
   { leaf: 'retrig',    label: 'RETRIG', kind: 'discrete',   min: 0,     max: 1,   default: 0, options: POLY_MONO },
 ];
 
@@ -51,8 +50,10 @@ export function padKeyForNote(note: number): string {
   return GM_DRUM_MAP[note] ?? `zone${note}`;
 }
 
-/** Inverse of padKeyForNote. */
+/** Inverse of padKeyForNote for canonical pads. GM alias notes (e.g. 35→kick)
+ *  collapse to the canonical MIDI (36); use the original trigger note directly
+ *  when it is available. */
 export function noteForPadKey(key: string): number {
-  if (key in VOICE_MIDI) return VOICE_MIDI[key as keyof typeof VOICE_MIDI];
+  if (Object.hasOwn(VOICE_MIDI, key)) return VOICE_MIDI[key as keyof typeof VOICE_MIDI];
   return Number(key.replace(/^zone/, ''));
 }
