@@ -640,6 +640,8 @@ const sceneExporter: SceneExporter = {
     if (busy) exportBtn.textContent = 'Grabando…';
     else if (exportMsgTimer === undefined) exportBtn.textContent = EXPORT_IDLE_LABEL;
   },
+  // Stop on finish is intentional (explicit design decision): an export restarts
+  // the scene from the top and halts the transport once the capture completes.
   finish: () => { seq.stop(); playBtn.textContent = '▶'; },
 };
 
