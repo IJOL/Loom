@@ -723,6 +723,11 @@ wireRandomizeUI({
   getBassLaneId: () => LANE_ID_BASS,
   getDrumsLaneId: () => LANE_ID_DRUMS,
   refreshKnobsFromSynth,
+  refreshDrumsRack: () => {
+    const laneId = LANE_ID_DRUMS;
+    const inst = getLaneEngineInstance(laneId);
+    if (inst) refreshLaneKnobs(laneId, inst);
+  },
   historyDeps,
 });
 wireSaveManager(saveWiringDeps);

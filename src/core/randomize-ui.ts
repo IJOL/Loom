@@ -17,6 +17,8 @@ export interface RandomizeUIDeps {
   /** Active drums lane id (for marking its preset select as custom). */
   getDrumsLaneId: () => string;
   refreshKnobsFromSynth: () => void;
+  /** Re-reads the per-voice rack knob handles after a kit change (set in main.ts). */
+  refreshDrumsRack?: () => void;
   historyDeps: HistoryDeps;
 }
 
@@ -34,8 +36,9 @@ function randomizeDrumsSound(deps: RandomizeUIDeps): void {
   const kits = drums.listKits();
   if (kits.length === 0) return;
   const pick = kits[Math.floor(Math.random() * kits.length)];
-  drums.setKit(pick.id);
+  drums.loadKitDefaults(pick.id);
   markPagePresetCustom('drums-preset-select', deps.getDrumsLaneId());
+  deps.refreshDrumsRack?.();
 }
 
 /** Wire the "🎲 Sound" buttons. Call once at boot. */
