@@ -66,9 +66,46 @@ function parseWave(dv: DataView): LoopMetadata {
   return md;
 }
 
+/** Decode an 80-bit IEEE-754 extended float (big-endian) to a Number. */
+function readExtended(dv: DataView, off: number): number {
+  const expo = dv.getUint16(off, false);
+  const hi = dv.getUint32(off + 2, false);
+  const lo = dv.getUint32(off + 6, false);
+  const sign = expo & 0x8000 ? -1 : 1;
+  const e = (expo & 0x7fff) - 16383;
+  const mant = hi * 2 ** 32 + lo;
+  return sign * mant * 2 ** (e - 63);
+}
+
 function parseAiff(dv: DataView): LoopMetadata {
-  // Filled in by Task 4 (AIFF COMM/MARK). Stub returns empty metadata so an
-  // AIFF container is recognised (not null) but yields no slices/tempo yet.
-  void dv;
-  return {};
+  const md: LoopMetadata = {};
+  let rate = 44100;
+  let off = 12;
+  const end = dv.byteLength;
+  // first pass: COMM for the sample rate
+  for (let p = 12; p + 8 <= end;) {
+    const id = tag(dv, p); const size = dv.getUint32(p + 4, false);
+    if (id === 'COMM') { rate = readExtended(dv, p + 8 + 8) || 44100; break; }
+    p += 8 + size + (size & 1);
+  }
+  while (off + 8 <= end) {
+    const id = tag(dv, off);
+    const size = dv.getUint32(off + 4, false);
+    const body = off + 8;
+    if (id === 'MARK') {
+      const count = dv.getUint16(body, false);
+      const pts: number[] = [];
+      let o = body + 2;
+      for (let i = 0; i < count && o + 6 <= end; i++) {
+        o += 2; // marker id
+        const pos = dv.getUint32(o, false); o += 4;
+        pts.push(pos / rate);
+        const nameLen = dv.getUint8(o); o += 1 + nameLen;
+        if ((1 + nameLen) & 1) o += 1; // pad to even
+      }
+      md.slicePointsSec = pts.sort((a, b) => a - b);
+    }
+    off = body + size + (size & 1);
+  }
+  return md;
 }

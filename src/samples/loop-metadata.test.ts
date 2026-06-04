@@ -63,3 +63,63 @@ describe('parseLoopMetadata', () => {
     expect(md?.beats).toBe(8);
   });
 });
+
+// 80-bit IEEE extended (big-endian) encoder for a positive integer rate.
+function ext80(value: number): Uint8Array {
+  const out = new Uint8Array(10);
+  let m = value, e = 16383 + 31;
+  while ((m & 0x80000000) === 0 && m !== 0) { m <<= 1; e--; }
+  const dv = new DataView(out.buffer);
+  dv.setUint16(0, e, false);
+  dv.setUint32(2, m >>> 0, false);
+  dv.setUint32(6, 0, false);
+  return out;
+}
+function aiffChunkBE(id: string, body: Uint8Array): Uint8Array {
+  const out = new Uint8Array(8 + body.length + (body.length & 1));
+  const dv = new DataView(out.buffer);
+  for (let i = 0; i < 4; i++) out[i] = id.charCodeAt(i);
+  dv.setUint32(4, body.length, false);
+  out.set(body, 8);
+  return out;
+}
+function comm(rate: number, frames: number): Uint8Array {
+  const b = new Uint8Array(18); const dv = new DataView(b.buffer);
+  dv.setUint16(0, 2, false);       // channels
+  dv.setUint32(2, frames, false);  // sampleFrames
+  dv.setUint16(6, 16, false);      // bits
+  b.set(ext80(rate), 8);           // sampleRate (80-bit extended)
+  return aiffChunkBE('COMM', b);
+}
+function mark(framesList: number[]): Uint8Array {
+  // numMarkers(u16), then per-marker: id(u16), position(u32), pstring name
+  let len = 2;
+  for (const _ of framesList) len += 2 + 4 + 2; // 1-char padded pstring
+  const b = new Uint8Array(len); const dv = new DataView(b.buffer);
+  dv.setUint16(0, framesList.length, false);
+  let o = 2;
+  framesList.forEach((f, i) => {
+    dv.setUint16(o, i + 1, false); o += 2;
+    dv.setUint32(o, f, false); o += 4;
+    dv.setUint8(o, 0); o += 1; dv.setUint8(o, 0); o += 1; // empty pstring, padded
+  });
+  return aiffChunkBE('MARK', b);
+}
+function formAiff(...chunks: Uint8Array[]): ArrayBuffer {
+  const bodyLen = chunks.reduce((a, c) => a + c.length, 0) + 4;
+  const out = new Uint8Array(8 + bodyLen); const dv = new DataView(out.buffer);
+  'FORM'.split('').forEach((ch, i) => { out[i] = ch.charCodeAt(0); });
+  dv.setUint32(4, bodyLen, false);
+  'AIFF'.split('').forEach((ch, i) => { out[8 + i] = ch.charCodeAt(0); });
+  let off = 12; for (const c of chunks) { out.set(c, off); off += c.length; }
+  return out.buffer;
+}
+
+describe('parseLoopMetadata AIFF', () => {
+  it('reads MARK marker positions as slice seconds via COMM rate', () => {
+    const rate = 44100;
+    const buf = formAiff(comm(rate, rate), mark([0, rate / 4, rate / 2]));
+    const md = parseLoopMetadata(buf);
+    expect(md?.slicePointsSec).toEqual([0, 0.25, 0.5]);
+  });
+});
