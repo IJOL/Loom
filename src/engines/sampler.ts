@@ -41,6 +41,7 @@ const OUTPUT_TRIM = 0.7; // headroom so a full-scale sample + resonance stays < 
 interface SamplerVoiceApi {
   getPad: (note: number) => PadParams;
   getGlobal: (id: string) => number;
+  /** Shared FX bus — used by the per-pad reverb/delay sends (next task). */
   fx: FxBus | null;
 }
 
@@ -167,11 +168,10 @@ class SamplerVoice implements Voice {
   connect(_dest: AudioNode): void { /* already connected to output */ }
 
   getAudioParams(): Map<string, AudioParam> {
-    return new Map<string, AudioParam>([
-      ['gain',             this.ampGain.gain],
-      ['filter.cutoff',    this.filter.frequency],
-      ['filter.resonance', this.filter.Q],
-    ]);
+    // Only the master amp gain is exposed today. Per-pad modulation
+    // destinations (cutoff/level/pan per voice) are wired in Plan A2, which
+    // binds modulators at trigger time when the pad/note is known.
+    return new Map<string, AudioParam>([['gain', this.ampGain.gain]]);
   }
 
   dispose(): void {
@@ -212,7 +212,8 @@ export class SamplerEngine implements SynthEngine {
 
   /** Resolved pad params for a note (defaults merged with stored overrides). */
   getPad(note: number): PadParams {
-    return { ...PAD_DEFAULTS, ...(this.padStore[note] ?? {}) };
+    const canonical = noteForPadKey(padKeyForNote(note));
+    return { ...PAD_DEFAULTS, ...(this.padStore[canonical] ?? {}) };
   }
 
   /** Full per-pad override store — for persistence. */
@@ -291,7 +292,6 @@ export class SamplerEngine implements SynthEngine {
     container.appendChild(knobRow);
     wireEngineParams(this, ctx, knobRow, {
       formatter: (id, v) => {
-        if (id === 'pitch') return `${v.toFixed(0)} st`;
         if (id === 'poly.voices') return `${Math.round(v)}`;
         if (id.endsWith('.attack') || id.endsWith('.release')) {
           return v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed(2)}s`;
