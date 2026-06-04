@@ -220,7 +220,9 @@ export class DrumsEngine implements SynthEngine {
   readonly type = 'polyhost' as const;
   readonly polyphony = 'poly' as const;
   readonly editor = 'drum-grid' as const;
-  readonly params = DRUM_PARAMS;
+  get params(): EngineParamSpec[] {
+    return this.kitMode === 'sample' ? this.sampler.params : DRUM_PARAMS;
+  }
   get presets() { return getCachedPresets('drums-machine'); }
 
   private instances = new WeakMap<AudioNode, DrumMachine>();
@@ -314,6 +316,7 @@ export class DrumsEngine implements SynthEngine {
   }
 
   getBaseValue(id: string): number {
+    if (this.kitMode === 'sample') return this.sampler.getBaseValue(id);
     if (id.startsWith('bus.')) {
       return id in this.paramValues ? this.paramValues[id] : this.specDefault(id);
     }
@@ -330,6 +333,7 @@ export class DrumsEngine implements SynthEngine {
   }
 
   setBaseValue(id: string, v: number): void {
+    if (this.kitMode === 'sample') { this.sampler.setBaseValue(id, v); return; }
     // bus.* is read back from this cache, so always store it; per-voice ids are
     // sourced live from the DrumMachine once an instance exists, so only cache
     // them before the instance appears (a transient boot window).
@@ -375,6 +379,33 @@ export class DrumsEngine implements SynthEngine {
     // If setOutputTarget was never called, fall back to the passed output node
     // (which is busStrip.input in the legacy path).
     const routingTarget = this.outputTarget ?? output;
+
+    if (this.kitMode === 'sample') {
+      const inner = this.sampler.createVoice(ctx, routingTarget);
+      // Keep the bus-level LFO/ADSR (which target the shared bus strip) bound
+      // in sample mode too — bind on create, tear down on dispose, mirroring
+      // the synth DrumsVoice lifecycle.
+      if (!this.engineModVoices) this.engineModVoices = this.modHost.spawnVoice(ctx, () => this.bpm);
+      const laneId = getCurrentLaneForVoice();
+      let binder: ConnectionBinder | null = null;
+      if (laneId) {
+        binder = bindEngineModulators({ laneId, engine: this, voiceMods: this.engineModVoices, ctx });
+        this.currentLaneId = laneId;
+      }
+      return {
+        trigger: (m, t, o) => inner.trigger(m, t, o),
+        release: (t) => inner.release(t),
+        connect: (d) => inner.connect(d),
+        getAudioParams: () => inner.getAudioParams(),
+        getAudioParamRange: (id) => inner.getAudioParamRange?.(id),
+        dispose: () => {
+          inner.dispose();
+          if (binder) binder.disposeAll();
+          if (laneId) disposeLaneModulations(laneId);
+        },
+      };
+    }
+
     let dm = this.instances.get(routingTarget);
     if (!dm) {
       if (!this.sharedFx) {
@@ -415,6 +446,7 @@ export class DrumsEngine implements SynthEngine {
   }
 
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
+    if (this.kitMode === 'sample') { this.sampler.buildParamUI(container, ctx); return; }
     container.innerHTML = '';
     if (!ctx) return;
 
@@ -471,6 +503,7 @@ export class DrumsEngine implements SynthEngine {
   }
 
   getRackLayout() {
+    if (this.kitMode === 'sample') return this.sampler.getRackLayout();
     return {
       // The union ['tune','attack','decay','tone','snap'] reproduces the OLD per-voice
       // curated split exactly because each leaf only exists on some voices:

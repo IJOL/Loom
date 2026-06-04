@@ -192,3 +192,33 @@ describe('DrumsEngine façade — kitMode + forwarders', () => {
     expect(e.getDrumVoiceMutes()).toEqual({ kick: true });
   });
 });
+
+describe('DrumsEngine façade — mode-aware surface', () => {
+  it('params forward to the embedded sampler in sample mode', () => {
+    const e = new DrumsEngine();
+    const synthParamCount = e.params.length;
+    e.setKitMode('sample');
+    e.setKeymap([{ sampleId: 's', rootNote: 36, loNote: 36, hiNote: 36 }]);
+    // Sampler params are dynamic: globals (gain, poly.voices) + one set per pad.
+    expect(e.params.some((p) => p.id === 'gain')).toBe(true);
+    expect(e.params.some((p) => p.id === 'kick.tune')).toBe(true);
+    expect(e.params.length).not.toBe(synthParamCount);
+  });
+
+  it('getRackLayout forwards to the embedded sampler in sample mode', () => {
+    const e = new DrumsEngine();
+    e.setKitMode('sample');
+    expect(e.getRackLayout().curatedSynth).toEqual(['tune', 'cutoff', 'decay']);
+  });
+
+  it('createVoice in sample mode triggers the embedded sampler', () => {
+    const ctx = new AudioContext();
+    const e = new DrumsEngine();
+    e.setSharedFx({ reverbInput: ctx.createGain(), delayInput: ctx.createGain() } as unknown as import('../core/fx').FxBus);
+    e.setKitMode('sample');
+    e.setKeymap([{ sampleId: 'missing', rootNote: 36, loNote: 36, hiNote: 36 }]);
+    const v = e.createVoice(ctx, ctx.destination);
+    expect(typeof v.trigger).toBe('function');
+    expect(() => v.trigger(36, ctx.currentTime, { gateDuration: 0.1, accent: false } as never)).not.toThrow();
+  });
+});
