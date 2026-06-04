@@ -1,4 +1,5 @@
 import { wireEngineParams } from '../engines/engine-ui';
+import { normaliseSelectIndex } from '../core/select-control';
 import { wireDrumMasterUI } from '../core/drum-master-ui';
 import { mountLaneFxPanel as mountLaneFxPanelInner } from '../core/lane-fx-panel';
 import { tb303Engine } from '../engines/tb303';
@@ -144,7 +145,13 @@ export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
   const refreshLaneKnobs = (laneId: string, engine: SynthEngine) => {
     for (const spec of engine.params) {
       const handle = deps.registry.get(`${laneId}.${spec.id}`);
-      handle?.setValue(engine.getBaseValue(spec.id));
+      if (!handle) continue;
+      if (spec.kind === 'discrete' && spec.options && spec.options.length > 0) {
+        const idx = Math.round(engine.getBaseValue(spec.id));
+        handle.setValue(normaliseSelectIndex(idx, spec.options.length));
+      } else {
+        handle.setValue(engine.getBaseValue(spec.id));
+      }
     }
   };
 
