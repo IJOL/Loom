@@ -46,6 +46,12 @@ import {
 import { wireRandomizeUI } from './core/randomize-ui';
 import { wireFxUI, applyDelaySync as fxApplyDelaySync, type FxUIDeps } from './core/fx-ui';
 import { wireTransport, type TransportDeps } from './core/transport';
+import { exportCurrentScene, type SceneExporter } from './export/export-scene';
+import { RealtimeSceneRecorder } from './export/realtime-recorder';
+import { soundingSceneDurationSec } from './export/scene-duration';
+import { restartSoundingLanesForExport } from './export/scene-restart';
+import { wavEncoder } from './export/wav-encoder';
+import { downloadBlob, exportTimestamp } from './export/download';
 import {
   showPolyEditor,
   synthEditorState,
@@ -589,6 +595,56 @@ const transportDeps: TransportDeps = {
   onStop: () => { stopAllLanes(sessionHost.laneStates); sessionHost.renderWithMixer(); },
 };
 wireTransport(transportDeps);
+
+// ── Scene export (real-time WAV) ─────────────────────────────────────────
+const exportBtn = $<HTMLButtonElement>('export-scene');
+const EXPORT_TAIL_SEC = 2;    // let reverb/delay tails decay before the cut
+const EXPORT_LEAD_SEC = 0.15; // worklet spin-up + scene restart lead
+const EXPORT_IDLE_LABEL = '⤓ WAV';
+let exportMsgTimer: number | undefined;
+
+function showExportMessage(msg: string): void {
+  if (exportMsgTimer !== undefined) clearTimeout(exportMsgTimer);
+  exportBtn.textContent = msg;
+  exportMsgTimer = window.setTimeout(() => {
+    exportBtn.textContent = EXPORT_IDLE_LABEL;
+    exportMsgTimer = undefined;
+  }, 1500);
+}
+
+const sceneExporter: SceneExporter = {
+  totalSec: () => {
+    const music = soundingSceneDurationSec(sessionHost.laneStates, seq.meter, seq.bpm);
+    return music > 0 ? music + EXPORT_TAIL_SEC : 0;
+  },
+  record: (totalSec) => {
+    void ctx.resume();
+    const recorder = new RealtimeSceneRecorder({
+      ctx,
+      tap: masterComp.output,
+      leadSec: EXPORT_LEAD_SEC,
+      onStart: (startTime) => {
+        restartSoundingLanesForExport(sessionHost.laneStates, startTime);
+        if (!seq.isPlaying()) seq.start();
+      },
+    });
+    return recorder.record(totalSec);
+  },
+  encode: (channels, sampleRate) => wavEncoder.encode(channels, sampleRate),
+  download: (blob) => downloadBlob(blob, `loom-scene-${exportTimestamp()}.${wavEncoder.extension}`),
+  notify: (msg) => { console.warn('[export]', msg); showExportMessage(msg); },
+  setBusy: (busy) => {
+    if (busy && exportMsgTimer !== undefined) { clearTimeout(exportMsgTimer); exportMsgTimer = undefined; }
+    exportBtn.disabled = busy;
+    playBtn.disabled = busy;
+    if (busy) exportBtn.textContent = 'Grabando…';
+    else if (exportMsgTimer === undefined) exportBtn.textContent = EXPORT_IDLE_LABEL;
+  },
+  finish: () => { seq.stop(); playBtn.textContent = '▶'; },
+};
+
+exportBtn.addEventListener('click', () => { void exportCurrentScene(sceneExporter); });
+
 {
   const positionEl = document.getElementById('transport-position');
   const timeEl     = document.getElementById('transport-time');
