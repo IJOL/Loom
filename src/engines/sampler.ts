@@ -21,6 +21,7 @@ import { mirrorKeymapChange, mirrorDrumkitId } from '../session/session-engine-s
 import { listDrumkits, fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
 import { PAD_DEFAULTS, PAD_LEAF_SPECS, padKeyForNote, noteForPadKey, type PadParams } from './sampler-pad-params';
 import type { FxBus } from '../core/fx';
+import { computeVoiceMutes } from '../core/mute-solo';
 
 const SAMPLER_PARAMS: EngineParamSpec[] = [
   { id: 'gain',        label: 'Gain',   kind: 'continuous', min: 0, max: 1.5, default: 1 },
@@ -45,6 +46,7 @@ interface SamplerVoiceApi {
   fx: FxBus | null;
   onTrigger: (note: number, voice: SamplerVoice, time: number) => void;
   onDispose: (note: number, voice: SamplerVoice) => void;
+  isPadAudible: (note: number) => boolean;
 }
 
 class SamplerVoice implements Voice {
@@ -114,7 +116,8 @@ class SamplerVoice implements Voice {
     this.filter.Q.setValueAtTime(0.5 + pad.res * 20, time);
 
     // Per-pad amp envelope.
-    const peak = this.api.getGlobal('gain') * (entry.gain ?? 1) * (opts.accent ? 1.0 : 0.8) * OUTPUT_TRIM * pad.level;
+    const audible = this.api.isPadAudible(entry.rootNote) ? 1 : 0;
+    const peak = this.api.getGlobal('gain') * (entry.gain ?? 1) * (opts.accent ? 1.0 : 0.8) * OUTPUT_TRIM * pad.level * audible;
     const atk = Math.max(0.001, pad.attack);
     const rel = Math.max(0.005, pad.decay);
     const g = this.ampGain.gain;
@@ -251,6 +254,24 @@ export class SamplerEngine implements SynthEngine {
     if (this.activeByNote.get(note) === voice) this.activeByNote.delete(note);
   }
 
+  private voiceMute: Record<string, boolean> = {};
+  private voiceSolo: Record<string, boolean> = {};
+
+  getDrumVoiceMute(v: string): boolean { return !!this.voiceMute[v]; }
+  setDrumVoiceMute(v: string, m: boolean): void { this.voiceMute[v] = m; }
+  getDrumVoiceSolo(v: string): boolean { return !!this.voiceSolo[v]; }
+  toggleDrumVoiceSolo(v: string): void { this.voiceSolo[v] = !this.voiceSolo[v]; }
+  getDrumVoiceMutes(): Record<string, boolean> { return { ...this.voiceMute }; }
+  setDrumVoiceMutes(m: Record<string, boolean>): void { this.voiceMute = { ...m }; }
+
+  /** True if the pad at `note` should sound now (per mute/solo over the kit's
+   *  voice keys). Read by the voice at trigger time. */
+  isPadAudible(note: number): boolean {
+    const keys = this.keymap.map((e) => padKeyForNote(e.rootNote));
+    const muted = computeVoiceMutes(keys, this.voiceMute, this.voiceSolo);
+    return !muted[padKeyForNote(note)];
+  }
+
   setSharedFx(fx: FxBus): void { this.fx = fx; }
 
   /** Resolved pad params for a note (defaults merged with stored overrides). */
@@ -323,6 +344,7 @@ export class SamplerEngine implements SynthEngine {
       fx: this.fx,
       onTrigger: (note, voice, time) => this.retrigRegister(note, voice, time),
       onDispose: (note, voice) => this.retrigUnregister(note, voice),
+      isPadAudible: (note) => this.isPadAudible(note),
     });
   }
 
