@@ -86,17 +86,35 @@ describe('SamplerEngine — one-shot DSP', () => {
     expect(spectralCentroid(high, SR)).toBeGreaterThan(spectralCentroid(low, SR) * 1.5);
   });
 
-  it('opening the cutoff raises the spectral centroid', async () => {
-    const dark = await renderSampler({
-      durationSec: 0.4,
-      setup: (e) => e.setBaseValue('filter.cutoff', 0.1),
-      act: (v) => v.trigger(ROOT, 0, { gateDuration: 0.3 }),
-    });
-    const bright = await renderSampler({
-      durationSec: 0.4,
-      setup: (e) => e.setBaseValue('filter.cutoff', 0.95),
-      act: (v) => v.trigger(ROOT, 0, { gateDuration: 0.3 }),
-    });
+  it('opening the per-pad cutoff raises the spectral centroid', async () => {
+    // Use note 60 (not in GM drum map) so padKey = zone60 and round-trips cleanly.
+    // renderSampler uses ROOT=48 for its keymap; we override with a fresh render
+    // that uses note 60 as both the keymap rootNote and the trigger.
+    const NOTE = 60;
+    async function renderWithCutoff(cutoff: number): Promise<Float32Array> {
+      const ctx = new OfflineAudioContext(1, Math.round(0.4 * SR), SR);
+      const len = Math.round(0.5 * SR);
+      const buf = ctx.createBuffer(1, len, SR);
+      const data = buf.getChannelData(0);
+      const fundHz = 110;
+      for (let i = 0; i < len; i++) {
+        let s = 0;
+        for (let h = 1; h <= 8; h++) s += Math.sin(2 * Math.PI * fundHz * h * i / SR) / h;
+        data[i] = s * 0.2;
+      }
+      sampleCache.put('test60', buf);
+      const engine = new SamplerEngine();
+      engine.setKeymap([{ sampleId: 'test60', rootNote: NOTE, loNote: 0, hiNote: 127 }]);
+      engine.setBaseValue('zone60.cutoff', cutoff);
+      const out = ctx.createGain();
+      const voice = engine.createVoice(ctx as unknown as AudioContext, out);
+      out.connect(ctx.destination);
+      voice.trigger(NOTE, 0, { gateDuration: 0.3 });
+      const rendered = await ctx.startRendering();
+      return new Float32Array(rendered.getChannelData(0));
+    }
+    const dark   = await renderWithCutoff(0.1);
+    const bright = await renderWithCutoff(0.95);
     writeWav(dark,   wavPath('sampler__cutoff-low'), SR);
     writeWav(bright, wavPath('sampler__cutoff-hi'),  SR);
     expect(spectralCentroid(bright, SR)).toBeGreaterThan(spectralCentroid(dark, SR) * 1.5);
