@@ -1,0 +1,41 @@
+.drum-voice-rack {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 6px 4px;
+}
+.dv-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 58px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.dv-head {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  opacity: 0.8;
+  margin-bottom: 2px;
+}
+.dv-synth, .dv-mix, .dv-advanced {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.dv-mix { margin-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 4px; }
+.dv-adv-toggle {
+  margin-top: 4px;
+  font-size: 9px;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  color: inherit;
+  cursor: pointer;
+  padding: 1px 4px;
+}
+.dv-advanced { display: none; margin-top: 4px; }
+.dv-advanced.open { display: flex; }
