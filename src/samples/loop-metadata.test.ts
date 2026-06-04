@@ -40,11 +40,23 @@ function cue(sampleRate: number, offsetsSec: number[]): Uint8Array {
   return chunk('cue ', body);
 }
 function acid(beats: number, tempo: number): Uint8Array {
+  // ACID chunk layout: type(0) rootNote(4) ?(6) ?(8 float) numBeats(12)
+  // meterDen(16) meterNum(18) tempo(20 float).
   const b = new Uint8Array(24); const dv = new DataView(b.buffer);
   dv.setUint32(0, 0, true);
-  dv.setUint32(8, beats, true);
-  dv.setFloat32(20, tempo, true);
+  dv.setUint32(12, beats, true);   // dwNumBeats at 0x0C
+  dv.setFloat32(20, tempo, true);  // fTempo at 0x14
   return chunk('acid', b);
+}
+// smpl chunk: 9 leading dwords (rootNote at +12, numLoops at +28), then per-loop
+// 24-byte records (start at +8, end at +12 within the record).
+function smpl(sampleRate: number, rootNote: number, startSec: number, endSec: number): Uint8Array {
+  const b = new Uint8Array(36 + 24); const dv = new DataView(b.buffer);
+  dv.setUint32(12, rootNote, true);   // dwMIDIUnityNote
+  dv.setUint32(28, 1, true);          // cSampleLoops = 1
+  dv.setUint32(36 + 8, Math.round(startSec * sampleRate), true);  // loop start (samples)
+  dv.setUint32(36 + 12, Math.round(endSec * sampleRate), true);   // loop end (samples)
+  return chunk('smpl', b);
 }
 
 describe('parseLoopMetadata', () => {
@@ -61,6 +73,29 @@ describe('parseLoopMetadata', () => {
     const md = parseLoopMetadata(buf);
     expect(md?.originalBpm).toBeCloseTo(174, 3);
     expect(md?.beats).toBe(8);
+  });
+  it('reads smpl root note + loop points', () => {
+    const buf = riff(fmt(48000), smpl(48000, 60, 0.5, 1.5));
+    const md = parseLoopMetadata(buf);
+    expect(md?.rootNote).toBe(60);
+    expect(md?.loopStartSec).toBeCloseTo(0.5, 5);
+    expect(md?.loopEndSec).toBeCloseTo(1.5, 5);
+  });
+  it('does not throw on truncated chunks (untrusted input)', () => {
+    // a real WAVE header followed by acid/smpl chunks whose declared size runs
+    // past the buffer end — the parser must clamp, not throw.
+    const truncatedAcid = chunk('acid', new Uint8Array(4)); // declares 4 bytes < 24 needed
+    const buf = riff(fmt(44100), truncatedAcid);
+    expect(() => parseLoopMetadata(buf)).not.toThrow();
+    // garbage tail that looks like a chunk header with a huge size
+    const garbage = new Uint8Array(40);
+    const dv = new DataView(garbage.buffer);
+    garbage[0] = 82; garbage[1] = 73; garbage[2] = 70; garbage[3] = 70; // RIFF
+    dv.setUint32(4, 32, true);
+    garbage[8] = 87; garbage[9] = 65; garbage[10] = 86; garbage[11] = 69; // WAVE
+    for (let i = 0; i < 4; i++) garbage[12 + i] = 'cue '.charCodeAt(i);
+    dv.setUint32(16, 0xffffffff, true); // absurd chunk size
+    expect(() => parseLoopMetadata(garbage.buffer)).not.toThrow();
   });
 });
 
