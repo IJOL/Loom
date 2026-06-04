@@ -30,6 +30,8 @@ export interface PianoRollOpts {
   onGestureStart?: () => void;
   onGestureEnd?: () => void;
   onGestureCancel?: () => void;
+  /** Live-preview a pitch when typing/recording from the computer keyboard. */
+  auditionNote?: (midi: number) => void;
 }
 
 export interface PianoRollHandle {

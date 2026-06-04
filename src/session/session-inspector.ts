@@ -33,6 +33,9 @@ export interface InspectorDeps {
    *  fixtures without a global scale picker still compile. */
   scaleSel?: HTMLSelectElement;
   rootSel?: HTMLSelectElement;
+  /** Host note trigger, used to audition pitches from the keyboard editor.
+   *  Optional so test fixtures without an audio graph still compile. */
+  triggerForLane?: (laneId: string, note: number, time: number, gate: number, accent: boolean, slidingIn: boolean) => void;
 }
 
 export class SessionInspector {
@@ -203,6 +206,7 @@ export class SessionInspector {
       laneStates: this.deps.laneStates,
       midiLabel: this.deps.midiLabel,
       historyDeps: this.deps.historyDeps,
+      triggerForLane: this.deps.triggerForLane,
     };
     this.roll = renderClipEditor(editorBox, lane, clip, editorDeps, editorOverride.get(clip.id));
 

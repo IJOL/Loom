@@ -20,6 +20,7 @@ export interface ClipEditorDeps {
   laneStates: Map<string, LanePlayState>;
   midiLabel: (m: number) => string;
   historyDeps?: HistoryDeps;
+  triggerForLane?: (laneId: string, note: number, time: number, gate: number, accent: boolean, slidingIn: boolean) => void;
 }
 
 // In-memory per-clip zoom/scroll. Mirrors the editorOverride map: persists for
@@ -69,7 +70,8 @@ function buildPianoRoll(
   const setNotes = (notes: NoteEvent[]) => { clip.notes = notes; };
 
   const isBassLikeEngine = lane.engineId === 'tb303';
-  const { ctx, seq, laneStates, historyDeps } = deps;
+  const { ctx, seq, laneStates, historyDeps, triggerForLane } = deps;
+  const AUDITION_GATE = 0.25; // seconds — a short preview blip
   return createPianoRoll({
     host,
     getNotes,
@@ -80,6 +82,9 @@ function buildPianoRoll(
     minMidi: isBassLikeEngine ? 24 : 36,
     maxMidi: isBassLikeEngine ? 60 : 96,
     onChange: () => {},
+    auditionNote: triggerForLane
+      ? (midi: number) => triggerForLane(lane.id, midi, ctx.currentTime, AUDITION_GATE, false, false)
+      : undefined,
     getPlayheadTick: () => {
       const lp = laneStates.get(lane.id);
       if (!lp || !lp.playing || lp.playing.id !== clip.id) return -1;

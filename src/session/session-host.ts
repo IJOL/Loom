@@ -189,6 +189,7 @@ export class SessionHost {
       saveSession: this.deps.saveSession,
       scaleSel: this.deps.scaleSel,
       rootSel: this.deps.rootSel,
+      triggerForLane: this.deps.triggerForLane,
     });
 
     this.deps.seq.sessionTick = (now, look) => {
