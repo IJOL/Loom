@@ -142,15 +142,15 @@ function writeMixer(dm: DrumMachine, voice: DrumVoice, leaf: string, v: number):
 }
 
 function readMixer(dm: DrumMachine, voice: DrumVoice, leaf: string): number {
-  const s = dm.channels[voice].serialize();
+  const st = dm.channels[voice];
   switch (leaf) {
-    case 'level':   return s.level;
-    case 'pan':     return s.pan;
-    case 'rev':     return s.reverbSend;
-    case 'dly':     return s.delaySend;
-    case 'eq.low':  return s.eqLow;
-    case 'eq.mid':  return s.eqMid;
-    case 'eq.high': return s.eqHigh;
+    case 'level':   return st.level.gain.value;
+    case 'pan':     return st.getPan();
+    case 'rev':     return st.reverbSend.gain.value;
+    case 'dly':     return st.delaySend.gain.value;
+    case 'eq.low':  return st.getEqGainParam('low').value;
+    case 'eq.mid':  return st.getEqGainParam('mid').value;
+    case 'eq.high': return st.getEqGainParam('high').value;
   }
   return 0;
 }
@@ -287,7 +287,10 @@ export class DrumsEngine implements SynthEngine {
   }
 
   setBaseValue(id: string, v: number): void {
-    this.paramValues[id] = v;
+    // bus.* is read back from this cache, so always store it; per-voice ids are
+    // sourced live from the DrumMachine once an instance exists, so only cache
+    // them before the instance appears (a transient boot window).
+    if (id.startsWith('bus.') || !this.lastInstance) this.paramValues[id] = v;
     if (id.startsWith('bus.')) {
       if (!this.busStrip) return;
       switch (id) {
@@ -306,7 +309,9 @@ export class DrumsEngine implements SynthEngine {
     const leaf = id.slice(dot + 1);
     if (!DRUM_LANES.includes(voice)) return;
     const dm = this.lastInstance;
-    if (!dm) return; // pre-instance: cached in paramValues; restored once an instance exists
+    if (!dm) return; // no instance yet: cached above for getBaseValue; the real
+                     // restore path (applyEngineState) re-applies setBaseValue
+                     // after createVoice, so per-voice values land on the store then.
     if (MIXER_LEAVES.has(leaf)) { writeMixer(dm, voice, leaf, v); return; }
     dm.setVoiceParam(voice, leaf, v);
   }
