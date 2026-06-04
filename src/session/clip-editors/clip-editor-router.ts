@@ -13,6 +13,7 @@ import { ticksPerBar, stepsPerBar, stepsPerBeat } from '../../core/meter';
 import { resolveViewState, type ViewState } from '../../core/pianoroll-zoom';
 import { getEngine } from '../../engines/registry';
 import { renderDrumGridEditor } from './clip-editor-drum-grid';
+import { renderLoopEditor } from './clip-editor-loop';
 import type { HistoryDeps } from '../../save/history-wiring';
 
 export interface ClipEditorDeps {
@@ -45,6 +46,11 @@ export function chooseClipEditor(
   return override ?? (isDrumkitSampler ? 'drum-grid' : undefined) ?? engineEditor ?? 'piano-roll';
 }
 
+/** A loop clip that plays as retriggered slices (vs the stretch buffer path). */
+export function isSliceLoopClip(clip: SessionClip): boolean {
+  return !!clip.sample && clip.sample.warpMode !== 'stretch' && !!clip.sample.slices?.length;
+}
+
 export function renderClipEditor(
   host: HTMLElement,
   lane: SessionLane,
@@ -55,6 +61,21 @@ export function renderClipEditor(
   host.innerHTML = '';
   const engine = getEngine(lane.engineId);
   const editor = chooseClipEditor(lane, engine?.editor, override);
+
+  if (isSliceLoopClip(clip)) {
+    const audition = deps.triggerForLane
+      ? (midi: number) => deps.triggerForLane!(lane.id, midi, deps.ctx.currentTime, AUDITION_GATE, false, false)
+      : undefined;
+    const getPlayheadTick = (): number => {
+      const lp = deps.laneStates.get(lane.id);
+      if (!lp || !lp.playing || lp.playing.id !== clip.id) return -1;
+      const stepDur = 60 / deps.seq.bpm / 4;
+      const stepsElapsed = Math.max(0, (deps.ctx.currentTime - lp.startTime) / stepDur);
+      const clipSteps = clip.lengthBars * stepsPerBar(deps.seq.meter);
+      return (stepsElapsed % clipSteps) * TICKS_PER_STEP;
+    };
+    return renderLoopEditor(host, clip, deps.historyDeps, deps.seq.meter, { auditionNote: audition, getPlayheadTick });
+  }
 
   if (editor === 'drum-grid') {
     const audition = deps.triggerForLane
