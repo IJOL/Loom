@@ -144,6 +144,9 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
       (engine as unknown as { setBusStrip?(s: ChannelStrip): void }).setBusStrip?.(strip);
       (engine as unknown as { setOutputTarget?(n: AudioNode): void }).setOutputTarget?.(inserts.inputNode);
     }
+    if (engineId === 'sampler') {
+      (engine as unknown as { setSharedFx?(fx: FxBus): void }).setSharedFx?.(deps.fx);
+    }
     // tb303: TB303Engine.createVoice is self-registering — no external call.
   };
 

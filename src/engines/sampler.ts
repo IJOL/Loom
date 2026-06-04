@@ -49,6 +49,9 @@ class SamplerVoice implements Voice {
   private src: AudioBufferSourceNode | null = null;
   private readonly filter: BiquadFilterNode;
   private readonly ampGain: GainNode;
+  private readonly panner: StereoPannerNode;
+  private readonly revSend: GainNode;
+  private readonly dlySend: GainNode;
   private started = false;
   private endTime = Infinity;
 
@@ -62,7 +65,14 @@ class SamplerVoice implements Voice {
     this.filter.type = 'lowpass';
     this.ampGain = ctx.createGain();
     this.ampGain.gain.value = 0;
-    this.filter.connect(this.ampGain).connect(output);
+    this.panner = ctx.createStereoPanner();
+    this.revSend = ctx.createGain(); this.revSend.gain.value = 0;
+    this.dlySend = ctx.createGain(); this.dlySend.gain.value = 0;
+    this.filter.connect(this.ampGain).connect(this.panner).connect(output);
+    if (this.api.fx) {
+      this.panner.connect(this.revSend).connect(this.api.fx.reverbInput);
+      this.panner.connect(this.dlySend).connect(this.api.fx.delayInput);
+    }
   }
 
   trigger(midi: number, time: number, opts: VoiceTriggerOptions): void {
@@ -103,6 +113,10 @@ class SamplerVoice implements Voice {
     const releaseAt = Math.max(time + atk, time + opts.gateDuration);
     g.setValueAtTime(peak, releaseAt);
     g.linearRampToValueAtTime(0, releaseAt + rel);
+
+    this.panner.pan.setValueAtTime(pad.pan, time);
+    this.revSend.gain.setValueAtTime(pad.rev, time);
+    this.dlySend.gain.setValueAtTime(pad.dly, time);
 
     this.endTime = releaseAt + rel + 0.01;
     src.start(time, 0);
@@ -178,6 +192,9 @@ class SamplerVoice implements Voice {
     if (this.src) { try { this.src.stop(); } catch { /* */ } this.src.disconnect(); }
     this.filter.disconnect();
     this.ampGain.disconnect();
+    this.panner.disconnect();
+    this.revSend.disconnect();
+    this.dlySend.disconnect();
   }
 }
 
