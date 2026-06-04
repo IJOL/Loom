@@ -5,6 +5,11 @@ export interface TransportDeps {
   ctx: AudioContext;
   playBtn: HTMLButtonElement;
   resetAutomationPosition: () => void;
+  /** Stopping the master clock must also stop every lane and re-render the
+   *  session, otherwise the per-lane play states keep `playing` set: the
+   *  live-computed clip playheads (drum grid + piano roll) never return to -1
+   *  so the cursors keep advancing, and the clip cells stay styled as playing. */
+  onStop?: () => void;
 }
 
 /** Wires the Play/Stop button. (The Classic A/B/C/D pattern bank, chain, and
@@ -18,6 +23,7 @@ export function wireTransport(deps: TransportDeps): () => void {
     void ctx.resume();
     if (seq.isPlaying()) {
       seq.stop();
+      deps.onStop?.();
       playBtn.textContent = '▶';
     } else {
       deps.resetAutomationPosition();

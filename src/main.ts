@@ -29,7 +29,7 @@ import { emptySessionState } from './session/session';
 import { fetchDemoSession } from './demo/demo-loader';
 import { wireDemoPicker } from './demo/demo-picker';
 import { wireMidiImportUI } from './midi/midi-import-ui';
-import { launchScene as launchSceneRuntime } from './session/session-runtime';
+import { launchScene as launchSceneRuntime, stopAll as stopAllLanes } from './session/session-runtime';
 import { applyPresetToEngine } from './presets/preset-apply';
 import { wireSaveManager, bootRecoveryLoad } from './save/save-wiring';
 import { createHistory } from './core/history';
@@ -581,6 +581,10 @@ fxApplyDelaySync(fxUIDeps);
 const transportDeps: TransportDeps = {
   seq, ctx, playBtn,
   resetAutomationPosition,
+  // Stop the master clock AND every lane, then re-render: clears each lane's
+  // `playing` clip so the editor playheads return to -1 (cursors disappear) and
+  // the clip cells re-render as stopped. Matches the session "⏹ all" button.
+  onStop: () => { stopAllLanes(sessionHost.laneStates); sessionHost.renderWithMixer(); },
 };
 wireTransport(transportDeps);
 {
