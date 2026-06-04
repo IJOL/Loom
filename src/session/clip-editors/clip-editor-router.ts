@@ -53,7 +53,7 @@ export function renderClipEditor(
   const editor = chooseClipEditor(lane, engine?.editor, override);
 
   if (editor === 'drum-grid') {
-    renderDrumGridEditor(host, clip, deps.historyDeps);
+    renderDrumGridEditor(host, clip, deps.historyDeps, deps.seq.meter);
     return null;
   }
   return buildPianoRoll(host, lane, clip, deps);

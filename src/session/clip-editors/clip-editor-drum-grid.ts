@@ -9,15 +9,23 @@ import type { NoteEvent } from '../../core/notes';
 import { TICKS_PER_STEP } from '../../core/notes';
 import { GM_DRUM_MAP, VOICE_MIDI } from '../../engines/drum-gm-map';
 import { withUndo, type HistoryDeps } from '../../save/history-wiring';
+import { stepsPerBar, stepsPerBeat, DEFAULT_METER, type TimeSignature } from '../../core/meter';
 
 const LANE_LABELS: Record<DrumVoice, string> = {
   kick: 'KICK', snare: 'SNARE', closedHat: 'CH', openHat: 'OH',
   clap: 'CLAP', cowbell: 'COWBL', tom: 'TOM', ride: 'RIDE',
 };
 
-export function renderDrumGridEditor(host: HTMLElement, clip: SessionClip, historyDeps?: HistoryDeps): void {
+export function renderDrumGridEditor(
+  host: HTMLElement,
+  clip: SessionClip,
+  historyDeps?: HistoryDeps,
+  meter: TimeSignature = DEFAULT_METER,
+): void {
   host.innerHTML = '';
-  const steps = clip.lengthBars * 16;
+  const spb = stepsPerBar(meter);
+  const spbeat = stepsPerBeat(meter);
+  const steps = clip.lengthBars * spb;
   if (!clip.notes) clip.notes = [];
 
   const container = document.createElement('div');
@@ -25,12 +33,15 @@ export function renderDrumGridEditor(host: HTMLElement, clip: SessionClip, histo
   container.style.setProperty('--steps', String(steps));
 
   for (const voice of DRUM_LANES) {
-    container.appendChild(buildVoiceRow(clip, voice, steps, historyDeps));
+    container.appendChild(buildVoiceRow(clip, voice, steps, spb, spbeat, historyDeps));
   }
   host.appendChild(container);
 }
 
-function buildVoiceRow(clip: SessionClip, voice: DrumVoice, totalSteps: number, historyDeps?: HistoryDeps): HTMLElement {
+function buildVoiceRow(
+  clip: SessionClip, voice: DrumVoice, totalSteps: number,
+  spb: number, spbeat: number, historyDeps?: HistoryDeps,
+): HTMLElement {
   const row = document.createElement('div');
   row.className = `track drum-track ${voice}`;
 
@@ -44,17 +55,20 @@ function buildVoiceRow(clip: SessionClip, voice: DrumVoice, totalSteps: number, 
   cells.style.setProperty('--steps', String(totalSteps));
 
   for (let i = 0; i < totalSteps; i++) {
-    cells.appendChild(buildCell(clip, voice, i, historyDeps));
+    cells.appendChild(buildCell(clip, voice, i, spb, spbeat, historyDeps));
   }
   row.appendChild(cells);
   return row;
 }
 
-function buildCell(clip: SessionClip, voice: DrumVoice, stepIdx: number, historyDeps?: HistoryDeps): HTMLElement {
+function buildCell(
+  clip: SessionClip, voice: DrumVoice, stepIdx: number,
+  spb: number, spbeat: number, historyDeps?: HistoryDeps,
+): HTMLElement {
   const btn = document.createElement('button');
   btn.className = `dcell ${voice}`;
-  if (stepIdx % 16 === 0 && stepIdx > 0) btn.classList.add('seg-start');
-  if (stepIdx % 4  === 0)                btn.classList.add('downbeat');
+  if (stepIdx % spb === 0 && stepIdx > 0) btn.classList.add('seg-start');
+  if (stepIdx % spbeat === 0)             btn.classList.add('downbeat');
   refreshCellVisual(btn, clip, voice, stepIdx);
 
   btn.title = 'Click: off → on → accent → off   |   Shift+click: cycle roll ×1 → ×2 → ×3 → ×4';
