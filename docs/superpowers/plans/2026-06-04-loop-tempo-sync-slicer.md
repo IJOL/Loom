@@ -695,7 +695,7 @@ git commit -m "feat(loop): AIFF COMM/MARK metadata parsing"
 - Create: `src/samples/loop-analysis.ts`
 - Test: `src/samples/loop-analysis.dsp.test.ts`
 
-Pure DSP over decoded channel data: build an energy-onset envelope, peak-pick onsets, estimate a rough tempo by autocorrelation, then **snap to a whole-bar interpretation** of the buffer length for an exact BPM (with ×2/÷2 fallback to keep BPM in 70–180). Returns `{ originalBpm, slicePointsSec, confidence }`. Tested with a synthetic click train (known BPM + onsets).
+Pure DSP over decoded channel data: build an energy-onset envelope, peak-pick onsets, estimate a rough tempo by autocorrelation, then **snap to a whole-bar interpretation** of the buffer length for an exact BPM (with ×2/÷2 fallback to keep BPM in 70–180). Returns `{ originalBpm, slicePointsSec, confidence }`. Tested two ways: (1) a synthetic click train (deterministic, known BPM + onsets), and (2) the **committed real loop corpus** in `test/fixtures/loops/drum/` via the `test/loop-fixtures.ts` resolver — each fixture is decoded and `detectLoop`'s BPM is asserted **octave-equivalent** to the filename ground-truth BPM within tolerance. The real loops are plain `RIFF/WAVE` (no `acid`/`cue `/`smpl`), which is exactly why detection — not metadata — is the real-world path.
 
 - [ ] **Step 1: Write the failing DSP test**
 
