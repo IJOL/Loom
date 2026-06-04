@@ -60,13 +60,20 @@ export function buildDrumkitKeymap(samples: DrumkitSample[], sampleIds: string[]
   }));
 }
 
-/** Read the bundled kit index. Returns [] if it is missing. */
+/** Read the bundled kit index. Returns [] if it is missing or unreachable. */
 export async function listDrumkits(fetchFn: typeof fetch = fetch): Promise<DrumkitIndexEntry[]> {
   // Base-aware so it resolves under the deploy sub-path (GitHub Pages `/Loom/`);
-  // BASE_URL is `/` in dev + the standard build.
-  const res = await fetchFn(`${import.meta.env.BASE_URL}drumkits/index.json`);
-  if (!res.ok) return [];
-  return (await res.json()) as DrumkitIndexEntry[];
+  // BASE_URL is `/` in dev + the standard build. The try/catch honours the
+  // "returns [] if missing" contract: a thrown fetch (e.g. the relative URL has
+  // no base in node tests, or the browser is offline) yields [] rather than an
+  // unhandled rejection from the fire-and-forget caller in buildParamUI.
+  try {
+    const res = await fetchFn(`${import.meta.env.BASE_URL}drumkits/index.json`);
+    if (!res.ok) return [];
+    return (await res.json()) as DrumkitIndexEntry[];
+  } catch {
+    return [];
+  }
 }
 
 /** Read one kit manifest by id. */
