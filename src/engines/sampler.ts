@@ -377,11 +377,13 @@ export class SamplerEngine implements SynthEngine {
       renderDrumVoiceRack(this, ctx, rackHost, voices);
     }
 
-    // Param knobs (gain/attack/release/pitch/cutoff/res/voices).
+    // Param knobs — globals only (gain + poly.voices). Per-pad/zone params are
+    // rendered in the per-zone blocks below, not in the global row.
     const knobRow = document.createElement('div');
     knobRow.className = 'knob-row';
     container.appendChild(knobRow);
     wireEngineParams(this, ctx, knobRow, {
+      filter: (id) => !id.includes('.'),
       formatter: (id, v) => {
         if (id === 'poly.voices') return `${Math.round(v)}`;
         if (id.endsWith('.attack') || id.endsWith('.release')) {
@@ -551,6 +553,18 @@ export class SamplerEngine implements SynthEngine {
         rebuild();
       });
       row.appendChild(del);
+
+      // Per-zone params (melodic only — drumkits use the rack above).
+      if (!this.isDrumkit()) {
+        const zoneKey = padKeyForNote(entry.rootNote); // zone<root>
+        const params = document.createElement('div');
+        params.className = 'sampler-zone-params knob-row';
+        row.appendChild(params);
+        wireEngineParams(this, ctx, params, {
+          knobSize: 30,
+          filter: (id) => id.startsWith(`${zoneKey}.`),
+        });
+      }
 
       list.appendChild(row);
     });
