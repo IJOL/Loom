@@ -302,6 +302,12 @@ export class SessionHost {
     for (const lane of this.state.lanes) {
       const engine = this.deps.laneResources?.get(lane.id)?.engine;
       if (!engine) continue;
+      // Restore which drum source the Drums lane plays BEFORE keymap/padStore/
+      // mute restore, so the façade's active() points at the right source.
+      const kitMode = lane.engineState?.kitMode;
+      if (kitMode && typeof (engine as { setKitMode?: unknown }).setKitMode === 'function') {
+        (engine as unknown as { setKitMode(m: 'synth' | 'sample'): void }).setKitMode(kitMode);
+      }
       // Apply per-param values (bus sends, EQ, etc.) from engineState.params.
       const params = lane.engineState?.params;
       if (params) {
