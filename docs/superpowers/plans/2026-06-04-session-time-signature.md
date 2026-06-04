@@ -56,6 +56,9 @@
 - `src/session/clip-editors/clip-editor-router.ts` — pass meter-derived geometry to both editors.
 - `src/session/clip-editors/clip-editor-drum-grid.ts` — step count + segment marks from the meter.
 - `src/save/saved-state-v3.ts` — persist/restore `timeSignature`; new `meterSel` dep.
+- `src/save/save-wiring.ts` — add `meterSel` to `SaveWiringDeps` (a structural superset of `SavedStateV3Deps`; without it `tsc` breaks).
+- `src/save/saved-state-v3.performance.test.ts` — add a `meterSel` stub to the load test.
+- `src/session/clip-randomize.ts` + `src/session/session-inspector.ts` — randomized content fits the bar in any meter.
 - `index.html` — meter `<select>`; Bars `<select>` values become bar counts.
 - `src/main.ts` — wire the meter select, the Bars-as-bars handler, and the load-time sync.
 
@@ -63,6 +66,7 @@
 - `src/automation/automation-painter.ts:27` (`seqLength / 16`) — performance-view automation-lane
   default length. The performance view is a separate subsystem; leaving it 4/4 is acceptable.
 - `src/midi/midi-to-session.ts:50` (`TICKS_PER_BAR`) — MIDI import is 4/4; importing SMF meter is a non-goal.
+- `src/session/session-runtime.ts` (`tickSessionEnvelopes` clip-step count, ~line 262) **and** `src/session/clip-automation-lanes.ts:68,103` — the per-clip **automation** subsystem stays 16-steps/bar. It is internally self-consistent (the painter sizes the value buffer at `lengthBars*16*AUTOMATION_SUB_RES`; the tick reads/wraps at the same `lengthBars*16`), so changing only one side would desync the buffer from its readback. Making clip automation meter-aware is a coupled, multi-file change deferred to a follow-up; in non-4/4, per-clip envelopes loop at 16 steps/bar and drift against the meter-aware note loop. (NB: distinct from the `tickSession` note-scheduler modulo at ~line 227, which **is** fixed in Task 3.)
 
 ---
 
@@ -326,7 +330,15 @@ Add a `meter` field to the `SchedulerContext` interface (after `lastScheduledAt?
   meter?: TimeSignature;
 ```
 
-Delete the module constant `const TICKS_PER_BAR = TICKS_PER_STEP * 16;` (it is replaced below).
+Delete the module constant **and its doc-comment** (both lines, leaving the blank line that
+separates the imports from the `DRIFT` block):
+
+```ts
+/** TICKS_PER_BAR for the SessionClip note coordinate space (16 steps/bar). */
+const TICKS_PER_BAR = TICKS_PER_STEP * 16;
+```
+
+(it is replaced by the meter-aware projection below).
 
 In `tickLane`, replace the first two lines of the body:
 
@@ -626,8 +638,26 @@ with (and add the two geometry opts just below it):
     stepsPerBeat: stepsPerBeat(seq.meter),
 ```
 
-(`seq` is already destructured from `deps` in `buildPianoRoll`. `TICKS_PER_STEP` may now be
-unused in the router — if `tsc` flags it, remove it from that import.)
+(`seq` is already destructured from `deps` in `buildPianoRoll`. **Keep** the `TICKS_PER_STEP`
+import — it is still used by `getPlayheadTick` below.)
+
+Then, still in `buildPianoRoll`, fix the playhead loop-wrap in `getPlayheadTick` so the visual
+playhead matches the new meter-aware `patternTicks` (otherwise the playhead overshoots the grid
+and desyncs from the audio loop in non-4/4). Replace:
+
+```ts
+      const clipSteps = clip.lengthBars * 16;
+      return (stepsElapsed % clipSteps) * TICKS_PER_STEP;
+```
+
+with:
+
+```ts
+      const clipSteps = clip.lengthBars * stepsPerBar(seq.meter);
+      return (stepsElapsed % clipSteps) * TICKS_PER_STEP;
+```
+
+(`stepsPerBar` is imported in the step above; in 4/4 it is 16, so behavior is unchanged.)
 
 - [ ] **Step 6: Typecheck + build**
 
@@ -783,6 +813,19 @@ In the `SavedStateV3Deps` interface, after `swingInput: HTMLInputElement;`:
   meterSel: HTMLSelectElement;
 ```
 
+**Also (REQUIRED — prevents a `tsc` break):** `src/save/save-wiring.ts` declares a SEPARATE
+`SaveWiringDeps` interface and calls `applyLoadedStateV3(s, deps)` / `buildSavedStateV3(deps)`
+with it — it typechecks today only because `SaveWiringDeps` is a structural superset of
+`SavedStateV3Deps`. Once `SavedStateV3Deps` requires `meterSel`, `SaveWiringDeps` must too. Add
+the same field to `SaveWiringDeps` (after its `swingInput: HTMLInputElement;`):
+
+```ts
+  meterSel: HTMLSelectElement;
+```
+
+No runtime change is needed in `save-wiring.ts` — the value arrives via `saveBaseDeps` in
+`main.ts` (Task 8 Step 7), which both `saveWiringDeps` (spread) and `savedStateDeps` derive from.
+
 - [ ] **Step 2: Write the meter on save**
 
 In `buildSavedStateV3`, the `state` object literal sets `swing: seq.swing,`. Add right after it:
@@ -810,21 +853,42 @@ Then, right after the `swing` restore line
   {
     const m = resolveMeter(s.timeSignature);
     seq.meter = m;
-    meterSel.value = formatMeter(m);
+    if (meterSel) meterSel.value = formatMeter(m);
   }
 ```
 
-- [ ] **Step 4: Typecheck**
+The `if (meterSel)` guard matters: existing unit tests call `applyLoadedStateV3` with a `deps`
+object cast `as any` that has **no** `meterSel` (e.g. `saved-state-v3.performance.test.ts`).
+Without the guard, `meterSel.value = …` throws `TypeError` and that test regresses to red — and
+the `as any` cast hides it from `tsc`, so it would only surface at the Task 8 full-suite gate.
+
+- [ ] **Step 4: Update the existing load test**
+
+In `src/save/saved-state-v3.performance.test.ts`, the `applyLoadedStateV3 restores arrangement +
+mode` test builds a `deps` object (cast `as any`) that lacks `meterSel`. Add a stub so the new
+restore path is exercised — change the line `swingInput: { value: '' },` to:
+
+```ts
+      swingInput: { value: '' }, meterSel: { value: '' },
+```
+
+(The `if (meterSel)` guard already makes the test pass without this; the stub additionally
+exercises the assignment. Optionally add `timeSignature: { num: 7, den: 8 }` to that test's
+`save` object and `expect((deps as any).meterSel.value).toBe('7/8');` after the call.)
+
+- [ ] **Step 5: Typecheck + run the load test**
 
 Run: `npx tsc --noEmit`
-Expected: errors at `main.ts` (the `savedStateDeps` object does not yet provide `meterSel`).
-That is expected — it is supplied in Task 8. (If you prefer a green checkpoint, do Task 8 before
-re-running `tsc`.) The `saved-state-v3.ts` file itself must be error-free.
+Expected: errors only at `main.ts` (the `saveBaseDeps` object does not yet provide `meterSel`).
+That is expected — it is supplied in Task 8. The `saved-state-v3.ts` and `save-wiring.ts` files
+themselves must be error-free.
+Run: `NO_COLOR=1 npx vitest run src/save/saved-state-v3.performance.test.ts`
+Expected: PASS (no `TypeError`; the meter restores to 4/4 by default).
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add src/save/saved-state-v3.ts
+git add src/save/saved-state-v3.ts src/save/save-wiring.ts src/save/saved-state-v3.performance.test.ts
 git commit -m "feat(meter): persist/restore timeSignature in SavedStateV3"
 ```
 
@@ -921,17 +985,21 @@ barsSel.addEventListener('change', () => {
 meterSel.addEventListener('change', () => {
   seq.meter = meterFromLabel(meterSel.value);
   seq.setLength(parseInt(barsSel.value, 10) * stepsPerBar(seq.meter));
-  // Re-render the clip grid. An open clip editor picks up the new meter the
-  // next time it is opened (rebuilding a live-open editor is a Spec-2 concern).
+  // The scheduler + transport read seq.meter / seq.length live on the next step.
+  // renderLanes() is a no-op stub in main.ts (kept only for parity with the Bars
+  // handler); an open clip editor picks up the new meter when it is reopened via
+  // the session host (rebuilding a live-open editor is a Spec-2 concern).
   renderLanes();
 });
 ```
 
-- [ ] **Step 6: Fix the load-time Bars sync**
+- [ ] **Step 6: Fix the boot-time Bars sync**
 
-In `main.ts`, the post-load sync line (line ~453) is `barsSel.value = String(seq.length);`.
-Replace it with a bars-count derivation (the meter select itself is synced inside
-`applyLoadedStateV3` from Task 7):
+In `main.ts`, the **boot-time** Bars-sync line (line ~453, a top-level statement that runs once
+at startup — not on every load) is `barsSel.value = String(seq.length);`. Note: `seq.length` is
+intentionally **not** persisted in `SavedStateV3` and is not restored on load; only the meter is
+synced on load (via `meterSel` inside `applyLoadedStateV3`, Task 7). Replace this line with a
+bars-count derivation:
 
 ```ts
 barsSel.value = String(Math.max(1, Math.round(seq.length / stepsPerBar(seq.meter))));
@@ -968,6 +1036,23 @@ Replace **both** occurrences of:
 
 (Use the same `seq` reference already valid on those lines.)
 
+Then fix the drum-grid step-playhead wrap in `updateEditorPlayhead` (around line 781) so the
+highlighted cell tracks the meter-aware loop and the rendered cell count from Task 6 (otherwise
+in non-4/4 it highlights phantom/out-of-range cells and desyncs from the audio). Replace:
+
+```ts
+    const clipSteps = clip.lengthBars * 16;
+```
+
+with:
+
+```ts
+    const clipSteps = clip.lengthBars * stepsPerBar(this.deps.seq.meter);
+```
+
+(Reuses the `stepsPerBar` import added at the top of this step; `this.deps.seq` is the access
+pattern already used on the adjacent `bpm` line; in 4/4 it is 16, unchanged.)
+
 - [ ] **Step 9: Typecheck + build**
 
 Run: `npx tsc --noEmit`
@@ -984,12 +1069,15 @@ summary shows all passing, that is the known flaky teardown — re-run to confir
 - [ ] **Step 11: Manual smoke (dev server)**
 
 Run `npm run dev`, open <http://localhost:5173>, then verify:
-1. The transport row has a **Meter** dropdown (4/4 … 12/8); Bars shows 1–4.
+1. The transport row has a **Meter** dropdown (4/4 … 12/8). (The Bars `<select>` is CSS-hidden in
+   the current Loom UI — expected; it still functions under the hood.)
 2. Select **7/8**: open a melodic clip → the piano-roll ruler shows **14** sixteenth columns
    per bar, a heavy bar line every 14, beat lines every 2, and bar numbers increment correctly.
 3. Open a drums clip → the grid shows **14** cells per bar with the segment break at cell 14.
-4. Press play → the loop is audibly shorter than 4/4; the transport readout counts beats up to 7.
-5. Add a new clip → its default length matches the Bars selector in the current meter.
+4. Press play → the loop is audibly shorter than 4/4; the transport readout counts beats up to 7;
+   the piano-roll and drum-grid **playheads stay inside the grid** and wrap with the audio loop.
+5. Add a new clip → open it; the inspector **Length (bars)** field (`#insp-length`) shows the
+   expected bar count for the current Bars value in this meter.
 6. Save, reload the page, load the save → the meter is still 7/8 and everything matches.
 7. Switch back to **4/4** → grids return to 16 columns/bar; an old 4/4 save loads identically.
 
@@ -998,6 +1086,110 @@ Run `npm run dev`, open <http://localhost:5173>, then verify:
 ```bash
 git add index.html src/main.ts src/session/session-host.ts
 git commit -m "feat(meter): meter selector + Bars-as-bars + meter-aware new-clip length"
+```
+
+---
+
+## Task 9: Randomized clip content fits the bar in any meter
+
+**Files:**
+- Modify: `src/session/clip-randomize.ts`
+- Modify: `src/session/session-inspector.ts:172-175`
+- Test: `src/session/clip-randomize.test.ts`
+
+`bassNotes` / `polyNotes` / `drumNotes` each compute `const steps = clip.lengthBars * 16;`, so in
+a non-4/4 meter they emit notes past the bar (start ticks ≥ `ticksPerBar(meter)`) that fall
+outside the loop window. Thread the meter so generated content fits.
+
+- [ ] **Step 1: Write the failing test**
+
+In `src/session/clip-randomize.test.ts` (create it if absent; if it exists, add only the
+`describe` block plus whichever of these imports it does not already have):
+
+```ts
+import { describe, it, expect } from 'vitest';
+import { randomizeClipNotes } from './clip-randomize';
+import { ticksPerBar } from '../core/meter';
+import type { SessionClip, SessionLane } from './session';
+
+describe('randomizeClipNotes respects the meter', () => {
+  it('keeps every generated note inside the bar in 7/8', () => {
+    const clip = { id: 'r', lengthBars: 1, notes: [] } as unknown as SessionClip;
+    const lane = { id: 'l', engineId: 'drums-machine' } as unknown as SessionLane;
+    const limit = ticksPerBar({ num: 7, den: 8 }); // 336
+    for (let trial = 0; trial < 30; trial++) {
+      randomizeClipNotes(clip, lane, { scale: 'pentMinor', rootMidi: 36 }, { num: 7, den: 8 });
+      for (const n of clip.notes) expect(n.start).toBeLessThan(limit);
+    }
+  });
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `NO_COLOR=1 npx vitest run src/session/clip-randomize.test.ts`
+Expected: FAIL — `randomizeClipNotes` takes 3 args (TS error), or notes land at ticks ≥ 336.
+
+- [ ] **Step 3: Thread the meter through `clip-randomize.ts`**
+
+Add the import (the file already imports `TICKS_PER_STEP, type NoteEvent` from `'../core/notes'`):
+
+```ts
+import { stepsPerBar, DEFAULT_METER, type TimeSignature } from '../core/meter';
+```
+
+Give each generator a `steps` parameter and remove its local `const steps = clip.lengthBars * 16;`.
+Their signatures become:
+
+```ts
+function bassNotes(clip: SessionClip, opts: ClipRandomizeOpts, steps: number): NoteEvent[] {
+function polyNotes(clip: SessionClip, opts: ClipRandomizeOpts, steps: number): NoteEvent[] {
+function drumNotes(clip: SessionClip, steps: number): NoteEvent[] {
+```
+
+(delete the `const steps = clip.lengthBars * 16;` line at the top of each; the loop bodies are
+unchanged. `drumNotes` keeps its `i % 4` / `i % 8` accent positions — in odd meters they produce
+a 4/4-flavoured accent pattern within the correct step count, with no overflow.)
+
+Then rewrite `randomizeClipNotes` to derive the meter-aware step count and forward it:
+
+```ts
+export function randomizeClipNotes(
+  clip: SessionClip,
+  lane: SessionLane,
+  opts: ClipRandomizeOpts,
+  meter: TimeSignature = DEFAULT_METER,
+): void {
+  const steps = clip.lengthBars * stepsPerBar(meter);
+  if (lane.engineId === 'tb303') clip.notes = bassNotes(clip, opts, steps);
+  else if (lane.engineId === 'drums-machine') clip.notes = drumNotes(clip, steps);
+  else clip.notes = polyNotes(clip, opts, steps);
+}
+```
+
+- [ ] **Step 4: Pass the meter at the call site**
+
+In `src/session/session-inspector.ts` (the 🎲 Notes handler, ~line 172), add the meter argument:
+
+```ts
+        randomizeClipNotes(clip, lane!, {
+          scale: scaleSel?.value ?? 'pentMinor',
+          rootMidi: parseInt(rootSel?.value ?? '36', 10) || 36,
+        }, this.deps.seq.meter);
+```
+
+(`this.deps.seq` is already on `InspectorDeps`.)
+
+- [ ] **Step 5: Run test to verify it passes**
+
+Run: `NO_COLOR=1 npx vitest run src/session/clip-randomize.test.ts`
+Expected: PASS.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/session/clip-randomize.ts src/session/session-inspector.ts src/session/clip-randomize.test.ts
+git commit -m "fix(meter): randomized clip content fits the bar in any meter"
 ```
 
 ---
@@ -1024,3 +1216,27 @@ both optional so existing call sites compile unchanged. Pianoroll opts use `step
 piano-roll does not import `meter.ts`).
 
 **Placeholder scan:** none — every code step shows complete code.
+
+## Post-review hardening (adversarial workflow, 16 findings → 6 real)
+
+A multi-agent adversarial review (5 dimension reviewers + per-finding verification against the
+real source) caught these, now folded in above:
+
+- **[blocker]** Adding required `meterSel` to `SavedStateV3Deps` breaks the SEPARATE
+  `SaveWiringDeps` interface → `tsc` fails at `save-wiring.ts:54,160`. Fixed: Task 7 Step 1 now
+  also adds the field to `SaveWiringDeps`.
+- **[major]** Two visual-playhead loop-wraps still hard-coded `lengthBars * 16`
+  (`clip-editor-router.ts:86` piano-roll, `session-host.ts:781` drum-grid) → overshoot + desync in
+  non-4/4. Fixed: Task 5 and Task 8 Step 8.
+- **[major]** The existing `saved-state-v3.performance.test.ts` load test passes a `deps` without
+  `meterSel`; the unconditional `meterSel.value = …` threw (hidden from `tsc` by `as any`). Fixed:
+  `if (meterSel)` guard (Task 7 Step 3) + test stub & vitest gate (Task 7 Steps 4–5).
+- **[minor]** `clip-randomize.ts` generated `lengthBars * 16` steps → notes overflow the bar in
+  non-4/4. Fixed: new Task 9.
+- **[scope]** The per-clip **automation** subsystem (`tickSessionEnvelopes` + `clip-automation-lanes.ts`)
+  is `*16` end-to-end and self-consistent; a partial fix would desync the buffer from its readback.
+  Resolved by adding it to the explicit out-of-scope list (not a code change).
+- **[nits]** Plan-wording fixes: delete the orphaned `TICKS_PER_BAR` doc-comment (Task 3); drop the
+  false "TICKS_PER_STEP may be unused" note (Task 5); correct the `renderLanes` no-op comment and the
+  "post-load"→"boot-time" Bars-sync framing (Task 8); fix the smoke steps that referenced the
+  CSS-hidden Bars selector (Task 8 Step 11).
