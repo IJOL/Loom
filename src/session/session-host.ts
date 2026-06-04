@@ -18,9 +18,10 @@ import { sampleStore } from '../samples/store-singleton';
 import { sampleCache } from '../samples/sample-cache';
 import { getNoteFxChain, loadNoteFxForLane } from '../notefx/notefx-registry';
 import { renderNoteFxPanel } from '../notefx/notefx-ui';
-import { syncNoteFx, mirrorKeymapChange } from './session-engine-state';
+import { syncNoteFx, mirrorKeymapChange, mirrorDrumkitId } from './session-engine-state';
 import { fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
 import type { KeymapEntry } from '../samples/types';
+import { findDrumKit } from '../presets/drum-kits-loader';
 
 // ── Pure helper: slug id generation ────────────────────────────────────────
 /** Returns the next available slug id for a new lane of the given engineId.
@@ -368,6 +369,50 @@ export class SessionHost {
     } catch (err) {
       console.warn(`[drumkit] failed to reload '${kitId}' for ${laneId}:`, err);
     }
+  }
+
+  /** Live drums-page preset pick (ctx-aware). Synth kits go through the engine's
+   *  sync applyPreset; sample kits decode the bundled drumkit into the embedded
+   *  sampler here (we hold the AudioContext), mirror the sub-state, then rebuild
+   *  the inspector engine-body so the panel swaps. */
+  async applyDrumPreset(laneId: string, name: string): Promise<void> {
+    const entry = findDrumKit(name);
+    const engine = this.deps.laneResources?.get(laneId)?.engine as unknown as {
+      applyPreset(n: string): void;
+      setKitMode(m: 'synth' | 'sample'): void;
+      setKeymap(k: KeymapEntry[]): void;
+    } | undefined;
+    if (!entry || !engine) return;
+
+    engine.applyPreset(name);        // sets kitMode (+ synth loadKitDefaults)
+    if (entry.kind === 'sample' && entry.drumkitId) {
+      engine.setKitMode('sample');   // belt-and-suspenders before the async decode
+      try {
+        const manifest = await fetchDrumkitManifest(entry.drumkitId);
+        const km = await loadDrumkit(manifest, this.deps.ctx);
+        engine.setKeymap(km);
+        mirrorKeymapChange(this.state, laneId, km);
+        mirrorDrumkitId(this.state, laneId, entry.drumkitId);
+      } catch (err) {
+        console.warn(`[drumkit] failed to load '${entry.drumkitId}' for ${laneId}:`, err);
+      }
+    } else {
+      // Synth kit: drop any stale drumkit sub-state so a later load doesn't
+      // re-trigger the sample self-heal.
+      mirrorDrumkitId(this.state, laneId, undefined);
+    }
+
+    const lane = this.state.lanes.find((l) => l.id === laneId);
+    if (lane) {
+      if (!lane.engineState) lane.engineState = {};
+      lane.engineState.kitMode = entry.kind;
+      lane.enginePresetName = `engine:${name}`;
+    }
+
+    // Rebuild the inspector engine-body so the synth rack <-> sampler panel swaps
+    // immediately (this also re-pushes current knob values). Only when this lane
+    // is the one being edited.
+    if (this.activeEditLane === laneId) this.injectEngineModulatorPanel(laneId, 'drums');
   }
 
   // ── Rendering ────────────────────────────────────────────────────────────

@@ -539,6 +539,7 @@ const polySynthPresetsDeps: PolySynthPresetsDeps = {
   },
   // Late-bound via getter so historyDeps is resolved at event-fire time.
   get historyDeps() { return _discreteHistoryDeps; },
+  applyDrumKitPreset: (laneId, name) => { void sessionHost.applyDrumPreset(laneId, name); },
 };
 
 // Now that polySynthPresetsDeps exist, wire synthEditorDeps

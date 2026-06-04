@@ -3,6 +3,7 @@ import { randomizePolySynth } from '../core/random';
 import type { SynthEngine } from '../engines/engine-types';
 import { getCachedPresets } from '../presets/preset-loader';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
+import { getDrumKits, loadDrumKits, type DrumKitPreset } from '../presets/drum-kits-loader';
 
 /** Convert a flat dot-path subtractive preset (e.g. `"osc1.wave": 0`,
  *  `"filter.cutoff": 0.55`) back into the nested PolySynthParams tree the
@@ -75,6 +76,9 @@ export interface PolySynthPresetsDeps {
    *  button click) are wrapped with withUndo so each becomes one undoable
    *  entry. Omit for programmatic/session-load callers. */
   historyDeps?: HistoryDeps;
+  /** Apply a unified drum-kit preset (synth or sample) to a drums lane — the
+   *  ctx-aware orchestrator (session-host.applyDrumPreset). */
+  applyDrumKitPreset?: (laneId: string, name: string) => void;
 }
 
 let _deps: PolySynthPresetsDeps | null = null;
@@ -377,11 +381,84 @@ export function mountBassPresetSelect(laneId: string): void {
   wireEnginePresetSelectById('bass-preset-select', 'bass-preset-load');
 }
 
-/** Called by injectEngineModulatorPanel when the drums page is activated for
- *  a drums-machine lane. Populates + wires the drums preset select. */
+/** Called by injectEngineModulatorPanel when the drums page is activated.
+ *  Populates the drums preset <select> from the unified drum-kits.json list
+ *  (grouped Synth / Samples) and wires change/Load to the ctx-aware
+ *  orchestrator. Option values keep the `engine:<name>` vocabulary so
+ *  pagePresetName / refresh helpers keep working. */
 export function mountDrumsPresetSelect(laneId: string): void {
-  populateEnginePresetSelectById('drums-preset-select', 'drums-machine', laneId);
-  wireEnginePresetSelectById('drums-preset-select', 'drums-preset-load');
+  populateDrumKitsSelect(laneId);
+  wireDrumKitsSelect('drums-preset-select', 'drums-preset-load');
+}
+
+function populateDrumKitsSelect(laneId: string): void {
+  const sel = document.getElementById('drums-preset-select') as HTMLSelectElement | null;
+  if (!sel) return;
+
+  let holder = pageSelectActiveLane.get('drums-preset-select');
+  if (!holder) { holder = { laneId }; pageSelectActiveLane.set('drums-preset-select', holder); }
+  else holder.laneId = laneId;
+
+  const render = () => {
+    sel.innerHTML = '';
+    const custom = document.createElement('option');
+    custom.value = '__custom__';
+    custom.textContent = '(custom — no preset)';
+    sel.appendChild(custom);
+
+    const kits = getDrumKits();
+    const groups = new Map<string, DrumKitPreset[]>();
+    for (const k of kits) {
+      const arr = groups.get(k.group) ?? [];
+      arr.push(k);
+      groups.set(k.group, arr);
+    }
+    for (const [group, entries] of groups) {
+      const og = document.createElement('optgroup');
+      og.label = group;
+      for (const k of entries) {
+        const opt = document.createElement('option');
+        opt.value = `engine:${k.name}`;
+        opt.textContent = k.name;
+        og.appendChild(opt);
+      }
+      sel.appendChild(og);
+    }
+    const prev = pagePresetName.get(laneId);
+    sel.value = prev ?? '__custom__';
+  };
+
+  render();
+  // If the loader hasn't resolved yet, re-render when it does (boot race).
+  if (getDrumKits().length === 0) void loadDrumKits().then(render);
+}
+
+function wireDrumKitsSelect(selectId: string, loadBtnId: string): void {
+  const sel = document.getElementById(selectId) as HTMLSelectElement | null;
+  if (!sel) return;
+  if (sel.dataset.presetWired === '1') return;
+  sel.dataset.presetWired = '1';
+
+  const applySelected = () => {
+    const holder = pageSelectActiveLane.get(selectId);
+    if (!holder) return;
+    const val = sel.value;
+    if (!val || val === '__custom__') return;
+    if (!val.startsWith('engine:')) return;
+    const name = val.slice('engine:'.length);
+    _deps?.applyDrumKitPreset?.(holder.laneId, name);
+    pagePresetName.set(holder.laneId, val);
+  };
+
+  sel.addEventListener('change', () => {
+    if (_deps?.historyDeps) withUndo(_deps.historyDeps, applySelected);
+    else applySelected();
+  });
+  const loadBtn = document.getElementById(loadBtnId) as HTMLButtonElement | null;
+  loadBtn?.addEventListener('click', () => {
+    if (_deps?.historyDeps) withUndo(_deps.historyDeps, applySelected);
+    else applySelected();
+  });
 }
 
 export function wirePolyControls(deps: PolySynthPresetsDeps): void {
