@@ -1,13 +1,18 @@
 {
   "presets": [
-    { "name": "KIT Standard",      "group": "Synth",   "kind": "synth",  "kitId": "909" },
-    { "name": "KIT Room",          "group": "Synth",   "kind": "synth",  "kitId": "linn" },
-    { "name": "KIT Power",         "group": "Synth",   "kind": "synth",  "kitId": "909" },
-    { "name": "KIT Electronic",    "group": "Synth",   "kind": "synth",  "kitId": "606" },
-    { "name": "KIT TR-808",        "group": "Synth",   "kind": "synth",  "kitId": "808" },
-    { "name": "KIT Jazz",          "group": "Synth",   "kind": "synth",  "kitId": "78" },
-    { "name": "KIT Brush",         "group": "Synth",   "kind": "synth",  "kitId": "78" },
-    { "name": "KIT Orchestra",     "group": "Synth",   "kind": "synth",  "kitId": "linn" },
+    { "name": "KIT Standard",      "group": "GM",      "kind": "synth",  "kitId": "909" },
+    { "name": "KIT Room",          "group": "GM",      "kind": "synth",  "kitId": "linn" },
+    { "name": "KIT Power",         "group": "GM",      "kind": "synth",  "kitId": "909" },
+    { "name": "KIT Electronic",    "group": "GM",      "kind": "synth",  "kitId": "606" },
+    { "name": "KIT TR-808",        "group": "GM",      "kind": "synth",  "kitId": "808" },
+    { "name": "KIT Jazz",          "group": "GM",      "kind": "synth",  "kitId": "78" },
+    { "name": "KIT Brush",         "group": "GM",      "kind": "synth",  "kitId": "78" },
+    { "name": "KIT Orchestra",     "group": "GM",      "kind": "synth",  "kitId": "linn" },
+    { "name": "TR-909",            "group": "Synth",   "kind": "synth",  "kitId": "909" },
+    { "name": "TR-808",            "group": "Synth",   "kind": "synth",  "kitId": "808" },
+    { "name": "TR-606",            "group": "Synth",   "kind": "synth",  "kitId": "606" },
+    { "name": "CR-78",             "group": "Synth",   "kind": "synth",  "kitId": "78" },
+    { "name": "LinnDrum",          "group": "Synth",   "kind": "synth",  "kitId": "linn" },
     { "name": "TR-808 (samples)",  "group": "Samples", "kind": "sample", "drumkitId": "tr808" },
     { "name": "Acoustic (samples)","group": "Samples", "kind": "sample", "drumkitId": "acoustic" }
   ]

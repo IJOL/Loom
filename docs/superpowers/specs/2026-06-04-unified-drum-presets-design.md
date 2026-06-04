@@ -100,24 +100,29 @@ This keeps the `AudioContext` in session-host (where it already is) rather than 
 
 ### 3. Unified preset JSON + its loader
 
-`public/presets/drum-kits.json`. **The Synth group preserves the EXISTING synth drum presets** (the GM-named `KIT *` entries, same names + kitIds as `drums-machine.json`) so nothing the user had disappears — "unified" = the existing presets **plus** the sample kits, not a curated replacement:
+`public/presets/drum-kits.json`. **The list is purely additive — it keeps everything the user had and adds the sample kits.** Three `<optgroup>`s: **GM** (the 8 GM-named `KIT *` presets, same names + kitIds as `drums-machine.json`), **Synth** (the 5 raw kit names — TR-909/TR-808/TR-606/CR-78/LinnDrum, the `DrumMachine` KITS), and **Samples** (the bundled sample kits):
 
 ```json
 { "presets": [
-  { "name": "KIT Standard",      "group": "Synth",   "kind": "synth",  "kitId": "909" },
-  { "name": "KIT Room",          "group": "Synth",   "kind": "synth",  "kitId": "linn" },
-  { "name": "KIT Power",         "group": "Synth",   "kind": "synth",  "kitId": "909" },
-  { "name": "KIT Electronic",    "group": "Synth",   "kind": "synth",  "kitId": "606" },
-  { "name": "KIT TR-808",        "group": "Synth",   "kind": "synth",  "kitId": "808" },
-  { "name": "KIT Jazz",          "group": "Synth",   "kind": "synth",  "kitId": "78" },
-  { "name": "KIT Brush",         "group": "Synth",   "kind": "synth",  "kitId": "78" },
-  { "name": "KIT Orchestra",     "group": "Synth",   "kind": "synth",  "kitId": "linn" },
+  { "name": "KIT Standard",      "group": "GM",      "kind": "synth",  "kitId": "909" },
+  { "name": "KIT Room",          "group": "GM",      "kind": "synth",  "kitId": "linn" },
+  { "name": "KIT Power",         "group": "GM",      "kind": "synth",  "kitId": "909" },
+  { "name": "KIT Electronic",    "group": "GM",      "kind": "synth",  "kitId": "606" },
+  { "name": "KIT TR-808",        "group": "GM",      "kind": "synth",  "kitId": "808" },
+  { "name": "KIT Jazz",          "group": "GM",      "kind": "synth",  "kitId": "78" },
+  { "name": "KIT Brush",         "group": "GM",      "kind": "synth",  "kitId": "78" },
+  { "name": "KIT Orchestra",     "group": "GM",      "kind": "synth",  "kitId": "linn" },
+  { "name": "TR-909",            "group": "Synth",   "kind": "synth",  "kitId": "909" },
+  { "name": "TR-808",            "group": "Synth",   "kind": "synth",  "kitId": "808" },
+  { "name": "TR-606",            "group": "Synth",   "kind": "synth",  "kitId": "606" },
+  { "name": "CR-78",             "group": "Synth",   "kind": "synth",  "kitId": "78" },
+  { "name": "LinnDrum",          "group": "Synth",   "kind": "synth",  "kitId": "linn" },
   { "name": "TR-808 (samples)",  "group": "Samples", "kind": "sample", "drumkitId": "tr808" },
   { "name": "Acoustic (samples)","group": "Samples", "kind": "sample", "drumkitId": "acoustic" }
 ] }
 ```
 
-Schema per entry: `name`, `group` (display heading), `kind` (`'synth'` | `'sample'`), and `kitId` (synth) / `drumkitId` (sample). (The names match `drums-machine.json`, so MIDI-import / `gm-lookup` recall — `factory:KIT Power` etc. — keeps resolving through the same unified lookup.)
+Schema per entry: `name`, `group` (display heading), `kind` (`'synth'` | `'sample'`), and `kitId` (synth) / `drumkitId` (sample). All names are unique (the loader dedups by name). The GM names match `drums-machine.json`, so MIDI-import / `gm-lookup` recall — `factory:KIT Power` etc. — keeps resolving through the same unified lookup.
 
 **Loader wiring (review finding):** `drum-kits` is not a plugin id, so the existing `loadAllPresets(ENGINE_IDS_FOR_PRESETS)` ([main.ts:86-87](../../../src/main.ts)) never fetches it, and its schema fails `validatePresetEntry` (which requires `gm[]` + `params{}`). So add a **bespoke `drum-kits-loader.ts`** with `loadDrumKits()` that fetches + validates `drum-kits.json` into its **own cache** (not the `EnginePreset` cache). Boot must start it **alongside** `loadAllPresets(...)` and the drums `<select>` must be populated only after it resolves (await it before the first `mountDrumsPresetSelect`, or re-render on resolve) — otherwise the dropdown is empty/racy on the first drums-tab render.
 

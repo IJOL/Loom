@@ -234,6 +234,13 @@ export class DrumsEngine implements SynthEngine {
   private sampler = new SamplerEngine();
   private kitMode: 'synth' | 'sample' = 'synth';
 
+  /** The sample-player carries OUTPUT_TRIM headroom, so a sample kit reads
+   *  quieter than the synth voices. Run the embedded sampler at a higher base
+   *  gain so sample kits sit near the synth-drum level. The standalone Poly-lane
+   *  sampler is a separate instance and keeps its default gain. */
+  private static readonly SAMPLE_GAIN = 1.4;
+  constructor() { this.sampler.setBaseValue('gain', DrumsEngine.SAMPLE_GAIN); }
+
   getKitMode(): 'synth' | 'sample' { return this.kitMode; }
   setKitMode(m: 'synth' | 'sample'): void { this.kitMode = m; }
 
