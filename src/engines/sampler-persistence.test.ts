@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { OfflineAudioContext } from 'node-web-audio-api';
 import { SamplerEngine } from './sampler';
 import { FxBus } from '../core/fx';
-import { mirrorPadParams } from '../session/session-engine-state';
+import { mirrorPadParams, mirrorDrumkitId } from '../session/session-engine-state';
 import type { SessionState } from '../session/session';
 import type { KeymapEntry } from '../samples/types';
 
@@ -26,5 +26,17 @@ describe('sampler per-pad persistence', () => {
     const b = makeEngine();
     b.setPadStore(saved as Record<number, Record<string, number>>);
     expect(b.getBaseValue('kick.tune')).toBe(5);
+  });
+
+  it('mirrorDrumkitId preserves padParams (kit switch does not wipe per-pad edits)', () => {
+    const state = { lanes: [{ id: 'drums-1', engineState: {} }] } as unknown as SessionState;
+    mirrorPadParams(state, 'drums-1', { 36: { tune: 5 } });
+    mirrorDrumkitId(state, 'drums-1', 'tr808');                 // switch kit
+    const sampler = (state.lanes[0] as { engineState: { sampler?: { padParams?: Record<number, Record<string, number>>; drumkitId?: string } } }).engineState.sampler!;
+    expect(sampler.drumkitId).toBe('tr808');
+    expect(sampler.padParams![36].tune).toBe(5);               // survived
+    mirrorDrumkitId(state, 'drums-1', undefined);              // clear kit
+    expect((state.lanes[0] as { engineState: { sampler?: { drumkitId?: string; padParams?: Record<number, Record<string, number>> } } }).engineState.sampler!.drumkitId).toBeUndefined();
+    expect((state.lanes[0] as { engineState: { sampler?: { padParams?: Record<number, Record<string, number>> } } }).engineState.sampler!.padParams![36].tune).toBe(5); // still survives
   });
 });

@@ -80,7 +80,11 @@ export function mirrorDrumkitId(state: SessionState, laneId: string, drumkitId: 
   if (!lane) return;
   if (!lane.engineState) lane.engineState = {};
   const keymap = lane.engineState.sampler?.keymap ?? [];
-  lane.engineState.sampler = { keymap, ...(drumkitId ? { drumkitId } : {}) };
+  lane.engineState.sampler = {
+    ...lane.engineState.sampler,
+    keymap,
+    drumkitId: drumkitId || undefined,
+  };
 }
 
 /** Read which bundled drumkit a sampler lane uses, if any. */
