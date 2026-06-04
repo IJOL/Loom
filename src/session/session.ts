@@ -52,6 +52,8 @@ export interface SessionLane {
     modulators?: import('../modulation/types').ModulatorState[];
     noteFx?: import('../notefx/notefx-types').NoteFxState[];
     sampler?: { keymap: import('../samples/types').KeymapEntry[]; drumkitId?: string };
+    /** Per-voice drum mute flags (drums-machine). Solo is live-only, not saved. */
+    drumMutes?: Record<string, boolean>;
   };
   /** Currently applied preset name for this lane (`factory:Name` /
    *  `user:Name` / `engine:Name` — same shape as `polyPresetName` values). */

@@ -20,6 +20,26 @@
   opacity: 0.8;
   margin-bottom: 2px;
 }
+.dv-ms {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 3px;
+}
+.dv-mute, .dv-solo {
+  width: 16px;
+  height: 14px;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+}
+.dv-mute.on  { background: #c0392b; border-color: #e74c3c; color: #fff; }
+.dv-solo.on  { background: #f1c40f; border-color: #f7d000; color: #1a1a1a; }
 .dv-synth, .dv-mix, .dv-advanced {
   display: flex;
   flex-direction: column;

@@ -8,6 +8,16 @@
 import type { SynthEngine, EngineUIContext } from './engine-types';
 import { DRUM_LANES, type DrumVoice } from '../core/drums';
 import { wireEngineParams } from './engine-ui';
+import { mirrorDrumMutes } from '../session/session-engine-state';
+
+/** The drum mute/solo surface the rack drives (DrumsEngine implements it). */
+interface DrumMuteSoloEngine {
+  getDrumVoiceMute(v: DrumVoice): boolean;
+  setDrumVoiceMute(v: DrumVoice, m: boolean): void;
+  getDrumVoiceSolo(v: DrumVoice): boolean;
+  toggleDrumVoiceSolo(v: DrumVoice): void;
+  getDrumVoiceMutes(): Record<string, boolean>;
+}
 
 const VOICE_LABELS: Record<DrumVoice, string> = {
   kick: 'KICK', snare: 'SNARE', closedHat: 'CH', openHat: 'OH',
@@ -45,6 +55,7 @@ export function renderDrumVoiceRack(
   const idsByVoice = new Map<DrumVoice, string[]>(
     DRUM_LANES.map((v) => [v, engine.params.map((p) => p.id).filter((id) => id.startsWith(`${v}.`))]),
   );
+  const ms = engine as unknown as DrumMuteSoloEngine;
 
   for (const voice of DRUM_LANES) {
     const col = document.createElement('div');
@@ -54,6 +65,36 @@ export function renderDrumVoiceRack(
     head.className = 'dv-head';
     head.textContent = VOICE_LABELS[voice];
     col.appendChild(head);
+
+    // Per-voice mute/solo. Mute persists (mirrored to engineState); solo is
+    // live-only (exclusive within the kit, applied via channels[voice].setMuted).
+    const msRow = document.createElement('div');
+    msRow.className = 'dv-ms';
+    const muteBtn = document.createElement('button');
+    muteBtn.type = 'button';
+    muteBtn.className = 'dv-mute';
+    muteBtn.textContent = 'M';
+    muteBtn.title = 'Mute this voice';
+    muteBtn.classList.toggle('on', ms.getDrumVoiceMute(voice));
+    const soloBtn = document.createElement('button');
+    soloBtn.type = 'button';
+    soloBtn.className = 'dv-solo';
+    soloBtn.textContent = 'S';
+    soloBtn.title = 'Solo this voice (within the kit)';
+    soloBtn.classList.toggle('on', ms.getDrumVoiceSolo(voice));
+    muteBtn.addEventListener('click', () => {
+      const next = !ms.getDrumVoiceMute(voice);
+      ms.setDrumVoiceMute(voice, next);
+      muteBtn.classList.toggle('on', next);
+      if (ctx.sessionState) mirrorDrumMutes(ctx.sessionState, ctx.laneId, ms.getDrumVoiceMutes());
+    });
+    soloBtn.addEventListener('click', () => {
+      ms.toggleDrumVoiceSolo(voice);
+      soloBtn.classList.toggle('on', ms.getDrumVoiceSolo(voice));
+    });
+    msRow.appendChild(muteBtn);
+    msRow.appendChild(soloBtn);
+    col.appendChild(msRow);
 
     const all = idsByVoice.get(voice)!;
     const curatedSynth = new Set(CURATED_SYNTH[voice].map((l) => `${voice}.${l}`));

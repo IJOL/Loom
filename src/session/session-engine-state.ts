@@ -38,6 +38,20 @@ export function mirrorParamChange(
   lane.engineState.params[paramId] = value;
 }
 
+/** Mirror the per-voice drum mute map into engineState so muted voices persist
+ *  across tab switches + save/load. Solo is live-only and never mirrored.
+ *  No-op if the lane is unknown. */
+export function mirrorDrumMutes(
+  state: SessionState,
+  laneId: string,
+  mutes: Record<string, boolean>,
+): void {
+  const lane = state.lanes.find((l) => l.id === laneId);
+  if (!lane) return;
+  if (!lane.engineState) lane.engineState = {};
+  lane.engineState.drumMutes = { ...mutes };
+}
+
 /** Mirror the lane's one-shot keymap into engineState so it survives tab
  *  switches and save/load. No-op if the lane is unknown. */
 export function mirrorKeymapChange(

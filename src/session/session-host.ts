@@ -328,6 +328,11 @@ export class SessionHost {
       if (drumkitId && typeof (engine as { setKeymap?: unknown }).setKeymap === 'function') {
         void this.reloadDrumkit(lane.id, drumkitId, engine as unknown as { setKeymap(k: KeymapEntry[]): void });
       }
+      // Restore per-voice drum mutes (drums-machine). Solo is live-only.
+      const drumMutes = lane.engineState?.drumMutes;
+      if (drumMutes && typeof (engine as { setDrumVoiceMutes?: unknown }).setDrumVoiceMutes === 'function') {
+        (engine as unknown as { setDrumVoiceMutes(m: Record<string, boolean>): void }).setDrumVoiceMutes(drumMutes);
+      }
     }
   }
 

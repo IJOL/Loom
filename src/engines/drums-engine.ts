@@ -257,6 +257,15 @@ export class DrumsEngine implements SynthEngine {
    *  pre-boot singleton. */
   getInstance(): DrumMachine | null { return this.lastInstance; }
 
+  // ── Per-voice mute/solo (delegates to the live DrumMachine) ──────────────
+  getDrumVoiceMute(voice: DrumVoice): boolean { return this.lastInstance?.getVoiceMute(voice) ?? false; }
+  setDrumVoiceMute(voice: DrumVoice, muted: boolean): void { this.lastInstance?.setVoiceMute(voice, muted); }
+  getDrumVoiceSolo(voice: DrumVoice): boolean { return this.lastInstance?.getVoiceSolo(voice) ?? false; }
+  toggleDrumVoiceSolo(voice: DrumVoice): void { this.lastInstance?.toggleVoiceSolo(voice); }
+  /** Full mute map for persistence (solo is live-only). */
+  getDrumVoiceMutes(): Record<string, boolean> { return this.lastInstance?.getVoiceMutes() ?? {}; }
+  setDrumVoiceMutes(mutes: Record<string, boolean>): void { this.lastInstance?.setVoiceMutes(mutes); }
+
   private modHost = new ModulationHostImpl([
     makeDefaultLFO('lfo1'),
     makeDefaultADSR('adsr1'),
