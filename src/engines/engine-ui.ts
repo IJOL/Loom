@@ -20,6 +20,8 @@ export interface WireEngineParamsOptions {
   formatter?: (id: string, v: number) => string;
   /** Optional element predicate — if returns false, the spec is skipped. */
   filter?: (specId: string) => boolean;
+  /** Knob SVG size in px (continuous params only). Default: createKnob's 40. */
+  knobSize?: number;
 }
 
 /**
@@ -46,6 +48,7 @@ export function wireEngineParams(
         max: spec.max,
         value: engine.getBaseValue(spec.id),
         defaultValue: spec.default,
+        size: opts.knobSize,
         onChange: (v) => {
           engine.setBaseValue(spec.id, v);
           if (ctx.sessionState) {
