@@ -52,9 +52,12 @@ audio callback.
 ## Data model & schema
 
 Additive and optional on the existing `schemaVersion: 3`. A sliced loop is "a normal note clip + a slice
-map," so old sessions and other engines are untouched. **The discriminator between the two playback paths is
-the presence of `slices`, not `warpMode` alone** — migration therefore leaves existing `loop`/`song` buffer
-clips untouched (no `slices` ⇒ they keep the buffer path) and never blanket-sets `warpMode`.
+map," so old sessions and other engines are untouched. **No migration is needed:** the discriminator between
+the two playback paths is the **presence of `slices`**, and legacy `loop`/`song` clips have none — so they
+stay on the existing buffer path with their current varispeed behavior, unchanged. `warpMode` is read with a
+default of `'slice'` at the point of use (a read-time default, not a normalisation pass). The save format
+serializes the whole `ClipSample`, so the new optional fields round-trip without a schema bump (verify the
+serializer isn't field-whitelisting; if it is, add the two fields there).
 
 `ClipSample` evolves ([src/session/session.ts:19](../../../src/session/session.ts)) — `warp` finally gets
 meaning, plus two new optional fields:
@@ -180,8 +183,9 @@ settings live in the loop editor.
      `{bpm, slicePoints, rootNote}`; malformed/absent → `null`.
    - `slice-clip` — slices + tempos + grid → expected `NoteEvent[]`, `lengthBars`, note↔slice mapping
      (relative assertions: counts, ordering, ratios).
-   - `session-migration` — clip with new fields absent → defaults (`warpMode:'slice'`, `warp` preserved);
-     round-trips.
+   - **read-time defaults / routing** — a clip with `slices` absent routes to the buffer path; with `slices`
+     present and `warpMode` absent it routes to the slice path (`warpMode` defaults to `'slice'`). Save →
+     load round-trips the new optional fields without loss.
 2. **DSP real** (`*.dsp.test.ts`, `OfflineAudioContext` + dsp-battery):
    - `loop-analysis` — synthetic click-trains at a known BPM → detected within a ratio band; onset count
      matches; ×2/÷2 resolved.
@@ -222,7 +226,8 @@ All assertions **relative** (ratios/ordering), per the project convention.
 
 **Changed:** `src/session/session.ts` (`ClipSample`, `LoopSlice`), `src/engines/engine-types.ts`
 (`VoiceTriggerOptions.slice`), `src/engines/sampler.ts` (slice trigger path; stretch buffer swap),
-the lane scheduler / `trigger-dispatch` (slice-region resolution + `warpMode` branch),
+the lane scheduler / `trigger-dispatch` (slice-region resolution + `slices`-presence branch),
 `src/session/clip-editors/clip-editor-router.ts` (route slice loops), the import / file-drop flow,
-`src/app` bpm-broadcast (debounced stretch re-render), `src/session/session-migration.ts` (defaults),
-`src/save/saved-state-v3.ts` (persist new optional fields).
+`src/app` bpm-broadcast (debounced stretch re-render). `src/save/saved-state-v3.ts` only if its serializer
+field-whitelists `ClipSample` (otherwise the new optional fields round-trip for free). **No
+`session-migration.ts` change — additive optional fields, read-time defaults.**
