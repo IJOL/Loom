@@ -34,3 +34,8 @@ drum-samples/
 midi-library/
 public/drumkits/**/*.wav
 loops/
+
+# …but DO commit the small curated loop corpus used as test fixtures
+# (the bulk loops/ above stays ignored; these are a handful for the test suite).
+!test/fixtures/loops/
+!test/fixtures/loops/**
