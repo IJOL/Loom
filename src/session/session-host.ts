@@ -772,6 +772,16 @@ export class SessionHost {
       fxBus: this.deps.fxBus,
       // Live AudioContext for the sampler's audio import (decodeAudioData).
       audioContext: this.deps.ctx,
+      // Place a built clip (sampler loop import) onto this lane's first empty
+      // slot (or append) and re-render the grid + inspector.
+      installClip: (clip) => {
+        const lane = this.state.lanes.find((l) => l.id === laneId);
+        if (!lane) return;
+        const empty = lane.clips.findIndex((c) => c == null);
+        const idx = empty >= 0 ? empty : lane.clips.length;
+        lane.clips[idx] = clip;
+        this.renderWithMixer();
+      },
     });
 
     // Per-lane NOTE FX panel — mounted next to MODULATORS (which buildParamUI
