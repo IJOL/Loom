@@ -43,4 +43,13 @@ describe('exportCurrentScene', () => {
     expect(x.finish).toHaveBeenCalledTimes(1);
     expect(x.setBusy).toHaveBeenLastCalledWith(false);
   });
+
+  it('reports errors when encoding fails and skips download', async () => {
+    const x = fakeExporter({ encode: vi.fn(() => { throw new Error('bad wav'); }) });
+    await exportCurrentScene(x);
+    expect(x.notify).toHaveBeenCalledWith('No se pudo exportar: bad wav');
+    expect(x.download).not.toHaveBeenCalled();
+    expect(x.finish).toHaveBeenCalledTimes(1);
+    expect(x.setBusy).toHaveBeenLastCalledWith(false);
+  });
 });
