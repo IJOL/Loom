@@ -1,0 +1,11 @@
+{
+  "presets": [
+    { "name": "TR-909",            "group": "Synth",   "kind": "synth",  "kitId": "909" },
+    { "name": "TR-808",            "group": "Synth",   "kind": "synth",  "kitId": "808" },
+    { "name": "TR-606",            "group": "Synth",   "kind": "synth",  "kitId": "606" },
+    { "name": "CR-78",             "group": "Synth",   "kind": "synth",  "kitId": "78" },
+    { "name": "LinnDrum",          "group": "Synth",   "kind": "synth",  "kitId": "linn" },
+    { "name": "TR-808 (samples)",  "group": "Samples", "kind": "sample", "drumkitId": "tr808" },
+    { "name": "Acoustic (samples)","group": "Samples", "kind": "sample", "drumkitId": "acoustic" }
+  ]
+}

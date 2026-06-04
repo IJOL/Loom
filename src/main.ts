@@ -52,6 +52,7 @@ import {
 } from './session/synth-editor-routing';
 import { startVisualizer } from './core/visualizer';
 import { loadAllPresets } from './presets/preset-loader';
+import { loadDrumKits } from './presets/drum-kits-loader';
 import {
   startAutomationTick, resetAutomationPosition, getAutoAbsSubIdx,
   type AutomationTickDeps,
@@ -85,6 +86,9 @@ bootstrapPlugins();
 // host IS the subtractive engine's voice allocator).
 const ENGINE_IDS_FOR_PRESETS = listPlugins('synth').map((p) => p.manifest.id);
 const presetsLoaded = loadAllPresets(ENGINE_IDS_FOR_PRESETS);
+// Unified Drums picker list (synth + sample kits). Fire-and-forget; the drums
+// populator re-renders when this resolves (see mountDrumsPresetSelect).
+void loadDrumKits();
 
 // ── Audio graph ────────────────────────────────────────────────────────────
 const audio = createAudioGraph();
