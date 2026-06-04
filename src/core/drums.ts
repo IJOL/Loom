@@ -6,6 +6,7 @@
 // level). The DrumMachine owns the strips; main.ts wires them to the UI.
 
 import { ChannelStrip, FxBus } from './fx';
+import { computeVoiceMutes } from './mute-solo';
 
 export type DrumVoice =
   | 'kick' | 'snare' | 'closedHat' | 'openHat' | 'clap' | 'cowbell' | 'tom' | 'ride';
@@ -139,6 +140,11 @@ export class DrumMachine {
   kitId: string = '909';
   channels: Record<DrumVoice, ChannelStrip>;
   private synth: DrumSynthState;
+  // Per-voice mute/solo (drives channels[voice].setMuted). Independent of the
+  // lane bus mute/solo, which acts on the drum BUS strip. Mute persists with
+  // the session; solo is a live-only performance toggle.
+  private voiceMute: Partial<Record<DrumVoice, boolean>> = {};
+  private voiceSolo: Partial<Record<DrumVoice, boolean>> = {};
 
   constructor(private ctx: AudioContext, fx: FxBus, dryDest: AudioNode) {
     this.noiseBuffer = makeWhiteNoise(ctx, 2);
@@ -178,6 +184,37 @@ export class DrumMachine {
 
   getVoiceParam(voice: DrumVoice, leaf: string): number | undefined {
     return this.synth[voice]?.[leaf];
+  }
+
+  // ── Per-voice mute/solo ───────────────────────────────────────────────────
+  setVoiceMute(voice: DrumVoice, muted: boolean): void {
+    this.voiceMute[voice] = muted;
+    this.applyVoiceMutes();
+  }
+  getVoiceMute(voice: DrumVoice): boolean { return !!this.voiceMute[voice]; }
+
+  setVoiceSolo(voice: DrumVoice, soloed: boolean): void {
+    this.voiceSolo[voice] = soloed;
+    this.applyVoiceMutes();
+  }
+  toggleVoiceSolo(voice: DrumVoice): void { this.setVoiceSolo(voice, !this.voiceSolo[voice]); }
+  getVoiceSolo(voice: DrumVoice): boolean { return !!this.voiceSolo[voice]; }
+
+  /** Full per-voice mute map — persisted with the session (solo is live-only). */
+  getVoiceMutes(): Record<DrumVoice, boolean> {
+    const out = {} as Record<DrumVoice, boolean>;
+    for (const v of DRUM_LANES) out[v] = !!this.voiceMute[v];
+    return out;
+  }
+  /** Restore persisted per-voice mutes (session/demo load). */
+  setVoiceMutes(mutes: Partial<Record<DrumVoice, boolean>>): void {
+    this.voiceMute = { ...mutes };
+    this.applyVoiceMutes();
+  }
+
+  private applyVoiceMutes(): void {
+    const muted = computeVoiceMutes(DRUM_LANES, this.voiceMute, this.voiceSolo);
+    for (const v of DRUM_LANES) this.channels[v].setMuted(muted[v]);
   }
 
   trigger(voice: DrumVoice, time: number, accent = false) {

@@ -34,3 +34,21 @@ export function computeStripMutes(input: MuteSoloInputs): Record<string, boolean
   }
   return result;
 }
+
+/** Per-voice mute/solo arithmetic for ONE drum kit. Same rule as a mixer:
+ *  if any voice is soloed, every non-soloed voice is muted; otherwise each
+ *  voice follows its own mute flag. Independent of (and composes with) the
+ *  lane-level mute/solo, which acts on the drum BUS strip, not these per-voice
+ *  strips. Caller applies the result via `channels[voice].setMuted(value)`. */
+export function computeVoiceMutes<V extends string>(
+  voices: readonly V[],
+  mute: Partial<Record<V, boolean>>,
+  solo: Partial<Record<V, boolean>>,
+): Record<V, boolean> {
+  const anySolo = voices.some((v) => solo[v]);
+  const out = {} as Record<V, boolean>;
+  for (const v of voices) {
+    out[v] = anySolo ? !solo[v] : !!mute[v];
+  }
+  return out;
+}

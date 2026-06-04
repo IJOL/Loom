@@ -1,5 +1,40 @@
 import { describe, it, expect } from 'vitest';
-import { computeStripMutes, type MuteSoloLane } from './mute-solo';
+import { computeStripMutes, computeVoiceMutes, type MuteSoloLane } from './mute-solo';
+
+const VOICES = ['kick', 'snare', 'closedHat', 'openHat', 'clap', 'cowbell', 'tom', 'ride'] as const;
+
+describe('computeVoiceMutes (per-voice mute/solo within one kit)', () => {
+  it('no mutes/solos → nothing muted', () => {
+    const out = computeVoiceMutes(VOICES, {}, {});
+    for (const v of VOICES) expect(out[v]).toBe(false);
+  });
+
+  it('muting one voice mutes only that voice', () => {
+    const out = computeVoiceMutes(VOICES, { snare: true }, {});
+    expect(out.snare).toBe(true);
+    expect(out.kick).toBe(false);
+  });
+
+  it('soloing one voice mutes every OTHER voice', () => {
+    const out = computeVoiceMutes(VOICES, {}, { kick: true });
+    expect(out.kick).toBe(false);
+    expect(out.snare).toBe(true);
+    expect(out.closedHat).toBe(true);
+  });
+
+  it('solo overrides an explicit mute on a different voice (Ableton model)', () => {
+    const out = computeVoiceMutes(VOICES, { snare: true }, { kick: true });
+    expect(out.kick).toBe(false);   // soloed → audible
+    expect(out.snare).toBe(true);   // muted because not soloed
+  });
+
+  it('two solos keep both audible', () => {
+    const out = computeVoiceMutes(VOICES, {}, { kick: true, snare: true });
+    expect(out.kick).toBe(false);
+    expect(out.snare).toBe(false);
+    expect(out.closedHat).toBe(true);
+  });
+});
 
 // A lane "owns" extra mixer track ids (the drum bus owns the drum-voice
 // strips, the bass lane owns the legacy `bass` alias, etc.). Solo'ing a

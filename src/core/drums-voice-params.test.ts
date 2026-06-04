@@ -74,3 +74,45 @@ describe('closed/open hat are independent', () => {
     expect(dm.getVoiceParam('openHat', 'decay')).toBe(0.35);
   });
 });
+
+describe('DrumMachine per-voice mute/solo', () => {
+  it('setVoiceMute mutes only that voice strip', () => {
+    const dm = makeDM('909');
+    dm.setVoiceMute('snare', true);
+    expect(dm.channels.snare.isMuted()).toBe(true);
+    expect(dm.channels.kick.isMuted()).toBe(false);
+    expect(dm.getVoiceMute('snare')).toBe(true);
+  });
+
+  it('solo mutes every other voice; soloed voice stays audible', () => {
+    const dm = makeDM('909');
+    dm.setVoiceSolo('kick', true);
+    expect(dm.channels.kick.isMuted()).toBe(false);
+    expect(dm.channels.snare.isMuted()).toBe(true);
+    expect(dm.getVoiceSolo('kick')).toBe(true);
+  });
+
+  it('clearing solo restores the explicit mute state', () => {
+    const dm = makeDM('909');
+    dm.setVoiceMute('snare', true);
+    dm.setVoiceSolo('kick', true);
+    expect(dm.channels.snare.isMuted()).toBe(true);  // muted (not soloed)
+    expect(dm.channels.kick.isMuted()).toBe(false);
+    dm.toggleVoiceSolo('kick');                       // solo off
+    expect(dm.channels.kick.isMuted()).toBe(false);   // kick not muted
+    expect(dm.channels.snare.isMuted()).toBe(true);   // explicit mute survives
+  });
+
+  it('getVoiceMutes/setVoiceMutes round-trip (persistence)', () => {
+    const dm = makeDM('909');
+    dm.setVoiceMute('tom', true);
+    const map = dm.getVoiceMutes();
+    expect(map.tom).toBe(true);
+    expect(map.kick).toBe(false);
+
+    const dm2 = makeDM('909');
+    dm2.setVoiceMutes(map);
+    expect(dm2.channels.tom.isMuted()).toBe(true);
+    expect(dm2.channels.kick.isMuted()).toBe(false);
+  });
+});
