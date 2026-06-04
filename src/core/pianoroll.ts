@@ -497,6 +497,55 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   f.gridCanvas.addEventListener('pointercancel', endDrag);
   f.gridCanvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
+  // ── Keyboard editing (focus-scoped to the editor wrap) ────────────────────
+  const bounds = () => ({ patternTicks: opts.patternTicks, minMidi, maxMidi });
+
+  f.wrap.addEventListener('keydown', (e) => {
+    if (isTextEditTarget(e.target)) return; // per spec §6: native text editing wins
+    const cmd = e.metaKey || e.ctrlKey;
+
+    // Contain Delete/Backspace to the editor so a stray one can NEVER bubble to the
+    // inspector's document-level clip-delete (session-inspector wireKeyboardShortcuts).
+    // The branches below act on notes/cursor when there's something to do; otherwise
+    // this makes the key a no-op here instead of deleting the whole clip.
+    if (e.key === 'Delete' || e.key === 'Backspace') e.stopPropagation();
+
+    // Tool toggle
+    if (!cmd && e.key === '1') { currentTool = 'draw'; refreshToolbar(); e.preventDefault(); return; }
+    if (!cmd && e.key === '2') { currentTool = 'select'; refreshToolbar(); e.preventDefault(); return; }
+
+    // Select all
+    if (cmd && e.key.toLowerCase() === 'a') {
+      selection.clear(); for (const n of opts.getNotes()) selection.add(n);
+      drawGrid(); e.preventDefault(); return;
+    }
+    // Clear selection
+    if (e.key === 'Escape') { selection.clear(); drawGrid(); e.preventDefault(); return; }
+
+    // Delete selection
+    if ((e.key === 'Delete' || e.key === 'Backspace') && selection.size > 0) {
+      opts.onGestureStart?.();
+      opts.setNotes(opts.getNotes().filter((n) => !selection.has(n)));
+      selection.clear();
+      opts.onChange?.(); drawGrid(); opts.onGestureEnd?.();
+      e.preventDefault(); e.stopPropagation(); return;
+    }
+
+    // Arrow nudge of the selection
+    if (selection.size > 0 && (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      const dTick = e.key === 'ArrowRight' ? snap : e.key === 'ArrowLeft' ? -snap : 0;
+      const dMidi = e.key === 'ArrowUp' ? 1 : e.key === 'ArrowDown' ? -1 : 0;
+      const sel = [...selection];
+      const adj = translateGroup(sel, dTick, dMidi, bounds());
+      if (adj.dTick || adj.dMidi) {
+        opts.onGestureStart?.();
+        for (const n of sel) { n.start += adj.dTick; n.midi += adj.dMidi; }
+        opts.onChange?.(); drawGrid(); opts.onGestureEnd?.();
+      }
+      e.preventDefault(); return;
+    }
+  });
+
   // ── Initial mount ─────────────────────────────────────────────────────────
   let lastVW = f.gridVp.clientWidth, lastVH = f.gridVp.clientHeight;
   layoutAll();
