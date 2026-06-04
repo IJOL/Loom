@@ -69,7 +69,7 @@ describe('SavedStateV3 persists mode + arrangement', () => {
     let appliedArr: { durationSec?: number } | undefined;
     const deps = {
       seq: { bpm: 0 }, volInput: { value: '' }, bpmInput: { value: '' },
-      swingInput: { value: '' },
+      swingInput: { value: '' }, meterSel: { value: '' },
       sessionHost: { applyLoadedSessionState: () => {} },
       lanes: { resources: new Map() },
       refreshKnobsFromSynth: () => {}, renderLanes: () => {},
@@ -82,10 +82,13 @@ describe('SavedStateV3 persists mode + arrangement', () => {
       synthParams: {}, sessionState: { lanes: [], scenes: [], globalQuantize: '1/1' },
       mode: 'performance',
       arrangement: { bpm: 130, durationSec: 4, lanes: [], globalAutomation: [] },
+      timeSignature: { num: 7, den: 8 },
     } as any;
     applyLoadedStateV3(save, deps);
     expect(appliedMode).toBe('performance');
     expect(appliedArr?.durationSec).toBe(4);
+    expect((deps as any).meterSel.value).toBe('7/8');
+    expect((deps as any).seq.meter).toEqual({ num: 7, den: 8 });
   });
 });
 

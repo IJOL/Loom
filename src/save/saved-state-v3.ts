@@ -7,11 +7,14 @@ import { LANE_ID_BASS, LANE_ID_DRUMS } from '../core/lane-ids';
 import type { TB303Engine } from '../engines/tb303';
 import type { DrumsEngine } from '../engines/drums-engine';
 import type { ArrangementState } from '../performance/performance';
+import { resolveMeter, formatMeter, type TimeSignature } from '../core/meter';
 
 export interface SavedStateV3 {
   schemaVersion: 3;
   bpm: number;
   swing: number;
+  /** Global time signature — optional/additive; absent ⇒ 4/4 on load. */
+  timeSignature?: TimeSignature;
   masterVol: number;
   kit: string;
   wave: Wave;
@@ -31,6 +34,7 @@ export interface SavedStateV3Deps {
   volInput: HTMLInputElement;
   bpmInput: HTMLInputElement;
   swingInput: HTMLInputElement;
+  meterSel: HTMLSelectElement;
   sessionHost: SessionHost;
   refreshKnobsFromSynth: () => void;
   renderLanes: () => void;
@@ -65,6 +69,7 @@ export function buildSavedStateV3(deps: SavedStateV3Deps): SavedStateV3 {
     schemaVersion: 3,
     bpm: seq.bpm,
     swing: seq.swing,
+    timeSignature: { ...seq.meter },
     masterVol: parseFloat(volInput.value),
     kit: drums?.kitId ?? 'default',
     wave: synth?.params.wave ?? 'sawtooth',
@@ -78,12 +83,17 @@ export function buildSavedStateV3(deps: SavedStateV3Deps): SavedStateV3 {
 
 export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): void {
   const {
-    seq, volInput, bpmInput, swingInput,
+    seq, volInput, bpmInput, swingInput, meterSel,
     sessionHost, refreshKnobsFromSynth, renderLanes, fx, master,
   } = deps;
 
   if (typeof s.bpm === 'number') { seq.bpm = s.bpm; bpmInput.value = String(s.bpm); }
   if (typeof s.swing === 'number') { seq.swing = s.swing; swingInput.value = String(s.swing); }
+  {
+    const m = resolveMeter(s.timeSignature);
+    seq.meter = m;
+    if (meterSel) meterSel.value = formatMeter(m);
+  }
   if (typeof s.masterVol === 'number') { master.gain.value = s.masterVol; volInput.value = String(s.masterVol); }
 
   // Session state is applied first so lane resources are allocated before
