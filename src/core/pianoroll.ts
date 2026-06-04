@@ -519,6 +519,32 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       selection.clear(); for (const n of opts.getNotes()) selection.add(n);
       drawGrid(); e.preventDefault(); return;
     }
+    // Copy
+    if (cmd && e.key.toLowerCase() === 'c' && selection.size > 0) {
+      clipboard = serializeClipboard([...selection]);
+      e.preventDefault(); return;
+    }
+    // Cut
+    if (cmd && e.key.toLowerCase() === 'x' && selection.size > 0) {
+      clipboard = serializeClipboard([...selection]);
+      opts.onGestureStart?.();
+      opts.setNotes(opts.getNotes().filter((n) => !selection.has(n)));
+      selection.clear();
+      opts.onChange?.(); drawGrid(); opts.onGestureEnd?.();
+      e.preventDefault(); return;
+    }
+    // Paste at the mouse (snapped); fall back to insertion cursor / 0.
+    if (cmd && e.key.toLowerCase() === 'v' && clipboard && clipboard.length) {
+      const anchorTick = Math.floor((lastMouse?.tick ?? cursorTick) / snap) * snap;
+      const anchorMidi = lastMouse?.midi ?? octaveBase;
+      const pasted = pasteTranslate(clipboard, anchorTick, anchorMidi, bounds());
+      opts.onGestureStart?.();
+      const notes = opts.getNotes();
+      for (const n of pasted) notes.push(n);
+      selection.clear(); for (const n of pasted) selection.add(n);
+      opts.onChange?.(); drawGrid(); opts.onGestureEnd?.();
+      e.preventDefault(); return;
+    }
     // Clear selection
     if (e.key === 'Escape') { selection.clear(); drawGrid(); e.preventDefault(); return; }
 
