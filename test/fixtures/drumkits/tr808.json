@@ -1,0 +1,8 @@
+{
+  "id": "tr808",
+  "name": "TR-808 (test fixture)",
+  "samples": [
+    { "voice": "kick",  "note": 36, "file": "tr808/kick.wav" },
+    { "voice": "snare", "note": 38, "file": "tr808/snare.wav" }
+  ]
+}

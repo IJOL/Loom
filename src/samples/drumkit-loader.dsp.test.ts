@@ -1,8 +1,13 @@
 // src/samples/drumkit-loader.dsp.test.ts
-// Layer-3 real-DSP: load the bundled TR-808 kit's actual WAVs off disk, decode
-// them through a real OfflineAudioContext into the sample cache, then render a
-// SamplerEngine voice on a GM drum note and assert it is audible. Proves the
-// whole loadDrumkit → keymap → sampler-voice path with real audio.
+// Layer-3 real-DSP: load a small committed TR-808 fixture kit's actual WAVs off
+// disk, decode them through a real OfflineAudioContext into the sample cache,
+// then render a SamplerEngine voice on a GM drum note and assert it is audible.
+// Proves the whole loadDrumkit → keymap → sampler-voice path with real audio.
+//
+// The full kit under public/drumkits/**/*.wav is gitignored (mixed-license raw
+// audio), so this test reads a self-contained 2-pad fixture (kick + snare)
+// committed under test/fixtures/drumkits/ — enough to exercise the real path
+// in a fresh checkout / CI without bundling the whole kit.
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import fs from 'node:fs';
@@ -14,7 +19,7 @@ import { SamplerEngine } from '../engines/sampler';
 import { peak, isSilent } from '../../test/dsp-asserts';
 
 const SR = 44100;
-const KIT_DIR = path.resolve(process.cwd(), 'public/drumkits');
+const KIT_DIR = path.resolve(process.cwd(), 'test/fixtures/drumkits');
 
 /** A fetch that reads /drumkits/<rel> from the public/ folder on disk. */
 function diskFetch(): typeof fetch {
@@ -29,12 +34,12 @@ function diskFetch(): typeof fetch {
 const tr808 = (): DrumkitManifest =>
   JSON.parse(fs.readFileSync(path.join(KIT_DIR, 'tr808.json'), 'utf8')) as DrumkitManifest;
 
-const GM_NOTES = [36, 38, 42, 46, 39, 56, 45, 51]; // kick snare CH OH clap cowbell tom ride
+const GM_NOTES = [36, 38]; // kick, snare — the fixture kit's two pads
 
-describe('loadDrumkit — real TR-808 WAVs through OfflineAudioContext', () => {
+describe('loadDrumkit — real TR-808 fixture WAVs through OfflineAudioContext', () => {
   beforeEach(() => sampleCache.clear());
 
-  it('maps 8 single-note pads at the GM notes, each backed by a decoded buffer', async () => {
+  it('maps the fixture pads at their GM notes, each backed by a decoded buffer', async () => {
     const ctx = new OfflineAudioContext(1, Math.round(0.2 * SR), SR);
     const manifest = tr808();
     const km = await loadDrumkit(manifest, ctx as unknown as AudioContext, {
