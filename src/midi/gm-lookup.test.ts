@@ -8,7 +8,7 @@ vi.mock('../engines/registry', () => ({
   ],
 }));
 
-import { findGMMatches, firstMatchForGM, pickPresetForGM, firstDrumKitForGM, pickDrumKitForGM, suggestDefaultMapping } from './gm-lookup';
+import { findGMMatches, firstMatchForGM, pickPresetForGM, suggestDefaultMapping } from './gm-lookup';
 import type { ParsedMidi } from './midi-parse';
 
 describe('findGMMatches', () => {
@@ -51,26 +51,6 @@ describe('pickPresetForGM', () => {
   });
 });
 
-describe('firstDrumKitForGM', () => {
-  it('only returns drums-engine matches', () => {
-    expect(firstDrumKitForGM(0)).toEqual({ engineId: 'drums-machine', presetName: 'KIT Standard' });
-  });
-
-  it('falls back to KIT Standard when no match', () => {
-    expect(firstDrumKitForGM(99)).toEqual({ engineId: 'drums-machine', presetName: 'KIT Standard' });
-  });
-});
-
-describe('pickDrumKitForGM', () => {
-  it('picks a drums match', () => {
-    expect(pickDrumKitForGM(25, () => 0)).toEqual({ engineId: 'drums-machine', presetName: 'KIT 808' });
-  });
-
-  it('falls back to KIT Standard', () => {
-    expect(pickDrumKitForGM(99, () => 0)).toEqual({ engineId: 'drums-machine', presetName: 'KIT Standard' });
-  });
-});
-
 describe('suggestDefaultMapping', () => {
   const parsed: ParsedMidi = {
     division: 96, bpm: null,
@@ -85,24 +65,24 @@ describe('suggestDefaultMapping', () => {
     const result = suggestDefaultMapping(parsed, [0, 1]);
     expect(result.presetPerTrack[0]).toEqual({ engineId: 'subtractive', presetName: 'S1' });
     expect(result.presetPerTrack[1]).toEqual({ engineId: 'subtractive', presetName: 'S1' });
-    expect(result.drumKitMatch).toBeNull();
   });
 
-  it('routes drum-channel tracks to drumKitMatch instead of presetPerTrack', () => {
+  it('gives a drum-channel track a per-track preset, same path as any track', () => {
+    // No special-casing of channel 9: the drum track goes through the same
+    // firstMatchForGM lookup. Program 25 maps to a drums kit through ordinary
+    // GM matching — not through drum-specific routing.
     const result = suggestDefaultMapping(parsed, [2]);
-    expect(result.presetPerTrack[2]).toBeUndefined();
-    expect(result.drumKitMatch).toEqual({ engineId: 'drums-machine', presetName: 'KIT 808' });
+    expect(result.presetPerTrack[2]).toEqual({ engineId: 'drums-machine', presetName: 'KIT 808' });
   });
 
-  it('handles selection of all tracks', () => {
+  it('maps every selected track, drum-channel included', () => {
     const result = suggestDefaultMapping(parsed, [0, 1, 2]);
-    expect(Object.keys(result.presetPerTrack)).toEqual(['0', '1']);
-    expect(result.drumKitMatch).toEqual({ engineId: 'drums-machine', presetName: 'KIT 808' });
+    expect(Object.keys(result.presetPerTrack)).toEqual(['0', '1', '2']);
+    expect(result.presetPerTrack[2]).toEqual({ engineId: 'drums-machine', presetName: 'KIT 808' });
   });
 
   it('ignores indices not present in parsed.tracks', () => {
     const result = suggestDefaultMapping(parsed, [99]);
     expect(result.presetPerTrack).toEqual({});
-    expect(result.drumKitMatch).toBeNull();
   });
 });

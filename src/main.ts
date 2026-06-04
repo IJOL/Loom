@@ -620,7 +620,6 @@ wireMidiImportUI({
     bpmBroadcast.broadcast(clamped);
     bpmInput.value = String(clamped);
   },
-  drumLaneId: LANE_ID_DRUMS,
   audioContext: ctx,
   auditionOutput: master,
   onSessionChanged: () => sessionHost.renderWithMixer(),

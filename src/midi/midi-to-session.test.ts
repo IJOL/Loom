@@ -21,7 +21,6 @@ describe('midiToSession', () => {
     const result = midiToSession(parsed, {
       selectedTrackIndices: [0],
       presetPerTrack: { 0: { engineId: 'tb303', presetName: 'BASS Acid Classic' } },
-      drumKitMatch: null,
     });
     expect(result.newLanes).toHaveLength(1);
     expect(result.newLanes[0].engineId).toBe('tb303');
@@ -41,7 +40,6 @@ describe('midiToSession', () => {
     const result = midiToSession(parsed, {
       selectedTrackIndices: [0],
       presetPerTrack: { 0: { engineId: 'tb303', presetName: 'BASS Acid Classic' } },
-      drumKitMatch: null,
       sceneRow: 2,
     });
     const lane = result.newLanes[0];
@@ -53,7 +51,10 @@ describe('midiToSession', () => {
     expect(result.scene.clipPerLane[lane.id]).toBe(2);
   });
 
-  it('merges all ch10 notes into a single drumClip', () => {
+  it('imports a ch10 (drum) track as its own lane + clip, like any other track', () => {
+    // No special drum handling: a channel-9 track becomes its own lane with all
+    // of its notes intact — not merged into a shared drum clip, not routed to a
+    // special drum lane.
     const parsed: ParsedMidi = {
       division: 96, bpm: null,
       tracks: [
@@ -66,13 +67,32 @@ describe('midiToSession', () => {
     };
     const result = midiToSession(parsed, {
       selectedTrackIndices: [0],
-      presetPerTrack: {},
-      drumKitMatch: { engineId: 'drums-machine', presetName: 'KIT 808' },
+      presetPerTrack: { 0: { engineId: 'subtractive', presetName: 'Init' } },
     });
-    expect(result.drumClip).not.toBeNull();
-    expect(result.drumClip!.notes).toHaveLength(2);
-    expect(result.newLanes).toHaveLength(0);
-    expect(result.drumKitMatch).toEqual({ engineId: 'drums-machine', presetName: 'KIT 808' });
+    expect(result.newLanes).toHaveLength(1);
+    expect(result.newLanes[0].engineId).toBe('subtractive');
+    const clip = result.newLanes[0].clips[0];
+    expect(clip?.notes).toHaveLength(2);
+    expect(clip?.notes.map((n) => n.midi)).toEqual([36, 38]);
+  });
+
+  it('keeps tonal and drum-channel tracks as separate lanes (no merge)', () => {
+    const parsed: ParsedMidi = {
+      division: 96, bpm: null,
+      tracks: [
+        { index: 0, name: 'Bass',  program: 33, notes: [{ startTick: 0, duration: 48, midi: 36, velocity: 90, channel: 0 }] },
+        { index: 1, name: 'Drums', program: 0,  notes: [{ startTick: 0, duration: 24, midi: 36, velocity: 100, channel: 9 }] },
+      ],
+    };
+    const result = midiToSession(parsed, {
+      selectedTrackIndices: [0, 1],
+      presetPerTrack: {
+        0: { engineId: 'tb303', presetName: 'BASS Acid Classic' },
+        1: { engineId: 'subtractive', presetName: 'Init' },
+      },
+    });
+    expect(result.newLanes).toHaveLength(2);
+    expect(result.newLanes.map((l) => l.name)).toEqual(['Bass', 'Drums']);
   });
 
   it('honours an explicit override even when presetPerTrack contradicts GM', () => {
@@ -85,7 +105,6 @@ describe('midiToSession', () => {
     const result = midiToSession(parsed, {
       selectedTrackIndices: [0],
       presetPerTrack: { 0: { engineId: 'subtractive', presetName: 'Init' } },
-      drumKitMatch: null,
     });
     expect(result.newLanes[0].engineId).toBe('subtractive');
     expect(result.newLanes[0].enginePresetName).toBe('factory:Init');
@@ -101,7 +120,6 @@ describe('midiToSession', () => {
     const result = midiToSession(parsed, {
       selectedTrackIndices: [0],
       presetPerTrack: {},
-      drumKitMatch: null,
     });
     expect(result.newLanes[0].engineId).toBe('poly');
     expect(result.newLanes[0].enginePresetName).toBe('factory:Init');
@@ -123,7 +141,6 @@ describe('midiToSession', () => {
         0: { engineId: 'subtractive', presetName: 'Init' },
         1: { engineId: 'subtractive', presetName: 'Init' },
       },
-      drumKitMatch: null,
     });
     expect(result.newLanes).toHaveLength(2);
     // Earliest note in selection is tick 96; tick 96 should map to start=0 in the output.

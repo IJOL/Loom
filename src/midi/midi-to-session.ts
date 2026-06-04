@@ -8,8 +8,6 @@ export interface MidiImportResult {
   newLanes: SessionLane[];
   scene: SessionScene;
   bpm: number | null;
-  drumClip: SessionClip | null;
-  drumKitMatch: GMMatch | null;
   unmatchedTracks: { name: string; program: number }[];
 }
 
@@ -25,7 +23,6 @@ export function midiToSession(
   opts: {
     selectedTrackIndices: number[];
     presetPerTrack: Record<number, GMMatch>;
-    drumKitMatch: GMMatch | null;
     /** Clip-slot/row this import's scene occupies. The grid couples row r ↔
      *  scene r ↔ clip slot r, so a scene appended at index N must place its
      *  clips at slot N to render on the same row as its launch button. Default
@@ -53,28 +50,12 @@ export function midiToSession(
   const clipPerLane: Record<string, number | null> = {};
   const unmatchedTracks: { name: string; program: number }[] = [];
 
-  const drumNotes: NoteEvent[] = [];
-
   for (const tr of selected) {
-    const isDrum = tr.notes.some((n) => n.channel === 9);
-    if (isDrum) {
-      for (const n of tr.notes) if (n.channel === 9) {
-        drumNotes.push({
-          start: Math.round((n.startTick - globalMinStart) * scale),
-          duration: Math.max(6, Math.round(n.duration * scale)),
-          midi: n.midi,
-          velocity: n.velocity,
-        });
-      }
-      continue;
-    }
-
     const prog = tr.program < 0 ? 0 : tr.program;
     const match = opts.presetPerTrack[tr.index] ?? { engineId: 'poly', presetName: 'Init' };
     if (findGMMatches(prog).length === 0) unmatchedTracks.push({ name: tr.name, program: prog });
 
     const clipNotes: NoteEvent[] = tr.notes
-      .filter((n) => n.channel !== 9)
       .map((n) => ({
         start: Math.round((n.startTick - globalMinStart) * scale),
         duration: Math.max(6, Math.round(n.duration * scale)),
@@ -103,13 +84,6 @@ export function midiToSession(
     clipPerLane[lane.id] = sceneRow;
   }
 
-  const drumClip: SessionClip | null = drumNotes.length === 0 ? null : {
-    id: nextId('clip'),
-    name: 'MIDI Drums',
-    lengthBars,
-    notes: drumNotes,
-  };
-
   const scene: SessionScene = {
     id: nextId('scene'),
     name: 'MIDI Import',
@@ -119,8 +93,6 @@ export function midiToSession(
   return {
     newLanes, scene,
     bpm: parsed.bpm,
-    drumClip,
-    drumKitMatch: opts.drumKitMatch,
     unmatchedTracks,
   };
 }

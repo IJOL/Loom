@@ -7,8 +7,8 @@
 //
 // On Load, calls midiToSession with the per-track mapping the user picked
 // and presents an Add/Replace/Cancel confirm. Add appends lanes + scene to
-// the current session; Replace wipes lanes (preserving the drum lane if any)
-// and seeds a fresh session with just the imported content.
+// the current session; Replace seeds a fresh session with just the imported
+// content. Every track — drum-channel included — is treated identically.
 
 import { parseMidiFile, type ParsedMidi } from './midi-parse';
 import { midiToSession } from './midi-to-session';
@@ -16,16 +16,13 @@ import { findGMMatches, suggestDefaultMapping, type GMMatch } from './gm-lookup'
 import { auditionPreset } from './audition';
 import { isPresetsReady, getCachedPresets } from '../presets/preset-loader';
 import { listEngines } from '../engines/registry';
-import type { SessionState, SessionLane } from '../session/session';
+import type { SessionState } from '../session/session';
 
 export interface MidiImportUiDeps {
   session: SessionState;
   /** Apply a new tempo. The caller updates whatever holds the global BPM
    *  (Sequencer.bpm, UI input, downstream engines). */
   setBpm: (bpm: number) => void;
-  /** Lane id that owns drum playback in the current session. Drum clips from
-   *  MIDI are appended to this lane's clip list. May be null if no drum lane. */
-  drumLaneId: string | null;
   audioContext: AudioContext;
   /** Node the audition voice connects into — typically the master gain. */
   auditionOutput: AudioNode;
@@ -52,7 +49,6 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
 
   let parsed: ParsedMidi | null = null;
   let presetPerTrack: Record<number, GMMatch> = {};
-  let drumKitMatch: GMMatch | null = null;
 
   function buildAllPresetsList(): GMMatch[] {
     const out: GMMatch[] = [];
@@ -120,14 +116,12 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
     const initialIndices = parsed.tracks.filter((t) => t.notes.length > 0).map((t) => t.index);
     const defaults = suggestDefaultMapping(parsed, initialIndices);
     presetPerTrack = { ...defaults.presetPerTrack };
-    drumKitMatch = defaults.drumKitMatch;
 
     trackListEl.innerHTML = '';
     for (const tr of parsed.tracks) {
       if (tr.notes.length === 0) continue;
       const lo = Math.min(...tr.notes.map((n) => n.midi));
       const hi = Math.max(...tr.notes.map((n) => n.midi));
-      const isDrum = tr.notes.some((n) => n.channel === 9);
 
       const row = document.createElement('div');
       row.className = 'midi-track-row';
@@ -137,28 +131,18 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
       cb.dataset.idx = String(tr.index);
       cb.checked = true;
       const label = document.createElement('span');
-      label.textContent = ` [${tr.index}] ${tr.name || 'untitled'} — ${tr.notes.length} notes, ${lo}-${hi}, prog ${tr.program}${isDrum ? ' (DRUMS)' : ''}`;
+      label.textContent = ` [${tr.index}] ${tr.name || 'untitled'} — ${tr.notes.length} notes, ${lo}-${hi}, prog ${tr.program}`;
       row.append(cb, label);
 
-      if (!isDrum) {
-        const current = presetPerTrack[tr.index] ?? { engineId: 'subtractive', presetName: 'Init' };
-        if (!presetPerTrack[tr.index]) presetPerTrack[tr.index] = current;
-        const sel = buildPresetSelect(
-          tr.program < 0 ? 0 : tr.program,
-          current,
-          (m) => { presetPerTrack[tr.index] = m; },
-        );
-        const audition = buildAuditionButton(() => presetPerTrack[tr.index] ?? current);
-        row.append(sel, audition);
-      } else if (drumKitMatch) {
-        const sel = buildPresetSelect(
-          tr.program < 0 ? 0 : tr.program,
-          drumKitMatch,
-          (m) => { drumKitMatch = m; },
-        );
-        const audition = buildAuditionButton(() => drumKitMatch!);
-        row.append(sel, audition);
-      }
+      const current = presetPerTrack[tr.index] ?? { engineId: 'subtractive', presetName: 'Init' };
+      if (!presetPerTrack[tr.index]) presetPerTrack[tr.index] = current;
+      const sel = buildPresetSelect(
+        tr.program < 0 ? 0 : tr.program,
+        current,
+        (m) => { presetPerTrack[tr.index] = m; },
+      );
+      const audition = buildAuditionButton(() => presetPerTrack[tr.index] ?? current);
+      row.append(sel, audition);
       trackListEl.appendChild(row);
     }
     trackListEl.style.display = '';
@@ -183,12 +167,9 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
     // Confirm BEFORE building the session: Add places the import on a NEW row
     // (= the current scene count) so its clips align with their scene's launch
     // button; Replace builds a fresh session at row 0. (`confirm` is binary.)
-    const sel = parsed.tracks.filter((t) => indices.includes(t.index));
-    const tonalCount = sel.filter((t) => !t.notes.some((n) => n.channel === 9)).length;
-    const hasDrums = sel.some((t) => t.notes.some((n) => n.channel === 9));
+    const trackCount = indices.length;
     const doAdd = window.confirm(
-      `MIDI parsed: ${tonalCount} tonal tracks` +
-      (hasDrums ? ' + drum clip' : '') +
+      `MIDI parsed: ${trackCount} track(s)` +
       (parsed.bpm ? ` @ ${Math.round(parsed.bpm)} BPM` : '') +
       `\n\nOK = Add to current session.\nCancel = Replace session.`,
     );
@@ -197,48 +178,22 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
     const result = midiToSession(parsed, {
       selectedTrackIndices: indices,
       presetPerTrack,
-      drumKitMatch,
       sceneRow,
     });
-
-    // Place the drum clip on `lane` at the same row as the rest of the import.
-    const placeDrum = (lane: SessionLane) => {
-      while (lane.clips.length < sceneRow) lane.clips.push(null);
-      lane.clips[sceneRow] = result.drumClip!;
-      result.scene.clipPerLane[lane.id] = sceneRow;
-    };
 
     if (doAdd) {
       deps.session.lanes.push(...result.newLanes);
       deps.session.scenes.push(result.scene);
-      if (result.drumClip && deps.drumLaneId) {
-        const drumLane = deps.session.lanes.find((l) => l.id === deps.drumLaneId);
-        if (drumLane) placeDrum(drumLane);
-        else console.warn('MIDI drums dropped — no drums lane in session');
-      } else if (result.drumClip) {
-        console.warn('MIDI drums dropped — no drums lane in session');
-      }
     } else {
-      // Replace: a fresh session from JUST the import. Only keep a drums lane
-      // when the import actually has drums — otherwise a melodic MIDI leaves an
-      // empty "Drums" lane sitting as a pointless first column. When kept, its
-      // stale clips are cleared so it isn't full of the previous session.
-      const preservedDrumLane = (result.drumClip && deps.drumLaneId)
-        ? deps.session.lanes.find((l) => l.id === deps.drumLaneId) ?? null
-        : null;
-      if (preservedDrumLane) preservedDrumLane.clips = [];
-      deps.session.lanes = preservedDrumLane
-        ? [preservedDrumLane, ...result.newLanes]
-        : [...result.newLanes];
+      // Replace: a fresh session built from JUST the imported lanes + scene.
+      deps.session.lanes = [...result.newLanes];
       deps.session.scenes = [result.scene];
-      if (result.drumClip && preservedDrumLane) placeDrum(preservedDrumLane);
-      else if (result.drumClip) console.warn('MIDI drums dropped — no drums lane in session');
     }
 
     if (result.bpm) deps.setBpm(result.bpm);
 
     deps.onSessionChanged();
     deps.launchScene(result.scene.id);
-    deps.flashButton(loadBtn, `Loaded ${result.newLanes.length} lane(s), ${result.drumClip ? '1' : '0'} drum clip`);
+    deps.flashButton(loadBtn, `Loaded ${result.newLanes.length} lane(s)`);
   });
 }
