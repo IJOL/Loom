@@ -446,8 +446,12 @@ function wireDrumKitsSelect(selectId: string, loadBtnId: string): void {
     if (!val || val === '__custom__') return;
     if (!val.startsWith('engine:')) return;
     const name = val.slice('engine:'.length);
-    _deps?.applyDrumKitPreset?.(holder.laneId, name);
+    // Record the selection BEFORE applying: applyDrumKitPreset rebuilds the drums
+    // inspector synchronously (unified picker), which re-populates this select and
+    // reads pagePresetName. Setting it after made the dropdown snap back to
+    // "(custom — no preset)" mid-apply.
     pagePresetName.set(holder.laneId, val);
+    _deps?.applyDrumKitPreset?.(holder.laneId, name);
   };
 
   sel.addEventListener('change', () => {
