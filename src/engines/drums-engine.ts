@@ -402,17 +402,22 @@ export class DrumsEngine implements SynthEngine {
   applyPreset(name: string): void {
     if (!this.lastInstance) return;
     const preset = this.presets.find((p) => p.name === name);
+    let kitId: string | undefined;
+    let overrides: Array<[string, number]> = [];
     if (preset) {
-      const kitId = (preset.params as { kitId?: string }).kitId;
-      if (typeof kitId === 'string') {
-        this.lastInstance.setKit(kitId);
-        return;
-      }
+      const params = preset.params as Record<string, number | string>;
+      if (typeof params.kitId === 'string') kitId = params.kitId;
+      overrides = Object.entries(params)
+        .filter(([k, v]) => k !== 'kitId' && typeof v === 'number') as Array<[string, number]>;
     }
-    // Fallback: match against actual kit names (back-compat for direct kit selection).
-    const kits = this.lastInstance.listKits();
-    const kit = kits.find((k) => k.name === name);
-    if (kit) this.lastInstance.setKit(kit.id);
+    // Fallback: a bare kit *name* (back-compat for direct kit selection).
+    if (!kitId) {
+      const kit = this.lastInstance.listKits().find((k) => k.name === name);
+      kitId = kit?.id;
+    }
+    if (kitId) this.lastInstance.loadKitDefaults(kitId);
+    // Keep the engine param cache + the live instance in sync.
+    for (const [id, v] of overrides) this.setBaseValue(id, v);
   }
 
   getSharedAudioParams(): Map<string, AudioParam> {
