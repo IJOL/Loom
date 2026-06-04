@@ -39,6 +39,9 @@ export interface SessionClip {
   /** Loop/song audio clip. When present, the scheduler fires one buffer
    *  trigger per clip iteration instead of sequencing `notes`. */
   sample?: ClipSample;
+  /** Drum-editor grid resolution key (Spec 3). Additive/optional; absent ⇒ '1/16'.
+   *  Clamped on read by the editor, so an unknown value self-corrects. */
+  gridResolution?: import('../core/drum-grid-editing').ResolutionKey;
 }
 
 export interface SessionLane {
