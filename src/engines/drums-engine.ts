@@ -12,6 +12,9 @@ import { registerEngine, registerEngineFactory } from './registry';
 import { getCachedPresets } from '../presets/preset-loader';
 import { DrumMachine, DRUM_LANES, type DrumVoice } from '../core/drums';
 import { FxBus } from '../core/fx';
+import { SamplerEngine } from './sampler';
+import type { KeymapEntry } from '../samples/types';
+import type { PadParams } from './sampler-pad-params';
 import { GM_DRUM_MAP } from './drum-gm-map';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
@@ -223,6 +226,23 @@ export class DrumsEngine implements SynthEngine {
   private instances = new WeakMap<AudioNode, DrumMachine>();
   private lastInstance: DrumMachine | null = null;
 
+  /** Embedded, complete Sampler instance — the sample-kit source. Eager so
+   *  host-wiring (setSharedFx) reaches it before its first createVoice. */
+  private sampler = new SamplerEngine();
+  private kitMode: 'synth' | 'sample' = 'synth';
+
+  getKitMode(): 'synth' | 'sample' { return this.kitMode; }
+  setKitMode(m: 'synth' | 'sample'): void { this.kitMode = m; }
+
+  /** Keymap + pad-store forwarders to the embedded sampler. The session load
+   *  path (applyEngineState) feature-detects these on the LANE engine (this
+   *  façade), so they must exist here; they target the embedded sampler in
+   *  both modes (inert for a synth lane that has no engineState.sampler). */
+  setKeymap(km: KeymapEntry[]): void { this.sampler.setKeymap(km); }
+  getKeymap(): KeymapEntry[] { return this.sampler.getKeymap(); }
+  setPadStore(s: Record<number, Partial<PadParams>>): void { this.sampler.setPadStore(s); }
+  getPadStore(): Record<number, Partial<PadParams>> { return this.sampler.getPadStore(); }
+
   /** Engine-level cache for scalar param values. Only bus.* params are cached
    *  here; per-voice values live in the DrumMachine synth store and are read
    *  from there by getBaseValue. This avoids a stale mirror for the 56+
@@ -238,7 +258,7 @@ export class DrumsEngine implements SynthEngine {
   // host injects one shared FxBus via setSharedFx so lanes can share reverb/
   // delay tails with the rest of the mix.
   private sharedFx: FxBus | null = null;
-  setSharedFx(fx: FxBus): void { this.sharedFx = fx; }
+  setSharedFx(fx: FxBus): void { this.sharedFx = fx; this.sampler.setSharedFx(fx); }
 
   private busStrip: import('../core/fx').ChannelStrip | null = null;
   setBusStrip(strip: import('../core/fx').ChannelStrip): void {
@@ -257,14 +277,27 @@ export class DrumsEngine implements SynthEngine {
    *  pre-boot singleton. */
   getInstance(): DrumMachine | null { return this.lastInstance; }
 
-  // ── Per-voice mute/solo (delegates to the live DrumMachine) ──────────────
-  getDrumVoiceMute(voice: DrumVoice): boolean { return this.lastInstance?.getVoiceMute(voice) ?? false; }
-  setDrumVoiceMute(voice: DrumVoice, muted: boolean): void { this.lastInstance?.setVoiceMute(voice, muted); }
-  getDrumVoiceSolo(voice: DrumVoice): boolean { return this.lastInstance?.getVoiceSolo(voice) ?? false; }
-  toggleDrumVoiceSolo(voice: DrumVoice): void { this.lastInstance?.toggleVoiceSolo(voice); }
+  // ── Per-voice mute/solo (delegates to the active source) ─────────────────
+  private muteTarget(): { getDrumVoiceMute(v: string): boolean; setDrumVoiceMute(v: string, m: boolean): void; getDrumVoiceSolo(v: string): boolean; toggleDrumVoiceSolo(v: string): void; getDrumVoiceMutes(): Record<string, boolean>; setDrumVoiceMutes(m: Record<string, boolean>): void } | null {
+    if (this.kitMode === 'sample') return this.sampler;
+    return this.lastInstance
+      ? {
+          getDrumVoiceMute: (v) => this.lastInstance!.getVoiceMute(v as DrumVoice),
+          setDrumVoiceMute: (v, m) => this.lastInstance!.setVoiceMute(v as DrumVoice, m),
+          getDrumVoiceSolo: (v) => this.lastInstance!.getVoiceSolo(v as DrumVoice),
+          toggleDrumVoiceSolo: (v) => this.lastInstance!.toggleVoiceSolo(v as DrumVoice),
+          getDrumVoiceMutes: () => this.lastInstance!.getVoiceMutes(),
+          setDrumVoiceMutes: (m) => this.lastInstance!.setVoiceMutes(m),
+        }
+      : null;
+  }
+  getDrumVoiceMute(voice: DrumVoice): boolean { return this.muteTarget()?.getDrumVoiceMute(voice) ?? false; }
+  setDrumVoiceMute(voice: DrumVoice, muted: boolean): void { this.muteTarget()?.setDrumVoiceMute(voice, muted); }
+  getDrumVoiceSolo(voice: DrumVoice): boolean { return this.muteTarget()?.getDrumVoiceSolo(voice) ?? false; }
+  toggleDrumVoiceSolo(voice: DrumVoice): void { this.muteTarget()?.toggleDrumVoiceSolo(voice); }
   /** Full mute map for persistence (solo is live-only). */
-  getDrumVoiceMutes(): Record<string, boolean> { return this.lastInstance?.getVoiceMutes() ?? {}; }
-  setDrumVoiceMutes(mutes: Record<string, boolean>): void { this.lastInstance?.setVoiceMutes(mutes); }
+  getDrumVoiceMutes(): Record<string, boolean> { return this.muteTarget()?.getDrumVoiceMutes() ?? {}; }
+  setDrumVoiceMutes(mutes: Record<string, boolean>): void { this.muteTarget()?.setDrumVoiceMutes(mutes); }
 
   private modHost = new ModulationHostImpl([
     makeDefaultLFO('lfo1'),

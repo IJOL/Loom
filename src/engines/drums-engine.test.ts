@@ -163,3 +163,32 @@ describe('DrumsEngine modulation routing (LFO → bus.pan regression)', () => {
     ).toBe(1);
   });
 });
+
+describe('DrumsEngine façade — kitMode + forwarders', () => {
+  it('defaults to synth mode', () => {
+    const e = new DrumsEngine();
+    expect(e.getKitMode()).toBe('synth');
+  });
+
+  it('setKitMode flips the mode', () => {
+    const e = new DrumsEngine();
+    e.setKitMode('sample');
+    expect(e.getKitMode()).toBe('sample');
+  });
+
+  it('forwards setKeymap/getKeymap/setPadStore/getPadStore to the embedded sampler', () => {
+    const e = new DrumsEngine();
+    const km = [{ sampleId: 's1', rootNote: 36, loNote: 36, hiNote: 36 }];
+    e.setKeymap(km);
+    expect(e.getKeymap()).toEqual(km);
+    e.setPadStore({ 36: { tune: 3 } });
+    expect(e.getPadStore()[36]).toEqual({ tune: 3 });
+  });
+
+  it('routes drum-voice mutes to the embedded sampler in sample mode', () => {
+    const e = new DrumsEngine();
+    e.setKitMode('sample');
+    e.setDrumVoiceMutes({ kick: true });
+    expect(e.getDrumVoiceMutes()).toEqual({ kick: true });
+  });
+});
