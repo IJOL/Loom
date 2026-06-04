@@ -16,6 +16,7 @@ import { GM_DRUM_MAP } from './drum-gm-map';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
+import { renderDrumVoiceRack } from './drum-voice-rack';
 import { getCurrentLaneForVoice } from '../modulation/active-mods';
 import { bindEngineModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
 import { ConnectionBinder } from '../modulation/connection-binder';
@@ -374,6 +375,13 @@ export class DrumsEngine implements SynthEngine {
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
     container.innerHTML = '';
     if (!ctx) return;
+
+    // Per-voice mini-mixer rack — between the master strip (#drum-master-knobs,
+    // mounted on the static page) and the modulators panel below.
+    const rackHost = document.createElement('div');
+    rackHost.className = 'drum-rack-host';
+    container.appendChild(rackHost);
+    renderDrumVoiceRack(this, ctx, rackHost);
 
     // Strip controls (DRUM VOL/PAN/REV/DLY/LO/MID/HI) and per-voice levels are
     // rendered by the static drum page via wireDrumMasterUI + the drum-grid
