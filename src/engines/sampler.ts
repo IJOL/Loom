@@ -22,6 +22,7 @@ import { listDrumkits, fetchDrumkitManifest, loadDrumkit } from '../samples/drum
 import { PAD_DEFAULTS, PAD_LEAF_SPECS, padKeyForNote, noteForPadKey, type PadParams } from './sampler-pad-params';
 import type { FxBus } from '../core/fx';
 import { computeVoiceMutes } from '../core/mute-solo';
+import { renderDrumVoiceRack } from './drum-voice-rack';
 
 const SAMPLER_PARAMS: EngineParamSpec[] = [
   { id: 'gain',        label: 'Gain',   kind: 'continuous', min: 0, max: 1.5, default: 1 },
@@ -264,6 +265,20 @@ export class SamplerEngine implements SynthEngine {
   getDrumVoiceMutes(): Record<string, boolean> { return { ...this.voiceMute }; }
   setDrumVoiceMutes(m: Record<string, boolean>): void { this.voiceMute = { ...m }; }
 
+  getRackLayout() {
+    return {
+      curatedSynth: ['tune', 'cutoff', 'decay'],
+      curatedMixer: ['level', 'rev', 'dly'],
+      // advanced synth (res/attack/loop/loopStart/retrig) + pan auto-fall into advanced.
+      advancedMixer: ['pan'],
+    };
+  }
+
+  /** A lane is a drumkit when every keymap entry sits on a GM drum note. */
+  private isDrumkit(): boolean {
+    return this.keymap.length > 0 && this.keymap.every((e) => padKeyForNote(e.rootNote) !== `zone${e.rootNote}`);
+  }
+
   /** True if the pad at `note` should sound now (per mute/solo over the kit's
    *  voice keys). Read by the voice at trigger time. */
   isPadAudible(note: number): boolean {
@@ -352,6 +367,15 @@ export class SamplerEngine implements SynthEngine {
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
     container.innerHTML = '';
     if (!ctx) return;
+
+    // Drumkit: render the per-pad rack FIRST (reuses drum-voice-rack with
+    // the sampler's own getRackLayout + getDrumVoice* contract).
+    if (this.isDrumkit()) {
+      const rackHost = document.createElement('div');
+      container.appendChild(rackHost);
+      const voices = this.keymap.map((e) => padKeyForNote(e.rootNote));
+      renderDrumVoiceRack(this, ctx, rackHost, voices);
+    }
 
     // Param knobs (gain/attack/release/pitch/cutoff/res/voices).
     const knobRow = document.createElement('div');
