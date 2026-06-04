@@ -5,6 +5,7 @@
 
 import type { SessionClip, SessionLane } from './session';
 import { TICKS_PER_STEP, type NoteEvent } from '../core/notes';
+import { stepsPerBar, DEFAULT_METER, type TimeSignature } from '../core/meter';
 
 const SCALE_INTERVALS: Record<string, number[]> = {
   major:     [0, 2, 4, 5, 7, 9, 11],
@@ -30,8 +31,7 @@ function pickInScale(opts: ClipRandomizeOpts, octaveRange: number, baseOffset: n
   return opts.rootMidi + baseOffset + oct * 12 + iv;
 }
 
-function bassNotes(clip: SessionClip, opts: ClipRandomizeOpts): NoteEvent[] {
-  const steps = clip.lengthBars * 16;
+function bassNotes(clip: SessionClip, opts: ClipRandomizeOpts, steps: number): NoteEvent[] {
   const out: NoteEvent[] = [];
   for (let i = 0; i < steps; i++) {
     if (Math.random() >= 0.5) continue;
@@ -45,8 +45,7 @@ function bassNotes(clip: SessionClip, opts: ClipRandomizeOpts): NoteEvent[] {
   return out;
 }
 
-function polyNotes(clip: SessionClip, opts: ClipRandomizeOpts): NoteEvent[] {
-  const steps = clip.lengthBars * 16;
+function polyNotes(clip: SessionClip, opts: ClipRandomizeOpts, steps: number): NoteEvent[] {
   const out: NoteEvent[] = [];
   for (let i = 0; i < steps; i++) {
     if (Math.random() >= 0.3) continue;
@@ -60,8 +59,7 @@ function polyNotes(clip: SessionClip, opts: ClipRandomizeOpts): NoteEvent[] {
   return out;
 }
 
-function drumNotes(clip: SessionClip): NoteEvent[] {
-  const steps = clip.lengthBars * 16;
+function drumNotes(clip: SessionClip, steps: number): NoteEvent[] {
   const out: NoteEvent[] = [];
   for (let i = 0; i < steps; i++) {
     const onDownbeat = i % 4 === 0;
@@ -87,8 +85,10 @@ export function randomizeClipNotes(
   clip: SessionClip,
   lane: SessionLane,
   opts: ClipRandomizeOpts,
+  meter: TimeSignature = DEFAULT_METER,
 ): void {
-  if (lane.engineId === 'tb303') clip.notes = bassNotes(clip, opts);
-  else if (lane.engineId === 'drums-machine') clip.notes = drumNotes(clip);
-  else clip.notes = polyNotes(clip, opts);
+  const steps = clip.lengthBars * stepsPerBar(meter);
+  if (lane.engineId === 'tb303') clip.notes = bassNotes(clip, opts, steps);
+  else if (lane.engineId === 'drums-machine') clip.notes = drumNotes(clip, steps);
+  else clip.notes = polyNotes(clip, opts, steps);
 }

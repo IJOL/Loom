@@ -172,7 +172,7 @@ export class SessionInspector {
         randomizeClipNotes(clip, lane!, {
           scale: scaleSel?.value ?? 'pentMinor',
           rootMidi: parseInt(rootSel?.value ?? '36', 10) || 36,
-        });
+        }, this.deps.seq.meter);
         this.renderEditor();
       };
       if (d) withUndo(d, run); else run();
