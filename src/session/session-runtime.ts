@@ -157,6 +157,7 @@ export type LaneTriggerFn = (
   accent: boolean,
   slidingIn: boolean,
   sample?: ClipSample,
+  slice?: { sampleId: string; start: number; end: number },
 ) => void;
 
 /** Called each time a step boundary fires (for visual playhead updates). */
@@ -221,7 +222,7 @@ export function tickSession(
       loopStartedAt: currentLoopStart,
       meter,
       lastScheduledAt: lp.lastScheduledAt,
-      onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample }, scheduleTime: number) => {
+      onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample; slice?: { sampleId: string; start: number; end: number } }, scheduleTime: number) => {
         if (scheduleTime > lp.lastScheduledAt) lp.lastScheduledAt = scheduleTime;
         const accent = note.velocity >= 100;
         const gateSec = Math.max(0.01, note.duration * tickSec);
@@ -238,7 +239,7 @@ export function tickSession(
             (m) => m.start < scheduledStartTick
               && (m.start + m.duration) > scheduledStartTick + 1,
           );
-        onLaneTrigger(lane.id, note.midi, scheduleTime, gateSec, accent, slidingIn, note.sample);
+        onLaneTrigger(lane.id, note.midi, scheduleTime, gateSec, accent, slidingIn, note.sample, note.slice);
         onClipStepFired(
           lane.id, clip.id,
           Math.floor(scheduledStartTick / TICKS_PER_STEP),

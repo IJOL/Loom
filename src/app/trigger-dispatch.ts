@@ -7,6 +7,7 @@ export type TriggerForLane = (
   laneId: string, note: number, time: number, gate: number,
   accent: boolean, slidingIn?: boolean,
   sample?: import('../session/session').ClipSample,
+  slice?: { sampleId: string; start: number; end: number },
 ) => void;
 
 export interface TriggerDispatchDeps {
@@ -16,7 +17,7 @@ export interface TriggerDispatchDeps {
 }
 
 export function createTriggerForLane(deps: TriggerDispatchDeps): TriggerForLane {
-  return (laneId, note, time, gate, accent, slidingIn = false, sample) => {
+  return (laneId, note, time, gate, accent, slidingIn = false, sample, slice) => {
     const res = deps.laneResources.get(laneId);
     if (!res) return;
     const engineId = res.engine.id;
@@ -25,11 +26,11 @@ export function createTriggerForLane(deps: TriggerDispatchDeps): TriggerForLane 
       setCurrentLaneForVoice(laneId);
       const v = res.engine.createVoice(deps.ctx, res.strip.input);
       setCurrentLaneForVoice(null);
-      v.trigger(m, t, { gateDuration: g, accent: a, slide: sl, sample });
+      v.trigger(m, t, { gateDuration: g, accent: a, slide: sl, sample, slice });
     };
 
-    // Audio clips bypass note-FX; drums lanes are not note-transformed.
-    const chain = sample == null && engineId !== 'drums-machine'
+    // Audio + slice clips bypass note-FX; drums lanes are not note-transformed.
+    const chain = sample == null && slice == null && engineId !== 'drums-machine'
       ? getNoteFxChain(laneId)
       : null;
 
