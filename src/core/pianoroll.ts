@@ -4,6 +4,7 @@
 // keyboard (↕ zoom pitch); native scrollbars pan. Snap defaults to 16th notes.
 
 import { TICKS_PER_STEP, type NoteEvent } from './notes';
+import { EDITOR_MIN_MIDI, EDITOR_MAX_MIDI } from './pianoroll-range';
 import {
   clampZoom, scrubToZoom, zoomAroundAnchor, maxZoomX, maxZoomY,
   defaultViewState, type ViewState,
@@ -143,8 +144,8 @@ function setSize(cv: HTMLCanvasElement, w: number, h: number): void {
 }
 
 export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
-  const minMidi = opts.minMidi ?? 36;
-  const maxMidi = opts.maxMidi ?? 96;
+  const minMidi = opts.minMidi ?? EDITOR_MIN_MIDI;
+  const maxMidi = opts.maxMidi ?? EDITOR_MAX_MIDI;
   const snap = opts.snapTicks ?? TICKS_PER_STEP;
   const barSteps = opts.stepsPerBar ?? 16;
   const beatSteps = opts.stepsPerBeat ?? 4;

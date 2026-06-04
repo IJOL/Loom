@@ -7,6 +7,7 @@ import type { SessionClip, SessionLane } from '../session';
 import type { Sequencer } from '../../core/sequencer';
 import type { LanePlayState } from '../session-runtime';
 import { createPianoRoll, type PianoRollHandle } from '../../core/pianoroll';
+import { pianoRollRange } from '../../core/pianoroll-range';
 import { TICKS_PER_STEP, type NoteEvent } from '../../core/notes';
 import { ticksPerBar, stepsPerBar, stepsPerBeat } from '../../core/meter';
 import { resolveViewState, type ViewState } from '../../core/pianoroll-zoom';
@@ -81,8 +82,10 @@ function buildPianoRoll(
   const getNotes = (): NoteEvent[] => clip.notes ?? [];
   const setNotes = (notes: NoteEvent[]) => { clip.notes = notes; };
 
-  const isBassLikeEngine = lane.engineId === 'tb303';
   const { ctx, seq, laneStates, historyDeps, triggerForLane } = deps;
+  // Full orchestral range (C0..C8), widened so every note already in the clip
+  // is visible — no engine-specific narrowing.
+  const { minMidi, maxMidi } = pianoRollRange(getNotes());
   return createPianoRoll({
     host,
     getNotes,
@@ -90,8 +93,8 @@ function buildPianoRoll(
     patternTicks: clip.lengthBars * ticksPerBar(seq.meter),
     stepsPerBar: stepsPerBar(seq.meter),
     stepsPerBeat: stepsPerBeat(seq.meter),
-    minMidi: isBassLikeEngine ? 24 : 36,
-    maxMidi: isBassLikeEngine ? 60 : 96,
+    minMidi,
+    maxMidi,
     onChange: () => {},
     auditionNote: triggerForLane
       ? (midi: number) => triggerForLane(lane.id, midi, ctx.currentTime, AUDITION_GATE, false, false)
