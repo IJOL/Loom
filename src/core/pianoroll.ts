@@ -8,6 +8,16 @@ import {
   clampZoom, scrubToZoom, zoomAroundAnchor, maxZoomX, maxZoomY,
   defaultViewState, type ViewState,
 } from './pianoroll-zoom';
+import {
+  notesInRect, translateGroup, serializeClipboard, pasteTranslate, midiForKey,
+  quantizeRecorded, type ClipboardNote,
+} from './piano-roll-editing';
+import { isTextEditTarget } from '../save/history-wiring';
+
+type Tool = 'draw' | 'select';
+// Module-level so the tool choice + clipboard persist across clip re-opens and clips.
+let currentTool: Tool = 'draw';
+let clipboard: ClipboardNote[] | null = null;
 
 export interface PianoRollOpts {
   /** Host element; the editor frame is built inside it. */
@@ -47,6 +57,7 @@ const FRAME_H = 320; // total editor height; grid viewport gets FRAME_H - RULER_
 
 export interface PianoRollFrame {
   frame: HTMLDivElement;
+  wrap: HTMLDivElement; toolbar: HTMLDivElement;
   rulerWrap: HTMLDivElement; keysWrap: HTMLDivElement; gridVp: HTMLDivElement;
   rulerCanvas: HTMLCanvasElement; keysCanvas: HTMLCanvasElement; gridCanvas: HTMLCanvasElement;
 }
@@ -106,9 +117,18 @@ export function buildEditorFrame(host: HTMLElement): PianoRollFrame {
   gridVp.appendChild(gridCanvas);
 
   frame.append(corner, rulerWrap, keysWrap, gridVp);
-  host.appendChild(frame);
 
-  return { frame, rulerWrap, keysWrap, gridVp, rulerCanvas, keysCanvas, gridCanvas };
+  const toolbar = document.createElement('div');
+  toolbar.className = 'pr-toolbar';
+  Object.assign(toolbar.style, { display: 'flex', gap: '6px', alignItems: 'center', padding: '4px 2px' } as Partial<CSSStyleDeclaration>);
+
+  const wrap = document.createElement('div');
+  wrap.tabIndex = 0; // focusable, so the keyboard handler can target it
+  wrap.style.outline = 'none';
+  wrap.append(toolbar, frame);
+  host.appendChild(wrap);
+
+  return { frame, wrap, toolbar, rulerWrap, keysWrap, gridVp, rulerCanvas, keysCanvas, gridCanvas };
 }
 
 function ctx2d(cv: HTMLCanvasElement): CanvasRenderingContext2D {
@@ -131,6 +151,26 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   const noteCount = maxMidi - minMidi + 1;
 
   const f = buildEditorFrame(opts.host);
+
+  let octaveBase = Math.max(minMidi, Math.min(maxMidi - 12, 60)); // C4 default, clamped
+  const selection = new Set<NoteEvent>();
+
+  const drawBtn = document.createElement('button');
+  drawBtn.textContent = '✏ Draw';
+  const selBtn = document.createElement('button');
+  selBtn.textContent = '▭ Select';
+  const octLabel = document.createElement('span');
+  octLabel.style.cssText = 'margin-left:auto;font:11px ui-monospace,monospace;color:#9a9a9a';
+  const refreshToolbar = () => {
+    drawBtn.style.fontWeight = currentTool === 'draw' ? '700' : '400';
+    selBtn.style.fontWeight  = currentTool === 'select' ? '700' : '400';
+    octLabel.textContent = `oct: C${Math.floor(octaveBase / 12) - 1}`;
+  };
+  drawBtn.addEventListener('click', () => { currentTool = 'draw'; refreshToolbar(); });
+  selBtn.addEventListener('click', () => { currentTool = 'select'; refreshToolbar(); });
+  f.toolbar.append(drawBtn, selBtn, octLabel);
+  refreshToolbar();
+
   const gctx = ctx2d(f.gridCanvas);
   const rctx = ctx2d(f.rulerCanvas);
   const kctx = ctx2d(f.keysCanvas);
@@ -180,9 +220,22 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     for (const n of opts.getNotes()) {
       if (n.midi < minMidi || n.midi > maxMidi) continue;
       const x = xForTick(n.start), x2 = xForTick(n.start + n.duration), y = yForMidi(n.midi);
-      gctx.fillStyle = n.velocity >= 100 ? '#ffaa44' : '#3498db';
+      const sel = selection.has(n);
+      gctx.fillStyle = sel ? '#7fd4ff' : (n.velocity >= 100 ? '#ffaa44' : '#3498db');
       gctx.fillRect(x + 1, y + 1, Math.max(2, x2 - x - 2), rowHeight - 2);
-      gctx.strokeStyle = '#0a0a0a'; gctx.strokeRect(x + 0.5, y + 0.5, x2 - x - 1, rowHeight - 1);
+      gctx.strokeStyle = sel ? '#ffffff' : '#0a0a0a';
+      gctx.lineWidth = sel ? 1.5 : 1;
+      gctx.strokeRect(x + 0.5, y + 0.5, x2 - x - 1, rowHeight - 1);
+      gctx.lineWidth = 1;
+    }
+    if (marquee) {
+      const x = xForTick(Math.min(marquee.tick0, marquee.tick1));
+      const w = Math.abs(xForTick(marquee.tick1) - xForTick(marquee.tick0));
+      const yTop = yForMidi(Math.max(marquee.midi0, marquee.midi1));
+      const yBot = yForMidi(Math.min(marquee.midi0, marquee.midi1)) + rowHeight;
+      gctx.strokeStyle = '#7fd4ff'; gctx.setLineDash([4, 3]);
+      gctx.strokeRect(x + 0.5, yTop + 0.5, Math.max(1, w), Math.max(1, yBot - yTop));
+      gctx.setLineDash([]);
     }
     const ph = opts.getPlayheadTick?.() ?? -1;
     if (ph >= 0) {
@@ -301,6 +354,13 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   type Interaction = { type: 'move' | 'resize'; note: NoteEvent; offsetTick: number };
   let interaction: Interaction | null = null;
   let gestureMutated = false;
+  let marquee: { tick0: number; midi0: number; tick1: number; midi1: number } | null = null;
+  let groupDrag: { lastTick: number; lastMidi: number } | null = null;
+  let lastMouse: { tick: number; midi: number } | null = null;
+  // Insertion cursor (ticks): paste fallback (Task 5) + step input (Task 6). Declared
+  // HERE — before the initial-mount layoutAll()/drawGrid() — because Task 6 makes
+  // drawGrid read it; a later declaration would hit its TDZ on first render.
+  let cursorTick = 0;
 
   const isResizeEdge = (n: NoteEvent, tick: number) => {
     const edgeRange = Math.max(snap / 3, 6);
@@ -322,6 +382,23 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
 
   f.gridCanvas.addEventListener('pointerdown', (e) => {
     const { tick, midi } = pointerPos(e);
+    f.wrap.focus();
+
+    if (currentTool === 'select' && !(e.altKey || e.button === 2)) {
+      const hit = findNoteAt(tick, midi);
+      if (hit) {
+        if (e.shiftKey) { selection.has(hit) ? selection.delete(hit) : selection.add(hit); }
+        else if (!selection.has(hit)) { selection.clear(); selection.add(hit); }
+        groupDrag = { lastTick: Math.floor(tick / snap) * snap, lastMidi: midi };
+        opts.onGestureStart?.(); gestureMutated = false;
+      } else {
+        if (!e.shiftKey) selection.clear();
+        marquee = { tick0: tick, midi0: midi, tick1: tick, midi1: midi };
+      }
+      f.gridCanvas.setPointerCapture(e.pointerId);
+      drawGrid(); e.preventDefault();
+      return;
+    }
 
     if (e.altKey || e.button === 2) {
       const hit = findNoteAt(tick, midi);
@@ -357,6 +434,25 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   });
 
   f.gridCanvas.addEventListener('pointermove', (e) => {
+    { const p = pointerPos(e); lastMouse = { tick: p.tick, midi: p.midi }; }
+    if (marquee) {
+      const p = pointerPos(e); marquee.tick1 = p.tick; marquee.midi1 = p.midi;
+      drawGrid(); return;
+    }
+    if (groupDrag) {
+      const p = pointerPos(e);
+      const wantTick = Math.floor(p.tick / snap) * snap;
+      const dTick = wantTick - groupDrag.lastTick;
+      const dMidi = p.midi - groupDrag.lastMidi;
+      if (dTick !== 0 || dMidi !== 0) {
+        const sel = [...selection];
+        const adj = translateGroup(sel, dTick, dMidi, { patternTicks: opts.patternTicks, minMidi, maxMidi });
+        for (const n of sel) { n.start += adj.dTick; n.midi += adj.dMidi; }
+        groupDrag.lastTick += adj.dTick; groupDrag.lastMidi += adj.dMidi;
+        gestureMutated = true; drawGrid(); opts.onChange?.();
+      }
+      return;
+    }
     const { tick, midi } = pointerPos(e);
     if (!interaction) {
       const hit = findNoteAt(tick, midi);
@@ -378,6 +474,19 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   });
 
   const endDrag = (e: PointerEvent) => {
+    if (marquee) {
+      for (const n of notesInRect(opts.getNotes(), marquee)) selection.add(n);
+      marquee = null;
+      try { f.gridCanvas.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+      drawGrid();
+      return;
+    }
+    if (groupDrag) {
+      groupDrag = null;
+      try { f.gridCanvas.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+      if (gestureMutated) opts.onGestureEnd?.(); else opts.onGestureCancel?.();
+      return;
+    }
     if (!interaction) return;
     interaction = null;
     try { f.gridCanvas.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
