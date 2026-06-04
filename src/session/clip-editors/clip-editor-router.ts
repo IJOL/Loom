@@ -23,6 +23,8 @@ export interface ClipEditorDeps {
   triggerForLane?: (laneId: string, note: number, time: number, gate: number, accent: boolean, slidingIn: boolean) => void;
 }
 
+const AUDITION_GATE = 0.25; // seconds — short preview blip, shared by both editors
+
 // In-memory per-clip zoom/scroll. Mirrors the editorOverride map: persists for
 // the session, resets on reload. No saved-state schema change.
 const viewStateByClip = new Map<string, ViewState>();
@@ -54,8 +56,18 @@ export function renderClipEditor(
   const editor = chooseClipEditor(lane, engine?.editor, override);
 
   if (editor === 'drum-grid') {
-    renderDrumGridEditor(host, clip, deps.historyDeps, deps.seq.meter);
-    return null;
+    const audition = deps.triggerForLane
+      ? (midi: number) => deps.triggerForLane!(lane.id, midi, deps.ctx.currentTime, AUDITION_GATE, false, false)
+      : undefined;
+    const getPlayheadTick = (): number => {
+      const lp = deps.laneStates.get(lane.id);
+      if (!lp || !lp.playing || lp.playing.id !== clip.id) return -1;
+      const stepDur = 60 / deps.seq.bpm / 4;
+      const stepsElapsed = Math.max(0, (deps.ctx.currentTime - lp.startTime) / stepDur);
+      const clipSteps = clip.lengthBars * stepsPerBar(deps.seq.meter);
+      return (stepsElapsed % clipSteps) * TICKS_PER_STEP;
+    };
+    return renderDrumGridEditor(host, clip, deps.historyDeps, deps.seq.meter, { auditionNote: audition, getPlayheadTick });
   }
   return buildPianoRoll(host, lane, clip, deps);
 }
@@ -71,7 +83,6 @@ function buildPianoRoll(
 
   const isBassLikeEngine = lane.engineId === 'tb303';
   const { ctx, seq, laneStates, historyDeps, triggerForLane } = deps;
-  const AUDITION_GATE = 0.25; // seconds — a short preview blip
   return createPianoRoll({
     host,
     getNotes,
