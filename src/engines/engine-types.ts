@@ -31,6 +31,10 @@ export interface VoiceTriggerOptions {
   /** Loop/song audio clip to play directly (sampler). When present, the voice
    *  plays this buffer for `gateDuration` instead of resolving the lane keymap. */
   sample?: import('../session/session').ClipSample;
+  /** Slice-mode playback (sampler): play this sub-region of a buffer at
+   *  natural pitch, applying the per-pad params keyed by the trigger note.
+   *  Set by the scheduler for warpMode==='slice' loop clips. */
+  slice?: { sampleId: string; start: number; end: number };
 }
 
 export interface EngineSequencer {

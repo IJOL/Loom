@@ -13,6 +13,12 @@ export interface ClipEnvelope {
   stepped?: boolean;
 }
 
+export interface LoopSlice {
+  start: number;   // seconds into the buffer
+  end: number;     // seconds
+  note: number;    // MIDI row this slice maps to (editor row + the note that fires it)
+}
+
 /** Audio bound to a loop/song clip (each clip carries its own sample). Distinct
  *  from the per-lane one-shot keymap: loop/song clips play this buffer directly
  *  when the clip is launched, instead of sequencing notes against a keymap. */
@@ -21,8 +27,13 @@ export interface ClipSample {
   mode: 'loop' | 'song';
   /** Loop: convenience metadata to suggest lengthBars on import. Song: optional. */
   originalBpm?: number;
-  /** Future: time-stretch. Absent/false = repitch (varispeed). */
+  /** Per-clip warp/sync on/off. */
   warp?: boolean;
+  /** How a warped loop plays. 'slice' (default) = notes trigger slice regions;
+   *  'stretch' = one WSOLA-stretched buffer. Read with a 'slice' default. */
+  warpMode?: 'slice' | 'stretch';
+  /** Slice carve map (present in slice mode). Discriminates the playback path. */
+  slices?: LoopSlice[];
   trimStart: number;   // seconds into the buffer
   trimEnd: number;     // seconds (buffer end if not trimmed)
   gain?: number;       // linear, default 1
@@ -126,6 +137,37 @@ export function audioClip(opts: {
     sample: {
       sampleId: opts.sampleId,
       mode: opts.mode ?? 'loop',
+      trimStart: 0,
+      trimEnd: opts.durationSec,
+    },
+  };
+}
+
+/** Build a slice-mode (warp) loop clip: carries clip.sample.slices + the
+ *  generated NoteEvent[] that fire them. lengthBars/slices/notes come from the
+ *  pure slice-clip builder (core/slice-clip.ts). */
+export function slicedLoopClip(opts: {
+  name: string;
+  sampleId: string;
+  durationSec: number;
+  originalBpm: number;
+  lengthBars: number;
+  slices: LoopSlice[];
+  notes: NoteEvent[];
+}): SessionClip {
+  return {
+    id: nextId('clip'),
+    name: opts.name,
+    color: pickRandomClipColor(),
+    lengthBars: opts.lengthBars,
+    notes: opts.notes,
+    sample: {
+      sampleId: opts.sampleId,
+      mode: 'loop',
+      originalBpm: opts.originalBpm,
+      warp: true,
+      warpMode: 'slice',
+      slices: opts.slices,
       trimStart: 0,
       trimEnd: opts.durationSec,
     },
