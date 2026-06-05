@@ -53,6 +53,12 @@ export interface SessionClip {
   /** Drum-editor grid resolution key (Spec 3). Additive/optional; absent ⇒ '1/16'.
    *  Clamped on read by the editor, so an unknown value self-corrects. */
   gridResolution?: import('../core/drum-grid-editing').ResolutionKey;
+  /** Loop sub-region (Phase A). When loopEnabled, the scheduler repeats only
+   *  [loopStartTick, loopEndTick) instead of the whole clip. Ticks are on the
+   *  TICKS_PER_QUARTER grid (same as NoteEvent.start). Absent ⇒ whole clip. */
+  loopEnabled?: boolean;
+  loopStartTick?: number;
+  loopEndTick?: number;
 }
 
 export interface SessionLane {
