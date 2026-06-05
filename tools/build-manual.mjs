@@ -8,6 +8,7 @@
 import { preview } from 'vite';
 import { buildShots } from './manual/shots.mjs';
 import { buildPdf } from './manual/pdf.mjs';
+import { buildWebHtml } from './manual/web.mjs';
 
 const args = process.argv.slice(2);
 const shotsOnly = args.includes('--shots-only');
@@ -22,7 +23,7 @@ async function withPreview(fn) {
 
 async function main() {
   if (!pdfOnly) await withPreview((url) => buildShots(url));
-  if (!shotsOnly) await buildPdf();
+  if (!shotsOnly) { await buildPdf(); buildWebHtml(); }
   console.log('manual: done.');
 }
 

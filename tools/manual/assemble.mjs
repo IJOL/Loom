@@ -35,13 +35,35 @@ export function rewriteHtmlImageSrcs(html, manualDir) {
   );
 }
 
-/** Read every chapter, convert to HTML, rewrite images, wrap with CSS. */
-export function assembleHtml(manualDir, cssText) {
+/** Anchor id for a chapter file (README → "top"). */
+export function chapterId(file) {
+  return file === 'README.md' ? 'top' : file.replace(/\.md$/, '');
+}
+
+// Inter-chapter links like "02-transport.md" / "02-transport.md#x" / "README.md".
+const MD_LINK = /href="(?:\.\/)?([^"#]+?)\.md(?:#[^"]*)?"/gi;
+
+/** Rewrite inter-chapter `*.md` links to in-page anchors (single-page manual). */
+export function rewriteChapterLinks(html) {
+  return html.replace(MD_LINK, (_m, name) => `href="#${name === 'README' ? 'top' : name}"`);
+}
+
+/**
+ * Read every chapter, convert to HTML, rewrite cross-links to in-page anchors,
+ * wrap each in an id'd <section>, and wrap the whole thing with CSS.
+ * `webImages: false` (PDF) rewrites images to file:// URLs; `true` (web) keeps
+ * them relative so they resolve next to the served index.html.
+ */
+export function assembleHtml(manualDir, cssText, { webImages = false } = {}) {
   const sections = CHAPTERS.map((file) => {
     const md = readFileSync(join(manualDir, file), 'utf8');
-    const html = rewriteHtmlImageSrcs(marked.parse(md), manualDir);
-    return `<section class="chapter">${html}</section>`;
+    let html = marked.parse(md);
+    if (!webImages) html = rewriteHtmlImageSrcs(html, manualDir);
+    html = rewriteChapterLinks(html);
+    return `<section class="chapter" id="${chapterId(file)}">${html}</section>`;
   });
   return `<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loom — Manual</title>
 <style>${cssText}</style></head><body>${sections.join('\n')}</body></html>`;
 }

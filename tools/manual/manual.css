@@ -21,3 +21,12 @@ th, td { border: 1px solid var(--rule); padding: .35em .55em; text-align: left; 
 th { background: #f3f1ff; }
 a { color: var(--accent); text-decoration: none; }
 blockquote { border-left: 3px solid var(--accent); margin: .8em 0; padding: .2em .9em; color: var(--muted); background: #faf9ff; }
+
+/* Screen-only: centre the single-page web build (docs/manual/index.html).
+   page.pdf() renders with print media, so these rules never affect the PDF. */
+@media screen {
+  body { max-width: 920px; margin: 0 auto; padding: 28px 20px 80px; }
+  .chapter { break-after: auto; }
+  img { box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+  a:hover { text-decoration: underline; }
+}
