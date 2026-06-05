@@ -62,6 +62,9 @@ export class LiveTakeRecorder {
   /** Called by the unified stop. If recording, tell the worklet to finalize after
    *  the tail; the 'done' handler then delivers the take and resets to idle. */
   finish(): void {
+    // Stopped while armed but never played → tear down the live tap (no take),
+    // so the worklet node isn't leaked and the UI returns to idle.
+    if (this.state === 'armed') { this.teardown(); this.setState('idle'); return; }
     if (this.state !== 'recording' || !this.node) return;
     this.node.port.postMessage({ type: 'stop', tailSec: this.deps.tailSec });
   }

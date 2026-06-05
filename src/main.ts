@@ -703,7 +703,7 @@ const sceneExporter: SceneExporter = {
   },
   // Stop on finish is intentional (explicit design decision): an export restarts
   // the scene from the top and halts the transport once the capture completes.
-  finish: () => { seq.stop(); playBtn.textContent = '▶'; },
+  finish: () => { liveTake.finish(); seq.stop(); playBtn.textContent = '▶'; },
 };
 
 const exportMenu = $<HTMLElement>('export-menu');
