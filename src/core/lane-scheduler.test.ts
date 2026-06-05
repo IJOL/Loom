@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { tickLane, type SchedulerContext } from './lane-scheduler';
+import { tickLane, noteTrigger, type SchedulerContext } from './lane-scheduler';
 import type { SessionClip } from '../session/session';
-import { TICKS_PER_STEP } from './notes';
+import { TICKS_PER_STEP, TICKS_PER_QUARTER } from './notes';
 import { ticksPerBar, DEFAULT_METER } from './meter';
 
 describe('lane-scheduler tickLane regression: overlapping windows', () => {
@@ -199,5 +199,42 @@ describe('lane-scheduler tickLane — audio (loop/song) clips', () => {
     // Never fires the 64/67 notes — only the synthetic sample trigger (midi 60).
     expect(midis.length).toBeGreaterThan(0);
     expect(midis.every((m) => m === 60)).toBe(true);
+  });
+});
+
+describe('noteTrigger', () => {
+  // Note durations live on the TICKS_PER_QUARTER (96) grid:
+  //   1 quarter = 96 ticks = 60/bpm seconds at given bpm.
+  // At 120 bpm: secPerTick = (60/120)/96 = 0.0052083...
+  // note[0] start=0   ticks → scheduleTime = 0
+  // note[1] start=24  ticks → scheduleTime = 24 * secPerTick = 0.125 s
+  const BPM = 120;
+  const SEC_PER_TICK = (60 / BPM) / TICKS_PER_QUARTER; // (60/120)/96
+  const clip: SessionClip = {
+    id: 'c', lengthBars: 1,
+    notes: [
+      { start: 0, duration: 48, midi: 36, velocity: 80 },
+      { start: 24, duration: 12, midi: 38, velocity: 110 },
+    ],
+  };
+  const note1Time = 24 * SEC_PER_TICK; // scheduleTime for note[1]
+
+  it('marks accent when velocity >= 100', () => {
+    const a = noteTrigger('tb303', clip, clip.notes[0], 0, 0, BPM, undefined);
+    const b = noteTrigger('tb303', clip, clip.notes[1], note1Time, 0, BPM, undefined);
+    expect(a.accent).toBe(false);
+    expect(b.accent).toBe(true);
+  });
+
+  it('gateSec = duration * secPerTick(bpm) on TICKS_PER_QUARTER grid, floored at 0.01', () => {
+    const a = noteTrigger('tb303', clip, clip.notes[0], 0, 0, BPM, undefined);
+    expect(a.gateSec).toBeCloseTo(48 * SEC_PER_TICK, 6);
+  });
+
+  it('slidingIn only for tb303 when a prior note overlaps this start', () => {
+    const bTb = noteTrigger('tb303', clip, clip.notes[1], note1Time, 0, BPM, undefined);
+    const bSub = noteTrigger('subtractive', clip, clip.notes[1], note1Time, 0, BPM, undefined);
+    expect(bTb.slidingIn).toBe(true);
+    expect(bSub.slidingIn).toBe(false);
   });
 });

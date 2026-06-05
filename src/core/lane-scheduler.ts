@@ -5,8 +5,8 @@
 // It also advances the loop boundary when a full clip iteration completes.
 
 import type { SessionClip, ClipEnvelope, ClipSample } from '../session/session';
-import { TICKS_PER_QUARTER } from './notes';
-import { quartersPerBar, DEFAULT_METER, type TimeSignature } from './meter';
+import { TICKS_PER_QUARTER, TICKS_PER_STEP, type NoteEvent } from './notes';
+import { quartersPerBar, ticksPerBar, DEFAULT_METER, type TimeSignature } from './meter';
 
 export interface SchedulerContext {
   bpm: number;
@@ -141,4 +141,45 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
   }
 
   return loopStart;
+}
+
+export interface NoteTrigger {
+  midi: number;
+  gateSec: number;
+  accent: boolean;
+  slidingIn: boolean;
+}
+
+/** Seconds per tick at the given bpm on the TICKS_PER_QUARTER (96) grid that
+ *  note start/duration live on. A quarter note = 96 ticks = 60/bpm seconds. */
+function secPerTickLocal(bpm: number): number {
+  return (60 / bpm) / TICKS_PER_QUARTER;
+}
+
+/**
+ * Pure note → trigger-shape computation, shared by the live tick (tickSession)
+ * and the offline batch collector. `scheduleTime` is the absolute audio time;
+ * `loopStart` is the absolute time the current clip iteration began.
+ */
+export function noteTrigger(
+  engineId: string,
+  clip: SessionClip,
+  note: { midi: number; duration: number; velocity: number },
+  scheduleTime: number,
+  loopStart: number,
+  bpm: number,
+  meter: TimeSignature | undefined,
+): NoteTrigger {
+  const m = meter ?? DEFAULT_METER;
+  const tickSec = secPerTickLocal(bpm);
+  const accent = note.velocity >= 100;
+  const gateSec = Math.max(0.01, note.duration * tickSec);
+  const scheduledStartTick = Math.round((scheduleTime - loopStart) / tickSec)
+    % (clip.lengthBars * ticksPerBar(m));
+  const slidingIn = engineId === 'tb303'
+    && (clip.notes as NoteEvent[]).some(
+      (other) => other.start < scheduledStartTick
+        && (other.start + other.duration) > scheduledStartTick + 1,
+    );
+  return { midi: note.midi, gateSec, accent, slidingIn };
 }

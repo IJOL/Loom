@@ -2,9 +2,8 @@
 // queue, and the tick-side scheduler that is called from the main 25 ms loop.
 
 import type { SessionClip, SessionState, LaunchQuantize, SessionLane, ClipSample } from './session';
-import { tickLane } from '../core/lane-scheduler';
+import { tickLane, noteTrigger } from '../core/lane-scheduler';
 import { TICKS_PER_STEP, TICKS_PER_QUARTER } from '../core/notes';
-import type { NoteEvent } from '../core/notes';
 import { ticksPerBar, DEFAULT_METER, type TimeSignature } from '../core/meter';
 import { AUTOMATION_SUB_RES } from '../core/pattern';
 import type { RecState } from '../performance/rec-state';
@@ -224,22 +223,10 @@ export function tickSession(
       lastScheduledAt: lp.lastScheduledAt,
       onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample; slice?: { sampleId: string; start: number; end: number } }, scheduleTime: number) => {
         if (scheduleTime > lp.lastScheduledAt) lp.lastScheduledAt = scheduleTime;
-        const accent = note.velocity >= 100;
-        const gateSec = Math.max(0.01, note.duration * tickSec);
-        // Derive tick position within the clip from the schedule time and the
-        // current loop start.  tickLane always calls onTrigger with an absolute
-        // scheduleTime that is loopStart + (noteTick / TICKS_PER_BAR) * barSec.
-        // Back-computing gives us the same tick value the note was stored at
-        // (within 1 µs float tolerance, well inside TICKS_PER_STEP/2 gap).
+        const t = noteTrigger(lane.engineId, clip, note, scheduleTime, currentLoopStart, bpm, meter);
         const scheduledStartTick = Math.round((scheduleTime - currentLoopStart) / tickSec)
           % (clip.lengthBars * ticksPerBar(meter));
-        // TB-303 slide: a prior note whose end overlaps this note's start.
-        const slidingIn = lane.engineId === 'tb303'
-          && (clip.notes as NoteEvent[]).some(
-            (m) => m.start < scheduledStartTick
-              && (m.start + m.duration) > scheduledStartTick + 1,
-          );
-        onLaneTrigger(lane.id, note.midi, scheduleTime, gateSec, accent, slidingIn, note.sample, note.slice);
+        onLaneTrigger(lane.id, t.midi, scheduleTime, t.gateSec, t.accent, t.slidingIn, note.sample, note.slice);
         onClipStepFired(
           lane.id, clip.id,
           Math.floor(scheduledStartTick / TICKS_PER_STEP),
