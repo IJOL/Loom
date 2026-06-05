@@ -15,6 +15,21 @@ function fakeDeps(fired: Array<{ note: number; time: number }>) {
   };
 }
 
+describe('createTriggerForLane velocity', () => {
+  it('passes velocity into Voice.trigger', () => {
+    const seen: number[] = [];
+    const fakeVoice = { trigger: (_m: number, _t: number, o: any) => seen.push(o.velocity), release() {}, connect() {}, dispose() {}, getAudioParams: () => new Map() };
+    const deps = {
+      ctx: {} as AudioContext,
+      seq: { bpm: 120 } as never,
+      laneResources: { get: () => ({ engine: { id: 'poly', createVoice: () => fakeVoice }, strip: { input: {} } }) } as never,
+    };
+    const trigger = createTriggerForLane(deps);
+    trigger('lane1', 60, 0, 0.2, false, false, undefined, undefined, 73);
+    expect(seen).toEqual([73]);
+  });
+});
+
 describe('createTriggerForLane note-FX integration', () => {
   beforeEach(() => { _resetNoteFxRegistry(); });
 

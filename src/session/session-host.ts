@@ -78,6 +78,7 @@ export interface SessionHostDeps {
     laneId: string, note: number, time: number, gate: number, accent: boolean, slidingIn: boolean,
     sample?: import('./session').ClipSample,
     slice?: { sampleId: string; start: number; end: number },
+    velocity?: number,
   ) => void;
   // Phase G: drums removed — triggerForLane now routes drums-machine via
   // res.engine.createVoice() like every other engine.
@@ -201,8 +202,8 @@ export class SessionHost {
     this.deps.seq.sessionTick = (now, look) => {
       tickSession(
         this.laneStates, this.state, now, look, this.deps.seq.bpm,
-        (laneId, midi, scheduleTime, gateSec, accent, slidingIn, sample, slice) =>
-          this.deps.triggerForLane(laneId, midi, scheduleTime, gateSec, accent, slidingIn, sample, slice),
+        (laneId, midi, scheduleTime, gateSec, accent, slidingIn, sample, slice, velocity) =>
+          this.deps.triggerForLane(laneId, midi, scheduleTime, gateSec, accent, slidingIn, sample, slice, velocity),
         (laneId, _clipId, _stepInClip, stepTime) =>
           this.deps.markTrackActive(laneId, stepTime),
         this.deps.recHooks,

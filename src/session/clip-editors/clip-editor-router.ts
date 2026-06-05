@@ -26,6 +26,7 @@ export interface ClipEditorDeps {
     laneId: string, note: number, time: number, gate: number, accent: boolean, slidingIn: boolean,
     sample?: import('../session').ClipSample,
     slice?: { sampleId: string; start: number; end: number },
+    velocity?: number,
   ) => void;
 }
 

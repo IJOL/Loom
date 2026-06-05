@@ -148,6 +148,7 @@ export interface NoteTrigger {
   gateSec: number;
   accent: boolean;
   slidingIn: boolean;
+  velocity: number;
   scheduledStartTick: number;
 }
 
@@ -182,5 +183,5 @@ export function noteTrigger(
       (other) => other.start < scheduledStartTick
         && (other.start + other.duration) > scheduledStartTick + 1,
     );
-  return { midi: note.midi, gateSec, accent, slidingIn, scheduledStartTick };
+  return { midi: note.midi, gateSec, accent, slidingIn, velocity: note.velocity, scheduledStartTick };
 }

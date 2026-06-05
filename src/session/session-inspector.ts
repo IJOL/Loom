@@ -35,7 +35,12 @@ export interface InspectorDeps {
   rootSel?: HTMLSelectElement;
   /** Host note trigger, used to audition pitches from the keyboard editor.
    *  Optional so test fixtures without an audio graph still compile. */
-  triggerForLane?: (laneId: string, note: number, time: number, gate: number, accent: boolean, slidingIn: boolean) => void;
+  triggerForLane?: (
+    laneId: string, note: number, time: number, gate: number, accent: boolean, slidingIn: boolean,
+    sample?: import('./session').ClipSample,
+    slice?: { sampleId: string; start: number; end: number },
+    velocity?: number,
+  ) => void;
 }
 
 export class SessionInspector {

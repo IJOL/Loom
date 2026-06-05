@@ -202,6 +202,15 @@ describe('lane-scheduler tickLane — audio (loop/song) clips', () => {
   });
 });
 
+describe('noteTrigger — velocity', () => {
+  it('noteTrigger carries the note velocity through', () => {
+    const clip = { lengthBars: 1, notes: [] } as never;
+    const t = noteTrigger('poly', clip, { midi: 60, duration: 24, velocity: 73 }, 0, 0, 120, undefined);
+    expect(t.velocity).toBe(73);
+    expect(t.accent).toBe(false); // 73 < 100
+  });
+});
+
 describe('noteTrigger', () => {
   // Note durations live on the TICKS_PER_QUARTER (96) grid:
   //   1 quarter = 96 ticks = 60/bpm seconds at given bpm.

@@ -1,5 +1,6 @@
 import { setCurrentLaneForVoice } from '../modulation/active-mods';
 import { getNoteFxChain } from '../notefx/notefx-registry';
+import { resolveVelocity } from '../core/velocity-gain';
 import type { LaneResourceMap } from '../core/lane-resources';
 import type { Sequencer } from '../core/sequencer';
 
@@ -8,6 +9,7 @@ export type TriggerForLane = (
   accent: boolean, slidingIn?: boolean,
   sample?: import('../session/session').ClipSample,
   slice?: { sampleId: string; start: number; end: number },
+  velocity?: number,
 ) => void;
 
 export interface TriggerDispatchDeps {
@@ -17,16 +19,17 @@ export interface TriggerDispatchDeps {
 }
 
 export function createTriggerForLane(deps: TriggerDispatchDeps): TriggerForLane {
-  return (laneId, note, time, gate, accent, slidingIn = false, sample, slice) => {
+  return (laneId, note, time, gate, accent, slidingIn = false, sample, slice, velocity) => {
     const res = deps.laneResources.get(laneId);
     if (!res) return;
     const engineId = res.engine.id;
+    const vel = resolveVelocity(velocity, accent);
 
     const fire = (m: number, t: number, g: number, a: boolean, sl: boolean) => {
       setCurrentLaneForVoice(laneId);
       const v = res.engine.createVoice(deps.ctx, res.strip.input);
       setCurrentLaneForVoice(null);
-      v.trigger(m, t, { gateDuration: g, accent: a, slide: sl, sample, slice });
+      v.trigger(m, t, { gateDuration: g, accent: a, slide: sl, sample, slice, velocity: vel });
     };
 
     // Audio + slice clips bypass note-FX; drums lanes are not note-transformed.
