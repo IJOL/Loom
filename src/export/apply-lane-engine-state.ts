@@ -52,7 +52,12 @@ export async function applyLaneEngineState(
 
   const drumkitId = es?.sampler?.drumkitId;
   if (drumkitId && typeof engine.setKeymap === 'function') {
-    await deps.reloadDrumkit(lane.id, drumkitId, engine as { setKeymap(k: KeymapEntry[]): void });
+    // Only yield if the callback is actually async (offline render returns a
+    // Promise so samples are decoded before setPadStore; the live host's
+    // fire-and-forget returns undefined → keep the rest synchronous, preserving
+    // the original ordering).
+    const r = deps.reloadDrumkit(lane.id, drumkitId, engine as { setKeymap(k: KeymapEntry[]): void });
+    if (r && typeof (r as Promise<void>).then === 'function') await r;
   }
 
   const padParams = es?.sampler?.padParams;

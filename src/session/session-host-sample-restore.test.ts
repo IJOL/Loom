@@ -9,7 +9,7 @@ import { SessionHost } from './session-host';
 };
 
 describe('SessionHost.applyEngineState — sample-kit restore round-trip', () => {
-  it('restores kitMode + keymap + padStore onto the lane engine (embedded sampler)', async () => {
+  it('restores kitMode + keymap + padStore onto the lane engine (embedded sampler)', () => {
     // The façade forwards setKeymap/setPadStore to its embedded sampler, so the
     // EXISTING load-restore path (feature-detected on the lane engine) reaches it.
     const calls: { setKitMode?: string; setKeymap?: unknown; setPadStore?: unknown } = {};
@@ -37,10 +37,6 @@ describe('SessionHost.applyEngineState — sample-kit restore round-trip', () =>
     }];
 
     (host as unknown as { applyEngineState(): void }).applyEngineState();
-    // applyLaneEngineState is async; setPadStore is called after the drumkit-reload
-    // await (which resolves to void/undefined for the live fire-and-forget path).
-    // Flush the microtask queue before asserting.
-    await Promise.resolve();
 
     // Mode restored first, then the persisted keymap + per-pad overrides land on
     // the embedded sampler (via the façade forwarders). The drumkitId self-heal
