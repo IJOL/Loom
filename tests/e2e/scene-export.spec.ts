@@ -19,8 +19,9 @@ test('exports the current scene to a .wav download', async ({ page }) => {
 
   // Export. The download fires after the real-time capture window completes
   // (one clip pass + 2s tail), so allow generous time.
+  await page.locator('#export-scene').click();           // open the export menu
   const downloadPromise = page.waitForEvent('download', { timeout: 30_000 });
-  await page.locator('#export-scene').click();
+  await page.locator('#export-rt').click();              // real-time export
   const download = await downloadPromise;
 
   expect(download.suggestedFilename()).toMatch(/^loom-scene-.*\.wav$/);
