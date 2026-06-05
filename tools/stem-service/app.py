@@ -12,16 +12,16 @@ from jobs import JobRegistry
 from separation import separate_file, MODEL_FILENAME
 
 WORK_ROOT = os.path.join(tempfile.gettempdir(), "loom-stem-service")
-ALLOWED_ORIGINS = [
-    "http://localhost:5173",   # vite dev
-    "http://localhost:4173",   # vite preview / e2e
-    "https://ijol.github.io",  # GitHub Pages
-]
+# GitHub Pages origin plus ANY localhost/127.0.0.1 port — Vite falls back to
+# 5174+ when 5173 is busy, so a fixed port list is brittle for local dev.
+ALLOWED_ORIGINS = ["https://ijol.github.io"]
+LOCALHOST_ORIGIN_REGEX = r"https?://(localhost|127\.0\.0\.1)(:\d+)?"
 
 app = FastAPI(title="Loom Stem Service")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=LOCALHOST_ORIGIN_REGEX,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
