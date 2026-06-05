@@ -20,6 +20,11 @@ class LoomSceneRecorder extends AudioWorkletProcessor {
       if (e.data && e.data.type === 'window') {
         this._startTime = e.data.startTime;
         this._endTime = e.data.endTime;
+      } else if (e.data && e.data.type === 'stop') {
+        // Open-ended capture: a 'window' with endTime=Infinity records until this
+        // 'stop' arrives, which sets the end (+ optional tail so reverb/delay
+        // tails aren't clipped). The existing blockEnd >= endTime path finalizes.
+        this._endTime = currentTime + (e.data.tailSec || 0);
       }
     };
   }
