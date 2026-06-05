@@ -30,6 +30,7 @@ import {
   type RecHooks,
 } from '../session/session-runtime';
 import { renderPerformanceView } from '../performance/performance-ui';
+import { arrangementFromSession } from '../performance/arrangement-from-session';
 
 export interface PerformanceFeatureDeps {
   ctx: AudioContext;
@@ -60,6 +61,9 @@ export interface PerformanceFeature {
   onPlay: () => boolean;
   /** Called from the patched seq.stop. */
   onStop: () => boolean;
+  /** Build the arrangement from the current session (scenes in order) and
+   *  switch to Performance. */
+  copyFromSession: () => void;
 }
 
 export function createPerformanceFeature(deps: PerformanceFeatureDeps): PerformanceFeature {
@@ -151,6 +155,12 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   function setArrangement(a: ArrangementState) {
     Object.assign(arrangement, a);
     refreshPerformanceView();
+  }
+
+  function copyFromSession() {
+    const built = arrangementFromSession(sessionHost.state, seq.bpm, seq.meter);
+    setArrangement(built);
+    setMode('performance');
   }
 
   function arrangementOnLaunchClip(laneId: string, clipId: string) {
@@ -254,5 +264,6 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     onLookahead,
     onPlay,
     onStop,
+    copyFromSession,
   };
 }

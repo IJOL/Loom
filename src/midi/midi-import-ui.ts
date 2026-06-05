@@ -36,6 +36,9 @@ export interface MidiImportUiDeps {
    *  button if a file was picked before presets were ready (boot race) — the
    *  button is gated on isPresetsReady() and would otherwise stay stuck. */
   presetsReady?: Promise<unknown>;
+  /** Called after a successful import so the caller can e.g. copy to the
+   *  arrangement and switch to Performance view. */
+  onImported?: () => void;
 }
 
 export function wireMidiImportUI(deps: MidiImportUiDeps): void {
@@ -194,6 +197,7 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
 
     deps.onSessionChanged();
     deps.launchScene(result.scene.id);
+    deps.onImported?.();
     deps.flashButton(loadBtn, `Loaded ${result.newLanes.length} lane(s)`);
   });
 }

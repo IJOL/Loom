@@ -491,6 +491,9 @@ const _origStop = seq.stop.bind(seq);
 seq.start = () => { if (!performanceFeature.onPlay()) _origStart(); };
 seq.stop = () => { if (!performanceFeature.onStop()) _origStop(); };
 
+const copyBtn = document.getElementById('copy-to-performance');
+copyBtn?.addEventListener('click', () => performanceFeature.copyFromSession());
+
 barsSel.value = String(Math.max(1, Math.round(seq.length / stepsPerBar(seq.meter))));
 
 // ── Deps objects for extracted UI modules ─────────────────────────────────
@@ -724,6 +727,7 @@ wireMidiImportUI({
   launchScene: (sceneId: string) => launchSceneById(sceneId),
   flashButton,
   presetsReady: presetsLoaded,
+  onImported: () => performanceFeature.copyFromSession(),
 });
 
 const automationTickDeps: AutomationTickDeps = {
