@@ -59,7 +59,9 @@ const DRIFT = 1e-6;
  * every note in the clip whose absolute schedule time falls in the window,
  * call ctx.onTrigger.  Notes are iterated by converting their clip-tick
  * position to seconds, then projecting onto the absolute timeline using the
- * current loop-start anchor.
+ * current loop-start anchor.  When `clip.loopEnabled` is set, both the
+ * iteration period and (for audio clips) the triggered buffer trim range
+ * are bounded by the clip's effective sub-region via `effectiveClipLoop`.
  *
  * Loop advancement: the function derives how many full clip iterations have
  * completed since ctx.loopStartedAt (using floor division — drift-free
@@ -108,14 +110,24 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
     const sliceMode = !!clip.sample && !!clip.sample.slices?.length && clip.sample.warpMode !== 'stretch';
     if (clip.sample && !sliceMode) {
       // Loop/song or stretch audio clip: one buffer trigger per iteration, gated
-      // to the full clip length. duration is the clip length in TICKS_PER_QUARTER
-      // ticks (= lengthBars × ticksPerBar) so it round-trips back to clipDurSec
-      // through the runtime's secPerTick (which divides by TICKS_PER_QUARTER).
+      // to the sub-region length. When loopEnabled, trimStart/trimEnd are
+      // remapped to the matching fraction of the original buffer so only the
+      // corresponding audio plays. duration is the sub-region in ticks
+      // (= loopTicks) so it round-trips back to clipDurSec through the
+      // runtime's secPerTick (which divides by TICKS_PER_QUARTER).
       if (iterStart >= windowStart && iterStart < windowEnd) {
-        ctx.onTrigger(
-          { midi: 60, duration: clip.lengthBars * quartersPerBar(meter) * TICKS_PER_QUARTER, velocity: 100, sample: clip.sample },
-          iterStart,
-        );
+        const total = clip.lengthBars * ticksPerBar(meter);
+        const isWhole = startTick === 0 && endTick === total;
+        let sample = clip.sample;
+        if (!isWhole) {
+          const span = clip.sample.trimEnd - clip.sample.trimStart;
+          sample = {
+            ...clip.sample,
+            trimStart: clip.sample.trimStart + (startTick / total) * span,
+            trimEnd:   clip.sample.trimStart + (endTick / total) * span,
+          };
+        }
+        ctx.onTrigger({ midi: 60, duration: loopTicks, velocity: 100, sample }, iterStart);
       }
     } else {
       // Note clip (incl. slice-mode loops): each note fires at its grid time. In

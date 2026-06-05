@@ -258,6 +258,45 @@ describe('lane-scheduler tickLane — clip loop sub-region', () => {
   });
 });
 
+describe('lane-scheduler tickLane — audio clip loop sub-region', () => {
+  const bar = ticksPerBar(DEFAULT_METER);
+
+  it('plays only the buffer fraction matching the sub-region; duration = sub-region ticks', () => {
+    // 2-bar clip mapped to buffer [0,4]s. Loop the 2nd bar ⇒ fraction [0.5,1] ⇒ [2,4]s.
+    const clip: SessionClip = {
+      id: 'a', lengthBars: 2,
+      loopEnabled: true, loopStartTick: bar, loopEndTick: 2 * bar,
+      notes: [], sample: { sampleId: 's1', mode: 'loop', trimStart: 0, trimEnd: 4 },
+    };
+    const fires: Array<{ trimStart?: number; trimEnd?: number; duration: number }> = [];
+    let loopStart = 0;
+    for (let now = 0; now < 2.0; now += 0.2) {
+      loopStart = tickLane(clip, {
+        bpm: 120, lookaheadSec: 0.2, now, loopStartedAt: loopStart,
+        onTrigger: (n, _t) => fires.push({ trimStart: n.sample?.trimStart, trimEnd: n.sample?.trimEnd, duration: n.duration }),
+        onAutomation: () => {},
+      });
+    }
+    expect(fires.length).toBeGreaterThan(0);
+    expect(fires[0].trimStart).toBeCloseTo(2, 5);
+    expect(fires[0].trimEnd).toBeCloseTo(4, 5);
+    expect(fires[0].duration).toBe(bar); // one bar of ticks
+  });
+
+  it('loop off ⇒ original trim + full duration (no regression)', () => {
+    const clip: SessionClip = {
+      id: 'b', lengthBars: 1, notes: [],
+      sample: { sampleId: 's2', mode: 'loop', trimStart: 0, trimEnd: 1 },
+    };
+    let loopStart = 0; const fires: Array<{ trimStart?: number; trimEnd?: number; duration: number }> = [];
+    tickLane(clip, { bpm: 120, lookaheadSec: 0.2, now: 0, loopStartedAt: loopStart,
+      onTrigger: (n) => fires.push({ trimStart: n.sample?.trimStart, trimEnd: n.sample?.trimEnd, duration: n.duration }), onAutomation: () => {} });
+    expect(fires[0].trimStart).toBe(0);
+    expect(fires[0].trimEnd).toBe(1);
+    expect(fires[0].duration).toBe(ticksPerBar(DEFAULT_METER)); // 1 bar
+  });
+});
+
 describe('noteTrigger', () => {
   // Note durations live on the TICKS_PER_QUARTER (96) grid:
   //   1 quarter = 96 ticks = 60/bpm seconds at given bpm.
