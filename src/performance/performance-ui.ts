@@ -73,9 +73,11 @@ function makeClipBand(
   pxPerBar: number,
   resolveClipColor: (clipId: string) => string,
   resolveClipName: (clipId: string) => string,
+  cb: PerfUICallbacks,
 ): HTMLElement {
   const barSec = barSecOf(bpm);
   const totalBars = Math.ceil(durationSec / barSec);
+  const secPerPx = barSec / pxPerBar; // inverse of the draw scale
 
   const row = document.createElement('div');
   row.className = 'perf-row';
@@ -86,7 +88,7 @@ function makeClipBand(
   const band = document.createElement('div');
   band.className = 'perf-clip-band';
 
-  for (const ev of laneRec.clipEvents) {
+  laneRec.clipEvents.forEach((ev, i) => {
     const x = (ev.atSec / barSec) * pxPerBar;
     const w = (Math.min(ev.untilSec, durationSec) - ev.atSec) / barSec * pxPerBar;
     const el = document.createElement('div');
@@ -97,8 +99,52 @@ function makeClipBand(
     if (color) el.style.background = color;
     else el.classList.add('missing');
     el.textContent = resolveClipName(ev.clipId);
+
+    // resize handles
+    const hL = document.createElement('span'); hL.className = 'perf-clip-handle l';
+    const hR = document.createElement('span'); hR.className = 'perf-clip-handle r';
+    // delete button
+    const del = document.createElement('button'); del.className = 'perf-clip-del'; del.textContent = '×';
+    del.addEventListener('pointerdown', (e) => { e.stopPropagation(); });
+    del.addEventListener('click', (e) => { e.stopPropagation(); cb.onDeleteBand(laneRec.laneId, i); });
+    // body drag = move
+    el.addEventListener('pointerdown', (down) => {
+      down.preventDefault();
+      const startX = down.clientX;
+      const baseAt = ev.atSec;
+      const move = (e: PointerEvent) => {
+        const dxSec = (e.clientX - startX) * secPerPx;
+        el.style.left = `${((baseAt + dxSec) / barSec) * pxPerBar}px`;
+      };
+      const up = (e: PointerEvent) => {
+        window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up);
+        const dxSec = (e.clientX - startX) * secPerPx;
+        cb.onMoveBand(laneRec.laneId, i, baseAt + dxSec);
+      };
+      window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+    });
+    const resize = (edge: 'start' | 'end') => (down: PointerEvent) => {
+      down.preventDefault(); down.stopPropagation();
+      const move = (e: PointerEvent) => {
+        const rect = track.getBoundingClientRect();
+        const sec = ((e.clientX - rect.left) / pxPerBar) * barSec;
+        if (edge === 'start') el.style.left = `${(sec / barSec) * pxPerBar}px`;
+        else el.style.width = `${Math.max(8, (sec - ev.atSec) / barSec * pxPerBar)}px`;
+      };
+      const up = (e: PointerEvent) => {
+        window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up);
+        const rect = track.getBoundingClientRect();
+        const sec = ((e.clientX - rect.left) / pxPerBar) * barSec;
+        cb.onResizeBand(laneRec.laneId, i, edge, sec);
+      };
+      window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+    };
+    hL.addEventListener('pointerdown', resize('start'));
+    hR.addEventListener('pointerdown', resize('end'));
+    el.append(hL, hR, del);
+
     band.appendChild(el);
-  }
+  });
   track.appendChild(band);
   row.appendChild(track);
   return row;
@@ -125,6 +171,9 @@ export interface PerfUICallbacks {
   loopStartBar: number;
   loopEndBar: number;
   onSetLoop: (enabled: boolean, startBar: number, endBar: number) => void;
+  onMoveBand: (laneId: string, index: number, newAtSec: number) => void;
+  onResizeBand: (laneId: string, index: number, edge: 'start' | 'end', newSec: number) => void;
+  onDeleteBand: (laneId: string, index: number) => void;
 }
 
 function makeToolbar(state: ArrangementState, cb: PerfUICallbacks): HTMLElement {
@@ -223,7 +272,7 @@ export function renderPerformanceView(host: HTMLElement, state: ArrangementState
   host.appendChild(buildAutomationHeader(autoDeps));
 
   for (const lane of state.lanes) {
-    host.appendChild(makeClipBand(lane, dur, state.bpm, cb.pxPerBar, cb.resolveClipColor, cb.resolveClipName));
+    host.appendChild(makeClipBand(lane, dur, state.bpm, cb.pxPerBar, cb.resolveClipColor, cb.resolveClipName, cb));
     for (const curve of lane.automation) host.appendChild(buildAutomationLane(curve, autoDeps));
   }
 
