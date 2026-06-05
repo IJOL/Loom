@@ -48,6 +48,7 @@ import { wireFxUI, applyDelaySync as fxApplyDelaySync, type FxUIDeps } from './c
 import { wireTransport, type TransportDeps } from './core/transport';
 import { exportCurrentScene, type SceneExporter } from './export/export-scene';
 import { RealtimeSceneRecorder } from './export/realtime-recorder';
+import { OfflineSceneRecorder } from './export/offline-recorder';
 import { soundingSceneDurationSec } from './export/scene-duration';
 import { restartSoundingLanesForExport } from './export/scene-restart';
 import { wavEncoder } from './export/wav-encoder';
@@ -645,7 +646,25 @@ const sceneExporter: SceneExporter = {
   finish: () => { seq.stop(); playBtn.textContent = '▶'; },
 };
 
-exportBtn.addEventListener('click', () => { void exportCurrentScene(sceneExporter); });
+const exportMenu = $<HTMLElement>('export-menu');
+exportBtn.addEventListener('click', () => { exportMenu.hidden = !exportMenu.hidden; });
+
+function runExport(mode: 'rt' | 'offline'): void {
+  exportMenu.hidden = true;
+  if (mode === 'rt') { void exportCurrentScene(sceneExporter); return; }
+  // Offline: same orchestrator + encoder + download; only the recorder differs.
+  void exportCurrentScene({
+    ...sceneExporter,
+    record: (totalSec) => new OfflineSceneRecorder({
+      state: sessionHost.state,
+      laneStates: sessionHost.laneStates,
+      bpm: seq.bpm,
+      meter: seq.meter,
+    }).record(totalSec),
+  });
+}
+$<HTMLButtonElement>('export-rt').addEventListener('click', () => runExport('rt'));
+$<HTMLButtonElement>('export-offline').addEventListener('click', () => runExport('offline'));
 
 {
   const positionEl = document.getElementById('transport-position');

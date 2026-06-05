@@ -51,6 +51,10 @@
       .row.poly-section:has(#poly-lfo2-knobs) {
         display: none !important;
       }
+      .export-menu-wrap { position: relative; display: inline-block; }
+      .export-menu { position: absolute; top: 100%; left: 0; z-index: 20; display: flex; flex-direction: column; background: #222; border: 1px solid #444; }
+      .export-menu[hidden] { display: none; }
+      .export-menu .io { white-space: nowrap; }
     </style>
   </head>
   <body data-pure-session="true">
@@ -59,7 +63,13 @@
 
       <div class="row transport">
         <button id="play" title="Play / Stop">&#9654;</button>
-        <button id="export-scene" class="io" title="Export the current scene to WAV (real-time)">&#10515; WAV</button>
+        <span class="export-menu-wrap">
+          <button id="export-scene" class="io" title="Export the current scene to WAV">&#10515; WAV &#9662;</button>
+          <span id="export-menu" class="export-menu" hidden>
+            <button id="export-rt" class="io">Tiempo real</button>
+            <button id="export-offline" class="io">Offline (r&aacute;pido)</button>
+          </span>
+        </span>
         <div class="transport-readout" title="Bar.beat.step  ·  hh:mm:ss elapsed">
           <span id="transport-position" class="transport-position">1.1.1</span>
           <span id="transport-time" class="transport-time">00:00:00</span>
