@@ -858,10 +858,16 @@ wireStemDialog({
   client: stemClient,
   addStemLanes: (stems, opts) => sessionHost.addStemLanes(stems, opts),
   transcribeStem: async (file, label, kind) => {
-    const result = await stemClient.transcribe(file, kind);
-    const plan = transcribeToNoteLane(result, seq.bpm, seq.meter);
-    if (plan.notes.length) {
-      sessionHost.addNoteLane(plan.engineId, plan.notes, plan.lengthBars, label);
+    // Per-stem + non-fatal: a transcription failure for one stem must not abort
+    // the others (the audio Sampler lanes are already created either way).
+    try {
+      const result = await stemClient.transcribe(file, kind);
+      const plan = transcribeToNoteLane(result, seq.bpm, seq.meter);
+      if (plan.notes.length) {
+        sessionHost.addNoteLane(plan.engineId, plan.notes, plan.lengthBars, label);
+      }
+    } catch (err) {
+      console.warn('[stems] transcription failed for', label, err);
     }
   },
 });
