@@ -1,3 +1,270 @@
 # Engines
 
-_(chapter content added in a later task)_
+Every lane in Loom runs exactly one synthesis engine. You choose the engine
+with the ENGINE selector at the top of the lane's editor panel. Changing the
+engine replaces the sound source while preserving the lane's clips and
+modulation routing.
+
+Each engine exposes a PRESET dropdown (Load / Save As / Delete) and a
+**🎲 Sound** button that randomises the patch and sets the preset name to
+"Custom". Presets are JSON assets stored per-engine; they include GM programme
+tags so that MIDI import can auto-assign the best engine and preset for each
+track. See [Sessions, Lanes, Clips & Scenes](03-sessions-lanes-clips-scenes.md)
+for how to add and configure lanes.
+
+---
+
+## TB-303
+
+![TB-303 editor panel](images/engine-tb303.png)
+
+Above: TB-303 editor — Wave, Cutoff, Resonance, Env Mod, Decay, Accent, and a per-lane LFO.
+
+The TB-303 is a monophonic, resonant bass synthesiser modelled on the Roland
+TB-303. It is the natural choice for acid bass lines but works equally well for
+aggressive leads and any sound that calls for a steep, self-oscillating filter
+sweep.
+
+### TB-303 parameters
+
+| Parameter | Description |
+| --- | --- |
+| Wave | Sawtooth or Square oscillator waveform |
+| Cutoff | Filter cutoff frequency (0–100%) |
+| Resonance | Filter Q — self-oscillates at high values |
+| Env Mod | How far the filter envelope opens the filter per step |
+| Decay | Filter envelope decay time |
+| Accent | Per-step level: brightens the filter, bumps Q, raises output gain |
+
+### Slide and accent behaviour
+
+A note's `slide` flag means "slide into the next step". When the scheduler
+emits step N it checks whether step N-1 carried a slide flag; if so, it ramps
+the pitch from the previous note and skips the amp re-attack so the gate stays
+open across the boundary. The outgoing step gets an extended gate (1.5× step
+length) so the overlap is audible.
+
+Accent is a per-step flag that simultaneously brightens the filter envelope,
+raises the resonance Q, and boosts the output gain — the classic 303 bassline
+punctuation technique.
+
+The engine ships with 20+ presets from "BASS Acid Classic" to "LEAD Squelch".
+See [Editing Clips](05-editing-clips.md) for how to set slide and accent on
+individual steps.
+
+---
+
+## Subtractive
+
+![Subtractive editor panel](images/engine-subtractive.png)
+
+Above: Subtractive editor — OSC 1/2, Sub oscillator, Noise, Filter (with
+built-in envelope), Amp, and POLY controls.
+
+The Subtractive engine is a classic analogue-style polyphonic synthesiser with
+two oscillators, a sub oscillator, a noise source, a resonant low-pass filter,
+and a full amplitude envelope. It is the most general-purpose engine in Loom
+and suits pads, leads, basses, and plucks.
+
+### Parameter sections
+
+- **OSC 1 / OSC 2** — waveform (Saw/Sqr/Tri/Sin), level, and detune in cents.
+  Detuning the two oscillators creates the classic "supersaw" chorus effect.
+- **SUB / NOISE** — sub oscillator level (one octave below OSC 1) and a
+  noise generator for breath and texture.
+- **FILTER** — Cutoff, Resonance, Env Amount, Drive, Key Track, and a full
+  ADSR filter envelope (toggle with Built-in Env).
+- **AMP** — Attack/Decay/Sustain/Release amplitude envelope (toggle with
+  Built-in Env).
+- **MASTER** — global Tune in semitones.
+- **POLY** — voice count (1–16), poly/mono mode, and legato/retrig behaviour
+  in mono mode.
+
+For modulation routing see [Modulation & Note FX](06-modulation-and-note-fx.md).
+
+---
+
+## FM
+
+![FM editor panel](images/engine-fm.png)
+
+Above: FM editor — Algorithm selector, Op 1–4 (Ratio/Detune/Level/ADSR),
+global Mix and Voices.
+
+The FM engine is a four-operator, DX7-style frequency-modulation synthesiser.
+Each operator is a sine oscillator with its own ADSR amplitude envelope and
+level; operators are wired together according to one of four algorithms.
+
+### FM parameters
+
+| Parameter | Description |
+| --- | --- |
+| Algorithm | 1 = serial 4→3→2→1; 2 = three parallel mods → Op 1; 3 = two pairs; 4 = additive |
+| FB (Op4) | Op 4 self-feedback — adds odd harmonics and edge |
+| Op 1–4: Ratio | Frequency ratio relative to the played note (0.1–16×) |
+| Op 1–4: Det | Per-operator detune in cents |
+| Op 1–4: Level | Carrier output level or modulation index (modulators) |
+| Op 1–4: ADSR | Per-operator amplitude envelope |
+| Mix | Final output level (0–1) |
+| Voices | Polyphony cap (1–16; default 6) |
+
+FM suits metallic tones, electric pianos, bells, and evolving textures. Small
+ratio changes yield very different timbres; the preset library covers bells,
+organs, and electronic basses.
+
+---
+
+## Wavetable
+
+![Wavetable editor panel](images/engine-wavetable.png)
+
+Above: Wavetable editor — Wave A/B selectors, Morph, Detune, Filter, Amp
+envelope, and Voices.
+
+The Wavetable engine morphs between two pre-computed waveforms — Wave A and
+Wave B — using the Morph knob or an LFO/ADSR routed to it. Both waves are
+drawn from a fixed bank of eight anti-aliased tables: Sine, Triangle, Sawtooth,
+Square, Pulse (25%), Organ, Brass, and Vocal.
+
+### Wavetable parameters
+
+| Parameter | Description |
+| --- | --- |
+| Wave A / Wave B | Source waveforms to interpolate between |
+| Morph | Crossfade position (0 = full Wave A, 1 = full Wave B) |
+| Detune | Global detune in cents |
+| Cutoff / Res | Resonant low-pass filter |
+| Built-in Env | Toggle the built-in amp ADSR on/off |
+| Attack / Decay / Sustain / Release | Amplitude envelope |
+| Voices | Polyphony cap (1–16; default 8) |
+
+Animating Morph with an LFO is the signature technique — sweeping from Sine to
+Sawtooth or Brass to Vocal while a note sustains produces evolving, living
+tones. See [Modulation & Note FX](06-modulation-and-note-fx.md).
+
+---
+
+## Karplus-Strong
+
+![Karplus-Strong editor panel](images/engine-karplus.png)
+
+Above: Karplus-Strong editor — String section (Damping, Brightness), Excite
+section (Excite time, Noise Tone), and Amp controls.
+
+Karplus-Strong is a physical-modelling engine that synthesises plucked-string
+sounds. Loom renders each note offline (sample-by-sample in JavaScript) into a
+buffer and plays it back through an amplitude envelope. This gives exact pitch
+at every frequency, natural high-harmonic roll-off, and no feedback runaway.
+
+### Karplus-Strong parameters
+
+| Parameter | Description |
+| --- | --- |
+| Damping | T60 decay: 0 = long sustain (~4 s), 1 = muted (~0.12 s) |
+| Brightness | Loop filter: 0 = dark/cello, 1 = open/metallic |
+| Excite | Excitation burst length (pluck sharpness) |
+| Noise Tone | Colour of the excitation noise (dark → bright) |
+| Attack / Release | Amp envelope on buffer playback |
+| Level | Output amplitude |
+| Voices | Polyphony cap (1–16; default 8) |
+
+Damping and Brightness are set per-note at the moment of the pluck (baked into
+the buffer). Level and its envelope are live AudioParams and can be modulated.
+Karplus suits acoustic bass, guitar, harp, and marimba-style sounds.
+
+---
+
+## Sampler
+
+![Sampler editor panel](images/engine-sampler.png)
+
+Above: Sampler editor — global Gain/Voices controls; per-pad controls appear
+once samples are loaded.
+
+The Sampler engine plays back audio samples mapped across the keyboard. Each
+keymap zone (pad) has its own per-pad parameters read at trigger time, making
+it possible to tune, filter, and pan individual pads independently.
+
+### Global parameters
+
+| Parameter | Description |
+| --- | --- |
+| Gain | Master output gain for the lane |
+| Voices | Polyphony cap (1–16; default 8) |
+
+### Per-pad parameters
+
+Shown in the drum-voice rack once pads are mapped.
+
+| Parameter | Description |
+| --- | --- |
+| Tune | Transposition in semitones (−24 to +24) |
+| Cutoff / Res | Per-pad resonant low-pass filter |
+| Attack / Decay | Per-pad amplitude envelope |
+| Level | Per-pad output level |
+| Pan | Stereo position |
+| Rev / Dly | Send amounts to the shared reverb and delay |
+| Loop / Loop Start | Loop mode (one-shot or loop-while-gated) and loop start point |
+| Retrig | Poly (voices overlap) or Mono (re-hit cuts the previous voice) |
+
+A Sampler lane with pads mapped to GM drum note numbers automatically enters
+drumkit mode and shows the drum-grid editor instead of the piano roll. For
+details on loading samples and building keymaps see
+[MIDI & Samples](08-midi-and-samples.md).
+
+---
+
+## Drums (Drum Machine)
+
+![Drums editor panel](images/engine-drums.png)
+
+Above: Drums editor — Preset row, master bus knobs (Vol/Pan/Rev/Dly/Lo/Mid/Hi),
+per-voice rack with Tune/Decay/Rev/Dly controls per voice.
+
+The Drums engine is a fully synthesised eight-voice drum machine — no samples
+required. All eight voices (Kick, Snare, Closed Hat, Open Hat, Clap, Cowbell,
+Tom, Ride) are built from oscillators, noise generators, and simple envelopes.
+Each voice routes through its own channel strip and then to a shared drum bus.
+
+### Voice synthesis rack
+
+The per-voice rack exposes the key parameters for each voice:
+
+| Voice | Key parameters |
+| --- | --- |
+| Kick | Tune, Attack (click), Decay, Start/End Freq, Sweep, Wave |
+| Snare | Tune, Tone body, Snap (noise), Body Decay, Noise Decay, Noise Tone |
+| Closed Hat | Tune, Decay |
+| Open Hat | Tune, Decay |
+| Clap | Tone, Decay, Sharp (filter Q) |
+| Tom | Tune, Decay, Sweep, Start/End Freq |
+| Cowbell | Tune, Decay, Detune |
+| Ride | Tune, Decay |
+
+### Kits as presets
+
+Drum kits (TR-808, Standard, Room, Power, Electronic, Jazz, Brush, Orchestra)
+act as presets: loading a kit seeds all per-voice parameters from the kit's
+characteristic values. You can then edit individual voices on top. The
+🎲 Sound button randomises all voice parameters simultaneously.
+
+### Bus controls
+
+The master bus row gives Vol, Pan, Rev, Dly, Lo, Mid, and Hi (±18 dB shelves)
+for the whole drum bus. These are automatable via
+[Modulation & Note FX](06-modulation-and-note-fx.md). Routing to the shared
+reverb and delay sends is covered in [Mixing & FX](07-mixing-and-fx.md).
+
+---
+
+## Summary table
+
+| Engine | Best for | Standout parameters |
+| --- | --- | --- |
+| TB-303 | Acid bass lines, resonant leads | Slide, Accent, Env Mod |
+| Subtractive | Pads, leads, basses, general-purpose | Dual OSC detune, Filter Drive, Key Track, POLY mode |
+| FM | Bells, electric pianos, metallic textures | Algorithm, per-operator Ratio, FB feedback |
+| Wavetable | Evolving tones, digital leads, pads | Morph (A→B crossfade), 8-waveform bank |
+| Karplus-Strong | Plucked strings, guitar, harp | Damping (sustain), Brightness, Excitation |
+| Sampler | Any audio, drum kits with per-pad control | Per-pad Tune/Filter/Envelope, Loop mode |
+| Drums | Synthesised drum machine, percussion | 8-voice synth rack, kits-as-presets, bus EQ |
