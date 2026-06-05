@@ -9,7 +9,7 @@ function state(): SessionState {
       id: 'L1', engineId: 'sampler', clips: [
         { id: 'a', lengthBars: 2, notes: [], sample: { sampleId: 'smp-1', mode: 'loop', warp: true, warpMode: 'stretch', trimStart: 0, trimEnd: 4 } },
         { id: 'b', lengthBars: 1, notes: [], sample: { sampleId: 'smp-2', mode: 'loop', warp: false, warpMode: 'stretch', trimStart: 0, trimEnd: 2 } },
-        { id: 'c', lengthBars: 1, notes: [], sample: { sampleId: 'smp-3', mode: 'loop', warp: true, warpMode: 'slice', slices: [{ start: 0, end: 1, note: 36 }], trimStart: 0, trimEnd: 1 } },
+        { id: 'c', lengthBars: 1, notes: [], sample: { sampleId: 'smp-3', mode: 'loop', warp: true, trimStart: 0, trimEnd: 1 } }, // warp on but no stretch mode → skipped
       ],
     }],
     scenes: [], globalQuantize: '1/1',

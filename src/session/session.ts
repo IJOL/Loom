@@ -30,11 +30,10 @@ export interface ClipSample {
   originalBpm?: number;
   /** Per-clip warp/sync on/off. */
   warp?: boolean;
-  /** How a warped loop plays. 'slice' (default) = notes trigger slice regions;
-   *  'stretch' = one WSOLA-stretched buffer. Read with a 'slice' default. */
-  warpMode?: 'slice' | 'stretch';
-  /** Slice carve map (present in slice mode). Discriminates the playback path. */
-  slices?: LoopSlice[];
+  /** How a warped loop plays. Only 'stretch' is honored: one WSOLA-stretched
+   *  buffer per iteration (pitch preserved). The scheduler always plays the
+   *  whole buffer for an audio clip; absent ⇒ varispeed fill. */
+  warpMode?: 'stretch';
   trimStart: number;   // seconds into the buffer
   trimEnd: number;     // seconds (buffer end if not trimmed)
   gain?: number;       // linear, default 1
@@ -62,8 +61,8 @@ export interface SessionClip {
   loopEndTick?: number;
   /** Display-only source buffer for the waveform header (Mode-2 sliced clips
    *  whose audio now lives in the bank keymap). The scheduler IGNORES this — it
-   *  is purely for the editor's waveform strip. Absent ⇒ no header. */
-  waveformRef?: { sampleId: string };
+   *  is purely for the editor's waveform strip + slice markers. Absent ⇒ no header. */
+  waveformRef?: { sampleId: string; slices?: LoopSlice[] };
 }
 
 export interface SessionLane {

@@ -226,7 +226,7 @@ export class SessionHost {
         lengthBars: built.lengthBars,
         notes: built.notes,
         gridResolution: DEFAULT_RESOLUTION,
-        waveformRef: { sampleId: srcId }, // keep the waveform header above the notes
+        waveformRef: { sampleId: srcId, slices: built.slices }, // waveform + slice markers above the notes
       };
       const hd = this.deps.historyDeps;
       const run = () => {
@@ -646,7 +646,7 @@ export class SessionHost {
             };
             if (hd) withUndo(hd, run); else run();
           } catch (err) {
-            console.warn('Sampler: could not load dropped audio:', err);
+            console.warn('Could not load dropped audio:', err);
           }
         })();
       },

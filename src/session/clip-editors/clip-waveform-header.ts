@@ -68,9 +68,9 @@ export function mountWaveformHeader(
       c2d.beginPath(); c2d.moveTo(x, 0); c2d.lineTo(x, RULER_H); c2d.stroke();
     }
 
-    // slice markers (when present)
-    const slices = clip.sample?.slices ?? [];
-    const dur = (clip.sample?.trimEnd ?? 0) - (clip.sample?.trimStart ?? 0);
+    // slice markers (Mode-2 sliced clips carry the carve map on waveformRef)
+    const slices = clip.waveformRef?.slices ?? [];
+    const dur = buf?.duration ?? 0;
     if (slices.length && dur > 0) {
       c2d.strokeStyle = '#ffb454';
       for (const s of slices) {
@@ -87,10 +87,14 @@ export function mountWaveformHeader(
   }
 
   draw();
+  let lastW = Math.max(320, host.clientWidth || 600);
   return {
     redraw() {
       const f = deps.getPlayheadFrac?.() ?? -1;
-      if (f !== playheadFrac) { playheadFrac = f; }
+      const w = Math.max(320, host.clientWidth || 600);
+      if (f === playheadFrac && w === lastW) return; // nothing changed — skip repaint
+      playheadFrac = f;
+      lastW = w;
       draw();
     },
   };

@@ -43,7 +43,7 @@ describe('audio engine', () => {
  *  engine voice — the SAME path the live transport uses (engine + scheduler). */
 async function renderViaScheduler(opts: {
   durationSec: number; bpm: number; sampleId: string;
-  loopDurSec: number; originalBpm: number; preStretch?: boolean;
+  loopDurSec: number; originalBpm: number;
 }): Promise<AudioBuffer> {
   const sr = 44100;
   const render = new OfflineAudioContext(1, Math.ceil(opts.durationSec * sr), sr);
