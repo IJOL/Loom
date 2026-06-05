@@ -22,6 +22,7 @@ Loom grew out of a Roland TB-303 bass synth + drum machine and still has those a
 - **Per-lane modulation** — LFO and ADSR modulators routable to any parameter.
 - **FX & mixer** — multifilter, distortion, reverb, delay as per-lane inserts or master sends, plus a mixer with **sidechain compression**.
 - **MIDI import** — drop a `.mid` file and it's transformed into a session, with General MIDI instrument matching.
+- **Hardware MIDI control** — drive Loom live from an **Akai APC Key 25** (or any MIDI keyboard) over USB: play the active lane with **held, velocity-sensitive, polyphonic** notes, launch clips on the **8×5 pad grid with LED feedback**, tweak params with the 8 knobs, and fire scenes / STOP ALL. Auto-detects mk1/mk2 and falls back to a generic keyboard; see [below](#hardware-midi-control-apc-key-25).
 - **Stem separation (optional)** — drop a finished song and Loom splits it into **4 Sampler lanes** (vocals / drums / bass / other) so you can mute, solo and remix the parts. Separation runs on a **small local helper you start yourself** (Demucs — the models behind [UVR](https://github.com/anjok07/ultimatevocalremovergui)); the app itself stays 100% browser. Setup below / [`tools/stem-service/`](tools/stem-service/README.md).
 - **Presets** — 20+ per engine, GM-tagged.
 - **Global undo/redo** and session save/load (stored locally in your browser).
@@ -82,6 +83,20 @@ uvicorn app:app --port 8765
 ```
 
 Then click **Stems…**, pick a song, and the 4 lanes appear when it finishes. The feature is **entirely opt-in**: if the service isn't running the button just says so, and nothing else changes. Full setup — CPU vs GPU/CUDA, Windows/ffmpeg, Codespaces, CORS / Chrome Private Network Access, troubleshooting — lives in [`tools/stem-service/README.md`](tools/stem-service/README.md).
+
+## Hardware MIDI control (APC Key 25)
+
+Loom can be played from a hardware controller over **Web MIDI** (Chrome / Edge — Firefox needs the flag). Open the **MIDI Control** panel and click **Enable**; the status shows the detected device, e.g. `APC Key 25 (mk2) ✓`. Plug-and-play: unplug/replug re-binds, and the choice is remembered across reloads.
+
+It's built around an **Akai APC Key 25** (both **mk1** and **mk2** auto-detect), but any class-compliant keyboard works as a generic fallback (notes + CC knobs, no LEDs). Adding support for another controller is dropping one **profile** file in [`src/control/profiles/`](src/control/profiles/) — it's discovered at build time, just like engines and FX.
+
+Surface map:
+
+- **Keyboard** → plays the **active lane**'s engine as **held notes**: hold for sustain, release to stop, chords are polyphonic, velocity drives loudness, and the sustain pedal holds.
+- **8×5 pads** → launch the clips of the visible lanes, with **LED feedback**: green = playing, amber = stopped, off = empty (mk1); clip colours on mk2.
+- **8 knobs** → tweak parameters; the bank buttons switch between **VOLUME / PAN / SEND (= EQ) / DEVICE** (the active lane's first engine params). Values jump to the knob position (no pickup).
+- **Scene buttons** → launch scenes; **STOP ALL** stops everything.
+- **LEFT / RIGHT** → change the active lane — and the on-screen UI follows (the active lane is a single source of truth, synced both ways).
 
 ## Deployment
 
