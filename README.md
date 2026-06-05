@@ -76,6 +76,23 @@ npm run build:pages   # tsc + vite build --base=/Loom/
 
 The standard `npm run build` (base `/`) is left untouched for local preview and other hosts.
 
+## Credits — sample sources
+
+The synth drum kits (808 / 909 / 606 / 78 / Linn) are **100% generated DSP** — no samples.
+The two *sample* kits bundled under [`public/drumkits/`](public/drumkits/) are small one-shots
+(16 files, ~1.1 MB total) curated from freely-circulated, community-redistributed sources:
+
+- **`acoustic` ("Acoustic / Dirt")** and most of **`tr808`** — the [**Dirt-Samples**](https://github.com/tidalcycles/Dirt-Samples)
+  collection that ships with [TidalCycles](https://tidalcycles.org/), plus a couple of generic acoustic one-shots.
+- **`tr808` ("TR-808")** — the classic Roland **TR-808** sounds (the widely-distributed
+  *Michael Fischer 808* set and equivalents). "TR-808" is a trademark of Roland Corporation;
+  the bundled samples are decades-old, freely-circulated one-shots used here for educational/demo purposes.
+- **`tr808/ride`** uses a TR-808 crash; the acoustic ride is from Dirt-Samples.
+
+These are bundled so the sampled kits work on the live deploy. They're a tiny curated subset, not a
+redistribution of any full commercial library. **If you hold rights to any sound here and want it
+removed or re-credited, open an issue and it'll be swapped immediately.**
+
 ## Architecture
 
 See [CLAUDE.md](CLAUDE.md) for a tour of the subsystems (engine/FX/modulator registry, the `SessionState` data model, the per-lane scheduler, and the source layout under `src/`).

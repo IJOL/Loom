@@ -29,11 +29,16 @@ playwright-report/
 # Personal editor config (e.g. CMake settings from sibling C++ work) — not shared
 .vscode/
 
-# Harvested raw assets (mixed-license / copyright) — not committed; loaded from public/ at runtime
+# Raw harvested asset pools (bulk, mixed-license) — NOT committed. These are the
+# candidate libraries we curate kits *from*; one chosen file per voice is copied
+# into public/drumkits/<kit>/ by hand.
 drum-samples/
 midi-library/
-public/drumkits/**/*.wav
 loops/
+# NOTE: the 16 curated drumkit WAVs under public/drumkits/<kit>/ ARE committed
+# (~1.1 MB total) so the sampled kits actually work on the live GitHub Pages
+# deploy. Sources are credited in the README. (Previously these were ignored via
+# `public/drumkits/**/*.wav`, which broke the remote deploy with 404s.)
 
 # …but DO commit the small curated loop corpus used as test fixtures
 # (the bulk loops/ above stays ignored; these are a handful for the test suite).
