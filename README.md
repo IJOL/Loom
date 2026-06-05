@@ -73,12 +73,15 @@ Loom can split a finished track into 4 stems and load each as a Sampler lane (**
 
 ```bash
 cd tools/stem-service
-python -m venv .venv && . .venv/bin/activate   # Windows: .venv\Scripts\activate
+python -m venv .venv && . .venv/bin/activate   # Windows: py -m venv .venv ; .venv\Scripts\activate
 pip install -r requirements.txt                 # needs ffmpeg on PATH
+# then a Torch backend (Demucs runs on PyTorch) — pick one:
+pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu128   # NVIDIA GPU (cu128 = RTX 50xx/Blackwell)
+# pip install torch torchaudio                                                    # …or CPU-only
 uvicorn app:app --port 8765
 ```
 
-Then click **Stems…**, pick a song, and the 4 lanes appear when it finishes. The feature is **entirely opt-in**: if the service isn't running the button just says so, and nothing else changes. Full notes — Codespaces, CORS / Chrome Private Network Access, the configurable service URL — live in [`tools/stem-service/README.md`](tools/stem-service/README.md).
+Then click **Stems…**, pick a song, and the 4 lanes appear when it finishes. The feature is **entirely opt-in**: if the service isn't running the button just says so, and nothing else changes. Full setup — CPU vs GPU/CUDA, Windows/ffmpeg, Codespaces, CORS / Chrome Private Network Access, troubleshooting — lives in [`tools/stem-service/README.md`](tools/stem-service/README.md).
 
 ## Deployment
 
