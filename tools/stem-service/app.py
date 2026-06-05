@@ -48,7 +48,13 @@ async def transcribe(file: UploadFile = File(...), kind: str = Form("auto")):
     in_path = os.path.join(job_root, f"{os.urandom(6).hex()}-{safe_name}")
     with open(in_path, "wb") as f:
         f.write(await file.read())
-    return await run_in_threadpool(transcribe_file, in_path, kind)
+    try:
+        return await run_in_threadpool(transcribe_file, in_path, kind)
+    finally:
+        try:
+            os.remove(in_path)
+        except OSError:
+            pass
 
 
 @app.post("/jobs", status_code=201)

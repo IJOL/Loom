@@ -8,6 +8,8 @@ Times are in SECONDS; the browser maps them onto the session grid at its own bpm
 librosa is imported lazily so the module stays cheap to import (and tests can stub)."""
 from __future__ import annotations
 
+import math
+
 HOP = 512
 SR = 22050
 
@@ -32,7 +34,8 @@ def _tempo(y, sr):
             t = librosa.feature.rhythm.tempo(y=y, sr=sr)
         except AttributeError:
             t = librosa.beat.tempo(y=y, sr=sr)
-        return float(t[0])
+        t0 = float(t[0])
+        return t0 if math.isfinite(t0) else None  # never serialize NaN (invalid JSON)
     except Exception:  # noqa: BLE001
         return None
 

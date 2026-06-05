@@ -850,8 +850,8 @@ wireHistoryKeyboard(historyDeps);
 // undoable. Must happen after historyDeps is built (it closes over sessionHost
 // via savedStateDeps → saveWiringDeps).
 sessionHost.setHistoryDeps(historyDeps);
-// Stems: transport-bar "Stems…" dialog → local separation service. Optionally
-// transcribes the chosen stems to note lanes in the same pass (checkboxes in the dialog).
+// Stems: transport-bar "Stems…" dialog → local separation service. Every
+// separation also transcribes each stem to a note/drums lane (always-on).
 const stemClient = new StemClient(stemServiceBaseUrl());
 wireStemDialog({
   ctx,

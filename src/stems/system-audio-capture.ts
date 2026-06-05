@@ -33,14 +33,20 @@ export async function startSystemAudioCapture(): Promise<AudioCapture> {
     throw new Error('No se compartió audio. Vuelve a intentarlo y marca «compartir audio del sistema».');
   }
 
+  const releaseTracks = () => stream.getTracks().forEach((t) => t.stop());
+
   const audioStream = new MediaStream(audioTracks);
   const mime = pickMime();
-  const rec = new MediaRecorder(audioStream, mime ? { mimeType: mime } : undefined);
   const chunks: Blob[] = [];
-  rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
-  rec.start();
-
-  const releaseTracks = () => stream.getTracks().forEach((t) => t.stop());
+  let rec: MediaRecorder;
+  try {
+    rec = new MediaRecorder(audioStream, mime ? { mimeType: mime } : undefined);
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    rec.start();
+  } catch (e) {
+    releaseTracks(); // don't leave the screen-share running if recording can't start
+    throw e;
+  }
 
   return {
     stop: () => new Promise<File>((resolve, reject) => {
