@@ -76,8 +76,10 @@ export function wireStemDialog(deps: StemDialogDeps): void {
       cancelBtn.hidden = true;
       progress.hidden = true;
       runBtn.disabled = false;
-      setStatus((err as Error)?.message ?? 'Error en la separación.');
-      hint.textContent = (err as Error)?.message ?? 'Error en la separación.';
+      const aborted = err instanceof DOMException && err.name === 'AbortError';
+      const msg = aborted ? 'Cancelado' : ((err as Error)?.message ?? 'Error en la separación.');
+      setStatus(msg);
+      hint.textContent = msg;
     }
   });
 
