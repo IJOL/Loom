@@ -2,6 +2,8 @@
 
 Loom is a browser-based, session-based music workstation. It organises sound into **lanes** (instrument tracks), **clips** (patterns of notes), and **scenes** (rows of clips launched together). Seven synthesis engines are available — TB-303, Subtractive, FM, Wavetable, Karplus-Strong, Sampler, and Drum Machine — and all synthesis runs live in the browser with no install or sign-in required.
 
+Beyond the engines, Loom has **note velocity & dynamics** (an Ableton-style velocity lane), **per-clip and arrangement-wide loop regions**, **per-lane modulation and FX** with a sidechain mixer, **MIDI import**, ready-made **sampled drum kits**, a **playable arrangement** timeline, and optional **stem separation** (split a finished song into 4 lanes via a local helper).
+
 ---
 
 ![Loom — the full application: transport bar, session grid, and channel strips](images/app-overview.png)
@@ -23,8 +25,8 @@ Loom is a browser-based, session-based music workstation. It organises sound int
 |7|[Mixing & FX](07-mixing-and-fx.md)|
 |8|[MIDI & Samples](08-midi-and-samples.md)|
 |9|[Saving & Export](09-saving-and-export.md)|
-|10|[Developer Guide](10-developer-guide.md)|
-|11|[Performance & Arrangement](11-performance-and-arrangement.md)|
+|10|[Performance & Arrangement](10-performance-and-arrangement.md)|
+|11|[Developer Guide](11-developer-guide.md)|
 
 ---
 

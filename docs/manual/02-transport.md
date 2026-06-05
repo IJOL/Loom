@@ -46,7 +46,7 @@ Each 16th-note step lasts `60 / bpm / 4` seconds.
 **Session / Performance** (`#mode-toggle`) — switches the main view between the Session clip grid and the Performance arrangement view.
 
 - **Session** is the default mode: you see the clip grid and can trigger scenes, edit clips, and record automation in real time.
-- **Performance** shows the arrangement timeline where recorded takes are displayed as timeline bands and automation curves can be drawn directly. See [Performance & Arrangement](11-performance-and-arrangement.md) for the full workflow.
+- **Performance** shows the arrangement timeline where recorded takes are displayed as timeline bands and automation curves can be drawn directly. See [Performance & Arrangement](10-performance-and-arrangement.md) for the full workflow.
 
 **● REC** (`#rec`) — arms knob-movement recording. When armed (button shows "● REC ON"), any knob you move during playback is captured as automation in the current take. Click again to disarm. See [Modulation & Note FX](06-modulation-and-note-fx.md) for how automation lanes work.
 

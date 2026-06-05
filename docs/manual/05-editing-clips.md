@@ -118,7 +118,7 @@ The loop region is **per-clip** and saved with the session. Two clips in the sam
 
 All loop-region edits (moving handles, toggling) are part of the global undo history (Ctrl+Z / Cmd+Z).
 
-For how to use an arrangement-wide A–B loop brace that repeats a section across all lanes at once, see [Performance & Arrangement](11-performance-and-arrangement.md).
+For how to use an arrangement-wide A–B loop brace that repeats a section across all lanes at once, see [Performance & Arrangement](10-performance-and-arrangement.md).
 
 ---
 
