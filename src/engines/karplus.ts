@@ -131,7 +131,7 @@ import { bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disp
 import { ConnectionBinder } from '../modulation/connection-binder';
 import { wireEngineParams } from './engine-ui';
 import { getCachedPresets } from '../presets/preset-loader';
-import { velToGain, resolveVelocity } from '../core/velocity-gain';
+import { velGain } from '../core/velocity-gain';
 
 // Unified-param schema. Dot-namespaced ids that map consistently between
 // knob layer and voice AudioParam destinations (no more ks-* split between
@@ -216,7 +216,7 @@ class KarplusVoice implements Voice {
     }
 
     const freq = 440 * Math.pow(2, (midi - 69) / 12);
-    const velMul = velToGain(resolveVelocity(options.velocity, !!options.accent));
+    const velMul = velGain(options.velocity, !!options.accent);
 
     const damping    = this.getParam('string.damping');     // 0..1, 0 = ringy, 1 = dead
     const brightness = this.getParam('string.brightness');  // 0..1, loop LP cutoff scale

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { velNorm, velToGain, DEFAULT_VELOCITY, resolveVelocity } from './velocity-gain';
+import { velNorm, velToGain, DEFAULT_VELOCITY, resolveVelocity, velGain } from './velocity-gain';
 
 describe('velocity-gain', () => {
   it('velNorm maps 0..127 to 0..1, clamped', () => {
@@ -25,5 +25,14 @@ describe('velocity-gain', () => {
     expect(resolveVelocity(undefined, false)).toBe(DEFAULT_VELOCITY);
     expect(resolveVelocity(undefined, true)).toBeGreaterThanOrEqual(100); // accent default ≥ threshold
     expect(resolveVelocity(50, false)).toBe(50);
+  });
+
+  it('velGain adds an accent punch on top of the velocity curve', () => {
+    // same velocity, accent louder than non-accent
+    expect(velGain(110, true)).toBeGreaterThan(velGain(110, false));
+    // non-accent path equals the plain velocity curve
+    expect(velGain(80, false)).toBeCloseTo(velToGain(80), 5);
+    // accented note is clearly louder than a normal (non-accent) note at the default velocity
+    expect(velGain(115, true)).toBeGreaterThan(velGain(90, false) * 1.2);
   });
 });

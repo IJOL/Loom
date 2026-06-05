@@ -7,7 +7,7 @@
 
 import { ChannelStrip, FxBus } from './fx';
 import { computeVoiceMutes } from './mute-solo';
-import { velToGain, resolveVelocity } from './velocity-gain';
+import { velGain } from './velocity-gain';
 
 export type DrumVoice =
   | 'kick' | 'snare' | 'closedHat' | 'openHat' | 'clap' | 'cowbell' | 'tom' | 'ride';
@@ -219,7 +219,7 @@ export class DrumMachine {
   }
 
   trigger(voice: DrumVoice, time: number, accent = false, velocity?: number) {
-    const vel = 0.65 * velToGain(resolveVelocity(velocity, accent));
+    const vel = 0.65 * velGain(velocity, accent);
     switch (voice) {
       case 'kick':      this.playKick(time, vel); break;
       case 'snare':     this.playSnare(time, vel); break;

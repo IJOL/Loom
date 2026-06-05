@@ -1,4 +1,4 @@
-import { velToGain, resolveVelocity } from './velocity-gain';
+import { velGain } from './velocity-gain';
 
 export type Wave = 'sawtooth' | 'square';
 
@@ -90,7 +90,7 @@ export class TB303 {
     const decaySec = 0.05 + p.decay * 1.2;
     const accentBoost = note.accent ? p.accent : 0;
     const peakCutoff = Math.min(baseCutoff + envAmount * (1 + accentBoost), 18000);
-    const peakAmp = 0.3 * velToGain(resolveVelocity(note.velocity, note.accent));
+    const peakAmp = 0.3 * velGain(note.velocity, note.accent);
 
     this.osc.type = p.wave;
 

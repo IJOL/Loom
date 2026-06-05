@@ -16,7 +16,7 @@ import { bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disp
 import { ConnectionBinder } from '../modulation/connection-binder';
 import { wireEngineParams } from './engine-ui';
 import { getCachedPresets } from '../presets/preset-loader';
-import { velToGain, resolveVelocity } from '../core/velocity-gain';
+import { velGain } from '../core/velocity-gain';
 
 interface FMAlgorithm {
   id: number;
@@ -185,7 +185,7 @@ class FMVoice implements Voice {
     }
 
     const freq = 440 * Math.pow(2, (midi - 69) / 12);
-    const velMul = velToGain(resolveVelocity(options.velocity, !!options.accent));
+    const velMul = velGain(options.velocity, !!options.accent);
 
     let maxRelease = 0;
     for (let i = 0; i < 4; i++) {

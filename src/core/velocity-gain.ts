@@ -21,3 +21,15 @@ export function resolveVelocity(velocity: number | undefined, accent: boolean): 
   if (velocity != null) return velocity;
   return accent ? 115 : DEFAULT_VELOCITY;
 }
+
+// Accent emphasis: on top of the continuous velocity gain, an accented note
+// (velocity ≥ 100) gets an extra loudness punch so accents pop — matching the
+// app's binary accent model (which also brightens filter/Q). Tuned by ear + the
+// engines' no-clip DSP tests.
+export const ACCENT_PUNCH = 1.1;
+
+/** Per-note loudness multiplier: continuous velocity gain × accent punch.
+ *  Engines apply this as `oldNonAccentBase × velGain(velocity, accent)`. */
+export function velGain(velocity: number | undefined, accent: boolean): number {
+  return velToGain(resolveVelocity(velocity, accent)) * (accent ? ACCENT_PUNCH : 1);
+}

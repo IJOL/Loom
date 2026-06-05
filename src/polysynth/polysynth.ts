@@ -8,7 +8,7 @@
 // the entire envelope at sample-accurate times and frees itself when the
 // release tail ends.
 
-import { velToGain, resolveVelocity } from '../core/velocity-gain';
+import { velGain } from '../core/velocity-gain';
 
 export type FilterType = 'lowpass' | 'highpass' | 'bandpass';
 
@@ -193,7 +193,7 @@ export class PolySynth {
     // realtime LFO/ADSR on master.tune actually bends pitch.
     const noteFreq = 440 * Math.pow(2, (midi - 69) / 12);
     const accentMul = accent ? 1.3 : 1.0;       // filter-env brightness (timbre)
-    const ampGain = velToGain(resolveVelocity(velocity, accent)); // loudness
+    const ampGain = velGain(velocity, accent); // loudness
 
     // master.tune in semitones → cents detune offset shared across oscs.
     // Each osc.detune AudioParam receives `tune.offset` (cents) via a per-voice

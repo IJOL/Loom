@@ -27,7 +27,7 @@ import { computeVoiceMutes } from '../core/mute-solo';
 import { renderDrumVoiceRack } from './drum-voice-rack';
 import { parseLoopMetadata } from '../samples/loop-metadata';
 import { detectLoop } from '../samples/loop-analysis';
-import { velToGain, resolveVelocity } from '../core/velocity-gain';
+import { velGain } from '../core/velocity-gain';
 import { analyzeLoopFor } from '../samples/loop-import';
 import { slicedLoopClip } from '../session/session';
 import { DEFAULT_RESOLUTION } from '../core/drum-grid-editing';
@@ -128,7 +128,7 @@ class SamplerVoice implements Voice {
 
     // Per-pad amp envelope.
     const audible = this.api.isPadAudible(entry.rootNote) ? 1 : 0;
-    const peak = this.api.getGlobal('gain') * (entry.gain ?? 1) * (0.8 * velToGain(resolveVelocity(opts.velocity, !!opts.accent))) * OUTPUT_TRIM * pad.level * audible;
+    const peak = this.api.getGlobal('gain') * (entry.gain ?? 1) * (0.8 * velGain(opts.velocity, !!opts.accent)) * OUTPUT_TRIM * pad.level * audible;
     const atk = Math.max(0.001, pad.attack);
     const rel = Math.max(0.005, pad.decay);
     const g = this.ampGain.gain;
@@ -238,7 +238,7 @@ class SamplerVoice implements Voice {
     this.filter.Q.setValueAtTime(0.5 + pad.res * 20, time);
 
     const audible = this.api.isPadAudible(midi) ? 1 : 0;
-    const peak = this.api.getGlobal('gain') * (0.8 * velToGain(resolveVelocity(opts.velocity, !!opts.accent))) * OUTPUT_TRIM * pad.level * audible;
+    const peak = this.api.getGlobal('gain') * (0.8 * velGain(opts.velocity, !!opts.accent)) * OUTPUT_TRIM * pad.level * audible;
     const atk = Math.max(0.001, pad.attack);
     const rel = Math.max(0.005, pad.decay);
     const g = this.ampGain.gain;
