@@ -18,6 +18,7 @@ import { sampleStore } from '../samples/store-singleton';
 import { sampleCache } from '../samples/sample-cache';
 import { getNoteFxChain, loadNoteFxForLane } from '../notefx/notefx-registry';
 import { applyLaneEngineState } from '../export/apply-lane-engine-state';
+import { preloadSceneSamples } from '../export/preload-scene-samples';
 import { renderNoteFxPanel } from '../notefx/notefx-ui';
 import { syncNoteFx, mirrorKeymapChange, mirrorDrumkitId } from './session-engine-state';
 import { fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
@@ -283,6 +284,11 @@ export class SessionHost {
       rehydrateInsertChain(this.deps.ctx, masterChain, this.state.masterInserts);
     }
     this.renderWithMixer();
+    // Decode every referenced audio buffer (audio clips, sampler keymaps, slice
+    // banks) into the cache so loaded sessions sound on first Play, not just on
+    // offline export. Fire-and-forget: editors render regardless; audio comes
+    // alive once decode resolves.
+    void preloadSceneSamples(this.deps.ctx, this.state.lanes);
     this._fireStateApplied();
   }
 

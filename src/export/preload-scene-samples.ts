@@ -18,6 +18,7 @@ export function collectSampleIds(lanes: SessionLane[]): Set<string> {
     }
     for (const clip of lane.clips) {
       if (clip?.sample?.sampleId) ids.add(clip.sample.sampleId);
+      if (clip?.waveformRef?.sampleId) ids.add(clip.waveformRef.sampleId);
     }
   }
   return ids;

@@ -24,4 +24,16 @@ describe('collectSampleIds', () => {
     const lanes: SessionLane[] = [{ id: 'b', engineId: 'tb303', clips: [{ id: 'c', lengthBars: 1, notes: [] }] }];
     expect(collectSampleIds(lanes).size).toBe(0);
   });
+
+  it('includes clip.sample and clip.waveformRef sampleIds', () => {
+    const lanes = [{
+      id: 'a', engineId: 'audio', clips: [
+        { id: 'c1', lengthBars: 1, notes: [], sample: { sampleId: 'smp-clip', mode: 'loop', trimStart: 0, trimEnd: 1 } },
+        { id: 'c2', lengthBars: 1, notes: [], waveformRef: { sampleId: 'smp-wave' } },
+      ],
+    }] as unknown as import('../session/session').SessionLane[];
+    const ids = collectSampleIds(lanes);
+    expect(ids.has('smp-clip')).toBe(true);
+    expect(ids.has('smp-wave')).toBe(true);
+  });
 });
