@@ -90,3 +90,66 @@ See [Editing Clips](05-editing-clips.md) for how to draw patterns in the drum gr
 The **Import as loop** picker (below the drop zone) takes an audio file and creates a tempo-synced slice clip on the lane instead of adding a keymap entry. Loom reads any embedded tempo/slice metadata from the file (Acid chunks, cue markers, or AIFF markers) first; if none is found, it runs onset detection and autocorrelation to estimate the original BPM and slice points. The result is a clip whose slices are mapped to drum-grid steps — playing it triggers each slice at the right moment to keep the loop in time with the session BPM. The status line confirms how many slices were found and the detected tempo.
 
 The loop import path bypasses the keymap and the per-pad parameters; the slice clip plays each region at its natural pitch with short anti-click fades and no amp envelope.
+
+---
+
+## Stem separation (optional, local service)
+
+Stem separation lets you drop a finished song into Loom and get it back as four separate Sampler lanes — **Voz** (vocals), **Batería** (drums), **Bajo** (bass), and **Otros** (other) — so you can mute, solo, and remix each part inside the existing session.
+
+![Stems modal](images/stems-modal.png)
+
+### How it works
+
+Click **☰ Stems…** in the transport bar. A dialog titled "Separar en stems" opens and immediately checks whether the local helper service is reachable:
+
+- **Service found** — the hint line reads "4 pistas (voz / batería / bajo / otros) vía el servicio local." and the **Separar** button becomes active once you pick a file.
+- **Service not found** — the hint reads "No encuentro el servicio de stems en localhost:8765. ¿Está arrancado?" and Separar stays disabled. Start the service (see below), then re-open the dialog.
+
+To separate a track: pick an audio file with the file picker, then click **Separar**. The dialog shows a progress bar:
+
+1. **"Subiendo…"** — the file is being uploaded to the local service.
+2. **"Separando… m:ss"** — the service is running Demucs; the counter shows elapsed time. The bar may be indeterminate if the model does not report fine-grained progress.
+3. On success the dialog closes automatically and four new Sampler lanes appear in the session — one per stem, each holding a full-length one-shot clip sized to the song. Hitting Play reconstructs the original mix; mute or solo any lane to isolate parts.
+
+The entire lane-creation is a **single undo step**, so you can undo all four lanes at once.
+
+**Cancelar** aborts a running job and frees the temporary files on the service. **Cerrar** closes the dialog (only available when no job is running).
+
+### Opt-in nature
+
+The feature is entirely opt-in. If you never start the service, nothing else in Loom changes — the ☰ Stems… button is the only touch point, and it degrades gracefully to a clear "service not found" message.
+
+Stems land in IndexedDB as ordinary sample assets: they survive browser reloads just like any other sample you import.
+
+### Setting up the local service
+
+The separation runs on your machine via a small Python service in `tools/stem-service/`. It requires **Python 3.10+** and **ffmpeg** on your PATH.
+
+```bash
+cd tools/stem-service
+python -m venv .venv
+# macOS / Linux:
+. .venv/bin/activate
+# Windows:
+.venv\Scripts\activate
+
+pip install -r requirements.txt
+uvicorn app:app --port 8765
+```
+
+The first time you separate a track the service downloads the Demucs `htdemucs` model automatically (several hundred MB). Subsequent runs skip the download. Separation takes roughly **1–2 minutes per song** on CPU; a GPU-enabled PyTorch build is much faster.
+
+### Codespaces and custom service URL
+
+If you want to run the service in a GitHub Codespace (a Linux VM with Python), start it there with the same commands above, forward port 8765, and paste the resulting HTTPS URL into the browser console:
+
+```js
+localStorage.loomStemServiceUrl = 'https://your-codespace-url-8765.preview.app.github.dev'
+```
+
+The same override works for any non-default host. CORS for `localhost:5173` (dev), `localhost:4173` (preview), and the GitHub Pages origin is already configured in the service.
+
+> Note: Chrome's *Private Network Access* policy may add a preflight request when the Pages version of Loom calls `http://localhost:8765`. The lowest-friction setup is running Loom locally (`npm run dev`) alongside the service.
+
+For full notes on CORS, the HTTP contract, and the Codespaces workflow, see [`tools/stem-service/README.md`](../../tools/stem-service/README.md).

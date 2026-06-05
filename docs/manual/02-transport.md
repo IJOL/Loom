@@ -66,3 +66,4 @@ The remaining controls in the transport row are covered in dedicated chapters:
 - **New / Save / Load** (`#new-session`, `#save`, `#load`) — session file management. See [Saving & Export](09-saving-and-export.md).
 - **— load a demo —** (`#demo-picker`) — loads a bundled demo arrangement into the session.
 - **▶ MIDI IMPORT** (`.midi-panel`) — imports a Standard MIDI File. See the MIDI Import chapter for details.
+- **☰ Stems…** (`#stems-open`) — opens the stem-separation dialog, which splits a finished song into four Sampler lanes (vocals / drums / bass / other) via a local helper service. Requires the service to be running; see [MIDI & Samples → Stem separation](08-midi-and-samples.md#stem-separation-optional-local-service).

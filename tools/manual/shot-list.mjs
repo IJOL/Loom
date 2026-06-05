@@ -142,6 +142,15 @@ export const SHOTS = [
     },
   },
 
+  {
+    name: 'stems-modal',
+    selector: '#stems-modal .save-manager-dialog',
+    setup: async (page) => {
+      await page.locator('#stems-open').click();
+      await page.locator('#stems-modal').waitFor({ state: 'visible' });
+    },
+  },
+
   // ── Clip editor screenshots ───────────────────────────────────────────────
 
   {
