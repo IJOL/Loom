@@ -23,6 +23,7 @@ describe('web-midi-access', () => {
     const access = createMidiAccess({ nav: {} as any });
     const r = await access.enable();
     expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('expected enable() to fail');
     expect(r.reason).toBe('unsupported');
   });
 
@@ -34,6 +35,7 @@ describe('web-midi-access', () => {
     const access = createMidiAccess({ nav: nav as any });
     const r = await access.enable({ onEvent: (e) => events.push(e) });
     expect(r.ok).toBe(true);
+    if (!r.ok) throw new Error('expected enable() to succeed');
     expect(r.profileId).toBe('apc-key25');
     // Simulate a pad press from the device.
     input.onmidimessage({ data: Uint8Array.from([0x90, 0, 100]) });

@@ -5,9 +5,9 @@ import { loadControlPrefs, saveControlPrefs } from './persistence';
 function memStorage(): Storage {
   const m = new Map<string, string>();
   return {
-    getItem: (k) => m.get(k) ?? null,
-    setItem: (k, v) => void m.set(k, v),
-    removeItem: (k) => void m.delete(k),
+    getItem: (k: string) => m.get(k) ?? null,
+    setItem: (k: string, v: string) => void m.set(k, v),
+    removeItem: (k: string) => void m.delete(k),
     clear: () => m.clear(),
     key: () => null, length: 0,
   } as unknown as Storage;
