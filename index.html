@@ -70,6 +70,7 @@
             <button id="export-offline" class="io">Offline (r&aacute;pido)</button>
           </span>
         </span>
+        <button id="stems-open" class="io" title="Separar una canción en stems (servicio local)">&#9776; Stems&#8230;</button>
         <div class="transport-readout" title="Bar.beat.step  ·  hh:mm:ss elapsed">
           <span id="transport-position" class="transport-position">1.1.1</span>
           <span id="transport-time" class="transport-time">00:00:00</span>
@@ -341,6 +342,24 @@
           <button class="rnd" id="save-manager-load-file">Load from file…</button>
           <button class="rnd" id="save-manager-clear-all">Clear all saves</button>
           <span id="save-manager-size" class="save-manager-size"></span>
+        </div>
+      </div>
+    </div>
+
+    <div id="stems-modal" class="save-manager-modal" hidden>
+      <div class="save-manager-backdrop" id="stems-backdrop"></div>
+      <div class="save-manager-dialog">
+        <h3>Separar en stems</h3>
+        <p class="stems-hint" id="stems-hint">4 pistas (voz / batería / bajo / otros) vía el servicio local.</p>
+        <input type="file" id="stems-file" accept="audio/*" />
+        <div class="stems-progress" id="stems-progress" hidden>
+          <progress id="stems-bar" max="1"></progress>
+          <span id="stems-status"></span>
+        </div>
+        <div class="stems-actions">
+          <button id="stems-run" class="io" disabled>Separar</button>
+          <button id="stems-cancel" class="io" hidden>Cancelar</button>
+          <button id="stems-close" class="io">Cerrar</button>
         </div>
       </div>
     </div>
