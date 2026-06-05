@@ -15,6 +15,7 @@ import { getEngine } from '../../engines/registry';
 import { renderDrumGridEditor } from './clip-editor-drum-grid';
 import { renderLoopEditor } from './clip-editor-loop';
 import type { HistoryDeps } from '../../save/history-wiring';
+import { mountClipLoopBrace } from '../../core/clip-loop-brace';
 
 export interface ClipEditorDeps {
   ctx: AudioContext;
@@ -66,6 +67,7 @@ export function renderClipEditor(
   host.innerHTML = '';
   const engine = getEngine(lane.engineId);
   const editor = chooseClipEditor(lane, engine?.editor, override);
+  let handle: PianoRollHandle | null;
 
   if (isSliceLoopClip(clip)) {
     // Audition must carry the slice region (the lane keymap is empty for a slice
@@ -85,10 +87,8 @@ export function renderClipEditor(
       const clipSteps = clip.lengthBars * stepsPerBar(deps.seq.meter);
       return (stepsElapsed % clipSteps) * TICKS_PER_STEP;
     };
-    return renderLoopEditor(host, clip, deps.historyDeps, deps.seq.meter, { auditionNote: audition, getPlayheadTick });
-  }
-
-  if (editor === 'drum-grid') {
+    handle = renderLoopEditor(host, clip, deps.historyDeps, deps.seq.meter, { auditionNote: audition, getPlayheadTick });
+  } else if (editor === 'drum-grid') {
     const audition = deps.triggerForLane
       ? (midi: number) => deps.triggerForLane!(lane.id, midi, deps.ctx.currentTime, AUDITION_GATE, false, false)
       : undefined;
@@ -100,9 +100,13 @@ export function renderClipEditor(
       const clipSteps = clip.lengthBars * stepsPerBar(deps.seq.meter);
       return (stepsElapsed % clipSteps) * TICKS_PER_STEP;
     };
-    return renderDrumGridEditor(host, clip, deps.historyDeps, deps.seq.meter, { auditionNote: audition, getPlayheadTick });
+    handle = renderDrumGridEditor(host, clip, deps.historyDeps, deps.seq.meter, { auditionNote: audition, getPlayheadTick });
+  } else {
+    handle = buildPianoRoll(host, lane, clip, deps);
   }
-  return buildPianoRoll(host, lane, clip, deps);
+
+  mountClipLoopBrace(host, clip, deps.seq.meter, deps.historyDeps, () => {});
+  return handle;
 }
 
 function buildPianoRoll(

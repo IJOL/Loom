@@ -1,0 +1,7 @@
+.clip-loop-brace { display:flex; align-items:center; gap:8px; height:20px; margin-bottom:4px; }
+.clip-loop-toggle { font-size:11px; padding:2px 8px; border-radius:12px; }
+.clip-loop-toggle.on { background:#ffcc33; color:#222; }
+.clip-loop-track { position:relative; flex:1; height:14px; background:#23272f; border-radius:4px; }
+.clip-loop-region { position:absolute; top:0; bottom:0; background:rgba(255,204,51,.18); border:1px solid #ffcc33; box-sizing:border-box; }
+.clip-loop-handle { position:absolute; top:0; bottom:0; width:8px; cursor:ew-resize; }
+.clip-loop-handle.l { left:-4px; } .clip-loop-handle.r { right:-4px; }
