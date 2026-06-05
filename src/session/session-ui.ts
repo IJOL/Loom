@@ -192,10 +192,10 @@ function clipCell(
     cell.classList.add('session-cell-empty');
     cell.addEventListener('click', () => cb.onCellClick(lane.id, rowIdx));
   }
-  // Sampler lanes accept an audio file dropped onto ANY cell (empty or filled)
+  // Sampler and audio lanes accept an audio file dropped onto ANY cell (empty or filled)
   // → create/replace a loop clip. Guarded to file drags so it does not interfere
   // with the internal clip-move drag (wireClipDrag) on filled cells.
-  if (lane.engineId === 'sampler' && cb.onCellDropAudio) {
+  if ((lane.engineId === 'sampler' || lane.engineId === 'audio') && cb.onCellDropAudio) {
     const onDrop = cb.onCellDropAudio;
     const isFileDrag = (e: DragEvent) =>
       !!e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files');

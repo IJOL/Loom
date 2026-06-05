@@ -535,6 +535,7 @@ export class SessionHost {
       onCellClick(laneId, clipIdx) {
         const lane = self.state.lanes.find((l) => l.id === laneId);
         if (!lane) return;
+        if (lane.engineId === 'audio') return; // audio cells are filled by dropping a WAV
         const hd = self.deps.historyDeps;
         const run = () => {
           const defaultLen = Math.max(1, Math.floor(seq.length / stepsPerBar(seq.meter)));
@@ -549,7 +550,7 @@ export class SessionHost {
       },
       onCellDropAudio(laneId, clipIdx, file) {
         const lane = self.state.lanes.find((l) => l.id === laneId);
-        if (!lane || lane.engineId !== 'sampler') return;
+        if (!lane || (lane.engineId !== 'sampler' && lane.engineId !== 'audio')) return;
         void ctx.resume();
         void (async () => {
           try {
@@ -558,11 +559,17 @@ export class SessionHost {
             const buf = await ctx.decodeAudioData(asset.bytes.slice(0));
             sampleCache.put(asset.id, buf);
             const name = file.name.replace(/\.[^.]+$/, '');
-            const clip = audioClip({ name, sampleId: asset.id, durationSec: buf.duration, bpm: seq.bpm });
+            const clip = lane.engineId === 'audio'
+              ? audioChannelClip({
+                  name, sampleId: asset.id, durationSec: buf.duration,
+                  originalBpm: detectLoop(buf, seq.meter).originalBpm, projectMeter: seq.meter,
+                })
+              : audioClip({ name, sampleId: asset.id, durationSec: buf.duration, bpm: seq.bpm });
             const hd = self.deps.historyDeps;
             const run = () => {
               while (lane.clips.length <= clipIdx) lane.clips.push(null);
               lane.clips[clipIdx] = clip;
+              ensureScenesForRows(self.state);
               self.inspector.setSelectedClip({ laneId, clipIdx });
               self.inspector.openInspector();
               self.renderWithMixer();
