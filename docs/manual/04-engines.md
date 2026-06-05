@@ -12,6 +12,13 @@ tags so that MIDI import can auto-assign the best engine and preset for each
 track. See [Sessions, Lanes, Clips & Scenes](03-sessions-lanes-clips-scenes.md)
 for how to add and configure lanes.
 
+Every engine responds to **note velocity**. Velocity (0–127) scales each note's
+loudness continuously; accent (velocity ≥ 100) layers additional character on
+top — brightening the filter envelope and resonance on bass-style engines, and
+adding brightness on drums. For how to view and edit velocities in the
+piano-roll or drum-grid, see
+[Velocity & dynamics](05-editing-clips.md#velocity--dynamics).
+
 ---
 
 ## TB-303
