@@ -70,6 +70,14 @@ import {
 } from './automation/automation-tick';
 import { getActiveModVoice } from './modulation/active-mods';
 import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from './core/lane-ids';
+// ── Live MIDI control (src/control) ─────────────────────────────────────────
+import { createActiveLaneStore } from './control/active-lane';
+import { createLoomFacade } from './control/loom-facade';
+import { createMediator } from './control/control-mediator';
+import { createMidiAccess } from './control/web-midi-access';
+import { wireControlSurfaceUI } from './control/control-surface-ui';
+import { listProfiles } from './control/profile-registry';
+import { loadControlPrefs, saveControlPrefs } from './control/persistence';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -369,6 +377,9 @@ const showPolyEditorWrapper = (laneId: string, target: PolySynth, displayName: s
   if (!synthEditorDeps) return;
   showPolyEditor(laneId, target, displayName, synthEditorDeps);
 };
+// Active-lane store: single source of truth bridged to SessionHost.activeEditLane
+// so the UI and the APC stay in sync. Mirrored in onActiveLaneChanged below.
+const activeLaneStore = createActiveLaneStore();
 const sessionHost = new SessionHost({
   ctx, seq, playBtn,
   resetAutomationPosition,
@@ -404,6 +415,8 @@ const sessionHost = new SessionHost({
       if (engineId === 'tb303') engineSel303.value = 'tb303';
       mountLaneFxPanel(active);
     }
+    // Mirror the active lane into the control store (guarded → no UI↔APC loop).
+    activeLaneStore.set(sessionHost.activeEditLane);
   },
   laneResources,
   ensureLaneResource,
@@ -433,6 +446,67 @@ sessionHost.init();
 // as the source of truth (replaces the pattern-based fallback used at boot).
 laneHost.setLookupEngineId((laneId) =>
   sessionHost.state.lanes.find((l) => l.id === laneId)?.engineId ?? 'subtractive');
+
+// ── Live MIDI control subsystem ─────────────────────────────────────────────
+// Assemble facade → mediator → access seam → UI. activeLaneStore (declared
+// above) is mirrored from SessionHost.activeEditLane in onActiveLaneChanged.
+const controlFacade = createLoomFacade({
+  ctx,
+  sessionHost,
+  laneResources,
+  activeLane: activeLaneStore,
+  knobRegistry: automationRegistry,   // `${laneId}.${paramId}` → KnobHandle
+});
+
+let controlMediator: ReturnType<typeof createMediator> | null = null;
+const midiAccess = createMidiAccess();   // uses globalThis.navigator
+
+async function enableMidiControl(overrideProfileId: string | null): Promise<{ ok: boolean; label: string }> {
+  const res = await midiAccess.enable({
+    forceProfileId: overrideProfileId ?? undefined,
+    onEvent: (ev) => controlMediator?.handle(ev),
+  });
+  if (!res.ok) {
+    saveControlPrefs({ enabled: false, overrideProfileId });
+    const label = res.reason === 'unsupported' ? 'MIDI not supported in this browser'
+      : res.reason === 'denied' ? 'permission denied'
+      : 'no controller found';
+    return { ok: false, label };
+  }
+  const profile = listProfiles().find((p) => p.id === res.profileId)!;
+  controlMediator = createMediator({
+    facade: controlFacade, profile, send: (b) => midiAccess.send(b), variant: res.variant,
+  });
+  controlMediator.refreshLeds();
+  saveControlPrefs({ enabled: true, overrideProfileId });
+  return { ok: true, label: `${profile.label} (${res.variant}) ✓` };
+}
+
+function disableMidiControl(): void {
+  controlMediator?.dispose();
+  controlMediator = null;
+  midiAccess.disable();
+  saveControlPrefs({ enabled: false, overrideProfileId: null });
+}
+
+wireControlSurfaceUI({
+  onEnable: enableMidiControl,
+  onDisable: disableMidiControl,
+  profiles: listProfiles().map((p) => ({ id: p.id, label: p.label })),
+  initialEnabled: loadControlPrefs().enabled,
+});
+
+// Keep LEDs in sync with clip launches: refresh after every mixer render.
+const _origRenderWithMixer = sessionHost.renderWithMixer.bind(sessionHost);
+sessionHost.renderWithMixer = () => { _origRenderWithMixer(); controlMediator?.refreshLeds(); };
+
+// Clean the device on page unload.
+window.addEventListener('beforeunload', () => disableMidiControl());
+
+// Auto-reconnect if the user had it enabled (browser remembers the permission grant).
+if (loadControlPrefs().enabled) {
+  void enableMidiControl(loadControlPrefs().overrideProfileId);
+}
 
 // Engine swap: change the engine of an existing lane in place.
 const engineSwapDeps: EngineSwapDeps = {
