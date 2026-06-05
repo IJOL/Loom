@@ -32,6 +32,8 @@ import {
 } from '../session/session-runtime';
 import { renderPerformanceView } from '../performance/performance-ui';
 import { arrangementFromSession } from '../performance/arrangement-from-session';
+import { createHistory } from '../core/history';
+import { moveEvent, resizeEvent, deleteEvent } from '../performance/arrangement-edit';
 
 export interface PerformanceFeatureDeps {
   ctx: AudioContext;
@@ -79,6 +81,15 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   const arrangementPlayState = createArrangementPlayState();
   const recHooks: RecHooks = { rec, arrangement };
   let mode: 'session' | 'performance' = 'session';
+
+  // The session history deliberately excludes the arrangement; give the arrangement
+  // its OWN undo stack so timeline edits (and length/brace) are undoable without
+  // coupling to session undo.
+  const arrHistory = createHistory<ArrangementState>({ maxSize: 100 });
+  const snapArr = (): ArrangementState => JSON.parse(JSON.stringify(arrangement));
+  const restoreArr = (s: ArrangementState) => { setArrangement(s); };
+  /** Snapshot before a discrete arrangement edit. */
+  const commitArrUndo = () => arrHistory.commit(snapArr());
   let pxPerBar = 80;
   let brush: AutoBrush = 'line';
   const laneIds = () => sessionHost.state.lanes.map((l) => l.id);
@@ -109,6 +120,15 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     setTimeout(() => { t.remove(); }, 2200);
   };
 
+  const beforeEdit = () => commitArrUndo();
+
+  function editBands(laneId: string, fn: (events: import('../performance/performance').ArrangementClipEvent[]) => import('../performance/performance').ArrangementClipEvent[]) {
+    const lane = arrangement.lanes.find((l) => l.laneId === laneId);
+    if (!lane) return;
+    lane.clipEvents = fn(lane.clipEvents);
+    refreshPerformanceView();
+  }
+
   function refreshPerformanceView() {
     const host = document.getElementById('performance-view-root');
     if (!host) return;
@@ -134,17 +154,18 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       getBrush: () => brush,
       setBrush: (b) => { brush = b; },
       painterDeps: { seq, getAutoAbsSubIdx: () => 0 },
-      onSetLengthBars: (bars) => { setArrangementLengthBars(arrangement, bars); onPerformanceEdited?.(); refreshPerformanceView(); },
+      onSetLengthBars: (bars) => { beforeEdit(); setArrangementLengthBars(arrangement, bars); refreshPerformanceView(); },
       onZoom: (px) => { pxPerBar = px; refreshPerformanceView(); },
-      onAddCurve: (paramId) => { addAutomationCurve(arrangement, paramId, laneIds()); onPerformanceEdited?.(); refreshPerformanceView(); },
-      onRemoveCurve: (paramId) => { removeAutomationCurve(arrangement, paramId, laneIds()); onPerformanceEdited?.(); refreshPerformanceView(); },
+      onAddCurve: (paramId) => { beforeEdit(); addAutomationCurve(arrangement, paramId, laneIds()); refreshPerformanceView(); },
+      onRemoveCurve: (paramId) => { beforeEdit(); removeAutomationCurve(arrangement, paramId, laneIds()); refreshPerformanceView(); },
       onEdited: () => { onPerformanceEdited?.(); },
       loopEnabled: !!arrangement.loopEnabled,
       loopStartBar: arrangement.loopStartBar ?? 0,
       loopEndBar: arrangement.loopEndBar ?? Math.ceil(effectiveDurationSec(arrangement) / ((60 / arrangement.bpm) * 4)),
       onSetLoop: (enabled, startBar, endBar) => {
+        beforeEdit();
         arrangement.loopEnabled = enabled; arrangement.loopStartBar = startBar; arrangement.loopEndBar = endBar;
-        onPerformanceEdited?.(); refreshPerformanceView();
+        refreshPerformanceView();
       },
     });
   }
@@ -168,6 +189,22 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       setMode((b as HTMLElement).dataset.mode as 'session' | 'performance');
     });
   });
+
+  document.addEventListener('keydown', (e) => {
+    if (mode !== 'performance') return;
+    const cmd = e.metaKey || e.ctrlKey;
+    if (!cmd) return;
+    const target = e.target as HTMLElement | null;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+    const key = e.key.toLowerCase();
+    if (key === 'z' && !e.shiftKey) {
+      const prev = arrHistory.undo(snapArr());
+      if (prev) { e.preventDefault(); e.stopPropagation(); restoreArr(prev); }
+    } else if ((key === 'z' && e.shiftKey) || key === 'y') {
+      const next = arrHistory.redo(snapArr());
+      if (next) { e.preventDefault(); e.stopPropagation(); restoreArr(next); }
+    }
+  }, true); // capture phase so it beats the session handler
 
   function setArrangement(a: ArrangementState) {
     Object.assign(arrangement, a);
