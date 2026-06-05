@@ -31,19 +31,13 @@ Each 16th-note step lasts `60 / bpm / 4` seconds.
 
 **Meter** (`#meter`) — sets the global time signature. The dropdown offers common meters: 4/4, 3/4, 2/4, 5/4, 6/8, 7/8, 9/8, and 12/8. The meter controls how bars map onto the 16th-step grid and how the position readout counts beats. Changing the meter takes effect on the next loop cycle.
 
-**Swing** (`#swing`) — delays every odd 16th-note step to add a shuffle feel. Range: 0 (straight) to 0.6 (heavy swing). The value is saved and restored with the session. Swing is stored in the sequencer and persisted but its full scheduling effect is reserved for a future update; the slider is present and functional as a parameter store.
+**Swing** (`#swing`) — intended to add a shuffle feel by delaying odd 16th-note steps. Range: 0 (straight) to 0.6. The value is saved and restored with the session. **Note:** swing is currently stored and persisted but is not yet read by the scheduler, so moving the slider does not change the timing you hear — full swing is planned for a future update.
 
 ---
 
 ## Master volume
 
 **Volume** (`#volume`) — the master output level, range 0–1 (default 0.5). This is a post-mix gain applied before the output visualiser.
-
----
-
-## Bars
-
-**Bars** (`#bars`) — sets the default clip length for new clips: 1, 2, 3, or 4 bars. This controls the view length in the clip editors and the length assigned to clips you create.
 
 ---
 
