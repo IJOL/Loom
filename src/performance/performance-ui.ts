@@ -38,15 +38,25 @@ function makeRuler(durationSec: number, bpm: number, pxPerBar: number, cb: PerfU
     const hL = document.createElement('span'); hL.className = 'perf-loop-handle l';
     const hR = document.createElement('span'); hR.className = 'perf-loop-handle r';
     brace.append(hL, hR);
+    // Drag updates the brace imperatively against a rect captured at pointerdown,
+    // committing once on pointerup. Calling onSetLoop mid-drag would re-render the
+    // ruler (host.innerHTML = '') and detach the very track we measure, so the
+    // drag would jump. Mirrors the clip-loop brace (core/clip-loop-brace.ts).
     const drag = (which: 'l' | 'r') => (down: PointerEvent) => {
       down.preventDefault();
+      const rect = track.getBoundingClientRect();
+      let region = { start: cb.loopStartBar, end: cb.loopEndBar };
       const move = (e: PointerEvent) => {
-        const rect = track.getBoundingClientRect();
         const b = pxToBar(e.clientX - rect.left, pxPerBar);
-        const r = which === 'l' ? clampBarRegion(b, cb.loopEndBar, bars) : clampBarRegion(cb.loopStartBar, b, bars);
-        cb.onSetLoop(true, r.start, r.end);
+        region = which === 'l' ? clampBarRegion(b, cb.loopEndBar, bars) : clampBarRegion(cb.loopStartBar, b, bars);
+        brace.style.left = `${region.start * pxPerBar}px`;
+        brace.style.width = `${(region.end - region.start) * pxPerBar}px`;
       };
-      const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
+      const up = () => {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+        cb.onSetLoop(true, region.start, region.end);
+      };
       window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
     };
     hL.addEventListener('pointerdown', drag('l')); hR.addEventListener('pointerdown', drag('r'));
