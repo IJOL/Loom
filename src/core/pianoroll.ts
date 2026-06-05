@@ -57,8 +57,8 @@ const BLACK_KEY_PCS = [1, 3, 6, 8, 10];
 // Frame geometry (CSS px).
 const KEYS_W = 42;
 const RULER_H = 26;
-const FRAME_H = 320; // total editor height; grid viewport gets FRAME_H - RULER_H
-const VEL_LANE_H = 64;         // ~20% of the note area; the velocity lane
+const FRAME_H = 320; // ruler + note-grid height; the velocity lane is added BELOW, so the note grid keeps its size
+const VEL_LANE_H = 64;         // ~20% of the note area; the velocity lane (added under the grid, growing total height)
 
 export interface PianoRollFrame {
   frame: HTMLDivElement;
@@ -80,7 +80,7 @@ export function buildEditorFrame(host: HTMLElement): PianoRollFrame {
     display: 'grid',
     gridTemplateColumns: `${KEYS_W}px 1fr`,
     gridTemplateRows: `${RULER_H}px 1fr ${VEL_LANE_H}px`,
-    height: `${FRAME_H}px`,
+    height: `${FRAME_H + VEL_LANE_H}px`,
     background: '#141414',
     border: '1px solid #2a2a2a',
     borderRadius: '6px',
@@ -705,6 +705,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     else setVelocity(hit, v);
     gestureMutated = true;
     drawGrid(); drawVelLane();
+    opts.onChange?.();
     f.velCanvas.setPointerCapture(e.pointerId); e.preventDefault();
   });
 
