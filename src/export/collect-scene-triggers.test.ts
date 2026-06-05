@@ -44,4 +44,19 @@ describe('collectSceneTriggers', () => {
     );
     expect(triggers.map((t) => t.laneId)).toEqual(['B', 'A']);
   });
+
+  it('carries the slice region for slice-mode loops', () => {
+    const c: SessionClip = {
+      id: 's', lengthBars: 1,
+      notes: [{ start: 0, duration: 24, midi: 60, velocity: 100 }],
+      sample: {
+        sampleId: 'loop', mode: 'loop', trimStart: 0, trimEnd: 2,
+        slices: [{ note: 60, start: 0.0, end: 0.5 }],
+      } as SessionClip['sample'],
+    };
+    const triggers = collectSceneTriggers(
+      [{ laneId: 'S', engineId: 'sampler', clip: c }], 120, DEFAULT_METER, 2.0);
+    expect(triggers).toHaveLength(1);
+    expect(triggers[0].slice).toEqual({ sampleId: 'loop', start: 0.0, end: 0.5 });
+  });
 });
