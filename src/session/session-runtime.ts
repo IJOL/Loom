@@ -3,8 +3,8 @@
 
 import type { SessionClip, SessionState, LaunchQuantize, SessionLane, ClipSample } from './session';
 import { tickLane, noteTrigger } from '../core/lane-scheduler';
-import { TICKS_PER_STEP, TICKS_PER_QUARTER } from '../core/notes';
-import { ticksPerBar, DEFAULT_METER, type TimeSignature } from '../core/meter';
+import { TICKS_PER_STEP } from '../core/notes';
+import { DEFAULT_METER, type TimeSignature } from '../core/meter';
 import { AUTOMATION_SUB_RES } from '../core/pattern';
 import type { RecState } from '../performance/rec-state';
 import { arrangementNow } from '../performance/rec-state';
@@ -167,15 +167,6 @@ export type ClipStepFiredFn = (
   stepTime: number,
 ) => void;
 
-/** Seconds per tick at the given bpm. Note timing lives on the
- *  TICKS_PER_QUARTER (96) grid — the same resolution as note `start`/`duration`
- *  and `ticksPerBar` (meter.ts) — so a quarter note = TICKS_PER_QUARTER ticks =
- *  one beat = 60/bpm s. (Dividing by TICKS_PER_STEP here was a unit bug that
- *  made every note gate 4× too long, only audible on sustained presets.) */
-function secPerTick(bpm: number): number {
-  return (60 / bpm) / TICKS_PER_QUARTER;
-}
-
 export function tickSession(
   laneStates: Map<string, LanePlayState>,
   state: SessionState,
@@ -208,7 +199,6 @@ export function tickSession(
 
     if (!lp.playing) continue;
     const clip = lp.playing;
-    const tickSec = secPerTick(bpm);
     // Capture the loop start before tickLane potentially advances it.
     // onTrigger fires synchronously inside tickLane, so this value is valid
     // for all triggers produced in this tick.
@@ -224,12 +214,10 @@ export function tickSession(
       onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample; slice?: { sampleId: string; start: number; end: number } }, scheduleTime: number) => {
         if (scheduleTime > lp.lastScheduledAt) lp.lastScheduledAt = scheduleTime;
         const t = noteTrigger(lane.engineId, clip, note, scheduleTime, currentLoopStart, bpm, meter);
-        const scheduledStartTick = Math.round((scheduleTime - currentLoopStart) / tickSec)
-          % (clip.lengthBars * ticksPerBar(meter));
         onLaneTrigger(lane.id, t.midi, scheduleTime, t.gateSec, t.accent, t.slidingIn, note.sample, note.slice);
         onClipStepFired(
           lane.id, clip.id,
-          Math.floor(scheduledStartTick / TICKS_PER_STEP),
+          Math.floor(t.scheduledStartTick / TICKS_PER_STEP),
           scheduleTime,
         );
       },

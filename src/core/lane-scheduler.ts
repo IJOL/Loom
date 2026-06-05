@@ -148,6 +148,7 @@ export interface NoteTrigger {
   gateSec: number;
   accent: boolean;
   slidingIn: boolean;
+  scheduledStartTick: number;
 }
 
 /** Seconds per tick at the given bpm on the TICKS_PER_QUARTER (96) grid that
@@ -181,5 +182,5 @@ export function noteTrigger(
       (other) => other.start < scheduledStartTick
         && (other.start + other.duration) > scheduledStartTick + 1,
     );
-  return { midi: note.midi, gateSec, accent, slidingIn };
+  return { midi: note.midi, gateSec, accent, slidingIn, scheduledStartTick };
 }
