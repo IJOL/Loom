@@ -5,6 +5,7 @@
 
 import { TICKS_PER_STEP, type NoteEvent } from './notes';
 import { velToColor } from './velocity-color';
+import { velocityToBarHeight, FAN_PX, yToVelocity, barHitTest, setVelocity, applyGroupDelta } from './velocity-lane-editing';
 import { DEFAULT_VELOCITY } from './velocity-gain';
 import { EDITOR_MIN_MIDI, EDITOR_MAX_MIDI } from './pianoroll-range';
 import {
@@ -57,12 +58,14 @@ const BLACK_KEY_PCS = [1, 3, 6, 8, 10];
 const KEYS_W = 42;
 const RULER_H = 26;
 const FRAME_H = 320; // total editor height; grid viewport gets FRAME_H - RULER_H
+const VEL_LANE_H = 64;         // ~20% of the note area; the velocity lane
 
 export interface PianoRollFrame {
   frame: HTMLDivElement;
   wrap: HTMLDivElement; toolbar: HTMLDivElement;
   rulerWrap: HTMLDivElement; keysWrap: HTMLDivElement; gridVp: HTMLDivElement;
   rulerCanvas: HTMLCanvasElement; keysCanvas: HTMLCanvasElement; gridCanvas: HTMLCanvasElement;
+  velWrap: HTMLDivElement; velCanvas: HTMLCanvasElement;
 }
 
 /** Build the 2×2 editor frame (corner / ruler / keyboard / grid-viewport)
@@ -76,7 +79,7 @@ export function buildEditorFrame(host: HTMLElement): PianoRollFrame {
   Object.assign(frame.style, {
     display: 'grid',
     gridTemplateColumns: `${KEYS_W}px 1fr`,
-    gridTemplateRows: `${RULER_H}px 1fr`,
+    gridTemplateRows: `${RULER_H}px 1fr ${VEL_LANE_H}px`,
     height: `${FRAME_H}px`,
     background: '#141414',
     border: '1px solid #2a2a2a',
@@ -119,7 +122,17 @@ export function buildEditorFrame(host: HTMLElement): PianoRollFrame {
   const gridCanvas = mkCanvas(false);
   gridVp.appendChild(gridCanvas);
 
-  frame.append(corner, rulerWrap, keysWrap, gridVp);
+  const velCorner = document.createElement('div');
+  velCorner.className = 'pr-velcorner';
+  Object.assign(velCorner.style, { background: '#181818', borderRight: '1px solid #2a2a2a', borderTop: '1px solid #2a2a2a' } as Partial<CSSStyleDeclaration>);
+
+  const velWrap = mkWrap('pr-vel', 'ns-resize');
+  velWrap.style.borderTop = '1px solid #2a2a2a';
+  velWrap.style.background = '#0e0e0e';
+  const velCanvas = mkCanvas(true);
+  velWrap.appendChild(velCanvas);
+
+  frame.append(corner, rulerWrap, keysWrap, gridVp, velCorner, velWrap);
 
   const toolbar = document.createElement('div');
   toolbar.className = 'pr-toolbar';
@@ -131,7 +144,7 @@ export function buildEditorFrame(host: HTMLElement): PianoRollFrame {
   wrap.append(toolbar, frame);
   host.appendChild(wrap);
 
-  return { frame, wrap, toolbar, rulerWrap, keysWrap, gridVp, rulerCanvas, keysCanvas, gridCanvas };
+  return { frame, wrap, toolbar, rulerWrap, keysWrap, gridVp, rulerCanvas, keysCanvas, gridCanvas, velWrap, velCanvas };
 }
 
 function ctx2d(cv: HTMLCanvasElement): CanvasRenderingContext2D {
@@ -177,6 +190,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   const gctx = ctx2d(f.gridCanvas);
   const rctx = ctx2d(f.rulerCanvas);
   const kctx = ctx2d(f.keysCanvas);
+  const vctx = ctx2d(f.velCanvas);
 
   // View state (mutable). Initialised from the caller, defaults to fit.
   let { zoomX, zoomY, scrollLeft, scrollTop } = opts.viewState ?? defaultViewState();
@@ -260,6 +274,24 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     }
   }
 
+  function drawVelLane(): void {
+    vctx.fillStyle = '#0e0e0e'; vctx.fillRect(0, 0, gridW, VEL_LANE_H);
+    const accentY = VEL_LANE_H - velocityToBarHeight(100, VEL_LANE_H);
+    vctx.strokeStyle = '#ff8c2e'; vctx.globalAlpha = 0.6; vctx.setLineDash([4, 3]);
+    vctx.beginPath(); vctx.moveTo(0, accentY); vctx.lineTo(gridW, accentY); vctx.stroke();
+    vctx.setLineDash([]); vctx.globalAlpha = 1;
+    const seenTick = new Map<number, number>();
+    for (const n of opts.getNotes()) {
+      if (n.midi < minMidi || n.midi > maxMidi) continue;
+      const fan = seenTick.get(n.start) ?? 0; seenTick.set(n.start, fan + 1);
+      const x = xForTick(n.start) + fan * FAN_PX;
+      const h = velocityToBarHeight(n.velocity, VEL_LANE_H);
+      const sel = selection.has(n);
+      vctx.fillStyle = sel ? '#7fd4ff' : velToColor(n.velocity);
+      vctx.fillRect(x, VEL_LANE_H - h, 6, h);
+    }
+  }
+
   function drawRuler(): void {
     rctx.fillStyle = '#181818'; rctx.fillRect(0, 0, gridW, RULER_H);
     const steps = opts.patternTicks / TICKS_PER_STEP;
@@ -294,19 +326,24 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   function syncStrips(): void {
     f.rulerCanvas.style.transform = `translateX(${-f.gridVp.scrollLeft}px)`;
     f.keysCanvas.style.transform = `translateY(${-f.gridVp.scrollTop}px)`;
+    f.velCanvas.style.transform = `translateX(${-f.gridVp.scrollLeft}px)`;
   }
   function persist(): void {
     opts.onViewChange?.({ zoomX, zoomY, scrollLeft: f.gridVp.scrollLeft, scrollTop: f.gridVp.scrollTop });
   }
 
-  /** Full relayout: resize all canvases, redraw all three surfaces. */
+  /** Full relayout: resize all canvases, redraw all four surfaces. */
   function layoutAll(): void {
     geom();
     setSize(f.gridCanvas, gridW, gridH);
     setSize(f.rulerCanvas, gridW, RULER_H);
     setSize(f.keysCanvas, KEYS_W, gridH);
-    drawGrid(); drawRuler(); drawKeys();
+    setSize(f.velCanvas, gridW, VEL_LANE_H);
+    drawGrid(); drawRuler(); drawKeys(); drawVelLane();
   }
+
+  /** Redraw both the note grid and the velocity lane together (for note edits). */
+  function redrawGridAndLane(): void { drawGrid(); drawVelLane(); }
 
   // ── Scroll: re-pin strips + persist ───────────────────────────────────────
   f.gridVp.addEventListener('scroll', () => {
@@ -327,8 +364,8 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     const oldGridW = gridW;
     zoomX = scrubToZoom(zoomX, dy);
     geom();
-    setSize(f.gridCanvas, gridW, gridH); setSize(f.rulerCanvas, gridW, RULER_H);
-    drawGrid(); drawRuler();
+    setSize(f.gridCanvas, gridW, gridH); setSize(f.rulerCanvas, gridW, RULER_H); setSize(f.velCanvas, gridW, VEL_LANE_H);
+    drawGrid(); drawRuler(); drawVelLane();
     const anchorPx = e.clientX - f.rulerWrap.getBoundingClientRect().left;
     f.gridVp.scrollLeft = zoomAroundAnchor(f.gridVp.scrollLeft, anchorPx, oldGridW, gridW) - dx;
     syncStrips(); persist();
@@ -406,7 +443,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
         marquee = { tick0: tick, midi0: midi, tick1: tick, midi1: midi };
       }
       f.gridCanvas.setPointerCapture(e.pointerId);
-      drawGrid(); e.preventDefault();
+      redrawGridAndLane(); e.preventDefault();
       return;
     }
 
@@ -416,7 +453,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
         opts.onGestureStart?.();
         opts.setNotes(opts.getNotes().filter((n) => n !== hit));
         opts.onChange?.();
-        drawGrid();
+        redrawGridAndLane();
         opts.onGestureEnd?.();
       }
       e.preventDefault();
@@ -439,7 +476,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       opts.onChange?.();
     }
     f.gridCanvas.setPointerCapture(e.pointerId);
-    drawGrid();
+    redrawGridAndLane();
     e.preventDefault();
   });
 
@@ -447,7 +484,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     { const p = pointerPos(e); lastMouse = { tick: p.tick, midi: p.midi }; }
     if (marquee) {
       const p = pointerPos(e); marquee.tick1 = p.tick; marquee.midi1 = p.midi;
-      drawGrid(); return;
+      redrawGridAndLane(); return;
     }
     if (groupDrag) {
       const p = pointerPos(e);
@@ -459,7 +496,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
         const adj = translateGroup(sel, dTick, dMidi, { patternTicks: opts.patternTicks, minMidi, maxMidi });
         for (const n of sel) { n.start += adj.dTick; n.midi += adj.dMidi; }
         groupDrag.lastTick += adj.dTick; groupDrag.lastMidi += adj.dMidi;
-        gestureMutated = true; drawGrid(); opts.onChange?.();
+        gestureMutated = true; redrawGridAndLane(); opts.onChange?.();
       }
       return;
     }
@@ -479,7 +516,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       interaction.note.duration = Math.min(opts.patternTicks - interaction.note.start, newDur);
     }
     gestureMutated = true;
-    drawGrid();
+    redrawGridAndLane();
     opts.onChange?.();
   });
 
@@ -488,7 +525,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       for (const n of notesInRect(opts.getNotes(), marquee)) selection.add(n);
       marquee = null;
       try { f.gridCanvas.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
-      drawGrid();
+      redrawGridAndLane();
       return;
     }
     if (groupDrag) {
@@ -527,7 +564,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     // Select all
     if (cmd && e.key.toLowerCase() === 'a') {
       selection.clear(); for (const n of opts.getNotes()) selection.add(n);
-      drawGrid(); e.preventDefault(); return;
+      redrawGridAndLane(); e.preventDefault(); return;
     }
     // Copy
     if (cmd && e.key.toLowerCase() === 'c' && selection.size > 0) {
@@ -540,7 +577,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       opts.onGestureStart?.();
       opts.setNotes(opts.getNotes().filter((n) => !selection.has(n)));
       selection.clear();
-      opts.onChange?.(); drawGrid(); opts.onGestureEnd?.();
+      opts.onChange?.(); redrawGridAndLane(); opts.onGestureEnd?.();
       e.preventDefault(); return;
     }
     // Paste at the mouse (snapped); fall back to insertion cursor / 0.
@@ -552,11 +589,11 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       const notes = opts.getNotes();
       for (const n of pasted) notes.push(n);
       selection.clear(); for (const n of pasted) selection.add(n);
-      opts.onChange?.(); drawGrid(); opts.onGestureEnd?.();
+      opts.onChange?.(); redrawGridAndLane(); opts.onGestureEnd?.();
       e.preventDefault(); return;
     }
     // Clear selection
-    if (e.key === 'Escape') { selection.clear(); drawGrid(); e.preventDefault(); return; }
+    if (e.key === 'Escape') { selection.clear(); redrawGridAndLane(); e.preventDefault(); return; }
 
     // Octave shift
     if (!cmd && (e.key === 'z' || e.key === 'x')) {
@@ -566,7 +603,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     // Move insertion cursor when nothing is selected
     if (selection.size === 0 && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
       cursorTick = Math.max(0, Math.min(opts.patternTicks - snap, cursorTick + (e.key === 'ArrowRight' ? snap : -snap)));
-      drawGrid(); e.preventDefault(); return;
+      redrawGridAndLane(); e.preventDefault(); return;
     }
 
     if (!cmd) {
@@ -587,7 +624,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
           heldKeys.set(e.key.toLowerCase(), { midi, startTick: cursorTick });
           opts.onGestureStart?.();
           opts.getNotes().push({ start: cursorTick, duration: snap, midi, velocity: DEFAULT_VELOCITY });
-          opts.onChange?.(); drawGrid(); opts.onGestureEnd?.();
+          opts.onChange?.(); redrawGridAndLane(); opts.onGestureEnd?.();
         }
         return;
       }
@@ -599,7 +636,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
           opts.onGestureStart?.();
           opts.setNotes(notes.filter((n) => n.start !== Math.max(0, cursorTick - snap)));
           cursorTick = Math.max(0, cursorTick - snap);
-          opts.onChange?.(); drawGrid(); opts.onGestureEnd?.();
+          opts.onChange?.(); redrawGridAndLane(); opts.onGestureEnd?.();
         }
         e.preventDefault(); return;
       }
@@ -610,7 +647,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       opts.onGestureStart?.();
       opts.setNotes(opts.getNotes().filter((n) => !selection.has(n)));
       selection.clear();
-      opts.onChange?.(); drawGrid(); opts.onGestureEnd?.();
+      opts.onChange?.(); redrawGridAndLane(); opts.onGestureEnd?.();
       e.preventDefault(); e.stopPropagation(); return;
     }
 
@@ -623,7 +660,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       if (adj.dTick || adj.dMidi) {
         opts.onGestureStart?.();
         for (const n of sel) { n.start += adj.dTick; n.midi += adj.dMidi; }
-        opts.onChange?.(); drawGrid(); opts.onGestureEnd?.();
+        opts.onChange?.(); redrawGridAndLane(); opts.onGestureEnd?.();
       }
       e.preventDefault(); return;
     }
@@ -640,13 +677,60 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       const q = quantizeRecorded(held.startTick, endTick < held.startTick ? held.startTick + snap : endTick, snap);
       opts.onGestureStart?.();
       opts.getNotes().push({ start: q.start, duration: q.duration, midi: held.midi, velocity: DEFAULT_VELOCITY });
-      opts.onChange?.(); drawGrid(); opts.onGestureEnd?.();
+      opts.onChange?.(); redrawGridAndLane(); opts.onGestureEnd?.();
     } else if (heldKeys.size === 0) {
       // All step-input keys released → advance the cursor one step (chord = one advance).
       cursorTick = Math.min(opts.patternTicks - snap, cursorTick + snap);
-      drawGrid();
+      redrawGridAndLane();
     }
   });
+
+  // ── Velocity lane pointer editing ────────────────────────────────────────
+  let velDrag: { note: NoteEvent | null } | null = null;
+
+  const velPos = (e: PointerEvent) => {
+    const rect = f.velCanvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  };
+
+  f.velCanvas.addEventListener('pointerdown', (e) => {
+    f.wrap.focus();
+    const { x, y } = velPos(e);
+    const hit = barHitTest(opts.getNotes(), x, xForTick);
+    if (!hit) return;
+    opts.onGestureStart?.(); gestureMutated = false;
+    velDrag = { note: hit };
+    const v = yToVelocity(y, VEL_LANE_H);
+    if (selection.has(hit) && selection.size > 1) applyGroupDelta([...selection], v - hit.velocity);
+    else setVelocity(hit, v);
+    gestureMutated = true;
+    drawGrid(); drawVelLane();
+    f.velCanvas.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+
+  f.velCanvas.addEventListener('pointermove', (e) => {
+    if (!velDrag) return;
+    const { x, y } = velPos(e);
+    const v = yToVelocity(y, VEL_LANE_H);
+    if (velDrag.note && selection.has(velDrag.note) && selection.size > 1) {
+      applyGroupDelta([...selection], v - velDrag.note.velocity);
+    } else {
+      const hit = barHitTest(opts.getNotes(), x, xForTick) ?? velDrag.note;
+      if (hit) setVelocity(hit, v);
+    }
+    gestureMutated = true;
+    drawGrid(); drawVelLane();
+    opts.onChange?.();
+  });
+
+  const velEnd = (e: PointerEvent) => {
+    if (!velDrag) return;
+    velDrag = null;
+    try { f.velCanvas.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+    if (gestureMutated) opts.onGestureEnd?.(); else opts.onGestureCancel?.();
+  };
+  f.velCanvas.addEventListener('pointerup', velEnd);
+  f.velCanvas.addEventListener('pointercancel', velEnd);
 
   // ── Initial mount ─────────────────────────────────────────────────────────
   let lastVW = f.gridVp.clientWidth, lastVH = f.gridVp.clientHeight;
@@ -667,7 +751,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       f.gridVp.scrollLeft = scrollLeft; f.gridVp.scrollTop = scrollTop;
       syncStrips();
     } else {
-      drawGrid();
+      redrawGridAndLane();
     }
   }
 
