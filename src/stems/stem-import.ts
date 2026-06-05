@@ -12,6 +12,8 @@ export interface StemImportDeps {
     stems: { label: string; sampleId: string; durationSec: number }[],
     opts?: { replace?: boolean },
   ) => void;
+  /** Transcribe one stem's audio to a note/drums lane (label = lane name). */
+  transcribeStem?: (file: File, label: string) => Promise<void>;
 }
 
 export interface StemImportCallbacks {
@@ -60,4 +62,14 @@ export async function importStems(
   });
 
   deps.addStemLanes(lanes, { replace: cb.replace });
+
+  // Always also transcribe each stem to a note/drums lane — every separation
+  // yields both the audio (Sampler) and the notes for remixing.
+  if (deps.transcribeStem) {
+    cb.onProgress?.('transcribing', null);
+    for (const { plan: p, bytes } of decoded) {
+      const file = new File([bytes], `${p.label}.wav`, { type: 'audio/wav' });
+      await deps.transcribeStem(file, `Notas: ${p.label}`);
+    }
+  }
 }

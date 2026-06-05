@@ -2,6 +2,8 @@
 // go through an injected fetch so it is unit-testable. Network failures (service
 // not running) surface as StemServiceUnreachable so the UI can show a clear hint.
 
+import type { TranscribeResult } from './transcribe-to-clip';
+
 export type StemName = 'vocals' | 'drums' | 'bass' | 'other';
 
 export interface StemRef { name: string; url: string; }
@@ -62,6 +64,15 @@ export class StemClient {
 
   async cancelJob(jobId: string): Promise<void> {
     try { await this.req(`/jobs/${jobId}`, { method: 'DELETE' }); } catch { /* best-effort */ }
+  }
+
+  /** Audio → notes. The backend auto-picks melodic (pitch) vs drums (onsets). */
+  async transcribe(file: File): Promise<TranscribeResult> {
+    const body = new FormData();
+    body.append('file', file, file.name);
+    const r = await this.req('/transcribe', { method: 'POST', body });
+    if (!r.ok) throw new Error(`transcribe failed: HTTP ${r.status}`);
+    return r.json() as Promise<TranscribeResult>;
   }
 
   /** Resolve a (possibly relative) stem url returned by the service against the base. */

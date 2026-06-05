@@ -9,6 +9,7 @@ export interface StemDialogDeps {
     stems: { label: string; sampleId: string; durationSec: number }[],
     opts?: { replace?: boolean },
   ) => void;
+  transcribeStem?: (file: File, label: string) => Promise<void>;
 }
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -87,7 +88,11 @@ export function wireStemDialog(deps: StemDialogDeps): void {
         onProgress: (status, p) => {
           const elapsed = Math.floor((performance.now() - startedAt) / 1000);
           if (typeof p === 'number') bar.value = p; else bar.removeAttribute('value');
-          setStatus(status === 'done' ? 'Listo' : `Separando… ${fmtElapsed(elapsed)}`);
+          setStatus(
+            status === 'done' ? 'Listo'
+              : status === 'transcribing' ? 'Transcribiendo notas…'
+              : `Separando… ${fmtElapsed(elapsed)}`,
+          );
         },
       });
       controller = null;

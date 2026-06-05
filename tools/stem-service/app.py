@@ -34,6 +34,23 @@ def health():
     return {"ok": True, "model": MODEL_FILENAME}
 
 
+@app.post("/transcribe")
+async def transcribe(file: UploadFile = File(...)):
+    """Audio → notes. Auto-picks melodic (pitch) vs drums (onsets). Synchronous —
+    pYIN/onset detection is far quicker than separation, and FastAPI runs this in a
+    threadpool so it won't block the event loop."""
+    from starlette.concurrency import run_in_threadpool
+    from transcribe import transcribe_file
+
+    job_root = os.path.join(WORK_ROOT, "transcribe")
+    os.makedirs(job_root, exist_ok=True)
+    safe_name = os.path.basename(file.filename or "input") or "input"
+    in_path = os.path.join(job_root, f"{os.urandom(6).hex()}-{safe_name}")
+    with open(in_path, "wb") as f:
+        f.write(await file.read())
+    return await run_in_threadpool(transcribe_file, in_path)
+
+
 @app.post("/jobs", status_code=201)
 async def create_job(file: UploadFile = File(...)):
     job_root = os.path.join(WORK_ROOT, "in")

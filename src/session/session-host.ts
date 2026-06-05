@@ -436,6 +436,37 @@ export class SessionHost {
     this.callbacks.onAddStemLanes(stems, opts);
   }
 
+  /** Create one new lane (melodic or drums) holding a clip of transcribed notes,
+   *  as a single undoable action. Used by the "🎵 Notas" transcription flow. */
+  addNoteLane(
+    engineId: string,
+    notes: import('../core/notes').NoteEvent[],
+    lengthBars: number,
+    name: string,
+  ): void {
+    const hd = this.deps.historyDeps;
+    const seq = this.deps.seq;
+    const run = () => {
+      const used = new Set(this.state.lanes.map((l) => l.id));
+      const newId = nextLaneSlug(used, engineId);
+      const lane = emptyLane(newId, engineId);
+      lane.name = name;
+      const rows = Math.max(this.state.scenes.length, 1);
+      const defaultLen = Math.max(1, Math.floor(seq.length / stepsPerBar(seq.meter)));
+      const clip = emptyClip(Math.max(1, lengthBars));
+      clip.notes = notes;
+      clip.name = name;
+      for (let r = 0; r < rows; r++) lane.clips.push(r === 0 ? clip : emptyClip(defaultLen));
+      this.state.lanes.push(lane);
+      this.laneStates.set(newId, emptyLanePlayState(newId));
+      this.deps.ensureLaneResource?.(newId, engineId);
+      // Launch alongside scene 0 (the stems scene) when one exists.
+      if (this.state.scenes[0]) this.state.scenes[0].clipPerLane[newId] = 0;
+      this.renderWithMixer();
+    };
+    if (hd) withUndo(hd, run); else run();
+  }
+
   // ── Callbacks ────────────────────────────────────────────────────────────
 
   private buildCallbacks(): void {

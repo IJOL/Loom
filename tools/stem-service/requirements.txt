@@ -2,3 +2,4 @@ fastapi
 uvicorn[standard]
 audio-separator
 python-multipart
+librosa
