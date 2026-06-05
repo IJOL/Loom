@@ -141,4 +141,34 @@ export const SHOTS = [
       await page.locator('.page:not([hidden])').first().waitFor({ state: 'visible' });
     },
   },
+
+  // ── Clip editor screenshots ───────────────────────────────────────────────
+
+  {
+    name: 'inspector-piano-roll',
+    selector: '#insp-roll-host',
+    setup: async (page) => {
+      await loadDemo(page, 'Minimal Techno');
+      // Click the first filled cell on a melodic lane (tb-303-1 = "303 1").
+      // data-lane-id='tb-303-1' cells are the first column in the session grid.
+      const cell = page.locator('.session-cell-filled[data-lane-id="tb-303-1"]').first();
+      await cell.click();
+      await page.locator('#session-inspector').waitFor({ state: 'visible' });
+      // Give the piano-roll canvas time to render.
+      await page.waitForTimeout(300);
+    },
+  },
+  {
+    name: 'inspector-drum-grid',
+    selector: '#insp-roll-host',
+    setup: async (page) => {
+      await loadDemo(page, 'Minimal Techno');
+      // Click the first filled cell on the drums lane.
+      const cell = page.locator('.session-cell-filled[data-lane-id="drums-1"]').first();
+      await cell.click();
+      await page.locator('#session-inspector').waitFor({ state: 'visible' });
+      // Give the drum-grid canvas time to render.
+      await page.waitForTimeout(300);
+    },
+  },
 ];
