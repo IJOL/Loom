@@ -4,6 +4,8 @@
 
 🎛️ **Live demo → [ijol.github.io/Loom](https://ijol.github.io/Loom/)**
 
+📖 **Manual → [ijol.github.io/Loom/manual](https://ijol.github.io/Loom/manual/)** — also a downloadable [PDF](docs/manual/Loom-Manual.pdf) or browse the [Markdown source](docs/manual/README.md).
+
 Loom grew out of a Roland TB-303 bass synth + drum machine and still has those at its core, but is now a multi-engine instrument host. Everything runs **live in the browser** — the core has no backend, uploads nothing to a server, and needs no plugins installed. Make a beat, tweak knobs, and it plays. *(One opt-in extra — **stem separation** — talks to a small helper you run locally; see [below](#stem-separation-optional-local-service).)*
 
 ---
@@ -24,6 +26,16 @@ Loom grew out of a Roland TB-303 bass synth + drum machine and still has those a
 - **Presets** — 20+ per engine, GM-tagged.
 - **Global undo/redo** and session save/load (stored locally in your browser).
 - **Plugin architecture** — engines, FX, and modulators are discovered at build time; adding one is dropping a file, not editing the core.
+
+## Manual
+
+A full user + developer manual ships with the app:
+
+- **Read online:** [ijol.github.io/Loom/manual](https://ijol.github.io/Loom/manual/) (in-app too — the **Manual ↗** link beside the title).
+- **PDF:** [`docs/manual/Loom-Manual.pdf`](docs/manual/Loom-Manual.pdf).
+- **Markdown source:** [`docs/manual/`](docs/manual/README.md) — 11 chapters (Getting Started → Performance & Arrangement) plus a Developer Guide.
+
+It's generated from the Markdown chapters with `npm run build:manual` (Playwright captures the screenshots, then the chapters render to the PDF and the single-page web build); the Vite build copies it into `dist/manual/` so it deploys to Pages.
 
 ## Tech
 

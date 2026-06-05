@@ -55,11 +55,14 @@
       .export-menu { position: absolute; top: 100%; left: 0; z-index: 20; display: flex; flex-direction: column; background: #222; border: 1px solid #444; }
       .export-menu[hidden] { display: none; }
       .export-menu .io { white-space: nowrap; }
+      h1 { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
+      .manual-link { font-size: 0.42em; font-weight: 400; letter-spacing: 0.04em; text-transform: uppercase; color: #f5a623; text-decoration: none; border: 1px solid #f5a623; border-radius: 4px; padding: 0.15em 0.5em; opacity: 0.85; }
+      .manual-link:hover { opacity: 1; background: #f5a623; color: #111; }
     </style>
   </head>
   <body data-pure-session="true">
     <div class="synth">
-      <h1>Loom</h1>
+      <h1>Loom <a class="manual-link" href="manual/" target="_blank" rel="noopener" title="Open the Loom manual in a new tab">Manual &#8599;</a></h1>
 
       <div class="row transport">
         <button id="play" title="Play / Stop">&#9654;</button>
