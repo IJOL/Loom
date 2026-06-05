@@ -20,9 +20,13 @@ export function velocityToBarHeight(velocity: number, laneHeight: number): numbe
 }
 
 /** Notes sharing a start tick are fanned by FAN_PX so each bar is grabbable.
- *  Returns the note whose (possibly fanned) bar x is nearest the pointer x. */
+ *  Returns the note whose (possibly fanned) bar x is nearest the pointer x.
+ *  `maxDist` bounds the grab radius (px): a pointer farther than that from every
+ *  bar returns null, so clicking empty lane space does not grab a distant note.
+ *  Default Infinity preserves the unbounded "nearest" behaviour. */
 export function barHitTest(
   notes: NoteEvent[], pointerX: number, xForTick: (t: number) => number,
+  maxDist = Infinity,
 ): NoteEvent | null {
   const byTick = new Map<number, NoteEvent[]>();
   for (const note of notes) {
@@ -37,7 +41,7 @@ export function barHitTest(
       if (d < bestDist) { bestDist = d; best = note; }
     });
   }
-  return best;
+  return bestDist <= maxDist ? best : null;
 }
 
 export function setVelocity(note: NoteEvent, velocity: number): void {

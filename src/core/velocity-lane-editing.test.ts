@@ -44,6 +44,20 @@ describe('velocity-lane-editing', () => {
     expect(b.velocity).toBe(127); // clamped
   });
 
+  it('barHitTest returns null when the pointer is farther than maxDist from every bar', () => {
+    const notes = [n(0, 80)];
+    const xForTick = (t: number) => t * 2;
+    expect(barHitTest(notes, 100, xForTick, 10)).toBeNull(); // 100px away, radius 10
+    expect(barHitTest(notes, 5, xForTick, 10)).toBe(notes[0]); // within radius
+  });
+
+  it('paintVelocity normalises a reversed drag range (t0 > t1)', () => {
+    const a = n(0, 80), b = n(48, 80);
+    paintVelocity([a, b], 60, 0, 50); // t0 > t1
+    expect(a.velocity).toBe(50);
+    expect(b.velocity).toBe(50);
+  });
+
   it('paintVelocity sets every note whose start is in [t0,t1]', () => {
     const a = n(0, 80), b = n(48, 80), c = n(200, 80);
     paintVelocity([a, b, c], 0, 60, 30);
