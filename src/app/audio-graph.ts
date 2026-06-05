@@ -15,8 +15,10 @@ export interface AudioGraph {
   sidechainBus: SidechainBus;
 }
 
-export function createAudioGraph(): AudioGraph {
-  const ctx = new AudioContext();
+/** Build the master audio graph against ANY context (live or offline). The
+ *  analyser is wired to ctx.destination so the master signal reaches the
+ *  output (or the offline render target). */
+export function buildAudioGraph(ctx: AudioContext): AudioGraph {
   const master = ctx.createGain();
   const analyser = ctx.createAnalyser();
   analyser.fftSize = 2048;
@@ -30,4 +32,8 @@ export function createAudioGraph(): AudioGraph {
   const sidechainBus = new SidechainBus();
 
   return { ctx, master, analyser, masterInsertChain, masterComp, fx, sidechainBus };
+}
+
+export function createAudioGraph(): AudioGraph {
+  return buildAudioGraph(new AudioContext());
 }
