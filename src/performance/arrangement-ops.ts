@@ -119,6 +119,20 @@ export function effectiveDurationSec(s: ArrangementState): number {
   return Math.max(s.durationSec, s.lengthBars * barSec(s.bpm));
 }
 
+/** Resolve the playback window in seconds. Loop off / invalid ⇒ inactive with
+ *  endSec at the full effective duration (the song-end stop boundary). */
+export function arrangementLoopWindowSec(
+  s: ArrangementState,
+): { startSec: number; endSec: number; active: boolean } {
+  const fullEnd = effectiveDurationSec(s);
+  if (!s.loopEnabled) return { startSec: 0, endSec: fullEnd, active: false };
+  const bs = barSec(s.bpm);
+  const start = Math.max(0, (s.loopStartBar ?? 0) * bs);
+  const end = Math.min(fullEnd, (s.loopEndBar ?? fullEnd / bs) * bs);
+  if (end <= start) return { startSec: 0, endSec: fullEnd, active: false };
+  return { startSec: start, endSec: end, active: true };
+}
+
 /** Sub-step count for a given number of bars at AUTOMATION_SUB_RES. */
 export function subStepsForBars(bars: number): number {
   return Math.max(0, Math.round(bars)) * 16 * AUTOMATION_SUB_RES;

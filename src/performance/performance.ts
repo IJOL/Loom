@@ -33,6 +33,11 @@ export interface ArrangementState {
   lengthBars: number;
   lanes: ArrangementLaneRec[];
   globalAutomation: AutomationCurve[];
+  /** A–B loop (Phase B). When loopEnabled, playback repeats [loopStartBar,
+   *  loopEndBar) instead of stopping at the end. Bars; absent ⇒ no loop. */
+  loopEnabled?: boolean;
+  loopStartBar?: number;
+  loopEndBar?: number;
 }
 
 export function emptyArrangementState(bpm: number): ArrangementState {

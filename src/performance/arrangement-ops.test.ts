@@ -175,6 +175,7 @@ describe('finalizeArrangement', () => {
 import {
   effectiveDurationSec, setArrangementLengthBars,
   addAutomationCurve, removeAutomationCurve,
+  arrangementLoopWindowSec,
 } from './arrangement-ops';
 
 describe('arrangement length', () => {
@@ -226,5 +227,26 @@ describe('addAutomationCurve', () => {
     addAutomationCurve(s, 'fx.reverb.wet', laneIds);
     removeAutomationCurve(s, 'fx.reverb.wet', laneIds);
     expect(s.globalAutomation.length).toBe(0);
+  });
+});
+
+describe('arrangementLoopWindowSec', () => {
+  const withTake = () => {
+    const s = emptyArrangementState(120); // barSec = 2 at 120
+    appendClipEvent(s, 'l1', 'c1', 0); closePendingClipEvent(s, 'l1', 16); // 8 bars
+    finalizeArrangement(s, 16);
+    return s;
+  };
+  it('loop off ⇒ inactive, endSec = full duration', () => {
+    const s = withTake();
+    expect(arrangementLoopWindowSec(s)).toEqual({ startSec: 0, endSec: 16, active: false });
+  });
+  it('loop on ⇒ [startBar,endBar) in seconds', () => {
+    const s = withTake(); s.loopEnabled = true; s.loopStartBar = 2; s.loopEndBar = 6;
+    expect(arrangementLoopWindowSec(s)).toEqual({ startSec: 4, endSec: 12, active: true });
+  });
+  it('invalid (end<=start) ⇒ inactive full duration', () => {
+    const s = withTake(); s.loopEnabled = true; s.loopStartBar = 6; s.loopEndBar = 2;
+    expect(arrangementLoopWindowSec(s)).toEqual({ startSec: 0, endSec: 16, active: false });
   });
 });
