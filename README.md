@@ -4,7 +4,7 @@
 
 🎛️ **Live demo → [ijol.github.io/Loom](https://ijol.github.io/Loom/)**
 
-Loom grew out of a Roland TB-303 bass synth + drum machine and still has those at its core, but is now a multi-engine instrument host. Everything runs **live in the browser** — there is no backend, no audio uploads to a server, no plugins to install. Make a beat, tweak knobs, and it plays.
+Loom grew out of a Roland TB-303 bass synth + drum machine and still has those at its core, but is now a multi-engine instrument host. Everything runs **live in the browser** — the core has no backend, uploads nothing to a server, and needs no plugins installed. Make a beat, tweak knobs, and it plays. *(One opt-in extra — **stem separation** — talks to a small helper you run locally; see [below](#stem-separation-optional-local-service).)*
 
 ---
 
@@ -17,6 +17,7 @@ Loom grew out of a Roland TB-303 bass synth + drum machine and still has those a
 - **Per-lane modulation** — LFO and ADSR modulators routable to any parameter.
 - **FX & mixer** — multifilter, distortion, reverb, delay as per-lane inserts or master sends, plus a mixer with **sidechain compression**.
 - **MIDI import** — drop a `.mid` file and it's transformed into a session, with General MIDI instrument matching.
+- **Stem separation (optional)** — drop a finished song and Loom splits it into **4 Sampler lanes** (vocals / drums / bass / other) so you can mute, solo and remix the parts. Separation runs on a **small local helper you start yourself** (Demucs — the models behind [UVR](https://github.com/anjok07/ultimatevocalremovergui)); the app itself stays 100% browser. Setup below / [`tools/stem-service/`](tools/stem-service/README.md).
 - **Presets** — 20+ per engine, GM-tagged.
 - **Global undo/redo** and session save/load (stored locally in your browser).
 - **Plugin architecture** — engines, FX, and modulators are discovered at build time; adding one is dropping a file, not editing the core.
@@ -50,6 +51,19 @@ npm run test:fast   # everything except the slower real-DSP renders
 ```
 
 Four test layers: pure logic, scheduling (fake clock), real-DSP renders through `OfflineAudioContext`, and modulation wiring.
+
+## Stem separation (optional local service)
+
+Loom can split a finished track into 4 stems and load each as a Sampler lane (**Stems…** in the transport bar). Because separation needs Python + ML models (Demucs, via [`audio-separator`](https://github.com/nomadkaraoke/python-audio-separator) — the same models as [UVR](https://github.com/anjok07/ultimatevocalremovergui)), it runs in a **small local service you start on your own machine** — not in the browser, and not on GitHub Pages (which only serves the UI).
+
+```bash
+cd tools/stem-service
+python -m venv .venv && . .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt                 # needs ffmpeg on PATH
+uvicorn app:app --port 8765
+```
+
+Then click **Stems…**, pick a song, and the 4 lanes appear when it finishes. The feature is **entirely opt-in**: if the service isn't running the button just says so, and nothing else changes. Full notes — Codespaces, CORS / Chrome Private Network Access, the configurable service URL — live in [`tools/stem-service/README.md`](tools/stem-service/README.md).
 
 ## Deployment
 
