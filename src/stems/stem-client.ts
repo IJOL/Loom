@@ -66,10 +66,12 @@ export class StemClient {
     try { await this.req(`/jobs/${jobId}`, { method: 'DELETE' }); } catch { /* best-effort */ }
   }
 
-  /** Audio → notes. The backend auto-picks melodic (pitch) vs drums (onsets). */
-  async transcribe(file: File): Promise<TranscribeResult> {
+  /** Audio → notes. Pass the known stem role as `kind` ('drums' | 'melodic') so the
+   *  drums stem becomes a drum pattern and the rest become pitched notes. */
+  async transcribe(file: File, kind: 'melodic' | 'drums' | 'auto' = 'auto'): Promise<TranscribeResult> {
     const body = new FormData();
     body.append('file', file, file.name);
+    body.append('kind', kind);
     const r = await this.req('/transcribe', { method: 'POST', body });
     if (!r.ok) throw new Error(`transcribe failed: HTTP ${r.status}`);
     return r.json() as Promise<TranscribeResult>;

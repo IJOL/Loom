@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 import tempfile
 
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
@@ -35,10 +35,10 @@ def health():
 
 
 @app.post("/transcribe")
-async def transcribe(file: UploadFile = File(...)):
-    """Audio → notes. Auto-picks melodic (pitch) vs drums (onsets). Synchronous —
-    pYIN/onset detection is far quicker than separation, and FastAPI runs this in a
-    threadpool so it won't block the event loop."""
+async def transcribe(file: UploadFile = File(...), kind: str = Form("auto")):
+    """Audio → notes. `kind` = 'drums' | 'melodic' | 'auto' (caller should pass the
+    known stem role). Synchronous — pYIN/onset detection is far quicker than
+    separation, and FastAPI runs this in a threadpool so it won't block the loop."""
     from starlette.concurrency import run_in_threadpool
     from transcribe import transcribe_file
 
@@ -48,7 +48,7 @@ async def transcribe(file: UploadFile = File(...)):
     in_path = os.path.join(job_root, f"{os.urandom(6).hex()}-{safe_name}")
     with open(in_path, "wb") as f:
         f.write(await file.read())
-    return await run_in_threadpool(transcribe_file, in_path)
+    return await run_in_threadpool(transcribe_file, in_path, kind)
 
 
 @app.post("/jobs", status_code=201)

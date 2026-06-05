@@ -857,8 +857,8 @@ wireStemDialog({
   ctx,
   client: stemClient,
   addStemLanes: (stems, opts) => sessionHost.addStemLanes(stems, opts),
-  transcribeStem: async (file, label) => {
-    const result = await stemClient.transcribe(file);
+  transcribeStem: async (file, label, kind) => {
+    const result = await stemClient.transcribe(file, kind);
     const plan = transcribeToNoteLane(result, seq.bpm, seq.meter);
     if (plan.notes.length) {
       sessionHost.addNoteLane(plan.engineId, plan.notes, plan.lengthBars, label);

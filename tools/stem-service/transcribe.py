@@ -113,11 +113,17 @@ def _drums(y, sr) -> dict:
     return {"kind": "drums", "tempo": _tempo(y, sr), "notes": notes}
 
 
-def transcribe_file(path: str) -> dict:
-    """Load `path`, auto-pick melodic vs drums, return a notes dict."""
+def transcribe_file(path: str, kind: str = "auto") -> dict:
+    """Load `path` and transcribe. `kind` forces the mode: 'drums' or 'melodic'.
+    'auto' picks by harmonic/percussive ratio (less reliable — prefer passing the
+    known stem role: the drums stem → 'drums', everything else → 'melodic')."""
     import librosa
 
     y, sr = librosa.load(path, sr=SR, mono=True)
     if y is None or y.size == 0:
         return {"kind": "melodic", "tempo": None, "notes": []}
+    if kind == "drums":
+        return _drums(y, sr)
+    if kind == "melodic":
+        return _melodic(y, sr)
     return _drums(y, sr) if _percussive_ratio(y, sr) > 0.62 else _melodic(y, sr)

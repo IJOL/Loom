@@ -9,7 +9,7 @@ export interface StemDialogDeps {
     stems: { label: string; sampleId: string; durationSec: number }[],
     opts?: { replace?: boolean },
   ) => void;
-  transcribeStem?: (file: File, label: string) => Promise<void>;
+  transcribeStem?: (file: File, label: string, kind: 'melodic' | 'drums') => Promise<void>;
 }
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;

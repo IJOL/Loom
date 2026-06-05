@@ -12,8 +12,9 @@ export interface StemImportDeps {
     stems: { label: string; sampleId: string; durationSec: number }[],
     opts?: { replace?: boolean },
   ) => void;
-  /** Transcribe one stem's audio to a note/drums lane (label = lane name). */
-  transcribeStem?: (file: File, label: string) => Promise<void>;
+  /** Transcribe one stem's audio to a note/drums lane (label = lane name).
+   *  `kind` is the known stem role: 'drums' for the drum stem, 'melodic' otherwise. */
+  transcribeStem?: (file: File, label: string, kind: 'melodic' | 'drums') => Promise<void>;
 }
 
 export interface StemImportCallbacks {
@@ -69,7 +70,8 @@ export async function importStems(
     cb.onProgress?.('transcribing', null);
     for (const { plan: p, bytes } of decoded) {
       const file = new File([bytes], `${p.label}.wav`, { type: 'audio/wav' });
-      await deps.transcribeStem(file, `Notas: ${p.label}`);
+      const kind = p.name === 'drums' ? 'drums' : 'melodic';
+      await deps.transcribeStem(file, `Notas: ${p.label}`, kind);
     }
   }
 }
