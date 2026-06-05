@@ -84,3 +84,35 @@ test('Performance: clip bands show readable names, not raw ids (bug 2)', async (
     expect(n.trim()).not.toMatch(/^clip-/);
   }
 });
+
+test('Performance: playhead lines up with bar 1 and the ruler (not host padding / over the toolbar)', async ({ page }) => {
+  await page.goto('/');
+  await waitForBoot(page);
+  await page.locator('#copy-to-performance').click();
+  await expect(page.locator('#performance-view-root .perf-clip').first()).toBeVisible();
+  await page.locator('#play').click();
+  await page.waitForTimeout(120);
+  const ph = await page.locator('#perf-playhead').boundingBox();
+  const track = await page.locator('.perf-ruler .perf-track').boundingBox();
+  if (!ph || !track) throw new Error('boxes not found');
+  // Horizontal: the cursor is at/after bar 1's left edge — not ~20px to the left
+  // (the host-padding bug put it there).
+  expect(ph.x).toBeGreaterThanOrEqual(track.x - 2);
+  expect(ph.x).toBeLessThan(track.x + 240); // still near the start so soon after play
+  // Vertical: the cursor starts at the ruler, not up over the toolbar (the top:26px
+  // bug started it above the tracks).
+  expect(ph.y).toBeGreaterThanOrEqual(track.y - 2);
+});
+
+test('Performance: enabling Loop A–B does not add a scrollbar to the ruler', async ({ page }) => {
+  await page.goto('/');
+  await waitForBoot(page);
+  await page.locator('#copy-to-performance').click();
+  await page.locator('.perf-loop-toggle').click();
+  await expect(page.locator('.perf-loop-brace')).toBeVisible();
+  // A horizontal scrollbar would shrink the track's clientHeight below its
+  // offsetHeight; overflow:hidden on the ruler track keeps them equal.
+  const scrollbarPx = await page.locator('.perf-ruler .perf-track')
+    .evaluate((el) => el.offsetHeight - el.clientHeight);
+  expect(scrollbarPx).toBeLessThanOrEqual(0);
+});

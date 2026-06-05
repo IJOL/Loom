@@ -6,8 +6,10 @@
   font-size: 12px;
 
   .perf-playhead {
-    position: absolute; top: 26px; bottom: 0; width: 2px;
-    background: #ffd166; left: 90px; pointer-events: none;
+    // top/left are set every frame by rafPlayhead against the real ruler-track
+    // rect; these defaults just keep it hidden until playback positions it.
+    position: absolute; top: 0; bottom: 0; width: 2px; left: 0; display: none;
+    background: #ffd166; pointer-events: none;
     box-shadow: 0 0 4px rgba(255, 209, 102, 0.5);
   }
 
@@ -39,6 +41,9 @@
     font-weight: 600;
   }
   .perf-track  { position: relative; height: 100%; overflow-x: auto; }
+  // The ruler is a guide, not a scroller; its own scrollbar would otherwise
+  // appear when the A–B loop brace handle (right:-4px) overhangs the content.
+  .perf-ruler .perf-track { overflow: hidden; }
   .perf-bar-mark {
     position: absolute; top: 5px; color: #888; font-size: 10px; padding-left: 4px;
   }

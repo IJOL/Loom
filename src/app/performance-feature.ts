@@ -260,15 +260,27 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   }
 
   function rafPlayhead() {
-    if (mode === 'performance' && arrangementPlayState.isPlaying) {
-      const el = document.getElementById('perf-playhead');
-      if (el) {
+    const el = document.getElementById('perf-playhead');
+    const host = document.getElementById('performance-view-root');
+    const rulerTrack = host?.querySelector('.perf-ruler .perf-track') as HTMLElement | null;
+    if (el) {
+      if (mode === 'performance' && arrangementPlayState.isPlaying && host && rulerTrack) {
         const barSec = (60 / (arrangement.bpm || seq.bpm)) * 4;
         const lw = arrangementLoopWindowSec(arrangement);
         let sec = arrangementPlayhead(arrangementPlayState, ctx.currentTime);
         if (lw.active) sec = lw.startSec + ((sec - lw.startSec) % (lw.endSec - lw.startSec));
         const bars = sec / barSec;
-        el.style.left = `${90 + bars * pxPerBar}px`;
+        // Position against the REAL ruler-track rect so the cursor lines up with
+        // bar 1 regardless of the host padding, the label column, the toolbar
+        // height or horizontal scroll. (The old hardcoded 90/26 offsets ignored
+        // all of these → the cursor sat ~20px left of bar 1 and over the toolbar.)
+        const hostRect = host.getBoundingClientRect();
+        const trackRect = rulerTrack.getBoundingClientRect();
+        el.style.left = `${(trackRect.left - hostRect.left) + bars * pxPerBar - rulerTrack.scrollLeft}px`;
+        el.style.top = `${trackRect.top - hostRect.top}px`;
+        el.style.display = 'block'; // '' would fall back to the CSS display:none
+      } else {
+        el.style.display = 'none';
       }
     }
     requestAnimationFrame(rafPlayhead);
