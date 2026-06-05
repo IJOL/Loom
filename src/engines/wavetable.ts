@@ -13,6 +13,7 @@ import { bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disp
 import { ConnectionBinder } from '../modulation/connection-binder';
 import { wireEngineParams } from './engine-ui';
 import { getCachedPresets } from '../presets/preset-loader';
+import { velToGain, resolveVelocity } from '../core/velocity-gain';
 
 const WAVE_OPTIONS = WAVETABLES.map((w, i) => ({ value: String(i), label: w.name }));
 
@@ -129,7 +130,7 @@ class WavetableVoice implements Voice {
     }
 
     const freq = 440 * Math.pow(2, (midi - 69) / 12);
-    const velMul = options.accent ? 1.3 : 1.0;
+    const velMul = velToGain(resolveVelocity(options.velocity, !!options.accent));
     const morph = this.getParam('osc.morph');
     const detune = this.getParam('osc.detune');
     const cutoff = this.getParam('filter.cutoff');
