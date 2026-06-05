@@ -8,6 +8,7 @@ import type { PolySynth } from '../polysynth/polysynth';
 import type { Sequencer } from '../core/sequencer';
 import { stepsPerBar } from '../core/meter';
 import type { MixerColumnDeps } from '../core/mixer';
+import { ensureScenesForRows } from '../core/scene-ensure';
 import {
   emptySessionState, cloneSessionState, emptyLane, emptyClip, audioClip, emptyScene,
   moveClip, copyClip,
@@ -618,7 +619,7 @@ export class SessionHost {
           // Allocate a fresh ChannelStrip + engine instance for the new lane so
           // triggerForLane can find it via laneResources immediately.
           self.deps.ensureLaneResource?.(newId, engineId);
-
+          ensureScenesForRows(self.state);
           self.renderWithMixer();
         };
         if (hd) withUndo(hd, run); else run();
@@ -692,6 +693,7 @@ export class SessionHost {
               | undefined;
             engine?.setKeymap?.(lane.engineState!.sampler!.keymap);
           }
+          ensureScenesForRows(self.state);
           self.renderWithMixer();
         };
 
