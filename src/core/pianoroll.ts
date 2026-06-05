@@ -4,6 +4,8 @@
 // keyboard (↕ zoom pitch); native scrollbars pan. Snap defaults to 16th notes.
 
 import { TICKS_PER_STEP, type NoteEvent } from './notes';
+import { velToColor } from './velocity-color';
+import { DEFAULT_VELOCITY } from './velocity-gain';
 import { EDITOR_MIN_MIDI, EDITOR_MAX_MIDI } from './pianoroll-range';
 import {
   clampZoom, scrubToZoom, zoomAroundAnchor, maxZoomX, maxZoomY,
@@ -222,10 +224,10 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       if (n.midi < minMidi || n.midi > maxMidi) continue;
       const x = xForTick(n.start), x2 = xForTick(n.start + n.duration), y = yForMidi(n.midi);
       const sel = selection.has(n);
-      gctx.fillStyle = sel ? '#7fd4ff' : (n.velocity >= 100 ? '#ffaa44' : '#3498db');
+      gctx.fillStyle = sel ? '#7fd4ff' : velToColor(n.velocity);
       gctx.fillRect(x + 1, y + 1, Math.max(2, x2 - x - 2), rowHeight - 2);
-      gctx.strokeStyle = sel ? '#ffffff' : '#0a0a0a';
-      gctx.lineWidth = sel ? 1.5 : 1;
+      gctx.strokeStyle = sel ? '#ffffff' : (n.velocity >= 100 ? '#ffffff' : '#0a0a0a');
+      gctx.lineWidth = (sel || n.velocity >= 100) ? 1.5 : 1;
       gctx.strokeRect(x + 0.5, y + 0.5, x2 - x - 1, rowHeight - 1);
       gctx.lineWidth = 1;
     }
@@ -430,7 +432,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       else interaction = { type: 'move', note: hit, offsetTick: tick - hit.start };
     } else {
       const snappedStart = Math.floor(tick / snap) * snap;
-      const newNote: NoteEvent = { start: snappedStart, duration: snap, midi, velocity: 80 };
+      const newNote: NoteEvent = { start: snappedStart, duration: snap, midi, velocity: DEFAULT_VELOCITY };
       opts.getNotes().push(newNote);
       interaction = { type: 'resize', note: newNote, offsetTick: 0 };
       gestureMutated = true;
@@ -584,7 +586,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
           // Step input: write at the cursor, advance after all keys release.
           heldKeys.set(e.key.toLowerCase(), { midi, startTick: cursorTick });
           opts.onGestureStart?.();
-          opts.getNotes().push({ start: cursorTick, duration: snap, midi, velocity: 80 });
+          opts.getNotes().push({ start: cursorTick, duration: snap, midi, velocity: DEFAULT_VELOCITY });
           opts.onChange?.(); drawGrid(); opts.onGestureEnd?.();
         }
         return;
@@ -637,7 +639,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       const endTick = opts.getPlayheadTick?.() ?? held.startTick;
       const q = quantizeRecorded(held.startTick, endTick < held.startTick ? held.startTick + snap : endTick, snap);
       opts.onGestureStart?.();
-      opts.getNotes().push({ start: q.start, duration: q.duration, midi: held.midi, velocity: 80 });
+      opts.getNotes().push({ start: q.start, duration: q.duration, midi: held.midi, velocity: DEFAULT_VELOCITY });
       opts.onChange?.(); drawGrid(); opts.onGestureEnd?.();
     } else if (heldKeys.size === 0) {
       // All step-input keys released → advance the cursor one step (chord = one advance).

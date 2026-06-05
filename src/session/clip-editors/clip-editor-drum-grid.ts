@@ -5,6 +5,8 @@
 // { redraw } handle driven by the session-host RAF. Pure logic in core/drum-grid-editing.ts.
 
 import { DRUM_LANES, type DrumVoice } from '../../core/drums';
+import { velToColor } from '../../core/velocity-color';
+import { DEFAULT_VELOCITY } from '../../core/velocity-gain';
 import type { SessionClip } from '../session';
 import type { NoteEvent } from '../../core/notes';
 import { GM_DRUM_MAP, VOICE_MIDI } from '../../engines/drum-gm-map';
@@ -134,9 +136,10 @@ export function renderDrumGridEditor(
       const w = Math.max(3, Math.min(n.duration * pxPerTick, maxW));
       const y = yForRow(r) + 3;
       const sel = selection.has(n);
-      ctx.fillStyle = sel ? '#7fd4ff' : (n.velocity >= 100 ? '#ffaa44' : '#3498db');
+      ctx.fillStyle = sel ? '#7fd4ff' : velToColor(n.velocity);
       ctx.fillRect(x, y, w, ROW_H - 6);
-      ctx.strokeStyle = sel ? '#fff' : '#0a0a0a'; ctx.strokeRect(x + 0.5, y + 0.5, Math.max(3, w - 1), ROW_H - 7);
+      ctx.strokeStyle = sel ? '#fff' : (n.velocity >= 100 ? '#ffffff' : '#0a0a0a');
+      ctx.strokeRect(x + 0.5, y + 0.5, Math.max(3, w - 1), ROW_H - 7);
     }
     if (marquee) {
       const x0 = xForTick(Math.min(marquee.tick0, marquee.tick1));
@@ -162,7 +165,7 @@ export function renderDrumGridEditor(
     const run = () => {
       if (cluster.length === 0) {
         const dur = Math.max(1, Math.floor(snap() * 0.9));
-        notes().push({ midi: VOICE_MIDI[voice], start: cell, duration: dur, velocity: 80 });
+        notes().push({ midi: VOICE_MIDI[voice], start: cell, duration: dur, velocity: DEFAULT_VELOCITY });
         audition?.(VOICE_MIDI[voice]);
       } else if (cluster.every((n) => n.velocity < 100)) {
         for (const n of cluster) n.velocity = 115;
