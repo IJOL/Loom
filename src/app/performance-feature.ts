@@ -18,6 +18,7 @@ import {
 import {
   finalizeArrangement, setArrangementLengthBars,
   addAutomationCurve, removeAutomationCurve,
+  effectiveDurationSec, arrangementLoopWindowSec,
 } from '../performance/arrangement-ops';
 import type { AutoBrush } from '../automation/automation-painter';
 import {
@@ -26,7 +27,7 @@ import {
   type ArrangementPlayState,
 } from '../performance/arrangement-runtime';
 import {
-  launchClip, stopLane,
+  launchClip, stopLane, stopAll,
   type RecHooks,
 } from '../session/session-runtime';
 import { renderPerformanceView } from '../performance/performance-ui';
@@ -129,6 +130,13 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       onAddCurve: (paramId) => { addAutomationCurve(arrangement, paramId, laneIds()); onPerformanceEdited?.(); refreshPerformanceView(); },
       onRemoveCurve: (paramId) => { removeAutomationCurve(arrangement, paramId, laneIds()); onPerformanceEdited?.(); refreshPerformanceView(); },
       onEdited: () => { onPerformanceEdited?.(); },
+      loopEnabled: !!arrangement.loopEnabled,
+      loopStartBar: arrangement.loopStartBar ?? 0,
+      loopEndBar: arrangement.loopEndBar ?? Math.ceil(effectiveDurationSec(arrangement) / ((60 / arrangement.bpm) * 4)),
+      onSetLoop: (enabled, startBar, endBar) => {
+        arrangement.loopEnabled = enabled; arrangement.loopStartBar = startBar; arrangement.loopEndBar = endBar;
+        onPerformanceEdited?.(); refreshPerformanceView();
+      },
     });
   }
 
@@ -202,6 +210,8 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         onLaunchClip: arrangementOnLaunchClip,
         onStopLane: arrangementOnStopLane,
         applyAutomation: arrangementApplyAutomation,
+        loopWindow: arrangementLoopWindowSec(arrangement),
+        onArrangementEnd: () => { stopAll(sessionHost.laneStates); stopArrangement(arrangementPlayState); },
       });
     }
   }
@@ -244,8 +254,11 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     if (mode === 'performance' && arrangementPlayState.isPlaying) {
       const el = document.getElementById('perf-playhead');
       if (el) {
-        const bars = arrangementPlayhead(arrangementPlayState, ctx.currentTime)
-          / ((60 / (arrangement.bpm || seq.bpm)) * 4);
+        const barSec = (60 / (arrangement.bpm || seq.bpm)) * 4;
+        const lw = arrangementLoopWindowSec(arrangement);
+        let sec = arrangementPlayhead(arrangementPlayState, ctx.currentTime);
+        if (lw.active) sec = lw.startSec + ((sec - lw.startSec) % (lw.endSec - lw.startSec));
+        const bars = sec / barSec;
         el.style.left = `${90 + bars * pxPerBar}px`;
       }
     }

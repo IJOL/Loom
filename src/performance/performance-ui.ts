@@ -3,6 +3,7 @@ import type { KnobHandle } from '../core/knob';
 import type { AutoBrush, PainterDeps } from '../automation/automation-painter';
 import { effectiveDurationSec } from './arrangement-ops';
 import { buildAutomationHeader, buildAutomationLane, type PerfAutoDeps } from './performance-automation-ui';
+import { pxToBar, clampBarRegion } from './arrangement-brace';
 
 function makeLabel(text: string, cls = ''): HTMLElement {
   const el = document.createElement('div');
@@ -13,7 +14,7 @@ function makeLabel(text: string, cls = ''): HTMLElement {
 
 function barSecOf(bpm: number): number { return (60 / bpm) * 4; }
 
-function makeRuler(durationSec: number, bpm: number, pxPerBar: number): HTMLElement {
+function makeRuler(durationSec: number, bpm: number, pxPerBar: number, cb: PerfUICallbacks): HTMLElement {
   const barSec = barSecOf(bpm);
   const bars = Math.ceil(durationSec / barSec);
   const ruler = document.createElement('div');
@@ -28,6 +29,28 @@ function makeRuler(durationSec: number, bpm: number, pxPerBar: number): HTMLElem
     m.style.left = `${b * pxPerBar}px`;
     m.textContent = String(b + 1);
     track.appendChild(m);
+  }
+  if (cb.loopEnabled) {
+    const brace = document.createElement('div');
+    brace.className = 'perf-loop-brace';
+    brace.style.left = `${cb.loopStartBar * pxPerBar}px`;
+    brace.style.width = `${(cb.loopEndBar - cb.loopStartBar) * pxPerBar}px`;
+    const hL = document.createElement('span'); hL.className = 'perf-loop-handle l';
+    const hR = document.createElement('span'); hR.className = 'perf-loop-handle r';
+    brace.append(hL, hR);
+    const drag = (which: 'l' | 'r') => (down: PointerEvent) => {
+      down.preventDefault();
+      const move = (e: PointerEvent) => {
+        const rect = track.getBoundingClientRect();
+        const b = pxToBar(e.clientX - rect.left, pxPerBar);
+        const r = which === 'l' ? clampBarRegion(b, cb.loopEndBar, bars) : clampBarRegion(cb.loopStartBar, b, bars);
+        cb.onSetLoop(true, r.start, r.end);
+      };
+      const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
+      window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+    };
+    hL.addEventListener('pointerdown', drag('l')); hR.addEventListener('pointerdown', drag('r'));
+    track.appendChild(brace);
   }
   ruler.appendChild(track);
   return ruler;
@@ -88,6 +111,10 @@ export interface PerfUICallbacks {
   onAddCurve: (paramId: string) => void;
   onRemoveCurve: (paramId: string) => void;
   onEdited: () => void;
+  loopEnabled: boolean;
+  loopStartBar: number;
+  loopEndBar: number;
+  onSetLoop: (enabled: boolean, startBar: number, endBar: number) => void;
 }
 
 function makeToolbar(state: ArrangementState, cb: PerfUICallbacks): HTMLElement {
@@ -129,7 +156,12 @@ function makeToolbar(state: ArrangementState, cb: PerfUICallbacks): HTMLElement 
   readout.className = 'perf-readout';
   readout.textContent = `${bars} bars · ${state.bpm} BPM`;
 
-  bar.append(lenWrap, ' · Zoom ', zoom, ' · ', brushBar, ' · ', readout);
+  const loopBtn = document.createElement('button');
+  loopBtn.className = 'rnd perf-loop-toggle' + (cb.loopEnabled ? ' primary' : '');
+  loopBtn.textContent = 'Loop A–B';
+  loopBtn.addEventListener('click', () => cb.onSetLoop(!cb.loopEnabled, cb.loopStartBar, cb.loopEndBar));
+
+  bar.append(lenWrap, ' · Zoom ', zoom, ' · ', brushBar, ' · ', loopBtn, ' · ', readout);
   return bar;
 }
 
@@ -175,7 +207,7 @@ export function renderPerformanceView(host: HTMLElement, state: ArrangementState
     onEdited: cb.onEdited,
   };
 
-  host.appendChild(makeRuler(dur, state.bpm, cb.pxPerBar));
+  host.appendChild(makeRuler(dur, state.bpm, cb.pxPerBar, cb));
   // Single "+ Automation" control; the chosen param's prefix routes it into a
   // lane section or the master section (arrangement-ops.routeParamId).
   host.appendChild(buildAutomationHeader(autoDeps));
