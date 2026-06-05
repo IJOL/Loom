@@ -66,3 +66,23 @@ test('real-time export arms a live take → Play/Stop → take lands in a new au
   // The export button has returned to idle (recorder reset after delivering the take).
   await expect(page.locator('#export-scene')).not.toHaveClass(/armed|recording/, { timeout: 5_000 });
 });
+
+test('arming then stopping without Play tears down cleanly (no take, no audio channel)', async ({ page }) => {
+  await page.goto('/');
+  await waitForBoot(page);
+  await expect(page.locator('.lane-engine-audio')).toHaveCount(0);
+  const lanesBefore = await page.locator('button.session-lane-tab').count();
+
+  // Arm the live take…
+  await page.locator('#export-scene').click();
+  await page.locator('#export-rt').click();
+  await expect(page.locator('#export-scene')).toHaveClass(/armed/, { timeout: 2000 });
+
+  // …then Stop WITHOUT ever pressing Play, via the session "⏹ all" (unified stop).
+  await page.locator('#session-stop-all').click();
+
+  // The recorder tears down: button returns to idle and NO audio channel is created.
+  await expect(page.locator('#export-scene')).not.toHaveClass(/armed|recording/, { timeout: 3000 });
+  await expect(page.locator('.lane-engine-audio')).toHaveCount(0);
+  await expect(page.locator('button.session-lane-tab')).toHaveCount(lanesBefore);
+});
