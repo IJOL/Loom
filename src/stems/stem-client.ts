@@ -24,7 +24,13 @@ export class StemServiceUnreachable extends Error {
 type FetchFn = typeof fetch;
 
 export class StemClient {
-  constructor(private readonly baseUrl: string, private readonly fetchFn: FetchFn = fetch) {}
+  // Default wraps the global fetch in an arrow so calling it as `this.fetchFn(...)`
+  // keeps fetch bound to window. A bare `= fetch` default throws "Illegal invocation"
+  // in real browsers (the native fetch rejects being called with this !== Window).
+  constructor(
+    private readonly baseUrl: string,
+    private readonly fetchFn: FetchFn = (input, init) => fetch(input, init),
+  ) {}
 
   private async req(path: string, init?: RequestInit): Promise<Response> {
     try {

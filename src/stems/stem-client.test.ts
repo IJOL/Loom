@@ -56,4 +56,27 @@ describe('StemClient', () => {
     expect(c.stemUrl('/jobs/abc/stems/vocals')).toBe(`${base}/jobs/abc/stems/vocals`);
     expect(c.stemUrl('http://other/x')).toBe('http://other/x');
   });
+
+  it('the DEFAULT fetch keeps its global binding (guards "Illegal invocation")', async () => {
+    // A real browser's native fetch throws "Illegal invocation" when called with a
+    // receiver other than the global object. A bare `fetchFn = fetch` default trips
+    // this because StemClient calls `this.fetchFn(...)`. Mimic the native behaviour
+    // and prove the default StemClient (no injected fetchFn) survives it.
+    const orig = globalThis.fetch;
+    const native = function (this: unknown): Promise<Response> {
+      if (this !== undefined && this !== globalThis) {
+        return Promise.reject(
+          new TypeError("Failed to execute 'fetch' on 'Window': Illegal invocation"),
+        );
+      }
+      return Promise.resolve(jsonResponse({ ok: true, model: 'htdemucs' }));
+    };
+    (globalThis as { fetch: typeof fetch }).fetch = native as unknown as typeof fetch;
+    try {
+      const c = new StemClient(base); // uses the default fetchFn
+      await expect(c.health()).resolves.toEqual({ ok: true, model: 'htdemucs' });
+    } finally {
+      (globalThis as { fetch: typeof fetch }).fetch = orig;
+    }
+  });
 });
