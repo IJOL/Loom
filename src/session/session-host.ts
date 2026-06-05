@@ -184,6 +184,8 @@ export class SessionHost {
 
   constructor(public readonly deps: SessionHostDeps) {}
 
+  onSliceToBank(_laneId: string, _clipIdx: number): void { /* implemented in Task D2 */ }
+
   init(): void {
     this.inspector = new SessionInspector({
       ctx: this.deps.ctx,
@@ -200,6 +202,7 @@ export class SessionHost {
       scaleSel: this.deps.scaleSel,
       rootSel: this.deps.rootSel,
       triggerForLane: this.deps.triggerForLane,
+      onSliceToBank: (laneId, clipIdx) => this.onSliceToBank(laneId, clipIdx),
     });
 
     this.deps.seq.sessionTick = (now, look) => {

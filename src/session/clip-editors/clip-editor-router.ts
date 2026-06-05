@@ -13,7 +13,7 @@ import { ticksPerBar, stepsPerBar, stepsPerBeat } from '../../core/meter';
 import { resolveViewState, type ViewState } from '../../core/pianoroll-zoom';
 import { getEngine } from '../../engines/registry';
 import { renderDrumGridEditor } from './clip-editor-drum-grid';
-import { renderLoopEditor } from './clip-editor-loop';
+import { mountWaveformHeader, renderAudioClipEditor } from './clip-waveform-header';
 import type { HistoryDeps } from '../../save/history-wiring';
 import { mountClipLoopBrace } from '../../core/clip-loop-brace';
 
@@ -29,6 +29,7 @@ export interface ClipEditorDeps {
     slice?: { sampleId: string; start: number; end: number },
     velocity?: number,
   ) => void;
+  onSliceToBank?: () => void;
 }
 
 const AUDITION_GATE = 0.25; // seconds — short preview blip, shared by both editors
@@ -52,9 +53,9 @@ export function chooseClipEditor(
   return override ?? (isDrumkitSampler ? 'drum-grid' : undefined) ?? engineEditor ?? 'piano-roll';
 }
 
-/** A loop clip that plays as retriggered slices (vs the stretch buffer path). */
-export function isSliceLoopClip(clip: SessionClip): boolean {
-  return !!clip.sample && clip.sample.warpMode !== 'stretch' && !!clip.sample.slices?.length;
+/** An audio-channel clip: lives on an `audio` lane, has a sample, no notes. */
+export function isAudioClip(lane: SessionLane, clip: SessionClip): boolean {
+  return lane.engineId === 'audio' && !!clip.sample && (clip.notes?.length ?? 0) === 0;
 }
 
 export function renderClipEditor(
@@ -67,28 +68,37 @@ export function renderClipEditor(
   host.innerHTML = '';
   const engine = getEngine(lane.engineId);
   const editor = chooseClipEditor(lane, engine?.editor, override);
-  let handle: PianoRollHandle | null;
 
-  if (isSliceLoopClip(clip)) {
-    // Audition must carry the slice region (the lane keymap is empty for a slice
-    // loop), otherwise previewing a row in the editor would be silent.
-    const audition = deps.triggerForLane
-      ? (midi: number) => {
-          const s = clip.sample!.slices!.find((x) => x.note === midi);
-          const slice = s ? { sampleId: clip.sample!.sampleId, start: s.start, end: s.end } : undefined;
-          deps.triggerForLane!(lane.id, midi, deps.ctx.currentTime, AUDITION_GATE, false, false, undefined, slice);
-        }
-      : undefined;
-    const getPlayheadTick = (): number => {
-      const lp = deps.laneStates.get(lane.id);
-      if (!lp || !lp.playing || lp.playing.id !== clip.id) return -1;
-      const stepDur = 60 / deps.seq.bpm / 4;
-      const stepsElapsed = Math.max(0, (deps.ctx.currentTime - lp.startTime) / stepDur);
-      const clipSteps = clip.lengthBars * stepsPerBar(deps.seq.meter);
-      return (stepsElapsed % clipSteps) * TICKS_PER_STEP;
-    };
-    handle = renderLoopEditor(host, clip, deps.historyDeps, deps.seq.meter, { auditionNote: audition, getPlayheadTick });
-  } else if (editor === 'drum-grid') {
+  const playheadFrac = (): number => {
+    const lp = deps.laneStates.get(lane.id);
+    if (!lp || !lp.playing || lp.playing.id !== clip.id) return -1;
+    const stepDur = 60 / deps.seq.bpm / 4;
+    const stepsElapsed = Math.max(0, (deps.ctx.currentTime - lp.startTime) / stepDur);
+    const clipSteps = clip.lengthBars * stepsPerBar(deps.seq.meter);
+    return (stepsElapsed % clipSteps) / clipSteps;
+  };
+
+  // Audio-channel clip → waveform-only editor (no note grid).
+  if (isAudioClip(lane, clip)) {
+    return renderAudioClipEditor(host, clip, deps.seq.meter, {
+      onSliceToBank: deps.onSliceToBank,
+      getPlayheadFrac: playheadFrac,
+    });
+  }
+
+  // Everything else: optional waveform header (when the clip references a buffer)
+  // ABOVE the normal note editor.
+  let headerHandle: { redraw: () => void } | null = null;
+  if (clip.sample || clip.waveformRef) {
+    const headerBox = document.createElement('div');
+    host.appendChild(headerBox);
+    headerHandle = mountWaveformHeader(headerBox, clip, deps.seq.meter, { getPlayheadFrac: playheadFrac });
+  }
+  const bodyBox = document.createElement('div');
+  host.appendChild(bodyBox);
+
+  let bodyHandle: PianoRollHandle | null;
+  if (editor === 'drum-grid') {
     const audition = deps.triggerForLane
       ? (midi: number) => deps.triggerForLane!(lane.id, midi, deps.ctx.currentTime, AUDITION_GATE, false, false)
       : undefined;
@@ -100,13 +110,13 @@ export function renderClipEditor(
       const clipSteps = clip.lengthBars * stepsPerBar(deps.seq.meter);
       return (stepsElapsed % clipSteps) * TICKS_PER_STEP;
     };
-    handle = renderDrumGridEditor(host, clip, deps.historyDeps, deps.seq.meter, { auditionNote: audition, getPlayheadTick });
+    bodyHandle = renderDrumGridEditor(bodyBox, clip, deps.historyDeps, deps.seq.meter, { auditionNote: audition, getPlayheadTick });
   } else {
-    handle = buildPianoRoll(host, lane, clip, deps);
+    bodyHandle = buildPianoRoll(bodyBox, lane, clip, deps);
   }
 
-  mountClipLoopBrace(host, clip, deps.seq.meter, deps.historyDeps, () => {});
-  return handle;
+  mountClipLoopBrace(bodyBox, clip, deps.seq.meter, deps.historyDeps, () => {});
+  return { redraw: () => { headerHandle?.redraw(); bodyHandle?.redraw(); } };
 }
 
 function buildPianoRoll(

@@ -41,6 +41,9 @@ export interface InspectorDeps {
     slice?: { sampleId: string; start: number; end: number },
     velocity?: number,
   ) => void;
+  /** Mode 2: chop the audio clip into bank samples + a note clip on a new
+   *  sampler lane. Bound to (laneId, clipIdx) by the host. */
+  onSliceToBank?: (laneId: string, clipIdx: number) => void;
 }
 
 export class SessionInspector {
@@ -212,6 +215,9 @@ export class SessionInspector {
       midiLabel: this.deps.midiLabel,
       historyDeps: this.deps.historyDeps,
       triggerForLane: this.deps.triggerForLane,
+      onSliceToBank: this.selectedClip
+        ? () => this.deps.onSliceToBank?.(this.selectedClip!.laneId, this.selectedClip!.clipIdx)
+        : undefined,
     };
     this.roll = renderClipEditor(editorBox, lane, clip, editorDeps, editorOverride.get(clip.id));
 

@@ -1,6 +1,6 @@
 // src/session/clip-editors/clip-editor-router.test.ts
 import { describe, it, expect } from 'vitest';
-import { chooseClipEditor, isSliceLoopClip } from './clip-editor-router';
+import { chooseClipEditor, isAudioClip } from './clip-editor-router';
 import type { SessionLane, SessionClip } from '../session';
 
 const lane = (over: Partial<SessionLane>): SessionLane => ({
@@ -36,13 +36,14 @@ describe('chooseClipEditor', () => {
   });
 });
 
-describe('isSliceLoopClip', () => {
-  it('true only for a slice-mode loop clip', () => {
-    const slice = { id: 'a', lengthBars: 1, notes: [], sample: { sampleId: 's', mode: 'loop', warpMode: 'slice', slices: [{ start: 0, end: 1, note: 36 }], trimStart: 0, trimEnd: 1 } } as unknown as SessionClip;
-    const plain = { id: 'b', lengthBars: 1, notes: [] } as unknown as SessionClip;
-    const stretch = { id: 'c', lengthBars: 1, notes: [], sample: { sampleId: 's', mode: 'loop', warpMode: 'stretch', trimStart: 0, trimEnd: 1 } } as unknown as SessionClip;
-    expect(isSliceLoopClip(slice)).toBe(true);
-    expect(isSliceLoopClip(plain)).toBe(false);
-    expect(isSliceLoopClip(stretch)).toBe(false);
+describe('isAudioClip', () => {
+  it('true only for an audio-lane clip with a sample and no notes', () => {
+    const audio = { id: 'a', engineId: 'audio', clips: [] } as unknown as SessionLane;
+    const sampler = { id: 's', engineId: 'sampler', clips: [] } as unknown as SessionLane;
+    const withSample = { id: 'c', lengthBars: 1, notes: [], sample: { sampleId: 's', mode: 'loop', trimStart: 0, trimEnd: 1 } } as unknown as SessionClip;
+    const noteClip = { id: 'd', lengthBars: 1, notes: [{ start: 0, duration: 1, midi: 60, velocity: 90 }] } as unknown as SessionClip;
+    expect(isAudioClip(audio, withSample)).toBe(true);
+    expect(isAudioClip(sampler, withSample)).toBe(false);
+    expect(isAudioClip(audio, noteClip)).toBe(false);
   });
 });
