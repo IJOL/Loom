@@ -575,6 +575,38 @@ export class SessionHost {
         };
         if (hd) withUndo(hd, run); else run();
       },
+      /** Create one full-length Sampler lane per separated stem, as a single
+       *  undoable action. Each `stems[i].sampleId` must already be in the sample
+       *  store AND decoded into sampleCache by the caller (stem-import). */
+      onAddStemLanes(stems: { label: string; sampleId: string; durationSec: number }[]) {
+        const hd = self.deps.historyDeps;
+        const run = () => {
+          for (const stem of stems) {
+            const used = new Set(self.state.lanes.map((l) => l.id));
+            const newId = nextLaneSlug(used, 'sampler');
+            const lane = emptyLane(newId, 'sampler');
+            lane.name = stem.label;
+
+            const rowCount = Math.max(self.state.scenes.length, 1);
+            const defaultLen = Math.max(1, Math.floor(seq.length / stepsPerBar(seq.meter)));
+            const clip = audioClip({
+              name: stem.label,
+              sampleId: stem.sampleId,
+              durationSec: stem.durationSec,
+              bpm: seq.bpm,
+              mode: 'song',
+            });
+            for (let r = 0; r < rowCount; r++) {
+              lane.clips.push(r === 0 ? clip : emptyClip(defaultLen));
+            }
+            self.state.lanes.push(lane);
+            self.laneStates.set(newId, emptyLanePlayState(newId));
+            self.deps.ensureLaneResource?.(newId, 'sampler');
+          }
+          self.renderWithMixer();
+        };
+        if (hd) withUndo(hd, run); else run();
+      },
       onMoveClip(from: ClipSlot, to: ClipSlot, copy: boolean) {
         const destLane = self.state.lanes.find((l) => l.id === to.laneId);
         if (!destLane) return;
