@@ -216,6 +216,7 @@ class SubtractiveVoice implements Voice {
           mv.trigger(time, { gateDuration: options.gateDuration, accent: options.accent });
         }
       },
+      options.velocity,
     );
   }
 

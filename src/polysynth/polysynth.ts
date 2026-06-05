@@ -8,6 +8,8 @@
 // the entire envelope at sample-accurate times and frees itself when the
 // release tail ends.
 
+import { velToGain, resolveVelocity } from '../core/velocity-gain';
+
 export type FilterType = 'lowpass' | 'highpass' | 'bandpass';
 
 export interface PolySynthParams {
@@ -137,18 +139,18 @@ export class PolySynth {
    */
   triggerWithBinding(
     midi: number, time: number, gateDuration: number, accent = false,
-    onVoice?: (params: PolyVoiceParams) => void,
+    onVoice?: (params: PolyVoiceParams) => void, velocity?: number,
   ) {
-    this.internalTrigger(midi, time, gateDuration, accent, onVoice);
+    this.internalTrigger(midi, time, gateDuration, accent, onVoice, velocity);
   }
 
-  trigger(midi: number, time: number, gateDuration: number, accent = false) {
-    this.internalTrigger(midi, time, gateDuration, accent);
+  trigger(midi: number, time: number, gateDuration: number, accent = false, velocity?: number) {
+    this.internalTrigger(midi, time, gateDuration, accent, undefined, velocity);
   }
 
   private internalTrigger(
     midi: number, time: number, gateDuration: number, accent: boolean,
-    onVoice?: (params: PolyVoiceParams) => void,
+    onVoice?: (params: PolyVoiceParams) => void, velocity?: number,
   ) {
     const ctx = this.ctx;
     const p = this.params;
@@ -190,7 +192,8 @@ export class PolySynth {
     // modulatable detune offset (cents) on each oscillator below, so
     // realtime LFO/ADSR on master.tune actually bends pitch.
     const noteFreq = 440 * Math.pow(2, (midi - 69) / 12);
-    const velMul = accent ? 1.3 : 1.0;
+    const accentMul = accent ? 1.3 : 1.0;       // filter-env brightness (timbre)
+    const ampGain = velToGain(resolveVelocity(velocity, accent)); // loudness
 
     // master.tune in semitones → cents detune offset shared across oscs.
     // Each osc.detune AudioParam receives `tune.offset` (cents) via a per-voice
@@ -309,7 +312,7 @@ export class PolySynth {
     // Cap the envelope sweep so a maxed-out cutoff knob doesn't push the
     // filter freq into self-oscillation territory beyond Nyquist.
     const envRange = Math.min(baseHz * 7, 16000);
-    envScaler.gain.value = envRange * p.filter.envAmount * velMul;
+    envScaler.gain.value = envRange * p.filter.envAmount * accentMul;
     envCutoffNorm.connect(envScaler).connect(filter.frequency);
 
     // ── Amp gain node (envelope scheduled below) ─────────────────────────
@@ -378,7 +381,7 @@ export class PolySynth {
     }
 
     // ── Amp envelope ─────────────────────────────────────────────────────
-    const peakAmp = 0.4 * velMul;
+    const peakAmp = 0.4 * ampGain;
     const sustainAmp = Math.max(0.0001, peakAmp * p.amp.sustain);
     const aa = Math.max(0.001, p.amp.attack);
     const ad = Math.max(0.001, p.amp.decay);
