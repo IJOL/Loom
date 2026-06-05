@@ -9,6 +9,7 @@ export interface SessionTabBarDeps {
   state: SessionState;
   onPickLane: (laneId: string) => void;
   onAddLane:  (engineId: string) => void;
+  onAddAudioChannel?: (file: File) => void;
 }
 
 export function renderSessionTabBar(host: HTMLElement, deps: SessionTabBarDeps): void {
@@ -34,6 +35,7 @@ export function renderSessionTabBar(host: HTMLElement, deps: SessionTabBarDeps):
   // Populated lazily here AND defensively re-populated each render in case the
   // registry expands later. Cheap — just rebuild options.
   for (const engine of listEngines('polyhost')) {
+    if (engine.id === 'audio') continue; // audio lanes are created via "+ Audio"
     const opt = document.createElement('option');
     opt.value = engine.id;
     opt.textContent = engine.name;
@@ -48,4 +50,26 @@ export function renderSessionTabBar(host: HTMLElement, deps: SessionTabBarDeps):
   adder.appendChild(sel);
   adder.appendChild(btn);
   host.appendChild(adder);
+
+  if (deps.onAddAudioChannel) {
+    const audioAdder = document.createElement('span');
+    audioAdder.className = 'session-tabs-add-audio';
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'audio/*';
+    fileInput.className = 'session-add-audio-input';
+    fileInput.style.display = 'none';
+    const audioBtn = document.createElement('button');
+    audioBtn.className = 'tab session-add-audio-btn';
+    audioBtn.textContent = '+ Audio';
+    audioBtn.title = 'Drop a WAV loop as a tempo-locked audio channel';
+    audioBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => {
+      const f = fileInput.files?.[0];
+      if (f) deps.onAddAudioChannel!(f);
+      fileInput.value = '';
+    });
+    audioAdder.append(fileInput, audioBtn);
+    host.appendChild(audioAdder);
+  }
 }

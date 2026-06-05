@@ -17,6 +17,8 @@ export interface SessionUICallbacks {
   /** An audio file was dropped onto an EMPTY clip cell of a sampler lane. The
    *  host imports it and creates a loop clip carrying clip.sample. */
   onCellDropAudio?: (laneId: string, clipIdx: number, file: File) => void;
+  /** A WAV was chosen via the "+ Audio" control: create an audio-channel lane. */
+  onAddAudioChannel?: (file: File) => void;
   /** Drop a clip onto another slot. `copy=true` when the user held Ctrl
    *  during the drag (Ctrl=copy, plain drag=move). Caller is responsible
    *  for wrapping the mutation in withUndo. */
