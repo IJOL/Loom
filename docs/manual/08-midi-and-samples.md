@@ -87,13 +87,56 @@ Once a kit is loaded the lane switches to the drum-grid editor (the same grid us
 
 See [Editing Clips](05-editing-clips.md) for how to draw patterns in the drum grid, and [Engines](04-engines.md) for a comparison with the Drum Machine engine (which lists all available kits, including the synth kits, in a unified preset table).
 
-### Import as loop
+---
 
-The **Import as loop** picker (below the drop zone) takes an audio file and creates a tempo-synced slice clip on the lane instead of adding a keymap entry. Loom reads any embedded tempo/slice metadata from the file (Acid chunks, cue markers, or AIFF markers) first; if none is found, it runs onset detection and autocorrelation to estimate the original BPM and slice points. The result is a clip whose slices are mapped to drum-grid steps — playing it triggers each slice at the right moment to keep the loop in time with the session BPM. The status line confirms how many slices were found and the detected tempo.
+## Audio channel
 
-The loop import path bypasses the keymap and the per-pad parameters; the slice clip plays each region at its natural pitch with short anti-click fades and no amp envelope.
+The **audio channel** is the first-class way to bring a finished loop into a Loom session: drop a WAV and it plays **tempo-locked to the project without changing pitch**, with its waveform shown as a header above the clip editor. From there you can keep it as a continuous loop, or chop it into individually editable slices with one click.
 
-Once a loop clip is on the lane, click its body to open the dedicated loop editor — waveform view, slice grid, warp mode toggle, and grid resolution. See [Editing Clips — Loop / slice editor](05-editing-clips.md#loop--slice-editor) for a full walkthrough.
+![The + Audio control in the session tab bar](images/audio-channel-add.png)
+
+### Creating an audio channel
+
+There are two ways to add one:
+
+- **+ Audio button** — at the end of the lane tab row, next to the engine picker, sits a **+ Audio** button. Click it and pick a WAV. Loom decodes the file, stores it in IndexedDB (so it survives a reload), estimates its original tempo, and creates a **new audio lane** holding the loop as an audio clip. The clip opens automatically in the inspector.
+- **Drag onto an audio-lane cell** — once an audio lane exists, you can drag another WAV directly onto one of its grid cells to place a second audio clip there.
+
+Each new audio lane gets a launch button on its scene row, so it is immediately playable alongside the rest of the session.
+
+### The audio-clip editor
+
+![The audio-clip editor: BPM, bars, Warp, Slice → pads, and the waveform header](images/audio-clip-editor.png)
+
+An audio clip has no note grid. Clicking it opens the **audio-clip editor**, a small toolbar above a **waveform header**:
+
+- **BPM** — the detected original tempo of the loop.
+- **bars** — how many bars the loop occupies at the project meter.
+- **♺ Warp ON / OFF** — toggles tempo-locking (see below).
+- **✂ Slice → pads** — chops the loop into a sampler lane (see [Slice → pads](#slice--pads)).
+
+The waveform header shows a peak view of the buffer with a bar/beat ruler, any detected slice markers (orange), and a live playhead while the clip plays. This same header also appears **above** the normal piano-roll or drum-grid for any clip that references a buffer, so you always see the audio you are editing against.
+
+### Tempo-lock (Warp)
+
+With **Warp ON** (the default), the audio channel plays in time with the project BPM using a pitch-preserving WSOLA time-stretch:
+
+- **At the loop's native BPM** the stretch ratio is ≈ 1, so playback is essentially identical to the source file.
+- **At any other project BPM** the buffer is time-stretched to fit — faster or slower — **without changing pitch**. The stretched buffer is cached and re-rendered automatically whenever you change the project tempo, so the loop stays locked as you experiment.
+
+With **Warp OFF** the loop plays at its natural speed with no tempo sync — useful when you want the audio exactly as recorded.
+
+> First-play note: on the very first loop iteration after import (before the stretch cache is warm) playback briefly falls back to a varispeed render — a slight pitch shift that self-heals from the next iteration. At the loop's native tempo the ratio is ≈ 1, so even that first pass is near-identical.
+
+### Slice → pads
+
+For rhythmic material you often want access to the individual hits. Click **✂ Slice → pads** and Loom:
+
+1. Detects slice points (from embedded **Acid / `cue` / AIFF** markers when present, or by onset detection plus a tempo estimate).
+2. Cuts the buffer into one short sample per slice and stores each as a **bank one-shot** in IndexedDB.
+3. Creates a **new Sampler lane** whose keymap maps one slice per note, with an auto-built note clip that triggers the slices in order — so the groove plays back identically, now as discrete pads.
+
+The original audio lane is left untouched. The new sampler lane is a normal note clip, so the slices become individually editable and remixable: move, mute, repitch, or re-order the hits in the piano-roll, and tweak each pad's tune/cutoff/decay/level/pan in the per-pad rack (see [Per-pad / per-zone parameters](#per-pad--per-zone-parameters)). The sliced clip keeps the original waveform as its header so you can still see the source loop above the notes. The whole operation is a single undo step.
 
 ---
 

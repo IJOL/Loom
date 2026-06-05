@@ -38,6 +38,38 @@ const addLane = async (page, engineId) => {
   await page.waitForTimeout(300);
 };
 
+/** A ~2s 16-bit PCM mono WAV with four decaying bursts, so onset detection
+ *  finds slices when the audio channel / "Slice → pads" runs. Returned as a
+ *  base64 string fed to the hidden "+ Audio" file input via setInputFiles. */
+const loopWavBase64 = () => {
+  const sr = 44100, secs = 2.0, n = Math.floor(sr * secs);
+  const dataLen = n * 2;
+  const b = Buffer.alloc(44 + dataLen);
+  b.write('RIFF', 0); b.writeUInt32LE(36 + dataLen, 4); b.write('WAVE', 8);
+  b.write('fmt ', 12); b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20);
+  b.writeUInt16LE(1, 22); b.writeUInt32LE(sr, 24); b.writeUInt32LE(sr * 2, 28);
+  b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34);
+  b.write('data', 36); b.writeUInt32LE(dataLen, 40);
+  for (let i = 0; i < n; i++) {
+    const phase = (i / sr) % 0.5;        // bursts at 0, 0.5, 1.0, 1.5s
+    const env = Math.exp(-phase * 18);
+    const s = Math.sin(2 * Math.PI * 180 * (i / sr)) * env * 16000;
+    b.writeInt16LE(Math.round(s), 44 + i * 2);
+  }
+  return b.toString('base64');
+};
+
+/** Drop a generated WAV into the "+ Audio" control; the new audio clip
+ *  auto-opens in the inspector showing the audio-clip editor. */
+const addAudioChannel = async (page) => {
+  await page.locator('input.session-add-audio-input').setInputFiles({
+    name: 'beat.wav', mimeType: 'audio/wav',
+    buffer: Buffer.from(loopWavBase64(), 'base64'),
+  });
+  await page.locator('.audio-clip-slice').waitFor({ state: 'visible', timeout: 10_000 });
+  await page.waitForTimeout(300); // let the waveform canvas paint
+};
+
 export const SHOTS = [
   { name: 'app-overview', selector: '.synth' },
   { name: 'transport', selector: '.row.transport' },
@@ -140,6 +172,20 @@ export const SHOTS = [
       await tabs.nth(count - 1).click();
       await page.locator('.page:not([hidden])').first().waitFor({ state: 'visible' });
     },
+  },
+
+  // ── Audio channel ─────────────────────────────────────────────────────────
+  {
+    // The "+ Audio" control in the session tab bar.
+    name: 'audio-channel-add',
+    selector: '.session-tabs',
+  },
+  {
+    // The audio-clip editor (BPM / bars / Warp / Slice → pads + waveform header),
+    // reached by dropping a generated WAV into the "+ Audio" control.
+    name: 'audio-clip-editor',
+    selector: '#insp-roll-host',
+    setup: addAudioChannel,
   },
 
   {

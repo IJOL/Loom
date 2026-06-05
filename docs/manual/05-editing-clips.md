@@ -94,7 +94,7 @@ A vertical playhead line moves across the canvas in real time while the clip is 
 
 ## Loop regions
 
-A **loop brace** sits above every clip editor — piano-roll, drum-grid, and sample/slice editors — as a narrow strip spanning the full clip length. It lets you mark an A–B sub-region and repeat just that portion while the clip plays.
+A **loop brace** sits above every clip editor — piano-roll and drum-grid — as a narrow strip spanning the full clip length. It lets you mark an A–B sub-region and repeat just that portion while the clip plays.
 
 ### Setting the loop region
 
@@ -112,7 +112,9 @@ The loop region works the same way for all clip types:
 
 - **Note clips (piano-roll)** — only notes whose start falls within the A–B range are triggered; the period of repetition equals the duration of that range.
 - **Drum clips (drum-grid)** — same: only hits inside the sub-region fire.
-- **Audio / slice clips (Sampler)** — the corresponding fraction of the audio buffer plays, still tempo-locked and pitch-preserving.
+- **Sliced note clips (Sampler)** — a clip whose notes trigger bank slices behaves like any note clip: only the hits inside the A–B sub-region fire, still tempo-locked and pitch-preserving.
+
+The brace lives on the note/drum editor. A pure audio channel (the waveform-only audio-clip editor) does not show a brace; to gain per-region control over an audio loop, chop it into a note clip first with **Slice → pads** (see [MIDI & Samples — Audio channel](08-midi-and-samples.md#audio-channel)).
 
 The loop region is **per-clip** and saved with the session. Two clips in the same lane or scene can each have their own independent A–B region, or none at all.
 
@@ -122,40 +124,14 @@ For how to use an arrangement-wide A–B loop brace that repeats a section acros
 
 ---
 
-## Loop / slice editor
+## Waveform header
 
-When you import an audio file using **Import as loop** in the Sampler engine (see [MIDI & Samples](08-midi-and-samples.md)), Loom creates a special slice clip on the lane. Clicking the body of that clip opens the **loop / slice editor** instead of the piano-roll or drum-grid.
+Any clip that references an audio buffer shows a **waveform header** above its editor — a peak view of the buffer with a bar/beat ruler, slice markers (orange), and a live playhead. It appears in two situations:
 
-### When the editor appears
+- **Audio clips** open the dedicated **audio-clip editor** (toolbar + waveform header, no note grid).
+- **Sliced note clips** (and any normal clip that carries a display-only waveform reference) keep the header **above** the piano-roll or drum-grid, so you can edit notes against the source audio.
 
-The loop editor opens for any Sampler clip that was imported as a loop and has at least one slice region. Clips imported via the normal drag-and-drop or file picker (keymap mode) continue to open the piano-roll.
-
-### The waveform and slice grid
-
-The editor shows two main areas stacked vertically:
-
-- **Waveform strip** — a peak-waveform view of the full audio buffer. Orange vertical lines mark each slice boundary, so you can see at a glance where the loop is divided.
-- **Slice grid** — one row per slice, labelled S1, S2, … Each row represents one region of the audio. A note event in the grid triggers that slice region at the right moment during playback; notes can be moved, copied, or deleted just like drum-grid hits (draw mode by default; switch to select mode with the **2** key, back to draw with **1**).
-
-A live playhead line scrolls across both areas while the clip is playing.
-
-### How slices are detected
-
-When the file is imported, Loom reads any embedded tempo and slice metadata first — **Acid chunks**, WAV **cue markers**, or **AIFF MARK markers**. If none is found, it falls back to onset detection (energy-based peak picking) followed by an autocorrelation tempo estimate that is snapped to the nearest whole-bar interpretation, keeping the result in the 70–180 BPM range. The toolbar shows the detected (or embedded) **BPM** and the **bar count** for the clip, plus how many slices were found. You can click the BPM readout to correct it manually if the detection was wrong.
-
-### Tempo-lock (slice-and-retrigger)
-
-By default the loop plays in **slice** mode: each slice region is retriggered on the sequencer grid at the project BPM. Because the timing is driven by note events on the grid rather than by stretching the audio, pitch is completely unchanged regardless of how far the project BPM is from the loop's original tempo. The **Grid resolution** selector sets the snap for placing and moving notes in the slice grid.
-
-### Warp mode toggle
-
-The **Warp ON / OFF** button and the adjacent mode selector let you switch between the two playback strategies:
-
-- **Warp OFF** — the loop plays as a normal one-shot sample (no tempo sync). Use this if you want the audio at its natural speed with no grid interaction.
-- **Warp ON, mode = slice** (default) — slice-and-retrigger as described above. Best for rhythmic loops (drums, percussion, arpeggiated bass) where you want crisp, pitch-stable playback and the freedom to edit individual hits.
-- **Warp ON, mode = stretch** — the entire buffer is time-stretched offline (OLA / WSOLA) to match the project BPM and played as a single region. Use this for sustained material (pads, vocals, melodic loops) where maintaining the continuous texture matters more than edit access to individual slices. The stretched buffer is cached; it is re-rendered automatically when the project BPM changes.
-
-All changes in the loop editor are undoable (Ctrl+Z / Cmd+Z).
+To bring a loop into a session as a tempo-locked audio channel — and to chop one into individually editable pads with **Slice → pads** — see [MIDI & Samples — Audio channel](08-midi-and-samples.md#audio-channel), which covers the **+ Audio** control, the waveform header, the **Warp** tempo-lock, and slicing in full.
 
 ---
 
