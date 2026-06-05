@@ -17,6 +17,7 @@ import { importFile } from '../samples/import';
 import { sampleStore } from '../samples/store-singleton';
 import { sampleCache } from '../samples/sample-cache';
 import { getNoteFxChain, loadNoteFxForLane } from '../notefx/notefx-registry';
+import { applyLaneEngineState } from '../export/apply-lane-engine-state';
 import { renderNoteFxPanel } from '../notefx/notefx-ui';
 import { syncNoteFx, mirrorKeymapChange, mirrorDrumkitId } from './session-engine-state';
 import { fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
@@ -307,56 +308,12 @@ export class SessionHost {
     for (const lane of this.state.lanes) {
       const engine = this.deps.laneResources?.get(lane.id)?.engine;
       if (!engine) continue;
-      // Restore which drum source the Drums lane plays BEFORE keymap/padStore/
-      // mute restore, so the façade's active() points at the right source.
-      const kitMode = lane.engineState?.kitMode;
-      // Restore unconditionally with the documented default: the DrumsEngine
-      // façade is REUSED across loads, so an absent kitMode must RESET a stale
-      // 'sample' back to 'synth' (New Session / a synth-only session), not leave
-      // the engine stuck in sample mode.
-      if (typeof (engine as { setKitMode?: unknown }).setKitMode === 'function') {
-        (engine as unknown as { setKitMode(m: 'synth' | 'sample'): void }).setKitMode(kitMode ?? 'synth');
-      }
-      // Apply per-param values (bus sends, EQ, etc.) from engineState.params.
-      const params = lane.engineState?.params;
-      if (params) {
-        for (const [id, v] of Object.entries(params)) {
-          if (typeof v === 'number') engine.setBaseValue(id, v);
-        }
-      }
-      // Restore modulator state.
-      const mods = lane.engineState?.modulators;
-      if (mods) {
-        const host = (engine as { modulators?: { deserialize(s: unknown[]): void } } | undefined)?.modulators;
-        if (host) host.deserialize(mods);
-      }
-      // Restore the lane's note-FX chain so it follows the loaded demo
-      // (fixes the global-arp bug where note-FX kept the first demo's config).
-      loadNoteFxForLane(lane.id, lane.engineState?.noteFx);
-      // Restore sampler keymap (one-shot lanes).
-      const km = lane.engineState?.sampler?.keymap;
-      if (km && typeof (engine as { setKeymap?: unknown }).setKeymap === 'function') {
-        (engine as unknown as { setKeymap(k: typeof km): void }).setKeymap(km);
-      }
-      // Sample drumkits: if this sampler lane is a kit, re-load it from its
-      // manifest. The decoded-sample cache is never serialised, so the
-      // persisted keymap ids would be silent after a reload — reloading by id
-      // regenerates the samples + cache. Self-healing across reload + demo swap.
-      const drumkitId = lane.engineState?.sampler?.drumkitId;
-      if (drumkitId && typeof (engine as { setKeymap?: unknown }).setKeymap === 'function') {
-        void this.reloadDrumkit(lane.id, drumkitId, engine as unknown as { setKeymap(k: KeymapEntry[]): void });
-      }
-      // Restore per-pad param overrides (sampler). Feature-detected so only
-      // the sampler responds; independent of the async drumkit reload.
-      const padParams = lane.engineState?.sampler?.padParams;
-      if (padParams && typeof (engine as { setPadStore?: unknown }).setPadStore === 'function') {
-        (engine as unknown as { setPadStore(s: Record<number, Record<string, number>>): void }).setPadStore(padParams);
-      }
-      // Restore per-voice drum mutes (drums-machine). Solo is live-only.
-      const drumMutes = lane.engineState?.drumMutes;
-      if (drumMutes && typeof (engine as { setDrumVoiceMutes?: unknown }).setDrumVoiceMutes === 'function') {
-        (engine as unknown as { setDrumVoiceMutes(m: Record<string, boolean>): void }).setDrumVoiceMutes(drumMutes);
-      }
+      void applyLaneEngineState(engine as never, lane, this.deps.ctx, {
+        loadNoteFx: (laneId, state) => loadNoteFxForLane(laneId, state),
+        // Live: fire-and-forget the drumkit reload (the editor renders regardless;
+        // audio comes alive once the fetch/decode resolves).
+        reloadDrumkit: (laneId, kitId, eng) => { void this.reloadDrumkit(laneId, kitId, eng); },
+      });
     }
   }
 
