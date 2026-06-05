@@ -201,11 +201,15 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
     const key = e.key.toLowerCase();
     if (key === 'z' && !e.shiftKey) {
+      // Always preventDefault+stopPropagation in Performance mode so session undo
+      // never fires silently when the arrangement history stack is empty.
+      e.preventDefault(); e.stopPropagation();
       const prev = arrHistory.undo(snapArr());
-      if (prev) { e.preventDefault(); e.stopPropagation(); restoreArr(prev); }
+      if (prev) restoreArr(prev);
     } else if ((key === 'z' && e.shiftKey) || key === 'y') {
+      e.preventDefault(); e.stopPropagation();
       const next = arrHistory.redo(snapArr());
-      if (next) { e.preventDefault(); e.stopPropagation(); restoreArr(next); }
+      if (next) restoreArr(next);
     }
   }, true); // capture phase so it beats the session handler
 
