@@ -38,7 +38,9 @@ def health():
 async def create_job(file: UploadFile = File(...)):
     job_root = os.path.join(WORK_ROOT, "in")
     os.makedirs(job_root, exist_ok=True)
-    in_path = os.path.join(job_root, f"{os.urandom(6).hex()}-{file.filename or 'input'}")
+    # basename-only: never let a crafted upload name escape job_root (path traversal).
+    safe_name = os.path.basename(file.filename or "input") or "input"
+    in_path = os.path.join(job_root, f"{os.urandom(6).hex()}-{safe_name}")
     with open(in_path, "wb") as f:
         f.write(await file.read())
     out_dir = os.path.join(WORK_ROOT, "out", os.urandom(6).hex())
