@@ -2,6 +2,7 @@
 // Pure types and pure helpers only — no audio side effects.
 
 import type { NoteEvent } from '../core/notes';
+import { barCountFor } from '../core/slice-clip';
 
 export type LaunchQuantize =
   | 'immediate' | '1/4' | '1/2' | '1/1' | '2/1' | '4/1';
@@ -59,6 +60,10 @@ export interface SessionClip {
   loopEnabled?: boolean;
   loopStartTick?: number;
   loopEndTick?: number;
+  /** Display-only source buffer for the waveform header (Mode-2 sliced clips
+   *  whose audio now lives in the bank keymap). The scheduler IGNORES this — it
+   *  is purely for the editor's waveform strip. Absent ⇒ no header. */
+  waveformRef?: { sampleId: string };
 }
 
 export interface SessionLane {
@@ -145,6 +150,36 @@ export function audioClip(opts: {
       mode: opts.mode ?? 'loop',
       trimStart: 0,
       trimEnd: opts.durationSec,
+    },
+  };
+}
+
+/** Build an audio-channel clip: a whole-loop ClipSample warped to the session
+ *  tempo via pitch-preserving WSOLA. lengthBars = whole-bar count at the loop's
+ *  native BPM, so at that BPM it plays near-identical to the source. */
+export function audioChannelClip(opts: {
+  name: string;
+  sampleId: string;
+  durationSec: number;
+  originalBpm: number;
+  projectMeter: import('../core/meter').TimeSignature;
+}): SessionClip {
+  const lengthBars = barCountFor(opts.durationSec, opts.originalBpm, opts.projectMeter);
+  return {
+    id: nextId('clip'),
+    name: opts.name,
+    color: pickRandomClipColor(),
+    lengthBars,
+    notes: [],
+    sample: {
+      sampleId: opts.sampleId,
+      mode: 'loop',
+      originalBpm: opts.originalBpm,
+      warp: true,
+      warpMode: 'stretch',
+      trimStart: 0,
+      trimEnd: opts.durationSec,
+      gain: 1,
     },
   };
 }
