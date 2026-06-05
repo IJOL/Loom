@@ -92,6 +92,36 @@ A vertical playhead line moves across the canvas in real time while the clip is 
 
 ---
 
+## Loop regions
+
+A **loop brace** sits above every clip editor — piano-roll, drum-grid, and sample/slice editors — as a narrow strip spanning the full clip length. It lets you mark an A–B sub-region and repeat just that portion while the clip plays.
+
+### Setting the loop region
+
+The brace strip has two drag handles (left = A, right = B) and a **Loop** toggle button. To use it:
+
+1. Click **Loop** to enable the loop region. The region highlights between the A and B handles; if no region was set before, it defaults to the full clip length.
+2. Drag the **left handle** to move the start point (A). Drag the **right handle** to move the end point (B). Both handles snap to 16th-note grid positions.
+3. While the clip is playing, the scheduler repeats only the A–B sub-region — the rest of the clip is skipped.
+
+Click **Loop** again to disable it. The clip reverts to playing its full length; the A and B positions are remembered so you can re-enable the same region later.
+
+### What the loop brace affects
+
+The loop region works the same way for all clip types:
+
+- **Note clips (piano-roll)** — only notes whose start falls within the A–B range are triggered; the period of repetition equals the duration of that range.
+- **Drum clips (drum-grid)** — same: only hits inside the sub-region fire.
+- **Audio / slice clips (Sampler)** — the corresponding fraction of the audio buffer plays, still tempo-locked and pitch-preserving.
+
+The loop region is **per-clip** and saved with the session. Two clips in the same lane or scene can each have their own independent A–B region, or none at all.
+
+All loop-region edits (moving handles, toggling) are part of the global undo history (Ctrl+Z / Cmd+Z).
+
+For how to use an arrangement-wide A–B loop brace that repeats a section across all lanes at once, see [Performance & Arrangement](11-performance-and-arrangement.md).
+
+---
+
 ## Velocity & dynamics
 
 ![Piano-roll with velocity lane](images/inspector-piano-roll.png)

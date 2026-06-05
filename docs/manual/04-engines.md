@@ -248,12 +248,23 @@ The per-voice rack exposes the key parameters for each voice:
 | Cowbell | Tune, Decay, Detune |
 | Ride | Tune, Decay |
 
-### Kits as presets
+### Drum preset dropdown — synth kits and sample kits
 
-Drum kits (TR-808, Standard, Room, Power, Electronic, Jazz, Brush, Orchestra)
-act as presets: loading a kit seeds all per-voice parameters from the kit's
-characteristic values. You can then edit individual voices on top. The
-🎲 Sound button randomises all voice parameters simultaneously.
+The preset dropdown for any drum lane lists kits from three groups:
+
+| Group | Kits | How it works |
+| --- | --- | --- |
+| GM | KIT Standard, KIT Room, KIT Power, KIT Electronic, KIT TR-808, KIT Jazz, KIT Brush, KIT Orchestra | GM-programme aliases that map to the synth kits below |
+| Synth | TR-909, TR-808, TR-606, CR-78, LinnDrum | 100% synthesised DSP — no samples required |
+| Samples | TR-808 (samples), Acoustic / Dirt (samples), Dirt (samples) | Real one-shot WAVs bundled with Loom |
+
+**Synth kits** seed all eight per-voice parameters from the kit's characteristic values; you can edit individual voices on top and hit 🎲 Sound to randomise all voices at once.
+
+**Sample kits** load the matching WAV for each voice (kick, snare, closed hat, open hat, clap, tom, cowbell, ride) from `public/drumkits/` and rebuild the keymap fresh on every session load — you never need to re-import the files manually. Once a sample kit is selected, the lane uses the drum-grid editor and the full per-pad parameter rack, exactly like a Sampler lane in drumkit mode.
+
+The sample WAVs are curated one-shots from the Dirt-Samples collection (used by TidalCycles) and classic TR-808 recordings. Full credits are in the repo `README.md` under "Credits — sample sources".
+
+> Note: sample kits are loaded by the Sampler engine under the hood. For the Sampler's own Drumkit dropdown and per-pad parameters, see [MIDI & Samples](08-midi-and-samples.md).
 
 ### Bus controls
 

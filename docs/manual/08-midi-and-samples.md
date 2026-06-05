@@ -81,9 +81,11 @@ In drumkit mode these appear in the per-pad rack (the same eight-column layout u
 
 Select a kit from the **Drumkit** dropdown ("— none (melodic) —" means melodic mode). Loom fetches the kit's manifest, downloads each voice's WAV, stores them in IndexedDB, and maps every sample to its canonical General MIDI drum note (kick on 36, snare on 38, and so on). The keymap is rebuilt fresh from the manifest on each session load, so you do not need to re-import the kit files manually.
 
+In addition to any kits you build yourself by loading samples, Loom ships three **ready-made sample drum kits** that appear directly in the Drumkit dropdown: **TR-808 (samples)**, **Acoustic / Dirt (samples)**, and **Dirt (samples)**. These are curated one-shot WAVs bundled with the app, so they work on the live GitHub Pages deploy without any manual file import. Simply pick one from the dropdown and the lane is ready to play.
+
 Once a kit is loaded the lane switches to the drum-grid editor (the same grid used by the Drum Machine engine). You get per-pad mute and solo buttons, and the full per-pad parameter rack. To return to melodic mode, choose "— none (melodic) —" from the dropdown.
 
-See [Editing Clips](05-editing-clips.md) for how to draw patterns in the drum grid, and [Engines](04-engines.md) for a comparison with the Drum Machine engine.
+See [Editing Clips](05-editing-clips.md) for how to draw patterns in the drum grid, and [Engines](04-engines.md) for a comparison with the Drum Machine engine (which lists all available kits, including the synth kits, in a unified preset table).
 
 ### Import as loop
 
