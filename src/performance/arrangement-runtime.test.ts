@@ -192,3 +192,34 @@ describe('tickArrangement song-end stop', () => {
     expect(ended).toBe(1);
   });
 });
+
+describe('tickArrangement A-B loop wrap', () => {
+  it('re-anchors the clock and relaunches the active clip at A when crossing B', () => {
+    const s = emptyArrangementState(120);
+    // Lane has one long clip covering [0,8). Loop window A=2 B=6.
+    appendClipEvent(s, 'l1', 'c1', 0); closePendingClipEvent(s, 'l1', 8);
+
+    const ps = createArrangementPlayState();
+    startArrangement(ps, 100);
+    const lw = { startSec: 2, endSec: 6, active: true };
+
+    const launches: Array<{ id: string; at: number }> = [];
+    const stops: string[] = [];
+    const tick = (nowCtx: number) => tickArrangement({
+      ps, state: s, nowCtx, lookaheadSec: 0.12, bpm: 120, loopWindow: lw,
+      onLaunchClip: (_l, id, at) => launches.push({ id, at }),
+      onStopLane: (id) => stops.push(id), applyAutomation: () => {},
+    });
+
+    tick(100);   // tNow=0: launches c1 at start
+    expect(launches.map((l) => l.id)).toEqual(['c1']);
+    const startedBefore = ps.startedAtCtx;
+    tick(106);   // tNow=6 reaches B ⇒ wrap
+    expect(stops).toContain('l1');               // stop scheduled at B
+    expect(ps.startedAtCtx).toBeCloseTo(startedBefore + (lw.endSec - lw.startSec), 5); // re-anchored by period (4)
+    // After the wrap the active clip is relaunched so A keeps sounding.
+    expect(launches.length).toBeGreaterThanOrEqual(2);
+    expect(launches[launches.length - 1].id).toBe('c1');
+    expect(ps.ended).toBe(false); // loop never "ends"
+  });
+});

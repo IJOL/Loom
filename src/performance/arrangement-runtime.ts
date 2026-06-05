@@ -98,9 +98,32 @@ export function tickArrangement(args: TickArrangementArgs): void {
   }
 
   const lw = args.loopWindow;
-  if (lw && !lw.active && !ps.ended && tNow + lookaheadSec >= lw.endSec) {
-    for (const lane of state.lanes) onStopLane(lane.laneId, ps.startedAtCtx + lw.endSec);
-    ps.ended = true;
-    args.onArrangementEnd?.();
+  if (lw && tNow + lookaheadSec >= lw.endSec) {
+    if (!lw.active) {
+      if (!ps.ended) {
+        for (const lane of state.lanes) onStopLane(lane.laneId, ps.startedAtCtx + lw.endSec);
+        ps.ended = true;
+        args.onArrangementEnd?.();
+      }
+    } else {
+      const period = lw.endSec - lw.startSec;
+      // 1) stop everyone at B
+      for (const lane of state.lanes) onStopLane(lane.laneId, ps.startedAtCtx + lw.endSec);
+      // 2) re-anchor so the next tick's tNow lands back at A
+      ps.startedAtCtx += period;
+      // 3) reset indices to the first event at/after A, then relaunch the clip
+      //    that is active across A so it keeps sounding after the wrap.
+      for (const lane of state.lanes) {
+        let idx = 0;
+        let active: typeof lane.clipEvents[number] | undefined;
+        for (let i = 0; i < lane.clipEvents.length; i++) {
+          const ev = lane.clipEvents[i];
+          if (ev.atSec <= lw.startSec && lw.startSec < ev.untilSec) active = ev;
+          if (ev.atSec < lw.startSec) idx = i + 1;
+        }
+        ps.nextEventIdxPerLane.set(lane.laneId, idx);
+        if (active) onLaunchClip(lane.laneId, active.clipId, ps.startedAtCtx + lw.startSec);
+      }
+    }
   }
 }
