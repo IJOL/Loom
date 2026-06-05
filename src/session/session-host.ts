@@ -182,6 +182,57 @@ export class SessionHost {
   // Expose inspector roll for the automation tick in main.ts
   get inspectorRoll() { return this.inspector?.roll ?? null; }
 
+  /** Launch (or restart) a clip by lane id + clip index. Used by the MIDI mediator
+   *  and any non-UI launcher. Mirrors onClipPlayPause's transport idle/running logic. */
+  launchClipAt(laneId: string, clipIdx: number): void {
+    const lane = this.state.lanes.find((l) => l.id === laneId);
+    const clip = lane?.clips[clipIdx];
+    if (!lane || !clip) return;
+    void this.deps.ctx.resume();
+    if (!this.deps.seq.isPlaying()) {
+      let next = this.laneStates.get(lane.id);
+      if (!next) {
+        next = { laneId: lane.id, playing: null, queued: null, queuedBoundary: 0,
+                 startTime: 0, nextStepIdx: 0, loopCount: 0, loopStartedAt: 0,
+                 lastScheduledAt: -Infinity };
+        this.laneStates.set(lane.id, next);
+      }
+      next.queued = clip;
+      next.queuedBoundary = this.deps.ctx.currentTime;
+      this.deps.resetAutomationPosition?.();
+      this.deps.seq.start();
+    } else {
+      launchClip(this.laneStates, this.state, lane, clip,
+        this.deps.ctx.currentTime, this.deps.seq.bpm, this.deps.recHooks);
+    }
+    this.renderWithMixer();
+  }
+
+  /** Launch a scene by index (Ableton model). */
+  launchSceneAt(sceneIdx: number): void {
+    const scene = this.state.scenes[sceneIdx];
+    if (!scene) return;
+    void this.deps.ctx.resume();
+    launchScene(this.laneStates, this.state, scene, sceneIdx, this.deps.ctx.currentTime, this.deps.seq.bpm);
+    if (!this.deps.seq.isPlaying()) { this.deps.resetAutomationPosition?.(); this.deps.seq.start(); }
+    this.renderWithMixer();
+  }
+
+  /** Stop every playing/queued clip. */
+  stopAllClips(): void {
+    stopAll(this.laneStates);
+    this.renderWithMixer();
+  }
+
+  /** Make a lane the active/edit lane (single source of truth shared with the APC).
+   *  Idempotent; fires onActiveLaneChanged so subscribers (UI + control) stay in sync. */
+  focusLane(laneId: string): void {
+    if (this.activeEditLane === laneId) return;
+    this.activeEditLane = laneId;
+    this.deps.onActiveLaneChanged?.();
+    this.renderWithMixer();
+  }
+
   /** Wire historyDeps into the inspector after construction.
    *  historyDeps closes over saveWiringDeps which closes over sessionHost,
    *  so it can only be built after sessionHost.init() returns. */
