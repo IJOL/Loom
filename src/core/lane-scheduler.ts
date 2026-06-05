@@ -6,7 +6,7 @@
 
 import type { SessionClip, ClipEnvelope, ClipSample } from '../session/session';
 import { TICKS_PER_QUARTER, TICKS_PER_STEP, type NoteEvent } from './notes';
-import { quartersPerBar, ticksPerBar, DEFAULT_METER, type TimeSignature } from './meter';
+import { ticksPerBar, DEFAULT_METER, type TimeSignature } from './meter';
 import { effectiveClipLoop } from './clip-loop';
 
 export interface SchedulerContext {
