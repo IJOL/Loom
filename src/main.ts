@@ -53,6 +53,7 @@ import { soundingSceneDurationSec } from './export/scene-duration';
 import { restartSoundingLanesForExport } from './export/scene-restart';
 import { wavEncoder } from './export/wav-encoder';
 import { downloadBlob, exportTimestamp } from './export/download';
+import { LiveTakeRecorder } from './export/live-take';
 import {
   showPolyEditor,
   synthEditorState,
@@ -376,6 +377,11 @@ const showPolyEditorWrapper = (laneId: string, target: PolySynth, displayName: s
 const sessionHost = new SessionHost({
   ctx, seq, playBtn,
   resetAutomationPosition,
+  // Unified stop: the session "⏹ all" button finalizes any live-take recording,
+  // stops the clock + every lane, and resets the Play button. stopTransport is a
+  // hoisted function declaration further down, so this arrow can call it even
+  // though it's lexically defined later (it only fires on a user click).
+  onStopAll: () => stopTransport(),
   triggerForLane,
   // Phase G: drums removed — triggerForLane handles drums via engine.createVoice.
   drumLanes: DRUM_LANES,
@@ -606,17 +612,10 @@ sessionHost.onStateApplied(rebuildMasterInserts);
 // Phase G: deferred to sessionHost.onStateApplied (lane not allocated at boot).
 // mountDrumMasterLaneKnobs(LANE_ID_DRUMS) — see boot section below.
 fxApplyDelaySync(fxUIDeps);
-const transportDeps: TransportDeps = {
-  seq, ctx, playBtn,
-  resetAutomationPosition,
-  // Stop the master clock AND every lane, then re-render: clears each lane's
-  // `playing` clip so the editor playheads return to -1 (cursors disappear) and
-  // the clip cells re-render as stopped. Matches the session "⏹ all" button.
-  onStop: () => { stopAllLanes(sessionHost.laneStates); sessionHost.renderWithMixer(); },
-};
-wireTransport(transportDeps);
-
-// ── Scene export (real-time WAV) ─────────────────────────────────────────
+// ── Scene export (real-time live-take + offline WAV) ──────────────────────
+// The button + helpers are declared BEFORE the transport block because the
+// live-take recorder (and the unified stopTransport) close over them, and
+// wireTransport(transportDeps) below must see liveTake + stopTransport already.
 const exportBtn = $<HTMLButtonElement>('export-scene');
 const EXPORT_TAIL_SEC = 2;    // let reverb/delay tails decay before the cut
 const EXPORT_LEAD_SEC = 0.15; // worklet spin-up + scene restart lead
@@ -631,6 +630,48 @@ function showExportMessage(msg: string): void {
     exportMsgTimer = undefined;
   }, 1500);
 }
+
+// Real-time export is now an ARM → Play → Stop live take: arming pre-connects
+// the master tap, Play starts the capture, and the unified stop finalizes it.
+// The finished take is inserted as a clip in a NEW dedicated 'audio' channel.
+const liveTake = new LiveTakeRecorder({
+  ctx,
+  tap: masterComp.output,
+  tailSec: EXPORT_TAIL_SEC,
+  onState: (s) => {
+    exportBtn.classList.toggle('armed', s === 'armed');
+    exportBtn.classList.toggle('recording', s === 'recording');
+    exportBtn.textContent = s === 'armed' ? '● REC ▾' : s === 'recording' ? '● Grabando…' : EXPORT_IDLE_LABEL;
+  },
+  onTake: (audio) => {
+    const blob = wavEncoder.encode(audio.channels, audio.sampleRate);
+    const file = new File([blob], `loom-take-${exportTimestamp()}.wav`, { type: 'audio/wav' });
+    sessionHost.addAudioChannel(file);
+    showExportMessage('Toma → canal de audio');
+  },
+  onError: (m) => { console.warn('[live-take]', m); showExportMessage(m); },
+});
+
+// Unified stop: finalize any in-progress take (delivers via onTake), then stop
+// the master clock + every lane and reset the Play button + re-render. Clearing
+// each lane's `playing` clip returns the editor playheads to -1 (cursors
+// disappear) and re-renders the clip cells as stopped. Matches "⏹ all".
+function stopTransport(): void {
+  liveTake.finish();
+  if (seq.isPlaying()) seq.stop();
+  stopAllLanes(sessionHost.laneStates);
+  playBtn.textContent = '▶';
+  sessionHost.renderWithMixer();
+}
+
+const transportDeps: TransportDeps = {
+  seq, ctx, playBtn,
+  resetAutomationPosition,
+  onStop: stopTransport,
+  // On Play, if a take is armed, begin capturing from the downbeat.
+  onStart: () => liveTake.onTransportStart(),
+};
+wireTransport(transportDeps);
 
 const sceneExporter: SceneExporter = {
   totalSec: () => {
@@ -668,9 +709,8 @@ const sceneExporter: SceneExporter = {
 const exportMenu = $<HTMLElement>('export-menu');
 exportBtn.addEventListener('click', () => { exportMenu.hidden = !exportMenu.hidden; });
 
-function runExport(mode: 'rt' | 'offline'): void {
+function runOfflineExport(): void {
   exportMenu.hidden = true;
-  if (mode === 'rt') { void exportCurrentScene(sceneExporter); return; }
   // Offline: same orchestrator + encoder + download; only the recorder differs.
   void exportCurrentScene({
     ...sceneExporter,
@@ -682,8 +722,12 @@ function runExport(mode: 'rt' | 'offline'): void {
     }).record(totalSec),
   });
 }
-$<HTMLButtonElement>('export-rt').addEventListener('click', () => runExport('rt'));
-$<HTMLButtonElement>('export-offline').addEventListener('click', () => runExport('offline'));
+// Real-time → arm/disarm a live take (Play starts it, the unified stop ends it).
+$<HTMLButtonElement>('export-rt').addEventListener('click', () => {
+  exportMenu.hidden = true;
+  void liveTake.toggleArm();
+});
+$<HTMLButtonElement>('export-offline').addEventListener('click', () => runOfflineExport());
 
 // Dismiss the export menu when clicking outside its wrapper.
 document.addEventListener('click', (e) => {

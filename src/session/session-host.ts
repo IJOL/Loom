@@ -79,6 +79,10 @@ export interface SessionHostDeps {
   seq: Sequencer;
   playBtn: HTMLButtonElement;
   resetAutomationPosition: () => void;
+  /** Injected unified stop. When provided, the session's "Stop all" button
+   *  delegates to it (so it also finalizes any live-take recording + resets the
+   *  Play button) instead of the local stopAll + re-render. */
+  onStopAll?: () => void;
   /** Single per-lane trigger entry — encapsulates engineId dispatch +
    *  laneResources lookup. Replaces the old bassTriggerDirect /
    *  bassTriggerForArp / polyTriggerDirect trio. */
@@ -546,6 +550,50 @@ export class SessionHost {
     if (hd) withUndo(hd, run); else run();
   }
 
+  /** Create a new dedicated 'audio' channel/lane holding the given file as a
+   *  single clip (decodes + persists the sample, then adds the lane + clip as
+   *  one undoable action). Public so the live-take recorder can drop a finished
+   *  take straight into a fresh audio channel. */
+  addAudioChannel(file: File): void {
+    const self = this;
+    const { ctx, seq } = this.deps;
+    void ctx.resume();
+    void (async () => {
+      try {
+        const asset = await importFile(file, ctx);
+        await sampleStore.put(asset);
+        const buf = await ctx.decodeAudioData(asset.bytes.slice(0));
+        sampleCache.put(asset.id, buf);
+        const det = detectLoop(buf, seq.meter);
+        const name = file.name.replace(/\.[^.]+$/, '');
+        const clip = audioChannelClip({
+          name, sampleId: asset.id, durationSec: buf.duration,
+          originalBpm: det.originalBpm, projectMeter: seq.meter,
+        });
+        const hd = self.deps.historyDeps;
+        const run = () => {
+          const used = new Set(self.state.lanes.map((l) => l.id));
+          const newId = nextLaneSlug(used, 'audio');
+          const lane = emptyLane(newId, 'audio');
+          lane.name = name;
+          const rows = Math.max(self.state.scenes.length, 1);
+          const defaultLen = Math.max(1, Math.floor(seq.length / stepsPerBar(seq.meter)));
+          for (let r = 0; r < rows; r++) lane.clips.push(r === 0 ? clip : emptyClip(defaultLen));
+          self.state.lanes.push(lane);
+          self.laneStates.set(newId, emptyLanePlayState(newId));
+          self.deps.ensureLaneResource?.(newId, 'audio');
+          ensureScenesForRows(self.state);
+          self.inspector.setSelectedClip({ laneId: newId, clipIdx: 0 });
+          self.inspector.openInspector();
+          self.renderWithMixer();
+        };
+        if (hd) withUndo(hd, run); else run();
+      } catch (err) {
+        console.warn('Audio channel: could not load loop:', err);
+      }
+    })();
+  }
+
   // ── Callbacks ────────────────────────────────────────────────────────────
 
   private buildCallbacks(): void {
@@ -650,43 +698,7 @@ export class SessionHost {
           }
         })();
       },
-      onAddAudioChannel(file: File) {
-        void ctx.resume();
-        void (async () => {
-          try {
-            const asset = await importFile(file, ctx);
-            await sampleStore.put(asset);
-            const buf = await ctx.decodeAudioData(asset.bytes.slice(0));
-            sampleCache.put(asset.id, buf);
-            const det = detectLoop(buf, seq.meter);
-            const name = file.name.replace(/\.[^.]+$/, '');
-            const clip = audioChannelClip({
-              name, sampleId: asset.id, durationSec: buf.duration,
-              originalBpm: det.originalBpm, projectMeter: seq.meter,
-            });
-            const hd = self.deps.historyDeps;
-            const run = () => {
-              const used = new Set(self.state.lanes.map((l) => l.id));
-              const newId = nextLaneSlug(used, 'audio');
-              const lane = emptyLane(newId, 'audio');
-              lane.name = name;
-              const rows = Math.max(self.state.scenes.length, 1);
-              const defaultLen = Math.max(1, Math.floor(seq.length / stepsPerBar(seq.meter)));
-              for (let r = 0; r < rows; r++) lane.clips.push(r === 0 ? clip : emptyClip(defaultLen));
-              self.state.lanes.push(lane);
-              self.laneStates.set(newId, emptyLanePlayState(newId));
-              self.deps.ensureLaneResource?.(newId, 'audio');
-              ensureScenesForRows(self.state);
-              self.inspector.setSelectedClip({ laneId: newId, clipIdx: 0 });
-              self.inspector.openInspector();
-              self.renderWithMixer();
-            };
-            if (hd) withUndo(hd, run); else run();
-          } catch (err) {
-            console.warn('Audio channel: could not load loop:', err);
-          }
-        })();
-      },
+      onAddAudioChannel(file: File) { self.addAudioChannel(file); },
       onStopLane(laneId) {
         stopLane(self.laneStates, laneId,
           self.deps.recHooks ? { ...self.deps.recHooks, nowCtx: ctx.currentTime } : undefined);
@@ -700,7 +712,10 @@ export class SessionHost {
         if (!seq.isPlaying()) { resetAutomationPosition(); seq.start(); playBtn.textContent = '■'; }
         self.renderWithMixer();
       },
-      onStopAll() { stopAll(self.laneStates); self.renderWithMixer(); },
+      onStopAll() {
+        if (self.deps.onStopAll) { self.deps.onStopAll(); return; }
+        stopAll(self.laneStates); self.renderWithMixer();
+      },
       onAddScene() {
         const hd = self.deps.historyDeps;
         const run = () => {
