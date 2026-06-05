@@ -79,8 +79,8 @@ The standard `npm run build` (base `/`) is left untouched for local preview and 
 ## Credits — sample sources
 
 The synth drum kits (808 / 909 / 606 / 78 / Linn) are **100% generated DSP** — no samples.
-The two *sample* kits bundled under [`public/drumkits/`](public/drumkits/) are small one-shots
-(16 files, ~1.1 MB total) curated from freely-circulated, community-redistributed sources:
+The three *sample* kits bundled under [`public/drumkits/`](public/drumkits/) (`tr808`, `acoustic`,
+`dirt`) are small one-shots curated from freely-circulated, community-redistributed sources:
 
 - **`acoustic` ("Acoustic / Dirt")** and most of **`tr808`** — the [**Dirt-Samples**](https://github.com/tidalcycles/Dirt-Samples)
   collection that ships with [TidalCycles](https://tidalcycles.org/), plus a couple of generic acoustic one-shots.

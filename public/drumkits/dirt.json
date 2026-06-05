@@ -1,0 +1,46 @@
+{
+  "id": "dirt",
+  "name": "Dirt (samples)",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "dirt/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "dirt/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "dirt/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "dirt/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "dirt/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "dirt/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "dirt/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "dirt/ride.wav"
+    }
+  ]
+}

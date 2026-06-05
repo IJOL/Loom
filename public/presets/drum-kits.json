@@ -14,6 +14,7 @@
     { "name": "CR-78",             "group": "Synth",   "kind": "synth",  "kitId": "78" },
     { "name": "LinnDrum",          "group": "Synth",   "kind": "synth",  "kitId": "linn" },
     { "name": "TR-808 (samples)",  "group": "Samples", "kind": "sample", "drumkitId": "tr808" },
-    { "name": "Acoustic (samples)","group": "Samples", "kind": "sample", "drumkitId": "acoustic" }
+    { "name": "Acoustic (samples)","group": "Samples", "kind": "sample", "drumkitId": "acoustic" },
+    { "name": "Dirt (samples)",    "group": "Samples", "kind": "sample", "drumkitId": "dirt" }
   ]
 }
