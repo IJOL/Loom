@@ -1,3 +1,5 @@
+import { velToGain, resolveVelocity } from './velocity-gain';
+
 export type Wave = 'sawtooth' | 'square';
 
 export interface VoiceParams {
@@ -14,6 +16,7 @@ export interface Note {
   accent: boolean;
   slide: boolean;     // true when this note continues from a sliding previous note
   duration: number;   // seconds the gate is open
+  velocity?: number;
 }
 
 // Single-voice, monophonic TB-303-style synth: saw/square → resonant LP → VCA.
@@ -87,7 +90,7 @@ export class TB303 {
     const decaySec = 0.05 + p.decay * 1.2;
     const accentBoost = note.accent ? p.accent : 0;
     const peakCutoff = Math.min(baseCutoff + envAmount * (1 + accentBoost), 18000);
-    const peakAmp = note.accent ? 0.35 + p.accent * 0.4 : 0.3;
+    const peakAmp = 0.3 * velToGain(resolveVelocity(note.velocity, note.accent));
 
     this.osc.type = p.wave;
 

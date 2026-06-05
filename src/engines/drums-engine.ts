@@ -195,7 +195,7 @@ class DrumsVoice implements Voice {
   trigger(midi: number, time: number, opts: VoiceTriggerOptions): void {
     const voice = GM_DRUM_MAP[midi];
     if (!voice) return;
-    this.dm.trigger(voice, time, !!opts.accent);
+    this.dm.trigger(voice, time, !!opts.accent, opts.velocity);
   }
 
   release(_t: number): void {}

@@ -86,6 +86,7 @@ class TB303Voice implements Voice {
     this.tb303.trigger({
       freq: midiToFreq(midi),
       accent: !!opts.accent,
+      velocity: opts.velocity,
       slide: !!opts.slide,
       duration: opts.gateDuration,
     }, time);
