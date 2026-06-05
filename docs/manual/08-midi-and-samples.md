@@ -93,6 +93,8 @@ The **Import as loop** picker (below the drop zone) takes an audio file and crea
 
 The loop import path bypasses the keymap and the per-pad parameters; the slice clip plays each region at its natural pitch with short anti-click fades and no amp envelope.
 
+Once a loop clip is on the lane, click its body to open the dedicated loop editor — waveform view, slice grid, warp mode toggle, and grid resolution. See [Editing Clips — Loop / slice editor](05-editing-clips.md#loop--slice-editor) for a full walkthrough.
+
 ---
 
 ## Stem separation (optional, local service)

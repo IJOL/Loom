@@ -122,6 +122,43 @@ For how to use an arrangement-wide A–B loop brace that repeats a section acros
 
 ---
 
+## Loop / slice editor
+
+When you import an audio file using **Import as loop** in the Sampler engine (see [MIDI & Samples](08-midi-and-samples.md)), Loom creates a special slice clip on the lane. Clicking the body of that clip opens the **loop / slice editor** instead of the piano-roll or drum-grid.
+
+### When the editor appears
+
+The loop editor opens for any Sampler clip that was imported as a loop and has at least one slice region. Clips imported via the normal drag-and-drop or file picker (keymap mode) continue to open the piano-roll.
+
+### The waveform and slice grid
+
+The editor shows two main areas stacked vertically:
+
+- **Waveform strip** — a peak-waveform view of the full audio buffer. Orange vertical lines mark each slice boundary, so you can see at a glance where the loop is divided.
+- **Slice grid** — one row per slice, labelled S1, S2, … Each row represents one region of the audio. A note event in the grid triggers that slice region at the right moment during playback; notes can be moved, copied, or deleted just like drum-grid hits (draw mode by default; switch to select mode with the **2** key, back to draw with **1**).
+
+A live playhead line scrolls across both areas while the clip is playing.
+
+### How slices are detected
+
+When the file is imported, Loom reads any embedded tempo and slice metadata first — **Acid chunks**, WAV **cue markers**, or **AIFF MARK markers**. If none is found, it falls back to onset detection (energy-based peak picking) followed by an autocorrelation tempo estimate that is snapped to the nearest whole-bar interpretation, keeping the result in the 70–180 BPM range. The toolbar shows the detected (or embedded) **BPM** and the **bar count** for the clip, plus how many slices were found. You can click the BPM readout to correct it manually if the detection was wrong.
+
+### Tempo-lock (slice-and-retrigger)
+
+By default the loop plays in **slice** mode: each slice region is retriggered on the sequencer grid at the project BPM. Because the timing is driven by note events on the grid rather than by stretching the audio, pitch is completely unchanged regardless of how far the project BPM is from the loop's original tempo. The **Grid resolution** selector sets the snap for placing and moving notes in the slice grid.
+
+### Warp mode toggle
+
+The **Warp ON / OFF** button and the adjacent mode selector let you switch between the two playback strategies:
+
+- **Warp OFF** — the loop plays as a normal one-shot sample (no tempo sync). Use this if you want the audio at its natural speed with no grid interaction.
+- **Warp ON, mode = slice** (default) — slice-and-retrigger as described above. Best for rhythmic loops (drums, percussion, arpeggiated bass) where you want crisp, pitch-stable playback and the freedom to edit individual hits.
+- **Warp ON, mode = stretch** — the entire buffer is time-stretched offline (OLA / WSOLA) to match the project BPM and played as a single region. Use this for sustained material (pads, vocals, melodic loops) where maintaining the continuous texture matters more than edit access to individual slices. The stretched buffer is cached; it is re-rendered automatically when the project BPM changes.
+
+All changes in the loop editor are undoable (Ctrl+Z / Cmd+Z).
+
+---
+
 ## Velocity & dynamics
 
 ![Piano-roll with velocity lane](images/inspector-piano-roll.png)
