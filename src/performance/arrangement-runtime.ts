@@ -8,6 +8,7 @@ export interface ArrangementPlayState {
   startedAtCtx: number;
   laneOverridden: Map<string, boolean>;
   nextEventIdxPerLane: Map<string, number>;
+  ended: boolean;
 }
 
 export function createArrangementPlayState(): ArrangementPlayState {
@@ -16,6 +17,7 @@ export function createArrangementPlayState(): ArrangementPlayState {
     startedAtCtx: 0,
     laneOverridden: new Map(),
     nextEventIdxPerLane: new Map(),
+    ended: false,
   };
 }
 
@@ -23,6 +25,7 @@ export function startArrangement(ps: ArrangementPlayState, nowCtx: number): void
   ps.isPlaying = true;
   ps.startedAtCtx = nowCtx;
   ps.nextEventIdxPerLane.clear();
+  ps.ended = false;
 }
 
 export function stopArrangement(ps: ArrangementPlayState): void {
@@ -56,6 +59,8 @@ export interface TickArrangementArgs {
   onLaunchClip: (laneId: string, clipId: string, atCtx: number) => void;
   onStopLane: (laneId: string, atCtx: number) => void;
   applyAutomation: (paramId: string, valueNorm: number) => void;
+  loopWindow?: { startSec: number; endSec: number; active: boolean };
+  onArrangementEnd?: () => void;
 }
 
 export function tickArrangement(args: TickArrangementArgs): void {
@@ -90,5 +95,12 @@ export function tickArrangement(args: TickArrangementArgs): void {
   for (const curve of state.globalAutomation) {
     if (curve.enabled === false) continue;
     applyAutomation(curve.paramId, sampleAutomationAt(curve, subIdx));
+  }
+
+  const lw = args.loopWindow;
+  if (lw && !lw.active && !ps.ended && tNow + lookaheadSec >= lw.endSec) {
+    for (const lane of state.lanes) onStopLane(lane.laneId, ps.startedAtCtx + lw.endSec);
+    ps.ended = true;
+    args.onArrangementEnd?.();
   }
 }

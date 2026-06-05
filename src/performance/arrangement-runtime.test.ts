@@ -165,3 +165,30 @@ describe('tickArrangement respects curve.enabled', () => {
     expect(applied).not.toContain('fx.reverb.wet');
   });
 });
+
+describe('tickArrangement song-end stop', () => {
+  it('stops every lane and fires onArrangementEnd once when the playhead reaches endSec', () => {
+    const s = emptyArrangementState(120);
+    appendClipEvent(s, 'l1', 'c1', 0); closePendingClipEvent(s, 'l1', 4);
+    appendClipEvent(s, 'l2', 'd1', 0); closePendingClipEvent(s, 'l2', 4);
+
+    const ps = createArrangementPlayState();
+    startArrangement(ps, 100);
+
+    const stops: string[] = [];
+    let ended = 0;
+    const tick = (nowCtx: number) => tickArrangement({
+      ps, state: s, nowCtx, lookaheadSec: 0.12, bpm: 120,
+      loopWindow: { startSec: 0, endSec: 4, active: false },
+      onArrangementEnd: () => { ended++; },
+      onLaunchClip: () => {}, onStopLane: (id) => stops.push(id), applyAutomation: () => {},
+    });
+    tick(101);     // tNow=1, nothing
+    expect(ended).toBe(0);
+    tick(104);     // tNow=4 reaches end
+    expect(new Set(stops)).toEqual(new Set(['l1', 'l2']));
+    expect(ended).toBe(1);
+    tick(104.05);  // already ended ⇒ no repeat
+    expect(ended).toBe(1);
+  });
+});
