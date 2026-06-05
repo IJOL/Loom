@@ -9,9 +9,9 @@ import type { Sequencer } from '../core/sequencer';
 import { stepsPerBar } from '../core/meter';
 import type { MixerColumnDeps } from '../core/mixer';
 import {
-  emptySessionState, cloneSessionState, emptyLane, emptyClip, audioClip,
+  emptySessionState, cloneSessionState, emptyLane, emptyClip, audioClip, emptyScene,
   moveClip, copyClip,
-  type SessionState, type SessionClip, type ClipSlot,
+  type SessionState, type SessionLane, type SessionClip, type ClipSlot,
 } from './session';
 import { importFile } from '../samples/import';
 import { sampleStore } from '../samples/store-singleton';
@@ -426,10 +426,14 @@ export class SessionHost {
     });
   }
 
-  /** Public entry for the Stems dialog: create one full-length Sampler lane per
-   *  separated stem (delegates to the undoable callbacks impl). */
-  addStemLanes(stems: { label: string; sampleId: string; durationSec: number }[]): void {
-    this.callbacks.onAddStemLanes(stems);
+  /** Public entry for the Stems dialog: create one Sampler lane per separated
+   *  stem (delegates to the undoable callbacks impl). With `opts.replace` the
+   *  whole session is swapped for a clean stems-only one. */
+  addStemLanes(
+    stems: { label: string; sampleId: string; durationSec: number }[],
+    opts: { replace?: boolean } = {},
+  ): void {
+    this.callbacks.onAddStemLanes(stems, opts);
   }
 
   // ── Callbacks ────────────────────────────────────────────────────────────
@@ -582,36 +586,79 @@ export class SessionHost {
         };
         if (hd) withUndo(hd, run); else run();
       },
-      /** Create one full-length Sampler lane per separated stem, as a single
-       *  undoable action. Each `stems[i].sampleId` must already be in the sample
-       *  store AND decoded into sampleCache by the caller (stem-import). */
-      onAddStemLanes(stems: { label: string; sampleId: string; durationSec: number }[]) {
+      /** Create one Sampler lane per separated stem, as a single undoable action.
+       *  Each lane gets a melodic keymap zone (so the Sampler instrument editor
+       *  SHOWS the stem) + a full-length 'song' audio clip on row 0. With
+       *  `opts.replace`, the whole session is swapped for a clean one holding only
+       *  the stems (1 scene, every lane launching its clip). Each `stems[i].sampleId`
+       *  must already be in the sample store AND decoded into sampleCache by the
+       *  caller (stem-import). */
+      onAddStemLanes(
+        stems: { label: string; sampleId: string; durationSec: number }[],
+        opts: { replace?: boolean } = {},
+      ) {
         const hd = self.deps.historyDeps;
-        const run = () => {
+        const defaultLen = Math.max(1, Math.floor(seq.length / stepsPerBar(seq.meter)));
+
+        // One Sampler lane carrying the stem: keymap zone (instrument view) +
+        // 'song' audio clips. `rows` = how many scene rows to back-fill with
+        // empty clips so the lane lines up with the existing scene grid.
+        const buildStemLane = (
+          stem: { label: string; sampleId: string; durationSec: number },
+          id: string,
+          rows: number,
+        ): SessionLane => {
+          const lane = emptyLane(id, 'sampler');
+          lane.name = stem.label;
+          lane.engineState = {
+            sampler: { keymap: [{ sampleId: stem.sampleId, rootNote: 60, loNote: 0, hiNote: 127 }] },
+          };
+          const clip = audioClip({
+            name: stem.label,
+            sampleId: stem.sampleId,
+            durationSec: stem.durationSec,
+            bpm: seq.bpm,
+            mode: 'song',
+          });
+          for (let r = 0; r < rows; r++) lane.clips.push(r === 0 ? clip : emptyClip(defaultLen));
+          return lane;
+        };
+
+        const runReplace = () => {
+          const lanes = stems.map((s, i) => buildStemLane(s, `sampler-stem-${i + 1}`, 1));
+          const scene = emptyScene('Stems');
+          scene.clipPerLane = Object.fromEntries(lanes.map((l) => [l.id, 0]));
+          const newState: SessionState = {
+            lanes,
+            scenes: [scene],
+            globalQuantize: self.state.globalQuantize,
+          };
+          // applyLoadedSessionState allocates engine resources AND applies each
+          // lane's engineState (the keymap), so the instruments show the stems.
+          self.applyLoadedSessionState(newState);
+        };
+
+        const runAdd = () => {
+          const rows = Math.max(self.state.scenes.length, 1);
           for (const stem of stems) {
             const used = new Set(self.state.lanes.map((l) => l.id));
             const newId = nextLaneSlug(used, 'sampler');
-            const lane = emptyLane(newId, 'sampler');
-            lane.name = stem.label;
-
-            const rowCount = Math.max(self.state.scenes.length, 1);
-            const defaultLen = Math.max(1, Math.floor(seq.length / stepsPerBar(seq.meter)));
-            const clip = audioClip({
-              name: stem.label,
-              sampleId: stem.sampleId,
-              durationSec: stem.durationSec,
-              bpm: seq.bpm,
-              mode: 'song',
-            });
-            for (let r = 0; r < rowCount; r++) {
-              lane.clips.push(r === 0 ? clip : emptyClip(defaultLen));
-            }
+            const lane = buildStemLane(stem, newId, rows);
             self.state.lanes.push(lane);
             self.laneStates.set(newId, emptyLanePlayState(newId));
             self.deps.ensureLaneResource?.(newId, 'sampler');
+            // The add path does not run applyEngineState, so push the keymap into
+            // the freshly-allocated live engine ourselves (otherwise the instrument
+            // editor stays empty until reload).
+            const engine = self.deps.laneResources?.get(newId)?.engine as
+              | { setKeymap?: (k: import('../samples/types').KeymapEntry[]) => void }
+              | undefined;
+            engine?.setKeymap?.(lane.engineState!.sampler!.keymap);
           }
           self.renderWithMixer();
         };
+
+        const run = opts.replace ? runReplace : runAdd;
         if (hd) withUndo(hd, run); else run();
       },
       onMoveClip(from: ClipSlot, to: ClipSlot, copy: boolean) {

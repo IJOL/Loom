@@ -853,7 +853,7 @@ sessionHost.setHistoryDeps(historyDeps);
 wireStemDialog({
   ctx,
   client: new StemClient(stemServiceBaseUrl()),
-  addStemLanes: (stems) => sessionHost.addStemLanes(stems),
+  addStemLanes: (stems, opts) => sessionHost.addStemLanes(stems, opts),
 });
 // Activate undo for discrete selectors (kit, wave, engine, preset) now that
 // historyDeps is ready.

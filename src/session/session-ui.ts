@@ -26,7 +26,10 @@ export interface SessionUICallbacks {
   onStopAll:   () => void;
   onAddScene:  () => void;
   onAddLane: (engineId: string) => void;
-  onAddStemLanes: (stems: { label: string; sampleId: string; durationSec: number }[]) => void;
+  onAddStemLanes: (
+    stems: { label: string; sampleId: string; durationSec: number }[],
+    opts?: { replace?: boolean },
+  ) => void;
   onAddClipRow: () => void;
   onEditLane:  (laneId: string) => void;
   onToggleDrumsExpanded: () => void;

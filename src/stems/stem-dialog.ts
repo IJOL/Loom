@@ -4,7 +4,10 @@ import { importStems } from './stem-import';
 export interface StemDialogDeps {
   ctx: AudioContext;
   client: StemClient;
-  addStemLanes: (stems: { label: string; sampleId: string; durationSec: number }[]) => void;
+  addStemLanes: (
+    stems: { label: string; sampleId: string; durationSec: number }[],
+    opts?: { replace?: boolean },
+  ) => void;
 }
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -60,9 +63,11 @@ export function wireStemDialog(deps: StemDialogDeps): void {
     bar.removeAttribute('value'); // indeterminate until we get a number
     setStatus('Subiendo…');
 
+    const replace = $<HTMLInputElement>('stems-replace')?.checked ?? true;
     try {
       await importStems(deps, file, {
         signal: controller.signal,
+        replace,
         onProgress: (status, p) => {
           const elapsed = Math.floor((performance.now() - startedAt) / 1000);
           if (typeof p === 'number') bar.value = p; else bar.removeAttribute('value');

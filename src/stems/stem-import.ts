@@ -8,12 +8,17 @@ import { sampleCache } from '../samples/sample-cache';
 export interface StemImportDeps {
   ctx: AudioContext;
   client: StemClient;
-  addStemLanes: (stems: { label: string; sampleId: string; durationSec: number }[]) => void;
+  addStemLanes: (
+    stems: { label: string; sampleId: string; durationSec: number }[],
+    opts?: { replace?: boolean },
+  ) => void;
 }
 
 export interface StemImportCallbacks {
   onProgress?: (status: string, progress: number | null) => void;
   signal?: AbortSignal;
+  /** Replace the whole session with the stems instead of adding lanes. */
+  replace?: boolean;
 }
 
 /** Full flow: upload -> poll -> decode all stems -> create lanes (all-or-nothing). */
@@ -54,5 +59,5 @@ export async function importStems(
     return { label: p.label, sampleId: asset.id, durationSec: buffer.duration };
   });
 
-  deps.addStemLanes(lanes);
+  deps.addStemLanes(lanes, { replace: cb.replace });
 }
