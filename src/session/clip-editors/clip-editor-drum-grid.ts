@@ -6,6 +6,7 @@
 
 import { DRUM_LANES, type DrumVoice } from '../../core/drums';
 import { velToColor } from '../../core/velocity-color';
+import { velocityToBarHeight, barHitTest, yToVelocity, setVelocity, applyGroupDelta, FAN_PX } from '../../core/velocity-lane-editing';
 import { DEFAULT_VELOCITY } from '../../core/velocity-gain';
 import type { SessionClip } from '../session';
 import type { NoteEvent } from '../../core/notes';
@@ -28,7 +29,8 @@ const rowOfVoice = (v: DrumVoice): number => ROWS.indexOf(v);
 const LABEL_W = 54;
 const RULER_H = 20;
 const ROW_H = 26;
-const FRAME_H = RULER_H + ROW_H * 8;
+const VEL_LANE_H = 46;                       // velocity lane band
+const FRAME_H = RULER_H + ROW_H * 8 + VEL_LANE_H;
 
 type Tool = 'draw' | 'select';
 let currentTool: Tool = 'draw';          // persists across clips (session)
@@ -63,6 +65,7 @@ export function renderDrumGridEditor(
   const selection = new Set<NoteEvent>();
   let marquee: { row0: number; tick0: number; row1: number; tick1: number } | null = null;
   let groupDrag: { lastTick: number; lastRow: number } | null = null;
+  let laneDrag: NoteEvent | null = null;
   let lastMouse: { row: number; tick: number } | null = null;
   let mutated = false;
   let playheadTick = -1;
@@ -155,6 +158,23 @@ export function renderDrumGridEditor(
       ctx.strokeStyle = '#f7d000'; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(x, RULER_H); ctx.lineTo(x, FRAME_H); ctx.stroke();
     }
+    // ── Velocity lane band ────────────────────────────────────────────────────
+    const laneTop = RULER_H + ROW_H * 8;
+    ctx.fillStyle = '#0e0e0e'; ctx.fillRect(LABEL_W, laneTop, gridW, VEL_LANE_H);
+    ctx.fillStyle = '#202020'; ctx.fillRect(0, laneTop, LABEL_W, VEL_LANE_H);
+    const accentY = laneTop + VEL_LANE_H - velocityToBarHeight(100, VEL_LANE_H);
+    ctx.strokeStyle = '#ff8c2e'; ctx.globalAlpha = 0.6; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(LABEL_W, accentY); ctx.lineTo(LABEL_W + gridW, accentY); ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+    const seen = new Map<number, number>();
+    for (const n of notes()) {
+      const v = GM_DRUM_MAP[n.midi]; if (!v) continue;
+      const fan = seen.get(n.start) ?? 0; seen.set(n.start, fan + 1);
+      const x = xForTick(n.start) + fan * FAN_PX;
+      const h = velocityToBarHeight(n.velocity, VEL_LANE_H);
+      ctx.fillStyle = selection.has(n) ? '#7fd4ff' : velToColor(n.velocity);
+      ctx.fillRect(x, laneTop + VEL_LANE_H - h, 6, h);
+    }
   }
 
   // ── Pencil: click-cycle off → normal → accent → off over the whole cell ───
@@ -189,6 +209,21 @@ export function renderDrumGridEditor(
   canvas.addEventListener('pointerdown', (e) => {
     const p = pos(e); wrap.focus();
     if (p.x < LABEL_W) return; // label gutter
+    const laneTop = RULER_H + ROW_H * 8;
+    const localY = e.clientY - canvas.getBoundingClientRect().top;
+    if (localY >= laneTop) {
+      const hit = barHitTest(notes(), p.x, xForTick);
+      if (hit) {
+        historyDeps?.history.beginGesture(historyDeps.snapshot()); mutated = false;
+        laneDrag = hit;
+        const vel = yToVelocity(localY - laneTop, VEL_LANE_H);
+        if (selection.has(hit) && selection.size > 1) applyGroupDelta([...selection], vel - hit.velocity);
+        else setVelocity(hit, vel);
+        mutated = true; draw();
+        canvas.setPointerCapture(e.pointerId); e.preventDefault();
+      }
+      return;
+    }
     if (e.altKey || e.button === 2) {
       const v = ROWS[p.row]; const cell = snapTickToRes(p.tick, snap());
       const cluster = hitsInCell(notes(), v, cell, snap());
@@ -212,6 +247,18 @@ export function renderDrumGridEditor(
 
   canvas.addEventListener('pointermove', (e) => {
     const p = pos(e); lastMouse = { row: p.row, tick: p.tick };
+    if (laneDrag) {
+      const localY = e.clientY - canvas.getBoundingClientRect().top;
+      const laneTop = RULER_H + ROW_H * 8;
+      const vel = yToVelocity(localY - laneTop, VEL_LANE_H);
+      if (selection.has(laneDrag) && selection.size > 1) applyGroupDelta([...selection], vel - laneDrag.velocity);
+      else {
+        const hit = barHitTest(notes(), e.clientX - canvas.getBoundingClientRect().left, xForTick) ?? laneDrag;
+        setVelocity(hit, vel);
+      }
+      mutated = true; draw();
+      return;
+    }
     if (marquee) { marquee.row1 = p.row; marquee.tick1 = p.tick; draw(); return; }
     if (groupDrag) {
       const wantTick = snapTickToRes(p.tick, snap());
@@ -229,6 +276,12 @@ export function renderDrumGridEditor(
   });
 
   const endPointer = (e: PointerEvent) => {
+    if (laneDrag) {
+      laneDrag = null;
+      try { canvas.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+      if (mutated) historyDeps?.history.commitGesture(); else historyDeps?.history.cancelGesture();
+      return;
+    }
     if (marquee) {
       for (const n of rowsInRect(notes(), marquee, rowOfVoice)) selection.add(n);
       marquee = null; try { canvas.releasePointerCapture(e.pointerId); } catch { /* ignore */ } draw(); return;
