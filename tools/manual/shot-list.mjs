@@ -151,6 +151,23 @@ export const SHOTS = [
     },
   },
 
+  // ── Performance view ─────────────────────────────────────────────────────
+  {
+    name: 'performance-view',
+    selector: '#performance-view-root',
+    setup: async (page) => {
+      // Populate the arrangement via "Copy to Performance", then switch to Performance.
+      await page.locator('#copy-to-performance').click();
+      // Wait for the Performance view to become visible and contain content.
+      await page.locator('#performance-view-root').waitFor({ state: 'visible' });
+      await page.waitForFunction(
+        () => !document.getElementById('performance-view-root')?.hidden,
+        null, { timeout: 5_000 },
+      );
+      await page.waitForTimeout(300);
+    },
+  },
+
   // ── Clip editor screenshots ───────────────────────────────────────────────
 
   {

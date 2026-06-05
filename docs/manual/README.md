@@ -24,6 +24,7 @@ Loom is a browser-based, session-based music workstation. It organises sound int
 |8|[MIDI & Samples](08-midi-and-samples.md)|
 |9|[Saving & Export](09-saving-and-export.md)|
 |10|[Developer Guide](10-developer-guide.md)|
+|11|[Performance & Arrangement](11-performance-and-arrangement.md)|
 
 ---
 

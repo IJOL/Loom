@@ -16,6 +16,7 @@ export const CHAPTERS = [
   '08-midi-and-samples.md',
   '09-saving-and-export.md',
   '10-developer-guide.md',
+  '11-performance-and-arrangement.md',
 ];
 
 const ABSOLUTE = /^(?:[a-z]+:)?\/\//i; // http://, https://, //, file:// (file: handled below)
