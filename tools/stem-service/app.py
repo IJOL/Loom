@@ -1,0 +1,75 @@
+"""Local stem-separation service (the headless engine behind UVR, via audio-separator).
+Personal/localhost tool — no auth. Start with:  uvicorn app:app --port 8765"""
+from __future__ import annotations
+import os
+import tempfile
+
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
+
+from jobs import JobRegistry
+from separation import separate_file, MODEL_FILENAME
+
+WORK_ROOT = os.path.join(tempfile.gettempdir(), "loom-stem-service")
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",   # vite dev
+    "http://localhost:4173",   # vite preview / e2e
+    "https://ijol.github.io",  # GitHub Pages
+]
+
+app = FastAPI(title="Loom Stem Service")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
+
+registry = JobRegistry(separate=separate_file)
+
+
+@app.get("/health")
+def health():
+    return {"ok": True, "model": MODEL_FILENAME}
+
+
+@app.post("/jobs", status_code=201)
+async def create_job(file: UploadFile = File(...)):
+    job_root = os.path.join(WORK_ROOT, "in")
+    os.makedirs(job_root, exist_ok=True)
+    in_path = os.path.join(job_root, f"{os.urandom(6).hex()}-{file.filename or 'input'}")
+    with open(in_path, "wb") as f:
+        f.write(await file.read())
+    out_dir = os.path.join(WORK_ROOT, "out", os.urandom(6).hex())
+    job_id = registry.create(in_path=in_path, out_dir=out_dir)
+    return {"jobId": job_id}
+
+
+@app.get("/jobs/{job_id}")
+def get_job(job_id: str):
+    job = registry.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="job not found")
+    body = {"status": job.status, "progress": job.progress}
+    if job.status == "done":
+        body["stems"] = [{"name": name, "url": f"/jobs/{job_id}/stems/{name}"}
+                         for name in job.stems]
+    if job.status == "error":
+        body["error"] = job.error
+    return JSONResponse(body)
+
+
+@app.get("/jobs/{job_id}/stems/{name}")
+def get_stem(job_id: str, name: str):
+    job = registry.get(job_id)
+    if job is None or name not in job.stems:
+        raise HTTPException(status_code=404, detail="stem not found")
+    return FileResponse(job.stems[name], media_type="audio/wav", filename=f"{name}.wav")
+
+
+@app.delete("/jobs/{job_id}")
+def delete_job(job_id: str):
+    if not registry.delete(job_id):
+        raise HTTPException(status_code=404, detail="job not found")
+    return {"ok": True}

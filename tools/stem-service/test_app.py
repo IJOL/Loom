@@ -33,3 +33,61 @@ def test_job_error_is_captured():
     job = reg.get(job_id)
     assert job.status == "error"
     assert "model download failed" in job.error
+
+
+import io
+import app as app_module
+from fastapi.testclient import TestClient
+
+
+def _client_with_stub(monkeypatch):
+    # Stub separation so no real Demucs runs; write tiny wav files on demand.
+    import os, tempfile
+
+    def fake_separate(in_path, out_dir):
+        os.makedirs(out_dir, exist_ok=True)
+        out = {}
+        for stem in ("vocals", "drums", "bass", "other"):
+            p = os.path.join(out_dir, f"{stem}.wav")
+            with open(p, "wb") as f:
+                f.write(b"RIFF....WAVEfmt ")  # not a valid wav; only the bytes matter for the test
+            out[stem] = p
+        return out
+
+    app_module.registry._separate = fake_separate  # type: ignore[attr-defined]
+    return TestClient(app_module.app)
+
+
+def test_health(monkeypatch):
+    client = _client_with_stub(monkeypatch)
+    r = client.get("/health")
+    assert r.status_code == 200
+    assert r.json()["ok"] is True
+
+
+def test_post_job_then_poll_to_done(monkeypatch):
+    client = _client_with_stub(monkeypatch)
+    r = client.post("/jobs", files={"file": ("song.wav", io.BytesIO(b"data"), "audio/wav")})
+    assert r.status_code == 201
+    job_id = r.json()["jobId"]
+    status = None
+    for _ in range(50):
+        body = client.get(f"/jobs/{job_id}").json()
+        status = body["status"]
+        if status in ("done", "error"):
+            break
+        time.sleep(0.02)
+    assert status == "done"
+    names = {s["name"] for s in client.get(f"/jobs/{job_id}").json()["stems"]}
+    assert names == {"vocals", "drums", "bass", "other"}
+    # stem bytes are downloadable
+    assert client.get(f"/jobs/{job_id}/stems/vocals").status_code == 200
+
+
+def test_delete_job(monkeypatch):
+    client = _client_with_stub(monkeypatch)
+    job_id = client.post(
+        "/jobs", files={"file": ("song.wav", io.BytesIO(b"data"), "audio/wav")}
+    ).json()["jobId"]
+    assert client.delete(f"/jobs/{job_id}").status_code == 200
+    assert client.get(f"/jobs/{job_id}").status_code == 404
