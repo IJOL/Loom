@@ -7,6 +7,7 @@
 import type { SessionClip, ClipEnvelope, ClipSample } from '../session/session';
 import { TICKS_PER_QUARTER, TICKS_PER_STEP, type NoteEvent } from './notes';
 import { quartersPerBar, ticksPerBar, DEFAULT_METER, type TimeSignature } from './meter';
+import { effectiveClipLoop } from './clip-loop';
 
 export interface SchedulerContext {
   bpm: number;
@@ -68,7 +69,9 @@ const DRIFT = 1e-6;
 export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
   const meter = ctx.meter ?? DEFAULT_METER;
   const secPerBeat = 60 / ctx.bpm;
-  const clipDurSec = clip.lengthBars * quartersPerBar(meter) * secPerBeat;
+  const { startTick, endTick } = effectiveClipLoop(clip, meter);
+  const loopTicks = endTick - startTick;
+  const clipDurSec = (loopTicks / TICKS_PER_QUARTER) * secPerBeat;
   if (clipDurSec <= 0) return ctx.loopStartedAt;
 
   // Derive how many full iterations have completed since the original anchor.
@@ -120,7 +123,8 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
       const slices = clip.sample?.slices;
       const sampleId = clip.sample?.sampleId;
       for (const n of clip.notes) {
-        const clipTimeSec = (n.start / TICKS_PER_QUARTER) * secPerBeat;
+        if (n.start < startTick || n.start >= endTick) continue;
+        const clipTimeSec = ((n.start - startTick) / TICKS_PER_QUARTER) * secPerBeat;
         const scheduleAt  = iterStart + clipTimeSec;
         if (scheduleAt >= windowStart && scheduleAt < windowEnd) {
           let slice: { sampleId: string; start: number; end: number } | undefined;

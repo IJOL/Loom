@@ -211,6 +211,53 @@ describe('noteTrigger — velocity', () => {
   });
 });
 
+describe('lane-scheduler tickLane — clip loop sub-region', () => {
+  const bar = ticksPerBar(DEFAULT_METER); // 384
+
+  it('loops only bars 2-3 of a 4-bar clip; period = 2 bars; outside notes never fire', () => {
+    const clip: SessionClip = {
+      id: 'sub', lengthBars: 4,
+      loopEnabled: true, loopStartTick: bar, loopEndTick: 3 * bar,
+      notes: [
+        { start: 0,        duration: 10, midi: 36, velocity: 100 }, // bar 1 — outside
+        { start: bar,      duration: 10, midi: 48, velocity: 100 }, // bar 2 — inside (at region start)
+        { start: 2 * bar,  duration: 10, midi: 50, velocity: 100 }, // bar 3 — inside
+        { start: 3 * bar,  duration: 10, midi: 60, velocity: 100 }, // bar 4 — outside
+      ],
+    };
+    const fires: Array<{ midi: number; time: number }> = [];
+    let loopStart = 0, last = -Infinity;
+    // 2 bars at 120 bpm = 4 sec. Run 8 sec ⇒ 2 full iterations.
+    for (let now = 0; now < 8.0; now += 0.025) {
+      loopStart = tickLane(clip, {
+        bpm: 120, lookaheadSec: 0.12, now, loopStartedAt: loopStart, lastScheduledAt: last,
+        onTrigger: (n, t) => { fires.push({ midi: n.midi, time: t }); if (t > last) last = t; },
+        onAutomation: () => {},
+      });
+    }
+    expect(fires.some((f) => f.midi === 36 || f.midi === 60)).toBe(false); // outside never fires
+    const midis = fires.map((f) => f.midi);
+    // Midi 48 fires at t=0, t=4, and t=8 (lookahead from last tick peeks into 3rd iteration start).
+    // Midi 50 fires at t=2 and t=6 only (t=10 is beyond the 8-sec window).
+    expect(midis.filter((m) => m === 48).length).toBe(3);
+    expect(midis.filter((m) => m === 50).length).toBe(2);
+    // region-start note is repositioned to the iteration start (t≈0, 4, 8)
+    const m48 = fires.filter((f) => f.midi === 48).map((f) => f.time);
+    expect(m48[0]).toBeCloseTo(0, 5);
+    expect(m48[1]).toBeCloseTo(4, 5);
+  });
+
+  it('loop off is byte-for-byte the current behaviour (no regression)', () => {
+    const clip: SessionClip = { id: 'whole', lengthBars: 1, notes: [{ start: 0, duration: TICKS_PER_STEP, midi: 60, velocity: 100 }] };
+    const fires: number[] = [];
+    let loopStart = 0;
+    for (let now = 0; now < 8.0; now += 0.2) {
+      loopStart = tickLane(clip, { bpm: 120, lookaheadSec: 0.2, now, loopStartedAt: loopStart, onTrigger: (_n, t) => fires.push(t), onAutomation: () => {} });
+    }
+    expect(fires).toHaveLength(4); // identical to the existing 1-bar test
+  });
+});
+
 describe('noteTrigger', () => {
   // Note durations live on the TICKS_PER_QUARTER (96) grid:
   //   1 quarter = 96 ticks = 60/bpm seconds at given bpm.
