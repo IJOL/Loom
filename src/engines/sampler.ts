@@ -82,7 +82,6 @@ class SamplerVoice implements Voice {
   }
 
   trigger(midi: number, time: number, opts: VoiceTriggerOptions): void {
-    if (opts.slice) { this.triggerSlice(midi, time, opts); return; }
     if (opts.sample) { this.triggerSample(time, opts); return; }
     const entry = keymapEntryFor(this.keymap, midi);
     if (!entry) return;
@@ -163,59 +162,6 @@ class SamplerVoice implements Voice {
     if (!r) return;
     this.src = r.src;
     this.endTime = r.endTime;
-    this.started = true;
-  }
-
-  /** Slice path: play a sub-region of a buffer at natural pitch, applying the
-   *  per-pad params keyed by the trigger note (same envelope/filter/pan/sends
-   *  as the keymap path). Set by the scheduler for warpMode==='slice' loops. */
-  private triggerSlice(midi: number, time: number, opts: VoiceTriggerOptions): void {
-    const sl = opts.slice!;
-    const buf = sampleCache.get(sl.sampleId);
-    if (!buf) return;
-    const pad = this.api.getPad(midi);
-
-    if (this.src && this.started) {
-      try { this.src.stop(); } catch { /* already stopped */ }
-      this.src.disconnect();
-    }
-    this.note = midi;
-    this.api.onTrigger(midi, this, time);
-
-    const start = Math.max(0, Math.min(sl.start, buf.duration));
-    const end = sl.end > start ? Math.min(sl.end, buf.duration) : buf.duration;
-    const region = Math.max(0.001, end - start);
-
-    const src = this.ctx.createBufferSource();
-    src.buffer = buf;
-    src.playbackRate.value = Math.pow(2, pad.tune / 12); // natural pitch + TUNE only
-    src.connect(this.filter);
-    this.src = src;
-
-    this.filter.frequency.setValueAtTime(60 * Math.pow(300, pad.cutoff), time);
-    this.filter.Q.setValueAtTime(0.5 + pad.res * 20, time);
-
-    const audible = this.api.isPadAudible(midi) ? 1 : 0;
-    const peak = this.api.getGlobal('gain') * (0.8 * velGain(opts.velocity, !!opts.accent)) * OUTPUT_TRIM * pad.level * audible;
-    const atk = Math.max(0.001, pad.attack);
-    const rel = Math.max(0.005, pad.decay);
-    const g = this.ampGain.gain;
-    g.cancelScheduledValues(time);
-    g.setValueAtTime(0, time);
-    g.linearRampToValueAtTime(peak, time + atk);
-    // gate to the slice's own region length OR the note gate (whichever is shorter)
-    const playDur = Math.min(region / src.playbackRate.value, Math.max(opts.gateDuration, atk));
-    const releaseAt = Math.max(time + atk, time + playDur);
-    g.setValueAtTime(peak, releaseAt);
-    g.linearRampToValueAtTime(0, releaseAt + rel);
-
-    this.panner.pan.setValueAtTime(pad.pan, time);
-    this.revSend.gain.setValueAtTime(pad.rev, time);
-    this.dlySend.gain.setValueAtTime(pad.dly, time);
-
-    this.endTime = releaseAt + rel + 0.01;
-    src.start(time, start, region + 0.01);
-    src.stop(this.endTime);
     this.started = true;
   }
 

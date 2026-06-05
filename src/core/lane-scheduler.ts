@@ -30,7 +30,7 @@ export interface SchedulerContext {
   meter?: TimeSignature;
   /** Called with the original note + the absolute audio time at which it
    *  should be scheduled. */
-  onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample; slice?: { sampleId: string; start: number; end: number } }, scheduleTime: number) => void;
+  onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample }, scheduleTime: number) => void;
   /** Called for each clip envelope sample falling in the window. The
    *  `clipTimeNorm` is 0..1 within the clip iteration. */
   onAutomation: (env: ClipEnvelope, clipTimeNorm: number, scheduleTime: number) => void;
@@ -107,8 +107,7 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
 
   for (let k = kMin; k <= kMax; k++) {
     const iterStart = loopStart + k * clipDurSec;
-    const sliceMode = !!clip.sample && !!clip.sample.slices?.length && clip.sample.warpMode !== 'stretch';
-    if (clip.sample && !sliceMode) {
+    if (clip.sample) {
       // Loop/song or stretch audio clip: one buffer trigger per iteration, gated
       // to the sub-region length. When loopEnabled, trimStart/trimEnd are
       // remapped to the matching fraction of the original buffer so only the
@@ -130,21 +129,13 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
         ctx.onTrigger({ midi: 60, duration: loopTicks, velocity: 100, sample }, iterStart);
       }
     } else {
-      // Note clip (incl. slice-mode loops): each note fires at its grid time. In
-      // slice mode the matching slice region is attached so the sampler plays it.
-      const slices = clip.sample?.slices;
-      const sampleId = clip.sample?.sampleId;
+      // Note clip: each note fires at its grid time.
       for (const n of clip.notes) {
         if (n.start < startTick || n.start >= endTick) continue;
         const clipTimeSec = ((n.start - startTick) / TICKS_PER_QUARTER) * secPerBeat;
         const scheduleAt  = iterStart + clipTimeSec;
         if (scheduleAt >= windowStart && scheduleAt < windowEnd) {
-          let slice: { sampleId: string; start: number; end: number } | undefined;
-          if (sliceMode && slices && sampleId) {
-            const s = slices.find((x) => x.note === n.midi);
-            if (s) slice = { sampleId, start: s.start, end: s.end };
-          }
-          ctx.onTrigger({ midi: n.midi, duration: n.duration, velocity: n.velocity, slice }, scheduleAt);
+          ctx.onTrigger({ midi: n.midi, duration: n.duration, velocity: n.velocity }, scheduleAt);
         }
       }
     }

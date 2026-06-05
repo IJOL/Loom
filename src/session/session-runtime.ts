@@ -156,7 +156,6 @@ export type LaneTriggerFn = (
   accent: boolean,
   slidingIn: boolean,
   sample?: ClipSample,
-  slice?: { sampleId: string; start: number; end: number },
   velocity?: number,
 ) => void;
 
@@ -212,10 +211,10 @@ export function tickSession(
       loopStartedAt: currentLoopStart,
       meter,
       lastScheduledAt: lp.lastScheduledAt,
-      onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample; slice?: { sampleId: string; start: number; end: number } }, scheduleTime: number) => {
+      onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample }, scheduleTime: number) => {
         if (scheduleTime > lp.lastScheduledAt) lp.lastScheduledAt = scheduleTime;
         const t = noteTrigger(lane.engineId, clip, note, scheduleTime, currentLoopStart, bpm, meter);
-        onLaneTrigger(lane.id, t.midi, scheduleTime, t.gateSec, t.accent, t.slidingIn, note.sample, note.slice, t.velocity);
+        onLaneTrigger(lane.id, t.midi, scheduleTime, t.gateSec, t.accent, t.slidingIn, note.sample, t.velocity);
         onClipStepFired(
           lane.id, clip.id,
           Math.floor(t.scheduledStartTick / TICKS_PER_STEP),

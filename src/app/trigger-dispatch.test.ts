@@ -25,7 +25,7 @@ describe('createTriggerForLane velocity', () => {
       laneResources: { get: () => ({ engine: { id: 'poly', createVoice: () => fakeVoice }, strip: { input: {} } }) } as never,
     };
     const trigger = createTriggerForLane(deps);
-    trigger('lane1', 60, 0, 0.2, false, false, undefined, undefined, 73);
+    trigger('lane1', 60, 0, 0.2, false, false, undefined, 73);
     expect(seen).toEqual([73]);
   });
 });

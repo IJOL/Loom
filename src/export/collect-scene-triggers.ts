@@ -22,7 +22,6 @@ export interface OfflineTrigger {
   accent: boolean;
   slidingIn: boolean;
   sample?: ClipSample;
-  slice?: { sampleId: string; start: number; end: number };
 }
 
 export function collectSceneTriggers(
@@ -51,7 +50,6 @@ export function collectSceneTriggers(
           accent: t.accent,
           slidingIn: t.slidingIn,
           sample: note.sample,
-          slice: note.slice,
         });
       },
       onAutomation: () => { /* envelopes are out of scope for offline v1 */ },

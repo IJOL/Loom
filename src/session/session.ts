@@ -184,37 +184,6 @@ export function audioChannelClip(opts: {
   };
 }
 
-/** Build a slice-mode (warp) loop clip: carries clip.sample.slices + the
- *  generated NoteEvent[] that fire them. lengthBars/slices/notes come from the
- *  pure slice-clip builder (core/slice-clip.ts). */
-export function slicedLoopClip(opts: {
-  name: string;
-  sampleId: string;
-  durationSec: number;
-  originalBpm: number;
-  lengthBars: number;
-  slices: LoopSlice[];
-  notes: NoteEvent[];
-}): SessionClip {
-  return {
-    id: nextId('clip'),
-    name: opts.name,
-    color: pickRandomClipColor(),
-    lengthBars: opts.lengthBars,
-    notes: opts.notes,
-    sample: {
-      sampleId: opts.sampleId,
-      mode: 'loop',
-      originalBpm: opts.originalBpm,
-      warp: true,
-      warpMode: 'slice',
-      slices: opts.slices,
-      trimStart: 0,
-      trimEnd: opts.durationSec,
-    },
-  };
-}
-
 export function emptyLane(id: string, engineId: string): SessionLane {
   return { id, engineId, clips: [] };
 }

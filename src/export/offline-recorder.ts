@@ -99,7 +99,7 @@ export class OfflineSceneRecorder implements SceneRecorder {
       (s) => ({ laneId: s.laneId, engineId: s.engineId, clip: s.clip }),
     );
     for (const ev of collectSceneTriggers(laneClips, bpm, meter, totalSec)) {
-      trigger(ev.laneId, ev.midi, ev.time, ev.gateSec, ev.accent, ev.slidingIn, ev.sample, ev.slice);
+      trigger(ev.laneId, ev.midi, ev.time, ev.gateSec, ev.accent, ev.slidingIn, ev.sample);
     }
 
     // Render → RenderedAudio.
