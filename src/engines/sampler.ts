@@ -23,13 +23,7 @@ import { PAD_DEFAULTS, PAD_LEAF_SPECS, padKeyForNote, noteForPadKey, type PadPar
 import type { FxBus } from '../core/fx';
 import { computeVoiceMutes } from '../core/mute-solo';
 import { renderDrumVoiceRack } from './drum-voice-rack';
-import { parseLoopMetadata } from '../samples/loop-metadata';
-import { detectLoop } from '../samples/loop-analysis';
 import { velGain } from '../core/velocity-gain';
-import { analyzeLoopFor } from '../samples/loop-import';
-import { slicedLoopClip } from '../session/session';
-import { DEFAULT_RESOLUTION } from '../core/drum-grid-editing';
-import { DEFAULT_METER } from '../core/meter';
 import { playAudioClip, OUTPUT_TRIM } from './audio-clip-voice';
 
 const SAMPLER_PARAMS: EngineParamSpec[] = [
@@ -536,55 +530,6 @@ export class SamplerEngine implements SynthEngine {
     drop.className = 'sampler-dropzone';
     drop.textContent = 'Drop an audio file, or use the picker above';
     section.appendChild(drop);
-
-    // Import-as-loop: pick an audio file → auto-slice + tempo-lock it into a new
-    // slice clip on this lane (bypasses the keymap). Embedded Acid/cue/AIFF
-    // markers win; otherwise onset/tempo detection fills in. See loop-import.ts.
-    const loopRow = document.createElement('div');
-    loopRow.className = 'sampler-loop-import';
-    const loopLabel = document.createElement('label');
-    loopLabel.textContent = 'Import as loop ';
-    const loopInput = document.createElement('input');
-    loopInput.type = 'file';
-    loopInput.accept = 'audio/*';
-    loopLabel.appendChild(loopInput);
-    loopRow.appendChild(loopLabel);
-    const loopStatus = document.createElement('span');
-    loopStatus.className = 'sampler-loop-import-status';
-    loopRow.appendChild(loopStatus);
-    section.appendChild(loopRow);
-
-    const loadLoop = async (file: File): Promise<void> => {
-      const audioCtx = ctx.audioContext;
-      if (!audioCtx) return;
-      loopStatus.textContent = ' analyzing…';
-      try {
-        const asset = await importFile(file, audioCtx);
-        await sampleStore.put(asset);
-        const buffer = await audioCtx.decodeAudioData(asset.bytes.slice(0));
-        sampleCache.put(asset.id, buffer);
-        const result = analyzeLoopFor({
-          durationSec: buffer.duration,
-          projectMeter: DEFAULT_METER,
-          gridResolution: DEFAULT_RESOLUTION,
-          metadata: parseLoopMetadata(asset.bytes),
-          detect: () => detectLoop(buffer, DEFAULT_METER),
-        });
-        const clip = slicedLoopClip({
-          name: file.name, sampleId: asset.id, durationSec: buffer.duration,
-          originalBpm: result.originalBpm, lengthBars: result.lengthBars,
-          slices: result.slices, notes: result.notes,
-        });
-        ctx.installClip?.(clip);
-        loopStatus.textContent = ` ${result.slices.length} slices · ${Math.round(result.originalBpm)} BPM`;
-      } catch (err) {
-        loopStatus.textContent = ` failed: ${(err as Error).message}`;
-      }
-    };
-    loopInput.addEventListener('change', () => {
-      const f = loopInput.files?.[0];
-      if (f) void loadLoop(f);
-    });
 
     const loadFile = async (file: File) => {
       const audioCtx = ctx.audioContext;
