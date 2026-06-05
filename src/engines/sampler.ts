@@ -12,8 +12,6 @@ import { ModulationHostImpl } from '../modulation/modulation-host';
 import type { KeymapEntry } from '../samples/types';
 import type { VoiceTriggerOptions } from './engine-types';
 import { sampleCache } from '../samples/sample-cache';
-import { stretchCache } from '../samples/stretch-cache';
-import { stretchBuffer } from '../samples/timestretch';
 import { keymapEntryFor, repitchRate } from '../samples/keymap';
 import { wireEngineParams } from './engine-ui';
 import { sampleStore } from '../samples/store-singleton';
@@ -32,6 +30,7 @@ import { analyzeLoopFor } from '../samples/loop-import';
 import { slicedLoopClip } from '../session/session';
 import { DEFAULT_RESOLUTION } from '../core/drum-grid-editing';
 import { DEFAULT_METER } from '../core/meter';
+import { playAudioClip, OUTPUT_TRIM } from './audio-clip-voice';
 
 const SAMPLER_PARAMS: EngineParamSpec[] = [
   { id: 'gain',        label: 'Gain',   kind: 'continuous', min: 0, max: 1.5, default: 1 },
@@ -46,8 +45,6 @@ class SamplerSequencer implements EngineSequencer {
   deserialize(): void {}
   dispose(): void {}
 }
-
-const OUTPUT_TRIM = 0.7; // headroom so a full-scale sample + resonance stays < 0 dBFS
 
 interface SamplerVoiceApi {
   getPad: (note: number) => PadParams;
@@ -149,62 +146,29 @@ class SamplerVoice implements Voice {
     this.started = true;
   }
 
-  /** Loop/song path: play the clip's buffer flat (no ADSR), repitched so a
-   *  loop fills the clip exactly; song plays at natural rate. ~5 ms anti-click
-   *  fades at the edges. Re-fired once per clip iteration by the scheduler. */
+  /** Loop/song path: delegates to the shared audio-clip playback helper, then
+   *  sets a neutral (wide-open) filter so audio clips aren't coloured. */
   private triggerSample(time: number, opts: VoiceTriggerOptions): void {
-    const cs = opts.sample!;
-    const buf = sampleCache.get(cs.sampleId);
-    if (!buf) return;
-
     if (this.src && this.started) {
       try { this.src.stop(); } catch { /* already stopped */ }
       this.src.disconnect();
     }
-
-    const trimStart = Math.max(0, cs.trimStart);
-    const trimEnd = cs.trimEnd > trimStart ? Math.min(cs.trimEnd, buf.duration) : buf.duration;
-    const region = Math.max(0.001, trimEnd - trimStart);
-    const gate = Math.max(0.001, opts.gateDuration);
-
-    const src = this.ctx.createBufferSource();
-    const wantStretch = cs.mode === 'loop' && cs.warp && cs.warpMode === 'stretch';
-    const ratio = gate / region;
-    const stretched = wantStretch ? stretchCache.get(cs.sampleId, ratio) : undefined;
-    if (stretched) {
-      src.buffer = stretched;
-      src.playbackRate.value = 1; // pitch preserved; buffer already fills the gate
-    } else {
-      src.buffer = buf;
-      // loop → varispeed fill (also the stretch-miss fallback); song → natural.
-      src.playbackRate.value = cs.mode === 'loop' ? region / gate : 1;
-      // Self-heal: on a stretch cache miss, render the stretched buffer in the
-      // background so the next loop iteration plays pitch-preserved — this makes
-      // 'stretch' mode work on first play even if the BPM is never changed.
-      if (wantStretch) {
-        void stretchCache.ensure(cs.sampleId, ratio, () => stretchBuffer(this.ctx, buf, ratio));
-      }
-    }
-    src.connect(this.filter);
-    this.src = src;
-
-    // Audio clips: use neutral defaults (filter wide open, flat gain).
+    // Neutral filter for audio clips (filter wide open, flat gain).
     this.filter.frequency.setValueAtTime(60 * Math.pow(300, PAD_DEFAULTS.cutoff), time);
     this.filter.Q.setValueAtTime(0.5 + PAD_DEFAULTS.res * 20, time);
 
-    // Flat gain with short anti-click fades — no amp envelope for audio clips.
-    const peak = this.api.getGlobal('gain') * (cs.gain ?? 1) * OUTPUT_TRIM;
-    const fade = Math.min(0.005, gate / 4);
-    const g = this.ampGain.gain;
-    g.cancelScheduledValues(time);
-    g.setValueAtTime(0, time);
-    g.linearRampToValueAtTime(peak, time + fade);
-    g.setValueAtTime(peak, Math.max(time + fade, time + gate - fade));
-    g.linearRampToValueAtTime(0, time + gate);
-
-    this.endTime = time + gate + 0.01;
-    src.start(time, stretched ? 0 : trimStart);
-    src.stop(this.endTime);
+    const r = playAudioClip({
+      ctx: this.ctx,
+      sample: opts.sample!,
+      time,
+      gateDuration: opts.gateDuration,
+      dest: this.filter,
+      ampGain: this.ampGain,
+      masterGain: this.api.getGlobal('gain'),
+    });
+    if (!r) return;
+    this.src = r.src;
+    this.endTime = r.endTime;
     this.started = true;
   }
 
