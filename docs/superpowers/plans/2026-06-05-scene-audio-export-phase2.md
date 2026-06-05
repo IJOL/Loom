@@ -32,9 +32,9 @@ The real-time backend (A) cannot run under Node (AudioWorklet is unavailable in 
 
 ## Scope (v1)
 
-In scope: engines + per-lane `ChannelStrip` (EQ / pan / level / reverb+delay sends) + master `InsertChain` + `MasterCompressor` + `SidechainBus`, plus per-lane/master **insert plugin slots** (reused for free because `createLaneAllocator` builds the `InsertChain` and `applyLaneEngineState` does not touch inserts — see Task 5 note on insert slots). Currently-playing clips only (same source as Phase 1). Duration = Phase 1's `soundingSceneDurationSec` + tail.
+In scope: engines + per-lane `ChannelStrip` (EQ / pan / level / reverb+delay sends) + master `InsertChain` + `MasterCompressor` + `SidechainBus` + per-lane/master **insert plugin slots** (reproduced via `rehydrateInsertChain` — Task 6) → full parity with the live mix. Currently-playing clips only (same source as Phase 1). Duration = Phase 1's `soundingSceneDurationSec` + tail.
 
-Out of scope (v1): exporting a non-playing scene; stems; bit depths other than 16-bit (the encoder seam already allows it later).
+Out of scope (v1): exporting a non-playing scene; stems; bit depths other than 16-bit (the encoder seam already allows it later); per-clip envelope automation (the live tick keeps it minimal too).
 
 ## File structure
 
@@ -590,7 +590,7 @@ git commit -m "refactor(export): shared applyLaneEngineState for live host + off
 
 Offline render must have every referenced sample buffer decoded **before** `startRendering()` (sampler voices read synchronously from `sampleCache`). Enumerate sampleIds from each sounding lane's keymap + clip samples and ensure them; drumkit lanes are handled by `applyLaneEngineState`'s awaited `reloadDrumkit`, so only non-kit sample references need explicit preload here.
 
-> **Insert slots note:** per-lane `lane.inserts` and `state.masterInserts` are insert *plugin* slots. They are NOT applied by `applyLaneEngineState`; in the live app they are mounted by the FX UI. For v1 offline, insert slots are **not** reproduced (the live/real-time backend remains the full-fidelity path). This is the one documented parity gap; record it in the spec's "Out of scope" when implementing the UI (Task 8).
+> **Insert slots note:** per-lane `lane.inserts` and `state.masterInserts` are insert *plugin* slots, NOT applied by `applyLaneEngineState`. They ARE reproduced offline by `rehydrateInsertChain(ctx, chain, slots)` (`src/session/insert-slot.ts:27`) — a pure, ctx-portable function the live `SessionHost` already uses on load (`session-host.ts:268,281`). Task 6 calls it on the offline lane chains + master chain, so offline reaches full mix parity.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -707,6 +707,7 @@ import { collectSceneTriggers, type SoundingLaneClip } from './collect-scene-tri
 import { loadNoteFxForLane } from '../notefx/notefx-registry';
 import { fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
 import { mirrorKeymapChange } from '../session/session-engine-state';
+import { rehydrateInsertChain } from '../session/insert-slot';
 import type { KeymapEntry } from '../samples/types';
 
 export interface OfflineRecorderDeps {
@@ -759,6 +760,16 @@ export class OfflineSceneRecorder implements SceneRecorder {
           mirrorKeymapChange(state, id, km);
         },
       });
+      // Per-lane insert plugin slots → full parity with the live mix.
+      const res = lanes.resources.get(laneId);
+      if (res?.inserts && lane.inserts && lane.inserts.length > 0) {
+        rehydrateInsertChain(offlineCtx as unknown as AudioContext, res.inserts, lane.inserts);
+      }
+    }
+
+    // 3b) Master insert plugin slots.
+    if (state.masterInserts && state.masterInserts.length > 0) {
+      rehydrateInsertChain(offlineCtx as unknown as AudioContext, graph.masterInsertChain, state.masterInserts);
     }
 
     // 4) Preload one-shot / clip sample buffers.
@@ -941,19 +952,17 @@ $<HTMLButtonElement>('export-offline').addEventListener('click', () => runExport
 .export-menu .io { white-space: nowrap; }
 ```
 
-- [ ] **Step 4: Record the v1 parity gap** — in the spec's "Out of scope (v1)" list, append: `- Offline backend v1 does not reproduce per-lane / master insert plugin slots (use real-time for sessions with inserts).`
-
-- [ ] **Step 5: Typecheck + build**
+- [ ] **Step 4: Typecheck + build**
 
 Run: `npx tsc --noEmit`
 Expected: no errors.
 Run: `npm run build`
 Expected: succeeds (required before e2e — it serves `dist/`).
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add index.html src/main.ts docs/superpowers/specs/2026-06-04-scene-audio-export-design.md
+git add index.html src/main.ts
 git commit -m "feat(export): backend menu (real-time default + offline) + offline wiring"
 ```
 
@@ -1042,4 +1051,4 @@ Per project convention: `git rebase main`, then `git merge --ff-only`, then `Exi
 - "ScriptProcessor/AudioWorklet offline incompatibility" → verified none exist in engines; only Phase 1's recorder, which offline doesn't use. ✅
 - "UI: real-time default + offline option" → Task 8. ✅
 - "A↔C parity gate" → automated offline-correctness DSP test (Task 7) + manual/`wav-diff` browser parity (Task 10 step 3), since A can't run under Node. ✅
-- Insert-slot fidelity gap is documented (Task 5 note + Task 8 step 4). ✅
+- Insert plugin slots reproduced via `rehydrateInsertChain` (Task 6) → full mix parity, no gap. ✅
