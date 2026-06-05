@@ -23,7 +23,11 @@ describe('wireTransport Play/Stop button', () => {
     } as unknown as TransportDeps['seq'];
     const ctx = { resume: () => Promise.resolve() } as unknown as AudioContext;
     const btn = fakeButton();
-    const onStop = vi.fn();
+    // The unified stop now owns stopping the clock AND resetting the glyph (so
+    // the live-take finalize, lane stop, glyph reset, and re-render are a single
+    // source of truth in main's stopTransport). wireTransport just delegates to
+    // it on the stop click — it no longer touches seq.stop()/the glyph itself.
+    const onStop = vi.fn(() => { seq.stop(); btn.el.textContent = '▶'; });
     const resetAutomationPosition = vi.fn();
     wireTransport({ seq, ctx, playBtn: btn.el, resetAutomationPosition, onStop });
     return { seq, btn, onStop, resetAutomationPosition };
@@ -36,11 +40,13 @@ describe('wireTransport Play/Stop button', () => {
     expect(onStop).not.toHaveBeenCalled();
   });
 
-  it('stopping invokes onStop (so lanes stop + playheads clear) and shows the play glyph', () => {
-    const { btn, onStop } = setup();
+  it('stopping delegates to onStop (the unified stop), which clears the glyph', () => {
+    const { seq, btn, onStop } = setup();
     btn.click(); // start
-    btn.click(); // stop
-    expect(btn.el.textContent).toBe('▶');
+    btn.click(); // stop → delegates entirely to onStop
     expect(onStop).toHaveBeenCalledTimes(1);
+    // The glyph reset and clock stop come from onStop, not wireTransport.
+    expect(btn.el.textContent).toBe('▶');
+    expect(seq.stop).toHaveBeenCalledTimes(1);
   });
 });
