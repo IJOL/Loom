@@ -666,6 +666,12 @@ function runExport(mode: 'rt' | 'offline'): void {
 $<HTMLButtonElement>('export-rt').addEventListener('click', () => runExport('rt'));
 $<HTMLButtonElement>('export-offline').addEventListener('click', () => runExport('offline'));
 
+// Dismiss the export menu when clicking outside its wrapper.
+document.addEventListener('click', (e) => {
+  const wrap = exportBtn.closest('.export-menu-wrap');
+  if (wrap && !wrap.contains(e.target as Node)) exportMenu.hidden = true;
+});
+
 {
   const positionEl = document.getElementById('transport-position');
   const timeEl     = document.getElementById('transport-time');
