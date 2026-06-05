@@ -118,7 +118,10 @@ export function tickArrangement(args: TickArrangementArgs): void {
         let active: typeof lane.clipEvents[number] | undefined;
         for (let i = 0; i < lane.clipEvents.length; i++) {
           const ev = lane.clipEvents[i];
-          if (ev.atSec <= lw.startSec && lw.startSec < ev.untilSec) active = ev;
+          // strictly before A: the while-loop relaunches an event that starts
+          // exactly at A on the next tick, so only events spanning INTO A need
+          // an explicit relaunch (otherwise the clip double-fires at the wrap).
+          if (ev.atSec < lw.startSec && lw.startSec < ev.untilSec) active = ev;
           if (ev.atSec < lw.startSec) idx = i + 1;
         }
         ps.nextEventIdxPerLane.set(lane.laneId, idx);

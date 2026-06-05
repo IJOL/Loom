@@ -222,4 +222,29 @@ describe('tickArrangement A-B loop wrap', () => {
     expect(launches[launches.length - 1].id).toBe('c1');
     expect(ps.ended).toBe(false); // loop never "ends"
   });
+
+  it('does not double-fire a clip whose event starts exactly at A', () => {
+    // A on a section boundary (atSec === startSec) is a real case: arrangementFromSession
+    // emits one event per scene at each boundary and the user can drag A onto one.
+    const s = emptyArrangementState(120);
+    appendClipEvent(s, 'l1', 'c1', 4); closePendingClipEvent(s, 'l1', 12); // event [4,12)
+    const ps = createArrangementPlayState();
+    startArrangement(ps, 100);
+    const lw = { startSec: 4, endSec: 8, active: true }; // A coincides with the event start
+
+    const launches: Array<{ id: string; at: number }> = [];
+    const tick = (nowCtx: number) => tickArrangement({
+      ps, state: s, nowCtx, lookaheadSec: 0.12, bpm: 120, loopWindow: lw,
+      onLaunchClip: (_l, id, at) => launches.push({ id, at }),
+      onStopLane: () => {}, applyAutomation: () => {},
+    });
+
+    tick(104);    // tNow=4: while-loop launches c1 at ctx 104
+    tick(108);    // tNow=8 reaches B ⇒ wrap; an event whose atSec===A must NOT be relaunched
+    tick(108.05); // tNow≈4 after re-anchor: while-loop launches c1 exactly once
+    const c1Times = launches.filter((l) => l.id === 'c1').map((l) => l.at);
+    // The bug scheduled two launches at the same instant (the wrap relaunch + the
+    // next tick's while-loop). With the fix every launch is at a distinct time.
+    expect(new Set(c1Times).size).toBe(c1Times.length);
+  });
 });
