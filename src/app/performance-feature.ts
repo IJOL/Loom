@@ -44,6 +44,10 @@ export interface PerformanceFeatureDeps {
   /** Optional: snapshot current state for undo after a performance edit
    *  (length/zoom/add/remove/draw). Undefined keeps edits working without undo. */
   onPerformanceEdited?: () => void;
+  /** Called when arrangement playback reaches the end of the song (song mode):
+   *  lets the host stop the transport engine and reset the Play button so a
+   *  fresh Play restarts from the top rather than toggling a stale ■. */
+  onArrangementEnd?: () => void;
 }
 
 export interface PerformanceFeature {
@@ -118,7 +122,12 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       onStop: () => stopArrangement(arrangementPlayState),
       onGoToSession: () => setMode('session'),
       resolveClipColor: (id) => findClip(id)?.color ?? '',
-      resolveClipName: (id) => findClip(id)?.name ?? findClip(id)?.id ?? 'missing',
+      resolveClipName: (id) => {
+        for (const lane of sessionHost.state.lanes)
+          for (const c of lane.clips)
+            if (c?.id === id) return c.name || lane.name || lane.engineId || 'Clip';
+        return 'missing';
+      },
       registry: automationRegistry,
       laneIds: laneIds(),
       pxPerBar,
@@ -211,7 +220,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         onStopLane: arrangementOnStopLane,
         applyAutomation: arrangementApplyAutomation,
         loopWindow: arrangementLoopWindowSec(arrangement),
-        onArrangementEnd: () => { stopAll(sessionHost.laneStates); stopArrangement(arrangementPlayState); },
+        onArrangementEnd: () => { stopAll(sessionHost.laneStates); stopArrangement(arrangementPlayState); deps.onArrangementEnd?.(); },
       });
     }
   }

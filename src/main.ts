@@ -468,9 +468,17 @@ const recBtn = $<HTMLButtonElement>('rec');
 // is no longer attached — the Performance recorder owns REC behaviour now).
 // recHooks + onAfterTick are patched into sessionHost.deps after construction
 // because the feature needs sessionHost to resolve clip launches.
+// Bind the original transport methods BEFORE the patch below, so the song-end
+// callback can stop the engine directly without re-entering the patched seq.stop.
+const _origStart = seq.start.bind(seq);
+const _origStop = seq.stop.bind(seq);
+
 const performanceFeature = createPerformanceFeature({
   ctx, seq, sessionHost,
   automationRegistry,
+  // Arrangement reached the end (song mode): halt the engine + reset the Play
+  // button so the next Play restarts from the top.
+  onArrangementEnd: () => { _origStop(); playBtn.textContent = '▶'; },
   onRegisterKnob: (hook) => {
     const origRegister = automation.registerKnob.bind(automation);
     automation.registerKnob = (k: KnobHandle) => {
@@ -486,10 +494,14 @@ const performanceFeature = createPerformanceFeature({
 (sessionHost.deps as { onAfterTick?: (n: number, l: number) => void }).onAfterTick =
   performanceFeature.onLookahead;
 
-const _origStart = seq.start.bind(seq);
-const _origStop = seq.stop.bind(seq);
-seq.start = () => { if (!performanceFeature.onPlay()) _origStart(); };
-seq.stop = () => { if (!performanceFeature.onStop()) _origStop(); };
+// Performance needs the SAME look-ahead engine as Session: tickArrangement and
+// the per-lane tickSession both run from seq.tick → onLookahead, so the engine
+// must start in both modes. onPlay/onStop do the arrangement/REC bookkeeping;
+// the engine always starts/stops. (Previously onPlay()===true skipped
+// _origStart, so Performance had no engine → no sound, and seq.isPlaying()
+// stayed false so the Play button never toggled to Stop.)
+seq.start = () => { performanceFeature.onPlay(); _origStart(); };
+seq.stop = () => { performanceFeature.onStop(); _origStop(); };
 
 const copyBtn = document.getElementById('copy-to-performance');
 copyBtn?.addEventListener('click', () => performanceFeature.copyFromSession());
