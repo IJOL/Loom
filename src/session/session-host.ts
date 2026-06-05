@@ -425,6 +425,12 @@ export class SessionHost {
     });
   }
 
+  /** Public entry for the Stems dialog: create one full-length Sampler lane per
+   *  separated stem (delegates to the undoable callbacks impl). */
+  addStemLanes(stems: { label: string; sampleId: string; durationSec: number }[]): void {
+    this.callbacks.onAddStemLanes(stems);
+  }
+
   // ── Callbacks ────────────────────────────────────────────────────────────
 
   private buildCallbacks(): void {

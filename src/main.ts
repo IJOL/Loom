@@ -57,6 +57,9 @@ import {
   showPolyEditor,
   synthEditorState,
 } from './session/synth-editor-routing';
+import { StemClient } from './stems/stem-client';
+import { stemServiceBaseUrl } from './stems/stem-config';
+import { wireStemDialog } from './stems/stem-dialog';
 import { startVisualizer } from './core/visualizer';
 import { loadAllPresets } from './presets/preset-loader';
 import { loadDrumKits } from './presets/drum-kits-loader';
@@ -830,6 +833,12 @@ wireHistoryKeyboard(historyDeps);
 // undoable. Must happen after historyDeps is built (it closes over sessionHost
 // via savedStateDeps → saveWiringDeps).
 sessionHost.setHistoryDeps(historyDeps);
+// Stems: transport-bar "Stems…" dialog → local separation service → one Sampler lane per stem.
+wireStemDialog({
+  ctx,
+  client: new StemClient(stemServiceBaseUrl()),
+  addStemLanes: (stems) => sessionHost.addStemLanes(stems),
+});
 // Activate undo for discrete selectors (kit, wave, engine, preset) now that
 // historyDeps is ready.
 _discreteHistoryDeps = historyDeps;
