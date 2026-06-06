@@ -17,8 +17,9 @@ import { wireEngineParams } from './engine-ui';
 import { sampleStore } from '../samples/store-singleton';
 import { importFile } from '../samples/import';
 import { addSampleToKeymap, removeKeymapEntry, setEntryRoot } from '../samples/keymap-edit';
-import { mirrorKeymapChange, mirrorDrumkitId, mirrorPadParams } from '../session/session-engine-state';
+import { mirrorKeymapChange, mirrorDrumkitId, mirrorInstrumentId, mirrorPadParams } from '../session/session-engine-state';
 import { listDrumkits, fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
+import { listInstruments, fetchInstrumentManifest, loadInstrument, type InstrumentIndexEntry } from '../samples/instrument-loader';
 import { PAD_DEFAULTS, PAD_LEAF_SPECS, padKeyForNote, noteForPadKey, type PadParams } from './sampler-pad-params';
 import type { FxBus } from '../core/fx';
 import { computeVoiceMutes } from '../core/mute-solo';
@@ -427,70 +428,174 @@ export class SamplerEngine implements SynthEngine {
     heading.textContent = 'Keymap';
     section.appendChild(heading);
 
-    // Bundled drumkit picker: load a kit (single-note pads at the GM drum
-    // notes) into this lane. Selecting a kit flips the lane to the drum-grid
-    // editor (drumkitId is mirrored into the session); '— none —' detaches it.
-    const kitRow = document.createElement('div');
-    kitRow.className = 'sampler-drumkit-row';
-    const kitLabel = document.createElement('label');
-    kitLabel.textContent = 'Drumkit ';
-    const kitSel = document.createElement('select');
-    kitSel.className = 'sampler-drumkit-select';
+    // Family picker: one grouped selector over the three Sampler instrument
+    // families. Each family loads a *bundled* preset (self-healing by id) and
+    // mirrors the matching id into engineState, keeping `drumkitId` and
+    // `instrumentId` MUTUALLY EXCLUSIVE (choosing one clears the other, D9):
+    //   • Melódico (instrument-loader `family:'melodic'`) → multi-zone chromatic
+    //     keymap; view = the per-zone keymap list below (piano-roll clip editor).
+    //   • Percusión (drumkit-loader) → 8 GM pads; view = the drum-voice rack
+    //     above + the drum-grid clip editor (drumkitId routes it).
+    //   • Loop (instrument-loader `family:'loop'`) → a slice bank (one note per
+    //     slice from SLICE_BASE_NOTE); view = the bank list + a hint that the
+    //     notes are edited in the clip's piano-roll. The clip/scene that play a
+    //     loop are materialised by SessionHost (Task 13), not here.
+    // The options are namespaced `melodic:<id>` / `drumkit:<id>` / `loop:<id>`
+    // so a single change handler can dispatch on family.
+    const famRow = document.createElement('div');
+    famRow.className = 'sampler-family-row';
+    const famLabel = document.createElement('label');
+    famLabel.textContent = 'Instrumento ';
+    const famSel = document.createElement('select');
+    famSel.className = 'sampler-family-select';
     const noneOpt = document.createElement('option');
     noneOpt.value = '';
-    noneOpt.textContent = '— none (melodic) —';
-    kitSel.appendChild(noneOpt);
-    kitLabel.appendChild(kitSel);
-    kitRow.appendChild(kitLabel);
-    const kitStatus = document.createElement('span');
-    kitStatus.className = 'sampler-drumkit-status';
-    kitRow.appendChild(kitStatus);
-    section.appendChild(kitRow);
+    noneOpt.textContent = '— ninguno (keymap propio) —';
+    famSel.appendChild(noneOpt);
+    const melGroup = document.createElement('optgroup');
+    melGroup.label = 'Melódico';
+    melGroup.className = 'sampler-family-melodic';
+    const kitGroup = document.createElement('optgroup');
+    kitGroup.label = 'Percusión';
+    kitGroup.className = 'sampler-family-drumkit';
+    const loopGroup = document.createElement('optgroup');
+    loopGroup.label = 'Loop';
+    loopGroup.className = 'sampler-family-loop';
+    famSel.appendChild(melGroup);
+    famSel.appendChild(kitGroup);
+    famSel.appendChild(loopGroup);
+    famLabel.appendChild(famSel);
+    famRow.appendChild(famLabel);
+    const famStatus = document.createElement('span');
+    famStatus.className = 'sampler-family-status';
+    famRow.appendChild(famStatus);
+    section.appendChild(famRow);
 
-    const currentKit =
-      ctx.sessionState?.lanes.find((l) => l.id === ctx.laneId)?.engineState?.sampler?.drumkitId ?? '';
+    const laneSampler =
+      ctx.sessionState?.lanes.find((l) => l.id === ctx.laneId)?.engineState?.sampler;
+    const currentKit = laneSampler?.drumkitId ?? '';
+    const currentInstrument = laneSampler?.instrumentId ?? '';
+
+    // Populate the three families (each list is independent + fire-and-forget;
+    // an empty list — e.g. no public/instruments/index.json — just leaves that
+    // optgroup empty). Resolve the persisted selection once both fetches land.
+    let instruments: InstrumentIndexEntry[] = [];
+    let kitsLoaded = false;
+    let instrumentsLoaded = false;
+    const resolveSelection = () => {
+      if (!kitsLoaded || !instrumentsLoaded) return;
+      if (currentKit) { famSel.value = `drumkit:${currentKit}`; return; }
+      if (currentInstrument) {
+        const fam = instruments.find((i) => i.id === currentInstrument)?.family ?? 'melodic';
+        famSel.value = `${fam}:${currentInstrument}`;
+      }
+    };
     void listDrumkits().then((kits) => {
       for (const k of kits) {
         const opt = document.createElement('option');
-        opt.value = k.id;
+        opt.value = `drumkit:${k.id}`;
         opt.textContent = k.name;
-        kitSel.appendChild(opt);
+        kitGroup.appendChild(opt);
       }
-      kitSel.value = currentKit;
+      kitsLoaded = true;
+      resolveSelection();
+    });
+    // Loop view hint: a loaded loop is a slice bank (each note is a slice). The
+    // performance notes live in the clip's piano-roll, not here. The hint is
+    // attached once we know the loaded instrument's family (the list is async).
+    const loopHint = document.createElement('div');
+    loopHint.className = 'sampler-loop-hint label';
+    loopHint.textContent = 'Loop: cada nota es un slice. Las notas se editan en el piano-roll del clip.';
+    loopHint.style.display = 'none';
+    section.appendChild(loopHint);
+
+    void listInstruments().then((entries) => {
+      instruments = entries;
+      for (const inst of entries) {
+        const opt = document.createElement('option');
+        opt.value = `${inst.family}:${inst.id}`;
+        opt.textContent = inst.name;
+        (inst.family === 'loop' ? loopGroup : melGroup).appendChild(opt);
+      }
+      instrumentsLoaded = true;
+      resolveSelection();
+      // Show the loop hint only when the lane's bundled instrument is a loop.
+      if (currentInstrument && entries.find((i) => i.id === currentInstrument)?.family === 'loop') {
+        loopHint.style.display = '';
+      }
     });
 
     const fireEditorReroute = () =>
       document.dispatchEvent(new CustomEvent('loom:lane-engine-ui-changed', { detail: { laneId: ctx.laneId } }));
 
-    kitSel.addEventListener('change', () => {
-      const id = kitSel.value;
-      if (!id) {
-        if (ctx.sessionState) mirrorDrumkitId(ctx.sessionState, ctx.laneId, undefined);
+    const restoreSelection = () => {
+      if (currentKit) famSel.value = `drumkit:${currentKit}`;
+      else if (currentInstrument) {
+        const fam = instruments.find((i) => i.id === currentInstrument)?.family ?? 'melodic';
+        famSel.value = `${fam}:${currentInstrument}`;
+      } else famSel.value = '';
+    };
+
+    famSel.addEventListener('change', () => {
+      const raw = famSel.value;
+      // '— ninguno —': detach any bundled preset, keep the live keymap as a plain
+      // user keymap. Clear BOTH ids (mutual exclusion); the lane reverts to the
+      // melodic/piano-roll editor.
+      if (!raw) {
+        if (ctx.sessionState) {
+          mirrorDrumkitId(ctx.sessionState, ctx.laneId, undefined);
+          mirrorInstrumentId(ctx.sessionState, ctx.laneId, undefined);
+        }
         fireEditorReroute();
         return;
       }
+      const sep = raw.indexOf(':');
+      const family = raw.slice(0, sep) as 'melodic' | 'drumkit' | 'loop';
+      const id = raw.slice(sep + 1);
       const audioCtx = ctx.audioContext;
       if (!audioCtx) {
-        kitStatus.textContent = ' audio not ready — press play once, then pick';
-        kitSel.value = currentKit;
+        famStatus.textContent = ' audio not ready — press play once, then pick';
+        restoreSelection();
         return;
       }
       void (async () => {
-        kitSel.disabled = true;
-        kitStatus.textContent = ' loading…';
+        famSel.disabled = true;
+        famStatus.textContent = ' loading…';
         try {
-          const manifest = await fetchDrumkitManifest(id);
-          const km = await loadDrumkit(manifest, audioCtx);
-          this.setKeymap(km);
-          if (ctx.sessionState) {
-            mirrorKeymapChange(ctx.sessionState, ctx.laneId, km);
-            mirrorDrumkitId(ctx.sessionState, ctx.laneId, id);
+          if (family === 'drumkit') {
+            // Percussion: IDENTICAL to the previous Drumkit picker. drumkitId
+            // wins → mirror it, clear instrumentId, reroute to the drum grid.
+            const manifest = await fetchDrumkitManifest(id);
+            const km = await loadDrumkit(manifest, audioCtx);
+            this.setKeymap(km);
+            if (ctx.sessionState) {
+              mirrorKeymapChange(ctx.sessionState, ctx.laneId, km);
+              mirrorDrumkitId(ctx.sessionState, ctx.laneId, id);
+              mirrorInstrumentId(ctx.sessionState, ctx.laneId, undefined);
+            }
+          } else {
+            // Melodic / Loop: load the bundled instrument by id (self-healing).
+            // instrumentId wins → mirror it, clear drumkitId. Melodic carries
+            // optional per-zone padParams; loop returns a slice bank keymap.
+            const manifest = await fetchInstrumentManifest(id);
+            const loaded = await loadInstrument(manifest, audioCtx);
+            this.setKeymap(loaded.keymap);
+            if (ctx.sessionState) {
+              mirrorKeymapChange(ctx.sessionState, ctx.laneId, loaded.keymap);
+              mirrorInstrumentId(ctx.sessionState, ctx.laneId, id);
+              mirrorDrumkitId(ctx.sessionState, ctx.laneId, undefined);
+            }
+            if (family === 'melodic' && 'padParams' in loaded && loaded.padParams) {
+              const pad = loaded.padParams as Record<number, Record<string, number>>;
+              this.setPadStore(pad);
+              if (ctx.sessionState) mirrorPadParams(ctx.sessionState, ctx.laneId, pad);
+            }
           }
           fireEditorReroute();
           rebuild();
         } catch (err) {
-          kitStatus.textContent = ` failed: ${(err as Error).message}`;
-          kitSel.disabled = false;
+          famStatus.textContent = ` failed: ${(err as Error).message}`;
+          famSel.disabled = false;
         }
       })();
     });
