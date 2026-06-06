@@ -30,4 +30,21 @@ describe('ensureScenesForRows', () => {
     expect(added).toBe(false);
     expect(s.scenes.length).toBe(2);
   });
+
+  it('seeds at least one scene when every lane is empty (no clips)', () => {
+    const s = emptySessionState();
+    for (const l of s.lanes) l.clips = [];
+    s.scenes = [];
+    ensureScenesForRows(s);
+    expect(s.scenes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('does not invent scenes when there are no lanes at all', () => {
+    const s = emptySessionState();
+    s.lanes = [];
+    s.scenes = [];
+    const added = ensureScenesForRows(s);
+    expect(added).toBe(false);
+    expect(s.scenes.length).toBe(0);
+  });
 });

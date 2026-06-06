@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { audioClip, cloneSessionState } from './session';
+import {
+  audioClip, cloneSessionState,
+  deleteClipAt, deleteLane, laneHasContent, sceneHasContent, deleteScene,
+  type SessionState, type SessionLane, type SessionClip,
+} from './session';
 
 describe('audioClip', () => {
   it('carries clip.sample, empty notes, and derives lengthBars from duration/bpm', () => {
@@ -27,5 +31,74 @@ describe('engineState.kitMode persistence', () => {
     };
     const clone = cloneSessionState(state);
     expect(clone.lanes[0].engineState?.kitMode).toBe('sample');
+  });
+});
+
+describe('deletion helpers (front A)', () => {
+  const mkClip = (id: string): SessionClip => ({ id, lengthBars: 1, notes: [] });
+  const mkLane = (id: string, clips: (SessionClip | null)[]): SessionLane =>
+    ({ id, engineId: 'subtractive', clips });
+  const mkState = (lanes: SessionLane[], scenes: SessionState['scenes']): SessionState =>
+    ({ lanes, scenes, globalQuantize: '1/1' });
+
+  it('deleteClipAt nulls the cell without splicing (idempotent)', () => {
+    const lane = mkLane('L', [mkClip('A'), mkClip('B'), mkClip('C')]);
+    deleteClipAt(lane, 1);
+    expect(lane.clips[1]).toBeNull();
+    expect(lane.clips[0]?.id).toBe('A');
+    expect(lane.clips[2]?.id).toBe('C');
+    expect(lane.clips.length).toBe(3);
+    deleteClipAt(lane, 1);
+    expect(lane.clips[1]).toBeNull();
+  });
+
+  it('deleteLane removes the lane and its clipPerLane references', () => {
+    const state = mkState(
+      [mkLane('L1', []), mkLane('L2', [])],
+      [{ id: 's', name: 'S', clipPerLane: { L1: 0, L2: 1 } }],
+    );
+    deleteLane(state, 'L2');
+    expect(state.lanes.map((l) => l.id)).toEqual(['L1']);
+    expect(state.scenes[0].clipPerLane).toEqual({ L1: 0 });
+    deleteLane(state, 'nope');
+    expect(state.lanes.length).toBe(1);
+  });
+
+  it('laneHasContent reflects presence of any clip', () => {
+    expect(laneHasContent(mkLane('a', []))).toBe(false);
+    expect(laneHasContent(mkLane('a', [null, null]))).toBe(false);
+    expect(laneHasContent(mkLane('a', [null, mkClip('X')]))).toBe(true);
+  });
+
+  it('sceneHasContent: direct clips AND explicit clipPerLane mappings', () => {
+    const direct = mkState(
+      [mkLane('L', [null, mkClip('B')])],
+      [{ id: 's0', name: 'A', clipPerLane: {} }, { id: 's1', name: 'B', clipPerLane: {} }],
+    );
+    expect(sceneHasContent(direct, 1)).toBe(true);
+    expect(sceneHasContent(direct, 0)).toBe(false);
+    const indirect = mkState(
+      [mkLane('L', [mkClip('A')])],
+      [{ id: 's0', name: 'A', clipPerLane: {} }, { id: 's1', name: 'B', clipPerLane: { L: 0 } }],
+    );
+    expect(sceneHasContent(indirect, 0)).toBe(true);
+  });
+
+  it('deleteScene compacts clip rows and reindexes clipPerLane', () => {
+    const state = mkState(
+      [mkLane('L', [mkClip('A'), mkClip('B'), mkClip('C')])],
+      [
+        { id: 's0', name: '1', clipPerLane: { L: 0 } },
+        { id: 's1', name: '2', clipPerLane: {} },
+        { id: 's2', name: '3', clipPerLane: { L: 2 } },
+      ],
+    );
+    deleteScene(state, 1);
+    expect(state.scenes.length).toBe(2);
+    expect(state.lanes[0].clips.map((c) => c?.id)).toEqual(['A', 'C']);
+    expect(state.scenes[0].clipPerLane).toEqual({ L: 0 });
+    expect(state.scenes[1].clipPerLane).toEqual({ L: 1 });
+    deleteScene(state, 99);
+    expect(state.scenes.length).toBe(2);
   });
 });

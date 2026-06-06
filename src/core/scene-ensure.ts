@@ -9,6 +9,10 @@ import type { SessionState } from '../session/session';
 export function ensureScenesForRows(state: SessionState): boolean {
   let maxClipRows = 0;
   for (const lane of state.lanes) maxClipRows = Math.max(maxClipRows, lane.clips.length);
+  // Minimum seed: with at least one lane, guarantee at least one launchable scene.
+  // (Front A stops auto-filling empty clips, so every lane can be `clips:[]` →
+  // maxClipRows 0 → no scenes → the grid would show no scene-launch button at all.)
+  if (state.lanes.length > 0) maxClipRows = Math.max(maxClipRows, 1);
   let added = false;
   while (state.scenes.length < maxClipRows) {
     state.scenes.push({

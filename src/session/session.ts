@@ -312,3 +312,58 @@ export function copyClip(
     : reEvaluateEnvelopes(clone, destEngineParamIds);
   return out;
 }
+
+// ── Deletion helpers (front A · session management) ──────────────────────────
+
+/** Empty a single cell (set null), keeping the column length. NOT a splice. */
+export function deleteClipAt(lane: SessionLane, clipIdx: number): void {
+  if (clipIdx >= 0 && clipIdx < lane.clips.length) lane.clips[clipIdx] = null;
+}
+
+/** Remove a whole lane + its references in every scene's clipPerLane. Does not
+ *  touch audio resources (the host disposes those separately). */
+export function deleteLane(state: SessionState, laneId: string): void {
+  const i = state.lanes.findIndex((l) => l.id === laneId);
+  if (i < 0) return;
+  state.lanes.splice(i, 1);
+  for (const scene of state.scenes) delete scene.clipPerLane[laneId];
+}
+
+/** True if the lane holds any clip (used to decide whether to confirm deletion). */
+export function laneHasContent(lane: SessionLane): boolean {
+  return lane.clips.some((c) => c != null);
+}
+
+/** True if deleting this scene row would lose anything launchable: a clip on that
+ *  row in any lane, OR a scene's explicit clipPerLane mapping pointing at that row
+ *  (addNoteLane / stems / MIDI import create such explicit mappings). */
+export function sceneHasContent(state: SessionState, sceneIdx: number): boolean {
+  if (state.lanes.some((l) => l.clips[sceneIdx] != null)) return true;
+  for (const scene of state.scenes) {
+    for (const [laneId, row] of Object.entries(scene.clipPerLane)) {
+      if (row !== sceneIdx) continue;
+      const lane = state.lanes.find((l) => l.id === laneId);
+      if (lane?.clips[row] != null) return true;
+    }
+  }
+  return false;
+}
+
+/** Remove a scene row, COMPACTING the clip columns (scene launch is positional —
+ *  session-runtime.ts launchScene uses the row index — so a non-compacting delete
+ *  would pair surviving scenes with the wrong clips). Reindexes explicit
+ *  clipPerLane mappings: row===idx is dropped, row>idx decrements. */
+export function deleteScene(state: SessionState, sceneIdx: number): void {
+  if (sceneIdx < 0 || sceneIdx >= state.scenes.length) return;
+  state.scenes.splice(sceneIdx, 1);
+  for (const lane of state.lanes) {
+    if (sceneIdx < lane.clips.length) lane.clips.splice(sceneIdx, 1);
+  }
+  for (const scene of state.scenes) {
+    for (const [laneId, row] of Object.entries(scene.clipPerLane)) {
+      if (row == null) continue;
+      if (row === sceneIdx) delete scene.clipPerLane[laneId];
+      else if (row > sceneIdx) scene.clipPerLane[laneId] = row - 1;
+    }
+  }
+}
