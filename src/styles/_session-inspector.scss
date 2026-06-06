@@ -14,6 +14,11 @@
 .clip-edit-row {
   display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
 }
+/* The edit row is hidden for audio clips via the `hidden` attribute (set in
+ * openInspector). An author `display:flex` rule beats the UA `[hidden]` rule,
+ * so re-assert `display:none` here or the row would stay visible despite the
+ * attribute. */
+.clip-edit-row[hidden] { display: none; }
 .clip-edit-row {
   margin-top: 8px;
   border-top: 1px solid var(--border);
