@@ -23,15 +23,14 @@ describe('clip-waveform-header', () => {
     expect(typeof handle.redraw).toBe('function');
   });
 
-  it('renderAudioClipEditor shows the bpm + a Slice → pads button that calls back', () => {
+  it('renderAudioClipEditor shows the bpm + warp toggle but NO Slice → pads button', () => {
     stubCanvas();
     const host = document.createElement('div');
-    const onSlice = vi.fn();
-    renderAudioClipEditor(host, audioClip(), DEFAULT_METER, { onSliceToBank: onSlice });
+    renderAudioClipEditor(host, audioClip(), DEFAULT_METER, {});
+    // The audio lane is a pure WAV channel now: bpm/bars/warp stay, slicing is gone.
     expect(host.textContent).toContain('120');
-    const btn = host.querySelector('.audio-clip-slice') as HTMLButtonElement;
-    expect(btn).toBeTruthy();
-    btn.click();
-    expect(onSlice).toHaveBeenCalledTimes(1);
+    expect(host.querySelector('.audio-clip-bpm')).toBeTruthy();
+    expect(host.querySelector('.audio-clip-warp')).toBeTruthy();
+    expect(host.querySelector('.audio-clip-slice')).toBeNull();
   });
 });

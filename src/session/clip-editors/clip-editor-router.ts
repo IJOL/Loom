@@ -28,7 +28,6 @@ export interface ClipEditorDeps {
     sample?: import('../session').ClipSample,
     velocity?: number,
   ) => void;
-  onSliceToBank?: () => void;
 }
 
 const AUDITION_GATE = 0.25; // seconds — short preview blip, shared by both editors
@@ -80,7 +79,6 @@ export function renderClipEditor(
   // Audio-channel clip → waveform-only editor (no note grid).
   if (isAudioClip(lane, clip)) {
     return renderAudioClipEditor(host, clip, deps.seq.meter, {
-      onSliceToBank: deps.onSliceToBank,
       getPlayheadFrac: playheadFrac,
     });
   }

@@ -4,7 +4,7 @@
 //   - mountWaveformHeader: canvas (waveform + bar/beat ruler + slice markers)
 //     mounted above the body editor; returns { redraw } for the host RAF.
 //   - renderAudioClipEditor: the audio-clip (Mode 1) editor — waveform header +
-//     a small toolbar (bpm / bars / warp / Slice → pads). No note grid.
+//     a small toolbar (bpm / bars / warp). No note grid.
 
 import type { SessionClip } from '../session';
 import { sampleCache } from '../../samples/sample-cache';
@@ -101,7 +101,6 @@ export function mountWaveformHeader(
 }
 
 export interface AudioClipEditorDeps {
-  onSliceToBank?: () => void;
   getPlayheadFrac?: () => number;
 }
 
@@ -129,13 +128,7 @@ export function renderAudioClipEditor(
   warpBtn.addEventListener('click', () => { if (sample) { sample.warp = !sample.warp; refreshWarp(); } });
   refreshWarp();
 
-  const sliceBtn = document.createElement('button');
-  sliceBtn.className = 'audio-clip-slice';
-  sliceBtn.textContent = '✂ Slice → pads';
-  sliceBtn.title = 'Chop into bank samples + a note clip on a new sampler lane';
-  sliceBtn.addEventListener('click', () => deps.onSliceToBank?.());
-
-  toolbar.append(bpmLabel, barsLabel, warpBtn, sliceBtn);
+  toolbar.append(bpmLabel, barsLabel, warpBtn);
   host.appendChild(toolbar);
 
   const headerHost = document.createElement('div');

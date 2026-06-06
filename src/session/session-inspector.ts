@@ -218,9 +218,6 @@ export class SessionInspector {
       midiLabel: this.deps.midiLabel,
       historyDeps: this.deps.historyDeps,
       triggerForLane: this.deps.triggerForLane,
-      onSliceToBank: this.selectedClip
-        ? () => this.deps.onSliceToBank?.(this.selectedClip!.laneId, this.selectedClip!.clipIdx)
-        : undefined,
     };
     this.roll = renderClipEditor(editorBox, lane, clip, editorDeps, editorOverride.get(clip.id));
 

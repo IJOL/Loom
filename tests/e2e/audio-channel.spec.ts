@@ -61,18 +61,3 @@ test('launching the audio channel scene starts the transport', async ({ page }) 
   // Transport is now playing (play button shows the stop glyph).
   await expect(page.locator('#play')).toHaveText('■', { timeout: 5_000 });
 });
-
-test('Slice → pads adds a sampler lane with the sliced notes', async ({ page }) => {
-  await page.goto('/');
-  await waitForBoot(page);
-  await page.locator('input.session-add-audio-input').setInputFiles({
-    name: 'beat.wav', mimeType: 'audio/wav', buffer: loopWav(),
-  });
-  // The audio clip auto-opens in the inspector → the audio-clip editor is shown.
-  const sliceBtn = page.locator('.audio-clip-slice');
-  await expect(sliceBtn).toBeVisible({ timeout: 10_000 });
-  const lanesBefore = await page.locator('button.session-lane-tab').count();
-  await sliceBtn.click();
-  // A new sampler lane appears with the sliced note clip.
-  await expect(page.locator('button.session-lane-tab')).toHaveCount(lanesBefore + 1, { timeout: 10_000 });
-});
