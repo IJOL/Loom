@@ -46,15 +46,13 @@ import {
 import { wireRandomizeUI } from './core/randomize-ui';
 import { wireFxUI, applyDelaySync as fxApplyDelaySync, type FxUIDeps } from './core/fx-ui';
 import { wireTransport, type TransportDeps } from './core/transport';
-import { exportCurrentScene, type SceneExporter } from './export/export-scene';
-import { RealtimeSceneRecorder } from './export/realtime-recorder';
 import { OfflineSceneRecorder } from './export/offline-recorder';
 import { soundingSceneDurationSec } from './export/scene-duration';
-import { restartSoundingLanesForExport } from './export/scene-restart';
 import { wavEncoder } from './export/wav-encoder';
 import { downloadBlob, exportTimestamp } from './export/download';
 import { LiveTakeRecorder } from './export/live-take';
 import { showTakeDestinationDialog } from './export/take-destination-dialog';
+import type { RenderedAudio } from './export/types';
 import {
   showPolyEditor,
   synthEditorState,
@@ -618,8 +616,7 @@ fxApplyDelaySync(fxUIDeps);
 // live-take recorder (and the unified stopTransport) close over them, and
 // wireTransport(transportDeps) below must see liveTake + stopTransport already.
 const exportBtn = $<HTMLButtonElement>('export-scene');
-const EXPORT_TAIL_SEC = 2;    // let reverb/delay tails decay before the cut
-const EXPORT_LEAD_SEC = 0.15; // worklet spin-up + scene restart lead
+const EXPORT_TAIL_SEC = 2;    // live take: let reverb/delay tails decay before the cut
 const EXPORT_IDLE_LABEL = '⤓ WAV';
 let exportMsgTimer: number | undefined;
 
@@ -644,23 +641,7 @@ const liveTake = new LiveTakeRecorder({
     exportBtn.classList.toggle('recording', s === 'recording');
     exportBtn.textContent = s === 'armed' ? '● REC ▾' : s === 'recording' ? '● Grabando…' : EXPORT_IDLE_LABEL;
   },
-  onTake: (audio) => {
-    // The take is NOT auto-inserted: ask where it should go (file vs new audio
-    // channel). Encoding is deferred until a destination is chosen.
-    void (async () => {
-      const dest = await showTakeDestinationDialog();
-      if (!dest) { showExportMessage('Toma descartada'); return; }
-      const blob = wavEncoder.encode(audio.channels, audio.sampleRate);
-      if (dest === 'file') {
-        downloadBlob(blob, `loom-take-${exportTimestamp()}.${wavEncoder.extension}`);
-        showExportMessage('Toma → fichero WAV');
-      } else {
-        const file = new File([blob], `loom-take-${exportTimestamp()}.wav`, { type: 'audio/wav' });
-        sessionHost.addAudioChannel(file);
-        showExportMessage('Toma → canal de audio');
-      }
-    })();
-  },
+  onTake: (audio) => deliverTake(audio),
   onError: (m) => { console.warn('[live-take]', m); showExportMessage(m); },
 });
 
@@ -690,54 +671,56 @@ wireTransport(transportDeps);
 // unless a take is armed, so this is safe on every start.
 seq.onStart = () => liveTake.onTransportStart();
 
-const sceneExporter: SceneExporter = {
-  totalSec: () => {
-    const music = soundingSceneDurationSec(sessionHost.laneStates, seq.meter, seq.bpm);
-    return music > 0 ? music + EXPORT_TAIL_SEC : 0;
-  },
-  record: (totalSec) => {
-    void ctx.resume();
-    const recorder = new RealtimeSceneRecorder({
-      ctx,
-      tap: masterComp.output,
-      leadSec: EXPORT_LEAD_SEC,
-      onStart: (startTime) => {
-        restartSoundingLanesForExport(sessionHost.laneStates, startTime);
-        if (!seq.isPlaying()) seq.start();
-      },
-    });
-    return recorder.record(totalSec);
-  },
-  encode: (channels, sampleRate) => wavEncoder.encode(channels, sampleRate),
-  download: (blob) => downloadBlob(blob, `loom-scene-${exportTimestamp()}.${wavEncoder.extension}`),
-  notify: (msg) => { console.warn('[export]', msg); showExportMessage(msg); },
-  setBusy: (busy) => {
-    if (busy && exportMsgTimer !== undefined) { clearTimeout(exportMsgTimer); exportMsgTimer = undefined; }
-    exportBtn.disabled = busy;
-    playBtn.disabled = busy;
-    if (busy) exportBtn.textContent = 'Grabando…';
-    else if (exportMsgTimer === undefined) exportBtn.textContent = EXPORT_IDLE_LABEL;
-  },
-  // Stop on finish is intentional (explicit design decision): an export restarts
-  // the scene from the top and halts the transport once the capture completes.
-  finish: () => { liveTake.finish(); seq.stop(); playBtn.textContent = '▶'; },
-};
+// Shared delivery for a finished take/render (live OR offline): ask where it
+// goes (download a WAV vs a new audio channel) — never auto-insert. The channel
+// branch passes the project BPM so the clip locks to the grid (warp 1.0) instead
+// of re-detecting the tempo of audio we just rendered.
+function deliverTake(audio: RenderedAudio): void {
+  void (async () => {
+    const dest = await showTakeDestinationDialog();
+    if (!dest) { showExportMessage('Toma descartada'); return; }
+    const blob = wavEncoder.encode(audio.channels, audio.sampleRate);
+    if (dest === 'file') {
+      downloadBlob(blob, `loom-take-${exportTimestamp()}.${wavEncoder.extension}`);
+      showExportMessage('Toma → fichero WAV');
+    } else {
+      const file = new File([blob], `loom-take-${exportTimestamp()}.wav`, { type: 'audio/wav' });
+      sessionHost.addAudioChannel(file, { knownBpm: seq.bpm });
+      showExportMessage('Toma → canal de audio');
+    }
+  })();
+}
 
 const exportMenu = $<HTMLElement>('export-menu');
 exportBtn.addEventListener('click', () => { exportMenu.hidden = !exportMenu.hidden; });
 
 function runOfflineExport(): void {
   exportMenu.hidden = true;
-  // Offline: same orchestrator + encoder + download; only the recorder differs.
-  void exportCurrentScene({
-    ...sceneExporter,
-    record: (totalSec) => new OfflineSceneRecorder({
-      state: sessionHost.state,
-      laneStates: sessionHost.laneStates,
-      bpm: seq.bpm,
-      meter: seq.meter,
-    }).record(totalSec),
-  });
+  // Render EXACTLY the musical (bar-aligned) length — no reverb tail. At the
+  // project BPM that makes the warp ratio 1.0 and the loop seamless, so the
+  // result locks to the grid. (A trailing tail rounds up to an extra bar and
+  // drifts — the offline "no sincroniza" bug.) Then route through the dialog.
+  const musicSec = soundingSceneDurationSec(sessionHost.laneStates, seq.meter, seq.bpm);
+  if (musicSec <= 0) { showExportMessage('Lanza una escena primero'); return; }
+  if (exportMsgTimer !== undefined) { clearTimeout(exportMsgTimer); exportMsgTimer = undefined; }
+  exportBtn.disabled = true; playBtn.disabled = true;
+  exportBtn.textContent = 'Renderizando…';
+  void (async () => {
+    try {
+      const rendered = await new OfflineSceneRecorder({
+        state: sessionHost.state,
+        laneStates: sessionHost.laneStates,
+        bpm: seq.bpm,
+        meter: seq.meter,
+      }).record(musicSec);
+      deliverTake(rendered);
+    } catch (err) {
+      showExportMessage('No se pudo exportar: ' + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      exportBtn.disabled = false; playBtn.disabled = false;
+      if (exportMsgTimer === undefined) exportBtn.textContent = EXPORT_IDLE_LABEL;
+    }
+  })();
 }
 // Real-time → arm/disarm a live take (Play starts it, the unified stop ends it).
 $<HTMLButtonElement>('export-rt').addEventListener('click', () => {

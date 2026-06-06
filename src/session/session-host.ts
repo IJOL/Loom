@@ -553,8 +553,14 @@ export class SessionHost {
   /** Create a new dedicated 'audio' channel/lane holding the given file as a
    *  single clip (decodes + persists the sample, then adds the lane + clip as
    *  one undoable action). Public so the live-take recorder can drop a finished
-   *  take straight into a fresh audio channel. */
-  addAudioChannel(file: File): void {
+   *  take straight into a fresh audio channel.
+   *
+   *  `knownBpm`: for audio WE generated (a live take / offline render captured at
+   *  the project tempo), pass the project BPM so the clip locks to the grid with
+   *  warp ratio 1.0. Re-running tempo detection on our own render is unreliable
+   *  (autocorrelation guesses a wrong multiple) and warps the audio — that was
+   *  the "no cuadra / cortado al principio" bug. Omitted ⇒ detect (external WAVs). */
+  addAudioChannel(file: File, opts?: { knownBpm?: number }): void {
     const self = this;
     const { ctx, seq } = this.deps;
     void ctx.resume();
@@ -564,11 +570,11 @@ export class SessionHost {
         await sampleStore.put(asset);
         const buf = await ctx.decodeAudioData(asset.bytes.slice(0));
         sampleCache.put(asset.id, buf);
-        const det = detectLoop(buf, seq.meter);
+        const originalBpm = opts?.knownBpm ?? detectLoop(buf, seq.meter).originalBpm;
         const name = file.name.replace(/\.[^.]+$/, '');
         const clip = audioChannelClip({
           name, sampleId: asset.id, durationSec: buf.duration,
-          originalBpm: det.originalBpm, projectMeter: seq.meter,
+          originalBpm, projectMeter: seq.meter,
         });
         const hd = self.deps.historyDeps;
         const run = () => {
