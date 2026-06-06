@@ -9,6 +9,7 @@ export interface AudioGraph {
   ctx: AudioContext;
   master: GainNode;
   analyser: AnalyserNode;
+  masterMeterAnalyser: AnalyserNode;
   masterInsertChain: InsertChain;
   masterComp: MasterCompressor;
   fx: FxBus;
@@ -25,13 +26,18 @@ export function buildAudioGraph(ctx: AudioContext): AudioGraph {
   analyser.connect(ctx.destination);
   const masterComp = new MasterCompressor(ctx);
   masterComp.output.connect(analyser);
+  // Dedicated metering tap off masterComp.output — NOT connected to destination
+  // (mirrors the per-strip analysers; feeds the master strip VU meter).
+  const masterMeterAnalyser = ctx.createAnalyser();
+  masterMeterAnalyser.fftSize = 512;
+  masterComp.output.connect(masterMeterAnalyser);
   // master → InsertChain → masterComp → analyser → destination
   const masterInsertChain = new InsertChain(master, masterComp.input);
   const fx = new FxBus(ctx, master);
 
   const sidechainBus = new SidechainBus();
 
-  return { ctx, master, analyser, masterInsertChain, masterComp, fx, sidechainBus };
+  return { ctx, master, analyser, masterMeterAnalyser, masterInsertChain, masterComp, fx, sidechainBus };
 }
 
 export function createAudioGraph(): AudioGraph {
