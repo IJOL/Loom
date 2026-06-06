@@ -93,9 +93,9 @@ export const SHOTS = [
   },
   {
     name: 'master-fx',
-    selector: '.page[data-page="fx"]',
-    setup: async (page) => { await page.locator('.tab[data-tab="fx"]').click();
-      await page.locator('.page[data-page="fx"]').waitFor({ state: 'visible' }); },
+    selector: '#master-fx-panel',
+    setup: async (page) => { await page.locator('.master-fx-toggle').click();
+      await page.locator('#master-fx-panel').waitFor({ state: 'visible' }); },
   },
   {
     name: 'save-manager',

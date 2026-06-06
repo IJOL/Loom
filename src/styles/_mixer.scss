@@ -193,3 +193,55 @@
 .mix-btn.solo.active { background: var(--amber); color: var(--bg); border-color: var(--amber); }
 
 .mix-track.bass .mix-name { color: var(--amber); }
+
+/* ── Master strip ──────────────────────────────────────────────────────────
+   The mixer column for the master bus. Reuses .mix-col / .mix-name /
+   .mix-fader-wrap / .mix-fader / .mix-vu-host; only adds an amber accent and
+   the FX toggle. Sits in the last (scenes) column of the mixer row (140px). */
+.mix-col.master-strip {
+  // It has no EQ/SEND two-column body, just name + FX button + fader/VU.
+  grid-template-columns: 1fr;
+  // Reinforced amber accent to mark it apart from the lane strips.
+  border-color: var(--amber-soft);
+  box-shadow: inset 0 0 0 1px var(--amber-glow);
+}
+.master-strip .mix-name {
+  // Amber on dark, already; make the master read a touch louder.
+  letter-spacing: 0.1em;
+}
+
+/* FX toggle button — coherent with .rnd, with an .active (open) state. */
+.master-fx-toggle {
+  width: 100%;
+  margin-top: 4px;
+  padding: 4px 0;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+}
+.master-fx-toggle:hover { color: var(--amber); border-color: var(--amber); }
+.master-fx-toggle.active {
+  background: var(--amber);
+  color: var(--bg);
+  border-color: var(--amber);
+}
+
+/* ── Master FX panel ───────────────────────────────────────────────────────
+   Moved out of .page[data-page="fx"]; lives full-width under the grid +
+   inspector (after #session-inspector). It lost .page[hidden]'s display:none
+   (see _tabs.scss) so it needs its own [hidden] rule. */
+#master-fx-panel {
+  margin-top: 12px;
+  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+#master-fx-panel[hidden] { display: none; }
