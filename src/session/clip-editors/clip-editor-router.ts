@@ -56,6 +56,22 @@ export function isAudioClip(lane: SessionLane, clip: SessionClip): boolean {
   return lane.engineId === 'audio' && !!clip.sample && (clip.notes?.length ?? 0) === 0;
 }
 
+/** The three high-level clip kinds the inspector UI cares about. */
+export type ClipKind = 'notes' | 'drums' | 'audio';
+
+/** Classify a clip for the inspector's conditional UI. Audio is checked FIRST
+ *  (an audio-channel clip never gets a note editor); otherwise reuse the
+ *  resolved editor from `chooseClipEditor` so the precedence isn't duplicated. */
+export function classifyClip(
+  lane: SessionLane,
+  clip: SessionClip,
+  engineEditor: 'piano-roll' | 'drum-grid' | undefined,
+  override?: 'piano-roll' | 'drum-grid',
+): ClipKind {
+  if (isAudioClip(lane, clip)) return 'audio';
+  return chooseClipEditor(lane, engineEditor, override) === 'drum-grid' ? 'drums' : 'notes';
+}
+
 export function renderClipEditor(
   host: HTMLElement,
   lane: SessionLane,
