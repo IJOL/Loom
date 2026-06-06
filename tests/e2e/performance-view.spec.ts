@@ -34,7 +34,7 @@ test('switching to Performance shows the empty-state placeholder', async ({ page
   // With no recording, the empty-state div is rendered.
   const emptyState = page.locator('.perf-empty');
   await expect(emptyState).toBeVisible({ timeout: 3_000 });
-  await expect(emptyState).toContainText('Sin grabación.');
+  await expect(emptyState).toContainText('No recording.');
   // No clip blocks should exist.
   await expect(page.locator('.perf-clip')).toHaveCount(0);
 });
@@ -84,7 +84,7 @@ test('record a take → Performance surfaces the recorded clip bands', async ({ 
   await expect(page.locator('#rec')).toHaveClass(/armed/);
 
   // Launch a scene so its clips get captured as they promote on the next boundary.
-  await page.locator('#session-launch-scene-1').click();
+  await page.locator('.session-scene-launch').first().click();
   await page.waitForTimeout(3000);
 
   // Disarm REC — this finalizes the take (clamps open clip events, sets durationSec).

@@ -2,8 +2,12 @@
 //
 // Offline export renders the current scene against an OfflineAudioContext at the
 // EXACT bar-aligned musical length (no reverb tail) and then routes the result
-// through the same destination dialog as the live take: download a WAV, or drop
-// it straight into a new — grid-locked — audio channel.
+// through the destination dialog: download a WAV, or drop it straight into a
+// new — grid-locked — audio channel.
+//
+// The trigger is the unified REC group: pick the ⚡ offline mode, then press the
+// REC button (the old standalone "↓ WAV" / #export-scene menu is gone). Offline
+// runs immediately (no Play needed) and surfaces the destination dialog.
 import { test, expect } from '@playwright/test';
 import { statSync } from 'node:fs';
 
@@ -18,11 +22,15 @@ async function launchAScene(page: import('@playwright/test').Page): Promise<void
   await expect(page.locator('.session-cell-playing').first()).toBeVisible({ timeout: 2000 });
 }
 
-test('offline export → dialog → "Descargar WAV" downloads a .wav', async ({ page }) => {
-  await launchAScene(page);
+async function runOfflineExport(page: import('@playwright/test').Page): Promise<void> {
+  // Select the ⚡ offline REC mode, then press REC → renders immediately.
+  await page.locator('[data-recmode="offline"]').click();
+  await page.locator('#rec').click();
+}
 
-  await page.locator('#export-scene').click();
-  await page.locator('#export-offline').click();
+test('offline export → dialog → "Download WAV" downloads a .wav', async ({ page }) => {
+  await launchAScene(page);
+  await runOfflineExport(page);
 
   // The render finishes, then the destination dialog appears.
   await expect(page.locator('#take-dialog')).toBeVisible({ timeout: 30_000 });
@@ -37,13 +45,12 @@ test('offline export → dialog → "Descargar WAV" downloads a .wav', async ({ 
   expect(statSync(filePath!).size).toBeGreaterThan(44);
 });
 
-test('offline export → dialog → "Nuevo canal de audio" creates a grid-locked audio channel', async ({ page }) => {
+test('offline export → dialog → "New audio channel" creates a grid-locked audio channel', async ({ page }) => {
   await launchAScene(page);
   await expect(page.locator('.lane-engine-audio')).toHaveCount(0);
   const lanesBefore = await page.locator('button.session-lane-tab').count();
 
-  await page.locator('#export-scene').click();
-  await page.locator('#export-offline').click();
+  await runOfflineExport(page);
   await expect(page.locator('#take-dialog')).toBeVisible({ timeout: 30_000 });
 
   await page.locator('#take-dest-audio').click();

@@ -144,7 +144,7 @@ test('6) every clip row keeps a ▶ even when clips grow past the scene count', 
   expect(scenesAfter).toBeGreaterThanOrEqual(clips);
 });
 
-test('7) right-click on a lane header offers "Borrar pista" and deletes it', async ({ page }) => {
+test('7) right-click on a lane header offers "Delete track" and deletes it', async ({ page }) => {
   await page.goto('/');
   await waitForBoot(page);
 
@@ -154,7 +154,7 @@ test('7) right-click on a lane header offers "Borrar pista" and deletes it', asy
 
   const menu = page.locator('.context-menu');
   await expect(menu).toBeVisible();
-  const del = menu.locator('.context-menu-item.danger', { hasText: 'Borrar pista' });
+  const del = menu.locator('.context-menu-item.danger', { hasText: 'Delete track' });
   await expect(del).toBeVisible();
   await del.click();
 

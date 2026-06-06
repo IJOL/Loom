@@ -126,11 +126,11 @@ test('separates a song into 4 sampler lanes (service stubbed)', async ({ page })
 
   await page.locator('#stems-open').click();
 
-  // Wait for health check to complete: hint text changes away from "Comprobando…".
-  await expect(page.locator('#stems-hint')).not.toHaveText(/Comprobando/, { timeout: 5000 });
+  // Wait for health check to complete: hint text changes away from "Checking…".
+  await expect(page.locator('#stems-hint')).not.toHaveText(/Checking/, { timeout: 5000 });
 
   // Verify health succeeded (not the unreachable error).
-  await expect(page.locator('#stems-hint')).toContainText('pistas', { timeout: 1000 });
+  await expect(page.locator('#stems-hint')).toContainText('tracks', { timeout: 1000 });
 
   // Set the file — this triggers the 'change' event which enables #stems-run.
   await page.locator('#stems-file').setInputFiles({
@@ -147,11 +147,11 @@ test('separates a song into 4 sampler lanes (service stubbed)', async ({ page })
   // Modal closes on success (lanes are created, then hidden=true).
   await expect(page.locator('#stems-modal')).toBeHidden({ timeout: 15000 });
 
-  // The 4 stem sampler lanes are created (session tab bar shows their Spanish
-  // labels). We assert presence rather than an exact total count: a demo may be
+  // The 4 stem sampler lanes are created (session tab bar shows their labels).
+  // We assert presence rather than an exact total count: a demo may be
   // auto-loaded at boot and the replace/add timing makes an exact count fragile.
   const tabTexts = await page.locator('button.session-lane-tab').allTextContents();
-  for (const label of ['Voz', 'Batería', 'Bajo', 'Otros']) {
+  for (const label of ['Vocals', 'Drums', 'Bass', 'Other']) {
     expect(tabTexts).toContain(label);
   }
 });

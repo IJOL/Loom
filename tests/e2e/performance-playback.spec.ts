@@ -55,20 +55,19 @@ test('Performance playback schedules audio (currently SILENT — bug 1)', async 
   expect(scheduled).toBeGreaterThan(0);
 });
 
-test('Performance: the Play button stops the playhead (bug 3)', async ({ page }) => {
+test('Performance: the Stop button halts the playhead', async ({ page }) => {
   await page.goto('/');
   await waitForBoot(page);
   await page.locator('#copy-to-performance').click();
   await expect(page.locator('#performance-view-root .perf-clip').first()).toBeVisible();
   await page.locator('#play').click();                 // start
   await page.waitForTimeout(400);
-  await page.locator('#play').click();                 // press again → expect STOP
+  await page.locator('#stop').click();                 // dedicated Stop (Play no longer toggles)
   await page.waitForTimeout(250);
   const a = await playheadLeft(page);
   await page.waitForTimeout(350);
   const b = await playheadLeft(page);
-  // BUG 3: the playhead keeps advancing because the toggle re-started instead of
-  // stopping (seq.isPlaying() never becomes true in Performance).
+  // After Stop the playhead must not keep advancing.
   expect(b).toBeCloseTo(a, 1);
 });
 

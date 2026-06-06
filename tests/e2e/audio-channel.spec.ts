@@ -58,6 +58,7 @@ test('launching the audio channel scene starts the transport', async ({ page }) 
   });
   await expect(page.locator('.session-scene-launch').first()).toBeVisible({ timeout: 10_000 });
   await page.locator('.session-scene-launch').first().click();
-  // Transport is now playing (play button shows the stop glyph).
-  await expect(page.locator('#play')).toHaveText('■', { timeout: 5_000 });
+  // Transport is now playing. Play and Stop are separate buttons now, so the
+  // Play glyph stays ▶ and the playing state is reflected by the .is-playing class.
+  await expect(page.locator('#play')).toHaveClass(/is-playing/, { timeout: 5_000 });
 });

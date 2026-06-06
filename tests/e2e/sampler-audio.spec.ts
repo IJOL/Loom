@@ -68,7 +68,7 @@ test.describe('sampler 3-family picker', () => {
     await expect(page.locator('.sampler-family-loop option')).not.toHaveCount(0);
   });
 
-  test('picking Percusión → drum-grid; back to Melódico → piano-roll', async ({ page }) => {
+  test('picking Percussion → drum-grid; back to Melodic → piano-roll', async ({ page }) => {
     await page.goto('/');
     const laneId = await addAndOpenSamplerLane(page);
 
