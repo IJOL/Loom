@@ -484,6 +484,10 @@ export class SessionHost {
         // Live: fire-and-forget the drumkit reload (the editor renders regardless;
         // audio comes alive once the fetch/decode resolves).
         reloadDrumkit: (laneId, kitId, eng) => { void this.reloadDrumkit(laneId, kitId, eng); },
+        // Bundled melodic/loop instrument self-heal. The persisted keymap is
+        // already applied above, so the live editor renders; the full method
+        // (fresh sampleIds + loop waveformRef re-point) is wired in Task 7b.
+        reloadInstrument: () => { /* TODO(T7b): void this.reloadInstrument(laneId, id, eng); */ },
       });
     }
   }

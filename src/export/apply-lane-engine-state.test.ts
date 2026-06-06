@@ -28,7 +28,7 @@ describe('applyLaneEngineState', () => {
         drumMutes: { kick: true },
       },
     };
-    await applyLaneEngineState(eng as never, lane, ctx, { loadNoteFx: vi.fn(), reloadDrumkit: vi.fn() });
+    await applyLaneEngineState(eng as never, lane, ctx, { loadNoteFx: vi.fn(), reloadDrumkit: vi.fn(), reloadInstrument: vi.fn() });
     expect(eng.setKitMode).toHaveBeenCalledWith('synth');
     expect(eng.setBaseValue).toHaveBeenCalledWith('bus.level', 0.8);
     expect(eng.modulators.deserialize).toHaveBeenCalledWith(lane.engineState!.modulators);
@@ -38,7 +38,7 @@ describe('applyLaneEngineState', () => {
   it('defaults kitMode to synth when absent', async () => {
     const eng = fakeEngine();
     const lane: SessionLane = { id: 'l', engineId: 'drums-machine', clips: [] };
-    await applyLaneEngineState(eng as never, lane, ctx, { loadNoteFx: vi.fn(), reloadDrumkit: vi.fn() });
+    await applyLaneEngineState(eng as never, lane, ctx, { loadNoteFx: vi.fn(), reloadDrumkit: vi.fn(), reloadInstrument: vi.fn() });
     expect(eng.setKitMode).toHaveBeenCalledWith('synth');
   });
 
@@ -49,7 +49,66 @@ describe('applyLaneEngineState', () => {
       id: 'l', engineId: 'sampler', clips: [],
       engineState: { sampler: { keymap: [], drumkitId: 'tr808' } },
     };
-    await applyLaneEngineState(eng as never, lane, ctx, { loadNoteFx: vi.fn(), reloadDrumkit });
+    await applyLaneEngineState(eng as never, lane, ctx, { loadNoteFx: vi.fn(), reloadDrumkit, reloadInstrument: vi.fn() });
     expect(reloadDrumkit).toHaveBeenCalledWith('l', 'tr808', eng);
+  });
+
+  it('reloads a melodic instrument when an instrumentId is present (no drumkitId)', async () => {
+    const eng = fakeEngine();
+    const reloadInstrument = vi.fn(async () => { /* resolves */ });
+    const lane: SessionLane = {
+      id: 'l', engineId: 'sampler', clips: [],
+      engineState: { sampler: { keymap: [], instrumentId: 'sweep-pad' } },
+    };
+    await applyLaneEngineState(eng as never, lane, ctx, {
+      loadNoteFx: vi.fn(), reloadDrumkit: vi.fn(), reloadInstrument,
+    });
+    expect(reloadInstrument).toHaveBeenCalledWith('l', 'sweep-pad', eng);
+  });
+
+  it('awaits the instrument reload before setPadStore (offline ordering)', async () => {
+    const eng = fakeEngine();
+    let resolved = false;
+    const reloadInstrument = vi.fn(async () => { resolved = true; });
+    const lane: SessionLane = {
+      id: 'l', engineId: 'sampler', clips: [],
+      engineState: { sampler: { keymap: [], instrumentId: 'sweep-pad', padParams: { 0: { tune: 1 } } } },
+    };
+    await applyLaneEngineState(eng as never, lane, ctx, {
+      loadNoteFx: vi.fn(), reloadDrumkit: vi.fn(), reloadInstrument,
+    });
+    expect(resolved).toBe(true);
+    // reloadInstrument runs before setPadStore.
+    const reloadOrder = reloadInstrument.mock.invocationCallOrder[0];
+    const padOrder = eng.setPadStore.mock.invocationCallOrder[0];
+    expect(reloadOrder).toBeLessThan(padOrder);
+  });
+
+  it('fire-and-forgets a sync instrument reload (live host)', async () => {
+    const eng = fakeEngine();
+    const reloadInstrument = vi.fn(() => { /* sync, returns undefined */ });
+    const lane: SessionLane = {
+      id: 'l', engineId: 'sampler', clips: [],
+      engineState: { sampler: { keymap: [], instrumentId: 'sweep-pad' } },
+    };
+    await applyLaneEngineState(eng as never, lane, ctx, {
+      loadNoteFx: vi.fn(), reloadDrumkit: vi.fn(), reloadInstrument,
+    });
+    expect(reloadInstrument).toHaveBeenCalledWith('l', 'sweep-pad', eng);
+  });
+
+  it('mutual exclusion (D9): drumkitId wins, instrumentId is ignored', async () => {
+    const eng = fakeEngine();
+    const reloadDrumkit = vi.fn(async () => { /* resolves */ });
+    const reloadInstrument = vi.fn(async () => { /* resolves */ });
+    const lane: SessionLane = {
+      id: 'l', engineId: 'sampler', clips: [],
+      engineState: { sampler: { keymap: [], drumkitId: 'tr808', instrumentId: 'sweep-pad' } },
+    };
+    await applyLaneEngineState(eng as never, lane, ctx, {
+      loadNoteFx: vi.fn(), reloadDrumkit, reloadInstrument,
+    });
+    expect(reloadDrumkit).toHaveBeenCalledWith('l', 'tr808', eng);
+    expect(reloadInstrument).not.toHaveBeenCalled();
   });
 });

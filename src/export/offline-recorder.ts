@@ -16,6 +16,7 @@ import { preloadSceneSamples } from './preload-scene-samples';
 import { collectSceneTriggers, type SoundingLaneClip } from './collect-scene-triggers';
 import { loadNoteFxForLane } from '../notefx/notefx-registry';
 import { fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
+import { fetchInstrumentManifest, loadInstrument } from '../samples/instrument-loader';
 import { mirrorKeymapChange } from '../session/session-engine-state';
 import { rehydrateInsertChain } from '../session/insert-slot';
 import type { KeymapEntry } from '../samples/types';
@@ -69,6 +70,17 @@ export class OfflineSceneRecorder implements SceneRecorder {
           const km = await loadDrumkit(manifest, offlineCtx as unknown as AudioContext);
           eng.setKeymap(km);
           mirrorKeymapChange(state, id, km);
+        },
+        // Bundled melodic instrument: decode into fresh sampleIds + mirror the
+        // resolved keymap (offline parity with the drumkit branch). Loop-family
+        // instruments materialize a note clip/scene at import time and persist as
+        // ordinary clips, so they need no reload here.
+        reloadInstrument: async (id, instrumentId, eng: { setKeymap(k: KeymapEntry[]): void }) => {
+          const manifest = await fetchInstrumentManifest(instrumentId);
+          if (manifest.family !== 'melodic') return;
+          const { keymap } = await loadInstrument(manifest, offlineCtx as unknown as AudioContext);
+          eng.setKeymap(keymap);
+          mirrorKeymapChange(state, id, keymap);
         },
       });
       // Per-lane insert plugin slots → full parity with the live mix.

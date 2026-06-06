@@ -14,6 +14,11 @@ export interface ApplyLaneEngineStateDeps {
     kitId: string,
     engine: { setKeymap(k: KeymapEntry[]): void },
   ) => void | Promise<void>;
+  reloadInstrument: (
+    laneId: string,
+    instrumentId: string,
+    engine: { setKeymap(k: KeymapEntry[]): void },
+  ) => void | Promise<void>;
 }
 
 type AnyEngine = {
@@ -51,12 +56,19 @@ export async function applyLaneEngineState(
   if (km && typeof engine.setKeymap === 'function') engine.setKeymap(km);
 
   const drumkitId = es?.sampler?.drumkitId;
+  const instrumentId = es?.sampler?.instrumentId;
   if (drumkitId && typeof engine.setKeymap === 'function') {
     // Only yield if the callback is actually async (offline render returns a
     // Promise so samples are decoded before setPadStore; the live host's
     // fire-and-forget returns undefined → keep the rest synchronous, preserving
     // the original ordering).
     const r = deps.reloadDrumkit(lane.id, drumkitId, engine as { setKeymap(k: KeymapEntry[]): void });
+    if (r && typeof (r as Promise<void>).then === 'function') await r;
+  } else if (instrumentId && typeof engine.setKeymap === 'function') {
+    // Mutual exclusion (D9): drumkit wins, so this is reached only when there is
+    // no drumkitId. Same sync/await semantics as the drumkit branch (offline
+    // decodes before setPadStore; the live host fire-and-forgets).
+    const r = deps.reloadInstrument(lane.id, instrumentId, engine as { setKeymap(k: KeymapEntry[]): void });
     if (r && typeof (r as Promise<void>).then === 'function') await r;
   }
 
