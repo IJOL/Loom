@@ -65,6 +65,7 @@ import { getEngine, getEngineParamIds } from '../engines/registry';
 import { renderSessionGrid, type SessionUICallbacks } from './session-ui';
 import { renderSessionTabBar } from './session-tab-bar';
 import { buildMixerColumn } from '../core/mixer';
+import { buildMasterStrip } from '../core/master-strip';
 // session-step-scheduler is superseded by the note-based tickLane path (Phase D.3).
 import { SessionInspector } from './session-inspector';
 import { withUndo } from '../save/history-wiring';
@@ -157,6 +158,14 @@ export interface SessionHostDeps {
    *  button in the clip editor can produce scale-aware randomization. */
   scaleSel?: HTMLSelectElement;
   rootSel?: HTMLSelectElement;
+  /** The existing #volume range input. When present (+ masterMeterAnalyser),
+   *  renderWithMixer builds the master strip into the last mixer column as a
+   *  proxy of #volume. Optional so test fixtures without audio fall back to the
+   *  old spacer. */
+  volInput?: HTMLInputElement;
+  /** Dedicated meter tap of the master bus (fftSize=512) feeding the master
+   *  strip's VU. Optional, paired with volInput. */
+  masterMeterAnalyser?: AnalyserNode;
 }
 
 export class SessionHost {
@@ -165,6 +174,35 @@ export class SessionHost {
   private inspector!: SessionInspector;
   private callbacks!: SessionUICallbacks;
   activeEditLane: string | null = null;
+  /** UI-only flag (NOT serialized): whether the #master-fx-panel under the
+   *  grid+inspector is expanded. Toggled by the master strip's FX button via
+   *  toggleMasterFx(). Lives alongside activeEditLane (also UI-only). */
+  masterFxOpen = false;
+
+  // VU-meter teardown channel: every mixer column / master strip that mounts a
+  // level meter registers its dispose() handle here. renderWithMixer disposes
+  // and clears the list before it wipes the row (row.innerHTML = ''), so the
+  // RAF + retained analyser of the previous render don't leak. Created here
+  // because no such channel existed before; without it every re-render of the
+  // mixer row (one per play-state change) leaked a meter.
+  private mixerDisposables: { dispose(): void }[] = [];
+  /** Register a VU-meter (or other per-render) dispose handle so the next
+   *  renderWithMixer tears it down before rebuilding the mixer row. */
+  registerMixerDisposable(d: { dispose(): void }): void {
+    this.mixerDisposables.push(d);
+  }
+
+  /** Toggle the Master FX panel open/closed. Reflects the flag into the DOM
+   *  (#master-fx-panel.hidden + .master-fx-toggle.active) WITHOUT a full
+   *  re-render — renderWithMixer re-applies masterFxOpen so the panel survives
+   *  the play-state re-renders. */
+  toggleMasterFx(): void {
+    this.masterFxOpen = !this.masterFxOpen;
+    const panel = document.getElementById('master-fx-panel');
+    if (panel) (panel as HTMLElement).hidden = !this.masterFxOpen;
+    const btn = document.querySelector('.master-fx-toggle');
+    if (btn) btn.classList.toggle('active', this.masterFxOpen);
+  }
 
   // Callback list fired after every applyLoadedSessionState call (boot + demo
   // switches). Consumers that need lane resources (e.g. boot-eager UI that
@@ -536,6 +574,10 @@ export class SessionHost {
     this.refreshSynthTabs();
     const row = this.callbacks?._mixerRow;
     if (!row) return;
+    // Tear down the previous render's VU meters (RAF + retained analyser)
+    // before wiping the row, so they don't leak across re-renders.
+    for (const d of this.mixerDisposables) d.dispose();
+    this.mixerDisposables = [];
     row.innerHTML = '';
     const sp = document.createElement('div');
     sp.className = 'session-spacer';
@@ -543,9 +585,25 @@ export class SessionHost {
     for (const lane of this.state.lanes) {
       row.appendChild(buildMixerColumn(lane.id, this.deps.mixerDeps));
     }
-    const sp2 = document.createElement('div');
-    sp2.className = 'session-spacer';
-    row.appendChild(sp2);
+    // Last (scenes) column: the master strip when an audio graph is wired,
+    // else the old spacer (test fixtures without audio omit volInput/analyser).
+    if (this.deps.volInput && this.deps.masterMeterAnalyser) {
+      row.appendChild(buildMasterStrip({
+        volInput: this.deps.volInput,
+        masterMeterAnalyser: this.deps.masterMeterAnalyser,
+        isFxOpen: () => this.masterFxOpen,
+        onToggleFx: () => this.toggleMasterFx(),
+        registerDisposable: (d) => this.registerMixerDisposable(d),
+      }));
+    } else {
+      const sp2 = document.createElement('div');
+      sp2.className = 'session-spacer';
+      row.appendChild(sp2);
+    }
+    // Re-apply the (non-serialized) Master FX open flag to the panel so it
+    // survives the play-state re-renders that rebuild the mixer row.
+    const mfPanel = document.getElementById('master-fx-panel');
+    if (mfPanel) (mfPanel as HTMLElement).hidden = !this.masterFxOpen;
   }
 
   private refreshSynthTabs(): void {

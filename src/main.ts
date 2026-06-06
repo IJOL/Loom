@@ -115,7 +115,7 @@ const audio = createAudioGraph();
 // Phase G: audio-graph.ts is now master-only. All per-lane strips, instrument
 // instances, and configurators were removed. Lane allocation happens lazily via
 // lanes.ensureLaneResource() when applyLoadedSessionState runs.
-const { ctx, master, analyser, masterInsertChain, fx, masterComp, sidechainBus } = audio;
+const { ctx, master, analyser, masterMeterAnalyser, masterInsertChain, fx, masterComp, sidechainBus } = audio;
 
 // Stable call-site wrappers — set in boot section, after automationDeps is built.
 let renderLanes: () => void = () => { /* populated at boot */ };
@@ -241,6 +241,10 @@ const mixerDeps: import('./core/mixer').MixerColumnDeps = {
   soloState: soloState as unknown as Record<string, boolean>,
   applyMuteSolo,
   registerKnob,
+  // VU-meter teardown: each mixer column registers its level-meter dispose
+  // handle so SessionHost.renderWithMixer can tear it down before rebuilding the
+  // mixer row (prevents the RAF + retained-analyser leak across re-renders).
+  registerDisposable: (d) => sessionHost.registerMixerDisposable(d),
   // Late-bound via getter: _discreteHistoryDeps is assigned after historyDeps
   // is built (further below), but mixer columns are built at user-interaction
   // time so the getter always sees the final value.
@@ -275,7 +279,14 @@ function markTrackActive(trackId: string, audioTime: number) {
 
 swingInput.addEventListener('input', () => { seq.swing = parseFloat(swingInput.value); });
 
-volInput.addEventListener('input', () => { master.gain.value = parseFloat(volInput.value); });
+volInput.addEventListener('input', () => {
+  master.gain.value = parseFloat(volInput.value);
+  // Inverse sync (#volume → master strip fader): keep the fader visually in
+  // step when the value changes here (drag, load, undo). Only assign .value —
+  // never dispatch 'input' on the fader, or we'd loop back into this handler.
+  const mf = document.querySelector('.master-strip .mix-fader') as HTMLInputElement | null;
+  if (mf && mf.value !== volInput.value) mf.value = volInput.value;
+});
 master.gain.value = parseFloat(volInput.value);
 
 // ── Gesture brackets for continuous inputs (BPM / swing / volume) ──────────
@@ -426,6 +437,10 @@ const sessionHost = new SessionHost({
   fxBus: fx,
   scaleSel,
   rootSel,
+  // Master strip in the last mixer column: the fader proxies #volume, the VU
+  // reads the dedicated master meter tap (audio-graph.ts).
+  volInput,
+  masterMeterAnalyser,
   applyPresetForLane: (laneId, presetName) => {
     // presetName is a prefixed value matching the dropdown vocabulary
     // (factory: / user: / engine:). See src/presets/preset-apply.ts.
