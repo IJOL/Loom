@@ -87,6 +87,24 @@ export function launchClip(
   lp.queuedBoundary = nextBoundary(q, now, bpm);
 }
 
+/** Launch a clip to start at an EXACT audio-clock time, bypassing launch
+ *  quantize. Arrangement playback already computes the precise start time
+ *  (startedAtCtx + atSec); routing it through the bar-quantized {@link launchClip}
+ *  re-snaps it to the next absolute bar boundary of the AudioContext grid, which
+ *  made the arrangement begin on bar 2 — a silent first bar whose length varied
+ *  with the sub-bar phase at Play ("sometimes it starts late"). */
+export function launchClipAtTime(
+  laneStates: Map<string, LanePlayState>,
+  lane: SessionLane,
+  clip: SessionClip,
+  atCtx: number,
+): void {
+  let lp = laneStates.get(lane.id);
+  if (!lp) { lp = emptyLanePlayState(lane.id); laneStates.set(lane.id, lp); }
+  lp.queued = clip;
+  lp.queuedBoundary = atCtx;
+}
+
 export function launchScene(
   laneStates: Map<string, LanePlayState>,
   state: SessionState,

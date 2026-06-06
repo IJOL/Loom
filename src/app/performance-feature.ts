@@ -27,7 +27,7 @@ import {
   type ArrangementPlayState,
 } from '../performance/arrangement-runtime';
 import {
-  launchClip, stopLane, stopAll,
+  launchClipAtTime, stopLane, stopAll,
   type RecHooks,
 } from '../session/session-runtime';
 import { renderPerformanceView } from '../performance/performance-ui';
@@ -229,13 +229,18 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     setMode('performance');
   }
 
-  function arrangementOnLaunchClip(laneId: string, clipId: string) {
+  function arrangementOnLaunchClip(laneId: string, clipId: string, atCtx: number) {
     const state = sessionHost.state;
     const lane = state.lanes.find((l) => l.id === laneId);
     if (!lane) return;
     const clip = lane.clips.find((c) => c?.id === clipId);
     if (!clip) return;
-    launchClip(sessionHost.laneStates, state, lane, clip, ctx.currentTime, seq.bpm, recHooks);
+    // Honour the arrangement's exact start time (startedAtCtx + atSec). Never
+    // re-quantize to the session bar grid — that snapped the first event to the
+    // next absolute bar boundary, leaving a silent first bar. Clamp to now so the
+    // very first event (atSec 0, already a hair in the past once the tick fires)
+    // schedules immediately rather than at a past time.
+    launchClipAtTime(sessionHost.laneStates, lane, clip, Math.max(atCtx, ctx.currentTime));
   }
   function arrangementOnStopLane(laneId: string) {
     stopLane(sessionHost.laneStates, laneId, { ...recHooks, nowCtx: ctx.currentTime });

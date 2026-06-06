@@ -6,6 +6,8 @@ import {
 } from './arrangement-runtime';
 import { emptyArrangementState } from './performance';
 import { appendClipEvent, closePendingClipEvent, writeAutomationSample } from './arrangement-ops';
+import { testSessionState, emptyClip } from '../session/session';
+import { launchClip, launchClipAtTime, type LanePlayState } from '../session/session-runtime';
 
 describe('ArrangementPlayState lifecycle', () => {
   it('createArrangementPlayState returns isPlaying=false and no overrides', () => {
@@ -246,5 +248,43 @@ describe('tickArrangement A-B loop wrap', () => {
     // The bug scheduled two launches at the same instant (the wrap relaunch + the
     // next tick's while-loop). With the fix every launch is at a distinct time.
     expect(new Set(c1Times).size).toBe(c1Times.length);
+  });
+});
+
+describe('arrangement launch timing (regression: no silent first bar)', () => {
+  it('queues the first event at the exact startedAtCtx, not the next bar boundary', () => {
+    const arr = emptyArrangementState(120);
+    appendClipEvent(arr, 'tb-303-1', 'c1', 0.0); // first clip event at atSec 0
+    closePendingClipEvent(arr, 'tb-303-1', 2.0);
+
+    // Play pressed at a sub-bar phase (NOT on a bar boundary) — the worst case
+    // for the old bug, where the silence lasted almost a full bar.
+    const startedAt = 100.37;
+    const ps = createArrangementPlayState();
+    startArrangement(ps, startedAt);
+
+    const session = testSessionState();
+    const lane = session.lanes[0]; // id 'tb-303-1'
+    const clip = { ...emptyClip(1)!, id: 'c1' };
+    const laneStates = new Map<string, LanePlayState>();
+
+    // Wire onLaunchClip the way performance-feature does now: delegate to the
+    // exact-time launcher, honouring the atCtx tickArrangement computes.
+    tickArrangement({
+      ps, state: arr, nowCtx: startedAt, lookaheadSec: 0.12, bpm: 120,
+      onLaunchClip: (_laneId, _clipId, atCtx) => launchClipAtTime(laneStates, lane, clip, atCtx),
+      onStopLane: () => {}, applyAutomation: () => {},
+    });
+
+    // Fixed: the clip starts exactly at Play — the first bar is NOT silent.
+    expect(laneStates.get(lane.id)!.queuedBoundary).toBe(startedAt);
+
+    // Guard against regressing to the session's bar-quantized launch, which
+    // snapped the same event to the next absolute bar boundary (> startedAt).
+    const quantized = new Map<string, LanePlayState>();
+    launchClip(quantized, session, lane, clip, startedAt, 120);
+    const barSec = (60 / 120) * 4; // 2 s at 120 BPM
+    expect(quantized.get(lane.id)!.queuedBoundary).toBeCloseTo(Math.ceil(startedAt / barSec) * barSec, 6);
+    expect(quantized.get(lane.id)!.queuedBoundary).toBeGreaterThan(startedAt);
   });
 });
