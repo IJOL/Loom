@@ -16,9 +16,12 @@
 // index/manifest fetch helpers (same contract as drumkit-loader). The impure
 // loadInstrument helper lands in the following tasks.
 
-import type { KeymapEntry } from './types';
+import type { KeymapEntry, SampleAsset } from './types';
 import type { PadParams } from '../engines/sampler-pad-params';
 import type { ResolutionKey } from '../core/drum-grid-editing';
+import { sampleStore } from './store-singleton';
+import { sampleCache } from './sample-cache';
+import { buildSampleAsset, newSampleId } from './import';
 
 /** One melodic zone: a wav mapped over a key range at a root note. */
 export interface MelodicZone {
@@ -62,6 +65,23 @@ export interface InstrumentIndexEntry {
   family: 'melodic' | 'loop';
 }
 
+/** What a loaded melodic instrument hands back: a fresh keymap plus any
+ *  per-zone params the manifest carried (the caller casts + feeds them to
+ *  setPadStore/mirrorPadParams). */
+export interface LoadedMelodicInstrument {
+  keymap: KeymapEntry[];
+  padParams?: Record<number, Partial<PadParams>>;
+}
+
+/** Minimal seams so the impure loader is unit-testable without a real
+ *  AudioContext / IndexedDB / network. Mirror of drumkit-loader's LoadDeps. */
+interface LoadDeps {
+  store?: { put(asset: SampleAsset): Promise<void> };
+  cache?: { put(id: string, buf: AudioBuffer): void };
+  fetchFn?: typeof fetch;
+  now?: () => number;
+}
+
 /** PURE: build a multi-zone melodic keymap from a manifest's zones and the
  *  sampleId assigned to each (same order). One entry per zone carrying its
  *  rootNote/loNote/hiNote (+ gain when present). Mirror of buildDrumkitKeymap;
@@ -100,4 +120,33 @@ export async function fetchInstrumentManifest(id: string, fetchFn: typeof fetch 
   const res = await fetchFn(`${import.meta.env.BASE_URL}instruments/${id}.json`);
   if (!res.ok) throw new Error(`instrument '${id}' manifest not found (${res.status})`);
   return (await res.json()) as InstrumentManifest;
+}
+
+/** IMPURE (melodic family): fetch every zone's wav, decode it, persist to the
+ *  sample store + decoded cache with a fresh id, and return a multi-zone keymap
+ *  plus any per-zone params the manifest declared. Mirror of loadDrumkit: fresh
+ *  ids every call (self-healing across reloads), IndexedDB-only cache.
+ *  The loop family lands in the next task. */
+export async function loadInstrument(
+  manifest: MelodicInstrumentManifest,
+  ctx: AudioContext,
+  deps: LoadDeps = {},
+): Promise<LoadedMelodicInstrument> {
+  const store = deps.store ?? sampleStore;
+  const cache = deps.cache ?? sampleCache;
+  const fetchFn = deps.fetchFn ?? fetch;
+  const now = deps.now ?? Date.now;
+
+  const ids: string[] = [];
+  for (const z of manifest.zones) {
+    const res = await fetchFn(`${import.meta.env.BASE_URL}instruments/${z.file}`);
+    const bytes = await res.arrayBuffer();
+    // decodeAudioData detaches its input — decode a copy, keep the original bytes.
+    const buffer = await ctx.decodeAudioData(bytes.slice(0));
+    const id = newSampleId();
+    await store.put(buildSampleAsset({ id, name: z.file, mime: 'audio/wav', bytes, buffer, createdAt: now() }));
+    cache.put(id, buffer);
+    ids.push(id);
+  }
+  return { keymap: buildMelodicKeymap(manifest.zones, ids), padParams: manifest.padParams };
 }

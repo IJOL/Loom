@@ -2,6 +2,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   buildMelodicKeymap,
+  loadInstrument,
   listInstruments,
   fetchInstrumentManifest,
   type MelodicInstrumentManifest,
@@ -34,6 +35,74 @@ describe('buildMelodicKeymap (pure)', () => {
 
   it('throws when ids count does not match zones count', () => {
     expect(() => buildMelodicKeymap(ZONES, ['only-one'])).toThrow();
+  });
+});
+
+describe('loadInstrument (melodic, impure, injected deps)', () => {
+  const fakeBuffer = { duration: 1.2, sampleRate: 44100, numberOfChannels: 2 } as unknown as AudioBuffer;
+  const ctx = { decodeAudioData: vi.fn(async () => fakeBuffer) } as unknown as AudioContext;
+
+  const MELODIC: MelodicInstrumentManifest = {
+    id: 'sweep-pad',
+    name: 'Sweep Pad',
+    family: 'melodic',
+    zones: [
+      { file: 'sweep-pad/low.wav', rootNote: 48, loNote: 0, hiNote: 59 },
+      { file: 'sweep-pad/high.wav', rootNote: 72, loNote: 60, hiNote: 127, gain: 0.8 },
+    ],
+    padParams: { 48: { cutoff: 0.5 } },
+  };
+
+  it('fetches + decodes + stores + caches each zone and returns a multi-zone keymap', async () => {
+    const fetched: string[] = [];
+    const fetchFn = vi.fn(async (url: string) => {
+      fetched.push(url);
+      return { ok: true, arrayBuffer: async () => new ArrayBuffer(16) } as unknown as Response;
+    }) as unknown as typeof fetch;
+    const stored: string[] = [];
+    const cached: string[] = [];
+    const store = { put: vi.fn(async (a: { id: string }) => { stored.push(a.id); }) };
+    const cache = { put: vi.fn((id: string) => { cached.push(id); }) };
+
+    const { keymap, padParams } = await loadInstrument(MELODIC, ctx, { store, cache, fetchFn, now: () => 1234 });
+
+    // one fetch per zone, at the /instruments/<file> path
+    expect(fetched).toEqual(['/instruments/sweep-pad/low.wav', '/instruments/sweep-pad/high.wav']);
+    // stored + cached once per zone, ids aligned
+    expect(stored).toHaveLength(2);
+    expect(cached).toEqual(stored);
+    // keymap mirrors the zones, fresh ids === the stored ids, ranges intact
+    expect(keymap.map((e) => e.rootNote)).toEqual([48, 72]);
+    expect(keymap.map((e) => [e.loNote, e.hiNote])).toEqual([[0, 59], [60, 127]]);
+    expect(keymap[1].gain).toBe(0.8);
+    expect(keymap.map((e) => e.sampleId)).toEqual(stored);
+    // padParams passed through untouched
+    expect(padParams).toEqual({ 48: { cutoff: 0.5 } });
+  });
+
+  it('self-heals: two loads yield distinct sampleIds but the same note↔zone mapping', async () => {
+    const fetchFn = vi.fn(async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(16) } as unknown as Response)) as unknown as typeof fetch;
+    const store = { put: vi.fn(async () => {}) };
+    const cache = { put: vi.fn() };
+
+    const a = await loadInstrument(MELODIC, ctx, { store, cache, fetchFn });
+    const b = await loadInstrument(MELODIC, ctx, { store, cache, fetchFn });
+
+    // ids differ between loads
+    expect(a.keymap.map((e) => e.sampleId)).not.toEqual(b.keymap.map((e) => e.sampleId));
+    // but the note↔zone mapping is identical
+    expect(a.keymap.map((e) => [e.rootNote, e.loNote, e.hiNote]))
+      .toEqual(b.keymap.map((e) => [e.rootNote, e.loNote, e.hiNote]));
+  });
+
+  it('omits padParams when the manifest has none', async () => {
+    const fetchFn = vi.fn(async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(16) } as unknown as Response)) as unknown as typeof fetch;
+    const { padParams } = await loadInstrument(
+      { ...MELODIC, padParams: undefined },
+      ctx,
+      { store: { put: vi.fn(async () => {}) }, cache: { put: vi.fn() }, fetchFn },
+    );
+    expect(padParams).toBeUndefined();
   });
 });
 
