@@ -851,6 +851,10 @@ if (demoPicker) {
 const newSessionBtn = document.getElementById('new-session');
 newSessionBtn?.addEventListener('click', () => {
   if (!window.confirm('Start a new empty session? Unsaved changes will be lost.')) return;
+  // Stop the transport + silence every lane's voices BEFORE wiping. Without this
+  // the master clock keeps running and in-flight voices keep sounding after the
+  // old lanes are disposed → the "New leaves the old synths playing" bug.
+  stopTransport();
   sessionHost.applyLoadedSessionState(emptySessionState());
   history.clear();
 });
