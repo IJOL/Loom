@@ -6,11 +6,11 @@ import {
 import { emptyArrangementState } from '../performance/performance';
 import { createRecState, armRec, startRecording } from '../performance/rec-state';
 import {
-  type SessionState, type SessionClip, emptySessionState,
+  type SessionState, type SessionClip, testSessionState,
 } from './session';
 
 function withSingleLane(): { s: SessionState; clip: SessionClip } {
-  const s = emptySessionState();
+  const s = testSessionState();
   s.lanes = [{ id: 'tb-303-1', engineId: 'tb303', clips: [] }];
   const clip: SessionClip = { id: 'c1', lengthBars: 1, notes: [] };
   s.lanes[0].clips = [clip];

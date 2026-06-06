@@ -34,7 +34,9 @@
 .session-table { display: flex; flex-direction: column; gap: 2px; min-width: 100%; }
 .session-row {
   display: grid;
-  grid-template-columns: 24px repeat(var(--lane-count), 120px) 140px;
+  // Full template comes from JS (--session-cols) so the zero-lane case can drop
+  // the lane tracks entirely; the fallback keeps an empty session valid too.
+  grid-template-columns: var(--session-cols, 24px 140px);
   gap: 2px;
   align-items: center;
 }
@@ -106,6 +108,14 @@
   color: var(--text-dim); font-size: 11px; cursor: pointer; opacity: 0.35;
 }
 .session-del-cross:hover { opacity: 1; color: var(--red); background: var(--red-soft); }
+/* Lane (horizontal) + scene (vertical) delete crosses sit on dark surfaces where
+   the faint default is almost invisible — make them clearly red. Clip crosses
+   stay subtle: they sit on light pastel cells where the dim tone already reads. */
+.session-lane-header .session-del-cross,
+.session-scene-cell .session-del-cross {
+  color: var(--red);
+  opacity: 0.9;
+}
 .session-scenes-header {
   text-align: center;
   font-size: 11px;
@@ -134,14 +144,17 @@
   cursor: pointer;
 }
 .session-lane-stop:hover, .session-stop-all:hover { background: var(--red); color: var(--bg); }
+/* The "+" that adds a scene row. The old faint dashed treatment was nearly
+   invisible — give it an amber affordance (bold +) so it reads as "add". */
 .session-add-scene {
   background: transparent;
-  color: var(--text-faint);
-  border: 1px dashed var(--border);
+  color: var(--amber);
+  border: 1px dashed var(--amber);
   cursor: pointer;
   border-radius: 2px;
+  font-weight: 700;
 }
-.session-add-scene:hover { color: var(--amber); border-color: var(--amber); }
+.session-add-scene:hover { color: var(--bg); background: var(--amber); border-color: var(--amber); }
 
 .session-add-engine-select {
   background: var(--surface-2);

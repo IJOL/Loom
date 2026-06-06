@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
-  canDropClip, emptySessionState, emptyLane, emptyClip, moveClip, copyClip,
+  canDropClip, testSessionState, emptyLane, emptyClip, moveClip, copyClip,
   type SessionState, type ClipSlot,
 } from './session';
 import type { NoteEvent } from '../core/notes';
 
 function stateWithClip(): SessionState {
-  const s = emptySessionState();
+  const s = testSessionState();
   s.lanes = [emptyLane('lane-a', 'tb303'), emptyLane('lane-b', 'drums-machine')];
   s.lanes[0].clips = [emptyClip(1), null];   // clip at row 0, empty at row 1
   return s;

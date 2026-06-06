@@ -198,7 +198,17 @@ export function emptyScene(name: string): SessionScene {
   return { id: nextId('scene'), name, clipPerLane: {} };
 }
 
+/** A truly empty session: no lanes, no scenes. "New session" wipes to this —
+ *  the user builds it from scratch via the "+ Add" control. (Boot loads a demo,
+ *  not this.) */
 export function emptySessionState(): SessionState {
+  return { lanes: [], scenes: [], globalQuantize: '1/1' };
+}
+
+/** A populated fixture (one each of three engines, no clips/scenes) for tests
+ *  that need lanes to operate on. NOT the New-session state — that is the empty
+ *  {@link emptySessionState}. */
+export function testSessionState(): SessionState {
   return {
     lanes: [
       { id: 'tb-303-1',      engineId: 'tb303',          name: '303 1',   clips: [] },

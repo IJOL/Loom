@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { emptySessionState } from './session';
+import { testSessionState } from './session';
 import { mirrorParamChange, syncModulators, mirrorKeymapChange, readLaneKeymap, mirrorDrumkitId, readLaneDrumkitId, mirrorInstrumentId, readLaneInstrumentId } from './session-engine-state';
 import type { KeymapEntry } from '../samples/types';
 import { syncNoteFx } from './session-engine-state';
@@ -7,21 +7,21 @@ import type { NoteFxState } from '../notefx/notefx-types';
 
 describe('per-lane engineState persistence', () => {
   it('mirrorParamChange writes to lane.engineState.params', () => {
-    const state = emptySessionState();
+    const state = testSessionState();
     mirrorParamChange(state, 'subtractive-1', 'filter.cutoff', 0.42);
     const lane = state.lanes.find((l) => l.id === 'subtractive-1')!;
     expect(lane.engineState?.params?.['filter.cutoff']).toBe(0.42);
   });
 
   it('mirrorParamChange does not affect other lanes', () => {
-    const state = emptySessionState();
+    const state = testSessionState();
     mirrorParamChange(state, 'subtractive-1', 'filter.cutoff', 0.42);
     const otherLane = state.lanes.find((l) => l.id === 'tb-303-1')!;
     expect(otherLane.engineState?.params?.['filter.cutoff']).toBeUndefined();
   });
 
   it('mirrorParamChange overwrites existing param value', () => {
-    const state = emptySessionState();
+    const state = testSessionState();
     mirrorParamChange(state, 'subtractive-1', 'filter.cutoff', 0.42);
     mirrorParamChange(state, 'subtractive-1', 'filter.cutoff', 0.85);
     const lane = state.lanes.find((l) => l.id === 'subtractive-1')!;
@@ -29,14 +29,14 @@ describe('per-lane engineState persistence', () => {
   });
 
   it('mirrorParamChange noop on unknown laneId', () => {
-    const state = emptySessionState();
+    const state = testSessionState();
     mirrorParamChange(state, 'does-not-exist', 'filter.cutoff', 0.42);
     // No exception; no mutation of existing lanes.
     expect(state.lanes.every((l) => !l.engineState?.params?.['filter.cutoff'])).toBe(true);
   });
 
   it('syncModulators writes the modulator array into lane.engineState.modulators', () => {
-    const state = emptySessionState();
+    const state = testSessionState();
     const mods = [
       { id: 'lfo1', kind: 'lfo' as const, enabled: true, connections: [] },
       { id: 'adsr1', kind: 'adsr' as const, enabled: true, connections: [], attackSec: 0.05 },
@@ -49,7 +49,7 @@ describe('per-lane engineState persistence', () => {
   });
 
   it('syncModulators deep-copies the array so later mutations on the source do not leak', () => {
-    const state = emptySessionState();
+    const state = testSessionState();
     const mods = [{ id: 'lfo1', kind: 'lfo' as const, enabled: true, connections: [] }];
     syncModulators(state, 'subtractive-1', mods as unknown as import('../modulation/types').ModulatorState[]);
     // Mutate the source
@@ -60,14 +60,14 @@ describe('per-lane engineState persistence', () => {
   });
 
   it('syncModulators is a no-op for unknown laneId', () => {
-    const state = emptySessionState();
+    const state = testSessionState();
     syncModulators(state, 'does-not-exist', []);
     // No exception, no lane mutated.
     expect(state.lanes.every((l) => !l.engineState?.modulators)).toBe(true);
   });
 
   it('mirrorKeymapChange writes the keymap onto lane.engineState.sampler.keymap', () => {
-    const state = emptySessionState();
+    const state = testSessionState();
     const km: KeymapEntry[] = [{ sampleId: 'a', rootNote: 60, loNote: 0, hiNote: 127 }];
     mirrorKeymapChange(state, 'subtractive-1', km);
     const lane = state.lanes.find((l) => l.id === 'subtractive-1')!;
@@ -75,7 +75,7 @@ describe('per-lane engineState persistence', () => {
   });
 
   it('readLaneKeymap round-trips and returns [] when absent', () => {
-    const state = emptySessionState();
+    const state = testSessionState();
     expect(readLaneKeymap(state, 'subtractive-1')).toEqual([]);
     const km: KeymapEntry[] = [{ sampleId: 'b', rootNote: 48, loNote: 0, hiNote: 127 }];
     mirrorKeymapChange(state, 'subtractive-1', km);
@@ -83,7 +83,7 @@ describe('per-lane engineState persistence', () => {
   });
 
   it('mirrorKeymapChange is a no-op for unknown laneId', () => {
-    const state = emptySessionState();
+    const state = testSessionState();
     mirrorKeymapChange(state, 'does-not-exist', [{ sampleId: 'x', rootNote: 60, loNote: 0, hiNote: 127 }]);
     expect(state.lanes.every((l) => !l.engineState?.sampler)).toBe(true);
   });
@@ -91,13 +91,13 @@ describe('per-lane engineState persistence', () => {
 
 describe('drumkit id persistence (sample drumkits)', () => {
   it('mirrorDrumkitId records the kit id under engineState.sampler', () => {
-    const state = emptySessionState();
+    const state = testSessionState();
     mirrorDrumkitId(state, 'subtractive-1', 'tr808');
     expect(readLaneDrumkitId(state, 'subtractive-1')).toBe('tr808');
   });
 
   it('mirrorDrumkitId preserves an existing keymap; mirrorKeymapChange preserves the kit id', () => {
-    const state = emptySessionState();
+    const state = testSessionState();
     const km: KeymapEntry[] = [{ sampleId: 'kick', rootNote: 36, loNote: 36, hiNote: 36 }];
     mirrorKeymapChange(state, 'subtractive-1', km);
     mirrorDrumkitId(state, 'subtractive-1', 'tr808');
@@ -112,7 +112,7 @@ describe('drumkit id persistence (sample drumkits)', () => {
   });
 
   it('mirrorDrumkitId(undefined) detaches the kit but keeps the keymap', () => {
-    const state = emptySessionState();
+    const state = testSessionState();
     const km: KeymapEntry[] = [{ sampleId: 'kick', rootNote: 36, loNote: 36, hiNote: 36 }];
     mirrorKeymapChange(state, 'subtractive-1', km);
     mirrorDrumkitId(state, 'subtractive-1', 'tr808');
@@ -122,7 +122,7 @@ describe('drumkit id persistence (sample drumkits)', () => {
   });
 
   it('readLaneDrumkitId is undefined when unset; mirror is a no-op for unknown lane', () => {
-    const state = emptySessionState();
+    const state = testSessionState();
     expect(readLaneDrumkitId(state, 'subtractive-1')).toBeUndefined();
     mirrorDrumkitId(state, 'does-not-exist', 'tr808');
     expect(state.lanes.every((l) => !l.engineState?.sampler)).toBe(true);
@@ -131,13 +131,13 @@ describe('drumkit id persistence (sample drumkits)', () => {
 
 describe('instrument id persistence (bundled melodic/loop presets)', () => {
   it('mirrorInstrumentId records the instrument id under engineState.sampler', () => {
-    const state = emptySessionState();
+    const state = testSessionState();
     mirrorInstrumentId(state, 'subtractive-1', 'sweep-pad');
     expect(readLaneInstrumentId(state, 'subtractive-1')).toBe('sweep-pad');
   });
 
   it('mirrorInstrumentId preserves an existing keymap / drumkitId / padParams', () => {
-    const state = emptySessionState();
+    const state = testSessionState();
     const km: KeymapEntry[] = [{ sampleId: 'a', rootNote: 60, loNote: 0, hiNote: 127 }];
     mirrorKeymapChange(state, 'subtractive-1', km);
     mirrorDrumkitId(state, 'subtractive-1', 'tr808');
@@ -155,7 +155,7 @@ describe('instrument id persistence (bundled melodic/loop presets)', () => {
   });
 
   it('mirrorInstrumentId(undefined) detaches the instrument but keeps the keymap', () => {
-    const state = emptySessionState();
+    const state = testSessionState();
     const km: KeymapEntry[] = [{ sampleId: 'b', rootNote: 48, loNote: 0, hiNote: 127 }];
     mirrorKeymapChange(state, 'subtractive-1', km);
     mirrorInstrumentId(state, 'subtractive-1', 'sweep-pad');
@@ -165,7 +165,7 @@ describe('instrument id persistence (bundled melodic/loop presets)', () => {
   });
 
   it('readLaneInstrumentId is undefined when unset; mirror is a no-op for unknown lane', () => {
-    const state = emptySessionState();
+    const state = testSessionState();
     expect(readLaneInstrumentId(state, 'subtractive-1')).toBeUndefined();
     mirrorInstrumentId(state, 'does-not-exist', 'sweep-pad');
     expect(state.lanes.every((l) => !l.engineState?.sampler)).toBe(true);

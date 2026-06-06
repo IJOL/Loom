@@ -77,7 +77,15 @@ export function renderSessionGrid(
 
   const table = document.createElement('div');
   table.className = 'session-table';
-  table.style.setProperty('--lane-count', String(state.lanes.length));
+  // The full row-grid column template. Stored as a complete value (not a bare
+  // repeat() count) because CSS `repeat(0, 120px)` is INVALID and collapses the
+  // whole template to one auto column — a deformed grid when the session has no
+  // lanes. With zero lanes we emit just the label + scenes/master columns.
+  const n = state.lanes.length;
+  table.style.setProperty(
+    '--session-cols',
+    n > 0 ? `24px repeat(${n}, 120px) 140px` : '24px 140px',
+  );
 
   const headerRow = document.createElement('div');
   headerRow.className = 'session-row session-row-header';
