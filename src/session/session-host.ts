@@ -292,9 +292,7 @@ export class SessionHost {
         const newLane = emptyLane(newId, 'sampler');
         newLane.name = `${lane.name ?? 'Audio'} slices`;
         newLane.engineState = { sampler: { keymap: km } };
-        const rows = Math.max(this.state.scenes.length, 1);
-        const defaultLen = Math.max(1, Math.floor(seq.length / stepsPerBar(seq.meter)));
-        for (let r = 0; r < rows; r++) newLane.clips.push(r === 0 ? noteClip : emptyClip(defaultLen));
+        newLane.clips = [noteClip]; // born with just the slice clip; no empty filler
         this.state.lanes.push(newLane);
         this.laneStates.set(newId, emptyLanePlayState(newId));
         this.deps.ensureLaneResource?.(newId, 'sampler');
@@ -580,21 +578,20 @@ export class SessionHost {
     name: string,
   ): void {
     const hd = this.deps.historyDeps;
-    const seq = this.deps.seq;
     const run = () => {
       const used = new Set(this.state.lanes.map((l) => l.id));
       const newId = nextLaneSlug(used, engineId);
       const lane = emptyLane(newId, engineId);
       lane.name = name;
-      const rows = Math.max(this.state.scenes.length, 1);
-      const defaultLen = Math.max(1, Math.floor(seq.length / stepsPerBar(seq.meter)));
       const clip = emptyClip(Math.max(1, lengthBars));
       clip.notes = notes;
       clip.name = name;
-      for (let r = 0; r < rows; r++) lane.clips.push(r === 0 ? clip : emptyClip(defaultLen));
+      lane.clips = [clip]; // born with just the note clip; no empty filler
       this.state.lanes.push(lane);
       this.laneStates.set(newId, emptyLanePlayState(newId));
       this.deps.ensureLaneResource?.(newId, engineId);
+      // Only creation path that historically skipped this — seed a launchable scene.
+      ensureScenesForRows(this.state);
       // Launch alongside scene 0 (the stems scene) when one exists.
       if (this.state.scenes[0]) this.state.scenes[0].clipPerLane[newId] = 0;
       this.renderWithMixer();
@@ -634,9 +631,7 @@ export class SessionHost {
           const newId = nextLaneSlug(used, 'audio');
           const lane = emptyLane(newId, 'audio');
           lane.name = name;
-          const rows = Math.max(self.state.scenes.length, 1);
-          const defaultLen = Math.max(1, Math.floor(seq.length / stepsPerBar(seq.meter)));
-          for (let r = 0; r < rows; r++) lane.clips.push(r === 0 ? clip : emptyClip(defaultLen));
+          lane.clips = [clip]; // audio channel: the WAV clip lives in row 0 only
           self.state.lanes.push(lane);
           self.laneStates.set(newId, emptyLanePlayState(newId));
           self.deps.ensureLaneResource?.(newId, 'audio');
@@ -716,8 +711,9 @@ export class SessionHost {
         const run = () => {
           const defaultLen = Math.max(1, Math.floor(seq.length / stepsPerBar(seq.meter)));
           const clip: SessionClip = emptyClip(defaultLen);
-          while (lane.clips.length <= clipIdx) lane.clips.push(null);
-          lane.clips[clipIdx] = clip;
+          // Single placement seam: grows lane.clips AND re-seeds scenes so the row
+          // gets a ▶ (the "▶ missing" bug was this path skipping ensureScenesForRows).
+          self.placeClipEnsuringScene(laneId, clipIdx, clip);
           self.inspector.setSelectedClip({ laneId, clipIdx });
           self.inspector.openInspector();
           self.renderWithMixer();
@@ -743,9 +739,7 @@ export class SessionHost {
               : audioClip({ name, sampleId: asset.id, durationSec: buf.duration, bpm: seq.bpm });
             const hd = self.deps.historyDeps;
             const run = () => {
-              while (lane.clips.length <= clipIdx) lane.clips.push(null);
-              lane.clips[clipIdx] = clip;
-              ensureScenesForRows(self.state);
+              self.placeClipEnsuringScene(laneId, clipIdx, clip);
               self.inspector.setSelectedClip({ laneId, clipIdx });
               self.inspector.openInspector();
               self.renderWithMixer();
@@ -797,17 +791,14 @@ export class SessionHost {
           const displayName = engineDef ? `${engineDef.name} ${sameKindCount + 1}` : newId;
           const lane = emptyLane(newId, engineId);
           lane.name = displayName;
-          const rowCount = Math.max(self.state.scenes.length, 1);
-          const defaultLen = Math.max(1, Math.floor(seq.length / stepsPerBar(seq.meter)));
-          for (let r = 0; r < rowCount; r++) {
-            lane.clips.push(emptyClip(defaultLen));
-          }
+          // Instrument lane is born EMPTY (no phantom clips); emptyLane gives clips:[].
           self.state.lanes.push(lane);
           self.laneStates.set(newId, emptyLanePlayState(newId));
 
           // Allocate a fresh ChannelStrip + engine instance for the new lane so
           // triggerForLane can find it via laneResources immediately.
           self.deps.ensureLaneResource?.(newId, engineId);
+          // Seed ≥1 launchable scene even though the lane has no clips yet.
           ensureScenesForRows(self.state);
           self.renderWithMixer();
         };
@@ -825,15 +816,12 @@ export class SessionHost {
         opts: { replace?: boolean } = {},
       ) {
         const hd = self.deps.historyDeps;
-        const defaultLen = Math.max(1, Math.floor(seq.length / stepsPerBar(seq.meter)));
 
-        // One Sampler lane carrying the stem: keymap zone (instrument view) +
-        // 'song' audio clips. `rows` = how many scene rows to back-fill with
-        // empty clips so the lane lines up with the existing scene grid.
+        // One Sampler lane carrying the stem: keymap zone (instrument view) + a
+        // single 'song' audio clip on row 0. No empty filler rows.
         const buildStemLane = (
           stem: { label: string; sampleId: string; durationSec: number },
           id: string,
-          rows: number,
         ): SessionLane => {
           const lane = emptyLane(id, 'sampler');
           lane.name = stem.label;
@@ -847,12 +835,12 @@ export class SessionHost {
             bpm: seq.bpm,
             mode: 'song',
           });
-          for (let r = 0; r < rows; r++) lane.clips.push(r === 0 ? clip : emptyClip(defaultLen));
+          lane.clips = [clip];
           return lane;
         };
 
         const runReplace = () => {
-          const lanes = stems.map((s, i) => buildStemLane(s, `sampler-stem-${i + 1}`, 1));
+          const lanes = stems.map((s, i) => buildStemLane(s, `sampler-stem-${i + 1}`));
           const scene = emptyScene('Stems');
           scene.clipPerLane = Object.fromEntries(lanes.map((l) => [l.id, 0]));
           const newState: SessionState = {
@@ -866,11 +854,10 @@ export class SessionHost {
         };
 
         const runAdd = () => {
-          const rows = Math.max(self.state.scenes.length, 1);
           for (const stem of stems) {
             const used = new Set(self.state.lanes.map((l) => l.id));
             const newId = nextLaneSlug(used, 'sampler');
-            const lane = buildStemLane(stem, newId, rows);
+            const lane = buildStemLane(stem, newId);
             self.state.lanes.push(lane);
             self.laneStates.set(newId, emptyLanePlayState(newId));
             self.deps.ensureLaneResource?.(newId, 'sampler');
@@ -987,6 +974,37 @@ export class SessionHost {
       },
       onToggleDrumsExpanded() { /* drum-bus expand removed — drum-grid editor shows all voices */ },
     };
+  }
+
+  /** Place a clip at a specific row, growing the lane's clip array with nulls as
+   *  needed, then guarantee the grid has a launchable scene for that row. The
+   *  single seam every clip-placement path funnels through — without the
+   *  ensureScenesForRows call a clip in a fresh row would render with NO ▶
+   *  (that was the "▶ missing after inserting a clip" bug). */
+  private placeClipEnsuringScene(laneId: string, clipIdx: number, clip: SessionClip): void {
+    const lane = this.state.lanes.find((l) => l.id === laneId);
+    if (!lane) return;
+    while (lane.clips.length <= clipIdx) lane.clips.push(null);
+    lane.clips[clipIdx] = clip;
+    ensureScenesForRows(this.state);
+  }
+
+  /** Public seam (front D · Sampler): drop a freshly-built clip onto the lane's
+   *  first empty slot (or append), select it, and open the inspector — as one
+   *  undoable action. Replaces the removed `EngineUIContext.installClip`. */
+  installSamplerClip(laneId: string, clip: SessionClip): void {
+    const lane = this.state.lanes.find((l) => l.id === laneId);
+    if (!lane) return;
+    const empty = lane.clips.findIndex((c) => c == null);
+    const idx = empty >= 0 ? empty : lane.clips.length;
+    const hd = this.deps.historyDeps;
+    const run = () => {
+      this.placeClipEnsuringScene(laneId, idx, clip);
+      this.inspector.setSelectedClip({ laneId, clipIdx: idx });
+      this.inspector.openInspector();
+      this.renderWithMixer();
+    };
+    if (hd) withUndo(hd, run); else run();
   }
 
   /** Show a lane's editor: route to its engine's page (poly / 303 / drums),
@@ -1113,16 +1131,6 @@ export class SessionHost {
       fxBus: this.deps.fxBus,
       // Live AudioContext for the sampler's audio import (decodeAudioData).
       audioContext: this.deps.ctx,
-      // Place a built clip (sampler loop import) onto this lane's first empty
-      // slot (or append) and re-render the grid + inspector.
-      installClip: (clip) => {
-        const lane = this.state.lanes.find((l) => l.id === laneId);
-        if (!lane) return;
-        const empty = lane.clips.findIndex((c) => c == null);
-        const idx = empty >= 0 ? empty : lane.clips.length;
-        lane.clips[idx] = clip;
-        this.renderWithMixer();
-      },
     });
 
     // Per-lane NOTE FX panel — mounted next to MODULATORS (which buildParamUI

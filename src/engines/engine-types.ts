@@ -71,9 +71,6 @@ export interface EngineUIContext {
   fxBus?: import('../core/fx').FxBus;
   /** Live AudioContext — sampler/UI code uses it to decode imported audio. */
   audioContext?: AudioContext;
-  /** Place a freshly-built clip onto this lane (the sampler's "import as loop"
-   *  flow). The host adds it to the lane's first empty clip slot and re-renders. */
-  installClip?: (clip: import('../session/session').SessionClip) => void;
 }
 
 export interface EnginePreset<P = Record<string, number>> {

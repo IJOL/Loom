@@ -4,6 +4,7 @@
 import type { SessionState, SessionLane, SessionClip, ClipSlot } from './session';
 import { canDropClip } from './session';
 import type { LanePlayState } from './session-runtime';
+import { openContextMenu } from '../core/context-menu';
 
 export interface SessionUICallbacks {
   /** Click on the clip body (anywhere except the ▶ icon): open the clip in
@@ -166,6 +167,14 @@ function laneHeader(lane: SessionLane, cb: SessionUICallbacks): HTMLElement {
   edit.addEventListener('click', () => cb.onEditLane(lane.id));
   el.appendChild(edit);
 
+  el.addEventListener('contextmenu', (e) =>
+    openContextMenu(e, [
+      { label: 'Editar instrumento', onSelect: () => cb.onEditLane(lane.id) },
+      { label: 'Parar pista', onSelect: () => cb.onStopLane(lane.id) },
+      { label: 'Borrar pista', danger: true, separatorBefore: true, onSelect: () => cb.onDeleteLane(lane.id) },
+    ]),
+  );
+
   return el;
 }
 
@@ -208,9 +217,28 @@ function clipCell(
     });
     cell.appendChild(playIcon);
     wireClipDrag(cell, { laneId: lane.id, clipIdx: rowIdx }, cb, state);
+    cell.addEventListener('contextmenu', (e) =>
+      openContextMenu(e, [
+        { label: 'Abrir editor', onSelect: () => cb.onClipClick(lane.id, rowIdx) },
+        { label: 'Reproducir / Parar', onSelect: () => cb.onClipPlayPause(lane.id, rowIdx) },
+        { label: 'Borrar clip', danger: true, separatorBefore: true, onSelect: () => cb.onDeleteClip(lane.id, rowIdx) },
+      ]),
+    );
   } else {
     cell.classList.add('session-cell-empty');
     cell.addEventListener('click', () => cb.onCellClick(lane.id, rowIdx));
+    // Audio lanes don't create empty clips (their cells are filled by dropping a
+    // WAV), so offer a disabled hint there; every other engine gets "Crear clip".
+    const isAudio = lane.engineId === 'audio';
+    cell.addEventListener('contextmenu', (e) =>
+      openContextMenu(e, [
+        {
+          label: isAudio ? 'Importar audio (arrastra un WAV)' : 'Crear clip',
+          disabled: isAudio,
+          onSelect: () => cb.onCellClick(lane.id, rowIdx),
+        },
+      ]),
+    );
   }
   // Sampler and audio lanes accept an audio file dropped onto ANY cell (empty or filled)
   // → create/replace a loop clip. Guarded to file drags so it does not interfere
@@ -246,6 +274,13 @@ function sceneLaunchCell(scene: { name?: string } | undefined, idx: number, cb: 
     btn.textContent = `▶ ${scene.name ?? idx + 1}`;
     btn.addEventListener('click', () => cb.onLaunchScene(idx));
     el.appendChild(btn);
+    el.addEventListener('contextmenu', (e) =>
+      openContextMenu(e, [
+        { label: 'Lanzar escena', onSelect: () => cb.onLaunchScene(idx) },
+        { label: 'Añadir escena', onSelect: () => cb.onAddScene() },
+        { label: 'Borrar escena', danger: true, separatorBefore: true, onSelect: () => cb.onDeleteScene(idx) },
+      ]),
+    );
   } else {
     el.classList.add('session-scene-cell-empty');
   }

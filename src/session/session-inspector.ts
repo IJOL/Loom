@@ -13,6 +13,7 @@ import { withUndo, isTextEditTarget } from '../save/history-wiring';
 import type { LaneResourceMap } from '../core/lane-resources';
 import { buildLaneInsertUI } from './lane-insert-ui';
 import { randomizeClipNotes } from './clip-randomize';
+import { ensureScenesForRows } from '../core/scene-ensure';
 
 export interface InspectorDeps {
   ctx: AudioContext;
@@ -152,6 +153,9 @@ export class SessionInspector {
         dup.id = `clip-${Date.now().toString(36)}`;
         dup.name = (clip.name ?? '') + ' copy';
         ln.clips.push(dup);
+        // Append can push the clip past the last scene row; seed a scene so the
+        // new row gets a launchable ▶ (same guarantee as placeClipEnsuringScene).
+        ensureScenesForRows(this.deps.state);
         this.deps.renderWithMixer();
       };
       if (d) withUndo(d, run); else run();
