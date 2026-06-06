@@ -76,6 +76,8 @@
       h1 { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
       .manual-link { font-size: 0.42em; font-weight: 400; letter-spacing: 0.04em; text-transform: uppercase; color: #f5a623; text-decoration: none; border: 1px solid #f5a623; border-radius: 4px; padding: 0.15em 0.5em; opacity: 0.85; }
       .manual-link:hover { opacity: 1; background: #f5a623; color: #111; }
+      /* Transport running: light up the Play button (Play and Stop are now separate). */
+      #play.is-playing { background: #1f8a4c; color: #fff; border-color: #2ec27a; }
     </style>
   </head>
   <body data-pure-session="true">
@@ -83,7 +85,8 @@
       <h1>Loom <a class="manual-link" href="manual/" target="_blank" rel="noopener" title="Open the Loom manual in a new tab">Manual &#8599;</a></h1>
 
       <div class="row transport">
-        <button id="play" title="Play / Stop">&#9654;</button>
+        <button id="play" title="Play — arranca el transporte">&#9654;</button>
+        <button id="stop" title="Stop — detiene el transporte">&#9209;</button>
         <span class="export-menu-wrap">
           <button id="export-scene" class="io" title="Export the current scene to WAV">&#10515; WAV &#9662;</button>
           <span id="export-menu" class="export-menu" hidden>

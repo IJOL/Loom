@@ -45,7 +45,7 @@ import {
 } from './polysynth/polysynth-presets';
 import { wireRandomizeUI } from './core/randomize-ui';
 import { wireFxUI, applyDelaySync as fxApplyDelaySync, type FxUIDeps } from './core/fx-ui';
-import { wireTransport, type TransportDeps } from './core/transport';
+import { wireTransport, setPlaying, type TransportDeps } from './core/transport';
 import { OfflineSceneRecorder } from './export/offline-recorder';
 import { soundingSceneDurationSec } from './export/scene-duration';
 import { wavEncoder } from './export/wav-encoder';
@@ -159,6 +159,7 @@ const applyMuteSolo = () => muteSolo.apply();
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
 const playBtn  = $<HTMLButtonElement>('play');
+const stopBtn  = $<HTMLButtonElement>('stop');
 const bpmInput = $<HTMLInputElement>('bpm');
 const swingInput = $<HTMLInputElement>('swing');
 const volInput = $<HTMLInputElement>('volume');
@@ -479,7 +480,7 @@ const performanceFeature = createPerformanceFeature({
   automationRegistry,
   // Arrangement reached the end (song mode): halt the engine + reset the Play
   // button so the next Play restarts from the top.
-  onArrangementEnd: () => { _origStop(); playBtn.textContent = '▶'; },
+  onArrangementEnd: () => { _origStop(); setPlaying(playBtn, false); },
   onRegisterKnob: (hook) => {
     const origRegister = automation.registerKnob.bind(automation);
     automation.registerKnob = (k: KnobHandle) => {
@@ -646,12 +647,12 @@ function stopTransport(): void {
   liveTake.finish();
   if (seq.isPlaying()) seq.stop();
   stopAllLanes(sessionHost.laneStates);
-  playBtn.textContent = '▶';
+  setPlaying(playBtn, false);
   sessionHost.renderWithMixer();
 }
 
 const transportDeps: TransportDeps = {
-  seq, ctx, playBtn,
+  seq, ctx, playBtn, stopBtn,
   resetAutomationPosition,
   onStop: stopTransport,
 };
@@ -764,7 +765,7 @@ function launchSceneById(sceneId: string): void {
     }
   }
   launchSceneRuntime(sessionHost.laneStates, sessionHost.state, scene, idx, ctx.currentTime, seq.bpm);
-  if (!seq.isPlaying()) { resetAutomationPosition(); seq.start(); playBtn.textContent = '■'; }
+  if (!seq.isPlaying()) { resetAutomationPosition(); seq.start(); setPlaying(playBtn, true); }
   sessionHost.renderWithMixer();
 }
 

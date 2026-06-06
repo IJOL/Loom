@@ -648,7 +648,7 @@ export class SessionHost {
           next.queuedBoundary = ctx.currentTime;
           resetAutomationPosition();
           seq.start();
-          playBtn.textContent = '■';
+          playBtn.classList.add('is-playing');
         } else {
           launchClip(self.laneStates, self.state, lane, clip, ctx.currentTime, seq.bpm,
             self.deps.recHooks);
@@ -714,7 +714,7 @@ export class SessionHost {
         if (!scene) return;
         void ctx.resume();
         launchScene(self.laneStates, self.state, scene, idx, ctx.currentTime, seq.bpm);
-        if (!seq.isPlaying()) { resetAutomationPosition(); seq.start(); playBtn.textContent = '■'; }
+        if (!seq.isPlaying()) { resetAutomationPosition(); seq.start(); playBtn.classList.add('is-playing'); }
         self.renderWithMixer();
       },
       onStopAll() {

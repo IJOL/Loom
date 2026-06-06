@@ -1,19 +1,28 @@
 import { describe, it, expect, vi } from 'vitest';
-import { wireTransport, type TransportDeps } from './transport';
+import { wireTransport, setPlaying, type TransportDeps } from './transport';
 
-/** A fake play button that captures the click listener so a test can fire it. */
+/** A fake button that captures its click listener and tracks classList. */
 function fakeButton() {
   let clickHandler: (() => void) | null = null;
+  const classes = new Set<string>();
   const el = {
-    textContent: '',
+    classList: {
+      add: (c: string) => { classes.add(c); },
+      remove: (c: string) => { classes.delete(c); },
+      toggle: (c: string, on?: boolean) => {
+        const want = on === undefined ? !classes.has(c) : on;
+        if (want) classes.add(c); else classes.delete(c);
+      },
+      contains: (c: string) => classes.has(c),
+    },
     addEventListener: (type: string, fn: () => void) => {
       if (type === 'click') clickHandler = fn;
     },
   } as unknown as HTMLButtonElement;
-  return { el, click: () => clickHandler?.() };
+  return { el, click: () => clickHandler?.(), hasClass: (c: string) => classes.has(c) };
 }
 
-describe('wireTransport Play/Stop button', () => {
+describe('wireTransport — separate Play and Stop buttons', () => {
   function setup() {
     let playing = false;
     const seq = {
@@ -22,31 +31,44 @@ describe('wireTransport Play/Stop button', () => {
       stop: vi.fn(() => { playing = false; }),
     } as unknown as TransportDeps['seq'];
     const ctx = { resume: () => Promise.resolve() } as unknown as AudioContext;
-    const btn = fakeButton();
-    // The unified stop now owns stopping the clock AND resetting the glyph (so
-    // the live-take finalize, lane stop, glyph reset, and re-render are a single
-    // source of truth in main's stopTransport). wireTransport just delegates to
-    // it on the stop click — it no longer touches seq.stop()/the glyph itself.
-    const onStop = vi.fn(() => { seq.stop(); btn.el.textContent = '▶'; });
+    const play = fakeButton();
+    const stop = fakeButton();
+    // Unified stop owns the actual clock stop + clearing the playing state.
+    const onStop = vi.fn(() => { seq.stop(); setPlaying(play.el, false); });
     const resetAutomationPosition = vi.fn();
-    wireTransport({ seq, ctx, playBtn: btn.el, resetAutomationPosition, onStop });
-    return { seq, btn, onStop, resetAutomationPosition };
+    wireTransport({ seq, ctx, playBtn: play.el, stopBtn: stop.el, resetAutomationPosition, onStop });
+    return { seq, play, stop, onStop, resetAutomationPosition };
   }
 
-  it('starting does not invoke onStop and shows the stop glyph', () => {
-    const { btn, onStop } = setup();
-    btn.click(); // start
-    expect(btn.el.textContent).toBe('■');
+  it('Play starts the transport, marks it playing, and never calls onStop', () => {
+    const { play, seq, onStop } = setup();
+    play.click();
+    expect(seq.start).toHaveBeenCalledTimes(1);
+    expect(play.hasClass('is-playing')).toBe(true);
     expect(onStop).not.toHaveBeenCalled();
   });
 
-  it('stopping delegates to onStop (the unified stop), which clears the glyph', () => {
-    const { seq, btn, onStop } = setup();
-    btn.click(); // start
-    btn.click(); // stop → delegates entirely to onStop
+  it('Play while already running is a no-op (never stops)', () => {
+    const { play, seq, onStop } = setup();
+    play.click(); // start
+    play.click(); // again — should NOT restart or stop
+    expect(seq.start).toHaveBeenCalledTimes(1);
+    expect(onStop).not.toHaveBeenCalled();
+  });
+
+  it('Stop delegates to onStop, which clears the playing state', () => {
+    const { play, stop, seq, onStop } = setup();
+    play.click(); // start
+    stop.click(); // stop
     expect(onStop).toHaveBeenCalledTimes(1);
-    // The glyph reset and clock stop come from onStop, not wireTransport.
-    expect(btn.el.textContent).toBe('▶');
     expect(seq.stop).toHaveBeenCalledTimes(1);
+    expect(play.hasClass('is-playing')).toBe(false);
+  });
+
+  it('Stop while idle is a no-op (never starts)', () => {
+    const { stop, seq, onStop } = setup();
+    stop.click();
+    expect(onStop).not.toHaveBeenCalled();
+    expect(seq.start).not.toHaveBeenCalled();
   });
 });
