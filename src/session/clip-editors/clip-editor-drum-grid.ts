@@ -36,6 +36,13 @@ type Tool = 'draw' | 'select';
 let currentTool: Tool = 'draw';          // persists across clips (session)
 let clipboard: DrumClipNote[] | null = null;
 
+// Drum-grid keyboard legend (the real key set handled in the keydown below — no
+// note-typing here). Kept next to the handler so the on-screen help cannot drift.
+export const DRUM_KEY_LEGEND =
+  'Keyboard:  1 / 2 = pencil / select · ←/→ = move · ↑/↓ = change voice\n' +
+  '           Ctrl+A = select all · Ctrl+C / Ctrl+X / Ctrl+V = copy / cut / paste\n' +
+  '           Esc = deselect · ⌫ = delete';
+
 export interface DrumEditorDeps {
   auditionNote?: (midi: number) => void;
   getPlayheadTick?: () => number;        // -1 when not playing
@@ -77,9 +84,40 @@ export function renderDrumGridEditor(
   Object.assign(toolbar.style, { display: 'flex', gap: '6px', alignItems: 'center', padding: '4px 2px' } as Partial<CSSStyleDeclaration>);
   const drawBtn = document.createElement('button'); drawBtn.textContent = '✏ Draw';
   const selBtn = document.createElement('button'); selBtn.textContent = '▭ Select';
+
+  // Resolution as a grid-control anchored to the right, mirroring the piano-roll's
+  // octave stepper: a "Grid" label + the resolution <select>, wrapped in
+  // .editor-grid-control (right-anchored, styled by Task 10).
+  const resCtl = document.createElement('div');
+  resCtl.className = 'editor-grid-control';
+  // Right-anchor + compact layout; the .editor-grid-control SCSS (Task 10)
+  // reinforces this. Inline kept so the control reads correctly before that lands.
+  resCtl.style.cssText = 'margin-left:auto;display:flex;gap:4px;align-items:center';
+  const resLabel = document.createElement('span');
+  resLabel.textContent = 'Grid';
+  resLabel.style.cssText = 'font:11px ui-monospace,monospace;color:#9a9a9a';
   const resSel = document.createElement('select');
+  resSel.title = 'Grid resolution';
   for (const r of RESOLUTIONS) { const o = document.createElement('option'); o.value = r; o.textContent = r; resSel.appendChild(o); }
   resSel.value = resolution;
+  resCtl.append(resLabel, resSel);
+
+  // Keyboard-shortcut help: a "?" button toggling a popover with DRUM_KEY_LEGEND,
+  // keeping the shortcuts discoverable without permanently eating toolbar space.
+  const helpBtn = document.createElement('button');
+  helpBtn.className = 'editor-help-btn';
+  helpBtn.textContent = '?';
+  helpBtn.title = DRUM_KEY_LEGEND; // native multi-line tooltip fallback
+  const helpPopover = document.createElement('pre');
+  helpPopover.className = 'editor-help-popover';
+  helpPopover.textContent = DRUM_KEY_LEGEND;
+  helpPopover.hidden = true;
+  helpBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    helpPopover.hidden = !helpPopover.hidden;
+  });
+  helpBtn.addEventListener('blur', () => { helpPopover.hidden = true; });
+
   const refreshToolbar = () => {
     drawBtn.style.fontWeight = currentTool === 'draw' ? '700' : '400';
     selBtn.style.fontWeight = currentTool === 'select' ? '700' : '400';
@@ -87,12 +125,13 @@ export function renderDrumGridEditor(
   drawBtn.addEventListener('click', () => { currentTool = 'draw'; refreshToolbar(); });
   selBtn.addEventListener('click', () => { currentTool = 'select'; refreshToolbar(); });
   resSel.addEventListener('change', () => { resolution = clampResolution(resSel.value); clip.gridResolution = resolution; draw(); });
-  toolbar.append(drawBtn, selBtn, resSel);
+  toolbar.append(drawBtn, selBtn, resCtl, helpBtn);
   refreshToolbar();
 
   const canvas = document.createElement('canvas');
   canvas.style.display = 'block'; canvas.style.cursor = 'crosshair';
-  wrap.append(toolbar, canvas);
+  // Popover lives just below the toolbar (inside the wrap), positioned by SCSS.
+  wrap.append(toolbar, helpPopover, canvas);
   host.appendChild(wrap);
 
   const c2d = canvas.getContext('2d');
