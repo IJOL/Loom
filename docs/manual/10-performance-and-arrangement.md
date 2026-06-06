@@ -14,7 +14,7 @@ The arrangement starts empty. There are three ways to give it content.
 
 ### 1. Copy to Performance
 
-The fastest route from a working session to a playable song is the **⇉ Copiar a Performance** button in the transport bar. Clicking it calls `arrangementFromSession`, which walks your scenes in order and lays them out as a linear song:
+The fastest route from a working session to a playable song is the **⤉ Copy-to-Performance** button (`#copy-to-performance`) in the session bar of the header — now an icon-only button with the tooltip "Copiar las escenas a la timeline de Performance". Clicking it calls `arrangementFromSession`, which walks your scenes in order and lays them out as a linear song:
 
 - Each scene becomes one section.
 - The section length equals the longest effective clip in that scene (measured in bars). If a clip has a loop sub-region enabled, its sub-region length is used instead of the full clip length.
@@ -26,7 +26,9 @@ After the layout is computed, Loom switches you to Performance automatically. Th
 
 You can record the arrangement in real time while you play.
 
-1. Click **● REC** in the transport bar to arm recording (the button shows "● REC ON").
+Recording is driven by the unified **REC** control in the session bar, which has three modes selectable beside the **● REC** button: **🎛 take** (the default — captures knob moves + clip launches into a performance take, described below), **⏱ live** (records real-time audio to a WAV file), and **⚡ offline** (renders the current scene to WAV offline, faster than real time). The steps below assume **🎛 take** is selected.
+
+1. Make sure the REC mode selector (`#rec-mode`, next to the REC button) is set to **🎛 take** — its default. (The other two modes, **⏱ live** and **⚡ offline**, record audio to WAV instead; see [Saving & Export](09-saving-and-export.md).) Then click **● REC** (`#rec`) in the session bar to arm recording.
 2. Stay in Session view and press Play. Recording begins.
 3. Launch clips and scenes as you would for a performance. Move any knobs whose automation you want captured.
 4. Press Stop. Loom finalises the take: any still-open clip events are clamped to the stop time, durations are computed, and the recorded content appears in the Performance view as timeline bands and automation curves.

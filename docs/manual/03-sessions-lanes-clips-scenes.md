@@ -18,7 +18,15 @@ The session view is the main workspace in Loom. It organises everything you hear
 
 Lane names run along the top header row; row numbers (1, 2, 3 …) label the scenes down the left edge. Scenes launch buttons sit in the rightmost column. Each filled cell shows the clip's name (or its row number as a fallback) against the clip's pastel colour. A ⚙ icon in the lane header opens that lane's instrument editor.
 
+A newly created instrument lane starts out empty — no placeholder clips are added to its column; you fill cells yourself. Audio and Sampler lanes created from a dropped WAV or loop place their clip in row 1 only. The grid always keeps at least one launchable scene available even when every lane is empty.
+
+Right-clicking grid elements opens a context menu. On a **lane header**: *Editar instrumento*, *Parar pista*, and *Borrar pista* (red). On a **scene cell**: *Lanzar escena*, *Añadir escena*, and *Borrar escena* (red). On a **filled clip**: *Abrir editor*, *Reproducir / Parar*, and *Borrar clip* (red). On an **empty cell**: *Crear clip* — on audio lanes this entry is disabled and instead reads *Importar audio (arrastra un WAV)*.
+
 Below the scene rows there is a stop row: each lane has its own ⏹ stop button, and a global **⏹ all** button at the far right stops every lane at once.
+
+### Deleting from the grid
+
+A small **✕** cross appears on every lane header (*Borrar pista*), every filled clip cell (*Borrar clip*), and every scene cell (*Borrar escena*). Deleting a clip is immediate. Deleting a lane or scene asks you to confirm in an in-app dialog (**Aceptar** / **Cancelar**, with the destructive choice in red) only when the target still has content — an empty lane or scene is removed straight away. Every deletion is undoable with **Ctrl+Z**, which restores the lane, scene, or clip along with its audio resources.
 
 ## Launching clips and scenes
 

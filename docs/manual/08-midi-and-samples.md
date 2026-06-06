@@ -148,7 +148,7 @@ Stem separation lets you drop a finished song into Loom and get it back as four 
 
 ### How it works
 
-Click **☰ Stems…** in the transport bar. A dialog titled "Separar en stems" opens and immediately checks whether the local helper service is reachable:
+Click **☰ Stems…** in the session bar (the second header row, alongside Save / Load / MIDI). A dialog titled "Separar en stems" opens and immediately checks whether the local helper service is reachable:
 
 - **Service found** — the hint line reads "4 pistas (voz / batería / bajo / otros) vía el servicio local." and the **Separar** button becomes active once you pick a file.
 - **Service not found** — the hint reads "No encuentro el servicio de stems en localhost:8765. ¿Está arrancado?" and Separar stays disabled. Start the service (see below), then re-open the dialog.

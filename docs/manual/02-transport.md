@@ -1,6 +1,6 @@
 # Transport
 
-The transport bar runs across the top of the interface and controls every aspect of playback timing.
+The header runs across the top of the interface in two rows. The first row (transport & tempo) holds the playback and timing controls you touch while the music plays; the second row (session & I/O) holds the mode toggle, recording/export, and session file management.
 
 ![Transport bar](images/transport.png)
 
@@ -8,7 +8,7 @@ The transport bar runs across the top of the interface and controls every aspect
 
 ## Play / Stop
 
-Press **▶** (`#play`) to start playback. The button acts as a toggle — pressing it again stops the transport. When you press Play the browser's `AudioContext` resumes automatically if it was suspended (a browser policy requirement on first interaction).
+Press **▶** (`#play`, title "Play — arranca el transporte") to start playback, and **⏹** (`#stop`, title "Stop — detiene el transporte") to stop it. Play and Stop are now two separate buttons — Play is no longer a play/stop toggle. When you press Play the browser's `AudioContext` resumes automatically if it was suspended (a browser policy requirement on first interaction).
 
 ---
 
@@ -45,10 +45,18 @@ Each 16th-note step lasts `60 / bpm / 4` seconds.
 
 **Session / Performance** (`#mode-toggle`) — switches the main view between the Session clip grid and the Performance arrangement view.
 
+**⤉ Copy to Performance** (`#copy-to-performance`) — an icon-only button (tooltip "Copiar las escenas a la timeline de Performance") that copies the current scenes onto the Performance timeline. See [Performance & Arrangement](10-performance-and-arrangement.md).
+
 - **Session** is the default mode: you see the clip grid and can trigger scenes, edit clips, and record automation in real time.
 - **Performance** shows the arrangement timeline where recorded takes are displayed as timeline bands and automation curves can be drawn directly. See [Performance & Arrangement](10-performance-and-arrangement.md) for the full workflow.
 
-**● REC** (`#rec`) — arms knob-movement recording. When armed (button shows "● REC ON"), any knob you move during playback is captured as automation in the current take. Click again to disarm. See [Modulation & Note FX](06-modulation-and-note-fx.md) for how automation lanes work.
+**● REC** (`#rec`, tooltip "Grabar — el modo se elige al lado") arms recording; the **mode selector** (`#rec-mode`) beside it chooses what gets recorded:
+
+- **🎛 take** (`data-recmode="take"`, the default) — records knob moves and clip launches into a performance take. See [Modulation & Note FX](06-modulation-and-note-fx.md) for how automation lanes work.
+- **⏱ live** (`data-recmode="live"`) — records the real-time audio output to a WAV.
+- **⚡ offline** (`data-recmode="offline"`) — renders the current scene to a WAV offline (fast).
+
+Click **REC** again to disarm. This unified REC group replaced the old standalone WAV-export button.
 
 ---
 
@@ -62,7 +70,7 @@ The canvas at the far right (`#viz`) shows a real-time waveform of the master ou
 
 The remaining controls in the transport row are covered in dedicated chapters:
 
-- **↓ WAV ▾** (`#export-scene`) — opens an export menu with Real-time and Offline (fast) options. See [Saving & Export](09-saving-and-export.md).
+- **WAV export** — there is no longer a standalone "↓ WAV" button. WAV export now happens through the **REC** group's mode selector (see the Mode toggle and REC section above): **⏱ live** records real-time audio to WAV, and **⚡ offline** renders the scene to WAV offline (fast). See [Saving & Export](09-saving-and-export.md).
 - **New / Save / Load** (`#new-session`, `#save`, `#load`) — session file management. See [Saving & Export](09-saving-and-export.md).
 - **— load a demo —** (`#demo-picker`) — loads a bundled demo arrangement into the session.
 - **▶ MIDI IMPORT** (`.midi-panel`) — imports a Standard MIDI File. See the MIDI Import chapter for details.

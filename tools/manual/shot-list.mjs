@@ -81,10 +81,10 @@ export const SHOTS = [
     setup: openFirstClip,
   },
   {
-    name: 'export-menu',
-    selector: '.export-menu-wrap',
-    setup: async (page) => { await page.locator('#export-scene').click();
-      await page.locator('#export-menu').waitFor({ state: 'visible' }); },
+    // The unified REC group on the session bar (REC button + take/live/offline
+    // mode selector). Replaced the removed standalone "↓ WAV" export menu.
+    name: 'rec-group',
+    selector: '.rec-group',
   },
   {
     name: 'midi-import',

@@ -129,7 +129,7 @@ src/
   performance/    Arrangement / record model:
                   arrangement-from-session, arrangement-ops,
                   arrangement-runtime (records clip-launches + knob automation;
-                  playback logic is wired but the UI does not yet surface a take)
+                  surfaced via the REC group's take mode — see performance-feature)
   polysynth/      PolySynth poly voice host (used by Subtractive):
                   voice stealing, mono/legato/retrig, per-voice mod bus
   app/            Boot factories: audio-graph, lane-allocator, trigger-dispatch,

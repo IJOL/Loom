@@ -35,5 +35,5 @@ Click any clip cell to open its editor in the inspector below the grid. The edit
 
 ## Next steps
 
-- [Transport](02-transport.md) — BPM, meter, swing, record, and export controls.
+- [Transport](02-transport.md) — BPM, meter, swing, and the unified REC controls (take / live-WAV / offline-WAV).
 - [Sessions, Lanes, Clips & Scenes](03-sessions-lanes-clips-scenes.md) — how to build and arrange your own session from scratch.
