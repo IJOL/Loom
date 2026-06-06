@@ -14,7 +14,7 @@ import {
 } from './pianoroll-zoom';
 import {
   notesInRect, translateGroup, serializeClipboard, pasteTranslate, midiForKey,
-  quantizeRecorded, clampOctaveBase, octaveBaseLabel, type ClipboardNote,
+  quantizeRecorded, clampOctaveBase, octaveBaseLabel, PIANO_KEY_LEGEND, type ClipboardNote,
 } from './piano-roll-editing';
 import { isTextEditTarget } from '../save/history-wiring';
 
@@ -193,6 +193,23 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   octUpBtn.title = 'Octave (z / x)';
   octCtl.append(octDownBtn, octLabel, octUpBtn);
 
+  // Keyboard-shortcut help: a "?" button that toggles a popover holding the
+  // full PIANO_KEY_LEGEND (notes + every editing shortcut), so the legend stays
+  // discoverable without permanently eating toolbar space.
+  const helpBtn = document.createElement('button');
+  helpBtn.className = 'editor-help-btn';
+  helpBtn.textContent = '?';
+  helpBtn.title = PIANO_KEY_LEGEND; // native multi-line tooltip fallback
+  const helpPopover = document.createElement('pre');
+  helpPopover.className = 'editor-help-popover';
+  helpPopover.textContent = PIANO_KEY_LEGEND;
+  helpPopover.hidden = true;
+  helpBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    helpPopover.hidden = !helpPopover.hidden;
+  });
+  helpBtn.addEventListener('blur', () => { helpPopover.hidden = true; });
+
   const refreshToolbar = () => {
     drawBtn.style.fontWeight = currentTool === 'draw' ? '700' : '400';
     selBtn.style.fontWeight  = currentTool === 'select' ? '700' : '400';
@@ -206,7 +223,9 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   selBtn.addEventListener('click', () => { currentTool = 'select'; refreshToolbar(); });
   octDownBtn.addEventListener('click', () => shiftOctave(-1));
   octUpBtn.addEventListener('click', () => shiftOctave(1));
-  f.toolbar.append(drawBtn, selBtn, octCtl);
+  f.toolbar.append(drawBtn, selBtn, octCtl, helpBtn);
+  // Popover lives just below the toolbar (inside the wrap), positioned by SCSS.
+  f.toolbar.after(helpPopover);
   refreshToolbar();
 
   const gctx = ctx2d(f.gridCanvas);
