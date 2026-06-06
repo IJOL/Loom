@@ -42,7 +42,9 @@ export interface PerformanceFeatureDeps {
   automationRegistry: Map<string, KnobHandle>;
   /** Called by registerKnob — performance also wants the knob events. */
   onRegisterKnob: (registerExtra: (k: KnobHandle) => void) => void;
-  recBtn: HTMLButtonElement;
+  /** Repaint the (main-owned) shared REC button after Performance changes the
+   *  take's armed state (e.g. auto-disarm when Performance starts playing). */
+  onRecVisualChanged?: () => void;
   /** Optional: snapshot current state for undo after a performance edit
    *  (length/zoom/add/remove/draw). Undefined keeps edits working without undo. */
   onPerformanceEdited?: () => void;
@@ -71,10 +73,13 @@ export interface PerformanceFeature {
   /** Build the arrangement from the current session (scenes in order) and
    *  switch to Performance. */
   copyFromSession: () => void;
+  /** Toggle the Performance "take" arm (clip launches + knob automation).
+   *  Returns the new armed state. Called by main's unified REC button. */
+  toggleTakeRec: () => boolean;
 }
 
 export function createPerformanceFeature(deps: PerformanceFeatureDeps): PerformanceFeature {
-  const { ctx, seq, sessionHost, automationRegistry, onRegisterKnob, recBtn, onPerformanceEdited } = deps;
+  const { ctx, seq, sessionHost, automationRegistry, onRegisterKnob, onPerformanceEdited } = deps;
 
   const rec = createRecState();
   const arrangement = emptyArrangementState(seq.bpm);
@@ -102,14 +107,14 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     };
   });
 
-  recBtn.replaceWith(recBtn.cloneNode(true));
-  const freshRec = document.getElementById('rec') as HTMLButtonElement;
-  freshRec.addEventListener('click', () => {
+  // The REC button + its 3-mode selector are owned by main.ts (take/live/offline
+  // dispatcher). Performance only owns the *take* mode, exposed here. Returns the
+  // new armed state so main can repaint the shared button.
+  function toggleTakeRec(): boolean {
     if (rec.armed) { finishRecordingIfActive(); disarmRec(rec); } else armRec(rec);
-    freshRec.classList.toggle('armed', rec.armed);
-    freshRec.textContent = rec.armed ? '● REC ON' : '● REC';
     if (rec.armed && seq.isPlaying()) startRecording(rec, ctx.currentTime);
-  });
+    return rec.armed;
+  }
 
   const flashToast = (msg: string) => {
     const t = document.createElement('div');
@@ -273,8 +278,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     if (mode === 'performance') {
       if (rec.armed) {
         disarmRec(rec);
-        const btn = document.getElementById('rec') as HTMLButtonElement | null;
-        if (btn) { btn.classList.remove('armed'); btn.textContent = '● REC'; }
+        deps.onRecVisualChanged?.();
         flashToast('REC desarmado: Performance está reproduciendo');
       }
       startArrangement(arrangementPlayState, ctx.currentTime);
@@ -343,5 +347,6 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     onPlay,
     onStop,
     copyFromSession,
+    toggleTakeRec,
   };
 }

@@ -60,12 +60,16 @@
       .export-menu { position: absolute; top: 100%; left: 0; z-index: 20; display: flex; flex-direction: column; background: #222; border: 1px solid #444; }
       .export-menu[hidden] { display: none; }
       .export-menu .io { white-space: nowrap; }
-      /* Armed and waiting for Play to start capturing: GREEN background, blinking. */
-      #export-scene.armed { background: #1f8a4c; color: #fff; border-color: #2ec27a; animation: export-blink 0.8s steps(1) infinite; }
-      /* While actually capturing: a solid RED background so recording is unmistakable. */
-      #export-scene.recording { background: #c81e2b; color: #fff; border-color: #ff4d57; animation: export-rec-pulse 1s ease-in-out infinite; }
+      /* REC armed (waiting for Play): GREEN, blinking. Recording: RED, pulsing. */
+      #rec.armed { background: #1f8a4c; color: #fff; border-color: #2ec27a; animation: export-blink 0.8s steps(1) infinite; }
+      #rec.recording { background: #c81e2b; color: #fff; border-color: #ff4d57; animation: export-rec-pulse 1s ease-in-out infinite; }
       @keyframes export-blink { 50% { opacity: 0.35; } }
       @keyframes export-rec-pulse { 50% { background: #ec3340; } }
+      /* REC group: the single REC button + its 3-mode selector (take/live/offline). */
+      .rec-group { display: inline-flex; align-items: center; gap: 5px; }
+      .rec-mode { display: inline-flex; border: 1px solid #444; border-radius: 6px; overflow: hidden; }
+      .rec-mode button { border: 0; background: #222; color: #aaa; padding: 3px 7px; font-size: 13px; cursor: pointer; line-height: 1; }
+      .rec-mode button.on { background: #6c7cff; color: #0b0b12; }
       /* Live-take destination chooser (file vs new audio channel). */
       .take-dialog { background: #1c1c1c; color: #eee; border: 1px solid #555; border-radius: 8px; padding: 18px 20px; min-width: 280px; }
       .take-dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
@@ -113,12 +117,12 @@
         </span>
         <button class="rnd" id="copy-to-performance" title="Copiar las escenas a la timeline de Performance">&#8649;</button>
         <div class="vert-divider"></div>
-        <button class="io" id="rec" title="Grabar (knobs + lanzamientos de clips)">&#9679; REC</button>
-        <span class="export-menu-wrap">
-          <button id="export-scene" class="io" title="Exportar la escena a WAV">&#10515; WAV &#9662;</button>
-          <span id="export-menu" class="export-menu" hidden>
-            <button id="export-rt" class="io">Tiempo real</button>
-            <button id="export-offline" class="io">Offline (r&aacute;pido)</button>
+        <span class="rec-group">
+          <button class="io" id="rec" title="Grabar — el modo se elige al lado">&#9679; REC</button>
+          <span class="rec-mode" id="rec-mode">
+            <button data-recmode="take" class="on" title="Actuación: knobs + lanzamientos de clips (take)">&#127899;</button>
+            <button data-recmode="live" title="Audio en tiempo real a WAV">&#9201;</button>
+            <button data-recmode="offline" title="Render de la escena a WAV (offline, rápido)">&#9889;</button>
           </span>
         </span>
         <button id="stems-open" class="io" title="Separar una canción en stems (servicio local)">&#9776;</button>

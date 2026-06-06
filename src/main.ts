@@ -489,7 +489,7 @@ const performanceFeature = createPerformanceFeature({
     };
     for (const k of automationRegistry.values()) hook(k);
   },
-  recBtn,
+  onRecVisualChanged: () => refreshRecButton(),
 });
 (sessionHost.deps as { recHooks?: import('./session/session-runtime').RecHooks }).recHooks =
   performanceFeature.recHooks;
@@ -609,32 +609,44 @@ fxApplyDelaySync(fxUIDeps);
 // The button + helpers are declared BEFORE the transport block because the
 // live-take recorder (and the unified stopTransport) close over them, and
 // wireTransport(transportDeps) below must see liveTake + stopTransport already.
-const exportBtn = $<HTMLButtonElement>('export-scene');
+// One REC button (#rec) + a 3-mode selector (🎛 take / ⏱ live / ⚡ offline). All
+// three deliver via deliverTake. recBtn is declared above; the old separate
+// #export-scene control + its rt/offline menu are folded in here.
 const EXPORT_TAIL_SEC = 2;    // live take: let reverb/delay tails decay before the cut
-const EXPORT_IDLE_LABEL = '⤓ WAV';
+type RecMode = 'take' | 'live' | 'offline';
+let recMode: RecMode = 'take';
+let liveState: 'idle' | 'armed' | 'recording' = 'idle';
 let exportMsgTimer: number | undefined;
+
+// Paint the shared REC button from the active mode + its recorder state.
+function refreshRecButton(): void {
+  if (exportMsgTimer !== undefined) return; // a transient message owns the label
+  recBtn.classList.remove('armed', 'recording');
+  if (recMode === 'live') {
+    recBtn.classList.toggle('armed', liveState === 'armed');
+    recBtn.classList.toggle('recording', liveState === 'recording');
+    recBtn.textContent = liveState === 'armed' ? '● ARMADO' : liveState === 'recording' ? '● Grabando…' : '● REC';
+  } else if (recMode === 'take') {
+    recBtn.classList.toggle('armed', performanceFeature.rec.armed);
+    recBtn.textContent = performanceFeature.rec.armed ? '● REC ON' : '● REC';
+  } else {
+    recBtn.textContent = '● REC';
+  }
+}
 
 function showExportMessage(msg: string): void {
   if (exportMsgTimer !== undefined) clearTimeout(exportMsgTimer);
-  exportBtn.textContent = msg;
-  exportMsgTimer = window.setTimeout(() => {
-    exportBtn.textContent = EXPORT_IDLE_LABEL;
-    exportMsgTimer = undefined;
-  }, 1500);
+  recBtn.textContent = msg;
+  exportMsgTimer = window.setTimeout(() => { exportMsgTimer = undefined; refreshRecButton(); }, 1500);
 }
 
-// Real-time export is now an ARM → Play → Stop live take: arming pre-connects
-// the master tap, Play starts the capture, and the unified stop finalizes it.
-// The finished take is inserted as a clip in a NEW dedicated 'audio' channel.
+// Real-time take: ARM → Play → Stop. Arming pre-connects the master tap; Play
+// starts the capture; the unified stop finalizes it (delivered via deliverTake).
 const liveTake = new LiveTakeRecorder({
   ctx,
   tap: masterComp.output,
   tailSec: EXPORT_TAIL_SEC,
-  onState: (s) => {
-    exportBtn.classList.toggle('armed', s === 'armed');
-    exportBtn.classList.toggle('recording', s === 'recording');
-    exportBtn.textContent = s === 'armed' ? '● REC ▾' : s === 'recording' ? '● Grabando…' : EXPORT_IDLE_LABEL;
-  },
+  onState: (s) => { liveState = s; refreshRecButton(); },
   onTake: (audio) => deliverTake(audio),
   onError: (m) => { console.warn('[live-take]', m); showExportMessage(m); },
 });
@@ -685,11 +697,7 @@ function deliverTake(audio: RenderedAudio): void {
   })();
 }
 
-const exportMenu = $<HTMLElement>('export-menu');
-exportBtn.addEventListener('click', () => { exportMenu.hidden = !exportMenu.hidden; });
-
 function runOfflineExport(): void {
-  exportMenu.hidden = true;
   // Render EXACTLY the musical (bar-aligned) length — no reverb tail. At the
   // project BPM that makes the warp ratio 1.0 and the loop seamless, so the
   // result locks to the grid. (A trailing tail rounds up to an extra bar and
@@ -697,8 +705,8 @@ function runOfflineExport(): void {
   const musicSec = soundingSceneDurationSec(sessionHost.laneStates, seq.meter, seq.bpm);
   if (musicSec <= 0) { showExportMessage('Lanza una escena primero'); return; }
   if (exportMsgTimer !== undefined) { clearTimeout(exportMsgTimer); exportMsgTimer = undefined; }
-  exportBtn.disabled = true; playBtn.disabled = true;
-  exportBtn.textContent = 'Renderizando…';
+  recBtn.disabled = true; playBtn.disabled = true;
+  recBtn.textContent = 'Renderizando…';
   void (async () => {
     try {
       const rendered = await new OfflineSceneRecorder({
@@ -711,23 +719,33 @@ function runOfflineExport(): void {
     } catch (err) {
       showExportMessage('No se pudo exportar: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
-      exportBtn.disabled = false; playBtn.disabled = false;
-      if (exportMsgTimer === undefined) exportBtn.textContent = EXPORT_IDLE_LABEL;
+      recBtn.disabled = false; playBtn.disabled = false;
+      if (exportMsgTimer === undefined) refreshRecButton();
     }
   })();
 }
-// Real-time → arm/disarm a live take (Play starts it, the unified stop ends it).
-$<HTMLButtonElement>('export-rt').addEventListener('click', () => {
-  exportMenu.hidden = true;
-  void liveTake.toggleArm();
-});
-$<HTMLButtonElement>('export-offline').addEventListener('click', () => runOfflineExport());
 
-// Dismiss the export menu when clicking outside its wrapper.
-document.addEventListener('click', (e) => {
-  const wrap = exportBtn.closest('.export-menu-wrap');
-  if (wrap && !wrap.contains(e.target as Node)) exportMenu.hidden = true;
+// 3-mode selector (🎛 take / ⏱ live / ⚡ offline) — mutually exclusive: switching
+// disarms whatever the leaving mode had armed.
+const recModeBtns = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-recmode]'));
+function setRecMode(m: RecMode): void {
+  if (m === recMode) return;
+  if (recMode === 'take' && performanceFeature.rec.armed) performanceFeature.toggleTakeRec();
+  if (recMode === 'live' && liveState === 'armed') void liveTake.toggleArm();
+  recMode = m;
+  for (const b of recModeBtns) b.classList.toggle('on', b.dataset.recmode === m);
+  refreshRecButton();
+}
+for (const b of recModeBtns) b.addEventListener('click', () => setRecMode(b.dataset.recmode as RecMode));
+
+// The single REC button dispatches by the active mode.
+recBtn.addEventListener('click', () => {
+  void ctx.resume();
+  if (recMode === 'take') { performanceFeature.toggleTakeRec(); refreshRecButton(); }
+  else if (recMode === 'live') { void liveTake.toggleArm(); }
+  else runOfflineExport();
 });
+refreshRecButton();
 
 {
   const positionEl = document.getElementById('transport-position');
