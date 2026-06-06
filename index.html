@@ -101,23 +101,6 @@
         <label>Swing<input id="swing" type="range" min="0" max="0.6" step="0.01" value="0" /></label>
         <label>Volume<input id="volume" type="range" min="0" max="1" step="0.01" value="0.5" /></label>
         <div class="vert-divider"></div>
-        <div class="vert-divider"></div>
-        <label>Bars
-          <select id="bars">
-            <option value="1">1</option>
-            <option value="2" selected>2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-          </select>
-        </label>
-        <div class="vert-divider"></div>
-        <div class="vert-divider"></div>
-        <div class="tool-group" id="pager">
-          <span class="tool-label">View</span>
-          <button class="page-btn" id="page-prev">◀</button>
-          <span id="page-label">1/2</span>
-          <button class="page-btn" id="page-next">▶</button>
-        </div>
         <span class="mode-toggle" id="mode-toggle">
           <button class="mode-btn on" data-mode="session">Session</button>
           <button class="mode-btn" data-mode="performance">Performance</button>
@@ -312,10 +295,6 @@
       </details>
 
       <div class="session-view" id="session-view">
-        <div class="session-toolbar">
-          <button class="rnd" id="session-launch-scene-1">▶ Scene 1 (debug)</button>
-          <button class="rnd" id="session-stop-all">⏹ All</button>
-        </div>
         <div id="session-grid" class="session-grid">Session grid will render here.</div>
         <div id="session-inspector" class="session-inspector" hidden>
           <div class="session-inspector-row">

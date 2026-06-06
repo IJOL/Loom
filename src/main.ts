@@ -162,7 +162,6 @@ const playBtn  = $<HTMLButtonElement>('play');
 const bpmInput = $<HTMLInputElement>('bpm');
 const swingInput = $<HTMLInputElement>('swing');
 const volInput = $<HTMLInputElement>('volume');
-const barsSel  = $<HTMLSelectElement>('bars');
 const meterSel = $<HTMLSelectElement>('meter');
 const scaleSel = $<HTMLSelectElement>('scale');
 const rootSel  = $<HTMLSelectElement>('root');
@@ -296,18 +295,14 @@ let _discreteHistoryDeps: HistoryDeps | undefined;
 // Legacy global wave selector removed — TB-303 wave is a per-lane engine param
 // (osc.wave) rendered by TB303Engine.buildParamUI, like every other engine.
 
-barsSel.addEventListener('change', () => {
-  seq.setLength(parseInt(barsSel.value, 10) * stepsPerBar(seq.meter));
-  renderLanes();
-});
-
 meterSel.addEventListener('change', () => {
+  // Keep the same number of bars across a meter change: derive the bar count
+  // from the current length under the OLD meter, then re-length under the new
+  // one. (The legacy "Bars" selector that used to drive this was removed.)
+  const bars = Math.max(1, Math.round(seq.length / stepsPerBar(seq.meter)));
   seq.meter = meterFromLabel(meterSel.value);
-  seq.setLength(parseInt(barsSel.value, 10) * stepsPerBar(seq.meter));
+  seq.setLength(bars * stepsPerBar(seq.meter));
   // The scheduler + transport read seq.meter / seq.length live on the next step.
-  // renderLanes() is a no-op stub in main.ts (kept only for parity with the Bars
-  // handler); an open clip editor picks up the new meter when it is reopened via
-  // the session host (rebuilding a live-open editor is a Spec-2 concern).
   renderLanes();
 });
 
@@ -511,8 +506,6 @@ seq.stop = () => { performanceFeature.onStop(); _origStop(); };
 
 const copyBtn = document.getElementById('copy-to-performance');
 copyBtn?.addEventListener('click', () => performanceFeature.copyFromSession());
-
-barsSel.value = String(Math.max(1, Math.round(seq.length / stepsPerBar(seq.meter))));
 
 // ── Deps objects for extracted UI modules ─────────────────────────────────
 function activeEnginePrefix(): string | null {

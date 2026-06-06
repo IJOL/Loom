@@ -290,7 +290,6 @@ export class SessionHost {
     };
 
     this.buildCallbacks();
-    this.wireToolbar();
     this.refreshSynthTabs();
     this.startRenderTick();
     // Phase G deferral rule: lane resources don't exist until
@@ -1038,18 +1037,6 @@ export class SessionHost {
     }
     if (targetTab === '303') mountBassPresetSelect(laneId);
     if (targetTab === 'drums') mountDrumsPresetSelect(laneId);
-  }
-
-  // ── Toolbar wiring ─────────────────────────────────────────────────────────
-
-  private wireToolbar(): void {
-    document.getElementById('session-launch-scene-1')!.addEventListener('click',
-      () => this.callbacks.onLaunchScene(0));
-    document.getElementById('session-stop-all')!.addEventListener('click',
-      () => this.callbacks.onStopAll());
-    // Lane creation moved into the dynamic tab bar (renderSessionTabBar); the
-    // duplicate '#session-add-engine' / '#session-add-lane' controls have been
-    // removed from the toolbar markup.
   }
 
   // ── Render tick (rAF loop that re-renders when play state changes) ─────────
