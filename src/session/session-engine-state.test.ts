@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { emptySessionState } from './session';
-import { mirrorParamChange, syncModulators, mirrorKeymapChange, readLaneKeymap, mirrorDrumkitId, readLaneDrumkitId } from './session-engine-state';
+import { mirrorParamChange, syncModulators, mirrorKeymapChange, readLaneKeymap, mirrorDrumkitId, readLaneDrumkitId, mirrorInstrumentId, readLaneInstrumentId } from './session-engine-state';
 import type { KeymapEntry } from '../samples/types';
 import { syncNoteFx } from './session-engine-state';
 import type { NoteFxState } from '../notefx/notefx-types';
@@ -125,6 +125,49 @@ describe('drumkit id persistence (sample drumkits)', () => {
     const state = emptySessionState();
     expect(readLaneDrumkitId(state, 'subtractive-1')).toBeUndefined();
     mirrorDrumkitId(state, 'does-not-exist', 'tr808');
+    expect(state.lanes.every((l) => !l.engineState?.sampler)).toBe(true);
+  });
+});
+
+describe('instrument id persistence (bundled melodic/loop presets)', () => {
+  it('mirrorInstrumentId records the instrument id under engineState.sampler', () => {
+    const state = emptySessionState();
+    mirrorInstrumentId(state, 'subtractive-1', 'sweep-pad');
+    expect(readLaneInstrumentId(state, 'subtractive-1')).toBe('sweep-pad');
+  });
+
+  it('mirrorInstrumentId preserves an existing keymap / drumkitId / padParams', () => {
+    const state = emptySessionState();
+    const km: KeymapEntry[] = [{ sampleId: 'a', rootNote: 60, loNote: 0, hiNote: 127 }];
+    mirrorKeymapChange(state, 'subtractive-1', km);
+    mirrorDrumkitId(state, 'subtractive-1', 'tr808');
+    // seed padParams directly so we can confirm the spread preserves siblings
+    const lane = state.lanes.find((l) => l.id === 'subtractive-1')!;
+    lane.engineState!.sampler!.padParams = { 60: { tune: 0.5 } };
+
+    mirrorInstrumentId(state, 'subtractive-1', 'sweep-pad');
+
+    expect(readLaneInstrumentId(state, 'subtractive-1')).toBe('sweep-pad');
+    expect(readLaneKeymap(state, 'subtractive-1')).toEqual(km);
+    expect(readLaneDrumkitId(state, 'subtractive-1')).toBe('tr808');
+    expect(state.lanes.find((l) => l.id === 'subtractive-1')!.engineState?.sampler?.padParams)
+      .toEqual({ 60: { tune: 0.5 } });
+  });
+
+  it('mirrorInstrumentId(undefined) detaches the instrument but keeps the keymap', () => {
+    const state = emptySessionState();
+    const km: KeymapEntry[] = [{ sampleId: 'b', rootNote: 48, loNote: 0, hiNote: 127 }];
+    mirrorKeymapChange(state, 'subtractive-1', km);
+    mirrorInstrumentId(state, 'subtractive-1', 'sweep-pad');
+    mirrorInstrumentId(state, 'subtractive-1', undefined);
+    expect(readLaneInstrumentId(state, 'subtractive-1')).toBeUndefined();
+    expect(readLaneKeymap(state, 'subtractive-1')).toEqual(km);
+  });
+
+  it('readLaneInstrumentId is undefined when unset; mirror is a no-op for unknown lane', () => {
+    const state = emptySessionState();
+    expect(readLaneInstrumentId(state, 'subtractive-1')).toBeUndefined();
+    mirrorInstrumentId(state, 'does-not-exist', 'sweep-pad');
     expect(state.lanes.every((l) => !l.engineState?.sampler)).toBe(true);
   });
 });

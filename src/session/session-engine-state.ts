@@ -92,6 +92,28 @@ export function readLaneDrumkitId(state: SessionState, laneId: string): string |
   return state.lanes.find((l) => l.id === laneId)?.engineState?.sampler?.drumkitId;
 }
 
+/** Mirror which bundled melodic/loop instrument preset a sampler lane uses
+ *  (undefined = a plain user keymap). Mirror of `mirrorDrumkitId`; the two ids
+ *  are mutually exclusive (drumkit wins in the load path). Spreads the existing
+ *  sampler sub-state so it never drops a sibling keymap/drumkitId/padParams.
+ *  No-op if the lane is unknown. */
+export function mirrorInstrumentId(state: SessionState, laneId: string, instrumentId: string | undefined): void {
+  const lane = state.lanes.find((l) => l.id === laneId);
+  if (!lane) return;
+  if (!lane.engineState) lane.engineState = {};
+  const keymap = lane.engineState.sampler?.keymap ?? [];
+  lane.engineState.sampler = {
+    ...lane.engineState.sampler,
+    keymap,
+    instrumentId: instrumentId || undefined,
+  };
+}
+
+/** Read which bundled melodic/loop instrument preset a sampler lane uses, if any. */
+export function readLaneInstrumentId(state: SessionState, laneId: string): string | undefined {
+  return state.lanes.find((l) => l.id === laneId)?.engineState?.sampler?.instrumentId;
+}
+
 /** Mirror the sampler's per-pad param overrides (keyed by note) so per-pad
  *  edits persist + survive a drumkit reload-by-id. */
 export function mirrorPadParams(
