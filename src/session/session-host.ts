@@ -9,9 +9,11 @@ import type { Sequencer } from '../core/sequencer';
 import { stepsPerBar } from '../core/meter';
 import type { MixerColumnDeps } from '../core/mixer';
 import { ensureScenesForRows } from '../core/scene-ensure';
+import { confirmDialog } from '../core/dialog';
 import {
   emptySessionState, cloneSessionState, emptyLane, emptyClip, audioClip, audioChannelClip, emptyScene,
   moveClip, copyClip,
+  deleteClipAt, deleteLane, laneHasContent, sceneHasContent, deleteScene,
   type SessionState, type SessionLane, type SessionClip, type ClipSlot,
 } from './session';
 import { detectLoop } from '../samples/loop-analysis';
@@ -916,6 +918,72 @@ export class SessionHost {
           return;
         }
         self.showLaneEditor(laneId);
+      },
+      onDeleteClip(laneId, clipIdx) {
+        const lane = self.state.lanes.find((l) => l.id === laneId);
+        if (!lane || lane.clips[clipIdx] == null) return; // empty cell → no-op
+        const hd = self.deps.historyDeps;
+        const run = () => {
+          deleteClipAt(lane, clipIdx);
+          const sel = self.inspector.getSelectedClip();
+          if (sel && sel.laneId === laneId && sel.clipIdx === clipIdx) {
+            self.inspector.setSelectedClip(null);
+            const panel = document.getElementById('session-inspector');
+            if (panel) panel.hidden = true;
+          }
+          self.renderWithMixer();
+        };
+        if (hd) withUndo(hd, run); else run();
+      },
+      async onDeleteLane(laneId) {
+        const lane = self.state.lanes.find((l) => l.id === laneId);
+        if (!lane) return;
+        if (laneHasContent(lane)) {
+          const label = lane.name ?? lane.id;
+          if (!(await confirmDialog(`¿Borrar la pista «${label}» y todos sus clips?`, { danger: true, okLabel: 'Borrar' }))) return;
+        }
+        // Stop the lane BEFORE disposing it: cut in-flight voices/loops (symmetry
+        // with onDeleteScene; avoids the analogue of the "New leaves synths" bug).
+        stopLane(self.laneStates, laneId,
+          self.deps.recHooks ? { ...self.deps.recHooks, nowCtx: ctx.currentTime } : undefined);
+        const hd = self.deps.historyDeps;
+        const run = () => {
+          deleteLane(self.state, laneId);
+          self.laneStates.delete(laneId);
+          self.deps.laneResources?.dispose(laneId); // frees strip + engine + inserts
+          if (self.activeEditLane === laneId) {
+            document.querySelectorAll<HTMLElement>('.page').forEach((p) => { p.hidden = true; });
+            document.querySelectorAll<HTMLButtonElement>('.session-lane-tab').forEach((t) => t.classList.remove('active'));
+            self.activeEditLane = null;
+            self.deps.onActiveLaneChanged?.();
+          }
+          self.refreshSynthTabs();
+          self.renderWithMixer();
+        };
+        if (hd) withUndo(hd, run); else run();
+      },
+      async onDeleteScene(sceneIdx) {
+        const scene = self.state.scenes[sceneIdx];
+        if (!scene) return;
+        if (sceneHasContent(self.state, sceneIdx)) {
+          const label = scene.name ?? `Scene ${sceneIdx + 1}`;
+          if (!(await confirmDialog(`¿Borrar la escena «${label}»?`, { danger: true, okLabel: 'Borrar' }))) return;
+        }
+        const hd = self.deps.historyDeps;
+        const run = () => {
+          // Stop whatever is sounding/queued on that row before compacting.
+          for (const lp of self.laneStates.values()) {
+            const lane = self.state.lanes.find((l) => l.id === lp.laneId);
+            const clipInRow = lane?.clips[sceneIdx];
+            if (clipInRow && (lp.playing?.id === clipInRow.id || lp.queued?.id === clipInRow.id)) {
+              stopLane(self.laneStates, lp.laneId,
+                self.deps.recHooks ? { ...self.deps.recHooks, nowCtx: ctx.currentTime } : undefined);
+            }
+          }
+          deleteScene(self.state, sceneIdx); // COMPACTING (front A · session.ts)
+          self.renderWithMixer();
+        };
+        if (hd) withUndo(hd, run); else run();
       },
       onToggleDrumsExpanded() { /* drum-bus expand removed — drum-grid editor shows all voices */ },
     };

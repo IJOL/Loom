@@ -96,6 +96,16 @@
 }
 .session-cell-label { flex: 1; color: inherit; }
 .session-cell-play  { opacity: 0.85; color: inherit; }
+/* ✕ delete button on clips / lane headers / scene cells (front A). A small flex
+   item, faint by default, red on hover. */
+.session-del-cross {
+  flex: 0 0 auto;
+  width: 15px; height: 15px;
+  padding: 0; line-height: 1;
+  background: transparent; border: none; border-radius: 2px;
+  color: var(--text-dim); font-size: 11px; cursor: pointer; opacity: 0.35;
+}
+.session-del-cross:hover { opacity: 1; color: var(--red); background: var(--red-soft); }
 .session-scenes-header {
   text-align: center;
   font-size: 11px;

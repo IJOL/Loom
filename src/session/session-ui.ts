@@ -34,6 +34,9 @@ export interface SessionUICallbacks {
   ) => void;
   onAddClipRow: () => void;
   onEditLane:  (laneId: string) => void;
+  onDeleteClip:  (laneId: string, clipIdx: number) => void;
+  onDeleteLane:  (laneId: string) => void;
+  onDeleteScene: (sceneIdx: number) => void;
   onToggleDrumsExpanded: () => void;
   _mixerRow?: HTMLElement;
 }
@@ -43,6 +46,20 @@ export interface SessionUICallbacks {
 // pastel palette — so this fallback MUST also be light, or the label goes
 // black-on-dark-grey and unreadable.
 const COLOR_IDLE = '#c9c9c9';
+
+/** A small ✕ delete button. Stops pointer/click propagation so it never triggers
+ *  the cell's clip drag nor the scene/lane click underneath it (mirrors the play
+ *  icon's stopPropagation). */
+function deleteCross(title: string, onDelete: () => void): HTMLButtonElement {
+  const b = document.createElement('button');
+  b.className = 'session-del-cross';
+  b.title = title;
+  b.textContent = '✕';
+  b.addEventListener('pointerdown', (e) => e.stopPropagation());
+  b.addEventListener('pointerup', (e) => e.stopPropagation());
+  b.addEventListener('click', (e) => { e.stopPropagation(); onDelete(); });
+  return b;
+}
 
 export function renderSessionGrid(
   host: HTMLElement,
@@ -135,6 +152,8 @@ export function renderSessionGrid(
 function laneHeader(lane: SessionLane, cb: SessionUICallbacks): HTMLElement {
   const el = document.createElement('div');
   el.className = `session-lane-header lane-engine-${lane.engineId}`;
+  el.dataset.laneId = lane.id;
+  el.appendChild(deleteCross('Borrar pista', () => cb.onDeleteLane(lane.id)));
   const name = document.createElement('div');
   name.className = 'session-lane-name';
   name.textContent = lane.name ?? lane.id.toUpperCase();
@@ -172,6 +191,7 @@ function clipCell(
     if (isPlaying) cell.classList.add('session-cell-playing');
     if (isQueued)  cell.classList.add('session-cell-queued');
     cell.style.backgroundColor = clip.color ?? COLOR_IDLE;
+    cell.appendChild(deleteCross('Borrar clip', () => cb.onDeleteClip(lane.id, rowIdx)));
     const label = document.createElement('span');
     label.className = 'session-cell-label';
     label.textContent = clip.name ?? `${rowIdx + 1}`;
@@ -220,6 +240,7 @@ function sceneLaunchCell(scene: { name?: string } | undefined, idx: number, cb: 
   const el = document.createElement('div');
   el.className = 'session-scene-cell';
   if (scene) {
+    el.appendChild(deleteCross('Borrar escena', () => cb.onDeleteScene(idx)));
     const btn = document.createElement('button');
     btn.className = 'session-scene-launch';
     btn.textContent = `▶ ${scene.name ?? idx + 1}`;

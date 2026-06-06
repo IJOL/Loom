@@ -1,0 +1,40 @@
+// Reusable right-click context menu. See src/core/context-menu.ts.
+.context-menu {
+  position: fixed;
+  z-index: 1000;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  min-width: 168px;
+  background: #232329;
+  border: 1px solid #45454f;
+  border-radius: 6px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  font-size: 13px;
+  color: #dfe0e4;
+  user-select: none;
+}
+
+.context-menu-item {
+  padding: 6px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover { background: #34343c; }
+
+  &.disabled {
+    color: #6a6a72;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  &.danger { color: #ff7a72; }
+  &.danger:hover { background: #3a1f1d; }
+}
+
+.context-menu-sep {
+  height: 1px;
+  margin: 4px 0;
+  background: #3a3a42;
+  pointer-events: none;
+}
