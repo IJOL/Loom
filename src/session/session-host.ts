@@ -318,6 +318,14 @@ export class SessionHost {
     this.buildCallbacks();
     this.refreshSynthTabs();
     this.startRenderTick();
+
+    // Front D · Task 13 — the Sampler's "Importar loop…" control dispatches this
+    // event (it has no direct host reference); the host owns the loop slice flow
+    // + the `installSamplerClip` seam, so it runs the import on the named lane.
+    document.addEventListener('loom:import-loop', (e) => {
+      const detail = (e as CustomEvent<{ laneId: string; file: File }>).detail;
+      if (detail?.laneId && detail.file) this.importLoopToSampler(detail.laneId, detail.file);
+    });
     // Phase G deferral rule: lane resources don't exist until
     // applyLoadedSessionState runs (post-demo-fetch). renderWithMixer calls
     // stripFor() for every lane, which throws if the lane isn't allocated.
@@ -698,6 +706,79 @@ export class SessionHost {
         if (hd) withUndo(hd, run); else run();
       } catch (err) {
         console.warn('Audio channel: could not load loop:', err);
+      }
+    })();
+  }
+
+  /** Front D · Task 13 — import a loop WAV into the EXISTING sampler lane.
+   *  Slices the loop into per-slice bank samples (each a fresh IndexedDB id),
+   *  installs that slice bank as the lane's keymap, then builds a note clip
+   *  (one note per slice from SLICE_BASE_NOTE) plus a display-only waveformRef
+   *  pointing at the whole loop, and drops it onto the lane via the single
+   *  `installSamplerClip` seam (places + ensures the row's ▶ scene + opens the
+   *  piano-roll, all under one undo entry).
+   *
+   *  Operates on the CURRENT sampler lane — it does NOT create a new lane (that
+   *  was the removed `onSliceToBank` path). A user-imported loop is IndexedDB-
+   *  only: we deliberately DON'T mirror an `instrumentId` (there's no bundled
+   *  manifest to self-heal from — `reloadInstrument` would throw on reload). */
+  importLoopToSampler(laneId: string, file: File): void {
+    const self = this;
+    const { ctx, seq } = this.deps;
+    const lane = this.state.lanes.find((l) => l.id === laneId);
+    if (!lane || lane.engineId !== 'sampler') return;
+    void ctx.resume();
+    void (async () => {
+      try {
+        // Persist + decode the whole loop first; its id backs the clip's
+        // display-only waveformRef so the editor's waveform header resolves.
+        const asset = await importFile(file, ctx);
+        await sampleStore.put(asset);
+        const buf = await ctx.decodeAudioData(asset.bytes.slice(0));
+        sampleCache.put(asset.id, buf);
+        const loopId = asset.id;
+        const name = file.name.replace(/\.[^.]+$/, '');
+
+        const det = detectLoop(buf, seq.meter);
+        const cuts = sliceBuffer(ctx, buf, det.slicePointsSec);
+        const sliceIds: string[] = [];
+        for (const cut of cuts) {
+          const id = newSampleId();
+          const bytes = await audioBufferToWavBytes(cut.buffer);
+          await sampleStore.put(buildSampleAsset({
+            id, name: `${name} ${sliceIds.length + 1}`,
+            mime: 'audio/wav', bytes, buffer: cut.buffer, createdAt: Date.now(),
+          }));
+          sampleCache.put(id, cut.buffer);
+          sliceIds.push(id);
+        }
+        const km = slicesToKeymap(sliceIds);
+        const built = buildSliceClip({
+          slicePointsSec: det.slicePointsSec, durationSec: buf.duration,
+          originalBpm: det.originalBpm, projectMeter: seq.meter,
+          gridResolution: DEFAULT_RESOLUTION,
+        });
+        // Install the bank on the lane's live engine + mirror it (the lane is
+        // not recreated — this replaces the current sampler keymap).
+        const eng = self.deps.laneResources?.get(laneId)?.engine as unknown as
+          { setKeymap?(k: typeof km): void } | undefined;
+        eng?.setKeymap?.(km);
+        mirrorKeymapChange(self.state, laneId, km);
+
+        const noteClip: SessionClip = {
+          id: `clip-${Date.now().toString(36)}`,
+          name: `${name} loop`,
+          lengthBars: built.lengthBars,
+          notes: built.notes,
+          gridResolution: DEFAULT_RESOLUTION,
+          // Display-only: waveform + slice markers above the notes in the editor.
+          waveformRef: { sampleId: loopId, slices: built.slices },
+        };
+        // Single placement seam (front A): places the clip, guarantees the row's
+        // ▶ scene, opens the piano-roll, all bracketed in one undo entry.
+        self.installSamplerClip(laneId, noteClip);
+      } catch (err) {
+        console.warn('Sampler loop import: could not load loop:', err);
       }
     })();
   }

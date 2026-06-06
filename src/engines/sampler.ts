@@ -600,6 +600,37 @@ export class SamplerEngine implements SynthEngine {
       })();
     });
 
+    // Loop import (Task 13). One WAV → the host slices it, installs the slice
+    // bank as this lane's keymap, and drops a note clip (one note per slice) +
+    // scene into the lane via `installSamplerClip` (opens the piano-roll). The
+    // engine has no host reference, so we hand the file off through a custom
+    // event the SessionHost listens for. A user-imported loop is IndexedDB-only
+    // (no bundled manifest → no `instrumentId` self-heal). The performance notes
+    // are edited in the clip's piano-roll, NOT inside the Sampler inspector.
+    const loopInput = document.createElement('input');
+    loopInput.type = 'file';
+    loopInput.accept = 'audio/*';
+    loopInput.className = 'sampler-load-loop';
+    loopInput.style.display = 'none';
+    section.appendChild(loopInput);
+
+    const loopBtn = document.createElement('button');
+    loopBtn.className = 'sampler-import-loop-btn';
+    loopBtn.textContent = 'Importar loop…';
+    loopBtn.title = 'Importar un loop: lo recorta en slices y crea un clip de notas con su piano-roll';
+    loopBtn.addEventListener('click', () => loopInput.click());
+    section.appendChild(loopBtn);
+
+    loopInput.addEventListener('change', () => {
+      const file = loopInput.files?.[0];
+      if (file) {
+        document.dispatchEvent(new CustomEvent('loom:import-loop', {
+          detail: { laneId: ctx.laneId, file },
+        }));
+      }
+      loopInput.value = '';
+    });
+
     // Multi-sample import. Pick one or more audio files; each becomes a zone in
     // the keymap. `addSampleToKeymap` fixes loNote:0/hiNote:127 on every zone,
     // so with N samples only the LAST one sounds (keymapEntryFor is last-match-
