@@ -44,13 +44,13 @@ See [Engines](04-engines.md) for what each engine sounds like, and [Sessions, La
 
 ![Sampler engine editor](images/engine-sampler.png)
 
-The Sampler is a polyphonic playback engine that maps audio files across the keyboard and plays them back at the correct pitch per note. It has two modes: **melodic** (one or more zones spanning a range of keys) and **drumkit** (single-note pads at GM drum notes). The inspector shows **GAIN** and **VOICES** knobs, a **Keymap** section, a **Drumkit** dropdown, a file picker, and a drop zone.
+The Sampler is a polyphonic playback engine that maps audio files across the keyboard and plays them back at the correct pitch per note. It has three **families**, chosen from an **Instrument** selector: **Melodic** (one or more zones spanning a range of keys), **Percussion** (single-note pads at GM drum notes — a drum kit), and **Loop** (a sliced loop played as notes). The inspector shows **GAIN** and **VOICES** knobs, a **Keymap** section, the **Instrument** family selector, and **Import samples…** / **Import loop…** controls.
 
 ### Loading samples
 
-Drag an audio file onto the drop zone labelled "Drop an audio file, or use the picker above", or use the **Choose File** picker. Loom decodes the file and stores it in IndexedDB, so the sample persists across browser reloads — you do not need to re-import it each session.
+Click **Import samples…** and pick one or more audio files (the picker is multi-select). Loom decodes each file and stores it in IndexedDB, so the samples persist across browser reloads — you do not need to re-import them each session.
 
-Each imported file becomes a keymap entry that spans the full keyboard (MIDI 0–127) with the root note set to middle C (MIDI 60) by default. You can change the root note in the keymap list, and remove an entry with the **✕** button.
+Each imported file becomes a keymap entry that spans the full keyboard (MIDI 0–127) with the root note set to middle C (MIDI 60) by default. When you import several at once they stack full-range — last match wins, so only the last sounds until you narrow the ranges. Set each zone's root and low/high boundary in the keymap list, and remove an entry with the **✕** button.
 
 ### Keymap and repitch
 
@@ -77,13 +77,13 @@ Every keymap entry (pad in drumkit mode, zone in melodic mode) has its own set o
 
 In drumkit mode these appear in the per-pad rack (the same eight-column layout used by the Drum Machine engine). In melodic mode they appear as a knob row below each keymap entry.
 
-### Drumkit mode
+### Percussion family (drum kits)
 
-Select a kit from the **Drumkit** dropdown ("— none (melodic) —" means melodic mode). Loom fetches the kit's manifest, downloads each voice's WAV, stores them in IndexedDB, and maps every sample to its canonical General MIDI drum note (kick on 36, snare on 38, and so on). The keymap is rebuilt fresh from the manifest on each session load, so you do not need to re-import the kit files manually.
+Pick the **Percussion** family in the **Instrument** selector and choose a kit ("— none (own keymap) —" leaves the lane on its own keymap). Loom fetches the kit's manifest, downloads each voice's WAV, stores them in IndexedDB, and maps every sample to its canonical General MIDI drum note (kick on 36, snare on 38, and so on). The keymap is rebuilt fresh from the manifest on each session load, so you do not need to re-import the kit files manually.
 
-In addition to any kits you build yourself by loading samples, Loom ships three **ready-made sample drum kits** that appear directly in the Drumkit dropdown: **TR-808 (samples)**, **Acoustic / Dirt (samples)**, and **Dirt (samples)**. These are curated one-shot WAVs bundled with the app, so they work on the live GitHub Pages deploy without any manual file import. Simply pick one from the dropdown and the lane is ready to play.
+In addition to any kits you build yourself by loading samples, Loom ships three **ready-made sample drum kits** that appear directly in the Percussion family: **TR-808 (samples)**, **Acoustic / Dirt (samples)**, and **Dirt (samples)**. These are curated one-shot WAVs bundled with the app, so they work on the live GitHub Pages deploy without any manual file import. Simply pick one from the dropdown and the lane is ready to play.
 
-Once a kit is loaded the lane switches to the drum-grid editor (the same grid used by the Drum Machine engine). You get per-pad mute and solo buttons, and the full per-pad parameter rack. To return to melodic mode, choose "— none (melodic) —" from the dropdown.
+Once a kit is loaded the lane switches to the drum-grid editor (the same grid used by the Drum Machine engine). You get per-pad mute and solo buttons, and the full per-pad parameter rack. To return to a melodic keymap, pick the **Melodic** family.
 
 See [Editing Clips](05-editing-clips.md) for how to draw patterns in the drum grid, and [Engines](04-engines.md) for a comparison with the Drum Machine engine (which lists all available kits, including the synth kits, in a unified preset table).
 
@@ -91,7 +91,7 @@ See [Editing Clips](05-editing-clips.md) for how to draw patterns in the drum gr
 
 ## Audio channel
 
-The **audio channel** is the first-class way to bring a finished loop into a Loom session: drop a WAV and it plays **tempo-locked to the project without changing pitch**, with its waveform shown as a header above the clip editor. From there you can keep it as a continuous loop, or chop it into individually editable slices with one click.
+The **audio channel** is the first-class way to bring a finished loop into a Loom session: drop a WAV and it plays **tempo-locked to the project without changing pitch**, with its waveform shown as a header above the clip editor. It stays a pure audio loop; to chop a loop into individually editable note slices, load it through the Sampler's **Loop** family instead (see [Sampler](#sampler)).
 
 ![The + Audio control in the session tab bar](images/audio-channel-add.png)
 
@@ -106,14 +106,9 @@ Each new audio lane gets a launch button on its scene row, so it is immediately 
 
 ### The audio-clip editor
 
-![The audio-clip editor: BPM, bars, Warp, Slice → pads, and the waveform header](images/audio-clip-editor.png)
+![The audio-clip editor: the Warp toggle and the waveform header](images/audio-clip-editor.png)
 
-An audio clip has no note grid. Clicking it opens the **audio-clip editor**, a small toolbar above a **waveform header**:
-
-- **BPM** — the detected original tempo of the loop.
-- **bars** — how many bars the loop occupies at the project meter.
-- **♺ Warp ON / OFF** — toggles tempo-locking (see below).
-- **✂ Slice → pads** — chops the loop into a sampler lane (see [Slice → pads](#slice--pads)).
+An audio clip has no note grid. Clicking it opens the **audio-clip editor** — a **♺ Warp ON / OFF** toggle (tempo-locking, see below) above a **waveform header**.
 
 The waveform header shows a peak view of the buffer with a bar/beat ruler, any detected slice markers (orange), and a live playhead while the clip plays. This same header also appears **above** the normal piano-roll or drum-grid for any clip that references a buffer, so you always see the audio you are editing against.
 
@@ -128,35 +123,29 @@ With **Warp OFF** the loop plays at its natural speed with no tempo sync — use
 
 > First-play note: on the very first loop iteration after import (before the stretch cache is warm) playback briefly falls back to a varispeed render — a slight pitch shift that self-heals from the next iteration. At the loop's native tempo the ratio is ≈ 1, so even that first pass is near-identical.
 
-### Slice → pads
+### Slicing a loop into notes
 
-For rhythmic material you often want access to the individual hits. Click **✂ Slice → pads** and Loom:
-
-1. Detects slice points (from embedded **Acid / `cue` / AIFF** markers when present, or by onset detection plus a tempo estimate).
-2. Cuts the buffer into one short sample per slice and stores each as a **bank one-shot** in IndexedDB.
-3. Creates a **new Sampler lane** whose keymap maps one slice per note, with an auto-built note clip that triggers the slices in order — so the groove plays back identically, now as discrete pads.
-
-The original audio lane is left untouched. The new sampler lane is a normal note clip, so the slices become individually editable and remixable: move, mute, repitch, or re-order the hits in the piano-roll, and tweak each pad's tune/cutoff/decay/level/pan in the per-pad rack (see [Per-pad / per-zone parameters](#per-pad--per-zone-parameters)). The sliced clip keeps the original waveform as its header so you can still see the source loop above the notes. The whole operation is a single undo step.
+The audio channel itself is a pure WAV loop. To chop a loop into individually editable hits, load it through the Sampler's **Loop** family (see [Sampler](#sampler)) rather than the audio channel. Loom detects slice points (from embedded **Acid / `cue` / AIFF** markers when present, or by onset detection plus a tempo estimate), stores one short sample per slice in IndexedDB, and creates a **note clip** that triggers the slices in order on a piano-roll — so the groove plays back identically, now as discrete, editable notes. Move, mute, repitch, or re-order the hits in the piano-roll, and tweak each pad's tune/cutoff/decay/level/pan in the per-pad rack (see [Per-pad / per-zone parameters](#per-pad--per-zone-parameters)); the clip keeps the original waveform as its header. *(Earlier builds did this from a **✂ Slice → pads** button on the audio channel; that moved to the Sampler's Loop family.)*
 
 ---
 
 ## Stem separation (optional, local service)
 
-Stem separation lets you drop a finished song into Loom and get it back as four separate Sampler lanes — **Voz** (vocals), **Batería** (drums), **Bajo** (bass), and **Otros** (other) — so you can mute, solo, and remix each part inside the existing session.
+Stem separation lets you drop a finished song into Loom and get it back as four separate Sampler lanes — **Vocals**, **Drums**, **Bass**, and **Other** — so you can mute, solo, and remix each part inside the existing session.
 
 ![Stems modal](images/stems-modal.png)
 
 ### How it works
 
-Click **☰ Stems…** in the session bar (the second header row, alongside Save / Load / MIDI). A dialog titled "Separar en stems" opens and immediately checks whether the local helper service is reachable:
+Click **☰ Stems…** in the session bar (the second header row, alongside Save / Load / MIDI). A dialog titled "Separate into stems" opens and immediately checks whether the local helper service is reachable:
 
-- **Service found** — the hint line reads "4 pistas (voz / batería / bajo / otros) vía el servicio local." and the **Separar** button becomes active once you pick a file.
-- **Service not found** — the hint reads "No encuentro el servicio de stems en localhost:8765. ¿Está arrancado?" and Separar stays disabled. Start the service (see below), then re-open the dialog.
+- **Service found** — the hint line reads "4 tracks (Vocals / Drums / Bass / Other) via the local service." and the **Separate** button becomes active once you pick a file.
+- **Service not found** — the hint reads "Can't find the stems service at localhost:8765. Is it running?" and Separate stays disabled. Start the service (see below), then re-open the dialog.
 
-To separate a track: pick an audio file with the file picker, then click **Separar**. The dialog shows a progress bar:
+To separate a track: pick an audio file with the file picker, then click **Separate**. The dialog shows a progress bar:
 
-1. **"Subiendo…"** — the file is being uploaded to the local service.
-2. **"Separando… m:ss"** — the service is running Demucs; the counter shows elapsed time. The bar may be indeterminate if the model does not report fine-grained progress.
+1. **"Uploading…"** — the file is being uploaded to the local service.
+2. **"Separating… m:ss"** — the service is running Demucs; the counter shows elapsed time. The bar may be indeterminate if the model does not report fine-grained progress.
 3. On success the dialog closes automatically and four new Sampler lanes appear in the session — one per stem, each holding a full-length one-shot clip sized to the song. Hitting Play reconstructs the original mix; mute or solo any lane to isolate parts.
 
 The entire lane-creation is a **single undo step**, so you can undo all four lanes at once.

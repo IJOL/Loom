@@ -264,7 +264,7 @@ The preset dropdown for any drum lane lists kits from three groups:
 
 The sample WAVs are curated one-shots from the Dirt-Samples collection (used by TidalCycles) and classic TR-808 recordings. Full credits are in the repo `README.md` under "Credits — sample sources".
 
-> Note: sample kits are loaded by the Sampler engine under the hood. For the Sampler's own Drumkit dropdown and per-pad parameters, see [MIDI & Samples](08-midi-and-samples.md).
+> Note: sample kits are loaded by the Sampler engine under the hood. For the Sampler's own Instrument family selector (Melodic / Percussion / Loop) and per-pad parameters, see [MIDI & Samples](08-midi-and-samples.md).
 
 ### Bus controls
 

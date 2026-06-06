@@ -66,7 +66,9 @@ const addAudioChannel = async (page) => {
     name: 'beat.wav', mimeType: 'audio/wav',
     buffer: Buffer.from(loopWavBase64(), 'base64'),
   });
-  await page.locator('.audio-clip-slice').waitFor({ state: 'visible', timeout: 10_000 });
+  // The audio-clip editor's Warp toggle confirms it has mounted (the old
+  // ✂ Slice→pads button was removed by the audio-channel revert, front D).
+  await page.locator('.audio-clip-warp').waitFor({ state: 'visible', timeout: 10_000 });
   await page.waitForTimeout(300); // let the waveform canvas paint
 };
 

@@ -1,6 +1,6 @@
 # Editing Clips
 
-Every clip in Loom holds a sequence of notes. To edit those notes, click the **body** of any filled cell in the session grid — anywhere except the ▶ play icon or the ✕ delete cross in its corner (clicking ✕ deletes the clip outright, with no confirmation). You can also **right-click** a filled cell and choose **Abrir editor**. The inspector panel opens below the grid and the editor renders inside it. Closing the inspector does not stop playback — launching and editing are independent.
+Every clip in Loom holds a sequence of notes. To edit those notes, click the **body** of any filled cell in the session grid — anywhere except the ▶ play icon or the ✕ delete cross in its corner (clicking ✕ deletes the clip outright, with no confirmation). You can also **right-click** a filled cell and choose **Open editor**. The inspector panel opens below the grid and the editor renders inside it. Closing the inspector does not stop playback — launching and editing are independent.
 
 Melodic lanes (TB-303, Subtractive, FM, Wavetable, Karplus, Sampler) open the **piano-roll**. Drum-machine lanes and sampler lanes that have a drum kit loaded open the **drum-grid**. If you want to switch between the two views for a given clip, click the **↔ Editor** button in the inspector toolbar.
 
@@ -114,7 +114,7 @@ The loop region works the same way for all clip types:
 - **Drum clips (drum-grid)** — same: only hits inside the sub-region fire.
 - **Sliced note clips (Sampler)** — a clip whose notes trigger bank slices behaves like any note clip: only the hits inside the A–B sub-region fire, still tempo-locked and pitch-preserving.
 
-The brace lives on the note/drum editor. A pure audio channel (the waveform-only audio-clip editor) does not show a brace; to gain per-region control over an audio loop, chop it into a note clip first with **Slice → pads** (see [MIDI & Samples — Audio channel](08-midi-and-samples.md#audio-channel)).
+The brace lives on the note/drum editor. A pure audio channel (the waveform-only audio-clip editor) does not show a brace; to gain per-region control over an audio loop, bring it in through the Sampler's **Loop** family, which slices it into a note clip with a piano-roll (see [MIDI & Samples — Sampler](08-midi-and-samples.md#sampler)).
 
 The loop region is **per-clip** and saved with the session. Two clips in the same lane or scene can each have their own independent A–B region, or none at all.
 
@@ -131,7 +131,7 @@ Any clip that references an audio buffer shows a **waveform header** above its e
 - **Audio clips** open the dedicated **audio-clip editor** (toolbar + waveform header, no note grid).
 - **Sliced note clips** (and any normal clip that carries a display-only waveform reference) keep the header **above** the piano-roll or drum-grid, so you can edit notes against the source audio.
 
-To bring a loop into a session as a tempo-locked audio channel — and to chop one into individually editable pads with **Slice → pads** — see [MIDI & Samples — Audio channel](08-midi-and-samples.md#audio-channel), which covers the **+ Audio** control, the waveform header, the **Warp** tempo-lock, and slicing in full.
+To bring a loop into a session as a tempo-locked audio channel, see [MIDI & Samples — Audio channel](08-midi-and-samples.md#audio-channel) (the **+ Audio** control, the waveform header, the **Warp** tempo-lock). To chop a loop into individually editable note slices, load it through the Sampler's **Loop** family instead.
 
 ---
 

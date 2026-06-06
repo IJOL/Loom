@@ -1,6 +1,6 @@
 # Mixing & FX
 
-Every lane in Loom has its own signal path from the synthesis engine through to the master output. This chapter explains how that path is structured, what controls are available per lane, and how the shared Master FX page ties everything together.
+Every lane in Loom has its own signal path from the synthesis engine through to the master output. This chapter explains how that path is structured, what controls are available per lane, and how the shared Master FX panel ties everything together.
 
 ---
 
@@ -49,7 +49,7 @@ All three bands are ±dB adjustments. EQ gain AudioParams are exposed to modulat
 
 ### REV and DLY sends
 
-The **REV** and **DLY** knobs control how much of this lane's post-duck signal is fed into the shared master reverb and delay returns. They are independent wet levels: 0 = dry only, higher values mix the lane into the reverb or delay tail. The shared reverb and delay processors live on the Master FX page; per-lane send amounts just determine how much goes in.
+The **REV** and **DLY** knobs control how much of this lane's post-duck signal is fed into the shared master reverb and delay returns. They are independent wet levels: 0 = dry only, higher values mix the lane into the reverb or delay tail. The shared reverb and delay processors live in the Master FX panel; per-lane send amounts just determine how much goes in.
 
 ---
 
@@ -59,15 +59,15 @@ Every lane also has a private insert chain that sits *before* the channel strip 
 
 **Inserts vs sends:** an insert is a serial in-line processor (distortion, filter, etc.) that replaces the signal passing through it; a send is a parallel path that adds wet signal from a shared return (reverb, delay). Use inserts when you want a destructive or tone-shaping effect on a single lane; use sends when you want a common acoustic space that multiple lanes share.
 
-The insert types available per lane are the same four plugins used on the master chain — see [Master FX page](#master-fx-page) below for their parameter details.
+The insert types available per lane are the same four plugins used on the master chain — see [Master FX panel](#master-fx-panel) below for their parameter details.
 
 ---
 
-## Master FX page
+## Master FX panel
 
-Click the **FX** tab to open the Master FX page.
+The master bus has its own strip at the foot of the **scenes column** of the mixer row — a **MASTER** label, an **FX** button, a fader that mirrors the master **Volume**, and a VU meter. Click its **FX** button to open the **Master FX panel** below the grid (click again to close it). *(Previously this was a separate "Master FX" tab; the controls are identical, only the way you open them changed.)*
 
-![Loom Master FX page — SENDS, MASTER COMP, and INSERTS sections](images/master-fx.png)
+![Loom Master FX panel — SENDS, MASTER COMP, and INSERTS sections](images/master-fx.png)
 
 ### SENDS — Reverb and Delay
 

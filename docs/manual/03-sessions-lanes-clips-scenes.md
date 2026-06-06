@@ -49,9 +49,9 @@ Clicking a clip cell body opens the inspector below the grid with controls for t
 | **Name** | Free-text label shown on the cell. |
 | **Length (bars)** | How many bars the clip plays before looping. |
 | **Quantize** | Per-clip launch alignment: *Default* (inherits lane/global setting), *Immediate* (no wait), or a fixed interval — 1/4, 1/2, 1 bar, 2 bars, or 4 bars. |
-| **Copy Clip** | Copies the clip to an internal clipboard. |
-| **Paste (Replace)** | Replaces the selected clip with the clipboard contents. |
-| **Paste (Layer)** | Merges the clipboard notes into the selected clip rather than replacing it. |
+| **Copy notes** | Copies the clip's notes to an internal clipboard. |
+| **Paste ▸ Replace** | Replaces the selected clip's notes with the clipboard contents. |
+| **Paste ▸ Layer** | Merges the clipboard notes into the selected clip rather than replacing them. |
 | **Duplicate** | Creates a copy of the clip in the next empty cell of the same lane. |
 | **↔ Editor** | Toggles between the piano-roll editor and the drum-grid editor. The appropriate editor is chosen automatically based on the lane's engine; use this button to switch if needed. See [Editing Clips](05-editing-clips.md) for the full editing reference. |
 | **🎲 Notes** | Randomizes the clip's note content using the current scale and root settings. |
