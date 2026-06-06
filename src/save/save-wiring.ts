@@ -33,6 +33,7 @@ export interface SaveWiringDeps {
   renderLanes: () => void;
   fx: FxBus;
   masterInsertChain: InsertChain;
+  masterStrip?: import('../core/master-bus-strip').MasterBusStrip;
   flashButton: (b: HTMLButtonElement, msg: string) => void;
   history: HistoryController<SavedStateV3>;
   /** Performance view persistence (optional). Wired for save/load only — NOT

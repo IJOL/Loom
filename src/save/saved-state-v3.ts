@@ -16,6 +16,8 @@ export interface SavedStateV3 {
   /** Global time signature — optional/additive; absent ⇒ 4/4 on load. */
   timeSignature?: TimeSignature;
   masterVol: number;
+  /** Master bus EQ/pan/mute — optional/additive; absent ⇒ flat/centred/unmuted. */
+  masterStrip?: import('../core/master-bus-strip').MasterBusState;
   kit: string;
   wave: Wave;
   synthParams: import('../core/synth').TB303['params'];
@@ -41,6 +43,9 @@ export interface SavedStateV3Deps {
   fx: import('../core/fx').FxBus;
   masterInsertChain: import('../plugins/fx/insert-chain').InsertChain;
   master: GainNode;
+  /** Master bus EQ/pan/mute strip — serialized/restored alongside masterVol.
+   *  Optional so callers without an audio graph (tests) keep working. */
+  masterStrip?: import('../core/master-bus-strip').MasterBusStrip;
   /** Performance view persistence — optional; when absent the take is not
    *  saved/restored (older callers keep working unchanged). */
   getMode?: () => 'session' | 'performance';
@@ -71,6 +76,7 @@ export function buildSavedStateV3(deps: SavedStateV3Deps): SavedStateV3 {
     swing: seq.swing,
     timeSignature: { ...seq.meter },
     masterVol: parseFloat(volInput.value),
+    masterStrip: deps.masterStrip?.serialize(),
     kit: drums?.kitId ?? 'default',
     wave: synth?.params.wave ?? 'sawtooth',
     synthParams: synth?.params ? { ...synth.params } : {} as import('../core/synth').TB303['params'],
@@ -95,6 +101,7 @@ export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): voi
     if (meterSel) meterSel.value = formatMeter(m);
   }
   if (typeof s.masterVol === 'number') { master.gain.value = s.masterVol; volInput.value = String(s.masterVol); }
+  deps.masterStrip?.restore(s.masterStrip);
 
   // Session state is applied first so lane resources are allocated before
   // we try to get synth/drums instances from them.

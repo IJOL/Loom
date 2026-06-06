@@ -1,4 +1,5 @@
 import { FxBus, MasterCompressor } from '../core/fx';
+import { MasterBusStrip } from '../core/master-bus-strip';
 import { InsertChain } from '../plugins/fx/insert-chain';
 import { SidechainBus } from '../core/sidechain-bus';
 
@@ -10,6 +11,9 @@ export interface AudioGraph {
   master: GainNode;
   analyser: AnalyserNode;
   masterMeterAnalyser: AnalyserNode;
+  /** Master bus EQ + pan + mute (the master mixer module's tone controls).
+   *  Sits between the sum bus and the master insert chain. */
+  masterStrip: MasterBusStrip;
   masterInsertChain: InsertChain;
   masterComp: MasterCompressor;
   fx: FxBus;
@@ -31,13 +35,16 @@ export function buildAudioGraph(ctx: AudioContext): AudioGraph {
   const masterMeterAnalyser = ctx.createAnalyser();
   masterMeterAnalyser.fftSize = 512;
   masterComp.output.connect(masterMeterAnalyser);
-  // master → InsertChain → masterComp → analyser → destination
-  const masterInsertChain = new InsertChain(master, masterComp.input);
+  // master (sum) → MasterBusStrip (EQ/pan/mute) → InsertChain → masterComp → analyser → destination.
+  // FxBus returns sum into `master` (pre-strip), so the master EQ shapes the wet returns too.
+  const masterStrip = new MasterBusStrip(ctx);
+  master.connect(masterStrip.input);
+  const masterInsertChain = new InsertChain(masterStrip.output, masterComp.input);
   const fx = new FxBus(ctx, master);
 
   const sidechainBus = new SidechainBus();
 
-  return { ctx, master, analyser, masterMeterAnalyser, masterInsertChain, masterComp, fx, sidechainBus };
+  return { ctx, master, analyser, masterMeterAnalyser, masterStrip, masterInsertChain, masterComp, fx, sidechainBus };
 }
 
 export function createAudioGraph(): AudioGraph {

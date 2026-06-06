@@ -65,7 +65,7 @@ The insert types available per lane are the same four plugins used on the master
 
 ## Master FX panel
 
-The master bus has its own strip at the foot of the **scenes column** of the mixer row — a **MASTER** label, an **FX** button, a fader that mirrors the master **Volume**, and a VU meter. Click its **FX** button to open the **Master FX panel** below the grid (click again to close it). *(Previously this was a separate "Master FX" tab; the controls are identical, only the way you open them changed.)*
+The master bus has its own strip at the foot of the **scenes column** of the mixer row — a full column laid out like a lane strip, so it lines up with them: a **MASTER** label, an **EQ** section (HI / MID / LO), an **FX** button (in the lane's SEND slot — the master has no sends), a **PAN** knob, a **Mute** button (no Solo — meaningless on the master), and a fader that mirrors the master **Volume** plus a VU meter. The master EQ, pan and mute shape the whole mix; they are saved with the session and the EQ/pan are undoable like any knob. Click the **FX** button to open the **Master FX panel** below the grid (click again to close it). *(The panel's content — SENDS, MASTER COMP, INSERTS — was previously a separate "Master FX" tab; the controls are identical, only the way you open them changed.)*
 
 ![Loom Master FX panel — SENDS, MASTER COMP, and INSERTS sections](images/master-fx.png)
 

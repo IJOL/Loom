@@ -115,7 +115,7 @@ const audio = createAudioGraph();
 // Phase G: audio-graph.ts is now master-only. All per-lane strips, instrument
 // instances, and configurators were removed. Lane allocation happens lazily via
 // lanes.ensureLaneResource() when applyLoadedSessionState runs.
-const { ctx, master, analyser, masterMeterAnalyser, masterInsertChain, fx, masterComp, sidechainBus } = audio;
+const { ctx, master, analyser, masterMeterAnalyser, masterStrip, masterInsertChain, fx, masterComp, sidechainBus } = audio;
 
 // Stable call-site wrappers — set in boot section, after automationDeps is built.
 let renderLanes: () => void = () => { /* populated at boot */ };
@@ -437,10 +437,12 @@ const sessionHost = new SessionHost({
   fxBus: fx,
   scaleSel,
   rootSel,
-  // Master strip in the last mixer column: the fader proxies #volume, the VU
-  // reads the dedicated master meter tap (audio-graph.ts).
+  // Master strip in the last mixer column: a full lane-style column — the fader
+  // proxies #volume, the VU reads the dedicated master meter tap, and the
+  // EQ/pan/mute knobs drive masterStrip (audio-graph.ts).
   volInput,
   masterMeterAnalyser,
+  masterStrip,
   applyPresetForLane: (laneId, presetName) => {
     // presetName is a prefixed value matching the dropdown vocabulary
     // (factory: / user: / engine:). See src/presets/preset-apply.ts.
@@ -976,6 +978,7 @@ const saveBaseDeps = {
   renderLanes,
   fx,
   masterInsertChain,
+  masterStrip,
   flashButton,
   history,
 };

@@ -199,12 +199,16 @@
    .mix-fader-wrap / .mix-fader / .mix-vu-host; only adds an amber accent and
    the FX toggle. Sits in the last (scenes) column of the mixer row (140px). */
 .mix-col.master-strip {
-  // It has no EQ/SEND two-column body, just name + FX button + fader/VU.
-  grid-template-columns: 1fr;
-  // Reinforced amber accent to mark it apart from the lane strips.
+  // Full lane-style two-column body (EQ on the left, the FX button in the lane's
+  // SEND slot on the right, then PAN / Mute / fader+VU spanning both), so the
+  // master module lines up pixel-for-pixel with the lane columns. Only the
+  // reinforced amber accent marks it apart.
   border-color: var(--amber-soft);
   box-shadow: inset 0 0 0 1px var(--amber-glow);
 }
+// The FX button sits in a .mix-section (the SEND slot) — drop its standalone
+// top margin; the section's gap handles spacing.
+.master-fx-section .master-fx-toggle { margin-top: 0; }
 .master-strip .mix-name {
   // Amber on dark, already; make the master read a touch louder.
   letter-spacing: 0.1em;

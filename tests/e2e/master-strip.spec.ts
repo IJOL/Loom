@@ -99,4 +99,27 @@ test.describe('master strip', () => {
     // Exactly one master strip, and it is excluded from the lane count above.
     await expect(page.locator('.master-strip')).toHaveCount(1);
   });
+
+  test('the master column has lane-parity controls: EQ + PAN knobs, Mute (no Solo), FX', async ({ page }) => {
+    await page.goto('/');
+    await waitForBoot(page);
+
+    const master = page.locator('.master-strip');
+    // EQ section with three knobs + a PAN knob = 4 knobs total (no SEND knobs).
+    await expect(master.locator('.mix-section', { has: page.locator('.mix-sec-label', { hasText: 'EQ' }) })).toHaveCount(1);
+    await expect(master.locator('.knob')).toHaveCount(4);
+    // Mute button present; Solo absent (meaningless on the master).
+    await expect(master.locator('.mix-btn.mute')).toHaveCount(1);
+    await expect(master.locator('.mix-btn.solo')).toHaveCount(0);
+    // The FX button lives inside the column (in the SEND slot).
+    await expect(master.locator('.master-fx-toggle')).toHaveCount(1);
+
+    // Mute toggles its active state.
+    const mute = master.locator('.mix-btn.mute');
+    await expect(mute).not.toHaveClass(/active/);
+    await mute.click();
+    await expect(mute).toHaveClass(/active/);
+    await mute.click();
+    await expect(mute).not.toHaveClass(/active/);
+  });
 });

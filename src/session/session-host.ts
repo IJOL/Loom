@@ -167,6 +167,9 @@ export interface SessionHostDeps {
   /** Dedicated meter tap of the master bus (fftSize=512) feeding the master
    *  strip's VU. Optional, paired with volInput. */
   masterMeterAnalyser?: AnalyserNode;
+  /** Master bus EQ/pan/mute strip the master mixer module's tone controls drive.
+   *  Optional, paired with volInput/masterMeterAnalyser. */
+  masterStrip?: import('../core/master-bus-strip').MasterBusStrip;
 }
 
 export class SessionHost {
@@ -592,12 +595,14 @@ export class SessionHost {
     }
     // Last (scenes) column: the master strip when an audio graph is wired,
     // else the old spacer (test fixtures without audio omit volInput/analyser).
-    if (this.deps.volInput && this.deps.masterMeterAnalyser) {
+    if (this.deps.volInput && this.deps.masterMeterAnalyser && this.deps.masterStrip) {
       row.appendChild(buildMasterStrip({
         volInput: this.deps.volInput,
         masterMeterAnalyser: this.deps.masterMeterAnalyser,
+        masterStrip: this.deps.masterStrip,
         isFxOpen: () => this.masterFxOpen,
         onToggleFx: () => this.toggleMasterFx(),
+        historyDeps: this.deps.historyDeps,
         registerDisposable: (d) => this.registerMixerDisposable(d),
       }));
     } else {
