@@ -45,6 +45,11 @@
       .synth > .synth-row    { order: 2; }
       .synth > .page         { order: 3; }
       .synth > .session-view { order: 4; }
+      /* The session/IO bar sits right under the transport row (both order:0, so
+         document order keeps transport on top, session bar below). */
+      .synth > .row.session-bar { order: 0; }
+      .row.session-bar { border-top: 1px solid #2a2a2a; padding-top: 6px; margin-top: 2px; }
+      .transport-spacer { flex: 1 1 auto; }
       /* Hide legacy PolySynth LFO1/LFO2 knob sections — the per-lane
          modulators panel replaces them functionally. */
       .row.poly-section:has(#poly-lfo1-knobs),
@@ -84,17 +89,10 @@
     <div class="synth">
       <h1>Loom <a class="manual-link" href="manual/" target="_blank" rel="noopener" title="Open the Loom manual in a new tab">Manual &#8599;</a></h1>
 
+      <!-- Fila 1 · Transporte & tempo (lo que tocas mientras suena) -->
       <div class="row transport">
         <button id="play" title="Play — arranca el transporte">&#9654;</button>
         <button id="stop" title="Stop — detiene el transporte">&#9209;</button>
-        <span class="export-menu-wrap">
-          <button id="export-scene" class="io" title="Export the current scene to WAV">&#10515; WAV &#9662;</button>
-          <span id="export-menu" class="export-menu" hidden>
-            <button id="export-rt" class="io">Tiempo real</button>
-            <button id="export-offline" class="io">Offline (r&aacute;pido)</button>
-          </span>
-        </span>
-        <button id="stems-open" class="io" title="Separar una canción en stems (servicio local)">&#9776; Stems&#8230;</button>
         <div class="transport-readout" title="Bar.beat.step  ·  hh:mm:ss elapsed">
           <span id="transport-position" class="transport-position">1.1.1</span>
           <span id="transport-time" class="transport-time">00:00:00</span>
@@ -103,27 +101,40 @@
         <label>Meter<select id="meter"></select></label>
         <label>Swing<input id="swing" type="range" min="0" max="0.6" step="0.01" value="0" /></label>
         <label>Volume<input id="volume" type="range" min="0" max="1" step="0.01" value="0.5" /></label>
-        <div class="vert-divider"></div>
+        <span class="transport-spacer"></span>
+        <canvas id="viz" width="200" height="40"></canvas>
+      </div>
+
+      <!-- Fila 2 · Sesión & E/S (todo lo relativo a la sesión) -->
+      <div class="row session-bar">
         <span class="mode-toggle" id="mode-toggle">
           <button class="mode-btn on" data-mode="session">Session</button>
           <button class="mode-btn" data-mode="performance">Performance</button>
         </span>
-        <button class="rnd" id="copy-to-performance" title="Volcar las escenas a la timeline y abrir Performance">⇉ Copiar a Performance</button>
-        <button class="io" id="rec" title="Record knob moves">● REC</button>
-        <button class="io" id="new-session" title="Start a new empty session">New</button>
-        <button class="io" id="save">Save</button>
-        <button class="io" id="load">Load</button>
+        <button class="rnd" id="copy-to-performance" title="Copiar las escenas a la timeline de Performance">&#8649;</button>
         <div class="vert-divider"></div>
-        <select id="demo-picker" class="demo-picker"></select>
-        <details class="midi-panel">
-          <summary>MIDI Import</summary>
+        <button class="io" id="rec" title="Grabar (knobs + lanzamientos de clips)">&#9679; REC</button>
+        <span class="export-menu-wrap">
+          <button id="export-scene" class="io" title="Exportar la escena a WAV">&#10515; WAV &#9662;</button>
+          <span id="export-menu" class="export-menu" hidden>
+            <button id="export-rt" class="io">Tiempo real</button>
+            <button id="export-offline" class="io">Offline (r&aacute;pido)</button>
+          </span>
+        </span>
+        <button id="stems-open" class="io" title="Separar una canción en stems (servicio local)">&#9776;</button>
+        <div class="vert-divider"></div>
+        <button class="io" id="new-session" title="Nueva sesión vacía">&#128459;</button>
+        <button class="io" id="save" title="Guardar sesión">&#128190;</button>
+        <button class="io" id="load" title="Cargar sesión">&#128193;</button>
+        <select id="demo-picker" class="demo-picker" title="Cargar un demo"></select>
+        <details class="midi-panel" title="Importar archivo MIDI">
+          <summary>&#11015; MIDI</summary>
           <div class="midi-import-row">
             <input type="file" id="poly-midi-file" accept=".mid,.midi" />
             <button class="rnd primary" id="poly-midi-load" style="display:none;">Import MIDI</button>
           </div>
           <div id="poly-midi-tracklist" class="midi-tracklist" style="display:none;"></div>
         </details>
-        <canvas id="viz" width="200" height="40"></canvas>
       </div>
 
       <div id="session-view-root">
