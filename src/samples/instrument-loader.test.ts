@@ -6,7 +6,10 @@ import {
   listInstruments,
   fetchInstrumentManifest,
   type MelodicInstrumentManifest,
+  type LoopInstrumentManifest,
 } from './instrument-loader';
+import { SLICE_BASE_NOTE, buildSliceClip } from '../core/slice-clip';
+import { DEFAULT_METER } from '../core/meter';
 
 const ZONES: MelodicInstrumentManifest['zones'] = [
   { file: 'sweep-pad/low.wav', rootNote: 48, loNote: 0, hiNote: 59 },
@@ -103,6 +106,103 @@ describe('loadInstrument (melodic, impure, injected deps)', () => {
       { store: { put: vi.fn(async () => {}) }, cache: { put: vi.fn() }, fetchFn },
     );
     expect(padParams).toBeUndefined();
+  });
+});
+
+describe('loadInstrument (loop, impure, injected deps) — note↔slice determinism', () => {
+  // A minimal fake AudioBuffer + context so slice-buffer's createBuffer/getChannelData
+  // and audioBufferToWavBytes run without node-web-audio-api. The loop fixture is a
+  // 2-second mono buffer; the manifest pins slicePointsSec so cuts are deterministic.
+  const SR = 8000;
+  const DURATION = 2;
+  function fakeBuffer(durationSec: number, ch = 1, sr = SR): AudioBuffer {
+    const length = Math.round(durationSec * sr);
+    const data = Array.from({ length: ch }, () => new Float32Array(length).fill(0.3));
+    return {
+      duration: durationSec,
+      length,
+      sampleRate: sr,
+      numberOfChannels: ch,
+      getChannelData: (c: number) => data[c],
+    } as unknown as AudioBuffer;
+  }
+  const decoded = fakeBuffer(DURATION);
+  const ctx = {
+    decodeAudioData: vi.fn(async () => decoded),
+    createBuffer: (ch: number, len: number, sr: number) => fakeBuffer(len / sr, ch, sr),
+  } as unknown as AudioContext;
+
+  const SLICE_POINTS = [0.5, 1.0, 1.5]; // → with the 0 anchor: 4 slices
+  const LOOP: LoopInstrumentManifest = {
+    id: 'amen-loop',
+    name: 'Amen Loop',
+    family: 'loop',
+    file: 'amen-loop/loop.wav',
+    originalBpm: 120,
+    slicePointsSec: SLICE_POINTS,
+  };
+
+  it('fetches + slices + stores + caches one bank sample per slice, mono-note keymap from SLICE_BASE_NOTE', async () => {
+    const fetched: string[] = [];
+    const fetchFn = vi.fn(async (url: string) => {
+      fetched.push(url);
+      return { ok: true, arrayBuffer: async () => new ArrayBuffer(16) } as unknown as Response;
+    }) as unknown as typeof fetch;
+    const stored: string[] = [];
+    const cached: string[] = [];
+    const store = { put: vi.fn(async (a: { id: string }) => { stored.push(a.id); }) };
+    const cache = { put: vi.fn((id: string) => { cached.push(id); }) };
+
+    const loaded = await loadInstrument(LOOP, ctx, { store, cache, fetchFn, now: () => 1234 });
+
+    // a single fetch for the whole-loop wav
+    expect(fetched).toEqual(['/instruments/amen-loop/loop.wav']);
+    // 4 slices (0, 0.5, 1.0, 1.5) → stored + cached once each, ids aligned
+    expect(stored).toHaveLength(4);
+    expect(cached).toEqual(stored);
+    // the keymap is one mono-note entry per slice, consecutive from SLICE_BASE_NOTE
+    expect(loaded.keymap).toHaveLength(4);
+    loaded.keymap.forEach((e, i) => {
+      expect(e.rootNote).toBe(SLICE_BASE_NOTE + i);
+      expect(e.loNote).toBe(SLICE_BASE_NOTE + i);
+      expect(e.hiNote).toBe(SLICE_BASE_NOTE + i);
+    });
+    expect(loaded.keymap.map((e) => e.sampleId)).toEqual(stored);
+    // the loop metadata flows back for SessionHost to build the clip
+    expect(loaded.slicePointsSec).toEqual(SLICE_POINTS);
+    expect(loaded.durationSec).toBe(DURATION);
+    expect(loaded.originalBpm).toBe(120);
+  });
+
+  it('keymap[i].rootNote === buildSliceClip notes[i].midi (loader↔slice-clip contract)', async () => {
+    const fetchFn = vi.fn(async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(16) } as unknown as Response)) as unknown as typeof fetch;
+    const loaded = await loadInstrument(LOOP, ctx, {
+      store: { put: vi.fn(async () => {}) }, cache: { put: vi.fn() }, fetchFn,
+    });
+
+    const { notes } = buildSliceClip({
+      slicePointsSec: loaded.slicePointsSec,
+      durationSec: loaded.durationSec,
+      originalBpm: loaded.originalBpm,
+      projectMeter: DEFAULT_METER,
+      gridResolution: '1/16',
+    });
+
+    // same count, same order: slice i ⇄ note i ⇄ MIDI SLICE_BASE_NOTE + i
+    expect(notes).toHaveLength(loaded.keymap.length);
+    notes.forEach((n, i) => {
+      expect(n.midi).toBe(SLICE_BASE_NOTE + i);
+      expect(loaded.keymap[i].rootNote).toBe(n.midi);
+    });
+  });
+
+  it('self-heals: two loads yield distinct sampleIds but the same note↔slice mapping', async () => {
+    const fetchFn = vi.fn(async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(16) } as unknown as Response)) as unknown as typeof fetch;
+    const deps = { store: { put: vi.fn(async () => {}) }, cache: { put: vi.fn() }, fetchFn };
+    const a = await loadInstrument(LOOP, ctx, deps);
+    const b = await loadInstrument(LOOP, ctx, deps);
+    expect(a.keymap.map((e) => e.sampleId)).not.toEqual(b.keymap.map((e) => e.sampleId));
+    expect(a.keymap.map((e) => e.rootNote)).toEqual(b.keymap.map((e) => e.rootNote));
   });
 });
 

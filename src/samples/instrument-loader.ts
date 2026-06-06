@@ -22,6 +22,10 @@ import type { ResolutionKey } from '../core/drum-grid-editing';
 import { sampleStore } from './store-singleton';
 import { sampleCache } from './sample-cache';
 import { buildSampleAsset, newSampleId } from './import';
+import { sliceBuffer } from './slice-buffer';
+import { slicesToKeymap, audioBufferToWavBytes } from './slice-to-bank';
+import { detectLoop } from './loop-analysis';
+import { DEFAULT_METER } from '../core/meter';
 
 /** One melodic zone: a wav mapped over a key range at a root note. */
 export interface MelodicZone {
@@ -73,6 +77,18 @@ export interface LoadedMelodicInstrument {
   padParams?: Record<number, Partial<PadParams>>;
 }
 
+/** What a loaded loop instrument hands back: the slice bank as a mono-note
+ *  keymap plus the loop metadata SessionHost needs to build the note clip +
+ *  scene (buildSliceClip + installSamplerClip live there, not here — the loader
+ *  never touches SessionState). slicePointsSec mirrors the manifest's fixed cuts
+ *  so the note↔slice mapping is deterministic across reloads. */
+export interface LoadedLoopInstrument {
+  keymap: KeymapEntry[];
+  slicePointsSec: number[];
+  durationSec: number;
+  originalBpm: number;
+}
+
 /** Minimal seams so the impure loader is unit-testable without a real
  *  AudioContext / IndexedDB / network. Mirror of drumkit-loader's LoadDeps. */
 interface LoadDeps {
@@ -122,15 +138,31 @@ export async function fetchInstrumentManifest(id: string, fetchFn: typeof fetch 
   return (await res.json()) as InstrumentManifest;
 }
 
-/** IMPURE (melodic family): fetch every zone's wav, decode it, persist to the
- *  sample store + decoded cache with a fresh id, and return a multi-zone keymap
- *  plus any per-zone params the manifest declared. Mirror of loadDrumkit: fresh
- *  ids every call (self-healing across reloads), IndexedDB-only cache.
- *  The loop family lands in the next task. */
-export async function loadInstrument(
-  manifest: MelodicInstrumentManifest,
+/** IMPURE: load a bundled Sampler instrument. Dispatches on the manifest
+ *  family — melodic → a multi-zone chromatic keymap, loop → a slice bank +
+ *  the loop metadata. Both are self-healing: fresh sampleIds every call,
+ *  IndexedDB-only cache (mirror of loadDrumkit). The overloads keep the return
+ *  type precise per family. */
+export function loadInstrument(manifest: MelodicInstrumentManifest, ctx: AudioContext, deps?: LoadDeps): Promise<LoadedMelodicInstrument>;
+export function loadInstrument(manifest: LoopInstrumentManifest, ctx: AudioContext, deps?: LoadDeps): Promise<LoadedLoopInstrument>;
+export function loadInstrument(manifest: InstrumentManifest, ctx: AudioContext, deps?: LoadDeps): Promise<LoadedMelodicInstrument | LoadedLoopInstrument>;
+export function loadInstrument(
+  manifest: InstrumentManifest,
   ctx: AudioContext,
   deps: LoadDeps = {},
+): Promise<LoadedMelodicInstrument | LoadedLoopInstrument> {
+  return manifest.family === 'loop'
+    ? loadLoopInstrument(manifest, ctx, deps)
+    : loadMelodicInstrument(manifest, ctx, deps);
+}
+
+/** Melodic family: fetch every zone's wav, decode it, persist to the sample
+ *  store + decoded cache with a fresh id, and return a multi-zone keymap plus
+ *  any per-zone params the manifest declared. */
+async function loadMelodicInstrument(
+  manifest: MelodicInstrumentManifest,
+  ctx: AudioContext,
+  deps: LoadDeps,
 ): Promise<LoadedMelodicInstrument> {
   const store = deps.store ?? sampleStore;
   const cache = deps.cache ?? sampleCache;
@@ -149,4 +181,54 @@ export async function loadInstrument(
     ids.push(id);
   }
   return { keymap: buildMelodicKeymap(manifest.zones, ids), padParams: manifest.padParams };
+}
+
+/** Loop family: fetch + decode the single loop wav, carve it at the manifest's
+ *  FIXED slicePointsSec (re-derive with detectLoop only if the manifest left
+ *  them empty), persist each slice as a fresh bank sample, and return the slice
+ *  bank as a mono-note keymap (one consecutive note per slice from
+ *  SLICE_BASE_NOTE) plus the loop metadata. buildSliceClip + clip/scene
+ *  insertion happen in SessionHost — the loader never touches SessionState.
+ *
+ *  Determinism: the same slicePointsSec ⇒ the same slice order ⇒
+ *  keymap[i].rootNote === SLICE_BASE_NOTE + i, matching buildSliceClip's
+ *  notes[i].midi for the identical onsets. */
+async function loadLoopInstrument(
+  manifest: LoopInstrumentManifest,
+  ctx: AudioContext,
+  deps: LoadDeps,
+): Promise<LoadedLoopInstrument> {
+  const store = deps.store ?? sampleStore;
+  const cache = deps.cache ?? sampleCache;
+  const fetchFn = deps.fetchFn ?? fetch;
+  const now = deps.now ?? Date.now;
+
+  const res = await fetchFn(`${import.meta.env.BASE_URL}instruments/${manifest.file}`);
+  const bytes = await res.arrayBuffer();
+  // decodeAudioData detaches its input — decode a copy (the whole-loop bytes are
+  // re-persisted by SessionHost's reloadInstrument, not here).
+  const buffer = await ctx.decodeAudioData(bytes.slice(0));
+
+  // The manifest pins slicePointsSec for note↔slice determinism; only fall back
+  // to detection if it left them empty.
+  const slicePointsSec = manifest.slicePointsSec.length > 0
+    ? manifest.slicePointsSec
+    : detectLoop(buffer, DEFAULT_METER).slicePointsSec;
+
+  const cuts = sliceBuffer(ctx, buffer, slicePointsSec);
+  const ids: string[] = [];
+  for (const cut of cuts) {
+    const sliceBytes = await audioBufferToWavBytes(cut.buffer);
+    const id = newSampleId();
+    await store.put(buildSampleAsset({ id, name: `${manifest.id}/slice-${ids.length}.wav`, mime: 'audio/wav', bytes: sliceBytes, buffer: cut.buffer, createdAt: now() }));
+    cache.put(id, cut.buffer);
+    ids.push(id);
+  }
+
+  return {
+    keymap: slicesToKeymap(ids),
+    slicePointsSec,
+    durationSec: buffer.duration,
+    originalBpm: manifest.originalBpm,
+  };
 }
