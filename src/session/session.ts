@@ -75,7 +75,14 @@ export interface SessionLane {
     params?: Record<string, number>;
     modulators?: import('../modulation/types').ModulatorState[];
     noteFx?: import('../notefx/notefx-types').NoteFxState[];
-    sampler?: { keymap: import('../samples/types').KeymapEntry[]; drumkitId?: string; padParams?: Record<number, Record<string, number>> };
+    sampler?: {
+      keymap: import('../samples/types').KeymapEntry[];
+      drumkitId?: string;
+      /** Mirror of `drumkitId` for bundled melodic/loop presets; mutually
+       *  exclusive with `drumkitId` (drumkit wins in the load path). */
+      instrumentId?: string;
+      padParams?: Record<number, Record<string, number>>;
+    };
     /** Per-voice drum mute flags (drums-machine). Solo is live-only, not saved. */
     drumMutes?: Record<string, boolean>;
     /** Which drum source the Drums lane plays. Absent ⇒ 'synth' (façade default). */
