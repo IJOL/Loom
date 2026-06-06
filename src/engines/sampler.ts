@@ -25,11 +25,40 @@ import { computeVoiceMutes } from '../core/mute-solo';
 import { renderDrumVoiceRack } from './drum-voice-rack';
 import { velGain } from '../core/velocity-gain';
 import { playAudioClip, OUTPUT_TRIM } from './audio-clip-voice';
+import { withUndo } from '../save/history-wiring';
 
 const SAMPLER_PARAMS: EngineParamSpec[] = [
   { id: 'gain',        label: 'Gain',   kind: 'continuous', min: 0, max: 1.5, default: 1 },
   { id: 'poly.voices', label: 'Voices', kind: 'continuous', min: 1, max: 16,  default: 8 },
 ];
+
+const NOTE_NAMES: Record<string, number> = {
+  c: 0, 'c#': 1, db: 1, d: 2, 'd#': 3, eb: 3, e: 4, f: 5,
+  'f#': 6, gb: 6, g: 7, 'g#': 8, ab: 8, a: 9, 'a#': 10, bb: 10, b: 11,
+};
+
+/** Guess a sample's root MIDI note from its file name. Recognises a note name
+ *  with octave (e.g. `C3`, `A#4`, `Db2`) or a bare MIDI number (`60`); falls
+ *  back to C3 = 60 when nothing matches. Octave convention: C3 = 60 (yamaha). */
+export function guessRootNoteFromName(fileName: string): number {
+  const base = fileName.replace(/\.[a-z0-9]+$/i, '');
+  // Note name + octave: C3, A#4, Db-1, gb 2 …
+  const nm = base.match(/(?:^|[^a-z])([a-gA-G])([#b]?)\s*(-?\d{1,2})(?![\d])/);
+  if (nm) {
+    const semis = NOTE_NAMES[(nm[1] + nm[2]).toLowerCase()];
+    if (semis !== undefined) {
+      const midi = (Number(nm[3]) + 2) * 12 + semis; // C3 = 60 ⇒ octave+2
+      if (midi >= 0 && midi <= 127) return midi;
+    }
+  }
+  // Bare MIDI number: only when not glued to other digits.
+  const mm = base.match(/(?:^|[^0-9])(\d{1,3})(?![0-9])/);
+  if (mm) {
+    const midi = Number(mm[1]);
+    if (midi >= 0 && midi <= 127) return midi;
+  }
+  return 60;
+}
 
 class SamplerSequencer implements EngineSequencer {
   getStepAt(): unknown { return null; }
@@ -466,45 +495,69 @@ export class SamplerEngine implements SynthEngine {
       })();
     });
 
+    // Multi-sample import. Pick one or more audio files; each becomes a zone in
+    // the keymap. `addSampleToKeymap` fixes loNote:0/hiNote:127 on every zone,
+    // so with N samples only the LAST one sounds (keymapEntryFor is last-match-
+    // wins). This is intentional full-range stacking — the user then dials each
+    // zone's root/range in the rack below. This is NOT automatic multi-zone
+    // splitting (that lives in bundled instrument presets, the Loop/Melodic
+    // families). See keymap-edit.ts:addSampleToKeymap.
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
+    fileInput.multiple = true;
     fileInput.accept = 'audio/*';
     fileInput.className = 'sampler-load';
+    fileInput.style.display = 'none';
     section.appendChild(fileInput);
 
-    const drop = document.createElement('div');
-    drop.className = 'sampler-dropzone';
-    drop.textContent = 'Drop an audio file, or use the picker above';
-    section.appendChild(drop);
+    const importBtn = document.createElement('button');
+    importBtn.className = 'sampler-import-btn';
+    importBtn.textContent = 'Importar muestras…';
+    importBtn.title = 'Importar uno o varios audios como zonas del keymap';
+    importBtn.addEventListener('click', () => fileInput.click());
+    section.appendChild(importBtn);
 
-    const loadFile = async (file: File) => {
+    const importHint = document.createElement('div');
+    importHint.className = 'sampler-import-hint label';
+    importHint.textContent = 'Cada audio se añade como una zona. Ajusta el rango de cada zona abajo.';
+    section.appendChild(importHint);
+
+    const importStatus = document.createElement('span');
+    importStatus.className = 'sampler-import-status';
+    section.appendChild(importStatus);
+
+    const loadFiles = async (files: File[]) => {
       const audioCtx = ctx.audioContext;
-      if (!audioCtx) return;
-      try {
-        const asset = await importFile(file, audioCtx);
-        await sampleStore.put(asset);
-        const buf = await audioCtx.decodeAudioData(asset.bytes.slice(0));
-        sampleCache.put(asset.id, buf);
-        const km = addSampleToKeymap(this.getKeymap(), asset.id);
+      if (!audioCtx) {
+        importStatus.textContent = ' audio not ready — press play once, then import';
+        return;
+      }
+      let km = this.getKeymap();
+      const failed: string[] = [];
+      for (const file of files) {
+        try {
+          const asset = await importFile(file, audioCtx);
+          await sampleStore.put(asset);
+          const buf = await audioCtx.decodeAudioData(asset.bytes.slice(0));
+          sampleCache.put(asset.id, buf);
+          km = addSampleToKeymap(km, asset.id, { rootNote: guessRootNoteFromName(file.name) });
+        } catch (err) {
+          failed.push(`${file.name}: ${(err as Error).message}`);
+        }
+      }
+      const commit = () => {
         this.setKeymap(km);
         if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, km);
-        rebuild();
-      } catch (err) {
-        drop.textContent = `Could not load: ${(err as Error).message}`;
-      }
+      };
+      if (ctx.historyDeps) withUndo(ctx.historyDeps, commit); else commit();
+      importStatus.textContent = failed.length ? ` ${failed.join('; ')}` : '';
+      rebuild();
     };
 
     fileInput.addEventListener('change', () => {
-      const f = fileInput.files?.[0];
-      if (f) void loadFile(f);
-    });
-    drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
-    drop.addEventListener('dragleave', () => drop.classList.remove('over'));
-    drop.addEventListener('drop', (e) => {
-      e.preventDefault();
-      drop.classList.remove('over');
-      const f = e.dataTransfer?.files?.[0];
-      if (f) void loadFile(f);
+      const files = Array.from(fileInput.files ?? []);
+      if (files.length) void loadFiles(files);
+      fileInput.value = '';
     });
 
     const list = document.createElement('div');
