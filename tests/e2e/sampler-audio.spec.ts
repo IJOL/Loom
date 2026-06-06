@@ -9,6 +9,11 @@
 // Front D · Task 17 — multi-sample import (one zone per file, full-range
 // stacked) and loop import (a note clip + launchable scene + a piano-roll with
 // a waveform header — the performance notes live there, NOT inside the Sampler).
+//
+// Front D · Task 18 — an audio channel (a dropped WAV on an `audio` lane) is a
+// pure waveform clip: its editor is the waveform header + a small bpm/bars/warp
+// toolbar, with NO `✂ Slice → pads` button (that slice-to-bank path was removed
+// — slicing now happens Sampler-side via "Importar loop…", see Task 13).
 import { test, expect } from '@playwright/test';
 
 type Page = import('@playwright/test').Page;
@@ -151,5 +156,35 @@ test.describe('sampler import (Task 17)', () => {
     // piano-roll of its own.
     await expect(page.locator('.sampler-keymap')).toBeVisible();
     await expect(page.locator('.sampler-keymap .pr-frame')).toHaveCount(0);
+  });
+});
+
+test.describe('audio channel (Task 18)', () => {
+  test('a dropped WAV is a pure waveform clip — no ✂ Slice → pads button', async ({ page }) => {
+    await page.goto('/');
+    // Boot: the demo session fills the grid before we add anything.
+    await page.waitForFunction(
+      () => document.querySelectorAll('.session-cell-filled').length > 0,
+      { timeout: 10_000 },
+    );
+
+    // "+ Audio" → the hidden file input drops a WAV onto a fresh audio lane.
+    // addAudioChannel selects the new clip and opens its editor immediately, so
+    // the audio-clip editor renders into #insp-roll-host without any extra click.
+    await page.locator('input.session-add-audio-input').setInputFiles({
+      name: 'beat.wav', mimeType: 'audio/wav', buffer: samplerWav(180),
+    });
+
+    // The editor is the audio-clip editor: a waveform header + the small toolbar
+    // (bpm / bars / warp). It is NOT a piano-roll.
+    const roll = page.locator('#insp-roll-host');
+    await expect(roll).toBeVisible();
+    await expect(roll.locator('.clip-waveform-header')).toBeVisible({ timeout: 10_000 });
+    await expect(roll.locator('.audio-clip-warp')).toBeVisible();
+
+    // The Task-9 removal: there is NO ✂ Slice → pads button anywhere in the
+    // audio-clip editor.
+    await expect(roll.locator('.audio-clip-slice')).toHaveCount(0);
+    await expect(roll.locator('.pr-frame')).toHaveCount(0);
   });
 });
