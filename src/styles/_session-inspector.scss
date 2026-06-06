@@ -7,16 +7,84 @@
   border-radius: 2px;
   padding: 10px;
 }
-.session-inspector-row {
+/* Two-plane inspector bar: transport (Name/Length/Launch/Duplicate/Delete) on
+ * top, editing (Copy/Paste/random/view-toggle) below. A subtle divider keeps
+ * the two planes visually distinct so the editing row reads as a sub-group. */
+.clip-transport-row,
+.clip-edit-row {
   display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
 }
-.session-inspector-row label {
+.clip-edit-row {
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+.clip-transport-row label,
+.clip-edit-row label {
   font-size: 11px; color: var(--text-dim);
   display: flex; align-items: center; gap: 4px;
 }
-.session-inspector-row input[type="text"] { width: 160px; }
-.session-inspector-row input[type="number"] { width: 60px; }
+.clip-transport-row input[type="text"],
+.clip-edit-row input[type="text"] { width: 160px; }
+.clip-transport-row input[type="number"],
+.clip-edit-row input[type="number"] { width: 60px; }
 .session-inspector-roll { margin-top: 8px; }
+
+/* Editor grid-control — the right-anchored octave (◂ C4 ▸) / resolution (Grid
+ * [select]) cluster shared by the piano-roll and drum-grid toolbars. */
+.editor-grid-control {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto; /* push to the right edge of the toolbar */
+}
+.editor-grid-control > span {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text-dim);
+}
+.editor-grid-control button {
+  padding: 1px 6px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+.editor-grid-control select {
+  background: var(--surface-3);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 2px 4px;
+  font-size: 11px;
+  font-family: var(--mono);
+  height: 22px;
+}
+
+/* Keyboard-help "?" button + its popover (the full key legend). The popover is
+ * a <pre> rendered just below the editor toolbar. It stays in normal flow (so
+ * it always lands directly under the toolbar regardless of editor host
+ * positioning) and layers above the canvas via position/z-index. */
+.editor-help-btn {
+  padding: 1px 7px;
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+.editor-help-popover {
+  position: relative;
+  z-index: 20; /* above the editor canvas */
+  margin: 2px 0 6px;
+  padding: 8px 10px;
+  width: fit-content;
+  max-width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre;
+}
 .session-mix-col {
   background: var(--surface-2);
   border: 1px solid var(--border);
