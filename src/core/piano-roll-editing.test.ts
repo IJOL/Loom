@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   keyToSemitone, midiForKey, notesInRect, translateGroup,
   serializeClipboard, pasteTranslate, quantizeRecorded,
+  clampOctaveBase, octaveBaseLabel,
   KEY_SEMITONES, PIANO_KEY_LEGEND,
 } from './piano-roll-editing';
 import type { NoteEvent } from './notes';
@@ -23,6 +24,33 @@ describe('keyboard map', () => {
     expect(midiForKey('w', 60)).toBe(61);
     expect(midiForKey('k', 60)).toBe(72);
     expect(midiForKey('z', 60)).toBeNull(); // z/x are octave shifts, not notes
+  });
+});
+
+describe('clampOctaveBase', () => {
+  it('keeps an in-range base unchanged', () => {
+    expect(clampOctaveBase(60, 36, 96)).toBe(60);
+  });
+  it('floors at minMidi', () => {
+    expect(clampOctaveBase(60 - 12 * 4, 36, 96)).toBe(36); // 12 < 36 → clamp up
+    expect(clampOctaveBase(0, 36, 96)).toBe(36);
+  });
+  it('leaves a full octave of headroom at the top', () => {
+    expect(clampOctaveBase(96, 36, 96)).toBe(84); // maxMidi - 12
+    expect(clampOctaveBase(200, 36, 96)).toBe(84);
+  });
+  it('shifting up by 12 from C4 then clamping lands one octave higher', () => {
+    expect(clampOctaveBase(60 + 12, 36, 96)).toBe(72);
+  });
+});
+
+describe('octaveBaseLabel', () => {
+  it('labels the default base C4', () => {
+    expect(octaveBaseLabel(60)).toBe('C4');
+  });
+  it('moves the label with the octave', () => {
+    expect(octaveBaseLabel(72)).toBe('C5');
+    expect(octaveBaseLabel(48)).toBe('C3');
   });
 });
 

@@ -26,6 +26,21 @@ export function keyToSemitone(key: string): number | null {
   return s === undefined ? null : s;
 }
 
+/**
+ * Clamp an octave base (the MIDI note the on-screen keyboard's lowest key maps
+ * to) into the editor's range, leaving a full octave of headroom at the top.
+ * Shared by the z/x shortcut and the toolbar ◂/▸ octave stepper so they cannot
+ * drift apart.
+ */
+export function clampOctaveBase(octaveBase: number, minMidi: number, maxMidi: number): number {
+  return Math.max(minMidi, Math.min(maxMidi - 12, octaveBase));
+}
+
+/** Note-name label for an octave base, e.g. 60 → "C4" (matches the keyboard map). */
+export function octaveBaseLabel(octaveBase: number): string {
+  return `C${Math.floor(octaveBase / 12) - 1}`;
+}
+
 export function midiForKey(key: string, octaveBase: number): number | null {
   const semi = keyToSemitone(key);
   return semi === null ? null : octaveBase + semi;

@@ -14,7 +14,7 @@ import {
 } from './pianoroll-zoom';
 import {
   notesInRect, translateGroup, serializeClipboard, pasteTranslate, midiForKey,
-  quantizeRecorded, type ClipboardNote,
+  quantizeRecorded, clampOctaveBase, octaveBaseLabel, type ClipboardNote,
 } from './piano-roll-editing';
 import { isTextEditTarget } from '../save/history-wiring';
 
@@ -168,23 +168,45 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
 
   const f = buildEditorFrame(opts.host);
 
-  let octaveBase = Math.max(minMidi, Math.min(maxMidi - 12, 60)); // C4 default, clamped
+  let octaveBase = clampOctaveBase(60, minMidi, maxMidi); // C4 default, clamped
   const selection = new Set<NoteEvent>();
 
   const drawBtn = document.createElement('button');
   drawBtn.textContent = '✏ Draw';
   const selBtn = document.createElement('button');
   selBtn.textContent = '▭ Select';
+
+  // Octave stepper: ◂ [C4] ▸ — a grid-control anchored to the right of the
+  // toolbar. The buttons mirror the z/x keyboard shortcut (shiftOctave below).
+  const octCtl = document.createElement('div');
+  octCtl.className = 'editor-grid-control';
+  // Right-anchor + compact layout; the .editor-grid-control SCSS (Task 10)
+  // reinforces this. Inline kept so the control reads correctly before that lands.
+  octCtl.style.cssText = 'margin-left:auto;display:flex;gap:4px;align-items:center';
+  const octDownBtn = document.createElement('button');
+  octDownBtn.textContent = '◂';
+  octDownBtn.title = 'Octave (z / x)';
   const octLabel = document.createElement('span');
-  octLabel.style.cssText = 'margin-left:auto;font:11px ui-monospace,monospace;color:#9a9a9a';
+  octLabel.style.cssText = 'font:11px ui-monospace,monospace;color:#9a9a9a';
+  const octUpBtn = document.createElement('button');
+  octUpBtn.textContent = '▸';
+  octUpBtn.title = 'Octave (z / x)';
+  octCtl.append(octDownBtn, octLabel, octUpBtn);
+
   const refreshToolbar = () => {
     drawBtn.style.fontWeight = currentTool === 'draw' ? '700' : '400';
     selBtn.style.fontWeight  = currentTool === 'select' ? '700' : '400';
-    octLabel.textContent = `oct: C${Math.floor(octaveBase / 12) - 1}`;
+    octLabel.textContent = octaveBaseLabel(octaveBase);
+  };
+  const shiftOctave = (dir: 1 | -1) => {
+    octaveBase = clampOctaveBase(octaveBase + dir * 12, minMidi, maxMidi);
+    refreshToolbar();
   };
   drawBtn.addEventListener('click', () => { currentTool = 'draw'; refreshToolbar(); });
   selBtn.addEventListener('click', () => { currentTool = 'select'; refreshToolbar(); });
-  f.toolbar.append(drawBtn, selBtn, octLabel);
+  octDownBtn.addEventListener('click', () => shiftOctave(-1));
+  octUpBtn.addEventListener('click', () => shiftOctave(1));
+  f.toolbar.append(drawBtn, selBtn, octCtl);
   refreshToolbar();
 
   const gctx = ctx2d(f.gridCanvas);
@@ -595,10 +617,10 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     // Clear selection
     if (e.key === 'Escape') { selection.clear(); redrawGridAndLane(); e.preventDefault(); return; }
 
-    // Octave shift
+    // Octave shift (shares shiftOctave with the toolbar ◂/▸ stepper)
     if (!cmd && (e.key === 'z' || e.key === 'x')) {
-      octaveBase = Math.max(minMidi, Math.min(maxMidi - 12, octaveBase + (e.key === 'x' ? 12 : -12)));
-      refreshToolbar(); e.preventDefault(); return;
+      shiftOctave(e.key === 'x' ? 1 : -1);
+      e.preventDefault(); return;
     }
     // Move insertion cursor when nothing is selected
     if (selection.size === 0 && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
