@@ -1,4 +1,5 @@
 import { fetchDemoSession } from './demo-loader';
+import { alertDialog } from '../core/dialog';
 import type { SessionHost } from '../session/session-host';
 
 export interface DemoPickerDeps {
@@ -34,7 +35,7 @@ export function wireDemoPicker(deps: DemoPickerDeps): void {
       if (typeof state.bpm === 'number') applyBpm?.(state.bpm);
       onLoaded?.();
     } catch (err) {
-      alert(`Demo load failed: ${(err as Error).message}`);
+      void alertDialog(`Demo load failed: ${(err as Error).message}`);
     }
   });
 }

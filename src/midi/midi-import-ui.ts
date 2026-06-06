@@ -11,6 +11,7 @@
 // content. Every track — drum-channel included — is treated identically.
 
 import { parseMidiFile, type ParsedMidi } from './midi-parse';
+import { alertDialog, confirmDialog } from '../core/dialog';
 import { midiToSession } from './midi-to-session';
 import { findGMMatches, suggestDefaultMapping, type GMMatch } from './gm-lookup';
 import { auditionPreset } from './audition';
@@ -112,7 +113,7 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
     try {
       parsed = parseMidiFile(buf);
     } catch (err) {
-      alert('Not a valid SMF: ' + (err as Error).message);
+      void alertDialog('Not a valid SMF: ' + (err as Error).message);
       return;
     }
 
@@ -158,10 +159,10 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
     }
   });
 
-  loadBtn.addEventListener('click', () => {
+  loadBtn.addEventListener('click', async () => {
     if (!parsed) return;
     if (!isPresetsReady()) {
-      alert('Presets still loading, retry in a moment');
+      void alertDialog('Presets still loading, retry in a moment');
       return;
     }
     const checks = Array.from(trackListEl.querySelectorAll<HTMLInputElement>('input[type=checkbox]:checked'));
@@ -171,7 +172,7 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
     // (= the current scene count) so its clips align with their scene's launch
     // button; Replace builds a fresh session at row 0. (`confirm` is binary.)
     const trackCount = indices.length;
-    const doAdd = window.confirm(
+    const doAdd = await confirmDialog(
       `MIDI parsed: ${trackCount} track(s)` +
       (parsed.bpm ? ` @ ${Math.round(parsed.bpm)} BPM` : '') +
       `\n\nOK = Add to current session.\nCancel = Replace session.`,

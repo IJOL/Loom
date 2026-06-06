@@ -4,6 +4,7 @@ import {
   downloadAsJson, loadFromFile,
   type SaveIndexEntry,
 } from './save-manager';
+import { alertDialog, confirmDialog, promptDialog } from '../core/dialog';
 import type { Sequencer } from '../core/sequencer';
 import type { FxBus } from '../core/fx';
 import type { InsertChain } from '../plugins/fx/insert-chain';
@@ -48,7 +49,7 @@ function applyLoadedState(data: unknown, deps: SaveWiringDeps): void {
     if (data && typeof data === 'object' && 'schemaVersion' in data) {
       console.warn('[SaveManager] Ignoring legacy save file (schemaVersion < 3). Classic mode no longer supported.');
     } else {
-      alert('Invalid save data');
+      void alertDialog('Invalid save data');
     }
     return;
   }
@@ -101,12 +102,12 @@ function openSaveManager(deps: SaveWiringDeps, applyLoaded: (data: unknown) => v
       const data = loadEntry(entry.id);
       if (data) downloadAsJson(`tb303-${entry.name.replace(/[^\w-]+/g, '_')}.json`, data);
     };
-    row.querySelector<HTMLButtonElement>('[data-act=ren]')!.onclick = () => {
-      const next = window.prompt('Rename:', entry.name);
+    row.querySelector<HTMLButtonElement>('[data-act=ren]')!.onclick = async () => {
+      const next = await promptDialog('Rename:', entry.name);
       if (next) { renameEntry(entry.id, next); openSaveManager(deps, applyLoaded); }
     };
-    row.querySelector<HTMLButtonElement>('[data-act=del]')!.onclick = () => {
-      if (window.confirm(`Delete "${entry.name}"?`)) { deleteEntry(entry.id); openSaveManager(deps, applyLoaded); }
+    row.querySelector<HTMLButtonElement>('[data-act=del]')!.onclick = async () => {
+      if (await confirmDialog(`Delete "${entry.name}"?`)) { deleteEntry(entry.id); openSaveManager(deps, applyLoaded); }
     };
     list.appendChild(row);
   }
@@ -137,11 +138,11 @@ export function wireSaveManager(deps: SaveWiringDeps): void {
       applyLoaded(data);
       closeSaveManager();
     } catch (err) {
-      alert('Invalid save file: ' + (err as Error).message);
+      void alertDialog('Invalid save file: ' + (err as Error).message);
     }
   });
-  document.getElementById('save-manager-clear-all')!.addEventListener('click', () => {
-    if (window.confirm('Clear ALL saves? Autosave is preserved.')) {
+  document.getElementById('save-manager-clear-all')!.addEventListener('click', async () => {
+    if (await confirmDialog('Clear ALL saves? Autosave is preserved.')) {
       clearAll();
       openManager();
     }

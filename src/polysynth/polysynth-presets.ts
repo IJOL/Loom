@@ -1,4 +1,5 @@
 import { PolySynth, POLY_DEFAULTS, type PolySynthParams } from './polysynth';
+import { alertDialog, confirmDialog, promptDialog } from '../core/dialog';
 import { randomizePolySynth } from '../core/random';
 import type { SynthEngine } from '../engines/engine-types';
 import { getCachedPresets } from '../presets/preset-loader';
@@ -544,8 +545,8 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
       else loadCurrentPreset();
     });
 
-  (document.getElementById('poly-preset-save') as HTMLButtonElement).addEventListener('click', () => {
-    const name = prompt('Preset name:');
+  (document.getElementById('poly-preset-save') as HTMLButtonElement).addEventListener('click', async () => {
+    const name = await promptDialog('Preset name:');
     if (!name) return;
     const trimmed = name.trim();
     if (!trimmed) return;
@@ -559,15 +560,15 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
     refreshPolyPresetSelect();
   });
 
-  (document.getElementById('poly-preset-delete') as HTMLButtonElement).addEventListener('click', () => {
+  (document.getElementById('poly-preset-delete') as HTMLButtonElement).addEventListener('click', async () => {
     const sel = document.getElementById('poly-preset-select') as HTMLSelectElement;
     const val = sel.value;
     if (!val.startsWith('user:')) {
-      alert('Solo se pueden borrar presets de usuario (no los Factory).');
+      void alertDialog('Solo se pueden borrar presets de usuario (no los Factory).');
       return;
     }
     const name = val.slice('user:'.length);
-    if (!confirm(`Borrar preset "${name}"?`)) return;
+    if (!await confirmDialog(`Borrar preset "${name}"?`)) return;
     const presets = loadUserPolyPresets();
     delete presets[name];
     saveUserPolyPresets(presets);

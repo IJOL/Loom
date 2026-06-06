@@ -1,0 +1,52 @@
+// Reusable modal dialog facility (alert / confirm / prompt). See src/core/dialog.ts.
+.app-dialog {
+  background: #1c1c1c;
+  color: #eee;
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 18px 20px;
+  min-width: 300px;
+  max-width: 440px;
+
+  &::backdrop { background: rgba(0, 0, 0, 0.55); }
+}
+
+.app-dialog-title { margin: 0 0 6px; font-size: 15px; }
+.app-dialog-text { margin: 0 0 14px; color: #ccc; font-size: 13px; line-height: 1.4; white-space: pre-wrap; }
+
+.app-dialog-input {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 14px;
+  padding: 8px 10px;
+  background: #2a2a2a;
+  border: 1px solid #555;
+  color: #eee;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.app-dialog-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+.app-dialog-btn {
+  padding: 8px 16px;
+  cursor: pointer;
+  background: #2c2c2c;
+  border: 1px solid #555;
+  color: #eee;
+  border-radius: 6px;
+  font-size: 13px;
+
+  &:hover { background: #383838; }
+}
+
+.app-dialog-primary {
+  border-color: #2a9d6b;
+  &:hover { background: #1f5e44; }
+}
+
+.app-dialog-danger {
+  border-color: #b3403a;
+  color: #ff9a93;
+  &:hover { background: #5a1f1c; }
+}
