@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { migrateLoadedSessionState } from './session-migration';
-import type { SessionState } from './session';
+import type { SessionClip, SessionState } from './session';
 import { VOICE_MIDI } from '../engines/drum-gm-map';
 
 function emptyState(): SessionState {
@@ -82,5 +82,42 @@ describe('migrateLoadedSessionState', () => {
     const notes = out.lanes[0].clips[0]!.notes;
     expect(notes.find((n) => n.midi === VOICE_MIDI.kick)!.start).toBe(0);
     expect(notes.find((n) => n.midi === VOICE_MIDI.snare)!.start).toBeGreaterThan(0);
+  });
+
+  // D10 backward-compat: sampler lanes materialised by the old `onSliceToBank`
+  // carry a "modern" clip (`notes` + `sample` + `waveformRef`) with no
+  // `instrumentId` — they are IndexedDB-only. The modern passthrough branch
+  // must preserve those audio fields verbatim so the bank/waveform survive a load.
+  it('preserves sample + waveformRef + notes on a modern (sliced) sampler clip', () => {
+    const clip: SessionClip = {
+      id: 'loopclip', lengthBars: 2, color: '#a8e8b8',
+      notes: [
+        { midi: 36, start: 0,  duration: 24, velocity: 90 },
+        { midi: 37, start: 24, duration: 24, velocity: 90 },
+      ],
+      sample: {
+        sampleId: 'whole-loop', mode: 'loop', originalBpm: 174,
+        warp: true, trimStart: 0, trimEnd: 2.2,
+      },
+      waveformRef: {
+        sampleId: 'whole-loop',
+        slices: [
+          { start: 0,   end: 1.1, note: 36 },
+          { start: 1.1, end: 2.2, note: 37 },
+        ],
+      },
+    };
+    const s: SessionState = {
+      lanes: [{ id: 'sampler1', engineId: 'sampler', clips: [clip] }],
+      scenes: [], globalQuantize: '1/1',
+    };
+    const out = migrateLoadedSessionState(s);
+    const migrated = out.lanes[0].clips[0]!;
+    expect(migrated.notes).toHaveLength(2);
+    expect(migrated.notes[1].midi).toBe(37);
+    expect(migrated.sample).toEqual(clip.sample);
+    expect(migrated.waveformRef).toEqual(clip.waveformRef);
+    // No instrumentId is invented — sliced clips stay IndexedDB-only.
+    expect(out.lanes[0].engineState?.sampler?.instrumentId).toBeUndefined();
   });
 });
