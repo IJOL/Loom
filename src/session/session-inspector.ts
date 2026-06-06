@@ -159,9 +159,10 @@ export class SessionInspector {
     };
     document.getElementById('insp-delete')!.onclick = () => this.deleteSelectedClip();
 
-    // Copy / paste
+    // Copy / paste — Copy only lifts the NOTES (the button says "Copy notes"),
+    // not the whole clip, so paste never carries name/sample/launchQuantize.
     document.getElementById('insp-copy')!.onclick = () => {
-      clipClipboard = JSON.parse(JSON.stringify(clip)) as SessionClip;
+      clipClipboard = { notes: JSON.parse(JSON.stringify(clip.notes ?? [])) };
       updatePasteBtnState();
     };
     document.getElementById('insp-paste-replace')!.onclick = () => this.pasteReplace();
@@ -288,7 +289,13 @@ export class SessionInspector {
 }
 
 // ── Module-level clipboard ─────────────────────────────────────────────────
-let clipClipboard: SessionClip | null = null;
+// Copy lifts only the notes (honest "Copy notes"): never the whole clip.
+let clipClipboard: { notes: import('../core/notes').NoteEvent[] } | null = null;
+
+/** Test-only peek at the notes clipboard (it is module-local). */
+export function _getClipClipboardForTesting(): { notes: import('../core/notes').NoteEvent[] } | null {
+  return clipClipboard;
+}
 
 // Drum clips can be edited as grid or piano-roll. This map stores the user's
 // per-clip preference. Default is the engine's editor (drum-grid for drums).
