@@ -130,11 +130,14 @@ button.primary:hover,
   color: var(--bg);
 }
 
-/* Play button is special — round-ish, prominent */
-#play {
+/* Play + Stop are the prominent transport buttons — same square footprint. */
+#play, #stop {
   width: 38px; height: 38px;
   border-radius: 2px;
   font-size: 16px;
+}
+/* Play carries the amber accent; Stop keeps the neutral button palette. */
+#play {
   color: var(--amber);
   border-color: var(--amber);
   background: var(--surface);
