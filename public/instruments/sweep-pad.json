@@ -1,0 +1,10 @@
+{
+  "id": "sweep-pad",
+  "name": "Sweep Pad",
+  "family": "melodic",
+  "zones": [
+    { "file": "sweep-pad/low.wav", "rootNote": 36, "loNote": 0, "hiNote": 47 },
+    { "file": "sweep-pad/mid.wav", "rootNote": 60, "loNote": 48, "hiNote": 71 },
+    { "file": "sweep-pad/high.wav", "rootNote": 84, "loNote": 72, "hiNote": 127 }
+  ]
+}

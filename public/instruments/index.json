@@ -1,0 +1,5 @@
+[
+  { "id": "sweep-pad", "name": "Sweep Pad", "family": "melodic" },
+  { "id": "synth-bass", "name": "Synth Bass", "family": "melodic" },
+  { "id": "amen-175", "name": "Amen Break (loop)", "family": "loop" }
+]

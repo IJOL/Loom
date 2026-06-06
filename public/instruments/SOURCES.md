@@ -2,6 +2,20 @@
      Generado por el workflow wf_b792d2e6-48f: 58 candidatos, 20 fuentes usables.
      Revisar cada licencia antes de incluir muestras en el repo. -->
 
+## Presets bundled en el repo (mínimos, todos sin atribución)
+
+Estas tres entradas se sirven desde `public/instruments/` (ver `index.json`) y son
+el contenido mínimo que consumen el e2e y el smoke del frente D. Todas son
+redistribuibles sin atribución:
+
+- **Sweep Pad** (`sweep-pad.json`, 3 zonas melódicas) y **Synth Bass**
+  (`synth-bass.json`, 2 zonas) — audio **sintetizado por Loom**
+  (`tools/gen-bundled-instruments.mjs`, sin samples de terceros) ⇒ dominio
+  público / CC0. WAV mono 22.05 kHz, recortados para web.
+- **Amen Break (loop)** (`amen-175.json`, `family:'loop'`) — copia del fixture
+  ya comiteado en `test/fixtures/loops/drum/`. `slicePointsSec` FIJADO en el
+  manifiesto (determinismo nota↔slice).
+
 Aquí tienes el informe completo en Markdown.
 
 ---

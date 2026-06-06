@@ -1,0 +1,9 @@
+{
+  "id": "synth-bass",
+  "name": "Synth Bass",
+  "family": "melodic",
+  "zones": [
+    { "file": "synth-bass/low.wav", "rootNote": 24, "loNote": 0, "hiNote": 35 },
+    { "file": "synth-bass/mid.wav", "rootNote": 48, "loNote": 36, "hiNote": 127 }
+  ]
+}
