@@ -62,14 +62,20 @@ async function openClip(page: Page, laneId: string): Promise<void> {
   await expect(page.locator('#session-inspector')).toBeVisible();
 }
 
-/** Create an audio channel from an in-memory WAV; its clip auto-opens in the
- *  inspector. Returns once the audio lane has appeared. */
+/** Create an empty audio channel ("+ Audio"), then import a WAV into its first
+ *  cell (the picker now opens on cell click, not at channel creation); the clip
+ *  auto-opens in the inspector. Returns once the audio clip has been imported. */
 async function addAudioChannel(page: Page): Promise<void> {
   const lanesBefore = await page.locator('button.session-lane-tab').count();
-  await page.locator('input.session-add-audio-input').setInputFiles({
-    name: 'beat.wav', mimeType: 'audio/wav', buffer: loopWav(),
-  });
+  await page.locator('button.session-add-audio-btn').click();
   await expect(page.locator('button.session-lane-tab')).toHaveCount(lanesBefore + 1, { timeout: 10_000 });
+  const laneId = await page.locator('button.session-lane-tab').last().getAttribute('data-lane-id');
+  const cell = page.locator(`.session-cell[data-lane-id="${laneId}"][data-clip-idx="0"]`);
+  const [chooser] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    cell.click(),
+  ]);
+  await chooser.setFiles({ name: 'beat.wav', mimeType: 'audio/wav', buffer: loopWav() });
 }
 
 test('1 · Launch quantize sits in the transport row, not the edit row', async ({ page }) => {

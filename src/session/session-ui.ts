@@ -19,7 +19,7 @@ export interface SessionUICallbacks {
    *  host imports it and creates a loop clip carrying clip.sample. */
   onCellDropAudio?: (laneId: string, clipIdx: number, file: File) => void;
   /** A WAV was chosen via the "+ Audio" control: create an audio-channel lane. */
-  onAddAudioChannel?: (file: File) => void;
+  onAddAudioChannel?: () => void;
   /** Drop a clip onto another slot. `copy=true` when the user held Ctrl
    *  during the drag (Ctrl=copy, plain drag=move). Caller is responsible
    *  for wrapping the mutation in withUndo. */
@@ -235,14 +235,13 @@ function clipCell(
   } else {
     cell.classList.add('session-cell-empty');
     cell.addEventListener('click', () => cb.onCellClick(lane.id, rowIdx));
-    // Audio lanes don't create empty clips (their cells are filled by dropping a
-    // WAV), so offer a disabled hint there; every other engine gets "Crear clip".
+    // Audio lanes pick a WAV per clip: clicking the empty cell opens the file
+    // picker (you can also drop a WAV). Every other engine creates an empty clip.
     const isAudio = lane.engineId === 'audio';
     cell.addEventListener('contextmenu', (e) =>
       openContextMenu(e, [
         {
-          label: isAudio ? 'Import audio (drag a WAV)' : 'Create clip',
-          disabled: isAudio,
+          label: isAudio ? 'Import audio (WAV)…' : 'Create clip',
           onSelect: () => cb.onCellClick(lane.id, rowIdx),
         },
       ]),

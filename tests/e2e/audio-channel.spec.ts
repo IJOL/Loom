@@ -1,5 +1,5 @@
 // tests/e2e/audio-channel.spec.ts
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 /** A ~2s 16-bit PCM mono WAV at 44.1k with two onset bursts so detection finds
  *  slices. Returned as a Buffer for setInputFiles. */
@@ -22,28 +22,37 @@ function loopWav(): Buffer {
   return buf;
 }
 
-async function waitForBoot(page: import('@playwright/test').Page): Promise<void> {
+async function waitForBoot(page: Page): Promise<void> {
   await page.waitForFunction(
     () => document.querySelectorAll('.session-cell-filled').length > 0,
     { timeout: 10_000 },
   );
 }
 
-test('add an audio channel from a WAV → lane + launchable scene appear', async ({ page }) => {
+/** New flow: "+ Audio" creates an EMPTY audio channel (no file prompt); the WAV
+ *  is imported per clip by clicking an empty cell, which opens the file picker. */
+async function addAudioChannelWithWav(page: Page, wav: Buffer): Promise<void> {
+  const lanesBefore = await page.locator('button.session-lane-tab').count();
+  await page.locator('button.session-add-audio-btn').click();
+  await expect(page.locator('button.session-lane-tab')).toHaveCount(lanesBefore + 1, { timeout: 10_000 });
+  const laneId = await page.locator('button.session-lane-tab').last().getAttribute('data-lane-id');
+  const cell = page.locator(`.session-cell[data-lane-id="${laneId}"][data-clip-idx="0"]`);
+  const [chooser] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    cell.click(),
+  ]);
+  await chooser.setFiles({ name: 'beat.wav', mimeType: 'audio/wav', buffer: wav });
+}
+
+test('add an audio channel and import a WAV → lane + launchable scene appear', async ({ page }) => {
   await page.goto('/');
   await waitForBoot(page);
 
-  const lanesBefore = await page.locator('button.session-lane-tab').count();
   const scenesBefore = await page.locator('.session-scene-launch').count();
 
-  // "+ Audio" → file input.
-  await page.locator('input.session-add-audio-input').setInputFiles({
-    name: 'beat.wav', mimeType: 'audio/wav', buffer: loopWav(),
-  });
+  await addAudioChannelWithWav(page, loopWav());
 
-  // A new lane appears...
-  await expect(page.locator('button.session-lane-tab')).toHaveCount(lanesBefore + 1, { timeout: 10_000 });
-  // ...and the row it occupies has a launchable scene button (the bug fix).
+  // The row the imported clip occupies has a launchable scene button (the bug fix).
   await expect(page.locator('.session-scene-launch')).toHaveCount(
     Math.max(1, scenesBefore), { timeout: 5_000 },
   );
@@ -53,9 +62,7 @@ test('add an audio channel from a WAV → lane + launchable scene appear', async
 test('launching the audio channel scene starts the transport', async ({ page }) => {
   await page.goto('/');
   await waitForBoot(page);
-  await page.locator('input.session-add-audio-input').setInputFiles({
-    name: 'beat.wav', mimeType: 'audio/wav', buffer: loopWav(),
-  });
+  await addAudioChannelWithWav(page, loopWav());
   await expect(page.locator('.session-scene-launch').first()).toBeVisible({ timeout: 10_000 });
   await page.locator('.session-scene-launch').first().click();
   // Transport is now playing. Play and Stop are separate buttons now, so the

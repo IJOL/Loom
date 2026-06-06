@@ -623,7 +623,7 @@ export class SessionHost {
       state: this.state,
       onPickLane: (laneId) => this.callbacks.onEditLane(laneId),
       onAddLane:  (engineId) => this.callbacks.onAddLane(engineId),
-      onAddAudioChannel: (file) => this.callbacks.onAddAudioChannel?.(file),
+      onAddAudioChannel: () => this.callbacks.onAddAudioChannel?.(),
     });
   }
 
@@ -711,6 +711,44 @@ export class SessionHost {
         if (hd) withUndo(hd, run); else run();
       } catch (err) {
         console.warn('Audio channel: could not load loop:', err);
+      }
+    })();
+  }
+
+  /** Load a WAV into a specific cell of a sampler/audio lane. Shared by dropping
+   *  a file on the cell AND — for audio channels — clicking the empty cell, which
+   *  opens the file picker (the channel itself is created empty; the WAV is chosen
+   *  per clip). Audio lanes get a tempo-locked audioChannelClip; sampler lanes get
+   *  an audioClip. */
+  loadAudioFileIntoCell(laneId: string, clipIdx: number, file: File): void {
+    const self = this;
+    const { ctx, seq } = this.deps;
+    const lane = self.state.lanes.find((l) => l.id === laneId);
+    if (!lane || (lane.engineId !== 'sampler' && lane.engineId !== 'audio')) return;
+    void ctx.resume();
+    void (async () => {
+      try {
+        const asset = await importFile(file, ctx);
+        await sampleStore.put(asset);
+        const buf = await ctx.decodeAudioData(asset.bytes.slice(0));
+        sampleCache.put(asset.id, buf);
+        const name = file.name.replace(/\.[^.]+$/, '');
+        const clip = lane.engineId === 'audio'
+          ? audioChannelClip({
+              name, sampleId: asset.id, durationSec: buf.duration,
+              originalBpm: detectLoop(buf, seq.meter).originalBpm, projectMeter: seq.meter,
+            })
+          : audioClip({ name, sampleId: asset.id, durationSec: buf.duration, bpm: seq.bpm });
+        const hd = self.deps.historyDeps;
+        const run = () => {
+          self.placeClipEnsuringScene(laneId, clipIdx, clip);
+          self.inspector.setSelectedClip({ laneId, clipIdx });
+          self.inspector.openInspector();
+          self.renderWithMixer();
+        };
+        if (hd) withUndo(hd, run); else run();
+      } catch (err) {
+        console.warn('Could not load audio into cell:', err);
       }
     })();
   }
@@ -847,7 +885,22 @@ export class SessionHost {
       onCellClick(laneId, clipIdx) {
         const lane = self.state.lanes.find((l) => l.id === laneId);
         if (!lane) return;
-        if (lane.engineId === 'audio') return; // audio cells are filled by dropping a WAV
+        if (lane.engineId === 'audio') {
+          // Audio channels hold one WAV per clip — pick the file now (the channel
+          // itself was created empty). Same load path as dropping a WAV here.
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = 'audio/*';
+          input.style.display = 'none';
+          input.addEventListener('change', () => {
+            const f = input.files?.[0];
+            input.remove();
+            if (f) self.loadAudioFileIntoCell(laneId, clipIdx, f);
+          });
+          document.body.appendChild(input);
+          input.click();
+          return;
+        }
         const hd = self.deps.historyDeps;
         const run = () => {
           const defaultLen = Math.max(1, Math.floor(seq.length / stepsPerBar(seq.meter)));
@@ -862,36 +915,9 @@ export class SessionHost {
         if (hd) withUndo(hd, run); else run();
       },
       onCellDropAudio(laneId, clipIdx, file) {
-        const lane = self.state.lanes.find((l) => l.id === laneId);
-        if (!lane || (lane.engineId !== 'sampler' && lane.engineId !== 'audio')) return;
-        void ctx.resume();
-        void (async () => {
-          try {
-            const asset = await importFile(file, ctx);
-            await sampleStore.put(asset);
-            const buf = await ctx.decodeAudioData(asset.bytes.slice(0));
-            sampleCache.put(asset.id, buf);
-            const name = file.name.replace(/\.[^.]+$/, '');
-            const clip = lane.engineId === 'audio'
-              ? audioChannelClip({
-                  name, sampleId: asset.id, durationSec: buf.duration,
-                  originalBpm: detectLoop(buf, seq.meter).originalBpm, projectMeter: seq.meter,
-                })
-              : audioClip({ name, sampleId: asset.id, durationSec: buf.duration, bpm: seq.bpm });
-            const hd = self.deps.historyDeps;
-            const run = () => {
-              self.placeClipEnsuringScene(laneId, clipIdx, clip);
-              self.inspector.setSelectedClip({ laneId, clipIdx });
-              self.inspector.openInspector();
-              self.renderWithMixer();
-            };
-            if (hd) withUndo(hd, run); else run();
-          } catch (err) {
-            console.warn('Could not load dropped audio:', err);
-          }
-        })();
+        self.loadAudioFileIntoCell(laneId, clipIdx, file);
       },
-      onAddAudioChannel(file: File) { self.addAudioChannel(file); },
+      onAddAudioChannel() { self.callbacks.onAddLane('audio'); },
       onStopLane(laneId) {
         stopLane(self.laneStates, laneId,
           self.deps.recHooks ? { ...self.deps.recHooks, nowCtx: ctx.currentTime } : undefined);

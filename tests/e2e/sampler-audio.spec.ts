@@ -168,12 +168,17 @@ test.describe('audio channel (Task 18)', () => {
       { timeout: 10_000 },
     );
 
-    // "+ Audio" → the hidden file input drops a WAV onto a fresh audio lane.
-    // addAudioChannel selects the new clip and opens its editor immediately, so
-    // the audio-clip editor renders into #insp-roll-host without any extra click.
-    await page.locator('input.session-add-audio-input').setInputFiles({
-      name: 'beat.wav', mimeType: 'audio/wav', buffer: samplerWav(180),
-    });
+    // "+ Audio" creates an EMPTY audio channel; the WAV is imported by clicking
+    // the new lane's empty cell (the picker opens there now). Importing selects
+    // the clip and opens its editor in #insp-roll-host with no extra click.
+    await page.locator('button.session-add-audio-btn').click();
+    const laneId = await page.locator('button.session-lane-tab').last().getAttribute('data-lane-id');
+    const cell = page.locator(`.session-cell[data-lane-id="${laneId}"][data-clip-idx="0"]`);
+    const [chooser] = await Promise.all([
+      page.waitForEvent('filechooser'),
+      cell.click(),
+    ]);
+    await chooser.setFiles({ name: 'beat.wav', mimeType: 'audio/wav', buffer: samplerWav(180) });
 
     // The editor is the audio-clip editor: a waveform header + the small toolbar
     // (bpm / bars / warp). It is NOT a piano-roll.
