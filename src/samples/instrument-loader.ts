@@ -12,8 +12,9 @@
 //     one note per slice from SLICE_BASE_NOTE (the bank); the note clip + scene
 //     that play it are materialised by SessionHost, not here.
 //
-// This file (Task 3) defines the manifest types and the PURE keymap builder.
-// The impure list/fetch/load helpers land in the following tasks.
+// This file defines the manifest types, the PURE keymap builder, and the
+// index/manifest fetch helpers (same contract as drumkit-loader). The impure
+// loadInstrument helper lands in the following tasks.
 
 import type { KeymapEntry } from './types';
 import type { PadParams } from '../engines/sampler-pad-params';
@@ -76,4 +77,27 @@ export function buildMelodicKeymap(zones: MelodicZone[], sampleIds: string[]): K
     hiNote: z.hiNote,
     ...(z.gain != null ? { gain: z.gain } : {}),
   }));
+}
+
+/** Read the bundled instrument index. Returns [] if it is missing or
+ *  unreachable (same contract as listDrumkits): a thrown fetch (offline, or the
+ *  relative URL has no base in node tests) yields [] rather than an unhandled
+ *  rejection from the fire-and-forget caller in buildParamUI. Base-aware so it
+ *  resolves under the deploy sub-path (GitHub Pages `/Loom/`). */
+export async function listInstruments(fetchFn: typeof fetch = fetch): Promise<InstrumentIndexEntry[]> {
+  try {
+    const res = await fetchFn(`${import.meta.env.BASE_URL}instruments/index.json`);
+    if (!res.ok) return [];
+    return (await res.json()) as InstrumentIndexEntry[];
+  } catch {
+    return [];
+  }
+}
+
+/** Read one instrument manifest by id. Throws if the manifest is missing
+ *  (mirror of fetchDrumkitManifest). */
+export async function fetchInstrumentManifest(id: string, fetchFn: typeof fetch = fetch): Promise<InstrumentManifest> {
+  const res = await fetchFn(`${import.meta.env.BASE_URL}instruments/${id}.json`);
+  if (!res.ok) throw new Error(`instrument '${id}' manifest not found (${res.status})`);
+  return (await res.json()) as InstrumentManifest;
 }

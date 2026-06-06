@@ -1,7 +1,9 @@
 // src/samples/instrument-loader.test.ts
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   buildMelodicKeymap,
+  listInstruments,
+  fetchInstrumentManifest,
   type MelodicInstrumentManifest,
 } from './instrument-loader';
 
@@ -32,5 +34,48 @@ describe('buildMelodicKeymap (pure)', () => {
 
   it('throws when ids count does not match zones count', () => {
     expect(() => buildMelodicKeymap(ZONES, ['only-one'])).toThrow();
+  });
+});
+
+describe('listInstruments / fetchInstrumentManifest', () => {
+  it('reads the bundled index', async () => {
+    const fetchFn = vi.fn(async () => ({
+      ok: true,
+      json: async () => [
+        { id: 'sweep-pad', name: 'Sweep Pad', family: 'melodic' },
+        { id: 'amen-loop', name: 'Amen Loop', family: 'loop' },
+      ],
+    } as unknown as Response)) as unknown as typeof fetch;
+    const idx = await listInstruments(fetchFn);
+    expect(idx.map((e) => e.id)).toEqual(['sweep-pad', 'amen-loop']);
+    expect(idx.map((e) => e.family)).toEqual(['melodic', 'loop']);
+  });
+
+  it('reads one instrument manifest by id', async () => {
+    const manifest: MelodicInstrumentManifest = {
+      id: 'sweep-pad',
+      name: 'Sweep Pad',
+      family: 'melodic',
+      zones: [{ file: 'sweep-pad/low.wav', rootNote: 48, loNote: 0, hiNote: 127 }],
+    };
+    const fetchFn = vi.fn(async () => ({ ok: true, json: async () => manifest } as unknown as Response)) as unknown as typeof fetch;
+    const m = await fetchInstrumentManifest('sweep-pad', fetchFn);
+    expect(m.id).toBe('sweep-pad');
+    expect(m.family).toBe('melodic');
+  });
+
+  it('returns [] when the index is missing', async () => {
+    const fetchFn = vi.fn(async () => ({ ok: false } as unknown as Response)) as unknown as typeof fetch;
+    expect(await listInstruments(fetchFn)).toEqual([]);
+  });
+
+  it('returns [] when the fetch throws', async () => {
+    const fetchFn = vi.fn(async () => { throw new Error('offline'); }) as unknown as typeof fetch;
+    expect(await listInstruments(fetchFn)).toEqual([]);
+  });
+
+  it('throws when an instrument manifest is not found', async () => {
+    const fetchFn = vi.fn(async () => ({ ok: false, status: 404 } as unknown as Response)) as unknown as typeof fetch;
+    await expect(fetchInstrumentManifest('missing', fetchFn)).rejects.toThrow();
   });
 });
