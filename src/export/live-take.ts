@@ -1,8 +1,8 @@
 // src/export/live-take.ts
 // Real-time "live take" recorder: arm → (on transport Play) capture open-ended →
-// (on any Stop) finalize with a tail and deliver the take. Unlike the fixed-
-// window RealtimeSceneRecorder, this records exactly from the downbeat until the
-// user stops, so the full performance (including scene changes) is captured.
+// (on any Stop) finalize with a tail and deliver the take. Unlike a fixed-window
+// render, this records exactly from the downbeat until the user stops, so the
+// full performance (including scene changes) is captured.
 //
 // Arming pre-connects the worklet tap (capturing nothing, startTime=Infinity) so
 // that starting the capture on Play is a single cheap port message — the audio
