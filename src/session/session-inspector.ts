@@ -5,7 +5,8 @@
 import type { SessionState, SessionClip } from './session';
 import type { LanePlayState } from './session-runtime';
 import type { Sequencer } from '../core/sequencer';
-import { renderClipEditor, type ClipEditorDeps } from './clip-editors/clip-editor-router';
+import { renderClipEditor, classifyClip, type ClipEditorDeps } from './clip-editors/clip-editor-router';
+import { getEngine } from '../engines/registry';
 import { renderClipAutomationLanes } from './clip-automation-lanes';
 import type { PianoRollHandle } from '../core/pianoroll';
 import type { HistoryDeps } from '../save/history-wiring';
@@ -110,6 +111,12 @@ export class SessionInspector {
     const clip = lane?.clips[this.selectedClip.clipIdx];
     if (!clip) { panel.hidden = true; return; }
     panel.hidden = false;
+
+    // Classify the clip so the inspector can hide the note-editing controls for
+    // audio-channel clips (which have no note editor). notes/drums → show.
+    const kind = classifyClip(lane, clip, getEngine(lane.engineId)?.editor, editorOverride.get(clip.id));
+    const editRow = document.getElementById('insp-edit-row');
+    if (editRow) editRow.hidden = kind === 'audio';
 
     const nameEl = document.getElementById('insp-name') as HTMLInputElement;
     const lenEl  = document.getElementById('insp-length') as HTMLInputElement;

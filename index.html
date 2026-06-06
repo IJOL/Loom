@@ -289,10 +289,10 @@
       <div class="session-view" id="session-view">
         <div id="session-grid" class="session-grid">Session grid will render here.</div>
         <div id="session-inspector" class="session-inspector" hidden>
-          <div class="session-inspector-row">
+          <div id="insp-transport-row" class="clip-transport-row">
             <label>Name <input id="insp-name" type="text" /></label>
             <label>Length (bars) <input id="insp-length" type="number" min="1" step="1" /></label>
-            <label>Quantize
+            <label>Launch
               <select id="insp-quantize">
                 <option value="">Default (lane/global)</option>
                 <option value="immediate">Immediate</option>
@@ -303,13 +303,15 @@
                 <option value="4/1">4 bars</option>
               </select>
             </label>
+            <button class="rnd" id="insp-duplicate">Duplicate</button>
+            <button class="rnd" id="insp-delete">Delete</button>
+          </div>
+          <div id="insp-edit-row" class="clip-edit-row">
             <button class="rnd" id="insp-copy" title="Copy this clip's notes">Copy notes</button>
             <button class="rnd" id="insp-paste-replace" disabled title="Replace the notes with the copied ones">Paste ▸ Replace</button>
             <button class="rnd" id="insp-paste-layer" disabled title="Add the copied notes to the existing ones">Paste ▸ Layer</button>
-            <button class="rnd" id="insp-duplicate">Duplicate</button>
-            <button class="rnd" id="insp-toggle-editor" title="Change how this clip is EDITED; it does not change the sound.">↔ Editor</button>
             <button class="rnd primary" id="insp-random-notes" title="Randomize clip notes">🎲 Notes</button>
-            <button class="rnd" id="insp-delete">Delete</button>
+            <button class="rnd" id="insp-toggle-editor" title="Change how this clip is EDITED; it does not change the sound.">↔ Editor</button>
           </div>
           <div id="insp-roll-host" class="session-inspector-roll"></div>
         </div>

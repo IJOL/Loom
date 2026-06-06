@@ -7,9 +7,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // The embedded clip editor (canvas piano-roll) and automation lanes are
-// irrelevant to the clipboard and unsafe under jsdom — stub them out so
-// openInspector()'s final renderEditor() call is a no-op.
-vi.mock('./clip-editors/clip-editor-router', () => ({
+// irrelevant to the clipboard and unsafe under jsdom — stub renderClipEditor so
+// openInspector()'s final renderEditor() call is a no-op. The pure helpers
+// (classifyClip / isAudioClip / chooseClipEditor) stay real via importOriginal
+// because openInspector() now calls classifyClip to gate the edit-row.
+vi.mock('./clip-editors/clip-editor-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./clip-editors/clip-editor-router')>()),
   renderClipEditor: () => null,
 }));
 vi.mock('./clip-automation-lanes', () => ({
