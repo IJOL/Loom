@@ -98,24 +98,17 @@
 }
 .session-cell-label { flex: 1; color: inherit; }
 .session-cell-play  { opacity: 0.85; color: inherit; }
-/* ✕ delete button on clips / lane headers / scene cells (front A). A small flex
-   item, faint by default, red on hover. */
+/* ✕ delete button on clips / lane headers / scene cells. Clearly red so it reads
+   as "delete" on both the dark lane/scene strips and the light pastel clip cells;
+   brighter still on hover. */
 .session-del-cross {
   flex: 0 0 auto;
   width: 15px; height: 15px;
   padding: 0; line-height: 1;
   background: transparent; border: none; border-radius: 2px;
-  color: var(--text-dim); font-size: 11px; cursor: pointer; opacity: 0.35;
+  color: var(--red); font-size: 11px; cursor: pointer; opacity: 0.85;
 }
 .session-del-cross:hover { opacity: 1; color: var(--red); background: var(--red-soft); }
-/* Lane (horizontal) + scene (vertical) delete crosses sit on dark surfaces where
-   the faint default is almost invisible — make them clearly red. Clip crosses
-   stay subtle: they sit on light pastel cells where the dim tone already reads. */
-.session-lane-header .session-del-cross,
-.session-scene-cell .session-del-cross {
-  color: var(--red);
-  opacity: 0.9;
-}
 .session-scenes-header {
   text-align: center;
   font-size: 11px;
