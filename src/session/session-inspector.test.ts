@@ -135,3 +135,100 @@ describe('Copy notes (front E · Task 3b)', () => {
     expect(pasteL.disabled).toBe(false);
   });
 });
+
+// ── View toggle (front E · Task 8) ──────────────────────────────────────────
+// The toggle flips the RESOLVED editor (what the user sees), so a melodic lane
+// with no stored override switches on the FIRST click (no no-op). Its label
+// names the target view, and it is hidden for audio clips.
+
+// Unique ids per clip: the editorOverride map is module-level and persists
+// across tests, so reusing an id would let one test's toggle bleed into another.
+let clipSeq = 0;
+function makeNoteClip(): SessionClip {
+  return {
+    id: `clip-n-${clipSeq++}`,
+    name: 'Notes',
+    lengthBars: 2,
+    notes: JSON.parse(JSON.stringify(NOTES)),
+  } as unknown as SessionClip;
+}
+
+function makeAudioClip(): SessionClip {
+  return {
+    id: `clip-a-${clipSeq++}`,
+    name: 'Audio',
+    lengthBars: 2,
+    notes: [],
+    sample: { sampleId: 'snd', mode: 'loop', trimStart: 0, trimEnd: 1 },
+  } as unknown as SessionClip;
+}
+
+function mountInspectorFor(lane: SessionLane): SessionInspector {
+  const state = { lanes: [lane] } as unknown as SessionState;
+  const insp = new SessionInspector({
+    ctx: {} as AudioContext,
+    seq: { meter: { num: 4, den: 4 }, bpm: 120 } as unknown as InstanceType<typeof import('../core/sequencer').Sequencer>,
+    state,
+    laneStates: new Map(),
+    renderWithMixer: () => {},
+    midiLabel: (m: number) => String(m),
+    automationRegistry: new Map(),
+    getAutoAbsSubIdx: () => 0,
+  });
+  insp.setSelectedClip({ laneId: lane.id, clipIdx: 0 });
+  insp.openInspector();
+  return insp;
+}
+
+describe('View toggle (front E · Task 8)', () => {
+  beforeEach(() => {
+    mountInspectorDom();
+  });
+
+  it('a melodic lane: label reads "View as grid" and is visible', () => {
+    const clip = makeNoteClip();
+    const lane = { id: 'lane-m', engineId: 'subtractive', clips: [clip] } as unknown as SessionLane;
+    mountInspectorFor(lane);
+    const btn = document.getElementById('insp-toggle-editor') as HTMLButtonElement;
+    expect(btn.hidden).toBe(false);
+    expect(btn.textContent).toBe('View as grid');
+  });
+
+  it('a melodic lane: ONE click switches to drum-grid (no first-click no-op) and relabels', () => {
+    const clip = makeNoteClip();
+    const lane = { id: 'lane-m', engineId: 'subtractive', clips: [clip] } as unknown as SessionLane;
+    mountInspectorFor(lane);
+    const btn = document.getElementById('insp-toggle-editor') as HTMLButtonElement;
+
+    btn.click();
+
+    // After one click the resolved view is drum-grid → label now offers piano roll.
+    expect(btn.textContent).toBe('View as piano roll');
+
+    // And a second click flips back.
+    btn.click();
+    expect(btn.textContent).toBe('View as grid');
+  });
+
+  it('a drum lane (drumkit sampler → drum-grid): label reads "View as piano roll", visible', () => {
+    // A drumkit-loaded sampler resolves to drum-grid via engineState alone,
+    // with no dependency on the engine registry (which isn't bootstrapped here).
+    const clip = makeNoteClip();
+    const lane = {
+      id: 'lane-d', engineId: 'sampler', clips: [clip],
+      engineState: { sampler: { drumkitId: 'tr808' } },
+    } as unknown as SessionLane;
+    mountInspectorFor(lane);
+    const btn = document.getElementById('insp-toggle-editor') as HTMLButtonElement;
+    expect(btn.hidden).toBe(false);
+    expect(btn.textContent).toBe('View as piano roll');
+  });
+
+  it('an audio clip: the toggle is hidden', () => {
+    const clip = makeAudioClip();
+    const lane = { id: 'lane-a', engineId: 'audio', clips: [clip] } as unknown as SessionLane;
+    mountInspectorFor(lane);
+    const btn = document.getElementById('insp-toggle-editor') as HTMLButtonElement;
+    expect(btn.hidden).toBe(true);
+  });
+});

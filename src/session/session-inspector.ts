@@ -5,7 +5,7 @@
 import type { SessionState, SessionClip } from './session';
 import type { LanePlayState } from './session-runtime';
 import type { Sequencer } from '../core/sequencer';
-import { renderClipEditor, classifyClip, type ClipEditorDeps } from './clip-editors/clip-editor-router';
+import { renderClipEditor, classifyClip, chooseClipEditor, type ClipEditorDeps } from './clip-editors/clip-editor-router';
 import { getEngine } from '../engines/registry';
 import { renderClipAutomationLanes } from './clip-automation-lanes';
 import type { PianoRollHandle } from '../core/pianoroll';
@@ -174,14 +174,22 @@ export class SessionInspector {
     };
     document.getElementById('insp-paste-replace')!.onclick = () => this.pasteReplace();
     document.getElementById('insp-paste-layer')!.onclick   = () => this.pasteLayer();
-    document.getElementById('insp-toggle-editor')!.onclick = () => {
+    // View toggle. Hidden for audio clips (no note editor); visible for both
+    // note and drum clips so either can be edited the other way.
+    const toggleBtn = document.getElementById('insp-toggle-editor') as HTMLButtonElement;
+    toggleBtn.hidden = kind === 'audio';
+    toggleBtn.onclick = () => {
       if (!this.selectedClip) return;
-      const cur = editorOverride.get(clip.id) ?? null;
-      const next: 'piano-roll' | 'drum-grid' =
-        cur === 'piano-roll' ? 'drum-grid' : 'piano-roll';
+      // Compute the next view from the RESOLVED editor (what the user is seeing),
+      // not the stored override — otherwise the first click on a melodic lane with
+      // no override (cur=null → 'piano-roll') is a no-op.
+      const resolved = chooseClipEditor(lane!, getEngine(lane!.engineId)?.editor, editorOverride.get(clip.id));
+      const next: 'piano-roll' | 'drum-grid' = resolved === 'piano-roll' ? 'drum-grid' : 'piano-roll';
       editorOverride.set(clip.id, next);
       this.renderEditor();
+      this.refreshToggleLabel();
     };
+    this.refreshToggleLabel();
     document.getElementById('insp-random-notes')!.onclick = () => {
       if (!this.selectedClip) return;
       const d = this.deps.historyDeps;
@@ -200,6 +208,19 @@ export class SessionInspector {
 
     // Auto-render editor
     this.renderEditor();
+  }
+
+  /** Update the view-toggle button label to read what it WILL switch to,
+   *  based on the currently resolved editor. Re-resolves lane/clip from the
+   *  selection so it is safe to call from openInspector and after a toggle. */
+  private refreshToggleLabel(): void {
+    const btn = document.getElementById('insp-toggle-editor') as HTMLButtonElement | null;
+    if (!btn || !this.selectedClip) return;
+    const lane = this.deps.state.lanes.find((l) => l.id === this.selectedClip!.laneId);
+    const clip = lane?.clips[this.selectedClip.clipIdx];
+    if (!lane || !clip) return;
+    const resolved = chooseClipEditor(lane, getEngine(lane.engineId)?.editor, editorOverride.get(clip.id));
+    btn.textContent = resolved === 'drum-grid' ? 'View as piano roll' : 'View as grid';
   }
 
   private renderEditor(): void {
