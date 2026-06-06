@@ -1,39 +1,34 @@
 # Frente A · Gestión de sesión — Plan de implementación
 
-**Fecha:** 2026-06-06
+**Fecha:** 2026-06-06 (revisado tras la revisión adversarial + coordinación transversal)
 **Estado:** plan de implementación (TDD donde aplique).
 **Deriva de:** [2026-06-06-gestion-sesion-design.md](../specs/2026-06-06-gestion-sesion-design.md).
-**Índice maestro:** [2026-06-06-loom-ux-overhaul-overview.md](../specs/2026-06-06-loom-ux-overhaul-overview.md), sección "Frente A".
+**Coordinación:** [2026-06-06-coordinacion-frentes.md](../specs/2026-06-06-coordinacion-frentes.md). **Frente A va PRIMERO** (cimiento de D y de la estabilidad del grid).
 
 ---
 
 ## Cómo usar este plan
 
-- Las tareas están ordenadas de **menor a mayor riesgo**. Las primeras son lógica pura (modelo + predicados + módulo nuevo aislado), testeables al 100% en Vitest sin tocar la UI ni el audio. Las últimas tocan `SessionHost` (estado + audio + undo), que es lo delicado.
-- **TDD donde aplique:** para la lógica pura, escribe primero el test (rojo), luego implementa, luego verde. Para la UI / wiring, escribe el e2e después de implementar (Playwright sirve `dist/`, así que el ciclo rojo→verde es más caro; ahí prima el typecheck + smoke).
-- **Verificación por tarea:** cada tarea dice cómo comprobarla. Comandos de referencia:
+- Tareas ordenadas de **menor a mayor riesgo**. Primero lógica pura (modelo + predicados + módulo aislado), testeable al 100% en Vitest. Después la UI/wiring sobre `SessionHost` (estado + audio + undo), lo delicado.
+- **TDD donde aplique:** lógica pura → test rojo, implementar, verde. UI/wiring → e2e después de implementar (Playwright sirve `dist/`, el ciclo rojo→verde es caro; ahí prima typecheck + smoke).
+- **Verificación por tarea.** Comandos de referencia:
   - `npx tsc --noEmit` — typecheck sin bundle.
-  - `NO_COLOR=1 npx vitest run ruta/al/fichero.test.ts` — un test unitario suelto.
-  - `npm run test:unit` — toda la batería Vitest (re-run si salta `ERR_IPC_CHANNEL_CLOSED` en teardown, flaky conocido).
-  - `npm run build && npm run test:e2e` — e2e Playwright (el build es OBLIGATORIO antes; `test:e2e` sirve `dist/` sin construir).
-- **DUDAS ABIERTAS:** hay un bloque al principio con las decisiones pendientes del usuario. Cada una está marcada en la tarea que bloquea con `⚠️ CONFIRMAR ANTES (Duda N)`. **No las resuelvas tú**; pregunta al usuario antes de empezar esa tarea.
+  - `NO_COLOR=1 npx vitest run ruta/al/fichero.test.ts` — un test suelto.
+  - `npm run test:unit` — toda la batería Vitest (re-run si `ERR_IPC_CHANNEL_CLOSED` en teardown — flaky conocido).
+  - `npm run build && npm run test:e2e` — e2e Playwright (build OBLIGATORIO antes; `test:e2e` sirve `dist/` sin construir).
+- **Dudas reales** (bloque siguiente): solo 3, todas decisiones de producto. Marcadas en la tarea que bloquean con `⚠️ CONFIRMAR (Duda N)`. **No las resuelvas tú.**
 
 ---
 
-## DUDAS ABIERTAS — confirmar con el usuario ANTES de las tareas marcadas
+## DUDAS REALES — confirmar con el usuario ANTES de las tareas marcadas
 
-Copiadas del spec (sección "Dudas abiertas"). Bloquean la tarea indicada.
+> Las pseudo-dudas de la versión anterior se ELIMINARON porque la revisión las resolvió contra el código (ver spec, sección "Dudas reales"): `deleteScene` **compacta** (decidido), siembra **mínima de 1 scene** (decidido), `installClip` se **elimina** y el bug real es `onCellClick` (decidido). Quedan SOLO estas 3 decisiones de producto:
 
 | # | Duda | Bloquea |
 |---|------|---------|
-| **D1** | **Estilo de confirmación:** ¿`window.confirm` nativo (rápido, feo) o un mini-diálogo propio coherente con la UI de Loom? El plan asume `window.confirm` en v1. | Tarea 9, Tarea 10 |
-| **D2** | **`deleteScene` ¿compacta o no?** El diseño propuesto **no** desplaza las filas de clips al borrar una scene (mantiene índices). Alternativa: compactar (`splice(idx,1)` en cada columna). | Tarea 4 |
-| **D3** | **¿Retirar el borrado por teclado del inspector?** Propuesta: **mantenerlo** (no estorba, es un atajo). | Tarea 11 |
-| **D4** | **Confirmación al borrar clip:** el plan borra clips **siempre directo** (sin confirmar). ¿Un clip con muchas notas merece confirmación? | Tarea 8 |
-| **D5** | **Ítem "Duplicar clip" en el menú contextual:** ¿se incluye en v1 (reusando la lógica de `insp-duplicate`) o se deja para más tarde? | Tarea 13 |
-| **D6** | **Migrar los `contextmenu` existentes** (drum-grid, piano-roll) al nuevo `context-menu.ts`: hoy solo hacen `preventDefault`. ¿Darles menú real o dejarlo fuera? | Fuera de alcance v1 (no bloquea ninguna tarea; mencionado en Tarea 12) |
-
-> Las dudas del **Frente D** (Sampler & audio) NO se deciden aquí. Este frente solo arregla la **siembra** de canales de audio (clip en fila 0, resto vacío) y el bug del ▶; no reubica la responsabilidad loop↔audio.
+| **D1** | **Estilo de confirmación:** `window.confirm` nativo vs. mini-diálogo propio. El plan asume `window.confirm` en v1. | T8, T9 |
+| **D2** | **¿Retirar el borrado por teclado del inspector?** Propuesta: **mantenerlo** (Delete/Backspace + `#insp-delete`, no estorban). | T11 |
+| **D3** | **Ítem "Duplicar clip" en el menú contextual:** ¿v1 (reusando `insp-duplicate`, que hace `clips.push` append) o más tarde? | T13 |
 
 ---
 
@@ -41,16 +36,18 @@ Copiadas del spec (sección "Dudas abiertas"). Bloquean la tarea indicada.
 
 | Archivo | Tarea(s) |
 |---|---|
-| `src/session/session.ts` | T1–T5 (helpers puros + predicados) |
-| `src/session/session.test.ts` (nuevo o existente) | T1–T5 (tests pura) |
+| `src/session/session.ts` | T1–T4 (helpers + predicados) |
+| `src/session/session.test.ts` (ya existe) | T1–T4 (tests pura) |
+| `src/core/scene-ensure.ts` | T5 (siembra mínima de scene) |
+| `src/core/scene-ensure.test.ts` (ya existe) | T5 (tests siembra/▶) |
 | `src/core/context-menu.ts` (**NUEVO**) | T6 |
 | `src/core/context-menu.test.ts` (**NUEVO**) | T6 |
-| `src/styles/_context-menu.scss` (**NUEVO**) | T6 |
-| `src/session/session-ui.ts` | T7 (callbacks + aspa), T12 (contextmenu) |
+| `src/styles/_context-menu.scss` (**NUEVO**) + `src/style.scss` | T6 |
+| `src/session/session-ui.ts` | T7 (callbacks + aspa + data-lane-id), T12 (contextmenu) |
 | `src/styles/_session-grid.scss` | T7 (`.session-del-cross`) |
-| `src/session/session-host.ts` | T8–T11 (wiring + siembra), T14 (fix ▶) |
-| `src/session/session-inspector.ts` | T11 (refactor `deleteSelectedClip`) |
-| `src/core/scene-ensure.test.ts` | T14 (regresión ▶) |
+| `src/session/session-host.ts` | T8–T10 (wiring), T14 (helper único + siembra + eliminar installClip + installSamplerClip) |
+| `src/engines/engine-types.ts` | T14 (eliminar declaración `installClip?`) |
+| `src/session/session-inspector.ts` | T11 (mantener/documentar) |
 | `tests/e2e/session-management.spec.ts` (**NUEVO**) | T15 |
 
 ---
@@ -59,22 +56,21 @@ Copiadas del spec (sección "Dudas abiertas"). Bloquean la tarea indicada.
 
 ### Tarea 1 — `deleteClipAt(lane, clipIdx)` (lógica pura)
 
-**Archivos:** `src/session/session.ts`, `src/session/session.test.ts` (crear si no existe).
+**Archivos:** `src/session/session.ts`, `src/session/session.test.ts`.
 
-**Qué hacer:**
-- TDD. Escribe primero el test:
-  - Dado `lane.clips = [clipA, clipB, clipC]`, `deleteClipAt(lane, 1)` deja `clips[1] === null` y **no desplaza**: `clips[0] === clipA`, `clips[2] === clipC` (NO `splice`).
-  - `deleteClipAt(lane, 0)` con un solo clip → `clips[0] === null`, `length` se conserva.
-  - Idempotente sobre un `null`: `deleteClipAt(lane, idx)` donde ya es `null` no rompe.
-- Implementa junto a `moveClip`/`copyClip` (`session.ts:266`), estilo mutación in-place:
+**Qué hacer (TDD):**
+- Test:
+  - `lane.clips = [A, B, C]`, `deleteClipAt(lane, 1)` → `clips[1] === null`, `clips[0] === A`, `clips[2] === C` (NO `splice`).
+  - `deleteClipAt(lane, 0)` con un solo clip → `clips[0] === null`, `length` conservado.
+  - Idempotente sobre `null`.
+- Implementa junto a `moveClip`/`copyClip`:
   ```ts
   export function deleteClipAt(lane: SessionLane, clipIdx: number): void {
     if (clipIdx >= 0 && clipIdx < lane.clips.length) lane.clips[clipIdx] = null;
   }
   ```
-  (No usar `splice`: hay que preservar el índice de fila para que el resto de la columna no se desplace.)
 
-**Cómo verificar:** `NO_COLOR=1 npx vitest run src/session/session.test.ts` verde; `npx tsc --noEmit` limpio.
+**Verificar:** `NO_COLOR=1 npx vitest run src/session/session.test.ts` verde; `npx tsc --noEmit` limpio.
 
 ---
 
@@ -82,12 +78,11 @@ Copiadas del spec (sección "Dudas abiertas"). Bloquean la tarea indicada.
 
 **Archivos:** `src/session/session.ts`, `src/session/session.test.ts`.
 
-**Qué hacer:**
-- TDD. Test:
-  - `deleteLane(state, 'L2')` quita la lane de `state.lanes` (queda fuera del array).
-  - Limpia `scene.clipPerLane['L2']` en **todas** las scenes (la entrada colgada se borra: `delete scene.clipPerLane[laneId]`).
-  - No toca las otras lanes (sus `clips` y su entrada en `clipPerLane` intactas).
-  - No-op silencioso si el `laneId` no existe.
+**Qué hacer (TDD):**
+- Test:
+  - `deleteLane(state, 'L2')` quita la lane de `state.lanes`.
+  - `delete scene.clipPerLane['L2']` en TODAS las scenes.
+  - No toca otras lanes; no-op si el id no existe.
 - Implementa:
   ```ts
   export function deleteLane(state: SessionState, laneId: string): void {
@@ -97,9 +92,9 @@ Copiadas del spec (sección "Dudas abiertas"). Bloquean la tarea indicada.
     for (const scene of state.scenes) delete scene.clipPerLane[laneId];
   }
   ```
-  **No** toca recursos de audio (separación pura/efecto: el host hace `dispose` tras la mutación, ver Tarea 9).
+  No toca recursos de audio (el host hace `dispose`, T9).
 
-**Cómo verificar:** vitest del fichero verde; `npx tsc --noEmit` limpio.
+**Verificar:** vitest verde; `tsc --noEmit` limpio.
 
 ---
 
@@ -107,138 +102,172 @@ Copiadas del spec (sección "Dudas abiertas"). Bloquean la tarea indicada.
 
 **Archivos:** `src/session/session.ts`, `src/session/session.test.ts`.
 
-**Qué hacer:**
-- TDD. Test:
-  - `laneHasContent(lane)` → `true` si `lane.clips.some(c => c != null)`; `false` con `clips: []` o todo `null`.
-  - `sceneHasContent(state, idx)` → `true` si alguna lane tiene un clip en `lane.clips[idx]` **o** si alguna `scene.clipPerLane` referencia algún clip de esa fila; `false` cuando la fila no tiene nada lanzable.
+**Qué hacer (TDD):**
+- Test:
+  - `laneHasContent(lane)` → true si `clips.some(c => c != null)`; false con `[]` o todo `null`.
+  - `sceneHasContent(state, idx)` → true si alguna lane tiene clip en `lane.clips[idx]` **O** si algún `scene.clipPerLane` apunta explícitamente a `idx` con clip presente. Caso clave del test: una lane cuyo `clips[idx]` es null pero otra scene tiene `clipPerLane[laneId] = idx` apuntando a un clip presente → `true` (no se debe borrar sin confirmar).
 - Implementa:
   ```ts
   export function laneHasContent(lane: SessionLane): boolean {
     return lane.clips.some((c) => c != null);
   }
   export function sceneHasContent(state: SessionState, sceneIdx: number): boolean {
-    return state.lanes.some((l) => l.clips[sceneIdx] != null);
+    // Contenido lanzable directo: cualquier lane con clip en esa fila.
+    if (state.lanes.some((l) => l.clips[sceneIdx] != null)) return true;
+    // Contenido lanzable indirecto: un mapeo clipPerLane explícito a esa fila.
+    for (const scene of state.scenes) {
+      for (const [laneId, row] of Object.entries(scene.clipPerLane)) {
+        if (row !== sceneIdx) continue;
+        const lane = state.lanes.find((l) => l.id === laneId);
+        if (lane?.clips[row] != null) return true;
+      }
+    }
+    return false;
   }
   ```
-  (Criterio operativo del spec: ¿borrar la fila pierde algo lanzable? Si la fila tiene cualquier clip → sí. La rama `clipPerLane` es defensiva; basta con la presencia de clip en la fila.)
+  (Corrige el hallazgo "sceneHasContent ignora clipPerLane": no es defensivo, hay mapeos explícitos reales — `addNoteLane`, stems, MIDI import.)
 
-**Cómo verificar:** vitest verde; `npx tsc --noEmit` limpio.
+**Verificar:** vitest verde; `tsc --noEmit` limpio.
 
 ---
 
-### Tarea 4 — `deleteScene(state, sceneIdx)` (lógica pura) ⚠️ CONFIRMAR ANTES (Duda D2)
+### Tarea 4 — `deleteScene(state, sceneIdx)` COMPACTANTE (lógica pura)
 
 **Archivos:** `src/session/session.ts`, `src/session/session.test.ts`.
 
-> ⚠️ **Antes de implementar, confirma D2 con el usuario:** ¿`deleteScene` compacta las filas de clips o no? El plan asume **NO compactar** (mantener índices de fila). Si el usuario quiere compactar, la implementación cambia (cada columna hace `splice(idx,1)` y hay que revisar `clipPerLane`).
+> **Decisión cerrada (NO es duda):** `deleteScene` COMPACTA. El lanzamiento de scene es posicional (`session-runtime.ts:103`: `idx = hasExplicit ? clipPerLane[lane.id] : sceneIdx`); no compactar emparejaría cada scene superviviente con clips de otra fila y lanzaría clips equivocados (corrupción funcional, no UX).
 
-**Qué hacer (variante NO-compacta, la propuesta):**
-- TDD. Test:
-  - `deleteScene(state, 1)` quita `state.scenes[1]` del array (`scenes.length` baja en 1).
-  - **No** desplaza filas de clips: para una lane con `clips = [A, B, C]`, tras borrar la scene 1 sigue siendo `clips = [A, B, C]` (assert explícito de que `clips[2]` no se movió). Documentar este comportamiento con un comentario en el código y en el nombre del test (`'deleteScene does NOT compact clip rows'`).
+**Qué hacer (TDD):**
+- Test `'deleteScene compacts clip rows and reindexes clipPerLane'`:
+  - `deleteScene(state, 1)` → `scenes.length` baja 1.
+  - Para una lane con `clips = [A, B, C]`, tras borrar idx 1 → `clips = [A, C]` (assert explícito de que se desplazó).
+  - `clipPerLane` reindexado: un mapeo `row = 2` con `idx = 1` pasa a `row = 1`; un mapeo `row = 1 === idx` se elimina; `row = 0 < idx` intacto.
+  - No-op si el índice está fuera de rango.
 - Implementa:
   ```ts
   export function deleteScene(state: SessionState, sceneIdx: number): void {
-    if (sceneIdx >= 0 && sceneIdx < state.scenes.length) state.scenes.splice(sceneIdx, 1);
+    if (sceneIdx < 0 || sceneIdx >= state.scenes.length) return;
+    state.scenes.splice(sceneIdx, 1);
+    for (const lane of state.lanes) {
+      if (sceneIdx < lane.clips.length) lane.clips.splice(sceneIdx, 1);
+    }
+    for (const scene of state.scenes) {
+      for (const [laneId, row] of Object.entries(scene.clipPerLane)) {
+        if (row == null) continue;
+        if (row === sceneIdx) delete scene.clipPerLane[laneId];
+        else if (row > sceneIdx) scene.clipPerLane[laneId] = row - 1;
+      }
+    }
   }
   ```
 
-**Cómo verificar:** vitest verde; `npx tsc --noEmit` limpio.
+**Verificar:** vitest verde; `tsc --noEmit` limpio.
 
 ---
 
-### Tarea 5 — Tests de "siembra vacía" como contrato puro (rojo→verde tardío)
+### Tarea 5 — `ensureScenesForRows` siembra mínima de scene + regresión ▶ (lógica pura)
 
-**Archivos:** `src/session/session.test.ts`.
+**Archivos:** `src/core/scene-ensure.ts`, `src/core/scene-ensure.test.ts`.
 
-**Qué hacer:**
-- Estos tests **codifican el contrato** que las Tareas 8/9 harán cumplir en el host. Escríbelos ahora sobre helpers puros, donde sea posible, para fijar la expectativa:
-  - `emptyLane(id, engineId)` ya nace con `clips: []` (verificar — es el contrato de instrumento "vacío de verdad"). Test trivial de regresión: `emptyLane('x','tb303').clips.length === 0`.
-  - Patrón de canal de audio: dado un `clip` y `lane.clips = [clip]`, leer `lane.clips[1] ?? null` da `null` (no hay clip fantasma). Test que documenta el patrón `lane.clips = [clip]` (clip en fila 0, resto vacío).
-- No hay implementación en esta tarea (los helpers ya existen); es para **fijar el contrato** antes de tocar el host. Si `emptyLane` ya devuelve `clips: []`, el test pasa en verde de inmediato y sirve de red de seguridad.
+> Corrige A5: con la nueva siembra "vacía de verdad", si todas las lanes nacen con `clips:[]`, `maxClipRows = 0` → 0 scenes → grid sin ningún ▶. Garantizar ≥1 scene cuando hay ≥1 lane.
 
-**Cómo verificar:** vitest verde; `npx tsc --noEmit` limpio.
+**Antes de editar:** `gitnexus_impact({target: "ensureScenesForRows", direction: "upstream"})` y reportar blast radius (es llamada desde varios caminos de creación de lane). Avisar si HIGH/CRITICAL.
 
-> Nota: el cumplimiento real de "lane nace vacía" en los caminos del host (`onAddLane`, etc.) se verifica con e2e en Tarea 15 (caso "Lane nace vacía") porque esos caminos son métodos de instancia con efectos (audio, render), difíciles de testear como pura.
+**Qué hacer (TDD):**
+- Test:
+  - Con ≥1 lane y todas a `clips:[]` → `ensureScenesForRows(s)` deja `s.scenes.length >= 1`.
+  - Con 0 lanes → 0 scenes (no inventa filas de la nada).
+  - Regresión ▶: lane con un clip en fila 0 y `scenes:[]` → tras `ensureScenesForRows`, `scenes.length >= 1` (la fila 0 queda lanzable).
+  - No reduce scenes existentes (idempotente al alza).
+- Implementa (modificar el cálculo de `maxClipRows`):
+  ```ts
+  export function ensureScenesForRows(state: SessionState): boolean {
+    let maxClipRows = 0;
+    for (const lane of state.lanes) maxClipRows = Math.max(maxClipRows, lane.clips.length);
+    // Siembra mínima: con al menos una lane, garantiza al menos una scene lanzable
+    // (quitar el relleno automático de clips puede dejar todas las lanes a [] → 0 scenes).
+    if (state.lanes.length > 0) maxClipRows = Math.max(maxClipRows, 1);
+    let added = false;
+    while (state.scenes.length < maxClipRows) {
+      state.scenes.push({ id: `scene-${Date.now().toString(36)}-${state.scenes.length}`,
+        name: `Scene ${state.scenes.length + 1}`, clipPerLane: {} });
+      added = true;
+    }
+    return added;
+  }
+  ```
+
+**Verificar:** `NO_COLOR=1 npx vitest run src/core/scene-ensure.test.ts` verde; `tsc --noEmit` limpio. **Antes de commit:** `gitnexus_detect_changes()`.
 
 ---
 
-### Tarea 6 — Módulo nuevo `context-menu.ts` + estilos + tests jsdom (aislado, riesgo bajo)
+### Tarea 6 — Módulo `context-menu.ts` + estilos + tests jsdom (aislado, riesgo bajo)
 
-**Archivos NUEVOS:** `src/core/context-menu.ts`, `src/core/context-menu.test.ts`, `src/styles/_context-menu.scss`.
+**Archivos NUEVOS:** `src/core/context-menu.ts`, `src/core/context-menu.test.ts`, `src/styles/_context-menu.scss`; + 1 línea en `src/style.scss`.
 
-**Qué hacer:**
-- TDD (jsdom, Vitest ya corre en jsdom para tests de DOM puro). Tests:
-  - `openContextMenu(e, items)` añade un `<ul class="context-menu">` al `document.body`.
-  - Posiciona en `e.clientX/clientY` (assert de que `style.left/top` reflejan las coords; corrección de viewport puede testearse con un caso de coords grandes).
-  - Click en un ítem dispara su `onSelect` y **cierra** el menú (se elimina del DOM).
-  - Click fuera del menú lo cierra; `Escape` lo cierra.
-  - Un ítem con `disabled: true` NO dispara `onSelect` y se renderiza con clase `disabled`.
-  - Abrir un segundo menú cierra el primero (solo uno a la vez).
-  - `e.preventDefault()` se llama (mockear `preventDefault` y assertar).
-- Implementa la API mínima del spec:
+**Qué hacer (TDD, jsdom):**
+- **Importante (corrige una premisa frecuente):** vitest corre en `environment: 'node'` por defecto (`vitest.config.ts:5`); `test/setup.ts` NO globaliza `document`. Para un test que construye DOM real, usa la directiva por-archivo `// @vitest-environment jsdom` en la primera línea del `.test.ts` (como `src/core/lane-fx-panel.test.ts:1`). NO sigas el patrón de stub trivial de `session-host-active-lane.test.ts`.
+- Tests:
+  - `openContextMenu(e, items)` añade `<ul class="context-menu">` a `document.body`, posicionado en `e.clientX/clientY`.
+  - Click en un ítem dispara su `onSelect` y cierra el menú (se elimina del DOM).
+  - Click fuera lo cierra; `Escape` lo cierra.
+  - `disabled: true` NO dispara `onSelect` (clase `disabled`).
+  - Abrir un segundo menú cierra el primero.
+  - `e.preventDefault()` se llama (mock + assert).
+- Implementa la API del spec:
   ```ts
   export interface ContextMenuItem {
-    label: string;
-    onSelect: () => void;
-    disabled?: boolean;
-    danger?: boolean;        // estilo "borrar"
-    separatorBefore?: boolean;
+    label: string; onSelect: () => void;
+    disabled?: boolean; danger?: boolean; separatorBefore?: boolean;
   }
   export function openContextMenu(e: MouseEvent, items: ContextMenuItem[]): void;
   ```
-  - DOM puro, sin dependencias. Construye `<ul>` con `<li>` por ítem (los `separatorBefore` insertan un `<li class="context-menu-sep">` o un borde CSS).
-  - Cierre: registra `click` (capture) en `document`, `keydown` Escape, y limpia ambos al cerrar. Guarda el menú abierto en un módulo-singleton (`let openMenu`) para cerrar el anterior.
-  - `danger` añade una clase para el estilo rojo.
-- SCSS `_context-menu.scss`: lista vertical, `position: fixed`, z-index alto, ítem `danger` rojo, `disabled` atenuado + `pointer-events: none`. Importar el parcial en el SCSS raíz (revisar `src/styles/` para el `@use`/`@import` del índice; añadir la línea).
+  DOM puro, sin dependencias. `<ul>` con `<li>` por ítem (`separatorBefore` → borde/`<li class="context-menu-sep">`). Cierre: `click` (capture) en `document` + `keydown` Escape; limpia ambos al cerrar. Singleton module-level (`let openMenu`) para cerrar el anterior. `danger` añade clase roja.
+- SCSS `_context-menu.scss`: `position: fixed`, z-index alto, `danger` rojo, `disabled` atenuado + `pointer-events: none`. Añadir `@use 'styles/context-menu';` en `src/style.scss`.
 
-**Cómo verificar:** `NO_COLOR=1 npx vitest run src/core/context-menu.test.ts` verde; `npx tsc --noEmit` limpio; `npm run build` compila el SCSS sin error.
+**Verificar:** `NO_COLOR=1 npx vitest run src/core/context-menu.test.ts` verde; `tsc --noEmit` limpio; `npm run build` compila el SCSS.
 
 ---
 
-### Tarea 7 — Aspa ✕ de borrado en el grid (UI en `session-ui.ts` + SCSS)
+### Tarea 7 — Aspa ✕ + `data-lane-id` en el grid (UI en `session-ui.ts` + SCSS)
 
 **Archivos:** `src/session/session-ui.ts`, `src/styles/_session-grid.scss`.
 
 **Qué hacer:**
-1. Extender `SessionUICallbacks` (`session-ui.ts:8`) con:
+1. Extender `SessionUICallbacks` (`session-ui.ts:8`):
    ```ts
    onDeleteClip:  (laneId: string, clipIdx: number) => void;
    onDeleteLane:  (laneId: string) => void;
    onDeleteScene: (sceneIdx: number) => void;
    ```
-   (Esto romperá el typecheck hasta que `SessionHost` los provea en Tareas 8–10 — es esperado; puedes hacer T7–T10 en una rama y typecheckear al final, o stubear temporalmente.)
-2. Helper interno `deleteCross(title, onDelete)`:
+   (Romperá el typecheck hasta que el host los provea en T8–T10; implementa T7–T10 en la misma rama y typecheckea al cerrar T10.)
+2. Helper `deleteCross(title, onDelete)`:
    ```ts
    function deleteCross(title: string, onDelete: () => void): HTMLElement {
      const b = document.createElement('button');
-     b.className = 'session-del-cross';
-     b.title = title;
-     b.textContent = '✕';
+     b.className = 'session-del-cross'; b.title = title; b.textContent = '✕';
      b.addEventListener('click', (e) => { e.stopPropagation(); onDelete(); });
      return b;
    }
    ```
-3. Insertar el aspa:
-   - **Lane:** en `laneHeader` (`session-ui.ts:135`), como **primer hijo** del `.session-lane-header`, antes del `name`. `title="Borrar pista"` → `cb.onDeleteLane(lane.id)`.
-   - **Scene:** en `sceneLaunchCell` (`session-ui.ts:219`), dentro de la rama `if (scene)`, antes del botón `▶`. `title="Borrar escena"` → `cb.onDeleteScene(idx)`. Las celdas de scene vacías (`else`) **no** llevan aspa.
-   - **Clip:** en `clipCell` (`session-ui.ts:170`), solo en la rama `if (clip)`, como **primer hijo** antes del `label`. `title="Borrar clip"` → `cb.onDeleteClip(lane.id, rowIdx)`. **Crítico:** igual que el `playIcon`, el aspa debe `stopPropagation` en `pointerdown`/`pointerup`/`click` para no disparar `wireClipDrag`/`onClipClick` (el helper ya hace `stopPropagation` en `click`; añade los handlers `pointerdown`/`pointerup` al botón del clip — replica el patrón del `playIcon` en `session-ui.ts:183-184`).
-4. SCSS `.session-del-cross` en `_session-grid.scss` (mismo parcial que `session-cell-filled`): pequeña, esquina superior izquierda (`position: absolute; top/left`), atenuada por defecto (`opacity` baja), hover color "danger" (rojo). Asegurar que coexiste con `▶` (a la derecha del clip) y con `⚙` (`.session-lane-edit`) sin solaparse — ajustar paddings si hace falta. El clip lleno y el header de lane deben ser `position: relative` para anclar el aspa absoluta.
+3. Insertar el aspa + `data-lane-id`:
+   - **Lane:** en `laneHeader` (`session-ui.ts:135`), aspa como **primer hijo** antes del `name`. `title="Borrar pista"` → `cb.onDeleteLane(lane.id)`. **Añadir `el.dataset.laneId = lane.id`** al `.session-lane-header` (hoy NO lo lleva — verificado; lo necesita el e2e para identificar la columna).
+   - **Scene:** en `sceneLaunchCell` (`session-ui.ts:219`), rama `if (scene)`, antes del `▶`. `title="Borrar escena"` → `cb.onDeleteScene(idx)`. La rama `else` (sin scene) NO lleva aspa.
+   - **Clip:** en `clipCell` (`session-ui.ts:170`), rama `if (clip)`, **primer hijo** antes del `label`. `title="Borrar clip"` → `cb.onDeleteClip(lane.id, rowIdx)`. **Crítico:** añade `stopPropagation` en `pointerdown`/`pointerup`/`click` al botón aspa (replica el patrón del `playIcon`, `session-ui.ts:183-184`) para no disparar `wireClipDrag`.
+4. SCSS `.session-del-cross` en `_session-grid.scss`: pequeña, esquina superior izquierda (`position: absolute; top/left`), `opacity` baja por defecto, hover rojo. El clip lleno y el header deben ser `position: relative`. Coexistencia con `▶` (derecha) y `⚙` (`.session-lane-edit`) — ajustar paddings.
 
-**Cómo verificar:** `npx tsc --noEmit` (limpio una vez existan los callbacks del host; si haces T7 antes que T8–T10, el typecheck fallará por callbacks faltantes — completa hasta T10 antes de typecheckear el conjunto). `npm run build` compila el SCSS. Verificación visual real en Tarea 15 (e2e).
+**Verificar:** `tsc --noEmit` limpio una vez existan los callbacks del host (cierra hasta T10 antes de typecheckear el conjunto). `npm run build` compila el SCSS. Verificación visual en T15.
 
 ---
 
-### Tarea 8 — Wiring `onDeleteClip` en `SessionHost` ⚠️ CONFIRMAR ANTES (Duda D4)
+### Tarea 8 — Wiring `onDeleteClip` en `SessionHost` ⚠️ CONFIRMAR (Duda D1 no aplica: clip se borra directo)
 
 **Archivos:** `src/session/session-host.ts`.
 
-> ⚠️ **Antes de implementar, confirma D4:** ¿un clip con muchas notas se borra directo (sin confirmar)? El plan asume **sí, directo** (la confirmación se reserva a lane/scene).
-
-**Antes de editar `buildCallbacks`:** correr `gitnexus_impact({target: "buildCallbacks", direction: "upstream"})` y reportar el blast radius (instrucción del CLAUDE.md del proyecto). Es un método grande y central; avisar si HIGH/CRITICAL.
+**Antes de editar `buildCallbacks`:** `gitnexus_impact({target: "buildCallbacks", direction: "upstream"})` y reportar blast radius (método grande y central). Avisar si HIGH/CRITICAL.
 
 **Qué hacer:**
-- En `buildCallbacks` (`session-host.ts:604`), añadir al objeto `this.callbacks`:
+- En `buildCallbacks`, añadir a `this.callbacks`:
   ```ts
   onDeleteClip(laneId, clipIdx) {
     const lane = self.state.lanes.find((l) => l.id === laneId);
@@ -246,8 +275,7 @@ Copiadas del spec (sección "Dudas abiertas"). Bloquean la tarea indicada.
     const hd = self.deps.historyDeps;
     const run = () => {
       deleteClipAt(lane, clipIdx);
-      // Si el clip borrado era el seleccionado del inspector, cerrar el panel.
-      const sel = self.inspector.getSelectedClip?.();
+      const sel = self.inspector.getSelectedClip();
       if (sel && sel.laneId === laneId && sel.clipIdx === clipIdx) {
         self.inspector.setSelectedClip(null);
         const panel = document.getElementById('session-inspector');
@@ -258,20 +286,18 @@ Copiadas del spec (sección "Dudas abiertas"). Bloquean la tarea indicada.
     if (hd) withUndo(hd, run); else run();
   },
   ```
-  - Importar `deleteClipAt` de `./session`.
-  - Un clip individual **siempre se borra directo** (sin confirmación), coherente con el índice maestro.
+  - Importar `deleteClipAt` de `./session`. `getSelectedClip()`/`setSelectedClip(null)` existen (session-inspector.ts:100-106).
+  - Un clip individual **siempre directo** (sin confirmación), coherente con el índice maestro.
 
-**Cómo verificar:** `npx tsc --noEmit` limpio (junto con T7/T9/T10); cobertura de comportamiento en e2e Tarea 15 (caso "Aspa borra clip").
+**Verificar:** `tsc --noEmit` limpio (con T7/T9/T10); comportamiento en e2e T15 (caso 1).
 
 ---
 
-### Tarea 9 — Wiring `onDeleteLane` (confirmación + dispose de audio + limpieza) ⚠️ CONFIRMAR ANTES (Duda D1)
+### Tarea 9 — Wiring `onDeleteLane` (confirmación + stop + dispose + limpieza) ⚠️ CONFIRMAR (Duda D1)
 
 **Archivos:** `src/session/session-host.ts`.
 
-> ⚠️ **Antes de implementar, confirma D1:** ¿`window.confirm` nativo o mini-diálogo propio? El plan asume `window.confirm` en v1. Si el usuario quiere componente propio, es una sub-tarea de UI adicional.
-
-**Esta es una de las tareas más delicadas** (toca estado + audio + undo). `gitnexus_impact` sobre `buildCallbacks` ya hecho en T8.
+> ⚠️ **Confirma D1:** `window.confirm` nativo o mini-diálogo propio. El plan asume `window.confirm` en v1.
 
 **Qué hacer:**
 - Añadir a `this.callbacks`:
@@ -283,13 +309,17 @@ Copiadas del spec (sección "Dudas abiertas"). Bloquean la tarea indicada.
       const label = lane.name ?? lane.id;
       if (!window.confirm(`¿Borrar la pista «${label}» y todos sus clips?`)) return;
     }
+    // Parar la lane ANTES de disponerla: corta voces/loops en vuelo (simetría con
+    // onDeleteScene; evita el análogo de "New no libera synths").
+    stopLane(self.laneStates, laneId,
+      self.deps.recHooks ? { ...self.deps.recHooks, nowCtx: ctx.currentTime } : undefined);
     const hd = self.deps.historyDeps;
     const run = () => {
-      deleteLane(self.state, laneId);              // mutación pura del estado
-      self.laneStates.delete(laneId);              // estado de reproducción
-      self.deps.laneResources?.dispose(laneId);    // libera audio (strip+engine+inserts)
+      deleteLane(self.state, laneId);
+      self.laneStates.delete(laneId);
+      self.deps.laneResources?.dispose(laneId);   // libera strip+engine+inserts
       if (self.activeEditLane === laneId) {
-        // mismo gesto que el toggle-off de onEditLane
+        // mismo gesto que el toggle-off de onEditLane (session-host.ts:858-865)
         document.querySelectorAll<HTMLElement>('.page').forEach((p) => { p.hidden = true; });
         document.querySelectorAll<HTMLButtonElement>('.session-lane-tab').forEach((t) => t.classList.remove('active'));
         self.activeEditLane = null;
@@ -301,19 +331,19 @@ Copiadas del spec (sección "Dudas abiertas"). Bloquean la tarea indicada.
     if (hd) withUndo(hd, run); else run();
   },
   ```
-  - Importar `deleteLane`, `laneHasContent` de `./session`.
-  - **No** llamar `ensureScenesForRows` (borrar columnas no añade filas).
-- **Undo de borrado de lane (el punto más delicado del frente):** verificar que al deshacer, la lane restaurada **recupera su recurso de audio**. El `restore` del historial llama por el camino de `applyLoadedSessionState`/`onStateApplied`, que re-alloca lanes sin recurso (`ensureLaneResource`, ver `session-host.ts:336-341`). **Confirmar empíricamente** que el undo pasa por ese re-allocate; si no, el `restore` debe forzar un `ensureLaneResource` para la lane restaurada. Esto se cubre con el e2e Tarea 15 (caso "Undo de borrado de lane": lanzar su clip tras el undo no debe dar `stripFor: no resource`).
+  - Importar `deleteLane`, `laneHasContent` de `./session`. `stopLane` y `ctx` ya están en scope de `buildCallbacks`.
+  - NO llamar `ensureScenesForRows` (borrar columnas no añade filas).
+- **Undo de borrado de lane:** VERIFICADO que el `restore` del historial pasa por `applyLoadedSessionState`, que dispone orphans (`session-host.ts:321-324`) y re-asigna recursos a las lanes sin recurso (`ensureLaneResource`/`swapLaneEngine`, :325-341). El mecanismo ya existe; basta con cubrirlo con el e2e T15 (caso 8: lanzar el clip restaurado no da `stripFor: no resource`). No requiere código extra en `run`.
 
-**Cómo verificar:** `npx tsc --noEmit` limpio; e2e Tarea 15 (casos "Aspa borra lane", "Borrado de lane vacía sin diálogo", "Undo de borrado de lane").
+**Verificar:** `tsc --noEmit` limpio; e2e T15 (casos 2/3/8).
 
 ---
 
-### Tarea 10 — Wiring `onDeleteScene` (confirmación condicional) ⚠️ CONFIRMAR ANTES (Duda D1)
+### Tarea 10 — Wiring `onDeleteScene` (confirmación + stop + compactante) ⚠️ CONFIRMAR (Duda D1)
 
 **Archivos:** `src/session/session-host.ts`.
 
-> ⚠️ Misma Duda D1 (estilo de confirmación) que la Tarea 9.
+> ⚠️ Misma Duda D1 (estilo de confirmación).
 
 **Qué hacer:**
 - Añadir a `this.callbacks`:
@@ -327,8 +357,7 @@ Copiadas del spec (sección "Dudas abiertas"). Bloquean la tarea indicada.
     }
     const hd = self.deps.historyDeps;
     const run = () => {
-      // Parar/limpiar lo que estuviera sonando o encolado de esa fila (decisión
-      // del spec: parar lo lanzable de la scene borrada).
+      // Parar lo que suene/encolado de esa fila antes de compactar.
       for (const lp of self.laneStates.values()) {
         const lane = self.state.lanes.find((l) => l.id === lp.laneId);
         const clipInRow = lane?.clips[sceneIdx];
@@ -337,31 +366,30 @@ Copiadas del spec (sección "Dudas abiertas"). Bloquean la tarea indicada.
             self.deps.recHooks ? { ...self.deps.recHooks, nowCtx: ctx.currentTime } : undefined);
         }
       }
-      deleteScene(self.state, sceneIdx);
+      deleteScene(self.state, sceneIdx);   // COMPACTANTE (T4)
       self.renderWithMixer();
     };
     if (hd) withUndo(hd, run); else run();
   },
   ```
-  - Importar `deleteScene`, `sceneHasContent` de `./session`. `stopLane` y `ctx` ya están en scope dentro de `buildCallbacks`.
+  - Importar `deleteScene`, `sceneHasContent` de `./session`.
+  - `LanePlayState` expone `laneId` (verificado: `lp.laneId`); `playing`/`queued` son clips con `.id`.
 
-**Cómo verificar:** `npx tsc --noEmit` limpio; e2e Tarea 15 (caso "Aspa borra scene").
+**Verificar:** `tsc --noEmit` limpio; e2e T15 (caso 4: compacta).
 
 ---
 
-### Tarea 11 — Refactor `deleteSelectedClip` para delegar en `onDeleteClip` ⚠️ CONFIRMAR ANTES (Duda D3)
+### Tarea 11 — `deleteSelectedClip` del inspector: mantener + documentar ⚠️ CONFIRMAR (Duda D2)
 
 **Archivos:** `src/session/session-inspector.ts`.
 
-> ⚠️ **Antes de implementar, confirma D3:** ¿se MANTIENE el borrado por teclado (Delete/Backspace) del inspector? El plan asume **sí, se mantiene** (el aspa es el camino primario, pero el atajo no estorba). Si el usuario quiere retirarlo, esta tarea cambia a "eliminar `wireKeyboardShortcuts`/`deleteSelectedClip`".
+> ⚠️ **Confirma D2:** ¿se MANTIENE el borrado por teclado (Delete/Backspace) + `#insp-delete` del inspector? Propuesta: **sí** (el aspa es el primario; el atajo no estorba). Si el usuario quiere retirarlo, esta tarea pasa a "eliminar `wireKeyboardShortcuts`/`deleteSelectedClip`/`#insp-delete`".
 
-**Qué hacer (variante mantener):**
-- `deleteSelectedClip` (`session-inspector.ts:77`) y `onDeleteClip` del host hacen lo mismo (poner `null` + cerrar panel). Para no duplicar, hay dos opciones:
-  - **(a)** Dejar `deleteSelectedClip` tal cual (ya funciona; bajo riesgo). El spec lo permite ("conservarlo no estorba").
-  - **(b)** Refactor: que `deleteSelectedClip` delegue en el `onDeleteClip` del host. Requiere que el inspector tenga acceso al callback del host. Hoy el inspector NO recibe `SessionUICallbacks`; añadir esa dependencia es más invasivo.
-- **Recomendación:** opción **(a)** para v1 (menor riesgo) — el aspa y el teclado comparten la lógica de "poner null + cerrar panel" pero por dos caminos pequeños y bien acotados. Documentar en un comentario que ambos existen. Si el usuario insiste en deduplicar (b), extraer un helper compartido en el host expuesto al inspector.
+**Qué hacer (variante mantener — recomendada):**
+- `deleteSelectedClip` (`session-inspector.ts:77-91`) y `onDeleteClip` del host comparten la semántica "poner null + cerrar panel" por dos caminos pequeños y acotados. **No deduplicar en v1** (deduplicar exigiría que el inspector reciba el callback del host, hoy NO recibe `SessionUICallbacks` → más invasivo y de mayor riesgo). Dejar `deleteSelectedClip` tal cual; añadir un comentario que documente que aspa (host) y teclado/`#insp-delete` (inspector) coexisten intencionadamente.
+- `#insp-delete` (`session-inspector.ts:159`) ya delega en `deleteSelectedClip`; sin cambios.
 
-**Cómo verificar:** `npx tsc --noEmit` limpio; el atajo Delete/Backspace sigue funcionando (smoke manual en Tarea 16).
+**Verificar:** `tsc --noEmit` limpio; el atajo Delete/Backspace y `#insp-delete` siguen funcionando (smoke en T16).
 
 ---
 
@@ -369,72 +397,76 @@ Copiadas del spec (sección "Dudas abiertas"). Bloquean la tarea indicada.
 
 **Archivos:** `src/session/session-ui.ts`.
 
-> Duda D6 (migrar los `contextmenu` de drum-grid / piano-roll a este módulo) queda **fuera de alcance v1**. No tocar `clip-editor-drum-grid.ts` ni `pianoroll.ts`.
+> La migración de los `contextmenu` de drum-grid/piano-roll a este módulo queda **fuera de alcance**. No tocar `clip-editor-drum-grid.ts` ni `pianoroll.ts`.
 
 **Qué hacer:**
 - Importar `openContextMenu` de `../core/context-menu`.
-- Añadir `addEventListener('contextmenu', (e) => openContextMenu(e, items))` en cada elemento, con ítems que reutilizan callbacks existentes:
-  - **Cabecera de lane** (`.session-lane-header`, en `laneHeader`): "Editar instrumento" (`cb.onEditLane`), "Parar pista" (`cb.onStopLane`), separador, "Borrar pista" (`danger` → `cb.onDeleteLane`).
-  - **Scene** (`.session-scene-cell` con scene, en `sceneLaunchCell` rama `if (scene)`): "Lanzar escena" (`cb.onLaunchScene`), "Añadir escena" (`cb.onAddScene`), separador, "Borrar escena" (`danger` → `cb.onDeleteScene`).
-  - **Clip lleno** (`.session-cell-filled`, en `clipCell` rama `if (clip)`): "Abrir editor" (`cb.onClipClick`), "Reproducir / Parar" (`cb.onClipPlayPause`), [opcional "Duplicar" — ver Tarea 13], separador, "Borrar clip" (`danger` → `cb.onDeleteClip`).
-  - **Celda vacía** (`.session-cell-empty`, en `clipCell` rama `else`): "Crear clip" (`cb.onCellClick`) salvo en lanes `audio`/`sampler` donde `onCellClick` no crea clip — ahí dejar el ítem deshabilitado o omitir (v1: solo "Crear clip" donde aplique; para `audio`/`sampler` un ítem `disabled`).
-- El menú **coexiste** con el aspa (uno es `click` en el botón, otro `contextmenu` en el contenedor; sin conflicto).
+- `addEventListener('contextmenu', (e) => openContextMenu(e, items))` en cada elemento, con ítems que reutilizan callbacks:
+  - **Cabecera de lane** (`.session-lane-header`): "Editar instrumento" (`cb.onEditLane`), "Parar pista" (`cb.onStopLane`), separador, "Borrar pista" (`danger` → `cb.onDeleteLane`).
+  - **Scene** (`.session-scene-cell` rama `if (scene)`): "Lanzar escena" (`cb.onLaunchScene`), "Añadir escena" (`cb.onAddScene`), separador, "Borrar escena" (`danger` → `cb.onDeleteScene`).
+  - **Clip lleno** (`.session-cell-filled`, rama `if (clip)`): "Abrir editor" (`cb.onClipClick`), "Reproducir / Parar" (`cb.onClipPlayPause`), [opcional "Duplicar" — T13], separador, "Borrar clip" (`danger` → `cb.onDeleteClip`).
+  - **Celda vacía** (`.session-cell-empty`, rama `else`): "Crear clip" (`cb.onCellClick`). **Verificado:** `onCellClick` solo bloquea `engineId === 'audio'` (`session-host.ts:661`); en **sampler** SÍ crea clip. Por tanto el ítem "Crear clip" se ofrece normal para `sampler`/drumkit y se deshabilita (o se cambia a "Importar audio…") SOLO para `audio`. **NO deshabilitar en sampler** (regresionaría una capacidad existente).
+- El menú **coexiste** con el aspa (uno es `click` en el botón, otro `contextmenu` en el contenedor).
 
-**Cómo verificar:** `npx tsc --noEmit` limpio; e2e Tarea 15 (caso "Menú contextual"); smoke manual del botón derecho en cada nivel.
+**Verificar:** `tsc --noEmit` limpio; e2e T15 (caso 7); smoke del botón derecho en cada nivel.
 
 ---
 
-### Tarea 13 — (Opcional v1) Ítem "Duplicar clip" en el menú contextual ⚠️ CONFIRMAR ANTES (Duda D5)
+### Tarea 13 — (Opcional v1) Ítem "Duplicar clip" en el menú contextual ⚠️ CONFIRMAR (Duda D3)
 
 **Archivos:** `src/session/session-ui.ts`, `src/session/session-host.ts`.
 
-> ⚠️ **Antes de implementar, confirma D5:** ¿se incluye "Duplicar clip" en v1? Si **no**, omite esta tarea (el menú del clip de Tarea 12 ya queda completo sin "Duplicar").
+> ⚠️ **Confirma D3:** ¿"Duplicar clip" en v1? Si **no**, omite esta tarea (el menú del clip de T12 queda completo sin "Duplicar").
 
 **Qué hacer (si se incluye):**
 - Añadir `onDuplicateClip?: (laneId: string, clipIdx: number) => void` a `SessionUICallbacks`.
-- Implementarlo en `buildCallbacks` reusando la lógica de `insp-duplicate` (`session-inspector.ts:146`): clonar el clip (`JSON.parse(JSON.stringify)`), nuevo id, nombre `+ ' copy'`, colocarlo en el primer hueco libre de la columna (o append), `withUndo` + `renderWithMixer`.
-- Añadir el ítem "Duplicar" al menú del clip lleno en Tarea 12.
+- Implementarlo en `buildCallbacks` reusando la lógica de `insp-duplicate` (`session-inspector.ts:146-158`): clonar (`JSON.parse(JSON.stringify)`), nuevo id, nombre `+ ' copy'`. **Verificado:** `insp-duplicate` hace `clips.push(dup)` (append al final, NO "primer hueco libre"). Replicar ese comportamiento (append) por coherencia, o documentar si se prefiere colocar en el primer hueco libre de la columna. `withUndo` + `renderWithMixer`.
+- Añadir el ítem "Duplicar" al menú del clip en T12.
 
-**Cómo verificar:** `npx tsc --noEmit` limpio; smoke manual.
+**Verificar:** `tsc --noEmit` limpio; smoke.
 
 ---
 
-### Tarea 14 — Siembra "vacía de verdad" + fix del bug "▶ ausente"
+### Tarea 14 — Helper único `placeClipEnsuringScene` + `installSamplerClip` + eliminar `installClip` + siembra vacía + fix ▶
 
-**Archivos:** `src/session/session-host.ts`, `src/core/scene-ensure.test.ts`.
+**Archivos:** `src/session/session-host.ts`, `src/engines/engine-types.ts`.
 
-**Antes de editar:** `gitnexus_impact` sobre `installClip` (es el callback de `buildParamUI`) y sobre los métodos de creación de lane que se tocan. Reportar blast radius.
+**Antes de editar:** `gitnexus_impact` sobre `onCellClick`, `onCellDropAudio` y los métodos de creación de lane que se tocan; y sobre `installClip` (para confirmar que NO tiene callers — debe salir blast radius vacío de invocación). Reportar.
 
-**Qué hacer (dos partes — el orden importa: primero el fix del ▶, que es un bug real, luego la siembra):**
+**Qué hacer (orden: helper → migrar caminos → eliminar installClip + seam → siembra):**
 
-**14a. Fix `installClip` (causa raíz del ▶ ausente):**
-- En `installClip` (`session-host.ts:999-1006`, el camino del import de loop del Sampler), añadir `ensureScenesForRows(this.state)` **antes** de `this.renderWithMixer()`. Importar `ensureScenesForRows` de `../core/scene-ensure` (ya está importado en el host — verificar). Es la única función que hoy NO lo llama; el resto (`onSliceToBank`, `addAudioChannel`, `onCellDropAudio`, `onAddLane`, `onAddStemLanes`) ya lo hacen.
-- **Defensa en profundidad (opcional pero recomendado):** extraer un helper de instancia `private placeClipEnsuringScene(lane, idx, clip)` que haga `lane.clips[idx] = clip; ensureScenesForRows(this.state);` y migrar a él los puntos de inserción (`onCellClick`, `onCellDropAudio`, `installClip`, y los `clips[0]` de creación). Esto evita que un camino futuro vuelva a olvidar la scene.
+**14a. Helper único `placeClipEnsuringScene` (privado en `SessionHost`):**
+```ts
+private placeClipEnsuringScene(laneId: string, clipIdx: number, clip: SessionClip): void {
+  const lane = this.state.lanes.find((l) => l.id === laneId);
+  if (!lane) return;
+  while (lane.clips.length <= clipIdx) lane.clips.push(null);
+  lane.clips[clipIdx] = clip;
+  ensureScenesForRows(this.state);
+}
+```
 
-**14b. Siembra vacía (quitar el relleno con `emptyClip`):**
-Sustituir el bucle de relleno `for (r..rows) clips.push(r===0 ? clip : emptyClip(...))` por `lane.clips = [clip]` (clip en fila 0) o `lane.clips = []` (instrumento sin clip), y dejar que `ensureScenesForRows` mantenga las scenes. En cada sitio, tras la mutación, **siempre** `ensureScenesForRows(state)`:
-  - **`onAddLane`** (`session-host.ts:736`, bucle en `:749-751`): lane de instrumento → `lane.clips = []` (0 clips). Quitar el `for` que hace push de `emptyClip`. `emptyLane` ya devuelve `clips: []`, así que basta con **no** rellenar. Mantener `ensureScenesForRows(self.state)` (ya está en `:758`).
-  - **`addNoteLane`** (`session-host.ts:523`, bucle en `:541`): `lane.clips = [clip]` (clip de notas en fila 0). Quitar el `for`.
-  - **`addAudioChannel`** (`session-host.ts:562`, bucle en `:586`): `lane.clips = [clip]`. Quitar el `for`. Mantener `ensureScenesForRows(self.state)` (ya en `:590`).
-  - **`onSliceToBank`** (`session-host.ts:197`, bucle en `:244`): `newLane.clips = [noteClip]`. Quitar el `for`. Mantener `ensureScenesForRows` (ya en `:251`).
-  - **`onCellDropAudio`** (camino audio, `session-host.ts:674`): ya coloca el clip en una celda concreta (`lane.clips[clipIdx] = clip`), NO rellena la columna — **no cambia**, pero verificar que sigue llamando `ensureScenesForRows` (ya en `:695`).
-  - **Stems** (`onAddStemLanes` → `buildStemLane`, `session-host.ts:780`, bucle en `:797`): cada lane de stem → `lane.clips = [clip]`. Quitar el `for`. `runReplace` llama `buildStemLane(s, id, 1)` y arma la scene aparte; `runAdd` llama con `rows` pero el relleno ya no es necesario — `lane.clips = [clip]` + `ensureScenesForRows` (ya en `:832`) basta.
-- **Importante (del spec):** quitar el relleno **no** rompe `ensureScenesForRows`, porque calcula `maxClipRows` sobre `lane.clips.length`. Una lane vacía aporta `length 0`; las lanes con clip en fila 0 aportan `length 1`. Las scenes existentes se conservan (otras lanes ya empujan `maxClipRows`).
+**14b. Migrar los caminos de colocación de clip al helper (corrige el bug ▶ REAL):**
+- **`onCellClick`** (`session-host.ts:658-672`): dentro del `run`, sustituir `while(...push null); lane.clips[clipIdx]=clip;` por `self.placeClipEnsuringScene(laneId, clipIdx, clip);` (dejar fuera del helper la selección del inspector + `openInspector` + `renderWithMixer`). **Este es el fix del bug** (hoy NO llama a `ensureScenesForRows`).
+- **`onCellDropAudio`** (`session-host.ts:674-705`): sustituir su `while(...push null); lane.clips[clipIdx]=clip; ensureScenesForRows(...)` por `self.placeClipEnsuringScene(laneId, clipIdx, clip);` (mantener selección + open + render).
 
-**14c. Test de regresión del ▶ (en `scene-ensure.test.ts`):**
-- Añadir un caso que reproduzca el bug de `installClip`: simular "clip colocado en una fila sin scene previa" y assertar que `ensureScenesForRows` crea la scene de esa fila. Patrón (puro, sin host):
-  ```ts
-  it('creates a scene for a clip placed at a row without one (installClip regression)', () => {
-    const s = emptySessionState();
-    s.lanes[0].clips = [];           // lane vacía
-    s.lanes[0].clips[0] = emptyClip(1); // clip colocado en fila 0, 0 scenes
-    expect(s.scenes.length).toBe(0);
-    ensureScenesForRows(s);
-    expect(s.scenes.length).toBeGreaterThanOrEqual(1); // ▶ disponible para la fila
-  });
-  ```
+**14c. `installSamplerClip` (seam de D) + ELIMINAR `installClip`:**
+- Añadir el método público `installSamplerClip(laneId, clip)` (firma exacta en el spec, §Seam): busca primer hueco libre → `placeClipEnsuringScene` → `setSelectedClip` + `openInspector` → todo dentro de `withUndo`.
+- **Eliminar** la implementación `installClip` en `buildParamUI`/EngineUIContext (`session-host.ts:999-1006`) y el comentario asociado (:997-998).
+- **Eliminar** la declaración `installClip?: (clip) => void` en `src/engines/engine-types.ts:76` + comentario. Verificar (grep) que NINGÚN otro sitio la referencia.
 
-**Cómo verificar:** `NO_COLOR=1 npx vitest run src/core/scene-ensure.test.ts` verde (incluye el nuevo caso); `npx tsc --noEmit` limpio; e2e Tarea 15 (casos "Lane nace vacía" y "▶ presente tras import de loop/slice"). **Antes de commit:** `gitnexus_detect_changes()` para verificar que el alcance afectado es el esperado.
+**14d. Siembra vacía (quitar el relleno con `emptyClip`):**
+Sustituir el bucle `for (r..rows) clips.push(r===0 ? clip : emptyClip(...))` por `lane.clips = [clip]` (clip en fila 0) o `lane.clips = []` (instrumento). Tras la mutación, `ensureScenesForRows`:
+  - **`onAddLane`** (`session-host.ts:736`, bucle :749-751): instrumento → `lane.clips = []`. Quitar el `for`. `emptyLane` ya da `clips:[]`; mantener `ensureScenesForRows` (:758).
+  - **`addNoteLane`** (`session-host.ts:523`, bucle :541): `lane.clips = [clip]`. Quitar el `for`. **AÑADIR `ensureScenesForRows(this.state)`** tras `this.state.lanes.push(lane)` (verificado: hoy es el único camino de creación que NO lo llama — corrige la contradicción T14a/T14b de la versión anterior).
+  - **`addAudioChannel`** (`session-host.ts:562`, bucle :586): `lane.clips = [clip]`. Quitar el `for`. Mantener `ensureScenesForRows` (:590).
+  - **`onSliceToBank`** (`session-host.ts:197`, bucle :244): `newLane.clips = [noteClip]`. Quitar el `for`. Mantener `ensureScenesForRows` (:251).
+  - **Stems** (`buildStemLane`, `session-host.ts:780`, bucle :797): `lane.clips = [clip]`. Quitar el `for`. `runAdd` mantiene `ensureScenesForRows` (:832); `runReplace` arma su scene aparte.
+- La siembra mínima de scene (T5) ya garantiza que una sesión con lanes vacías tenga ≥1 scene.
+
+**14e. Test de regresión del ▶** ya cubierto en T5 (caso "clip en fila sin scene"). El comportamiento end-to-end de `onCellClick` se cubre en e2e T15 (caso 6).
+
+**Verificar:** `NO_COLOR=1 npx vitest run src/core/scene-ensure.test.ts src/session/session.test.ts` verde; `tsc --noEmit` limpio (la eliminación de `installClip` no debe romper nada — grep previo); e2e T15 (casos 5/6). **Antes de commit:** `gitnexus_detect_changes()`.
 
 ---
 
@@ -442,50 +474,51 @@ Sustituir el bucle de relleno `for (r..rows) clips.push(r===0 ? clip : emptyClip
 
 **Archivos NUEVOS:** `tests/e2e/session-management.spec.ts`.
 
-> Recordatorio: `test:e2e` sirve `dist/` sin build → **`npm run build` antes**. Patrón de boot (de `lane-ui.spec.ts`): `await page.goto('/')` + `await page.waitForFunction(() => document.querySelectorAll('.session-cell-filled').length > 0)` para esperar a que el demo async cargue.
+> `test:e2e` sirve `dist/` sin build → **`npm run build` antes**. Boot: `page.goto('/')` + `waitForFunction(() => document.querySelectorAll('.session-cell-filled').length > 0)`.
 
-**Qué hacer:** escribir los 8 casos del plan de pruebas del spec:
-1. **Aspa borra clip:** contar `.session-cell-filled`, clicar el `.session-del-cross` de uno (el del clip), assertar conteo −1 y que la celda pasa a `.session-cell-empty`.
-2. **Aspa borra lane (con confirmación):** añadir lane (`+` del tab-bar), poner contenido (crear un clip), `page.on('dialog', d => d.accept())`, clicar el aspa de la cabecera, assertar que la columna desaparece (`.session-lane-header` con ese contenido ya no existe) y que **no** hay error `stripFor`/`no resource` en consola (`page.on('console', ...)`).
-3. **Borrado de lane vacía sin diálogo:** añadir lane (queda vacía), registrar un handler de `dialog` que marque una bandera, borrar, assertar que el handler **no** se invocó y la columna desaparece.
-4. **Aspa borra scene:** contar `.session-scene-launch`, borrar una scene con contenido (aceptar diálogo), assertar conteo −1.
-5. **Lane nace vacía:** añadir una lane de instrumento, assertar que su columna tiene **0** `.session-cell-filled` (todas las celdas `.session-cell-empty`). (Verifica Tarea 14b.)
-6. **▶ presente tras import de loop/slice (regresión del bug):** ejecutar el flujo del Sampler que llama a `installClip`/`onSliceToBank` (reusar patrones de `sampler.spec.ts` / `loop-arrangement.spec.ts`), assertar que tras la operación existe un `.session-scene-launch` en la fila del clip y `state.scenes.length >= idxDelClip+1` (leer `state` vía `page.evaluate` si el host lo expone, o vía conteo de botones ▶). (Verifica Tarea 14a.)
-7. **Menú contextual:** `click({ button: 'right' })` sobre una cabecera de lane, assertar que aparece `.context-menu` con un ítem "Borrar pista"; seleccionarlo borra la lane (equivale al aspa).
-8. **Undo de borrado de lane (caso delicado):** borrar lane → `Ctrl+Z` → assertar que la columna vuelve **y** tiene recurso (lanzar su clip no produce error `stripFor: no resource` en consola). Verifica el re-allocate del undo (Tarea 9).
+**Qué hacer:** los 8 casos del spec:
+1. **Aspa borra clip:** contar `.session-cell-filled`, clicar el `.session-del-cross` del clip, conteo −1 + celda pasa a `.session-cell-empty`.
+2. **Aspa borra lane (con confirmación):** añadir lane, crear un clip, `page.on('dialog', d => d.accept())`, clicar el aspa de la cabecera; `.session-lane-header[data-lane-id="…"]` desaparece (selector ya disponible por T7) y NO hay error `stripFor`/`no resource` en consola (`page.on('console', ...)`).
+3. **Borrado de lane vacía sin diálogo:** añadir lane (vacía), registrar handler `dialog` con bandera, borrar; bandera NO marcada + columna desaparece.
+4. **`deleteScene` compacta:** con ≥2 scenes y clips en filas distintas, borrar la scene N (aceptar diálogo); assert de que la scene que estaba en N+1 ahora lanza SU clip (no el de otra fila) — leer vía conteo de `.session-scene-launch` (baja 1) + comprobar que el clip de la fila siguiente subió de fila. Cubre A2.
+5. **Lane nace vacía:** añadir lane de instrumento → 0 `.session-cell-filled` en su columna (identificada por `data-lane-id`). Cubre 14d.
+6. **▶ presente tras crear clip en fila sin scene (regresión del bug REAL):** provocar `onCellClick` (click en una celda vacía de una fila sin scene previa) o `onSliceToBank`; assert de que existe `.session-scene-launch` en esa fila tras la operación. Cubre 14b. (NO se ejercita `installClip`: eliminado.)
+7. **Menú contextual:** `click({ button: 'right' })` sobre una cabecera de lane → `.context-menu` con "Borrar pista"; seleccionarlo borra la lane.
+8. **Undo de borrado de lane:** borrar lane → `Ctrl+Z` (en modo **session**, no Performance — `performance-feature.ts:208` enruta Ctrl+Z al arrangement) → la columna vuelve y lanzar su clip no da `stripFor: no resource` en consola. Verifica el re-allocate de `applyLoadedSessionState`.
 
-**Cómo verificar:** `npm run build && npm run test:e2e` con los 8 casos verdes. Si un caso falla por timing async, usar `waitForFunction`/`waitForSelector` como en los spec existentes.
+**Verificar:** `npm run build && npm run test:e2e` con los 8 verdes. Si un caso falla por timing async, usar `waitForFunction`/`waitForSelector`.
 
 ---
 
-### Tarea 16 — Verificación final (typecheck + unit + build + smoke en navegador)
+### Tarea 16 — Verificación final (typecheck + unit + build + smoke)
 
 **Archivos:** ninguno (verificación).
 
 **Qué hacer:**
 - `npx tsc --noEmit` → limpio.
-- `npm run test:unit` → verde (re-run si `ERR_IPC_CHANNEL_CLOSED` en teardown, flaky conocido; no es fallo real).
+- `npm run test:unit` → verde (re-run si `ERR_IPC_CHANNEL_CLOSED` en teardown — flaky conocido).
 - `npm run build` → typecheck + bundle OK.
-- `npm run test:e2e` → verde (incluye `session-management.spec.ts` nuevo).
-- **Smoke manual en `http://localhost:5173`** (`npm run dev`):
-  - Crear una lane de instrumento → nace **vacía** (sin clips fantasma).
-  - Crear un clip en una celda → aparece.
-  - Borrar el clip con el **aspa** → desaparece, la celda queda vacía, sin confirmación.
-  - Borrar una lane **con contenido** con el aspa → sale la **confirmación**; aceptar → la columna desaparece; el audio no da errores en consola.
-  - **Ctrl+Z** → la lane vuelve y su clip se puede lanzar sin error.
-  - Borrar una **scene** con contenido → confirmación; vacía → directa.
-  - Botón **derecho** en cada nivel (lane / scene / clip lleno / celda vacía) → menú contextual con las acciones esperadas; "Borrar…" en rojo al final.
-  - Import de loop / slice en el Sampler → el botón **▶** de scene-launch aparece en la fila del clip (regresión del bug arreglada).
-  - El atajo **Delete/Backspace** del inspector sigue borrando el clip seleccionado (si se mantuvo en Tarea 11).
-- **Antes de commit final:** `gitnexus_detect_changes()` para confirmar que el alcance afectado es el esperado (instrucción del CLAUDE.md del proyecto).
+- `npm run test:e2e` → verde (incluye `session-management.spec.ts`).
+- **Smoke en `http://localhost:5173`** (`npm run dev`):
+  - Crear lane de instrumento → nace **vacía** (sin clips fantasma) pero la sesión tiene ≥1 scene lanzable.
+  - Crear clip en una celda → aparece + su fila tiene ▶.
+  - Borrar clip con el **aspa** → desaparece, sin confirmación.
+  - Borrar lane **con contenido** → **confirmación**; aceptar → columna desaparece, sin errores de consola.
+  - **Ctrl+Z** (modo session) → la lane vuelve y su clip se lanza sin error.
+  - Borrar **scene** con contenido → confirmación; **compacta** (las posteriores suben y mantienen su clip).
+  - Botón **derecho** en cada nivel → menú con acciones esperadas; "Borrar…" rojo al final; "Crear clip" disponible en sampler (no deshabilitado).
+  - Crear clip en una fila sin scene → aparece el **▶** (bug ▶ arreglado en su causa real).
+  - Atajo **Delete/Backspace** + `#insp-delete` siguen borrando el clip seleccionado (si se mantuvo, D2).
+- **Antes de commit final:** `gitnexus_detect_changes()`.
 
-**Cómo verificar:** todos los comandos verdes + checklist de smoke completado sin errores de consola.
+**Verificar:** todos los comandos verdes + checklist de smoke sin errores de consola.
 
 ---
 
 ## Notas de implementación transversales
 
-- **Orden de typecheck:** las Tareas 7–10 están acopladas por el contrato de `SessionUICallbacks` (la UI declara los callbacks que el host implementa). Si haces T7 antes que T8–T10, `npx tsc --noEmit` fallará por callbacks faltantes en `this.callbacks`. Plan: implementa T8–T10 (host) y T7 (UI) en la misma rama y typecheckea el conjunto al cerrar T10.
-- **Worktree:** este plan se ejecuta en un worktree aislado (ya estás en `loom-ux-overhaul`). Commitea libremente en la rama y rebasea sobre `main` a menudo.
-- **GitNexus:** correr `gitnexus_impact` antes de editar `buildCallbacks`, `installClip` y los métodos de creación de lane (instrucción del proyecto). Avisar si HIGH/CRITICAL. La MCP de GitNexus es ciega al worktree (indexa el repo principal), así que `detect_changes` puede no ver cambios desde aquí — no bloquea, solo es informativo.
-- **No tocar:** `lane-resources.ts` (`dispose` ya hace lo necesario) ni `scene-ensure.ts` (se reutiliza tal cual; el fix es **llamarla** desde `installClip`). Tampoco la cabecera/transporte (Frente B), el mixer (C), el Sampler/audio (D) ni los editores de clip (E).
+- **Orden de typecheck:** T7–T10 acopladas por el contrato de `SessionUICallbacks`. Implementa el host (T8–T10) y la UI (T7) en la misma rama; typecheckea al cerrar T10.
+- **Coordinación A↔D:** A introduce primero `placeClipEnsuringScene` + `installSamplerClip` y elimina `installClip` (T14). D consume `installSamplerClip` (no lo redefine). Si por planificación D fuese antes, D crearía `installSamplerClip` con esta firma y A lo adopta.
+- **Worktree:** este plan se ejecuta en el worktree aislado (`loom-ux-overhaul`). Commitea libremente; rebasea sobre `main` a menudo.
+- **GitNexus:** correr `gitnexus_impact` antes de editar `buildCallbacks`, `onCellClick`, los métodos de creación de lane y `ensureScenesForRows`. Avisar si HIGH/CRITICAL. La MCP es ciega al worktree (indexa el repo principal): `detect_changes` puede no ver cambios desde aquí — informativo, no bloqueante.
+- **No tocar:** `lane-resources.ts` (`dispose` ya hace lo necesario). La cabecera/transporte (B), el mixer (C), el Sampler/audio (D salvo el seam `installSamplerClip`) ni los editores de clip (E).
