@@ -4,7 +4,8 @@
 //   - mountWaveformHeader: canvas (waveform + bar/beat ruler + slice markers)
 //     mounted above the body editor; returns { redraw } for the host RAF.
 //   - renderAudioClipEditor: the audio-clip (Mode 1) editor — waveform header +
-//     a small toolbar (bpm / bars / warp). No note grid.
+//     a small toolbar (warp). BPM/length live in the inspector, not here. No
+//     note grid.
 
 import type { SessionClip } from '../session';
 import { sampleCache } from '../../samples/sample-cache';
@@ -114,21 +115,13 @@ export function renderAudioClipEditor(
   toolbar.className = 'audio-clip-toolbar';
   Object.assign(toolbar.style, { display: 'flex', gap: '8px', alignItems: 'center', padding: '4px 2px', fontSize: '11px' } as Partial<CSSStyleDeclaration>);
 
-  const bpmLabel = document.createElement('span');
-  bpmLabel.className = 'audio-clip-bpm';
-  bpmLabel.textContent = `BPM ${Math.round(sample?.originalBpm ?? 120)}`;
-  bpmLabel.title = 'Detected loop tempo';
-
-  const barsLabel = document.createElement('span');
-  barsLabel.textContent = `${clip.lengthBars} bar${clip.lengthBars > 1 ? 's' : ''}`;
-
   const warpBtn = document.createElement('button');
   warpBtn.className = 'audio-clip-warp';
   const refreshWarp = () => { warpBtn.textContent = sample?.warp ? '♺ Warp ON' : '♺ Warp OFF'; };
   warpBtn.addEventListener('click', () => { if (sample) { sample.warp = !sample.warp; refreshWarp(); } });
   refreshWarp();
 
-  toolbar.append(bpmLabel, barsLabel, warpBtn);
+  toolbar.append(warpBtn);
   host.appendChild(toolbar);
 
   const headerHost = document.createElement('div');
