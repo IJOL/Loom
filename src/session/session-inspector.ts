@@ -41,9 +41,6 @@ export interface InspectorDeps {
     sample?: import('./session').ClipSample,
     velocity?: number,
   ) => void;
-  /** Mode 2: chop the audio clip into bank samples + a note clip on a new
-   *  sampler lane. Bound to (laneId, clipIdx) by the host. */
-  onSliceToBank?: (laneId: string, clipIdx: number) => void;
 }
 
 export class SessionInspector {

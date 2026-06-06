@@ -284,69 +284,6 @@ export class SessionHost {
 
   constructor(public readonly deps: SessionHostDeps) {}
 
-  /** Mode 2: chop an audio clip into per-slice bank samples + a normal note clip
-   *  on a NEW sampler lane (the original audio lane is left intact). */
-  onSliceToBank(laneId: string, clipIdx: number): void {
-    const { ctx, seq } = this.deps;
-    const lane = this.state.lanes.find((l) => l.id === laneId);
-    const clip = lane?.clips[clipIdx];
-    if (!lane || !clip?.sample) return;
-    void ctx.resume();
-    void (async () => {
-      const srcId = clip.sample!.sampleId;
-      const buf = sampleCache.get(srcId) ?? await sampleCache.ensureLoaded(ctx, srcId, sampleStore);
-      if (!buf) return;
-      const det = detectLoop(buf, seq.meter);
-      const cuts = sliceBuffer(ctx, buf, det.slicePointsSec);
-      const sliceIds: string[] = [];
-      for (const cut of cuts) {
-        const id = newSampleId();
-        const bytes = await audioBufferToWavBytes(cut.buffer);
-        await sampleStore.put(buildSampleAsset({
-          id, name: `${clip.name ?? 'slice'} ${sliceIds.length + 1}`,
-          mime: 'audio/wav', bytes, buffer: cut.buffer, createdAt: Date.now(),
-        }));
-        sampleCache.put(id, cut.buffer);
-        sliceIds.push(id);
-      }
-      const km = slicesToKeymap(sliceIds);
-      const built = buildSliceClip({
-        slicePointsSec: det.slicePointsSec, durationSec: buf.duration,
-        originalBpm: clip.sample!.originalBpm ?? det.originalBpm,
-        projectMeter: seq.meter, gridResolution: DEFAULT_RESOLUTION,
-      });
-      const noteClip: SessionClip = {
-        id: `clip-${Date.now().toString(36)}`,
-        name: `${clip.name ?? 'Loop'} sliced`,
-        color: clip.color,
-        lengthBars: built.lengthBars,
-        notes: built.notes,
-        gridResolution: DEFAULT_RESOLUTION,
-        waveformRef: { sampleId: srcId, slices: built.slices }, // waveform + slice markers above the notes
-      };
-      const hd = this.deps.historyDeps;
-      const run = () => {
-        const used = new Set(this.state.lanes.map((l) => l.id));
-        const newId = nextLaneSlug(used, 'sampler');
-        const newLane = emptyLane(newId, 'sampler');
-        newLane.name = `${lane.name ?? 'Audio'} slices`;
-        newLane.engineState = { sampler: { keymap: km } };
-        newLane.clips = [noteClip]; // born with just the slice clip; no empty filler
-        this.state.lanes.push(newLane);
-        this.laneStates.set(newId, emptyLanePlayState(newId));
-        this.deps.ensureLaneResource?.(newId, 'sampler');
-        const eng = this.deps.laneResources?.get(newId)?.engine as unknown as { setKeymap?(k: typeof km): void };
-        eng?.setKeymap?.(km);
-        mirrorKeymapChange(this.state, newId, km);
-        ensureScenesForRows(this.state);
-        this.inspector.setSelectedClip({ laneId: newId, clipIdx: 0 });
-        this.inspector.openInspector();
-        this.renderWithMixer();
-      };
-      if (hd) withUndo(hd, run); else run();
-    })();
-  }
-
   init(): void {
     this.inspector = new SessionInspector({
       ctx: this.deps.ctx,
@@ -363,7 +300,6 @@ export class SessionHost {
       scaleSel: this.deps.scaleSel,
       rootSel: this.deps.rootSel,
       triggerForLane: this.deps.triggerForLane,
-      onSliceToBank: (laneId, clipIdx) => this.onSliceToBank(laneId, clipIdx),
     });
 
     this.deps.seq.sessionTick = (now, look) => {
