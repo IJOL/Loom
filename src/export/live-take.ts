@@ -48,7 +48,7 @@ export class LiveTakeRecorder {
     } catch (err) {
       this.teardown();
       this.setState('idle');
-      this.deps.onError('No se pudo armar la grabación: ' + ((err as Error)?.message ?? String(err)));
+      this.deps.onError('Could not arm recording: ' + ((err as Error)?.message ?? String(err)));
     }
   }
 

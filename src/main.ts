@@ -715,7 +715,7 @@ function refreshRecButton(): void {
   if (recMode === 'live') {
     recBtn.classList.toggle('armed', liveState === 'armed');
     recBtn.classList.toggle('recording', liveState === 'recording');
-    recBtn.textContent = liveState === 'armed' ? '● ARMADO' : liveState === 'recording' ? '● Grabando…' : '● REC';
+    recBtn.textContent = liveState === 'armed' ? '● ARMED' : liveState === 'recording' ? '● Recording…' : '● REC';
   } else if (recMode === 'take') {
     recBtn.classList.toggle('armed', performanceFeature.rec.armed);
     recBtn.textContent = performanceFeature.rec.armed ? '● REC ON' : '● REC';
@@ -774,15 +774,15 @@ seq.onStart = () => liveTake.onTransportStart();
 function deliverTake(audio: RenderedAudio): void {
   void (async () => {
     const dest = await showTakeDestinationDialog();
-    if (!dest) { showExportMessage('Toma descartada'); return; }
+    if (!dest) { showExportMessage('Take discarded'); return; }
     const blob = wavEncoder.encode(audio.channels, audio.sampleRate);
     if (dest === 'file') {
       downloadBlob(blob, `loom-take-${exportTimestamp()}.${wavEncoder.extension}`);
-      showExportMessage('Toma → fichero WAV');
+      showExportMessage('Take → WAV file');
     } else {
       const file = new File([blob], `loom-take-${exportTimestamp()}.wav`, { type: 'audio/wav' });
       sessionHost.addAudioChannel(file, { knownBpm: seq.bpm });
-      showExportMessage('Toma → canal de audio');
+      showExportMessage('Take → audio channel');
     }
   })();
 }
@@ -793,10 +793,10 @@ function runOfflineExport(): void {
   // result locks to the grid. (A trailing tail rounds up to an extra bar and
   // drifts — the offline "no sincroniza" bug.) Then route through the dialog.
   const musicSec = soundingSceneDurationSec(sessionHost.laneStates, seq.meter, seq.bpm);
-  if (musicSec <= 0) { showExportMessage('Lanza una escena primero'); return; }
+  if (musicSec <= 0) { showExportMessage('Launch a scene first'); return; }
   if (exportMsgTimer !== undefined) { clearTimeout(exportMsgTimer); exportMsgTimer = undefined; }
   recBtn.disabled = true; playBtn.disabled = true;
-  recBtn.textContent = 'Renderizando…';
+  recBtn.textContent = 'Rendering…';
   void (async () => {
     try {
       const rendered = await new OfflineSceneRecorder({
@@ -807,7 +807,7 @@ function runOfflineExport(): void {
       }).record(musicSec);
       deliverTake(rendered);
     } catch (err) {
-      showExportMessage('No se pudo exportar: ' + (err instanceof Error ? err.message : String(err)));
+      showExportMessage('Export failed: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       recBtn.disabled = false; playBtn.disabled = false;
       if (exportMsgTimer === undefined) refreshRecButton();

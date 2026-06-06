@@ -154,7 +154,7 @@ function laneHeader(lane: SessionLane, cb: SessionUICallbacks): HTMLElement {
   const el = document.createElement('div');
   el.className = `session-lane-header lane-engine-${lane.engineId}`;
   el.dataset.laneId = lane.id;
-  el.appendChild(deleteCross('Borrar pista', () => cb.onDeleteLane(lane.id)));
+  el.appendChild(deleteCross('Delete track', () => cb.onDeleteLane(lane.id)));
   const name = document.createElement('div');
   name.className = 'session-lane-name';
   name.textContent = lane.name ?? lane.id.toUpperCase();
@@ -169,9 +169,9 @@ function laneHeader(lane: SessionLane, cb: SessionUICallbacks): HTMLElement {
 
   el.addEventListener('contextmenu', (e) =>
     openContextMenu(e, [
-      { label: 'Editar instrumento', onSelect: () => cb.onEditLane(lane.id) },
-      { label: 'Parar pista', onSelect: () => cb.onStopLane(lane.id) },
-      { label: 'Borrar pista', danger: true, separatorBefore: true, onSelect: () => cb.onDeleteLane(lane.id) },
+      { label: 'Edit instrument', onSelect: () => cb.onEditLane(lane.id) },
+      { label: 'Stop track', onSelect: () => cb.onStopLane(lane.id) },
+      { label: 'Delete track', danger: true, separatorBefore: true, onSelect: () => cb.onDeleteLane(lane.id) },
     ]),
   );
 
@@ -200,7 +200,7 @@ function clipCell(
     if (isPlaying) cell.classList.add('session-cell-playing');
     if (isQueued)  cell.classList.add('session-cell-queued');
     cell.style.backgroundColor = clip.color ?? COLOR_IDLE;
-    cell.appendChild(deleteCross('Borrar clip', () => cb.onDeleteClip(lane.id, rowIdx)));
+    cell.appendChild(deleteCross('Delete clip', () => cb.onDeleteClip(lane.id, rowIdx)));
     const label = document.createElement('span');
     label.className = 'session-cell-label';
     label.textContent = clip.name ?? `${rowIdx + 1}`;
@@ -219,9 +219,9 @@ function clipCell(
     wireClipDrag(cell, { laneId: lane.id, clipIdx: rowIdx }, cb, state);
     cell.addEventListener('contextmenu', (e) =>
       openContextMenu(e, [
-        { label: 'Abrir editor', onSelect: () => cb.onClipClick(lane.id, rowIdx) },
-        { label: 'Reproducir / Parar', onSelect: () => cb.onClipPlayPause(lane.id, rowIdx) },
-        { label: 'Borrar clip', danger: true, separatorBefore: true, onSelect: () => cb.onDeleteClip(lane.id, rowIdx) },
+        { label: 'Open editor', onSelect: () => cb.onClipClick(lane.id, rowIdx) },
+        { label: 'Play / Stop', onSelect: () => cb.onClipPlayPause(lane.id, rowIdx) },
+        { label: 'Delete clip', danger: true, separatorBefore: true, onSelect: () => cb.onDeleteClip(lane.id, rowIdx) },
       ]),
     );
   } else {
@@ -233,7 +233,7 @@ function clipCell(
     cell.addEventListener('contextmenu', (e) =>
       openContextMenu(e, [
         {
-          label: isAudio ? 'Importar audio (arrastra un WAV)' : 'Crear clip',
+          label: isAudio ? 'Import audio (drag a WAV)' : 'Create clip',
           disabled: isAudio,
           onSelect: () => cb.onCellClick(lane.id, rowIdx),
         },
@@ -268,7 +268,7 @@ function sceneLaunchCell(scene: { name?: string } | undefined, idx: number, cb: 
   const el = document.createElement('div');
   el.className = 'session-scene-cell';
   if (scene) {
-    el.appendChild(deleteCross('Borrar escena', () => cb.onDeleteScene(idx)));
+    el.appendChild(deleteCross('Delete scene', () => cb.onDeleteScene(idx)));
     const btn = document.createElement('button');
     btn.className = 'session-scene-launch';
     btn.textContent = `▶ ${scene.name ?? idx + 1}`;
@@ -276,9 +276,9 @@ function sceneLaunchCell(scene: { name?: string } | undefined, idx: number, cb: 
     el.appendChild(btn);
     el.addEventListener('contextmenu', (e) =>
       openContextMenu(e, [
-        { label: 'Lanzar escena', onSelect: () => cb.onLaunchScene(idx) },
-        { label: 'Añadir escena', onSelect: () => cb.onAddScene() },
-        { label: 'Borrar escena', danger: true, separatorBefore: true, onSelect: () => cb.onDeleteScene(idx) },
+        { label: 'Launch scene', onSelect: () => cb.onLaunchScene(idx) },
+        { label: 'Add scene', onSelect: () => cb.onAddScene() },
+        { label: 'Delete scene', danger: true, separatorBefore: true, onSelect: () => cb.onDeleteScene(idx) },
       ]),
     );
   } else {

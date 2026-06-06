@@ -279,7 +279,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       if (rec.armed) {
         disarmRec(rec);
         deps.onRecVisualChanged?.();
-        flashToast('REC desarmado: Performance está reproduciendo');
+        flashToast('REC disarmed: Performance is playing');
       }
       startArrangement(arrangementPlayState, ctx.currentTime);
       return true;

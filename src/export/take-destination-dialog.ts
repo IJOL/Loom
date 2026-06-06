@@ -24,13 +24,13 @@ function build(): HTMLDialogElement {
   dlg.className = 'take-dialog';
   dlg.innerHTML = `
     <div class="take-dialog-body">
-      <h3 class="take-dialog-title">Toma grabada</h3>
-      <p class="take-dialog-text">¿Dónde quieres guardarla?</p>
+      <h3 class="take-dialog-title">Take recorded</h3>
+      <p class="take-dialog-text">Where do you want to save it?</p>
       <div class="take-dialog-actions">
-        <button type="button" id="take-dest-audio" class="take-dialog-btn take-dialog-primary">Nuevo canal de audio</button>
-        <button type="button" id="take-dest-file" class="take-dialog-btn">Descargar WAV</button>
+        <button type="button" id="take-dest-audio" class="take-dialog-btn take-dialog-primary">New audio channel</button>
+        <button type="button" id="take-dest-file" class="take-dialog-btn">Download WAV</button>
       </div>
-      <button type="button" id="take-dest-cancel" class="take-dialog-cancel">Descartar toma</button>
+      <button type="button" id="take-dest-cancel" class="take-dialog-cancel">Discard take</button>
     </div>`;
   dlg.querySelector('#take-dest-audio')!.addEventListener('click', () => settle('audio'));
   dlg.querySelector('#take-dest-file')!.addEventListener('click', () => settle('file'));

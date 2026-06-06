@@ -1063,7 +1063,7 @@ export class SessionHost {
         if (!lane) return;
         if (laneHasContent(lane)) {
           const label = lane.name ?? lane.id;
-          if (!(await confirmDialog(`¿Borrar la pista «${label}» y todos sus clips?`, { danger: true, okLabel: 'Borrar' }))) return;
+          if (!(await confirmDialog(`Delete track «${label}» and all its clips?`, { danger: true, okLabel: 'Delete' }))) return;
         }
         // Stop the lane BEFORE disposing it: cut in-flight voices/loops (symmetry
         // with onDeleteScene; avoids the analogue of the "New leaves synths" bug).
@@ -1090,7 +1090,7 @@ export class SessionHost {
         if (!scene) return;
         if (sceneHasContent(self.state, sceneIdx)) {
           const label = scene.name ?? `Scene ${sceneIdx + 1}`;
-          if (!(await confirmDialog(`¿Borrar la escena «${label}»?`, { danger: true, okLabel: 'Borrar' }))) return;
+          if (!(await confirmDialog(`Delete scene «${label}»?`, { danger: true, okLabel: 'Delete' }))) return;
         }
         const hd = self.deps.historyDeps;
         const run = () => {

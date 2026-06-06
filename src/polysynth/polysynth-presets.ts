@@ -564,11 +564,11 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
     const sel = document.getElementById('poly-preset-select') as HTMLSelectElement;
     const val = sel.value;
     if (!val.startsWith('user:')) {
-      void alertDialog('Solo se pueden borrar presets de usuario (no los Factory).');
+      void alertDialog('Only user presets can be deleted (not the Factory ones).');
       return;
     }
     const name = val.slice('user:'.length);
-    if (!await confirmDialog(`Borrar preset "${name}"?`)) return;
+    if (!await confirmDialog(`Delete preset "${name}"?`)) return;
     const presets = loadUserPolyPresets();
     delete presets[name];
     saveUserPolyPresets(presets);

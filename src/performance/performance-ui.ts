@@ -245,9 +245,9 @@ export function renderPerformanceView(host: HTMLElement, state: ArrangementState
     const empty = document.createElement('div');
     empty.className = 'perf-empty';
     empty.innerHTML = `
-      <p>Sin grabación. Fija una <b>longitud</b> arriba para empezar a dibujar automatización,</p>
-      <p>o arma <b>REC</b>, vuelve a Session, lanza clips y mueve knobs.</p>
-      <button class="perf-empty-back">Volver a Session</button>`;
+      <p>No recording. Set a <b>length</b> above to start drawing automation,</p>
+      <p>or arm <b>REC</b>, go back to Session, launch clips and move knobs.</p>
+      <button class="perf-empty-back">Back to Session</button>`;
     empty.querySelector('.perf-empty-back')!.addEventListener('click', cb.onGoToSession);
     host.appendChild(empty);
     return;

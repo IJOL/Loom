@@ -50,8 +50,8 @@ function run(message: string, variant: Variant, opts: DialogOpts = {}): Promise<
   if (settleCurrent) settle(cancelValue); // supersede any pending dialog as cancelled
   cancelValue = variant.kind === 'confirm' ? false : variant.kind === 'prompt' ? null : undefined;
 
-  const okLabel = opts.okLabel ?? (variant.kind === 'alert' ? 'OK' : 'Aceptar');
-  const cancelLabel = opts.cancelLabel ?? 'Cancelar';
+  const okLabel = opts.okLabel ?? 'OK';
+  const cancelLabel = opts.cancelLabel ?? 'Cancel';
   const showInput = variant.kind === 'prompt';
   const showCancel = variant.kind !== 'alert';
 

@@ -1,7 +1,7 @@
 import type { StemRef } from './stem-client';
 
 const LABELS: Record<string, string> = {
-  vocals: 'Voz', drums: 'Batería', bass: 'Bajo', other: 'Otros',
+  vocals: 'Vocals', drums: 'Drums', bass: 'Bass', other: 'Other',
 };
 const ORDER = ['vocals', 'drums', 'bass', 'other'];
 

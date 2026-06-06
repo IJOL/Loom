@@ -33,8 +33,8 @@ export function wireStemDialog(deps: StemDialogDeps): void {
   let startedAt = 0;
 
   const setStatus = (msg: string) => { statusEl.textContent = msg; };
-  const LISTEN_IDLE = '🎙 Escuchar audio del PC';
-  const LISTEN_REC = '■ Detener y separar';
+  const LISTEN_IDLE = '🎙 Capture PC audio';
+  const LISTEN_REC = '■ Stop and separate';
 
   const close = () => {
     if (controller) return;       // don't close mid-separation
@@ -54,22 +54,22 @@ export function wireStemDialog(deps: StemDialogDeps): void {
     fileInput.disabled = false;
     fileInput.value = '';
     setStatus('');
-    hint.textContent = 'Comprobando el servicio…';
+    hint.textContent = 'Checking the service…';
     try {
       await deps.client.health();
-      hint.textContent = '4 pistas (voz / batería / bajo / otros) vía el servicio local.';
+      hint.textContent = '4 tracks (Vocals / Drums / Bass / Other) via the local service.';
       runBtn.disabled = !fileInput.files?.length;
       listenBtn.disabled = false;
     } catch (err) {
       hint.textContent = err instanceof StemServiceUnreachable
-        ? 'No encuentro el servicio de stems en localhost:8765. ¿Está arrancado? (ver tools/stem-service/README.md)'
-        : 'No se pudo contactar el servicio de stems.';
+        ? "Can't find the stems service at localhost:8765. Is it running? (see tools/stem-service/README.md)"
+        : "Couldn't reach the stems service.";
       runBtn.disabled = true;
       listenBtn.disabled = true;
     }
   };
 
-  /** Shared separation flow used by both "Separar" (file) and "Detener" (capture). */
+  /** Shared separation flow used by both "Separate" (file) and "Stop" (capture). */
   const runSeparation = async (file: File) => {
     controller = new AbortController();
     startedAt = performance.now();
@@ -79,7 +79,7 @@ export function wireStemDialog(deps: StemDialogDeps): void {
     cancelBtn.hidden = false;
     progress.hidden = false;
     bar.removeAttribute('value'); // indeterminate until we get a number
-    setStatus('Subiendo…');
+    setStatus('Uploading…');
 
     try {
       await importStems(deps, file, {
@@ -89,9 +89,9 @@ export function wireStemDialog(deps: StemDialogDeps): void {
           const elapsed = Math.floor((performance.now() - startedAt) / 1000);
           if (typeof p === 'number') bar.value = p; else bar.removeAttribute('value');
           setStatus(
-            status === 'done' ? 'Listo'
-              : status === 'transcribing' ? 'Transcribiendo notas…'
-              : `Separando… ${fmtElapsed(elapsed)}`,
+            status === 'done' ? 'Done'
+              : status === 'transcribing' ? 'Transcribing notes…'
+              : `Separating… ${fmtElapsed(elapsed)}`,
           );
         },
       });
@@ -105,7 +105,7 @@ export function wireStemDialog(deps: StemDialogDeps): void {
       runBtn.disabled = !fileInput.files?.length;
       listenBtn.disabled = false;
       const aborted = err instanceof DOMException && err.name === 'AbortError';
-      const msg = aborted ? 'Cancelado' : ((err as Error)?.message ?? 'Error en la separación.');
+      const msg = aborted ? 'Cancelled' : ((err as Error)?.message ?? 'Separation failed.');
       setStatus(msg);
       hint.textContent = msg;
     }
@@ -125,18 +125,18 @@ export function wireStemDialog(deps: StemDialogDeps): void {
     if (capture) {
       const cap = capture; capture = null;
       listenBtn.textContent = LISTEN_IDLE;
-      setStatus('Procesando la grabación…');
+      setStatus('Processing the recording…');
       let file: File;
       try {
         file = await cap.stop();
       } catch (err) {
-        setStatus((err as Error)?.message ?? 'Error al capturar el audio.');
+        setStatus((err as Error)?.message ?? 'Failed to capture audio.');
         runBtn.disabled = !fileInput.files?.length;
         fileInput.disabled = false;
         return;
       }
       if (!file.size) {
-        setStatus('No se capturó audio (¿marcaste «compartir audio»?).');
+        setStatus('No audio captured (did you tick «share audio»?).');
         runBtn.disabled = !fileInput.files?.length;
         fileInput.disabled = false;
         return;
@@ -152,14 +152,14 @@ export function wireStemDialog(deps: StemDialogDeps): void {
     } catch (err) {
       const aborted = err instanceof DOMException && err.name === 'NotAllowedError';
       hint.textContent = aborted
-        ? 'Captura cancelada.'
-        : ((err as Error)?.message ?? 'No se pudo capturar el audio del sistema.');
+        ? 'Capture cancelled.'
+        : ((err as Error)?.message ?? 'Failed to capture system audio.');
       return;
     }
     listenBtn.textContent = LISTEN_REC;
     runBtn.disabled = true;
     fileInput.disabled = true;
-    setStatus('Grabando… reproduce el audio y pulsa «Detener y separar».');
+    setStatus('Recording… play the audio and press «Stop and separate».');
   });
 
   cancelBtn.addEventListener('click', () => { controller?.abort(); controller = null; });

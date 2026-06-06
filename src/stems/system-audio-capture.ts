@@ -22,7 +22,7 @@ function pickMime(): string | undefined {
 export async function startSystemAudioCapture(): Promise<AudioCapture> {
   const md = navigator.mediaDevices;
   if (!md?.getDisplayMedia) {
-    throw new Error('Tu navegador no permite capturar el audio del sistema.');
+    throw new Error('Your browser does not support capturing system audio.');
   }
   // video:true is required by Chrome to expose the "share audio" option; we keep
   // only the audio track and drop the video.
@@ -30,7 +30,7 @@ export async function startSystemAudioCapture(): Promise<AudioCapture> {
   const audioTracks = stream.getAudioTracks();
   if (audioTracks.length === 0) {
     stream.getTracks().forEach((t) => t.stop());
-    throw new Error('No se compartió audio. Vuelve a intentarlo y marca «compartir audio del sistema».');
+    throw new Error('No audio was shared. Try again and tick «share system audio».');
   }
 
   const releaseTracks = () => stream.getTracks().forEach((t) => t.stop());
@@ -56,7 +56,7 @@ export async function startSystemAudioCapture(): Promise<AudioCapture> {
         const ext = type.includes('ogg') ? 'ogg' : 'webm';
         resolve(new File(chunks, `captura.${ext}`, { type }));
       };
-      rec.onerror = () => { releaseTracks(); reject(new Error('Fallo grabando el audio capturado.')); };
+      rec.onerror = () => { releaseTracks(); reject(new Error('Failed recording the captured audio.')); };
       try { rec.stop(); } catch (e) { releaseTracks(); reject(e as Error); }
     }),
     cancel: () => { try { rec.stop(); } catch { /* already stopped */ } releaseTracks(); },

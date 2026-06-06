@@ -445,18 +445,18 @@ export class SamplerEngine implements SynthEngine {
     const famRow = document.createElement('div');
     famRow.className = 'sampler-family-row';
     const famLabel = document.createElement('label');
-    famLabel.textContent = 'Instrumento ';
+    famLabel.textContent = 'Instrument ';
     const famSel = document.createElement('select');
     famSel.className = 'sampler-family-select';
     const noneOpt = document.createElement('option');
     noneOpt.value = '';
-    noneOpt.textContent = '— ninguno (keymap propio) —';
+    noneOpt.textContent = '— none (own keymap) —';
     famSel.appendChild(noneOpt);
     const melGroup = document.createElement('optgroup');
-    melGroup.label = 'Melódico';
+    melGroup.label = 'Melodic';
     melGroup.className = 'sampler-family-melodic';
     const kitGroup = document.createElement('optgroup');
-    kitGroup.label = 'Percusión';
+    kitGroup.label = 'Percussion';
     kitGroup.className = 'sampler-family-drumkit';
     const loopGroup = document.createElement('optgroup');
     loopGroup.label = 'Loop';
@@ -505,7 +505,7 @@ export class SamplerEngine implements SynthEngine {
     // attached once we know the loaded instrument's family (the list is async).
     const loopHint = document.createElement('div');
     loopHint.className = 'sampler-loop-hint label';
-    loopHint.textContent = 'Loop: cada nota es un slice. Las notas se editan en el piano-roll del clip.';
+    loopHint.textContent = 'Loop: each note is a slice. The notes are edited in the clip\'s piano-roll.';
     loopHint.style.display = 'none';
     section.appendChild(loopHint);
 
@@ -616,8 +616,8 @@ export class SamplerEngine implements SynthEngine {
 
     const loopBtn = document.createElement('button');
     loopBtn.className = 'sampler-import-loop-btn';
-    loopBtn.textContent = 'Importar loop…';
-    loopBtn.title = 'Importar un loop: lo recorta en slices y crea un clip de notas con su piano-roll';
+    loopBtn.textContent = 'Import loop…';
+    loopBtn.title = 'Import a loop: slices it and creates a note clip with its piano-roll';
     loopBtn.addEventListener('click', () => loopInput.click());
     section.appendChild(loopBtn);
 
@@ -648,14 +648,14 @@ export class SamplerEngine implements SynthEngine {
 
     const importBtn = document.createElement('button');
     importBtn.className = 'sampler-import-btn';
-    importBtn.textContent = 'Importar muestras…';
-    importBtn.title = 'Importar uno o varios audios como zonas del keymap';
+    importBtn.textContent = 'Import samples…';
+    importBtn.title = 'Import one or more audio files as keymap zones';
     importBtn.addEventListener('click', () => fileInput.click());
     section.appendChild(importBtn);
 
     const importHint = document.createElement('div');
     importHint.className = 'sampler-import-hint label';
-    importHint.textContent = 'Cada audio se añade como una zona. Ajusta el rango de cada zona abajo.';
+    importHint.textContent = 'Each audio file is added as a zone. Adjust each zone\'s range below.';
     section.appendChild(importHint);
 
     const importStatus = document.createElement('span');

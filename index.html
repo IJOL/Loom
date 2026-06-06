@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -95,8 +95,8 @@
 
       <!-- Fila 1 · Transporte & tempo (lo que tocas mientras suena) -->
       <div class="row transport">
-        <button id="play" title="Play — arranca el transporte">&#9654;</button>
-        <button id="stop" title="Stop — detiene el transporte">&#9209;</button>
+        <button id="play" title="Play — start the transport">&#9654;</button>
+        <button id="stop" title="Stop — stop the transport">&#9209;</button>
         <div class="transport-readout" title="Bar.beat.step  ·  hh:mm:ss elapsed">
           <span id="transport-position" class="transport-position">1.1.1</span>
           <span id="transport-time" class="transport-time">00:00:00</span>
@@ -115,23 +115,23 @@
           <button class="mode-btn on" data-mode="session">Session</button>
           <button class="mode-btn" data-mode="performance">Performance</button>
         </span>
-        <button class="rnd" id="copy-to-performance" title="Copiar las escenas a la timeline de Performance">&#8649;</button>
+        <button class="rnd" id="copy-to-performance" title="Copy the scenes to the Performance timeline">&#8649;</button>
         <div class="vert-divider"></div>
         <span class="rec-group">
-          <button class="io" id="rec" title="Grabar — el modo se elige al lado">&#9679; REC</button>
+          <button class="io" id="rec" title="Record — pick the mode beside it">&#9679; REC</button>
           <span class="rec-mode" id="rec-mode">
-            <button data-recmode="take" class="on" title="Actuación: knobs + lanzamientos de clips (take)">&#127899;</button>
-            <button data-recmode="live" title="Audio en tiempo real a WAV">&#9201;</button>
-            <button data-recmode="offline" title="Render de la escena a WAV (offline, rápido)">&#9889;</button>
+            <button data-recmode="take" class="on" title="Performance: knobs + clip launches (take)">&#127899;</button>
+            <button data-recmode="live" title="Real-time audio to WAV">&#9201;</button>
+            <button data-recmode="offline" title="Render the scene to WAV (offline, fast)">&#9889;</button>
           </span>
         </span>
-        <button id="stems-open" class="io" title="Separar una canción en stems (servicio local)">&#9776;</button>
+        <button id="stems-open" class="io" title="Separate a song into stems (local service)">&#9776;</button>
         <div class="vert-divider"></div>
-        <button class="io" id="new-session" title="Nueva sesión vacía">&#128459;</button>
-        <button class="io" id="save" title="Guardar sesión">&#128190;</button>
-        <button class="io" id="load" title="Cargar sesión">&#128193;</button>
-        <select id="demo-picker" class="demo-picker" title="Cargar un demo"></select>
-        <details class="midi-panel" title="Importar archivo MIDI">
+        <button class="io" id="new-session" title="New empty session">&#128459;</button>
+        <button class="io" id="save" title="Save session">&#128190;</button>
+        <button class="io" id="load" title="Load session">&#128193;</button>
+        <select id="demo-picker" class="demo-picker" title="Load a demo"></select>
+        <details class="midi-panel" title="Import MIDI file">
           <summary>&#11015; MIDI</summary>
           <div class="midi-import-row">
             <input type="file" id="poly-midi-file" accept=".mid,.midi" />
@@ -376,20 +376,20 @@
     <div id="stems-modal" class="save-manager-modal" hidden>
       <div class="save-manager-backdrop" id="stems-backdrop"></div>
       <div class="save-manager-dialog">
-        <h3>Separar en stems</h3>
-        <p class="stems-hint" id="stems-hint">4 pistas (voz / batería / bajo / otros) vía el servicio local.</p>
+        <h3>Separate into stems</h3>
+        <p class="stems-hint" id="stems-hint">4 tracks (Vocals / Drums / Bass / Other) via the local service.</p>
         <input type="file" id="stems-file" accept="audio/*" />
-        <button id="stems-listen" class="io" disabled>&#127908; Escuchar audio del PC</button>
-        <label class="stems-replace"><input type="checkbox" id="stems-replace" checked /> Reemplazar la sesión por los stems</label>
-        <p class="stems-note">Cada pista se separa en audio (Sampler) y se transcribe a notas/batería para remezclar.</p>
+        <button id="stems-listen" class="io" disabled>&#127908; Capture PC audio</button>
+        <label class="stems-replace"><input type="checkbox" id="stems-replace" checked /> Replace the session with the stems</label>
+        <p class="stems-note">Each track is separated into audio (Sampler) and transcribed to notes/drums to remix.</p>
         <div class="stems-progress" id="stems-progress" hidden>
           <progress id="stems-bar" max="1"></progress>
           <span id="stems-status"></span>
         </div>
         <div class="stems-actions">
-          <button id="stems-run" class="io" disabled>Separar</button>
-          <button id="stems-cancel" class="io" hidden>Cancelar</button>
-          <button id="stems-close" class="io">Cerrar</button>
+          <button id="stems-run" class="io" disabled>Separate</button>
+          <button id="stems-cancel" class="io" hidden>Cancel</button>
+          <button id="stems-close" class="io">Close</button>
         </div>
       </div>
     </div>

@@ -156,7 +156,7 @@ export function wireSaveManager(deps: SaveWiringDeps): void {
   // toolbar Save button now just opens this modal with the name field focused.
   const nameInput = document.getElementById('save-manager-name') as HTMLInputElement | null;
   const saveBtn = document.getElementById('save-manager-save') as HTMLButtonElement | null;
-  const defaultName = () => `Sesión ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
+  const defaultName = () => `Session ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
   const commitSave = () => {
     const name = nameInput?.value.trim() || defaultName();
     const state = buildSavedStateV3(deps);
