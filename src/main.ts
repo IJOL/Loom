@@ -54,6 +54,7 @@ import { restartSoundingLanesForExport } from './export/scene-restart';
 import { wavEncoder } from './export/wav-encoder';
 import { downloadBlob, exportTimestamp } from './export/download';
 import { LiveTakeRecorder } from './export/live-take';
+import { showTakeDestinationDialog } from './export/take-destination-dialog';
 import {
   showPolyEditor,
   synthEditorState,
@@ -644,10 +645,21 @@ const liveTake = new LiveTakeRecorder({
     exportBtn.textContent = s === 'armed' ? '● REC ▾' : s === 'recording' ? '● Grabando…' : EXPORT_IDLE_LABEL;
   },
   onTake: (audio) => {
-    const blob = wavEncoder.encode(audio.channels, audio.sampleRate);
-    const file = new File([blob], `loom-take-${exportTimestamp()}.wav`, { type: 'audio/wav' });
-    sessionHost.addAudioChannel(file);
-    showExportMessage('Toma → canal de audio');
+    // The take is NOT auto-inserted: ask where it should go (file vs new audio
+    // channel). Encoding is deferred until a destination is chosen.
+    void (async () => {
+      const dest = await showTakeDestinationDialog();
+      if (!dest) { showExportMessage('Toma descartada'); return; }
+      const blob = wavEncoder.encode(audio.channels, audio.sampleRate);
+      if (dest === 'file') {
+        downloadBlob(blob, `loom-take-${exportTimestamp()}.${wavEncoder.extension}`);
+        showExportMessage('Toma → fichero WAV');
+      } else {
+        const file = new File([blob], `loom-take-${exportTimestamp()}.wav`, { type: 'audio/wav' });
+        sessionHost.addAudioChannel(file);
+        showExportMessage('Toma → canal de audio');
+      }
+    })();
   },
   onError: (m) => { console.warn('[live-take]', m); showExportMessage(m); },
 });
@@ -668,10 +680,15 @@ const transportDeps: TransportDeps = {
   seq, ctx, playBtn,
   resetAutomationPosition,
   onStop: stopTransport,
-  // On Play, if a take is armed, begin capturing from the downbeat.
-  onStart: () => liveTake.onTransportStart(),
 };
 wireTransport(transportDeps);
+
+// Begin capturing an armed live-take whenever the transport starts — from ANY
+// path. Wiring this to the ▶ button alone missed scene/clip launches (the most
+// natural way to start playback), so the armed take never recorded. Centralized
+// on the Sequencer's idle→playing transition; onTransportStart() is a no-op
+// unless a take is armed, so this is safe on every start.
+seq.onStart = () => liveTake.onTransportStart();
 
 const sceneExporter: SceneExporter = {
   totalSec: () => {

@@ -45,6 +45,12 @@ export class Sequencer {
    *  existing callers that set it to `true` at boot are harmless no-ops. */
   sessionMode: boolean = true;
 
+  /** Fired on every idle→playing transition, from ANY start path (top transport
+   *  ▶, scene launch, clip launch, MIDI-import launch). Centralizing it here is
+   *  what lets the armed live-take begin recording no matter how playback was
+   *  started — wiring it only to the ▶ button missed scene/clip launches. */
+  onStart?: () => void;
+
   private playing = false;
   private timerId: number | null = null;
   private engineSequencers: EngineSequencer[] = [];
@@ -71,6 +77,8 @@ export class Sequencer {
     if (this.playing) return;
     if (this.ctx.state === 'suspended') void this.ctx.resume();
     this.playing = true;
+    // Notify BEFORE the first tick so a live-take captures from the true downbeat.
+    this.onStart?.();
     this.tick();
   }
 
