@@ -7,9 +7,19 @@ import type { NoteEvent } from './notes';
 
 // Standard piano-typing layout: home row a s d f g h j k = white C D E F G A B C;
 // upper row w e t y u = black C# D# F# G# A#. Other keys are unused.
-const KEY_SEMITONES: Record<string, number> = {
+export const KEY_SEMITONES: Record<string, number> = {
   a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h: 9, u: 10, j: 11, k: 12,
 };
+
+// Complete piano-roll keyboard legend (notes + all editing shortcuts). Kept next
+// to KEY_SEMITONES so the on-screen help and the actual key handling cannot drift.
+// A coherence test asserts every live key/shortcut is mentioned here.
+export const PIANO_KEY_LEGEND =
+  'Keyboard:  a s d f g h j k = notes (C…C) · w e t y u = sharps\n' +
+  '           z / x = octave down / up · 1 / 2 = pencil / select\n' +
+  '           Ctrl+A = select all · Ctrl+C / Ctrl+X / Ctrl+V = copy / cut / paste\n' +
+  '           Esc = deselect · ←/→ = move cursor (or nudge with a selection)\n' +
+  '           ↑/↓ = transpose selection · ⌫ = delete';
 
 export function keyToSemitone(key: string): number | null {
   const s = KEY_SEMITONES[key.toLowerCase()];

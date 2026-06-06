@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   keyToSemitone, midiForKey, notesInRect, translateGroup,
   serializeClipboard, pasteTranslate, quantizeRecorded,
+  KEY_SEMITONES, PIANO_KEY_LEGEND,
 } from './piano-roll-editing';
 import type { NoteEvent } from './notes';
 
@@ -65,6 +66,28 @@ describe('clipboard round-trip', () => {
     const clip = serializeClipboard([N(0, 60, 48)]);
     const pasted = pasteTranslate(clip, 380, 60, BOUNDS); // 380+48 = 428 > 384
     expect(pasted[0].start).toBe(336); // 384 - 48
+  });
+});
+
+describe('PIANO_KEY_LEGEND coherence', () => {
+  it('mentions every note key from KEY_SEMITONES', () => {
+    for (const k of Object.keys(KEY_SEMITONES)) {
+      expect(PIANO_KEY_LEGEND, `missing note key "${k}"`).toContain(k);
+    }
+  });
+  it('mentions every editing shortcut the handlers implement', () => {
+    const shortcuts = [
+      'z', 'x', '1', '2',
+      'Ctrl+A', 'Ctrl+C', 'Ctrl+X', 'Ctrl+V',
+      'Esc', '←', '→', '↑', '↓', '⌫',
+    ];
+    for (const s of shortcuts) {
+      expect(PIANO_KEY_LEGEND, `missing shortcut "${s}"`).toContain(s);
+    }
+  });
+  it('is written in English (no Spanish UI text)', () => {
+    expect(PIANO_KEY_LEGEND.toLowerCase()).toContain('keyboard');
+    expect(PIANO_KEY_LEGEND.toLowerCase()).not.toContain('teclado');
   });
 });
 
