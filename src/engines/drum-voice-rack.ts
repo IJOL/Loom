@@ -47,6 +47,8 @@ const KNOB = 34;
 export interface DrumRackOpts {
   keyOf?: (voice: string) => string;     // e.g. 'kick' → 'D1'
   onDelete?: (voice: string) => void;    // remove this pad
+  onSelect?: (voice: string) => void;    // select this channel (drives the sample editor)
+  isSelected?: (voice: string) => boolean;
 }
 
 export function renderDrumVoiceRack(
@@ -70,6 +72,8 @@ export function renderDrumVoiceRack(
   for (const voice of voices) {
     const col = document.createElement('div');
     col.className = `dv-col ${voice}`;
+    col.dataset.voice = voice;
+    if (opts.isSelected?.(voice)) col.classList.add('selected');
 
     const head = document.createElement('div');
     head.className = 'dv-head';
@@ -91,6 +95,16 @@ export function renderDrumVoiceRack(
       del.title = 'Delete this pad';
       del.addEventListener('click', () => opts.onDelete!(voice));
       head.appendChild(del);
+    }
+    // Clicking the header (not the ✕) selects this channel → drives the sample editor.
+    if (opts.onSelect) {
+      head.classList.add('dv-head-sel');
+      head.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('button')) return;
+        rack.querySelectorAll('.dv-col.selected').forEach((c) => c.classList.remove('selected'));
+        col.classList.add('selected');
+        opts.onSelect!(voice);
+      });
     }
     col.appendChild(head);
 

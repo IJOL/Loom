@@ -21,7 +21,8 @@ import { mirrorKeymapChange, mirrorDrumkitId, mirrorInstrumentId, mirrorPadParam
 import { listDrumkits, fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
 import { listInstruments, fetchInstrumentManifest, loadInstrument, type InstrumentIndexEntry } from '../samples/instrument-loader';
 import { PAD_DEFAULTS, PAD_LEAF_SPECS, padKeyForNote, noteForPadKey, nextFreePadNote, type PadParams } from './sampler-pad-params';
-import { renderSamplerKeyboardMap, noteName } from './sampler-keyboard-map';
+import { renderSamplerKeyboardMap, noteName, padColor } from './sampler-keyboard-map';
+import { renderSampleViewer } from './sampler-sample-viewer';
 import type { FxBus } from '../core/fx';
 import { computeVoiceMutes } from '../core/mute-solo';
 import { renderDrumVoiceRack } from './drum-voice-rack';
@@ -251,6 +252,8 @@ export class SamplerEngine implements SynthEngine {
   private padStore: Record<number, Partial<PadParams>> = {};
   private fx: FxBus | null = null;
   private keymap: KeymapEntry[] = [];
+  /** The drumkit channel whose sample is shown in the editor (by trigger note). */
+  private selectedPadNote: number | null = null;
   private modHost = new ModulationHostImpl([]);
   private activeByNote = new Map<number, SamplerVoice>();
 
@@ -447,6 +450,33 @@ export class SamplerEngine implements SynthEngine {
       // Each pad (channel) carries its own trigger key + a ✕ delete, so there is
       // no separate sample list (the list is melodic-only below).
       const voiceNote = new Map(this.keymap.map((e) => [padKeyForNote(e.rootNote), e.rootNote] as const));
+
+      // The sample editor below shows the SELECTED channel's sample. Default to the
+      // first pad; keep the selection valid as pads are added/removed.
+      const padNotes = this.keymap.map((e) => e.rootNote);
+      if (this.selectedPadNote == null || !padNotes.includes(this.selectedPadNote)) {
+        this.selectedPadNote = padNotes[0] ?? null;
+      }
+      const viewerLabel = document.createElement('div');
+      viewerLabel.className = 'label sampler-viewer-label';
+      viewerLabel.textContent = 'Selected sample';
+      const viewerHost = document.createElement('div');
+      viewerHost.className = 'sampler-sample-viewer';
+      const renderViewer = () => {
+        const note = this.selectedPadNote;
+        const idx = this.keymap.findIndex((e) => e.rootNote === note);
+        if (idx < 0) { viewerHost.innerHTML = ''; return; }
+        const entry = this.keymap[idx];
+        const pad = this.getPad(note!);
+        renderSampleViewer(viewerHost, {
+          sampleId: entry.sampleId,
+          keyLabel: noteName(note!),
+          color: padColor(idx, this.keymap.length),
+          loop: pad.loop >= 0.5,
+          loopStart: pad.loopStart,
+        });
+      };
+
       renderDrumVoiceRack(this, ctx, rackHost, voices, {
         keyOf: (voice) => noteName(voiceNote.get(voice) ?? noteForPadKey(voice)),
         onDelete: (voice) => {
@@ -456,7 +486,24 @@ export class SamplerEngine implements SynthEngine {
           if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, this.keymap);
           rebuild();
         },
+        isSelected: (voice) => voiceNote.get(voice) === this.selectedPadNote,
+        onSelect: (voice) => { this.selectedPadNote = voiceNote.get(voice) ?? null; renderViewer(); },
       });
+
+      // Filename tooltip on each channel (per the user: "tooltip si acaso"); the
+      // name itself lives in the sample editor below.
+      for (const e of this.keymap) {
+        const v = padKeyForNote(e.rootNote);
+        void sampleStore.get(e.sampleId).then((asset) => {
+          if (!asset) return;
+          const col = rackHost.querySelector<HTMLElement>(`.dv-col[data-voice="${v}"]`);
+          if (col) col.title = asset.name;
+        }).catch(() => { /* no store / no IndexedDB (tests) — skip the tooltip */ });
+      }
+
+      container.appendChild(viewerLabel);
+      container.appendChild(viewerHost);
+      renderViewer();
     }
 
     // Param knobs — globals only (gain + poly.voices). Per-pad/zone params are

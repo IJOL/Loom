@@ -429,6 +429,81 @@
 .smk-key.c {
   box-shadow: inset 1px 0 0 rgba(255, 167, 38, 0.45);
 } // mark each C
+
+// Sample editor ("Muestra seleccionada") — waveform of the selected channel.
+.sampler-viewer-label {
+  margin-top: 10px;
+}
+.sampler-sample-viewer {
+  margin-bottom: 4px;
+}
+.ssv-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ssv-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+.ssv-sw {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: none;
+}
+.ssv-name {
+  font-family: var(--mono, ui-monospace, monospace);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 280px;
+}
+.ssv-key,
+.ssv-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-dim);
+}
+.ssv-badge.loop {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+.ssv-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.ssv-zhint {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+.ssv-zbtn {
+  padding: 1px 8px;
+  font-size: 12px;
+  line-height: 1.1;
+}
+.ssv-zlvl {
+  font-size: 10px;
+  color: var(--text-dim);
+  min-width: 24px;
+  text-align: center;
+}
+.ssv-wave {
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: #080706;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+.ssv-canvas {
+  display: block;
+}
 .sampler-dropzone {
   border: 1px dashed #79c;
   border-radius: 8px;
