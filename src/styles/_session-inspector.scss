@@ -365,7 +365,15 @@
 
 // Keyboard map (visual keymap) — mockup parity, increment 1.
 .sampler-keymap-viz {
-  margin: 6px 0 10px;
+  margin: 6px 0 0;
+}
+// Connector layer between the keyboard and the channel strips (canvas curves).
+.sampler-keyboard-conn {
+  position: relative;
+  height: 20px;
+}
+.smk-connectors {
+  display: block;
 }
 .smk-wrap {
   position: relative;

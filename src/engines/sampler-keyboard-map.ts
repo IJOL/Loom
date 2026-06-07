@@ -81,6 +81,7 @@ export function renderSamplerKeyboardMap(host: HTMLElement, keymap: KeymapEntry[
   for (let m = lo; m <= hi; m++) {
     const k = document.createElement('div');
     k.className = `smk-key${isBlack(m) ? ' black' : ''}${pc(m) === 0 ? ' c' : ''}`;
+    k.dataset.note = String(m);                  // for keyboard→strip connectors
     const tint = keyTint.get(m);
     if (tint) { k.classList.add('pad'); k.style.background = tint; }
     keys.appendChild(k);
