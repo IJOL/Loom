@@ -57,3 +57,15 @@ export function noteForPadKey(key: string): number {
   if (Object.hasOwn(VOICE_MIDI, key)) return VOICE_MIDI[key as keyof typeof VOICE_MIDI];
   return Number(key.replace(/^zone/, ''));
 }
+
+/** The trigger note for a NEW pad when growing a variable-size kit: just above the
+ *  current max, skipping any note whose pad KEY already exists. GM alias notes
+ *  (e.g. 59→ride) would otherwise collapse onto an existing pad and silently share
+ *  its per-pad params / mute-solo. Returns 127 if nothing free is found. */
+export function nextFreePadNote(notes: readonly number[]): number {
+  const usedNotes = new Set(notes);
+  const usedKeys = new Set(notes.map(padKeyForNote));
+  let note = (notes.length ? Math.max(...notes) : 35) + 1;
+  while (note < 127 && (usedNotes.has(note) || usedKeys.has(padKeyForNote(note)))) note++;
+  return note;
+}

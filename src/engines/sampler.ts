@@ -20,7 +20,7 @@ import { addSampleToKeymap, removeKeymapEntry, setEntryRoot } from '../samples/k
 import { mirrorKeymapChange, mirrorDrumkitId, mirrorInstrumentId, mirrorPadParams } from '../session/session-engine-state';
 import { listDrumkits, fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
 import { listInstruments, fetchInstrumentManifest, loadInstrument, type InstrumentIndexEntry } from '../samples/instrument-loader';
-import { PAD_DEFAULTS, PAD_LEAF_SPECS, padKeyForNote, noteForPadKey, type PadParams } from './sampler-pad-params';
+import { PAD_DEFAULTS, PAD_LEAF_SPECS, padKeyForNote, noteForPadKey, nextFreePadNote, type PadParams } from './sampler-pad-params';
 import type { FxBus } from '../core/fx';
 import { computeVoiceMutes } from '../core/mute-solo';
 import { renderDrumVoiceRack } from './drum-voice-rack';
@@ -417,9 +417,7 @@ export class SamplerEngine implements SynthEngine {
       addBtn.addEventListener('click', () => {
         const proto = this.keymap[this.keymap.length - 1];
         if (!proto) return;
-        const used = new Set(this.keymap.map((e) => e.rootNote));
-        let note = Math.min(127, Math.max(...this.keymap.map((e) => e.rootNote)) + 1);
-        while (used.has(note) && note < 127) note++;
+        const note = nextFreePadNote(this.keymap.map((e) => e.rootNote));
         this.setKeymap([...this.keymap, { sampleId: proto.sampleId, rootNote: note, loNote: note, hiNote: note }]);
         if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, this.keymap);
         rebuild();
