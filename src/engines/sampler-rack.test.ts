@@ -19,7 +19,7 @@ function makeCtx(ids: string[]): EngineUIContext {
 }
 
 describe('SamplerEngine.buildParamUI drumkit rack', () => {
-  it('renders the per-voice rack with kick/snare columns for a GM drumkit', () => {
+  it('renders the per-pad rack (note-based ids) for a GM drumkit', () => {
     const ctx = new OfflineAudioContext(1, 1024, 44100) as unknown as AudioContext;
     const e = new SamplerEngine(); e.setSharedFx(new FxBus(ctx, ctx.destination));
     e.setKeymap(KIT);
@@ -28,7 +28,8 @@ describe('SamplerEngine.buildParamUI drumkit rack', () => {
     e.buildParamUI(host, makeCtx(ids));
     expect(host.querySelector('.drum-voice-rack')).not.toBeNull();
     expect(host.querySelectorAll('.dv-col').length).toBe(2);
-    expect(ids).toContain('drums-1.kick.tune');
-    expect(ids).toContain('drums-1.snare.decay');
+    // Pad identity is the note (zone<note>), not the GM voice name.
+    expect(ids).toContain('drums-1.zone36.tune');
+    expect(ids).toContain('drums-1.zone38.decay');
   });
 });

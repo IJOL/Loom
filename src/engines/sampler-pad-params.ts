@@ -1,10 +1,12 @@
 // src/engines/sampler-pad-params.ts
 // Per-pad (per-keymap-entry) sound + playback params for the Sampler. A pad is
-// identified by its trigger MIDI note; param ids use a pad KEY: the GM voice
-// name for drumkit pads (so a drumkit reuses drum-voice-rack), else `zone<note>`.
+// identified by its trigger MIDI note. The pad KEY is `zone<note>` — a UNIQUE,
+// note-based identity. (GM voice names are NOT used as the identity: doing so
+// merged distinct notes — loop slices, multi-note GM voices like tom 41/43/45/47/48
+// — into one pad, sharing params + mute/solo. GM is a drumkit DISPLAY concern only,
+// applied where the rack is built; loops have nothing to do with GM.)
 
 import type { EngineParamSpec } from './engine-params';
-import { GM_DRUM_MAP, VOICE_MIDI } from './drum-gm-map';
 
 export interface PadParams {
   tune: number;      // semitones, -24..24
@@ -45,27 +47,21 @@ export const PAD_LEAF_SPECS: Array<Omit<EngineParamSpec, 'id'> & { leaf: keyof P
   { leaf: 'retrig',    label: 'RETRIG', kind: 'discrete',   min: 0,     max: 1,   default: 0, options: POLY_MONO },
 ];
 
-/** Pad key for a trigger note. */
+/** Pad key for a trigger note — a UNIQUE per-note identity (`zone<note>`). */
 export function padKeyForNote(note: number): string {
-  return GM_DRUM_MAP[note] ?? `zone${note}`;
+  return `zone${note}`;
 }
 
-/** Inverse of padKeyForNote for canonical pads. GM alias notes (e.g. 35→kick)
- *  collapse to the canonical MIDI (36); use the original trigger note directly
- *  when it is available. */
+/** Inverse of padKeyForNote. */
 export function noteForPadKey(key: string): number {
-  if (Object.hasOwn(VOICE_MIDI, key)) return VOICE_MIDI[key as keyof typeof VOICE_MIDI];
   return Number(key.replace(/^zone/, ''));
 }
 
 /** The trigger note for a NEW pad when growing a variable-size kit: just above the
- *  current max, skipping any note whose pad KEY already exists. GM alias notes
- *  (e.g. 59→ride) would otherwise collapse onto an existing pad and silently share
- *  its per-pad params / mute-solo. Returns 127 if nothing free is found. */
+ *  current max, skipping any note already in use. Returns 127 if nothing is free. */
 export function nextFreePadNote(notes: readonly number[]): number {
-  const usedNotes = new Set(notes);
-  const usedKeys = new Set(notes.map(padKeyForNote));
+  const used = new Set(notes);
   let note = (notes.length ? Math.max(...notes) : 35) + 1;
-  while (note < 127 && (usedNotes.has(note) || usedKeys.has(padKeyForNote(note)))) note++;
+  while (note < 127 && used.has(note)) note++;
   return note;
 }

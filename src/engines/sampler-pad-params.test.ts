@@ -17,15 +17,19 @@ describe('sampler pad params', () => {
     }
   });
 
-  it('padKeyForNote maps GM drum notes to voice names, else zone<note>', () => {
-    expect(padKeyForNote(36)).toBe('kick');
-    expect(padKeyForNote(38)).toBe('snare');
+  it('padKeyForNote is a unique per-note key (zone<note>), never a GM voice name', () => {
+    // GM voice names are NOT the identity — that merged distinct notes (loop slices,
+    // tom 41/43/45/47/48) into one pad. Every note gets its own key.
+    expect(padKeyForNote(36)).toBe('zone36');
+    expect(padKeyForNote(38)).toBe('zone38');
+    expect(padKeyForNote(45)).toBe('zone45');
+    expect(padKeyForNote(47)).toBe('zone47'); // 45 + 47 are both GM "tom" — still distinct
     expect(padKeyForNote(60)).toBe('zone60');
   });
 
-  it('noteForPadKey is the inverse for voice names and zones', () => {
-    expect(noteForPadKey('kick')).toBe(36);
-    expect(noteForPadKey('snare')).toBe(38);
+  it('noteForPadKey is the inverse', () => {
+    expect(noteForPadKey('zone36')).toBe(36);
+    expect(noteForPadKey('zone45')).toBe(45);
     expect(noteForPadKey('zone60')).toBe(60);
   });
 });
@@ -38,21 +42,15 @@ describe('nextFreePadNote (variable-size kit growth)', () => {
     expect(nextFreePadNote([])).toBe(36);
   });
 
-  it('returns the next note above the max when its pad key is unique', () => {
-    expect(nextFreePadNote(TR808)).toBe(57); // 57 → zone57, unique
+  it('returns the next note above the max (no GM-alias skipping any more)', () => {
+    expect(nextFreePadNote(TR808)).toBe(57);
+    expect(nextFreePadNote([...TR808, 57, 58])).toBe(59); // 59 was skipped before (GM ride)
   });
 
-  it('skips a GM-alias note whose pad key collides with an existing pad', () => {
-    // 59 is a GM ride alias; the kit already has ride (51), so a pad on 59 would
-    // collapse onto it — nextFreePadNote must skip 59 and pick 60.
-    expect(padKeyForNote(59)).toBe('ride');
-    expect(nextFreePadNote([...TR808, 57, 58])).toBe(60);
-  });
-
-  it('every grown pad keeps a distinct pad key (no silent param sharing)', () => {
+  it('every grown pad keeps a distinct note + key', () => {
     const notes = [...TR808];
     for (let i = 0; i < 6; i++) notes.push(nextFreePadNote(notes));
-    const keys = notes.map(padKeyForNote);
-    expect(new Set(keys).size).toBe(keys.length); // all distinct
+    expect(new Set(notes).size).toBe(notes.length);
+    expect(new Set(notes.map(padKeyForNote)).size).toBe(notes.length);
   });
 });

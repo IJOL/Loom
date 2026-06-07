@@ -5,6 +5,12 @@ import type { SynthEngine } from '../engines/engine-types';
 import { getCachedPresets } from '../presets/preset-loader';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
 import { getDrumKits, loadDrumKits, type DrumKitPreset } from '../presets/drum-kits-loader';
+import { listDrumkits } from '../samples/drumkit-loader';
+import { listInstruments } from '../samples/instrument-loader';
+
+// Bumped on every #poly-preset-select population so a slow async fill (the
+// sampler's instrument list) bails if the user has since switched lanes.
+let polyPopGen = 0;
 
 /** Convert a flat dot-path subtractive preset (e.g. `"osc1.wave": 0`,
  *  `"filter.cutoff": 0.55`) back into the nested PolySynthParams tree the
@@ -136,6 +142,7 @@ export function populatePolyPresetSelectForLane(laneId: string): void {
   const sel = document.getElementById('poly-preset-select') as HTMLSelectElement;
   if (!sel) return;
   sel.innerHTML = '';
+  const gen = ++polyPopGen;
 
   const custom = document.createElement('option');
   custom.value = '__custom__';
@@ -145,6 +152,33 @@ export function populatePolyPresetSelectForLane(laneId: string): void {
   const deps = _deps;
   if (!deps) return;
   const engineId = deps.getLaneEngineId(laneId);
+
+  // Sampler: its PRESET dropdown IS its instrument list (drumkits + melodic + loops),
+  // loaded asynchronously. Selecting one runs SamplerEngine.loadFamilyRef (see the
+  // change handler). The fill bails if the user switched lanes meanwhile.
+  if (engineId === 'sampler') {
+    void Promise.all([listDrumkits(), listInstruments()]).then(([kits, instruments]) => {
+      if (gen !== polyPopGen) return;
+      const s = document.getElementById('poly-preset-select') as HTMLSelectElement | null;
+      if (!s) return;
+      const group = (label: string, items: [string, string][]): void => {
+        if (!items.length) return;
+        const g = document.createElement('optgroup');
+        g.label = label;
+        for (const [val, text] of items) {
+          const o = document.createElement('option');
+          o.value = val; o.textContent = text;
+          g.appendChild(o);
+        }
+        s.appendChild(g);
+      };
+      group('Drumkit', kits.map((k) => [`sampler:drumkit:${k.id}`, k.name]));
+      group('Melodic', instruments.filter((i) => i.family === 'melodic').map((i) => [`sampler:melodic:${i.id}`, i.name]));
+      group('Loop', instruments.filter((i) => i.family === 'loop').map((i) => [`sampler:loop:${i.id}`, i.name]));
+      s.value = pagePresetName.get(laneId) ?? '__custom__';
+    });
+    return;
+  }
 
   if (engineId === 'subtractive') {
     const factoryGroup = document.createElement('optgroup');
@@ -502,6 +536,17 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
     const sel = document.getElementById('poly-preset-select') as HTMLSelectElement;
     const val = sel.value;
     if (!val || val === '__custom__') return;
+
+    // Sampler: a "preset" is a bundled instrument ref ('sampler:drumkit:tr808', …).
+    // Load it through the engine (async fetch + decode + keymap + id mirror).
+    if (val.startsWith('sampler:')) {
+      const ref = val.slice('sampler:'.length);
+      const laneId = deps.getActiveEngineLaneId();
+      const instance = deps.getLaneEngineInstance(laneId) as unknown as { loadFamilyRef?: (r: string) => Promise<void> } | null;
+      void instance?.loadFamilyRef?.(ref);
+      pagePresetName.set(laneId, val);
+      return;
+    }
 
     // Handle engine-prefixed presets FIRST — they resolve via getLaneEngineInstance
     // and do NOT need a PolySynth target. (FM, Wavetable, Karplus all reach this path.)

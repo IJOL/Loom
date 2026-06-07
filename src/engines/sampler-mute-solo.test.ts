@@ -30,12 +30,13 @@ async function renderNote(note: number, mut: (e: SamplerEngine) => void): Promis
 }
 
 describe('sampler per-pad mute/solo', () => {
-  it('muting kick silences the kick pad, snare unaffected', async () => {
-    expect(await renderNote(36, (e) => e.setDrumVoiceMute('kick', true))).toBeLessThan(1e-4);
-    expect(await renderNote(38, (e) => e.setDrumVoiceMute('kick', true))).toBeGreaterThan(1e-3);
+  // Pad identity is note-based: the kick pad (note 36) is 'zone36', snare (38) 'zone38'.
+  it('muting the kick pad silences it, snare unaffected', async () => {
+    expect(await renderNote(36, (e) => e.setDrumVoiceMute('zone36', true))).toBeLessThan(1e-4);
+    expect(await renderNote(38, (e) => e.setDrumVoiceMute('zone36', true))).toBeGreaterThan(1e-3);
   });
-  it('soloing snare silences the kick', async () => {
-    expect(await renderNote(36, (e) => e.toggleDrumVoiceSolo('snare'))).toBeLessThan(1e-4);
-    expect(await renderNote(38, (e) => e.toggleDrumVoiceSolo('snare'))).toBeGreaterThan(1e-3);
+  it('soloing the snare pad silences the kick', async () => {
+    expect(await renderNote(36, (e) => e.toggleDrumVoiceSolo('zone38'))).toBeLessThan(1e-4);
+    expect(await renderNote(38, (e) => e.toggleDrumVoiceSolo('zone38'))).toBeGreaterThan(1e-3);
   });
 });

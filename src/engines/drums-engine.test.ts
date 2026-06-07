@@ -201,9 +201,10 @@ describe('DrumsEngine façade — mode-aware surface', () => {
     const synthParamCount = e.params.length;
     e.setKitMode('sample');
     e.setKeymap([{ sampleId: 's', rootNote: 36, loNote: 36, hiNote: 36 }]);
-    // Sampler params are dynamic: globals (gain, poly.voices) + one set per pad.
+    // Sampler params are dynamic: globals (gain, poly.voices) + one set per pad,
+    // keyed by the pad's note (zone<note>), not a GM voice name.
     expect(e.params.some((p) => p.id === 'gain')).toBe(true);
-    expect(e.params.some((p) => p.id === 'kick.tune')).toBe(true);
+    expect(e.params.some((p) => p.id === 'zone36.tune')).toBe(true);
     expect(e.params.length).not.toBe(synthParamCount);
   });
 

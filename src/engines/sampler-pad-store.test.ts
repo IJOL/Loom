@@ -14,10 +14,11 @@ describe('SamplerEngine per-pad params', () => {
     const e = new SamplerEngine();
     e.setKeymap(kit());
     const ids = e.params.map((p) => p.id);
-    expect(ids).toContain('kick.tune');
-    expect(ids).toContain('kick.decay');
-    expect(ids).toContain('kick.loop');
-    expect(ids).toContain('snare.cutoff');
+    // Pad keys are note-based (zone<note>), not GM voice names.
+    expect(ids).toContain('zone36.tune');
+    expect(ids).toContain('zone36.decay');
+    expect(ids).toContain('zone36.loop');
+    expect(ids).toContain('zone38.cutoff');
     // global params still present
     expect(ids).toContain('gain');
     expect(ids).toContain('poly.voices');
@@ -26,16 +27,16 @@ describe('SamplerEngine per-pad params', () => {
   it('set/getBaseValue round-trip a per-pad value (keyed by note)', () => {
     const e = new SamplerEngine();
     e.setKeymap(kit());
-    e.setBaseValue('kick.tune', 7);
-    expect(e.getBaseValue('kick.tune')).toBe(7);
+    e.setBaseValue('zone36.tune', 7);
+    expect(e.getBaseValue('zone36.tune')).toBe(7);
     expect(e.getPad(36).tune).toBe(7);          // stored by note
-    expect(e.getBaseValue('snare.tune')).toBe(0); // untouched default
+    expect(e.getBaseValue('zone38.tune')).toBe(0); // untouched default
   });
 
   it('an untouched per-pad param returns the default', () => {
     const e = new SamplerEngine();
     e.setKeymap(kit());
-    expect(e.getBaseValue('kick.cutoff')).toBe(1);
-    expect(e.getBaseValue('snare.decay')).toBe(0.08);
+    expect(e.getBaseValue('zone36.cutoff')).toBe(1);
+    expect(e.getBaseValue('zone38.decay')).toBe(0.08);
   });
 });

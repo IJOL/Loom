@@ -26,7 +26,8 @@ import { renderSampleViewer } from './sampler-sample-viewer';
 import { mountKeyboardConnectors } from './sampler-keyboard-connectors';
 import type { FxBus } from '../core/fx';
 import { computeVoiceMutes } from '../core/mute-solo';
-import { renderDrumVoiceRack } from './drum-voice-rack';
+import { renderDrumVoiceRack, VOICE_LABELS } from './drum-voice-rack';
+import { GM_DRUM_MAP } from './drum-gm-map';
 import { velGain } from '../core/velocity-gain';
 import { playAudioClip, OUTPUT_TRIM } from './audio-clip-voice';
 import { withUndo } from '../save/history-wiring';
@@ -255,6 +256,10 @@ export class SamplerEngine implements SynthEngine {
   private keymap: KeymapEntry[] = [];
   /** The drumkit channel whose sample is shown in the editor (by trigger note). */
   private selectedPadNote: number | null = null;
+  /** Cached UI context + rebuild closure so the unified PRESET dropdown can load
+   *  an instrument (it has no direct AudioContext / session handle). Set by buildParamUI. */
+  private uiCtx: EngineUIContext | null = null;
+  private uiRebuild: (() => void) | null = null;
   private modHost = new ModulationHostImpl([]);
   private activeByNote = new Map<number, SamplerVoice>();
 
@@ -375,6 +380,59 @@ export class SamplerEngine implements SynthEngine {
     for (const [k, v] of Object.entries(p.params)) this.paramValues[k] = v;
   }
 
+  /** Load a bundled instrument by namespaced ref ('drumkit:<id>' / 'melodic:<id>'
+   *  / 'loop:<id>') — the unified PRESET path. Uses the cached UI context for the
+   *  AudioContext + session mirroring, then reroutes the editor + rebuilds. The
+   *  Sampler's "presets" ARE its instruments, so this is what a preset pick runs. */
+  async loadFamilyRef(ref: string): Promise<void> {
+    const ctx = this.uiCtx;
+    const audioCtx = ctx?.audioContext;
+    if (!ctx || !audioCtx) return;
+    const sep = ref.indexOf(':');
+    if (sep < 0) return;
+    const family = ref.slice(0, sep) as 'melodic' | 'drumkit' | 'loop';
+    const id = ref.slice(sep + 1);
+    if (family === 'drumkit') {
+      const manifest = await fetchDrumkitManifest(id);
+      const km = await loadDrumkit(manifest, audioCtx);
+      this.setKeymap(km);
+      if (ctx.sessionState) {
+        mirrorKeymapChange(ctx.sessionState, ctx.laneId, km);
+        mirrorDrumkitId(ctx.sessionState, ctx.laneId, id);
+        mirrorInstrumentId(ctx.sessionState, ctx.laneId, undefined);
+      }
+    } else {
+      const manifest = await fetchInstrumentManifest(id);
+      const loaded = await loadInstrument(manifest, audioCtx);
+      this.setKeymap(loaded.keymap);
+      if (ctx.sessionState) {
+        mirrorKeymapChange(ctx.sessionState, ctx.laneId, loaded.keymap);
+        mirrorInstrumentId(ctx.sessionState, ctx.laneId, id);
+        mirrorDrumkitId(ctx.sessionState, ctx.laneId, undefined);
+      }
+      if (family === 'melodic' && 'padParams' in loaded && loaded.padParams) {
+        const pad = loaded.padParams as Record<number, Record<string, number>>;
+        this.setPadStore(pad);
+        if (ctx.sessionState) mirrorPadParams(ctx.sessionState, ctx.laneId, pad);
+      }
+      // A loop: ask the host to materialise the playable note clip (one note per
+      // slice). This is what was missing — selecting a loop preset never played.
+      if (family === 'loop' && 'slicePointsSec' in loaded) {
+        document.dispatchEvent(new CustomEvent('loom:loop-loaded', {
+          detail: {
+            laneId: ctx.laneId,
+            slicePointsSec: loaded.slicePointsSec,
+            durationSec: loaded.durationSec,
+            originalBpm: loaded.originalBpm,
+          },
+        }));
+      }
+    }
+    this.selectedPadNote = null;
+    document.dispatchEvent(new CustomEvent('loom:lane-engine-ui-changed', { detail: { laneId: ctx.laneId } }));
+    this.uiRebuild?.();
+  }
+
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
     return new SamplerVoice(ctx, output, this.keymap, {
       getPad: (note) => this.getPad(note),
@@ -400,6 +458,9 @@ export class SamplerEngine implements SynthEngine {
     // Re-render the whole param UI from scratch (used by the keymap pickers and
     // the add/delete pad affordances). Declared up-front so handlers can close over it.
     const rebuild = () => { container.innerHTML = ''; this.buildParamUI(container, ctx); };
+    // Cache for loadFamilyRef (the unified PRESET dropdown loads instruments through it).
+    this.uiCtx = ctx;
+    this.uiRebuild = rebuild;
 
     const laneSampler = ctx.sessionState?.lanes.find((l) => l.id === ctx.laneId)?.engineState?.sampler;
     // Three inspector shapes share ONE channel layout (keyboard → connectors →
@@ -409,9 +470,13 @@ export class SamplerEngine implements SynthEngine {
     //   • loop     = single-note slice bank WITH an instrumentId → NOT a channel view;
     //                it keeps the slice list + loop hint and edits in the piano-roll.
     const singleNote = this.isDrumkit();
+    const isLoop = singleNote && !!laneSampler?.instrumentId;
     const isDrumkitView = singleNote && !laneSampler?.instrumentId;
     const isMelodicView = this.keymap.length > 0 && !singleNote;
-    const isChannelView = isDrumkitView || isMelodicView;
+    // Drumkit, melodic AND loop all use the SAME channel layout now (the user:
+    // bring the loop "al formato del resto"). A loop's slices are channels too; its
+    // CLIP still edits in the piano-roll (the router decides that independently).
+    const isChannelView = this.keymap.length > 0;
 
     // Keyboard map (visual): a mini-keyboard with drumkit pad markers or melodic
     // zone bands, mirroring the mockup. Hidden when the keymap is empty.
@@ -420,7 +485,8 @@ export class SamplerEngine implements SynthEngine {
       keyboardHost = document.createElement('div');
       keyboardHost.className = 'sampler-keymap-viz';
       container.appendChild(keyboardHost);
-      renderSamplerKeyboardMap(keyboardHost, this.keymap, { drumkit: isDrumkitView });
+      // Markers (single-note: drumkit + loop slices) vs zone bands (melodic ranges).
+      renderSamplerKeyboardMap(keyboardHost, this.keymap, { drumkit: singleNote });
     }
 
     // Channel view (drumkit OR melodic): keyboard → connectors → channel strips →
@@ -493,11 +559,21 @@ export class SamplerEngine implements SynthEngine {
         }
       };
 
-      const labelFor = (voice: string): string => noteName(voiceNote.get(voice) ?? noteForPadKey(voice));
+      const noteOf = (voice: string): number => voiceNote.get(voice) ?? noteForPadKey(voice);
+      // Slice index by ascending note — a loop is an ordered sequence (slice i → the
+      // i-th note), so its channels read "Slice 1, 2, 3…", NOT GM voice names.
+      const sliceIdx = new Map([...voiceNote.values()].sort((a, b) => a - b).map((n, i) => [n, i] as const));
+      const labelFor = (voice: string): string => {
+        const note = noteOf(voice);
+        if (isLoop) return `Slice ${(sliceIdx.get(note) ?? 0) + 1}`;
+        if (isDrumkitView) { const gm = GM_DRUM_MAP[note]; return gm ? VOICE_LABELS[gm] : noteName(note); }
+        return noteName(note);
+      };
       renderDrumVoiceRack(this, ctx, rackHost, voices, {
-        // Drumkit: GM voice name + the key. Melodic: the root note as the title (a
-        // zone at a GM note must not read "KICK").
-        ...(isDrumkitView ? { keyOf: labelFor } : { labelOf: labelFor }),
+        // Title: drumkit → GM voice name (it IS a kit); loop → "Slice N"; melodic →
+        // root note. The trigger key is shown as the sub-label for drumkit + loop.
+        labelOf: labelFor,
+        ...((isDrumkitView || isLoop) ? { keyOf: (voice: string) => noteName(noteOf(voice)) } : {}),
         onDelete: (voice) => {
           if (this.keymap.length <= 1) return;
           const km = this.keymap.filter((e) => padKeyForNote(e.rootNote) !== voice);
@@ -507,7 +583,12 @@ export class SamplerEngine implements SynthEngine {
         },
         isSelected: (voice) => voiceNote.get(voice) === this.selectedPadNote,
         onSelect: (voice) => { this.selectedPadNote = voiceNote.get(voice) ?? null; renderViewer(); },
-        onAdd: () => {
+        // ▶ play this channel's sample (the host routes it through the lane via triggerForLane).
+        onAudition: (voice) => {
+          document.dispatchEvent(new CustomEvent('loom:audition-note', { detail: { laneId: ctx.laneId, note: noteOf(voice) } }));
+        },
+        // A loop's slices come from the audio, so no "+" tile for loops.
+        onAdd: isLoop ? undefined : (() => {
           if (isDrumkitView) {
             const proto = this.keymap[this.keymap.length - 1];
             if (!proto) return;
@@ -523,7 +604,7 @@ export class SamplerEngine implements SynthEngine {
             input.addEventListener('change', () => { const fs = Array.from(input.files ?? []); if (fs.length) void loadFiles(fs); });
             input.click();
           }
-        },
+        }),
       });
 
       // Connectors: now that the rack exists, join each key to its strip (live-measured).

@@ -33,24 +33,36 @@
   opacity: 0.55;
   font-family: var(--mono, ui-monospace, monospace);
 }
+// ▶ play / ✕ delete: a centred row at the TOP of the channel header, separated
+// from the name below by a divider line.
+.dv-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding-bottom: 3px;
+  margin-bottom: 3px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+.dv-play,
 .dv-del {
-  position: absolute;
-  top: 2px;
-  right: 3px;
-  width: 14px;
-  height: 14px;
   padding: 0;
   line-height: 1;
-  font-size: 10px;
-  color: var(--red, #e53935);
+  font-size: 11px;
   background: transparent;
   border: none;
   cursor: pointer;
-  opacity: 0.45;
+  opacity: 0.6;
 
   &:hover {
     opacity: 1;
   }
+}
+.dv-play {
+  color: var(--green, #7cb342);
+}
+.dv-del {
+  color: var(--red, #e53935);
 }
 .dv-head-sel {
   cursor: pointer;

@@ -329,6 +329,37 @@ export class SessionHost {
       const detail = (e as CustomEvent<{ laneId: string; file: File }>).detail;
       if (detail?.laneId && detail.file) this.importLoopToSampler(detail.laneId, detail.file);
     });
+
+    // A sampler channel's ▶ play button auditions its pad through the lane's audio
+    // path (the engine has no triggerForLane handle, so it asks via this event).
+    document.addEventListener('loom:audition-note', (e) => {
+      const d = (e as CustomEvent<{ laneId: string; note: number }>).detail;
+      if (!d?.laneId || typeof d.note !== 'number') return;
+      void this.deps.ctx.resume();
+      this.deps.triggerForLane(d.laneId, d.note, this.deps.ctx.currentTime, 0.4, false, false);
+    });
+
+    // Selecting a bundled LOOP preset loads its slice bank (the engine does that),
+    // then asks the host to materialise the playable note clip — one note per slice,
+    // ascending — so the loop actually plays. (This was the missing "loop preset that
+    // never played" piece.)
+    document.addEventListener('loom:loop-loaded', (e) => {
+      const d = (e as CustomEvent<{ laneId: string; slicePointsSec: number[]; durationSec: number; originalBpm: number }>).detail;
+      const lane = d && this.state.lanes.find((l) => l.id === d.laneId);
+      if (!d || !lane || lane.engineId !== 'sampler') return;
+      const built = buildSliceClip({
+        slicePointsSec: d.slicePointsSec, durationSec: d.durationSec,
+        originalBpm: d.originalBpm, projectMeter: this.deps.seq.meter,
+        gridResolution: DEFAULT_RESOLUTION,
+      });
+      this.installSamplerClip(d.laneId, {
+        id: `clip-${Date.now().toString(36)}`,
+        name: `${lane.name ?? 'Loop'} loop`,
+        lengthBars: built.lengthBars,
+        notes: built.notes,
+        gridResolution: DEFAULT_RESOLUTION,
+      });
+    });
     // Phase G deferral rule: lane resources don't exist until
     // applyLoadedSessionState runs (post-demo-fetch). renderWithMixer calls
     // stripFor() for every lane, which throws if the lane isn't allocated.

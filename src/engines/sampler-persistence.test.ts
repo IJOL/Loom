@@ -17,7 +17,7 @@ describe('sampler per-pad persistence', () => {
   it('mirrorPadParams + setPadStore restores per-pad edits keyed by note', () => {
     const state = { lanes: [{ id: 'drums-1', engineState: {} }] } as unknown as SessionState;
     const a = makeEngine();
-    a.setBaseValue('kick.tune', 5);
+    a.setBaseValue('zone36.tune', 5);
     mirrorPadParams(state, 'drums-1', a.getPadStore());
     const saved = (state.lanes[0] as { engineState: { sampler?: { padParams?: Record<number, Record<string, number>> } } })
       .engineState.sampler!.padParams!;
@@ -25,7 +25,7 @@ describe('sampler per-pad persistence', () => {
 
     const b = makeEngine();
     b.setPadStore(saved as Record<number, Record<string, number>>);
-    expect(b.getBaseValue('kick.tune')).toBe(5);
+    expect(b.getBaseValue('zone36.tune')).toBe(5);
   });
 
   it('mirrorDrumkitId preserves padParams (kit switch does not wipe per-pad edits)', () => {

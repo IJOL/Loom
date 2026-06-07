@@ -26,7 +26,7 @@ function setup() {
 describe('sampler per-pad retrigger (mono)', () => {
   it('mono: a second hit cuts the first voice of the same pad', () => {
     const { ctx, dest, e } = setup();
-    e.setBaseValue('kick.retrig', 1); // mono
+    e.setBaseValue('zone36.retrig', 1); // mono
     const v1 = e.createVoice(ctx, dest);
     v1.trigger(36, 0, { gateDuration: 0.4, accent: false, slide: false });
     const cut = vi_spyRelease(v1);

@@ -25,9 +25,9 @@ describe('SamplerEngine — metadata', () => {
     ];
     e.setKeymap(kit);
     const kitIds = e.params.map((p) => p.id);
-    expect(kitIds).toContain('kick.cutoff');
-    expect(kitIds).toContain('kick.tune');
-    expect(kitIds).toContain('kick.decay');
+    expect(kitIds).toContain('zone36.cutoff');
+    expect(kitIds).toContain('zone36.tune');
+    expect(kitIds).toContain('zone36.decay');
   });
 
   it('per-pad cutoff defaults to fully open (1)', () => {

@@ -51,6 +51,7 @@ export interface DrumRackOpts {
   onSelect?: (voice: string) => void;    // select this channel (drives the sample editor)
   isSelected?: (voice: string) => boolean;
   onAdd?: () => void;                    // a "+" tile after the last column adds a pad
+  onAudition?: (voice: string) => void;  // ▶ play this channel's sample
 }
 
 export function renderDrumVoiceRack(
@@ -79,6 +80,31 @@ export function renderDrumVoiceRack(
 
     const head = document.createElement('div');
     head.className = 'dv-head';
+    // Actions row (▶ play / ✕ delete) centred at the TOP, separated from the name
+    // below by a divider line.
+    if (opts.onAudition || opts.onDelete) {
+      const actions = document.createElement('div');
+      actions.className = 'dv-actions';
+      if (opts.onAudition) {
+        const play = document.createElement('button');
+        play.type = 'button';
+        play.className = 'dv-play';
+        play.textContent = '▶';
+        play.title = 'Play this sample';
+        play.addEventListener('click', (e) => { e.stopPropagation(); opts.onAudition!(voice); });
+        actions.appendChild(play);
+      }
+      if (opts.onDelete) {
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'dv-del';
+        del.textContent = '✕';
+        del.title = 'Delete this pad';
+        del.addEventListener('click', () => opts.onDelete!(voice));
+        actions.appendChild(del);
+      }
+      head.appendChild(actions);
+    }
     const nameEl = document.createElement('span');
     nameEl.className = 'dv-name';
     nameEl.textContent = opts.labelOf?.(voice) ?? VOICE_LABELS[voice as DrumVoice] ?? voice.toUpperCase();
@@ -88,15 +114,6 @@ export function renderDrumVoiceRack(
       keyEl.className = 'dv-key';
       keyEl.textContent = opts.keyOf(voice);
       head.appendChild(keyEl);
-    }
-    if (opts.onDelete) {
-      const del = document.createElement('button');
-      del.type = 'button';
-      del.className = 'dv-del';
-      del.textContent = '✕';
-      del.title = 'Delete this pad';
-      del.addEventListener('click', () => opts.onDelete!(voice));
-      head.appendChild(del);
     }
     // Clicking the header (not the ✕) selects this channel → drives the sample editor.
     if (opts.onSelect) {
