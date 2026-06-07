@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Loom — Sampler · mockup v5 (loop + melódico apilados, controles con conector)</title>
+<title>Loom — Sampler · mockup</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -47,6 +47,9 @@ select{padding:4px 6px}optgroup{color:var(--text-dim)}option{color:var(--text);t
 .knob-value{fill:none;stroke:var(--amber);stroke-width:3;stroke-linecap:round}.knob-body{fill:var(--surface-2);stroke:var(--border);stroke-width:1}.knob-pointer{stroke:var(--amber);stroke-width:2;stroke-linecap:round}
 .knob-value-text{font-size:9px;color:var(--text-dim);min-width:28px;text-align:center;font-variant-numeric:tabular-nums}
 
+/* ── módulos estrechos: bloque ancho = nº × 58px (como el drum-rack real al cargar un kit), a la izquierda, con scroll ── */
+.mapwrap{overflow-x:auto;padding-bottom:4px}
+.mapblock{width:calc(var(--n) * 58px)}
 /* ── visualizador de mapeo (ancho variable) ── */
 .viz{position:relative;border:1px solid var(--border);border-radius:2px;background:#080706;overflow:hidden}
 .wave{position:relative;height:84px;display:flex;align-items:center;gap:1px}
@@ -72,8 +75,8 @@ select{padding:4px 6px}optgroup{color:var(--text-dim)}option{color:var(--text);t
 .strips{display:flex;gap:0;border:1px solid var(--border);border-top:0;border-radius:0 0 2px 2px;overflow:hidden}
 .dv-col{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;padding:6px 3px;border-right:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.03)}
 .dv-col:last-child{border-right:0}.dv-col.muted{opacity:.4}
-.dv-head{font-size:10px;letter-spacing:.04em;opacity:.95;font-weight:600;line-height:1.1}
-.dv-sub{font-size:8px;color:var(--text-faint);margin-bottom:3px}
+.dv-head{font-size:10px;letter-spacing:.04em;opacity:.95;font-weight:600;line-height:1.1;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.dv-sub{font-size:8px;color:var(--text-faint);margin-bottom:3px;white-space:nowrap}
 .dv-ms{display:flex;gap:3px;margin-bottom:3px}
 .dv-mute,.dv-solo{width:15px;height:13px;font-size:7px;font-weight:700;line-height:1;padding:0;border:1px solid rgba(255,255,255,.15);border-radius:3px;background:rgba(255,255,255,.04);color:rgba(255,255,255,.55);cursor:pointer}
 .dv-mute.on{background:#c0392b;border-color:#e74c3c;color:#fff}.dv-solo.on{background:#f1c40f;border-color:#f7d000;color:#1a1a1a}
@@ -90,7 +93,7 @@ select{padding:4px 6px}optgroup{color:var(--text-dim)}option{color:var(--text);t
 </head>
 <body>
 <div class="synth">
-  <h1>Sampler · v5 — controles uniformes + conector</h1>
+  <h1>Sampler — rediseño (mockup)</h1>
   <p class="note">Selector arriba a la derecha (<b>Melódico / Pads / Loop</b>). Los controles van en una <b>fila uniforme</b> (mismo ancho cada uno, sin estirarse al ancho del corte) y una <b>línea</b> une cada control con el trozo que controla (slice o zona). Estilos reales de Loom. El preset de loop <b>guarda los cortes + la nota</b>; al cargar verifica el sample (sha) y restaura — no re-trocea.</p>
 
   <div class="bar">
@@ -122,9 +125,11 @@ select{padding:4px 6px}optgroup{color:var(--text-dim)}option{color:var(--text);t
         <span class="lbl">Cortes 16</span><button>＋ añadir</button><button>－ borrar</button>
         <span class="hintinline">arrastra ◆ para mover · <b>M</b> = slice mudo</span>
       </div>
-      <div class="viz"><div class="wave" id="wave"></div></div>
-      <svg class="conn" id="connLoop" viewBox="0 0 1000 30" preserveAspectRatio="none"></svg>
-      <div class="strips" id="loopStrips"></div>
+      <div class="mapwrap"><div class="mapblock" style="--n:16">
+        <div class="viz"><div class="wave" id="wave"></div></div>
+        <svg class="conn" id="connLoop" viewBox="0 0 1000 30" preserveAspectRatio="none"></svg>
+        <div class="strips" id="loopStrips"></div>
+      </div></div>
       <div class="sec">Clip creado (se guarda en el preset) — 1 nota por slice; lo que suena y editas</div>
       <div class="roll" id="roll"></div>
     </div>
@@ -135,16 +140,18 @@ select{padding:4px 6px}optgroup{color:var(--text-dim)}option{color:var(--text);t
     <div class="panel-h">⌨ <b>Melódico</b> · "Grand Piano" — 10 muestras repartidas por el teclado</div>
     <div class="panel-b">
       <div class="hint"><b>⚡</b>&nbsp; Cada muestra cubre un rango de teclas (anchos distintos) con su <b>&nbsp;nota raíz&nbsp;</b>. La línea une cada muestra con su zona del teclado.</div>
-      <div class="viz"><div class="zonebar" id="zonebar"></div><div class="kbd" id="kbd"></div></div>
-      <svg class="conn" id="connMel" viewBox="0 0 1000 30" preserveAspectRatio="none"></svg>
-      <div class="strips" id="melStrips"></div>
+      <div class="mapwrap"><div class="mapblock" style="--n:10">
+        <div class="viz"><div class="zonebar" id="zonebar"></div><div class="kbd" id="kbd"></div></div>
+        <svg class="conn" id="connMel" viewBox="0 0 1000 30" preserveAspectRatio="none"></svg>
+        <div class="strips" id="melStrips"></div>
+      </div></div>
     </div>
   </div>
 
   <!-- ░░░ PADS ░░░ -->
   <div class="panel" data-view="pads" hidden>
     <div class="panel-h">▦ <b>Percusión</b> · drumkit — mismas tiras, sin visualizador (cada pad es su control)</div>
-    <div class="panel-b"><div class="strips" id="padStrips" style="border-top:1px solid var(--border)"></div></div>
+    <div class="panel-b"><div class="mapwrap"><div class="mapblock" style="--n:8"><div class="strips" id="padStrips" style="border:1px solid var(--border)"></div></div></div></div>
   </div>
 
   <div class="cards">
@@ -197,7 +204,7 @@ SLI.forEach((s,i)=>{const band=document.createElement('div');band.className='ban
   if(i>0){const c=document.createElement('div');c.className='scut';c.style.left=s.start+'%';wave.appendChild(c);}
   const l=document.createElement('div');l.className='slab';l.style.left=s.start+'%';l.innerHTML=`<span class="n">${i+1}</span><span class="nt">${NOTES[i]}</span>`;wave.appendChild(l);});
 const ls=document.getElementById('loopStrips');
-SLI.forEach((s,i)=>ls.appendChild(strip(`${i+1} · ${NOTES[i]}`,'',[['Tune',.5,'0'],['Lvl',.8,'-2'],['Pan',.5,'C']])));
+SLI.forEach((s,i)=>ls.appendChild(strip(String(i+1),NOTES[i],[['Tune',.5,'0'],['Lvl',.8,'-2'],['Pan',.5,'C']])));
 connect(document.getElementById('connLoop'),SLI.map(s=>s.center),16);
 // clip
 const roll=document.getElementById('roll');roll.style.gridTemplateColumns='repeat(16,1fr)';roll.style.gridTemplateRows='repeat(16,11px)';
