@@ -46,6 +46,12 @@ describe('chooseClipEditor', () => {
     const l = lane({ engineId: 'sampler', engineState: { sampler: { keymap: km } } });
     expect(chooseClipEditor(l, 'piano-roll')).toBe('piano-roll');
   });
+
+  it('a loop slice bank (single-note keymap + instrumentId) → piano-roll, not drum-grid', () => {
+    const km = Array.from({ length: 8 }, (_, i) => ({ sampleId: `s${i}`, rootNote: 60 + i, loNote: 60 + i, hiNote: 60 + i }));
+    const l = lane({ engineId: 'sampler', engineState: { sampler: { keymap: km, instrumentId: 'amen-175' } } });
+    expect(chooseClipEditor(l, 'piano-roll')).toBe('piano-roll');
+  });
 });
 
 describe('classifyClip', () => {

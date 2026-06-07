@@ -49,6 +49,7 @@ export interface DrumRackOpts {
   onDelete?: (voice: string) => void;    // remove this pad
   onSelect?: (voice: string) => void;    // select this channel (drives the sample editor)
   isSelected?: (voice: string) => boolean;
+  onAdd?: () => void;                    // a "+" tile after the last column adds a pad
 }
 
 export function renderDrumVoiceRack(
@@ -177,6 +178,18 @@ export function renderDrumVoiceRack(
     });
 
     rack.appendChild(col);
+  }
+
+  // A "+" tile after the last channel adds a pad (the standard add affordance,
+  // right where the modules are). Delete is per-channel (the ✕ on each strip).
+  if (opts.onAdd) {
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'dv-add';
+    add.textContent = '＋';
+    add.title = 'Add a pad';
+    add.addEventListener('click', () => opts.onAdd!());
+    rack.appendChild(add);
   }
 
   host.appendChild(rack);

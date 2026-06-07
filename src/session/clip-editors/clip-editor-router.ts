@@ -51,9 +51,14 @@ export function chooseClipEditor(
   // the GM map) still routes here: a loaded kit (drumkitId) OR a keymap whose
   // every entry is a single-note pad (loNote===hiNote===rootNote). A melodic
   // instrument uses range zones (loNote<hiNote), so it never trips the second test.
-  const km = lane.engineState?.sampler?.keymap ?? [];
+  const sampler = lane.engineState?.sampler;
+  const km = sampler?.keymap ?? [];
   const allSingleNote = km.length > 0 && km.every((e) => e.loNote === e.hiNote && e.hiNote === e.rootNote);
-  const isDrumkitSampler = lane.engineId === 'sampler' && (!!lane.engineState?.sampler?.drumkitId || allSingleNote);
+  // A loop slice bank is ALSO single-note, but it carries an instrumentId and is
+  // edited in the piano-roll — so exclude it. A bundled drumkit uses drumkitId; a
+  // user-built kit has neither id.
+  const isDrumkitSampler = lane.engineId === 'sampler'
+    && (!!sampler?.drumkitId || (allSingleNote && !sampler?.instrumentId));
   return override ?? (isDrumkitSampler ? 'drum-grid' : undefined) ?? engineEditor ?? 'piano-roll';
 }
 
