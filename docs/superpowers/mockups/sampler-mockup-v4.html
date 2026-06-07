@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Loom — Sampler · mockup v4 (alineado + look real)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0e0c0a;--surface:#161310;--surface-2:#1c1814;--surface-3:#221d18;--border:#2a221c;--border-soft:#1f1a15;
+  --text:#d8d2c8;--text-dim:#8a8278;--text-faint:#5a5550;--amber:#ffa726;--amber-soft:rgba(255,167,38,.4);--amber-glow:rgba(255,167,38,.18);
+  --red:#e53935;--green:#7cb342;--mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.4;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.7 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+.synth{position:relative;z-index:1;padding:16px 20px;width:100%}
+h1{font-weight:700;font-size:18px;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);text-shadow:0 0 8px var(--amber-glow);margin:4px 0 6px}
+.note{color:var(--text-dim);font-size:11px;margin:0 0 14px;max-width:980px;line-height:1.55}.note b{color:var(--text)}
+button,select{font-family:var(--mono);background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:2px;padding:5px 12px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+button:hover,select:hover{border-color:var(--amber);color:var(--amber)}
+select{padding:4px 6px}optgroup{color:var(--text-dim)}option{color:var(--text);text-transform:none}
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:10px 14px;margin-bottom:10px}
+.eng{font-weight:700;letter-spacing:.14em;color:var(--amber);font-size:12px}.lane{color:var(--text-dim)}
+.lbl{color:var(--text-faint);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.vdiv{width:1px;align-self:stretch;background:var(--border);margin:0 4px;min-height:30px}
+.radio-strip{display:inline-flex;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:1px}
+.radio-btn{display:inline-flex;align-items:center;justify-content:center;height:24px;padding:0 12px;background:transparent;color:var(--text-dim);border:1px solid transparent;border-radius:2px;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;cursor:pointer}
+.radio-btn:hover{color:var(--amber)}.radio-btn.active{color:var(--amber);background:var(--surface-3);border-color:var(--amber);box-shadow:0 0 4px var(--amber-glow)}
+.hint{display:flex;align-items:flex-start;gap:8px;background:var(--surface);border:1px solid var(--border);border-left:2px solid var(--amber);color:var(--text-dim);border-radius:2px;padding:7px 12px;font-size:11px;margin-bottom:12px;line-height:1.5}.hint b{color:var(--amber)}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:2px;margin-bottom:14px}.panel[hidden]{display:none}
+.panel-h{padding:8px 12px;border-bottom:1px solid var(--border);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);background:var(--surface-2)}.panel-h b{color:var(--text)}
+.panel-b{padding:13px}
+.sec{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);margin:14px 0 5px}
+.presetstate{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:10.5px;color:var(--text-dim);background:var(--surface-2);border:1px solid var(--border);border-radius:2px;padding:6px 10px;margin-bottom:10px}
+.presetstate .ok{color:var(--green)}.presetstate .sha{color:var(--text-faint)}.presetstate b{color:var(--text)}
+.slicebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface-2);border:1px solid var(--border);border-radius:2px;padding:6px 10px;margin:4px 0 8px}
+.slicebar button{padding:3px 8px;font-size:10px}
+.slicebar .reslice{color:var(--amber);border-color:var(--amber)}
+.slicebar .reslice:hover{background:var(--amber);color:var(--bg)}
+.hintinline{font-size:10px;color:var(--text-faint)}.hintinline b{color:var(--text-dim)}
+/* knob real */
+.knob{display:flex;flex-direction:column;align-items:center;gap:2px;user-select:none}
+.knob-label{font-size:9px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.knob-svg{display:block}.knob-track{fill:none;stroke:var(--border);stroke-width:3;stroke-linecap:round}
+.knob-value{fill:none;stroke:var(--amber);stroke-width:3;stroke-linecap:round}
+.knob-body{fill:var(--surface-2);stroke:var(--border);stroke-width:1}.knob-pointer{stroke:var(--amber);stroke-width:2;stroke-linecap:round}
+.knob-value-text{font-size:9px;color:var(--text-dim);min-width:28px;text-align:center;font-variant-numeric:tabular-nums}
+/* tiras reales */
+.dv-col{display:flex;flex-direction:column;align-items:center;min-width:0;padding:5px 3px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
+.dv-head{font-size:10px;letter-spacing:.04em;opacity:.9;font-weight:600;line-height:1.1}
+.dv-sub{font-size:8px;color:var(--text-faint);margin-bottom:3px}
+.dv-ms{display:flex;gap:3px;margin-bottom:3px}
+.dv-mute,.dv-solo{width:15px;height:13px;font-size:7px;font-weight:700;line-height:1;padding:0;border:1px solid rgba(255,255,255,.15);border-radius:3px;background:rgba(255,255,255,.04);color:rgba(255,255,255,.55);cursor:pointer}
+.dv-mute.on{background:#c0392b;border-color:#e74c3c;color:#fff}.dv-solo.on{background:#f1c40f;border-color:#f7d000;color:#1a1a1a}
+.dv-col.muted{opacity:.4}
+.dv-synth{display:flex;flex-direction:column;align-items:center;gap:3px}
+.dv-adv{margin-top:4px;font-size:8px;background:none;border:1px solid rgba(255,255,255,.12);border-radius:4px;color:var(--text-dim);cursor:pointer;padding:1px 4px;text-transform:none;letter-spacing:0}
+/* ── ALINEADO: visualizador (fila 1, todo el ancho) + tiras (fila 2, 1 por columna) ── */
+.aligned{display:grid;gap:0;border:1px solid var(--border);border-radius:2px;overflow:hidden;background:#080706}
+.aligned>.span{grid-column:1/-1}
+.aligned .dv-col{border-top:0}
+/* waveform */
+.wave{position:relative;height:88px;display:flex;align-items:center;gap:1px;padding:0;border-bottom:1px solid var(--border)}
+.wave .b{flex:1;min-width:1px;background:var(--amber);opacity:.42}
+.scut{position:absolute;top:0;bottom:0;border-left:1px solid var(--amber-soft);cursor:ew-resize}
+.scut::before{content:'';position:absolute;top:-0px;left:-3px;width:6px;height:9px;background:var(--amber);border-radius:1px;box-shadow:0 0 4px var(--amber-glow)}
+.slab{position:absolute;top:3px;transform:translateX(3px);line-height:1.05;pointer-events:none}
+.slab .n{font-size:8px;color:var(--amber);font-weight:700;display:block}.slab .nt{font-size:8px;color:var(--text-dim);display:block}
+/* keyboard */
+.kbd{position:relative;height:50px;display:flex;border-bottom:1px solid var(--border)}
+.zonebar{position:relative;height:18px;display:flex}
+.zseg{position:relative;border-right:1px solid #0e0c0a;display:flex;align-items:center;justify-content:center;font-size:9px;color:#0e0c0a;font-weight:700;overflow:hidden;white-space:nowrap}
+.key{flex:1;border-right:1px solid #17120e;position:relative;background:#080706}
+.key.bk::after{content:"";position:absolute;left:50%;top:0;width:60%;height:60%;transform:translateX(-50%);background:#040303;border-radius:0 0 2px 2px;border:1px solid #000}
+.key .rt{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:8px;color:var(--amber);font-weight:700}
+/* mini piano-roll (clip) */
+.roll{position:relative;display:grid;background:var(--bg);border:1px solid var(--border);border-radius:2px;overflow:hidden}
+.roll .cl{border-right:1px solid #15110d;border-bottom:1px solid #120f0c}
+.roll .nt{position:absolute;background:var(--amber);border:1px solid #ffd089;border-radius:1px;box-shadow:0 0 5px var(--amber-glow)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:8px;margin-top:6px}
+.card{background:var(--surface);border:1px solid var(--border);border-left:2px solid var(--amber);border-radius:2px;padding:10px 12px}
+.card b{color:var(--text)}.card p{margin:4px 0 0;color:var(--text-dim);font-size:11px;line-height:1.45}
+</style>
+</head>
+<body>
+<div class="synth">
+  <h1>Sampler · v4 — alineado + look real</h1>
+  <p class="note">Cada <b>tira de knobs</b> va <b>justo debajo del trozo que controla</b> (loop: bajo su slice · melódico: bajo su zona del teclado). Estilos reales de Loom. El preset de loop <b>guarda los cortes + la nota</b> de cada slice; al cargar verifica el sample (sha) y restaura — no re-trocea.</p>
+
+  <div class="bar">
+    <span class="eng">SAMPLER</span><span class="lane">· Amen Break</span>
+    <span class="vdiv"></span><span class="lbl">Preset</span>
+    <select><optgroup label="Melódico"><option>Grand Piano (10 zonas)</option><option>Rhodes EP</option></optgroup><optgroup label="Percusión"><option>TR-808</option></optgroup><optgroup label="Loop"><option selected>Amen Break 174</option></optgroup></select>
+    <button>Load</button><button>Save As…</button><button>🎲</button>
+    <span class="vdiv"></span><span id="kGain"></span><span id="kVoices"></span>
+    <span style="flex:1"></span>
+    <span class="radio-strip" id="vt"><button class="radio-btn" data-v="kbd">⌨ Teclado</button><button class="radio-btn" data-v="pads">▦ Pads</button><button class="radio-btn active" data-v="loop">〜 Loop</button></span>
+  </div>
+
+  <!-- ░░ LOOP ░░ -->
+  <div class="panel" data-view="loop">
+    <div class="panel-h">Vista <b>Loop</b> · Amen Break 174 · 16 slices → 16 notas (C1…D#2)</div>
+    <div class="panel-b">
+      <div class="presetstate">
+        <span><b>Preset:</b> 16 cortes + notas guardados</span><span class="vdiv" style="min-height:16px"></span>
+        <span>sample <span class="ok">✓ verificado</span> <span class="sha">sha 9f3a1c…</span></span><span class="vdiv" style="min-height:16px"></span>
+        <span>al cargar <b>restaura</b>, no re-trocea</span>
+      </div>
+      <div class="slicebar">
+        <span class="lbl">Trocear por</span>
+        <span class="radio-strip" id="sliceMode"><button class="radio-btn active">Onsets</button><button class="radio-btn">Grid</button></span>
+        <span id="kSens"></span><span id="kThr"></span>
+        <select title="División (modo Grid)"><option>1/16</option><option>1/8</option><option>1/4</option><option>1/32</option><option>1/8T</option></select>
+        <button class="reslice">↻ Re-trocear</button>
+        <span class="vdiv" style="min-height:34px"></span>
+        <span class="lbl">Cortes 16</span><button>＋ añadir</button><button>－ borrar</button>
+        <span class="hintinline">arrastra ◆ para mover · <b>M</b> en una tira = slice mudo</span>
+      </div>
+      <div class="sec">Onda + control de cada slice (tira alineada bajo su trozo)</div>
+      <div class="aligned" id="loopAligned" style="grid-template-columns:repeat(16,1fr)">
+        <div class="wave span" id="wave"></div>
+      </div>
+      <div class="sec">Clip creado (se guarda en el preset) — 1 nota por slice; lo que suena y editas en el piano-roll</div>
+      <div class="roll" id="roll"></div>
+    </div>
+  </div>
+
+  <!-- ░░ PADS ░░ -->
+  <div class="panel" data-view="pads" hidden>
+    <div class="panel-h">Vista <b>Pads</b> · drumkit — tiras (mismo motor que Drums)</div>
+    <div class="panel-b"><div class="aligned" id="padAligned" style="grid-template-columns:repeat(8,1fr)"></div></div>
+  </div>
+
+  <!-- ░░ TECLADO ░░ -->
+  <div class="panel" data-view="kbd" hidden>
+    <div class="panel-h">Vista <b>Teclado</b> · "Grand Piano" — 10 muestras repartidas por el teclado</div>
+    <div class="panel-b">
+      <div class="hint"><b>⚡</b>&nbsp; Preset melódico prototípico: 10 muestras de piano (una cada ~media octava). Se <b>&nbsp;auto-reparten&nbsp;</b> por el teclado; cada zona cubre un rango con su <b>&nbsp;nota raíz&nbsp;</b>. La tira de cada muestra va <b>&nbsp;bajo su zona&nbsp;</b>.</div>
+      <div class="sec">Teclado (zonas) + control de cada muestra (tira alineada bajo su zona)</div>
+      <div class="aligned" id="melAligned" style="grid-template-columns:repeat(10,1fr)">
+        <div class="zonebar span" id="zonebar"></div>
+        <div class="kbd span" id="kbd"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card"><b>Preset de loop = cortes + notas + sha</b><p>El preset guarda los puntos de corte y la nota de cada slice. Al cargar verifica el sample con un sha y restaura; solo trocea la 1ª vez (o si editas los cortes).</p></div>
+    <div class="card"><b>Cortes editables</b><p>Arrastra los cortes para moverlos, añade/borra cortes. Mutear una tira (M) deja ese slice sin usar.</p></div>
+    <div class="card"><b>Tiras alineadas</b><p>La columna de knobs de cada slice/muestra se sitúa justo debajo del trozo de onda / zona de teclas que controla.</p></div>
+  </div>
+</div>
+
+<script>
+const NS='http://www.w3.org/2000/svg';
+function polar(cx,cy,r,d){const a=d*Math.PI/180;return[cx+r*Math.sin(a),cy-r*Math.cos(a)];}
+function arc(cx,cy,r,a0,a1){const[x0,y0]=polar(cx,cy,r,a0),[x1,y1]=polar(cx,cy,r,a1);const lg=Math.abs(a1-a0)>180?1:0;return`M ${x0} ${y0} A ${r} ${r} 0 ${lg} 1 ${x1} ${y1}`;}
+function knob(label,norm,opt){opt=opt||{};const sz=opt.size||30,cx=sz/2,cy=sz/2,tR=sz*.42,bR=sz*.32,pL=bR-2,ang=-135+norm*270;
+  const w=document.createElement('div');w.className='knob';
+  if(label){const l=document.createElement('div');l.className='knob-label';l.textContent=label;w.appendChild(l);}
+  const s=document.createElementNS(NS,'svg');s.setAttribute('class','knob-svg');s.setAttribute('viewBox',`0 0 ${sz} ${sz}`);s.setAttribute('width',sz);s.setAttribute('height',sz);
+  const t=document.createElementNS(NS,'path');t.setAttribute('class','knob-track');t.setAttribute('d',arc(cx,cy,tR,-135,135));s.appendChild(t);
+  const v=document.createElementNS(NS,'path');v.setAttribute('class','knob-value');v.setAttribute('d',arc(cx,cy,tR,-135,ang));s.appendChild(v);
+  const b=document.createElementNS(NS,'circle');b.setAttribute('cx',cx);b.setAttribute('cy',cy);b.setAttribute('r',bR);b.setAttribute('class','knob-body');s.appendChild(b);
+  const p=document.createElementNS(NS,'line');p.setAttribute('x1',cx);p.setAttribute('y1',cy);p.setAttribute('x2',cx);p.setAttribute('y2',cy-pL);p.setAttribute('class','knob-pointer');p.setAttribute('transform',`rotate(${ang} ${cx} ${cy})`);s.appendChild(p);
+  w.appendChild(s);const vt=document.createElement('div');vt.className='knob-value-text';vt.textContent=opt.text||'';w.appendChild(vt);return w;}
+function strip(head,sub,knobs,headColor){const c=document.createElement('div');c.className='dv-col';
+  const h=document.createElement('div');h.className='dv-head';h.textContent=head;if(headColor)h.style.color=headColor;c.appendChild(h);
+  if(sub){const s=document.createElement('div');s.className='dv-sub';s.textContent=sub;c.appendChild(s);}
+  const ms=document.createElement('div');ms.className='dv-ms';ms.innerHTML='<button class="dv-mute">M</button><button class="dv-solo">S</button>';c.appendChild(ms);
+  ms.querySelector('.dv-mute').addEventListener('click',e=>{e.target.classList.toggle('on');c.classList.toggle('muted',e.target.classList.contains('on'));});
+  ms.querySelector('.dv-solo').addEventListener('click',e=>e.target.classList.toggle('on'));
+  const sy=document.createElement('div');sy.className='dv-synth';knobs.forEach(k=>sy.appendChild(knob(k[0],k[1],{size:30,text:k[2]})));c.appendChild(sy);
+  const adv=document.createElement('button');adv.className='dv-adv';adv.textContent='▸ adv';c.appendChild(adv);return c;}
+
+document.getElementById('kGain').appendChild(knob('Gain',.8,{size:38,text:'100%'}));
+document.getElementById('kVoices').appendChild(knob('Voices',.5,{size:38,text:'8'}));
+document.getElementById('kSens').appendChild(knob('Sens',.6,{size:32,text:'60%'}));
+document.getElementById('kThr').appendChild(knob('Umbral',.35,{size:32,text:'-24dB'}));
+
+// ── LOOP (aligned) ──
+const NOTES=['C1','C#1','D1','D#1','E1','F1','F#1','G1','G#1','A1','A#1','B1','C2','C#2','D2','D#2'],SL=16;
+const wave=document.getElementById('wave');
+for(let i=0;i<128;i++){const b=document.createElement('div');b.className='b';const env=Math.exp(-((i%(128/SL))/(128/SL))*2.1);b.style.height=(8+(0.4+0.6*Math.abs(Math.sin(i*0.9)))*74*env)+'%';wave.appendChild(b);}
+for(let s=1;s<SL;s++){const d=document.createElement('div');d.className='scut';d.style.left=(s/SL*100)+'%';wave.appendChild(d);}
+for(let s=0;s<SL;s++){const l=document.createElement('div');l.className='slab';l.style.left=(s/SL*100)+'%';l.innerHTML=`<span class="n">${s+1}</span><span class="nt">${NOTES[s]}</span>`;wave.appendChild(l);}
+const la=document.getElementById('loopAligned');
+for(let s=0;s<SL;s++)la.appendChild(strip(String(s+1),NOTES[s],[['Tune',.5,'0'],['Lvl',.8,'-2'],['Pan',.5,'C']]));
+// clip piano-roll
+const roll=document.getElementById('roll');roll.style.gridTemplateColumns=`repeat(${SL},1fr)`;roll.style.gridTemplateRows=`repeat(${SL},12px)`;
+for(let i=0;i<SL*SL;i++){const c=document.createElement('div');c.className='cl';roll.appendChild(c);}
+for(let s=0;s<SL;s++){const n=document.createElement('div');n.className='nt';n.style.left=(s/SL*100)+'%';n.style.width=(100/SL)+'%';n.style.height='10px';n.style.top=(((SL-1-s)/SL)*100)+'%';roll.appendChild(n);}
+
+// ── PADS ──
+const PADS=[['Kick','n36'],['Snare','n38'],['Clap','n39'],['CH','n42'],['OH','n46'],['Tom','n45'],['Cowbl','n56'],['Ride','n51']];
+const pa=document.getElementById('padAligned');PADS.forEach(([n,nt])=>pa.appendChild(strip(n,nt,[['Tune',.5,'0'],['Cut',.7,'72'],['Decay',.4,'.3s'],['Lvl',.8,'0'],['Rev',.2,'12'],['Dly',.1,'0']])));
+
+// ── TECLADO (aligned) ──
+const NM=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'],nn=k=>NM[((k%12)+12)%12]+(1+Math.floor(k/12));
+const NZ=10,KPZ=6,N=NZ*KPZ,bk={1:1,3:1,6:1,8:1,10:1};
+const PAL=['#2ee0c0','#f7d000','#3498db','#e67e22','#9b59b6','#16a085','#c0392b','#7cb342','#2ee0c0','#e67e22'];
+const zb=document.getElementById('zonebar'),kbd=document.getElementById('kbd'),ma=document.getElementById('melAligned');
+for(let z=0;z<NZ;z++){const lo=z*KPZ,hi=lo+KPZ-1,rt=lo+KPZ/2|0,col=PAL[z];
+  const seg=document.createElement('div');seg.className='zseg';seg.style.flex=KPZ;seg.style.background=col;seg.textContent=nn(rt);zb.appendChild(seg);}
+for(let i=0;i<N;i++){const k=document.createElement('div');k.className='key'+(bk[i%12]?' bk':'');const z=Math.floor(i/KPZ),rt=z*KPZ+(KPZ/2|0);if(i===rt){const r=document.createElement('span');r.className='rt';r.textContent='◆';k.appendChild(r);}kbd.appendChild(k);}
+for(let z=0;z<NZ;z++){const lo=z*KPZ,hi=lo+KPZ-1,rt=lo+(KPZ/2|0),col=PAL[z];ma.appendChild(strip(nn(rt),nn(lo)+'–'+nn(hi),[['Tune',.5,'0'],['Cut',.85,'88'],['Lvl',.8,'0'],['Pan',.5,'C']],col));}
+
+document.getElementById('vt').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;document.querySelectorAll('#vt .radio-btn').forEach(x=>x.classList.toggle('active',x===b));const v=b.dataset.v;document.querySelectorAll('.panel[data-view]').forEach(p=>p.hidden=(p.dataset.view!==v));});
+</script>
+</body>
+</html>
