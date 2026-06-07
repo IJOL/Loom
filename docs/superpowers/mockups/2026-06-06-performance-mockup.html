@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Loom — Modo Performance (mockup)</title>
+<style>
+  :root{
+    --bg:#121214; --panel:#1c1c20; --panel2:#232329; --line:#34343c;
+    --txt:#dfe0e4; --mut:#9a9aa6; --btn:#2a2a31; --btnh:#363640;
+    --accent:#6c7cff; --rec:#e23b30; --recglow:#ff5147;
+    --lab:120px; --pxbar:46px; --bars:16;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:"Inter",system-ui,Segoe UI,Roboto,sans-serif;font-size:13px;padding:22px}
+  h1{font-size:16px;font-weight:600;margin:0 0 4px}
+  .sub{color:var(--mut);margin:0 0 18px;font-size:12px;line-height:1.5}
+  .stage{max-width:1080px}
+
+  /* toolbar */
+  .perf-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px 10px 0 0;
+    padding:9px 12px;border-bottom:0}
+  .perf-toolbar .grp{display:inline-flex;align-items:center;gap:7px}
+  .perf-toolbar .lab{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+  .perf-toolbar input[type=number]{width:54px;background:var(--panel2);border:1px solid var(--line);
+    color:var(--txt);border-radius:6px;padding:4px 6px}
+  .perf-toolbar .range{width:120px;height:7px;border-radius:99px;background:linear-gradient(90deg,var(--accent) 38%,#2a2a31 38%);position:relative}
+  .perf-toolbar .range::after{content:"";position:absolute;left:36%;top:50%;width:13px;height:13px;transform:translate(-50%,-50%);background:#cfd2ff;border-radius:50%;box-shadow:0 0 0 1px #0006}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+  .seg button{border:0;background:transparent;color:var(--txt);padding:5px 10px;font:inherit;cursor:pointer}
+  .seg button.on{background:var(--accent);color:#0b0b12;font-weight:600}
+  .tgl{border:1px solid var(--line);background:var(--btn);color:var(--txt);border-radius:7px;padding:5px 11px;cursor:pointer;font:inherit}
+  .tgl.on{background:#2b2150;border-color:#5a4fa0;color:#cbd0ff}
+  .readout{margin-left:auto;color:var(--mut);font-family:ui-monospace,Consolas,monospace;font-size:12px}
+
+  /* timeline */
+  .perf{position:relative;background:#101013;border:1px solid var(--line);border-radius:0 0 10px 10px;
+    overflow:hidden}
+  .scroller{overflow-x:auto}
+  .row{display:flex;align-items:stretch;border-top:1px solid #232329;min-height:34px}
+  .row:first-child{border-top:0}
+  .label{width:var(--lab);flex:0 0 var(--lab);display:flex;align-items:center;gap:7px;
+    padding:0 10px;background:#16161b;border-right:1px solid var(--line);
+    color:var(--txt);font-size:12px;position:sticky;left:0;z-index:3}
+  .label .x{margin-left:auto;color:var(--mut);cursor:pointer;font-size:13px;border:1px solid transparent;border-radius:4px;padding:0 4px}
+  .label .x:hover{color:#fff;background:#3a2222;border-color:#5b3030}
+  .label.muted{color:var(--mut)}
+  .track{position:relative;width:calc(var(--bars) * var(--pxbar));flex:0 0 calc(var(--bars) * var(--pxbar))}
+
+  /* ruler */
+  .ruler .track{display:block}
+  .bar-mark{position:absolute;top:0;bottom:0;border-left:1px solid #26262e;color:var(--mut);
+    font-size:10px;padding-left:3px;line-height:22px}
+  .bar-mark.beat4{border-left-color:#34343c}
+  .ruler{height:24px;min-height:24px;background:#141418}
+  .ruler .label{background:#141418}
+
+  /* loop brace */
+  .loop-brace{position:absolute;top:0;bottom:0;background:#6c7cff1f;border-left:2px solid var(--accent);border-right:2px solid var(--accent);z-index:1}
+  .loop-band{position:absolute;top:24px;bottom:0;background:#6c7cff10;border-left:1px dashed #6c7cff66;border-right:1px dashed #6c7cff66;z-index:1;pointer-events:none}
+
+  /* clip bands */
+  .clip{position:absolute;top:5px;bottom:5px;border-radius:6px;display:flex;align-items:center;
+    padding:0 9px;font-size:11px;color:#10101a;font-weight:600;overflow:hidden;white-space:nowrap;
+    box-shadow:inset 0 0 0 1px #0003;cursor:grab}
+  .clip .ch{position:absolute;top:0;bottom:0;width:6px;cursor:ew-resize}
+  .clip .ch.l{left:0} .clip .ch.r{right:0}
+  .clip .del{position:absolute;right:3px;top:3px;width:15px;height:15px;border-radius:4px;border:0;
+    background:#0003;color:#10101a;font-size:11px;line-height:15px;cursor:pointer;opacity:0;display:flex;align-items:center;justify-content:center}
+  .clip:hover .del{opacity:1}
+
+  /* automation lane */
+  .auto{min-height:46px;background:#0d0d12}
+  .auto .label{background:#121217;color:var(--mut);font-size:11px}
+  .auto .track{background:repeating-linear-gradient(90deg,transparent 0,transparent calc(var(--pxbar) - 1px),#1c1c24 calc(var(--pxbar) - 1px),#1c1c24 var(--pxbar))}
+  .auto svg{position:absolute;inset:0;width:100%;height:100%}
+
+  .master .label{color:#e8b04b;font-weight:600;background:#1a160f;border-right-color:#5b4a2c}
+
+  /* playhead */
+  .playhead{position:absolute;top:0;bottom:0;width:2px;background:var(--rec);z-index:4;
+    box-shadow:0 0 8px #e23b3088}
+  .playhead::before{content:"";position:absolute;top:0;left:-4px;border:5px solid transparent;border-top-color:var(--rec)}
+  .ghost{position:absolute;top:24px;bottom:0;width:0;border-left:2px dashed #e23b3066;z-index:4}
+  .ghost .tag{position:absolute;top:40%;left:6px;white-space:nowrap;color:#e2837d;font-size:11px;background:#1a0e0d;border:1px solid #5b2a26;border-radius:5px;padding:2px 7px}
+
+  .legend{margin-top:22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:12px 13px}
+  .card b{color:#fff} .card p{margin:5px 0 0;color:var(--mut);font-size:12px;line-height:1.45}
+  .pill{display:inline-block;font-size:11px;color:#39d98a;border:1px solid #2c5b45;background:#11271d;border-radius:99px;padding:1px 8px;margin-right:4px}
+  .pill.bug{color:#e2837d;border-color:#5b2a26;background:#1a0e0d}
+</style>
+</head>
+<body>
+<div class="stage">
+  <h1>Loom — Modo Performance · mockup</h1>
+  <p class="sub">Cómo se vería la timeline de arrangement: regla de barras con <b>loop A–B</b>, una banda por lane con sus clips de colores,
+    curvas de automatización y la sección MASTER. La línea roja es el <b>playhead</b>. Pasa el ratón por un clip para ver su <b>×</b>.</p>
+
+  <!-- toolbar -->
+  <div class="perf-toolbar">
+    <span class="grp"><span class="lab">Length</span><input type="number" value="16" title="Longitud del arreglo en barras" /><span class="lab" style="text-transform:none">bars</span></span>
+    <span class="grp"><span class="lab">Zoom</span><span class="range" title="Zoom horizontal (px por barra). También Ctrl+rueda"></span></span>
+    <span class="grp"><span class="lab">Brush</span>
+      <span class="seg" title="Pincel para dibujar automatización"><button class="on">Line</button><button>Flat</button></span>
+    </span>
+    <button class="tgl on" title="Activar bucle A–B: repite el tramo marcado en la regla">⟲ Loop A–B</button>
+    <span class="readout">16 bars · 130 BPM</span>
+  </div>
+
+  <!-- timeline -->
+  <div class="perf">
+    <div class="scroller">
+
+      <!-- ruler -->
+      <div class="row ruler">
+        <div class="label" style="color:var(--mut);font-size:11px">bars</div>
+        <div class="track" id="ruler"></div>
+      </div>
+
+      <!-- lanes -->
+      <div class="row" data-lane>
+        <div class="label">303 <span class="x" title="Quitar lane del arreglo">×</span></div>
+        <div class="track" data-clips='[[0,4,"Acid A","#8a7cff"],[4,8,"Acid B","#a98cff"],[8,12,"Acid A","#8a7cff"],[12,16,"Fill","#c08cff"]]'></div>
+      </div>
+      <div class="row auto">
+        <div class="label">303 · cutoff <span class="x" title="Quitar curva">×</span></div>
+        <div class="track"><svg viewBox="0 0 736 46" preserveAspectRatio="none"><polyline points="0,38 120,30 230,12 360,20 470,8 600,26 736,14" fill="none" stroke="#8a7cff" stroke-width="2"/></svg></div>
+      </div>
+
+      <div class="row" data-lane>
+        <div class="label">Drums <span class="x"></span></div>
+        <div class="track" data-clips='[[0,8,"Beat","#ff9b53"],[8,16,"Beat+","#ffb46b"]]'></div>
+      </div>
+
+      <div class="row" data-lane>
+        <div class="label">Bass <span class="x"></span></div>
+        <div class="track" data-clips='[[2,6,"Sub","#43d98a"],[10,14,"Sub","#43d98a"]]'></div>
+      </div>
+
+      <div class="row" data-lane>
+        <div class="label">Pad <span class="x"></span></div>
+        <div class="track" data-clips='[[4,12,"Chords","#53b8ff"]]'></div>
+      </div>
+
+      <div class="row" data-lane>
+        <div class="label muted">Vocal (audio) <span class="x"></span></div>
+        <div class="track" data-clips='[[0,16,"vocal-take.wav","#ff77c8"]]'></div>
+      </div>
+
+      <!-- master -->
+      <div class="row master">
+        <div class="label">MASTER</div>
+        <div class="track" style="background:#15120a"></div>
+      </div>
+      <div class="row auto master">
+        <div class="label">master · volume <span class="x"></span></div>
+        <div class="track"><svg viewBox="0 0 736 46" preserveAspectRatio="none"><polyline points="0,30 200,30 300,16 520,16 600,34 736,34" fill="none" stroke="#e8b04b" stroke-width="2"/></svg></div>
+      </div>
+
+      <!-- loop band over the lanes (bars 5–9) -->
+      <div class="loop-band" id="loopband"></div>
+      <!-- playhead at bar 6 (aligned, target) -->
+      <div class="playhead" id="playhead"></div>
+      <!-- ghost showing today's bug -->
+      <div class="ghost" id="ghost"><span class="tag">← hoy el cursor cae aquí (bug #5): no compensa la columna de nombres ni el scroll</span></div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="card"><span class="pill">así se vería</span><b>Regla + Loop A–B</b>
+      <p>Barras numeradas; el <b>brace A–B</b> (resaltado azul) marca el tramo que se repite. Se arrastra por los extremos.</p></div>
+    <div class="card"><span class="pill">así se vería</span><b>Bandas de clip por lane</b>
+      <p>Cada lane es una banda; los clips lanzados aparecen como bloques de su color, movibles y redimensionables, con <b>×</b> para borrar.</p></div>
+    <div class="card"><span class="pill">así se vería</span><b>Automatización</b>
+      <p>Bajo cada lane, las curvas (cutoff, volumen…) dibujables con el pincel Line/Flat. La sección <b>MASTER</b> agrupa las globales.</p></div>
+    <div class="card"><span class="pill bug">bug #5</span><b>Playhead corrido</b>
+      <p>Hoy el cursor sale a la <b>izquierda</b> y desincronizado del contenido. Sospecha: el playhead no descuenta el ancho de la <b>columna de nombres</b> ni el <b>scroll</b>. El objetivo es la línea roja sólida; la punteada es donde cae ahora.</p></div>
+  </div>
+</div>
+
+<script>
+  const PXBAR = 46, BARS = 16, LAB = 120;
+  // ruler marks
+  const ruler = document.getElementById('ruler');
+  for (let b=0;b<BARS;b++){
+    const m=document.createElement('span');
+    m.className='bar-mark'+(b%4===0?' beat4':'');
+    m.style.left=(b*PXBAR)+'px'; m.textContent=(b+1);
+    ruler.appendChild(m);
+  }
+  // loop brace in ruler (bars 5–9 → index 4..8)
+  const lb=document.createElement('div'); lb.className='loop-brace';
+  lb.style.left=(4*PXBAR)+'px'; lb.style.width=(4*PXBAR)+'px'; ruler.appendChild(lb);
+  // clips
+  document.querySelectorAll('[data-clips]').forEach(tr=>{
+    JSON.parse(tr.dataset.clips).forEach(([s,e,name,col])=>{
+      const c=document.createElement('div'); c.className='clip';
+      c.style.left=(s*PXBAR)+'px'; c.style.width=((e-s)*PXBAR-3)+'px'; c.style.background=col;
+      c.innerHTML='<span class="ch l"></span>'+name+'<button class="del" title="Borrar banda">×</button><span class="ch r"></span>';
+      tr.appendChild(c);
+    });
+  });
+  // loop band + playhead positioned over the track area (offset by label width)
+  const loopband=document.getElementById('loopband');
+  loopband.style.left=(LAB+4*PXBAR)+'px'; loopband.style.width=(4*PXBAR)+'px';
+  const ph=document.getElementById('playhead');
+  ph.style.left=(LAB+6*PXBAR)+'px';                 // aligned target (bar 6)
+  const gh=document.getElementById('ghost');
+  gh.style.left=(6*PXBAR - 8)+'px';                 // buggy: forgot the LAB offset → ~bar 4.8
+</script>
+</body>
+</html>

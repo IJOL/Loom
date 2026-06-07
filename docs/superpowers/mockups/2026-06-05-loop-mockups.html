@@ -1,0 +1,144 @@
+<h2>Loops &amp; arrangement reproducible — mockups</h2>
+<p class="subtitle">Tres piezas de UI. Mira si la disposición y la interacción te encajan; dime en el terminal qué cambiar (o clica una opción abajo).</p>
+
+<style>
+  .lm { --bg:#1c1f26; --panel:#23272f; --panel2:#2b3039; --ink:#e7ebf2; --dim:#8a93a3;
+        --grid:#363c47; --accent:#ffcc33; --accent2:#4fd1c5; --bass:#a8c8e8; --drums:#f4b8b8; --lead:#c8a8e0;
+        font-family: ui-sans-serif,system-ui,sans-serif; color:var(--ink); margin-bottom:34px; }
+  .lm .cap { font-size:13px; color:var(--dim); margin:0 0 8px; }
+  .lm .frame { background:var(--bg); border:1px solid #000; border-radius:10px; padding:14px; box-shadow:0 6px 24px rgba(0,0,0,.35); }
+  .lm .bar { display:flex; align-items:center; gap:10px; background:var(--panel2); border-radius:7px; padding:7px 10px; margin-bottom:10px; font-size:12px; }
+  .lm .tog { display:inline-flex; align-items:center; gap:6px; background:var(--panel); border:1px solid var(--grid); border-radius:14px; padding:3px 9px; }
+  .lm .tog.on { background:var(--accent); color:#222; border-color:var(--accent); font-weight:600; }
+  .lm .dot { width:8px;height:8px;border-radius:50%; background:#555; }
+  .lm .tog.on .dot { background:#222; }
+  .lm .pill { background:var(--panel); border:1px solid var(--grid); border-radius:6px; padding:3px 8px; color:var(--dim); }
+  .lm .spacer { flex:1; }
+  .lm .btn-copy { margin-left:auto; background:var(--accent2); color:#0c1a18; font-weight:700; border:none; border-radius:7px; padding:7px 12px; font-size:12px; cursor:pointer; }
+  .lm .tabs { display:flex; gap:4px; }
+  .lm .tab { padding:5px 12px; border-radius:6px 6px 0 0; background:var(--panel); color:var(--dim); font-size:12px; }
+  .lm .tab.active { background:var(--accent); color:#222; font-weight:600; }
+
+  /* timeline-ish */
+  .lm .ruler { position:relative; height:22px; margin-left:64px; border-bottom:1px solid var(--grid); }
+  .lm .ruler .b { position:absolute; top:4px; font-size:10px; color:var(--dim); border-left:1px solid var(--grid); padding-left:3px; height:18px; }
+  .lm .brace { position:absolute; top:0; height:22px; background:rgba(255,204,51,.16); border-left:2px solid var(--accent); border-right:2px solid var(--accent); box-sizing:border-box; }
+  .lm .brace .h { position:absolute; top:-3px; width:0;height:0; border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid var(--accent); }
+  .lm .brace .h.l{ left:-6px;} .lm .brace .h.r{ right:-6px;}
+  .lm .brace .tag{ position:absolute; top:2px; font-size:9px; font-weight:700; color:var(--accent); }
+  .lm .brace .tag.a{ left:3px;} .lm .brace .tag.b{ right:3px;}
+
+  .lm .row { position:relative; height:30px; margin:6px 0; }
+  .lm .row .lbl { position:absolute; left:0; top:6px; width:56px; font-size:11px; color:var(--dim); text-align:right; }
+  .lm .track { position:absolute; left:64px; right:0; top:0; bottom:0; background:repeating-linear-gradient(90deg,transparent 0,transparent 59px,var(--grid) 59px,var(--grid) 60px); border-radius:4px; }
+  .lm .clip { position:absolute; top:3px; height:24px; border-radius:4px; font-size:10px; color:#222; padding:4px 6px; box-sizing:border-box; overflow:hidden; white-space:nowrap; }
+  .lm .dim { opacity:.28; }
+  .lm .play { position:absolute; top:0; bottom:0; width:2px; background:#fff; box-shadow:0 0 6px #fff; }
+
+  /* piano roll */
+  .lm .pr { position:relative; margin-left:64px; height:96px; background:linear-gradient(180deg,#20242c,#1a1d24); border-radius:4px; overflow:hidden; }
+  .lm .pr .col { position:absolute; top:0; bottom:0; width:1px; background:var(--grid); }
+  .lm .pr .zone { position:absolute; top:0; bottom:0; background:rgba(255,204,51,.10); border-left:2px solid var(--accent); border-right:2px solid var(--accent); }
+  .lm .pr .note { position:absolute; height:9px; border-radius:2px; background:var(--bass); }
+  .lm .legend { font-size:11px; color:var(--dim); margin-top:8px; }
+  .lm .legend b{ color:var(--accent); }
+</style>
+
+<div class="lm">
+
+  <!-- 1. CLIP LOOP -->
+  <p class="cap">🅰 <b>Loop de clip</b> — editor (piano-roll / drum-grid / loop). El brace marca la sub-región que suena; el resto se atenúa.</p>
+  <div class="frame">
+    <div class="bar">
+      <span style="font-weight:600">Clip: Bassline</span>
+      <span class="pill">4 bars</span>
+      <span class="tog on"><span class="dot"></span>Loop</span>
+      <span class="pill">▣ snap: 1/16</span>
+      <span class="spacer"></span>
+      <span class="pill" style="color:var(--accent)">zona 2 → 3</span>
+    </div>
+    <div class="ruler">
+      <span class="b" style="left:0%">1</span><span class="b" style="left:25%">2</span>
+      <span class="b" style="left:50%">3</span><span class="b" style="left:75%">4</span>
+      <div class="brace" style="left:25%; width:50%">
+        <span class="h l"></span><span class="h r"></span>
+        <span class="tag a">A</span><span class="tag b">B</span>
+      </div>
+    </div>
+    <div class="pr">
+      <div class="zone" style="left:25%; width:50%"></div>
+      <div class="col" style="left:25%"></div><div class="col" style="left:50%"></div><div class="col" style="left:75%"></div>
+      <!-- notes outside zone dimmed, inside bright -->
+      <div class="note dim" style="left:4%; top:60px; width:7%"></div>
+      <div class="note dim" style="left:14%; top:48px; width:6%"></div>
+      <div class="note" style="left:27%; top:54px; width:8%"></div>
+      <div class="note" style="left:38%; top:36px; width:7%"></div>
+      <div class="note" style="left:50%; top:60px; width:8%"></div>
+      <div class="note" style="left:62%; top:42px; width:9%"></div>
+      <div class="note dim" style="left:78%; top:54px; width:7%"></div>
+      <div class="note dim" style="left:88%; top:48px; width:6%"></div>
+    </div>
+    <p class="legend">Arrastra <b>A</b>/<b>B</b> para definir la zona · toggle <b>Loop</b> off = el clip vuelve a sonar entero (como hoy).</p>
+  </div>
+
+  <!-- 2. ARRANGEMENT -->
+  <p class="cap">🅱 <b>Arrangement reproducible</b> — brace A–B en la regla (loop) o, si está off, reproduce de inicio a fin y para.</p>
+  <div class="frame">
+    <div class="bar">
+      <span style="font-weight:600">Performance</span>
+      <span class="pill">Length: 8 bars</span>
+      <span class="pill">Zoom ▭▭▭</span>
+      <span class="tog on"><span class="dot"></span>Loop A–B</span>
+      <span class="spacer"></span>
+      <span class="pill">8 bars · 128 BPM</span>
+    </div>
+    <div class="ruler">
+      <span class="b" style="left:0%">1</span><span class="b" style="left:12.5%">2</span><span class="b" style="left:25%">3</span>
+      <span class="b" style="left:37.5%">4</span><span class="b" style="left:50%">5</span><span class="b" style="left:62.5%">6</span>
+      <span class="b" style="left:75%">7</span><span class="b" style="left:87.5%">8</span>
+      <div class="brace" style="left:12.5%; width:50%">
+        <span class="h l"></span><span class="h r"></span>
+        <span class="tag a">A</span><span class="tag b">B</span>
+      </div>
+    </div>
+    <div class="row"><span class="lbl">bass</span><div class="track">
+      <div class="clip" style="left:0%;width:25%;background:var(--bass)">Bassline</div>
+      <div class="clip" style="left:25%;width:25%;background:var(--bass)">Bassline</div>
+      <div class="clip" style="left:50%;width:50%;background:var(--bass)">Bridge</div>
+    </div></div>
+    <div class="row"><span class="lbl">drums</span><div class="track">
+      <div class="clip" style="left:0%;width:50%;background:var(--drums)">Beat A</div>
+      <div class="clip" style="left:50%;width:50%;background:var(--drums)">Beat B</div>
+    </div></div>
+    <div class="row"><span class="lbl">lead</span><div class="track">
+      <div class="clip" style="left:25%;width:25%;background:var(--lead)">Hook</div>
+      <div class="clip" style="left:50%;width:25%;background:var(--lead)">Hook</div>
+    </div>
+      <div class="play" style="left:calc(64px + 31%)"></div>
+    </div>
+    <p class="legend">Secciones = escenas en orden (<b>Copiar a Performance</b>). El brace <b>A–B</b> repite ese tramo afectando a todos los lanes por igual.</p>
+  </div>
+
+  <!-- 3. COPY BUTTON -->
+  <p class="cap">🅱 <b>Copiar a Performance</b> — en la barra de Session; vuelca las escenas a la timeline y conmuta de vista.</p>
+  <div class="frame">
+    <div class="bar" style="margin-bottom:0">
+      <div class="tabs"><span class="tab active">Session</span><span class="tab">Performance</span></div>
+      <span class="pill">8 escenas</span>
+      <span class="spacer"></span>
+      <button class="btn-copy">⇉ Copiar a Performance</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="options">
+  <div class="option" data-choice="ok" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content"><h3>Me encaja, escribe el spec</h3><p>La disposición y la interacción son las correctas.</p></div>
+  </div>
+  <div class="option" data-choice="tweak" onclick="toggleSelect(this)">
+    <div class="letter">✎</div>
+    <div class="content"><h3>Ajustar algo</h3><p>Te digo en el terminal qué cambiar (posición del botón, asas, etiquetas…).</p></div>
+  </div>
+</div>
