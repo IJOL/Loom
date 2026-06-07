@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Loom — Sampler rediseñado · mockup v2 (tiras + loop)</title>
+<style>
+  :root{
+    --bg:#121214; --panel:#1c1c20; --panel2:#232329; --line:#34343c;
+    --txt:#dfe0e4; --mut:#9a9aa6; --btn:#2a2a31; --btnh:#363640;
+    --accent:#6c7cff; --ok:#39d98a; --warn:#e8b04b; --rec:#e23b30; --loop:#39d98a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:"Inter",system-ui,Segoe UI,Roboto,sans-serif;font-size:13px;padding:22px}
+  h1{font-size:16px;font-weight:600;margin:0 0 4px}
+  .sub{color:var(--mut);margin:0 0 16px;font-size:12px;line-height:1.5;max-width:920px}
+  .stage{max-width:1120px}
+  button,select{font:inherit;color:var(--txt);background:var(--btn);border:1px solid var(--line);
+    border-radius:7px;padding:6px 10px;cursor:pointer}
+  button:hover{background:var(--btnh)}
+  select{padding:5px 8px}
+  .div{width:1px;height:26px;background:var(--line);margin:0 4px}
+  .lab{color:var(--mut);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em}
+
+  .samp-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);
+    border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+  .eng{font-weight:700;letter-spacing:.14em;color:var(--accent);font-size:12px}
+  .lane{color:var(--mut)}
+  .view-toggle{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .view-toggle button{border:0;border-radius:0;background:transparent;padding:6px 12px}
+  .view-toggle button.on{background:var(--accent);color:#0b0b12;font-weight:600}
+  optgroup{color:var(--mut)} option{color:var(--txt)}
+
+  .hint{display:flex;align-items:center;gap:8px;background:#0e1a14;border:1px solid #265a40;
+    color:#9fe3bf;border-radius:9px;padding:8px 12px;font-size:12px;margin-bottom:14px}
+  .hint b{color:#fff}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:11px;margin-bottom:16px;overflow:hidden}
+  .panel.hidden{display:none}
+  .panel-h{padding:9px 13px;border-bottom:1px solid var(--line);font-size:12px;color:var(--mut);background:#1a1a1f}
+  .panel-h b{color:var(--txt)}
+  .panel-body{padding:14px}
+
+  /* knobs */
+  .knob{display:inline-flex;flex-direction:column;align-items:center;gap:3px}
+  .knob i{width:26px;height:26px;border-radius:50%;background:
+    radial-gradient(circle at 50% 38%,#3a3a44 0,#23232a 70%);border:1px solid #45454f;position:relative;display:block}
+  .knob i::after{content:"";position:absolute;left:50%;top:3px;width:2px;height:9px;background:var(--accent);
+    transform-origin:50% 10px;transform:translateX(-50%) rotate(var(--rot,-35deg));border-radius:2px}
+  .knob b{font-size:8px;color:var(--mut);text-transform:uppercase;letter-spacing:.02em;font-weight:600}
+  .knob.lg i{width:38px;height:38px}
+  .knobrow{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
+
+  /* ── STRIPS (vertical columns, drumkit-style — compact, many fit, scroll) ── */
+  .strips{display:flex;gap:6px;overflow-x:auto;padding:6px 2px 2px}
+  .strip{flex:0 0 auto;width:66px;border:1px solid var(--line);border-radius:9px;background:#17171c;
+    padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .strip .sh{font-size:11px;font-weight:700;letter-spacing:.02em;line-height:1;text-align:center}
+  .strip .sn{font-size:8.5px;color:var(--mut)}
+  .strip .ms{display:inline-flex;gap:3px}
+  .strip .ms button{padding:1px 5px;font-size:9px;border-radius:4px;line-height:1.3}
+  .strip .ms .on{background:var(--accent);color:#0b0b12;border-color:var(--accent)}
+  .strip .kcol{display:flex;flex-direction:column;gap:6px;align-items:center}
+  .strip .adv{font-size:8.5px;color:var(--mut);cursor:pointer;margin-top:2px}
+  .strip.loop .sh{color:var(--loop)}
+
+  /* keyboard with zones (vista Teclado) */
+  .kbd-wrap{position:relative;margin-bottom:14px}
+  .zonebar{position:relative;height:22px;margin-bottom:3px}
+  .zone-seg{position:absolute;top:0;bottom:0;border-radius:5px;display:flex;align-items:center;
+    padding:0 7px;font-size:10px;color:#10101a;font-weight:600;overflow:hidden;white-space:nowrap;box-shadow:inset 0 0 0 1px #0003}
+  .kbd{position:relative;height:60px;background:#0d0d10;border:1px solid var(--line);border-radius:7px;overflow:hidden;display:flex}
+  .key{flex:1;border-right:1px solid #20202a;position:relative}
+  .key.black::after{content:"";position:absolute;left:50%;top:0;width:62%;height:60%;transform:translateX(-50%);background:#06060a;border-radius:0 0 3px 3px;border:1px solid #000}
+  .key .root{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:8px;color:var(--accent);font-weight:700}
+  .zone{border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:9px;background:#17171c}
+  .zone-top{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+  .zone-top .sw{width:12px;height:12px;border-radius:3px}
+  .zname{font-weight:600}
+  .root,.range{color:var(--mut);font-size:11px;border:1px solid var(--line);border-radius:5px;padding:2px 6px;background:#101014}
+  .zone-top .x{margin-left:auto;background:#241414;border:1px solid #5b3030;color:#e2837d;border-radius:6px;padding:3px 9px}
+  .add{width:100%;border-style:dashed;color:var(--mut);padding:11px;background:#141418}
+
+  /* ── LOOP view ── */
+  .loop-flow{display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--mut);margin-bottom:12px}
+  .loop-flow .step{flex:1 1 150px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#15181c}
+  .loop-flow .step b{color:var(--txt);display:block;font-size:11px;margin-bottom:2px}
+  .loop-flow .step .n{color:var(--loop);font-weight:700}
+  .wave{position:relative;height:104px;background:linear-gradient(#0e1014,#0a0b0f);
+    border:1px solid var(--line);border-radius:9px;overflow:hidden;display:flex;align-items:center;gap:1px;padding:0 5px;margin-bottom:4px}
+  .wave .b{flex:1;min-width:2px;background:var(--accent);opacity:.5;border-radius:1px}
+  .slice-mark{position:absolute;top:0;bottom:0;border-left:1px solid #5a6cffcc}
+  .slice-lab{position:absolute;top:3px;transform:translateX(2px);display:flex;flex-direction:column;line-height:1.1}
+  .slice-lab .num{font-size:8px;color:#cfd4ff;font-weight:700}
+  .slice-lab .nt{font-size:8px;color:#7f88c8}
+  .wave-cap{font-size:10.5px;color:var(--mut);margin:0 0 12px}
+  /* mini piano-roll of the created clip (diagonal staircase) */
+  .roll{position:relative;display:grid;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#0d0e12;margin-bottom:6px}
+  .roll .cell{border-right:1px solid #1b1c22;border-bottom:1px solid #15161b}
+  .roll .note{position:absolute;height:calc(100%/16 - 2px);background:linear-gradient(#7d8bff,#5566e8);
+    border:1px solid #93a0ff;border-radius:3px;box-shadow:0 0 6px #6c7cff55}
+  .roll-cap{font-size:10.5px;color:var(--mut);margin:0 0 6px}
+
+  .legend{margin-top:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:12px 13px}
+  .card b{color:#fff} .card p{margin:5px 0 0;color:var(--mut);font-size:12px;line-height:1.45}
+  .pill{display:inline-block;font-size:11px;color:var(--ok);border:1px solid #2c5b45;background:#11271d;border-radius:99px;padding:1px 8px;margin-right:4px}
+  .pill.new{color:#cbd0ff;border-color:#4a4f86;background:#191a2c}
+</style>
+</head>
+<body>
+<div class="stage">
+  <h1>Loom — Sampler rediseñado · mockup v2</h1>
+  <p class="sub">Tres familias de <b>preset</b> (en el mismo sitio que el resto de engines): <b>Melódico</b> (vista Teclado),
+    <b>Percusión</b> (vista Pads, ahora en <b>tiras</b> compactas) y <b>Loop</b> (vista nueva: el break se trocea en slices,
+    cada slice = una nota, y al cargar el preset <b>se crea el clip</b>). Cambia de vista con el toggle.</p>
+
+  <div class="samp-head">
+    <span class="eng">SAMPLER</span>
+    <span class="lane" id="laneName">Amen Break</span>
+    <div class="div"></div>
+    <span class="lab">Preset</span>
+    <select id="preset" title="Presets del Sampler — viven con el resto de presets">
+      <optgroup label="— Melódico —"><option>Grand Piano</option><option>Rhodes EP</option><option>Sub Bass</option><option>Warm Pad</option></optgroup>
+      <optgroup label="— Percusión —"><option>TR-808</option><option>Acoustic Kit</option><option>Dirt</option></optgroup>
+      <optgroup label="— Loop —"><option selected>Amen Break 174</option><option>Think Break</option><option>Apache</option></optgroup>
+    </select>
+    <button>Load</button><button>Save As…</button><button>🎲</button>
+    <div class="div"></div>
+    <span class="knob lg"><i style="--rot:20deg"></i><b>Gain</b></span>
+    <span class="knob lg"><i style="--rot:0deg"></i><b>Voices</b></span>
+    <div style="flex:1"></div>
+    <span class="view-toggle" id="vt">
+      <button data-v="kbd">⌨ Teclado</button><button data-v="pads">▦ Pads</button><button class="on" data-v="loop">〜 Loop</button>
+    </span>
+  </div>
+
+  <div class="hint">✓ Al elegir un preset de <b>Loop</b>, el Sampler trocea el break, mapea cada slice a una nota y <b>crea un clip</b> con esas notas en el lane. La forma de onda se ve detrás del piano-roll del clip.</div>
+
+  <!-- ════ VISTA LOOP ════ -->
+  <div class="panel" data-view="loop">
+    <div class="panel-h">Vista <b>Loop</b> · "Amen Break 174" — 16 slices → 16 notas (C1…D#2)</div>
+    <div class="panel-body">
+      <div class="loop-flow">
+        <div class="step"><b><span class="n">1</span> · Trocea</b>El break se corta en 16 slices (en los onsets).</div>
+        <div class="step"><b><span class="n">2</span> · Mapea</b>Cada slice → una nota desde C1 (banco de slices).</div>
+        <div class="step"><b><span class="n">3</span> · Clip</b>Se crea un clip de notas (1 por slice) en el lane + su escena.</div>
+        <div class="step"><b><span class="n">4</span> · Edita</b>Cambias el groove en el piano-roll; la onda va detrás.</div>
+      </div>
+
+      <div class="wave" id="wave"></div>
+      <p class="wave-cap">▲ Forma de onda con los cortes de slice + su nota. Arrastrar un corte = reasignar el slice.</p>
+
+      <p class="roll-cap">Clip creado (piano-roll) — una nota por slice, en su sitio del compás. Esto es lo que suena y editas:</p>
+      <div class="roll" id="roll"></div>
+
+      <div class="panel-h" style="border-top:1px solid var(--line);border-bottom:0;padding-left:0;background:transparent;margin-top:6px">Banco de slices (tiras) — afina cada slice</div>
+      <div class="strips" id="loopstrips"></div>
+    </div>
+  </div>
+
+  <!-- ════ VISTA PADS (tiras) ════ -->
+  <div class="panel hidden" data-view="pads">
+    <div class="panel-h">Vista <b>Pads</b> · drumkit — en <b>tiras</b> compactas (mismo motor que Drums)</div>
+    <div class="panel-body"><div class="strips" id="padstrips"></div></div>
+  </div>
+
+  <!-- ════ VISTA TECLADO ════ -->
+  <div class="panel hidden" data-view="kbd">
+    <div class="panel-h">Vista <b>Teclado</b> · preset melódico (multi-muestra cromático)</div>
+    <div class="panel-body">
+      <div class="kbd-wrap"><div class="zonebar" id="zonebar"></div><div class="kbd" id="kbd"></div></div>
+      <div id="zones"></div>
+      <button class="add">+ Sample · o arrastra un WAV aquí</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="card"><span class="pill new">clave</span><b>Loop = preset + clip</b><p>Cargar un loop crea el clip de notas en el lane (lo que faltaba). Suena y se edita en el piano-roll, no dentro del Sampler.</p></div>
+    <div class="card"><span class="pill">tiras</span><b>Pads y slices en tiras</b><p>Columnas verticales compactas (como el drumkit): ordenadas, regulares y caben muchas con scroll horizontal.</p></div>
+    <div class="card"><span class="pill">unificado</span><b>Presets donde el resto</b><p>Los presets del Sampler viven con los del resto de engines, no en un sitio especial. Melódico/Percusión/Loop son familias.</p></div>
+  </div>
+</div>
+
+<script>
+  const KNOBS_PAD=[['Tune'],['Cut'],['Decay'],['Lvl'],['Rev'],['Dly']];
+  const KNOBS_LOOP=[['Tune'],['Lvl'],['Pan']];
+  function strip(name, note, knobs, cls){
+    const s=document.createElement('div'); s.className='strip'+(cls?' '+cls:'');
+    s.innerHTML=`<div class="sh">${name}</div><div class="sn">${note}</div>`+
+      `<div class="ms"><button>M</button><button>S</button></div><div class="kcol"></div><div class="adv">▸ adv</div>`;
+    const col=s.querySelector('.kcol');
+    knobs.forEach(([lab],i)=>{const k=document.createElement('span');k.className='knob';k.innerHTML=`<i style="--rot:${i*34-50}deg"></i><b>${lab}</b>`;col.appendChild(k);});
+    return s;
+  }
+
+  // ---- LOOP view ----
+  const NOTES=['C1','C#1','D1','D#1','E1','F1','F#1','G1','G#1','A1','A#1','B1','C2','C#2','D2','D#2'];
+  const SLICES=16;
+  const wave=document.getElementById('wave');
+  const NB=128;
+  for(let i=0;i<NB;i++){const b=document.createElement('div');b.className='b';
+    const env=Math.exp(-((i%(NB/SLICES))/(NB/SLICES))*2.2); // decay per slice
+    b.style.height=(10+ (0.35+0.65*Math.abs(Math.sin(i*0.9)))*78*env + Math.random()*8)+'%';
+    wave.appendChild(b);}
+  for(let s=0;s<SLICES;s++){
+    const x=s/SLICES*100;
+    if(s>0){const d=document.createElement('div');d.className='slice-mark';d.style.left=x+'%';wave.appendChild(d);}
+    const lab=document.createElement('div');lab.className='slice-lab';lab.style.left=x+'%';
+    lab.innerHTML=`<span class="num">${s+1}</span><span class="nt">${NOTES[s]}</span>`;wave.appendChild(lab);
+  }
+  // mini piano-roll: 16 steps x 16 notes, a note block per slice (diagonal staircase)
+  const roll=document.getElementById('roll');
+  roll.style.gridTemplateColumns=`repeat(${SLICES},1fr)`;
+  roll.style.gridTemplateRows=`repeat(${SLICES},14px)`;
+  for(let r=0;r<SLICES;r++)for(let c=0;c<SLICES;c++){const cell=document.createElement('div');cell.className='cell';roll.appendChild(cell);}
+  for(let s=0;s<SLICES;s++){
+    const n=document.createElement('div');n.className='note';
+    n.style.left=(s/SLICES*100)+'%';n.style.width=(100/SLICES)+'%';
+    n.style.top=(( (SLICES-1-s) /SLICES)*100)+'%'; // low note at bottom
+    roll.appendChild(n);
+  }
+  const lb=document.getElementById('loopstrips');
+  for(let s=0;s<SLICES;s++) lb.appendChild(strip(String(s+1), NOTES[s], KNOBS_LOOP, 'loop'));
+
+  // ---- PADS view (strips) ----
+  const PADS=[['Kick','n36'],['Snare','n38'],['Clap','n39'],['CH','n42'],['OH','n46'],['Tom','n45'],['Cowbl','n56'],['Ride','n51']];
+  const ps=document.getElementById('padstrips');
+  PADS.forEach(([n,note])=>ps.appendChild(strip(n,note,KNOBS_PAD)));
+
+  // ---- KBD view ----
+  const kbd=document.getElementById('kbd'),N=36,blk={1:1,3:1,6:1,8:1,10:1};
+  for(let i=0;i<N;i++){const k=document.createElement('div');k.className='key'+(blk[i%12]?' black':'');kbd.appendChild(k);}
+  const ZONES=[[0,11,'Piano-C2','#8a7cff',5],[12,23,'Piano-C3','#6c9cff',17],[24,35,'Piano-C4','#53c8ff',29]];
+  const zonebar=document.getElementById('zonebar'),pct=x=>x/N*100;
+  ZONES.forEach(([s,e,name,col,root])=>{const z=document.createElement('div');z.className='zone-seg';z.style.left=pct(s)+'%';z.style.width=pct(e-s+1)+'%';z.style.background=col;z.textContent=name;zonebar.appendChild(z);const rk=kbd.children[root];if(rk){const r=document.createElement('span');r.className='root';r.textContent='◆';rk.appendChild(r);}});
+  const LEAVES=[['Tune'],['Cut'],['Res'],['Atk'],['Dec'],['Lvl'],['Pan'],['Rev'],['Dly']];
+  const zones=document.getElementById('zones');
+  ZONES.forEach(([s,e,name,col])=>{const z=document.createElement('div');z.className='zone';const top=document.createElement('div');top.className='zone-top';const rng=name.split('-')[1];top.innerHTML=`<span class="sw" style="background:${col}"></span><span class="zname">${name}.wav</span><span class="root">root ${rng}</span><span class="range">${rng==='C2'?'C0–B2':rng==='C3'?'C3–B3':'C4–B5'}</span><button class="x">×</button>`;const kr=document.createElement('div');kr.className='knobrow';LEAVES.forEach(([lab],i)=>{const k=document.createElement('span');k.className='knob';k.innerHTML=`<i style="--rot:${i*26-40}deg"></i><b>${lab}</b>`;kr.appendChild(k);});z.append(top,kr);zones.appendChild(z);});
+
+  // ---- view toggle ----
+  document.getElementById('vt').addEventListener('click',e=>{
+    const btn=e.target.closest('button'); if(!btn) return;
+    document.querySelectorAll('#vt button').forEach(b=>b.classList.toggle('on',b===btn));
+    const v=btn.dataset.v;
+    document.querySelectorAll('.panel[data-view]').forEach(p=>p.classList.toggle('hidden',p.dataset.view!==v));
+  });
+</script>
+</body>
+</html>
