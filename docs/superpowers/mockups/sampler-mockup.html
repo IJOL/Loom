@@ -40,6 +40,12 @@ select{padding:4px 6px}optgroup{color:var(--text-dim)}option{color:var(--text);t
 .radio-strip{display:inline-flex;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:1px}
 .radio-btn{display:inline-flex;align-items:center;justify-content:center;height:24px;padding:0 10px;background:transparent;color:var(--text-dim);border:1px solid transparent;border-radius:2px;font-family:var(--mono);font-size:10px;text-transform:uppercase;cursor:pointer}
 .radio-btn.active{color:var(--amber);background:var(--surface-3);border-color:var(--amber)}
+.sampler-h{display:flex;align-items:center;gap:12px;flex-wrap:wrap;text-transform:none;letter-spacing:0}
+.sampler-h #instHead{color:var(--text-dim);font-size:10px;letter-spacing:.06em}
+.slideswitch{position:relative;display:inline-flex;border:1px solid var(--border);border-radius:13px;background:var(--surface);padding:2px;cursor:pointer;user-select:none}
+.slideswitch .msl{position:relative;z-index:2;padding:3px 12px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);transition:color .15s}
+.slideswitch .msl.on{color:#0e0c0a;font-weight:700}
+.slideswitch .thumb{position:absolute;top:2px;bottom:2px;border-radius:11px;background:var(--amber);transition:left .18s ease,width .18s ease;z-index:1;box-shadow:0 0 6px var(--amber-glow)}
 /* knob real */
 .knob{display:flex;flex-direction:column;align-items:center;gap:2px;user-select:none}
 .knob-label{font-size:9px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
@@ -135,7 +141,7 @@ select{padding:4px 6px}optgroup{color:var(--text-dim)}option{color:var(--text);t
     <button>Load</button><button>Save As…</button><button>🎲</button>
     <span class="vdiv"></span><span id="kGain"></span><span id="kVoices"></span>
     <span style="flex:1"></span>
-    <span class="radio-strip" id="vt"><button class="radio-btn active" data-v="melodic">⌨ Melódico</button><button class="radio-btn" data-v="drumkit">▦ Drumkit</button><button class="radio-btn" data-v="loop">〜 Loop</button></span>
+    <span class="radio-strip" id="vt"><button class="radio-btn active" data-v="sampler">▣ Sampler</button><button class="radio-btn" data-v="loop">〜 Loop</button></span>
   </div>
 
   <!-- ░░░ LOOP ░░░ -->
@@ -170,8 +176,11 @@ select{padding:4px 6px}optgroup{color:var(--text-dim)}option{color:var(--text);t
   </div>
 
   <!-- ░░░ INSTRUMENTO · Melódico ⇄ Drumkit (mismo keymap, distinta presentación) ░░░ -->
-  <div class="panel" data-view="inst">
-    <div class="panel-h" id="instHead"></div>
+  <div class="panel" data-view="sampler">
+    <div class="panel-h sampler-h"><span>▣ <b>Sampler</b></span>
+      <span class="slideswitch" id="modeSwitch" title="Solo cambia la visualización (mismo instrumento)"><span class="thumb"></span><span class="msl on" data-m="melodic">⌨ Melódico</span><span class="msl" data-m="drumkit">▦ Drumkit</span></span>
+      <span id="instHead"></span>
+    </div>
     <div class="panel-b">
       <div class="hint" id="instHint"></div>
       <div class="mapwrap"><div class="mapblock" id="instBlock" style="--n:10">
@@ -286,7 +295,7 @@ function renderInstrument(mode){
   for(let i=0;i<NK;i++){const k=document.createElement('div');k.className='key'+(bk[i%12]?' bk':'');kbd.appendChild(k);}
   let samples=[];
   if(mode==='melodic'){
-    $('instHead').innerHTML='⌨ <b>Melódico</b> · el mismo instrumento — muestras por <b>rangos</b> de teclas';
+    $('instHead').innerHTML='· muestras por <b>rangos</b> de teclas';
     $('instHint').innerHTML='<b>⚡</b>&nbsp; Cada muestra cubre un <b>rango</b> con su nota raíz; al tocar una tecla del rango suena pitcheada. Selecciona una muestra para verla/editarla.';
     $('instImport').innerHTML='<b>＋ Importar muestras…</b> · arrastra WAV(s) — cada una se mapea a un rango (ajustas root/rango). <b>Mismo import</b> que Drumkit.';
     $('instConv').innerHTML='<b>⇄ Convertir a Drumkit es solo presentación</b> (mismo keymap): cada muestra pasa a su tecla raíz (1 tecla); al volver, los rangos siguen ahí. Sin pérdida.';
@@ -297,16 +306,16 @@ function renderInstrument(mode){
     block.style.setProperty('--n',ZON.length);
     connect(conn,ZON.map(z=>((z.lo+z.hi+1)/2)/NK*100),ZON.length,i=>PAL[i]);
   }else{
-    $('instHead').innerHTML='▦ <b>Drumkit</b> · el mismo instrumento — <b>una muestra por tecla</b> (barra de sonidos)';
-    $('instHint').innerHTML='<b>⚡</b>&nbsp; Cada sonido del kit en <b>una tecla</b>, a su tono nativo. Selecciona un sonido para ver/editar su muestra.';
-    $('instImport').innerHTML='<b>Cambiar sonidos:</b> arrastra un WAV a un pad (⤓) · <button>＋ Pad</button> · <button>Cargar otro kit…</button> — <b>mismo import</b> que Melódico.';
+    const KIT=['Kick','Snare','Clap','Rim','CH','OH','Perc','Tom1','Tom2','Tom3','Cowbl','Ride','Crash','Shkr'],keyOf=i=>Math.round((i+0.5)/KIT.length*NK),kcol=i=>'hsl('+Math.round(i*360/KIT.length)+',68%,56%)';
+    $('instHead').innerHTML='· <b>'+KIT.length+' sonidos</b> (nº variable) — una muestra por tecla';
+    $('instHint').innerHTML='<b>⚡</b>&nbsp; Un drumkit tiene <b>cualquier número de sonidos</b> (más o menos de 8) — se añaden/quitan con ＋/－ Pad. Cada sonido en una tecla; se usa igual en el motor <b>Drums</b>. Selecciona uno para ver/editar su muestra.';
+    $('instImport').innerHTML='<b>Sonidos del kit ('+KIT.length+'):</b> arrastra un WAV a un pad (⤓) · <button>＋ Pad</button> <button>－ Pad</button> · <button>Cargar otro kit…</button> — kits de <b>tamaño variable</b>. Mismo import que Melódico.';
     $('instConv').innerHTML='<b>⇄ Convertir a Melódico es solo presentación</b> (mismo keymap): cada sonido es una zona de 1 tecla que puedes <b>ensanchar</b>; al volver vuelve a su tecla. Sin pérdida.';
-    const KIT=['Kick','Snare','Clap','CH','OH','Tom','Cowbl','Ride'],keyOf=i=>Math.round((i+0.5)/KIT.length*NK);
-    KIT.forEach((name,i)=>{const key=keyOf(i);const lab=document.createElement('div');lab.className='dseg';lab.style.left=((key+0.5)/NK*100)+'%';lab.style.background=PAL[i];lab.textContent=name;zb.appendChild(lab);
-      const k=kbd.children[key];k.classList.add('hot');k.style.setProperty('--hot',PAL[i]);const r=document.createElement('span');r.className='rt';r.textContent='●';r.style.color=PAL[i];k.appendChild(r);});
-    samples=KIT.map((name,i)=>({head:name,sub:nn(keyOf(i)),color:PAL[i],name:'kit_'+name.toLowerCase()+'.wav',knobs:[['Tune',.5,'0'],['Cut',.7,'72'],['Decay',.4,'.3s'],['Lvl',.8,'0'],['Rev',.2,'12'],['Dly',.1,'0']],loop:false}));
+    KIT.forEach((name,i)=>{const key=keyOf(i);const lab=document.createElement('div');lab.className='dseg';lab.style.left=((key+0.5)/NK*100)+'%';lab.style.background=kcol(i);lab.textContent=name;zb.appendChild(lab);
+      const k=kbd.children[key];k.classList.add('hot');k.style.setProperty('--hot',kcol(i));const r=document.createElement('span');r.className='rt';r.textContent='●';r.style.color=kcol(i);k.appendChild(r);});
+    samples=KIT.map((name,i)=>({head:name,sub:nn(keyOf(i)),color:kcol(i),name:'kit_'+name.toLowerCase()+'.wav',knobs:[['Tune',.5,'0'],['Cut',.7,'72'],['Decay',.4,'.3s'],['Lvl',.8,'0'],['Rev',.2,'12'],['Dly',.1,'0']],loop:false}));
     block.style.setProperty('--n',KIT.length);
-    connect(conn,KIT.map((_,i)=>(keyOf(i)+0.5)/NK*100),KIT.length,i=>PAL[i]);
+    connect(conn,KIT.map((_,i)=>(keyOf(i)+0.5)/NK*100),KIT.length,kcol);
   }
   if(selSample>=samples.length)selSample=0;
   samples.forEach((s,i)=>{const st=strip(s.head,s.sub,s.knobs,s.color,s.name,s.loop);const hd=st.querySelector('.dv-head');hd.style.cursor='pointer';hd.title='Ver/editar esta muestra';
@@ -314,14 +323,19 @@ function renderInstrument(mode){
     if(i===selSample)st.classList.add('sel');strips.appendChild(st);});
   renderSampleDetail(samples,selSample);
 }
+let instMode='melodic';
+function setMode(m){instMode=m;const sw=$('modeSwitch');sw.querySelectorAll('.msl').forEach(s=>s.classList.toggle('on',s.dataset.m===m));
+  const on=sw.querySelector('.msl.on'),th=sw.querySelector('.thumb');th.style.left=on.offsetLeft+'px';th.style.width=on.offsetWidth+'px';
+  renderInstrument(m);}
+$('modeSwitch').addEventListener('click',e=>{const s=e.target.closest('.msl');if(s)setMode(s.dataset.m);});
 $('vt').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   document.querySelectorAll('#vt .radio-btn').forEach(x=>x.classList.toggle('active',x===b));
-  const v=b.dataset.v,inst=(v==='melodic'||v==='drumkit');
-  document.querySelector('.panel[data-view="inst"]').hidden=!inst;
+  const v=b.dataset.v;
+  document.querySelector('.panel[data-view="sampler"]').hidden=(v!=='sampler');
   document.querySelector('.panel[data-view="loop"]').hidden=(v!=='loop');
-  if(inst)renderInstrument(v);
+  if(v==='sampler')setMode(instMode);
 });
-renderInstrument('melodic');
+setMode('melodic');
 </script>
 </body>
 </html>
