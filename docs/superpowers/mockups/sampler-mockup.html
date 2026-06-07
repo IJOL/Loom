@@ -77,6 +77,17 @@ select{padding:4px 6px}optgroup{color:var(--text-dim)}option{color:var(--text);t
 .mw{position:absolute;top:0;bottom:0;display:flex;align-items:center;gap:1px;padding:0 2px;overflow:hidden;border-right:1px solid #0e0c0a}
 .mw .b{flex:1;min-width:1px;border-radius:1px}
 .mwl{position:absolute;top:2px;left:4px;font-size:8px;font-weight:700;z-index:2;text-shadow:0 1px 2px #000}
+/* panel de muestra seleccionada (muestra a muestra) */
+.dv-col{cursor:default}
+.dv-col.sel{box-shadow:inset 0 0 0 1px var(--amber)}
+.sampdetail{border:1px solid var(--border);border-radius:2px;background:var(--surface-2);padding:10px 12px}
+.sampdetail .sw{width:12px;height:12px;border-radius:3px;flex:0 0 auto}
+.sdhead{display:flex;align-items:center;gap:10px;font-size:11px;margin-bottom:8px;flex-wrap:wrap}
+.sdname{font-weight:700}
+.sd-wave{position:relative;height:60px;background:#080706;border:1px solid var(--border);border-radius:2px;display:flex;align-items:center;gap:1px;padding:0 4px;overflow:hidden}
+.sd-wave .b{flex:1;min-width:1px;border-radius:1px}
+.sd-loop{position:absolute;top:0;bottom:0;background:rgba(255,167,38,.12);border-left:2px solid var(--amber);border-right:2px solid var(--amber)}
+.sd-loop .lh{position:absolute;top:0;width:6px;height:9px;background:var(--amber);border-radius:1px;cursor:ew-resize}
 /* ── conector ── */
 .conn{display:block;width:100%;height:30px}
 .conn path{fill:none;stroke:var(--amber-soft);stroke-width:1}
@@ -164,10 +175,12 @@ select{padding:4px 6px}optgroup{color:var(--text-dim)}option{color:var(--text);t
     <div class="panel-b">
       <div class="hint" id="instHint"></div>
       <div class="mapwrap"><div class="mapblock" id="instBlock" style="--n:10">
-        <div class="viz"><div class="instwave" id="instWave"></div><div class="kbd" id="instKbd"></div></div>
+        <div class="viz"><div class="zonebar" id="instZone"></div><div class="kbd" id="instKbd"></div></div>
         <svg class="conn" id="instConn" viewBox="0 0 1000 30" preserveAspectRatio="none"></svg>
         <div class="strips" id="instStrips"></div>
       </div></div>
+      <div class="sec">Muestra seleccionada · muestra a muestra (su onda + loop points; el editor completo vivirá en el editor de notas)</div>
+      <div class="sampdetail" id="sampDetail"></div>
       <div class="importbar" id="instImport" style="margin-top:10px"></div>
       <div class="hint" id="instConv" style="border-left-color:var(--knob-blue);margin:10px 0 0"></div>
     </div>
@@ -254,33 +267,52 @@ function miniWave(host,leftPct,widthPct,color,label,seed){
   for(let i=0;i<n;i++){const b=document.createElement('div');b.className='b';b.style.height=(14+Math.abs(Math.sin((i+seed)*0.9))*72*Math.exp(-(i/n)*1.3))+'%';b.style.background=color;b.style.opacity='.72';w.appendChild(b);}
   host.appendChild(w);
 }
+let selSample=0;
+function renderSampleDetail(samples,idx){
+  const s=samples[idx],host=$('sampDetail');host.innerHTML='';
+  const head=document.createElement('div');head.className='sdhead';
+  head.innerHTML='<span class="sw" style="background:'+s.color+'"></span><span class="sdname" style="color:'+s.color+'">'+s.name+'</span>'+
+    '<span class="root">'+s.sub+'</span>'+(s.loop?'<span class="root" style="color:var(--amber);border-color:var(--amber)">⟳ loop sostenido</span>':'<span class="root">one-shot</span>')+
+    '<span class="hintinline" style="margin-left:auto">⤓ cambiar muestra · trim + loop points aquí (editor de muestra)</span>';
+  host.appendChild(head);
+  const wave=document.createElement('div');wave.className='sd-wave';
+  for(let i=0;i<100;i++){const b=document.createElement('div');b.className='b';b.style.height=(12+Math.abs(Math.sin((i+idx*5)*0.55))*78*Math.exp(-(i/100)*1.1))+'%';b.style.background=s.color;b.style.opacity='.6';wave.appendChild(b);}
+  if(s.loop){const lp=document.createElement('div');lp.className='sd-loop';lp.style.left='40%';lp.style.width='36%';lp.innerHTML='<span class="lh" style="left:-4px"></span><span class="lh" style="right:-4px"></span>';wave.appendChild(lp);}
+  host.appendChild(wave);
+}
 function renderInstrument(mode){
-  const wv=$('instWave'),kbd=$('instKbd'),strips=$('instStrips'),conn=$('instConn'),block=$('instBlock');
-  wv.innerHTML='';kbd.innerHTML='';strips.innerHTML='';
+  const zb=$('instZone'),kbd=$('instKbd'),strips=$('instStrips'),conn=$('instConn'),block=$('instBlock');
+  zb.innerHTML='';kbd.innerHTML='';strips.innerHTML='';zb.className='zonebar'+(mode==='drumkit'?' drum':'');
   for(let i=0;i<NK;i++){const k=document.createElement('div');k.className='key'+(bk[i%12]?' bk':'');kbd.appendChild(k);}
+  let samples=[];
   if(mode==='melodic'){
-    $('instHead').innerHTML='⌨ <b>Melódico</b> · el mismo instrumento — muestras por <b>rangos</b> de teclas (su onda encima)';
-    $('instHint').innerHTML='<b>⚡</b>&nbsp; Cada muestra cubre un <b>rango</b> con su nota raíz; al tocar una tecla del rango suena pitcheada. La onda de cada muestra va sobre su zona.';
+    $('instHead').innerHTML='⌨ <b>Melódico</b> · el mismo instrumento — muestras por <b>rangos</b> de teclas';
+    $('instHint').innerHTML='<b>⚡</b>&nbsp; Cada muestra cubre un <b>rango</b> con su nota raíz; al tocar una tecla del rango suena pitcheada. Selecciona una muestra para verla/editarla.';
     $('instImport').innerHTML='<b>＋ Importar muestras…</b> · arrastra WAV(s) — cada una se mapea a un rango (ajustas root/rango). <b>Mismo import</b> que Drumkit.';
-    $('instConv').innerHTML='<b>⇄ Convertir es solo presentación</b> (mismo keymap): a <b>Drumkit</b> cada muestra pasa a su tecla raíz (1 tecla); al volver a <b>Melódico</b> los rangos siguen ahí. Round-trip sin pérdida.';
+    $('instConv').innerHTML='<b>⇄ Convertir a Drumkit es solo presentación</b> (mismo keymap): cada muestra pasa a su tecla raíz (1 tecla); al volver, los rangos siguen ahí. Sin pérdida.';
     const rawZ=[8,7,7,6,6,6,5,5,5,5];let ka=0;const ZON=rawZ.map((kc,i)=>{const o={lo:ka,hi:ka+kc-1,kc,root:ka+(kc/2|0)};ka+=kc;return o;});
-    ZON.forEach((z,i)=>miniWave(wv,z.lo/NK*100,z.kc/NK*100,PAL[i],nn(z.root),i*2));
+    ZON.forEach((z,i)=>{const seg=document.createElement('div');seg.className='zseg';seg.style.flex=z.kc;seg.style.background=PAL[i];seg.textContent=nn(z.root);zb.appendChild(seg);});
     ZON.forEach(z=>{const r=document.createElement('span');r.className='rt';r.textContent='◆';kbd.children[z.root].appendChild(r);});
-    ZON.forEach((z,i)=>strips.appendChild(strip(nn(z.root),nn(z.lo)+'–'+nn(z.hi),[['Tune',.5,'0'],['Cut',.85,'88'],['Lvl',.8,'0'],['Pan',.5,'C']],PAL[i],'pno_'+nn(z.root).replace('#','s')+'.wav',true)));
+    samples=ZON.map((z,i)=>({head:nn(z.root),sub:nn(z.lo)+'–'+nn(z.hi),color:PAL[i],name:'pno_'+nn(z.root).replace('#','s')+'.wav',knobs:[['Tune',.5,'0'],['Cut',.85,'88'],['Lvl',.8,'0'],['Pan',.5,'C']],loop:true}));
     block.style.setProperty('--n',ZON.length);
     connect(conn,ZON.map(z=>((z.lo+z.hi+1)/2)/NK*100),ZON.length,i=>PAL[i]);
   }else{
-    $('instHead').innerHTML='▦ <b>Drumkit</b> · el mismo instrumento — <b>una muestra por tecla</b>, su onda encima';
-    $('instHint').innerHTML='<b>⚡</b>&nbsp; Cada sonido del kit es una muestra en <b>una tecla</b> (su onda arriba), a su tono nativo. Zonas de 1 tecla.';
+    $('instHead').innerHTML='▦ <b>Drumkit</b> · el mismo instrumento — <b>una muestra por tecla</b> (barra de sonidos)';
+    $('instHint').innerHTML='<b>⚡</b>&nbsp; Cada sonido del kit en <b>una tecla</b>, a su tono nativo. Selecciona un sonido para ver/editar su muestra.';
     $('instImport').innerHTML='<b>Cambiar sonidos:</b> arrastra un WAV a un pad (⤓) · <button>＋ Pad</button> · <button>Cargar otro kit…</button> — <b>mismo import</b> que Melódico.';
-    $('instConv').innerHTML='<b>⇄ Convertir es solo presentación</b> (mismo keymap): a <b>Melódico</b> cada sonido es una zona de 1 tecla que puedes <b>ensanchar</b>; al volver vuelve a su tecla. Sin pérdida.';
-    const KIT=['Kick','Snare','Clap','CH','OH','Tom','Cowbl','Ride'],seg=NK/KIT.length;
-    KIT.forEach((name,i)=>{miniWave(wv,(i*seg)/NK*100,seg/NK*100,PAL[i],name,i*3);
-      const key=Math.round(i*seg+seg/2);const k=kbd.children[key];k.classList.add('hot');k.style.setProperty('--hot',PAL[i]);const r=document.createElement('span');r.className='rt';r.textContent='●';r.style.color=PAL[i];k.appendChild(r);});
-    KIT.forEach((name,i)=>{const key=Math.round(i*seg+seg/2);strips.appendChild(strip(name,nn(key),[['Tune',.5,'0'],['Cut',.7,'72'],['Decay',.4,'.3s'],['Lvl',.8,'0'],['Rev',.2,'12'],['Dly',.1,'0']],PAL[i],'kit_'+name.toLowerCase()+'.wav',false));});
+    $('instConv').innerHTML='<b>⇄ Convertir a Melódico es solo presentación</b> (mismo keymap): cada sonido es una zona de 1 tecla que puedes <b>ensanchar</b>; al volver vuelve a su tecla. Sin pérdida.';
+    const KIT=['Kick','Snare','Clap','CH','OH','Tom','Cowbl','Ride'],keyOf=i=>Math.round((i+0.5)/KIT.length*NK);
+    KIT.forEach((name,i)=>{const key=keyOf(i);const lab=document.createElement('div');lab.className='dseg';lab.style.left=((key+0.5)/NK*100)+'%';lab.style.background=PAL[i];lab.textContent=name;zb.appendChild(lab);
+      const k=kbd.children[key];k.classList.add('hot');k.style.setProperty('--hot',PAL[i]);const r=document.createElement('span');r.className='rt';r.textContent='●';r.style.color=PAL[i];k.appendChild(r);});
+    samples=KIT.map((name,i)=>({head:name,sub:nn(keyOf(i)),color:PAL[i],name:'kit_'+name.toLowerCase()+'.wav',knobs:[['Tune',.5,'0'],['Cut',.7,'72'],['Decay',.4,'.3s'],['Lvl',.8,'0'],['Rev',.2,'12'],['Dly',.1,'0']],loop:false}));
     block.style.setProperty('--n',KIT.length);
-    connect(conn,KIT.map((_,i)=>((i+0.5)/KIT.length)*100),KIT.length,i=>PAL[i]);
+    connect(conn,KIT.map((_,i)=>(keyOf(i)+0.5)/NK*100),KIT.length,i=>PAL[i]);
   }
+  if(selSample>=samples.length)selSample=0;
+  samples.forEach((s,i)=>{const st=strip(s.head,s.sub,s.knobs,s.color,s.name,s.loop);const hd=st.querySelector('.dv-head');hd.style.cursor='pointer';hd.title='Ver/editar esta muestra';
+    st.addEventListener('click',()=>{selSample=i;[...strips.children].forEach((c,j)=>c.classList.toggle('sel',j===i));renderSampleDetail(samples,i);});
+    if(i===selSample)st.classList.add('sel');strips.appendChild(st);});
+  renderSampleDetail(samples,selSample);
 }
 $('vt').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   document.querySelectorAll('#vt .radio-btn').forEach(x=>x.classList.toggle('active',x===b));
