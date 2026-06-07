@@ -84,10 +84,20 @@ These live in the TB-303 engine ([src/core/synth.ts](src/core/synth.ts) + the la
 
 Implemented design docs are intentionally **not kept in the tree** — they drift from the code and pollute context; recover them from git history if you need the rationale. Only **outstanding** design work stays under [docs/superpowers/](docs/superpowers/): the `plans/`/`specs/` still present describe unfinished features, summarised in [docs/superpowers/REMAINING-WORK.md](docs/superpowers/REMAINING-WORK.md).
 
+## Approved mockups & honest "done" (process — learned the hard way 2026-06-06)
+
+A failed Sampler overhaul (shipped the OLD UI instead of the approved mockup; a loop preset that never played) traced to one root cause: **the approved mockup was never turned into verifiable requirements**, and "tests green" was treated as "done". Rules:
+
+- **An approved mockup is a committed artifact.** When the user approves a mockup, save it in-tree next to its spec (`docs/superpowers/specs/<date>-<topic>-mockup.html`) and link it from the spec. NEVER leave it as a throwaway `public/*-mockup.html` — those get deleted (the Sampler one was lost, uncommitted, forever).
+- **The spec must link the mockup and name what it drops.** If a spec defers or excludes any part of the approved *look*, that is the **user's** call → a `⛔ CONFIRMAR` block, not a silent scope cut. Re-scoping "make it like the mockup" into "reorganise the logic on the old UI" is the exact failure to avoid.
+- **Visual parity is an acceptance criterion.** For any work with an approved mockup, "done" requires a human look: load the real screen, screenshot, compare side-by-side with the mockup. Automated tests do not check whether it matches what was approved.
+- **One test per user path.** No `(or …)` alternatives in test tasks — they let a broken path (e.g. the loop *preset* picker) hide behind a working one (loop *import*). Each path gets its own test.
+- **Don't claim a UI feature "done"/"verified" without opening it and looking.** (Complements "lean on code, not the browser" for *debugging* — but for *done-claims on UI*, the browser look is mandatory.)
+
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **tb303-synth** (6898 symbols, 16045 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **Loom** (10159 symbols, 21621 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -110,10 +120,10 @@ This project is indexed by GitNexus as **tb303-synth** (6898 symbols, 16045 rela
 
 | Resource | Use for |
 |----------|---------|
-| `gitnexus://repo/tb303-synth/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/tb303-synth/clusters` | All functional areas |
-| `gitnexus://repo/tb303-synth/processes` | All execution flows |
-| `gitnexus://repo/tb303-synth/process/{name}` | Step-by-step execution trace |
+| `gitnexus://repo/Loom/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/Loom/clusters` | All functional areas |
+| `gitnexus://repo/Loom/processes` | All execution flows |
+| `gitnexus://repo/Loom/process/{name}` | Step-by-step execution trace |
 
 ## CLI
 
