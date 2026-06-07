@@ -5,6 +5,7 @@
   padding: 6px 4px;
 }
 .dv-col {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -15,10 +16,41 @@
   background: rgba(255, 255, 255, 0.03);
 }
 .dv-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  width: 100%;
+  margin-bottom: 2px;
+}
+.dv-name {
   font-size: 10px;
   letter-spacing: 0.04em;
-  opacity: 0.8;
-  margin-bottom: 2px;
+  opacity: 0.9;
+}
+.dv-key {
+  font-size: 9px;
+  opacity: 0.55;
+  font-family: var(--mono, ui-monospace, monospace);
+}
+.dv-del {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  line-height: 1;
+  font-size: 10px;
+  color: var(--red, #e53935);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  opacity: 0.45;
+
+  &:hover {
+    opacity: 1;
+  }
 }
 .dv-ms {
   display: flex;

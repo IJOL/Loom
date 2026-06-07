@@ -42,11 +42,19 @@ const KNOB = 34;
 
 // Precondition: the caller clears `host` first (e.g. buildParamUI sets container.innerHTML='');
 // this appends a fresh `.drum-voice-rack`.
+/** Optional per-column extras for the SAMPLER drumkit (a pad has a trigger key and
+ *  can be deleted). Synth drums omit these — their voices are fixed. */
+export interface DrumRackOpts {
+  keyOf?: (voice: string) => string;     // e.g. 'kick' → 'D1'
+  onDelete?: (voice: string) => void;    // remove this pad
+}
+
 export function renderDrumVoiceRack(
   engine: SynthEngine,
   ctx: EngineUIContext,
   host: HTMLElement,
   voices: string[] = DRUM_LANES as unknown as string[],
+  opts: DrumRackOpts = {},
 ): void {
   const layout = (engine as unknown as { getRackLayout?: () => RackLayout }).getRackLayout?.() ?? DEFAULT_LAYOUT;
 
@@ -65,7 +73,25 @@ export function renderDrumVoiceRack(
 
     const head = document.createElement('div');
     head.className = 'dv-head';
-    head.textContent = VOICE_LABELS[voice as DrumVoice] ?? voice.toUpperCase();
+    const nameEl = document.createElement('span');
+    nameEl.className = 'dv-name';
+    nameEl.textContent = VOICE_LABELS[voice as DrumVoice] ?? voice.toUpperCase();
+    head.appendChild(nameEl);
+    if (opts.keyOf) {
+      const keyEl = document.createElement('span');
+      keyEl.className = 'dv-key';
+      keyEl.textContent = opts.keyOf(voice);
+      head.appendChild(keyEl);
+    }
+    if (opts.onDelete) {
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'dv-del';
+      del.textContent = '✕';
+      del.title = 'Delete this pad';
+      del.addEventListener('click', () => opts.onDelete!(voice));
+      head.appendChild(del);
+    }
     col.appendChild(head);
 
     // Per-voice mute/solo. Mute persists (mirrored to engineState); solo is

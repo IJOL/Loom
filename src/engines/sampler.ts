@@ -21,7 +21,7 @@ import { mirrorKeymapChange, mirrorDrumkitId, mirrorInstrumentId, mirrorPadParam
 import { listDrumkits, fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
 import { listInstruments, fetchInstrumentManifest, loadInstrument, type InstrumentIndexEntry } from '../samples/instrument-loader';
 import { PAD_DEFAULTS, PAD_LEAF_SPECS, padKeyForNote, noteForPadKey, nextFreePadNote, type PadParams } from './sampler-pad-params';
-import { renderSamplerKeyboardMap } from './sampler-keyboard-map';
+import { renderSamplerKeyboardMap, noteName } from './sampler-keyboard-map';
 import type { FxBus } from '../core/fx';
 import { computeVoiceMutes } from '../core/mute-solo';
 import { renderDrumVoiceRack } from './drum-voice-rack';
@@ -444,7 +444,19 @@ export class SamplerEngine implements SynthEngine {
       const rackHost = document.createElement('div');
       container.appendChild(rackHost);
       const voices = this.keymap.map((e) => padKeyForNote(e.rootNote));
-      renderDrumVoiceRack(this, ctx, rackHost, voices);
+      // Each pad (channel) carries its own trigger key + a ✕ delete, so there is
+      // no separate sample list (the list is melodic-only below).
+      const voiceNote = new Map(this.keymap.map((e) => [padKeyForNote(e.rootNote), e.rootNote] as const));
+      renderDrumVoiceRack(this, ctx, rackHost, voices, {
+        keyOf: (voice) => noteName(voiceNote.get(voice) ?? noteForPadKey(voice)),
+        onDelete: (voice) => {
+          if (this.keymap.length <= 1) return;
+          const km = this.keymap.filter((e) => padKeyForNote(e.rootNote) !== voice);
+          this.setKeymap(km);
+          if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, this.keymap);
+          rebuild();
+        },
+      });
     }
 
     // Param knobs — globals only (gain + poly.voices). Per-pad/zone params are
@@ -747,7 +759,9 @@ export class SamplerEngine implements SynthEngine {
     list.className = 'sampler-keymap-list';
     section.appendChild(list);
     const keymap = this.getKeymap();
-    keymap.forEach((entry, i) => {
+    // Drumkit pads are edited as channels in the rack above — each strip carries its
+    // trigger key + a ✕ delete — so the per-sample list is melodic-only.
+    if (!this.isDrumkit()) keymap.forEach((entry, i) => {
       const row = document.createElement('div');
       row.className = 'sampler-keymap-row';
 
