@@ -764,12 +764,17 @@ export class SamplerEngine implements SynthEngine {
     loopInput.style.display = 'none';
     section.appendChild(loopInput);
 
+    // Both import buttons live in ONE compact row (a flex column stretches its
+    // children, which is why they were full-width before).
+    const importRow = document.createElement('div');
+    importRow.className = 'sampler-import-row';
+
     const loopBtn = document.createElement('button');
     loopBtn.className = 'sampler-import-loop-btn';
     loopBtn.textContent = 'Import loop…';
     loopBtn.title = 'Import a loop: slices it and creates a note clip with its piano-roll';
     loopBtn.addEventListener('click', () => loopInput.click());
-    section.appendChild(loopBtn);
+    importRow.appendChild(loopBtn);
 
     loopInput.addEventListener('change', () => {
       const file = loopInput.files?.[0];
@@ -801,7 +806,8 @@ export class SamplerEngine implements SynthEngine {
     importBtn.textContent = 'Import samples…';
     importBtn.title = 'Import one or more audio files as keymap zones';
     importBtn.addEventListener('click', () => fileInput.click());
-    section.appendChild(importBtn);
+    importRow.appendChild(importBtn);
+    section.appendChild(importRow);
 
     const importHint = document.createElement('div');
     importHint.className = 'sampler-import-hint label';

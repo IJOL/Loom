@@ -346,6 +346,17 @@
   flex-direction: column;
   gap: 6px;
 }
+// Compact import row (Import loop… / Import samples…): buttons keep their natural
+// width + sit left, instead of stretching full-width in the flex column.
+.sampler-import-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  button {
+    flex: 0 0 auto;
+  }
+}
 .sampler-padbar {
   display: flex;
   align-items: center;
