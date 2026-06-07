@@ -90,10 +90,14 @@ select{padding:4px 6px}optgroup{color:var(--text-dim)}option{color:var(--text);t
 .sampdetail .sw{width:12px;height:12px;border-radius:3px;flex:0 0 auto}
 .sdhead{display:flex;align-items:center;gap:10px;font-size:11px;margin-bottom:8px;flex-wrap:wrap}
 .sdname{font-weight:700}
-.sd-wave{position:relative;height:60px;background:#080706;border:1px solid var(--border);border-radius:2px;display:flex;align-items:center;gap:1px;padding:0 4px;overflow:hidden}
+.sd-wave{position:relative;height:60px;background:#080706;border:1px solid var(--border);border-radius:2px;overflow-x:auto;overflow-y:hidden}
+.sd-wave-inner{position:relative;height:100%;display:flex;align-items:center;gap:1px;padding:0 4px;min-width:100%}
 .sd-wave .b{flex:1;min-width:1px;border-radius:1px}
 .sd-loop{position:absolute;top:0;bottom:0;background:rgba(255,167,38,.12);border-left:2px solid var(--amber);border-right:2px solid var(--amber)}
 .sd-loop .lh{position:absolute;top:0;width:6px;height:9px;background:var(--amber);border-radius:1px;cursor:ew-resize}
+.zoomctl{display:inline-flex;align-items:center;gap:6px}
+.zbtn{padding:1px 8px;font-size:12px;line-height:1.1}
+.zlvl{font-size:10px;color:var(--text-dim);min-width:24px;text-align:center}
 /* ── conector ── */
 .conn{display:block;width:100%;height:30px}
 .conn path{fill:none;stroke:var(--amber-soft);stroke-width:1}
@@ -177,8 +181,7 @@ select{padding:4px 6px}optgroup{color:var(--text-dim)}option{color:var(--text);t
 
   <!-- ░░░ INSTRUMENTO · Melódico ⇄ Drumkit (mismo keymap, distinta presentación) ░░░ -->
   <div class="panel" data-view="sampler">
-    <div class="panel-h sampler-h"><span>▣ <b>Sampler</b></span>
-      <span class="slideswitch" id="modeSwitch" title="Solo cambia la visualización (mismo instrumento)"><span class="thumb"></span><span class="msl on" data-m="melodic">⌨ Melódico</span><span class="msl" data-m="drumkit">▦ Drumkit</span></span>
+    <div class="panel-h sampler-h"><span class="slideswitch" id="modeSwitch" title="Solo cambia la visualización (mismo instrumento)"><span class="thumb"></span><span class="msl on" data-m="melodic">⌨ Melódico</span><span class="msl" data-m="drumkit">▦ Drumkit</span></span>
       <span id="instHead"></span>
     </div>
     <div class="panel-b">
@@ -277,17 +280,22 @@ function miniWave(host,leftPct,widthPct,color,label,seed){
   host.appendChild(w);
 }
 let selSample=0;
+let sampZoom=1,curSamples=null,curIdx=0;
 function renderSampleDetail(samples,idx){
+  curSamples=samples;curIdx=idx;
   const s=samples[idx],host=$('sampDetail');host.innerHTML='';
   const head=document.createElement('div');head.className='sdhead';
   head.innerHTML='<span class="sw" style="background:'+s.color+'"></span><span class="sdname" style="color:'+s.color+'">'+s.name+'</span>'+
     '<span class="root">'+s.sub+'</span>'+(s.loop?'<span class="root" style="color:var(--amber);border-color:var(--amber)">⟳ loop sostenido</span>':'<span class="root">one-shot</span>')+
-    '<span class="hintinline" style="margin-left:auto">⤓ cambiar muestra · trim + loop points aquí (editor de muestra)</span>';
+    '<span class="zoomctl" style="margin-left:auto"><span class="hintinline">⤓ cambiar · trim + loop · zoom</span><button class="zbtn" data-z="out">－</button><span class="zlvl">'+sampZoom+'×</span><button class="zbtn" data-z="in">＋</button></span>';
   host.appendChild(head);
-  const wave=document.createElement('div');wave.className='sd-wave';
-  for(let i=0;i<100;i++){const b=document.createElement('div');b.className='b';b.style.height=(12+Math.abs(Math.sin((i+idx*5)*0.55))*78*Math.exp(-(i/100)*1.1))+'%';b.style.background=s.color;b.style.opacity='.6';wave.appendChild(b);}
-  if(s.loop){const lp=document.createElement('div');lp.className='sd-loop';lp.style.left='40%';lp.style.width='36%';lp.innerHTML='<span class="lh" style="left:-4px"></span><span class="lh" style="right:-4px"></span>';wave.appendChild(lp);}
-  host.appendChild(wave);
+  const sc=document.createElement('div');sc.className='sd-wave';
+  const inner=document.createElement('div');inner.className='sd-wave-inner';inner.style.width=(sampZoom*100)+'%';
+  const n=Math.round(100*sampZoom);
+  for(let i=0;i<n;i++){const t=i/n;const b=document.createElement('div');b.className='b';b.style.height=(12+Math.abs(Math.sin(t*44+idx*5))*78*Math.exp(-t*1.1))+'%';b.style.background=s.color;b.style.opacity='.6';inner.appendChild(b);}
+  if(s.loop){const lp=document.createElement('div');lp.className='sd-loop';lp.style.left='40%';lp.style.width='36%';lp.innerHTML='<span class="lh" style="left:-4px"></span><span class="lh" style="right:-4px"></span>';inner.appendChild(lp);}
+  sc.appendChild(inner);host.appendChild(sc);
+  head.querySelectorAll('.zbtn').forEach(z=>z.addEventListener('click',e=>{e.stopPropagation();sampZoom=z.dataset.z==='in'?Math.min(16,sampZoom*2):Math.max(1,sampZoom/2);renderSampleDetail(curSamples,curIdx);}));
 }
 function renderInstrument(mode){
   const zb=$('instZone'),kbd=$('instKbd'),strips=$('instStrips'),conn=$('instConn'),block=$('instBlock');
