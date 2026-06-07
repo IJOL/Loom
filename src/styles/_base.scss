@@ -30,6 +30,18 @@ h1 {
   margin: 4px 0 16px;
 }
 
+/* App version label beside the LOOM logo — small, dim, monospace, subtle. */
+.app-version {
+  font-family: var(--mono);
+  font-size: 0.5em;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  text-transform: none;
+  color: var(--text-dim);
+  text-shadow: none;
+  opacity: 0.7;
+}
+
 .row.transport {
   background: var(--surface);
   border: 1px solid var(--border);

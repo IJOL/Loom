@@ -1,0 +1,48 @@
+#!/bin/sh
+#
+# Loom pre-push hook — auto-bumps the app version on every push.
+#
+# It runs tools/bump-version.mjs, and if version.json changed, commits the bump.
+#
+# IMPORTANT — trailing-by-one behaviour:
+#   A pre-push hook runs AFTER the set of commits to push has been computed, so a
+#   commit it creates here CANNOT join the push that is in flight. The bump
+#   commit therefore rides the NEXT push. That's expected and documented in
+#   tools/VERSIONING.md. (To make a push carry its own bump you'd bump in a
+#   pre-commit / CI step instead.)
+#
+# Safety: this hook must NEVER block a push on its own failure. Everything below
+# is guarded and the script always exits 0.
+
+# Resolve repo root so the hook works regardless of where git invokes it.
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || ROOT="."
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "pre-push: node not found; skipping version bump." >&2
+  exit 0
+fi
+
+# Run the bump. If it errors, warn and let the push proceed.
+if ! node "$ROOT/tools/bump-version.mjs"; then
+  echo "pre-push: version bump failed; pushing without a bump." >&2
+  exit 0
+fi
+
+# Did version.json actually change? (It always should, but be defensive.)
+if git -C "$ROOT" diff --quiet -- version.json 2>/dev/null; then
+  # No change staged/unstaged — nothing to commit.
+  exit 0
+fi
+
+# Read the new version line for the commit message (best-effort).
+NEW_VER="$(node -e 'try{const v=require("'"$ROOT"'/version.json");process.stdout.write("v"+v.version+" - "+v.codename)}catch(e){process.stdout.write("next")}' 2>/dev/null)"
+[ -z "$NEW_VER" ] && NEW_VER="next"
+
+git -C "$ROOT" add version.json package.json 2>/dev/null
+if ! git -C "$ROOT" commit -m "chore(version): bump to $NEW_VER [skip ci]" >/dev/null 2>&1; then
+  echo "pre-push: could not commit the version bump; pushing anyway." >&2
+  exit 0
+fi
+
+echo "pre-push: bumped to $NEW_VER (commit rides your NEXT push)." >&2
+exit 0

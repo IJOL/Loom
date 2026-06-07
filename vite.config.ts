@@ -1,10 +1,27 @@
 import { defineConfig, type Plugin } from 'vite';
-import { cpSync, createReadStream, existsSync, statSync } from 'node:fs';
+import { cpSync, createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const MANUAL_SRC = join(ROOT, 'docs', 'manual');
+
+// App version + codename — the single source of truth is version.json at the
+// repo root (bumped by tools/bump-version.mjs / the pre-push hook). Read it at
+// config time and inline it into the bundle via `define` so the running app can
+// show it next to the logo. Falls back to a sane default if the file is missing.
+function readAppVersion(): { version: string; codename: string } {
+  try {
+    const v = JSON.parse(readFileSync(join(ROOT, 'version.json'), 'utf8'));
+    return {
+      version: typeof v.version === 'string' ? v.version : '0.0',
+      codename: typeof v.codename === 'string' ? v.codename : 'Unknown',
+    };
+  } catch {
+    return { version: '0.0', codename: 'Unknown' };
+  }
+}
+const APP_VERSION = readAppVersion();
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -48,4 +65,10 @@ function manualPlugin(): Plugin {
   };
 }
 
-export default defineConfig({ plugins: [manualPlugin()] });
+export default defineConfig({
+  plugins: [manualPlugin()],
+  define: {
+    __APP_VERSION__: JSON.stringify(APP_VERSION.version),
+    __APP_CODENAME__: JSON.stringify(APP_VERSION.codename),
+  },
+});

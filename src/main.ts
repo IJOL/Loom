@@ -95,6 +95,12 @@ const ALL_TRACKS: TrackId[] = ['bass', 'poly', ...EXTRA_IDS, 'drumBus', ...DRUM_
 const $  = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const $$ = <T extends HTMLElement>(sel: string) => Array.from(document.querySelectorAll<T>(sel));
 
+// ── App version label (next to the LOOM logo) ────────────────────────────────
+// __APP_VERSION__ / __APP_CODENAME__ are inlined by vite.config.ts `define` from
+// version.json, e.g. "v0.1 · Downbeat". On-screen uses the middle-dot separator.
+const appVersionEl = document.getElementById('app-version');
+if (appVersionEl) appVersionEl.textContent = `v${__APP_VERSION__} · ${__APP_CODENAME__}`;
+
 // ── Plugin bootstrap (must run BEFORE preset cache + audio graph) ─────────
 bootstrapPlugins();
 

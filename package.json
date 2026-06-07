@@ -1,9 +1,11 @@
 {
   "name": "tb303-synth",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "type": "module",
   "private": true,
   "scripts": {
+    "prepare": "node tools/install-hooks.mjs",
+    "bump": "node tools/bump-version.mjs",
     "dev": "vite",
     "build": "tsc && vite build",
     "build:pages": "tsc && vite build --base=/Loom/",
