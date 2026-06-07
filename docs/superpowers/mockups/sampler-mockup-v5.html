@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Loom — Sampler · mockup v5 (loop + melódico apilados, controles con conector)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0e0c0a;--surface:#161310;--surface-2:#1c1814;--surface-3:#221d18;--border:#2a221c;--border-soft:#1f1a15;
+  --text:#d8d2c8;--text-dim:#8a8278;--text-faint:#5a5550;--amber:#ffa726;--amber-soft:rgba(255,167,38,.4);--amber-glow:rgba(255,167,38,.18);
+  --red:#e53935;--green:#7cb342;--mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.4;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.7 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+.synth{position:relative;z-index:1;padding:16px 20px;width:100%}
+h1{font-weight:700;font-size:18px;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);text-shadow:0 0 8px var(--amber-glow);margin:4px 0 6px}
+.note{color:var(--text-dim);font-size:11px;margin:0 0 14px;max-width:1000px;line-height:1.55}.note b{color:var(--text)}
+button,select{font-family:var(--mono);background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:2px;padding:5px 12px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+button:hover,select:hover{border-color:var(--amber);color:var(--amber)}
+select{padding:4px 6px}optgroup{color:var(--text-dim)}option{color:var(--text);text-transform:none}
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:10px 14px;margin-bottom:12px}
+.eng{font-weight:700;letter-spacing:.14em;color:var(--amber);font-size:12px}.lane{color:var(--text-dim)}
+.lbl{color:var(--text-faint);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.vdiv{width:1px;align-self:stretch;background:var(--border);margin:0 4px;min-height:30px}
+.hint{display:flex;align-items:flex-start;gap:8px;background:var(--surface);border:1px solid var(--border);border-left:2px solid var(--amber);color:var(--text-dim);border-radius:2px;padding:7px 12px;font-size:11px;margin-bottom:12px;line-height:1.5}.hint b{color:var(--amber)}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:2px;margin-bottom:14px}
+.panel[hidden]{display:none}
+.panel-h{padding:8px 12px;border-bottom:1px solid var(--border);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);background:var(--surface-2)}.panel-h b{color:var(--amber)}
+.panel-b{padding:13px}
+.sec{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);margin:14px 0 5px}
+.presetstate{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:10.5px;color:var(--text-dim);background:var(--surface-2);border:1px solid var(--border);border-radius:2px;padding:6px 10px;margin-bottom:10px}
+.presetstate .ok{color:var(--green)}.presetstate .sha{color:var(--text-faint)}.presetstate b{color:var(--text)}
+.slicebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface-2);border:1px solid var(--border);border-radius:2px;padding:6px 10px;margin:4px 0 8px}
+.slicebar button{padding:3px 8px;font-size:10px}.slicebar .reslice{color:var(--amber);border-color:var(--amber)}.slicebar .reslice:hover{background:var(--amber);color:var(--bg)}
+.hintinline{font-size:10px;color:var(--text-faint)}.hintinline b{color:var(--text-dim)}
+.radio-strip{display:inline-flex;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:1px}
+.radio-btn{display:inline-flex;align-items:center;justify-content:center;height:24px;padding:0 10px;background:transparent;color:var(--text-dim);border:1px solid transparent;border-radius:2px;font-family:var(--mono);font-size:10px;text-transform:uppercase;cursor:pointer}
+.radio-btn.active{color:var(--amber);background:var(--surface-3);border-color:var(--amber)}
+/* knob real */
+.knob{display:flex;flex-direction:column;align-items:center;gap:2px;user-select:none}
+.knob-label{font-size:9px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.knob-svg{display:block}.knob-track{fill:none;stroke:var(--border);stroke-width:3;stroke-linecap:round}
+.knob-value{fill:none;stroke:var(--amber);stroke-width:3;stroke-linecap:round}.knob-body{fill:var(--surface-2);stroke:var(--border);stroke-width:1}.knob-pointer{stroke:var(--amber);stroke-width:2;stroke-linecap:round}
+.knob-value-text{font-size:9px;color:var(--text-dim);min-width:28px;text-align:center;font-variant-numeric:tabular-nums}
+
+/* ── visualizador de mapeo (ancho variable) ── */
+.viz{position:relative;border:1px solid var(--border);border-radius:2px;background:#080706;overflow:hidden}
+.wave{position:relative;height:84px;display:flex;align-items:center;gap:1px}
+.wave .b{flex:1;min-width:1px;background:var(--amber);opacity:.42}
+.band{position:absolute;top:0;bottom:0;pointer-events:none}
+.band.alt{background:rgba(255,255,255,.025)}
+.scut{position:absolute;top:0;bottom:0;border-left:1px solid var(--amber-soft);cursor:ew-resize;z-index:2}
+.scut::before{content:'';position:absolute;top:0;left:-3px;width:6px;height:9px;background:var(--amber);border-radius:1px;box-shadow:0 0 4px var(--amber-glow)}
+.slab{position:absolute;top:3px;transform:translateX(3px);line-height:1.05;pointer-events:none;z-index:2}
+.slab .n{font-size:8px;color:var(--amber);font-weight:700;display:block}.slab .nt{font-size:8px;color:var(--text-dim);display:block}
+/* keyboard zones (ancho variable) */
+.zonebar{position:relative;height:18px;display:flex}
+.zseg{position:relative;border-right:1px solid #0e0c0a;display:flex;align-items:center;justify-content:center;font-size:9px;color:#0e0c0a;font-weight:700;overflow:hidden;white-space:nowrap}
+.kbd{position:relative;height:46px;display:flex}
+.key{flex:1;border-right:1px solid #17120e;position:relative;background:#080706}
+.key.bk::after{content:"";position:absolute;left:50%;top:0;width:60%;height:60%;transform:translateX(-50%);background:#040303;border-radius:0 0 2px 2px;border:1px solid #000}
+.key .rt{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:8px;color:var(--amber);font-weight:700}
+/* ── conector ── */
+.conn{display:block;width:100%;height:30px}
+.conn path{fill:none;stroke:var(--amber-soft);stroke-width:1}
+.conn .dot{fill:var(--amber)}
+/* ── controles: fila uniforme (mismo ancho) ── */
+.strips{display:flex;gap:0;border:1px solid var(--border);border-top:0;border-radius:0 0 2px 2px;overflow:hidden}
+.dv-col{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;padding:6px 3px;border-right:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.03)}
+.dv-col:last-child{border-right:0}.dv-col.muted{opacity:.4}
+.dv-head{font-size:10px;letter-spacing:.04em;opacity:.95;font-weight:600;line-height:1.1}
+.dv-sub{font-size:8px;color:var(--text-faint);margin-bottom:3px}
+.dv-ms{display:flex;gap:3px;margin-bottom:3px}
+.dv-mute,.dv-solo{width:15px;height:13px;font-size:7px;font-weight:700;line-height:1;padding:0;border:1px solid rgba(255,255,255,.15);border-radius:3px;background:rgba(255,255,255,.04);color:rgba(255,255,255,.55);cursor:pointer}
+.dv-mute.on{background:#c0392b;border-color:#e74c3c;color:#fff}.dv-solo.on{background:#f1c40f;border-color:#f7d000;color:#1a1a1a}
+.dv-synth{display:flex;flex-direction:column;align-items:center;gap:3px}
+.dv-adv{margin-top:4px;font-size:8px;background:none;border:1px solid rgba(255,255,255,.12);border-radius:4px;color:var(--text-dim);cursor:pointer;padding:1px 4px;text-transform:none;letter-spacing:0}
+/* piano-roll */
+.roll{position:relative;display:grid;background:var(--bg);border:1px solid var(--border);border-radius:2px;overflow:hidden}
+.roll .cl{border-right:1px solid #15110d;border-bottom:1px solid #120f0c}
+.roll .nt{position:absolute;background:var(--amber);border:1px solid #ffd089;border-radius:1px;box-shadow:0 0 5px var(--amber-glow)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:8px;margin-top:6px}
+.card{background:var(--surface);border:1px solid var(--border);border-left:2px solid var(--amber);border-radius:2px;padding:10px 12px}
+.card b{color:var(--text)}.card p{margin:4px 0 0;color:var(--text-dim);font-size:11px;line-height:1.45}
+</style>
+</head>
+<body>
+<div class="synth">
+  <h1>Sampler · v5 — controles uniformes + conector</h1>
+  <p class="note">Selector arriba a la derecha (<b>Melódico / Pads / Loop</b>). Los controles van en una <b>fila uniforme</b> (mismo ancho cada uno, sin estirarse al ancho del corte) y una <b>línea</b> une cada control con el trozo que controla (slice o zona). Estilos reales de Loom. El preset de loop <b>guarda los cortes + la nota</b>; al cargar verifica el sample (sha) y restaura — no re-trocea.</p>
+
+  <div class="bar">
+    <span class="eng">SAMPLER</span><span class="lane">· Amen Break</span>
+    <span class="vdiv"></span><span class="lbl">Preset</span>
+    <select><optgroup label="Melódico"><option>Grand Piano (10 zonas)</option></optgroup><optgroup label="Percusión"><option>TR-808</option></optgroup><optgroup label="Loop"><option selected>Amen Break 174</option></optgroup></select>
+    <button>Load</button><button>Save As…</button><button>🎲</button>
+    <span class="vdiv"></span><span id="kGain"></span><span id="kVoices"></span>
+    <span style="flex:1"></span>
+    <span class="radio-strip" id="vt"><button class="radio-btn" data-v="kbd">⌨ Teclado</button><button class="radio-btn" data-v="pads">▦ Pads</button><button class="radio-btn active" data-v="loop">〜 Loop</button></span>
+  </div>
+
+  <!-- ░░░ LOOP ░░░ -->
+  <div class="panel" data-view="loop">
+    <div class="panel-h">〜 <b>Loop</b> · Amen Break 174 · 16 slices → 16 notas (C1…D#2)</div>
+    <div class="panel-b">
+      <div class="presetstate">
+        <span><b>Preset:</b> 16 cortes + notas guardados</span><span class="vdiv" style="min-height:16px"></span>
+        <span>sample <span class="ok">✓ verificado</span> <span class="sha">sha 9f3a1c…</span></span><span class="vdiv" style="min-height:16px"></span>
+        <span>al cargar <b>restaura</b>, no re-trocea</span>
+      </div>
+      <div class="slicebar">
+        <span class="lbl">Trocear por</span>
+        <span class="radio-strip"><button class="radio-btn active">Onsets</button><button class="radio-btn">Grid</button></span>
+        <span id="kSens"></span><span id="kThr"></span>
+        <select title="División (Grid)"><option>1/16</option><option>1/8</option><option>1/4</option><option>1/32</option><option>1/8T</option></select>
+        <button class="reslice">↻ Re-trocear</button>
+        <span class="vdiv" style="min-height:34px"></span>
+        <span class="lbl">Cortes 16</span><button>＋ añadir</button><button>－ borrar</button>
+        <span class="hintinline">arrastra ◆ para mover · <b>M</b> = slice mudo</span>
+      </div>
+      <div class="viz"><div class="wave" id="wave"></div></div>
+      <svg class="conn" id="connLoop" viewBox="0 0 1000 30" preserveAspectRatio="none"></svg>
+      <div class="strips" id="loopStrips"></div>
+      <div class="sec">Clip creado (se guarda en el preset) — 1 nota por slice; lo que suena y editas</div>
+      <div class="roll" id="roll"></div>
+    </div>
+  </div>
+
+  <!-- ░░░ MELÓDICO ░░░ -->
+  <div class="panel" data-view="kbd" hidden>
+    <div class="panel-h">⌨ <b>Melódico</b> · "Grand Piano" — 10 muestras repartidas por el teclado</div>
+    <div class="panel-b">
+      <div class="hint"><b>⚡</b>&nbsp; Cada muestra cubre un rango de teclas (anchos distintos) con su <b>&nbsp;nota raíz&nbsp;</b>. La línea une cada muestra con su zona del teclado.</div>
+      <div class="viz"><div class="zonebar" id="zonebar"></div><div class="kbd" id="kbd"></div></div>
+      <svg class="conn" id="connMel" viewBox="0 0 1000 30" preserveAspectRatio="none"></svg>
+      <div class="strips" id="melStrips"></div>
+    </div>
+  </div>
+
+  <!-- ░░░ PADS ░░░ -->
+  <div class="panel" data-view="pads" hidden>
+    <div class="panel-h">▦ <b>Percusión</b> · drumkit — mismas tiras, sin visualizador (cada pad es su control)</div>
+    <div class="panel-b"><div class="strips" id="padStrips" style="border-top:1px solid var(--border)"></div></div>
+  </div>
+
+  <div class="cards">
+    <div class="card"><b>Controles uniformes + conector</b><p>Los slices/zonas tienen anchos distintos; los controles no. Van en fila de igual ancho y una línea une cada uno con su trozo.</p></div>
+    <div class="card"><b>Preset de loop = cortes + notas + sha</b><p>Guarda cortes y nota por slice. Al cargar verifica el sample (sha) y restaura; solo trocea la 1ª vez o si editas. Herramienta de re-troceo con sus parámetros (onsets/grid, sens, umbral).</p></div>
+    <div class="card"><b>Mismos elementos</b><p>Knob SVG, tiras, onda, teclado: los componentes reales, combinados igual en loop y melódico. No son vistas diferentes.</p></div>
+  </div>
+</div>
+
+<script>
+const NS='http://www.w3.org/2000/svg';
+function polar(cx,cy,r,d){const a=d*Math.PI/180;return[cx+r*Math.sin(a),cy-r*Math.cos(a)];}
+function arc(cx,cy,r,a0,a1){const[x0,y0]=polar(cx,cy,r,a0),[x1,y1]=polar(cx,cy,r,a1);const lg=Math.abs(a1-a0)>180?1:0;return`M ${x0} ${y0} A ${r} ${r} 0 ${lg} 1 ${x1} ${y1}`;}
+function knob(label,norm,opt){opt=opt||{};const sz=opt.size||30,cx=sz/2,cy=sz/2,tR=sz*.42,bR=sz*.32,pL=bR-2,ang=-135+norm*270;
+  const w=document.createElement('div');w.className='knob';
+  if(label){const l=document.createElement('div');l.className='knob-label';l.textContent=label;w.appendChild(l);}
+  const s=document.createElementNS(NS,'svg');s.setAttribute('class','knob-svg');s.setAttribute('viewBox',`0 0 ${sz} ${sz}`);s.setAttribute('width',sz);s.setAttribute('height',sz);
+  const t=document.createElementNS(NS,'path');t.setAttribute('class','knob-track');t.setAttribute('d',arc(cx,cy,tR,-135,135));s.appendChild(t);
+  const v=document.createElementNS(NS,'path');v.setAttribute('class','knob-value');v.setAttribute('d',arc(cx,cy,tR,-135,ang));s.appendChild(v);
+  const b=document.createElementNS(NS,'circle');b.setAttribute('cx',cx);b.setAttribute('cy',cy);b.setAttribute('r',bR);b.setAttribute('class','knob-body');s.appendChild(b);
+  const p=document.createElementNS(NS,'line');p.setAttribute('x1',cx);p.setAttribute('y1',cy);p.setAttribute('x2',cx);p.setAttribute('y2',cy-pL);p.setAttribute('class','knob-pointer');p.setAttribute('transform',`rotate(${ang} ${cx} ${cy})`);s.appendChild(p);
+  w.appendChild(s);const vt=document.createElement('div');vt.className='knob-value-text';vt.textContent=opt.text||'';w.appendChild(vt);return w;}
+function strip(head,sub,knobs,headColor){const c=document.createElement('div');c.className='dv-col';
+  const h=document.createElement('div');h.className='dv-head';h.textContent=head;if(headColor)h.style.color=headColor;c.appendChild(h);
+  if(sub){const s=document.createElement('div');s.className='dv-sub';s.textContent=sub;c.appendChild(s);}
+  const ms=document.createElement('div');ms.className='dv-ms';ms.innerHTML='<button class="dv-mute">M</button><button class="dv-solo">S</button>';c.appendChild(ms);
+  ms.querySelector('.dv-mute').addEventListener('click',e=>{e.target.classList.toggle('on');c.classList.toggle('muted',e.target.classList.contains('on'));});
+  ms.querySelector('.dv-solo').addEventListener('click',e=>e.target.classList.toggle('on'));
+  const sy=document.createElement('div');sy.className='dv-synth';knobs.forEach(k=>sy.appendChild(knob(k[0],k[1],{size:30,text:k[2]})));c.appendChild(sy);
+  const adv=document.createElement('button');adv.className='dv-adv';adv.textContent='▸ adv';c.appendChild(adv);return c;}
+// conector: line de cada centro-fuente (variable) al centro-tira (uniforme)
+function connect(svg,srcPct,n){svg.innerHTML='';const W=1000,H=30;
+  for(let i=0;i<n;i++){const x0=srcPct[i]/100*W,x1=(i+0.5)/n*W;
+    const p=document.createElementNS(NS,'path');p.setAttribute('d',`M ${x0} 0 C ${x0} 19, ${x1} 11, ${x1} 30`);svg.appendChild(p);
+    const d0=document.createElementNS(NS,'circle');d0.setAttribute('class','dot');d0.setAttribute('cx',x0);d0.setAttribute('cy',1.5);d0.setAttribute('r',2);svg.appendChild(d0);
+  }}
+
+document.getElementById('kGain').appendChild(knob('Gain',.8,{size:38,text:'100%'}));
+document.getElementById('kVoices').appendChild(knob('Voices',.5,{size:38,text:'8'}));
+document.getElementById('kSens').appendChild(knob('Sens',.6,{size:32,text:'60%'}));
+document.getElementById('kThr').appendChild(knob('Umbral',.35,{size:32,text:'-24dB'}));
+
+// ── LOOP: slices de ancho VARIABLE ──
+const NOTES=['C1','C#1','D1','D#1','E1','F1','F#1','G1','G#1','A1','A#1','B1','C2','C#2','D2','D#2'];
+const rawW=[9,4,7,3,8,5,6,3,9,4,7,3,8,5,6,9],tot=rawW.reduce((a,b)=>a+b,0);
+let acc=0;const SLI=rawW.map(w=>{const pct=w/tot*100,o={start:acc,w:pct,center:acc+pct/2};acc+=pct;return o;});
+const wave=document.getElementById('wave');
+for(let i=0;i<140;i++){const b=document.createElement('div');b.className='b';b.style.height=(8+(0.35+0.65*Math.abs(Math.sin(i*0.8)))*72*Math.exp(-((i%9)/9)*2))+'%';wave.appendChild(b);}
+SLI.forEach((s,i)=>{const band=document.createElement('div');band.className='band'+(i%2?' alt':'');band.style.left=s.start+'%';band.style.width=s.w+'%';wave.appendChild(band);
+  if(i>0){const c=document.createElement('div');c.className='scut';c.style.left=s.start+'%';wave.appendChild(c);}
+  const l=document.createElement('div');l.className='slab';l.style.left=s.start+'%';l.innerHTML=`<span class="n">${i+1}</span><span class="nt">${NOTES[i]}</span>`;wave.appendChild(l);});
+const ls=document.getElementById('loopStrips');
+SLI.forEach((s,i)=>ls.appendChild(strip(`${i+1} · ${NOTES[i]}`,'',[['Tune',.5,'0'],['Lvl',.8,'-2'],['Pan',.5,'C']])));
+connect(document.getElementById('connLoop'),SLI.map(s=>s.center),16);
+// clip
+const roll=document.getElementById('roll');roll.style.gridTemplateColumns='repeat(16,1fr)';roll.style.gridTemplateRows='repeat(16,11px)';
+for(let i=0;i<256;i++){const c=document.createElement('div');c.className='cl';roll.appendChild(c);}
+for(let s=0;s<16;s++){const n=document.createElement('div');n.className='nt';n.style.left=(SLI[s].start)+'%';n.style.width=(SLI[s].w)+'%';n.style.height='9px';n.style.top=(((16-1-s)/16)*100)+'%';roll.appendChild(n);}
+
+// ── MELÓDICO: zonas de ancho VARIABLE ──
+const NM=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'],nn=k=>NM[((k%12)+12)%12]+(1+Math.floor(k/12));
+const PAL=['#2ee0c0','#f7d000','#3498db','#e67e22','#9b59b6','#16a085','#c0392b','#7cb342','#2ee0c0','#e67e22'];
+const rawZ=[8,7,7,6,6,6,5,5,5,5],NK=rawZ.reduce((a,b)=>a+b,0); // 60 teclas, 10 zonas anchos distintos
+let ka=0;const ZON=rawZ.map((kc,i)=>{const o={lo:ka,hi:ka+kc-1,kc,root:ka+(kc/2|0)};ka+=kc;return o;});
+const zb=document.getElementById('zonebar'),kbd=document.getElementById('kbd');
+ZON.forEach((z,i)=>{const seg=document.createElement('div');seg.className='zseg';seg.style.flex=z.kc;seg.style.background=PAL[i];seg.textContent=nn(z.root);zb.appendChild(seg);});
+const bk={1:1,3:1,6:1,8:1,10:1};
+for(let i=0;i<NK;i++){const k=document.createElement('div');k.className='key'+(bk[i%12]?' bk':'');ZON.forEach(z=>{if(i===z.root){const r=document.createElement('span');r.className='rt';r.textContent='◆';k.appendChild(r);}});kbd.appendChild(k);}
+const ms=document.getElementById('melStrips');
+ZON.forEach((z,i)=>ms.appendChild(strip(nn(z.root),nn(z.lo)+'–'+nn(z.hi),[['Tune',.5,'0'],['Cut',.85,'88'],['Lvl',.8,'0'],['Pan',.5,'C']],PAL[i])));
+connect(document.getElementById('connMel'),ZON.map(z=>((z.lo+z.hi+1)/2)/NK*100),10);
+
+// ── PADS ──
+const PADS=[['Kick','n36'],['Snare','n38'],['Clap','n39'],['CH','n42'],['OH','n46'],['Tom','n45'],['Cowbl','n56'],['Ride','n51']];
+const ps=document.getElementById('padStrips');PADS.forEach(([n,nt])=>ps.appendChild(strip(n,nt,[['Tune',.5,'0'],['Cut',.7,'72'],['Decay',.4,'.3s'],['Lvl',.8,'0'],['Rev',.2,'12'],['Dly',.1,'0']])));
+
+document.getElementById('vt').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;document.querySelectorAll('#vt .radio-btn').forEach(x=>x.classList.toggle('active',x===b));const v=b.dataset.v;document.querySelectorAll('.panel[data-view]').forEach(p=>p.hidden=(p.dataset.view!==v));});
+</script>
+</body>
+</html>
