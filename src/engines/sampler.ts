@@ -21,6 +21,7 @@ import { mirrorKeymapChange, mirrorDrumkitId, mirrorInstrumentId, mirrorPadParam
 import { listDrumkits, fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
 import { listInstruments, fetchInstrumentManifest, loadInstrument, type InstrumentIndexEntry } from '../samples/instrument-loader';
 import { PAD_DEFAULTS, PAD_LEAF_SPECS, padKeyForNote, noteForPadKey, nextFreePadNote, type PadParams } from './sampler-pad-params';
+import { renderSamplerKeyboardMap } from './sampler-keyboard-map';
 import type { FxBus } from '../core/fx';
 import { computeVoiceMutes } from '../core/mute-solo';
 import { renderDrumVoiceRack } from './drum-voice-rack';
@@ -395,6 +396,15 @@ export class SamplerEngine implements SynthEngine {
     // Re-render the whole param UI from scratch (used by the keymap pickers and
     // the ＋/－ Pad buttons). Declared up-front so those handlers can close over it.
     const rebuild = () => { container.innerHTML = ''; this.buildParamUI(container, ctx); };
+
+    // Keyboard map (visual): a mini-keyboard with drumkit pad markers or melodic
+    // zone bands, mirroring the mockup. Hidden when the keymap is empty.
+    if (this.keymap.length) {
+      const mapHost = document.createElement('div');
+      mapHost.className = 'sampler-keymap-viz';
+      container.appendChild(mapHost);
+      renderSamplerKeyboardMap(mapHost, this.keymap, { drumkit: this.isDrumkit() });
+    }
 
     // Drumkit: a ＋/－ Pad toolbar (variable-size kit) THEN the per-pad rack
     // (reuses drum-voice-rack with the sampler's own getRackLayout +
