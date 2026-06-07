@@ -1,8 +1,9 @@
-// Canvas drum-rack editor (Spec 3): 8 voice rows × time, variable resolution +
+// Canvas drum-rack editor (Spec 3): N voice rows × time, variable resolution +
 // free off-grid placement, selection/clipboard/group-move, and a canvas playhead.
-// Replaces the button matrix. Same NoteEvent + GM-midi data model; serves
-// synth-drums and the sampler drumkit (rows are always DRUM_LANES). Returns a
-// { redraw } handle driven by the session-host RAF. Pure logic in core/drum-grid-editing.ts.
+// Replaces the button matrix. Same NoteEvent data model; serves synth-drums (the
+// fixed 8 GM rows) AND a variable-size sample drumkit (one row per pad) via an
+// injected DrumRows model. Returns a { redraw } handle driven by the session-host
+// RAF. Pure logic in core/drum-grid-editing.ts.
 
 import { DRUM_LANES, type DrumVoice } from '../../core/drums';
 import { velToColor } from '../../core/velocity-color';
@@ -10,27 +11,28 @@ import { velocityToBarHeight, barHitTest, yToVelocity, setVelocity, applyGroupDe
 import { DEFAULT_VELOCITY } from '../../core/velocity-gain';
 import type { SessionClip } from '../session';
 import type { NoteEvent } from '../../core/notes';
-import { GM_DRUM_MAP, VOICE_MIDI } from '../../engines/drum-gm-map';
 import { withUndo, isTextEditTarget, type HistoryDeps } from '../../save/history-wiring';
 import { ticksPerBar, stepsPerBar, stepsPerBeat, DEFAULT_METER, type TimeSignature } from '../../core/meter';
 import {
   RESOLUTIONS, resolutionToSnap, clampResolution, DEFAULT_RESOLUTION, snapTickToRes,
   hitInCell, hitsInCell, rowsInRect, rowMove, serializeDrumClipboard, pasteDrumClipboard, clampGroupTick,
-  type ResolutionKey, type DrumClipNote,
+  gmDrumRows, type DrumRows, type ResolutionKey, type DrumClipNote,
 } from '../../core/drum-grid-editing';
 
-const LANE_LABELS: Record<DrumVoice, string> = {
+export const LANE_LABELS: Record<DrumVoice, string> = {
   kick: 'KICK', snare: 'SNARE', closedHat: 'CH', openHat: 'OH',
   clap: 'CLAP', cowbell: 'COWBL', tom: 'TOM', ride: 'RIDE',
 };
-const ROWS = DRUM_LANES;
-const rowOfVoice = (v: DrumVoice): number => ROWS.indexOf(v);
+
+/** The rows the editor draws: how many (rows.count), how notes map to them, and a
+ *  label per row. Defaults to the fixed 8 GM voices when the caller omits it. */
+export interface DrumGridModel { rows: DrumRows; labels: string[] }
+const GM_MODEL: DrumGridModel = { rows: gmDrumRows(), labels: DRUM_LANES.map((v) => LANE_LABELS[v]) };
 
 const LABEL_W = 54;
 const RULER_H = 20;
 const ROW_H = 26;
 const VEL_LANE_H = 46;                       // velocity lane band
-const FRAME_H = RULER_H + ROW_H * 8 + VEL_LANE_H;
 
 type Tool = 'draw' | 'select';
 let currentTool: Tool = 'draw';          // persists across clips (session)
@@ -53,12 +55,18 @@ export function renderDrumGridEditor(
   host: HTMLElement, clip: SessionClip,
   historyDeps?: HistoryDeps, meter: TimeSignature = DEFAULT_METER,
   deps: DrumEditorDeps = {},
+  model: DrumGridModel = GM_MODEL,
 ): DrumEditorHandle {
   host.innerHTML = '';
   if (!clip.notes) clip.notes = [];
   const notes = (): NoteEvent[] => clip.notes;
   const setNotes = (n: NoteEvent[]) => { clip.notes = n; };
   const audition = deps.auditionNote;
+
+  const rows = model.rows;
+  const labels = model.labels;
+  const ROWS_N = Math.max(1, rows.count);
+  const FRAME_H = RULER_H + ROW_H * ROWS_N + VEL_LANE_H;
 
   let resolution: ResolutionKey = clampResolution(clip.gridResolution ?? DEFAULT_RESOLUTION);
   clip.gridResolution = resolution;
@@ -90,8 +98,6 @@ export function renderDrumGridEditor(
   // .editor-grid-control (right-anchored, styled by Task 10).
   const resCtl = document.createElement('div');
   resCtl.className = 'editor-grid-control';
-  // Right-anchor + compact layout; the .editor-grid-control SCSS (Task 10)
-  // reinforces this. Inline kept so the control reads correctly before that lands.
   resCtl.style.cssText = 'margin-left:auto;display:flex;gap:4px;align-items:center';
   const resLabel = document.createElement('span');
   resLabel.textContent = 'Grid';
@@ -142,7 +148,7 @@ export function renderDrumGridEditor(
   const xForTick = (t: number) => LABEL_W + t * pxPerTick;
   const yForRow = (r: number) => RULER_H + r * ROW_H;
   const tickFromX = (x: number) => Math.max(0, Math.min(patternTicks - 1, (x - LABEL_W) / pxPerTick));
-  const rowFromY = (y: number) => Math.max(0, Math.min(7, Math.floor((y - RULER_H) / ROW_H)));
+  const rowFromY = (y: number) => Math.max(0, Math.min(ROWS_N - 1, Math.floor((y - RULER_H) / ROW_H)));
 
   function resize(): void {
     const w = Math.max(320, wrap.clientWidth || host.clientWidth || 600);
@@ -155,12 +161,12 @@ export function renderDrumGridEditor(
 
   function draw(): void {
     ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, canvas.width, FRAME_H);
-    for (let r = 0; r < 8; r++) {
+    for (let r = 0; r < ROWS_N; r++) {
       const y = yForRow(r);
       ctx.fillStyle = r % 2 ? '#121212' : '#161616'; ctx.fillRect(LABEL_W, y, gridW, ROW_H);
       ctx.fillStyle = '#202020'; ctx.fillRect(0, y, LABEL_W, ROW_H);
       ctx.fillStyle = '#9a9a9a'; ctx.font = '10px ui-monospace, monospace'; ctx.textBaseline = 'middle';
-      ctx.fillText(LANE_LABELS[ROWS[r]], 4, y + ROW_H / 2);
+      ctx.fillText(labels[r] ?? '', 4, y + ROW_H / 2);
     }
     // gridlines: in free mode draw only bar/beat reference lines (snap=1 would draw one per tick).
     const lineStep = resolution === 'free' ? beatTicks : snap();
@@ -170,8 +176,7 @@ export function renderDrumGridEditor(
       ctx.beginPath(); ctx.moveTo(x, RULER_H); ctx.lineTo(x, FRAME_H); ctx.stroke();
     }
     for (const n of notes()) {
-      const v = GM_DRUM_MAP[n.midi];
-      const r = v ? rowOfVoice(v) : -1;
+      const r = rows.noteToRow(n.midi);
       if (r < 0) continue;
       const x = xForTick(n.start);
       const maxW = (LABEL_W + gridW) - x;
@@ -198,7 +203,7 @@ export function renderDrumGridEditor(
       ctx.beginPath(); ctx.moveTo(x, RULER_H); ctx.lineTo(x, FRAME_H); ctx.stroke();
     }
     // ── Velocity lane band ────────────────────────────────────────────────────
-    const laneTop = RULER_H + ROW_H * 8;
+    const laneTop = RULER_H + ROW_H * ROWS_N;
     ctx.fillStyle = '#0e0e0e'; ctx.fillRect(LABEL_W, laneTop, gridW, VEL_LANE_H);
     ctx.fillStyle = '#202020'; ctx.fillRect(0, laneTop, LABEL_W, VEL_LANE_H);
     const accentY = laneTop + VEL_LANE_H - velocityToBarHeight(100, VEL_LANE_H);
@@ -207,7 +212,7 @@ export function renderDrumGridEditor(
     ctx.setLineDash([]); ctx.globalAlpha = 1;
     const seen = new Map<number, number>();
     for (const n of notes()) {
-      const v = GM_DRUM_MAP[n.midi]; if (!v) continue;
+      if (rows.noteToRow(n.midi) < 0) continue;
       const fan = seen.get(n.start) ?? 0; seen.set(n.start, fan + 1);
       const x = xForTick(n.start) + fan * FAN_PX;
       const h = velocityToBarHeight(n.velocity, VEL_LANE_H);
@@ -218,17 +223,17 @@ export function renderDrumGridEditor(
 
   // ── Pencil: click-cycle off → normal → accent → off over the whole cell ───
   function pencilClick(row: number, rawTick: number): void {
-    const voice = ROWS[row];
+    const midi = rows.rowToNote(row);
     const cell = snapTickToRes(rawTick, snap());
-    const cluster = hitsInCell(notes(), voice, cell, snap());
+    const cluster = hitsInCell(notes(), row, cell, snap(), rows);
     const run = () => {
       if (cluster.length === 0) {
         const dur = Math.max(1, Math.floor(snap() * 0.9));
-        notes().push({ midi: VOICE_MIDI[voice], start: cell, duration: dur, velocity: DEFAULT_VELOCITY });
-        audition?.(VOICE_MIDI[voice]);
+        notes().push({ midi, start: cell, duration: dur, velocity: DEFAULT_VELOCITY });
+        audition?.(midi);
       } else if (cluster.every((n) => n.velocity < 100)) {
         for (const n of cluster) n.velocity = 115;
-        audition?.(VOICE_MIDI[voice]);
+        audition?.(midi);
       } else {
         const set = new Set(cluster);
         setNotes(notes().filter((n) => !set.has(n)));
@@ -248,7 +253,7 @@ export function renderDrumGridEditor(
   canvas.addEventListener('pointerdown', (e) => {
     const p = pos(e); wrap.focus();
     if (p.x < LABEL_W) return; // label gutter
-    const laneTop = RULER_H + ROW_H * 8;
+    const laneTop = RULER_H + ROW_H * ROWS_N;
     const localY = e.clientY - canvas.getBoundingClientRect().top;
     if (localY >= laneTop) {
       const hit = barHitTest(notes(), p.x, xForTick);
@@ -264,14 +269,14 @@ export function renderDrumGridEditor(
       return;
     }
     if (e.altKey || e.button === 2) {
-      const v = ROWS[p.row]; const cell = snapTickToRes(p.tick, snap());
-      const cluster = hitsInCell(notes(), v, cell, snap());
+      const cell = snapTickToRes(p.tick, snap());
+      const cluster = hitsInCell(notes(), p.row, cell, snap(), rows);
       if (cluster.length) { const set = new Set(cluster); const run = () => { setNotes(notes().filter((n) => !set.has(n))); draw(); }; historyDeps ? withUndo(historyDeps, run) : run(); }
       e.preventDefault(); return;
     }
     if (currentTool === 'draw') { pencilClick(p.row, p.tick); e.preventDefault(); return; }
-    const v = ROWS[p.row]; const cell = snapTickToRes(p.tick, snap());
-    const hit = hitInCell(notes(), v, cell, snap());
+    const cell = snapTickToRes(p.tick, snap());
+    const hit = hitInCell(notes(), p.row, cell, snap(), rows);
     if (hit) {
       if (e.shiftKey) { selection.has(hit) ? selection.delete(hit) : selection.add(hit); }
       else if (!selection.has(hit)) { selection.clear(); selection.add(hit); }
@@ -288,7 +293,7 @@ export function renderDrumGridEditor(
     const p = pos(e); lastMouse = { row: p.row, tick: p.tick };
     if (laneDrag) {
       const localY = e.clientY - canvas.getBoundingClientRect().top;
-      const laneTop = RULER_H + ROW_H * 8;
+      const laneTop = RULER_H + ROW_H * ROWS_N;
       const vel = yToVelocity(localY - laneTop, VEL_LANE_H);
       if (selection.has(laneDrag) && selection.size > 1) applyGroupDelta([...selection], vel - laneDrag.velocity);
       else {
@@ -305,7 +310,7 @@ export function renderDrumGridEditor(
       const dRow = p.row - groupDrag.lastRow;
       if (dTick !== 0) { for (const n of selection) n.start += dTick; groupDrag.lastTick += dTick; mutated = true; }
       if (dRow !== 0) {
-        const moved = rowMove([...selection], dRow, ROWS);
+        const moved = rowMove([...selection], dRow, rows);
         for (const [n, midi] of moved) n.midi = midi;
         groupDrag.lastRow += dRow; mutated = true;
       }
@@ -322,7 +327,7 @@ export function renderDrumGridEditor(
       return;
     }
     if (marquee) {
-      for (const n of rowsInRect(notes(), marquee, rowOfVoice)) selection.add(n);
+      for (const n of rowsInRect(notes(), marquee, rows)) selection.add(n);
       marquee = null; try { canvas.releasePointerCapture(e.pointerId); } catch { /* ignore */ } draw(); return;
     }
     if (groupDrag) {
@@ -349,9 +354,9 @@ export function renderDrumGridEditor(
       const run = () => { setNotes(notes().filter((n) => !set.has(n))); selection.clear(); draw(); };
       historyDeps ? withUndo(historyDeps, run) : run(); e.preventDefault(); return;
     }
-    if (cmd && e.key.toLowerCase() === 'c' && selection.size) { clipboard = serializeDrumClipboard([...selection], rowOfVoice); e.preventDefault(); return; }
+    if (cmd && e.key.toLowerCase() === 'c' && selection.size) { clipboard = serializeDrumClipboard([...selection], rows); e.preventDefault(); return; }
     if (cmd && e.key.toLowerCase() === 'x' && selection.size) {
-      clipboard = serializeDrumClipboard([...selection], rowOfVoice);
+      clipboard = serializeDrumClipboard([...selection], rows);
       const set = new Set(selection);
       const run = () => { setNotes(notes().filter((n) => !set.has(n))); selection.clear(); draw(); };
       historyDeps ? withUndo(historyDeps, run) : run(); e.preventDefault(); return;
@@ -359,7 +364,7 @@ export function renderDrumGridEditor(
     if (cmd && e.key.toLowerCase() === 'v' && clipboard && clipboard.length) {
       const anchorTick = snapTickToRes(lastMouse?.tick ?? 0, snap());
       const anchorRow = lastMouse?.row ?? 0;
-      const pasted = pasteDrumClipboard(clipboard, anchorTick, anchorRow, patternTicks, ROWS);
+      const pasted = pasteDrumClipboard(clipboard, anchorTick, anchorRow, patternTicks, rows);
       const run = () => { for (const n of pasted) notes().push(n); selection.clear(); for (const n of pasted) selection.add(n); draw(); };
       historyDeps ? withUndo(historyDeps, run) : run(); e.preventDefault(); return;
     }
@@ -369,7 +374,7 @@ export function renderDrumGridEditor(
           const d = clampGroupTick([...selection], e.key === 'ArrowRight' ? snap() : -snap(), patternTicks);
           for (const n of selection) n.start += d;
         } else {
-          const moved = rowMove([...selection], e.key === 'ArrowDown' ? 1 : -1, ROWS);
+          const moved = rowMove([...selection], e.key === 'ArrowDown' ? 1 : -1, rows);
           for (const [n, midi] of moved) n.midi = midi;
         }
         draw();

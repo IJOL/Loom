@@ -288,9 +288,12 @@ export class SamplerEngine implements SynthEngine {
     };
   }
 
-  /** A lane is a drumkit when every keymap entry sits on a GM drum note. */
+  /** A lane is a drumkit when every keymap entry is a single-note pad
+   *  (loNote===hiNote===rootNote). Structural + note-agnostic, so a variable-size
+   *  kit (>8 pads off the GM map) still counts; a melodic instrument uses range
+   *  zones (loNote<hiNote) and never matches. */
   private isDrumkit(): boolean {
-    return this.keymap.length > 0 && this.keymap.every((e) => padKeyForNote(e.rootNote) !== `zone${e.rootNote}`);
+    return this.keymap.length > 0 && this.keymap.every((e) => e.loNote === e.hiNote && e.hiNote === e.rootNote);
   }
 
   /** True if the pad at `note` should sound now (per mute/solo over the kit's
@@ -389,9 +392,47 @@ export class SamplerEngine implements SynthEngine {
       ? () => mirrorPadParams(ctx.sessionState!, ctx.laneId, this.getPadStore() as Record<number, Record<string, number>>)
       : null);
 
-    // Drumkit: render the per-pad rack FIRST (reuses drum-voice-rack with
-    // the sampler's own getRackLayout + getDrumVoice* contract).
+    // Re-render the whole param UI from scratch (used by the keymap pickers and
+    // the ＋/－ Pad buttons). Declared up-front so those handlers can close over it.
+    const rebuild = () => { container.innerHTML = ''; this.buildParamUI(container, ctx); };
+
+    // Drumkit: a ＋/－ Pad toolbar (variable-size kit) THEN the per-pad rack
+    // (reuses drum-voice-rack with the sampler's own getRackLayout +
+    // getDrumVoice* contract). The drum-grid clip editor derives its row count
+    // from this same keymap, so the kit can hold any number of sounds.
     if (this.isDrumkit()) {
+      const padBar = document.createElement('div');
+      padBar.className = 'sampler-padbar';
+      const count = document.createElement('span');
+      count.className = 'sampler-padcount';
+      count.textContent = `${this.keymap.length} pads`;
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button'; addBtn.textContent = '＋ Pad';
+      addBtn.title = 'Add a pad (clones the last pad onto the next free key)';
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button'; delBtn.textContent = '－ Pad';
+      delBtn.title = 'Remove the last pad';
+      // ＋ clones the last pad's sample onto the next free note (immediately
+      // audible/visible); － drops the last pad (never below 1).
+      addBtn.addEventListener('click', () => {
+        const proto = this.keymap[this.keymap.length - 1];
+        if (!proto) return;
+        const used = new Set(this.keymap.map((e) => e.rootNote));
+        let note = Math.min(127, Math.max(...this.keymap.map((e) => e.rootNote)) + 1);
+        while (used.has(note) && note < 127) note++;
+        this.setKeymap([...this.keymap, { sampleId: proto.sampleId, rootNote: note, loNote: note, hiNote: note }]);
+        if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, this.keymap);
+        rebuild();
+      });
+      delBtn.addEventListener('click', () => {
+        if (this.keymap.length <= 1) return;
+        this.setKeymap(this.keymap.slice(0, -1));
+        if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, this.keymap);
+        rebuild();
+      });
+      padBar.append(count, addBtn, delBtn);
+      container.appendChild(padBar);
+
       const rackHost = document.createElement('div');
       container.appendChild(rackHost);
       const voices = this.keymap.map((e) => padKeyForNote(e.rootNote));
@@ -420,8 +461,6 @@ export class SamplerEngine implements SynthEngine {
     const section = document.createElement('div');
     section.className = 'sampler-keymap';
     container.appendChild(section);
-
-    const rebuild = () => { container.innerHTML = ''; this.buildParamUI(container, ctx); };
 
     const heading = document.createElement('div');
     heading.className = 'label';

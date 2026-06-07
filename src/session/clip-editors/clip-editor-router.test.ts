@@ -34,6 +34,18 @@ describe('chooseClipEditor', () => {
   it('falls back to piano-roll when engine editor is undefined', () => {
     expect(chooseClipEditor(lane({ engineId: 'mystery' }), undefined)).toBe('piano-roll');
   });
+
+  it('sampler with a variable single-note keymap (no drumkitId) → drum-grid', () => {
+    const km = Array.from({ length: 12 }, (_, i) => ({ sampleId: `s${i}`, rootNote: 36 + i, loNote: 36 + i, hiNote: 36 + i }));
+    const l = lane({ engineId: 'sampler', engineState: { sampler: { keymap: km } } });
+    expect(chooseClipEditor(l, 'piano-roll')).toBe('drum-grid');
+  });
+
+  it('melodic sampler with range zones (no drumkitId) → piano-roll', () => {
+    const km = [{ sampleId: 's', rootNote: 60, loNote: 0, hiNote: 127 }];
+    const l = lane({ engineId: 'sampler', engineState: { sampler: { keymap: km } } });
+    expect(chooseClipEditor(l, 'piano-roll')).toBe('piano-roll');
+  });
 });
 
 describe('classifyClip', () => {

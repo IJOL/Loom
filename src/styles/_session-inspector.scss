@@ -346,6 +346,22 @@
   flex-direction: column;
   gap: 6px;
 }
+.sampler-padbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+
+  .sampler-padcount {
+    font-size: 11px;
+    opacity: 0.7;
+    margin-right: 4px;
+  }
+  button {
+    font-size: 11px;
+    padding: 2px 8px;
+  }
+}
 .sampler-dropzone {
   border: 1px dashed #79c;
   border-radius: 8px;

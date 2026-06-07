@@ -12,7 +12,9 @@ import { TICKS_PER_STEP, type NoteEvent } from '../../core/notes';
 import { ticksPerBar, stepsPerBar, stepsPerBeat } from '../../core/meter';
 import { resolveViewState, type ViewState } from '../../core/pianoroll-zoom';
 import { getEngine } from '../../engines/registry';
-import { renderDrumGridEditor } from './clip-editor-drum-grid';
+import { renderDrumGridEditor, LANE_LABELS, type DrumGridModel } from './clip-editor-drum-grid';
+import { noteDrumRows } from '../../core/drum-grid-editing';
+import { GM_DRUM_MAP } from '../../engines/drum-gm-map';
 import { mountWaveformHeader, renderAudioClipEditor } from './clip-waveform-header';
 import type { HistoryDeps } from '../../save/history-wiring';
 import { mountClipLoopBrace } from '../../core/clip-loop-brace';
@@ -37,18 +39,38 @@ const AUDITION_GATE = 0.25; // seconds — short preview blip, shared by both ed
 const viewStateByClip = new Map<string, ViewState>();
 
 /** Decide which editor a lane's clip uses. Precedence: an explicit per-clip
- *  override → a drumkit-loaded sampler (8-pad grid) → the engine's native
+ *  override → a drumkit sampler (variable-size drum grid) → the engine's native
  *  editor → piano-roll. Pure so it can be unit-tested without the DOM. */
 export function chooseClipEditor(
   lane: SessionLane,
   engineEditor: 'piano-roll' | 'drum-grid' | undefined,
   override?: 'piano-roll' | 'drum-grid',
 ): 'piano-roll' | 'drum-grid' {
-  // A sampler lane that has loaded a drumkit edits on the 8-pad drum grid;
-  // a plain sampler stays on the piano roll. drumkitId is the single source
-  // of truth (set by the sampler kit picker, persisted in engineState).
-  const isDrumkitSampler = lane.engineId === 'sampler' && !!lane.engineState?.sampler?.drumkitId;
+  // A sampler drumkit edits on the drum grid; a melodic sampler stays on the
+  // piano roll. Detection is note-agnostic so a variable-size kit (>8 pads, off
+  // the GM map) still routes here: a loaded kit (drumkitId) OR a keymap whose
+  // every entry is a single-note pad (loNote===hiNote===rootNote). A melodic
+  // instrument uses range zones (loNote<hiNote), so it never trips the second test.
+  const km = lane.engineState?.sampler?.keymap ?? [];
+  const allSingleNote = km.length > 0 && km.every((e) => e.loNote === e.hiNote && e.hiNote === e.rootNote);
+  const isDrumkitSampler = lane.engineId === 'sampler' && (!!lane.engineState?.sampler?.drumkitId || allSingleNote);
   return override ?? (isDrumkitSampler ? 'drum-grid' : undefined) ?? engineEditor ?? 'piano-roll';
+}
+
+/** Build the drum-grid row model for a sampler drumkit lane: one row per pad,
+ *  ordered by note, labelled with the GM voice name when the pad sits on a GM
+ *  note, else the note name. Returns undefined (→ the editor's default 8 GM rows)
+ *  when there are no pads. */
+function samplerDrumModel(lane: SessionLane, midiLabel: (m: number) => string): DrumGridModel | undefined {
+  const km = lane.engineState?.sampler?.keymap ?? [];
+  // Preserve keymap order so the grid rows line up with the per-pad rack columns
+  // (which also iterate the keymap). Dedup by note, first occurrence wins.
+  const notes: number[] = [];
+  const seen = new Set<number>();
+  for (const e of km) { if (!seen.has(e.rootNote)) { seen.add(e.rootNote); notes.push(e.rootNote); } }
+  if (notes.length === 0) return undefined;
+  const labels = notes.map((n) => { const v = GM_DRUM_MAP[n]; return v ? LANE_LABELS[v] : midiLabel(n); });
+  return { rows: noteDrumRows(notes), labels };
 }
 
 /** An audio-channel clip: lives on an `audio` lane, has a sample, no notes. */
@@ -123,7 +145,8 @@ export function renderClipEditor(
       const clipSteps = clip.lengthBars * stepsPerBar(deps.seq.meter);
       return (stepsElapsed % clipSteps) * TICKS_PER_STEP;
     };
-    bodyHandle = renderDrumGridEditor(bodyBox, clip, deps.historyDeps, deps.seq.meter, { auditionNote: audition, getPlayheadTick });
+    const model = lane.engineId === 'sampler' ? samplerDrumModel(lane, deps.midiLabel) : undefined;
+    bodyHandle = renderDrumGridEditor(bodyBox, clip, deps.historyDeps, deps.seq.meter, { auditionNote: audition, getPlayheadTick }, model);
   } else {
     bodyHandle = buildPianoRoll(bodyBox, lane, clip, deps);
   }
