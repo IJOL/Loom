@@ -67,6 +67,9 @@ select{padding:4px 6px}optgroup{color:var(--text-dim)}option{color:var(--text);t
 .key{flex:1;border-right:1px solid #17120e;position:relative;background:#080706}
 .key.bk::after{content:"";position:absolute;left:50%;top:0;width:60%;height:60%;transform:translateX(-50%);background:#040303;border-radius:0 0 2px 2px;border:1px solid #000}
 .key .rt{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:8px;color:var(--amber);font-weight:700}
+.zonebar.drum{position:relative}
+.dseg{position:absolute;top:1px;transform:translateX(-50%);font-size:7.5px;color:#0e0c0a;font-weight:700;padding:1px 4px;border-radius:2px;white-space:nowrap;z-index:2}
+.key.hot{box-shadow:inset 0 -4px 0 var(--hot)}
 /* ── conector ── */
 .conn{display:block;width:100%;height:30px}
 .conn path{fill:none;stroke:var(--amber-soft);stroke-width:1}
@@ -114,11 +117,11 @@ select{padding:4px 6px}optgroup{color:var(--text-dim)}option{color:var(--text);t
     <button>Load</button><button>Save As…</button><button>🎲</button>
     <span class="vdiv"></span><span id="kGain"></span><span id="kVoices"></span>
     <span style="flex:1"></span>
-    <span class="radio-strip" id="vt"><button class="radio-btn" data-v="kbd">⌨ Teclado</button><button class="radio-btn" data-v="pads">▦ Pads</button><button class="radio-btn active" data-v="loop">〜 Loop</button></span>
+    <span class="radio-strip" id="vt"><button class="radio-btn active" data-v="melodic">⌨ Melódico</button><button class="radio-btn" data-v="drumkit">▦ Drumkit</button><button class="radio-btn" data-v="loop">〜 Loop</button></span>
   </div>
 
   <!-- ░░░ LOOP ░░░ -->
-  <div class="panel" data-view="loop">
+  <div class="panel" data-view="loop" hidden>
     <div class="panel-h">〜 <b>Loop</b> · Amen Break 174 · 16 slices → 16 notas (C1…D#2)</div>
     <div class="panel-b">
       <div class="presetstate">
@@ -147,25 +150,19 @@ select{padding:4px 6px}optgroup{color:var(--text-dim)}option{color:var(--text);t
     </div>
   </div>
 
-  <!-- ░░░ MELÓDICO ░░░ -->
-  <div class="panel" data-view="kbd" hidden>
-    <div class="panel-h">⌨ <b>Teclado</b> · melódico = el mismo instrumento, muestras por <b>rangos</b> de teclas</div>
+  <!-- ░░░ INSTRUMENTO · Melódico ⇄ Drumkit (mismo keymap, distinta presentación) ░░░ -->
+  <div class="panel" data-view="inst">
+    <div class="panel-h" id="instHead"></div>
     <div class="panel-b">
-      <div class="hint"><b>⚡</b>&nbsp; Cada muestra cubre un rango de teclas (anchos distintos) con su <b>&nbsp;nota raíz&nbsp;</b>. La línea une cada muestra con su zona del teclado.</div>
-      <div class="mapwrap"><div class="mapblock" style="--n:10">
-        <div class="viz"><div class="zonebar" id="zonebar"></div><div class="kbd" id="kbd"></div></div>
-        <svg class="conn" id="connMel" viewBox="0 0 1000 30" preserveAspectRatio="none"></svg>
-        <div class="strips" id="melStrips"></div>
+      <div class="hint" id="instHint"></div>
+      <div class="mapwrap"><div class="mapblock" id="instBlock" style="--n:10">
+        <div class="viz"><div class="zonebar" id="instZone"></div><div class="kbd" id="instKbd"></div></div>
+        <svg class="conn" id="instConn" viewBox="0 0 1000 30" preserveAspectRatio="none"></svg>
+        <div class="strips" id="instStrips"></div>
       </div></div>
-      <div class="importbar" style="margin-top:10px"><b>＋ Importar muestras…</b> (varias) · o arrastra WAV(s) — cada una se mapea a una tecla/rango (el ⤓ de cada muestra la cambia). El <b>mismo import</b> que en Pads.</div>
+      <div class="importbar" id="instImport" style="margin-top:10px"></div>
+      <div class="hint" id="instConv" style="border-left-color:var(--knob-blue);margin:10px 0 0"></div>
     </div>
-  </div>
-
-  <!-- ░░░ PADS ░░░ -->
-  <div class="panel" data-view="pads" hidden>
-    <div class="panel-h">▦ <b>Pads</b> · drumkit = <b>el mismo instrumento</b>, una muestra por tecla (vista de pads)</div>
-    <div class="panel-b"><div class="mapwrap"><div class="mapblock" style="--n:8"><div class="strips" id="padStrips" style="border:1px solid var(--border)"></div></div></div>
-      <div class="importbar" style="margin-top:10px"><b>Cambiar sonidos:</b> arrastra un WAV sobre un pad (o el ⤓ del pad) · <button>＋ Pad</button> · <button>Cargar otro kit…</button> — igual que importar muestras en Teclado.</div></div>
   </div>
 
   <div class="cards">
@@ -232,24 +229,46 @@ const roll=document.getElementById('roll');roll.style.gridTemplateColumns='repea
 for(let i=0;i<256;i++){const c=document.createElement('div');c.className='cl';roll.appendChild(c);}
 for(let s=0;s<16;s++){const n=document.createElement('div');n.className='nt';n.style.left=(SLI[s].start)+'%';n.style.width=(SLI[s].w)+'%';n.style.height='9px';n.style.top=(((16-1-s)/16)*100)+'%';roll.appendChild(n);}
 
-// ── MELÓDICO: zonas de ancho VARIABLE ──
+// ── INSTRUMENTO: Melódico (rangos) ⇄ Drumkit (1 muestra por tecla) — el MISMO keymap ──
 const NM=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'],nn=k=>NM[((k%12)+12)%12]+(1+Math.floor(k/12));
 const PAL=['#2ee0c0','#f7d000','#3498db','#e67e22','#9b59b6','#16a085','#c0392b','#7cb342','#2ee0c0','#e67e22'];
-const rawZ=[8,7,7,6,6,6,5,5,5,5],NK=rawZ.reduce((a,b)=>a+b,0); // 60 teclas, 10 zonas anchos distintos
-let ka=0;const ZON=rawZ.map((kc,i)=>{const o={lo:ka,hi:ka+kc-1,kc,root:ka+(kc/2|0)};ka+=kc;return o;});
-const zb=document.getElementById('zonebar'),kbd=document.getElementById('kbd');
-ZON.forEach((z,i)=>{const seg=document.createElement('div');seg.className='zseg';seg.style.flex=z.kc;seg.style.background=PAL[i];seg.textContent=nn(z.root);zb.appendChild(seg);});
-const bk={1:1,3:1,6:1,8:1,10:1};
-for(let i=0;i<NK;i++){const k=document.createElement('div');k.className='key'+(bk[i%12]?' bk':'');ZON.forEach(z=>{if(i===z.root){const r=document.createElement('span');r.className='rt';r.textContent='◆';k.appendChild(r);}});kbd.appendChild(k);}
-const ms=document.getElementById('melStrips');
-ZON.forEach((z,i)=>ms.appendChild(strip(nn(z.root),nn(z.lo)+'–'+nn(z.hi),[['Tune',.5,'0'],['Cut',.85,'88'],['Lvl',.8,'0'],['Pan',.5,'C']],PAL[i],'pno_'+nn(z.root).replace('#','s')+'.wav',true)));
-connect(document.getElementById('connMel'),ZON.map(z=>((z.lo+z.hi+1)/2)/NK*100),10);
-
-// ── PADS ──
-const PADS=[['Kick','n36'],['Snare','n38'],['Clap','n39'],['CH','n42'],['OH','n46'],['Tom','n45'],['Cowbl','n56'],['Ride','n51']];
-const ps=document.getElementById('padStrips');PADS.forEach(([n,nt])=>ps.appendChild(strip(n,nt,[['Tune',.5,'0'],['Cut',.7,'72'],['Decay',.4,'.3s'],['Lvl',.8,'0'],['Rev',.2,'12'],['Dly',.1,'0']],null,'808_'+n.toLowerCase()+'.wav',false)));
-
-document.getElementById('vt').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;document.querySelectorAll('#vt .radio-btn').forEach(x=>x.classList.toggle('active',x===b));const v=b.dataset.v;document.querySelectorAll('.panel[data-view]').forEach(p=>p.hidden=(p.dataset.view!==v));});
+const NK=60,bk={1:1,3:1,6:1,8:1,10:1},$=id=>document.getElementById(id);
+function renderInstrument(mode){
+  const zb=$('instZone'),kbd=$('instKbd'),strips=$('instStrips'),conn=$('instConn'),block=$('instBlock');
+  zb.innerHTML='';kbd.innerHTML='';strips.innerHTML='';zb.className='zonebar'+(mode==='drumkit'?' drum':'');
+  for(let i=0;i<NK;i++){const k=document.createElement('div');k.className='key'+(bk[i%12]?' bk':'');kbd.appendChild(k);}
+  if(mode==='melodic'){
+    $('instHead').innerHTML='⌨ <b>Melódico</b> · el mismo instrumento — muestras por <b>rangos</b> de teclas';
+    $('instHint').innerHTML='<b>⚡</b>&nbsp; Cada muestra cubre un <b>rango</b> con su nota raíz; al tocar una tecla del rango suena pitcheada. La línea une cada muestra con su zona.';
+    $('instImport').innerHTML='<b>＋ Importar muestras…</b> · arrastra WAV(s) — cada una se mapea a un rango (ajustas root/rango). <b>Mismo import</b> que Drumkit.';
+    $('instConv').innerHTML='<b>⇄ Convertir es solo presentación</b> (mismo keymap): a <b>Drumkit</b> cada muestra pasa a su tecla raíz (1 tecla); al volver a <b>Melódico</b> los rangos siguen ahí (los ensanchas si quieres). Round-trip sin pérdida.';
+    const rawZ=[8,7,7,6,6,6,5,5,5,5];let ka=0;const ZON=rawZ.map((kc,i)=>{const o={lo:ka,hi:ka+kc-1,kc,root:ka+(kc/2|0)};ka+=kc;return o;});
+    ZON.forEach((z,i)=>{const seg=document.createElement('div');seg.className='zseg';seg.style.flex=z.kc;seg.style.background=PAL[i];seg.textContent=nn(z.root);zb.appendChild(seg);});
+    ZON.forEach(z=>{const r=document.createElement('span');r.className='rt';r.textContent='◆';kbd.children[z.root].appendChild(r);});
+    ZON.forEach((z,i)=>strips.appendChild(strip(nn(z.root),nn(z.lo)+'–'+nn(z.hi),[['Tune',.5,'0'],['Cut',.85,'88'],['Lvl',.8,'0'],['Pan',.5,'C']],PAL[i],'pno_'+nn(z.root).replace('#','s')+'.wav',true)));
+    block.style.setProperty('--n',ZON.length);
+    connect(conn,ZON.map(z=>((z.lo+z.hi+1)/2)/NK*100),ZON.length);
+  }else{
+    $('instHead').innerHTML='▦ <b>Drumkit</b> · el mismo instrumento — <b>una muestra por tecla</b> (barra de sonidos, no rangos)';
+    $('instHint').innerHTML='<b>⚡</b>&nbsp; Cada sonido del kit en <b>una tecla</b>, a su tono nativo (zonas de 1 tecla). El resto del teclado queda libre.';
+    $('instImport').innerHTML='<b>Cambiar sonidos:</b> arrastra un WAV a un pad (⤓) · <button>＋ Pad</button> · <button>Cargar otro kit…</button> — <b>mismo import</b> que Melódico.';
+    $('instConv').innerHTML='<b>⇄ Convertir es solo presentación</b> (mismo keymap): a <b>Melódico</b> cada sonido es una zona de 1 tecla que puedes <b>ensanchar</b>; al volver vuelve a su tecla. Sin pérdida.';
+    const KIT=['Kick','Snare','Clap','CH','OH','Tom','Cowbl','Ride'],keyOf=i=>Math.round((i+0.5)/KIT.length*NK);
+    KIT.forEach((name,i)=>{const key=keyOf(i);const lab=document.createElement('div');lab.className='dseg';lab.style.left=((key+0.5)/NK*100)+'%';lab.style.background=PAL[i];lab.textContent=name;zb.appendChild(lab);
+      const k=kbd.children[key];k.classList.add('hot');k.style.setProperty('--hot',PAL[i]);const r=document.createElement('span');r.className='rt';r.textContent='●';r.style.color=PAL[i];k.appendChild(r);});
+    KIT.forEach((name,i)=>strips.appendChild(strip(name,nn(keyOf(i)),[['Tune',.5,'0'],['Cut',.7,'72'],['Decay',.4,'.3s'],['Lvl',.8,'0'],['Rev',.2,'12'],['Dly',.1,'0']],PAL[i],'kit_'+name.toLowerCase()+'.wav',false)));
+    block.style.setProperty('--n',KIT.length);
+    connect(conn,KIT.map((_,i)=>(keyOf(i)+0.5)/NK*100),KIT.length);
+  }
+}
+$('vt').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('#vt .radio-btn').forEach(x=>x.classList.toggle('active',x===b));
+  const v=b.dataset.v,inst=(v==='melodic'||v==='drumkit');
+  document.querySelector('.panel[data-view="inst"]').hidden=!inst;
+  document.querySelector('.panel[data-view="loop"]').hidden=(v!=='loop');
+  if(inst)renderInstrument(v);
+});
+renderInstrument('melodic');
 </script>
 </body>
 </html>
