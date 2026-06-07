@@ -54,18 +54,22 @@ export function renderSamplerKeyboardMap(host: HTMLElement, keymap: KeymapEntry[
   const band = document.createElement('div');
   band.className = 'smk-band';
   const keyTint = new Map<number, string>();
+  // Drumkit connector lines: each evenly-spread chip ↔ its real key position.
+  const conns: { chipX: number; keyX: number; color: string }[] = [];
   if (opts.drumkit) {
     keymap.forEach((e, i) => {
       const c = padColor(i, n);
       keyTint.set(e.rootNote, c);
+      const chipX = ((i + 0.5) / n) * 100;
       const chip = document.createElement('div');
       chip.className = 'smk-pad';
-      chip.style.left = `${((i + 0.5) / n) * 100}%`;       // evenly spread (mockup)
+      chip.style.left = `${chipX}%`;                        // evenly spread (mockup)
       chip.style.setProperty('--smk-c', c);
       const key = padKeyForNote(e.rootNote);
       chip.textContent = (VOICE_LABELS as Record<string, string>)[key] ?? noteName(e.rootNote);
       chip.title = `${chip.textContent} · ${noteName(e.rootNote)}`;
       band.appendChild(chip);
+      conns.push({ chipX, keyX: leftPct(e.rootNote) + widthPct(0.5), color: c });
     });
   } else {
     keymap.forEach((e, i) => {
@@ -97,6 +101,28 @@ export function renderSamplerKeyboardMap(host: HTMLElement, keymap: KeymapEntry[
     keys.appendChild(k);
   }
 
-  wrap.append(band, keys);
+  // ── Connector lines (drumkit): join each chip to its real key (SVG, x in %) ──
+  const children: (HTMLElement | SVGElement)[] = [band];
+  if (conns.length) {
+    const NS = 'http://www.w3.org/2000/svg';
+    const conn = document.createElementNS(NS, 'svg');
+    conn.setAttribute('class', 'smk-conn');
+    conn.setAttribute('viewBox', '0 0 100 10');
+    conn.setAttribute('preserveAspectRatio', 'none');
+    for (const c of conns) {
+      const ln = document.createElementNS(NS, 'line');
+      ln.setAttribute('x1', `${c.chipX}`); ln.setAttribute('y1', '0');
+      ln.setAttribute('x2', `${c.keyX}`); ln.setAttribute('y2', '10');
+      ln.setAttribute('stroke', c.color);
+      ln.setAttribute('stroke-width', '1');
+      ln.setAttribute('vector-effect', 'non-scaling-stroke');
+      ln.setAttribute('opacity', '0.65');
+      conn.appendChild(ln);
+    }
+    children.push(conn);
+  }
+  children.push(keys);
+
+  wrap.append(...children);
   host.appendChild(wrap);
 }

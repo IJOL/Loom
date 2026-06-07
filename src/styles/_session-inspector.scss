@@ -373,7 +373,11 @@
 .smk-band {
   position: relative;
   height: 18px;
-  margin-bottom: 3px;
+}
+.smk-conn {
+  display: block;
+  width: 100%;
+  height: 9px;
 }
 .smk-pad {
   position: absolute;
