@@ -45,6 +45,7 @@ const KNOB = 34;
 /** Optional per-column extras for the SAMPLER drumkit (a pad has a trigger key and
  *  can be deleted). Synth drums omit these — their voices are fixed. */
 export interface DrumRackOpts {
+  labelOf?: (voice: string) => string;   // override the column title (melodic: a note name)
   keyOf?: (voice: string) => string;     // e.g. 'kick' → 'D1'
   onDelete?: (voice: string) => void;    // remove this pad
   onSelect?: (voice: string) => void;    // select this channel (drives the sample editor)
@@ -80,7 +81,7 @@ export function renderDrumVoiceRack(
     head.className = 'dv-head';
     const nameEl = document.createElement('span');
     nameEl.className = 'dv-name';
-    nameEl.textContent = VOICE_LABELS[voice as DrumVoice] ?? voice.toUpperCase();
+    nameEl.textContent = opts.labelOf?.(voice) ?? VOICE_LABELS[voice as DrumVoice] ?? voice.toUpperCase();
     head.appendChild(nameEl);
     if (opts.keyOf) {
       const keyEl = document.createElement('span');

@@ -12,7 +12,7 @@ function makeCtx(ids: string[]): EngineUIContext {
 }
 
 describe('SamplerEngine.buildParamUI melodic per-zone params', () => {
-  it('renders zone<root> param knobs under a melodic keymap row', () => {
+  it('renders the channel rack with zone<root> param knobs for a melodic keymap', () => {
     const ctx = new OfflineAudioContext(1, 1024, 44100) as unknown as AudioContext;
     const buf = ctx.createBuffer(1, 64, 44100); sampleCache.put('m', buf as unknown as AudioBuffer);
     const e = new SamplerEngine(); e.setSharedFx(new FxBus(ctx, ctx.destination));
@@ -21,7 +21,10 @@ describe('SamplerEngine.buildParamUI melodic per-zone params', () => {
     const host = document.createElement('div');
     const ids: string[] = [];
     e.buildParamUI(host, makeCtx(ids));
-    expect(host.querySelector('.drum-voice-rack')).toBeNull(); // not a drumkit
+    // Melodic now uses the per-zone channel rack (each zone is a column) — the same
+    // layout as a drumkit, not the old keymap list.
+    expect(host.querySelector('.drum-voice-rack')).not.toBeNull();
+    expect(host.querySelector('.dv-col[data-voice="zone60"]')).not.toBeNull();
     expect(ids).toContain('sampler-1.zone60.tune');
     expect(ids).toContain('sampler-1.zone60.cutoff');
   });

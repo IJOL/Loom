@@ -512,6 +512,23 @@
 .ssv-canvas {
   display: block;
 }
+.ssv-zone {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.ssv-znum {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  input {
+    width: 48px;
+  }
+}
 .sampler-dropzone {
   border: 1px dashed #79c;
   border-radius: 8px;

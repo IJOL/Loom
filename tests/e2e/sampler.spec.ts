@@ -36,8 +36,9 @@ test.describe('sampler', () => {
       name: 'tone.wav', mimeType: 'audio/wav', buffer: makeWav(),
     });
 
-    // The keymap now has exactly one entry, defaulting to root note 60.
-    await expect(page.locator('.sampler-keymap-row')).toHaveCount(1);
-    await expect(page.locator('.sampler-keymap-row .sampler-keymap-root')).toHaveValue('60');
+    // The keymap now has exactly one melodic zone, rendered as a channel strip
+    // (root note 60 = C4), with its root editable in the sample editor.
+    await expect(page.locator('.dv-col')).toHaveCount(1);
+    await expect(page.locator('.ssv-znum input').first()).toHaveValue('60');
   });
 });

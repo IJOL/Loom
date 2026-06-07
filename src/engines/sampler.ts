@@ -16,7 +16,7 @@ import { keymapEntryFor, repitchRate } from '../samples/keymap';
 import { wireEngineParams } from './engine-ui';
 import { sampleStore } from '../samples/store-singleton';
 import { importFile } from '../samples/import';
-import { addSampleToKeymap, removeKeymapEntry, setEntryRoot } from '../samples/keymap-edit';
+import { addSampleToKeymap, removeKeymapEntry, setEntryRoot, setEntryRange } from '../samples/keymap-edit';
 import { mirrorKeymapChange, mirrorDrumkitId, mirrorInstrumentId, mirrorPadParams } from '../session/session-engine-state';
 import { listDrumkits, fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
 import { listInstruments, fetchInstrumentManifest, loadInstrument, type InstrumentIndexEntry } from '../samples/instrument-loader';
@@ -402,10 +402,16 @@ export class SamplerEngine implements SynthEngine {
     const rebuild = () => { container.innerHTML = ''; this.buildParamUI(container, ctx); };
 
     const laneSampler = ctx.sessionState?.lanes.find((l) => l.id === ctx.laneId)?.engineState?.sampler;
-    // A drumkit VIEW (the channel rack) = single-note pads that are NOT a loop slice
-    // bank. A loop is also single-note but carries an instrumentId and is edited in
-    // the piano-roll, so it must NOT show the drum rack.
-    const isDrumkitView = this.isDrumkit() && !laneSampler?.instrumentId;
+    // Three inspector shapes share ONE channel layout (keyboard → connectors →
+    // strips → sample editor):
+    //   • drumkit  = single-note pads, no instrumentId (bundled kit / user kit).
+    //   • melodic  = range zones.
+    //   • loop     = single-note slice bank WITH an instrumentId → NOT a channel view;
+    //                it keeps the slice list + loop hint and edits in the piano-roll.
+    const singleNote = this.isDrumkit();
+    const isDrumkitView = singleNote && !laneSampler?.instrumentId;
+    const isMelodicView = this.keymap.length > 0 && !singleNote;
+    const isChannelView = isDrumkitView || isMelodicView;
 
     // Keyboard map (visual): a mini-keyboard with drumkit pad markers or melodic
     // zone bands, mirroring the mockup. Hidden when the keymap is empty.
@@ -417,10 +423,10 @@ export class SamplerEngine implements SynthEngine {
       renderSamplerKeyboardMap(keyboardHost, this.keymap, { drumkit: isDrumkitView });
     }
 
-    // Drumkit view: keyboard → connectors → channel strips → sample editor. A "+"
-    // tile at the end of the rack adds a pad; each strip has a ✕ to delete itself.
-    // (reuses drum-voice-rack with the sampler's own getRackLayout + getDrumVoice*.)
-    if (isDrumkitView) {
+    // Channel view (drumkit OR melodic): keyboard → connectors → channel strips →
+    // sample editor. A "+" tile at the end of the rack adds a pad/zone; each strip
+    // has a ✕ to delete itself. Reuses drum-voice-rack (params are per-voice/zone).
+    if (isChannelView) {
       // Connector layer (keyboard → strips), placed directly under the keyboard
       // so the curves bridge the gap between them.
       const connHost = document.createElement('div');
@@ -458,10 +464,40 @@ export class SamplerEngine implements SynthEngine {
           loop: pad.loop >= 0.5,
           loopStart: pad.loopStart,
         });
+        // Melodic zones carry a root + a key range; edit them here (a drumkit pad
+        // is a single key, so it needs neither).
+        if (isMelodicView) {
+          const zr = document.createElement('div');
+          zr.className = 'ssv-zone';
+          const num = (label: string, val: number, onCh: (v: number) => void): HTMLElement => {
+            const wrap = document.createElement('label');
+            wrap.className = 'ssv-znum';
+            wrap.append(label);
+            const inp = document.createElement('input');
+            inp.type = 'number'; inp.min = '0'; inp.max = '127'; inp.value = String(val);
+            inp.addEventListener('change', () => onCh(Math.max(0, Math.min(127, Math.round(Number(inp.value))))));
+            wrap.appendChild(inp);
+            return wrap;
+          };
+          const commit = (km: typeof this.keymap) => {
+            this.setKeymap(km);
+            if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, km);
+            rebuild();
+          };
+          zr.append(
+            num('root ', entry.rootNote, (v) => { this.selectedPadNote = v; commit(setEntryRoot(this.getKeymap(), idx, v)); }),
+            num('lo ', entry.loNote, (v) => { commit(setEntryRange(this.getKeymap(), idx, v, this.keymap[idx].hiNote)); }),
+            num('hi ', entry.hiNote, (v) => { commit(setEntryRange(this.getKeymap(), idx, this.keymap[idx].loNote, v)); }),
+          );
+          viewerHost.appendChild(zr);
+        }
       };
 
+      const labelFor = (voice: string): string => noteName(voiceNote.get(voice) ?? noteForPadKey(voice));
       renderDrumVoiceRack(this, ctx, rackHost, voices, {
-        keyOf: (voice) => noteName(voiceNote.get(voice) ?? noteForPadKey(voice)),
+        // Drumkit: GM voice name + the key. Melodic: the root note as the title (a
+        // zone at a GM note must not read "KICK").
+        ...(isDrumkitView ? { keyOf: labelFor } : { labelOf: labelFor }),
         onDelete: (voice) => {
           if (this.keymap.length <= 1) return;
           const km = this.keymap.filter((e) => padKeyForNote(e.rootNote) !== voice);
@@ -472,12 +508,21 @@ export class SamplerEngine implements SynthEngine {
         isSelected: (voice) => voiceNote.get(voice) === this.selectedPadNote,
         onSelect: (voice) => { this.selectedPadNote = voiceNote.get(voice) ?? null; renderViewer(); },
         onAdd: () => {
-          const proto = this.keymap[this.keymap.length - 1];
-          if (!proto) return;
-          const note = nextFreePadNote(this.keymap.map((e) => e.rootNote));
-          this.setKeymap([...this.keymap, { sampleId: proto.sampleId, rootNote: note, loNote: note, hiNote: note }]);
-          if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, this.keymap);
-          rebuild();
+          if (isDrumkitView) {
+            const proto = this.keymap[this.keymap.length - 1];
+            if (!proto) return;
+            const note = nextFreePadNote(this.keymap.map((e) => e.rootNote));
+            this.setKeymap([...this.keymap, { sampleId: proto.sampleId, rootNote: note, loNote: note, hiNote: note }]);
+            if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, this.keymap);
+            rebuild();
+          } else {
+            // Melodic: importing audio is how you add a zone (loadFiles is declared
+            // further down; this closure runs on click, after it is bound).
+            const input = document.createElement('input');
+            input.type = 'file'; input.multiple = true; input.accept = 'audio/*';
+            input.addEventListener('change', () => { const fs = Array.from(input.files ?? []); if (fs.length) void loadFiles(fs); });
+            input.click();
+          }
         },
       });
 
@@ -532,7 +577,7 @@ export class SamplerEngine implements SynthEngine {
     heading.className = 'label';
     // A drumkit is "loaded as a kit" (the pads ARE the keymap); a melodic/loop
     // sampler shows the raw keymap.
-    heading.textContent = isDrumkitView ? 'Load kit' : 'Keymap';
+    heading.textContent = isDrumkitView ? 'Load kit' : (isMelodicView ? 'Load instrument' : 'Keymap');
     section.appendChild(heading);
 
     // Family picker: one grouped selector over the three Sampler instrument
@@ -762,7 +807,7 @@ export class SamplerEngine implements SynthEngine {
     importHint.className = 'sampler-import-hint label';
     importHint.textContent = 'Each audio file is added as a zone. Adjust each zone\'s range below.';
     // The "added as a zone" hint is melodic-only — a drumkit edits per channel.
-    if (isDrumkitView) importHint.style.display = 'none';
+    if (isChannelView) importHint.style.display = 'none';
     section.appendChild(importHint);
 
     const importStatus = document.createElement('span');
@@ -809,7 +854,7 @@ export class SamplerEngine implements SynthEngine {
     const keymap = this.getKeymap();
     // Drumkit pads are edited as channels in the rack above — each strip carries its
     // trigger key + a ✕ delete — so the per-sample list is melodic-only.
-    if (!isDrumkitView) keymap.forEach((entry, i) => {
+    if (!isChannelView) keymap.forEach((entry, i) => {
       const row = document.createElement('div');
       row.className = 'sampler-keymap-row';
 
@@ -845,8 +890,8 @@ export class SamplerEngine implements SynthEngine {
       });
       row.appendChild(del);
 
-      // Per-zone params (the rack above covers the drumkit view).
-      if (!isDrumkitView) {
+      // Per-zone params (the rack above covers drumkit + melodic; only loop uses this).
+      if (!isChannelView) {
         const zoneKey = padKeyForNote(entry.rootNote); // zone<root>
         const params = document.createElement('div');
         params.className = 'sampler-zone-params knob-row';
