@@ -83,6 +83,11 @@ export interface SessionHostDeps {
   seq: Sequencer;
   playBtn: HTMLButtonElement;
   resetAutomationPosition: () => void;
+  /** Set the project tempo through the canonical broadcaster (updates the
+   *  scheduler, the BPM input, fx sync + every engine). Loading a loop conforms
+   *  the project to the loop's own tempo, so a sliced REX loop sounds natural
+   *  without a manual BPM change. */
+  applyBpm?: (bpm: number) => void;
   /** Injected unified stop. When provided, the session's "Stop all" button
    *  delegates to it (so it also finalizes any live-take recording + resets the
    *  Play button) instead of the local stopAll + re-render. */
@@ -359,6 +364,11 @@ export class SessionHost {
         notes: built.notes,
         gridResolution: DEFAULT_RESOLUTION,
       });
+      // Conform the project tempo to the loop's own bpm so the sliced REX loop
+      // plays back seamlessly without a manual BPM change (the slices re-grid at
+      // any other tempo, REX-style). Robust to octave guesses: lengthBars + bpm
+      // come from the same originalBpm, so the clip period always matches the loop.
+      if (d.originalBpm > 0) this.deps.applyBpm?.(d.originalBpm);
     });
     // Phase G deferral rule: lane resources don't exist until
     // applyLoadedSessionState runs (post-demo-fetch). renderWithMixer calls
@@ -851,6 +861,9 @@ export class SessionHost {
         // Single placement seam (front A): places the clip, guarantees the row's
         // ▶ scene, opens the piano-roll, all bracketed in one undo entry.
         self.installSamplerClip(laneId, noteClip);
+        // Conform the project tempo to the loop (see the loom:loop-loaded handler)
+        // so an imported loop sounds natural immediately, no manual BPM change.
+        if (det.originalBpm > 0) self.deps.applyBpm?.(det.originalBpm);
       } catch (err) {
         console.warn('Sampler loop import: could not load loop:', err);
       }

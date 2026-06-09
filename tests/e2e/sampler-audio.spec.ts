@@ -1,10 +1,11 @@
 // tests/e2e/sampler-audio.spec.ts
-// Front D · Task 16 — the Sampler's 3-family instrument picker
-// (Melódico / Percusión / Loop) switches the clip editor:
-//   • Melódico / Loop  → piano-roll (`.pr-frame`)
-//   • Percusión        → drum-grid (canvas, no `.pr-frame`)
-// The picker lives in the lane's engine inspector (`.sampler-family-select`);
-// the editor it reroutes lives in the clip inspector (`#insp-roll-host`).
+// The Sampler's instruments (Melodic / Drumkit / Loop) ARE its presets: they
+// load from the unified PRESET dropdown (`#poly-preset-select`), and selecting
+// one switches the clip editor:
+//   • Melodic / Loop  → piano-roll (`.pr-frame`)
+//   • Drumkit         → drum-grid (canvas, no `.pr-frame`)
+// (There is no separate family picker in the body — one selector = PRESET.)
+// The editor it reroutes lives in the clip inspector (`#insp-roll-host`).
 //
 // Front D · Task 17 — multi-sample import (one zone per file, full-range
 // stacked) and loop import (a note clip + launchable scene + a piano-roll with
@@ -41,34 +42,35 @@ function samplerWav(freq = 220): Buffer {
 }
 
 /** Add a Sampler lane via the new-lane engine picker and open its editor so the
- *  engine inspector (the `.sampler-family-select` picker) renders. Returns the
- *  new lane's id (read off the now-active lane tab). */
+ *  engine inspector (PRESET dropdown + keymap editor) renders. Returns the new
+ *  lane's id (read off the now-active lane tab). */
 async function addAndOpenSamplerLane(page: Page): Promise<string> {
   await page.locator('select.session-tabs-engine').selectOption('sampler');
   await page.locator('button.session-tabs-add-btn').click();
-  // Open the lane → its engine inspector (keymap editor + family picker) renders.
+  // Open the lane → its engine inspector (PRESET dropdown + keymap editor) renders.
   await page.getByRole('button', { name: 'Sampler 1', exact: true }).click();
   const tab = page.locator('button.session-lane-tab.active');
   await expect(tab).toBeVisible();
   return (await tab.getAttribute('data-lane-id')) ?? '';
 }
 
-test.describe('sampler 3-family picker', () => {
-  test('the family selector offers melodic / drumkit / loop families', async ({ page }) => {
+test.describe('sampler instruments via the PRESET dropdown', () => {
+  test('the PRESET dropdown offers melodic / drumkit / loop instruments', async ({ page }) => {
     await page.goto('/');
     await addAndOpenSamplerLane(page);
 
-    const sel = page.locator('select.sampler-family-select');
+    const sel = page.locator('#poly-preset-select');
     await expect(sel).toBeVisible();
 
-    // Each family is its own <optgroup>; the bundled content (Fase 6) populates
-    // every one — the lists are fetched async, so retry until they fill in.
-    await expect(page.locator('.sampler-family-melodic option')).not.toHaveCount(0);
-    await expect(page.locator('.sampler-family-drumkit option')).not.toHaveCount(0);
-    await expect(page.locator('.sampler-family-loop option')).not.toHaveCount(0);
+    // The Sampler's instruments populate the shared preset selector as namespaced
+    // `sampler:<family>:<id>` options (grouped Drumkit / Melodic / Loop); the
+    // lists are fetched async, so retry until they fill in.
+    await expect(sel.locator('option[value^="sampler:melodic:"]')).not.toHaveCount(0);
+    await expect(sel.locator('option[value^="sampler:drumkit:"]')).not.toHaveCount(0);
+    await expect(sel.locator('option[value^="sampler:loop:"]')).not.toHaveCount(0);
   });
 
-  test('picking Percussion → drum-grid; back to Melodic → piano-roll', async ({ page }) => {
+  test('picking a drumkit → drum-grid; back to melodic → piano-roll', async ({ page }) => {
     await page.goto('/');
     const laneId = await addAndOpenSamplerLane(page);
 
@@ -82,17 +84,17 @@ test.describe('sampler 3-family picker', () => {
     // A plain sampler lane edits on the piano-roll first.
     await expect(roll.locator('.pr-frame')).toBeVisible();
 
-    const sel = page.locator('select.sampler-family-select');
+    const sel = page.locator('#poly-preset-select');
     await expect(sel).toBeVisible();
 
-    // Percusión: loading a drumkit sets drumkitId → the clip reroutes to the
-    // canvas drum-grid (no `.pr-frame`). The load + reroute are async.
-    await sel.selectOption({ value: 'drumkit:tr808' });
+    // A drumkit: loading it sets drumkitId → the clip reroutes to the canvas
+    // drum-grid (no `.pr-frame`). The load + reroute are async.
+    await sel.selectOption({ value: 'sampler:drumkit:tr808' });
     await expect(roll.locator('.pr-frame')).toHaveCount(0, { timeout: 10_000 });
     await expect(roll.locator('canvas')).not.toHaveCount(0);
 
-    // Back to Melódico: drumkitId cleared (mutual exclusion) → piano-roll again.
-    await sel.selectOption({ value: 'melodic:sweep-pad' });
+    // Back to a melodic instrument: drumkitId cleared (mutual exclusion) → piano-roll.
+    await sel.selectOption({ value: 'sampler:melodic:sweep-pad' });
     await expect(roll.locator('.pr-frame')).toBeVisible({ timeout: 10_000 });
   });
 });

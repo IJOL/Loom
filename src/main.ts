@@ -401,6 +401,7 @@ const activeLaneStore = createActiveLaneStore();
 const sessionHost = new SessionHost({
   ctx, seq, playBtn,
   resetAutomationPosition,
+  applyBpm: setTransportBpm,
   // Unified stop: the session "⏹ all" button finalizes any live-take recording,
   // stops the clock + every lane, and resets the Play button. stopTransport is a
   // hoisted function declaration further down, so this arrow can call it even
