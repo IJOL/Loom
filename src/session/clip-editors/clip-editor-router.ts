@@ -45,6 +45,7 @@ export function chooseClipEditor(
   lane: SessionLane,
   engineEditor: 'piano-roll' | 'drum-grid' | undefined,
   override?: 'piano-roll' | 'drum-grid',
+  clip?: SessionClip,
 ): 'piano-roll' | 'drum-grid' {
   // A sampler drumkit edits on the drum grid; a melodic sampler stays on the
   // piano roll. Detection is note-agnostic so a variable-size kit (>8 pads, off
@@ -54,10 +55,12 @@ export function chooseClipEditor(
   const sampler = lane.engineState?.sampler;
   const km = sampler?.keymap ?? [];
   const allSingleNote = km.length > 0 && km.every((e) => e.loNote === e.hiNote && e.hiNote === e.rootNote);
-  // A loop slice bank is ALSO single-note, but it carries an instrumentId and is
-  // edited in the piano-roll — so exclude it. A bundled drumkit uses drumkitId; a
-  // user-built kit has neither id.
-  const isDrumkitSampler = lane.engineId === 'sampler'
+  // A loop slice bank is ALSO single-note, but it's edited in the piano-roll. A
+  // bundled loop preset carries an instrumentId; a user-imported loop has neither
+  // id but DOES carry a waveform slice bank on its clip — recognise both so a
+  // sliced loop never falls into the drumkit branch.
+  const isLoopClip = !!clip?.waveformRef?.slices?.length;
+  const isDrumkitSampler = !isLoopClip && lane.engineId === 'sampler'
     && (!!sampler?.drumkitId || (allSingleNote && !sampler?.instrumentId));
   return override ?? (isDrumkitSampler ? 'drum-grid' : undefined) ?? engineEditor ?? 'piano-roll';
 }
@@ -96,7 +99,7 @@ export function classifyClip(
   override?: 'piano-roll' | 'drum-grid',
 ): ClipKind {
   if (isAudioClip(lane, clip)) return 'audio';
-  return chooseClipEditor(lane, engineEditor, override) === 'drum-grid' ? 'drums' : 'notes';
+  return chooseClipEditor(lane, engineEditor, override, clip) === 'drum-grid' ? 'drums' : 'notes';
 }
 
 export function renderClipEditor(
@@ -108,7 +111,7 @@ export function renderClipEditor(
 ): PianoRollHandle | null {
   host.innerHTML = '';
   const engine = getEngine(lane.engineId);
-  const editor = chooseClipEditor(lane, engine?.editor, override);
+  const editor = chooseClipEditor(lane, engine?.editor, override, clip);
 
   const playheadFrac = (): number => {
     const lp = deps.laneStates.get(lane.id);

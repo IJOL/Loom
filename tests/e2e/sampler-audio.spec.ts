@@ -115,10 +115,9 @@ test.describe('sampler import (Task 17)', () => {
       { name: 'snare.wav', mimeType: 'audio/wav', buffer: samplerWav(330) },
     ]);
 
-    // The inspector rebuilds after import → two zone rows in the keymap list.
-    await expect(page.locator('.sampler-keymap-list .sampler-keymap-row')).toHaveCount(2, {
-      timeout: 10_000,
-    });
+    // The inspector rebuilds after import → two channel strips (one per zone).
+    // The redesign shows zones as per-channel strips (`.dv-col`), not a keymap list.
+    await expect(page.locator('.dv-col')).toHaveCount(2, { timeout: 10_000 });
     await expect(page.locator('.sampler-keymap-empty')).toHaveCount(0);
   });
 

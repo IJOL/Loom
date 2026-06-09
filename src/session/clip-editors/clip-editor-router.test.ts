@@ -52,6 +52,21 @@ describe('chooseClipEditor', () => {
     const l = lane({ engineId: 'sampler', engineState: { sampler: { keymap: km, instrumentId: 'amen-175' } } });
     expect(chooseClipEditor(l, 'piano-roll')).toBe('piano-roll');
   });
+
+  it('a user-imported loop (single-note bank, NO id, but a waveform slice clip) → piano-roll', () => {
+    // Identical lane shape to a user-built drumkit (single-note keymap, no
+    // drumkitId/instrumentId) — so WITHOUT the clip it routes to the drum grid…
+    const km = Array.from({ length: 8 }, (_, i) => ({ sampleId: `s${i}`, rootNote: 36 + i, loNote: 36 + i, hiNote: 36 + i }));
+    const l = lane({ engineId: 'sampler', engineState: { sampler: { keymap: km } } });
+    expect(chooseClipEditor(l, 'piano-roll')).toBe('drum-grid');
+    // …but the loop clip carries a waveform slice bank, which pins it to the
+    // piano-roll (an imported loop has no instrumentId to lean on).
+    const loopClip = {
+      id: 'c', lengthBars: 1, notes: [],
+      waveformRef: { sampleId: 'loop', slices: [{ start: 0, end: 1, note: 36 }] },
+    } as unknown as SessionClip;
+    expect(chooseClipEditor(l, 'piano-roll', undefined, loopClip)).toBe('piano-roll');
+  });
 });
 
 describe('classifyClip', () => {

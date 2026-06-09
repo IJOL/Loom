@@ -183,7 +183,7 @@ export class SessionInspector {
       // Compute the next view from the RESOLVED editor (what the user is seeing),
       // not the stored override — otherwise the first click on a melodic lane with
       // no override (cur=null → 'piano-roll') is a no-op.
-      const resolved = chooseClipEditor(lane!, getEngine(lane!.engineId)?.editor, editorOverride.get(clip.id));
+      const resolved = chooseClipEditor(lane!, getEngine(lane!.engineId)?.editor, editorOverride.get(clip.id), clip);
       const next: 'piano-roll' | 'drum-grid' = resolved === 'piano-roll' ? 'drum-grid' : 'piano-roll';
       editorOverride.set(clip.id, next);
       this.renderEditor();
@@ -219,7 +219,7 @@ export class SessionInspector {
     const lane = this.deps.state.lanes.find((l) => l.id === this.selectedClip!.laneId);
     const clip = lane?.clips[this.selectedClip.clipIdx];
     if (!lane || !clip) return;
-    const resolved = chooseClipEditor(lane, getEngine(lane.engineId)?.editor, editorOverride.get(clip.id));
+    const resolved = chooseClipEditor(lane, getEngine(lane.engineId)?.editor, editorOverride.get(clip.id), clip);
     btn.textContent = resolved === 'drum-grid' ? 'View as piano roll' : 'View as grid';
   }
 
