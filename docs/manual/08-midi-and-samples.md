@@ -95,6 +95,8 @@ A drumkit is one sample per key, edited on the **drum-grid** (the same grid as t
 
 ### Loops
 
+![A Sampler Loop instrument: the whole-loop overview above the per-slice strips](images/engine-sampler-loop.png)
+
 A loop is sliced into segments mapped to **consecutive notes**, so playing the keys in order replays the groove. Above the strips the **whole loop** is drawn as one continuous, colour-coded waveform with a cut line at every slice. Selecting a loop also **drops a note clip** onto the lane — one note per slice, each placed at its exact position so the notes form a continuous **staircase** — opened in the piano-roll; hit Play and it replays the loop, now as discrete notes you can move, mute, repitch or re-order. The clip keeps the loop's waveform as its header.
 
 See [Editing Clips](05-editing-clips.md) for drawing patterns in the drum grid, and [Engines](04-engines.md) for the Drum Machine engine (which lists every kit — synth and sample — in a unified preset table).

@@ -38,9 +38,27 @@ const addLane = async (page, engineId) => {
   await page.waitForTimeout(300);
 };
 
-/** A ~2s 16-bit PCM mono WAV with four decaying bursts, so onset detection
- *  finds slices when the audio channel / "Slice → pads" runs. Returned as a
- *  base64 string fed to the hidden "+ Audio" file input via setInputFiles. */
+/** Select a value in the shared #poly-preset-select, waiting for the (async-
+ *  populated) option to exist first. The Sampler surfaces its instruments —
+ *  drumkits, melodic instruments and loops — as options here. */
+const loadPolyPreset = async (page, value) => {
+  const sel = page.locator('#poly-preset-select');
+  await sel.locator(`option[value="${value}"]`).waitFor({ state: 'attached', timeout: 10_000 });
+  await sel.selectOption(value);
+};
+
+/** Add a Sampler lane and reveal its editor (shared steps for the sampler shots). */
+const openSamplerLane = async (page) => {
+  await loadDemo(page, 'Minimal Techno');
+  await addLane(page, 'sampler');
+  const tabs = page.locator('.session-lane-tab');
+  const count = await tabs.count();
+  await tabs.nth(count - 1).click();
+  await page.locator('.page:not([hidden])').first().waitFor({ state: 'visible' });
+};
+
+/** A ~2s 16-bit PCM mono WAV with four decaying bursts. Returned as a base64
+ *  string fed to the audio-channel cell's file picker via the filechooser event. */
 const loopWavBase64 = () => {
   const sr = 44100, secs = 2.0, n = Math.floor(sr * secs);
   const dataLen = n * 2;
@@ -59,15 +77,21 @@ const loopWavBase64 = () => {
   return b.toString('base64');
 };
 
-/** Drop a generated WAV into the "+ Audio" control; the new audio clip
- *  auto-opens in the inspector showing the audio-clip editor. */
+/** Add an audio channel and load a WAV into its first cell, so the audio-clip
+ *  editor auto-opens in the inspector. The "+ Audio" button creates an EMPTY
+ *  audio lane; a WAV is imported by clicking a cell, which opens a file picker
+ *  (a transient <input type=file> the app .click()s) — caught via filechooser. */
 const addAudioChannel = async (page) => {
-  await page.locator('input.session-add-audio-input').setInputFiles({
+  await page.locator('.session-add-audio-btn').click();
+  await page.waitForTimeout(300); // let the audio lane + its grid row mount
+  const cell = page.locator('.session-cell[data-lane-id^="audio-"]').first();
+  const fileChooser = page.waitForEvent('filechooser');
+  await cell.click();
+  await (await fileChooser).setFiles({
     name: 'beat.wav', mimeType: 'audio/wav',
     buffer: Buffer.from(loopWavBase64(), 'base64'),
   });
-  // The audio-clip editor's Warp toggle confirms it has mounted (the old
-  // ✂ Slice→pads button was removed by the audio-channel revert, front D).
+  // The audio-clip editor's Warp toggle confirms it has mounted.
   await page.locator('.audio-clip-warp').waitFor({ state: 'visible', timeout: 10_000 });
   await page.waitForTimeout(300); // let the waveform canvas paint
 };
@@ -167,12 +191,24 @@ export const SHOTS = [
     name: 'engine-sampler',
     selector: '.page[data-page="poly"]',
     setup: async (page) => {
-      await loadDemo(page, 'Minimal Techno');
-      await addLane(page, 'sampler');
-      const tabs = page.locator('.session-lane-tab');
-      const count = await tabs.count();
-      await tabs.nth(count - 1).click();
-      await page.locator('.page:not([hidden])').first().waitFor({ state: 'visible' });
+      await openSamplerLane(page);
+      // Load a ready-made drumkit so the channel strips, keyboard map and
+      // Selected-sample editor render (a fresh Sampler lane is empty).
+      await loadPolyPreset(page, 'sampler:drumkit:tr808');
+      await page.locator('.dv-col').first().waitFor({ state: 'visible', timeout: 10_000 });
+      await page.waitForTimeout(500); // keyboard / connector / sample-viewer canvases
+    },
+  },
+  {
+    // The Sampler's Loop instrument: the whole-loop colour-coded overview above
+    // the per-slice channel strips.
+    name: 'engine-sampler-loop',
+    selector: '.page[data-page="poly"]',
+    setup: async (page) => {
+      await openSamplerLane(page);
+      await loadPolyPreset(page, 'sampler:loop:amen-175');
+      await page.locator('.sampler-loop-overview canvas').waitFor({ state: 'visible', timeout: 15_000 });
+      await page.waitForTimeout(600); // overview + per-strip canvases paint
     },
   },
 
@@ -183,8 +219,8 @@ export const SHOTS = [
     selector: '.session-tabs',
   },
   {
-    // The audio-clip editor (BPM / bars / Warp / Slice → pads + waveform header),
-    // reached by dropping a generated WAV into the "+ Audio" control.
+    // The audio-clip editor (Warp toggle + waveform header), reached by adding an
+    // audio channel and loading a generated WAV into its first cell.
     name: 'audio-clip-editor',
     selector: '#insp-roll-host',
     setup: addAudioChannel,
