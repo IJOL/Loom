@@ -24,6 +24,7 @@ import { PAD_DEFAULTS, PAD_LEAF_SPECS, padKeyForNote, noteForPadKey, nextFreePad
 import { renderSamplerKeyboardMap, noteName, padColor } from './sampler-keyboard-map';
 import { renderSampleViewer } from './sampler-sample-viewer';
 import { mountKeyboardConnectors } from './sampler-keyboard-connectors';
+import { renderLoopOverview } from './sampler-loop-overview';
 import type { FxBus } from '../core/fx';
 import { computeVoiceMutes } from '../core/mute-solo';
 import { renderDrumVoiceRack, VOICE_LABELS } from './drum-voice-rack';
@@ -477,6 +478,15 @@ export class SamplerEngine implements SynthEngine {
     // bring the loop "al formato del resto"). A loop's slices are channels too; its
     // CLIP still edits in the piano-roll (the router decides that independently).
     const isChannelView = this.keymap.length > 0;
+
+    // Loop: the WHOLE loop above everything — the slices stitched back into one
+    // continuous, colour-coded waveform with cut lines (the mockup's loop view).
+    if (isLoop) {
+      const loHost = document.createElement('div');
+      loHost.className = 'sampler-loop-overview';
+      container.appendChild(loHost);
+      renderLoopOverview(loHost, this.keymap);
+    }
 
     // Keyboard map (visual): a mini-keyboard with drumkit pad markers or melodic
     // zone bands, mirroring the mockup. Hidden when the keymap is empty.

@@ -375,6 +375,17 @@
 }
 
 // Keyboard map (visual keymap) — mockup parity, increment 1.
+// The whole loop above the strips (slices stitched into one waveform).
+.sampler-loop-overview {
+  margin: 8px 0 2px;
+}
+.slo-canvas {
+  display: block;
+  width: 100%;
+  background: #080706;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
 .sampler-keymap-viz {
   margin: 6px 0 0;
 }
