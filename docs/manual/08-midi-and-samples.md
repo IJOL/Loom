@@ -44,21 +44,33 @@ See [Engines](04-engines.md) for what each engine sounds like, and [Sessions, La
 
 ![Sampler engine editor](images/engine-sampler.png)
 
-The Sampler is a polyphonic playback engine that maps audio files across the keyboard and plays them back at the correct pitch per note. It has three **families**, chosen from an **Instrument** selector: **Melodic** (one or more zones spanning a range of keys), **Percussion** (single-note pads at GM drum notes — a drum kit), and **Loop** (a sliced loop played as notes). The inspector shows **GAIN** and **VOICES** knobs, a **Keymap** section, the **Instrument** family selector, and **Import samples…** / **Import loop…** controls.
+The Sampler is a polyphonic playback engine that maps audio across the keyboard and plays it back at the correct pitch per note. A Sampler lane can be three things — a **melodic instrument** (samples spread across ranges of keys), a **drumkit** (one sample per key), or a **loop** (a sliced loop played as a sequence of notes) — and all three share **one inspector layout**.
 
-### Loading samples
+### Presets are the instruments
 
-Click **Import samples…** and pick one or more audio files (the picker is multi-select). Loom decodes each file and stores it in IndexedDB, so the samples persist across browser reloads — you do not need to re-import them each session.
+The Sampler's bundled instruments — drumkits, melodic instruments, and loops — *are* its presets: pick one straight from the standard **PRESET** dropdown at the top of the inspector (grouped **Drumkit / Melodic / Loop**). Selecting one downloads + decodes its WAVs into IndexedDB (so it persists across reloads) and loads it. There is no separate picker. Loom ships ready-made kits (**TR-808**, **Acoustic / Dirt**, **Dirt**), melodic instruments, and loops — all working on the live deploy without a manual import.
 
-Each imported file becomes a keymap entry that spans the full keyboard (MIDI 0–127) with the root note set to middle C (MIDI 60) by default. When you import several at once they stack full-range — last match wins, so only the last sounds until you narrow the ranges. Set each zone's root and low/high boundary in the keymap list, and remove an entry with the **✕** button.
+### The channel layout
+
+Whatever you load, the inspector has the same shape:
+
+- A **keyboard map** across the top — coloured markers at each sound's key (drumkit / loop) or coloured range bands (melodic) — with **connector lines** down to the strips.
+- A row of **channel strips**, one per sound. Each strip carries its **name** (the GM voice for a drumkit — KICK, SNARE…; the note for a melodic zone; **Slice N** for a loop slice), its trigger **key**, a **▶ play** button to audition the sample and a **✕** to delete that sound (a row at the top of the strip, above the knobs), per-sound knobs (TUNE / CUTOFF / DECAY / LEVEL / REV / DLY plus an **▸ adv** block), and **M / S** mute-solo. A **＋** tile at the end of the row adds a sound.
+- A **Selected sample** editor below — click any strip and it shows that sample's waveform on a canvas with a **−/＋ zoom**, the filename, the key, a one-shot/loop badge, and (for melodic) editable **root / lo / hi**.
+
+Every sound is keyed by its own note, so each pad / zone / slice has its **own** parameters and mute-solo — nothing is shared between sounds.
+
+### Building your own
+
+**Import samples…** (multi-select) decodes each file, stores it in IndexedDB (so it persists across reloads), and adds it as a new melodic zone spanning the full keyboard with the root at middle C (MIDI 60); narrow each zone's root and low/high boundary in the sample editor. On a drumkit, the **＋** tile clones the last pad onto the next free key.
 
 ### Keymap and repitch
 
-A **keymap entry** has a root note, a low-note boundary, and a high-note boundary. When a note falls within the range, the sample plays at a playback rate of `2^((midi − rootNote) / 12)`, giving equal-temperament repitching. Multiple entries can cover different key ranges — last match wins — so you can build multi-sample instruments by importing several files and adjusting their boundaries.
+A sound's **keymap entry** has a root note and a low/high key range. When a note falls in the range, the sample plays at a rate of `2^((midi − rootNote) / 12)` — equal-temperament repitching — so a melodic instrument's zones span the keyboard chromatically while a drumkit pad or a loop slice sits on a single key.
 
-### Per-pad / per-zone parameters
+### Per-sound parameters
 
-Every keymap entry (pad in drumkit mode, zone in melodic mode) has its own set of parameters, all read at trigger time:
+Every sound — a drumkit pad, a melodic zone, or a loop slice — has its own set of parameters, all read at trigger time:
 
 | Parameter | Range | Default | Description |
 | --- | --- | --- | --- |
@@ -75,17 +87,17 @@ Every keymap entry (pad in drumkit mode, zone in melodic mode) has its own set o
 | LSTART | 0–1 | 0 | Loop start point as a fraction of sample duration |
 | RETRIG | Poly / Mono | Poly | Mono cuts the previous hit on re-trigger; Poly layers them |
 
-In drumkit mode these appear in the per-pad rack (the same eight-column layout used by the Drum Machine engine). In melodic mode they appear as a knob row below each keymap entry.
+These live in each channel strip — drumkit, melodic, and loop all share the same per-channel rack (there is no eight-pad limit and no separate knob row).
 
-### Percussion family (drum kits)
+### Drumkits
 
-Pick the **Percussion** family in the **Instrument** selector and choose a kit ("— none (own keymap) —" leaves the lane on its own keymap). Loom fetches the kit's manifest, downloads each voice's WAV, stores them in IndexedDB, and maps every sample to its canonical General MIDI drum note (kick on 36, snare on 38, and so on). The keymap is rebuilt fresh from the manifest on each session load, so you do not need to re-import the kit files manually.
+A drumkit is one sample per key, edited on the **drum-grid** (the same grid as the Drum Machine engine). A kit holds **any number of sounds** — not just eight — and you grow or shrink it with the **＋** tile and each strip's **✕**. Loom ships three ready-made sample kits (**TR-808**, **Acoustic / Dirt**, **Dirt**); pick one from the PRESET dropdown and the lane is ready to play. The kit is rebuilt fresh from its manifest on each session load, so the WAVs never need re-importing.
 
-In addition to any kits you build yourself by loading samples, Loom ships three **ready-made sample drum kits** that appear directly in the Percussion family: **TR-808 (samples)**, **Acoustic / Dirt (samples)**, and **Dirt (samples)**. These are curated one-shot WAVs bundled with the app, so they work on the live GitHub Pages deploy without any manual file import. Simply pick one from the dropdown and the lane is ready to play.
+### Loops
 
-Once a kit is loaded the lane switches to the drum-grid editor (the same grid used by the Drum Machine engine). You get per-pad mute and solo buttons, and the full per-pad parameter rack. To return to a melodic keymap, pick the **Melodic** family.
+A loop is sliced into segments mapped to **consecutive notes**, so playing the keys in order replays the groove. Above the strips the **whole loop** is drawn as one continuous, colour-coded waveform with a cut line at every slice. Selecting a loop also **drops a note clip** onto the lane — one note per slice, each placed at its exact position so the notes form a continuous **staircase** — opened in the piano-roll; hit Play and it replays the loop, now as discrete notes you can move, mute, repitch or re-order. The clip keeps the loop's waveform as its header.
 
-See [Editing Clips](05-editing-clips.md) for how to draw patterns in the drum grid, and [Engines](04-engines.md) for a comparison with the Drum Machine engine (which lists all available kits, including the synth kits, in a unified preset table).
+See [Editing Clips](05-editing-clips.md) for drawing patterns in the drum grid, and [Engines](04-engines.md) for the Drum Machine engine (which lists every kit — synth and sample — in a unified preset table).
 
 ---
 
@@ -125,7 +137,7 @@ With **Warp OFF** the loop plays at its natural speed with no tempo sync — use
 
 ### Slicing a loop into notes
 
-The audio channel itself is a pure WAV loop. To chop a loop into individually editable hits, load it through the Sampler's **Loop** family (see [Sampler](#sampler)) rather than the audio channel. Loom detects slice points (from embedded **Acid / `cue` / AIFF** markers when present, or by onset detection plus a tempo estimate), stores one short sample per slice in IndexedDB, and creates a **note clip** that triggers the slices in order on a piano-roll — so the groove plays back identically, now as discrete, editable notes. Move, mute, repitch, or re-order the hits in the piano-roll, and tweak each pad's tune/cutoff/decay/level/pan in the per-pad rack (see [Per-pad / per-zone parameters](#per-pad--per-zone-parameters)); the clip keeps the original waveform as its header. *(Earlier builds did this from a **✂ Slice → pads** button on the audio channel; that moved to the Sampler's Loop family.)*
+The audio channel itself is a pure WAV loop. To chop a loop into individually editable hits, load it through the Sampler's **Loop** family (see [Sampler](#sampler)) rather than the audio channel. Loom detects slice points (from embedded **Acid / `cue` / AIFF** markers when present, or by onset detection plus a tempo estimate), stores one short sample per slice in IndexedDB, and creates a **note clip** that triggers the slices in order on a piano-roll — so the groove plays back identically, now as discrete, editable notes. Move, mute, repitch, or re-order the hits in the piano-roll, and tweak each slice's tune/cutoff/decay/level/pan in its channel strip (see [Per-sound parameters](#per-sound-parameters)); the clip keeps the original waveform as its header. *(Earlier builds did this from a **✂ Slice → pads** button on the audio channel; that moved to the Sampler's Loop family.)*
 
 ---
 
