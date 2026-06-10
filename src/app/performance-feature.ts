@@ -32,6 +32,7 @@ import {
 } from '../session/session-runtime';
 import { renderPerformanceView } from '../performance/performance-ui';
 import { buildMiniMaster } from '../core/master-strip';
+import { createLevelMeter } from '../core/level-meter';
 import { arrangementFromSession } from '../performance/arrangement-from-session';
 import { createHistory } from '../core/history';
 import { moveEvent, resizeEvent, deleteEvent } from '../performance/arrangement-edit';
@@ -155,6 +156,37 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     refreshPerformanceView();
   }
 
+  // Per-lane header controls (mute/solo + VU) for the Performance lane rows,
+  // reusing the session mixer's ChannelStrip + mute/solo state. Null when the
+  // lane has no allocated strip. The VU registers in perfDisposables so it's torn
+  // down with the rest of the view on each re-render.
+  function buildLaneHeader(laneId: string): HTMLElement | null {
+    const md = sessionHost.deps.mixerDeps;
+    const strip = sessionHost.deps.laneResources?.get(laneId)?.strip;
+    if (!md || !strip) return null;
+    const wrap = document.createElement('div');
+    wrap.className = 'perf-lane-ctrls';
+    const mkBtn = (cls: string, text: string, get: () => boolean, set: (v: boolean) => void) => {
+      const b = document.createElement('button');
+      b.className = `perf-lane-btn ${cls}`;
+      b.textContent = text;
+      if (get()) b.classList.add('active');
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        set(!get());
+        b.classList.toggle('active', get());
+        md.applyMuteSolo();
+      });
+      return b;
+    };
+    const m = mkBtn('mute', 'M', () => !!md.muteState[laneId], (v) => { md.muteState[laneId] = v; });
+    const s = mkBtn('solo', 'S', () => !!md.soloState[laneId], (v) => { md.soloState[laneId] = v; });
+    const vu = createLevelMeter({ analyser: strip.getMeterAnalyser() });
+    perfDisposables.push(vu);
+    wrap.append(m, s, vu.el);
+    return wrap;
+  }
+
   function refreshPerformanceView() {
     const host = document.getElementById('performance-view-root');
     if (!host) return;
@@ -208,6 +240,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
             registerDisposable: (d) => perfDisposables.push(d),
           })
         : null,
+      buildLaneHeader,
     });
   }
 

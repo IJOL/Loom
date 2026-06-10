@@ -81,7 +81,16 @@ function makeClipBand(
 
   const row = document.createElement('div');
   row.className = 'perf-row';
-  row.appendChild(makeLabel(laneRec.laneId));
+  // Lane header: name + (optional) mute/solo + VU, mirroring the session mixer.
+  const label = document.createElement('div');
+  label.className = 'perf-label';
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'perf-lane-name';
+  nameSpan.textContent = laneRec.laneId;
+  label.appendChild(nameSpan);
+  const ctrls = cb.buildLaneHeader?.(laneRec.laneId);
+  if (ctrls) label.appendChild(ctrls);
+  row.appendChild(label);
   const track = document.createElement('div');
   track.className = 'perf-track';
   track.style.width = `${totalBars * pxPerBar}px`;
@@ -187,6 +196,9 @@ export interface PerfUICallbacks {
   /** Optional: build the compact master strip (VU + fader) for the toolbar.
    *  Returns null when no audio graph is wired (test fixtures). */
   buildMaster?: () => HTMLElement | null;
+  /** Optional: build per-lane header controls (mute/solo + VU) for a lane row.
+   *  Returns null when the lane isn't allocated (no strip). */
+  buildLaneHeader?: (laneId: string) => HTMLElement | null;
 }
 
 function makeToolbar(state: ArrangementState, cb: PerfUICallbacks): HTMLElement {
