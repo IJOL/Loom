@@ -146,6 +146,16 @@ function makeClipBand(
     band.appendChild(el);
   });
   track.appendChild(band);
+  // Loop A–B span across this lane: a translucent column with A/B edges. Every
+  // lane draws it at the same x (same pxPerBar), so it reads as one continuous
+  // marker down the whole arrangement, not just a brace in the ruler.
+  if (cb.loopEnabled && cb.loopEndBar > cb.loopStartBar) {
+    const span = document.createElement('div');
+    span.className = 'perf-loop-span';
+    span.style.left = `${cb.loopStartBar * pxPerBar}px`;
+    span.style.width = `${(cb.loopEndBar - cb.loopStartBar) * pxPerBar}px`;
+    track.appendChild(span);
+  }
   row.appendChild(track);
   return row;
 }
@@ -196,7 +206,10 @@ function makeToolbar(state: ArrangementState, cb: PerfUICallbacks): HTMLElement 
   zoom.type = 'range'; zoom.min = '16'; zoom.max = '400'; zoom.step = '1';
   zoom.value = String(cb.pxPerBar);
   zoom.className = 'perf-zoom';
-  zoom.addEventListener('input', () => cb.onZoom(parseInt(zoom.value, 10)));
+  // 'change' (fires on release), NOT 'input': re-rendering on every drag tick
+  // rebuilt the whole view — including this slider — under the pointer, breaking
+  // the drag and flooding the main thread. One re-render when the user lets go.
+  zoom.addEventListener('change', () => cb.onZoom(parseInt(zoom.value, 10)));
 
   const brushBar = document.createElement('span');
   brushBar.className = 'perf-brush-bar';
@@ -223,7 +236,28 @@ function makeToolbar(state: ArrangementState, cb: PerfUICallbacks): HTMLElement 
   loopBtn.textContent = 'Loop A–B';
   loopBtn.addEventListener('click', () => cb.onSetLoop(!cb.loopEnabled, cb.loopStartBar, cb.loopEndBar));
 
-  bar.append(lenWrap, ' · Zoom ', zoom, ' · ', brushBar, ' · ', loopBtn, ' · ', readout);
+  // Editable A/B bar fields — dragging the brace on a long song is a pain. Typing
+  // a value sets AND enables the loop (the button still toggles it off).
+  const loopFields = document.createElement('span');
+  loopFields.className = 'perf-loop-fields';
+  const mkLoopInput = (val: number, title: string) => {
+    const inp = document.createElement('input');
+    inp.type = 'number'; inp.min = '0'; inp.className = 'perf-loop-input';
+    inp.value = String(val); inp.title = title;
+    return inp;
+  };
+  const aIn = mkLoopInput(cb.loopStartBar, 'Loop start (bar)');
+  const bIn = mkLoopInput(cb.loopEndBar, 'Loop end (bar)');
+  const commitLoop = () => {
+    const a = Math.max(0, Math.floor(parseFloat(aIn.value) || 0));
+    const b = Math.max(a + 1, Math.floor(parseFloat(bIn.value) || a + 1));
+    cb.onSetLoop(true, a, b);
+  };
+  aIn.addEventListener('change', commitLoop);
+  bIn.addEventListener('change', commitLoop);
+  loopFields.append('A', aIn, 'B', bIn);
+
+  bar.append(lenWrap, ' · Zoom ', zoom, ' · ', brushBar, ' · ', loopBtn, loopFields, ' · ', readout);
 
   // Compact master (VU + fader) pushed to the right — the full master strip is
   // hidden with the session root in Performance mode (see buildMiniMaster).
@@ -234,14 +268,26 @@ function makeToolbar(state: ArrangementState, cb: PerfUICallbacks): HTMLElement 
   return bar;
 }
 
-function attachWheelZoom(host: HTMLElement, cb: PerfUICallbacks): void {
-  host.addEventListener('wheel', (e) => {
-    if (!e.ctrlKey) return;
-    e.preventDefault();
-    const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+type HostWithWheel = HTMLElement & { __wheelZoom?: EventListener };
+
+export function attachWheelZoom(host: HTMLElement, cb: PerfUICallbacks): void {
+  // `host` (#performance-view-root) PERSISTS across re-renders: host.innerHTML=''
+  // clears its children but NOT the host's own listeners. renderPerformanceView
+  // calls this every render, so wheel handlers stacked — each wheel fired ALL of
+  // them → N onZoom → N re-renders → +N handlers: an exponential blow-up that
+  // froze the tab. Remove the previous handler before adding the current one.
+  const h = host as HostWithWheel;
+  if (h.__wheelZoom) host.removeEventListener('wheel', h.__wheelZoom);
+  const handler: EventListener = (e) => {
+    const we = e as WheelEvent;
+    if (!we.ctrlKey) return;
+    we.preventDefault();
+    const factor = we.deltaY < 0 ? 1.1 : 1 / 1.1;
     const next = Math.max(16, Math.min(400, cb.pxPerBar * factor));
     cb.onZoom(Math.round(next));
-  }, { passive: false });
+  };
+  host.addEventListener('wheel', handler, { passive: false });
+  h.__wheelZoom = handler;
 }
 
 export function renderPerformanceView(host: HTMLElement, state: ArrangementState, cb: PerfUICallbacks): void {

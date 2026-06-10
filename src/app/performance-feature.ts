@@ -111,6 +111,15 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   // leak the meter's analyser registration with the shared RAF loop.
   let perfDisposables: { dispose(): void }[] = [];
 
+  // Coalesce zoom re-renders into one per animation frame. The slider uses
+  // 'change' (one event on release), but a wheel-zoom can fire many notches in
+  // quick succession; without this each one did a full synchronous re-render.
+  let zoomRaf = 0;
+  const scheduleZoomRefresh = () => {
+    if (zoomRaf !== 0) return;
+    zoomRaf = requestAnimationFrame(() => { zoomRaf = 0; refreshPerformanceView(); });
+  };
+
   onRegisterKnob((k) => {
     const prev = k.onValueChanged;
     k.onValueChanged = (v, fromUser) => {
@@ -177,7 +186,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       setBrush: (b) => { brush = b; },
       painterDeps: { seq, getAutoAbsSubIdx: () => 0 },
       onSetLengthBars: (bars) => { beforeEdit(); setArrangementLengthBars(arrangement, bars); refreshPerformanceView(); },
-      onZoom: (px) => { pxPerBar = px; refreshPerformanceView(); },
+      onZoom: (px) => { pxPerBar = px; scheduleZoomRefresh(); },
       onAddCurve: (paramId) => { beforeEdit(); addAutomationCurve(arrangement, paramId, laneIds()); refreshPerformanceView(); },
       onRemoveCurve: (paramId) => { beforeEdit(); removeAutomationCurve(arrangement, paramId, laneIds()); refreshPerformanceView(); },
       onEdited: () => { onPerformanceEdited?.(); },
