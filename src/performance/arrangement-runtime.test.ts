@@ -116,6 +116,57 @@ describe('tickArrangement', () => {
     });
     expect(applied['fx.reverb.wet']).toBe(0.7);
   });
+
+  it('emits stopLane for a finite untilSec that falls BEYOND the first lookahead (multi-tick)', () => {
+    // Regression: a clip whose untilSec is past the launch tick's lookahead never
+    // got its stop scheduled — the lane looped forever (e.g. an 8-bar scene that a
+    // later scene follows on OTHER lanes, so they sound superimposed). The stop
+    // must fire once the playhead reaches untilSec, even though it wasn't in range
+    // at launch time.
+    const s = emptyArrangementState(120);
+    appendClipEvent(s, 'l1', 'c1', 0.0);
+    closePendingClipEvent(s, 'l1', 2.0);   // l1 plays [0,2) then must fall silent
+    // l2 starts at 2 so the song-end stop (at endSec) can't mask l1's missing stop.
+    appendClipEvent(s, 'l2', 'd1', 2.0);
+    closePendingClipEvent(s, 'l2', 4.0);
+
+    const ps = createArrangementPlayState();
+    startArrangement(ps, 100);
+    const stops: Array<{ id: string; at: number }> = [];
+    const tick = (nowCtx: number) => tickArrangement({
+      ps, state: s, nowCtx, lookaheadSec: 0.12, bpm: 120,
+      loopWindow: { startSec: 0, endSec: 4, active: false },
+      onLaunchClip: () => {}, onStopLane: (id, at) => stops.push({ id, at }), applyAutomation: () => {},
+    });
+    tick(100);     // tNow=0: launches c1; untilSec 2.0 is beyond the 0.12 lookahead
+    tick(102);     // tNow=2: playhead reaches l1's untilSec → its stop must fire
+    const l1stop = stops.find((x) => x.id === 'l1');
+    expect(l1stop).toBeDefined();
+    expect(l1stop!.at).toBeCloseTo(100 + 2.0, 5);
+  });
+
+  it('does NOT stop between contiguous events on the same lane (the next clip relaunches)', () => {
+    // Two back-to-back clips on one lane (untilSec_i === atSec_{i+1}). The second
+    // launch supersedes the first, so emitting a stop at the boundary would cause
+    // an audible re-trigger gap. No stop should fire between contiguous events.
+    const s = emptyArrangementState(120);
+    appendClipEvent(s, 'l1', 'c1', 0.0);
+    closePendingClipEvent(s, 'l1', 2.0);
+    appendClipEvent(s, 'l1', 'c2', 2.0);   // contiguous: starts exactly at c1's untilSec
+    closePendingClipEvent(s, 'l1', 4.0);
+
+    const ps = createArrangementPlayState();
+    startArrangement(ps, 100);
+    const stops: string[] = [];
+    const tick = (nowCtx: number) => tickArrangement({
+      ps, state: s, nowCtx, lookaheadSec: 0.12, bpm: 120,
+      loopWindow: { startSec: 0, endSec: 4, active: false },
+      onLaunchClip: () => {}, onStopLane: (id) => stops.push(id), applyAutomation: () => {},
+    });
+    tick(100); tick(102); tick(102.5);  // cross the c1→c2 boundary at t=2, stay before song end (t=4)
+    // Crossing the contiguous boundary must NOT stop the lane (c2's launch supersedes c1).
+    expect(stops).toEqual([]);
+  });
 });
 
 describe('backToArrangement', () => {
