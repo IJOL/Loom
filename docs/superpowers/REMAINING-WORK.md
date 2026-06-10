@@ -1,42 +1,49 @@
 # Remaining work
 
-Audit of 2026-05-31 against the codebase. Implemented design docs are removed from the
-tree (recover from git history). The items below are what's left.
+Audit of 2026-06-10 against the codebase (refreshes the 2026-05-31 audit).
+Implemented design docs are removed from the tree per convention — recover them
+from git history. What stays below is the **outstanding** work only.
 
-## ✅ Closed since the audit
+## Open fronts (docs still in the tree)
 
-- **Performance view now surfaces *and* persists takes** (was the only High item; plan +
-  spec deleted). `finalizeArrangement` ([src/performance/arrangement-ops.ts](../../src/performance/arrangement-ops.ts))
-  clamps open clip events on stop and computes `durationSec`, so a recorded take renders as
-  timeline bands instead of the ever-empty `durationSec === 0` state; it's wired into
-  `performance-feature`'s stop/disarm paths. `mode` + `arrangement` now persist in v3 saves
-  ([src/save/saved-state-v3.ts](../../src/save/saved-state-v3.ts)) — save/load only, **not**
-  undo/redo (so a take survives undoing an unrelated session edit). A round-trip e2e
-  (record → switch → assert `.perf-clip`) replaces the old empty-state-only coverage.
-  Verified in the real app (record → save → reload → load → the take re-renders). Commits
-  `dced8d9` + `e77fd5c`.
+- **Frente C — Editores de clips** ([plan](plans/2026-06-06-editores-clips-plan.md),
+  [spec](specs/2026-06-06-editores-clips-design.md)). Parts shipped via the editors
+  overhaul (variable-kit rows, clip-loop brace); the rest of the plan is unverified —
+  re-audit against the code before executing.
+- **Frente E — Mixer / master** ([plan](plans/2026-06-06-mixer-master-plan.md),
+  [spec](specs/2026-06-06-mixer-master-design.md)). Master strip exists in the session
+  mixer row, but the plan's full scope (master FX surface, VU hygiene) is unfinished.
+- **Sampler — decisiones pendientes (Parte B)**
+  ([plan](plans/2026-06-07-sampler-frontd-gaps.md)). Parte A shipped (the channel
+  redesign + the loop-preset fix); B1/B2/B3 need user decisions + brainstorming.
+- **Sampler — per-pad LFO/ADSR (Plan A2)**
+  ([spec](specs/2026-06-04-sampler-per-pad-modulation-design.md)). Needs trigger-time
+  modulator binding; per-pad params shipped without modulation.
+- **Audio channel — dirección** ([plan](plans/2026-06-05-audio-channel.md),
+  [spec](specs/2026-06-05-audio-channel-design.md)). Core shipped (audio engine,
+  waveform editor, warp toolbar); the "✂ Slice → pads" path was deliberately
+  reverted in favour of Sampler-side slicing. The remaining direction (one-shot
+  WSOLA mode vs sliced→bank) is an open product decision.
+- **Programa 5-frentes** ([overview](specs/2026-06-06-loom-ux-overhaul-overview.md),
+  [coordinación](specs/2026-06-06-coordinacion-frentes.md),
+  [review findings](specs/2026-06-06-loom-review-findings.md)). Frentes A/B/D done
+  and pruned; these stay as the index + bug backlog for C/E.
+- **LoomN (C++/JUCE)** ([spec](specs/2026-06-01-cpp-juce-migration-design.md),
+  [plan](plans/2026-06-01-loomn-foundation-core-model.md)). Cross-repo: Phase 1 done;
+  work continues in the `LoomN` repo. Kept here deliberately as the reference copy.
 
 ## Low — minor, isolated
 
-- **`modular-modulators` Task 19 — preset selector not automatable.** The preset dropdowns
-  (`#bass-preset-select`, `#poly-preset-select`, `#drums-preset-select`) are plain `<select>`s,
-  not wrapped in `createSelectControl` nor registered under a `<laneId>.preset` automation id.
-  No `.preset` knob id exists. Everything else in that plan shipped.
-- **`lane-resource-unification` cleanup debt.** `seq.pattern.bass/drums/automation/melody` is
-  still read in ~7 files (main.ts, automation-ui.ts, copy/lane-copy.ts, …) and
-  [src/session/session-migration.ts](../../src/session/session-migration.ts) still exists
-  (now a load-time normaliser). The plan's "Phase E: kill Classic UI" was effectively
-  *reinterpreted*, not skipped: the `data-page="303"/"drums"/"poly"/"fx"` divs were **repurposed**
-  as the per-engine Session inspector pages (engine-swap mounts `#engine-select-303`,
-  lane-fx-panel mounts into `[data-page] .lane-fx-knobs`), so they are live, not dead.
+- **Preset selectors not automatable.** `#bass-preset-select` / `#poly-preset-select` /
+  `#drums-preset-select` are plain `<select>`s, not wrapped in `createSelectControl`
+  nor registered under a `<laneId>.preset` automation id (modular-modulators Task 19
+  leftover).
+- **Swing slider not wired to the scheduler** (documented as such in the manual,
+  ch. Transporte).
 
-## Intentionally superseded (no action — recorded for context)
+## Closed since the 2026-05-31 audit (recorded; nothing to do)
 
-`session-view` and `session-clip-editors-and-copy-paste` were authored against a
-`kind`/per-type-steps model that was later replaced by `engineId` + a unified
-`SessionClip.notes: NoteEvent[]`. Their Classic-coupled deliverables (the mode toggle, the
-`importClassicToSession` migration, the four per-type clip editors, cross-kind paste guards)
-are genuinely absent because **Classic mode was removed entirely** — the work evolved, it
-wasn't dropped. `classic-tracks-extraction` was done and then deliberately reverted for the
-same reason. `main-ts-refactor` met its extraction goal but `main.ts` is ~824 lines (not the
-~250 target) after absorbing later features.
+- Performance takes surface + persist (was the only High item).
+- `seq.pattern` substrate fully removed — only a historical comment remains
+  ([src/session/clip-automation-lanes.ts](../../src/session/clip-automation-lanes.ts)).
+  `session-migration.ts` survives as the load-time normaliser by design.
