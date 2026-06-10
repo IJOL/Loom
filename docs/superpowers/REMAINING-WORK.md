@@ -1,27 +1,24 @@
 # Remaining work
 
-Audit of 2026-06-10 against the codebase (refreshes the 2026-05-31 audit; corrected
-same day — the C/E fronts of the 2026-06-06 program turned out SHIPPED, their docs
-pruned). Implemented design docs are removed from the tree per convention — recover
-them from git history. What stays below is the **outstanding** work only.
+Audit refreshed 2026-06-10 (evening) against the codebase. Implemented design docs
+are removed from the tree per convention — recover them from git history. What stays
+below is the **outstanding** work only.
 
 ## Needs a user decision first (do NOT implement blind)
 
-- **Sampler — Parte B** ([plan](plans/2026-06-07-sampler-frontd-gaps.md)):
-  B1 per-zone knobs vs the clean mockup (expander / always / selected-zone panel —
-  current code uses the selected-zone panel); B2 waveform clip editor with draggable
-  trim + Loop/Tema toggle + BPM fields; B3 audio-lane trim/warp UI + multi-zone
-  auto-spread on multi-sample import.
 - **Audio channel — dirección** ([plan](plans/2026-06-05-audio-channel.md),
   [spec](specs/2026-06-05-audio-channel-design.md)): core shipped (audio engine,
-  waveform editor, warp toolbar); "✂ Slice → pads" was deliberately reverted. The
-  remaining one-shot-WSOLA vs sliced→bank direction is an open product decision.
+  waveform header, warp toggle); "✂ Slice → pads" was deliberately reverted. Open:
+  the one-shot-WSOLA vs sliced→bank default direction, **plus** the audio-lane's own
+  trim/warp UI and multi-zone auto-spread on multi-sample import (the old Sampler
+  "Parte B3" — the only piece of that plan not yet built).
 
 ## Feature work with a spec, ready to plan
 
 - **Sampler per-pad LFO/ADSR (Plan A2)**
   ([spec](specs/2026-06-04-sampler-per-pad-modulation-design.md)): per-pad params
-  shipped without modulation; needs trigger-time modulator binding.
+  shipped without modulation; needs trigger-time modulator binding (destinations must
+  be `zone<note>.<leaf>`, not GM `<voice>.<leaf>`).
 
 ## Low — minor, isolated
 
@@ -42,6 +39,14 @@ them from git history. What stays below is the **outstanding** work only.
 
 ## Closed since the 2026-05-31 audit (recorded; nothing to do)
 
+- **Sampler — Parte B (editable waveform) — DONE 2026-06-10** (`8edac81..6564df9`):
+  draggable trim + loop handles + clickable loop badge in the per-pad "Selected
+  sample" viewer, wired to the per-pad store, trigger plays the trimmed window +
+  `[loopStart,loopEnd]`. B1 (per-zone knob placement) is settled by the shipped
+  selected-zone panel. Only B3 (audio-lane trim/warp + multi-zone auto-spread)
+  remains, folded into the audio-channel item above. *(Its spec/plan
+  `2026-06-10-sampler-b2-waveform-edit*` are still in the tree — prune per convention
+  once confirmed.)*
 - Performance takes surface + persist (was the only High item).
 - The whole 2026-06-06 five-front UX program (A header/transport, B session
   management, C/E editors declutter + master strip, D sampler families) — all
