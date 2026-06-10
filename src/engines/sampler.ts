@@ -544,6 +544,12 @@ export class SamplerEngine implements SynthEngine {
           color: padColor(idx, this.keymap.length),
           loop: pad.loop >= 0.5,
           loopStart: pad.loopStart,
+          loopEnd: pad.loopEnd,
+          sampleStart: pad.sampleStart,
+          sampleEnd: pad.sampleEnd,
+          onEdit: (leaf, value) => {
+            this.setBaseValue(`${padKeyForNote(note!)}.${leaf}`, value);
+          },
         });
         // Melodic zones carry a root + a key range; edit them here (a drumkit pad
         // is a single key, so it needs neither).
