@@ -1,5 +1,16 @@
 # Audio Channel Implementation Plan
 
+> **⚠️ STATUS 2026-06-10 — read before treating any checkbox as TODO.** The core
+> shipped (the registered `audio` engine, the shared `audio-clip-voice` helper, the
+> waveform header + Warp toggle, `clip-editor-loop.ts` deleted). **Mode 2's "✂ Slice
+> → pads" button on the audio-clip editor (Tasks C1/C2/D1/D2) was deliberately
+> REVERTED** — unit + e2e now ASSERT that button is ABSENT. A slice→bank path does
+> exist, but on the **Sampler-import** side (`session-host.ts` `importLoopToSampler`),
+> not as the audio-editor button this plan describes. What's genuinely OUTSTANDING is
+> only the **product decision** (one-shot WSOLA vs sliced→bank as the default
+> direction) — see [REMAINING-WORK.md](../REMAINING-WORK.md). The task list below is
+> the pre-revert design, kept for rationale; do not re-implement the slice button.
+>
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a first-class **audio channel** to Loom — drop a WAV and it plays tempo-locked without altering pitch (Mode 1), or slice it into bank samples + a normal note clip (Mode 2) — with the waveform shown as a header above the normal editor.

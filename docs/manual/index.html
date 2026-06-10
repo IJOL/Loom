@@ -646,7 +646,7 @@ Each voice routes through its own channel strip and then to a shared drum bus.</
 </tr>
 <tr>
 <td>Samples</td>
-<td>TR-808 (samples), Acoustic / Dirt (samples), Dirt (samples)</td>
+<td>TR-808 (samples), Acoustic (samples), Dirt (samples)</td>
 <td>Real one-shot WAVs bundled with Loom</td>
 </tr>
 </tbody></table>
@@ -654,7 +654,7 @@ Each voice routes through its own channel strip and then to a shared drum bus.</
 <p><strong>Sample kits</strong> load the matching WAV for each voice (kick, snare, closed hat, open hat, clap, tom, cowbell, ride) from <code>public/drumkits/</code> and rebuild the keymap fresh on every session load — you never need to re-import the files manually. Once a sample kit is selected, the lane uses the drum-grid editor and the full per-pad parameter rack, exactly like a Sampler lane in drumkit mode.</p>
 <p>The sample WAVs are curated one-shots from the Dirt-Samples collection (used by TidalCycles) and classic TR-808 recordings. Full credits are in the repo <code>README.md</code> under &quot;Credits — sample sources&quot;.</p>
 <blockquote>
-<p>Note: sample kits are loaded by the Sampler engine under the hood. For the Sampler&#39;s own Instrument family selector (Melodic / Percussion / Loop) and per-pad parameters, see <a href="#08-midi-and-samples">MIDI &amp; Samples</a>.</p>
+<p>Note: sample kits are loaded by the Sampler engine under the hood. For the Sampler&#39;s own Instrument family selector (Drumkit / Melodic / Loop) and per-pad parameters, see <a href="#08-midi-and-samples">MIDI &amp; Samples</a>.</p>
 </blockquote>
 <h3>Bus controls</h3>
 <p>The master bus row gives Vol, Pan, Rev, Dly, Lo, Mid, and Hi (±18 dB shelves)
@@ -1304,7 +1304,7 @@ master bus → master insert chain → master compressor → output             
 <p><img src="images/engine-sampler.png" alt="Sampler engine editor"></p>
 <p>The Sampler is a polyphonic playback engine that maps audio across the keyboard and plays it back at the correct pitch per note. A Sampler lane can be three things — a <strong>melodic instrument</strong> (samples spread across ranges of keys), a <strong>drumkit</strong> (one sample per key), or a <strong>loop</strong> (a sliced loop played as a sequence of notes) — and all three share <strong>one inspector layout</strong>.</p>
 <h3>Presets are the instruments</h3>
-<p>The Sampler&#39;s bundled instruments — drumkits, melodic instruments, and loops — <em>are</em> its presets: pick one straight from the standard <strong>PRESET</strong> dropdown at the top of the inspector (grouped <strong>Drumkit / Melodic / Loop</strong>). Selecting one downloads + decodes its WAVs into IndexedDB (so it persists across reloads) and loads it. There is no separate picker. Loom ships ready-made kits (<strong>TR-808</strong>, <strong>Acoustic / Dirt</strong>, <strong>Dirt</strong>), melodic instruments, and loops — all working on the live deploy without a manual import.</p>
+<p>The Sampler&#39;s bundled instruments — drumkits, melodic instruments, and loops — <em>are</em> its presets: pick one straight from the standard <strong>PRESET</strong> dropdown at the top of the inspector (grouped <strong>Drumkit / Melodic / Loop</strong>). Selecting one downloads + decodes its WAVs into IndexedDB (so it persists across reloads) and loads it. There is no separate picker. Loom ships ready-made kits (<strong>TR-808</strong>, <strong>Acoustic</strong>, <strong>Dirt</strong>), melodic instruments, and loops — all working on the live deploy without a manual import.</p>
 <h3>The channel layout</h3>
 <p>Whatever you load, the inspector has the same shape:</p>
 <ul>
@@ -1403,7 +1403,7 @@ master bus → master insert chain → master compressor → output             
 </tbody></table>
 <p>These live in each channel strip — drumkit, melodic, and loop all share the same per-channel rack (there is no eight-pad limit and no separate knob row).</p>
 <h3>Drumkits</h3>
-<p>A drumkit is one sample per key, edited on the <strong>drum-grid</strong> (the same grid as the Drum Machine engine). A kit holds <strong>any number of sounds</strong> — not just eight — and you grow or shrink it with the <strong>＋</strong> tile and each strip&#39;s <strong>✕</strong>. Loom ships three ready-made sample kits (<strong>TR-808</strong>, <strong>Acoustic / Dirt</strong>, <strong>Dirt</strong>); pick one from the PRESET dropdown and the lane is ready to play. The kit is rebuilt fresh from its manifest on each session load, so the WAVs never need re-importing.</p>
+<p>A drumkit is one sample per key, edited on the <strong>drum-grid</strong> (the same grid as the Drum Machine engine). A kit holds <strong>any number of sounds</strong> — not just eight — and you grow or shrink it with the <strong>＋</strong> tile and each strip&#39;s <strong>✕</strong>. Loom ships three ready-made sample kits (<strong>TR-808</strong>, <strong>Acoustic</strong>, <strong>Dirt</strong>); pick one from the PRESET dropdown and the lane is ready to play. The kit is rebuilt fresh from its manifest on each session load, so the WAVs never need re-importing.</p>
 <h3>Loops</h3>
 <p><img src="images/engine-sampler-loop.png" alt="A Sampler Loop instrument: the whole-loop overview above the per-slice strips"></p>
 <p>A loop is sliced into segments mapped to <strong>consecutive notes</strong>, so playing the keys in order replays the groove. Above the strips the <strong>whole loop</strong> is drawn as one continuous, colour-coded waveform with a cut line at every slice. Selecting a loop also <strong>drops a note clip</strong> onto the lane — one note per slice, each placed at its exact position so the notes form a continuous <strong>staircase</strong> — opened in the piano-roll; hit Play and it replays the loop, now as discrete notes you can move, mute, repitch or re-order. The clip keeps the loop&#39;s waveform as its header.</p>

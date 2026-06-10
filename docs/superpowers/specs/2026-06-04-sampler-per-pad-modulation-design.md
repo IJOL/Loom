@@ -5,6 +5,14 @@
 **Area:** `src/engines/sampler.ts`, `src/samples/*`, `src/engines/drum-voice-rack.ts`, sampler keymap UI
 **Part of:** the "redesign drums to unify synth + sample kits" effort. This is **Spec A** (the foundation). **Spec B** (unified drum presets that select the engine synth↔sampler) is a separate, later spec.
 
+> **⚠️ STATUS 2026-06-10:** Plan **A1 (per-pad params + mixer + loop/retrig + rack
+> reuse + persistence) SHIPPED** (merged 2026-06-04). What remains is **A2: per-pad
+> LFO/ADSR with trigger-time modulator binding** — `SamplerVoice` still exposes only
+> the master amp gain. **Stale id detail to fix before planning A2:** this spec uses
+> GM-voice-name pad ids (`kick.tune`, keyed by note 36/38). The shipped code reversed
+> that to a per-note `zone<note>` identity (GM is display-only), so A2's destinations
+> must be `zone<note>.<leaf>`, NOT `<voice>.<leaf>`.
+
 ## Problem
 
 The Sampler engine shapes sound with **global** params (gain, amp attack/release, pitch, filter cutoff/resonance) applied to **every** pad/voice on the lane. Per pad, the only control is `rootNote` (+ an optional `gain`/trim on the keymap entry). So when a sampler lane is a **drumkit** (8 single-note pads at GM notes, via `engineState.sampler.drumkitId`), you cannot tune just the kick, shorten just the hat, or filter just the snare — every pad shares one filter, one envelope, one pitch.

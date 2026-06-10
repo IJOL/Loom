@@ -48,7 +48,7 @@ The Sampler is a polyphonic playback engine that maps audio across the keyboard 
 
 ### Presets are the instruments
 
-The Sampler's bundled instruments — drumkits, melodic instruments, and loops — *are* its presets: pick one straight from the standard **PRESET** dropdown at the top of the inspector (grouped **Drumkit / Melodic / Loop**). Selecting one downloads + decodes its WAVs into IndexedDB (so it persists across reloads) and loads it. There is no separate picker. Loom ships ready-made kits (**TR-808**, **Acoustic / Dirt**, **Dirt**), melodic instruments, and loops — all working on the live deploy without a manual import.
+The Sampler's bundled instruments — drumkits, melodic instruments, and loops — *are* its presets: pick one straight from the standard **PRESET** dropdown at the top of the inspector (grouped **Drumkit / Melodic / Loop**). Selecting one downloads + decodes its WAVs into IndexedDB (so it persists across reloads) and loads it. There is no separate picker. Loom ships ready-made kits (**TR-808**, **Acoustic**, **Dirt**), melodic instruments, and loops — all working on the live deploy without a manual import.
 
 ### The channel layout
 
@@ -91,7 +91,7 @@ These live in each channel strip — drumkit, melodic, and loop all share the sa
 
 ### Drumkits
 
-A drumkit is one sample per key, edited on the **drum-grid** (the same grid as the Drum Machine engine). A kit holds **any number of sounds** — not just eight — and you grow or shrink it with the **＋** tile and each strip's **✕**. Loom ships three ready-made sample kits (**TR-808**, **Acoustic / Dirt**, **Dirt**); pick one from the PRESET dropdown and the lane is ready to play. The kit is rebuilt fresh from its manifest on each session load, so the WAVs never need re-importing.
+A drumkit is one sample per key, edited on the **drum-grid** (the same grid as the Drum Machine engine). A kit holds **any number of sounds** — not just eight — and you grow or shrink it with the **＋** tile and each strip's **✕**. Loom ships three ready-made sample kits (**TR-808**, **Acoustic**, **Dirt**); pick one from the PRESET dropdown and the lane is ready to play. The kit is rebuilt fresh from its manifest on each session load, so the WAVs never need re-importing.
 
 ### Loops
 

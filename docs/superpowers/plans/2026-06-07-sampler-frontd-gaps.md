@@ -2,8 +2,8 @@
 
 > Trimmed 2026-06-10: la **Parte A** de este plan (preset de loop reproducible,
 > tiras verticales por slice, layout del keymap, estilos del picker) **se implementó**
-> con el rediseño de canal del Sampler (commits `b20d016`, `971a504`, `a36498e`, más
-> el fix del `waveformRef` del preset y su e2e en la rama `mejoras-2026-06-10`).
+> con el rediseño de canal del Sampler (commits `b20d016`, `971a504`, `a36498e`), más
+> el fix del `waveformRef` del preset y su e2e (commit `3aed24f`) — todo ya en `main`.
 > La auditoría original y los pasos de la Parte A se recuperan del historial git.
 > Queda SOLO la Parte B: decisiones del usuario antes de planificar. Mockup vivo:
 > [sampler-mockup.html](../mockups/sampler-mockup.html).

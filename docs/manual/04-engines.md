@@ -256,7 +256,7 @@ The preset dropdown for any drum lane lists kits from three groups:
 | --- | --- | --- |
 | GM | KIT Standard, KIT Room, KIT Power, KIT Electronic, KIT TR-808, KIT Jazz, KIT Brush, KIT Orchestra | GM-programme aliases that map to the synth kits below |
 | Synth | TR-909, TR-808, TR-606, CR-78, LinnDrum | 100% synthesised DSP — no samples required |
-| Samples | TR-808 (samples), Acoustic / Dirt (samples), Dirt (samples) | Real one-shot WAVs bundled with Loom |
+| Samples | TR-808 (samples), Acoustic (samples), Dirt (samples) | Real one-shot WAVs bundled with Loom |
 
 **Synth kits** seed all eight per-voice parameters from the kit's characteristic values; you can edit individual voices on top and hit 🎲 Sound to randomise all voices at once.
 
@@ -264,7 +264,7 @@ The preset dropdown for any drum lane lists kits from three groups:
 
 The sample WAVs are curated one-shots from the Dirt-Samples collection (used by TidalCycles) and classic TR-808 recordings. Full credits are in the repo `README.md` under "Credits — sample sources".
 
-> Note: sample kits are loaded by the Sampler engine under the hood. For the Sampler's own Instrument family selector (Melodic / Percussion / Loop) and per-pad parameters, see [MIDI & Samples](08-midi-and-samples.md).
+> Note: sample kits are loaded by the Sampler engine under the hood. For the Sampler's own Instrument family selector (Drumkit / Melodic / Loop) and per-pad parameters, see [MIDI & Samples](08-midi-and-samples.md).
 
 ### Bus controls
 

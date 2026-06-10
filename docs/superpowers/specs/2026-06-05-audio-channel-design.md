@@ -1,7 +1,12 @@
 # Audio channel — design
 
 - **Date:** 2026-06-05
-- **Status:** Approved (brainstorming). Next: implementation plan (writing-plans).
+- **Status (updated 2026-06-10):** Core SHIPPED; the **Mode-2 "✂ Slice → pads"
+  button (§3) was deliberately REVERTED** (tests now assert its absence). The
+  surviving slice→bank path lives on the Sampler-import side, not the audio-clip
+  editor. Only the **direction decision** (one-shot WSOLA vs sliced→bank) is
+  outstanding — see [REMAINING-WORK.md](../REMAINING-WORK.md). The design below is the
+  pre-revert proposal, kept for rationale.
 - **Branch:** `feat/audio-channel`
 - **Context/decisions:** memory `project_audio_channel_direction.md`, `project_loop_tempo_sync_slicer.md`.
 
