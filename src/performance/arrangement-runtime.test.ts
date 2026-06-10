@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
-  createArrangementPlayState, startArrangement, stopArrangement,
+  createArrangementPlayState, startArrangement, startArrangementAt, stopArrangement,
   overrideLane, backToArrangement, isLaneOverridden,
-  tickArrangement,
+  tickArrangement, arrangementPlayhead,
 } from './arrangement-runtime';
 import { emptyArrangementState } from './performance';
 import { appendClipEvent, closePendingClipEvent, writeAutomationSample } from './arrangement-ops';
@@ -166,6 +166,49 @@ describe('tickArrangement', () => {
     tick(100); tick(102); tick(102.5);  // cross the c1→c2 boundary at t=2, stay before song end (t=4)
     // Crossing the contiguous boundary must NOT stop the lane (c2's launch supersedes c1).
     expect(stops).toEqual([]);
+  });
+});
+
+describe('startArrangementAt (loop-start seek — Play begins at A, not 0)', () => {
+  it('seeks the playhead to startSec and relaunches the clip spanning it', () => {
+    const s = emptyArrangementState(120);
+    appendClipEvent(s, 'l1', 'c1', 0); closePendingClipEvent(s, 'l1', 8); // [0,8) spans A=4
+    const ps = createArrangementPlayState();
+    const launches: Array<{ id: string; at: number }> = [];
+    startArrangementAt(ps, 100, s, 4, (_l, id, at) => launches.push({ id, at }));
+    expect(ps.isPlaying).toBe(true);
+    // Playhead starts at A (4 s), not 0.
+    expect(arrangementPlayhead(ps, 100)).toBeCloseTo(4, 5);
+    // The clip active across A is relaunched immediately (at nowCtx = 100).
+    expect(launches).toEqual([{ id: 'c1', at: 100 }]);
+    // The launch pointer skips the already-active event.
+    expect(ps.nextEventIdxPerLane.get('l1')).toBe(1);
+  });
+
+  it('startSec <= 0 is a plain start (no seek, no relaunch)', () => {
+    const s = emptyArrangementState(120);
+    appendClipEvent(s, 'l1', 'c1', 0); closePendingClipEvent(s, 'l1', 8);
+    const ps = createArrangementPlayState();
+    const launches: string[] = [];
+    startArrangementAt(ps, 100, s, 0, (_l, id) => launches.push(id));
+    expect(arrangementPlayhead(ps, 100)).toBe(0);
+    expect(launches).toEqual([]); // the normal tick will launch c1 at atSec 0
+  });
+
+  it('after seeking to A, the next tick does NOT re-launch the spanning clip (no double-fire)', () => {
+    const s = emptyArrangementState(120);
+    appendClipEvent(s, 'l1', 'c1', 0); closePendingClipEvent(s, 'l1', 8);
+    const ps = createArrangementPlayState();
+    const launches: Array<{ id: string; at: number }> = [];
+    startArrangementAt(ps, 100, s, 4, (_l, id, at) => launches.push({ id, at }));
+    tickArrangement({
+      ps, state: s, nowCtx: 100, lookaheadSec: 0.12, bpm: 120,
+      loopWindow: { startSec: 4, endSec: 6, active: true },
+      onLaunchClip: (_l, id, at) => launches.push({ id, at }),
+      onStopLane: () => {}, applyAutomation: () => {},
+    });
+    // Only the seek's relaunch — the tick must not fire c1 again at A.
+    expect(launches.filter((l) => l.id === 'c1').length).toBe(1);
   });
 });
 

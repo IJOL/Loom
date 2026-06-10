@@ -22,7 +22,7 @@ import {
 } from '../performance/arrangement-ops';
 import type { AutoBrush } from '../automation/automation-painter';
 import {
-  createArrangementPlayState, startArrangement, stopArrangement,
+  createArrangementPlayState, startArrangement, startArrangementAt, stopArrangement,
   tickArrangement, arrangementPlayhead,
   type ArrangementPlayState,
 } from '../performance/arrangement-runtime';
@@ -373,7 +373,13 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     if (playheadRaf === 0) playheadRaf = requestAnimationFrame(rafPlayhead);
   }
   function beginArrangement() {
-    startArrangement(arrangementPlayState, ctx.currentTime);
+    // With an active A-B loop, Play starts at A (the marked point), not at 0.
+    const lw = arrangementLoopWindowSec(arrangement);
+    if (lw.active && lw.startSec > 0) {
+      startArrangementAt(arrangementPlayState, ctx.currentTime, arrangement, lw.startSec, arrangementOnLaunchClip);
+    } else {
+      startArrangement(arrangementPlayState, ctx.currentTime);
+    }
     ensurePlayheadLoop();
   }
 

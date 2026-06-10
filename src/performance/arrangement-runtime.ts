@@ -40,6 +40,51 @@ export function stopArrangement(ps: ArrangementPlayState): void {
   ps.nextStopIdxPerLane.clear();
 }
 
+/** Point every lane's launch/stop pointers at `atSec` (skipping events already
+ *  finished by then) and relaunch the clip spanning `atSec` at `relaunchAtCtx`.
+ *  Shared by the A-B loop wrap and the loop-start seek (startArrangementAt). */
+function anchorLanesAt(
+  ps: ArrangementPlayState,
+  state: ArrangementState,
+  atSec: number,
+  relaunchAtCtx: number,
+  onLaunchClip: (laneId: string, clipId: string, atCtx: number) => void,
+): void {
+  for (const lane of state.lanes) {
+    let idx = 0;
+    let stopIdx = 0;
+    let active: typeof lane.clipEvents[number] | undefined;
+    for (let i = 0; i < lane.clipEvents.length; i++) {
+      const ev = lane.clipEvents[i];
+      // A clip spanning atSec (starts before, ends after) keeps sounding → relaunch.
+      if (ev.atSec < atSec && atSec < ev.untilSec) active = ev;
+      if (ev.atSec < atSec) idx = i + 1;
+      if (Number.isFinite(ev.untilSec) && ev.untilSec <= atSec) stopIdx = i + 1;
+    }
+    ps.nextEventIdxPerLane.set(lane.laneId, idx);
+    ps.nextStopIdxPerLane.set(lane.laneId, stopIdx);
+    if (active) onLaunchClip(lane.laneId, active.clipId, relaunchAtCtx);
+  }
+}
+
+/** Start playback with the playhead seeked to `startSec` (e.g. the A of an
+ *  active A-B loop) rather than 0, relaunching the clip active across that point
+ *  so it sounds immediately. `startSec <= 0` is a plain start. */
+export function startArrangementAt(
+  ps: ArrangementPlayState,
+  nowCtx: number,
+  state: ArrangementState,
+  startSec: number,
+  onLaunchClip: (laneId: string, clipId: string, atCtx: number) => void,
+): void {
+  startArrangement(ps, nowCtx);
+  if (startSec <= 0) return;
+  // Anchor the clock so the first tick's tNow lands at startSec; relaunch the
+  // active clip now (startedAtCtx + startSec === nowCtx).
+  ps.startedAtCtx = nowCtx - startSec;
+  anchorLanesAt(ps, state, startSec, nowCtx, onLaunchClip);
+}
+
 export function overrideLane(ps: ArrangementPlayState, laneId: string): void {
   ps.laneOverridden.set(laneId, true);
 }
@@ -131,27 +176,11 @@ export function tickArrangement(args: TickArrangementArgs): void {
       for (const lane of state.lanes) onStopLane(lane.laneId, ps.startedAtCtx + lw.endSec);
       // 2) re-anchor so the next tick's tNow lands back at A
       ps.startedAtCtx += period;
-      // 3) reset indices to the first event at/after A, then relaunch the clip
-      //    that is active across A so it keeps sounding after the wrap.
-      for (const lane of state.lanes) {
-        let idx = 0;
-        let stopIdx = 0;
-        let active: typeof lane.clipEvents[number] | undefined;
-        for (let i = 0; i < lane.clipEvents.length; i++) {
-          const ev = lane.clipEvents[i];
-          // strictly before A: the while-loop relaunches an event that starts
-          // exactly at A on the next tick, so only events spanning INTO A need
-          // an explicit relaunch (otherwise the clip double-fires at the wrap).
-          if (ev.atSec < lw.startSec && lw.startSec < ev.untilSec) active = ev;
-          if (ev.atSec < lw.startSec) idx = i + 1;
-          // Stops already past A on the previous pass must not re-fire; resume the
-          // stop scan at the first event still ending at/after A.
-          if (Number.isFinite(ev.untilSec) && ev.untilSec <= lw.startSec) stopIdx = i + 1;
-        }
-        ps.nextEventIdxPerLane.set(lane.laneId, idx);
-        ps.nextStopIdxPerLane.set(lane.laneId, stopIdx);
-        if (active) onLaunchClip(lane.laneId, active.clipId, ps.startedAtCtx + lw.startSec);
-      }
+      // 3) reset launch/stop pointers to A and relaunch the clip spanning A so it
+      //    keeps sounding after the wrap (shared with the loop-start seek). An
+      //    event starting exactly at A is relaunched by the next tick's while-loop,
+      //    not here, so it does not double-fire.
+      anchorLanesAt(ps, state, lw.startSec, ps.startedAtCtx + lw.startSec, onLaunchClip);
     }
   }
 }
