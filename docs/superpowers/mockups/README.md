@@ -19,6 +19,7 @@ y se borraron sin commitear). Regla en [CLAUDE.md](../../../CLAUDE.md) → «App
 | [2026-06-06-header-mockup.html](./2026-06-06-header-mockup.html) | Cabecera de transporte. |
 | [2026-06-06-performance-mockup.html](./2026-06-06-performance-mockup.html) | Performance / arrangement. |
 | [2026-06-05-loop-mockups.html](./2026-06-05-loop-mockups.html) | Layouts del editor de loop. |
+| [2026-06-10-sampler-b2-waveform-edit-mockup.png](./2026-06-10-sampler-b2-waveform-edit-mockup.png) | Sampler B2 — asas de trim/loop sobre la onda (panel Selected sample). Implementado (`8edac81..6564df9`). |
 
 **Ver en local:** `npm run preview` y abre `http://localhost:4173/sampler-mockup.html` (o el fichero
 directamente en el navegador).

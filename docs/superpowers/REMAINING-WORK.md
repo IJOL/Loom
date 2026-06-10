@@ -44,9 +44,8 @@ below is the **outstanding** work only.
   sample" viewer, wired to the per-pad store, trigger plays the trimmed window +
   `[loopStart,loopEnd]`. B1 (per-zone knob placement) is settled by the shipped
   selected-zone panel. Only B3 (audio-lane trim/warp + multi-zone auto-spread)
-  remains, folded into the audio-channel item above. *(Its spec/plan
-  `2026-06-10-sampler-b2-waveform-edit*` are still in the tree — prune per convention
-  once confirmed.)*
+  remains, folded into the audio-channel item above. (Spec/plan pruned per
+  convention; the approved mockup stays in `mockups/`.)
 - Performance takes surface + persist (was the only High item).
 - The whole 2026-06-06 five-front UX program (A header/transport, B session
   management, C/E editors declutter + master strip, D sampler families) — all
