@@ -157,9 +157,11 @@ describe('loadInstrument (loop, impure, injected deps) — note↔slice determin
 
     // a single fetch for the whole-loop wav
     expect(fetched).toEqual(['/instruments/amen-loop/loop.wav']);
-    // 4 slices (0, 0.5, 1.0, 1.5) → stored + cached once each, ids aligned
-    expect(stored).toHaveLength(4);
+    // the whole loop (for the clip's waveformRef) + 4 slices (0, 0.5, 1.0, 1.5)
+    // → stored + cached once each, ids aligned; the loop wav goes first
+    expect(stored).toHaveLength(5);
     expect(cached).toEqual(stored);
+    expect(loaded.loopSampleId).toBe(stored[0]);
     // the keymap is one mono-note entry per slice, consecutive from SLICE_BASE_NOTE
     expect(loaded.keymap).toHaveLength(4);
     loaded.keymap.forEach((e, i) => {
@@ -167,7 +169,7 @@ describe('loadInstrument (loop, impure, injected deps) — note↔slice determin
       expect(e.loNote).toBe(SLICE_BASE_NOTE + i);
       expect(e.hiNote).toBe(SLICE_BASE_NOTE + i);
     });
-    expect(loaded.keymap.map((e) => e.sampleId)).toEqual(stored);
+    expect(loaded.keymap.map((e) => e.sampleId)).toEqual(stored.slice(1));
     // the loop metadata flows back for SessionHost to build the clip
     expect(loaded.slicePointsSec).toEqual(SLICE_POINTS);
     expect(loaded.durationSec).toBe(DURATION);

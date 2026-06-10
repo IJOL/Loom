@@ -349,7 +349,7 @@ export class SessionHost {
     // ascending — so the loop actually plays. (This was the missing "loop preset that
     // never played" piece.)
     document.addEventListener('loom:loop-loaded', (e) => {
-      const d = (e as CustomEvent<{ laneId: string; slicePointsSec: number[]; durationSec: number; originalBpm: number }>).detail;
+      const d = (e as CustomEvent<{ laneId: string; slicePointsSec: number[]; durationSec: number; originalBpm: number; loopSampleId?: string }>).detail;
       const lane = d && this.state.lanes.find((l) => l.id === d.laneId);
       if (!d || !lane || lane.engineId !== 'sampler') return;
       const built = buildSliceClip({
@@ -363,6 +363,9 @@ export class SessionHost {
         lengthBars: built.lengthBars,
         notes: built.notes,
         gridResolution: DEFAULT_RESOLUTION,
+        // Display-only waveform header, parity with the user-import path (and
+        // what reloadInstrument's self-heal re-points on session reload).
+        ...(d.loopSampleId ? { waveformRef: { sampleId: d.loopSampleId, slices: built.slices } } : {}),
       });
       // Conform the project tempo to the loop's own bpm so the sliced REX loop
       // plays back seamlessly without a manual BPM change (the slices re-grid at

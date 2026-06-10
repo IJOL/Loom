@@ -97,6 +97,37 @@ test.describe('sampler instruments via the PRESET dropdown', () => {
     await sel.selectOption({ value: 'sampler:melodic:sweep-pad' });
     await expect(roll.locator('.pr-frame')).toBeVisible({ timeout: 10_000 });
   });
+
+  // One test per user path: loop IMPORT is covered below (Task 17); this is the
+  // loop PRESET path — the one that once loaded a slice bank but never built the
+  // playable clip, and passed green because only the import path was tested.
+  test('picking a loop preset materialises a playable note clip + scene + waveform header', async ({ page }) => {
+    await page.goto('/');
+    const laneId = await addAndOpenSamplerLane(page);
+
+    const sel = page.locator('#poly-preset-select');
+    await expect(sel).toBeVisible();
+    // The loop options are fetched async; wait for the bundled one to appear.
+    await expect(sel.locator('option[value="sampler:loop:amen-175"]')).toHaveCount(1);
+    await sel.selectOption({ value: 'sampler:loop:amen-175' });
+
+    // (a) A note clip materialises on THIS sampler lane (fetch + decode + slice
+    // are async). Selecting the preset also conforms the project tempo to the
+    // loop's originalBpm — covered at the unit level, not asserted here.
+    await expect(
+      page.locator(`.session-cell-filled[data-lane-id="${laneId}"]`),
+    ).not.toHaveCount(0, { timeout: 10_000 });
+
+    // (b) The row it occupies has a launchable ▶ scene.
+    await expect(page.locator('.session-scene-launch')).not.toHaveCount(0);
+
+    // (c) The editor opens on the piano-roll WITH the whole-loop waveform header
+    // (display-only waveformRef — parity with the user-import path).
+    const roll = page.locator('#insp-roll-host');
+    await expect(roll).toBeVisible();
+    await expect(roll.locator('.clip-waveform-header')).toBeVisible({ timeout: 10_000 });
+    await expect(roll.locator('.pr-frame')).toBeVisible();
+  });
 });
 
 test.describe('sampler import (Task 17)', () => {

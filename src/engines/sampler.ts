@@ -425,6 +425,7 @@ export class SamplerEngine implements SynthEngine {
             slicePointsSec: loaded.slicePointsSec,
             durationSec: loaded.durationSec,
             originalBpm: loaded.originalBpm,
+            loopSampleId: loaded.loopSampleId,
           },
         }));
       }

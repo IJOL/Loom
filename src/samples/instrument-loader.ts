@@ -81,12 +81,15 @@ export interface LoadedMelodicInstrument {
  *  keymap plus the loop metadata SessionHost needs to build the note clip +
  *  scene (buildSliceClip + installSamplerClip live there, not here — the loader
  *  never touches SessionState). slicePointsSec mirrors the manifest's fixed cuts
- *  so the note↔slice mapping is deterministic across reloads. */
+ *  so the note↔slice mapping is deterministic across reloads. loopSampleId is
+ *  the WHOLE loop wav, persisted alongside the slices so the note clip's
+ *  display-only waveformRef resolves (parity with the user-import path). */
 export interface LoadedLoopInstrument {
   keymap: KeymapEntry[];
   slicePointsSec: number[];
   durationSec: number;
   originalBpm: number;
+  loopSampleId: string;
 }
 
 /** Minimal seams so the impure loader is unit-testable without a real
@@ -205,9 +208,15 @@ async function loadLoopInstrument(
 
   const res = await fetchFn(`${import.meta.env.BASE_URL}instruments/${manifest.file}`);
   const bytes = await res.arrayBuffer();
-  // decodeAudioData detaches its input — decode a copy (the whole-loop bytes are
-  // re-persisted by SessionHost's reloadInstrument, not here).
+  // decodeAudioData detaches its input — decode a copy, keep the original bytes.
   const buffer = await ctx.decodeAudioData(bytes.slice(0));
+
+  // Persist the WHOLE loop too: the note clip carries a display-only
+  // waveformRef to it, so the editor's waveform header resolves on first load
+  // (reloadInstrument re-persists it with a fresh id on session reload).
+  const loopSampleId = newSampleId();
+  await store.put(buildSampleAsset({ id: loopSampleId, name: `${manifest.id}/loop.wav`, mime: 'audio/wav', bytes, buffer, createdAt: now() }));
+  cache.put(loopSampleId, buffer);
 
   // The manifest pins slicePointsSec for note↔slice determinism; only fall back
   // to detection if it left them empty.
@@ -230,5 +239,6 @@ async function loadLoopInstrument(
     slicePointsSec,
     durationSec: buffer.duration,
     originalBpm: manifest.originalBpm,
+    loopSampleId,
   };
 }
