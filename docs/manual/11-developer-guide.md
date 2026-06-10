@@ -53,7 +53,7 @@ Each lane's `LaneResources` consists of a `ChannelStrip` (level, EQ, send levels
 
 ## The scheduler
 
-The `Sequencer` class (`src/core/sequencer.ts`) is a 25 ms look-ahead timer. On each tick it calls `sessionTick(now, lookaheadSec)`, and the session host fans that out to `tickLane` for each playing lane.
+The `Sequencer` class (`src/core/sequencer.ts`) fires every 25 ms (the poll interval) and looks **120 ms** ahead. On each tick it calls `sessionTick(now, lookaheadSec)` with `lookaheadSec = 0.12`, and the session host fans that out to `tickLane` for each playing lane.
 
 `tickLane` (`src/core/lane-scheduler.ts`) implements the Chris Wilson two-clocks pattern: for every `NoteEvent` whose absolute schedule time falls in the window `[now, now + lookaheadSec)`, it calls `ctx.onTrigger`. Schedule times are derived by converting clip-tick positions to seconds using the current BPM and projecting onto the absolute timeline from the loop-start anchor. Step duration for a 16th note is `60 / bpm / 4` seconds.
 
@@ -138,8 +138,8 @@ src/
   save/           SaveManager (schemaVersion: 3), history-wiring (withUndo)
   notefx/         Note-FX plugin category (arpeggiator, chord spread) — per-lane
   automation/     Clip envelope recording + read-back helpers
-  arp/            Arpeggiator voice logic
-  copy/           Clipboard helpers for clip/note copy-paste
+  control/        Live MIDI controller subsystem: APC Key 25 profile, live
+                  keyboard, LED mediator, profile registry
   demo/           Baked MIDI demos + demo picker
   styles/         SCSS
 

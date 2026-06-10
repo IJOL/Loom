@@ -56,7 +56,7 @@ Whatever you load, the inspector has the same shape:
 
 - A **keyboard map** across the top — coloured markers at each sound's key (drumkit / loop) or coloured range bands (melodic) — with **connector lines** down to the strips.
 - A row of **channel strips**, one per sound. Each strip carries its **name** (the GM voice for a drumkit — KICK, SNARE…; the note for a melodic zone; **Slice N** for a loop slice), its trigger **key**, a **▶ play** button to audition the sample and a **✕** to delete that sound (a row at the top of the strip, above the knobs), per-sound knobs (TUNE / CUTOFF / DECAY / LEVEL / REV / DLY plus an **▸ adv** block), and **M / S** mute-solo. A **＋** tile at the end of the row adds a sound.
-- A **Selected sample** editor below — click any strip and it shows that sample's waveform on a canvas with a **−/＋ zoom**, the filename, the key, a one-shot/loop badge, and (for melodic) editable **root / lo / hi**.
+- A **Selected sample** editor below — click any strip and it shows that sample's waveform on a canvas with a **−/＋ zoom**, the filename, the key, and a **one-shot / loop badge** (click to toggle). Drag the handles over the waveform to set the **trim** (amber start/end lines — the dimmed regions are silenced) and, when loop is on, the **loop region** (green start/end lines that cycle while a key is held). For a melodic zone, the **root / lo / hi** keys are editable here too.
 
 Every sound is keyed by its own note, so each pad / zone / slice has its **own** parameters and mute-solo — nothing is shared between sounds.
 
@@ -85,6 +85,9 @@ Every sound — a drumkit pad, a melodic zone, or a loop slice — has its own s
 | DLY | 0–1 | 0 | Send level to the lane's delay insert |
 | LOOP | Off / On | Off | When On, the sample loops while the gate is held |
 | LSTART | 0–1 | 0 | Loop start point as a fraction of sample duration |
+| LEND | 0–1 | 1 | Loop end point as a fraction of sample duration |
+| START | 0–1 | 0 | Trim in — playback start as a fraction of sample duration |
+| END | 0–1 | 1 | Trim out — playback end as a fraction of sample duration |
 | RETRIG | Poly / Mono | Poly | Mono cuts the previous hit on re-trigger; Poly layers them |
 
 These live in each channel strip — drumkit, melodic, and loop all share the same per-channel rack (there is no eight-pad limit and no separate knob row).
