@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **tb303-synth** (6898 symbols, 16045 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **Loom** (10159 symbols, 21621 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -24,10 +24,10 @@ This project is indexed by GitNexus as **tb303-synth** (6898 symbols, 16045 rela
 
 | Resource | Use for |
 |----------|---------|
-| `gitnexus://repo/tb303-synth/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/tb303-synth/clusters` | All functional areas |
-| `gitnexus://repo/tb303-synth/processes` | All execution flows |
-| `gitnexus://repo/tb303-synth/process/{name}` | Step-by-step execution trace |
+| `gitnexus://repo/Loom/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/Loom/clusters` | All functional areas |
+| `gitnexus://repo/Loom/processes` | All execution flows |
+| `gitnexus://repo/Loom/process/{name}` | Step-by-step execution trace |
 
 ## CLI
 
