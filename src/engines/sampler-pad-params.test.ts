@@ -32,6 +32,16 @@ describe('sampler pad params', () => {
     expect(noteForPadKey('zone45')).toBe(45);
     expect(noteForPadKey('zone60')).toBe(60);
   });
+
+  it('has trim + loop-end leaves with sound-preserving defaults', () => {
+    expect(PAD_DEFAULTS.sampleStart).toBe(0);
+    expect(PAD_DEFAULTS.sampleEnd).toBe(1);
+    expect(PAD_DEFAULTS.loopEnd).toBe(1);
+    const leaves = PAD_LEAF_SPECS.map((s) => s.leaf);
+    expect(leaves).toContain('sampleStart');
+    expect(leaves).toContain('sampleEnd');
+    expect(leaves).toContain('loopEnd');
+  });
 });
 
 describe('nextFreePadNote (variable-size kit growth)', () => {

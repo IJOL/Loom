@@ -18,14 +18,17 @@ export interface PadParams {
   pan: number;       // -1..1
   rev: number;       // 0..1
   dly: number;       // 0..1
-  loop: number;      // 0 = one-shot, 1 = loop while gated
-  loopStart: number; // 0..1 of sample duration
-  retrig: number;    // 0 = poly, 1 = mono (re-hit cuts previous)
+  loop: number;        // 0 = one-shot, 1 = loop while gated
+  loopStart: number;   // 0..1 of sample duration
+  loopEnd: number;     // 0..1 of sample duration (paired with loopStart)
+  sampleStart: number; // 0..1 — playback start (trim in)
+  sampleEnd: number;   // 0..1 — playback end (trim out)
+  retrig: number;      // 0 = poly, 1 = mono (re-hit cuts previous)
 }
 
 export const PAD_DEFAULTS: PadParams = {
   tune: 0, cutoff: 1, res: 0, attack: 0.005, decay: 0.08,
-  level: 1, pan: 0, rev: 0, dly: 0, loop: 0, loopStart: 0, retrig: 0,
+  level: 1, pan: 0, rev: 0, dly: 0, loop: 0, loopStart: 0, loopEnd: 1, sampleStart: 0, sampleEnd: 1, retrig: 0,
 };
 
 const ON_OFF = [{ value: 'off', label: 'Off' }, { value: 'on', label: 'On' }];
@@ -43,8 +46,11 @@ export const PAD_LEAF_SPECS: Array<Omit<EngineParamSpec, 'id'> & { leaf: keyof P
   { leaf: 'rev',       label: 'REV',    kind: 'continuous', min: 0,     max: 1,   default: 0 },
   { leaf: 'dly',       label: 'DLY',    kind: 'continuous', min: 0,     max: 1,   default: 0 },
   { leaf: 'loop',      label: 'LOOP',   kind: 'discrete',   min: 0,     max: 1,   default: 0, options: ON_OFF },
-  { leaf: 'loopStart', label: 'LSTART', kind: 'continuous', min: 0,     max: 1,   default: 0 },
-  { leaf: 'retrig',    label: 'RETRIG', kind: 'discrete',   min: 0,     max: 1,   default: 0, options: POLY_MONO },
+  { leaf: 'loopStart',   label: 'LSTART', kind: 'continuous', min: 0, max: 1, default: 0 },
+  { leaf: 'loopEnd',     label: 'LEND',   kind: 'continuous', min: 0, max: 1, default: 1 },
+  { leaf: 'sampleStart', label: 'START',  kind: 'continuous', min: 0, max: 1, default: 0 },
+  { leaf: 'sampleEnd',   label: 'END',    kind: 'continuous', min: 0, max: 1, default: 1 },
+  { leaf: 'retrig',      label: 'RETRIG', kind: 'discrete',   min: 0, max: 1, default: 0, options: POLY_MONO },
 ];
 
 /** Pad key for a trigger note — a UNIQUE per-note identity (`zone<note>`). */
