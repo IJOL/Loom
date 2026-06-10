@@ -141,7 +141,7 @@ class SamplerVoice implements Voice {
     // repitch by key distance + per-pad TUNE semitones.
     const rate = repitchRate(midi, entry.rootNote, pad.tune);
     src.playbackRate.value = rate;
-    const win = samplePlaybackWindow(pad, buf.duration, rate);
+    const win = samplePlaybackWindow(pad, buf.duration);
     if (win.loop) {
       src.loop = true;
       src.loopStart = win.loopStart;

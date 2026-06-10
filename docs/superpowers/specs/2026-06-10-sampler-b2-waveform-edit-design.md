@@ -79,21 +79,22 @@ Se persisten y migran como los demás (un pad sin estos campos → defaults).
 En `Sampler*.trigger` ([sampler.ts](../../../src/engines/sampler.ts)):
 
 - Calcular `startSec = sampleStart·dur`, `endSec = sampleEnd·dur`.
-- **One-shot**: `src.start(time, startSec, (endSec − startSec) / playbackRate)` — arranca
-  recortado y dura solo el tramo audible (ajustado por `playbackRate`, ya que el repitch
-  cambia la duración real).
+- **One-shot**: `src.start(time, startSec, endSec − startSec)` — arranca recortado y dura
+  solo el tramo audible. **No dividir por `playbackRate`**: los args `offset` y `duration`
+  de `AudioBufferSourceNode.start()` son segundos de buffer, independientes del
+  `playbackRate`; el pitch se controla solo con `src.playbackRate.value`.
 - **Loop**: `src.loopStart = loopStart·dur`, `src.loopEnd = loopEnd·dur`, y el arranque
   sigue en `startSec`. El gate/ADSR (attack/decay) no cambia; el loop cicla mientras la
   nota está sostenida.
 - Extraer el cálculo de `{ offset, duration, loopStart, loopEnd }` a una **función pura**
-  (entrada: PadParams + `dur` + `playbackRate`; salida: argumentos de reproducción) para
-  poder testearla sin DOM ni audio.
+  (entrada: PadParams + `dur`; salida: argumentos de reproducción) para poder testearla
+  sin DOM ni audio.
 
 ### Pruebas
 
 Una por camino de usuario (sin alternativas "(o…)"):
 
-1. **Pura** — `samplePlaybackWindow(pad, dur, rate)` devuelve offset/duration/loop
+1. **Pura** — `samplePlaybackWindow(pad, dur)` devuelve offset/duration/loop
    correctos: defaults = buffer completo; recorte = ventana reducida; loop = límites
    `[loopStart, loopEnd]`. Casos de clamp (asas cruzadas, ancho cero).
 2. **Pura** — hit-testing del visor: dado un `clientX` y el layout (zoom, scroll, ancho),
