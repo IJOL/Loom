@@ -31,6 +31,7 @@ import { renderDrumVoiceRack, VOICE_LABELS } from './drum-voice-rack';
 import { GM_DRUM_MAP } from './drum-gm-map';
 import { velGain } from '../core/velocity-gain';
 import { playAudioClip, OUTPUT_TRIM } from './audio-clip-voice';
+import { samplePlaybackWindow } from './sampler-playback-window';
 import { withUndo } from '../save/history-wiring';
 
 const SAMPLER_PARAMS: EngineParamSpec[] = [
@@ -138,11 +139,13 @@ class SamplerVoice implements Voice {
     const src = this.ctx.createBufferSource();
     src.buffer = buf;
     // repitch by key distance + per-pad TUNE semitones.
-    src.playbackRate.value = repitchRate(midi, entry.rootNote, pad.tune);
-    if (pad.loop > 0.5) {
+    const rate = repitchRate(midi, entry.rootNote, pad.tune);
+    src.playbackRate.value = rate;
+    const win = samplePlaybackWindow(pad, buf.duration, rate);
+    if (win.loop) {
       src.loop = true;
-      src.loopStart = Math.min(pad.loopStart, 0.999) * buf.duration;
-      src.loopEnd = buf.duration;
+      src.loopStart = win.loopStart;
+      src.loopEnd = win.loopEnd;
     }
     src.connect(this.filter);
     this.src = src;
@@ -169,7 +172,8 @@ class SamplerVoice implements Voice {
     this.dlySend.gain.setValueAtTime(pad.dly, time);
 
     this.endTime = releaseAt + rel + 0.01;
-    src.start(time, 0);
+    if (win.duration == null) src.start(time, win.offset);
+    else src.start(time, win.offset, win.duration);
     src.stop(this.endTime);
     this.started = true;
   }
