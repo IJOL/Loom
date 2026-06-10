@@ -3,6 +3,7 @@ import { OfflineAudioContext } from 'node-web-audio-api';
 import { SamplerEngine } from './sampler';
 import { FxBus } from '../core/fx';
 import { sampleCache } from '../samples/sample-cache';
+import { padKeyForNote } from './sampler-pad-params';
 import { rms } from '../../test/dsp-asserts';
 import type { KeymapEntry } from '../samples/types';
 
@@ -22,8 +23,8 @@ async function render(loop: number): Promise<number> {
   const dest = ctx.createGain(); dest.connect(ctx.destination);
   const fx = new FxBus(ctx as unknown as AudioContext, dest);
   const e = new SamplerEngine(); e.setSharedFx(fx); e.setKeymap(KIT);
-  e.setBaseValue('kick.loop', loop);
-  e.setBaseValue('kick.decay', 0.01);
+  e.setBaseValue(`${padKeyForNote(36)}.loop`, loop);
+  e.setBaseValue(`${padKeyForNote(36)}.decay`, 0.01);
   const v = e.createVoice(ctx as unknown as AudioContext, dest);
   v.trigger(36, 0, { gateDuration: 0.3, accent: false, slide: false }); // gate 300ms >> 50ms sample
   const ab = await ctx.startRendering();

@@ -3,6 +3,7 @@ import { OfflineAudioContext } from 'node-web-audio-api';
 import { SamplerEngine } from './sampler';
 import { FxBus } from '../core/fx';
 import { sampleCache } from '../samples/sample-cache';
+import { padKeyForNote } from './sampler-pad-params';
 import { spectralCentroid, rms } from '../../test/dsp-asserts';
 import type { KeymapEntry } from '../samples/types';
 
@@ -20,6 +21,8 @@ const KIT: KeymapEntry[] = [
   { sampleId: 'kick', rootNote: 36, loNote: 36, hiNote: 36 },
   { sampleId: 'snare', rootNote: 38, loNote: 38, hiNote: 38 },
 ];
+// Pads are addressed by `zone<note>` keys (GM names are display-only).
+const KICK = padKeyForNote(36);
 
 async function renderNote(note: number, mut: (e: SamplerEngine) => void): Promise<Float32Array> {
   const ctx = new OfflineAudioContext(1, Math.round(SR * 0.5), SR);
@@ -38,8 +41,8 @@ async function renderNote(note: number, mut: (e: SamplerEngine) => void): Promis
 
 describe('sampler per-pad sound params are independent per pad', () => {
   it('kick CUTOFF down darkens the kick (lower centroid)', async () => {
-    const open = await renderNote(36, (e) => e.setBaseValue('kick.cutoff', 1));
-    const dark = await renderNote(36, (e) => e.setBaseValue('kick.cutoff', 0.15));
+    const open = await renderNote(36, (e) => e.setBaseValue(`${KICK}.cutoff`, 1));
+    const dark = await renderNote(36, (e) => e.setBaseValue(`${KICK}.cutoff`, 0.15));
     expect(spectralCentroid(dark, SR)).toBeLessThan(spectralCentroid(open, SR));
   });
 
@@ -47,10 +50,10 @@ describe('sampler per-pad sound params are independent per pad', () => {
     // Measure only the head window: tune=+24 plays at 4× rate so spectral content
     // is still present at t=0..40 ms for both versions; the faster source is brighter.
     const head = (b: Float32Array) => b.subarray(0, Math.round(0.04 * SR));
-    const kickLo = await renderNote(36, (e) => e.setBaseValue('kick.tune', -12)); // 0.5× rate
-    const kickHi = await renderNote(36, (e) => e.setBaseValue('kick.tune', 24));  // 4× rate
+    const kickLo = await renderNote(36, (e) => e.setBaseValue(`${KICK}.tune`, -12)); // 0.5× rate
+    const kickHi = await renderNote(36, (e) => e.setBaseValue(`${KICK}.tune`, 24));  // 4× rate
     expect(spectralCentroid(head(kickHi), SR)).toBeGreaterThan(spectralCentroid(head(kickLo), SR));
-    const snareA = await renderNote(38, (e) => e.setBaseValue('kick.tune', 12));
+    const snareA = await renderNote(38, (e) => e.setBaseValue(`${KICK}.tune`, 12));
     const snareB = await renderNote(38, () => {});
     // Each render re-seeds noise so RMS differs slightly; ratio within 5% confirms kick.tune left snare untouched.
     expect(rms(snareA) / rms(snareB)).toBeGreaterThan(0.95);
@@ -59,8 +62,8 @@ describe('sampler per-pad sound params are independent per pad', () => {
 
   it('kick DECAY shorter shortens its tail', async () => {
     const tail = (b: Float32Array) => rms(b.subarray(Math.round(0.25 * SR)));
-    const long  = await renderNote(36, (e) => e.setBaseValue('kick.decay', 0.4));
-    const short = await renderNote(36, (e) => e.setBaseValue('kick.decay', 0.02));
+    const long  = await renderNote(36, (e) => e.setBaseValue(`${KICK}.decay`, 0.4));
+    const short = await renderNote(36, (e) => e.setBaseValue(`${KICK}.decay`, 0.02));
     expect(tail(short)).toBeLessThan(tail(long));
   });
 });

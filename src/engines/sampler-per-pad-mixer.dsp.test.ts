@@ -3,6 +3,7 @@ import { OfflineAudioContext } from 'node-web-audio-api';
 import { SamplerEngine } from './sampler';
 import { FxBus } from '../core/fx';
 import { sampleCache } from '../samples/sample-cache';
+import { padKeyForNote } from './sampler-pad-params';
 import { rms } from '../../test/dsp-asserts';
 import type { KeymapEntry } from '../samples/types';
 
@@ -35,12 +36,12 @@ async function render(mut: (e: SamplerEngine) => void): Promise<{ L: Float32Arra
 
 describe('sampler per-pad mixer', () => {
   it('PAN left pushes more energy to L than R', async () => {
-    const { L, R } = await render((e) => e.setBaseValue('kick.pan', -1));
+    const { L, R } = await render((e) => e.setBaseValue(`${padKeyForNote(36)}.pan`, -1));
     expect(rms(L)).toBeGreaterThan(rms(R) * 1.5);
   });
   it('REV send up adds reverb tail energy', async () => {
-    const dry = await render((e) => e.setBaseValue('kick.rev', 0));
-    const wet = await render((e) => e.setBaseValue('kick.rev', 1));
+    const dry = await render((e) => e.setBaseValue(`${padKeyForNote(36)}.rev`, 0));
+    const wet = await render((e) => e.setBaseValue(`${padKeyForNote(36)}.rev`, 1));
     expect(wet.revTail).toBeGreaterThan(dry.revTail * 2);
   });
 });
