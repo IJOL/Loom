@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
-import { buildMasterStrip, type MasterStripDeps } from './master-strip';
+import { buildMasterStrip, buildMiniMaster, type MasterStripDeps, type MiniMasterDeps } from './master-strip';
 import type { MasterBusStrip } from './master-bus-strip';
 
 // A minimal AnalyserNode stand-in. createLevelMeter only reads `fftSize`
@@ -133,6 +133,54 @@ describe('buildMasterStrip', () => {
   it('registers the VU meter handle via registerDisposable', () => {
     const registerDisposable = vi.fn();
     buildMasterStrip(makeDeps({ registerDisposable }));
+    expect(registerDisposable).toHaveBeenCalled();
+    expect(typeof registerDisposable.mock.calls[0][0].dispose).toBe('function');
+  });
+});
+
+function makeMiniDeps(over: Partial<MiniMasterDeps> = {}): MiniMasterDeps {
+  return {
+    volInput: makeVolInput(),
+    masterMeterAnalyser: fakeAnalyser(),
+    ...over,
+  };
+}
+
+describe('buildMiniMaster (Performance toolbar)', () => {
+  it('returns an element with class perf-master-mini and a MASTER label', () => {
+    const el = buildMiniMaster(makeMiniDeps());
+    expect(el).toBeInstanceOf(HTMLElement);
+    expect(el.classList.contains('perf-master-mini')).toBe(true);
+    expect(el.querySelector('.perf-master-mini-label')?.textContent).toBe('MASTER');
+  });
+
+  it('mounts a VU meter (.mix-vu-host) fed by the master meter analyser', () => {
+    const el = buildMiniMaster(makeMiniDeps());
+    expect(el.querySelector('.mix-vu-host')).not.toBeNull();
+  });
+
+  it('initializes the fader from volInput.value', () => {
+    const el = buildMiniMaster(makeMiniDeps({ volInput: makeVolInput('0.33') }));
+    expect((el.querySelector('.perf-master-mini-fader') as HTMLInputElement).value).toBe('0.33');
+  });
+
+  it('fader range is 0..1 and proxies volInput (writes value + dispatches input)', () => {
+    const volInput = makeVolInput('0.2');
+    const spy = vi.fn();
+    volInput.addEventListener('input', spy);
+    const el = buildMiniMaster(makeMiniDeps({ volInput }));
+    const fader = el.querySelector('.perf-master-mini-fader') as HTMLInputElement;
+    expect(fader.min).toBe('0');
+    expect(fader.max).toBe('1');
+    fader.value = '0.7';
+    fader.dispatchEvent(new Event('input'));
+    expect(volInput.value).toBe('0.7');
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('registers the VU meter handle via registerDisposable', () => {
+    const registerDisposable = vi.fn();
+    buildMiniMaster(makeMiniDeps({ registerDisposable }));
     expect(registerDisposable).toHaveBeenCalled();
     expect(typeof registerDisposable.mock.calls[0][0].dispose).toBe('function');
   });

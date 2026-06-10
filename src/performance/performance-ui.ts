@@ -174,6 +174,9 @@ export interface PerfUICallbacks {
   onMoveBand: (laneId: string, index: number, newAtSec: number) => void;
   onResizeBand: (laneId: string, index: number, edge: 'start' | 'end', newSec: number) => void;
   onDeleteBand: (laneId: string, index: number) => void;
+  /** Optional: build the compact master strip (VU + fader) for the toolbar.
+   *  Returns null when no audio graph is wired (test fixtures). */
+  buildMaster?: () => HTMLElement | null;
 }
 
 function makeToolbar(state: ArrangementState, cb: PerfUICallbacks): HTMLElement {
@@ -221,6 +224,13 @@ function makeToolbar(state: ArrangementState, cb: PerfUICallbacks): HTMLElement 
   loopBtn.addEventListener('click', () => cb.onSetLoop(!cb.loopEnabled, cb.loopStartBar, cb.loopEndBar));
 
   bar.append(lenWrap, ' · Zoom ', zoom, ' · ', brushBar, ' · ', loopBtn, ' · ', readout);
+
+  // Compact master (VU + fader) pushed to the right — the full master strip is
+  // hidden with the session root in Performance mode (see buildMiniMaster).
+  if (cb.buildMaster) {
+    const master = cb.buildMaster();
+    if (master) bar.appendChild(master);
+  }
   return bar;
 }
 

@@ -31,6 +31,7 @@ import {
   type RecHooks,
 } from '../session/session-runtime';
 import { renderPerformanceView } from '../performance/performance-ui';
+import { buildMiniMaster } from '../core/master-strip';
 import { arrangementFromSession } from '../performance/arrangement-from-session';
 import { createHistory } from '../core/history';
 import { moveEvent, resizeEvent, deleteEvent } from '../performance/arrangement-edit';
@@ -52,6 +53,11 @@ export interface PerformanceFeatureDeps {
    *  lets the host stop the transport engine and reset the Play button so a
    *  fresh Play restarts from the top rather than toggling a stale ■. */
   onArrangementEnd?: () => void;
+  /** Optional master meter tap — feeds the compact master VU in the Performance
+   *  toolbar (the full master strip is hidden with the session root in Perf). */
+  masterMeterAnalyser?: AnalyserNode;
+  /** Optional #volume input — the Performance mini master fader proxies it. */
+  volInput?: HTMLInputElement;
 }
 
 export interface PerformanceFeature {
@@ -99,6 +105,12 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   let brush: AutoBrush = 'line';
   const laneIds = () => sessionHost.state.lanes.map((l) => l.id);
 
+  // VU meters built into the performance toolbar register here so we can tear
+  // them down before each re-render (renderPerformanceView wipes the host),
+  // mirroring the mixer row's disposal channel — otherwise each refresh would
+  // leak the meter's analyser registration with the shared RAF loop.
+  let perfDisposables: { dispose(): void }[] = [];
+
   onRegisterKnob((k) => {
     const prev = k.onValueChanged;
     k.onValueChanged = (v, fromUser) => {
@@ -137,13 +149,18 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   function refreshPerformanceView() {
     const host = document.getElementById('performance-view-root');
     if (!host) return;
+    // Tear down the previous toolbar's VU meter(s) before renderPerformanceView
+    // wipes the host (host.innerHTML = ''), so they don't leak their analyser
+    // registration with the shared RAF loop across re-renders.
+    for (const d of perfDisposables) d.dispose();
+    perfDisposables = [];
     const findClip = (id: string) => {
       for (const lane of sessionHost.state.lanes)
         for (const c of lane.clips) if (c?.id === id) return c;
       return null;
     };
     renderPerformanceView(host, arrangement, {
-      onPlay: () => startArrangement(arrangementPlayState, ctx.currentTime),
+      onPlay: () => beginArrangement(),
       onStop: () => stopArrangement(arrangementPlayState),
       onGoToSession: () => setMode('session'),
       resolveClipColor: (id) => findClip(id)?.color ?? '',
@@ -175,6 +192,13 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       onMoveBand: (laneId, index, newAtSec) => { commitArrUndo(); editBands(laneId, (evs) => moveEvent(evs, index, newAtSec, arrangement.bpm)); },
       onResizeBand: (laneId, index, edge, newSec) => { commitArrUndo(); editBands(laneId, (evs) => resizeEvent(evs, index, edge, newSec, arrangement.bpm)); },
       onDeleteBand: (laneId, index) => { commitArrUndo(); editBands(laneId, (evs) => deleteEvent(evs, index)); },
+      buildMaster: () => (deps.masterMeterAnalyser && deps.volInput)
+        ? buildMiniMaster({
+            volInput: deps.volInput,
+            masterMeterAnalyser: deps.masterMeterAnalyser,
+            registerDisposable: (d) => perfDisposables.push(d),
+          })
+        : null,
     });
   }
 
@@ -286,7 +310,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         deps.onRecVisualChanged?.();
         flashToast('REC disarmed: Performance is playing');
       }
-      startArrangement(arrangementPlayState, ctx.currentTime);
+      beginArrangement();
       return true;
     }
     if (rec.armed) startRecording(rec, ctx.currentTime);
@@ -312,12 +336,19 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     return false;
   }
 
+  // The playhead RAF only runs while actually animating (Performance mode AND
+  // playing). It used to re-queue itself unconditionally and never cancel, so it
+  // did 3 DOM lookups + a style write every frame forever — even sitting idle in
+  // Session mode. ensurePlayheadLoop() (re)starts it when playback begins; the
+  // loop parks itself (one final pass to hide the cursor) when playback stops.
+  let playheadRaf = 0;
   function rafPlayhead() {
+    const animating = mode === 'performance' && arrangementPlayState.isPlaying;
     const el = document.getElementById('perf-playhead');
-    const host = document.getElementById('performance-view-root');
-    const rulerTrack = host?.querySelector('.perf-ruler .perf-track') as HTMLElement | null;
     if (el) {
-      if (mode === 'performance' && arrangementPlayState.isPlaying && host && rulerTrack) {
+      const host = document.getElementById('performance-view-root');
+      const rulerTrack = host?.querySelector('.perf-ruler .perf-track') as HTMLElement | null;
+      if (animating && host && rulerTrack) {
         const barSec = (60 / (arrangement.bpm || seq.bpm)) * 4;
         const lw = arrangementLoopWindowSec(arrangement);
         let sec = arrangementPlayhead(arrangementPlayState, ctx.currentTime);
@@ -336,9 +367,15 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         el.style.display = 'none';
       }
     }
-    requestAnimationFrame(rafPlayhead);
+    playheadRaf = animating ? requestAnimationFrame(rafPlayhead) : 0;
   }
-  requestAnimationFrame(rafPlayhead);
+  function ensurePlayheadLoop() {
+    if (playheadRaf === 0) playheadRaf = requestAnimationFrame(rafPlayhead);
+  }
+  function beginArrangement() {
+    startArrangement(arrangementPlayState, ctx.currentTime);
+    ensurePlayheadLoop();
+  }
 
   refreshPerformanceView();
 

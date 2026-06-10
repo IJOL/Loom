@@ -155,3 +155,61 @@ export function buildMasterStrip(deps: MasterStripDeps): HTMLElement {
 
   return col;
 }
+
+// ── Mini master (Performance toolbar) ──────────────────────────────────────
+//
+// The full master strip lives in #session-view-root, which is hidden in
+// Performance mode — so a player loses the master VU + fader the moment they
+// switch to Performance. This compact variant brings just those back into the
+// performance-view toolbar: a MASTER label, a VU meter and a horizontal fader.
+// It deliberately omits EQ/PAN/Mute/FX (the FX button would open the master FX
+// panel, which is hidden with the session root anyway).
+//
+// Like the full strip, the fader is a PROXY of #volume (writes volInput.value +
+// dispatches its `input` event), so save (SavedStateV3.masterVol) and the
+// #volume undo bracket keep working unchanged. The VU registers a disposable so
+// the host can tear it down on each re-render (renderPerformanceView wipes the
+// toolbar) without leaking the meter's analyser registration.
+
+export interface MiniMasterDeps {
+  /** The existing #volume range input; the mini fader proxies it. */
+  volInput: HTMLInputElement;
+  /** Dedicated meter tap of the master bus. */
+  masterMeterAnalyser: AnalyserNode;
+  /** Optional teardown registration for the VU meter handle (RAF + analyser). */
+  registerDisposable?(d: { dispose(): void }): void;
+}
+
+export function buildMiniMaster(deps: MiniMasterDeps): HTMLElement {
+  const wrap = document.createElement('div');
+  wrap.className = 'perf-master-mini';
+
+  const label = document.createElement('span');
+  label.className = 'perf-master-mini-label';
+  label.textContent = 'MASTER';
+  wrap.appendChild(label);
+
+  const vuMeter = createLevelMeter({ analyser: deps.masterMeterAnalyser });
+  if (deps.registerDisposable) deps.registerDisposable(vuMeter);
+  wrap.appendChild(vuMeter.el);
+
+  const fader = document.createElement('input');
+  fader.type = 'range';
+  fader.className = 'perf-master-mini-fader';
+  fader.min = '0'; fader.max = '1'; fader.step = '0.01';
+  fader.value = deps.volInput.value;
+
+  const val = document.createElement('span');
+  val.className = 'perf-master-mini-val';
+  const updateText = () => { val.textContent = fmtPct(parseFloat(fader.value)); };
+  updateText();
+
+  fader.addEventListener('input', () => {
+    deps.volInput.value = fader.value;
+    deps.volInput.dispatchEvent(new Event('input'));
+    updateText();
+  });
+
+  wrap.append(fader, val);
+  return wrap;
+}

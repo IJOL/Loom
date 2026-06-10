@@ -80,6 +80,21 @@
     .perf-length-input { width: 56px; }
     .perf-zoom { width: 160px; vertical-align: middle; }
     .perf-readout { color: #888; }
+
+    // Compact master (VU + #volume-proxy fader), pushed to the right edge. The
+    // full master strip lives in the session root, hidden in Performance mode.
+    .perf-master-mini {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-left: auto; padding-left: 12px;
+      border-left: 1px solid #2a2a2a;
+      .perf-master-mini-label {
+        font-size: 10px; font-weight: 600; letter-spacing: 0.5px; color: #f0b429;
+      }
+      // Squash the default 110px-tall VU column into a toolbar-height indicator.
+      .mix-vu-host { height: 30px; width: 8px; }
+      .perf-master-mini-fader { width: 96px; accent-color: #f0b429; }
+      .perf-master-mini-val { font-size: 10px; color: #999; min-width: 32px; text-align: right; }
+    }
   }
   .perf-auto-header {
     display: flex; gap: 6px; align-items: center; padding: 6px 0 6px 90px;
