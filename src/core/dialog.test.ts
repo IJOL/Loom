@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeAll } from 'vitest';
-import { alertDialog, confirmDialog, promptDialog } from './dialog';
+import { alertDialog, confirmDialog, promptDialog, choiceDialog } from './dialog';
 
 // jsdom doesn't implement <dialog>.showModal()/close() — stub them so the module
 // can open/close its singleton dialog without throwing.
@@ -54,5 +54,31 @@ describe('dialog facility', () => {
     expect(document.getElementById('app-dialog-ok')!.classList.contains('app-dialog-danger')).toBe(true);
     click('app-dialog-ok');
     await p;
+  });
+
+  it('choiceDialog resolves the picked choice id and renders a button per choice', async () => {
+    const p = choiceDialog('MIDI: 3 pistas', [
+      { id: 'replace', label: 'Sustituir', danger: true },
+      { id: 'add', label: 'Añadir', primary: true },
+    ], { title: 'Importar MIDI' });
+    const replace = document.getElementById('app-dialog-choice-replace')!;
+    const add = document.getElementById('app-dialog-choice-add')!;
+    expect(replace.textContent).toBe('Sustituir');
+    expect(replace.classList.contains('app-dialog-danger')).toBe(true);
+    expect(add.classList.contains('app-dialog-primary')).toBe(true);
+    click('app-dialog-choice-replace');
+    expect(await p).toBe('replace');
+  });
+
+  it('choiceDialog resolves the OTHER choice when picked', async () => {
+    const p = choiceDialog('x', [{ id: 'replace', label: 'Sustituir' }, { id: 'add', label: 'Añadir' }]);
+    click('app-dialog-choice-add');
+    expect(await p).toBe('add');
+  });
+
+  it('choiceDialog resolves null on Cancel (abort, not a hidden action)', async () => {
+    const p = choiceDialog('x', [{ id: 'replace', label: 'Sustituir' }, { id: 'add', label: 'Añadir' }]);
+    click('app-dialog-cancel');
+    expect(await p).toBeNull();
   });
 });

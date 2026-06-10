@@ -11,7 +11,7 @@
 // content. Every track — drum-channel included — is treated identically.
 
 import { parseMidiFile, type ParsedMidi } from './midi-parse';
-import { alertDialog, confirmDialog } from '../core/dialog';
+import { alertDialog, choiceDialog } from '../core/dialog';
 import { midiToSession } from './midi-to-session';
 import { findGMMatches, suggestDefaultMapping, type GMMatch } from './gm-lookup';
 import { auditionPreset } from './audition';
@@ -168,15 +168,22 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
     const checks = Array.from(trackListEl.querySelectorAll<HTMLInputElement>('input[type=checkbox]:checked'));
     const indices = checks.map((cb) => parseInt(cb.dataset.idx ?? '', 10));
 
-    // Confirm BEFORE building the session: Add places the import on a NEW row
-    // (= the current scene count) so its clips align with their scene's launch
-    // button; Replace builds a fresh session at row 0. (`confirm` is binary.)
+    // Ask BEFORE building the session, with EXPLICIT named buttons (not a binary
+    // OK/Cancel whose meaning hides in the text). Add places the import on a NEW
+    // row (= the current scene count) so its clips align with their scene's launch
+    // button; Replace builds a fresh session at row 0; Cancel aborts.
     const trackCount = indices.length;
-    const doAdd = await confirmDialog(
-      `MIDI parsed: ${trackCount} track(s)` +
-      (parsed.bpm ? ` @ ${Math.round(parsed.bpm)} BPM` : '') +
-      `\n\nOK = Add to current session.\nCancel = Replace session.`,
+    const action = await choiceDialog(
+      `${trackCount} pista(s)` + (parsed.bpm ? ` @ ${Math.round(parsed.bpm)} BPM` : '') +
+      `. ¿Añadir a la sesión actual o sustituirla?`,
+      [
+        { id: 'replace', label: 'Sustituir', danger: true },
+        { id: 'add', label: 'Añadir', primary: true },
+      ],
+      { title: 'Importar MIDI' },
     );
+    if (action === null) return; // Cancelled — abort the import cleanly.
+    const doAdd = action === 'add';
 
     const sceneRow = doAdd ? deps.session.scenes.length : 0;
     const result = midiToSession(parsed, {

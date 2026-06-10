@@ -109,3 +109,68 @@ export function confirmDialog(message: string, opts?: DialogOpts): Promise<boole
 export function promptDialog(message: string, defaultValue = '', opts?: DialogOpts): Promise<string | null> {
   return run(message, { kind: 'prompt', defaultValue }, opts) as Promise<string | null>;
 }
+
+export interface DialogChoice {
+  /** Returned by choiceDialog when this button is picked. */
+  id: string;
+  label: string;
+  /** Emphasised (accent) button. */
+  primary?: boolean;
+  /** Destructive (red) button. */
+  danger?: boolean;
+}
+
+/**
+ * Modal with N explicit action buttons plus a Cancel. Resolves the picked
+ * choice's `id`, or `null` if cancelled (Cancel button / Esc). Use instead of a
+ * binary confirm when both outcomes are positive actions that deserve their own
+ * named button (e.g. Add vs Replace) — hiding the meaning behind OK/Cancel is a
+ * UX trap. Choice buttons render after Cancel (Cancel left, actions right).
+ * Each gets a stable id `#app-dialog-choice-<id>` for e2e.
+ */
+export function choiceDialog(
+  message: string,
+  choices: DialogChoice[],
+  opts: { title?: string; cancelLabel?: string } = {},
+): Promise<string | null> {
+  const dlg = ensureDialog();
+  if (settleCurrent) settle(cancelValue); // supersede any pending dialog as cancelled
+  cancelValue = null;
+
+  dlg.innerHTML = `
+    <div class="app-dialog-body">
+      <h3 class="app-dialog-title"></h3>
+      <p class="app-dialog-text"></p>
+      <div class="app-dialog-actions"></div>
+    </div>`;
+  const titleEl = dlg.querySelector<HTMLElement>('.app-dialog-title')!;
+  if (opts.title) titleEl.textContent = opts.title; else titleEl.remove();
+  dlg.querySelector<HTMLElement>('.app-dialog-text')!.textContent = message;
+
+  const actions = dlg.querySelector<HTMLElement>('.app-dialog-actions')!;
+  const cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.id = 'app-dialog-cancel';
+  cancelBtn.className = 'app-dialog-btn';
+  cancelBtn.textContent = opts.cancelLabel ?? 'Cancelar';
+  cancelBtn.addEventListener('click', () => settle(null));
+  actions.appendChild(cancelBtn);
+
+  for (const c of choices) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = `app-dialog-choice-${c.id}`;
+    btn.className = 'app-dialog-btn'
+      + (c.primary ? ' app-dialog-primary' : '')
+      + (c.danger ? ' app-dialog-danger' : '');
+    btn.dataset.choice = c.id;
+    btn.textContent = c.label; // textContent — no HTML injection
+    btn.addEventListener('click', () => settle(c.id));
+    actions.appendChild(btn);
+  }
+
+  return new Promise<string | null>((resolve) => {
+    settleCurrent = resolve as (v: unknown) => void;
+    if (!dlg.open) dlg.showModal();
+  });
+}
