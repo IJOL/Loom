@@ -3,10 +3,11 @@
 // see THAT sample — colour swatch + filename + key + one-shot/loop badge + a
 // waveform (canvas) with the loop region marked + a horizontal zoom (−/＋). The
 // filename lives HERE (per the user: not on the strip; a tooltip there at most).
-// Read-only for now (trim/loop-point dragging is a later refinement).
+// Handles for trim-start/end + loop-start/end are draggable; badge toggles loop.
 
 import { sampleCache } from '../samples/sample-cache';
 import { sampleStore } from '../samples/store-singleton';
+import { xToFrac, pickHandle, applyHandle, type TrimState, type WaveHandle } from './sampler-waveform-edit';
 
 export interface SampleViewerOpts {
   sampleId: string;
@@ -14,6 +15,11 @@ export interface SampleViewerOpts {
   color: string;      // the channel's colour
   loop: boolean;
   loopStart: number;  // 0..1 of the sample
+  loopEnd: number;    // NEW
+  sampleStart: number; // NEW
+  sampleEnd: number;   // NEW
+  /** Persist a fraction change for the selected pad. */
+  onEdit?: (leaf: 'sampleStart' | 'sampleEnd' | 'loopStart' | 'loopEnd' | 'loop', value: number) => void; // NEW
 }
 
 // Zoom persists across re-renders (selecting another pad keeps the level).
@@ -78,6 +84,53 @@ export function renderSampleViewer(host: HTMLElement, opts: SampleViewerOpts): v
   void sampleStore.get(opts.sampleId)
     .then((asset) => { const label = asset?.name ?? opts.sampleId; nameEl.textContent = label; nameEl.title = label; })
     .catch(() => { nameEl.textContent = opts.sampleId; });
+
+  // ── Badge: clickable loop toggle ──
+  badge.style.cursor = 'pointer';
+  badge.title = 'Click to toggle one-shot / loop';
+  badge.addEventListener('click', () => {
+    const next = opts.loop ? 0 : 1;
+    opts.loop = next > 0.5;
+    opts.onEdit?.('loop', next);
+    draw();
+    badge.textContent = opts.loop ? '⟳ loop' : 'one-shot';
+    badge.classList.toggle('loop', opts.loop);
+  });
+
+  // ── Pointer dragging on the canvas ──
+  let dragging: WaveHandle | null = null;
+  const stateNow = (): TrimState => ({
+    sampleStart: opts.sampleStart, sampleEnd: opts.sampleEnd,
+    loopStart: opts.loopStart, loopEnd: opts.loopEnd, loop: opts.loop,
+  });
+  const fracAt = (clientX: number): number => {
+    const r = sc.getBoundingClientRect();
+    return xToFrac(clientX, r.left, sc.scrollLeft, canvas.width);
+  };
+  canvas.style.cursor = 'pointer';
+  canvas.addEventListener('pointerdown', (ev) => {
+    const h = pickHandle(fracAt(ev.clientX), stateNow(), 0.02);
+    if (!h) return;
+    dragging = h;
+    canvas.setPointerCapture(ev.pointerId);
+    ev.preventDefault();
+  });
+  canvas.addEventListener('pointermove', (ev) => {
+    if (!dragging) return;
+    const next = applyHandle(dragging, fracAt(ev.clientX), stateNow());
+    const leaf = dragging === 'start' ? 'sampleStart' : dragging === 'end' ? 'sampleEnd' : dragging;
+    const value = next[leaf as keyof TrimState] as number;
+    (opts as unknown as Record<string, number>)[leaf] = value; // update local opts so further drags read the new value
+    draw();
+    opts.onEdit?.(leaf, value);
+  });
+  const endDrag = (ev: PointerEvent) => {
+    if (!dragging) return;
+    dragging = null;
+    try { canvas.releasePointerCapture(ev.pointerId); } catch { /* not captured */ }
+  };
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', endDrag);
 }
 
 function drawWave(
@@ -122,13 +175,30 @@ function drawWave(
     ctx.fillRect(x, y1, 1, Math.max(1, y2 - y1));
   }
 
-  // Loop region (from loopStart to the end), amber like the mockup.
+  // Trim + loop handles replacing the old single-handle loop block.
+  const st = Math.min(Math.max(opts.sampleStart, 0), 1);
+  const en = Math.min(Math.max(opts.sampleEnd, 0), 1);
+  // dim trimmed-out regions
+  ctx.fillStyle = 'rgba(0,0,0,0.62)';
+  ctx.fillRect(0, 0, st * w, h);
+  ctx.fillRect(en * w, 0, (1 - en) * w, h);
+  // trim handles (amber)
+  ctx.fillStyle = '#ffa726';
+  ctx.fillRect(st * w - 1, 0, 2, h);
+  ctx.fillRect(en * w - 1, 0, 2, h);
+  // loop region (green) + its two handles, only when loop is on
   if (opts.loop) {
-    const lx = Math.max(0, Math.min(1, opts.loopStart)) * w;
-    ctx.fillStyle = 'rgba(255,167,38,0.12)';
-    ctx.fillRect(lx, 0, w - lx, h);
-    ctx.strokeStyle = '#ffa726';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(lx + 0.5, 0); ctx.lineTo(lx + 0.5, h); ctx.stroke();
+    const ls = Math.min(Math.max(opts.loopStart, 0), 1);
+    const le = Math.min(Math.max(opts.loopEnd, 0), 1);
+    ctx.fillStyle = 'rgba(124,179,66,0.20)';
+    ctx.fillRect(ls * w, 0, (le - ls) * w, h);
+    ctx.fillStyle = '#7cb342';
+    ctx.fillRect(ls * w - 1, 0, 2, h);
+    ctx.fillRect(le * w - 1, 0, 2, h);
   }
+  canvas.dataset.sampleStart = st.toFixed(4);
+  canvas.dataset.sampleEnd = en.toFixed(4);
+  canvas.dataset.loopStart = String(opts.loopStart);
+  canvas.dataset.loopEnd = String(opts.loopEnd);
+  canvas.dataset.loop = opts.loop ? '1' : '0';
 }
