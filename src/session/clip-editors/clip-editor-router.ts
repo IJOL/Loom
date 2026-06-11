@@ -185,6 +185,8 @@ function buildPianoRoll(
     stepsPerBeat: stepsPerBeat(seq.meter),
     minMidi,
     maxMidi,
+    gridResolution: clip.gridResolution,
+    onResolutionChange: (r) => { clip.gridResolution = r; },
     onChange: () => {},
     auditionNote: triggerForLane
       ? (midi: number) => triggerForLane(lane.id, midi, ctx.currentTime, AUDITION_GATE, false, false)

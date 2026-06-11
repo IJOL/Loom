@@ -17,6 +17,10 @@ import {
   quantizeRecorded, clampOctaveBase, octaveBaseLabel, PIANO_KEY_LEGEND, type ClipboardNote,
 } from './piano-roll-editing';
 import { isTextEditTarget } from '../save/history-wiring';
+import {
+  createToolToggle, createHelpButton, createGridControl, createResolutionSelect,
+} from './clip-editor-toolbar';
+import { resolutionToSnap, DEFAULT_RESOLUTION, type ResolutionKey } from './drum-grid-editing';
 
 type Tool = 'draw' | 'select';
 // Module-level so the tool choice + clipboard persist across clip re-opens and clips.
@@ -32,6 +36,10 @@ export interface PianoRollOpts {
   minMidi?: number;
   maxMidi?: number;
   snapTicks?: number;
+  /** Initial grid resolution (the notes editor's quantization). Defaults to 1/16. */
+  gridResolution?: ResolutionKey;
+  /** Fired when the user changes the resolution, so the caller can persist it. */
+  onResolutionChange?: (r: ResolutionKey) => void;
   /** Grid geometry from the session meter; default to 4/4 (16 / 4). */
   stepsPerBar?: number;
   stepsPerBeat?: number;
@@ -161,7 +169,8 @@ function setSize(cv: HTMLCanvasElement, w: number, h: number): void {
 export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   const minMidi = opts.minMidi ?? EDITOR_MIN_MIDI;
   const maxMidi = opts.maxMidi ?? EDITOR_MAX_MIDI;
-  const snap = opts.snapTicks ?? TICKS_PER_STEP;
+  let resolution: ResolutionKey = opts.gridResolution ?? DEFAULT_RESOLUTION;
+  let snap = opts.snapTicks ?? resolutionToSnap(resolution);
   const barSteps = opts.stepsPerBar ?? 16;
   const beatSteps = opts.stepsPerBeat ?? 4;
   const noteCount = maxMidi - minMidi + 1;
@@ -171,61 +180,39 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   let octaveBase = clampOctaveBase(60, minMidi, maxMidi); // C4 default, clamped
   const selection = new Set<NoteEvent>();
 
-  const drawBtn = document.createElement('button');
-  drawBtn.textContent = '✏ Draw';
-  const selBtn = document.createElement('button');
-  selBtn.textContent = '▭ Select';
+  const tools = createToolToggle(currentTool, (t) => { currentTool = t; });
+  const drawBtn = tools.drawBtn, selBtn = tools.selBtn;
 
-  // Octave stepper: ◂ [C4] ▸ — a grid-control anchored to the right of the
-  // toolbar. The buttons mirror the z/x keyboard shortcut (shiftOctave below).
-  const octCtl = document.createElement('div');
-  octCtl.className = 'editor-grid-control';
-  // Right-anchor + compact layout; the .editor-grid-control SCSS (Task 10)
-  // reinforces this. Inline kept so the control reads correctly before that lands.
-  octCtl.style.cssText = 'margin-left:auto;display:flex;gap:4px;align-items:center';
+  // Octave stepper: ◂ [C4] ▸ (piano-roll specific — drives the computer-keyboard
+  // note typing; mirrors the z/x shortcut). Shared grid-control wrapper.
   const octDownBtn = document.createElement('button');
-  octDownBtn.textContent = '◂';
-  octDownBtn.title = 'Octave (z / x)';
+  octDownBtn.textContent = '◂'; octDownBtn.title = 'Octave (z / x)';
   const octLabel = document.createElement('span');
   octLabel.style.cssText = 'font:11px ui-monospace,monospace;color:#9a9a9a';
   const octUpBtn = document.createElement('button');
-  octUpBtn.textContent = '▸';
-  octUpBtn.title = 'Octave (z / x)';
-  octCtl.append(octDownBtn, octLabel, octUpBtn);
+  octUpBtn.textContent = '▸'; octUpBtn.title = 'Octave (z / x)';
+  const octCtl = createGridControl(octDownBtn, octLabel, octUpBtn);
 
-  // Keyboard-shortcut help: a "?" button that toggles a popover holding the
-  // full PIANO_KEY_LEGEND (notes + every editing shortcut), so the legend stays
-  // discoverable without permanently eating toolbar space.
-  const helpBtn = document.createElement('button');
-  helpBtn.className = 'editor-help-btn';
-  helpBtn.textContent = '?';
-  helpBtn.title = PIANO_KEY_LEGEND; // native multi-line tooltip fallback
-  const helpPopover = document.createElement('pre');
-  helpPopover.className = 'editor-help-popover';
-  helpPopover.textContent = PIANO_KEY_LEGEND;
-  helpPopover.hidden = true;
-  helpBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    helpPopover.hidden = !helpPopover.hidden;
+  // Grid resolution — shared with the drum-grid so notes quantize the same way.
+  // Reactive: changing it re-snaps new edits + re-draws the grid lines.
+  const { control: resCtl } = createResolutionSelect(resolution, (r) => {
+    resolution = r; snap = resolutionToSnap(r);
+    opts.onResolutionChange?.(r);
+    redrawGridAndLane();
   });
-  helpBtn.addEventListener('blur', () => { helpPopover.hidden = true; });
 
-  const refreshToolbar = () => {
-    drawBtn.style.fontWeight = currentTool === 'draw' ? '700' : '400';
-    selBtn.style.fontWeight  = currentTool === 'select' ? '700' : '400';
-    octLabel.textContent = octaveBaseLabel(octaveBase);
-  };
+  const help = createHelpButton(PIANO_KEY_LEGEND);
+
+  const refreshToolbar = () => { octLabel.textContent = octaveBaseLabel(octaveBase); };
   const shiftOctave = (dir: 1 | -1) => {
     octaveBase = clampOctaveBase(octaveBase + dir * 12, minMidi, maxMidi);
     refreshToolbar();
   };
-  drawBtn.addEventListener('click', () => { currentTool = 'draw'; refreshToolbar(); });
-  selBtn.addEventListener('click', () => { currentTool = 'select'; refreshToolbar(); });
   octDownBtn.addEventListener('click', () => shiftOctave(-1));
   octUpBtn.addEventListener('click', () => shiftOctave(1));
-  f.toolbar.append(drawBtn, selBtn, octCtl, helpBtn);
+  f.toolbar.append(drawBtn, selBtn, octCtl, resCtl, help.btn);
   // Popover lives just below the toolbar (inside the wrap), positioned by SCSS.
-  f.toolbar.after(helpPopover);
+  f.toolbar.after(help.popover);
   refreshToolbar();
 
   const gctx = ctx2d(f.gridCanvas);
@@ -267,12 +254,14 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
         gctx.beginPath(); gctx.moveTo(0, i * rowHeight); gctx.lineTo(w, i * rowHeight); gctx.stroke();
       }
     }
-    const steps = opts.patternTicks / TICKS_PER_STEP;
-    for (let s = 0; s <= steps; s++) {
-      const x = s * TICKS_PER_STEP * pxPerTick;
-      if (s % barSteps === 0) gctx.strokeStyle = '#555';
-      else if (s % beatSteps === 0) gctx.strokeStyle = '#2f2f2f';
-      else gctx.strokeStyle = '#1c1c1c';
+    // Grid lines follow the chosen resolution (bar/beat emphasis preserved);
+    // 'free' draws only bar/beat reference lines. Mirrors the drum-grid.
+    const barTicks = barSteps * TICKS_PER_STEP;
+    const beatTicks = beatSteps * TICKS_PER_STEP;
+    const lineStep = resolution === 'free' ? beatTicks : snap;
+    for (let t = 0; t <= opts.patternTicks; t += lineStep) {
+      const x = t * pxPerTick;
+      gctx.strokeStyle = (t % barTicks === 0) ? '#555' : (t % beatTicks === 0) ? '#2f2f2f' : '#1c1c1c';
       gctx.beginPath(); gctx.moveTo(x, 0); gctx.lineTo(x, h); gctx.stroke();
     }
     for (const n of opts.getNotes()) {
@@ -599,8 +588,8 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     if (e.key === 'Delete' || e.key === 'Backspace') e.stopPropagation();
 
     // Tool toggle
-    if (!cmd && e.key === '1') { currentTool = 'draw'; refreshToolbar(); e.preventDefault(); return; }
-    if (!cmd && e.key === '2') { currentTool = 'select'; refreshToolbar(); e.preventDefault(); return; }
+    if (!cmd && e.key === '1') { currentTool = 'draw'; tools.set('draw'); e.preventDefault(); return; }
+    if (!cmd && e.key === '2') { currentTool = 'select'; tools.set('select'); e.preventDefault(); return; }
 
     // Select all
     if (cmd && e.key.toLowerCase() === 'a') {

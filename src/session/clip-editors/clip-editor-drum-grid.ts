@@ -14,10 +14,11 @@ import type { NoteEvent } from '../../core/notes';
 import { withUndo, isTextEditTarget, type HistoryDeps } from '../../save/history-wiring';
 import { ticksPerBar, stepsPerBar, stepsPerBeat, DEFAULT_METER, type TimeSignature } from '../../core/meter';
 import {
-  RESOLUTIONS, resolutionToSnap, clampResolution, DEFAULT_RESOLUTION, snapTickToRes,
+  resolutionToSnap, clampResolution, DEFAULT_RESOLUTION, snapTickToRes,
   hitInCell, hitsInCell, rowsInRect, rowMove, serializeDrumClipboard, pasteDrumClipboard, clampGroupTick,
   gmDrumRows, type DrumRows, type ResolutionKey, type DrumClipNote,
 } from '../../core/drum-grid-editing';
+import { createToolToggle, createHelpButton, createResolutionSelect } from '../../core/clip-editor-toolbar';
 
 export const LANE_LABELS: Record<DrumVoice, string> = {
   kick: 'KICK', snare: 'SNARE', closedHat: 'CH', openHat: 'OH',
@@ -90,49 +91,18 @@ export function renderDrumGridEditor(
   wrap.tabIndex = 0; wrap.style.outline = 'none';
   const toolbar = document.createElement('div');
   Object.assign(toolbar.style, { display: 'flex', gap: '6px', alignItems: 'center', padding: '4px 2px' } as Partial<CSSStyleDeclaration>);
-  const drawBtn = document.createElement('button'); drawBtn.textContent = '✏ Draw';
-  const selBtn = document.createElement('button'); selBtn.textContent = '▭ Select';
+  const tools = createToolToggle(currentTool, (t) => { currentTool = t; });
+  const drawBtn = tools.drawBtn, selBtn = tools.selBtn;
 
-  // Resolution as a grid-control anchored to the right, mirroring the piano-roll's
-  // octave stepper: a "Grid" label + the resolution <select>, wrapped in
-  // .editor-grid-control (right-anchored, styled by Task 10).
-  const resCtl = document.createElement('div');
-  resCtl.className = 'editor-grid-control';
-  resCtl.style.cssText = 'margin-left:auto;display:flex;gap:4px;align-items:center';
-  const resLabel = document.createElement('span');
-  resLabel.textContent = 'Grid';
-  resLabel.style.cssText = 'font:11px ui-monospace,monospace;color:#9a9a9a';
-  const resSel = document.createElement('select');
-  resSel.title = 'Grid resolution';
-  for (const r of RESOLUTIONS) { const o = document.createElement('option'); o.value = r; o.textContent = r; resSel.appendChild(o); }
-  resSel.value = resolution;
-  resCtl.append(resLabel, resSel);
-
-  // Keyboard-shortcut help: a "?" button toggling a popover with DRUM_KEY_LEGEND,
-  // keeping the shortcuts discoverable without permanently eating toolbar space.
-  const helpBtn = document.createElement('button');
-  helpBtn.className = 'editor-help-btn';
-  helpBtn.textContent = '?';
-  helpBtn.title = DRUM_KEY_LEGEND; // native multi-line tooltip fallback
-  const helpPopover = document.createElement('pre');
-  helpPopover.className = 'editor-help-popover';
-  helpPopover.textContent = DRUM_KEY_LEGEND;
-  helpPopover.hidden = true;
-  helpBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    helpPopover.hidden = !helpPopover.hidden;
+  // Grid resolution select — shared with the piano-roll; persisted on the clip.
+  const { control: resCtl } = createResolutionSelect(resolution, (r) => {
+    resolution = r; clip.gridResolution = r; draw();
   });
-  helpBtn.addEventListener('blur', () => { helpPopover.hidden = true; });
 
-  const refreshToolbar = () => {
-    drawBtn.style.fontWeight = currentTool === 'draw' ? '700' : '400';
-    selBtn.style.fontWeight = currentTool === 'select' ? '700' : '400';
-  };
-  drawBtn.addEventListener('click', () => { currentTool = 'draw'; refreshToolbar(); });
-  selBtn.addEventListener('click', () => { currentTool = 'select'; refreshToolbar(); });
-  resSel.addEventListener('change', () => { resolution = clampResolution(resSel.value); clip.gridResolution = resolution; draw(); });
-  toolbar.append(drawBtn, selBtn, resCtl, helpBtn);
-  refreshToolbar();
+  const help = createHelpButton(DRUM_KEY_LEGEND);
+  const helpPopover = help.popover;
+
+  toolbar.append(drawBtn, selBtn, resCtl, help.btn);
 
   const canvas = document.createElement('canvas');
   canvas.style.display = 'block'; canvas.style.cursor = 'crosshair';
@@ -345,8 +315,8 @@ export function renderDrumGridEditor(
     if (isTextEditTarget(e.target)) return;
     const cmd = e.metaKey || e.ctrlKey;
     if (e.key === 'Delete' || e.key === 'Backspace') e.stopPropagation();
-    if (!cmd && e.key === '1') { currentTool = 'draw'; refreshToolbar(); e.preventDefault(); return; }
-    if (!cmd && e.key === '2') { currentTool = 'select'; refreshToolbar(); e.preventDefault(); return; }
+    if (!cmd && e.key === '1') { currentTool = 'draw'; tools.set('draw'); e.preventDefault(); return; }
+    if (!cmd && e.key === '2') { currentTool = 'select'; tools.set('select'); e.preventDefault(); return; }
     if (cmd && e.key.toLowerCase() === 'a') { selection.clear(); for (const n of notes()) selection.add(n); draw(); e.preventDefault(); return; }
     if (e.key === 'Escape') { selection.clear(); draw(); e.preventDefault(); return; }
     if ((e.key === 'Delete' || e.key === 'Backspace') && selection.size) {
