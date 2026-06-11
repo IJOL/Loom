@@ -14,7 +14,8 @@ import { createTriggerForLane } from '../app/trigger-dispatch';
 import { applyLaneEngineState } from './apply-lane-engine-state';
 import { applyPresetToEngine } from '../presets/preset-apply';
 import { preloadSceneSamples } from './preload-scene-samples';
-import { collectSceneTriggers, type SoundingLaneClip } from './collect-scene-triggers';
+import { collectSceneTriggers, type SoundingLaneClip, type OfflineTrigger } from './collect-scene-triggers';
+import { collectSceneAutomation, type OfflineAutomationPoint } from './collect-scene-automation';
 import { loadNoteFxForLane } from '../notefx/notefx-registry';
 import { fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
 import { fetchInstrumentManifest, loadInstrument } from '../samples/instrument-loader';
@@ -117,8 +118,33 @@ export class OfflineSceneRecorder implements SceneRecorder {
     const laneClips: SoundingLaneClip[] = sounding.map(
       (s) => ({ laneId: s.laneId, engineId: s.engineId, clip: s.clip }),
     );
-    for (const ev of collectSceneTriggers(laneClips, bpm, meter, totalSec)) {
-      trigger(ev.laneId, ev.midi, ev.time, ev.gateSec, ev.accent, ev.slidingIn, ev.sample);
+    // Clip automation is applied per-trigger: a setBaseValue BEFORE the triggers
+    // at the same time, so each new voice captures the automated base value — the
+    // same audible result as the live host (a voice reads filter.cutoff etc. at
+    // creation; the live rAF only updates the base for FUTURE voices).
+    const triggers = collectSceneTriggers(laneClips, bpm, meter, totalSec);
+    const autos = collectSceneAutomation(laneClips, bpm, totalSec);
+    type MergedEv =
+      | { time: number; kind: 'auto'; auto: OfflineAutomationPoint }
+      | { time: number; kind: 'trig'; trig: OfflineTrigger };
+    const merged: MergedEv[] = [
+      ...autos.map((a): MergedEv => ({ time: a.time, kind: 'auto', auto: a })),
+      ...triggers.map((t): MergedEv => ({ time: t.time, kind: 'trig', trig: t })),
+    ];
+    // Sort by time; at equal time automation runs first so the trigger sees it.
+    merged.sort((x, y) => x.time - y.time || (x.kind === y.kind ? 0 : x.kind === 'auto' ? -1 : 1));
+    for (const ev of merged) {
+      if (ev.kind === 'auto') {
+        const engine = lanes.getLaneEngineInstance(ev.auto.laneId);
+        if (!engine) continue;
+        const spec = engine.params.find((p) => p.id === ev.auto.paramId);
+        const min = spec?.min ?? 0;
+        const max = spec?.max ?? 1;
+        engine.setBaseValue(ev.auto.paramId, min + ev.auto.normalised * (max - min));
+      } else {
+        const t = ev.trig;
+        trigger(t.laneId, t.midi, t.time, t.gateSec, t.accent, t.slidingIn, t.sample);
+      }
     }
 
     // Render → RenderedAudio.
