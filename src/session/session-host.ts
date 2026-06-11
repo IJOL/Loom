@@ -2,7 +2,6 @@
 // main.ts constructs this after the audio graph and trigger functions are ready,
 // then calls sessionHost.init() to activate it.
 
-import type { PolySynth } from '../polysynth/polysynth';
 import type { SessionHostDeps } from './session-host-deps';
 import { ensureScenesForRows } from '../core/scene-ensure';
 import {
@@ -14,8 +13,6 @@ import { DEFAULT_RESOLUTION } from '../core/drum-grid-editing';
 import { getNoteFxChain, loadNoteFxForLane } from '../notefx/notefx-registry';
 import { applyLaneEngineState } from '../export/apply-lane-engine-state';
 import { preloadSceneSamples } from '../export/preload-scene-samples';
-import { renderNoteFxPanel } from '../notefx/notefx-ui';
-import { syncNoteFx } from './session-engine-state';
 
 // nextLaneSlug lives in session-host-util (shared with the extracted sub-modules).
 // Re-exported here so existing importers (e.g. session-add-lane.test) keep working.
@@ -27,7 +24,6 @@ import {
   type LanePlayState,
 } from './session-runtime';
 import { migrateLoadedSessionState } from './session-migration';
-import { getEngine } from '../engines/registry';
 import { renderSessionGrid, type SessionUICallbacks } from './session-ui';
 import { buildSessionCallbacks } from './session-host-callbacks';
 import {
@@ -40,6 +36,10 @@ import {
   reloadInstrument as reloadInstrumentImpl,
   applyDrumPreset as applyDrumPresetImpl,
 } from './session-host-presets';
+import {
+  showLaneEditor as showLaneEditorImpl,
+  injectEngineModulatorPanel as injectEngineModulatorPanelImpl,
+} from './session-host-lane-editor';
 import { renderSessionTabBar } from './session-tab-bar';
 import { buildMixerColumn } from '../core/mixer';
 import { buildMasterStrip } from '../core/master-strip';
@@ -47,12 +47,6 @@ import { buildMasterStrip } from '../core/master-strip';
 import { SessionInspector } from './session-inspector';
 import { withUndo } from '../save/history-wiring';
 import { rehydrateInsertChain } from './insert-slot';
-import {
-  mountBassPresetSelect,
-  mountDrumsPresetSelect,
-  populatePolyPresetSelectForLane,
-  refreshPolyPresetSelect,
-} from '../polysynth/polysynth-presets';
 
 export type { SessionHostDeps } from './session-host-deps';
 
@@ -530,162 +524,15 @@ export class SessionHost {
 
   /** Show a lane's editor: route to its engine's page (poly / 303 / drums),
    *  rebuild the engine param UI + modulator panel + labels. Does NOT toggle.
-   *  Used by onEditLane (non-toggle path) and by the post-engine-swap re-route. */
+   *  Impl in session-host-lane-editor. */
   showLaneEditor(laneId: string): void {
-    const lane = this.state.lanes.find((l) => l.id === laneId);
-
-    let polyTarget: PolySynth | null = null;
-    if (lane?.engineId === 'subtractive') {
-      // Each subtractive lane owns its PolySynth instance — reach it via
-      // the engine stored in laneResources.
-      const engine = this.deps.laneResources?.get(laneId)?.engine;
-      const getPS = (engine as unknown as { getPolySynth?(): PolySynth | null })?.getPolySynth;
-      polyTarget = getPS ? getPS.call(engine) ?? null : null;
-    }
-
-    const targetTab =
-      lane?.engineId === 'tb303'          ? '303'   :
-      (lane?.engineId === 'drums-machine' || laneId.startsWith('drum:')) ? 'drums' :
-                                                                           'poly';
-    document.querySelectorAll<HTMLButtonElement>('.tab').forEach((t) => {
-      if (t.classList.contains('session-lane-tab')) {
-        t.classList.toggle('active', t.dataset.laneId === laneId);
-      } else {
-        t.classList.toggle('active', t.dataset.tab === targetTab && !t.classList.contains('synth-tab'));
-      }
-    });
-    const displayName = lane?.name ?? laneId.toUpperCase();
-    if (polyTarget) {
-      this.deps.showPolyEditor(laneId, polyTarget, displayName);
-    } else {
-      document.querySelectorAll<HTMLElement>('.page').forEach((p) => {
-        p.hidden = p.dataset.page !== targetTab;
-      });
-      // FM/Wavetable/Karplus poly lanes: no PolySynth target, so the
-      // showPolyEditor path above is skipped — but the preset dropdown,
-      // engine selector, and engine-mod-host all need to retarget to
-      // this lane. Calling setActiveEngineLane updates _lehState.activeLaneId
-      // so that getActiveEngineLaneId() inside polysynth-presets.ts
-      // resolves to the right lane when the user picks a preset.
-      if (targetTab === 'poly') {
-        this.deps.setActiveEngineLane?.(laneId);
-      }
-    }
-    // Hide Subtractive-only knob rows when the active poly lane's engine
-    // is NOT subtractive (FM / Wavetable / Karplus render their own
-    // controls inside engine-mod-host; the legacy `data-engine="subtractive"`
-    // rows shouldn't leak in on top). The toggle runs unconditionally so
-    // switching back to a subtractive lane re-shows them.
-    const polyPage = document.querySelector('[data-page="poly"]');
-    if (polyPage) {
-      const subRows = polyPage.querySelectorAll<HTMLElement>('[data-engine="subtractive"]');
-      const showSubRows = lane?.engineId === 'subtractive';
-      for (const row of subRows) row.style.display = showSubRows ? '' : 'none';
-    }
-    // Keep #engine-lane-label in sync for non-poly lanes too (no-op if the
-    // active page doesn't include it).
-    const laneLabelEl = document.getElementById('engine-lane-label');
-    if (laneLabelEl) laneLabelEl.textContent = displayName;
-    const polyActiveLabel = document.getElementById('poly-active-label');
-    if (polyActiveLabel) polyActiveLabel.textContent = displayName;
-    this.activeEditLane = laneId;
-    this.injectEngineModulatorPanel(laneId, targetTab);
-    this.deps.onActiveLaneChanged?.();
+    showLaneEditorImpl(this, laneId);
   }
 
-  // ── Engine modulator panel injection ─────────────────────────────────────
-  // Single source of truth for the modulators UI: every editable lane (bass,
-  // drums, and every poly lane regardless of engine) gets its panel injected
-  // into the bottom of the currently-shown page.
-
-  /** @internal — accessed by the extracted session-host-* sub-modules. */
+  /** @internal — inject a lane's engine param UI + modulator/note-FX/insert
+   *  panels + preset dropdowns into its page. Impl in session-host-lane-editor. */
   injectEngineModulatorPanel(laneId: string, targetTab: string): void {
-    // Phase B: engine comes from laneResources (single source of truth). No
-    // more singleton/extra split — every lane has its own instance.
-    const lane = this.state.lanes.find((l) => l.id === laneId);
-    let engine = this.deps.laneResources?.get(laneId)?.engine;
-    if (!engine) {
-      // Fallback (e.g. drum sub-voice laneIds starting with `drum:` aren't in
-      // laneResources). Use the engine for the lane's declared engineId.
-      const engineId = lane?.engineId
-        ?? (laneId.startsWith('drum:') ? 'drums-machine' : 'subtractive');
-      engine = getEngine(engineId);
-      if (!engine) return;
-    }
-
-    // Mount or reuse a container. Place the modulators panel BELOW the main
-    // synth controls — for poly we anchor on #poly-seq-mode-row so the panel
-    // sits between the engine controls and the SEQ MODE / tracks block. For
-    // other pages (drums, bass) we fall back to appending at the end.
-    const page = document.querySelector<HTMLElement>(`[data-page="${targetTab}"]`);
-    if (!page) return;
-    let host = page.querySelector<HTMLElement>('.engine-mod-host');
-    if (!host) {
-      host = document.createElement('div');
-      host.className = 'engine-mod-host';
-      // Place engine body BEFORE the FX row so the engine knobs render above
-      // the compressor on every page: poly anchors on #poly-fx-row, while the
-      // 303 / drums pages fall back to the FX row that hosts .lane-fx-knobs.
-      const anchor = page.querySelector<HTMLElement>('#poly-fx-row')
-        ?? page.querySelector<HTMLElement>('#poly-seq-mode-row')
-        ?? page.querySelector<HTMLElement>('.lane-fx-knobs')?.closest<HTMLElement>('.row');
-      if (anchor) page.insertBefore(host, anchor);
-      else page.appendChild(host);
-    }
-    host.innerHTML = '';
-
-    engine.buildParamUI(host, {
-      laneId,
-      registerKnob: (k: unknown) => {
-        const handle = k as import('../core/knob').KnobHandle;
-        if (handle.meta?.id) this.deps.automationRegistry.set(handle.meta.id, handle);
-      },
-      registry: this.deps.automationRegistry as Map<string, unknown>,
-      lookupLaneDisplayName: (id: string) =>
-        this.state.lanes.find((l) => l.id === id)?.name,
-      sessionState: this.state,
-      historyDeps: this.deps.historyDeps,
-      // Phase J: thread insert chains so the modulation destination dropdown
-      // can expose lane and master FX params.
-      laneInserts: this.deps.laneResources?.get(laneId)?.inserts,
-      masterInserts: this.deps.masterInsertChain,
-      // Option B2: thread FxBus so master send params appear in destination dropdown.
-      fxBus: this.deps.fxBus,
-      // Live AudioContext for the sampler's audio import (decodeAudioData).
-      audioContext: this.deps.ctx,
-    });
-
-    // Per-lane NOTE FX panel — mounted next to MODULATORS (which buildParamUI
-    // rendered into `host`). Drum lanes are not note-transformed, so skip them.
-    if (engine.id !== 'drums-machine') {
-      const nfHost = document.createElement('div');
-      nfHost.className = 'lane-notefx-panel-host';
-      host.appendChild(nfHost);
-      renderNoteFxPanel(nfHost, {
-        laneId,
-        chain: getNoteFxChain(laneId),
-        onChange: (noteFx) => syncNoteFx(this.state, laneId, noteFx),
-        historyDeps: this.deps.historyDeps,
-      });
-    }
-
-    // Phase H: mount the insert-chain panel below the engine controls.
-    // Every active lane has an InsertChain (allocated in ensureLaneResource)
-    // so there is no boot-lane special case.
-    this.inspector.mountLaneInserts(laneId, host);
-
-    // Populate the correct preset dropdown for each page type.
-    // The poly page's #poly-preset-select is populated here for ALL poly-engine
-    // lanes (subtractive, fm, wavetable, karplus). For subtractive, the existing
-    // showPolyEditor → rebuildEngineParamUI path also populates it (harmless
-    // double call). For FM/Wavetable/Karplus, showPolyEditor is NOT called so
-    // without this call those engines would show stale Subtractive presets.
-    if (targetTab === 'poly') {
-      populatePolyPresetSelectForLane(laneId);
-      refreshPolyPresetSelect();
-    }
-    if (targetTab === '303') mountBassPresetSelect(laneId);
-    if (targetTab === 'drums') mountDrumsPresetSelect(laneId);
+    injectEngineModulatorPanelImpl(this, laneId, targetTab);
   }
 
   // ── Render tick (rAF loop that re-renders when play state changes) ─────────
