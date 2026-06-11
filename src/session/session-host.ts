@@ -10,19 +10,12 @@ import {
   type SessionState, type SessionClip,
 } from './session';
 import { buildSliceClip } from '../core/slice-clip';
-import { buildSampleAsset, newSampleId } from '../samples/import';
 import { DEFAULT_RESOLUTION } from '../core/drum-grid-editing';
-import { sampleStore } from '../samples/store-singleton';
-import { sampleCache } from '../samples/sample-cache';
 import { getNoteFxChain, loadNoteFxForLane } from '../notefx/notefx-registry';
 import { applyLaneEngineState } from '../export/apply-lane-engine-state';
 import { preloadSceneSamples } from '../export/preload-scene-samples';
 import { renderNoteFxPanel } from '../notefx/notefx-ui';
-import { syncNoteFx, mirrorKeymapChange, mirrorDrumkitId, mirrorPadParams } from './session-engine-state';
-import { fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
-import { fetchInstrumentManifest, loadInstrument } from '../samples/instrument-loader';
-import type { KeymapEntry } from '../samples/types';
-import { findDrumKit } from '../presets/drum-kits-loader';
+import { syncNoteFx } from './session-engine-state';
 
 // nextLaneSlug lives in session-host-util (shared with the extracted sub-modules).
 // Re-exported here so existing importers (e.g. session-add-lane.test) keep working.
@@ -42,6 +35,11 @@ import {
   loadAudioFileIntoCell as loadAudioFileIntoCellImpl,
   importLoopToSampler as importLoopToSamplerImpl,
 } from './session-host-audio-import';
+import {
+  reloadDrumkit as reloadDrumkitImpl,
+  reloadInstrument as reloadInstrumentImpl,
+  applyDrumPreset as applyDrumPresetImpl,
+} from './session-host-presets';
 import { renderSessionTabBar } from './session-tab-bar';
 import { buildMixerColumn } from '../core/mixer';
 import { buildMasterStrip } from '../core/master-strip';
@@ -358,142 +356,20 @@ export class SessionHost {
         loadNoteFx: (laneId, state) => loadNoteFxForLane(laneId, state),
         // Live: fire-and-forget the drumkit reload (the editor renders regardless;
         // audio comes alive once the fetch/decode resolves).
-        reloadDrumkit: (laneId, kitId, eng) => { void this.reloadDrumkit(laneId, kitId, eng); },
+        reloadDrumkit: (laneId, kitId, eng) => { void reloadDrumkitImpl(this, laneId, kitId, eng); },
         // Bundled melodic/loop instrument self-heal: fire-and-forget like the
         // drumkit reload. The persisted keymap is already applied above, so the
         // live editor renders; audio comes alive once the fetch/decode resolves.
-        reloadInstrument: (laneId, id, eng) => { void this.reloadInstrument(laneId, id, eng); },
+        reloadInstrument: (laneId, id, eng) => { void reloadInstrumentImpl(this, laneId, id, eng); },
       });
-    }
-  }
-
-  /** Re-load a bundled drumkit by id into a sampler lane (fresh sampleIds +
-   *  decoded cache), then re-mirror the resolved keymap. Fire-and-forget from
-   *  applyEngineState; the drum-grid editor renders its 8 rows regardless and
-   *  audio comes alive once the fetch/decode completes. */
-  private async reloadDrumkit(
-    laneId: string,
-    kitId: string,
-    engine: { setKeymap(k: KeymapEntry[]): void },
-  ): Promise<void> {
-    try {
-      const manifest = await fetchDrumkitManifest(kitId);
-      const km = await loadDrumkit(manifest, this.deps.ctx);
-      engine.setKeymap(km);
-      mirrorKeymapChange(this.state, laneId, km);
-    } catch (err) {
-      console.warn(`[drumkit] failed to reload '${kitId}' for ${laneId}:`, err);
-    }
-  }
-
-  /** Re-load a bundled melodic/loop instrument by id into a sampler lane (mirror
-   *  of reloadDrumkit). Self-healing: fresh sampleIds + decoded cache every call,
-   *  then re-mirror the resolved keymap.
-   *
-   *  - Melodic: fetch the manifest, decode every zone, push the multi-zone keymap
-   *    + any per-zone padParams the manifest carried.
-   *  - Loop: regenerate the slice bank AND re-persist the whole-loop wav with a
-   *    fresh id, re-pointing the loop clip's `waveformRef.sampleId` for this lane
-   *    so the editor's waveform header survives a reload (corrects D8). The note
-   *    clip + scene are NOT rebuilt here — they already live in SessionState.
-   *
-   *  Fire-and-forget from applyEngineState; the editor renders regardless and
-   *  audio comes alive once the fetch/decode completes. */
-  private async reloadInstrument(
-    laneId: string,
-    instrumentId: string,
-    engine: { setKeymap(k: KeymapEntry[]): void },
-  ): Promise<void> {
-    try {
-      const manifest = await fetchInstrumentManifest(instrumentId);
-      if (manifest.family === 'loop') {
-        const loaded = await loadInstrument(manifest, this.deps.ctx);
-        engine.setKeymap(loaded.keymap);
-        mirrorKeymapChange(this.state, laneId, loaded.keymap);
-        // Re-persist the whole-loop wav with a fresh id and re-point every loop
-        // clip's waveformRef on this lane so the editor's waveform header keeps
-        // resolving after a session/demo reload (the slices got fresh ids above;
-        // the whole-loop buffer must too).
-        const res = await fetch(`${import.meta.env.BASE_URL}instruments/${manifest.file}`);
-        const bytes = await res.arrayBuffer();
-        const buffer = await this.deps.ctx.decodeAudioData(bytes.slice(0));
-        const loopId = newSampleId();
-        await sampleStore.put(buildSampleAsset({
-          id: loopId, name: `${manifest.id}/loop.wav`, mime: 'audio/wav',
-          bytes, buffer, createdAt: Date.now(),
-        }));
-        sampleCache.put(loopId, buffer);
-        const lane = this.state.lanes.find((l) => l.id === laneId);
-        for (const clip of lane?.clips ?? []) {
-          if (clip?.waveformRef) clip.waveformRef = { ...clip.waveformRef, sampleId: loopId };
-        }
-      } else {
-        const loaded = await loadInstrument(manifest, this.deps.ctx);
-        engine.setKeymap(loaded.keymap);
-        mirrorKeymapChange(this.state, laneId, loaded.keymap);
-        if (loaded.padParams) {
-          const pad = loaded.padParams as Record<number, Record<string, number>>;
-          (engine as unknown as { setPadStore?(s: Record<number, Record<string, number>>): void }).setPadStore?.(pad);
-          mirrorPadParams(this.state, laneId, pad);
-        }
-      }
-    } catch (err) {
-      console.warn(`[instrument] failed to reload '${instrumentId}' for ${laneId}:`, err);
     }
   }
 
   /** Live drums-page preset pick (ctx-aware). Synth kits go through the engine's
    *  sync applyPreset; sample kits decode the bundled drumkit into the embedded
-   *  sampler here (we hold the AudioContext), mirror the sub-state, then rebuild
-   *  the inspector engine-body so the panel swaps. */
-  async applyDrumPreset(laneId: string, name: string): Promise<void> {
-    const entry = findDrumKit(name);
-    const engine = this.deps.laneResources?.get(laneId)?.engine as unknown as {
-      applyPreset(n: string): void;
-      setKitMode(m: 'synth' | 'sample'): void;
-      setKeymap(k: KeymapEntry[]): void;
-    } | undefined;
-    if (!entry || !engine) return;
-
-    engine.applyPreset(name);        // sets kitMode (+ synth loadKitDefaults)
-    if (entry.kind === 'sample' && entry.drumkitId) {
-      engine.setKitMode('sample');   // belt-and-suspenders before the async decode
-      try {
-        const manifest = await fetchDrumkitManifest(entry.drumkitId);
-        const km = await loadDrumkit(manifest, this.deps.ctx);
-        engine.setKeymap(km);
-        mirrorKeymapChange(this.state, laneId, km);
-        mirrorDrumkitId(this.state, laneId, entry.drumkitId);
-      } catch (err) {
-        console.warn(`[drumkit] failed to load '${entry.drumkitId}' for ${laneId}:`, err);
-      }
-    } else {
-      // Synth kit: drop any stale drumkit sub-state so a later load doesn't
-      // re-trigger the sample self-heal.
-      mirrorDrumkitId(this.state, laneId, undefined);
-    }
-
-    const lane = this.state.lanes.find((l) => l.id === laneId);
-    if (lane) {
-      if (!lane.engineState) lane.engineState = {};
-      const prevMode = lane.engineState.kitMode;
-      if (prevMode && prevMode !== entry.kind && lane.engineState.params) {
-        // Per-voice ids (e.g. 'kick.tune') mean different things + ranges in
-        // synth vs sample mode; bus.* is mode-agnostic. Drop the per-voice keys
-        // so a kit-mode switch doesn't replay stale cross-mode values into the
-        // other source on the next load.
-        for (const id of Object.keys(lane.engineState.params)) {
-          if (!id.startsWith('bus.')) delete lane.engineState.params[id];
-        }
-      }
-      lane.engineState.kitMode = entry.kind;
-      lane.enginePresetName = `engine:${name}`;
-    }
-
-    // Rebuild the inspector engine-body so the synth rack <-> sampler panel swaps
-    // immediately (this also re-pushes current knob values). Only when this lane
-    // is the one being edited.
-    if (this.activeEditLane === laneId) this.injectEngineModulatorPanel(laneId, 'drums');
+   *  sampler. Impl (with reloadDrumkit/reloadInstrument) in session-host-presets. */
+  applyDrumPreset(laneId: string, name: string): Promise<void> {
+    return applyDrumPresetImpl(this, laneId, name);
   }
 
   // ── Rendering ────────────────────────────────────────────────────────────
@@ -722,7 +598,8 @@ export class SessionHost {
   // drums, and every poly lane regardless of engine) gets its panel injected
   // into the bottom of the currently-shown page.
 
-  private injectEngineModulatorPanel(laneId: string, targetTab: string): void {
+  /** @internal — accessed by the extracted session-host-* sub-modules. */
+  injectEngineModulatorPanel(laneId: string, targetTab: string): void {
     // Phase B: engine comes from laneResources (single source of truth). No
     // more singleton/extra split — every lane has its own instance.
     const lane = this.state.lanes.find((l) => l.id === laneId);
