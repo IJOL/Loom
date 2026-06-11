@@ -10,9 +10,6 @@ import {
 } from './session';
 import { buildSliceClip } from '../core/slice-clip';
 import { DEFAULT_RESOLUTION } from '../core/drum-grid-editing';
-import { getNoteFxChain, loadNoteFxForLane } from '../notefx/notefx-registry';
-import { applyLaneEngineState } from '../export/apply-lane-engine-state';
-import { preloadSceneSamples } from '../export/preload-scene-samples';
 
 // nextLaneSlug lives in session-host-util (shared with the extracted sub-modules).
 // Re-exported here so existing importers (e.g. session-add-lane.test) keep working.
@@ -23,7 +20,6 @@ import {
   emptyLanePlayState,
   type LanePlayState,
 } from './session-runtime';
-import { migrateLoadedSessionState } from './session-migration';
 import { renderSessionGrid, type SessionUICallbacks } from './session-ui';
 import { buildSessionCallbacks } from './session-host-callbacks';
 import {
@@ -31,22 +27,22 @@ import {
   loadAudioFileIntoCell as loadAudioFileIntoCellImpl,
   importLoopToSampler as importLoopToSamplerImpl,
 } from './session-host-audio-import';
-import {
-  reloadDrumkit as reloadDrumkitImpl,
-  reloadInstrument as reloadInstrumentImpl,
-  applyDrumPreset as applyDrumPresetImpl,
-} from './session-host-presets';
+import { applyDrumPreset as applyDrumPresetImpl } from './session-host-presets';
 import {
   showLaneEditor as showLaneEditorImpl,
   injectEngineModulatorPanel as injectEngineModulatorPanelImpl,
 } from './session-host-lane-editor';
+import {
+  applyLoadedSessionState as applyLoadedSessionStateImpl,
+  collectEngineState as collectEngineStateImpl,
+  applyEngineState as applyEngineStateImpl,
+} from './session-host-persistence';
 import { renderSessionTabBar } from './session-tab-bar';
 import { buildMixerColumn } from '../core/mixer';
 import { buildMasterStrip } from '../core/master-strip';
 // session-step-scheduler is superseded by the note-based tickLane path (Phase D.3).
 import { SessionInspector } from './session-inspector';
 import { withUndo } from '../save/history-wiring';
-import { rehydrateInsertChain } from './insert-slot';
 
 export type { SessionHostDeps } from './session-host-deps';
 
@@ -99,7 +95,8 @@ export class SessionHost {
   onStateApplied(cb: () => void): void {
     this._stateAppliedCallbacks.push(cb);
   }
-  private _fireStateApplied(): void {
+  /** @internal — accessed by the extracted session-host-* sub-modules. */
+  _fireStateApplied(): void {
     for (const cb of this._stateAppliedCallbacks) cb();
   }
 
@@ -260,103 +257,20 @@ export class SessionHost {
   // ── Public API for save/load ─────────────────────────────────────────────
 
   getStateForSave(): SessionState {
-    this.collectEngineState();
+    collectEngineStateImpl(this);
     return cloneSessionState(this.state);
   }
 
+  /** Replace the session with a loaded/migrated SessionState (lane allocation +
+   *  insert/engine rehydration). Impl in session-host-persistence. */
   applyLoadedSessionState(sess: SessionState): void {
-    const migrated = migrateLoadedSessionState(sess);
-    this.state.lanes = migrated.lanes ?? [];
-    this.state.scenes = migrated.scenes ?? [];
-    this.state.globalQuantize = migrated.globalQuantize ?? '1/1';
-    this.state.masterInserts = migrated.masterInserts ?? [];
-    this.laneStates.clear();
-    // Free audio resources for lanes that vanished in the new state (e.g.
-    // undo of add-lane). Keeping orphans around accumulates ChannelStrips and
-    // engine instances each time the user cycles add → undo → add.
-    const keep = new Set(this.state.lanes.map((l) => l.id));
-    for (const id of this.deps.laneResources?.ids() ?? []) {
-      if (!keep.has(id)) this.deps.laneResources?.dispose(id);
-    }
-    for (const lane of this.state.lanes) {
-      this.laneStates.set(lane.id, emptyLanePlayState(lane.id));
-      // Every lane needs an audio resource (strip + engine instance) — without
-      // it, triggerForLane finds nothing and automation knobs never get
-      // registered under the lane's id. Built-in lanes are pre-allocated at
-      // boot; lanes that arrive via loaded state (demos, save files) are
-      // allocated lazily here.
-      // Allocate lazily, OR reconcile a lane whose engineId changed (undo/redo
-      // or a loaded session): if a resource exists but its live engine differs
-      // from the lane's engineId, swap it in place rather than skip (the
-      // idempotent ensureLaneResource would otherwise leave the old engine).
-      const existing = this.deps.laneResources?.get(lane.id);
-      if (existing && existing.engine.id !== lane.engineId) {
-        this.deps.swapLaneEngine?.(lane.id, lane.engineId);
-      } else {
-        this.deps.ensureLaneResource?.(lane.id, lane.engineId);
-      }
-      // Task 28: rehydrate persisted insert slots into the lane's chain.
-      if (lane.inserts && lane.inserts.length > 0) {
-        const laneRes = this.deps.laneResources?.get(lane.id);
-        if (laneRes?.inserts) {
-          rehydrateInsertChain(this.deps.ctx, laneRes.inserts, lane.inserts);
-        }
-      }
-      if (lane.enginePresetName) {
-        this.deps.applyPresetForLane?.(lane.id, lane.enginePresetName);
-      }
-    }
-    this.applyEngineState();
-    // Task 28: rehydrate master insert chain before firing state-applied callbacks
-    // so the UI rebuild (rebuildMasterInserts) sees a populated chain.
-    const masterChain = this.deps.masterInsertChain;
-    if (masterChain && this.state.masterInserts && this.state.masterInserts.length > 0) {
-      while (masterChain.size() > 0) masterChain.remove(0);
-      rehydrateInsertChain(this.deps.ctx, masterChain, this.state.masterInserts);
-    }
-    this.renderWithMixer();
-    // Decode every referenced audio buffer (audio clips, sampler keymaps, slice
-    // banks) into the cache so loaded sessions sound on first Play, not just on
-    // offline export. Fire-and-forget: editors render regardless; audio comes
-    // alive once decode resolves.
-    void preloadSceneSamples(this.deps.ctx, this.state.lanes);
-    this._fireStateApplied();
+    applyLoadedSessionStateImpl(this, sess);
   }
 
-  private collectEngineState(): void {
-    for (const lane of this.state.lanes) {
-      const engine = this.deps.laneResources?.get(lane.id)?.engine;
-      const host = (engine as { modulators?: { serialize(): unknown[] } } | undefined)?.modulators;
-      if (host) {
-        // Preserve params (mirrored live by mirrorParamChange on every knob
-        // change) and only refresh modulators from the live engine. Replacing
-        // the whole engineState object here dropped every per-lane knob value
-        // on save, so non-303 lanes loaded back with default sound params.
-        if (!lane.engineState) lane.engineState = {};
-        lane.engineState.modulators =
-          host.serialize() as import('../modulation/types').ModulatorState[];
-      }
-      // Mirror the lane's note-FX chain so it persists on save.
-      if (!lane.engineState) lane.engineState = {};
-      lane.engineState.noteFx = getNoteFxChain(lane.id).serialize();
-    }
-  }
-
-  private applyEngineState(): void {
-    for (const lane of this.state.lanes) {
-      const engine = this.deps.laneResources?.get(lane.id)?.engine;
-      if (!engine) continue;
-      void applyLaneEngineState(engine as never, lane, this.deps.ctx, {
-        loadNoteFx: (laneId, state) => loadNoteFxForLane(laneId, state),
-        // Live: fire-and-forget the drumkit reload (the editor renders regardless;
-        // audio comes alive once the fetch/decode resolves).
-        reloadDrumkit: (laneId, kitId, eng) => { void reloadDrumkitImpl(this, laneId, kitId, eng); },
-        // Bundled melodic/loop instrument self-heal: fire-and-forget like the
-        // drumkit reload. The persisted keymap is already applied above, so the
-        // live editor renders; audio comes alive once the fetch/decode resolves.
-        reloadInstrument: (laneId, id, eng) => { void reloadInstrumentImpl(this, laneId, id, eng); },
-      });
-    }
+  /** @internal — push persisted engine state onto live engines (load path).
+   *  Kept as a method because tests drive it directly. Impl in session-host-persistence. */
+  applyEngineState(): void {
+    applyEngineStateImpl(this);
   }
 
   /** Live drums-page preset pick (ctx-aware). Synth kits go through the engine's
