@@ -12,6 +12,7 @@ import { buildAudioGraph } from '../app/audio-graph';
 import { createLaneAllocator } from '../app/lane-allocator';
 import { createTriggerForLane } from '../app/trigger-dispatch';
 import { applyLaneEngineState } from './apply-lane-engine-state';
+import { applyPresetToEngine } from '../presets/preset-apply';
 import { preloadSceneSamples } from './preload-scene-samples';
 import { collectSceneTriggers, type SoundingLaneClip } from './collect-scene-triggers';
 import { loadNoteFxForLane } from '../notefx/notefx-registry';
@@ -63,6 +64,12 @@ export class OfflineSceneRecorder implements SceneRecorder {
       const engine = lanes.getLaneEngineInstance(laneId);
       if (!engine) continue;
       const lane = state.lanes.find((l) => l.id === laneId)!;
+      // Apply the lane's factory/engine preset FIRST (sets osc/filter/ADSR/kit),
+      // then let applyLaneEngineState's params override it — the same order as the
+      // live host (main.ts applyPresetToEngine on load). Without this every lane
+      // rendered with the engine DEFAULT sound, so an offline take sounded nothing
+      // like the live scene.
+      if (lane.enginePresetName) applyPresetToEngine(engine, lane.enginePresetName);
       await applyLaneEngineState(engine as never, lane, offlineCtx as unknown as AudioContext, {
         loadNoteFx: (id, st) => loadNoteFxForLane(id, st),
         reloadDrumkit: async (id, kitId, eng: { setKeymap(k: KeymapEntry[]): void }) => {
