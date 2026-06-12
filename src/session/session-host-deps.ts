@@ -29,6 +29,12 @@ export interface SessionHostDeps {
     sample?: import('./session').ClipSample,
     velocity?: number,
   ) => void;
+  /** Per-lane live-voice registry shared with the trigger dispatch. The stop
+   *  seams (stopLane/stopAll) pass it as the `silence` hook so they release a
+   *  lane's still-sounding voices immediately — chiefly the long 'audio' channel
+   *  clip, which otherwise plays to the end after any Stop. Optional so test
+   *  fixtures without audio can skip it. */
+  liveVoices?: import('../app/live-voice-registry').LiveVoiceRegistry;
   // Phase G: drums removed — triggerForLane now routes drums-machine via
   // res.engine.createVoice() like every other engine.
   drumLanes: readonly DrumVoice[];

@@ -25,6 +25,15 @@ import { nextLaneSlug } from './session-host-util';
 export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
   const { ctx, seq, playBtn, resetAutomationPosition } = self.deps;
 
+  // Build the stop hooks for a per-lane stop: recording hooks (when present)
+  // PLUS the live-voice silencer so the lane's still-sounding voices (the long
+  // 'audio' clip especially) are released the instant Stop is pressed.
+  const stopHooks = () => ({
+    ...(self.deps.recHooks ?? {}),
+    nowCtx: ctx.currentTime,
+    ...(self.deps.liveVoices ? { silence: self.deps.liveVoices } : {}),
+  });
+
   return {
     onClipClick(laneId, clipIdx) {
       const lane = self.state.lanes.find((l) => l.id === laneId);
@@ -47,8 +56,7 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
       const isPlaying = !!(lp?.playing && lp.playing.id === clip.id);
       const isQueued  = !!(lp?.queued  && lp.queued.id  === clip.id);
       if (isPlaying || isQueued) {
-        stopLane(self.laneStates, lane.id,
-          self.deps.recHooks ? { ...self.deps.recHooks, nowCtx: ctx.currentTime } : undefined);
+        stopLane(self.laneStates, lane.id, stopHooks());
         self.renderWithMixer();
         return;
       }
@@ -112,8 +120,7 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
     },
     onAddAudioChannel() { self.callbacks.onAddLane('audio'); },
     onStopLane(laneId) {
-      stopLane(self.laneStates, laneId,
-        self.deps.recHooks ? { ...self.deps.recHooks, nowCtx: ctx.currentTime } : undefined);
+      stopLane(self.laneStates, laneId, stopHooks());
       self.renderWithMixer();
     },
     onLaunchScene(idx) {
@@ -126,7 +133,8 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
     },
     onStopAll() {
       if (self.deps.onStopAll) { self.deps.onStopAll(); return; }
-      stopAll(self.laneStates); self.renderWithMixer();
+      stopAll(self.laneStates, self.deps.liveVoices, ctx.currentTime);
+      self.renderWithMixer();
     },
     onAddScene() {
       const hd = self.deps.historyDeps;
@@ -291,8 +299,7 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
       }
       // Stop the lane BEFORE disposing it: cut in-flight voices/loops (symmetry
       // with onDeleteScene; avoids the analogue of the "New leaves synths" bug).
-      stopLane(self.laneStates, laneId,
-        self.deps.recHooks ? { ...self.deps.recHooks, nowCtx: ctx.currentTime } : undefined);
+      stopLane(self.laneStates, laneId, stopHooks());
       const hd = self.deps.historyDeps;
       const run = () => {
         deleteLane(self.state, laneId);
@@ -323,8 +330,7 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
           const lane = self.state.lanes.find((l) => l.id === lp.laneId);
           const clipInRow = lane?.clips[sceneIdx];
           if (clipInRow && (lp.playing?.id === clipInRow.id || lp.queued?.id === clipInRow.id)) {
-            stopLane(self.laneStates, lp.laneId,
-              self.deps.recHooks ? { ...self.deps.recHooks, nowCtx: ctx.currentTime } : undefined);
+            stopLane(self.laneStates, lp.laneId, stopHooks());
           }
         }
         deleteScene(self.state, sceneIdx); // COMPACTING (front A · session.ts)

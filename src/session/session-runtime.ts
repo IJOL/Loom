@@ -141,26 +141,43 @@ export function launchScene(
   }
 }
 
+/** Stop hooks shared by every stop seam. `rec`/`arrangement` close any pending
+ *  recorded clip event; `silence` immediately releases the lane's LIVE voices
+ *  (so a long 'audio' clip stops the instant Stop is pressed, not when the loop
+ *  ends). Both are optional so non-audio/non-recording callers stay simple. */
+export type StopHooks = Partial<RecHooks> & {
+  nowCtx?: number;
+  /** Live-voice silencer (the LiveVoiceRegistry). */
+  silence?: { silenceLane(laneId: string, now: number): void };
+};
+
 export function stopLane(
   laneStates: Map<string, LanePlayState>,
   laneId: string,
-  hooks?: RecHooks & { nowCtx?: number },
+  hooks?: StopHooks,
 ): void {
   const lp = laneStates.get(laneId);
   if (!lp) return;
   lp.playing = null;
   lp.queued = null;
-  if (hooks?.rec.recording) {
+  // Silence live voices first so the audio is cut even if there is no rec hook.
+  if (hooks?.silence) hooks.silence.silenceLane(laneId, hooks.nowCtx ?? 0);
+  if (hooks?.rec?.recording && hooks.arrangement) {
     const at = arrangementNow(hooks.rec, hooks.nowCtx ?? hooks.rec.startedAtCtx);
     closePendingClipEvent(hooks.arrangement, laneId, at);
   }
 }
 
-export function stopAll(laneStates: Map<string, LanePlayState>): void {
+export function stopAll(
+  laneStates: Map<string, LanePlayState>,
+  silence?: { silenceAll(now: number): void },
+  nowCtx = 0,
+): void {
   for (const lp of laneStates.values()) {
     lp.playing = null;
     lp.queued = null;
   }
+  if (silence) silence.silenceAll(nowCtx);
 }
 
 // ── Tick ───────────────────────────────────────────────────────────────────

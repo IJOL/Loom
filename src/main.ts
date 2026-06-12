@@ -6,6 +6,7 @@ import { createMuteSolo } from './app/mute-solo';
 import { createLaneAllocator } from './app/lane-allocator';
 import { createAutomationRecorder } from './app/automation-recording';
 import { createTriggerForLane } from './app/trigger-dispatch';
+import { LiveVoiceRegistry } from './app/live-voice-registry';
 import { createKnobMounter } from './app/knob-mounting';
 import { createLaneHost } from './app/lane-host-wiring';
 import { createPerformanceFeature } from './app/performance-feature';
@@ -381,10 +382,16 @@ for (const t of $$<HTMLButtonElement>('button.tab')) {
   });
 }
 
+// Per-lane live-voice registry: trigger-dispatch records each voice it creates,
+// and every Stop seam (transport Stop, STOP ALL, stopLane/stopAll) releases the
+// tracked voices so a long 'audio' channel clip stops immediately instead of
+// playing to the end of its buffer after Stop.
+const liveVoices = new LiveVoiceRegistry();
+
 // Single-entry-point trigger dispatch — delegates by engine.id.
 // Phase G: drums removed from deps (drums-machine triggers via res.engine.createVoice).
 const triggerForLane = createTriggerForLane({
-  ctx, laneResources, seq,
+  ctx, laneResources, seq, liveVoices,
 });
 
 // ── Session host ───────────────────────────────────────────────────────────
@@ -408,6 +415,7 @@ const sessionHost = new SessionHost({
   // though it's lexically defined later (it only fires on a user click).
   onStopAll: () => stopTransport(),
   triggerForLane,
+  liveVoices,
   // Phase G: drums removed — triggerForLane handles drums via engine.createVoice.
   drumLanes: DRUM_LANES,
   markTrackActive,
@@ -760,7 +768,9 @@ const liveTake = new LiveTakeRecorder({
 function stopTransport(): void {
   liveTake.finish();
   if (seq.isPlaying()) seq.stop();
-  stopAllLanes(sessionHost.laneStates);
+  // Pass the live-voice silencer so a long 'audio' channel clip is cut now,
+  // not when its buffer ends (it has no gate to self-terminate on Stop).
+  stopAllLanes(sessionHost.laneStates, liveVoices, ctx.currentTime);
   setPlaying(playBtn, false);
   sessionHost.renderWithMixer();
 }

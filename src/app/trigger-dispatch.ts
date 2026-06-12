@@ -3,6 +3,7 @@ import { getNoteFxChain } from '../notefx/notefx-registry';
 import { resolveVelocity } from '../core/velocity-gain';
 import type { LaneResourceMap } from '../core/lane-resources';
 import type { Sequencer } from '../core/sequencer';
+import type { LiveVoiceRegistry } from './live-voice-registry';
 
 export type TriggerForLane = (
   laneId: string, note: number, time: number, gate: number,
@@ -15,6 +16,10 @@ export interface TriggerDispatchDeps {
   ctx: AudioContext;
   laneResources: LaneResourceMap;
   seq: Sequencer;
+  /** Optional per-lane live-voice registry. When present, every voice the
+   *  dispatch creates is recorded so the stop seams can release it immediately
+   *  (the 'audio' channel clip otherwise plays to the end after any Stop). */
+  liveVoices?: LiveVoiceRegistry;
 }
 
 export function createTriggerForLane(deps: TriggerDispatchDeps): TriggerForLane {
@@ -28,6 +33,8 @@ export function createTriggerForLane(deps: TriggerDispatchDeps): TriggerForLane 
       setCurrentLaneForVoice(laneId);
       const v = res.engine.createVoice(deps.ctx, res.strip.input);
       setCurrentLaneForVoice(null);
+      // Track the live voice so any Stop path can release it immediately.
+      deps.liveVoices?.record(laneId, v);
       v.trigger(m, t, { gateDuration: g, accent: a, slide: sl, sample, velocity: vel });
     };
 

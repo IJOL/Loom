@@ -141,7 +141,7 @@ export class SessionHost {
 
   /** Stop every playing/queued clip. */
   stopAllClips(): void {
-    stopAll(this.laneStates);
+    stopAll(this.laneStates, this.deps.liveVoices, this.deps.ctx.currentTime);
     this.renderWithMixer();
   }
 

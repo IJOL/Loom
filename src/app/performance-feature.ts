@@ -309,7 +309,9 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     launchClipAtTime(sessionHost.laneStates, lane, clip, Math.max(atCtx, ctx.currentTime));
   }
   function arrangementOnStopLane(laneId: string) {
-    stopLane(sessionHost.laneStates, laneId, { ...recHooks, nowCtx: ctx.currentTime });
+    stopLane(sessionHost.laneStates, laneId, {
+      ...recHooks, nowCtx: ctx.currentTime, silence: sessionHost.deps.liveVoices,
+    });
   }
   function arrangementApplyAutomation(paramId: string, valueNorm: number) {
     const k = automationRegistry.get(paramId);
@@ -340,7 +342,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         onStopLane: arrangementOnStopLane,
         applyAutomation: arrangementApplyAutomation,
         loopWindow: arrangementLoopWindowSec(arrangement),
-        onArrangementEnd: () => { stopAll(sessionHost.laneStates); stopArrangement(arrangementPlayState); deps.onArrangementEnd?.(); },
+        onArrangementEnd: () => { stopAll(sessionHost.laneStates, sessionHost.deps.liveVoices, ctx.currentTime); stopArrangement(arrangementPlayState); deps.onArrangementEnd?.(); },
       });
     }
   }
