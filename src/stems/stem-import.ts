@@ -17,9 +17,12 @@ export interface StemImportDeps {
   /** Transcribe one stem's audio to a note/drums lane (label = lane name).
    *  `kind` is the known stem role: 'drums' for the drum stem, 'melodic' otherwise. */
   transcribeStem?: (file: File, label: string, kind: 'melodic' | 'drums') => Promise<void>;
-  /** Optional: conform the session tempo to the imported audio. Called once after
-   *  decoding with the BPM detected from the DRUMS stem (most reliable for tempo),
-   *  falling back to the longest stem. Wire it to the canonical BPM setter so the
+  /** Optional: conform the session tempo to the imported audio. Called once
+   *  BEFORE the lanes are built (so each clip's frozen lengthBars matches the new
+   *  tempo) with the BPM detected from the DRUMS stem (most reliable for tempo),
+   *  falling back to the longest stem that has audible energy. Only fires when the
+   *  import REPLACES the session (cb.replace) — in ADD mode the project tempo is
+   *  authoritative and left untouched. Wire it to the canonical BPM setter so the
    *  scheduler, UI and tempo-locked engines all update. Omitted ⇒ BPM unchanged. */
   setSessionBpm?: (bpm: number) => void;
   /** Current session meter, so tempo detection snaps to the right bar length.
@@ -72,13 +75,15 @@ export async function importStems(
     return { label: p.label, sampleId: asset.id, durationSec: buffer.duration };
   });
 
-  deps.addStemLanes(lanes, { replace: cb.replace });
-
-  // Conform the session tempo to the imported audio: detect from the DRUMS stem
-  // (most reliable for tempo), else the longest decoded stem. detectLoop already
-  // folds octaves into [70,180] and snaps to whole bars; we only set when the
-  // chosen buffer has real audio so an empty/silent stem can't force BPM.
-  if (deps.setSessionBpm) {
+  // Conform the session tempo to the imported audio BEFORE building the lanes:
+  // buildStemLane freezes each clip's lengthBars from seq.bpm at build time
+  // (via audioClip), so the BPM must already be the detected value or the clip
+  // gate won't match the audio (chopped/gapped stems). Detect from the DRUMS
+  // stem (most reliable for tempo), else the longest decoded stem that has audio.
+  // detectLoop folds octaves into [70,180] and snaps to whole bars. We only
+  // conform when REPLACING the session — in ADD mode the existing project tempo
+  // is authoritative and must be left untouched.
+  if (deps.setSessionBpm && cb.replace) {
     const tempoBuf = pickTempoBuffer(decoded);
     if (tempoBuf && tempoBuf.length > 0 && tempoBuf.duration > 0) {
       const meter = deps.getMeter?.() ?? DEFAULT_METER;
@@ -86,6 +91,8 @@ export async function importStems(
       if (Number.isFinite(originalBpm) && originalBpm > 0) deps.setSessionBpm(originalBpm);
     }
   }
+
+  deps.addStemLanes(lanes, { replace: cb.replace });
 
   // Always also transcribe each stem to a note/drums lane — every separation
   // yields both the audio (Sampler) and the notes for remixing.
@@ -101,14 +108,44 @@ export async function importStems(
 
 type DecodedStem = { plan: { name: string }; buffer: AudioBuffer };
 
+// Below this peak amplitude a stem carries no usable onsets — detectLoop would
+// return a bogus ~180 BPM (zero-confidence autocorrelation) from the silence.
+// A drumless track's separated "drums" stem looks exactly like this. The floor
+// is well under any real transient yet clears decode/dither noise.
+const ENERGY_FLOOR = 1e-3;
+
+/** Peak absolute sample across all channels — cheap proxy for "has audible
+ *  energy". Returns 0 for an empty or all-zero buffer. */
+function bufferPeak(buffer: AudioBuffer): number {
+  if (buffer.length <= 0) return 0;
+  let peak = 0;
+  for (let c = 0; c < buffer.numberOfChannels; c++) {
+    const d = buffer.getChannelData(c);
+    for (let i = 0; i < d.length; i++) {
+      const a = Math.abs(d[i]);
+      if (a > peak) peak = a;
+    }
+  }
+  return peak;
+}
+
+function hasEnergy(buffer: AudioBuffer): boolean {
+  return bufferPeak(buffer) > ENERGY_FLOOR;
+}
+
 /** Pick the stem whose tempo best represents the track: the drums stem if the
- *  separation produced one (percussive onsets give the cleanest autocorrelation),
- *  otherwise the longest decoded stem (the first when durations tie). */
+ *  separation produced one AND it has audible energy (percussive onsets give the
+ *  cleanest autocorrelation), otherwise the longest decoded stem that has energy
+ *  (the first when durations tie). Returns null when no stem carries audio, so a
+ *  silent separation can't override the project BPM. */
 function pickTempoBuffer<T extends DecodedStem>(decoded: T[]): AudioBuffer | null {
   if (decoded.length === 0) return null;
   const drums = decoded.find((d) => d.plan.name === 'drums');
-  if (drums) return drums.buffer;
-  let best = decoded[0];
-  for (const d of decoded) if (d.buffer.duration > best.buffer.duration) best = d;
-  return best.buffer;
+  if (drums && hasEnergy(drums.buffer)) return drums.buffer;
+  let best: AudioBuffer | null = null;
+  for (const d of decoded) {
+    if (!hasEnergy(d.buffer)) continue;
+    if (!best || d.buffer.duration > best.duration) best = d.buffer;
+  }
+  return best;
 }

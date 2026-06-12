@@ -89,8 +89,26 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+// A non-empty buffer of pure silence (length > 0, all zeros). The separated
+// drums stem of a drumless track looks like this; its all-zero onset makes
+// detectLoop return a bogus ~180 BPM with zero confidence. The energy guard
+// must reject it just like a length-0 buffer.
+function silentBuffer(bars = 4, bpm = 120, meter = { num: 4, den: 4 }): AudioBuffer {
+  const sampleRate = 44100;
+  const durationSec = (60 / bpm) * meter.num * bars;
+  const length = Math.floor(durationSec * sampleRate);
+  const data = new Float32Array(length); // all zeros
+  return {
+    numberOfChannels: 1,
+    length,
+    duration: durationSec,
+    sampleRate,
+    getChannelData: () => data,
+  } as unknown as AudioBuffer;
+}
+
 describe('importStems → session BPM', () => {
-  it('sets the session BPM from the DRUMS stem tempo when present', async () => {
+  it('sets the session BPM from the DRUMS stem tempo when replacing the session', async () => {
     const setSessionBpm = vi.fn();
     const stems = [
       { name: 'vocals', url: '/v' },
@@ -104,7 +122,7 @@ describe('importStems → session BPM', () => {
     };
     const deps = makeDeps(stems, buffers, { setSessionBpm });
 
-    await importStems(deps, new File([], 'song.wav'), {});
+    await importStems(deps, new File([], 'song.wav'), { replace: true });
 
     expect(setSessionBpm).toHaveBeenCalledTimes(1);
     const got = setSessionBpm.mock.calls[0][0] as number;
@@ -123,10 +141,38 @@ describe('importStems → session BPM', () => {
     };
     const deps = makeDeps(stems, buffers, { setSessionBpm });
 
-    await importStems(deps, new File([], 'song.wav'), {});
+    await importStems(deps, new File([], 'song.wav'), { replace: true });
 
     expect(setSessionBpm).toHaveBeenCalledTimes(1);
     expect(setSessionBpm.mock.calls[0][0]).toBeCloseTo(95, 0);
+  });
+
+  it('does NOT touch the session BPM in ADD mode (replace falsy)', async () => {
+    const setSessionBpm = vi.fn();
+    const stems = [{ name: 'drums', url: '/d' }];
+    const buffers = { 'http://svc/d': pulseBuffer(140, 4) }; // a clear drums tempo
+    const deps = makeDeps(stems, buffers, { setSessionBpm });
+
+    // No replace flag → adding lanes to an existing project must keep its tempo.
+    await importStems(deps, new File([], 'song.wav'), {});
+
+    expect(setSessionBpm).not.toHaveBeenCalled();
+    expect(deps.addStemLanes).toHaveBeenCalledTimes(1);
+  });
+
+  it('sets the BPM BEFORE adding the lanes (so buildStemLane reads the new tempo)', async () => {
+    const setSessionBpm = vi.fn();
+    const stems = [{ name: 'drums', url: '/d' }];
+    const buffers = { 'http://svc/d': pulseBuffer(140, 4) };
+    const deps = makeDeps(stems, buffers, { setSessionBpm });
+
+    await importStems(deps, new File([], 'song.wav'), { replace: true });
+
+    expect(setSessionBpm).toHaveBeenCalledTimes(1);
+    expect(deps.addStemLanes).toHaveBeenCalledTimes(1);
+    const setOrder = setSessionBpm.mock.invocationCallOrder[0];
+    const addOrder = (deps.addStemLanes as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0];
+    expect(setOrder).toBeLessThan(addOrder);
   });
 
   it('does not set BPM when the dep is absent (back-compat)', async () => {
@@ -134,11 +180,11 @@ describe('importStems → session BPM', () => {
     const buffers = { 'http://svc/d': pulseBuffer(128, 4) };
     const deps = makeDeps(stems, buffers); // no setSessionBpm
     // Just proves importStems still completes and creates lanes without the dep.
-    await importStems(deps, new File([], 'song.wav'), {});
+    await importStems(deps, new File([], 'song.wav'), { replace: true });
     expect(deps.addStemLanes).toHaveBeenCalledTimes(1);
   });
 
-  it('leaves BPM unchanged for an empty / silent buffer', async () => {
+  it('leaves BPM unchanged for an empty / silent (length 0) buffer', async () => {
     const setSessionBpm = vi.fn();
     const sampleRate = 44100;
     const silent = {
@@ -149,8 +195,39 @@ describe('importStems → session BPM', () => {
     const buffers = { 'http://svc/d': silent };
     const deps = makeDeps(stems, buffers, { setSessionBpm });
 
-    await importStems(deps, new File([], 'song.wav'), {});
+    await importStems(deps, new File([], 'song.wav'), { replace: true });
 
     expect(setSessionBpm).not.toHaveBeenCalled();
+  });
+
+  it('leaves BPM unchanged for a NON-empty but silent drums buffer (energy guard)', async () => {
+    const setSessionBpm = vi.fn();
+    // length > 0 and duration > 0, but every sample is zero — a drumless track's
+    // separated drums stem. Must be rejected so a bogus ~180 BPM can't win.
+    const stems = [{ name: 'drums', url: '/d' }];
+    const buffers = { 'http://svc/d': silentBuffer(4) };
+    const deps = makeDeps(stems, buffers, { setSessionBpm });
+
+    await importStems(deps, new File([], 'song.wav'), { replace: true });
+
+    expect(setSessionBpm).not.toHaveBeenCalled();
+  });
+
+  it('falls back to an energetic non-drums stem when the drums stem is silent', async () => {
+    const setSessionBpm = vi.fn();
+    const stems = [
+      { name: 'drums', url: '/d' },
+      { name: 'other', url: '/o' },
+    ];
+    const buffers = {
+      'http://svc/d': silentBuffer(4),     // silent → skipped
+      'http://svc/o': pulseBuffer(100, 8), // audible → its tempo wins
+    };
+    const deps = makeDeps(stems, buffers, { setSessionBpm });
+
+    await importStems(deps, new File([], 'song.wav'), { replace: true });
+
+    expect(setSessionBpm).toHaveBeenCalledTimes(1);
+    expect(setSessionBpm.mock.calls[0][0]).toBeCloseTo(100, 0);
   });
 });
