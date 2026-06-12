@@ -8,6 +8,8 @@ import { tickLane } from '../core/lane-scheduler';
 import { stretchCache } from '../samples/stretch-cache';
 import { audioChannelClip } from '../session/session';
 import { DEFAULT_METER } from '../core/meter';
+import { rms } from '../../test/dsp-asserts';
+import { writeWav, wavPath } from '../../test/wav';
 
 function tone(ctx: OfflineAudioContext, durationSec: number, freq: number): AudioBuffer {
   const sr = ctx.sampleRate, n = Math.ceil(durationSec * sr);
@@ -36,6 +38,30 @@ describe('audio engine', () => {
     const d = out.getChannelData(0);
     let peak = 0; for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
     expect(peak).toBeGreaterThan(0.1);
+  });
+
+  it('release() truncates a playing audio clip (the stop seam actually silences)', async () => {
+    // This proves the core requirement behind the live-voice silencer: when a
+    // stop seam (Stop / mode-toggle / Load) calls voice.release(t), the whole
+    // audio clip's scheduled buffer source is cut, not left ringing to its gate.
+    const sr = 44100;
+    const render = new OfflineAudioContext(1, Math.ceil(1.0 * sr), sr);
+    sampleCache.put('smp-rel', tone(render, 1.0, 220));
+    const engine = new AudioEngine();
+    const voice = engine.createVoice(render as unknown as AudioContext, render.destination as unknown as AudioNode);
+    // Long gate so the clip would sound for the full second; release at 0.3s.
+    voice.trigger(60, 0, {
+      gateDuration: 1.0,
+      sample: { sampleId: 'smp-rel', mode: 'loop', trimStart: 0, trimEnd: 1.0 },
+    });
+    voice.release(0.3);
+    const out = await render.startRendering();
+    const d = new Float32Array(out.getChannelData(0));
+    writeWav(d, wavPath('audio__release-truncates'), sr);
+    // Pre-release the clip is sounding; post-release (tail) it must be ~silent.
+    const head = d.subarray(0, Math.round(0.2 * sr));
+    const tail = d.subarray(d.length - Math.round(0.2 * sr));
+    expect(rms(tail)).toBeLessThan(rms(head) * 0.1);
   });
 });
 

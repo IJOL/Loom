@@ -248,6 +248,10 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     if (mode === next) return;
     if (seq.isPlaying()) seq.stop();
     if (arrangementPlayState.isPlaying) stopArrangement(arrangementPlayState);
+    // seq.stop()/stopArrangement only halt FUTURE look-ahead triggers; a clip's
+    // already-scheduled whole-loop source (the 'audio' channel) plays on. Silence
+    // live voices so switching modes doesn't leave an audio/stem clip ringing.
+    stopAll(sessionHost.laneStates, sessionHost.deps.liveVoices, ctx.currentTime);
     mode = next;
     document.querySelectorAll('#mode-toggle .mode-btn').forEach((b) => {
       b.classList.toggle('on', (b as HTMLElement).dataset.mode === next);

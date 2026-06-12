@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { SessionHost } from './session-host';
 import type { SessionState } from './session';
 
@@ -10,7 +10,10 @@ import type { SessionState } from './session';
   querySelectorAll: () => [],
 };
 
-function makeMinimalDeps(applied: string[]): ConstructorParameters<typeof SessionHost>[0] {
+function makeMinimalDeps(
+  applied: string[],
+  extra?: Partial<ConstructorParameters<typeof SessionHost>[0]>,
+): ConstructorParameters<typeof SessionHost>[0] {
   return {
     // @ts-expect-error — partial deps for unit test
     ctx: { currentTime: 0, resume: () => Promise.resolve() },
@@ -36,6 +39,7 @@ function makeMinimalDeps(applied: string[]): ConstructorParameters<typeof Sessio
     applyPresetForLane: (laneId: string, presetName: string) => {
       applied.push(`${laneId}=${presetName}`);
     },
+    ...extra,
   };
 }
 
@@ -57,5 +61,25 @@ describe('SessionHost.applyLoadedSessionState — preset application', () => {
       'subtractive-1=factory:PAD Warm',
       'subtractive-2=factory:LEAD Soft Sine',
     ]);
+  });
+});
+
+describe('SessionHost.applyLoadedSessionState — silences live voices on load', () => {
+  it('calls liveVoices.silenceAll(ctx.currentTime) so a playing audio/stem clip stops on Load/demo-switch', () => {
+    const silenceAll = vi.fn();
+    const deps = makeMinimalDeps([], {
+      // @ts-expect-error — partial ctx for unit test; currentTime is what matters
+      ctx: { currentTime: 3.5, resume: () => Promise.resolve() },
+      liveVoices: { silenceAll, silenceLane: vi.fn(), record: vi.fn() } as never,
+    });
+    const host = new SessionHost(deps);
+    const state: SessionState = {
+      lanes: [{ id: 'audio-1', engineId: 'audio', clips: [] }],
+      scenes: [],
+      globalQuantize: '1/1',
+    };
+    host.applyLoadedSessionState(state);
+    expect(silenceAll).toHaveBeenCalledTimes(1);
+    expect(silenceAll).toHaveBeenCalledWith(3.5);
   });
 });

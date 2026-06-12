@@ -17,6 +17,13 @@ import { reloadDrumkit, reloadInstrument } from './session-host-presets';
  *  lane audio resources (allocate / swap / dispose), rehydrate insert chains
  *  (lane + master), apply per-lane engine state, then render + preload samples. */
 export function applyLoadedSessionState(self: SessionHost, sess: SessionState): void {
+  // Silence any still-sounding live voices BEFORE we clear laneStates and
+  // dispose lanes. A playing 'audio'/stem clip schedules a whole-loop buffer
+  // source that nobody else stops, so without this a Load or a demo-switch
+  // would leave the previous clip ringing. This single choke point covers both
+  // (every SaveManager load and the demo picker reach here); the New button's
+  // explicit pre-stop becomes redundant-but-harmless.
+  self.deps.liveVoices?.silenceAll(self.deps.ctx.currentTime);
   const migrated = migrateLoadedSessionState(sess);
   self.state.lanes = migrated.lanes ?? [];
   self.state.scenes = migrated.scenes ?? [];
