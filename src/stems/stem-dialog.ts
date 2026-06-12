@@ -10,6 +10,10 @@ export interface StemDialogDeps {
     opts?: { replace?: boolean },
   ) => void;
   transcribeStem?: (file: File, label: string, kind: 'melodic' | 'drums') => Promise<void>;
+  /** Conform the session tempo to the imported audio (see StemImportDeps). */
+  setSessionBpm?: (bpm: number) => void;
+  /** Live session meter for tempo detection. */
+  getMeter?: () => import('../core/meter').TimeSignature;
 }
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;

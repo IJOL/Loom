@@ -1030,6 +1030,10 @@ wireStemDialog({
   ctx,
   client: stemClient,
   addStemLanes: (stems, opts) => sessionHost.addStemLanes(stems, opts),
+  // Conform the project tempo to the imported audio (detected from the drums
+  // stem) via the canonical BPM setter — scheduler, UI and tempo-locked engines.
+  setSessionBpm: setTransportBpm,
+  getMeter: () => seq.meter,
   transcribeStem: async (file, label, kind) => {
     // Per-stem + non-fatal: a transcription failure for one stem must not abort
     // the others (the audio Sampler lanes are already created either way).
