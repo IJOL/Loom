@@ -18,41 +18,45 @@ const SCALE_INTERVALS: Record<string, number[]> = {
 export interface ClipRandomizeOpts {
   scale: string;
   rootMidi: number;
+  /** Editor's selected octave base (the ◂ C4 ▸ stepper; MIDI of the lowest
+   *  on-screen key). Notes are placed relative to this so randomize follows the
+   *  selected octave instead of a fixed register. Absent ⇒ C4 (60). */
+  octaveBase?: number;
 }
 
 const GM_DRUMS = {
   kick: 36, snare: 38, closedHat: 42, openHat: 46, clap: 39, cowbell: 56,
 } as const;
 
-function pickInScale(opts: ClipRandomizeOpts, octaveRange: number, baseOffset: number): number {
+function pickInScale(opts: ClipRandomizeOpts, octaveRange: number, baseMidi: number): number {
   const intervals = SCALE_INTERVALS[opts.scale] ?? SCALE_INTERVALS.pentMinor;
   const oct = Math.floor(Math.random() * octaveRange);
   const iv  = intervals[Math.floor(Math.random() * intervals.length)];
-  return opts.rootMidi + baseOffset + oct * 12 + iv;
+  return baseMidi + oct * 12 + iv;
 }
 
-function bassNotes(clip: SessionClip, opts: ClipRandomizeOpts, steps: number): NoteEvent[] {
+function bassNotes(opts: ClipRandomizeOpts, steps: number, baseMidi: number): NoteEvent[] {
   const out: NoteEvent[] = [];
   for (let i = 0; i < steps; i++) {
     if (Math.random() >= 0.5) continue;
     out.push({
       start: i * TICKS_PER_STEP,
       duration: TICKS_PER_STEP,
-      midi: pickInScale(opts, 2, 0),
+      midi: pickInScale(opts, 2, baseMidi),
       velocity: Math.random() < 0.25 ? 115 : 80,
     });
   }
   return out;
 }
 
-function polyNotes(clip: SessionClip, opts: ClipRandomizeOpts, steps: number): NoteEvent[] {
+function polyNotes(opts: ClipRandomizeOpts, steps: number, baseMidi: number): NoteEvent[] {
   const out: NoteEvent[] = [];
   for (let i = 0; i < steps; i++) {
     if (Math.random() >= 0.3) continue;
     out.push({
       start: i * TICKS_PER_STEP,
       duration: TICKS_PER_STEP * (Math.random() < 0.3 ? 2 : 1),
-      midi: pickInScale(opts, 3, 36),
+      midi: pickInScale(opts, 2, baseMidi),
       velocity: Math.random() < 0.25 ? 115 : 80,
     });
   }
@@ -88,7 +92,9 @@ export function randomizeClipNotes(
   meter: TimeSignature = DEFAULT_METER,
 ): void {
   const steps = clip.lengthBars * stepsPerBar(meter);
-  if (lane.engineId === 'tb303') clip.notes = bassNotes(clip, opts, steps);
+  const octaveBase = opts.octaveBase ?? 60;            // editor ◂ C4 ▸ (default C4)
+  const pc = (((opts.rootMidi ?? 0) % 12) + 12) % 12;  // key pitch class
+  if (lane.engineId === 'tb303') clip.notes = bassNotes(opts, steps, octaveBase - 12 + pc);
   else if (lane.engineId === 'drums-machine') clip.notes = drumNotes(clip, steps);
-  else clip.notes = polyNotes(clip, opts, steps);
+  else clip.notes = polyNotes(opts, steps, octaveBase + pc);
 }

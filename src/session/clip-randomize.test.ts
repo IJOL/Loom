@@ -24,14 +24,21 @@ describe('randomizeClipNotes', () => {
     for (const n of clip.notes) expect(gm.has(n.midi)).toBe(true);
   });
 
-  it('poly clips place notes within the clip and above the bass register', () => {
+  it('poly clips place notes within the clip and at/above the default octave (C4)', () => {
     const clip = { lengthBars: 2, notes: [] } as any;
     randomizeClipNotes(clip, { engineId: 'subtractive' } as any, { scale: 'minor', rootMidi: 36 });
     const maxTick = 2 * 16 * TICKS_PER_STEP;
     for (const n of clip.notes) {
       expect(n.start).toBeLessThan(maxTick);
-      expect(n.midi).toBeGreaterThanOrEqual(36 + 36); // rootMidi + poly baseOffset
+      expect(n.midi).toBeGreaterThanOrEqual(60); // default octaveBase = C4 (60)
     }
+  });
+
+  it('respects the selected octave (octaveBase) for poly notes', () => {
+    const clip = { lengthBars: 2, notes: [] } as any;
+    randomizeClipNotes(clip, { engineId: 'subtractive' } as any, { scale: 'minor', rootMidi: 36, octaveBase: 72 });
+    expect(clip.notes.length).toBeGreaterThan(0);
+    for (const n of clip.notes) expect(n.midi).toBeGreaterThanOrEqual(72); // notes follow the C5 octave base
   });
 });
 

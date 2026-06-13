@@ -58,6 +58,10 @@ export interface PianoRollOpts {
 
 export interface PianoRollHandle {
   redraw: () => void;
+  /** Current octave base (MIDI of the on-screen keyboard's lowest key — the
+   *  ◂ C4 ▸ stepper). The clip note-randomizer reads it so it places notes at
+   *  the selected octave. Only piano-roll editors expose it. */
+  getOctaveBase?: () => number;
 }
 
 const BLACK_KEY_PCS = [1, 3, 6, 8, 10];
@@ -786,5 +790,5 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     }
   }
 
-  return { redraw };
+  return { redraw, getOctaveBase: () => octaveBase };
 }

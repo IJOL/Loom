@@ -199,6 +199,7 @@ export class SessionInspector {
         randomizeClipNotes(clip, lane!, {
           scale: scaleSel?.value ?? 'pentMinor',
           rootMidi: parseInt(rootSel?.value ?? '36', 10) || 36,
+          octaveBase: this.roll?.getOctaveBase?.() ?? 60,
         }, this.deps.seq.meter);
         this.renderEditor();
       };
