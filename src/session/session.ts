@@ -45,6 +45,12 @@ export interface ClipSample {
   /** Ableton-style warp markers (srcSec↔beat). When present + warp on, the clip
    *  plays a piecewise time-stretched buffer that locks each beat to the grid. */
   warpMarkers?: WarpMarker[];
+  /** Stems separated from one import share this id, so a marker edit on the
+   *  reference clip can propagate the same markers to every stem of the import. */
+  warpGroupId?: string;
+  /** This clip is the editable warp REFERENCE (the drums stem); only the
+   *  reference clip shows the draggable marker editor. Absent ⇒ follower. */
+  warpRef?: boolean;
 }
 
 export interface SessionClip {
