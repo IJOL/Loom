@@ -20,7 +20,7 @@ export interface WarpMarkerEditorDeps {
 }
 export interface WarpMarkerEditorHandle { redraw: () => void; }
 
-const AMBER = '#f5a623', AMBER2 = '#ffc061', GREY = '#8a8a90';
+const AMBER = '#f5a623', GREY = '#8a8a90';
 
 export function mountWarpMarkerEditor(host: HTMLElement, deps: WarpMarkerEditorDeps): WarpMarkerEditorHandle {
   const bpb = Math.max(1, Math.round(quartersPerBar(deps.meter)));
@@ -67,7 +67,6 @@ export function mountWarpMarkerEditor(host: HTMLElement, deps: WarpMarkerEditorD
     count.textContent = `${markers.length} marcas`;
     // clear marker children but keep nothing else
     [...layer.querySelectorAll('.warp-marker,.warp-grid,.warp-seg')].forEach((n) => n.remove());
-    const H = layer.clientHeight || 82;
     // alternate segment shading
     for (let i = 0; i < markers.length - 1; i++) {
       const seg = document.createElement('div'); seg.className = 'warp-seg';
@@ -111,8 +110,9 @@ export function mountWarpMarkerEditor(host: HTMLElement, deps: WarpMarkerEditorD
       // right-click delete (interior only; deleteMarker protects endpoints)
       el.addEventListener('contextmenu', (ev) => {
         ev.preventDefault(); ev.stopPropagation();
-        const next = deleteMarker(deps.getMarkers(), i);
-        if (next !== deps.getMarkers()) deps.onMarkersChange(next, true);
+        const cur = deps.getMarkers();
+        const next = deleteMarker(cur, i);
+        if (next !== cur) deps.onMarkersChange(next, true);
       });
       layer.appendChild(el);
     });
@@ -124,8 +124,9 @@ export function mountWarpMarkerEditor(host: HTMLElement, deps: WarpMarkerEditorD
     const rect = layer.getBoundingClientRect();
     const sec = nearestOnset(secFor(ev.clientX - rect.left));
     const beat = Math.round((sec / Math.max(0.001, deps.durationSec)) * deps.clipBars * bpb);
-    const next = addMarker(deps.getMarkers(), sec, beat);
-    if (next !== deps.getMarkers()) deps.onMarkersChange(next, true);
+    const cur = deps.getMarkers();
+    const next = addMarker(cur, sec, beat);
+    if (next !== cur) deps.onMarkersChange(next, true);
   });
 
   draw();
