@@ -339,12 +339,12 @@ export class SessionHost {
     });
   }
 
-  /** Public entry for the Stems dialog: create one Sampler lane per separated
+  /** Public entry for the Stems dialog: create one audio lane per separated
    *  stem (delegates to the undoable callbacks impl). With `opts.replace` the
    *  whole session is swapped for a clean stems-only one. */
   addStemLanes(
     stems: { label: string; sampleId: string; durationSec: number }[],
-    opts: { replace?: boolean } = {},
+    opts: { replace?: boolean; anchorSec?: number } = {},
   ): void {
     this.callbacks.onAddStemLanes(stems, opts);
   }

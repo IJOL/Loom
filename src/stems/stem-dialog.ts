@@ -7,7 +7,7 @@ export interface StemDialogDeps {
   client: StemClient;
   addStemLanes: (
     stems: { label: string; sampleId: string; durationSec: number }[],
-    opts?: { replace?: boolean },
+    opts?: { replace?: boolean; anchorSec?: number },
   ) => void;
   transcribeStem?: (file: File, label: string, kind: 'melodic' | 'drums') => Promise<void>;
   /** Conform the session tempo to the imported audio (see StemImportDeps). */

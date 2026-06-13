@@ -19,6 +19,7 @@ import {
 import { getEngine, getEngineParamIds } from '../engines/registry';
 import { withUndo } from '../save/history-wiring';
 import { nextLaneSlug } from './session-host-util';
+import { buildStemAudioLane } from './stem-lane-builder';
 
 /** Build the clip-grid / scene callbacks bound to a SessionHost instance.
  *  SessionHost.buildCallbacks() assigns the result to `this.callbacks`. */
@@ -172,43 +173,21 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
       };
       if (hd) withUndo(hd, run); else run();
     },
-    /** Create one Sampler lane per separated stem, as a single undoable action.
-     *  Each lane gets a melodic keymap zone (so the Sampler instrument editor
-     *  SHOWS the stem) + a full-length 'song' audio clip on row 0. With
-     *  `opts.replace`, the whole session is swapped for a clean one holding only
-     *  the stems (1 scene, every lane launching its clip). Each `stems[i].sampleId`
-     *  must already be in the sample store AND decoded into sampleCache by the
-     *  caller (stem-import). */
+    /** Create one AUDIO lane per separated stem, as a single undoable action.
+     *  Each lane plays the whole stem natively (warp off), its downbeat trimmed to
+     *  `opts.anchorSec` so it lands on bar 1. With `opts.replace` the whole session
+     *  is swapped for a clean one holding only the stems (1 scene). */
     onAddStemLanes(
       stems: { label: string; sampleId: string; durationSec: number }[],
-      opts: { replace?: boolean } = {},
+      opts: { replace?: boolean; anchorSec?: number } = {},
     ) {
       const hd = self.deps.historyDeps;
-
-      // One Sampler lane carrying the stem: keymap zone (instrument view) + a
-      // single 'song' audio clip on row 0. No empty filler rows.
-      const buildStemLane = (
-        stem: { label: string; sampleId: string; durationSec: number },
-        id: string,
-      ): SessionLane => {
-        const lane = emptyLane(id, 'sampler');
-        lane.name = stem.label;
-        lane.engineState = {
-          sampler: { keymap: [{ sampleId: stem.sampleId, rootNote: 60, loNote: 0, hiNote: 127 }] },
-        };
-        const clip = audioClip({
-          name: stem.label,
-          sampleId: stem.sampleId,
-          durationSec: stem.durationSec,
-          bpm: seq.bpm,
-          mode: 'song',
-        });
-        lane.clips = [clip];
-        return lane;
-      };
+      const anchorSec = opts.anchorSec ?? 0;
+      const build = (stem: { label: string; sampleId: string; durationSec: number }, id: string) =>
+        buildStemAudioLane(stem, id, { bpm: seq.bpm, meter: seq.meter, anchorSec });
 
       const runReplace = () => {
-        const lanes = stems.map((s, i) => buildStemLane(s, `sampler-stem-${i + 1}`));
+        const lanes = stems.map((s, i) => build(s, `audio-stem-${i + 1}`));
         const scene = emptyScene('Stems');
         scene.clipPerLane = Object.fromEntries(lanes.map((l) => [l.id, 0]));
         const newState: SessionState = {
@@ -216,26 +195,17 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
           scenes: [scene],
           globalQuantize: self.state.globalQuantize,
         };
-        // applyLoadedSessionState allocates engine resources AND applies each
-        // lane's engineState (the keymap), so the instruments show the stems.
         self.applyLoadedSessionState(newState);
       };
 
       const runAdd = () => {
         for (const stem of stems) {
           const used = new Set(self.state.lanes.map((l) => l.id));
-          const newId = nextLaneSlug(used, 'sampler');
-          const lane = buildStemLane(stem, newId);
+          const newId = nextLaneSlug(used, 'audio');
+          const lane = build(stem, newId);
           self.state.lanes.push(lane);
           self.laneStates.set(newId, emptyLanePlayState(newId));
-          self.deps.ensureLaneResource?.(newId, 'sampler');
-          // The add path does not run applyEngineState, so push the keymap into
-          // the freshly-allocated live engine ourselves (otherwise the instrument
-          // editor stays empty until reload).
-          const engine = self.deps.laneResources?.get(newId)?.engine as
-            | { setKeymap?: (k: import('../samples/types').KeymapEntry[]) => void }
-            | undefined;
-          engine?.setKeymap?.(lane.engineState!.sampler!.keymap);
+          self.deps.ensureLaneResource?.(newId, 'audio');
         }
         ensureScenesForRows(self.state);
         self.renderWithMixer();
