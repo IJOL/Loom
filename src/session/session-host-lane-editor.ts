@@ -8,6 +8,7 @@ import { getEngine } from '../engines/registry';
 import { renderNoteFxPanel } from '../notefx/notefx-ui';
 import { getNoteFxChain } from '../notefx/notefx-registry';
 import { syncNoteFx } from './session-engine-state';
+import { laneEditorPanels } from './lane-editor-panels';
 import {
   mountBassPresetSelect,
   mountDrumsPresetSelect,
@@ -120,30 +121,30 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
   }
   host.innerHTML = '';
 
-  engine.buildParamUI(host, {
-    laneId,
-    registerKnob: (k: unknown) => {
-      const handle = k as import('../core/knob').KnobHandle;
-      if (handle.meta?.id) self.deps.automationRegistry.set(handle.meta.id, handle);
-    },
-    registry: self.deps.automationRegistry as Map<string, unknown>,
-    lookupLaneDisplayName: (id: string) =>
-      self.state.lanes.find((l) => l.id === id)?.name,
-    sessionState: self.state,
-    historyDeps: self.deps.historyDeps,
-    // Phase J: thread insert chains so the modulation destination dropdown
-    // can expose lane and master FX params.
-    laneInserts: self.deps.laneResources?.get(laneId)?.inserts,
-    masterInserts: self.deps.masterInsertChain,
-    // Option B2: thread FxBus so master send params appear in destination dropdown.
-    fxBus: self.deps.fxBus,
-    // Live AudioContext for the sampler's audio import (decodeAudioData).
-    audioContext: self.deps.ctx,
-  });
+  const panels = laneEditorPanels(lane?.engineId ?? engine.id);
+
+  if (panels.engineParams) {
+    engine.buildParamUI(host, {
+      laneId,
+      registerKnob: (k: unknown) => {
+        const handle = k as import('../core/knob').KnobHandle;
+        if (handle.meta?.id) self.deps.automationRegistry.set(handle.meta.id, handle);
+      },
+      registry: self.deps.automationRegistry as Map<string, unknown>,
+      lookupLaneDisplayName: (id: string) =>
+        self.state.lanes.find((l) => l.id === id)?.name,
+      sessionState: self.state,
+      historyDeps: self.deps.historyDeps,
+      laneInserts: self.deps.laneResources?.get(laneId)?.inserts,
+      masterInserts: self.deps.masterInsertChain,
+      fxBus: self.deps.fxBus,
+      audioContext: self.deps.ctx,
+    });
+  }
 
   // Per-lane NOTE FX panel — mounted next to MODULATORS (which buildParamUI
   // rendered into `host`). Drum lanes are not note-transformed, so skip them.
-  if (engine.id !== 'drums-machine') {
+  if (panels.noteFx) {
     const nfHost = document.createElement('div');
     nfHost.className = 'lane-notefx-panel-host';
     host.appendChild(nfHost);
@@ -166,10 +167,16 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
   // showPolyEditor → rebuildEngineParamUI path also populates it (harmless
   // double call). For FM/Wavetable/Karplus, showPolyEditor is NOT called so
   // without this call those engines would show stale Subtractive presets.
+  // Hide the poly page's ENGINE/PRESET/🎲 header row for audio lanes (an audio
+  // channel is not an instrument). The subtractive knob rows are already hidden
+  // for non-subtractive engines elsewhere.
   if (targetTab === 'poly') {
-    populatePolyPresetSelectForLane(laneId);
-    refreshPolyPresetSelect();
+    const headerRow = page.querySelector<HTMLElement>('#poly-engine-row');
+    if (headerRow) headerRow.style.display = panels.engineHeaderRow ? '' : 'none';
   }
-  if (targetTab === '303') mountBassPresetSelect(laneId);
-  if (targetTab === 'drums') mountDrumsPresetSelect(laneId);
+  if (panels.preset) {
+    if (targetTab === 'poly') { populatePolyPresetSelectForLane(laneId); refreshPolyPresetSelect(); }
+    if (targetTab === '303') mountBassPresetSelect(laneId);
+    if (targetTab === 'drums') mountDrumsPresetSelect(laneId);
+  }
 }
