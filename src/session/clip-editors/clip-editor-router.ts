@@ -3,7 +3,7 @@
 // editor (piano-roll or drum-grid). Falls back to piano-roll if engine has
 // no explicit preference.
 
-import type { SessionClip, SessionLane } from '../session';
+import type { SessionClip, SessionLane, WarpMarker } from '../session';
 import type { Sequencer } from '../../core/sequencer';
 import type { LanePlayState } from '../session-runtime';
 import { createPianoRoll, type PianoRollHandle } from '../../core/pianoroll';
@@ -17,11 +17,16 @@ import { noteDrumRows } from '../../core/drum-grid-editing';
 import { GM_DRUM_MAP } from '../../engines/drum-gm-map';
 import { mountWaveformHeader, renderAudioClipEditor } from './clip-waveform-header';
 import type { HistoryDeps } from '../../save/history-wiring';
+import { withUndo } from '../../save/history-wiring';
 import { mountClipLoopBrace } from '../../core/clip-loop-brace';
 import type { LaneResourceMap } from '../../core/lane-resources';
 import type { KnobHandle } from '../../core/knob';
 import type { EngineUIContext } from '../../engines/engine-types';
 import type { SessionState } from '../session';
+import { detectLoop } from '../../samples/loop-analysis';
+import { propagateWarp } from '../warp-marker-edit';
+import { warpCache } from '../../samples/warp-cache';
+import { sampleCache } from '../../samples/sample-cache';
 
 export interface ClipEditorDeps {
   ctx: AudioContext;
@@ -152,7 +157,29 @@ export function renderClipEditor(
           } as EngineUIContext,
         }
       : undefined;
-    return renderAudioClipEditor(host, clip, deps.seq.meter, { getPlayheadFrac: playheadFrac, gain });
+    const warp = (clip.sample?.warpRef)
+      ? {
+          bpm: deps.seq.bpm,
+          getOnsets: (): number[] => {
+            const buf = clip.sample ? sampleCache.get(clip.sample.sampleId) : undefined;
+            if (!buf) return [];
+            return detectLoop(buf, deps.seq.meter).slicePointsSec;
+          },
+          onMarkersChange: (markers: WarpMarker[], on: boolean): void => {
+            const apply = () => {
+              const s = clip.sample; if (!s) return;
+              s.warpMarkers = markers.map((m) => ({ ...m }));
+              s.warp = on;
+              const ids = s.warpGroupId
+                ? propagateWarp(deps.sessionState!, s.warpGroupId, markers, on)
+                : [s.sampleId];
+              for (const id of ids) warpCache.invalidate(id);
+            };
+            if (deps.historyDeps) withUndo(deps.historyDeps, apply); else apply();
+          },
+        }
+      : undefined;
+    return renderAudioClipEditor(host, clip, deps.seq.meter, { getPlayheadFrac: playheadFrac, gain, warp });
   }
 
   // Everything else: optional waveform header (when the clip references a buffer)
