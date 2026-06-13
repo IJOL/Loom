@@ -122,8 +122,10 @@ A marker interaction layer mounted by `renderAudioClipEditor` **only when
   extend full height faintly) + alternate segment shading between markers.
 - **Drift hint**: a short dashed connector from a marker to its target grid line with a
   `±Nms` label (kept per the approved mockup; cheap, source-time vs grid-time delta).
-- **Toolbar additions** (next to the existing Warp toggle + Gain): a **density select**
+- **Toolbar additions** (next to the Warp toggle + Gain): a **density select**
   (`cada 1 / 2 / 4 / 8 compases`, default **4**) and a **↻ Re-detectar** button.
+- **Warp toggle** is restyled to the mockup's **amber `ON` / dim `OFF` pill** (replacing the
+  current `♺ Warp ON/OFF` text button), per the resolved CONFIRMAR below.
 
 Interactions (pointer on the layer):
 
@@ -188,15 +190,13 @@ sparse set + `warpGroupId` + `warpRef`.
 
 ## Out of scope / ⛔ CONFIRMAR (deviations from the approved look)
 
-The approved mockup is the target. Two minor look deviations the implementation makes —
-**confirm or veto**:
+The approved mockup is the target. Resolved look decisions:
 
-1. **Warp toggle style.** The mockup shows an amber **`ON` pill**; the editor reuses the
-   existing **`♺ Warp ON/OFF` button** already in the audio-clip toolbar (consistent with
-   the current app, less new chrome). ⛔ CONFIRMAR: keep the existing button, or restyle to
-   the pill?
+1. **Warp toggle style** — ✅ RESOLVED (user, 2026-06-13): restyle to the mockup's **amber
+   `ON` / dim `OFF` pill**, replacing the current `♺ Warp ON/OFF` text button. Match the
+   mockup colors (amber fill + black text when ON; bordered dim when OFF).
 2. **Active-marker tooltip** ("Compás 5 · arrastra para ajustar") shows only **while
-   dragging**, not statically. ⛔ CONFIRMAR (assumed fine).
+   dragging**, not statically (assumed fine).
 
 Genuinely out of scope (later): automatic tempo-following beyond the markers; multi-track
 beat fusion; quantizing transcribed notes to the markers; per-segment manual ratio.
