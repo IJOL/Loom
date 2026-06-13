@@ -141,7 +141,7 @@ export function renderAudioClipEditor(
     warpBtn.textContent = on ? 'ON' : 'OFF';
     Object.assign(warpBtn.style, {
       background: on ? '#f5a623' : 'transparent', color: on ? '#000' : '#8a8a90',
-      border: on ? 'none' : '1px solid #2c2c32', fontWeight: '700',
+      border: on ? '1px solid #f5a623' : '1px solid #2c2c32', fontWeight: '700',
       padding: '3px 10px', borderRadius: '3px', cursor: 'pointer',
     } as Partial<CSSStyleDeclaration>);
   };
