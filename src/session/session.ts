@@ -20,6 +20,11 @@ export interface LoopSlice {
   note: number;    // MIDI row this slice maps to (editor row + the note that fires it)
 }
 
+export interface WarpMarker {
+  srcSec: number;  // position in the SOURCE buffer (seconds)
+  beat: number;    // musical beat it is pinned to (0-based; beat 0 = clip downbeat)
+}
+
 /** Audio bound to a loop/song clip (each clip carries its own sample). Distinct
  *  from the per-lane one-shot keymap: loop/song clips play this buffer directly
  *  when the clip is launched, instead of sequencing notes against a keymap. */
@@ -37,6 +42,9 @@ export interface ClipSample {
   trimStart: number;   // seconds into the buffer
   trimEnd: number;     // seconds (buffer end if not trimmed)
   gain?: number;       // linear, default 1
+  /** Ableton-style warp markers (srcSec↔beat). When present + warp on, the clip
+   *  plays a piecewise time-stretched buffer that locks each beat to the grid. */
+  warpMarkers?: WarpMarker[];
 }
 
 export interface SessionClip {
