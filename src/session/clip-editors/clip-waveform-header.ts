@@ -165,9 +165,15 @@ export function renderAudioClipEditor(
   if (sample?.warpRef && deps.warp) {
     const editorHost = document.createElement('div');
     host.appendChild(editorHost);
+    // Markers are ABSOLUTE source-buffer time, same as the waveform header above:
+    // use the full buffer duration (not trimEnd-trimStart) so markers line up with
+    // the waveform, and pass trimStart as the downbeat (beat 0) for re-seeding.
+    const buf = sampleCache.get(sample.sampleId);
+    const fullDur = buf?.duration ?? sample.trimEnd ?? 1;
     markerHandle = mountWarpMarkerEditor(editorHost, {
       getMarkers: () => clip.sample?.warpMarkers ?? [],
-      durationSec: (clip.sample ? clip.sample.trimEnd - clip.sample.trimStart : 0) || 1,
+      durationSec: fullDur,
+      downbeatSec: sample.trimStart,
       meter, bpm: deps.warp.bpm, clipBars: clip.lengthBars, barsPerMarker: 4,
       getOnsets: deps.warp.getOnsets, onMarkersChange: deps.warp.onMarkersChange,
     });

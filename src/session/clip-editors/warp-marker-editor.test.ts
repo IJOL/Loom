@@ -19,7 +19,7 @@ describe('mountWarpMarkerEditor', () => {
   it('renders one handle per marker', () => {
     const host = makeHost();
     mountWarpMarkerEditor(host, {
-      getMarkers: () => markers, durationSec: 16, meter: DEFAULT_METER, bpm: 120,
+      getMarkers: () => markers, durationSec: 16, downbeatSec: 0, meter: DEFAULT_METER, bpm: 120,
       clipBars: 16, barsPerMarker: 4, getOnsets: () => [], onMarkersChange: vi.fn(),
     });
     expect(host.querySelectorAll('.warp-marker').length).toBe(3);
@@ -29,7 +29,7 @@ describe('mountWarpMarkerEditor', () => {
     const host = makeHost();
     const onChange = vi.fn();
     mountWarpMarkerEditor(host, {
-      getMarkers: () => markers, durationSec: 16, meter: DEFAULT_METER, bpm: 120,
+      getMarkers: () => markers, durationSec: 16, downbeatSec: 0, meter: DEFAULT_METER, bpm: 120,
       clipBars: 16, barsPerMarker: 4, getOnsets: () => [], onMarkersChange: onChange,
     });
     const interior = host.querySelectorAll('.warp-marker')[1] as HTMLElement;
@@ -42,7 +42,7 @@ describe('mountWarpMarkerEditor', () => {
     const host = makeHost();
     const onChange = vi.fn();
     mountWarpMarkerEditor(host, {
-      getMarkers: () => markers, durationSec: 16, meter: DEFAULT_METER, bpm: 120,
+      getMarkers: () => markers, durationSec: 16, downbeatSec: 0, meter: DEFAULT_METER, bpm: 120,
       clipBars: 16, barsPerMarker: 4,
       getOnsets: () => Array.from({ length: 65 }, (_, i) => i * 0.25), // 64 beats @0.25s
       onMarkersChange: onChange,

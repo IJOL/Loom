@@ -10,7 +10,8 @@ import { seedSparseWarpMarkers } from '../../samples/warp-seed-sparse';
 
 export interface WarpMarkerEditorDeps {
   getMarkers: () => WarpMarker[];
-  durationSec: number;
+  durationSec: number;          // FULL source-buffer duration (same coord space as the waveform header)
+  downbeatSec: number;          // source time of beat 0 (the clip anchor / trimStart)
   meter: TimeSignature;
   bpm: number;
   clipBars: number;
@@ -47,7 +48,7 @@ export function mountWarpMarkerEditor(host: HTMLElement, deps: WarpMarkerEditorD
   host.appendChild(layer);
 
   const reseed = () => {
-    const m = seedSparseWarpMarkers(deps.getOnsets(), 0, deps.bpm, deps.durationSec, deps.meter, barsPerMarker, deps.clipBars);
+    const m = seedSparseWarpMarkers(deps.getOnsets(), deps.downbeatSec, deps.bpm, deps.durationSec, deps.meter, barsPerMarker, deps.clipBars);
     if (m.length >= 2) deps.onMarkersChange(m, true);
   };
   sel.addEventListener('change', () => { barsPerMarker = Number(sel.value) || 4; reseed(); });
@@ -65,9 +66,16 @@ export function mountWarpMarkerEditor(host: HTMLElement, deps: WarpMarkerEditorD
     const w = width();
     const markers = deps.getMarkers();
     count.textContent = `${markers.length} marcas`;
-    // clear marker children but keep nothing else
-    [...layer.querySelectorAll('.warp-marker,.warp-grid,.warp-seg')].forEach((n) => n.remove());
-    // alternate segment shading
+    // clear our own children (markers/grid/segments/drift) — leave nothing else
+    [...layer.querySelectorAll('.warp-marker,.warp-grid,.warp-seg,.warp-drift')].forEach((n) => n.remove());
+    const has = markers.length >= 2;
+    const firstSrc = has ? markers[0].srcSec : 0;
+    const lastSrc = has ? markers[markers.length - 1].srcSec : deps.durationSec;
+    const lastBeat = has ? markers[markers.length - 1].beat : deps.clipBars * bpb;
+    // even-grid source time a beat WOULD sit at (the "should land here" reference);
+    // endpoints sit exactly on it, interior markers drift off it.
+    const gridSecForBeat = (beat: number) => (lastBeat > 0 ? firstSrc + (beat / lastBeat) * (lastSrc - firstSrc) : 0);
+    // alternate segment shading between markers
     for (let i = 0; i < markers.length - 1; i++) {
       const seg = document.createElement('div'); seg.className = 'warp-seg';
       Object.assign(seg.style, { position: 'absolute', top: '0', height: '100%', left: xFor(markers[i].srcSec) + 'px',
@@ -75,9 +83,9 @@ export function mountWarpMarkerEditor(host: HTMLElement, deps: WarpMarkerEditorD
         background: i % 2 ? 'rgba(245,166,35,0.05)' : 'rgba(63,208,201,0.04)', pointerEvents: 'none' });
       layer.appendChild(seg);
     }
-    // faint per-bar grid (target positions)
+    // faint per-bar reference grid (even division of the marked span → endpoints on grid)
     for (let bar = 0; bar <= deps.clipBars; bar++) {
-      const gx = (bar / deps.clipBars) * w;
+      const gx = has ? xFor(gridSecForBeat(bar * bpb)) : (bar / deps.clipBars) * w;
       const g = document.createElement('div'); g.className = 'warp-grid';
       Object.assign(g.style, { position: 'absolute', top: '0', height: '100%', left: gx + 'px', width: '1px',
         background: bar % 4 === 0 ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.05)', pointerEvents: 'none' });
@@ -86,6 +94,20 @@ export function mountWarpMarkerEditor(host: HTMLElement, deps: WarpMarkerEditorD
     // markers
     markers.forEach((mk, i) => {
       const mx = xFor(mk.srcSec);
+      // drift connector: dashed line from the marker to its even-grid reference + ±ms
+      if (has && i > 0 && i < markers.length - 1) {
+        const gx = xFor(gridSecForBeat(mk.beat));
+        if (Math.abs(mx - gx) > 1.5) {
+          const con = document.createElement('div'); con.className = 'warp-drift';
+          Object.assign(con.style, { position: 'absolute', top: '50%', left: Math.min(mx, gx) + 'px',
+            width: Math.abs(mx - gx) + 'px', height: '0', borderTop: `1px dashed ${GREY}`, pointerEvents: 'none' });
+          const ms = Math.round((mk.srcSec - gridSecForBeat(mk.beat)) * 1000);
+          const dl = document.createElement('div'); dl.className = 'warp-drift'; dl.textContent = `${ms >= 0 ? '+' : ''}${ms}ms`;
+          Object.assign(dl.style, { position: 'absolute', top: 'calc(50% - 13px)', left: Math.min(mx, gx) + 'px',
+            fontSize: '9px', color: GREY, pointerEvents: 'none' });
+          layer.append(con, dl);
+        }
+      }
       const el = document.createElement('div'); el.className = 'warp-marker'; (el as HTMLElement).dataset.index = String(i);
       Object.assign(el.style, { position: 'absolute', top: '0', height: '100%', left: (mx - 4) + 'px', width: '9px', cursor: 'ew-resize' });
       const line = document.createElement('div');
