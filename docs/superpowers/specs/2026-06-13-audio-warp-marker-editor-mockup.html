@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Loom — Mockup: editor de marcas warp (clip de audio)</title>
+<style>
+  :root {
+    --amber: #f5a623; --amber2: #ffc061; --cyan: #3fd0c9; --grey: #8a8a90;
+    --panel: #141417; --panel2: #1b1b1f; --border: #2c2c32; --bg: #0a0a0c;
+  }
+  html, body { margin: 0; background: var(--bg); }
+  body {
+    font-family: 'JetBrains Mono','IBM Plex Mono',ui-monospace,monospace;
+    color: #e8e8ea; padding: 22px 26px;
+  }
+  .head { display:flex; align-items:baseline; gap:14px; margin-bottom:14px; }
+  .logo { color: var(--amber); font-weight:700; letter-spacing:2px; font-size:18px; }
+  .sub { color: var(--grey); font-size:11px; }
+  .panel { background: var(--panel); border:1px solid var(--border); border-radius:6px; max-width:1500px; }
+  .toolbar { display:flex; align-items:center; gap:18px; padding:10px 14px; border-bottom:1px solid var(--border); }
+  .badge { background:#e0564b; color:#000; font-size:10px; font-weight:700; padding:2px 7px; border-radius:3px; }
+  .name { font-size:12px; color:#ddd; }
+  .meta { color: var(--grey); font-size:11px; }
+  .spacer { flex:1; }
+  .lbl { font-size:10px; color: var(--grey); }
+  .warp-on { background: var(--amber); color:#000; font-size:11px; font-weight:700; padding:3px 10px; border-radius:3px; }
+  .select { border:1px solid var(--border); background: var(--panel2); padding:3px 9px; border-radius:3px; font-size:11px; color:#ddd; }
+  .count { color: var(--cyan); font-size:11px; }
+  .btn { background: var(--panel2); border:1px solid var(--border); color: var(--grey); font-size:11px; padding:3px 9px; border-radius:3px; font-family:inherit; }
+  .knob-wrap { display:flex; flex-direction:column; align-items:center; gap:2px; margin-left:8px; }
+  .knob { width:26px; height:26px; border-radius:50%; border:2px solid var(--amber); position:relative; }
+  .knob i { position:absolute; left:50%; top:50%; width:2px; height:11px; background: var(--amber); transform-origin:bottom center; transform: translate(-50%,-100%) rotate(35deg); }
+  #wf-wrap { position:relative; height:230px; background: var(--bg); }
+  #wf-canvas { position:absolute; inset:0; width:100%; height:100%; }
+  #wf-overlay { position:absolute; inset:0; pointer-events:none; }
+  .legend { display:flex; align-items:center; gap:22px; padding:9px 14px; border-top:1px solid var(--border); font-size:11px; color: var(--grey); }
+  .legend b { color:#ddd; }
+  .note { max-width:1500px; margin-top:12px; font-size:11px; color: var(--grey); line-height:1.6; }
+  .note b { color:#ddd; }
+</style>
+</head>
+<body>
+  <div class="head">
+    <span class="logo">LOOM</span>
+    <span class="sub">MOCKUP · editor de clip de audio — marcas warp (cada 4 compases)</span>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <span class="badge">DRUMS</span>
+      <span class="name">Drums 1 · clip 1</span>
+      <span class="meta">16 compases · 130 BPM</span>
+      <span class="spacer"></span>
+      <span class="lbl">WARP</span>
+      <span class="warp-on">ON</span>
+      <span class="lbl">MARCAS</span>
+      <span class="select">cada 4 compases ▾</span>
+      <span class="count">5 marcas</span>
+      <button class="btn">↻ Re-detectar</button>
+      <div class="knob-wrap">
+        <span class="lbl">GAIN</span>
+        <div class="knob"><i></i></div>
+        <span style="font-size:9px;color:#ccc">0.0</span>
+      </div>
+    </div>
+
+    <div id="wf-wrap">
+      <canvas id="wf-canvas"></canvas>
+      <div id="wf-overlay"></div>
+    </div>
+
+    <div class="legend">
+      <span><b>arrastrar</b> marca = mover (re-warpea los 2 tramos contiguos)</span>
+      <span><b>click</b> en hueco = añadir</span>
+      <span><b>click derecho</b> = borrar</span>
+      <span class="spacer"></span>
+      <span style="color:var(--cyan)">las marcas viven en el clip de DRUMS · el mismo warp se aplica a todos los stems del import</span>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Cómo leerlo:</b> las líneas tenues verticales son la <b>rejilla de compases</b> (dónde DEBEN caer los beats).
+    Las líneas <span style="color:var(--amber)">ámbar</span> con tirador son las <b>marcas warp</b> detectadas, pegadas al golpe real del bombo.
+    Cuando una marca queda desplazada de su línea de rejilla, la flechita punteada muestra la <b>deriva</b> que el warp corrige estirando el tramo.
+    Entre marcas el audio se estira de forma independiente (sombreado alterno) para que cada compás marcado clave en la rejilla.
+  </div>
+
+<script>
+(function () {
+  const AMBER = '#f5a623', AMBER2 = '#ffc061', CYAN = '#3fd0c9', GREY = '#8a8a90';
+  const MONO = "'JetBrains Mono','IBM Plex Mono',ui-monospace,monospace";
+  const wrap = document.getElementById('wf-wrap');
+  const cv = document.getElementById('wf-canvas');
+  const ovl = document.getElementById('wf-overlay');
+  const W = wrap.clientWidth, H = wrap.clientHeight;
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = W * dpr; cv.height = H * dpr;
+  const g = cv.getContext('2d'); g.scale(dpr, dpr);
+
+  const padL = 8, padR = 8, innerW = W - padL - padR;
+  const bars = 16, bpb = 4, beats = bars * bpb;
+  const base = 0.5; const t = [0];
+  for (let i = 0; i < beats; i++) {
+    const drift = 1 + 0.07 * Math.sin(i * 0.22) + 0.03 * Math.sin(i * 0.6);
+    t.push(t[i] + base * drift);
+  }
+  const total = t[beats];
+  const xFor = (sec) => padL + (sec / total) * innerW;
+  const mid = H * 0.52;
+
+  function amp(sec) {
+    let a = 0;
+    for (let b = 0; b <= beats; b++) {
+      const dt = sec - t[b];
+      if (dt < 0 || dt > 0.5) continue;
+      const isDown = b % 4 === 0, isBack = b % 4 === 2;
+      const A = isDown ? 1.0 : isBack ? 0.82 : 0.5;
+      const decay = isDown ? 0.16 : 0.10;
+      a += A * Math.exp(-dt / decay);
+    }
+    return Math.min(1, a);
+  }
+
+  const markerBars = [0, 4, 8, 12, 16];
+  for (let s = 0; s < markerBars.length - 1; s++) {
+    const x0 = xFor(t[markerBars[s] * bpb]);
+    const x1 = xFor(t[markerBars[s + 1] * bpb]);
+    g.fillStyle = s % 2 ? 'rgba(245,166,35,0.05)' : 'rgba(63,208,201,0.04)';
+    g.fillRect(x0, 0, x1 - x0, H);
+  }
+  for (let bar = 0; bar <= bars; bar++) {
+    const gx = padL + (bar / bars) * innerW;
+    g.strokeStyle = bar % 4 === 0 ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.05)';
+    g.lineWidth = 1; g.beginPath(); g.moveTo(gx, 0); g.lineTo(gx, H); g.stroke();
+  }
+  g.strokeStyle = 'rgba(120,200,255,0.55)'; g.lineWidth = 1; g.beginPath();
+  for (let px = 0; px <= innerW; px++) {
+    const sec = (px / innerW) * total;
+    const env = amp(sec);
+    const tex = env * (0.55 + 0.45 * Math.abs(Math.sin(px * 0.9) * Math.cos(px * 0.31)));
+    const h = tex * (H * 0.42);
+    const x = padL + px;
+    g.moveTo(x, mid - h); g.lineTo(x, mid + h);
+  }
+  g.stroke();
+
+  function addMarker(bar, opts) {
+    opts = opts || {};
+    const mx = xFor(t[bar * bpb]);
+    const gx = padL + (bar / bars) * innerW;
+    const active = opts.active;
+    const line = document.createElement('div');
+    Object.assign(line.style, { position:'absolute', left:mx+'px', top:'0', width:'2px', height:'100%',
+      background: active?AMBER2:AMBER, boxShadow: active?('0 0 8px '+AMBER):'none' });
+    ovl.appendChild(line);
+    const handle = document.createElement('div');
+    Object.assign(handle.style, { position:'absolute', left:(mx-5)+'px', top:'0', width:'0', height:'0',
+      borderLeft:'6px solid transparent', borderRight:'6px solid transparent', borderTop:'9px solid '+(active?AMBER2:AMBER) });
+    ovl.appendChild(handle);
+    const lbl = document.createElement('div'); lbl.textContent = (bar + 1).toString();
+    Object.assign(lbl.style, { position:'absolute', left:(mx+5)+'px', top:'11px', fontSize:'10px',
+      color: active?AMBER2:AMBER, fontFamily:MONO, fontWeight:'700' });
+    ovl.appendChild(lbl);
+    if (Math.abs(mx - gx) > 2 && !opts.end) {
+      const con = document.createElement('div'); const x0 = Math.min(mx, gx), w = Math.abs(mx - gx);
+      Object.assign(con.style, { position:'absolute', left:x0+'px', top:(H*0.5)+'px', width:w+'px', height:'0',
+        borderTop:'1px dashed '+GREY });
+      ovl.appendChild(con);
+      const dl = document.createElement('div');
+      dl.textContent = (mx > gx ? '+' : '−') + Math.round(Math.abs(mx - gx) / innerW * total * 1000) + 'ms';
+      Object.assign(dl.style, { position:'absolute', left:x0+'px', top:(H*0.5-14)+'px', fontSize:'9px', color:GREY, fontFamily:MONO });
+      ovl.appendChild(dl);
+    }
+    if (active) {
+      const tip = document.createElement('div'); tip.textContent = 'Compás 5 · arrastra para ajustar';
+      Object.assign(tip.style, { position:'absolute', left:(mx+8)+'px', top:(H-34)+'px', fontSize:'10px',
+        color:'#000', background:AMBER2, padding:'3px 7px', borderRadius:'3px', fontFamily:MONO, whiteSpace:'nowrap' });
+      ovl.appendChild(tip);
+    }
+  }
+  markerBars.forEach((b, i) => addMarker(b, { active: i === 1, end: b === bars }));
+
+  const ghostX = xFor(t[10 * bpb]) + 14;
+  const ghost = document.createElement('div');
+  Object.assign(ghost.style, { position:'absolute', left:ghostX+'px', top:'0', width:'2px', height:'100%',
+    background:'rgba(245,166,35,0.35)', borderLeft:'2px dashed '+AMBER });
+  ovl.appendChild(ghost);
+  const gtip = document.createElement('div'); gtip.textContent = '+ añadir';
+  Object.assign(gtip.style, { position:'absolute', left:(ghostX+6)+'px', top:(H-52)+'px', fontSize:'10px',
+    color:AMBER, background:'rgba(0,0,0,0.6)', padding:'2px 6px', borderRadius:'3px', fontFamily:MONO });
+  ovl.appendChild(gtip);
+})();
+</script>
+</body>
+</html>
