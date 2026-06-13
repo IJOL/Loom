@@ -7,6 +7,9 @@ import { collectStretchJobs } from './stretch-resync';
 import { stretchCache } from '../samples/stretch-cache';
 import { stretchBuffer } from '../samples/timestretch';
 import { sampleCache } from '../samples/sample-cache';
+import { collectWarpJobs } from './warp-resync';
+import { warpCache } from '../samples/warp-cache';
+import { warpStretch, warpKey } from '../samples/warp-stretch';
 
 export interface BpmBroadcasterDeps {
   seq: Sequencer;
@@ -49,6 +52,11 @@ export function createBpmBroadcaster(deps: BpmBroadcasterDeps): BpmBroadcaster {
         const buf = sampleCache.get(job.sampleId);
         if (!buf) continue;
         void stretchCache.ensure(job.sampleId, job.ratio, () => stretchBuffer(deps.ctx!, buf, job.ratio));
+      }
+      for (const job of collectWarpJobs(state, bpm, deps.seq.meter)) {
+        const buf = sampleCache.get(job.sampleId);
+        if (!buf) continue;
+        void warpCache.ensure(warpKey(job.sampleId, job.markers, job.gate), () => warpStretch(deps.ctx!, buf, job.markers, job.gate));
       }
     }, 120);
   };
