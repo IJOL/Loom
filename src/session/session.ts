@@ -169,8 +169,18 @@ export function audioChannelClip(opts: {
   durationSec: number;
   originalBpm: number;
   projectMeter: import('../core/meter').TimeSignature;
+  /** Trim the front of the buffer so the audio's downbeat lands on bar 1.
+   *  Also shortens lengthBars to the whole bars AFTER the anchor. Default 0. */
+  anchorSec?: number;
+  /** false ⇒ native `song` clip (playbackRate 1, full fidelity). true (default)
+   *  ⇒ WSOLA-locked `loop`. warpMode stays 'stretch' either way so the editor's
+   *  Warp toggle can flip it on without re-deriving. */
+  warp?: boolean;
 }): SessionClip {
-  const lengthBars = barCountFor(opts.durationSec, opts.originalBpm, opts.projectMeter);
+  const anchorSec = Math.max(0, Math.min(opts.anchorSec ?? 0, opts.durationSec));
+  const warp = opts.warp ?? true;
+  const playableSec = Math.max(0.001, opts.durationSec - anchorSec);
+  const lengthBars = barCountFor(playableSec, opts.originalBpm, opts.projectMeter);
   return {
     id: nextId('clip'),
     name: opts.name,
@@ -179,11 +189,11 @@ export function audioChannelClip(opts: {
     notes: [],
     sample: {
       sampleId: opts.sampleId,
-      mode: 'loop',
+      mode: warp ? 'loop' : 'song',
       originalBpm: opts.originalBpm,
-      warp: true,
+      warp,
       warpMode: 'stretch',
-      trimStart: 0,
+      trimStart: anchorSec,
       trimEnd: opts.durationSec,
       gain: 1,
     },
