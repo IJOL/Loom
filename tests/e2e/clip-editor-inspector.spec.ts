@@ -103,7 +103,7 @@ test('2 · Edit row + editor controls vary by clip kind', async ({ page }) => {
   await openClip(page, melodic);
   await expect(page.locator('#insp-edit-row')).toBeVisible();
   await expect(page.locator('#insp-copy')).toHaveText('Copy notes');
-  await expect(page.locator('#insp-random-notes')).toHaveText('🎲 Notes');
+  await expect(page.locator('#insp-random-notes')).toHaveText('🎲');
   const octLabel = page.locator('#insp-roll-host .pr-toolbar .editor-grid-control span');
   await expect(octLabel).toHaveText(/^C-?\d+$/);
 
