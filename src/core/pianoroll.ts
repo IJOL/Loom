@@ -62,6 +62,8 @@ export interface PianoRollHandle {
    *  ◂ C4 ▸ stepper). The clip note-randomizer reads it so it places notes at
    *  the selected octave. Only piano-roll editors expose it. */
   getOctaveBase?: () => number;
+  /** Restore the octave base (e.g. after a re-render reset it to the default). */
+  setOctaveBase?: (midi: number) => void;
 }
 
 const BLACK_KEY_PCS = [1, 3, 6, 8, 10];
@@ -790,5 +792,9 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     }
   }
 
-  return { redraw, getOctaveBase: () => octaveBase };
+  return {
+    redraw,
+    getOctaveBase: () => octaveBase,
+    setOctaveBase: (m: number) => { octaveBase = clampOctaveBase(m, minMidi, maxMidi); refreshToolbar(); },
+  };
 }

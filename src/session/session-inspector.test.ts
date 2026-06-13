@@ -11,9 +11,20 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 // openInspector()'s final renderEditor() call is a no-op. The pure helpers
 // (classifyClip / isAudioClip / chooseClipEditor) stay real via importOriginal
 // because openInspector() now calls classifyClip to gate the edit-row.
+// A fake piano-roll handle so the inspector's note-randomizer can read/restore
+// the editor octave (the real createPianoRoll is canvas-bound, unsafe under jsdom).
+const rollMock = vi.hoisted(() => {
+  const state = { octave: 60 };
+  return {
+    redraw: () => {},
+    getOctaveBase: () => state.octave,
+    setOctaveBase: vi.fn((m: number) => { state.octave = m; }),
+    _state: state,
+  };
+});
 vi.mock('./clip-editors/clip-editor-router', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./clip-editors/clip-editor-router')>()),
-  renderClipEditor: () => null,
+  renderClipEditor: () => rollMock,
 }));
 vi.mock('./clip-automation-lanes', () => ({
   renderClipAutomationLanes: () => {},
@@ -230,5 +241,30 @@ describe('View toggle (front E · Task 8)', () => {
     mountInspectorFor(lane);
     const btn = document.getElementById('insp-toggle-editor') as HTMLButtonElement;
     expect(btn.hidden).toBe(true);
+  });
+});
+
+// ── Randomize notes: octave ────────────────────────────────────────────────
+// Bug: set the octave stepper, hit 🎲, and the editor re-render reset the octave
+// to C4 (and notes looked like they generated at C4). Randomize must read the
+// roll's octave AND restore it after the post-randomize renderEditor.
+describe('Randomize notes respects + preserves the selected octave', () => {
+  beforeEach(() => {
+    mountInspectorDom();
+    rollMock._state.octave = 60;
+    rollMock.setOctaveBase.mockClear();
+  });
+
+  it('generates at the roll octave and restores it after the editor re-renders', () => {
+    rollMock._state.octave = 72; // user dialed the stepper to C5
+    const clip = makeNoteClip();
+    const lane = { id: 'lane-rnd', engineId: 'subtractive', clips: [clip] } as unknown as SessionLane;
+    mountInspectorFor(lane);
+
+    (document.getElementById('insp-random-notes') as HTMLButtonElement).click();
+
+    expect(clip.notes.length).toBeGreaterThan(0);
+    for (const n of clip.notes) expect(n.midi).toBeGreaterThanOrEqual(72); // generated at C5, not the C4 default
+    expect(rollMock.setOctaveBase).toHaveBeenCalledWith(72);              // octave restored after renderEditor reset it
   });
 });

@@ -196,12 +196,17 @@ export class SessionInspector {
       const run = () => {
         const scaleSel = this.deps.scaleSel;
         const rootSel  = this.deps.rootSel;
+        // Capture the octave BEFORE re-rendering — renderEditor() recreates the
+        // piano-roll, which resets its octave base to the C4 default. We restore
+        // it afterwards so the stepper (and the view) stay where the user left it.
+        const octaveBase = this.roll?.getOctaveBase?.() ?? 60;
         randomizeClipNotes(clip, lane!, {
           scale: scaleSel?.value ?? 'pentMinor',
           rootMidi: parseInt(rootSel?.value ?? '36', 10) || 36,
-          octaveBase: this.roll?.getOctaveBase?.() ?? 60,
+          octaveBase,
         }, this.deps.seq.meter);
         this.renderEditor();
+        this.roll?.setOctaveBase?.(octaveBase);
       };
       if (d) withUndo(d, run); else run();
     };
