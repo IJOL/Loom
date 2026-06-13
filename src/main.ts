@@ -80,6 +80,7 @@ import { createMidiAccess } from './control/web-midi-access';
 import { wireControlSurfaceUI } from './control/control-surface-ui';
 import { listProfiles } from './control/profile-registry';
 import { loadControlPrefs, saveControlPrefs } from './control/persistence';
+import { clampBpm, formatBpm } from './core/bpm';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -259,8 +260,8 @@ const mixerDeps: import('./core/mixer').MixerColumnDeps = {
 };
 
 bpmInput.addEventListener('input', () => {
-  const v = parseInt(bpmInput.value, 10);
-  if (!isNaN(v)) bpmBroadcast.broadcast(Math.max(40, Math.min(240, v)));
+  const v = parseFloat(bpmInput.value);
+  if (!isNaN(v)) bpmBroadcast.broadcast(clampBpm(v));
 });
 bpmBroadcast.broadcast(seq.bpm);
 
@@ -268,9 +269,11 @@ bpmBroadcast.broadcast(seq.bpm);
 // it in the visible BPM input. Distinct from the 'input' handler above, which
 // must NOT write the input back while the user is mid-type.
 function setTransportBpm(bpm: number): void {
-  const clamped = Math.max(40, Math.min(240, Math.round(bpm)));
+  // Keep the FLOAT — a detected 127.63 must not snap to 128, or native-played
+  // audio (stems/loops) drifts against the grid within a few bars.
+  const clamped = clampBpm(bpm);
   bpmBroadcast.broadcast(clamped);
-  bpmInput.value = String(clamped);
+  bpmInput.value = formatBpm(clamped);
 }
 
 // Track activity timestamps for visual "triggered" pulse on track headers.
