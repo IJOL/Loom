@@ -29,8 +29,24 @@ describe('clip-waveform-header', () => {
     renderAudioClipEditor(host, audioClip(), DEFAULT_METER, {});
     // The audio lane is a pure WAV channel now: warp stays; BPM/length live in
     // the inspector (no duplicate spans here), slicing is gone.
-    expect(host.querySelector('.audio-clip-warp')).toBeTruthy();
+    const pill = host.querySelector('.audio-clip-warp') as HTMLElement;
+    expect(pill).toBeTruthy();
+    expect(pill.textContent === 'ON' || pill.textContent === 'OFF').toBe(true);
     expect(host.querySelector('.audio-clip-bpm')).toBeNull();
     expect(host.querySelector('.audio-clip-slice')).toBeNull();
+  });
+
+  it('mounts the warp marker editor only when the clip sample is the warpRef', () => {
+    stubCanvas();
+    const host = document.createElement('div');
+    const clip = audioClip();
+    clip.sample!.warpRef = true;
+    clip.sample!.warpMarkers = [{ srcSec: 0, beat: 0 }, { srcSec: 4, beat: 16 }];
+    renderAudioClipEditor(host, clip, DEFAULT_METER, { warp: { getOnsets: () => [], bpm: 120, onMarkersChange: () => {} } });
+    expect(host.querySelector('.warp-layer')).toBeTruthy();
+
+    const host2 = document.createElement('div');
+    renderAudioClipEditor(host2, audioClip(), DEFAULT_METER, {}); // no warpRef
+    expect(host2.querySelector('.warp-layer')).toBeNull();
   });
 });

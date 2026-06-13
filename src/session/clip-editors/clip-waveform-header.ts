@@ -13,6 +13,7 @@ import { ticksPerBar, stepsPerBar, stepsPerBeat, DEFAULT_METER, type TimeSignatu
 import { setAudioClipWarp } from './audio-clip-warp';
 import { wireEngineParams } from '../../engines/engine-ui';
 import type { SynthEngine, EngineUIContext } from '../../engines/engine-types';
+import { mountWarpMarkerEditor } from './warp-marker-editor';
 
 const RULER_H = 18;
 const WAVE_H = 64;
@@ -110,6 +111,14 @@ export interface AudioClipEditorDeps {
    *  lanes show their controls here, next to the waveform — not in the lane
    *  editor). */
   gain?: { engine: SynthEngine; ctx: EngineUIContext };
+  /** When present + the clip sample is the warpRef, mount the editable warp
+   *  marker overlay. The host supplies onset detection + the BPM + the commit
+   *  callback (propagate/cache-invalidate/undo live in the router). */
+  warp?: {
+    getOnsets: () => number[];
+    bpm: number;
+    onMarkersChange: (markers: import('../session').WarpMarker[], warp: boolean) => void;
+  };
 }
 
 export function renderAudioClipEditor(
@@ -118,17 +127,29 @@ export function renderAudioClipEditor(
   host.innerHTML = '';
   const sample = clip.sample;
 
+  // Hoisted so the warpBtn click handler can call markerHandle?.redraw().
+  let markerHandle: { redraw: () => void } | undefined;
+
   const toolbar = document.createElement('div');
   toolbar.className = 'audio-clip-toolbar';
   Object.assign(toolbar.style, { display: 'flex', gap: '8px', alignItems: 'center', padding: '4px 2px', fontSize: '11px' } as Partial<CSSStyleDeclaration>);
 
   const warpBtn = document.createElement('button');
   warpBtn.className = 'audio-clip-warp';
-  const refreshWarp = () => { warpBtn.textContent = sample?.warp ? '♺ Warp ON' : '♺ Warp OFF'; };
-  warpBtn.addEventListener('click', () => { if (sample) { setAudioClipWarp(sample, !sample.warp); refreshWarp(); } });
+  const refreshWarp = () => {
+    const on = !!sample?.warp;
+    warpBtn.textContent = on ? 'ON' : 'OFF';
+    Object.assign(warpBtn.style, {
+      background: on ? '#f5a623' : 'transparent', color: on ? '#000' : '#8a8a90',
+      border: on ? 'none' : '1px solid #2c2c32', fontWeight: '700',
+      padding: '3px 10px', borderRadius: '3px', cursor: 'pointer',
+    } as Partial<CSSStyleDeclaration>);
+  };
+  warpBtn.addEventListener('click', () => { if (sample) { setAudioClipWarp(sample, !sample.warp); refreshWarp(); markerHandle?.redraw(); } });
+  const warpLbl = document.createElement('span'); warpLbl.textContent = 'WARP'; warpLbl.style.color = '#8a8a90'; warpLbl.style.fontSize = '10px';
   refreshWarp();
+  toolbar.append(warpLbl, warpBtn);
 
-  toolbar.append(warpBtn);
   if (deps.gain) {
     const knobRow = document.createElement('div');
     knobRow.className = 'knob-row';
@@ -139,5 +160,18 @@ export function renderAudioClipEditor(
 
   const headerHost = document.createElement('div');
   host.appendChild(headerHost);
-  return mountWaveformHeader(headerHost, clip, meter, { getPlayheadFrac: deps.getPlayheadFrac });
+  const header = mountWaveformHeader(headerHost, clip, meter, { getPlayheadFrac: deps.getPlayheadFrac });
+
+  if (sample?.warpRef && deps.warp) {
+    const editorHost = document.createElement('div');
+    host.appendChild(editorHost);
+    markerHandle = mountWarpMarkerEditor(editorHost, {
+      getMarkers: () => clip.sample?.warpMarkers ?? [],
+      durationSec: (clip.sample ? clip.sample.trimEnd - clip.sample.trimStart : 0) || 1,
+      meter, bpm: deps.warp.bpm, clipBars: clip.lengthBars, barsPerMarker: 4,
+      getOnsets: deps.warp.getOnsets, onMarkersChange: deps.warp.onMarkersChange,
+    });
+  }
+
+  return { redraw: () => { header.redraw(); markerHandle?.redraw(); } };
 }
