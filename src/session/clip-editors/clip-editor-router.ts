@@ -18,6 +18,10 @@ import { GM_DRUM_MAP } from '../../engines/drum-gm-map';
 import { mountWaveformHeader, renderAudioClipEditor } from './clip-waveform-header';
 import type { HistoryDeps } from '../../save/history-wiring';
 import { mountClipLoopBrace } from '../../core/clip-loop-brace';
+import type { LaneResourceMap } from '../../core/lane-resources';
+import type { KnobHandle } from '../../core/knob';
+import type { EngineUIContext } from '../../engines/engine-types';
+import type { SessionState } from '../session';
 
 export interface ClipEditorDeps {
   ctx: AudioContext;
@@ -30,6 +34,13 @@ export interface ClipEditorDeps {
     sample?: import('../session').ClipSample,
     velocity?: number,
   ) => void;
+  /** Phase 2a: per-lane resources (to reach the audio lane's engine) +
+   *  automation registry + session state, so the audio clip editor can mount
+   *  the engine's Gain knob as an automatable control. Optional so non-audio
+   *  callers/tests are unaffected. */
+  laneResources?: LaneResourceMap;
+  automationRegistry?: Map<string, KnobHandle>;
+  sessionState?: SessionState;
 }
 
 const AUDITION_GATE = 0.25; // seconds — short preview blip, shared by both editors
@@ -122,11 +133,26 @@ export function renderClipEditor(
     return (stepsElapsed % clipSteps) / clipSteps;
   };
 
-  // Audio-channel clip → waveform-only editor (no note grid).
+  // Audio-channel clip → waveform-only editor (no note grid). Mount the engine
+  // Gain knob in its toolbar (audio lanes show controls here, not in the lane editor).
   if (isAudioClip(lane, clip)) {
-    return renderAudioClipEditor(host, clip, deps.seq.meter, {
-      getPlayheadFrac: playheadFrac,
-    });
+    const engine = deps.laneResources?.get(lane.id)?.engine;
+    const gain = (engine && deps.automationRegistry)
+      ? {
+          engine,
+          ctx: {
+            laneId: lane.id,
+            registerKnob: (k: unknown) => {
+              const h = k as KnobHandle;
+              if (h.meta?.id) deps.automationRegistry!.set(h.meta.id, h);
+            },
+            registry: deps.automationRegistry as Map<string, unknown>,
+            sessionState: deps.sessionState,
+            historyDeps: deps.historyDeps,
+          } as EngineUIContext,
+        }
+      : undefined;
+    return renderAudioClipEditor(host, clip, deps.seq.meter, { getPlayheadFrac: playheadFrac, gain });
   }
 
   // Everything else: optional waveform header (when the clip references a buffer)

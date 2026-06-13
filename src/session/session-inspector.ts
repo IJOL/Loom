@@ -244,6 +244,9 @@ export class SessionInspector {
       midiLabel: this.deps.midiLabel,
       historyDeps: this.deps.historyDeps,
       triggerForLane: this.deps.triggerForLane,
+      laneResources: this.deps.laneResources,
+      automationRegistry: this.deps.automationRegistry,
+      sessionState: this.deps.state,
     };
     this.roll = renderClipEditor(editorBox, lane, clip, editorDeps, editorOverride.get(clip.id));
 

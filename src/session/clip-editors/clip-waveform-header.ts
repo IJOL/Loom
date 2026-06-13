@@ -11,6 +11,8 @@ import type { SessionClip } from '../session';
 import { sampleCache } from '../../samples/sample-cache';
 import { ticksPerBar, stepsPerBar, stepsPerBeat, DEFAULT_METER, type TimeSignature } from '../../core/meter';
 import { setAudioClipWarp } from './audio-clip-warp';
+import { wireEngineParams } from '../../engines/engine-ui';
+import type { SynthEngine, EngineUIContext } from '../../engines/engine-types';
 
 const RULER_H = 18;
 const WAVE_H = 64;
@@ -104,6 +106,10 @@ export function mountWaveformHeader(
 
 export interface AudioClipEditorDeps {
   getPlayheadFrac?: () => number;
+  /** When present, mount the audio engine's Gain knob in the toolbar (audio
+   *  lanes show their controls here, next to the waveform — not in the lane
+   *  editor). */
+  gain?: { engine: SynthEngine; ctx: EngineUIContext };
 }
 
 export function renderAudioClipEditor(
@@ -123,6 +129,12 @@ export function renderAudioClipEditor(
   refreshWarp();
 
   toolbar.append(warpBtn);
+  if (deps.gain) {
+    const knobRow = document.createElement('div');
+    knobRow.className = 'knob-row';
+    wireEngineParams(deps.gain.engine, deps.gain.ctx, knobRow, { filter: (id) => id === 'gain' });
+    toolbar.append(knobRow);
+  }
   host.appendChild(toolbar);
 
   const headerHost = document.createElement('div');
