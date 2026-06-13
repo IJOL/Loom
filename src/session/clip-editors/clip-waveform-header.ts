@@ -10,6 +10,7 @@
 import type { SessionClip } from '../session';
 import { sampleCache } from '../../samples/sample-cache';
 import { ticksPerBar, stepsPerBar, stepsPerBeat, DEFAULT_METER, type TimeSignature } from '../../core/meter';
+import { setAudioClipWarp } from './audio-clip-warp';
 
 const RULER_H = 18;
 const WAVE_H = 64;
@@ -118,7 +119,7 @@ export function renderAudioClipEditor(
   const warpBtn = document.createElement('button');
   warpBtn.className = 'audio-clip-warp';
   const refreshWarp = () => { warpBtn.textContent = sample?.warp ? '♺ Warp ON' : '♺ Warp OFF'; };
-  warpBtn.addEventListener('click', () => { if (sample) { sample.warp = !sample.warp; refreshWarp(); } });
+  warpBtn.addEventListener('click', () => { if (sample) { setAudioClipWarp(sample, !sample.warp); refreshWarp(); } });
   refreshWarp();
 
   toolbar.append(warpBtn);
