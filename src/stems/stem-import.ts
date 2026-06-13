@@ -6,7 +6,6 @@ import { sampleStore } from '../samples/store-singleton';
 import { sampleCache } from '../samples/sample-cache';
 import { detectLoop } from '../samples/loop-analysis';
 import { DEFAULT_METER, type TimeSignature } from '../core/meter';
-import { seedWarpMarkers } from '../samples/warp-seed';
 import type { WarpMarker } from '../session/session';
 
 export interface StemImportDeps {
@@ -84,20 +83,22 @@ export async function importStems(
   // The anchor is applied to EVERY stem so they stay mutually phase-locked and
   // their shared downbeat lands on bar 1. BPM is conformed only when REPLACING —
   // in ADD mode the project tempo is authoritative.
+  // Auto-warp is OFF: the naive per-beat marker seed mangled real songs (tempo
+  // wobble / freezes from degenerate markers). Stems import NATIVE (Phase 2a) —
+  // clean, with a small downbeat anchor. Warp markers return with the 2b-2 editor
+  // (visible + draggable), where the user can see and correct them.
   let anchorSec = 0;
-  let warpMarkers: WarpMarker[] | undefined;
   const tempoBuf = pickTempoBuffer(decoded);
   if (tempoBuf && tempoBuf.length > 0 && tempoBuf.duration > 0) {
     const meter = deps.getMeter?.() ?? DEFAULT_METER;
     const { originalBpm, slicePointsSec } = detectLoop(tempoBuf, meter);
     anchorSec = pickDownbeatAnchor(slicePointsSec);
-    if (Number.isFinite(originalBpm) && originalBpm > 0) {
-      warpMarkers = seedWarpMarkers(slicePointsSec, anchorSec, originalBpm, tempoBuf.duration);
-      if (deps.setSessionBpm && cb.replace) deps.setSessionBpm(originalBpm);
+    if (deps.setSessionBpm && cb.replace && Number.isFinite(originalBpm) && originalBpm > 0) {
+      deps.setSessionBpm(originalBpm);
     }
   }
 
-  deps.addStemLanes(lanes, { replace: cb.replace, anchorSec, warpMarkers });
+  deps.addStemLanes(lanes, { replace: cb.replace, anchorSec });
 
   // Optional: transcribe each stem to a note/drums lane. Off by default — quality
   // is rough — so it only runs when the dialog checkbox sets cb.transcribe.
