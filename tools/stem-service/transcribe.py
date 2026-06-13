@@ -45,51 +45,68 @@ def _velocity(amp: float, base: int, gain: float) -> int:
 
 
 def _melodic(y, sr) -> dict:
+    """Transcribe by COARSE REGISTER BANDS (one band per octave, C2..C7).
+
+    For each band we run onset detection on that band's energy envelope, so a
+    note STARTS on the real transient/attack (not where a monophonic pitch
+    tracker happens to lock — the old pYIN path started notes late and merged
+    runs, which is why they "didn't play at the right moment"). Per onset the
+    pitch is the dominant frequency inside the band (approximate, snapped to a
+    semitone). Bands fire independently → polyphony by register, and silences
+    are preserved (no onset in a band ⇒ no note). Times are absolute seconds."""
     import numpy as np
     import librosa
 
-    fmin = librosa.note_to_hz("C2")
-    fmax = librosa.note_to_hz("C7")
-    f0, voiced, _ = librosa.pyin(y, fmin=fmin, fmax=fmax, sr=sr, hop_length=HOP)
-    times = librosa.times_like(f0, sr=sr, hop_length=HOP)
-    rms = librosa.feature.rms(y=y, hop_length=HOP)[0]
+    S = np.abs(librosa.stft(y, hop_length=HOP))
+    if S.size == 0 or S.shape[1] < 2:
+        return {"kind": "melodic", "tempo": _tempo(y, sr), "notes": []}
+    freqs = librosa.fft_frequencies(sr=sr)
+    times = librosa.frames_to_time(np.arange(S.shape[1]), sr=sr, hop_length=HOP)
+
+    fmin = float(librosa.note_to_hz("C2"))
+    fmax = min(float(librosa.note_to_hz("C7")), sr / 2.0)
+    edges = []
+    f = fmin
+    while f < fmax:
+        edges.append(f)
+        f *= 2.0  # one band per octave
+    edges.append(fmax)
 
     notes = []
-    cur = None  # {midi, start_i, last_i, amp_sum, n}
-
-    def finish(c):
-        start = float(times[c["start_i"]])
-        end = float(times[min(c["last_i"] + 1, len(times) - 1)])
-        amp = c["amp_sum"] / max(1, c["n"])
-        return {
-            "start": start,
-            "dur": max(0.05, end - start),
-            "midi": int(c["midi"]),
-            "velocity": _velocity(amp, 45, 600),
-        }
-
-    for i, f in enumerate(f0):
-        midi = None
-        if bool(voiced[i]) and not np.isnan(f):
-            midi = int(round(float(librosa.hz_to_midi(f))))
-        if midi is None:
-            if cur:
-                notes.append(finish(cur))
-                cur = None
+    for b in range(len(edges) - 1):
+        mask = (freqs >= edges[b]) & (freqs < edges[b + 1])
+        if not mask.any():
             continue
-        a = float(rms[i]) if i < len(rms) else 0.0
-        if cur and midi == cur["midi"]:
-            cur["last_i"] = i
-            cur["amp_sum"] += a
-            cur["n"] += 1
-        else:
-            if cur:
-                notes.append(finish(cur))
-            cur = {"midi": midi, "start_i": i, "last_i": i, "amp_sum": a, "n": 1}
-    if cur:
-        notes.append(finish(cur))
+        band = S[mask, :]
+        band_freqs = freqs[mask]
+        env = band.sum(axis=0)
+        peak = float(env.max())
+        if peak <= 1e-6:
+            continue
+        onsets = librosa.onset.onset_detect(
+            onset_envelope=env, sr=sr, hop_length=HOP, backtrack=True,
+        )
+        if len(onsets) == 0:
+            continue
+        thresh = 0.15 * peak  # drop weak hits in this band (noise / bleed)
+        for k, fr in enumerate(onsets):
+            fr = int(fr)
+            if env[fr] < thresh:
+                continue
+            pf = float(band_freqs[int(np.argmax(band[:, fr]))])  # dominant pitch in band
+            if pf <= 0:
+                continue
+            start = float(times[fr])
+            nxt = int(onsets[k + 1]) if k + 1 < len(onsets) else S.shape[1] - 1
+            dur = max(0.08, min(float(times[nxt]) - start, 2.0))
+            notes.append({
+                "start": start,
+                "dur": dur,
+                "midi": int(round(float(librosa.hz_to_midi(pf)))),
+                "velocity": _velocity(float(env[fr]) / (peak + 1e-9), 50, 70),
+            })
 
-    notes = [n for n in notes if n["dur"] >= 0.06]  # drop blips
+    notes.sort(key=lambda n: (n["start"], n["midi"]))
     return {"kind": "melodic", "tempo": _tempo(y, sr), "notes": notes}
 
 
