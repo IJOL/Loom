@@ -231,3 +231,52 @@ describe('importStems → session BPM', () => {
     expect(setSessionBpm.mock.calls[0][0]).toBeCloseTo(100, 0);
   });
 });
+
+// A pulse buffer with `leadSec` of silence before the first beat — exercises the
+// downbeat anchor (first onset ≈ leadSec).
+function pulseBufferWithLead(bpm: number, bars: number, leadSec: number, meter = { num: 4, den: 4 }): AudioBuffer {
+  const sampleRate = 44100;
+  const beatSec = 60 / bpm;
+  const length = Math.floor((leadSec + beatSec * meter.num * bars) * sampleRate);
+  const data = new Float32Array(length);
+  const beatLen = Math.floor(beatSec * sampleRate);
+  const lead = Math.floor(leadSec * sampleRate);
+  for (let b = 0; lead + b * beatLen < length; b++) {
+    const start = lead + b * beatLen;
+    for (let i = 0; i < 200 && start + i < length; i++) data[start + i] = 1;
+  }
+  return { numberOfChannels: 1, length, duration: length / sampleRate, sampleRate,
+    getChannelData: () => data } as unknown as AudioBuffer;
+}
+
+describe('importStems → audio lane sync + transcription', () => {
+  it('passes a non-zero downbeat anchor (first onset) to addStemLanes', async () => {
+    const addStemLanes = vi.fn();
+    const stems = [{ name: 'drums', url: '/d' }];
+    const buffers = { 'http://svc/d': pulseBufferWithLead(120, 4, 0.5) }; // beat 1 at ~0.5 s
+    const deps = makeDeps(stems, buffers, { addStemLanes });
+    await importStems(deps, new File([], 'song.wav'), { replace: true });
+    expect(addStemLanes).toHaveBeenCalledTimes(1);
+    const opts = addStemLanes.mock.calls[0][1] as { anchorSec?: number };
+    expect(opts.anchorSec).toBeGreaterThan(0.3);
+    expect(opts.anchorSec).toBeLessThan(0.7);
+  });
+
+  it('does NOT transcribe by default (cb.transcribe falsy)', async () => {
+    const transcribeStem = vi.fn().mockResolvedValue(undefined);
+    const stems = [{ name: 'drums', url: '/d' }];
+    const buffers = { 'http://svc/d': pulseBuffer(120, 4) };
+    const deps = makeDeps(stems, buffers, { transcribeStem });
+    await importStems(deps, new File([], 'song.wav'), { replace: true }); // no transcribe flag
+    expect(transcribeStem).not.toHaveBeenCalled();
+  });
+
+  it('transcribes when cb.transcribe is true', async () => {
+    const transcribeStem = vi.fn().mockResolvedValue(undefined);
+    const stems = [{ name: 'drums', url: '/d' }, { name: 'vocals', url: '/v' }];
+    const buffers = { 'http://svc/d': pulseBuffer(120, 4), 'http://svc/v': pulseBuffer(120, 4) };
+    const deps = makeDeps(stems, buffers, { transcribeStem });
+    await importStems(deps, new File([], 'song.wav'), { replace: true, transcribe: true });
+    expect(transcribeStem).toHaveBeenCalledTimes(2);
+  });
+});

@@ -12,7 +12,7 @@ export interface StemImportDeps {
   client: StemClient;
   addStemLanes: (
     stems: { label: string; sampleId: string; durationSec: number }[],
-    opts?: { replace?: boolean },
+    opts?: { replace?: boolean; anchorSec?: number },
   ) => void;
   /** Transcribe one stem's audio to a note/drums lane (label = lane name).
    *  `kind` is the known stem role: 'drums' for the drum stem, 'melodic' otherwise. */
@@ -35,6 +35,9 @@ export interface StemImportCallbacks {
   signal?: AbortSignal;
   /** Replace the whole session with the stems instead of adding lanes. */
   replace?: boolean;
+  /** Transcribe each stem to a note/drums lane (default false; the dialog
+   *  checkbox sets it). Audio→notes quality is rough, so it is opt-in. */
+  transcribe?: boolean;
 }
 
 /** Full flow: upload -> poll -> decode all stems -> create lanes (all-or-nothing). */
@@ -75,28 +78,26 @@ export async function importStems(
     return { label: p.label, sampleId: asset.id, durationSec: buffer.duration };
   });
 
-  // Conform the session tempo to the imported audio BEFORE building the lanes:
-  // buildStemLane freezes each clip's lengthBars from seq.bpm at build time
-  // (via audioClip), so the BPM must already be the detected value or the clip
-  // gate won't match the audio (chopped/gapped stems). Detect from the DRUMS
-  // stem (most reliable for tempo), else the longest decoded stem that has audio.
-  // detectLoop folds octaves into [70,180] and snaps to whole bars. We only
-  // conform when REPLACING the session — in ADD mode the existing project tempo
-  // is authoritative and must be left untouched.
-  if (deps.setSessionBpm && cb.replace) {
-    const tempoBuf = pickTempoBuffer(decoded);
-    if (tempoBuf && tempoBuf.length > 0 && tempoBuf.duration > 0) {
-      const meter = deps.getMeter?.() ?? DEFAULT_METER;
-      const { originalBpm } = detectLoop(tempoBuf, meter);
-      if (Number.isFinite(originalBpm) && originalBpm > 0) deps.setSessionBpm(originalBpm);
+  // Detect tempo + downbeat from the best stem (drums, else longest with energy).
+  // The anchor is applied to EVERY stem so they stay mutually phase-locked and
+  // their shared downbeat lands on bar 1. BPM is conformed only when REPLACING —
+  // in ADD mode the project tempo is authoritative.
+  let anchorSec = 0;
+  const tempoBuf = pickTempoBuffer(decoded);
+  if (tempoBuf && tempoBuf.length > 0 && tempoBuf.duration > 0) {
+    const meter = deps.getMeter?.() ?? DEFAULT_METER;
+    const { originalBpm, slicePointsSec } = detectLoop(tempoBuf, meter);
+    anchorSec = pickDownbeatAnchor(slicePointsSec);
+    if (deps.setSessionBpm && cb.replace && Number.isFinite(originalBpm) && originalBpm > 0) {
+      deps.setSessionBpm(originalBpm);
     }
   }
 
-  deps.addStemLanes(lanes, { replace: cb.replace });
+  deps.addStemLanes(lanes, { replace: cb.replace, anchorSec });
 
-  // Always also transcribe each stem to a note/drums lane — every separation
-  // yields both the audio (Sampler) and the notes for remixing.
-  if (deps.transcribeStem) {
+  // Optional: transcribe each stem to a note/drums lane. Off by default — quality
+  // is rough — so it only runs when the dialog checkbox sets cb.transcribe.
+  if (deps.transcribeStem && cb.transcribe) {
     cb.onProgress?.('transcribing', null);
     for (const { plan: p, bytes } of decoded) {
       const file = new File([bytes], `${p.label}.wav`, { type: 'audio/wav' });
@@ -148,4 +149,16 @@ function pickTempoBuffer<T extends DecodedStem>(decoded: T[]): AudioBuffer | nul
     if (!best || d.buffer.duration > best.duration) best = d.buffer;
   }
   return best;
+}
+
+// A late "first onset" is detection noise or a long intro, not a downbeat — don't
+// trim real audio away. The downbeat of 4/4 material sits well inside the first
+// couple of seconds.
+const MAX_ANCHOR_SEC = 2.0;
+
+/** First detected onset (the downbeat to align to bar 1), or 0 when none lies
+ *  within MAX_ANCHOR_SEC. */
+export function pickDownbeatAnchor(slicePointsSec: number[]): number {
+  const first = slicePointsSec.find((t) => t > 0);
+  return first != null && first <= MAX_ANCHOR_SEC ? first : 0;
 }
