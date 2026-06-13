@@ -19,4 +19,16 @@ describe('buildStemAudioLane', () => {
     expect(s.mode).toBe('song');
     expect(s.warp).toBe(false);
   });
+
+  it('forwards warpGroupId + warpRef onto the clip sample', () => {
+    const lane = buildStemAudioLane(stem, 'audio-stem-1', {
+      bpm: 120, meter: METER, anchorSec: 0,
+      warpMarkers: [{ srcSec: 0, beat: 0 }, { srcSec: 4, beat: 16 }],
+      warpGroupId: 'grp-x', warpRef: true,
+    });
+    const s = lane.clips[0]!.sample!;
+    expect(s.warpGroupId).toBe('grp-x');
+    expect(s.warpRef).toBe(true);
+    expect(s.warpMarkers).toHaveLength(2);
+  });
 });

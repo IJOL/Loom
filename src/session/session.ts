@@ -191,6 +191,8 @@ export function audioChannelClip(opts: {
    *  Warp toggle can flip it on without re-deriving. */
   warp?: boolean;
   warpMarkers?: import('./session').WarpMarker[];
+  warpGroupId?: string;
+  warpRef?: boolean;
 }): SessionClip {
   const anchorSec = Math.max(0, Math.min(opts.anchorSec ?? 0, opts.durationSec));
   const warp = opts.warp ?? true;
@@ -212,6 +214,8 @@ export function audioChannelClip(opts: {
       trimEnd: opts.durationSec,
       gain: 1,
       ...(opts.warpMarkers && opts.warpMarkers.length >= 2 ? { warpMarkers: opts.warpMarkers } : {}),
+      ...(opts.warpGroupId ? { warpGroupId: opts.warpGroupId } : {}),
+      ...(opts.warpRef ? { warpRef: true } : {}),
     },
   };
 }
