@@ -30,8 +30,8 @@ export interface SessionUICallbacks {
   onAddScene:  () => void;
   onAddLane: (engineId: string) => void;
   onAddStemLanes: (
-    stems: { label: string; sampleId: string; durationSec: number }[],
-    opts?: { replace?: boolean },
+    stems: { label: string; sampleId: string; durationSec: number; warpRef?: boolean }[],
+    opts?: { replace?: boolean; anchorSec?: number; warpMarkers?: import('./session').WarpMarker[]; warpGroupId?: string },
   ) => void;
   onAddClipRow: () => void;
   onEditLane:  (laneId: string) => void;

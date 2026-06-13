@@ -343,8 +343,8 @@ export class SessionHost {
    *  stem (delegates to the undoable callbacks impl). With `opts.replace` the
    *  whole session is swapped for a clean stems-only one. */
   addStemLanes(
-    stems: { label: string; sampleId: string; durationSec: number }[],
-    opts: { replace?: boolean; anchorSec?: number; warpMarkers?: import('./session').WarpMarker[] } = {},
+    stems: { label: string; sampleId: string; durationSec: number; warpRef?: boolean }[],
+    opts: { replace?: boolean; anchorSec?: number; warpMarkers?: import('./session').WarpMarker[]; warpGroupId?: string } = {},
   ): void {
     this.callbacks.onAddStemLanes(stems, opts);
   }

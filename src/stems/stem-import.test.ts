@@ -280,3 +280,32 @@ describe('importStems → audio lane sync + transcription', () => {
     expect(transcribeStem).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('importStems → warp marker seeding', () => {
+  // Multi-stem set: drums has strong periodic transients (pulseBuffer gives
+  // detectLoop clean onsets), bass/vocals are plain pulse buffers.
+  // We use 8 bars at 120 BPM so seedSparseWarpMarkers yields >= 2 markers
+  // (1 every 4 bars → markers at beats 0, 16, 32 for 8 bars = 32 beats).
+  const stems = [
+    { name: 'drums', url: '/d' },
+    { name: 'bass',  url: '/b' },
+    { name: 'vocals', url: '/v' },
+  ];
+  const buffers = {
+    'http://svc/d': pulseBuffer(120, 8), // drums: 8 bars of strong transients
+    'http://svc/b': pulseBuffer(120, 8),
+    'http://svc/v': pulseBuffer(120, 8),
+  };
+
+  it('seeds sparse warp markers + sets warpRef on the drums stem + a shared group', async () => {
+    const addStemLanes = vi.fn();
+    const deps = makeDeps(stems, buffers, { addStemLanes });
+    await importStems(deps, new File([], 'song.wav'), { replace: true });
+    const [lanesArg, opts] = addStemLanes.mock.calls[0] as [Array<{ label: string; warpRef?: boolean }>, { warpGroupId?: string; warpMarkers?: unknown[] }];
+    expect(opts.warpGroupId).toBeTruthy();
+    expect(opts.warpMarkers && opts.warpMarkers.length).toBeGreaterThanOrEqual(2);
+    const drums = lanesArg.find((l) => /drum/i.test(l.label));
+    expect(drums?.warpRef).toBe(true);                       // reference is the drums stem
+    expect(lanesArg.filter((l) => l.warpRef).length).toBe(1); // exactly one reference
+  });
+});

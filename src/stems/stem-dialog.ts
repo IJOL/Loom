@@ -6,8 +6,8 @@ export interface StemDialogDeps {
   ctx: AudioContext;
   client: StemClient;
   addStemLanes: (
-    stems: { label: string; sampleId: string; durationSec: number }[],
-    opts?: { replace?: boolean; anchorSec?: number; warpMarkers?: import('../session/session').WarpMarker[] },
+    stems: { label: string; sampleId: string; durationSec: number; warpRef?: boolean }[],
+    opts?: { replace?: boolean; anchorSec?: number; warpMarkers?: import('../session/session').WarpMarker[]; warpGroupId?: string },
   ) => void;
   transcribeStem?: (file: File, label: string, kind: 'melodic' | 'drums') => Promise<void>;
   /** Conform the session tempo to the imported audio (see StemImportDeps). */

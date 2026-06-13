@@ -178,13 +178,16 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
      *  `opts.anchorSec` so it lands on bar 1. With `opts.replace` the whole session
      *  is swapped for a clean one holding only the stems (1 scene). */
     onAddStemLanes(
-      stems: { label: string; sampleId: string; durationSec: number }[],
-      opts: { replace?: boolean; anchorSec?: number; warpMarkers?: import('./session').WarpMarker[] } = {},
+      stems: { label: string; sampleId: string; durationSec: number; warpRef?: boolean }[],
+      opts: { replace?: boolean; anchorSec?: number; warpMarkers?: import('./session').WarpMarker[]; warpGroupId?: string } = {},
     ) {
       const hd = self.deps.historyDeps;
       const anchorSec = opts.anchorSec ?? 0;
-      const build = (stem: { label: string; sampleId: string; durationSec: number }, id: string) =>
-        buildStemAudioLane(stem, id, { bpm: seq.bpm, meter: seq.meter, anchorSec, warpMarkers: opts.warpMarkers });
+      const build = (stem: { label: string; sampleId: string; durationSec: number; warpRef?: boolean }, id: string) =>
+        buildStemAudioLane(stem, id, {
+          bpm: seq.bpm, meter: seq.meter, anchorSec,
+          warpMarkers: opts.warpMarkers, warpGroupId: opts.warpGroupId, warpRef: stem.warpRef,
+        });
 
       const runReplace = () => {
         const lanes = stems.map((s, i) => build(s, `audio-stem-${i + 1}`));

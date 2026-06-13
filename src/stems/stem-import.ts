@@ -7,13 +7,15 @@ import { sampleCache } from '../samples/sample-cache';
 import { detectLoop } from '../samples/loop-analysis';
 import { DEFAULT_METER, type TimeSignature } from '../core/meter';
 import type { WarpMarker } from '../session/session';
+import { seedSparseWarpMarkers } from '../samples/warp-seed-sparse';
+import { barCountFor } from '../core/slice-clip';
 
 export interface StemImportDeps {
   ctx: AudioContext;
   client: StemClient;
   addStemLanes: (
-    stems: { label: string; sampleId: string; durationSec: number }[],
-    opts?: { replace?: boolean; anchorSec?: number; warpMarkers?: WarpMarker[] },
+    stems: { label: string; sampleId: string; durationSec: number; warpRef?: boolean }[],
+    opts?: { replace?: boolean; anchorSec?: number; warpMarkers?: WarpMarker[]; warpGroupId?: string },
   ) => void;
   /** Transcribe one stem's audio to a note/drums lane (label = lane name).
    *  `kind` is the known stem role: 'drums' for the drum stem, 'melodic' otherwise. */
@@ -83,22 +85,34 @@ export async function importStems(
   // The anchor is applied to EVERY stem so they stay mutually phase-locked and
   // their shared downbeat lands on bar 1. BPM is conformed only when REPLACING —
   // in ADD mode the project tempo is authoritative.
-  // Auto-warp is OFF: the naive per-beat marker seed mangled real songs (tempo
-  // wobble / freezes from degenerate markers). Stems import NATIVE (Phase 2a) —
-  // clean, with a small downbeat anchor. Warp markers return with the 2b-2 editor
-  // (visible + draggable), where the user can see and correct them.
+  // Seed sparse warp markers (1 per 4 bars) from the detected onsets so the
+  // user gets a gentle starting point for the editable warp editor (2b-2).
   let anchorSec = 0;
+  let warpMarkers: WarpMarker[] | undefined;
   const tempoBuf = pickTempoBuffer(decoded);
+  const meter = deps.getMeter?.() ?? DEFAULT_METER;
   if (tempoBuf && tempoBuf.length > 0 && tempoBuf.duration > 0) {
-    const meter = deps.getMeter?.() ?? DEFAULT_METER;
     const { originalBpm, slicePointsSec } = detectLoop(tempoBuf, meter);
     anchorSec = pickDownbeatAnchor(slicePointsSec);
     if (deps.setSessionBpm && cb.replace && Number.isFinite(originalBpm) && originalBpm > 0) {
       deps.setSessionBpm(originalBpm);
     }
+    if (Number.isFinite(originalBpm) && originalBpm > 0) {
+      const playable = Math.max(0.001, tempoBuf.duration - anchorSec);
+      const clipBars = barCountFor(playable, originalBpm, meter);
+      const m = seedSparseWarpMarkers(slicePointsSec, anchorSec, originalBpm, tempoBuf.duration, meter, 4, clipBars);
+      if (m.length >= 2) warpMarkers = m;
+    }
   }
 
-  deps.addStemLanes(lanes, { replace: cb.replace, anchorSec });
+  // Mark the drums stem as the editable warp reference (fallback: the longest
+  // decoded stem — the same heuristic pickTempoBuffer uses).
+  const refName = decoded.find((d) => d.plan.name === 'drums')?.plan.name
+    ?? decoded.slice().sort((a, b) => b.buffer.duration - a.buffer.duration)[0]?.plan.name;
+  const groupId = warpMarkers ? `warp:${lanes[0]?.sampleId ?? 'grp'}` : undefined;
+  const taggedLanes = lanes.map((l, i) => ({ ...l, warpRef: !!warpMarkers && decoded[i].plan.name === refName }));
+
+  deps.addStemLanes(taggedLanes, { replace: cb.replace, anchorSec, warpMarkers, warpGroupId: groupId });
 
   // Optional: transcribe each stem to a note/drums lane. Off by default — quality
   // is rough — so it only runs when the dialog checkbox sets cb.transcribe.
