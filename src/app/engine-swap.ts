@@ -34,6 +34,8 @@ export function swapLaneEngineFlow(
   const lane = deps.state.lanes.find((l) => l.id === laneId);
   if (!lane) return false;
   if (lane.engineId === newEngineId) return false;                        // same engine
+  // An audio channel is not a swappable instrument (and a synth can't become one).
+  if (lane.engineId === 'audio' || newEngineId === 'audio') return false;
   if (deps.getEngineEditor(newEngineId) !== 'piano-roll') return false;   // target not melodic
   if (deps.getEngineEditor(lane.engineId) !== 'piano-roll') return false; // source is drums
 
