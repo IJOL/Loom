@@ -31,6 +31,7 @@ export function wireStemDialog(deps: StemDialogDeps): void {
   const statusEl = $('stems-status');
   const hint = $('stems-hint');
   const replaceBox = $<HTMLInputElement>('stems-replace');
+  const transcribeBox = $<HTMLInputElement>('stems-transcribe');
 
   let controller: AbortController | null = null; // separation in progress
   let capture: AudioCapture | null = null;       // live system-audio capture
@@ -89,6 +90,7 @@ export function wireStemDialog(deps: StemDialogDeps): void {
       await importStems(deps, file, {
         signal: controller.signal,
         replace: replaceBox?.checked ?? true,
+        transcribe: transcribeBox?.checked ?? false,
         onProgress: (status, p) => {
           const elapsed = Math.floor((performance.now() - startedAt) / 1000);
           if (typeof p === 'number') bar.value = p; else bar.removeAttribute('value');
