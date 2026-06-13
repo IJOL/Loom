@@ -184,6 +184,7 @@ export function audioChannelClip(opts: {
    *  ⇒ WSOLA-locked `loop`. warpMode stays 'stretch' either way so the editor's
    *  Warp toggle can flip it on without re-deriving. */
   warp?: boolean;
+  warpMarkers?: import('./session').WarpMarker[];
 }): SessionClip {
   const anchorSec = Math.max(0, Math.min(opts.anchorSec ?? 0, opts.durationSec));
   const warp = opts.warp ?? true;
@@ -204,6 +205,7 @@ export function audioChannelClip(opts: {
       trimStart: anchorSec,
       trimEnd: opts.durationSec,
       gain: 1,
+      ...(opts.warpMarkers && opts.warpMarkers.length >= 2 ? { warpMarkers: opts.warpMarkers } : {}),
     },
   };
 }

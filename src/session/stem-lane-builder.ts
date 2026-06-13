@@ -8,10 +8,11 @@ import type { TimeSignature } from '../core/meter';
 export function buildStemAudioLane(
   stem: { label: string; sampleId: string; durationSec: number },
   id: string,
-  opts: { bpm: number; meter: TimeSignature; anchorSec: number },
+  opts: { bpm: number; meter: TimeSignature; anchorSec: number; warpMarkers?: import('./session').WarpMarker[] },
 ): SessionLane {
   const lane = emptyLane(id, 'audio');
   lane.name = stem.label;
+  const hasWarp = !!opts.warpMarkers && opts.warpMarkers.length >= 2;
   lane.clips = [audioChannelClip({
     name: stem.label,
     sampleId: stem.sampleId,
@@ -19,7 +20,8 @@ export function buildStemAudioLane(
     originalBpm: opts.bpm,
     projectMeter: opts.meter,
     anchorSec: opts.anchorSec,
-    warp: false,
+    warp: hasWarp,            // auto-warp ON when we have markers
+    warpMarkers: opts.warpMarkers,
   })];
   return lane;
 }

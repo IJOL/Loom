@@ -344,7 +344,7 @@ export class SessionHost {
    *  whole session is swapped for a clean stems-only one. */
   addStemLanes(
     stems: { label: string; sampleId: string; durationSec: number }[],
-    opts: { replace?: boolean; anchorSec?: number } = {},
+    opts: { replace?: boolean; anchorSec?: number; warpMarkers?: import('./session').WarpMarker[] } = {},
   ): void {
     this.callbacks.onAddStemLanes(stems, opts);
   }

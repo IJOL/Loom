@@ -280,3 +280,16 @@ describe('importStems → audio lane sync + transcription', () => {
     expect(transcribeStem).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('importStems → warp markers', () => {
+  it('seeds warpMarkers and passes them to addStemLanes (auto-warp)', async () => {
+    const addStemLanes = vi.fn();
+    const stems = [{ name: 'drums', url: '/d' }];
+    const buffers = { 'http://svc/d': pulseBuffer(120, 4) }; // steady 120 BPM pulse
+    const deps = makeDeps(stems, buffers, { addStemLanes });
+    await importStems(deps, new File([], 'song.wav'), { replace: true });
+    const opts = addStemLanes.mock.calls[0][1] as { warpMarkers?: unknown[] };
+    expect(Array.isArray(opts.warpMarkers)).toBe(true);
+    expect(opts.warpMarkers!.length).toBeGreaterThan(4); // several beats over 4 bars
+  });
+});

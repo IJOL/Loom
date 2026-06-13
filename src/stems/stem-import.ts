@@ -6,13 +6,15 @@ import { sampleStore } from '../samples/store-singleton';
 import { sampleCache } from '../samples/sample-cache';
 import { detectLoop } from '../samples/loop-analysis';
 import { DEFAULT_METER, type TimeSignature } from '../core/meter';
+import { seedWarpMarkers } from '../samples/warp-seed';
+import type { WarpMarker } from '../session/session';
 
 export interface StemImportDeps {
   ctx: AudioContext;
   client: StemClient;
   addStemLanes: (
     stems: { label: string; sampleId: string; durationSec: number }[],
-    opts?: { replace?: boolean; anchorSec?: number },
+    opts?: { replace?: boolean; anchorSec?: number; warpMarkers?: WarpMarker[] },
   ) => void;
   /** Transcribe one stem's audio to a note/drums lane (label = lane name).
    *  `kind` is the known stem role: 'drums' for the drum stem, 'melodic' otherwise. */
@@ -83,17 +85,19 @@ export async function importStems(
   // their shared downbeat lands on bar 1. BPM is conformed only when REPLACING —
   // in ADD mode the project tempo is authoritative.
   let anchorSec = 0;
+  let warpMarkers: WarpMarker[] | undefined;
   const tempoBuf = pickTempoBuffer(decoded);
   if (tempoBuf && tempoBuf.length > 0 && tempoBuf.duration > 0) {
     const meter = deps.getMeter?.() ?? DEFAULT_METER;
     const { originalBpm, slicePointsSec } = detectLoop(tempoBuf, meter);
     anchorSec = pickDownbeatAnchor(slicePointsSec);
-    if (deps.setSessionBpm && cb.replace && Number.isFinite(originalBpm) && originalBpm > 0) {
-      deps.setSessionBpm(originalBpm);
+    if (Number.isFinite(originalBpm) && originalBpm > 0) {
+      warpMarkers = seedWarpMarkers(slicePointsSec, anchorSec, originalBpm, tempoBuf.duration);
+      if (deps.setSessionBpm && cb.replace) deps.setSessionBpm(originalBpm);
     }
   }
 
-  deps.addStemLanes(lanes, { replace: cb.replace, anchorSec });
+  deps.addStemLanes(lanes, { replace: cb.replace, anchorSec, warpMarkers });
 
   // Optional: transcribe each stem to a note/drums lane. Off by default — quality
   // is rough — so it only runs when the dialog checkbox sets cb.transcribe.

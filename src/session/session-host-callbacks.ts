@@ -179,12 +179,12 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
      *  is swapped for a clean one holding only the stems (1 scene). */
     onAddStemLanes(
       stems: { label: string; sampleId: string; durationSec: number }[],
-      opts: { replace?: boolean; anchorSec?: number } = {},
+      opts: { replace?: boolean; anchorSec?: number; warpMarkers?: import('./session').WarpMarker[] } = {},
     ) {
       const hd = self.deps.historyDeps;
       const anchorSec = opts.anchorSec ?? 0;
       const build = (stem: { label: string; sampleId: string; durationSec: number }, id: string) =>
-        buildStemAudioLane(stem, id, { bpm: seq.bpm, meter: seq.meter, anchorSec });
+        buildStemAudioLane(stem, id, { bpm: seq.bpm, meter: seq.meter, anchorSec, warpMarkers: opts.warpMarkers });
 
       const runReplace = () => {
         const lanes = stems.map((s, i) => build(s, `audio-stem-${i + 1}`));
