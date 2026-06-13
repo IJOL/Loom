@@ -16,5 +16,10 @@ export const warpCache = {
     inflight.set(key, p);
     return p;
   },
+  invalidate(sampleId: string): void {
+    const prefix = `${sampleId}|`;
+    for (const k of [...cache.keys()]) if (k.startsWith(prefix)) cache.delete(k);
+    for (const k of [...inflight.keys()]) if (k.startsWith(prefix)) inflight.delete(k);
+  },
   clear(): void { cache.clear(); inflight.clear(); },
 };
