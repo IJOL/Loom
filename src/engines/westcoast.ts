@@ -326,6 +326,12 @@ class WestVoice implements Voice {
     // filter env in lp/both). Mirrors the wavetable release-cut pattern.
     this.contour.offset.cancelScheduledValues(time);
     this.contour.offset.linearRampToValueAtTime(0, time + 0.02);
+    // In LP mode the lpgVCA intrinsic gain is held at 1 (contour drives only the
+    // filter, not the VCA), so the contour ramp above does not silence the note.
+    // Ramp the VCA intrinsic to 0 explicitly. In gate/both modes the intrinsic is
+    // already 0 (VCA is driven via vcaEnvGain), so this is a no-op.
+    this.lpgVCA.gain.cancelScheduledValues(time);
+    this.lpgVCA.gain.linearRampToValueAtTime(0, time + 0.02);
   }
 
   connect(_dest: AudioNode): void {}

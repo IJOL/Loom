@@ -13,6 +13,7 @@ export function nextLaneSlug(existingIds: ReadonlySet<string>, engineId: string)
     engineId === 'wavetable'     ? 'wavetable'   :
     engineId === 'fm'            ? 'fm-4-op'     :
     engineId === 'karplus'       ? 'karplus'     :
+    engineId === 'westcoast'     ? 'west'        :
                                    engineId;
   for (let i = 1; i <= 99; i++) {
     const candidate = `${prefix}-${i}`;

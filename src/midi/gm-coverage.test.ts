@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const TONAL_ENGINES = ['tb303', 'fm', 'wavetable', 'karplus', 'subtractive'];
+const TONAL_ENGINES = ['tb303', 'fm', 'wavetable', 'karplus', 'subtractive', 'westcoast'];
 const DRUM_ENGINES  = ['drums', 'drums-machine']; // accept whichever filename exists
 
 function loadPresets(engineId: string): { name: string; gm: number[] }[] {

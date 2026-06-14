@@ -181,7 +181,9 @@ Modeled on `WavetableVoice` / the Wavetable voice manager:
 - `getAudioParams()` (per-voice) exposes, with native ranges via `getAudioParamRange`:
   `amp.gain` (0..1), `lpg.cutoff` (filter Hz, ±), `lpg.resonance` (Q, ±),
   `timbre.fold` (foldDrive gain ×), `timbre.symmetry` (bias ±), `osc.fmIndex`
-  (fmDepth ±), `osc.ring` (0..1), `osc.detune` (cents ±), `master.tune` (cents ±).
+  (fmDepth ±), `osc.ring` (0..1), `osc.detune` (cents ±).
+  (`master.tune` is applied additively to all oscillator detune at trigger time only
+  and is not exposed as a modulatable AudioParam.)
 - `getSharedAudioParams()` exposes a shared `modBus` (one `ConstantSourceNode` per
   param, summed into each live voice — same pattern as PolySynth/Wavetable) for:
   `lpg.cutoff`, `lpg.resonance`, `amp.gain`, `timbre.fold`. A shared LFO on
