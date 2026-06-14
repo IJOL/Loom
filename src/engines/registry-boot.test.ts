@@ -16,6 +16,7 @@ import '../engines/fm';
 import '../engines/karplus';
 import '../engines/tb303';
 import '../engines/drums-engine';
+import '../engines/westcoast';
 
 import { getEngine, createEngineInstance } from './registry';
 
@@ -27,6 +28,7 @@ describe('engine registry after side-effect imports', () => {
     ['fm'],
     ['karplus'],
     ['drums-machine'],
+    ['westcoast'],
   ])('getEngine(%s) returns a registered instance', (id) => {
     const eng = getEngine(id);
     expect(eng, `getEngine('${id}') returned undefined — module not loaded?`).toBeDefined();
@@ -38,6 +40,7 @@ describe('engine registry after side-effect imports', () => {
     ['wavetable'],
     ['fm'],
     ['karplus'],
+    ['westcoast'],
   ])('createEngineInstance(%s) produces a fresh instance', (id) => {
     const inst = createEngineInstance(id);
     expect(inst, `createEngineInstance('${id}') returned undefined`).toBeDefined();

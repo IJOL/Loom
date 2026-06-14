@@ -31,7 +31,7 @@ export interface BpmBroadcaster {
   broadcast(bpm: number): void;
 }
 
-const LANE_HOST_ENGINE_IDS = ['fm', 'karplus', 'subtractive', 'wavetable', 'drums-machine'];
+const LANE_HOST_ENGINE_IDS = ['fm', 'karplus', 'subtractive', 'wavetable', 'drums-machine', 'westcoast'];
 
 export function createBpmBroadcaster(deps: BpmBroadcasterDeps): BpmBroadcaster {
   const propagateToLaneEngines = (bpm: number): void => {
