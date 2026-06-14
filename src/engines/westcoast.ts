@@ -63,7 +63,7 @@ const WEST_PARAMS: EngineParamSpec[] = [
   { id: 'osc.subLevel', label: 'Sub Lvl',    kind: 'continuous', min: 0, max: 1, default: 0.3 },
   { id: 'osc.detune',   label: 'Detune',     kind: 'continuous', min: -50, max: 50, default: 0, unit: '¢' },
   // Timbre (wavefolder)
-  { id: 'timbre.fold',     label: 'Fold',     kind: 'continuous', min: 0, max: 1, default: 0.3 },
+  { id: 'timbre.fold',     label: 'Fold',     kind: 'continuous', min: 0, max: 1, default: 0.5 },
   { id: 'timbre.symmetry', label: 'Symmetry', kind: 'continuous', min: -1, max: 1, default: 0 },
   // Low-pass gate
   { id: 'lpg.mode',      label: 'Mode',      kind: 'discrete', min: 0, max: 2, default: 2, options: LPG_MODE_OPTIONS },
@@ -101,8 +101,10 @@ const FOLD_CURVE = makeFoldCurve();
 // Holds the post-fold peak below 0 dBFS at accent + max fold (mirrors the
 // OUTPUT_TRIM in wavetable.ts / fm.ts).
 const OUTPUT_TRIM = 0.5;
-// Hz the contour adds to the filter cutoff at amount=1 (LP / Both modes).
-const CUTOFF_ENV_HZ = 6000;
+// Multiplier on the base cutoff Hz that the contour applies to the filter.
+// Relative (not absolute) so the base cutoff param genuinely controls timbre:
+// low cutoff → contour sweeps a narrow band; high cutoff → contour sweeps wide.
+const CUTOFF_ENV_SCALE = 3;
 
 function midiToHz(midi: number): number { return 440 * Math.pow(2, (midi - 69) / 12); }
 function cutoffHz(norm: number): number { return Math.min(18000, 60 * Math.pow(220, norm)); }
@@ -271,7 +273,7 @@ class WestVoice implements Voice {
     // Low-pass gate base + per-mode routing.
     this.lpgFilter.Q.setValueAtTime(0.5 + res * 20, time);
     this.cutoffBase.offset.setValueAtTime(cutoffHz(cutoff), time);
-    this.cutoffEnvGain.gain.setValueAtTime(filterMode ? CUTOFF_ENV_HZ * accentMul : 0, time);
+    this.cutoffEnvGain.gain.setValueAtTime(filterMode ? cutoffHz(cutoff) * CUTOFF_ENV_SCALE * accentMul : 0, time);
     this.vcaEnvGain.gain.setValueAtTime(vcaMode ? 1 : 0, time);
     this.lpgVCA.gain.setValueAtTime(vcaMode ? 0 : 1, time);
 
