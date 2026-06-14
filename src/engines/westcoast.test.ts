@@ -1,5 +1,6 @@
 // src/engines/westcoast.test.ts
 import { describe, it, expect } from 'vitest';
+import '../../test/setup';
 import { WestEngine } from './westcoast';
 
 describe('WestEngine — param state', () => {
@@ -50,5 +51,14 @@ describe('WestEngine — param state', () => {
     e.setBaseValue('osc.subDiv', 1);
     expect(e.getBaseValue('timbre.fold')).toBeCloseTo(0.9);
     expect(e.getBaseValue('osc.subDiv')).toBe(1);
+  });
+
+  it('mono mode caps simultaneous voices to 1', () => {
+    const e = new WestEngine();
+    const ctx = new AudioContext();
+    e.setBaseValue('poly.mode', 1);
+    e.createVoice(ctx, ctx.destination);
+    e.createVoice(ctx, ctx.destination);
+    expect(e.activeVoiceCount()).toBe(1);
   });
 });

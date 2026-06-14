@@ -47,7 +47,6 @@ const CONTOUR_MODE_OPTIONS = [
 ];
 const ONOFF_OPTIONS = [{ value: 'off', label: 'Off' }, { value: 'on', label: 'On' }];
 const POLY_MODE_OPTIONS = [{ value: 'poly', label: 'Poly' }, { value: 'mono', label: 'Mono' }];
-const RETRIG_OPTIONS = [{ value: 'legato', label: 'Legato' }, { value: 'retrig', label: 'Retrig' }];
 
 const MAIN_WAVE_VALUES = MAIN_WAVE_OPTIONS.map(o => o.value) as OscillatorType[];
 const MOD_WAVE_VALUES = MOD_WAVE_OPTIONS.map(o => o.value) as OscillatorType[];
@@ -80,9 +79,9 @@ const WEST_PARAMS: EngineParamSpec[] = [
   { id: 'amp.level',   label: 'Level', kind: 'continuous', min: 0, max: 1, default: 0.8 },
   { id: 'master.tune', label: 'Tune',  kind: 'continuous', min: -12, max: 12, default: 0, unit: 'st' },
   // Poly
+  // poly.mode = real monophony (effective cap 1). Legato/retrig is future work.
   { id: 'poly.voices', label: 'Voices', kind: 'continuous', min: 1, max: 16, default: 8 },
   { id: 'poly.mode',   label: 'Mode',   kind: 'discrete', min: 0, max: 1, default: 0, options: POLY_MODE_OPTIONS },
-  { id: 'poly.retrig', label: 'Retrig', kind: 'discrete', min: 0, max: 1, default: 1, options: RETRIG_OPTIONS },
 ];
 
 /** Operating ranges for the shared modBus AudioParams (native units). Must
@@ -375,6 +374,7 @@ export class WestEngine implements SynthEngine {
   private paramValues: Record<string, number> = {};
   bpm = 120;
   maxVoices = 8;
+  private monoMode = false;
   private activeVoices: WestVoice[] = [];
   private currentLaneId: string | null = null;
 
@@ -395,6 +395,11 @@ export class WestEngine implements SynthEngine {
 
   activeVoiceCount(): number { return this.activeVoices.length; }
 
+  /** Mono mode collapses the effective polyphony cap to 1 voice. */
+  private effectiveCap(): number {
+    return this.monoMode ? 1 : this.maxVoices;
+  }
+
   private stealOldest(n: number): void {
     const toSteal = this.activeVoices.splice(0, n);
     for (const v of toSteal) v.dispose();
@@ -410,6 +415,14 @@ export class WestEngine implements SynthEngine {
       this.maxVoices = cap;
       this.paramValues[id] = cap;
       if (this.activeVoices.length > cap) this.stealOldest(this.activeVoices.length - cap);
+      return;
+    }
+    if (id === 'poly.mode') {
+      this.monoMode = v >= 0.5;
+      this.paramValues[id] = this.monoMode ? 1 : 0;
+      if (this.activeVoices.length > this.effectiveCap()) {
+        this.stealOldest(this.activeVoices.length - this.effectiveCap());
+      }
       return;
     }
     this.paramValues[id] = v;
@@ -456,13 +469,13 @@ export class WestEngine implements SynthEngine {
       const engineMods = this.engineModVoices ?? new Map();
       const combinedMods = new Map<string, ModulatorVoice>([...engineMods, ...voiceMods]);
       voice.binder = bindVoiceModulators({
-        laneId, engine: this, voice, voiceMods: combinedMods, ctx, voicePool: this.maxVoices,
+        laneId, engine: this, voice, voiceMods: combinedMods, ctx, voicePool: this.effectiveCap(),
       });
       this.currentLaneId = laneId;
     }
     this.activeVoices.push(voice);
-    if (this.activeVoices.length > this.maxVoices) {
-      this.stealOldest(this.activeVoices.length - this.maxVoices);
+    if (this.activeVoices.length > this.effectiveCap()) {
+      this.stealOldest(this.activeVoices.length - this.effectiveCap());
     }
     voice.mainOsc.addEventListener('ended', () => {
       const idx = this.activeVoices.indexOf(voice);
@@ -517,7 +530,7 @@ export class WestEngine implements SynthEngine {
       });
     };
 
-    section('POLY', 'west-poly-knobs', ['poly.mode', 'poly.retrig', 'poly.voices']);
+    section('POLY', 'west-poly-knobs', ['poly.mode', 'poly.voices']);
     section('COMPLEX OSCILLATOR', 'west-osc-knobs',
       ['osc.mainWave', 'osc.modWave', 'osc.ratio', 'osc.fmIndex', 'osc.ring', 'osc.subDiv', 'osc.subLevel', 'osc.detune']);
     section('TIMBRE', 'west-timbre-knobs', ['timbre.fold', 'timbre.symmetry']);
