@@ -118,6 +118,13 @@ git commit -m "feat(westcoast): wavefolder transfer curve"
 
 ## Task 2: Engine param schema + state API (pure)
 
+> **Amended in code review (2026-06-14):** the `poly.mode`/`poly.retrig` knobs in the
+> code block below were dead (no mono/legato behaviour). Resolution shipped: `poly.mode`
+> implements **real monophony** (effective voice cap of 1), and `poly.retrig` is
+> **removed** (legato deferred to future work — no dead knob). See the spec's
+> "Voice model & polyphony" section. The code block below is the original draft; the
+> committed engine reflects the amendment.
+
 **Files:**
 - Create: `src/engines/westcoast.ts`
 - Test: `src/engines/westcoast.test.ts`

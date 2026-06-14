@@ -99,8 +99,11 @@ Modeled on `WavetableVoice` / the Wavetable voice manager:
   `stop()` + an `ended` listener prunes it from the pool — no perpetual oscillators).
 - `poly.voices` (1–16) caps polyphony; oldest-voice stealing on overflow, plus
   same-note stealing (matches Subtractive/PolySynth, prevents MIDI-retrigger pile-up).
-- `poly.mode` (poly/mono) and `poly.retrig` (legato/retrig) follow the Subtractive
-  semantics: mono+legato re-pitches the held voice without restarting the contour.
+- `poly.mode` (poly/mono) gives **real monophony**: in mono the effective voice cap
+  collapses to 1 (oldest-voice stealing keeps a single voice sounding). Legato/retrig
+  (re-pitching a held voice without re-attacking the contour) requires restructuring
+  the voice model and is **deferred to future work** — no `poly.retrig` knob ships in
+  v1, to avoid a dead control (decided during Task 2 code review, 2026-06-14).
 
 ### Per-voice signal chain (all real-time Web Audio nodes)
 
@@ -221,8 +224,7 @@ All `continuous` unless marked discrete. Ids are dot-namespaced.
 | `amp.level` | Level | continuous | 0 | 1 | 0.8 | |
 | `master.tune` | Tune | continuous | -12 | 12 | 0 | st |
 | `poly.voices` | Voices | continuous | 1 | 16 | 8 | |
-| `poly.mode` | Mode | discrete | 0 | 1 | 0 (poly) | poly/mono |
-| `poly.retrig` | Retrig | discrete | 0 | 1 | 1 (retrig) | legato/retrig |
+| `poly.mode` | Mode | discrete | 0 | 1 | 0 (poly) | poly/mono (mono = cap 1) |
 
 ## UI
 
