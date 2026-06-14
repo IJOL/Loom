@@ -1,6 +1,6 @@
 // src/session/clip-editors/clip-editor-router.test.ts
-import { describe, it, expect } from 'vitest';
-import { chooseClipEditor, isAudioClip, classifyClip } from './clip-editor-router';
+import { describe, it, expect, vi } from 'vitest';
+import { chooseClipEditor, isAudioClip, classifyClip, combineEditorHandle } from './clip-editor-router';
 import type { SessionLane, SessionClip } from '../session';
 
 const lane = (over: Partial<SessionLane>): SessionLane => ({
@@ -105,5 +105,34 @@ describe('isAudioClip', () => {
     expect(isAudioClip(audio, withSample)).toBe(true);
     expect(isAudioClip(sampler, withSample)).toBe(false);
     expect(isAudioClip(audio, noteClip)).toBe(false);
+  });
+});
+
+// Regression: renderClipEditor wraps the body editor + optional waveform header
+// into one handle. It MUST forward the body's getOctaveBase/setOctaveBase (the
+// piano-roll's), or the note-randomizer can't read/restore the editor octave —
+// the bug where 🎲 reset the octave to C4 and generated there.
+describe('combineEditorHandle', () => {
+  it('forwards the body capabilities (getOctaveBase/setOctaveBase) and paints both', () => {
+    let header = 0, body = 0;
+    const setSpy = vi.fn();
+    const h = combineEditorHandle(
+      { redraw: () => { header++; } },
+      { redraw: () => { body++; }, getOctaveBase: () => 72, setOctaveBase: setSpy },
+    );
+    expect(h.getOctaveBase?.()).toBe(72);
+    h.setOctaveBase?.(84);
+    expect(setSpy).toHaveBeenCalledWith(84);
+    h.redraw();
+    expect(header).toBe(1);
+    expect(body).toBe(1);
+  });
+
+  it('works without a waveform header (header null)', () => {
+    let body = 0;
+    const h = combineEditorHandle(null, { redraw: () => { body++; }, getOctaveBase: () => 60 });
+    expect(h.getOctaveBase?.()).toBe(60);
+    h.redraw();
+    expect(body).toBe(1);
   });
 });

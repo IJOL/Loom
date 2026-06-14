@@ -213,7 +213,20 @@ export function renderClipEditor(
   }
 
   mountClipLoopBrace(bodyBox, clip, deps.seq.meter, deps.historyDeps, () => {});
-  return { redraw: () => { headerHandle?.redraw(); bodyHandle?.redraw(); } };
+  return combineEditorHandle(headerHandle, bodyHandle);
+}
+
+/** Combine the optional waveform-header handle with the body editor (piano-roll
+ *  or drum-grid) into ONE PianoRollHandle: forward ALL of the body's
+ *  capabilities — getOctaveBase / setOctaveBase live on the piano-roll — and
+ *  make redraw() paint BOTH. The spread (not just `{redraw}`) is load-bearing:
+ *  the note-randomizer reads & restores the editor octave through this handle,
+ *  so dropping the body's methods silently broke "randomize keeps the octave". */
+export function combineEditorHandle(
+  header: { redraw: () => void } | null,
+  body: PianoRollHandle | null,
+): PianoRollHandle {
+  return { ...(body ?? {}), redraw: () => { header?.redraw(); body?.redraw(); } } as PianoRollHandle;
 }
 
 function buildPianoRoll(
