@@ -130,6 +130,7 @@ class WestVoice implements Voice {
   private vcaEnvGain: GainNode;
   private started = false;
   private stopScheduled = false;
+  private resourcesReleased = false;
 
   laneId: string | null = null;
   binder: ConnectionBinder | null = null;
@@ -317,6 +318,12 @@ class WestVoice implements Voice {
     }
     const stopTime = Math.max(tailEnd, gateEnd) + 0.1;
     this.mainOsc.stop(stopTime); this.modOsc.stop(stopTime); this.subOsc.stop(stopTime);
+    // Stop the per-voice ConstantSources at the same time. Otherwise they keep
+    // "playing" forever, and a still-playing source with a path to the
+    // destination keeps the whole subgraph alive — including the expensive
+    // oversample-'4x' WaveShaper. Without this, every note in a loop leaked a
+    // live 4x folder chain → CPU climbed without bound → audio crackled.
+    this.bias.stop(stopTime); this.contour.stop(stopTime); this.cutoffBase.stop(stopTime);
     this.stopScheduled = true;
   }
 
@@ -336,9 +343,14 @@ class WestVoice implements Voice {
 
   connect(_dest: AudioNode): void {}
 
-  dispose(): void {
-    if (this.binder) this.binder.disposeAll();
-    if (this.laneId) disposeLaneModulations(this.laneId);
+  /** Free this voice's OWN audio resources: stop its sources (oscillators +
+   *  ConstantSources), disconnect every node, and dispose its per-voice
+   *  modulators. Safe to call when a note ends naturally — does NOT touch the
+   *  lane-shared modulation (engine modulators / lane bindings), which must
+   *  persist across notes. Idempotent. */
+  releaseResources(): void {
+    if (this.resourcesReleased) return;
+    this.resourcesReleased = true;
     if (!this.stopScheduled && this.started) {
       try { this.mainOsc.stop(); } catch {}
       try { this.modOsc.stop(); } catch {}
@@ -356,6 +368,12 @@ class WestVoice implements Voice {
     this.contour.disconnect(); this.cutoffBase.disconnect();
     this.cutoffEnvGain.disconnect(); this.vcaEnvGain.disconnect();
     for (const mv of this.voiceMods.values()) mv.dispose();
+  }
+
+  dispose(): void {
+    if (this.binder) this.binder.disposeAll();
+    if (this.laneId) disposeLaneModulations(this.laneId);
+    this.releaseResources();
   }
 }
 
@@ -488,6 +506,10 @@ export class WestEngine implements SynthEngine {
     voice.mainOsc.addEventListener('ended', () => {
       const idx = this.activeVoices.indexOf(voice);
       if (idx !== -1) this.activeVoices.splice(idx, 1);
+      // Free this voice's own nodes + per-voice mods now that it has ended,
+      // so its (4x-WaveShaper) subgraph is disconnected immediately instead of
+      // lingering until GC. Does NOT touch the lane's shared modulation.
+      voice.releaseResources();
     });
     return voice;
   }
