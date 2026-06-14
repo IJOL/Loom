@@ -211,7 +211,7 @@ All `continuous` unless marked discrete. Ids are dot-namespaced.
 | `osc.subDiv` | Sub ÷ | discrete | 0 | 3 | 0 (off) | off/2/3/4 |
 | `osc.subLevel` | Sub Lvl | continuous | 0 | 1 | 0.3 | |
 | `osc.detune` | Detune | continuous | -50 | 50 | 0 | ¢ |
-| `timbre.fold` | Fold | continuous | 0 | 1 | 0.3 | |
+| `timbre.fold` | Fold | continuous | 0 | 1 | 0.5 | |
 | `timbre.symmetry` | Symmetry | continuous | -1 | 1 | 0 | |
 | `lpg.mode` | Mode | discrete | 0 | 2 | 2 (Both) | LP/Gate/Both |
 | `lpg.cutoff` | Cutoff | continuous | 0 | 1 | 0.6 | |
