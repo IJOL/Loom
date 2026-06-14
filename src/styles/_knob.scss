@@ -156,3 +156,11 @@
   .knob-value   { stroke: var(--knob-yellow); }
   .knob-pointer { stroke: var(--knob-yellow); }
 }
+
+/* West Coast engine — per-section knob accents (classes, not ids, because
+ * the engine renders per-lane and ids must stay unique). */
+.west-osc-knobs     { @include knob-accent(var(--knob-cyan));   }
+.west-timbre-knobs  { @include knob-accent(var(--knob-orange)); }
+.west-lpg-knobs     { @include knob-accent(var(--knob-purple)); }
+.west-contour-knobs { @include knob-accent(var(--knob-red));    }
+.west-amp-knobs     { @include knob-accent(var(--knob-green));  }
