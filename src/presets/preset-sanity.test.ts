@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 
 // Engine ids whose JSON files exist in public/presets/. drums-machine instead
 // of drums; poly was merged into subtractive.
-const ENGINES = ['tb303', 'fm', 'wavetable', 'karplus', 'subtractive', 'drums-machine'];
+const ENGINES = ['tb303', 'fm', 'wavetable', 'karplus', 'subtractive', 'drums-machine', 'westcoast'];
 
 interface Preset { name: string; gm?: number[]; params: unknown }
 
