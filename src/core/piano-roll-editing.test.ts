@@ -129,8 +129,8 @@ describe('quantizeRecorded', () => {
 
 describe('snapNoteMidi', () => {
   const ctx = { inScale: (m: number) => [0, 2, 4, 5, 7, 9, 11].includes(((m % 12) + 12) % 12) }; // C major
-  it('snaps when locked and out of scale', () => {
-    expect(snapNoteMidi(61, ctx, true)).not.toBe(61); // C# → C or D
+  it('snaps when locked and out of scale (tie → up)', () => {
+    expect(snapNoteMidi(61, ctx, true)).toBe(62); // C# → D (tie resolves up)
     expect(ctx.inScale(snapNoteMidi(61, ctx, true))).toBe(true);
   });
   it('passes through when locked and already in scale', () => {

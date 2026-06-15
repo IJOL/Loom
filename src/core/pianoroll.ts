@@ -561,7 +561,8 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       const newStart = Math.max(0, Math.floor((tick - interaction.offsetTick) / snap) * snap);
       const maxStart = opts.patternTicks - interaction.note.duration;
       interaction.note.start = Math.min(maxStart, newStart);
-      interaction.note.midi = snapMidi(Math.max(minMidi, Math.min(maxMidi, midi)));
+      // clamp → snap → re-clamp, so a snap near the range edge can't escape [minMidi,maxMidi]
+      interaction.note.midi = Math.max(minMidi, Math.min(maxMidi, snapMidi(Math.max(minMidi, Math.min(maxMidi, midi)))));
     } else {
       const newDur = Math.max(snap, Math.ceil((tick - interaction.note.start) / snap) * snap);
       interaction.note.duration = Math.min(opts.patternTicks - interaction.note.start, newDur);
