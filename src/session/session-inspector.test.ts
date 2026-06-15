@@ -46,8 +46,9 @@ function mountInspectorDom(): void {
       <button id="insp-copy"></button>
       <button id="insp-paste-replace" disabled></button>
       <button id="insp-paste-layer" disabled></button>
-      <button id="insp-toggle-editor"></button>
       <button id="insp-random-notes"></button>
+      <button id="insp-examples"></button>
+      <button id="insp-toggle-editor"></button>
       <div id="insp-roll-host"></div>
     </div>`;
 }
