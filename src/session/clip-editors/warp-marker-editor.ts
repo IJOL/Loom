@@ -16,7 +16,7 @@ export interface WarpMarkerEditorDeps {
   bpm: number;
   clipBars: number;
   barsPerMarker: number;
-  getOnsets: () => number[];                 // for Re-detectar / density
+  getOnsets: () => number[];                 // for Re-detect / density
   onMarkersChange: (markers: WarpMarker[], warp: boolean) => void;
 }
 export interface WarpMarkerEditorHandle { redraw: () => void; }
@@ -31,13 +31,13 @@ export function mountWarpMarkerEditor(host: HTMLElement, deps: WarpMarkerEditorD
   const toolbar = document.createElement('div');
   toolbar.className = 'warp-toolbar';
   Object.assign(toolbar.style, { display: 'flex', gap: '8px', alignItems: 'center', fontSize: '11px', padding: '2px 0' });
-  const dlbl = document.createElement('span'); dlbl.textContent = 'MARCAS'; dlbl.style.color = GREY;
+  const dlbl = document.createElement('span'); dlbl.textContent = 'MARKERS'; dlbl.style.color = GREY;
   const sel = document.createElement('select'); sel.className = 'warp-density';
   for (const n of [1, 2, 4, 8]) {
-    const o = document.createElement('option'); o.value = String(n); o.textContent = `cada ${n} compás${n > 1 ? 'es' : ''}`;
+    const o = document.createElement('option'); o.value = String(n); o.textContent = `every ${n} bar${n > 1 ? 's' : ''}`;
     if (n === barsPerMarker) o.selected = true; sel.appendChild(o);
   }
-  const redetect = document.createElement('button'); redetect.className = 'warp-redetect'; redetect.textContent = '↻ Re-detectar';
+  const redetect = document.createElement('button'); redetect.className = 'warp-redetect'; redetect.textContent = '↻ Re-detect';
   const count = document.createElement('span'); count.className = 'warp-count'; count.style.color = AMBER;
   toolbar.append(dlbl, sel, redetect, count);
   host.appendChild(toolbar);
@@ -65,7 +65,7 @@ export function mountWarpMarkerEditor(host: HTMLElement, deps: WarpMarkerEditorD
   function draw(): void {
     const w = width();
     const markers = deps.getMarkers();
-    count.textContent = `${markers.length} marcas`;
+    count.textContent = `${markers.length} markers`;
     // clear our own children (markers/grid/segments/drift) — leave nothing else
     [...layer.querySelectorAll('.warp-marker,.warp-grid,.warp-seg,.warp-drift')].forEach((n) => n.remove());
     const has = markers.length >= 2;
