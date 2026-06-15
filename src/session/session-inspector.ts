@@ -4,7 +4,7 @@
 
 import type { SessionState, SessionClip, SessionLane } from './session';
 import { resolveTonality, DEFAULT_MUSICALITY } from './session';
-import { rootNameEs } from '../core/musicality';
+import { rootNameEs, SCALE_CATALOG } from '../core/musicality';
 import type { LanePlayState } from './session-runtime';
 import type { Sequencer } from '../core/sequencer';
 import { renderClipEditor, classifyClip, chooseClipEditor, type ClipEditorDeps } from './clip-editors/clip-editor-router';
@@ -239,10 +239,11 @@ export class SessionInspector {
     const g = this.deps.state.musicality ?? DEFAULT_MUSICALITY;
     const eff = resolveTonality(lane, this.deps.state);
     const overridden = !!lane.musicalityOverride;
+    const scaleLabel = (id: string) => SCALE_CATALOG.find((s) => s.id === id)?.label ?? id;
     const label = document.createElement('span');
     label.textContent = overridden
-      ? `Tono: propio (${rootNameEs(eff.key)} ${eff.scale})`
-      : `Tono: hereda ${rootNameEs(g.key)} ${g.scale}`;
+      ? `Tono: propio (${rootNameEs(eff.key)} ${scaleLabel(eff.scale)})`
+      : `Tono: hereda ${rootNameEs(g.key)} ${scaleLabel(g.scale)}`;
     const btn = document.createElement('button');
     btn.className = 'rnd';
     btn.textContent = overridden ? 'Volver al global' : 'Cambiar';
