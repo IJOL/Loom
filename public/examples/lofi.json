@@ -31,6 +31,65 @@
       ]
     },
     {
+      "id": "lofi-bass-3",
+      "name": "Rainy Walk",
+      "style": "lofi",
+      "kind": "bass",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 96, "degree": 0, "octave": 0, "velocity": 88  },
+        { "start": 144, "duration": 48, "degree": 4, "octave": 0, "velocity": 75  },
+        { "start": 192, "duration": 96, "degree": 2, "octave": 0, "velocity": 82  },
+        { "start": 336, "duration": 48, "degree": 0, "octave": 0, "velocity": 80  }
+      ]
+    },
+    {
+      "id": "lofi-bass-4",
+      "name": "Minor Seventh",
+      "style": "lofi",
+      "kind": "bass",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 72, "degree": 0, "octave": 0, "velocity": 90  },
+        { "start":  96, "duration": 24, "degree": 6, "octave": 0, "velocity": 68  },
+        { "start": 144, "duration": 48, "degree": 4, "octave": 0, "velocity": 80  },
+        { "start": 192, "duration": 48, "degree": 2, "octave": 0, "velocity": 78  },
+        { "start": 288, "duration": 72, "degree": 0, "octave": 0, "velocity": 85  },
+        { "start": 360, "duration": 24, "degree": 6, "octave": 0, "velocity": 65  }
+      ]
+    },
+    {
+      "id": "lofi-bass-5",
+      "name": "2-Bar Story",
+      "style": "lofi",
+      "kind": "bass",
+      "bars": 2,
+      "degrees": [
+        { "start":   0, "duration": 96, "degree": 0, "octave": 0, "velocity": 88  },
+        { "start": 144, "duration": 48, "degree": 4, "octave": 0, "velocity": 75  },
+        { "start": 288, "duration": 96, "degree": 2, "octave": 0, "velocity": 82  },
+        { "start": 384, "duration": 96, "degree": 0, "octave": 0, "velocity": 88  },
+        { "start": 528, "duration": 48, "degree": 6, "octave": 0, "velocity": 68  },
+        { "start": 576, "duration": 48, "degree": 4, "octave": 0, "velocity": 75  },
+        { "start": 672, "duration": 96, "degree": 0, "octave": 0, "velocity": 85  }
+      ]
+    },
+    {
+      "id": "lofi-bass-6",
+      "name": "Study Session",
+      "style": "lofi",
+      "kind": "bass",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 48, "degree": 0, "octave": 0, "velocity": 82  },
+        { "start":  72, "duration": 24, "degree": 2, "octave": 0, "velocity": 68  },
+        { "start": 144, "duration": 48, "degree": 0, "octave": 0, "velocity": 80  },
+        { "start": 240, "duration": 48, "degree": 4, "octave": 0, "velocity": 78  },
+        { "start": 288, "duration": 48, "degree": 0, "octave": 0, "velocity": 85  },
+        { "start": 360, "duration": 24, "degree": 5, "octave": 0, "velocity": 70  }
+      ]
+    },
+    {
       "id": "lofi-melody-1",
       "name": "Dusty Keys",
       "style": "lofi",
@@ -43,6 +102,65 @@
         { "start": 192, "duration": 48, "degree": 0, "octave": 1, "velocity": 85  },
         { "start": 264, "duration": 24, "degree": 2, "octave": 1, "velocity": 70  },
         { "start": 288, "duration": 96, "degree": 0, "octave": 1, "velocity": 80  }
+      ]
+    },
+    {
+      "id": "lofi-melody-2",
+      "name": "Mellow Evening",
+      "style": "lofi",
+      "kind": "melody",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 96, "degree": 0, "octave": 1, "velocity": 78  },
+        { "start": 144, "duration": 48, "degree": 4, "octave": 1, "velocity": 68  },
+        { "start": 192, "duration": 96, "degree": 2, "octave": 1, "velocity": 75  },
+        { "start": 336, "duration": 48, "degree": 0, "octave": 1, "velocity": 80  }
+      ]
+    },
+    {
+      "id": "lofi-melody-3",
+      "name": "Tape Hum",
+      "style": "lofi",
+      "kind": "melody",
+      "bars": 2,
+      "degrees": [
+        { "start":   0, "duration": 48, "degree": 4, "octave": 1, "velocity": 80  },
+        { "start":  96, "duration": 48, "degree": 2, "octave": 1, "velocity": 72  },
+        { "start": 192, "duration": 48, "degree": 0, "octave": 1, "velocity": 82  },
+        { "start": 288, "duration": 96, "degree": 6, "octave": 0, "velocity": 75  },
+        { "start": 384, "duration": 48, "degree": 0, "octave": 1, "velocity": 80  },
+        { "start": 480, "duration": 48, "degree": 4, "octave": 1, "velocity": 72  },
+        { "start": 576, "duration": 48, "degree": 5, "octave": 1, "velocity": 78  },
+        { "start": 672, "duration": 96, "degree": 0, "octave": 1, "velocity": 85  }
+      ]
+    },
+    {
+      "id": "lofi-melody-4",
+      "name": "Coffee Cup",
+      "style": "lofi",
+      "kind": "melody",
+      "bars": 1,
+      "degrees": [
+        { "start":  48, "duration": 24, "degree": 2, "octave": 1, "velocity": 75  },
+        { "start":  96, "duration": 48, "degree": 4, "octave": 1, "velocity": 80  },
+        { "start": 192, "duration": 24, "degree": 5, "octave": 1, "velocity": 72  },
+        { "start": 240, "duration": 48, "degree": 4, "octave": 1, "velocity": 78  },
+        { "start": 336, "duration": 48, "degree": 2, "octave": 1, "velocity": 75  }
+      ]
+    },
+    {
+      "id": "lofi-melody-5",
+      "name": "Midnight Haze",
+      "style": "lofi",
+      "kind": "melody",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 72, "degree": 0, "octave": 1, "velocity": 80  },
+        { "start":  96, "duration": 24, "degree": 6, "octave": 0, "velocity": 65  },
+        { "start": 144, "duration": 48, "degree": 0, "octave": 1, "velocity": 78  },
+        { "start": 240, "duration": 24, "degree": 2, "octave": 1, "velocity": 70  },
+        { "start": 288, "duration": 48, "degree": 4, "octave": 1, "velocity": 75  },
+        { "start": 384, "duration": 48, "degree": 0, "octave": 1, "velocity": 82  }
       ]
     },
     {
@@ -62,6 +180,88 @@
         { "start": 264, "duration": 12, "midi": 42, "velocity": 45  },
         { "start": 288, "duration": 12, "midi": 42, "velocity": 55  },
         { "start": 336, "duration": 12, "midi": 42, "velocity": 50  }
+      ]
+    },
+    {
+      "id": "lofi-beat-2",
+      "name": "Swung Shuffle",
+      "style": "lofi",
+      "kind": "beat",
+      "bars": 1,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 95  },
+        { "start":  36, "duration": 12, "midi": 42, "velocity": 50  },
+        { "start":  96, "duration": 12, "midi": 42, "velocity": 55  },
+        { "start": 132, "duration": 12, "midi": 42, "velocity": 48  },
+        { "start": 192, "duration": 24, "midi": 38, "velocity": 90  },
+        { "start": 228, "duration": 12, "midi": 42, "velocity": 50  },
+        { "start": 252, "duration": 24, "midi": 36, "velocity": 78  },
+        { "start": 288, "duration": 12, "midi": 42, "velocity": 55  },
+        { "start": 324, "duration": 12, "midi": 42, "velocity": 48  }
+      ]
+    },
+    {
+      "id": "lofi-beat-3",
+      "name": "Minimal Tap",
+      "style": "lofi",
+      "kind": "beat",
+      "bars": 1,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 95  },
+        { "start":  96, "duration": 12, "midi": 42, "velocity": 52  },
+        { "start": 192, "duration": 24, "midi": 38, "velocity": 88  },
+        { "start": 240, "duration": 12, "midi": 42, "velocity": 48  },
+        { "start": 288, "duration": 24, "midi": 36, "velocity": 80  },
+        { "start": 336, "duration": 12, "midi": 42, "velocity": 52  }
+      ]
+    },
+    {
+      "id": "lofi-beat-4",
+      "name": "Ghost Notes",
+      "style": "lofi",
+      "kind": "beat",
+      "bars": 1,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 98  },
+        { "start":  36, "duration": 12, "midi": 38, "velocity": 45  },
+        { "start":  48, "duration": 12, "midi": 42, "velocity": 52  },
+        { "start":  96, "duration": 12, "midi": 42, "velocity": 50  },
+        { "start": 144, "duration": 12, "midi": 38, "velocity": 40  },
+        { "start": 192, "duration": 24, "midi": 38, "velocity": 92  },
+        { "start": 228, "duration": 12, "midi": 38, "velocity": 45  },
+        { "start": 252, "duration": 24, "midi": 36, "velocity": 78  },
+        { "start": 288, "duration": 12, "midi": 42, "velocity": 52  },
+        { "start": 336, "duration": 12, "midi": 38, "velocity": 40  },
+        { "start": 360, "duration": 12, "midi": 42, "velocity": 48  }
+      ]
+    },
+    {
+      "id": "lofi-beat-5",
+      "name": "2-Bar Boom Bap",
+      "style": "lofi",
+      "kind": "beat",
+      "bars": 2,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 100 },
+        { "start":  48, "duration": 12, "midi": 42, "velocity": 55  },
+        { "start":  96, "duration": 12, "midi": 42, "velocity": 50  },
+        { "start": 132, "duration": 12, "midi": 38, "velocity": 42  },
+        { "start": 192, "duration": 24, "midi": 38, "velocity": 92  },
+        { "start": 240, "duration": 12, "midi": 42, "velocity": 52  },
+        { "start": 252, "duration": 24, "midi": 36, "velocity": 82  },
+        { "start": 288, "duration": 12, "midi": 42, "velocity": 55  },
+        { "start": 336, "duration": 12, "midi": 42, "velocity": 50  },
+        { "start": 384, "duration": 24, "midi": 36, "velocity": 100 },
+        { "start": 420, "duration": 12, "midi": 42, "velocity": 52  },
+        { "start": 480, "duration": 12, "midi": 42, "velocity": 50  },
+        { "start": 516, "duration": 12, "midi": 38, "velocity": 40  },
+        { "start": 528, "duration": 24, "midi": 36, "velocity": 78  },
+        { "start": 576, "duration": 24, "midi": 38, "velocity": 90  },
+        { "start": 612, "duration": 12, "midi": 38, "velocity": 42  },
+        { "start": 624, "duration": 12, "midi": 42, "velocity": 52  },
+        { "start": 672, "duration": 24, "midi": 36, "velocity": 80  },
+        { "start": 720, "duration": 12, "midi": 42, "velocity": 55  },
+        { "start": 756, "duration": 12, "midi": 42, "velocity": 48  }
       ]
     }
   ]

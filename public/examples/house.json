@@ -43,6 +43,86 @@
       ]
     },
     {
+      "id": "house-bass-3",
+      "name": "Soulful Step",
+      "style": "house",
+      "kind": "bass",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 48, "degree": 0, "octave": 0, "velocity": 105 },
+        { "start":  72, "duration": 24, "degree": 4, "octave": 0, "velocity": 90  },
+        { "start":  96, "duration": 24, "degree": 0, "octave": 0, "velocity": 100 },
+        { "start": 144, "duration": 24, "degree": 2, "octave": 0, "velocity": 85  },
+        { "start": 168, "duration": 24, "degree": 4, "octave": 0, "velocity": 90  },
+        { "start": 192, "duration": 48, "degree": 0, "octave": 0, "velocity": 105 },
+        { "start": 264, "duration": 24, "degree": 4, "octave": 0, "velocity": 90  },
+        { "start": 288, "duration": 24, "degree": 0, "octave": 0, "velocity": 100 },
+        { "start": 336, "duration": 24, "degree": 5, "octave": 0, "velocity": 85  },
+        { "start": 360, "duration": 24, "degree": 4, "octave": 0, "velocity": 80  }
+      ]
+    },
+    {
+      "id": "house-bass-4",
+      "name": "Octave Bounce",
+      "style": "house",
+      "kind": "bass",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 24, "degree": 0, "octave": 0, "velocity": 110 },
+        { "start":  48, "duration": 24, "degree": 0, "octave": 1, "velocity": 90  },
+        { "start":  96, "duration": 24, "degree": 0, "octave": 0, "velocity": 105 },
+        { "start": 144, "duration": 24, "degree": 4, "octave": 0, "velocity": 90  },
+        { "start": 192, "duration": 24, "degree": 0, "octave": 0, "velocity": 110 },
+        { "start": 240, "duration": 24, "degree": 0, "octave": 1, "velocity": 90  },
+        { "start": 288, "duration": 24, "degree": 0, "octave": 0, "velocity": 105 },
+        { "start": 312, "duration": 24, "degree": 2, "octave": 0, "velocity": 85  },
+        { "start": 336, "duration": 24, "degree": 4, "octave": 0, "velocity": 90  },
+        { "start": 360, "duration": 24, "degree": 0, "octave": 0, "velocity": 85  }
+      ]
+    },
+    {
+      "id": "house-bass-5",
+      "name": "Chicago Deep",
+      "style": "house",
+      "kind": "bass",
+      "bars": 2,
+      "degrees": [
+        { "start":   0, "duration": 72, "degree": 0, "octave": 0, "velocity": 105 },
+        { "start":  96, "duration": 24, "degree": 0, "octave": 0, "velocity": 85  },
+        { "start": 144, "duration": 24, "degree": 4, "octave": 0, "velocity": 90  },
+        { "start": 192, "duration": 48, "degree": 0, "octave": 0, "velocity": 100 },
+        { "start": 264, "duration": 24, "degree": 2, "octave": 0, "velocity": 85  },
+        { "start": 288, "duration": 48, "degree": 0, "octave": 0, "velocity": 105 },
+        { "start": 360, "duration": 24, "degree": 4, "octave": 0, "velocity": 90  },
+        { "start": 384, "duration": 72, "degree": 5, "octave": 0, "velocity": 100 },
+        { "start": 480, "duration": 24, "degree": 5, "octave": 0, "velocity": 85  },
+        { "start": 528, "duration": 24, "degree": 4, "octave": 0, "velocity": 90  },
+        { "start": 576, "duration": 48, "degree": 2, "octave": 0, "velocity": 100 },
+        { "start": 648, "duration": 24, "degree": 4, "octave": 0, "velocity": 85  },
+        { "start": 672, "duration": 48, "degree": 0, "octave": 0, "velocity": 105 },
+        { "start": 744, "duration": 24, "degree": 4, "octave": 0, "velocity": 90  }
+      ]
+    },
+    {
+      "id": "house-bass-6",
+      "name": "Funky Anticipation",
+      "style": "house",
+      "kind": "bass",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 24, "degree": 0, "octave": 0, "velocity": 105 },
+        { "start":  72, "duration": 24, "degree": 4, "octave": 0, "velocity": 90  },
+        { "start":  96, "duration": 24, "degree": 0, "octave": 0, "velocity": 100 },
+        { "start": 120, "duration": 24, "degree": 0, "octave": 0, "velocity": 80  },
+        { "start": 168, "duration": 24, "degree": 2, "octave": 0, "velocity": 85  },
+        { "start": 192, "duration": 24, "degree": 0, "octave": 0, "velocity": 105 },
+        { "start": 264, "duration": 24, "degree": 4, "octave": 0, "velocity": 90  },
+        { "start": 288, "duration": 24, "degree": 0, "octave": 0, "velocity": 100 },
+        { "start": 312, "duration": 24, "degree": 0, "octave": 0, "velocity": 80  },
+        { "start": 360, "duration": 24, "degree": 6, "octave": 0, "velocity": 80  }
+      ]
+    },
+    {
       "id": "house-melody-1",
       "name": "Piano Hook",
       "style": "house",
@@ -62,6 +142,75 @@
       ]
     },
     {
+      "id": "house-melody-2",
+      "name": "Gospel Lift",
+      "style": "house",
+      "kind": "melody",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 48, "degree": 0, "octave": 1, "velocity": 100 },
+        { "start":  72, "duration": 24, "degree": 2, "octave": 1, "velocity": 85  },
+        { "start":  96, "duration": 48, "degree": 4, "octave": 1, "velocity": 105 },
+        { "start": 168, "duration": 24, "degree": 5, "octave": 1, "velocity": 90  },
+        { "start": 192, "duration": 96, "degree": 4, "octave": 1, "velocity": 110 },
+        { "start": 288, "duration": 48, "degree": 2, "octave": 1, "velocity": 90  },
+        { "start": 360, "duration": 24, "degree": 0, "octave": 1, "velocity": 100 }
+      ]
+    },
+    {
+      "id": "house-melody-3",
+      "name": "Stab Chord Lead",
+      "style": "house",
+      "kind": "melody",
+      "bars": 1,
+      "degrees": [
+        { "start":  48, "duration": 24, "degree": 4, "octave": 1, "velocity": 100 },
+        { "start":  72, "duration": 24, "degree": 2, "octave": 1, "velocity": 90  },
+        { "start":  96, "duration": 24, "degree": 0, "octave": 1, "velocity": 105 },
+        { "start": 144, "duration": 24, "degree": 4, "octave": 1, "velocity": 95  },
+        { "start": 192, "duration": 24, "degree": 2, "octave": 1, "velocity": 85  },
+        { "start": 240, "duration": 24, "degree": 4, "octave": 1, "velocity": 100 },
+        { "start": 288, "duration": 48, "degree": 0, "octave": 1, "velocity": 110 },
+        { "start": 360, "duration": 24, "degree": 2, "octave": 1, "velocity": 85  }
+      ]
+    },
+    {
+      "id": "house-melody-4",
+      "name": "2-Bar Diva",
+      "style": "house",
+      "kind": "melody",
+      "bars": 2,
+      "degrees": [
+        { "start":   0, "duration": 24, "degree": 0, "octave": 1, "velocity": 100 },
+        { "start":  48, "duration": 24, "degree": 4, "octave": 1, "velocity": 90  },
+        { "start":  96, "duration": 48, "degree": 5, "octave": 1, "velocity": 105 },
+        { "start": 192, "duration": 24, "degree": 4, "octave": 1, "velocity": 90  },
+        { "start": 240, "duration": 48, "degree": 2, "octave": 1, "velocity": 95  },
+        { "start": 336, "duration": 48, "degree": 0, "octave": 1, "velocity": 100 },
+        { "start": 384, "duration": 24, "degree": 2, "octave": 1, "velocity": 85  },
+        { "start": 432, "duration": 24, "degree": 4, "octave": 1, "velocity": 90  },
+        { "start": 480, "duration": 48, "degree": 5, "octave": 1, "velocity": 110 },
+        { "start": 576, "duration": 24, "degree": 4, "octave": 1, "velocity": 90  },
+        { "start": 624, "duration": 24, "degree": 2, "octave": 1, "velocity": 85  },
+        { "start": 672, "duration": 96, "degree": 0, "octave": 1, "velocity": 115 }
+      ]
+    },
+    {
+      "id": "house-melody-5",
+      "name": "Warmth Lead",
+      "style": "house",
+      "kind": "melody",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 72, "degree": 0, "octave": 1, "velocity": 95  },
+        { "start":  96, "duration": 24, "degree": 4, "octave": 1, "velocity": 85  },
+        { "start": 144, "duration": 48, "degree": 2, "octave": 1, "velocity": 90  },
+        { "start": 192, "duration": 72, "degree": 4, "octave": 1, "velocity": 100 },
+        { "start": 288, "duration": 48, "degree": 5, "octave": 1, "velocity": 95  },
+        { "start": 360, "duration": 24, "degree": 0, "octave": 1, "velocity": 100 }
+      ]
+    },
+    {
       "id": "house-beat-1",
       "name": "Classic House Kit",
       "style": "house",
@@ -78,6 +227,105 @@
         { "start": 288, "duration": 24, "midi": 36, "velocity": 110 },
         { "start": 288, "duration": 24, "midi": 39, "velocity": 100 },
         { "start": 336, "duration": 12, "midi": 42, "velocity": 75  }
+      ]
+    },
+    {
+      "id": "house-beat-2",
+      "name": "Full Offbeat Hats",
+      "style": "house",
+      "kind": "beat",
+      "bars": 1,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start":  48, "duration": 12, "midi": 42, "velocity": 80  },
+        { "start":  96, "duration": 24, "midi": 36, "velocity": 110 },
+        { "start":  96, "duration": 24, "midi": 38, "velocity": 100 },
+        { "start": 144, "duration": 12, "midi": 42, "velocity": 80  },
+        { "start": 192, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start": 192, "duration": 24, "midi": 42, "velocity": 75  },
+        { "start": 240, "duration": 12, "midi": 42, "velocity": 80  },
+        { "start": 288, "duration": 24, "midi": 36, "velocity": 110 },
+        { "start": 288, "duration": 24, "midi": 38, "velocity": 100 },
+        { "start": 336, "duration": 12, "midi": 42, "velocity": 80  }
+      ]
+    },
+    {
+      "id": "house-beat-3",
+      "name": "Shuffle Clap",
+      "style": "house",
+      "kind": "beat",
+      "bars": 1,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start":  48, "duration": 12, "midi": 42, "velocity": 75  },
+        { "start":  84, "duration": 12, "midi": 42, "velocity": 60  },
+        { "start":  96, "duration": 24, "midi": 36, "velocity": 110 },
+        { "start":  96, "duration": 24, "midi": 39, "velocity": 105 },
+        { "start": 144, "duration": 12, "midi": 42, "velocity": 75  },
+        { "start": 180, "duration": 12, "midi": 42, "velocity": 60  },
+        { "start": 192, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start": 240, "duration": 12, "midi": 42, "velocity": 75  },
+        { "start": 276, "duration": 12, "midi": 42, "velocity": 60  },
+        { "start": 288, "duration": 24, "midi": 36, "velocity": 110 },
+        { "start": 288, "duration": 24, "midi": 39, "velocity": 105 },
+        { "start": 336, "duration": 12, "midi": 42, "velocity": 75  },
+        { "start": 372, "duration": 12, "midi": 42, "velocity": 60  }
+      ]
+    },
+    {
+      "id": "house-beat-4",
+      "name": "Open Hat Groove",
+      "style": "house",
+      "kind": "beat",
+      "bars": 1,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start":  48, "duration": 12, "midi": 42, "velocity": 75  },
+        { "start":  96, "duration": 24, "midi": 36, "velocity": 110 },
+        { "start":  96, "duration": 24, "midi": 38, "velocity": 100 },
+        { "start": 120, "duration": 18, "midi": 46, "velocity": 85  },
+        { "start": 144, "duration": 12, "midi": 42, "velocity": 75  },
+        { "start": 192, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start": 240, "duration": 12, "midi": 42, "velocity": 75  },
+        { "start": 264, "duration": 18, "midi": 46, "velocity": 85  },
+        { "start": 288, "duration": 24, "midi": 36, "velocity": 110 },
+        { "start": 288, "duration": 24, "midi": 38, "velocity": 100 },
+        { "start": 336, "duration": 12, "midi": 42, "velocity": 75  },
+        { "start": 360, "duration": 18, "midi": 46, "velocity": 90  }
+      ]
+    },
+    {
+      "id": "house-beat-5",
+      "name": "2-Bar Breakdown",
+      "style": "house",
+      "kind": "beat",
+      "bars": 2,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start":  48, "duration": 12, "midi": 42, "velocity": 75  },
+        { "start":  96, "duration": 24, "midi": 36, "velocity": 110 },
+        { "start":  96, "duration": 24, "midi": 39, "velocity": 100 },
+        { "start": 144, "duration": 12, "midi": 42, "velocity": 75  },
+        { "start": 192, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start": 240, "duration": 12, "midi": 42, "velocity": 75  },
+        { "start": 288, "duration": 24, "midi": 36, "velocity": 110 },
+        { "start": 288, "duration": 24, "midi": 39, "velocity": 100 },
+        { "start": 312, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start": 336, "duration": 12, "midi": 42, "velocity": 70  },
+        { "start": 360, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start": 384, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start": 432, "duration": 12, "midi": 42, "velocity": 80  },
+        { "start": 480, "duration": 24, "midi": 36, "velocity": 110 },
+        { "start": 480, "duration": 24, "midi": 39, "velocity": 105 },
+        { "start": 528, "duration": 12, "midi": 42, "velocity": 80  },
+        { "start": 528, "duration": 12, "midi": 36, "velocity": 75  },
+        { "start": 576, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start": 600, "duration": 18, "midi": 46, "velocity": 85  },
+        { "start": 624, "duration": 12, "midi": 42, "velocity": 80  },
+        { "start": 672, "duration": 24, "midi": 36, "velocity": 110 },
+        { "start": 672, "duration": 24, "midi": 39, "velocity": 105 },
+        { "start": 720, "duration": 12, "midi": 42, "velocity": 80  },
+        { "start": 744, "duration": 18, "midi": 46, "velocity": 90  }
       ]
     }
   ]

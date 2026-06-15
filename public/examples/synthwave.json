@@ -44,6 +44,92 @@
       ]
     },
     {
+      "id": "synthwave-bass-3",
+      "name": "Outrun Octave",
+      "style": "synthwave",
+      "kind": "bass",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 24, "degree": 0, "octave": 0, "velocity": 110 },
+        { "start":  24, "duration": 24, "degree": 0, "octave": 1, "velocity": 95  },
+        { "start":  48, "duration": 24, "degree": 4, "octave": 0, "velocity": 100 },
+        { "start":  72, "duration": 24, "degree": 4, "octave": 1, "velocity": 90  },
+        { "start":  96, "duration": 24, "degree": 0, "octave": 0, "velocity": 110 },
+        { "start": 120, "duration": 24, "degree": 0, "octave": 1, "velocity": 95  },
+        { "start": 144, "duration": 24, "degree": 2, "octave": 0, "velocity": 95  },
+        { "start": 168, "duration": 24, "degree": 2, "octave": 1, "velocity": 85  },
+        { "start": 192, "duration": 24, "degree": 0, "octave": 0, "velocity": 110 },
+        { "start": 216, "duration": 24, "degree": 0, "octave": 1, "velocity": 95  },
+        { "start": 240, "duration": 24, "degree": 4, "octave": 0, "velocity": 100 },
+        { "start": 264, "duration": 24, "degree": 4, "octave": 1, "velocity": 90  },
+        { "start": 288, "duration": 24, "degree": 5, "octave": 0, "velocity": 105 },
+        { "start": 312, "duration": 24, "degree": 5, "octave": 1, "velocity": 95  },
+        { "start": 336, "duration": 24, "degree": 4, "octave": 0, "velocity": 100 },
+        { "start": 360, "duration": 24, "degree": 0, "octave": 0, "velocity": 105 }
+      ]
+    },
+    {
+      "id": "synthwave-bass-4",
+      "name": "Retrowave Root",
+      "style": "synthwave",
+      "kind": "bass",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 96, "degree": 0, "octave": 0, "velocity": 110 },
+        { "start":  96, "duration": 96, "degree": 4, "octave": 0, "velocity": 100 },
+        { "start": 192, "duration": 96, "degree": 0, "octave": 0, "velocity": 110 },
+        { "start": 288, "duration": 48, "degree": 5, "octave": 0, "velocity": 100 },
+        { "start": 336, "duration": 48, "degree": 4, "octave": 0, "velocity": 95  }
+      ]
+    },
+    {
+      "id": "synthwave-bass-5",
+      "name": "Miami Drive",
+      "style": "synthwave",
+      "kind": "bass",
+      "bars": 2,
+      "degrees": [
+        { "start":   0, "duration": 24, "degree": 0, "octave": 0, "velocity": 110 },
+        { "start":  24, "duration": 24, "degree": 2, "octave": 0, "velocity": 90  },
+        { "start":  48, "duration": 24, "degree": 4, "octave": 0, "velocity": 100 },
+        { "start":  72, "duration": 24, "degree": 0, "octave": 1, "velocity": 105 },
+        { "start":  96, "duration": 48, "degree": 0, "octave": 0, "velocity": 110 },
+        { "start": 144, "duration": 24, "degree": 4, "octave": 0, "velocity": 95  },
+        { "start": 192, "duration": 24, "degree": 2, "octave": 0, "velocity": 90  },
+        { "start": 240, "duration": 48, "degree": 0, "octave": 0, "velocity": 105 },
+        { "start": 288, "duration": 24, "degree": 5, "octave": 0, "velocity": 100 },
+        { "start": 336, "duration": 48, "degree": 4, "octave": 0, "velocity": 95  },
+        { "start": 384, "duration": 24, "degree": 0, "octave": 0, "velocity": 110 },
+        { "start": 408, "duration": 24, "degree": 2, "octave": 0, "velocity": 90  },
+        { "start": 432, "duration": 24, "degree": 4, "octave": 0, "velocity": 100 },
+        { "start": 456, "duration": 24, "degree": 0, "octave": 1, "velocity": 110 },
+        { "start": 480, "duration": 24, "degree": 4, "octave": 1, "velocity": 100 },
+        { "start": 504, "duration": 24, "degree": 2, "octave": 1, "velocity": 90  },
+        { "start": 528, "duration": 24, "degree": 0, "octave": 1, "velocity": 100 },
+        { "start": 552, "duration": 24, "degree": 4, "octave": 0, "velocity": 90  },
+        { "start": 576, "duration": 24, "degree": 5, "octave": 0, "velocity": 100 },
+        { "start": 624, "duration": 24, "degree": 4, "octave": 0, "velocity": 95  },
+        { "start": 672, "duration": 96, "degree": 0, "octave": 0, "velocity": 110 }
+      ]
+    },
+    {
+      "id": "synthwave-bass-6",
+      "name": "Night City Eighth",
+      "style": "synthwave",
+      "kind": "bass",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 48, "degree": 0, "octave": 0, "velocity": 110 },
+        { "start":  48, "duration": 48, "degree": 2, "octave": 0, "velocity": 90  },
+        { "start":  96, "duration": 48, "degree": 4, "octave": 0, "velocity": 100 },
+        { "start": 144, "duration": 48, "degree": 0, "octave": 1, "velocity": 105 },
+        { "start": 192, "duration": 48, "degree": 0, "octave": 0, "velocity": 110 },
+        { "start": 240, "duration": 48, "degree": 4, "octave": 0, "velocity": 95  },
+        { "start": 288, "duration": 48, "degree": 5, "octave": 0, "velocity": 100 },
+        { "start": 336, "duration": 48, "degree": 0, "octave": 0, "velocity": 105 }
+      ]
+    },
+    {
       "id": "synthwave-melody-1",
       "name": "Neon Lead",
       "style": "synthwave",
@@ -61,6 +147,80 @@
         { "start": 240, "duration": 24, "degree": 0, "octave": 2, "velocity": 105 },
         { "start": 264, "duration": 24, "degree": 4, "octave": 1, "velocity": 90  },
         { "start": 288, "duration": 96, "degree": 0, "octave": 1, "velocity": 115 }
+      ]
+    },
+    {
+      "id": "synthwave-melody-2",
+      "name": "Chrome Arp",
+      "style": "synthwave",
+      "kind": "melody",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 24, "degree": 0, "octave": 1, "velocity": 100 },
+        { "start":  24, "duration": 24, "degree": 2, "octave": 1, "velocity": 85  },
+        { "start":  48, "duration": 24, "degree": 4, "octave": 1, "velocity": 90  },
+        { "start":  72, "duration": 24, "degree": 0, "octave": 2, "velocity": 105 },
+        { "start":  96, "duration": 24, "degree": 4, "octave": 1, "velocity": 90  },
+        { "start": 120, "duration": 24, "degree": 2, "octave": 1, "velocity": 85  },
+        { "start": 144, "duration": 24, "degree": 0, "octave": 1, "velocity": 95  },
+        { "start": 168, "duration": 24, "degree": 4, "octave": 1, "velocity": 90  },
+        { "start": 192, "duration": 24, "degree": 0, "octave": 1, "velocity": 100 },
+        { "start": 216, "duration": 24, "degree": 2, "octave": 1, "velocity": 85  },
+        { "start": 240, "duration": 24, "degree": 5, "octave": 1, "velocity": 95  },
+        { "start": 264, "duration": 24, "degree": 4, "octave": 1, "velocity": 90  },
+        { "start": 288, "duration": 96, "degree": 0, "octave": 1, "velocity": 110 }
+      ]
+    },
+    {
+      "id": "synthwave-melody-3",
+      "name": "Sunset Hero",
+      "style": "synthwave",
+      "kind": "melody",
+      "bars": 2,
+      "degrees": [
+        { "start":   0, "duration": 48, "degree": 4, "octave": 1, "velocity": 105 },
+        { "start":  96, "duration": 48, "degree": 5, "octave": 1, "velocity": 100 },
+        { "start": 192, "duration": 96, "degree": 0, "octave": 2, "velocity": 115 },
+        { "start": 288, "duration": 48, "degree": 6, "octave": 1, "velocity": 95  },
+        { "start": 336, "duration": 48, "degree": 5, "octave": 1, "velocity": 100 },
+        { "start": 384, "duration": 48, "degree": 4, "octave": 1, "velocity": 105 },
+        { "start": 480, "duration": 48, "degree": 2, "octave": 1, "velocity": 95  },
+        { "start": 576, "duration": 48, "degree": 0, "octave": 1, "velocity": 100 },
+        { "start": 672, "duration": 96, "degree": 0, "octave": 1, "velocity": 115 }
+      ]
+    },
+    {
+      "id": "synthwave-melody-4",
+      "name": "Grid Runner",
+      "style": "synthwave",
+      "kind": "melody",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 24, "degree": 0, "octave": 2, "velocity": 110 },
+        { "start":  48, "duration": 24, "degree": 6, "octave": 1, "velocity": 85  },
+        { "start":  96, "duration": 48, "degree": 4, "octave": 1, "velocity": 100 },
+        { "start": 144, "duration": 24, "degree": 5, "octave": 1, "velocity": 90  },
+        { "start": 192, "duration": 24, "degree": 4, "octave": 1, "velocity": 95  },
+        { "start": 240, "duration": 48, "degree": 2, "octave": 1, "velocity": 100 },
+        { "start": 288, "duration": 48, "degree": 0, "octave": 1, "velocity": 110 },
+        { "start": 336, "duration": 24, "degree": 4, "octave": 1, "velocity": 90  },
+        { "start": 360, "duration": 24, "degree": 0, "octave": 2, "velocity": 105 }
+      ]
+    },
+    {
+      "id": "synthwave-melody-5",
+      "name": "Cassette Riff",
+      "style": "synthwave",
+      "kind": "melody",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 48, "degree": 0, "octave": 1, "velocity": 100 },
+        { "start":  48, "duration": 48, "degree": 4, "octave": 1, "velocity": 90  },
+        { "start":  96, "duration": 48, "degree": 5, "octave": 1, "velocity": 95  },
+        { "start": 144, "duration": 48, "degree": 4, "octave": 1, "velocity": 85  },
+        { "start": 192, "duration": 48, "degree": 2, "octave": 1, "velocity": 95  },
+        { "start": 240, "duration": 48, "degree": 0, "octave": 1, "velocity": 100 },
+        { "start": 288, "duration": 96, "degree": 0, "octave": 2, "velocity": 115 }
       ]
     },
     {
@@ -88,6 +248,111 @@
         { "start": 312, "duration": 12, "midi": 42, "velocity": 65  },
         { "start": 336, "duration": 12, "midi": 42, "velocity": 60  },
         { "start": 360, "duration": 12, "midi": 42, "velocity": 70  }
+      ]
+    },
+    {
+      "id": "synthwave-beat-2",
+      "name": "Gated Clap Drive",
+      "style": "synthwave",
+      "kind": "beat",
+      "bars": 1,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start":  48, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start":  96, "duration": 24, "midi": 36, "velocity": 90  },
+        { "start":  96, "duration": 24, "midi": 39, "velocity": 105 },
+        { "start": 144, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start": 192, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start": 240, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start": 264, "duration": 12, "midi": 46, "velocity": 85  },
+        { "start": 288, "duration": 24, "midi": 36, "velocity": 90  },
+        { "start": 288, "duration": 24, "midi": 39, "velocity": 105 },
+        { "start": 336, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start": 360, "duration": 12, "midi": 46, "velocity": 90  }
+      ]
+    },
+    {
+      "id": "synthwave-beat-3",
+      "name": "Snare Double",
+      "style": "synthwave",
+      "kind": "beat",
+      "bars": 1,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start":  48, "duration": 12, "midi": 42, "velocity": 70  },
+        { "start":  96, "duration": 24, "midi": 36, "velocity": 85  },
+        { "start":  96, "duration": 24, "midi": 38, "velocity": 105 },
+        { "start": 120, "duration": 12, "midi": 38, "velocity": 75  },
+        { "start": 144, "duration": 12, "midi": 42, "velocity": 70  },
+        { "start": 192, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start": 240, "duration": 12, "midi": 42, "velocity": 70  },
+        { "start": 264, "duration": 12, "midi": 46, "velocity": 85  },
+        { "start": 288, "duration": 24, "midi": 36, "velocity": 85  },
+        { "start": 288, "duration": 24, "midi": 38, "velocity": 105 },
+        { "start": 312, "duration": 12, "midi": 38, "velocity": 75  },
+        { "start": 336, "duration": 12, "midi": 42, "velocity": 70  },
+        { "start": 360, "duration": 12, "midi": 46, "velocity": 90  }
+      ]
+    },
+    {
+      "id": "synthwave-beat-4",
+      "name": "Turbo Kick",
+      "style": "synthwave",
+      "kind": "beat",
+      "bars": 1,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start":  48, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start":  72, "duration": 12, "midi": 36, "velocity": 80  },
+        { "start":  96, "duration": 24, "midi": 36, "velocity": 90  },
+        { "start":  96, "duration": 24, "midi": 38, "velocity": 105 },
+        { "start": 144, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start": 168, "duration": 12, "midi": 36, "velocity": 80  },
+        { "start": 192, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start": 240, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start": 264, "duration": 12, "midi": 36, "velocity": 80  },
+        { "start": 288, "duration": 24, "midi": 36, "velocity": 90  },
+        { "start": 288, "duration": 24, "midi": 38, "velocity": 105 },
+        { "start": 336, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start": 360, "duration": 12, "midi": 46, "velocity": 90  }
+      ]
+    },
+    {
+      "id": "synthwave-beat-5",
+      "name": "2-Bar Electro",
+      "style": "synthwave",
+      "kind": "beat",
+      "bars": 2,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start":  48, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start":  96, "duration": 24, "midi": 36, "velocity": 85  },
+        { "start":  96, "duration": 24, "midi": 38, "velocity": 105 },
+        { "start": 144, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start": 192, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start": 240, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start": 264, "duration": 12, "midi": 46, "velocity": 85  },
+        { "start": 288, "duration": 24, "midi": 36, "velocity": 85  },
+        { "start": 288, "duration": 24, "midi": 38, "velocity": 105 },
+        { "start": 312, "duration": 12, "midi": 38, "velocity": 75  },
+        { "start": 336, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start": 360, "duration": 12, "midi": 46, "velocity": 90  },
+        { "start": 384, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start": 432, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start": 480, "duration": 24, "midi": 36, "velocity": 85  },
+        { "start": 480, "duration": 24, "midi": 38, "velocity": 105 },
+        { "start": 504, "duration": 12, "midi": 38, "velocity": 75  },
+        { "start": 528, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start": 576, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start": 576, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start": 608, "duration": 12, "midi": 42, "velocity": 60  },
+        { "start": 624, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start": 648, "duration": 12, "midi": 46, "velocity": 85  },
+        { "start": 672, "duration": 24, "midi": 36, "velocity": 85  },
+        { "start": 672, "duration": 24, "midi": 38, "velocity": 105 },
+        { "start": 696, "duration": 12, "midi": 38, "velocity": 80  },
+        { "start": 720, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start": 744, "duration": 12, "midi": 46, "velocity": 95  }
       ]
     }
   ]
