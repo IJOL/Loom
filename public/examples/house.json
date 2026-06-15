@@ -1,0 +1,84 @@
+{
+  "style": "house",
+  "examples": [
+    {
+      "id": "house-bass-1",
+      "name": "Root & Fifth Groove",
+      "style": "house",
+      "kind": "bass",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 36, "degree": 0, "octave": 0, "velocity": 105 },
+        { "start":  48, "duration": 24, "degree": 0, "octave": 0, "velocity": 85  },
+        { "start":  72, "duration": 24, "degree": 4, "octave": 0, "velocity": 90  },
+        { "start":  96, "duration": 36, "degree": 0, "octave": 0, "velocity": 100 },
+        { "start": 144, "duration": 24, "degree": 4, "octave": 0, "velocity": 85  },
+        { "start": 192, "duration": 48, "degree": 0, "octave": 0, "velocity": 105 },
+        { "start": 240, "duration": 24, "degree": 0, "octave": 0, "velocity": 85  },
+        { "start": 264, "duration": 24, "degree": 4, "octave": 0, "velocity": 90  },
+        { "start": 288, "duration": 48, "degree": 0, "octave": 0, "velocity": 100 },
+        { "start": 336, "duration": 24, "degree": 4, "octave": 0, "velocity": 90  },
+        { "start": 360, "duration": 24, "degree": 2, "octave": 0, "velocity": 80  }
+      ]
+    },
+    {
+      "id": "house-bass-2",
+      "name": "Offbeat Pump",
+      "style": "house",
+      "kind": "bass",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 24, "degree": 0, "octave": 0, "velocity": 100 },
+        { "start":  24, "duration": 24, "degree": 0, "octave": 0, "velocity": 80  },
+        { "start":  72, "duration": 24, "degree": 4, "octave": 0, "velocity": 90  },
+        { "start":  96, "duration": 24, "degree": 0, "octave": 0, "velocity": 100 },
+        { "start": 120, "duration": 24, "degree": 0, "octave": 0, "velocity": 80  },
+        { "start": 168, "duration": 24, "degree": 2, "octave": 0, "velocity": 85  },
+        { "start": 192, "duration": 24, "degree": 0, "octave": 0, "velocity": 100 },
+        { "start": 216, "duration": 24, "degree": 0, "octave": 0, "velocity": 80  },
+        { "start": 264, "duration": 24, "degree": 4, "octave": 0, "velocity": 90  },
+        { "start": 288, "duration": 24, "degree": 0, "octave": 0, "velocity": 100 },
+        { "start": 312, "duration": 24, "degree": 0, "octave": 0, "velocity": 80  },
+        { "start": 360, "duration": 24, "degree": 3, "octave": 0, "velocity": 85  }
+      ]
+    },
+    {
+      "id": "house-melody-1",
+      "name": "Piano Hook",
+      "style": "house",
+      "kind": "melody",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 24, "degree": 4, "octave": 1, "velocity": 95  },
+        { "start":  24, "duration": 24, "degree": 2, "octave": 1, "velocity": 80  },
+        { "start":  48, "duration": 48, "degree": 0, "octave": 1, "velocity": 105 },
+        { "start": 120, "duration": 24, "degree": 2, "octave": 1, "velocity": 80  },
+        { "start": 144, "duration": 24, "degree": 4, "octave": 1, "velocity": 90  },
+        { "start": 168, "duration": 24, "degree": 0, "octave": 1, "velocity": 85  },
+        { "start": 192, "duration": 48, "degree": 5, "octave": 1, "velocity": 95  },
+        { "start": 240, "duration": 24, "degree": 4, "octave": 1, "velocity": 80  },
+        { "start": 264, "duration": 24, "degree": 2, "octave": 1, "velocity": 85  },
+        { "start": 288, "duration": 96, "degree": 0, "octave": 1, "velocity": 110 }
+      ]
+    },
+    {
+      "id": "house-beat-1",
+      "name": "Classic House Kit",
+      "style": "house",
+      "kind": "beat",
+      "bars": 1,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start":  48, "duration": 12, "midi": 42, "velocity": 75  },
+        { "start":  96, "duration": 24, "midi": 36, "velocity": 110 },
+        { "start":  96, "duration": 24, "midi": 39, "velocity": 100 },
+        { "start": 144, "duration": 12, "midi": 42, "velocity": 75  },
+        { "start": 192, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start": 240, "duration": 12, "midi": 42, "velocity": 75  },
+        { "start": 288, "duration": 24, "midi": 36, "velocity": 110 },
+        { "start": 288, "duration": 24, "midi": 39, "velocity": 100 },
+        { "start": 336, "duration": 12, "midi": 42, "velocity": 75  }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "style": "lofi",
+  "examples": [
+    {
+      "id": "lofi-bass-1",
+      "name": "Sparse Roots",
+      "style": "lofi",
+      "kind": "bass",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 72, "degree": 0, "octave": 0, "velocity": 90  },
+        { "start":  96, "duration": 48, "degree": 0, "octave": 0, "velocity": 75  },
+        { "start": 192, "duration": 72, "degree": 2, "octave": 0, "velocity": 85  },
+        { "start": 288, "duration": 48, "degree": 0, "octave": 0, "velocity": 80  },
+        { "start": 360, "duration": 24, "degree": 6, "octave": 0, "velocity": 70  }
+      ]
+    },
+    {
+      "id": "lofi-bass-2",
+      "name": "Jazz Waltz Low",
+      "style": "lofi",
+      "kind": "bass",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 48, "degree": 0, "octave": 0, "velocity": 85  },
+        { "start":  96, "duration": 48, "degree": 0, "octave": 0, "velocity": 70  },
+        { "start": 168, "duration": 24, "degree": 6, "octave": 0, "velocity": 65  },
+        { "start": 192, "duration": 48, "degree": 2, "octave": 0, "velocity": 80  },
+        { "start": 288, "duration": 72, "degree": 0, "octave": 0, "velocity": 85  },
+        { "start": 360, "duration": 24, "degree": 4, "octave": 0, "velocity": 70  }
+      ]
+    },
+    {
+      "id": "lofi-melody-1",
+      "name": "Dusty Keys",
+      "style": "lofi",
+      "kind": "melody",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 48, "degree": 2, "octave": 1, "velocity": 80  },
+        { "start":  72, "duration": 24, "degree": 0, "octave": 1, "velocity": 70  },
+        { "start":  96, "duration": 72, "degree": 6, "octave": 0, "velocity": 75  },
+        { "start": 192, "duration": 48, "degree": 0, "octave": 1, "velocity": 85  },
+        { "start": 264, "duration": 24, "degree": 2, "octave": 1, "velocity": 70  },
+        { "start": 288, "duration": 96, "degree": 0, "octave": 1, "velocity": 80  }
+      ]
+    },
+    {
+      "id": "lofi-beat-1",
+      "name": "Head Nod",
+      "style": "lofi",
+      "kind": "beat",
+      "bars": 1,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 100 },
+        { "start":  48, "duration": 12, "midi": 42, "velocity": 55  },
+        { "start":  96, "duration": 12, "midi": 42, "velocity": 50  },
+        { "start": 144, "duration": 12, "midi": 42, "velocity": 55  },
+        { "start": 192, "duration": 24, "midi": 38, "velocity": 95  },
+        { "start": 240, "duration": 12, "midi": 42, "velocity": 50  },
+        { "start": 252, "duration": 24, "midi": 36, "velocity": 85  },
+        { "start": 264, "duration": 12, "midi": 42, "velocity": 45  },
+        { "start": 288, "duration": 12, "midi": 42, "velocity": 55  },
+        { "start": 336, "duration": 12, "midi": 42, "velocity": 50  }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "style": "acid",
+  "examples": [
+    {
+      "id": "acid-bass-1",
+      "name": "Roller 16th",
+      "style": "acid",
+      "kind": "bass",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 30, "degree": 0, "octave": 0, "velocity": 115 },
+        { "start":  24, "duration": 18, "degree": 0, "octave": 1, "velocity": 80  },
+        { "start":  48, "duration": 24, "degree": 2, "octave": 0, "velocity": 90  },
+        { "start":  72, "duration": 30, "degree": 0, "octave": 0, "velocity": 115 },
+        { "start":  96, "duration": 18, "degree": 4, "octave": 0, "velocity": 80  },
+        { "start": 120, "duration": 18, "degree": 0, "octave": 1, "velocity": 95  },
+        { "start": 144, "duration": 24, "degree": 2, "octave": 0, "velocity": 80  },
+        { "start": 168, "duration": 18, "degree": 6, "octave": 0, "velocity": 75  },
+        { "start": 192, "duration": 30, "degree": 0, "octave": 0, "velocity": 115 },
+        { "start": 216, "duration": 18, "degree": 0, "octave": 1, "velocity": 80  },
+        { "start": 240, "duration": 24, "degree": 4, "octave": 0, "velocity": 90  },
+        { "start": 264, "duration": 18, "degree": 2, "octave": 0, "velocity": 80  },
+        { "start": 288, "duration": 30, "degree": 0, "octave": 0, "velocity": 115 },
+        { "start": 312, "duration": 18, "degree": 4, "octave": 0, "velocity": 85  },
+        { "start": 336, "duration": 24, "degree": 0, "octave": 1, "velocity": 95  },
+        { "start": 360, "duration": 24, "degree": 0, "octave": 0, "velocity": 80  }
+      ]
+    },
+    {
+      "id": "acid-bass-2",
+      "name": "Squelch Riff",
+      "style": "acid",
+      "kind": "bass",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 36, "degree": 0, "octave": 0, "velocity": 115 },
+        { "start":  48, "duration": 24, "degree": 4, "octave": 0, "velocity": 85  },
+        { "start":  72, "duration": 18, "degree": 0, "octave": 1, "velocity": 100 },
+        { "start":  96, "duration": 36, "degree": 0, "octave": 0, "velocity": 115 },
+        { "start": 144, "duration": 24, "degree": 2, "octave": 0, "velocity": 80  },
+        { "start": 168, "duration": 18, "degree": 6, "octave": 0, "velocity": 70  },
+        { "start": 192, "duration": 36, "degree": 0, "octave": 0, "velocity": 115 },
+        { "start": 240, "duration": 18, "degree": 4, "octave": 0, "velocity": 90  },
+        { "start": 264, "duration": 18, "degree": 0, "octave": 1, "velocity": 105 },
+        { "start": 288, "duration": 36, "degree": 0, "octave": 0, "velocity": 115 },
+        { "start": 336, "duration": 18, "degree": 3, "octave": 0, "velocity": 85  },
+        { "start": 360, "duration": 24, "degree": 2, "octave": 0, "velocity": 80  }
+      ]
+    },
+    {
+      "id": "acid-melody-1",
+      "name": "303 Hook",
+      "style": "acid",
+      "kind": "melody",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 24, "degree": 4, "octave": 1, "velocity": 110 },
+        { "start":  24, "duration": 24, "degree": 2, "octave": 1, "velocity": 85  },
+        { "start":  48, "duration": 24, "degree": 0, "octave": 1, "velocity": 100 },
+        { "start":  96, "duration": 24, "degree": 6, "octave": 0, "velocity": 80  },
+        { "start": 120, "duration": 24, "degree": 4, "octave": 0, "velocity": 90  },
+        { "start": 144, "duration": 48, "degree": 0, "octave": 1, "velocity": 115 },
+        { "start": 216, "duration": 24, "degree": 2, "octave": 1, "velocity": 80  },
+        { "start": 240, "duration": 24, "degree": 4, "octave": 1, "velocity": 90  },
+        { "start": 264, "duration": 24, "degree": 0, "octave": 1, "velocity": 100 },
+        { "start": 288, "duration": 96, "degree": 0, "octave": 0, "velocity": 115 }
+      ]
+    },
+    {
+      "id": "acid-beat-1",
+      "name": "Four-on-Floor Acid",
+      "style": "acid",
+      "kind": "beat",
+      "bars": 1,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start":   0, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start":  24, "duration": 12, "midi": 42, "velocity": 55  },
+        { "start":  48, "duration": 12, "midi": 42, "velocity": 70  },
+        { "start":  72, "duration": 12, "midi": 42, "velocity": 55  },
+        { "start":  96, "duration": 24, "midi": 36, "velocity": 110 },
+        { "start":  96, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start": 120, "duration": 12, "midi": 46, "velocity": 75  },
+        { "start": 144, "duration": 12, "midi": 42, "velocity": 70  },
+        { "start": 168, "duration": 12, "midi": 42, "velocity": 55  },
+        { "start": 192, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start": 192, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start": 216, "duration": 12, "midi": 42, "velocity": 55  },
+        { "start": 240, "duration": 12, "midi": 42, "velocity": 70  },
+        { "start": 264, "duration": 12, "midi": 46, "velocity": 80  },
+        { "start": 288, "duration": 24, "midi": 36, "velocity": 110 },
+        { "start": 288, "duration": 12, "midi": 42, "velocity": 65  },
+        { "start": 312, "duration": 12, "midi": 42, "velocity": 55  },
+        { "start": 336, "duration": 12, "midi": 42, "velocity": 70  },
+        { "start": 360, "duration": 12, "midi": 46, "velocity": 90  }
+      ]
+    }
+  ]
+}
