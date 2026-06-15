@@ -9,7 +9,8 @@
 
 import type { SessionClip } from '../session';
 import { sampleCache } from '../../samples/sample-cache';
-import { ticksPerBar, stepsPerBar, stepsPerBeat, DEFAULT_METER, type TimeSignature } from '../../core/meter';
+import { ticksPerBar, stepsPerBar, stepsPerBeat, quartersPerBar, DEFAULT_METER, type TimeSignature } from '../../core/meter';
+import { srcSecAtBeat } from '../../samples/warp-region';
 import { setAudioClipWarp } from './audio-clip-warp';
 import { wireEngineParams } from '../../engines/engine-ui';
 import type { SynthEngine, EngineUIContext } from '../../engines/engine-types';
@@ -82,6 +83,23 @@ export function mountWaveformHeader(
       c2d.strokeStyle = '#ffb454';
       for (const s of slices) {
         const x = (s.start / dur) * w;
+        c2d.beginPath(); c2d.moveTo(x, RULER_H); c2d.lineTo(x, RULER_H + WAVE_H); c2d.stroke();
+      }
+    }
+
+    // warp beat grid — the song's actual bar positions in the SOURCE, from the
+    // shared warp markers (propagated to every channel of the import). Drawn on
+    // any warped clip's waveform so beat alignment is visible everywhere, not
+    // only on the drums reference. Bars at warped source x; every 4th brighter.
+    const wm = clip.sample?.warpMarkers;
+    if (wm && wm.length >= 2 && dur > 0) {
+      const bpb = Math.max(1, Math.round(quartersPerBar(meter)));
+      const lastBeat = wm[wm.length - 1].beat;
+      for (let barIdx = 0; barIdx <= clip.lengthBars; barIdx++) {
+        const beat = barIdx * bpb;
+        if (beat > lastBeat) break;
+        const x = (srcSecAtBeat(wm, beat) / dur) * w;
+        c2d.strokeStyle = barIdx % 4 === 0 ? 'rgba(245,166,35,0.40)' : 'rgba(245,166,35,0.13)';
         c2d.beginPath(); c2d.moveTo(x, RULER_H); c2d.lineTo(x, RULER_H + WAVE_H); c2d.stroke();
       }
     }

@@ -5,6 +5,13 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const MANUAL_SRC = join(ROOT, 'docs', 'manual');
+// Git worktrees live in `<ROOT>/.claude/worktrees/<name>/` (each with its own
+// node_modules after a local install). The dev server must ignore OTHER worktrees
+// so creating/installing one doesn't thrash this server's file watcher — but it
+// must keep watching THIS tree. Anchoring to `<ROOT>/.claude/worktrees` does both:
+// for the primary checkout it's the worktrees dir (ignored); for a worktree server
+// it resolves under that worktree and matches nothing real (so its own src is watched).
+const WORKTREES_DIR = join(ROOT, '.claude', 'worktrees');
 
 // App version + codename — the single source of truth is version.json at the
 // repo root (bumped by tools/bump-version.mjs / the pre-push hook). Read it at
@@ -67,12 +74,9 @@ function manualPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [manualPlugin()],
-  // Keep the dev-server file watcher out of `.claude/` — git worktrees are created
-  // under `.claude/worktrees/<name>/` (each with its own node_modules after a local
-  // install). Without this, creating/installing a worktree dumps thousands of files
-  // under the watched root and the PRIMARY dev server reloads/crashes. Worktrees are
-  // isolated checkouts; the server serving one tree must ignore the others.
-  server: { watch: { ignored: ['**/.claude/**'] } },
+  // Ignore OTHER git worktrees so creating/installing one never thrashes this
+  // server's watcher (see WORKTREES_DIR). A path predicate is robust on Windows.
+  server: { watch: { ignored: (file: string) => file.startsWith(WORKTREES_DIR) } },
   define: {
     __APP_VERSION__: JSON.stringify(APP_VERSION.version),
     __APP_CODENAME__: JSON.stringify(APP_VERSION.codename),

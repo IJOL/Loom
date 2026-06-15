@@ -85,11 +85,27 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
   col.append(hL, hR);
   host.appendChild(col);
 
+  // The bar grid does NOT always fill the host: a piano-roll/drum editor has a
+  // left label gutter, so bar 0 starts inside the host, not at its left edge.
+  // Anchor the column to the widest <canvas> in the host (the note/drum grid or
+  // the waveform) — for the gutter-less waveform that's the full width, so audio
+  // is unchanged; for the piano-roll it lines the column up with the bar numbers.
+  const contentBox = (): { leftRel: number; absLeft: number; width: number } => {
+    const hr = host.getBoundingClientRect();
+    let best: DOMRect | null = null;
+    for (const c of Array.from(host.querySelectorAll('canvas'))) {
+      const r = c.getBoundingClientRect();
+      if (r.width > 0 && (!best || r.width > best.width)) best = r;
+    }
+    const r = best ?? hr;
+    return { leftRel: r.left - hr.left, absLeft: r.left, width: r.width || 1 };
+  };
+
   const layout = () => {
     const { startTick, endTick } = effectiveClipLoop(clip, meter);
-    const w = host.clientWidth || 1;
-    col.style.left = `${tickToPx(startTick, w, total)}px`;
-    col.style.width = `${tickToPx(endTick - startTick, w, total)}px`;
+    const cb = contentBox();
+    col.style.left = `${cb.leftRel + tickToPx(startTick, cb.width, total)}px`;
+    col.style.width = `${tickToPx(endTick - startTick, cb.width, total)}px`;
     col.style.display = clip.loopEnabled ? '' : 'none';
     toggle.classList.toggle('on', !!clip.loopEnabled);
   };
@@ -108,9 +124,9 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
     if (!clip.loopEnabled) return;
     historyDeps?.history.beginGesture(historyDeps.snapshot());
     const move = (e: PointerEvent) => {
-      const rect = host.getBoundingClientRect();
+      const cb = contentBox();
       const step = snapFor();
-      const tick = snapTick(pxToTick(e.clientX - rect.left, rect.width, total), step);
+      const tick = snapTick(pxToTick(e.clientX - cb.absLeft, cb.width, total), step);
       const cur = effectiveClipLoop(clip, meter);
       const next = which === 'l'
         ? clampLoopRegion(tick, cur.endTick, total, step)

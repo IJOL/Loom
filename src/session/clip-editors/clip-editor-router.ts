@@ -18,7 +18,7 @@ import { GM_DRUM_MAP } from '../../engines/drum-gm-map';
 import { mountWaveformHeader, renderAudioClipEditor } from './clip-waveform-header';
 import type { HistoryDeps } from '../../save/history-wiring';
 import { withUndo } from '../../save/history-wiring';
-import { mountClipLoopBrace } from '../../core/clip-loop-brace';
+import { mountClipLoopOverlay } from '../../core/clip-loop-overlay';
 import type { LaneResourceMap } from '../../core/lane-resources';
 import type { KnobHandle } from '../../core/knob';
 import type { EngineUIContext } from '../../engines/engine-types';
@@ -227,7 +227,14 @@ export function renderClipEditor(
     bodyHandle = buildPianoRoll(bodyBox, lane, clip, deps);
   }
 
-  mountClipLoopBrace(bodyBox, clip, deps.seq.meter, deps.historyDeps, () => {});
+  // Performance-style loop overlay over the note/drum editor (toolbar above it),
+  // matching the audio editor so the loop reads the same everywhere.
+  const loopBar = document.createElement('div');
+  host.insertBefore(loopBar, bodyBox);
+  mountClipLoopOverlay({
+    toolbarHost: loopBar, overlayHost: bodyBox,
+    clip, meter: deps.seq.meter, historyDeps: deps.historyDeps, onChange: () => {},
+  });
   return combineEditorHandle(headerHandle, bodyHandle);
 }
 
