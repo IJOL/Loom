@@ -4,7 +4,7 @@
 
 import type { SessionState, SessionClip, SessionLane } from './session';
 import { resolveTonality, DEFAULT_MUSICALITY } from './session';
-import { rootNameEs, SCALE_CATALOG } from '../core/musicality';
+import { rootNameEs, SCALE_CATALOG, STYLE_CATALOG } from '../core/musicality';
 import type { LanePlayState } from './session-runtime';
 import type { Sequencer } from '../core/sequencer';
 import { renderClipEditor, classifyClip, chooseClipEditor, type ClipEditorDeps } from './clip-editors/clip-editor-router';
@@ -19,7 +19,7 @@ import { generate, type GenKind } from '../core/generators';
 import { stepsPerBar, ticksPerBar } from '../core/meter';
 import { ensureScenesForRows } from '../core/scene-ensure';
 import { alertDialog, promptDialog } from '../core/dialog';
-import { loadAllExamples, renderExampleNotes, clipToExample, exampleToJson, saveUserExample } from './example-loader';
+import { loadAllExamples, renderExampleNotes, clipToExample, exampleToJson, saveUserExample, type Example } from './example-loader';
 
 function genKindFor(engineId: string): GenKind {
   if (engineId === 'tb303') return 'bass';
@@ -223,18 +223,32 @@ export class SessionInspector {
     const exKind = genKindFor(lane!.engineId);
     const exSelect = document.getElementById('insp-examples-select') as HTMLSelectElement;
 
+    // Show ALL examples regardless of the project's global style/key. Filter only by
+    // editor category: a piano-roll lane shows melodic riffs (bass+melody); a drum lane
+    // shows beats. Group by style with <optgroup> headers (like the preset picker).
+    const kindsToShow: string[] = exKind === 'beat' ? ['beat'] : ['bass', 'melody'];
+
     const repopulate = async () => {
-      const all = await loadAllExamples(style()).catch(() => []);
-      const list = all.filter((e) => e.kind === exKind);
       exSelect.innerHTML = '';
       const ph = document.createElement('option');
-      ph.value = ''; ph.textContent = list.length ? '— ejemplo… —' : '— sin ejemplos —';
+      ph.value = ''; ph.textContent = '— ejemplo… —';
       exSelect.appendChild(ph);
-      for (const e of list) {
-        const o = document.createElement('option');
-        o.value = e.id;
-        o.textContent = e.source === 'user' ? `★ ${e.name}` : e.name;
-        exSelect.appendChild(o);
+      const perStyle = await Promise.all(
+        STYLE_CATALOG.map((s) =>
+          loadAllExamples(s.id).then((list) => ({ s, list })).catch(() => ({ s, list: [] as Example[] }))),
+      );
+      for (const { s, list } of perStyle) {
+        const matching = list.filter((e) => kindsToShow.includes(e.kind));
+        if (matching.length === 0) continue;
+        const group = document.createElement('optgroup');
+        group.label = s.label;
+        for (const e of matching) {
+          const o = document.createElement('option');
+          o.value = e.id;
+          o.textContent = e.source === 'user' ? `★ ${e.name}` : e.name;
+          group.appendChild(o);
+        }
+        exSelect.appendChild(group);
       }
     };
     void repopulate();
@@ -243,9 +257,9 @@ export class SessionInspector {
       const id = exSelect.value;
       exSelect.value = ''; // reset to placeholder
       if (!id) return;
-      const all = await loadAllExamples(style()).catch(() => null);
-      if (!all) { void alertDialog('No se pudieron cargar los ejemplos.'); return; }
-      const chosen = all.find((e) => e.id === id);
+      const perStyle = await Promise.all(STYLE_CATALOG.map((s) => loadAllExamples(s.id).catch(() => []))).catch(() => null);
+      if (!perStyle) { void alertDialog('No se pudieron cargar los ejemplos.'); return; }
+      const chosen = perStyle.flat().find((e) => e.id === id);
       if (!chosen) return;
       const d = this.deps.historyDeps;
       const viewOctave = this.roll?.getOctaveBase?.() ?? 60;
