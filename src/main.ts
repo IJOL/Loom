@@ -474,7 +474,7 @@ laneHost.setLookupEngineId((laneId) =>
 
 // ── Musicality bar ────────────────────────────────────────────────────────────
 const musicalityHost = $<HTMLDivElement>('musicality-bar');
-renderMusicalityBar(musicalityHost, {
+const musicalityBar = renderMusicalityBar(musicalityHost, {
   get: () => sessionHost.state.musicality ?? DEFAULT_MUSICALITY,
   onChange: (next) => {
     const run = () => {
@@ -484,6 +484,9 @@ renderMusicalityBar(musicalityHost, {
     if (_discreteHistoryDeps) withUndo(_discreteHistoryDeps, run); else run();
   },
 });
+// Refresh the summary whenever a new session is applied (boot demo, demo
+// picker, save-load, new-session) so the displayed tonality stays in sync.
+sessionHost.onStateApplied(() => musicalityBar.refresh());
 
 // ── Live MIDI control subsystem ─────────────────────────────────────────────
 // Assemble facade → mediator → access seam → UI. activeLaneStore (declared

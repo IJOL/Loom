@@ -5,8 +5,8 @@ import { markPagePresetCustom, recordPagePresetForLane } from '../polysynth/poly
 import { getDrumKits } from '../presets/drum-kits-loader';
 
 // ── Per-lane "🎲 Sound" randomize ─────────────────────────────────────────
-// Randomizes the engine's *sound* (params / kit). Note randomization is per
-// Session clip and lives in the clip inspector (see clip-randomize.ts).
+// Randomizes the engine's *sound* (params / kit). Only sound parameters are
+// affected here; note content in clips is not touched.
 
 export interface RandomizeUIDeps {
   // Phase G: synth resolved lazily — null before boot lane is allocated.
