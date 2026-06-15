@@ -52,6 +52,9 @@ function mountInspectorDom(): void {
       <button id="insp-paste-replace" disabled></button>
       <button id="insp-paste-layer" disabled></button>
       <button id="insp-random-notes"></button>
+      <button id="insp-variate"></button>
+      <button id="insp-invert-melodic"></button>
+      <button id="insp-retrograde"></button>
       <select id="insp-examples-select"></select>
       <button id="insp-save-example"></button>
       <button id="insp-export-example"></button>

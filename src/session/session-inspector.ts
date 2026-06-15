@@ -16,6 +16,7 @@ import { withUndo, isTextEditTarget } from '../save/history-wiring';
 import type { LaneResourceMap } from '../core/lane-resources';
 import { buildLaneInsertUI } from './lane-insert-ui';
 import { generate, type GenKind } from '../core/generators';
+import { variateNotes, invertMelodic, invertRetrograde } from '../core/note-transform';
 import { stepsPerBar, ticksPerBar } from '../core/meter';
 import { ensureScenesForRows } from '../core/scene-ensure';
 import { alertDialog, promptDialog } from '../core/dialog';
@@ -222,6 +223,45 @@ export class SessionInspector {
     const style = () => this.deps.state.musicality?.style ?? 'acid';
     const exKind = genKindFor(lane!.engineId);
     const exSelect = document.getElementById('insp-examples-select') as HTMLSelectElement;
+
+    // ── Variar / Espejo / Reverso ─────────────────────────────────────────────
+    // Shared helper: wraps any clip-note mutation in undo + octave-restore,
+    // mirroring the 🎲 handler's pattern.
+    const withClipEdit = (fn: () => void): void => {
+      const d = this.deps.historyDeps;
+      const viewOctave = this.roll?.getOctaveBase?.() ?? 60;
+      const run = () => { fn(); this.renderEditor(); this.roll?.setOctaveBase?.(viewOctave); };
+      if (d) withUndo(d, run); else run();
+    };
+
+    document.getElementById('insp-variate')!.onclick = () => {
+      withClipEdit(() => {
+        const ton = resolveTonality(lane!, this.deps.state);
+        clip.notes = variateNotes(clip.notes ?? [], {
+          key: ton.key, scale: ton.scale, melodic: exKind !== 'beat',
+          clipTicks: clip.lengthBars * ticksPerBar(this.deps.seq.meter),
+          rng: Math.random,
+        });
+      });
+    };
+
+    const invMelodicBtn = document.getElementById('insp-invert-melodic') as HTMLButtonElement;
+    invMelodicBtn.hidden = exKind === 'beat'; // melodic inversion is meaningless for drums
+    invMelodicBtn.onclick = () => {
+      withClipEdit(() => {
+        const ton = resolveTonality(lane!, this.deps.state);
+        clip.notes = invertMelodic(clip.notes ?? [], ton.key, ton.scale);
+      });
+    };
+
+    document.getElementById('insp-retrograde')!.onclick = () => {
+      withClipEdit(() => {
+        clip.notes = invertRetrograde(
+          clip.notes ?? [],
+          clip.lengthBars * ticksPerBar(this.deps.seq.meter),
+        );
+      });
+    };
 
     // Show ALL examples regardless of the project's global style/key. Filter only by
     // editor category: a piano-roll lane shows melodic riffs (bass+melody); a drum lane
