@@ -2,7 +2,7 @@
 // Performance-style loop region: a translucent amber COLUMN with vertical A/B
 // edge lines spanning the full height of the editor it overlays (same look as the
 // arrangement's `.perf-loop-span`), plus a toolbar with a Loop toggle and a
-// VARIABLE quantize selector (libre / beat / compás). Used by the audio, piano-
+// VARIABLE quantize selector (free / beat / bar). Used by the audio, piano-
 // roll and drum editors so the loop reads the same everywhere.
 //
 // Coordinate space: the column maps the clip's [0, total) ticks across the
@@ -38,7 +38,7 @@ export interface ClipLoopOverlayDeps {
 }
 
 const QUANT_LABELS: ReadonlyArray<readonly [LoopQuantize, string]> = [
-  ['bar', 'compás'], ['beat', 'beat'], ['free', 'libre'],
+  ['bar', 'Bar'], ['beat', 'Beat'], ['free', 'Free'],
 ];
 
 export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () => void } {
@@ -56,7 +56,7 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
   toggle.textContent = 'Loop';
   const qsel = document.createElement('select');
   qsel.className = 'clip-loop-quant';
-  qsel.title = 'Cuantización del loop';
+  qsel.title = 'Loop quantization';
   for (const [v, label] of QUANT_LABELS) {
     const o = document.createElement('option');
     o.value = v; o.textContent = label;
@@ -67,8 +67,8 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
   if (deps.applyToAll) {
     const all = document.createElement('button');
     all.className = 'clip-loop-all';
-    all.textContent = 'Todos los canales';
-    all.title = 'Aplicar este loop a todos los canales de audio del tema';
+    all.textContent = 'All channels';
+    all.title = 'Apply this loop region to every audio channel of the song';
     all.addEventListener('click', () => {
       const { startTick, endTick } = effectiveClipLoop(clip, meter);
       historyDeps?.history.beginGesture(historyDeps.snapshot());
