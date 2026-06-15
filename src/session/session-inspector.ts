@@ -275,8 +275,10 @@ export class SessionInspector {
     // Only show the button for melodic lanes (not drums/audio/sampler-drumkit).
     const chordsBtn = document.getElementById('insp-chords') as HTMLButtonElement | null;
     if (chordsBtn) {
-      chordsBtn.hidden = exKind === 'beat' || lane!.engineId === 'audio';
+      chordsBtn.hidden = exKind === 'beat' || lane!.engineId === 'audio' || lane!.engineId === 'sampler';
       chordsBtn.onclick = () => {
+        // Guard the INPUT: an empty melody has nothing to harmonise.
+        if (!clip.notes || clip.notes.length === 0) { void alertDialog('Draw or generate a melody first.'); return; }
         void (async () => {
           const ton = resolveTonality(lane!, this.deps.state);
           const barTicks = ticksPerBar(this.deps.seq.meter);
@@ -288,11 +290,7 @@ export class SessionInspector {
             barTicks,
             octaveBase: 48,
           });
-          if (chordNotes.length === 0) {
-            void alertDialog('Draw or generate a melody first.');
-            return;
-          }
-          // Build choice list: melodic lanes (not drums/audio/sampler-drumkit) + new lane
+          // Build choice list: melodic lanes (not drums/audio/sampler) + new lane
           const melodicLanes = this.deps.state.lanes.filter(
             (l) => l.engineId !== 'drums-machine' && l.engineId !== 'audio' && l.engineId !== 'sampler',
           );
@@ -309,10 +307,11 @@ export class SessionInspector {
           if (picked === '__new__') {
             this.deps.addNoteLane?.('subtractive', chordNotes, clip.lengthBars, 'Chords');
           } else {
+            if (!this.selectedClip) return; // inspector closed mid-dialog
             const chordClip = emptyClip(clip.lengthBars);
             chordClip.notes = chordNotes;
             chordClip.name = 'Chords';
-            this.deps.placeChordClip?.(picked, this.selectedClip!.clipIdx, chordClip);
+            this.deps.placeChordClip?.(picked, this.selectedClip.clipIdx, chordClip);
           }
         })();
       };

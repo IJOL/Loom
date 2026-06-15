@@ -152,7 +152,7 @@ export function choiceDialog(
   cancelBtn.type = 'button';
   cancelBtn.id = 'app-dialog-cancel';
   cancelBtn.className = 'app-dialog-btn';
-  cancelBtn.textContent = opts.cancelLabel ?? 'Cancelar';
+  cancelBtn.textContent = opts.cancelLabel ?? 'Cancel';
   cancelBtn.addEventListener('click', () => settle(null));
   actions.appendChild(cancelBtn);
 
