@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveTonality, DEFAULT_MUSICALITY } from './session';
+import { resolveTonality, DEFAULT_MUSICALITY, emptySessionState } from './session';
 import type { SessionState, SessionLane } from './session';
 
 const baseState = (): SessionState => ({
@@ -20,5 +20,12 @@ describe('resolveTonality', () => {
     const lane = { id: 'l1', engineId: 'tb303', clips: [] } as SessionLane;
     const s = { lanes: [], scenes: [], globalQuantize: 'immediate' } as SessionState;
     expect(resolveTonality(lane, s)).toEqual({ key: DEFAULT_MUSICALITY.key, scale: DEFAULT_MUSICALITY.scale });
+  });
+});
+
+describe('emptySessionState seeds the default musicality', () => {
+  it('a fresh session has the default tonality with the scale lock ON', () => {
+    expect(emptySessionState().musicality).toEqual(DEFAULT_MUSICALITY);
+    expect(emptySessionState().musicality?.lock).toBe(true);
   });
 });

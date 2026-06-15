@@ -258,7 +258,9 @@ export function emptyScene(name: string): SessionScene {
  *  the user builds it from scratch via the "+ Add" control. (Boot loads a demo,
  *  not this.) */
 export function emptySessionState(): SessionState {
-  return { lanes: [], scenes: [], globalQuantize: '1/1' };
+  // Seed the default tonality so a fresh session has the scale lock ON (matches the
+  // migration default for loaded sessions). Without this, lock?? falls to false.
+  return { lanes: [], scenes: [], globalQuantize: '1/1', musicality: { ...DEFAULT_MUSICALITY } };
 }
 
 /** A populated fixture (one each of three engines, no clips/scenes) for tests
