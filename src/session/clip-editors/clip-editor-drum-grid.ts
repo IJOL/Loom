@@ -30,7 +30,7 @@ export const LANE_LABELS: Record<DrumVoice, string> = {
 export interface DrumGridModel { rows: DrumRows; labels: string[] }
 const GM_MODEL: DrumGridModel = { rows: gmDrumRows(), labels: DRUM_LANES.map((v) => LANE_LABELS[v]) };
 
-const LABEL_W = 54;
+export const LABEL_W = 54;
 const RULER_H = 20;
 const ROW_H = 26;
 const VEL_LANE_H = 46;                       // velocity lane band

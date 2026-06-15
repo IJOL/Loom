@@ -12,7 +12,7 @@ import { TICKS_PER_STEP, type NoteEvent } from '../../core/notes';
 import { ticksPerBar, stepsPerBar, stepsPerBeat } from '../../core/meter';
 import { resolveViewState, type ViewState } from '../../core/pianoroll-zoom';
 import { getEngine } from '../../engines/registry';
-import { renderDrumGridEditor, LANE_LABELS, type DrumGridModel } from './clip-editor-drum-grid';
+import { renderDrumGridEditor, LANE_LABELS, LABEL_W as DRUM_GRID_LABEL_W, type DrumGridModel } from './clip-editor-drum-grid';
 import { noteDrumRows } from '../../core/drum-grid-editing';
 import { GM_DRUM_MAP } from '../../engines/drum-gm-map';
 import { mountWaveformHeader, renderAudioClipEditor } from './clip-waveform-header';
@@ -234,6 +234,9 @@ export function renderClipEditor(
   mountClipLoopOverlay({
     toolbarHost: loopBar, overlayHost: bodyBox,
     clip, meter: deps.seq.meter, historyDeps: deps.historyDeps, onChange: () => {},
+    // The drum-grid draws its row labels in a LABEL_W gutter on the same canvas,
+    // so the bar grid starts that far in; the piano-roll has no internal gutter.
+    gridInsetLeft: editor === 'drum-grid' ? DRUM_GRID_LABEL_W : 0,
   });
   return combineEditorHandle(headerHandle, bodyHandle);
 }

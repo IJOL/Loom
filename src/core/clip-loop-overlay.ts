@@ -30,6 +30,11 @@ export interface ClipLoopOverlayDeps {
   /** When present, shows an "all channels" button that hands the current loop
    *  region to the caller (already wrapped in an undo gesture + onChange). */
   applyToAll?: (loopEnabled: boolean, startTick: number, endTick: number) => void;
+  /** Left inset (px) of the bar grid INSIDE the editor's widest canvas. The
+   *  drum-grid draws its row labels in a fixed gutter on the same canvas, so bar 0
+   *  sits `LABEL_W` px in — without this the column would start over the labels.
+   *  The piano-roll/waveform have no internal gutter (default 0). */
+  gridInsetLeft?: number;
 }
 
 const QUANT_LABELS: ReadonlyArray<readonly [LoopQuantize, string]> = [
@@ -107,8 +112,12 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
     }
     const wx = widest ?? hr;
     if (!Number.isFinite(top)) { top = hr.top; bottom = hr.bottom; }
+    // gridInsetLeft skips a gutter drawn INSIDE the canvas (the drum-grid's row
+    // labels live on the same canvas, so bar 0 is LABEL_W px in).
+    const inset = deps.gridInsetLeft ?? 0;
+    const absLeft = wx.left + inset;
     return {
-      leftRel: wx.left - hr.left, absLeft: wx.left, width: wx.width || 1,
+      leftRel: absLeft - hr.left, absLeft, width: Math.max(1, (wx.width || 1) - inset),
       topRel: top - hr.top, height: Math.max(1, bottom - top),
     };
   };
@@ -162,5 +171,11 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
 
   // Defer first layout until the host has a measured width.
   requestAnimationFrame(layout);
+  // Re-layout when the editor canvas sizes/resizes after mount (the bar grid lives
+  // inside it; a one-shot layout could measure it before it has its final size and
+  // leave the column misplaced). Cheap — just reads rects and sets styles.
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(() => layout()).observe(host);
+  }
   return { redraw: layout };
 }
