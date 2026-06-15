@@ -26,7 +26,8 @@ import { PolySynth } from './polysynth/polysynth';
 import { stepsToNotes, bassStepsToNotes } from './core/notes';
 import * as laneTrackHelpers from './core/lane-display';
 import { SessionHost } from './session/session-host';
-import { emptySessionState } from './session/session';
+import { emptySessionState, DEFAULT_MUSICALITY } from './session/session';
+import { renderMusicalityBar } from './session/musicality-bar';
 import { fetchDemoSession } from './demo/demo-loader';
 import { wireDemoPicker } from './demo/demo-picker';
 import { wireMidiImportUI } from './midi/midi-import-ui';
@@ -181,8 +182,6 @@ const bpmInput = $<HTMLInputElement>('bpm');
 const swingInput = $<HTMLInputElement>('swing');
 const volInput = $<HTMLInputElement>('volume');
 const meterSel = $<HTMLSelectElement>('meter');
-const scaleSel = $<HTMLSelectElement>('scale');
-const rootSel  = $<HTMLSelectElement>('root');
 const vizCanvas    = $<HTMLCanvasElement>('viz');
 const engineSel    = $<HTMLSelectElement>('engine-select');
 const engineSel303 = $<HTMLSelectElement>('engine-select-303');
@@ -193,14 +192,6 @@ const engineSel303 = $<HTMLSelectElement>('engine-select-303');
 
 const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const midiLabel = (m: number) => `${NOTE_NAMES[m % 12]}${Math.floor(m / 12) - 1}`;
-
-for (let m = 24; m <= 48; m++) {
-  const opt = document.createElement('option');
-  opt.value = String(m);
-  opt.textContent = midiLabel(m);
-  if (m === 36) opt.selected = true;
-  rootSel.appendChild(opt);
-}
 
 for (const m of COMMON_METERS) {
   const o = document.createElement('option');
@@ -453,8 +444,6 @@ const sessionHost = new SessionHost({
   swapLaneEngine,
   masterInsertChain,
   fxBus: fx,
-  scaleSel,
-  rootSel,
   // Master strip in the last mixer column: a full lane-style column — the fader
   // proxies #volume, the VU reads the dedicated master meter tap, and the
   // EQ/pan/mute knobs drive masterStrip (audio-graph.ts).
@@ -482,6 +471,19 @@ sessionHost.init();
 // as the source of truth (replaces the pattern-based fallback used at boot).
 laneHost.setLookupEngineId((laneId) =>
   sessionHost.state.lanes.find((l) => l.id === laneId)?.engineId ?? 'subtractive');
+
+// ── Musicality bar ────────────────────────────────────────────────────────────
+const musicalityHost = $<HTMLDivElement>('musicality-bar');
+renderMusicalityBar(musicalityHost, {
+  get: () => sessionHost.state.musicality ?? DEFAULT_MUSICALITY,
+  onChange: (next) => {
+    const run = () => {
+      sessionHost.state.musicality = next;
+      sessionHost.renderWithMixer();
+    };
+    if (_discreteHistoryDeps) withUndo(_discreteHistoryDeps, run); else run();
+  },
+});
 
 // ── Live MIDI control subsystem ─────────────────────────────────────────────
 // Assemble facade → mediator → access seam → UI. activeLaneStore (declared
