@@ -15,8 +15,15 @@ import type { HistoryDeps } from '../save/history-wiring';
 import { withUndo, isTextEditTarget } from '../save/history-wiring';
 import type { LaneResourceMap } from '../core/lane-resources';
 import { buildLaneInsertUI } from './lane-insert-ui';
-import { randomizeClipNotes } from './clip-randomize';
+import { generate, type GenKind } from '../core/generators';
+import { stepsPerBar } from '../core/meter';
 import { ensureScenesForRows } from '../core/scene-ensure';
+
+function genKindFor(engineId: string): GenKind {
+  if (engineId === 'tb303') return 'bass';
+  if (engineId === 'drums-machine') return 'beat';
+  return 'melody';
+}
 
 export interface InspectorDeps {
   ctx: AudioContext;
@@ -33,10 +40,6 @@ export interface InspectorDeps {
   laneResources?: LaneResourceMap;
   /** Phase H: persist the session after the user edits an insert slot. */
   saveSession?: () => void;
-  /** Scale + root for scale-aware clip-note randomization. Optional so test
-   *  fixtures without a global scale picker still compile. */
-  scaleSel?: HTMLSelectElement;
-  rootSel?: HTMLSelectElement;
   /** Host note trigger, used to audition pitches from the keyboard editor.
    *  Optional so test fixtures without an audio graph still compile. */
   triggerForLane?: (
@@ -196,17 +199,19 @@ export class SessionInspector {
       if (!this.selectedClip) return;
       const d = this.deps.historyDeps;
       const run = () => {
-        const scaleSel = this.deps.scaleSel;
-        const rootSel  = this.deps.rootSel;
         // Capture the octave BEFORE re-rendering — renderEditor() recreates the
         // piano-roll, which resets its octave base to the C4 default. We restore
         // it afterwards so the stepper (and the view) stay where the user left it.
         const octaveBase = this.roll?.getOctaveBase?.() ?? 60;
-        randomizeClipNotes(clip, lane!, {
-          scale: scaleSel?.value ?? 'pentMinor',
-          rootMidi: parseInt(rootSel?.value ?? '36', 10) || 36,
-          octaveBase,
-        }, this.deps.seq.meter);
+        const ton = resolveTonality(lane!, this.deps.state);
+        const style = this.deps.state.musicality?.style ?? 'acid';
+        const stepsPerBarVal = stepsPerBar(this.deps.seq.meter);
+        clip.notes = generate(genKindFor(lane!.engineId), style, {
+          key: ton.key, scale: ton.scale,
+          bars: clip.lengthBars, stepsPerBar: stepsPerBarVal,
+          octaveBase: octaveBase - 12,   // el bajo suena una octava por debajo de la vista
+          rng: Math.random,
+        });
         this.renderEditor();
         this.roll?.setOctaveBase?.(octaveBase);
       };

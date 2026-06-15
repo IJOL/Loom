@@ -95,10 +95,6 @@ export interface SessionHostDeps {
    *  modulation destination dropdown. Optional so test fixtures without audio
    *  don't need to wire it. */
   fxBus?: import('../core/fx').FxBus;
-  /** Scale + root selectors — forwarded to SessionInspector so the 🎲 Notes
-   *  button in the clip editor can produce scale-aware randomization. */
-  scaleSel?: HTMLSelectElement;
-  rootSel?: HTMLSelectElement;
   /** The existing #volume range input. When present (+ masterMeterAnalyser),
    *  renderWithMixer builds the master strip into the last mixer column as a
    *  proxy of #volume. Optional so test fixtures without audio fall back to the

@@ -177,8 +177,6 @@ export class SessionHost {
       historyDeps: this.deps.historyDeps,
       laneResources: this.deps.laneResources,
       saveSession: this.deps.saveSession,
-      scaleSel: this.deps.scaleSel,
-      rootSel: this.deps.rootSel,
       triggerForLane: this.deps.triggerForLane,
     });
 
