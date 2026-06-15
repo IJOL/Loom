@@ -103,6 +103,7 @@
         </div>
         <label>BPM<input id="bpm" type="number" value="130" min="40" max="240" step="0.01" /></label>
         <label>Meter<select id="meter"></select></label>
+        <div id="musicality-bar"></div>
         <label>Swing<input id="swing" type="range" min="0" max="0.6" step="0.01" value="0" /></label>
         <label>Volume<input id="volume" type="range" min="0" max="1" step="0.01" value="0.5" /></label>
         <span class="transport-spacer"></span>
@@ -160,10 +161,6 @@
         <label class="copy-chk"><input type="checkbox" id="copy-melody" checked> Melody</label>
         <label class="copy-chk"><input type="checkbox" id="copy-auto"> Auto</label>
         <button class="rnd primary" id="copy-go">Copy →</button>
-      </div>
-
-      <div class="row tools">
-        <div class="tool-group" id="musicality-bar"></div>
       </div>
 
       <details class="presets-panel">
