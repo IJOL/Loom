@@ -34,8 +34,8 @@ blockquote { border-left: 3px solid var(--accent); margin: .8em 0; padding: .2em
   a:hover { text-decoration: underline; }
 }
 </style></head><body><section class="chapter" id="top"><h1>Loom — Manual</h1>
-<p>Loom is a browser-based, session-based music workstation. It organises sound into <strong>lanes</strong> (instrument tracks), <strong>clips</strong> (patterns of notes), and <strong>scenes</strong> (rows of clips launched together). Seven synthesis engines are available — TB-303, Subtractive, FM, Wavetable, Karplus-Strong, Sampler, and Drum Machine — and all synthesis runs live in the browser with no install or sign-in required.</p>
-<p>Beyond the engines, Loom has <strong>note velocity &amp; dynamics</strong> (an Ableton-style velocity lane), <strong>per-clip and arrangement-wide loop regions</strong>, <strong>per-lane modulation and FX</strong> with a sidechain mixer, <strong>MIDI import</strong>, ready-made <strong>sampled drum kits</strong>, a <strong>playable arrangement</strong> timeline, and optional <strong>stem separation</strong> (split a finished song into 4 lanes via a local helper).</p>
+<p>Loom is a browser-based, session-based music workstation. It organises sound into <strong>lanes</strong> (instrument tracks), <strong>clips</strong> (patterns of notes), and <strong>scenes</strong> (rows of clips launched together). Eight synthesis engines are available — TB-303, Subtractive, FM, Wavetable, Karplus-Strong, West Coast, Sampler, and Drum Machine — and all synthesis runs live in the browser with no install or sign-in required.</p>
+<p>Beyond the engines, Loom has <strong>note velocity &amp; dynamics</strong> (an Ableton-style velocity lane), <strong>per-clip and arrangement-wide loop regions</strong>, <strong>per-lane modulation and FX</strong> with a sidechain mixer, <strong>MIDI import</strong>, ready-made <strong>sampled drum kits</strong>, a <strong>playable arrangement</strong> timeline, optional <strong>stem separation</strong> (split a finished song into 4 lanes via a local helper), <strong>key &amp; scale musical assistance</strong> (a project key/scale with a scale-locked piano-roll, genre generators, an examples gallery, and a chord-accompaniment maker), and <strong>editable warp markers</strong> for locking audio loops to tempo.</p>
 <hr>
 <p><img src="images/app-overview.png" alt="Loom — the full application: transport bar, session grid, and channel strips"></p>
 <p><em>The Loom interface: transport across the top, the session clip grid in the centre, and per-lane channel strips below.</em></p>
@@ -145,7 +145,7 @@ blockquote { border-left: 3px solid var(--accent); margin: .8em 0; padding: .2em
 <p>Both readouts update via <code>requestAnimationFrame</code> while playing and freeze on stop so you can read the final position. Because each lane has its own independent loop clock, the global position is computed from elapsed seconds rather than a single sequencer cursor. The visual playhead is similarly a display-only timer matched to scheduled audio time; it may drift slightly under browser tab throttling, but audio scheduling is unaffected.</p>
 <hr>
 <h2>Tempo controls</h2>
-<p><strong>BPM</strong> (<code>#bpm</code>) — sets the tempo. Range: 40–240 BPM, default 130. You can type a value directly or use the number-input spinners. BPM changes propagate immediately to the sequencer, all lane engines, delay/LFO sync, and stretch-mode loop buffers. The change takes effect on the next scheduled step; it does not alter a note that is already held.</p>
+<p><strong>BPM</strong> (<code>#bpm</code>) — sets the tempo. Range: 40–240 BPM, default 130. The field accepts <strong>floating-point values</strong> (e.g. 128.57 BPM, step 0.01); tempos detected from MIDI imports or stem separation are no longer rounded to an integer. You can type a value directly or use the number-input spinners. BPM changes propagate immediately to the sequencer, all lane engines, delay/LFO sync, and stretch-mode loop buffers. The change takes effect on the next scheduled step; it does not alter a note that is already held.</p>
 <p>Each 16th-note step lasts <code>60 / bpm / 4</code> seconds.</p>
 <p><strong>Meter</strong> (<code>#meter</code>) — sets the global time signature. The dropdown offers common meters: 4/4, 3/4, 2/4, 5/4, 6/8, 7/8, 9/8, and 12/8. The meter controls how bars map onto the 16th-step grid and how the position readout counts beats. Changing the meter takes effect on the next loop cycle.</p>
 <p><strong>Swing</strong> (<code>#swing</code>) — intended to add a shuffle feel by delaying odd 16th-note steps. Range: 0 (straight) to 0.6. The value is saved and restored with the session. <strong>Note:</strong> swing is currently stored and persisted but is not yet read by the scheduler, so moving the slider does not change the timing you hear — full swing is planned for a future update.</p>
@@ -262,7 +262,9 @@ blockquote { border-left: 3px solid var(--accent); margin: .8em 0; padding: .2em
 <p>Every lane in Loom runs exactly one synthesis engine. You choose the engine
 with the ENGINE selector at the top of the lane&#39;s editor panel. Changing the
 engine replaces the sound source while preserving the lane&#39;s clips and
-modulation routing.</p>
+modulation routing. Eight engines are available: six melodic synthesisers
+(TB-303, Subtractive, FM, Wavetable, Karplus-Strong, West Coast), a Sampler,
+and a Drum Machine.</p>
 <p>Each engine exposes a PRESET dropdown (Load / Save As / Delete) and a
 <strong>🎲 Sound</strong> button that randomises the patch and sets the preset name to
 &quot;Custom&quot;. Presets are JSON assets stored per-engine; they include GM programme
@@ -503,6 +505,143 @@ at every frequency, natural high-harmonic roll-off, and no feedback runaway.</p>
 the buffer). Level and its envelope are live AudioParams and can be modulated.
 Karplus suits acoustic bass, guitar, harp, and marimba-style sounds.</p>
 <hr>
+<h2>West Coast</h2>
+<p><img src="images/engine-westcoast.png" alt="West Coast editor panel"></p>
+<p><em>A Buchla-style &quot;West Coast&quot; voice: complex oscillator → wavefolder → low-pass gate, driven by a built-in AD contour.</em></p>
+<p>The West Coast engine takes a fundamentally different approach to synthesis from the filter-based (&quot;East Coast&quot;) engines above. Instead of shaping a harmonically-rich waveform by subtracting frequencies with a filter, it <strong>adds</strong> harmonics by routing an oscillator through a <strong>wavefolder</strong> and then taming the result with a <strong>low-pass gate</strong>. The result is highly percussive and organic — metallic plucks, woody tones, evolving bell-like pads, and abstract textures that are difficult to achieve with conventional subtractive synthesis.</p>
+<p>The engine is <strong>monophonic</strong> (a single voice; legato mode is planned for a future update). FM here is native-linear, not through-zero.</p>
+<p>The signal chain is: <strong>Complex Oscillator</strong> → <strong>Timbre (Wavefolder)</strong> → <strong>Low-Pass Gate (LPG)</strong> driven by an <strong>AD Contour</strong>.</p>
+<h3>COMPLEX OSCILLATOR section</h3>
+<p>Two cross-coupled oscillators produce the raw material. The principal oscillator&#39;s frequency is modulated by the modulator oscillator (linear FM), optionally ring-modulated, and a sub-harmonic divider can be added below.</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Princ Wave</td>
+<td>Waveform of the principal oscillator: Sin, Tri, or Saw</td>
+</tr>
+<tr>
+<td>Mod Wave</td>
+<td>Waveform of the modulator oscillator: Sin or Tri</td>
+</tr>
+<tr>
+<td>Ratio</td>
+<td>Frequency ratio of the modulator relative to the principal (0.25–16×) — integer ratios produce harmonic tones; non-integers produce inharmonic, bell-like partials</td>
+</tr>
+<tr>
+<td>FM Index</td>
+<td>Depth of linear FM from the modulator into the principal (0–1) — higher values add more sidebands</td>
+</tr>
+<tr>
+<td>Ring/AM</td>
+<td>Amount of ring modulation mixed in (0 = off, 1 = full ring mod)</td>
+</tr>
+<tr>
+<td>Sub ÷</td>
+<td>Sub-harmonic divider: Off, ÷2, ÷3, or ÷4 — adds a sub-oscillator one, two, or three octaves below</td>
+</tr>
+<tr>
+<td>Sub Lvl</td>
+<td>Output level of the sub-harmonic oscillator (0–1)</td>
+</tr>
+<tr>
+<td>Detune</td>
+<td>Fine-tune of the principal oscillator in cents (±50 ¢)</td>
+</tr>
+</tbody></table>
+<h3>TIMBRE section (wavefolder)</h3>
+<p>The wavefolder processes the summed oscillator signal through a non-linear waveshaping curve. As the <strong>Fold</strong> amount increases it drives the signal harder into the curve, folding the waveform back on itself and adding a cascade of new harmonics. Accent (velocity ≥ 100) pushes the fold drive harder automatically.</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Fold</td>
+<td>Drive into the fold curve (0 = gentle/clean, 1 = heavy folding/maximum harmonics)</td>
+</tr>
+<tr>
+<td>Symmetry</td>
+<td>DC bias applied before the folder — shifts the waveform asymmetrically for even-harmonic colouring (−1 to +1)</td>
+</tr>
+</tbody></table>
+<h3>LOW-PASS GATE section</h3>
+<p>A low-pass gate combines a resonant filter and a VCA in a single, vactrol-like element so that the contour simultaneously opens the brightness and the volume. The <strong>Mode</strong> selector determines how the contour is routed.</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Mode</td>
+<td><strong>LP</strong> — contour sweeps the filter only (VCA stays open); <strong>Gate</strong> — contour opens the VCA only (filter stays at its base cutoff); <strong>Both</strong> — contour drives both, the most classic &quot;plonky&quot; Buchla behaviour</td>
+</tr>
+<tr>
+<td>Cutoff</td>
+<td>Base cutoff frequency (0–1, exponential scaling from ~60 Hz to 18 kHz)</td>
+</tr>
+<tr>
+<td>Resonance</td>
+<td>Filter Q (0–1) — adds resonant emphasis at the cutoff</td>
+</tr>
+</tbody></table>
+<h3>CONTOUR section</h3>
+<p>A single AD (attack–decay) envelope generator, similar to the contour generator in a Buchla 281. It drives both the LPG filter and VCA according to the Mode setting above.</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Mode</td>
+<td><strong>Pluck</strong> — decay is gate-independent (fires and fades regardless of note length); <strong>Sus</strong> — holds at peak until the note ends, then decays</td>
+</tr>
+<tr>
+<td>Attack</td>
+<td>Rise time (1 ms – 2 s)</td>
+</tr>
+<tr>
+<td>Decay</td>
+<td>Fall time (5 ms – 4 s) — in Pluck mode this is the T60 envelope; in Sus mode this is the release time after gate-end</td>
+</tr>
+<tr>
+<td>Amount</td>
+<td>Peak level of the contour (0–1) — scales how far the LPG opens</td>
+</tr>
+<tr>
+<td>Cycle</td>
+<td><strong>On</strong> — re-triggers the AD shape repeatedly while the note is held, turning the contour into a free-running LFO-like modulator</td>
+</tr>
+</tbody></table>
+<h3>AMP section</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Level</td>
+<td>Master output gain (0–1)</td>
+</tr>
+<tr>
+<td>Tune</td>
+<td>Global pitch offset in semitones (±12 st)</td>
+</tr>
+</tbody></table>
+<p>The engine ships with <strong>24 presets</strong> — spanning percussive bass plucks (BASS Fold Sub, BASS Growl FM), bells (BELL Metallic, BELL Crystal Ring), pads (PAD Fold Drone, PAD Glass Air), keys (KEYS Fold E-Piano, KEYS Marimba Fold), and abstract textures (FX Cycle Burst, FX Sci-Fi Cycle) — selectable from the lane&#39;s preset dropdown. Per-section knob accent colours group the COMPLEX OSCILLATOR, TIMBRE, LOW-PASS GATE, and CONTOUR sections visually.</p>
+<hr>
 <h2>Sampler</h2>
 <p><img src="images/engine-sampler.png" alt="Sampler editor panel"></p>
 <p>Above: Sampler editor — global Gain/Voices controls; per-pad controls appear
@@ -561,8 +700,12 @@ it possible to tune, filter, and pan individual pads independently.</p>
 <td>Send amounts to the shared reverb and delay</td>
 </tr>
 <tr>
-<td>Loop / Loop Start</td>
-<td>Loop mode (one-shot or loop-while-gated) and loop start point</td>
+<td>Loop / Loop Start / Loop End</td>
+<td>Loop mode (one-shot or loop-while-gated) and the loop region (start/end as a fraction of the sample)</td>
+</tr>
+<tr>
+<td>Sample Start / End</td>
+<td>Trim the played window — start/end as a fraction of the sample; draggable on the waveform in the Selected sample panel</td>
 </tr>
 <tr>
 <td>Retrig</td>
@@ -661,6 +804,9 @@ Each voice routes through its own channel strip and then to a shared drum bus.</
 for the whole drum bus. These are automatable via
 <a href="#06-modulation-and-note-fx">Modulation &amp; Note FX</a>. Routing to the shared
 reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX</a>.</p>
+<h3>Choke groups</h3>
+<p>Each drum voice has a <strong>Choke</strong> dropdown in the voice&#39;s advanced area of the per-voice rack. Voices assigned to the <strong>same non-zero choke group are mutually exclusive</strong>: triggering one immediately cuts the tails of all other voices in the same group. A voice assigned to group 0 (the default) is never choked by anything.</p>
+<p>The default configuration is <strong>closed hat and open hat both in group 1</strong>, which gives the classic hi-hat choke behaviour — hitting the closed hat silences the open hat&#39;s ring, just as on a real drum kit. You can reassign any voice to any group number to create other exclusive pairs, for example a conga and cowbell that cannot overlap.</p>
 <hr>
 <h2>Summary table</h2>
 <table>
@@ -697,6 +843,11 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <td>Damping (sustain), Brightness, Excitation</td>
 </tr>
 <tr>
+<td>West Coast</td>
+<td>Percussive plucks, metallic tones, evolving textures</td>
+<td>Wavefolder (Fold), LPG Mode, Contour Cycle</td>
+</tr>
+<tr>
 <td>Sampler</td>
 <td>Any audio, drum kits with per-pad control</td>
 <td>Per-pad Tune/Filter/Envelope, Loop mode</td>
@@ -704,14 +855,104 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <tr>
 <td>Drums</td>
 <td>Synthesised drum machine, percussion</td>
-<td>8-voice synth rack, kits-as-presets, bus EQ</td>
+<td>8-voice synth rack, kits-as-presets, bus EQ, Choke groups</td>
 </tr>
 </tbody></table>
 </section>
 <section class="chapter" id="05-editing-clips"><h1>Editing Clips</h1>
 <p>Every clip in Loom holds a sequence of notes. To edit those notes, click the <strong>body</strong> of any filled cell in the session grid — anywhere except the ▶ play icon or the ✕ delete cross in its corner (clicking ✕ deletes the clip outright, with no confirmation). You can also <strong>right-click</strong> a filled cell and choose <strong>Open editor</strong>. The inspector panel opens below the grid and the editor renders inside it. Closing the inspector does not stop playback — launching and editing are independent.</p>
-<p>Melodic lanes (TB-303, Subtractive, FM, Wavetable, Karplus, Sampler) open the <strong>piano-roll</strong>. Drum-machine lanes and sampler lanes that have a drum kit loaded open the <strong>drum-grid</strong>. If you want to switch between the two views for a given clip, click the <strong>↔ Editor</strong> button in the inspector toolbar.</p>
+<p>Melodic lanes (TB-303, Subtractive, FM, Wavetable, Karplus, West Coast, Sampler) open the <strong>piano-roll</strong>. Drum-machine lanes and sampler lanes that have a drum kit loaded open the <strong>drum-grid</strong>. If you want to switch between the two views for a given clip, click the <strong>↔ Editor</strong> button in the inspector toolbar.</p>
 <p>See <a href="#03-sessions-lanes-clips-scenes">Sessions, Lanes, Clips &amp; Scenes</a> for how clips are organised, and <a href="#04-engines">Engines</a> for the controls each engine exposes.</p>
+<hr>
+<h2>Key, scale &amp; musical assistance</h2>
+<p><img src="images/musicality-bar.png" alt="Project key &amp; style bar"></p>
+<p><em>The project key/style bar sits in the transport strip next to Meter; the 🔒 Scale button and the 🎲, Vary, Mirror, Reverse, and Chords controls appear in the clip-editor toolbar.</em></p>
+<p>Loom&#39;s musical-assistance layer works from a single shared <strong>project key and style</strong> setting. Everything that generates or reshapes notes — the random generator, the examples gallery, the pattern transforms, the chord harmoniser — reads that setting and stays in key automatically. You can override it on a per-lane basis when one part needs to inhabit a different harmonic world.</p>
+<h3>Project key &amp; style bar</h3>
+<p>In the top transport bar, next to the <strong>Meter</strong> control, a button displays the current project tonality — for example <strong>🎼 A minor · Acid / Techno</strong>. Click it to open the key/style panel.</p>
+<p>The panel has three pickers:</p>
+<ul>
+<li><strong>Root</strong> — the tonic note (C through B).</li>
+<li><strong>Scale</strong> — chosen by feel rather than by musical-theory name. Each option shows a mood label, the musical name in small print, and a one-line usage hint:<ul>
+<li>🌙 Dark / tense — minor · the classic acid/techno sound</li>
+<li>🛡️ Safe (almost anything fits) — pentatonic minor</li>
+<li>☀️ Bright / uplifting — major</li>
+<li>🌊 Hypnotic / modal — dorian</li>
+<li>😰 Unsettling — phrygian</li>
+<li>🎨 Anything goes — chromatic (no constraint)</li>
+</ul>
+</li>
+<li><strong>Style</strong> — the rhythmic and harmonic character used by the generators (Acid / Techno, House, Synthwave, Lo-fi, and others). Style affects which rhythmic patterns the chord maker lays down and sets the default feel of generated basslines and melodies.</li>
+</ul>
+<p>Every other musical-assistance feature — the piano-roll scale highlight, the generator, the examples, the transforms, and the chord maker — respects the active root and scale. Closing the panel without choosing commits no change.</p>
+<h4>Per-lane override</h4>
+<p>The lane inspector shows a line such as <strong>Key: inherits A minor · Override</strong>. Click <strong>Override</strong> to assign a different root and scale to that lane alone, so one part can be in a different key while the rest of the session stays in the project key.</p>
+<hr>
+<h3>Scale highlight &amp; lock (piano-roll)</h3>
+<p>Inside the piano-roll, in-scale pitch rows are highlighted and the keyboard strip on the left colours in-scale keys — the tonic row and key are the brightest. This gives you an instant visual map of which notes belong to the current key.</p>
+<p>A <strong>🔒 Scale</strong> button in the piano-roll toolbar controls the scale lock (on by default). When locked:</p>
+<ul>
+<li>Drawing a note with the pencil snaps the pitch to the nearest in-scale degree.</li>
+<li>Dragging an existing note vertically skips over out-of-scale rows.</li>
+<li>Computer-keyboard note input plays and records only in-scale pitches.</li>
+<li>Paste lands notes on in-scale pitches, transposing each pasted note by the minimum interval needed to put it back in key.</li>
+</ul>
+<p>It is impossible to place a wrong note with the lock on. Click the button to toggle it to <strong>🔓</strong> (unlocked) when you need chromatic freedom — accidentals, blue notes, deliberate dissonance. The arrow-key nudge (semitone up/down) intentionally ignores the lock in both states, so you can always make precise micro-adjustments with the keyboard.</p>
+<hr>
+<h3>Generate (🎲)</h3>
+<p>The <strong>🎲</strong> (dice) button in the clip-editor toolbar fills the current clip with a freshly generated musical part in the project key, scale, and style:</p>
+<ul>
+<li><strong>TB-303-style lanes</strong> — a characteristic bassline (slide and accent placement influenced by the active style).</li>
+<li><strong>Drum lanes</strong> — a beat pattern matched to the style&#39;s rhythmic vocabulary.</li>
+<li><strong>Other melodic lanes</strong> — a melody or counterpoint line.</li>
+</ul>
+<p>The result is not flat random: it is constrained to the scale, shaped by the style, and proportioned to the clip length. Press 🎲 again for another variation; change the global <strong>Style</strong> in the key/style panel for a different character while keeping the same root and scale.</p>
+<hr>
+<h3>Examples gallery</h3>
+<p>An inline dropdown next to 🎲 in the toolbar lists factory riff examples <strong>grouped by style</strong> (Acid / House / Synthwave / Lo-fi section headers). The list is filtered by editor type: melodic editors show basslines and melodies; drum editors show beat patterns.</p>
+<p>Selecting an example:</p>
+<ol>
+<li>Loads it into the current clip.</li>
+<li>Transposes it from its stored key into the <strong>current project key</strong>.</li>
+<li>Repeats or trims it to exactly fill the clip length — short riffs tile; long riffs are cut at the clip boundary.</li>
+</ol>
+<p>Two additional controls sit at the bottom of the dropdown:</p>
+<ul>
+<li><strong>+ Example</strong> — saves the current clip&#39;s notes as your own example. It is stored in this browser (IndexedDB), persists across reloads, and is marked with a ★ in the list.</li>
+<li><strong>⤓ JSON</strong> — exports the current clip as a portable <code>.json</code> file that you can share or import into another browser.</li>
+</ul>
+<hr>
+<h3>Pattern transforms</h3>
+<p>Three buttons in the toolbar reshape the current pattern — all results stay within the project key and scale.</p>
+<table>
+<thead>
+<tr>
+<th>Button</th>
+<th>Name</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Vary</strong></td>
+<td>Musical variation</td>
+<td>Nudges some pitches to neighbouring scale degrees and lightly adjusts rhythm and velocity; the overall character and contour are preserved.</td>
+</tr>
+<tr>
+<td><strong>Mirror</strong></td>
+<td>Melodic inversion</td>
+<td>Flips the melodic contour so that rising lines fall and falling lines rise, mirrored around the first note of the clip.</td>
+</tr>
+<tr>
+<td><strong>Reverse</strong></td>
+<td>Retrograde</td>
+<td>Plays the pattern backwards in time — the last note becomes the first.</td>
+</tr>
+</tbody></table>
+<p>All three are undoable with Ctrl+Z / Cmd+Z.</p>
+<hr>
+<h3>Chords</h3>
+<p>The <strong>Chords</strong> button harmonises the current melodic clip. For each bar it picks the most characteristic <strong>diatonic triad</strong> implied by the bar&#39;s melody notes, then writes an accompaniment using a <strong>rhythm pattern drawn from the global style</strong> — for example offset stabs in House, sustained pads in Lo-fi, driving eighth notes in Synthwave.</p>
+<p>When you click Chords a small dialog asks <strong>which lane</strong> to write the chord part to: pick an existing melodic lane or let Loom create a new lane labelled &quot;Chords&quot;. The original clip is not modified.</p>
 <hr>
 <h2>Piano-roll</h2>
 <p><img src="images/inspector-piano-roll.png" alt="Piano-roll editor"></p>
@@ -1310,7 +1551,7 @@ master bus → master insert chain → master compressor → output             
 <ul>
 <li>A <strong>keyboard map</strong> across the top — coloured markers at each sound&#39;s key (drumkit / loop) or coloured range bands (melodic) — with <strong>connector lines</strong> down to the strips.</li>
 <li>A row of <strong>channel strips</strong>, one per sound. Each strip carries its <strong>name</strong> (the GM voice for a drumkit — KICK, SNARE…; the note for a melodic zone; <strong>Slice N</strong> for a loop slice), its trigger <strong>key</strong>, a <strong>▶ play</strong> button to audition the sample and a <strong>✕</strong> to delete that sound (a row at the top of the strip, above the knobs), per-sound knobs (TUNE / CUTOFF / DECAY / LEVEL / REV / DLY plus an <strong>▸ adv</strong> block), and <strong>M / S</strong> mute-solo. A <strong>＋</strong> tile at the end of the row adds a sound.</li>
-<li>A <strong>Selected sample</strong> editor below — click any strip and it shows that sample&#39;s waveform on a canvas with a <strong>−/＋ zoom</strong>, the filename, the key, a one-shot/loop badge, and (for melodic) editable <strong>root / lo / hi</strong>.</li>
+<li>A <strong>Selected sample</strong> editor below — click any strip and it shows that sample&#39;s waveform on a canvas with a <strong>−/＋ zoom</strong>, the filename, the key, and a <strong>one-shot / loop badge</strong> (click to toggle). Drag the handles over the waveform to set the <strong>trim</strong> (amber start/end lines — the dimmed regions are silenced) and, when loop is on, the <strong>loop region</strong> (green start/end lines that cycle while a key is held). For a melodic zone, the <strong>root / lo / hi</strong> keys are editable here too.</li>
 </ul>
 <p>Every sound is keyed by its own note, so each pad / zone / slice has its <strong>own</strong> parameters and mute-solo — nothing is shared between sounds.</p>
 <h3>Building your own</h3>
@@ -1395,6 +1636,24 @@ master bus → master insert chain → master compressor → output             
 <td>Loop start point as a fraction of sample duration</td>
 </tr>
 <tr>
+<td>LEND</td>
+<td>0–1</td>
+<td>1</td>
+<td>Loop end point as a fraction of sample duration</td>
+</tr>
+<tr>
+<td>START</td>
+<td>0–1</td>
+<td>0</td>
+<td>Trim in — playback start as a fraction of sample duration</td>
+</tr>
+<tr>
+<td>END</td>
+<td>0–1</td>
+<td>1</td>
+<td>Trim out — playback end as a fraction of sample duration</td>
+</tr>
+<tr>
 <td>RETRIG</td>
 <td>Poly / Mono</td>
 <td>Poly</td>
@@ -1435,6 +1694,19 @@ master bus → master insert chain → master compressor → output             
 </blockquote>
 <h3>Slicing a loop into notes</h3>
 <p>The audio channel itself is a pure WAV loop. To chop a loop into individually editable hits, load it through the Sampler&#39;s <strong>Loop</strong> family (see <a href="#sampler">Sampler</a>) rather than the audio channel. Loom detects slice points (from embedded <strong>Acid / <code>cue</code> / AIFF</strong> markers when present, or by onset detection plus a tempo estimate), stores one short sample per slice in IndexedDB, and creates a <strong>note clip</strong> that triggers the slices in order on a piano-roll — so the groove plays back identically, now as discrete, editable notes. Move, mute, repitch, or re-order the hits in the piano-roll, and tweak each slice&#39;s tune/cutoff/decay/level/pan in its channel strip (see <a href="#per-sound-parameters">Per-sound parameters</a>); the clip keeps the original waveform as its header. <em>(Earlier builds did this from a <strong>✂ Slice → pads</strong> button on the audio channel; that moved to the Sampler&#39;s Loop family.)</em></p>
+<h3>Editable warp markers</h3>
+<p><img src="images/audio-clip-editor.png" alt="The audio-clip editor: the Warp toggle and the waveform header"></p>
+<p><em>Amber warp markers appear as vertical lines in the waveform header; drag one to re-anchor that beat to the grid.</em></p>
+<p>An audio clip can carry <strong>warp markers</strong> — sparse reference points that pin specific audio beats to exact positions on the session grid. With markers in place, the WSOLA time-stretcher locks each inter-marker region independently, so the groove tracks the grid precisely rather than relying on a single global stretch ratio.</p>
+<p><strong>Auto-seeding on stem import.</strong> When you separate a track into stems (see <a href="#stem-separation-optional-local-service">Stem separation</a>), Loom analyses the drums stem (the most rhythmically reliable) and seeds quarter-bar warp markers automatically across all stems of that import. The drums stem becomes the <strong>warp reference</strong> for the group; its clip is the one with a fully editable marker overlay in the waveform header.</p>
+<p><strong>Editing markers.</strong> Open the drums-stem clip in the inspector. In the waveform header you will see amber vertical lines at each marker. You can:</p>
+<ul>
+<li><strong>Drag</strong> a marker left or right to realign that beat to the correct grid position.</li>
+<li><strong>Double-click</strong> an empty area of the header to add a new marker at that audio position.</li>
+<li><strong>Double-click</strong> an existing marker to delete it.</li>
+</ul>
+<p>Edits to the reference clip&#39;s markers propagate automatically to the other stems that share the same warp group — move one marker and all four audio clips update together.</p>
+<p><strong>Warp pill.</strong> An amber <strong>Warp</strong> pill in the clip-editor toolbar toggles warping on and off for the clip. Warping is pitch-preserving (WSOLA) and re-renders automatically whenever the project tempo changes, so stems stay locked to the grid as you experiment with BPM.</p>
 <hr>
 <h2>Stem separation (optional, local service)</h2>
 <p>Stem separation lets you drop a finished song into Loom and get it back as four separate Sampler lanes — <strong>Vocals</strong>, <strong>Drums</strong>, <strong>Bass</strong>, and <strong>Other</strong> — so you can mute, solo, and remix each part inside the existing session.</p>
@@ -1449,9 +1721,16 @@ master bus → master insert chain → master compressor → output             
 <ol>
 <li><strong>&quot;Uploading…&quot;</strong> — the file is being uploaded to the local service.</li>
 <li><strong>&quot;Separating… m:ss&quot;</strong> — the service is running Demucs; the counter shows elapsed time. The bar may be indeterminate if the model does not report fine-grained progress.</li>
-<li>On success the dialog closes automatically and four new Sampler lanes appear in the session — one per stem, each holding a full-length one-shot clip sized to the song. Hitting Play reconstructs the original mix; mute or solo any lane to isolate parts.</li>
+<li>On success the dialog closes automatically and four new <strong>audio lanes</strong> appear in the session — one per stem (<strong>Vocals</strong>, <strong>Drums</strong>, <strong>Bass</strong>, <strong>Other</strong>). Each lane holds a full-length audio clip downbeat-anchored to bar 1 and tempo-warped to the session BPM. Hitting Play reconstructs the original mix; mute or solo any lane to isolate parts.</li>
 </ol>
+<p>The session BPM is updated to the <strong>detected floating-point tempo</strong> of the imported track on import, so the warp ratio starts at exactly 1.0 and the grooves lock to the grid from the first bar.</p>
 <p>The entire lane-creation is a <strong>single undo step</strong>, so you can undo all four lanes at once.</p>
+<p><strong>Transcribe to notes (opt-in).</strong> A <strong>&quot;Transcribe to notes&quot;</strong> checkbox in the Separate dialog (off by default) tells the service to additionally analyse each stem and create a note clip alongside the audio:</p>
+<ul>
+<li>Pitched stems (Vocals, Bass, Other) → melodic note clips, with pitches estimated via pYIN onset detection.</li>
+<li>The Drums stem → a drum-machine pattern, with hits mapped to the Drum Machine engine.</li>
+</ul>
+<p>The note clips are placed on a second layer within each stem lane and are immediately editable in the piano-roll or drum-grid. They are a convenience starting point, not a perfect transcription — pitch detection works best on monophonic or sparse material.</p>
 <p><strong>Cancelar</strong> aborts a running job and frees the temporary files on the service. <strong>Cerrar</strong> closes the dialog (only available when no job is running).</p>
 <h3>Opt-in nature</h3>
 <p>The feature is entirely opt-in. If you never start the service, nothing else in Loom changes — the ☰ Stems… button is the only touch point, and it degrades gracefully to a clear &quot;service not found&quot; message.</p>
@@ -1647,6 +1926,15 @@ uvicorn app:app --port 8765
 <p>Curves added manually behave identically to curves captured by recording. During arrangement playback they are applied continuously alongside clip launches — knob values are updated every lookahead tick, mapped from the normalised 0–1 curve to the parameter&#39;s min–max range. Curves generated by a recorded take (see <a href="#02-transport">Transport — REC</a>) and manually drawn curves live in the same list and can coexist on the same lane.</p>
 <p>For modulator-driven per-lane automation (LFO / ADSR) that runs in Session view rather than the arrangement timeline, see <a href="#06-modulation-and-note-fx">Modulation &amp; Note FX</a>.</p>
 <hr>
+<h2>Lane mute, solo &amp; VU meters</h2>
+<p>Each lane header — visible in both the session lane strip and the mixer — carries three live controls:</p>
+<ul>
+<li><strong>M (Mute)</strong> — silences the lane&#39;s audio output. The lane continues to schedule notes; unmuting restores it at full level with no re-trigger.</li>
+<li><strong>S (Solo)</strong> — solos this lane, temporarily muting all other lanes. Multiple lanes can be soloed simultaneously; un-soloing the last one restores normal playback.</li>
+<li><strong>VU meter</strong> — a vertical level meter in the lane header shows the lane&#39;s live output RMS. It gives an at-a-glance read of which lanes are active and how loud each one is during a take or a performance.</li>
+</ul>
+<p>Mute and solo states are saved with the session.</p>
+<hr>
 <h2>Persistence</h2>
 <p>The arrangement is saved as part of the session file (schema version 3). Recorded takes — clip bands, automation curves, loop brace position — survive Save / Load and browser restarts. Undo/redo covers arrangement edits (length, zoom, adding/removing curves, drawing automation, Copy to Performance) but not the raw recording; a take is finalised on Stop and does not participate in the undo stack.</p>
 <p>See <a href="#09-saving-and-export">Saving &amp; Export</a> for how sessions are saved and loaded.</p>
@@ -1688,7 +1976,7 @@ src/plugins/modulators/   — LFO / ADSR modulators
 <p>Each lane&#39;s <code>LaneResources</code> consists of a <code>ChannelStrip</code> (level, EQ, send levels), a <code>SynthEngine</code>, and an <code>InsertChain</code> of per-lane FX. <code>LaneResourceMap.replaceEngine</code> hot-swaps only the engine while keeping the strip and inserts in place — the channel-level resources survive an engine swap.</p>
 <p><code>ensureLaneResource</code> in the lane allocator is the only place that constructs a <code>LaneResources</code>. Call it once per lane before accessing anything in the map. Test code that needs a lane wired up must call it explicitly as setup.</p>
 <h2>The scheduler</h2>
-<p>The <code>Sequencer</code> class (<code>src/core/sequencer.ts</code>) is a 25 ms look-ahead timer. On each tick it calls <code>sessionTick(now, lookaheadSec)</code>, and the session host fans that out to <code>tickLane</code> for each playing lane.</p>
+<p>The <code>Sequencer</code> class (<code>src/core/sequencer.ts</code>) fires every 25 ms (the poll interval) and looks <strong>120 ms</strong> ahead. On each tick it calls <code>sessionTick(now, lookaheadSec)</code> with <code>lookaheadSec = 0.12</code>, and the session host fans that out to <code>tickLane</code> for each playing lane.</p>
 <p><code>tickLane</code> (<code>src/core/lane-scheduler.ts</code>) implements the Chris Wilson two-clocks pattern: for every <code>NoteEvent</code> whose absolute schedule time falls in the window <code>[now, now + lookaheadSec)</code>, it calls <code>ctx.onTrigger</code>. Schedule times are derived by converting clip-tick positions to seconds using the current BPM and projecting onto the absolute timeline from the loop-start anchor. Step duration for a 16th note is <code>60 / bpm / 4</code> seconds.</p>
 <p>Two important consequences for contributors:</p>
 <ul>
@@ -1761,8 +2049,8 @@ src/plugins/modulators/   — LFO / ADSR modulators
   save/           SaveManager (schemaVersion: 3), history-wiring (withUndo)
   notefx/         Note-FX plugin category (arpeggiator, chord spread) — per-lane
   automation/     Clip envelope recording + read-back helpers
-  arp/            Arpeggiator voice logic
-  copy/           Clipboard helpers for clip/note copy-paste
+  control/        Live MIDI controller subsystem: APC Key 25 profile, live
+                  keyboard, LED mediator, profile registry
   demo/           Baked MIDI demos + demo picker
   styles/         SCSS
 

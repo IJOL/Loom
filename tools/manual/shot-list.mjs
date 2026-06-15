@@ -188,6 +188,28 @@ export const SHOTS = [
     },
   },
   {
+    name: 'engine-westcoast',
+    selector: '.page[data-page="poly"]',
+    setup: async (page) => {
+      await loadDemo(page, 'Minimal Techno');
+      await addLane(page, 'westcoast');
+      const tabs = page.locator('.session-lane-tab');
+      const count = await tabs.count();
+      await tabs.nth(count - 1).click();
+      await page.locator('.page:not([hidden])').first().waitFor({ state: 'visible' });
+      await page.waitForTimeout(300);
+    },
+  },
+  {
+    name: 'musicality-bar',
+    selector: '.musicality-popover',
+    setup: async (page) => {
+      await page.locator('.musicality-summary').click();
+      await page.locator('.musicality-popover').waitFor({ state: 'visible' });
+      await page.waitForTimeout(150);
+    },
+  },
+  {
     name: 'engine-sampler',
     selector: '.page[data-page="poly"]',
     setup: async (page) => {
