@@ -95,14 +95,21 @@ export function saveUserExample(ex: Example): void {
   if (!validateExample(ex)) throw new Error(`saveUserExample: invalid example (id=${(ex as Record<string, unknown>).id})`);
   const existing = loadUserExamples(ex.style);
   existing.push(ex);
-  localStorage.setItem(lsKey(ex.style), JSON.stringify(existing));
+  try {
+    localStorage.setItem(lsKey(ex.style), JSON.stringify(existing));
+  } catch {
+    throw new Error('No se pudo guardar el ejemplo: almacenamiento del navegador lleno o no disponible.');
+  }
 }
 
 /** Remove an example by id from localStorage for the given style. No-op if not found. */
 export function deleteUserExample(style: StyleId, id: string): void {
   const existing = loadUserExamples(style);
   const filtered = existing.filter((e) => e.id !== id);
-  localStorage.setItem(lsKey(style), JSON.stringify(filtered));
+  if (filtered.length === existing.length) return; // nothing removed → skip the write
+  try {
+    localStorage.setItem(lsKey(style), JSON.stringify(filtered));
+  } catch { /* best-effort delete; ignore storage errors */ }
 }
 
 // ── Factory examples (with source stamp) ────────────────────────────────────

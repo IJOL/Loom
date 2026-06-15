@@ -107,5 +107,15 @@ describe('musicality core', () => {
         expect(rebuilt).toBe(snapToScale(m, key, scale));
       }
     });
+
+    it('chromatic scale round-trip with a non-zero key', () => {
+      const key = 7; const scale = 'chromatic'; const octaveBase = 36;
+      const testMidis = [36, 37, 38, 41, 44, 48, 55, 60, 67, 72];
+      for (const m of testMidis) {
+        const deg = midiToScaleDegree(m, key, scale, octaveBase);
+        const rebuilt = scaleDegreeToMidi(deg, octaveBase, key, scale);
+        expect(rebuilt).toBe(snapToScale(m, key, scale));
+      }
+    });
   });
 });
