@@ -50,12 +50,22 @@ export function playAudioClip(opts: {
     src.playbackRate.value = 1;
   } else {
     src.buffer = buf;
-    src.playbackRate.value = sample.mode === 'loop' ? region / gate : 1;
     if (wantWarp) {
-      // render the warped buffer for next time (markers present but not cached yet)
+      // Cache miss (markers/gate combo not warped yet). Render it for next time,
+      // and for THIS pass fall back to the MARKED source span at varispeed: play
+      // [markers[0].srcSec, markers[last].srcSec] stretched to fill the gate. That
+      // is the right audio region (only off-pitch until the warp heals) — crucial
+      // for a loop sub-region, whose markers are sliced to that region, so the old
+      // "play the whole buffer" fallback would have played garbage (the reported
+      // first-play noise). For a full warped clip the span is the whole take, so
+      // this stays ~rate 1 — unchanged.
+      const wStart = markers![0].srcSec;
+      const wSpan = Math.max(1e-3, markers![markers!.length - 1].srcSec - wStart);
+      src.playbackRate.value = wSpan / gate;
       void warpCache.ensure(warpKey(sample.sampleId, markers!, gate), () => warpStretch(ctx, buf, markers!, gate));
-    } else if (wantStretch) {
-      void stretchCache.ensure(sample.sampleId, ratio, () => stretchBuffer(ctx, buf, ratio));
+    } else {
+      src.playbackRate.value = sample.mode === 'loop' ? region / gate : 1;
+      if (wantStretch) void stretchCache.ensure(sample.sampleId, ratio, () => stretchBuffer(ctx, buf, ratio));
     }
   }
   src.connect(dest);
@@ -70,7 +80,10 @@ export function playAudioClip(opts: {
   g.linearRampToValueAtTime(0, time + gate);
 
   const endTime = time + gate + 0.01;
-  src.start(time, (warped || stretched) ? 0 : trimStart);
+  // Warped/stretched buffers already start at 0. The warp varispeed fallback starts
+  // at the first marker (the marked region's source start); else at the clip trim.
+  const startOffset = (warped || stretched) ? 0 : (wantWarp ? markers![0].srcSec : trimStart);
+  src.start(time, startOffset);
   src.stop(endTime);
   return { src, endTime };
 }

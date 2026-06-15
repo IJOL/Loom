@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { effectiveClipLoop } from './clip-loop';
-import { DEFAULT_METER, ticksPerBar } from './meter';
+import { effectiveClipLoop, loopAwareStep } from './clip-loop';
+import { DEFAULT_METER, ticksPerBar, stepsPerBar } from './meter';
 import type { SessionClip } from '../session/session';
 
 const bar = ticksPerBar(DEFAULT_METER); // 384
@@ -26,5 +26,25 @@ describe('effectiveClipLoop', () => {
   it('bounds are clamped into 0..total', () => {
     const r = effectiveClipLoop(clip({ loopEnabled: true, loopStartTick: -50, loopEndTick: 99 * bar }), DEFAULT_METER);
     expect(r).toEqual({ startTick: 0, endTick: 4 * bar });
+  });
+});
+
+describe('loopAwareStep', () => {
+  const spb = stepsPerBar(DEFAULT_METER);     // 16
+  const total = 4 * spb;                      // 64 steps in a 4-bar clip
+
+  it('loop off ⇒ wraps over the whole clip', () => {
+    expect(loopAwareStep(clip({}), DEFAULT_METER, 0)).toBe(0);
+    expect(loopAwareStep(clip({}), DEFAULT_METER, 10)).toBe(10);
+    expect(loopAwareStep(clip({}), DEFAULT_METER, total + 5)).toBe(5); // wrap at full clip
+  });
+
+  it('loop on ⇒ starts at the loop start and wraps within the sub-region', () => {
+    // loop bars 2..4 ⇒ steps [16, 48), length 32 steps.
+    const c = clip({ loopEnabled: true, loopStartTick: bar, loopEndTick: 3 * bar });
+    expect(loopAwareStep(c, DEFAULT_METER, 0)).toBe(16);     // launch at the loop start, not 0
+    expect(loopAwareStep(c, DEFAULT_METER, 10)).toBe(26);    // 16 + 10
+    expect(loopAwareStep(c, DEFAULT_METER, 32)).toBe(16);    // wraps after 32 steps, back to start
+    expect(loopAwareStep(c, DEFAULT_METER, 40)).toBe(24);    // 16 + (40 % 32)
   });
 });

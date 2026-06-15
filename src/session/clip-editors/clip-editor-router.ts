@@ -25,6 +25,7 @@ import type { EngineUIContext } from '../../engines/engine-types';
 import type { SessionState } from '../session';
 import { detectLoop } from '../../samples/loop-analysis';
 import { propagateWarp, propagateLoop } from '../warp-marker-edit';
+import { loopAwareStep } from '../../core/clip-loop';
 import { warpCache } from '../../samples/warp-cache';
 import { sampleCache } from '../../samples/sample-cache';
 
@@ -134,8 +135,8 @@ export function renderClipEditor(
     if (!lp || !lp.playing || lp.playing.id !== clip.id) return -1;
     const stepDur = 60 / deps.seq.bpm / 4;
     const stepsElapsed = Math.max(0, (deps.ctx.currentTime - lp.startTime) / stepDur);
-    const clipSteps = clip.lengthBars * stepsPerBar(deps.seq.meter);
-    return (stepsElapsed % clipSteps) / clipSteps;
+    const totalSteps = Math.max(1, clip.lengthBars * stepsPerBar(deps.seq.meter));
+    return loopAwareStep(clip, deps.seq.meter, stepsElapsed) / totalSteps;
   };
 
   // Audio-channel clip → waveform-only editor (no note grid). Mount the engine
@@ -218,8 +219,7 @@ export function renderClipEditor(
       if (!lp || !lp.playing || lp.playing.id !== clip.id) return -1;
       const stepDur = 60 / deps.seq.bpm / 4;
       const stepsElapsed = Math.max(0, (deps.ctx.currentTime - lp.startTime) / stepDur);
-      const clipSteps = clip.lengthBars * stepsPerBar(deps.seq.meter);
-      return (stepsElapsed % clipSteps) * TICKS_PER_STEP;
+      return loopAwareStep(clip, deps.seq.meter, stepsElapsed) * TICKS_PER_STEP;
     };
     const model = lane.engineId === 'sampler' ? samplerDrumModel(lane, deps.midiLabel) : undefined;
     bodyHandle = renderDrumGridEditor(bodyBox, clip, deps.historyDeps, deps.seq.meter, { auditionNote: audition, getPlayheadTick }, model);
@@ -285,8 +285,7 @@ function buildPianoRoll(
       const now = ctx.currentTime;
       const stepDur = 60 / seq.bpm / 4;
       const stepsElapsed = Math.max(0, (now - lp.startTime) / stepDur);
-      const clipSteps = clip.lengthBars * stepsPerBar(seq.meter);
-      return (stepsElapsed % clipSteps) * TICKS_PER_STEP;
+      return loopAwareStep(clip, seq.meter, stepsElapsed) * TICKS_PER_STEP;
     },
     viewState: resolveViewState(viewStateByClip, clip.id),
     onViewChange: (v) => { viewStateByClip.set(clip.id, v); },
