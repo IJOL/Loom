@@ -19,8 +19,10 @@ import { generate, type GenKind } from '../core/generators';
 import { variateNotes, invertMelodic, invertRetrograde } from '../core/note-transform';
 import { stepsPerBar, ticksPerBar } from '../core/meter';
 import { ensureScenesForRows } from '../core/scene-ensure';
-import { alertDialog, promptDialog } from '../core/dialog';
+import { alertDialog, promptDialog, choiceDialog } from '../core/dialog';
 import { loadAllExamples, renderExampleNotes, clipToExample, exampleToJson, saveUserExample, type Example } from './example-loader';
+import { renderChordComp } from '../core/harmony';
+import { emptyClip } from './session';
 
 function genKindFor(engineId: string): GenKind {
   if (engineId === 'tb303') return 'bass';
@@ -50,6 +52,12 @@ export interface InspectorDeps {
     sample?: import('./session').ClipSample,
     velocity?: number,
   ) => void;
+  /** Create a new melodic lane with the given notes (Acordes flow).
+   *  Optional so test fixtures without a SessionHost still compile. */
+  addNoteLane?: (engineId: string, notes: import('../core/notes').NoteEvent[], lengthBars: number, name: string) => void;
+  /** Place a chord clip into an existing lane at the given clip index (Acordes flow).
+   *  Optional so test fixtures without a SessionHost still compile. */
+  placeChordClip?: (laneId: string, clipIdx: number, clip: import('./session').SessionClip) => void;
 }
 
 export class SessionInspector {
@@ -262,6 +270,53 @@ export class SessionInspector {
         );
       });
     };
+
+    // ── Acordes (chord accompaniment) ─────────────────────────────────────────
+    // Only show the button for melodic lanes (not drums/audio/sampler-drumkit).
+    const chordsBtn = document.getElementById('insp-chords') as HTMLButtonElement | null;
+    if (chordsBtn) {
+      chordsBtn.hidden = exKind === 'beat' || lane!.engineId === 'audio';
+      chordsBtn.onclick = () => {
+        void (async () => {
+          const ton = resolveTonality(lane!, this.deps.state);
+          const barTicks = ticksPerBar(this.deps.seq.meter);
+          const chordNotes = renderChordComp(clip.notes ?? [], {
+            key: ton.key,
+            scale: ton.scale,
+            style: this.deps.state.musicality?.style ?? 'acid',
+            bars: clip.lengthBars,
+            barTicks,
+            octaveBase: 48,
+          });
+          if (chordNotes.length === 0) {
+            void alertDialog('Dibuja o genera una melodía primero.');
+            return;
+          }
+          // Build choice list: melodic lanes (not drums/audio/sampler-drumkit) + new lane
+          const melodicLanes = this.deps.state.lanes.filter(
+            (l) => l.engineId !== 'drums-machine' && l.engineId !== 'audio' && l.engineId !== 'sampler',
+          );
+          const choices = [
+            ...melodicLanes.map((l) => ({ id: l.id, label: l.name ?? l.id })),
+            { id: '__new__', label: '➕ Nueva pista de acordes', primary: true as const },
+          ];
+          const picked = await choiceDialog(
+            '¿Dónde colocar los acordes?',
+            choices,
+            { title: 'Acordes' },
+          );
+          if (!picked) return; // cancelled
+          if (picked === '__new__') {
+            this.deps.addNoteLane?.('subtractive', chordNotes, clip.lengthBars, 'Acordes');
+          } else {
+            const chordClip = emptyClip(clip.lengthBars);
+            chordClip.notes = chordNotes;
+            chordClip.name = 'Acordes';
+            this.deps.placeChordClip?.(picked, this.selectedClip!.clipIdx, chordClip);
+          }
+        })();
+      };
+    }
 
     // Show ALL examples regardless of the project's global style/key. Filter only by
     // editor category: a piano-roll lane shows melodic riffs (bass+melody); a drum lane

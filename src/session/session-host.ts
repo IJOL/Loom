@@ -178,6 +178,15 @@ export class SessionHost {
       laneResources: this.deps.laneResources,
       saveSession: this.deps.saveSession,
       triggerForLane: this.deps.triggerForLane,
+      addNoteLane: (engineId, notes, lengthBars, name) => this.addNoteLane(engineId, notes, lengthBars, name),
+      placeChordClip: (laneId, clipIdx, clip) => {
+        const hd = this.deps.historyDeps;
+        const run = () => {
+          this.placeClipEnsuringScene(laneId, clipIdx, clip);
+          this.renderWithMixer();
+        };
+        if (hd) withUndo(hd, run); else run();
+      },
     });
 
     this.deps.seq.sessionTick = (now, look) => {

@@ -55,10 +55,12 @@ function mountInspectorDom(): void {
       <button id="insp-variate"></button>
       <button id="insp-invert-melodic"></button>
       <button id="insp-retrograde"></button>
+      <button id="insp-chords"></button>
       <select id="insp-examples-select"></select>
       <button id="insp-save-example"></button>
       <button id="insp-export-example"></button>
       <button id="insp-toggle-editor"></button>
+      <div id="insp-tonality"></div>
       <div id="insp-roll-host"></div>
     </div>`;
 }
