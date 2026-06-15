@@ -1,0 +1,117 @@
+/* ── Musicality bar — tonality + style picker ──────────────────────────── */
+
+/*
+ * The musicality bar lives in `.row.tools` and consists of:
+ *   .musicality-bar          — wrapper (relative anchor for the popover)
+ *   .musicality-summary      — the always-visible toggle button
+ *   .musicality-popover      — the floating card (position: absolute)
+ *     .musicality-row        — one label + select pair inside the card
+ *
+ * .insp-tonality             — quiet inline status line in the clip inspector
+ */
+
+.musicality-bar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ── Summary button — mirrors .rnd / toolbar button conventions ── */
+.musicality-summary {
+  font-family: var(--mono);
+  font-size: 11px;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  /* No text-transform — the emoji + readable text should stay as-is */
+}
+.musicality-summary:hover {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+/* Active state while the popover is open */
+.musicality-bar.open .musicality-summary {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
+/* ── Floating popover ── */
+.musicality-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 50;
+  min-width: 260px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+}
+
+/*
+ * The browser's native [hidden] attribute sets display:none, but an explicit
+ * display rule on the element would override it. Reassert display:none so the
+ * popover is truly gone when hidden (same pattern as .clip-edit-row[hidden]).
+ */
+.musicality-popover[hidden] { display: none; }
+
+/* ── Row inside the popover: label + select ── */
+.musicality-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text);
+  cursor: default;
+}
+
+.musicality-row > span {
+  flex: 0 0 56px;
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+.musicality-row > select {
+  flex: 1;
+  /* Inherits global select styling (surface-2 bg, text color, border, mono font)
+   * from _base.scss. We just ensure it fills the remaining width. */
+}
+
+/* ── Inline tonality label in the clip inspector ── */
+.insp-tonality {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 11px var(--mono);
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.insp-tonality button {
+  font-family: var(--mono);
+  font-size: 10px;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.insp-tonality button:hover {
+  color: var(--amber);
+  border-color: var(--amber);
+}
