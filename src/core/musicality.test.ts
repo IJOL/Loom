@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   inScale, snapToScale, degreesOf, scaleDegreeToMidi, rootNameEs,
-  SCALE_CATALOG, STYLE_CATALOG, scaleIntervals,
+  SCALE_CATALOG, STYLE_CATALOG, scaleIntervals, midiToScaleDegree,
 } from './musicality';
 
 describe('musicality core', () => {
@@ -40,5 +40,72 @@ describe('musicality core', () => {
     expect(SCALE_CATALOG.length).toBeGreaterThan(3);
     expect(STYLE_CATALOG.length).toBe(4);
     for (const s of SCALE_CATALOG) expect(scaleIntervals(s.id).length).toBeGreaterThan(0);
+  });
+
+  // --- midiToScaleDegree ---
+  describe('midiToScaleDegree', () => {
+    it('round-trips: scaleDegreeToMidi(midiToScaleDegree(m)) === snapToScale(m) for C minor, octaveBase 36', () => {
+      const key = 0; const scale = 'minor'; const octaveBase = 36;
+      const testMidis = [36, 37, 38, 40, 43, 48, 50, 51, 53, 55, 60, 62, 63, 65, 67];
+      for (const m of testMidis) {
+        const deg = midiToScaleDegree(m, key, scale, octaveBase);
+        const rebuilt = scaleDegreeToMidi(deg, octaveBase, key, scale);
+        expect(rebuilt).toBe(snapToScale(m, key, scale));
+      }
+    });
+
+    it('round-trips for A minor, octaveBase 36', () => {
+      const key = 9; const scale = 'minor'; const octaveBase = 36;
+      const testMidis = [36, 40, 45, 52, 57, 60, 69, 72, 81];
+      for (const m of testMidis) {
+        const deg = midiToScaleDegree(m, key, scale, octaveBase);
+        const rebuilt = scaleDegreeToMidi(deg, octaveBase, key, scale);
+        expect(rebuilt).toBe(snapToScale(m, key, scale));
+      }
+    });
+
+    it('round-trips for major, phrygian, dorian, pentMinor', () => {
+      const octaveBase = 36;
+      const cases: Array<{ key: number; scale: Parameters<typeof midiToScaleDegree>[2] }> = [
+        { key: 0, scale: 'major' },
+        { key: 5, scale: 'phrygian' },
+        { key: 2, scale: 'dorian' },
+        { key: 0, scale: 'pentMinor' },
+      ];
+      const testMidis = [36, 38, 42, 48, 53, 60, 65, 72];
+      for (const { key, scale } of cases) {
+        for (const m of testMidis) {
+          const deg = midiToScaleDegree(m, key, scale, octaveBase);
+          const rebuilt = scaleDegreeToMidi(deg, octaveBase, key, scale);
+          expect(rebuilt).toBe(snapToScale(m, key, scale));
+        }
+      }
+    });
+
+    it('degree 0 maps to the root note at octaveBase', () => {
+      // C minor, octaveBase 36: root = C2 = 36
+      expect(midiToScaleDegree(36, 0, 'minor', 36)).toBe(0);
+      // degree for one octave up (midi 48 = C3) should be 7 (scale length of minor)
+      expect(midiToScaleDegree(48, 0, 'minor', 36)).toBe(7);
+    });
+
+    it('handles notes below octaveBase (negative degrees)', () => {
+      const key = 0; const scale = 'minor'; const octaveBase = 60;
+      const m = 48; // C3, one octave below octaveBase C4
+      const deg = midiToScaleDegree(m, key, scale, octaveBase);
+      expect(deg).toBe(-7); // -1 octave = -7 degrees in 7-note scale
+      const rebuilt = scaleDegreeToMidi(deg, octaveBase, key, scale);
+      expect(rebuilt).toBe(snapToScale(m, key, scale));
+    });
+
+    it('chromatic scale round-trip (12 degrees per octave)', () => {
+      const key = 0; const scale = 'chromatic'; const octaveBase = 36;
+      const testMidis = [36, 37, 38, 39, 40, 41, 48, 60, 72];
+      for (const m of testMidis) {
+        const deg = midiToScaleDegree(m, key, scale, octaveBase);
+        const rebuilt = scaleDegreeToMidi(deg, octaveBase, key, scale);
+        expect(rebuilt).toBe(snapToScale(m, key, scale));
+      }
+    });
   });
 });

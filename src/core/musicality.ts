@@ -70,3 +70,25 @@ export function scaleDegreeToMidi(degree: number, octaveBase: number, key: numbe
   const k = ((key % 12) + 12) % 12;
   return octaveBase + k + ivs[idx] + 12 * oct;
 }
+
+/** Inverse of scaleDegreeToMidi. Returns the degree index (0-based, may be
+ *  negative or exceed scale length) such that:
+ *    scaleDegreeToMidi(result, octaveBase, key, scale) === snapToScale(midi, key, scale)
+ *  Works by snapping midi to scale first, then computing the semitone offset
+ *  from the scale root at octaveBase and walking scaleIntervals across octaves. */
+export function midiToScaleDegree(midi: number, key: number, scale: ScaleId, octaveBase: number): number {
+  const snapped = snapToScale(midi, key, scale);
+  const ivs = scaleIntervals(scale);
+  const n = ivs.length;
+  const k = ((key % 12) + 12) % 12;
+  // Semitone distance from the root at octaveBase (can be negative)
+  const semiOffset = snapped - (octaveBase + k);
+  // Which octave does the note fall in relative to the root?
+  const octave = Math.floor(semiOffset / 12);
+  // Semitone within that octave (interval relative to root pitch class)
+  const semitoneInOct = ((semiOffset % 12) + 12) % 12;
+  // Find the degree index within the octave by matching the interval
+  const degInOct = ivs.indexOf(semitoneInOct);
+  // degInOct should always be found (snapToScale guarantees an in-scale result)
+  return octave * n + degInOct;
+}
