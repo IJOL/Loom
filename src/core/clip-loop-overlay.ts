@@ -90,15 +90,27 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
   // Anchor the column to the widest <canvas> in the host (the note/drum grid or
   // the waveform) — for the gutter-less waveform that's the full width, so audio
   // is unchanged; for the piano-roll it lines the column up with the bar numbers.
-  const contentBox = (): { leftRel: number; absLeft: number; width: number } => {
+  const contentBox = (): { leftRel: number; absLeft: number; width: number; topRel: number; height: number } => {
     const hr = host.getBoundingClientRect();
-    let best: DOMRect | null = null;
+    // Horizontal: the widest <canvas> = the bar-grid area (skips the narrow key
+    // gutter). Vertical: the UNION of all canvases (ruler → grid → velocity) — this
+    // excludes the editor's own toolbar (DRAW/SELECT, octave, grid are divs, not
+    // canvases), so the column sits over the bar-number row + grid, not above it.
+    let widest: DOMRect | null = null;
+    let top = Infinity, bottom = -Infinity;
     for (const c of Array.from(host.querySelectorAll('canvas'))) {
       const r = c.getBoundingClientRect();
-      if (r.width > 0 && (!best || r.width > best.width)) best = r;
+      if (r.width <= 0 || r.height <= 0) continue;
+      if (!widest || r.width > widest.width) widest = r;
+      top = Math.min(top, r.top);
+      bottom = Math.max(bottom, r.bottom);
     }
-    const r = best ?? hr;
-    return { leftRel: r.left - hr.left, absLeft: r.left, width: r.width || 1 };
+    const wx = widest ?? hr;
+    if (!Number.isFinite(top)) { top = hr.top; bottom = hr.bottom; }
+    return {
+      leftRel: wx.left - hr.left, absLeft: wx.left, width: wx.width || 1,
+      topRel: top - hr.top, height: Math.max(1, bottom - top),
+    };
   };
 
   const layout = () => {
@@ -106,6 +118,8 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
     const cb = contentBox();
     col.style.left = `${cb.leftRel + tickToPx(startTick, cb.width, total)}px`;
     col.style.width = `${tickToPx(endTick - startTick, cb.width, total)}px`;
+    col.style.top = `${cb.topRel}px`;
+    col.style.height = `${cb.height}px`;
     col.style.display = clip.loopEnabled ? '' : 'none';
     toggle.classList.toggle('on', !!clip.loopEnabled);
   };

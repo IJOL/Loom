@@ -11,7 +11,8 @@
 .clip-loop-bar { display:flex; align-items:center; gap:8px; height:20px; margin:2px 0; font-size:11px; }
 .clip-loop-quant, .clip-loop-all { font-size:11px; padding:2px 6px; border-radius:4px; }
 .clip-loop-col {
-  position:absolute; top:0; bottom:0; z-index:5; pointer-events:none; box-sizing:border-box;
+  // top + height are set by clip-loop-overlay.ts (the bar-row→grid span).
+  position:absolute; z-index:5; pointer-events:none; box-sizing:border-box;
   background:rgba(255,204,51,.10);
   border-left:2px solid #ffcc33; border-right:2px solid #ffcc33;
 }
