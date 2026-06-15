@@ -1,7 +1,7 @@
 // src/core/musicality.ts
-// Única fuente de verdad de escalas/tonalidad para todo Loom. Puro: sin DOM,
-// sin audio. Lo consumen el piano-roll (resaltado + candado), los generadores
-// y la galería de ejemplos.
+// Single source of truth for scales/tonality across all of Loom. Pure: no DOM,
+// no audio. Consumed by the piano-roll (highlight + lock), generators,
+// and the example gallery.
 
 export type ScaleId = 'minor' | 'major' | 'pentMinor' | 'phrygian' | 'dorian' | 'chromatic';
 export type StyleId = 'acid' | 'house' | 'synthwave' | 'lofi';
@@ -17,12 +17,12 @@ const INTERVALS: Record<ScaleId, number[]> = {
 
 export interface ScaleEntry { id: ScaleId; label: string; mood: string; hint: string; }
 export const SCALE_CATALOG: ScaleEntry[] = [
-  { id: 'minor',     label: 'menor',          mood: '🌙 Oscura / tensa',       hint: 'el sonido acid/techno clásico' },
-  { id: 'pentMinor', label: 'pentatónica menor', mood: '🛡️ Segura (casi todo pega)', hint: 'difícil sonar mal; riffs y bajos' },
-  { id: 'major',     label: 'mayor',          mood: '☀️ Alegre / abierta',      hint: 'pop, casi todo lo "feliz"' },
-  { id: 'phrygian',  label: 'frigia',         mood: '🔥 Misteriosa / hipnótica', hint: 'acid oscuro, EBM' },
-  { id: 'dorian',    label: 'dórica',         mood: '🌊 Groovy / con swing',    hint: 'house y funk' },
-  { id: 'chromatic', label: 'cromática',      mood: '🎛️ Todo vale (sin red)',   hint: 'cualquier nota; sin ayuda' },
+  { id: 'minor',     label: 'minor',            mood: '🌙 Dark / tense',                hint: 'the classic acid/techno sound' },
+  { id: 'pentMinor', label: 'pentatonic minor',  mood: '🛡️ Safe (almost anything fits)', hint: 'hard to sound wrong; riffs & basslines' },
+  { id: 'major',     label: 'major',            mood: '☀️ Bright / open',               hint: 'pop, most "happy" music' },
+  { id: 'phrygian',  label: 'phrygian',         mood: '🔥 Mysterious / hypnotic',       hint: 'dark acid, EBM' },
+  { id: 'dorian',    label: 'dorian',           mood: '🌊 Groovy / swung',              hint: 'house & funk' },
+  { id: 'chromatic', label: 'chromatic',        mood: '🎛️ Anything goes (no net)',      hint: 'any note; no safety net' },
 ];
 
 export interface StyleEntry { id: StyleId; label: string; }
@@ -33,13 +33,13 @@ export const STYLE_CATALOG: StyleEntry[] = [
   { id: 'lofi',      label: 'Lo-fi / Ambient' },
 ];
 
-const ROOT_NAMES_ES = ['Do', 'Do♯', 'Re', 'Re♯', 'Mi', 'Fa', 'Fa♯', 'Sol', 'Sol♯', 'La', 'La♯', 'Si'];
+const ROOT_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 export function scaleIntervals(scale: ScaleId): number[] {
   return INTERVALS[scale] ?? INTERVALS.minor;
 }
-export function rootNameEs(pc: number): string {
-  return ROOT_NAMES_ES[((pc % 12) + 12) % 12];
+export function rootName(pc: number): string {
+  return ROOT_NAMES[((pc % 12) + 12) % 12];
 }
 /** Pitch classes (0-11) that belong to `scale` rooted at `key`. */
 export function degreesOf(key: number, scale: ScaleId): number[] {

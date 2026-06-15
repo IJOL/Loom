@@ -1,8 +1,8 @@
 // src/session/musicality-bar.ts
-// Panel de tonalidad + estilo de la barra superior. Reemplaza los <select>
-// #scale/#root sueltos. Muestra las escalas por sensación (mood + hint).
+// Tonality + style panel for the top bar. Replaces the loose #scale/#root <select>s.
+// Displays scales by feel (mood + hint).
 import {
-  SCALE_CATALOG, STYLE_CATALOG, rootNameEs, type ScaleId, type StyleId,
+  SCALE_CATALOG, STYLE_CATALOG, rootName, type ScaleId, type StyleId,
 } from '../core/musicality';
 import type { MusicalityState } from './session';
 
@@ -18,7 +18,7 @@ export function renderMusicalityBar(host: HTMLElement, deps: MusicalityBarDeps):
 
   const summary = document.createElement('button');
   summary.className = 'musicality-summary';
-  summary.title = 'Tonalidad y estilo del proyecto';
+  summary.title = 'Project key & style';
 
   const popover = document.createElement('div');
   popover.className = 'musicality-popover';
@@ -27,7 +27,7 @@ export function renderMusicalityBar(host: HTMLElement, deps: MusicalityBarDeps):
   const rootSel = document.createElement('select');
   rootSel.dataset.musicality = 'root';
   for (let pc = 0; pc < 12; pc++) {
-    const o = document.createElement('option'); o.value = String(pc); o.textContent = rootNameEs(pc);
+    const o = document.createElement('option'); o.value = String(pc); o.textContent = rootName(pc);
     rootSel.appendChild(o);
   }
   const scaleSel = document.createElement('select');
@@ -50,15 +50,15 @@ export function renderMusicalityBar(host: HTMLElement, deps: MusicalityBarDeps):
     row.append(span, el); return row;
   };
   popover.append(
-    mkRow('Tónica', rootSel),
-    mkRow('Escala', scaleSel),
-    mkRow('Estilo', styleSel),
+    mkRow('Root', rootSel),
+    mkRow('Scale', scaleSel),
+    mkRow('Style', styleSel),
   );
 
   const summaryText = (m: MusicalityState) => {
     const sc = SCALE_CATALOG.find((s) => s.id === m.scale);
     const st = STYLE_CATALOG.find((s) => s.id === m.style);
-    return `${rootNameEs(m.key)} ${sc?.label ?? m.scale} · ${st?.label ?? m.style}`;
+    return `${rootName(m.key)} ${sc?.label ?? m.scale} · ${st?.label ?? m.style}`;
   };
   const refresh = () => {
     const m = deps.get();

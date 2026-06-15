@@ -1,6 +1,6 @@
 // src/core/generators.ts
-// Generadores de notas por estilo, anclados a una tonalidad. Sustituyen el azar
-// plano de session/clip-randomize. Puros: rng inyectable → deterministas en test.
+// Style-aware note generators anchored to a tonality. Replace the flat randomness
+// of session/clip-randomize. Pure: injectable rng → deterministic in tests.
 import { TICKS_PER_STEP, type NoteEvent } from './notes';
 import { scaleDegreeToMidi, type ScaleId, type StyleId } from './musicality';
 
@@ -8,7 +8,7 @@ export type GenKind = 'bass' | 'melody' | 'beat';
 export interface GenContext {
   key: number; scale: ScaleId;
   bars: number; stepsPerBar: number;
-  octaveBase: number;          // midi de la octava base del editor (p. ej. 36 = C2)
+  octaveBase: number;          // midi of the editor's base octave (e.g. 36 = C2)
   rng: () => number;           // [0,1)
 }
 
@@ -50,7 +50,7 @@ function genBass(style: StyleId, c: GenContext): NoteEvent[] {
     const slide = c.rng() < cfg.slideChance;
     out.push({
       start: i * TICKS_PER_STEP,
-      duration: Math.floor(TICKS_PER_STEP * (slide ? 1.5 : 0.92)), // slide = duración solapada (ver notes.ts)
+      duration: Math.floor(TICKS_PER_STEP * (slide ? 1.5 : 0.92)), // slide = overlapping duration (see notes.ts)
       midi,
       velocity: c.rng() < cfg.accentChance ? ACCENT : NORM,
     });
@@ -64,10 +64,10 @@ function genMelody(style: StyleId, c: GenContext): NoteEvent[] {
   const steps = c.bars * c.stepsPerBar;
   const out: NoteEvent[] = [];
   let degree = 0;
-  const melBase = c.octaveBase + 12; // una octava por encima del bajo
+  const melBase = c.octaveBase + 12; // one octave above the bass
   for (let i = 0; i < steps; i++) {
     if (c.rng() >= cfg.density) continue;
-    // contorno: paseo aleatorio acotado, sesgado a volver al centro
+    // contour: bounded random walk, biased back toward the centre
     degree += Math.round((c.rng() - 0.5) * 4);
     degree = Math.max(0, Math.min(cfg.spanDegrees, degree));
     const long = c.rng() < cfg.longChance;
@@ -78,7 +78,7 @@ function genMelody(style: StyleId, c: GenContext): NoteEvent[] {
       velocity: c.rng() < 0.25 ? ACCENT : NORM,
     });
   }
-  // resolución a la tónica en el último step si hay hueco
+  // resolve to the tonic on the last step if the slot is free
   const lastStart = (steps - 1) * TICKS_PER_STEP;
   if (!out.some((n) => n.start === lastStart)) {
     out.push({ start: lastStart, duration: TICKS_PER_STEP, midi: scaleDegreeToMidi(0, melBase, c.key, c.scale), velocity: NORM });
@@ -101,7 +101,7 @@ function genBeat(style: StyleId, c: GenContext): NoteEvent[] {
       at(i, c.rng() < cfg.openHatChance ? GM.openhat : GM.hat, 70);
     }
   }
-  // garantía: kick en el primer downbeat
+  // guarantee: kick on the first downbeat
   if (!out.some((n) => n.midi === GM.kick && n.start === 0)) at(0, GM.kick, ACCENT);
   return out;
 }

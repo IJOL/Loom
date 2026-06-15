@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  inScale, snapToScale, degreesOf, scaleDegreeToMidi, rootNameEs,
+  inScale, snapToScale, degreesOf, scaleDegreeToMidi, rootName,
   SCALE_CATALOG, STYLE_CATALOG, scaleIntervals, midiToScaleDegree,
 } from './musicality';
 
@@ -31,9 +31,9 @@ describe('musicality core', () => {
     expect(inScale(scaleDegreeToMidi(7, 60, 0, 'minor'), 0, 'minor')).toBe(true);
   });
 
-  it('rootNameEs uses Spanish note names', () => {
-    expect(rootNameEs(9)).toBe('La');
-    expect(rootNameEs(0)).toBe('Do');
+  it('rootName uses English note names', () => {
+    expect(rootName(9)).toBe('A');
+    expect(rootName(0)).toBe('C');
   });
 
   it('catalogs are non-empty and every scale has intervals', () => {

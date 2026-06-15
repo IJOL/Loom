@@ -1,13 +1,13 @@
 // src/session/example-loader.ts
-// Galería de ejemplos (estilo Classic). Los melódicos se guardan en GRADOS de
-// escala → encajan en cualquier tonalidad; los beats en notas GM tal cual.
+// Example gallery (Classic-style). Melodic examples are stored as SCALE DEGREES
+// so they fit any tonality; beats are stored as raw GM notes.
 import { scaleDegreeToMidi, midiToScaleDegree, snapToScale, type ScaleId, type StyleId } from '../core/musicality';
 import { type NoteEvent } from '../core/notes';
 
 export interface ExampleDegree { start: number; duration: number; degree: number; octave: number; velocity: number; }
 export interface Example {
   id: string; name: string; style: StyleId; kind: 'bass' | 'melody' | 'beat'; bars: number;
-  degrees?: ExampleDegree[];   // melódicos
+  degrees?: ExampleDegree[];   // melodic examples
   notes?: NoteEvent[];         // beats (GM)
   source?: 'user' | 'factory';
 }
@@ -98,7 +98,7 @@ export function saveUserExample(ex: Example): void {
   try {
     localStorage.setItem(lsKey(ex.style), JSON.stringify(existing));
   } catch {
-    throw new Error('No se pudo guardar el ejemplo: almacenamiento del navegador lleno o no disponible.');
+    throw new Error('Could not save the example: browser storage is full or unavailable.');
   }
 }
 

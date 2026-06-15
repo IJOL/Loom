@@ -226,8 +226,8 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   let lockOn = opts.scaleLock ?? false;
   const lockBtn = document.createElement('button');
   const refreshLock = () => {
-    lockBtn.textContent = lockOn ? '🔒 Escala' : '🔓 Escala';
-    lockBtn.title = lockOn ? 'Candado de escala ON (las notas caen en tono)' : 'Candado de escala OFF';
+    lockBtn.textContent = lockOn ? '🔒 Scale' : '🔓 Scale';
+    lockBtn.title = lockOn ? 'Scale lock ON (notes snap to key)' : 'Scale lock OFF';
   };
   lockBtn.addEventListener('click', () => {
     lockOn = !lockOn;
@@ -277,8 +277,8 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       if (BLACK_KEY_PCS.includes(((midi % 12) + 12) % 12)) {
         gctx.fillStyle = '#161616'; gctx.fillRect(0, i * rowHeight, w, rowHeight);
       }
-      // Resaltado de escala (musicality): filas en tono con un tinte verde sutil,
-      // la tónica algo más marcada. Las de fuera quedan como están (más oscuras).
+      // Scale highlight (musicality): in-key rows get a subtle green tint,
+      // the root is slightly stronger. Out-of-key rows stay as-is (darker).
       if (opts.scaleCtx?.inScale(midi)) {
         gctx.fillStyle = opts.scaleCtx.isRoot?.(midi) ? 'rgba(57,217,138,0.13)' : 'rgba(57,217,138,0.05)';
         gctx.fillRect(0, i * rowHeight, w, rowHeight);

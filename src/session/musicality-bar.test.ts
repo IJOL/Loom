@@ -9,12 +9,12 @@ describe('musicality bar', () => {
     const onChange = vi.fn();
     const handle = renderMusicalityBar(host, { get: () => ({ ...DEFAULT_MUSICALITY }), onChange });
     const summary = host.querySelector('.musicality-summary') as HTMLButtonElement;
-    expect(summary.textContent).toContain('La menor');
+    expect(summary.textContent).toContain('A minor');
     const scaleSel = host.querySelector('select[data-musicality="scale"]') as HTMLSelectElement;
     scaleSel.value = 'major';
     scaleSel.dispatchEvent(new Event('change'));
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ scale: 'major' }));
     handle.refresh();
-    expect(summary.textContent).toContain('La');
+    expect(summary.textContent).toContain('A');
   });
 });

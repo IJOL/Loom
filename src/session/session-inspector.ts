@@ -4,7 +4,7 @@
 
 import type { SessionState, SessionClip, SessionLane } from './session';
 import { resolveTonality, DEFAULT_MUSICALITY } from './session';
-import { rootNameEs, SCALE_CATALOG, STYLE_CATALOG } from '../core/musicality';
+import { rootName, SCALE_CATALOG, STYLE_CATALOG } from '../core/musicality';
 import type { LanePlayState } from './session-runtime';
 import type { Sequencer } from '../core/sequencer';
 import { renderClipEditor, classifyClip, chooseClipEditor, type ClipEditorDeps } from './clip-editors/clip-editor-router';
@@ -52,10 +52,10 @@ export interface InspectorDeps {
     sample?: import('./session').ClipSample,
     velocity?: number,
   ) => void;
-  /** Create a new melodic lane with the given notes (Acordes flow).
+  /** Create a new melodic lane with the given notes (Chords flow).
    *  Optional so test fixtures without a SessionHost still compile. */
   addNoteLane?: (engineId: string, notes: import('../core/notes').NoteEvent[], lengthBars: number, name: string) => void;
-  /** Place a chord clip into an existing lane at the given clip index (Acordes flow).
+  /** Place a chord clip into an existing lane at the given clip index (Chords flow).
    *  Optional so test fixtures without a SessionHost still compile. */
   placeChordClip?: (laneId: string, clipIdx: number, clip: import('./session').SessionClip) => void;
 }
@@ -220,7 +220,7 @@ export class SessionInspector {
         clip.notes = generate(genKindFor(lane!.engineId), style, {
           key: ton.key, scale: ton.scale,
           bars: clip.lengthBars, stepsPerBar: stepsPerBarVal,
-          octaveBase: octaveBase - 12,   // el bajo suena una octava por debajo de la vista
+          octaveBase: octaveBase - 12,   // bass sounds one octave below the view
           rng: Math.random,
         });
         this.renderEditor();
@@ -232,7 +232,7 @@ export class SessionInspector {
     const exKind = genKindFor(lane!.engineId);
     const exSelect = document.getElementById('insp-examples-select') as HTMLSelectElement;
 
-    // ── Variar / Espejo / Reverso ─────────────────────────────────────────────
+    // ── Vary / Mirror / Reverse ───────────────────────────────────────────────
     // Shared helper: wraps any clip-note mutation in undo + octave-restore,
     // mirroring the 🎲 handler's pattern.
     const withClipEdit = (fn: () => void): void => {
@@ -271,7 +271,7 @@ export class SessionInspector {
       });
     };
 
-    // ── Acordes (chord accompaniment) ─────────────────────────────────────────
+    // ── Chords (chord accompaniment) ──────────────────────────────────────────
     // Only show the button for melodic lanes (not drums/audio/sampler-drumkit).
     const chordsBtn = document.getElementById('insp-chords') as HTMLButtonElement | null;
     if (chordsBtn) {
@@ -289,7 +289,7 @@ export class SessionInspector {
             octaveBase: 48,
           });
           if (chordNotes.length === 0) {
-            void alertDialog('Dibuja o genera una melodía primero.');
+            void alertDialog('Draw or generate a melody first.');
             return;
           }
           // Build choice list: melodic lanes (not drums/audio/sampler-drumkit) + new lane
@@ -298,20 +298,20 @@ export class SessionInspector {
           );
           const choices = [
             ...melodicLanes.map((l) => ({ id: l.id, label: l.name ?? l.id })),
-            { id: '__new__', label: '➕ Nueva pista de acordes', primary: true as const },
+            { id: '__new__', label: '➕ New chord lane', primary: true as const },
           ];
           const picked = await choiceDialog(
-            '¿Dónde colocar los acordes?',
+            'Which lane should the chords go to?',
             choices,
-            { title: 'Acordes' },
+            { title: 'Chords' },
           );
           if (!picked) return; // cancelled
           if (picked === '__new__') {
-            this.deps.addNoteLane?.('subtractive', chordNotes, clip.lengthBars, 'Acordes');
+            this.deps.addNoteLane?.('subtractive', chordNotes, clip.lengthBars, 'Chords');
           } else {
             const chordClip = emptyClip(clip.lengthBars);
             chordClip.notes = chordNotes;
-            chordClip.name = 'Acordes';
+            chordClip.name = 'Chords';
             this.deps.placeChordClip?.(picked, this.selectedClip!.clipIdx, chordClip);
           }
         })();
@@ -326,7 +326,7 @@ export class SessionInspector {
     const repopulate = async () => {
       exSelect.innerHTML = '';
       const ph = document.createElement('option');
-      ph.value = ''; ph.textContent = '— ejemplo… —';
+      ph.value = ''; ph.textContent = '— example… —';
       exSelect.appendChild(ph);
       const perStyle = await Promise.all(
         STYLE_CATALOG.map((s) =>
@@ -353,7 +353,7 @@ export class SessionInspector {
       exSelect.value = ''; // reset to placeholder
       if (!id) return;
       const perStyle = await Promise.all(STYLE_CATALOG.map((s) => loadAllExamples(s.id).catch(() => []))).catch(() => null);
-      if (!perStyle) { void alertDialog('No se pudieron cargar los ejemplos.'); return; }
+      if (!perStyle) { void alertDialog('Could not load examples.'); return; }
       const chosen = perStyle.flat().find((e) => e.id === id);
       if (!chosen) return;
       const d = this.deps.historyDeps;
@@ -368,8 +368,8 @@ export class SessionInspector {
     };
 
     document.getElementById('insp-save-example')!.onclick = async () => {
-      if (!clip.notes || clip.notes.length === 0) { void alertDialog('El clip está vacío: dibuja o genera notas antes de guardarlo como ejemplo.'); return; }
-      const name = await promptDialog('Nombre del ejemplo:', '');
+      if (!clip.notes || clip.notes.length === 0) { void alertDialog('The clip is empty: draw or generate notes before saving it as an example.'); return; }
+      const name = await promptDialog('Example name:', '');
       if (!name) return;
       const viewOctave = this.roll?.getOctaveBase?.() ?? 60;
       const ton = resolveTonality(lane!, this.deps.state);
@@ -383,7 +383,7 @@ export class SessionInspector {
     };
 
     document.getElementById('insp-export-example')!.onclick = () => {
-      if (!clip.notes || clip.notes.length === 0) { void alertDialog('El clip está vacío.'); return; }
+      if (!clip.notes || clip.notes.length === 0) { void alertDialog('The clip is empty.'); return; }
       const viewOctave = this.roll?.getOctaveBase?.() ?? 60;
       const ton = resolveTonality(lane!, this.deps.state);
       const ex = clipToExample({
@@ -427,11 +427,11 @@ export class SessionInspector {
     const scaleLabel = (id: string) => SCALE_CATALOG.find((s) => s.id === id)?.label ?? id;
     const label = document.createElement('span');
     label.textContent = overridden
-      ? `Tono: propio (${rootNameEs(eff.key)} ${scaleLabel(eff.scale)})`
-      : `Tono: hereda ${rootNameEs(g.key)} ${scaleLabel(g.scale)}`;
+      ? `Key: custom (${rootName(eff.key)} ${scaleLabel(eff.scale)})`
+      : `Key: inherits ${rootName(g.key)} ${scaleLabel(g.scale)}`;
     const btn = document.createElement('button');
     btn.className = 'rnd';
-    btn.textContent = overridden ? 'Volver al global' : 'Cambiar';
+    btn.textContent = overridden ? 'Use global' : 'Override';
     btn.onclick = () => {
       const d = this.deps.historyDeps;
       const run = () => {
