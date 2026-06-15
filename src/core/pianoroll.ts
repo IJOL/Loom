@@ -14,7 +14,7 @@ import {
 } from './pianoroll-zoom';
 import {
   notesInRect, translateGroup, serializeClipboard, pasteTranslate, midiForKey,
-  quantizeRecorded, clampOctaveBase, octaveBaseLabel, PIANO_KEY_LEGEND, type ClipboardNote, type ScaleCtx,
+  quantizeRecorded, clampOctaveBase, octaveBaseLabel, PIANO_KEY_LEGEND, snapNoteMidi, type ClipboardNote, type ScaleCtx,
 } from './piano-roll-editing';
 import { isTextEditTarget } from '../save/history-wiring';
 import {
@@ -181,6 +181,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   const maxMidi = opts.maxMidi ?? EDITOR_MAX_MIDI;
   let resolution: ResolutionKey = opts.gridResolution ?? DEFAULT_RESOLUTION;
   let snap = opts.snapTicks ?? resolutionToSnap(resolution);
+  const snapMidi = (m: number) => snapNoteMidi(m, opts.scaleCtx, opts.scaleLock ?? false);
   const barSteps = opts.stepsPerBar ?? 16;
   const beatSteps = opts.stepsPerBeat ?? 4;
   const noteCount = maxMidi - minMidi + 1;
@@ -519,7 +520,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       else interaction = { type: 'move', note: hit, offsetTick: tick - hit.start };
     } else {
       const snappedStart = Math.floor(tick / snap) * snap;
-      const newNote: NoteEvent = { start: snappedStart, duration: snap, midi, velocity: DEFAULT_VELOCITY };
+      const newNote: NoteEvent = { start: snappedStart, duration: snap, midi: snapMidi(midi), velocity: DEFAULT_VELOCITY };
       opts.getNotes().push(newNote);
       interaction = { type: 'resize', note: newNote, offsetTick: 0 };
       gestureMutated = true;
@@ -560,7 +561,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       const newStart = Math.max(0, Math.floor((tick - interaction.offsetTick) / snap) * snap);
       const maxStart = opts.patternTicks - interaction.note.duration;
       interaction.note.start = Math.min(maxStart, newStart);
-      interaction.note.midi = Math.max(minMidi, Math.min(maxMidi, midi));
+      interaction.note.midi = snapMidi(Math.max(minMidi, Math.min(maxMidi, midi)));
     } else {
       const newDur = Math.max(snap, Math.ceil((tick - interaction.note.start) / snap) * snap);
       interaction.note.duration = Math.min(opts.patternTicks - interaction.note.start, newDur);
@@ -635,6 +636,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       const anchorTick = Math.floor((lastMouse?.tick ?? cursorTick) / snap) * snap;
       const anchorMidi = lastMouse?.midi ?? octaveBase;
       const pasted = pasteTranslate(clipboard, anchorTick, anchorMidi, bounds());
+      for (const n of pasted) n.midi = snapMidi(n.midi);
       opts.onGestureStart?.();
       const notes = opts.getNotes();
       for (const n of pasted) notes.push(n);
@@ -657,7 +659,8 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     }
 
     if (!cmd) {
-      const midi = midiForKey(e.key, octaveBase);
+      const rawMidi = midiForKey(e.key, octaveBase);
+      const midi = rawMidi === null ? null : snapMidi(rawMidi);
       if (midi !== null && midi >= minMidi && midi <= maxMidi) {
         e.preventDefault();
         if (e.repeat || heldKeys.has(e.key.toLowerCase())) return;
