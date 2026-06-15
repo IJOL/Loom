@@ -224,7 +224,7 @@ export class SessionInspector {
     const exSelect = document.getElementById('insp-examples-select') as HTMLSelectElement;
 
     const repopulate = async () => {
-      const all = await loadAllExamples(style());
+      const all = await loadAllExamples(style()).catch(() => []);
       const list = all.filter((e) => e.kind === exKind);
       exSelect.innerHTML = '';
       const ph = document.createElement('option');
@@ -243,7 +243,8 @@ export class SessionInspector {
       const id = exSelect.value;
       exSelect.value = ''; // reset to placeholder
       if (!id) return;
-      const all = await loadAllExamples(style());
+      const all = await loadAllExamples(style()).catch(() => null);
+      if (!all) { void alertDialog('No se pudieron cargar los ejemplos.'); return; }
       const chosen = all.find((e) => e.id === id);
       if (!chosen) return;
       const d = this.deps.historyDeps;
@@ -264,7 +265,7 @@ export class SessionInspector {
       const viewOctave = this.roll?.getOctaveBase?.() ?? 60;
       const ton = resolveTonality(lane!, this.deps.state);
       const ex = clipToExample({
-        id: `user-${exKind}-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${clip.notes.length}`,
+        id: `user-${exKind}-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString(36)}`,
         name, style: style(), kind: exKind, notes: clip.notes, bars: clip.lengthBars,
         ton, octaveBase: viewOctave - 12, ticksPerBar: ticksPerBar(this.deps.seq.meter),
       });
