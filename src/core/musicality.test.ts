@@ -23,8 +23,11 @@ describe('musicality core', () => {
   });
 
   it('scaleDegreeToMidi maps degree index + octave to a midi in scale', () => {
-    const m = scaleDegreeToMidi(0, 60, 0, 'minor');
-    expect(inScale(m, 0, 'minor')).toBe(true);
+    // degree 0 = root: key=0 (Do), base 60 → C4 = 60
+    expect(scaleDegreeToMidi(0, 60, 0, 'minor')).toBe(60);
+    // degree 7 wraps one octave (7-note scale) → C5 = 72
+    expect(scaleDegreeToMidi(7, 60, 0, 'minor')).toBe(72);
+    expect(inScale(scaleDegreeToMidi(0, 60, 0, 'minor'), 0, 'minor')).toBe(true);
     expect(inScale(scaleDegreeToMidi(7, 60, 0, 'minor'), 0, 'minor')).toBe(true);
   });
 

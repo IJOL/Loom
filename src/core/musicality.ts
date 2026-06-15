@@ -57,7 +57,7 @@ export function snapToScale(midi: number, key: number, scale: ScaleId): number {
     if (inScale(midi + d, key, scale)) return midi + d; // up wins ties (checked first)
     if (inScale(midi - d, key, scale)) return midi - d;
   }
-  return midi;
+  return midi; // unreachable for the defined scales (max gap between in-scale notes is 2 semitones)
 }
 /** Map a scale-degree index (0-based, may exceed the scale length → wraps octaves)
  *  to an absolute midi, relative to `octaveBase` (midi of the scale root in the
