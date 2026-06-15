@@ -223,17 +223,26 @@ export class SessionInspector {
       if (!this.selectedClip) return;
       const style = this.deps.state.musicality?.style ?? 'acid';
       const kind = genKindFor(lane!.engineId);
-      const all = await loadExamples(style);
-      const list = all.filter((e) => e.kind === kind);
+      let list;
+      try {
+        const all = await loadExamples(style);
+        list = all.filter((e) => e.kind === kind);
+      } catch {
+        void alertDialog('No se pudieron cargar los ejemplos.');
+        return;
+      }
       if (list.length === 0) { void alertDialog('No hay ejemplos para este tipo de pista todavía.'); return; }
       const chosen = await pickExample(list);
       if (!chosen) return;
       const d = this.deps.historyDeps;
+      // Capture the VIEW octave before re-rendering (renderEditor resets the roll
+      // to the C4 default); restore it after, like the 🎲 handler does.
+      const viewOctave = this.roll?.getOctaveBase?.() ?? 60;
       const run = () => {
         const ton = resolveTonality(lane!, this.deps.state);
-        const octaveBase = (this.roll?.getOctaveBase?.() ?? 60) - 12;
-        clip.notes = renderExampleNotes(chosen, ton, octaveBase);
+        clip.notes = renderExampleNotes(chosen, ton, viewOctave - 12);
         this.renderEditor();
+        this.roll?.setOctaveBase?.(viewOctave);
       };
       if (d) withUndo(d, run); else run();
     };
