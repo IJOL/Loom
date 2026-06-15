@@ -25,7 +25,7 @@ Both readouts update via `requestAnimationFrame` while playing and freeze on sto
 
 ## Tempo controls
 
-**BPM** (`#bpm`) — sets the tempo. Range: 40–240 BPM, default 130. You can type a value directly or use the number-input spinners. BPM changes propagate immediately to the sequencer, all lane engines, delay/LFO sync, and stretch-mode loop buffers. The change takes effect on the next scheduled step; it does not alter a note that is already held.
+**BPM** (`#bpm`) — sets the tempo. Range: 40–240 BPM, default 130. The field accepts **floating-point values** (e.g. 128.57 BPM, step 0.01); tempos detected from MIDI imports or stem separation are no longer rounded to an integer. You can type a value directly or use the number-input spinners. BPM changes propagate immediately to the sequencer, all lane engines, delay/LFO sync, and stretch-mode loop buffers. The change takes effect on the next scheduled step; it does not alter a note that is already held.
 
 Each 16th-note step lasts `60 / bpm / 4` seconds.
 

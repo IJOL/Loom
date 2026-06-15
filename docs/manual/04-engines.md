@@ -3,7 +3,9 @@
 Every lane in Loom runs exactly one synthesis engine. You choose the engine
 with the ENGINE selector at the top of the lane's editor panel. Changing the
 engine replaces the sound source while preserving the lane's clips and
-modulation routing.
+modulation routing. Eight engines are available: six melodic synthesisers
+(TB-303, Subtractive, FM, Wavetable, Karplus-Strong, West Coast), a Sampler,
+and a Drum Machine.
 
 Each engine exposes a PRESET dropdown (Load / Save As / Delete) and a
 **🎲 Sound** button that randomises the patch and sets the preset name to
@@ -181,6 +183,75 @@ Karplus suits acoustic bass, guitar, harp, and marimba-style sounds.
 
 ---
 
+## West Coast
+
+![West Coast editor panel](images/engine-westcoast.png)
+
+*A Buchla-style "West Coast" voice: complex oscillator → wavefolder → low-pass gate, driven by a built-in AD contour.*
+
+The West Coast engine takes a fundamentally different approach to synthesis from the filter-based ("East Coast") engines above. Instead of shaping a harmonically-rich waveform by subtracting frequencies with a filter, it **adds** harmonics by routing an oscillator through a **wavefolder** and then taming the result with a **low-pass gate**. The result is highly percussive and organic — metallic plucks, woody tones, evolving bell-like pads, and abstract textures that are difficult to achieve with conventional subtractive synthesis.
+
+The engine is **monophonic** (a single voice; legato mode is planned for a future update). FM here is native-linear, not through-zero.
+
+The signal chain is: **Complex Oscillator** → **Timbre (Wavefolder)** → **Low-Pass Gate (LPG)** driven by an **AD Contour**.
+
+### COMPLEX OSCILLATOR section
+
+Two cross-coupled oscillators produce the raw material. The principal oscillator's frequency is modulated by the modulator oscillator (linear FM), optionally ring-modulated, and a sub-harmonic divider can be added below.
+
+| Parameter | Description |
+| --- | --- |
+| Princ Wave | Waveform of the principal oscillator: Sin, Tri, or Saw |
+| Mod Wave | Waveform of the modulator oscillator: Sin or Tri |
+| Ratio | Frequency ratio of the modulator relative to the principal (0.25–16×) — integer ratios produce harmonic tones; non-integers produce inharmonic, bell-like partials |
+| FM Index | Depth of linear FM from the modulator into the principal (0–1) — higher values add more sidebands |
+| Ring/AM | Amount of ring modulation mixed in (0 = off, 1 = full ring mod) |
+| Sub ÷ | Sub-harmonic divider: Off, ÷2, ÷3, or ÷4 — adds a sub-oscillator one, two, or three octaves below |
+| Sub Lvl | Output level of the sub-harmonic oscillator (0–1) |
+| Detune | Fine-tune of the principal oscillator in cents (±50 ¢) |
+
+### TIMBRE section (wavefolder)
+
+The wavefolder processes the summed oscillator signal through a non-linear waveshaping curve. As the **Fold** amount increases it drives the signal harder into the curve, folding the waveform back on itself and adding a cascade of new harmonics. Accent (velocity ≥ 100) pushes the fold drive harder automatically.
+
+| Parameter | Description |
+| --- | --- |
+| Fold | Drive into the fold curve (0 = gentle/clean, 1 = heavy folding/maximum harmonics) |
+| Symmetry | DC bias applied before the folder — shifts the waveform asymmetrically for even-harmonic colouring (−1 to +1) |
+
+### LOW-PASS GATE section
+
+A low-pass gate combines a resonant filter and a VCA in a single, vactrol-like element so that the contour simultaneously opens the brightness and the volume. The **Mode** selector determines how the contour is routed.
+
+| Parameter | Description |
+| --- | --- |
+| Mode | **LP** — contour sweeps the filter only (VCA stays open); **Gate** — contour opens the VCA only (filter stays at its base cutoff); **Both** — contour drives both, the most classic "plonky" Buchla behaviour |
+| Cutoff | Base cutoff frequency (0–1, exponential scaling from ~60 Hz to 18 kHz) |
+| Resonance | Filter Q (0–1) — adds resonant emphasis at the cutoff |
+
+### CONTOUR section
+
+A single AD (attack–decay) envelope generator, similar to the contour generator in a Buchla 281. It drives both the LPG filter and VCA according to the Mode setting above.
+
+| Parameter | Description |
+| --- | --- |
+| Mode | **Pluck** — decay is gate-independent (fires and fades regardless of note length); **Sus** — holds at peak until the note ends, then decays |
+| Attack | Rise time (1 ms – 2 s) |
+| Decay | Fall time (5 ms – 4 s) — in Pluck mode this is the T60 envelope; in Sus mode this is the release time after gate-end |
+| Amount | Peak level of the contour (0–1) — scales how far the LPG opens |
+| Cycle | **On** — re-triggers the AD shape repeatedly while the note is held, turning the contour into a free-running LFO-like modulator |
+
+### AMP section
+
+| Parameter | Description |
+| --- | --- |
+| Level | Master output gain (0–1) |
+| Tune | Global pitch offset in semitones (±12 st) |
+
+The engine ships with **24 presets** — spanning percussive bass plucks (BASS Fold Sub, BASS Growl FM), bells (BELL Metallic, BELL Crystal Ring), pads (PAD Fold Drone, PAD Glass Air), keys (KEYS Fold E-Piano, KEYS Marimba Fold), and abstract textures (FX Cycle Burst, FX Sci-Fi Cycle) — selectable from the lane's preset dropdown. Per-section knob accent colours group the COMPLEX OSCILLATOR, TIMBRE, LOW-PASS GATE, and CONTOUR sections visually.
+
+---
+
 ## Sampler
 
 ![Sampler editor panel](images/engine-sampler.png)
@@ -274,6 +345,12 @@ for the whole drum bus. These are automatable via
 [Modulation & Note FX](06-modulation-and-note-fx.md). Routing to the shared
 reverb and delay sends is covered in [Mixing & FX](07-mixing-and-fx.md).
 
+### Choke groups
+
+Each drum voice has a **Choke** dropdown in the voice's advanced area of the per-voice rack. Voices assigned to the **same non-zero choke group are mutually exclusive**: triggering one immediately cuts the tails of all other voices in the same group. A voice assigned to group 0 (the default) is never choked by anything.
+
+The default configuration is **closed hat and open hat both in group 1**, which gives the classic hi-hat choke behaviour — hitting the closed hat silences the open hat's ring, just as on a real drum kit. You can reassign any voice to any group number to create other exclusive pairs, for example a conga and cowbell that cannot overlap.
+
 ---
 
 ## Summary table
@@ -285,5 +362,6 @@ reverb and delay sends is covered in [Mixing & FX](07-mixing-and-fx.md).
 | FM | Bells, electric pianos, metallic textures | Algorithm, per-operator Ratio, FB feedback |
 | Wavetable | Evolving tones, digital leads, pads | Morph (A→B crossfade), 8-waveform bank |
 | Karplus-Strong | Plucked strings, guitar, harp | Damping (sustain), Brightness, Excitation |
+| West Coast | Percussive plucks, metallic tones, evolving textures | Wavefolder (Fold), LPG Mode, Contour Cycle |
 | Sampler | Any audio, drum kits with per-pad control | Per-pad Tune/Filter/Envelope, Loop mode |
-| Drums | Synthesised drum machine, percussion | 8-voice synth rack, kits-as-presets, bus EQ |
+| Drums | Synthesised drum machine, percussion | 8-voice synth rack, kits-as-presets, bus EQ, Choke groups |
