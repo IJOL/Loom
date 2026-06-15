@@ -4,6 +4,8 @@
 // no explicit preference.
 
 import type { SessionClip, SessionLane, WarpMarker } from '../session';
+import { resolveTonality } from '../session';
+import { inScale } from '../../core/musicality';
 import type { Sequencer } from '../../core/sequencer';
 import type { LanePlayState } from '../session-runtime';
 import { createPianoRoll, type PianoRollHandle } from '../../core/pianoroll';
@@ -267,6 +269,15 @@ function buildPianoRoll(
   // Full orchestral range (C0..C8), widened so every note already in the clip
   // is visible — no engine-specific narrowing.
   const { minMidi, maxMidi } = pianoRollRange(getNotes());
+  const state = deps.sessionState;
+  const ton = state ? resolveTonality(lane, state) : undefined;
+  const scaleCtx = ton
+    ? {
+        inScale: (m: number) => inScale(m, ton.key, ton.scale),
+        isRoot: (m: number) => (((m % 12) + 12) % 12) === (((ton.key % 12) + 12) % 12),
+      }
+    : undefined;
+  const scaleLock = state?.musicality?.lock ?? false;
   return createPianoRoll({
     host,
     getNotes,
@@ -276,6 +287,11 @@ function buildPianoRoll(
     stepsPerBeat: stepsPerBeat(seq.meter),
     minMidi,
     maxMidi,
+    scaleCtx,
+    scaleLock,
+    onScaleLockChange: (lock) => {
+      if (state?.musicality) state.musicality.lock = lock;
+    },
     gridResolution: clip.gridResolution,
     onResolutionChange: (r) => { clip.gridResolution = r; },
     onChange: () => {},

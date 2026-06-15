@@ -58,6 +58,8 @@ export interface PianoRollOpts {
   scaleCtx?: ScaleCtx & { isRoot?: (midi: number) => boolean };
   /** When true (and scaleCtx present), placed notes snap to scale. */
   scaleLock?: boolean;
+  /** Persist a scale-lock toggle (the caller writes musicality.lock). */
+  onScaleLockChange?: (lock: boolean) => void;
 }
 
 export interface PianoRollHandle {
@@ -221,7 +223,22 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   };
   octDownBtn.addEventListener('click', () => shiftOctave(-1));
   octUpBtn.addEventListener('click', () => shiftOctave(1));
-  f.toolbar.append(drawBtn, selBtn, octCtl, resCtl, help.btn);
+  let lockOn = opts.scaleLock ?? false;
+  const lockBtn = document.createElement('button');
+  const refreshLock = () => {
+    lockBtn.textContent = lockOn ? '🔒 Escala' : '🔓 Escala';
+    lockBtn.title = lockOn ? 'Candado de escala ON (las notas caen en tono)' : 'Candado de escala OFF';
+  };
+  lockBtn.addEventListener('click', () => {
+    lockOn = !lockOn;
+    opts.scaleLock = lockOn;          // snapMidi reads opts.scaleLock live
+    refreshLock();
+    opts.onScaleLockChange?.(lockOn);
+  });
+  refreshLock();
+  lockBtn.hidden = !opts.scaleCtx;     // only meaningful with a tonality
+
+  f.toolbar.append(drawBtn, selBtn, octCtl, resCtl, help.btn, lockBtn);
   // Popover lives just below the toolbar (inside the wrap), positioned by SCSS.
   f.toolbar.after(help.popover);
   refreshToolbar();
