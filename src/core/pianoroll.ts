@@ -14,7 +14,7 @@ import {
 } from './pianoroll-zoom';
 import {
   notesInRect, translateGroup, serializeClipboard, pasteTranslate, midiForKey,
-  quantizeRecorded, clampOctaveBase, octaveBaseLabel, PIANO_KEY_LEGEND, type ClipboardNote,
+  quantizeRecorded, clampOctaveBase, octaveBaseLabel, PIANO_KEY_LEGEND, type ClipboardNote, type ScaleCtx,
 } from './piano-roll-editing';
 import { isTextEditTarget } from '../save/history-wiring';
 import {
@@ -54,6 +54,10 @@ export interface PianoRollOpts {
   onGestureCancel?: () => void;
   /** Live-preview a pitch when typing/recording from the computer keyboard. */
   auditionNote?: (midi: number) => void;
+  /** Scale highlight + lock context (musicality). Absent ⇒ no highlight, no snap. */
+  scaleCtx?: ScaleCtx & { isRoot?: (midi: number) => boolean };
+  /** When true (and scaleCtx present), placed notes snap to scale. */
+  scaleLock?: boolean;
 }
 
 export interface PianoRollHandle {
@@ -255,6 +259,12 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       if (BLACK_KEY_PCS.includes(((midi % 12) + 12) % 12)) {
         gctx.fillStyle = '#161616'; gctx.fillRect(0, i * rowHeight, w, rowHeight);
       }
+      // Resaltado de escala (musicality): filas en tono con un tinte verde sutil,
+      // la tónica algo más marcada. Las de fuera quedan como están (más oscuras).
+      if (opts.scaleCtx?.inScale(midi)) {
+        gctx.fillStyle = opts.scaleCtx.isRoot?.(midi) ? 'rgba(57,217,138,0.13)' : 'rgba(57,217,138,0.05)';
+        gctx.fillRect(0, i * rowHeight, w, rowHeight);
+      }
       if (midi % 12 === 0) {
         gctx.strokeStyle = '#2a2a2a';
         gctx.beginPath(); gctx.moveTo(0, i * rowHeight); gctx.lineTo(w, i * rowHeight); gctx.stroke();
@@ -352,6 +362,10 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       kctx.fillStyle = BLACK_KEY_PCS.includes(pc) ? '#0e0e0e' : '#1f1f1f';
       kctx.fillRect(0, i * rowHeight, KEYS_W - 1, rowHeight);
       kctx.strokeStyle = '#070707'; kctx.strokeRect(0, i * rowHeight + 0.5, KEYS_W - 1, rowHeight);
+      if (opts.scaleCtx?.inScale(midi)) {
+        kctx.fillStyle = opts.scaleCtx.isRoot?.(midi) ? '#39d98a' : 'rgba(57,217,138,0.35)';
+        kctx.fillRect(KEYS_W - 5, i * rowHeight + 1, 4, rowHeight - 2);
+      }
       if (pc === 0 && rowHeight >= 9) {
         kctx.fillStyle = '#9a9a9a'; kctx.font = '9px ui-monospace, monospace'; kctx.textBaseline = 'middle';
         kctx.fillText(`C${Math.floor(midi / 12) - 1}`, 4, i * rowHeight + rowHeight / 2);
