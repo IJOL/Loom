@@ -4,6 +4,7 @@ import {
   serializeClipboard, pasteTranslate, quantizeRecorded,
   clampOctaveBase, octaveBaseLabel,
   KEY_SEMITONES, PIANO_KEY_LEGEND,
+  snapNoteMidi,
 } from './piano-roll-editing';
 import type { NoteEvent } from './notes';
 
@@ -123,5 +124,19 @@ describe('quantizeRecorded', () => {
   it('snaps start and rounds duration to at least one snap', () => {
     expect(quantizeRecorded(50, 60, 24)).toEqual({ start: 48, duration: 24 });
     expect(quantizeRecorded(0, 60, 24)).toEqual({ start: 0, duration: 72 }); // 60→round(2.5)=72? see note
+  });
+});
+
+describe('snapNoteMidi', () => {
+  const ctx = { inScale: (m: number) => [0, 2, 4, 5, 7, 9, 11].includes(((m % 12) + 12) % 12) }; // C major
+  it('snaps when locked and out of scale', () => {
+    expect(snapNoteMidi(61, ctx, true)).not.toBe(61); // C# → C or D
+    expect(ctx.inScale(snapNoteMidi(61, ctx, true))).toBe(true);
+  });
+  it('passes through when locked and already in scale', () => {
+    expect(snapNoteMidi(60, ctx, true)).toBe(60);
+  });
+  it('passes through unchanged when unlocked', () => {
+    expect(snapNoteMidi(61, ctx, false)).toBe(61);
   });
 });

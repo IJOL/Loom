@@ -114,3 +114,17 @@ export function quantizeRecorded(startTick: number, endTick: number, snap: numbe
   const duration = Math.max(snap, Math.round(rawDur / snap) * snap);
   return { start, duration };
 }
+
+/** Scale context the piano-roll uses to paint + lock. Kept as a tiny interface
+ *  (a predicate, not a ScaleId) so pianoroll.ts stays free of musicality imports. */
+export interface ScaleCtx { inScale: (midi: number) => boolean; }
+
+/** Nearest in-scale midi when `lock` is on; unchanged otherwise. Tie → up. */
+export function snapNoteMidi(midi: number, ctx: ScaleCtx | undefined, lock: boolean): number {
+  if (!lock || !ctx || ctx.inScale(midi)) return midi;
+  for (let d = 1; d <= 6; d++) {
+    if (ctx.inScale(midi + d)) return midi + d;
+    if (ctx.inScale(midi - d)) return midi - d;
+  }
+  return midi;
+}
