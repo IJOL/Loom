@@ -107,6 +107,18 @@ For modulator-driven per-lane automation (LFO / ADSR) that runs in Session view 
 
 ---
 
+## Lane mute, solo & VU meters
+
+Each lane header — visible in both the session lane strip and the mixer — carries three live controls:
+
+- **M (Mute)** — silences the lane's audio output. The lane continues to schedule notes; unmuting restores it at full level with no re-trigger.
+- **S (Solo)** — solos this lane, temporarily muting all other lanes. Multiple lanes can be soloed simultaneously; un-soloing the last one restores normal playback.
+- **VU meter** — a vertical level meter in the lane header shows the lane's live output RMS. It gives an at-a-glance read of which lanes are active and how loud each one is during a take or a performance.
+
+Mute and solo states are saved with the session.
+
+---
+
 ## Persistence
 
 The arrangement is saved as part of the session file (schema version 3). Recorded takes — clip bands, automation curves, loop brace position — survive Save / Load and browser restarts. Undo/redo covers arrangement edits (length, zoom, adding/removing curves, drawing automation, Copy to Performance) but not the raw recording; a take is finalised on Stop and does not participate in the undo stack.

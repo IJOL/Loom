@@ -2,9 +2,107 @@
 
 Every clip in Loom holds a sequence of notes. To edit those notes, click the **body** of any filled cell in the session grid — anywhere except the ▶ play icon or the ✕ delete cross in its corner (clicking ✕ deletes the clip outright, with no confirmation). You can also **right-click** a filled cell and choose **Open editor**. The inspector panel opens below the grid and the editor renders inside it. Closing the inspector does not stop playback — launching and editing are independent.
 
-Melodic lanes (TB-303, Subtractive, FM, Wavetable, Karplus, Sampler) open the **piano-roll**. Drum-machine lanes and sampler lanes that have a drum kit loaded open the **drum-grid**. If you want to switch between the two views for a given clip, click the **↔ Editor** button in the inspector toolbar.
+Melodic lanes (TB-303, Subtractive, FM, Wavetable, Karplus, West Coast, Sampler) open the **piano-roll**. Drum-machine lanes and sampler lanes that have a drum kit loaded open the **drum-grid**. If you want to switch between the two views for a given clip, click the **↔ Editor** button in the inspector toolbar.
 
 See [Sessions, Lanes, Clips & Scenes](03-sessions-lanes-clips-scenes.md) for how clips are organised, and [Engines](04-engines.md) for the controls each engine exposes.
+
+---
+
+## Key, scale & musical assistance
+
+![Project key & style bar](images/musicality-bar.png)
+
+*The project key/style bar sits in the transport strip next to Meter; the 🔒 Scale button and the 🎲, Vary, Mirror, Reverse, and Chords controls appear in the clip-editor toolbar.*
+
+Loom's musical-assistance layer works from a single shared **project key and style** setting. Everything that generates or reshapes notes — the random generator, the examples gallery, the pattern transforms, the chord harmoniser — reads that setting and stays in key automatically. You can override it on a per-lane basis when one part needs to inhabit a different harmonic world.
+
+### Project key & style bar
+
+In the top transport bar, next to the **Meter** control, a button displays the current project tonality — for example **🎼 A minor · Acid / Techno**. Click it to open the key/style panel.
+
+The panel has three pickers:
+
+- **Root** — the tonic note (C through B).
+- **Scale** — chosen by feel rather than by musical-theory name. Each option shows a mood label, the musical name in small print, and a one-line usage hint:
+  - 🌙 Dark / tense — minor · the classic acid/techno sound
+  - 🛡️ Safe (almost anything fits) — pentatonic minor
+  - ☀️ Bright / uplifting — major
+  - 🌊 Hypnotic / modal — dorian
+  - 😰 Unsettling — phrygian
+  - 🎨 Anything goes — chromatic (no constraint)
+- **Style** — the rhythmic and harmonic character used by the generators (Acid / Techno, House, Synthwave, Lo-fi, and others). Style affects which rhythmic patterns the chord maker lays down and sets the default feel of generated basslines and melodies.
+
+Every other musical-assistance feature — the piano-roll scale highlight, the generator, the examples, the transforms, and the chord maker — respects the active root and scale. Closing the panel without choosing commits no change.
+
+#### Per-lane override
+
+The lane inspector shows a line such as **Key: inherits A minor · Override**. Click **Override** to assign a different root and scale to that lane alone, so one part can be in a different key while the rest of the session stays in the project key.
+
+---
+
+### Scale highlight & lock (piano-roll)
+
+Inside the piano-roll, in-scale pitch rows are highlighted and the keyboard strip on the left colours in-scale keys — the tonic row and key are the brightest. This gives you an instant visual map of which notes belong to the current key.
+
+A **🔒 Scale** button in the piano-roll toolbar controls the scale lock (on by default). When locked:
+
+- Drawing a note with the pencil snaps the pitch to the nearest in-scale degree.
+- Dragging an existing note vertically skips over out-of-scale rows.
+- Computer-keyboard note input plays and records only in-scale pitches.
+- Paste lands notes on in-scale pitches, transposing each pasted note by the minimum interval needed to put it back in key.
+
+It is impossible to place a wrong note with the lock on. Click the button to toggle it to **🔓** (unlocked) when you need chromatic freedom — accidentals, blue notes, deliberate dissonance. The arrow-key nudge (semitone up/down) intentionally ignores the lock in both states, so you can always make precise micro-adjustments with the keyboard.
+
+---
+
+### Generate (🎲)
+
+The **🎲** (dice) button in the clip-editor toolbar fills the current clip with a freshly generated musical part in the project key, scale, and style:
+
+- **TB-303-style lanes** — a characteristic bassline (slide and accent placement influenced by the active style).
+- **Drum lanes** — a beat pattern matched to the style's rhythmic vocabulary.
+- **Other melodic lanes** — a melody or counterpoint line.
+
+The result is not flat random: it is constrained to the scale, shaped by the style, and proportioned to the clip length. Press 🎲 again for another variation; change the global **Style** in the key/style panel for a different character while keeping the same root and scale.
+
+---
+
+### Examples gallery
+
+An inline dropdown next to 🎲 in the toolbar lists factory riff examples **grouped by style** (Acid / House / Synthwave / Lo-fi section headers). The list is filtered by editor type: melodic editors show basslines and melodies; drum editors show beat patterns.
+
+Selecting an example:
+
+1. Loads it into the current clip.
+2. Transposes it from its stored key into the **current project key**.
+3. Repeats or trims it to exactly fill the clip length — short riffs tile; long riffs are cut at the clip boundary.
+
+Two additional controls sit at the bottom of the dropdown:
+
+- **+ Example** — saves the current clip's notes as your own example. It is stored in this browser (IndexedDB), persists across reloads, and is marked with a ★ in the list.
+- **⤓ JSON** — exports the current clip as a portable `.json` file that you can share or import into another browser.
+
+---
+
+### Pattern transforms
+
+Three buttons in the toolbar reshape the current pattern — all results stay within the project key and scale.
+
+| Button      | Name              | What it does                                                                                                                                |
+| ----------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Vary**    | Musical variation | Nudges some pitches to neighbouring scale degrees and lightly adjusts rhythm and velocity; the overall character and contour are preserved. |
+| **Mirror**  | Melodic inversion | Flips the melodic contour so that rising lines fall and falling lines rise, mirrored around the first note of the clip.                     |
+| **Reverse** | Retrograde        | Plays the pattern backwards in time — the last note becomes the first.                                                                      |
+
+All three are undoable with Ctrl+Z / Cmd+Z.
+
+---
+
+### Chords
+
+The **Chords** button harmonises the current melodic clip. For each bar it picks the most characteristic **diatonic triad** implied by the bar's melody notes, then writes an accompaniment using a **rhythm pattern drawn from the global style** — for example offset stabs in House, sustained pads in Lo-fi, driving eighth notes in Synthwave.
+
+When you click Chords a small dialog asks **which lane** to write the chord part to: pick an existing melodic lane or let Loom create a new lane labelled "Chords". The original clip is not modified.
 
 ---
 

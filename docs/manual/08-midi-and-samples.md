@@ -144,6 +144,26 @@ With **Warp OFF** the loop plays at its natural speed with no tempo sync — use
 
 The audio channel itself is a pure WAV loop. To chop a loop into individually editable hits, load it through the Sampler's **Loop** family (see [Sampler](#sampler)) rather than the audio channel. Loom detects slice points (from embedded **Acid / `cue` / AIFF** markers when present, or by onset detection plus a tempo estimate), stores one short sample per slice in IndexedDB, and creates a **note clip** that triggers the slices in order on a piano-roll — so the groove plays back identically, now as discrete, editable notes. Move, mute, repitch, or re-order the hits in the piano-roll, and tweak each slice's tune/cutoff/decay/level/pan in its channel strip (see [Per-sound parameters](#per-sound-parameters)); the clip keeps the original waveform as its header. *(Earlier builds did this from a **✂ Slice → pads** button on the audio channel; that moved to the Sampler's Loop family.)*
 
+### Editable warp markers
+
+![The audio-clip editor: the Warp toggle and the waveform header](images/audio-clip-editor.png)
+
+*Amber warp markers appear as vertical lines in the waveform header; drag one to re-anchor that beat to the grid.*
+
+An audio clip can carry **warp markers** — sparse reference points that pin specific audio beats to exact positions on the session grid. With markers in place, the WSOLA time-stretcher locks each inter-marker region independently, so the groove tracks the grid precisely rather than relying on a single global stretch ratio.
+
+**Auto-seeding on stem import.** When you separate a track into stems (see [Stem separation](#stem-separation-optional-local-service)), Loom analyses the drums stem (the most rhythmically reliable) and seeds quarter-bar warp markers automatically across all stems of that import. The drums stem becomes the **warp reference** for the group; its clip is the one with a fully editable marker overlay in the waveform header.
+
+**Editing markers.** Open the drums-stem clip in the inspector. In the waveform header you will see amber vertical lines at each marker. You can:
+
+- **Drag** a marker left or right to realign that beat to the correct grid position.
+- **Double-click** an empty area of the header to add a new marker at that audio position.
+- **Double-click** an existing marker to delete it.
+
+Edits to the reference clip's markers propagate automatically to the other stems that share the same warp group — move one marker and all four audio clips update together.
+
+**Warp pill.** An amber **Warp** pill in the clip-editor toolbar toggles warping on and off for the clip. Warping is pitch-preserving (WSOLA) and re-renders automatically whenever the project tempo changes, so stems stay locked to the grid as you experiment with BPM.
+
 ---
 
 ## Stem separation (optional, local service)
@@ -163,9 +183,18 @@ To separate a track: pick an audio file with the file picker, then click **Separ
 
 1. **"Uploading…"** — the file is being uploaded to the local service.
 2. **"Separating… m:ss"** — the service is running Demucs; the counter shows elapsed time. The bar may be indeterminate if the model does not report fine-grained progress.
-3. On success the dialog closes automatically and four new Sampler lanes appear in the session — one per stem, each holding a full-length one-shot clip sized to the song. Hitting Play reconstructs the original mix; mute or solo any lane to isolate parts.
+3. On success the dialog closes automatically and four new **audio lanes** appear in the session — one per stem (**Vocals**, **Drums**, **Bass**, **Other**). Each lane holds a full-length audio clip downbeat-anchored to bar 1 and tempo-warped to the session BPM. Hitting Play reconstructs the original mix; mute or solo any lane to isolate parts.
+
+The session BPM is updated to the **detected floating-point tempo** of the imported track on import, so the warp ratio starts at exactly 1.0 and the grooves lock to the grid from the first bar.
 
 The entire lane-creation is a **single undo step**, so you can undo all four lanes at once.
+
+**Transcribe to notes (opt-in).** A **"Transcribe to notes"** checkbox in the Separate dialog (off by default) tells the service to additionally analyse each stem and create a note clip alongside the audio:
+
+- Pitched stems (Vocals, Bass, Other) → melodic note clips, with pitches estimated via pYIN onset detection.
+- The Drums stem → a drum-machine pattern, with hits mapped to the Drum Machine engine.
+
+The note clips are placed on a second layer within each stem lane and are immediately editable in the piano-roll or drum-grid. They are a convenience starting point, not a perfect transcription — pitch detection works best on monophonic or sparse material.
 
 **Cancelar** aborts a running job and frees the temporary files on the service. **Cerrar** closes the dialog (only available when no job is running).
 
