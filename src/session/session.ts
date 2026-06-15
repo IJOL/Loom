@@ -3,6 +3,16 @@
 
 import type { NoteEvent } from '../core/notes';
 import { barCountFor } from '../core/slice-clip';
+import type { ScaleId, StyleId } from '../core/musicality';
+
+export interface MusicalityState {
+  key: number;        // pitch class 0-11 (0 = Do … 9 = La)
+  scale: ScaleId;
+  style: StyleId;
+  lock: boolean;      // candado de escala del piano-roll
+}
+export interface LaneMusicalityOverride { key?: number; scale?: ScaleId; }
+export const DEFAULT_MUSICALITY: MusicalityState = { key: 9, scale: 'minor', style: 'acid', lock: true };
 
 export type LaunchQuantize =
   | 'immediate' | '1/4' | '1/2' | '1/1' | '2/1' | '4/1';
@@ -109,6 +119,8 @@ export interface SessionLane {
    *  Task 28). Defaults to [] when absent so consumers can write `??= []`
    *  and then push to the same array without losing the reference. */
   inserts?: import('./insert-slot').InsertSlot[];
+  /** Per-lane tonality override (Spec 1). Absent ⇒ inherits the global musicality. */
+  musicalityOverride?: LaneMusicalityOverride;
 }
 
 export interface SessionScene {
@@ -123,6 +135,9 @@ export interface SessionState {
   globalQuantize: LaunchQuantize;
   /** Master insert-chain slots. Persisted by Task 28. Defaults to [] when absent. */
   masterInserts?: import('./insert-slot').InsertSlot[];
+  /** Global tonality + style + scale-lock (Spec 1). Optional/additive; absent ⇒
+   *  DEFAULT_MUSICALITY (backfilled by session-migration). */
+  musicality?: MusicalityState;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -145,6 +160,17 @@ function nextId(prefix: string): string {
 
 export function emptyClip(lengthBars: number): SessionClip {
   return { id: nextId('clip'), lengthBars, notes: [], color: pickRandomClipColor() };
+}
+
+/** Resolve a lane's effective tonality: its override (field-by-field) over the
+ *  global musicality, over DEFAULT_MUSICALITY. */
+export function resolveTonality(
+  lane: Pick<SessionLane, 'musicalityOverride'>,
+  state: Pick<SessionState, 'musicality'>,
+): { key: number; scale: ScaleId } {
+  const g = state.musicality ?? DEFAULT_MUSICALITY;
+  const o = lane.musicalityOverride ?? {};
+  return { key: o.key ?? g.key, scale: o.scale ?? g.scale };
 }
 
 /** Build a loop/song audio clip (carries clip.sample). lengthBars is derived so
