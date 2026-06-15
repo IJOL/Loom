@@ -17,6 +17,9 @@ export interface EngineParamSpec {
    *  radio-button strip — for many or long-labelled options (e.g. the FM
    *  algorithm) so the control stays compact. Default: radio strip when ≤4. */
   selectStyle?: 'radio' | 'dropdown';
+  /** Discrete only: show the param label above the control (default off). For
+   *  controls whose option text isn't self-describing, e.g. CHOKE (—/1/2/3/4). */
+  showLabel?: boolean;
 }
 
 export function isContinuous(s: EngineParamSpec): boolean {

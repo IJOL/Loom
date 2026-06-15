@@ -127,3 +127,8 @@
 }
 .dv-advanced { display: none; margin-top: 4px; }
 .dv-advanced.open { display: flex; }
+
+// Captioned discrete control (e.g. the CHOKE group selector): a small label
+// above the control so it reads clearly among the unlabelled knobs.
+.select-labeled { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.select-labeled .ctl-label { font-size: 9px; color: #8a8a90; letter-spacing: 0.04em; }

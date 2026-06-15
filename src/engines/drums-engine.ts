@@ -116,10 +116,23 @@ const VOICE_MIXER_SPECS: Array<Omit<EngineParamSpec, 'id'> & { leaf: string }> =
 
 const MIXER_LEAVES = new Set(VOICE_MIXER_SPECS.map((s) => s.leaf));
 
+// CHOKE group selector (discrete): stored value is the option index = the group
+// number. 0 = — (no group); voices sharing a non-zero group cut each other. Every
+// voice gets one; default group 1 for the hi-hats (the standard CH-chokes-OH).
+const CHOKE_OPTIONS = [
+  { value: 'none', label: '—' },
+  { value: 'g1', label: '1' }, { value: 'g2', label: '2' },
+  { value: 'g3', label: '3' }, { value: 'g4', label: '4' },
+];
+function chokeSpec(voice: DrumVoice): EngineParamSpec {
+  const dflt = voice === 'closedHat' || voice === 'openHat' ? 1 : 0;
+  return { id: 'chokeGroup', label: 'CHOKE', kind: 'discrete', min: 0, max: 4, default: dflt, options: CHOKE_OPTIONS, selectStyle: 'dropdown', showLabel: true };
+}
+
 function buildPerVoiceSpecs(): EngineParamSpec[] {
   const out: EngineParamSpec[] = [];
   for (const voice of DRUM_LANES) {
-    for (const s of VOICE_SYNTH_SPECS[voice]) out.push({ ...s, id: `${voice}.${s.id}` });
+    for (const s of [...VOICE_SYNTH_SPECS[voice], chokeSpec(voice)]) out.push({ ...s, id: `${voice}.${s.id}` });
     for (const m of VOICE_MIXER_SPECS) {
       const { leaf, ...rest } = m;
       out.push({ ...rest, id: `${voice}.${leaf}` });

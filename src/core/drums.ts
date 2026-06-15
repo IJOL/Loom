@@ -16,6 +16,11 @@ export const DRUM_LANES: DrumVoice[] = [
   'kick', 'snare', 'closedHat', 'openHat', 'clap', 'cowbell', 'tom', 'ride',
 ];
 
+/** A live output gain + the exponential decay it was scheduled with (peak at t0,
+ *  → 0.001 over `decay` s). Lets a choke compute the gain's value at the cut
+ *  moment and fade cleanly from there. */
+type ActiveAmp = { node: GainNode; peak: number; t0: number; decay: number };
+
 interface KickParams    { startFreq: number; endFreq: number; pitchDecay: number; ampDecay: number; clickAmount: number; tone: OscillatorType; }
 interface SnareParams   { tone1: number; tone2: number; toneDecay: number; toneAmount: number; noiseAmount: number; noiseDecay: number; noiseFilter: number; }
 interface HatParams     { decay: number; openDecay: number; tune: number; }
@@ -48,30 +53,41 @@ export type VoiceSynthState = Record<string, number>;
 export type DrumSynthState = Record<DrumVoice, VoiceSynthState>;
 
 function seedSynthState(kit: Kit): DrumSynthState {
+  // chokeGroup: 0 = none; voices sharing a non-zero group cut each other (mutually
+  // exclusive). Default group 1 = {closedHat, openHat} — the standard hi-hat choke.
   return {
     kick: {
       tune: 1, attack: kit.kick.clickAmount, decay: kit.kick.ampDecay,
       startFreq: kit.kick.startFreq, endFreq: kit.kick.endFreq,
-      sweep: kit.kick.pitchDecay, wave: WAVE_INDEX[kit.kick.tone] ?? 0,
+      sweep: kit.kick.pitchDecay, wave: WAVE_INDEX[kit.kick.tone] ?? 0, chokeGroup: 0,
     },
     snare: {
       tune: 1, tone: kit.snare.toneAmount, snap: kit.snare.noiseAmount,
       bodyDecay: kit.snare.toneDecay, noiseDecay: kit.snare.noiseDecay,
-      noiseTone: kit.snare.noiseFilter, tone1: kit.snare.tone1, tone2: kit.snare.tone2,
+      noiseTone: kit.snare.noiseFilter, tone1: kit.snare.tone1, tone2: kit.snare.tone2, chokeGroup: 0,
     },
-    closedHat: { tune: kit.hat.tune, decay: kit.hat.decay,    filter: HAT_FILTER_DEFAULT },
-    openHat:   { tune: kit.hat.tune, decay: kit.hat.openDecay, filter: HAT_FILTER_DEFAULT },
-    clap: { tone: kit.clap.filterFreq, decay: kit.clap.decay, sharp: kit.clap.filterQ },
+    closedHat: { tune: kit.hat.tune, decay: kit.hat.decay,    filter: HAT_FILTER_DEFAULT, chokeGroup: 1 },
+    openHat:   { tune: kit.hat.tune, decay: kit.hat.openDecay, filter: HAT_FILTER_DEFAULT, chokeGroup: 1 },
+    clap: { tone: kit.clap.filterFreq, decay: kit.clap.decay, sharp: kit.clap.filterQ, chokeGroup: 0 },
     tom: {
       tune: 1, decay: kit.tom.ampDecay, sweep: kit.tom.pitchDecay,
-      startFreq: kit.tom.startFreq, end: kit.tom.endFreq,
+      startFreq: kit.tom.startFreq, end: kit.tom.endFreq, chokeGroup: 0,
     },
     cowbell: {
       tune: 1, decay: kit.cowbell.decay, detune: 1, // new param, no kit field — neutral default
-      freq1: kit.cowbell.freq1, freq2: kit.cowbell.freq2,
+      freq1: kit.cowbell.freq1, freq2: kit.cowbell.freq2, chokeGroup: 0,
     },
-    ride: { tune: kit.ride.tune, decay: kit.ride.decay },
+    ride: { tune: kit.ride.tune, decay: kit.ride.decay, chokeGroup: 0 },
   };
+}
+
+/** Voices choked when `voice` triggers: all voices (including `voice` itself, to
+ *  cut its own previous ring) that share its non-zero chokeGroup. [] if no group.
+ *  Pure — drives both the live mechanism and its test. */
+export function chokeGroupMates(synth: DrumSynthState, voice: DrumVoice): DrumVoice[] {
+  const g = synth[voice]?.chokeGroup ?? 0;
+  if (!(g > 0)) return [];
+  return DRUM_LANES.filter((w) => (synth[w]?.chokeGroup ?? 0) === g);
 }
 
 const KITS: Kit[] = [
@@ -146,6 +162,11 @@ export class DrumMachine {
   // the session; solo is a live-only performance toggle.
   private voiceMute: Partial<Record<DrumVoice, boolean>> = {};
   private voiceSolo: Partial<Record<DrumVoice, boolean>> = {};
+  // Most-recent ringing instance per voice: each output gain + the exponential
+  // envelope it was scheduled with (peak at t0 → 0.001 over `decay`), so a later
+  // trigger in the same choke group can compute the gain's value at the cut moment
+  // and fade cleanly from there. endTime = when the voice has fully died. See chokeActive().
+  private activeVoices: Partial<Record<DrumVoice, { amps: ActiveAmp[]; endTime: number }>> = {};
 
   constructor(private ctx: AudioContext, fx: FxBus, dryDest: AudioNode) {
     this.noiseBuffer = makeWhiteNoise(ctx, 2);
@@ -218,8 +239,37 @@ export class DrumMachine {
     for (const v of DRUM_LANES) this.channels[v].setMuted(muted[v]);
   }
 
+  // Cut every still-ringing voice that shares `voice`'s choke group, fading its
+  // output to 0 starting at `time` (the standard CH-silences-OH behaviour, applied
+  // to any configured group). We compute the value the voice's exponential decay
+  // has reached AT `time` analytically (cancelAndHoldAtTime is unreliable under
+  // node-web-audio-api), pin the gain there, then linear-ramp to 0 over ~6 ms —
+  // a clean cut with no click back up to full and no automation blow-up.
+  private chokeActive(voice: DrumVoice, time: number): void {
+    for (const w of chokeGroupMates(this.synth, voice)) {
+      const active = this.activeVoices[w];
+      if (!active || active.endTime <= time) continue;
+      for (const a of active.amps) {
+        const frac = a.decay > 0 ? Math.min(1, Math.max(0, (time - a.t0) / a.decay)) : 1;
+        const v = Math.max(1e-5, a.peak * Math.pow(0.001 / Math.max(1e-6, a.peak), frac));
+        const g = a.node.gain;
+        g.cancelScheduledValues(time);
+        g.setValueAtTime(v, time);
+        g.linearRampToValueAtTime(0, time + 0.006);
+      }
+      delete this.activeVoices[w];
+    }
+  }
+
+  /** Record a voice's live output gain(s) + their decay envelopes so the choke
+   *  group can compute the value at the cut moment and fade cleanly. */
+  private registerActive(voice: DrumVoice, amps: ActiveAmp[], endTime: number): void {
+    this.activeVoices[voice] = { amps, endTime };
+  }
+
   trigger(voice: DrumVoice, time: number, accent = false, velocity?: number) {
     const vel = 0.65 * velGain(velocity, accent);
+    this.chokeActive(voice, time);   // cut ringing group-mates before this hit sounds
     switch (voice) {
       case 'kick':      this.playKick(time, vel); break;
       case 'snare':     this.playSnare(time, vel); break;
@@ -256,6 +306,7 @@ export class DrumMachine {
       click.start(time);
       click.stop(time + 0.015);
     }
+    this.registerActive('kick', [{ node: amp, peak: vel * 1.2, t0: time, decay: s.decay }], time + s.decay + 0.05);
   }
 
   private playSnare(time: number, vel: number) {
@@ -287,6 +338,10 @@ export class DrumMachine {
     noise.connect(hp).connect(noiseAmp).connect(dest);
     noise.start(time);
     noise.stop(time + s.noiseDecay + 0.05);
+    this.registerActive('snare', [
+      { node: toneAmp, peak: vel * s.tone, t0: time, decay: s.bodyDecay },
+      { node: noiseAmp, peak: vel * s.snap, t0: time, decay: s.noiseDecay },
+    ], time + Math.max(s.bodyDecay, s.noiseDecay) + 0.05);
   }
 
   // Six square waves at inharmonic ratios — classic TR-808/909 hat recipe.
@@ -313,12 +368,14 @@ export class DrumMachine {
     amp.gain.setValueAtTime(vel, time);
     amp.gain.exponentialRampToValueAtTime(0.001, time + decay);
     merger.connect(bp).connect(hp).connect(amp).connect(dest);
+    this.registerActive(voice, [{ node: amp, peak: vel, t0: time, decay }], time + decay + 0.05);
   }
 
   private playClap(time: number, vel: number) {
     const s = this.synth.clap;
     const dest = this.channels.clap.input;
     const offsets = [0, 0.011, 0.022, 0.033];
+    const amps: ActiveAmp[] = [];
     for (let i = 0; i < offsets.length; i++) {
       const off = offsets[i];
       const isLast = i === offsets.length - 1;
@@ -336,7 +393,9 @@ export class DrumMachine {
       noise.connect(bp).connect(amp).connect(dest);
       noise.start(time + off);
       noise.stop(time + off + d + 0.05);
+      amps.push({ node: amp, peak: v, t0: time + off, decay: d });
     }
+    this.registerActive('clap', amps, time + offsets[offsets.length - 1] + s.decay + 0.05);
   }
 
   private playCowbell(time: number, vel: number) {
@@ -361,6 +420,7 @@ export class DrumMachine {
     osc1.start(time); osc2.start(time);
     osc1.stop(time + s.decay + 0.05);
     osc2.stop(time + s.decay + 0.05);
+    this.registerActive('cowbell', [{ node: amp, peak: vel * 0.55, t0: time, decay: s.decay }], time + s.decay + 0.05);
   }
 
   private playTom(time: number, vel: number) {
@@ -376,6 +436,7 @@ export class DrumMachine {
     osc.connect(amp).connect(dest);
     osc.start(time);
     osc.stop(time + s.decay + 0.05);
+    this.registerActive('tom', [{ node: amp, peak: vel * 1.0, t0: time, decay: s.decay }], time + s.decay + 0.05);
   }
 
   // Ride: shimmering metallic — like a long open hat with different inharmonic freqs
@@ -401,6 +462,7 @@ export class DrumMachine {
     amp.gain.setValueAtTime(vel * 0.7, time);
     amp.gain.exponentialRampToValueAtTime(0.001, time + s.decay);
     merger.connect(bp).connect(hp).connect(amp).connect(dest);
+    this.registerActive('ride', [{ node: amp, peak: vel * 0.7, t0: time, decay: s.decay }], time + s.decay + 0.05);
   }
 }
 

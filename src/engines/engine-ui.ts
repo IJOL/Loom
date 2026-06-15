@@ -70,6 +70,7 @@ export function wireEngineParams(
         options,
         initialValue,
         forceSelect: spec.selectStyle === 'dropdown',
+        showLabel: spec.showLabel,
         onChange: (v) => {
           const i = options.findIndex((o) => o.value === v);
           engine.setBaseValue(spec.id, i);

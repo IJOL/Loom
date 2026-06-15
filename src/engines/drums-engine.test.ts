@@ -30,9 +30,9 @@ describe('DrumsEngine.params', () => {
     expect(ids).toContain('kick.eq.low');
   });
 
-  it('kick.wave is the only discrete spec; the rest are continuous', () => {
+  it('discrete specs are kick.wave + every voice chokeGroup; the rest continuous', () => {
     for (const spec of engine.params) {
-      if (spec.id === 'kick.wave') expect(spec.kind).toBe('discrete');
+      if (spec.id === 'kick.wave' || spec.id.endsWith('.chokeGroup')) expect(spec.kind).toBe('discrete');
       else expect(spec.kind).toBe('continuous');
     }
   });

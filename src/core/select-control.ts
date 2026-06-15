@@ -20,6 +20,9 @@ export interface SelectControlOpts {
   /** Force the native <select> rendering even with ≤4 options (used for
    *  long-labelled option sets like the FM algorithm). */
   forceSelect?: boolean;
+  /** Show the param label above the control. Off by default (WAVE/FM render
+   *  bare); on for controls whose option text isn't self-describing (CHOKE). */
+  showLabel?: boolean;
 }
 
 export function quantiseSelectValue(norm: number, optionCount: number): number {
@@ -174,5 +177,18 @@ function createNativeSelect(opts: SelectControlOpts): { el: HTMLElement; handle:
 
 export function createSelectControl(opts: SelectControlOpts): { el: HTMLElement; handle: KnobHandle } {
   const useStrip = !opts.forceSelect && opts.options.length <= 4;
-  return useStrip ? createRadioStrip(opts) : createNativeSelect(opts);
+  const built = useStrip ? createRadioStrip(opts) : createNativeSelect(opts);
+  // Optionally wrap with a small caption so non-self-describing controls (CHOKE)
+  // read clearly in a dense rack. handle.el stays the control (automation target);
+  // only the layout `el` becomes the captioned wrapper.
+  if (opts.showLabel && opts.label) {
+    const wrap = document.createElement('div');
+    wrap.className = 'select-labeled';
+    const cap = document.createElement('span');
+    cap.className = 'ctl-label';
+    cap.textContent = opts.label;
+    wrap.append(cap, built.el);
+    return { el: wrap, handle: built.handle };
+  }
+  return built;
 }
