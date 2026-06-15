@@ -3,7 +3,7 @@
 // missing — engine ids, modern `notes` array from legacy step formats,
 // and a stable palette color.
 
-import { CLIP_COLOR_PALETTE, type SessionClip, type SessionState } from './session';
+import { CLIP_COLOR_PALETTE, DEFAULT_MUSICALITY, type SessionClip, type SessionState } from './session';
 import { bassStepsToNotes, stepsToNotes, drumStepsToNotes } from '../core/notes';
 import type { NoteEvent } from '../core/notes';
 
@@ -15,6 +15,7 @@ export function migrateLoadedSessionState(s: SessionState): SessionState {
 
     lane.clips = lane.clips.map((c) => c ? migrateClip(c) : null);
   }
+  if (!s.musicality) s.musicality = { ...DEFAULT_MUSICALITY };
   return s;
 }
 

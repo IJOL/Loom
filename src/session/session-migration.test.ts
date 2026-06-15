@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { migrateLoadedSessionState } from './session-migration';
+import { DEFAULT_MUSICALITY } from './session';
 import type { SessionClip, SessionState } from './session';
 import { VOICE_MIDI } from '../engines/drum-gm-map';
 
@@ -119,5 +120,19 @@ describe('migrateLoadedSessionState', () => {
     expect(migrated.waveformRef).toEqual(clip.waveformRef);
     // No instrumentId is invented — sliced clips stay IndexedDB-only.
     expect(out.lanes[0].engineState?.sampler?.instrumentId).toBeUndefined();
+  });
+});
+
+describe('migration backfills musicality', () => {
+  it('adds DEFAULT_MUSICALITY when an old save has none', () => {
+    const s = { lanes: [], scenes: [], globalQuantize: 'immediate' } as SessionState;
+    const out = migrateLoadedSessionState(s);
+    expect(out.musicality).toEqual(DEFAULT_MUSICALITY);
+  });
+  it('keeps an existing musicality untouched', () => {
+    const s = { lanes: [], scenes: [], globalQuantize: 'immediate',
+      musicality: { key: 0, scale: 'major', style: 'house', lock: false } } as SessionState;
+    const out = migrateLoadedSessionState(s);
+    expect(out.musicality).toEqual({ key: 0, scale: 'major', style: 'house', lock: false });
   });
 });
