@@ -29,6 +29,11 @@ vi.mock('./clip-editors/clip-editor-router', async (importOriginal) => ({
 vi.mock('./clip-automation-lanes', () => ({
   renderClipAutomationLanes: () => {},
 }));
+vi.mock('./example-loader', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./example-loader')>()),
+  // Prevent repopulate() from making real fetch calls in jsdom.
+  loadAllExamples: async () => [],
+}));
 
 import { SessionInspector, _getClipClipboardForTesting } from './session-inspector';
 import type { SessionState, SessionClip, SessionLane } from './session';
@@ -47,7 +52,9 @@ function mountInspectorDom(): void {
       <button id="insp-paste-replace" disabled></button>
       <button id="insp-paste-layer" disabled></button>
       <button id="insp-random-notes"></button>
-      <button id="insp-examples"></button>
+      <select id="insp-examples-select"></select>
+      <button id="insp-save-example"></button>
+      <button id="insp-export-example"></button>
       <button id="insp-toggle-editor"></button>
       <div id="insp-roll-host"></div>
     </div>`;

@@ -16,10 +16,10 @@ import { withUndo, isTextEditTarget } from '../save/history-wiring';
 import type { LaneResourceMap } from '../core/lane-resources';
 import { buildLaneInsertUI } from './lane-insert-ui';
 import { generate, type GenKind } from '../core/generators';
-import { stepsPerBar } from '../core/meter';
+import { stepsPerBar, ticksPerBar } from '../core/meter';
 import { ensureScenesForRows } from '../core/scene-ensure';
-import { alertDialog } from '../core/dialog';
-import { loadExamples, renderExampleNotes, type Example } from './example-loader';
+import { alertDialog, promptDialog } from '../core/dialog';
+import { loadAllExamples, renderExampleNotes, clipToExample, exampleToJson, saveUserExample } from './example-loader';
 
 function genKindFor(engineId: string): GenKind {
   if (engineId === 'tb303') return 'bass';
@@ -219,32 +219,73 @@ export class SessionInspector {
       };
       if (d) withUndo(d, run); else run();
     };
-    document.getElementById('insp-examples')!.onclick = async () => {
-      if (!this.selectedClip) return;
-      const style = this.deps.state.musicality?.style ?? 'acid';
-      const kind = genKindFor(lane!.engineId);
-      let list;
-      try {
-        const all = await loadExamples(style);
-        list = all.filter((e) => e.kind === kind);
-      } catch {
-        void alertDialog('No se pudieron cargar los ejemplos.');
-        return;
+    const style = () => this.deps.state.musicality?.style ?? 'acid';
+    const exKind = genKindFor(lane!.engineId);
+    const exSelect = document.getElementById('insp-examples-select') as HTMLSelectElement;
+
+    const repopulate = async () => {
+      const all = await loadAllExamples(style());
+      const list = all.filter((e) => e.kind === exKind);
+      exSelect.innerHTML = '';
+      const ph = document.createElement('option');
+      ph.value = ''; ph.textContent = list.length ? '— ejemplo… —' : '— sin ejemplos —';
+      exSelect.appendChild(ph);
+      for (const e of list) {
+        const o = document.createElement('option');
+        o.value = e.id;
+        o.textContent = e.source === 'user' ? `★ ${e.name}` : e.name;
+        exSelect.appendChild(o);
       }
-      if (list.length === 0) { void alertDialog('No hay ejemplos para este tipo de pista todavía.'); return; }
-      const chosen = await pickExample(list);
+    };
+    void repopulate();
+
+    exSelect.onchange = async () => {
+      const id = exSelect.value;
+      exSelect.value = ''; // reset to placeholder
+      if (!id) return;
+      const all = await loadAllExamples(style());
+      const chosen = all.find((e) => e.id === id);
       if (!chosen) return;
       const d = this.deps.historyDeps;
-      // Capture the VIEW octave before re-rendering (renderEditor resets the roll
-      // to the C4 default); restore it after, like the 🎲 handler does.
       const viewOctave = this.roll?.getOctaveBase?.() ?? 60;
       const run = () => {
         const ton = resolveTonality(lane!, this.deps.state);
-        clip.notes = renderExampleNotes(chosen, ton, viewOctave - 12);
+        clip.notes = renderExampleNotes(chosen, ton, viewOctave - 12, clip.lengthBars, ticksPerBar(this.deps.seq.meter));
         this.renderEditor();
         this.roll?.setOctaveBase?.(viewOctave);
       };
       if (d) withUndo(d, run); else run();
+    };
+
+    document.getElementById('insp-save-example')!.onclick = async () => {
+      if (!clip.notes || clip.notes.length === 0) { void alertDialog('El clip está vacío: dibuja o genera notas antes de guardarlo como ejemplo.'); return; }
+      const name = await promptDialog('Nombre del ejemplo:', '');
+      if (!name) return;
+      const viewOctave = this.roll?.getOctaveBase?.() ?? 60;
+      const ton = resolveTonality(lane!, this.deps.state);
+      const ex = clipToExample({
+        id: `user-${exKind}-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${clip.notes.length}`,
+        name, style: style(), kind: exKind, notes: clip.notes, bars: clip.lengthBars,
+        ton, octaveBase: viewOctave - 12, ticksPerBar: ticksPerBar(this.deps.seq.meter),
+      });
+      try { saveUserExample(ex); } catch (e) { void alertDialog((e as Error).message); return; }
+      await repopulate();
+    };
+
+    document.getElementById('insp-export-example')!.onclick = () => {
+      if (!clip.notes || clip.notes.length === 0) { void alertDialog('El clip está vacío.'); return; }
+      const viewOctave = this.roll?.getOctaveBase?.() ?? 60;
+      const ton = resolveTonality(lane!, this.deps.state);
+      const ex = clipToExample({
+        id: `${exKind}-export`, name: clip.name || `${exKind} export`, style: style(), kind: exKind,
+        notes: clip.notes, bars: clip.lengthBars, ton, octaveBase: viewOctave - 12,
+        ticksPerBar: ticksPerBar(this.deps.seq.meter),
+      });
+      const blob = new Blob([exampleToJson(ex)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${ex.id}.json`; a.click();
+      URL.revokeObjectURL(url);
     };
     updatePasteBtnState();
     this.renderTonalityOverride(lane!);
@@ -403,27 +444,6 @@ export function _getClipClipboardForTesting(): { notes: import('../core/notes').
 // per-clip preference. Default is the engine's editor (drum-grid for drums).
 const editorOverride = new Map<string, 'piano-roll' | 'drum-grid'>();
 
-async function pickExample(list: Example[]): Promise<Example | null> {
-  return new Promise((resolve) => {
-    const overlay = document.createElement('div');
-    overlay.className = 'example-picker-overlay';
-    Object.assign(overlay.style, { position: 'fixed', inset: '0', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: '9999' });
-    const box = document.createElement('div');
-    box.className = 'example-picker';
-    Object.assign(box.style, { background: '#1c1c1c', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '240px' });
-    const title = document.createElement('div'); title.textContent = 'Elige un ejemplo'; title.style.cssText = 'font:13px ui-monospace,monospace;color:#ddd';
-    const sel = document.createElement('select');
-    for (const e of list) { const o = document.createElement('option'); o.value = e.id; o.textContent = e.name; sel.appendChild(o); }
-    const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:8px;justify-content:flex-end';
-    const ok = document.createElement('button'); ok.className = 'rnd primary'; ok.textContent = 'Cargar';
-    const cancel = document.createElement('button'); cancel.className = 'rnd'; cancel.textContent = 'Cancelar';
-    const close = (val: Example | null) => { overlay.remove(); resolve(val); };
-    ok.onclick = () => close(list.find((e) => e.id === sel.value) ?? null);
-    cancel.onclick = () => close(null);
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(null); });
-    row.append(cancel, ok); box.append(title, sel, row); overlay.append(box); document.body.appendChild(overlay);
-  });
-}
 
 function updatePasteBtnState(): void {
   const hasClip = clipClipboard !== null;
