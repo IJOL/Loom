@@ -41,3 +41,30 @@ export function propagateWarp(state: SessionState, groupId: string, markers: War
   }
   return affected;
 }
+
+/** Apply a loop sub-region to EVERY clip whose sample shares `groupId` — the
+ *  "paint a loop across all channels of this song at once" gesture. The loop
+ *  fields live on the clip (loopEnabled/loopStartTick/loopEndTick) while the
+ *  grouping key (warpGroupId) lives on the sample; all stems of one import share
+ *  the same lengthBars, so the tick bounds map 1:1 across them. Returns affected
+ *  sampleIds (so the caller can invalidate each warp-cache entry). */
+export function propagateLoop(
+  state: SessionState,
+  groupId: string,
+  loopEnabled: boolean,
+  loopStartTick: number,
+  loopEndTick: number,
+): string[] {
+  const affected: string[] = [];
+  for (const lane of state.lanes) {
+    for (const clip of lane.clips) {
+      const s = clip?.sample;
+      if (!clip || !s || s.warpGroupId !== groupId) continue;
+      clip.loopEnabled = loopEnabled;
+      clip.loopStartTick = loopStartTick;
+      clip.loopEndTick = loopEndTick;
+      affected.push(s.sampleId);
+    }
+  }
+  return affected;
+}

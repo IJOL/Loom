@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { moveMarker, addMarker, deleteMarker, propagateWarp } from './warp-marker-edit';
+import { moveMarker, addMarker, deleteMarker, propagateWarp, propagateLoop } from './warp-marker-edit';
 import type { SessionState, WarpMarker } from './session';
 
 const m = (): WarpMarker[] => [
@@ -39,5 +39,23 @@ describe('warp-marker-edit', () => {
     expect(state.lanes[0].clips[0]!.sample!.warpMarkers).toHaveLength(3);
     expect(state.lanes[0].clips[0]!.sample!.warp).toBe(true);
     expect(state.lanes[2].clips[0]!.sample!.warpMarkers).toBeUndefined(); // other group untouched
+  });
+
+  it('propagateLoop applies the loop sub-region to every clip in the group', () => {
+    const state: SessionState = {
+      lanes: [
+        { id: 'a', engineId: 'audio', clips: [{ id: 'c1', lengthBars: 4, notes: [], sample: { sampleId: 's1', mode: 'loop', trimStart: 0, trimEnd: 8, warpGroupId: 'g1' } }] },
+        { id: 'b', engineId: 'audio', clips: [{ id: 'c2', lengthBars: 4, notes: [], sample: { sampleId: 's2', mode: 'loop', trimStart: 0, trimEnd: 8, warpGroupId: 'g1' } }] },
+        { id: 'c', engineId: 'audio', clips: [{ id: 'c3', lengthBars: 4, notes: [], sample: { sampleId: 's3', mode: 'loop', trimStart: 0, trimEnd: 8, warpGroupId: 'OTHER' } }] },
+      ],
+      scenes: [], globalQuantize: '1/1',
+    };
+    const ids = propagateLoop(state, 'g1', true, 0, 192);
+    expect(ids.sort()).toEqual(['s1', 's2']);
+    expect(state.lanes[0].clips[0]!.loopEnabled).toBe(true);
+    expect(state.lanes[0].clips[0]!.loopStartTick).toBe(0);
+    expect(state.lanes[0].clips[0]!.loopEndTick).toBe(192);
+    expect(state.lanes[1].clips[0]!.loopEndTick).toBe(192);
+    expect(state.lanes[2].clips[0]!.loopEnabled).toBeUndefined(); // other group untouched
   });
 });

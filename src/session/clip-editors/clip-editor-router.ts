@@ -24,7 +24,7 @@ import type { KnobHandle } from '../../core/knob';
 import type { EngineUIContext } from '../../engines/engine-types';
 import type { SessionState } from '../session';
 import { detectLoop } from '../../samples/loop-analysis';
-import { propagateWarp } from '../warp-marker-edit';
+import { propagateWarp, propagateLoop } from '../warp-marker-edit';
 import { warpCache } from '../../samples/warp-cache';
 import { sampleCache } from '../../samples/sample-cache';
 
@@ -179,7 +179,22 @@ export function renderClipEditor(
           },
         }
       : undefined;
-    return renderAudioClipEditor(host, clip, deps.seq.meter, { getPlayheadFrac: playheadFrac, gain, warp });
+    // Loop overlay: write loop fields (the overlay mutates the clip + wraps undo)
+    // then invalidate the warp cache so the new sub-region re-warps. applyToAll
+    // propagates the same region across every channel of the warp group.
+    const loop = clip.sample
+      ? {
+          historyDeps: deps.historyDeps,
+          onChange: (): void => { const s = clip.sample; if (s) warpCache.invalidate(s.sampleId); },
+          applyToAll: (clip.sample.warpGroupId && deps.sessionState)
+            ? (enabled: boolean, start: number, end: number): void => {
+                const ids = propagateLoop(deps.sessionState!, clip.sample!.warpGroupId!, enabled, start, end);
+                for (const id of ids) warpCache.invalidate(id);
+              }
+            : undefined,
+        }
+      : undefined;
+    return renderAudioClipEditor(host, clip, deps.seq.meter, { getPlayheadFrac: playheadFrac, gain, warp, loop });
   }
 
   // Everything else: optional waveform header (when the clip references a buffer)

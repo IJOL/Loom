@@ -8,6 +8,7 @@ import type { SessionClip, ClipEnvelope, ClipSample } from '../session/session';
 import { TICKS_PER_QUARTER, TICKS_PER_STEP, type NoteEvent } from './notes';
 import { ticksPerBar, DEFAULT_METER, type TimeSignature } from './meter';
 import { effectiveClipLoop } from './clip-loop';
+import { sliceMarkersToRegion } from '../samples/warp-region';
 
 export interface SchedulerContext {
   bpm: number;
@@ -119,12 +120,25 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
         const isWhole = startTick === 0 && endTick === total;
         let sample = clip.sample;
         if (!isWhole) {
-          const span = clip.sample.trimEnd - clip.sample.trimStart;
-          sample = {
-            ...clip.sample,
-            trimStart: clip.sample.trimStart + (startTick / total) * span,
-            trimEnd:   clip.sample.trimStart + (endTick / total) * span,
-          };
+          const s = clip.sample;
+          if (s.warp && s.warpMarkers && s.warpMarkers.length >= 2) {
+            // Warped clip: playback plays the grid-aligned warped buffer from the
+            // start (trim is ignored), so a sub-region loop can't be expressed by
+            // trimming. Instead slice the markers to the sub-region's beat range
+            // (rebased to 0) — warpStretch then renders only that slice into the
+            // shorter gate. beat == tick / TICKS_PER_QUARTER on the warp grid.
+            sample = {
+              ...s,
+              warpMarkers: sliceMarkersToRegion(s.warpMarkers, startTick / TICKS_PER_QUARTER, endTick / TICKS_PER_QUARTER),
+            };
+          } else {
+            const span = s.trimEnd - s.trimStart;
+            sample = {
+              ...s,
+              trimStart: s.trimStart + (startTick / total) * span,
+              trimEnd:   s.trimStart + (endTick / total) * span,
+            };
+          }
         }
         ctx.onTrigger({ midi: 60, duration: loopTicks, velocity: 100, sample }, iterStart);
       }

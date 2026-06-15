@@ -14,6 +14,8 @@ import { setAudioClipWarp } from './audio-clip-warp';
 import { wireEngineParams } from '../../engines/engine-ui';
 import type { SynthEngine, EngineUIContext } from '../../engines/engine-types';
 import { mountWarpMarkerEditor } from './warp-marker-editor';
+import { mountClipLoopOverlay } from '../../core/clip-loop-overlay';
+import type { HistoryDeps } from '../../save/history-wiring';
 
 const RULER_H = 18;
 const WAVE_H = 64;
@@ -119,6 +121,15 @@ export interface AudioClipEditorDeps {
     bpm: number;
     onMarkersChange: (markers: import('../session').WarpMarker[], warp: boolean) => void;
   };
+  /** When present, mount the performance-style loop overlay (Loop toggle +
+   *  variable quantize + draggable A/B column) over the waveform. The router
+   *  supplies undo + warp-cache invalidation; applyToAll propagates the loop
+   *  region across every channel of the warp group. */
+  loop?: {
+    historyDeps?: HistoryDeps;
+    onChange: () => void;
+    applyToAll?: (loopEnabled: boolean, startTick: number, endTick: number) => void;
+  };
 }
 
 export function renderAudioClipEditor(
@@ -162,6 +173,18 @@ export function renderAudioClipEditor(
   host.appendChild(headerHost);
   const header = mountWaveformHeader(headerHost, clip, meter, { getPlayheadFrac: deps.getPlayheadFrac });
 
+  // Performance-style loop overlay over the waveform (toolbar in the top row).
+  let loopHandle: { redraw: () => void } | undefined;
+  if (deps.loop) {
+    loopHandle = mountClipLoopOverlay({
+      toolbarHost: toolbar, overlayHost: headerHost,
+      clip, meter,
+      historyDeps: deps.loop.historyDeps,
+      onChange: deps.loop.onChange,
+      applyToAll: deps.loop.applyToAll,
+    });
+  }
+
   if (sample?.warpRef && deps.warp) {
     const editorHost = document.createElement('div');
     host.appendChild(editorHost);
@@ -179,5 +202,5 @@ export function renderAudioClipEditor(
     });
   }
 
-  return { redraw: () => { header.redraw(); markerHandle?.redraw(); } };
+  return { redraw: () => { header.redraw(); markerHandle?.redraw(); loopHandle?.redraw(); } };
 }

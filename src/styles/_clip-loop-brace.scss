@@ -5,3 +5,15 @@
 .clip-loop-region { position:absolute; top:0; bottom:0; background:rgba(255,204,51,.18); border:1px solid #ffcc33; box-sizing:border-box; }
 .clip-loop-handle { position:absolute; top:0; bottom:0; width:8px; cursor:ew-resize; }
 .clip-loop-handle.l { left:-4px; } .clip-loop-handle.r { right:-4px; }
+
+// Performance-style loop overlay (clip-loop-overlay.ts): a toolbar + a full-height
+// translucent amber column with vertical A/B edge lines, drawn OVER the editor.
+.clip-loop-bar { display:flex; align-items:center; gap:8px; height:20px; margin:2px 0; font-size:11px; }
+.clip-loop-quant, .clip-loop-all { font-size:11px; padding:2px 6px; border-radius:4px; }
+.clip-loop-col {
+  position:absolute; top:0; bottom:0; z-index:5; pointer-events:none; box-sizing:border-box;
+  background:rgba(255,204,51,.10);
+  border-left:2px solid #ffcc33; border-right:2px solid #ffcc33;
+}
+.clip-loop-edge { position:absolute; top:0; bottom:0; width:10px; cursor:ew-resize; pointer-events:auto; z-index:6; }
+.clip-loop-edge.l { left:-5px; } .clip-loop-edge.r { right:-5px; }

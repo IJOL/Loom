@@ -67,6 +67,12 @@ function manualPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [manualPlugin()],
+  // Keep the dev-server file watcher out of `.claude/` — git worktrees are created
+  // under `.claude/worktrees/<name>/` (each with its own node_modules after a local
+  // install). Without this, creating/installing a worktree dumps thousands of files
+  // under the watched root and the PRIMARY dev server reloads/crashes. Worktrees are
+  // isolated checkouts; the server serving one tree must ignore the others.
+  server: { watch: { ignored: ['**/.claude/**'] } },
   define: {
     __APP_VERSION__: JSON.stringify(APP_VERSION.version),
     __APP_CODENAME__: JSON.stringify(APP_VERSION.codename),

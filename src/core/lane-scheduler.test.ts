@@ -283,6 +283,33 @@ describe('lane-scheduler tickLane — audio clip loop sub-region', () => {
     expect(fires[0].duration).toBe(bar); // one bar of ticks
   });
 
+  it('warped clip: a sub-region loop slices the markers (rebased), trim untouched', () => {
+    // 2-bar clip = 8 quarter-beats. Markers over the whole clip; loop bar 2 ⇒
+    // beats [4,8). The trigger sample must carry markers sliced + rebased to 0.
+    const clip: SessionClip = {
+      id: 'w', lengthBars: 2,
+      loopEnabled: true, loopStartTick: bar, loopEndTick: 2 * bar,
+      notes: [],
+      sample: {
+        sampleId: 's3', mode: 'loop', trimStart: 0, trimEnd: 8, warp: true,
+        warpMarkers: [{ srcSec: 0, beat: 0 }, { srcSec: 5, beat: 4 }, { srcSec: 8, beat: 8 }],
+      },
+    };
+    const fires: Array<{ markers?: { srcSec: number; beat: number }[]; trimStart?: number; duration: number }> = [];
+    let loopStart = 0;
+    for (let now = 0; now < 2.0; now += 0.2) {
+      loopStart = tickLane(clip, {
+        bpm: 120, lookaheadSec: 0.2, now, loopStartedAt: loopStart,
+        onTrigger: (n, _t) => fires.push({ markers: n.sample?.warpMarkers, trimStart: n.sample?.trimStart, duration: n.duration }),
+        onAutomation: () => {},
+      });
+    }
+    expect(fires.length).toBeGreaterThan(0);
+    expect(fires[0].markers).toEqual([{ srcSec: 5, beat: 0 }, { srcSec: 8, beat: 4 }]);
+    expect(fires[0].trimStart).toBe(0);     // trim NOT remapped on the warp path
+    expect(fires[0].duration).toBe(bar);
+  });
+
   it('loop off ⇒ original trim + full duration (no regression)', () => {
     const clip: SessionClip = {
       id: 'b', lengthBars: 1, notes: [],
