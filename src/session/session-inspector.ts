@@ -2,7 +2,9 @@
 // Manages the clip detail panel (name, length, quantize, duplicate, delete)
 // and the embedded clip editor (piano roll, step grids, drum grids).
 
-import type { SessionState, SessionClip } from './session';
+import type { SessionState, SessionClip, SessionLane } from './session';
+import { resolveTonality, DEFAULT_MUSICALITY } from './session';
+import { rootNameEs } from '../core/musicality';
 import type { LanePlayState } from './session-runtime';
 import type { Sequencer } from '../core/sequencer';
 import { renderClipEditor, classifyClip, chooseClipEditor, type ClipEditorDeps } from './clip-editors/clip-editor-router';
@@ -211,6 +213,7 @@ export class SessionInspector {
       if (d) withUndo(d, run); else run();
     };
     updatePasteBtnState();
+    this.renderTonalityOverride(lane!);
 
     // Auto-render editor
     this.renderEditor();
@@ -227,6 +230,33 @@ export class SessionInspector {
     if (!lane || !clip) return;
     const resolved = chooseClipEditor(lane, getEngine(lane.engineId)?.editor, editorOverride.get(clip.id), clip);
     btn.textContent = resolved === 'drum-grid' ? 'View as piano roll' : 'View as grid';
+  }
+
+  private renderTonalityOverride(lane: SessionLane): void {
+    const host = document.getElementById('insp-tonality');
+    if (!host) return;
+    host.innerHTML = '';
+    const g = this.deps.state.musicality ?? DEFAULT_MUSICALITY;
+    const eff = resolveTonality(lane, this.deps.state);
+    const overridden = !!lane.musicalityOverride;
+    const label = document.createElement('span');
+    label.textContent = overridden
+      ? `Tono: propio (${rootNameEs(eff.key)} ${eff.scale})`
+      : `Tono: hereda ${rootNameEs(g.key)} ${g.scale}`;
+    const btn = document.createElement('button');
+    btn.className = 'rnd';
+    btn.textContent = overridden ? 'Volver al global' : 'Cambiar';
+    btn.onclick = () => {
+      const d = this.deps.historyDeps;
+      const run = () => {
+        if (overridden) delete lane.musicalityOverride;
+        else lane.musicalityOverride = { key: g.key, scale: g.scale };
+        this.renderTonalityOverride(lane);
+        this.renderEditor();
+      };
+      if (d) withUndo(d, run); else run();
+    };
+    host.append(label, btn);
   }
 
   private renderEditor(): void {
