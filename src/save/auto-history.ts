@@ -84,7 +84,15 @@ export function createAutoHistory(deps: AutoHistoryDeps): AutoHistory {
       const micro = (fn: () => void) => queueMicrotask(fn);
 
       const onPointerDown = () => self.beginGesture();
-      const onPointerUp = () => micro(() => self.endGesture());
+      // pointerup: schedule endGesture for drag-only paths (pointerup without a
+      // following click event, e.g. canvas drags). setTimeout(0) defers past any
+      // click event that follows in the same pointer-event sequence.
+      const onPointerUp = () => setTimeout(() => self.endGesture(), 0);
+      // click (bubble, fires AFTER the target's click handler): close the gesture
+      // and checkpoint synchronously. This fires after the mutation so the diff is
+      // captured reliably — fixing both real browser and Playwright timer races.
+      // For drags (no click follows pointerup), the setTimeout path above handles it.
+      const onClick = () => { self.endGesture(); };
       const onKeyUp = (e: Event) => {
         const ke = e as KeyboardEvent;
         const cmd = ke.metaKey || ke.ctrlKey;
@@ -105,6 +113,8 @@ export function createAutoHistory(deps: AutoHistoryDeps): AutoHistory {
       const opts = { capture: true } as const;
       doc.addEventListener('pointerdown', onPointerDown, opts);
       doc.addEventListener('pointerup', onPointerUp, opts);
+      // click: bubble phase (no capture) so it fires AFTER the target's listener
+      doc.addEventListener('click', onClick);
       doc.addEventListener('keyup', onKeyUp, opts);
       doc.addEventListener('change', onChange, opts);
       doc.addEventListener('drop', onDrop, opts);
@@ -115,6 +125,7 @@ export function createAutoHistory(deps: AutoHistoryDeps): AutoHistory {
       return () => {
         doc.removeEventListener('pointerdown', onPointerDown, opts);
         doc.removeEventListener('pointerup', onPointerUp, opts);
+        doc.removeEventListener('click', onClick);
         doc.removeEventListener('keyup', onKeyUp, opts);
         doc.removeEventListener('change', onChange, opts);
         doc.removeEventListener('drop', onDrop, opts);
