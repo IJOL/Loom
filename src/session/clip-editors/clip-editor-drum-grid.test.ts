@@ -27,6 +27,18 @@ describe('clip-editor-drum-grid roll behaviour', () => {
     try { renderDrumGridEditor(makeHost(), clip); } catch { /* no DOM */ }
     expect(clip.notes).toEqual([]);
   });
+
+  it('renderDrumGridEditor does NOT set clip.gridResolution when the clip has none (no phantom undo mutation)', () => {
+    // Root-cause test for the phantom-undo bug: the editor used to write
+    // clip.gridResolution = DEFAULT_RESOLUTION on every open/render, which
+    // turned into a spurious undo entry on the first real edit.  The fix reads
+    // the value into a LOCAL variable and leaves clip.gridResolution untouched.
+    const clip = { id: 't', lengthBars: 1, notes: [] } as SessionClip;
+    expect(clip.gridResolution).toBeUndefined();          // pre-condition: no value
+    try { renderDrumGridEditor(makeHost(), clip); } catch { /* no DOM */ }
+    // Post-condition: the clip must not have been mutated on open.
+    expect(clip.gridResolution).toBeUndefined();
+  });
 });
 
 describe('drum-grid roll encoding (data shape)', () => {

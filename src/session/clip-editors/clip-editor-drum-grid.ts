@@ -70,7 +70,6 @@ export function renderDrumGridEditor(
   const FRAME_H = RULER_H + ROW_H * ROWS_N + VEL_LANE_H;
 
   let resolution: ResolutionKey = clampResolution(clip.gridResolution ?? DEFAULT_RESOLUTION);
-  clip.gridResolution = resolution;
   const snap = () => resolutionToSnap(resolution);
 
   const patternTicks = Math.max(1, clip.lengthBars * ticksPerBar(meter));
