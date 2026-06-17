@@ -2,7 +2,7 @@
 // queue, and the tick-side scheduler that is called from the main 25 ms loop.
 
 import type { SessionClip, SessionState, LaunchQuantize, SessionLane, ClipSample, SessionScene } from './session';
-import { emptyScene } from './session';
+import { emptyScene, clipRowCount, cloneClipWithNewId } from './session';
 import { tickLane, noteTrigger } from '../core/lane-scheduler';
 import { TICKS_PER_STEP } from '../core/notes';
 import { DEFAULT_METER, type TimeSignature } from '../core/meter';
@@ -50,28 +50,36 @@ export function emptyLanePlayState(laneId: string): LanePlayState {
   };
 }
 
-/** Snapshot the currently-playing clip on each lane into a new scene. Lanes with
- *  no playing clip get an explicit `null` so launching the captured scene leaves
- *  them untouched (rather than falling back to a row index). Returns `null` when
- *  nothing is playing. The caller appends the scene to state.scenes. */
-export function buildSceneFromPlaying(
+/** Capture the currently-playing clips into a NEW scene row: clone each playing
+ *  clip (fresh id) into a fresh bottom row so the new scene visibly CONTAINS the
+ *  clips (Ableton "Capture"), then add a launchable scene for that row. Idle lanes
+ *  get an empty slot in the new row. Mutates `state`. Returns the new scene, or
+ *  `null` (no mutation) when nothing is playing. The new scene keeps clipPerLane
+ *  empty: launching it falls back to its own row index, which is where the clones
+ *  live, so it plays exactly the captured clips and leaves idle lanes silent. */
+export function captureSceneFromPlaying(
   state: SessionState,
   laneStates: Map<string, LanePlayState>,
 ): SessionScene | null {
-  const clipPerLane: Record<string, number | null> = {};
-  let any = false;
+  const captured: { lane: SessionLane; clip: SessionClip }[] = [];
   for (const lane of state.lanes) {
     const playing = laneStates.get(lane.id)?.playing;
-    if (playing) {
-      const idx = lane.clips.findIndex((c) => c?.id === playing.id);
-      if (idx >= 0) { clipPerLane[lane.id] = idx; any = true; continue; }
-    }
-    clipPerLane[lane.id] = null;
+    if (!playing) continue;
+    const clip = lane.clips.find((c) => c?.id === playing.id);
+    if (clip) captured.push({ lane, clip });
   }
-  if (!any) return null;
-  const scene = emptyScene(`Scene ${state.scenes.length + 1}`);
-  scene.clipPerLane = clipPerLane;
-  return scene;
+  if (captured.length === 0) return null;
+  // The captured row sits below every existing clip/scene row.
+  const newRow = clipRowCount(state);
+  for (const { lane, clip } of captured) {
+    while (lane.clips.length <= newRow) lane.clips.push(null);
+    lane.clips[newRow] = cloneClipWithNewId(clip);
+  }
+  // Guarantee a launchable scene up to (and including) the new row — normally one.
+  while (state.scenes.length <= newRow) {
+    state.scenes.push(emptyScene(`Scene ${state.scenes.length + 1}`));
+  }
+  return state.scenes[newRow];
 }
 
 // ── Quantize ───────────────────────────────────────────────────────────────

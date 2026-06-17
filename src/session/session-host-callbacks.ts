@@ -14,7 +14,7 @@ import {
   type SessionState, type SessionLane, type SessionClip, type ClipSlot,
 } from './session';
 import {
-  launchClip, launchScene, stopLane, stopAll, emptyLanePlayState, buildSceneFromPlaying,
+  launchClip, launchScene, stopLane, stopAll, emptyLanePlayState, captureSceneFromPlaying,
 } from './session-runtime';
 import { rehydrateLane } from './session-host-persistence';
 import { getEngine, getEngineParamIds } from '../engines/registry';
@@ -194,11 +194,11 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
       if (hd) withUndo(hd, run); else run();
     },
     onCaptureScene() {
-      // Build BEFORE withUndo so an empty capture (nothing playing) commits nothing.
-      const scene = buildSceneFromPlaying(self.state, self.laneStates);
-      if (!scene) return;
+      // Guard BEFORE withUndo so an empty capture (nothing playing) commits nothing.
+      const anyPlaying = self.state.lanes.some((l) => self.laneStates.get(l.id)?.playing);
+      if (!anyPlaying) return;
       const hd = self.deps.historyDeps;
-      const run = () => { self.state.scenes.push(scene); self.renderWithMixer(); };
+      const run = () => { captureSceneFromPlaying(self.state, self.laneStates); self.renderWithMixer(); };
       if (hd) withUndo(hd, run); else run();
     },
     /** Create one AUDIO lane per separated stem, as a single undoable action.

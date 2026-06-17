@@ -162,6 +162,11 @@ export function emptyClip(lengthBars: number): SessionClip {
   return { id: nextId('clip'), lengthBars, notes: [], color: pickRandomClipColor() };
 }
 
+/** Deep-clone a clip with a fresh unique id (for copy/capture). */
+export function cloneClipWithNewId(clip: SessionClip): SessionClip {
+  return { ...(JSON.parse(JSON.stringify(clip)) as SessionClip), id: nextId('clip') };
+}
+
 /** Resolve a lane's effective tonality: its override (field-by-field) over the
  *  global musicality, over DEFAULT_MUSICALITY. */
 export function resolveTonality(
