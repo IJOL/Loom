@@ -142,36 +142,53 @@ _ADTOF_PITCH_TO_VOICE = {
 }
 
 
+ADTOF_FPS = 100
+# Map the model's per-onset activation (0..1, its predicted onset strength) to a
+# MIDI velocity. Linear with a floor so a faintly-detected hit is still audible
+# but soft, and confident hits approach full velocity.
+ADTOF_VEL_FLOOR = 30
+
+
+def _adtof_velocity(activation: float) -> int:
+    v = round(ADTOF_VEL_FLOOR + activation * (127 - ADTOF_VEL_FLOOR))
+    return int(max(1, min(127, v)))
+
+
 def _drums_adtof(path: str) -> dict:
     """Neural drum transcription via ADTOF-pytorch (torch-only, weights bundled).
-    Writes a temp GM-drum MIDI, then maps its notes to our drum voices. Raises on
-    any failure so the caller can fall back to the librosa heuristic."""
+    Runs the model to get per-frame onset activations, peak-picks onsets with the
+    package's picker, and derives each hit's velocity from the activation strength
+    at its frame (vs the high-level transcribe_to_midi, which hard-codes velocity).
+    Raises on any failure so the caller can fall back to the librosa heuristic."""
     import os
     import tempfile
-    import pretty_midi
-    from adtof_pytorch import transcribe_to_midi
+    import numpy as np
+    from adtof_pytorch import transcribe_to_midi, PeakPicker, FRAME_RNN_THRESHOLDS, LABELS_5
 
-    fd, mid_path = tempfile.mkstemp(suffix=".mid")
-    os.close(fd)
-    try:
-        transcribe_to_midi(path, mid_path)
-        pm = pretty_midi.PrettyMIDI(mid_path)
-    finally:
-        try:
-            os.remove(mid_path)
-        except OSError:
-            pass
+    # return_activations short-circuits before any MIDI is written; the path is
+    # required positionally but never touched.
+    unused_mid = os.path.join(tempfile.gettempdir(), "_adtof_unused.mid")
+    pred = transcribe_to_midi(path, unused_mid, fps=ADTOF_FPS, return_activations=True)
+    acts = np.asarray(pred)
+    if acts.ndim == 3:
+        acts = acts[0]  # [time, classes]
+    n_frames = acts.shape[0]
+
+    peaks = PeakPicker(thresholds=FRAME_RNN_THRESHOLDS, fps=ADTOF_FPS).pick(pred, labels=LABELS_5)[0]
+    col_of = {int(p): i for i, p in enumerate(LABELS_5)}
 
     notes = []
-    for inst in pm.instruments:
-        for n in inst.notes:
-            voice = _ADTOF_PITCH_TO_VOICE.get(int(n.pitch))
-            if voice is None:
-                continue
+    for pitch, times in peaks.items():
+        voice = _ADTOF_PITCH_TO_VOICE.get(int(pitch))
+        if voice is None:
+            continue
+        col = col_of[int(pitch)]
+        for t in times:
+            frame = min(n_frames - 1, max(0, int(round(t * ADTOF_FPS))))
             notes.append({
-                "start": float(n.start),
+                "start": float(t),
                 "voice": voice,
-                "velocity": int(max(1, min(127, n.velocity or 100))),
+                "velocity": _adtof_velocity(float(acts[frame, col])),
             })
     notes.sort(key=lambda x: x["start"])
     return {"kind": "drums", "tempo": None, "notes": notes}
