@@ -4,7 +4,7 @@
 // engines. Extracted from session-host.ts.
 
 import type { SessionHost } from './session-host';
-import type { SessionState } from './session';
+import type { SessionState, SessionLane } from './session';
 import { migrateLoadedSessionState } from './session-migration';
 import { emptyLanePlayState } from './session-runtime';
 import { rehydrateInsertChain } from './insert-slot';
@@ -104,18 +104,36 @@ export function collectEngineState(self: SessionHost): void {
 /** Push persisted engine state (params, modulators, note-FX, drumkit/instrument
  *  keymaps) onto every lane's live engine, self-healing bundled samples. */
 export function applyEngineState(self: SessionHost): void {
-  for (const lane of self.state.lanes) {
-    const engine = self.deps.laneResources?.get(lane.id)?.engine;
-    if (!engine) continue;
-    void applyLaneEngineState(engine as never, lane, self.deps.ctx, {
-      loadNoteFx: (laneId, state) => loadNoteFxForLane(laneId, state),
-      // Live: fire-and-forget the drumkit reload (the editor renders regardless;
-      // audio comes alive once the fetch/decode resolves).
-      reloadDrumkit: (laneId, kitId, eng) => { void reloadDrumkit(self, laneId, kitId, eng); },
-      // Bundled melodic/loop instrument self-heal: fire-and-forget like the
-      // drumkit reload. The persisted keymap is already applied above, so the
-      // live editor renders; audio comes alive once the fetch/decode resolves.
-      reloadInstrument: (laneId, id, eng) => { void reloadInstrument(self, laneId, id, eng); },
-    });
+  for (const lane of self.state.lanes) applyEngineStateForLane(self, lane);
+}
+
+/** Apply ONE lane's persisted engineState to its live engine. Extracted so the
+ *  duplicate-lane path can rehydrate a single new lane without touching others. */
+export function applyEngineStateForLane(self: SessionHost, lane: SessionLane): void {
+  const engine = self.deps.laneResources?.get(lane.id)?.engine;
+  if (!engine) return;
+  void applyLaneEngineState(engine as never, lane, self.deps.ctx, {
+    loadNoteFx: (laneId, state) => loadNoteFxForLane(laneId, state),
+    // Live: fire-and-forget the drumkit reload (the editor renders regardless;
+    // audio comes alive once the fetch/decode resolves).
+    reloadDrumkit: (laneId, kitId, eng) => { void reloadDrumkit(self, laneId, kitId, eng); },
+    // Bundled melodic/loop instrument self-heal: fire-and-forget like the
+    // drumkit reload. The persisted keymap is already applied above, so the
+    // live editor renders; audio comes alive once the fetch/decode resolves.
+    reloadInstrument: (laneId, id, eng) => { void reloadInstrument(self, laneId, id, eng); },
+  });
+}
+
+/** Allocate + configure the audio resource for a single (newly added) lane:
+ *  fresh ChannelStrip + engine instance, persisted inserts, preset, and engine
+ *  state. Mirrors the per-lane work `applyLoadedSessionState` does, for the
+ *  duplicate-lane path which adds one lane without reloading the session. */
+export function rehydrateLane(self: SessionHost, lane: SessionLane): void {
+  self.deps.ensureLaneResource?.(lane.id, lane.engineId);
+  if (lane.inserts && lane.inserts.length > 0) {
+    const laneRes = self.deps.laneResources?.get(lane.id);
+    if (laneRes?.inserts) rehydrateInsertChain(self.deps.ctx, laneRes.inserts, lane.inserts);
   }
+  if (lane.enginePresetName) self.deps.applyPresetForLane?.(lane.id, lane.enginePresetName);
+  applyEngineStateForLane(self, lane);
 }
