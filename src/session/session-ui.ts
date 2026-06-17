@@ -30,6 +30,12 @@ export interface SessionUICallbacks {
   onStopAll:   () => void;
   onAddScene:  () => void;
   onAddLane: (engineId: string) => void;
+  /** Full-clone a lane (instrument + clips); the new lane appears to the right. */
+  onDuplicateLane: (laneId: string) => void;
+  /** Append a clone of the scene at sceneIdx. */
+  onDuplicateScene: (sceneIdx: number) => void;
+  /** Append a new scene capturing the currently-playing clip on each lane. */
+  onCaptureScene: () => void;
   onAddStemLanes: (
     stems: { label: string; sampleId: string; durationSec: number; warpRef?: boolean }[],
     opts?: { replace?: boolean; anchorSec?: number; warpMarkers?: import('./session').WarpMarker[]; warpGroupId?: string },

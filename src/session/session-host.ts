@@ -145,6 +145,12 @@ export class SessionHost {
     this.renderWithMixer();
   }
 
+  /** Append a scene capturing the currently-playing clips. Wired to the toolbar
+   *  button and the Ctrl+I hotkey; same path as the Scenes-header button. */
+  captureScene(): void {
+    this.callbacks.onCaptureScene();
+  }
+
   /** Make a lane the active/edit lane (single source of truth shared with the APC).
    *  Idempotent; fires onActiveLaneChanged so subscribers (UI + control) stay in sync. */
   focusLane(laneId: string): void {

@@ -9,13 +9,14 @@ import { ensureScenesForRows } from '../core/scene-ensure';
 import { confirmDialog } from '../core/dialog';
 import {
   emptyLane, emptyClip, audioClip, emptyScene,
-  moveClip, copyClip,
+  moveClip, copyClip, duplicateLane, duplicateScene,
   deleteClipAt, deleteLane, laneHasContent, sceneHasContent, deleteScene,
   type SessionState, type SessionLane, type SessionClip, type ClipSlot,
 } from './session';
 import {
-  launchClip, launchScene, stopLane, stopAll, emptyLanePlayState,
+  launchClip, launchScene, stopLane, stopAll, emptyLanePlayState, buildSceneFromPlaying,
 } from './session-runtime';
+import { rehydrateLane } from './session-host-persistence';
 import { getEngine, getEngineParamIds } from '../engines/registry';
 import { withUndo } from '../save/history-wiring';
 import { nextLaneSlug } from './session-host-util';
@@ -171,6 +172,33 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
         ensureScenesForRows(self.state);
         self.renderWithMixer();
       };
+      if (hd) withUndo(hd, run); else run();
+    },
+    onDuplicateLane(laneId: string) {
+      const src = self.state.lanes.find((l) => l.id === laneId);
+      if (!src) return;
+      const hd = self.deps.historyDeps;
+      const run = () => {
+        const used = new Set(self.state.lanes.map((l) => l.id));
+        const newId = nextLaneSlug(used, src.engineId);
+        const clone = duplicateLane(self.state, laneId, newId);
+        self.laneStates.set(newId, emptyLanePlayState(newId));
+        rehydrateLane(self, clone); // allocate strip+engine, rehydrate inserts/preset/state
+        self.renderWithMixer();
+      };
+      if (hd) withUndo(hd, run); else run();
+    },
+    onDuplicateScene(sceneIdx: number) {
+      const hd = self.deps.historyDeps;
+      const run = () => { duplicateScene(self.state, sceneIdx); self.renderWithMixer(); };
+      if (hd) withUndo(hd, run); else run();
+    },
+    onCaptureScene() {
+      // Build BEFORE withUndo so an empty capture (nothing playing) commits nothing.
+      const scene = buildSceneFromPlaying(self.state, self.laneStates);
+      if (!scene) return;
+      const hd = self.deps.historyDeps;
+      const run = () => { self.state.scenes.push(scene); self.renderWithMixer(); };
       if (hd) withUndo(hd, run); else run();
     },
     /** Create one AUDIO lane per separated stem, as a single undoable action.
