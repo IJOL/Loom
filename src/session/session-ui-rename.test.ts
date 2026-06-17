@@ -39,3 +39,39 @@ describe('open-clip highlight', () => {
     expect(host.querySelectorAll('.session-row-editing').length).toBe(0);
   });
 });
+
+describe('grid in-place rename', () => {
+  it('double-clicking the lane name commits via onRenameLane', () => {
+    const host = document.createElement('div');
+    const onRenameLane = vi.fn();
+    renderSessionGrid(host, makeState(), new Map(), noopCallbacks({ onRenameLane }));
+    const nameEl = host.querySelector('.session-lane-name') as HTMLElement;
+    nameEl.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    const input = host.querySelector('.inline-rename-input') as HTMLInputElement;
+    expect(input).toBeTruthy();
+    input.value = 'Reese';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(onRenameLane).toHaveBeenCalledWith('bass', 'Reese');
+  });
+
+  it('double-clicking the scene name commits via onRenameScene', () => {
+    const host = document.createElement('div');
+    const onRenameScene = vi.fn();
+    renderSessionGrid(host, makeState(), new Map(), noopCallbacks({ onRenameScene }));
+    const nameEl = host.querySelector('.session-scene-name') as HTMLElement;
+    nameEl.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    const input = host.querySelector('.inline-rename-input') as HTMLInputElement;
+    input.value = 'Drop';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(onRenameScene).toHaveBeenCalledWith(0, 'Drop');
+  });
+
+  it('clicking the scene name does NOT launch the scene', () => {
+    const host = document.createElement('div');
+    const onLaunchScene = vi.fn();
+    renderSessionGrid(host, makeState(), new Map(), noopCallbacks({ onLaunchScene }));
+    const nameEl = host.querySelector('.session-scene-name') as HTMLElement;
+    nameEl.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(onLaunchScene).not.toHaveBeenCalled();
+  });
+});

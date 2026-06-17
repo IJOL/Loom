@@ -5,6 +5,7 @@ import type { SessionState, SessionLane, SessionClip, ClipSlot } from './session
 import { canDropClip } from './session';
 import type { LanePlayState } from './session-runtime';
 import { openContextMenu } from '../core/context-menu';
+import { beginInlineRename } from './inline-rename';
 
 export interface SessionUICallbacks {
   /** Click on the clip body (anywhere except the ▶ icon): open the clip in
@@ -173,6 +174,13 @@ function laneHeader(lane: SessionLane, cb: SessionUICallbacks): HTMLElement {
   name.className = 'session-lane-name';
   name.textContent = lane.name ?? lane.id.toUpperCase();
   el.appendChild(name);
+  name.title = 'Double-click to rename';
+  name.addEventListener('dblclick', (e) => {
+    e.stopPropagation();
+    beginInlineRename(name, lane.name ?? lane.id.toUpperCase(), {
+      commit: (v) => cb.onRenameLane?.(lane.id, v),
+    });
+  });
 
   const edit = document.createElement('button');
   edit.className = 'session-lane-edit';
@@ -183,6 +191,7 @@ function laneHeader(lane: SessionLane, cb: SessionUICallbacks): HTMLElement {
 
   el.addEventListener('contextmenu', (e) =>
     openContextMenu(e, [
+      { label: 'Rename track', onSelect: () => beginInlineRename(name, lane.name ?? lane.id.toUpperCase(), { commit: (v) => cb.onRenameLane?.(lane.id, v) }) },
       { label: 'Edit instrument', onSelect: () => cb.onEditLane(lane.id) },
       { label: 'Stop track', onSelect: () => cb.onStopLane(lane.id) },
       { label: 'Delete track', danger: true, separatorBefore: true, onSelect: () => cb.onDeleteLane(lane.id) },
@@ -288,11 +297,32 @@ function sceneLaunchCell(scene: { name?: string } | undefined, idx: number, cb: 
     el.appendChild(deleteCross('Delete scene', () => cb.onDeleteScene(idx)));
     const btn = document.createElement('button');
     btn.className = 'session-scene-launch';
-    btn.textContent = `▶ ${scene.name ?? idx + 1}`;
     btn.addEventListener('click', () => cb.onLaunchScene(idx));
+
+    const play = document.createElement('span');
+    play.className = 'session-scene-play';
+    play.textContent = '▶';
+    btn.appendChild(play);
+
+    const name = document.createElement('span');
+    name.className = 'session-scene-name';
+    name.textContent = scene.name ?? `Scene ${idx + 1}`;
+    name.title = 'Double-click to rename';
+    // The name area is a rename target, not a launch target: swallow its click
+    // so single-clicking the name never launches the scene (launch via ▶).
+    name.addEventListener('click', (e) => e.stopPropagation());
+    name.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      beginInlineRename(name, scene.name ?? `Scene ${idx + 1}`, {
+        commit: (v) => cb.onRenameScene?.(idx, v),
+      });
+    });
+    btn.appendChild(name);
     el.appendChild(btn);
+
     el.addEventListener('contextmenu', (e) =>
       openContextMenu(e, [
+        { label: 'Rename scene', onSelect: () => beginInlineRename(name, scene.name ?? `Scene ${idx + 1}`, { commit: (v) => cb.onRenameScene?.(idx, v) }) },
         { label: 'Launch scene', onSelect: () => cb.onLaunchScene(idx) },
         { label: 'Add scene', onSelect: () => cb.onAddScene() },
         { label: 'Delete scene', danger: true, separatorBefore: true, onSelect: () => cb.onDeleteScene(idx) },
