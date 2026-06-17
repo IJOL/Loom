@@ -162,6 +162,14 @@ export class SessionHost {
     this.inspector?.setHistoryDeps(hd);
   }
 
+  /** Wire the audio→notes loop transcriber into the inspector after construction
+   *  (the closure needs both the stem client and this host, built later). */
+  setTranscribeLoop(fn: (clip: SessionClip, kind: 'melodic' | 'drums') => void | Promise<void>): void {
+    this._transcribeLoop = fn;
+    this.inspector?.setTranscribeLoop(fn);
+  }
+  private _transcribeLoop?: (clip: SessionClip, kind: 'melodic' | 'drums') => void | Promise<void>;
+
   constructor(public readonly deps: SessionHostDeps) {}
 
   init(): void {
@@ -179,6 +187,7 @@ export class SessionHost {
       saveSession: this.deps.saveSession,
       triggerForLane: this.deps.triggerForLane,
       addNoteLane: (engineId, notes, lengthBars, name) => this.addNoteLane(engineId, notes, lengthBars, name),
+      transcribeLoop: this._transcribeLoop,
       placeChordClip: (laneId, clipIdx, clip) => {
         const hd = this.deps.historyDeps;
         const run = () => {

@@ -49,6 +49,10 @@ export interface ClipEditorDeps {
   laneResources?: LaneResourceMap;
   automationRegistry?: Map<string, KnobHandle>;
   sessionState?: SessionState;
+  /** When present, the audio clip editor shows a "Transcribe loop" button that
+   *  sends the clip's effective loop region to the audio→notes backend. The
+   *  router binds the clip; the closure does slice→WAV→transcribe→new note lane. */
+  transcribeLoop?: (clip: SessionClip, kind: 'melodic' | 'drums') => void | Promise<void>;
 }
 
 const AUDITION_GATE = 0.25; // seconds — short preview blip, shared by both editors
@@ -197,7 +201,10 @@ export function renderClipEditor(
             : undefined,
         }
       : undefined;
-    return renderAudioClipEditor(host, clip, deps.seq.meter, { getPlayheadFrac: playheadFrac, gain, warp, loop });
+    const transcribe = deps.transcribeLoop
+      ? { run: (kind: 'melodic' | 'drums') => deps.transcribeLoop!(clip, kind) }
+      : undefined;
+    return renderAudioClipEditor(host, clip, deps.seq.meter, { getPlayheadFrac: playheadFrac, gain, warp, loop, transcribe });
   }
 
   // Everything else: optional waveform header (when the clip references a buffer)

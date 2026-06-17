@@ -148,6 +148,10 @@ export interface AudioClipEditorDeps {
     onChange: () => void;
     applyToAll?: (loopEnabled: boolean, startTick: number, endTick: number) => void;
   };
+  /** When present, show a "Transcribe loop" button + melodic/drums toggle that
+   *  sends the clip's effective loop region to the audio→notes backend. The
+   *  router binds the clip; here we only choose the kind and fire `run`. */
+  transcribe?: { run: (kind: 'melodic' | 'drums') => void | Promise<void> };
 }
 
 export function renderAudioClipEditor(
@@ -201,6 +205,55 @@ export function renderAudioClipEditor(
       onChange: deps.loop.onChange,
       applyToAll: deps.loop.applyToAll,
     });
+  }
+
+  // Transcribe-the-loop controls: a melodic/drums toggle + a button that sends
+  // the clip's effective loop region to the audio→notes backend (wired by the
+  // router, which binds this clip). Floated to the right of the top row.
+  if (deps.transcribe) {
+    let kind: 'melodic' | 'drums' = 'melodic';
+    const wrap = document.createElement('div');
+    wrap.className = 'audio-clip-transcribe-row';
+    Object.assign(wrap.style, { display: 'flex', gap: '4px', alignItems: 'center', marginLeft: 'auto' } as Partial<CSSStyleDeclaration>);
+
+    const lbl = document.createElement('span');
+    lbl.textContent = 'TRANSCRIBE'; lbl.style.color = '#8a8a90'; lbl.style.fontSize = '10px';
+
+    const kindBtns: Array<[HTMLButtonElement, 'melodic' | 'drums']> = [];
+    const paintKind = (): void => {
+      for (const [b, k] of kindBtns) {
+        const on = kind === k;
+        Object.assign(b.style, {
+          background: on ? '#4a9a6a' : 'transparent', color: on ? '#000' : '#8a8a90',
+          border: on ? '1px solid #4a9a6a' : '1px solid #2c2c32', fontWeight: on ? '700' : '400',
+          padding: '3px 8px', borderRadius: '3px', cursor: 'pointer', fontSize: '10px',
+        } as Partial<CSSStyleDeclaration>);
+      }
+    };
+    for (const [k, text] of [['melodic', 'Melodic'], ['drums', 'Drums']] as const) {
+      const b = document.createElement('button');
+      b.className = 'transcribe-kind';
+      b.dataset.kind = k;
+      b.textContent = text;
+      b.addEventListener('click', () => { kind = k; paintKind(); });
+      kindBtns.push([b, k]);
+    }
+    paintKind();
+
+    const go = document.createElement('button');
+    go.className = 'audio-clip-transcribe';
+    go.textContent = 'Transcribe loop';
+    Object.assign(go.style, {
+      background: '#2a3a4a', color: '#cfe', border: '1px solid #3a5a7a', fontWeight: '700',
+      padding: '3px 10px', borderRadius: '3px', cursor: 'pointer', fontSize: '10px',
+    } as Partial<CSSStyleDeclaration>);
+    go.addEventListener('click', () => {
+      go.textContent = 'Transcribing…';
+      Promise.resolve(deps.transcribe!.run(kind)).finally(() => { go.textContent = 'Transcribe loop'; });
+    });
+
+    wrap.append(lbl, kindBtns[0][0], kindBtns[1][0], go);
+    toolbar.append(wrap);
   }
 
   if (sample?.warpRef && deps.warp) {

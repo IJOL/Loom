@@ -58,6 +58,9 @@ export interface InspectorDeps {
   /** Place a chord clip into an existing lane at the given clip index (Chords flow).
    *  Optional so test fixtures without a SessionHost still compile. */
   placeChordClip?: (laneId: string, clipIdx: number, clip: import('./session').SessionClip) => void;
+  /** Transcribe an audio clip's effective loop region to a new note/drums lane.
+   *  Set late (after the stem client + host both exist) via setTranscribeLoop. */
+  transcribeLoop?: (clip: import('./session').SessionClip, kind: 'melodic' | 'drums') => void | Promise<void>;
 }
 
 export class SessionInspector {
@@ -110,6 +113,12 @@ export class SessionInspector {
    *  sessionHost itself). */
   setHistoryDeps(hd: HistoryDeps): void {
     this.deps = { ...this.deps, historyDeps: hd };
+  }
+
+  /** Called after the stem client + host exist (both needed before the audio→
+   *  notes closure can be built), mirroring setHistoryDeps' late binding. */
+  setTranscribeLoop(fn: InspectorDeps['transcribeLoop']): void {
+    this.deps = { ...this.deps, transcribeLoop: fn };
   }
 
   getSelectedClip(): { laneId: string; clipIdx: number } | null {
@@ -468,6 +477,7 @@ export class SessionInspector {
       laneResources: this.deps.laneResources,
       automationRegistry: this.deps.automationRegistry,
       sessionState: this.deps.state,
+      transcribeLoop: this.deps.transcribeLoop,
     };
     this.roll = renderClipEditor(editorBox, lane, clip, editorDeps, editorOverride.get(clip.id));
 

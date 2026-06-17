@@ -36,6 +36,35 @@ describe('clip-waveform-header', () => {
     expect(host.querySelector('.audio-clip-slice')).toBeNull();
   });
 
+  it('shows a Transcribe-loop button + melodic/drums toggle that calls transcribe.run with the selected kind', () => {
+    stubCanvas();
+    const host = document.createElement('div');
+    const run = vi.fn();
+    renderAudioClipEditor(host, audioClip(), DEFAULT_METER, { transcribe: { run } });
+
+    const btn = host.querySelector('.audio-clip-transcribe') as HTMLButtonElement;
+    expect(btn).toBeTruthy();
+
+    // Default kind is melodic.
+    btn.click();
+    expect(run).toHaveBeenLastCalledWith('melodic');
+
+    // Switch to drums via the toggle, then transcribe again.
+    const drums = host.querySelector('.transcribe-kind[data-kind="drums"]') as HTMLButtonElement;
+    expect(drums).toBeTruthy();
+    drums.click();
+    btn.click();
+    expect(run).toHaveBeenLastCalledWith('drums');
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it('omits the transcribe controls when no transcribe dep is given', () => {
+    stubCanvas();
+    const host = document.createElement('div');
+    renderAudioClipEditor(host, audioClip(), DEFAULT_METER, {});
+    expect(host.querySelector('.audio-clip-transcribe')).toBeNull();
+  });
+
   it('mounts the warp marker editor only when the clip sample is the warpRef', () => {
     stubCanvas();
     const host = document.createElement('div');
