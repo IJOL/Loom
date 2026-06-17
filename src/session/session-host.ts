@@ -522,7 +522,14 @@ export class SessionHost {
         sigParts.push(`${lp.laneId}:${lp.playing?.id ?? '-'}:${lp.queued?.id ?? '-'}`);
       }
       const next = sigParts.sort().join('|');
-      if (next !== lastSig) { lastSig = next; this.renderWithMixer(); }
+      if (next !== lastSig) {
+        // Defer the grid rebuild while a track/scene is being renamed inline —
+        // renderWithMixer() does host.innerHTML='' and would destroy the open
+        // rename input mid-edit. Leave lastSig stale so the NEXT tick re-renders
+        // once the edit commits/cancels and the input is gone.
+        const renaming = document.activeElement?.classList.contains('inline-rename-input');
+        if (!renaming) { lastSig = next; this.renderWithMixer(); }
+      }
     };
     requestAnimationFrame(loop);
   }
