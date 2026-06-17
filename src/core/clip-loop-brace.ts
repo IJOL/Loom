@@ -68,17 +68,17 @@ export function mountClipLoopBrace(
   };
 
   toggle.addEventListener('click', () => {
-    historyDeps?.history.beginGesture(historyDeps.snapshot());
+    historyDeps?.beginGesture?.();
     clip.loopEnabled = !clip.loopEnabled;
     if (clip.loopEnabled && clip.loopEndTick == null) { clip.loopStartTick = 0; clip.loopEndTick = total; }
-    historyDeps?.history.commitGesture();
+    historyDeps?.endGesture?.();
     layout(); onChange();
   });
 
   const startDrag = (which: 'l' | 'r') => (down: PointerEvent) => {
     down.preventDefault();
     if (!clip.loopEnabled) return;
-    historyDeps?.history.beginGesture(historyDeps.snapshot());
+    historyDeps?.beginGesture?.();
     const move = (e: PointerEvent) => {
       const rect = track.getBoundingClientRect();
       const tick = snapTick(pxToTick(e.clientX - rect.left, rect.width, total), stepTicks);
@@ -92,7 +92,7 @@ export function mountClipLoopBrace(
     const up = () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
-      historyDeps?.history.commitGesture(); onChange();
+      historyDeps?.endGesture?.(); onChange();
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);

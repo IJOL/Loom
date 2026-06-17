@@ -71,9 +71,9 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
     all.title = 'Apply this loop region to every audio channel of the song';
     all.addEventListener('click', () => {
       const { startTick, endTick } = effectiveClipLoop(clip, meter);
-      historyDeps?.history.beginGesture(historyDeps.snapshot());
+      historyDeps?.beginGesture?.();
       deps.applyToAll!(!!clip.loopEnabled, startTick, endTick);
-      historyDeps?.history.commitGesture();
+      historyDeps?.endGesture?.();
       deps.onChange?.();
     });
     bar.append(all);
@@ -134,10 +134,10 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
   };
 
   toggle.addEventListener('click', () => {
-    historyDeps?.history.beginGesture(historyDeps.snapshot());
+    historyDeps?.beginGesture?.();
     clip.loopEnabled = !clip.loopEnabled;
     if (clip.loopEnabled && clip.loopEndTick == null) { clip.loopStartTick = 0; clip.loopEndTick = total; }
-    historyDeps?.history.commitGesture();
+    historyDeps?.endGesture?.();
     layout(); deps.onChange?.();
   });
   qsel.addEventListener('change', () => { quantize = (qsel.value as LoopQuantize) || 'bar'; });
@@ -145,7 +145,7 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
   const startDrag = (which: 'l' | 'r') => (down: PointerEvent) => {
     down.preventDefault(); down.stopPropagation();
     if (!clip.loopEnabled) return;
-    historyDeps?.history.beginGesture(historyDeps.snapshot());
+    historyDeps?.beginGesture?.();
     const move = (e: PointerEvent) => {
       const cb = contentBox();
       const step = snapFor();
@@ -160,7 +160,7 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
     const up = () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
-      historyDeps?.history.commitGesture();
+      historyDeps?.endGesture?.();
       deps.onChange?.();
     };
     window.addEventListener('pointermove', move);

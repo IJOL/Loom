@@ -302,16 +302,16 @@ master.gain.value = parseFloat(volInput.value);
 // driving live audio and must NOT call beginGesture/commitGesture themselves.
 for (const el of [bpmInput, swingInput, volInput]) {
   el.addEventListener('pointerdown', () => {
-    if (_discreteHistoryDeps) _discreteHistoryDeps.history.beginGesture(_discreteHistoryDeps.snapshot());
+    if (_discreteHistoryDeps) _discreteHistoryDeps.beginGesture?.();
   });
   el.addEventListener('pointerup', () => {
-    if (_discreteHistoryDeps) _discreteHistoryDeps.history.commitGesture();
+    if (_discreteHistoryDeps) _discreteHistoryDeps.endGesture?.();
   });
   el.addEventListener('focus', () => {
-    if (_discreteHistoryDeps) _discreteHistoryDeps.history.beginGesture(_discreteHistoryDeps.snapshot());
+    if (_discreteHistoryDeps) _discreteHistoryDeps.beginGesture?.();
   });
   el.addEventListener('blur', () => {
-    if (_discreteHistoryDeps) _discreteHistoryDeps.history.commitGesture();
+    if (_discreteHistoryDeps) _discreteHistoryDeps.endGesture?.();
   });
 }
 
@@ -1054,6 +1054,10 @@ const autoHistory = createAutoHistory({
 autoHistory.installGlobalListeners(document);
 wireHistoryKeyboard(autoHistory);
 wireUndoButtons(autoHistory);
+// Route gesture brackets through AutoHistory's gestureDepth so pointer-capture
+// drags (piano-roll, drum-grid, knobs, faders) coalesce into one undo step.
+historyDeps.beginGesture = () => autoHistory.beginGesture();
+historyDeps.endGesture   = () => autoHistory.endGesture();
 // Wire async-mutation checkpoint: stems / transcription / import flows call this
 // after their async settle (no pointer/key event closes the event loop there).
 sessionHost.deps.checkpointHistory = () => autoHistory.checkpoint();

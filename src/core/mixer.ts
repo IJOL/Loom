@@ -167,16 +167,10 @@ export function buildMixerColumn(trackId: string, deps: MixerColumnDeps): HTMLEl
   fader.min = '0'; fader.max = '1.5'; fader.step = '0.01';
   fader.value = String(state.level);
   fader.addEventListener('input', () => strip.setLevel(parseFloat(fader.value)));
-  fader.addEventListener('pointerdown', () => {
-    const hd = deps.historyDeps;
-    if (hd) hd.history.beginGesture(hd.snapshot());
-  });
-  fader.addEventListener('pointerup', () => deps.historyDeps?.history.commitGesture());
-  fader.addEventListener('focus', () => {
-    const hd = deps.historyDeps;
-    if (hd) hd.history.beginGesture(hd.snapshot());
-  });
-  fader.addEventListener('blur', () => deps.historyDeps?.history.commitGesture());
+  fader.addEventListener('pointerdown', () => deps.historyDeps?.beginGesture?.());
+  fader.addEventListener('pointerup',   () => deps.historyDeps?.endGesture?.());
+  fader.addEventListener('focus',       () => deps.historyDeps?.beginGesture?.());
+  fader.addEventListener('blur',        () => deps.historyDeps?.endGesture?.());
 
   const vuMeter = createLevelMeter({ analyser: strip.getMeterAnalyser() });
   if (deps.registerDisposable) deps.registerDisposable(vuMeter);

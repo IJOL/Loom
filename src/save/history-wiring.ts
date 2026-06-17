@@ -5,6 +5,11 @@ export interface HistoryDeps {
   history: HistoryController<SavedStateV3>;
   snapshot: () => SavedStateV3;
   restore: (s: SavedStateV3) => void;
+  /** Gesture bracket — delegate to AutoHistory so pointer-capture drags
+   *  (piano-roll, drum-grid, knobs, faders) coalesce into one undo step.
+   *  Wired in main.ts to autoHistory.beginGesture/endGesture. */
+  beginGesture?: () => void;
+  endGesture?: () => void;
 }
 
 /** Install Ctrl+Z / Cmd+Z / Ctrl+Shift+Z / Cmd+Shift+Z / Ctrl+Y on `document`,
@@ -54,11 +59,15 @@ export function withUndo<R>(_d: HistoryDeps, fn: () => R): R {
   return fn();
 }
 
-/** Neutralised gesture bracket — AutoHistory coalesces gestures via global
- *  pointer/focus listeners. Kept so createKnob opts still type-check. */
-export function attachKnobUndo(_d: HistoryDeps): {
+/** Routes knob gesture brackets through AutoHistory's gestureDepth so
+ *  pointer-capture knob drags coalesce into one undo step alongside the
+ *  global pointerdown/pointerup listeners. */
+export function attachKnobUndo(d: HistoryDeps): {
   onGestureStart: () => void;
   onGestureEnd: () => void;
 } {
-  return { onGestureStart: () => {}, onGestureEnd: () => {} };
+  return {
+    onGestureStart: () => d.beginGesture?.(),
+    onGestureEnd:   () => d.endGesture?.(),
+  };
 }

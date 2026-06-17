@@ -316,9 +316,9 @@ function buildPianoRoll(
     viewState: resolveViewState(viewStateByClip, clip.id),
     onViewChange: (v) => { viewStateByClip.set(clip.id, v); },
     ...(historyDeps ? {
-      onGestureStart:  () => historyDeps.history.beginGesture(historyDeps.snapshot()),
-      onGestureEnd:    () => historyDeps.history.commitGesture(),
-      onGestureCancel: () => historyDeps.history.cancelGesture(),
+      onGestureStart:  () => historyDeps.beginGesture?.(),
+      onGestureEnd:    () => historyDeps.endGesture?.(),
+      onGestureCancel: () => historyDeps.endGesture?.(),
     } : {}),
   });
 }

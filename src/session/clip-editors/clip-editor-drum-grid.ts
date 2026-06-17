@@ -228,7 +228,7 @@ export function renderDrumGridEditor(
     if (localY >= laneTop) {
       const hit = barHitTest(notes(), p.x, xForTick);
       if (hit) {
-        historyDeps?.history.beginGesture(historyDeps.snapshot()); mutated = false;
+        historyDeps?.beginGesture?.(); mutated = false;
         laneDrag = hit;
         const vel = yToVelocity(localY - laneTop, VEL_LANE_H);
         if (selection.has(hit) && selection.size > 1) applyGroupDelta([...selection], vel - hit.velocity);
@@ -251,7 +251,7 @@ export function renderDrumGridEditor(
       if (e.shiftKey) { selection.has(hit) ? selection.delete(hit) : selection.add(hit); }
       else if (!selection.has(hit)) { selection.clear(); selection.add(hit); }
       groupDrag = { lastTick: snapTickToRes(p.tick, snap()), lastRow: p.row };
-      historyDeps?.history.beginGesture(historyDeps.snapshot()); mutated = false;
+      historyDeps?.beginGesture?.(); mutated = false;
     } else {
       if (!e.shiftKey) selection.clear();
       marquee = { row0: p.row, tick0: p.tick, row1: p.row, tick1: p.tick };
@@ -293,7 +293,7 @@ export function renderDrumGridEditor(
     if (laneDrag) {
       laneDrag = null;
       try { canvas.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
-      if (mutated) historyDeps?.history.commitGesture(); else historyDeps?.history.cancelGesture();
+      historyDeps?.endGesture?.();
       return;
     }
     if (marquee) {
@@ -302,7 +302,7 @@ export function renderDrumGridEditor(
     }
     if (groupDrag) {
       groupDrag = null; try { canvas.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
-      if (mutated) historyDeps?.history.commitGesture(); else historyDeps?.history.cancelGesture();
+      historyDeps?.endGesture?.();
       return;
     }
   };

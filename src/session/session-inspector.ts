@@ -160,13 +160,13 @@ export class SessionInspector {
     const sig = this._fieldAc.signal;
 
     nameEl.addEventListener('input',  () => { clip.name = nameEl.value || undefined; this.deps.renderWithMixer(); }, { signal: sig });
-    nameEl.addEventListener('focus',  () => { this.deps.historyDeps?.history.beginGesture(this.deps.historyDeps.snapshot()); }, { signal: sig });
-    nameEl.addEventListener('blur',   () => { this.deps.historyDeps?.history.commitGesture(); }, { signal: sig });
+    nameEl.addEventListener('focus',  () => { this.deps.historyDeps?.beginGesture?.(); }, { signal: sig });
+    nameEl.addEventListener('blur',   () => { this.deps.historyDeps?.endGesture?.(); }, { signal: sig });
     lenEl.addEventListener('input',   () => { clip.lengthBars = Math.max(1, parseInt(lenEl.value, 10) || 1); }, { signal: sig });
-    lenEl.addEventListener('focus',   () => { this.deps.historyDeps?.history.beginGesture(this.deps.historyDeps.snapshot()); }, { signal: sig });
-    lenEl.addEventListener('blur',    () => { this.deps.historyDeps?.history.commitGesture(); }, { signal: sig });
-    lenEl.addEventListener('pointerdown', () => { this.deps.historyDeps?.history.beginGesture(this.deps.historyDeps.snapshot()); }, { signal: sig });
-    lenEl.addEventListener('pointerup',   () => { this.deps.historyDeps?.history.commitGesture(); }, { signal: sig });
+    lenEl.addEventListener('focus',   () => { this.deps.historyDeps?.beginGesture?.(); }, { signal: sig });
+    lenEl.addEventListener('blur',    () => { this.deps.historyDeps?.endGesture?.(); }, { signal: sig });
+    lenEl.addEventListener('pointerdown', () => { this.deps.historyDeps?.beginGesture?.(); }, { signal: sig });
+    lenEl.addEventListener('pointerup',   () => { this.deps.historyDeps?.endGesture?.(); }, { signal: sig });
     qEl.addEventListener('change', () => {
       const d = this.deps.historyDeps;
       const run = () => {
