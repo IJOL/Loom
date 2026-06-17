@@ -20,13 +20,13 @@ Lane names run along the top header row; row numbers (1, 2, 3 …) label the sce
 
 A newly created instrument lane starts out empty — no placeholder clips are added to its column; you fill cells yourself. Audio and Sampler lanes created from a dropped WAV or loop place their clip in row 1 only. The grid always keeps at least one launchable scene available even when every lane is empty.
 
-Right-clicking grid elements opens a context menu. On a **lane header**: *Editar instrumento*, *Parar pista*, and *Borrar pista* (red). On a **scene cell**: *Lanzar escena*, *Añadir escena*, and *Borrar escena* (red). On a **filled clip**: *Abrir editor*, *Reproducir / Parar*, and *Borrar clip* (red). On an **empty cell**: *Crear clip* — on audio lanes this entry is disabled and instead reads *Importar audio (arrastra un WAV)*.
+Right-clicking grid elements opens a context menu. On a **lane header**: *Rename track*, *Edit instrument*, *Duplicate track*, *Stop track*, and *Delete track* (red). On a **scene cell**: *Rename scene*, *Launch scene*, *Duplicate scene*, *Capture playing -> scene*, *Add scene*, and *Delete scene* (red). On a **filled clip**: *Open editor*, *Play / Stop*, and *Delete clip* (red). On an **empty cell**: *Create clip* — on audio lanes this entry reads *Import audio (WAV)...*.
 
 Below the scene rows there is a stop row: each lane has its own ⏹ stop button, and a global **⏹ all** button at the far right stops every lane at once.
 
 ### Deleting from the grid
 
-A small **✕** cross appears on every lane header (*Borrar pista*), every filled clip cell (*Borrar clip*), and every scene cell (*Borrar escena*). Deleting a clip is immediate. Deleting a lane or scene asks you to confirm in an in-app dialog (**Aceptar** / **Cancelar**, with the destructive choice in red) only when the target still has content — an empty lane or scene is removed straight away. Every deletion is undoable with **Ctrl+Z**, which restores the lane, scene, or clip along with its audio resources.
+A small **✕** cross appears on every lane header (*Delete track*), every filled clip cell (*Delete clip*), and every scene cell (*Delete scene*). Deleting a clip is immediate. Deleting a lane or scene asks you to confirm in an in-app dialog (**OK** / **Cancel**, with the destructive choice in red) only when the target still has content — an empty lane or scene is removed straight away. Every deletion is undoable with **Ctrl+Z**, which restores the lane, scene, or clip along with its audio resources.
 
 ## Launching clips and scenes
 
@@ -37,6 +37,23 @@ When the transport is stopped, launching a clip starts it immediately. When the 
 Click the **▶ N** button at the right of a scene row to launch all clips in that row together. All lanes share the same boundary, so they start aligned. The toolbar's **⏹ All** button stops every lane at once.
 
 The quantize boundary is determined by the clip's own `Quantize` setting (see the inspector below). If the clip has no override, the lane's quantize applies; if the lane has none, the session's global quantize is used.
+
+## Renaming, duplicating, and capturing scenes
+
+Track and scene names support **inline rename**: double-click a lane name in the header or a scene name in the scene cell, type the new label, and press Enter.
+
+You can also use the context menus to duplicate structure quickly:
+
+- **Duplicate track** clones the whole lane with fresh clip ids and keeps its clip content.
+- **Duplicate scene** appends a full clone of that scene's lane/clip assignments.
+
+To snapshot the current live state into a new scene, use **Capture scene**:
+
+- Click the **⊙** button in the **Scenes** header (tooltip: *New scene from currently playing clips*).
+- Or press **Ctrl+I**.
+- Or use **Capture playing -> scene** from a scene cell's context menu.
+
+Capture scene appends a new scene row and writes one clip-per-lane mapping from whatever is playing at that moment.
 
 ## The inspector
 

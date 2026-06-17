@@ -35,7 +35,7 @@ blockquote { border-left: 3px solid var(--accent); margin: .8em 0; padding: .2em
 }
 </style></head><body><section class="chapter" id="top"><h1>Loom — Manual</h1>
 <p>Loom is a browser-based, session-based music workstation. It organises sound into <strong>lanes</strong> (instrument tracks), <strong>clips</strong> (patterns of notes), and <strong>scenes</strong> (rows of clips launched together). Eight synthesis engines are available — TB-303, Subtractive, FM, Wavetable, Karplus-Strong, West Coast, Sampler, and Drum Machine — and all synthesis runs live in the browser with no install or sign-in required.</p>
-<p>Beyond the engines, Loom has <strong>note velocity &amp; dynamics</strong> (an Ableton-style velocity lane), <strong>per-clip and arrangement-wide loop regions</strong>, <strong>per-lane modulation and FX</strong> with a sidechain mixer, <strong>MIDI import</strong>, ready-made <strong>sampled drum kits</strong>, a <strong>playable arrangement</strong> timeline, optional <strong>stem separation</strong> (split a finished song into 4 lanes via a local helper), <strong>key &amp; scale musical assistance</strong> (a project key/scale with a scale-locked piano-roll, genre generators, an examples gallery, and a chord-accompaniment maker), and <strong>editable warp markers</strong> for locking audio loops to tempo.</p>
+<p>Beyond the engines, Loom has <strong>note velocity &amp; dynamics</strong> (an Ableton-style velocity lane), <strong>per-clip and arrangement-wide loop regions</strong>, <strong>per-lane modulation and FX</strong> with a sidechain mixer, <strong>MIDI import</strong>, ready-made <strong>sampled drum kits</strong>, a <strong>playable arrangement</strong> timeline, improved <strong>session editing workflow</strong> (inline track/scene rename, duplicate track/scene, and capture-playing-to-scene), optional <strong>stem separation + transcription</strong> (split a finished song into 4 lanes via a local helper and optionally derive editable note/drum lanes), <strong>key &amp; scale musical assistance</strong> (a project key/scale with a scale-locked piano-roll, genre generators, an examples gallery, and a chord-accompaniment maker), and <strong>editable warp markers</strong> for locking audio loops to tempo.</p>
 <hr>
 <p><img src="images/app-overview.png" alt="Loom — the full application: transport bar, session grid, and channel strips"></p>
 <p><em>The Loom interface: transport across the top, the session clip grid in the centre, and per-lane channel strips below.</em></p>
@@ -192,15 +192,29 @@ blockquote { border-left: 3px solid var(--accent); margin: .8em 0; padding: .2em
 <p><img src="images/session-grid.png" alt="Session grid"></p>
 <p>Lane names run along the top header row; row numbers (1, 2, 3 …) label the scenes down the left edge. Scenes launch buttons sit in the rightmost column. Each filled cell shows the clip&#39;s name (or its row number as a fallback) against the clip&#39;s pastel colour. A ⚙ icon in the lane header opens that lane&#39;s instrument editor.</p>
 <p>A newly created instrument lane starts out empty — no placeholder clips are added to its column; you fill cells yourself. Audio and Sampler lanes created from a dropped WAV or loop place their clip in row 1 only. The grid always keeps at least one launchable scene available even when every lane is empty.</p>
-<p>Right-clicking grid elements opens a context menu. On a <strong>lane header</strong>: <em>Editar instrumento</em>, <em>Parar pista</em>, and <em>Borrar pista</em> (red). On a <strong>scene cell</strong>: <em>Lanzar escena</em>, <em>Añadir escena</em>, and <em>Borrar escena</em> (red). On a <strong>filled clip</strong>: <em>Abrir editor</em>, <em>Reproducir / Parar</em>, and <em>Borrar clip</em> (red). On an <strong>empty cell</strong>: <em>Crear clip</em> — on audio lanes this entry is disabled and instead reads <em>Importar audio (arrastra un WAV)</em>.</p>
+<p>Right-clicking grid elements opens a context menu. On a <strong>lane header</strong>: <em>Rename track</em>, <em>Edit instrument</em>, <em>Duplicate track</em>, <em>Stop track</em>, and <em>Delete track</em> (red). On a <strong>scene cell</strong>: <em>Rename scene</em>, <em>Launch scene</em>, <em>Duplicate scene</em>, <em>Capture playing -&gt; scene</em>, <em>Add scene</em>, and <em>Delete scene</em> (red). On a <strong>filled clip</strong>: <em>Open editor</em>, <em>Play / Stop</em>, and <em>Delete clip</em> (red). On an <strong>empty cell</strong>: <em>Create clip</em> — on audio lanes this entry reads <em>Import audio (WAV)...</em>.</p>
 <p>Below the scene rows there is a stop row: each lane has its own ⏹ stop button, and a global <strong>⏹ all</strong> button at the far right stops every lane at once.</p>
 <h3>Deleting from the grid</h3>
-<p>A small <strong>✕</strong> cross appears on every lane header (<em>Borrar pista</em>), every filled clip cell (<em>Borrar clip</em>), and every scene cell (<em>Borrar escena</em>). Deleting a clip is immediate. Deleting a lane or scene asks you to confirm in an in-app dialog (<strong>Aceptar</strong> / <strong>Cancelar</strong>, with the destructive choice in red) only when the target still has content — an empty lane or scene is removed straight away. Every deletion is undoable with <strong>Ctrl+Z</strong>, which restores the lane, scene, or clip along with its audio resources.</p>
+<p>A small <strong>✕</strong> cross appears on every lane header (<em>Delete track</em>), every filled clip cell (<em>Delete clip</em>), and every scene cell (<em>Delete scene</em>). Deleting a clip is immediate. Deleting a lane or scene asks you to confirm in an in-app dialog (<strong>OK</strong> / <strong>Cancel</strong>, with the destructive choice in red) only when the target still has content — an empty lane or scene is removed straight away. Every deletion is undoable with <strong>Ctrl+Z</strong>, which restores the lane, scene, or clip along with its audio resources.</p>
 <h2>Launching clips and scenes</h2>
 <p>Click the <strong>▶ icon</strong> on any filled cell to launch that clip. The icon switches to ⏸ once the clip is playing; clicking ⏸ stops that lane. Clicking anywhere else on the cell body — outside the play icon — opens the inspector without affecting playback.</p>
 <p>When the transport is stopped, launching a clip starts it immediately. When the transport is running, the launch is held until the next quantize boundary, then the clip starts in sync with the rest of the session.</p>
 <p>Click the <strong>▶ N</strong> button at the right of a scene row to launch all clips in that row together. All lanes share the same boundary, so they start aligned. The toolbar&#39;s <strong>⏹ All</strong> button stops every lane at once.</p>
 <p>The quantize boundary is determined by the clip&#39;s own <code>Quantize</code> setting (see the inspector below). If the clip has no override, the lane&#39;s quantize applies; if the lane has none, the session&#39;s global quantize is used.</p>
+<h2>Renaming, duplicating, and capturing scenes</h2>
+<p>Track and scene names support <strong>inline rename</strong>: double-click a lane name in the header or a scene name in the scene cell, type the new label, and press Enter.</p>
+<p>You can also use the context menus to duplicate structure quickly:</p>
+<ul>
+<li><strong>Duplicate track</strong> clones the whole lane with fresh clip ids and keeps its clip content.</li>
+<li><strong>Duplicate scene</strong> appends a full clone of that scene&#39;s lane/clip assignments.</li>
+</ul>
+<p>To snapshot the current live state into a new scene, use <strong>Capture scene</strong>:</p>
+<ul>
+<li>Click the <strong>⊙</strong> button in the <strong>Scenes</strong> header (tooltip: <em>New scene from currently playing clips</em>).</li>
+<li>Or press <strong>Ctrl+I</strong>.</li>
+<li>Or use <strong>Capture playing -&gt; scene</strong> from a scene cell&#39;s context menu.</li>
+</ul>
+<p>Capture scene appends a new scene row and writes one clip-per-lane mapping from whatever is playing at that moment.</p>
 <h2>The inspector</h2>
 <p>Clicking a clip cell body opens the inspector below the grid with controls for that clip.</p>
 <p><img src="images/inspector.png" alt="Inspector panel"></p>
@@ -1682,6 +1696,7 @@ master bus → master insert chain → master compressor → output             
 <p><img src="images/audio-clip-editor.png" alt="The audio-clip editor: the Warp toggle and the waveform header"></p>
 <p>An audio clip has no note grid. Clicking it opens the <strong>audio-clip editor</strong> — a <strong>♺ Warp ON / OFF</strong> toggle (tempo-locking, see below) above a <strong>waveform header</strong>.</p>
 <p>The waveform header shows a peak view of the buffer with a bar/beat ruler, any detected slice markers (orange), and a live playhead while the clip plays. This same header also appears <strong>above</strong> the normal piano-roll or drum-grid for any clip that references a buffer, so you always see the audio you are editing against.</p>
+<p>When the transcription helper is configured, the audio-clip header also shows a <strong>TRANSCRIBE</strong> row with a <strong>melodic/drums</strong> toggle and a <strong>Transcribe loop</strong> button. This sends the clip&#39;s effective loop region to the local <code>/transcribe</code> pipeline and creates a fresh lane with an editable note/drum clip from that region.</p>
 <h3>Tempo-lock (Warp)</h3>
 <p>With <strong>Warp ON</strong> (the default), the audio channel plays in time with the project BPM using a pitch-preserving WSOLA time-stretch:</p>
 <ul>

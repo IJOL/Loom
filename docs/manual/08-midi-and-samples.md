@@ -129,6 +129,8 @@ An audio clip has no note grid. Clicking it opens the **audio-clip editor** — 
 
 The waveform header shows a peak view of the buffer with a bar/beat ruler, any detected slice markers (orange), and a live playhead while the clip plays. This same header also appears **above** the normal piano-roll or drum-grid for any clip that references a buffer, so you always see the audio you are editing against.
 
+When the transcription helper is configured, the audio-clip header also shows a **TRANSCRIBE** row with a **melodic/drums** toggle and a **Transcribe loop** button. This sends the clip's effective loop region to the local `/transcribe` pipeline and creates a fresh lane with an editable note/drum clip from that region.
+
 ### Tempo-lock (Warp)
 
 With **Warp ON** (the default), the audio channel plays in time with the project BPM using a pitch-preserving WSOLA time-stretch:
