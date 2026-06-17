@@ -36,7 +36,7 @@ import { applyPresetToEngine } from './presets/preset-apply';
 import { wireSaveManager, bootRecoveryLoad } from './save/save-wiring';
 import { createHistory } from './core/history';
 import {
-  wireHistoryKeyboard, withUndo, type HistoryDeps,
+  wireHistoryKeyboard, withUndo, isTextEditTarget, type HistoryDeps,
 } from './save/history-wiring';
 import {
   buildSavedStateV3, applyLoadedStateV3, type SavedStateV3, type SavedStateV3Deps,
@@ -629,6 +629,18 @@ seq.stop = () => { performanceFeature.onStop(); _origStop(); };
 
 const copyBtn = document.getElementById('copy-to-performance');
 copyBtn?.addEventListener('click', () => performanceFeature.copyFromSession());
+
+document.getElementById('capture-scene')?.addEventListener('click', () => sessionHost.captureScene());
+
+// Ctrl/Cmd+I — capture currently-playing clips into a new scene. Skip while
+// typing in a text field so it never steals input from BPM / save-name inputs.
+document.addEventListener('keydown', (e) => {
+  if (isTextEditTarget(e.target)) return;
+  if (!(e.ctrlKey || e.metaKey)) return;
+  if (e.key.toLowerCase() !== 'i') return;
+  e.preventDefault();
+  sessionHost.captureScene();
+});
 
 // ── Deps objects for extracted UI modules ─────────────────────────────────
 function activeEnginePrefix(): string | null {
