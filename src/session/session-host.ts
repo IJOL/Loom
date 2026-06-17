@@ -451,6 +451,7 @@ export class SessionHost {
         if (this.state.scenes[0]) this.state.scenes[0].clipPerLane[newId] = 0;
       }
       this.renderWithMixer();
+      this.deps.checkpointHistory?.();
     };
     if (hd) withUndo(hd, run); else run();
   }
@@ -508,6 +509,7 @@ export class SessionHost {
       this.inspector.setSelectedClip({ laneId, clipIdx: idx });
       this.inspector.openInspector();
       this.renderWithMixer();
+      this.deps.checkpointHistory?.();
     };
     if (hd) withUndo(hd, run); else run();
   }

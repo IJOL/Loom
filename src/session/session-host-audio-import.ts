@@ -60,6 +60,7 @@ export function addAudioChannel(self: SessionHost, file: File, opts?: { knownBpm
         self.inspector.setSelectedClip({ laneId: newId, clipIdx: 0 });
         self.inspector.openInspector();
         self.renderWithMixer();
+        self.deps.checkpointHistory?.();
       };
       if (hd) withUndo(hd, run); else run();
     } catch (err) {
@@ -97,6 +98,7 @@ export function loadAudioFileIntoCell(self: SessionHost, laneId: string, clipIdx
         self.inspector.setSelectedClip({ laneId, clipIdx });
         self.inspector.openInspector();
         self.renderWithMixer();
+        self.deps.checkpointHistory?.();
       };
       if (hd) withUndo(hd, run); else run();
     } catch (err) {

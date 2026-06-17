@@ -106,4 +106,7 @@ export interface SessionHostDeps {
   /** Master bus EQ/pan/mute strip the master mixer module's tone controls drive.
    *  Optional, paired with volInput/masterMeterAnalyser. */
   masterStrip?: import('../core/master-bus-strip').MasterBusStrip;
+  /** Commit an undo checkpoint after an async/programmatic mutation that does
+   *  not end in a user pointer/key event (stems, transcription, import). */
+  checkpointHistory?: () => void;
 }

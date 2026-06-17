@@ -1054,6 +1054,9 @@ const autoHistory = createAutoHistory({
 autoHistory.installGlobalListeners(document);
 wireHistoryKeyboard(autoHistory);
 wireUndoButtons(autoHistory);
+// Wire async-mutation checkpoint: stems / transcription / import flows call this
+// after their async settle (no pointer/key event closes the event loop there).
+sessionHost.deps.checkpointHistory = () => autoHistory.checkpoint();
 // Wire historyDeps into the session inspector so drum-grid cell clicks are
 // undoable. Must happen after historyDeps is built (it closes over sessionHost
 // via savedStateDeps → saveWiringDeps).

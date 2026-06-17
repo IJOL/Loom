@@ -227,6 +227,7 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
           globalQuantize: self.state.globalQuantize,
         };
         self.applyLoadedSessionState(newState);
+        self.deps.checkpointHistory?.();
       };
 
       const runAdd = () => {
@@ -240,6 +241,7 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
         }
         ensureScenesForRows(self.state);
         self.renderWithMixer();
+        self.deps.checkpointHistory?.();
       };
 
       // Each separation gets a fresh 'Transcription' scene for its note lanes.
