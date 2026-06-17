@@ -1,7 +1,8 @@
 // Live performance state for Session mode. Holds per-lane play position,
 // queue, and the tick-side scheduler that is called from the main 25 ms loop.
 
-import type { SessionClip, SessionState, LaunchQuantize, SessionLane, ClipSample } from './session';
+import type { SessionClip, SessionState, LaunchQuantize, SessionLane, ClipSample, SessionScene } from './session';
+import { emptyScene } from './session';
 import { tickLane, noteTrigger } from '../core/lane-scheduler';
 import { TICKS_PER_STEP } from '../core/notes';
 import { DEFAULT_METER, type TimeSignature } from '../core/meter';
@@ -47,6 +48,30 @@ export function emptyLanePlayState(laneId: string): LanePlayState {
     loopStartedAt: 0,
     lastScheduledAt: -Infinity,
   };
+}
+
+/** Snapshot the currently-playing clip on each lane into a new scene. Lanes with
+ *  no playing clip get an explicit `null` so launching the captured scene leaves
+ *  them untouched (rather than falling back to a row index). Returns `null` when
+ *  nothing is playing. The caller appends the scene to state.scenes. */
+export function buildSceneFromPlaying(
+  state: SessionState,
+  laneStates: Map<string, LanePlayState>,
+): SessionScene | null {
+  const clipPerLane: Record<string, number | null> = {};
+  let any = false;
+  for (const lane of state.lanes) {
+    const playing = laneStates.get(lane.id)?.playing;
+    if (playing) {
+      const idx = lane.clips.findIndex((c) => c?.id === playing.id);
+      if (idx >= 0) { clipPerLane[lane.id] = idx; any = true; continue; }
+    }
+    clipPerLane[lane.id] = null;
+  }
+  if (!any) return null;
+  const scene = emptyScene(`Scene ${state.scenes.length + 1}`);
+  scene.clipPerLane = clipPerLane;
+  return scene;
 }
 
 // ── Quantize ───────────────────────────────────────────────────────────────
