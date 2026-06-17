@@ -41,4 +41,10 @@ describe('rename callbacks', () => {
     buildSessionCallbacks(self).onRenameLane!('bass', '');
     expect(state.lanes[0].name).toBeUndefined();
   });
+
+  it('an empty scene name clears back to undefined', () => {
+    const { self, state } = makeSelf();
+    buildSessionCallbacks(self).onRenameScene!(0, '');
+    expect(state.scenes[0].name).toBeUndefined();
+  });
 });
