@@ -4,7 +4,8 @@
 // out-of-range all collapse to the whole clip [0, total).
 import type { SessionClip } from '../session/session';
 import { ticksPerBar, stepsPerBar, type TimeSignature } from './meter';
-import { TICKS_PER_STEP } from './notes';
+import { TICKS_PER_STEP, TICKS_PER_QUARTER } from './notes';
+import { srcSecAtBeat } from '../samples/warp-region';
 
 export function effectiveClipLoop(
   clip: SessionClip, meter: TimeSignature,
@@ -32,4 +33,27 @@ export function loopAwareStep(clip: SessionClip, meter: TimeSignature, stepsElap
     return loopSteps > 0 ? startStep + (elapsed % loopSteps) : startStep;
   }
   return elapsed % totalSteps;
+}
+
+/** SOURCE-audio [startSec, endSec) of a clip's effective loop region (the whole
+ *  clip when loop is off). For a WARPED clip the loop lives in beat space, so map
+ *  beats → source seconds through the warp markers (srcSecAtBeat); for a plain clip
+ *  the loop tick-fraction maps onto the [trimStart, trimEnd) span of the buffer.
+ *  Used to slice the audio for transcribing JUST the loop. */
+export function clipLoopSourceRange(
+  clip: SessionClip, meter: TimeSignature, bufferDuration: number,
+): { startSec: number; endSec: number } {
+  const total = Math.max(1, clip.lengthBars * ticksPerBar(meter));
+  const { startTick, endTick } = effectiveClipLoop(clip, meter);
+  const s = clip.sample;
+  if (s?.warp && s.warpMarkers && s.warpMarkers.length >= 2) {
+    return {
+      startSec: srcSecAtBeat(s.warpMarkers, startTick / TICKS_PER_QUARTER),
+      endSec: srcSecAtBeat(s.warpMarkers, endTick / TICKS_PER_QUARTER),
+    };
+  }
+  const trimStart = Math.max(0, s?.trimStart ?? 0);
+  const trimEnd = (s && s.trimEnd > trimStart) ? Math.min(s.trimEnd, bufferDuration) : bufferDuration;
+  const span = Math.max(0.001, trimEnd - trimStart);
+  return { startSec: trimStart + (startTick / total) * span, endSec: trimStart + (endTick / total) * span };
 }
