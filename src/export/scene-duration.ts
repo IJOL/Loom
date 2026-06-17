@@ -5,11 +5,20 @@
 
 import type { LanePlayState } from '../session/session-runtime';
 import type { SessionClip } from '../session/session';
-import { quartersPerBar, type TimeSignature } from '../core/meter';
+import { type TimeSignature } from '../core/meter';
+import { TICKS_PER_QUARTER } from '../core/notes';
+import { effectiveClipLoop } from '../core/clip-loop';
 
-/** Musical length of one clip iteration, in seconds. Mirrors lane-scheduler. */
+/** Musical length of one clip iteration, in seconds. Mirrors lane-scheduler's
+ *  `tickLane`: when a loop sub-region is active the iteration is the LOOP length,
+ *  not the whole clip. Without this, an audio clip looping a few bars of a long
+ *  buffer reports its full `lengthBars` (hundreds of bars), so the offline render
+ *  window balloons to the whole buffer and hangs the browser. For a clip with no
+ *  loop `effectiveClipLoop` returns [0, lengthBars·ticksPerBar) ⇒ identical to the
+ *  old `lengthBars · quartersPerBar · 60/bpm`. */
 export function clipDurationSec(clip: SessionClip, meter: TimeSignature, bpm: number): number {
-  return clip.lengthBars * quartersPerBar(meter) * (60 / bpm);
+  const { startTick, endTick } = effectiveClipLoop(clip, meter);
+  return ((endTick - startTick) / TICKS_PER_QUARTER) * (60 / bpm);
 }
 
 /** Longest sounding clip across all lanes, in seconds. 0 ⇒ nothing playing. */
