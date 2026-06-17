@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { duplicateLane, type SessionState } from './session';
+import { duplicateLane, duplicateScene, type SessionState } from './session';
 
 function fixture(): SessionState {
   return {
@@ -58,5 +58,29 @@ describe('duplicateLane', () => {
     duplicateLane(s, 'tb-303-1', 'tb-303-2');
     expect(s.scenes[0].clipPerLane['tb-303-2']).toBe(0);
     expect('tb-303-2' in s.scenes[1].clipPerLane).toBe(false);
+  });
+});
+
+describe('duplicateScene', () => {
+  it('appends a clone resolving explicit entries for all lanes', () => {
+    const s = fixture();
+    const sc = duplicateScene(s, 0);
+    expect(s.scenes).toHaveLength(3);
+    expect(s.scenes[2]).toBe(sc);
+    expect(sc!.clipPerLane).toEqual({ 'tb-303-1': 0, 'drums-1': 0 });
+    expect(sc!.name).toBe('A copy');
+  });
+
+  it('resolves row-index fallback to the source index for lanes with no explicit entry', () => {
+    const s = fixture();
+    const sc = duplicateScene(s, 1); // s2 has empty clipPerLane
+    expect(sc!.clipPerLane).toEqual({ 'tb-303-1': 1, 'drums-1': 1 });
+    expect(sc!.name).toBe('B copy');
+  });
+
+  it('returns null and mutates nothing when sceneIdx is out of range', () => {
+    const s = fixture();
+    expect(duplicateScene(s, 9)).toBeNull();
+    expect(s.scenes).toHaveLength(2);
   });
 });

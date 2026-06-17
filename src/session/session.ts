@@ -410,6 +410,27 @@ export function duplicateLane(state: SessionState, srcLaneId: string, newId: str
   return clone;
 }
 
+/** Clone a scene and append it at the end. clipPerLane is fully resolved for
+ *  every lane (explicit value, else the source row index) so the clone launches
+ *  exactly what the source launches regardless of its new row position. New
+ *  scenes are appended (never spliced) so row-index-fallback scenes stay aligned. */
+export function duplicateScene(state: SessionState, sceneIdx: number): SessionScene | null {
+  const src = state.scenes[sceneIdx];
+  if (!src) return null;
+  const clipPerLane: Record<string, number | null> = {};
+  for (const lane of state.lanes) {
+    const explicit = Object.prototype.hasOwnProperty.call(src.clipPerLane, lane.id);
+    clipPerLane[lane.id] = explicit ? src.clipPerLane[lane.id] : sceneIdx;
+  }
+  const scene: SessionScene = {
+    id: nextId('scene'),
+    name: `${src.name ?? `Scene ${sceneIdx + 1}`} copy`,
+    clipPerLane,
+  };
+  state.scenes.push(scene);
+  return scene;
+}
+
 // ── Deletion helpers (front A · session management) ──────────────────────────
 
 /** Empty a single cell (set null), keeping the column length. NOT a splice. */
