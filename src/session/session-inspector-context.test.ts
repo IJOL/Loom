@@ -44,7 +44,7 @@ function mountDom(): void {
     </div>`;
 }
 
-function makeInspector(over: { renderWithMixer?: () => void } = {}): { state: SessionState; lane: SessionLane } {
+function makeInspector(over: { renderWithMixer?: () => void } = {}): { state: SessionState; lane: SessionLane; insp: SessionInspector } {
   const clip: SessionClip = { id: 'c0', name: 'Acid line', lengthBars: 2, notes: [] } as unknown as SessionClip;
   const lane: SessionLane = { id: 'bass', engineId: 'tb303', name: 'BASS', clips: [clip] } as unknown as SessionLane;
   const state = { lanes: [lane], scenes: [{ id: 's0', name: 'Drop', clipPerLane: {} }] } as unknown as SessionState;
@@ -60,7 +60,7 @@ function makeInspector(over: { renderWithMixer?: () => void } = {}): { state: Se
   });
   insp.setSelectedClip({ laneId: 'bass', clipIdx: 0 });
   insp.openInspector();
-  return { state, lane };
+  return { state, lane, insp };
 }
 
 describe('inspector context breadcrumb', () => {
@@ -94,5 +94,14 @@ describe('inspector context breadcrumb', () => {
     input.value = 'Verse';
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     expect(state.scenes[0].name).toBe('Verse');
+  });
+
+  it('refreshContext re-syncs the breadcrumb after a grid-side scene rename', () => {
+    const { state, insp } = makeInspector();
+    // Simulate a grid-side rename: mutate state directly (as the host callback does),
+    // then ask the inspector to re-sync (as SessionHost.render() now does).
+    state.scenes[0].name = 'Drop';
+    insp.refreshContext();
+    expect(document.getElementById('insp-context-scene')!.textContent).toBe('Drop');
   });
 });

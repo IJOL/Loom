@@ -307,6 +307,7 @@ export class SessionHost {
       ? (this.inspector.getSelectedClip() ?? undefined)
       : undefined;
     renderSessionGrid(hostEl, this.state, this.laneStates, this.callbacks, openClip);
+    this.inspector.refreshContext();
   }
 
   renderWithMixer(): void {

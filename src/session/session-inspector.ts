@@ -496,6 +496,13 @@ export class SessionInspector {
     if (lane && clip) this.renderContextHeader(lane, clip);
   }
 
+  /** Public: re-sync the breadcrumb with current state. Called by the host on
+   *  every grid render so a grid-side rename of the open clip's track/scene
+   *  (or an undo) is reflected immediately. No-op when no clip is selected. */
+  refreshContext(): void {
+    this.refreshContextHeader();
+  }
+
   private commitTrackName(laneId: string, name: string): void {
     const d = this.deps.historyDeps;
     const run = () => {
