@@ -45,3 +45,4 @@ loops/
 !test/fixtures/loops/
 !test/fixtures/loops/**
 music/**
+ccmixter_dub.json
