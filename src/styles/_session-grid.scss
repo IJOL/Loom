@@ -131,9 +131,12 @@
   font-size: 11px;
   padding: 4px 6px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
 }
 .session-scene-launch:hover { background: var(--amber); color: var(--bg); border-color: var(--amber); }
-.session-scene-launch { display: flex; align-items: center; gap: 6px; text-align: left; }
 .session-scene-play { opacity: 0.85; flex: none; }
 .session-scene-name { flex: 1; }
 .session-scene-name:hover { color: var(--amber); }
