@@ -166,7 +166,15 @@ export function renderSessionGrid(
   function scenesHeader() {
     const d = document.createElement('div');
     d.className = 'session-scenes-header';
-    d.textContent = 'Scenes';
+    const label = document.createElement('span');
+    label.textContent = 'Scenes';
+    d.appendChild(label);
+    const cap = document.createElement('button');
+    cap.className = 'session-capture-scene';
+    cap.textContent = '⊙';
+    cap.title = 'New scene from currently playing clips (Ctrl+I)';
+    cap.addEventListener('click', cb.onCaptureScene);
+    d.appendChild(cap);
     return d;
   }
 }
@@ -199,6 +207,7 @@ function laneHeader(lane: SessionLane, cb: SessionUICallbacks): HTMLElement {
     openContextMenu(e, [
       { label: 'Rename track', onSelect: () => beginInlineRename(name, lane.name ?? lane.id.toUpperCase(), { commit: (v) => cb.onRenameLane?.(lane.id, v) }) },
       { label: 'Edit instrument', onSelect: () => cb.onEditLane(lane.id) },
+      { label: 'Duplicate track', onSelect: () => cb.onDuplicateLane(lane.id) },
       { label: 'Stop track', onSelect: () => cb.onStopLane(lane.id) },
       { label: 'Delete track', danger: true, separatorBefore: true, onSelect: () => cb.onDeleteLane(lane.id) },
     ]),
@@ -330,6 +339,8 @@ function sceneLaunchCell(scene: { name?: string } | undefined, idx: number, cb: 
       openContextMenu(e, [
         { label: 'Rename scene', onSelect: () => beginInlineRename(name, scene.name ?? `Scene ${idx + 1}`, { commit: (v) => cb.onRenameScene?.(idx, v) }) },
         { label: 'Launch scene', onSelect: () => cb.onLaunchScene(idx) },
+        { label: 'Duplicate scene', onSelect: () => cb.onDuplicateScene(idx) },
+        { label: 'Capture playing → scene', onSelect: () => cb.onCaptureScene() },
         { label: 'Add scene', onSelect: () => cb.onAddScene() },
         { label: 'Delete scene', danger: true, separatorBefore: true, onSelect: () => cb.onDeleteScene(idx) },
       ]),
