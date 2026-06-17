@@ -5,8 +5,8 @@
 import type { SessionHostDeps } from './session-host-deps';
 import { ensureScenesForRows } from '../core/scene-ensure';
 import {
-  emptySessionState, cloneSessionState, emptyLane, emptyClip,
-  type SessionState, type SessionClip,
+  emptySessionState, cloneSessionState, emptyLane, emptyClip, emptyScene,
+  type SessionState, type SessionClip, type SessionLane,
 } from './session';
 import { buildSliceClip } from '../core/slice-clip';
 import { DEFAULT_RESOLUTION } from '../core/drum-grid-editing';
@@ -365,13 +365,47 @@ export class SessionHost {
     this.callbacks.onAddStemLanes(stems, opts);
   }
 
+  /** Transcription lanes (stems / loop) are launched in their OWN scene, kept
+   *  apart from the audio stems so you can A/B audio vs the transcribed notes.
+   *  Holds the current batch's scene id; reset per batch (see resetTranscriptionScene)
+   *  so each separation/loop gets a fresh scene. */
+  private _transcriptionSceneId: string | null = null;
+
+  /** Start a fresh transcription scene for the next batch of addNoteLane calls. */
+  resetTranscriptionScene(): void { this._transcriptionSceneId = null; }
+
+  /** Place a transcribed lane's clip in the dedicated 'Transcription' scene
+   *  (creating it on first use). The clip goes at the scene's ROW index so the
+   *  grid shows it IN that scene (earlier rows are empty cells), and the lane is
+   *  mapped to play ONLY in the transcription scene — otherwise scene 0 would
+   *  default-launch a row-0 clip (Ableton fallback). */
+  private placeTranscriptionLane(lane: SessionLane, clip: SessionClip): void {
+    let scene = this._transcriptionSceneId
+      ? this.state.scenes.find((s) => s.id === this._transcriptionSceneId)
+      : undefined;
+    if (!scene) {
+      scene = emptyScene('Transcription');
+      this.state.scenes.push(scene);
+      this._transcriptionSceneId = scene.id;
+    }
+    const sceneIdx = this.state.scenes.indexOf(scene);
+    const clips: (SessionClip | null)[] = [];
+    for (let i = 0; i < sceneIdx; i++) clips.push(null); // empty cells in earlier scene rows
+    clips.push(clip);
+    lane.clips = clips;
+    for (const s of this.state.scenes) s.clipPerLane[lane.id] = (s === scene) ? sceneIdx : null;
+  }
+
   /** Create one new lane (melodic or drums) holding a clip of transcribed notes,
-   *  as a single undoable action. Used by the "🎵 Notas" transcription flow. */
+   *  as a single undoable action. Used by the "🎵 Notes" transcription flow.
+   *  `opts.newScene` launches it in a separate 'Transcription' scene instead of
+   *  alongside the stems (used by the stem + loop transcription flows). */
   addNoteLane(
     engineId: string,
     notes: import('../core/notes').NoteEvent[],
     lengthBars: number,
     name: string,
+    opts: { newScene?: boolean } = {},
   ): void {
     const hd = this.deps.historyDeps;
     const run = () => {
@@ -382,14 +416,19 @@ export class SessionHost {
       const clip = emptyClip(Math.max(1, lengthBars));
       clip.notes = notes;
       clip.name = name;
-      lane.clips = [clip]; // born with just the note clip; no empty filler
       this.state.lanes.push(lane);
       this.laneStates.set(newId, emptyLanePlayState(newId));
       this.deps.ensureLaneResource?.(newId, engineId);
-      // Only creation path that historically skipped this — seed a launchable scene.
-      ensureScenesForRows(this.state);
-      // Launch alongside scene 0 (the stems scene) when one exists.
-      if (this.state.scenes[0]) this.state.scenes[0].clipPerLane[newId] = 0;
+      if (opts.newScene) {
+        // Land in (and only in) a separate 'Transcription' scene, at its own row.
+        this.placeTranscriptionLane(lane, clip);
+      } else {
+        lane.clips = [clip]; // born with just the note clip; no empty filler
+        // Only creation path that historically skipped this — seed a launchable scene.
+        ensureScenesForRows(this.state);
+        // Launch alongside scene 0 (the stems scene) when one exists.
+        if (this.state.scenes[0]) this.state.scenes[0].clipPerLane[newId] = 0;
+      }
       this.renderWithMixer();
     };
     if (hd) withUndo(hd, run); else run();

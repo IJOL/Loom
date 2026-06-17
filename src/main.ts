@@ -1053,7 +1053,9 @@ wireStemDialog({
       const result = await stemClient.transcribe(file, kind);
       const plan = transcribeToNoteLane(result, seq.bpm, seq.meter);
       if (plan.notes.length) {
-        sessionHost.addNoteLane(plan.engineId, plan.notes, plan.lengthBars, label);
+        // Land the transcribed lanes in their own scene, separate from the
+        // audio stems (the batch's scene is reset once per separation).
+        sessionHost.addNoteLane(plan.engineId, plan.notes, plan.lengthBars, label, { newScene: true });
       }
     } catch (err) {
       console.warn('[stems] transcription failed for', label, err);
@@ -1075,7 +1077,10 @@ sessionHost.setTranscribeLoop(async (clip: SessionClip, kind: 'melodic' | 'drums
     const wav = sliceBufferToWavFile(buf, startSec, endSec, `${name}.wav`);
     const result = await stemClient.transcribe(wav, kind);
     const plan = transcribeToNoteLane(result, seq.bpm, seq.meter);
-    if (plan.notes.length) sessionHost.addNoteLane(plan.engineId, plan.notes, plan.lengthBars, `${name} (notes)`);
+    if (plan.notes.length) {
+      sessionHost.resetTranscriptionScene();  // each loop transcription → its own scene
+      sessionHost.addNoteLane(plan.engineId, plan.notes, plan.lengthBars, `${name} (notes)`, { newScene: true });
+    }
   } catch (err) {
     console.warn('[transcribe-loop] failed for', name, err);
   }

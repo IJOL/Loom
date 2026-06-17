@@ -214,6 +214,8 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
         self.renderWithMixer();
       };
 
+      // Each separation gets a fresh 'Transcription' scene for its note lanes.
+      self.resetTranscriptionScene();
       const run = opts.replace ? runReplace : runAdd;
       if (hd) withUndo(hd, run); else run();
     },

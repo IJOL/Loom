@@ -121,7 +121,7 @@ export async function importStems(
     for (const { plan: p, bytes } of decoded) {
       const file = new File([bytes], `${p.label}.wav`, { type: 'audio/wav' });
       const kind = p.name === 'drums' ? 'drums' : 'melodic';
-      await deps.transcribeStem(file, `Notas: ${p.label}`, kind);
+      await deps.transcribeStem(file, `Notes: ${p.label}`, kind);
     }
   }
 }
