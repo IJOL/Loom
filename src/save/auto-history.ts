@@ -84,15 +84,21 @@ export function createAutoHistory(deps: AutoHistoryDeps): AutoHistory {
       const micro = (fn: () => void) => queueMicrotask(fn);
 
       const onPointerDown = () => self.beginGesture();
-      // pointerup: schedule endGesture for drag-only paths (pointerup without a
-      // following click event, e.g. canvas drags). setTimeout(0) defers past any
-      // click event that follows in the same pointer-event sequence.
-      const onPointerUp = () => setTimeout(() => self.endGesture(), 0);
+      // pointerup: schedule endGesture as a microtask so it runs after the full
+      // pointerup dispatch (including bubble handlers that perform the mutation)
+      // but still within the same browser task — before the next macrotask such as
+      // a Ctrl+Z keydown. This covers drag-only paths (no click follows). For
+      // button clicks, this microtask runs before the click event, so its
+      // checkpoint is a no-op; the onClick bubble listener below captures those.
+      // For drag paths that use setPointerCapture, the mutation callback must also
+      // call checkpointHistory() directly, since the captured element's pointerup
+      // handler fires in a separate dispatch cycle after the microtask drains.
+      const onPointerUp = () => micro(() => self.endGesture());
       // click (bubble, fires AFTER the target's click handler): close the gesture
       // and checkpoint synchronously. This fires after the mutation so the diff is
       // captured reliably — fixing both real browser and Playwright timer races.
-      // For drags (no click follows pointerup), the setTimeout path above handles it.
-      const onClick = () => { self.endGesture(); };
+      // For drags (no click follows pointerup), the microtask path above handles it.
+      const onClick = () => self.endGesture();
       const onKeyUp = (e: Event) => {
         const ke = e as KeyboardEvent;
         const cmd = ke.metaKey || ke.ctrlKey;

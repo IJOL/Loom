@@ -16,9 +16,9 @@ function harness() {
   const uninstall = ah.installGlobalListeners(document);
   return { ah, uninstall, set: (n: number) => { live = { n }; }, get: () => live.n };
 }
-// pointerup now defers endGesture via setTimeout(0) so the checkpoint runs after
-// the click event that follows pointerup. Use a real-timer tick (not microtask).
-const tick = () => new Promise<void>((r) => setTimeout(r, 0));
+// pointerup defers endGesture via queueMicrotask so the checkpoint runs after the
+// full pointerup dispatch but before the next macrotask. Use a microtask tick.
+const tick = () => new Promise<void>((r) => queueMicrotask(r));
 
 describe('global listeners', () => {
   it('a pointer gesture (down→up) over a mutation collapses to one undo', async () => {

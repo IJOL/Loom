@@ -262,6 +262,7 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
         self.state.scenes = next.scenes;
         self.state.globalQuantize = next.globalQuantize;
         self.renderWithMixer();
+        self.deps.checkpointHistory?.();
       };
       if (hd) withUndo(hd, run); else run();
     },
