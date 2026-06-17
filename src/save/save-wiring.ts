@@ -42,6 +42,9 @@ export interface SaveWiringDeps {
   getArrangement?: () => ArrangementState;
   setMode?: (m: 'session' | 'performance') => void;
   setArrangement?: (a: ArrangementState) => void;
+  /** Called after a save file is applied (load/autosave). Used to resync the
+   *  AutoHistory baseline so the loaded state is the new clean baseline. */
+  onAfterApply?: () => void;
 }
 
 function applyLoadedState(data: unknown, deps: SaveWiringDeps): void {
@@ -56,6 +59,7 @@ function applyLoadedState(data: unknown, deps: SaveWiringDeps): void {
   }
   applyLoadedStateV3(s, deps);
   deps.history.clear();
+  deps.onAfterApply?.();
 }
 
 function openSaveManager(deps: SaveWiringDeps, applyLoaded: (data: unknown) => void): void {

@@ -35,6 +35,7 @@ import { launchScene as launchSceneRuntime, stopAll as stopAllLanes } from './se
 import { applyPresetToEngine } from './presets/preset-apply';
 import { wireSaveManager, bootRecoveryLoad } from './save/save-wiring';
 import { createHistory } from './core/history';
+import { createAutoHistory } from './save/auto-history';
 import {
   wireHistoryKeyboard, withUndo, isTextEditTarget, type HistoryDeps,
 } from './save/history-wiring';
@@ -970,7 +971,7 @@ presetsLoaded
   .then((state) => {
     sessionHost.applyLoadedSessionState(state);
     if (typeof state.bpm === 'number') setTransportBpm(state.bpm);
-    history.clear();
+    autoHistory.markClean();
   })
   .catch((err: unknown) => {
     console.error('Demo load failed; falling back to empty session.', err);
@@ -991,7 +992,7 @@ if (demoPicker) {
       { label: 'Neon Drive', path: `${import.meta.env.BASE_URL}demos/neon-drive.json` },
     ],
     applyBpm: setTransportBpm,
-    onLoaded: () => history.clear(),
+    onLoaded: () => autoHistory.markClean(),
   });
 }
 
@@ -1004,7 +1005,7 @@ newSessionBtn?.addEventListener('click', async () => {
   // old lanes are disposed → the "New leaves the old synths playing" bug.
   stopTransport();
   sessionHost.applyLoadedSessionState(emptySessionState());
-  history.clear();
+  autoHistory.markClean();
 });
 
 // App is always in session mode — seq.sessionMode must be true at boot.
@@ -1033,6 +1034,7 @@ const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
   getArrangement: () => performanceFeature.arrangement,
   setMode: (m) => performanceFeature.setMode(m),
   setArrangement: (a) => performanceFeature.setArrangement(a),
+  onAfterApply: () => autoHistory.markClean(),
 };
 // History (undo/redo) snapshots session state only — no perf accessors, so a
 // recorded take is never wiped by undoing an unrelated session edit.
@@ -1042,7 +1044,14 @@ const historyDeps: HistoryDeps = {
   snapshot: () => buildSavedStateV3(savedStateDeps),
   restore: (s) => applyLoadedStateV3(s, savedStateDeps),
 };
-wireHistoryKeyboard(historyDeps);
+const autoHistory = createAutoHistory({
+  history,
+  snapshot: () => buildSavedStateV3(savedStateDeps),
+  restore: (s) => applyLoadedStateV3(s, savedStateDeps),
+  refreshAll: () => sessionHost.refreshAfterRestore(),
+});
+autoHistory.installGlobalListeners(document);
+wireHistoryKeyboard(autoHistory);
 // Wire historyDeps into the session inspector so drum-grid cell clicks are
 // undoable. Must happen after historyDeps is built (it closes over sessionHost
 // via savedStateDeps → saveWiringDeps).

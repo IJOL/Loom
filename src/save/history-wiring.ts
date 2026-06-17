@@ -7,25 +7,25 @@ export interface HistoryDeps {
   restore: (s: SavedStateV3) => void;
 }
 
-/** Install Ctrl+Z / Cmd+Z / Ctrl+Shift+Z / Cmd+Shift+Z / Ctrl+Y on `document`.
- *  Ignores the event when typing in text inputs / textareas / contentEditable so
- *  native undo inside save-name prompts etc. is preserved. */
-export function wireHistoryKeyboard(d: HistoryDeps): void {
+/** Install Ctrl+Z / Cmd+Z / Ctrl+Shift+Z / Cmd+Shift+Z / Ctrl+Y on `document`,
+ *  delegating to an undo controller (AutoHistory). Skips text-edit targets so
+ *  native field undo wins. */
+export function wireHistoryKeyboard(h: {
+  canUndo(): boolean; canRedo(): boolean; undo(): void; redo(): void;
+}): void {
   document.addEventListener('keydown', (e) => {
     if (isTextEditTarget(e.target)) return;
     const cmd = e.metaKey || e.ctrlKey;
     if (!cmd) return;
     const key = e.key.toLowerCase();
     if (key === 'z' && !e.shiftKey) {
-      if (!d.history.canUndo()) return;
+      if (!h.canUndo()) return;
       e.preventDefault();
-      const prev = d.history.undo(d.snapshot());
-      if (prev) d.restore(prev);
+      h.undo();
     } else if ((key === 'z' && e.shiftKey) || key === 'y') {
-      if (!d.history.canRedo()) return;
+      if (!h.canRedo()) return;
       e.preventDefault();
-      const next = d.history.redo(d.snapshot());
-      if (next) d.restore(next);
+      h.redo();
     }
   });
 }
