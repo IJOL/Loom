@@ -319,7 +319,7 @@ Create `src/session/session-ui-rename.test.ts`:
 
 ```ts
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { renderSessionGrid, type SessionUICallbacks } from './session-ui';
 import type { SessionState } from './session';
 import type { LanePlayState } from './session-runtime';
@@ -469,12 +469,9 @@ Wire double-click + context-menu rename onto the lane header name and the scene 
 
 - [ ] **Step 1: Write the failing tests (append to the file)**
 
-Append to `src/session/session-ui-rename.test.ts`:
+Append to `src/session/session-ui-rename.test.ts` (`vi`, `makeState`, `noopCallbacks`, and `renderSessionGrid` are already in scope from the top of the file):
 
 ```ts
-import { renderSessionGrid as _grid } from './session-ui'; // (already imported above; no-op duplicate-safe)
-import { vi } from 'vitest';
-
 describe('grid in-place rename', () => {
   it('double-clicking the lane name commits via onRenameLane', () => {
     const host = document.createElement('div');
