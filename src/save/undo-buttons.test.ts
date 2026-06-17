@@ -21,5 +21,11 @@ describe('wireUndoButtons', () => {
     expect(r.disabled).toBe(true);
     u.click();
     expect(undo).toHaveBeenCalledOnce();
+    // redo button: enable it and verify click calls redo
+    can = { undo: true, redo: true };
+    (globalThis as never as { _fire: () => void })._fire();
+    expect(r.disabled).toBe(false);
+    r.click();
+    expect(redo).toHaveBeenCalledOnce();
   });
 });

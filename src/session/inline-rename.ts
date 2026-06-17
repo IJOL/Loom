@@ -35,6 +35,10 @@ export function beginInlineRename(
     if (done) return;
     done = true;
     const v = input.value.trim();
+    // Blur before remove so focusout fires while the element is still connected —
+    // this lets the AutoHistory focusout listener call endGesture() deterministically
+    // across all browsers (Enter path bypasses blur otherwise).
+    input.blur();
     input.remove();
     labelEl.style.display = '';
     if (commit && v && v !== currentValue) opts.commit(v);

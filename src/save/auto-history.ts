@@ -48,7 +48,7 @@ export function createAutoHistory(deps: AutoHistoryDeps): AutoHistory {
     undo() {
       if (!deps.history.canUndo()) return;
       const prev = deps.history.undo(baseline);
-      if (!prev) return;
+      if (prev === null) return;
       deps.restore(prev);
       baseline = deps.snapshot();
       deps.refreshAll();
@@ -57,7 +57,7 @@ export function createAutoHistory(deps: AutoHistoryDeps): AutoHistory {
     redo() {
       if (!deps.history.canRedo()) return;
       const next = deps.history.redo(baseline);
-      if (!next) return;
+      if (next === null) return;
       deps.restore(next);
       baseline = deps.snapshot();
       deps.refreshAll();
@@ -83,7 +83,26 @@ export function createAutoHistory(deps: AutoHistoryDeps): AutoHistory {
       let wheelTimer: ReturnType<typeof setTimeout> | null = null;
       const micro = (fn: () => void) => queueMicrotask(fn);
 
-      const onPointerDown = () => self.beginGesture();
+      // --- Fix B: leak-proof model ---
+      // activePointers tracks pointer ids currently in flight (pointerdown received,
+      // no pointerup/pointercancel yet). textFieldFocused tracks whether a text edit
+      // focus gesture is open. Together they allow self-healing: if a fresh
+      // pointerdown arrives while activePointers WAS empty (no pointer in flight) yet
+      // gestureDepth > 0, that residual depth is a stale leak from a prior
+      // interaction — safe to reset BEFORE beginGesture() so undo stays usable.
+      const activePointers = new Set<number>();
+      let textFieldFocused = false;
+
+      const onPointerDown = (e: Event) => {
+        const pe = e as PointerEvent;
+        // Self-heal: if no pointer was in flight and no text field is focused,
+        // any non-zero gestureDepth is a leak — reset it.
+        if (activePointers.size === 0 && !textFieldFocused && gestureDepth > 0) {
+          gestureDepth = 0;
+        }
+        activePointers.add(pe.pointerId);
+        self.beginGesture();
+      };
       // pointerup: schedule endGesture as a microtask so it runs after the full
       // pointerup dispatch (including bubble handlers that perform the mutation)
       // but still within the same browser task — before the next macrotask such as
@@ -93,7 +112,11 @@ export function createAutoHistory(deps: AutoHistoryDeps): AutoHistory {
       // For drag paths that use setPointerCapture, the mutation callback must also
       // call checkpointHistory() directly, since the captured element's pointerup
       // handler fires in a separate dispatch cycle after the microtask drains.
-      const onPointerUp = () => micro(() => self.endGesture());
+      const onPointerEnd = (e: Event) => {
+        const pe = e as PointerEvent;
+        activePointers.delete(pe.pointerId);
+        micro(() => self.endGesture());
+      };
       // click (bubble, fires AFTER the target's click handler): close the gesture
       // and checkpoint synchronously. This fires after the mutation so the diff is
       // captured reliably — fixing both real browser and Playwright timer races.
@@ -113,12 +136,24 @@ export function createAutoHistory(deps: AutoHistoryDeps): AutoHistory {
         if (wheelTimer) clearTimeout(wheelTimer);
         wheelTimer = setTimeout(() => { wheelTimer = null; self.checkpoint(); }, 250);
       };
-      const onFocusIn = (e: Event) => { if (isTextEditTarget((e as FocusEvent).target)) self.beginGesture(); };
-      const onFocusOut = (e: Event) => { if (isTextEditTarget((e as FocusEvent).target)) micro(() => self.endGesture()); };
+      const onFocusIn = (e: Event) => {
+        if (isTextEditTarget((e as FocusEvent).target)) {
+          textFieldFocused = true;
+          self.beginGesture();
+        }
+      };
+      const onFocusOut = (e: Event) => {
+        if (isTextEditTarget((e as FocusEvent).target)) {
+          textFieldFocused = false;
+          micro(() => self.endGesture());
+        }
+      };
 
       const opts = { capture: true } as const;
       doc.addEventListener('pointerdown', onPointerDown, opts);
-      doc.addEventListener('pointerup', onPointerUp, opts);
+      doc.addEventListener('pointerup', onPointerEnd, opts);
+      // Fix A: pointercancel ends the gesture just like pointerup (same handler)
+      doc.addEventListener('pointercancel', onPointerEnd, opts);
       // click: bubble phase (no capture) so it fires AFTER the target's listener
       doc.addEventListener('click', onClick);
       doc.addEventListener('keyup', onKeyUp, opts);
@@ -130,7 +165,8 @@ export function createAutoHistory(deps: AutoHistoryDeps): AutoHistory {
 
       return () => {
         doc.removeEventListener('pointerdown', onPointerDown, opts);
-        doc.removeEventListener('pointerup', onPointerUp, opts);
+        doc.removeEventListener('pointerup', onPointerEnd, opts);
+        doc.removeEventListener('pointercancel', onPointerEnd, opts);
         doc.removeEventListener('click', onClick);
         doc.removeEventListener('keyup', onKeyUp, opts);
         doc.removeEventListener('change', onChange, opts);

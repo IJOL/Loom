@@ -40,4 +40,20 @@ describe('SessionInspector.refreshOpenEditor', () => {
     insp.refreshOpenEditor();
     expect(renderClipEditor).not.toHaveBeenCalled();
   });
+
+  it('does nothing when panel is open but no clip is selected', () => {
+    document.body.innerHTML = `<div id="session-inspector"></div><div id="insp-editor"></div><div id="insp-roll-host"></div>`;
+    const panel = document.getElementById('session-inspector')!;
+    panel.hidden = false;
+    const state = { lanes: [{ id: 'l1', engineId: 'tb303', clips: [{ id: 'c1', lengthBars: 1, notes: [] }], name: 'L1' }], scenes: [] } as never;
+    const insp = new SessionInspector({
+      ctx: {} as never, seq: { meter: '4/4', bpm: 120 } as never, state,
+      laneStates: new Map(), renderWithMixer: () => {}, midiLabel: (m: number) => String(m),
+      automationRegistry: new Map(), getAutoAbsSubIdx: () => 0,
+    } as never);
+    // No setSelectedClip call — no clip selected
+    (renderClipEditor as ReturnType<typeof vi.fn>).mockClear();
+    insp.refreshOpenEditor();
+    expect(renderClipEditor).not.toHaveBeenCalled();
+  });
 });

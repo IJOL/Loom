@@ -82,7 +82,6 @@ export function renderDrumGridEditor(
   let groupDrag: { lastTick: number; lastRow: number } | null = null;
   let laneDrag: NoteEvent | null = null;
   let lastMouse: { row: number; tick: number } | null = null;
-  let mutated = false;
   let playheadTick = -1;
 
   // ── DOM: toolbar + canvas ─────────────────────────────────────────────────
@@ -227,12 +226,12 @@ export function renderDrumGridEditor(
     if (localY >= laneTop) {
       const hit = barHitTest(notes(), p.x, xForTick);
       if (hit) {
-        historyDeps?.beginGesture?.(); mutated = false;
+        historyDeps?.beginGesture?.();
         laneDrag = hit;
         const vel = yToVelocity(localY - laneTop, VEL_LANE_H);
         if (selection.has(hit) && selection.size > 1) applyGroupDelta([...selection], vel - hit.velocity);
         else setVelocity(hit, vel);
-        mutated = true; draw();
+        draw();
         canvas.setPointerCapture(e.pointerId); e.preventDefault();
       }
       return;
@@ -250,7 +249,7 @@ export function renderDrumGridEditor(
       if (e.shiftKey) { selection.has(hit) ? selection.delete(hit) : selection.add(hit); }
       else if (!selection.has(hit)) { selection.clear(); selection.add(hit); }
       groupDrag = { lastTick: snapTickToRes(p.tick, snap()), lastRow: p.row };
-      historyDeps?.beginGesture?.(); mutated = false;
+      historyDeps?.beginGesture?.();
     } else {
       if (!e.shiftKey) selection.clear();
       marquee = { row0: p.row, tick0: p.tick, row1: p.row, tick1: p.tick };
@@ -269,7 +268,7 @@ export function renderDrumGridEditor(
         const hit = barHitTest(notes(), e.clientX - canvas.getBoundingClientRect().left, xForTick) ?? laneDrag;
         setVelocity(hit, vel);
       }
-      mutated = true; draw();
+      draw();
       return;
     }
     if (marquee) { marquee.row1 = p.row; marquee.tick1 = p.tick; draw(); return; }
@@ -277,11 +276,11 @@ export function renderDrumGridEditor(
       const wantTick = snapTickToRes(p.tick, snap());
       const dTick = clampGroupTick([...selection], wantTick - groupDrag.lastTick, patternTicks);
       const dRow = p.row - groupDrag.lastRow;
-      if (dTick !== 0) { for (const n of selection) n.start += dTick; groupDrag.lastTick += dTick; mutated = true; }
+      if (dTick !== 0) { for (const n of selection) n.start += dTick; groupDrag.lastTick += dTick; }
       if (dRow !== 0) {
         const moved = rowMove([...selection], dRow, rows);
         for (const [n, midi] of moved) n.midi = midi;
-        groupDrag.lastRow += dRow; mutated = true;
+        groupDrag.lastRow += dRow;
       }
       if (dTick !== 0 || dRow !== 0) draw();
       return;
