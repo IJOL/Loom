@@ -41,6 +41,7 @@
   align-items: center;
 }
 .session-row-header, .session-row-stop { background: var(--surface); }
+.session-row-editing { background: var(--amber-glow); }
 .session-row-label { text-align: center; font-size: 10px; color: var(--text-faint); }
 .session-spacer { min-height: 24px; }
 .session-lane-header {
@@ -86,6 +87,11 @@
   border: 1px solid var(--border);
 }
 .session-cell-filled:hover { border-color: var(--amber); }
+.session-cell-editing {
+  outline: 2px solid var(--amber);
+  outline-offset: -2px;
+  box-shadow: 0 0 10px var(--amber-glow);
+}
 .session-cell-playing {
   outline: 2px solid var(--red);
   outline-offset: -2px;
@@ -127,6 +133,10 @@
   cursor: pointer;
 }
 .session-scene-launch:hover { background: var(--amber); color: var(--bg); border-color: var(--amber); }
+.session-scene-launch { display: flex; align-items: center; gap: 6px; text-align: left; }
+.session-scene-play { opacity: 0.85; flex: none; }
+.session-scene-name { flex: 1; }
+.session-scene-name:hover { color: var(--amber); }
 .session-lane-stop, .session-stop-all {
   background: transparent;
   color: var(--red);
@@ -265,4 +275,16 @@ body.drag-copy .session-ghost::after {
   font-weight: bold;
   font-size: 16px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.inline-rename-input {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--amber);
+  border-radius: 2px;
+  font-family: var(--mono);
+  font-size: inherit;
+  padding: 1px 4px;
+  min-width: 60px;
+  max-width: 100%;
 }

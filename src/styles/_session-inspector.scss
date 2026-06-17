@@ -535,3 +535,37 @@
   font-size: 11px;
   opacity: 0.6;
 }
+
+/* ── Clip context breadcrumb (Track ▸ Scene ▸ Clip) ──────────────────────── */
+.clip-context {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 2px 2px 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+.ctx-seg { display: flex; align-items: center; gap: 7px; }
+.ctx-clip-seg { flex: 1; min-width: 220px; }
+.ctx-sep { color: var(--text-faint); }
+.ctx-kind {
+  font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint);
+}
+.ctx-swatch {
+  width: 11px; height: 11px; border-radius: 2px; flex: none;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+.ctx-track-name, .ctx-scene-name {
+  font-size: 12px; color: var(--text-dim); letter-spacing: 0.06em;
+  cursor: text; border: 1px solid transparent; border-radius: 2px; padding: 2px 5px;
+}
+.ctx-track-name:hover, .ctx-scene-name:hover { border-color: var(--border); color: var(--text); }
+.ctx-row { color: var(--text-faint); font-size: 10px; }
+.ctx-clip-name {
+  flex: 1;
+  background: var(--surface-3); border: 1px solid var(--border); border-radius: 2px;
+  color: var(--text); font-family: var(--mono); font-size: 14px; padding: 5px 8px; letter-spacing: 0.04em;
+}
+.ctx-clip-name:focus { outline: none; border-color: var(--amber); }
+.ctx-editing {
+  font-size: 9px; color: var(--amber); border: 1px solid var(--amber); border-radius: 2px;
+  padding: 2px 6px; letter-spacing: 0.1em; text-transform: uppercase;
+}
