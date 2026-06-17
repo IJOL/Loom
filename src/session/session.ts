@@ -442,3 +442,34 @@ export function deleteScene(state: SessionState, sceneIdx: number): void {
     }
   }
 }
+
+/** Resolve the display context for a clip at (laneId, clipIdx): the track,
+ *  scene (the scene on the clip's OWN row — matches default scene launch), row
+ *  number, and the three display names with their fallbacks. Pure; returns null
+ *  when the lane or clip is absent. Used by the inspector's context breadcrumb. */
+export function resolveClipContext(
+  state: SessionState,
+  laneId: string,
+  clipIdx: number,
+): {
+  lane: SessionLane;
+  clip: SessionClip;
+  trackName: string;
+  sceneName: string;
+  rowNumber: number;
+  clipName: string;
+} | null {
+  const lane = state.lanes.find((l) => l.id === laneId);
+  const clip = lane?.clips[clipIdx];
+  if (!lane || !clip) return null;
+  // `?.` guards against test fixtures that omit `scenes`; production always has it.
+  const scene = state.scenes?.[clipIdx];
+  return {
+    lane,
+    clip,
+    trackName: lane.name ?? lane.id.toUpperCase(),
+    sceneName: scene?.name ?? `Scene ${clipIdx + 1}`,
+    rowNumber: clipIdx + 1,
+    clipName: clip.name ?? `Clip ${clipIdx + 1}`,
+  };
+}
