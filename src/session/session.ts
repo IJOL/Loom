@@ -388,6 +388,28 @@ export function copyClip(
   return out;
 }
 
+/** Full-clone a lane (instrument + all clips) and insert it immediately to the
+ *  right of the source. Clips get fresh ids (ids must be unique across the
+ *  session). Explicit clipPerLane entries pointing at the source lane are
+ *  mirrored onto the new lane in every scene; scenes that use row-index
+ *  fallback need no change (the cloned clips sit at the same row indices). */
+export function duplicateLane(state: SessionState, srcLaneId: string, newId: string): SessionLane {
+  const srcIndex = state.lanes.findIndex((l) => l.id === srcLaneId);
+  if (srcIndex < 0) throw new Error(`duplicateLane: no lane ${srcLaneId}`);
+  const src = state.lanes[srcIndex];
+  const clone: SessionLane = JSON.parse(JSON.stringify(src));
+  clone.id = newId;
+  clone.name = `${src.name ?? src.id} copy`;
+  clone.clips = clone.clips.map((c) => (c ? { ...c, id: nextId('clip') } : null));
+  state.lanes.splice(srcIndex + 1, 0, clone);
+  for (const scene of state.scenes) {
+    if (Object.prototype.hasOwnProperty.call(scene.clipPerLane, srcLaneId)) {
+      scene.clipPerLane[newId] = scene.clipPerLane[srcLaneId];
+    }
+  }
+  return clone;
+}
+
 // ── Deletion helpers (front A · session management) ──────────────────────────
 
 /** Empty a single cell (set null), keeping the column length. NOT a splice. */
