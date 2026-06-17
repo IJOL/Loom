@@ -278,8 +278,26 @@
       <div class="session-view" id="session-view">
         <div id="session-grid" class="session-grid">Session grid will render here.</div>
         <div id="session-inspector" class="session-inspector" hidden>
+          <div id="insp-context" class="clip-context">
+            <div class="ctx-seg">
+              <span class="ctx-kind">Track</span>
+              <span id="insp-context-swatch" class="ctx-swatch"></span>
+              <span id="insp-context-track" class="ctx-track-name" title="Double-click to rename"></span>
+            </div>
+            <span class="ctx-sep">▸</span>
+            <div class="ctx-seg">
+              <span class="ctx-kind">Scene</span>
+              <span id="insp-context-scene" class="ctx-scene-name" title="Double-click to rename"></span>
+              <span id="insp-context-row" class="ctx-row"></span>
+            </div>
+            <span class="ctx-sep">▸</span>
+            <div class="ctx-seg ctx-clip-seg">
+              <span class="ctx-kind">Clip</span>
+              <input id="insp-name" type="text" class="ctx-clip-name" placeholder="Clip name" />
+              <span class="ctx-editing">editing</span>
+            </div>
+          </div>
           <div id="insp-transport-row" class="clip-transport-row">
-            <label>Name <input id="insp-name" type="text" /></label>
             <label>Length (bars) <input id="insp-length" type="number" min="1" step="1" /></label>
             <label>Launch
               <select id="insp-quantize">

@@ -3,7 +3,8 @@
 // and the embedded clip editor (piano roll, step grids, drum grids).
 
 import type { SessionState, SessionClip, SessionLane } from './session';
-import { resolveTonality, DEFAULT_MUSICALITY } from './session';
+import { resolveTonality, DEFAULT_MUSICALITY, resolveClipContext } from './session';
+import { beginInlineRename } from './inline-rename';
 import { rootName, SCALE_CATALOG, STYLE_CATALOG } from '../core/musicality';
 import type { LanePlayState } from './session-runtime';
 import type { Sequencer } from '../core/sequencer';
@@ -407,6 +408,7 @@ export class SessionInspector {
     };
     updatePasteBtnState();
     this.renderTonalityOverride(lane!);
+    this.renderContextHeader(lane, clip);
 
     // Auto-render editor
     this.renderEditor();
@@ -451,6 +453,71 @@ export class SessionInspector {
       if (d) withUndo(d, run); else run();
     };
     host.append(label, btn);
+  }
+
+  /** Populate the editor context breadcrumb (Track ▸ Scene ▸ Clip). The clip
+   *  name is the relocated #insp-name input (wired in openInspector); here we
+   *  fill the track swatch + track/scene labels and wire their inline rename. */
+  private renderContextHeader(lane: SessionLane, clip: SessionClip): void {
+    if (!this.selectedClip) return;
+    const ctx = resolveClipContext(this.deps.state, lane.id, this.selectedClip.clipIdx);
+    if (!ctx) return;
+
+    const swatch = document.getElementById('insp-context-swatch');
+    if (swatch) swatch.style.background = clip.color ?? '#8a8278';
+
+    const trackEl = document.getElementById('insp-context-track');
+    if (trackEl) {
+      trackEl.textContent = ctx.trackName;
+      trackEl.ondblclick = (e) => {
+        e.preventDefault();
+        beginInlineRename(trackEl, ctx.trackName, { commit: (v) => this.commitTrackName(lane.id, v) });
+      };
+    }
+
+    const sceneEl = document.getElementById('insp-context-scene');
+    if (sceneEl) {
+      sceneEl.textContent = ctx.sceneName;
+      sceneEl.ondblclick = (e) => {
+        e.preventDefault();
+        beginInlineRename(sceneEl, ctx.sceneName, { commit: (v) => this.commitSceneName(this.selectedClip!.clipIdx, v) });
+      };
+    }
+
+    const rowEl = document.getElementById('insp-context-row');
+    if (rowEl) rowEl.textContent = `(row ${ctx.rowNumber})`;
+  }
+
+  /** Re-fill the breadcrumb from the current selection (after a rename). */
+  private refreshContextHeader(): void {
+    if (!this.selectedClip) return;
+    const lane = this.deps.state.lanes.find((l) => l.id === this.selectedClip!.laneId);
+    const clip = lane?.clips[this.selectedClip.clipIdx];
+    if (lane && clip) this.renderContextHeader(lane, clip);
+  }
+
+  private commitTrackName(laneId: string, name: string): void {
+    const d = this.deps.historyDeps;
+    const run = () => {
+      const lane = this.deps.state.lanes.find((l) => l.id === laneId);
+      if (!lane) return;
+      lane.name = name || undefined;
+      this.deps.renderWithMixer();
+      this.refreshContextHeader();
+    };
+    if (d) withUndo(d, run); else run();
+  }
+
+  private commitSceneName(sceneIdx: number, name: string): void {
+    const d = this.deps.historyDeps;
+    const run = () => {
+      const scene = this.deps.state.scenes[sceneIdx];
+      if (!scene) return;
+      scene.name = name || undefined;
+      this.deps.renderWithMixer();
+      this.refreshContextHeader();
+    };
+    if (d) withUndo(d, run); else run();
   }
 
   private renderEditor(): void {
