@@ -5,8 +5,10 @@ Two modes, auto-selected by how percussive the audio is:
     note events {start,dur,midi,velocity}. Far better than the old librosa
     band-onset heuristic for real, polyphonic material; exposes tunable
     thresholds (onset/frame/min-note-length/min-max-frequency) for experiments.
-  - drums:   librosa onset detection + spectral-centroid banding → hits
-    {start,voice,velocity}.
+  - drums:   **ADTOF** (ADTOF-pytorch, a CRNN trained on 359h of real music) →
+    5-class drum transcription (kick/snare/hi-hat/toms/cymbals) mapped to our
+    drum voices. Falls back to the old librosa onset + spectral-centroid banding
+    if ADTOF is unavailable/fails. Hits {start,voice,velocity}.
 
 Times are in SECONDS; the browser maps them onto the session grid at its own bpm.
 Heavy deps (librosa, basic_pitch) are imported lazily so the module stays cheap
@@ -127,6 +129,54 @@ def _drums(y, sr) -> dict:
     return {"kind": "drums", "tempo": _tempo(y, sr), "notes": notes}
 
 
+# ADTOF emits a GM-drum MIDI file; map each GM note to one of our DrumMachine
+# voices. ADTOF's 5 classes land on 35 (kick), 38 (snare), 42 (hi-hat), 47 (toms),
+# 49 (cymbals) — we widen the buckets to be robust to nearby GM notes.
+_ADTOF_PITCH_TO_VOICE = {
+    35: "kick", 36: "kick",
+    38: "snare", 40: "snare",
+    42: "closedHat", 44: "closedHat",
+    46: "openHat",
+    41: "tom", 43: "tom", 45: "tom", 47: "tom", 48: "tom", 50: "tom",
+    49: "ride", 51: "ride", 53: "ride", 57: "ride", 59: "ride",
+}
+
+
+def _drums_adtof(path: str) -> dict:
+    """Neural drum transcription via ADTOF-pytorch (torch-only, weights bundled).
+    Writes a temp GM-drum MIDI, then maps its notes to our drum voices. Raises on
+    any failure so the caller can fall back to the librosa heuristic."""
+    import os
+    import tempfile
+    import pretty_midi
+    from adtof_pytorch import transcribe_to_midi
+
+    fd, mid_path = tempfile.mkstemp(suffix=".mid")
+    os.close(fd)
+    try:
+        transcribe_to_midi(path, mid_path)
+        pm = pretty_midi.PrettyMIDI(mid_path)
+    finally:
+        try:
+            os.remove(mid_path)
+        except OSError:
+            pass
+
+    notes = []
+    for inst in pm.instruments:
+        for n in inst.notes:
+            voice = _ADTOF_PITCH_TO_VOICE.get(int(n.pitch))
+            if voice is None:
+                continue
+            notes.append({
+                "start": float(n.start),
+                "voice": voice,
+                "velocity": int(max(1, min(127, n.velocity or 100))),
+            })
+    notes.sort(key=lambda x: x["start"])
+    return {"kind": "drums", "tempo": None, "notes": notes}
+
+
 def transcribe_file(
     path: str,
     kind: str = "auto",
@@ -146,13 +196,26 @@ def transcribe_file(
     def melodic():
         return _melodic(path, onset_threshold, frame_threshold, min_note_length_ms, min_freq, max_freq)
 
+    def drums():
+        # Prefer ADTOF (neural, real-music-trained); fall back to the librosa
+        # onset+centroid heuristic if the model is missing or errors on this input.
+        try:
+            return _drums_adtof(path)
+        except Exception as exc:  # noqa: BLE001
+            import logging
+            logging.warning("ADTOF drum transcription failed (%s); using librosa fallback", exc)
+            y, sr = librosa.load(path, sr=SR, mono=True)
+            if y is None or y.size == 0:
+                return {"kind": "drums", "tempo": None, "notes": []}
+            return _drums(y, sr)
+
     if kind == "melodic":
         return melodic()
+    if kind == "drums":
+        return drums()
 
-    # drums / auto need the decoded signal.
+    # auto: pick by how percussive the signal is.
     y, sr = librosa.load(path, sr=SR, mono=True)
     if y is None or y.size == 0:
         return {"kind": "melodic", "tempo": None, "notes": []}
-    if kind == "drums":
-        return _drums(y, sr)
-    return _drums(y, sr) if _percussive_ratio(y, sr) > 0.62 else melodic()
+    return drums() if _percussive_ratio(y, sr) > 0.62 else melodic()

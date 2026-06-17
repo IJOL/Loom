@@ -12,3 +12,9 @@ librosa
 pretty_midi
 mir_eval
 onnxruntime
+
+# Drum transcription: ADTOF-pytorch (a CRNN trained on 359h of real music, 5-class
+# kick/snare/hi-hat/toms/cymbals). Torch-only (no TensorFlow/Keras/madmom) and the
+# weights are bundled, so it installs cleanly on Python 3.12 and runs on the torch
+# already present for Demucs:
+#     pip install git+https://github.com/xavriley/ADTOF-pytorch.git
