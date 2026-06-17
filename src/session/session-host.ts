@@ -355,6 +355,15 @@ export class SessionHost {
     if (mfPanel) (mfPanel as HTMLElement).hidden = !this.masterFxOpen;
   }
 
+  /** Repaint EVERY state-dependent view after an undo/redo so the change is
+   *  visible wherever the user is: the grid + mixer, the open clip editor, and
+   *  the active lane editor (knobs/labels/preset). */
+  refreshAfterRestore(): void {
+    this.renderWithMixer();
+    this.inspector.refreshOpenEditor();
+    if (this.activeEditLane) this.showLaneEditor(this.activeEditLane);
+  }
+
   /** @internal — accessed by the extracted session-host-* sub-modules. */
   refreshSynthTabs(): void {
     const host = document.getElementById('synth-tabs');

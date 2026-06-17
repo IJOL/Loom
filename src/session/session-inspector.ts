@@ -515,6 +515,17 @@ export class SessionInspector {
     this.refreshContextHeader();
   }
 
+  /** Re-render the open clip editor against current state. Called after an
+   *  undo/redo so the mounted piano-roll/drum-grid (which closes over the clip
+   *  object) reflects the restored notes instead of the stale ones. No-op when
+   *  the inspector panel is hidden or nothing is selected. */
+  refreshOpenEditor(): void {
+    const panel = document.getElementById('session-inspector');
+    if (!panel || panel.hidden) return;
+    if (!this.selectedClip) return;
+    this.renderEditor();
+  }
+
   private commitTrackName(laneId: string, name: string): void {
     const d = this.deps.historyDeps;
     const run = () => {
