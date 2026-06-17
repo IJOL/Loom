@@ -24,6 +24,7 @@ import { alertDialog, promptDialog, choiceDialog } from '../core/dialog';
 import { loadAllExamples, renderExampleNotes, clipToExample, exampleToJson, saveUserExample, type Example } from './example-loader';
 import { renderChordComp } from '../core/harmony';
 import { emptyClip } from './session';
+import { scaleClipTempo } from '../core/clip-time-scale';
 
 function genKindFor(engineId: string): GenKind {
   if (engineId === 'tb303') return 'bass';
@@ -173,6 +174,17 @@ export class SessionInspector {
       };
       if (d) withUndo(d, run); else run();
     }, { signal: sig });
+
+    // *2 / /2 tempo scale — next to the Length field. Note clips and drum clips
+    // only (audio clips have no notes). `.onclick` replaces on each open, so no
+    // listener accumulation. `kind` was computed above.
+    const dblBtn  = document.getElementById('insp-tempo-double') as HTMLButtonElement;
+    const halfBtn = document.getElementById('insp-tempo-halve')  as HTMLButtonElement;
+    const isNoteClip = kind !== 'audio';
+    dblBtn.hidden  = !isNoteClip;
+    halfBtn.hidden = !isNoteClip;
+    dblBtn.onclick  = () => this.applyTempoScale(2);   // double tempo (compress)
+    halfBtn.onclick = () => this.applyTempoScale(0.5); // halve tempo (stretch)
 
     document.getElementById('insp-duplicate')!.onclick = () => {
       if (!this.selectedClip) return;
@@ -523,6 +535,29 @@ export class SessionInspector {
       scene.name = name || undefined;
       this.deps.renderWithMixer();
       this.refreshContextHeader();
+    };
+    if (d) withUndo(d, run); else run();
+  }
+
+  /** Double (tempoMult 2) or halve (tempoMult 0.5) the open clip's perceived
+   *  tempo: time-scale its notes/loop/length/automation in one undoable gesture,
+   *  then re-render the editor (new patternTicks), the Length field, and the grid. */
+  private applyTempoScale(tempoMult: number): void {
+    if (!this.selectedClip) return;
+    const lane = this.deps.state.lanes.find((l) => l.id === this.selectedClip!.laneId);
+    const clip = lane?.clips[this.selectedClip.clipIdx];
+    if (!clip) return;
+    const d = this.deps.historyDeps;
+    const run = () => {
+      // Preserve the editor octave across the rebuild (renderEditor recreates the
+      // piano-roll, which resets its octave base to C4) — mirrors insp-random-notes.
+      const octaveBase = this.roll?.getOctaveBase?.() ?? 60;
+      scaleClipTempo(clip, tempoMult);
+      const lenEl = document.getElementById('insp-length') as HTMLInputElement | null;
+      if (lenEl) lenEl.value = String(clip.lengthBars);
+      this.renderEditor();
+      this.roll?.setOctaveBase?.(octaveBase);
+      this.deps.renderWithMixer();
     };
     if (d) withUndo(d, run); else run();
   }
