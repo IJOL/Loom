@@ -35,10 +35,20 @@ def health():
 
 
 @app.post("/transcribe")
-async def transcribe(file: UploadFile = File(...), kind: str = Form("auto")):
+async def transcribe(
+    file: UploadFile = File(...),
+    kind: str = Form("auto"),
+    # Melodic (basic-pitch) tuning — all optional; omitted ⇒ transcribe_file defaults.
+    onset_threshold: float | None = Form(None),
+    frame_threshold: float | None = Form(None),
+    min_note_length_ms: float | None = Form(None),
+    min_freq: float | None = Form(None),
+    max_freq: float | None = Form(None),
+):
     """Audio → notes. `kind` = 'drums' | 'melodic' | 'auto' (caller should pass the
-    known stem role). Synchronous — pYIN/onset detection is far quicker than
-    separation, and FastAPI runs this in a threadpool so it won't block the loop."""
+    known stem role). Melodic uses basic-pitch; the bp_* form fields tune it.
+    Synchronous detection is far quicker than separation, and FastAPI runs this in
+    a threadpool so it won't block the loop."""
     from starlette.concurrency import run_in_threadpool
     from transcribe import transcribe_file
 
@@ -48,8 +58,15 @@ async def transcribe(file: UploadFile = File(...), kind: str = Form("auto")):
     in_path = os.path.join(job_root, f"{os.urandom(6).hex()}-{safe_name}")
     with open(in_path, "wb") as f:
         f.write(await file.read())
+    bp = {k: v for k, v in {
+        "onset_threshold": onset_threshold,
+        "frame_threshold": frame_threshold,
+        "min_note_length_ms": min_note_length_ms,
+        "min_freq": min_freq,
+        "max_freq": max_freq,
+    }.items() if v is not None}
     try:
-        return await run_in_threadpool(transcribe_file, in_path, kind)
+        return await run_in_threadpool(transcribe_file, in_path, kind, **bp)
     finally:
         try:
             os.remove(in_path)

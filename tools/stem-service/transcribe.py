@@ -1,17 +1,34 @@
 """Audio → notes transcription for remixing a stem.
 
 Two modes, auto-selected by how percussive the audio is:
-  - melodic: monophonic pitch tracking (librosa pYIN) → note events {start,dur,midi,velocity}
-  - drums:   onset detection + spectral-centroid banding → hits {start,voice,velocity}
+  - melodic: Spotify's **basic-pitch** (neural polyphonic AMT, run via ONNX) →
+    note events {start,dur,midi,velocity}. Far better than the old librosa
+    band-onset heuristic for real, polyphonic material; exposes tunable
+    thresholds (onset/frame/min-note-length/min-max-frequency) for experiments.
+  - drums:   librosa onset detection + spectral-centroid banding → hits
+    {start,voice,velocity}.
 
 Times are in SECONDS; the browser maps them onto the session grid at its own bpm.
-librosa is imported lazily so the module stays cheap to import (and tests can stub)."""
+Heavy deps (librosa, basic_pitch) are imported lazily so the module stays cheap
+to import (and tests can stub them).
+
+basic-pitch install note (Python 3.12 / numpy 2): the package pins TensorFlow +
+an old numpy that won't build here, so it is installed WITHOUT deps and runs on
+the already-present onnxruntime:
+    pip install basic-pitch --no-deps
+    pip install pretty_midi mir_eval        # its pure-python runtime deps
+"""
 from __future__ import annotations
 
 import math
 
 HOP = 512
 SR = 22050
+
+# basic-pitch melodic defaults (also the /transcribe endpoint defaults).
+BP_ONSET_THRESHOLD = 0.5      # higher → fewer note onsets (more conservative)
+BP_FRAME_THRESHOLD = 0.3      # higher → notes must be more confident to sustain
+BP_MIN_NOTE_LENGTH_MS = 127.70  # drop notes shorter than this (ms)
 
 
 def _percussive_ratio(y, sr) -> float:
@@ -44,70 +61,47 @@ def _velocity(amp: float, base: int, gain: float) -> int:
     return int(max(1, min(127, round(base + amp * gain))))
 
 
-def _melodic(y, sr) -> dict:
-    """Transcribe by COARSE REGISTER BANDS (one band per octave, C2..C7).
+def _melodic(
+    path: str,
+    onset_threshold: float = BP_ONSET_THRESHOLD,
+    frame_threshold: float = BP_FRAME_THRESHOLD,
+    min_note_length_ms: float = BP_MIN_NOTE_LENGTH_MS,
+    min_freq: float | None = None,
+    max_freq: float | None = None,
+) -> dict:
+    """Polyphonic transcription via basic-pitch. Returns note events
+    {start,dur,midi,velocity} in absolute seconds; silences are preserved (no
+    detection ⇒ no note). basic-pitch loads + resamples `path` itself.
 
-    For each band we run onset detection on that band's energy envelope, so a
-    note STARTS on the real transient/attack (not where a monophonic pitch
-    tracker happens to lock — the old pYIN path started notes late and merged
-    runs, which is why they "didn't play at the right moment"). Per onset the
-    pitch is the dominant frequency inside the band (approximate, snapped to a
-    semitone). Bands fire independently → polyphony by register, and silences
-    are preserved (no onset in a band ⇒ no note). Times are absolute seconds."""
-    import numpy as np
-    import librosa
+    note_events from predict() are tuples: (start_s, end_s, pitch_midi,
+    amplitude[0..1], pitch_bends). velocity = round(amplitude * 127)."""
+    import warnings
+    import logging
+    warnings.filterwarnings("ignore")
+    logging.disable(logging.WARNING)  # silence basic-pitch's backend-availability noise
+    from basic_pitch.inference import predict
 
-    S = np.abs(librosa.stft(y, hop_length=HOP))
-    if S.size == 0 or S.shape[1] < 2:
-        return {"kind": "melodic", "tempo": _tempo(y, sr), "notes": []}
-    freqs = librosa.fft_frequencies(sr=sr)
-    times = librosa.frames_to_time(np.arange(S.shape[1]), sr=sr, hop_length=HOP)
-
-    fmin = float(librosa.note_to_hz("C2"))
-    fmax = min(float(librosa.note_to_hz("C7")), sr / 2.0)
-    edges = []
-    f = fmin
-    while f < fmax:
-        edges.append(f)
-        f *= 2.0  # one band per octave
-    edges.append(fmax)
-
+    _model_out, _midi, events = predict(
+        path,
+        onset_threshold=onset_threshold,
+        frame_threshold=frame_threshold,
+        minimum_note_length=min_note_length_ms,
+        minimum_frequency=min_freq,
+        maximum_frequency=max_freq,
+    )
     notes = []
-    for b in range(len(edges) - 1):
-        mask = (freqs >= edges[b]) & (freqs < edges[b + 1])
-        if not mask.any():
-            continue
-        band = S[mask, :]
-        band_freqs = freqs[mask]
-        env = band.sum(axis=0)
-        peak = float(env.max())
-        if peak <= 1e-6:
-            continue
-        onsets = librosa.onset.onset_detect(
-            onset_envelope=env, sr=sr, hop_length=HOP, backtrack=True,
-        )
-        if len(onsets) == 0:
-            continue
-        thresh = 0.15 * peak  # drop weak hits in this band (noise / bleed)
-        for k, fr in enumerate(onsets):
-            fr = int(fr)
-            if env[fr] < thresh:
-                continue
-            pf = float(band_freqs[int(np.argmax(band[:, fr]))])  # dominant pitch in band
-            if pf <= 0:
-                continue
-            start = float(times[fr])
-            nxt = int(onsets[k + 1]) if k + 1 < len(onsets) else S.shape[1] - 1
-            dur = max(0.08, min(float(times[nxt]) - start, 2.0))
-            notes.append({
-                "start": start,
-                "dur": dur,
-                "midi": int(round(float(librosa.hz_to_midi(pf)))),
-                "velocity": _velocity(float(env[fr]) / (peak + 1e-9), 50, 70),
-            })
-
+    for ev in events:
+        start, end, midi, amp = float(ev[0]), float(ev[1]), int(ev[2]), float(ev[3])
+        notes.append({
+            "start": start,
+            "dur": max(0.02, end - start),
+            "midi": midi,
+            "velocity": int(max(1, min(127, round(amp * 127)))),
+        })
     notes.sort(key=lambda n: (n["start"], n["midi"]))
-    return {"kind": "melodic", "tempo": _tempo(y, sr), "notes": notes}
+    # tempo is metadata only (the browser maps notes at the session bpm); basic-pitch
+    # doesn't load `y`, so skip the librosa estimate here.
+    return {"kind": "melodic", "tempo": None, "notes": notes}
 
 
 def _drums(y, sr) -> dict:
@@ -133,17 +127,32 @@ def _drums(y, sr) -> dict:
     return {"kind": "drums", "tempo": _tempo(y, sr), "notes": notes}
 
 
-def transcribe_file(path: str, kind: str = "auto") -> dict:
+def transcribe_file(
+    path: str,
+    kind: str = "auto",
+    *,
+    onset_threshold: float = BP_ONSET_THRESHOLD,
+    frame_threshold: float = BP_FRAME_THRESHOLD,
+    min_note_length_ms: float = BP_MIN_NOTE_LENGTH_MS,
+    min_freq: float | None = None,
+    max_freq: float | None = None,
+) -> dict:
     """Load `path` and transcribe. `kind` forces the mode: 'drums' or 'melodic'.
     'auto' picks by harmonic/percussive ratio (less reliable — prefer passing the
-    known stem role: the drums stem → 'drums', everything else → 'melodic')."""
+    known stem role: the drums stem → 'drums', everything else → 'melodic').
+    The bp_* params tune the melodic (basic-pitch) path only."""
     import librosa
 
+    def melodic():
+        return _melodic(path, onset_threshold, frame_threshold, min_note_length_ms, min_freq, max_freq)
+
+    if kind == "melodic":
+        return melodic()
+
+    # drums / auto need the decoded signal.
     y, sr = librosa.load(path, sr=SR, mono=True)
     if y is None or y.size == 0:
         return {"kind": "melodic", "tempo": None, "notes": []}
     if kind == "drums":
         return _drums(y, sr)
-    if kind == "melodic":
-        return _melodic(y, sr)
-    return _drums(y, sr) if _percussive_ratio(y, sr) > 0.62 else _melodic(y, sr)
+    return _drums(y, sr) if _percussive_ratio(y, sr) > 0.62 else melodic()

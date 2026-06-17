@@ -3,3 +3,12 @@ uvicorn[standard]
 audio-separator
 python-multipart
 librosa
+
+# Melodic transcription: Spotify basic-pitch (neural polyphonic AMT) run on ONNX.
+# basic-pitch pins TensorFlow + an old numpy that will NOT build on Python 3.12 /
+# numpy 2, so install it WITHOUT its deps and provide its pure-python runtime deps
+# (below) — it then uses the already-present onnxruntime:
+#     pip install basic-pitch --no-deps
+pretty_midi
+mir_eval
+onnxruntime
