@@ -45,6 +45,8 @@ function mountInspectorDom(): void {
     <div id="session-inspector" hidden>
       <input id="insp-name" type="text" />
       <input id="insp-length" type="number" />
+      <button id="insp-tempo-double"></button>
+      <button id="insp-tempo-halve"></button>
       <select id="insp-quantize"><option value=""></option><option value="1/1">1 bar</option></select>
       <button id="insp-duplicate"></button>
       <button id="insp-delete"></button>

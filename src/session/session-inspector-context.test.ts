@@ -28,6 +28,8 @@ function mountDom(): void {
       </div>
       <input id="insp-name" type="text" />
       <input id="insp-length" type="number" />
+      <button id="insp-tempo-double"></button>
+      <button id="insp-tempo-halve"></button>
       <select id="insp-quantize"><option value=""></option></select>
       <button id="insp-duplicate"></button><button id="insp-delete"></button>
       <button id="insp-copy"></button>
