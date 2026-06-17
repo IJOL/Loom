@@ -39,6 +39,7 @@ import { createAutoHistory } from './save/auto-history';
 import {
   wireHistoryKeyboard, withUndo, isTextEditTarget, type HistoryDeps,
 } from './save/history-wiring';
+import { wireUndoButtons } from './save/undo-buttons';
 import {
   buildSavedStateV3, applyLoadedStateV3, type SavedStateV3, type SavedStateV3Deps,
 } from './save/saved-state-v3';
@@ -1052,6 +1053,7 @@ const autoHistory = createAutoHistory({
 });
 autoHistory.installGlobalListeners(document);
 wireHistoryKeyboard(autoHistory);
+wireUndoButtons(autoHistory);
 // Wire historyDeps into the session inspector so drum-grid cell clicks are
 // undoable. Must happen after historyDeps is built (it closes over sessionHost
 // via savedStateDeps → saveWiringDeps).

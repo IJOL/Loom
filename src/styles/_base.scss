@@ -50,6 +50,9 @@ h1 {
   margin-bottom: 12px;
 }
 
+.row.transport #undo-btn[disabled],
+.row.transport #redo-btn[disabled] { opacity: 0.35; cursor: default; }
+
 .transport-readout {
   display: inline-flex;
   flex-direction: column;
