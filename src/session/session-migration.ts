@@ -6,6 +6,7 @@
 import { CLIP_COLOR_PALETTE, DEFAULT_MUSICALITY, type SessionClip, type SessionState } from './session';
 import { bassStepsToNotes, stepsToNotes, drumStepsToNotes } from '../core/notes';
 import type { NoteEvent } from '../core/notes';
+import { DEFAULT_RESOLUTION } from '../core/drum-grid-editing';
 
 export function migrateLoadedSessionState(s: SessionState): SessionState {
   for (const lane of s.lanes) {
@@ -37,7 +38,10 @@ function migrateClip(c: SessionClip): SessionClip {
   // Modern clip: only backfill the color if it was missing (e.g. demo JSONs
   // that predate the color field, or save files from before the palette).
   if (Array.isArray(c.notes)) {
-    return c.color ? c : { ...c, color: colorForClipId(c.id) };
+    // Backfill gridResolution so the editor's first open doesn't mutate the clip
+    // and accidentally create a spurious undo entry via AutoHistory's diff check.
+    const withColor: SessionClip = c.color ? c : { ...c, color: colorForClipId(c.id) };
+    return withColor.gridResolution ? withColor : { ...withColor, gridResolution: DEFAULT_RESOLUTION };
   }
   type LegacyClip = SessionClip & {
     bassNotes?: NoteEvent[];
