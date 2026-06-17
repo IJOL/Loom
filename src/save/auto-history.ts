@@ -5,6 +5,7 @@
 
 import type { HistoryController } from '../core/history';
 import type { SavedStateV3 } from './saved-state-v3';
+import { isTextEditTarget } from './history-wiring';
 
 export interface AutoHistoryDeps {
   history: HistoryController<SavedStateV3>;
@@ -78,8 +79,51 @@ export function createAutoHistory(deps: AutoHistoryDeps): AutoHistory {
       listeners.push(cb);
       return () => { const i = listeners.indexOf(cb); if (i >= 0) listeners.splice(i, 1); };
     },
-    // Implemented in Task 2.
-    installGlobalListeners() { return () => {}; },
+    installGlobalListeners(doc: Document) {
+      let wheelTimer: ReturnType<typeof setTimeout> | null = null;
+      const micro = (fn: () => void) => queueMicrotask(fn);
+
+      const onPointerDown = () => self.beginGesture();
+      const onPointerUp = () => micro(() => self.endGesture());
+      const onKeyUp = (e: Event) => {
+        const ke = e as KeyboardEvent;
+        const cmd = ke.metaKey || ke.ctrlKey;
+        const k = ke.key.toLowerCase();
+        if (cmd && (k === 'z' || k === 'y')) return;      // undo/redo shortcut
+        if (isTextEditTarget(ke.target)) return;          // text fields → focus/blur path
+        micro(() => self.checkpoint());
+      };
+      const onChange = () => micro(() => self.checkpoint());
+      const onDrop = () => micro(() => self.checkpoint());
+      const onWheel = () => {
+        if (wheelTimer) clearTimeout(wheelTimer);
+        wheelTimer = setTimeout(() => { wheelTimer = null; self.checkpoint(); }, 250);
+      };
+      const onFocusIn = (e: Event) => { if (isTextEditTarget((e as FocusEvent).target)) self.beginGesture(); };
+      const onFocusOut = (e: Event) => { if (isTextEditTarget((e as FocusEvent).target)) micro(() => self.endGesture()); };
+
+      const opts = { capture: true } as const;
+      doc.addEventListener('pointerdown', onPointerDown, opts);
+      doc.addEventListener('pointerup', onPointerUp, opts);
+      doc.addEventListener('keyup', onKeyUp, opts);
+      doc.addEventListener('change', onChange, opts);
+      doc.addEventListener('drop', onDrop, opts);
+      doc.addEventListener('wheel', onWheel, opts);
+      doc.addEventListener('focusin', onFocusIn, opts);
+      doc.addEventListener('focusout', onFocusOut, opts);
+
+      return () => {
+        doc.removeEventListener('pointerdown', onPointerDown, opts);
+        doc.removeEventListener('pointerup', onPointerUp, opts);
+        doc.removeEventListener('keyup', onKeyUp, opts);
+        doc.removeEventListener('change', onChange, opts);
+        doc.removeEventListener('drop', onDrop, opts);
+        doc.removeEventListener('wheel', onWheel, opts);
+        doc.removeEventListener('focusin', onFocusIn, opts);
+        doc.removeEventListener('focusout', onFocusOut, opts);
+        if (wheelTimer) clearTimeout(wheelTimer);
+      };
+    },
   };
   return self;
 }
