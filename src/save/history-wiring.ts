@@ -46,21 +46,19 @@ export function isTextEditTarget(t: EventTarget | null): boolean {
   return false;
 }
 
-/** Discrete-action helper: snapshot before, then mutate. */
-export function withUndo<R>(d: HistoryDeps, fn: () => R): R {
-  d.history.commit(d.snapshot());
+/** Neutralised: AutoHistory (src/save/auto-history.ts) is now the single source
+ *  of undo capture. This helper only runs the mutation; the resulting state
+ *  change is captured automatically on the next interaction checkpoint. Kept so
+ *  the existing call sites compile unchanged. */
+export function withUndo<R>(_d: HistoryDeps, fn: () => R): R {
   return fn();
 }
 
-/** Returns the gesture-bracket callbacks to spread into createKnob opts:
- *  `createKnob({ …, ...attachKnobUndo(historyDeps) })`. Snapshots once at
- *  pointerdown/wheel-burst-start and commits at pointerup/wheel-burst-end. */
-export function attachKnobUndo(d: HistoryDeps): {
+/** Neutralised gesture bracket — AutoHistory coalesces gestures via global
+ *  pointer/focus listeners. Kept so createKnob opts still type-check. */
+export function attachKnobUndo(_d: HistoryDeps): {
   onGestureStart: () => void;
   onGestureEnd: () => void;
 } {
-  return {
-    onGestureStart: () => d.history.beginGesture(d.snapshot()),
-    onGestureEnd:   () => d.history.commitGesture(),
-  };
+  return { onGestureStart: () => {}, onGestureEnd: () => {} };
 }
