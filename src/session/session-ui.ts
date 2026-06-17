@@ -38,6 +38,10 @@ export interface SessionUICallbacks {
   onDeleteClip:  (laneId: string, clipIdx: number) => void;
   onDeleteLane:  (laneId: string) => void;
   onDeleteScene: (sceneIdx: number) => void;
+  /** Rename a track / scene in place. Optional so test fixtures + the host
+   *  (which wires them in a later task) compile independently. */
+  onRenameLane?: (laneId: string, name: string) => void;
+  onRenameScene?: (sceneIdx: number, name: string) => void;
   onToggleDrumsExpanded: () => void;
   _mixerRow?: HTMLElement;
 }
@@ -67,6 +71,7 @@ export function renderSessionGrid(
   state: SessionState,
   laneStates: Map<string, LanePlayState>,
   cb: SessionUICallbacks,
+  openClip?: ClipSlot,
 ): void {
   host.innerHTML = '';
   host.classList.add('session-grid-root');
@@ -97,11 +102,12 @@ export function renderSessionGrid(
   for (let r = 0; r < rowCount; r++) {
     const row = document.createElement('div');
     row.className = 'session-row';
+    if (openClip && openClip.clipIdx === r) row.classList.add('session-row-editing');
     const rowLabel = document.createElement('div');
     rowLabel.className = 'session-row-label';
     rowLabel.textContent = String(r + 1);
     row.appendChild(rowLabel);
-    for (const lane of state.lanes) row.appendChild(clipCell(lane, r, laneStates, cb, state));
+    for (const lane of state.lanes) row.appendChild(clipCell(lane, r, laneStates, cb, state, openClip));
     row.appendChild(sceneLaunchCell(state.scenes[r], r, cb));
     table.appendChild(row);
   }
@@ -192,6 +198,7 @@ function clipCell(
   laneStates: Map<string, LanePlayState>,
   cb: SessionUICallbacks,
   state: SessionState,
+  openClip?: ClipSlot,
 ): HTMLElement {
   const clip: SessionClip | null = lane.clips[rowIdx] ?? null;
   const cell = document.createElement('div');
@@ -205,6 +212,9 @@ function clipCell(
 
   if (clip) {
     cell.classList.add('session-cell-filled');
+    if (openClip && openClip.laneId === lane.id && openClip.clipIdx === rowIdx) {
+      cell.classList.add('session-cell-editing');
+    }
     if (isPlaying) cell.classList.add('session-cell-playing');
     if (isQueued)  cell.classList.add('session-cell-queued');
     cell.style.backgroundColor = clip.color ?? COLOR_IDLE;
