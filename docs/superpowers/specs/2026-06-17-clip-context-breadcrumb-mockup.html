@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Loom — Clip context breadcrumb (mockup)</title>
+<style>
+  :root{
+    --bg:#0e0c0a; --surface:#161310; --surface-2:#1c1814; --surface-3:#221d18;
+    --border:#2a221c; --border-soft:#1f1a15;
+    --text:#d8d2c8; --text-dim:#8a8278; --text-faint:#5a5550;
+    --amber:#ffa726; --amber-soft:rgba(255,167,38,.4); --amber-glow:rgba(255,167,38,.18);
+    --red:#e53935; --red-soft:rgba(229,57,53,.45);
+    --mono:'IBM Plex Mono', ui-monospace,'SF Mono',Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg); color:var(--text); font-family:var(--mono); margin:0; padding:24px; font-size:13px;}
+  h1{font-size:13px; letter-spacing:.12em; color:var(--amber); text-transform:uppercase; margin:0 0 4px;}
+  .sub{color:var(--text-dim); font-size:11px; margin:0 0 20px;}
+  .wrap{max-width:1080px;}
+  .caption{color:var(--text-faint); font-size:10px; letter-spacing:.1em; text-transform:uppercase; margin:22px 0 6px;}
+
+  /* ── session grid slice ── */
+  .session-grid{background:var(--bg); border:1px solid var(--border); border-radius:2px; padding:6px;}
+  .session-table{display:flex; flex-direction:column; gap:2px;}
+  .session-row{display:grid; grid-template-columns:24px 120px 120px 120px 140px; gap:2px; align-items:center;}
+  .session-row-header{background:var(--surface);}
+  .row-label{text-align:center; font-size:10px; color:var(--text-faint);}
+  .lane-header{display:flex; align-items:center; gap:4px; background:var(--surface-2); border:1px solid var(--border); border-left:2px solid var(--amber); padding:4px 6px; border-radius:2px;}
+  .lane-name{flex:1; font-size:11px; letter-spacing:.1em; color:var(--text);}
+  .lane-name.editing{background:var(--surface); border:1px solid var(--amber); border-radius:2px; padding:1px 4px; color:var(--text); outline:none;}
+  .lane-edit{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-size:11px;padding:2px 6px;border-radius:2px;}
+  .cell{height:30px;border-radius:2px;display:flex;align-items:center;justify-content:space-between;padding:0 6px;font-size:11px;}
+  .cell-empty{background:var(--surface);border:1px dashed var(--border-soft);}
+  .cell-filled{color:#111;border:1px solid var(--border);}
+  .cell-label{flex:1;}
+  .cell-play{opacity:.85;}
+  .cell-editing{outline:2px solid var(--amber); outline-offset:-2px; box-shadow:0 0 10px var(--amber-glow);}
+  .scene-cell{display:flex;}
+  .scene-launch{flex:1;background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:2px;font-size:11px;padding:4px 6px;text-align:left;}
+  .scene-launch.editing{border-color:var(--amber);background:var(--surface);}
+  .scene-row-editing{background:var(--amber-glow);}
+  .scenes-header{text-align:center;font-size:11px;color:var(--text-dim);letter-spacing:.08em;}
+  .tag{font-size:9px;color:var(--bg);background:var(--amber);border-radius:2px;padding:1px 5px;letter-spacing:.08em;}
+
+  /* ── inspector ── */
+  .inspector{margin-top:10px;background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:10px;}
+
+  /* NEW context header (breadcrumb) */
+  .ctx{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:2px 2px 10px;border-bottom:1px solid var(--border);}
+  .ctx .seg{display:flex;align-items:center;gap:7px;}
+  .ctx .sep{color:var(--text-faint);font-size:14px;}
+  .ctx .kind{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);}
+  .swatch{width:11px;height:11px;border-radius:2px;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.4);}
+  .ctx .track-name,.ctx .scene-name{font-size:12px;color:var(--text-dim);letter-spacing:.06em;cursor:text;border:1px solid transparent;border-radius:2px;padding:2px 5px;}
+  .ctx .track-name:hover,.ctx .scene-name:hover{border-color:var(--border);color:var(--text);}
+  .ctx .clip-seg{flex:1;min-width:220px;}
+  .ctx .clip-name{flex:1;background:var(--surface-3);border:1px solid var(--border);border-radius:2px;color:var(--text);font-family:var(--mono);font-size:14px;padding:5px 8px;letter-spacing:.04em;}
+  .ctx .clip-name:focus{outline:none;border-color:var(--amber);}
+  .ctx .editing-tag{font-size:9px;color:var(--amber);border:1px solid var(--amber);border-radius:2px;padding:2px 6px;letter-spacing:.1em;text-transform:uppercase;}
+
+  /* secondary controls (was the transport row) */
+  .ctrls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:10px;}
+  .ctrls label{font-size:11px;color:var(--text-dim);display:flex;align-items:center;gap:4px;}
+  .ctrls input[type=number]{width:54px;background:var(--surface-3);color:var(--text);border:1px solid var(--border);border-radius:2px;padding:3px 4px;font-family:var(--mono);}
+  .ctrls select{background:var(--surface-3);color:var(--text);border:1px solid var(--border);border-radius:2px;padding:3px 4px;font-family:var(--mono);font-size:11px;}
+  .btn{background:var(--surface-2);color:var(--text-dim);border:1px solid var(--border);border-radius:2px;padding:4px 9px;font-family:var(--mono);font-size:11px;}
+  .btn.primary{color:var(--bg);background:var(--amber);border-color:var(--amber);}
+  .divider{width:1px;height:18px;background:var(--border);}
+
+  /* piano-roll stand-in */
+  .roll{margin-top:10px;height:140px;background:#080706;border:1px solid var(--border);border-radius:2px;position:relative;overflow:hidden;}
+  .roll .gl{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,255,255,.05);}
+  .roll .note{position:absolute;height:10px;border-radius:2px;background:var(--amber);opacity:.85;}
+  .roll .ph{position:absolute;top:0;bottom:0;width:2px;background:var(--red);box-shadow:0 0 6px var(--red-soft);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Loom · Clip context breadcrumb + in-place rename</h1>
+  <p class="sub">Mockup — proposed editor context header, clip highlighted in the grid, double-click rename for track &amp; scene.</p>
+
+  <div class="caption">Session grid (top) — the open clip is ringed in amber; its scene row is tinted</div>
+  <div class="session-grid">
+    <div class="session-table">
+      <div class="session-row session-row-header">
+        <div></div>
+        <div class="lane-header"><span class="lane-name">BASS</span><button class="lane-edit">⚙</button></div>
+        <div class="lane-header"><span class="lane-name editing">Lead synth</span><button class="lane-edit">⚙</button></div>
+        <div class="lane-header"><span class="lane-name">DRUMS</span><button class="lane-edit">⚙</button></div>
+        <div class="scenes-header">Scenes</div>
+      </div>
+
+      <div class="session-row">
+        <div class="row-label">1</div>
+        <div class="cell cell-filled" style="background:#a8c8e8"><span class="cell-label">Intro bass</span><span class="cell-play">▶</span></div>
+        <div class="cell cell-empty"></div>
+        <div class="cell cell-filled" style="background:#f4b8b8"><span class="cell-label">Beat A</span><span class="cell-play">▶</span></div>
+        <div class="scene-cell"><button class="scene-launch">▶ Intro</button></div>
+      </div>
+
+      <div class="session-row scene-row-editing">
+        <div class="row-label">2</div>
+        <div class="cell cell-filled cell-editing" style="background:#a8c8e8"><span class="cell-label">Acid line</span><span class="cell-play">▶</span></div>
+        <div class="cell cell-filled" style="background:#d8e8a8"><span class="cell-label">Stab</span><span class="cell-play">▶</span></div>
+        <div class="cell cell-filled" style="background:#f4b8b8"><span class="cell-label">Beat B</span><span class="cell-play">▶</span></div>
+        <div class="scene-cell"><button class="scene-launch editing">▶ Drop</button></div>
+      </div>
+
+      <div class="session-row">
+        <div class="row-label">3</div>
+        <div class="cell cell-empty"></div>
+        <div class="cell cell-filled" style="background:#d8e8a8"><span class="cell-label">Riff</span><span class="cell-play">▶</span></div>
+        <div class="cell cell-filled" style="background:#f4b8b8"><span class="cell-label">Fill</span><span class="cell-play">▶</span></div>
+        <div class="scene-cell"><button class="scene-launch">▶ Break</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="caption">Clip editor (bottom) — NEW context header tells you exactly where you are</div>
+  <div class="inspector">
+    <!-- NEW: context header / breadcrumb -->
+    <div class="ctx">
+      <div class="seg">
+        <span class="kind">Track</span>
+        <span class="swatch" style="background:#a8c8e8"></span>
+        <span class="track-name" title="Double-click to rename">BASS</span>
+      </div>
+      <span class="sep">▸</span>
+      <div class="seg">
+        <span class="kind">Scene</span>
+        <span class="scene-name" title="Double-click to rename">Drop</span>
+        <span style="color:var(--text-faint);font-size:10px;">(row 2)</span>
+      </div>
+      <span class="sep">▸</span>
+      <div class="seg clip-seg">
+        <span class="kind">Clip</span>
+        <input class="clip-name" value="Acid line" />
+        <span class="editing-tag">editing</span>
+      </div>
+    </div>
+
+    <!-- secondary controls (previously the cramped transport row) -->
+    <div class="ctrls">
+      <label>Length <input type="number" value="2" /></label>
+      <label>Launch
+        <select><option>Default (lane/global)</option><option>1 bar</option></select>
+      </label>
+      <span class="divider"></span>
+      <button class="btn">Duplicate</button>
+      <button class="btn">Delete</button>
+      <span class="divider"></span>
+      <button class="btn">Copy notes</button>
+      <button class="btn">Paste ▸ Replace</button>
+      <button class="btn primary">🎲</button>
+      <button class="btn">Vary</button>
+      <button class="btn">View as grid</button>
+    </div>
+
+    <!-- piano roll stand-in -->
+    <div class="roll" id="roll"></div>
+  </div>
+</div>
+<script>
+  // decorate the piano-roll stand-in with a few notes + gridlines + playhead
+  const roll=document.getElementById('roll');
+  for(let i=1;i<16;i++){const g=document.createElement('div');g.className='gl';g.style.left=(i*6.25)+'%';roll.appendChild(g);}
+  const notes=[[2,70],[10,55],[18,62],[30,48],[40,66],[52,58],[64,52],[76,60],[86,44]];
+  notes.forEach(([x,y],k)=>{const n=document.createElement('div');n.className='note';n.style.left=x+'%';n.style.top=y+'px';n.style.width=(4+ (k%3)*2)+'%';roll.appendChild(n);});
+  const ph=document.createElement('div');ph.className='ph';ph.style.left='34%';roll.appendChild(ph);
+</script>
+</body>
+</html>
