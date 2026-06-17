@@ -313,6 +313,26 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
       };
       if (hd) withUndo(hd, run); else run();
     },
+    onRenameLane(laneId, name) {
+      const hd = self.deps.historyDeps;
+      const run = () => {
+        const lane = self.state.lanes.find((l) => l.id === laneId);
+        if (!lane) return;
+        lane.name = name || undefined;
+        self.renderWithMixer();
+      };
+      if (hd) withUndo(hd, run); else run();
+    },
+    onRenameScene(sceneIdx, name) {
+      const hd = self.deps.historyDeps;
+      const run = () => {
+        const scene = self.state.scenes[sceneIdx];
+        if (!scene) return;
+        scene.name = name || undefined;
+        self.renderWithMixer();
+      };
+      if (hd) withUndo(hd, run); else run();
+    },
     onToggleDrumsExpanded() { /* drum-bus expand removed — drum-grid editor shows all voices */ },
   };
 }

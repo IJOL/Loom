@@ -301,7 +301,12 @@ export class SessionHost {
   private render(): void {
     const hostEl = document.getElementById('session-grid');
     if (!hostEl) return;
-    renderSessionGrid(hostEl, this.state, this.laneStates, this.callbacks);
+    // Ring the clip currently open in the inspector (only while its panel is shown).
+    const panel = document.getElementById('session-inspector');
+    const openClip = (panel && !panel.hidden)
+      ? (this.inspector.getSelectedClip() ?? undefined)
+      : undefined;
+    renderSessionGrid(hostEl, this.state, this.laneStates, this.callbacks, openClip);
   }
 
   renderWithMixer(): void {
