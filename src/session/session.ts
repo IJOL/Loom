@@ -12,7 +12,9 @@ export interface MusicalityState {
   lock: boolean;      // candado de escala del piano-roll
 }
 export interface LaneMusicalityOverride { key?: number; scale?: ScaleId; }
-export const DEFAULT_MUSICALITY: MusicalityState = { key: 9, scale: 'minor', style: 'acid', lock: true };
+// Scale lock defaults OFF: a fresh session must never silently constrain which
+// notes the user can place. It's opt-in via the 🔒 toggle in the tonality bar.
+export const DEFAULT_MUSICALITY: MusicalityState = { key: 9, scale: 'minor', style: 'acid', lock: false };
 
 export type LaunchQuantize =
   | 'immediate' | '1/4' | '1/2' | '1/1' | '2/1' | '4/1';

@@ -43,6 +43,13 @@ export function renderMusicalityBar(host: HTMLElement, deps: MusicalityBarDeps):
     const o = document.createElement('option'); o.value = s.id; o.textContent = s.label;
     styleSel.appendChild(o);
   }
+  // Global scale lock. When ON, the piano-roll snaps placed notes to the key;
+  // OFF means you can play anything. This is the single global source of truth
+  // (the piano-roll's own 🔒 button writes the same musicality.lock).
+  const lockChk = document.createElement('input');
+  lockChk.type = 'checkbox';
+  lockChk.dataset.musicality = 'lock';
+  lockChk.title = 'When ON, notes you place snap to the project key';
 
   const mkRow = (label: string, el: HTMLElement) => {
     const row = document.createElement('label'); row.className = 'musicality-row';
@@ -53,6 +60,7 @@ export function renderMusicalityBar(host: HTMLElement, deps: MusicalityBarDeps):
     mkRow('Root', rootSel),
     mkRow('Scale', scaleSel),
     mkRow('Style', styleSel),
+    mkRow('Scale lock', lockChk),
   );
 
   const summaryText = (m: MusicalityState) => {
@@ -65,7 +73,10 @@ export function renderMusicalityBar(host: HTMLElement, deps: MusicalityBarDeps):
     rootSel.value = String(((m.key % 12) + 12) % 12);
     scaleSel.value = m.scale;
     styleSel.value = m.style;
-    summary.textContent = `🎼 ${summaryText(m)}`;
+    lockChk.checked = m.lock;
+    // 🔒/🔓 in the summary so the lock state is visible at a glance, without
+    // opening the popover or any clip editor.
+    summary.textContent = `🎼 ${summaryText(m)} · ${m.lock ? '🔒' : '🔓'}`;
   };
 
   const emit = () => {
@@ -75,10 +86,11 @@ export function renderMusicalityBar(host: HTMLElement, deps: MusicalityBarDeps):
       key: parseInt(rootSel.value, 10),
       scale: scaleSel.value as ScaleId,
       style: styleSel.value as StyleId,
+      lock: lockChk.checked,
     });
     refresh();
   };
-  for (const el of [rootSel, scaleSel, styleSel]) el.addEventListener('change', emit);
+  for (const el of [rootSel, scaleSel, styleSel, lockChk]) el.addEventListener('change', emit);
   summary.addEventListener('click', () => { popover.hidden = !popover.hidden; });
 
   host.append(summary, popover);

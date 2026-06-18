@@ -24,8 +24,10 @@ describe('resolveTonality', () => {
 });
 
 describe('emptySessionState seeds the default musicality', () => {
-  it('a fresh session has the default tonality with the scale lock ON', () => {
+  it('a fresh session has the default tonality with the scale lock OFF', () => {
     expect(emptySessionState().musicality).toEqual(DEFAULT_MUSICALITY);
-    expect(emptySessionState().musicality?.lock).toBe(true);
+    // Scale lock defaults OFF: a new session must never silently constrain
+    // which notes the user can place. The lock is opt-in via the tonality bar.
+    expect(emptySessionState().musicality?.lock).toBe(false);
   });
 });
