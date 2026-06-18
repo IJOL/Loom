@@ -246,6 +246,7 @@ function clipCell(
   const lp = laneStates.get(lane.id);
   const isPlaying = !!(clip && lp?.playing && lp.playing.id === clip.id);
   const isQueued  = !!(clip && lp?.queued  && lp.queued.id  === clip.id);
+  const isStopping = !!(clip && lp?.playing && lp.playing.id === clip.id && lp.queuedStop != null);
 
   if (clip) {
     cell.classList.add('session-cell-filled');
@@ -254,6 +255,7 @@ function clipCell(
     }
     if (isPlaying) cell.classList.add('session-cell-playing');
     if (isQueued)  cell.classList.add('session-cell-queued');
+    if (isStopping) cell.classList.add('session-cell-stopping');
     cell.style.backgroundColor = clip.color ?? COLOR_IDLE;
     cell.appendChild(deleteCross('Delete clip', () => cb.onDeleteClip(lane.id, rowIdx)));
     const label = document.createElement('span');

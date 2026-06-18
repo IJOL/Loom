@@ -102,6 +102,11 @@
   from { outline: 2px solid var(--amber); outline-offset: -2px; }
   to   { outline: 2px solid #b07418; outline-offset: -2px; }
 }
+.session-cell-stopping { animation: stopping-pulse 0.6s infinite alternate; }
+@keyframes stopping-pulse {
+  from { outline: 2px solid var(--red); outline-offset: -2px; }
+  to   { outline: 2px solid #5a1d1d; outline-offset: -2px; }
+}
 .session-cell-label { flex: 1; color: inherit; }
 /* The clip launch (▶/⏸) is a comfortable hit target, not a tiny glyph: it
    stretches the full cell height and hugs the right edge (into the cell padding)
