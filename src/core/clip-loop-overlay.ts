@@ -12,29 +12,30 @@ import type { SessionClip } from '../session/session';
 import { ticksPerBar, type TimeSignature } from './meter';
 import { TICKS_PER_QUARTER } from './notes';
 import { effectiveClipLoop } from './clip-loop';
-import { pxToTick, tickToPx, snapTick, clampLoopRegion } from './clip-loop-brace';
+import { snapTick, clampLoopRegion } from './clip-loop-brace';
 import type { HistoryDeps } from '../save/history-wiring';
 
 export type LoopQuantize = 'free' | 'beat' | 'bar';
 
 export interface ClipLoopOverlayDeps {
-  /** Where the Loop toggle + quantize select (+ optional "all channels") mount. */
+  /** Where the Loop toggle + quantize select (+ optional "All channels") mount. */
   toolbarHost: HTMLElement;
-  /** Element the column overlays; made `position:relative` if it is static. */
-  overlayHost: HTMLElement;
+  /** Scrollable element the amber column is appended to. Its `overflow` clips the
+   *  column and its scroll moves it. Made `position:relative` if static. */
+  scrollHost: HTMLElement;
   clip: SessionClip;
   meter: TimeSignature;
   historyDeps?: HistoryDeps;
-  /** Called after a committed edit (e.g. invalidate the warp cache + persist). */
   onChange?: () => void;
-  /** When present, shows an "all channels" button that hands the current loop
-   *  region to the caller (already wrapped in an undo gesture + onChange). */
   applyToAll?: (loopEnabled: boolean, startTick: number, endTick: number) => void;
-  /** Left inset (px) of the bar grid INSIDE the editor's widest canvas. The
-   *  drum-grid draws its row labels in a fixed gutter on the same canvas, so bar 0
-   *  sits `LABEL_W` px in — without this the column would start over the labels.
-   *  The piano-roll/waveform have no internal gutter (default 0). */
-  gridInsetLeft?: number;
+  /** Content-space x (px) of a tick — i.e. `tick·pxPerTick` (+ any fixed gutter). */
+  tickToX: (tick: number) => number;
+  /** Inverse for the A/B drag: viewport client x → clip-axis tick in [0,total]. */
+  tickFromClientX: (clientX: number) => number;
+  /** Column height (the content/grid height) in px. */
+  contentHeight: () => number;
+  /** Column top within scrollHost; default 0. */
+  contentTop?: () => number;
 }
 
 const QUANT_LABELS: ReadonlyArray<readonly [LoopQuantize, string]> = [
@@ -80,8 +81,8 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
   }
   deps.toolbarHost.appendChild(bar);
 
-  // ── column overlay ──
-  const host = deps.overlayHost;
+  // ── column overlay (mounted INSIDE the editor's scrollable content) ──
+  const host = deps.scrollHost;
   if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
   const col = document.createElement('div');
   col.className = 'clip-loop-col';
@@ -90,45 +91,14 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
   col.append(hL, hR);
   host.appendChild(col);
 
-  // The bar grid does NOT always fill the host: a piano-roll/drum editor has a
-  // left label gutter, so bar 0 starts inside the host, not at its left edge.
-  // Anchor the column to the widest <canvas> in the host (the note/drum grid or
-  // the waveform) — for the gutter-less waveform that's the full width, so audio
-  // is unchanged; for the piano-roll it lines the column up with the bar numbers.
-  const contentBox = (): { leftRel: number; absLeft: number; width: number; topRel: number; height: number } => {
-    const hr = host.getBoundingClientRect();
-    // Horizontal: the widest <canvas> = the bar-grid area (skips the narrow key
-    // gutter). Vertical: the UNION of all canvases (ruler → grid → velocity) — this
-    // excludes the editor's own toolbar (DRAW/SELECT, octave, grid are divs, not
-    // canvases), so the column sits over the bar-number row + grid, not above it.
-    let widest: DOMRect | null = null;
-    let top = Infinity, bottom = -Infinity;
-    for (const c of Array.from(host.querySelectorAll('canvas'))) {
-      const r = c.getBoundingClientRect();
-      if (r.width <= 0 || r.height <= 0) continue;
-      if (!widest || r.width > widest.width) widest = r;
-      top = Math.min(top, r.top);
-      bottom = Math.max(bottom, r.bottom);
-    }
-    const wx = widest ?? hr;
-    if (!Number.isFinite(top)) { top = hr.top; bottom = hr.bottom; }
-    // gridInsetLeft skips a gutter drawn INSIDE the canvas (the drum-grid's row
-    // labels live on the same canvas, so bar 0 is LABEL_W px in).
-    const inset = deps.gridInsetLeft ?? 0;
-    const absLeft = wx.left + inset;
-    return {
-      leftRel: absLeft - hr.left, absLeft, width: Math.max(1, (wx.width || 1) - inset),
-      topRel: top - hr.top, height: Math.max(1, bottom - top),
-    };
-  };
-
   const layout = () => {
     const { startTick, endTick } = effectiveClipLoop(clip, meter);
-    const cb = contentBox();
-    col.style.left = `${cb.leftRel + tickToPx(startTick, cb.width, total)}px`;
-    col.style.width = `${tickToPx(endTick - startTick, cb.width, total)}px`;
-    col.style.top = `${cb.topRel}px`;
-    col.style.height = `${cb.height}px`;
+    const x0 = deps.tickToX(startTick);
+    const x1 = deps.tickToX(endTick);
+    col.style.left = `${x0}px`;
+    col.style.width = `${Math.max(0, x1 - x0)}px`;
+    col.style.top = `${deps.contentTop?.() ?? 0}px`;
+    col.style.height = `${deps.contentHeight()}px`;
     col.style.display = clip.loopEnabled ? '' : 'none';
     toggle.classList.toggle('on', !!clip.loopEnabled);
   };
@@ -147,9 +117,8 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
     if (!clip.loopEnabled) return;
     historyDeps?.beginGesture?.();
     const move = (e: PointerEvent) => {
-      const cb = contentBox();
       const step = snapFor();
-      const tick = snapTick(pxToTick(e.clientX - cb.absLeft, cb.width, total), step);
+      const tick = snapTick(deps.tickFromClientX(e.clientX), step);
       const cur = effectiveClipLoop(clip, meter);
       const next = which === 'l'
         ? clampLoopRegion(tick, cur.endTick, total, step)
@@ -169,11 +138,7 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
   hL.addEventListener('pointerdown', startDrag('l'));
   hR.addEventListener('pointerdown', startDrag('r'));
 
-  // Defer first layout until the host has a measured width.
   requestAnimationFrame(layout);
-  // Re-layout when the editor canvas sizes/resizes after mount (the bar grid lives
-  // inside it; a one-shot layout could measure it before it has its final size and
-  // leave the column misplaced). Cheap — just reads rects and sets styles.
   if (typeof ResizeObserver !== 'undefined') {
     new ResizeObserver(() => layout()).observe(host);
   }

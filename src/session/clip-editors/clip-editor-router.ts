@@ -14,13 +14,12 @@ import { TICKS_PER_STEP, type NoteEvent } from '../../core/notes';
 import { ticksPerBar, stepsPerBar, stepsPerBeat } from '../../core/meter';
 import { resolveViewState, type ViewState } from '../../core/pianoroll-zoom';
 import { getEngine } from '../../engines/registry';
-import { renderDrumGridEditor, LANE_LABELS, LABEL_W as DRUM_GRID_LABEL_W, type DrumGridModel } from './clip-editor-drum-grid';
+import { renderDrumGridEditor, LANE_LABELS, type DrumGridModel } from './clip-editor-drum-grid';
 import { noteDrumRows } from '../../core/drum-grid-editing';
 import { GM_DRUM_MAP } from '../../engines/drum-gm-map';
 import { mountWaveformHeader, renderAudioClipEditor } from './clip-waveform-header';
 import type { HistoryDeps } from '../../save/history-wiring';
 import { withUndo } from '../../save/history-wiring';
-import { mountClipLoopOverlay } from '../../core/clip-loop-overlay';
 import type { LaneResourceMap } from '../../core/lane-resources';
 import type { KnobHandle } from '../../core/knob';
 import type { EngineUIContext } from '../../engines/engine-types';
@@ -215,6 +214,8 @@ export function renderClipEditor(
     host.appendChild(headerBox);
     headerHandle = mountWaveformHeader(headerBox, clip, deps.seq.meter, { getPlayheadFrac: playheadFrac });
   }
+  const loopBar = document.createElement('div');
+  host.appendChild(loopBar);
   const bodyBox = document.createElement('div');
   host.appendChild(bodyBox);
 
@@ -231,22 +232,13 @@ export function renderClipEditor(
       return loopAwareStep(clip, deps.seq.meter, stepsElapsed) * TICKS_PER_STEP;
     };
     const model = lane.engineId === 'sampler' ? samplerDrumModel(lane, deps.midiLabel) : undefined;
-    bodyHandle = renderDrumGridEditor(bodyBox, clip, deps.historyDeps, deps.seq.meter, { auditionNote: audition, getPlayheadTick }, model);
+    bodyHandle = renderDrumGridEditor(bodyBox, clip, deps.historyDeps, deps.seq.meter, {
+      auditionNote: audition, getPlayheadTick,
+      loop: { toolbarHost: loopBar, historyDeps: deps.historyDeps, onChange: () => {} },
+    }, model);
   } else {
-    bodyHandle = buildPianoRoll(bodyBox, lane, clip, deps);
+    bodyHandle = buildPianoRoll(bodyBox, lane, clip, deps, loopBar);
   }
-
-  // Performance-style loop overlay over the note/drum editor (toolbar above it),
-  // matching the audio editor so the loop reads the same everywhere.
-  const loopBar = document.createElement('div');
-  host.insertBefore(loopBar, bodyBox);
-  mountClipLoopOverlay({
-    toolbarHost: loopBar, overlayHost: bodyBox,
-    clip, meter: deps.seq.meter, historyDeps: deps.historyDeps, onChange: () => {},
-    // The drum-grid draws its row labels in a LABEL_W gutter on the same canvas,
-    // so the bar grid starts that far in; the piano-roll has no internal gutter.
-    gridInsetLeft: editor === 'drum-grid' ? DRUM_GRID_LABEL_W : 0,
-  });
   return combineEditorHandle(headerHandle, bodyHandle);
 }
 
@@ -268,6 +260,7 @@ function buildPianoRoll(
   lane: SessionLane,
   clip: SessionClip,
   deps: ClipEditorDeps,
+  loopBar: HTMLElement,
 ): PianoRollHandle {
   const getNotes = (): NoteEvent[] => clip.notes ?? [];
   const setNotes = (notes: NoteEvent[]) => { clip.notes = notes; };
@@ -320,5 +313,6 @@ function buildPianoRoll(
       onGestureEnd:    () => historyDeps.endGesture?.(),
       onGestureCancel: () => historyDeps.endGesture?.(),
     } : {}),
+    loop: { toolbarHost: loopBar, clip, meter: seq.meter, historyDeps, onChange: () => {} },
   });
 }

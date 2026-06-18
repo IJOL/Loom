@@ -19,6 +19,7 @@ import {
   gmDrumRows, type DrumRows, type ResolutionKey, type DrumClipNote,
 } from '../../core/drum-grid-editing';
 import { createToolToggle, createHelpButton, createResolutionSelect } from '../../core/clip-editor-toolbar';
+import { mountClipLoopOverlay } from '../../core/clip-loop-overlay';
 
 export const LANE_LABELS: Record<DrumVoice, string> = {
   kick: 'KICK', snare: 'SNARE', closedHat: 'CH', openHat: 'OH',
@@ -49,6 +50,12 @@ export const DRUM_KEY_LEGEND =
 export interface DrumEditorDeps {
   auditionNote?: (midi: number) => void;
   getPlayheadTick?: () => number;        // -1 when not playing
+  /** When present, mount the loop overlay over the grid (toolbar in loop.toolbarHost). */
+  loop?: {
+    toolbarHost: HTMLElement;
+    historyDeps?: HistoryDeps;
+    onChange?: () => void;
+  };
 }
 export interface DrumEditorHandle { redraw: () => void; }
 
@@ -353,6 +360,24 @@ export function renderDrumGridEditor(
 
   // ── Mount + the host-RAF redraw handle (per-frame width check + playhead) ──
   resize();
+
+  if (deps.loop) {
+    mountClipLoopOverlay({
+      toolbarHost: deps.loop.toolbarHost,
+      scrollHost: wrap,
+      clip, meter,
+      historyDeps: deps.loop.historyDeps,
+      onChange: deps.loop.onChange,
+      tickToX: (t) => xForTick(t), // = LABEL_W + t·pxPerTick
+      tickFromClientX: (cx) => {
+        const x = cx - canvas.getBoundingClientRect().left - LABEL_W;
+        return pxPerTick > 0 ? Math.max(0, Math.min(patternTicks, x / pxPerTick)) : 0;
+      },
+      contentHeight: () => FRAME_H,
+      contentTop: () => canvas.offsetTop,
+    });
+  }
+
   let lastW = wrap.clientWidth;
   function redraw(): void {
     const w = wrap.clientWidth;

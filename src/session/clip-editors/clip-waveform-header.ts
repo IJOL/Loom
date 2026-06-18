@@ -198,12 +198,21 @@ export function renderAudioClipEditor(
   // Performance-style loop overlay over the waveform (toolbar in the top row).
   let loopHandle: { redraw: () => void } | undefined;
   if (deps.loop) {
+    const total = clip.lengthBars * ticksPerBar(meter);
+    const headerWidth = () => Math.max(320, headerHost.clientWidth || 600);
     loopHandle = mountClipLoopOverlay({
-      toolbarHost: toolbar, overlayHost: headerHost,
+      toolbarHost: toolbar,
+      scrollHost: headerHost,
       clip, meter,
       historyDeps: deps.loop.historyDeps,
       onChange: deps.loop.onChange,
       applyToAll: deps.loop.applyToAll,
+      tickToX: (t) => (t / total) * headerWidth(),
+      tickFromClientX: (cx) => {
+        const r = headerHost.getBoundingClientRect();
+        return Math.max(0, Math.min(total, ((cx - r.left) / Math.max(1, headerWidth())) * total));
+      },
+      contentHeight: () => RULER_H + WAVE_H,
     });
   }
 

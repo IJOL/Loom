@@ -16,10 +16,14 @@ import {
   notesInRect, translateGroup, serializeClipboard, pasteTranslate, midiForKey,
   quantizeRecorded, clampOctaveBase, octaveBaseLabel, PIANO_KEY_LEGEND, snapNoteMidi, type ClipboardNote, type ScaleCtx,
 } from './piano-roll-editing';
-import { isTextEditTarget } from '../save/history-wiring';
+import { isTextEditTarget, type HistoryDeps } from '../save/history-wiring';
 import {
-  createToolToggle, createHelpButton, createGridControl, createResolutionSelect,
+  createToolToggle, createHelpButton, createGridControl, createResolutionSelect, createFollowToggle,
 } from './clip-editor-toolbar';
+import type { SessionClip } from '../session/session';
+import type { TimeSignature } from './meter';
+import { mountClipLoopOverlay } from './clip-loop-overlay';
+import { isFollowEnabled } from './clip-follow';
 import { resolutionToSnap, DEFAULT_RESOLUTION, type ResolutionKey } from './drum-grid-editing';
 
 type Tool = 'draw' | 'select';
@@ -60,6 +64,16 @@ export interface PianoRollOpts {
   scaleLock?: boolean;
   /** Persist a scale-lock toggle (the caller writes musicality.lock). */
   onScaleLockChange?: (lock: boolean) => void;
+  /** When present, mount the performance-style loop overlay INSIDE the grid
+   *  viewport (so it tracks zoom + scroll) and put its toggle/quantize toolbar
+   *  in `loop.toolbarHost`. */
+  loop?: {
+    toolbarHost: HTMLElement;
+    clip: SessionClip;
+    meter: TimeSignature;
+    historyDeps?: HistoryDeps;
+    onChange?: () => void;
+  };
 }
 
 export interface PianoRollHandle {
@@ -238,7 +252,8 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   refreshLock();
   lockBtn.hidden = !opts.scaleCtx;     // only meaningful with a tonality
 
-  f.toolbar.append(drawBtn, selBtn, octCtl, resCtl, help.btn, lockBtn);
+  const followBtn = createFollowToggle();
+  f.toolbar.append(drawBtn, selBtn, followBtn, octCtl, resCtl, help.btn, lockBtn);
   // Popover lives just below the toolbar (inside the wrap), positioned by SCSS.
   f.toolbar.after(help.popover);
   refreshToolbar();
@@ -252,6 +267,9 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   let { zoomX, zoomY, scrollLeft, scrollTop } = opts.viewState ?? defaultViewState();
   // Geometry derived from zoom + viewport (recomputed in geom()).
   let gridW = 0, gridH = 0, pxPerTick = 0, rowHeight = 0;
+
+  let loopOverlay: { redraw: () => void } | null = null;
+  const refreshLoop = () => loopOverlay?.redraw();
 
   const xForTick = (t: number) => t * pxPerTick;
   const yForMidi = (m: number) => (maxMidi - m) * rowHeight;
@@ -323,9 +341,8 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       const x = xForTick(ph);
       gctx.strokeStyle = '#f7d000'; gctx.lineWidth = 1;
       gctx.beginPath(); gctx.moveTo(x, 0); gctx.lineTo(x, h); gctx.stroke();
-      // Follow the playhead horizontally (assignment triggers the scroll
-      // listener, which re-pins the strips and persists).
-      if (gridW > f.gridVp.clientWidth) {
+      // Follow the playhead horizontally — only when Follow mode is on.
+      if (isFollowEnabled() && gridW > f.gridVp.clientWidth) {
         const target = Math.max(0, x - f.gridVp.clientWidth / 2);
         if (Math.abs(f.gridVp.scrollLeft - target) > 2) f.gridVp.scrollLeft = target;
       }
@@ -408,6 +425,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     setSize(f.keysCanvas, KEYS_W, gridH);
     setSize(f.velCanvas, gridW, VEL_LANE_H);
     drawGrid(); drawRuler(); drawKeys(); drawVelLane();
+    refreshLoop();
   }
 
   /** Redraw both the note grid and the velocity lane together (for note edits). */
@@ -416,7 +434,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   // ── Scroll: re-pin strips + persist ───────────────────────────────────────
   f.gridVp.addEventListener('scroll', () => {
     scrollLeft = f.gridVp.scrollLeft; scrollTop = f.gridVp.scrollTop;
-    syncStrips(); persist();
+    syncStrips(); persist(); refreshLoop();
   });
 
   // ── Ruler scrub: ↕ zoom-H (anchored), ↔ pan-H ─────────────────────────────
@@ -436,7 +454,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     drawGrid(); drawRuler(); drawVelLane();
     const anchorPx = e.clientX - f.rulerWrap.getBoundingClientRect().left;
     f.gridVp.scrollLeft = zoomAroundAnchor(f.gridVp.scrollLeft, anchorPx, oldGridW, gridW) - dx;
-    syncStrips(); persist();
+    syncStrips(); persist(); refreshLoop();
   });
   const rulerEnd = (e: PointerEvent) => { rulerDrag = false; try { f.rulerWrap.releasePointerCapture(e.pointerId); } catch { /* ignore */ } };
   f.rulerWrap.addEventListener('pointerup', rulerEnd);
@@ -458,7 +476,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     drawGrid(); drawKeys();
     const anchorPy = e.clientY - f.keysWrap.getBoundingClientRect().top;
     f.gridVp.scrollTop = zoomAroundAnchor(f.gridVp.scrollTop, anchorPy, oldGridH, gridH);
-    syncStrips(); persist();
+    syncStrips(); persist(); refreshLoop();
   });
   const keysEnd = (e: PointerEvent) => { keysDrag = false; try { f.keysWrap.releasePointerCapture(e.pointerId); } catch { /* ignore */ } };
   f.keysWrap.addEventListener('pointerup', keysEnd);
@@ -810,6 +828,23 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   f.gridVp.scrollLeft = scrollLeft;
   f.gridVp.scrollTop = scrollTop;
   syncStrips();
+
+  if (opts.loop) {
+    loopOverlay = mountClipLoopOverlay({
+      toolbarHost: opts.loop.toolbarHost,
+      scrollHost: f.gridVp,
+      clip: opts.loop.clip,
+      meter: opts.loop.meter,
+      historyDeps: opts.loop.historyDeps,
+      onChange: opts.loop.onChange,
+      tickToX: (t) => xForTick(t),
+      tickFromClientX: (cx) => {
+        const x = cx - f.gridCanvas.getBoundingClientRect().left;
+        return pxPerTick > 0 ? Math.max(0, Math.min(opts.patternTicks, x / pxPerTick)) : 0;
+      },
+      contentHeight: () => gridH,
+    });
+  }
 
   // redraw() runs every animation frame (driven by session-host's RAF loop) to
   // animate the playhead. It also cheaply detects a viewport resize and does a

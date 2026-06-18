@@ -5,6 +5,7 @@
 // drum-grid/piano-roll resolution select) plug into `createGridControl`.
 
 import { RESOLUTIONS, clampResolution, type ResolutionKey } from './drum-grid-editing';
+import { isFollowEnabled, toggleFollow } from './clip-follow';
 
 export type EditorTool = 'draw' | 'select';
 
@@ -57,6 +58,22 @@ export function createGridControl(...children: HTMLElement[]): HTMLDivElement {
   ctl.style.cssText = 'margin-left:auto;display:flex;gap:4px;align-items:center';
   ctl.append(...children);
   return ctl;
+}
+
+/** A "Follow" on/off button bound to the session-global Follow flag. Reflects
+ *  the shared state on every render so all editors agree. `onChange` lets the
+ *  editor react (e.g. immediately re-evaluate scroll). */
+export function createFollowToggle(onChange?: (on: boolean) => void): HTMLButtonElement {
+  const btn = document.createElement('button');
+  btn.className = 'clip-loop-toggle'; // reuse the on/off pill styling
+  const refresh = () => {
+    btn.textContent = 'Follow';
+    btn.classList.toggle('on', isFollowEnabled());
+    btn.title = isFollowEnabled() ? 'Follow playhead: ON (view scrolls to the playhead)' : 'Follow playhead: OFF';
+  };
+  btn.addEventListener('click', () => { const on = toggleFollow(); refresh(); onChange?.(on); });
+  refresh();
+  return btn;
 }
 
 /** A "Grid" resolution `<select>` (reuses RESOLUTIONS), wrapped in a grid-control.
