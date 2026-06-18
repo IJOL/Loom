@@ -2,6 +2,9 @@
 import { describe, it, expect } from 'vitest';
 import { launchScene, tickSession, emptyLanePlayState, type LanePlayState } from './session-runtime';
 import type { SessionState, SessionClip, SessionLane, SessionScene } from './session';
+import { emptyArrangementState } from '../performance/performance';
+import { createRecState, armRec, startRecording } from '../performance/rec-state';
+import { appendClipEvent } from '../performance/arrangement-ops';
 
 const BPM = 120; // 1 bar = 2s
 
@@ -55,6 +58,40 @@ describe('launchScene — atomic switch synced to governing loop end', () => {
     expect(A.queued).toBeNull();        // not re-queued
     expect(A.queuedStop).toBeNull();    // not stopped
     expect(A.playing!.id).toBe('a0');   // still playing, same phase
+  });
+});
+
+describe('tickSession orphan-stop closes the pending rec clip event', () => {
+  it('closePendingClipEvent is called at queuedStop when recording', () => {
+    const { state, laneStates } = setup();
+    const C = laneStates.get('C')!;
+    C.queuedStop = 8;
+
+    // Set up recording
+    const rec = createRecState();
+    const arrangement = emptyArrangementState(120);
+    armRec(rec); startRecording(rec, 0);
+
+    // Open a pending clip event for lane C at t=0 (simulates it having been promoted).
+    // appendClipEvent leaves untilSec = Infinity (open).
+    appendClipEvent(arrangement, 'C', 'c0', 0);
+    expect(arrangement.lanes.find(l => l.laneId === 'C')?.clipEvents[0].untilSec).toBe(Infinity);
+
+    // Tick so the orphan-stop fires at T=8
+    tickSession(
+      laneStates, state, 7.9, 0.2, BPM,
+      () => {}, () => {},
+      { rec, arrangement },
+      undefined,
+      { silenceLane: () => {} },
+    );
+
+    expect(C.playing).toBeNull();
+    expect(C.queuedStop).toBeNull();
+    // The pending clip event must have been closed at the queuedStop boundary
+    const cLane = arrangement.lanes.find(l => l.laneId === 'C');
+    expect(cLane).toBeDefined();
+    expect(cLane!.clipEvents[0].untilSec).toBeCloseTo(8, 3);
   });
 });
 
