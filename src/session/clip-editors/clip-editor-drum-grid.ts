@@ -18,8 +18,14 @@ import {
   hitInCell, hitsInCell, rowsInRect, rowMove, serializeDrumClipboard, pasteDrumClipboard, clampGroupTick,
   gmDrumRows, type DrumRows, type ResolutionKey, type DrumClipNote,
 } from '../../core/drum-grid-editing';
-import { createToolToggle, createHelpButton, createResolutionSelect } from '../../core/clip-editor-toolbar';
+import { createToolToggle, createHelpButton, createResolutionSelect, createFollowToggle } from '../../core/clip-editor-toolbar';
 import { mountClipLoopOverlay } from '../../core/clip-loop-overlay';
+import { clampZoom, scrubToZoom, zoomAroundAnchor, maxZoomX } from '../../core/pianoroll-zoom';
+import { isFollowEnabled, followScrollTarget } from '../../core/clip-follow';
+
+// In-memory horizontal zoom/scroll per clip (mirrors the piano-roll's
+// viewStateByClip; resets on reload; no saved-state change).
+const hViewByClip = new Map<string, { zoomX: number; scrollLeft: number }>();
 
 export const LANE_LABELS: Record<DrumVoice, string> = {
   kick: 'KICK', snare: 'SNARE', closedHat: 'CH', openHat: 'OH',
@@ -91,7 +97,7 @@ export function renderDrumGridEditor(
   let lastMouse: { row: number; tick: number } | null = null;
   let playheadTick = -1;
 
-  // ── DOM: toolbar + canvas ─────────────────────────────────────────────────
+  // ── DOM: toolbar + label column + scroll viewport ─────────────────────────
   const wrap = document.createElement('div');
   wrap.tabIndex = 0; wrap.style.outline = 'none';
   const toolbar = document.createElement('div');
@@ -107,41 +113,71 @@ export function renderDrumGridEditor(
   const help = createHelpButton(DRUM_KEY_LEGEND);
   const helpPopover = help.popover;
 
-  toolbar.append(drawBtn, selBtn, resCtl, help.btn);
+  toolbar.append(drawBtn, selBtn, createFollowToggle(), resCtl, help.btn);
 
+  const labelsCanvas = document.createElement('canvas');
+  labelsCanvas.style.cssText = `display:block;flex:0 0 ${LABEL_W}px`;
+
+  const viewport = document.createElement('div');
+  viewport.className = 'drum-grid-vp';
+  Object.assign(viewport.style, { flex: '1 1 auto', overflowX: 'auto', overflowY: 'hidden', position: 'relative' } as Partial<CSSStyleDeclaration>);
   const canvas = document.createElement('canvas');
   canvas.style.display = 'block'; canvas.style.cursor = 'crosshair';
+  viewport.appendChild(canvas);
+
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:flex-start';
+  row.append(labelsCanvas, viewport);
+
   // Popover lives just below the toolbar (inside the wrap), positioned by SCSS.
-  wrap.append(toolbar, helpPopover, canvas);
+  wrap.append(toolbar, helpPopover, row);
   host.appendChild(wrap);
 
   const c2d = canvas.getContext('2d');
   if (!c2d) throw new Error('canvas 2d unavailable');
   const ctx = c2d;
 
+  const lctx = labelsCanvas.getContext('2d')!;
+
+  // ── Zoom/scroll state + content-space coordinates ─────────────────────────
+  const stored = hViewByClip.get(clip.id);
+  let zoomX = stored?.zoomX ?? 1;
   let gridW = 600, pxPerTick = gridW / patternTicks;
-  const xForTick = (t: number) => LABEL_W + t * pxPerTick;
+  const xForTick = (t: number) => t * pxPerTick;                 // content space (no LABEL_W)
   const yForRow = (r: number) => RULER_H + r * ROW_H;
-  const tickFromX = (x: number) => Math.max(0, Math.min(patternTicks - 1, (x - LABEL_W) / pxPerTick));
+  const tickFromX = (x: number) => Math.max(0, Math.min(patternTicks - 1, x / pxPerTick));
   const rowFromY = (y: number) => Math.max(0, Math.min(ROWS_N - 1, Math.floor((y - RULER_H) / ROW_H)));
+  const persist = () => hViewByClip.set(clip.id, { zoomX, scrollLeft: viewport.scrollLeft });
 
   function resize(): void {
-    const w = Math.max(320, wrap.clientWidth || host.clientWidth || 600);
-    gridW = w - LABEL_W;
+    const vpW = Math.max(120, viewport.clientWidth || ((wrap.clientWidth || host.clientWidth || 600) - LABEL_W));
+    zoomX = clampZoom(zoomX, maxZoomX(vpW));
+    gridW = Math.round(vpW * zoomX);
     pxPerTick = gridW / patternTicks;
-    canvas.width = w; canvas.height = FRAME_H;
-    canvas.style.width = `${w}px`; canvas.style.height = `${FRAME_H}px`;
-    draw();
+    canvas.width = gridW; canvas.height = FRAME_H;
+    canvas.style.width = `${gridW}px`; canvas.style.height = `${FRAME_H}px`;
+    labelsCanvas.width = LABEL_W; labelsCanvas.height = FRAME_H;
+    labelsCanvas.style.width = `${LABEL_W}px`; labelsCanvas.style.height = `${FRAME_H}px`;
+    drawLabels(); draw();
+  }
+
+  function drawLabels(): void {
+    lctx.fillStyle = '#0a0a0a'; lctx.fillRect(0, 0, LABEL_W, FRAME_H);
+    for (let r = 0; r < ROWS_N; r++) {
+      const y = yForRow(r);
+      lctx.fillStyle = '#202020'; lctx.fillRect(0, y, LABEL_W, ROW_H);
+      lctx.fillStyle = '#9a9a9a'; lctx.font = '10px ui-monospace, monospace'; lctx.textBaseline = 'middle';
+      lctx.fillText(labels[r] ?? '', 4, y + ROW_H / 2);
+    }
+    const laneTop = RULER_H + ROW_H * ROWS_N;
+    lctx.fillStyle = '#202020'; lctx.fillRect(0, laneTop, LABEL_W, VEL_LANE_H);
   }
 
   function draw(): void {
     ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, canvas.width, FRAME_H);
     for (let r = 0; r < ROWS_N; r++) {
       const y = yForRow(r);
-      ctx.fillStyle = r % 2 ? '#121212' : '#161616'; ctx.fillRect(LABEL_W, y, gridW, ROW_H);
-      ctx.fillStyle = '#202020'; ctx.fillRect(0, y, LABEL_W, ROW_H);
-      ctx.fillStyle = '#9a9a9a'; ctx.font = '10px ui-monospace, monospace'; ctx.textBaseline = 'middle';
-      ctx.fillText(labels[r] ?? '', 4, y + ROW_H / 2);
+      ctx.fillStyle = r % 2 ? '#121212' : '#161616'; ctx.fillRect(0, y, gridW, ROW_H);
     }
     // gridlines: in free mode draw only bar/beat reference lines (snap=1 would draw one per tick).
     const lineStep = resolution === 'free' ? beatTicks : snap();
@@ -154,7 +190,7 @@ export function renderDrumGridEditor(
       const r = rows.noteToRow(n.midi);
       if (r < 0) continue;
       const x = xForTick(n.start);
-      const maxW = (LABEL_W + gridW) - x;
+      const maxW = gridW - x;
       const w = Math.max(3, Math.min(n.duration * pxPerTick, maxW));
       const y = yForRow(r) + 3;
       const sel = selection.has(n);
@@ -179,11 +215,10 @@ export function renderDrumGridEditor(
     }
     // ── Velocity lane band ────────────────────────────────────────────────────
     const laneTop = RULER_H + ROW_H * ROWS_N;
-    ctx.fillStyle = '#0e0e0e'; ctx.fillRect(LABEL_W, laneTop, gridW, VEL_LANE_H);
-    ctx.fillStyle = '#202020'; ctx.fillRect(0, laneTop, LABEL_W, VEL_LANE_H);
+    ctx.fillStyle = '#0e0e0e'; ctx.fillRect(0, laneTop, gridW, VEL_LANE_H);
     const accentY = laneTop + VEL_LANE_H - velocityToBarHeight(100, VEL_LANE_H);
     ctx.strokeStyle = '#ff8c2e'; ctx.globalAlpha = 0.6; ctx.setLineDash([4, 3]);
-    ctx.beginPath(); ctx.moveTo(LABEL_W, accentY); ctx.lineTo(LABEL_W + gridW, accentY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, accentY); ctx.lineTo(gridW, accentY); ctx.stroke();
     ctx.setLineDash([]); ctx.globalAlpha = 1;
     const seen = new Map<number, number>();
     for (const n of notes()) {
@@ -220,16 +255,38 @@ export function renderDrumGridEditor(
 
   // ── Pointer handling ──────────────────────────────────────────────────────
   const pos = (e: PointerEvent) => {
-    const rect = canvas.getBoundingClientRect();
+    const rect = canvas.getBoundingClientRect();         // shifted by scroll → content x
     const x = e.clientX - rect.left;
-    return { row: rowFromY(e.clientY - rect.top), x, tick: tickFromX(x) };
+    return { row: rowFromY(e.clientY - rect.top), x, tick: tickFromX(x), localY: e.clientY - rect.top };
   };
 
   canvas.addEventListener('pointerdown', (e) => {
+    // Ruler scrub: ↕ zoom-H anchored at the cursor, ↔ pan-H.
+    if ((e.clientY - canvas.getBoundingClientRect().top) < RULER_H) {
+      let lx = e.clientX, ly = e.clientY;
+      canvas.setPointerCapture(e.pointerId); e.preventDefault();
+      const onMove = (ev: PointerEvent) => {
+        const dy = ev.clientY - ly, dx = ev.clientX - lx; lx = ev.clientX; ly = ev.clientY;
+        const oldGridW = gridW;
+        zoomX = scrubToZoom(zoomX, dy);
+        resize();
+        const anchorPx = ev.clientX - viewport.getBoundingClientRect().left;
+        viewport.scrollLeft = zoomAroundAnchor(viewport.scrollLeft, anchorPx, oldGridW, gridW) - dx;
+        persist();
+      };
+      const onUp = (ev: PointerEvent) => {
+        canvas.removeEventListener('pointermove', onMove);
+        canvas.removeEventListener('pointerup', onUp);
+        try { canvas.releasePointerCapture(ev.pointerId); } catch { /* ignore */ }
+      };
+      canvas.addEventListener('pointermove', onMove);
+      canvas.addEventListener('pointerup', onUp);
+      return;
+    }
+
     const p = pos(e); wrap.focus();
-    if (p.x < LABEL_W) return; // label gutter
     const laneTop = RULER_H + ROW_H * ROWS_N;
-    const localY = e.clientY - canvas.getBoundingClientRect().top;
+    const localY = p.localY;
     if (localY >= laneTop) {
       const hit = barHitTest(notes(), p.x, xForTick);
       if (hit) {
@@ -360,30 +417,37 @@ export function renderDrumGridEditor(
 
   // ── Mount + the host-RAF redraw handle (per-frame width check + playhead) ──
   resize();
+  if (stored) viewport.scrollLeft = stored.scrollLeft;
+
+  viewport.addEventListener('scroll', () => persist());
 
   if (deps.loop) {
+    const total = patternTicks;
     mountClipLoopOverlay({
       toolbarHost: deps.loop.toolbarHost,
-      scrollHost: wrap,
+      scrollHost: viewport,
       clip, meter,
       historyDeps: deps.loop.historyDeps,
       onChange: deps.loop.onChange,
-      tickToX: (t) => xForTick(t), // = LABEL_W + t·pxPerTick
+      tickToX: (t) => xForTick(t),
       tickFromClientX: (cx) => {
-        const x = cx - canvas.getBoundingClientRect().left - LABEL_W;
-        return pxPerTick > 0 ? Math.max(0, Math.min(patternTicks, x / pxPerTick)) : 0;
+        const x = cx - canvas.getBoundingClientRect().left;
+        return pxPerTick > 0 ? Math.max(0, Math.min(total, x / pxPerTick)) : 0;
       },
       contentHeight: () => FRAME_H,
-      contentTop: () => canvas.offsetTop,
     });
   }
 
-  let lastW = wrap.clientWidth;
+  let lastW = viewport.clientWidth;
   function redraw(): void {
-    const w = wrap.clientWidth;
-    if (w && w !== lastW) { lastW = w; resize(); }            // reflow on panel/window resize
+    const w = viewport.clientWidth;
+    if (w && w !== lastW) { lastW = w; resize(); if (stored) viewport.scrollLeft = Math.min(stored.scrollLeft, Math.max(0, gridW - w)); }
     const ph = deps.getPlayheadTick?.() ?? -1;
-    if (ph !== playheadTick) { playheadTick = ph; draw(); }    // animate the playhead
+    if (ph !== playheadTick) { playheadTick = ph; draw(); }
+    if (ph >= 0 && isFollowEnabled()) {
+      const target = followScrollTarget(xForTick(ph), viewport.clientWidth, gridW, viewport.scrollLeft);
+      if (target != null) viewport.scrollLeft = target;     // fires scroll → persist
+    }
   }
   return { redraw };
 }
