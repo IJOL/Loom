@@ -2,6 +2,28 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import '../../test/setup';
 import { ChannelStrip, FxBus } from './fx';
 import { SidechainBus } from './sidechain-bus';
+import { registerPlugin, _resetRegistry } from '../plugins/registry';
+import { reverbPlugin } from '../plugins/fx/reverb';
+import { delayPlugin } from '../plugins/fx/delay';
+
+describe('FxBus as a 2-send bank', () => {
+  beforeAll(() => { _resetRegistry(); registerPlugin(reverbPlugin); registerPlugin(delayPlugin); });
+
+  it('exposes two sends A(delay) and B(reverb)', () => {
+    const ctx = new AudioContext();
+    const fx = new FxBus(ctx, ctx.destination);
+    expect(fx.sends.map((s) => s.id)).toEqual(['A', 'B']);
+    expect(fx.getSendBus('A').label).toMatch(/delay/i);
+    expect(fx.getSendBus('B').label).toMatch(/reverb/i);
+  });
+
+  it('reverbInput aliases bus B and delayInput aliases bus A', () => {
+    const ctx = new AudioContext();
+    const fx = new FxBus(ctx, ctx.destination);
+    expect(fx.reverbInput).toBe(fx.getSendBus('B').input);
+    expect(fx.delayInput).toBe(fx.getSendBus('A').input);
+  });
+});
 
 describe('ChannelStrip.getEqGainParam', () => {
   let ctx: AudioContext;

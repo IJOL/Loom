@@ -11,68 +11,59 @@ import {
 } from './comp-state';
 import { DuckerSubgraph } from './ducker-subgraph';
 import { SidechainBus } from './sidechain-bus';
-import type { FxInstance } from '../plugins/types';
-import { reverbPlugin as _reverbPlugin } from '../plugins/fx/reverb';
-import { delayPlugin as _delayPlugin } from '../plugins/fx/delay';
+import { SendBus } from './send-bus';
+import { createInstance } from '../plugins/registry';
 
-type FxFactory = { kind: 'fx'; manifest: unknown; create(ctx: AudioContext): FxInstance };
-const reverbPlugin = _reverbPlugin as unknown as FxFactory;
-const delayPlugin  = _delayPlugin  as unknown as FxFactory;
-
+// FxBus is the FX send bank: two generic send buses, A (seeded Delay) and B
+// (seeded Reverb). Kept under the name `FxBus` to bound blast radius; it is no
+// longer a privileged reverb+delay pair — reverb/delay are ordinary inserts
+// living in the bus insert chains. `reverbInput`/`delayInput` alias the bus
+// inputs so ChannelStrip and DrumMachine per-voice sends route unchanged.
 export class FxBus {
-  reverbInput: GainNode;
-  delayInput: GainNode;
+  readonly sends: SendBus[];
 
-  private reverbInstance: FxInstance;
-  private delayInstance: FxInstance;
-
-  constructor(private ctx: AudioContext, private output: AudioNode) {
-    // Reverb send: reverbInput → plugin input → plugin output → master output
-    this.reverbInstance = reverbPlugin.create(ctx);
-    this.reverbInput = ctx.createGain();
-    this.reverbInput.connect(this.reverbInstance.input);
-    this.reverbInstance.output.connect(output);
-
-    // Delay send: delayInput → plugin input → plugin output → master output
-    this.delayInstance = delayPlugin.create(ctx);
-    this.delayInput = ctx.createGain();
-    this.delayInput.connect(this.delayInstance.input);
-    this.delayInstance.output.connect(output);
+  constructor(ctx: AudioContext, output: AudioNode) {
+    const a = new SendBus(ctx, 'A', 'Send A (Delay)', output);
+    const b = new SendBus(ctx, 'B', 'Send B (Reverb)', output);
+    // Seed each bus with its default insert. createInstance returns undefined
+    // when the registry isn't bootstrapped (e.g. pure unit tests) — the chain
+    // stays empty (pass-through) and the shims below no-op.
+    const delay  = createInstance('fx', 'delay',  ctx);
+    const reverb = createInstance('fx', 'reverb', ctx);
+    if (delay)  a.inserts.insert(delay);
+    if (reverb) b.inserts.insert(reverb);
+    this.sends = [a, b];
   }
 
-  // ── Reverb controls ──────────────────────────────────────────────────
-  setReverbWet(g: number)        { this.reverbInstance.setBaseValue('wet', g); }
-  setReverbPredelay(sec: number) { this.reverbInstance.setBaseValue('predelay', sec); }
-  setReverbSize(sec: number, decay?: number) {
-    this.reverbInstance.setBaseValue('size', sec);
-    if (decay !== undefined) this.reverbInstance.setBaseValue('decay', decay);
-  }
-  setReverbDecay(d: number)      { this.reverbInstance.setBaseValue('decay', d); }
-  getReverbWet()      { return this.reverbInstance.getBaseValue('wet'); }
-  getReverbSize()     { return this.reverbInstance.getBaseValue('size'); }
-  getReverbDecay()    { return this.reverbInstance.getBaseValue('decay'); }
-  getReverbPredelay() { return this.reverbInstance.getBaseValue('predelay'); }
-
-  // ── Delay controls ───────────────────────────────────────────────────
-  setDelayTime(sec: number)   { this.delayInstance.setBaseValue('time', sec); }
-  setDelayFeedback(g: number) { this.delayInstance.setBaseValue('feedback', g); }
-  setDelayWet(g: number)      { this.delayInstance.setBaseValue('wet', g); }
-  setDelayDamping(hz: number) { this.delayInstance.setBaseValue('damping', hz); }
-  getDelayFeedback() { return this.delayInstance.getBaseValue('feedback'); }
-  getDelayWet()      { return this.delayInstance.getBaseValue('wet'); }
-  getDelayDamping()  { return this.delayInstance.getBaseValue('damping'); }
-
-  setBpmSync(bpm: number, beatFraction = 0.375) {
-    const seconds = (60 / bpm) * beatFraction * 4;
-    this.setDelayTime(seconds);
+  getSendBus(id: 'A' | 'B'): SendBus {
+    const s = this.sends.find((x) => x.id === id);
+    if (!s) throw new Error(`FxBus: unknown send bus "${id}"`);
+    return s;
   }
 
-  /** Expose the underlying plugin instances so the modulation panel can
-   *  offer their AudioParams as destinations without allowing the user to
-   *  add them as lane inserts (which would cause double-tail summing). */
-  getMasterSendInstances(): { reverb: FxInstance; delay: FxInstance } {
-    return { reverb: this.reverbInstance, delay: this.delayInstance };
-  }
+  get reverbInput(): GainNode { return this.getSendBus('B').input; }
+  get delayInput(): GainNode  { return this.getSendBus('A').input; }
+
+  // ── Transitional shims (removed in Task 12 once fx-ui/modulation-ui migrate).
+  // They drive the seeded reverb (bus B) / delay (bus A) inserts directly.
+  private seed(id: 'A' | 'B') { return this.getSendBus(id).inserts.list()[0]?.fx; }
+  setReverbWet(g: number)        { this.seed('B')?.setBaseValue('wet', g); }
+  setReverbPredelay(sec: number) { this.seed('B')?.setBaseValue('predelay', sec); }
+  setReverbSize(sec: number, decay?: number) { this.seed('B')?.setBaseValue('size', sec); if (decay !== undefined) this.seed('B')?.setBaseValue('decay', decay); }
+  setReverbDecay(d: number)      { this.seed('B')?.setBaseValue('decay', d); }
+  getReverbWet()      { return this.seed('B')?.getBaseValue('wet') ?? 0; }
+  getReverbSize()     { return this.seed('B')?.getBaseValue('size') ?? 0; }
+  getReverbDecay()    { return this.seed('B')?.getBaseValue('decay') ?? 0; }
+  getReverbPredelay() { return this.seed('B')?.getBaseValue('predelay') ?? 0; }
+  setDelayTime(sec: number)   { this.seed('A')?.setBaseValue('time', sec); }
+  setDelayFeedback(g: number) { this.seed('A')?.setBaseValue('feedback', g); }
+  setDelayWet(g: number)      { this.seed('A')?.setBaseValue('wet', g); }
+  setDelayDamping(hz: number) { this.seed('A')?.setBaseValue('damping', hz); }
+  getDelayFeedback() { return this.seed('A')?.getBaseValue('feedback') ?? 0; }
+  getDelayWet()      { return this.seed('A')?.getBaseValue('wet') ?? 0; }
+  getDelayDamping()  { return this.seed('A')?.getBaseValue('damping') ?? 0; }
+  setBpmSync(bpm: number, beatFraction = 0.375) { this.setDelayTime((60 / bpm) * beatFraction * 4); }
+  getMasterSendInstances() { return { reverb: this.seed('B'), delay: this.seed('A') }; }
 }
 
 export interface SidechainRegistration {
