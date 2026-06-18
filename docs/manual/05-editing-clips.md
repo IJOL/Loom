@@ -18,9 +18,9 @@ Loom's musical-assistance layer works from a single shared **project key and sty
 
 ### Project key & style bar
 
-In the top transport bar, next to the **Meter** control, a button displays the current project tonality — for example **🎼 A minor · Acid / Techno**. Click it to open the key/style panel.
+In the top transport bar, next to the **Meter** control, a button displays the current project tonality and the scale-lock state — for example **🎼 A minor · Acid / Techno · 🔓**. The 🔒/🔓 glyph at the end tells you at a glance whether the scale lock is on, without opening anything. Click the button to open the key/style panel.
 
-The panel has three pickers:
+The panel has three pickers and a lock toggle:
 
 - **Root** — the tonic note (C through B).
 - **Scale** — chosen by feel rather than by musical-theory name. Each option shows a mood label, the musical name in small print, and a one-line usage hint:
@@ -31,6 +31,7 @@ The panel has three pickers:
   - 😰 Unsettling — phrygian
   - 🎨 Anything goes — chromatic (no constraint)
 - **Style** — the rhythmic and harmonic character used by the generators (Acid / Techno, House, Synthwave, Lo-fi, and others). Style affects which rhythmic patterns the chord maker lays down and sets the default feel of generated basslines and melodies.
+- **Scale lock** — a checkbox that turns the piano-roll's note snapping on or off **globally**. It is **off by default**, so you can play freely; tick it when you want every placed note pulled into the key. This is the same switch as the piano-roll's 🔒 button — wherever you toggle it, the other reflects it.
 
 Every other musical-assistance feature — the piano-roll scale highlight, the generator, the examples, the transforms, and the chord maker — respects the active root and scale. Closing the panel without choosing commits no change.
 
@@ -44,14 +45,14 @@ The lane inspector shows a line such as **Key: inherits A minor · Override**. C
 
 Inside the piano-roll, in-scale pitch rows are highlighted and the keyboard strip on the left colours in-scale keys — the tonic row and key are the brightest. This gives you an instant visual map of which notes belong to the current key.
 
-A **🔒 Scale** button in the piano-roll toolbar controls the scale lock (on by default). When locked:
+A **🔒 Scale** button in the piano-roll toolbar controls the scale lock, mirroring the **Scale lock** checkbox in the project key/style panel — both write the same global setting. The lock is **off by default**: a fresh session never constrains what you play, and a saved session always loads unlocked, so the lock can never surprise you by being on. Switch it to **🔒** whenever you want a safety net. When locked:
 
 - Drawing a note with the pencil snaps the pitch to the nearest in-scale degree.
 - Dragging an existing note vertically skips over out-of-scale rows.
 - Computer-keyboard note input plays and records only in-scale pitches.
 - Paste lands notes on in-scale pitches, transposing each pasted note by the minimum interval needed to put it back in key.
 
-It is impossible to place a wrong note with the lock on. Click the button to toggle it to **🔓** (unlocked) when you need chromatic freedom — accidentals, blue notes, deliberate dissonance. The arrow-key nudge (semitone up/down) intentionally ignores the lock in both states, so you can always make precise micro-adjustments with the keyboard.
+With the lock on it is impossible to place a wrong note; toggle it back to **🔓** (the default) for chromatic freedom — accidentals, blue notes, deliberate dissonance. The arrow-key nudge (semitone up/down) intentionally ignores the lock in both states, so you can always make precise micro-adjustments with the keyboard.
 
 ---
 
