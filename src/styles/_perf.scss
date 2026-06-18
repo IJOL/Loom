@@ -1,10 +1,17 @@
 // Performance diagnostics overlay (HUD + detail panel). Fixed bottom-right,
 // monospace, above the app. Only present in the DOM while the tool is open.
+//
+// FIXED SIZE: the HUD box never resizes with its content. The width is fixed,
+// each row clips/truncates instead of widening, and the expandable panel has a
+// fixed height whose content (lanes + log) scrolls. So changing data (voice
+// count, lane list, dropout log) reflows the CONTENT, never the HUD.
 .perf-diag {
   position: fixed;
   right: 12px;
   bottom: 12px;
   z-index: 9999;
+  box-sizing: border-box;
+  width: 260px;
   font: 11px/1.35 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   color: #d8f0e8;
   background: rgba(12, 16, 18, 0.92);
@@ -12,25 +19,37 @@
   border-radius: 6px;
   padding: 6px 8px;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
-  pointer-events: auto;
-  min-width: 220px;
 }
 .perf-diag-hud { position: relative; }
 .perf-diag-row { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .perf-diag-k { color: #6fb6a4; width: 42px; flex: 0 0 auto; }
-.perf-diag-v { color: #eafff7; }
-.perf-diag-spark { color: #8fd6c2; margin-left: auto; letter-spacing: -1px; }
+// Value truncates rather than pushing the box wider.
+.perf-diag-v { color: #eafff7; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+// Sparkline is a fixed-width, right-aligned, clipped strip.
+.perf-diag-spark {
+  color: #8fd6c2; flex: 0 0 auto; width: 120px; margin-left: auto;
+  text-align: right; letter-spacing: -1px; overflow: hidden; white-space: nowrap;
+}
 .perf-diag-expand {
   position: absolute; top: -2px; right: -2px;
   background: transparent; border: 0; color: #6fb6a4; cursor: pointer;
   font-size: 13px; line-height: 1; padding: 2px;
 }
 .perf-diag-expand:hover { color: #eafff7; }
-.perf-diag-panel { margin-top: 6px; border-top: 1px solid #2c3a3a; padding-top: 6px; }
-.perf-diag-sub { color: #6fb6a4; margin: 4px 0 2px; }
-.perf-diag-lanes { color: #eafff7; white-space: normal; }
+// Fixed-height expanded panel: content scrolls inside, the panel never grows.
+// `display:flex` is scoped to :not([hidden]) so it doesn't defeat the `hidden`
+// attribute's display:none (which is how the panel collapses).
+.perf-diag-panel {
+  margin-top: 6px; border-top: 1px solid #2c3a3a; padding-top: 6px;
+  height: 172px;
+}
+.perf-diag-panel:not([hidden]) { display: flex; flex-direction: column; }
+.perf-diag-sub { color: #6fb6a4; margin: 4px 0 2px; flex: 0 0 auto; }
+// Lanes: bounded, scrolls when many lanes are active.
+.perf-diag-lanes { color: #eafff7; white-space: normal; flex: 0 0 auto; max-height: 56px; overflow-y: auto; }
+// Log: fills the remaining panel height and scrolls.
 .perf-diag-log {
-  margin: 0; max-height: 140px; overflow: auto; color: #e0c08a;
+  margin: 0; flex: 1 1 auto; min-height: 0; overflow-y: auto; color: #e0c08a;
   white-space: pre-wrap; font: inherit;
 }
 // The transport toggle button's active state.
