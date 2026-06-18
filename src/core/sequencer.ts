@@ -41,6 +41,13 @@ export class Sequencer {
   /** Session-mode tick hook. Called every scheduler tick with (currentTime,
    *  lookaheadSec). The session host owns per-lane scheduling. */
   sessionTick?: (now: number, lookahead: number) => void;
+
+  /** Diagnostics seam (perf-monitor). Called once per tick ONLY when set:
+   *  (lagMs = gap since previous tick minus the nominal 25ms; tickDurMs =
+   *  wall-clock duration of the sessionTick call). Unset in normal operation,
+   *  so this costs one boolean check per tick when the perf tool is closed. */
+  onTickStats?: (lagMs: number, tickDurMs: number) => void;
+
   /** Always true — the app is session-only. Retained as a readable field so
    *  existing callers that set it to `true` at boot are harmless no-ops. */
   sessionMode: boolean = true;
@@ -53,6 +60,7 @@ export class Sequencer {
 
   private playing = false;
   private timerId: number | null = null;
+  private lastTickPerf = 0;
   private engineSequencers: EngineSequencer[] = [];
 
   registerEngineSequencer(seq: EngineSequencer): void {
@@ -77,6 +85,7 @@ export class Sequencer {
     if (this.playing) return;
     if (this.ctx.state === 'suspended') void this.ctx.resume();
     this.playing = true;
+    this.lastTickPerf = 0;
     // Notify BEFORE the first tick so a live-take captures from the true downbeat.
     this.onStart?.();
     this.tick();
@@ -84,6 +93,7 @@ export class Sequencer {
 
   stop() {
     this.playing = false;
+    this.lastTickPerf = 0;
     if (this.timerId !== null) {
       clearTimeout(this.timerId);
       this.timerId = null;
@@ -100,8 +110,14 @@ export class Sequencer {
   private tick = () => {
     if (!this.playing) return;
     const lookahead = 0.12;
+    const stats = this.onTickStats;
+    const nowPerf = stats ? performance.now() : 0;
+    const lagMs = stats ? (this.lastTickPerf ? nowPerf - this.lastTickPerf - 25 : 0) : 0;
+    if (stats) this.lastTickPerf = nowPerf;
+    const t0 = stats ? performance.now() : 0;
     // Session mode: host owns per-lane scheduling via sessionTick → tickSession.
     if (this.sessionTick) this.sessionTick(this.ctx.currentTime, lookahead);
+    if (stats) stats(lagMs, performance.now() - t0);
     if (this.playing) this.timerId = window.setTimeout(this.tick, 25);
   };
 }
