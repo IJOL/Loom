@@ -4,6 +4,7 @@ import { compressorPlugin } from './compressor';
 describe('compressor plugin', () => {
   it('has fx manifest with the documented params', () => {
     expect(compressorPlugin.kind).toBe('fx');
+    if (compressorPlugin.kind !== 'fx') throw new Error('expected fx plugin');
     expect(compressorPlugin.manifest.id).toBe('compressor');
     const ids = compressorPlugin.manifest.params.map((p) => p.id).sort();
     expect(ids).toEqual(['attack', 'knee', 'makeup', 'ratio', 'release', 'threshold']);

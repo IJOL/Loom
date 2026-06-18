@@ -4,6 +4,7 @@ import { limiterPlugin } from './limiter';
 describe('limiter plugin', () => {
   it('has fx manifest with ceiling + release', () => {
     expect(limiterPlugin.kind).toBe('fx');
+    if (limiterPlugin.kind !== 'fx') throw new Error('expected fx plugin');
     expect(limiterPlugin.manifest.id).toBe('limiter');
     const ids = limiterPlugin.manifest.params.map((p) => p.id).sort();
     expect(ids).toEqual(['ceiling', 'release']);
