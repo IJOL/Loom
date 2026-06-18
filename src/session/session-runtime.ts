@@ -23,6 +23,9 @@ export interface LanePlayState {
   playing: SessionClip | null;
   queued: SessionClip | null;
   queuedBoundary: number;
+  /** Absolute audio time at which this lane STOPS (orphan lane on scene launch).
+   *  null = no pending stop. Runtime-only; never persisted. */
+  queuedStop: number | null;
   startTime: number;
   nextStepIdx: number;
   loopCount: number;
@@ -43,6 +46,7 @@ export function emptyLanePlayState(laneId: string): LanePlayState {
     playing: null,
     queued: null,
     queuedBoundary: 0,
+    queuedStop: null,
     startTime: 0,
     nextStepIdx: 0,
     loopCount: 0,
@@ -155,32 +159,58 @@ export function launchScene(
   sceneIdx: number,
   now: number,
   bpm: number,
+  meter: TimeSignature = DEFAULT_METER,
 ): void {
-  // Resolve each lane's target clip: explicit mapping wins, otherwise fall back
-  // to the scene's row index (Ableton model: scene N launches column N).
-  const resolved: { lane: SessionLane; clip: SessionClip }[] = [];
+  // Resolve every lane's target (explicit mapping wins, else the row index).
+  // null target = "this lane plays nothing in this scene".
+  const starts: { lane: SessionLane; clip: SessionClip }[] = [];
+  const stops: SessionLane[] = [];
   for (const lane of state.lanes) {
+    const lp = laneStates.get(lane.id);
     const hasExplicit = Object.prototype.hasOwnProperty.call(scene.clipPerLane, lane.id);
     const idx = hasExplicit ? scene.clipPerLane[lane.id] : sceneIdx;
-    if (idx == null) continue;
-    const clip = lane.clips[idx];
-    if (!clip) continue;
-    resolved.push({ lane, clip });
+    const clip = idx == null ? null : lane.clips[idx] ?? null;
+    if (clip) {
+      // Already playing this exact clip → leave it running (seamless, in-phase).
+      if (lp?.playing && lp.playing.id === clip.id) continue;
+      starts.push({ lane, clip });
+    } else if (lp?.playing) {
+      stops.push(lane); // orphan: playing but the new scene has nothing here
+    }
   }
-  if (resolved.length === 0) return;
+  if (starts.length === 0 && stops.length === 0) return;
 
-  // All lanes share the same boundary so they start aligned.
-  let boundary = -1;
-  for (const { lane } of resolved) {
-    const q = lane.launchQuantize ?? state.globalQuantize;
-    const b = nextBoundary(q, now, bpm);
-    if (b > boundary) boundary = b;
+  // The shared switch instant: the governing loop end if anything is playing,
+  // else the cold-start quantize grid.
+  const playingLoops: { loopStartedAt: number; loopSec: number }[] = [];
+  for (const lane of state.lanes) {
+    const lp = laneStates.get(lane.id);
+    if (!lp?.playing) continue;
+    playingLoops.push({ loopStartedAt: lp.loopStartedAt, loopSec: clipLoopSec(lp.playing, bpm, meter) });
   }
-  for (const { lane, clip } of resolved) {
+  let T: number;
+  if (playingLoops.length > 0) {
+    T = sceneSwitchBoundary(playingLoops, now);
+  } else {
+    let b = -1;
+    for (const { lane } of starts) {
+      const q = lane.launchQuantize ?? state.globalQuantize;
+      const bb = nextBoundary(q, now, bpm);
+      if (bb > b) b = bb;
+    }
+    T = b < 0 ? now : b;
+  }
+
+  for (const { lane, clip } of starts) {
     let lp = laneStates.get(lane.id);
     if (!lp) { lp = emptyLanePlayState(lane.id); laneStates.set(lane.id, lp); }
     lp.queued = clip;
-    lp.queuedBoundary = boundary;
+    lp.queuedBoundary = T;
+    lp.queuedStop = null; // a fresh launch cancels any pending stop
+  }
+  for (const lane of stops) {
+    const lp = laneStates.get(lane.id);
+    if (lp) lp.queuedStop = T;
   }
 }
 
@@ -255,6 +285,7 @@ export function tickSession(
   onClipStepFired: ClipStepFiredFn,
   hooks?: RecHooks,
   meter: TimeSignature = DEFAULT_METER,
+  silence?: { silenceLane(laneId: string, atSec: number): void },
 ): void {
   for (const lane of state.lanes) {
     const lp = laneStates.get(lane.id);
@@ -262,6 +293,10 @@ export function tickSession(
 
     // Promote queued → playing once we cross the boundary
     if (lp.queued && now + lookahead >= lp.queuedBoundary) {
+      // Release any old/long voices on this lane AT the boundary so a non-aligned
+      // tail can't bleed past the switch; new voices are created later this tick
+      // (after this call) and are therefore not affected.
+      if (lp.playing) silence?.silenceLane(lane.id, lp.queuedBoundary);
       lp.playing = lp.queued;
       lp.queued = null;
       lp.startTime = lp.queuedBoundary;
@@ -273,6 +308,13 @@ export function tickSession(
         const at = arrangementNow(hooks.rec, lp.queuedBoundary);
         appendClipEvent(hooks.arrangement, lane.id, lp.playing!.id, at);
       }
+    }
+
+    // Stop an orphan lane at its boundary (scene launch left it with no clip).
+    if (lp.queuedStop != null && now + lookahead >= lp.queuedStop) {
+      silence?.silenceLane(lane.id, lp.queuedStop);
+      lp.playing = null;
+      lp.queuedStop = null;
     }
 
     if (!lp.playing) continue;

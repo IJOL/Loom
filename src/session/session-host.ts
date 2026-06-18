@@ -114,8 +114,8 @@ export class SessionHost {
       let next = this.laneStates.get(lane.id);
       if (!next) {
         next = { laneId: lane.id, playing: null, queued: null, queuedBoundary: 0,
-                 startTime: 0, nextStepIdx: 0, loopCount: 0, loopStartedAt: 0,
-                 lastScheduledAt: -Infinity };
+                 queuedStop: null, startTime: 0, nextStepIdx: 0, loopCount: 0,
+                 loopStartedAt: 0, lastScheduledAt: -Infinity };
         this.laneStates.set(lane.id, next);
       }
       next.queued = clip;
@@ -134,7 +134,7 @@ export class SessionHost {
     const scene = this.state.scenes[sceneIdx];
     if (!scene) return;
     void this.deps.ctx.resume();
-    launchScene(this.laneStates, this.state, scene, sceneIdx, this.deps.ctx.currentTime, this.deps.seq.bpm);
+    launchScene(this.laneStates, this.state, scene, sceneIdx, this.deps.ctx.currentTime, this.deps.seq.bpm, this.deps.seq.meter);
     if (!this.deps.seq.isPlaying()) { this.deps.resetAutomationPosition?.(); this.deps.seq.start(); }
     this.renderWithMixer();
   }

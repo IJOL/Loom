@@ -70,8 +70,8 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
         let next = self.laneStates.get(lane.id);
         if (!next) {
           next = { laneId: lane.id, playing: null, queued: null, queuedBoundary: 0,
-                   startTime: 0, nextStepIdx: 0, loopCount: 0, loopStartedAt: 0,
-                   lastScheduledAt: -Infinity };
+                   queuedStop: null, startTime: 0, nextStepIdx: 0, loopCount: 0,
+                   loopStartedAt: 0, lastScheduledAt: -Infinity };
           self.laneStates.set(lane.id, next);
         }
         next.queued = clip;
@@ -129,7 +129,7 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
       const scene = self.state.scenes[idx];
       if (!scene) return;
       void ctx.resume();
-      launchScene(self.laneStates, self.state, scene, idx, ctx.currentTime, seq.bpm);
+      launchScene(self.laneStates, self.state, scene, idx, ctx.currentTime, seq.bpm, seq.meter);
       if (!seq.isPlaying()) { resetAutomationPosition(); seq.start(); playBtn.classList.add('is-playing'); }
       self.renderWithMixer();
     },

@@ -26,7 +26,7 @@ describe('launchClip recording hook', () => {
     armRec(rec); startRecording(rec, 100);
 
     launchClip(laneStates, s, s.lanes[0], clip, /*now=*/100, /*bpm=*/120,
-      { rec, arrangement });
+      undefined, { rec, arrangement });
 
     tickSession(
       laneStates, s, /*now=*/100, /*lookahead=*/0.15, /*bpm=*/120,
@@ -47,7 +47,7 @@ describe('launchClip recording hook', () => {
     const arrangement = emptyArrangementState(120);
     armRec(rec); startRecording(rec, 0);
 
-    launchClip(laneStates, s, s.lanes[0], clip, 0, 120, { rec, arrangement });
+    launchClip(laneStates, s, s.lanes[0], clip, 0, 120, undefined, { rec, arrangement });
     tickSession(laneStates, s, 0, 0.15, 120, () => {}, () => {}, { rec, arrangement });
 
     stopLane(laneStates, 'tb-303-1', { rec, arrangement, nowCtx: 2 });
