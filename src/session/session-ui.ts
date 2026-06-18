@@ -59,6 +59,19 @@ export interface SessionUICallbacks {
 // black-on-dark-grey and unreadable.
 const COLOR_IDLE = '#c9c9c9';
 
+// Single-vs-double click disambiguation for scene buttons, keyed by ROW INDEX.
+// A scene launch re-renders the whole grid (renderWithMixer), replacing the
+// button — so the native `dblclick` event is unreliable here: the two clicks of
+// a double land on different element instances. Tracking the last click time by
+// index instead lets the second click (which lands on the freshly-rendered
+// button) recognise the double and open the rename on the live element. This
+// keeps launch INSTANT on a single click while making double-click rename work.
+const sceneLastClick = new Map<number, number>();
+const SCENE_DBLCLICK_MS = 350;
+/** Test-only: clear the scene click-timing state so module state can't leak
+ *  between tests (clicks in different tests would otherwise read as a double). */
+export function _resetSceneClickStateForTesting(): void { sceneLastClick.clear(); }
+
 /** A small ✕ delete button. Stops pointer/click propagation so it never triggers
  *  the cell's clip drag nor the scene/lane click underneath it (mirrors the play
  *  icon's stopPropagation). */
@@ -310,30 +323,36 @@ function sceneLaunchCell(scene: { name?: string } | undefined, idx: number, cb: 
   el.className = 'session-scene-cell';
   if (scene) {
     el.appendChild(deleteCross('Delete scene', () => cb.onDeleteScene(idx)));
-    const btn = document.createElement('button');
-    btn.className = 'session-scene-launch';
-    btn.addEventListener('click', () => cb.onLaunchScene(idx));
-
     const play = document.createElement('span');
     play.className = 'session-scene-play';
     play.textContent = '▶';
-    btn.appendChild(play);
 
     const name = document.createElement('span');
     name.className = 'session-scene-name';
     name.textContent = scene.name ?? `Scene ${idx + 1}`;
-    name.title = 'Double-click to rename';
-    // The name area is a rename target, not a launch target: swallow its click
-    // so single-clicking the name never launches the scene (launch via ▶).
-    name.addEventListener('click', (e) => e.stopPropagation());
-    name.addEventListener('dblclick', (e) => {
-      e.stopPropagation();
-      beginInlineRename(name, scene.name ?? `Scene ${idx + 1}`, {
-        commit: (v) => cb.onRenameScene?.(idx, v),
-      });
-    });
-    btn.appendChild(name);
+    name.title = 'Click to launch · double-click to rename';
+
+    const btn = document.createElement('button');
+    btn.className = 'session-scene-launch';
+    btn.append(play, name);
     el.appendChild(btn);
+
+    // Whole button is the launch zone: a single click launches instantly. A
+    // quick second click renames instead (double tracked by index — see
+    // sceneLastClick — because the first click's launch re-rendered this button).
+    btn.addEventListener('click', () => {
+      const now = performance.now();
+      const prev = sceneLastClick.get(idx);
+      if (prev !== undefined && now - prev < SCENE_DBLCLICK_MS) {
+        sceneLastClick.delete(idx);
+        beginInlineRename(name, scene.name ?? `Scene ${idx + 1}`, {
+          commit: (v) => cb.onRenameScene?.(idx, v),
+        });
+      } else {
+        sceneLastClick.set(idx, now);
+        cb.onLaunchScene(idx);
+      }
+    });
 
     el.addEventListener('contextmenu', (e) =>
       openContextMenu(e, [

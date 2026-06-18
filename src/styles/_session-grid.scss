@@ -103,7 +103,25 @@
   to   { outline: 2px solid #b07418; outline-offset: -2px; }
 }
 .session-cell-label { flex: 1; color: inherit; }
-.session-cell-play  { opacity: 0.85; color: inherit; }
+/* The clip launch (▶/⏸) is a comfortable hit target, not a tiny glyph: it
+   stretches the full cell height and hugs the right edge (into the cell padding)
+   so it's easy to click without opening the editor. The cell body still opens
+   the editor; this zone launches. */
+.session-cell-play {
+  flex: 0 0 auto;
+  align-self: stretch;            /* full cell height (cell is align-items:center) */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  margin: 0 -6px 0 4px;           /* extend into the cell's 6px right padding */
+  padding: 0 8px;
+  border-radius: 2px;
+  color: inherit;
+  opacity: 0.85;
+  cursor: pointer;
+}
+.session-cell-play:hover { opacity: 1; background: rgba(0, 0, 0, 0.16); }
 /* ✕ delete button on clips / lane headers / scene cells. Clearly red so it reads
    as "delete" on both the dark lane/scene strips and the light pastel clip cells;
    brighter still on hover. */
@@ -137,9 +155,10 @@
   text-align: left;
 }
 .session-scene-launch:hover { background: var(--amber); color: var(--bg); border-color: var(--amber); }
+/* The whole scene button is the launch zone (single click launches); the name
+   inherits the button's hover colour so it doesn't go amber-on-amber. */
 .session-scene-play { opacity: 0.85; flex: none; }
 .session-scene-name { flex: 1; }
-.session-scene-name:hover { color: var(--amber); }
 .session-lane-stop, .session-stop-all {
   background: transparent;
   color: var(--red);

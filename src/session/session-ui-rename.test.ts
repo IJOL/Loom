@@ -1,8 +1,12 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest';
-import { renderSessionGrid, type SessionUICallbacks } from './session-ui';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderSessionGrid, _resetSceneClickStateForTesting, type SessionUICallbacks } from './session-ui';
 import type { SessionState } from './session';
 import type { LanePlayState } from './session-runtime';
+
+// Scene single/double click is disambiguated via module-level timing state;
+// clear it between tests so one test's click is never read as another's double.
+beforeEach(() => _resetSceneClickStateForTesting());
 
 export function makeState(): SessionState {
   return {
@@ -55,24 +59,28 @@ describe('grid in-place rename', () => {
     expect(onRenameLane).toHaveBeenCalledWith('bass', 'Reese');
   });
 
-  it('double-clicking the scene name commits via onRenameScene', () => {
-    const host = document.createElement('div');
-    const onRenameScene = vi.fn();
-    renderSessionGrid(host, makeState(), new Map(), noopCallbacks({ onRenameScene }));
-    const nameEl = host.querySelector('.session-scene-name') as HTMLElement;
-    nameEl.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
-    const input = host.querySelector('.inline-rename-input') as HTMLInputElement;
-    input.value = 'Drop';
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-    expect(onRenameScene).toHaveBeenCalledWith(0, 'Drop');
-  });
-
-  it('clicking the scene name does NOT launch the scene', () => {
+  it('a single click on a scene launches it immediately', () => {
     const host = document.createElement('div');
     const onLaunchScene = vi.fn();
     renderSessionGrid(host, makeState(), new Map(), noopCallbacks({ onLaunchScene }));
     const nameEl = host.querySelector('.session-scene-name') as HTMLElement;
     nameEl.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    expect(onLaunchScene).not.toHaveBeenCalled();
+    expect(onLaunchScene).toHaveBeenCalledWith(0);   // instant, no guard delay
+  });
+
+  it('a quick second click on a scene renames it (launches once, then edits)', () => {
+    const host = document.createElement('div');
+    const onLaunchScene = vi.fn();
+    const onRenameScene = vi.fn();
+    renderSessionGrid(host, makeState(), new Map(), noopCallbacks({ onLaunchScene, onRenameScene }));
+    const nameEl = host.querySelector('.session-scene-name') as HTMLElement;
+    nameEl.dispatchEvent(new MouseEvent('click', { bubbles: true }));   // 1st → launch
+    nameEl.dispatchEvent(new MouseEvent('click', { bubbles: true }));   // 2nd (quick) → rename
+    expect(onLaunchScene).toHaveBeenCalledTimes(1);                     // only the first launched
+    const input = host.querySelector('.inline-rename-input') as HTMLInputElement;
+    expect(input).toBeTruthy();
+    input.value = 'Drop';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(onRenameScene).toHaveBeenCalledWith(0, 'Drop');
   });
 });
