@@ -152,8 +152,8 @@ their live voices via the existing `LiveVoiceRegistry` silencer (the same one
   new clip or stopped at the boundary, it calls `silence.silenceLane(laneId, T)`
   just before the new clip's first notes. Absent hook (tests/headless) → no-op,
   behavior identical except no live-voice cut.
-- The call site in `app/performance-feature.ts` (the `onLookahead` that drives
-  `tickSession`) passes `deps.liveVoices`.
+- The call site in `session/session-host.ts` (the `seq.sessionTick` closure that
+  drives `tickSession`) passes `deps.liveVoices`.
 
 ### Visual feedback (queued / stopping)
 
