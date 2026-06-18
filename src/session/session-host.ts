@@ -213,6 +213,7 @@ export class SessionHost {
           this.deps.markTrackActive(laneId, stepTime),
         this.deps.recHooks,
         this.deps.seq.meter,
+        this.deps.liveVoices,
       );
       if (this.deps.onAfterTick) this.deps.onAfterTick(now, look);
     };
