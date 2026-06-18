@@ -129,10 +129,12 @@ describe('migration backfills musicality', () => {
     const out = migrateLoadedSessionState(s);
     expect(out.musicality).toEqual(DEFAULT_MUSICALITY);
   });
-  it('keeps an existing musicality untouched', () => {
+  it('keeps an existing key/scale/style but forces the scale lock OFF on load', () => {
     const s = { lanes: [], scenes: [], globalQuantize: 'immediate',
-      musicality: { key: 0, scale: 'major', style: 'house', lock: false } } as SessionState;
+      musicality: { key: 0, scale: 'major', style: 'house', lock: true } } as SessionState;
     const out = migrateLoadedSessionState(s);
+    // A loaded session must never start with the lock ON — not even from an
+    // old save that had lock:true. The user opts in per working session.
     expect(out.musicality).toEqual({ key: 0, scale: 'major', style: 'house', lock: false });
   });
 });
