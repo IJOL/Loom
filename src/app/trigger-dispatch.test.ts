@@ -50,3 +50,34 @@ describe('createTriggerForLane note-FX integration', () => {
     expect(fired.map((f) => f.note)).toEqual([60, 64, 67]);
   });
 });
+
+describe('trigger-dispatch onVoiceFired tap', () => {
+  function fakeDepsTap(onVoiceFired?: (laneId: string, gateSec: number) => void) {
+    const voice = { trigger() {}, release() {}, connect() {}, dispose() {}, getAudioParams: () => new Map() };
+    const res = {
+      engine: { id: 'subtractive', createVoice: () => voice },
+      strip: { input: {} as AudioNode },
+    };
+    const laneResources = { get: (id: string) => (id === 'bass' ? res : undefined) } as any;
+    return {
+      ctx: {} as AudioContext,
+      laneResources,
+      seq: { bpm: 120 } as any,
+      onVoiceFired,
+    };
+  }
+
+  it('fires the tap with (laneId, gate) for each voice', () => {
+    const seen: Array<[string, number]> = [];
+    const trigger = createTriggerForLane(fakeDepsTap((l, g) => seen.push([l, g])));
+    trigger('bass', 60, 0, 0.25, false);
+    expect(seen).toEqual([['bass', 0.25]]);
+  });
+
+  it('does nothing when the lane has no resource', () => {
+    const seen: Array<[string, number]> = [];
+    const trigger = createTriggerForLane(fakeDepsTap((l, g) => seen.push([l, g])));
+    trigger('missing', 60, 0, 0.25, false);
+    expect(seen.length).toBe(0);
+  });
+});

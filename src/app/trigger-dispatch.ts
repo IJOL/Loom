@@ -20,6 +20,10 @@ export interface TriggerDispatchDeps {
    *  dispatch creates is recorded so the stop seams can release it immediately
    *  (the 'audio' channel clip otherwise plays to the end after any Stop). */
   liveVoices?: LiveVoiceRegistry;
+  /** Diagnostics seam (perf-monitor). Called once per voice fired with the
+   *  lane id and the gate seconds used. No-op when unset → zero cost when the
+   *  perf tool is closed. */
+  onVoiceFired?: (laneId: string, gateSec: number) => void;
 }
 
 export function createTriggerForLane(deps: TriggerDispatchDeps): TriggerForLane {
@@ -36,6 +40,7 @@ export function createTriggerForLane(deps: TriggerDispatchDeps): TriggerForLane 
       // Track the live voice so any Stop path can release it immediately.
       deps.liveVoices?.record(laneId, v);
       v.trigger(m, t, { gateDuration: g, accent: a, slide: sl, sample, velocity: vel });
+      deps.onVoiceFired?.(laneId, g);
     };
 
     // Audio clips bypass note-FX; drums lanes are not note-transformed.
