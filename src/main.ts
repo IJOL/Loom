@@ -1,3 +1,5 @@
+import { createPerfDiagnostics } from './perf/perf-diagnostics';
+import type { PerfVoiceTap } from './perf/perf-sources';
 import { bootstrapPlugins } from './app/plugin-bootstrap';
 import { listPlugins } from './plugins/registry';
 import { createAudioGraph } from './app/audio-graph';
@@ -388,10 +390,14 @@ for (const t of $$<HTMLButtonElement>('button.tab')) {
 // playing to the end of its buffer after Stop.
 const liveVoices = new LiveVoiceRegistry();
 
+// Diagnostics voice tap: dormant (fn=null) until the perf tool opens.
+const perfVoiceTap: PerfVoiceTap = { fn: null };
+
 // Single-entry-point trigger dispatch — delegates by engine.id.
 // Phase G: drums removed from deps (drums-machine triggers via res.engine.createVoice).
 const triggerForLane = createTriggerForLane({
   ctx, laneResources, seq, liveVoices,
+  onVoiceFired: (laneId, gateSec) => perfVoiceTap.fn?.(laneId, gateSec),
 });
 
 // ── Session host ───────────────────────────────────────────────────────────
@@ -807,6 +813,16 @@ const transportDeps: TransportDeps = {
   onStop: stopTransport,
 };
 wireTransport(transportDeps);
+
+// Performance diagnostics (PERF button). Zero cost until toggled open.
+const perfDiagnostics = createPerfDiagnostics({
+  ctx, seq, voiceTap: perfVoiceTap, mount: document.body,
+  resolveLaneName: (id) => sessionHost.state.lanes.find((l) => l.id === id)?.name ?? id,
+});
+document.getElementById('perf-toggle')?.addEventListener('click', (e) => {
+  perfDiagnostics.toggle();
+  (e.currentTarget as HTMLElement).classList.toggle('on', perfDiagnostics.isOpen());
+});
 
 // Begin capturing an armed live-take whenever the transport starts — from ANY
 // path. Wiring this to the ▶ button alone missed scene/clip launches (the most
