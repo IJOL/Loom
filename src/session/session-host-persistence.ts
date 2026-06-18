@@ -5,6 +5,8 @@
 
 import type { SessionHost } from './session-host';
 import type { SessionState, SessionLane } from './session';
+import type { FxBus } from '../core/fx';
+import type { SendBusState } from '../core/send-bus';
 import { migrateLoadedSessionState } from './session-migration';
 import { emptyLanePlayState } from './session-runtime';
 import { rehydrateInsertChain } from './insert-slot';
@@ -12,6 +14,35 @@ import { preloadSceneSamples } from '../export/preload-scene-samples';
 import { applyLaneEngineState } from '../export/apply-lane-engine-state';
 import { getNoteFxChain, loadNoteFxForLane } from '../notefx/notefx-registry';
 import { reloadDrumkit, reloadInstrument } from './session-host-presets';
+
+/** Snapshot the two send buses (return level, mute, and preserved insert slots).
+ *  Insert slots are session-owned (like lane/master inserts) — `prev` carries
+ *  whatever was already persisted so we don't drop them on a live-knob save. */
+export function collectSends(fx: FxBus, prev: SendBusState[] | undefined): SendBusState[] {
+  return fx.sends.map((bus, i) => ({
+    id: bus.id,
+    label: bus.label,
+    returnLevel: bus.getReturnLevel(),
+    muted: bus.isMuted(),
+    inserts: prev?.[i]?.inserts ?? [],
+  }));
+}
+
+/** Apply persisted send-bus state: return level, mute, and rehydrated inserts. */
+export function rehydrateSends(ctx: AudioContext, fx: FxBus, sends: SendBusState[] | undefined): void {
+  if (!sends) return;
+  for (const state of sends) {
+    const bus = fx.sends.find((b) => b.id === state.id);
+    if (!bus) continue;
+    bus.label = state.label;
+    bus.setReturnLevel(state.returnLevel);
+    bus.setMuted(state.muted);
+    if (state.inserts && state.inserts.length > 0) {
+      while (bus.inserts.size() > 0) bus.inserts.remove(0);
+      rehydrateInsertChain(ctx, bus.inserts, state.inserts);
+    }
+  }
+}
 
 /** Replace the host's session with a loaded/migrated SessionState: reconcile
  *  lane audio resources (allocate / swap / dispose), rehydrate insert chains
@@ -29,6 +60,7 @@ export function applyLoadedSessionState(self: SessionHost, sess: SessionState): 
   self.state.scenes = migrated.scenes ?? [];
   self.state.globalQuantize = migrated.globalQuantize ?? '1/1';
   self.state.masterInserts = migrated.masterInserts ?? [];
+  self.state.sends = migrated.sends;
   self.laneStates.clear();
   // Free audio resources for lanes that vanished in the new state (e.g.
   // undo of add-lane). Keeping orphans around accumulates ChannelStrips and
@@ -73,6 +105,8 @@ export function applyLoadedSessionState(self: SessionHost, sess: SessionState): 
     while (masterChain.size() > 0) masterChain.remove(0);
     rehydrateInsertChain(self.deps.ctx, masterChain, self.state.masterInserts);
   }
+  // FX send buses: return level, mute, and insert chains.
+  if (self.deps.fxBus) rehydrateSends(self.deps.ctx, self.deps.fxBus, self.state.sends);
   self.renderWithMixer();
   // Decode every referenced audio buffer (audio clips, sampler keymaps, slice
   // banks) into the cache so loaded sessions sound on first Play, not just on
@@ -85,7 +119,7 @@ export function applyLoadedSessionState(self: SessionHost, sess: SessionState): 
 /** Mirror live modulator + note-FX state back onto each lane before a save.
  *  Params are mirrored live on every knob change, so only modulators + noteFx
  *  are refreshed here (replacing the whole engineState object dropped per-lane
- *  knob values on save). */
+ *  knob values on save). Also refreshes send-bus return level + mute. */
 export function collectEngineState(self: SessionHost): void {
   for (const lane of self.state.lanes) {
     const engine = self.deps.laneResources?.get(lane.id)?.engine;
@@ -98,6 +132,10 @@ export function collectEngineState(self: SessionHost): void {
     // Mirror the lane's note-FX chain so it persists on save.
     if (!lane.engineState) lane.engineState = {};
     lane.engineState.noteFx = getNoteFxChain(lane.id).serialize();
+  }
+  // Refresh send-bus return level + mute (inserts are session-owned, preserved via prev).
+  if (self.deps.fxBus) {
+    self.state.sends = collectSends(self.deps.fxBus, self.state.sends);
   }
 }
 

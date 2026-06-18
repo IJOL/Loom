@@ -140,6 +140,8 @@ export interface SessionState {
   /** Global tonality + style + scale-lock (Spec 1). Optional/additive; absent ⇒
    *  DEFAULT_MUSICALITY (backfilled by session-migration). */
   musicality?: MusicalityState;
+  /** FX send buses (A=delay, B=reverb). Optional/additive; absent ⇒ seeded by migration. */
+  sends?: import('../core/send-bus').SendBusState[];
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
