@@ -362,33 +362,11 @@ function renderRoutingList(mod: ModulatorState, deps: ModulationUIDeps): HTMLEle
     }
   }
 
-  // Master Sends params — optgroup "Master Sends" (reverb + delay plugin instances in FxBus)
-  if (deps.fxBus) {
-    const sends = deps.fxBus.getMasterSendInstances();
-    const masterSendOpts: HTMLOptionElement[] = [];
-    for (const [paramId] of sends.reverb.getAudioParams()) {
-      const key = `master-send:reverb:${paramId}`;
-      if (used.has(key)) continue;
-      const opt = document.createElement('option');
-      opt.value = key;
-      opt.textContent = `Reverb: ${paramId}`;
-      masterSendOpts.push(opt);
-    }
-    for (const [paramId] of sends.delay.getAudioParams()) {
-      const key = `master-send:delay:${paramId}`;
-      if (used.has(key)) continue;
-      const opt = document.createElement('option');
-      opt.value = key;
-      opt.textContent = `Delay: ${paramId}`;
-      masterSendOpts.push(opt);
-    }
-    if (masterSendOpts.length > 0) {
-      const grp = document.createElement('optgroup');
-      grp.label = 'Master Sends';
-      for (const opt of masterSendOpts) grp.appendChild(opt);
-      destSel.appendChild(grp);
-    }
-  }
+  // Reverb/delay are now ordinary inserts inside the Send A/B chains; they are
+  // modulatable wherever they're inserted (lane/master insert dropdowns above).
+  // The old "Master Sends" optgroup keyed on FxBus.getMasterSendInstances() was a
+  // dead path (its `master-send:` destination ids were never resolved by the
+  // connection binder), so it has been removed.
 
   const addBtn = document.createElement('button');
   addBtn.className = 'rnd primary';
