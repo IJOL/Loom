@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { compressorPlugin } from './compressor';
 
 describe('compressor plugin', () => {
@@ -19,9 +19,7 @@ describe('compressor plugin', () => {
   });
 });
 
-import { describe as describe2 } from 'vitest';
-
-describe2('compressor DSP', () => {
+describe('compressor DSP', () => {
   it('reduces peak of a hot signal vs an uncompressed copy (relative)', async () => {
     const sr = 44100;
     const render = async (compress: boolean) => {
