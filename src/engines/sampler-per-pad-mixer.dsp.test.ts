@@ -1,7 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { OfflineAudioContext } from 'node-web-audio-api';
 import { SamplerEngine } from './sampler';
 import { FxBus } from '../core/fx';
+import { registerPlugin } from '../plugins/registry';
+import { reverbPlugin } from '../plugins/fx/reverb';
+import { delayPlugin } from '../plugins/fx/delay';
 import { sampleCache } from '../samples/sample-cache';
 import { padKeyForNote } from './sampler-pad-params';
 import { rms } from '../../test/dsp-asserts';
@@ -35,6 +38,11 @@ async function render(mut: (e: SamplerEngine) => void): Promise<{ L: Float32Arra
 }
 
 describe('sampler per-pad mixer', () => {
+  // FxBus seeds its reverb (bus B) / delay (bus A) sends via the plugin
+  // registry; register them so the seeds exist — matches the app, which
+  // bootstraps plugins before building the audio graph.
+  beforeAll(() => { registerPlugin(reverbPlugin); registerPlugin(delayPlugin); });
+
   it('PAN left pushes more energy to L than R', async () => {
     const { L, R } = await render((e) => e.setBaseValue(`${padKeyForNote(36)}.pan`, -1));
     expect(rms(L)).toBeGreaterThan(rms(R) * 1.5);
