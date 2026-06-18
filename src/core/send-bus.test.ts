@@ -26,6 +26,31 @@ describe('SendBus', () => {
     expect(muted).toBeLessThan(open * 0.01);
   });
 
+  it('restores signal after mute→unmute round-trip (insert chain stays connected)', async () => {
+    const sr = 44100;
+    const ctx = new OfflineAudioContext(1, sr, sr);
+    const out = ctx.createGain();
+    out.connect(ctx.destination);
+    const bus = new SendBus(ctx as unknown as AudioContext, 'C', 'Send C', out);
+    const osc = ctx.createOscillator();
+    osc.frequency.value = 220;
+    osc.connect(bus.input);
+    osc.start();
+
+    // Set level, mute, unmute before rendering
+    bus.setReturnLevel(1);
+    bus.setMuted(true);
+    bus.setMuted(false);
+
+    const buf = await ctx.startRendering();
+    let peak = 0;
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
+
+    // Peak should be non-trivial, proving the insert chain was NOT torn down
+    expect(peak).toBeGreaterThan(0.01);
+  });
+
   it('serializes its state', () => {
     const ctx = new AudioContext();
     const bus = new SendBus(ctx, 'B', 'Send B', ctx.destination);
