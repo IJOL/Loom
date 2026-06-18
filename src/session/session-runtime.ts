@@ -7,6 +7,7 @@ import { tickLane, noteTrigger } from '../core/lane-scheduler';
 import { TICKS_PER_STEP } from '../core/notes';
 import { DEFAULT_METER, type TimeSignature } from '../core/meter';
 import { AUTOMATION_SUB_RES } from '../core/pattern';
+import { clipLoopSec, nextLoopEnd, sceneSwitchBoundary } from '../core/launch-timing';
 import type { RecState } from '../performance/rec-state';
 import { arrangementNow } from '../performance/rec-state';
 import type { ArrangementState } from '../performance/performance';
@@ -111,13 +112,22 @@ export function launchClip(
   clip: SessionClip,
   now: number,
   bpm: number,
+  meter: TimeSignature = DEFAULT_METER,
   _hooks?: RecHooks,
 ): void {
   let lp = laneStates.get(lane.id);
   if (!lp) { lp = emptyLanePlayState(lane.id); laneStates.set(lane.id, lp); }
-  const q = effectiveQuantize(state, lane, clip);
   lp.queued = clip;
-  lp.queuedBoundary = nextBoundary(q, now, bpm);
+  if (lp.playing) {
+    // Hot swap: wait for THIS lane's current clip to finish its loop (no premature
+    // entry). No outlier cap — it is a single loop.
+    const loopSec = clipLoopSec(lp.playing, bpm, meter);
+    lp.queuedBoundary = nextLoopEnd(lp.loopStartedAt, loopSec, now);
+  } else {
+    // Cold start: nothing to sync to → the quantize grid governs.
+    const q = effectiveQuantize(state, lane, clip);
+    lp.queuedBoundary = nextBoundary(q, now, bpm);
+  }
 }
 
 /** Launch a clip to start at an EXACT audio-clock time, bypassing launch

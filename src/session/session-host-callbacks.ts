@@ -81,7 +81,7 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
         playBtn.classList.add('is-playing');
       } else {
         launchClip(self.laneStates, self.state, lane, clip, ctx.currentTime, seq.bpm,
-          self.deps.recHooks);
+          seq.meter, self.deps.recHooks);
       }
       self.renderWithMixer();
     },

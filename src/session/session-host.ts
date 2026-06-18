@@ -124,7 +124,7 @@ export class SessionHost {
       this.deps.seq.start();
     } else {
       launchClip(this.laneStates, this.state, lane, clip,
-        this.deps.ctx.currentTime, this.deps.seq.bpm, this.deps.recHooks);
+        this.deps.ctx.currentTime, this.deps.seq.bpm, this.deps.seq.meter, this.deps.recHooks);
     }
     this.renderWithMixer();
   }
