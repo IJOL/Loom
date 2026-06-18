@@ -122,6 +122,7 @@ export function launchClip(
   let lp = laneStates.get(lane.id);
   if (!lp) { lp = emptyLanePlayState(lane.id); laneStates.set(lane.id, lp); }
   lp.queued = clip;
+  lp.queuedStop = null; // a fresh launch cancels any pending orphan stop
   if (lp.playing) {
     // Hot swap: wait for THIS lane's current clip to finish its loop (no premature
     // entry). No outlier cap — it is a single loop.
@@ -233,6 +234,7 @@ export function stopLane(
   if (!lp) return;
   lp.playing = null;
   lp.queued = null;
+  lp.queuedStop = null;
   // Silence live voices first so the audio is cut even if there is no rec hook.
   if (hooks?.silence) hooks.silence.silenceLane(laneId, hooks.nowCtx ?? 0);
   if (hooks?.rec?.recording && hooks.arrangement) {
@@ -249,6 +251,7 @@ export function stopAll(
   for (const lp of laneStates.values()) {
     lp.playing = null;
     lp.queued = null;
+    lp.queuedStop = null;
   }
   if (silence) silence.silenceAll(nowCtx);
 }
@@ -313,6 +316,10 @@ export function tickSession(
     // Stop an orphan lane at its boundary (scene launch left it with no clip).
     if (lp.queuedStop != null && now + lookahead >= lp.queuedStop) {
       silence?.silenceLane(lane.id, lp.queuedStop);
+      if (hooks?.rec.recording && hooks.arrangement) {
+        const at = arrangementNow(hooks.rec, lp.queuedStop);
+        closePendingClipEvent(hooks.arrangement, lane.id, at);
+      }
       lp.playing = null;
       lp.queuedStop = null;
     }
