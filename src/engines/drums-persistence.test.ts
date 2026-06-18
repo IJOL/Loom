@@ -34,7 +34,7 @@ describe('per-voice params persist + restore via engineState', () => {
     for (const [id, v] of Object.entries(params)) b.setBaseValue(id, v);
 
     expect(b.getInstance()!.getVoiceParam('kick', 'tune')).toBeCloseTo(1.6, 5);
-    expect(b.getInstance()!.channels.snare.serialize().reverbSend).toBeCloseTo(0.5, 5);
+    expect(b.getInstance()!.channels.snare.serialize().sendB).toBeCloseTo(0.5, 5);
   });
 
   it('kit baseline then param override = override wins (load ordering)', () => {

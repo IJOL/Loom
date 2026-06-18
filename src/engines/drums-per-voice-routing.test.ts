@@ -26,8 +26,8 @@ describe('DrumsEngine per-voice routing', () => {
     const engine = makeEngine();
     engine.setBaseValue('kick.rev', 0.6);
     const dm = engine.getInstance()!;
-    expect(dm.channels.kick.serialize().reverbSend).toBeCloseTo(0.6, 5);
-    expect(dm.channels.snare.serialize().reverbSend).toBe(0); // untouched
+    expect(dm.channels.kick.serialize().sendB).toBeCloseTo(0.6, 5);
+    expect(dm.channels.snare.serialize().sendB).toBe(0); // untouched
   });
 
   it('per-voice level + eq route to the voice strip', () => {

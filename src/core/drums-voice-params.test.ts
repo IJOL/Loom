@@ -46,9 +46,9 @@ describe('DrumMachine per-voice synth store', () => {
 
   it('loadKitDefaults resets per-voice mixer to neutral', () => {
     const dm = makeDM('909');
-    dm.channels.kick.setReverbSend(0.8);
+    dm.channels.kick.setSendB(0.8);
     dm.loadKitDefaults('808');
-    expect(dm.channels.kick.serialize().reverbSend).toBe(0);
+    expect(dm.channels.kick.serialize().sendB).toBe(0);
     expect(dm.channels.kick.serialize().level).toBe(1);
   });
 

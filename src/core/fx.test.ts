@@ -86,6 +86,27 @@ describe('ChannelStrip compressor block', () => {
   });
 });
 
+describe('ChannelStrip A/B sends', () => {
+  beforeAll(() => { _resetRegistry(); registerPlugin(reverbPlugin); registerPlugin(delayPlugin); });
+
+  it('serializes sendA/sendB and restores legacy reverbSend/delaySend', () => {
+    const ctx = new AudioContext();
+    const fx = new FxBus(ctx, ctx.destination);
+    const strip = new ChannelStrip(ctx, ctx.destination, fx);
+    strip.setSendA(0.3); strip.setSendB(0.6);
+    const s = strip.serialize();
+    expect(s.sendA).toBeCloseTo(0.3, 3);
+    expect(s.sendB).toBeCloseTo(0.6, 3);
+
+    const strip2 = new ChannelStrip(ctx, ctx.destination, fx);
+    // Legacy save: delaySend → sendA, reverbSend → sendB
+    strip2.restore({ ...s, sendA: undefined as unknown as number, sendB: undefined as unknown as number,
+      delaySend: 0.2, reverbSend: 0.5 } as never);
+    expect(strip2.serialize().sendA).toBeCloseTo(0.2, 3);
+    expect(strip2.serialize().sendB).toBeCloseTo(0.5, 3);
+  });
+});
+
 describe('ChannelStrip sidechain tap registration', () => {
   let ctx: AudioContext;
 

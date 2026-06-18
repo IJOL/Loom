@@ -194,7 +194,7 @@ export class DrumMachine {
     this.synth = seedSynthState(kit);
     for (const v of DRUM_LANES) {
       const st = this.channels[v];
-      st.setLevel(1); st.setPan(0); st.setReverbSend(0); st.setDelaySend(0);
+      st.setLevel(1); st.setPan(0); st.setSendA(0); st.setSendB(0);
       st.setEqLow(0); st.setEqMid(0); st.setEqHigh(0);
     }
   }

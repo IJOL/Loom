@@ -79,8 +79,8 @@ export interface ChannelStripOptions {
 export interface ChannelState {
   level: number;
   pan: number;        // -1 (L) .. +1 (R)
-  reverbSend: number;
-  delaySend: number;
+  sendA: number;      // Send A → Delay bus
+  sendB: number;      // Send B → Reverb bus
   eqLow: number;
   eqMid: number;
   eqHigh: number;
@@ -92,8 +92,8 @@ export interface ChannelState {
 export class ChannelStrip {
   input: GainNode;
   level: GainNode;
-  reverbSend: GainNode;
-  delaySend: GainNode;
+  sendA: GainNode;
+  sendB: GainNode;
   comp: CompBlock;
   sidechainTap: GainNode;
   private duckGain: GainNode;
@@ -125,8 +125,8 @@ export class ChannelStrip {
     this.level    = ctx.createGain(); this.level.gain.value = 1;
     this.panner   = ctx.createStereoPanner(); this.panner.pan.value = 0;
     this.muteGain = ctx.createGain(); this.muteGain.gain.value = 1;
-    this.reverbSend = ctx.createGain(); this.reverbSend.gain.value = 0;
-    this.delaySend  = ctx.createGain(); this.delaySend.gain.value = 0;
+    this.sendA = ctx.createGain(); this.sendA.gain.value = 0;
+    this.sendB = ctx.createGain(); this.sendB.gain.value = 0;
 
     // EQ → comp → level → pan → mute → {dry, sends}
     this.comp = new CompBlock(ctx);
@@ -144,8 +144,8 @@ export class ChannelStrip {
     this.duckGain.gain.value = 1;
     this.muteGain.connect(this.duckGain);
     this.duckGain.connect(dry);
-    this.duckGain.connect(this.reverbSend).connect(fx.reverbInput);
-    this.duckGain.connect(this.delaySend ).connect(fx.delayInput);
+    this.duckGain.connect(this.sendA).connect(fx.delayInput);   // Send A → Delay bus
+    this.duckGain.connect(this.sendB).connect(fx.reverbInput);  // Send B → Reverb bus
 
     // Post-mute fan-out tap for sidechain consumers. Connected to muteGain
     // (pre-duck) so a lane's outgoing tap reflects pre-duck signal — avoids
@@ -198,9 +198,9 @@ export class ChannelStrip {
     return this.eqHigh.gain;
   }
 
-  setLevel(g: number)        { this.level.gain.value       = g; }
-  setReverbSend(g: number)   { this.reverbSend.gain.value  = g; }
-  setDelaySend (g: number)   { this.delaySend.gain.value   = g; }
+  setLevel(g: number)  { this.level.gain.value  = g; }
+  setSendA(g: number)  { this.sendA.gain.value  = g; }
+  setSendB(g: number)  { this.sendB.gain.value  = g; }
 
   setCompState(s: Partial<CompState>) { this.comp.setState(s); }
   getCompState(): CompState { return this.comp.getState(); }
@@ -259,8 +259,8 @@ export class ChannelStrip {
     return {
       level: this.level.gain.value,
       pan: this.panner.pan.value,
-      reverbSend: this.reverbSend.gain.value,
-      delaySend: this.delaySend.gain.value,
+      sendA: this.sendA.gain.value,
+      sendB: this.sendB.gain.value,
       eqLow:  this.eqLow.gain.value,
       eqMid:  this.eqMid.gain.value,
       eqHigh: this.eqHigh.gain.value,
@@ -273,8 +273,9 @@ export class ChannelStrip {
   restore(s: ChannelState) {
     this.setLevel(s.level);
     if (typeof s.pan === 'number') this.setPan(s.pan);
-    this.setReverbSend(s.reverbSend);
-    this.setDelaySend(s.delaySend);
+    const legacy = s as ChannelState & { reverbSend?: number; delaySend?: number };
+    this.setSendA(s.sendA ?? legacy.delaySend ?? 0);
+    this.setSendB(s.sendB ?? legacy.reverbSend ?? 0);
     this.setEqLow(s.eqLow);
     this.setEqMid(s.eqMid);
     this.setEqHigh(s.eqHigh);

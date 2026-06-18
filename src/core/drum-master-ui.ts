@@ -44,10 +44,10 @@ export function wireDrumMasterUI(deps: DrumMasterUIDeps): void {
     label: 'DRUM VOL', color: '#f7d000', format: fmtPct, onChange: (v) => drumBusStrip.setLevel(v) });
   mk({ id: `${laneId}.bus.pan`, min: -1, max: 1, step: 0.01, value: state.pan ?? 0, defaultValue: 0,
     label: 'PAN', color: '#e67e22', format: fmtPan, onChange: (v) => drumBusStrip.setPan(v) });
-  mk({ id: `${laneId}.bus.reverbSend`, min: 0, max: 1, step: 0.01, value: state.reverbSend, defaultValue: 0,
-    label: 'REV', color: '#9b59b6', format: fmtPct, onChange: (v) => drumBusStrip.setReverbSend(v) });
-  mk({ id: `${laneId}.bus.delaySend`, min: 0, max: 1, step: 0.01, value: state.delaySend, defaultValue: 0,
-    label: 'DLY', color: '#3498db', format: fmtPct, onChange: (v) => drumBusStrip.setDelaySend(v) });
+  mk({ id: `${laneId}.bus.reverbSend`, min: 0, max: 1, step: 0.01, value: state.sendB, defaultValue: 0,
+    label: 'REV', color: '#9b59b6', format: fmtPct, onChange: (v) => drumBusStrip.setSendB(v) });
+  mk({ id: `${laneId}.bus.delaySend`, min: 0, max: 1, step: 0.01, value: state.sendA, defaultValue: 0,
+    label: 'DLY', color: '#3498db', format: fmtPct, onChange: (v) => drumBusStrip.setSendA(v) });
   mk({ id: `${laneId}.bus.eq.low`, min: -18, max: 18, step: 0.5, value: state.eqLow, defaultValue: 0,
     label: 'LO',  color: '#c0392b', format: fmtDb, onChange: (v) => drumBusStrip.setEqLow(v) });
   mk({ id: `${laneId}.bus.eq.mid`, min: -18, max: 18, step: 0.5, value: state.eqMid, defaultValue: 0,

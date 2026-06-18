@@ -151,8 +151,8 @@ function writeMixer(dm: DrumMachine, voice: DrumVoice, leaf: string, v: number):
   switch (leaf) {
     case 'level':   st.setLevel(v);      break;
     case 'pan':     st.setPan(v);        break;
-    case 'rev':     st.setReverbSend(v); break;
-    case 'dly':     st.setDelaySend(v);  break;
+    case 'rev':     st.setSendB(v); break;
+    case 'dly':     st.setSendA(v); break;
     case 'eq.low':  st.setEqLow(v);      break;
     case 'eq.mid':  st.setEqMid(v);      break;
     case 'eq.high': st.setEqHigh(v);     break;
@@ -164,8 +164,8 @@ function readMixer(dm: DrumMachine, voice: DrumVoice, leaf: string): number {
   switch (leaf) {
     case 'level':   return st.level.gain.value;
     case 'pan':     return st.getPan();
-    case 'rev':     return st.reverbSend.gain.value;
-    case 'dly':     return st.delaySend.gain.value;
+    case 'rev':     return st.sendB.gain.value;
+    case 'dly':     return st.sendA.gain.value;
     case 'eq.low':  return st.getEqGainParam('low').value;
     case 'eq.mid':  return st.getEqGainParam('mid').value;
     case 'eq.high': return st.getEqGainParam('high').value;
@@ -196,8 +196,8 @@ class DrumsVoice implements Voice {
     if (this.busStrip) {
       m.set('bus.level',      this.busStrip.level.gain);
       m.set('bus.pan',        this.busStrip.getPanParam());
-      m.set('bus.reverbSend', this.busStrip.reverbSend.gain);
-      m.set('bus.delaySend',  this.busStrip.delaySend.gain);
+      m.set('bus.reverbSend', this.busStrip.sendB.gain);
+      m.set('bus.delaySend',  this.busStrip.sendA.gain);
       m.set('bus.eq.low',     this.busStrip.getEqGainParam('low'));
       m.set('bus.eq.mid',     this.busStrip.getEqGainParam('mid'));
       m.set('bus.eq.high',    this.busStrip.getEqGainParam('high'));
@@ -375,8 +375,8 @@ export class DrumsEngine implements SynthEngine {
       switch (id) {
         case 'bus.level':      this.busStrip.setLevel(v);      return;
         case 'bus.pan':        this.busStrip.setPan(v);        return;
-        case 'bus.reverbSend': this.busStrip.setReverbSend(v); return;
-        case 'bus.delaySend':  this.busStrip.setDelaySend(v);  return;
+        case 'bus.reverbSend': this.busStrip.setSendB(v); return;
+        case 'bus.delaySend':  this.busStrip.setSendA(v);  return;
         case 'bus.eq.low':     this.busStrip.setEqLow(v);      return;
         case 'bus.eq.mid':     this.busStrip.setEqMid(v);      return;
         case 'bus.eq.high':    this.busStrip.setEqHigh(v);     return;
@@ -572,8 +572,8 @@ export class DrumsEngine implements SynthEngine {
     if (this.busStrip) {
       m.set('bus.level',      this.busStrip.level.gain);
       m.set('bus.pan',        this.busStrip.getPanParam());
-      m.set('bus.reverbSend', this.busStrip.reverbSend.gain);
-      m.set('bus.delaySend',  this.busStrip.delaySend.gain);
+      m.set('bus.reverbSend', this.busStrip.sendB.gain);
+      m.set('bus.delaySend',  this.busStrip.sendA.gain);
       m.set('bus.eq.low',     this.busStrip.getEqGainParam('low'));
       m.set('bus.eq.mid',     this.busStrip.getEqGainParam('mid'));
       m.set('bus.eq.high',    this.busStrip.getEqGainParam('high'));
