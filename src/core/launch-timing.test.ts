@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { governingLoopSec, clipLoopSec, nextLoopEnd } from './launch-timing';
+import { governingLoopSec, clipLoopSec, nextLoopEnd, sceneSwitchBoundary } from './launch-timing';
 import type { SessionClip } from '../session/session';
 
 describe('governingLoopSec — iterative outlier cap (multiset)', () => {
@@ -46,5 +46,28 @@ describe('nextLoopEnd', () => {
   });
   it('degenerate loopSec → now', () => {
     expect(nextLoopEnd(0, 0, 7)).toBe(7);
+  });
+});
+
+describe('sceneSwitchBoundary', () => {
+  it('single playing clip → its own next loop end', () => {
+    expect(sceneSwitchBoundary([{ loopStartedAt: 0, loopSec: 2 }], 3)).toBeCloseTo(4, 9);
+  });
+  it('equal-length aligned clips → shared boundary', () => {
+    const p = [{ loopStartedAt: 0, loopSec: 2 }, { loopStartedAt: 0, loopSec: 2 }];
+    expect(sceneSwitchBoundary(p, 3)).toBeCloseTo(4, 9);
+  });
+  it('mixed lengths, no outlier → governed by the longest (4s loop)', () => {
+    // lengths 2s & 4s; 4 > 2·2? no → governs 4s; aligned at 0 → next end 8s when now=5
+    const p = [{ loopStartedAt: 0, loopSec: 2 }, { loopStartedAt: 0, loopSec: 4 }];
+    expect(sceneSwitchBoundary(p, 5)).toBeCloseTo(8, 9);
+  });
+  it('giant outlier dropped → governed by the 2s loop', () => {
+    // lengths 2s & 16s; 16 > 2·2 → drop → governs 2s; now=5 → next 2s end is 6s
+    const p = [{ loopStartedAt: 0, loopSec: 2 }, { loopStartedAt: 0, loopSec: 16 }];
+    expect(sceneSwitchBoundary(p, 5)).toBeCloseTo(6, 9);
+  });
+  it('empty → now', () => {
+    expect(sceneSwitchBoundary([], 5)).toBe(5);
   });
 });

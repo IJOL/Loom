@@ -41,3 +41,21 @@ export function nextLoopEnd(loopStartedAt: number, loopSec: number, now: number)
   const k = elapsed <= 0 ? 1 : Math.ceil(elapsed / loopSec);
   return loopStartedAt + k * loopSec;
 }
+
+/** The synchronized switch instant from the currently-playing loops. */
+export function sceneSwitchBoundary(
+  playing: { loopStartedAt: number; loopSec: number }[],
+  now: number,
+): number {
+  const valid = playing.filter((p) => p.loopSec > 0);
+  if (valid.length === 0) return now;
+  const gov = governingLoopSec(valid.map((p) => p.loopSec));
+  const EPS = 1e-6;
+  let best = Infinity;
+  for (const p of valid) {
+    if (Math.abs(p.loopSec - gov) > EPS) continue;
+    const t = nextLoopEnd(p.loopStartedAt, p.loopSec, now);
+    if (t < best) best = t;
+  }
+  return best === Infinity ? now : best;
+}
