@@ -135,7 +135,10 @@ src/
   app/            Boot factories: audio-graph, lane-allocator, trigger-dispatch,
                   knob-mounting, mute-solo, bpm-broadcast, engine-swap,
                   plugin-bootstrap, lane-host-wiring
-  save/           SaveManager (schemaVersion: 3), history-wiring (withUndo)
+  save/           SaveManager (schemaVersion: 3), auto-history (AutoHistory:
+                  snapshot-diff undo/redo + gesture coalescing, wired to the
+                  transport-bar ↺/↻ buttons), history-wiring (legacy withUndo /
+                  attachKnobUndo — now no-op shims)
   notefx/         Note-FX plugin category (arpeggiator, chord spread) — per-lane
   automation/     Clip envelope recording + read-back helpers
   control/        Live MIDI controller subsystem: APC Key 25 profile, live

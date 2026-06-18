@@ -1065,6 +1065,14 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <h3>Playhead</h3>
 <p>A vertical playhead line moves across the canvas in real time while the clip is playing, driven by the sequencer&#39;s look-ahead clock. It updates on every redraw tick and resets to the left edge when the clip stops.</p>
 <hr>
+<h2>Clip tempo (×2 / ÷2)</h2>
+<p>Next to the <strong>Length (bars)</strong> field in the inspector toolbar sit two buttons, <strong><code>*2</code></strong> and <strong><code>/2</code></strong>, that time-scale the whole clip in a single, undoable step — Ableton&#39;s &quot;double / halve clip tempo&quot; applied to the open clip.</p>
+<ul>
+<li><strong><code>*2</code></strong> <em>(Double tempo — compress notes &amp; halve clip length)</em> — packs the clip into half the time: every note&#39;s start and duration is halved, the loop region scales with it, the clip&#39;s length in bars halves, and any clip automation is compressed to match. The pattern plays back twice as fast.</li>
+<li><strong><code>/2</code></strong> <em>(Halve tempo — stretch notes &amp; double clip length)</em> — the inverse: notes, loop, length and automation all double, so the pattern plays back half as fast over twice the bars.</li>
+</ul>
+<p>Because every part of the clip is scaled together — notes, loop brace, length and automation — the groove keeps its shape; only its speed (and the bars it occupies) changes. The buttons appear for <strong>note and drum clips</strong>; a pure audio channel has no notes to scale, so they are hidden there. The whole rescale is one entry in the global undo history, so a single Ctrl+Z restores the original timing.</p>
+<hr>
 <h2>Loop regions</h2>
 <p>A <strong>loop brace</strong> sits above every clip editor — piano-roll and drum-grid — as a narrow strip spanning the full clip length. It lets you mark an A–B sub-region and repeat just that portion while the clip plays.</p>
 <h3>Setting the loop region</h3>
@@ -1824,7 +1832,9 @@ uvicorn app:app --port 8765
 <p>The footer shows the total size of all named saves, so you can keep an eye on <code>localStorage</code> usage.</p>
 <hr>
 <h2>Undo / redo</h2>
-<p>Loom maintains a global undo stack that covers all session mutations: adding or removing lanes and clips, editing notes in the piano roll or drum grid, changing engine parameters via knobs, and more. The keyboard shortcuts are:</p>
+<p>Loom keeps a global undo history that covers <strong>every</strong> session mutation: adding or removing lanes, clips and scenes, editing notes in the piano roll or drum grid, moving or tempo-scaling clips, changing engine parameters via knobs and faders, and inline renames. You can step backwards and forwards from the header buttons or from the keyboard.</p>
+<p><strong>Header buttons.</strong> A pair of <strong>↺ Undo / ↻ Redo</strong> buttons sits in the transport bar, just to the right of the Play / Stop controls. Each reflects the current state of the history — it is disabled (greyed out) when there is nothing to undo or redo — so you can see at a glance whether a step is available. Click ↺ to undo the last change, ↻ to redo it.</p>
+<p><strong>Keyboard shortcuts.</strong></p>
 <table>
 <thead>
 <tr>
@@ -1841,7 +1851,7 @@ uvicorn app:app --port 8765
 <td>Ctrl+Shift+Z / Cmd+Shift+Z or Ctrl+Y</td>
 </tr>
 </tbody></table>
-<p>Knob gestures are bracketed — Loom snapshots the state at the moment you grab a knob and commits when you release, so a single drag is a single undo step. The shortcuts are inactive when a text input has focus, so typing a save name does not accidentally undo your work. Loading a session clears the undo history.</p>
+<p>Capture is automatic — Loom snapshots the session after each interaction and coalesces a continuous gesture (a knob or fader drag, a note drag, a marquee move) into a <strong>single</strong> undo step, so one drag undoes in one click. The shortcuts are inactive while a text input has focus, so typing a save name — or an inline rename — never accidentally undoes your work. Loading a session, loading a demo, or starting a new session clears the undo history.</p>
 <hr>
 <h2>WAV export</h2>
 <p><img src="images/rec-group.png" alt="The REC group on the session bar — REC button plus the take / live / offline mode selector"></p>
@@ -2061,7 +2071,10 @@ src/plugins/modulators/   — LFO / ADSR modulators
   app/            Boot factories: audio-graph, lane-allocator, trigger-dispatch,
                   knob-mounting, mute-solo, bpm-broadcast, engine-swap,
                   plugin-bootstrap, lane-host-wiring
-  save/           SaveManager (schemaVersion: 3), history-wiring (withUndo)
+  save/           SaveManager (schemaVersion: 3), auto-history (AutoHistory:
+                  snapshot-diff undo/redo + gesture coalescing, wired to the
+                  transport-bar ↺/↻ buttons), history-wiring (legacy withUndo /
+                  attachKnobUndo — now no-op shims)
   notefx/         Note-FX plugin category (arpeggiator, chord spread) — per-lane
   automation/     Clip envelope recording + read-back helpers
   control/        Live MIDI controller subsystem: APC Key 25 profile, live

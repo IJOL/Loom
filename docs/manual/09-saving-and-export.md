@@ -59,14 +59,18 @@ The footer shows the total size of all named saves, so you can keep an eye on `l
 
 ## Undo / redo
 
-Loom maintains a global undo stack that covers all session mutations: adding or removing lanes and clips, editing notes in the piano roll or drum grid, changing engine parameters via knobs, and more. The keyboard shortcuts are:
+Loom keeps a global undo history that covers **every** session mutation: adding or removing lanes, clips and scenes, editing notes in the piano roll or drum grid, moving or tempo-scaling clips, changing engine parameters via knobs and faders, and inline renames. You can step backwards and forwards from the header buttons or from the keyboard.
+
+**Header buttons.** A pair of **↺ Undo / ↻ Redo** buttons sits in the transport bar, just to the right of the Play / Stop controls. Each reflects the current state of the history — it is disabled (greyed out) when there is nothing to undo or redo — so you can see at a glance whether a step is available. Click ↺ to undo the last change, ↻ to redo it.
+
+**Keyboard shortcuts.**
 
 | Action | Shortcut |
 | --- | --- |
 | Undo | Ctrl+Z / Cmd+Z |
 | Redo | Ctrl+Shift+Z / Cmd+Shift+Z or Ctrl+Y |
 
-Knob gestures are bracketed — Loom snapshots the state at the moment you grab a knob and commits when you release, so a single drag is a single undo step. The shortcuts are inactive when a text input has focus, so typing a save name does not accidentally undo your work. Loading a session clears the undo history.
+Capture is automatic — Loom snapshots the session after each interaction and coalesces a continuous gesture (a knob or fader drag, a note drag, a marquee move) into a **single** undo step, so one drag undoes in one click. The shortcuts are inactive while a text input has focus, so typing a save name — or an inline rename — never accidentally undoes your work. Loading a session, loading a demo, or starting a new session clears the undo history.
 
 ---
 

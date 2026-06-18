@@ -190,6 +190,17 @@ A vertical playhead line moves across the canvas in real time while the clip is 
 
 ---
 
+## Clip tempo (×2 / ÷2)
+
+Next to the **Length (bars)** field in the inspector toolbar sit two buttons, **`*2`** and **`/2`**, that time-scale the whole clip in a single, undoable step — Ableton's "double / halve clip tempo" applied to the open clip.
+
+- **`*2`** *(Double tempo — compress notes & halve clip length)* — packs the clip into half the time: every note's start and duration is halved, the loop region scales with it, the clip's length in bars halves, and any clip automation is compressed to match. The pattern plays back twice as fast.
+- **`/2`** *(Halve tempo — stretch notes & double clip length)* — the inverse: notes, loop, length and automation all double, so the pattern plays back half as fast over twice the bars.
+
+Because every part of the clip is scaled together — notes, loop brace, length and automation — the groove keeps its shape; only its speed (and the bars it occupies) changes. The buttons appear for **note and drum clips**; a pure audio channel has no notes to scale, so they are hidden there. The whole rescale is one entry in the global undo history, so a single Ctrl+Z restores the original timing.
+
+---
+
 ## Loop regions
 
 A **loop brace** sits above every clip editor — piano-roll and drum-grid — as a narrow strip spanning the full clip length. It lets you mark an A–B sub-region and repeat just that portion while the clip plays.
