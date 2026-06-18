@@ -148,6 +148,11 @@ export function renderDrumGridEditor(
   const tickFromX = (x: number) => Math.max(0, Math.min(patternTicks - 1, x / pxPerTick));
   const rowFromY = (y: number) => Math.max(0, Math.min(ROWS_N - 1, Math.floor((y - RULER_H) / ROW_H)));
   const persist = () => hViewByClip.set(clip.id, { zoomX, scrollLeft: viewport.scrollLeft });
+  // Loop overlay handle — its column lives inside the viewport and is positioned
+  // in CONTENT coords (tickToX = t·pxPerTick), so a zoom change (which changes
+  // pxPerTick) must re-layout it. resize() is the single place zoom is applied,
+  // so it drives the redraw; the column then tracks the grid at every zoom.
+  let loopHandle: { redraw: () => void } | undefined;
 
   function resize(): void {
     const vpW = Math.max(120, viewport.clientWidth || ((wrap.clientWidth || host.clientWidth || 600) - LABEL_W));
@@ -159,6 +164,7 @@ export function renderDrumGridEditor(
     labelsCanvas.width = LABEL_W; labelsCanvas.height = FRAME_H;
     labelsCanvas.style.width = `${LABEL_W}px`; labelsCanvas.style.height = `${FRAME_H}px`;
     drawLabels(); draw();
+    loopHandle?.redraw();   // re-layout the loop column for the new pxPerTick (zoom)
   }
 
   function drawLabels(): void {
@@ -423,7 +429,7 @@ export function renderDrumGridEditor(
 
   if (deps.loop) {
     const total = patternTicks;
-    mountClipLoopOverlay({
+    loopHandle = mountClipLoopOverlay({
       toolbarHost: deps.loop.toolbarHost,
       scrollHost: viewport,
       clip, meter,
