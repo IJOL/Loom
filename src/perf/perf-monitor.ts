@@ -100,7 +100,7 @@ export class PerfMonitor {
       fps: this.fps, frameMs: this.frameMs,
       voicesTotal: total, voicesByLane: byLane, genNodes: this.genNodes,
       histLoad: this.histLoad.slice(), histLag: this.histLag.slice(), histFps: this.histFps.slice(),
-      events: this.events.slice(),
+      events: this.events.map((e) => ({ ...e })),
     };
   }
 }
