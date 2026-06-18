@@ -30,6 +30,18 @@ export function clampLoopRegion(
   return { start: a, end: b };
 }
 
+/** Slide a loop region by `deltaTicks` along the timeline, PRESERVING its length.
+ *  The resulting start is snapped to `step`, then both edges are clamped into
+ *  [0, total] together (the region stops at an edge instead of shrinking). */
+export function moveLoopRegion(
+  start: number, end: number, deltaTicks: number, total: number, step: number,
+): { start: number; end: number } {
+  const length = Math.max(0, end - start);
+  const snapped = snapTick(start + deltaTicks, step);
+  const a = Math.max(0, Math.min(total - length, snapped));
+  return { start: a, end: a + length };
+}
+
 /** Mount a loop-brace strip as the first child of `host` (above the editor).
  *  Mutates the clip's loop fields through historyDeps gestures so it is undoable. */
 export function mountClipLoopBrace(

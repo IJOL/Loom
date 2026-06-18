@@ -12,7 +12,7 @@ import type { SessionClip } from '../session/session';
 import { ticksPerBar, type TimeSignature } from './meter';
 import { TICKS_PER_QUARTER } from './notes';
 import { effectiveClipLoop } from './clip-loop';
-import { snapTick, clampLoopRegion } from './clip-loop-brace';
+import { snapTick, clampLoopRegion, moveLoopRegion } from './clip-loop-brace';
 import type { HistoryDeps } from '../save/history-wiring';
 
 export type LoopQuantize = 'free' | 'beat' | 'bar';
@@ -86,9 +86,13 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
   if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
   const col = document.createElement('div');
   col.className = 'clip-loop-col';
+  // Interior move zone (between the edge handles): drag it to slide the whole
+  // loop region along the timeline, length preserved. Sits below the edges so
+  // resizing still wins at the very borders.
+  const mid = document.createElement('span'); mid.className = 'clip-loop-move';
   const hL = document.createElement('span'); hL.className = 'clip-loop-edge l';
   const hR = document.createElement('span'); hR.className = 'clip-loop-edge r';
-  col.append(hL, hR);
+  col.append(mid, hL, hR);
   host.appendChild(col);
 
   const layout = () => {
@@ -137,6 +141,33 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
   };
   hL.addEventListener('pointerdown', startDrag('l'));
   hR.addEventListener('pointerdown', startDrag('r'));
+
+  // Drag the interior to SLIDE the whole region (length preserved). Derive the
+  // current px-per-tick from tickToX so it tracks zoom; a pure screen-x delta
+  // maps 1:1 to content px (scroll changes offset, not scale).
+  mid.addEventListener('pointerdown', (down: PointerEvent) => {
+    down.preventDefault(); down.stopPropagation();
+    if (!clip.loopEnabled) return;
+    const cur = effectiveClipLoop(clip, meter);
+    const origStart = cur.startTick, origEnd = cur.endTick;
+    const downX = down.clientX;
+    const pxPerTick = deps.tickToX(1) - deps.tickToX(0);
+    historyDeps?.beginGesture?.();
+    const move = (e: PointerEvent) => {
+      const deltaTicks = pxPerTick > 0 ? (e.clientX - downX) / pxPerTick : 0;
+      const next = moveLoopRegion(origStart, origEnd, deltaTicks, total, snapFor());
+      clip.loopStartTick = next.start; clip.loopEndTick = next.end;
+      layout();
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      historyDeps?.endGesture?.();
+      deps.onChange?.();
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  });
 
   requestAnimationFrame(layout);
   if (typeof ResizeObserver !== 'undefined') {

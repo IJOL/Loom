@@ -18,3 +18,6 @@
 }
 .clip-loop-edge { position:absolute; top:0; bottom:0; width:10px; cursor:ew-resize; pointer-events:auto; z-index:6; }
 .clip-loop-edge.l { left:-5px; } .clip-loop-edge.r { right:-5px; }
+// Interior grab zone: fills the column between the edges; drag to slide the loop
+// region (length preserved). Below the edges so resizing still wins at the borders.
+.clip-loop-move { position:absolute; inset:0; cursor:move; pointer-events:auto; z-index:5; }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pxToTick, snapTick, clampLoopRegion } from './clip-loop-brace';
+import { pxToTick, snapTick, clampLoopRegion, moveLoopRegion } from './clip-loop-brace';
 
 describe('clip-loop-brace math', () => {
   it('pxToTick maps 0..width to 0..total', () => {
@@ -19,5 +19,17 @@ describe('clip-loop-brace math', () => {
     expect(clampLoopRegion(100, 50, 800, 24)).toEqual({ start: 50, end: 100 }); // swaps
     expect(clampLoopRegion(0, 0, 800, 24)).toEqual({ start: 0, end: 24 });      // min width
     expect(clampLoopRegion(-10, 9000, 800, 24)).toEqual({ start: 0, end: 800 });
+  });
+  it('moveLoopRegion slides the region preserving length, snapping the start', () => {
+    // length 200; +90 ticks → snap(290,100)=300 → end 500
+    expect(moveLoopRegion(200, 400, 90, 800, 100)).toEqual({ start: 300, end: 500 });
+    // negative delta moves left, still snapped
+    expect(moveLoopRegion(400, 600, -90, 800, 100)).toEqual({ start: 300, end: 500 });
+  });
+  it('moveLoopRegion clamps at both edges without shrinking the length', () => {
+    // pushed past the left edge → start 0, length 200 kept
+    expect(moveLoopRegion(200, 400, -500, 800, 100)).toEqual({ start: 0, end: 200 });
+    // pushed past the right edge → end == total, length 200 kept
+    expect(moveLoopRegion(200, 400, 1000, 800, 100)).toEqual({ start: 600, end: 800 });
   });
 });
