@@ -166,6 +166,7 @@ const getSynthInstance = (): TB303 | null => {
 // Phase G: polysynth comes from lane resources lazily; null before boot session loads.
 const bpmBroadcast = createBpmBroadcaster({
   seq, fx, masterInsertChain,
+  laneResources,
   ctx,
   getSessionState: () => sessionHost?.state ?? null,
   getPolysynth: () => {

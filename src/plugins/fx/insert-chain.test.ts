@@ -90,4 +90,17 @@ describe('InsertChain', () => {
     const chain2 = new InsertChain(inp as any, out as any);
     expect(chain2.inputNode).toBe(inp);
   });
+
+  it('setBpm forwards to slot instances that implement setBpm', () => {
+    const ctx = new AudioContext();
+    const input = ctx.createGain(), output = ctx.createGain();
+    const chain = new InsertChain(input, output);
+    let seen = 0;
+    const fake = { input: ctx.createGain(), output: ctx.createGain(),
+      getAudioParams: () => new Map(), getBaseValue: () => 0, setBaseValue: () => {},
+      applyPreset: () => {}, setBpm: (b: number) => { seen = b; }, dispose: () => {} };
+    chain.insert(fake as never);
+    chain.setBpm(140);
+    expect(seen).toBe(140);
+  });
 });

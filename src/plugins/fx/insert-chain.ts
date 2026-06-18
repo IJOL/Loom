@@ -46,6 +46,10 @@ export class InsertChain {
     this.rewire();
   }
 
+  setBpm(bpm: number): void {
+    for (const s of this.slots) s.fx.setBpm?.(bpm);
+  }
+
   dispose(): void {
     for (const s of this.slots) s.fx.dispose();
     this.slots = [];

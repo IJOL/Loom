@@ -3,6 +3,7 @@ import type { FxBus } from '../core/fx';
 import type { Sequencer } from '../core/sequencer';
 import type { PolySynth } from '../polysynth/polysynth';
 import type { InsertChain } from '../plugins/fx/insert-chain';
+import type { LaneResourceMap } from '../core/lane-resources';
 import { collectStretchJobs } from './stretch-resync';
 import { stretchCache } from '../samples/stretch-cache';
 import { stretchBuffer } from '../samples/timestretch';
@@ -15,6 +16,8 @@ export interface BpmBroadcasterDeps {
   seq: Sequencer;
   fx: FxBus;
   masterInsertChain: InsertChain;
+  /** Lane resources map — forwarded to per-lane insert chains when BPM changes. */
+  laneResources: LaneResourceMap;
   // Phase G: polysynth is now a lazy getter — the boot poly lane isn't
   // allocated until applyLoadedSessionState runs. BPM broadcast at boot
   // (before lanes exist) skips null safely.
@@ -64,8 +67,10 @@ export function createBpmBroadcaster(deps: BpmBroadcasterDeps): BpmBroadcaster {
     broadcast(bpm: number) {
       deps.seq.bpm = bpm;
       deps.fx.setBpmSync(bpm);
-      // TODO: propagate BPM to masterInsertChain slots (Task 28 – serialize/sync)
-      void deps.masterInsertChain;
+      // Broadcast BPM to all insert chains (send buses, per-lane, master).
+      for (const send of deps.fx.sends) send.inserts.setBpm(bpm);
+      for (const [, res] of deps.laneResources) res.inserts.setBpm(bpm);
+      deps.masterInsertChain.setBpm(bpm);
       const poly = deps.getPolysynth();
       if (poly) poly.bpm = bpm;
       for (const p of deps.getExtraPolys()) p.bpm = bpm;
