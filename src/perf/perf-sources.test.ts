@@ -36,9 +36,11 @@ describe('attachPerfSources', () => {
     expect(monitor.snapshot().audioSupported).toBe(false);
     const osc = ctx.createOscillator() as unknown as { end: () => void };
     const buf = ctx.createBufferSource() as unknown as { end: () => void };
-    expect(monitor.snapshot().genNodes).toBe(2);
+    // all three generator factories are wrapped (oscillator/buffer/constant)
+    ctx.createConstantSource() as unknown as { end: () => void };
+    expect(monitor.snapshot().genNodes).toBe(3);
     osc.end();
-    expect(monitor.snapshot().genNodes).toBe(1);
+    expect(monitor.snapshot().genNodes).toBe(2);
 
     // voice tap installed
     voiceTap.fn!('bass', 0.1);

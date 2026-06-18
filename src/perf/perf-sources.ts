@@ -75,11 +75,14 @@ export function attachPerfSources(deps: PerfSourcesDeps): () => void {
     monitor.markAudioSupported(false);
   }
 
-  // 5) FPS / main-thread frame time.
+  // 5) FPS / main-thread frame time. `detached` guards the self-reschedule so a
+  // detach() that lands mid-frame can't be undone by the callback re-queuing.
   const hasRaf = typeof requestAnimationFrame === 'function';
   let rafId = 0;
   let lastFrame = 0;
+  let detached = false;
   const frame = (t: number) => {
+    if (detached) return;
     if (lastFrame !== 0) {
       const dt = t - lastFrame;
       if (dt > 0) monitor.recordFps(1000 / dt, dt);
@@ -90,6 +93,7 @@ export function attachPerfSources(deps: PerfSourcesDeps): () => void {
   if (hasRaf) rafId = requestAnimationFrame(frame);
 
   return function detach() {
+    detached = true;
     seq.onTickStats = undefined;
     voiceTap.fn = null;
     for (const id of timers) clearTimeout(id);
