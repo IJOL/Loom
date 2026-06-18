@@ -19,12 +19,12 @@ import { reloadDrumkit, reloadInstrument } from './session-host-presets';
  *  Insert slots are session-owned (like lane/master inserts) — `prev` carries
  *  whatever was already persisted so we don't drop them on a live-knob save. */
 export function collectSends(fx: FxBus, prev: SendBusState[] | undefined): SendBusState[] {
-  return fx.sends.map((bus, i) => ({
+  return fx.sends.map((bus) => ({
     id: bus.id,
     label: bus.label,
     returnLevel: bus.getReturnLevel(),
     muted: bus.isMuted(),
-    inserts: prev?.[i]?.inserts ?? [],
+    inserts: prev?.find((p) => p.id === bus.id)?.inserts ?? [],
   }));
 }
 
@@ -37,10 +37,8 @@ export function rehydrateSends(ctx: AudioContext, fx: FxBus, sends: SendBusState
     bus.label = state.label;
     bus.setReturnLevel(state.returnLevel);
     bus.setMuted(state.muted);
-    if (state.inserts && state.inserts.length > 0) {
-      while (bus.inserts.size() > 0) bus.inserts.remove(0);
-      rehydrateInsertChain(ctx, bus.inserts, state.inserts);
-    }
+    while (bus.inserts.size() > 0) bus.inserts.remove(0);
+    rehydrateInsertChain(ctx, bus.inserts, state.inserts);
   }
 }
 
