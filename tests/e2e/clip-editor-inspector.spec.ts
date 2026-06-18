@@ -87,8 +87,10 @@ test('1 · Launch quantize sits in the transport row, not the edit row', async (
   // Launch select is a child of the transport row, never of the edit row.
   await expect(page.locator('#insp-transport-row #insp-quantize')).toHaveCount(1);
   await expect(page.locator('#insp-edit-row #insp-quantize')).toHaveCount(0);
-  // Transport row owns Name / Length / Duplicate / Delete too.
-  await expect(page.locator('#insp-transport-row #insp-name')).toHaveCount(1);
+  // The clip name now lives in the breadcrumb header (inline-rename input),
+  // not the transport row. The transport row owns Length / Duplicate / Delete.
+  await expect(page.locator('.ctx-clip-seg #insp-name')).toHaveCount(1);
+  await expect(page.locator('#insp-transport-row #insp-name')).toHaveCount(0);
   await expect(page.locator('#insp-transport-row #insp-length')).toHaveCount(1);
   await expect(page.locator('#insp-transport-row #insp-duplicate')).toHaveCount(1);
   await expect(page.locator('#insp-transport-row #insp-delete')).toHaveCount(1);
@@ -104,7 +106,10 @@ test('2 · Edit row + editor controls vary by clip kind', async ({ page }) => {
   await expect(page.locator('#insp-edit-row')).toBeVisible();
   await expect(page.locator('#insp-copy')).toHaveText('Copy notes');
   await expect(page.locator('#insp-random-notes')).toHaveText('🎲');
-  const octLabel = page.locator('#insp-roll-host .pr-toolbar .editor-grid-control span');
+  // The pr-toolbar now holds TWO .editor-grid-control wrappers: the octave
+  // stepper (◂ [C4] ▸, has buttons) and the shared Grid resolution <select>
+  // (no buttons). Isolate the octave one via :has(button).
+  const octLabel = page.locator('#insp-roll-host .pr-toolbar .editor-grid-control:has(button) span');
   await expect(octLabel).toHaveText(/^C-?\d+$/);
 
   // Drums clip → edit row visible, the grid-control is the "Grid" resolution <select>.
@@ -115,13 +120,15 @@ test('2 · Edit row + editor controls vary by clip kind', async ({ page }) => {
   await expect(gridCtl).toContainText('Grid');
   await expect(gridCtl.locator('select')).toHaveCount(1);
 
-  // Audio clip → edit row hidden, header carries no BPM/bar text.
+  // Audio clip → edit row hidden. The audio editor surfaces the warp/loop
+  // controls (Warp on/off, loop quantize free/beat/bar, Transcribe loop) but
+  // never a numeric tempo readout, so there is no "bpm" text. ("bar" now appears
+  // legitimately as a loop-quantize option, so it is no longer a useful negative.)
   await addAudioChannel(page);
   await expect(page.locator('#session-inspector')).toBeVisible();
   await expect(page.locator('#insp-edit-row')).toBeHidden();
   const headerText = (await page.locator('#insp-roll-host').innerText()).toLowerCase();
   expect(headerText).not.toContain('bpm');
-  expect(headerText).not.toContain('bar');
 });
 
 test('3 · Clip buttons carry honest labels and tooltips', async ({ page }) => {
@@ -145,7 +152,9 @@ test('4 · Octave is operable from the UI and matches the x shortcut', async ({ 
   const lane = await laneIdForEngine(page, 'tb303');
   await openClip(page, lane);
 
-  const octCtl = page.locator('#insp-roll-host .pr-toolbar .editor-grid-control');
+  // The octave grid-control is the one with the ◂/▸ buttons (the other
+  // .editor-grid-control is the Grid resolution <select>, no buttons).
+  const octCtl = page.locator('#insp-roll-host .pr-toolbar .editor-grid-control:has(button)');
   const octLabel = octCtl.locator('span');
   const upBtn = octCtl.getByRole('button', { name: '▸' });
 
