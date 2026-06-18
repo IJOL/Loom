@@ -101,14 +101,14 @@ export function buildMixerColumn(trackId: string, deps: MixerColumnDeps): HTMLEl
   sendLab.textContent = 'SEND';
   sendSec.appendChild(sendLab);
   addKnob(sendSec, deps, {
-    id: `mix.${trackId}.rev`, label: 'REV', min: 0, max: 1, step: 0.01,
-    value: state.sendB, defaultValue: 0, color: '#9b59b6', format: fmtPct,
-    onChange: (v) => strip.setSendB(v),
-  });
-  addKnob(sendSec, deps, {
-    id: `mix.${trackId}.dly`, label: 'DLY', min: 0, max: 1, step: 0.01,
+    id: `mix.${trackId}.sendA`, label: 'A', min: 0, max: 1, step: 0.01,
     value: state.sendA, defaultValue: 0, color: '#3498db', format: fmtPct,
     onChange: (v) => strip.setSendA(v),
+  });
+  addKnob(sendSec, deps, {
+    id: `mix.${trackId}.sendB`, label: 'B', min: 0, max: 1, step: 0.01,
+    value: state.sendB, defaultValue: 0, color: '#9b59b6', format: fmtPct,
+    onChange: (v) => strip.setSendB(v),
   });
   col.appendChild(sendSec);
 
