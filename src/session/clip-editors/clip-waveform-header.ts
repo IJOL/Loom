@@ -256,10 +256,12 @@ export function renderAudioClipEditor(
     const onUp = (ev: PointerEvent) => {
       headerHost.removeEventListener('pointermove', onMove);
       headerHost.removeEventListener('pointerup', onUp);
+      headerHost.removeEventListener('pointercancel', onUp);
       try { headerHost.releasePointerCapture(ev.pointerId); } catch { /* ignore */ }
     };
     headerHost.addEventListener('pointermove', onMove);
     headerHost.addEventListener('pointerup', onUp);
+    headerHost.addEventListener('pointercancel', onUp);
   });
   viewport.addEventListener('scroll', () => persist());
 
@@ -350,9 +352,15 @@ export function renderAudioClipEditor(
   }
 
   if (stored) { relayout(); viewport.scrollLeft = stored.scrollLeft; } else { relayout(); }
+  let lastVpW = viewport.clientWidth;
   return {
     redraw: () => {
-      header.redraw(); markerHandle?.redraw(); loopHandle?.redraw();
+      // On a panel resize, re-fit the content width (relayout redraws header +
+      // markers + loop); otherwise just repaint them. Without this the inner
+      // canvases widen on resize but the scroll-range wrapper keeps a stale width.
+      const vpw = viewport.clientWidth;
+      if (vpw && vpw !== lastVpW) { lastVpW = vpw; relayout(); }
+      else { header.redraw(); markerHandle?.redraw(); loopHandle?.redraw(); }
       const f = deps.getPlayheadFrac?.() ?? -1;
       if (f >= 0 && isFollowEnabled()) {
         const target = followScrollTarget(f * contentW(), viewport.clientWidth, contentW(), viewport.scrollLeft);

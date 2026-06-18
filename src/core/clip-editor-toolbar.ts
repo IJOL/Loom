@@ -61,8 +61,9 @@ export function createGridControl(...children: HTMLElement[]): HTMLDivElement {
 }
 
 /** A "Follow" on/off button bound to the session-global Follow flag. Reflects
- *  the shared state on every render so all editors agree. `onChange` lets the
- *  editor react (e.g. immediately re-evaluate scroll). */
+ *  the shared state on construction and on click; since one clip editor is
+ *  mounted at a time (rebuilt on open), the button always shows the live flag.
+ *  `onChange` lets the editor react (e.g. immediately re-evaluate scroll). */
 export function createFollowToggle(onChange?: (on: boolean) => void): HTMLButtonElement {
   const btn = document.createElement('button');
   btn.className = 'clip-loop-toggle'; // reuse the on/off pill styling

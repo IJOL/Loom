@@ -283,10 +283,12 @@ export function renderDrumGridEditor(
       const onUp = (ev: PointerEvent) => {
         canvas.removeEventListener('pointermove', onMove);
         canvas.removeEventListener('pointerup', onUp);
+        canvas.removeEventListener('pointercancel', onUp);
         try { canvas.releasePointerCapture(ev.pointerId); } catch { /* ignore */ }
       };
       canvas.addEventListener('pointermove', onMove);
       canvas.addEventListener('pointerup', onUp);
+      canvas.addEventListener('pointercancel', onUp);
       return;
     }
 
