@@ -7,6 +7,7 @@ import { CLIP_COLOR_PALETTE, DEFAULT_MUSICALITY, type SessionClip, type SessionS
 import { bassStepsToNotes, stepsToNotes, drumStepsToNotes } from '../core/notes';
 import type { NoteEvent } from '../core/notes';
 import { DEFAULT_RESOLUTION } from '../core/drum-grid-editing';
+import { defaultSends, remapLaneSendParams } from '../core/send-migration';
 
 export function migrateLoadedSessionState(s: SessionState): SessionState {
   for (const lane of s.lanes) {
@@ -21,6 +22,14 @@ export function migrateLoadedSessionState(s: SessionState): SessionState {
   // already ON, even if an old save persisted lock:true. The user re-enables
   // it from the tonality bar when they want it.
   s.musicality.lock = false;
+  // FX sends: seed the two default buses if absent (old saves predate them).
+  if (!s.sends) s.sends = defaultSends();
+  // Remap legacy per-lane send knob ids (mix.<lane>.rev/.dly → .sendB/.sendA).
+  for (const lane of s.lanes) {
+    if (lane.engineState?.params) {
+      lane.engineState.params = remapLaneSendParams(lane.engineState.params);
+    }
+  }
   return s;
 }
 

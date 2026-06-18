@@ -4,6 +4,18 @@ import { DEFAULT_MUSICALITY } from './session';
 import type { SessionClip, SessionState } from './session';
 import { VOICE_MIDI } from '../engines/drum-gm-map';
 
+it('seeds default sends and remaps legacy lane send knobs', () => {
+  const s = {
+    lanes: [{ id: 'bass', engineId: 'tb303', clips: [],
+      engineState: { params: { 'mix.bass.rev': 0.5, 'mix.bass.dly': 0.2 } } }],
+    scenes: [], globalQuantize: '1/1',
+  } as unknown as SessionState;
+  const out = migrateLoadedSessionState(s);
+  expect(out.sends?.map((b) => b.id)).toEqual(['A', 'B']);
+  expect(out.lanes[0].engineState!.params!['mix.bass.sendB']).toBe(0.5);
+  expect(out.lanes[0].engineState!.params!['mix.bass.sendA']).toBe(0.2);
+});
+
 function emptyState(): SessionState {
   return { lanes: [], scenes: [], globalQuantize: '1/1' };
 }
