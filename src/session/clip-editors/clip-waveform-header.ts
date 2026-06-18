@@ -17,12 +17,22 @@ import type { SynthEngine, EngineUIContext } from '../../engines/engine-types';
 import { mountWarpMarkerEditor } from './warp-marker-editor';
 import { mountClipLoopOverlay } from '../../core/clip-loop-overlay';
 import type { HistoryDeps } from '../../save/history-wiring';
+import { clampZoom, scrubToZoom, zoomAroundAnchor, maxZoomX } from '../../core/pianoroll-zoom';
+import { isFollowEnabled, followScrollTarget } from '../../core/clip-follow';
+import { createFollowToggle } from '../../core/clip-editor-toolbar';
+
+// Per-clip horizontal zoom/scroll (in-memory; resets on reload).
+const audioHViewByClip = new Map<string, { zoomX: number; scrollLeft: number }>();
 
 const RULER_H = 18;
 const WAVE_H = 64;
 
 export interface WaveformHeaderHandle { redraw: () => void; }
-export interface WaveformHeaderDeps { getPlayheadFrac?: () => number; }
+export interface WaveformHeaderDeps {
+  getPlayheadFrac?: () => number;
+  /** Zoomed content width (px). Defaults to the host width (no zoom). */
+  contentWidth?: () => number;
+}
 
 /** Source buffer id used by the header: the audio clip's own sample, or a
  *  display-only waveformRef (Mode-2 sliced note clip). */
@@ -48,9 +58,10 @@ export function mountWaveformHeader(
 
   function draw(): void {
     if (!c2d) return;
-    const w = Math.max(320, host.clientWidth || 600);
+    const w = Math.max(320, deps.contentWidth?.() ?? host.clientWidth ?? 600);
     const h = RULER_H + WAVE_H;
     canvas.width = w; canvas.height = h;
+    canvas.style.width = `${w}px`;
     canvas.style.height = `${h}px`;
     c2d.fillStyle = '#0c0c12'; c2d.fillRect(0, 0, w, h);
 
@@ -112,11 +123,11 @@ export function mountWaveformHeader(
   }
 
   draw();
-  let lastW = Math.max(320, host.clientWidth || 600);
+  let lastW = Math.max(320, deps.contentWidth?.() ?? host.clientWidth ?? 600);
   return {
     redraw() {
       const f = deps.getPlayheadFrac?.() ?? -1;
-      const w = Math.max(320, host.clientWidth || 600);
+      const w = Math.max(320, deps.contentWidth?.() ?? host.clientWidth ?? 600);
       if (f === playheadFrac && w === lastW) return; // nothing changed — skip repaint
       playheadFrac = f;
       lastW = w;
@@ -189,28 +200,83 @@ export function renderAudioClipEditor(
     wireEngineParams(deps.gain.engine, deps.gain.ctx, knobRow, { filter: (id) => id === 'gain' });
     toolbar.append(knobRow);
   }
+
+  // Follow button (after WARP controls)
+  toolbar.append(createFollowToggle());
+
   host.appendChild(toolbar);
 
-  const headerHost = document.createElement('div');
-  host.appendChild(headerHost);
-  const header = mountWaveformHeader(headerHost, clip, meter, { getPlayheadFrac: deps.getPlayheadFrac });
+  // Scroll viewport + zoomed content
+  const stored = audioHViewByClip.get(clip.id);
+  let zoomX = stored?.zoomX ?? 1;
 
-  // Performance-style loop overlay over the waveform (toolbar in the top row).
+  const viewport = document.createElement('div');
+  viewport.className = 'audio-clip-vp';
+  Object.assign(viewport.style, { overflowX: 'auto', overflowY: 'hidden', position: 'relative' } as Partial<CSSStyleDeclaration>);
+  host.appendChild(viewport);
+
+  const content = document.createElement('div');
+  content.style.position = 'relative';
+  viewport.appendChild(content);
+
+  const viewportW = () => Math.max(320, viewport.clientWidth || 600);
+  const contentW = () => Math.round(viewportW() * clampZoom(zoomX, maxZoomX(viewportW())));
+  const persist = () => audioHViewByClip.set(clip.id, { zoomX, scrollLeft: viewport.scrollLeft });
+
+  const headerHost = document.createElement('div');
+  content.appendChild(headerHost);
+  const header = mountWaveformHeader(headerHost, clip, meter, {
+    getPlayheadFrac: deps.getPlayheadFrac, contentWidth: contentW,
+  });
+
+  // Hoist loopHandle so relayout() closure can call it
   let loopHandle: { redraw: () => void } | undefined;
+
+  const relayout = () => {
+    const cw = contentW();
+    content.style.width = `${cw}px`;
+    header.redraw();
+    markerHandle?.redraw();
+    loopHandle?.redraw();
+  };
+
+  // Ruler-scrub zoom on the waveform strip
+  headerHost.addEventListener('pointerdown', (e) => {
+    let lx = e.clientX, ly = e.clientY;
+    headerHost.setPointerCapture(e.pointerId); e.preventDefault();
+    const onMove = (ev: PointerEvent) => {
+      const dy = ev.clientY - ly, dx = ev.clientX - lx; lx = ev.clientX; ly = ev.clientY;
+      const oldW = contentW();
+      zoomX = clampZoom(scrubToZoom(zoomX, dy), maxZoomX(viewportW()));
+      relayout();
+      const anchorPx = ev.clientX - viewport.getBoundingClientRect().left;
+      viewport.scrollLeft = zoomAroundAnchor(viewport.scrollLeft, anchorPx, oldW, contentW()) - dx;
+      persist();
+    };
+    const onUp = (ev: PointerEvent) => {
+      headerHost.removeEventListener('pointermove', onMove);
+      headerHost.removeEventListener('pointerup', onUp);
+      try { headerHost.releasePointerCapture(ev.pointerId); } catch { /* ignore */ }
+    };
+    headerHost.addEventListener('pointermove', onMove);
+    headerHost.addEventListener('pointerup', onUp);
+  });
+  viewport.addEventListener('scroll', () => persist());
+
+  // Performance-style loop overlay inside the viewport (zoom-aware)
   if (deps.loop) {
     const total = clip.lengthBars * ticksPerBar(meter);
-    const headerWidth = () => Math.max(320, headerHost.clientWidth || 600);
     loopHandle = mountClipLoopOverlay({
       toolbarHost: toolbar,
-      scrollHost: headerHost,
+      scrollHost: viewport,
       clip, meter,
       historyDeps: deps.loop.historyDeps,
       onChange: deps.loop.onChange,
       applyToAll: deps.loop.applyToAll,
-      tickToX: (t) => (t / total) * headerWidth(),
+      tickToX: (t) => (t / total) * contentW(),
       tickFromClientX: (cx) => {
-        const r = headerHost.getBoundingClientRect();
-        return Math.max(0, Math.min(total, ((cx - r.left) / Math.max(1, headerWidth())) * total));
+        const x = cx - content.getBoundingClientRect().left;  // shifted by scroll
+        return Math.max(0, Math.min(total, (x / Math.max(1, contentW())) * total));
       },
       contentHeight: () => RULER_H + WAVE_H,
     });
@@ -267,7 +333,7 @@ export function renderAudioClipEditor(
 
   if (sample?.warpRef && deps.warp) {
     const editorHost = document.createElement('div');
-    host.appendChild(editorHost);
+    content.appendChild(editorHost);
     // Markers are ABSOLUTE source-buffer time, same as the waveform header above:
     // use the full buffer duration (not trimEnd-trimStart) so markers line up with
     // the waveform, and pass trimStart as the downbeat (beat 0) for re-seeding.
@@ -279,8 +345,19 @@ export function renderAudioClipEditor(
       downbeatSec: sample.trimStart,
       meter, bpm: deps.warp.bpm, clipBars: clip.lengthBars, barsPerMarker: 4,
       getOnsets: deps.warp.getOnsets, onMarkersChange: deps.warp.onMarkersChange,
+      contentWidth: contentW,
     });
   }
 
-  return { redraw: () => { header.redraw(); markerHandle?.redraw(); loopHandle?.redraw(); } };
+  if (stored) { relayout(); viewport.scrollLeft = stored.scrollLeft; } else { relayout(); }
+  return {
+    redraw: () => {
+      header.redraw(); markerHandle?.redraw(); loopHandle?.redraw();
+      const f = deps.getPlayheadFrac?.() ?? -1;
+      if (f >= 0 && isFollowEnabled()) {
+        const target = followScrollTarget(f * contentW(), viewport.clientWidth, contentW(), viewport.scrollLeft);
+        if (target != null) viewport.scrollLeft = target;
+      }
+    },
+  };
 }

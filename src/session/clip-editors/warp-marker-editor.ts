@@ -18,6 +18,8 @@ export interface WarpMarkerEditorDeps {
   barsPerMarker: number;
   getOnsets: () => number[];                 // for Re-detect / density
   onMarkersChange: (markers: WarpMarker[], warp: boolean) => void;
+  /** Zoomed content width (px). Defaults to host width (no zoom). */
+  contentWidth?: () => number;
 }
 export interface WarpMarkerEditorHandle { redraw: () => void; }
 
@@ -54,7 +56,7 @@ export function mountWarpMarkerEditor(host: HTMLElement, deps: WarpMarkerEditorD
   sel.addEventListener('change', () => { barsPerMarker = Number(sel.value) || 4; reseed(); });
   redetect.addEventListener('click', reseed);
 
-  const width = () => Math.max(320, host.clientWidth || 600);
+  const width = () => Math.max(320, deps.contentWidth?.() ?? host.clientWidth ?? 600);
   const xFor = (sec: number) => (sec / Math.max(0.001, deps.durationSec)) * width();
   const secFor = (x: number) => (x / width()) * deps.durationSec;
   const nearestOnset = (sec: number) => {
@@ -64,6 +66,7 @@ export function mountWarpMarkerEditor(host: HTMLElement, deps: WarpMarkerEditorD
 
   function draw(): void {
     const w = width();
+    layer.style.width = `${w}px`;
     const markers = deps.getMarkers();
     count.textContent = `${markers.length} markers`;
     // clear our own children (markers/grid/segments/drift) — leave nothing else
