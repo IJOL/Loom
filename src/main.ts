@@ -741,10 +741,13 @@ const fxUIDeps: FxUIDeps = {
   // Task 28: expose session state so master insert slots are persisted.
   getSessionState: () => sessionHost.state,
 };
-const { rebuildMasterInserts } = wireFxUI(fxUIDeps);
+const { rebuildMasterInserts, rebuildSends } = wireFxUI(fxUIDeps);
 // Task 28: rebuild master insert UI after each session load so the slots
 // array reference stays in sync with sessionHost.state.masterInserts.
 sessionHost.onStateApplied(rebuildMasterInserts);
+// Task 10: rebuild send modules after each session load so insert racks
+// reflect the loaded sessionState.sends[i].inserts.
+sessionHost.onStateApplied(rebuildSends);
 // Phase G: deferred to sessionHost.onStateApplied (lane not allocated at boot).
 // mountDrumMasterLaneKnobs(LANE_ID_DRUMS) — see boot section below.
 fxApplyDelaySync(fxUIDeps);

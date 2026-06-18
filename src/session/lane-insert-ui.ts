@@ -4,12 +4,6 @@ import { applyInsertSlot, type InsertSlot } from './insert-slot';
 import type { InsertChain } from '../plugins/fx/insert-chain';
 import { createKnob } from '../core/knob';
 
-// Reverb/delay live in FxBus as sends. They're registered in the plugin catalog
-// so their params can be modulation destinations, but hidden from the insert
-// picker to prevent double-tail bugs (lane sends to FxBus AND has a reverb
-// insert = two reverb tails summed at master).
-const SEND_ONLY_IN_PHASE_1 = new Set<string>(['reverb', 'delay']);
-
 export interface LaneInsertUIDeps {
   ctx: AudioContext;
   container: HTMLElement;
@@ -35,16 +29,29 @@ export function buildLaneInsertUI(deps: LaneInsertUIDeps): void {
       row.appendChild(label);
 
       for (const spec of factory.manifest.params) {
-        if (spec.kind !== 'continuous') continue;
-        // createKnob takes (opts: KnobOpts): KnobHandle — no parent/get/set fields.
-        // Adapt: value = get(), onChange = set(v), append handle.el to row manually.
-        const handle = createKnob({
-          label: spec.label,
-          min: spec.min, max: spec.max,
-          value: cs.fx.getBaseValue(spec.id),
-          onChange: (v) => { cs.fx.setBaseValue(spec.id, v); slot.params[spec.id] = v; onChange(); },
-        });
-        row.appendChild(handle.el);
+        if (spec.kind === 'continuous') {
+          // createKnob takes (opts: KnobOpts): KnobHandle — no parent/get/set fields.
+          // Adapt: value = get(), onChange = set(v), append handle.el to row manually.
+          const handle = createKnob({
+            label: spec.label,
+            min: spec.min, max: spec.max,
+            value: cs.fx.getBaseValue(spec.id),
+            onChange: (v) => { cs.fx.setBaseValue(spec.id, v); slot.params[spec.id] = v; onChange(); },
+          });
+          row.appendChild(handle.el);
+        } else if (spec.kind === 'discrete' && spec.options) {
+          const sel = document.createElement('select');
+          sel.title = spec.label;
+          spec.options.forEach((opt, idx) => sel.appendChild(new Option(opt.label, String(idx))));
+          sel.selectedIndex = Math.round(cs.fx.getBaseValue(spec.id));
+          sel.onchange = () => {
+            const idx = sel.selectedIndex;
+            cs.fx.setBaseValue(spec.id, idx);
+            slot.params[spec.id] = idx;
+            onChange();
+          };
+          row.appendChild(sel);
+        }
       }
     }
 
@@ -77,7 +84,6 @@ export function buildLaneInsertUI(deps: LaneInsertUIDeps): void {
     const picker = document.createElement('select');
     picker.appendChild(new Option('—', ''));
     for (const p of listPlugins('fx')) {
-      if (SEND_ONLY_IN_PHASE_1.has(p.manifest.id)) continue;
       picker.appendChild(new Option(p.manifest.name, p.manifest.id));
     }
     picker.onchange = () => {

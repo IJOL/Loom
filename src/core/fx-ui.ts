@@ -85,62 +85,23 @@ export interface FxUIDeps {
 }
 
 let _deps: FxUIDeps | null = null;
-let _delaySyncDiv: SyncDiv = '1/8.';
 
-export function getDelaySyncDiv(): SyncDiv { return _delaySyncDiv; }
-
-export function applyDelaySync(deps: FxUIDeps) {
-  const beatFractions: Record<SyncDiv, number> = {
-    'off': 0.375,
-    '4/1': 4, '3/1': 3, '2/1': 2, '1/1': 1,
-    '1/2': 0.5, '1/4': 0.25, '1/8': 0.125, '1/8.': 0.1875, '1/8t': 1/12,
-    '1/16': 0.0625, '1/16t': 1/24, '1/32': 0.03125,
-  };
-  const frac = beatFractions[_delaySyncDiv];
-  deps.fx.setBpmSync(deps.getBpm(), frac);
-}
+// Legacy exports kept for backwards-compatibility (main.ts still imports them).
+// The delay SYNC param is now an insert-slot discrete param on Send A; these
+// functions are no-ops and will be removed in Task 12.
+/** @deprecated Use the delay insert's SYNC discrete param instead. */
+export function getDelaySyncDiv(): SyncDiv { return '1/8.' as SyncDiv; }
+/** @deprecated No-op — delay sync is now driven by the insert param. */
+export function applyDelaySync(_deps: FxUIDeps): void { /* no-op */ }
 
 // TODO: Task 19 will replace appendFilterRow with InsertChain-based plugin UI.
 // The old MasterFilter row builder is stubbed out pending that task.
 
-export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void } {
+export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void; rebuildSends: () => void } {
   _deps = deps;
 
-  const revRow = document.getElementById('fx-reverb-knobs') as HTMLDivElement;
-  const dlyRow = document.getElementById('fx-delay-knobs') as HTMLDivElement;
   const SIZE = 44;
-  const revColor = '#9b59b6';
-  const dlyColor = '#3498db';
   const undoHooks = deps.historyDeps ? attachKnobUndo(deps.historyDeps) : undefined;
-
-  // REVERB
-  appendKnob(revRow, { id: 'fx.reverb.wet', min: 0, max: 1, step: 0.01, value: deps.fx.getReverbWet(), defaultValue: 0.9,
-    label: 'WET', color: revColor, size: SIZE, format: fmtPct,
-    onChange: (v) => deps.fx.setReverbWet(v) }, deps.registerKnob, undoHooks);
-  appendKnob(revRow, { id: 'fx.reverb.size', min: 0.1, max: 6, step: 0.1, value: deps.fx.getReverbSize(), defaultValue: 2.5,
-    label: 'SIZE', color: revColor, size: SIZE, format: (v) => `${v.toFixed(1)}s`,
-    onChange: (v) => deps.fx.setReverbSize(v) }, deps.registerKnob, undoHooks);
-  appendKnob(revRow, { id: 'fx.reverb.decay', min: 0.5, max: 8, step: 0.1, value: deps.fx.getReverbDecay(), defaultValue: 3,
-    label: 'DECAY', color: revColor, size: SIZE, format: (v) => v.toFixed(1),
-    onChange: (v) => deps.fx.setReverbDecay(v) }, deps.registerKnob, undoHooks);
-  appendKnob(revRow, { id: 'fx.reverb.predly', min: 0, max: 0.5, step: 0.005, value: deps.fx.getReverbPredelay(), defaultValue: 0,
-    label: 'PREDLY', color: revColor, size: SIZE, format: fmtSec,
-    onChange: (v) => deps.fx.setReverbPredelay(v) }, deps.registerKnob, undoHooks);
-
-  // DELAY
-  appendSelect(dlyRow, 'SYNC', SYNC_OPTS, () => _delaySyncDiv, (v) => {
-    _delaySyncDiv = v as SyncDiv;
-    applyDelaySync(deps);
-  });
-  appendKnob(dlyRow, { id: 'fx.delay.feedback', min: 0, max: 0.95, step: 0.01, value: deps.fx.getDelayFeedback(), defaultValue: 0.45,
-    label: 'FBACK', color: dlyColor, size: SIZE, format: fmtPct,
-    onChange: (v) => deps.fx.setDelayFeedback(v) }, deps.registerKnob, undoHooks);
-  appendKnob(dlyRow, { id: 'fx.delay.wet', min: 0, max: 1, step: 0.01, value: deps.fx.getDelayWet(), defaultValue: 0.8,
-    label: 'WET', color: dlyColor, size: SIZE, format: fmtPct,
-    onChange: (v) => deps.fx.setDelayWet(v) }, deps.registerKnob, undoHooks);
-  appendKnob(dlyRow, { id: 'fx.delay.damp', min: 200, max: 16000, step: 50, value: deps.fx.getDelayDamping(), defaultValue: 4500,
-    label: 'DAMP', color: dlyColor, size: SIZE, format: (v) => `${Math.round(v)}Hz`,
-    onChange: (v) => deps.fx.setDelayDamping(v) }, deps.registerKnob, undoHooks);
 
   // MASTER COMP
   const mcRow = document.getElementById('fx-master-comp-knobs') as HTMLDivElement;
@@ -208,5 +169,54 @@ export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void } {
   };
 
   rebuildMasterInserts();
-  return { rebuildMasterInserts };
+
+  // ── Send return modules (Task 10) ──────────────────────────────────────────
+  const buildSendModule = (bus: import('./send-bus').SendBus, slots: InsertSlot[]) => {
+    const host = document.getElementById(`fx-send-${bus.id.toLowerCase()}`) as HTMLDivElement | null;
+    if (!host) return;
+    host.replaceChildren();
+    const title = document.createElement('div');
+    title.className = 'fx-send-title';
+    title.textContent = bus.label;
+    host.appendChild(title);
+    const ctrls = document.createElement('div');
+    ctrls.className = 'fx-send-ctrls';
+    appendKnob(ctrls, {
+      id: `fx.send.${bus.id}.level`, min: 0, max: 1.5, step: 0.01,
+      value: bus.getReturnLevel(), defaultValue: 1, label: 'RET', size: SIZE, format: fmtPct,
+      onChange: (v) => bus.setReturnLevel(v),
+    }, deps.registerKnob, undoHooks);
+    const mute = document.createElement('button');
+    mute.className = 'rnd';
+    mute.textContent = 'MUTE';
+    mute.classList.toggle('active', bus.isMuted());
+    mute.onclick = () => {
+      const m = !bus.isMuted();
+      bus.setMuted(m);
+      mute.classList.toggle('active', m);
+      deps.saveSession?.();
+    };
+    ctrls.appendChild(mute);
+    host.appendChild(ctrls);
+    const rack = document.createElement('div');
+    host.appendChild(rack);
+    buildLaneInsertUI({
+      ctx: deps.ctx,
+      container: rack,
+      chain: bus.inserts,
+      slots,
+      onChange: () => deps.saveSession?.(),
+    });
+  };
+
+  const rebuildSends = (): void => {
+    const ss = deps.getSessionState?.();
+    deps.fx.sends.forEach((bus, i) => {
+      const slots = ss?.sends?.[i]?.inserts ?? [];
+      buildSendModule(bus, slots);
+    });
+  };
+
+  rebuildSends();
+  return { rebuildMasterInserts, rebuildSends };
 }

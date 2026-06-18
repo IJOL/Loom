@@ -337,18 +337,12 @@
           <div id="insp-roll-host" class="session-inspector-roll"></div>
         </div>
         <div id="master-fx-panel" hidden>
-          <!-- SENDS zone: reverb + delay -->
+          <!-- SENDS zone: Send A (Delay) + Send B (Reverb) return modules -->
           <div class="row fx-zone">
             <div class="section-label">SENDS</div>
             <div class="fx-zone-content">
-              <div class="row poly-section">
-                <div class="section-label">REVERB</div>
-                <div id="fx-reverb-knobs" class="knob-row"></div>
-              </div>
-              <div class="row poly-section">
-                <div class="section-label">DELAY</div>
-                <div id="fx-delay-knobs" class="knob-row"></div>
-              </div>
+              <div id="fx-send-a" class="fx-send-module"></div>
+              <div id="fx-send-b" class="fx-send-module"></div>
             </div>
           </div>
           <!-- MASTER COMP: standalone -->

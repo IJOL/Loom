@@ -48,3 +48,29 @@
   background: var(--red);
   color: var(--bg);
 }
+
+/* Send return modules (Task 10) */
+.fx-send-module {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  min-width: 160px;
+}
+.fx-send-title {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim, #888);
+  margin-bottom: 2px;
+}
+.fx-send-ctrls {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
