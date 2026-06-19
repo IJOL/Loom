@@ -181,7 +181,7 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
   barsInput.value = String(mod.syncBars ?? 0.25);
   barsInput.className = 'mod-bars-field';
   barsInput.style.cssText =
-    'width:3.6em;background:#1b1b1b;color:#eee;border:1px solid #444;border-radius:3px;' +
+    'width:4.6em;background:#1b1b1b;color:#eee;border:1px solid #444;border-radius:3px;' +
     'font:inherit;text-align:center;padding:2px 3px;';
   const commitBars = () => {
     const v = parseFloat(barsInput.value);
