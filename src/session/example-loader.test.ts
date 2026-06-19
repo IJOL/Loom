@@ -42,6 +42,19 @@ describe('example loader', () => {
     expect(validateExample({ id: 'x' })).toBe(false);
   });
 
+  it('validates breakbeat beat and bass examples', () => {
+    const bbBeat: Example = {
+      id: 'breakbeat-beat-1', name: 'Classic Breakbeat', style: 'breakbeat', kind: 'beat', bars: 1,
+      notes: [{ start: 0, duration: 24, midi: 36, velocity: 115 }],
+    };
+    const bbBass: Example = {
+      id: 'breakbeat-bass-1', name: 'Funk Octave Riff', style: 'breakbeat', kind: 'bass', bars: 1,
+      degrees: [{ start: 0, duration: 22, degree: 0, octave: 0, velocity: 110 }],
+    };
+    expect(validateExample(bbBeat)).toBe(true);
+    expect(validateExample(bbBass)).toBe(true);
+  });
+
   it('validates examples with optional source field', () => {
     const withSource: Example = { ...melodic, source: 'user' };
     expect(validateExample(withSource)).toBe(true);

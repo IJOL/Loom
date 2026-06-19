@@ -1,0 +1,317 @@
+{
+  "style": "breakbeat",
+  "examples": [
+    {
+      "id": "breakbeat-beat-1",
+      "name": "Classic Breakbeat",
+      "style": "breakbeat",
+      "kind": "beat",
+      "bars": 1,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start": 240, "duration": 24, "midi": 36, "velocity": 100 },
+        { "start":  96, "duration": 24, "midi": 38, "velocity": 110 },
+        { "start": 288, "duration": 24, "midi": 38, "velocity": 110 },
+        { "start": 168, "duration": 24, "midi": 38, "velocity": 45  },
+        { "start": 264, "duration": 24, "midi": 38, "velocity": 40  },
+        { "start":   0, "duration": 12, "midi": 42, "velocity": 70  },
+        { "start":  48, "duration": 12, "midi": 42, "velocity": 70  },
+        { "start":  96, "duration": 12, "midi": 42, "velocity": 70  },
+        { "start": 144, "duration": 12, "midi": 42, "velocity": 70  },
+        { "start": 192, "duration": 12, "midi": 42, "velocity": 70  },
+        { "start": 240, "duration": 12, "midi": 42, "velocity": 70  },
+        { "start": 288, "duration": 12, "midi": 42, "velocity": 70  },
+        { "start": 336, "duration": 18, "midi": 46, "velocity": 82  }
+      ]
+    },
+    {
+      "id": "breakbeat-beat-2",
+      "name": "Funky Break",
+      "style": "breakbeat",
+      "kind": "beat",
+      "bars": 1,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start": 120, "duration": 24, "midi": 36, "velocity": 85  },
+        { "start": 240, "duration": 24, "midi": 36, "velocity": 100 },
+        { "start":  96, "duration": 24, "midi": 38, "velocity": 110 },
+        { "start": 288, "duration": 24, "midi": 38, "velocity": 110 },
+        { "start": 360, "duration": 24, "midi": 38, "velocity": 45  },
+        { "start":   0, "duration": 12, "midi": 42, "velocity": 68  },
+        { "start":  48, "duration": 12, "midi": 42, "velocity": 68  },
+        { "start":  96, "duration": 12, "midi": 42, "velocity": 68  },
+        { "start": 192, "duration": 12, "midi": 42, "velocity": 68  },
+        { "start": 240, "duration": 12, "midi": 42, "velocity": 68  },
+        { "start": 288, "duration": 12, "midi": 42, "velocity": 68  },
+        { "start": 144, "duration": 18, "midi": 46, "velocity": 76  },
+        { "start": 336, "duration": 18, "midi": 46, "velocity": 78  }
+      ]
+    },
+    {
+      "id": "breakbeat-beat-3",
+      "name": "Amen 2-Bar",
+      "style": "breakbeat",
+      "kind": "beat",
+      "bars": 2,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 115 },
+        { "start": 240, "duration": 24, "midi": 36, "velocity": 100 },
+        { "start":  96, "duration": 24, "midi": 38, "velocity": 110 },
+        { "start": 288, "duration": 24, "midi": 38, "velocity": 110 },
+        { "start": 168, "duration": 24, "midi": 38, "velocity": 45  },
+        { "start":   0, "duration": 12, "midi": 42, "velocity": 68  },
+        { "start":  48, "duration": 12, "midi": 42, "velocity": 68  },
+        { "start":  96, "duration": 12, "midi": 42, "velocity": 68  },
+        { "start": 144, "duration": 12, "midi": 42, "velocity": 68  },
+        { "start": 192, "duration": 12, "midi": 42, "velocity": 68  },
+        { "start": 240, "duration": 12, "midi": 42, "velocity": 68  },
+        { "start": 288, "duration": 12, "midi": 42, "velocity": 68  },
+        { "start": 336, "duration": 12, "midi": 42, "velocity": 68  },
+        { "start": 384, "duration": 24, "midi": 36, "velocity": 112 },
+        { "start": 648, "duration": 24, "midi": 36, "velocity": 100 },
+        { "start": 480, "duration": 24, "midi": 38, "velocity": 110 },
+        { "start": 720, "duration": 24, "midi": 38, "velocity": 108 },
+        { "start": 552, "duration": 24, "midi": 38, "velocity": 45  },
+        { "start": 600, "duration": 24, "midi": 38, "velocity": 42  },
+        { "start": 696, "duration": 24, "midi": 38, "velocity": 48  },
+        { "start": 384, "duration": 12, "midi": 42, "velocity": 66  },
+        { "start": 432, "duration": 12, "midi": 42, "velocity": 66  },
+        { "start": 480, "duration": 12, "midi": 42, "velocity": 66  },
+        { "start": 528, "duration": 12, "midi": 42, "velocity": 66  },
+        { "start": 576, "duration": 12, "midi": 42, "velocity": 66  },
+        { "start": 624, "duration": 12, "midi": 42, "velocity": 66  },
+        { "start": 672, "duration": 12, "midi": 42, "velocity": 66  },
+        { "start": 744, "duration": 18, "midi": 46, "velocity": 80  }
+      ]
+    },
+    {
+      "id": "breakbeat-beat-4",
+      "name": "Big Beat Stomp",
+      "style": "breakbeat",
+      "kind": "beat",
+      "bars": 1,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 120 },
+        { "start":  48, "duration": 24, "midi": 36, "velocity": 95  },
+        { "start": 192, "duration": 24, "midi": 36, "velocity": 110 },
+        { "start":  96, "duration": 24, "midi": 38, "velocity": 118 },
+        { "start":  96, "duration": 24, "midi": 39, "velocity": 100 },
+        { "start": 288, "duration": 24, "midi": 38, "velocity": 118 },
+        { "start": 288, "duration": 24, "midi": 39, "velocity": 100 },
+        { "start":   0, "duration": 12, "midi": 42, "velocity": 60  },
+        { "start":  96, "duration": 12, "midi": 42, "velocity": 60  },
+        { "start": 192, "duration": 12, "midi": 42, "velocity": 60  },
+        { "start": 288, "duration": 12, "midi": 42, "velocity": 60  },
+        { "start": 144, "duration": 18, "midi": 46, "velocity": 85  },
+        { "start": 336, "duration": 18, "midi": 46, "velocity": 88  }
+      ]
+    },
+    {
+      "id": "breakbeat-beat-5",
+      "name": "Prodigy Punch",
+      "style": "breakbeat",
+      "kind": "beat",
+      "bars": 1,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 120 },
+        { "start":  24, "duration": 24, "midi": 36, "velocity": 90  },
+        { "start": 144, "duration": 24, "midi": 36, "velocity": 100 },
+        { "start": 168, "duration": 24, "midi": 36, "velocity": 95  },
+        { "start": 192, "duration": 24, "midi": 38, "velocity": 120 },
+        { "start": 192, "duration": 24, "midi": 39, "velocity": 105 },
+        { "start":   0, "duration": 12, "midi": 42, "velocity": 58  },
+        { "start":  48, "duration": 12, "midi": 42, "velocity": 58  },
+        { "start":  96, "duration": 12, "midi": 42, "velocity": 58  },
+        { "start": 144, "duration": 12, "midi": 42, "velocity": 58  },
+        { "start": 240, "duration": 12, "midi": 42, "velocity": 58  },
+        { "start": 336, "duration": 12, "midi": 42, "velocity": 58  },
+        { "start": 288, "duration": 18, "midi": 46, "velocity": 85  }
+      ]
+    },
+    {
+      "id": "breakbeat-beat-6",
+      "name": "Big Beat Roll",
+      "style": "breakbeat",
+      "kind": "beat",
+      "bars": 2,
+      "notes": [
+        { "start":   0, "duration": 24, "midi": 36, "velocity": 120 },
+        { "start":  48, "duration": 24, "midi": 36, "velocity": 95  },
+        { "start": 192, "duration": 24, "midi": 36, "velocity": 110 },
+        { "start":  96, "duration": 24, "midi": 38, "velocity": 118 },
+        { "start":  96, "duration": 24, "midi": 39, "velocity": 100 },
+        { "start": 288, "duration": 24, "midi": 38, "velocity": 118 },
+        { "start": 288, "duration": 24, "midi": 39, "velocity": 100 },
+        { "start":   0, "duration": 12, "midi": 42, "velocity": 60  },
+        { "start":  96, "duration": 12, "midi": 42, "velocity": 60  },
+        { "start": 192, "duration": 12, "midi": 42, "velocity": 60  },
+        { "start": 144, "duration": 18, "midi": 46, "velocity": 85  },
+        { "start": 384, "duration": 24, "midi": 36, "velocity": 120 },
+        { "start": 432, "duration": 24, "midi": 36, "velocity": 95  },
+        { "start": 576, "duration": 24, "midi": 36, "velocity": 110 },
+        { "start": 480, "duration": 24, "midi": 38, "velocity": 118 },
+        { "start": 384, "duration": 12, "midi": 42, "velocity": 60  },
+        { "start": 480, "duration": 12, "midi": 42, "velocity": 60  },
+        { "start": 672, "duration": 24, "midi": 38, "velocity": 90  },
+        { "start": 696, "duration": 24, "midi": 38, "velocity": 98  },
+        { "start": 720, "duration": 24, "midi": 38, "velocity": 106 },
+        { "start": 744, "duration": 24, "midi": 38, "velocity": 115 }
+      ]
+    },
+    {
+      "id": "breakbeat-bass-1",
+      "name": "Funk Octave Riff",
+      "style": "breakbeat",
+      "kind": "bass",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 22, "degree": 0, "octave": 0, "velocity": 110 },
+        { "start":  72, "duration": 22, "degree": 0, "octave": 1, "velocity": 85  },
+        { "start": 144, "duration": 22, "degree": 0, "octave": 0, "velocity": 90  },
+        { "start": 192, "duration": 22, "degree": 2, "octave": 0, "velocity": 95  },
+        { "start": 264, "duration": 22, "degree": 0, "octave": 1, "velocity": 85  },
+        { "start": 336, "duration": 22, "degree": 4, "octave": 0, "velocity": 90  }
+      ]
+    },
+    {
+      "id": "breakbeat-bass-2",
+      "name": "Syncopated Stab",
+      "style": "breakbeat",
+      "kind": "bass",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 22, "degree": 0, "octave": 0, "velocity": 115 },
+        { "start":  48, "duration": 22, "degree": 0, "octave": 0, "velocity": 80  },
+        { "start": 120, "duration": 22, "degree": 3, "octave": 0, "velocity": 90  },
+        { "start": 192, "duration": 22, "degree": 0, "octave": 0, "velocity": 100 },
+        { "start": 240, "duration": 22, "degree": 4, "octave": 0, "velocity": 85  },
+        { "start": 312, "duration": 22, "degree": 6, "octave": 0, "velocity": 90  }
+      ]
+    },
+    {
+      "id": "breakbeat-bass-3",
+      "name": "Big Beat Driver",
+      "style": "breakbeat",
+      "kind": "bass",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 72, "degree": 0, "octave": 0, "velocity": 115 },
+        { "start":  96, "duration": 48, "degree": 0, "octave": 0, "velocity": 95  },
+        { "start": 192, "duration": 72, "degree": 5, "octave": 0, "velocity": 100 },
+        { "start": 288, "duration": 48, "degree": 4, "octave": 0, "velocity": 95  }
+      ]
+    },
+    {
+      "id": "breakbeat-bass-4",
+      "name": "Walking Break",
+      "style": "breakbeat",
+      "kind": "bass",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 22, "degree": 0, "octave": 0, "velocity": 105 },
+        { "start":  48, "duration": 22, "degree": 2, "octave": 0, "velocity": 80  },
+        { "start":  96, "duration": 22, "degree": 3, "octave": 0, "velocity": 90  },
+        { "start": 144, "duration": 22, "degree": 4, "octave": 0, "velocity": 85  },
+        { "start": 192, "duration": 22, "degree": 4, "octave": 0, "velocity": 95  },
+        { "start": 240, "duration": 22, "degree": 3, "octave": 0, "velocity": 80  },
+        { "start": 288, "duration": 22, "degree": 2, "octave": 0, "velocity": 85  },
+        { "start": 336, "duration": 22, "degree": 0, "octave": 0, "velocity": 90  }
+      ]
+    },
+    {
+      "id": "breakbeat-bass-5",
+      "name": "Two-Bar Funk",
+      "style": "breakbeat",
+      "kind": "bass",
+      "bars": 2,
+      "degrees": [
+        { "start":   0, "duration": 22, "degree": 0, "octave": 0, "velocity": 110 },
+        { "start":  72, "duration": 22, "degree": 0, "octave": 1, "velocity": 85  },
+        { "start": 144, "duration": 22, "degree": 4, "octave": 0, "velocity": 90  },
+        { "start": 216, "duration": 22, "degree": 3, "octave": 0, "velocity": 85  },
+        { "start": 288, "duration": 22, "degree": 0, "octave": 0, "velocity": 100 },
+        { "start": 336, "duration": 22, "degree": 6, "octave": 0, "velocity": 85  },
+        { "start": 384, "duration": 22, "degree": 0, "octave": 0, "velocity": 110 },
+        { "start": 456, "duration": 22, "degree": 0, "octave": 1, "velocity": 85  },
+        { "start": 528, "duration": 22, "degree": 5, "octave": 0, "velocity": 90  },
+        { "start": 600, "duration": 22, "degree": 4, "octave": 0, "velocity": 85  },
+        { "start": 672, "duration": 48, "degree": 2, "octave": 0, "velocity": 95  },
+        { "start": 744, "duration": 22, "degree": 0, "octave": 0, "velocity": 90  }
+      ]
+    },
+    {
+      "id": "breakbeat-melody-1",
+      "name": "Stab Hook",
+      "style": "breakbeat",
+      "kind": "melody",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 24, "degree": 4, "octave": 1, "velocity": 100 },
+        { "start":  48, "duration": 24, "degree": 2, "octave": 1, "velocity": 85  },
+        { "start":  96, "duration": 48, "degree": 0, "octave": 1, "velocity": 105 },
+        { "start": 192, "duration": 24, "degree": 4, "octave": 1, "velocity": 90  },
+        { "start": 240, "duration": 24, "degree": 6, "octave": 1, "velocity": 85  },
+        { "start": 288, "duration": 48, "degree": 0, "octave": 1, "velocity": 100 }
+      ]
+    },
+    {
+      "id": "breakbeat-melody-2",
+      "name": "Descending Big Beat",
+      "style": "breakbeat",
+      "kind": "melody",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 48, "degree": 6, "octave": 1, "velocity": 100 },
+        { "start":  96, "duration": 48, "degree": 4, "octave": 1, "velocity": 95  },
+        { "start": 192, "duration": 48, "degree": 2, "octave": 1, "velocity": 90  },
+        { "start": 288, "duration": 48, "degree": 0, "octave": 1, "velocity": 105 }
+      ]
+    },
+    {
+      "id": "breakbeat-melody-3",
+      "name": "Funk Riff",
+      "style": "breakbeat",
+      "kind": "melody",
+      "bars": 1,
+      "degrees": [
+        { "start":   0, "duration": 24, "degree": 0, "octave": 1, "velocity": 95  },
+        { "start":  24, "duration": 24, "degree": 2, "octave": 1, "velocity": 80  },
+        { "start":  96, "duration": 24, "degree": 4, "octave": 1, "velocity": 100 },
+        { "start": 144, "duration": 24, "degree": 2, "octave": 1, "velocity": 85  },
+        { "start": 192, "duration": 24, "degree": 0, "octave": 1, "velocity": 90  },
+        { "start": 288, "duration": 48, "degree": 4, "octave": 1, "velocity": 95  }
+      ]
+    },
+    {
+      "id": "breakbeat-melody-4",
+      "name": "Acid Lick",
+      "style": "breakbeat",
+      "kind": "melody",
+      "bars": 1,
+      "degrees": [
+        { "start":  48, "duration": 24, "degree": 0, "octave": 1, "velocity": 100 },
+        { "start":  72, "duration": 24, "degree": 3, "octave": 1, "velocity": 85  },
+        { "start": 120, "duration": 24, "degree": 4, "octave": 1, "velocity": 90  },
+        { "start": 192, "duration": 24, "degree": 6, "octave": 1, "velocity": 95  },
+        { "start": 240, "duration": 24, "degree": 4, "octave": 1, "velocity": 85  },
+        { "start": 336, "duration": 24, "degree": 0, "octave": 1, "velocity": 90  }
+      ]
+    },
+    {
+      "id": "breakbeat-melody-5",
+      "name": "Two-Bar Theme",
+      "style": "breakbeat",
+      "kind": "melody",
+      "bars": 2,
+      "degrees": [
+        { "start":   0, "duration": 48, "degree": 0, "octave": 1, "velocity": 100 },
+        { "start":  96, "duration": 48, "degree": 2, "octave": 1, "velocity": 90  },
+        { "start": 192, "duration": 48, "degree": 4, "octave": 1, "velocity": 100 },
+        { "start": 288, "duration": 48, "degree": 5, "octave": 1, "velocity": 95  },
+        { "start": 384, "duration": 48, "degree": 4, "octave": 1, "velocity": 100 },
+        { "start": 480, "duration": 48, "degree": 2, "octave": 1, "velocity": 90  },
+        { "start": 576, "duration": 96, "degree": 0, "octave": 1, "velocity": 110 }
+      ]
+    }
+  ]
+}
