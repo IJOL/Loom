@@ -121,6 +121,10 @@ export interface SessionLane {
    *  Task 28). Defaults to [] when absent so consumers can write `??= []`
    *  and then push to the same array without losing the reference. */
   inserts?: import('./insert-slot').InsertSlot[];
+  /** Per-lane mixer ChannelStrip snapshot (level/pan/EQ/sendA/sendB/mute/comp/
+   *  sidechain). Optional/additive — absent ⇒ the strip keeps its defaults on
+   *  load. Collected on save from the live strip, restored on load. */
+  mixer?: import('../core/fx').ChannelState;
   /** Per-lane tonality override (Spec 1). Absent ⇒ inherits the global musicality. */
   musicalityOverride?: LaneMusicalityOverride;
 }

@@ -130,6 +130,11 @@ export function collectEngineState(self: SessionHost): void {
     // Mirror the lane's note-FX chain so it persists on save.
     if (!lane.engineState) lane.engineState = {};
     lane.engineState.noteFx = getNoteFxChain(lane.id).serialize();
+    // Snapshot the live mixer strip (level/pan/EQ/sends/mute/comp/sidechain).
+    // Without this a save dropped the whole per-lane mixer ("Save doesn't save
+    // the full mixer state").
+    const strip = self.deps.laneResources?.get(lane.id)?.strip;
+    if (strip) lane.mixer = strip.serialize();
   }
   // Refresh send-bus return level + mute (inserts are session-owned, preserved via prev).
   if (self.deps.fxBus) {
@@ -146,7 +151,11 @@ export function applyEngineState(self: SessionHost): void {
 /** Apply ONE lane's persisted engineState to its live engine. Extracted so the
  *  duplicate-lane path can rehydrate a single new lane without touching others. */
 export function applyEngineStateForLane(self: SessionHost, lane: SessionLane): void {
-  const engine = self.deps.laneResources?.get(lane.id)?.engine;
+  const res = self.deps.laneResources?.get(lane.id);
+  // Restore the per-lane mixer strip (level/pan/EQ/sends/mute/comp/sidechain).
+  // Older saves have no `mixer` — the strip then keeps its constructed defaults.
+  if (res?.strip && lane.mixer) res.strip.restore(lane.mixer);
+  const engine = res?.engine;
   if (!engine) return;
   void applyLaneEngineState(engine as never, lane, self.deps.ctx, {
     loadNoteFx: (laneId, state) => loadNoteFxForLane(laneId, state),
