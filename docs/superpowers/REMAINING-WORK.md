@@ -1,8 +1,10 @@
 # Remaining work
 
-Audit refreshed 2026-06-10 (evening) against the codebase. Implemented design docs
+Audit refreshed 2026-06-19 against the codebase. Implemented design docs
 are removed from the tree per convention — recover them from git history. What stays
-below is the **outstanding** work only.
+below is the **outstanding** work only. A feature's **mockup is archived together with
+its spec and plan**: once both are pruned, the mockup is removed too (recover from git);
+only a mockup whose spec is still outstanding stays under `mockups/`.
 
 ## Needs a user decision first (do NOT implement blind)
 
@@ -36,6 +38,17 @@ below is the **outstanding** work only.
 - **LoomN (C++/JUCE)** ([spec](specs/2026-06-01-cpp-juce-migration-design.md),
   [plan](plans/2026-06-01-loomn-foundation-core-model.md)): cross-repo reference
   copies; Phase 1 done, work continues in the `LoomN` repo.
+
+## Closed since the 2026-06-10 audit (docs pruned 2026-06-19)
+
+All merged to main (NOT pushed); spec+plan (+ any mockup) removed from the tree,
+recoverable from git history:
+
+- Stems as audio lanes; audio-lane editor; audio-warp engine; audio-warp marker editor.
+- West Coast engine; musicality assist (Spec 1).
+- Clip context breadcrumb; clip tempo *2//2; duplicate lanes/scenes + capture; universal undo.
+- Clip zoom + viewport-anchored loop + Follow; loop-region MOVE (drag interior); performance
+  diagnostics (PERF HUD); scene/clip launch loop-sync.
 
 ## Closed since the 2026-05-31 audit (recorded; nothing to do)
 
