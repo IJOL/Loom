@@ -105,6 +105,11 @@ export function applyLoadedSessionState(self: SessionHost, sess: SessionState): 
   }
   // FX send buses: return level, mute, and insert chains.
   if (self.deps.fxBus) rehydrateSends(self.deps.ctx, self.deps.fxBus, self.state.sends);
+  // Close any editor left open on a lane/clip that the new state no longer has
+  // (e.g. "New" wipes every lane but the synth-lane editor + clip inspector
+  // stayed mounted showing the old lane). Must run BEFORE renderWithMixer so the
+  // grid is repainted without a stale open-clip ring.
+  reconcileOpenEditors(self);
   self.renderWithMixer();
   // Decode every referenced audio buffer (audio clips, sampler keymaps, slice
   // banks) into the cache so loaded sessions sound on first Play, not just on
@@ -112,6 +117,27 @@ export function applyLoadedSessionState(self: SessionHost, sess: SessionState): 
   // alive once decode resolves.
   void preloadSceneSamples(self.deps.ctx, self.state.lanes);
   self._fireStateApplied();
+}
+
+/** After a state swap (New / load / demo / stem-Replace), close any editor that
+ *  now points at a lane or clip the new state no longer contains. Without this
+ *  the synth-lane editor page stayed visible showing the old lane, and the clip
+ *  inspector stayed open on a deleted clip. */
+export function reconcileOpenEditors(self: SessionHost): void {
+  // Synth-lane editor: the edited lane is gone ⇒ hide its editor pages + clear
+  // the active-lane focus (mirrors what the UI shows when no lane is selected).
+  if (self.activeEditLane && !self.state.lanes.some((l) => l.id === self.activeEditLane)) {
+    self.activeEditLane = null;
+    document.querySelectorAll<HTMLElement>('#session-view-root .page')
+      .forEach((p) => { p.hidden = true; });
+    self.deps.onActiveLaneChanged?.();
+  }
+  // Clip inspector: the selected clip's lane or clip is gone ⇒ close it.
+  const sel = self.inspector?.getSelectedClip?.();
+  if (sel) {
+    const lane = self.state.lanes.find((l) => l.id === sel.laneId);
+    if (!lane || !lane.clips[sel.clipIdx]) self.inspector.closeInspector();
+  }
 }
 
 /** Mirror live modulator + note-FX state back onto each lane before a save.

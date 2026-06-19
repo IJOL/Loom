@@ -135,6 +135,14 @@ export class SessionInspector {
     this.selectedClip = sel;
   }
 
+  /** Close the clip editor: hide the inspector panel and drop the selection.
+   *  Called when the selected clip's lane/clip vanishes (New, load, Replace). */
+  closeInspector(): void {
+    const panel = document.getElementById('session-inspector');
+    if (panel) panel.hidden = true;
+    this.selectedClip = null;
+  }
+
   openInspector(): void {
     const panel = document.getElementById('session-inspector');
     if (!panel || !this.selectedClip) return;
