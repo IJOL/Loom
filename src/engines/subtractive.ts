@@ -13,7 +13,7 @@ import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR, type ModulatorVoice } from '../modulation/types';
 import { recordVoiceMods, getCurrentLaneForVoice } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
-import { bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
+import { bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations, disposeEngineMods } from '../modulation/voice-mod-binding';
 import { ConnectionBinder } from '../modulation/connection-binder';
 import { PendingBaseValues } from './pending-base-values';
 import type { KnobHandle } from '../core/knob';
@@ -515,6 +515,12 @@ class SubtractiveEngine implements SynthEngine {
   }
 
   dispose(): void {
+    // Stop the shared LFO/ADSR oscillators and drop the lane's modulation
+    // bridges before releasing the polysynth — a "New" / stem-"Replace" disposes
+    // the lane here and previously left the shared modulators running.
+    disposeEngineMods(this.engineModVoices, this.currentLaneId);
+    this.engineModVoices = null;
+    this.currentLaneId = null;
     this.polysynth = null;
   }
 }

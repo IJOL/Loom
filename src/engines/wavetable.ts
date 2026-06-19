@@ -9,7 +9,7 @@ import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
 import type { ModulatorVoice } from '../modulation/types';
 import { recordVoiceMods, getCurrentLaneForVoice } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
-import { bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
+import { bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations, disposeEngineMods } from '../modulation/voice-mod-binding';
 import { ConnectionBinder } from '../modulation/connection-binder';
 import { wireEngineParams } from './engine-ui';
 import { getCachedPresets } from '../presets/preset-loader';
@@ -571,6 +571,9 @@ export class WavetableEngine implements SynthEngine {
   }
 
   dispose(): void {
+    disposeEngineMods(this.engineModVoices, this.currentLaneId);
+    this.engineModVoices = null;
+    this.currentLaneId = null;
     this.waves = [];
   }
 }

@@ -16,7 +16,7 @@ import { makeDefaultLFO, type ModulatorVoice } from '../modulation/types';
 import { recordVoiceMods, getCurrentLaneForVoice } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
 import { wireEngineParams } from './engine-ui';
-import { bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
+import { bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations, disposeEngineMods } from '../modulation/voice-mod-binding';
 import { ConnectionBinder } from '../modulation/connection-binder';
 import { PendingBaseValues } from './pending-base-values';
 import type { KnobHandle } from '../core/knob';
@@ -346,7 +346,14 @@ export class TB303Engine implements SynthEngine {
     ]);
   }
 
-  dispose(): void {}
+  dispose(): void {
+    // Stop the shared LFO/ADSR oscillators and drop the lane's modulation
+    // bridges. A "New" or stem-"Replace" disposes the lane via this path; an
+    // empty dispose() left the shared modulators running ("doesn't clean up").
+    disposeEngineMods(this.engineModVoices, this.currentLaneId);
+    this.engineModVoices = null;
+    this.currentLaneId = null;
+  }
 }
 
 export const tb303Engine = new TB303Engine();

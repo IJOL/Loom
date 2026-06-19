@@ -127,7 +127,7 @@ import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR, type ModulatorVoice } from '../modulation/types';
 import { recordVoiceMods, getCurrentLaneForVoice } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
-import { bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
+import { bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations, disposeEngineMods } from '../modulation/voice-mod-binding';
 import { ConnectionBinder } from '../modulation/connection-binder';
 import { wireEngineParams } from './engine-ui';
 import { getCachedPresets } from '../presets/preset-loader';
@@ -552,7 +552,11 @@ export class KarplusEngine implements SynthEngine {
     this.paramValues['amp.level']         = rnd(0.6, 0.9);
   }
 
-  dispose(): void {}
+  dispose(): void {
+    disposeEngineMods(this.engineModVoices, this.currentLaneId);
+    this.engineModVoices = null;
+    this.currentLaneId = null;
+  }
 }
 
 export const karplusEngine = new KarplusEngine();

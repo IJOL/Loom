@@ -22,7 +22,7 @@ import { renderModulatorsPanel } from '../modulation/modulation-ui';
 import { renderDrumVoiceRack } from './drum-voice-rack';
 import { getCurrentLaneForVoice } from '../modulation/active-mods';
 import { findDrumKit } from '../presets/drum-kits-loader';
-import { bindEngineModulators, reapplyLaneModulations, disposeLaneModulations } from '../modulation/voice-mod-binding';
+import { bindEngineModulators, reapplyLaneModulations, disposeLaneModulations, disposeEngineMods } from '../modulation/voice-mod-binding';
 import { ConnectionBinder } from '../modulation/connection-binder';
 import type { KnobHandle } from '../core/knob';
 
@@ -581,7 +581,11 @@ export class DrumsEngine implements SynthEngine {
     return m;
   }
 
-  dispose(): void {}
+  dispose(): void {
+    disposeEngineMods(this.engineModVoices, this.currentLaneId);
+    this.engineModVoices = null;
+    this.currentLaneId = null;
+  }
 }
 
 const drumsEngine = new DrumsEngine();

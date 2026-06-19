@@ -18,7 +18,7 @@ import { makeDefaultLFO, makeDefaultADSR, type ModulatorVoice } from '../modulat
 import { recordVoiceMods, getCurrentLaneForVoice } from '../modulation/active-mods';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
 import {
-  bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations,
+  bindEngineModulators, bindVoiceModulators, reapplyLaneModulations, disposeLaneModulations, disposeEngineMods,
 } from '../modulation/voice-mod-binding';
 import { ConnectionBinder } from '../modulation/connection-binder';
 import { wireEngineParams } from './engine-ui';
@@ -600,6 +600,9 @@ export class WestEngine implements SynthEngine {
   }
 
   dispose(): void {
+    disposeEngineMods(this.engineModVoices, this.currentLaneId);
+    this.engineModVoices = null;
+    this.currentLaneId = null;
     for (const v of this.activeVoices) v.dispose();
     this.activeVoices = [];
   }

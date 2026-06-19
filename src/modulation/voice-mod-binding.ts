@@ -293,6 +293,19 @@ export function disposeLaneModulations(laneId: string): void {
   laneBindings.delete(laneId);
 }
 
+/** Full teardown of a polyhost engine's SHARED modulators on engine.dispose():
+ *  stop/disconnect the free-running engineModVoices (LFO/ADSR oscillators) AND
+ *  drop the lane's modulation bridges. Without this, a "New" or stem-"Replace"
+ *  that disposes the lane left the shared LFO running and routing. Safe with a
+ *  null map or null lane. Engines should null their engineModVoices afterwards. */
+export function disposeEngineMods(
+  engineModVoices: Map<string, ModulatorVoice> | null | undefined,
+  laneId: string | null | undefined,
+): void {
+  if (engineModVoices) for (const mv of engineModVoices.values()) mv.dispose();
+  if (laneId) disposeLaneModulations(laneId);
+}
+
 export function clearLaneBindings(): void {
   for (const lb of laneBindings.values()) {
     lb.engineBinding?.binder.disposeAll();
