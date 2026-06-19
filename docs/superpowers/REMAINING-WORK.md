@@ -35,9 +35,8 @@ only a mockup whose spec is still outstanding stays under `mockups/`.
 - **Review findings 2026-06-06** ([spec](specs/2026-06-06-loom-review-findings.md)):
   adversarial-review backlog from the five-front program; most items were addressed
   by the fronts — verify any item against the code before acting on it.
-- **LoomN (C++/JUCE)** ([spec](specs/2026-06-01-cpp-juce-migration-design.md),
-  [plan](plans/2026-06-01-loomn-foundation-core-model.md)): cross-repo reference
-  copies; Phase 1 done, work continues in the `LoomN` repo.
+  *(The LoomN C++/JUCE migration spec + plan were cross-repo reference copies; removed
+  from this tree 2026-06-19 — they live in the `LoomN` repo. Recover from git if needed.)*
 
 ## Closed since the 2026-06-10 audit (docs pruned 2026-06-19)
 
