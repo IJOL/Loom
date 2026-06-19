@@ -191,10 +191,12 @@ class SubtractiveVoice implements Voice {
       // filter.Q. Native ~0.5..22.5; depth=1 with bipolar LFO sweeps ±10 Q.
       case 'filter.resonance': return { min: -10,   max: 10   };
       // Hz of envelope sweep contribution (envScaler.gain). ±8 kHz lets the
-      // env open the filter wide on big modulations.
+      // env open the filter wide on big modulations. (Per-note multiplier —
+      // not a fixed knob value — so this stays a deliberate heuristic.)
       case 'filter.envAmount': return { min: -8000, max: 8000 };
-      // Hz of key-tracking contribution per voice (already scaled by note delta).
-      case 'filter.keyTrack':  return { min: -4,    max: 4    };
+      // keyTrack.gain IS the knob value (0..1), so fall back to the spec range
+      // (default below) → depth=1 sweeps the knob's 0..1, faithful to the arc
+      // (was ±4, 8× the knob).
       // Pre-shaper input boost (×). 1×=no drive, 9×=max drive.
       case 'filter.drive':     return { min: -8,    max: 8    };
       // osc.detune is in cents and its knob is already in cents (±50) — fall
