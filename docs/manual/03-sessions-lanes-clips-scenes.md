@@ -32,11 +32,14 @@ A small **✕** cross appears on every lane header (*Delete track*), every fille
 
 Click the **▶ icon** on any filled cell to launch that clip. The icon switches to ⏸ once the clip is playing; clicking ⏸ stops that lane. Clicking anywhere else on the cell body — outside the play icon — opens the inspector without affecting playback.
 
-When the transport is stopped, launching a clip starts it immediately. When the transport is running, the launch is held until the next quantize boundary, then the clip starts in sync with the rest of the session.
+**From a cold start (transport stopped),** launching a clip starts it immediately, and the `Quantize` setting decides the alignment of that first start. **While the session is already playing,** Loom keeps everything phase-aligned instead:
 
-Click the **▶ N** button at the right of a scene row to launch all clips in that row together. All lanes share the same boundary, so they start aligned. The toolbar's **⏹ All** button stops every lane at once.
+- **Launching a single clip** swaps it in at the end of *its own* current loop, so the new pattern enters cleanly on the downbeat rather than mid-bar.
+- **Launching a scene** is an **atomic switch at the end of the governing loop** — the longest loop currently playing (with stray outliers capped, so one odd 1-bar clip doesn't drag a 4-bar groove). Every clip in the scene changes together on that boundary, and any **lane that has no clip in the new scene stops** at the same moment (it pulses a "stopping" state until then). The result is a clean, simultaneous scene change with no lanes left hanging.
 
-The quantize boundary is determined by the clip's own `Quantize` setting (see the inspector below). If the clip has no override, the lane's quantize applies; if the lane has none, the session's global quantize is used.
+Click the **▶ N** button at the right of a scene row to launch all clips in that row. The toolbar's **⏹ All** button stops every lane at once.
+
+The `Quantize` setting (per clip, falling back to the lane's, then the session's global) governs **cold starts** — the alignment used when you launch from a stopped transport. Once the transport is running, the loop-end sync above takes over so launches stay musically aligned.
 
 ## Renaming, duplicating, and capturing scenes
 

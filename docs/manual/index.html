@@ -198,9 +198,13 @@ blockquote { border-left: 3px solid var(--accent); margin: .8em 0; padding: .2em
 <p>A small <strong>✕</strong> cross appears on every lane header (<em>Delete track</em>), every filled clip cell (<em>Delete clip</em>), and every scene cell (<em>Delete scene</em>). Deleting a clip is immediate. Deleting a lane or scene asks you to confirm in an in-app dialog (<strong>OK</strong> / <strong>Cancel</strong>, with the destructive choice in red) only when the target still has content — an empty lane or scene is removed straight away. Every deletion is undoable with <strong>Ctrl+Z</strong>, which restores the lane, scene, or clip along with its audio resources.</p>
 <h2>Launching clips and scenes</h2>
 <p>Click the <strong>▶ icon</strong> on any filled cell to launch that clip. The icon switches to ⏸ once the clip is playing; clicking ⏸ stops that lane. Clicking anywhere else on the cell body — outside the play icon — opens the inspector without affecting playback.</p>
-<p>When the transport is stopped, launching a clip starts it immediately. When the transport is running, the launch is held until the next quantize boundary, then the clip starts in sync with the rest of the session.</p>
-<p>Click the <strong>▶ N</strong> button at the right of a scene row to launch all clips in that row together. All lanes share the same boundary, so they start aligned. The toolbar&#39;s <strong>⏹ All</strong> button stops every lane at once.</p>
-<p>The quantize boundary is determined by the clip&#39;s own <code>Quantize</code> setting (see the inspector below). If the clip has no override, the lane&#39;s quantize applies; if the lane has none, the session&#39;s global quantize is used.</p>
+<p><strong>From a cold start (transport stopped),</strong> launching a clip starts it immediately, and the <code>Quantize</code> setting decides the alignment of that first start. <strong>While the session is already playing,</strong> Loom keeps everything phase-aligned instead:</p>
+<ul>
+<li><strong>Launching a single clip</strong> swaps it in at the end of <em>its own</em> current loop, so the new pattern enters cleanly on the downbeat rather than mid-bar.</li>
+<li><strong>Launching a scene</strong> is an <strong>atomic switch at the end of the governing loop</strong> — the longest loop currently playing (with stray outliers capped, so one odd 1-bar clip doesn&#39;t drag a 4-bar groove). Every clip in the scene changes together on that boundary, and any <strong>lane that has no clip in the new scene stops</strong> at the same moment (it pulses a &quot;stopping&quot; state until then). The result is a clean, simultaneous scene change with no lanes left hanging.</li>
+</ul>
+<p>Click the <strong>▶ N</strong> button at the right of a scene row to launch all clips in that row. The toolbar&#39;s <strong>⏹ All</strong> button stops every lane at once.</p>
+<p>The <code>Quantize</code> setting (per clip, falling back to the lane&#39;s, then the session&#39;s global) governs <strong>cold starts</strong> — the alignment used when you launch from a stopped transport. Once the transport is running, the loop-end sync above takes over so launches stay musically aligned.</p>
 <h2>Renaming, duplicating, and capturing scenes</h2>
 <p>Track and scene names support <strong>inline rename</strong>: double-click a lane name in the header or a scene name in the scene cell, type the new label, and press Enter.</p>
 <p>You can also use the context menus to duplicate structure quickly:</p>
@@ -710,8 +714,8 @@ it possible to tune, filter, and pan individual pads independently.</p>
 <td>Stereo position</td>
 </tr>
 <tr>
-<td>Rev / Dly</td>
-<td>Send amounts to the shared reverb and delay</td>
+<td>A / B</td>
+<td>Send amounts to Send A (delay by default) and Send B (reverb by default)</td>
 </tr>
 <tr>
 <td>Loop / Loop Start / Loop End</td>
@@ -974,6 +978,9 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <p>The piano-roll is a two-axis canvas: time runs left-to-right, pitch runs bottom-to-top. A vertical keyboard on the left names the rows; a time ruler at the top marks bars and beats.</p>
 <h3>Zoom and pan</h3>
 <p>Scrub <strong>vertically on the time ruler</strong> to zoom the time axis; scrub <strong>horizontally</strong> on the ruler to pan. Scrub the <strong>keyboard strip</strong> vertically to zoom the pitch axis. The native scroll bars pan both axes. Zoom state is saved per clip and restored when you reopen it.</p>
+<p>The <strong>drum-grid</strong> and the <strong>audio-clip editor</strong> have the same horizontal zoom and scroll: their fixed parts (the voice-name labels on the drum grid, the waveform header on an audio clip) stay pinned on the left while the timeline content scrolls and zooms beside them. The loop brace tracks the zoom in every editor.</p>
+<h3>Follow (auto-scroll)</h3>
+<p>A session-global <strong>Follow</strong> toggle keeps the playhead in view: while it&#39;s on, every clip editor auto-scrolls horizontally to follow playback. It is <strong>on by default</strong> — turn it off when you want to inspect one region while the transport runs elsewhere. The setting is shared across all editors and saved with the session.</p>
 <h3>Draw mode (pencil)</h3>
 <p>The default tool is <strong>Draw</strong>. Click an empty area of the grid to place a note at the snap resolution (default: 16th notes). Drag right while placing to extend its duration. Click and drag an existing note&#39;s right edge to resize it. Click and drag the body of a note to move it. Alt-click or right-click a note to delete it.</p>
 <h3>Select mode</h3>
@@ -1081,6 +1088,7 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <ol>
 <li>Click <strong>Loop</strong> to enable the loop region. The region highlights between the A and B handles; if no region was set before, it defaults to the full clip length.</li>
 <li>Drag the <strong>left handle</strong> to move the start point (A). Drag the <strong>right handle</strong> to move the end point (B). Both handles snap to 16th-note grid positions.</li>
+<li>Drag the <strong>interior</strong> of the region (between the handles) to <strong>slide the whole window</strong> along the timeline — its length is preserved, it snaps to the grid, and it stops at both ends of the clip. Handy for auditioning the same-length loop over different bars.</li>
 <li>While the clip is playing, the scheduler repeats only the A–B sub-region — the rest of the clip is skipped.</li>
 </ol>
 <p>Click <strong>Loop</strong> again to disable it. The clip reverts to playing its full length; the A and B positions are remembered so you can re-enable the same region later.</p>
@@ -1294,11 +1302,11 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <hr>
 <h2>Signal flow overview</h2>
 <pre><code>Lane engine → lane insert chain → channel strip (EQ → comp → level → pan → mute → duck) → master bus
-                                                                               └──→ reverb send ─┐
-                                                                               └──→ delay send  ─┤
-master bus → master insert chain → master compressor → output                   FxBus returns ──┘
+                                                                               ├──→ Send A (gain) ─┐
+                                                                               └──→ Send B (gain) ─┤
+master bus → master insert chain → master compressor → output      Send A / Send B returns ──┘
 </code></pre>
-<p>In short: the engine&#39;s audio passes through any per-lane inserts first, then the channel strip where EQ, sends, pan, and level are applied. The processed signal joins the master bus, which runs through the master insert chain and the master compressor before reaching the speaker.</p>
+<p>In short: the engine&#39;s audio passes through any per-lane inserts first, then the channel strip where EQ, sends, pan, and level are applied. The processed signal joins the master bus, which runs through the master insert chain and the master compressor before reaching the speaker. The two <strong>Send A / Send B</strong> buses are parallel return channels: each lane feeds them a post-fader amount, and each send runs its own insert chain (seeded <strong>A = Delay, B = Reverb</strong>) before returning to the master.</p>
 <hr>
 <h2>Per-lane channel strip</h2>
 <p>Each lane owns a <code>ChannelStrip</code>. Its controls are visible below the session grid in the lane&#39;s row.</p>
@@ -1340,19 +1348,20 @@ master bus → master insert chain → master compressor → output             
 </tr>
 </tbody></table>
 <p>All three bands are ±dB adjustments. EQ gain AudioParams are exposed to modulation so you can automate filter sweeps from the modulation panel.</p>
-<h3>REV and DLY sends</h3>
-<p>The <strong>REV</strong> and <strong>DLY</strong> knobs control how much of this lane&#39;s post-duck signal is fed into the shared master reverb and delay returns. They are independent wet levels: 0 = dry only, higher values mix the lane into the reverb or delay tail. The shared reverb and delay processors live in the Master FX panel; per-lane send amounts just determine how much goes in.</p>
+<h3>Send A and Send B</h3>
+<p>The two send knobs — <strong>A</strong> and <strong>B</strong> — control how much of this lane&#39;s post-duck signal is fed into the two shared send buses. They replaced the old fixed REV/DLY knobs. Send A and Send B are general-purpose return channels, seeded <strong>A = Delay</strong> and <strong>B = Reverb</strong>, but you can change what effect lives in each — see <a href="#sends--send-a-and-send-b">Send A / Send B return modules</a>. The knobs are independent wet levels: 0 = dry only, higher values mix more of the lane into that send&#39;s effect. Sends are post-fader, so they follow the lane&#39;s level and sidechain ducking. (Saved knob ids are <code>mix.&lt;lane&gt;.sendA</code> / <code>mix.&lt;lane&gt;.sendB</code>; old saves with <code>…rev</code> / <code>…dly</code> amounts migrate automatically — reverb→B, delay→A.)</p>
 <hr>
 <h2>Per-lane inserts</h2>
 <p>Every lane also has a private insert chain that sits <em>before</em> the channel strip — the engine&#39;s audio passes through it first. If you open the lane&#39;s inspector and add FX to its insert list, those effects process the lane signal exclusively and do not affect any other lane.</p>
-<p><strong>Inserts vs sends:</strong> an insert is a serial in-line processor (distortion, filter, etc.) that replaces the signal passing through it; a send is a parallel path that adds wet signal from a shared return (reverb, delay). Use inserts when you want a destructive or tone-shaping effect on a single lane; use sends when you want a common acoustic space that multiple lanes share.</p>
-<p>The insert types available per lane are the same four plugins used on the master chain — see <a href="#master-fx-panel">Master FX panel</a> below for their parameter details.</p>
+<p><strong>Inserts vs sends:</strong> an insert is a serial in-line processor that the signal passes <em>through</em>; a send is a parallel path that taps a copy of the signal into a shared return. Use inserts for tone-shaping a single lane; use sends when several lanes should share one effect (a common reverb space, a tempo-synced delay). Loom no longer privileges any effect — reverb and delay are ordinary inserts too, and they just happen to be the default residents of the Send A / Send B return chains.</p>
+<p><strong>The same picker everywhere.</strong> Every insert rack — per lane (including audio lanes), on each send return, and on the master — draws from one unified effect picker: <strong>Filter (multifilter)</strong>, <strong>Distortion</strong>, <strong>Reverb</strong>, <strong>Delay</strong>, <strong>Compressor</strong>, and <strong>Limiter</strong>. See <a href="#master-fx-panel">Master FX panel</a> below for each effect&#39;s parameters. Any insert&#39;s parameters are modulation and Performance-automation destinations, wherever the insert sits.</p>
 <hr>
 <h2>Master FX panel</h2>
 <p>The master bus has its own strip at the foot of the <strong>scenes column</strong> of the mixer row — a full column laid out like a lane strip, so it lines up with them: a <strong>MASTER</strong> label, an <strong>EQ</strong> section (HI / MID / LO), an <strong>FX</strong> button (in the lane&#39;s SEND slot — the master has no sends), a <strong>PAN</strong> knob, a <strong>Mute</strong> button (no Solo — meaningless on the master), and a fader that mirrors the master <strong>Volume</strong> plus a VU meter. The master EQ, pan and mute shape the whole mix; they are saved with the session and the EQ/pan are undoable like any knob. Click the <strong>FX</strong> button to open the <strong>Master FX panel</strong> below the grid (click again to close it). <em>(The panel&#39;s content — SENDS, MASTER COMP, INSERTS — was previously a separate &quot;Master FX&quot; tab; the controls are identical, only the way you open them changed.)</em></p>
 <p><img src="images/master-fx.png" alt="Loom Master FX panel — SENDS, MASTER COMP, and INSERTS sections"></p>
-<h3>SENDS — Reverb and Delay</h3>
-<p>The SENDS section holds the global return effects. Lane REV/DLY knobs feed into these processors; the knobs here control the shared effect itself.</p>
+<h3>SENDS — Send A and Send B</h3>
+<p>The SENDS section shows the two send buses as <strong>return modules</strong>. Each module is a <em>simple return</em> — a <strong>return level</strong>, a <strong>mute</strong>, and an <strong>insert rack</strong> — with no EQ or pan of its own. Whatever effects sit in a send&#39;s rack process everything the lanes send into it; the per-lane <strong>A</strong> / <strong>B</strong> knobs set how much each lane contributes. By default <strong>Send A holds a Delay</strong> and <strong>Send B holds a Reverb</strong>, but you can add, remove, reorder, or replace inserts in either rack from the same picker used everywhere else — so a send can carry a whole chain (say a filter into a delay), not just one effect.</p>
+<p>The default reverb and delay expose the parameters below (and behave like any other insert — bypass per slot, modulatable params, etc.).</p>
 <p><strong>REVERB</strong> parameters:</p>
 <table>
 <thead>
@@ -1396,7 +1405,7 @@ master bus → master insert chain → master compressor → output             
 <tbody><tr>
 <td>Time</td>
 <td>0.01–2 s</td>
-<td>Delay time (BPM-synced at session start: 3/8 beat × BPM)</td>
+<td>Delay time. A <strong>SYNC</strong> toggle on the delay insert locks the time to the project tempo and re-locks whenever the BPM changes</td>
 </tr>
 <tr>
 <td>Fbk</td>
@@ -1469,8 +1478,8 @@ master bus → master insert chain → master compressor → output             
 </tr>
 </tbody></table>
 <p>The master compressor is bypassed by default. Enable it for glue and loudness control on the final mix, or to tame transient peaks before export. See <a href="#09-saving-and-export">Saving &amp; Export</a> for how the master bus feeds the offline render.</p>
-<h3>INSERTS → Master Filters</h3>
-<p>Below MASTER COMP, the INSERTS section holds the master insert chain. Click <strong>+ Add Filter</strong> to append a slot. Each slot can hold one of four plugin types, selectable in the slot&#39;s Type control:</p>
+<h3>INSERTS — the master rack</h3>
+<p>Below MASTER COMP, the INSERTS section holds the master insert chain. Add a slot from the picker and pick its type. The <strong>same six plugin types</strong> are available in every rack — per lane, per send, and here on the master:</p>
 <p><strong>Filter (multifilter)</strong></p>
 <ul>
 <li>Type: LP / HP / BP / Notch</li>
@@ -1482,10 +1491,12 @@ master bus → master insert chain → master compressor → output             
 <li>Drive: 0–1 — waveshaper saturation amount (4x oversampled)</li>
 <li>Mix: 0–1 — dry/wet blend</li>
 </ul>
-<p><strong>Reverb</strong> — same parameters as the send reverb above (Wet, PreD, Size, Decay). Use as an insert to apply reverb to the full master rather than via sends.</p>
-<p><strong>Delay</strong> — same parameters as the send delay (Time, Fbk, Wet, Damp). Use as an insert for a master-bus slapback or stutter.</p>
+<p><strong>Reverb</strong> — same parameters as the Send B reverb above (Wet, PreD, Size, Decay). Use as an insert to reverb the full master rather than via a send.</p>
+<p><strong>Delay</strong> — same parameters as the Send A delay (Time + SYNC, Fbk, Wet, Damp). Use as an insert for a master-bus slapback or stutter.</p>
+<p><strong>Compressor</strong> — the same <code>CompBlock</code> dynamics compressor as the channel-strip and master compressors, now insertable anywhere. Params: Bypass, Threshold, Ratio, Attack, Release, Knee, Makeup (see <a href="#master-comp">MASTER COMP</a> for ranges).</p>
+<p><strong>Limiter</strong> — a brickwall limiter (ratio 20:1, hard knee, near-zero attack) for catching peaks. Params: <strong>Ceiling</strong> (the level it will not exceed) and <strong>Release</strong>.</p>
 <p>Slots in the chain are ordered in series: the output of each slot feeds the input of the next. Each slot has a bypass toggle so you can A/B it without removing it. Individual slots can be removed; adding the same type multiple times is allowed.</p>
-<p>The master insert chain is distinct from the FxBus send effects — insert slots process the full mixed signal, while the send reverb and delay receive per-lane amounts and return to the master bus independently.</p>
+<p>The master insert chain processes the full mixed signal, after the EQ/pan of the master strip and before the master compressor — distinct from the Send A/B returns, which receive per-lane amounts and sum back into the master independently.</p>
 <hr>
 <h2>Sidechain compression</h2>
 <p>Loom includes a sidechain ducking system. Any lane&#39;s channel strip can be ducked by the signal level of another lane (the <em>source</em>). The ducker follows the source lane&#39;s envelope via a full-wave rectifier and two smoothing filters, then reduces the target lane&#39;s gain proportionally:</p>

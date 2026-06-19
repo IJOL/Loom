@@ -281,7 +281,7 @@ Shown in the drum-voice rack once pads are mapped.
 | Attack / Decay | Per-pad amplitude envelope |
 | Level | Per-pad output level |
 | Pan | Stereo position |
-| Rev / Dly | Send amounts to the shared reverb and delay |
+| A / B | Send amounts to Send A (delay by default) and Send B (reverb by default) |
 | Loop / Loop Start / Loop End | Loop mode (one-shot or loop-while-gated) and the loop region (start/end as a fraction of the sample) |
 | Sample Start / End | Trim the played window — start/end as a fraction of the sample; draggable on the waveform in the Selected sample panel |
 | Retrig | Poly (voices overlap) or Mono (re-hit cuts the previous voice) |

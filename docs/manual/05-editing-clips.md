@@ -117,6 +117,12 @@ The piano-roll is a two-axis canvas: time runs left-to-right, pitch runs bottom-
 
 Scrub **vertically on the time ruler** to zoom the time axis; scrub **horizontally** on the ruler to pan. Scrub the **keyboard strip** vertically to zoom the pitch axis. The native scroll bars pan both axes. Zoom state is saved per clip and restored when you reopen it.
 
+The **drum-grid** and the **audio-clip editor** have the same horizontal zoom and scroll: their fixed parts (the voice-name labels on the drum grid, the waveform header on an audio clip) stay pinned on the left while the timeline content scrolls and zooms beside them. The loop brace tracks the zoom in every editor.
+
+### Follow (auto-scroll)
+
+A session-global **Follow** toggle keeps the playhead in view: while it's on, every clip editor auto-scrolls horizontally to follow playback. It is **on by default** — turn it off when you want to inspect one region while the transport runs elsewhere. The setting is shared across all editors and saved with the session.
+
 ### Draw mode (pencil)
 
 The default tool is **Draw**. Click an empty area of the grid to place a note at the snap resolution (default: 16th notes). Drag right while placing to extend its duration. Click and drag an existing note's right edge to resize it. Click and drag the body of a note to move it. Alt-click or right-click a note to delete it.
@@ -212,7 +218,8 @@ The brace strip has two drag handles (left = A, right = B) and a **Loop** toggle
 
 1. Click **Loop** to enable the loop region. The region highlights between the A and B handles; if no region was set before, it defaults to the full clip length.
 2. Drag the **left handle** to move the start point (A). Drag the **right handle** to move the end point (B). Both handles snap to 16th-note grid positions.
-3. While the clip is playing, the scheduler repeats only the A–B sub-region — the rest of the clip is skipped.
+3. Drag the **interior** of the region (between the handles) to **slide the whole window** along the timeline — its length is preserved, it snaps to the grid, and it stops at both ends of the clip. Handy for auditioning the same-length loop over different bars.
+4. While the clip is playing, the scheduler repeats only the A–B sub-region — the rest of the clip is skipped.
 
 Click **Loop** again to disable it. The clip reverts to playing its full length; the A and B positions are remembered so you can re-enable the same region later.
 

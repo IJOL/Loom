@@ -40,7 +40,7 @@ only a mockup whose spec is still outstanding stays under `mockups/`.
 
 ## Closed since the 2026-06-10 audit (docs pruned 2026-06-19)
 
-All merged to main (NOT pushed); spec+plan (+ any mockup) removed from the tree,
+All merged to main and pushed; spec+plan (+ any mockup) removed from the tree,
 recoverable from git history:
 
 - Stems as audio lanes; audio-lane editor; audio-warp engine; audio-warp marker editor.
@@ -48,6 +48,11 @@ recoverable from git history:
 - Clip context breadcrumb; clip tempo *2//2; duplicate lanes/scenes + capture; universal undo.
 - Clip zoom + viewport-anchored loop + Follow; loop-region MOVE (drag interior); performance
   diagnostics (PERF HUD); scene/clip launch loop-sync.
+- **Unified FX + Send A/B** (`31b760f`): generic Send A/B return buses (seeded A=delay,
+  B=reverb) replacing the fixed REV/DLY sends; reverb/delay demoted to ordinary inserts;
+  insertable Compressor + Limiter; one picker for every rack (lane/audio/send/master); delay
+  BPM-sync as an insert param; insert params are Performance-automation destinations; dead
+  FilterChain/MasterFilter removed.
 
 ## Closed since the 2026-05-31 audit (recorded; nothing to do)
 

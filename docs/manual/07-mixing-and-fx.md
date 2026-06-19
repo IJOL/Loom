@@ -8,12 +8,12 @@ Every lane in Loom has its own signal path from the synthesis engine through to 
 
 ```
 Lane engine → lane insert chain → channel strip (EQ → comp → level → pan → mute → duck) → master bus
-                                                                               └──→ reverb send ─┐
-                                                                               └──→ delay send  ─┤
-master bus → master insert chain → master compressor → output                   FxBus returns ──┘
+                                                                               ├──→ Send A (gain) ─┐
+                                                                               └──→ Send B (gain) ─┤
+master bus → master insert chain → master compressor → output      Send A / Send B returns ──┘
 ```
 
-In short: the engine's audio passes through any per-lane inserts first, then the channel strip where EQ, sends, pan, and level are applied. The processed signal joins the master bus, which runs through the master insert chain and the master compressor before reaching the speaker.
+In short: the engine's audio passes through any per-lane inserts first, then the channel strip where EQ, sends, pan, and level are applied. The processed signal joins the master bus, which runs through the master insert chain and the master compressor before reaching the speaker. The two **Send A / Send B** buses are parallel return channels: each lane feeds them a post-fader amount, and each send runs its own insert chain (seeded **A = Delay, B = Reverb**) before returning to the master.
 
 ---
 
@@ -47,9 +47,9 @@ The three EQ knobs apply before the per-lane compressor:
 
 All three bands are ±dB adjustments. EQ gain AudioParams are exposed to modulation so you can automate filter sweeps from the modulation panel.
 
-### REV and DLY sends
+### Send A and Send B
 
-The **REV** and **DLY** knobs control how much of this lane's post-duck signal is fed into the shared master reverb and delay returns. They are independent wet levels: 0 = dry only, higher values mix the lane into the reverb or delay tail. The shared reverb and delay processors live in the Master FX panel; per-lane send amounts just determine how much goes in.
+The two send knobs — **A** and **B** — control how much of this lane's post-duck signal is fed into the two shared send buses. They replaced the old fixed REV/DLY knobs. Send A and Send B are general-purpose return channels, seeded **A = Delay** and **B = Reverb**, but you can change what effect lives in each — see [Send A / Send B return modules](#sends--send-a-and-send-b). The knobs are independent wet levels: 0 = dry only, higher values mix more of the lane into that send's effect. Sends are post-fader, so they follow the lane's level and sidechain ducking. (Saved knob ids are `mix.<lane>.sendA` / `mix.<lane>.sendB`; old saves with `…rev` / `…dly` amounts migrate automatically — reverb→B, delay→A.)
 
 ---
 
@@ -57,9 +57,9 @@ The **REV** and **DLY** knobs control how much of this lane's post-duck signal i
 
 Every lane also has a private insert chain that sits *before* the channel strip — the engine's audio passes through it first. If you open the lane's inspector and add FX to its insert list, those effects process the lane signal exclusively and do not affect any other lane.
 
-**Inserts vs sends:** an insert is a serial in-line processor (distortion, filter, etc.) that replaces the signal passing through it; a send is a parallel path that adds wet signal from a shared return (reverb, delay). Use inserts when you want a destructive or tone-shaping effect on a single lane; use sends when you want a common acoustic space that multiple lanes share.
+**Inserts vs sends:** an insert is a serial in-line processor that the signal passes *through*; a send is a parallel path that taps a copy of the signal into a shared return. Use inserts for tone-shaping a single lane; use sends when several lanes should share one effect (a common reverb space, a tempo-synced delay). Loom no longer privileges any effect — reverb and delay are ordinary inserts too, and they just happen to be the default residents of the Send A / Send B return chains.
 
-The insert types available per lane are the same four plugins used on the master chain — see [Master FX panel](#master-fx-panel) below for their parameter details.
+**The same picker everywhere.** Every insert rack — per lane (including audio lanes), on each send return, and on the master — draws from one unified effect picker: **Filter (multifilter)**, **Distortion**, **Reverb**, **Delay**, **Compressor**, and **Limiter**. See [Master FX panel](#master-fx-panel) below for each effect's parameters. Any insert's parameters are modulation and Performance-automation destinations, wherever the insert sits.
 
 ---
 
@@ -69,9 +69,11 @@ The master bus has its own strip at the foot of the **scenes column** of the mix
 
 ![Loom Master FX panel — SENDS, MASTER COMP, and INSERTS sections](images/master-fx.png)
 
-### SENDS — Reverb and Delay
+### SENDS — Send A and Send B
 
-The SENDS section holds the global return effects. Lane REV/DLY knobs feed into these processors; the knobs here control the shared effect itself.
+The SENDS section shows the two send buses as **return modules**. Each module is a *simple return* — a **return level**, a **mute**, and an **insert rack** — with no EQ or pan of its own. Whatever effects sit in a send's rack process everything the lanes send into it; the per-lane **A** / **B** knobs set how much each lane contributes. By default **Send A holds a Delay** and **Send B holds a Reverb**, but you can add, remove, reorder, or replace inserts in either rack from the same picker used everywhere else — so a send can carry a whole chain (say a filter into a delay), not just one effect.
+
+The default reverb and delay expose the parameters below (and behave like any other insert — bypass per slot, modulatable params, etc.).
 
 **REVERB** parameters:
 
@@ -88,7 +90,7 @@ The reverb is a convolution reverb with a procedurally generated impulse respons
 
 | Param | Range | Description |
 |-------|-------|-------------|
-| Time | 0.01–2 s | Delay time (BPM-synced at session start: 3/8 beat × BPM) |
+| Time | 0.01–2 s | Delay time. A **SYNC** toggle on the delay insert locks the time to the project tempo and re-locks whenever the BPM changes |
 | Fbk | 0–0.95 | Feedback amount |
 | Wet | 0–1.5 | Wet output level |
 | Damp | 200–12 000 Hz | Low-pass filter on the feedback loop; lower values darken repeats |
@@ -109,9 +111,9 @@ The master compressor sits at the tail of the master chain, after all inserts. I
 
 The master compressor is bypassed by default. Enable it for glue and loudness control on the final mix, or to tame transient peaks before export. See [Saving & Export](09-saving-and-export.md) for how the master bus feeds the offline render.
 
-### INSERTS → Master Filters
+### INSERTS — the master rack
 
-Below MASTER COMP, the INSERTS section holds the master insert chain. Click **+ Add Filter** to append a slot. Each slot can hold one of four plugin types, selectable in the slot's Type control:
+Below MASTER COMP, the INSERTS section holds the master insert chain. Add a slot from the picker and pick its type. The **same six plugin types** are available in every rack — per lane, per send, and here on the master:
 
 **Filter (multifilter)**
 - Type: LP / HP / BP / Notch
@@ -122,13 +124,17 @@ Below MASTER COMP, the INSERTS section holds the master insert chain. Click **+ 
 - Drive: 0–1 — waveshaper saturation amount (4x oversampled)
 - Mix: 0–1 — dry/wet blend
 
-**Reverb** — same parameters as the send reverb above (Wet, PreD, Size, Decay). Use as an insert to apply reverb to the full master rather than via sends.
+**Reverb** — same parameters as the Send B reverb above (Wet, PreD, Size, Decay). Use as an insert to reverb the full master rather than via a send.
 
-**Delay** — same parameters as the send delay (Time, Fbk, Wet, Damp). Use as an insert for a master-bus slapback or stutter.
+**Delay** — same parameters as the Send A delay (Time + SYNC, Fbk, Wet, Damp). Use as an insert for a master-bus slapback or stutter.
+
+**Compressor** — the same `CompBlock` dynamics compressor as the channel-strip and master compressors, now insertable anywhere. Params: Bypass, Threshold, Ratio, Attack, Release, Knee, Makeup (see [MASTER COMP](#master-comp) for ranges).
+
+**Limiter** — a brickwall limiter (ratio 20:1, hard knee, near-zero attack) for catching peaks. Params: **Ceiling** (the level it will not exceed) and **Release**.
 
 Slots in the chain are ordered in series: the output of each slot feeds the input of the next. Each slot has a bypass toggle so you can A/B it without removing it. Individual slots can be removed; adding the same type multiple times is allowed.
 
-The master insert chain is distinct from the FxBus send effects — insert slots process the full mixed signal, while the send reverb and delay receive per-lane amounts and return to the master bus independently.
+The master insert chain processes the full mixed signal, after the EQ/pan of the master strip and before the master compressor — distinct from the Send A/B returns, which receive per-lane amounts and sum back into the master independently.
 
 ---
 
