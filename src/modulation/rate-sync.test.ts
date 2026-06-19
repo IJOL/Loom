@@ -3,6 +3,7 @@ import {
   effectiveRateHz, SYNC_RATIO_MAP,
   lfoFreeRatePosToHz, lfoFreeRateHzToPos,
   FREE_RATE_MID_HZ, FREE_RATE_MAX_HZ,
+  parseSyncRatioToBars,
 } from './rate-sync';
 import type { ModulatorState } from './types';
 
@@ -87,6 +88,50 @@ describe('FREE rate knob — piecewise scale (slow gets the first half)', () => 
   it('clamps out-of-range rates to the knob ends', () => {
     expect(lfoFreeRateHzToPos(40)).toBe(1);          // above the 20 Hz top
     expect(lfoFreeRateHzToPos(0)).toBeLessThan(0.01); // floored near 0% (min ~0.02 Hz)
+  });
+});
+
+describe('effectiveRateHz — SYNC bars-per-cycle model', () => {
+  it('4 bars/cycle straight at 120 BPM = 0.125 Hz (one cycle per 4 bars)', () => {
+    expect(effectiveRateHz(lfo({ syncToBpm: true, syncBars: 4, syncSubdiv: 'straight' }), 120))
+      .toBeCloseTo(0.125, 6);
+  });
+  it('0.25 bars/cycle straight = a quarter note (= old 1/4) → 2 Hz at 120', () => {
+    expect(effectiveRateHz(lfo({ syncToBpm: true, syncBars: 0.25, syncSubdiv: 'straight' }), 120))
+      .toBeCloseTo(2, 6);
+  });
+  it('triplet is ×3/2 faster than straight', () => {
+    const straight = effectiveRateHz(lfo({ syncToBpm: true, syncBars: 0.25, syncSubdiv: 'straight' }), 120);
+    const triplet  = effectiveRateHz(lfo({ syncToBpm: true, syncBars: 0.25, syncSubdiv: 'triplet'  }), 120);
+    expect(triplet).toBeCloseTo(straight * 3 / 2, 6);
+  });
+  it('dotted is ×2/3 of straight (longer/slower)', () => {
+    const straight = effectiveRateHz(lfo({ syncToBpm: true, syncBars: 0.25, syncSubdiv: 'straight' }), 120);
+    const dotted   = effectiveRateHz(lfo({ syncToBpm: true, syncBars: 0.25, syncSubdiv: 'dotted'   }), 120);
+    expect(dotted).toBeCloseTo(straight * 2 / 3, 6);
+  });
+  it('syncBars supersedes a legacy syncRatio when both present', () => {
+    const r = effectiveRateHz(lfo({ syncToBpm: true, syncBars: 8, syncRatio: '1/16' }), 120);
+    expect(r).toBeCloseTo(2 / (8 * 4), 6);   // uses bars (8), not the 1/16 ratio
+  });
+});
+
+describe('parseSyncRatioToBars — legacy migration is exact', () => {
+  it('parses straight / triplet / dotted labels', () => {
+    expect(parseSyncRatioToBars('4/1')).toEqual({ bars: 4, subdiv: 'straight' });
+    expect(parseSyncRatioToBars('1/8T')).toEqual({ bars: 0.125, subdiv: 'triplet' });
+    expect(parseSyncRatioToBars('1/4.')).toEqual({ bars: 0.25, subdiv: 'dotted' });
+    expect(parseSyncRatioToBars('garbage')).toBeNull();
+  });
+  it('migrated bars reproduce the exact rate of every legacy ratio', () => {
+    for (const label of Object.keys(SYNC_RATIO_MAP)) {
+      const legacy = effectiveRateHz(lfo({ syncToBpm: true, syncRatio: label }), 120);
+      const p = parseSyncRatioToBars(label)!;
+      const migrated = effectiveRateHz(
+        lfo({ syncToBpm: true, syncBars: p.bars, syncSubdiv: p.subdiv }), 120,
+      );
+      expect(migrated).toBeCloseTo(legacy, 6);
+    }
   });
 });
 

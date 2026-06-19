@@ -7,7 +7,7 @@
 import type { KnobHandle } from '../core/knob';
 import { createKnob } from '../core/knob';
 import { createSelectControl } from '../core/select-control';
-import { SYNC_RATIO_MAP, lfoFreeRatePosToHz, lfoFreeRateHzToPos } from './rate-sync';
+import { lfoFreeRatePosToHz, lfoFreeRateHzToPos } from './rate-sync';
 import { formatParamIdForDisplay } from '../core/lane-display';
 import type { ModulationHost, ModulatorState, Waveform } from './types';
 import type { SessionState } from '../session/session';
@@ -165,26 +165,59 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
   deps.registerKnob(rate);
   row.appendChild(rate.el);
 
-  const ratioOpts = Object.keys(SYNC_RATIO_MAP).map((k) => ({ value: k, label: k }));
-  const ratio = createSelectControl({
-    id: `${deps.laneId}.mod.${mod.id}.syncRatio`,
-    label: 'RATIO',
-    options: ratioOpts,
-    initialValue: mod.syncRatio ?? '1/4',
+  // SYNC rate: a free numeric BARS-per-cycle input (the "4" of 4/1 = 4 bars,
+  // open range for slow sweeps: 8, 16, 32…) + a straight/triplet/dotted FEEL
+  // selector. Supersedes the old fixed RATIO dropdown.
+  const barsWrap = document.createElement('div');
+  barsWrap.className = 'knob mod-bars';
+  const barsLabel = document.createElement('div');
+  barsLabel.className = 'knob-label';
+  barsLabel.textContent = 'BARS';
+  const barsInput = document.createElement('input');
+  barsInput.type = 'number';
+  barsInput.min = '0.0625';
+  barsInput.max = '64';
+  barsInput.step = '0.0625';
+  barsInput.value = String(mod.syncBars ?? 0.25);
+  barsInput.className = 'mod-bars-field';
+  barsInput.style.cssText =
+    'width:3.6em;background:#1b1b1b;color:#eee;border:1px solid #444;border-radius:3px;' +
+    'font:inherit;text-align:center;padding:2px 3px;';
+  const commitBars = () => {
+    const v = parseFloat(barsInput.value);
+    if (!isFinite(v) || v <= 0) { barsInput.value = String(mod.syncBars ?? 0.25); return; }
+    const run = () => { mod.syncBars = v; sync(deps); };
+    if (deps.historyDeps) withUndo(deps.historyDeps, run); else run();
+  };
+  barsInput.addEventListener('change', commitBars);
+  barsWrap.appendChild(barsLabel);
+  barsWrap.appendChild(barsInput);
+  row.appendChild(barsWrap);
+
+  const subdiv = createSelectControl({
+    id: `${deps.laneId}.mod.${mod.id}.syncSubdiv`,
+    label: 'FEEL',
+    options: [
+      { value: 'straight', label: 'Str' },
+      { value: 'triplet',  label: 'Trip' },
+      { value: 'dotted',   label: 'Dot' },
+    ],
+    initialValue: mod.syncSubdiv ?? 'straight',
     onChange: (v) => {
-      const run = () => { mod.syncRatio = v; sync(deps); };
+      const run = () => { mod.syncSubdiv = v as 'straight' | 'triplet' | 'dotted'; sync(deps); };
       if (deps.historyDeps) withUndo(deps.historyDeps, run); else run();
     },
   });
-  deps.registerKnob(ratio.handle);
-  row.appendChild(ratio.el);
+  deps.registerKnob(subdiv.handle);
+  row.appendChild(subdiv.el);
 
   const syncBtn = document.createElement('button');
   const refreshSyncUI = () => {
     syncBtn.className = 'rnd' + (mod.syncToBpm ? ' primary' : '');
     syncBtn.textContent = mod.syncToBpm ? 'SYNC' : 'FREE';
     rate.el.style.display      = mod.syncToBpm ? 'none' : '';
-    ratio.el.style.display     = mod.syncToBpm ? '' : 'none';
+    barsWrap.style.display     = mod.syncToBpm ? '' : 'none';
+    subdiv.el.style.display    = mod.syncToBpm ? '' : 'none';
   };
   refreshSyncUI();
   syncBtn.addEventListener('click', () => {
