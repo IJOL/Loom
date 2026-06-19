@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { generate, type GenContext } from './generators';
 import { inScale } from './musicality';
+import { TICKS_PER_STEP } from './notes';
 
 function mulberry32(a: number) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
@@ -32,5 +33,25 @@ describe('genre generators', () => {
   });
   it('is deterministic for a fixed rng seed', () => {
     expect(generate('bass', 'acid', ctx())).toEqual(generate('bass', 'acid', ctx()));
+  });
+
+  it('breakbeat bass and melody notes are all in scale', () => {
+    for (const kind of ['bass', 'melody'] as const) {
+      const notes = generate(kind, 'breakbeat', ctx());
+      expect(notes.length).toBeGreaterThan(0);
+      for (const n of notes) expect(inScale(n.midi, 9, 'minor')).toBe(true);
+    }
+  });
+
+  it('breakbeat beat is broken: a kick lands off the beat grid', () => {
+    const notes = generate('beat', 'breakbeat', ctx({ stepsPerBar: 16 }));
+    const beatTicks = (16 / 4) * TICKS_PER_STEP; // 4 steps/beat × 24 = 96
+    const offGridKick = notes.some((n) => n.midi === 36 && n.start % beatTicks !== 0);
+    expect(offGridKick).toBe(true);
+  });
+
+  it('breakbeat beat still kicks on the first downbeat', () => {
+    const notes = generate('beat', 'breakbeat', ctx());
+    expect(notes.some((n) => n.midi === 36 && n.start === 0)).toBe(true);
   });
 });

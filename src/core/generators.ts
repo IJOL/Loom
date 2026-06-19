@@ -21,6 +21,7 @@ const BASS: Record<StyleId, BassCfg> = {
   house:     { density: 0.45, octaves: [0],        slideChance: 0.1,  accentChance: 0.2,  degreePool: [0, 4, 0, 2] },
   synthwave: { density: 0.55, octaves: [0, 1],     slideChance: 0.05, accentChance: 0.25, degreePool: [0, 2, 4, 0] },
   lofi:      { density: 0.22, octaves: [0],        slideChance: 0.0,  accentChance: 0.1,  degreePool: [0, 4, 6] },
+  breakbeat: { density: 0.5,  octaves: [0, 1],     slideChance: 0.15, accentChance: 0.3,  degreePool: [0, 0, 4, 3, 6, 2] },
 };
 interface MelCfg { density: number; longChance: number; spanDegrees: number; }
 const MEL: Record<StyleId, MelCfg> = {
@@ -28,13 +29,15 @@ const MEL: Record<StyleId, MelCfg> = {
   house:     { density: 0.3,  longChance: 0.3, spanDegrees: 7 },
   synthwave: { density: 0.45, longChance: 0.2, spanDegrees: 9 },
   lofi:      { density: 0.18, longChance: 0.5, spanDegrees: 5 },
+  breakbeat: { density: 0.32, longChance: 0.15, spanDegrees: 7 },
 };
-interface BeatCfg { kickEveryBeat: boolean; snareBackbeat: boolean; hatChance: number; hatStep: number; openHatChance: number; }
+interface BeatCfg { kickEveryBeat: boolean; snareBackbeat: boolean; hatChance: number; hatStep: number; openHatChance: number; breakbeat?: boolean; }
 const BEAT: Record<StyleId, BeatCfg> = {
   acid:      { kickEveryBeat: true,  snareBackbeat: false, hatChance: 0.8, hatStep: 1, openHatChance: 0.1 },
   house:     { kickEveryBeat: true,  snareBackbeat: true,  hatChance: 0.9, hatStep: 2, openHatChance: 0.2 },
   synthwave: { kickEveryBeat: false, snareBackbeat: true,  hatChance: 0.6, hatStep: 2, openHatChance: 0.05 },
   lofi:      { kickEveryBeat: false, snareBackbeat: true,  hatChance: 0.4, hatStep: 2, openHatChance: 0.0 },
+  breakbeat: { kickEveryBeat: false, snareBackbeat: true,  hatChance: 0.85, hatStep: 1, openHatChance: 0.12, breakbeat: true },
 };
 
 const pick = <T,>(arr: T[], rng: () => number): T => arr[Math.floor(rng() * arr.length)];
@@ -99,6 +102,17 @@ function genBeat(style: StyleId, c: GenContext): NoteEvent[] {
     if (cfg.snareBackbeat && onBeat && (beatIdx === 1 || beatIdx === 3)) at(i, GM.snare, NORM);
     if (i % cfg.hatStep === 0 && c.rng() < cfg.hatChance) {
       at(i, c.rng() < cfg.openHatChance ? GM.openhat : GM.hat, 70);
+    }
+  }
+  // breakbeat character: syncopated kicks off the beat grid + sparse ghost snares.
+  if (cfg.breakbeat) {
+    for (let b = 0; b < c.bars; b++) {
+      const base = b * c.stepsPerBar;
+      at(base + Math.round(stepsPerBeat * 1.5), GM.kick, NORM);              // "and of beat 2"
+      if (c.rng() < 0.5) at(base + Math.round(stepsPerBeat * 2.5), GM.kick, NORM); // "and of beat 3"
+      for (const off of [Math.round(stepsPerBeat * 0.5), Math.round(stepsPerBeat * 3.5)]) {
+        if (c.rng() < 0.35) at(base + off, GM.snare, 45);                    // ghost snares
+      }
     }
   }
   // guarantee: kick on the first downbeat

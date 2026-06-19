@@ -4,7 +4,7 @@
 // and the example gallery.
 
 export type ScaleId = 'minor' | 'major' | 'pentMinor' | 'phrygian' | 'dorian' | 'chromatic';
-export type StyleId = 'acid' | 'house' | 'synthwave' | 'lofi';
+export type StyleId = 'acid' | 'house' | 'synthwave' | 'lofi' | 'breakbeat';
 
 const INTERVALS: Record<ScaleId, number[]> = {
   major:     [0, 2, 4, 5, 7, 9, 11],
@@ -31,6 +31,7 @@ export const STYLE_CATALOG: StyleEntry[] = [
   { id: 'house',     label: 'House' },
   { id: 'synthwave', label: 'Synthwave / Electro' },
   { id: 'lofi',      label: 'Lo-fi / Ambient' },
+  { id: 'breakbeat', label: 'Breakbeat / Big Beat' },
 ];
 
 const ROOT_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];

@@ -20,6 +20,8 @@ const STYLE_PATTERNS: Record<StyleId, HitPattern[]> = {
   acid:     [{ stepOffset: 0, durationSteps: 2 }, { stepOffset: 8, durationSteps: 2 }],
   // one sustained chord per bar
   lofi:     [{ stepOffset: 0, durationSteps: 16 }],
+  // syncopated stabs: downbeat + 16th-note ahead of beat 3 (step 9) + offbeat before bar end
+  breakbeat: [{ stepOffset: 0, durationSteps: 1 }, { stepOffset: 9, durationSteps: 1 }, { stepOffset: 14, durationSteps: 1 }],
 };
 
 // ── Public API ────────────────────────────────────────────────────────────────
