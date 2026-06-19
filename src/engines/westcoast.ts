@@ -222,8 +222,10 @@ class WestVoice implements Voice {
       case 'timbre.fold':   return { min: -1, max: 1 };
       case 'timbre.symmetry': return { min: -1, max: 1 };
       case 'osc.fmIndex':   return { min: -2000, max: 2000 };
-      case 'osc.detune':    return { min: -1200, max: 1200 };
-      default: return undefined; // amp.gain, osc.ring fall back to 0..1
+      // osc.detune knob is already in cents (±50) — fall back to the spec range
+      // (default below) so depth=1 = the knob's ±50¢, faithful to the arc
+      // (was ±1200¢, 24× the knob).
+      default: return undefined; // osc.detune, amp.gain, osc.ring fall back to spec / 0..1
     }
   }
 

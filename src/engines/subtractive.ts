@@ -197,11 +197,12 @@ class SubtractiveVoice implements Voice {
       case 'filter.keyTrack':  return { min: -4,    max: 4    };
       // Pre-shaper input boost (×). 1×=no drive, 9×=max drive.
       case 'filter.drive':     return { min: -8,    max: 8    };
-      // Cents on osc.detune. ±1200 = ±octave swing for pitch modulation.
-      case 'osc1.detune':
-      case 'osc2.detune':      return { min: -1200, max: 1200 };
-      // master.tune is a ConstantSource.offset in cents, summed into every osc
-      // detune. ±1200 = ±octave global tune sweep.
+      // osc.detune is in cents and its knob is already in cents (±50) — fall
+      // back to the spec range so depth=1 sweeps exactly the knob's ±50¢
+      // (faithful to the arc), instead of the old ±1200¢ (24× the knob).
+      // (handled by the default below.)
+      // master.tune knob is ±12 semitones; the AudioParam is cents (×100), so
+      // ±1200¢ = the full ±12 st knob — already faithful, keep the override.
       case 'master.tune':      return { min: -1200, max: 1200 };
       // noise.color is filter cutoff (Hz). ±8 kHz hops the noise from sub to bright.
       case 'noise.color':      return { min: -8000, max: 8000 };
