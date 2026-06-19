@@ -43,8 +43,10 @@ test.describe('master strip', () => {
 
     await page.locator('.master-fx-toggle').click();
     await expect(panel).toBeVisible();
-    // Internal ids were preserved when the markup moved out of the old tab.
-    await expect(panel.locator('#fx-reverb-knobs')).toHaveCount(1);
+    // Reverb/delay are now the Send A/B return modules; master comp + master
+    // insert rack remain.
+    await expect(panel.locator('#fx-send-a')).toHaveCount(1);
+    await expect(panel.locator('#fx-send-b')).toHaveCount(1);
     await expect(panel.locator('#fx-master-comp-knobs')).toHaveCount(1);
     await expect(panel.locator('#fx-filters')).toHaveCount(1);
 
