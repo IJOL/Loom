@@ -2,21 +2,20 @@
 /**
  * bump-version.mjs — advances Loom's app version by one minor step.
  *
- * Scheme: `v0.N - Codename`. v0.1 is the first version (codename "Downbeat").
- * Each minor gets a music/rhythm codename from tools/version-codenames.json
- * (ordered; index 0 = v0.1, index 1 = v0.2, …). So the codename for minor N is
- * codenames[N - 1]. Bumping from v0.{N} produces v0.{N+1} whose codename is
- * codenames[(N+1) - 1] === codenames[N].
+ * Scheme: `v0.N · alpha · Codename`. v0.1 is the first version (codename
+ * "Downbeat"). Each minor gets a music/rhythm codename from
+ * tools/version-codenames.json (ordered; index 0 = v0.1, index 1 = v0.2, …), so
+ * the codename for minor N is codenames[N - 1]. The project is in the "alpha"
+ * stage, recorded alongside the version.
  *
  * It rewrites:
- *   - version.json            (the source of truth: { version, codename })
+ *   - version.json            (the source of truth: { version, stage, codename })
  *   - package.json "version"  (kept in sync as 0.{minor}.0)
  *
  * Resilient by design: clear errors + non-zero exit on failure; if the codename
  * list runs out it wraps with modulo so it never crashes.
  *
- * Run manually with `npm run bump`. The pre-push git hook also runs it so each
- * push bumps the version (the bump commit rides the NEXT push — see VERSIONING.md).
+ * Run manually with `npm run bump` (there is no automatic push-time bump).
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -79,8 +78,8 @@ const codename = idx < codenames.length
 
 const nextVersion = `${major}.${nextMinor}`;
 
-// 1) version.json — the source of truth.
-const nextVersionJson = { ...current, version: nextVersion, codename };
+// 1) version.json — the source of truth. The project stays in the "alpha" stage.
+const nextVersionJson = { ...current, version: nextVersion, stage: 'alpha', codename };
 try {
   writeFileSync(VERSION_PATH, JSON.stringify(nextVersionJson, null, 2) + '\n');
 } catch (err) {
@@ -96,4 +95,4 @@ try {
   fail('could not write package.json', err);
 }
 
-console.log(`Bumped to v${nextVersion} - ${codename}`);
+console.log(`Bumped to v${nextVersion} · alpha · ${codename}`);

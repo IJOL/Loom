@@ -107,10 +107,11 @@ const $  = <T extends HTMLElement>(id: string) => document.getElementById(id) as
 const $$ = <T extends HTMLElement>(sel: string) => Array.from(document.querySelectorAll<T>(sel));
 
 // ── App version label (next to the LOOM logo) ────────────────────────────────
-// __APP_VERSION__ / __APP_CODENAME__ are inlined by vite.config.ts `define` from
-// version.json, e.g. "v0.1 · Downbeat". On-screen uses the middle-dot separator.
+// __APP_VERSION__ / __APP_STAGE__ / __APP_CODENAME__ are inlined by vite.config.ts
+// `define` from version.json, e.g. "v0.4 · alpha · Breakbeat". On-screen uses the
+// middle-dot separator.
 const appVersionEl = document.getElementById('app-version');
-if (appVersionEl) appVersionEl.textContent = `v${__APP_VERSION__} · ${__APP_CODENAME__}`;
+if (appVersionEl) appVersionEl.textContent = `v${__APP_VERSION__} · ${__APP_STAGE__} · ${__APP_CODENAME__}`;
 
 // ── Plugin bootstrap (must run BEFORE preset cache + audio graph) ─────────
 bootstrapPlugins();

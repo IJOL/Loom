@@ -13,19 +13,21 @@ const MANUAL_SRC = join(ROOT, 'docs', 'manual');
 // it resolves under that worktree and matches nothing real (so its own src is watched).
 const WORKTREES_DIR = join(ROOT, '.claude', 'worktrees');
 
-// App version + codename — the single source of truth is version.json at the
-// repo root (bumped by tools/bump-version.mjs / the pre-push hook). Read it at
-// config time and inline it into the bundle via `define` so the running app can
-// show it next to the logo. Falls back to a sane default if the file is missing.
-function readAppVersion(): { version: string; codename: string } {
+// App version + stage + codename — the single source of truth is version.json at
+// the repo root (bumped manually by tools/bump-version.mjs via `npm run bump`).
+// Read it at config time and inline it into the bundle via `define` so the
+// running app can show it next to the logo. Falls back to a sane default if the
+// file is missing.
+function readAppVersion(): { version: string; stage: string; codename: string } {
   try {
     const v = JSON.parse(readFileSync(join(ROOT, 'version.json'), 'utf8'));
     return {
       version: typeof v.version === 'string' ? v.version : '0.0',
+      stage: typeof v.stage === 'string' ? v.stage : 'alpha',
       codename: typeof v.codename === 'string' ? v.codename : 'Unknown',
     };
   } catch {
-    return { version: '0.0', codename: 'Unknown' };
+    return { version: '0.0', stage: 'alpha', codename: 'Unknown' };
   }
 }
 const APP_VERSION = readAppVersion();
@@ -79,6 +81,7 @@ export default defineConfig({
   server: { watch: { ignored: (file: string) => file.startsWith(WORKTREES_DIR) } },
   define: {
     __APP_VERSION__: JSON.stringify(APP_VERSION.version),
+    __APP_STAGE__: JSON.stringify(APP_VERSION.stage),
     __APP_CODENAME__: JSON.stringify(APP_VERSION.codename),
   },
 });

@@ -1,10 +1,9 @@
 {
   "name": "loom",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "private": true,
   "scripts": {
-    "prepare": "node tools/install-hooks.mjs",
     "bump": "node tools/bump-version.mjs",
     "dev": "vite",
     "build": "tsc && vite build",
