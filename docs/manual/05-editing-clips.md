@@ -30,7 +30,7 @@ The panel has three pickers and a lock toggle:
   - 🌊 Hypnotic / modal — dorian
   - 😰 Unsettling — phrygian
   - 🎨 Anything goes — chromatic (no constraint)
-- **Style** — the rhythmic and harmonic character used by the generators (Acid / Techno, House, Synthwave, Lo-fi, and others). Style affects which rhythmic patterns the chord maker lays down and sets the default feel of generated basslines and melodies.
+- **Style** — the rhythmic and harmonic character used by the generators (Acid / Techno, House, Synthwave, Lo-fi, and **Breakbeat / Big Beat**). Style affects which rhythmic patterns the chord maker lays down and sets the default feel of generated basslines and melodies — Breakbeat / Big Beat adds a broken-beat drum generator and its own curated examples (chunky beats, rolling basslines, and riff-style melodies).
 - **Scale lock** — a checkbox that turns the piano-roll's note snapping on or off **globally**. It is **off by default**, so you can play freely; tick it when you want every placed note pulled into the key. This is the same switch as the piano-roll's 🔒 button — wherever you toggle it, the other reflects it.
 
 Every other musical-assistance feature — the piano-roll scale highlight, the generator, the examples, the transforms, and the chord maker — respects the active root and scale. Closing the panel without choosing commits no change.
@@ -199,12 +199,12 @@ A vertical playhead line moves across the canvas in real time while the clip is 
 
 ## Clip tempo (×2 / ÷2)
 
-Next to the **Length (bars)** field in the inspector toolbar sit two buttons, **`*2`** and **`/2`**, that time-scale the whole clip in a single, undoable step — Ableton's "double / halve clip tempo" applied to the open clip.
+Next to the **Length (bars)** field in the inspector toolbar sit two buttons, **`*2`** and **`/2`**, that time-scale the open clip's notes in a single, undoable step — the perceived tempo of the pattern doubles or halves while the clip stays musically useful.
 
-- **`*2`** *(Double tempo — compress notes & halve clip length)* — packs the clip into half the time: every note's start and duration is halved, the loop region scales with it, the clip's length in bars halves, and any clip automation is compressed to match. The pattern plays back twice as fast.
-- **`/2`** *(Halve tempo — stretch notes & double clip length)* — the inverse: notes, loop, length and automation all double, so the pattern plays back half as fast over twice the bars.
+- **`*2`** *(Double tempo — compress notes & repeat to fill, length unchanged)* — every note's start and duration is halved (so the pattern plays **twice as fast**), and the clip's **length in bars stays the same**: the now-shorter pattern is **tiled** to fill it, so you hear a clean double-time version rather than a half-empty clip.
+- **`/2`** *(Halve tempo — stretch notes & grow the clip length)* — the inverse: notes and durations double (so the pattern plays **half as fast**) and the clip's **length grows** to fit the stretched material.
 
-Because every part of the clip is scaled together — notes, loop brace, length and automation — the groove keeps its shape; only its speed (and the bars it occupies) changes. The buttons appear for **note and drum clips**; a pure audio channel has no notes to scale, so they are hidden there. The whole rescale is one entry in the global undo history, so a single Ctrl+Z restores the original timing.
+The loop region and any clip automation scale with the notes. The buttons appear for **note and drum clips**; a pure audio channel has no notes to scale, so they are hidden there. The whole rescale is one entry in the global undo history, so a single Ctrl+Z restores the original timing.
 
 ---
 

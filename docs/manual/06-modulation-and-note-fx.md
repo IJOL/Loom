@@ -18,9 +18,9 @@ An LFO generates a periodic waveform that you route to one or more target parame
 | Control | Description |
 |---------|-------------|
 | WAVE | Waveform shape: Sine, Tri, Sqr, or Saw |
-| RATE | Free rate in Hz (0.01–40 Hz, default 4 Hz) |
-| RATIO | Musical division for BPM-sync mode (e.g. 1/4, 1/8, 1/8T, 1/16.) |
-| FREE / SYNC | Toggles between free-running Hz rate and BPM-locked ratio. In FREE mode the RATE knob is shown; in SYNC mode the RATIO selector replaces it. |
+| RATE | *(FREE mode)* the free-running rate, set with a log-scaled knob and shown in **bpm** (LFO cycles per minute), from ultra-slow sweeps (under 1 bpm) up to audio-rate wobble. The slow half of the knob travel covers the slow rates, so gentle sweeps are easy to dial in. |
+| BARS / FEEL | *(SYNC mode)* **BARS** is a free numeric input for the cycle length in bars-per-cycle (e.g. `0.25` = a quarter-bar cycle, `4` = one cycle every four bars; any value from 1/16-bar up to 64 bars). **FEEL** offsets it — **Str** (straight), **Trip** (triplet), **Dot** (dotted). This replaced the old fixed RATIO dropdown, so you can sync to any cycle length, not just preset divisions. |
+| FREE / SYNC | Toggles between the free-running bpm RATE knob (FREE) and the tempo-locked BARS + FEEL controls (SYNC). |
 | POLARITY | **-1..+1** (bipolar, default) oscillates symmetrically around the param's centre. **0..1** (unipolar) only pushes the parameter upward. |
 | TRIG | **Free** — the LFO phase runs continuously regardless of note triggers, like a classic analogue LFO. **Note** — phase resets on every note-on, so the LFO peak always lands at the start of each note. Hidden when scope is PER-VOICE (see below). |
 | SCOPE | **Shared** — one LFO voice runs for the whole lane. **PerVoice** — an independent LFO is spawned for each played note and lives for the duration of that note. |

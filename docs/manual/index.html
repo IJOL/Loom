@@ -786,7 +786,7 @@ Each voice routes through its own channel strip and then to a shared drum bus.</
 </tr>
 </tbody></table>
 <h3>Drum preset dropdown — synth kits and sample kits</h3>
-<p>The preset dropdown for any drum lane lists kits from three groups:</p>
+<p>The preset dropdown for any drum lane lists kits from four groups:</p>
 <table>
 <thead>
 <tr>
@@ -810,10 +810,15 @@ Each voice routes through its own channel strip and then to a shared drum bus.</
 <td>TR-808 (samples), Acoustic (samples), Dirt (samples)</td>
 <td>Real one-shot WAVs bundled with Loom</td>
 </tr>
+<tr>
+<td>Drum Machines</td>
+<td>64 sampled kits from classic boxes (Roland, LinnDrum, Korg, Oberheim, Casio, E-mu…)</td>
+<td>Sampled one-shots from the <strong>tidal-drum-machines</strong> collection — a large library of vintage drum-machine sounds</td>
+</tr>
 </tbody></table>
 <p><strong>Synth kits</strong> seed all eight per-voice parameters from the kit&#39;s characteristic values; you can edit individual voices on top and hit 🎲 Sound to randomise all voices at once.</p>
 <p><strong>Sample kits</strong> load the matching WAV for each voice (kick, snare, closed hat, open hat, clap, tom, cowbell, ride) from <code>public/drumkits/</code> and rebuild the keymap fresh on every session load — you never need to re-import the files manually. Once a sample kit is selected, the lane uses the drum-grid editor and the full per-pad parameter rack, exactly like a Sampler lane in drumkit mode.</p>
-<p>The sample WAVs are curated one-shots from the Dirt-Samples collection (used by TidalCycles) and classic TR-808 recordings. Full credits are in the repo <code>README.md</code> under &quot;Credits — sample sources&quot;.</p>
+<p>The sample WAVs are curated one-shots from the Dirt-Samples collection (used by TidalCycles), classic TR-808 recordings, and — for the <strong>Drum Machines</strong> group — the <a href="https://github.com/ritchse/tidal-drum-machines">tidal-drum-machines</a> library. Full credits are in the repo <code>README.md</code> under &quot;Credits — sample sources&quot;.</p>
 <blockquote>
 <p>Note: sample kits are loaded by the Sampler engine under the hood. For the Sampler&#39;s own Instrument family selector (Drumkit / Melodic / Loop) and per-pad parameters, see <a href="#08-midi-and-samples">MIDI &amp; Samples</a>.</p>
 </blockquote>
@@ -900,7 +905,7 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <li>🎨 Anything goes — chromatic (no constraint)</li>
 </ul>
 </li>
-<li><strong>Style</strong> — the rhythmic and harmonic character used by the generators (Acid / Techno, House, Synthwave, Lo-fi, and others). Style affects which rhythmic patterns the chord maker lays down and sets the default feel of generated basslines and melodies.</li>
+<li><strong>Style</strong> — the rhythmic and harmonic character used by the generators (Acid / Techno, House, Synthwave, Lo-fi, and <strong>Breakbeat / Big Beat</strong>). Style affects which rhythmic patterns the chord maker lays down and sets the default feel of generated basslines and melodies — Breakbeat / Big Beat adds a broken-beat drum generator and its own curated examples (chunky beats, rolling basslines, and riff-style melodies).</li>
 <li><strong>Scale lock</strong> — a checkbox that turns the piano-roll&#39;s note snapping on or off <strong>globally</strong>. It is <strong>off by default</strong>, so you can play freely; tick it when you want every placed note pulled into the key. This is the same switch as the piano-roll&#39;s 🔒 button — wherever you toggle it, the other reflects it.</li>
 </ul>
 <p>Every other musical-assistance feature — the piano-roll scale highlight, the generator, the examples, the transforms, and the chord maker — respects the active root and scale. Closing the panel without choosing commits no change.</p>
@@ -1074,12 +1079,12 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <p>A vertical playhead line moves across the canvas in real time while the clip is playing, driven by the sequencer&#39;s look-ahead clock. It updates on every redraw tick and resets to the left edge when the clip stops.</p>
 <hr>
 <h2>Clip tempo (×2 / ÷2)</h2>
-<p>Next to the <strong>Length (bars)</strong> field in the inspector toolbar sit two buttons, <strong><code>*2</code></strong> and <strong><code>/2</code></strong>, that time-scale the whole clip in a single, undoable step — Ableton&#39;s &quot;double / halve clip tempo&quot; applied to the open clip.</p>
+<p>Next to the <strong>Length (bars)</strong> field in the inspector toolbar sit two buttons, <strong><code>*2</code></strong> and <strong><code>/2</code></strong>, that time-scale the open clip&#39;s notes in a single, undoable step — the perceived tempo of the pattern doubles or halves while the clip stays musically useful.</p>
 <ul>
-<li><strong><code>*2</code></strong> <em>(Double tempo — compress notes &amp; halve clip length)</em> — packs the clip into half the time: every note&#39;s start and duration is halved, the loop region scales with it, the clip&#39;s length in bars halves, and any clip automation is compressed to match. The pattern plays back twice as fast.</li>
-<li><strong><code>/2</code></strong> <em>(Halve tempo — stretch notes &amp; double clip length)</em> — the inverse: notes, loop, length and automation all double, so the pattern plays back half as fast over twice the bars.</li>
+<li><strong><code>*2</code></strong> <em>(Double tempo — compress notes &amp; repeat to fill, length unchanged)</em> — every note&#39;s start and duration is halved (so the pattern plays <strong>twice as fast</strong>), and the clip&#39;s <strong>length in bars stays the same</strong>: the now-shorter pattern is <strong>tiled</strong> to fill it, so you hear a clean double-time version rather than a half-empty clip.</li>
+<li><strong><code>/2</code></strong> <em>(Halve tempo — stretch notes &amp; grow the clip length)</em> — the inverse: notes and durations double (so the pattern plays <strong>half as fast</strong>) and the clip&#39;s <strong>length grows</strong> to fit the stretched material.</li>
 </ul>
-<p>Because every part of the clip is scaled together — notes, loop brace, length and automation — the groove keeps its shape; only its speed (and the bars it occupies) changes. The buttons appear for <strong>note and drum clips</strong>; a pure audio channel has no notes to scale, so they are hidden there. The whole rescale is one entry in the global undo history, so a single Ctrl+Z restores the original timing.</p>
+<p>The loop region and any clip automation scale with the notes. The buttons appear for <strong>note and drum clips</strong>; a pure audio channel has no notes to scale, so they are hidden there. The whole rescale is one entry in the global undo history, so a single Ctrl+Z restores the original timing.</p>
 <hr>
 <h2>Loop regions</h2>
 <p>A <strong>loop brace</strong> sits above every clip editor — piano-roll and drum-grid — as a narrow strip spanning the full clip length. It lets you mark an A–B sub-region and repeat just that portion while the clip plays.</p>
@@ -1156,15 +1161,15 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 </tr>
 <tr>
 <td>RATE</td>
-<td>Free rate in Hz (0.01–40 Hz, default 4 Hz)</td>
+<td><em>(FREE mode)</em> the free-running rate, set with a log-scaled knob and shown in <strong>bpm</strong> (LFO cycles per minute), from ultra-slow sweeps (under 1 bpm) up to audio-rate wobble. The slow half of the knob travel covers the slow rates, so gentle sweeps are easy to dial in.</td>
 </tr>
 <tr>
-<td>RATIO</td>
-<td>Musical division for BPM-sync mode (e.g. 1/4, 1/8, 1/8T, 1/16.)</td>
+<td>BARS / FEEL</td>
+<td><em>(SYNC mode)</em> <strong>BARS</strong> is a free numeric input for the cycle length in bars-per-cycle (e.g. <code>0.25</code> = a quarter-bar cycle, <code>4</code> = one cycle every four bars; any value from 1/16-bar up to 64 bars). <strong>FEEL</strong> offsets it — <strong>Str</strong> (straight), <strong>Trip</strong> (triplet), <strong>Dot</strong> (dotted). This replaced the old fixed RATIO dropdown, so you can sync to any cycle length, not just preset divisions.</td>
 </tr>
 <tr>
 <td>FREE / SYNC</td>
-<td>Toggles between free-running Hz rate and BPM-locked ratio. In FREE mode the RATE knob is shown; in SYNC mode the RATIO selector replaces it.</td>
+<td>Toggles between the free-running bpm RATE knob (FREE) and the tempo-locked BARS + FEEL controls (SYNC).</td>
 </tr>
 <tr>
 <td>POLARITY</td>
