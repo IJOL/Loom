@@ -1026,6 +1026,11 @@ newSessionBtn?.addEventListener('click', async () => {
   // old lanes are disposed → the "New leaves the old synths playing" bug.
   stopTransport();
   sessionHost.applyLoadedSessionState(emptySessionState());
+  // Also wipe the Performance take + leave Performance mode. Without this New
+  // cleared the session but left the old arrangement in the timeline, where
+  // every band turned into an orphaned "missing" (clipEvents pointing at the
+  // just-deleted clips).
+  performanceFeature.resetArrangement();
   autoHistory.markClean();
 });
 

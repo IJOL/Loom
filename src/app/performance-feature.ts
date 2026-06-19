@@ -80,6 +80,8 @@ export interface PerformanceFeature {
   /** Build the arrangement from the current session (scenes in order) and
    *  switch to Performance. */
   copyFromSession: () => void;
+  /** Wipe the take back to empty and return to Session mode (used by "New"). */
+  resetArrangement: () => void;
   /** Toggle the Performance "take" arm (clip launches + knob automation).
    *  Returns the new armed state. Called by main's unified REC button. */
   toggleTakeRec: () => boolean;
@@ -299,6 +301,15 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     setMode('performance');
   }
 
+  /** Wipe the take back to empty and return to Session mode. Called by the
+   *  "New session" button: without it New cleared the session but left the old
+   *  arrangement in the Performance timeline, where every band turned into an
+   *  orphaned "missing" (its clipEvents pointed at deleted clips). */
+  function resetArrangement() {
+    setArrangement({ ...emptyArrangementState(seq.bpm), loopEnabled: false, loopStartBar: 0, loopEndBar: undefined });
+    setMode('session');
+  }
+
   function arrangementOnLaunchClip(laneId: string, clipId: string, atCtx: number) {
     const state = sessionHost.state;
     const lane = state.lanes.find((l) => l.id === laneId);
@@ -443,6 +454,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     onPlay,
     onStop,
     copyFromSession,
+    resetArrangement,
     toggleTakeRec,
   };
 }
