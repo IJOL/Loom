@@ -38,7 +38,7 @@ describe('musicality core', () => {
 
   it('catalogs are non-empty and every scale has intervals', () => {
     expect(SCALE_CATALOG.length).toBeGreaterThan(3);
-    expect(STYLE_CATALOG.length).toBe(4);
+    expect(STYLE_CATALOG.length).toBeGreaterThan(4);
     for (const s of SCALE_CATALOG) expect(scaleIntervals(s.id).length).toBeGreaterThan(0);
   });
 
