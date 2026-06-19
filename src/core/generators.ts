@@ -13,7 +13,7 @@ export interface GenContext {
 }
 
 const GM = { kick: 36, snare: 38, hat: 42, openhat: 46, clap: 39 } as const;
-const ACCENT = 115, NORM = 80;
+const ACCENT = 115, NORM = 80, GHOST = 45;
 
 interface BassCfg { density: number; octaves: number[]; slideChance: number; accentChance: number; degreePool: number[]; }
 const BASS: Record<StyleId, BassCfg> = {
@@ -111,7 +111,7 @@ function genBeat(style: StyleId, c: GenContext): NoteEvent[] {
       at(base + Math.round(stepsPerBeat * 1.5), GM.kick, NORM);              // "and of beat 2"
       if (c.rng() < 0.5) at(base + Math.round(stepsPerBeat * 2.5), GM.kick, NORM); // "and of beat 3"
       for (const off of [Math.round(stepsPerBeat * 0.5), Math.round(stepsPerBeat * 3.5)]) {
-        if (c.rng() < 0.35) at(base + off, GM.snare, 45);                    // ghost snares
+        if (c.rng() < 0.35) at(base + off, GM.snare, GHOST);                 // ghost snares
       }
     }
   }
