@@ -1,4 +1,4 @@
-import { type FxBus, type SyncDiv } from './fx';
+import { type FxBus } from './fx';
 import type { InsertChain } from '../plugins/fx/insert-chain';
 import { createKnob, type KnobHandle } from './knob';
 import { attachKnobUndo, type HistoryDeps } from '../save/history-wiring';
@@ -19,52 +19,10 @@ function appendKnob(
   return k;
 }
 
-/** Local replacement for the deleted addPolySelect helper. */
-function appendSelect(
-  parent: HTMLElement,
-  label: string,
-  options: Array<{ value: string; label: string }>,
-  getCurrent: () => string,
-  onChange: (v: string) => void,
-): void {
-  const wrap = document.createElement('div');
-  wrap.className = 'knob';
-  const lab = document.createElement('div');
-  lab.className = 'knob-label';
-  lab.textContent = label;
-  wrap.appendChild(lab);
-  const sel = document.createElement('select');
-  sel.className = 'poly-wave-sel';
-  for (const o of options) {
-    const opt = document.createElement('option');
-    opt.value = o.value; opt.textContent = o.label;
-    if (o.value === getCurrent()) opt.selected = true;
-    sel.appendChild(opt);
-  }
-  sel.addEventListener('change', () => onChange(sel.value));
-  wrap.appendChild(sel);
-  parent.appendChild(wrap);
-}
-
 // ── Formatters ──────────────────────────────────────────────────────────────
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtSec = (v: number) => v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed(2)}s`;
 
-export const SYNC_OPTS: Array<{ value: SyncDiv; label: string }> = [
-  { value: 'off',   label: 'Free' },
-  { value: '4/1',   label: '4 bars' },
-  { value: '3/1',   label: '3 bars' },
-  { value: '2/1',   label: '2 bars' },
-  { value: '1/1',   label: '1 bar' },
-  { value: '1/2',   label: '1/2' },
-  { value: '1/4',   label: '1/4' },
-  { value: '1/8.',  label: '1/8.' },
-  { value: '1/8',   label: '1/8' },
-  { value: '1/8t',  label: '1/8t' },
-  { value: '1/16',  label: '1/16' },
-  { value: '1/16t', label: '1/16t' },
-  { value: '1/32',  label: '1/32' },
-];
 
 export interface FxUIDeps {
   ctx: AudioContext;
@@ -85,17 +43,6 @@ export interface FxUIDeps {
 }
 
 let _deps: FxUIDeps | null = null;
-
-// Legacy exports kept for backwards-compatibility (main.ts still imports them).
-// The delay SYNC param is now an insert-slot discrete param on Send A; these
-// functions are no-ops and will be removed in Task 12.
-/** @deprecated Use the delay insert's SYNC discrete param instead. */
-export function getDelaySyncDiv(): SyncDiv { return '1/8.' as SyncDiv; }
-/** @deprecated No-op — delay sync is now driven by the insert param. */
-export function applyDelaySync(_deps: FxUIDeps): void { /* no-op */ }
-
-// TODO: Task 19 will replace appendFilterRow with InsertChain-based plugin UI.
-// The old MasterFilter row builder is stubbed out pending that task.
 
 export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void; rebuildSends: () => void } {
   _deps = deps;

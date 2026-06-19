@@ -1,6 +1,4 @@
-// Master FX bus (reverb + delay) and per-voice ChannelStrip (EQ + sends + mute + level).
-// Also a `FilterChain` of stackable filters on the master output, each with
-// optional BPM-synced LFO modulating its cutoff.
+// Master FX bus (reverb + delay send buses) and per-voice ChannelStrip (EQ + sends + mute + level).
 
 import { CompBlock } from './comp-block';
 import {
@@ -27,7 +25,7 @@ export class FxBus {
     const b = new SendBus(ctx, 'B', 'Send B (Reverb)', output);
     // Seed each bus with its default insert. createInstance returns undefined
     // when the registry isn't bootstrapped (e.g. pure unit tests) — the chain
-    // stays empty (pass-through) and the shims below no-op.
+    // stays empty (pass-through).
     const delay  = createInstance('fx', 'delay',  ctx);
     const reverb = createInstance('fx', 'reverb', ctx);
     if (delay)  a.inserts.insert(delay);
@@ -43,27 +41,6 @@ export class FxBus {
 
   get reverbInput(): GainNode { return this.getSendBus('B').input; }
   get delayInput(): GainNode  { return this.getSendBus('A').input; }
-
-  // ── Transitional shims (removed in Task 12 once fx-ui/modulation-ui migrate).
-  // They drive the seeded reverb (bus B) / delay (bus A) inserts directly.
-  private seed(id: 'A' | 'B') { return this.getSendBus(id).inserts.list()[0]?.fx; }
-  setReverbWet(g: number)        { this.seed('B')?.setBaseValue('wet', g); }
-  setReverbPredelay(sec: number) { this.seed('B')?.setBaseValue('predelay', sec); }
-  setReverbSize(sec: number, decay?: number) { this.seed('B')?.setBaseValue('size', sec); if (decay !== undefined) this.seed('B')?.setBaseValue('decay', decay); }
-  setReverbDecay(d: number)      { this.seed('B')?.setBaseValue('decay', d); }
-  getReverbWet()      { return this.seed('B')?.getBaseValue('wet') ?? 0; }
-  getReverbSize()     { return this.seed('B')?.getBaseValue('size') ?? 0; }
-  getReverbDecay()    { return this.seed('B')?.getBaseValue('decay') ?? 0; }
-  getReverbPredelay() { return this.seed('B')?.getBaseValue('predelay') ?? 0; }
-  setDelayTime(sec: number)   { this.seed('A')?.setBaseValue('time', sec); }
-  setDelayFeedback(g: number) { this.seed('A')?.setBaseValue('feedback', g); }
-  setDelayWet(g: number)      { this.seed('A')?.setBaseValue('wet', g); }
-  setDelayDamping(hz: number) { this.seed('A')?.setBaseValue('damping', hz); }
-  getDelayFeedback() { return this.seed('A')?.getBaseValue('feedback') ?? 0; }
-  getDelayWet()      { return this.seed('A')?.getBaseValue('wet') ?? 0; }
-  getDelayDamping()  { return this.seed('A')?.getBaseValue('damping') ?? 0; }
-  setBpmSync(bpm: number, beatFraction = 0.375) { this.setDelayTime((60 / bpm) * beatFraction * 4); }
-  getMasterSendInstances() { return { reverb: this.seed('B'), delay: this.seed('A') }; }
 }
 
 export interface SidechainRegistration {
@@ -286,162 +263,8 @@ export class ChannelStrip {
   }
 }
 
-// ── Master filter chain ───────────────────────────────────────────────────
-// Stackable filters in series on the master output. Each filter has its own
-// type/cutoff/Q and an optional BPM-synced LFO modulating its cutoff.
-
-export type SyncDiv =
-  | 'off'
-  | '4/1' | '3/1' | '2/1' | '1/1'   // multi-bar / whole-note cycles
-  | '1/2' | '1/4' | '1/8' | '1/8.' | '1/8t'
-  | '1/16' | '1/16t' | '1/32';
-
-const SYNC_BEATS: Record<SyncDiv, number> = {
-  'off':   0,
-  '4/1':   16,    // 4 whole notes = 4 bars in 4/4
-  '3/1':   12,    // 3 whole notes = 3 bars
-  '2/1':    8,    // 2 whole notes = 2 bars
-  '1/1':    4,    // 1 whole note  = 1 bar
-  '1/2':    2,
-  '1/4':    1,
-  '1/8':    0.5,
-  '1/8.':   0.75,
-  '1/8t':   1/3,
-  '1/16':   0.25,
-  '1/16t':  1/6,
-  '1/32':   0.125,
-};
-
-// LFO cycles per second given BPM + division. E.g. '1/4' at 120 BPM = 2 cycles/sec.
-export function syncDivToHz(bpm: number, div: SyncDiv): number {
-  const beats = SYNC_BEATS[div];
-  if (beats <= 0) return 0;
-  const beatsPerSec = bpm / 60;
-  return beatsPerSec / beats;
-}
-
-export interface MasterFilterState {
-  type: BiquadFilterType;
-  cutoff: number;
-  q: number;
-  lfoWave: OscillatorType;
-  lfoSync: SyncDiv;
-  lfoDepth: number;
-  bypass: boolean;
-}
-
-export class MasterFilter {
-  filter: BiquadFilterNode;
-  state: MasterFilterState;
-  private lfo: OscillatorNode | null = null;
-  private lfoGain: GainNode | null = null;
-
-  constructor(private ctx: AudioContext) {
-    this.filter = ctx.createBiquadFilter();
-    this.filter.type = 'lowpass';
-    this.filter.frequency.value = 8000;
-    this.filter.Q.value = 1;
-    this.state = {
-      type: 'lowpass', cutoff: 8000, q: 1,
-      lfoWave: 'sine', lfoSync: 'off', lfoDepth: 0, bypass: false,
-    };
-  }
-
-  setType(t: BiquadFilterType) { this.state.type = t; this.filter.type = t; }
-  setCutoff(hz: number) {
-    this.state.cutoff = hz;
-    this.filter.frequency.setTargetAtTime(hz, this.ctx.currentTime, 0.01);
-  }
-  setQ(q: number) { this.state.q = q; this.filter.Q.value = q; }
-  setBypass(b: boolean) {
-    // Implemented at chain level via rewire; we just track state.
-    this.state.bypass = b;
-  }
-  setLfo(wave: OscillatorType, sync: SyncDiv, depth: number, bpm: number) {
-    this.state.lfoWave = wave;
-    this.state.lfoSync = sync;
-    this.state.lfoDepth = depth;
-    this.rebuildLfo(bpm);
-  }
-  updateBpm(bpm: number) {
-    if (this.lfo && this.state.lfoSync !== 'off') {
-      const hz = syncDivToHz(bpm, this.state.lfoSync);
-      this.lfo.frequency.setTargetAtTime(hz, this.ctx.currentTime, 0.01);
-    }
-  }
-  private rebuildLfo(bpm: number) {
-    if (this.lfo) {
-      try { this.lfo.stop(); } catch {}
-      this.lfo.disconnect();
-      this.lfo = null;
-    }
-    if (this.lfoGain) { this.lfoGain.disconnect(); this.lfoGain = null; }
-    if (this.state.lfoSync === 'off' || this.state.lfoDepth === 0) return;
-    const hz = syncDivToHz(bpm, this.state.lfoSync);
-    this.lfo = this.ctx.createOscillator();
-    this.lfo.type = this.state.lfoWave;
-    this.lfo.frequency.value = hz;
-    this.lfoGain = this.ctx.createGain();
-    // Depth scales the cutoff modulation amount in Hz.
-    this.lfoGain.gain.value = this.state.lfoDepth * 4000;
-    this.lfo.connect(this.lfoGain).connect(this.filter.frequency);
-    this.lfo.start();
-  }
-  dispose() {
-    if (this.lfo) { try { this.lfo.stop(); } catch {} this.lfo.disconnect(); this.lfo = null; }
-    if (this.lfoGain) { this.lfoGain.disconnect(); this.lfoGain = null; }
-    this.filter.disconnect();
-  }
-}
-
-export class FilterChain {
-  filters: MasterFilter[] = [];
-
-  constructor(private ctx: AudioContext, private input: AudioNode, private output: AudioNode) {
-    // No filters yet: direct connection.
-    input.connect(output);
-  }
-
-  add(): MasterFilter {
-    const mf = new MasterFilter(this.ctx);
-    this.filters.push(mf);
-    this.rewire();
-    return mf;
-  }
-
-  remove(mf: MasterFilter) {
-    const idx = this.filters.indexOf(mf);
-    if (idx < 0) return;
-    this.filters.splice(idx, 1);
-    mf.dispose();
-    this.rewire();
-  }
-
-  updateBpm(bpm: number) {
-    for (const mf of this.filters) mf.updateBpm(bpm);
-  }
-
-  private rewire() {
-    // Disconnect everything in the chain and rebuild input → filters → output.
-    this.input.disconnect();
-    for (const mf of this.filters) mf.filter.disconnect();
-    const active = this.filters.filter((mf) => !mf.state.bypass);
-    if (active.length === 0) {
-      this.input.connect(this.output);
-      return;
-    }
-    this.input.connect(active[0].filter);
-    for (let i = 0; i < active.length - 1; i++) {
-      active[i].filter.connect(active[i + 1].filter);
-    }
-    active[active.length - 1].filter.connect(this.output);
-  }
-}
-
 // ── Master compressor ────────────────────────────────────────────────────
 // A thin wrapper around CompBlock used at the tail of the master chain.
-// Stored separately from FilterChain so the FX page UI can address them
-// independently and so bypass/serialize remain isolated.
 
 export class MasterCompressor {
   private block: CompBlock;

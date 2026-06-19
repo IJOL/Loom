@@ -1,5 +1,5 @@
 // src/notefx/arp-processor.ts
-import { type SyncDiv, syncDivToHz } from '../core/fx';
+import { type SyncDiv, syncDivToHz } from '../core/sync-div';
 import type { NoteFxEvent, NoteFxContext, NoteFxProcessor } from './notefx-types';
 
 export type ArpPattern = 'up' | 'down' | 'updown' | 'random' | 'cosmic';

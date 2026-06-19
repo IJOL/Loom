@@ -50,7 +50,7 @@ import {
   type PolySynthPresetsDeps,
 } from './polysynth/polysynth-presets';
 import { wireRandomizeUI } from './core/randomize-ui';
-import { wireFxUI, applyDelaySync as fxApplyDelaySync, type FxUIDeps } from './core/fx-ui';
+import { wireFxUI, type FxUIDeps } from './core/fx-ui';
 import { wireTransport, setPlaying, type TransportDeps } from './core/transport';
 import { confirmDialog } from './core/dialog';
 import { OfflineSceneRecorder } from './export/offline-recorder';
@@ -750,7 +750,6 @@ sessionHost.onStateApplied(rebuildMasterInserts);
 sessionHost.onStateApplied(rebuildSends);
 // Phase G: deferred to sessionHost.onStateApplied (lane not allocated at boot).
 // mountDrumMasterLaneKnobs(LANE_ID_DRUMS) — see boot section below.
-fxApplyDelaySync(fxUIDeps);
 // ── Scene export (real-time live-take + offline WAV) ──────────────────────
 // The button + helpers are declared BEFORE the transport block because the
 // live-take recorder (and the unified stopTransport) close over them, and

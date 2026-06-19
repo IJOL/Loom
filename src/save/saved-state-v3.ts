@@ -90,7 +90,7 @@ export function buildSavedStateV3(deps: SavedStateV3Deps): SavedStateV3 {
 export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): void {
   const {
     seq, volInput, bpmInput, swingInput, meterSel,
-    sessionHost, refreshKnobsFromSynth, renderLanes, fx, master,
+    sessionHost, refreshKnobsFromSynth, renderLanes, master,
   } = deps;
 
   if (typeof s.bpm === 'number') { seq.bpm = s.bpm; bpmInput.value = String(s.bpm); }
@@ -123,7 +123,6 @@ export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): voi
 
   refreshKnobsFromSynth();
   renderLanes();
-  fx.setBpmSync(seq.bpm);
 
   // Performance view (optional — older saves omit these). Restore the take
   // first so the view has content, then switch to the saved mode.

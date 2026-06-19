@@ -25,7 +25,8 @@ async function render(mut: (e: SamplerEngine) => void): Promise<{ L: Float32Arra
   putTone('k', ctx);
   const dest = ctx.createGain(); dest.connect(ctx.destination);
   const fx = new FxBus(ctx as unknown as AudioContext, dest);
-  fx.setReverbWet(1);
+  // Set reverb (bus B) fully wet by addressing the seeded reverb insert directly.
+  fx.getSendBus('B').inserts.list()[0]?.fx.setBaseValue('wet', 1);
   const e = new SamplerEngine(); e.setSharedFx(fx); e.setKeymap(KIT);
   mut(e);
   const v = e.createVoice(ctx as unknown as AudioContext, dest);

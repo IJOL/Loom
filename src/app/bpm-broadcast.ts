@@ -66,7 +66,6 @@ export function createBpmBroadcaster(deps: BpmBroadcasterDeps): BpmBroadcaster {
   return {
     broadcast(bpm: number) {
       deps.seq.bpm = bpm;
-      deps.fx.setBpmSync(bpm);
       // Broadcast BPM to all insert chains (send buses, per-lane, master).
       for (const send of deps.fx.sends) send.inserts.setBpm(bpm);
       for (const [, res] of deps.laneResources) res.inserts.setBpm(bpm);

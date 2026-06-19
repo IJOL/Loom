@@ -73,7 +73,7 @@ describe('SavedStateV3 persists mode + arrangement', () => {
       sessionHost: { applyLoadedSessionState: () => {} },
       lanes: { resources: new Map() },
       refreshKnobsFromSynth: () => {}, renderLanes: () => {},
-      fx: { setBpmSync: () => {} }, master: { gain: { value: 0 } },
+      fx: {}, master: { gain: { value: 0 } },
       setMode: (m: string) => { appliedMode = m; },
       setArrangement: (a: { durationSec?: number }) => { appliedArr = a; },
     } as any;
