@@ -17,14 +17,19 @@ import { velGain } from '../core/velocity-gain';
 
 const WAVE_OPTIONS = WAVETABLES.map((w, i) => ({ value: String(i), label: w.name }));
 
-/** Operating ranges for the shared modBus AudioParams (ConstantSourceNode.offset
- *  summed into each per-voice AudioParam). Native units: Hz for cutoff, Q for
- *  resonance, gain for amp — so depth=1 on a shared LFO produces the same
- *  audible swing as on a per-voice LFO bound to the same destination. */
+/** Full-knob exponential cutoff sweep in cents. The cutoff knob is normalized
+ *  0..1 → 60·220^x Hz (ratio 220 = log2(220) octaves). Cutoff modulation goes
+ *  into BiquadFilterNode.detune (cents, multiplicative) so it tracks the
+ *  normalized knob arc instead of summing raw Hz. */
+const CUTOFF_DETUNE_SPAN_CENTS = 1200 * Math.log2(220);  // ≈ 9337 ¢
+
+/** Modulation ranges for the shared modBus AudioParams. filter.cutoff →
+ *  .detune (cents); resonance → .Q (linear, slope 20: Q = 0.5 + res·20). The
+ *  binder uses (max−min) as the depth=1 peak gain. */
 function sharedParamRange(shortId: string): { min: number; max: number } {
   switch (shortId) {
-    case 'filter.cutoff':    return { min: -4000, max: 4000 };
-    case 'filter.resonance': return { min: -10,   max: 10   };
+    case 'filter.cutoff':    return { min: 0, max: CUTOFF_DETUNE_SPAN_CENTS };
+    case 'filter.resonance': return { min: 0,   max: 20   };
     case 'amp.gain':         return { min: 0,     max: 1    };
     default:                 return { min: 0,     max: 1    };
   }
@@ -89,7 +94,9 @@ class WavetableVoice implements Voice {
     // AudioParams. Shared-scope LFOs write to modBus[*].offset and the
     // contribution fans out here via Web Audio summing.
     if (modBus) {
-      modBus['filter.cutoff'].connect(this.filter.frequency);
+      // cutoff modulation → .detune (cents, exponential, tracks the knob arc);
+      // the cutoff envelope still drives .frequency below.
+      modBus['filter.cutoff'].connect(this.filter.detune);
       modBus['filter.resonance'].connect(this.filter.Q);
       modBus['amp.gain'].connect(this.ampGain.gain);
     }
@@ -117,9 +124,21 @@ class WavetableVoice implements Voice {
   getAudioParams(): Map<string, AudioParam> {
     return new Map<string, AudioParam>([
       ['amp.gain',         this.ampGain.gain],
-      ['filter.cutoff',    this.filter.frequency],
+      // cutoff → .detune (cents) so per-voice mods (the default adsr1→cutoff,
+      // or a per-voice LFO) sweep the filter exponentially, tracking the arc.
+      ['filter.cutoff',    this.filter.detune],
       ['filter.resonance', this.filter.Q],
     ]);
+  }
+
+  /** Per-voice modulation ranges (native units). Mirrors sharedParamRange so a
+   *  per-voice mod (e.g. the default adsr1→filter.cutoff) sweeps the same
+   *  amount as a shared one. Without this the binder fell back to the spec's
+   *  0..1 range — ±1 Hz / ±1 cent of modulation, effectively inaudible. */
+  getAudioParamRange(shortId: string): { min: number; max: number } | undefined {
+    if (shortId === 'filter.cutoff')    return { min: 0, max: CUTOFF_DETUNE_SPAN_CENTS };
+    if (shortId === 'filter.resonance') return { min: 0, max: 20 };
+    return undefined;
   }
 
   trigger(midi: number, time: number, options: VoiceTriggerOptions): void {

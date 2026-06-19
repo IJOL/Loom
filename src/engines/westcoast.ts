@@ -84,12 +84,18 @@ const WEST_PARAMS: EngineParamSpec[] = [
   { id: 'poly.mode',   label: 'Mode',   kind: 'discrete', min: 0, max: 1, default: 0, options: POLY_MODE_OPTIONS },
 ];
 
+/** Full-knob exponential LPG-cutoff sweep in cents. The cutoff knob is
+ *  normalized 0..1 → 60·220^x Hz (see cutoffHz). Cutoff modulation goes into
+ *  BiquadFilterNode.detune (cents, multiplicative) so it tracks the normalized
+ *  knob arc instead of summing raw Hz that would slam the gate shut. */
+const CUTOFF_DETUNE_SPAN_CENTS = 1200 * Math.log2(220);  // ≈ 9337 ¢
+
 /** Operating ranges for the shared modBus AudioParams (native units). Must
  *  agree with WestVoice.getAudioParamRange so depth=1 swings equally whether
  *  the modulator is shared or per-voice. */
 function sharedParamRange(shortId: string): { min: number; max: number } {
   switch (shortId) {
-    case 'lpg.cutoff':    return { min: -4000, max: 4000 };
+    case 'lpg.cutoff':    return { min: 0, max: CUTOFF_DETUNE_SPAN_CENTS };
     case 'lpg.resonance': return { min: -10, max: 10 };
     case 'timbre.fold':   return { min: -1, max: 1 };
     case 'amp.gain':      return { min: 0, max: 1 };
@@ -187,7 +193,8 @@ class WestVoice implements Voice {
 
     // Shared modulation bus fan-in (one connection regardless of voice count).
     if (modBus) {
-      modBus['lpg.cutoff'].connect(this.lpgFilter.frequency);
+      // cutoff modulation → .detune (cents, exponential, tracks the knob arc).
+      modBus['lpg.cutoff'].connect(this.lpgFilter.detune);
       modBus['lpg.resonance'].connect(this.lpgFilter.Q);
       modBus['amp.gain'].connect(this.ampOut.gain);
       modBus['timbre.fold'].connect(this.foldDrive.gain);
@@ -197,7 +204,8 @@ class WestVoice implements Voice {
   getAudioParams(): Map<string, AudioParam> {
     return new Map<string, AudioParam>([
       ['amp.gain',         this.ampOut.gain],
-      ['lpg.cutoff',       this.lpgFilter.frequency],
+      // cutoff → .detune (cents) so per-voice cutoff mods track the knob arc.
+      ['lpg.cutoff',       this.lpgFilter.detune],
       ['lpg.resonance',    this.lpgFilter.Q],
       ['timbre.fold',      this.foldDrive.gain],
       ['timbre.symmetry',  this.bias.offset],
@@ -209,7 +217,7 @@ class WestVoice implements Voice {
 
   getAudioParamRange(shortId: string): { min: number; max: number } | undefined {
     switch (shortId) {
-      case 'lpg.cutoff':    return { min: -4000, max: 4000 };
+      case 'lpg.cutoff':    return { min: 0, max: CUTOFF_DETUNE_SPAN_CENTS };
       case 'lpg.resonance': return { min: -10, max: 10 };
       case 'timbre.fold':   return { min: -1, max: 1 };
       case 'timbre.symmetry': return { min: -1, max: 1 };
