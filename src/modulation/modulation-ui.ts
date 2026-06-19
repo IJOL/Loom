@@ -7,7 +7,7 @@
 import type { KnobHandle } from '../core/knob';
 import { createKnob } from '../core/knob';
 import { createSelectControl } from '../core/select-control';
-import { SYNC_RATIO_MAP } from './rate-sync';
+import { SYNC_RATIO_MAP, lfoFreeRatePosToHz, lfoFreeRateHzToPos } from './rate-sync';
 import { formatParamIdForDisplay } from '../core/lane-display';
 import type { ModulationHost, ModulatorState, Waveform } from './types';
 import type { SessionState } from '../session/session';
@@ -149,14 +149,17 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
   deps.registerKnob(wave.handle);
   row.appendChild(wave.el);
 
+  // FREE rate: a 0..1 position knob with a piecewise scale (slow range gets
+  // the first half — see lfoFreeRatePosToHz). Stored as Hz in mod.rateHz; the
+  // knob maps position↔Hz and displays the rate in bpm (LFO cycles/min).
   const rate = createKnob({
     id: `${deps.laneId}.mod.${mod.id}.rate`,
     label: 'RATE',
-    min: 0.01, max: 40, step: 0.01,
-    value: mod.rateHz ?? 4,
-    defaultValue: 4,
-    onChange: (v) => { mod.rateHz = v; sync(deps); },
-    format: (v) => v < 1 ? `${v.toFixed(2)}Hz` : `${v.toFixed(1)}Hz`,
+    min: 0, max: 1, step: 0.001,
+    value: lfoFreeRateHzToPos(mod.rateHz ?? 4),
+    defaultValue: lfoFreeRateHzToPos(4),
+    onChange: (pos) => { mod.rateHz = lfoFreeRatePosToHz(pos); sync(deps); },
+    format: (pos) => `${Math.round(lfoFreeRatePosToHz(pos) * 60)} bpm`,
     ...(deps.historyDeps ? attachKnobUndo(deps.historyDeps) : {}),
   });
   deps.registerKnob(rate);
