@@ -95,10 +95,10 @@ function addInsertChainParams(
     for (const [paramId, ap] of cs.fx.getAudioParams()) {
       const key = `${prefix}-${idx}:${paramId}`;
       destMap.set(key, ap);
-      // Default range 0..1 for FX params; individual FX plugins may expose
-      // tighter ranges via getAudioParamRange (not called here — not worth the
-      // complexity until a use-case demands it).
-      rangeMap.set(key, { min: 0, max: 1 });
+      // Use the FX's declared modulation range (e.g. the Filter exposes its
+      // freq as .detune in cents → a full-knob exponential sweep). Falls back
+      // to 0..1 for params that don't declare one.
+      rangeMap.set(key, cs.fx.getAudioParamRange?.(paramId) ?? { min: 0, max: 1 });
     }
   });
 }
