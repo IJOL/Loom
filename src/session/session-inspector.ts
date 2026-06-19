@@ -555,8 +555,10 @@ export class SessionInspector {
   }
 
   /** Double (tempoMult 2) or halve (tempoMult 0.5) the open clip's perceived
-   *  tempo: time-scale its notes/loop/length/automation in one undoable gesture,
-   *  then re-render the editor (new patternTicks), the Length field, and the grid. */
+   *  tempo in one undoable gesture: *2 compresses the notes and repeats the
+   *  pattern to fill the clip (length unchanged); /2 stretches the notes and grows
+   *  the clip length. Then re-render the editor (new patternTicks), the Length
+   *  field, and the grid. */
   private applyTempoScale(tempoMult: number): void {
     if (!this.selectedClip) return;
     const lane = this.deps.state.lanes.find((l) => l.id === this.selectedClip!.laneId);
@@ -567,7 +569,7 @@ export class SessionInspector {
       // Preserve the editor octave across the rebuild (renderEditor recreates the
       // piano-roll, which resets its octave base to C4) — mirrors insp-random-notes.
       const octaveBase = this.roll?.getOctaveBase?.() ?? 60;
-      scaleClipTempo(clip, tempoMult);
+      scaleClipTempo(clip, tempoMult, ticksPerBar(this.deps.seq.meter));
       const lenEl = document.getElementById('insp-length') as HTMLInputElement | null;
       if (lenEl) lenEl.value = String(clip.lengthBars);
       this.renderEditor();
