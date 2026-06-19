@@ -2,7 +2,7 @@
 import { listPlugins, createInstance } from '../plugins/registry';
 import { applyInsertSlot, type InsertSlot } from './insert-slot';
 import type { InsertChain } from '../plugins/fx/insert-chain';
-import { createKnob } from '../core/knob';
+import { createKnob, type KnobHandle } from '../core/knob';
 
 export interface LaneInsertUIDeps {
   ctx: AudioContext;
@@ -10,10 +10,17 @@ export interface LaneInsertUIDeps {
   chain: InsertChain;
   slots: InsertSlot[];
   onChange: () => void;
+  /** When provided, continuous-param knobs are given a stable id
+   *  (`${automationIdPrefix}.fx${slotIdx}.${paramId}`) and registered
+   *  with the automation recorder so they become Performance-automation
+   *  destinations.  When absent, behaviour is identical to before. */
+  registerKnob?: (k: KnobHandle) => void;
+  automationIdPrefix?: string;
 }
 
 export function buildLaneInsertUI(deps: LaneInsertUIDeps): void {
   const { ctx, container, chain, slots, onChange } = deps;
+  const { registerKnob, automationIdPrefix } = deps;
   container.replaceChildren();
 
   chain.list().forEach((cs, idx) => {
@@ -32,13 +39,20 @@ export function buildLaneInsertUI(deps: LaneInsertUIDeps): void {
         if (spec.kind === 'continuous') {
           // createKnob takes (opts: KnobOpts): KnobHandle — no parent/get/set fields.
           // Adapt: value = get(), onChange = set(v), append handle.el to row manually.
+          const knobId = automationIdPrefix
+            ? `${automationIdPrefix}.fx${idx}.${spec.id}`
+            : undefined;
           const handle = createKnob({
+            id: knobId,
             label: spec.label,
             min: spec.min, max: spec.max,
             value: cs.fx.getBaseValue(spec.id),
             onChange: (v) => { cs.fx.setBaseValue(spec.id, v); slot.params[spec.id] = v; onChange(); },
           });
           row.appendChild(handle.el);
+          if (automationIdPrefix && registerKnob) {
+            registerKnob(handle);
+          }
         } else if (spec.kind === 'discrete' && spec.options) {
           const sel = document.createElement('select');
           sel.title = spec.label;

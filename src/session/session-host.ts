@@ -192,6 +192,9 @@ export class SessionHost {
       laneResources: this.deps.laneResources,
       saveSession: this.deps.saveSession,
       triggerForLane: this.deps.triggerForLane,
+      registerKnob: (k) => {
+        if (k.meta?.id) this.deps.automationRegistry.set(k.meta.id, k);
+      },
       addNoteLane: (engineId, notes, lengthBars, name) => this.addNoteLane(engineId, notes, lengthBars, name),
       transcribeLoop: this._transcribeLoop,
       placeChordClip: (laneId, clipIdx, clip) => {

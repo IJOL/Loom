@@ -112,6 +112,8 @@ export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void; re
       chain: deps.masterInsertChain,
       slots: getMasterSlots(),
       onChange: () => deps.saveSession?.(),
+      registerKnob: deps.registerKnob,
+      automationIdPrefix: 'fx.master',
     });
   };
 
@@ -153,6 +155,8 @@ export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void; re
       chain: bus.inserts,
       slots,
       onChange: () => deps.saveSession?.(),
+      registerKnob: deps.registerKnob,
+      automationIdPrefix: `fx.send.${bus.id}`,
     });
   };
 

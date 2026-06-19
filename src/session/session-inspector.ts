@@ -47,6 +47,10 @@ export interface InspectorDeps {
   laneResources?: LaneResourceMap;
   /** Phase H: persist the session after the user edits an insert slot. */
   saveSession?: () => void;
+  /** When provided, per-lane insert-rack continuous-param knobs are registered
+   *  as Performance-automation destinations.  Optional so test fixtures that do
+   *  not build an audio graph still compile. */
+  registerKnob?: (k: import('../core/knob').KnobHandle) => void;
   /** Host note trigger, used to audition pitches from the keyboard editor.
    *  Optional so test fixtures without an audio graph still compile. */
   triggerForLane?: (
@@ -632,6 +636,8 @@ export class SessionInspector {
       chain: laneRes.inserts,
       slots: sessionLane.inserts,
       onChange: () => this.deps.saveSession?.(),
+      registerKnob: this.deps.registerKnob,
+      automationIdPrefix: this.deps.registerKnob ? `lane.${laneId}` : undefined,
     });
     host.appendChild(insertsPanel);
   }
