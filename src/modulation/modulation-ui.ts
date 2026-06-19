@@ -159,7 +159,11 @@ function renderLfoConfig(mod: ModulatorState, deps: ModulationUIDeps): HTMLEleme
     value: lfoFreeRateHzToPos(mod.rateHz ?? 4),
     defaultValue: lfoFreeRateHzToPos(4),
     onChange: (pos) => { mod.rateHz = lfoFreeRatePosToHz(pos); sync(deps); },
-    format: (pos) => `${Math.round(lfoFreeRatePosToHz(pos) * 60)} bpm`,
+    format: (pos) => {
+      const b = lfoFreeRatePosToHz(pos) * 60;
+      // bpm with adaptive precision so ultra-slow rates aren't shown as "0 bpm".
+      return b < 1 ? `${b.toFixed(2)} bpm` : b < 10 ? `${b.toFixed(1)} bpm` : `${Math.round(b)} bpm`;
+    },
     ...(deps.historyDeps ? attachKnobUndo(deps.historyDeps) : {}),
   });
   deps.registerKnob(rate);

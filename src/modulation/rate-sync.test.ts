@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   effectiveRateHz, SYNC_RATIO_MAP,
   lfoFreeRatePosToHz, lfoFreeRateHzToPos,
-  FREE_RATE_MID_HZ, FREE_RATE_MAX_HZ,
+  FREE_RATE_MAX_HZ,
   parseSyncRatioToBars,
 } from './rate-sync';
 import type { ModulatorState } from './types';
@@ -49,45 +49,46 @@ describe('effectiveRateHz — unknown ratio fallback', () => {
   });
 });
 
-describe('FREE rate knob — piecewise scale (slow gets the first half)', () => {
+describe('FREE rate knob — logarithmic scale (slow dominates the travel)', () => {
   const bpm = (hz: number) => hz * 60;
 
-  it('50% of the knob = 240 bpm (4 Hz) — the breakpoint', () => {
-    expect(lfoFreeRatePosToHz(0.5)).toBeCloseTo(FREE_RATE_MID_HZ, 6);
-    expect(bpm(lfoFreeRatePosToHz(0.5))).toBeCloseTo(240, 6);
+  it('the first quarter of the knob stays well under 2 bpm', () => {
+    expect(bpm(lfoFreeRatePosToHz(0.25))).toBeLessThan(2);
   });
 
-  it('25% (quarter turn) = 120 bpm (2 Hz) — linear in the slow half', () => {
-    expect(bpm(lfoFreeRatePosToHz(0.25))).toBeCloseTo(120, 6);
+  it('0% is ~0.05 bpm (a very slow, ~20-minute cycle — not stopped)', () => {
+    expect(bpm(lfoFreeRatePosToHz(0))).toBeCloseTo(0.05, 4);
   });
 
   it('100% = 1200 bpm (20 Hz) — the top', () => {
     expect(lfoFreeRatePosToHz(1)).toBeCloseTo(FREE_RATE_MAX_HZ, 6);
-    expect(bpm(lfoFreeRatePosToHz(1))).toBeCloseTo(1200, 6);
+    expect(bpm(lfoFreeRatePosToHz(1))).toBeCloseTo(1200, 3);
   });
 
-  it('the slow half (0..50%) is linear in bpm', () => {
-    // midpoint of the slow half = half the breakpoint rate
-    expect(lfoFreeRatePosToHz(0.25)).toBeCloseTo(FREE_RATE_MID_HZ / 2, 6);
+  it('is monotonically increasing across the travel', () => {
+    let prev = -1;
+    for (let p = 0; p <= 1.00001; p += 0.05) {
+      const hz = lfoFreeRatePosToHz(p);
+      expect(hz).toBeGreaterThan(prev);
+      prev = hz;
+    }
   });
 
-  it('the fast half (50..100%) is exponential, not linear', () => {
-    // exponential midpoint = geometric mean of 4 and 20 ≈ 8.94 Hz, well below
-    // the linear midpoint (12 Hz).
-    const mid = lfoFreeRatePosToHz(0.75);
-    expect(mid).toBeCloseTo(Math.sqrt(FREE_RATE_MID_HZ * FREE_RATE_MAX_HZ), 4);
-    expect(mid).toBeLessThan((FREE_RATE_MID_HZ + FREE_RATE_MAX_HZ) / 2);
+  it('is logarithmic: equal knob steps multiply the rate by a constant factor', () => {
+    const a = lfoFreeRatePosToHz(0.25) / lfoFreeRatePosToHz(0.0);
+    const b = lfoFreeRatePosToHz(0.50) / lfoFreeRatePosToHz(0.25);
+    expect(b).toBeCloseTo(a, 4);
   });
 
   it('round-trips Hz → pos → Hz across the range', () => {
-    for (const hz of [0.5, 1, 2, 4, 8, 12, 20]) {
+    for (const hz of [0.01, 0.1, 1, 4, 10, 20]) {
       expect(lfoFreeRatePosToHz(lfoFreeRateHzToPos(hz))).toBeCloseTo(hz, 4);
     }
   });
 
   it('clamps out-of-range rates to the knob ends', () => {
-    expect(lfoFreeRateHzToPos(40)).toBe(1);          // above the 20 Hz top
-    expect(lfoFreeRateHzToPos(0)).toBeLessThan(0.01); // floored near 0% (min ~0.02 Hz)
+    expect(lfoFreeRateHzToPos(40)).toBe(1);   // above the 20 Hz top
+    expect(lfoFreeRateHzToPos(0)).toBe(0);    // floored at 0%
   });
 });
 
