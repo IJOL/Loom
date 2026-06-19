@@ -91,6 +91,13 @@ function readDotPath(obj: Record<string, unknown>, path: string): number {
   return 0;
 }
 
+/** Full-knob exponential sweep of the cutoff in cents. The cutoff knob is
+ *  normalized 0..1 and maps to 60·220^x Hz (60..13200, ratio 220 = log2(220)
+ *  octaves). Cutoff modulation targets BiquadFilterNode.detune (cents,
+ *  multiplicative) so a bipolar LFO at depth d moves the cutoff between
+ *  base·220^(±d) — exactly the normalized ±d the amber knob arc draws. */
+const CUTOFF_DETUNE_SPAN_CENTS = 1200 * Math.log2(220);  // ≈ 9337 ¢
+
 /** Operating ranges for the modBus AudioParams (ConstantSourceNode.offset
  *  summed into each per-voice AudioParam). Must agree with the per-voice
  *  ranges declared on SubtractiveVoice.getAudioParamRange so depth=1
@@ -98,7 +105,7 @@ function readDotPath(obj: Record<string, unknown>, path: string): number {
  *  per-voice. */
 function sharedParamRange(shortId: string): { min: number; max: number } {
   switch (shortId) {
-    case 'filter.cutoff':    return { min: -4000, max: 4000 };
+    case 'filter.cutoff':    return { min: 0, max: CUTOFF_DETUNE_SPAN_CENTS };
     case 'filter.resonance': return { min: -10,   max: 10   };
     case 'amp.gain':         return { min: 0,     max: 1    };
     default:                 return { min: 0,     max: 1    };
@@ -176,9 +183,11 @@ class SubtractiveVoice implements Voice {
    *  the modulator binder so depth=1.0 produces a full-swing modulation. */
   getAudioParamRange(shortId: string): { min: number; max: number } | undefined {
     switch (shortId) {
-      // filter.frequency holds 0; ConstantSources sum Hz into it. ±4 kHz is
-      // a dramatic but musical sweep on a typical 1-3 kHz base cutoff.
-      case 'filter.cutoff':    return { min: -4000, max: 4000 };
+      // cutoff modulation → BiquadFilterNode.detune (cents, exponential). A
+      // full-knob sweep is log2(220) octaves; depth=1 bipolar → ±that span, so
+      // the audio tracks the normalized knob arc instead of summing raw Hz
+      // (which slammed the filter shut on a low base).
+      case 'filter.cutoff':    return { min: 0, max: CUTOFF_DETUNE_SPAN_CENTS };
       // filter.Q. Native ~0.5..22.5; depth=1 with bipolar LFO sweeps ±10 Q.
       case 'filter.resonance': return { min: -10,   max: 10   };
       // Hz of envelope sweep contribution (envScaler.gain). ±8 kHz lets the

@@ -266,8 +266,12 @@ export class PolySynth {
     filter.Q.value = 0.5 + p.filter.resonance * 22;
     // Wire the shared modulation bus → this voice's filter/amp AudioParams.
     // External shared LFOs write to modBus['filter.cutoff'].offset and the
-    // contribution fans out here via Web Audio summing.
-    this.modBus['filter.cutoff'].connect(filter.frequency);
+    // contribution fans out here via Web Audio summing. Cutoff modulation goes
+    // into .detune (cents, multiplicative/exponential) so a bipolar LFO at
+    // depth d moves the cutoff by base·2^(±cents/1200) — i.e. proportionally,
+    // tracking the normalized knob arc instead of summing raw Hz that would
+    // drive the frequency negative and slam the filter shut on a low base.
+    this.modBus['filter.cutoff'].connect(filter.detune);
     this.modBus['filter.resonance'].connect(filter.Q);
     mix.connect(filter);
     drivePre.connect(filter);
@@ -355,7 +359,9 @@ export class PolySynth {
     // into these params via Web Audio's per-AudioParam summing.
     if (onVoice) onVoice({
       amp: amp.gain,
-      cutoff: filter.frequency,
+      // cutoff modulation → .detune (cents, exponential) so per-voice mods
+      // track the normalized knob arc; the envelope/keyTrack drive .frequency.
+      cutoff: filter.detune,
       resonance: filter.Q,
       pitch: osc1.detune,
       pitch2: osc2.detune,
