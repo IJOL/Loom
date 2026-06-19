@@ -1,0 +1,46 @@
+{
+  "id": "rolandtr505",
+  "name": "Roland TR 505",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "rolandtr505/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "rolandtr505/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "rolandtr505/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "rolandtr505/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "rolandtr505/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "rolandtr505/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "rolandtr505/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "rolandtr505/ride.wav"
+    }
+  ]
+}

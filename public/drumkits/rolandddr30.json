@@ -1,0 +1,21 @@
+{
+  "id": "rolandddr30",
+  "name": "Roland DDR 30",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "rolandddr30/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "rolandddr30/snare.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "rolandddr30/tom.wav"
+    }
+  ]
+}

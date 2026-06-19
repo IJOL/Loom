@@ -1,0 +1,46 @@
+{
+  "id": "rolandtr707",
+  "name": "Roland TR 707",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "rolandtr707/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "rolandtr707/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "rolandtr707/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "rolandtr707/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "rolandtr707/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "rolandtr707/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "rolandtr707/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "rolandtr707/ride.wav"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "id": "emudrumulator",
+  "name": "Emu Drumulator",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "emudrumulator/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "emudrumulator/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "emudrumulator/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "emudrumulator/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "emudrumulator/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "emudrumulator/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "emudrumulator/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "emudrumulator/ride.wav"
+    }
+  ]
+}

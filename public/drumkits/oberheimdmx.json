@@ -1,0 +1,46 @@
+{
+  "id": "oberheimdmx",
+  "name": "Oberheim DMX",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "oberheimdmx/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "oberheimdmx/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "oberheimdmx/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "oberheimdmx/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "oberheimdmx/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "oberheimdmx/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "oberheimdmx/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "oberheimdmx/ride.wav"
+    }
+  ]
+}

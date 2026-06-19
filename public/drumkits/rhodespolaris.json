@@ -1,0 +1,16 @@
+{
+  "id": "rhodespolaris",
+  "name": "Rhodes Polaris",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "rhodespolaris/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "rhodespolaris/snare.wav"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "id": "casiorz1",
+  "name": "Casio RZ 1",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "casiorz1/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "casiorz1/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "casiorz1/closedHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "casiorz1/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "casiorz1/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "casiorz1/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "casiorz1/ride.wav"
+    }
+  ]
+}

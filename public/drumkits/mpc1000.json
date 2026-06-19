@@ -1,0 +1,31 @@
+{
+  "id": "mpc1000",
+  "name": "MPC 1000",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "mpc1000/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "mpc1000/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "mpc1000/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "mpc1000/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "mpc1000/clap.wav"
+    }
+  ]
+}

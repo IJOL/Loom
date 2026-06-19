@@ -1,0 +1,46 @@
+{
+  "id": "rolandtr626",
+  "name": "Roland TR 626",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "rolandtr626/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "rolandtr626/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "rolandtr626/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "rolandtr626/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "rolandtr626/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "rolandtr626/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "rolandtr626/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "rolandtr626/ride.wav"
+    }
+  ]
+}

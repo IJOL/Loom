@@ -1,0 +1,36 @@
+{
+  "id": "bossdr110",
+  "name": "Boss DR 110",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "bossdr110/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "bossdr110/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "bossdr110/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "bossdr110/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "bossdr110/clap.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "bossdr110/ride.wav"
+    }
+  ]
+}

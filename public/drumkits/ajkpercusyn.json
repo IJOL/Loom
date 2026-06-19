@@ -1,0 +1,26 @@
+{
+  "id": "ajkpercusyn",
+  "name": "AJKPercusyn",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "ajkpercusyn/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "ajkpercusyn/snare.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "ajkpercusyn/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "ajkpercusyn/cowbell.wav"
+    }
+  ]
+}

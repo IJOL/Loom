@@ -1,0 +1,21 @@
+{
+  "id": "casiovl1",
+  "name": "Casio VL 1",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "casiovl1/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "casiovl1/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "casiovl1/closedHat.wav"
+    }
+  ]
+}

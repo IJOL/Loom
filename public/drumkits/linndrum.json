@@ -1,0 +1,46 @@
+{
+  "id": "linndrum",
+  "name": "Linn Drum",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "linndrum/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "linndrum/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "linndrum/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "linndrum/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "linndrum/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "linndrum/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "linndrum/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "linndrum/ride.wav"
+    }
+  ]
+}

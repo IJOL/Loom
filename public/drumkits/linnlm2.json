@@ -1,0 +1,46 @@
+{
+  "id": "linnlm2",
+  "name": "Linn LM 2",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "linnlm2/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "linnlm2/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "linnlm2/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "linnlm2/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "linnlm2/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "linnlm2/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "linnlm2/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "linnlm2/ride.wav"
+    }
+  ]
+}

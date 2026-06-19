@@ -10,5 +10,261 @@
   {
     "id": "dirt",
     "name": "Dirt (samples)"
+  },
+  {
+    "id": "ajkpercusyn",
+    "name": "AJKPercusyn"
+  },
+  {
+    "id": "akailinn",
+    "name": "Akai Linn"
+  },
+  {
+    "id": "akaimpc60",
+    "name": "Akai MPC 60"
+  },
+  {
+    "id": "akaixr10",
+    "name": "Akai XR 10"
+  },
+  {
+    "id": "alesishr16",
+    "name": "Alesis HR 16"
+  },
+  {
+    "id": "alesissr16",
+    "name": "Alesis SR 16"
+  },
+  {
+    "id": "bossdr110",
+    "name": "Boss DR 110"
+  },
+  {
+    "id": "bossdr220",
+    "name": "Boss DR 220"
+  },
+  {
+    "id": "bossdr55",
+    "name": "Boss DR 55"
+  },
+  {
+    "id": "bossdr550",
+    "name": "Boss DR 550"
+  },
+  {
+    "id": "casiorz1",
+    "name": "Casio RZ 1"
+  },
+  {
+    "id": "casiosk1",
+    "name": "Casio SK 1"
+  },
+  {
+    "id": "casiovl1",
+    "name": "Casio VL 1"
+  },
+  {
+    "id": "doepferms404",
+    "name": "Doepfer MS 404"
+  },
+  {
+    "id": "emudrumulator",
+    "name": "Emu Drumulator"
+  },
+  {
+    "id": "emusp12",
+    "name": "Emu SP 12"
+  },
+  {
+    "id": "korgddm110",
+    "name": "Korg DDM 110"
+  },
+  {
+    "id": "korgkpr77",
+    "name": "Korg KPR 77"
+  },
+  {
+    "id": "korgkr55",
+    "name": "Korg KR 55"
+  },
+  {
+    "id": "korgkrz",
+    "name": "Korg KRZ"
+  },
+  {
+    "id": "korgm1",
+    "name": "Korg M 1"
+  },
+  {
+    "id": "korgminipops",
+    "name": "Korg Minipops"
+  },
+  {
+    "id": "korgt3",
+    "name": "Korg T 3"
+  },
+  {
+    "id": "linn9000",
+    "name": "Linn 9000"
+  },
+  {
+    "id": "linndrum",
+    "name": "Linn Drum"
+  },
+  {
+    "id": "linnlm1",
+    "name": "Linn LM 1"
+  },
+  {
+    "id": "linnlm2",
+    "name": "Linn LM 2"
+  },
+  {
+    "id": "mfb512",
+    "name": "MFB 512"
+  },
+  {
+    "id": "mpc1000",
+    "name": "MPC 1000"
+  },
+  {
+    "id": "moogconcertmatemg1",
+    "name": "Moog Concert Mate MG 1"
+  },
+  {
+    "id": "oberheimdmx",
+    "name": "Oberheim DMX"
+  },
+  {
+    "id": "rhodespolaris",
+    "name": "Rhodes Polaris"
+  },
+  {
+    "id": "rhythmace",
+    "name": "Rhythm Ace"
+  },
+  {
+    "id": "rolandcompurhythm1000",
+    "name": "Roland Compurhythm 1000"
+  },
+  {
+    "id": "rolandcompurhythm78",
+    "name": "Roland Compurhythm 78"
+  },
+  {
+    "id": "rolandcompurhythm8000",
+    "name": "Roland Compurhythm 8000"
+  },
+  {
+    "id": "rolandd110",
+    "name": "Roland D 110"
+  },
+  {
+    "id": "rolandd70",
+    "name": "Roland D 70"
+  },
+  {
+    "id": "rolandddr30",
+    "name": "Roland DDR 30"
+  },
+  {
+    "id": "rolandjd990",
+    "name": "Roland JD 990"
+  },
+  {
+    "id": "rolandmc303",
+    "name": "Roland MC 303"
+  },
+  {
+    "id": "rolandmt32",
+    "name": "Roland MT 32"
+  },
+  {
+    "id": "rolandr8",
+    "name": "Roland R 8"
+  },
+  {
+    "id": "rolands50",
+    "name": "Roland S 50"
+  },
+  {
+    "id": "rolandsystem100",
+    "name": "Roland System 100"
+  },
+  {
+    "id": "rolandtr505",
+    "name": "Roland TR 505"
+  },
+  {
+    "id": "rolandtr606",
+    "name": "Roland TR 606"
+  },
+  {
+    "id": "rolandtr626",
+    "name": "Roland TR 626"
+  },
+  {
+    "id": "rolandtr707",
+    "name": "Roland TR 707"
+  },
+  {
+    "id": "rolandtr808",
+    "name": "Roland TR 808"
+  },
+  {
+    "id": "rolandtr909",
+    "name": "Roland TR 909"
+  },
+  {
+    "id": "sakatadpm48",
+    "name": "Sakata DPM 48"
+  },
+  {
+    "id": "sequentialcircuitsdrumtracks",
+    "name": "Sequential Circuits Drumtracks"
+  },
+  {
+    "id": "sequentialcircuitstom",
+    "name": "Sequential Circuits Tom"
+  },
+  {
+    "id": "simmonssds5",
+    "name": "Simmons SDS 5"
+  },
+  {
+    "id": "soundmastersr88",
+    "name": "Soundmasters R 88"
+  },
+  {
+    "id": "univoxmicrorhythmer12",
+    "name": "Univox Micro Rhythmer 12"
+  },
+  {
+    "id": "viscospacedrum",
+    "name": "Visco Space Drum"
+  },
+  {
+    "id": "xdrumlm8953",
+    "name": "Xdrum LM 8953"
+  },
+  {
+    "id": "yamaharm50",
+    "name": "Yamaha RM 50"
+  },
+  {
+    "id": "yamaharx21",
+    "name": "Yamaha RX 21"
+  },
+  {
+    "id": "yamaharx5",
+    "name": "Yamaha RX 5"
+  },
+  {
+    "id": "yamahary30",
+    "name": "Yamaha RY 30"
+  },
+  {
+    "id": "yamahatg33",
+    "name": "Yamaha TG 33"
   }
 ]

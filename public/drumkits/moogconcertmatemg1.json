@@ -1,0 +1,16 @@
+{
+  "id": "moogconcertmatemg1",
+  "name": "Moog Concert Mate MG 1",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "moogconcertmatemg1/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "moogconcertmatemg1/snare.wav"
+    }
+  ]
+}

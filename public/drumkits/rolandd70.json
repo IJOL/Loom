@@ -1,0 +1,46 @@
+{
+  "id": "rolandd70",
+  "name": "Roland D 70",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "rolandd70/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "rolandd70/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "rolandd70/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "rolandd70/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "rolandd70/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "rolandd70/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "rolandd70/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "rolandd70/ride.wav"
+    }
+  ]
+}

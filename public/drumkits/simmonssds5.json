@@ -1,0 +1,41 @@
+{
+  "id": "simmonssds5",
+  "name": "Simmons SDS 5",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "simmonssds5/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "simmonssds5/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "simmonssds5/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "simmonssds5/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "simmonssds5/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "simmonssds5/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "simmonssds5/cowbell.wav"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "id": "akaimpc60",
+  "name": "Akai MPC 60",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "akaimpc60/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "akaimpc60/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "akaimpc60/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "akaimpc60/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "akaimpc60/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "akaimpc60/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "akaimpc60/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "akaimpc60/ride.wav"
+    }
+  ]
+}

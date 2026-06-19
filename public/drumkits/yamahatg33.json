@@ -1,0 +1,46 @@
+{
+  "id": "yamahatg33",
+  "name": "Yamaha TG 33",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "yamahatg33/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "yamahatg33/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "yamahatg33/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "yamahatg33/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "yamahatg33/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "yamahatg33/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "yamahatg33/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "yamahatg33/ride.wav"
+    }
+  ]
+}

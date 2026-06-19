@@ -1,0 +1,46 @@
+{
+  "id": "rolandcompurhythm1000",
+  "name": "Roland Compurhythm 1000",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "rolandcompurhythm1000/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "rolandcompurhythm1000/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "rolandcompurhythm1000/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "rolandcompurhythm1000/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "rolandcompurhythm1000/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "rolandcompurhythm1000/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "rolandcompurhythm1000/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "rolandcompurhythm1000/ride.wav"
+    }
+  ]
+}

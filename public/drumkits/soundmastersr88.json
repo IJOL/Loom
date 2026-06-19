@@ -1,0 +1,31 @@
+{
+  "id": "soundmastersr88",
+  "name": "Soundmasters R 88",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "soundmastersr88/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "soundmastersr88/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "soundmastersr88/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "soundmastersr88/openHat.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "soundmastersr88/ride.wav"
+    }
+  ]
+}

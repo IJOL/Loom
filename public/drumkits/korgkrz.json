@@ -1,0 +1,36 @@
+{
+  "id": "korgkrz",
+  "name": "Korg KRZ",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "korgkrz/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "korgkrz/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "korgkrz/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "korgkrz/openHat.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "korgkrz/tom.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "korgkrz/ride.wav"
+    }
+  ]
+}

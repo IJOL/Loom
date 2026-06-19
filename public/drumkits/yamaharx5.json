@@ -1,0 +1,41 @@
+{
+  "id": "yamaharx5",
+  "name": "Yamaha RX 5",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "yamaharx5/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "yamaharx5/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "yamaharx5/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "yamaharx5/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "yamaharx5/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "yamaharx5/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "yamaharx5/cowbell.wav"
+    }
+  ]
+}

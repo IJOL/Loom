@@ -1,0 +1,46 @@
+{
+  "id": "linn9000",
+  "name": "Linn 9000",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "linn9000/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "linn9000/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "linn9000/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "linn9000/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "linn9000/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "linn9000/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "linn9000/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "linn9000/ride.wav"
+    }
+  ]
+}

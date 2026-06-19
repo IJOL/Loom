@@ -1,0 +1,46 @@
+{
+  "id": "bossdr550",
+  "name": "Boss DR 550",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "bossdr550/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "bossdr550/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "bossdr550/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "bossdr550/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "bossdr550/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "bossdr550/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "bossdr550/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "bossdr550/ride.wav"
+    }
+  ]
+}

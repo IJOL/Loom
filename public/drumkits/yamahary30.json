@@ -1,0 +1,46 @@
+{
+  "id": "yamahary30",
+  "name": "Yamaha RY 30",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "yamahary30/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "yamahary30/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "yamahary30/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "yamahary30/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "yamahary30/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "yamahary30/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "yamahary30/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "yamahary30/ride.wav"
+    }
+  ]
+}

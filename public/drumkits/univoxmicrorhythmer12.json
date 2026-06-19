@@ -1,0 +1,26 @@
+{
+  "id": "univoxmicrorhythmer12",
+  "name": "Univox Micro Rhythmer 12",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "univoxmicrorhythmer12/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "univoxmicrorhythmer12/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "univoxmicrorhythmer12/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "univoxmicrorhythmer12/openHat.wav"
+    }
+  ]
+}

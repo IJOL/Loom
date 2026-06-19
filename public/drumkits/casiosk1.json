@@ -1,0 +1,31 @@
+{
+  "id": "casiosk1",
+  "name": "Casio SK 1",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "casiosk1/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "casiosk1/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "casiosk1/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "casiosk1/openHat.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "casiosk1/tom.wav"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "id": "rolandsystem100",
+  "name": "Roland System 100",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "rolandsystem100/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "rolandsystem100/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "rolandsystem100/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "rolandsystem100/openHat.wav"
+    }
+  ]
+}

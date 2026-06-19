@@ -1,0 +1,41 @@
+{
+  "id": "alesissr16",
+  "name": "Alesis SR 16",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "alesissr16/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "alesissr16/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "alesissr16/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "alesissr16/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "alesissr16/clap.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "alesissr16/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "alesissr16/ride.wav"
+    }
+  ]
+}

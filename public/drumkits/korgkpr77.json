@@ -1,0 +1,31 @@
+{
+  "id": "korgkpr77",
+  "name": "Korg KPR 77",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "korgkpr77/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "korgkpr77/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "korgkpr77/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "korgkpr77/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "korgkpr77/clap.wav"
+    }
+  ]
+}

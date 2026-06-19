@@ -1,0 +1,41 @@
+{
+  "id": "sequentialcircuitstom",
+  "name": "Sequential Circuits Tom",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "sequentialcircuitstom/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "sequentialcircuitstom/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "sequentialcircuitstom/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "sequentialcircuitstom/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "sequentialcircuitstom/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "sequentialcircuitstom/tom.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "sequentialcircuitstom/ride.wav"
+    }
+  ]
+}

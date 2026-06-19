@@ -1,0 +1,41 @@
+{
+  "id": "mfb512",
+  "name": "MFB 512",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "mfb512/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "mfb512/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "mfb512/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "mfb512/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "mfb512/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "mfb512/tom.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "mfb512/ride.wav"
+    }
+  ]
+}

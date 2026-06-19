@@ -1,0 +1,41 @@
+{
+  "id": "viscospacedrum",
+  "name": "Visco Space Drum",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "viscospacedrum/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "viscospacedrum/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "viscospacedrum/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "viscospacedrum/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "viscospacedrum/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "viscospacedrum/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "viscospacedrum/cowbell.wav"
+    }
+  ]
+}

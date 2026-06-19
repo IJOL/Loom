@@ -1,0 +1,41 @@
+{
+  "id": "yamaharx21",
+  "name": "Yamaha RX 21",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "yamaharx21/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "yamaharx21/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "yamaharx21/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "yamaharx21/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "yamaharx21/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "yamaharx21/tom.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "yamaharx21/ride.wav"
+    }
+  ]
+}

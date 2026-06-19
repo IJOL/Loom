@@ -1,0 +1,46 @@
+{
+  "id": "rolands50",
+  "name": "Roland S 50",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "rolands50/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "rolands50/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "rolands50/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "rolands50/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "rolands50/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "rolands50/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "rolands50/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "rolands50/ride.wav"
+    }
+  ]
+}

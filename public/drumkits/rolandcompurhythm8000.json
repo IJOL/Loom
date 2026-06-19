@@ -1,0 +1,46 @@
+{
+  "id": "rolandcompurhythm8000",
+  "name": "Roland Compurhythm 8000",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "rolandcompurhythm8000/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "rolandcompurhythm8000/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "rolandcompurhythm8000/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "rolandcompurhythm8000/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "rolandcompurhythm8000/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "rolandcompurhythm8000/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "rolandcompurhythm8000/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "rolandcompurhythm8000/ride.wav"
+    }
+  ]
+}

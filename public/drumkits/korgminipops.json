@@ -1,0 +1,26 @@
+{
+  "id": "korgminipops",
+  "name": "Korg Minipops",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "korgminipops/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "korgminipops/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "korgminipops/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "korgminipops/openHat.wav"
+    }
+  ]
+}

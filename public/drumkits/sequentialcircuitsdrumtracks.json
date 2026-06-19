@@ -1,0 +1,46 @@
+{
+  "id": "sequentialcircuitsdrumtracks",
+  "name": "Sequential Circuits Drumtracks",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "sequentialcircuitsdrumtracks/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "sequentialcircuitsdrumtracks/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "sequentialcircuitsdrumtracks/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "sequentialcircuitsdrumtracks/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "sequentialcircuitsdrumtracks/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "sequentialcircuitsdrumtracks/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "sequentialcircuitsdrumtracks/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "sequentialcircuitsdrumtracks/ride.wav"
+    }
+  ]
+}

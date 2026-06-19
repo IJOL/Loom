@@ -1,0 +1,41 @@
+{
+  "id": "bossdr220",
+  "name": "Boss DR 220",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "bossdr220/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "bossdr220/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "bossdr220/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "bossdr220/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "bossdr220/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "bossdr220/tom.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "bossdr220/ride.wav"
+    }
+  ]
+}

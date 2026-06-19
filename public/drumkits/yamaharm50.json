@@ -1,0 +1,46 @@
+{
+  "id": "yamaharm50",
+  "name": "Yamaha RM 50",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "yamaharm50/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "yamaharm50/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "yamaharm50/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "yamaharm50/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "yamaharm50/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "yamaharm50/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "yamaharm50/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "yamaharm50/ride.wav"
+    }
+  ]
+}

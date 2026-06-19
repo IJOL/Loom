@@ -1,0 +1,46 @@
+{
+  "id": "korgkr55",
+  "name": "Korg KR 55",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "korgkr55/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "korgkr55/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "korgkr55/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "korgkr55/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "korgkr55/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "korgkr55/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "korgkr55/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "korgkr55/ride.wav"
+    }
+  ]
+}

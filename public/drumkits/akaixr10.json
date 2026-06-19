@@ -1,0 +1,46 @@
+{
+  "id": "akaixr10",
+  "name": "Akai XR 10",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "akaixr10/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "akaixr10/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "akaixr10/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "akaixr10/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "akaixr10/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "akaixr10/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "akaixr10/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "akaixr10/ride.wav"
+    }
+  ]
+}

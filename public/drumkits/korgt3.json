@@ -1,0 +1,36 @@
+{
+  "id": "korgt3",
+  "name": "Korg T 3",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "korgt3/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "korgt3/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "korgt3/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "korgt3/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "korgt3/clap.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "korgt3/cowbell.wav"
+    }
+  ]
+}

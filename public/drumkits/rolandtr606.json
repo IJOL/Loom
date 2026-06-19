@@ -1,0 +1,36 @@
+{
+  "id": "rolandtr606",
+  "name": "Roland TR 606",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "rolandtr606/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "rolandtr606/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "rolandtr606/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "rolandtr606/openHat.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "rolandtr606/tom.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "rolandtr606/ride.wav"
+    }
+  ]
+}

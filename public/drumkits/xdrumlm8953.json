@@ -1,0 +1,46 @@
+{
+  "id": "xdrumlm8953",
+  "name": "Xdrum LM 8953",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "xdrumlm8953/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "xdrumlm8953/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "xdrumlm8953/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "xdrumlm8953/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "xdrumlm8953/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "xdrumlm8953/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "xdrumlm8953/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "xdrumlm8953/ride.wav"
+    }
+  ]
+}

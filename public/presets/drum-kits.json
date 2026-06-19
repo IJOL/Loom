@@ -1,20 +1,484 @@
 {
   "presets": [
-    { "name": "KIT Standard",      "group": "GM",      "kind": "synth",  "kitId": "909" },
-    { "name": "KIT Room",          "group": "GM",      "kind": "synth",  "kitId": "linn" },
-    { "name": "KIT Power",         "group": "GM",      "kind": "synth",  "kitId": "909" },
-    { "name": "KIT Electronic",    "group": "GM",      "kind": "synth",  "kitId": "606" },
-    { "name": "KIT TR-808",        "group": "GM",      "kind": "synth",  "kitId": "808" },
-    { "name": "KIT Jazz",          "group": "GM",      "kind": "synth",  "kitId": "78" },
-    { "name": "KIT Brush",         "group": "GM",      "kind": "synth",  "kitId": "78" },
-    { "name": "KIT Orchestra",     "group": "GM",      "kind": "synth",  "kitId": "linn" },
-    { "name": "TR-909",            "group": "Synth",   "kind": "synth",  "kitId": "909" },
-    { "name": "TR-808",            "group": "Synth",   "kind": "synth",  "kitId": "808" },
-    { "name": "TR-606",            "group": "Synth",   "kind": "synth",  "kitId": "606" },
-    { "name": "CR-78",             "group": "Synth",   "kind": "synth",  "kitId": "78" },
-    { "name": "LinnDrum",          "group": "Synth",   "kind": "synth",  "kitId": "linn" },
-    { "name": "TR-808 (samples)",  "group": "Samples", "kind": "sample", "drumkitId": "tr808" },
-    { "name": "Acoustic (samples)","group": "Samples", "kind": "sample", "drumkitId": "acoustic" },
-    { "name": "Dirt (samples)",    "group": "Samples", "kind": "sample", "drumkitId": "dirt" }
+    {
+      "name": "KIT Standard",
+      "group": "GM",
+      "kind": "synth",
+      "kitId": "909"
+    },
+    {
+      "name": "KIT Room",
+      "group": "GM",
+      "kind": "synth",
+      "kitId": "linn"
+    },
+    {
+      "name": "KIT Power",
+      "group": "GM",
+      "kind": "synth",
+      "kitId": "909"
+    },
+    {
+      "name": "KIT Electronic",
+      "group": "GM",
+      "kind": "synth",
+      "kitId": "606"
+    },
+    {
+      "name": "KIT TR-808",
+      "group": "GM",
+      "kind": "synth",
+      "kitId": "808"
+    },
+    {
+      "name": "KIT Jazz",
+      "group": "GM",
+      "kind": "synth",
+      "kitId": "78"
+    },
+    {
+      "name": "KIT Brush",
+      "group": "GM",
+      "kind": "synth",
+      "kitId": "78"
+    },
+    {
+      "name": "KIT Orchestra",
+      "group": "GM",
+      "kind": "synth",
+      "kitId": "linn"
+    },
+    {
+      "name": "TR-909",
+      "group": "Synth",
+      "kind": "synth",
+      "kitId": "909"
+    },
+    {
+      "name": "TR-808",
+      "group": "Synth",
+      "kind": "synth",
+      "kitId": "808"
+    },
+    {
+      "name": "TR-606",
+      "group": "Synth",
+      "kind": "synth",
+      "kitId": "606"
+    },
+    {
+      "name": "CR-78",
+      "group": "Synth",
+      "kind": "synth",
+      "kitId": "78"
+    },
+    {
+      "name": "LinnDrum",
+      "group": "Synth",
+      "kind": "synth",
+      "kitId": "linn"
+    },
+    {
+      "name": "TR-808 (samples)",
+      "group": "Samples",
+      "kind": "sample",
+      "drumkitId": "tr808"
+    },
+    {
+      "name": "Acoustic (samples)",
+      "group": "Samples",
+      "kind": "sample",
+      "drumkitId": "acoustic"
+    },
+    {
+      "name": "Dirt (samples)",
+      "group": "Samples",
+      "kind": "sample",
+      "drumkitId": "dirt"
+    },
+    {
+      "name": "AJKPercusyn",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "ajkpercusyn"
+    },
+    {
+      "name": "Akai Linn",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "akailinn"
+    },
+    {
+      "name": "Akai MPC 60",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "akaimpc60"
+    },
+    {
+      "name": "Akai XR 10",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "akaixr10"
+    },
+    {
+      "name": "Alesis HR 16",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "alesishr16"
+    },
+    {
+      "name": "Alesis SR 16",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "alesissr16"
+    },
+    {
+      "name": "Boss DR 110",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "bossdr110"
+    },
+    {
+      "name": "Boss DR 220",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "bossdr220"
+    },
+    {
+      "name": "Boss DR 55",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "bossdr55"
+    },
+    {
+      "name": "Boss DR 550",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "bossdr550"
+    },
+    {
+      "name": "Casio RZ 1",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "casiorz1"
+    },
+    {
+      "name": "Casio SK 1",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "casiosk1"
+    },
+    {
+      "name": "Casio VL 1",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "casiovl1"
+    },
+    {
+      "name": "Doepfer MS 404",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "doepferms404"
+    },
+    {
+      "name": "Emu Drumulator",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "emudrumulator"
+    },
+    {
+      "name": "Emu SP 12",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "emusp12"
+    },
+    {
+      "name": "Korg DDM 110",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "korgddm110"
+    },
+    {
+      "name": "Korg KPR 77",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "korgkpr77"
+    },
+    {
+      "name": "Korg KR 55",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "korgkr55"
+    },
+    {
+      "name": "Korg KRZ",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "korgkrz"
+    },
+    {
+      "name": "Korg M 1",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "korgm1"
+    },
+    {
+      "name": "Korg Minipops",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "korgminipops"
+    },
+    {
+      "name": "Korg T 3",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "korgt3"
+    },
+    {
+      "name": "Linn 9000",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "linn9000"
+    },
+    {
+      "name": "Linn Drum",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "linndrum"
+    },
+    {
+      "name": "Linn LM 1",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "linnlm1"
+    },
+    {
+      "name": "Linn LM 2",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "linnlm2"
+    },
+    {
+      "name": "MFB 512",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "mfb512"
+    },
+    {
+      "name": "MPC 1000",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "mpc1000"
+    },
+    {
+      "name": "Moog Concert Mate MG 1",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "moogconcertmatemg1"
+    },
+    {
+      "name": "Oberheim DMX",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "oberheimdmx"
+    },
+    {
+      "name": "Rhodes Polaris",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "rhodespolaris"
+    },
+    {
+      "name": "Rhythm Ace",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "rhythmace"
+    },
+    {
+      "name": "Roland Compurhythm 1000",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "rolandcompurhythm1000"
+    },
+    {
+      "name": "Roland Compurhythm 78",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "rolandcompurhythm78"
+    },
+    {
+      "name": "Roland Compurhythm 8000",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "rolandcompurhythm8000"
+    },
+    {
+      "name": "Roland D 110",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "rolandd110"
+    },
+    {
+      "name": "Roland D 70",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "rolandd70"
+    },
+    {
+      "name": "Roland DDR 30",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "rolandddr30"
+    },
+    {
+      "name": "Roland JD 990",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "rolandjd990"
+    },
+    {
+      "name": "Roland MC 303",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "rolandmc303"
+    },
+    {
+      "name": "Roland MT 32",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "rolandmt32"
+    },
+    {
+      "name": "Roland R 8",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "rolandr8"
+    },
+    {
+      "name": "Roland S 50",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "rolands50"
+    },
+    {
+      "name": "Roland System 100",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "rolandsystem100"
+    },
+    {
+      "name": "Roland TR 505",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "rolandtr505"
+    },
+    {
+      "name": "Roland TR 606",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "rolandtr606"
+    },
+    {
+      "name": "Roland TR 626",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "rolandtr626"
+    },
+    {
+      "name": "Roland TR 707",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "rolandtr707"
+    },
+    {
+      "name": "Roland TR 808",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "rolandtr808"
+    },
+    {
+      "name": "Roland TR 909",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "rolandtr909"
+    },
+    {
+      "name": "Sakata DPM 48",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "sakatadpm48"
+    },
+    {
+      "name": "Sequential Circuits Drumtracks",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "sequentialcircuitsdrumtracks"
+    },
+    {
+      "name": "Sequential Circuits Tom",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "sequentialcircuitstom"
+    },
+    {
+      "name": "Simmons SDS 5",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "simmonssds5"
+    },
+    {
+      "name": "Soundmasters R 88",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "soundmastersr88"
+    },
+    {
+      "name": "Univox Micro Rhythmer 12",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "univoxmicrorhythmer12"
+    },
+    {
+      "name": "Visco Space Drum",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "viscospacedrum"
+    },
+    {
+      "name": "Xdrum LM 8953",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "xdrumlm8953"
+    },
+    {
+      "name": "Yamaha RM 50",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "yamaharm50"
+    },
+    {
+      "name": "Yamaha RX 21",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "yamaharx21"
+    },
+    {
+      "name": "Yamaha RX 5",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "yamaharx5"
+    },
+    {
+      "name": "Yamaha RY 30",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "yamahary30"
+    },
+    {
+      "name": "Yamaha TG 33",
+      "group": "Drum Machines",
+      "kind": "sample",
+      "drumkitId": "yamahatg33"
+    }
   ]
 }

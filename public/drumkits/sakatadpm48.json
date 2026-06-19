@@ -1,0 +1,46 @@
+{
+  "id": "sakatadpm48",
+  "name": "Sakata DPM 48",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "sakatadpm48/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "sakatadpm48/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "sakatadpm48/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "sakatadpm48/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "sakatadpm48/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "sakatadpm48/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "sakatadpm48/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "sakatadpm48/ride.wav"
+    }
+  ]
+}

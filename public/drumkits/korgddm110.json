@@ -1,0 +1,46 @@
+{
+  "id": "korgddm110",
+  "name": "Korg DDM 110",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "korgddm110/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "korgddm110/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "korgddm110/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "korgddm110/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "korgddm110/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "korgddm110/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "korgddm110/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "korgddm110/ride.wav"
+    }
+  ]
+}

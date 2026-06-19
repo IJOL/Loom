@@ -1,0 +1,31 @@
+{
+  "id": "doepferms404",
+  "name": "Doepfer MS 404",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "doepferms404/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "doepferms404/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "doepferms404/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "doepferms404/openHat.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "doepferms404/tom.wav"
+    }
+  ]
+}

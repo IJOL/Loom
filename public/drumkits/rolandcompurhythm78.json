@@ -1,0 +1,31 @@
+{
+  "id": "rolandcompurhythm78",
+  "name": "Roland Compurhythm 78",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "rolandcompurhythm78/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "rolandcompurhythm78/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "rolandcompurhythm78/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "rolandcompurhythm78/openHat.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "rolandcompurhythm78/cowbell.wav"
+    }
+  ]
+}

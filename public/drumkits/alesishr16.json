@@ -1,0 +1,41 @@
+{
+  "id": "alesishr16",
+  "name": "Alesis HR 16",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "alesishr16/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "alesishr16/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "alesishr16/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "alesishr16/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "alesishr16/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "alesishr16/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "alesishr16/cowbell.wav"
+    }
+  ]
+}

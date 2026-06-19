@@ -1,0 +1,46 @@
+{
+  "id": "akailinn",
+  "name": "Akai Linn",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "akailinn/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "akailinn/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "akailinn/closedHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "akailinn/openHat.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "akailinn/clap.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "akailinn/tom.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "akailinn/cowbell.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "akailinn/ride.wav"
+    }
+  ]
+}
