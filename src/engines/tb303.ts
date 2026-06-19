@@ -47,13 +47,24 @@ const PRESET_KEY_TO_SPEC: Record<string, string> = {
   wave:      'osc.wave',
 };
 
-/** Native operating ranges for the TB-303's shared AudioParams, mirroring
- *  TB303Voice.getAudioParamRange. The engine binder writes shared-scope
- *  modulation into BiquadFilterNode.frequency (Hz) / .Q — NOT the normalized
- *  0..1 spec range — so depth=1 produces a full sweep instead of ±1 Hz. */
+/** Full-knob exponential sweep of the cutoff expressed in cents. The cutoff
+ *  knob is normalized 0..1 and maps to 80·100^x Hz inside the synth — a ratio
+ *  of 100 across the full knob, i.e. log2(100) octaves. Modulation is routed
+ *  into BiquadFilterNode.detune (cents, multiplicative) instead of .frequency
+ *  (Hz, additive) so a bipolar LFO at depth d moves the cutoff between
+ *  base·100^(±d) — EXACTLY the normalized ±d the amber knob arc draws. The old
+ *  additive-Hz path summed up to ±18 kHz onto a few-hundred-Hz base, driving
+ *  filter.frequency negative and slamming the filter shut every cycle. */
+const CUTOFF_DETUNE_SPAN_CENTS = 1200 * Math.log2(100);  // ≈ 7972.6 ¢
+
+/** Modulation ranges for the TB-303's shared AudioParams, mirroring
+ *  TB303Voice.getAudioParamRange. filter.cutoff modulation targets .detune
+ *  (cents, exponential); filter.resonance targets .Q (linear, ~0..25 over the
+ *  knob). The binder uses (max−min) as the depth=1 peak gain, so the SPAN is
+ *  what matters. */
 function tb303SharedRange(shortId: string): { min: number; max: number } {
-  if (shortId === 'filter.cutoff')    return { min: 80, max: 18000 };
-  if (shortId === 'filter.resonance') return { min: 0,  max: 30 };
+  if (shortId === 'filter.cutoff')    return { min: 0, max: CUTOFF_DETUNE_SPAN_CENTS };
+  if (shortId === 'filter.resonance') return { min: 0, max: 25 };
   return { min: 0, max: 1 };
 }
 
@@ -106,21 +117,22 @@ class TB303Voice implements Voice {
 
   getAudioParams(): Map<string, AudioParam> {
     return new Map<string, AudioParam>([
-      ['filter.cutoff',    this.tb303.filter.frequency],
+      // cutoff modulation goes into .detune (cents, exponential) so it tracks
+      // the normalized knob arc; the filter envelope still drives .frequency.
+      ['filter.cutoff',    this.tb303.filter.detune],
       ['filter.resonance', this.tb303.filter.Q],
       ['amp.gain',         this.tb303.amp.gain],
     ]);
   }
 
-  /** Real AudioParam operating ranges for modulator depth scaling. The
-   *  knob/spec ranges are normalized 0..1 (because the engine internally
-   *  maps them with `80 * Math.pow(100, cutoff)` etc.) — but the
-   *  BiquadFilterNode.frequency / .Q AudioParams the binder writes to are
-   *  in Hz and Q units. Without this override an LFO at depth 0.5 would
-   *  contribute ±0.5 Hz to a 1 kHz filter — inaudible. */
+  /** Modulation depth-scaling ranges. The knob/spec ranges are normalized
+   *  0..1; the binder needs the destination AudioParam's units. filter.cutoff
+   *  modulates BiquadFilterNode.detune (cents — a full-knob exponential sweep),
+   *  filter.resonance modulates .Q (~0..25 across the knob). See
+   *  tb303SharedRange / CUTOFF_DETUNE_SPAN_CENTS. */
   getAudioParamRange(id: string): { min: number; max: number } | undefined {
-    if (id === 'filter.cutoff')    return { min: 80,  max: 18000 };
-    if (id === 'filter.resonance') return { min: 0,   max: 30    };
+    if (id === 'filter.cutoff')    return { min: 0, max: CUTOFF_DETUNE_SPAN_CENTS };
+    if (id === 'filter.resonance') return { min: 0, max: 25 };
     return undefined;
   }
 }
@@ -326,7 +338,9 @@ export class TB303Engine implements SynthEngine {
   getSharedAudioParams(): Map<string, AudioParam> {
     if (!this.lastInstance) return new Map();
     return new Map<string, AudioParam>([
-      ['filter.cutoff',    this.lastInstance.filter.frequency],
+      // cutoff → .detune (cents, exponential, tracks the knob arc); the filter
+      // envelope keeps driving .frequency underneath.
+      ['filter.cutoff',    this.lastInstance.filter.detune],
       ['filter.resonance', this.lastInstance.filter.Q],
       ['amp.gain',         this.lastInstance.amp.gain],
     ]);
