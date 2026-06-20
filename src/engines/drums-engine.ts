@@ -30,7 +30,7 @@ import type { KnobHandle } from '../core/knob';
 // engine level; per-voice `.level` ids map onto each DrumMachine channel
 // strip's `level.gain` AudioParam (see DrumsVoice.getAudioParams below).
 // Bus-level automatable params. The static drum page renders the matching
-// knobs (DRUM VOL / PAN / REV / DLY / LO / MID / HI) via wireDrumMasterUI;
+// knobs (DRUM VOL / PAN / A / B / LO / MID / HI) via wireDrumMasterUI;
 // the LFO/ADSR destination dropdown picks them up via the same lane-prefixed
 // ids registered there. Per-voice levels are NOT exposed as engine params:
 // volume is controlled via the static drum-grid editor + accents at trigger
@@ -38,8 +38,8 @@ import type { KnobHandle } from '../core/knob';
 const BUS_PARAMS: EngineParamSpec[] = [
   { id: 'bus.level',       label: 'Vol',  kind: 'continuous', min: 0,   max: 1.5, default: 1 },
   { id: 'bus.pan',         label: 'Pan',  kind: 'continuous', min: -1,  max: 1,   default: 0 },
-  { id: 'bus.reverbSend',  label: 'Rev',  kind: 'continuous', min: 0,   max: 1,   default: 0 },
-  { id: 'bus.delaySend',   label: 'Dly',  kind: 'continuous', min: 0,   max: 1,   default: 0 },
+  { id: 'bus.delaySend',   label: 'A',    kind: 'continuous', min: 0,   max: 1,   default: 0 },
+  { id: 'bus.reverbSend',  label: 'B',    kind: 'continuous', min: 0,   max: 1,   default: 0 },
   { id: 'bus.eq.low',      label: 'Lo',   kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
   { id: 'bus.eq.mid',      label: 'Mid',  kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
   { id: 'bus.eq.high',     label: 'Hi',   kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
@@ -106,8 +106,8 @@ const VOICE_SYNTH_SPECS: Record<DrumVoice, EngineParamSpec[]> = {
 
 const VOICE_MIXER_SPECS: Array<Omit<EngineParamSpec, 'id'> & { leaf: string }> = [
   { leaf: 'level',   label: 'LEVEL', kind: 'continuous', min: 0,   max: 1.5, default: 1 },
-  { leaf: 'rev',     label: 'REV',   kind: 'continuous', min: 0,   max: 1,   default: 0 },
-  { leaf: 'dly',     label: 'DLY',   kind: 'continuous', min: 0,   max: 1,   default: 0 },
+  { leaf: 'dly',     label: 'A',     kind: 'continuous', min: 0,   max: 1,   default: 0, color: '#3498db' },
+  { leaf: 'rev',     label: 'B',     kind: 'continuous', min: 0,   max: 1,   default: 0, color: '#9b59b6' },
   { leaf: 'pan',     label: 'PAN',   kind: 'continuous', min: -1,  max: 1,   default: 0 },
   { leaf: 'eq.low',  label: 'LO',    kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
   { leaf: 'eq.mid',  label: 'MID',   kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
@@ -490,7 +490,7 @@ export class DrumsEngine implements SynthEngine {
     container.appendChild(rackHost);
     renderDrumVoiceRack(this, ctx, rackHost);
 
-    // Strip controls (DRUM VOL/PAN/REV/DLY/LO/MID/HI) and per-voice levels are
+    // Strip controls (DRUM VOL/PAN/A/B/LO/MID/HI) and per-voice levels are
     // rendered by the static drum page via wireDrumMasterUI + the drum-grid
     // editor — they're not repeated here. This panel only carries the lane's
     // modulators (LFO/ADSR) so the engine-mod-host stays compact.
@@ -562,7 +562,7 @@ export class DrumsEngine implements SynthEngine {
       // NOTE: 'sweep' is intentionally NOT included — it would wrongly promote
       // kick/tom SWEEP from advanced to curated.
       curatedSynth: ['tune', 'attack', 'decay', 'tone', 'snap'],
-      curatedMixer: ['level', 'rev', 'dly'],
+      curatedMixer: ['level', 'dly', 'rev'],
       advancedMixer: ['pan', 'eq.low', 'eq.mid', 'eq.high'],
     };
   }

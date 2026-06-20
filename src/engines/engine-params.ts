@@ -12,6 +12,11 @@ export interface EngineParamSpec {
   default: number;         // continuous: initial value; discrete: index of default option
   curve?: 'linear' | 'exponential' | 'log';
   unit?: string;
+  /** Optional knob ring colour (CSS colour). Used to carry the Send A/B colour
+   *  code (A=delay blue, B=reverb purple) onto the per-voice drum mixer knobs so
+   *  the bare 'A'/'B' labels stay distinguishable, matching the master strip +
+   *  mixer. Continuous params only; falls back to createKnob's default amber. */
+  color?: string;
   options?: Array<{ value: string; label: string }>;   // only when kind === 'discrete'
   /** Discrete only: 'dropdown' forces a native <select> instead of the default
    *  radio-button strip — for many or long-labelled options (e.g. the FM

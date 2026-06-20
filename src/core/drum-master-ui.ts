@@ -19,7 +19,7 @@ export interface DrumMasterUIDeps {
 const fmtPan = (v: number) => v === 0 ? 'C' : v < 0 ? `L${Math.round(-v * 100)}` : `R${Math.round(v * 100)}`;
 
 /**
- * Mount the drum-master strip controls (DRUM VOL / PAN / REV / DLY / LO / MID / HI)
+ * Mount the drum-master strip controls (DRUM VOL / PAN / A / B / LO / MID / HI)
  * for a given drum lane. Idempotent — clears `#drum-master-knobs` before
  * re-populating so switching from drums-1 to drums-2 retargets both the audio
  * destinations and the registry ids.
@@ -44,10 +44,10 @@ export function wireDrumMasterUI(deps: DrumMasterUIDeps): void {
     label: 'DRUM VOL', color: '#f7d000', format: fmtPct, onChange: (v) => drumBusStrip.setLevel(v) });
   mk({ id: `${laneId}.bus.pan`, min: -1, max: 1, step: 0.01, value: state.pan ?? 0, defaultValue: 0,
     label: 'PAN', color: '#e67e22', format: fmtPan, onChange: (v) => drumBusStrip.setPan(v) });
-  mk({ id: `${laneId}.bus.reverbSend`, min: 0, max: 1, step: 0.01, value: state.sendB, defaultValue: 0,
-    label: 'REV', color: '#9b59b6', format: fmtPct, onChange: (v) => drumBusStrip.setSendB(v) });
   mk({ id: `${laneId}.bus.delaySend`, min: 0, max: 1, step: 0.01, value: state.sendA, defaultValue: 0,
-    label: 'DLY', color: '#3498db', format: fmtPct, onChange: (v) => drumBusStrip.setSendA(v) });
+    label: 'A', color: '#3498db', format: fmtPct, onChange: (v) => drumBusStrip.setSendA(v) });
+  mk({ id: `${laneId}.bus.reverbSend`, min: 0, max: 1, step: 0.01, value: state.sendB, defaultValue: 0,
+    label: 'B', color: '#9b59b6', format: fmtPct, onChange: (v) => drumBusStrip.setSendB(v) });
   mk({ id: `${laneId}.bus.eq.low`, min: -18, max: 18, step: 0.5, value: state.eqLow, defaultValue: 0,
     label: 'LO',  color: '#c0392b', format: fmtDb, onChange: (v) => drumBusStrip.setEqLow(v) });
   mk({ id: `${laneId}.bus.eq.mid`, min: -18, max: 18, step: 0.5, value: state.eqMid, defaultValue: 0,

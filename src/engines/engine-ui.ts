@@ -49,6 +49,7 @@ export function wireEngineParams(
         value: engine.getBaseValue(spec.id),
         defaultValue: spec.default,
         size: opts.knobSize,
+        color: spec.color,
         onChange: (v) => {
           engine.setBaseValue(spec.id, v);
           if (ctx.sessionState) {

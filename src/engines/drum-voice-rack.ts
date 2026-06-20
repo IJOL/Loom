@@ -1,6 +1,6 @@
 // src/engines/drum-voice-rack.ts
 // Renders the per-voice "mini-mixer" rack for a drums lane: one column per
-// voice with curated synth knobs + curated mixer (LEVEL/REV/DLY) + a collapsed
+// voice with curated synth knobs + curated mixer (LEVEL/A/B) + a collapsed
 // ▸advanced block (raw synth params + PAN + EQ). Each control is built through
 // wireEngineParams so it registers under `<laneId>.<id>`, mirrors to
 // engineState, and gets undo for free.
