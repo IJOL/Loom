@@ -153,7 +153,15 @@ class SubtractiveVoice implements Voice {
    *  the binder once the polysynth actually hands us a per-voice param set. */
   rebind: (() => void) | null = null;
 
+  /** Pending self-cleanup timer for this note's per-voice modulators + binder.
+   *  Scheduled in trigger() to fire after the note's tail so free-running
+   *  playback frees them (previously only the Stop path released them).
+   *  Cleared by dispose(). */
+  private cleanupTimer: ReturnType<typeof setTimeout> | null = null;
+  private voiceResourcesDisposed = false;
+
   constructor(
+    private ctx: AudioContext,
     private polysynth: PolySynth,
     private voiceMods: Map<string, ModulatorVoice>,
   ) {}
@@ -230,6 +238,18 @@ class SubtractiveVoice implements Voice {
       },
       options.velocity,
     );
+    // Free THIS note's one-shot per-voice modulators + binder once its tail
+    // ends. Without this, every note leaked its per-voice ADSR ConstantSource
+    // nodes (only the Stop path released them), so dense free-running playback
+    // piled up live nodes that starved the Web Audio render thread (choppy →
+    // silence-with-active-VU, worsening over minutes). Shared/lane modulators
+    // are engine-owned and are NOT touched here. Mirrors the Karplus voice
+    // self-dispose pattern.
+    let modTail = 0;
+    for (const mv of this.voiceMods.values()) modTail = Math.max(modTail, mv.tailSec?.() ?? 0);
+    const p = this.polysynth.params;
+    const tail = Math.max(p.amp.release, p.filter.release, modTail);
+    this.scheduleVoiceCleanup(time + options.gateDuration + tail + 0.1);
   }
 
   release(time: number): void {
@@ -243,10 +263,32 @@ class SubtractiveVoice implements Voice {
     // PolySynth already connected to destination in constructor
   }
 
-  dispose(): void {
-    if (this.binder) this.binder.disposeAll();
-    if (this.laneId) disposeLaneModulations(this.laneId);
+  /** Schedule disposal of this note's per-voice resources once its tail ends.
+   *  setTimeout (wall-clock) tracks the audio timeline closely enough — the
+   *  nodes are silent by then, so the exact instant is non-critical. */
+  private scheduleVoiceCleanup(endsAt: number): void {
+    if (this.cleanupTimer != null) clearTimeout(this.cleanupTimer);
+    const delayMs = Math.max(0, (endsAt - this.ctx.currentTime) * 1000);
+    this.cleanupTimer = setTimeout(() => {
+      this.cleanupTimer = null;
+      this.disposeVoiceResources();
+    }, delayMs);
+  }
+
+  /** Tear down ONLY this voice's per-note resources: its per-voice modulator
+   *  voices (stops their ConstantSourceNodes) and its binder (drops the gain
+   *  bridges). Idempotent. Does NOT touch lane/shared modulators. */
+  private disposeVoiceResources(): void {
+    if (this.voiceResourcesDisposed) return;
+    this.voiceResourcesDisposed = true;
+    if (this.binder) { this.binder.disposeAll(); this.binder = null; }
     for (const mv of this.voiceMods.values()) mv.dispose();
+  }
+
+  dispose(): void {
+    if (this.cleanupTimer != null) { clearTimeout(this.cleanupTimer); this.cleanupTimer = null; }
+    this.disposeVoiceResources();
+    if (this.laneId) disposeLaneModulations(this.laneId);
   }
 }
 
@@ -380,7 +422,7 @@ class SubtractiveEngine implements SynthEngine {
     // the shared LFO via getActiveModVoice and poll currentValue() (which
     // syncs the live OscillatorNode to state mutations).
     recordVoiceMods(new Map([...(this.engineModVoices ?? new Map()), ...voiceMods]));
-    const voice = new SubtractiveVoice(this.polysynth, voiceMods);
+    const voice = new SubtractiveVoice(ctx, this.polysynth, voiceMods);
     const laneId = getCurrentLaneForVoice();
     if (laneId) {
       voice.laneId = laneId;

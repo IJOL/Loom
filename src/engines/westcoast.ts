@@ -141,6 +141,11 @@ class WestVoice implements Voice {
   laneId: string | null = null;
   binder: ConnectionBinder | null = null;
 
+  /** Self-cleanup timer for this note's per-voice resources, scheduled in
+   *  trigger() as a deterministic fallback to the 'ended' listener (which may
+   *  not fire when the context is suspended). Cleared by dispose(). */
+  private cleanupTimer: ReturnType<typeof setTimeout> | null = null;
+
   constructor(
     private ctx: AudioContext,
     output: AudioNode,
@@ -335,6 +340,14 @@ class WestVoice implements Voice {
     // live 4x folder chain → CPU climbed without bound → audio crackled.
     this.bias.stop(stopTime); this.contour.stop(stopTime); this.cutoffBase.stop(stopTime);
     this.stopScheduled = true;
+
+    // Deterministic fallback to the 'ended' listener so this note's per-voice
+    // modulators + binder are freed even if 'ended' never fires (suspended
+    // context). Idempotent with the listener via the resourcesReleased guard.
+    let modTail = 0;
+    for (const mv of this.voiceMods.values()) modTail = Math.max(modTail, mv.tailSec?.() ?? 0);
+    const endsAt = Math.max(stopTime, gateEnd + modTail) + 0.1;
+    this.scheduleVoiceCleanup(endsAt);
   }
 
   release(time: number): void {
@@ -361,6 +374,7 @@ class WestVoice implements Voice {
   releaseResources(): void {
     if (this.resourcesReleased) return;
     this.resourcesReleased = true;
+    if (this.binder) { this.binder.disposeAll(); this.binder = null; }
     if (!this.stopScheduled && this.started) {
       try { this.mainOsc.stop(); } catch {}
       try { this.modOsc.stop(); } catch {}
@@ -380,10 +394,22 @@ class WestVoice implements Voice {
     for (const mv of this.voiceMods.values()) mv.dispose();
   }
 
+  /** Schedule per-voice cleanup once the note's tail ends. setTimeout
+   *  (wall-clock) tracks the audio timeline closely enough — nodes are silent
+   *  by then so the exact instant is non-critical. */
+  private scheduleVoiceCleanup(endsAt: number): void {
+    if (this.cleanupTimer != null) clearTimeout(this.cleanupTimer);
+    const delayMs = Math.max(0, (endsAt - this.ctx.currentTime) * 1000);
+    this.cleanupTimer = setTimeout(() => {
+      this.cleanupTimer = null;
+      this.releaseResources();
+    }, delayMs);
+  }
+
   dispose(): void {
-    if (this.binder) this.binder.disposeAll();
-    if (this.laneId) disposeLaneModulations(this.laneId);
+    if (this.cleanupTimer != null) { clearTimeout(this.cleanupTimer); this.cleanupTimer = null; }
     this.releaseResources();
+    if (this.laneId) disposeLaneModulations(this.laneId);
   }
 }
 

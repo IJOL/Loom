@@ -72,8 +72,15 @@ class WavetableVoice implements Voice {
   laneId: string | null = null;
   binder: ConnectionBinder | null = null;
 
+  /** Self-cleanup timer for this note's per-voice resources, scheduled in
+   *  trigger() to free them after the tail. A voice that ends naturally (no
+   *  steal) otherwise leaked its env ConstantSources + per-voice modulators
+   *  until the transport stopped. Cleared by dispose(). */
+  private cleanupTimer: ReturnType<typeof setTimeout> | null = null;
+  private voiceResourcesDisposed = false;
+
   constructor(
-    ctx: AudioContext,
+    private ctx: AudioContext,
     output: AudioNode,
     private waves: PeriodicWave[],
     private getParam: (id: string) => number,
@@ -240,6 +247,14 @@ class WavetableVoice implements Voice {
     this.oscA.stop(stopTime);
     this.oscB.stop(stopTime);
     this.stopScheduled = true;
+
+    // Free THIS note's per-voice resources once its tail ends. A voice that
+    // finishes naturally otherwise leaked its env ConstantSources + per-voice
+    // modulators until Stop. Lane/shared modulators are NOT touched here.
+    let modTail = 0;
+    for (const mv of this.voiceMods.values()) modTail = Math.max(modTail, mv.tailSec?.() ?? 0);
+    const endsAt = Math.max(stopTime, gateEnd + modTail) + 0.1;
+    this.scheduleVoiceCleanup(endsAt);
   }
 
   release(time: number): void {
@@ -257,9 +272,25 @@ class WavetableVoice implements Voice {
 
   connect(_dest: AudioNode): void {}
 
-  dispose(): void {
-    if (this.binder) this.binder.disposeAll();
-    if (this.laneId) disposeLaneModulations(this.laneId);
+  /** Schedule per-voice cleanup once the note's tail ends. setTimeout
+   *  (wall-clock) tracks the audio timeline closely enough — nodes are silent
+   *  by then so the exact instant is non-critical. */
+  private scheduleVoiceCleanup(endsAt: number): void {
+    if (this.cleanupTimer != null) clearTimeout(this.cleanupTimer);
+    const delayMs = Math.max(0, (endsAt - this.ctx.currentTime) * 1000);
+    this.cleanupTimer = setTimeout(() => {
+      this.cleanupTimer = null;
+      this.disposeVoiceResources();
+    }, delayMs);
+  }
+
+  /** Tear down ONLY this voice's own nodes + per-voice modulators (stops the
+   *  env + modulator ConstantSourceNodes, drops the binder bridges).
+   *  Idempotent. Does NOT touch lane/shared modulators. */
+  private disposeVoiceResources(): void {
+    if (this.voiceResourcesDisposed) return;
+    this.voiceResourcesDisposed = true;
+    if (this.binder) { this.binder.disposeAll(); this.binder = null; }
     if (!this.stopScheduled && this.started) {
       try { this.oscA.stop(); } catch {}
       try { this.oscB.stop(); } catch {}
@@ -274,6 +305,12 @@ class WavetableVoice implements Voice {
     this.envAmp.disconnect();
     this.envCutoff.disconnect();
     for (const mv of this.voiceMods.values()) mv.dispose();
+  }
+
+  dispose(): void {
+    if (this.cleanupTimer != null) { clearTimeout(this.cleanupTimer); this.cleanupTimer = null; }
+    this.disposeVoiceResources();
+    if (this.laneId) disposeLaneModulations(this.laneId);
   }
 }
 
