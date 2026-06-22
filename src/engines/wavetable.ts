@@ -251,6 +251,9 @@ class WavetableVoice implements Voice {
     // Free THIS note's per-voice resources once its tail ends. A voice that
     // finishes naturally otherwise leaked its env ConstantSources + per-voice
     // modulators until Stop. Lane/shared modulators are NOT touched here.
+    // Primary trigger = the render thread's 'ended' event (reliable under
+    // main-thread load); the setTimeout is a fallback the browser may throttle.
+    this.oscA.addEventListener('ended', () => this.disposeVoiceResources());
     let modTail = 0;
     for (const mv of this.voiceMods.values()) modTail = Math.max(modTail, mv.tailSec?.() ?? 0);
     const endsAt = Math.max(stopTime, gateEnd + modTail) + 0.1;

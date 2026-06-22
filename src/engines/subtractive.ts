@@ -226,6 +226,10 @@ class SubtractiveVoice implements Voice {
       (vp) => {
         this.lastVoiceParams = vp;
         this.lastReleaseGate = vp.releaseGate;
+        // Audio-clock cleanup: free this note's per-voice modulators the instant
+        // the polysynth voice's oscillators end. Reliable under main-thread load
+        // (the setTimeout below is only a fallback the browser may throttle).
+        vp.onEnded(() => this.disposeVoiceResources());
         // Now that getAudioParams() returns real params, (re)apply the binder
         // so modulator outputs reach this freshly-allocated polysynth voice.
         if (this.rebind) this.rebind();

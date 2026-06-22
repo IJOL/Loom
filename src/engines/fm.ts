@@ -252,6 +252,9 @@ class FMVoice implements Voice {
     // ConstantSources + per-voice modulators until Stop — dense playback then
     // piled up live nodes that starved the render thread. Lane/shared
     // modulators are engine-owned and are NOT touched here.
+    // Primary trigger = the render thread's 'ended' event (reliable under
+    // main-thread load); the setTimeout is a fallback the browser may throttle.
+    this.osc[0].addEventListener('ended', () => this.disposeVoiceResources());
     let modTail = 0;
     for (const mv of this.voiceMods.values()) modTail = Math.max(modTail, mv.tailSec?.() ?? 0);
     const endsAt = Math.max(stopTime, gateEnd + modTail) + 0.1;

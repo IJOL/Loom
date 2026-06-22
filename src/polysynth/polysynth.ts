@@ -69,6 +69,14 @@ export interface PolyVoiceParams {
    * to support live note-off, since trigger() pre-schedules the full envelope.
    */
   releaseGate: (time: number) => void;
+  /**
+   * Register a callback fired when this voice's oscillators end (the render
+   * thread's 'ended' event — reliable even when the main thread is loaded,
+   * unlike a throttled setTimeout). Lets the engine wrapper free its per-voice
+   * modulators exactly when the note is done, so dense free-running playback
+   * doesn't carry stale voices into the next loop iteration.
+   */
+  onEnded: (cb: () => void) => void;
 }
 
 export class PolySynth {
@@ -354,6 +362,9 @@ export class PolySynth {
     };
     this.active.push(entry);
 
+    // Audio-clock-driven end-of-voice callbacks (fired from osc1.onended below).
+    const endedCallbacks: Array<() => void> = [];
+
     // Modulation host bind point: expose per-voice AudioParams BEFORE the
     // hardcoded envelope ramps are scheduled. External ADSR/LFO outputs sum
     // into these params via Web Audio's per-AudioParam summing.
@@ -375,6 +386,7 @@ export class PolySynth {
       keyTrack:   keyTrack.gain,
       tune:       tune.offset,
       releaseGate,
+      onEnded: (cb: () => void) => { endedCallbacks.push(cb); },
     });
 
     // Schedule the normalised envCutoff (0..1) — sustain knob clamps it.
@@ -431,6 +443,9 @@ export class PolySynth {
       if (this.monoVoice && this.monoVoice.osc1 === osc1) {
         this.monoVoice = null;
       }
+      // Audio-clock cleanup: tell the engine wrapper the note is fully done so
+      // it frees its per-voice modulators now (not on a throttled setTimeout).
+      for (const cb of endedCallbacks) cb();
     };
   }
 }
