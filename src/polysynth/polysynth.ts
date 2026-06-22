@@ -238,16 +238,22 @@ export class PolySynth {
       this.monoVoice = { osc1, osc2, sub };
     }
 
-    // ── Noise (always-on, gated via gn.gain so noise.level is modulatable) ─
-    const noise = ctx.createBufferSource();
-    noise.buffer = this.noiseBuffer;
-    noise.loop = true;
+    // ── Noise (gated via gn.gain). The looping BufferSource is the per-voice
+    // cost; skip it when noise.level is 0 (the default) so a dense arrangement
+    // doesn't run one noise source per voice for nothing. gn/nFilter stay so
+    // noiseLevel/noiseColor remain valid modulation targets.
     const nFilter = ctx.createBiquadFilter();
     nFilter.type = 'lowpass';
     nFilter.frequency.value = 200 + p.noise.color * 14800;
     const gn = ctx.createGain();
     gn.gain.value = p.noise.level;
-    noise.connect(nFilter).connect(gn);
+    nFilter.connect(gn);
+    const noise = p.noise.level > 0 ? ctx.createBufferSource() : null;
+    if (noise) {
+      noise.buffer = this.noiseBuffer;
+      noise.loop = true;
+      noise.connect(nFilter);
+    }
 
     // ── Mix ──────────────────────────────────────────────────────────────
     const mix = ctx.createGain();
@@ -261,12 +267,20 @@ export class PolySynth {
     // distortion in real time.
     const drivePre = ctx.createGain();
     drivePre.gain.value = p.filter.drive;
-    const shaper = ctx.createWaveShaper();
-    (shaper as { curve: Float32Array | null }).curve = makeDriveCurve(1.0);
-    shaper.oversample = '2x';
-    // Dry: mix → filter. Wet: mix → shaper → drivePre → filter.
-    mix.connect(shaper);
-    shaper.connect(drivePre);
+    // The 2x-oversampled WaveShaper is the most expensive per-voice node. Build
+    // the wet drive path ONLY when drive>0 (default 0). At drive=0 the wet path
+    // contributed nothing anyway (drivePre.gain=0), so the output is unchanged
+    // while the dense-arrangement render cost drops sharply. drivePre stays as
+    // the modulation target for `drive`.
+    const driveOn = p.filter.drive > 0;
+    if (driveOn) {
+      const shaper = ctx.createWaveShaper();
+      (shaper as { curve: Float32Array | null }).curve = makeDriveCurve(1.0);
+      shaper.oversample = '2x';
+      // Dry: mix → filter. Wet: mix → shaper → drivePre → filter.
+      mix.connect(shaper);
+      shaper.connect(drivePre);
+    }
 
     // ── Filter ───────────────────────────────────────────────────────────
     const filter = ctx.createBiquadFilter();
@@ -282,7 +296,7 @@ export class PolySynth {
     this.modBus['filter.cutoff'].connect(filter.detune);
     this.modBus['filter.resonance'].connect(filter.Q);
     mix.connect(filter);
-    drivePre.connect(filter);
+    if (driveOn) drivePre.connect(filter);
 
     // ── Cutoff path: split into BASE + KEY TRACK + ENVELOPE ─────────────
     // baseCutoff (Hz, the steady-state filter freq absent envelope) sums
@@ -429,8 +443,9 @@ export class PolySynth {
     const stopTime = releaseStart + Math.max(ar, fr) + 0.05;
 
     osc1.start(time); osc2.start(time); sub.start(time);
-    noise.start(time);
-    osc1.stop(stopTime); osc2.stop(stopTime); sub.stop(stopTime); noise.stop(stopTime);
+    if (noise) noise.start(time);
+    osc1.stop(stopTime); osc2.stop(stopTime); sub.stop(stopTime);
+    if (noise) noise.stop(stopTime);
     envAmp.stop(stopTime); envCutoffNorm.stop(stopTime);
     tune.stop(stopTime); baseCutoffSrc.stop(stopTime); keyTrackSrc.stop(stopTime);
 
