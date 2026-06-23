@@ -389,11 +389,33 @@ class SubtractiveEngine implements SynthEngine {
   /** Cached so the modulation-panel onChange callback can re-apply bindings. */
   private currentLaneId: string | null = null;
 
+  /** Mirror "does any modulator drive filter.drive / noise.* ?" onto the
+   *  polysynth so it force-builds those per-voice nodes (which it otherwise
+   *  skips at base 0 for performance). Connection paramIds may be lane-prefixed
+   *  (e.g. "main.noise.level"), so match by suffix. */
+  private updatePolyModFlags(): void {
+    if (!this.polysynth) return;
+    const targets = (suffixes: string[]): boolean =>
+      this.modHost.modulators.some((m) =>
+        m.enabled !== false &&
+        m.connections.some((c) =>
+          (c.depth ?? 0) !== 0 &&
+          suffixes.some((s) => c.paramId === s || c.paramId.endsWith(`.${s}`)),
+        ),
+      );
+    this.polysynth.modDrive = targets(['filter.drive']);
+    this.polysynth.modNoise = targets(['noise.level', 'noise.color']);
+  }
+
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
     if (!this.polysynth) {
       this.polysynth = new PolySynth(ctx, output);
       this.pending.flush((id, v) => this.setBaseValue(id, v));
     }
+    // Tell the polysynth whether to force-build the (otherwise-skipped) wet
+    // drive / noise subgraph because a modulator targets it — recomputed per
+    // note so a live modulation edit takes effect on the next trigger.
+    this.updatePolyModFlags();
     // 1. Lazy-init engine-wide modulator voices for SHARED mods and bind
     //    them ONCE to the modulation bus AudioParams. The shared modBus
     //    offsets are summed into per-voice AudioParams in their native

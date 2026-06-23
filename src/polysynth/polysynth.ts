@@ -98,6 +98,13 @@ export class PolySynth {
    *  discrete params. */
   ampEnvEnabled = true;
   filterEnvEnabled = true;
+  /** Build the (otherwise-skipped) wet drive / noise per-voice subgraph even
+   *  when its base value is 0, because a modulator targets it — set by the
+   *  owning engine from its modulation host. Without this, the per-voice cost
+   *  optimisation (skip idle WaveShaper/noise) would make a modulator routed to
+   *  filter.drive / noise.level inaudible when the base is 0. */
+  modDrive = false;
+  modNoise = false;
   private monoSavedMax = 8;
   private monoVoice: { osc1: OscillatorNode; osc2: OscillatorNode; sub: OscillatorNode } | null = null;
   private active: Array<{ midi: number; allocatedAt: number; stop: (time: number) => void }> = [];
@@ -248,7 +255,7 @@ export class PolySynth {
     const gn = ctx.createGain();
     gn.gain.value = p.noise.level;
     nFilter.connect(gn);
-    const noise = p.noise.level > 0 ? ctx.createBufferSource() : null;
+    const noise = (p.noise.level > 0 || this.modNoise) ? ctx.createBufferSource() : null;
     if (noise) {
       noise.buffer = this.noiseBuffer;
       noise.loop = true;
@@ -272,7 +279,7 @@ export class PolySynth {
     // contributed nothing anyway (drivePre.gain=0), so the output is unchanged
     // while the dense-arrangement render cost drops sharply. drivePre stays as
     // the modulation target for `drive`.
-    const driveOn = p.filter.drive > 0;
+    const driveOn = p.filter.drive > 0 || this.modDrive;
     if (driveOn) {
       const shaper = ctx.createWaveShaper();
       (shaper as { curve: Float32Array | null }).curve = makeDriveCurve(1.0);
