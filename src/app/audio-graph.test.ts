@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildAudioGraph, createAudioGraph } from './audio-graph';
+import { buildAudioGraph, createAudioGraph, makeMasterSoftClipCurve } from './audio-graph';
 import { InsertChain } from '../plugins/fx/insert-chain';
 import { collectSends, rehydrateSends } from '../session/session-host-persistence';
 
@@ -24,6 +24,22 @@ describe('master safety limiter', () => {
     expect(s.bypass).toBe(false);          // ON by default (user can still bypass it in the master comp UI)
     expect(s.ratio).toBeGreaterThanOrEqual(12); // limiter-grade ratio, not a gentle 4:1 comp
     expect(s.threshold).toBeLessThan(0);   // catches overs near 0 dBFS
+  });
+});
+
+describe('master soft-clip curve', () => {
+  const curve = makeMasterSoftClipCurve();
+  const at = (x: number) => curve[Math.round(((x + 1) / 2) * (curve.length - 1))];
+  it('is transparent (identity) for normal levels below the knee', () => {
+    expect(at(0)).toBeCloseTo(0, 3);
+    expect(at(0.5)).toBeCloseTo(0.5, 2);
+    expect(at(-0.5)).toBeCloseTo(-0.5, 2);
+  });
+  it('never lets the output reach 0 dBFS — peak magnitude stays below 1', () => {
+    let max = 0;
+    for (const v of curve) max = Math.max(max, Math.abs(v));
+    expect(max).toBeLessThan(0.98);   // clamps overs (incl. inputs ≥ 1, which hit the endpoints)
+    expect(max).toBeGreaterThan(0.9); // but still uses most of the range (not over-squashed)
   });
 });
 
