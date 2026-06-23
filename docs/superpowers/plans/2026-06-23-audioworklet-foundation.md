@@ -733,7 +733,12 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     const fe = p.filterBuiltinEnv >= 0.5
       ? this.filtEnv.update(t, gate, p.filterAttack, p.filterDecay, p.filterSustain, p.filterRelease) : 0;
     const cutoff = this.baseCutoffHz + this.keyTrackHz + fe * this.envRangeHz;
-    const q = p.filterResonance * 22 * 0.45;     // 0..~10 res scale for Svf
+    // Svf resonance is 0..1 (NOT the biquad's 0..22 Q): the Svf damping is
+    // r = 0.5^((res+0.125)/0.125), so res>~1 makes it near-undamped → resonant
+    // blow-up (measured peak 9× at res=2.475). Map the 0..1 knob straight through;
+    // res=1 is already a strong, bounded resonance (peak ~2.8). Verified via the
+    // worklet peak-ceiling test + Playwright signal check.
+    const q = p.filterResonance;
     this.filter.update(mix, cutoff, q);
     // amp envelope
     const ae = p.ampBuiltinEnv >= 0.5
