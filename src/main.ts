@@ -90,6 +90,8 @@ import { wireControlSurfaceUI } from './control/control-surface-ui';
 import { listProfiles } from './control/profile-registry';
 import { loadControlPrefs, saveControlPrefs } from './control/persistence';
 import { clampBpm, formatBpm } from './core/bpm';
+// ── AudioWorklet spike (Task 1 — guarded behind ?worklettest) ───────────────
+import { loadLoomWorklet, LoomWorkletNode } from './audio-worklet/loom-node';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -1158,5 +1160,19 @@ wireRandomizeUI({
 });
 wireSaveManager(saveWiringDeps);
 bootRecoveryLoad(saveWiringDeps);
+
+// ── AudioWorklet spike: ?worklettest guard (removed in Task 8) ───────────────
+// Open http://localhost:5173/?worklettest, click Play → hear a steady 220 Hz tone.
+// addModule can run before ctx.resume(); the node stays silent until Play resumes ctx.
+if (new URLSearchParams(location.search).has('worklettest')) {
+  void (async () => {
+    try {
+      await loadLoomWorklet(ctx);
+      new LoomWorkletNode(ctx).connect(ctx.destination);
+    } catch (err) {
+      console.error('[worklettest] addModule failed:', err);
+    }
+  })();
+}
 
 // App always boots in Session mode (see fetchDemoSession call above).
