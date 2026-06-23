@@ -8,7 +8,8 @@ function snap(over: Partial<PerfSnapshot> = {}): PerfSnapshot {
     audioSupported: true, avgLoad: 0.37, peakLoad: 0.61, underrunRatio: 0,
     lagMs: 4, lagMaxMs: 22, tickDurMs: 1.8, fps: 58, frameMs: 17,
     voicesTotal: 12, voicesByLane: [{ laneId: 'bass', count: 8 }, { laneId: 'drums', count: 4 }],
-    genNodes: 84, histLoad: [0.1, 0.2, 0.4], histLag: [2, 4, 8], histFps: [60, 59, 58],
+    genNodes: 84, masterPeak: 0.5, masterReductionDb: 0, masterClips: 0,
+    histLoad: [0.1, 0.2, 0.4], histLag: [2, 4, 8], histFps: [60, 59, 58],
     events: [{ tSec: 12.3, kind: 'late-tick', detail: 'late tick +31ms' }],
     ...over,
   };
@@ -21,6 +22,15 @@ describe('createPerfView', () => {
     expect(v.el.querySelector('[data-f="audio"]')!.textContent).toContain('37%');
     expect(v.el.querySelector('[data-f="fps"]')!.textContent).toContain('58');
     expect(v.el.querySelector('[data-f="voices"]')!.textContent).toContain('12');
+  });
+
+  it('shows master peak, limiter gain reduction and clip count', () => {
+    const v = createPerfView();
+    v.render(snap({ masterPeak: 1.0, masterReductionDb: -4.2, masterClips: 3 }));
+    const txt = v.el.querySelector('[data-f="master"]')!.textContent!;
+    expect(txt).toContain('0.0 dBFS'); // 1.0 linear = 0 dBFS
+    expect(txt).toContain('GR -4.2');
+    expect(txt).toContain('CLIP×3');
   });
 
   it('shows n/d for audio load when unsupported', () => {

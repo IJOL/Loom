@@ -42,6 +42,20 @@ describe('PerfMonitor', () => {
     expect(s.peakLoad).toBeGreaterThan(s.avgLoad);
   });
 
+  it('records master peak/reduction and logs ONE clip event per rising edge', () => {
+    const m = new PerfMonitor();
+    m.recordMaster(0.5, 0, 1);    // below 0 dBFS → no clip
+    m.recordMaster(1.4, -6, 2);   // crosses → 1 clip
+    m.recordMaster(1.6, -8, 3);   // still clipping → NO new event (no spam)
+    m.recordMaster(0.7, -1, 4);   // drops below → reset edge
+    m.recordMaster(1.2, -5, 5);   // crosses again → 2nd clip
+    const s = m.snapshot();
+    expect(s.masterClips).toBe(2);
+    expect(s.events.filter((e) => e.kind === 'clip').length).toBe(2);
+    expect(s.masterPeak).toBeCloseTo(1.2, 5);
+    expect(s.masterReductionDb).toBe(-5);
+  });
+
   it('caps history length and event log (newest first)', () => {
     const m = new PerfMonitor();
     for (let i = 0; i < 500; i++) m.recordFps(60 - (i % 10), 16);

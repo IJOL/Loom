@@ -37,6 +37,7 @@ export function createPerfView(opts: PerfViewOpts = {}): PerfView {
       <div class="perf-diag-row"><span class="perf-diag-k">Sched</span><span class="perf-diag-v" data-f="sched"></span><span class="perf-diag-spark" data-s="lag"></span></div>
       <div class="perf-diag-row"><span class="perf-diag-k">FPS</span><span class="perf-diag-v" data-f="fps"></span><span class="perf-diag-spark" data-s="fps"></span></div>
       <div class="perf-diag-row"><span class="perf-diag-k">Load</span><span class="perf-diag-v" data-f="voices"></span></div>
+      <div class="perf-diag-row"><span class="perf-diag-k">Master</span><span class="perf-diag-v" data-f="master"></span></div>
     </div>
     <div class="perf-diag-panel" data-f="panel" hidden>
       <div class="perf-diag-sub">Voices by lane</div>
@@ -77,6 +78,13 @@ export function createPerfView(opts: PerfViewOpts = {}): PerfView {
       set('[data-f="fps"]', `${Math.round(s.fps)} (${s.frameMs.toFixed(1)}ms)`);
       set('[data-s="fps"]', spark(s.histFps, 60));
       set('[data-f="voices"]', `V ${s.voicesTotal}  N ${s.genNodes}`);
+      // Master peak (dBFS) + limiter gain reduction + clip onsets — the
+      // indicators that track audible damage on a hot multi-lane mix.
+      const pkDb = s.masterPeak > 0 ? 20 * Math.log10(s.masterPeak) : -Infinity;
+      const pk = pkDb === -Infinity ? '-∞' : `${pkDb >= 0 ? '+' : ''}${pkDb.toFixed(1)}`;
+      const gr = s.masterReductionDb < -0.1 ? `  GR ${s.masterReductionDb.toFixed(1)}` : '';
+      const clip = s.masterClips > 0 ? `  CLIP×${s.masterClips}` : '';
+      set('[data-f="master"]', `pk ${pk} dBFS${gr}${clip}`);
       if (!panel.hidden) fillPanel(s);
     },
     dispose() { el.remove(); },

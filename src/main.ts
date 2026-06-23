@@ -822,6 +822,8 @@ wireTransport(transportDeps);
 const perfDiagnostics = createPerfDiagnostics({
   ctx, seq, voiceTap: perfVoiceTap, mount: document.body,
   resolveLaneName: (id) => sessionHost.state.lanes.find((l) => l.id === id)?.name ?? id,
+  // Master peak/clip + limiter gain-reduction row (post-limiter tap).
+  masterAnalyser: masterMeterAnalyser, masterComp,
 });
 document.getElementById('perf-toggle')?.addEventListener('click', (e) => {
   perfDiagnostics.toggle();

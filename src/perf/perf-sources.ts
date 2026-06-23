@@ -29,6 +29,11 @@ export interface PerfSourcesDeps {
   ctx: AudioContext;
   seq: Sequencer;
   voiceTap: PerfVoiceTap;
+  /** Optional master-output analyser (tap off masterComp.output) for the
+   *  peak/clip indicator. Absent ⇒ no master metering. */
+  masterAnalyser?: AnalyserNode;
+  /** Optional master limiter, for its gain-reduction reading. */
+  masterComp?: { getReduction(): number };
 }
 
 export function attachPerfSources(deps: PerfSourcesDeps): () => void {
@@ -77,6 +82,11 @@ export function attachPerfSources(deps: PerfSourcesDeps): () => void {
 
   // 5) FPS / main-thread frame time. `detached` guards the self-reschedule so a
   // detach() that lands mid-frame can't be undone by the callback re-queuing.
+  // 5b) Master peak/clip + limiter gain reduction, sampled each frame.
+  const masterAnalyser = deps.masterAnalyser;
+  const masterComp = deps.masterComp;
+  const masterBuf = masterAnalyser ? new Float32Array(masterAnalyser.fftSize) : null;
+
   const hasRaf = typeof requestAnimationFrame === 'function';
   let rafId = 0;
   let lastFrame = 0;
@@ -88,6 +98,15 @@ export function attachPerfSources(deps: PerfSourcesDeps): () => void {
       if (dt > 0) monitor.recordFps(1000 / dt, dt);
     }
     lastFrame = t;
+    if (masterAnalyser && masterBuf) {
+      masterAnalyser.getFloatTimeDomainData(masterBuf);
+      let peak = 0;
+      for (let i = 0; i < masterBuf.length; i++) {
+        const a = Math.abs(masterBuf[i]);
+        if (a > peak) peak = a;
+      }
+      monitor.recordMaster(peak, masterComp ? masterComp.getReduction() : 0, nowSec());
+    }
     rafId = requestAnimationFrame(frame);
   };
   if (hasRaf) rafId = requestAnimationFrame(frame);

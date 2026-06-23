@@ -13,6 +13,9 @@ export interface PerfDiagnosticsDeps {
   voiceTap: PerfVoiceTap;
   mount: HTMLElement;
   resolveLaneName?: (laneId: string) => string;
+  /** Master-output analyser + limiter for the peak/clip + gain-reduction row. */
+  masterAnalyser?: AnalyserNode;
+  masterComp?: { getReduction(): number };
 }
 
 export interface PerfDiagnostics {
@@ -41,7 +44,10 @@ export function createPerfDiagnostics(deps: PerfDiagnosticsDeps): PerfDiagnostic
     monitor = new PerfMonitor();
     view = createPerfView({ resolveLaneName: deps.resolveLaneName });
     deps.mount.appendChild(view.el);
-    detach = attachPerfSources({ monitor, ctx: deps.ctx, seq: deps.seq, voiceTap: deps.voiceTap });
+    detach = attachPerfSources({
+      monitor, ctx: deps.ctx, seq: deps.seq, voiceTap: deps.voiceTap,
+      masterAnalyser: deps.masterAnalyser, masterComp: deps.masterComp,
+    });
     view.render(monitor.snapshot()); // immediate first paint
     lastPaint = 0;
     if (hasRaf) rafId = requestAnimationFrame(loop);

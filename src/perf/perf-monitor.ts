@@ -4,7 +4,7 @@
 
 export interface PerfEvent {
   tSec: number;
-  kind: 'late-tick' | 'underrun';
+  kind: 'late-tick' | 'underrun' | 'clip';
   detail: string;
 }
 
@@ -16,6 +16,12 @@ export interface PerfSnapshot {
   voicesTotal: number;
   voicesByLane: Array<{ laneId: string; count: number }>;
   genNodes: number;
+  /** Master-output peak this sample, linear (1.0 = 0 dBFS). */
+  masterPeak: number;
+  /** Master limiter gain reduction, dB (<= 0; 0 = not limiting). */
+  masterReductionDb: number;
+  /** Count of clip onsets (peak crossed 0 dBFS) since the panel opened. */
+  masterClips: number;
   histLoad: number[]; histLag: number[]; histFps: number[];
   events: PerfEvent[];
 }
@@ -38,6 +44,8 @@ export class PerfMonitor {
   private lagMs = 0; private lagMaxMs = 0; private tickDurMs = 0;
   private fps = 0; private frameMs = 0;
   private genNodes = 0;
+  private masterPeak = 0; private masterReductionDb = 0; private masterClips = 0;
+  private wasClipping = false;
 
   private push(arr: number[], v: number): void {
     arr.push(v);
@@ -88,6 +96,23 @@ export class PerfMonitor {
   incNode(): void { this.genNodes++; }
   decNode(): void { if (this.genNodes > 0) this.genNodes--; }
 
+  /** Master-output sample: peak (linear, 1.0 = 0 dBFS) + limiter gain reduction
+   *  (dB, <= 0). Logs ONE clip event on the rising edge (peak crossing 0 dBFS)
+   *  so a sustained clip doesn't spam the dropout log — pinpoints WHERE it
+   *  clipped. These are the indicators that actually track audible damage
+   *  (clipping) and how hard the master limiter is working (a level/load proxy
+   *  that works even when renderCapacity is unavailable). */
+  recordMaster(peak: number, reductionDb: number, nowSec: number): void {
+    this.masterPeak = peak;
+    this.masterReductionDb = reductionDb;
+    const clipping = peak >= 1.0;
+    if (clipping && !this.wasClipping) {
+      this.masterClips++;
+      this.logEvent({ tSec: nowSec, kind: 'clip', detail: `clip ${(20 * Math.log10(peak)).toFixed(1)} dBFS` });
+    }
+    this.wasClipping = clipping;
+  }
+
   snapshot(): PerfSnapshot {
     let total = 0;
     const byLane: Array<{ laneId: string; count: number }> = [];
@@ -99,6 +124,7 @@ export class PerfMonitor {
       lagMs: this.lagMs, lagMaxMs: this.lagMaxMs, tickDurMs: this.tickDurMs,
       fps: this.fps, frameMs: this.frameMs,
       voicesTotal: total, voicesByLane: byLane, genNodes: this.genNodes,
+      masterPeak: this.masterPeak, masterReductionDb: this.masterReductionDb, masterClips: this.masterClips,
       histLoad: this.histLoad.slice(), histLag: this.histLag.slice(), histFps: this.histFps.slice(),
       events: this.events.map((e) => ({ ...e })),
     };
