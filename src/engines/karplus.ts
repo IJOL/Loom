@@ -23,100 +23,12 @@
 // LFO/ADSR on the amp still work. This matches how a plucked string behaves —
 // the timbre is set at the moment of the pluck.
 
-// ── Karplus-Strong string renderer (offline, per note) ────────────────────
-// Renders a full plucked-string decay into a Float32Array using a sample-
-// accurate waveguide loop:
-//   excitation[n] ─►(+)─► delay(L, fractional) ─► one-pole LP ─►(×g)─┐
-//                    ▲                                                │
-//                    └────────────────────────────────────────────────┘
-//   • L = sampleRate/freq, read with linear interpolation for fractional
-//     tuning → correct pitch at ALL frequencies. L is shortened by the loop
-//     filter's group delay so the resonance lands on the true fundamental.
-//   • one-pole LP (coefficient from `brightness`) damps high harmonics faster
-//     than low ones → the characteristic string timbre and its evolution.
-//   • loop gain g < 1 (from `damping`) sets the overall T60 decay length.
-//   • a DC-blocking high-pass on the output removes any offset the random
-//     excitation burst leaves behind.
-//   • output is peak-normalized so the amp GainNode is the only level control.
-function renderKarplusString(opts: {
-  sampleRate: number; freq: number; damping: number; brightness: number;
-  exciteDur: number; noiseTone: number; seconds: number;
-}): Float32Array {
-  const { sampleRate: fs, freq, damping, brightness, exciteDur, noiseTone } = opts;
-  const N = Math.max(1, Math.round(opts.seconds * fs));
-  const out = new Float32Array(N);
-
-  // Loop low-pass coefficient from brightness (one-pole y += a·(x−y)):
-  // 0.15 ≈ 1 kHz cutoff (dark) … 0.95 ≈ 20 kHz (open/metallic).
-  const a = 0.15 + brightness * 0.80;
-  // Loop gain → decay time. A FIXED loop gain makes the 60 dB decay time
-  // T60 ∝ 1/freq (amp(t) = g^(freq·t)), so high notes die far too fast — C6
-  // collapses in ~0.1 s, which is both unmusical and left the top of the
-  // register near-silent. Instead choose g PER NOTE so T60 is set by `damping`
-  // and is ~constant across the register: solve g^(freq·T60) = 1e-3 for g.
-  //   damping 0 → T60 ≈ 4.0 s (long sustain)   damping 1 → T60 ≈ 0.12 s (muted)
-  // Clamped just below 1 for safety (the loop only runs offline, so there is no
-  // live feedback path to destabilize regardless).
-  const t60 = 4.0 * Math.pow(0.03, damping);
-  const g = Math.min(0.9995, Math.exp(Math.log(1e-3) / (Math.max(20, freq) * t60)));
-
-  // Delay length = period minus the one-pole's low-frequency group delay
-  // ((1−a)/a samples), so the filtered loop resonates at the true pitch.
-  const period = fs / Math.max(20, freq);
-  const Ldelay = Math.max(1, period - (1 - a) / a);
-  const Li = Math.floor(Ldelay);
-  const frac = Ldelay - Li;
-  const dlSize = Li + 2;
-  const dl = new Float32Array(dlSize);
-  let widx = 0;
-  let lp = 0;
-
-  // Excitation: a band-limited white-noise burst whose colour is set by
-  // noiseTone (200 Hz dark … 12 kHz bright), with a short raised-cosine
-  // fade-out so the burst's end doesn't click.
-  const exciteLen = Math.min(N, Math.max(4, Math.round(exciteDur * fs)));
-  const noiseHz = Math.min(fs * 0.45, 200 * Math.pow(60, noiseTone));
-  const na = 1 - Math.exp(-2 * Math.PI * noiseHz / fs);
-  let nlp = 0;
-  const FADE = 32;
-
-  for (let n = 0; n < N; n++) {
-    let exc = 0;
-    if (n < exciteLen) {
-      const w = Math.random() * 2 - 1;
-      nlp += na * (w - nlp);
-      exc = nlp;
-      if (n > exciteLen - FADE) {
-        exc *= 0.5 - 0.5 * Math.cos(Math.PI * (exciteLen - n) / FADE);
-      }
-    }
-    const i0 = (widx - Li + dlSize) % dlSize;
-    const i1 = (i0 - 1 + dlSize) % dlSize;
-    const read = dl[i0] * (1 - frac) + dl[i1] * frac;
-    lp += a * (read - lp);
-    const s = exc + g * lp;
-    out[n] = s;
-    dl[widx] = s;
-    widx = widx + 1 === dlSize ? 0 : widx + 1;
-  }
-
-  // DC blocker (one-pole high-pass, R≈0.997) so the random burst leaves no
-  // subsonic offset to thump the amp.
-  let xPrev = 0, yPrev = 0;
-  const R = 0.997;
-  for (let n = 0; n < N; n++) {
-    const x = out[n];
-    const y = x - xPrev + R * yPrev;
-    xPrev = x; yPrev = y; out[n] = y;
-  }
-
-  // Peak-normalize to fixed headroom: the output GainNode becomes the sole
-  // level control and a single note can never clip regardless of resonance.
-  let pk = 0;
-  for (let n = 0; n < N; n++) { const v = Math.abs(out[n]); if (v > pk) pk = v; }
-  if (pk > 1e-9) { const k = 0.8 / pk; for (let n = 0; n < N; n++) out[n] *= k; }
-  return out;
-}
+// renderKarplusString is now a shared pure function living in the audio-dsp
+// kernel so both this legacy Web Audio engine and the AudioWorklet renderer use
+// the same implementation (DRY). The function is re-exported here for backward
+// compatibility with any direct imports from this module.
+import { renderKarplusString } from '../audio-dsp/karplus-renderer';
+export { renderKarplusString };
 
 import type { SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, EngineUIContext } from './engine-types';
 import type { EngineParamSpec } from './engine-params';

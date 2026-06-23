@@ -25,6 +25,14 @@ export interface NoteSpec {
   slide: boolean;
 }
 
+/** Generic engine parameter bag: dot-id (`'filter.cutoff'`, `'op1.ratio'`, …)
+ *  → value. Replaces the typed SubParams as the cross-engine param carrier so
+ *  one VoiceManager/worklet drives any engine kind. */
+export type ParamBag = Record<string, number>;
+
+/** Read a ParamBag value with a default fallback. */
+export const param = (b: ParamBag, id: string, d: number): number => (b[id] ?? d);
+
 /** A modulation destination: any SubParams field, plus the synthetic `ampGain`
  *  (a multiplicative output gain — i.e. tremolo — which is not a stored param
  *  but the amp-envelope output). */
