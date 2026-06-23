@@ -1,9 +1,9 @@
-import type { NoteSpec, SubParams } from './types';
+import type { NoteSpec, ParamBag } from './types';
 import type { ModLite } from './modulation-runtime';
 
 export type MainToWorklet =
   | { type: 'spawn'; note: NoteSpec }
-  | { type: 'params'; params: Partial<SubParams> }
+  | { type: 'params'; params: ParamBag }   // dot-id → value
   | { type: 'mods'; mods: ModLite[] }
   | { type: 'config'; maxVoices: number }
   | { type: 'steal'; count: number };

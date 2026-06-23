@@ -1,8 +1,27 @@
 // src/audio-dsp/subtractive-renderer.ts
-import type { NoteSpec, SubParams, VoiceRenderer, VoiceModOffsets } from './types';
+import type { NoteSpec, SubParams, ParamBag, VoiceRenderer, VoiceModOffsets } from './types';
+import { param } from './types';
 import { SawOsc, SquareOsc, TriOsc, SineOsc, WhiteNoise } from './osc';
 import { Svf } from './filter';
 import { Adsr } from './adsr';
+import { registerRenderer } from './renderer-registry';
+
+/** Read a dot-id ParamBag into the typed SubParams snapshot the renderer uses
+ *  internally. Defaults match subtractive-params.ts / defaultSubParams(). */
+function subParamsFromBag(b: ParamBag): SubParams {
+  return {
+    masterTune: param(b, 'master.tune', 0),
+    osc1Wave: param(b, 'osc1.wave', 0), osc1Level: param(b, 'osc1.level', 0.6), osc1Detune: param(b, 'osc1.detune', 0),
+    osc2Wave: param(b, 'osc2.wave', 1), osc2Level: param(b, 'osc2.level', 0.4), osc2Detune: param(b, 'osc2.detune', 7),
+    subLevel: param(b, 'sub.level', 0.3),
+    noiseLevel: param(b, 'noise.level', 0), noiseColor: param(b, 'noise.color', 0.6),
+    filterCutoff: param(b, 'filter.cutoff', 0.55), filterResonance: param(b, 'filter.resonance', 0.25), filterEnvAmount: param(b, 'filter.envAmount', 0.45),
+    filterDrive: param(b, 'filter.drive', 0), filterKeyTrack: param(b, 'filter.keyTrack', 0), filterBuiltinEnv: param(b, 'filter.builtinEnv', 1),
+    filterAttack: param(b, 'filter.attack', 0.01), filterDecay: param(b, 'filter.decay', 0.3), filterSustain: param(b, 'filter.sustain', 0.4), filterRelease: param(b, 'filter.release', 0.35),
+    ampBuiltinEnv: param(b, 'amp.builtinEnv', 1),
+    ampAttack: param(b, 'amp.attack', 0.01), ampDecay: param(b, 'amp.decay', 0.2), ampSustain: param(b, 'amp.sustain', 0.7), ampRelease: param(b, 'amp.release', 0.3),
+  };
+}
 
 type Osc = { update(freq: number): number };
 function makeOsc(wave: number, sr: number): Osc {
@@ -40,25 +59,25 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
   private keySemiDelta: number; private accentMul: number;
   done = false;
 
-  constructor(note: NoteSpec, params: SubParams, sampleRate: number) {
-    this.sr = sampleRate; this.p = params;
+  constructor(note: NoteSpec, params: ParamBag, sampleRate: number) {
+    this.sr = sampleRate;
+    const p = subParamsFromBag(params); this.p = p;
     this.begin = note.beginSec;
     this.holdEnd = note.beginSec + note.durationSec;
-    const tuneSemis = params.masterTune;
-    this.baseFreq = midiToFreq(note.midi) * Math.pow(2, tuneSemis / 12);
-    this.osc1 = makeOsc(params.osc1Wave, sampleRate);
-    this.osc2 = makeOsc(params.osc2Wave, sampleRate);
+    this.baseFreq = midiToFreq(note.midi) * Math.pow(2, p.masterTune / 12);
+    this.osc1 = makeOsc(p.osc1Wave, sampleRate);
+    this.osc2 = makeOsc(p.osc2Wave, sampleRate);
     this.sub = new SineOsc(sampleRate);
     this.noiseLp = new Svf(sampleRate);
     this.filter = new Svf(sampleRate);
     // 0.4 * velGain(...) with NoteSpec.velocity already normalised 0..1.
     // velToGain(v01) = 0.3 + 1.1*v01 ; accent amp punch = 1.1 (ACCENT_PUNCH).
     this.velPeak = 0.4 * (0.3 + 1.1 * note.velocity) * (note.accent ? 1.1 : 1.0);
-    this.baseCutoffHz = Math.min(60 * Math.pow(220, params.filterCutoff), 18000);
+    this.baseCutoffHz = Math.min(60 * Math.pow(220, p.filterCutoff), 18000);
     this.keySemiDelta = note.midi - 60;
-    this.keyTrackHz = this.keySemiDelta * this.baseCutoffHz * (Math.pow(2, 1 / 12) - 1) * params.filterKeyTrack;
+    this.keyTrackHz = this.keySemiDelta * this.baseCutoffHz * (Math.pow(2, 1 / 12) - 1) * p.filterKeyTrack;
     this.accentMul = note.accent ? 1.3 : 1.0;
-    this.envRangeHz = Math.min(this.baseCutoffHz * 7, 16000) * params.filterEnvAmount * this.accentMul;
+    this.envRangeHz = Math.min(this.baseCutoffHz * 7, 16000) * p.filterEnvAmount * this.accentMul;
   }
 
   noteOff(t: number): void { if (t < this.holdEnd) this.holdEnd = t; }
@@ -134,3 +153,5 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     return out;
   }
 }
+
+registerRenderer('subtractive', (n, p, sr) => new SubtractiveVoiceRenderer(n, p, sr));

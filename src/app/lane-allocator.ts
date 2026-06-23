@@ -5,6 +5,11 @@ import { InsertChain } from '../plugins/fx/insert-chain';
 import { createEngineInstance } from '../engines/registry';
 import { WorkletLaneEngine } from '../engines/worklet-lane-engine';
 import type { GlobalVoiceCap } from '../audio-worklet/global-voice-cap';
+
+// Melodic engines that have a per-sample worklet renderer (Phase 1 subtractive +
+// Phase 2 ports). These route to WorkletLaneEngine on the live path; drums /
+// sampler / audio remain legacy until their own phases.
+const WORKLET_ENGINE_IDS = new Set(['subtractive', 'tb303', 'fm', 'wavetable', 'karplus', 'westcoast']);
 import { getPlugin, createInstance } from '../plugins/registry';
 import { setCurrentLaneForVoice } from '../modulation/active-mods';
 import { ModulationHostImpl } from '../modulation/modulation-host';
@@ -32,14 +37,15 @@ export interface LaneAllocatorDeps {
   sidechainBus: SidechainBus;
   getBpm(): number;
   extraIds: readonly string[];
-  /** How 'subtractive' lanes synthesise. 'worklet' (default) routes them to the
+  /** How the worklet-capable melodic engines (subtractive/tb303/fm/wavetable/
+   *  karplus/westcoast) synthesise. 'worklet' (default) routes them to the
    *  AudioWorklet (WorkletLaneEngine) — the live path. 'legacy' keeps the
-   *  PolySynth node-per-note engine; used by the offline scene recorder, which
+   *  node-per-note engines; used by the offline scene recorder, which
    *  batch-renders through an OfflineAudioContext where the real-time dropout
    *  problem the worklet solves does not apply and where worklet message
    *  delivery during startRendering is unreliable. TEMPORARY: Phase 4 (cutover)
-   *  removes the legacy engine and this seam. */
-  subtractiveBackend?: 'worklet' | 'legacy';
+   *  removes the legacy engines and this seam. */
+  synthesisBackend?: 'worklet' | 'legacy';
   /** Global simultaneous-voice budget coordinator. Each worklet lane registers
    *  its node so the busiest lane is told to steal when the total exceeds the
    *  budget. Absent in the offline recorder (no real-time dropout concern). */
@@ -128,19 +134,26 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
 
   /** Resolve an engine instance: legacy registry first, plugin registry as
    *  fallback (plugin-only synths get wrapped via pluginSynthAsEngine). */
-  const subtractiveBackend = deps.subtractiveBackend ?? 'worklet';
+  const synthesisBackend = deps.synthesisBackend ?? 'worklet';
 
   const createLaneEngine = (laneId: string, engineId: string, inserts: InsertChain): SynthEngine | null => {
-    // 'subtractive' lanes are synthesised in the AudioWorklet (live path). The
-    // engine constructs its own LoomWorkletNode and self-wires to
-    // inserts.inputNode, bypassing the legacy PolySynth path in
-    // wireEngineIntoLane below. The offline recorder opts into 'legacy'.
-    if (engineId === 'subtractive' && subtractiveBackend === 'worklet') {
-      const eng = new WorkletLaneEngine(deps.ctx, inserts.inputNode);
-      // Enrol this lane's worklet node in the global voice cap so its active
-      // count counts toward (and can be stolen against) the total budget.
-      deps.globalVoiceCap?.register(laneId, eng.getWorkletNode());
-      return eng;
+    // Worklet-capable melodic engines are synthesised in the AudioWorklet (live
+    // path). The WorkletLaneEngine constructs its own LoomWorkletNode and
+    // self-wires to inserts.inputNode, bypassing the legacy node-per-note path
+    // in wireEngineIntoLane. The offline recorder opts into 'legacy'. Config
+    // (name/polyphony/params/modulators) is read off a throwaway legacy engine
+    // instance so it never drifts from the registry.
+    if (WORKLET_ENGINE_IDS.has(engineId) && synthesisBackend === 'worklet') {
+      const spec = createEngineInstance(engineId);
+      if (spec) {
+        const eng = new WorkletLaneEngine(deps.ctx, inserts.inputNode, {
+          engineId, name: spec.name, presetsKey: engineId, polyphony: spec.polyphony,
+          params: spec.params, modulators: spec.modulators.serialize(),
+        });
+        // Enrol this lane's worklet node in the global voice cap.
+        deps.globalVoiceCap?.register(laneId, eng.getWorkletNode());
+        return eng;
+      }
     }
     let engine = createEngineInstance(engineId);
     if (!engine) {
@@ -161,10 +174,10 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     strip: ChannelStrip,
     inserts: InsertChain,
   ): void => {
+    // Worklet backend: a worklet-routed engine is a self-wiring WorkletLaneEngine
+    // (see createLaneEngine) — no legacy node wiring needed.
+    if (WORKLET_ENGINE_IDS.has(engineId) && synthesisBackend === 'worklet') return;
     if (engineId === 'subtractive') {
-      // Worklet backend: WorkletLaneEngine owns and self-wires its
-      // LoomWorkletNode (see createLaneEngine) — no PolySynth needed.
-      if (subtractiveBackend === 'worklet') return;
       // Legacy backend: wire a PolySynth into the SubtractiveEngine.
       const p = new PolySynth(deps.ctx, inserts.inputNode);
       p.bpm = deps.getBpm();

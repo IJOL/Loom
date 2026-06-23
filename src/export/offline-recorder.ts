@@ -59,10 +59,10 @@ export class OfflineSceneRecorder implements SceneRecorder {
       extraIds: [],
       // Offline export batch-renders through OfflineAudioContext, so the
       // real-time dropout problem the worklet solves does not apply here, and
-      // worklet message delivery during startRendering is unreliable. Keep
-      // subtractive on the proven legacy node-per-note engine. (Phase 4 cutover
-      // will revisit once the legacy engine is removed.)
-      subtractiveBackend: 'legacy',
+      // worklet message delivery during startRendering is unreliable. Keep ALL
+      // worklet-capable engines on the proven legacy node-per-note path offline.
+      // (Phase 4 cutover will revisit once the legacy engines are removed.)
+      synthesisBackend: 'legacy',
     });
 
     // Allocate + configure each sounding lane (await drumkit reloads + inserts).

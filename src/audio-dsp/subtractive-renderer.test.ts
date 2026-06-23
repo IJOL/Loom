@@ -1,13 +1,20 @@
 // src/audio-dsp/subtractive-renderer.test.ts
 import { describe, it, expect } from 'vitest';
 import { SubtractiveVoiceRenderer } from './subtractive-renderer';
-import { defaultSubParams } from './default-params';
-import type { NoteSpec } from './types';
+import type { NoteSpec, ParamBag } from './types';
 
 const SR = 48000;
-// Use the same defaults the worklet actually boots with — no separate literal
-// that could silently drift from default-params.ts.
-const DEFAULTS = defaultSubParams();
+// Dot-id ParamBag with the subtractive defaults — the shape a real lane sends.
+const DEFAULTS: ParamBag = {
+  'master.tune': 0,
+  'osc1.wave': 0, 'osc1.level': 0.6, 'osc1.detune': 0,
+  'osc2.wave': 1, 'osc2.level': 0.4, 'osc2.detune': 7,
+  'sub.level': 0.3, 'noise.level': 0, 'noise.color': 0.6,
+  'filter.cutoff': 0.55, 'filter.resonance': 0.25, 'filter.envAmount': 0.45,
+  'filter.drive': 0, 'filter.keyTrack': 0, 'filter.builtinEnv': 1,
+  'filter.attack': 0.01, 'filter.decay': 0.3, 'filter.sustain': 0.4, 'filter.release': 0.35,
+  'amp.builtinEnv': 1, 'amp.attack': 0.01, 'amp.decay': 0.2, 'amp.sustain': 0.7, 'amp.release': 0.3,
+};
 const note = (over: Partial<NoteSpec> = {}): NoteSpec =>
   ({ midi: 57, beginSec: 0, durationSec: 0.4, velocity: 0.8, accent: false, slide: false, ...over });
 const rms = (b: number[]) => Math.sqrt(b.reduce((s, v) => s + v * v, 0) / b.length);
@@ -37,7 +44,7 @@ describe('SubtractiveVoiceRenderer', () => {
     const bright = (cut: number) => {
       // resonance 0 isolates the cutoff's effect: a resonant filter rings at the
       // cutoff frequency, inflating the low-cutoff case and confounding the test.
-      const v = new SubtractiveVoiceRenderer(note(), { ...DEFAULTS, filterCutoff: cut, filterResonance: 0, filterEnvAmount: 0 }, SR);
+      const v = new SubtractiveVoiceRenderer(note(), { ...DEFAULTS, 'filter.cutoff': cut, 'filter.resonance': 0, 'filter.envAmount': 0 }, SR);
       const b: number[] = []; for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR));
       return rms(b);
     };
@@ -61,7 +68,7 @@ describe('SubtractiveVoiceRenderer', () => {
     // offset on a 0.15 base reaches the 0.95 cutoff that measured ~1.71× brighter.
     const bright = (cutMod: number) => {
       const v = new SubtractiveVoiceRenderer(
-        note(), { ...DEFAULTS, filterCutoff: 0.15, filterResonance: 0, filterEnvAmount: 0 }, SR,
+        note(), { ...DEFAULTS, 'filter.cutoff': 0.15, 'filter.resonance': 0, 'filter.envAmount': 0 }, SR,
       );
       const b: number[] = [];
       for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR, { filterCutoff: cutMod }));
@@ -73,7 +80,7 @@ describe('SubtractiveVoiceRenderer', () => {
   it('master-tune modulation shifts pitch (octave-up ≈ doubles the zero-crossing rate)', () => {
     const upwardCrossings = (tuneMod: number) => {
       const v = new SubtractiveVoiceRenderer(
-        note(), { ...DEFAULTS, osc1Wave: 3, osc1Level: 0.8, osc2Level: 0, subLevel: 0, noiseLevel: 0, filterCutoff: 0.95, filterResonance: 0, filterEnvAmount: 0 }, SR,
+        note(), { ...DEFAULTS, 'osc1.wave': 3, 'osc1.level': 0.8, 'osc2.level': 0, 'sub.level': 0, 'noise.level': 0, 'filter.cutoff': 0.95, 'filter.resonance': 0, 'filter.envAmount': 0 }, SR,
       );
       let prev = 0, zc = 0;
       for (let i = 0; i < SR * 0.1; i++) {
@@ -103,7 +110,7 @@ describe('SubtractiveVoiceRenderer', () => {
     // downstream master limiter/soft-clip is not constantly crushed. A peak far
     // above these signals an undamped-SVF regression (the resonance-scale bug).
     const peakOf = (res: number) => {
-      const v = new SubtractiveVoiceRenderer(note(), { ...DEFAULTS, filterResonance: res }, SR);
+      const v = new SubtractiveVoiceRenderer(note(), { ...DEFAULTS, 'filter.resonance': res }, SR);
       let peak = 0;
       for (let i = 0; i < SR * 0.6; i++) { const a = Math.abs(v.renderSample(i / SR)); if (a > peak) peak = a; }
       return peak;

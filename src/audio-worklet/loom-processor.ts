@@ -10,25 +10,37 @@ import { VoiceManager } from '../audio-dsp/voice-manager';
 import { SchedulerQueue } from '../audio-dsp/scheduler-queue';
 import { ModulationRuntime } from '../audio-dsp/modulation-runtime';
 import type { MainToWorklet, WorkletToMain } from '../audio-dsp/messages';
-import type { NoteSpec, SubParams } from '../audio-dsp/types';
-import { defaultSubParams } from '../audio-dsp/default-params';
+import type { NoteSpec } from '../audio-dsp/types';
 import { LOOM_PROCESSOR_NAME } from './processor-name';
+// Side-effect imports: each renderer self-registers into the renderer-registry
+// so VoiceManager.createRenderer(engineId, …) can build any engine's voice.
+import '../audio-dsp/subtractive-renderer';
+import '../audio-dsp/tb303-renderer';
+import '../audio-dsp/fm-renderer';
+import '../audio-dsp/karplus-renderer';
+import '../audio-dsp/wavetable-renderer';
+import '../audio-dsp/westcoast-renderer';
 
 class LoomProcessor extends AudioWorkletProcessor {
-  private vm = new VoiceManager(sampleRate, defaultSubParams());
+  private vm: VoiceManager;
   private mod = new ModulationRuntime(sampleRate);
   private queue = new SchedulerQueue<NoteSpec>();
   private frame = Math.floor(currentTime * sampleRate);
   private reportCountdown = 0;
 
-  constructor() {
-    super();
+  constructor(options?: unknown) {
+    super(options);
+    const engineId = (options as { processorOptions?: { engineId?: string } } | undefined)
+      ?.processorOptions?.engineId ?? 'subtractive';
+    // Start with an empty param bag — each renderer fills its own defaults via
+    // param(); the lane engine posts the real values immediately after.
+    this.vm = new VoiceManager(sampleRate, engineId, {});
     this.vm.setModulation(this.mod);
     this.port.onmessage = (e: MessageEvent<MainToWorklet>) => {
       const m = e.data;
       switch (m.type) {
         case 'spawn':  this.queue.push(Math.floor(m.note.beginSec * sampleRate), m.note); break;
-        case 'params': this.vm.setParams(m.params as Partial<SubParams>); break;
+        case 'params': this.vm.setParams(m.params); break;
         case 'config': this.vm.setMaxVoices(m.maxVoices); break;
         case 'steal':  this.vm.steal(m.count); break;
         case 'mods':   this.mod.setMods(m.mods); break;

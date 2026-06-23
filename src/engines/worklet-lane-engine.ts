@@ -15,13 +15,12 @@ import type {
   SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, EngineUIContext, EnginePreset,
 } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
-import type { SubParams, ModTarget } from '../audio-dsp/types';
+import type { ParamBag, SubParams, ModTarget } from '../audio-dsp/types';
 import type { ModLite } from '../audio-dsp/modulation-runtime';
-import { LoomWorkletNode, defaultSubParams } from '../audio-worklet/loom-node';
+import { LoomWorkletNode } from '../audio-worklet/loom-node';
 import { ModulationHostImpl } from '../modulation/modulation-host';
-import { makeDefaultLFO, makeDefaultADSR, type ModulatorState } from '../modulation/types';
+import { type ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
-import { SUB_PARAM_SPECS } from './subtractive-params';
 import { velNorm, resolveVelocity } from '../core/velocity-gain';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
 import { createKnob, type KnobHandle } from '../core/knob';
@@ -98,54 +97,64 @@ class WorkletVoice implements Voice {
   dispose(): void { /* no per-note nodes to tear down */ }
 }
 
+/** Per-engine configuration for a worklet-backed lane. */
+export interface WorkletEngineConfig {
+  engineId: string;
+  name: string;
+  params: EngineParamSpec[];
+  presetsKey: string;          // preset cache key (engine id)
+  polyphony: 'mono' | 'poly';
+  modulators?: ModulatorState[];
+}
+
 export class WorkletLaneEngine implements SynthEngine {
-  readonly id = 'subtractive';
-  readonly name = 'Sub';
+  readonly id: string;
+  readonly name: string;
   readonly type = 'polyhost' as const;
-  readonly polyphony = 'poly' as const;
+  readonly polyphony: 'mono' | 'poly';
   readonly editor = 'piano-roll' as const;
-  readonly params: EngineParamSpec[] = SUB_PARAM_SPECS;
-  // Same default modulator set as the legacy SubtractiveEngine (2 ADSR at
-  // depth 0 — the built-in amp/filter envelopes are authoritative — + 2 LFOs)
-  // so the modulators panel (Task 12) shows the same controls. Inert until the
-  // user connects one; toModLite/postMods then drive the in-worklet runtime.
-  private modHost = new ModulationHostImpl([
-    { ...makeDefaultADSR('adsr-amp'), connections: [{ id: 'c-amp', paramId: 'amp.gain', depth: 0 }] },
-    { ...makeDefaultADSR('adsr-filter'), connections: [{ id: 'c-cutoff', paramId: 'filter.cutoff', depth: 0 }] },
-    makeDefaultLFO('lfo1'),
-    { ...makeDefaultLFO('lfo2'), rateHz: 2, waveform: 'triangle' },
-  ]);
-  private state: SubParams = defaultSubParams();
-  private maxVoices = 8;
+  readonly params: EngineParamSpec[];
+  private readonly presetsKey: string;
+  private modHost: ModulationHostImpl;
+  // Current scalar param state as a dot-id ParamBag, seeded from the spec
+  // defaults. setBaseValue mirrors here and posts the same dot-id to the worklet.
+  private state: ParamBag = {};
+  private maxVoices: number;
   private worklet: LoomWorkletNode;
   bpm = 120;
 
-  constructor(ctx: AudioContext, output: AudioNode) {
-    this.worklet = new LoomWorkletNode(ctx);
+  constructor(ctx: AudioContext, output: AudioNode, cfg: WorkletEngineConfig) {
+    this.id = cfg.engineId;
+    this.name = cfg.name;
+    this.polyphony = cfg.polyphony;
+    this.params = cfg.params;
+    this.presetsKey = cfg.presetsKey;
+    this.modHost = new ModulationHostImpl(cfg.modulators ?? []);
+    for (const s of cfg.params) this.state[s.id] = s.default;
+    this.maxVoices = cfg.polyphony === 'mono' ? 1 : 8;
+    this.worklet = new LoomWorkletNode(ctx, cfg.engineId);
     this.worklet.connect(output);
+    if (cfg.polyphony === 'mono') this.worklet.setMaxVoices(1);
     this.postMods();
   }
 
   /** Push the current modulator set to the worklet runtime. Called on
-   *  construction, after applyPreset, and (Task 12) whenever the modulators
-   *  panel edits a modulator/connection. */
+   *  construction, after applyPreset, and whenever the modulators panel edits a
+   *  modulator/connection. (In-worklet modulation is currently subtractive-only;
+   *  for other engines toModLite yields inert mods until their targets are wired.) */
   private postMods(): void {
     this.worklet.setMods(toModLite(this.modHost.modulators));
   }
 
-  get presets(): EnginePreset[] { return getCachedPresets('subtractive'); }
+  get presets(): EnginePreset[] { return getCachedPresets(this.presetsKey); }
   get modulators(): ModulationHostImpl { return this.modHost; }
-  /** Exposed for the global voice cap (Task 11) and for tests. */
+  /** Exposed for the global voice cap and for tests. */
   getWorkletNode(): LoomWorkletNode { return this.worklet; }
 
   getBaseValue(id: string): number {
     if (id === 'poly.voices') return this.maxVoices;
-    if (id === 'poly.mode' || id === 'poly.retrig') {
-      return SUB_PARAM_SPECS.find((p) => p.id === id)?.default ?? 0;
-    }
-    const f = DOT_TO_FIELD[id];
-    if (f) return this.state[f];
-    return SUB_PARAM_SPECS.find((p) => p.id === id)?.default ?? 0;
+    if (id in this.state) return this.state[id];
+    return this.params.find((p) => p.id === id)?.default ?? 0;
   }
 
   setBaseValue(id: string, v: number): void {
@@ -154,13 +163,11 @@ export class WorkletLaneEngine implements SynthEngine {
       this.worklet.setMaxVoices(this.maxVoices);
       return;
     }
-    // mono/legato are not modelled in the worklet renderer yet (Phase 1 is
-    // poly-only); accept-and-ignore so a preset carrying them doesn't error.
+    // mono/legato are not modelled in the worklet renderer yet; accept-and-ignore
+    // so a preset carrying them doesn't error.
     if (id === 'poly.mode' || id === 'poly.retrig') return;
-    const f = DOT_TO_FIELD[id];
-    if (!f) return;
-    this.state[f] = v;
-    this.worklet.setParams({ [f]: v } as Partial<SubParams>);
+    this.state[id] = v;
+    this.worklet.setParams({ [id]: v });   // dot-id straight through to the renderer's ParamBag
   }
 
   applyPreset(name: string): void {
@@ -185,31 +192,30 @@ export class WorkletLaneEngine implements SynthEngine {
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
     if (!ctx) return;
     container.innerHTML = '';
-    // POLY header. The worklet renderer is poly-only, so only VOICES is shown
-    // (it maps to the worklet voice cap via setBaseValue('poly.voices')). MODE
-    // (mono) / RETRIG (legato) are intentionally omitted rather than rendered
-    // inert — they aren't modelled in the worklet renderer yet. The lane's
-    // osc/filter/amp/master knobs are mounted separately by
-    // knob-mounting.mountSubtractiveLaneKnobs (reads engine.params + getBaseValue).
-    const header = document.createElement('div');
-    header.className = 'row poly-section';
-    const lab = document.createElement('div');
-    lab.className = 'section-label';
-    lab.textContent = 'POLY';
-    header.appendChild(lab);
-    const knobRow = document.createElement('div');
-    knobRow.className = 'knob-row';
-    header.appendChild(knobRow);
-    const voices = createKnob({
-      id: `${ctx.laneId}.poly.voices`,
-      label: 'VOICES', min: 1, max: 16, step: 1, value: this.getBaseValue('poly.voices'), defaultValue: 8,
-      format: (v) => String(v),
-      onChange: (v) => { this.setBaseValue('poly.voices', v); },
-      ...(ctx.historyDeps ? attachKnobUndo(ctx.historyDeps) : {}),
-    });
-    ctx.registerKnob(voices);
-    knobRow.appendChild(voices.el);
-    container.appendChild(header);
+    // POLY header (poly engines only): a VOICES knob → the worklet voice cap.
+    // Mono engines (TB-303) are fixed at 1 voice, so the header is omitted. The
+    // lane's osc/filter/amp knobs are mounted separately by knob-mounting.
+    if (this.polyphony === 'poly') {
+      const header = document.createElement('div');
+      header.className = 'row poly-section';
+      const lab = document.createElement('div');
+      lab.className = 'section-label';
+      lab.textContent = 'POLY';
+      header.appendChild(lab);
+      const knobRow = document.createElement('div');
+      knobRow.className = 'knob-row';
+      header.appendChild(knobRow);
+      const voices = createKnob({
+        id: `${ctx.laneId}.poly.voices`,
+        label: 'VOICES', min: 1, max: 16, step: 1, value: this.getBaseValue('poly.voices'), defaultValue: 8,
+        format: (v) => String(v),
+        onChange: (v) => { this.setBaseValue('poly.voices', v); },
+        ...(ctx.historyDeps ? attachKnobUndo(ctx.historyDeps) : {}),
+      });
+      ctx.registerKnob(voices);
+      knobRow.appendChild(voices.el);
+      container.appendChild(header);
+    }
 
     // Modulators panel. Editing a modulator/connection re-posts the whole
     // modulator set to the worklet runtime (postMods) so live LFO edits sound.

@@ -1,5 +1,5 @@
-import type { NoteSpec, SubParams, VoiceRenderer } from './types';
-import { SubtractiveVoiceRenderer } from './subtractive-renderer';
+import type { NoteSpec, ParamBag, VoiceRenderer } from './types';
+import { createRenderer } from './renderer-registry';
 import type { ModulationRuntime } from './modulation-runtime';
 
 interface Slot { midi: number; allocatedAt: number; v: VoiceRenderer; }
@@ -7,7 +7,7 @@ interface Slot { midi: number; allocatedAt: number; v: VoiceRenderer; }
 export class VoiceManager {
   private slots: Slot[] = [];
   private maxVoices = 8;
-  private params: SubParams;
+  private params: ParamBag;
   private lastT = 0;
   private mod: ModulationRuntime | null = null;
   // Pooled per-sample modulation-offset struct — mutated in place each render
@@ -19,11 +19,11 @@ export class VoiceManager {
     osc1Level: 0, osc2Level: 0, subLevel: 0, noiseLevel: 0, noiseColor: 0,
     osc1Detune: 0, osc2Detune: 0, masterTune: 0, ampGain: 0,
   };
-  constructor(private sr: number, params: SubParams) {
+  constructor(private sr: number, private engineId: string, params: ParamBag) {
     this.params = { ...params };
   }
   get activeCount(): number { return this.slots.length; }
-  setParams(patch: Partial<SubParams>): void { Object.assign(this.params, patch); }
+  setParams(patch: ParamBag): void { Object.assign(this.params, patch); }
   setMaxVoices(n: number): void { this.maxVoices = Math.max(1, Math.min(64, Math.floor(n))); }
   /** Attach a shared-LFO modulation runtime. Its per-sample offsets are applied
    *  to every active voice at read time. */
@@ -40,7 +40,7 @@ export class VoiceManager {
     }
     this.slots.push({
       midi: note.midi, allocatedAt: note.beginSec,
-      v: new SubtractiveVoiceRenderer(note, this.params, this.sr),
+      v: createRenderer(this.engineId, note, this.params, this.sr),
     });
   }
 

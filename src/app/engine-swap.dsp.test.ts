@@ -37,6 +37,11 @@ describe('swapLaneEngine changes the lane timbre', () => {
     const lanes = createLaneAllocator({
       ctx, master, fx: new FxBus(ctx, master), sidechainBus: new SidechainBus(),
       getBpm: () => 120, extraIds: [],
+      // Render through the legacy node-per-note engines: the worklet renderers
+      // can't run under node-web-audio-api (its AudioWorkletNode is a silent test
+      // double). This test exercises the backend-agnostic swap LOGIC; worklet DSP
+      // is covered by the per-renderer unit tests + Playwright.
+      synthesisBackend: 'legacy',
     });
 
     lanes.ensureLaneResource('L', 'fm');
