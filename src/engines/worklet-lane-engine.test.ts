@@ -1,5 +1,7 @@
+/** @vitest-environment jsdom */
 import { describe, it, expect, vi } from 'vitest';
 import type { NoteSpec, SubParams } from '../audio-dsp/types';
+import type { EngineUIContext } from './engine-types';
 
 // Mock the node wrapper: capture spawns/params/maxVoices without a real
 // AudioWorkletNode (and without loading loom-node's ?worker&url processor).
@@ -85,6 +87,36 @@ describe('WorkletLaneEngine', () => {
     expect(ids).toEqual(['adsr-amp', 'adsr-filter', 'lfo1', 'lfo2']);
     // default seed has no audible connections (depth 0 / unconnected LFOs)
     expect(modsCalls[0].every((m) => Object.keys(m.depthByParam).length === 0)).toBe(true);
+  });
+
+  const makeUiCtx = (registered: string[] = []): EngineUIContext => ({
+    laneId: 'subtractive-1',
+    registerKnob: (k: { meta?: { id?: string } }) => { if (k.meta?.id) registered.push(k.meta.id); },
+    registry: new Map(),
+    lookupLaneDisplayName: () => undefined,
+  } as unknown as EngineUIContext);
+
+  it('buildParamUI renders the modulators panel and registers a VOICES knob', () => {
+    const eng = makeEngine();
+    const container = document.createElement('div');
+    const registered: string[] = [];
+    eng.buildParamUI(container, makeUiCtx(registered));
+    expect(container.querySelector('.mod-panel')).toBeTruthy();
+    expect(registered).toContain('subtractive-1.poly.voices');
+  });
+
+  it('editing the modulators panel re-posts the modulator config to the worklet', () => {
+    const eng = makeEngine();
+    const container = document.createElement('div');
+    eng.buildParamUI(container, makeUiCtx());
+    modsCalls.length = 0;
+    const addLfo = [...container.querySelectorAll('.mod-panel-header button')]
+      .find((b) => b.textContent?.includes('LFO')) as HTMLButtonElement;
+    expect(addLfo).toBeTruthy();
+    addLfo.click();                 // panel onChange → postMods
+    expect(modsCalls.length).toBeGreaterThan(0);
+    // the freshly added LFO is included in the re-posted set
+    expect(modsCalls.at(-1)!.some((m) => m.kind === 'lfo')).toBe(true);
   });
 });
 

@@ -23,6 +23,9 @@ import { makeDefaultLFO, makeDefaultADSR, type ModulatorState } from '../modulat
 import { getCachedPresets } from '../presets/preset-loader';
 import { SUB_PARAM_SPECS } from './subtractive-params';
 import { velNorm, resolveVelocity } from '../core/velocity-gain';
+import { renderModulatorsPanel } from '../modulation/modulation-ui';
+import { createKnob, type KnobHandle } from '../core/knob';
+import { attachKnobUndo } from '../save/history-wiring';
 
 // dot-id (SUB_PARAM_SPECS vocabulary) → flat SubParams field. Single source of
 // the mapping. Params not present here (poly.*) are handled explicitly in
@@ -176,10 +179,55 @@ export class WorkletLaneEngine implements SynthEngine {
     };
   }
 
-  buildParamUI(_container: HTMLElement, _ctx?: EngineUIContext): void {
-    /* The lane's fixed osc/filter/amp knob sections are mounted by
-       knob-mounting.mountSubtractiveLaneKnobs (which reads engine.params +
-       getBaseValue/setBaseValue). The modulators panel is wired in Task 10. */
+  buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
+    if (!ctx) return;
+    container.innerHTML = '';
+    // POLY header. The worklet renderer is poly-only, so only VOICES is shown
+    // (it maps to the worklet voice cap via setBaseValue('poly.voices')). MODE
+    // (mono) / RETRIG (legato) are intentionally omitted rather than rendered
+    // inert — they aren't modelled in the worklet renderer yet. The lane's
+    // osc/filter/amp/master knobs are mounted separately by
+    // knob-mounting.mountSubtractiveLaneKnobs (reads engine.params + getBaseValue).
+    const header = document.createElement('div');
+    header.className = 'row poly-section';
+    const lab = document.createElement('div');
+    lab.className = 'section-label';
+    lab.textContent = 'POLY';
+    header.appendChild(lab);
+    const knobRow = document.createElement('div');
+    knobRow.className = 'knob-row';
+    header.appendChild(knobRow);
+    const voices = createKnob({
+      id: `${ctx.laneId}.poly.voices`,
+      label: 'VOICES', min: 1, max: 16, step: 1, value: this.getBaseValue('poly.voices'), defaultValue: 8,
+      format: (v) => String(v),
+      onChange: (v) => { this.setBaseValue('poly.voices', v); },
+      ...(ctx.historyDeps ? attachKnobUndo(ctx.historyDeps) : {}),
+    });
+    ctx.registerKnob(voices);
+    knobRow.appendChild(voices.el);
+    container.appendChild(header);
+
+    // Modulators panel. Editing a modulator/connection re-posts the whole
+    // modulator set to the worklet runtime (postMods) so live LFO edits sound.
+    renderModulatorsPanel(container, {
+      engineId: this.id,
+      laneId: ctx.laneId,
+      host: this.modHost,
+      registry: ctx.registry as Map<string, KnobHandle>,
+      registerKnob: (k) => ctx.registerKnob(k),
+      lookupLaneDisplayName: ctx.lookupLaneDisplayName,
+      sessionState: ctx.sessionState,
+      historyDeps: ctx.historyDeps,
+      laneInserts: ctx.laneInserts,
+      masterInserts: ctx.masterInserts,
+      fxBus: ctx.fxBus,
+      onChange: () => {
+        container.innerHTML = '';
+        this.buildParamUI(container, ctx);
+        this.postMods();
+      },
+    });
   }
 
   dispose(): void { this.worklet.disconnect(); }
