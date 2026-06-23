@@ -21,57 +21,7 @@ import { createKnob } from '../core/knob';
 import { createSelectControl } from '../core/select-control';
 import { getCachedPresets } from '../presets/preset-loader';
 import { attachKnobUndo } from '../save/history-wiring';
-
-const WAVE_OPTIONS = [
-  { value: 'sawtooth', label: 'Saw' },
-  { value: 'square',   label: 'Sqr' },
-  { value: 'triangle', label: 'Tri' },
-  { value: 'sine',     label: 'Sin' },
-];
-
-// Unified-param schema. Dot-namespaced ids map directly onto the nested
-// polysynth.params object tree via the dot-path walkers below.
-const SUB_PARAMS: EngineParamSpec[] = [
-  // Oscillators
-  { id: 'osc1.level',   label: 'Osc1 Lvl',  kind: 'continuous', min: 0, max: 1, default: 0.6 },
-  { id: 'osc1.detune',  label: 'Osc1 Det',  kind: 'continuous', min: -50, max: 50, default: 0, unit: '¢' },
-  { id: 'osc1.wave',    label: 'Osc1 Wave', kind: 'discrete', min: 0, max: 3, default: 0,
-    options: WAVE_OPTIONS },
-  { id: 'osc2.level',   label: 'Osc2 Lvl',  kind: 'continuous', min: 0, max: 1, default: 0.4 },
-  { id: 'osc2.detune',  label: 'Osc2 Det',  kind: 'continuous', min: -50, max: 50, default: 7, unit: '¢' },
-  { id: 'osc2.wave',    label: 'Osc2 Wave', kind: 'discrete', min: 0, max: 3, default: 1,
-    options: WAVE_OPTIONS },
-  { id: 'sub.level',    label: 'Sub Lvl',   kind: 'continuous', min: 0, max: 1, default: 0.3 },
-  { id: 'noise.level',  label: 'Noise Lvl', kind: 'continuous', min: 0, max: 1, default: 0 },
-
-  // Filter
-  { id: 'filter.cutoff',    label: 'Cutoff',    kind: 'continuous', min: 0, max: 1, default: 0.55 },
-  { id: 'filter.resonance', label: 'Resonance', kind: 'continuous', min: 0, max: 1, default: 0.25 },
-  { id: 'filter.envAmount', label: 'Env Amt',   kind: 'continuous', min: 0, max: 1, default: 0.45 },
-  { id: 'filter.drive',     label: 'Drive',     kind: 'continuous', min: 0, max: 1, default: 0 },
-  { id: 'filter.keyTrack',  label: 'Key Track', kind: 'continuous', min: 0, max: 1, default: 0 },
-  { id: 'filter.builtinEnv', label: 'Built-in Env', kind: 'discrete', min: 0, max: 1, default: 1,
-    options: [{ value: 'off', label: 'Off' }, { value: 'on', label: 'On' }] },
-  { id: 'filter.attack',    label: 'F Atk',     kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's' },
-  { id: 'filter.decay',     label: 'F Dec',     kind: 'continuous', min: 0.001, max: 4, default: 0.3,  unit: 's' },
-  { id: 'filter.sustain',   label: 'F Sus',     kind: 'continuous', min: 0, max: 1, default: 0.4 },
-  { id: 'filter.release',   label: 'F Rel',     kind: 'continuous', min: 0.005, max: 4, default: 0.35, unit: 's' },
-
-  // Amp env
-  { id: 'amp.builtinEnv', label: 'Built-in Env', kind: 'discrete', min: 0, max: 1, default: 1,
-    options: [{ value: 'off', label: 'Off' }, { value: 'on', label: 'On' }] },
-  { id: 'amp.attack',  label: 'A Atk', kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's' },
-  { id: 'amp.decay',   label: 'A Dec', kind: 'continuous', min: 0.001, max: 4, default: 0.2,  unit: 's' },
-  { id: 'amp.sustain', label: 'A Sus', kind: 'continuous', min: 0, max: 1, default: 0.7 },
-  { id: 'amp.release', label: 'A Rel', kind: 'continuous', min: 0.005, max: 4, default: 0.3,  unit: 's' },
-
-  // Master
-  { id: 'master.tune', label: 'Tune', kind: 'continuous', min: -12, max: 12, default: 0, unit: 'st' },
-
-  { id: 'poly.mode',   label: 'Mode',   kind: 'continuous', min: 0, max: 1,  default: 0 },
-  { id: 'poly.retrig', label: 'Retrig', kind: 'continuous', min: 0, max: 1,  default: 1 },
-  { id: 'poly.voices', label: 'Voices', kind: 'continuous', min: 1, max: 16, default: 8 },
-];
+import { SUB_PARAM_SPECS as SUB_PARAMS, WAVE_OPTIONS } from './subtractive-params';
 
 const WAVE_VALUES = WAVE_OPTIONS.map(o => o.value);
 

@@ -57,6 +57,12 @@ export class OfflineSceneRecorder implements SceneRecorder {
       sidechainBus: graph.sidechainBus,
       getBpm: () => bpm,
       extraIds: [],
+      // Offline export batch-renders through OfflineAudioContext, so the
+      // real-time dropout problem the worklet solves does not apply here, and
+      // worklet message delivery during startRendering is unreliable. Keep
+      // subtractive on the proven legacy node-per-note engine. (Phase 4 cutover
+      // will revisit once the legacy engine is removed.)
+      subtractiveBackend: 'legacy',
     });
 
     // Allocate + configure each sounding lane (await drumkit reloads + inserts).

@@ -7,7 +7,11 @@ import loomProcessorUrl from './loom-processor.ts?worker&url';
 import type { MainToWorklet, WorkletToMain } from '../audio-dsp/messages';
 import type { NoteSpec, SubParams } from '../audio-dsp/types';
 import { defaultSubParams } from '../audio-dsp/default-params';
-import { LOOM_PROCESSOR_NAME } from './loom-processor';
+// Import the name from a worklet-code-free module, NOT from loom-processor.ts:
+// importing loom-processor.ts here would execute its `class extends
+// AudioWorkletProcessor` on the MAIN thread (ReferenceError). loom-processor.ts
+// is referenced ONLY via the `?worker&url` import above (a separate worklet chunk).
+import { LOOM_PROCESSOR_NAME } from './processor-name';
 
 export { defaultSubParams };
 

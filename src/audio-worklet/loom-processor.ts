@@ -11,8 +11,7 @@ import { SchedulerQueue } from '../audio-dsp/scheduler-queue';
 import type { MainToWorklet, WorkletToMain } from '../audio-dsp/messages';
 import type { NoteSpec, SubParams } from '../audio-dsp/types';
 import { defaultSubParams } from '../audio-dsp/default-params';
-
-export const LOOM_PROCESSOR_NAME = 'loom-processor';
+import { LOOM_PROCESSOR_NAME } from './processor-name';
 
 class LoomProcessor extends AudioWorkletProcessor {
   private vm = new VoiceManager(sampleRate, defaultSubParams());

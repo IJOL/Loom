@@ -1,0 +1,135 @@
+// src/engines/worklet-lane-engine.ts
+// A SynthEngine adapter backed by ONE LoomWorkletNode (the AudioWorklet
+// software synth). It replaces the PolySynth-per-lane model for 'subtractive'
+// lanes: createVoice() returns a thin Voice that posts a `spawn` message on
+// trigger(), so trigger-dispatch, the lane scheduler, note-FX, and the
+// live-voice registry stay untouched. setBaseValue/applyPreset post param
+// updates into the worklet.
+//
+// Phase 1 scope: modulation (LFO/ADSR) moves in-worklet in Task 10, so
+// getAudioParams() returns an empty Map and buildParamUI() is a stub here.
+// Per-lane voice cap (poly.voices) maps to the worklet's maxVoices; mono/legato
+// (poly.mode/poly.retrig) are not yet modelled in the worklet renderer.
+
+import type {
+  SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, EngineUIContext, EnginePreset,
+} from './engine-types';
+import type { EngineParamSpec } from './engine-params';
+import type { SubParams } from '../audio-dsp/types';
+import { LoomWorkletNode, defaultSubParams } from '../audio-worklet/loom-node';
+import { ModulationHostImpl } from '../modulation/modulation-host';
+import { getCachedPresets } from '../presets/preset-loader';
+import { SUB_PARAM_SPECS } from './subtractive-params';
+import { velNorm, resolveVelocity } from '../core/velocity-gain';
+
+// dot-id (SUB_PARAM_SPECS vocabulary) → flat SubParams field. Single source of
+// the mapping. Params not present here (poly.*) are handled explicitly in
+// setBaseValue/getBaseValue.
+const DOT_TO_FIELD: Record<string, keyof SubParams> = {
+  'master.tune': 'masterTune',
+  'osc1.wave': 'osc1Wave', 'osc1.level': 'osc1Level', 'osc1.detune': 'osc1Detune',
+  'osc2.wave': 'osc2Wave', 'osc2.level': 'osc2Level', 'osc2.detune': 'osc2Detune',
+  'sub.level': 'subLevel', 'noise.level': 'noiseLevel', 'noise.color': 'noiseColor',
+  'filter.cutoff': 'filterCutoff', 'filter.resonance': 'filterResonance',
+  'filter.envAmount': 'filterEnvAmount', 'filter.drive': 'filterDrive',
+  'filter.keyTrack': 'filterKeyTrack', 'filter.builtinEnv': 'filterBuiltinEnv',
+  'filter.attack': 'filterAttack', 'filter.decay': 'filterDecay',
+  'filter.sustain': 'filterSustain', 'filter.release': 'filterRelease',
+  'amp.builtinEnv': 'ampBuiltinEnv', 'amp.attack': 'ampAttack', 'amp.decay': 'ampDecay',
+  'amp.sustain': 'ampSustain', 'amp.release': 'ampRelease',
+};
+
+class WorkletVoice implements Voice {
+  constructor(private node: LoomWorkletNode) {}
+  trigger(midi: number, time: number, o: VoiceTriggerOptions): void {
+    const accent = o.accent ?? false;
+    // VoiceTriggerOptions.velocity is the MIDI 0..127 scale (see velocity-gain.ts:
+    // velNorm/resolveVelocity). NoteSpec.velocity the renderer expects is the
+    // normalised 0..1 value, so convert here (defaulting via resolveVelocity so a
+    // velocity-less audition/note-FX trigger lands at the legacy loudness).
+    this.node.spawn({
+      midi, beginSec: time, durationSec: o.gateDuration,
+      velocity: velNorm(resolveVelocity(o.velocity, accent)),
+      accent, slide: o.slide ?? false,
+    });
+  }
+  release(_t: number): void { /* gate handled by durationSec; live note-off deferred to a later task */ }
+  connect(_d: AudioNode): void { /* the lane's worklet node is already connected by the engine */ }
+  getAudioParams(): Map<string, AudioParam> { return new Map(); }
+  dispose(): void { /* no per-note nodes to tear down */ }
+}
+
+export class WorkletLaneEngine implements SynthEngine {
+  readonly id = 'subtractive';
+  readonly name = 'Sub';
+  readonly type = 'polyhost' as const;
+  readonly polyphony = 'poly' as const;
+  readonly editor = 'piano-roll' as const;
+  readonly params: EngineParamSpec[] = SUB_PARAM_SPECS;
+  private modHost = new ModulationHostImpl([]);
+  private state: SubParams = defaultSubParams();
+  private maxVoices = 8;
+  private worklet: LoomWorkletNode;
+  bpm = 120;
+
+  constructor(ctx: AudioContext, output: AudioNode) {
+    this.worklet = new LoomWorkletNode(ctx);
+    this.worklet.connect(output);
+  }
+
+  get presets(): EnginePreset[] { return getCachedPresets('subtractive'); }
+  get modulators(): ModulationHostImpl { return this.modHost; }
+  /** Exposed for the global voice cap (Task 11) and for tests. */
+  getWorkletNode(): LoomWorkletNode { return this.worklet; }
+
+  getBaseValue(id: string): number {
+    if (id === 'poly.voices') return this.maxVoices;
+    if (id === 'poly.mode' || id === 'poly.retrig') {
+      return SUB_PARAM_SPECS.find((p) => p.id === id)?.default ?? 0;
+    }
+    const f = DOT_TO_FIELD[id];
+    if (f) return this.state[f];
+    return SUB_PARAM_SPECS.find((p) => p.id === id)?.default ?? 0;
+  }
+
+  setBaseValue(id: string, v: number): void {
+    if (id === 'poly.voices') {
+      this.maxVoices = Math.max(1, Math.min(64, Math.round(v)));
+      this.worklet.setMaxVoices(this.maxVoices);
+      return;
+    }
+    // mono/legato are not modelled in the worklet renderer yet (Phase 1 is
+    // poly-only); accept-and-ignore so a preset carrying them doesn't error.
+    if (id === 'poly.mode' || id === 'poly.retrig') return;
+    const f = DOT_TO_FIELD[id];
+    if (!f) return;
+    this.state[f] = v;
+    this.worklet.setParams({ [f]: v } as Partial<SubParams>);
+  }
+
+  applyPreset(name: string): void {
+    const preset = this.presets.find((p) => p.name === name);
+    if (!preset) return;
+    for (const [id, val] of Object.entries(preset.params as Record<string, number>)) {
+      if (typeof val === 'number') this.setBaseValue(id, val);
+    }
+    if (preset.modulators) this.modHost.deserialize(preset.modulators);
+  }
+
+  createVoice(_ctx: AudioContext, _output: AudioNode): Voice { return new WorkletVoice(this.worklet); }
+
+  buildSequencer(): EngineSequencer {
+    return {
+      getStepAt: () => null, setLength() {}, highlight() {},
+      serialize: () => null, deserialize() {}, dispose() {},
+    };
+  }
+
+  buildParamUI(_container: HTMLElement, _ctx?: EngineUIContext): void {
+    /* The lane's fixed osc/filter/amp knob sections are mounted by
+       knob-mounting.mountSubtractiveLaneKnobs (which reads engine.params +
+       getBaseValue/setBaseValue). The modulators panel is wired in Task 10. */
+  }
+
+  dispose(): void { this.worklet.disconnect(); }
+}

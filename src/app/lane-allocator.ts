@@ -3,6 +3,7 @@ import { ChannelStrip } from '../core/fx';
 import { PolySynth } from '../polysynth/polysynth';
 import { InsertChain } from '../plugins/fx/insert-chain';
 import { createEngineInstance } from '../engines/registry';
+import { WorkletLaneEngine } from '../engines/worklet-lane-engine';
 import { getPlugin, createInstance } from '../plugins/registry';
 import { setCurrentLaneForVoice } from '../modulation/active-mods';
 import { ModulationHostImpl } from '../modulation/modulation-host';
@@ -30,6 +31,14 @@ export interface LaneAllocatorDeps {
   sidechainBus: SidechainBus;
   getBpm(): number;
   extraIds: readonly string[];
+  /** How 'subtractive' lanes synthesise. 'worklet' (default) routes them to the
+   *  AudioWorklet (WorkletLaneEngine) — the live path. 'legacy' keeps the
+   *  PolySynth node-per-note engine; used by the offline scene recorder, which
+   *  batch-renders through an OfflineAudioContext where the real-time dropout
+   *  problem the worklet solves does not apply and where worklet message
+   *  delivery during startRendering is unreliable. TEMPORARY: Phase 4 (cutover)
+   *  removes the legacy engine and this seam. */
+  subtractiveBackend?: 'worklet' | 'legacy';
 }
 
 export interface LaneAllocator {
@@ -114,7 +123,16 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
 
   /** Resolve an engine instance: legacy registry first, plugin registry as
    *  fallback (plugin-only synths get wrapped via pluginSynthAsEngine). */
+  const subtractiveBackend = deps.subtractiveBackend ?? 'worklet';
+
   const createLaneEngine = (engineId: string, inserts: InsertChain): SynthEngine | null => {
+    // 'subtractive' lanes are synthesised in the AudioWorklet (live path). The
+    // engine constructs its own LoomWorkletNode and self-wires to
+    // inserts.inputNode, bypassing the legacy PolySynth path in
+    // wireEngineIntoLane below. The offline recorder opts into 'legacy'.
+    if (engineId === 'subtractive' && subtractiveBackend === 'worklet') {
+      return new WorkletLaneEngine(deps.ctx, inserts.inputNode);
+    }
     let engine = createEngineInstance(engineId);
     if (!engine) {
       const factory = getPlugin('synth', engineId);
@@ -135,6 +153,10 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     inserts: InsertChain,
   ): void => {
     if (engineId === 'subtractive') {
+      // Worklet backend: WorkletLaneEngine owns and self-wires its
+      // LoomWorkletNode (see createLaneEngine) — no PolySynth needed.
+      if (subtractiveBackend === 'worklet') return;
+      // Legacy backend: wire a PolySynth into the SubtractiveEngine.
       const p = new PolySynth(deps.ctx, inserts.inputNode);
       p.bpm = deps.getBpm();
       (engine as unknown as { setPolySynth?(p: PolySynth): void }).setPolySynth?.(p);

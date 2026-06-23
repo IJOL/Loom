@@ -91,7 +91,7 @@ import { listProfiles } from './control/profile-registry';
 import { loadControlPrefs, saveControlPrefs } from './control/persistence';
 import { clampBpm, formatBpm } from './core/bpm';
 // ── AudioWorklet spike (Task 1 — guarded behind ?worklettest) ───────────────
-import { loadLoomWorklet, LoomWorkletNode } from './audio-worklet/loom-node';
+import { loadLoomWorklet } from './audio-worklet/loom-node';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -136,6 +136,17 @@ const audio = createAudioGraph();
 // instances, and configurators were removed. Lane allocation happens lazily via
 // lanes.ensureLaneResource() when applyLoadedSessionState runs.
 const { ctx, master, analyser, masterMeterAnalyser, masterStrip, masterInsertChain, fx, masterComp, sidechainBus } = audio;
+
+// Register the Loom AudioWorklet processor ASAP (idempotent, cached per ctx).
+// EVERY lane allocation that builds a 'subtractive' WorkletLaneEngine constructs
+// `new AudioWorkletNode(ctx,'loom-processor')`, which requires the module to be
+// registered first. addModule resolves once and stays registered for the ctx's
+// lifetime, so gating the initial allocation paths (boot demo + recovery) on
+// this promise covers later user-triggered allocations (New / picker / swap)
+// too — by then it has long resolved.
+const workletReady: Promise<void> = loadLoomWorklet(ctx).catch((err: unknown) => {
+  console.error('[worklet] addModule failed; subtractive lanes will not sound.', err);
+});
 
 // Stable call-site wrappers — set in boot section, after automationDeps is built.
 let renderLanes: () => void = () => { /* populated at boot */ };
@@ -991,7 +1002,10 @@ sessionHost.onStateApplied(() => {
 //
 // We gate the demo apply on `presetsLoaded` so the engine preset cache is
 // populated before applyLoadedSessionState calls applyPresetByName.
-presetsLoaded
+// Gate the demo apply on BOTH the preset cache AND the worklet module: the demo
+// allocates a subtractive lane (LANE_ID_POLY) whose WorkletLaneEngine needs the
+// processor registered before it constructs its AudioWorkletNode.
+Promise.all([presetsLoaded, workletReady])
   .then(() => fetchDemoSession(`${import.meta.env.BASE_URL}demos/minimal-techno.json`))
   .then((state) => {
     sessionHost.applyLoadedSessionState(state);
@@ -1159,23 +1173,9 @@ wireRandomizeUI({
   historyDeps,
 });
 wireSaveManager(saveWiringDeps);
-bootRecoveryLoad(saveWiringDeps);
-
-// ── AudioWorklet controller verification: ?worklettest guard ─────────────────
-// TEMPORARY — removed when Task 9 wires real lanes.
-// Open http://localhost:5173/?worklettest, click Play → hear a note at A3 after 0.1s.
-// addModule can run before ctx.resume(); the node stays silent until Play resumes ctx.
-if (new URLSearchParams(location.search).has('worklettest')) {
-  void (async () => {
-    try {
-      await loadLoomWorklet(ctx);
-      const node = new LoomWorkletNode(ctx);
-      node.connect(ctx.destination);
-      node.spawn({ midi: 57, beginSec: ctx.currentTime + 0.1, durationSec: 1.0, velocity: 0.8, accent: false, slide: false });
-    } catch (err) {
-      console.error('[worklettest] addModule failed:', err);
-    }
-  })();
-}
+// Recovery can allocate a subtractive lane synchronously, so gate it on the
+// worklet module being registered (same reason as the boot demo above). On a
+// fresh boot with no autosave this is a no-op regardless of timing.
+void workletReady.then(() => bootRecoveryLoad(saveWiringDeps));
 
 // App always boots in Session mode (see fetchDemoSession call above).
