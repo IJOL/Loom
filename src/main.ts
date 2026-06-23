@@ -1161,14 +1161,17 @@ wireRandomizeUI({
 wireSaveManager(saveWiringDeps);
 bootRecoveryLoad(saveWiringDeps);
 
-// ── AudioWorklet spike: ?worklettest guard (removed in Task 8) ───────────────
-// Open http://localhost:5173/?worklettest, click Play → hear a steady 220 Hz tone.
+// ── AudioWorklet controller verification: ?worklettest guard ─────────────────
+// TEMPORARY — removed when Task 9 wires real lanes.
+// Open http://localhost:5173/?worklettest, click Play → hear a note at A3 after 0.1s.
 // addModule can run before ctx.resume(); the node stays silent until Play resumes ctx.
 if (new URLSearchParams(location.search).has('worklettest')) {
   void (async () => {
     try {
       await loadLoomWorklet(ctx);
-      new LoomWorkletNode(ctx).connect(ctx.destination);
+      const node = new LoomWorkletNode(ctx);
+      node.connect(ctx.destination);
+      node.spawn({ midi: 57, beginSec: ctx.currentTime + 0.1, durationSec: 1.0, velocity: 0.8, accent: false, slide: false });
     } catch (err) {
       console.error('[worklettest] addModule failed:', err);
     }

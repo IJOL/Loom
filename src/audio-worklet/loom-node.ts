@@ -1,22 +1,24 @@
-// AudioWorklet loader + node wrapper for the Loom synthesis processor.
+// AudioWorklet loader + typed node wrapper for the Loom synthesis processor.
 //
-// Loading strategy: Blob URL from a JS source string (see loom-processor.ts).
-// Vite 5 does not transpile .ts files referenced via `new URL('./f.ts', import.meta.url)`;
-// it embeds raw TypeScript with MIME type video/mp2t, which browsers reject in
-// addModule. The Blob URL pattern (same as recorder-worklet.ts) is reliable in
-// both dev and build (--base=/Loom/) — the source is inlined in the main bundle
-// and the Blob is constructed at runtime, so no asset URL rewriting is needed.
-import { LOOM_PROCESSOR_NAME, LOOM_PROCESSOR_SOURCE } from './loom-processor';
+// Loading strategy: Vite bundles loom-processor.ts (+ its imports) into a
+// separate JS asset via the `?worker&url` suffix; addModule receives a
+// base-path-aware URL that works in both dev and GitHub Pages (/Loom/) builds.
+import loomProcessorUrl from './loom-processor.ts?worker&url';
+import type { MainToWorklet, WorkletToMain } from '../audio-dsp/messages';
+import type { NoteSpec, SubParams } from '../audio-dsp/types';
+import { defaultSubParams } from '../audio-dsp/default-params';
+import { LOOM_PROCESSOR_NAME } from './loom-processor';
 
-// Cache the promise per AudioContext (same pattern as recorder-worklet.ts).
-const moduleCache = new WeakMap<AudioContext, Promise<void>>();
+export { defaultSubParams };
 
-export async function loadLoomWorklet(ctx: AudioContext): Promise<void> {
+// Cache the addModule promise per BaseAudioContext so OfflineAudioContext is
+// also supported (WeakMap keyed on BaseAudioContext, not AudioContext).
+const moduleCache = new WeakMap<BaseAudioContext, Promise<void>>();
+
+export async function loadLoomWorklet(ctx: BaseAudioContext): Promise<void> {
   let p = moduleCache.get(ctx);
   if (!p) {
-    const blob = new Blob([LOOM_PROCESSOR_SOURCE], { type: 'application/javascript' });
-    const url = URL.createObjectURL(blob);
-    p = ctx.audioWorklet.addModule(url).finally(() => URL.revokeObjectURL(url));
+    p = ctx.audioWorklet.addModule(loomProcessorUrl);
     moduleCache.set(ctx, p);
   }
   return p;
@@ -24,9 +26,22 @@ export async function loadLoomWorklet(ctx: AudioContext): Promise<void> {
 
 export class LoomWorkletNode {
   readonly node: AudioWorkletNode;
-  constructor(ctx: AudioContext) {
+  private countCb: ((n: number) => void) | null = null;
+
+  constructor(ctx: BaseAudioContext) {
     this.node = new AudioWorkletNode(ctx, LOOM_PROCESSOR_NAME, { outputChannelCount: [2] });
+    this.node.port.onmessage = (e: MessageEvent<WorkletToMain>) => {
+      if (e.data.type === 'voices') this.countCb?.(e.data.active);
+    };
   }
+
+  private post(m: MainToWorklet): void { this.node.port.postMessage(m); }
+
+  spawn(note: NoteSpec): void { this.post({ type: 'spawn', note }); }
+  setParams(params: Partial<SubParams>): void { this.post({ type: 'params', params }); }
+  setMaxVoices(n: number): void { this.post({ type: 'config', maxVoices: n }); }
+  steal(count: number): void { this.post({ type: 'steal', count }); }
+  onVoiceCount(cb: (active: number) => void): void { this.countCb = cb; }
   connect(dest: AudioNode): void { this.node.connect(dest); }
   disconnect(): void { this.node.disconnect(); }
 }

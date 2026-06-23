@@ -1,28 +1,54 @@
-// TEMPORARY (Task 1 spike): a 220 Hz sine to prove the worklet pipe end-to-end.
-// Replaced by the real VoiceManager-backed processor in Task 8.
+// Real AudioWorklet processor: SchedulerQueue + VoiceManager, one sample at a time.
+// Bundled by Vite via the ?worker&url import in loom-node.ts so that normal
+// TypeScript imports resolve inside the worklet bundle.
 //
-// Authored as a JS source string (not a separate .ts module entry) because Vite 5
-// does not transpile .ts files referenced via `new URL('./file.ts', import.meta.url)`;
-// it embeds the raw TS source with MIME type video/mp2t, which browsers reject in
-// addModule. The Blob URL approach (matching recorder-worklet.ts) is the correct
-// pattern for this codebase.
+// CRITICAL: do NOT import loom-node.ts here — loom-node imports this file's
+// bundled URL; a reverse import would create a circular bundle dependency.
+// Shared constants (defaultSubParams) live in ../audio-dsp/default-params instead.
+/// <reference path="./worklet-globals.d.ts" />
+import { VoiceManager } from '../audio-dsp/voice-manager';
+import { SchedulerQueue } from '../audio-dsp/scheduler-queue';
+import type { MainToWorklet, WorkletToMain } from '../audio-dsp/messages';
+import type { NoteSpec, SubParams } from '../audio-dsp/types';
+import { defaultSubParams } from '../audio-dsp/default-params';
 
 export const LOOM_PROCESSOR_NAME = 'loom-processor';
 
-/** JavaScript source for the temporary test-tone AudioWorkletProcessor. */
-export const LOOM_PROCESSOR_SOURCE = `
 class LoomProcessor extends AudioWorkletProcessor {
-  constructor() { super(); this._phase = 0; }
-  process(_inputs, outputs) {
+  private vm = new VoiceManager(sampleRate, defaultSubParams());
+  private queue = new SchedulerQueue<NoteSpec>();
+  private frame = Math.floor(currentTime * sampleRate);
+  private reportCountdown = 0;
+
+  constructor() {
+    super();
+    this.port.onmessage = (e: MessageEvent<MainToWorklet>) => {
+      const m = e.data;
+      switch (m.type) {
+        case 'spawn':  this.queue.push(Math.floor(m.note.beginSec * sampleRate), m.note); break;
+        case 'params': this.vm.setParams(m.params as Partial<SubParams>); break;
+        case 'config': this.vm.setMaxVoices(m.maxVoices); break;
+        case 'steal':  this.vm.steal(m.count); break;
+        case 'mods':   /* wired in Task 10 */ break;
+      }
+    };
+  }
+
+  process(_inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
     const out = outputs[0];
-    const inc = 220 / sampleRate;
     for (let i = 0; i < out[0].length; i++) {
-      const s = Math.sin(this._phase * 2 * Math.PI) * 0.2;
-      this._phase = (this._phase + inc) % 1;
+      this.queue.drainDue(this.frame, (note) => this.vm.spawn(note));
+      const s = this.vm.renderSample(this.frame / sampleRate);
       for (let c = 0; c < out.length; c++) out[c][i] = s;
+      this.frame++;
+    }
+    if ((this.reportCountdown -= out[0].length) <= 0) {
+      this.reportCountdown = sampleRate / 30; // ~30 Hz voice-count report
+      const msg: WorkletToMain = { type: 'voices', active: this.vm.activeCount };
+      this.port.postMessage(msg);
     }
     return true;
   }
 }
-registerProcessor('${LOOM_PROCESSOR_NAME}', LoomProcessor);
-`;
+
+registerProcessor(LOOM_PROCESSOR_NAME, LoomProcessor);
