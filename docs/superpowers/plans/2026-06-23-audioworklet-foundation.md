@@ -633,11 +633,13 @@ describe('SubtractiveVoiceRenderer', () => {
 
   it('a higher cutoff yields more high-frequency energy (less filtering)', () => {
     const bright = (cut: number) => {
-      const v = new SubtractiveVoiceRenderer(note(), { ...DEFAULTS, filterCutoff: cut, filterEnvAmount: 0 }, SR);
+      // resonance 0 isolates the cutoff (a resonant filter rings at the cutoff freq,
+      // inflating the low-cutoff case). Measured ratio ~1.71 at res 0.
+      const v = new SubtractiveVoiceRenderer(note(), { ...DEFAULTS, filterCutoff: cut, filterResonance: 0, filterEnvAmount: 0 }, SR);
       const b: number[] = []; for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR));
       return rms(b);
     };
-    expect(bright(0.95)).toBeGreaterThan(bright(0.15) * 1.2);
+    expect(bright(0.95)).toBeGreaterThan(bright(0.15) * 1.3);
   });
 
   it('noteOff before the gate end shortens the sound (earlier silence)', () => {

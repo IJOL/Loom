@@ -42,13 +42,15 @@ describe('SubtractiveVoiceRenderer', () => {
 
   it('a higher cutoff yields more high-frequency energy (less filtering)', () => {
     const bright = (cut: number) => {
-      const v = new SubtractiveVoiceRenderer(note(), { ...DEFAULTS, filterCutoff: cut, filterEnvAmount: 0 }, SR);
+      // resonance 0 isolates the cutoff's effect: a resonant filter rings at the
+      // cutoff frequency, inflating the low-cutoff case and confounding the test.
+      const v = new SubtractiveVoiceRenderer(note(), { ...DEFAULTS, filterCutoff: cut, filterResonance: 0, filterEnvAmount: 0 }, SR);
       const b: number[] = []; for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR));
       return rms(b);
     };
-    // Higher cutoff → more pass-through (higher RMS). After Svf resonance fix (q=0..1 straight, not *22*0.45),
-    // the low-cutoff case is no longer over-amplified, so the difference is less dramatic.
-    expect(bright(0.95)).toBeGreaterThan(bright(0.15) * 1.05);
+    // Higher cutoff → more pass-through. Measured ratio ~1.71 at resonance 0; assert
+    // a robust 1.3× margin (the sub osc + low harmonics pass both cutoffs, so it's not huge).
+    expect(bright(0.95)).toBeGreaterThan(bright(0.15) * 1.3);
   });
 
   it('noteOff before the gate end shortens the sound (earlier silence)', () => {
