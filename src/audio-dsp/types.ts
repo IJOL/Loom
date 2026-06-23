@@ -25,14 +25,24 @@ export interface NoteSpec {
   slide: boolean;
 }
 
+/** A modulation destination: any SubParams field, plus the synthetic `ampGain`
+ *  (a multiplicative output gain — i.e. tremolo — which is not a stored param
+ *  but the amp-envelope output). */
+export type ModTarget = keyof SubParams | 'ampGain';
+
+/** Live, additive modulation offsets keyed by destination, NORMALISED (the sum
+ *  of LFO `wave×depth`, roughly -1..1). The renderer scales each to the field's
+ *  native units at read time (cents/semitones for pitch, ×gain for ampGain,
+ *  straight 0..1 add for the rest). */
+export type VoiceModOffsets = Partial<Record<ModTarget, number>>;
+
 /** A pooled, per-sample voice. Pure: no Web Audio. */
 export interface VoiceRenderer {
-  /** Render one mono sample at absolute time t (seconds). `modOffsets` are
-   *  live, additive modulation offsets in each field's native 0..1 units
-   *  (shared LFOs, computed once per sample by the VoiceManager and applied at
-   *  read time on top of the voice's spawned-snapshot params). Omitted ⇒ no
+  /** Render one mono sample at absolute time t (seconds). `modOffsets` are the
+   *  shared-LFO offsets computed once per sample by the VoiceManager and applied
+   *  at read time on top of the voice's spawned-snapshot params. Omitted ⇒ no
    *  modulation. */
-  renderSample(t: number, modOffsets?: Partial<Record<keyof SubParams, number>>): number;
+  renderSample(t: number, modOffsets?: VoiceModOffsets): number;
   /** Live note-off: end the gate at time t (release tail still plays). */
   noteOff(t: number): void;
   /** True once the release tail has fully decayed at the last rendered t. */

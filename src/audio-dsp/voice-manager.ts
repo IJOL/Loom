@@ -13,7 +13,12 @@ export class VoiceManager {
   // Pooled per-sample modulation-offset struct — mutated in place each render
   // sample and shared (read-only) by every voice, so the real-time render
   // callback allocates nothing on the audio thread when modulation is active.
-  private readonly modOffsets = { filterCutoff: 0, filterResonance: 0, osc1Level: 0, osc2Level: 0, noiseLevel: 0 };
+  // Covers the full subtractive modulation target set (+ ampGain tremolo).
+  private readonly modOffsets = {
+    filterCutoff: 0, filterResonance: 0, filterEnvAmount: 0, filterKeyTrack: 0, filterDrive: 0,
+    osc1Level: 0, osc2Level: 0, subLevel: 0, noiseLevel: 0, noiseColor: 0,
+    osc1Detune: 0, osc2Detune: 0, masterTune: 0, ampGain: 0,
+  };
   constructor(private sr: number, params: SubParams) {
     this.params = { ...params };
   }
@@ -55,9 +60,18 @@ export class VoiceManager {
       const m = this.modOffsets;
       m.filterCutoff    = this.mod.offsetFor('filterCutoff', t);
       m.filterResonance = this.mod.offsetFor('filterResonance', t);
+      m.filterEnvAmount = this.mod.offsetFor('filterEnvAmount', t);
+      m.filterKeyTrack  = this.mod.offsetFor('filterKeyTrack', t);
+      m.filterDrive     = this.mod.offsetFor('filterDrive', t);
       m.osc1Level       = this.mod.offsetFor('osc1Level', t);
       m.osc2Level       = this.mod.offsetFor('osc2Level', t);
+      m.subLevel        = this.mod.offsetFor('subLevel', t);
       m.noiseLevel      = this.mod.offsetFor('noiseLevel', t);
+      m.noiseColor      = this.mod.offsetFor('noiseColor', t);
+      m.osc1Detune      = this.mod.offsetFor('osc1Detune', t);
+      m.osc2Detune      = this.mod.offsetFor('osc2Detune', t);
+      m.masterTune      = this.mod.offsetFor('masterTune', t);
+      m.ampGain         = this.mod.offsetFor('ampGain', t);
       mo = m;
     }
     let out = 0;

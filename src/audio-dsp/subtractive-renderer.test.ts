@@ -70,6 +70,34 @@ describe('SubtractiveVoiceRenderer', () => {
     expect(bright(0.8)).toBeGreaterThan(bright(0) * 1.3);
   });
 
+  it('master-tune modulation shifts pitch (octave-up ≈ doubles the zero-crossing rate)', () => {
+    const upwardCrossings = (tuneMod: number) => {
+      const v = new SubtractiveVoiceRenderer(
+        note(), { ...DEFAULTS, osc1Wave: 3, osc1Level: 0.8, osc2Level: 0, subLevel: 0, noiseLevel: 0, filterCutoff: 0.95, filterResonance: 0, filterEnvAmount: 0 }, SR,
+      );
+      let prev = 0, zc = 0;
+      for (let i = 0; i < SR * 0.1; i++) {
+        const s = v.renderSample(i / SR, { masterTune: tuneMod });
+        if (prev < 0 && s >= 0) zc++;
+        prev = s;
+      }
+      return zc;
+    };
+    // +1 normalised master-tune offset = +12 st = ×2 frequency.
+    expect(upwardCrossings(1)).toBeGreaterThan(upwardCrossings(0) * 1.7);
+  });
+
+  it('amp-gain modulation scales output loudness (tremolo), down to silence at -1', () => {
+    const loud = (g: number) => {
+      const v = new SubtractiveVoiceRenderer(note(), DEFAULTS, SR);
+      const b: number[] = [];
+      for (let i = 0; i < SR * 0.05; i++) b.push(v.renderSample(i / SR, { ampGain: g }));
+      return rms(b);
+    };
+    expect(loud(1)).toBeGreaterThan(loud(0) * 1.5);   // +1 → ~×2
+    expect(loud(-1)).toBeLessThan(loud(0) * 0.05);    // -1 → ~silence
+  });
+
   it('filter output stays bounded — no resonant blow-up (master limiter must not be crushed)', () => {
     // Absolute peak ceilings (justified): a voice must stay near unity so the
     // downstream master limiter/soft-clip is not constantly crushed. A peak far

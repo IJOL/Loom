@@ -1,11 +1,13 @@
 // src/audio-dsp/modulation-runtime.ts
-// In-worklet modulation. Phase 1 scope: SHARED LFOs only, modulating a fixed
-// set of SubParams fields (filterCutoff, filterResonance, osc1Level, osc2Level,
-// noiseLevel). Per-voice modular ADSR beyond the amp/filter envelopes already
-// inside SubtractiveVoiceRenderer is deferred — `kind: 'adsr'` mods contribute
-// zero here. BPM-synced LFO rate is also deferred: `rateHz` (free Hz) is used
-// directly (the host resolves any sync→Hz before sending, future work).
-import type { SubParams } from './types';
+// In-worklet modulation: SHARED LFOs over the full subtractive modulation target
+// set (every SubParams field a connection can reach, plus the synthetic
+// `ampGain` tremolo). The runtime returns NORMALISED offsets (sum of
+// wave×depth); the renderer scales each to native units (cents/semitones for
+// pitch, ×gain for ampGain, 0..1 add for the rest). `kind: 'adsr'` mods
+// contribute zero here (per-voice modular ADSR beyond the built-in amp/filter
+// envelopes is deferred). BPM-synced LFO rate is also deferred: `rateHz` (free
+// Hz) is used directly (the host resolves any sync→Hz before sending).
+import type { ModTarget } from './types';
 
 export interface ModLite {
   id: string;
@@ -33,8 +35,10 @@ export class ModulationRuntime {
   // current free-rate implementation derives phase from absolute time directly.
   constructor(_sr: number) {}
   setMods(mods: ModLite[]): void { this.mods = mods; }
-  /** Additive offset (native 0..1 units of the field) at absolute time t. */
-  offsetFor(field: keyof SubParams, t: number): number {
+  /** Normalised additive offset (Σ wave×depth over enabled LFOs) for a
+   *  modulation target at absolute time t. The renderer scales it to the
+   *  target's native units. */
+  offsetFor(field: ModTarget, t: number): number {
     let sum = 0;
     for (const m of this.mods) {
       if (!m.enabled || m.kind !== 'lfo') continue;

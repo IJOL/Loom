@@ -15,7 +15,7 @@ import type {
   SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, EngineUIContext, EnginePreset,
 } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
-import type { SubParams } from '../audio-dsp/types';
+import type { SubParams, ModTarget } from '../audio-dsp/types';
 import type { ModLite } from '../audio-dsp/modulation-runtime';
 import { LoomWorkletNode, defaultSubParams } from '../audio-worklet/loom-node';
 import { ModulationHostImpl } from '../modulation/modulation-host';
@@ -45,8 +45,10 @@ const DOT_TO_FIELD: Record<string, keyof SubParams> = {
 };
 
 /** Resolve a modulation connection's paramId (possibly lane-prefixed, e.g.
- *  "subtractive-1.filter.cutoff") to a SubParams field via the dot-id suffix. */
-function fieldForParamId(paramId: string): keyof SubParams | null {
+ *  "subtractive-1.filter.cutoff") to a modulation target via the dot-id suffix.
+ *  `amp.gain` is the synthetic tremolo target (not a stored SubParams field). */
+function fieldForParamId(paramId: string): ModTarget | null {
+  if (paramId === 'amp.gain' || paramId.endsWith('.amp.gain')) return 'ampGain';
   for (const dotId in DOT_TO_FIELD) {
     if (paramId === dotId || paramId.endsWith('.' + dotId)) return DOT_TO_FIELD[dotId];
   }
@@ -54,8 +56,9 @@ function fieldForParamId(paramId: string): keyof SubParams | null {
 }
 
 /** Map the host's ModulatorState[] to the worklet's compact ModLite[]. Only
- *  fields that resolve to a SubParams target (and that the runtime acts on —
- *  shared LFOs) carry depth; everything else is sent inert. */
+ *  connections that resolve to a modulation target carry depth; everything else
+ *  is sent inert. (The runtime acts only on `kind:'lfo'`; ADSR mods are sent for
+ *  completeness but contribute zero — per-voice modular ADSR is deferred.) */
 export function toModLite(state: ModulatorState[]): ModLite[] {
   return state.map((m) => {
     const depthByParam: Record<string, number> = {};

@@ -135,8 +135,17 @@ describe('toModLite', () => {
     const [m] = toModLite([lfo({ connections: [
       { id: 'a', paramId: 'osc1.level', depth: 0.2 },
       { id: 'b', paramId: 'filter.resonance', depth: 0 },     // depth 0 → dropped
-      { id: 'c', paramId: 'amp.gain', depth: 0.5 },           // no SubParams field → dropped
+      { id: 'c', paramId: 'totally.unknown', depth: 0.5 },    // unresolved → dropped
     ] })]);
     expect(m.depthByParam).toEqual({ osc1Level: 0.2 });
+  });
+
+  it('maps the pitch + tremolo targets (master.tune, osc detune, amp.gain)', () => {
+    const [m] = toModLite([lfo({ connections: [
+      { id: 'a', paramId: 'subtractive-1.master.tune', depth: 0.3 },
+      { id: 'b', paramId: 'osc1.detune', depth: -0.5 },
+      { id: 'c', paramId: 'amp.gain', depth: 0.6 },           // synthetic tremolo target
+    ] })]);
+    expect(m.depthByParam).toEqual({ masterTune: 0.3, osc1Detune: -0.5, ampGain: 0.6 });
   });
 });
