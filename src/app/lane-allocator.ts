@@ -4,6 +4,7 @@ import { PolySynth } from '../polysynth/polysynth';
 import { InsertChain } from '../plugins/fx/insert-chain';
 import { createEngineInstance } from '../engines/registry';
 import { WorkletLaneEngine } from '../engines/worklet-lane-engine';
+import type { GlobalVoiceCap } from '../audio-worklet/global-voice-cap';
 import { getPlugin, createInstance } from '../plugins/registry';
 import { setCurrentLaneForVoice } from '../modulation/active-mods';
 import { ModulationHostImpl } from '../modulation/modulation-host';
@@ -39,6 +40,10 @@ export interface LaneAllocatorDeps {
    *  delivery during startRendering is unreliable. TEMPORARY: Phase 4 (cutover)
    *  removes the legacy engine and this seam. */
   subtractiveBackend?: 'worklet' | 'legacy';
+  /** Global simultaneous-voice budget coordinator. Each worklet lane registers
+   *  its node so the busiest lane is told to steal when the total exceeds the
+   *  budget. Absent in the offline recorder (no real-time dropout concern). */
+  globalVoiceCap?: GlobalVoiceCap;
 }
 
 export interface LaneAllocator {
@@ -125,13 +130,17 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
    *  fallback (plugin-only synths get wrapped via pluginSynthAsEngine). */
   const subtractiveBackend = deps.subtractiveBackend ?? 'worklet';
 
-  const createLaneEngine = (engineId: string, inserts: InsertChain): SynthEngine | null => {
+  const createLaneEngine = (laneId: string, engineId: string, inserts: InsertChain): SynthEngine | null => {
     // 'subtractive' lanes are synthesised in the AudioWorklet (live path). The
     // engine constructs its own LoomWorkletNode and self-wires to
     // inserts.inputNode, bypassing the legacy PolySynth path in
     // wireEngineIntoLane below. The offline recorder opts into 'legacy'.
     if (engineId === 'subtractive' && subtractiveBackend === 'worklet') {
-      return new WorkletLaneEngine(deps.ctx, inserts.inputNode);
+      const eng = new WorkletLaneEngine(deps.ctx, inserts.inputNode);
+      // Enrol this lane's worklet node in the global voice cap so its active
+      // count counts toward (and can be stolen against) the total budget.
+      deps.globalVoiceCap?.register(laneId, eng.getWorkletNode());
+      return eng;
     }
     let engine = createEngineInstance(engineId);
     if (!engine) {
@@ -279,7 +288,7 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     // channel strip. The chain's entry node is a GainNode (pass-through when
     // empty); its output is strip.input.
     const inserts = new InsertChain(deps.ctx.createGain(), strip.input);
-    const engine = createLaneEngine(engineId, inserts);
+    const engine = createLaneEngine(laneId, engineId, inserts);
     if (!engine) return;
     wireEngineIntoLane(engineId, engine, strip, inserts);
     resources.set(laneId, { strip, engine, inserts });
@@ -291,7 +300,10 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
   const swapLaneEngine = (laneId: string, newEngineId: string): void => {
     const res = resources.get(laneId);
     if (!res) return;
-    const engine = createLaneEngine(newEngineId, res.inserts);
+    // Drop the lane's previous global-cap registration before building the new
+    // engine; createLaneEngine re-registers if the new engine is a worklet one.
+    deps.globalVoiceCap?.unregister(laneId);
+    const engine = createLaneEngine(laneId, newEngineId, res.inserts);
     if (!engine) return; // unknown engine → leave the lane intact
     wireEngineIntoLane(newEngineId, engine, res.strip, res.inserts);
     laneVoices.delete(laneId);                  // drop the old engine's cached voice

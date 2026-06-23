@@ -6,6 +6,7 @@ import { createAudioGraph } from './app/audio-graph';
 import { createBpmBroadcaster } from './app/bpm-broadcast';
 import { createMuteSolo } from './app/mute-solo';
 import { createLaneAllocator } from './app/lane-allocator';
+import { GlobalVoiceCap } from './audio-worklet/global-voice-cap';
 import { createAutomationRecorder } from './app/automation-recording';
 import { createTriggerForLane } from './app/trigger-dispatch';
 import { LiveVoiceRegistry } from './app/live-voice-registry';
@@ -162,10 +163,14 @@ const currentEngineId = 'subtractive';
 // Phase G: LaneAllocatorDeps is master-only; all per-lane strip/engine deps
 // removed. Lanes are allocated lazily via ensureLaneResource() triggered by
 // applyLoadedSessionState when the boot session JSON is applied.
+// Global simultaneous-voice budget across all worklet lanes — the lever that
+// ends peak dropouts. Default 64; tune/surfacing in PERF is a follow-up.
+const globalVoiceCap = new GlobalVoiceCap(64);
 const lanes = createLaneAllocator({
   ctx, master, fx, sidechainBus,
   getBpm: () => seq.bpm,
   extraIds: EXTRA_IDS,
+  globalVoiceCap,
 });
 const { resources: laneResources, extraStrips, extraPolys,
         stripFor, ensureExtraPoly, ensureLaneVoice,
