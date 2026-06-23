@@ -1,6 +1,7 @@
 // src/audio-dsp/fm-renderer.test.ts
 import { describe, it, expect } from 'vitest';
 import { FMRenderer } from './fm-renderer';
+import { createRenderer } from './renderer-registry';
 import type { NoteSpec, ParamBag } from './types';
 
 const SR = 48000;
@@ -82,27 +83,48 @@ describe('FMRenderer', () => {
     expect(rms(buf)).toBeGreaterThan(0.005);
   });
 
-  it('more feedback adds timbre variation on op4 self-feedback', () => {
-    // feedback routes op4 output back into its own FM input. Two renders that
-    // only differ in feedback should produce distinguishable outputs.
-    const renderFirst = (fb: number): number => {
-      const v = new FMRenderer(note(), base({ algorithm: 3, feedback: fb }), SR);
-      return v.renderSample(0.1);  // one sample mid-sustain
+  it('serial algorithm (0) carrier stays in tune under active FM (tuning fix)', () => {
+    // Algorithm 0: op0 is the sole carrier. Set op1/2/3 (modulators) to very low
+    // level (~0.02) so the output is near-sinusoidal and pitch-detectable, but FM
+    // is still active. Note midi 69 = A4 = 440 Hz. Fundamental must land within
+    // one semitone (415..466 Hz).
+    const lowFmBag: ParamBag = base({
+      algorithm: 0, feedback: 0,
+      'op1.ratio': 1, 'op1.level': 0.02,
+      'op2.ratio': 1, 'op2.level': 0.02,
+      'op3.ratio': 1, 'op3.level': 0.02,
+      'op4.ratio': 1, 'op4.level': 0.02,
+      'op1.sustain': 1, 'op2.sustain': 1, 'op3.sustain': 1, 'op4.sustain': 1,
+      'op1.attack': 0.01, 'op2.attack': 0.01, 'op3.attack': 0.01, 'op4.attack': 0.01,
+    });
+    const v = new FMRenderer(note({ midi: 69, durationSec: 2 }), lowFmBag, SR);
+    // Skip attack transient
+    for (let i = 0; i < Math.floor(SR * 0.05); i++) v.renderSample(i / SR);
+    // Measure 1 s of steady carrier output
+    const buf = new Float32Array(SR);
+    for (let i = 0; i < SR; i++) buf[i] = v.renderSample((SR * 0.05 + i) / SR);
+    const f = fundamentalHz(buf, SR);
+    expect(f).toBeGreaterThan(415);  // 440 / 2^(1/12) ≈ 415
+    expect(f).toBeLessThan(466);     // 440 * 2^(1/12) ≈ 466
+  });
+
+  it('more feedback changes the signal (op4 self-feedback)', () => {
+    // Algorithm 0 serial: op4 is the first modulator in the chain AND carries the
+    // feedback loop. Render a short buffer with fb=0 and fb=0.8 and confirm the
+    // RMS outputs differ by a clear margin (>2% relative).
+    const renderRms = (fb: number): number => {
+      const v = new FMRenderer(note({ durationSec: 2 }), base({ algorithm: 0, feedback: fb }), SR);
+      const buf: number[] = [];
+      for (let i = 0; i < Math.floor(SR * 0.1); i++) buf.push(v.renderSample(i / SR));
+      return rms(buf);
     };
-    // With algorithm 3 (additive), op4 is a carrier but also has the feedback path.
-    // High feedback self-modulates op4's sine, adding harmonics and changing level.
-    // We just verify the render completes without error and feedback=0.8 differs from feedback=0.
-    const s0 = renderFirst(0);
-    const s1 = renderFirst(0.8);
-    // They can't both be exactly the same (feedback changes the waveform)
-    // but we only assert they're finite and renderable.
-    expect(isFinite(s0)).toBe(true);
-    expect(isFinite(s1)).toBe(true);
-    // The render function should produce non-zero output during a held note
-    const vFb = new FMRenderer(note({ durationSec: 2 }), base({ algorithm: 3, feedback: 0.5 }), SR);
-    const buf: number[] = [];
-    for (let i = 0; i < SR * 0.1; i++) buf.push(vFb.renderSample(i / SR));
-    expect(rms(buf)).toBeGreaterThan(0.001);
+    const rms0 = renderRms(0);
+    const rmsFb = renderRms(0.8);
+    // Both must be audible
+    expect(rms0).toBeGreaterThan(0.001);
+    expect(rmsFb).toBeGreaterThan(0.001);
+    // Feedback must produce a measurably different RMS (>2% relative difference)
+    expect(Math.abs(rmsFb - rms0) / Math.max(rmsFb, rms0)).toBeGreaterThan(0.02);
   });
 
   it('noteOff before gate end shortens the note (done earlier)', () => {
@@ -126,5 +148,10 @@ describe('FMRenderer', () => {
     const buf: number[] = [];
     for (let i = 0; i < SR * 0.2; i++) buf.push(v.renderSample(i / SR));
     expect(rms(buf)).toBeGreaterThan(0.005);
+  });
+
+  it('registers under engine id "fm"', () => {
+    // Importing FMRenderer above triggers its registerRenderer side-effect.
+    expect(() => createRenderer('fm', note(), base(), SR)).not.toThrow();
   });
 });

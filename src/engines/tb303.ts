@@ -38,7 +38,7 @@ const PARAMS: EngineParamSpec[] = [
 // TB-303 preset JSON keys are the TB303 synth's internal field names; map them
 // to the EngineParamSpec ids that getBaseValue / setBaseValue speak so a preset
 // can be applied through the same (instance-or-pending) path the knobs use.
-const PRESET_KEY_TO_SPEC: Record<string, string> = {
+export const PRESET_KEY_TO_SPEC: Record<string, string> = {
   cutoff:    'filter.cutoff',
   resonance: 'filter.resonance',
   envMod:    'env.amount',

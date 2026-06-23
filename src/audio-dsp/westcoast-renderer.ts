@@ -48,6 +48,10 @@ class AdContour {
   private phase: 'idle' | 'attack' | 'decay' | 'sustain' | 'release' | 'done' = 'idle';
   private phaseStart = 0;
   private peak = 0;
+  // Set once the note gate ends. A cycling contour keeps re-triggering only while
+  // the note is held; after gate-off it finishes its current decay and goes
+  // 'done' so the voice is reaped (otherwise a cycling LPG voice is immortal).
+  private ended = false;
 
   constructor(
     private atk: number,
@@ -62,8 +66,10 @@ class AdContour {
     this.peak = amount;
   }
 
-  /** Signal gate-off to the contour. */
+  /** Signal gate-off to the contour. Stops a cycling contour from re-triggering
+   *  and releases a sustained one. */
   noteOff(t: number): void {
+    this.ended = true;
     if (this.phase === 'sustain') {
       this.phase = 'release';
       this.phaseStart = t;
@@ -94,8 +100,9 @@ class AdContour {
         const tau = this.dec / 3;
         this.val = this.peak * Math.exp(-dt / tau);
         if (this.val < 1e-4) {
-          if (this.cycle) {
-            // Restart the AD cycle (free-running LFO-like contour)
+          if (this.cycle && !this.ended) {
+            // Restart the AD cycle (free-running LFO-like contour) — only while
+            // the note is still held; after gate-off it finishes here.
             this.phase = 'attack';
             this.phaseStart = t;
             this.val = 0;

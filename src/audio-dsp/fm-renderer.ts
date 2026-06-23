@@ -35,6 +35,10 @@ const CARRIERS: number[][] = [
 ];
 
 const midiToFreq = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
+// Modulation-depth scalars matching the legacy node engine (fm.ts): modulator
+// outGain = level·opFreq·4, op4 feedback gain = feedback·op4Freq·2.
+const FM_DEPTH = 4;
+const FB_DEPTH = 2;
 
 /** Minimal sine phase accumulator with support for per-sample frequency modulation.
  *  Unlike SineOsc (which advances by freq/sr and returns sin), FmSine lets the
@@ -133,16 +137,19 @@ export class FMRenderer implements VoiceRenderer {
       );
 
       // Sum FM contributions from ops that modulate this op.
-      // Each modulator contributes: modSine * modFreq * modLevel (Hz of deviation).
-      // This is linear FM — the modulator's frequency determines the modulation index.
+      // Each modulator contributes modSine * modFreq * modLevel * FM_DEPTH Hz of
+      // deviation. FM_DEPTH = 4 matches the legacy node engine's modulator outGain
+      // (level * opFreq * 4) so the ~20 FM presets keep their intended index. The
+      // tuning fix is the linear-FM phase advance below, independent of this depth.
       let fmHz = 0;
       for (const mIdx of algo[i]) {
-        fmHz += opOut[mIdx] * this.freqs[mIdx] * this.lvl[mIdx];
+        fmHz += opOut[mIdx] * this.freqs[mIdx] * this.lvl[mIdx] * FM_DEPTH;
       }
 
       // Op 3 (index 3) supports self-feedback: output at t-1 feeds its own FM input.
+      // FB_DEPTH = 2 matches the legacy fbGain = feedback * op4Freq * 2.
       if (i === 3 && this.feedback > 0) {
-        fmHz += this.fbState * this.freqs[3] * this.feedback;
+        fmHz += this.fbState * this.freqs[3] * this.feedback * FB_DEPTH;
       }
 
       opOut[i] = this.oscs[i].next(this.freqs[i], fmHz) * env;

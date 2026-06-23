@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { KarplusRenderer } from './karplus-renderer';
+import { createRenderer } from './renderer-registry';
 import type { NoteSpec, ParamBag } from './types';
 
 const SR = 48000;
@@ -42,8 +43,8 @@ describe('KarplusRenderer', () => {
       for (let i = 0; i < SR * 0.05; i++) buf.push(v.renderSample(i / SR));
       return rms(buf);
     };
-    // Both should be audible; brightness changes timbre/energy
-    expect(e(0.95)).toBeGreaterThan(e(0.1) * 0.9);
+    // Bright string must genuinely exceed dark string (strict comparison)
+    expect(e(0.95)).toBeGreaterThan(e(0.1));
   });
 
   it('decays to silence and done===true after the release tail', () => {
@@ -72,5 +73,10 @@ describe('KarplusRenderer', () => {
     let last = 1;
     for (let i = SR * 0.05; i < SR * 0.6; i++) last = v.renderSample(i / SR);
     expect(v.done).toBe(true);
+  });
+
+  it('registers under engine id "karplus"', () => {
+    // Importing KarplusRenderer above triggers its registerRenderer side-effect.
+    expect(() => createRenderer('karplus', note(), P, SR)).not.toThrow();
   });
 });

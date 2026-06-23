@@ -105,6 +105,10 @@ export interface WorkletEngineConfig {
   presetsKey: string;          // preset cache key (engine id)
   polyphony: 'mono' | 'poly';
   modulators?: ModulatorState[];
+  /** Optional remap from a preset JSON's legacy flat keys to the engine's
+   *  dot-id param spec (e.g. TB-303's 'cutoff' → 'filter.cutoff'). Engines whose
+   *  preset JSON already uses dot-ids omit it. */
+  presetKeyRemap?: Record<string, string>;
 }
 
 export class WorkletLaneEngine implements SynthEngine {
@@ -115,6 +119,7 @@ export class WorkletLaneEngine implements SynthEngine {
   readonly editor = 'piano-roll' as const;
   readonly params: EngineParamSpec[];
   private readonly presetsKey: string;
+  private readonly presetKeyRemap?: Record<string, string>;
   private modHost: ModulationHostImpl;
   // Current scalar param state as a dot-id ParamBag, seeded from the spec
   // defaults. setBaseValue mirrors here and posts the same dot-id to the worklet.
@@ -129,9 +134,11 @@ export class WorkletLaneEngine implements SynthEngine {
     this.polyphony = cfg.polyphony;
     this.params = cfg.params;
     this.presetsKey = cfg.presetsKey;
+    this.presetKeyRemap = cfg.presetKeyRemap;
     this.modHost = new ModulationHostImpl(cfg.modulators ?? []);
     for (const s of cfg.params) this.state[s.id] = s.default;
     this.maxVoices = cfg.polyphony === 'mono' ? 1 : 8;
+    this.state['poly.voices'] = this.maxVoices;   // keep the bag in sync with the authoritative cap
     this.worklet = new LoomWorkletNode(ctx, cfg.engineId);
     this.worklet.connect(output);
     if (cfg.polyphony === 'mono') this.worklet.setMaxVoices(1);
@@ -174,7 +181,10 @@ export class WorkletLaneEngine implements SynthEngine {
     const preset = this.presets.find((p) => p.name === name);
     if (!preset) return;
     for (const [id, val] of Object.entries(preset.params as Record<string, number>)) {
-      if (typeof val === 'number') this.setBaseValue(id, val);
+      if (typeof val !== 'number') continue;
+      // Remap legacy flat preset keys to the engine's dot-id spec when needed
+      // (e.g. TB-303's 'cutoff' → 'filter.cutoff'); other engines pass through.
+      this.setBaseValue(this.presetKeyRemap?.[id] ?? id, val);
     }
     if (preset.modulators) this.modHost.deserialize(preset.modulators);
     this.postMods();
@@ -215,6 +225,36 @@ export class WorkletLaneEngine implements SynthEngine {
       ctx.registerKnob(voices);
       knobRow.appendChild(voices.el);
       container.appendChild(header);
+    }
+
+    // Per-engine knob grid. Subtractive's osc/filter/amp/master knobs are mounted
+    // separately into fixed page sections by knob-mounting.mountSubtractiveLaneKnobs;
+    // every OTHER worklet engine (fm/wavetable/karplus/westcoast/tb303) has no such
+    // section, so render a generic grid here from its param spec — otherwise the
+    // lane would show no parameter controls at all.
+    if (this.id !== 'subtractive') {
+      const grid = document.createElement('div');
+      grid.className = 'row knob-row';
+      for (const spec of this.params) {
+        if (spec.id.startsWith('poly.')) continue;   // poly.* handled by the POLY header
+        const discrete = spec.kind === 'discrete' && !!spec.options && spec.options.length > 0;
+        const knob = createKnob({
+          id: `${ctx.laneId}.${spec.id}`,
+          label: spec.label,
+          min: spec.min, max: spec.max,
+          step: discrete ? 1 : (spec.max - spec.min) / 200,
+          value: this.getBaseValue(spec.id), defaultValue: spec.default,
+          color: spec.color,
+          format: discrete
+            ? (v) => spec.options![Math.max(0, Math.min(spec.options!.length - 1, Math.round(v)))].label
+            : (spec.unit ? (v) => `${v.toFixed(2)}${spec.unit}` : undefined),
+          onChange: (v) => { this.setBaseValue(spec.id, v); },
+          ...(ctx.historyDeps ? attachKnobUndo(ctx.historyDeps) : {}),
+        });
+        ctx.registerKnob(knob);
+        grid.appendChild(knob.el);
+      }
+      container.appendChild(grid);
     }
 
     // Modulators panel. Editing a modulator/connection re-posts the whole

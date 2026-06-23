@@ -55,8 +55,12 @@ export class VoiceManager {
     // Shared-LFO offsets: computed once per sample (same for every voice) and
     // applied at read time. Reuses the pooled struct (no per-sample allocation);
     // undefined when no modulation is attached.
+    // In-worklet shared-LFO modulation is currently SUBTRACTIVE-ONLY: the offset
+    // struct is keyed by SubParams fields and only SubtractiveVoiceRenderer reads
+    // modOffsets. Other engines' renderers ignore the arg, so skip the work (and
+    // don't pass a misleading struct) for them.
     let mo: typeof this.modOffsets | undefined;
-    if (this.mod) {
+    if (this.mod && this.engineId === 'subtractive') {
       const m = this.modOffsets;
       m.filterCutoff    = this.mod.offsetFor('filterCutoff', t);
       m.filterResonance = this.mod.offsetFor('filterResonance', t);

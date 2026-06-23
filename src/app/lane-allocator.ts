@@ -4,12 +4,8 @@ import { PolySynth } from '../polysynth/polysynth';
 import { InsertChain } from '../plugins/fx/insert-chain';
 import { createEngineInstance } from '../engines/registry';
 import { WorkletLaneEngine } from '../engines/worklet-lane-engine';
+import { PRESET_KEY_TO_SPEC as TB303_PRESET_KEY_TO_SPEC } from '../engines/tb303';
 import type { GlobalVoiceCap } from '../audio-worklet/global-voice-cap';
-
-// Melodic engines that have a per-sample worklet renderer (Phase 1 subtractive +
-// Phase 2 ports). These route to WorkletLaneEngine on the live path; drums /
-// sampler / audio remain legacy until their own phases.
-const WORKLET_ENGINE_IDS = new Set(['subtractive', 'tb303', 'fm', 'wavetable', 'karplus', 'westcoast']);
 import { getPlugin, createInstance } from '../plugins/registry';
 import { setCurrentLaneForVoice } from '../modulation/active-mods';
 import { ModulationHostImpl } from '../modulation/modulation-host';
@@ -18,6 +14,11 @@ import type { SynthEngine, Voice } from '../engines/engine-types';
 import type { SynthInstance, PluginManifest } from '../plugins/types';
 import type { FxBus } from '../core/fx';
 import type { SidechainBus } from '../core/sidechain-bus';
+
+// Melodic engines that have a per-sample worklet renderer (Phase 1 subtractive +
+// Phase 2 ports). These route to WorkletLaneEngine on the live path; drums /
+// sampler / audio remain legacy until their own phases.
+const WORKLET_ENGINE_IDS = new Set(['subtractive', 'tb303', 'fm', 'wavetable', 'karplus', 'westcoast']);
 
 // Phase G: LaneAllocatorDeps is now master-only — no per-lane strips,
 // instrument singletons, or boot configurators. ensureLaneResource() is
@@ -149,6 +150,10 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
         const eng = new WorkletLaneEngine(deps.ctx, inserts.inputNode, {
           engineId, name: spec.name, presetsKey: engineId, polyphony: spec.polyphony,
           params: spec.params, modulators: spec.modulators.serialize(),
+          // TB-303 preset JSON uses legacy flat keys; remap them to dot-ids so
+          // presets actually apply on the worklet path (other engines' JSON is
+          // already dot-id keyed). Same map the legacy TB303Engine uses.
+          presetKeyRemap: engineId === 'tb303' ? TB303_PRESET_KEY_TO_SPEC : undefined,
         });
         // Enrol this lane's worklet node in the global voice cap.
         deps.globalVoiceCap?.register(laneId, eng.getWorkletNode());

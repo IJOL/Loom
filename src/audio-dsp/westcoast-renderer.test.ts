@@ -89,28 +89,43 @@ describe('WestcoastRenderer', () => {
     const e1 = sigWith(1);
     // Ring mod changes the signal character; at least one should be non-zero
     expect(e0 + e1).toBeGreaterThan(0.001);
-    // They should differ
-    expect(Math.abs(e0 - e1)).toBeGreaterThan(0);
+    // They should differ by at least 5% relative
+    expect(Math.abs(e0 - e1) / Math.max(e0, e1, 1e-9)).toBeGreaterThan(0.05);
   });
 
   it('sub-divider adds bass content (changes output)', () => {
-    const noSub = (): number => {
-      const v = new WestcoastRenderer(note({ durationSec: 1 }), { ...P, 'osc.subDiv': 0 }, SR);
-      const b: number[] = [];
-      for (let i = 0; i < SR * 0.02; i++) b.push(v.renderSample(i / SR));
-      return rms(b);
-    };
-    const withSub = (): number => {
+    const renderSub = (subDiv: number, subLevel: number): number => {
       const v = new WestcoastRenderer(note({ durationSec: 1 }), {
-        ...P, 'osc.subDiv': 1, 'osc.subLevel': 0.8,
+        ...P, 'osc.subDiv': subDiv, 'osc.subLevel': subLevel,
       }, SR);
       const b: number[] = [];
       for (let i = 0; i < SR * 0.02; i++) b.push(v.renderSample(i / SR));
       return rms(b);
     };
-    // Both should produce sound; they should differ when sub is added
-    expect(noSub()).toBeGreaterThan(0.001);
-    expect(withSub()).toBeGreaterThan(0.001);
+    const a = renderSub(0, 0.3);   // sub off
+    const b = renderSub(1, 0.8);   // sub on at high level
+    // Both should produce sound and differ by at least 5% relative
+    expect(a).toBeGreaterThan(0.001);
+    expect(b).toBeGreaterThan(0.001);
+    expect(Math.abs(a - b) / Math.max(a, b, 1e-9)).toBeGreaterThan(0.05);
+  });
+
+  it('cycling contour terminates after gate-off (no immortal voice)', () => {
+    // Regression: a cycling contour (contour.cycle=1) used to re-trigger endlessly
+    // after the note gate ended, making the voice immortal and draining the voice budget.
+    // The fix: once ended===true (gate-off), the contour finishes its current decay
+    // and goes 'done' — it must not restart another AD cycle.
+    const cycleP: ParamBag = {
+      ...P,
+      'contour.cycle': 1,
+      'contour.mode': 0,    // pluck/AD mode
+      'contour.attack': 0.002,
+      'contour.decay': 0.05,
+    };
+    // Short note (0.1 s) + render well past note-end + several decay periods (1.5 s total)
+    const v = new WestcoastRenderer(note({ durationSec: 0.1 }), cycleP, SR);
+    for (let i = 0; i < Math.floor(SR * 1.5); i++) v.renderSample(i / SR);
+    expect(v.done).toBe(true);
   });
 
   it('registers under engine id "westcoast"', async () => {

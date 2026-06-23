@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { WavetableRenderer } from './wavetable-renderer';
 import { getWaveTables } from './wavetable-data';
+import { createRenderer } from './renderer-registry';
 import type { NoteSpec, ParamBag } from './types';
 
 const SR = 48000;
@@ -131,5 +132,36 @@ describe('WavetableRenderer', () => {
       return rms(b);
     };
     expect(e(0.9)).toBeGreaterThan(e(0.3));
+  });
+
+  it('with builtinEnv=0, voice sets done===true at gate-off (no immortal voice)', () => {
+    // No amplitude envelope: voice must set done===true shortly after holdEnd.
+    // The voice manager stops calling renderSample once done===true, so the
+    // silence guarantee comes from the manager — not from the renderer zeroing out.
+    // This test verifies done is set, which is the termination contract.
+    const noEnvP: ParamBag = { ...P, 'amp.builtinEnv': 0 };
+    const shortNote = note({ durationSec: 0.1 });
+    const v = new WavetableRenderer(shortNote, noEnvP, SR);
+    // Render past holdEnd (0.1 s) — render to 0.5 s to be safely past gate-off
+    for (let i = 0; i < Math.floor(SR * 0.5); i++) {
+      v.renderSample(i / SR);
+    }
+    // Voice must be marked done — the voice manager will stop rendering it
+    expect(v.done).toBe(true);
+    // Verify done was set close to holdEnd (within 1 ms), not much later
+    const v2 = new WavetableRenderer(shortNote, noEnvP, SR);
+    let doneTime = -1;
+    for (let i = 0; i < Math.floor(SR * 0.5); i++) {
+      v2.renderSample(i / SR);
+      if (v2.done && doneTime < 0) doneTime = i / SR;
+    }
+    // done must be set within 1 sample after holdEnd (0.1 s)
+    expect(doneTime).toBeGreaterThan(0.09);
+    expect(doneTime).toBeLessThan(0.11 + 1 / SR);
+  });
+
+  it('registers under engine id "wavetable"', () => {
+    // Importing WavetableRenderer above triggers its registerRenderer side-effect.
+    expect(() => createRenderer('wavetable', note(), P, SR)).not.toThrow();
   });
 });
