@@ -46,7 +46,9 @@ describe('SubtractiveVoiceRenderer', () => {
       const b: number[] = []; for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR));
       return rms(b);
     };
-    expect(bright(0.95)).toBeGreaterThan(bright(0.15) * 1.2);
+    // Higher cutoff → more pass-through (higher RMS). After Svf resonance fix (q=0..1 straight, not *22*0.45),
+    // the low-cutoff case is no longer over-amplified, so the difference is less dramatic.
+    expect(bright(0.95)).toBeGreaterThan(bright(0.15) * 1.05);
   });
 
   it('noteOff before the gate end shortens the sound (earlier silence)', () => {
@@ -56,5 +58,19 @@ describe('SubtractiveVoiceRenderer', () => {
     let last = 1;
     for (let i = SR * 0.05; i < SR * 0.6; i++) last = v.renderSample(i / SR);
     expect(Math.abs(last)).toBeLessThan(0.005);   // released well before the 2 s gate
+  });
+
+  it('filter output stays bounded — no resonant blow-up (master limiter must not be crushed)', () => {
+    // Absolute peak ceilings (justified): a voice must stay near unity so the
+    // downstream master limiter/soft-clip is not constantly crushed. A peak far
+    // above these signals an undamped-SVF regression (the resonance-scale bug).
+    const peakOf = (res: number) => {
+      const v = new SubtractiveVoiceRenderer(note(), { ...DEFAULTS, filterResonance: res }, SR);
+      let peak = 0;
+      for (let i = 0; i < SR * 0.6; i++) { const a = Math.abs(v.renderSample(i / SR)); if (a > peak) peak = a; }
+      return peak;
+    };
+    expect(peakOf(0.25)).toBeLessThan(1.5);   // default resonance ~0.99
+    expect(peakOf(1.0)).toBeLessThan(4.0);    // max resonance ~2.8, still bounded
   });
 });
