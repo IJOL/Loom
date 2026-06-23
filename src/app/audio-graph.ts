@@ -28,7 +28,15 @@ export function buildAudioGraph(ctx: AudioContext): AudioGraph {
   const analyser = ctx.createAnalyser();
   analyser.fftSize = 2048;
   analyser.connect(ctx.destination);
-  const masterComp = new MasterCompressor(ctx);
+  // Master SAFETY LIMITER, on by default. A session with many lanes at unity
+  // sums well past 0 dBFS and hard-clips at the destination (the harsh
+  // "chirps"). A brickwall-ish limiter near 0 dB is transparent for a
+  // well-levelled mix (peaks below threshold) but stops the gross clipping of a
+  // dense arrangement. Fully adjustable / bypassable in the master comp UI
+  // (fx-ui), so this is the "one we need", not a hidden param.
+  const masterComp = new MasterCompressor(ctx, {
+    bypass: false, threshold: -2, ratio: 20, attack: 0.002, release: 0.1, knee: 0, makeup: 1,
+  });
   masterComp.output.connect(analyser);
   // Dedicated metering tap off masterComp.output — NOT connected to destination
   // (mirrors the per-strip analysers; feeds the master strip VU meter).

@@ -17,6 +17,16 @@ describe('AudioGraph master InsertChain', () => {
   });
 });
 
+describe('master safety limiter', () => {
+  it('is active by default (not bypassed) with limiter settings so a hot multi-lane sum cannot clip', () => {
+    const g = createAudioGraph();
+    const s = g.masterComp.getState();
+    expect(s.bypass).toBe(false);          // ON by default (user can still bypass it in the master comp UI)
+    expect(s.ratio).toBeGreaterThanOrEqual(12); // limiter-grade ratio, not a gentle 4:1 comp
+    expect(s.threshold).toBeLessThan(0);   // catches overs near 0 dBFS
+  });
+});
+
 describe('collectSends / rehydrateSends round-trip', () => {
   it('collectSends → rehydrateSends round-trips return level + mute', () => {
     const g = buildAudioGraph(new AudioContext());
