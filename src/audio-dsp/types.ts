@@ -27,8 +27,12 @@ export interface NoteSpec {
 
 /** A pooled, per-sample voice. Pure: no Web Audio. */
 export interface VoiceRenderer {
-  /** Render one mono sample at absolute time t (seconds). */
-  renderSample(t: number): number;
+  /** Render one mono sample at absolute time t (seconds). `modOffsets` are
+   *  live, additive modulation offsets in each field's native 0..1 units
+   *  (shared LFOs, computed once per sample by the VoiceManager and applied at
+   *  read time on top of the voice's spawned-snapshot params). Omitted ⇒ no
+   *  modulation. */
+  renderSample(t: number, modOffsets?: Partial<Record<keyof SubParams, number>>): number;
   /** Live note-off: end the gate at time t (release tail still plays). */
   noteOff(t: number): void;
   /** True once the release tail has fully decayed at the last rendered t. */

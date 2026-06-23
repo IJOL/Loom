@@ -1,5 +1,6 @@
 import type { NoteSpec, SubParams, VoiceRenderer } from './types';
 import { SubtractiveVoiceRenderer } from './subtractive-renderer';
+import type { ModulationRuntime } from './modulation-runtime';
 
 interface Slot { midi: number; allocatedAt: number; v: VoiceRenderer; }
 
@@ -8,12 +9,16 @@ export class VoiceManager {
   private maxVoices = 8;
   private params: SubParams;
   private lastT = 0;
+  private mod: ModulationRuntime | null = null;
   constructor(private sr: number, params: SubParams) {
     this.params = { ...params };
   }
   get activeCount(): number { return this.slots.length; }
   setParams(patch: Partial<SubParams>): void { Object.assign(this.params, patch); }
   setMaxVoices(n: number): void { this.maxVoices = Math.max(1, Math.min(64, Math.floor(n))); }
+  /** Attach a shared-LFO modulation runtime. Its per-sample offsets are applied
+   *  to every active voice at read time. */
+  setModulation(m: ModulationRuntime): void { this.mod = m; }
 
   spawn(note: NoteSpec): void {
     // same-midi steal first (MIDI imports retrigger without note-off), then cap.
@@ -38,10 +43,19 @@ export class VoiceManager {
 
   renderSample(t: number): number {
     this.lastT = t;
+    // Shared-LFO offsets: computed once per sample (same for every voice) and
+    // applied at read time. Skipped entirely when no modulation is attached.
+    const mo = this.mod ? {
+      filterCutoff:    this.mod.offsetFor('filterCutoff', t),
+      filterResonance: this.mod.offsetFor('filterResonance', t),
+      osc1Level:       this.mod.offsetFor('osc1Level', t),
+      osc2Level:       this.mod.offsetFor('osc2Level', t),
+      noiseLevel:      this.mod.offsetFor('noiseLevel', t),
+    } : undefined;
     let out = 0;
     for (let i = this.slots.length - 1; i >= 0; i--) {
       const s = this.slots[i];
-      out += s.v.renderSample(t);
+      out += s.v.renderSample(t, mo);
       if (s.v.done) this.slots.splice(i, 1);
     }
     return out;

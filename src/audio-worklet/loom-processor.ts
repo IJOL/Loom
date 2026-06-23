@@ -8,6 +8,7 @@
 /// <reference path="./worklet-globals.d.ts" />
 import { VoiceManager } from '../audio-dsp/voice-manager';
 import { SchedulerQueue } from '../audio-dsp/scheduler-queue';
+import { ModulationRuntime } from '../audio-dsp/modulation-runtime';
 import type { MainToWorklet, WorkletToMain } from '../audio-dsp/messages';
 import type { NoteSpec, SubParams } from '../audio-dsp/types';
 import { defaultSubParams } from '../audio-dsp/default-params';
@@ -15,12 +16,14 @@ import { LOOM_PROCESSOR_NAME } from './processor-name';
 
 class LoomProcessor extends AudioWorkletProcessor {
   private vm = new VoiceManager(sampleRate, defaultSubParams());
+  private mod = new ModulationRuntime(sampleRate);
   private queue = new SchedulerQueue<NoteSpec>();
   private frame = Math.floor(currentTime * sampleRate);
   private reportCountdown = 0;
 
   constructor() {
     super();
+    this.vm.setModulation(this.mod);
     this.port.onmessage = (e: MessageEvent<MainToWorklet>) => {
       const m = e.data;
       switch (m.type) {
@@ -28,7 +31,7 @@ class LoomProcessor extends AudioWorkletProcessor {
         case 'params': this.vm.setParams(m.params as Partial<SubParams>); break;
         case 'config': this.vm.setMaxVoices(m.maxVoices); break;
         case 'steal':  this.vm.steal(m.count); break;
-        case 'mods':   /* wired in Task 10 */ break;
+        case 'mods':   this.mod.setMods(m.mods); break;
       }
     };
   }

@@ -6,6 +6,7 @@
 import loomProcessorUrl from './loom-processor.ts?worker&url';
 import type { MainToWorklet, WorkletToMain } from '../audio-dsp/messages';
 import type { NoteSpec, SubParams } from '../audio-dsp/types';
+import type { ModLite } from '../audio-dsp/modulation-runtime';
 import { defaultSubParams } from '../audio-dsp/default-params';
 // Import the name from a worklet-code-free module, NOT from loom-processor.ts:
 // importing loom-processor.ts here would execute its `class extends
@@ -44,6 +45,7 @@ export class LoomWorkletNode {
   spawn(note: NoteSpec): void { this.post({ type: 'spawn', note }); }
   setParams(params: Partial<SubParams>): void { this.post({ type: 'params', params }); }
   setMaxVoices(n: number): void { this.post({ type: 'config', maxVoices: n }); }
+  setMods(mods: ModLite[]): void { this.post({ type: 'mods', mods }); }
   steal(count: number): void { this.post({ type: 'steal', count }); }
   onVoiceCount(cb: (active: number) => void): void { this.countCb = cb; }
   connect(dest: AudioNode): void { this.node.connect(dest); }

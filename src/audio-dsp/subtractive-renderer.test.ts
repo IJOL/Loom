@@ -62,6 +62,21 @@ describe('SubtractiveVoiceRenderer', () => {
     expect(Math.abs(last)).toBeLessThan(0.005);   // released well before the 2 s gate
   });
 
+  it('honours a live cutoff modulation offset (positive offset = brighter)', () => {
+    // Same base/isolation as the 'higher cutoff = brighter' test above, but the
+    // cutoff is opened via the live modOffsets path instead of the param: a +0.8
+    // offset on a 0.15 base reaches the 0.95 cutoff that measured ~1.71× brighter.
+    const bright = (cutMod: number) => {
+      const v = new SubtractiveVoiceRenderer(
+        note(), { ...DEFAULTS, filterCutoff: 0.15, filterResonance: 0, filterEnvAmount: 0 }, SR,
+      );
+      const b: number[] = [];
+      for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR, { filterCutoff: cutMod }));
+      return rms(b);
+    };
+    expect(bright(0.8)).toBeGreaterThan(bright(0) * 1.3);
+  });
+
   it('filter output stays bounded — no resonant blow-up (master limiter must not be crushed)', () => {
     // Absolute peak ceilings (justified): a voice must stay near unity so the
     // downstream master limiter/soft-clip is not constantly crushed. A peak far

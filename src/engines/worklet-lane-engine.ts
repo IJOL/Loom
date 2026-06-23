@@ -16,8 +16,10 @@ import type {
 } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
 import type { SubParams } from '../audio-dsp/types';
+import type { ModLite } from '../audio-dsp/modulation-runtime';
 import { LoomWorkletNode, defaultSubParams } from '../audio-worklet/loom-node';
 import { ModulationHostImpl } from '../modulation/modulation-host';
+import { makeDefaultLFO, makeDefaultADSR, type ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
 import { SUB_PARAM_SPECS } from './subtractive-params';
 import { velNorm, resolveVelocity } from '../core/velocity-gain';
@@ -38,6 +40,37 @@ const DOT_TO_FIELD: Record<string, keyof SubParams> = {
   'amp.builtinEnv': 'ampBuiltinEnv', 'amp.attack': 'ampAttack', 'amp.decay': 'ampDecay',
   'amp.sustain': 'ampSustain', 'amp.release': 'ampRelease',
 };
+
+/** Resolve a modulation connection's paramId (possibly lane-prefixed, e.g.
+ *  "subtractive-1.filter.cutoff") to a SubParams field via the dot-id suffix. */
+function fieldForParamId(paramId: string): keyof SubParams | null {
+  for (const dotId in DOT_TO_FIELD) {
+    if (paramId === dotId || paramId.endsWith('.' + dotId)) return DOT_TO_FIELD[dotId];
+  }
+  return null;
+}
+
+/** Map the host's ModulatorState[] to the worklet's compact ModLite[]. Only
+ *  fields that resolve to a SubParams target (and that the runtime acts on —
+ *  shared LFOs) carry depth; everything else is sent inert. */
+export function toModLite(state: ModulatorState[]): ModLite[] {
+  return state.map((m) => {
+    const depthByParam: Record<string, number> = {};
+    for (const c of m.connections) {
+      if (!c.depth) continue;
+      const field = fieldForParamId(c.paramId);
+      if (field) depthByParam[field as string] = (depthByParam[field as string] ?? 0) + c.depth;
+    }
+    return {
+      id: m.id,
+      kind: m.kind === 'lfo' ? 'lfo' : 'adsr',
+      enabled: m.enabled !== false,
+      rateHz: m.rateHz ?? 4,
+      waveform: m.waveform ?? 'sine',
+      depthByParam,
+    };
+  });
+}
 
 class WorkletVoice implements Voice {
   constructor(private node: LoomWorkletNode) {}
@@ -66,7 +99,16 @@ export class WorkletLaneEngine implements SynthEngine {
   readonly polyphony = 'poly' as const;
   readonly editor = 'piano-roll' as const;
   readonly params: EngineParamSpec[] = SUB_PARAM_SPECS;
-  private modHost = new ModulationHostImpl([]);
+  // Same default modulator set as the legacy SubtractiveEngine (2 ADSR at
+  // depth 0 — the built-in amp/filter envelopes are authoritative — + 2 LFOs)
+  // so the modulators panel (Task 12) shows the same controls. Inert until the
+  // user connects one; toModLite/postMods then drive the in-worklet runtime.
+  private modHost = new ModulationHostImpl([
+    { ...makeDefaultADSR('adsr-amp'), connections: [{ id: 'c-amp', paramId: 'amp.gain', depth: 0 }] },
+    { ...makeDefaultADSR('adsr-filter'), connections: [{ id: 'c-cutoff', paramId: 'filter.cutoff', depth: 0 }] },
+    makeDefaultLFO('lfo1'),
+    { ...makeDefaultLFO('lfo2'), rateHz: 2, waveform: 'triangle' },
+  ]);
   private state: SubParams = defaultSubParams();
   private maxVoices = 8;
   private worklet: LoomWorkletNode;
@@ -75,6 +117,14 @@ export class WorkletLaneEngine implements SynthEngine {
   constructor(ctx: AudioContext, output: AudioNode) {
     this.worklet = new LoomWorkletNode(ctx);
     this.worklet.connect(output);
+    this.postMods();
+  }
+
+  /** Push the current modulator set to the worklet runtime. Called on
+   *  construction, after applyPreset, and (Task 12) whenever the modulators
+   *  panel edits a modulator/connection. */
+  private postMods(): void {
+    this.worklet.setMods(toModLite(this.modHost.modulators));
   }
 
   get presets(): EnginePreset[] { return getCachedPresets('subtractive'); }
@@ -114,6 +164,7 @@ export class WorkletLaneEngine implements SynthEngine {
       if (typeof val === 'number') this.setBaseValue(id, val);
     }
     if (preset.modulators) this.modHost.deserialize(preset.modulators);
+    this.postMods();
   }
 
   createVoice(_ctx: AudioContext, _output: AudioNode): Voice { return new WorkletVoice(this.worklet); }

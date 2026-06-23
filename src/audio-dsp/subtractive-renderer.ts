@@ -54,28 +54,44 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
 
   noteOff(t: number): void { if (t < this.holdEnd) this.holdEnd = t; }
 
-  renderSample(t: number): number {
+  renderSample(t: number, mo?: Partial<Record<keyof SubParams, number>>): number {
     if (t < this.begin) return 0;
     const p = this.p;
     const gate = t <= this.holdEnd ? 1 : 0;
+    // Live modulation offsets (shared LFOs) added on top of the spawned-snapshot
+    // params at read time, clamped to each field's valid range.
+    const osc1Level = mo?.osc1Level ? Math.max(0, p.osc1Level + mo.osc1Level) : p.osc1Level;
+    const osc2Level = mo?.osc2Level ? Math.max(0, p.osc2Level + mo.osc2Level) : p.osc2Level;
+    const noiseLevel = mo?.noiseLevel ? Math.max(0, p.noiseLevel + mo.noiseLevel) : p.noiseLevel;
     // oscillators (osc detune in cents; sub one octave down)
-    let mix = this.osc1.update(this.baseFreq * detuneMul(p.osc1Detune)) * p.osc1Level
-            + this.osc2.update(this.baseFreq * detuneMul(p.osc2Detune)) * p.osc2Level
+    let mix = this.osc1.update(this.baseFreq * detuneMul(p.osc1Detune)) * osc1Level
+            + this.osc2.update(this.baseFreq * detuneMul(p.osc2Detune)) * osc2Level
             + this.sub.update(this.baseFreq * 0.5) * p.subLevel;
-    if (p.noiseLevel > 0) {
+    if (noiseLevel > 0) {
       this.noiseLp.update(this.noise.update(), 200 + p.noiseColor * 14800, 0);
-      mix += this.noiseLp.lp * p.noiseLevel;
+      mix += this.noiseLp.lp * noiseLevel;
     }
     // parallel drive (dry + saturated wet scaled by drive), as in PolySynth
     if (p.filterDrive > 0) mix = mix + driveShape(mix, 1.0) * p.filterDrive;
-    // filter cutoff = base + keytrack + envelope contribution
+    // filter cutoff = base + keytrack + envelope contribution. A cutoff
+    // modulation offset is in normalised 0..1 knob units, so recompute the base
+    // cutoff Hz from the modulated, clamped knob value (keytrack/env ranges,
+    // derived from the unmodulated base at spawn, stay fixed — Phase 1 scope).
+    let baseCutoffHz = this.baseCutoffHz;
+    if (mo?.filterCutoff) {
+      const cutNorm = Math.max(0, Math.min(1, this.p.filterCutoff + mo.filterCutoff));
+      baseCutoffHz = Math.min(60 * Math.pow(220, cutNorm), 18000);
+    }
     const fe = p.filterBuiltinEnv >= 0.5
       ? this.filtEnv.update(t, gate, p.filterAttack, p.filterDecay, p.filterSustain, p.filterRelease) : 0;
-    const cutoff = this.baseCutoffHz + this.keyTrackHz + fe * this.envRangeHz;
+    const cutoff = baseCutoffHz + this.keyTrackHz + fe * this.envRangeHz;
     // Svf resonance is 0..1 (NOT the biquad's 0..22 Q): damping r = 0.5^((res+0.125)/0.125),
     // so res>~1 makes it near-undamped → resonant blow-up (peak 9× at res=2.475). Map the
     // 0..1 knob straight through; res=1 is already a strong, bounded resonance (peak ~2.8).
-    const q = p.filterResonance;
+    // Modulation offset clamped to 0..1 so a deep LFO can't drive it into blow-up.
+    const q = mo?.filterResonance
+      ? Math.max(0, Math.min(1, p.filterResonance + mo.filterResonance))
+      : p.filterResonance;
     this.filter.update(mix, cutoff, q);
     // amp envelope
     const ae = p.ampBuiltinEnv >= 0.5
