@@ -471,9 +471,15 @@ import { Adsr } from './adsr';
 
 describe('Adsr', () => {
   it('rises during attack and reaches ~1 at the attack peak', () => {
+    // Evaluate per-sample (real usage): the gate-driven state machine returns 0
+    // on the off→attack init frame, then interpolates — so call it densely, not
+    // with two sparse samples.
+    const SR = 48000;
     const e = new Adsr();
-    const mid = e.update(0.005, 1, 0.01, 0.1, 0.5, 0.2);  // halfway up a 10ms attack
-    const peak = e.update(0.01, 1, 0.01, 0.1, 0.5, 0.2);
+    const out: number[] = [];
+    for (let i = 0; i <= 480; i++) out.push(e.update(i / SR, 1, 0.01, 0.1, 0.5, 0.2)); // 480 samples = 10ms attack
+    const mid = out[240];   // ~halfway up the attack
+    const peak = out[480];  // attack end
     expect(mid).toBeGreaterThan(0);
     expect(mid).toBeLessThan(peak);
     expect(peak).toBeGreaterThan(0.9);
