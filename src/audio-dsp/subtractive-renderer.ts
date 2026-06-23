@@ -60,9 +60,9 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     const gate = t <= this.holdEnd ? 1 : 0;
     // Live modulation offsets (shared LFOs) added on top of the spawned-snapshot
     // params at read time, clamped to each field's valid range.
-    const osc1Level = mo?.osc1Level ? Math.max(0, p.osc1Level + mo.osc1Level) : p.osc1Level;
-    const osc2Level = mo?.osc2Level ? Math.max(0, p.osc2Level + mo.osc2Level) : p.osc2Level;
-    const noiseLevel = mo?.noiseLevel ? Math.max(0, p.noiseLevel + mo.noiseLevel) : p.noiseLevel;
+    const osc1Level = mo?.osc1Level ? Math.max(0, Math.min(1, p.osc1Level + mo.osc1Level)) : p.osc1Level;
+    const osc2Level = mo?.osc2Level ? Math.max(0, Math.min(1, p.osc2Level + mo.osc2Level)) : p.osc2Level;
+    const noiseLevel = mo?.noiseLevel ? Math.max(0, Math.min(1, p.noiseLevel + mo.noiseLevel)) : p.noiseLevel;
     // oscillators (osc detune in cents; sub one octave down)
     let mix = this.osc1.update(this.baseFreq * detuneMul(p.osc1Detune)) * osc1Level
             + this.osc2.update(this.baseFreq * detuneMul(p.osc2Detune)) * osc2Level
@@ -97,7 +97,12 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     const ae = p.ampBuiltinEnv >= 0.5
       ? this.ampEnv.update(t, gate, p.ampAttack, p.ampDecay, p.ampSustain, p.ampRelease) : 1;
     const out = this.filter.lp * ae * this.velPeak;
-    // done once the amp env has fully released after the gate
+    // Done once the amp env has fully released after the gate. When the built-in
+    // amp env is OFF (ampBuiltinEnv < 0.5) the Adsr never leaves 'off' so isOff
+    // is always true: the voice then ends at gate-off (no envelope ⇒ no release
+    // tail). That is intentional — it keeps a fixed-gain voice from becoming
+    // immortal; the only artifact is a hard edge at note-off, inherent to having
+    // no amp envelope.
     if (gate === 0 && this.ampEnv.isOff && t > this.holdEnd) this.done = true;
     return out;
   }

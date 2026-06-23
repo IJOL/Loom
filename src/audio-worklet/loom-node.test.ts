@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { defaultSubParams } from '../audio-dsp/default-params';
 import type { MainToWorklet } from '../audio-dsp/messages';
 
@@ -20,5 +21,19 @@ describe('loom-node message shaping', () => {
     fakePort.postMessage({ type: 'config', maxVoices: 12 });
     fakePort.postMessage({ type: 'steal', count: 3 });
     expect(posted.map((m) => m.type)).toEqual(['spawn', 'params', 'config', 'steal']);
+  });
+
+  // Regression guard for a bug that already shipped once: importing
+  // loom-processor.ts as a normal ESM module on the main thread executes its
+  // top-level `class extends AudioWorkletProcessor` + registerProcessor() →
+  // ReferenceError at boot (those globals exist only in the worklet scope). The
+  // processor MUST be referenced ONLY via the ?worker&url import (a separate
+  // worklet chunk); the shared name comes from processor-name.ts.
+  it('loom-node references loom-processor ONLY via ?worker&url (never a bare main-thread import)', () => {
+    const src = readFileSync(new URL('./loom-node.ts', import.meta.url), 'utf8');
+    // a bare `from './loom-processor'` (with or without .ts, no ?worker&url) is forbidden
+    expect(src).not.toMatch(/from\s+['"]\.\/loom-processor(\.ts)?['"]/);
+    // the allowed worker-url form must be present
+    expect(src).toMatch(/\.\/loom-processor\.ts\?worker&url/);
   });
 });

@@ -24,6 +24,9 @@ export async function loadLoomWorklet(ctx: BaseAudioContext): Promise<void> {
   let p = moduleCache.get(ctx);
   if (!p) {
     p = ctx.audioWorklet.addModule(loomProcessorUrl);
+    // Drop the cache entry if registration fails so a later call can retry,
+    // rather than permanently returning a cached rejection.
+    p.catch(() => { if (moduleCache.get(ctx) === p) moduleCache.delete(ctx); });
     moduleCache.set(ctx, p);
   }
   return p;

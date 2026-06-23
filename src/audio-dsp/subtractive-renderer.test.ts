@@ -1,20 +1,13 @@
 // src/audio-dsp/subtractive-renderer.test.ts
 import { describe, it, expect } from 'vitest';
 import { SubtractiveVoiceRenderer } from './subtractive-renderer';
-import type { SubParams, NoteSpec } from './types';
+import { defaultSubParams } from './default-params';
+import type { NoteSpec } from './types';
 
 const SR = 48000;
-const DEFAULTS: SubParams = {
-  masterTune: 0,
-  osc1Wave: 0, osc1Level: 0.6, osc1Detune: 0,
-  osc2Wave: 1, osc2Level: 0.4, osc2Detune: 7,
-  subLevel: 0.3, noiseLevel: 0, noiseColor: 0.6,
-  filterCutoff: 0.55, filterResonance: 0.25, filterEnvAmount: 0.45,
-  filterDrive: 0, filterKeyTrack: 0, filterBuiltinEnv: 1,
-  filterAttack: 0.01, filterDecay: 0.3, filterSustain: 0.4, filterRelease: 0.35,
-  ampBuiltinEnv: 1,
-  ampAttack: 0.01, ampDecay: 0.2, ampSustain: 0.7, ampRelease: 0.3,
-};
+// Use the same defaults the worklet actually boots with — no separate literal
+// that could silently drift from default-params.ts.
+const DEFAULTS = defaultSubParams();
 const note = (over: Partial<NoteSpec> = {}): NoteSpec =>
   ({ midi: 57, beginSec: 0, durationSec: 0.4, velocity: 0.8, accent: false, slide: false, ...over });
 const rms = (b: number[]) => Math.sqrt(b.reduce((s, v) => s + v * v, 0) / b.length);

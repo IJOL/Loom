@@ -23,12 +23,15 @@ describe('Svf lowpass', () => {
     expect(measure(8000)).toBeGreaterThan(measure(300) * 1.5);
   });
 
-  it('resonance boosts energy near the cutoff vs no resonance', () => {
+  it('resonance boosts energy near the cutoff vs no resonance (0..1 scale)', () => {
+    // resonance is the 0..1 contract (NOT biquad-Q). 0.8 is a strong but bounded
+    // resonance; this also guards the resonance-scale fix (commit 241ec16) — a
+    // biquad-scale value here would be near-undamped and meaningless.
     const measure = (res: number) => {
       const f = new Svf(SR); const o = new SawOsc(SR); const out: number[] = [];
       for (let i = 0; i < SR; i++) { f.update(o.update(110), 1200, res); out.push(f.lp); }
       return rms(out);
     };
-    expect(measure(8)).toBeGreaterThan(measure(0));
+    expect(measure(0.8)).toBeGreaterThan(measure(0));
   });
 });

@@ -10,6 +10,10 @@ export class VoiceManager {
   private params: SubParams;
   private lastT = 0;
   private mod: ModulationRuntime | null = null;
+  // Pooled per-sample modulation-offset struct — mutated in place each render
+  // sample and shared (read-only) by every voice, so the real-time render
+  // callback allocates nothing on the audio thread when modulation is active.
+  private readonly modOffsets = { filterCutoff: 0, filterResonance: 0, osc1Level: 0, osc2Level: 0, noiseLevel: 0 };
   constructor(private sr: number, params: SubParams) {
     this.params = { ...params };
   }
@@ -44,14 +48,18 @@ export class VoiceManager {
   renderSample(t: number): number {
     this.lastT = t;
     // Shared-LFO offsets: computed once per sample (same for every voice) and
-    // applied at read time. Skipped entirely when no modulation is attached.
-    const mo = this.mod ? {
-      filterCutoff:    this.mod.offsetFor('filterCutoff', t),
-      filterResonance: this.mod.offsetFor('filterResonance', t),
-      osc1Level:       this.mod.offsetFor('osc1Level', t),
-      osc2Level:       this.mod.offsetFor('osc2Level', t),
-      noiseLevel:      this.mod.offsetFor('noiseLevel', t),
-    } : undefined;
+    // applied at read time. Reuses the pooled struct (no per-sample allocation);
+    // undefined when no modulation is attached.
+    let mo: typeof this.modOffsets | undefined;
+    if (this.mod) {
+      const m = this.modOffsets;
+      m.filterCutoff    = this.mod.offsetFor('filterCutoff', t);
+      m.filterResonance = this.mod.offsetFor('filterResonance', t);
+      m.osc1Level       = this.mod.offsetFor('osc1Level', t);
+      m.osc2Level       = this.mod.offsetFor('osc2Level', t);
+      m.noiseLevel      = this.mod.offsetFor('noiseLevel', t);
+      mo = m;
+    }
     let out = 0;
     for (let i = this.slots.length - 1; i >= 0; i--) {
       const s = this.slots[i];

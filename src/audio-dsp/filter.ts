@@ -1,5 +1,9 @@
 // Two-pole state-variable filter (adapted from strudel dough.mjs TwoPoleFilter).
-// `resonance` here is a 0..~20 scale (Loom maps its 0..1 knob to 0.5..22.5 Q).
+// `resonance` is a 0..1 damping parameter (NOT a biquad 0..22 Q): damping
+// r = 0.5^((res+0.125)/0.125), so res=0 is heavily damped, res=1 is a strong but
+// bounded resonance (voice peak ~2.8×), and res > ~1.5 goes near-undamped and
+// blows up. Callers pass the 0..1 knob value straight through — no Q mapping.
+// (Was a 0..22 biquad-Q scale before commit 241ec16; do not reintroduce it.)
 const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
 
 export class Svf {

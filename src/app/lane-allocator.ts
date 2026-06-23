@@ -300,11 +300,15 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
   const swapLaneEngine = (laneId: string, newEngineId: string): void => {
     const res = resources.get(laneId);
     if (!res) return;
-    // Drop the lane's previous global-cap registration before building the new
-    // engine; createLaneEngine re-registers if the new engine is a worklet one.
-    deps.globalVoiceCap?.unregister(laneId);
+    // createLaneEngine registers a NEW worklet engine's node with the cap,
+    // overwriting the old laneId entry (the old node's stale reports are then
+    // ignored by the cap's node-identity guard). Build first so that on an
+    // unknown engineId we leave BOTH the lane and its cap registration intact.
     const engine = createLaneEngine(laneId, newEngineId, res.inserts);
     if (!engine) return; // unknown engine → leave the lane intact
+    // Replacement is NOT a worklet engine → the old worklet lane's cap
+    // registration is now orphaned; drop it so the disposed node stops counting.
+    if (!(engine instanceof WorkletLaneEngine)) deps.globalVoiceCap?.unregister(laneId);
     wireEngineIntoLane(newEngineId, engine, res.strip, res.inserts);
     laneVoices.delete(laneId);                  // drop the old engine's cached voice
     resources.replaceEngine(laneId, engine);    // disposes old engine, keeps strip+inserts

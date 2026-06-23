@@ -24,6 +24,22 @@ describe('Adsr', () => {
     expect(v).toBeCloseTo(0.4, 1);
   });
 
+  it('releases immediately on a note-off during a long attack (does not wait for the attack to finish)', () => {
+    const SR = 48000;
+    const e = new Adsr();
+    // Long 2 s attack; gate held only for the first 50 ms, then released well
+    // before the attack would complete. With a short release the level must
+    // reach ~0 long before the 2 s attack would have elapsed.
+    let v = 1;
+    for (let i = 0; i < SR * 0.05; i++) v = e.update(i / SR, 1, 2.0, 0.3, 0.6, 0.05);
+    const atGateOff = v;
+    expect(atGateOff).toBeGreaterThan(0);
+    expect(atGateOff).toBeLessThan(0.1);                 // still early in the 2 s attack
+    for (let i = SR * 0.05; i < SR * 0.2; i++) v = e.update(i / SR, 0, 2.0, 0.3, 0.6, 0.05); // gate off
+    expect(v).toBeLessThan(0.001);                        // released, not still attacking
+    expect(e.isOff).toBe(true);
+  });
+
   it('falls to 0 and reports off after the release tail', () => {
     const e = new Adsr();
     for (let t = 0; t <= 0.1; t += 1 / 48000) e.update(t, 1, 0.01, 0.02, 0.5, 0.05); // hold

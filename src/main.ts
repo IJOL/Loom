@@ -91,7 +91,7 @@ import { wireControlSurfaceUI } from './control/control-surface-ui';
 import { listProfiles } from './control/profile-registry';
 import { loadControlPrefs, saveControlPrefs } from './control/persistence';
 import { clampBpm, formatBpm } from './core/bpm';
-// ── AudioWorklet spike (Task 1 — guarded behind ?worklettest) ───────────────
+// ── AudioWorklet synthesis loader (live path for all subtractive lanes) ──────
 import { loadLoomWorklet } from './audio-worklet/loom-node';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
@@ -1026,17 +1026,23 @@ Promise.all([presetsLoaded, workletReady])
 // are no pre-baked MIDI demos.
 const demoPicker = document.getElementById('demo-picker') as HTMLSelectElement | null;
 if (demoPicker) {
-  wireDemoPicker({
-    sessionHost,
-    selectEl: demoPicker,
-    demos: [
-      { label: 'Minimal Techno', path: `${import.meta.env.BASE_URL}demos/minimal-techno.json` },
-      { label: 'Acid Rain', path: `${import.meta.env.BASE_URL}demos/acid-rain.json` },
-      { label: 'Cordillera', path: `${import.meta.env.BASE_URL}demos/cordillera.json` },
-      { label: 'Neon Drive', path: `${import.meta.env.BASE_URL}demos/neon-drive.json` },
-    ],
-    applyBpm: setTransportBpm,
-    onLoaded: () => autoHistory.markClean(),
+  // Wire the picker only after the worklet module is registered: picking a demo
+  // runs applyLoadedSessionState synchronously, which allocates a subtractive
+  // WorkletLaneEngine (→ new AudioWorkletNode). Doing so before addModule
+  // resolves would throw. On a normal load this resolves in ms.
+  void workletReady.then(() => {
+    wireDemoPicker({
+      sessionHost,
+      selectEl: demoPicker,
+      demos: [
+        { label: 'Minimal Techno', path: `${import.meta.env.BASE_URL}demos/minimal-techno.json` },
+        { label: 'Acid Rain', path: `${import.meta.env.BASE_URL}demos/acid-rain.json` },
+        { label: 'Cordillera', path: `${import.meta.env.BASE_URL}demos/cordillera.json` },
+        { label: 'Neon Drive', path: `${import.meta.env.BASE_URL}demos/neon-drive.json` },
+      ],
+      applyBpm: setTransportBpm,
+      onLoaded: () => autoHistory.markClean(),
+    });
   });
 }
 

@@ -21,8 +21,12 @@ export class Adsr {
         return 0;
       case 'attack': {
         const dt = t - this.startTime;
+        const cur = lerp(dt / attack, this.startVal, 1, 1);
+        // A note-off during the attack must release immediately from the current
+        // level — not wait for the full attack to elapse (attack ranges up to 2 s).
+        if (gate <= 0) { this.state = 'release'; this.startTime = t; this.startVal = cur; return cur; }
         if (dt > attack) { this.state = 'decay'; this.startTime = t; return 1; }
-        return lerp(dt / attack, this.startVal, 1, 1);
+        return cur;
       }
       case 'decay': {
         const dt = t - this.startTime;
