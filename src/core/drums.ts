@@ -29,7 +29,7 @@ interface CowbellParams { freq1: number; freq2: number; decay: number; }
 interface TomParams     { startFreq: number; endFreq: number; pitchDecay: number; ampDecay: number; }
 interface RideParams    { tune: number; decay: number; }
 
-interface Kit {
+export interface Kit {
   id: string;
   name: string;
   description: string;
@@ -52,7 +52,7 @@ const HAT_FILTER_DEFAULT = 7000;
 export type VoiceSynthState = Record<string, number>;
 export type DrumSynthState = Record<DrumVoice, VoiceSynthState>;
 
-function seedSynthState(kit: Kit): DrumSynthState {
+export function seedSynthState(kit: Kit): DrumSynthState {
   // chokeGroup: 0 = none; voices sharing a non-zero group cut each other (mutually
   // exclusive). Default group 1 = {closedHat, openHat} — the standard hi-hat choke.
   return {
@@ -90,7 +90,7 @@ export function chokeGroupMates(synth: DrumSynthState, voice: DrumVoice): DrumVo
   return DRUM_LANES.filter((w) => (synth[w]?.chokeGroup ?? 0) === g);
 }
 
-const KITS: Kit[] = [
+export const KITS: Kit[] = [
   {
     id: '808', name: 'TR-808', description: 'Warm, boomy — hip hop / electro',
     kick:    { startFreq: 150, endFreq: 50, pitchDecay: 0.05, ampDecay: 0.9, clickAmount: 0.2, tone: 'sine' },
@@ -143,7 +143,7 @@ const KITS: Kit[] = [
   },
 ];
 
-const BY_ID: Record<string, Kit> = Object.fromEntries(KITS.map((k) => [k.id, k]));
+export const BY_ID: Record<string, Kit> = Object.fromEntries(KITS.map((k) => [k.id, k]));
 
 /** Returns the static kit list without needing a DrumMachine instance.
  *  Phase G: used by main.ts to populate the kit selector at boot before

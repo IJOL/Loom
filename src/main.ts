@@ -93,6 +93,7 @@ import { loadControlPrefs, saveControlPrefs } from './control/persistence';
 import { clampBpm, formatBpm } from './core/bpm';
 // ── AudioWorklet synthesis loader (live path for all subtractive lanes) ──────
 import { loadLoomWorklet } from './audio-worklet/loom-node';
+import { loadDrumsWorklet } from './audio-worklet/drums-node';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -138,15 +139,19 @@ const audio = createAudioGraph();
 // lanes.ensureLaneResource() when applyLoadedSessionState runs.
 const { ctx, master, analyser, masterMeterAnalyser, masterStrip, masterInsertChain, fx, masterComp, sidechainBus } = audio;
 
-// Register the Loom AudioWorklet processor ASAP (idempotent, cached per ctx).
-// EVERY lane allocation that builds a 'subtractive' WorkletLaneEngine constructs
-// `new AudioWorkletNode(ctx,'loom-processor')`, which requires the module to be
+// Register both AudioWorklet processors ASAP (idempotent, cached per ctx). EVERY
+// lane allocation that builds a worklet engine constructs `new AudioWorkletNode`:
+// the melodic WorkletLaneEngine builds 'loom-processor', and the synth-mode
+// DrumsWorkletEngine builds the 8-output 'drums-processor'. Both modules must be
 // registered first. addModule resolves once and stays registered for the ctx's
-// lifetime, so gating the initial allocation paths (boot demo + recovery) on
-// this promise covers later user-triggered allocations (New / picker / swap)
+// lifetime, so gating the initial allocation paths (boot demo + recovery) on this
+// combined promise covers later user-triggered allocations (New / picker / swap)
 // too — by then it has long resolved.
-const workletReady: Promise<void> = loadLoomWorklet(ctx).catch((err: unknown) => {
-  console.error('[worklet] addModule failed; subtractive lanes will not sound.', err);
+const workletReady: Promise<void> = Promise.all([
+  loadLoomWorklet(ctx),
+  loadDrumsWorklet(ctx),
+]).then(() => undefined).catch((err: unknown) => {
+  console.error('[worklet] addModule failed; worklet lanes will not sound.', err);
 });
 
 // Stable call-site wrappers — set in boot section, after automationDeps is built.

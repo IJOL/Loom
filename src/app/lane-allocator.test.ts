@@ -6,6 +6,7 @@ import '../engines/subtractive';
 import '../engines/fm';
 import '../engines/wavetable';
 import { DrumsEngine } from '../engines/drums-engine';
+import { DrumsWorkletEngine } from '../engines/drums-worklet-engine';
 import { createLaneAllocator } from './lane-allocator';
 import { FxBus } from '../core/fx';
 import { SidechainBus } from '../core/sidechain-bus';
@@ -83,7 +84,9 @@ describe('Phase G latent-bug fix: drums-machine lane gets setSharedFx before cre
     const setSharedFxSpy = vi.spyOn(DrumsEngine.prototype, 'setSharedFx');
     const createVoiceSpy = vi.spyOn(DrumsEngine.prototype, 'createVoice');
 
-    const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [] });
+    // This test asserts the LEGACY DrumsEngine wiring order, so opt into the
+    // legacy backend (the live default routes drums to DrumsWorkletEngine).
+    const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [], synthesisBackend: 'legacy' });
     lanes.ensureLaneResource('drums-2', 'drums-machine');
 
     // setSharedFx must have been called by ensureLaneResource.
@@ -109,13 +112,41 @@ describe('Phase G latent-bug fix: drums-machine lane gets setSharedFx before cre
   it('extra drums-machine lane createVoice does not throw (latent bug was: sharedFx null)', () => {
     const ctx = makeCtx();
     const { master, fx, sidechainBus } = makeDeps(ctx);
-    const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [] });
+    // Legacy backend: this regression is about the legacy DrumsEngine's sharedFx
+    // wiring for extra lanes (the worklet path is covered separately).
+    const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [], synthesisBackend: 'legacy' });
     // Allocate a second drum lane (the latent bug only affected lanes after the first).
     lanes.ensureLaneResource('drums-2', 'drums-machine');
     const res = lanes.resources.get('drums-2');
     expect(res).toBeDefined();
     // This threw before the fix because setSharedFx was never called for extra lanes.
     expect(() => res!.engine.createVoice(ctx, res!.strip.input)).not.toThrow();
+  });
+});
+
+describe('Phase 2b: drums-machine routes to DrumsWorkletEngine on the worklet backend', () => {
+  it('default (worklet) backend allocates a DrumsWorkletEngine for a drums lane', () => {
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [] });
+    lanes.ensureLaneResource('drums-1', 'drums-machine');
+    const res = lanes.resources.get('drums-1')!;
+    expect(res).toBeDefined();
+    expect(res.engine.id).toBe('drums-machine');
+    // The worklet engine (not the legacy DrumsEngine) backs this lane.
+    expect(res.engine).toBeInstanceOf(DrumsWorkletEngine);
+    // createVoice builds the 8-output node + per-voice strips without throwing.
+    expect(() => res.engine.createVoice(ctx, res.inserts.inputNode)).not.toThrow();
+  });
+
+  it('legacy backend allocates the legacy DrumsEngine for a drums lane', () => {
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [], synthesisBackend: 'legacy' });
+    lanes.ensureLaneResource('drums-1', 'drums-machine');
+    const res = lanes.resources.get('drums-1')!;
+    expect(res.engine).toBeInstanceOf(DrumsEngine);
+    expect(res.engine).not.toBeInstanceOf(DrumsWorkletEngine);
   });
 });
 

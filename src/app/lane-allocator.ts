@@ -4,6 +4,7 @@ import { PolySynth } from '../polysynth/polysynth';
 import { InsertChain } from '../plugins/fx/insert-chain';
 import { createEngineInstance } from '../engines/registry';
 import { WorkletLaneEngine } from '../engines/worklet-lane-engine';
+import { DrumsWorkletEngine } from '../engines/drums-worklet-engine';
 import { PRESET_KEY_TO_SPEC as TB303_PRESET_KEY_TO_SPEC } from '../engines/tb303';
 import type { GlobalVoiceCap } from '../audio-worklet/global-voice-cap';
 import { getPlugin, createInstance } from '../plugins/registry';
@@ -159,6 +160,18 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
         deps.globalVoiceCap?.register(laneId, eng.getWorkletNode());
         return eng;
       }
+    }
+    // Synth-mode drums on the live path use the 8-output DrumsWorkletEngine (its
+    // own DrumsWorkletNode + 8 per-voice strips, NOT the LoomWorkletNode). It is
+    // wired by the shared drums-machine branch in wireEngineIntoLane
+    // (setSharedFx/setBusStrip/setOutputTarget), so it builds its node + strips on
+    // first createVoice. The offline recorder opts into 'legacy' → the legacy
+    // DrumsEngine (drums-engine.ts) instead. Sample-kit mode is handled inside
+    // DrumsWorkletEngine by delegating to its embedded SamplerEngine (Phase 3
+    // moves that into the worklet). The global voice cap is LoomWorkletNode-only,
+    // so the drums node is not enrolled.
+    if (engineId === 'drums-machine' && synthesisBackend === 'worklet') {
+      return new DrumsWorkletEngine();
     }
     let engine = createEngineInstance(engineId);
     if (!engine) {
