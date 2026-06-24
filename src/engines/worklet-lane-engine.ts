@@ -158,6 +158,17 @@ export class WorkletLaneEngine implements SynthEngine {
   /** Exposed for the global voice cap and for tests. */
   getWorkletNode(): LoomWorkletNode { return this.worklet; }
 
+  /** Snapshot of the current dot-id param state — the exact ParamBag the
+   *  audio-dsp renderer reads. The offline scene recorder uses this to render
+   *  this lane through the pure kernel (the worklet itself can't run under the
+   *  OfflineAudioContext / node-web-audio-api stub). */
+  getParamBag(): ParamBag { return { ...this.state }; }
+  /** Current per-lane voice cap (mirrors the worklet's maxVoices). */
+  getMaxVoices(): number { return this.maxVoices; }
+  /** Compact in-worklet modulation set (shared LFOs) — the same ModLite[] the
+   *  worklet runs. The offline kernel render feeds these to a ModulationRuntime. */
+  getModLite(): ModLite[] { return toModLite(this.modHost.modulators); }
+
   getBaseValue(id: string): number {
     if (id === 'poly.voices') return this.maxVoices;
     if (id in this.state) return this.state[id];

@@ -158,7 +158,9 @@ function buildPerVoiceSpecs(): EngineParamSpec[] {
   return out;
 }
 
-const DRUM_PARAMS: EngineParamSpec[] = [
+// Exported so the data-only 'drums-machine' registry descriptor (drums-engine.ts)
+// shares the exact same param vocabulary the worklet drums engine uses.
+export const DRUM_PARAMS: EngineParamSpec[] = [
   ...BUS_PARAMS,
   ...buildPerVoiceSpecs(),
 ];
@@ -621,8 +623,8 @@ const KITS_BY_NAME: Record<string, string> = Object.fromEntries(
 );
 
 // NOTE: this engine is NOT registered in the engine registry. Like
-// WorkletLaneEngine, it is constructed directly by the lane allocator's worklet
-// path (synthesisBackend === 'worklet'). The legacy DrumsEngine (drums-engine.ts)
-// keeps the 'drums-machine' registry entry as the metadata + offline-render
-// source (synthesisBackend === 'legacy'). Phase 4 (cutover) removes the legacy
-// engine and this engine becomes the sole 'drums-machine'.
+// WorkletLaneEngine, it is constructed directly by the lane allocator. The
+// data-only 'drums-machine' descriptor (drums-engine.ts) keeps the registry
+// metadata entry (it imports DRUM_PARAMS from here for an identical param
+// vocabulary). Phase 4 cutover: the legacy node-per-note DrumsEngine is gone, so
+// this is the sole synthesising 'drums-machine' engine.

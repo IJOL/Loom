@@ -2,14 +2,12 @@ import { wireEngineParams } from '../engines/engine-ui';
 import { normaliseSelectIndex } from '../core/select-control';
 import { wireDrumMasterUI } from '../core/drum-master-ui';
 import { mountLaneFxPanel as mountLaneFxPanelInner } from '../core/lane-fx-panel';
-import { tb303Engine } from '../engines/tb303';
 import { LANE_ID_BASS } from '../core/lane-ids';
 import type { KnobHandle } from '../core/knob';
 import type { SynthEngine, EngineUIContext } from '../engines/engine-types';
 import type { LaneResourceMap } from '../core/lane-resources';
 import type { SessionState } from '../session/session';
 import type { HistoryDeps } from '../save/history-wiring';
-import type { TB303Engine } from '../engines/tb303';
 
 export interface KnobMounterDeps {
   registerKnob(k: KnobHandle): void;
@@ -120,26 +118,12 @@ export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
   };
 
   const refreshKnobsFromSynth = () => {
-    // Phase G: resolve the TB303 instance lazily from laneResources.
+    // Phase 4 cutover: the bass lane's engine is a worklet engine. Refresh its
+    // TB-303 knobs from the engine's scalar param state (getBaseValue) — the same
+    // generic path as refreshLaneKnobs, no legacy TB303 instance needed.
     const engine = deps.laneResources.get(LANE_ID_BASS)?.engine;
-    const synth = (engine as TB303Engine | undefined)?.getInstance?.() ?? null;
-    if (!synth) return;
-    const liveValue = (specId: string): number | null => {
-      switch (specId) {
-        case 'filter.cutoff':    return synth.params.cutoff;
-        case 'filter.resonance': return synth.params.resonance;
-        case 'env.amount':       return synth.params.envMod;
-        case 'env.decay':        return synth.params.decay;
-        case 'env.accent':       return synth.params.accent;
-        case 'osc.wave':         return synth.params.wave === 'square' ? 1 : 0;
-      }
-      return null;
-    };
-    for (const spec of tb303Engine.params) {
-      const v = liveValue(spec.id);
-      if (v == null) continue;
-      deps.registry.get(`${LANE_ID_BASS}.${spec.id}`)?.setValue(v);
-    }
+    if (!engine || engine.id !== 'tb303') return;
+    refreshLaneKnobs(LANE_ID_BASS, engine);
   };
 
   const refreshLaneKnobs = (laneId: string, engine: SynthEngine) => {

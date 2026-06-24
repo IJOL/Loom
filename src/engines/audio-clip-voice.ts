@@ -1,9 +1,14 @@
 // src/engines/audio-clip-voice.ts
-// Shared loop/song buffer playback — extracted from SamplerVoice.triggerSample so
-// the Sampler and the dedicated `audio` engine play audio clips through ONE path.
-// WSOLA-stretches warp:stretch loops (pitch preserved) via stretchCache, with a
-// varispeed fallback that self-heals the cache for the next iteration. Flat gain
-// with ~5 ms anti-click fades — no ADSR.
+// Shared loop/song buffer playback PLAN — extracted so the Sampler and the
+// dedicated `audio` engine resolve audio clips through ONE path. WSOLA-stretches
+// warp:stretch loops (pitch preserved) via stretchCache, with a varispeed
+// fallback that self-heals the cache for the next iteration.
+//
+// Phase 4 cutover: the legacy node-per-note playAudioClip (Web Audio) was
+// deleted with the legacy AudioEngine/SamplerEngine voices; the worklet engines
+// (AudioWorkletEngine / SamplerWorkletEngine) build a SampleSpawn from the
+// resolved plan below and play it in the sampler worklet. resolveAudioClipPlayback
+// + OUTPUT_TRIM stay because BOTH worklet engines import them.
 
 import type { ClipSample } from '../session/session';
 import { sampleCache } from '../samples/sample-cache';
@@ -15,13 +20,9 @@ import { warpStretch, warpKey } from '../samples/warp-stretch';
 /** Headroom so a full-scale sample stays < 0 dBFS. */
 export const OUTPUT_TRIM = 0.7;
 
-export interface AudioClipPlayback { src: AudioBufferSourceNode; endTime: number; }
-
 /** A resolved audio-clip playback plan: which buffer to play, at what rate, from
  *  what offset, and at what flat gain. Computed entirely main-thread (warp/stretch
- *  caches, varispeed fallback). Both `playAudioClip` (Web Audio, legacy) and the
- *  worklet engines (AudioWorklet, posts a SampleSpawn) build from this — DRY so
- *  the two paths can never drift on rate/offset/warp logic.
+ *  caches, varispeed fallback). The worklet engines build a SampleSpawn from it.
  *
  *  `buffer` is the AudioBuffer to feed; `bufferId` is the worklet sample-bank key
  *  to transfer it under (the rendered warp/stretch key, or the raw sampleId). */
@@ -87,40 +88,4 @@ export function resolveAudioClipPlayback(opts: {
     }
   }
   return { buffer, bufferId, rate, offset, gain };
-}
-
-export function playAudioClip(opts: {
-  ctx: AudioContext;
-  sample: ClipSample;
-  time: number;
-  gateDuration: number;
-  dest: AudioNode;     // where the source connects (e.g. a filter or amp input)
-  ampGain: GainNode;   // gain node the flat envelope is scheduled on
-  masterGain: number;  // engine 'gain' global
-}): AudioClipPlayback | null {
-  const { ctx, sample, time, gateDuration, dest, ampGain, masterGain } = opts;
-  const resolved = resolveAudioClipPlayback({ ctx, sample, gateDuration, masterGain });
-  if (!resolved) return null;
-  const gate = Math.max(0.001, gateDuration);
-
-  const src = ctx.createBufferSource();
-  src.buffer = resolved.buffer;
-  src.playbackRate.value = resolved.rate;
-  src.connect(dest);
-
-  const peak = resolved.gain;
-  const fade = Math.min(0.005, gate / 4);
-  const g = ampGain.gain;
-  g.cancelScheduledValues(time);
-  g.setValueAtTime(0, time);
-  g.linearRampToValueAtTime(peak, time + fade);
-  g.setValueAtTime(peak, Math.max(time + fade, time + gate - fade));
-  g.linearRampToValueAtTime(0, time + gate);
-
-  const endTime = time + gate + 0.01;
-  // Warped/stretched buffers already start at 0; the varispeed fallback starts at
-  // the marked-region source start; else at the clip trim — all folded into offset.
-  src.start(time, resolved.offset);
-  src.stop(endTime);
-  return { src, endTime };
 }

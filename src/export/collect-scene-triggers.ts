@@ -21,6 +21,9 @@ export interface OfflineTrigger {
   gateSec: number;
   accent: boolean;
   slidingIn: boolean;
+  /** MIDI 0..127 note velocity (≥100 = accent). The kernel offline render
+   *  normalises this to 0..1 for the renderer, matching the live worklet path. */
+  velocity: number;
   sample?: ClipSample;
 }
 
@@ -49,6 +52,7 @@ export function collectSceneTriggers(
           gateSec: t.gateSec,
           accent: t.accent,
           slidingIn: t.slidingIn,
+          velocity: t.velocity,
           sample: note.sample,
         });
       },

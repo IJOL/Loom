@@ -4,8 +4,7 @@ import type { SessionHost } from '../session/session-host';
 import type { SessionState } from '../session/session';
 import type { LaneAllocator } from '../app/lane-allocator';
 import { LANE_ID_BASS, LANE_ID_DRUMS } from '../core/lane-ids';
-import type { TB303Engine } from '../engines/tb303';
-import type { DrumsEngine } from '../engines/drums-engine';
+import type { TB303 } from '../core/synth';
 import type { ArrangementState } from '../performance/performance';
 import { resolveMeter, formatMeter, type TimeSignature } from '../core/meter';
 
@@ -54,16 +53,23 @@ export interface SavedStateV3Deps {
   setArrangement?: (a: ArrangementState) => void;
 }
 
-/** Resolve the TB303 instance from the bass lane (null before first allocation). */
-function getSynth(deps: SavedStateV3Deps) {
-  const engine = deps.lanes.resources.get(LANE_ID_BASS)?.engine;
-  return (engine as TB303Engine | undefined)?.getInstance?.() ?? null;
+// Phase 4 cutover: the legacy node-per-note TB303 / DrumMachine instances are
+// gone (lanes synthesise through the worklet). The top-level v3 `kit`/`wave`/
+// `synthParams` fields are now vestigial — the authoritative per-lane sound
+// lives in sessionState.lanes[].engineState. getSynth/getDrums therefore always
+// return null; the fields stay in the schema for back-compat with old saves
+// (load tolerates a null instance), and save writes harmless defaults.
+interface LegacyTB303Instance { params: TB303['params']; setKit?(k: string): void; }
+interface LegacyDrumsInstance { kitId?: string; setKit(k: string): void; }
+function getSynth(deps: SavedStateV3Deps): LegacyTB303Instance | null {
+  const engine = deps.lanes.resources.get(LANE_ID_BASS)?.engine as
+    { getInstance?(): LegacyTB303Instance | null } | undefined;
+  return engine?.getInstance?.() ?? null;
 }
-
-/** Resolve the DrumMachine instance from the drums lane (null before first allocation). */
-function getDrums(deps: SavedStateV3Deps) {
-  const engine = deps.lanes.resources.get(LANE_ID_DRUMS)?.engine;
-  return (engine as DrumsEngine | undefined)?.getInstance?.() ?? null;
+function getDrums(deps: SavedStateV3Deps): LegacyDrumsInstance | null {
+  const engine = deps.lanes.resources.get(LANE_ID_DRUMS)?.engine as
+    { getInstance?(): LegacyDrumsInstance | null } | undefined;
+  return engine?.getInstance?.() ?? null;
 }
 
 export function buildSavedStateV3(deps: SavedStateV3Deps): SavedStateV3 {

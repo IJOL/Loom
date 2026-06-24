@@ -9,12 +9,9 @@ import { SamplerWorkletEngine } from '../engines/sampler-worklet-engine';
 import { AudioWorkletEngine } from '../engines/audio-worklet-engine';
 import { PRESET_KEY_TO_SPEC as TB303_PRESET_KEY_TO_SPEC } from '../engines/tb303';
 import type { GlobalVoiceCap } from '../audio-worklet/global-voice-cap';
-import { getPlugin, createInstance } from '../plugins/registry';
 import { setCurrentLaneForVoice } from '../modulation/active-mods';
-import { ModulationHostImpl } from '../modulation/modulation-host';
 import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from '../core/lane-ids';
 import type { SynthEngine, Voice } from '../engines/engine-types';
-import type { SynthInstance, PluginManifest } from '../plugins/types';
 import type { FxBus } from '../core/fx';
 import type { SidechainBus } from '../core/sidechain-bus';
 
@@ -41,15 +38,6 @@ export interface LaneAllocatorDeps {
   sidechainBus: SidechainBus;
   getBpm(): number;
   extraIds: readonly string[];
-  /** How the worklet-capable melodic engines (subtractive/tb303/fm/wavetable/
-   *  karplus/westcoast) synthesise. 'worklet' (default) routes them to the
-   *  AudioWorklet (WorkletLaneEngine) — the live path. 'legacy' keeps the
-   *  node-per-note engines; used by the offline scene recorder, which
-   *  batch-renders through an OfflineAudioContext where the real-time dropout
-   *  problem the worklet solves does not apply and where worklet message
-   *  delivery during startRendering is unreliable. TEMPORARY: Phase 4 (cutover)
-   *  removes the legacy engines and this seam. */
-  synthesisBackend?: 'worklet' | 'legacy';
   /** Global simultaneous-voice budget coordinator. Each worklet lane registers
    *  its node so the busiest lane is told to steal when the total exceeds the
    *  budget. Absent in the offline recorder (no real-time dropout concern). */
@@ -69,66 +57,6 @@ export interface LaneAllocator {
   getLaneEngineInstance(laneId: string): SynthEngine | null;
 }
 
-/**
- * Wraps a SynthInstance (plugin interface) in a minimal SynthEngine adapter
- * so it can be stored in LaneResourceMap and used by the rest of the audio
- * graph without a separate legacy SynthEngine registration.
- *
- * The adapter is intentionally thin: buildSequencer / buildParamUI return no-op
- * stubs because plugin-only synths manage their own UI through the plugin panel.
- */
-function pluginSynthAsEngine(manifest: PluginManifest, inst: SynthInstance): SynthEngine {
-  const modHost = new ModulationHostImpl([]);
-  return {
-    id:         manifest.id,
-    name:       manifest.name,
-    type:       'polyhost' as const,
-    polyphony:  'mono' as const,
-    editor:     'piano-roll' as const,
-    params:     manifest.params,
-    presets:    [],
-    modulators: modHost,
-
-    getBaseValue(id: string): number  { return inst.getBaseValue(id); },
-    setBaseValue(id: string, v: number): void { inst.setBaseValue(id, v); },
-
-    createVoice(_ctx: AudioContext, _output: AudioNode): Voice {
-      return {
-        trigger:        (m, t, o) => inst.trigger(m, t, o),
-        release:        (t)       => inst.release(t),
-        connect:        (d)       => inst.connect(d),
-        getAudioParams: ()        => inst.getAudioParams(),
-        getAudioParamRange: (id)  => inst.getAudioParamRange?.(id),
-        dispose:        ()        => { /* instance is shared per lane; disposal handled in engine.dispose */ },
-      };
-    },
-
-    getSharedAudioParams(ctx?: AudioContext): Map<string, AudioParam> {
-      return inst.getSharedAudioParams?.(ctx) ?? new Map();
-    },
-
-    applyPreset(name: string): void { inst.applyPreset(name); },
-
-    buildSequencer(_container: HTMLElement, _stepCount: number) {
-      // Plugin-only synths use the default piano-roll sequencer wired by session-host.
-      return {
-        getStepAt: () => null,
-        setLength:  () => { /* no-op */ },
-        highlight:  () => { /* no-op */ },
-        serialize:  () => ({}),
-        deserialize: () => { /* no-op */ },
-        dispose:    () => { /* no-op */ },
-      };
-    },
-
-    buildParamUI(_container: HTMLElement): void {
-      // Plugin-only synths manage their param UI through the plugin panel.
-    },
-
-    dispose(): void { inst.dispose(); },
-  };
-}
-
 export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
   const resources = new LaneResourceMap();
   const extraStrips: Partial<Record<string, ChannelStrip>> = {};
@@ -136,19 +64,16 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
   const extraLaneStrips = new Map<string, ChannelStrip>();
   const laneVoices = new Map<string, Voice>();
 
-  /** Resolve an engine instance: legacy registry first, plugin registry as
-   *  fallback (plugin-only synths get wrapped via pluginSynthAsEngine). */
-  const synthesisBackend = deps.synthesisBackend ?? 'worklet';
-
   const createLaneEngine = (laneId: string, engineId: string, inserts: InsertChain): SynthEngine | null => {
-    // Worklet-capable melodic engines are synthesised in the AudioWorklet (live
-    // path). The WorkletLaneEngine constructs its own LoomWorkletNode and
-    // self-wires to inserts.inputNode, bypassing the legacy node-per-note path
-    // in wireEngineIntoLane. The offline recorder opts into 'legacy'. Config
-    // (name/polyphony/params/modulators) is read from a pure-data registry
-    // descriptor — NOT a throwaway legacy engine instance — so the live path
-    // never constructs a node-per-note legacy class (Phase 4 Task 1).
-    if (WORKLET_ENGINE_IDS.has(engineId) && synthesisBackend === 'worklet') {
+    // Phase 4 cutover: synthesis is worklet-only. The legacy node-per-note engine
+    // classes are gone; the offline recorder renders melodic lanes through the
+    // pure audio-dsp kernel (it no longer constructs lane engines for synthesis).
+    //
+    // Worklet-capable melodic engines run in the AudioWorklet via a
+    // WorkletLaneEngine, which constructs its own LoomWorkletNode and self-wires
+    // to inserts.inputNode. Config (name/polyphony/params/modulators) is read
+    // from the pure-data registry descriptor — never a synthesising engine class.
+    if (WORKLET_ENGINE_IDS.has(engineId)) {
       const spec = getEngineDescriptor(engineId);
       if (spec) {
         const eng = new WorkletLaneEngine(deps.ctx, inserts.inputNode, {
@@ -156,7 +81,7 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
           params: spec.params, modulators: spec.modulators,
           // TB-303 preset JSON uses legacy flat keys; remap them to dot-ids so
           // presets actually apply on the worklet path (other engines' JSON is
-          // already dot-id keyed). Same map the legacy TB303Engine uses.
+          // already dot-id keyed).
           presetKeyRemap: engineId === 'tb303' ? TB303_PRESET_KEY_TO_SPEC : undefined,
         });
         // Enrol this lane's worklet node in the global voice cap.
@@ -164,79 +89,43 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
         return eng;
       }
     }
-    // Synth-mode drums on the live path use the 8-output DrumsWorkletEngine (its
-    // own DrumsWorkletNode + 8 per-voice strips, NOT the LoomWorkletNode). It is
-    // wired by the shared drums-machine branch in wireEngineIntoLane
-    // (setSharedFx/setBusStrip/setOutputTarget), so it builds its node + strips on
-    // first createVoice. The offline recorder opts into 'legacy' → the legacy
-    // DrumsEngine (drums-engine.ts) instead. Sample-kit mode is handled inside
-    // DrumsWorkletEngine by delegating to its embedded SamplerEngine (Phase 3
-    // moves that into the worklet). The global voice cap is LoomWorkletNode-only,
-    // so the drums node is not enrolled.
-    if (engineId === 'drums-machine' && synthesisBackend === 'worklet') {
-      return new DrumsWorkletEngine();
-    }
-    // Sampler + Audio channel on the live path use their own worklet engines
-    // (each owns a SamplerWorkletNode; dry → lane insert chain, send → FxBus).
-    // Wired by the shared sampler/audio branch in wireEngineIntoLane
-    // (setSharedFx/setOutputTarget). The offline recorder opts into 'legacy' →
-    // the legacy SamplerEngine/AudioEngine instead. The global voice cap is
-    // LoomWorkletNode-only, so these nodes are not enrolled. Phase 4 (cutover)
-    // makes these the sole 'sampler'/'audio' engines.
-    if (engineId === 'sampler' && synthesisBackend === 'worklet') {
-      return new SamplerWorkletEngine();
-    }
-    if (engineId === 'audio' && synthesisBackend === 'worklet') {
-      return new AudioWorkletEngine();
-    }
-    let engine = createEngineInstance(engineId);
-    if (!engine) {
-      const factory = getPlugin('synth', engineId);
-      if (factory && factory.kind === 'synth') {
-        const inst = createInstance('synth', engineId, deps.ctx, inserts.inputNode);
-        if (inst) engine = pluginSynthAsEngine(factory.manifest, inst);
-      }
-    }
-    return engine ?? null;
+    // Drums use the 8-output DrumsWorkletEngine (its own DrumsWorkletNode + 8
+    // per-voice strips, NOT the LoomWorkletNode). Wired by the drums-machine
+    // branch in wireEngineIntoLane (setSharedFx/setBusStrip/setOutputTarget), so
+    // it builds its node + strips on first createVoice. Not enrolled in the
+    // global voice cap (which is LoomWorkletNode-only).
+    if (engineId === 'drums-machine') return new DrumsWorkletEngine();
+    // Sampler + Audio channel use their own worklet engines (each owns a
+    // SamplerWorkletNode; dry → lane insert chain, send → FxBus). Wired by the
+    // sampler/audio branch in wireEngineIntoLane.
+    if (engineId === 'sampler') return new SamplerWorkletEngine();
+    if (engineId === 'audio') return new AudioWorkletEngine();
+    return null;
   };
 
   /** Per-engine wiring against a lane's strip + inserts. Shared by
-   *  ensureLaneResource (initial alloc) and swapLaneEngine (in-place swap). */
+   *  ensureLaneResource (initial alloc) and swapLaneEngine (in-place swap).
+   *  WorkletLaneEngine melodic lanes self-wire in createLaneEngine, so only the
+   *  8-output drums + sampler/audio worklet engines need their shared-fx/output
+   *  targets set here. */
   const wireEngineIntoLane = (
     engineId: string,
     engine: SynthEngine,
     strip: ChannelStrip,
     inserts: InsertChain,
   ): void => {
-    // Worklet backend: a worklet-routed engine is a self-wiring WorkletLaneEngine
-    // (see createLaneEngine) — no legacy node wiring needed.
-    if (WORKLET_ENGINE_IDS.has(engineId) && synthesisBackend === 'worklet') return;
-    if (engineId === 'subtractive') {
-      // Legacy backend: wire a PolySynth into the SubtractiveEngine.
-      const p = new PolySynth(deps.ctx, inserts.inputNode);
-      p.bpm = deps.getBpm();
-      (engine as unknown as { setPolySynth?(p: PolySynth): void }).setPolySynth?.(p);
-    }
+    if (WORKLET_ENGINE_IDS.has(engineId)) return;   // self-wiring WorkletLaneEngine
     if (engineId === 'drums-machine') {
       (engine as unknown as { setSharedFx?(fx: FxBus): void }).setSharedFx?.(deps.fx);
       (engine as unknown as { setBusStrip?(s: ChannelStrip): void }).setBusStrip?.(strip);
       (engine as unknown as { setOutputTarget?(n: AudioNode): void }).setOutputTarget?.(inserts.inputNode);
     }
-    if (engineId === 'sampler') {
-      (engine as unknown as { setSharedFx?(fx: FxBus): void }).setSharedFx?.(deps.fx);
-      // The worklet SamplerWorkletEngine also needs its dry output target (its node
-      // is self-owned). The legacy SamplerEngine has no setOutputTarget (its voice
-      // connects to the output passed at createVoice), so the optional call is inert.
-      (engine as unknown as { setOutputTarget?(n: AudioNode): void }).setOutputTarget?.(inserts.inputNode);
-    }
-    if (engineId === 'audio' && synthesisBackend === 'worklet') {
-      // AudioWorkletEngine owns a SamplerWorkletNode: dry → lane insert chain,
-      // send → FxBus. The legacy AudioEngine connects its voice at createVoice and
-      // has neither method, so this branch is worklet-only.
+    if (engineId === 'sampler' || engineId === 'audio') {
+      // SamplerWorkletEngine / AudioWorkletEngine own a SamplerWorkletNode: dry →
+      // lane insert chain, send → FxBus.
       (engine as unknown as { setSharedFx?(fx: FxBus): void }).setSharedFx?.(deps.fx);
       (engine as unknown as { setOutputTarget?(n: AudioNode): void }).setOutputTarget?.(inserts.inputNode);
     }
-    // tb303: TB303Engine.createVoice is self-registering — no external call.
   };
 
   // Phase G: No boot prefill block. The three default lanes (tb-303-1,
