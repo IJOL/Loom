@@ -30,6 +30,9 @@ export interface PolyStep {
 // look-ahead timer that drives `sessionTick`; the Session host owns all
 // per-lane scheduling. `length` survives as the default new-clip length (bars
 // selector) — it no longer sizes any pattern.
+const TICK_MS = 25;          // scheduler tick cadence (ms)
+const LOOKAHEAD_SEC = 0.2;   // schedule notes this far ahead — cushions tick jitter
+
 export class Sequencer {
   bpm = 130;
   swing = 0;             // 0..0.6, applied to odd 16ths
@@ -59,7 +62,8 @@ export class Sequencer {
   onStart?: () => void;
 
   private playing = false;
-  private timerId: number | null = null;
+  private timerId: number | null = null;   // main-thread fallback timer (when no Worker)
+  private clock: Worker | null = null;     // background-safe tick source (lazy, reused)
   private lastTickPerf = 0;
   private engineSequencers: EngineSequencer[] = [];
 
@@ -88,12 +92,14 @@ export class Sequencer {
     this.lastTickPerf = 0;
     // Notify BEFORE the first tick so a live-take captures from the true downbeat.
     this.onStart?.();
-    this.tick();
+    this.runTick();      // downbeat now; the clock drives every subsequent tick
+    this.startClock();
   }
 
   stop() {
     this.playing = false;
     this.lastTickPerf = 0;
+    this.clock?.postMessage({ type: 'stop' });   // halt the worker interval (worker kept for reuse)
     if (this.timerId !== null) {
       clearTimeout(this.timerId);
       this.timerId = null;
@@ -107,17 +113,42 @@ export class Sequencer {
     }
   }
 
-  private tick = () => {
+  /** One scheduler pass: hand the session host the look-ahead window. Driven by
+   *  the worker clock (or the fallback timer) — it does NOT self-reschedule. */
+  private runTick = () => {
     if (!this.playing) return;
-    const lookahead = 0.12;
     const stats = this.onTickStats;
     const nowPerf = stats ? performance.now() : 0;
-    const lagMs = stats ? (this.lastTickPerf ? nowPerf - this.lastTickPerf - 25 : 0) : 0;
+    const lagMs = stats ? (this.lastTickPerf ? nowPerf - this.lastTickPerf - TICK_MS : 0) : 0;
     if (stats) this.lastTickPerf = nowPerf;
     const t0 = stats ? performance.now() : 0;
     // Session mode: host owns per-lane scheduling via sessionTick → tickSession.
-    if (this.sessionTick) this.sessionTick(this.ctx.currentTime, lookahead);
+    if (this.sessionTick) this.sessionTick(this.ctx.currentTime, LOOKAHEAD_SEC);
     if (stats) stats(lagMs, performance.now() - t0);
-    if (this.playing) this.timerId = window.setTimeout(this.tick, 25);
+  };
+
+  /** Drive runTick from a Web Worker timer so playback survives the window being
+   *  backgrounded (a main-thread timer is throttled when the tab is hidden/occluded).
+   *  Falls back to a main-thread timer where Worker is unavailable (tests / SSR). */
+  private startClock(): void {
+    if (this.clock === null) {
+      try {
+        this.clock = new Worker(new URL('./clock-worker.ts', import.meta.url), { type: 'module' });
+        this.clock.onmessage = () => { if (this.playing) this.runTick(); };
+      } catch {
+        this.clock = null;   // no Worker (e.g. test env) → main-thread fallback
+      }
+    }
+    if (this.clock) this.clock.postMessage({ type: 'start', intervalMs: TICK_MS });
+    else this.scheduleFallback();
+  }
+
+  private scheduleFallback = (): void => {
+    if (!this.playing) return;
+    this.timerId = setTimeout(() => {
+      if (!this.playing) return;
+      this.runTick();
+      this.scheduleFallback();
+    }, TICK_MS) as unknown as number;
   };
 }
