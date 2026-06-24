@@ -5,6 +5,8 @@ import { InsertChain } from '../plugins/fx/insert-chain';
 import { createEngineInstance } from '../engines/registry';
 import { WorkletLaneEngine } from '../engines/worklet-lane-engine';
 import { DrumsWorkletEngine } from '../engines/drums-worklet-engine';
+import { SamplerWorkletEngine } from '../engines/sampler-worklet-engine';
+import { AudioWorkletEngine } from '../engines/audio-worklet-engine';
 import { PRESET_KEY_TO_SPEC as TB303_PRESET_KEY_TO_SPEC } from '../engines/tb303';
 import type { GlobalVoiceCap } from '../audio-worklet/global-voice-cap';
 import { getPlugin, createInstance } from '../plugins/registry';
@@ -173,6 +175,19 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     if (engineId === 'drums-machine' && synthesisBackend === 'worklet') {
       return new DrumsWorkletEngine();
     }
+    // Sampler + Audio channel on the live path use their own worklet engines
+    // (each owns a SamplerWorkletNode; dry → lane insert chain, send → FxBus).
+    // Wired by the shared sampler/audio branch in wireEngineIntoLane
+    // (setSharedFx/setOutputTarget). The offline recorder opts into 'legacy' →
+    // the legacy SamplerEngine/AudioEngine instead. The global voice cap is
+    // LoomWorkletNode-only, so these nodes are not enrolled. Phase 4 (cutover)
+    // makes these the sole 'sampler'/'audio' engines.
+    if (engineId === 'sampler' && synthesisBackend === 'worklet') {
+      return new SamplerWorkletEngine();
+    }
+    if (engineId === 'audio' && synthesisBackend === 'worklet') {
+      return new AudioWorkletEngine();
+    }
     let engine = createEngineInstance(engineId);
     if (!engine) {
       const factory = getPlugin('synth', engineId);
@@ -208,6 +223,17 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     }
     if (engineId === 'sampler') {
       (engine as unknown as { setSharedFx?(fx: FxBus): void }).setSharedFx?.(deps.fx);
+      // The worklet SamplerWorkletEngine also needs its dry output target (its node
+      // is self-owned). The legacy SamplerEngine has no setOutputTarget (its voice
+      // connects to the output passed at createVoice), so the optional call is inert.
+      (engine as unknown as { setOutputTarget?(n: AudioNode): void }).setOutputTarget?.(inserts.inputNode);
+    }
+    if (engineId === 'audio' && synthesisBackend === 'worklet') {
+      // AudioWorkletEngine owns a SamplerWorkletNode: dry → lane insert chain,
+      // send → FxBus. The legacy AudioEngine connects its voice at createVoice and
+      // has neither method, so this branch is worklet-only.
+      (engine as unknown as { setSharedFx?(fx: FxBus): void }).setSharedFx?.(deps.fx);
+      (engine as unknown as { setOutputTarget?(n: AudioNode): void }).setOutputTarget?.(inserts.inputNode);
     }
     // tb303: TB303Engine.createVoice is self-registering — no external call.
   };

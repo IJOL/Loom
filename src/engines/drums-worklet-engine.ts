@@ -31,7 +31,7 @@ import { computeVoiceMutes } from '../core/mute-solo';
 import { ChannelStrip, type FxBus } from '../core/fx';
 import { DrumsWorkletNode } from '../audio-worklet/drums-node';
 import { DRUM_VOICE_IDS } from '../audio-dsp/drums/types';
-import { SamplerEngine } from './sampler';
+import { SamplerWorkletEngine } from './sampler-worklet-engine';
 import type { KeymapEntry } from '../samples/types';
 import type { PadParams } from './sampler-pad-params';
 import { GM_DRUM_MAP } from './drum-gm-map';
@@ -247,9 +247,11 @@ export class DrumsWorkletEngine implements SynthEngine {
   private voiceMute: Partial<Record<DrumVoice, boolean>> = {};
   private voiceSolo: Partial<Record<DrumVoice, boolean>> = {};
 
-  /** Embedded Sampler instance — the sample-kit source. Eager so host-wiring
-   *  (setSharedFx) reaches it before its first createVoice. */
-  private sampler = new SamplerEngine();
+  /** Embedded Sampler instance — the sample-kit source, now the worklet-backed
+   *  SamplerWorkletEngine (Phase 3) so sample drumkits play in the worklet too.
+   *  Eager so host-wiring (setSharedFx/setOutputTarget) reaches it before its
+   *  first createVoice. */
+  private sampler = new SamplerWorkletEngine();
   private kitMode: 'synth' | 'sample' = 'synth';
 
   /** The sample-player carries OUTPUT_TRIM headroom; run the embedded sampler at
@@ -283,7 +285,12 @@ export class DrumsWorkletEngine implements SynthEngine {
   // Per-lane insert chain routing: createVoice connects the 8 voice strips (and
   // the embedded sampler) to this node instead of busStrip.input.
   private outputTarget: AudioNode | null = null;
-  setOutputTarget(n: AudioNode): void { this.outputTarget = n; }
+  setOutputTarget(n: AudioNode): void {
+    this.outputTarget = n;
+    // The worklet-backed embedded sampler owns its own node; point its dry output
+    // at the same lane routing target (insert chain → strip) used by synth mode.
+    this.sampler.setOutputTarget(n);
+  }
 
   // ── Per-voice mute/solo surface (mirrors the legacy DrumsEngine) ────────────
   private applyVoiceMutes(): void {
