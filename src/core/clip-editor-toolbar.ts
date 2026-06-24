@@ -6,6 +6,7 @@
 
 import { RESOLUTIONS, clampResolution, type ResolutionKey } from './drum-grid-editing';
 import { isFollowEnabled, toggleFollow } from './clip-follow';
+import { isDrumFullKit, setDrumFullKit } from './clip-drum-fullkit';
 
 export type EditorTool = 'draw' | 'select';
 
@@ -73,6 +74,23 @@ export function createFollowToggle(onChange?: (on: boolean) => void): HTMLButton
     btn.title = isFollowEnabled() ? 'Follow playhead: ON (view scrolls to the playhead)' : 'Follow playhead: OFF';
   };
   btn.addEventListener('click', () => { const on = toggleFollow(); refresh(); onChange?.(on); });
+  refresh();
+  return btn;
+}
+
+/** A "Full kit" pill toggle for sampler drum grids: reflects the session-global
+ *  fullKit flag; onChange fires after the flag flips so the editor can rebuild. */
+export function createFullKitToggle(onChange?: (on: boolean) => void): HTMLButtonElement {
+  const btn = document.createElement('button');
+  btn.className = 'clip-loop-toggle'; // reuse the on/off pill styling
+  const refresh = () => {
+    btn.textContent = 'Full kit';
+    btn.classList.toggle('on', isDrumFullKit());
+    btn.title = isDrumFullKit()
+      ? 'Show full kit: ON (all pads)'
+      : 'Show full kit: OFF (only sounds the clip uses)';
+  };
+  btn.addEventListener('click', () => { setDrumFullKit(!isDrumFullKit()); refresh(); onChange?.(isDrumFullKit()); });
   refresh();
   return btn;
 }
