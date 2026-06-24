@@ -1,8 +1,23 @@
 # GM Percussion kit (VCSL) + scalable drum grid + MIDI auto-assign
 
 - **Date:** 2026-06-24
-- **Status:** Design approved (verbal) — pending written-spec review
-- **Branch:** `worktree-gm-percussion-kit`
+- **Status:** Design approved (verbal); **rebased onto the AudioWorklet rewrite** — see "AudioWorklet rebase" below
+- **Branch:** `worktree-gm-percussion-kit`, now based on `worktree-audioworklet-foundation` (HEAD `ba2fcae`), NOT on `main`
+
+## AudioWorklet rebase (2026-06-24)
+
+This work was re-based onto the completed **AudioWorklet rewrite** (synthesis +
+sampling moved into an AudioWorklet; legacy node-per-note `SamplerVoice`/
+`DrumsEngine` classes deleted in `597c518`). The GM kit survives this almost
+unchanged because it is **sample data + main-thread keymap/UI**, and those layers
+were preserved. Confirmed by a full seam re-map:
+
+- **Keymap + repitch stay main-thread.** `samples/keymap.ts` `repitchRate(midi, rootNote, tune)` and `keymapEntryFor` are intact; `SamplerWorkletEngine.resolveSpawn` calls `repitchRate(midi, entry.rootNote, pad.tune)` and posts a fully-resolved `SampleSpawn` to the worklet, which only applies the rate. → **per-pad `root` (C2) works unchanged.**
+- **`drumkit-loader.ts` is intact** (`buildDrumkitKeymap` pure; `loadDrumkit` still fetch→decode→store/cache→`KeymapEntry[]`). Buffers reach the worklet when the engine's `setKeymap()` runs `pushAllKeymapBuffers()→SamplerWorkletNode.loadSample()`. **There is no separate `loadSample` the caller invokes** — `setKeymap` does it.
+- **Drum-grid editor + router are intact line-for-line.** `samplerDrumModel` reads `lane.engineState.sampler.keymap`; `chooseClipEditor` routes a lane to the grid when `engineId === 'sampler' && (drumkitId || all-single-note)`. → **C3/C4 unchanged.**
+- **The GM-kit lane MUST use `engineId: 'sampler'`** (the `SamplerWorkletEngine`). A `drums` lane would render the grid with the fixed 8 `GM_MODEL` rows (the `samplerDrumModel` path only runs for `engineId === 'sampler'`), losing the tropical pads in the editor.
+- **Manual load already works:** `polysynth-presets.ts:197` lists every `index.json` drumkit in the Sampler preset selector (group "Drumkit"); selecting one calls `SamplerWorkletEngine.loadFamilyRef('drumkit:<id>')`. So **registering the kit in `index.json` makes it loadable on any Sampler lane** with the full ~52-pad grid. → the kit is registered in `index.json` only, **not** `drum-kits.json`.
+- **Import load needs explicit wiring.** `launchSceneById` (now `src/main.ts:951`) applies presets **synchronously** via `applyPresetToEngine`, which does NOT load sample kits. → C5 fires the existing async `reloadDrumkit(self, laneId, kitId, engine)` for imported sampler-drumkit lanes.
 
 ## Problem
 
@@ -65,8 +80,12 @@ Two gaps:
   in the corpus (31 sticks, 37 side stick, 82 shaker, 85 castanets, 86/87 surdo)
   ≈ 52 pads.
 - **Import:** auto-assign the kit to percussion tracks (detected by channel 9 =
-  MIDI channel 10), reusing the existing drumkit-preset → `loadDrumkit` path.
-- **(a)** Preset group name: **"General MIDI"**.
+  MIDI channel 10) as an `engineId: 'sampler'` lane carrying
+  `engineState.sampler.drumkitId`, and fire `reloadDrumkit` to load it.
+- **(a)** Registration: the kit is added to `public/drumkits/index.json` only
+  (it then appears in the Sampler preset selector under "Drumkit"). It is **not**
+  added to `drum-kits.json` (that is the Drums-page path, which would show only 8
+  rows). The GM kit lives in the Sampler world.
 - **(b)** One sample per pad in v1.
 - **(c)** Accept the v1 editor limitation (ruler + velocity-lane scroll with the
   block); sticky is a future refinement.
@@ -92,10 +111,11 @@ touches hand-made kits.
 - Downloads to `public/drumkits/gm-percussion/<note>.wav`
   (`BASE = https://raw.githubusercontent.com/sgossner/VCSL/master/`,
   path segments URL-encoded).
-- Writes `public/drumkits/gm-percussion.json` (manifest), updates
-  `public/drumkits/index.json`, and adds one preset to
-  `public/presets/drum-kits.json`:
-  `{ name: "GM Percussion", group: "General MIDI", kind: "sample", drumkitId: "gm-percussion" }`.
+- Writes `public/drumkits/gm-percussion.json` (manifest) and adds an entry to
+  `public/drumkits/index.json` (`{ id: "gm-percussion", name: "GM Percussion" }`).
+  That index entry is what surfaces the kit in the Sampler preset selector
+  (`polysynth-presets.ts` reads `listDrumkits()`). **Does NOT touch
+  `drum-kits.json`** (see decision (a)).
 - Prints a coverage report (which notes got a real sample vs a substitute).
 
 ### C2 — Manifest: optional per-pad repitch
@@ -171,20 +191,31 @@ row; that note now exists in `clip.notes`, so it remains visible when they switc
 back to compact. (A future refinement could add an explicit "+ add sound" picker;
 v1 relies on the toggle + draw.)
 
-### C5 — MIDI import auto-assign
+### C5 — MIDI import auto-assign (worklet path)
 
-- **Detect percussion track:** in `src/midi/midi-import-ui.ts`, a track is
-  percussion when the majority of its notes are on channel 9 (`ParsedTrack`
-  notes already carry `channel`). Add a small pure helper
-  (`isPercussionTrack(track)`) with a unit test.
-- **Default preset:** percussion tracks default `presetPerTrack[i]` to
-  `{ engineId: 'sampler', presetName: 'GM Percussion' }` instead of the melodic
-  default. The dropdown still lets the user override.
-- **Keep notes:** `midiToSession` already copies `midi` verbatim — percussion
-  notes keep their GM numbers (no remap), so the sampler kit plays them by note.
-- The sampler lane loads the kit through the existing drumkit-preset path
-  (`session-host-presets` / `loadDrumkit`). Confirm async kit-load fits the
-  import apply flow during planning.
+- **Detect percussion track:** in `src/midi/gm-lookup.ts` (`suggestDefaultMapping`),
+  a track is percussion when the majority of its notes are on channel 9
+  (`ParsedTrack` notes already carry `channel`). Add a pure helper
+  `isPercussionTrack(track)` with a unit test.
+- **Default match:** percussion tracks default to
+  `{ engineId: 'sampler', presetName: 'GM Percussion', drumkitId: 'gm-percussion' }`
+  (extend `GMMatch` with `drumkitId?`). The dropdown still lets the user override.
+- **Lane shape:** `midiToSession` builds the percussion lane with
+  `engineId: 'sampler'` and `engineState.sampler = { keymap: [], drumkitId: 'gm-percussion' }`
+  (no `kitMode` — that is a Drums-engine concept). Notes keep their GM midi
+  numbers (no remap). `enginePresetName` is left unset so the synchronous
+  `applyPresetToEngine` step skips this lane.
+- **Load the kit:** in `launchSceneById` (`src/main.ts:951`), for each freshly
+  allocated lane whose `engineState.sampler.drumkitId` is set, fire the existing
+  `reloadDrumkit(sessionHost, laneId, drumkitId, engine)` (session-host-presets).
+  It fetches the manifest, `loadDrumkit`s it, calls `engine.setKeymap()` (which
+  pushes the buffers to the worklet via `loadSample`), and mirrors the keymap +
+  drumkitId into `engineState.sampler` — so the drum grid shows the pads and the
+  worklet plays them. Fire-and-forget on the live path (same as the normal
+  drums-page reload); audio is silent for the brief decode then plays.
+- **Self-heal on reload:** because the lane persists `engineState.sampler.drumkitId`,
+  `applyLaneEngineState` re-runs `reloadDrumkit` on session reload (existing
+  behaviour) — no extra work.
 
 ## Data — GM note → VCSL mapping (curated)
 
@@ -267,8 +298,11 @@ in its coverage report; the planning step locks the final per-pad choices.
   `overflow-y:auto`; the compact model produces few rows and no scroll;
   hit-testing still maps `offsetY`→row correctly in both.
 - **Import (C5):** `isPercussionTrack` true for a channel-9-majority track;
-  `midiToSession` gives such a track `engineId:'sampler'` + "GM Percussion" and
-  preserves note midis.
+  `suggestDefaultMapping` returns the `drumkitId:'gm-percussion'` match;
+  `midiToSession` gives such a track `engineId:'sampler'` +
+  `engineState.sampler.drumkitId='gm-percussion'` and preserves note midis.
+  (The `launchSceneById` `reloadDrumkit` wiring is verified manually — `main.ts`
+  is not unit-tested.)
 - **DSP (optional):** render the kit through the sampler battery (smoke).
 
 ## Verification (honest "done")

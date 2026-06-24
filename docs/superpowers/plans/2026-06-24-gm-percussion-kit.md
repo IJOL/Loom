@@ -6,7 +6,17 @@
 
 **Architecture:** The kit is pure data: a generator downloads curated VCSL samples into `public/drumkits/gm-percussion/`, writes a manifest + index + preset entry. At runtime a sample drumkit is a sampler keymap (one single-note pad per GM note); the editor already draws N rows via an injected `DrumGridModel`. We extend three seams: per-pad repitch in the manifest, GM percussion row labels, a compact/full row model + toggle, and import wiring that loads the kit for percussion tracks.
 
-**Tech Stack:** TypeScript + Vite, Web Audio, vitest (node, no browser for pure logic), Node ESM scripts (`tools/*.mjs`).
+**Tech Stack:** TypeScript + Vite, AudioWorklet (synthesis + sampling in-worklet), vitest (node, no browser for pure logic), Node ESM scripts (`tools/*.mjs`).
+
+> **REBASED ONTO THE AUDIOWORKLET REWRITE (2026-06-24).** This branch now sits on
+> `worktree-audioworklet-foundation` (HEAD `ba2fcae`), not `main`. The legacy
+> node-per-note `SamplerVoice`/`DrumsEngine` were deleted; sampling runs through
+> `SamplerWorkletEngine`. A full seam re-map confirmed the GM kit survives almost
+> unchanged. Net deltas vs. the original plan:
+> - **Tasks 1, 2, 4, 5, 6 unchanged** — `buildDrumkitKeymap`/`repitchRate` honor `rootNote`; the drum-grid editor, `samplerDrumModel`, `chooseClipEditor` are intact.
+> - **Task 3:** register the kit in `public/drumkits/index.json` ONLY (Sampler selector). Do **not** write to `drum-kits.json`.
+> - **Task 7/8:** the percussion lane is `engineId: 'sampler'` with `engineState.sampler.drumkitId` (no `kitMode`, no `enginePresetName`). `'sampler'` is mandatory so `samplerDrumModel` produces the ~52 rows (a `drums` lane shows only 8).
+> - **Task 9 (rewritten):** drop the `loadDrumkitById` helper; instead fire the existing `reloadDrumkit(self, laneId, kitId, engine)` in `launchSceneById` for imported sampler-drumkit lanes (it does fetch+decode+`setKeymap`→worklet `loadSample`+mirror). `main.ts` is not unit-tested → manual verification.
 
 ## Global Constraints
 
@@ -16,24 +26,40 @@
 - **Sample source = VCSL** (`github:sgossner/VCSL`, master), **CC0**. Base URL `https://raw.githubusercontent.com/sgossner/VCSL/master/`. Catalog paths are already `%20`-encoded — do NOT re-encode.
 - **Generated WAVs are committed** (like the 523 existing drumkit files). Credit VCSL in README.
 - **Never touch hand-made kits** (`tr808`, `acoustic`, `dirt`) or the tidal generator.
-- **Preset shape (sample kit):** `{ name, group, kind: 'sample', drumkitId }` — sample kits use `drumkitId` (NOT `kitId`). Validated by `validateDrumKit` (`src/presets/drum-kits-loader.ts:16`).
-- **Drumkit manifest shape:** `{ id, name, samples: DrumkitSample[] }` at `public/drumkits/<id>.json`.
+- **Registration:** the kit is a Sampler drumkit. Register it in `public/drumkits/index.json` (`{ id, name }`) — that is what surfaces it in the Sampler preset selector (`polysynth-presets.ts` → `listDrumkits()` → `loadFamilyRef('drumkit:<id>')`). Do NOT add it to `drum-kits.json` (the Drums-page list).
+- **Drumkit manifest shape:** `{ id, name, samples: DrumkitSample[] }` at `public/drumkits/<id>.json` (each sample `{ voice, note, file, root?, gain? }`).
+- **Drum lane engine id:** a sample drumkit lane MUST use `engineId: 'sampler'` (SamplerWorkletEngine) so `samplerDrumModel` renders one grid row per pad; a `drums` lane would show the fixed 8 rows.
 - **Worktree:** all work happens in `.claude/worktrees/gm-percussion-kit`. Run `npm install` there once before building/testing.
 
-## Key existing symbols (from the seam map — use these exact names)
+## Key existing symbols (re-mapped on the worklet base — use these exact names)
 
-- `buildDrumkitKeymap(samples: DrumkitSample[], sampleIds: string[]): KeymapEntry[]` — `src/samples/drumkit-loader.ts:50`. Builds single-note keymap; currently `rootNote = loNote = hiNote = sample.note`.
+Data / keymap (UNCHANGED by the rewrite):
+- `buildDrumkitKeymap(samples: DrumkitSample[], sampleIds: string[]): KeymapEntry[]` — `src/samples/drumkit-loader.ts:50`. Pure; currently `rootNote = loNote = hiNote = sample.note`.
 - `DrumkitSample` interface — `src/samples/drumkit-loader.ts:18` (`{ voice; note; file; gain? }`).
-- `loadDrumkit(manifest, ctx, deps)` — `src/samples/drumkit-loader.ts:88`; `fetchDrumkitManifest(id, fetchFn)` — `:80`.
-- `KeymapEntry` — `src/samples/types.ts:1` (`{ sampleId; rootNote; loNote; hiNote; gain? }`).
-- `repitchRate(midi, rootNote, pitchSemitones=0) = 2^((midi-rootNote+pitchSemitones)/12)` — `src/samples/keymap.ts:19`. Confirmed: a pad with `loNote===hiNote===note` and `rootNote !== note` repitches by `note-rootNote` semitones; `rootNote===note` ⇒ native pitch.
+- `loadDrumkit(manifest, ctx, deps)` — `:88`; `fetchDrumkitManifest(id, fetchFn)` — `:80`; `listDrumkits(fetchFn)` — `:64`.
+- `KeymapEntry` — `src/samples/types.ts:22` (`{ sampleId; rootNote; loNote; hiNote; gain? }`).
+- `keymapEntryFor(keymap, midi)` — `src/samples/keymap.ts:9`; `repitchRate(midi, rootNote, pitchSemitones=0) = 2^((midi-rootNote+pitchSemitones)/12)` — `:19`. Confirmed: `resolveSpawn` calls `repitchRate(midi, entry.rootNote, pad.tune)`, so a pad with `rootNote !== note` repitches; the worklet only applies the resolved `rate`.
 - `GM_DRUM_MAP`, `VOICE_MIDI` — `src/engines/drum-gm-map.ts`.
-- `samplerDrumModel(lane, midiLabel): DrumGridModel | undefined` — `src/session/clip-editors/clip-editor-router.ts:94`. Reads `lane.engineState.sampler.keymap`, dedups by `rootNote`, labels via `GM_DRUM_MAP`→`LANE_LABELS` else `midiLabel`. Called at `clip-editor-router.ts:234`.
+
+Editor / router (UNCHANGED by the rewrite):
+- `samplerDrumModel(lane, midiLabel): DrumGridModel | undefined` — `src/session/clip-editors/clip-editor-router.ts:94`. Reads `lane.engineState.sampler.keymap`, dedups by `rootNote`, labels via `GM_DRUM_MAP`→`LANE_LABELS` else `midiLabel`. Called only when `lane.engineId === 'sampler'`, at `clip-editor-router.ts:234`.
+- `chooseClipEditor` — `clip-editor-router.ts:66`; routes to `drum-grid` when `engineId === 'sampler' && (drumkitId || all-single-note)` (`:85`).
 - `DrumGridModel { rows: DrumRows; labels: string[] }` — `clip-editor-drum-grid.ts:37`. `noteDrumRows(notes)` — `src/core/drum-grid-editing.ts:60`.
-- `renderDrumGridEditor(host, clip, historyDeps?, meter?, deps?, model?)` — `clip-editor-drum-grid.ts:68`. `DrumEditorDeps` — `:56`. `ROW_H=26` `:42`, `ROWS_N`/`FRAME_H` consts `:82-83`, `resize()` `:157`, `drawLabels()` `:170`, `draw()` `:182`. Toolbar assembled `:104-116` (`createToolToggle`, `createFollowToggle`, `createResolutionSelect`, `createHelpButton`). Viewport DOM `:118-134`.
-- `createFollowToggle(onChange?: (on:boolean)=>void): HTMLButtonElement` — `src/core/clip-editor-toolbar.ts:67` (single-button pill; the pattern to copy).
-- `mirrorKeymapChange(state, laneId, keymap)` — `src/session/session-engine-state.ts:57`.
-- Import: `suggestDefaultMapping(parsed, indices)` — `src/midi/gm-lookup.ts:85`; `GMMatch { engineId; presetName }` — `:4`; `midiToSession(parsed, opts)` — `src/midi/midi-to-session.ts:21`; lane built `:80-88`. `launchSceneById` — `src/main.ts:926` (loop `:937-944` ensures resources + applies preset on first allocation). `ParsedTrack.notes[].channel` exists — `src/midi/midi-parse.ts:6`.
+- `renderDrumGridEditor(host, clip, historyDeps?, meter?, deps?, model?)` — `clip-editor-drum-grid.ts:68`. `DrumEditorDeps` — `:56`. `ROW_H=26` `:42`, `ROWS_N`/`FRAME_H` consts `:82-83`, `resize()` `:157`, `drawLabels()` `:170`, `draw()` `:182`, toolbar assembled `:104-116`.
+- `createFollowToggle(onChange?): HTMLButtonElement` — `src/core/clip-editor-toolbar.ts:67` (single-button pill; the pattern to copy).
+
+Worklet sampler / load path (NEW — the rewrite):
+- `SamplerWorkletEngine` — `src/engines/sampler-worklet-engine.ts:80`. `setKeymap(entries)` `:233` → `pushAllKeymapBuffers()` `:148` → `pushBuffer(id)` `:141` → `SamplerWorkletNode.loadSample(id, buf)` (`src/audio-worklet/sampler-node.ts:88`). `loadFamilyRef('drumkit:<id>')` `:249`. `resolveSpawn(midi,…)` `:320`.
+- `reloadDrumkit(self: SessionHost, laneId, kitId, engine: { setKeymap })` — `src/session/session-host-presets.ts:19`. Fetch manifest → `loadDrumkit` → `engine.setKeymap()` → mirror keymap+drumkitId. Use this for import load (Task 9).
+- `mirrorKeymapChange(state, laneId, keymap)` — `src/session/session-engine-state.ts:57`; `mirrorDrumkitId(state, laneId, id)` — `:78`.
+- `createLaneEngine(laneId, engineId, inserts)` — `src/app/lane-allocator.ts:67` (routes `sampler`→`SamplerWorkletEngine`); `ensureLaneResource(laneId, engineId)` — `:230` (sole allocation path).
+- Manual load already lists the kit: `polysynth-presets.ts:182` calls `listDrumkits()`, `:197` builds `sampler:drumkit:<id>` options, `:591` calls `engine.loadFamilyRef`.
+
+Import:
+- `suggestDefaultMapping(parsed, indices)` — `src/midi/gm-lookup.ts:85`; `GMMatch { engineId; presetName }` — `:4`; `firstMatchForGM`/`engineHintFromName` (`drum`/`perc` → `drums-machine`).
+- `midiToSession(parsed, opts)` — `src/midi/midi-to-session.ts:21`; lane built `:80-88` (`enginePresetName = 'factory:'+presetName` at `:87`).
+- `launchSceneById` — `src/main.ts:951`; loop ensuring resources + applying preset on first allocation `:964-968`; `applyPresetToEngine` — `src/presets/preset-apply.ts:28` (SYNC; does not load sample kits).
+- `ParsedTrack.notes[].channel` exists — `src/midi/midi-parse.ts:6`.
 - `SessionLane.engineState` — `src/session/session.ts:100-116` (`sampler.{keymap, drumkitId, instrumentId, padParams}`, `kitMode: 'synth'|'sample'`).
 
 ## File Structure
@@ -42,16 +68,16 @@
 - **Create** `tools/build-gm-percussion-kit.mjs` — generator (pure data output).
 - **Create** `tools/build-gm-percussion-kit.test.mjs` — pure test of the mapping table vs the catalog. (Or a `.test.ts` under `src/`; see Task 3.)
 - **Create** (generated, committed) `public/drumkits/gm-percussion.json` + `public/drumkits/gm-percussion/*.wav`.
-- **Modify** `public/drumkits/index.json`, `public/presets/drum-kits.json` (generated additions).
-- **Modify** `src/samples/drumkit-loader.ts` (+`root?`, repitch in `buildDrumkitKeymap`, +`loadDrumkitById`).
+- **Modify** `public/drumkits/index.json` (generated entry). NOT `drum-kits.json`.
+- **Modify** `src/samples/drumkit-loader.ts` (+`root?`, repitch in `buildDrumkitKeymap`).
 - **Modify** `src/engines/drum-gm-map.ts` (+`GM_PERCUSSION_NAMES`).
 - **Create** `src/core/clip-drum-fullkit.ts` (session-global "show full kit" flag).
 - **Modify** `src/core/clip-editor-toolbar.ts` (+`createFullKitToggle`).
 - **Modify** `src/session/clip-editors/clip-editor-router.ts` (`samplerDrumModel` gains `clip`+`fullKit`; build labels via `GM_PERCUSSION_NAMES`; pass `deps.fullKit`).
 - **Modify** `src/session/clip-editors/clip-editor-drum-grid.ts` (reassignable model, toggle, vertical scroll, `ROW_H`).
 - **Modify** `src/midi/gm-lookup.ts` (+`isPercussionTrack`, `GMMatch.drumkitId?`, percussion default).
-- **Modify** `src/midi/midi-to-session.ts` (drumkit lane engineState).
-- **Modify** `src/main.ts` (`launchSceneById` loads the kit for imported percussion lanes).
+- **Modify** `src/midi/midi-to-session.ts` (drumkit lane `engineState.sampler.drumkitId`).
+- **Modify** `src/main.ts` (`launchSceneById` fires `reloadDrumkit` for imported percussion lanes).
 - **Modify** `README.md` (credit VCSL; one line).
 
 ---
@@ -195,10 +221,10 @@ git commit -m "feat(drums): GM percussion row-label table (GM_PERCUSSION_NAMES)"
 - Create: `tools/build-gm-percussion-kit.mjs`
 - Create: `tools/build-gm-percussion-kit.test.mjs`
 - Generated (commit): `public/drumkits/gm-percussion.json`, `public/drumkits/gm-percussion/*.wav`
-- Modify (generated): `public/drumkits/index.json`, `public/presets/drum-kits.json`
+- Modify (generated): `public/drumkits/index.json` (NOT `drum-kits.json`)
 
 **Interfaces:**
-- Produces: a kit `gm-percussion` whose manifest `samples[]` are `{voice, note, file, root?}`; a preset `{name:'GM Percussion', group:'General MIDI', kind:'sample', drumkitId:'gm-percussion'}`.
+- Produces: a kit `gm-percussion` whose manifest `samples[]` are `{voice, note, file, root?}`; an `index.json` entry `{ id:'gm-percussion', name:'GM Percussion' }` (surfaces it in the Sampler preset selector). NO `drum-kits.json` change.
 
 - [ ] **Step 1: Vendor the catalog**
 
@@ -229,7 +255,6 @@ const ROOT = path.resolve(__dirname, '..');
 const PUB = path.join(ROOT, 'public', 'drumkits');
 const KIT_ID = 'gm-percussion';
 const KIT_NAME = 'GM Percussion';
-const PRESET_GROUP = 'General MIDI';
 const BASE = 'https://raw.githubusercontent.com/sgossner/VCSL/master/';
 
 // note → { voice, key (VCSL catalog key), pick (ordered filename substrings;
@@ -367,12 +392,10 @@ index = index.filter((e) => e.id !== KIT_ID);
 index.push({ id: KIT_ID, name: KIT_NAME });
 await writeFile(indexPath, JSON.stringify(index, null, 2) + '\n');
 
-// drum-kits.json — replace our preset
-const presetsPath = path.join(ROOT, 'public', 'presets', 'drum-kits.json');
-const doc = JSON.parse(await readFile(presetsPath, 'utf8'));
-doc.presets = doc.presets.filter((p) => !(p.kind === 'sample' && p.drumkitId === KIT_ID));
-doc.presets.push({ name: KIT_NAME, group: PRESET_GROUP, kind: 'sample', drumkitId: KIT_ID });
-await writeFile(presetsPath, JSON.stringify(doc, null, 2) + '\n');
+// NOTE: we deliberately do NOT touch public/presets/drum-kits.json. That file is
+// the Drums-page kit list (engineId 'drums'); the GM kit is a Sampler drumkit
+// (engineId 'sampler') and surfaces via index.json in the Sampler selector,
+// where the drum grid renders all ~52 pads (a Drums lane would show only 8).
 
 console.log(`DONE: ${ok.length} pads, ${(bytes / 1e6).toFixed(1)} MB`);
 ```
@@ -422,7 +445,7 @@ Expected: `resolved: 52 | missing key: 0`; inspect the printed note→file list 
 - [ ] **Step 6: Generate for real**
 
 Run: `node tools/build-gm-percussion-kit.mjs`
-Expected: `DONE: 52 pads, ~3-5 MB`. Files appear under `public/drumkits/gm-percussion/`, `gm-percussion.json` written, `index.json` + `drum-kits.json` updated.
+Expected: `DONE: 52 pads, ~3-5 MB`. Files appear under `public/drumkits/gm-percussion/`, `gm-percussion.json` written, `index.json` updated (NO `drum-kits.json` change).
 
 - [ ] **Step 7: Credit VCSL in README** — add one line near the drumkit-sources note:
 
@@ -435,7 +458,7 @@ Expected: `DONE: 52 pads, ~3-5 MB`. Files appear under `public/drumkits/gm-percu
 ```bash
 git add tools/vcsl.json tools/build-gm-percussion-kit.mjs tools/build-gm-percussion-kit.test.mjs \
         public/drumkits/gm-percussion.json public/drumkits/gm-percussion public/drumkits/index.json \
-        public/presets/drum-kits.json README.md
+        README.md
 git commit -m "feat(drums): GM Percussion kit (VCSL/CC0) generator + generated assets"
 ```
 
@@ -844,7 +867,7 @@ git commit -m "feat(midi): detect channel-10 tracks → GM Percussion kit defaul
 
 **Interfaces:**
 - Consumes: `GMMatch.drumkitId` (Task 7).
-- Produces: a lane whose `match.drumkitId` is set carries `engineState = { kitMode:'sample', sampler:{ keymap:[], drumkitId } }` and `enginePresetName = 'engine:' + presetName`; notes keep their GM midi.
+- Produces: a lane whose `match.drumkitId` is set has `engineId: 'sampler'`, `engineState = { sampler: { keymap: [], drumkitId } }`, and **no** `enginePresetName` (so `launchSceneById`'s synchronous `applyPresetToEngine` step skips it; Task 9 loads the kit). No `kitMode` (that is a Drums-engine concept). Notes keep their GM midi.
 
 - [ ] **Step 1: Write the failing test** (`midi-to-session.test.ts`) — note the existing file `vi.mock`s the registry (`:3`); follow its pattern. Add:
 
@@ -863,8 +886,8 @@ it('a drumkit match yields a sampler lane with engineState.sampler.drumkitId', (
   const lane = res.newLanes[0];
   expect(lane.engineId).toBe('sampler');
   expect(lane.engineState?.sampler?.drumkitId).toBe('gm-percussion');
-  expect(lane.engineState?.kitMode).toBe('sample');
-  expect(lane.enginePresetName).toBe('engine:GM Percussion');
+  expect(lane.engineState?.sampler?.keymap).toEqual([]);
+  expect(lane.enginePresetName).toBeUndefined();
   // notes keep their GM midi (no remap)
   expect(lane.clips.find(Boolean)!.notes.map((n) => n.midi)).toEqual([54, 69]);
 });
@@ -884,10 +907,11 @@ Expected: FAIL (`engineState`/`drumkitId` undefined; `enginePresetName` is `fact
       engineId: match.engineId,
       name: match.presetName,
       clips,
-      enginePresetName: `${isKit ? 'engine' : 'factory'}:${match.presetName}`,
-      ...(isKit ? {
-        engineState: { kitMode: 'sample' as const, sampler: { keymap: [], drumkitId: match.drumkitId } },
-      } : {}),
+      // Drumkit lanes load via engineState.sampler.drumkitId (Task 9), not a preset;
+      // leaving enginePresetName unset makes launchSceneById's sync preset step skip them.
+      ...(isKit
+        ? { engineState: { sampler: { keymap: [], drumkitId: match.drumkitId } } }
+        : { enginePresetName: `factory:${match.presetName}` }),
     };
 ```
 
@@ -902,73 +926,37 @@ Expected: PASS.
 
 ```bash
 git add src/midi/midi-to-session.ts src/midi/midi-to-session.test.ts
-git commit -m "feat(midi): drumkit import builds a sampler lane with drumkitId + sample kitMode"
+git commit -m "feat(midi): drumkit import builds a sampler lane with engineState.sampler.drumkitId"
 ```
 
 ---
 
-### Task 9: Load the kit for imported percussion lanes
+### Task 9: Load the kit for imported percussion lanes (wiring)
+
+> **Rewritten for the worklet base.** On `main` (pre-rewrite) this added a
+> `loadDrumkitById` helper. On the worklet base the right move is to reuse the
+> existing async `reloadDrumkit` (it already does fetch → `loadDrumkit` →
+> `engine.setKeymap()` [which pushes buffers to the worklet via `loadSample`] →
+> mirror keymap + drumkitId). No new helper. `main.ts` is not unit-tested, so this
+> task is wiring + manual verification (covered by Task 10's import check).
 
 **Files:**
-- Modify: `src/samples/drumkit-loader.ts` (+`loadDrumkitById`)
-- Modify: `src/main.ts:937-944` (`launchSceneById`)
-- Test: `src/samples/drumkit-loader.test.ts`
+- Modify: `src/main.ts` (`launchSceneById`, the lane loop around `:964-968`)
 
 **Interfaces:**
-- Produces: `loadDrumkitById(id: string, ctx: AudioContext, deps?: LoadDeps): Promise<KeymapEntry[]>` = `fetchDrumkitManifest(id, deps.fetchFn)` then `loadDrumkit(manifest, ctx, deps)`.
+- Consumes: `reloadDrumkit(self: SessionHost, laneId: string, kitId: string, engine: { setKeymap(k: KeymapEntry[]): void }): Promise<void>` — `src/session/session-host-presets.ts:19` (existing; already exercised by `session-host-drumpreset.test.ts`).
 
-- [ ] **Step 1: Write the failing test** (append to `drumkit-loader.test.ts`, mirror the existing `loadDrumkit` mock pattern with the `LoadDeps` seam)
+- [ ] **Step 1: Confirm the seam before editing**
 
-```ts
-import { loadDrumkitById } from './drumkit-loader';
+Read `src/session/session-host-presets.ts:19` (the `reloadDrumkit` signature) and `src/main.ts` `launchSceneById` (`:951`) + how it gets a lane's engine instance (`getLaneEngineInstance`). Confirm `getLaneEngineInstance(laneId)` returns the live `SamplerWorkletEngine` (which has `setKeymap`). If the import path is named differently, adapt the call below to the real names.
 
-it('loadDrumkitById fetches the manifest then decodes its samples', async () => {
-  const manifest = { id: 'gm-percussion', name: 'GM Percussion', samples: [{ voice: 'cabasa', note: 69, file: 'gm-percussion/69.wav' }] };
-  const fetchFn = vi.fn(async (url: string) => ({
-    ok: true,
-    json: async () => manifest,
-    arrayBuffer: async () => new ArrayBuffer(8),
-  })) as any;
-  const buf = {} as AudioBuffer;
-  const ctx = { decodeAudioData: async () => buf } as any;
-  const store = { put: vi.fn(async () => {}) };
-  const cache = { put: vi.fn(() => {}) };
-  const km = await loadDrumkitById('gm-percussion', ctx, { fetchFn, store, cache, now: () => 0 });
-  expect(km).toHaveLength(1);
-  expect(km[0]).toMatchObject({ rootNote: 69, loNote: 69, hiNote: 69 });
-});
-```
-
-- [ ] **Step 2: Run it, verify it fails**
-
-Run: `NO_COLOR=1 npx vitest run src/samples/drumkit-loader.test.ts -t "loadDrumkitById"`
-Expected: FAIL (not exported).
-
-- [ ] **Step 3: Implement** — append to `drumkit-loader.ts`:
+- [ ] **Step 2: Add the import** near the other session imports in `src/main.ts`:
 
 ```ts
-/** Convenience: fetch a bundled kit's manifest by id, then load it. */
-export async function loadDrumkitById(
-  id: string, ctx: AudioContext, deps: LoadDeps = {},
-): Promise<KeymapEntry[]> {
-  const manifest = await fetchDrumkitManifest(id, deps.fetchFn ?? fetch);
-  return loadDrumkit(manifest, ctx, deps);
-}
+import { reloadDrumkit } from './session/session-host-presets';
 ```
 
-- [ ] **Step 4: Run it, verify it passes**
-
-Run: `NO_COLOR=1 npx vitest run src/samples/drumkit-loader.test.ts`
-Expected: PASS.
-
-- [ ] **Step 5: Wire `launchSceneById`** in `src/main.ts`. Add imports near the other sample imports:
-
-```ts
-import { loadDrumkitById } from './samples/drumkit-loader';
-import { mirrorKeymapChange } from './session/session-engine-state';
-```
-
-   In the loop (`:937-944`), after the existing `applyPresetToEngine` block, add drumkit loading for freshly-allocated sampler lanes:
+- [ ] **Step 3: Add the drumkit-load branch** to the `launchSceneById` lane loop, right after the existing `applyPresetToEngine` block (which is skipped for these lanes because they have no `enginePresetName`):
 
 ```ts
     if (isNew) {
@@ -976,28 +964,28 @@ import { mirrorKeymapChange } from './session/session-engine-state';
       if (kitId) {
         const inst = getLaneEngineInstance(lane.id);
         if (inst && 'setKeymap' in inst) {
-          void loadDrumkitById(kitId, ctx).then((km) => {
-            (inst as { setKeymap(k: typeof km): void }).setKeymap(km);
-            mirrorKeymapChange(sessionHost.state, lane.id, km);
-            sessionHost.renderWithMixer();
-          }).catch((e) => console.warn('[import] drumkit load failed', kitId, e));
+          // Fire-and-forget (live path): reloadDrumkit fetches+decodes the kit,
+          // calls inst.setKeymap() (→ pushes buffers to the worklet via loadSample),
+          // and mirrors keymap+drumkitId into engineState.sampler so the drum grid
+          // shows the pads. Audio is silent for the brief decode, then plays.
+          void reloadDrumkit(sessionHost, lane.id, kitId, inst as Parameters<typeof reloadDrumkit>[3]);
         }
       }
     }
 ```
 
-   (This runs alongside the sync `applyPresetToEngine`, which is a no-op for a sampler `engine:GM Percussion` preset. The async load mirrors the keymap into `engineState.sampler.keymap` so the drum grid shows rows once decoded.)
+(The `Parameters<typeof reloadDrumkit>[3]` cast avoids importing `KeymapEntry` just for the type; the `'setKeymap' in inst` guard makes it safe at runtime.)
 
-- [ ] **Step 6: Build + typecheck**
+- [ ] **Step 4: Build + typecheck**
 
 Run: `NO_COLOR=1 npx tsc --noEmit`
-Expected: no errors.
+Expected: no errors. (If `reloadDrumkit` is not exported, export it; verify it does not pull DOM-only deps into a bad import cycle — it already runs in the live host.)
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add src/samples/drumkit-loader.ts src/samples/drumkit-loader.test.ts src/main.ts
-git commit -m "feat(midi): load the GM Percussion kit for imported channel-10 lanes"
+git add src/main.ts
+git commit -m "feat(midi): load the GM Percussion kit for imported channel-10 lanes (reloadDrumkit)"
 ```
 
 ---
@@ -1018,7 +1006,7 @@ Expected: `tsc` clean + bundle written.
 
 - [ ] **Step 3: Visual look — drum grid (MANDATORY)**
 
-Start `npm run dev`. Add a lane, set engine to Sampler, pick the **General MIDI ▸ GM Percussion** preset on the drums page. Open a clip. Confirm:
+Start `npm run dev`. Add a **Sampler** lane, then load **GM Percussion** from the Sampler preset selector (group "Drumkit" — fed by `index.json` via `loadFamilyRef`). Open a clip. Confirm:
 - Compact by default: only a few rows (the seed kick/snare/CH/OH/clap or the clip's used sounds), labels show GM names.
 - Click **Full kit**: all ~52 rows appear and the block scrolls vertically with the label column fixed at left and ruler/notes aligned.
 - Draw a note on a new row in full view, switch back to compact: the new sound's row persists.
@@ -1034,7 +1022,7 @@ Import a percussion-rich MIDI from `midi-library/` (e.g. one using tambourine/ca
 
 - [ ] **Step 6: Commit any verification fixups, then finish**
 
-If the visual/audible pass surfaced pick/label tweaks, fix and commit. Then follow `superpowers:finishing-a-development-branch` (rebase onto `main`, `merge --ff-only`, `ExitWorktree`). Do NOT merge without explicit user permission.
+If the visual/audible pass surfaced pick/label tweaks, fix and commit. Then follow `superpowers:finishing-a-development-branch`. **Integration target is `worktree-audioworklet-foundation`, NOT `main`** — this work depends on the AudioWorklet rewrite, which is not on `main` yet. Rebase onto that branch and `merge --ff-only` into it (or keep stacked until the worklet rewrite itself lands on `main`). Do NOT merge anything to `main` without explicit user permission.
 
 ---
 
@@ -1051,6 +1039,8 @@ If the visual/audible pass surfaced pick/label tweaks, fix and commit. Then foll
 
 **Placeholder scan:** none — every step has concrete code/commands.
 
-**Type consistency:** `samplerDrumModel(lane, clip, midiLabel, fullKit)` arity is consistent in Task 4 (definition), Task 6 (router call). `DrumEditorDeps.fullKit.build` matches between Task 6 editor + router. `GMMatch.drumkitId` defined Task 7, consumed Task 8. `loadDrumkitById` signature consistent Task 9. `root?` on `DrumkitSample` defined Task 1, produced by the generator Task 3, consumed by `buildDrumkitKeymap` Task 1.
+**Type consistency:** `samplerDrumModel(lane, clip, midiLabel, fullKit)` arity is consistent in Task 4 (definition), Task 6 (router call). `DrumEditorDeps.fullKit.build` matches between Task 6 editor + router. `GMMatch.drumkitId` defined Task 7, consumed Task 8. Task 9 reuses the existing `reloadDrumkit` (no new symbol). `root?` on `DrumkitSample` defined Task 1, produced by the generator Task 3, consumed by `buildDrumkitKeymap` Task 1.
+
+**AudioWorklet rebase coverage (re-verified 2026-06-24):** all plan-touched files survive the rewrite. Tasks 1/2/4/5/6 unchanged (keymap/repitch main-thread; editor + router intact). Task 3 drops the `drum-kits.json` write (index.json only). Task 7/8 fix the lane to `engineId:'sampler'` (mandatory for the ~52-row grid) with `engineState.sampler.drumkitId`, no `kitMode`/`enginePresetName`. Task 9 rewritten to reuse `reloadDrumkit` (the kit reaches the worklet via `setKeymap`→`loadSample`). Manual load already works via the Sampler selector (`listDrumkits`→`loadFamilyRef`), so `index.json` registration suffices.
 
 **Note (sequencing):** Task 4's call-site edit references `isDrumFullKit` (created in Task 5). Execute Task 5 before Task 4's Step 3.3, or temporarily inline `false`. Task 6 supersedes that call site with the `fullKit.build` wiring.
