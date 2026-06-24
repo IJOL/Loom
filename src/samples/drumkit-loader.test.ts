@@ -6,6 +6,7 @@ import {
   listDrumkits,
   fetchDrumkitManifest,
   type DrumkitManifest,
+  type DrumkitSample,
 } from './drumkit-loader';
 
 const MANIFEST: DrumkitManifest = {
@@ -64,6 +65,18 @@ describe('loadDrumkit (impure, injected deps)', () => {
     expect(km.map((e) => e.rootNote)).toEqual([36, 38, 42]);
     expect(km.every((e) => e.loNote === e.rootNote && e.hiNote === e.rootNote)).toBe(true);
     expect(km.map((e) => e.sampleId)).toEqual(stored);
+  });
+});
+
+describe('buildDrumkitKeymap repitch (root)', () => {
+  it('uses root as rootNote while pinning loNote/hiNote to note', () => {
+    const samples: DrumkitSample[] = [
+      { voice: 'tomHi', note: 50, file: 'k/50.wav', root: 47 }, // repitched +3
+      { voice: 'cabasa', note: 69, file: 'k/69.wav' },          // native
+    ];
+    const km = buildDrumkitKeymap(samples, ['s0', 's1']);
+    expect(km[0]).toMatchObject({ sampleId: 's0', rootNote: 47, loNote: 50, hiNote: 50 });
+    expect(km[1]).toMatchObject({ sampleId: 's1', rootNote: 69, loNote: 69, hiNote: 69 });
   });
 });
 

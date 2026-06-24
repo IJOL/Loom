@@ -20,6 +20,7 @@ export interface DrumkitSample {
   note: number; // GM midi note this pad triggers on (e.g. kick=36)
   file: string; // path under public/drumkits/, e.g. 'tr808/kick.wav'
   gain?: number; // optional linear gain
+  root?: number; // sample's nominal pitch; repitch = note - root. Absent ⇒ native pitch.
 }
 
 /** A bundled kit: public/drumkits/<id>.json. */
@@ -53,7 +54,7 @@ export function buildDrumkitKeymap(samples: DrumkitSample[], sampleIds: string[]
   }
   return samples.map((s, i) => ({
     sampleId: sampleIds[i],
-    rootNote: s.note,
+    rootNote: s.root ?? s.note,
     loNote: s.note,
     hiNote: s.note,
     ...(s.gain != null ? { gain: s.gain } : {}),
