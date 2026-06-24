@@ -116,6 +116,17 @@ describe('samplerDrumModel compact/full', () => {
     const m = samplerDrumModel(laneWith([36, 38, 42, 46, 39, 69]), clipWith([]), lbl, false)!;
     expect(m.labels).toEqual(['Kick', 'Snare', 'CH', 'OH', 'Clap']);
   });
+  it('keys rows by pad note (loNote), not rootNote, so repitched pads stay distinct', () => {
+    // Two toms sharing rootNote 43 (the repitch home) but distinct GM pad notes 41 & 43.
+    // Dedup must be by the pad's note, else the repitched pad (41) collapses into 43.
+    const lane = { id: 'l1', engineId: 'sampler', clips: [], engineState: { sampler: { keymap: [
+      { sampleId: 'a', rootNote: 43, loNote: 41, hiNote: 41 },
+      { sampleId: 'b', rootNote: 43, loNote: 43, hiNote: 43 },
+    ] } } } as any;
+    const m = samplerDrumModel(lane, clipWith([]), lbl, true)!;
+    expect(m.rows.count).toBe(2);
+    expect(m.labels).toEqual(['Lo Floor', 'Hi Floor']);
+  });
 });
 
 describe('isAudioClip', () => {

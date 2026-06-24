@@ -93,7 +93,7 @@ export function chooseClipEditor(
 const SEED_NOTES = [36, 38, 42, 46, 39];
 
 /** Build the drum-grid row model for a sampler drumkit lane. One row per pad,
- *  in keymap order (dedup by `rootNote`), labelled with the GM percussion name
+ *  in keymap order (dedup by the pad's GM note `loNote`), labelled with the GM percussion name
  *  when known, else the GM voice label, else the bare note name.
  *
  *  `fullKit === true`  ⇒ rows are every keymap pad (the whole kit).
@@ -109,10 +109,12 @@ export function samplerDrumModel(
 ): DrumGridModel | undefined {
   const km = lane.engineState?.sampler?.keymap ?? [];
   // Preserve keymap order so the grid rows line up with the per-pad rack columns
-  // (which also iterate the keymap). Dedup by note, first occurrence wins.
+  // (which also iterate the keymap). Dedup by the PAD's GM note (loNote, ===hiNote
+  // for a single-note drum pad) — NOT rootNote: a repitched pad (root ≠ note) must
+  // keep its own row, and the clip's notes + triggers address the pad by its note.
   const allNotes: number[] = [];
   const seen = new Set<number>();
-  for (const e of km) { if (!seen.has(e.rootNote)) { seen.add(e.rootNote); allNotes.push(e.rootNote); } }
+  for (const e of km) { if (!seen.has(e.loNote)) { seen.add(e.loNote); allNotes.push(e.loNote); } }
   if (allNotes.length === 0) return undefined;
 
   let notes: number[];
