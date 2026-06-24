@@ -8,11 +8,12 @@
 
 **Tech Stack:** TypeScript + Vite, AudioWorklet (synthesis + sampling in-worklet), vitest (node, no browser for pure logic), Node ESM scripts (`tools/*.mjs`).
 
-> **REBASED ONTO THE AUDIOWORKLET REWRITE (2026-06-24).** This branch now sits on
-> `worktree-audioworklet-foundation` (HEAD `ba2fcae`), not `main`. The legacy
-> node-per-note `SamplerVoice`/`DrumsEngine` were deleted; sampling runs through
-> `SamplerWorkletEngine`. A full seam re-map confirmed the GM kit survives almost
-> unchanged. Net deltas vs. the original plan:
+> **ON THE AUDIOWORKLET REWRITE (2026-06-24).** The legacy node-per-note
+> `SamplerVoice`/`DrumsEngine` were deleted; sampling runs through
+> `SamplerWorkletEngine`. The rewrite has **landed on `main`** (`6474344`), so this
+> branch is rebased onto `main`, which already contains the worklet. A full seam
+> re-map confirmed the GM kit survives almost unchanged. Net deltas vs. the
+> original plan:
 > - **Tasks 1, 2, 4, 5, 6 unchanged** — `buildDrumkitKeymap`/`repitchRate` honor `rootNote`; the drum-grid editor, `samplerDrumModel`, `chooseClipEditor` are intact.
 > - **Task 3:** register the kit in `public/drumkits/index.json` ONLY (Sampler selector). Do **not** write to `drum-kits.json`.
 > - **Task 7/8:** the percussion lane is `engineId: 'sampler'` with `engineState.sampler.drumkitId` (no `kitMode`, no `enginePresetName`). `'sampler'` is mandatory so `samplerDrumModel` produces the ~52 rows (a `drums` lane shows only 8).

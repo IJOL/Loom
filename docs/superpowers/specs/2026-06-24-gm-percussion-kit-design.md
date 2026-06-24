@@ -1,8 +1,8 @@
 # GM Percussion kit (VCSL) + scalable drum grid + MIDI auto-assign
 
 - **Date:** 2026-06-24
-- **Status:** Design approved (verbal); **rebased onto the AudioWorklet rewrite** — see "AudioWorklet rebase" below
-- **Branch:** `worktree-gm-percussion-kit`, now based on `worktree-audioworklet-foundation` (HEAD `ba2fcae`), NOT on `main`
+- **Status:** Design approved (verbal); **re-verified on the AudioWorklet rewrite** — see "AudioWorklet rebase" below
+- **Branch:** `worktree-gm-percussion-kit`, rebased onto `main`. The AudioWorklet rewrite has since **landed on `main`** (`6474344`), so `main` now contains the worklet; this branch = `main` + the spec/plan docs. Integration is a normal `--ff` to `main` (with permission).
 
 ## AudioWorklet rebase (2026-06-24)
 
