@@ -28,30 +28,10 @@ const BASE = 'https://raw.githubusercontent.com/sgossner/VCSL/master/';
 // VCSL has no exact instrument (see spec). pick[] is best-effort; the report
 // prints the actual chosen file so picks can be refined with --list.
 const PADS = [
-  { note: 35, voice: 'kickA',     key: 'bassdrum2',   pick: [] },
-  { note: 36, voice: 'kick',      key: 'bassdrum1',   pick: [] },
-  { note: 37, voice: 'sideStick', key: 'snare_rim',   pick: [] },
-  { note: 38, voice: 'snare',     key: 'snare_modern',pick: ['Hit', 'hit'] },
-  { note: 39, voice: 'clap',      key: 'clap',        pick: [] },
-  { note: 40, voice: 'snareE',    key: 'snare_hi',    pick: [] },
-  { note: 41, voice: 'tomLoFloor',key: 'tom2_mallet', pick: [] },
-  { note: 43, voice: 'tomHiFloor',key: 'tom2_mallet', pick: [] },
-  { note: 45, voice: 'tomLo',     key: 'tom2_mallet', pick: [] },
-  // Tom 1 (tom_mallet) is gone from VCSL master (all files 404); use Tom 2 for
-  // every tom at native pitch (tune per pad in the rack to taste).
-  { note: 47, voice: 'tomLoMid',  key: 'tom2_mallet', pick: [] },
-  { note: 48, voice: 'tomHiMid',  key: 'tom2_mallet', pick: [] },
-  { note: 50, voice: 'tomHi',     key: 'tom2_mallet', pick: [] },
-  { note: 42, voice: 'closedHat', key: 'hihat',       pick: ['Close', 'HitC'] },
-  { note: 44, voice: 'pedalHat',  key: 'hihat',       pick: ['Close', 'HitC'] }, // VCSL has no pedal hat; closed is the substitute
-  { note: 46, voice: 'openHat',   key: 'hihat',       pick: ['HitO_', 'HitO'] },
-  { note: 49, voice: 'crash1',    key: 'clash',       pick: [] },
-  { note: 51, voice: 'ride1',     key: 'sus_cymbal',  pick: [] },
-  { note: 52, voice: 'china',     key: 'gong2',       pick: [] },
-  { note: 53, voice: 'rideBell',  key: 'fingercymbal',pick: [] },
-  { note: 55, voice: 'splash',    key: 'clash2',      pick: [] },
-  { note: 57, voice: 'crash2',    key: 'clash2',      pick: [] },
-  { note: 59, voice: 'ride2',     key: 'sus_cymbal2', pick: [] },
+  // PERCUSSION ONLY — this is NOT a standard drum kit. Kick/snare/hi-hats/toms/
+  // cymbals (GM notes 35..53) are covered by the 808/909/tidal/acoustic kits;
+  // this kit only adds the GM auxiliary/Latin percussion (notes 54..87) those
+  // kits lack, so it layers on top of a normal drum lane.
   { note: 54, voice: 'tamb',      key: 'tambourine',  pick: ['Hit', 'hit'] },
   { note: 56, voice: 'cowbell',   key: 'cowbell',     pick: ['Cowbell1_Hit', 'Hit'] },
   { note: 58, voice: 'vibraslap', key: 'vibraslap',   pick: [] },
@@ -59,7 +39,7 @@ const PADS = [
   { note: 61, voice: 'bongoLo',   key: 'bongo',       pick: ['BongoL_Hit', 'BongoL'] },
   { note: 62, voice: 'congaMute', key: 'conga',       pick: ['Quinto_HitFM', 'HitFM'] },
   { note: 63, voice: 'congaOpen', key: 'conga',       pick: ['Quinto_HitN', 'Conga_HitN'] },
-  { note: 64, voice: 'congaLo',   key: 'conga',       pick: ['Tumba_HitN', 'Tumba'] },
+  { note: 64, voice: 'congaLo',   key: 'conga',       pick: ['Tumba_HitN_v4', 'Tumba_HitN_v3', 'Tumba_HitN'] }, // v1 was near-silent
   { note: 65, voice: 'timbaleHi', key: 'tom2_rim',    pick: [] },
   { note: 66, voice: 'timbaleLo', key: 'tom2_rim',    pick: [] },
   { note: 67, voice: 'agogoHi',   key: 'agogo',       pick: ['Agogo_High', 'High'] },
@@ -134,9 +114,14 @@ if (missing.length) { console.error('Refusing to build with missing keys — fix
 const destDir = path.join(PUB, KIT_ID);
 await mkdir(destDir, { recursive: true });
 let bytes = 0; const failures = [];
-// Download each VCSL file to a temp, then transcode to OGG/Vorbis (q5 ≈ ~160kbps
-// VBR). This keeps the committed kit ~3MB instead of ~34MB of 24-bit VCSL wav;
-// Vorbis has no encoder delay, so drum transients stay tight. Requires ffmpeg on PATH.
+// Download each VCSL file to a temp, peak-normalize, then transcode to OGG/Vorbis
+// (q5 ≈ ~160kbps VBR). Normalize because raw VCSL levels span ~57dB (some pads
+// near-silent next to a hot clap) — peak-boost each pad toward -1dB so nothing is
+// inaudible; balance is then tuned per-pad with the rack LEVEL knobs. Only boost
+// (never attenuate) and cap the gain so we don't amplify a near-silent file's
+// noise floor. Vorbis has no encoder delay, so drum transients stay tight.
+// Requires ffmpeg on PATH.
+const TARGET_PEAK_DB = -1, MAX_BOOST_DB = 24;
 await pool(resolved, 8, async (r) => {
   const url = BASE + r.src; // already %20-encoded
   const tmp = path.join(PUB, `${KIT_ID}/.tmp-${r.note}.${r.srcExt}`);
@@ -145,7 +130,12 @@ await pool(resolved, 8, async (r) => {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     await writeFile(tmp, Buffer.from(await res.arrayBuffer()));
-    execSync(`ffmpeg -y -loglevel error -i "${tmp}" -c:a libvorbis -q:a 5 "${out}"`);
+    const det = execSync(`ffmpeg -i "${tmp}" -af volumedetect -f null - 2>&1`).toString();
+    const mm = det.match(/max_volume:\s*(-?[\d.]+) dB/);
+    const peak = mm ? parseFloat(mm[1]) : 0;
+    const gain = Math.max(0, Math.min(MAX_BOOST_DB, TARGET_PEAK_DB - peak));
+    const af = gain > 0.1 ? `-af "volume=${gain.toFixed(1)}dB"` : '';
+    execSync(`ffmpeg -y -loglevel error -i "${tmp}" ${af} -c:a libvorbis -q:a 5 "${out}"`);
     await unlink(tmp);
     bytes += (await readFile(out)).length;
   } catch (e) { r.failed = true; failures.push(`${String(e)}  ${url}`); }
