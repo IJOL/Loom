@@ -35,8 +35,7 @@
     {
       "voice": "tomLoFloor",
       "note": 41,
-      "file": "gm-percussion/41.ogg",
-      "root": 43
+      "file": "gm-percussion/41.ogg"
     },
     {
       "voice": "tomHiFloor",
@@ -46,26 +45,22 @@
     {
       "voice": "tomLo",
       "note": 45,
-      "file": "gm-percussion/45.ogg",
-      "root": 43
+      "file": "gm-percussion/45.ogg"
     },
     {
       "voice": "tomLoMid",
       "note": 47,
-      "file": "gm-percussion/47.ogg",
-      "root": 43
+      "file": "gm-percussion/47.ogg"
     },
     {
       "voice": "tomHiMid",
       "note": 48,
-      "file": "gm-percussion/48.ogg",
-      "root": 43
+      "file": "gm-percussion/48.ogg"
     },
     {
       "voice": "tomHi",
       "note": 50,
-      "file": "gm-percussion/50.ogg",
-      "root": 43
+      "file": "gm-percussion/50.ogg"
     },
     {
       "voice": "closedHat",
@@ -160,14 +155,12 @@
     {
       "voice": "timbaleHi",
       "note": 65,
-      "file": "gm-percussion/65.ogg",
-      "root": 60
+      "file": "gm-percussion/65.ogg"
     },
     {
       "voice": "timbaleLo",
       "note": 66,
-      "file": "gm-percussion/66.ogg",
-      "root": 64
+      "file": "gm-percussion/66.ogg"
     },
     {
       "voice": "agogoHi",
@@ -217,8 +210,7 @@
     {
       "voice": "woodHi",
       "note": 76,
-      "file": "gm-percussion/76.ogg",
-      "root": 72
+      "file": "gm-percussion/76.ogg"
     },
     {
       "voice": "woodLo",
@@ -228,14 +220,12 @@
     {
       "voice": "cuicaMute",
       "note": 78,
-      "file": "gm-percussion/78.ogg",
-      "root": 64
+      "file": "gm-percussion/78.ogg"
     },
     {
       "voice": "cuicaOpen",
       "note": 79,
-      "file": "gm-percussion/79.ogg",
-      "root": 60
+      "file": "gm-percussion/79.ogg"
     },
     {
       "voice": "triMute",
@@ -270,14 +260,12 @@
     {
       "voice": "surdoMute",
       "note": 86,
-      "file": "gm-percussion/86.ogg",
-      "root": 43
+      "file": "gm-percussion/86.ogg"
     },
     {
       "voice": "surdoOpen",
       "note": 87,
-      "file": "gm-percussion/87.ogg",
-      "root": 41
+      "file": "gm-percussion/87.ogg"
     }
   ]
 }

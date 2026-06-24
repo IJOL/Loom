@@ -22,10 +22,11 @@ const KIT_NAME = 'GM Percussion';
 const BASE = 'https://raw.githubusercontent.com/sgossner/VCSL/master/';
 
 // note → { voice, key (VCSL catalog key), pick (ordered filename substrings;
-// first hit wins, else falls back to the key's first file), root (optional
-// repitch home; absent = native pitch) }. Substitutes are intentional where VCSL
-// has no exact instrument (see spec). pick[] is best-effort; the report prints
-// the actual chosen file so picks can be refined with --list.
+// first hit wins, else falls back to the key's first file) }. Each pad plays at
+// its sample's native pitch (no repitch — repitch collided in the sampler's
+// per-pad UI, which keys columns by rootNote). Substitutes are intentional where
+// VCSL has no exact instrument (see spec). pick[] is best-effort; the report
+// prints the actual chosen file so picks can be refined with --list.
 const PADS = [
   { note: 35, voice: 'kickA',     key: 'bassdrum2',   pick: [] },
   { note: 36, voice: 'kick',      key: 'bassdrum1',   pick: [] },
@@ -33,14 +34,14 @@ const PADS = [
   { note: 38, voice: 'snare',     key: 'snare_modern',pick: ['Hit', 'hit'] },
   { note: 39, voice: 'clap',      key: 'clap',        pick: [] },
   { note: 40, voice: 'snareE',    key: 'snare_hi',    pick: [] },
-  { note: 41, voice: 'tomLoFloor',key: 'tom2_mallet', pick: [], root: 43 },
+  { note: 41, voice: 'tomLoFloor',key: 'tom2_mallet', pick: [] },
   { note: 43, voice: 'tomHiFloor',key: 'tom2_mallet', pick: [] },
-  { note: 45, voice: 'tomLo',     key: 'tom2_mallet', pick: [], root: 43 },
-  // Tom 1 (tom_mallet) is gone from VCSL master (all files 404); use Tom 2
-  // repitched up from its native note (43) for the mid/high toms.
-  { note: 47, voice: 'tomLoMid',  key: 'tom2_mallet', pick: [], root: 43 },
-  { note: 48, voice: 'tomHiMid',  key: 'tom2_mallet', pick: [], root: 43 },
-  { note: 50, voice: 'tomHi',     key: 'tom2_mallet', pick: [], root: 43 },
+  { note: 45, voice: 'tomLo',     key: 'tom2_mallet', pick: [] },
+  // Tom 1 (tom_mallet) is gone from VCSL master (all files 404); use Tom 2 for
+  // every tom at native pitch (tune per pad in the rack to taste).
+  { note: 47, voice: 'tomLoMid',  key: 'tom2_mallet', pick: [] },
+  { note: 48, voice: 'tomHiMid',  key: 'tom2_mallet', pick: [] },
+  { note: 50, voice: 'tomHi',     key: 'tom2_mallet', pick: [] },
   { note: 42, voice: 'closedHat', key: 'hihat',       pick: ['Close', 'HitC'] },
   { note: 44, voice: 'pedalHat',  key: 'hihat',       pick: ['Close', 'HitC'] }, // VCSL has no pedal hat; closed is the substitute
   { note: 46, voice: 'openHat',   key: 'hihat',       pick: ['HitO_', 'HitO'] },
@@ -59,8 +60,8 @@ const PADS = [
   { note: 62, voice: 'congaMute', key: 'conga',       pick: ['Quinto_HitFM', 'HitFM'] },
   { note: 63, voice: 'congaOpen', key: 'conga',       pick: ['Quinto_HitN', 'Conga_HitN'] },
   { note: 64, voice: 'congaLo',   key: 'conga',       pick: ['Tumba_HitN', 'Tumba'] },
-  { note: 65, voice: 'timbaleHi', key: 'tom2_rim',    pick: [], root: 60 },
-  { note: 66, voice: 'timbaleLo', key: 'tom2_rim',    pick: [], root: 64 },
+  { note: 65, voice: 'timbaleHi', key: 'tom2_rim',    pick: [] },
+  { note: 66, voice: 'timbaleLo', key: 'tom2_rim',    pick: [] },
   { note: 67, voice: 'agogoHi',   key: 'agogo',       pick: ['Agogo_High', 'High'] },
   { note: 68, voice: 'agogoLo',   key: 'agogo',       pick: ['Agogo_Low', 'Low'] },
   { note: 69, voice: 'cabasa',    key: 'cabasa',      pick: ['Cabasa1_Hit', 'Hit'] },
@@ -70,18 +71,18 @@ const PADS = [
   { note: 73, voice: 'guiroS',    key: 'guiro',       pick: ['Guiro_Hit', 'Fast'] },
   { note: 74, voice: 'guiroL',    key: 'guiro',       pick: ['Slow', 'Med'] },
   { note: 75, voice: 'claves',    key: 'clave',       pick: ['Claves1_Hit', 'Hit'] },
-  { note: 76, voice: 'woodHi',    key: 'woodblock',   pick: ['wood_click_mp', 'click'], root: 72 },
+  { note: 76, voice: 'woodHi',    key: 'woodblock',   pick: ['wood_click_mp', 'click'] },
   { note: 77, voice: 'woodLo',    key: 'woodblock',   pick: ['wood_click_mp', 'click'] },
-  { note: 78, voice: 'cuicaMute', key: 'darbuka',     pick: ['Darbuka_1'], root: 64 }, // no mute/open variants; distinct hits + repitch substitute
-  { note: 79, voice: 'cuicaOpen', key: 'darbuka',     pick: ['Darbuka_3'], root: 60 },
+  { note: 78, voice: 'cuicaMute', key: 'darbuka',     pick: ['Darbuka_1'] }, // no mute/open variants; distinct hits + repitch substitute
+  { note: 79, voice: 'cuicaOpen', key: 'darbuka',     pick: ['Darbuka_3'] },
   { note: 80, voice: 'triMute',   key: 'triangles',   pick: ['HitM', 'Hit_'] },
   { note: 81, voice: 'triOpen',   key: 'triangles',   pick: ['Triangle1_Hit_v1', 'Hit_'] },
   { note: 82, voice: 'shaker',    key: 'shaker_large',pick: ['LShaker_Hit', 'Hit'] },
   { note: 83, voice: 'jingle',    key: 'sleighbells', pick: [] },
   { note: 84, voice: 'belltree',  key: 'marktrees',   pick: [] },
   { note: 85, voice: 'castanet',  key: 'slapstick',   pick: [] },
-  { note: 86, voice: 'surdoMute', key: 'framedrum',   pick: ['HitMuted', 'Muted'], root: 43 },
-  { note: 87, voice: 'surdoOpen', key: 'framedrum',   pick: ['HDrumL_Hit_v2', '_Hit_v'], root: 41 },
+  { note: 86, voice: 'surdoMute', key: 'framedrum',   pick: ['HitMuted', 'Muted'] },
+  { note: 87, voice: 'surdoOpen', key: 'framedrum',   pick: ['HDrumL_Hit_v2', '_Hit_v'] },
 ];
 
 function pickFile(catalog, pad) {
