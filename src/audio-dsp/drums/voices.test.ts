@@ -4,6 +4,7 @@ import { DRUM_RENDERERS } from './voices';
 import { DRUM_VOICE_IDS } from './types';
 import type { DrumHit, DrumVoiceId } from './types';
 import type { ParamBag } from '../types';
+import { TriOsc } from '../osc';
 
 const SR = 48000;
 const hit = (o: Partial<DrumHit> = {}): DrumHit => ({ voice: 'kick', beginSec: 0, velocity: 0.8, ...o });
@@ -29,6 +30,25 @@ describe('drum renderers', () => {
   it('snare: broadband noise + body', () => {
     const { b } = render('snare', { tone1: 240, tone2: 360, bodyDecay: 0.04, tone: 0.35, snap: 0.75, noiseDecay: 0.18, noiseTone: 7000, tune: 1 }, 0.4);
     expect(rms(b.slice(0, SR * 0.05))).toBeGreaterThan(0.02);
+  });
+
+  it('snare body sums both oscillators at unity (not halved)', () => {
+    // Legacy playSnare connected osc1 AND osc2 at unity into the tone gain, so
+    // the body peak is 2·(vel·tone). Isolate the body (snap=0, no noise) with a
+    // long bodyDecay so the env ≈ 1 over the window, vel=tone=1 so the body gain
+    // is unity, and compare its peak to a SINGLE triangle's peak. Two summed
+    // triangles must exceed one — a stray ×0.5 would drag it down to ≈ one.
+    const r = DRUM_RENDERERS.snare(
+      hit({ voice: 'snare', velocity: 1 }),
+      { tone1: 240, tone2: 360, bodyDecay: 10, tone: 1, snap: 0, noiseDecay: 0.001, noiseTone: 7000, tune: 1 },
+      SR,
+    );
+    let bodyPeak = 0;
+    for (let i = 0; i < SR * 0.05; i++) bodyPeak = Math.max(bodyPeak, Math.abs(r.renderSample(i / SR)));
+    const ref = new TriOsc(SR);
+    let triPeak = 0;
+    for (let i = 0; i < SR * 0.05; i++) triPeak = Math.max(triPeak, Math.abs(ref.update(240)));
+    expect(bodyPeak).toBeGreaterThan(triPeak * 1.3);
   });
 
   it('closed hat decays faster than open hat (shorter tail)', () => {

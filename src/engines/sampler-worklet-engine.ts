@@ -306,25 +306,39 @@ export class SamplerWorkletEngine implements SynthEngine {
   spawnFor(midi: number, time: number, opts: VoiceTriggerOptions): void {
     const node = this.node;
     if (!node) return;
+    const r = this.resolveSpawn(midi, time, opts, this.ctx);
+    if (!r) return;
+    if (!node.hasSample(r.spawn.sampleId)) node.loadSample(r.spawn.sampleId, r.buffer);
+    node.spawn(r.kind, r.spawn);
+  }
 
-    // Loop/song audio-clip path: resolve the (warp/stretch) buffer main-thread,
-    // push it to the bank under a warp/stretch key, post kind:'audio'.
+  /** Pure spawn resolution: turn a triggered note into the SampleSpawn the
+   *  renderer plays + the AudioBuffer to register under spawn.sampleId. Shared by
+   *  spawnFor (live) and the offline scene recorder (which renders the spawn
+   *  through SamplerRenderer/AudioClipRenderer instead of the worklet). `ctx` is
+   *  needed only for the audio-clip warp/stretch path. */
+  resolveSpawn(
+    midi: number, time: number, opts: VoiceTriggerOptions, ctx: AudioContext | null,
+  ): { kind: 'sampler' | 'audio'; spawn: SampleSpawn; buffer: AudioBuffer } | null {
+    // Loop/song audio-clip path: resolve the (warp/stretch) buffer main-thread.
     if (opts.sample) {
+      if (!ctx) return null;
       const resolved = resolveAudioClipPlayback({
-        ctx: this.ctx!, sample: opts.sample, gateDuration: opts.gateDuration,
+        ctx, sample: opts.sample, gateDuration: opts.gateDuration,
         masterGain: this.getBaseValue('gain'),
       });
-      if (!resolved) return;
-      if (!node.hasSample(resolved.bufferId)) node.loadSample(resolved.bufferId, resolved.buffer);
-      node.spawn('audio', neutralAudioSpawn(resolved.bufferId, time, opts.gateDuration, resolved.rate, resolved.offset, resolved.gain));
-      return;
+      if (!resolved) return null;
+      return {
+        kind: 'audio', buffer: resolved.buffer,
+        spawn: neutralAudioSpawn(resolved.bufferId, time, opts.gateDuration, resolved.rate, resolved.offset, resolved.gain),
+      };
     }
 
     const entry = keymapEntryFor(this.keymap, midi);
-    if (!entry) return;
+    if (!entry) return null;
     const buf = sampleCache.get(entry.sampleId);
-    if (!buf) return;
-    // Make sure the buffer is in the worklet bank.
+    if (!buf) return null;
+    // Make sure the buffer is in the worklet bank (live path; harmless offline).
     this.pushBuffer(entry.sampleId);
 
     const pad = this.getPad(entry.rootNote);
@@ -343,6 +357,10 @@ export class SamplerWorkletEngine implements SynthEngine {
       loop: win.loop,
       loopStartSec: win.loopStart,
       loopEndSec: win.loopEnd,
+      // One-shot trim-out: win.duration is the buffer-time window length (null for
+      // loops). The absolute end = offset + duration, so audio past the pad's
+      // sampleEnd never sounds (legacy src.start(t, offset, duration)).
+      ...(win.duration != null ? { endSec: win.offset + win.duration } : {}),
       cutoff: pad.cutoff,
       res: pad.res,
       attack: Math.max(0.001, pad.attack),
@@ -353,7 +371,7 @@ export class SamplerWorkletEngine implements SynthEngine {
       dly: pad.dly,
       gain,
     };
-    node.spawn('sampler', spawn);
+    return { kind: 'sampler', spawn, buffer: buf };
   }
 
   /** Transport Stop: silence every live voice (a long loop/song clip would

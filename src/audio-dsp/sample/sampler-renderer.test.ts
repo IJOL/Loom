@@ -48,7 +48,7 @@ describe('SamplerRenderer', () => {
     expect(r.done).toBe(true);
   });
 
-  it('per-pad send levels scale the dry signal', () => {
+  it('per-pad send levels scale the dry signal (rev and dly stay separate)', () => {
     const bank = new SampleBank();
     bank.set('s', tone(SR));
     const r = new SamplerRenderer(spawn({ rev: 0.5, dly: 0.25 }), bank, SR);
@@ -57,12 +57,70 @@ describe('SamplerRenderer', () => {
     for (let i = 0; i < SR * 0.02; i++) {
       const dry = Math.abs(r.renderSample(i / SR));
       maxDry = Math.max(maxDry, dry);
-      maxRev = Math.max(maxRev, Math.abs(r.sendRev()));
-      maxDly = Math.max(maxDly, Math.abs(r.sendDly()));
+      maxRev = Math.max(maxRev, Math.abs(r.sendRevL()) + Math.abs(r.sendRevR()));
+      maxDly = Math.max(maxDly, Math.abs(r.sendDlyL()) + Math.abs(r.sendDlyR()));
     }
     // sendRev is the dry × 0.5, sendDly is dry × 0.25 → rev twice dly, both < dry.
     expect(maxRev).toBeGreaterThan(maxDly);
     expect(maxRev).toBeLessThan(maxDry);
+  });
+
+  it('a reverb-only pad feeds the reverb send but NOT the delay send', () => {
+    const bank = new SampleBank();
+    bank.set('s', tone(SR));
+    const r = new SamplerRenderer(spawn({ rev: 0.8, dly: 0 }), bank, SR);
+    let maxRev = 0, maxDly = 0;
+    for (let i = 0; i < SR * 0.02; i++) {
+      r.renderSample(i / SR);
+      maxRev = Math.max(maxRev, Math.abs(r.sendRevL()) + Math.abs(r.sendRevR()));
+      maxDly = Math.max(maxDly, Math.abs(r.sendDlyL()) + Math.abs(r.sendDlyR()));
+    }
+    expect(maxRev).toBeGreaterThan(0);
+    expect(maxDly).toBe(0);   // delay send must stay silent for a rev-only pad
+  });
+
+  it('honours the one-shot trim-out (endSec): little/no source audio past sampleEnd', () => {
+    const bank = new SampleBank();
+    bank.set('s', tone(SR));
+    // Low cutoff so the per-pad filter passes the source cleanly (its own
+    // high-cutoff ring is a separate concern); measure the source, not the filter.
+    const tailRms = (over: Partial<SampleSpawn>) => {
+      const r = new SamplerRenderer(spawn({ gateSec: 0.1, attack: 0.001, decay: 0.001, cutoff: 0.4, ...over }), bank, SR);
+      const tail: number[] = [];
+      for (let i = 0; i < SR * 0.05; i++) { const v = r.renderSample(i / SR); if (i >= SR * 0.012) tail.push(v); }
+      return rms(tail);
+    };
+    // Trimmed at 10 ms: the 12-50 ms window is (near-)silent vs the un-trimmed
+    // clip, which keeps playing the tone through the whole gate.
+    const trimmed = tailRms({ endSec: 0.01 });
+    const full = tailRms({});
+    expect(full).toBeGreaterThan(0.05);
+    expect(trimmed).toBeLessThan(full * 0.05);
+  });
+
+  it('a centred mono sample pans equal-power (L ≈ R, both ≈ 0.707 of the mono level)', () => {
+    const bank = new SampleBank();
+    bank.set('s', tone(SR));
+    const r = new SamplerRenderer(spawn({ pan: 0 }), bank, SR);
+    let maxL = 0, maxR = 0;
+    for (let i = 0; i < SR * 0.02; i++) { const { l, r: rr } = r.renderStereoInto(i / SR); maxL = Math.max(maxL, Math.abs(l)); maxR = Math.max(maxR, Math.abs(rr)); }
+    expect(maxL).toBeCloseTo(maxR, 3);
+    expect(maxL).toBeGreaterThan(0);
+  });
+
+  it('preserves a stereo sample image (opposite channels stay distinct, no mono-sum)', () => {
+    const n = SR;
+    const l = new Float32Array(n);
+    const rch = new Float32Array(n);
+    for (let i = 0; i < n; i++) { l[i] = Math.sin(2 * Math.PI * 440 * i / SR); rch[i] = 0; }
+    const bank = new SampleBank();
+    bank.set('st', { channels: [l, rch], sampleRate: SR });
+    // pan=0 (identity for a stereo source): left channel has the tone, right is silent.
+    const r = new SamplerRenderer(spawn({ sampleId: 'st', pan: 0 }), bank, SR);
+    let maxL = 0, maxR = 0;
+    for (let i = 0; i < SR * 0.02; i++) { const { l: ll, r: rr } = r.renderStereoInto(i / SR); maxL = Math.max(maxL, Math.abs(ll)); maxR = Math.max(maxR, Math.abs(rr)); }
+    expect(maxL).toBeGreaterThan(0.05);
+    expect(maxR).toBeLessThan(maxL * 0.05);   // right stays near-silent → image preserved
   });
 
   it('higher gain produces a louder dry signal', () => {

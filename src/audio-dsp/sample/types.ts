@@ -20,6 +20,10 @@ export interface SampleSpawn {
   loop: boolean;
   loopStartSec: number;
   loopEndSec: number;
+  /** One-shot trim-out (buffer-time seconds, absolute). Absent ⇒ play to the
+   *  buffer end. Mirrors the legacy src.start(t, offset, duration) window so a
+   *  pad's sampleEnd trim is honoured. Ignored when `loop` is set. */
+  endSec?: number;
   // per-pad voice chain (sampler); audio channel sends neutral defaults
   cutoff: number;            // 0..1 → 60·300^x Hz
   res: number;               // 0..1

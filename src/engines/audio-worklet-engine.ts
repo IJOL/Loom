@@ -18,6 +18,7 @@ import { wireEngineParams } from './engine-ui';
 import { resolveAudioClipPlayback } from './audio-clip-voice';
 import { neutralAudioSpawn } from './sampler-worklet-engine';
 import { SamplerWorkletNode } from '../audio-worklet/sampler-node';
+import type { SampleSpawn } from '../audio-dsp/sample/types';
 import type { FxBus } from '../core/fx';
 
 const AUDIO_PARAMS: EngineParamSpec[] = [
@@ -93,16 +94,29 @@ export class AudioWorkletEngine implements SynthEngine {
   /** Resolve the clip buffer main-thread, push to the bank, post a flat spawn. */
   spawnClip(time: number, opts: VoiceTriggerOptions): void {
     const node = this.node;
-    if (!node || !opts.sample || !this.ctx) return;
+    if (!node) return;
+    const r = this.resolveSpawn(time, opts, this.ctx);
+    if (!r) return;
+    if (!node.hasSample(r.spawn.sampleId)) node.loadSample(r.spawn.sampleId, r.buffer);
+    node.spawn('audio', r.spawn);
+  }
+
+  /** Pure spawn resolution for an audio clip — the SampleSpawn the renderer plays
+   *  + the AudioBuffer to register. Shared by spawnClip (live) and the offline
+   *  scene recorder (which renders the spawn through AudioClipRenderer). */
+  resolveSpawn(
+    time: number, opts: VoiceTriggerOptions, ctx: AudioContext | null,
+  ): { spawn: SampleSpawn; buffer: AudioBuffer } | null {
+    if (!opts.sample || !ctx) return null;
     const resolved = resolveAudioClipPlayback({
-      ctx: this.ctx, sample: opts.sample, gateDuration: opts.gateDuration,
+      ctx, sample: opts.sample, gateDuration: opts.gateDuration,
       masterGain: this.getBaseValue('gain'),
     });
-    if (!resolved) return;
-    if (!node.hasSample(resolved.bufferId)) node.loadSample(resolved.bufferId, resolved.buffer);
-    node.spawn('audio', neutralAudioSpawn(
-      resolved.bufferId, time, opts.gateDuration, resolved.rate, resolved.offset, resolved.gain,
-    ));
+    if (!resolved) return null;
+    return {
+      buffer: resolved.buffer,
+      spawn: neutralAudioSpawn(resolved.bufferId, time, opts.gateDuration, resolved.rate, resolved.offset, resolved.gain),
+    };
   }
 
   /** Transport Stop: silence the whole-loop clip immediately (the registry's

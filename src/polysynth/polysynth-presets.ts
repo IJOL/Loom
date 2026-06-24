@@ -41,6 +41,33 @@ function flatToPolyParams(flat: Record<string, number>): PolySynthParams {
   return out;
 }
 
+/** Inverse of flatToPolyParams: flatten a nested PolySynthParams tree back to the
+ *  dot-id vocabulary the SUB_PARAM_SPECS / WorkletLaneEngine consume (osc waves as
+ *  0..3 indices). Used to apply a USER preset (stored as PolySynthParams) to the
+ *  worklet subtractive engine, and to snapshot the engine's params on Save.
+ *  Only the fields the subtractive engine reads are emitted. */
+export function polyParamsToFlat(p: PolySynthParams): Record<string, number> {
+  const WAVE_VALUES: OscillatorType[] = ['sawtooth', 'square', 'triangle', 'sine'];
+  const waveIdx = (w: OscillatorType): number => {
+    const i = WAVE_VALUES.indexOf(w);
+    return i < 0 ? 0 : i;
+  };
+  return {
+    'master.tune': p.master.tune,
+    'osc1.wave': waveIdx(p.osc1.wave), 'osc1.level': p.osc1.level, 'osc1.detune': p.osc1.detune,
+    'osc2.wave': waveIdx(p.osc2.wave), 'osc2.level': p.osc2.level, 'osc2.detune': p.osc2.detune,
+    'sub.level': p.sub.level,
+    'noise.level': p.noise.level, 'noise.color': p.noise.color,
+    'filter.cutoff': p.filter.cutoff, 'filter.resonance': p.filter.resonance,
+    'filter.envAmount': p.filter.envAmount, 'filter.drive': p.filter.drive,
+    'filter.keyTrack': p.filter.keyTrack,
+    'filter.attack': p.filter.attack, 'filter.decay': p.filter.decay,
+    'filter.sustain': p.filter.sustain, 'filter.release': p.filter.release,
+    'amp.attack': p.amp.attack, 'amp.decay': p.amp.decay,
+    'amp.sustain': p.amp.sustain, 'amp.release': p.amp.release,
+  };
+}
+
 /** Typed view over the JSON-loaded subtractive preset cache, materialised as
  *  the nested `PolySynthParams` shape the polysynth UI consumes. Subtractive
  *  presets are stored flat (dot-path id → value); we expand them on the fly. */
@@ -122,16 +149,11 @@ export function refreshPolyPresetSelect(): void {
   // polyPresetName by, so fall back to the lane-keyed memory (engine:<name>,
   // filled by recordPagePresetForLane on load + on preset change). Subtractive
   // keeps the PolySynth-keyed factory:/user: path.
+  // After the Phase 4 cutover subtractive lanes have no PolySynth target, so their
+  // selection is also tracked in the lane-keyed pagePresetName (set by the
+  // factory:/user: change handler + Save). All poly engines now read it here.
   const laneId = _deps?.getActiveEngineLaneId();
-  const engineId = laneId ? _deps?.getLaneEngineId(laneId) : undefined;
-  if (engineId && engineId !== 'subtractive') {
-    sel.value = (laneId && pagePresetName.get(laneId)) || '__custom__';
-    return;
-  }
-  const target = _deps?.getActivePolyTarget();
-  const current = target ? polyPresetName.get(target) : undefined;
-  if (current) sel.value = current;
-  else sel.value = '__custom__';
+  sel.value = (laneId && pagePresetName.get(laneId)) || '__custom__';
 }
 
 /** Core implementation: populate #poly-preset-select using an explicit laneId.
@@ -228,6 +250,19 @@ export function populatePolyPresetSelect(): void {
   const deps = _deps;
   if (!deps) return;
   populatePolyPresetSelectForLane(deps.getActiveEngineLaneId());
+}
+
+/** Apply a USER subtractive preset (stored as nested PolySynthParams) to a lane's
+ *  worklet engine: flatten to dot-ids + setBaseValue each, then refresh the lane
+ *  knobs. The Phase 4 cutover removed the PolySynth target these used to write to. */
+function applySubtractiveUserPreset(laneId: string, params: PolySynthParams): void {
+  const deps = _deps;
+  if (!deps) return;
+  const engine = deps.getLaneEngineInstance(laneId);
+  if (!engine) return;
+  const flat = polyParamsToFlat(params);
+  for (const [id, v] of Object.entries(flat)) engine.setBaseValue(id, v);
+  deps.refreshLaneKnobs(laneId);
 }
 
 /** Apply a non-subtractive engine preset to the active lane's engine
@@ -396,6 +431,10 @@ export function recordPagePresetForLane(laneId: string, presetName: string): voi
 export function markPolyPresetCustom(): void {
   const target = _deps?.getActivePolyTarget();
   if (target) polyPresetName.delete(target);
+  // Poly lanes (incl. subtractive after the cutover) track selection in the
+  // lane-keyed pagePresetName; clear the active lane's entry too.
+  const laneId = _deps?.getActiveEngineLaneId();
+  if (laneId) pagePresetName.delete(laneId);
   const sel = document.getElementById('poly-preset-select') as HTMLSelectElement | null;
   if (sel) sel.value = '__custom__';
 }
@@ -505,17 +544,24 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
 
   const btn = document.getElementById('poly-randomize') as HTMLButtonElement;
   btn.addEventListener('click', () => {
-    const engineId = deps.getLaneEngineId(deps.getActiveEngineLaneId());
+    const laneId = deps.getActiveEngineLaneId();
+    const engineId = deps.getLaneEngineId(laneId);
     if (engineId === 'subtractive') {
-      const target = deps.getActivePolyTarget();
-      if (!target) return;
-      randomizePolySynth(target);
-      polyPresetName.delete(target);
-      deps.refreshLaneKnobs(deps.getActiveEngineLaneId());
-      refreshPolyPresetSelect();
+      // After the Phase 4 cutover subtractive lanes have no PolySynth; randomize a
+      // fresh PolySynthParams bag (randomizePolySynth only mutates .params — no
+      // audio nodes), flatten to dot-ids and push to the worklet engine via
+      // setBaseValue (the same path the user-preset load uses).
+      const engine = deps.getLaneEngineInstance(laneId);
+      if (!engine) return;
+      const scratch = { params: JSON.parse(JSON.stringify(POLY_DEFAULTS)) as PolySynthParams } as PolySynth;
+      randomizePolySynth(scratch);
+      const flat = polyParamsToFlat(scratch.params);
+      for (const [id, v] of Object.entries(flat)) engine.setBaseValue(id, v);
+      deps.refreshLaneKnobs(laneId);
+      markPolyPresetCustom();
       return;
     }
-    const instance = deps.getLaneEngineInstance(deps.getActiveEngineLaneId());
+    const instance = deps.getLaneEngineInstance(laneId);
     if (!instance) return;
     const eng = instance as unknown as { randomize?: () => void; setParam?: (id: string, v: number) => void };
     if (eng.randomize) {
@@ -562,17 +608,23 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
       return;
     }
 
-    // factory:/user: presets target the active subtractive PolySynth.
-    const target = deps.getActivePolyTarget();
-    if (!target) return;
+    // factory:/user: presets target the active subtractive lane's WORKLET engine
+    // (the legacy PolySynth target is gone after the Phase 4 cutover). Factory
+    // presets ARE the subtractive.json list applied by name via engine.applyPreset;
+    // user presets are stored as PolySynthParams → flattened to dot-ids and pushed
+    // through setBaseValue, then the lane knobs refresh.
+    const laneId = deps.getActiveEngineLaneId();
     if (val.startsWith('factory:')) {
       const name = val.slice('factory:'.length);
-      const p = getFactoryPolyPresets().find((x) => x.name === name);
-      if (p) { applyPolyParams(p.params); polyPresetName.set(target, val); }
+      applyEnginePresetForLane(name, laneId);   // engine.applyPreset(name) + refreshLaneKnobs
+      pagePresetName.set(laneId, val);
     } else if (val.startsWith('user:')) {
       const name = val.slice('user:'.length);
       const presets = loadUserPolyPresets();
-      if (presets[name]) { applyPolyParams(presets[name]); polyPresetName.set(target, val); }
+      if (presets[name]) {
+        applySubtractiveUserPreset(laneId, presets[name]);
+        pagePresetName.set(laneId, val);
+      }
     }
   };
 
@@ -595,13 +647,19 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
     if (!name) return;
     const trimmed = name.trim();
     if (!trimmed) return;
-    const target = deps.getActivePolyTarget();
-    if (!target) return;
+    // Snapshot the active subtractive lane's worklet engine params (the legacy
+    // PolySynth target is gone). Read each subtractive dot-id base value, then
+    // expand to the nested PolySynthParams shape user presets are stored in.
+    const laneId = deps.getActiveEngineLaneId();
+    const engine = deps.getLaneEngineInstance(laneId);
+    if (!engine) return;
+    const flat: Record<string, number> = {};
+    for (const id of Object.keys(polyParamsToFlat(POLY_DEFAULTS))) flat[id] = engine.getBaseValue(id);
     const presets = loadUserPolyPresets();
-    presets[trimmed] = JSON.parse(JSON.stringify(target.params)) as PolySynthParams;
+    presets[trimmed] = flatToPolyParams(flat);
     saveUserPolyPresets(presets);
     populatePolyPresetSelect();
-    polyPresetName.set(target, `user:${trimmed}`);
+    pagePresetName.set(laneId, `user:${trimmed}`);
     refreshPolyPresetSelect();
   });
 

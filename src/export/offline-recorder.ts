@@ -6,13 +6,15 @@
 // through its ChannelStrip/inserts/master, then render the graph.
 // Implements the Phase 1 SceneRecorder so orchestrator/encoder/download reuse.
 //
-// SCOPE NOTE (Phase 4 cutover): only the melodic worklet engines (subtractive/
-// tb303/fm/karplus/wavetable/westcoast) have a per-sample kernel renderer wired
-// into this offline path. Drums (8-output kernel), Sampler, and the Audio
-// channel are NOT yet kernel-rendered offline — their notes/clips are skipped
-// here, so an offline export of a drum/sampler/audio scene is silent for those
-// lanes. No existing offline DSP test covers those engine types; wiring the
-// DrumVoiceManager + sample bank into the offline path is a follow-up.
+// SCOPE NOTE (Phase 4 cutover): every sounding lane is now rendered offline.
+// Melodic worklet engines (subtractive/tb303/fm/karplus/wavetable/westcoast) go
+// through the per-sample melodic kernel (kernel-lane-render). Drums (synth mode),
+// the Sampler, and the Audio channel are rendered through the SAME pure drum/
+// sample renderers the worklet uses (sample-lane-render), so a drum/sampler/audio
+// scene is NO LONGER silent on an offline export. Per-pad FX sends and per-voice
+// drum strip sends/EQ are dropped offline (no FxBus in the kernel), and SAMPLE-
+// MODE drum kits (the embedded Sampler) render their hits through the sampler
+// resolve path. Both are approximations of the live per-voice mix, not silence.
 
 import type { RenderedAudio, SceneRecorder } from './types';
 import type { SessionState, SessionClip } from '../session/session';
@@ -21,7 +23,14 @@ import type { TimeSignature } from '../core/meter';
 import { buildAudioGraph } from '../app/audio-graph';
 import { createLaneAllocator } from '../app/lane-allocator';
 import { WorkletLaneEngine } from '../engines/worklet-lane-engine';
+import { DrumsWorkletEngine } from '../engines/drums-worklet-engine';
+import { SamplerWorkletEngine } from '../engines/sampler-worklet-engine';
+import { AudioWorkletEngine } from '../engines/audio-worklet-engine';
 import { renderKernelLane, type KernelNote, type KernelLaneSpec } from './kernel-lane-render';
+import {
+  renderDrumLane, renderSampleLane,
+  type OfflineDrumHit, type OfflineDrumVoiceMix, type OfflineSampleSpawn, type StereoBuffer,
+} from './sample-lane-render';
 import { applyLaneEngineState } from './apply-lane-engine-state';
 import { applyPresetToEngine } from '../presets/preset-apply';
 import { preloadSceneSamples } from './preload-scene-samples';
@@ -32,8 +41,36 @@ import { fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
 import { fetchInstrumentManifest, loadInstrument } from '../samples/instrument-loader';
 import { mirrorKeymapChange } from '../session/session-engine-state';
 import { rehydrateInsertChain } from '../session/insert-slot';
-import { velNorm, resolveVelocity } from '../core/velocity-gain';
+import { velNorm, resolveVelocity, velGain } from '../core/velocity-gain';
+import { GM_DRUM_MAP } from '../engines/drum-gm-map';
+import { DRUM_LANES } from '../core/drums';
+import { DRUM_VOICE_IDS, type DrumVoiceId } from '../audio-dsp/drums/types';
+import { extractChannels } from '../audio-worklet/sampler-node';
 import type { KeymapEntry } from '../samples/types';
+import type { ParamBag } from '../audio-dsp/types';
+
+/** Resolve a sample/audio trigger to an OfflineSampleSpawn (spawn + decoded
+ *  channels), via the engine's pure resolveSpawn path. Handles the Sampler, the
+ *  Audio channel, and sample-mode drums (the embedded Sampler). Returns null for
+ *  any engine that can't resolve a spawn. */
+function resolveSampleSpawn(
+  engine: import('../engines/engine-types').SynthEngine,
+  t: OfflineTrigger,
+  ctx: AudioContext,
+): OfflineSampleSpawn | null {
+  const opts = { gateDuration: t.gateSec, velocity: t.velocity, accent: t.accent, sample: t.sample };
+  if (engine instanceof AudioWorkletEngine) {
+    const r = engine.resolveSpawn(t.time, opts, ctx);
+    return r ? { kind: 'audio', spawn: r.spawn, data: extractChannels(r.buffer) } : null;
+  }
+  // Sample-mode drums delegate to the embedded SamplerWorkletEngine.
+  const sampler = engine instanceof SamplerWorkletEngine
+    ? engine
+    : engine instanceof DrumsWorkletEngine ? engine.getEmbeddedSampler() : null;
+  if (!sampler) return null;
+  const r = sampler.resolveSpawn(t.midi, t.time, opts, ctx);
+  return r ? { kind: r.kind, spawn: r.spawn, data: extractChannels(r.buffer) } : null;
+}
 
 export interface OfflineRecorderDeps {
   state: SessionState;
@@ -151,6 +188,8 @@ export class OfflineSceneRecorder implements SceneRecorder {
     merged.sort((x, y) => x.time - y.time || (x.kind === y.kind ? 0 : x.kind === 'auto' ? -1 : 1));
 
     const kernelNotesByLane = new Map<string, KernelNote[]>();
+    const drumHitsByLane = new Map<string, OfflineDrumHit[]>();
+    const sampleSpawnsByLane = new Map<string, OfflineSampleSpawn[]>();
     for (const ev of merged) {
       if (ev.kind === 'auto') {
         const engine = lanes.getLaneEngineInstance(ev.auto.laneId);
@@ -161,24 +200,47 @@ export class OfflineSceneRecorder implements SceneRecorder {
         engine.setBaseValue(ev.auto.paramId, min + ev.auto.normalised * (max - min));
       } else {
         const t = ev.trig;
-        // Audio-clip samples are not synthesised by the melodic kernel; skip them
-        // here (drums/sampler/audio offline render is a follow-up — see record()
-        // doc note). Only worklet melodic lanes are kernel-rendered.
-        if (t.sample) continue;
         const engine = lanes.getLaneEngineInstance(t.laneId);
-        if (!(engine instanceof WorkletLaneEngine)) continue;
-        let list = kernelNotesByLane.get(t.laneId);
-        if (!list) { list = []; kernelNotesByLane.set(t.laneId, list); }
-        list.push({
-          note: {
-            midi: t.midi, beginSec: t.time, durationSec: t.gateSec,
-            // The kernel renderer's NoteSpec.velocity is normalised 0..1, exactly
-            // like the live WorkletVoice (velNorm(resolveVelocity(...))).
-            velocity: velNorm(resolveVelocity(t.velocity, t.accent)),
-            accent: t.accent, slide: t.slidingIn,
-          },
-          params: engine.getParamBag(),
-        });
+        if (!engine) continue;
+
+        // Melodic worklet lane → the per-sample melodic kernel.
+        if (engine instanceof WorkletLaneEngine) {
+          if (t.sample) continue;   // melodic engines never carry an audio clip
+          let list = kernelNotesByLane.get(t.laneId);
+          if (!list) { list = []; kernelNotesByLane.set(t.laneId, list); }
+          list.push({
+            note: {
+              midi: t.midi, beginSec: t.time, durationSec: t.gateSec,
+              // The kernel renderer's NoteSpec.velocity is normalised 0..1, exactly
+              // like the live WorkletVoice (velNorm(resolveVelocity(...))).
+              velocity: velNorm(resolveVelocity(t.velocity, t.accent)),
+              accent: t.accent, slide: t.slidingIn,
+            },
+            params: engine.getParamBag(),
+          });
+          continue;
+        }
+
+        // Drums lane (synth mode) → DrumVoiceManager. Sample-mode kits fall to the
+        // embedded Sampler resolve path below.
+        if (engine instanceof DrumsWorkletEngine && engine.getKitMode() === 'synth') {
+          const voice = GM_DRUM_MAP[t.midi] as DrumVoiceId | undefined;
+          if (!voice || !DRUM_VOICE_IDS.includes(voice)) continue;
+          if (engine.getOfflineVoiceMix(voice).muted) continue;
+          let hits = drumHitsByLane.get(t.laneId);
+          if (!hits) { hits = []; drumHitsByLane.set(t.laneId, hits); }
+          // Live loudness: vel = 0.65 · velGain(velocity, accent) — same as DrumsVoice.
+          hits.push({ voice, beginSec: t.time, velocity: 0.65 * velGain(t.velocity, t.accent) });
+          continue;
+        }
+
+        // Sampler / Audio lane (or sample-mode drums) → resolve a SampleSpawn and
+        // render it through the pure sample renderers.
+        const resolved = resolveSampleSpawn(engine, t, offlineCtx as unknown as AudioContext);
+        if (!resolved) continue;
+        let spawns = sampleSpawnsByLane.get(t.laneId);
+        if (!spawns) { spawns = []; sampleSpawnsByLane.set(t.laneId, spawns); }
+        spawns.push(resolved);
       }
     }
 
@@ -204,6 +266,38 @@ export class OfflineSceneRecorder implements SceneRecorder {
       srcNode.buffer = buf;
       srcNode.connect(res.inserts.inputNode);
       srcNode.start(0);
+    }
+
+    // Helper: play a rendered stereo pair through a lane's insert chain.
+    const playStereo = (laneId: string, st: StereoBuffer): void => {
+      const res = lanes.resources.get(laneId);
+      if (!res) return;
+      const buf = offlineCtx.createBuffer(2, frames, sr);
+      buf.getChannelData(0).set(st.l);
+      buf.getChannelData(1).set(st.r);
+      const node = offlineCtx.createBufferSource();
+      node.buffer = buf;
+      node.connect(res.inserts.inputNode);
+      node.start(0);
+    };
+
+    // Drums lanes (synth mode) → DrumVoiceManager → per-voice level/pan → strip.
+    for (const [laneId, hits] of drumHitsByLane) {
+      const engine = lanes.getLaneEngineInstance(laneId);
+      if (!(engine instanceof DrumsWorkletEngine)) continue;
+      const voiceParams: Partial<Record<DrumVoiceId, ParamBag>> = {};
+      const voiceMix: Partial<Record<DrumVoiceId, OfflineDrumVoiceMix>> = {};
+      for (const v of DRUM_LANES) {
+        voiceParams[v] = engine.getOfflineSynthBag(v);
+        const mix = engine.getOfflineVoiceMix(v);
+        voiceMix[v] = { level: mix.level, pan: mix.pan };
+      }
+      playStereo(laneId, renderDrumLane(hits, voiceParams, voiceMix, frames, sr));
+    }
+
+    // Sampler / Audio lanes (+ sample-mode drum hits) → sample renderers → strip.
+    for (const [laneId, spawns] of sampleSpawnsByLane) {
+      playStereo(laneId, renderSampleLane(spawns, frames, sr));
     }
 
     // Render → RenderedAudio.

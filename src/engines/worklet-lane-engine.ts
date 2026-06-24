@@ -21,6 +21,7 @@ import { LoomWorkletNode } from '../audio-worklet/loom-node';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import { type ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
+import { effectiveRateHz } from '../modulation/rate-sync';
 import { velNorm, resolveVelocity } from '../core/velocity-gain';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
 import { createKnob, type KnobHandle } from '../core/knob';
@@ -57,8 +58,12 @@ function fieldForParamId(paramId: string): ModTarget | null {
 /** Map the host's ModulatorState[] to the worklet's compact ModLite[]. Only
  *  connections that resolve to a modulation target carry depth; everything else
  *  is sent inert. (The runtime acts only on `kind:'lfo'`; ADSR mods are sent for
- *  completeness but contribute zero — per-voice modular ADSR is deferred.) */
-export function toModLite(state: ModulatorState[]): ModLite[] {
+ *  completeness but contribute zero — per-voice modular ADSR is deferred.)
+ *
+ *  `bpm` resolves a BPM-synced LFO's rate to free Hz here (effectiveRateHz),
+ *  because the in-worklet ModulationRuntime runs at a free `rateHz`. Without
+ *  this a synced LFO would send its stale free `rateHz` and ignore the tempo. */
+export function toModLite(state: ModulatorState[], bpm = 120): ModLite[] {
   return state.map((m) => {
     const depthByParam: Record<string, number> = {};
     for (const c of m.connections) {
@@ -70,7 +75,10 @@ export function toModLite(state: ModulatorState[]): ModLite[] {
       id: m.id,
       kind: m.kind === 'lfo' ? 'lfo' : 'adsr',
       enabled: m.enabled !== false,
-      rateHz: m.rateHz ?? 4,
+      // effectiveRateHz returns the free rateHz when syncToBpm is unset, so a
+      // free LFO is unchanged; a synced LFO gets the bpm-derived rate. Keep the
+      // legacy free-rate default (4 Hz) for a rate-less modulator.
+      rateHz: effectiveRateHz({ ...m, rateHz: m.rateHz ?? 4 }, bpm),
       waveform: m.waveform ?? 'sine',
       depthByParam,
     };
@@ -131,7 +139,11 @@ export class WorkletLaneEngine implements SynthEngine {
   private state: ParamBag = {};
   private maxVoices: number;
   private worklet: LoomWorkletNode;
-  bpm = 120;
+  private _bpm = 120;
+  /** Tempo. Assigning re-posts the modulator set so BPM-synced LFOs re-resolve
+   *  their rate live (bpm-broadcast assigns this on every tempo change). */
+  get bpm(): number { return this._bpm; }
+  set bpm(v: number) { this._bpm = v; this.postMods(); }
 
   constructor(ctx: AudioContext, output: AudioNode, cfg: WorkletEngineConfig) {
     this.id = cfg.engineId;
@@ -155,7 +167,7 @@ export class WorkletLaneEngine implements SynthEngine {
    *  modulator/connection. (In-worklet modulation is currently subtractive-only;
    *  for other engines toModLite yields inert mods until their targets are wired.) */
   private postMods(): void {
-    this.worklet.setMods(toModLite(this.modHost.modulators));
+    this.worklet.setMods(toModLite(this.modHost.modulators, this._bpm));
   }
 
   get presets(): EnginePreset[] { return getCachedPresets(this.presetsKey); }
@@ -172,7 +184,7 @@ export class WorkletLaneEngine implements SynthEngine {
   getMaxVoices(): number { return this.maxVoices; }
   /** Compact in-worklet modulation set (shared LFOs) — the same ModLite[] the
    *  worklet runs. The offline kernel render feeds these to a ModulationRuntime. */
-  getModLite(): ModLite[] { return toModLite(this.modHost.modulators); }
+  getModLite(): ModLite[] { return toModLite(this.modHost.modulators, this._bpm); }
 
   getBaseValue(id: string): number {
     if (id === 'poly.voices') return this.maxVoices;

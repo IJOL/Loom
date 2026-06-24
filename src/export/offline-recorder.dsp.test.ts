@@ -50,4 +50,31 @@ describe('OfflineSceneRecorder (DSP)', () => {
     const tail = ch.subarray(ch.length - Math.floor(0.25 * 44100));
     expect(rms(head)).toBeGreaterThan(rms(tail));
   });
+
+  it('renders a non-silent drums (synth-mode) scene — the Phase 4 offline regression', async () => {
+    // Four-on-the-floor kick (midi 36) → must NOT export silence (the cutover
+    // skipped drums offline). Synth-mode 'drums-machine' uses no external samples.
+    const clip: SessionClip = {
+      id: 'dc', lengthBars: 1,
+      notes: [
+        { start: 0, duration: 6, midi: 36, velocity: 120 },
+        { start: 24, duration: 6, midi: 36, velocity: 120 },
+        { start: 48, duration: 6, midi: 36, velocity: 120 },
+        { start: 72, duration: 6, midi: 36, velocity: 120 },
+      ],
+    };
+    const state: SessionState = {
+      lanes: [{ id: 'drums-1', engineId: 'drums-machine', clips: [clip] }],
+      scenes: [], globalQuantize: '1/1',
+    };
+    const laneStates = new Map<string, LanePlayState>();
+    const lp = emptyLanePlayState('drums-1'); lp.playing = clip;
+    laneStates.set('drums-1', lp);
+
+    const rec = new OfflineSceneRecorder({ state, laneStates, bpm: 120, meter: DEFAULT_METER, sampleRate: 44100 });
+    const rendered = await rec.record(1.5);
+    expect(rendered.channels).toHaveLength(2);
+    // Non-silent: the kicks render. (Was 0 — silent — before the fix.)
+    expect(rms(rendered.channels[0])).toBeGreaterThan(1e-3);
+  });
 });

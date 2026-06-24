@@ -55,4 +55,37 @@ describe('BufferPlayer', () => {
     for (let i = 0; i < 500; i++) if (p.update(1) !== 0) nonzero = true;
     expect(nonzero).toBe(true); // still producing after the buffer length
   });
+
+  it('setEnd trims a one-shot: stops producing past the end position', () => {
+    // 100-sample plateau, end at 40 samples → past index 40 it returns 0.
+    const p = new BufferPlayer(plateau(100), SR);
+    p.setEnd(40 / SR);
+    let firstZeroAt = -1;
+    for (let i = 0; i < 100; i++) {
+      const v = p.update(1);
+      if (v === 0 && firstZeroAt < 0) firstZeroAt = i;
+    }
+    expect(firstZeroAt).toBeGreaterThan(0);
+    expect(firstZeroAt).toBeLessThan(60);   // trimmed well before the 100-sample end
+  });
+
+  it('preserves distinct L/R for a stereo source (no mono collapse)', () => {
+    // L ramps up, R ramps down → opposite channels. After a read, lastL != lastR.
+    const n = 100;
+    const l = new Float32Array(n);
+    const r = new Float32Array(n);
+    for (let i = 0; i < n; i++) { l[i] = (i + 1) / n; r[i] = 1 - i / n; }
+    const p = new BufferPlayer({ channels: [l, r], sampleRate: SR }, SR);
+    p.update(1);   // read sample ~0: L≈0.01, R≈1.0
+    p.update(1);
+    expect(p.lastL).not.toBeCloseTo(p.lastR, 2);
+    // mono mix is the average of the two channels
+    expect(p.update(1)).toBeCloseTo((p.lastL + p.lastR) / 2, 6);
+  });
+
+  it('a mono source reports equal L/R', () => {
+    const p = new BufferPlayer(plateau(100), SR);
+    p.update(1);
+    expect(p.lastL).toBe(p.lastR);
+  });
 });

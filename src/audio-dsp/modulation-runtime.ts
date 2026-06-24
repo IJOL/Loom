@@ -5,8 +5,18 @@
 // wave×depth); the renderer scales each to native units (cents/semitones for
 // pitch, ×gain for ampGain, 0..1 add for the rest). `kind: 'adsr'` mods
 // contribute zero here (per-voice modular ADSR beyond the built-in amp/filter
-// envelopes is deferred). BPM-synced LFO rate is also deferred: `rateHz` (free
-// Hz) is used directly (the host resolves any sync→Hz before sending).
+// envelopes is deferred — see the SCOPE note below). BPM-synced LFOs ARE
+// honoured: the host (WorkletLaneEngine.toModLite) resolves any sync→free Hz
+// via effectiveRateHz before sending, so `rateHz` here is already tempo-correct
+// and re-posted on every BPM change.
+//
+// SCOPE (deferred): user-assigned ADSR→param connections beyond the engine's
+// built-in amp/filter envelopes do nothing on the worklet path. The shared
+// (not per-voice) runtime has no per-note gate to drive an envelope from; wiring
+// that needs a per-voice modulation pass, which is out of scope for this branch.
+// The descriptor engines still advertise default ADSR modulators and the mod
+// panel still lets users add ADSR connections, so those controls are currently
+// inert for non-built-in targets.
 import type { ModTarget } from './types';
 
 export interface ModLite {

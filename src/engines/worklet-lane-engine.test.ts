@@ -173,4 +173,19 @@ describe('toModLite', () => {
     ] })]);
     expect(m.depthByParam).toEqual({ masterTune: 0.3, osc1Detune: -0.5, ampGain: 0.6 });
   });
+
+  it('passes the free rateHz through when not BPM-synced (bpm ignored)', () => {
+    const [m] = toModLite([lfo({ rateHz: 3, syncToBpm: false })], 120);
+    expect(m.rateHz).toBeCloseTo(3, 6);
+  });
+
+  it('resolves a BPM-synced LFO rate from the bpm, not the stale free rateHz', () => {
+    // 1 bar per cycle at 120 BPM = 4 beats/cycle = 2 s/cycle = 0.5 Hz, regardless
+    // of the stale free rateHz (3). At 60 BPM the same sync is half as fast.
+    const synced = lfo({ rateHz: 3, syncToBpm: true, syncBars: 1, syncSubdiv: 'straight' });
+    const [at120] = toModLite([synced], 120);
+    const [at60] = toModLite([synced], 60);
+    expect(at120.rateHz).not.toBeCloseTo(3, 3);   // NOT the free rate
+    expect(at120.rateHz).toBeGreaterThan(at60.rateHz * 1.9);   // bpm-proportional
+  });
 });

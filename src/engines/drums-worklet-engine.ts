@@ -423,6 +423,20 @@ export class DrumsWorkletEngine implements SynthEngine {
     return 0;
   }
 
+  /** Per-voice synth ParamBag snapshot (the worklet bag) — for the offline scene
+   *  recorder, which renders drum hits through a pure DrumVoiceManager (synth mode
+   *  only; sample-mode kits play through the embedded Sampler). */
+  getOfflineSynthBag(voice: DrumVoice): Record<string, number> { return { ...this.synth[voice] }; }
+  /** Per-voice mixer level/pan for the offline render (the live path applies these
+   *  on the per-voice ChannelStrip, which the offline kernel doesn't build). */
+  getOfflineVoiceMix(voice: DrumVoice): { level: number; pan: number; muted: boolean } {
+    const muted = computeVoiceMutes(DRUM_LANES, this.voiceMute, this.voiceSolo)[voice];
+    return { level: this.readMixer(voice, 'level'), pan: this.readMixer(voice, 'pan'), muted };
+  }
+  /** The embedded Sampler (sample-mode kits) — exposed so the offline recorder can
+   *  resolve sample-drum spawns through the same resolveSpawn path. */
+  getEmbeddedSampler(): SamplerWorkletEngine { return this.sampler; }
+
   /** Send one voice's current bag to the worklet renderer. */
   private postVoice(voice: DrumVoice): void {
     this.node?.setVoiceParams(voice, { ...this.synth[voice] });

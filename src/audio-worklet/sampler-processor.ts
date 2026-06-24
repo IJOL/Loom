@@ -5,10 +5,14 @@
 // ?worker&url import in sampler-node.ts so normal TypeScript imports resolve
 // inside the worklet bundle.
 //
-// Two stereo outputs:
-//   outputs[0] = DRY  (each voice equal-power panned)
-//   outputs[1] = SEND (per-pad reverb + delay sends summed; the node fans this
-//                one stereo bus to both FxBus inputs).
+// Three stereo outputs (each voice renders a stereo pair — native L/R preserved,
+// then the pad pan applied — so a stereo sample / song keeps its image):
+//   outputs[0] = DRY     (post-pan L/R)
+//   outputs[1] = REVERB SEND (per-pad reverb send, post-pan L/R)
+//   outputs[2] = DELAY SEND  (per-pad delay send, post-pan L/R)
+// The reverb and delay sends are SEPARATE buses (Send A/B): the node routes
+// output[1]→reverbInput and output[2]→delayInput, so a pad's rev level cannot
+// bleed into the delay bus (or vice versa).
 //
 // CRITICAL: do NOT import sampler-node.ts here — sampler-node imports this file's
 // bundled URL; a reverse import would create a circular bundle dependency. The
@@ -28,10 +32,7 @@ type SamplerMsg =
 
 interface Slot {
   r: SamplerRenderer | AudioClipRenderer;
-  pan: number;        // -1..1, equal-power on the dry output
-  rev: number;        // per-pad reverb send level (sampler only)
-  dly: number;        // per-pad delay send level (sampler only)
-  sends: boolean;     // whether this voice contributes to the send bus
+  sampler: boolean;   // true ⇒ SamplerRenderer (has per-pad FX sends); false ⇒ AudioClipRenderer
 }
 
 class SamplerProcessor extends AudioWorkletProcessor {
@@ -61,7 +62,8 @@ class SamplerProcessor extends AudioWorkletProcessor {
 
   process(_inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
     const dry = outputs[0];
-    const send = outputs[1];
+    const rev = outputs[1];   // reverb send (Send B)
+    const dly = outputs[2];   // delay send (Send A)
     const n = dry[0].length;
     for (let i = 0; i < n; i++) {
       const t = this.frame / sampleRate;
@@ -70,25 +72,28 @@ class SamplerProcessor extends AudioWorkletProcessor {
         const r = kind === 'audio'
           ? new AudioClipRenderer(spawn, this.bank, sampleRate)
           : new SamplerRenderer(spawn, this.bank, sampleRate);
-        this.live.push({ r, pan: spawn.pan, rev: spawn.rev, dly: spawn.dly, sends: kind === 'sampler' });
+        this.live.push({ r, sampler: kind === 'sampler' });
       });
-      let l = 0;
-      let rr = 0;
-      let se = 0;
+      let l = 0, rr = 0;
+      let revL = 0, revR = 0, dlyL = 0, dlyR = 0;
       for (let s = this.live.length - 1; s >= 0; s--) {
         const slot = this.live[s];
-        const mono = slot.r.renderSample(t);
-        // equal-power pan: -1 → hard left, +1 → hard right.
-        const p = (slot.pan + 1) * 0.25 * Math.PI;
-        l += mono * Math.cos(p);
-        rr += mono * Math.sin(p);
-        if (slot.sends && slot.r instanceof SamplerRenderer) se += slot.r.sendRev() + slot.r.sendDly();
+        // Each voice renders its OWN post-pan stereo pair (native stereo image
+        // preserved; pan applied in the renderer). No pan here.
+        const { l: vl, r: vr } = slot.r.renderStereoInto(t);
+        l += vl;
+        rr += vr;
+        // Per-pad reverb/delay sends stay on SEPARATE buses (sampler only).
+        if (slot.sampler && slot.r instanceof SamplerRenderer) {
+          revL += slot.r.sendRevL(); revR += slot.r.sendRevR();
+          dlyL += slot.r.sendDlyL(); dlyR += slot.r.sendDlyR();
+        }
         if (slot.r.done) this.live.splice(s, 1);
       }
       dry[0][i] = l;
       dry[1][i] = rr;
-      send[0][i] = se;
-      send[1][i] = se;
+      rev[0][i] = revL; rev[1][i] = revR;
+      dly[0][i] = dlyL; dly[1][i] = dlyR;
       this.frame++;
     }
     return true;

@@ -61,6 +61,20 @@ describe('AudioClipRenderer', () => {
     expect(r.done).toBe(true);
   });
 
+  it('preserves stereo: a hard-left stereo clip plays left, near-silent right', () => {
+    const n = SR;
+    const l = new Float32Array(n);
+    const r = new Float32Array(n);
+    for (let i = 0; i < n; i++) { l[i] = Math.sin(2 * Math.PI * 220 * i / SR); r[i] = 0; }
+    const bank = new SampleBank();
+    bank.set('st', { channels: [l, r], sampleRate: SR });
+    const v = new AudioClipRenderer(spawn({ sampleId: 'st', gateSec: 0.1 }), bank, SR);
+    let maxL = 0, maxR = 0;
+    for (let i = SR * 0.02; i < SR * 0.08; i++) { const { l: ll, r: rr } = v.renderStereoInto(i / SR); maxL = Math.max(maxL, Math.abs(ll)); maxR = Math.max(maxR, Math.abs(rr)); }
+    expect(maxL).toBeGreaterThan(0.05);
+    expect(maxR).toBeLessThan(maxL * 0.05);   // right channel stays silent → not mono-summed
+  });
+
   it('noteOff cuts a long clip early (the transport-Stop path for the audio channel)', () => {
     const bank = new SampleBank();
     bank.set('s', tone(SR * 4));

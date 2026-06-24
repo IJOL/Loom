@@ -1,5 +1,5 @@
 // AudioWorklet loader + typed node wrapper for the Sampler + Audio-channel
-// processor (2 stereo outputs: dry + fx send).
+// processor (3 stereo outputs: dry + reverb send + delay send).
 //
 // Loading strategy mirrors loom-node.ts / drums-node.ts: Vite bundles
 // sampler-processor.ts (+ its imports) into a separate JS asset via the
@@ -79,8 +79,8 @@ export class SamplerWorkletNode {
   constructor(ctx: BaseAudioContext) {
     this.node = new AudioWorkletNode(ctx, SAMPLER_PROCESSOR_NAME, {
       numberOfInputs: 0,
-      numberOfOutputs: 2,
-      outputChannelCount: [2, 2],   // [0] dry, [1] fx send
+      numberOfOutputs: 3,
+      outputChannelCount: [2, 2, 2],   // [0] dry, [1] reverb send, [2] delay send
     });
   }
 
@@ -108,10 +108,12 @@ export class SamplerWorkletNode {
   /** Dry output (outputs[0]) → lane strip input. */
   connectDry(dest: AudioNode): void { this.node.connect(dest, 0); }
 
-  /** Send output (outputs[1]) → both FxBus inputs (delay + reverb). */
+  /** Reverb send (outputs[1]) → reverb FxBus input; delay send (outputs[2]) →
+   *  delay FxBus input. The two per-pad sends stay on DISTINCT buses (Send A/B)
+   *  so a pad's reverb level never bleeds into the delay (or vice versa). */
   connectSend(delayInput: AudioNode, reverbInput: AudioNode): void {
-    this.node.connect(delayInput, 1);
     this.node.connect(reverbInput, 1);
+    this.node.connect(delayInput, 2);
   }
 
   disconnect(): void { this.node.disconnect(); }

@@ -152,7 +152,10 @@ class SnareRenderer extends OneShot {
     const overall = Math.max(1e-6, expEnv(this.peak, this.t0, t, this.decay));
     const bodyW = (this.toneAmt * expEnv(this.peak, this.t0, t, this.bodyDecay)) / overall;
     const noiseW = (this.snap * expEnv(this.peak, this.t0, t, this.noiseDecay)) / overall;
-    const body = (this.o1.update(this.f1) + this.o2.update(this.f2)) * 0.5 * bodyW;
+    // Legacy playSnare connected osc1 AND osc2 at unity into a single tone gain
+    // (drums.ts: osc1.connect(toneAmp); osc2.connect(toneAmp)), so the body peak
+    // is 2·(vel·tone). No ×0.5 merger gain — summing both at unity matches that.
+    const body = (this.o1.update(this.f1) + this.o2.update(this.f2)) * bodyW;
     this.hp.update(this.noise.update(), this.noiseHz, 0.1);
     const noise = this.hp.hp * noiseW;
     return body + noise;
