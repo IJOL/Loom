@@ -1,9 +1,21 @@
 import { listEngines } from '../engines/registry';
-import type { ParsedMidi } from './midi-parse';
+import type { ParsedMidi, ParsedTrack } from './midi-parse';
 
 export interface GMMatch {
   engineId: string;
   presetName: string;
+  drumkitId?: string;
+}
+
+export const GM_PERCUSSION_MATCH: GMMatch = { engineId: 'sampler', presetName: 'GM Percussion', drumkitId: 'gm-percussion' };
+
+/** True when most of a track's notes are on MIDI channel 10 (0-based 9) — the
+ *  GM percussion channel. Such tracks import onto the GM Percussion sample kit. */
+export function isPercussionTrack(track: ParsedTrack): boolean {
+  const notes = track.notes;
+  if (notes.length === 0) return false;
+  const drum = notes.filter((n) => n.channel === 9).length;
+  return drum / notes.length >= 0.5;
 }
 
 export function findGMMatches(program: number): GMMatch[] {
@@ -77,11 +89,12 @@ function presetForEngine(engineId: string, program: number, trackName: string): 
   return { engineId, presetName: best.name };
 }
 
-// Every selected track — drum-channel or not — gets a per-track preset. The
-// track NAME picks the engine family when it carries an instrument keyword
-// (the GM program then selects the preset within that engine); otherwise we
-// fall back to the pure GM-program lookup across all engines. Channel 9 is not
-// special-cased.
+// Every selected track gets a per-track preset. Channel-10 (0-based 9)
+// percussion tracks are detected FIRST and default to the GM Percussion sample
+// kit (overriding any name hint), so their drum notes actually sound. For every
+// other track the NAME picks the engine family when it carries an instrument
+// keyword (the GM program then selects the preset within that engine); otherwise
+// we fall back to the pure GM-program lookup across all engines.
 export function suggestDefaultMapping(
   parsed: ParsedMidi,
   selectedTrackIndices: number[],
@@ -90,6 +103,7 @@ export function suggestDefaultMapping(
   for (const idx of selectedTrackIndices) {
     const tr = parsed.tracks.find((t) => t.index === idx);
     if (!tr) continue;
+    if (isPercussionTrack(tr)) { presetPerTrack[idx] = { ...GM_PERCUSSION_MATCH }; continue; }
     const prog = tr.program < 0 ? 0 : tr.program;
     const hint = engineHintFromName(tr.name);
     presetPerTrack[idx] = hint ? presetForEngine(hint, prog, tr.name) : firstMatchForGM(prog);

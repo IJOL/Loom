@@ -8,8 +8,28 @@ vi.mock('../engines/registry', () => ({
   ],
 }));
 
-import { findGMMatches, firstMatchForGM, pickPresetForGM, suggestDefaultMapping } from './gm-lookup';
+import { findGMMatches, firstMatchForGM, pickPresetForGM, suggestDefaultMapping, isPercussionTrack } from './gm-lookup';
 import type { ParsedMidi } from './midi-parse';
+
+const note = (midi: number, channel: number) => ({ startTick: 0, duration: 1, midi, velocity: 80, channel });
+const pTrack = (index: number, name: string, notes: any[]) => ({ index, name, program: 0, notes });
+
+describe('isPercussionTrack', () => {
+  it('true when the majority of notes are on channel 9', () => {
+    expect(isPercussionTrack(pTrack(0, 'Drums', [note(36, 9), note(38, 9), note(60, 9)]))).toBe(true);
+  });
+  it('false for a melodic track', () => {
+    expect(isPercussionTrack(pTrack(1, 'Bass', [note(40, 0), note(43, 0)]))).toBe(false);
+  });
+});
+
+describe('suggestDefaultMapping percussion default', () => {
+  it('assigns the GM Percussion drumkit to a channel-9 track', () => {
+    const parsed = { division: 96, bpm: 120, tracks: [pTrack(0, 'Drums', [note(36, 9), note(42, 9)])] } as any;
+    const { presetPerTrack } = suggestDefaultMapping(parsed, [0]);
+    expect(presetPerTrack[0]).toMatchObject({ engineId: 'sampler', presetName: 'GM Percussion', drumkitId: 'gm-percussion' });
+  });
+});
 
 describe('findGMMatches', () => {
   it('returns every preset across engines tagged with the program', () => {
@@ -67,18 +87,18 @@ describe('suggestDefaultMapping', () => {
     expect(result.presetPerTrack[1]).toEqual({ engineId: 'subtractive', presetName: 'S1' });
   });
 
-  it('gives a drum-channel track a per-track preset, same path as any track', () => {
-    // No special-casing of channel 9: the drum track goes through the same
-    // firstMatchForGM lookup. Program 25 maps to a drums kit through ordinary
-    // GM matching — not through drum-specific routing.
+  it('routes a channel-9 drum track to the GM Percussion sample kit', () => {
+    // Channel 10 (0-based 9) is the GM percussion channel: such a track now
+    // defaults to the GM Percussion sampler drumkit so its drum notes sound,
+    // overriding any name hint / program lookup.
     const result = suggestDefaultMapping(parsed, [2]);
-    expect(result.presetPerTrack[2]).toEqual({ engineId: 'drums-machine', presetName: 'KIT 808' });
+    expect(result.presetPerTrack[2]).toEqual({ engineId: 'sampler', presetName: 'GM Percussion', drumkitId: 'gm-percussion' });
   });
 
   it('maps every selected track, drum-channel included', () => {
     const result = suggestDefaultMapping(parsed, [0, 1, 2]);
     expect(Object.keys(result.presetPerTrack)).toEqual(['0', '1', '2']);
-    expect(result.presetPerTrack[2]).toEqual({ engineId: 'drums-machine', presetName: 'KIT 808' });
+    expect(result.presetPerTrack[2]).toEqual({ engineId: 'sampler', presetName: 'GM Percussion', drumkitId: 'gm-percussion' });
   });
 
   it('ignores indices not present in parsed.tracks', () => {
