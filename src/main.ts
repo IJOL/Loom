@@ -80,7 +80,6 @@ import {
   startAutomationTick, resetAutomationPosition, getAutoAbsSubIdx,
   type AutomationTickDeps,
 } from './automation/automation-tick';
-import { getActiveModVoice } from './modulation/active-mods';
 import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from './core/lane-ids';
 // ── Live MIDI control (src/control) ─────────────────────────────────────────
 import { createActiveLaneStore } from './control/active-lane';
@@ -990,8 +989,6 @@ const automationTickDeps: AutomationTickDeps = {
   automationRegistry,
   getLaneStates: () => sessionHost.laneStates,
   ctx,
-  getEngineForLane: (laneId) => laneResources.get(laneId)?.engine ?? undefined,
-  getActiveModVoice: (laneId, modId) => getActiveModVoice(laneId, modId),
 };
 
 startAutomationTick(automationTickDeps);
