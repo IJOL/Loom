@@ -98,18 +98,16 @@ A failed Sampler overhaul (shipped the OLD UI instead of the approved mockup; a 
 
 A real session burned ~20 turns fumbling this. Follow it verbatim.
 
-- **Server:** the build under test is whatever `npm run dev` serves at <http://localhost:5173> (a worktree has its own — run `npm run dev` inside the worktree). The Playwright MCP server's cwd is the **MAIN checkout**, so its `.playwright-mcp/` snapshot files land in `<repo-root>/.playwright-mcp/`, NOT the worktree — `Grep` them there.
-- **Snapshots are huge** (every lane has an engine/preset dropdown → 2000+ lines). NEVER read a full `browser_snapshot`; save it to a file + `Grep`, or query the DOM with `browser_evaluate`.
-- **Import a MIDI:**
+- **Server:** the build under test is whatever `npm run dev` serves at <http://localhost:5173> (a worktree has its own — run `npm run dev` inside the worktree). The Playwright MCP server's cwd is the **MAIN checkout**: default `browser_snapshot` files land in `<repo-root>/.playwright-mcp/`, but a snapshot taken with a custom `filename` lands in `<repo-root>/` itself — `Glob`/`Grep` to find it.
+- **Snapshots are huge** (every lane has an engine/preset dropdown → 2000+ lines, exceeds the token cap). NEVER read a full `browser_snapshot`; save to a file + `Grep` for the ref you need, or query the DOM with `browser_evaluate`. Toolbar refs (e7 ▶, e8 ⏹, the ⬇ MIDI group) are stable across reloads; grid refs are not.
+- **Import a MIDI (two steps — the toolbar button is NOT the commit):**
   1. Toolbar **"⬇ MIDI"** → reveals a **"Choose File"** button. Click it → file-chooser modal → `browser_file_upload` with the absolute `.mid` path.
-  2. That opens a **modal `<dialog id="app-dialog">`** (per-track preview: checkbox + preset dropdown + audition ▶ per track). Its real action buttons are at the bottom: **Cancel / Sustituir (replace) / Añadir (add)**. The toolbar "Import MIDI" button only OPENS the dialog — the commit is Sustituir/Añadir *inside* it.
-  3. The `<dialog>` is **modal and intercepts pointer events**, so the transport ▶ is unclickable until you dismiss it. Click **Sustituir** (replace session) or **Añadir**.
-- **Play a SCENE:**
-  1. Click the **"Session"** view tab — the scene list lives there.
-  2. In the **"Scenes"** panel each scene row has a launch ▶. ⚠️ **Right next to it are ~11 per-clip ▶ buttons (one per clip in the row); clicking one plays only THAT clip.** To play the whole scene click the **scene's own launch ▶**, not a clip's. (This exact mix-up cost the turns.)
-  - Or the global transport **▶ / ⏹** (top bar) starts/stops the whole session; "Stop all" silences everything.
-- **Audio gating:** only a TRUSTED click (`browser_click`) resumes the AudioContext. A synthetic `.click()` via `browser_evaluate` does NOT — fine for dismissing the import dialog, NOT for the play button.
-- **No `window.__loom` / audio global** is exposed → no easy master-analyser tap for objective dropout measurement (would need a `page.addInitScript` patch via `browser_run_code_unsafe` *before* boot). Usually unnecessary — confirm playback via console-error count + the transport bar.beat advancing.
+  2. The toolbar then shows a per-track preview + an **"Import MIDI"** button. Click it → opens a **modal `<dialog id="app-dialog">`** whose bottom action buttons are **Cancel / Sustituir (replace) / Añadir (add)**. Click **Sustituir** (or Añadir) — THAT is the commit. The `<dialog>` is modal and intercepts pointer events, so nothing else (incl. ▶) is clickable until you resolve it.
+- **Play a SCENE — ALWAYS use the scene launch, not the global transport (user's standing preference):**
+  1. Click the **"Session"** view tab.
+  2. A scene is a ROW of per-lane clip cells. That row has ~N **per-clip ▶** buttons (one per lane) — do NOT click those, each launches a single clip. The **scene launch** is the row's own **named button `▶ <SceneName>`** at the end of the row (a MIDI import creates a scene named **"MIDI Import"** → click **`▶ MIDI Import`**). That launches ALL clips in the scene = the whole arrangement. (Clicking a clip ▶ instead of the named scene button is the exact mistake that cost ~20 turns, twice.)
+- **Audio gating:** only a TRUSTED click (`browser_click`) resumes the AudioContext + counts as the play gesture. A synthetic `.click()` via `browser_evaluate` does NOT — it's fine for dismissing the import dialog (Sustituir), NOT for the scene/transport play.
+- **Objective audio measurement (master tap):** no `window.__loom`/audio global exists, so to measure peak/RMS/cortes: `browser_run_code_unsafe` → `page.addInitScript(...)` BEFORE boot, then reload. The init script wraps `window.AudioContext` so each instance does `createAnalyser()`, pre-connects it to `ctx.destination`, and monkeypatches `AudioNode.prototype.connect` to route anything connecting to `destination` THROUGH the analyser; stash analyser→`window.__an`, ctx→`window.__ctx`, and run a rAF max-peak tracker into `window.__peak`. Then per frame `getFloatTimeDomainData` → RMS+peak; **near-silent frames mid-playback = cortes; peak ≥ 1.0 = clipping.** VERIFIED 2026-06-24: dense 16-channel "Children" through the worklet scene = **peak 0.92 (no clip), RMS ~0.23 steady, 0 near-silent frames (no cortes)**.
 
 ## Dense-MIDI "cortes"/dropouts — already diagnosed, do NOT re-investigate
 
