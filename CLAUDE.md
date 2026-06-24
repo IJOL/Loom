@@ -113,6 +113,15 @@ A real session burned ~20 turns fumbling this. Follow it verbatim.
 
 Dropouts under dense polyphony are the **node-per-note architectural ceiling** (per-note Web Audio node churn → GC starves the main-thread scheduler), diagnosed at length (memory `project_voice_lifecycle_graph_leak`). The 9 perf fixes on `main` reduced but could not eliminate them. **The cure is the AudioWorklet engine rewrite** (`worktree-audioworklet-foundation`), proven to remove them (dense "Children" MIDI ran clean where node-per-note couldn't). Cortes on the OLD main/Pages build are expected; test the worklet build to confirm — don't re-derive the diagnosis.
 
+> **Voice cap REMOVED (commit `96b8fea`):** the spec's "global polyphony cap" was reversed — a finite per-lane cap evicted still-sounding voices (`VoiceManager.spawn` did `slots.shift()` before the voice's release rendered → a step discontinuity → audible **clicks** in dense parts). Now: poly lanes are UNCAPPED, mono lanes (`maxVoices === 1`) still steal their previous voice, global cap = `Infinity`. **Do NOT re-add a finite voice cap — it clicks.** (Details in memory `project_audioworklet_engine_rewrite`.)
+
+## Stems / audio separation — launch + test the worklet Sampler/Audio path
+
+- **Launch the stem-service** (the local Demucs backend the Stems button calls). The venv is gitignored, so it lives only in the MAIN checkout — run from there: `cd tools/stem-service && ./.venv/Scripts/python.exe -m uvicorn app:app --port 8765`. Health: `curl http://127.0.0.1:8765/health` → `{"ok":true,"model":"htdemucs.yaml"}`. CORS accepts any localhost port (the worktree dev on 5173 reaches it). The uvicorn/`print` log is block-buffered — don't trust it for activity; verify via the browser/network.
+- **Stems UI trigger = the "☰" button `#stems-open`** in the transport bar (title "Separate a song into stems"), NOT "⊙ Capture" (that's scene-capture). It opens `#stems-modal`: file input `#stems-file`, "Replace the session" `#stems-replace` (default on), "Separate" `#stems-run`.
+- **Drive via Playwright:** click `#stems-open` → click `#stems-file` → `browser_file_upload`. ⚠️ The audio file MUST be under the repo root — Playwright's allowed roots are `<repo>` and `<repo>/.playwright-mcp`, so a `~/Downloads` file is rejected: copy it into `.playwright-mcp/` first, upload, then delete it. → click `#stems-run` → wait ~15-30 s (Demucs on GPU; first run downloads the model) → `#stems-status` reads "Done", the modal closes, and 4 audio lanes load as a scene named **"Stems"** → Session → `▶ Stems` to play.
+- VERIFIED 2026-06-24: a Solid Sessions mp3 → 4 stems → worklet Sampler/Audio path = audible, peak 0.35, **0 clipping, 0 dropouts, 0 console errors**.
+
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
