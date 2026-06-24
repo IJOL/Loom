@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { extractChannels, samplerLoadMessage, samplerSpawnMessage } from './sampler-node';
+import { extractChannels, samplerLoadMessage, samplerSpawnMessage, samplerSilenceMessage } from './sampler-node';
 import type { SampleSpawn } from '../audio-dsp/sample/types';
 
 const SR = 48000;
@@ -60,6 +60,15 @@ describe('sampler node message shaping', () => {
     expect((posted[0].msg as { spawn: SampleSpawn }).spawn.sampleId).toBe('s');
     const [audioMsg] = samplerSpawnMessage('audio', spawn());
     expect(audioMsg).toMatchObject({ type: 'spawn', kind: 'audio' });
+  });
+
+  it('silence posts a plain stop-all message (no transferables)', () => {
+    const posted: { msg: unknown; transfer?: Transferable[] }[] = [];
+    const port = { postMessage: (m: unknown, t?: Transferable[]) => posted.push({ msg: m, transfer: t }) };
+    const [m] = samplerSilenceMessage();
+    port.postMessage(m);
+    expect(posted[0].msg).toMatchObject({ type: 'silence' });
+    expect(posted[0].transfer).toBeUndefined();
   });
 });
 

@@ -91,7 +91,12 @@ class WorkletVoice implements Voice {
       accent, slide: o.slide ?? false,
     });
   }
-  release(_t: number): void { /* gate handled by durationSec; live note-off deferred to a later task */ }
+  release(_t: number): void {
+    // Transport Stop / scene-launch boundary: the live-voice registry calls this
+    // to silence the lane. Steal every active worklet voice so a held/long note
+    // stops instead of ringing out its full gate.
+    this.node.silenceAll();
+  }
   connect(_d: AudioNode): void { /* the lane's worklet node is already connected by the engine */ }
   getAudioParams(): Map<string, AudioParam> { return new Map(); }
   dispose(): void { /* no per-note nodes to tear down */ }

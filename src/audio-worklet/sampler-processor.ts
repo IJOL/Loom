@@ -23,7 +23,8 @@ import type { SampleSpawn } from '../audio-dsp/sample/types';
 
 type SamplerMsg =
   | { type: 'loadSample'; sampleId: string; channels: Float32Array[]; sampleRate: number }
-  | { type: 'spawn'; kind: 'sampler' | 'audio'; spawn: SampleSpawn };
+  | { type: 'spawn'; kind: 'sampler' | 'audio'; spawn: SampleSpawn }
+  | { type: 'silence' };
 
 interface Slot {
   r: SamplerRenderer | AudioClipRenderer;
@@ -48,6 +49,12 @@ class SamplerProcessor extends AudioWorkletProcessor {
         this.bank.set(m.sampleId, { channels: m.channels, sampleRate: m.sampleRate });
       } else if (m.type === 'spawn') {
         this.queue.push(Math.floor(m.spawn.beginSec * sampleRate), { kind: m.kind, spawn: m.spawn });
+      } else if (m.type === 'silence') {
+        // Transport Stop: note-off every live voice now (a long loop/song clip
+        // would otherwise play its whole buffer past the Stop). Each renderer's
+        // noteOff shortens its gate so it fades out + flips `done` next render.
+        const t = this.frame / sampleRate;
+        for (const slot of this.live) slot.r.noteOff(t);
       }
     };
   }

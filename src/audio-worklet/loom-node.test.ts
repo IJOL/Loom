@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { defaultSubParams } from '../audio-dsp/default-params';
 import type { MainToWorklet } from '../audio-dsp/messages';
+import { LoomWorkletNode } from './loom-node';
 
 // The wrapper's posting logic is pure; test it by capturing posted messages.
 // (We don't instantiate a real AudioWorkletNode — that needs a worklet env.)
@@ -21,6 +22,19 @@ describe('loom-node message shaping', () => {
     fakePort.postMessage({ type: 'config', maxVoices: 12 });
     fakePort.postMessage({ type: 'steal', count: 3 });
     expect(posted.map((m) => m.type)).toEqual(['spawn', 'params', 'config', 'steal']);
+  });
+
+  it('silenceAll posts a steal covering every active voice (the Stop path)', () => {
+    // The global AudioWorkletNode stub (test/setup.ts) lets the node construct;
+    // capture what silenceAll posts to the worklet.
+    const node = new LoomWorkletNode({} as BaseAudioContext, 'subtractive');
+    const posted: MainToWorklet[] = [];
+    node.node.port.postMessage = (m: MainToWorklet) => posted.push(m);
+    node.silenceAll();
+    expect(posted).toHaveLength(1);
+    expect(posted[0].type).toBe('steal');
+    // A steal larger than any plausible per-lane voice count releases them all.
+    expect((posted[0] as { count: number }).count).toBeGreaterThan(64);
   });
 
   // Regression guard for a bug that already shipped once: importing

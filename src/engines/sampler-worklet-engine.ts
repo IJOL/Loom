@@ -71,7 +71,7 @@ class SamplerWorkletVoice implements Voice {
   trigger(midi: number, time: number, opts: VoiceTriggerOptions): void {
     this.engine.spawnFor(midi, time, opts);
   }
-  release(_time: number): void { /* gate carried in the spawn; live note-off deferred */ }
+  release(_time: number): void { this.engine.silence(); }
   connect(_dest: AudioNode): void { /* worklet node is connected by the engine */ }
   getAudioParams(): Map<string, AudioParam> { return new Map(); }
   dispose(): void { /* no per-note nodes */ }
@@ -355,6 +355,11 @@ export class SamplerWorkletEngine implements SynthEngine {
     };
     node.spawn('sampler', spawn);
   }
+
+  /** Transport Stop: silence every live voice (a long loop/song clip would
+   *  otherwise play to the end). The registry's Stop seam routes here via the
+   *  voice's release. */
+  silence(): void { this.node?.silenceAll(); }
 
   buildSequencer(_c: HTMLElement, _n: number): EngineSequencer { return new SamplerSequencer(); }
 

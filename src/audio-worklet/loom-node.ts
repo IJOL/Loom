@@ -50,6 +50,11 @@ export class LoomWorkletNode {
   setMaxVoices(n: number): void { this.post({ type: 'config', maxVoices: n }); }
   setMods(mods: ModLite[]): void { this.post({ type: 'mods', mods }); }
   steal(count: number): void { this.post({ type: 'steal', count }); }
+  /** Release EVERY active voice (transport Stop / STOP ALL / scene-launch
+   *  boundary). steal noteOffs the oldest `count` voices, so a count past the
+   *  per-lane cap (≤64) releases them all — their release tails ring out, same
+   *  as the legacy voice.release() the live-voice registry used to call. */
+  silenceAll(): void { this.steal(1024); }
   onVoiceCount(cb: (active: number) => void): void { this.countCb = cb; }
   connect(dest: AudioNode): void { this.node.connect(dest); }
   disconnect(): void { this.node.disconnect(); }

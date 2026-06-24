@@ -11,6 +11,7 @@ const spawns: NoteSpec[] = [];
 const params: ParamBag[] = [];
 const maxVoicesCalls: number[] = [];
 const modsCalls: ModLite[][] = [];
+let silenceAllCalls = 0;
 let lastEngineId: string | undefined;
 vi.mock('../audio-worklet/loom-node', () => ({
   loadLoomWorklet: vi.fn().mockResolvedValue(undefined),
@@ -20,7 +21,7 @@ vi.mock('../audio-worklet/loom-node', () => ({
     setParams(p: ParamBag) { params.push(p); }
     setMaxVoices(n: number) { maxVoicesCalls.push(n); }
     setMods(m: ModLite[]) { modsCalls.push(m); }
-    steal() {} onVoiceCount() {} connect() {} disconnect() {}
+    steal() {} silenceAll() { silenceAllCalls++; } onVoiceCount() {} connect() {} disconnect() {}
   },
 }));
 
@@ -79,6 +80,14 @@ describe('WorkletLaneEngine', () => {
   it('getAudioParams is empty (per-note params; shared modulation runs in the worklet)', () => {
     const v = makeEngine().createVoice({} as AudioContext, out());
     expect(v.getAudioParams().size).toBe(0);
+  });
+
+  it('release() silences the worklet so a held note stops on transport Stop', () => {
+    silenceAllCalls = 0;
+    const v = makeEngine().createVoice({} as AudioContext, out());
+    v.trigger(60, 0, { gateDuration: 10 });   // a long held note
+    v.release(0.5);
+    expect(silenceAllCalls).toBe(1);
   });
 
   it('posts processorOptions.engineId so the worklet builds the right renderer', () => {

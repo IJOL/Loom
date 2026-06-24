@@ -60,4 +60,17 @@ describe('AudioClipRenderer', () => {
     expect(r.renderSample(0)).toBe(0);
     expect(r.done).toBe(true);
   });
+
+  it('noteOff cuts a long clip early (the transport-Stop path for the audio channel)', () => {
+    const bank = new SampleBank();
+    bank.set('s', tone(SR * 4));
+    // A 4 s clip — without a cut it would keep sounding well past 1 s.
+    const r = new AudioClipRenderer(spawn({ gateSec: 4 }), bank, SR);
+    for (let i = 0; i < SR * 0.5; i++) r.renderSample(i / SR);   // play 0.5 s
+    r.noteOff(0.5);                                              // Stop pressed
+    // A short way past the cut (beyond the ~5 ms fade) it is silent + done.
+    r.renderSample(0.6);
+    expect(r.done).toBe(true);
+    expect(r.renderSample(0.7)).toBe(0);
+  });
 });

@@ -9,6 +9,7 @@ import type { SampleSpawn } from '../audio-dsp/sample/types';
 
 const loaded: string[] = [];
 const spawns: Array<{ kind: 'sampler' | 'audio'; spawn: SampleSpawn }> = [];
+let silenceAllCalls = 0;
 
 vi.mock('../audio-worklet/sampler-node', () => ({
   loadSamplerWorklet: vi.fn().mockResolvedValue(undefined),
@@ -17,6 +18,7 @@ vi.mock('../audio-worklet/sampler-node', () => ({
     loadSample(id: string) { this.sent.add(id); loaded.push(id); }
     hasSample(id: string) { return this.sent.has(id); }
     spawn(kind: 'sampler' | 'audio', spawn: SampleSpawn) { spawns.push({ kind, spawn }); }
+    silenceAll() { silenceAllCalls++; }
     connectDry() {}
     connectSend() {}
     disconnect() {}
@@ -42,7 +44,14 @@ const out = () => ({ connect() {} }) as unknown as AudioNode;
 const ctx = {} as unknown as AudioContext;
 
 describe('SamplerWorkletEngine', () => {
-  beforeEach(() => { loaded.length = 0; spawns.length = 0; });
+  beforeEach(() => { loaded.length = 0; spawns.length = 0; silenceAllCalls = 0; });
+
+  it('release() silences the worklet so a long loop/song clip stops on transport Stop', () => {
+    const eng = new SamplerWorkletEngine();
+    const v = eng.createVoice(ctx, out());
+    v.release(1.0);
+    expect(silenceAllCalls).toBe(1);
+  });
 
   it('pushes a decoded keymap buffer to the worklet bank on createVoice', () => {
     sampleCache.put('swe-kick', fakeBuffer(0.5));

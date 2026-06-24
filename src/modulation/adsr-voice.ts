@@ -38,15 +38,6 @@ export class ADSRVoice implements ModulatorVoice {
 
   release(_time: number): void { /* envelope finishes via scheduled ramps */ }
 
-  /** Upper bound on the envelope length after a trigger (attack+decay+release).
-   *  The owning voice adds the gate separately, so gate + tailSec() always
-   *  covers the real end (releaseAt + releaseSec, releaseAt = max(a+d, gate)).
-   *  Lets the voice schedule per-note cleanup without early-cutting the tail. */
-  tailSec(): number {
-    const { attackSec = 0.01, decaySec = 0.1, releaseSec = 0.3 } = this.state;
-    return attackSec + decaySec + releaseSec;
-  }
-
   currentValue(): number {
     const t = this.ctx.currentTime - this.triggeredAt;
     return computeAdsrAt(t, this.state, this.gateDur);

@@ -58,13 +58,6 @@ export interface ModulatorVoice {
   release(time: number): void;
   dispose(): void;
   currentValue(): number;   // for UI only; not for audio path
-  /** Optional: upper bound (seconds) on how long this modulator keeps running
-   *  AFTER the gate ends — i.e. its release tail. A polyhost voice uses it to
-   *  schedule disposal of its one-shot per-voice modulators once the note is
-   *  fully done, so free-running playback doesn't accumulate live nodes.
-   *  Omitted ⇒ treated as 0 (free-running modulators like the shared LFO must
-   *  NOT implement this; they're owned by the engine, not the note). */
-  tailSec?(): number;
 }
 
 export interface ModulationHost {

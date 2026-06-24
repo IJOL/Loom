@@ -39,7 +39,7 @@ class AudioWorkletVoice implements Voice {
     if (!opts.sample) return; // audio engine only plays clip samples
     this.engine.spawnClip(time, opts);
   }
-  release(_time: number): void { /* gate carried in the spawn */ }
+  release(_time: number): void { this.engine.silence(); }
   connect(_dest: AudioNode): void { /* worklet node connected by the engine */ }
   getAudioParams(): Map<string, AudioParam> { return new Map(); }
   dispose(): void { /* no per-note nodes */ }
@@ -104,6 +104,10 @@ export class AudioWorkletEngine implements SynthEngine {
       resolved.bufferId, time, opts.gateDuration, resolved.rate, resolved.offset, resolved.gain,
     ));
   }
+
+  /** Transport Stop: silence the whole-loop clip immediately (the registry's
+   *  Stop seam routes here via the voice's release). */
+  silence(): void { this.node?.silenceAll(); }
 
   buildSequencer(_c: HTMLElement, _n: number): EngineSequencer { return new AudioSequencer(); }
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
