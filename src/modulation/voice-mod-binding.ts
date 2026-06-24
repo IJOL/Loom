@@ -331,11 +331,3 @@ export function _getLaneBindingForTesting(laneId: string): { binder: ConnectionB
   // The latest voice's binder — what the historic single-slot tests probed.
   return { binder: lb.voiceBindings[lb.voiceBindings.length - 1].binder };
 }
-
-/** Test-only inspector. Returns the engine-wide (shared-scope) binder for the
- *  lane — where shared LFO→shared-bus connections live. */
-export function _getEngineBindingForTesting(laneId: string): { binder: ConnectionBinder } | undefined {
-  const lb = laneBindings.get(laneId);
-  if (!lb || !lb.engineBinding) return undefined;
-  return { binder: lb.engineBinding.binder };
-}
