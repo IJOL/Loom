@@ -27,3 +27,22 @@ export const VOICE_MIDI: Record<DrumVoice, number> = {
   tom: 45,
   ride: 51,
 };
+
+// Short English labels for the GM percussion map (channel 10), notes 27..87.
+// Used by the drum grid to label sample-drumkit rows (sampler pads) by their
+// percussion name instead of a bare note name. Kept terse to fit the 54px label column.
+export const GM_PERCUSSION_NAMES: Record<number, string> = {
+  27: 'High Q', 28: 'Slap', 29: 'Scratch+', 30: 'Scratch-', 31: 'Sticks',
+  32: 'Sq Click', 33: 'Metro', 34: 'Metro Bell',
+  35: 'Kick A', 36: 'Kick', 37: 'Side Stk', 38: 'Snare', 39: 'Clap', 40: 'Snare E',
+  41: 'Lo Floor', 42: 'CH', 43: 'Hi Floor', 44: 'Pedal HH', 45: 'Lo Tom', 46: 'OH',
+  47: 'LoMid Tom', 48: 'HiMid Tom', 49: 'Crash 1', 50: 'Hi Tom', 51: 'Ride 1',
+  52: 'China', 53: 'Ride Bell', 54: 'Tamb', 55: 'Splash', 56: 'Cowbell',
+  57: 'Crash 2', 58: 'Vibrslap', 59: 'Ride 2',
+  60: 'Hi Bongo', 61: 'Lo Bongo', 62: 'Mute Cga', 63: 'Open Cga', 64: 'Lo Conga',
+  65: 'Hi Timb', 66: 'Lo Timb', 67: 'Hi Agogo', 68: 'Lo Agogo', 69: 'Cabasa', 70: 'Maracas',
+  71: 'S Whistle', 72: 'L Whistle', 73: 'S Guiro', 74: 'L Guiro', 75: 'Claves',
+  76: 'Hi Wood', 77: 'Lo Wood', 78: 'Mute Cuica', 79: 'Open Cuica',
+  80: 'Mute Tri', 81: 'Open Tri', 82: 'Shaker', 83: 'Jingle', 84: 'Belltree',
+  85: 'Castanet', 86: 'Mute Surdo', 87: 'Open Surdo',
+};

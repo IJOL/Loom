@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { GM_DRUM_MAP, VOICE_MIDI } from './drum-gm-map';
+import { GM_DRUM_MAP, VOICE_MIDI, GM_PERCUSSION_NAMES } from './drum-gm-map';
 import { DRUM_LANES } from '../core/drums';
 
 describe('GM_DRUM_MAP / VOICE_MIDI', () => {
@@ -28,5 +28,18 @@ describe('GM_DRUM_MAP / VOICE_MIDI', () => {
   it('returns undefined for unmapped midis (so the engine voice can silently drop them)', () => {
     expect(GM_DRUM_MAP[0]).toBeUndefined();
     expect(GM_DRUM_MAP[127]).toBeUndefined();
+  });
+});
+
+describe('GM_PERCUSSION_NAMES', () => {
+  it('labels the tropical/uncovered notes', () => {
+    expect(GM_PERCUSSION_NAMES[54]).toBe('Tamb');
+    expect(GM_PERCUSSION_NAMES[69]).toBe('Cabasa');
+    expect(GM_PERCUSSION_NAMES[60]).toBe('Hi Bongo');
+    expect(GM_PERCUSSION_NAMES[64]).toBe('Lo Conga');
+    expect(GM_PERCUSSION_NAMES[36]).toBe('Kick');
+  });
+  it('covers the full standard GM range 35..81', () => {
+    for (let n = 35; n <= 81; n++) expect(GM_PERCUSSION_NAMES[n], `note ${n}`).toBeTruthy();
   });
 });
