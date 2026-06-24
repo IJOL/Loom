@@ -35,6 +35,7 @@ import { fetchDemoSession } from './demo/demo-loader';
 import { wireDemoPicker } from './demo/demo-picker';
 import { wireMidiImportUI } from './midi/midi-import-ui';
 import { launchScene as launchSceneRuntime, stopAll as stopAllLanes } from './session/session-runtime';
+import { reloadDrumkit } from './session/session-host-presets';
 import { applyPresetToEngine } from './presets/preset-apply';
 import { wireSaveManager, bootRecoveryLoad } from './save/save-wiring';
 import { createHistory } from './core/history';
@@ -967,6 +968,19 @@ function launchSceneById(sceneId: string): void {
     if (isNew && lane.enginePresetName) {
       const inst = getLaneEngineInstance(lane.id);
       if (inst) applyPresetToEngine(inst, lane.enginePresetName);
+    }
+    if (isNew) {
+      const kitId = lane.engineState?.sampler?.drumkitId;
+      if (kitId) {
+        const inst = getLaneEngineInstance(lane.id);
+        if (inst && 'setKeymap' in inst) {
+          // Fire-and-forget (live path): reloadDrumkit fetches+decodes the kit,
+          // calls inst.setKeymap() (→ pushes buffers to the worklet via loadSample),
+          // and mirrors the keymap into engineState.sampler so the drum grid shows
+          // the pads. Audio is silent for the brief decode, then plays.
+          void reloadDrumkit(sessionHost, lane.id, kitId, inst as Parameters<typeof reloadDrumkit>[3]);
+        }
+      }
     }
   }
   launchSceneRuntime(sessionHost.laneStates, sessionHost.state, scene, idx, ctx.currentTime, seq.bpm);
