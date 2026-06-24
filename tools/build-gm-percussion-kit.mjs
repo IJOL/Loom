@@ -1,7 +1,7 @@
 // tools/build-gm-percussion-kit.mjs
 // Builds the "GM Percussion" sample drumkit from VCSL (github:sgossner/VCSL,
 // CC0). Maps each GM percussion note (35..87 + a few GM2 extras) to one VCSL
-// sample, downloads it into public/drumkits/gm-percussion/<note>.wav, and writes
+// sample, downloads it and transcodes to public/drumkits/gm-percussion/<note>.ogg (ffmpeg), and writes
 // the manifest + index entry + drum-kits preset. Pure data output; re-runnable.
 //
 //   node tools/build-gm-percussion-kit.mjs            # download + write
@@ -9,7 +9,8 @@
 //   node tools/build-gm-percussion-kit.mjs --list KEY # print a VCSL key's files
 //
 // Source: https://github.com/sgossner/VCSL (CC0). Catalog vendored at tools/vcsl.json.
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, unlink } from 'node:fs/promises';
+import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -115,10 +116,10 @@ const missing = [];
 for (const pad of PADS) {
   const src = pickFile(catalog, pad);
   if (!src) { missing.push(pad); continue; }
-  // preserve the source extension (most VCSL files are .wav, a few are .mp3) so
-  // we never write mp3 bytes into a .wav-named file.
-  const ext = (src.split('.').pop() || 'wav').toLowerCase();
-  resolved.push({ ...pad, src, file: `${KIT_ID}/${pad.note}.${ext}` });
+  // Track the source extension (most VCSL files are .wav, a few are .mp3) for the
+  // temp download; the committed asset is always transcoded to .ogg (see below).
+  const srcExt = (src.split('.').pop() || 'wav').toLowerCase();
+  resolved.push({ ...pad, src, srcExt, file: `${KIT_ID}/${pad.note}.ogg` });
 }
 
 console.log(`Pads: ${PADS.length} | resolved: ${resolved.length} | missing key: ${missing.length}`);
@@ -132,14 +133,20 @@ if (missing.length) { console.error('Refusing to build with missing keys — fix
 const destDir = path.join(PUB, KIT_ID);
 await mkdir(destDir, { recursive: true });
 let bytes = 0; const failures = [];
-await pool(resolved, 12, async (r) => {
+// Download each VCSL file to a temp, then transcode to OGG/Vorbis (q5 ≈ ~160kbps
+// VBR). This keeps the committed kit ~3MB instead of ~34MB of 24-bit VCSL wav;
+// Vorbis has no encoder delay, so drum transients stay tight. Requires ffmpeg on PATH.
+await pool(resolved, 8, async (r) => {
   const url = BASE + r.src; // already %20-encoded
+  const tmp = path.join(PUB, `${KIT_ID}/.tmp-${r.note}.${r.srcExt}`);
+  const out = path.join(PUB, r.file);
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const buf = Buffer.from(await res.arrayBuffer());
-    await writeFile(path.join(PUB, r.file), buf);
-    bytes += buf.length;
+    await writeFile(tmp, Buffer.from(await res.arrayBuffer()));
+    execSync(`ffmpeg -y -loglevel error -i "${tmp}" -c:a libvorbis -q:a 5 "${out}"`);
+    await unlink(tmp);
+    bytes += (await readFile(out)).length;
   } catch (e) { r.failed = true; failures.push(`${String(e)}  ${url}`); }
 });
 

@@ -5,278 +5,278 @@
     {
       "voice": "kickA",
       "note": 35,
-      "file": "gm-percussion/35.wav"
+      "file": "gm-percussion/35.ogg"
     },
     {
       "voice": "kick",
       "note": 36,
-      "file": "gm-percussion/36.wav"
+      "file": "gm-percussion/36.ogg"
     },
     {
       "voice": "sideStick",
       "note": 37,
-      "file": "gm-percussion/37.wav"
+      "file": "gm-percussion/37.ogg"
     },
     {
       "voice": "snare",
       "note": 38,
-      "file": "gm-percussion/38.wav"
+      "file": "gm-percussion/38.ogg"
     },
     {
       "voice": "clap",
       "note": 39,
-      "file": "gm-percussion/39.wav"
+      "file": "gm-percussion/39.ogg"
     },
     {
       "voice": "snareE",
       "note": 40,
-      "file": "gm-percussion/40.wav"
+      "file": "gm-percussion/40.ogg"
     },
     {
       "voice": "tomLoFloor",
       "note": 41,
-      "file": "gm-percussion/41.wav",
+      "file": "gm-percussion/41.ogg",
       "root": 43
     },
     {
       "voice": "tomHiFloor",
       "note": 43,
-      "file": "gm-percussion/43.wav"
+      "file": "gm-percussion/43.ogg"
     },
     {
       "voice": "tomLo",
       "note": 45,
-      "file": "gm-percussion/45.wav",
+      "file": "gm-percussion/45.ogg",
       "root": 43
     },
     {
       "voice": "tomLoMid",
       "note": 47,
-      "file": "gm-percussion/47.wav",
+      "file": "gm-percussion/47.ogg",
       "root": 43
     },
     {
       "voice": "tomHiMid",
       "note": 48,
-      "file": "gm-percussion/48.wav",
+      "file": "gm-percussion/48.ogg",
       "root": 43
     },
     {
       "voice": "tomHi",
       "note": 50,
-      "file": "gm-percussion/50.wav",
+      "file": "gm-percussion/50.ogg",
       "root": 43
     },
     {
       "voice": "closedHat",
       "note": 42,
-      "file": "gm-percussion/42.wav"
+      "file": "gm-percussion/42.ogg"
     },
     {
       "voice": "pedalHat",
       "note": 44,
-      "file": "gm-percussion/44.wav"
+      "file": "gm-percussion/44.ogg"
     },
     {
       "voice": "openHat",
       "note": 46,
-      "file": "gm-percussion/46.wav"
+      "file": "gm-percussion/46.ogg"
     },
     {
       "voice": "crash1",
       "note": 49,
-      "file": "gm-percussion/49.wav"
+      "file": "gm-percussion/49.ogg"
     },
     {
       "voice": "ride1",
       "note": 51,
-      "file": "gm-percussion/51.wav"
+      "file": "gm-percussion/51.ogg"
     },
     {
       "voice": "china",
       "note": 52,
-      "file": "gm-percussion/52.mp3"
+      "file": "gm-percussion/52.ogg"
     },
     {
       "voice": "rideBell",
       "note": 53,
-      "file": "gm-percussion/53.wav"
+      "file": "gm-percussion/53.ogg"
     },
     {
       "voice": "splash",
       "note": 55,
-      "file": "gm-percussion/55.wav"
+      "file": "gm-percussion/55.ogg"
     },
     {
       "voice": "crash2",
       "note": 57,
-      "file": "gm-percussion/57.wav"
+      "file": "gm-percussion/57.ogg"
     },
     {
       "voice": "ride2",
       "note": 59,
-      "file": "gm-percussion/59.wav"
+      "file": "gm-percussion/59.ogg"
     },
     {
       "voice": "tamb",
       "note": 54,
-      "file": "gm-percussion/54.wav"
+      "file": "gm-percussion/54.ogg"
     },
     {
       "voice": "cowbell",
       "note": 56,
-      "file": "gm-percussion/56.wav"
+      "file": "gm-percussion/56.ogg"
     },
     {
       "voice": "vibraslap",
       "note": 58,
-      "file": "gm-percussion/58.wav"
+      "file": "gm-percussion/58.ogg"
     },
     {
       "voice": "bongoHi",
       "note": 60,
-      "file": "gm-percussion/60.wav"
+      "file": "gm-percussion/60.ogg"
     },
     {
       "voice": "bongoLo",
       "note": 61,
-      "file": "gm-percussion/61.wav"
+      "file": "gm-percussion/61.ogg"
     },
     {
       "voice": "congaMute",
       "note": 62,
-      "file": "gm-percussion/62.wav"
+      "file": "gm-percussion/62.ogg"
     },
     {
       "voice": "congaOpen",
       "note": 63,
-      "file": "gm-percussion/63.wav"
+      "file": "gm-percussion/63.ogg"
     },
     {
       "voice": "congaLo",
       "note": 64,
-      "file": "gm-percussion/64.wav"
+      "file": "gm-percussion/64.ogg"
     },
     {
       "voice": "timbaleHi",
       "note": 65,
-      "file": "gm-percussion/65.wav",
+      "file": "gm-percussion/65.ogg",
       "root": 60
     },
     {
       "voice": "timbaleLo",
       "note": 66,
-      "file": "gm-percussion/66.wav",
+      "file": "gm-percussion/66.ogg",
       "root": 64
     },
     {
       "voice": "agogoHi",
       "note": 67,
-      "file": "gm-percussion/67.wav"
+      "file": "gm-percussion/67.ogg"
     },
     {
       "voice": "agogoLo",
       "note": 68,
-      "file": "gm-percussion/68.wav"
+      "file": "gm-percussion/68.ogg"
     },
     {
       "voice": "cabasa",
       "note": 69,
-      "file": "gm-percussion/69.wav"
+      "file": "gm-percussion/69.ogg"
     },
     {
       "voice": "maracas",
       "note": 70,
-      "file": "gm-percussion/70.wav"
+      "file": "gm-percussion/70.ogg"
     },
     {
       "voice": "whistleS",
       "note": 71,
-      "file": "gm-percussion/71.wav"
+      "file": "gm-percussion/71.ogg"
     },
     {
       "voice": "whistleL",
       "note": 72,
-      "file": "gm-percussion/72.wav"
+      "file": "gm-percussion/72.ogg"
     },
     {
       "voice": "guiroS",
       "note": 73,
-      "file": "gm-percussion/73.wav"
+      "file": "gm-percussion/73.ogg"
     },
     {
       "voice": "guiroL",
       "note": 74,
-      "file": "gm-percussion/74.wav"
+      "file": "gm-percussion/74.ogg"
     },
     {
       "voice": "claves",
       "note": 75,
-      "file": "gm-percussion/75.wav"
+      "file": "gm-percussion/75.ogg"
     },
     {
       "voice": "woodHi",
       "note": 76,
-      "file": "gm-percussion/76.wav",
+      "file": "gm-percussion/76.ogg",
       "root": 72
     },
     {
       "voice": "woodLo",
       "note": 77,
-      "file": "gm-percussion/77.wav"
+      "file": "gm-percussion/77.ogg"
     },
     {
       "voice": "cuicaMute",
       "note": 78,
-      "file": "gm-percussion/78.wav",
+      "file": "gm-percussion/78.ogg",
       "root": 64
     },
     {
       "voice": "cuicaOpen",
       "note": 79,
-      "file": "gm-percussion/79.wav",
+      "file": "gm-percussion/79.ogg",
       "root": 60
     },
     {
       "voice": "triMute",
       "note": 80,
-      "file": "gm-percussion/80.wav"
+      "file": "gm-percussion/80.ogg"
     },
     {
       "voice": "triOpen",
       "note": 81,
-      "file": "gm-percussion/81.wav"
+      "file": "gm-percussion/81.ogg"
     },
     {
       "voice": "shaker",
       "note": 82,
-      "file": "gm-percussion/82.wav"
+      "file": "gm-percussion/82.ogg"
     },
     {
       "voice": "jingle",
       "note": 83,
-      "file": "gm-percussion/83.wav"
+      "file": "gm-percussion/83.ogg"
     },
     {
       "voice": "belltree",
       "note": 84,
-      "file": "gm-percussion/84.wav"
+      "file": "gm-percussion/84.ogg"
     },
     {
       "voice": "castanet",
       "note": 85,
-      "file": "gm-percussion/85.wav"
+      "file": "gm-percussion/85.ogg"
     },
     {
       "voice": "surdoMute",
       "note": 86,
-      "file": "gm-percussion/86.wav",
+      "file": "gm-percussion/86.ogg",
       "root": 43
     },
     {
       "voice": "surdoOpen",
       "note": 87,
-      "file": "gm-percussion/87.wav",
+      "file": "gm-percussion/87.ogg",
       "root": 41
     }
   ]
