@@ -14,10 +14,16 @@ const render = (vm: VoiceManager, from: number, to: number) => {
 };
 
 describe('VoiceManager', () => {
-  it('caps active voices at maxVoices, stealing the oldest', () => {
+  it('polyphonic lanes are UNCAPPED — voices accumulate, no eviction (an artificial cap clicked)', () => {
     const vm = new VoiceManager(SR, 'subtractive', P); vm.setMaxVoices(3);
     for (let i = 0; i < 6; i++) vm.spawn(note(48 + i));
-    expect(vm.activeCount).toBeLessThanOrEqual(3);
+    expect(vm.activeCount).toBe(6);   // poly does NOT steal — all 6 distinct notes sound
+  });
+
+  it('mono lane (maxVoices 1) stays monophonic — a new note steals the previous', () => {
+    const vm = new VoiceManager(SR, 'subtractive', P); vm.setMaxVoices(1);
+    for (let i = 0; i < 4; i++) vm.spawn(note(48 + i));
+    expect(vm.activeCount).toBe(1);
   });
 
   it('a retrigger of the same midi replaces, not stacks', () => {

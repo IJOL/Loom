@@ -6,7 +6,7 @@ interface Slot { midi: number; allocatedAt: number; v: VoiceRenderer; }
 
 export class VoiceManager {
   private slots: Slot[] = [];
-  private maxVoices = 8;
+  private maxVoices = 16; // default poly; mono lanes set 1 via setMaxVoices
   private params: ParamBag;
   private lastT = 0;
   private mod: ModulationRuntime | null = null;
@@ -34,9 +34,18 @@ export class VoiceManager {
     for (let i = this.slots.length - 1; i >= 0; i--) {
       if (this.slots[i].midi === note.midi) { this.slots[i].v.noteOff(this.lastT); this.slots.splice(i, 1); }
     }
-    while (this.slots.length >= this.maxVoices) {
-      const oldest = this.slots.shift();
-      oldest?.v.noteOff(this.lastT);
+    // Monophonic lanes (maxVoices === 1) steal the previous voice so the line stays
+    // mono (e.g. TB-303 acid bass). Polyphonic lanes are intentionally UNCAPPED: the
+    // AudioWorklet handles dense polyphony, and an artificial per-lane cap produced
+    // audible clicks — it yanked a still-sounding voice out of the render loop
+    // mid-note so its release never rendered (a step discontinuity). Voices
+    // self-terminate on release, so they don't grow unbounded. (User-confirmed
+    // click-free uncapped, 2026-06-24.)
+    if (this.maxVoices <= 1) {
+      while (this.slots.length >= 1) {
+        const oldest = this.slots.shift();
+        oldest?.v.noteOff(this.lastT);
+      }
     }
     this.slots.push({
       midi: note.midi, allocatedAt: note.beginSec,

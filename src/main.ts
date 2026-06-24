@@ -170,9 +170,11 @@ const currentEngineId = 'subtractive';
 // Phase G: LaneAllocatorDeps is master-only; all per-lane strip/engine deps
 // removed. Lanes are allocated lazily via ensureLaneResource() triggered by
 // applyLoadedSessionState when the boot session JSON is applied.
-// Global simultaneous-voice budget across all worklet lanes — the lever that
-// ends peak dropouts. Default 64; tune/surfacing in PERF is a follow-up.
-const globalVoiceCap = new GlobalVoiceCap(64);
+// Global simultaneous-voice budget across all worklet lanes. Set UNCAPPED: the
+// AudioWorklet handles dense polyphony, and any finite ceiling stole voices
+// audibly (clicks). Mono lanes still cap themselves at 1 in VoiceManager.
+// (User: "sin limitaciones, no las necesitamos" — click-free, 2026-06-24.)
+const globalVoiceCap = new GlobalVoiceCap(Number.POSITIVE_INFINITY);
 const lanes = createLaneAllocator({
   ctx, master, fx, sidechainBus,
   getBpm: () => seq.bpm,
