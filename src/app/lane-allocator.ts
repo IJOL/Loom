@@ -2,7 +2,7 @@ import { LaneResourceMap } from '../core/lane-resources';
 import { ChannelStrip } from '../core/fx';
 import { PolySynth } from '../polysynth/polysynth';
 import { InsertChain } from '../plugins/fx/insert-chain';
-import { createEngineInstance } from '../engines/registry';
+import { createEngineInstance, getEngineDescriptor } from '../engines/registry';
 import { WorkletLaneEngine } from '../engines/worklet-lane-engine';
 import { DrumsWorkletEngine } from '../engines/drums-worklet-engine';
 import { SamplerWorkletEngine } from '../engines/sampler-worklet-engine';
@@ -145,14 +145,15 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     // path). The WorkletLaneEngine constructs its own LoomWorkletNode and
     // self-wires to inserts.inputNode, bypassing the legacy node-per-note path
     // in wireEngineIntoLane. The offline recorder opts into 'legacy'. Config
-    // (name/polyphony/params/modulators) is read off a throwaway legacy engine
-    // instance so it never drifts from the registry.
+    // (name/polyphony/params/modulators) is read from a pure-data registry
+    // descriptor — NOT a throwaway legacy engine instance — so the live path
+    // never constructs a node-per-note legacy class (Phase 4 Task 1).
     if (WORKLET_ENGINE_IDS.has(engineId) && synthesisBackend === 'worklet') {
-      const spec = createEngineInstance(engineId);
+      const spec = getEngineDescriptor(engineId);
       if (spec) {
         const eng = new WorkletLaneEngine(deps.ctx, inserts.inputNode, {
           engineId, name: spec.name, presetsKey: engineId, polyphony: spec.polyphony,
-          params: spec.params, modulators: spec.modulators.serialize(),
+          params: spec.params, modulators: spec.modulators,
           // TB-303 preset JSON uses legacy flat keys; remap them to dot-ids so
           // presets actually apply on the worklet path (other engines' JSON is
           // already dot-id keyed). Same map the legacy TB303Engine uses.

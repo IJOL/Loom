@@ -5,13 +5,18 @@ import '../engines/drums-engine';
 import '../engines/subtractive';
 import '../engines/fm';
 import '../engines/wavetable';
+import '../engines/karplus';
+import '../engines/westcoast';
 import { DrumsEngine } from '../engines/drums-engine';
 import { DrumsWorkletEngine } from '../engines/drums-worklet-engine';
+import { WorkletLaneEngine } from '../engines/worklet-lane-engine';
+import { SubtractiveEngine } from '../engines/subtractive';
 import { createLaneAllocator } from './lane-allocator';
 import { FxBus } from '../core/fx';
 import { SidechainBus } from '../core/sidechain-bus';
 import { OfflineAudioContext } from 'node-web-audio-api';
 import type { FxInstance } from '../plugins/types';
+import * as registry from '../engines/registry';
 
 function makeCtx() {
   return new OfflineAudioContext(1, 128, 44100) as unknown as AudioContext;
@@ -147,6 +152,51 @@ describe('Phase 2b: drums-machine routes to DrumsWorkletEngine on the worklet ba
     const res = lanes.resources.get('drums-1')!;
     expect(res.engine).toBeInstanceOf(DrumsEngine);
     expect(res.engine).not.toBeInstanceOf(DrumsWorkletEngine);
+  });
+});
+
+describe('Phase 4 Task 1: live worklet backend constructs only worklet engines', () => {
+  beforeEach(() => { vi.restoreAllMocks(); });
+
+  it.each([
+    ['subtractive'],
+    ['tb303'],
+    ['fm'],
+    ['wavetable'],
+    ['karplus'],
+    ['westcoast'],
+  ])('allocates a WorkletLaneEngine for a %s lane on the default backend', (engineId) => {
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [] });
+    lanes.ensureLaneResource('L', engineId);
+    const res = lanes.resources.get('L')!;
+    expect(res).toBeDefined();
+    expect(res.engine.id).toBe(engineId);
+    expect(res.engine).toBeInstanceOf(WorkletLaneEngine);
+  });
+
+  it('does NOT construct a fresh legacy engine to read the worklet spec', () => {
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    // createEngineInstance builds a fresh node-per-note legacy engine. The
+    // worklet path must read its metadata from a descriptor instead, so this
+    // must NOT be invoked when allocating a melodic lane on the worklet backend.
+    const createSpy = vi.spyOn(registry, 'createEngineInstance');
+    const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [] });
+    lanes.ensureLaneResource('L', 'subtractive');
+    expect(lanes.resources.get('L')!.engine).toBeInstanceOf(WorkletLaneEngine);
+    expect(createSpy).not.toHaveBeenCalledWith('subtractive');
+  });
+
+  it('legacy backend still builds the legacy SubtractiveEngine (offline recorder path)', () => {
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [], synthesisBackend: 'legacy' });
+    lanes.ensureLaneResource('L', 'subtractive');
+    const res = lanes.resources.get('L')!;
+    expect(res.engine).toBeInstanceOf(SubtractiveEngine);
+    expect(res.engine).not.toBeInstanceOf(WorkletLaneEngine);
   });
 });
 

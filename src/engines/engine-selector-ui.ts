@@ -1,5 +1,5 @@
 import { listPlugins } from '../plugins/registry';
-import { getEngine } from './registry';
+import { getEngineDescriptor } from './registry';
 import { populatePolyPresetSelect, refreshPolyPresetSelect } from '../polysynth/polysynth-presets';
 import type { KnobHandle } from '../core/knob';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
@@ -40,7 +40,7 @@ export interface EngineSelectorUIDeps {
 export function melodicSynthEngineIds(): string[] {
   return listPlugins('synth')
     .map((p) => p.manifest.id)
-    .filter((id) => getEngine(id)?.editor === 'piano-roll');
+    .filter((id) => getEngineDescriptor(id)?.editor === 'piano-roll');
 }
 
 let _deps: EngineSelectorUIDeps | null = null;
