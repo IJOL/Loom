@@ -479,6 +479,12 @@
       "group": "Drum Machines",
       "kind": "sample",
       "drumkitId": "yamahatg33"
+    },
+    {
+      "name": "GM Percussion",
+      "group": "Percussion",
+      "kind": "sample",
+      "drumkitId": "gm-percussion"
     }
   ]
 }

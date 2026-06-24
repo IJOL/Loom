@@ -259,13 +259,19 @@ export function renderClipEditor(
       const stepsElapsed = Math.max(0, (deps.ctx.currentTime - lp.startTime) / stepDur);
       return loopAwareStep(clip, deps.seq.meter, stepsElapsed) * TICKS_PER_STEP;
     };
-    const model = lane.engineId === 'sampler'
+    // A keymapped drum grid (one row per pad) applies to a sampler lane AND to a
+    // Drums lane running a sample kit (kitMode 'sample' delegates to the embedded
+    // sampler, whose keymap is mirrored to engineState.sampler.keymap). A synth
+    // Drums lane keeps the fixed 8 GM_MODEL rows.
+    const useSamplerGrid = lane.engineId === 'sampler'
+      || (lane.engineId === 'drums-machine' && lane.engineState?.kitMode === 'sample');
+    const model = useSamplerGrid
       ? samplerDrumModel(lane, clip, deps.midiLabel, isDrumFullKit())
       : undefined;
-    // Sampler drumkit lanes get a "Full kit" toggle: build(full) re-derives the
+    // Keymapped drum lanes get a "Full kit" toggle: build(full) re-derives the
     // row model for the requested view so the editor can swap compact ↔ full in
     // place (an empty kit falls back to a zero-row model).
-    const fullKit = lane.engineId === 'sampler'
+    const fullKit = useSamplerGrid
       ? { build: (full: boolean) => samplerDrumModel(lane, clip, deps.midiLabel, full) ?? { rows: noteDrumRows([]), labels: [] } }
       : undefined;
     bodyHandle = renderDrumGridEditor(bodyBox, clip, deps.historyDeps, deps.seq.meter, {

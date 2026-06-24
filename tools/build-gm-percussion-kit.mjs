@@ -158,9 +158,14 @@ index = index.filter((e) => e.id !== KIT_ID);
 index.push({ id: KIT_ID, name: KIT_NAME });
 await writeFile(indexPath, JSON.stringify(index, null, 2) + '\n');
 
-// NOTE: we deliberately do NOT touch public/presets/drum-kits.json. That file is
-// the Drums-page kit list (engineId 'drums'); the GM kit is a Sampler drumkit
-// (engineId 'sampler') and surfaces via index.json in the Sampler selector,
-// where the drum grid renders all ~52 pads (a Drums lane would show only 8).
+// drum-kits.json — register the kit on the Drums page too (group "Percussion"),
+// so it sits next to 808/909/tidal. It is a kind:'sample' entry; the Drums engine
+// loads it in kitMode 'sample' (delegating to the embedded sampler) and the drum
+// grid shows every pad. It is ALSO listed in index.json (above) for the Sampler.
+const presetsPath = path.join(ROOT, 'public', 'presets', 'drum-kits.json');
+const doc = JSON.parse(await readFile(presetsPath, 'utf8'));
+doc.presets = doc.presets.filter((p) => !(p.kind === 'sample' && p.drumkitId === KIT_ID));
+doc.presets.push({ name: KIT_NAME, group: 'Percussion', kind: 'sample', drumkitId: KIT_ID });
+await writeFile(presetsPath, JSON.stringify(doc, null, 2) + '\n');
 
 console.log(`DONE: ${ok.length} pads, ${(bytes / 1e6).toFixed(1)} MB`);
