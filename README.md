@@ -121,6 +121,7 @@ The three *sample* kits bundled under [`public/drumkits/`](public/drumkits/) (`t
   *Michael Fischer 808* set and equivalents). "TR-808" is a trademark of Roland Corporation;
   the bundled samples are decades-old, freely-circulated one-shots used here for educational/demo purposes.
 - **`tr808/ride`** uses a TR-808 crash; the acoustic ride is from Dirt-Samples.
+- **GM Percussion** drum kit samples: [VCSL](https://github.com/sgossner/VCSL) (CC0).
 
 These are bundled so the sampled kits work on the live deploy. They're a tiny curated subset, not a
 redistribution of any full commercial library. **If you hold rights to any sound here and want it
