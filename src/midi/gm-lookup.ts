@@ -45,9 +45,13 @@ export function pickPresetForGM(program: number, rng: () => number): GMMatch {
 // track name is often the better signal. First keyword hit wins, so order
 // matters: more specific instrument families come first. Lower-cased substring
 // match — "GTR lead" still hits 'gtr'.
+// NOTE: there is deliberately NO 'drum'/'perc' name hint. Percussion is detected
+// by CHANNEL (isPercussionTrack), not by name — many MIDIs label a melodic track
+// "Drums" (or put real drums on a melodic channel), so trusting the name routes
+// melodic tracks to the drum engine. A non-channel-10 track named "Drums" falls
+// through to the GM-program lookup like any other track.
 const NAME_ENGINE_HINTS: { kw: string[]; engineId: string }[] = [
   { kw: ['guitar', 'gtr', 'pluck', 'nylon'],                                  engineId: 'karplus' },
-  { kw: ['drum', 'kick', 'snare', 'hat', 'perc', 'cymbal', 'clap', 'tom', 'kit'], engineId: 'drums-machine' },
   { kw: ['rhodes', 'wurli', 'wurlitzer', 'tine', 'epiano', 'e.piano', 'e piano'], engineId: 'fm' },
   { kw: ['bell', 'glock', 'chime', 'mallet', 'vibe', 'marimba', 'kalimba'],   engineId: 'fm' },
   { kw: ['pad', 'string', 'choir', 'voice', 'vox', 'brass', 'horn', 'orch', 'ensemble'], engineId: 'subtractive' },

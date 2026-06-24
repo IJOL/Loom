@@ -25,9 +25,11 @@ describe('engineHintFromName', () => {
     expect(engineHintFromName('Guitar 2')).toBe('karplus');
     expect(engineHintFromName('GTR lead')).toBe('karplus');
   });
-  it('maps drum-named tracks to drums-machine (even on a melodic program)', () => {
-    expect(engineHintFromName('Drums')).toBe('drums-machine');
-    expect(engineHintFromName('Perc')).toBe('drums-machine');
+  it('does NOT route drum/perc names by name — percussion is detected by channel, not name', () => {
+    // A track named "Drums"/"Perc" is often melodic; trusting the name routed
+    // melodies to the drum engine. The name no longer decides drums.
+    expect(engineHintFromName('Drums')).toBeNull();
+    expect(engineHintFromName('Perc')).toBeNull();
   });
   it('maps pads/strings/piano to subtractive and bells/rhodes to fm', () => {
     expect(engineHintFromName('Warm Pad')).toBe('subtractive');
@@ -58,9 +60,10 @@ describe('suggestDefaultMapping prefers the track name over the GM program', () 
     expect(r.presetPerTrack[0].presetName).toBe('Steel String'); // gm:25 inside karplus
   });
 
-  it('routes a Drums-named track to drums-machine despite a melodic program', () => {
+  it('does NOT force a melodic "Drums"-named track to drums-machine (uses the GM program)', () => {
     const r = suggestDefaultMapping(parsed, [1]);
-    expect(r.presetPerTrack[1].engineId).toBe('drums-machine');
+    // name no longer routes to drums; program 25 → karplus (Steel String)
+    expect(r.presetPerTrack[1].engineId).toBe('karplus');
   });
 
   it('falls back to the GM program when the name has no instrument keyword', () => {

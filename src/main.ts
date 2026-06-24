@@ -965,22 +965,24 @@ function launchSceneById(sceneId: string): void {
   for (const lane of sessionHost.state.lanes) {
     const isNew = !laneResources.get(lane.id);
     ensureLaneResource(lane.id, lane.engineId);
-    if (isNew && lane.enginePresetName) {
+    if (!isNew) continue;
+    const kitId = lane.engineState?.sampler?.drumkitId;
+    if (kitId && lane.engineId === 'drums-machine') {
+      // Imported percussion lane (sample-kit Drums): applyDrumPreset sets kitMode
+      // 'sample' + async fetch/decode/setKeymap + mirror, so the kit actually plays
+      // and the grid shows its pads. (applyPresetToEngine is sync and would NOT
+      // load a sample kit.)
+      const name = (lane.enginePresetName ?? '').replace(/^engine:/, '') || 'GM Percussion';
+      void sessionHost.applyDrumPreset(lane.id, name);
+    } else if (kitId) {
+      // Sampler drumkit lane: reloadDrumkit fetches+decodes + pushes to the worklet.
+      const inst = getLaneEngineInstance(lane.id);
+      if (inst && 'setKeymap' in inst) {
+        void reloadDrumkit(sessionHost, lane.id, kitId, inst as Parameters<typeof reloadDrumkit>[3]);
+      }
+    } else if (lane.enginePresetName) {
       const inst = getLaneEngineInstance(lane.id);
       if (inst) applyPresetToEngine(inst, lane.enginePresetName);
-    }
-    if (isNew) {
-      const kitId = lane.engineState?.sampler?.drumkitId;
-      if (kitId) {
-        const inst = getLaneEngineInstance(lane.id);
-        if (inst && 'setKeymap' in inst) {
-          // Fire-and-forget (live path): reloadDrumkit fetches+decodes the kit,
-          // calls inst.setKeymap() (→ pushes buffers to the worklet via loadSample),
-          // and mirrors the keymap into engineState.sampler so the drum grid shows
-          // the pads. Audio is silent for the brief decode, then plays.
-          void reloadDrumkit(sessionHost, lane.id, kitId, inst as Parameters<typeof reloadDrumkit>[3]);
-        }
-      }
     }
   }
   launchSceneRuntime(sessionHost.laneStates, sessionHost.state, scene, idx, ctx.currentTime, seq.bpm);

@@ -57,10 +57,9 @@ describe('midiToSession', () => {
     expect(result.scene.clipPerLane[lane.id]).toBe(2);
   });
 
-  it('imports a ch10 (drum) track as its own lane + clip, like any other track', () => {
-    // No special drum handling: a channel-9 track becomes its own lane with all
-    // of its notes intact — not merged into a shared drum clip, not routed to a
-    // special drum lane.
+  it('a ch10 standard-kit track → one drums-machine lane (notes intact)', () => {
+    // kick(36)+snare(38) are standard kit (not GM-percussion), so the track
+    // becomes a single drums-machine lane. Detection is by channel, not name.
     const parsed: ParsedMidi = {
       division: 96, bpm: null,
       tracks: [
@@ -71,18 +70,38 @@ describe('midiToSession', () => {
           ] },
       ],
     };
-    const result = midiToSession(parsed, {
-      selectedTrackIndices: [0],
-      presetPerTrack: { 0: { engineId: 'subtractive', presetName: 'Init' } },
-    });
+    const result = midiToSession(parsed, { selectedTrackIndices: [0], presetPerTrack: {} });
     expect(result.newLanes).toHaveLength(1);
-    expect(result.newLanes[0].engineId).toBe('subtractive');
-    const clip = result.newLanes[0].clips[0];
-    expect(clip?.notes).toHaveLength(2);
+    expect(result.newLanes[0].engineId).toBe('drums-machine');
+    expect(result.newLanes[0].engineState?.kitMode).toBeUndefined(); // synth kit
+    const clip = result.newLanes[0].clips.find(Boolean);
     expect(clip?.notes.map((n) => n.midi)).toEqual([36, 38]);
   });
 
-  it('keeps tonal and drum-channel tracks as separate lanes (no merge)', () => {
+  it('splits a MIXED ch10 track into a drum lane + a percussion lane', () => {
+    const parsed: ParsedMidi = {
+      division: 96, bpm: 120,
+      tracks: [
+        { index: 0, name: 'Drums', program: 0, notes: [
+          { startTick: 0,  duration: 12, midi: 36, velocity: 100, channel: 9 }, // kick → drum
+          { startTick: 12, duration: 12, midi: 42, velocity: 100, channel: 9 }, // hat  → drum
+          { startTick: 24, duration: 12, midi: 69, velocity: 90,  channel: 9 }, // cabasa → perc
+        ] },
+      ],
+    };
+    const res = midiToSession(parsed, { selectedTrackIndices: [0], presetPerTrack: {} });
+    expect(res.newLanes).toHaveLength(2);
+    const [drum, perc] = res.newLanes;
+    expect(drum.engineId).toBe('drums-machine');
+    expect(drum.engineState?.kitMode).toBeUndefined();
+    expect(drum.clips.find(Boolean)!.notes.map((n) => n.midi)).toEqual([36, 42]);
+    expect(perc.engineId).toBe('drums-machine');
+    expect(perc.engineState?.kitMode).toBe('sample');
+    expect(perc.engineState?.sampler?.drumkitId).toBe('gm-percussion');
+    expect(perc.clips.find(Boolean)!.notes.map((n) => n.midi)).toEqual([69]);
+  });
+
+  it('keeps a tonal track and a drum track as separate lanes', () => {
     const parsed: ParsedMidi = {
       division: 96, bpm: null,
       tracks: [
@@ -92,20 +111,12 @@ describe('midiToSession', () => {
     };
     const result = midiToSession(parsed, {
       selectedTrackIndices: [0, 1],
-      presetPerTrack: {
-        0: { engineId: 'tb303', presetName: 'BASS Acid Classic' },
-        1: { engineId: 'subtractive', presetName: 'Init' },
-      },
+      presetPerTrack: { 0: { engineId: 'tb303', presetName: 'BASS Acid Classic' } },
     });
     expect(result.newLanes).toHaveLength(2);
-    // Lane titles come from the presets; clip labels keep the MIDI track names.
-    expect(result.newLanes.map((l) => l.name)).toEqual(['BASS Acid Classic', 'Init']);
-    expect(result.newLanes.map((l) => l.clips[0]?.name)).toEqual(['Bass', 'Drums']);
-    // Adjacent imported lanes get distinct colours (rotating palette).
-    const colors = result.newLanes.map((l) => l.clips[0]?.color);
-    expect(colors[0]).toMatch(/^#[0-9a-f]{6}$/i);
-    expect(colors[1]).toMatch(/^#[0-9a-f]{6}$/i);
-    expect(colors[0]).not.toBe(colors[1]);
+    expect(result.newLanes[0].engineId).toBe('tb303');          // bass (channel 0, melodic)
+    expect(result.newLanes[1].engineId).toBe('drums-machine');  // drums (channel 10)
+    expect(result.newLanes.map((l) => l.name)).toEqual(['BASS Acid Classic', 'Drums']);
   });
 
   it('honours an explicit override even when presetPerTrack contradicts GM', () => {
@@ -138,22 +149,21 @@ describe('midiToSession', () => {
     expect(result.newLanes[0].enginePresetName).toBe('factory:Init');
   });
 
-  it('a drumkit match yields a sampler lane with engineState.sampler.drumkitId', () => {
+  it('a percussion-only ch10 track → a single sample-kit Drums lane (GM Percussion)', () => {
     const parsed = { division: 96, bpm: 120, tracks: [
-      { index: 0, name: 'Drums', program: 0, notes: [
+      { index: 0, name: 'Perc', program: 0, notes: [
         { startTick: 0, duration: 12, midi: 54, velocity: 90, channel: 9 },
         { startTick: 24, duration: 12, midi: 69, velocity: 90, channel: 9 },
       ] },
     ] } as any;
-    const res = midiToSession(parsed, {
-      selectedTrackIndices: [0],
-      presetPerTrack: { 0: { engineId: 'sampler', presetName: 'GM Percussion', drumkitId: 'gm-percussion' } },
-    });
+    const res = midiToSession(parsed, { selectedTrackIndices: [0], presetPerTrack: {} });
+    expect(res.newLanes).toHaveLength(1);
     const lane = res.newLanes[0];
-    expect(lane.engineId).toBe('sampler');
+    expect(lane.engineId).toBe('drums-machine');
+    expect(lane.engineState?.kitMode).toBe('sample');
     expect(lane.engineState?.sampler?.drumkitId).toBe('gm-percussion');
     expect(lane.engineState?.sampler?.keymap).toEqual([]);
-    expect(lane.enginePresetName).toBeUndefined();
+    expect(lane.enginePresetName).toBe('engine:GM Percussion');
     // notes keep their GM midi (no remap)
     expect(lane.clips.find(Boolean)!.notes.map((n) => n.midi)).toEqual([54, 69]);
   });

@@ -2,7 +2,11 @@ import type { ParsedMidi } from './midi-parse';
 import { CLIP_COLOR_PALETTE, type SessionLane, type SessionClip, type SessionScene } from '../session/session';
 import type { NoteEvent } from '../core/notes';
 import { TICKS_PER_STEP } from '../core/notes';
-import { findGMMatches, type GMMatch } from './gm-lookup';
+import { findGMMatches, isPercussionTrack, type GMMatch } from './gm-lookup';
+import { planDrumLanes } from './percussion-split';
+
+/** The bundled GM Percussion kit id (public/drumkits/gm-percussion.json). */
+const GM_PERCUSSION_KIT = 'gm-percussion';
 
 export interface MidiImportResult {
   newLanes: SessionLane[];
@@ -50,49 +54,63 @@ export function midiToSession(
   const clipPerLane: Record<string, number | null> = {};
   const unmatchedTracks: { name: string; program: number }[] = [];
 
+  const convert = (n: { startTick: number; duration: number; midi: number; velocity: number }): NoteEvent => ({
+    start: Math.round((n.startTick - globalMinStart) * scale),
+    duration: Math.max(6, Math.round(n.duration * scale)),
+    midi: n.midi,
+    velocity: n.velocity,
+  });
+
+  // Create a lane (+ its single clip at sceneRow). Colour rotates by lane index so
+  // adjacent imported lanes differ; without a colour the cell text is unreadable.
+  const pushLane = (notes: NoteEvent[], clipName: string, laneProps: Partial<SessionLane> & { engineId: string }): void => {
+    const clip: SessionClip = {
+      id: nextId('clip'),
+      name: clipName,
+      color: CLIP_COLOR_PALETTE[newLanes.length % CLIP_COLOR_PALETTE.length],
+      lengthBars,
+      notes,
+    };
+    const clips: (SessionClip | null)[] =
+      sceneRow > 0 ? [...Array<SessionClip | null>(sceneRow).fill(null), clip] : [clip];
+    const lane: SessionLane = { id: nextId('lane'), clips, ...laneProps };
+    newLanes.push(lane);
+    clipPerLane[lane.id] = sceneRow;
+  };
+
   for (const tr of selected) {
+    const clipNotes = tr.notes.map(convert);
+
+    // Percussion (channel 10) tracks are split: standard kit notes (kick/snare/
+    // hats/toms/cymbals) → a normal Drums lane; GM-percussion notes (shaker/
+    // tambourine/congas…) → a separate Drums lane on the GM Percussion sample kit.
+    if (isPercussionTrack(tr)) {
+      const plan = planDrumLanes(clipNotes);
+      if (plan.drum) {
+        pushLane(plan.drum, tr.name || 'Drums', { engineId: 'drums-machine', name: 'Drums' });
+      }
+      if (plan.perc) {
+        pushLane(plan.perc, 'Percussion', {
+          engineId: 'drums-machine',
+          name: 'Percussion',
+          // Sample-kit Drums lane: kitMode 'sample' + the GM Percussion kit. The
+          // import apply step (main.ts launchSceneById) loads it via applyDrumPreset.
+          engineState: { kitMode: 'sample', sampler: { keymap: [], drumkitId: GM_PERCUSSION_KIT } },
+          enginePresetName: 'engine:GM Percussion',
+        });
+      }
+      continue;
+    }
+
+    // Melodic track → normal engine/preset by GM program (name no longer forces drums).
     const prog = tr.program < 0 ? 0 : tr.program;
     const match = opts.presetPerTrack[tr.index] ?? { engineId: 'poly', presetName: 'Init' };
     if (findGMMatches(prog).length === 0) unmatchedTracks.push({ name: tr.name, program: prog });
-
-    const clipNotes: NoteEvent[] = tr.notes
-      .map((n) => ({
-        start: Math.round((n.startTick - globalMinStart) * scale),
-        duration: Math.max(6, Math.round(n.duration * scale)),
-        midi: n.midi,
-        velocity: n.velocity,
-      }));
-
-    const clip: SessionClip = {
-      id: nextId('clip'),
-      name: tr.name || `Track ${tr.index}`,
-      // Auto-assign a palette colour, rotating by lane index so adjacent imported
-      // lanes differ. Without a colour the cell falls back to a dark fill and the
-      // (dark) clip text becomes unreadable.
-      color: CLIP_COLOR_PALETTE[newLanes.length % CLIP_COLOR_PALETTE.length],
-      lengthBars,
-      notes: clipNotes,
-    };
-    // Pad with empty slots so the clip sits at `sceneRow`, aligning with the
-    // scene's launch button (otherwise imported clips pile into row 0).
-    const clips: (SessionClip | null)[] =
-      sceneRow > 0 ? [...Array<SessionClip | null>(sceneRow).fill(null), clip] : [clip];
-    const isKit = !!match.drumkitId;
-    const lane: SessionLane = {
-      id: nextId('lane'),
+    pushLane(clipNotes, tr.name || `Track ${tr.index}`, {
       engineId: match.engineId,
-      // The channel is titled after the assigned preset (the MIDI track names are
-      // often junk metadata); the clip keeps the original track name as its label.
       name: match.presetName,
-      clips,
-      // Drumkit lanes load via engineState.sampler.drumkitId (Task 9), not a preset;
-      // leaving enginePresetName unset makes launchSceneById's sync preset step skip them.
-      ...(isKit
-        ? { engineState: { sampler: { keymap: [], drumkitId: match.drumkitId } } }
-        : { enginePresetName: `factory:${match.presetName}` }),
-    };
-    newLanes.push(lane);
-    clipPerLane[lane.id] = sceneRow;
+      enginePresetName: `factory:${match.presetName}`,
+    });
   }
 
   const scene: SessionScene = {
