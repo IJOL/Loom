@@ -13,14 +13,14 @@ describe('gm-percussion generator mapping', () => {
     const catalog = JSON.parse(await readFile(path.join(dir, 'vcsl.json'), 'utf8'));
     const src = await readFile(path.join(dir, 'build-gm-percussion-kit.mjs'), 'utf8');
     const keys = [...src.matchAll(/key:\s*'([a-z0-9_]+)'/g)].map((m) => m[1]);
-    expect(keys.length).toBeGreaterThan(40);
+    expect(keys.length).toBeGreaterThan(20); // ~31 percussion-only pads
     for (const k of keys) expect(catalog[k], `VCSL key '${k}'`).toBeTruthy();
   });
-  it('notes are unique and within 27..87', async () => {
+  it('notes are unique and percussion-only (54..87 — no standard drums)', async () => {
     const src = await readFile(path.join(dir, 'build-gm-percussion-kit.mjs'), 'utf8');
     const notes = [...src.matchAll(/note:\s*(\d+)/g)].map((m) => Number(m[1]));
     const uniq = new Set(notes);
     expect(uniq.size).toBe(notes.length);
-    for (const n of notes) { expect(n).toBeGreaterThanOrEqual(27); expect(n).toBeLessThanOrEqual(87); }
+    for (const n of notes) { expect(n).toBeGreaterThanOrEqual(54); expect(n).toBeLessThanOrEqual(87); }
   });
 });
