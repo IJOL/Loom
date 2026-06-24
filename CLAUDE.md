@@ -94,6 +94,27 @@ A failed Sampler overhaul (shipped the OLD UI instead of the approved mockup; a 
 - **One test per user path.** No `(or …)` alternatives in test tasks — they let a broken path (e.g. the loop *preset* picker) hide behind a working one (loop *import*). Each path gets its own test.
 - **Don't claim a UI feature "done"/"verified" without opening it and looking.** (Complements "lean on code, not the browser" for *debugging* — but for *done-claims on UI*, the browser look is mandatory.)
 
+## Driving Loom in Playwright — load a MIDI + play a scene (exact flow; don't rediscover it)
+
+A real session burned ~20 turns fumbling this. Follow it verbatim.
+
+- **Server:** the build under test is whatever `npm run dev` serves at <http://localhost:5173> (a worktree has its own — run `npm run dev` inside the worktree). The Playwright MCP server's cwd is the **MAIN checkout**, so its `.playwright-mcp/` snapshot files land in `<repo-root>/.playwright-mcp/`, NOT the worktree — `Grep` them there.
+- **Snapshots are huge** (every lane has an engine/preset dropdown → 2000+ lines). NEVER read a full `browser_snapshot`; save it to a file + `Grep`, or query the DOM with `browser_evaluate`.
+- **Import a MIDI:**
+  1. Toolbar **"⬇ MIDI"** → reveals a **"Choose File"** button. Click it → file-chooser modal → `browser_file_upload` with the absolute `.mid` path.
+  2. That opens a **modal `<dialog id="app-dialog">`** (per-track preview: checkbox + preset dropdown + audition ▶ per track). Its real action buttons are at the bottom: **Cancel / Sustituir (replace) / Añadir (add)**. The toolbar "Import MIDI" button only OPENS the dialog — the commit is Sustituir/Añadir *inside* it.
+  3. The `<dialog>` is **modal and intercepts pointer events**, so the transport ▶ is unclickable until you dismiss it. Click **Sustituir** (replace session) or **Añadir**.
+- **Play a SCENE:**
+  1. Click the **"Session"** view tab — the scene list lives there.
+  2. In the **"Scenes"** panel each scene row has a launch ▶. ⚠️ **Right next to it are ~11 per-clip ▶ buttons (one per clip in the row); clicking one plays only THAT clip.** To play the whole scene click the **scene's own launch ▶**, not a clip's. (This exact mix-up cost the turns.)
+  - Or the global transport **▶ / ⏹** (top bar) starts/stops the whole session; "Stop all" silences everything.
+- **Audio gating:** only a TRUSTED click (`browser_click`) resumes the AudioContext. A synthetic `.click()` via `browser_evaluate` does NOT — fine for dismissing the import dialog, NOT for the play button.
+- **No `window.__loom` / audio global** is exposed → no easy master-analyser tap for objective dropout measurement (would need a `page.addInitScript` patch via `browser_run_code_unsafe` *before* boot). Usually unnecessary — confirm playback via console-error count + the transport bar.beat advancing.
+
+## Dense-MIDI "cortes"/dropouts — already diagnosed, do NOT re-investigate
+
+Dropouts under dense polyphony are the **node-per-note architectural ceiling** (per-note Web Audio node churn → GC starves the main-thread scheduler), diagnosed at length (memory `project_voice_lifecycle_graph_leak`). The 9 perf fixes on `main` reduced but could not eliminate them. **The cure is the AudioWorklet engine rewrite** (`worktree-audioworklet-foundation`), proven to remove them (dense "Children" MIDI ran clean where node-per-note couldn't). Cortes on the OLD main/Pages build are expected; test the worklet build to confirm — don't re-derive the diagnosis.
+
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
