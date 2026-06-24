@@ -18,10 +18,11 @@ import {
   hitInCell, hitsInCell, rowsInRect, rowMove, serializeDrumClipboard, pasteDrumClipboard, clampGroupTick,
   gmDrumRows, type DrumRows, type ResolutionKey, type DrumClipNote,
 } from '../../core/drum-grid-editing';
-import { createToolToggle, createHelpButton, createResolutionSelect, createFollowToggle } from '../../core/clip-editor-toolbar';
+import { createToolToggle, createHelpButton, createResolutionSelect, createFollowToggle, createFullKitToggle } from '../../core/clip-editor-toolbar';
 import { mountClipLoopOverlay } from '../../core/clip-loop-overlay';
 import { clampZoom, scrubToZoom, zoomAroundAnchor, maxZoomX } from '../../core/pianoroll-zoom';
 import { isFollowEnabled, followScrollTarget } from '../../core/clip-follow';
+import { isDrumFullKit } from '../../core/clip-drum-fullkit';
 
 // In-memory horizontal zoom/scroll per clip (mirrors the piano-roll's
 // viewStateByClip; resets on reload; no saved-state change).
@@ -39,7 +40,7 @@ const GM_MODEL: DrumGridModel = { rows: gmDrumRows(), labels: DRUM_LANES.map((v)
 
 export const LABEL_W = 54;
 const RULER_H = 20;
-const ROW_H = 26;
+const ROW_H = 22;
 const VEL_LANE_H = 46;                       // velocity lane band
 
 type Tool = 'draw' | 'select';
@@ -56,6 +57,10 @@ export const DRUM_KEY_LEGEND =
 export interface DrumEditorDeps {
   auditionNote?: (midi: number) => void;
   getPlayheadTick?: () => number;        // -1 when not playing
+  /** Sampler drumkit lanes only: lets the editor show a "Full kit" toggle and
+   *  rebuild its row model in place. build(full) returns the model for the
+   *  requested view; the global flag is owned by clip-drum-fullkit. */
+  fullKit?: { build: (full: boolean) => DrumGridModel; onToggle?: () => void };
   /** When present, mount the loop overlay over the grid (toolbar in loop.toolbarHost). */
   loop?: {
     toolbarHost: HTMLElement;
@@ -77,10 +82,14 @@ export function renderDrumGridEditor(
   const setNotes = (n: NoteEvent[]) => { clip.notes = n; };
   const audition = deps.auditionNote;
 
-  const rows = model.rows;
-  const labels = model.labels;
-  const ROWS_N = Math.max(1, rows.count);
-  const FRAME_H = RULER_H + ROW_H * ROWS_N + VEL_LANE_H;
+  // The row model is reassignable so the "Full kit" toggle can swap compact ↔
+  // full in place. On init, honour the current flag's view so reopening respects
+  // the toggle; otherwise use the model the caller passed.
+  let activeModel = deps.fullKit ? deps.fullKit.build(isDrumFullKit()) : model;
+  let rows = activeModel.rows;
+  let labels = activeModel.labels;
+  let ROWS_N = Math.max(1, rows.count);
+  let FRAME_H = RULER_H + ROW_H * ROWS_N + VEL_LANE_H;
 
   let resolution: ResolutionKey = clampResolution(clip.gridResolution ?? DEFAULT_RESOLUTION);
   const snap = () => resolutionToSnap(resolution);
@@ -113,7 +122,15 @@ export function renderDrumGridEditor(
   const help = createHelpButton(DRUM_KEY_LEGEND);
   const helpPopover = help.popover;
 
-  toolbar.append(drawBtn, selBtn, createFollowToggle(), resCtl, help.btn);
+  const toolbarKids: HTMLElement[] = [drawBtn, selBtn, createFollowToggle()];
+  if (deps.fullKit) {
+    toolbarKids.push(createFullKitToggle(() => {
+      setModel(deps.fullKit!.build(isDrumFullKit()));
+      deps.fullKit!.onToggle?.();
+    }));
+  }
+  toolbarKids.push(resCtl, help.btn);
+  toolbar.append(...toolbarKids);
 
   const labelsCanvas = document.createElement('canvas');
   labelsCanvas.style.cssText = `display:block;flex:0 0 ${LABEL_W}px`;
@@ -127,6 +144,10 @@ export function renderDrumGridEditor(
 
   const row = document.createElement('div');
   row.style.cssText = 'display:flex;align-items:flex-start';
+  // Full kit can be ~52 rows tall: bound the labels+grid block and scroll it
+  // vertically. The labels canvas (flex:0 0 LABEL_W) and the grid viewport stay
+  // side-by-side and scroll together; compact view (few rows) shows no scrollbar.
+  Object.assign(row.style, { maxHeight: '60vh', overflowY: 'auto' } as Partial<CSSStyleDeclaration>);
   row.append(labelsCanvas, viewport);
 
   // Popover lives just below the toolbar (inside the wrap), positioned by SCSS.
@@ -165,6 +186,17 @@ export function renderDrumGridEditor(
     labelsCanvas.style.width = `${LABEL_W}px`; labelsCanvas.style.height = `${FRAME_H}px`;
     drawLabels(); draw();
     loopHandle?.redraw();   // re-layout the loop column for the new pxPerTick (zoom)
+  }
+
+  // Swap the row model in place (the "Full kit" toggle). Recomputes row count +
+  // canvas heights, clears the selection (its notes may no longer have a row),
+  // and redraws both layers via resize().
+  function setModel(m: DrumGridModel): void {
+    activeModel = m; rows = m.rows; labels = m.labels;
+    ROWS_N = Math.max(1, rows.count);
+    FRAME_H = RULER_H + ROW_H * ROWS_N + VEL_LANE_H;
+    selection.clear();
+    resize();
   }
 
   function drawLabels(): void {

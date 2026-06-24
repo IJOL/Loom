@@ -260,8 +260,14 @@ export function renderClipEditor(
     const model = lane.engineId === 'sampler'
       ? samplerDrumModel(lane, clip, deps.midiLabel, isDrumFullKit())
       : undefined;
+    // Sampler drumkit lanes get a "Full kit" toggle: build(full) re-derives the
+    // row model for the requested view so the editor can swap compact ↔ full in
+    // place (an empty kit falls back to a zero-row model).
+    const fullKit = lane.engineId === 'sampler'
+      ? { build: (full: boolean) => samplerDrumModel(lane, clip, deps.midiLabel, full) ?? { rows: noteDrumRows([]), labels: [] } }
+      : undefined;
     bodyHandle = renderDrumGridEditor(bodyBox, clip, deps.historyDeps, deps.seq.meter, {
-      auditionNote: audition, getPlayheadTick,
+      auditionNote: audition, getPlayheadTick, fullKit,
       loop: { toolbarHost: loopBar, historyDeps: deps.historyDeps, onChange: () => {} },
     }, model);
   } else {

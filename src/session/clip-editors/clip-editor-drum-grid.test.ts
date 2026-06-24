@@ -1,8 +1,15 @@
-import { describe, it, expect } from 'vitest';
+// @vitest-environment jsdom
+import { describe, it, expect, vi } from 'vitest';
 import type { SessionClip } from '../session';
-import { renderDrumGridEditor } from './clip-editor-drum-grid';
+import { renderDrumGridEditor, type DrumGridModel } from './clip-editor-drum-grid';
 import { GM_DRUM_MAP, VOICE_MIDI } from '../../engines/drum-gm-map';
+import { noteDrumRows } from '../../core/drum-grid-editing';
 import { TICKS_PER_STEP } from '../../core/notes';
+
+function stubCanvas(): void {
+  const ctx2d = new Proxy({}, { get: () => () => {} }) as unknown as CanvasRenderingContext2D;
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx2d as never);
+}
 
 function freshClip(): SessionClip {
   return { id: 't', lengthBars: 1, notes: [] };
@@ -38,6 +45,21 @@ describe('clip-editor-drum-grid roll behaviour', () => {
     try { renderDrumGridEditor(makeHost(), clip); } catch { /* no DOM */ }
     // Post-condition: the clip must not have been mutated on open.
     expect(clip.gridResolution).toBeUndefined();
+  });
+});
+
+const model = (notes: number[]): DrumGridModel => ({ rows: noteDrumRows(notes), labels: notes.map(String) });
+
+describe('drum grid full-kit toggle', () => {
+  it('renders a Full kit toggle when deps.fullKit is provided', () => {
+    stubCanvas();
+    const host = document.createElement('div');
+    const clip = { id: 'c', lengthBars: 1, notes: [] } as SessionClip;
+    renderDrumGridEditor(host, clip, undefined, undefined, {
+      fullKit: { build: (full) => model(full ? [36, 38, 42] : [36]) },
+    }, model([36]));
+    const btn = [...host.querySelectorAll('button')].find((b) => /full kit/i.test(b.textContent ?? ''));
+    expect(btn).toBeTruthy();
   });
 });
 
