@@ -121,7 +121,7 @@ let bytes = 0; const failures = [];
 // (never attenuate) and cap the gain so we don't amplify a near-silent file's
 // noise floor. Vorbis has no encoder delay, so drum transients stay tight.
 // Requires ffmpeg on PATH.
-const TARGET_PEAK_DB = -1, MAX_BOOST_DB = 24;
+const TARGET_PEAK_DB = -1, MAX_BOOST_DB = 40;
 await pool(resolved, 8, async (r) => {
   const url = BASE + r.src; // already %20-encoded
   const tmp = path.join(PUB, `${KIT_ID}/.tmp-${r.note}.${r.srcExt}`);

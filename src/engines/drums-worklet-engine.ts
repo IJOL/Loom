@@ -256,9 +256,11 @@ export class DrumsWorkletEngine implements SynthEngine {
   private sampler = new SamplerWorkletEngine();
   private kitMode: 'synth' | 'sample' = 'synth';
 
-  /** The sample-player carries OUTPUT_TRIM headroom; run the embedded sampler at
-   *  a higher base gain so sample kits sit near the synth-drum level. */
-  private static readonly SAMPLE_GAIN = 1.4;
+  /** The sample-player carries OUTPUT_TRIM headroom (0.7) and one-shot samples
+   *  read quieter (loudness-wise) than sustained synth voices, so run the embedded
+   *  sampler at a higher base gain to sit near the synth level. The master
+   *  soft-clip protects against the occasional hot transient. */
+  private static readonly SAMPLE_GAIN = 2.0;
   constructor() { this.sampler.setBaseValue('gain', DrumsWorkletEngine.SAMPLE_GAIN); }
 
   getKitMode(): 'synth' | 'sample' { return this.kitMode; }
