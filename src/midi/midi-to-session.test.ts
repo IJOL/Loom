@@ -138,6 +138,26 @@ describe('midiToSession', () => {
     expect(result.newLanes[0].enginePresetName).toBe('factory:Init');
   });
 
+  it('a drumkit match yields a sampler lane with engineState.sampler.drumkitId', () => {
+    const parsed = { division: 96, bpm: 120, tracks: [
+      { index: 0, name: 'Drums', program: 0, notes: [
+        { startTick: 0, duration: 12, midi: 54, velocity: 90, channel: 9 },
+        { startTick: 24, duration: 12, midi: 69, velocity: 90, channel: 9 },
+      ] },
+    ] } as any;
+    const res = midiToSession(parsed, {
+      selectedTrackIndices: [0],
+      presetPerTrack: { 0: { engineId: 'sampler', presetName: 'GM Percussion', drumkitId: 'gm-percussion' } },
+    });
+    const lane = res.newLanes[0];
+    expect(lane.engineId).toBe('sampler');
+    expect(lane.engineState?.sampler?.drumkitId).toBe('gm-percussion');
+    expect(lane.engineState?.sampler?.keymap).toEqual([]);
+    expect(lane.enginePresetName).toBeUndefined();
+    // notes keep their GM midi (no remap)
+    expect(lane.clips.find(Boolean)!.notes.map((n) => n.midi)).toEqual([54, 69]);
+  });
+
   it('shifts notes to start at tick 0 of the lengthBars', () => {
     const parsed: ParsedMidi = {
       division: 96, bpm: null,

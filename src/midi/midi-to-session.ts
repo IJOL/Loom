@@ -77,6 +77,7 @@ export function midiToSession(
     // scene's launch button (otherwise imported clips pile into row 0).
     const clips: (SessionClip | null)[] =
       sceneRow > 0 ? [...Array<SessionClip | null>(sceneRow).fill(null), clip] : [clip];
+    const isKit = !!match.drumkitId;
     const lane: SessionLane = {
       id: nextId('lane'),
       engineId: match.engineId,
@@ -84,7 +85,11 @@ export function midiToSession(
       // often junk metadata); the clip keeps the original track name as its label.
       name: match.presetName,
       clips,
-      enginePresetName: `factory:${match.presetName}`,
+      // Drumkit lanes load via engineState.sampler.drumkitId (Task 9), not a preset;
+      // leaving enginePresetName unset makes launchSceneById's sync preset step skip them.
+      ...(isKit
+        ? { engineState: { sampler: { keymap: [], drumkitId: match.drumkitId } } }
+        : { enginePresetName: `factory:${match.presetName}` }),
     };
     newLanes.push(lane);
     clipPerLane[lane.id] = sceneRow;
