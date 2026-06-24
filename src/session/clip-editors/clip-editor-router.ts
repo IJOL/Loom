@@ -16,7 +16,7 @@ import { resolveViewState, type ViewState } from '../../core/pianoroll-zoom';
 import { getEngine } from '../../engines/registry';
 import { renderDrumGridEditor, LANE_LABELS, type DrumGridModel } from './clip-editor-drum-grid';
 import { noteDrumRows } from '../../core/drum-grid-editing';
-import { GM_DRUM_MAP } from '../../engines/drum-gm-map';
+import { GM_DRUM_MAP, GM_PERCUSSION_NAMES } from '../../engines/drum-gm-map';
 import { mountWaveformHeader, renderAudioClipEditor } from './clip-waveform-header';
 import type { HistoryDeps } from '../../save/history-wiring';
 import { withUndo } from '../../save/history-wiring';
@@ -27,6 +27,7 @@ import type { SessionState } from '../session';
 import { detectLoop } from '../../samples/loop-analysis';
 import { propagateWarp, propagateLoop } from '../warp-marker-edit';
 import { loopAwareStep } from '../../core/clip-loop';
+import { isDrumFullKit } from '../../core/clip-drum-fullkit';
 import { warpCache } from '../../samples/warp-cache';
 import { sampleCache } from '../../samples/sample-cache';
 
@@ -87,19 +88,44 @@ export function chooseClipEditor(
   return override ?? (isDrumkitSampler ? 'drum-grid' : undefined) ?? engineEditor ?? 'piano-roll';
 }
 
-/** Build the drum-grid row model for a sampler drumkit lane: one row per pad,
- *  ordered by note, labelled with the GM voice name when the pad sits on a GM
- *  note, else the note name. Returns undefined (→ the editor's default 8 GM rows)
- *  when there are no pads. */
-function samplerDrumModel(lane: SessionLane, midiLabel: (m: number) => string): DrumGridModel | undefined {
+// Compact-view seed when a fresh clip uses no pads yet: the basic kit voices
+// (kick/snare/closed-hat/open-hat/clap) so there is something to draw on.
+const SEED_NOTES = [36, 38, 42, 46, 39];
+
+/** Build the drum-grid row model for a sampler drumkit lane. One row per pad,
+ *  in keymap order (dedup by `rootNote`), labelled with the GM percussion name
+ *  when known, else the GM voice label, else the bare note name.
+ *
+ *  `fullKit === true`  ⇒ rows are every keymap pad (the whole kit).
+ *  `fullKit === false` ⇒ rows are only the pads the clip uses; for a fresh clip
+ *  that uses none yet, a small seed subset (kick/snare/CH/OH/clap when present).
+ *
+ *  Returns undefined (→ the editor's default 8 GM rows) when there are no pads. */
+export function samplerDrumModel(
+  lane: SessionLane,
+  clip: SessionClip,
+  midiLabel: (m: number) => string,
+  fullKit: boolean,
+): DrumGridModel | undefined {
   const km = lane.engineState?.sampler?.keymap ?? [];
   // Preserve keymap order so the grid rows line up with the per-pad rack columns
   // (which also iterate the keymap). Dedup by note, first occurrence wins.
-  const notes: number[] = [];
+  const allNotes: number[] = [];
   const seen = new Set<number>();
-  for (const e of km) { if (!seen.has(e.rootNote)) { seen.add(e.rootNote); notes.push(e.rootNote); } }
-  if (notes.length === 0) return undefined;
-  const labels = notes.map((n) => { const v = GM_DRUM_MAP[n]; return v ? LANE_LABELS[v] : midiLabel(n); });
+  for (const e of km) { if (!seen.has(e.rootNote)) { seen.add(e.rootNote); allNotes.push(e.rootNote); } }
+  if (allNotes.length === 0) return undefined;
+
+  let notes: number[];
+  if (fullKit) {
+    notes = allNotes;
+  } else {
+    const used = new Set((clip.notes ?? []).map((n) => n.midi));
+    notes = allNotes.filter((n) => used.has(n));
+    if (notes.length === 0) notes = allNotes.filter((n) => SEED_NOTES.includes(n));
+    if (notes.length === 0) notes = allNotes.slice(0, Math.min(5, allNotes.length));
+  }
+  const labels = notes.map((n) =>
+    GM_PERCUSSION_NAMES[n] ?? (GM_DRUM_MAP[n] ? LANE_LABELS[GM_DRUM_MAP[n]] : midiLabel(n)));
   return { rows: noteDrumRows(notes), labels };
 }
 
@@ -231,7 +257,9 @@ export function renderClipEditor(
       const stepsElapsed = Math.max(0, (deps.ctx.currentTime - lp.startTime) / stepDur);
       return loopAwareStep(clip, deps.seq.meter, stepsElapsed) * TICKS_PER_STEP;
     };
-    const model = lane.engineId === 'sampler' ? samplerDrumModel(lane, deps.midiLabel) : undefined;
+    const model = lane.engineId === 'sampler'
+      ? samplerDrumModel(lane, clip, deps.midiLabel, isDrumFullKit())
+      : undefined;
     bodyHandle = renderDrumGridEditor(bodyBox, clip, deps.historyDeps, deps.seq.meter, {
       auditionNote: audition, getPlayheadTick,
       loop: { toolbarHost: loopBar, historyDeps: deps.historyDeps, onChange: () => {} },

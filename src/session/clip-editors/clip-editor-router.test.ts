@@ -1,6 +1,6 @@
 // src/session/clip-editors/clip-editor-router.test.ts
 import { describe, it, expect, vi } from 'vitest';
-import { chooseClipEditor, isAudioClip, classifyClip, combineEditorHandle } from './clip-editor-router';
+import { chooseClipEditor, isAudioClip, classifyClip, combineEditorHandle, samplerDrumModel } from './clip-editor-router';
 import type { SessionLane, SessionClip } from '../session';
 
 const lane = (over: Partial<SessionLane>): SessionLane => ({
@@ -93,6 +93,28 @@ describe('classifyClip', () => {
   it('explicit piano-roll override on a drumkit-sampler → notes', () => {
     const l = lane({ engineId: 'sampler', engineState: { sampler: { keymap: [], drumkitId: 'tr808' } } });
     expect(classifyClip(l, noteClip, 'piano-roll', 'piano-roll')).toBe('notes');
+  });
+});
+
+const km = (notes: number[]) => notes.map((n) => ({ sampleId: `s${n}`, rootNote: n, loNote: n, hiNote: n }));
+const laneWith = (notes: number[]) => ({ id: 'l1', engineId: 'sampler', clips: [], engineState: { sampler: { keymap: km(notes) } } } as any);
+const clipWith = (used: number[]) => ({ id: 'c1', lengthBars: 1, notes: used.map((m) => ({ start: 0, duration: 6, midi: m, velocity: 80 })) } as any);
+const lbl = (m: number) => `n${m}`;
+
+describe('samplerDrumModel compact/full', () => {
+  it('full mode lists every pad with GM percussion labels', () => {
+    const m = samplerDrumModel(laneWith([36, 54, 69]), clipWith([]), lbl, true)!;
+    expect(m.rows.count).toBe(3);
+    expect(m.labels).toEqual(['Kick', 'Tamb', 'Cabasa']);
+  });
+  it('compact mode lists only the pads the clip uses', () => {
+    const m = samplerDrumModel(laneWith([36, 54, 69, 42]), clipWith([54, 69]), lbl, false)!;
+    expect(m.rows.count).toBe(2);
+    expect(m.labels).toEqual(['Tamb', 'Cabasa']);
+  });
+  it('compact mode on an empty clip seeds the basic voices present in the kit', () => {
+    const m = samplerDrumModel(laneWith([36, 38, 42, 46, 39, 69]), clipWith([]), lbl, false)!;
+    expect(m.labels).toEqual(['Kick', 'Snare', 'CH', 'OH', 'Clap']);
   });
 });
 
