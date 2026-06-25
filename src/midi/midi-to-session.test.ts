@@ -7,7 +7,7 @@ vi.mock('../engines/registry', () => ({
   ],
 }));
 
-import { midiToSession } from './midi-to-session';
+import { midiToSession, isGenericTrackName } from './midi-to-session';
 import type { ParsedMidi } from './midi-parse';
 
 describe('midiToSession', () => {
@@ -140,6 +140,34 @@ describe('midiToSession', () => {
     });
     // unique names stay clean; the two "Guitar" lanes get numbered
     expect(result.newLanes.map((l) => l.name)).toEqual(['Tambourine', 'Cabasa', 'Guitar 1', 'Guitar 2']);
+  });
+
+  it('falls back to the GM instrument when the track name is DAW cruft', () => {
+    const parsed: ParsedMidi = {
+      division: 96, bpm: null,
+      tracks: [
+        { index: 0, name: '1',        program: 20, notes: [{ startTick: 0, duration: 48, midi: 60, velocity: 90, channel: 0 }] },
+        { index: 1, name: 'MIDI out', program: 33, notes: [{ startTick: 0, duration: 48, midi: 40, velocity: 90, channel: 1 }] },
+        { index: 2, name: 'Bass',     program: 33, notes: [{ startTick: 0, duration: 48, midi: 40, velocity: 90, channel: 2 }] },
+      ],
+    };
+    const r = midiToSession(parsed, {
+      selectedTrackIndices: [0, 1, 2],
+      presetPerTrack: {
+        0: { engineId: 'subtractive', presetName: 'Init' },
+        1: { engineId: 'subtractive', presetName: 'Init' },
+        2: { engineId: 'subtractive', presetName: 'Init' },
+      },
+    });
+    // junk names → GM instrument; a real name ("Bass") is kept
+    expect(r.newLanes.map((l) => l.name)).toEqual(['Reed Organ', 'Electric Bass (finger)', 'Bass']);
+  });
+
+  it('isGenericTrackName flags DAW cruft, keeps real instrument names', () => {
+    for (const j of ['', '  ', '1', '10', 'Track', 'Track 3', 'MIDI out', 'MIDI out #2', 'untitled', 'channel 2'])
+      expect(isGenericTrackName(j), j).toBe(true);
+    for (const g of ['Tambourine', 'Bass', 'Lead Synth', 'Guitar', 'Reed Organ', 'Strings 1'])
+      expect(isGenericTrackName(g), g).toBe(false);
   });
 
   it('honours an explicit override even when presetPerTrack contradicts GM', () => {

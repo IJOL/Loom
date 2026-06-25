@@ -23,6 +23,19 @@ function nextId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${(idCounter++).toString(36)}`;
 }
 
+/** A MIDI track name that carries no instrument info — DAW-export cruft like
+ *  "1", "MIDI out", "MIDI out #2", "Track 3", "untitled", or empty. These are
+ *  dropped in favour of the channel's GM instrument (or a category label). */
+export function isGenericTrackName(name: string | undefined): boolean {
+  const n = (name ?? '').trim().toLowerCase();
+  if (n === '') return true;
+  if (/^\d+$/.test(n)) return true;                      // "1", "10"
+  if (/^track\s*\d*$/.test(n)) return true;              // "track", "track 3"
+  if (/^midi\s*(out|in)\s*#?\s*\d*$/.test(n)) return true; // "midi out", "midi out #2"
+  if (/^(untitled|new|none|channel\s*\d*|inst(rument)?\s*\d*)$/.test(n)) return true;
+  return false;
+}
+
 export function midiToSession(
   parsed: ParsedMidi,
   opts: {
@@ -93,13 +106,14 @@ export function midiToSession(
     // Percussion (channel 10) tracks are split: standard kit notes (kick/snare/
     // hats/toms/cymbals) → a normal Drums lane; GM-percussion notes (shaker/
     // tambourine/congas…) → a separate Drums lane on the GM Percussion sample kit.
+    const named = isGenericTrackName(trackName) ? undefined : trackName;
     if (isPercussionTrack(tr)) {
       const plan = planDrumLanes(clipNotes);
       if (plan.drum) {
-        specs.push({ notes: plan.drum, baseName: trackName || 'Drums', props: { engineId: 'drums-machine' } });
+        specs.push({ notes: plan.drum, baseName: named || 'Drums', props: { engineId: 'drums-machine' } });
       }
       if (plan.perc) {
-        specs.push({ notes: plan.perc, baseName: trackName || 'Percussion', props: {
+        specs.push({ notes: plan.perc, baseName: named || 'Percussion', props: {
           engineId: 'drums-machine',
           // Sample-kit Drums lane: kitMode 'sample' + the GM Percussion kit. The
           // import apply step (main.ts launchSceneById) loads it via applyDrumPreset.
@@ -118,7 +132,7 @@ export function midiToSession(
     // name (so a format-0 channel reads "Electric Bass (finger)" not a preset id),
     // else the assigned preset.
     const instrument = tr.program >= 0 ? gmInstrumentName(tr.program) : undefined;
-    specs.push({ notes: clipNotes, baseName: trackName || instrument || match.presetName, props: {
+    specs.push({ notes: clipNotes, baseName: named || instrument || match.presetName, props: {
       engineId: match.engineId,
       enginePresetName: `factory:${match.presetName}`,
     } });
