@@ -4,6 +4,7 @@ import type { NoteEvent } from '../core/notes';
 import { TICKS_PER_STEP } from '../core/notes';
 import { findGMMatches, isPercussionTrack, type GMMatch } from './gm-lookup';
 import { planDrumLanes } from './percussion-split';
+import { gmInstrumentName } from './gm-instruments';
 
 /** The bundled GM Percussion kit id (public/drumkits/gm-percussion.json). */
 const GM_PERCUSSION_KIT = 'gm-percussion';
@@ -78,8 +79,16 @@ export function midiToSession(
     clipPerLane[lane.id] = sceneRow;
   };
 
+  // Collect lane specs first, then title each lane after its instrument (the MIDI
+  // track name — informative in well-authored files), adding a numeric " 2"/" 3"
+  // suffix only when several lanes would share the same name. Falls back to the
+  // assigned preset / a generic label when a track has no name.
+  interface LaneSpec { notes: NoteEvent[]; baseName: string; props: Partial<SessionLane> & { engineId: string }; }
+  const specs: LaneSpec[] = [];
+
   for (const tr of selected) {
     const clipNotes = tr.notes.map(convert);
+    const trackName = tr.name?.trim();
 
     // Percussion (channel 10) tracks are split: standard kit notes (kick/snare/
     // hats/toms/cymbals) → a normal Drums lane; GM-percussion notes (shaker/
@@ -87,17 +96,16 @@ export function midiToSession(
     if (isPercussionTrack(tr)) {
       const plan = planDrumLanes(clipNotes);
       if (plan.drum) {
-        pushLane(plan.drum, tr.name || 'Drums', { engineId: 'drums-machine', name: 'Drums' });
+        specs.push({ notes: plan.drum, baseName: trackName || 'Drums', props: { engineId: 'drums-machine' } });
       }
       if (plan.perc) {
-        pushLane(plan.perc, 'Percussion', {
+        specs.push({ notes: plan.perc, baseName: trackName || 'Percussion', props: {
           engineId: 'drums-machine',
-          name: 'Percussion',
           // Sample-kit Drums lane: kitMode 'sample' + the GM Percussion kit. The
           // import apply step (main.ts launchSceneById) loads it via applyDrumPreset.
           engineState: { kitMode: 'sample', sampler: { keymap: [], drumkitId: GM_PERCUSSION_KIT } },
           enginePresetName: 'engine:GM Percussion',
-        });
+        } });
       }
       continue;
     }
@@ -106,11 +114,24 @@ export function midiToSession(
     const prog = tr.program < 0 ? 0 : tr.program;
     const match = opts.presetPerTrack[tr.index] ?? { engineId: 'poly', presetName: 'Init' };
     if (findGMMatches(prog).length === 0) unmatchedTracks.push({ name: tr.name, program: prog });
-    pushLane(clipNotes, tr.name || `Track ${tr.index}`, {
+    // Title after the instrument: the track name, else the GM program's instrument
+    // name (so a format-0 channel reads "Electric Bass (finger)" not a preset id),
+    // else the assigned preset.
+    const instrument = tr.program >= 0 ? gmInstrumentName(tr.program) : undefined;
+    specs.push({ notes: clipNotes, baseName: trackName || instrument || match.presetName, props: {
       engineId: match.engineId,
-      name: match.presetName,
       enginePresetName: `factory:${match.presetName}`,
-    });
+    } });
+  }
+
+  // Numeric dedup: a unique name stays clean; duplicates become "<name> 1", "<name> 2", …
+  const totals: Record<string, number> = {};
+  for (const s of specs) totals[s.baseName] = (totals[s.baseName] ?? 0) + 1;
+  const seen: Record<string, number> = {};
+  for (const s of specs) {
+    let name = s.baseName;
+    if (totals[s.baseName] > 1) { seen[s.baseName] = (seen[s.baseName] ?? 0) + 1; name = `${s.baseName} ${seen[s.baseName]}`; }
+    pushLane(s.notes, name, { ...s.props, name });
   }
 
   const scene: SessionScene = {

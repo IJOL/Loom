@@ -28,9 +28,9 @@ describe('midiToSession', () => {
     expect(result.newLanes[0].clips[0]?.notes[0].midi).toBe(36);
     expect(result.bpm).toBeCloseTo(128, 0);
     expect(result.newLanes[0].enginePresetName).toBe('factory:BASS Acid Classic');
-    // The lane (channel) is titled after the assigned preset, not the MIDI track.
-    expect(result.newLanes[0].name).toBe('BASS Acid Classic');
-    // The clip keeps the original MIDI track name as its label.
+    // The lane is titled after its instrument (the MIDI track name), not the preset.
+    expect(result.newLanes[0].name).toBe('Bass');
+    // The clip carries the same instrument label.
     expect(result.newLanes[0].clips[0]?.name).toBe('Bass');
     // Every imported clip gets an auto-assigned colour so it renders readably.
     expect(result.newLanes[0].clips[0]?.color).toMatch(/^#[0-9a-f]{6}$/i);
@@ -116,7 +116,30 @@ describe('midiToSession', () => {
     expect(result.newLanes).toHaveLength(2);
     expect(result.newLanes[0].engineId).toBe('tb303');          // bass (channel 0, melodic)
     expect(result.newLanes[1].engineId).toBe('drums-machine');  // drums (channel 10)
-    expect(result.newLanes.map((l) => l.name)).toEqual(['BASS Acid Classic', 'Drums']);
+    // Lanes are titled after their instruments (the MIDI track names).
+    expect(result.newLanes.map((l) => l.name)).toEqual(['Bass', 'Drums']);
+  });
+
+  it('titles lanes after the instrument, numbering duplicates "<name> 1/2/3"', () => {
+    const parsed: ParsedMidi = {
+      division: 96, bpm: null,
+      tracks: [
+        // three single-instrument percussion tracks sharing no name + two same-named melodic
+        { index: 0, name: 'Tambourine', program: 0, notes: [{ startTick: 0, duration: 12, midi: 54, velocity: 90, channel: 9 }] },
+        { index: 1, name: 'Cabasa',     program: 0, notes: [{ startTick: 0, duration: 12, midi: 69, velocity: 90, channel: 9 }] },
+        { index: 2, name: 'Guitar',     program: 25, notes: [{ startTick: 0, duration: 48, midi: 60, velocity: 90, channel: 0 }] },
+        { index: 3, name: 'Guitar',     program: 25, notes: [{ startTick: 0, duration: 48, midi: 62, velocity: 90, channel: 1 }] },
+      ],
+    };
+    const result = midiToSession(parsed, {
+      selectedTrackIndices: [0, 1, 2, 3],
+      presetPerTrack: {
+        2: { engineId: 'subtractive', presetName: 'Init' },
+        3: { engineId: 'subtractive', presetName: 'Init' },
+      },
+    });
+    // unique names stay clean; the two "Guitar" lanes get numbered
+    expect(result.newLanes.map((l) => l.name)).toEqual(['Tambourine', 'Cabasa', 'Guitar 1', 'Guitar 2']);
   });
 
   it('honours an explicit override even when presetPerTrack contradicts GM', () => {
