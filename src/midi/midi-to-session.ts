@@ -5,6 +5,7 @@ import { TICKS_PER_STEP } from '../core/notes';
 import { findGMMatches, isPercussionTrack, type GMMatch } from './gm-lookup';
 import { planDrumLanes } from './percussion-split';
 import { gmInstrumentName } from './gm-instruments';
+import { makeTempoMap, hasTempoChanges } from '../core/tempo-map';
 
 /** The bundled GM Percussion kit id (public/drumkits/gm-percussion.json). */
 const GM_PERCUSSION_KIT = 'gm-percussion';
@@ -64,6 +65,15 @@ export function midiToSession(
   const songTicks = Math.ceil((globalMaxEnd - globalMinStart) * scale);
   const lengthBars = Math.max(1, Math.ceil(songTicks / TICKS_PER_BAR));
 
+  // Build the clip tempo map (scaled to Loom ticks, same origin as the notes).
+  // Only attach it when the song actually changes tempo — a constant-tempo MIDI
+  // keeps the normal single-BPM scheduling path, unchanged.
+  const scaledTempos = (parsed.tempos ?? []).map((t) => ({
+    tick: Math.max(0, Math.round((t.tick - globalMinStart) * scale)), bpm: t.bpm,
+  }));
+  const songTempoMap = scaledTempos.length ? makeTempoMap(scaledTempos) : null;
+  const clipTempoMap = songTempoMap && hasTempoChanges(songTempoMap) ? songTempoMap : undefined;
+
   const newLanes: SessionLane[] = [];
   const clipPerLane: Record<string, number | null> = {};
   const unmatchedTracks: { name: string; program: number }[] = [];
@@ -84,6 +94,7 @@ export function midiToSession(
       color: CLIP_COLOR_PALETTE[newLanes.length % CLIP_COLOR_PALETTE.length],
       lengthBars,
       notes,
+      ...(clipTempoMap ? { tempoMap: clipTempoMap } : {}),
     };
     const clips: (SessionClip | null)[] =
       sceneRow > 0 ? [...Array<SessionClip | null>(sceneRow).fill(null), clip] : [clip];

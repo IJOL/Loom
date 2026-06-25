@@ -89,6 +89,11 @@ export interface SessionClip {
    *  whose audio now lives in the bank keymap). The scheduler IGNORES this — it
    *  is purely for the editor's waveform strip + slice markers. Absent ⇒ no header. */
   waveformRef?: { sampleId: string; slices?: LoopSlice[] };
+  /** Per-clip tempo map (tempo changes at ticks on the TICKS_PER_QUARTER grid,
+   *  same units as NoteEvent.start). When present with >1 distinct tempo, the
+   *  scheduler times notes by integrating it instead of the constant global BPM —
+   *  faithful playback of MIDIs with tempo changes. Absent ⇒ constant tempo. */
+  tempoMap?: import('../core/tempo-map').TempoPoint[];
 }
 
 export interface SessionLane {

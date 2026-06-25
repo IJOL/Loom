@@ -62,6 +62,32 @@ describe('lane-scheduler tickLane', () => {
     expect(triggered[1].time - triggered[0].time).toBeCloseTo(2.0, 1);
   });
 
+  it('a clip tempo map times notes by integrating tempo (not constant bpm)', () => {
+    // 120 BPM for the first beat, then 60 BPM. Notes on beats 0,1,2.
+    const clip: SessionClip = {
+      id: 'tm', lengthBars: 2,
+      notes: [
+        { start: 0, duration: 10, midi: 60, velocity: 100 },
+        { start: TICKS_PER_QUARTER, duration: 10, midi: 62, velocity: 100 },
+        { start: 2 * TICKS_PER_QUARTER, duration: 10, midi: 64, velocity: 100 },
+      ],
+      tempoMap: [{ tick: 0, bpm: 120 }, { tick: TICKS_PER_QUARTER, bpm: 60 }],
+    };
+    const fires: Array<{ midi: number; time: number }> = [];
+    let loopStart = 0, lastScheduledAt = -Infinity;
+    for (let now = 0; now < 2.5; now += 0.025) {
+      loopStart = tickLane(clip, {
+        bpm: 120, lookaheadSec: 0.12, now, loopStartedAt: loopStart, lastScheduledAt,
+        onTrigger: (n, t) => { fires.push({ midi: n.midi, time: t }); if (t > lastScheduledAt) lastScheduledAt = t; },
+        onAutomation: () => {},
+      });
+    }
+    expect(fires).toHaveLength(3);
+    expect(fires[0].time).toBeCloseTo(0, 4);   // beat 0
+    expect(fires[1].time).toBeCloseTo(0.5, 4); // beat 1 @120 → 0.5 s
+    expect(fires[2].time).toBeCloseTo(1.5, 4); // beat 2: +1 beat @60 → 1.5 s (constant-120 would be 1.0)
+  });
+
   it('two clips with lengths 1 and 4 loop independently', () => {
     const oneBar: SessionClip  = { id: 'a', lengthBars: 1, notes: [{ start: 0, duration: 10, midi: 60, velocity: 100 }] };
     const fourBar: SessionClip = { id: 'b', lengthBars: 4, notes: [{ start: 0, duration: 10, midi: 48, velocity: 100 }] };

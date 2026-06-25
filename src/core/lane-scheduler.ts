@@ -9,6 +9,7 @@ import { TICKS_PER_QUARTER, TICKS_PER_STEP, type NoteEvent } from './notes';
 import { ticksPerBar, DEFAULT_METER, type TimeSignature } from './meter';
 import { effectiveClipLoop } from './clip-loop';
 import { sliceMarkersToRegion } from '../samples/warp-region';
+import { tickRangeSec } from './tempo-map';
 
 export interface SchedulerContext {
   bpm: number;
@@ -72,9 +73,15 @@ const DRIFT = 1e-6;
 export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
   const meter = ctx.meter ?? DEFAULT_METER;
   const secPerBeat = 60 / ctx.bpm;
+  // Per-clip tempo map: when the clip varies tempo (imported MIDI with tempo
+  // changes), time notes by integrating the map instead of the constant global
+  // BPM. Absent / single-tempo ⇒ the normal linear path, unchanged.
+  const tmap = clip.tempoMap && clip.tempoMap.length > 1 ? clip.tempoMap : null;
   const { startTick, endTick } = effectiveClipLoop(clip, meter);
   const loopTicks = endTick - startTick;
-  const clipDurSec = (loopTicks / TICKS_PER_QUARTER) * secPerBeat;
+  const clipDurSec = tmap
+    ? tickRangeSec(tmap, startTick, endTick)
+    : (loopTicks / TICKS_PER_QUARTER) * secPerBeat;
   if (clipDurSec <= 0) return ctx.loopStartedAt;
 
   // Derive how many full iterations have completed since the original anchor.
@@ -146,7 +153,9 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
       // Note clip: each note fires at its grid time.
       for (const n of clip.notes) {
         if (n.start < startTick || n.start >= endTick) continue;
-        const clipTimeSec = ((n.start - startTick) / TICKS_PER_QUARTER) * secPerBeat;
+        const clipTimeSec = tmap
+          ? tickRangeSec(tmap, startTick, n.start)
+          : ((n.start - startTick) / TICKS_PER_QUARTER) * secPerBeat;
         const scheduleAt  = iterStart + clipTimeSec;
         if (scheduleAt >= windowStart && scheduleAt < windowEnd) {
           ctx.onTrigger({ midi: n.midi, duration: n.duration, velocity: n.velocity }, scheduleAt);
