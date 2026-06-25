@@ -27,12 +27,18 @@ export const ENGINE_TRIM: Record<string, number> = {
   karplus: 0.8,
 };
 
-/** Per-category gain — the global balance BETWEEN families. 1.0 = each path's
- *  historical level (so introducing this layer changes nothing until tuned).
- *  `drum` carries what used to be DrumsWorkletEngine.SAMPLE_GAIN (2.0). */
+/** Per-category gain — the global balance BETWEEN families. `drum` carries what
+ *  used to be DrumsWorkletEngine.SAMPLE_GAIN.
+ *
+ *  Tuned 2026-06-25 from a real hand-mix (Daft Punk "Around the World"): the user
+ *  had to drop melodic faders to ~0.5 and push drum/perc to the top (~1.5 → ×2.0
+ *  category ≈ 3.0) for a sensible balance. So sample drum kits read ~3 dB- ish
+ *  louder, synths sit lower — half-and-half (synth ÷2, drum ×1.5). Sampler/audio
+ *  stay at 1.0 (not measured yet — tune by ear here). The master soft-clip absorbs
+ *  the hotter drum transients. */
 export const CATEGORY_GAIN = {
-  synth: 1.0,
-  drum: 2.0,
+  synth: 0.5,
+  drum: 3.0,
   sampler: 1.0,
   audio: 1.0,
 };
