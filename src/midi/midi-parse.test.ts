@@ -68,6 +68,32 @@ describe('parseMidiFile', () => {
     expect(tracks.map((t) => t.index)).toEqual([0, 1]);
   });
 
+  it('collapses junk tempo events crammed at the start to the effective tempo', () => {
+    // Mirrors Calvin Harris: 100, 100, 128 within a few ticks at the very start —
+    // 128 is the real tempo. The parser must report 128 (not the literal first 100)
+    // and collapse the cluster to a single tempo entry.
+    const us = (bpm: number) => Math.round(60_000_000 / bpm);
+    const u3 = (n: number) => [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
+    const ev = [
+      0x00, 0xff, 0x51, 0x03, ...u3(us(100)),
+      0x01, 0xff, 0x51, 0x03, ...u3(us(100)),
+      0x01, 0xff, 0x51, 0x03, ...u3(us(128)),
+      0x00, 0x90, 60, 100,
+      0x60, 0x80, 60, 0,
+      0x00, 0xff, 0x2f, 0x00,
+    ];
+    const len = ev.length;
+    const buf = new Uint8Array([
+      0x4d,0x54,0x68,0x64, 0,0,0,6, 0,0, 0,1, 0,96,
+      0x4d,0x54,0x72,0x6b, (len>>24)&0xff,(len>>16)&0xff,(len>>8)&0xff,len&0xff,
+      ...ev,
+    ]);
+    const parsed = parseMidiFile(buf);
+    expect(Math.round(parsed.bpm ?? 0)).toBe(128);
+    expect(parsed.tempos).toHaveLength(1);
+    expect(Math.round(parsed.tempos![0].bpm)).toBe(128);
+  });
+
   it('parses a real fixture file (sweet-dreams.mid)', () => {
     const fs = require('node:fs');
     const path = require('node:path');

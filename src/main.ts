@@ -290,7 +290,8 @@ const mixerDeps: import('./core/mixer').MixerColumnDeps = {
 
 bpmInput.addEventListener('input', () => {
   const v = parseFloat(bpmInput.value);
-  if (!isNaN(v)) bpmBroadcast.broadcast(clampBpm(v));
+  // Manual BPM edit = take constant-tempo control: drop any active song tempo map.
+  if (!isNaN(v)) { seq.setTempoMap(undefined); bpmBroadcast.broadcast(clampBpm(v)); }
 });
 bpmBroadcast.broadcast(seq.bpm);
 
@@ -301,6 +302,9 @@ function setTransportBpm(bpm: number): void {
   // Keep the FLOAT — a detected 127.63 must not snap to 128, or native-played
   // audio (stems/loops) drifts against the grid within a few bars.
   const clamped = clampBpm(bpm);
+  // Default to constant tempo; a MIDI import with tempo changes re-sets a map
+  // immediately after (so demos/saves/stems, which don't, clear a stale map).
+  seq.setTempoMap(undefined);
   bpmBroadcast.broadcast(clamped);
   bpmInput.value = formatBpm(clamped);
 }
@@ -940,7 +944,7 @@ refreshRecButton();
   const timeEl     = document.getElementById('transport-time');
   if (positionEl && timeEl) {
     void import('./core/transport-display').then(({ wireTransportDisplay }) => {
-      wireTransportDisplay({ seq, ctx, positionEl, timeEl });
+      wireTransportDisplay({ seq, ctx, positionEl, timeEl, bpmEl: bpmInput });
     });
   }
 }
@@ -993,6 +997,7 @@ function launchSceneById(sceneId: string): void {
 wireMidiImportUI({
   session: sessionHost.state,
   setBpm: setTransportBpm,
+  setTempoMap: (map, songTicks) => seq.setTempoMap(map, songTicks),
   audioContext: ctx,
   auditionOutput: master,
   onSessionChanged: () => sessionHost.renderWithMixer(),

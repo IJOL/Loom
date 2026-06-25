@@ -14,12 +14,17 @@
 
 import type { Sequencer } from './sequencer';
 import { stepsPerBar, stepsPerBeat } from './meter';
+import { TICKS_PER_STEP } from './notes';
+import { tickToSec, secToTick, bpmAtTick } from './tempo-map';
 
 export interface TransportDisplayDeps {
   seq: Sequencer;
   ctx: AudioContext;
   positionEl: HTMLElement;
   timeEl: HTMLElement;
+  /** The visible BPM input. When a tempo map is active, the readout shows the
+   *  live current tempo here while playing. Optional. */
+  bpmEl?: HTMLInputElement;
 }
 
 export function formatPosition(step: number, barSteps: number, beatSteps: number): string {
@@ -39,7 +44,7 @@ function formatElapsed(seconds: number): string {
 }
 
 export function wireTransportDisplay(deps: TransportDisplayDeps): void {
-  const { seq, ctx, positionEl, timeEl } = deps;
+  const { seq, ctx, positionEl, timeEl, bpmEl } = deps;
   let playStartCtxTime: number | null = null;
   let wasPlaying = false;
 
@@ -51,11 +56,20 @@ export function wireTransportDisplay(deps: TransportDisplayDeps): void {
         wasPlaying = true;
       }
       const elapsed = ctx.currentTime - (playStartCtxTime ?? ctx.currentTime);
-      // step = elapsed_seconds / step_duration, where step_duration = 60/bpm/4
-      // (16ths). Equivalent: elapsed * bpm * 4 / 60.
-      const step = elapsed * seq.bpm * 4 / 60;
       const m = seq.meter;
-      positionEl.textContent = formatPosition(step, stepsPerBar(m), stepsPerBeat(m));
+      const tmap = seq.tempoMap;
+      if (tmap && seq.tempoSongTicks > 0) {
+        // Tempo-map playback: position + BPM follow the map, not a constant bpm.
+        // Loop the readout over the song length so it tracks the looping clips.
+        const songDur = tickToSec(tmap, seq.tempoSongTicks);
+        const posSec = songDur > 0 ? elapsed % songDur : elapsed;
+        const tk = secToTick(tmap, posSec);
+        positionEl.textContent = formatPosition(tk / TICKS_PER_STEP, stepsPerBar(m), stepsPerBeat(m));
+        if (bpmEl) bpmEl.value = String(Math.round(bpmAtTick(tmap, tk)));
+      } else {
+        // step = elapsed / step_duration (60/bpm/4 = 16ths) → elapsed * bpm * 4 / 60.
+        positionEl.textContent = formatPosition(elapsed * seq.bpm * 4 / 60, stepsPerBar(m), stepsPerBeat(m));
+      }
       timeEl.textContent = formatElapsed(elapsed);
     } else if (wasPlaying) {
       // Just stopped — freeze the readout so the user can read the final position.

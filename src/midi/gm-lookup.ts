@@ -10,12 +10,33 @@ export interface GMMatch {
 export const GM_PERCUSSION_MATCH: GMMatch = { engineId: 'sampler', presetName: 'GM Percussion', drumkitId: 'gm-percussion' };
 
 /** True when most of a track's notes are on MIDI channel 10 (0-based 9) — the
- *  GM percussion channel. Such tracks import onto the GM Percussion sample kit. */
+ *  GM percussion channel. */
 export function isPercussionTrack(track: ParsedTrack): boolean {
   const notes = track.notes;
   if (notes.length === 0) return false;
   const drum = notes.filter((n) => n.channel === 9).length;
   return drum / notes.length >= 0.5;
+}
+
+// Explicit percussion names (win over a melodic substring like "bass" in "bassdrum").
+const PERC_NAME_RE = /(drum|kick|snare|\bhat|hi-?hat|cymbal|crash|\bride\b|perc|clap|\btom\b|conga|bongo|shaker|tambour|cowbell|clave|woodblock|\bkit\b)/i;
+// Clearly melodic instrument/role names.
+const MELODIC_NAME_RE = /(melod|bass|lead|chord|pad|string|synth|\barp|pluck|\bkey|piano|organ|guitar|vocal|voice|brass|\bsax|flute|violin|cello|harp|bell|rhodes|wurli|clav|\bseq|riff|theme|hook|horn|trumpet|choir)/i;
+
+/** A track name that clearly names a melodic instrument/role (and is NOT an
+ *  explicit percussion name). Used to rescue a melodic part that a bad MIDI put
+ *  on channel 10 (e.g. Squarepusher's "melody 1") from the drum-kit path. */
+export function looksMelodic(name: string | undefined): boolean {
+  if (!name) return false;
+  if (PERC_NAME_RE.test(name)) return false;
+  return MELODIC_NAME_RE.test(name);
+}
+
+/** Should this track import onto the GM Percussion / drum kit? Channel-10 by
+ *  default, BUT a channel-10 track with a clearly melodic name is treated as
+ *  melodic (some MIDIs misuse channel 10 for a lead/chord part). */
+export function isDrumkitTrack(track: ParsedTrack): boolean {
+  return isPercussionTrack(track) && !looksMelodic(track.name);
 }
 
 export function findGMMatches(program: number): GMMatch[] {
@@ -30,6 +51,15 @@ export function findGMMatches(program: number): GMMatch[] {
 
 export function firstMatchForGM(program: number): GMMatch {
   const matches = findGMMatches(program);
+  return matches[0] ?? { engineId: 'poly', presetName: 'Init' };
+}
+
+/** Like firstMatchForGM but for a MELODIC track: never returns a drum kit. GM
+ *  program 0 (and others) are tagged on drums-machine KIT presets, so a plain
+ *  GM lookup would route a melodic track with no/zero program onto a drum kit —
+ *  exactly the "all melodic channels became drumkits" bug. */
+export function firstMelodicMatchForGM(program: number): GMMatch {
+  const matches = findGMMatches(program).filter((m) => m.engineId !== 'drums-machine');
   return matches[0] ?? { engineId: 'poly', presetName: 'Init' };
 }
 
@@ -107,10 +137,10 @@ export function suggestDefaultMapping(
   for (const idx of selectedTrackIndices) {
     const tr = parsed.tracks.find((t) => t.index === idx);
     if (!tr) continue;
-    if (isPercussionTrack(tr)) { presetPerTrack[idx] = { ...GM_PERCUSSION_MATCH }; continue; }
+    if (isDrumkitTrack(tr)) { presetPerTrack[idx] = { ...GM_PERCUSSION_MATCH }; continue; }
     const prog = tr.program < 0 ? 0 : tr.program;
     const hint = engineHintFromName(tr.name);
-    presetPerTrack[idx] = hint ? presetForEngine(hint, prog, tr.name) : firstMatchForGM(prog);
+    presetPerTrack[idx] = hint ? presetForEngine(hint, prog, tr.name) : firstMelodicMatchForGM(prog);
   }
   return { presetPerTrack };
 }

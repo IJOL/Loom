@@ -8,11 +8,36 @@ vi.mock('../engines/registry', () => ({
   ],
 }));
 
-import { findGMMatches, firstMatchForGM, pickPresetForGM, suggestDefaultMapping, isPercussionTrack } from './gm-lookup';
+import { findGMMatches, firstMatchForGM, firstMelodicMatchForGM, pickPresetForGM, suggestDefaultMapping, isPercussionTrack, looksMelodic, isDrumkitTrack } from './gm-lookup';
 import type { ParsedMidi } from './midi-parse';
 
 const note = (midi: number, channel: number) => ({ startTick: 0, duration: 1, midi, velocity: 80, channel });
 const pTrack = (index: number, name: string, notes: any[]) => ({ index, name, program: 0, notes });
+
+describe('looksMelodic / isDrumkitTrack', () => {
+  it('looksMelodic accepts melodic names, rejects percussion ones', () => {
+    for (const m of ['melody 1', 'Bassline', 'Chords 2', 'Lead Synth', 'Pad 3', 'Strings', 'Piano'])
+      expect(looksMelodic(m), m).toBe(true);
+    for (const p of ['bassdrum', 'cymbal', 'Drumkit', 'Snare', 'Hi-Hat', 'Conga', 'kick', ''])
+      expect(looksMelodic(p), p).toBe(false);
+  });
+  it('a channel-10 track with a melodic name is NOT a drum kit (e.g. melody on ch10)', () => {
+    expect(isDrumkitTrack(pTrack(0, 'melody 1', [note(60, 9), note(64, 9), note(67, 9)]))).toBe(false);
+    expect(isDrumkitTrack(pTrack(0, 'Drums', [note(36, 9), note(38, 9)]))).toBe(true);
+    expect(isDrumkitTrack(pTrack(0, 'Lead', [note(60, 0)]))).toBe(false); // melodic channel
+  });
+  it('firstMelodicMatchForGM never returns a drum kit (program 0 is tagged on KIT presets)', () => {
+    expect(firstMelodicMatchForGM(0).engineId).not.toBe('drums-machine');
+  });
+  it('a melodic track (program 0, no program) does NOT auto-map to a drum kit', () => {
+    const parsed: ParsedMidi = {
+      division: 96, bpm: 120,
+      tracks: [pTrack(0, 'melody 1', [note(60, 0), note(64, 0), note(67, 0)])],
+    } as any;
+    const { presetPerTrack } = suggestDefaultMapping(parsed, [0]);
+    expect(presetPerTrack[0].engineId).not.toBe('drums-machine');
+  });
+});
 
 describe('isPercussionTrack', () => {
   it('true when the majority of notes are on channel 9', () => {

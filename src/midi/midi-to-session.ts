@@ -2,7 +2,7 @@ import type { ParsedMidi } from './midi-parse';
 import { CLIP_COLOR_PALETTE, type SessionLane, type SessionClip, type SessionScene } from '../session/session';
 import type { NoteEvent } from '../core/notes';
 import { TICKS_PER_STEP } from '../core/notes';
-import { findGMMatches, isPercussionTrack, type GMMatch } from './gm-lookup';
+import { findGMMatches, isDrumkitTrack, type GMMatch } from './gm-lookup';
 import { planDrumLanes } from './percussion-split';
 import { gmInstrumentName } from './gm-instruments';
 import { makeTempoMap, hasTempoChanges } from '../core/tempo-map';
@@ -14,6 +14,11 @@ export interface MidiImportResult {
   newLanes: SessionLane[];
   scene: SessionScene;
   bpm: number | null;
+  /** Song tempo map (Loom ticks) when the MIDI changes tempo; the transport uses
+   *  it to show the live current BPM. Absent ⇒ constant tempo. */
+  tempoMap?: import('../core/tempo-map').TempoMap;
+  /** Total song length in Loom ticks (for looping the live tempo readout). */
+  songTicks?: number;
   unmatchedTracks: { name: string; program: number }[];
 }
 
@@ -118,7 +123,7 @@ export function midiToSession(
     // hats/toms/cymbals) → a normal Drums lane; GM-percussion notes (shaker/
     // tambourine/congas…) → a separate Drums lane on the GM Percussion sample kit.
     const named = isGenericTrackName(trackName) ? undefined : trackName;
-    if (isPercussionTrack(tr)) {
+    if (isDrumkitTrack(tr)) {
       const plan = planDrumLanes(clipNotes);
       if (plan.drum) {
         specs.push({ notes: plan.drum, baseName: named || 'Drums', props: { engineId: 'drums-machine' } });
@@ -167,7 +172,10 @@ export function midiToSession(
 
   return {
     newLanes, scene,
+    // parsed.bpm is the effective starting tempo (the parser collapses junk events
+    // crammed at the start to the real tempo).
     bpm: parsed.bpm,
+    ...(clipTempoMap ? { tempoMap: clipTempoMap, songTicks } : {}),
     unmatchedTracks,
   };
 }

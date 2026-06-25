@@ -13,7 +13,7 @@
 import { parseMidiFile, type ParsedMidi } from './midi-parse';
 import { alertDialog, choiceDialog } from '../core/dialog';
 import { midiToSession } from './midi-to-session';
-import { findGMMatches, suggestDefaultMapping, type GMMatch } from './gm-lookup';
+import { findGMMatches, suggestDefaultMapping, isDrumkitTrack, type GMMatch } from './gm-lookup';
 import { gmInstrumentName } from './gm-instruments';
 import { auditionPreset } from './audition';
 import { isPresetsReady, getCachedPresets } from '../presets/preset-loader';
@@ -25,6 +25,9 @@ export interface MidiImportUiDeps {
   /** Apply a new tempo. The caller updates whatever holds the global BPM
    *  (Sequencer.bpm, UI input, downstream engines). */
   setBpm: (bpm: number) => void;
+  /** Set (or clear) the active song tempo map so the transport shows the live
+   *  current BPM during tempo-varying playback. Called on every import. */
+  setTempoMap?: (map: import('../core/tempo-map').TempoMap | undefined, songTicks: number) => void;
   audioContext: AudioContext;
   /** Node the audition voice connects into — typically the master gain. */
   auditionOutput: AudioNode;
@@ -137,8 +140,8 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
       cb.checked = true;
       // Title preference mirrors midiToSession: track name, else GM instrument
       // (so a demultiplexed format-0 channel reads as its instrument, not "untitled").
-      const allPerc = tr.notes.every((n) => n.channel === 9);
-      const instrument = tr.name || (allPerc ? 'Percussion' : (tr.program >= 0 ? gmInstrumentName(tr.program) : '') || 'untitled');
+      const isDrum = isDrumkitTrack(tr);
+      const instrument = tr.name || (isDrum ? 'Percussion' : (tr.program >= 0 ? gmInstrumentName(tr.program) : '') || 'untitled');
       const label = document.createElement('span');
       label.textContent = ` [${tr.index}] ${instrument} — ${tr.notes.length} notes, ${lo}-${hi}, prog ${tr.program}`;
       row.append(cb, label);
@@ -207,6 +210,8 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
     }
 
     if (result.bpm) deps.setBpm(result.bpm);
+    // Activate (or clear) the live tempo-map readout for this import.
+    deps.setTempoMap?.(result.tempoMap, result.songTicks ?? 0);
 
     deps.onSessionChanged();
     deps.launchScene(result.scene.id);

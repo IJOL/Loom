@@ -41,6 +41,17 @@ export class Sequencer {
   meter: TimeSignature = { ...DEFAULT_METER };
   length: number;        // master/default length in 16th steps (bars * 16)
 
+  /** Active song tempo map (an imported MIDI that changes tempo). When set, the
+   *  transport readout shows the LIVE current BPM (bpmAtTick at the playhead) +
+   *  tempo-aware position, instead of the constant `bpm`. Cleared when the user
+   *  edits BPM manually or loads/imports content with no tempo map. */
+  tempoMap?: import('./tempo-map').TempoMap;
+  /** Total song length (Loom ticks) for the tempo map, to loop the live readout. */
+  tempoSongTicks = 0;
+  setTempoMap(map: import('./tempo-map').TempoMap | undefined, songTicks = 0): void {
+    this.tempoMap = map; this.tempoSongTicks = songTicks;
+  }
+
   /** Session-mode tick hook. Called every scheduler tick with (currentTime,
    *  lookaheadSec). The session host owns per-lane scheduling. */
   sessionTick?: (now: number, lookahead: number) => void;

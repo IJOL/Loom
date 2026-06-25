@@ -118,9 +118,20 @@ export function parseMidiFile(buf: Uint8Array): ParsedMidi {
       }
     }
   }
-  // Tempo events can come from any track; sort by absolute tick and drop
-  // consecutive duplicates so the map is clean for tickToSec().
+  // Tempo events can come from any track; sort by absolute tick, then COLLAPSE
+  // near-simultaneous events to the LAST one. Exports often cram several tempos
+  // at one instant (e.g. 100×7 then 128 within a few ticks at the very start,
+  // where 128 is the real tempo) — keeping the last of such a cluster yields the
+  // effective tempo. Finally drop consecutive duplicates. `bpm` (the scalar) then
+  // reflects the effective STARTING tempo, not the literal first event.
   tempos.sort((a, b) => a.tick - b.tick);
-  const tempoMap = tempos.filter((e, i) => i === 0 || e.bpm !== tempos[i - 1].bpm);
-  return { division, bpm, tempos: tempoMap, tracks };
+  const EPS = Math.max(1, division / 16); // events < 1/16 beat apart = same instant
+  const collapsed: TempoEvent[] = [];
+  for (const e of tempos) {
+    const prev = collapsed[collapsed.length - 1];
+    if (prev && e.tick - prev.tick < EPS) prev.bpm = e.bpm;
+    else collapsed.push({ tick: e.tick, bpm: e.bpm });
+  }
+  const tempoMap = collapsed.filter((e, i) => i === 0 || e.bpm !== collapsed[i - 1].bpm);
+  return { division, bpm: tempoMap.length ? tempoMap[0].bpm : bpm, tempos: tempoMap, tracks };
 }
