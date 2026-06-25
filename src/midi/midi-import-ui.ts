@@ -179,13 +179,13 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
     // button; Replace builds a fresh session at row 0; Cancel aborts.
     const trackCount = indices.length;
     const action = await choiceDialog(
-      `${trackCount} pista(s)` + (parsed.bpm ? ` @ ${Math.round(parsed.bpm)} BPM` : '') +
-      `. ¿Añadir a la sesión actual o sustituirla?`,
+      `${trackCount} track(s)` + (parsed.bpm ? ` @ ${Math.round(parsed.bpm)} BPM` : '') +
+      `. Add to the current session or replace it?`,
       [
-        { id: 'replace', label: 'Sustituir', danger: true },
-        { id: 'add', label: 'Añadir', primary: true },
+        { id: 'replace', label: 'Replace', danger: true },
+        { id: 'add', label: 'Add', primary: true },
       ],
-      { title: 'Importar MIDI' },
+      { title: 'Import MIDI' },
     );
     if (action === null) return; // Cancelled — abort the import cleanly.
     const doAdd = action === 'add';
