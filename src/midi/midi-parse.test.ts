@@ -40,6 +40,34 @@ describe('parseMidiFile', () => {
     expect(tracks[0].notes[0].velocity).toBe(47);
   });
 
+  it('demultiplexes a multi-channel (format-0) track into one track per channel', () => {
+    // One MTrk carrying two instruments on channels 0 and 1 (a format-0 layout).
+    const ev = [
+      0x00, 0xc0, 33,        // ch0 program = 33 (Electric Bass)
+      0x00, 0x90, 36, 100,   // ch0 note on
+      0x60, 0x80, 36, 0,     // ch0 note off
+      0x00, 0xc1, 56,        // ch1 program = 56 (Trumpet)
+      0x00, 0x91, 64, 90,    // ch1 note on
+      0x60, 0x81, 64, 0,     // ch1 note off
+      0x00, 0xff, 0x2f, 0x00,
+    ];
+    const len = ev.length;
+    const buf = new Uint8Array([
+      0x4d,0x54,0x68,0x64, 0x00,0x00,0x00,0x06,
+      0x00,0x00, 0x00,0x01, 0x00,0x60,
+      0x4d,0x54,0x72,0x6b,
+      (len>>24)&0xff,(len>>16)&0xff,(len>>8)&0xff,len&0xff,
+      ...ev,
+    ]);
+    const { tracks } = parseMidiFile(buf);
+    expect(tracks).toHaveLength(2);
+    expect(tracks[0].program).toBe(33);
+    expect(tracks[0].notes.every((n) => n.channel === 0)).toBe(true);
+    expect(tracks[1].program).toBe(56);
+    expect(tracks[1].notes.every((n) => n.channel === 1)).toBe(true);
+    expect(tracks.map((t) => t.index)).toEqual([0, 1]);
+  });
+
   it('parses a real fixture file (sweet-dreams.mid)', () => {
     const fs = require('node:fs');
     const path = require('node:path');

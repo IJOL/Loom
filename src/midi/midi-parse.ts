@@ -26,15 +26,25 @@ export function parseMidiFile(buf: Uint8Array): ParsedMidi {
   p = 4 + 4 + hLen;
   const tracks: ParsedTrack[] = [];
   let bpm: number | null = null;
+  let nextIndex = 0;
 
   for (let t = 0; t < ntracks; t++) {
     if (String.fromCharCode(buf[p], buf[p+1], buf[p+2], buf[p+3]) !== 'MTrk') break;
     p += 4;
     const tlen = u32();
     const tend = p + tlen;
-    let abs = 0; let lastStatus = 0; let name = ''; let program = -1;
+    let abs = 0; let lastStatus = 0; let name = '';
     const noteOn = new Map<number, { start: number; velocity: number }>();
-    const notes: ParsedTrack['notes'] = [];
+    // Demultiplex by MIDI channel: a format-0 file (and any multitimbral track)
+    // carries every instrument in ONE MTrk, distinguished only by channel. Bucket
+    // notes + program per channel so each becomes its own ParsedTrack below.
+    const byCh = new Map<number, { program: number; notes: ParsedTrack['notes'] }>();
+    const order: number[] = [];
+    const chBucket = (ch: number) => {
+      let e = byCh.get(ch);
+      if (!e) { e = { program: -1, notes: [] }; byCh.set(ch, e); order.push(ch); }
+      return e;
+    };
 
     while (p < tend) {
       abs += vlq();
@@ -66,12 +76,12 @@ export function parseMidiFile(buf: Uint8Array): ParsedMidi {
           else {
             const onEvt = noteOn.get(key);
             if (onEvt != null) {
-              notes.push({ startTick: onEvt.start, duration: abs - onEvt.start, midi: note, velocity: onEvt.velocity, channel: ch });
+              chBucket(ch).notes.push({ startTick: onEvt.start, duration: abs - onEvt.start, midi: note, velocity: onEvt.velocity, channel: ch });
               noteOn.delete(key);
             }
           }
         } else if (high === 0xc0) {
-          program = u8();
+          chBucket(ch).program = u8();
         } else if (high === 0xa0 || high === 0xb0 || high === 0xe0) {
           p += 2;
         } else if (high === 0xd0) {
@@ -79,7 +89,24 @@ export function parseMidiFile(buf: Uint8Array): ParsedMidi {
         }
       }
     }
-    tracks.push({ index: t, name, program, notes });
+    p = tend; // resync in case a malformed event left p mid-track
+
+    const channels = order.filter((ch) => byCh.get(ch)!.notes.length > 0);
+    if (channels.length === 0) {
+      // meta-only MTrk (e.g. a tempo/marker track) — keep one empty entry.
+      tracks.push({ index: nextIndex++, name, program: -1, notes: [] });
+    } else if (channels.length === 1) {
+      const e = byCh.get(channels[0])!;
+      tracks.push({ index: nextIndex++, name, program: e.program, notes: e.notes });
+    } else {
+      // Multi-channel MTrk → one virtual track per channel. The MTrk name (a song
+      // title in format-0) doesn't identify an instrument, so drop it; the import
+      // titles each lane from the channel's GM program instead.
+      for (const ch of channels) {
+        const e = byCh.get(ch)!;
+        tracks.push({ index: nextIndex++, name: '', program: e.program, notes: e.notes });
+      }
+    }
   }
   return { division, bpm, tracks };
 }

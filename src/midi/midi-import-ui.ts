@@ -14,6 +14,7 @@ import { parseMidiFile, type ParsedMidi } from './midi-parse';
 import { alertDialog, choiceDialog } from '../core/dialog';
 import { midiToSession } from './midi-to-session';
 import { findGMMatches, suggestDefaultMapping, type GMMatch } from './gm-lookup';
+import { gmInstrumentName } from './gm-instruments';
 import { auditionPreset } from './audition';
 import { isPresetsReady, getCachedPresets } from '../presets/preset-loader';
 import { listEngines } from '../engines/registry';
@@ -134,8 +135,12 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
       cb.type = 'checkbox';
       cb.dataset.idx = String(tr.index);
       cb.checked = true;
+      // Title preference mirrors midiToSession: track name, else GM instrument
+      // (so a demultiplexed format-0 channel reads as its instrument, not "untitled").
+      const allPerc = tr.notes.every((n) => n.channel === 9);
+      const instrument = tr.name || (allPerc ? 'Percussion' : (tr.program >= 0 ? gmInstrumentName(tr.program) : '') || 'untitled');
       const label = document.createElement('span');
-      label.textContent = ` [${tr.index}] ${tr.name || 'untitled'} — ${tr.notes.length} notes, ${lo}-${hi}, prog ${tr.program}`;
+      label.textContent = ` [${tr.index}] ${instrument} — ${tr.notes.length} notes, ${lo}-${hi}, prog ${tr.program}`;
       row.append(cb, label);
 
       const current = presetPerTrack[tr.index] ?? { engineId: 'subtractive', presetName: 'Init' };
