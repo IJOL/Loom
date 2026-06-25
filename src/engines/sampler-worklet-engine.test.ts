@@ -40,6 +40,16 @@ function fakeBuffer(durationSec: number): AudioBuffer {
   } as unknown as AudioBuffer;
 }
 
+function fakeBufferAmp(durationSec: number, amp: number): AudioBuffer {
+  const n = Math.ceil(durationSec * SR);
+  const ch = new Float32Array(n);
+  for (let i = 0; i < n; i++) ch[i] = amp * Math.sin(2 * Math.PI * 220 * i / SR);
+  return {
+    numberOfChannels: 1, sampleRate: SR, length: n, duration: durationSec,
+    getChannelData: () => ch,
+  } as unknown as AudioBuffer;
+}
+
 const out = () => ({ connect() {} }) as unknown as AudioNode;
 const ctx = {} as unknown as AudioContext;
 
@@ -129,6 +139,21 @@ describe('SamplerWorkletEngine', () => {
     const v = eng.createVoice(ctx, out());
     v.trigger(60, 0, { gateDuration: 0.2, velocity: 90 });
     expect(spawns[0].spawn.gain).toBe(0);
+  });
+
+  it('peak-normalizes a quiet keymap asset louder than a full-scale one', () => {
+    sampleCache.put('swe-loud', fakeBufferAmp(0.5, 1.0));   // peak ~0 dBFS → no boost
+    sampleCache.put('swe-quiet', fakeBufferAmp(0.5, 0.4));  // peak ~-8 dBFS → boosted
+    const eng = new SamplerWorkletEngine();
+    eng.setKeymap([
+      { sampleId: 'swe-loud', rootNote: 60, loNote: 60, hiNote: 60 },
+      { sampleId: 'swe-quiet', rootNote: 62, loNote: 62, hiNote: 62 },
+    ]);
+    const v = eng.createVoice(ctx, out());
+    v.trigger(60, 0, { gateDuration: 0.2, velocity: 90 });
+    v.trigger(62, 0, { gateDuration: 0.2, velocity: 90 });
+    const loud = spawns[0].spawn.gain, quiet = spawns[1].spawn.gain;
+    expect(quiet).toBeGreaterThan(loud * 1.5); // the sub-peak asset is lifted toward the target
   });
 
   it('exposes the sampler id + piano-roll editor', () => {

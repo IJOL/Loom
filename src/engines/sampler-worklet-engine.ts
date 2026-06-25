@@ -345,7 +345,10 @@ export class SamplerWorkletEngine implements SynthEngine {
     const rate = repitchRate(midi, entry.rootNote, pad.tune);
     const win = samplePlaybackWindow(pad, buf.duration);
     const audible = this.isPadAudible(entry.rootNote) ? 1 : 0;
-    const gain = this.getBaseValue('gain') * (entry.gain ?? 1)
+    // Per-asset peak-normalization evens out the drumkit library's level spread
+    // (TR-808/Acoustic/GM-percussion arrive 5-7 dB quieter than the rest). Keymap
+    // path only — audio clips/loops/stems keep their intentional mix level.
+    const gain = this.getBaseValue('gain') * (entry.gain ?? 1) * sampleCache.normGain(entry.sampleId)
       * (0.8 * velGain(opts.velocity, !!opts.accent)) * OUTPUT_TRIM * audible;
 
     const spawn: SampleSpawn = {
