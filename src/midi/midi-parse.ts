@@ -7,9 +7,16 @@ export interface ParsedTrack {
   notes: { startTick: number; duration: number; midi: number; velocity: number; channel: number }[];
 }
 
+/** A tempo change at an absolute MIDI tick. */
+export interface TempoEvent { tick: number; bpm: number; }
+
 export interface ParsedMidi {
   division: number;
   bpm: number | null;
+  /** All tempo changes in MIDI ticks (sorted, de-duped). Empty/absent ⇒ no tempo
+   *  event. `bpm` above is the first entry's tempo (back-compat scalar). Optional
+   *  so hand-built ParsedMidi literals (tests) need not supply it. */
+  tempos?: TempoEvent[];
   tracks: ParsedTrack[];
 }
 
@@ -27,6 +34,7 @@ export function parseMidiFile(buf: Uint8Array): ParsedMidi {
   const tracks: ParsedTrack[] = [];
   let bpm: number | null = null;
   let nextIndex = 0;
+  const tempos: TempoEvent[] = [];
 
   for (let t = 0; t < ntracks; t++) {
     if (String.fromCharCode(buf[p], buf[p+1], buf[p+2], buf[p+3]) !== 'MTrk') break;
@@ -58,9 +66,11 @@ export function parseMidiFile(buf: Uint8Array): ParsedMidi {
           // in the track-name meta so lane + clip names are clean.
           name = String.fromCharCode(...buf.slice(p, p + len))
             .split('').filter((c) => c.charCodeAt(0) >= 0x20).join('').trim();
-        } else if (type === 0x51 && len === 3 && bpm === null) {
+        } else if (type === 0x51 && len === 3) {
           const us = (buf[p] << 16) | (buf[p+1] << 8) | buf[p+2];
-          bpm = 60_000_000 / us;
+          const tBpm = 60_000_000 / us;
+          tempos.push({ tick: abs, bpm: tBpm });
+          if (bpm === null) bpm = tBpm; // first tempo = the scalar bpm (back-compat)
         }
         p += len;
       } else if (status === 0xf0 || status === 0xf7) {
@@ -108,5 +118,9 @@ export function parseMidiFile(buf: Uint8Array): ParsedMidi {
       }
     }
   }
-  return { division, bpm, tracks };
+  // Tempo events can come from any track; sort by absolute tick and drop
+  // consecutive duplicates so the map is clean for tickToSec().
+  tempos.sort((a, b) => a.tick - b.tick);
+  const tempoMap = tempos.filter((e, i) => i === 0 || e.bpm !== tempos[i - 1].bpm);
+  return { division, bpm, tempos: tempoMap, tracks };
 }
