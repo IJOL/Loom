@@ -44,6 +44,7 @@ import { renderDrumVoiceRack, VOICE_LABELS } from './drum-voice-rack';
 import { GM_DRUM_MAP } from './drum-gm-map';
 import { velGain } from '../core/velocity-gain';
 import { OUTPUT_TRIM, resolveAudioClipPlayback } from './audio-clip-voice';
+import { CATEGORY_GAIN, SAMPLE_HEADROOM } from '../audio-dsp/gain-staging';
 import { samplePlaybackWindow } from './sampler-playback-window';
 import { withUndo } from '../save/history-wiring';
 import { guessRootNoteFromName } from './sampler';
@@ -106,6 +107,10 @@ export class SamplerWorkletEngine implements SynthEngine {
   private uiCtx: EngineUIContext | null = null;
   private uiRebuild: (() => void) | null = null;
   private modHost = new ModulationHostImpl([]);
+  /** Per-category output gain (sampler vs drum vs audio). DrumsWorkletEngine sets
+   *  this so its embedded sampler plays at the 'drum' category level. */
+  private categoryGain = CATEGORY_GAIN.sampler;
+  setCategoryGain(g: number): void { this.categoryGain = g; }
 
   // ── Worklet node (built lazily once the ctx is known) ─────────────────────────
   private node: SamplerWorkletNode | null = null;
@@ -330,7 +335,7 @@ export class SamplerWorkletEngine implements SynthEngine {
       if (!resolved) return null;
       return {
         kind: 'audio', buffer: resolved.buffer,
-        spawn: neutralAudioSpawn(resolved.bufferId, time, opts.gateDuration, resolved.rate, resolved.offset, resolved.gain),
+        spawn: neutralAudioSpawn(resolved.bufferId, time, opts.gateDuration, resolved.rate, resolved.offset, resolved.gain * this.categoryGain),
       };
     }
 
@@ -349,7 +354,7 @@ export class SamplerWorkletEngine implements SynthEngine {
     // (TR-808/Acoustic/GM-percussion arrive 5-7 dB quieter than the rest). Keymap
     // path only — audio clips/loops/stems keep their intentional mix level.
     const gain = this.getBaseValue('gain') * (entry.gain ?? 1) * sampleCache.normGain(entry.sampleId)
-      * (0.8 * velGain(opts.velocity, !!opts.accent)) * OUTPUT_TRIM * audible;
+      * (SAMPLE_HEADROOM * velGain(opts.velocity, !!opts.accent)) * OUTPUT_TRIM * this.categoryGain * audible;
 
     const spawn: SampleSpawn = {
       sampleId: entry.sampleId,

@@ -13,6 +13,7 @@ import { SineOsc, TriOsc, SawOsc } from './osc';
 import { Svf } from './filter';
 import { fold } from './fold';
 import { registerRenderer } from './renderer-registry';
+import { synthTrim } from './gain-staging';
 
 type Osc = { update(f: number): number };
 
@@ -39,7 +40,7 @@ function cutoffHz(norm: number): number {
 // CUTOFF_ENV_SCALE from westcoast.ts: multiplier on base cutoff for the
 // contour's filter sweep.
 const CUTOFF_ENV_SCALE = 3;
-const OUTPUT_TRIM = 0.5;
+// Per-engine output trim now lives in gain-staging.ts — synthTrim('westcoast').
 
 /** Simple AD + optional sustain contour, clocked per-sample. Mirrors the
  *  ConstantSource automation schedule in WestVoice.trigger. */
@@ -237,7 +238,7 @@ export class WestcoastRenderer implements VoiceRenderer {
     const level = param(p, 'amp.level', 0.8);
     // velGain from legacy: 0.3 + 1.1 * vel (already 0..1 in NoteSpec)
     const vel = (0.3 + 1.1 * note.velocity) * accentMul;
-    this.ampGain = level * vel * OUTPUT_TRIM;
+    this.ampGain = level * vel * synthTrim('westcoast');
   }
 
   noteOff(t: number): void {

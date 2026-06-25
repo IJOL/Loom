@@ -32,6 +32,7 @@ import { ChannelStrip, type FxBus } from '../core/fx';
 import { DrumsWorkletNode } from '../audio-worklet/drums-node';
 import { DRUM_VOICE_IDS } from '../audio-dsp/drums/types';
 import { SamplerWorkletEngine } from './sampler-worklet-engine';
+import { CATEGORY_GAIN } from '../audio-dsp/gain-staging';
 import type { KeymapEntry } from '../samples/types';
 import type { PadParams } from './sampler-pad-params';
 import { GM_DRUM_MAP } from './drum-gm-map';
@@ -256,12 +257,11 @@ export class DrumsWorkletEngine implements SynthEngine {
   private sampler = new SamplerWorkletEngine();
   private kitMode: 'synth' | 'sample' = 'synth';
 
-  /** The sample-player carries OUTPUT_TRIM headroom (0.7) and one-shot samples
-   *  read quieter (loudness-wise) than sustained synth voices, so run the embedded
-   *  sampler at a higher base gain to sit near the synth level. The master
-   *  soft-clip protects against the occasional hot transient. */
-  private static readonly SAMPLE_GAIN = 2.0;
-  constructor() { this.sampler.setBaseValue('gain', DrumsWorkletEngine.SAMPLE_GAIN); }
+  /** Sample drum kits play through the embedded sampler at the 'drum' category
+   *  gain (CATEGORY_GAIN.drum, centralized in gain-staging.ts). One-shot samples
+   *  read quieter than sustained synth voices, so drum sits above unity; the
+   *  master soft-clip protects against the occasional hot transient. */
+  constructor() { this.sampler.setCategoryGain(CATEGORY_GAIN.drum); }
 
   getKitMode(): 'synth' | 'sample' { return this.kitMode; }
   setKitMode(m: 'synth' | 'sample'): void { this.kitMode = m; }

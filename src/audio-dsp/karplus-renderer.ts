@@ -7,6 +7,7 @@
 import type { NoteSpec, ParamBag, VoiceRenderer } from './types';
 import { param } from './types';
 import { registerRenderer } from './renderer-registry';
+import { synthTrim } from './gain-staging';
 
 // ── Karplus-Strong string renderer (offline, per note) ────────────────────
 // Verbatim copy of the pure-JS implementation from src/engines/karplus.ts.
@@ -88,7 +89,7 @@ export function renderKarplusString(opts: {
   // level control and a single note can never clip regardless of resonance.
   let pk = 0;
   for (let n = 0; n < N; n++) { const v = Math.abs(out[n]); if (v > pk) pk = v; }
-  if (pk > 1e-9) { const k = 0.8 / pk; for (let n = 0; n < N; n++) out[n] *= k; }
+  if (pk > 1e-9) { const k = 1.0 / pk; for (let n = 0; n < N; n++) out[n] *= k; }
   return out;
 }
 
@@ -148,7 +149,7 @@ export class KarplusRenderer implements VoiceRenderer {
         if (t > this.holdEnd && env < 0.001) this.done = true;
       }
     }
-    return this.buf[idx] * env * this.level * this.vel;
+    return this.buf[idx] * env * this.level * this.vel * synthTrim('karplus');
   }
 }
 

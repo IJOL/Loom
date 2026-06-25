@@ -9,6 +9,7 @@ import { param } from './types';
 import { SawOsc, SquareOsc } from './osc';
 import { Svf } from './filter';
 import { registerRenderer } from './renderer-registry';
+import { synthTrim } from './gain-staging';
 
 const midiToFreq = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
 
@@ -70,7 +71,7 @@ export class TB303Renderer implements VoiceRenderer {
     const biquadQ = 1 + resonance * 25 + accentBoost * 6;
     this.svfRes = qToSvfRes(biquadQ);
 
-    this.peakAmp = 0.3 * velGain(note.velocity, note.accent);
+    this.peakAmp = synthTrim('tb303') * velGain(note.velocity, note.accent);
   }
 
   noteOff(t: number): void {

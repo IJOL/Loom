@@ -15,6 +15,7 @@ import type { NoteSpec, ParamBag, VoiceRenderer } from './types';
 import { param } from './types';
 import { Adsr } from './adsr';
 import { registerRenderer } from './renderer-registry';
+import { synthTrim } from './gain-staging';
 
 // ALGORITHMS[algo][opIdx] = array of op indices that modulate opIdx.
 // Matches fm.ts FMAlgorithm.ops[i].modulators (0-indexed, 0..3).
@@ -170,8 +171,8 @@ export class FMRenderer implements VoiceRenderer {
       this.done = true;
     }
 
-    // OUTPUT_TRIM (0.25) + global mix + velocity, matching legacy carrier scaling.
-    return out * 0.25 * this.mix * this.vel;
+    // OUTPUT_TRIM (per-engine trim, centralized in gain-staging) + global mix + velocity.
+    return out * synthTrim('fm') * this.mix * this.vel;
   }
 }
 

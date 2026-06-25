@@ -16,9 +16,10 @@ import { stretchCache } from '../samples/stretch-cache';
 import { stretchBuffer } from '../samples/timestretch';
 import { warpCache } from '../samples/warp-cache';
 import { warpStretch, warpKey } from '../samples/warp-stretch';
+import { SAMPLE_OUTPUT_TRIM } from '../audio-dsp/gain-staging';
 
-/** Headroom so a full-scale sample stays < 0 dBFS. */
-export const OUTPUT_TRIM = 0.7;
+/** Headroom so a full-scale sample stays < 0 dBFS. Centralized in gain-staging.ts. */
+export const OUTPUT_TRIM = SAMPLE_OUTPUT_TRIM;
 
 /** A resolved audio-clip playback plan: which buffer to play, at what rate, from
  *  what offset, and at what flat gain. Computed entirely main-thread (warp/stretch

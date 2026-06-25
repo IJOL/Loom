@@ -17,6 +17,7 @@ import { ModulationHostImpl } from '../modulation/modulation-host';
 import { wireEngineParams } from './engine-ui';
 import { resolveAudioClipPlayback } from './audio-clip-voice';
 import { neutralAudioSpawn } from './sampler-worklet-engine';
+import { CATEGORY_GAIN } from '../audio-dsp/gain-staging';
 import { SamplerWorkletNode } from '../audio-worklet/sampler-node';
 import type { SampleSpawn } from '../audio-dsp/sample/types';
 import type { FxBus } from '../core/fx';
@@ -115,7 +116,7 @@ export class AudioWorkletEngine implements SynthEngine {
     if (!resolved) return null;
     return {
       buffer: resolved.buffer,
-      spawn: neutralAudioSpawn(resolved.bufferId, time, opts.gateDuration, resolved.rate, resolved.offset, resolved.gain),
+      spawn: neutralAudioSpawn(resolved.bufferId, time, opts.gateDuration, resolved.rate, resolved.offset, resolved.gain * CATEGORY_GAIN.audio),
     };
   }
 

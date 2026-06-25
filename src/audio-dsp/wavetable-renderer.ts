@@ -10,6 +10,7 @@ import { Svf } from './filter';
 import { Adsr } from './adsr';
 import { getWaveTables } from './wavetable-data';
 import { registerRenderer } from './renderer-registry';
+import { synthTrim } from './gain-staging';
 
 const midiToFreq = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
 
@@ -111,10 +112,9 @@ export class WavetableRenderer implements VoiceRenderer {
     // When builtinEnv is off, the voice ends at gate-off (no release tail).
     if (gate === 0 && this.ampEnv.isOff && t > this.holdEnd) this.done = true;
 
-    // OUTPUT_TRIM = 0.6 (same as legacy WavetableVoice). vel already accounts for
-    // the 0.3 + 1.1*v factor; multiply output by vel (not vel*OUTPUT_TRIM) and let
-    // OUTPUT_TRIM be embedded in the 0.6 factor applied to the vel scaling above.
-    return this.filter.lp * env * this.vel * 0.6;
+    // Per-engine output trim, centralized in gain-staging (was 0.6). vel already
+    // accounts for the 0.3 + 1.1*v factor.
+    return this.filter.lp * env * this.vel * synthTrim('wavetable');
   }
 }
 
