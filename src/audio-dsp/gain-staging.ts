@@ -19,7 +19,8 @@
  *  in each engine's voicing (e.g. FM sums 4 carriers → 0.25; Karplus is peak-
  *  normalized to 0.8 headroom). Tune these to make one engine sit with the others. */
 export const ENGINE_TRIM: Record<string, number> = {
-  tb303: 0.3,
+  tb303: 0.45, // raised from 0.3 (×1.5): after the synth-0.5 rebalance the TB-303
+               // acid bass sat too quiet — demos needed the 303 fader at the top.
   subtractive: 0.4,
   fm: 0.25,
   wavetable: 0.6,
