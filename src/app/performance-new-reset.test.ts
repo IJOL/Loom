@@ -19,7 +19,16 @@ function makePf() {
     stop: vi.fn(),
     start: vi.fn(),
   };
-  const sessionHost = { state: { lanes: [] }, laneStates: new Map(), deps: {} };
+  const sessionHost = {
+    state: { lanes: [] }, laneStates: new Map(), deps: {},
+    // Phase 4 global-transport seam: setMode/onLookahead mirror the shared song
+    // anchor through these members on the real SessionHost.
+    songAnchorSec: 0,
+    setSongAnchor(sec: number) { this.songAnchorSec = sec; },
+    // Loop-reflect seam: stub returns disabled loop (no active scene in this fixture).
+    globalLoopForUI() { return { enabled: false, startBar: 0, endBar: 0 }; },
+    setGlobalLoop(_enabled: boolean, _startBar: number, _endBar: number) { /* no active scene */ },
+  };
   return createPerformanceFeature({
     ctx,
     seq,

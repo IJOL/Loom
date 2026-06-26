@@ -867,7 +867,11 @@ document.getElementById('perf-toggle')?.addEventListener('click', (e) => {
 // natural way to start playback), so the armed take never recorded. Centralized
 // on the Sequencer's idle→playing transition; onTransportStart() is a no-op
 // unless a take is armed, so this is safe on every start.
-seq.onStart = () => liveTake.onTransportStart();
+// Chain, don't overwrite: SessionHost.init() already installed an onStart that
+// resets the global song anchor; preserve it so the playhead anchors at the
+// downbeat. (seq.onStart is a single slot — a plain assign would drop the reset.)
+const prevOnStart = seq.onStart;
+seq.onStart = () => { prevOnStart?.(); liveTake.onTransportStart(); };
 
 // Shared delivery for a finished take/render (live OR offline): ask where it
 // goes (download a WAV vs a new audio channel) — never auto-insert. The channel

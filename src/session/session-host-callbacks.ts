@@ -126,12 +126,11 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
       self.renderWithMixer();
     },
     onLaunchScene(idx) {
-      const scene = self.state.scenes[idx];
-      if (!scene) return;
-      void ctx.resume();
-      launchScene(self.laneStates, self.state, scene, idx, ctx.currentTime, seq.bpm, seq.meter);
-      if (!seq.isPlaying()) { resetAutomationPosition(); seq.start(); playBtn.classList.add('is-playing'); }
-      self.renderWithMixer();
+      // Delegate to launchSceneAt so activeSceneIdx + the global-loop driver state
+      // (glState) are set — the per-scene global loop is a no-op without an active
+      // scene, so launching via the raw launchScene left Global/seek loop dead.
+      self.launchSceneAt(idx);
+      playBtn.classList.add('is-playing');
     },
     onStopAll() {
       if (self.deps.onStopAll) { self.deps.onStopAll(); return; }

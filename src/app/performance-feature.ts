@@ -22,7 +22,7 @@ import {
 } from '../performance/arrangement-ops';
 import type { AutoBrush } from '../automation/automation-painter';
 import {
-  createArrangementPlayState, startArrangement, startArrangementAt, stopArrangement,
+  createArrangementPlayState, startArrangementAt, stopArrangement,
   tickArrangement, arrangementPlayhead,
   type ArrangementPlayState,
 } from '../performance/arrangement-runtime';
@@ -230,6 +230,10 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       onSetLoop: (enabled, startBar, endBar) => {
         beforeEdit();
         arrangement.loopEnabled = enabled; arrangement.loopStartBar = startBar; arrangement.loopEndBar = endBar;
+        // Reflect Performance A–B loop back into the active scene's global loop so
+        // Session shows the same region when the user returns. setGlobalLoop early-
+        // returns when activeScene() is null, so this is safe to call unconditionally.
+        sessionHost.setGlobalLoop(enabled, startBar, endBar);
         refreshPerformanceView();
       },
       onMoveBand: (laneId, index, newAtSec) => { commitArrUndo(); editBands(laneId, (evs) => moveEvent(evs, index, newAtSec, arrangement.bpm)); },
@@ -248,6 +252,23 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
 
   function setMode(next: 'session' | 'performance') {
     if (mode === next) return;
+    // Global transport: carry the shared song anchor across the view switch so
+    // neither view resets to 0. Done BEFORE the stop/silence below (which only
+    // halts playback — the POSITION is preserved). Leaving Performance pushes the
+    // Arrangement clock into the shared anchor; entering Performance pulls it the
+    // other way so the Arrangement playhead shows the preserved position pre-Play.
+    if (mode === 'performance') sessionHost.setSongAnchor(arrangementPlayState.startedAtCtx);
+    if (next === 'performance') arrangementPlayState.startedAtCtx = sessionHost.songAnchorSec;
+    if (next === 'performance') {
+      // Reflect the active scene's global loop into the Performance A–B loop so
+      // the brace shows the same region the user already set in Session.
+      const g = sessionHost.globalLoopForUI();
+      if (g.enabled) {
+        arrangement.loopEnabled = true;
+        arrangement.loopStartBar = g.startBar;
+        arrangement.loopEndBar = g.endBar;
+      }
+    }
     if (seq.isPlaying()) seq.stop();
     if (arrangementPlayState.isPlaying) stopArrangement(arrangementPlayState);
     // seq.stop()/stopArrangement only halt FUTURE look-ahead triggers; a clip's
@@ -350,6 +371,12 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       },
     });
     if (mode === 'performance') {
+      // Global transport: while STOPPED, mirror a stopped-mode seek (which moved
+      // the shared anchor via seekToBar) into the Arrangement clock so the perf
+      // playhead follows it. Done BEFORE the tick (the tick is a no-op when stopped).
+      if (!arrangementPlayState.isPlaying) {
+        arrangementPlayState.startedAtCtx = sessionHost.songAnchorSec;
+      }
       tickArrangement({
         ps: arrangementPlayState, state: arrangement, nowCtx, lookaheadSec,
         bpm: arrangement.bpm || seq.bpm,
@@ -359,6 +386,12 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         loopWindow: arrangementLoopWindowSec(arrangement),
         onArrangementEnd: () => { stopAll(sessionHost.laneStates, sessionHost.deps.liveVoices, ctx.currentTime); stopArrangement(arrangementPlayState); deps.onArrangementEnd?.(); },
       });
+      // Global transport: after the tick, propagate the (possibly loop-wrapped)
+      // Arrangement anchor BACK into the shared song anchor so the transport ruler
+      // and a later view switch read the right position while Arrangement plays.
+      if (arrangementPlayState.isPlaying) {
+        sessionHost.setSongAnchor(arrangementPlayState.startedAtCtx);
+      }
     }
   }
 
@@ -437,7 +470,12 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     if (lw.active && lw.startSec > 0) {
       startArrangementAt(arrangementPlayState, ctx.currentTime, arrangement, lw.startSec, arrangementOnLaunchClip);
     } else {
-      startArrangement(arrangementPlayState, ctx.currentTime);
+      // Global transport: with no A-B loop, start from the CURRENT shared song
+      // position (the anchor Session/Arrangement share) instead of 0, so switching
+      // views and pressing Play continues where the playhead was. startArrangementAt
+      // with songSec sets startedAtCtx === sessionHost.songAnchorSec at start.
+      const songSec = Math.max(0, ctx.currentTime - sessionHost.songAnchorSec);
+      startArrangementAt(arrangementPlayState, ctx.currentTime, arrangement, songSec, arrangementOnLaunchClip);
     }
     ensurePlayheadLoop();
   }

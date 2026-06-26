@@ -67,6 +67,15 @@ export interface InspectorDeps {
   /** Transcribe an audio clip's effective loop region to a new note/drums lane.
    *  Set late (after the stem client + host both exist) via setTranscribeLoop. */
   transcribeLoop?: (clip: import('./session').SessionClip, kind: 'melodic' | 'drums') => void | Promise<void>;
+  /** Seek the global song position to a bar (fractional). Wired from session-host. */
+  onSeekBar?: (bar: number) => void;
+  /** Returns true when the editing scene's loop is currently linked. */
+  isSceneLinked?: () => boolean;
+  /** Called when the user toggles the Link button in the loop overlay. */
+  onSetSceneLinked?: (linked: boolean) => void;
+  /** Called after each loop edit commit. When the scene is linked the host
+   *  propagates the edited clip's loop to every other clip in the scene. */
+  onClipLoopEdited?: () => void;
 }
 
 export class SessionInspector {
@@ -612,6 +621,10 @@ export class SessionInspector {
       automationRegistry: this.deps.automationRegistry,
       sessionState: this.deps.state,
       transcribeLoop: this.deps.transcribeLoop,
+      onSeekBar: this.deps.onSeekBar,
+      isSceneLinked: this.deps.isSceneLinked,
+      onSetSceneLinked: this.deps.onSetSceneLinked,
+      onClipLoopEdited: this.deps.onClipLoopEdited,
     };
     this.roll = renderClipEditor(editorBox, lane, clip, editorDeps, editorOverride.get(clip.id));
 

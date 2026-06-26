@@ -28,6 +28,7 @@ export interface SessionHostDeps {
     laneId: string, note: number, time: number, gate: number, accent: boolean, slidingIn: boolean,
     sample?: import('./session').ClipSample,
     velocity?: number,
+    offsetSec?: number,
   ) => void;
   /** Per-lane live-voice registry shared with the trigger dispatch. The stop
    *  seams (stopLane/stopAll) pass it as the `silence` hook so they release a

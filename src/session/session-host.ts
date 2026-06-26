@@ -16,10 +16,18 @@ import { DEFAULT_RESOLUTION } from '../core/drum-grid-editing';
 export { nextLaneSlug } from './session-host-util';
 import { nextLaneSlug } from './session-host-util';
 import {
-  tickSession, launchClip, launchScene, stopAll,
+  tickSession, launchClip, launchScene, stopAll, seekSession, tickGlobalLoop,
   emptyLanePlayState,
   type LanePlayState,
 } from './session-runtime';
+import { clipLoopSec } from '../core/launch-timing';
+import { audioRetrigger } from '../core/audio-retrigger';
+import { clipLoopSourceRange } from '../core/clip-loop';
+import { propagateLoopToSceneClips } from '../core/scene-loop-link';
+import { sampleCache } from '../samples/sample-cache';
+import type { ClipSample } from './session';
+import { effectiveGlobalLoop, globalLoopIteration, type GlobalLoop } from '../core/global-loop';
+import { songBarSec, seekAnchorSec } from '../core/song-position';
 import { renderSessionGrid, type SessionUICallbacks } from './session-ui';
 import { buildSessionCallbacks } from './session-host-callbacks';
 import {
@@ -49,6 +57,15 @@ export type { SessionHostDeps } from './session-host-deps';
 export class SessionHost {
   state: SessionState = emptySessionState();
   laneStates = new Map<string, LanePlayState>();
+  /** Audio time that maps to song position 0. A seek moves it; reset to
+   *  ctx.currentTime on each idle→playing start (Phase 1 = live seek only). */
+  songAnchorSec = 0;
+  /** Index of the scene currently launched (Phase 2 global loop is per-scene).
+   *  Starts at -1 (no scene launched) so a loaded save whose scene 0 has
+   *  globalLoopEnabled doesn't wrap the playhead before any scene is launched. */
+  activeSceneIdx = -1;
+  /** Global-loop driver state owned by the host (see tickGlobalLoop). */
+  private glState = { anchorSec: 0, lastIter: 0 };
   /** @internal — accessed by the extracted session-host-* sub-modules. */
   inspector!: SessionInspector;
   /** @internal — accessed by the extracted session-host-* sub-modules. */
@@ -134,9 +151,192 @@ export class SessionHost {
     const scene = this.state.scenes[sceneIdx];
     if (!scene) return;
     void this.deps.ctx.resume();
+    this.activeSceneIdx = sceneIdx;
+    this.glState = { anchorSec: this.deps.ctx.currentTime, lastIter: 0 };
     launchScene(this.laneStates, this.state, scene, sceneIdx, this.deps.ctx.currentTime, this.deps.seq.bpm, this.deps.seq.meter);
     if (!this.deps.seq.isPlaying()) { this.deps.resetAutomationPosition?.(); this.deps.seq.start(); }
     this.renderWithMixer();
+  }
+
+  /** Set the shared song anchor directly (Phase 4 seam). The Arrangement view
+   *  mirrors its playback anchor to this so Session + Arrangement share one
+   *  playhead and switching views preserves the position. */
+  setSongAnchor(sec: number): void { this.songAnchorSec = sec; }
+
+  /** The scene currently launched (last scene launched via launchSceneAt).
+   *  Returns null when no scene has been launched yet (activeSceneIdx === -1). */
+  activeScene(): import('./session').SessionScene | null {
+    return this.activeSceneIdx >= 0 ? (this.state.scenes[this.activeSceneIdx] ?? null) : null;
+  }
+
+  /** The scene of the clip currently open in the inspector.
+   *  Falls back to activeScene() when no clip is being edited, so callers that
+   *  don't care about the distinction still work correctly. */
+  private editScene(): import('./session').SessionScene | null {
+    const sel = this.inspector?.getSelectedClip();
+    if (sel != null) return this.state.scenes[sel.clipIdx] ?? null;
+    return this.activeScene();
+  }
+
+  // ── Scene LINK ──────────────────────────────────────────────────────────
+
+  /** True when the editing scene has its loop linked (all clips share one region). */
+  isSceneLinked(): boolean {
+    return this.editScene()?.loopLinked ?? false;
+  }
+
+  /** Toggle the editing scene's loopLinked flag. When turning ON, immediately
+   *  propagate the editing clip's current loop to all other clips in the scene. */
+  setSceneLoopLinked(linked: boolean): void {
+    const s = this.editScene();
+    if (!s) return;
+    const hd = this.deps.historyDeps;
+    const run = () => {
+      s.loopLinked = linked;
+      if (linked) {
+        // Snap all clips to the editing clip's current loop region on link-ON.
+        const sel = this.inspector?.getSelectedClip();
+        if (sel) {
+          const lane = this.state.lanes.find((l) => l.id === sel.laneId);
+          const clip = lane?.clips[sel.clipIdx];
+          if (clip) this._propagateLoopFromClip(clip);
+        }
+      }
+      this.renderWithMixer();
+    };
+    if (hd) withUndo(hd, run); else run();
+  }
+
+  /** Propagate `srcClip`'s loop to every other clip in the editing scene.
+   *  Undo-wrapped. Only acts when the editing scene is linked. */
+  private _propagateLoopFromClip(srcClip: import('./session').SessionClip): void {
+    const sel = this.inspector?.getSelectedClip();
+    if (!sel) return;
+    const sceneIdx = sel.clipIdx;
+    const scene = this.state.scenes[sceneIdx];
+    if (!scene) return;
+    const hd = this.deps.historyDeps;
+    const run = () => {
+      propagateLoopToSceneClips(this.state, scene, sceneIdx, srcClip, this.deps.seq.meter);
+      this.renderWithMixer();
+    };
+    if (hd) withUndo(hd, run); else run();
+  }
+
+  /** Hook called after any loop edit in the overlay. When the scene is linked,
+   *  propagates the editing clip's loop to every other clip in the scene. */
+  onClipLoopEdited(): void {
+    if (!this.isSceneLinked()) return;
+    const sel = this.inspector?.getSelectedClip();
+    if (!sel) return;
+    const lane = this.state.lanes.find((l) => l.id === sel.laneId);
+    const clip = lane?.clips[sel.clipIdx];
+    if (clip) this._propagateLoopFromClip(clip);
+  }
+
+  /** Effective global loop for the editor scene (for the transport UI and the
+   *  clip editor's Global toggle). Uses editScene() so the toggle works even
+   *  when no scene has been launched yet. */
+  globalLoopForUI(): GlobalLoop {
+    const s = this.editScene();
+    return s ? effectiveGlobalLoop(s) : { enabled: false, startBar: 0, endBar: 0 };
+  }
+
+  /** The editor scene's global loop in SONG BARS, or null when not enabled. */
+  globalLoopBars(): { startBar: number; endBar: number } | null {
+    const g = this.globalLoopForUI();
+    return g.enabled ? { startBar: g.startBar, endBar: g.endBar } : null;
+  }
+
+  /** Set the edited clip's scene global loop (Phase 2). Only mutates the scene
+   *  state and re-renders — does NOT touch glState (the loop clock). Audio is
+   *  re-anchored separately via applyGlobalLoopNow() (called on drag-commit /
+   *  toggle-ON), so dragging the brace on every pointermove is safe. Wrapped in
+   *  undo so A–B changes are reversible. */
+  setGlobalLoop(enabled: boolean, startBar: number, endBar: number): void {
+    const s = this.editScene();
+    if (!s) return;
+    const hd = this.deps.historyDeps;
+    const run = () => {
+      s.globalLoopEnabled = enabled;
+      s.globalLoopStartBar = Math.max(0, Math.floor(startBar));
+      s.globalLoopEndBar = Math.max(s.globalLoopStartBar + 1, Math.floor(endBar));
+      this.renderWithMixer();
+    };
+    if (hd) withUndo(hd, run); else run();
+  }
+
+  /** Jump to bar A of the active global loop and re-phase the loop clock cleanly.
+   *  Called on drag-commit (pointerup) and when the user toggles Global ON.
+   *  No-op when nothing is playing or when the edited scene is not the active scene. */
+  applyGlobalLoopNow(): void {
+    const editingActiveScene =
+      this.inspector?.getSelectedClip()?.clipIdx === this.activeSceneIdx ||
+      (!this.inspector?.getSelectedClip() && this.activeSceneIdx >= 0);
+    if (!editingActiveScene) return;
+    const loop = this.globalLoopForUI();
+    if (!loop.enabled) return;
+    if (!this.deps.seq.isPlaying()) return;
+    this.seekToBar(loop.startBar);
+  }
+
+  /** Resolve the decoded buffer duration (in seconds) for a ClipSample from the
+   *  main-thread sample cache. Returns undefined when the buffer hasn't been
+   *  decoded yet — callers fall back to a large sentinel so the audio-retrigger
+   *  helper clamps via trimEnd rather than bailing out. */
+  private audioBufferDuration(sample: ClipSample): number | undefined {
+    const buf = sampleCache.get(sample.sampleId);
+    return buf?.duration;
+  }
+
+  /** Re-trigger one audio lane at the given phase + audio time. Shared by the
+   *  seek and global-loop re-anchor paths (Fix 3 — deduplication).
+   *  When `loopLenSec` is provided (global-loop boundary), the buffer is always
+   *  restarted from bar A's offset and gated to the loop window — bypassing
+   *  audioRetrigger's phase-0 null guard which would otherwise skip phaseSec=0. */
+  private fireAudioRetrigger(laneId: string, phaseSec: number, sample: ClipSample, time: number, loopLenSec?: number): void {
+    const { bpm, meter } = this.deps.seq;
+    const lp = this.laneStates.get(laneId);
+    if (!lp?.playing) return;
+    const clipDurSec = clipLoopSec(lp.playing, bpm, meter);
+    const bufDur = this.audioBufferDuration(sample) ?? 1e6;
+    if (loopLenSec !== undefined) {
+      // Global-loop boundary: always restart at bar A's source offset with the
+      // loop-window gate. phaseSec may be 0 (A=0) — never skip, always trigger.
+      const { startSec, endSec } = clipLoopSourceRange(lp.playing, meter, bufDur);
+      const frac = clipDurSec > 0 ? Math.min(1, Math.max(0, phaseSec / clipDurSec)) : 0;
+      const offsetSec = Math.min(startSec + frac * (endSec - startSec), endSec);
+      const gateSec = Math.max(0.01, loopLenSec);
+      this.deps.triggerForLane(laneId, 60, time, gateSec, false, false, sample, 100, offsetSec);
+    } else {
+      // Seek path: use audioRetrigger (returns null at phase 0 → tickLane restarts).
+      const r = audioRetrigger(lp.playing, meter, phaseSec, clipDurSec, bufDur);
+      if (r) this.deps.triggerForLane(laneId, 60, time, r.gateSec, false, false, sample, 100, r.offsetSec);
+    }
+  }
+
+  /** Jump the running transport to `bar` (0-based song bars). Re-anchors every
+   *  playing lane in sync and silences live voices so the jump is clean. No-op
+   *  on the lane re-anchor when nothing is playing, but still moves the anchor. */
+  seekToBar(bar: number): void {
+    const { bpm, meter } = this.deps.seq;
+    const now = this.deps.ctx.currentTime;
+    const target = Math.max(0, bar);
+    const targetSongSec = target * songBarSec(bpm, meter);
+    this.songAnchorSec = seekAnchorSec(target, now, bpm, meter);
+    seekSession(this.laneStates, targetSongSec, now, bpm, meter, this.deps.liveVoices,
+      (laneId, phaseSec, sample, time) => this.fireAudioRetrigger(laneId, phaseSec, sample, time),
+    );
+    // If a global loop is active, re-phase its boundary grid through the seek
+    // point: anchor the loop's iteration-0 (bar A) to the new song anchor and set
+    // lastIter to the current iteration, so the next B boundary fires off the
+    // post-seek grid (otherwise it fires off the stale pre-seek grid and the
+    // playhead desyncs from the audio restart).
+    const loop = this.globalLoopForUI();
+    if (loop.enabled) {
+      this.glState.anchorSec = this.songAnchorSec + loop.startBar * songBarSec(bpm, meter);
+      this.glState.lastIter = globalLoopIteration(now, this.glState.anchorSec, loop, bpm, meter).iter;
+    }
   }
 
   /** Stop every playing/queued clip. */
@@ -197,6 +397,10 @@ export class SessionHost {
       },
       addNoteLane: (engineId, notes, lengthBars, name) => this.addNoteLane(engineId, notes, lengthBars, name),
       transcribeLoop: this._transcribeLoop,
+      onSeekBar: (bar: number) => this.seekToBar(bar),
+      isSceneLinked: () => this.isSceneLinked(),
+      onSetSceneLinked: (linked: boolean) => this.setSceneLoopLinked(linked),
+      onClipLoopEdited: () => this.onClipLoopEdited(),
       placeChordClip: (laneId, clipIdx, clip) => {
         const hd = this.deps.historyDeps;
         const run = () => {
@@ -208,6 +412,21 @@ export class SessionHost {
     });
 
     this.deps.seq.sessionTick = (now, look) => {
+      const { bpm, meter } = this.deps.seq;
+      // tickGlobalLoop is the legacy re-anchor mechanism. With the uniform
+      // per-clip region fix (laneLoopRegion in tickLane), the global loop is
+      // expressed as each clip's effective region, so clips self-loop at B
+      // without external re-anchoring. Only call tickGlobalLoop when the
+      // active scene has NO global loop (preserving its existing role for
+      // the old seek/retrigger path); skip it when the per-clip region is
+      // active to prevent double-triggering audio buffers at the B boundary.
+      const scene = this.activeScene();
+      const activeGlobalLoop = scene ? effectiveGlobalLoop(scene) : null;
+      if (!activeGlobalLoop?.enabled) {
+        tickGlobalLoop(this.laneStates, scene ?? {}, this.glState, now, look, bpm, meter, this.deps.liveVoices,
+          (laneId, phaseSec, sample, time) => this.fireAudioRetrigger(laneId, phaseSec, sample, time),
+        );
+      }
       tickSession(
         this.laneStates, this.state, now, look, this.deps.seq.bpm,
         (laneId, midi, scheduleTime, gateSec, accent, slidingIn, sample, velocity) =>
@@ -217,8 +436,16 @@ export class SessionHost {
         this.deps.recHooks,
         this.deps.seq.meter,
         this.deps.liveVoices,
+        this.activeScene(),
       );
       if (this.deps.onAfterTick) this.deps.onAfterTick(now, look);
+    };
+
+    const prevOnStart = this.deps.seq.onStart;
+    this.deps.seq.onStart = () => {
+      this.songAnchorSec = this.deps.ctx.currentTime;
+      this.glState = { anchorSec: this.deps.ctx.currentTime, lastIter: 0 };
+      prevOnStart?.();
     };
 
     this.buildCallbacks();

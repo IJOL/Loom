@@ -138,6 +138,19 @@ export interface SessionScene {
   id: string;
   name?: string;
   clipPerLane: Record<string, number | null>;
+  /** Phase 2: per-scene global loop in SONG bars. When enabled, every lane in
+   *  the scene restarts together at endBar (the window wins). Absent ⇒ no global
+   *  loop (each clip loops independently, exactly Phase 1).
+   *  These fields are kept for save-file compatibility but are no longer set by
+   *  the Link model. The scheduler ignores them when loopLinked is used instead. */
+  globalLoopEnabled?: boolean;
+  globalLoopStartBar?: number;
+  globalLoopEndBar?: number;
+  /** Scene LINK: when true, every clip in this scene shares one loop region.
+   *  Editing the loop on any clip propagates loopEnabled/loopStartTick/loopEndTick
+   *  to every other clip in the scene (clamped to each clip's own length).
+   *  On unlink each clip keeps its current region. */
+  loopLinked?: boolean;
 }
 
 export interface SessionState {

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { migrateLoadedSessionState } from './session-migration';
 import { DEFAULT_MUSICALITY } from './session';
 import type { SessionClip, SessionState } from './session';
+import { effectiveGlobalLoop } from '../core/global-loop';
 import { VOICE_MIDI } from '../engines/drum-gm-map';
 
 it('seeds default sends and remaps legacy lane send knobs', () => {
@@ -132,6 +133,13 @@ describe('migrateLoadedSessionState', () => {
     expect(migrated.waveformRef).toEqual(clip.waveformRef);
     // No instrumentId is invented — sliced clips stay IndexedDB-only.
     expect(out.lanes[0].engineState?.sampler?.instrumentId).toBeUndefined();
+  });
+});
+
+describe('global-loop fields', () => {
+  it('scenes without global-loop fields default to disabled', () => {
+    const migrated = migrateLoadedSessionState({ lanes: [], scenes: [{ id: 's1', clipPerLane: {} }] } as any);
+    expect(effectiveGlobalLoop(migrated.scenes[0]).enabled).toBe(false);
   });
 });
 

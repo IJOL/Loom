@@ -8,6 +8,8 @@ import { TICKS_PER_STEP } from '../core/notes';
 import { DEFAULT_METER, type TimeSignature } from '../core/meter';
 import { AUTOMATION_SUB_RES } from '../core/pattern';
 import { clipLoopSec, nextLoopEnd, sceneSwitchBoundary } from '../core/launch-timing';
+import { reanchorOnSeek } from '../core/song-position';
+import { effectiveGlobalLoop, globalLoopIteration } from '../core/global-loop';
 import type { RecState } from '../performance/rec-state';
 import { arrangementNow } from '../performance/rec-state';
 import type { ArrangementState } from '../performance/performance';
@@ -256,6 +258,83 @@ export function stopAll(
   if (silence) silence.silenceAll(nowCtx);
 }
 
+/** Jump every playing lane to song-second `targetSongSec`: re-anchor each clip's
+ *  loop phase to match, reset its dedupe cursor so the scheduler re-emits from the
+ *  new position, and silence live voices so the jump is clean. DOM-free; the host
+ *  passes its LiveVoiceRegistry as `silence`. Idle lanes are untouched.
+ *  `onAudioRetrigger` is called for each re-anchored lane whose clip has a `sample`,
+ *  with the lane's phase at the new anchor so the host can re-trigger the buffer. */
+export function seekSession(
+  laneStates: Map<string, LanePlayState>,
+  targetSongSec: number,
+  now: number,
+  bpm: number,
+  meter: TimeSignature = DEFAULT_METER,
+  silence?: { silenceAll(now: number): void },
+  onAudioRetrigger?: (laneId: string, phaseSec: number, sample: ClipSample, time: number) => void,
+): void {
+  // Silence BEFORE re-anchoring so the new voice (created inside onAudioRetrigger)
+  // is not immediately killed by silenceAll (Fix 1).
+  if (silence) silence.silenceAll(now);
+  for (const lp of laneStates.values()) {
+    if (!lp.playing) continue;
+    const clipDurSec = clipLoopSec(lp.playing, bpm, meter);
+    const anchor = reanchorOnSeek(clipDurSec, targetSongSec, now);
+    lp.loopStartedAt = anchor;
+    lp.startTime = anchor;
+    lp.lastScheduledAt = -Infinity;
+    if (lp.playing.sample && onAudioRetrigger) {
+      const phaseSec = ((targetSongSec % clipDurSec) + clipDurSec) % clipDurSec;
+      onAudioRetrigger(lp.laneId, phaseSec, lp.playing.sample, now);
+    }
+  }
+}
+
+/** Drive a scene's global loop (Phase 2). When the scene's A–B loop is enabled,
+ *  detect entry into a new global iteration and re-anchor EVERY playing lane to
+ *  song-bar A at that iteration's start, so all lanes restart together at B (the
+ *  window wins). `glState` is owned by the host: { anchorSec = ctx time the loop's
+ *  iteration 0 began at bar A; lastIter = last iteration we re-anchored }. No-op
+ *  when the loop is disabled. Voices are silenced at the boundary for a clean cut.
+ *  `onAudioRetrigger` is called for each re-anchored lane whose clip has a `sample`,
+ *  with the lane's phase at bar A so the host can re-trigger the buffer. */
+export function tickGlobalLoop(
+  laneStates: Map<string, LanePlayState>,
+  scene: { globalLoopEnabled?: boolean; globalLoopStartBar?: number; globalLoopEndBar?: number },
+  glState: { anchorSec: number; lastIter: number },
+  now: number,
+  lookahead: number,
+  bpm: number,
+  meter: TimeSignature = DEFAULT_METER,
+  silence?: { silenceAll(now: number): void },
+  onAudioRetrigger?: (laneId: string, phaseSec: number, sample: ClipSample, time: number, loopLenSec?: number) => void,
+): void {
+  const loop = effectiveGlobalLoop(scene);
+  if (!loop.enabled) return;
+  const { iter, iterStartSec, aSec, lenSec } = globalLoopIteration(now + lookahead, glState.anchorSec, loop, bpm, meter);
+  if (iter <= glState.lastIter) return;
+  glState.lastIter = iter;
+  // Silence BEFORE re-anchoring so the new voice (created inside onAudioRetrigger)
+  // is not immediately killed by silenceAll (Fix 1). Only silence on a real new
+  // boundary (iter guard has already passed above).
+  if (silence) silence.silenceAll(iterStartSec);
+  for (const lp of laneStates.values()) {
+    if (!lp.playing) continue;
+    const clipDurSec = clipLoopSec(lp.playing, bpm, meter);
+    const anchor = reanchorOnSeek(clipDurSec, aSec, iterStartSec);
+    lp.loopStartedAt = anchor;
+    lp.startTime = anchor;
+    lp.lastScheduledAt = -Infinity;
+    if (lp.playing.sample && onAudioRetrigger) {
+      const phaseSec = ((aSec % clipDurSec) + clipDurSec) % clipDurSec;
+      // Pass iterStartSec as the trigger time (Fix 2): the correct audio time is
+      // the boundary, not `now` (which can be up to ~lookahead seconds early).
+      // Pass lenSec so the host can gate the buffer to exactly the loop window.
+      onAudioRetrigger(lp.laneId, phaseSec, lp.playing.sample, iterStartSec, lenSec);
+    }
+  }
+}
+
 // ── Tick ───────────────────────────────────────────────────────────────────
 
 /** Called for every note that falls in the look-ahead window. */
@@ -268,6 +347,7 @@ export type LaneTriggerFn = (
   slidingIn: boolean,
   sample?: ClipSample,
   velocity?: number,
+  offsetSec?: number,
 ) => void;
 
 /** Called each time a step boundary fires (for visual playhead updates). */
@@ -289,7 +369,13 @@ export function tickSession(
   hooks?: RecHooks,
   meter: TimeSignature = DEFAULT_METER,
   silence?: { silenceLane(laneId: string, atSec: number): void },
+  /** The active scene (if any). When present and its globalLoop is enabled,
+   *  every lane uses [startBar, endBar) as its effective region instead of its
+   *  local loop. Absent ⇒ behaviour is byte-identical to before (additive). */
+  activeScene?: SessionScene | null,
 ): void {
+  // Resolve the active global loop once per tick (not per-lane).
+  const globalLoop = activeScene ? effectiveGlobalLoop(activeScene) : undefined;
   for (const lane of state.lanes) {
     const lp = laneStates.get(lane.id);
     if (!lp) continue;
@@ -337,6 +423,7 @@ export function tickSession(
       now,
       loopStartedAt: currentLoopStart,
       meter,
+      globalLoop: globalLoop?.enabled ? globalLoop : undefined,
       lastScheduledAt: lp.lastScheduledAt,
       onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample }, scheduleTime: number) => {
         if (scheduleTime > lp.lastScheduledAt) lp.lastScheduledAt = scheduleTime;

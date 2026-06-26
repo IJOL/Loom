@@ -10,6 +10,7 @@ export type TriggerForLane = (
   accent: boolean, slidingIn?: boolean,
   sample?: import('../session/session').ClipSample,
   velocity?: number,
+  offsetSec?: number,
 ) => void;
 
 export interface TriggerDispatchDeps {
@@ -27,7 +28,7 @@ export interface TriggerDispatchDeps {
 }
 
 export function createTriggerForLane(deps: TriggerDispatchDeps): TriggerForLane {
-  return (laneId, note, time, gate, accent, slidingIn = false, sample, velocity) => {
+  return (laneId, note, time, gate, accent, slidingIn = false, sample, velocity, offsetSec) => {
     const res = deps.laneResources.get(laneId);
     if (!res) return;
     const engineId = res.engine.id;
@@ -39,7 +40,7 @@ export function createTriggerForLane(deps: TriggerDispatchDeps): TriggerForLane 
       setCurrentLaneForVoice(null);
       // Track the live voice so any Stop path can release it immediately.
       deps.liveVoices?.record(laneId, v);
-      v.trigger(m, t, { gateDuration: g, accent: a, slide: sl, sample, velocity: vel });
+      v.trigger(m, t, { gateDuration: g, accent: a, slide: sl, sample, velocity: vel, offsetSec });
       deps.onVoiceFired?.(laneId, g);
     };
 
