@@ -21,7 +21,9 @@
 export const ENGINE_TRIM: Record<string, number> = {
   tb303: 0.45, // raised from 0.3 (×1.5): after the synth-0.5 rebalance the TB-303
                // acid bass sat too quiet — demos needed the 303 fader at the top.
-  subtractive: 0.4,
+  subtractive: 0.25, // lowered from 0.4: its "Sub"/bass presets sat too loud vs the
+                     // 303 in the demos (user mixed the sub to ~42%). Global, so
+                     // Around the World's subtractive leads drop too — accepted.
   fm: 0.25,
   wavetable: 0.6,
   westcoast: 0.5,
