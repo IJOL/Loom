@@ -31,6 +31,8 @@ export interface VoiceTriggerOptions {
   /** Loop/song audio clip to play directly (sampler). When present, the voice
    *  plays this buffer for `gateDuration` instead of resolving the lane keymap. */
   sample?: import('../session/session').ClipSample;
+  /** Phase 3: explicit buffer second to start playback from (global seek/loop re-trigger); overrides the computed trim/warp offset. */
+  offsetSec?: number;
 }
 
 export interface EngineSequencer {

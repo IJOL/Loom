@@ -111,7 +111,7 @@ export class AudioWorkletEngine implements SynthEngine {
     if (!opts.sample || !ctx) return null;
     const resolved = resolveAudioClipPlayback({
       ctx, sample: opts.sample, gateDuration: opts.gateDuration,
-      masterGain: this.getBaseValue('gain'),
+      masterGain: this.getBaseValue('gain'), offsetSec: opts.offsetSec,
     });
     if (!resolved) return null;
     return {

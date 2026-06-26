@@ -87,4 +87,38 @@ describe('AudioClipRenderer', () => {
     expect(r.done).toBe(true);
     expect(r.renderSample(0.7)).toBe(0);
   });
+
+  it('offsetSec seeks the buffer: samples rendered from the midpoint differ from samples rendered from the start', () => {
+    // Ramp buffer: channel[i] = i / n, so values encode position.
+    // At offset 0 the initial samples are near 0; at offset 0.5 s they are near 0.5.
+    // We compare the mean of the first rendered block (past the 5 ms fade-in) for
+    // both cases and assert the mid-offset block is much larger — a relative check
+    // that does not depend on absolute magnitudes.
+    const n = SR; // 1 s ramp
+    const ramp = new Float32Array(n);
+    for (let i = 0; i < n; i++) ramp[i] = i / n;
+    const bank = new SampleBank();
+    bank.set('ramp', { channels: [ramp], sampleRate: SR });
+
+    const measure = (offsetSec: number) => {
+      // gate = 0.4 s, gain = 1, rate = 1; beginSec = 0 (default).
+      const r = new AudioClipRenderer(
+        spawn({ sampleId: 'ramp', gateSec: 0.4, gain: 1, offsetSec }),
+        bank, SR,
+      );
+      let sum = 0, count = 0;
+      // Sample a window past the 5 ms fade-in (t in [0.01, 0.05] s).
+      for (let i = Math.floor(SR * 0.01); i < Math.floor(SR * 0.05); i++) {
+        sum += r.renderSample(i / SR);
+        count++;
+      }
+      return sum / count;
+    };
+
+    const fromStart = measure(0);
+    const fromMid = measure(0.5);
+    // The mid-offset start position is ~0.5 in the ramp; the zero-offset position
+    // is ~0.01–0.05, so the mid block should be at least 5× larger on average.
+    expect(fromMid).toBeGreaterThan(fromStart * 5);
+  });
 });

@@ -40,6 +40,9 @@ export function resolveAudioClipPlayback(opts: {
   sample: ClipSample;
   gateDuration: number;
   masterGain: number;
+  /** Phase 3: when present, overrides the computed trim/warp offset so playback
+   *  starts from an explicit buffer position (global seek/loop re-trigger). */
+  offsetSec?: number;
 }): ResolvedAudioClip | null {
   const { ctx, sample, gateDuration, masterGain } = opts;
   const buf = sampleCache.get(sample.sampleId);
@@ -88,5 +91,9 @@ export function resolveAudioClipPlayback(opts: {
       if (wantStretch) void stretchCache.ensure(sample.sampleId, ratio, () => stretchBuffer(ctx, buf, ratio));
     }
   }
-  return { buffer, bufferId, rate, offset, gain };
+  // Phase 3: an explicit offsetSec (e.g. from a global seek/loop re-trigger)
+  // overrides the computed offset across ALL paths (plain, loop, warped, stretched).
+  // When absent, behavior is byte-identical to before.
+  const finalOffset = opts.offsetSec != null ? opts.offsetSec : offset;
+  return { buffer, bufferId, rate, offset: finalOffset, gain };
 }
