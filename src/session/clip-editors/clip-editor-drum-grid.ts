@@ -66,6 +66,12 @@ export interface DrumEditorDeps {
     toolbarHost: HTMLElement;
     historyDeps?: HistoryDeps;
     onChange?: () => void;
+    /** Returns true when the editing scene's loop is currently linked. */
+    isLinked?: () => boolean;
+    /** Called when the user clicks the Link toggle in the loop toolbar. */
+    onToggleLink?: (linked: boolean) => void;
+    /** Called after each loop edit commit (toggle + brace drags). */
+    onClipLoopEdited?: () => void;
   };
 }
 export interface DrumEditorHandle { redraw: () => void; }
@@ -469,6 +475,9 @@ export function renderDrumGridEditor(
       clip, meter,
       historyDeps: deps.loop.historyDeps,
       onChange: deps.loop.onChange,
+      isLinked: deps.loop.isLinked,
+      onToggleLink: deps.loop.onToggleLink,
+      onClipLoopEdited: deps.loop.onClipLoopEdited,
       tickToX: (t) => xForTick(t),
       tickFromClientX: (cx) => {
         const x = cx - canvas.getBoundingClientRect().left;

@@ -152,12 +152,16 @@ export interface AudioClipEditorDeps {
   };
   /** When present, mount the performance-style loop overlay (Loop toggle +
    *  variable quantize + draggable A/B column) over the waveform. The router
-   *  supplies undo + warp-cache invalidation; applyToAll propagates the loop
-   *  region across every channel of the warp group. */
+   *  supplies undo + warp-cache invalidation. */
   loop?: {
     historyDeps?: HistoryDeps;
     onChange: () => void;
-    applyToAll?: (loopEnabled: boolean, startTick: number, endTick: number) => void;
+    /** Returns true when the editing scene's loop is currently linked. */
+    isLinked?: () => boolean;
+    /** Called when the user clicks the Link toggle in the loop toolbar. */
+    onToggleLink?: (linked: boolean) => void;
+    /** Called after each loop edit commit (toggle + brace drags). */
+    onClipLoopEdited?: () => void;
   };
   /** When present, show a "Transcribe loop" button + melodic/drums toggle that
    *  sends the clip's effective loop region to the audio→notes backend. The
@@ -274,7 +278,9 @@ export function renderAudioClipEditor(
       clip, meter,
       historyDeps: deps.loop.historyDeps,
       onChange: deps.loop.onChange,
-      applyToAll: deps.loop.applyToAll,
+      isLinked: deps.loop.isLinked,
+      onToggleLink: deps.loop.onToggleLink,
+      onClipLoopEdited: deps.loop.onClipLoopEdited,
       tickToX: (t) => (t / total) * contentW(),
       tickFromClientX: (cx) => {
         const x = cx - content.getBoundingClientRect().left;  // shifted by scroll

@@ -49,6 +49,8 @@ export interface PianoRollOpts {
   stepsPerBeat?: number;
   onChange?: () => void;
   getPlayheadTick?: () => number; // -1 when not playing
+  /** Click (no drag) on the time ruler seeks to that tick. Drag still zoom/pans. */
+  onSeek?: (tick: number) => void;
   /** Initial zoom/scroll for this clip (defaults to fit). */
   viewState?: ViewState;
   /** Called on every zoom/scroll so the caller can persist per-clip state. */
@@ -73,6 +75,12 @@ export interface PianoRollOpts {
     meter: TimeSignature;
     historyDeps?: HistoryDeps;
     onChange?: () => void;
+    /** Returns true when the editing scene's loop is currently linked. */
+    isLinked?: () => boolean;
+    /** Called when the user clicks the Link toggle in the loop toolbar. */
+    onToggleLink?: (linked: boolean) => void;
+    /** Called after each loop edit commit (toggle + brace drags). */
+    onClipLoopEdited?: () => void;
   };
 }
 
@@ -153,6 +161,12 @@ export function buildEditorFrame(host: HTMLElement): PianoRollFrame {
   const gridVp = document.createElement('div');
   gridVp.className = 'pr-grid-vp';
   Object.assign(gridVp.style, { overflow: 'auto', position: 'relative', background: '#0a0a0a' } as Partial<CSSStyleDeclaration>);
+  // Reserve the scrollbar gutter so clientWidth/Height stay constant whether or
+  // not a scrollbar is showing. The grid sizes its canvas to clientWidth/Height
+  // (geom()), and redraw() relays out on any change — so a scrollbar appearing
+  // and disappearing drove a relayout feedback loop (rapid flicker + the loop
+  // brace looking duplicated) the moment the loop overlay column was shown.
+  gridVp.style.setProperty('scrollbar-gutter', 'stable both-edges');
   const gridCanvas = mkCanvas(false);
   gridVp.appendChild(gridCanvas);
 
@@ -438,13 +452,15 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   });
 
   // ── Ruler scrub: ↕ zoom-H (anchored), ↔ pan-H ─────────────────────────────
-  let rulerDrag = false, rLastX = 0, rLastY = 0;
+  let rulerDrag = false, rLastX = 0, rLastY = 0, rulerMoved = false, rDownX = 0;
   f.rulerWrap.addEventListener('pointerdown', (e) => {
-    rulerDrag = true; rLastX = e.clientX; rLastY = e.clientY;
+    rulerDrag = true; rulerMoved = false; rDownX = e.clientX;
+    rLastX = e.clientX; rLastY = e.clientY;
     f.rulerWrap.setPointerCapture(e.pointerId); e.preventDefault();
   });
   f.rulerWrap.addEventListener('pointermove', (e) => {
     if (!rulerDrag) return;
+    if (Math.abs(e.clientX - rDownX) > 3) rulerMoved = true;
     const dy = e.clientY - rLastY, dx = e.clientX - rLastX;
     rLastX = e.clientX; rLastY = e.clientY;
     const oldGridW = gridW;
@@ -456,7 +472,14 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     f.gridVp.scrollLeft = zoomAroundAnchor(f.gridVp.scrollLeft, anchorPx, oldGridW, gridW) - dx;
     syncStrips(); persist(); refreshLoop();
   });
-  const rulerEnd = (e: PointerEvent) => { rulerDrag = false; try { f.rulerWrap.releasePointerCapture(e.pointerId); } catch { /* ignore */ } };
+  const rulerEnd = (e: PointerEvent) => {
+    if (e.type === 'pointerup' && rulerDrag && !rulerMoved && opts.onSeek) {
+      const x = (e.clientX - f.rulerWrap.getBoundingClientRect().left) + f.gridVp.scrollLeft;
+      opts.onSeek(tickFromX(x));
+    }
+    rulerDrag = false;
+    try { f.rulerWrap.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+  };
   f.rulerWrap.addEventListener('pointerup', rulerEnd);
   f.rulerWrap.addEventListener('pointercancel', rulerEnd);
 
@@ -837,6 +860,9 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
       meter: opts.loop.meter,
       historyDeps: opts.loop.historyDeps,
       onChange: opts.loop.onChange,
+      isLinked: opts.loop.isLinked,
+      onToggleLink: opts.loop.onToggleLink,
+      onClipLoopEdited: opts.loop.onClipLoopEdited,
       tickToX: (t) => xForTick(t),
       tickFromClientX: (cx) => {
         const x = cx - f.gridCanvas.getBoundingClientRect().left;

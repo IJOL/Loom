@@ -18,7 +18,7 @@ import type { HistoryDeps } from '../save/history-wiring';
 export type LoopQuantize = 'free' | 'beat' | 'bar';
 
 export interface ClipLoopOverlayDeps {
-  /** Where the Loop toggle + quantize select (+ optional "All channels") mount. */
+  /** Where the Loop toggle + quantize select (+ optional Global) mount. */
   toolbarHost: HTMLElement;
   /** Scrollable element the amber column is appended to. Its `overflow` clips the
    *  column and its scroll moves it. Made `position:relative` if static. */
@@ -27,7 +27,6 @@ export interface ClipLoopOverlayDeps {
   meter: TimeSignature;
   historyDeps?: HistoryDeps;
   onChange?: () => void;
-  applyToAll?: (loopEnabled: boolean, startTick: number, endTick: number) => void;
   /** Content-space x (px) of a tick — i.e. `tick·pxPerTick` (+ any fixed gutter). */
   tickToX: (tick: number) => number;
   /** Inverse for the A/B drag: viewport client x → clip-axis tick in [0,total]. */
@@ -36,6 +35,13 @@ export interface ClipLoopOverlayDeps {
   contentHeight: () => number;
   /** Column top within scrollHost; default 0. */
   contentTop?: () => number;
+  /** Returns true when the scene is currently link-linked. */
+  isLinked?: () => boolean;
+  /** Called when the user clicks the Link toggle button. */
+  onToggleLink?: (linked: boolean) => void;
+  /** Called on drag-commit (pointerup) AND when the Loop toggle fires.
+   *  Triggers propagation on the host when the scene is linked. */
+  onClipLoopEdited?: () => void;
 }
 
 const QUANT_LABELS: ReadonlyArray<readonly [LoopQuantize, string]> = [
@@ -65,19 +71,20 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
     qsel.appendChild(o);
   }
   bar.append(toggle, qsel);
-  if (deps.applyToAll) {
-    const all = document.createElement('button');
-    all.className = 'clip-loop-all';
-    all.textContent = 'All channels';
-    all.title = 'Apply this loop region to every audio channel of the song';
-    all.addEventListener('click', () => {
-      const { startTick, endTick } = effectiveClipLoop(clip, meter);
-      historyDeps?.beginGesture?.();
-      deps.applyToAll!(!!clip.loopEnabled, startTick, endTick);
-      historyDeps?.endGesture?.();
-      deps.onChange?.();
+
+  // Global button: lit amber when this scene's loop is shared across all its clips.
+  let linkBtn: HTMLButtonElement | null = null;
+  if (deps.onToggleLink) {
+    linkBtn = document.createElement('button');
+    linkBtn.className = 'clip-loop-global' + (deps.isLinked?.() ? ' on' : '');
+    linkBtn.textContent = 'Global';
+    linkBtn.title = 'Share this loop across every clip in the scene';
+    linkBtn.addEventListener('click', () => {
+      const linked = deps.isLinked?.() ?? false;
+      deps.onToggleLink!(!linked);
+      linkBtn!.classList.toggle('on', !linked);
     });
-    bar.append(all);
+    bar.append(linkBtn);
   }
   deps.toolbarHost.appendChild(bar);
 
@@ -96,15 +103,19 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
   host.appendChild(col);
 
   const layout = () => {
+    // Always draw the LOCAL loop region (no global-loop branch).
     const { startTick, endTick } = effectiveClipLoop(clip, meter);
+    const show = !!clip.loopEnabled;
     const x0 = deps.tickToX(startTick);
     const x1 = deps.tickToX(endTick);
     col.style.left = `${x0}px`;
     col.style.width = `${Math.max(0, x1 - x0)}px`;
     col.style.top = `${deps.contentTop?.() ?? 0}px`;
     col.style.height = `${deps.contentHeight()}px`;
-    col.style.display = clip.loopEnabled ? '' : 'none';
+    col.style.display = show ? '' : 'none';
     toggle.classList.toggle('on', !!clip.loopEnabled);
+    // Keep the Link button in sync with external state changes (e.g. undo).
+    linkBtn?.classList.toggle('on', deps.isLinked?.() ?? false);
   };
 
   toggle.addEventListener('click', () => {
@@ -112,7 +123,10 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
     clip.loopEnabled = !clip.loopEnabled;
     if (clip.loopEnabled && clip.loopEndTick == null) { clip.loopStartTick = 0; clip.loopEndTick = total; }
     historyDeps?.endGesture?.();
-    layout(); deps.onChange?.();
+    layout();
+    deps.onChange?.();
+    // Notify host for propagation (always safe; host only propagates when linked).
+    deps.onClipLoopEdited?.();
   });
   qsel.addEventListener('change', () => { quantize = (qsel.value as LoopQuantize) || 'bar'; });
 
@@ -127,6 +141,7 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
       const next = which === 'l'
         ? clampLoopRegion(tick, cur.endTick, total, step)
         : clampLoopRegion(cur.startTick, tick, total, step);
+      // Always write the LOCAL clip loop (no global-loop branch).
       clip.loopStartTick = next.start; clip.loopEndTick = next.end;
       layout();
     };
@@ -135,6 +150,8 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
       window.removeEventListener('pointerup', up);
       historyDeps?.endGesture?.();
       deps.onChange?.();
+      // Notify host for propagation (always safe; host only propagates when linked).
+      deps.onClipLoopEdited?.();
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
@@ -156,6 +173,7 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
     const move = (e: PointerEvent) => {
       const deltaTicks = pxPerTick > 0 ? (e.clientX - downX) / pxPerTick : 0;
       const next = moveLoopRegion(origStart, origEnd, deltaTicks, total, snapFor());
+      // Always write the LOCAL clip loop.
       clip.loopStartTick = next.start; clip.loopEndTick = next.end;
       layout();
     };
@@ -164,6 +182,8 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
       window.removeEventListener('pointerup', up);
       historyDeps?.endGesture?.();
       deps.onChange?.();
+      // Notify host for propagation (always safe; host only propagates when linked).
+      deps.onClipLoopEdited?.();
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);

@@ -1,6 +1,10 @@
 .clip-loop-brace { display:flex; align-items:center; gap:8px; height:20px; margin-bottom:4px; }
 .clip-loop-toggle { font-size:11px; padding:2px 8px; border-radius:12px; }
 .clip-loop-toggle.on { background:#ffcc33; color:#222; }
+// Global toggle: same pill shape; lit amber when this scene's loop is shared
+// across all its clips.
+.clip-loop-global { font-size:11px; padding:2px 8px; border-radius:12px; }
+.clip-loop-global.on { background:#ffcc33; color:#222; border-color:#ffcc33; }
 .clip-loop-track { position:relative; flex:1; height:14px; background:#23272f; border-radius:4px; }
 .clip-loop-region { position:absolute; top:0; bottom:0; background:rgba(255,204,51,.18); border:1px solid #ffcc33; box-sizing:border-box; }
 .clip-loop-handle { position:absolute; top:0; bottom:0; width:8px; cursor:ew-resize; }
@@ -9,7 +13,7 @@
 // Performance-style loop overlay (clip-loop-overlay.ts): a toolbar + a full-height
 // translucent amber column with vertical A/B edge lines, drawn OVER the editor.
 .clip-loop-bar { display:flex; align-items:center; gap:8px; height:20px; margin:2px 0; font-size:11px; }
-.clip-loop-quant, .clip-loop-all { font-size:11px; padding:2px 6px; border-radius:4px; }
+.clip-loop-quant { font-size:11px; padding:2px 6px; border-radius:4px; }
 .clip-loop-col {
   // top + height are set by clip-loop-overlay.ts (the bar-row→grid span).
   position:absolute; z-index:5; pointer-events:none; box-sizing:border-box;

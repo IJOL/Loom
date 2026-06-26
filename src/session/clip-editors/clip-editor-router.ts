@@ -25,7 +25,7 @@ import type { KnobHandle } from '../../core/knob';
 import type { EngineUIContext } from '../../engines/engine-types';
 import type { SessionState } from '../session';
 import { detectLoop } from '../../samples/loop-analysis';
-import { propagateWarp, propagateLoop } from '../warp-marker-edit';
+import { propagateWarp } from '../warp-marker-edit';
 import { loopAwareStep } from '../../core/clip-loop';
 import { isDrumFullKit } from '../../core/clip-drum-fullkit';
 import { warpCache } from '../../samples/warp-cache';
@@ -53,6 +53,15 @@ export interface ClipEditorDeps {
    *  sends the clip's effective loop region to the audio→notes backend. The
    *  router binds the clip; the closure does slice→WAV→transcribe→new note lane. */
   transcribeLoop?: (clip: SessionClip, kind: 'melodic' | 'drums') => void | Promise<void>;
+  /** Seek the global song position to a bar (fractional). Wired from session-host. */
+  onSeekBar?: (bar: number) => void;
+  /** Returns true when the editing scene's loop is currently linked. */
+  isSceneLinked?: () => boolean;
+  /** Called when the user toggles the Link button in the loop overlay. */
+  onSetSceneLinked?: (linked: boolean) => void;
+  /** Called after each loop edit commit (toggle + brace drags). When the scene is
+   *  linked the host propagates the edited clip's loop to every other clip in the scene. */
+  onClipLoopEdited?: () => void;
 }
 
 const AUDITION_GATE = 0.25; // seconds — short preview blip, shared by both editors
@@ -152,6 +161,18 @@ export function classifyClip(
   return chooseClipEditor(lane, engineEditor, override, clip) === 'drum-grid' ? 'drums' : 'notes';
 }
 
+/** Shared helper: builds the Link overlay deps for all three clip editors
+ *  (piano-roll, audio, drum-grid). The brace ALWAYS writes the clip's LOCAL loop
+ *  fields; after each commit the host propagates when the scene is linked.
+ *  (Replaces the old clipGlobalLoopHandlers which branched on isGlobalActive.) */
+function clipLinkHandlers(_clip: SessionClip, deps: ClipEditorDeps) {
+  return {
+    isLinked:         () => deps.isSceneLinked?.() ?? false,
+    onToggleLink:     (linked: boolean) => deps.onSetSceneLinked?.(linked),
+    onClipLoopEdited: () => deps.onClipLoopEdited?.(),
+  };
+}
+
 export function renderClipEditor(
   host: HTMLElement,
   lane: SessionLane,
@@ -214,18 +235,12 @@ export function renderClipEditor(
         }
       : undefined;
     // Loop overlay: write loop fields (the overlay mutates the clip + wraps undo)
-    // then invalidate the warp cache so the new sub-region re-warps. applyToAll
-    // propagates the same region across every channel of the warp group.
+    // then invalidate the warp cache so the new sub-region re-warps.
     const loop = clip.sample
       ? {
           historyDeps: deps.historyDeps,
           onChange: (): void => { const s = clip.sample; if (s) warpCache.invalidate(s.sampleId); },
-          applyToAll: (clip.sample.warpGroupId && deps.sessionState)
-            ? (enabled: boolean, start: number, end: number): void => {
-                const ids = propagateLoop(deps.sessionState!, clip.sample!.warpGroupId!, enabled, start, end);
-                for (const id of ids) warpCache.invalidate(id);
-              }
-            : undefined,
+          ...clipLinkHandlers(clip, deps),
         }
       : undefined;
     const transcribe = deps.transcribeLoop
@@ -276,7 +291,7 @@ export function renderClipEditor(
       : undefined;
     bodyHandle = renderDrumGridEditor(bodyBox, clip, deps.historyDeps, deps.seq.meter, {
       auditionNote: audition, getPlayheadTick, fullKit,
-      loop: { toolbarHost: loopBar, historyDeps: deps.historyDeps, onChange: () => {} },
+      loop: { toolbarHost: loopBar, historyDeps: deps.historyDeps, onChange: () => {}, ...clipLinkHandlers(clip, deps) },
     }, model);
   } else {
     bodyHandle = buildPianoRoll(bodyBox, lane, clip, deps, loopBar);
@@ -348,6 +363,10 @@ function buildPianoRoll(
       const stepsElapsed = Math.max(0, (now - lp.startTime) / stepDur);
       return loopAwareStep(clip, seq.meter, stepsElapsed) * TICKS_PER_STEP;
     },
+    onSeek: (tick: number) => {
+      const bar = tick / ticksPerBar(seq.meter);
+      deps.onSeekBar?.(bar);
+    },
     viewState: resolveViewState(viewStateByClip, clip.id),
     onViewChange: (v) => { viewStateByClip.set(clip.id, v); },
     ...(historyDeps ? {
@@ -355,6 +374,13 @@ function buildPianoRoll(
       onGestureEnd:    () => historyDeps.endGesture?.(),
       onGestureCancel: () => historyDeps.endGesture?.(),
     } : {}),
-    loop: { toolbarHost: loopBar, clip, meter: seq.meter, historyDeps, onChange: () => {} },
+    loop: {
+      toolbarHost: loopBar,
+      clip,
+      meter: seq.meter,
+      historyDeps,
+      onChange: () => {},
+      ...clipLinkHandlers(clip, deps),
+    },
   });
 }
