@@ -9,6 +9,7 @@ import type { SampleSpawn } from '../audio-dsp/sample/types';
 const loaded: string[] = [];
 const spawns: Array<{ kind: 'sampler' | 'audio'; spawn: SampleSpawn }> = [];
 let silenceAllCalls = 0;
+const silenceAllArgs: Array<number | undefined> = [];
 
 vi.mock('../audio-worklet/sampler-node', () => ({
   loadSamplerWorklet: vi.fn().mockResolvedValue(undefined),
@@ -17,7 +18,7 @@ vi.mock('../audio-worklet/sampler-node', () => ({
     loadSample(id: string) { this.sent.add(id); loaded.push(id); }
     hasSample(id: string) { return this.sent.has(id); }
     spawn(kind: 'sampler' | 'audio', spawn: SampleSpawn) { spawns.push({ kind, spawn }); }
-    silenceAll() { silenceAllCalls++; }
+    silenceAll(atSec?: number) { silenceAllCalls++; silenceAllArgs.push(atSec); }
     connectDry() {}
     connectSend() {}
     disconnect() {}
@@ -37,9 +38,9 @@ function tone(ctx: OfflineAudioContext, durationSec: number, freq: number): Audi
 const out = () => ({ connect() {} }) as unknown as AudioNode;
 
 describe('AudioWorkletEngine', () => {
-  beforeEach(() => { loaded.length = 0; spawns.length = 0; silenceAllCalls = 0; });
+  beforeEach(() => { loaded.length = 0; spawns.length = 0; silenceAllCalls = 0; silenceAllArgs.length = 0; });
 
-  it('release() silences the worklet so a long clip stops on transport Stop', () => {
+  it('release(T) silences the worklet AT T so the scene-switch cut is gapless', () => {
     const render = new OfflineAudioContext(1, 1, 44100);
     sampleCache.put('awe-stop', tone(render, 4.0, 220));
     const eng = new AudioWorkletEngine();
@@ -47,6 +48,9 @@ describe('AudioWorkletEngine', () => {
     v.trigger(0, 0, { gateDuration: 4.0, sample: { sampleId: 'awe-stop', mode: 'loop', trimStart: 0, trimEnd: 4.0 } });
     v.release(1.0);
     expect(silenceAllCalls).toBe(1);
+    // The switch instant T must reach the worklet (was dropped: release ignored
+    // its time + silence posted no atSec → cut early → audible scene-switch gap).
+    expect(silenceAllArgs).toEqual([1.0]);
   });
 
   it('a clip trigger resolves the buffer + posts a flat kind:"audio" spawn', () => {

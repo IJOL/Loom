@@ -72,7 +72,7 @@ class SamplerWorkletVoice implements Voice {
   trigger(midi: number, time: number, opts: VoiceTriggerOptions): void {
     this.engine.spawnFor(midi, time, opts);
   }
-  release(_time: number): void { this.engine.silence(); }
+  release(time: number): void { this.engine.silence(time); }
   connect(_dest: AudioNode): void { /* worklet node is connected by the engine */ }
   getAudioParams(): Map<string, AudioParam> { return new Map(); }
   dispose(): void { /* no per-note nodes */ }
@@ -382,10 +382,12 @@ export class SamplerWorkletEngine implements SynthEngine {
     return { kind: 'sampler', spawn, buffer: buf };
   }
 
-  /** Transport Stop: silence every live voice (a long loop/song clip would
-   *  otherwise play to the end). The registry's Stop seam routes here via the
-   *  voice's release. */
-  silence(): void { this.node?.silenceAll(); }
+  /** Silence the live voices (a long loop/song clip would otherwise play to the
+   *  end). `atSec` (audio-clock seconds) schedules the cut for that instant — the
+   *  gapless scene switch cuts the outgoing clip exactly when the incoming one
+   *  starts. Omit it for an immediate cut (transport Stop). The registry's stop
+   *  seam routes here via the voice's release(time). */
+  silence(atSec?: number): void { this.node?.silenceAll(atSec); }
 
   buildSequencer(_c: HTMLElement, _n: number): EngineSequencer { return new SamplerSequencer(); }
 

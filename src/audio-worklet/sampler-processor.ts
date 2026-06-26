@@ -21,6 +21,7 @@
 /// <reference path="./worklet-globals.d.ts" />
 import { SampleBank } from '../audio-dsp/sample/sample-bank';
 import { SchedulerQueue } from '../audio-dsp/scheduler-queue';
+import { ScheduledNoteOffs } from '../audio-dsp/scheduled-noteoffs';
 import { SamplerRenderer } from '../audio-dsp/sample/sampler-renderer';
 import { AudioClipRenderer } from '../audio-dsp/sample/audio-clip-renderer';
 import type { SampleSpawn } from '../audio-dsp/sample/types';
@@ -28,7 +29,11 @@ import type { SampleSpawn } from '../audio-dsp/sample/types';
 type SamplerMsg =
   | { type: 'loadSample'; sampleId: string; channels: Float32Array[]; sampleRate: number }
   | { type: 'spawn'; kind: 'sampler' | 'audio'; spawn: SampleSpawn }
-  | { type: 'silence' };
+  // `atSec` (audio-clock seconds): when present and still in the future, the
+  // currently-live voices are note-off'd AT that frame instead of immediately —
+  // the gapless scene-switch path (cut the outgoing clip exactly when the
+  // incoming one starts). Absent / already-past ⇒ immediate (transport Stop, seek).
+  | { type: 'silence'; atSec?: number };
 
 interface Slot {
   r: SamplerRenderer | AudioClipRenderer;
@@ -39,6 +44,7 @@ class SamplerProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() { return []; }
   private bank = new SampleBank();
   private queue = new SchedulerQueue<{ kind: 'sampler' | 'audio'; spawn: SampleSpawn }>();
+  private scheduledOffs = new ScheduledNoteOffs<SamplerRenderer | AudioClipRenderer>();
   private live: Slot[] = [];
   private frame = Math.floor(currentTime * sampleRate);
 
@@ -51,11 +57,20 @@ class SamplerProcessor extends AudioWorkletProcessor {
       } else if (m.type === 'spawn') {
         this.queue.push(Math.floor(m.spawn.beginSec * sampleRate), { kind: m.kind, spawn: m.spawn });
       } else if (m.type === 'silence') {
-        // Transport Stop: note-off every live voice now (a long loop/song clip
-        // would otherwise play its whole buffer past the Stop). Each renderer's
-        // noteOff shortens its gate so it fades out + flips `done` next render.
-        const t = this.frame / sampleRate;
-        for (const slot of this.live) slot.r.noteOff(t);
+        // Note-off the live voices. A long loop/song clip would otherwise play its
+        // whole buffer past the cut. Each renderer's noteOff shortens its gate so
+        // it fades out + flips `done` next render.
+        const atFrame = m.atSec != null ? Math.floor(m.atSec * sampleRate) : this.frame;
+        if (atFrame <= this.frame) {
+          // Immediate (transport Stop, seek): cut now.
+          const t = this.frame / sampleRate;
+          for (const slot of this.live) slot.r.noteOff(t);
+        } else {
+          // Gapless scene switch: cut the CURRENTLY-live (outgoing) voices exactly
+          // at T. Voices spawned later (the incoming clip, beginSec === T) are not
+          // captured here, so they start clean while the old ones fade at T.
+          this.scheduledOffs.schedule(atFrame, this.live.map((s) => s.r));
+        }
       }
     };
   }
@@ -67,6 +82,9 @@ class SamplerProcessor extends AudioWorkletProcessor {
     const n = dry[0].length;
     for (let i = 0; i < n; i++) {
       const t = this.frame / sampleRate;
+      // Fire any scheduled note-offs due at this frame (gapless scene switch): the
+      // outgoing voices fade exactly at T, the same frame the incoming clip spawns.
+      this.scheduledOffs.drainDue(this.frame, sampleRate);
       // Spawn any voices due at this exact frame (sample-accurate start).
       this.queue.drainDue(this.frame, ({ kind, spawn }) => {
         const r = kind === 'audio'

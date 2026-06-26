@@ -21,7 +21,7 @@ const SAMPLER_PROCESSOR_NAME = 'sampler-processor';
 export type SamplerMsg =
   | { type: 'loadSample'; sampleId: string; channels: Float32Array[]; sampleRate: number }
   | { type: 'spawn'; kind: 'sampler' | 'audio'; spawn: SampleSpawn }
-  | { type: 'silence' };
+  | { type: 'silence'; atSec?: number };
 
 /** Build the loadSample message + its transfer list (the channels' ArrayBuffers
  *  are transferred zero-copy, detaching them from the caller). Pure: testable
@@ -39,11 +39,12 @@ export function samplerSpawnMessage(kind: 'sampler' | 'audio', spawn: SampleSpaw
   return [{ type: 'spawn', kind, spawn }];
 }
 
-/** Build a silence message (transport Stop): the processor note-offs every live
- *  voice so a long loop/song clip cuts the instant Stop is pressed instead of
- *  playing to the end of its buffer. */
-export function samplerSilenceMessage(): [SamplerMsg] {
-  return [{ type: 'silence' }];
+/** Build a silence message: the processor note-offs the live voices so a long
+ *  loop/song clip cuts instead of playing its whole buffer. `atSec` (audio-clock
+ *  seconds) schedules the cut for that instant (gapless scene switch); omit it for
+ *  an immediate cut (transport Stop, seek). */
+export function samplerSilenceMessage(atSec?: number): [SamplerMsg] {
+  return [{ type: 'silence', atSec }];
 }
 
 /** Copy every channel out of an AudioBuffer (sliced into its own ArrayBuffer so
@@ -101,8 +102,8 @@ export class SamplerWorkletNode {
 
   /** Release every live voice (transport Stop / scene-launch boundary) so a long
    *  loop/song clip stops immediately instead of playing its buffer to the end. */
-  silenceAll(): void {
-    this.node.port.postMessage(...samplerSilenceMessage());
+  silenceAll(atSec?: number): void {
+    this.node.port.postMessage(...samplerSilenceMessage(atSec));
   }
 
   /** Dry output (outputs[0]) → lane strip input. */

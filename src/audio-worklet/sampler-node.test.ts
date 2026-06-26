@@ -62,13 +62,19 @@ describe('sampler node message shaping', () => {
     expect(audioMsg).toMatchObject({ type: 'spawn', kind: 'audio' });
   });
 
-  it('silence posts a plain stop-all message (no transferables)', () => {
+  it('silence posts a plain stop-all message (no transferables, no atSec ⇒ immediate)', () => {
     const posted: { msg: unknown; transfer?: Transferable[] }[] = [];
     const port = { postMessage: (m: unknown, t?: Transferable[]) => posted.push({ msg: m, transfer: t }) };
     const [m] = samplerSilenceMessage();
     port.postMessage(m);
     expect(posted[0].msg).toMatchObject({ type: 'silence' });
+    expect((posted[0].msg as { atSec?: number }).atSec).toBeUndefined();
     expect(posted[0].transfer).toBeUndefined();
+  });
+
+  it('silence carries atSec when given (gapless scene-switch cut scheduled at T)', () => {
+    const [m] = samplerSilenceMessage(2.5);
+    expect(m).toMatchObject({ type: 'silence', atSec: 2.5 });
   });
 });
 
