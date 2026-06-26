@@ -7,7 +7,7 @@
 import type { SessionClip, ClipEnvelope, ClipSample } from '../session/session';
 import { TICKS_PER_QUARTER, TICKS_PER_STEP, type NoteEvent } from './notes';
 import { ticksPerBar, DEFAULT_METER, type TimeSignature } from './meter';
-import { effectiveClipLoop } from './clip-loop';
+import { effectiveClipLoop, laneLoopRegion, type GlobalLoopOverride } from './clip-loop';
 import { sliceMarkersToRegion } from '../samples/warp-region';
 import { tickRangeSec } from './tempo-map';
 
@@ -30,6 +30,10 @@ export interface SchedulerContext {
   /** Global time signature; absent ⇒ 4/4. Controls loop (bar) duration only —
    *  individual note tick positions are absolute time, meter-independent. */
   meter?: TimeSignature;
+  /** Active scene's global loop override. When present and enabled, every clip
+   *  uses [startBar, endBar) as its effective region instead of its local loop.
+   *  Absent ⇒ behaviour is identical to before (effectiveClipLoop). */
+  globalLoop?: GlobalLoopOverride;
   /** Called with the original note + the absolute audio time at which it
    *  should be scheduled. */
   onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample }, scheduleTime: number) => void;
@@ -77,7 +81,9 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
   // changes), time notes by integrating the map instead of the constant global
   // BPM. Absent / single-tempo ⇒ the normal linear path, unchanged.
   const tmap = clip.tempoMap && clip.tempoMap.length > 1 ? clip.tempoMap : null;
-  const { startTick, endTick } = effectiveClipLoop(clip, meter);
+  // Use laneLoopRegion so a global-loop override replaces the clip's local loop.
+  // When ctx.globalLoop is absent/disabled, laneLoopRegion === effectiveClipLoop.
+  const { startTick, endTick } = laneLoopRegion(clip, meter, ctx.globalLoop);
   const loopTicks = endTick - startTick;
   const clipDurSec = tmap
     ? tickRangeSec(tmap, startTick, endTick)
