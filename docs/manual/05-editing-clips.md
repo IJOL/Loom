@@ -117,6 +117,8 @@ The piano-roll is a two-axis canvas: time runs left-to-right, pitch runs bottom-
 
 Scrub **vertically on the time ruler** to zoom the time axis; scrub **horizontally** on the ruler to pan. Scrub the **keyboard strip** vertically to zoom the pitch axis. The native scroll bars pan both axes. Zoom state is saved per clip and restored when you reopen it.
 
+A plain **click on the time ruler** (without dragging) **seeks** the song to that point: the global playback position jumps there and every lane re-anchors in phase, so while the transport runs you can jump around the timeline from any clip editor. Dragging the ruler still zooms/pans as above — only a click-without-drag seeks.
+
 The **drum-grid** and the **audio-clip editor** have the same horizontal zoom and scroll: their fixed parts (the voice-name labels on the drum grid, the waveform header on an audio clip) stay pinned on the left while the timeline content scrolls and zooms beside them. The loop brace tracks the zoom in every editor.
 
 ### Follow (auto-scroll)
@@ -235,7 +237,11 @@ The brace lives on the note/drum editor. A pure audio channel (the waveform-only
 
 The loop region is **per-clip** and saved with the session. Two clips in the same lane or scene can each have their own independent A–B region, or none at all.
 
-All loop-region edits (moving handles, toggling) are part of the global undo history (Ctrl+Z / Cmd+Z).
+### Sharing a loop across the scene
+
+By default each clip's loop is its own. The brace strip also carries a **Global** button (tooltip: *"Share this loop across every clip in the scene"*). Turn it on — it lights amber — to push this clip's A–B region onto **every clip in the scene** so they all loop the same bars together, which is handy for auditioning one section across the whole arrangement. Toggle it off to return each clip to its own independent region.
+
+All loop-region edits (moving handles, sliding the region, toggling, and the Global share) are part of the global undo history (Ctrl+Z / Cmd+Z).
 
 For how to use an arrangement-wide A–B loop brace that repeats a section across all lanes at once, see [Performance & Arrangement](10-performance-and-arrangement.md).
 

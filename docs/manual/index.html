@@ -983,6 +983,7 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <p>The piano-roll is a two-axis canvas: time runs left-to-right, pitch runs bottom-to-top. A vertical keyboard on the left names the rows; a time ruler at the top marks bars and beats.</p>
 <h3>Zoom and pan</h3>
 <p>Scrub <strong>vertically on the time ruler</strong> to zoom the time axis; scrub <strong>horizontally</strong> on the ruler to pan. Scrub the <strong>keyboard strip</strong> vertically to zoom the pitch axis. The native scroll bars pan both axes. Zoom state is saved per clip and restored when you reopen it.</p>
+<p>A plain <strong>click on the time ruler</strong> (without dragging) <strong>seeks</strong> the song to that point: the global playback position jumps there and every lane re-anchors in phase, so while the transport runs you can jump around the timeline from any clip editor. Dragging the ruler still zooms/pans as above — only a click-without-drag seeks.</p>
 <p>The <strong>drum-grid</strong> and the <strong>audio-clip editor</strong> have the same horizontal zoom and scroll: their fixed parts (the voice-name labels on the drum grid, the waveform header on an audio clip) stay pinned on the left while the timeline content scrolls and zooms beside them. The loop brace tracks the zoom in every editor.</p>
 <h3>Follow (auto-scroll)</h3>
 <p>A session-global <strong>Follow</strong> toggle keeps the playhead in view: while it&#39;s on, every clip editor auto-scrolls horizontally to follow playback. It is <strong>on by default</strong> — turn it off when you want to inspect one region while the transport runs elsewhere. The setting is shared across all editors and saved with the session.</p>
@@ -1106,7 +1107,9 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 </ul>
 <p>The brace lives on the note/drum editor. A pure audio channel (the waveform-only audio-clip editor) does not show a brace; to gain per-region control over an audio loop, bring it in through the Sampler&#39;s <strong>Loop</strong> family, which slices it into a note clip with a piano-roll (see <a href="#08-midi-and-samples">MIDI &amp; Samples — Sampler</a>).</p>
 <p>The loop region is <strong>per-clip</strong> and saved with the session. Two clips in the same lane or scene can each have their own independent A–B region, or none at all.</p>
-<p>All loop-region edits (moving handles, toggling) are part of the global undo history (Ctrl+Z / Cmd+Z).</p>
+<h3>Sharing a loop across the scene</h3>
+<p>By default each clip&#39;s loop is its own. The brace strip also carries a <strong>Global</strong> button (tooltip: <em>&quot;Share this loop across every clip in the scene&quot;</em>). Turn it on — it lights amber — to push this clip&#39;s A–B region onto <strong>every clip in the scene</strong> so they all loop the same bars together, which is handy for auditioning one section across the whole arrangement. Toggle it off to return each clip to its own independent region.</p>
+<p>All loop-region edits (moving handles, sliding the region, toggling, and the Global share) are part of the global undo history (Ctrl+Z / Cmd+Z).</p>
 <p>For how to use an arrangement-wide A–B loop brace that repeats a section across all lanes at once, see <a href="#10-performance-and-arrangement">Performance &amp; Arrangement</a>.</p>
 <hr>
 <h2>Waveform header</h2>
