@@ -73,6 +73,14 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
    *  refreshed each sample. The worklet reads the most-recent voice's copy to
    *  drive the knob ring (the LFO part is added from the shared activeOffsets). */
   private readonly adsrOnly: VoiceModOffsets = {};
+  /** When an ADSR is routed to the 'amp' target it BECOMES this voice's amplitude
+   *  envelope (multiplicative 0..1), replacing the built-in amp env. null ⇒ none. */
+  private ampEnvValue: number | null = null;
+  /** The Adsr driving 'amp' (for the done test) when an ADSR governs amplitude. */
+  private ampEnvAdsr: Adsr | null = null;
+  /** When an ADSR is routed to 'filterEnv' it BECOMES this voice's filter envelope
+   *  (0..1, scaled by envRangeHz exactly like the built-in), replacing it. null ⇒ none. */
+  private filterEnvValue: number | null = null;
 
   constructor(note: NoteSpec, params: ParamBag, sampleRate: number) {
     this.sr = sampleRate;
@@ -113,6 +121,7 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     // Recompute the ADSR-only contribution (cleared first; fields are fixed by the
     // connection set, so this loop is tiny — 1-2 entries).
     for (const k in a) a[k] = 0;
+    this.ampEnvValue = null; this.ampEnvAdsr = null; this.filterEnvValue = null;
     for (const me of this.modEnvs) {
       const env = me.adsr.update(
         t, gate, me.m.attackSec ?? 0.01, me.m.decaySec ?? 0.3, me.m.sustain ?? 0.7, me.m.releaseSec ?? 0.3,
@@ -121,6 +130,19 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
       for (const field in depths) {
         const depth = depths[field];
         if (!depth) continue;
+        if (field === 'amp') {
+          // 'amp' is the per-voice AMPLITUDE envelope (multiplicative 0..1), not an
+          // additive param offset — keep it out of the offset struct.
+          this.ampEnvValue = (this.ampEnvValue ?? 0) + env * depth;
+          this.ampEnvAdsr = me.adsr;
+          continue;
+        }
+        if (field === 'filterEnv') {
+          // 'filterEnv' is the per-voice FILTER envelope (0..1, scaled by envRangeHz
+          // downstream — same as the built-in), not an additive offset.
+          this.filterEnvValue = (this.filterEnvValue ?? 0) + env * depth;
+          continue;
+        }
         a[field] = (a[field] ?? 0) + env * depth;
       }
     }
@@ -183,8 +205,17 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
       const env = mo?.filterEnvAmount ? clamp01(p.filterEnvAmount + mo.filterEnvAmount) : p.filterEnvAmount;
       envRangeHz = Math.min(baseCutoffHz * 7, 16000) * env * this.accentMul;
     }
-    const fe = p.filterBuiltinEnv >= 0.5
-      ? this.filtEnv.update(t, gate, p.filterAttack, p.filterDecay, p.filterSustain, p.filterRelease) : 0;
+    // Filter envelope. Like amp: the built-in env wins when enabled (presets keep
+    // filterBuiltinEnv=1 → unchanged); else an ADSR routed to 'filterEnv' becomes the
+    // env — scaled by the SAME envRangeHz, so it sounds identical; else 0.
+    let fe: number;
+    if (p.filterBuiltinEnv >= 0.5) {
+      fe = this.filtEnv.update(t, gate, p.filterAttack, p.filterDecay, p.filterSustain, p.filterRelease);
+    } else if (this.filterEnvValue != null) {
+      fe = this.filterEnvValue;
+    } else {
+      fe = 0;
+    }
     const cutoff = baseCutoffHz + keyTrackHz + fe * envRangeHz;
     // Svf resonance is 0..1 (NOT the biquad's 0..22 Q): damping r = 0.5^((res+0.125)/0.125),
     // so res>~1 makes it near-undamped → resonant blow-up (peak 9× at res=2.475). Map the
@@ -192,20 +223,27 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     // Modulation offset clamped to 0..1 so a deep LFO can't drive it into blow-up.
     const q = mo?.filterResonance ? clamp01(p.filterResonance + mo.filterResonance) : p.filterResonance;
     this.filter.update(mix, cutoff, q);
-    // amp envelope
-    const ae = p.ampBuiltinEnv >= 0.5
-      ? this.ampEnv.update(t, gate, p.ampAttack, p.ampDecay, p.ampSustain, p.ampRelease) : 1;
+    // Amp envelope. Priority: the built-in env when enabled (presets keep
+    // ampBuiltinEnv=1 → unchanged); else an ADSR routed to 'amp' BECOMES the
+    // amplitude envelope (the unified pre-worklet model); else a flat gain.
+    let ae: number;
+    if (p.ampBuiltinEnv >= 0.5) {
+      ae = this.ampEnv.update(t, gate, p.ampAttack, p.ampDecay, p.ampSustain, p.ampRelease);
+    } else if (this.ampEnvValue != null) {
+      ae = this.ampEnvValue < 0 ? 0 : this.ampEnvValue > 1 ? 1 : this.ampEnvValue;
+    } else {
+      ae = 1;
+    }
     let out = this.filter.lp * ae * this.velPeak;
     // amp.gain modulation = tremolo: a multiplicative gain on the output
     // (depth 1 ⇒ ±1 ⇒ 0..2×), clamped non-negative.
     if (mo?.ampGain) out *= Math.max(0, Math.min(2, 1 + mo.ampGain));
-    // Done once the amp env has fully released after the gate. When the built-in
-    // amp env is OFF (ampBuiltinEnv < 0.5) the Adsr never leaves 'off' so isOff
-    // is always true: the voice then ends at gate-off (no envelope ⇒ no release
-    // tail). That is intentional — it keeps a fixed-gain voice from becoming
-    // immortal; the only artifact is a hard edge at note-off, inherent to having
-    // no amp envelope.
-    if (gate === 0 && this.ampEnv.isOff && t > this.holdEnd) this.done = true;
+    // Done once the amplitude DRIVER has fully released after the gate: the
+    // built-in env, the ADSR 'amp' envelope, or (no envelope) at gate-off. A
+    // fixed-gain voice ending at gate-off keeps it from becoming immortal.
+    const ampOff = p.ampBuiltinEnv >= 0.5 ? this.ampEnv.isOff
+      : this.ampEnvAdsr ? this.ampEnvAdsr.isOff : true;
+    if (gate === 0 && ampOff && t > this.holdEnd) this.done = true;
     return out;
   }
 }

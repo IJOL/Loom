@@ -152,4 +152,50 @@ describe('SubtractiveVoiceRenderer', () => {
     for (let i = SR * 0.05; i < SR * 0.4; i++) v.renderSample(i / SR);
     expect((v.getAdsrOffsets() as Record<string, number>).filterCutoff).toBeLessThan(0.1);
   });
+
+  const ampAdsr = {
+    id: 'amp', kind: 'adsr' as const, enabled: true, rateHz: 0, waveform: 'sine' as const,
+    attackSec: 0.005, decaySec: 0.01, sustain: 1, releaseSec: 0.05, depthByParam: { amp: 1 },
+  };
+
+  it("an ADSR routed to 'amp' becomes the amplitude envelope when the built-in is off", () => {
+    const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.2 }), { ...DEFAULTS, 'amp.builtinEnv': 0 }, SR);
+    v.setModEnvelopes([ampAdsr]);
+    const gate: number[] = [];
+    for (let i = 0; i < SR * 0.15; i++) gate.push(v.renderSample(i / SR));
+    expect(rms(gate)).toBeGreaterThan(0.02);        // audible while the envelope is open
+    let last = 1;
+    for (let i = SR * 0.2; i < SR * 0.6; i++) last = v.renderSample(i / SR);
+    expect(Math.abs(last)).toBeLessThan(0.005);     // silent after release
+    expect(v.done).toBe(true);                      // and the voice ends (ADSR governs done)
+  });
+
+  it("with the built-in amp env ON, an 'amp' ADSR is ignored (presets unchanged)", () => {
+    // ampBuiltinEnv=1 (the preset default): the built-in env governs amplitude and
+    // the 'amp' ADSR is inert, so existing presets sound exactly as before.
+    const r = (withAdsr: boolean) => {
+      const v = new SubtractiveVoiceRenderer(note(), DEFAULTS, SR);
+      if (withAdsr) v.setModEnvelopes([{ ...ampAdsr, sustain: 0, releaseSec: 0.001 }]); // would silence if applied
+      const b: number[] = []; for (let i = 0; i < SR * 0.05; i++) b.push(v.renderSample(i / SR));
+      return rms(b);
+    };
+    expect(r(true)).toBeCloseTo(r(false), 5);       // identical — the 'amp' ADSR was ignored
+  });
+
+  it("an ADSR routed to 'filterEnv' opens the filter when the built-in env is off", () => {
+    // built-in filter env OFF, low base cutoff, a real env amount. An ADSR on
+    // 'filterEnv' must brighten the voice (it scales the same envRangeHz path).
+    const bright = (withEnv: boolean) => {
+      const v = new SubtractiveVoiceRenderer(
+        note(), { ...DEFAULTS, 'filter.cutoff': 0.15, 'filter.resonance': 0, 'filter.envAmount': 0.8, 'filter.builtinEnv': 0 }, SR,
+      );
+      if (withEnv) v.setModEnvelopes([{
+        id: 'fe', kind: 'adsr', enabled: true, rateHz: 0, waveform: 'sine',
+        attackSec: 0.001, decaySec: 0.001, sustain: 1, releaseSec: 0.1, depthByParam: { filterEnv: 1 },
+      }]);
+      const b: number[] = []; for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR));
+      return rms(b);
+    };
+    expect(bright(true)).toBeGreaterThan(bright(false) * 1.3);
+  });
 });

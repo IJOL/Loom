@@ -33,10 +33,10 @@ export type ParamBag = Record<string, number>;
 /** Read a ParamBag value with a default fallback. */
 export const param = (b: ParamBag, id: string, d: number): number => (b[id] ?? d);
 
-/** A modulation destination: any SubParams field, plus the synthetic `ampGain`
- *  (a multiplicative output gain — i.e. tremolo — which is not a stored param
- *  but the amp-envelope output). */
-export type ModTarget = keyof SubParams | 'ampGain';
+/** A modulation destination: any SubParams field, plus two synthetic targets:
+ *  `ampGain` (a multiplicative output gain — tremolo), and `amp` (the per-voice
+ *  AMPLITUDE envelope itself — an ADSR routed here becomes the voice's amp env). */
+export type ModTarget = keyof SubParams | 'ampGain' | 'amp' | 'filterEnv';
 
 /** Live, additive modulation offsets keyed by destination, NORMALISED (the sum
  *  of LFO `wave×depth`, roughly -1..1). The renderer scales each to the field's

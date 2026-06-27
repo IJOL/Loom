@@ -49,6 +49,8 @@ const DOT_TO_FIELD: Record<string, keyof SubParams> = {
  *  `amp.gain` is the synthetic tremolo target (not a stored SubParams field). */
 function fieldForParamId(paramId: string): ModTarget | null {
   if (paramId === 'amp.gain' || paramId.endsWith('.amp.gain')) return 'ampGain';
+  if (paramId === 'amp' || paramId.endsWith('.amp')) return 'amp';   // amp ENVELOPE target
+  if (paramId === 'filter.env' || paramId.endsWith('.filter.env')) return 'filterEnv';   // filter ENVELOPE target
   for (const dotId in DOT_TO_FIELD) {
     if (paramId === dotId || paramId.endsWith('.' + dotId)) return DOT_TO_FIELD[dotId];
   }
