@@ -731,7 +731,7 @@ export class SamplerWorkletEngine implements SynthEngine {
 
   dispose(): void {
     this.keymap = [];
-    this.node?.disconnect();
+    this.node?.dispose();   // kill the processor, not just disconnect (phantom-processor leak)
     this.node = null;
   }
 }

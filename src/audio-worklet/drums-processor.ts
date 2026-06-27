@@ -15,13 +15,17 @@ import type { ParamBag } from '../audio-dsp/types';
 
 type DrumsMsg =
   | { type: 'hit'; voice: DrumVoiceId; beginSec: number; velocity: number }
-  | { type: 'voiceParams'; voice: DrumVoiceId; params: ParamBag };
+  | { type: 'voiceParams'; voice: DrumVoiceId; params: ParamBag }
+  | { type: 'kill' };
 
 class DrumsProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() { return []; }
   private vm = new DrumVoiceManager(sampleRate);
   private queue = new SchedulerQueue<DrumHit>();
   private frame = Math.floor(currentTime * sampleRate);
+  // Set by `kill` (lane disposed): process() then returns false so the audio engine
+  // reclaims this processor instead of running it forever (see loom-processor.ts).
+  private dead = false;
 
   constructor(options?: unknown) {
     super(options);
@@ -33,11 +37,14 @@ class DrumsProcessor extends AudioWorkletProcessor {
         });
       } else if (m.type === 'voiceParams') {
         this.vm.setVoiceParams(m.voice, m.params);
+      } else if (m.type === 'kill') {
+        this.dead = true;
       }
     };
   }
 
   process(_inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
+    if (this.dead) return false;   // disposed → let the engine reclaim this processor
     // numberOfOutputs = 8; outputs[v][0] is voice v's mono buffer for this block.
     const n = outputs[0][0].length;
     // Fire every hit due within this block (block granularity — sub-sample drum

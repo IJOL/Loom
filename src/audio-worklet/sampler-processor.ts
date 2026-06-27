@@ -33,7 +33,8 @@ type SamplerMsg =
   // currently-live voices are note-off'd AT that frame instead of immediately —
   // the gapless scene-switch path (cut the outgoing clip exactly when the
   // incoming one starts). Absent / already-past ⇒ immediate (transport Stop, seek).
-  | { type: 'silence'; atSec?: number };
+  | { type: 'silence'; atSec?: number }
+  | { type: 'kill' };
 
 interface Slot {
   r: SamplerRenderer | AudioClipRenderer;
@@ -47,12 +48,17 @@ class SamplerProcessor extends AudioWorkletProcessor {
   private scheduledOffs = new ScheduledNoteOffs<SamplerRenderer | AudioClipRenderer>();
   private live: Slot[] = [];
   private frame = Math.floor(currentTime * sampleRate);
+  // Set by `kill` (lane disposed): process() then returns false so the audio engine
+  // reclaims this processor instead of running it forever (see loom-processor.ts).
+  private dead = false;
 
   constructor(options?: unknown) {
     super(options);
     this.port.onmessage = (e: MessageEvent<SamplerMsg>) => {
       const m = e.data;
-      if (m.type === 'loadSample') {
+      if (m.type === 'kill') {
+        this.dead = true;
+      } else if (m.type === 'loadSample') {
         this.bank.set(m.sampleId, { channels: m.channels, sampleRate: m.sampleRate });
       } else if (m.type === 'spawn') {
         this.queue.push(Math.floor(m.spawn.beginSec * sampleRate), { kind: m.kind, spawn: m.spawn });
@@ -76,6 +82,7 @@ class SamplerProcessor extends AudioWorkletProcessor {
   }
 
   process(_inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
+    if (this.dead) return false;   // disposed → let the engine reclaim this processor
     const dry = outputs[0];
     const rev = outputs[1];   // reverb send (Send B)
     const dly = outputs[2];   // delay send (Send A)

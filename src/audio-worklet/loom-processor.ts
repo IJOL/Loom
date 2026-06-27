@@ -27,6 +27,10 @@ class LoomProcessor extends AudioWorkletProcessor {
   private queue = new SchedulerQueue<NoteSpec>();
   private frame = Math.floor(currentTime * sampleRate);
   private reportCountdown = 0;
+  // Set by a `kill` message (lane disposed / re-imported). Once true, process()
+  // returns false so the audio engine stops scheduling this processor and reclaims
+  // it — otherwise the always-true return below keeps it (and its CPU cost) alive.
+  private dead = false;
 
   constructor(options?: unknown) {
     super(options);
@@ -44,11 +48,18 @@ class LoomProcessor extends AudioWorkletProcessor {
         case 'config': this.vm.setMaxVoices(m.maxVoices); break;
         case 'steal':  this.vm.steal(m.count); break;
         case 'mods':   this.mod.setMods(m.mods); break;
+        case 'kill':   this.dead = true; break;
       }
     };
   }
 
   process(_inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
+    // Disposed: report zero voices once (so the global voice cap drops this lane's
+    // residual count) then return false so the engine reclaims this processor.
+    if (this.dead) {
+      this.port.postMessage({ type: 'voices', active: 0 } satisfies WorkletToMain);
+      return false;
+    }
     const out = outputs[0];
     for (let i = 0; i < out[0].length; i++) {
       this.queue.drainDue(this.frame, (note) => this.vm.spawn(note));

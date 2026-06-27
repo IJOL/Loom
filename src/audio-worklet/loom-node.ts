@@ -58,4 +58,10 @@ export class LoomWorkletNode {
   onVoiceCount(cb: (active: number) => void): void { this.countCb = cb; }
   connect(dest: AudioNode): void { this.node.connect(dest); }
   disconnect(): void { this.node.disconnect(); }
+  /** Tear-down for a disposed lane. `disconnect()` alone only removes the node from
+   *  the graph — the processor's process() returns true, so the audio engine keeps
+   *  running it forever. Sending `kill` makes process() return false so the engine
+   *  reclaims it; without this, re-importing MIDIs piled up phantom processors that
+   *  burned audio-thread CPU → progressive clicks/dropouts. */
+  dispose(): void { this.post({ type: 'kill' }); this.node.disconnect(); }
 }

@@ -21,7 +21,9 @@ const SAMPLER_PROCESSOR_NAME = 'sampler-processor';
 export type SamplerMsg =
   | { type: 'loadSample'; sampleId: string; channels: Float32Array[]; sampleRate: number }
   | { type: 'spawn'; kind: 'sampler' | 'audio'; spawn: SampleSpawn }
-  | { type: 'silence'; atSec?: number };
+  | { type: 'silence'; atSec?: number }
+  // Dispose: stop the processor (its process() returns false on `kill`).
+  | { type: 'kill' };
 
 /** Build the loadSample message + its transfer list (the channels' ArrayBuffers
  *  are transferred zero-copy, detaching them from the caller). Pure: testable
@@ -118,4 +120,8 @@ export class SamplerWorkletNode {
   }
 
   disconnect(): void { this.node.disconnect(); }
+  /** Tear-down: kill the processor (its process() returns false) THEN disconnect.
+   *  Without the kill, the disposed sampler/audio processor keeps running forever —
+   *  see loom-node.ts dispose() for the full rationale. */
+  dispose(): void { this.node.port.postMessage({ type: 'kill' } satisfies SamplerMsg); this.node.disconnect(); }
 }

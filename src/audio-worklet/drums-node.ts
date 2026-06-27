@@ -20,7 +20,9 @@ const DRUMS_PROCESSOR_NAME = 'drums-processor';
 // The drums-specific main↔worklet message protocol.
 export type DrumsMsg =
   | { type: 'hit'; voice: DrumVoiceId; beginSec: number; velocity: number }
-  | { type: 'voiceParams'; voice: DrumVoiceId; params: ParamBag };
+  | { type: 'voiceParams'; voice: DrumVoiceId; params: ParamBag }
+  // Dispose: stop the processor (its process() returns false on `kill`).
+  | { type: 'kill' };
 
 /** Pure message builders (testable without a real AudioWorkletNode). */
 export function drumsHitMessage(voice: DrumVoiceId, beginSec: number, velocity: number): DrumsMsg {
@@ -70,4 +72,8 @@ export class DrumsWorkletNode {
   /** Output index for a voice — the single source of truth is DRUM_VOICE_IDS. */
   voiceIndex(voice: DrumVoiceId): number { return DRUM_VOICE_IDS.indexOf(voice); }
   disconnect(): void { this.node.disconnect(); }
+  /** Tear-down: kill the processor (its process() returns false) THEN disconnect.
+   *  Without the kill, the disposed drums processor keeps running forever — see
+   *  loom-node.ts dispose() for the full rationale. */
+  dispose(): void { this.post({ type: 'kill' }); this.node.disconnect(); }
 }

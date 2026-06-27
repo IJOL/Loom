@@ -307,5 +307,5 @@ export class WorkletLaneEngine implements SynthEngine {
     });
   }
 
-  dispose(): void { this.worklet.disconnect(); }
+  dispose(): void { this.worklet.dispose(); }   // kill the processor, not just disconnect (phantom-processor leak)
 }

@@ -626,8 +626,11 @@ export class DrumsWorkletEngine implements SynthEngine {
     disposeEngineMods(this.engineModVoices, this.currentLaneId);
     this.engineModVoices = null;
     this.currentLaneId = null;
-    this.node?.disconnect();
+    this.node?.dispose();   // kill the processor, not just disconnect (phantom-processor leak)
     this.node = null;
+    // The embedded sampler (sample-kit mode) owns its OWN worklet node — dispose it
+    // too, else a disposed sample-drums lane leaks a phantom sampler processor.
+    this.sampler.dispose();
     this.wired = false;
     this.voiceStrips = {};
   }
