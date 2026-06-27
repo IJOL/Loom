@@ -27,7 +27,9 @@ export const ENGINE_TRIM: Record<string, number> = {
   fm: 0.25,
   wavetable: 0.6,
   westcoast: 0.5,
-  karplus: 0.8,
+  karplus: 1.2, // raised from 0.8 (×1.5): sat too quiet vs the other engines —
+                // balancing it needed the karplus lane fader at the top (1.5). Bake
+                // that ×1.5 in here so it sits right at unity fader.
 };
 
 /** Per-category gain — the global balance BETWEEN families. `drum` carries what
