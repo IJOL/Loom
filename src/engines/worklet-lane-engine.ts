@@ -139,6 +139,9 @@ export class WorkletLaneEngine implements SynthEngine {
   private state: ParamBag = {};
   private maxVoices: number;
   private worklet: LoomWorkletNode;
+  // Latest live modulation offsets reported by the worklet (field → normalised
+  // -1..1), the source of truth for the UI knob rings. Empty when nothing modulates.
+  private liveModOffsets: Record<string, number> = {};
   private _bpm = 120;
   /** Tempo. Assigning re-posts the modulator set so BPM-synced LFOs re-resolve
    *  their rate live (bpm-broadcast assigns this on every tempo change). */
@@ -158,6 +161,8 @@ export class WorkletLaneEngine implements SynthEngine {
     this.state['poly.voices'] = this.maxVoices;   // keep the bag in sync with the authoritative cap
     this.worklet = new LoomWorkletNode(ctx, cfg.engineId);
     this.worklet.connect(output);
+    // Receive live modulation telemetry so the UI can draw the REAL knob rings.
+    this.worklet.onModValues((o) => { this.liveModOffsets = o; });
     if (cfg.polyphony === 'mono') this.worklet.setMaxVoices(1);
     this.postMods();
   }
@@ -174,6 +179,16 @@ export class WorkletLaneEngine implements SynthEngine {
   get modulators(): ModulationHostImpl { return this.modHost; }
   /** Exposed for the global voice cap and for tests. */
   getWorkletNode(): LoomWorkletNode { return this.worklet; }
+
+  /** Live modulation offset (normalised -1..1) currently applied to `paramId`
+   *  (a dot-id like 'filter.cutoff' or the synthetic 'amp.gain'), or 0 if none.
+   *  Reads the worklet's last telemetry — the REAL modulation, so the UI ring
+   *  matches what is sounding. Drives the knob-ring overlay in automation-tick. */
+  getLiveModOffset(paramId: string): number {
+    const field = fieldForParamId(paramId);
+    if (!field) return 0;
+    return this.liveModOffsets[field as string] ?? 0;
+  }
 
   /** Snapshot of the current dot-id param state — the exact ParamBag the
    *  audio-dsp renderer reads. The offline scene recorder uses this to render
@@ -299,6 +314,7 @@ export class WorkletLaneEngine implements SynthEngine {
       laneInserts: ctx.laneInserts,
       masterInserts: ctx.masterInserts,
       fxBus: ctx.fxBus,
+      onLiveEdit: () => this.postMods(),   // depth/on-off/rate/… reach the worklet live
       onChange: () => {
         container.innerHTML = '';
         this.buildParamUI(container, ctx);

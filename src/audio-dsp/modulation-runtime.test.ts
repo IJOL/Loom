@@ -43,3 +43,36 @@ describe('ModulationRuntime (shared LFO)', () => {
     expect(r.offsetFor('osc1Level', 0.1)).toBeCloseTo(0.5, 6);
   });
 });
+
+// activeOffsets() is the telemetry the worklet posts to the UI so the knob rings
+// reflect the REAL modulation (not a main-thread re-computation). It must agree
+// with offsetFor() for every modulated param and omit the rest.
+describe('ModulationRuntime.activeOffsets (UI telemetry)', () => {
+  it('reports the live offset for every modulated param, matching offsetFor', () => {
+    const r = new ModulationRuntime(SR);
+    r.setMods([{
+      id: 'l', kind: 'lfo', enabled: true, rateHz: 2, waveform: 'sine',
+      depthByParam: { filterCutoff: 0.5, osc1Level: 0.3 },
+    }]);
+    const t = 0.1;
+    const off = r.activeOffsets(t);
+    expect(off.filterCutoff).toBeCloseTo(r.offsetFor('filterCutoff', t), 9);
+    expect(off.osc1Level).toBeCloseTo(r.offsetFor('osc1Level', t), 9);
+    expect(Object.keys(off).sort()).toEqual(['filterCutoff', 'osc1Level']);
+  });
+
+  it('is empty when the only LFO is disabled (nothing modulating)', () => {
+    const r = new ModulationRuntime(SR);
+    r.setMods([{ id: 'l', kind: 'lfo', enabled: false, rateHz: 2, waveform: 'sine', depthByParam: { filterCutoff: 0.5 } }]);
+    expect(r.activeOffsets(0.1)).toEqual({});
+  });
+
+  it('sums two LFOs on the same param (matches offsetFor)', () => {
+    const r = new ModulationRuntime(SR);
+    r.setMods([
+      { id: 'a', kind: 'lfo', enabled: true, rateHz: 1, waveform: 'square', depthByParam: { osc1Level: 0.2 } },
+      { id: 'b', kind: 'lfo', enabled: true, rateHz: 1, waveform: 'square', depthByParam: { osc1Level: 0.3 } },
+    ]);
+    expect(r.activeOffsets(0.1).osc1Level).toBeCloseTo(0.5, 6);
+  });
+});

@@ -59,4 +59,24 @@ export class ModulationRuntime {
     }
     return sum;
   }
+
+  /** Snapshot of the normalised offset for EVERY param any enabled modulator
+   *  drives at time t (the sum over all sources, the same value offsetFor
+   *  returns). The worklet posts this to the main thread so the knob rings show
+   *  the REAL modulation; params with no active modulation are omitted. When
+   *  per-voice ADSR lands it adds its contribution here and the rings follow. */
+  activeOffsets(t: number): Record<string, number> {
+    const out: Record<string, number> = {};
+    for (const m of this.mods) {
+      if (!m.enabled || m.kind !== 'lfo') continue;
+      const phase = (t * m.rateHz) % 1;
+      const w = wave(m.waveform, phase);
+      for (const field in m.depthByParam) {
+        const depth = m.depthByParam[field];
+        if (!depth) continue;
+        out[field] = (out[field] ?? 0) + w * depth;
+      }
+    }
+    return out;
+  }
 }

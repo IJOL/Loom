@@ -13,6 +13,7 @@ const maxVoicesCalls: number[] = [];
 const modsCalls: ModLite[][] = [];
 let silenceAllCalls = 0;
 let lastEngineId: string | undefined;
+let lastModCb: ((o: Record<string, number>) => void) | null = null;
 vi.mock('../audio-worklet/loom-node', () => ({
   loadLoomWorklet: vi.fn().mockResolvedValue(undefined),
   LoomWorkletNode: class {
@@ -21,7 +22,9 @@ vi.mock('../audio-worklet/loom-node', () => ({
     setParams(p: ParamBag) { params.push(p); }
     setMaxVoices(n: number) { maxVoicesCalls.push(n); }
     setMods(m: ModLite[]) { modsCalls.push(m); }
-    steal() {} silenceAll() { silenceAllCalls++; } onVoiceCount() {} connect() {} disconnect() {}
+    steal() {} silenceAll() { silenceAllCalls++; } onVoiceCount() {}
+    onModValues(cb: (o: Record<string, number>) => void) { lastModCb = cb; }
+    connect() {} disconnect() {} dispose() {}
   },
 }));
 
@@ -107,6 +110,17 @@ describe('WorkletLaneEngine', () => {
     expect(modsCalls).toHaveLength(1);
     expect(modsCalls[0].map((m) => m.id).sort()).toEqual(['adsr-amp', 'adsr-filter', 'lfo1', 'lfo2']);
     expect(modsCalls[0].every((m) => Object.keys(m.depthByParam).length === 0)).toBe(true);
+  });
+
+  it('getLiveModOffset maps a worklet modValues report (field) to the param dot-id', () => {
+    lastModCb = null;
+    const eng = makeEngine();
+    // The engine subscribed to onModValues in its constructor — simulate the
+    // worklet posting a live offset for the filterCutoff field.
+    expect(lastModCb).toBeTypeOf('function');
+    lastModCb!({ filterCutoff: 0.4 });
+    expect(eng.getLiveModOffset('filter.cutoff')).toBeCloseTo(0.4, 6);   // mapped via field
+    expect(eng.getLiveModOffset('osc1.level')).toBe(0);                  // not reported → ring hidden
   });
 
   const makeUiCtx = (registered: string[] = []): EngineUIContext => ({

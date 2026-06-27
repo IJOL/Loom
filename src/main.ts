@@ -1016,6 +1016,8 @@ const automationTickDeps: AutomationTickDeps = {
   automationRegistry,
   getLaneStates: () => sessionHost.laneStates,
   ctx,
+  // Lets the rAF loop read each lane's live modulation offsets for the knob rings.
+  getEngineForLane: (laneId) => getLaneEngineInstance(laneId) ?? undefined,
 };
 
 startAutomationTick(automationTickDeps);

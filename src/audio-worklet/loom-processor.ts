@@ -27,6 +27,9 @@ class LoomProcessor extends AudioWorkletProcessor {
   private queue = new SchedulerQueue<NoteSpec>();
   private frame = Math.floor(currentTime * sampleRate);
   private reportCountdown = 0;
+  // True when the last modulation report carried offsets — lets us post ONE empty
+  // snapshot when modulation stops, so the UI knob rings clear instead of freezing.
+  private lastModNonEmpty = false;
   // Set by a `kill` message (lane disposed / re-imported). Once true, process()
   // returns false so the audio engine stops scheduling this processor and reclaims
   // it — otherwise the always-true return below keeps it (and its CPU cost) alive.
@@ -68,9 +71,19 @@ class LoomProcessor extends AudioWorkletProcessor {
       this.frame++;
     }
     if ((this.reportCountdown -= out[0].length) <= 0) {
-      this.reportCountdown = sampleRate / 30; // ~30 Hz voice-count report
-      const msg: WorkletToMain = { type: 'voices', active: this.vm.activeCount };
-      this.port.postMessage(msg);
+      this.reportCountdown = sampleRate / 30; // ~30 Hz report
+      this.port.postMessage({ type: 'voices', active: this.vm.activeCount } satisfies WorkletToMain);
+      // Live modulation telemetry for the UI knob rings — the REAL per-param
+      // offset, summed over every source. Posted while something modulates, plus
+      // one empty snapshot on the falling edge so the rings clear (no Object.keys
+      // alloc on the audio thread: probe emptiness with a for-in/break).
+      const offsets = this.mod.activeOffsets(this.frame / sampleRate);
+      let has = false;
+      for (const _k in offsets) { has = true; break; }
+      if (has || this.lastModNonEmpty) {
+        this.port.postMessage({ type: 'modValues', offsets } satisfies WorkletToMain);
+      }
+      this.lastModNonEmpty = has;
     }
     return true;
   }

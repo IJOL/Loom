@@ -32,6 +32,7 @@ export async function loadLoomWorklet(ctx: BaseAudioContext): Promise<void> {
 export class LoomWorkletNode {
   readonly node: AudioWorkletNode;
   private countCb: ((n: number) => void) | null = null;
+  private modCb: ((offsets: Record<string, number>) => void) | null = null;
 
   constructor(ctx: BaseAudioContext, engineId = 'subtractive') {
     this.node = new AudioWorkletNode(ctx, LOOM_PROCESSOR_NAME, {
@@ -40,6 +41,7 @@ export class LoomWorkletNode {
     });
     this.node.port.onmessage = (e: MessageEvent<WorkletToMain>) => {
       if (e.data.type === 'voices') this.countCb?.(e.data.active);
+      else if (e.data.type === 'modValues') this.modCb?.(e.data.offsets);
     };
   }
 
@@ -56,6 +58,10 @@ export class LoomWorkletNode {
    *  as the legacy voice.release() the live-voice registry used to call. */
   silenceAll(): void { this.steal(1024); }
   onVoiceCount(cb: (active: number) => void): void { this.countCb = cb; }
+  /** Live modulation telemetry: latest normalised offset per modulated param
+   *  field (the worklet posts this ~30 Hz). The lane engine maps fields → knob
+   *  ids so the UI rings reflect the REAL modulation. */
+  onModValues(cb: (offsets: Record<string, number>) => void): void { this.modCb = cb; }
   connect(dest: AudioNode): void { this.node.connect(dest); }
   disconnect(): void { this.node.disconnect(); }
   /** Tear-down for a disposed lane. `disconnect()` alone only removes the node from

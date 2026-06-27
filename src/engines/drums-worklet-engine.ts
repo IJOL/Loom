@@ -547,6 +547,9 @@ export class DrumsWorkletEngine implements SynthEngine {
       laneInserts: ctx.laneInserts,
       masterInserts: ctx.masterInserts,
       fxBus: ctx.fxBus,
+      // Drums modulate Web-Audio bus params (main-thread): re-apply the bindings
+      // so depth/on-off/rate tweaks take effect without rebuilding the panel.
+      onLiveEdit: () => { if (this.currentLaneId) reapplyLaneModulations(this.currentLaneId); },
       onChange: () => {
         container.innerHTML = '';
         this.buildParamUI(container, ctx);

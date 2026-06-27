@@ -21,6 +21,12 @@ export interface ModulationUIDeps {
   registry: Map<string, KnobHandle>;
   registerKnob: (k: KnobHandle) => void;
   onChange: () => void;                   // engine re-renders or rebuilds voice
+  /** Push the CURRENT modulator set to the live engine WITHOUT rebuilding the
+   *  panel. Called after every value tweak (depth/on-off/rate/wave/…) so the
+   *  change is actually heard — the worklet only re-reads modulators when this
+   *  (or onChange) fires. Without it, editing DEPTH or toggling ON/OFF mutated
+   *  state + saved it but never reached the worklet, so nothing changed. */
+  onLiveEdit?: () => void;
   /** Resolves a session laneId (`bass`, `main`, `drums`, `poly1`…) to its
    *  user-facing display name (`TB-303 1`, `Subtractive 1`…) so the dropdown
    *  and connection labels can show the same name the session uses
@@ -48,6 +54,10 @@ function sync(deps: ModulationUIDeps): void {
   if (deps.sessionState) {
     syncModulators(deps.sessionState, deps.laneId, deps.host.modulators);
   }
+  // Every control calls sync() after mutating modulator state — so pushing the
+  // change to the live engine here makes ALL of them (depth, on/off, rate, wave,
+  // sync, polarity, scope…) take effect, not just add/remove which call onChange.
+  deps.onLiveEdit?.();
 }
 
 export function renderModulatorsPanel(container: HTMLElement, deps: ModulationUIDeps): void {
