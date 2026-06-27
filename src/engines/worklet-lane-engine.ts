@@ -80,6 +80,7 @@ export function toModLite(state: ModulatorState[], bpm = 120): ModLite[] {
       // legacy free-rate default (4 Hz) for a rate-less modulator.
       rateHz: effectiveRateHz({ ...m, rateHz: m.rateHz ?? 4 }, bpm),
       waveform: m.waveform ?? 'sine',
+      bipolar: m.bipolar !== false,   // POLARITY: default bipolar; uni maps wave to 0..1
       depthByParam,
     };
   });

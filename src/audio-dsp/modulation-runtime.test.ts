@@ -18,6 +18,16 @@ describe('ModulationRuntime (shared LFO)', () => {
     expect(min).toBeLessThan(-0.3);
   });
 
+  it('POLARITY: a unipolar LFO only pushes one way (0..depth, never negative)', () => {
+    const r = new ModulationRuntime(SR);
+    r.setMods([{ id: 'l', kind: 'lfo', enabled: true, bipolar: false, rateHz: 2, waveform: 'sine', depthByParam: { filterCutoff: 0.5 } }]);
+    let min = 1, max = -1;
+    for (let i = 0; i < SR; i++) { const v = r.offsetFor('filterCutoff', i / SR); min = Math.min(min, v); max = Math.max(max, v); }
+    expect(min).toBeGreaterThanOrEqual(0);          // never goes negative
+    expect(max).toBeGreaterThan(0.3);               // reaches ~depth
+    expect(max).toBeLessThanOrEqual(0.5 + 1e-9);    // capped at depth
+  });
+
   it('only modulates the connected param', () => {
     const r = new ModulationRuntime(SR);
     r.setMods([{ id: 'l', kind: 'lfo', enabled: true, rateHz: 2, waveform: 'sine', depthByParam: { filterCutoff: 0.5 } }]);

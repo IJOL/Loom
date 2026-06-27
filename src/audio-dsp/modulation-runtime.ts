@@ -25,9 +25,19 @@ export interface ModLite {
   enabled: boolean;
   rateHz: number;
   waveform: 'sine' | 'triangle' | 'square' | 'saw';
+  /** Polarity: bipolar (default) swings -1..+1; unipolar maps the wave to 0..1
+   *  so the offset only pushes the target one way. Optional — absent ⇒ bipolar. */
+  bipolar?: boolean;
   /** SubParams field name → modulation depth (-1..1), additive in the field's
    *  native 0..1 units. */
   depthByParam: Record<string, number>;
+}
+
+/** The modulator's signal at phase, honouring polarity: bipolar -1..+1 (raw
+ *  wave), unipolar 0..1 (wave shifted/scaled so it only pushes one way). */
+function signal(m: ModLite, phase: number): number {
+  const w = wave(m.waveform, phase);
+  return m.bipolar === false ? (w + 1) / 2 : w;
 }
 
 function wave(w: ModLite['waveform'], phase: number): number {
@@ -55,7 +65,7 @@ export class ModulationRuntime {
       const depth = m.depthByParam[field as string];
       if (!depth) continue;
       const phase = (t * m.rateHz) % 1;
-      sum += wave(m.waveform, phase) * depth;
+      sum += signal(m, phase) * depth;
     }
     return sum;
   }
@@ -70,7 +80,7 @@ export class ModulationRuntime {
     for (const m of this.mods) {
       if (!m.enabled || m.kind !== 'lfo') continue;
       const phase = (t * m.rateHz) % 1;
-      const w = wave(m.waveform, phase);
+      const w = signal(m, phase);
       for (const field in m.depthByParam) {
         const depth = m.depthByParam[field];
         if (!depth) continue;
