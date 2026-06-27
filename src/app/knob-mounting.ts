@@ -79,11 +79,24 @@ export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
     const engine = deps.laneResources.get(laneId)?.engine;
     if (!engine) return;
     const ctx = buildCtx(laneId);
+    // Unified envelope model: the amp/filter ADSR + Built-in Env toggle now live in
+    // the MODULATORS panel (the panel ADSRs ARE the envelopes), so don't mount the
+    // duplicate built-in env knobs here.
+    const ENV_LEAVES = new Set(['attack', 'decay', 'sustain', 'release', 'builtinEnv']);
+    const isEnvKnob = (id: string): boolean => ENV_LEAVES.has(id.slice(id.indexOf('.') + 1));
     for (const [prefix, divId] of sectionMap) {
       const parent = document.getElementById(divId);
       if (!parent) continue;
       parent.innerHTML = '';
-      wireEngineParams(engine, ctx, parent, { filter: (id) => id.startsWith(prefix) });
+      wireEngineParams(engine, ctx, parent, { filter: (id) => id.startsWith(prefix) && !isEnvKnob(id) });
+    }
+    // The AMP section held only envelope knobs ⇒ now empty. Hide it + its label so
+    // no orphan "AMP" header is left behind.
+    const ampDiv = document.getElementById('poly-amp-knobs');
+    if (ampDiv) {
+      ampDiv.style.display = 'none';
+      const lbl = ampDiv.previousElementSibling;
+      if (lbl?.classList.contains('section-label')) (lbl as HTMLElement).style.display = 'none';
     }
   };
 

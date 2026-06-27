@@ -21,6 +21,7 @@ import { LoomWorkletNode } from '../audio-worklet/loom-node';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import { type ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
+import { deriveSubtractiveEnvMods } from './subtractive';
 import { effectiveRateHz } from '../modulation/rate-sync';
 import { velNorm, resolveVelocity } from '../core/velocity-gain';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
@@ -237,7 +238,17 @@ export class WorkletLaneEngine implements SynthEngine {
       // (e.g. TB-303's 'cutoff' → 'filter.cutoff'); other engines pass through.
       this.setBaseValue(this.presetKeyRemap?.[id] ?? id, val);
     }
-    if (preset.modulators) this.modHost.deserialize(preset.modulators);
+    if (preset.modulators) {
+      this.modHost.deserialize(preset.modulators);
+    } else if (this.id === 'subtractive') {
+      // Unified envelope model: the panel ADSRs ARE the amp/filter envelopes.
+      // Derive them from the preset's built-in env params and switch the built-in
+      // off — the preset sounds identical (same Adsr, same mapping) with the ADSRs
+      // driving. Saves carry their own modulators, so they take the branch above.
+      this.modHost.deserialize(deriveSubtractiveEnvMods(preset.params as Record<string, number>));
+      this.setBaseValue('amp.builtinEnv', 0);
+      this.setBaseValue('filter.builtinEnv', 0);
+    }
     this.postMods();
   }
 
