@@ -4,8 +4,13 @@ import { param } from './types';
 import { SawOsc, SquareOsc, TriOsc, SineOsc, WhiteNoise } from './osc';
 import { Svf } from './filter';
 import { Adsr } from './adsr';
+import type { ModLite } from './modulation-runtime';
 import { registerRenderer } from './renderer-registry';
 import { synthTrim } from './gain-staging';
+
+/** One per-voice ADSR modulator: its own envelope state + the shape/depths from
+ *  the ModLite. update() returns env×depth per connected field, gated by the note. */
+interface ModEnv { adsr: Adsr; m: ModLite; }
 
 /** Read a dot-id ParamBag into the typed SubParams snapshot the renderer uses
  *  internally. Defaults match subtractive-params.ts / defaultSubParams(). */
@@ -59,6 +64,15 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
   // are modulated (those ranges scale with the live base cutoff).
   private keySemiDelta: number; private accentMul: number;
   done = false;
+  /** Per-voice ADSR modulators, handed in at spawn. Empty ⇒ LFO-only fast path. */
+  private modEnvs: ModEnv[] = [];
+  /** Pooled effective-offset struct (shared LFO + this voice's ADSR), reused each
+   *  sample so the render loop allocates nothing on the audio thread. */
+  private readonly effMo: VoiceModOffsets = {};
+  /** This voice's ADSR-only contribution per field (NOT including the LFO),
+   *  refreshed each sample. The worklet reads the most-recent voice's copy to
+   *  drive the knob ring (the LFO part is added from the shared activeOffsets). */
+  private readonly adsrOnly: VoiceModOffsets = {};
 
   constructor(note: NoteSpec, params: ParamBag, sampleRate: number) {
     this.sr = sampleRate;
@@ -83,10 +97,51 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
 
   noteOff(t: number): void { if (t < this.holdEnd) this.holdEnd = t; }
 
-  renderSample(t: number, mo?: VoiceModOffsets): number {
+  /** Receive this voice's per-voice ADSR modulators (one Adsr each). Called once
+   *  at spawn by the VoiceManager. LFOs are NOT here — they stay shared. */
+  setModEnvelopes(mods: ModLite[]): void {
+    this.modEnvs = mods.map((m) => ({ adsr: new Adsr(), m }));
+  }
+
+  /** Fold this voice's gated ADSR envelopes into the shared-LFO offsets, returning
+   *  one effective offset set the rest of renderSample reads. Reuses the pooled
+   *  struct; `moIn` carries the full 14-field subtractive set, so copying it first
+   *  resets every field before the ADSR contributions are added on top. */
+  private combineMods(t: number, gate: number, moIn?: VoiceModOffsets): VoiceModOffsets {
+    const e = this.effMo as Record<string, number>;
+    const a = this.adsrOnly as Record<string, number>;
+    // Recompute the ADSR-only contribution (cleared first; fields are fixed by the
+    // connection set, so this loop is tiny — 1-2 entries).
+    for (const k in a) a[k] = 0;
+    for (const me of this.modEnvs) {
+      const env = me.adsr.update(
+        t, gate, me.m.attackSec ?? 0.01, me.m.decaySec ?? 0.3, me.m.sustain ?? 0.7, me.m.releaseSec ?? 0.3,
+      );
+      const depths = me.m.depthByParam;
+      for (const field in depths) {
+        const depth = depths[field];
+        if (!depth) continue;
+        a[field] = (a[field] ?? 0) + env * depth;
+      }
+    }
+    // Effective offsets = shared-LFO base + this voice's ADSR. moIn carries all 14
+    // subtractive fields, so copying it resets every field before adding the ADSR.
+    if (moIn) Object.assign(e, moIn); else for (const k in e) e[k] = 0;
+    for (const k in a) e[k] = (e[k] ?? 0) + a[k];
+    return this.effMo;
+  }
+
+  /** This voice's ADSR-only offsets (for the UI knob ring). The worklet reads the
+   *  most-recent voice's copy and adds the shared-LFO part on top. */
+  getAdsrOffsets(): VoiceModOffsets { return this.adsrOnly; }
+
+  renderSample(t: number, moIn?: VoiceModOffsets): number {
     if (t < this.begin) return 0;
     const p = this.p;
     const gate = t <= this.holdEnd ? 1 : 0;
+    // Per-voice ADSR (gated by this note) folded into the shared-LFO offsets.
+    // No ADSR ⇒ use the shared struct directly (zero extra work).
+    const mo = this.modEnvs.length > 0 ? this.combineMods(t, gate, moIn) : moIn;
     // Live shared-LFO offsets (normalised) applied on top of the spawned-snapshot
     // params at read time, each scaled to its native units and clamped. A falsy
     // (incl. 0) offset takes the cached/base value — the unmodulated path.

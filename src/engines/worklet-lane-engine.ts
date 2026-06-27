@@ -81,6 +81,11 @@ export function toModLite(state: ModulatorState[], bpm = 120): ModLite[] {
       rateHz: effectiveRateHz({ ...m, rateHz: m.rateHz ?? 4 }, bpm),
       waveform: m.waveform ?? 'sine',
       bipolar: m.bipolar !== false,   // POLARITY: default bipolar; uni maps wave to 0..1
+      // ADSR shape (inert for LFOs; the renderer reads these for kind:'adsr').
+      attackSec: m.attackSec ?? 0.01,
+      decaySec: m.decaySec ?? 0.3,
+      sustain: m.sustain ?? 0.7,
+      releaseSec: m.releaseSec ?? 0.3,
       depthByParam,
     };
   });

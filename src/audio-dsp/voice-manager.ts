@@ -1,6 +1,6 @@
 import type { NoteSpec, ParamBag, VoiceRenderer } from './types';
 import { createRenderer } from './renderer-registry';
-import type { ModulationRuntime } from './modulation-runtime';
+import type { ModulationRuntime, ModLite } from './modulation-runtime';
 
 interface Slot { midi: number; allocatedAt: number; v: VoiceRenderer; }
 
@@ -29,6 +29,14 @@ export class VoiceManager {
    *  to every active voice at read time. */
   setModulation(m: ModulationRuntime): void { this.mod = m; }
 
+  /** ADSR-only modulation offsets of the MOST RECENT voice — the UI knob ring
+   *  follows the last note (the ADSR is per-voice; the legacy engine showed the
+   *  last note too). Undefined when no live voice carries an ADSR. */
+  lastVoiceAdsrOffsets(): Record<string, number> | undefined {
+    const last = this.slots[this.slots.length - 1];
+    return (last?.v as { getAdsrOffsets?(): Record<string, number> })?.getAdsrOffsets?.();
+  }
+
   spawn(note: NoteSpec): void {
     // same-midi steal first (MIDI imports retrigger without note-off), then cap.
     for (let i = this.slots.length - 1; i >= 0; i--) {
@@ -47,10 +55,13 @@ export class VoiceManager {
         oldest?.v.noteOff(this.lastT);
       }
     }
-    this.slots.push({
-      midi: note.midi, allocatedAt: note.beginSec,
-      v: createRenderer(this.engineId, note, this.params, this.sr),
-    });
+    const v = createRenderer(this.engineId, note, this.params, this.sr);
+    // Hand this voice its per-voice ADSR envelopes (subtractive renderer only;
+    // others ignore the call). Read once at spawn — live shape edits apply to the
+    // NEXT note, matching the engine's "params read at trigger time" rule.
+    const adsr = this.mod?.getAdsrMods();
+    if (adsr && adsr.length) (v as { setModEnvelopes?(m: ModLite[]): void }).setModEnvelopes?.(adsr);
+    this.slots.push({ midi: note.midi, allocatedAt: note.beginSec, v });
   }
 
   /** Release the `count` oldest voices early (global-cap stealing). */

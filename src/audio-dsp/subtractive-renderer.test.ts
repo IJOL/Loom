@@ -118,4 +118,38 @@ describe('SubtractiveVoiceRenderer', () => {
     expect(peakOf(0.25)).toBeLessThan(1.5);   // default resonance ~0.99
     expect(peakOf(1.0)).toBeLessThan(4.0);    // max resonance ~2.8, still bounded
   });
+
+  const adsrMod = (depth: number) => ({
+    id: 'a', kind: 'adsr' as const, enabled: true, rateHz: 0, waveform: 'sine' as const,
+    attackSec: 0.001, decaySec: 0.001, sustain: 1, releaseSec: 0.1,
+    depthByParam: { filterCutoff: depth },
+  });
+
+  it('a per-voice ADSR modulator brightens the cutoff while gated (envelope-driven)', () => {
+    // adsr → filter.cutoff, fast attack/decay, full sustain. With a low base cutoff
+    // and no LFO, the open envelope must brighten the voice (same isolation as the
+    // live-cutoff-offset test above).
+    const bright = (depth: number) => {
+      const v = new SubtractiveVoiceRenderer(
+        note(), { ...DEFAULTS, 'filter.cutoff': 0.15, 'filter.resonance': 0, 'filter.envAmount': 0 }, SR,
+      );
+      if (depth > 0) v.setModEnvelopes([adsrMod(depth)]);
+      const b: number[] = [];
+      for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR));
+      return rms(b);
+    };
+    expect(bright(0.8)).toBeGreaterThan(bright(0) * 1.3);
+  });
+
+  it('getAdsrOffsets follows the gated envelope (the knob-ring source)', () => {
+    const v = new SubtractiveVoiceRenderer(note({ durationSec: 10 }), DEFAULTS, SR);
+    v.setModEnvelopes([{ ...adsrMod(1), sustain: 0.5 }]);
+    for (let i = 0; i < SR * 0.05; i++) v.renderSample(i / SR);   // settle into sustain
+    const off = v.getAdsrOffsets() as Record<string, number>;
+    expect(off.filterCutoff).toBeCloseTo(0.5, 1);                 // sustain 0.5 × depth 1
+    // After note-off the envelope releases → the ring contribution falls back toward 0.
+    v.noteOff(0.05);
+    for (let i = SR * 0.05; i < SR * 0.4; i++) v.renderSample(i / SR);
+    expect((v.getAdsrOffsets() as Record<string, number>).filterCutoff).toBeLessThan(0.1);
+  });
 });

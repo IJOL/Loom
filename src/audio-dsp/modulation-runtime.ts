@@ -28,6 +28,13 @@ export interface ModLite {
   /** Polarity: bipolar (default) swings -1..+1; unipolar maps the wave to 0..1
    *  so the offset only pushes the target one way. Optional — absent ⇒ bipolar. */
   bipolar?: boolean;
+  /** ADSR shape (seconds; sustain 0..1). Present for kind:'adsr' — the renderer
+   *  drives a PER-VOICE envelope from these, gated by the note (attack on note-on,
+   *  release on note-off), and adds env×depth to each connected param. */
+  attackSec?: number;
+  decaySec?: number;
+  sustain?: number;
+  releaseSec?: number;
   /** SubParams field name → modulation depth (-1..1), additive in the field's
    *  native 0..1 units. */
   depthByParam: Record<string, number>;
@@ -55,6 +62,14 @@ export class ModulationRuntime {
   // current free-rate implementation derives phase from absolute time directly.
   constructor(_sr: number) {}
   setMods(mods: ModLite[]): void { this.mods = mods; }
+
+  /** The enabled ADSR modulators (per-voice envelopes the renderer drives). LFOs
+   *  stay shared in offsetFor/activeOffsets; ADSR is gated per note, so each voice
+   *  runs its own envelope from these — the VoiceManager hands them to the renderer
+   *  at spawn. */
+  getAdsrMods(): ModLite[] {
+    return this.mods.filter((m) => m.kind === 'adsr' && m.enabled);
+  }
   /** Normalised additive offset (Σ wave×depth over enabled LFOs) for a
    *  modulation target at absolute time t. The renderer scales it to the
    *  target's native units. */

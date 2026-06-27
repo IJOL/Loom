@@ -78,6 +78,10 @@ class LoomProcessor extends AudioWorkletProcessor {
       // one empty snapshot on the falling edge so the rings clear (no Object.keys
       // alloc on the audio thread: probe emptiness with a for-in/break).
       const offsets = this.mod.activeOffsets(this.frame / sampleRate);
+      // Add the most-recent voice's per-voice ADSR offsets on top of the shared LFO
+      // ones, so a knob driven by an ADSR shows its ring (following the last note).
+      const adsr = this.vm.lastVoiceAdsrOffsets();
+      if (adsr) for (const k in adsr) { if (adsr[k]) offsets[k] = (offsets[k] ?? 0) + adsr[k]; }
       let has = false;
       for (const _k in offsets) { has = true; break; }
       if (has || this.lastModNonEmpty) {
