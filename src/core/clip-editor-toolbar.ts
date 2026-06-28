@@ -6,6 +6,7 @@
 
 import { RESOLUTIONS, clampResolution, type ResolutionKey } from './drum-grid-editing';
 import { isFollowEnabled, toggleFollow } from './clip-follow';
+import { isKbInputEnabled, toggleKbInput } from './clip-kb-input';
 import { isDrumFullKit, setDrumFullKit } from './clip-drum-fullkit';
 
 export type EditorTool = 'draw' | 'select';
@@ -74,6 +75,25 @@ export function createFollowToggle(onChange?: (on: boolean) => void): HTMLButton
     btn.title = isFollowEnabled() ? 'Follow playhead: ON (view scrolls to the playhead)' : 'Follow playhead: OFF';
   };
   btn.addEventListener('click', () => { const on = toggleFollow(); refresh(); onChange?.(on); });
+  refresh();
+  return btn;
+}
+
+/** A "⌨ Keys" on/off pill for the piano-roll's computer-keyboard note input
+ *  (musical typing). OPT-IN: OFF by default, so typing in the focused editor
+ *  never inserts notes. `onChange` lets the editor react (e.g. redraw to show or
+ *  hide the green insertion cursor). */
+export function createKbInputToggle(onChange?: (on: boolean) => void): HTMLButtonElement {
+  const btn = document.createElement('button');
+  btn.className = 'clip-loop-toggle'; // reuse the on/off pill styling
+  const refresh = () => {
+    btn.textContent = '⌨ Keys';
+    btn.classList.toggle('on', isKbInputEnabled());
+    btn.title = isKbInputEnabled()
+      ? 'Keyboard note input: ON (letter keys play / record notes)'
+      : 'Keyboard note input: OFF (typing does not insert notes)';
+  };
+  btn.addEventListener('click', () => { toggleKbInput(); refresh(); onChange?.(isKbInputEnabled()); });
   refresh();
   return btn;
 }

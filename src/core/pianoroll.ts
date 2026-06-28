@@ -19,11 +19,13 @@ import {
 import { isTextEditTarget, type HistoryDeps } from '../save/history-wiring';
 import {
   createToolToggle, createHelpButton, createGridControl, createResolutionSelect, createFollowToggle,
+  createKbInputToggle,
 } from './clip-editor-toolbar';
 import type { SessionClip } from '../session/session';
 import type { TimeSignature } from './meter';
 import { mountClipLoopOverlay } from './clip-loop-overlay';
 import { isFollowEnabled } from './clip-follow';
+import { isKbInputEnabled } from './clip-kb-input';
 import { resolutionToSnap, DEFAULT_RESOLUTION, type ResolutionKey } from './drum-grid-editing';
 
 type Tool = 'draw' | 'select';
@@ -166,7 +168,14 @@ export function buildEditorFrame(host: HTMLElement): PianoRollFrame {
   // (geom()), and redraw() relays out on any change — so a scrollbar appearing
   // and disappearing drove a relayout feedback loop (rapid flicker + the loop
   // brace looking duplicated) the moment the loop overlay column was shown.
-  gridVp.style.setProperty('scrollbar-gutter', 'stable both-edges');
+  //
+  // MUST be `stable` (end-edge only), NOT `stable both-edges`: the grid canvas is
+  // the only in-flow child here, so a start-edge gutter would inset it ~15px to the
+  // right of the ruler/keys (which are left:0/top:0 absolute strips with no gutter),
+  // misaligning every bar line against the ruler. `stable` reserves only the
+  // inline-end gutter — enough to keep clientWidth constant — and leaves the grid
+  // origin flush with the strips.
+  gridVp.style.setProperty('scrollbar-gutter', 'stable');
   const gridCanvas = mkCanvas(false);
   gridVp.appendChild(gridCanvas);
 
@@ -267,7 +276,10 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   lockBtn.hidden = !opts.scaleCtx;     // only meaningful with a tonality
 
   const followBtn = createFollowToggle();
-  f.toolbar.append(drawBtn, selBtn, followBtn, octCtl, resCtl, help.btn, lockBtn);
+  // Opt-in computer-keyboard note input (OFF by default). Toggling it redraws so
+  // the green insertion cursor appears / disappears immediately.
+  const kbBtn = createKbInputToggle(() => redrawGridAndLane());
+  f.toolbar.append(drawBtn, selBtn, followBtn, kbBtn, octCtl, resCtl, help.btn, lockBtn);
   // Popover lives just below the toolbar (inside the wrap), positioned by SCSS.
   f.toolbar.after(help.popover);
   refreshToolbar();
@@ -361,7 +373,9 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
         if (Math.abs(f.gridVp.scrollLeft - target) > 2) f.gridVp.scrollLeft = target;
       }
     }
-    {
+    // Green insertion cursor — only meaningful in keyboard-input mode (it marks
+    // where a typed/step-input note lands), so hide it when that mode is off.
+    if (isKbInputEnabled()) {
       const cx = xForTick(cursorTick);
       gctx.strokeStyle = '#39d98a'; gctx.setLineDash([2, 2]);
       gctx.beginPath(); gctx.moveTo(cx, 0); gctx.lineTo(cx, gridH); gctx.stroke();
@@ -706,18 +720,22 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     // Clear selection
     if (e.key === 'Escape') { selection.clear(); redrawGridAndLane(); e.preventDefault(); return; }
 
-    // Octave shift (shares shiftOctave with the toolbar ◂/▸ stepper)
-    if (!cmd && (e.key === 'z' || e.key === 'x')) {
+    // Octave shift via z/x — part of computer-keyboard musical typing, so only in
+    // keyboard-input mode. (The toolbar ◂/▸ stepper still shifts the octave always.)
+    if (!cmd && isKbInputEnabled() && (e.key === 'z' || e.key === 'x')) {
       shiftOctave(e.key === 'x' ? 1 : -1);
       e.preventDefault(); return;
     }
-    // Move insertion cursor when nothing is selected
-    if (selection.size === 0 && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+    // Move insertion cursor when nothing is selected (step-input aid — only in
+    // keyboard-input mode, where the cursor is visible).
+    if (isKbInputEnabled() && selection.size === 0 && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
       cursorTick = Math.max(0, Math.min(opts.patternTicks - snap, cursorTick + (e.key === 'ArrowRight' ? snap : -snap)));
       redrawGridAndLane(); e.preventDefault(); return;
     }
 
-    if (!cmd) {
+    // Computer-keyboard note input (musical typing + step-input) — OPT-IN. When the
+    // ⌨ Keys toggle is off, letter keys never insert notes; only mouse drawing does.
+    if (!cmd && isKbInputEnabled()) {
       const rawMidi = midiForKey(e.key, octaveBase);
       const midi = rawMidi === null ? null : snapMidi(rawMidi);
       if (midi !== null && midi >= minMidi && midi <= maxMidi) {
