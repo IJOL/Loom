@@ -27,7 +27,21 @@ export async function loadEnginePresets(engineId: string): Promise<EnginePreset[
   // the standard build, so the resolved path is unchanged there.
   const url = `${import.meta.env.BASE_URL}presets/${engineId}.json`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to load ${url}: ${res.status}`);
+  // A missing presets/<id>.json is expected for engines that don't keep their
+  // presets in the param-preset files: `audio` has no presets at all, and
+  // `sampler` carries its own elsewhere (bundled instruments via
+  // instruments/index.json + drum kits via drum-kits.json) — not param presets
+  // here. The "absent" signal differs by environment:
+  //   - production / preview: a real 404 (`!res.ok`);
+  //   - Vite dev server: the SPA fallback serves index.html with a 200 and a
+  //     text/html content-type (so `res.json()` would choke on `<!DOCTYPE`).
+  // Treat both as "no param-preset file for this engine" → empty, no noise. Only
+  // a file that IS served as JSON but parses badly is a real error to surface.
+  const contentType = res.headers?.get('content-type') ?? '';
+  if (!res.ok || !contentType.includes('json')) {
+    cache.set(engineId, []);
+    return [];
+  }
   const body = (await res.json()) as PresetFile;
   const seen = new Set<string>();
   const out: EnginePreset[] = [];

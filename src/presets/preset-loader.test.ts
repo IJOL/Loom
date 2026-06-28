@@ -31,6 +31,7 @@ describe('loadEnginePresets', () => {
   it('fetches and returns valid presets', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
+      headers: { get: () => 'application/json' },
       json: async () => ({
         engineId: 'tb303',
         presets: [
@@ -49,6 +50,7 @@ describe('loadEnginePresets', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
+      headers: { get: () => 'application/json' },
       json: async () => ({
         engineId: 'tb303',
         presets: [
@@ -69,6 +71,7 @@ describe('loadEnginePresets', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
+      headers: { get: () => 'application/json' },
       json: async () => ({
         engineId: 'tb303',
         presets: [
@@ -84,9 +87,25 @@ describe('loadEnginePresets', () => {
     warn.mockRestore();
   });
 
-  it('throws on non-ok response', async () => {
+  it('returns empty for a missing presets file (404), without throwing', async () => {
+    // Engines like `audio` have no presets/<id>.json at all; in production a
+    // missing file is a real 404. That is "no presets for this engine", not an
+    // error — resolve to [] so loadAllPresets stays quiet.
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }));
-    await expect(loadEnginePresets('nope')).rejects.toThrow(/404/);
+    await expect(loadEnginePresets('nope')).resolves.toEqual([]);
+    vi.unstubAllGlobals();
+  });
+
+  it('returns empty when the dev server serves the SPA fallback (text/html)', async () => {
+    // Vite's dev server answers an unknown public path with index.html (a 200 +
+    // text/html), so `res.json()` would choke on `<!DOCTYPE`. Treat the non-JSON
+    // content-type as "file absent" and resolve to [] instead of erroring.
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: () => 'text/html' },
+      text: async () => '<!DOCTYPE html><html></html>',
+    }));
+    await expect(loadEnginePresets('audio')).resolves.toEqual([]);
     vi.unstubAllGlobals();
   });
 });
