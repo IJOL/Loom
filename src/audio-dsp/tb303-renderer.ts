@@ -4,12 +4,16 @@
 // Slide = pitch glide (approximated as instant for per-note rendering; cross-
 // note glide is a VoiceManager concern at integration time) + no amp re-attack.
 // Pure: no Web Audio globals. Sample rate injected via constructor.
-import type { NoteSpec, ParamBag, VoiceRenderer } from './types';
+import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets } from './types';
 import { param } from './types';
 import { SawOsc, SquareOsc } from './osc';
 import { Svf } from './filter';
+import type { ModLite } from './modulation-runtime';
+import { ModEnvHost } from './mod-env-host';
 import { registerRenderer } from './renderer-registry';
 import { synthTrim } from './gain-staging';
+
+const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
 const midiToFreq = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
 
@@ -39,6 +43,15 @@ export class TB303Renderer implements VoiceRenderer {
   private svfRes: number;
   private peakAmp: number;
   private slide: boolean;
+  // Saved knob bases so cutoff / env.amount / env.decay modulation can recompute
+  // the filter contour live. (waveform + accent aren't continuous → not modulatable.)
+  private cutoffBase: number;
+  private envAmountHz: number;
+  private accentBoost: number;
+  private envModBase: number;
+  private decayBase: number;
+  private accent: boolean;
+  private modEnv = new ModEnvHost();
   done = false;
 
   constructor(note: NoteSpec, p: ParamBag, private sr: number) {
@@ -64,6 +77,12 @@ export class TB303Renderer implements VoiceRenderer {
 
     const accentBoost = note.accent ? accentAmt : 0;
     this.peakCutHz = Math.min(this.baseCutHz + envAmount * (1 + accentBoost), 18000);
+    this.cutoffBase = cutoff;
+    this.envAmountHz = envAmount;
+    this.accentBoost = accentBoost;
+    this.envModBase = envMod;
+    this.decayBase = decay;
+    this.accent = note.accent;
     // accent shortens the filter decay (as in the real synth)
     if (note.accent) this.decaySec *= 0.6;
 
@@ -78,11 +97,18 @@ export class TB303Renderer implements VoiceRenderer {
     if (t < this.holdEnd) this.holdEnd = t;
   }
 
-  renderSample(t: number): number {
+  setModEnvelopes(mods: ModLite[]): void { this.modEnv.setModEnvelopes(mods); }
+  getAdsrOffsets(): VoiceModOffsets { return this.modEnv.getAdsrOffsets(); }
+
+  renderSample(t: number, moIn?: VoiceModOffsets): number {
     if (this.done) return 0;
     if (t < this.begin) return 0;
 
     const dt = t - this.begin;
+    const gate = t <= this.holdEnd ? 1 : 0;
+    // Generic modulation reaches the 303's cutoff/resonance; its native acid
+    // envelope (Env Mod + Decay) stays intact.
+    const mo = this.modEnv.active ? this.modEnv.combine(t, gate, moIn) : moIn;
     // Use the current holdEnd (may have been shortened by noteOff)
     const gateLen = this.holdEnd - this.begin;
 
@@ -116,13 +142,26 @@ export class TB303Renderer implements VoiceRenderer {
     }
 
     // Filter cutoff envelope: opens to peak at note start, decays to base
-    // exponentially over decaySec. Uses dt from note begin.
-    const cutoffHz = this.baseCutHz +
-      (this.peakCutHz - this.baseCutHz) * Math.exp(-dt / this.decaySec);
+    // exponentially over decaySec. The base+peak are shifted by any cutoff
+    // modulation (LFO/ADSR layered on top of the 303's own contour).
+    // env.amount (Env Mod) = how high the cutoff jumps; modulatable.
+    const envAmountHz = mo?.['env.amount']
+      ? clamp01(this.envModBase + mo['env.amount']) * 6000 : this.envAmountHz;
+    let baseCutHz = this.baseCutHz;
+    if (mo?.['filter.cutoff']) baseCutHz = 80 * Math.pow(100, clamp01(this.cutoffBase + mo['filter.cutoff']));
+    const peakCutHz = (mo?.['filter.cutoff'] || mo?.['env.amount'])
+      ? Math.min(baseCutHz + envAmountHz * (1 + this.accentBoost), 18000) : this.peakCutHz;
+    // env.decay (Decay) = how fast the cutoff closes; modulatable (accent shortens it).
+    const decaySec = mo?.['env.decay']
+      ? (0.05 + clamp01(this.decayBase + mo['env.decay']) * 1.2) * (this.accent ? 0.6 : 1) : this.decaySec;
+    const cutoffHz = baseCutHz + (peakCutHz - baseCutHz) * Math.exp(-dt / decaySec);
+    const res = mo?.['filter.resonance'] ? clamp01(this.svfRes + mo['filter.resonance']) : this.svfRes;
 
     const oscOut = this.osc.update(this.freq);
-    this.filter.update(oscOut, cutoffHz, this.svfRes);
-    return this.filter.lp * amp;
+    this.filter.update(oscOut, cutoffHz, res);
+    let out = this.filter.lp * amp;
+    if (mo?.['amp.gain']) out *= Math.max(0, Math.min(2, 1 + mo['amp.gain']));
+    return out;
   }
 }
 
