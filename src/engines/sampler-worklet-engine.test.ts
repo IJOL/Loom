@@ -163,3 +163,71 @@ describe('SamplerWorkletEngine', () => {
     expect(eng.polyphony).toBe('poly');
   });
 });
+
+describe('SamplerWorkletEngine — choke', () => {
+  beforeEach(() => { loaded.length = 0; spawns.length = 0; silenceAllCalls = 0; });
+
+  // A single-note-per-key keymap with GM hat + kick notes → a drumkit.
+  const drumkit = (): KeymapEntry[] => [
+    { sampleId: 'swe-kick', rootNote: 36, loNote: 36, hiNote: 36 },
+    { sampleId: 'swe-ch', rootNote: 42, loNote: 42, hiNote: 42 },
+    { sampleId: 'swe-oh', rootNote: 46, loNote: 46, hiNote: 46 },
+  ];
+
+  it('exposes a per-pad CHOKE control (so the strip can render it)', () => {
+    const eng = new SamplerWorkletEngine();
+    eng.setKeymap(drumkit());
+    const spec = eng.params.find((p) => p.id === 'zone42.chokeGroup');
+    expect(spec).toBeDefined();
+    expect(spec!.kind).toBe('discrete');
+    expect(spec!.label).toBe('CHOKE');
+  });
+
+  it('GM hi-hats default to choke group 1 on a drumkit; the kick stays 0', () => {
+    const eng = new SamplerWorkletEngine();
+    eng.setKeymap(drumkit());
+    expect(eng.getBaseValue('zone42.chokeGroup')).toBe(1); // closed hat
+    expect(eng.getBaseValue('zone46.chokeGroup')).toBe(1); // open hat
+    expect(eng.getBaseValue('zone36.chokeGroup')).toBe(0); // kick — no choke
+  });
+
+  it('the hat choke default reaches the spawn (group 1, padNote 46, poly)', () => {
+    sampleCache.put('swe-oh', fakeBuffer(1.0));
+    const eng = new SamplerWorkletEngine();
+    eng.setKeymap(drumkit());
+    const v = eng.createVoice(ctx, out());
+    v.trigger(46, 0, { gateDuration: 0.2, velocity: 90 });
+    expect(spawns[0].spawn.chokeGroup).toBe(1);
+    expect(spawns[0].spawn.padNote).toBe(46);
+    expect(spawns[0].spawn.retrig).toBe(0);
+  });
+
+  it('an explicit CHOKE override wins over the GM-hat default', () => {
+    sampleCache.put('swe-ch', fakeBuffer(1.0));
+    const eng = new SamplerWorkletEngine();
+    eng.setKeymap(drumkit());
+    eng.setBaseValue('zone42.chokeGroup', 0); // user turns the closed-hat choke OFF
+    expect(eng.getBaseValue('zone42.chokeGroup')).toBe(0);
+    const v = eng.createVoice(ctx, out());
+    v.trigger(42, 0, { gateDuration: 0.2, velocity: 90 });
+    expect(spawns[0].spawn.chokeGroup).toBe(0);
+  });
+
+  it('a melodic instrument (one wide zone) never gets the GM-hat default', () => {
+    // Root 46 but a 0..127 range = melodic, not a drumkit → must stay poly (group 0).
+    const eng = new SamplerWorkletEngine();
+    eng.setKeymap([{ sampleId: 'swe-piano', rootNote: 46, loNote: 0, hiNote: 127 }]);
+    expect(eng.getBaseValue('zone46.chokeGroup')).toBe(0);
+  });
+
+  it('the (formerly dead) RETRIG mono flag now reaches the spawn', () => {
+    sampleCache.put('swe-mono', fakeBuffer(1.0));
+    const eng = new SamplerWorkletEngine();
+    eng.setKeymap([{ sampleId: 'swe-mono', rootNote: 60, loNote: 60, hiNote: 60 }]);
+    eng.setBaseValue('zone60.retrig', 1); // mono
+    const v = eng.createVoice(ctx, out());
+    v.trigger(60, 0, { gateDuration: 0.2, velocity: 90 });
+    expect(spawns[0].spawn.retrig).toBe(1);
+    expect(spawns[0].spawn.padNote).toBe(60);
+  });
+});
