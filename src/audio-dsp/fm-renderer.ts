@@ -58,6 +58,10 @@ export class FMRenderer implements VoiceRenderer {
   private oscs: FmSine[];
   private envs: Adsr[];
   private freqs: number[];
+  private ratioBase: number[] = [];
+  private detuneBase: number[] = [];
+  private f0 = 0;
+  private readonly freqEff = new Float64Array(4);
   private opA: number[];
   private opD: number[];
   private opS: number[];
@@ -76,6 +80,7 @@ export class FMRenderer implements VoiceRenderer {
     this.holdEnd = note.beginSec + note.durationSec;
 
     const f = midiToFreq(note.midi);
+    this.f0 = f;
     this.algoIdx = Math.max(0, Math.min(3, Math.round(param(p, 'algorithm', 0))));
     this.feedback = param(p, 'feedback', 0);
     this.mix = param(p, 'amp.mix', 0.7);
@@ -97,6 +102,8 @@ export class FMRenderer implements VoiceRenderer {
       const ratio = param(p, `op${i}.ratio`, 1);
       const detCents = param(p, `op${i}.detune`, 0);
       this.freqs.push(f * ratio * Math.pow(2, detCents / 1200));
+      this.ratioBase.push(ratio);
+      this.detuneBase.push(detCents);
 
       this.opA.push(Math.max(0.001, param(p, `op${i}.attack`, 0.01)));
       this.opD.push(Math.max(0.001, param(p, `op${i}.decay`, 0.3)));
@@ -125,6 +132,16 @@ export class FMRenderer implements VoiceRenderer {
     const carriers = CARRIERS[this.algoIdx];
     const opOut = new Array<number>(4);
 
+    // Effective op frequencies — ratio (±2 units) and detune (±50¢) modulatable.
+    const fe = this.freqEff;
+    for (let i = 0; i < 4; i++) {
+      const rMod = mo?.[`op${i + 1}.ratio`], dMod = mo?.[`op${i + 1}.detune`];
+      fe[i] = (rMod || dMod)
+        ? this.f0 * Math.max(0.01, this.ratioBase[i] + (rMod ?? 0) * 2)
+            * Math.pow(2, (this.detuneBase[i] + (dMod ?? 0) * 50) / 1200)
+        : this.freqs[i];
+    }
+
     for (let i = 3; i >= 0; i--) {
       const env = this.envs[i].update(t, gate, this.opA[i], this.opD[i], this.opS[i], this.opR[i]);
       // FM index = modulator level, modulatable per op (base + offset, clamped 0..1).
@@ -132,13 +149,13 @@ export class FMRenderer implements VoiceRenderer {
       for (const mIdx of algo[i]) {
         const mLvlOff = mo?.[`op${mIdx + 1}.level`];
         const mLvl = mLvlOff ? clamp01(this.lvl[mIdx] + mLvlOff) : this.lvl[mIdx];
-        fmHz += opOut[mIdx] * this.freqs[mIdx] * mLvl * FM_DEPTH;
+        fmHz += opOut[mIdx] * fe[mIdx] * mLvl * FM_DEPTH;
       }
       if (i === 3 && feedback > 0) {
-        fmHz += this.fbState * this.freqs[3] * feedback * FB_DEPTH;
+        fmHz += this.fbState * fe[3] * feedback * FB_DEPTH;
       }
 
-      opOut[i] = this.oscs[i].next(this.freqs[i], fmHz) * env;   // raw osc×env (level applied in the carrier mix)
+      opOut[i] = this.oscs[i].next(fe[i], fmHz) * env;   // raw osc×env (level applied in the carrier mix)
       if (i === 3) this.fbState = opOut[3];
     }
 
