@@ -7,13 +7,17 @@
 //   → low-pass gate (SVF + VCA driven by AD contour)
 // Pure — no Web Audio. Sample rate is injected.
 
-import type { NoteSpec, ParamBag, VoiceRenderer } from './types';
+import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets } from './types';
 import { param } from './types';
 import { SineOsc, TriOsc, SawOsc } from './osc';
 import { Svf } from './filter';
 import { fold } from './fold';
+import type { ModLite } from './modulation-runtime';
+import { ModEnvHost } from './mod-env-host';
 import { registerRenderer } from './renderer-registry';
 import { synthTrim } from './gain-staging';
+
+const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
 type Osc = { update(f: number): number };
 
@@ -171,6 +175,16 @@ export class WestcoastRenderer implements VoiceRenderer {
   // Amp
   private ampGain: number;         // level * vel * OUTPUT_TRIM
 
+  // Modulation: ModEnvHost (per-voice ADSR) + saved knob bases so generic LFO/ADSR
+  // can recompute the timbre params live (cutoff, fold, resonance, fmIndex).
+  private modEnv = new ModEnvHost();
+  private foldBase: number;
+  private fmIndexBase: number;
+  private fmFactor: number;         // freq*ratio*2, so fmDepthHz = fmIndex * fmFactor
+  private cutoffNorm: number;       // 0..1 lpg.cutoff knob
+  private lpgResBase: number;
+  private accentMul: number;
+
   // Timing
   private begin: number;
   private holdEnd: number;
@@ -239,6 +253,14 @@ export class WestcoastRenderer implements VoiceRenderer {
     // velGain from legacy: 0.3 + 1.1 * vel (already 0..1 in NoteSpec)
     const vel = (0.3 + 1.1 * note.velocity) * accentMul;
     this.ampGain = level * vel * synthTrim('westcoast');
+
+    // Saved bases so generic LFO/ADSR can recompute the timbre params live.
+    this.foldBase = foldAmt;
+    this.fmIndexBase = fmIndex;
+    this.fmFactor = this.freq * ratio * 2;
+    this.cutoffNorm = cutoff;
+    this.lpgResBase = param(p, 'lpg.resonance', 0.2);
+    this.accentMul = accentMul;
   }
 
   noteOff(t: number): void {
@@ -248,16 +270,22 @@ export class WestcoastRenderer implements VoiceRenderer {
     }
   }
 
-  renderSample(t: number): number {
-    if (t < this.begin) return 0;
+  setModEnvelopes(mods: ModLite[]): void { this.modEnv.setModEnvelopes(mods); }
+  getAdsrOffsets(): VoiceModOffsets { return this.modEnv.getAdsrOffsets(); }
 
-    // --- Complex oscillator ---
+  renderSample(t: number, moIn?: VoiceModOffsets): number {
+    if (t < this.begin) return 0;
+    const gate = t <= this.holdEnd ? 1 : 0;
+    // Generic LFO/ADSR offsets keyed by param dot-id — the timbre params are
+    // modulatable (cutoff, fold, resonance, fmIndex); the contour stays native.
+    const mo = this.modEnv.active ? this.modEnv.combine(t, gate, moIn) : moIn;
+
+    // --- Complex oscillator (FM index modulatable) ---
     // Mod osc runs at modFreq, feeds linear FM into main osc via fmDepthHz.
-    // We implement linear FM per-sample: main osc frequency = freq + modSample * fmDepthHz.
-    // Since SineOsc/TriOsc/SawOsc take a frequency arg, we pass the modulated freq.
-    // The mod osc itself just runs at modFreq.
+    const fmDepthHz = mo?.['osc.fmIndex']
+      ? Math.max(0, this.fmIndexBase + mo['osc.fmIndex']) * this.fmFactor : this.fmDepthHz;
     const modSample = this.mod.update(this.modFreq);
-    const mainFreq = this.freq + modSample * this.fmDepthHz;
+    const mainFreq = this.freq + modSample * fmDepthHz;
     const mainSample = this.main.update(mainFreq);
 
     // Ring/AM: ringMod.gain = modSample, so ring = mainSample * modSample * ringAmt
@@ -272,8 +300,10 @@ export class WestcoastRenderer implements VoiceRenderer {
     // Original: mainGain=0.7, ringGain=ring param, subGain=subLevel
     const mixRaw = mainSample * this.mainGain + ringSample + subSample + this.symmetry;
 
-    // --- Wavefolder ---
-    const folded = fold(mixRaw, this.driveGain);
+    // --- Wavefolder (fold amount modulatable) ---
+    const driveGain = mo?.['timbre.fold']
+      ? (0.1 + clamp01(this.foldBase + mo['timbre.fold']) * 0.9) * this.accentMul : this.driveGain;
+    const folded = fold(mixRaw, driveGain);
 
     // --- Contour (AD envelope driving the LPG) ---
     // Trigger gate-off on the contour when the note gate ends (sustain mode needs this)
@@ -283,16 +313,22 @@ export class WestcoastRenderer implements VoiceRenderer {
     }
     const contourVal = this.contour.tick(t);
 
-    // --- Low-pass gate ---
-    // Filter cutoff: base + contour * envScale (in filter/both mode)
-    const dynamicCutoff = this.cutoffBaseHz + contourVal * this.cutoffEnvScale;
-    this.filter.update(folded, dynamicCutoff, this.lpgRes);
+    // --- Low-pass gate (cutoff + resonance modulatable) ---
+    let cutoffBaseHz = this.cutoffBaseHz, cutoffEnvScale = this.cutoffEnvScale;
+    if (mo?.['lpg.cutoff']) {
+      cutoffBaseHz = cutoffHz(clamp01(this.cutoffNorm + mo['lpg.cutoff']));
+      cutoffEnvScale = this.filterMode ? cutoffBaseHz * CUTOFF_ENV_SCALE * this.accentMul : 0;
+    }
+    const lpgRes = mo?.['lpg.resonance'] ? clamp01(this.lpgResBase + mo['lpg.resonance']) : this.lpgRes;
+    const dynamicCutoff = cutoffBaseHz + contourVal * cutoffEnvScale;
+    this.filter.update(folded, dynamicCutoff, lpgRes);
 
     // VCA: contour drives gain in gate/both mode; in lp-only mode, VCA is fixed 1
     const vca = this.vcaMode ? contourVal : 1;
 
-    // --- Output ---
-    const out = this.filter.lp * vca * this.ampGain;
+    // --- Output (amp.gain tremolo) ---
+    let out = this.filter.lp * vca * this.ampGain;
+    if (mo?.['amp.gain']) out *= Math.max(0, Math.min(2, 1 + mo['amp.gain']));
 
     // Mark done:
     // - In pluck (gate-independent) mode: done when contour finishes, regardless of gate
