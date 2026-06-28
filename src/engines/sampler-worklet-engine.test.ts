@@ -231,3 +231,28 @@ describe('SamplerWorkletEngine — choke', () => {
     expect(spawns[0].spawn.padNote).toBe(60);
   });
 });
+
+describe('SamplerWorkletEngine — channel filter params', () => {
+  it('declares filter.cutoff (default 20000, log) and filter.resonance (default 0.7)', () => {
+    const eng = new SamplerWorkletEngine();
+    const cutoff = eng.params.find((p) => p.id === 'filter.cutoff')!;
+    const res = eng.params.find((p) => p.id === 'filter.resonance')!;
+    expect(cutoff).toMatchObject({ kind: 'continuous', min: 20, max: 20000, default: 20000, curve: 'log' });
+    expect(res.default).toBeCloseTo(0.7, 5);
+    expect(res.max).toBe(18);
+  });
+
+  it('get/setBaseValue round-trips the filter params', () => {
+    const eng = new SamplerWorkletEngine();
+    eng.setBaseValue('filter.cutoff', 900);
+    eng.setBaseValue('filter.resonance', 5);
+    expect(eng.getBaseValue('filter.cutoff')).toBeCloseTo(900, 3);
+    expect(eng.getBaseValue('filter.resonance')).toBeCloseTo(5, 3);
+  });
+
+  it('defaults read back as passthrough before any edit', () => {
+    const eng = new SamplerWorkletEngine();
+    expect(eng.getBaseValue('filter.cutoff')).toBe(20000);
+    expect(eng.getBaseValue('filter.resonance')).toBeCloseTo(0.7, 5);
+  });
+});

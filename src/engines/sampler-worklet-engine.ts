@@ -51,10 +51,17 @@ import { withUndo } from '../save/history-wiring';
 import { guessRootNoteFromName } from './sampler';
 import { SamplerWorkletNode } from '../audio-worklet/sampler-node';
 import type { SampleSpawn } from '../audio-dsp/sample/types';
+import {
+  ChannelFilter,
+  FILTER_CUTOFF_MIN, FILTER_CUTOFF_MAX, FILTER_CUTOFF_DEFAULT,
+  FILTER_Q_MIN, FILTER_Q_MAX, FILTER_Q_DEFAULT, FILTER_DETUNE_SPAN_CENTS,
+} from '../core/channel-filter';
 
 const SAMPLER_PARAMS: EngineParamSpec[] = [
-  { id: 'gain',        label: 'Gain',   kind: 'continuous', min: 0, max: 1.5, default: 1 },
-  { id: 'poly.voices', label: 'Voices', kind: 'continuous', min: 1, max: 16,  default: 8 },
+  { id: 'gain',            label: 'Gain',   kind: 'continuous', min: 0,              max: 1.5,             default: 1 },
+  { id: 'poly.voices',     label: 'Voices', kind: 'continuous', min: 1,              max: 16,              default: 8 },
+  { id: 'filter.cutoff',   label: 'CUTOFF', kind: 'continuous', min: FILTER_CUTOFF_MIN, max: FILTER_CUTOFF_MAX, default: FILTER_CUTOFF_DEFAULT, curve: 'log', unit: 'Hz' },
+  { id: 'filter.resonance',label: 'RES',    kind: 'continuous', min: FILTER_Q_MIN,   max: FILTER_Q_MAX,    default: FILTER_Q_DEFAULT },
 ];
 
 class SamplerSequencer implements EngineSequencer {
@@ -118,6 +125,8 @@ export class SamplerWorkletEngine implements SynthEngine {
   private ctx: AudioContext | null = null;
   /** Connect targets, applied to the node when it is (re)built. */
   private dryTarget: AudioNode | null = null;
+  /** Channel filter on the RAW dry mix, BEFORE the lane inserts + bus EQ. */
+  private channelFilter: ChannelFilter | null = null;
 
   /** Build the worklet node + connect it (dry → lane strip, send → FxBus). The
    *  allocator calls setOutputTarget before the first createVoice. Idempotent. */
@@ -233,6 +242,8 @@ export class SamplerWorkletEngine implements SynthEngine {
   setBaseValue(id: string, v: number): void {
     if (id in this.paramValues || SAMPLER_PARAMS.some((p) => p.id === id)) {
       this.paramValues[id] = v;
+      if (id === 'filter.cutoff')    this.channelFilter?.setCutoff(v);
+      if (id === 'filter.resonance') this.channelFilter?.setResonance(v);
       return;
     }
     const dot = id.indexOf('.');
