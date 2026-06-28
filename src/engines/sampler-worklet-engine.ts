@@ -23,6 +23,13 @@ import type {
 } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
 import { ModulationHostImpl } from '../modulation/modulation-host';
+import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
+import type { ModulatorVoice } from '../modulation/types';
+import { renderModulatorsPanel } from '../modulation/modulation-ui';
+import { getCurrentLaneForVoice } from '../modulation/active-mods';
+import {
+  bindEngineModulators, reapplyLaneModulations, disposeLaneModulations, disposeEngineMods,
+} from '../modulation/voice-mod-binding';
 import type { KeymapEntry } from '../samples/types';
 import { sampleCache } from '../samples/sample-cache';
 import { keymapEntryFor, repitchRate } from '../samples/keymap';
@@ -114,7 +121,14 @@ export class SamplerWorkletEngine implements SynthEngine {
   private selectedPadNote: number | null = null;
   private uiCtx: EngineUIContext | null = null;
   private uiRebuild: (() => void) | null = null;
-  private modHost = new ModulationHostImpl([]);
+  private modHost = new ModulationHostImpl([
+    makeDefaultLFO('lfo1'),
+    makeDefaultADSR('adsr1'),
+  ]);
+  /** Tempo for LFO BPM sync — updated by main.ts when seq.bpm changes. */
+  bpm = 120;
+  private engineModVoices: Map<string, ModulatorVoice> | null = null;
+  private currentLaneId: string | null = null;
   /** Per-category output gain (sampler vs drum vs audio). DrumsWorkletEngine sets
    *  this so its embedded sampler plays at the 'drum' category level. */
   private categoryGain = CATEGORY_GAIN.sampler;
@@ -238,6 +252,26 @@ export class SamplerWorkletEngine implements SynthEngine {
 
   get modulators(): ModulationHostImpl { return this.modHost; }
 
+  /** Expose the channel filter's AudioParams so modulation binds to the real
+   *  Web-Audio nodes (cutoff → .detune cents, resonance → .Q linear). */
+  getSharedAudioParams(): Map<string, AudioParam> {
+    const m = new Map<string, AudioParam>();
+    if (this.channelFilter) {
+      m.set('filter.cutoff',    this.channelFilter.getCutoffModParam());  // .detune
+      m.set('filter.resonance', this.channelFilter.getResonanceParam()); // .Q
+    }
+    return m;
+  }
+
+  /** Range lookup for the modulation depth bridge. Cutoff uses the detune cents
+   *  span (NOT Hz) so a bipolar LFO sweeps musically — mirrors multifilter.ts. */
+  private filterRangeLookup = (id: string): { min: number; max: number } => {
+    if (id === 'filter.cutoff')    return { min: 0, max: FILTER_DETUNE_SPAN_CENTS };
+    if (id === 'filter.resonance') return { min: FILTER_Q_MIN, max: FILTER_Q_MAX };
+    const s = this.params.find((p) => p.id === id);
+    return { min: s?.min ?? 0, max: s?.max ?? 1 };
+  };
+
   constructor() {
     for (const p of SAMPLER_PARAMS) this.paramValues[p.id] = p.default;
   }
@@ -346,6 +380,18 @@ export class SamplerWorkletEngine implements SynthEngine {
     // Default the dry target to `output` if the allocator hasn't set one.
     if (!this.dryTarget) this.dryTarget = output;
     this.ensureNode(ctx);
+    // Spawn engine-level modulators (LFO/ADSR) once and bind them to the filter.
+    if (!this.engineModVoices) {
+      this.engineModVoices = this.modHost.spawnVoice(ctx, () => this.bpm);
+    }
+    const laneId = getCurrentLaneForVoice();
+    if (laneId) {
+      bindEngineModulators({
+        laneId, engine: this, voiceMods: this.engineModVoices, ctx,
+        rangeLookup: this.filterRangeLookup,
+      });
+      this.currentLaneId = laneId;
+    }
     return new SamplerWorkletVoice(this);
   }
 
@@ -779,6 +825,9 @@ export class SamplerWorkletEngine implements SynthEngine {
   }
 
   dispose(): void {
+    disposeEngineMods(this.engineModVoices, this.currentLaneId);
+    this.engineModVoices = null;
+    this.currentLaneId = null;
     this.keymap = [];
     this.channelFilter?.dispose(); this.channelFilter = null;
     this.node?.dispose();   // kill the processor, not just disconnect (phantom-processor leak)

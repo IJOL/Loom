@@ -236,6 +236,16 @@ describe('SamplerWorkletEngine — choke', () => {
   });
 });
 
+describe('SamplerWorkletEngine — filter modulation destinations', () => {
+  it('getSharedAudioParams exposes filter.cutoff and filter.resonance once a voice is built', () => {
+    const eng = new SamplerWorkletEngine();
+    eng.createVoice(ctx, out());
+    const m = eng.getSharedAudioParams!();
+    expect(m.has('filter.cutoff')).toBe(true);
+    expect(m.has('filter.resonance')).toBe(true);
+  });
+});
+
 describe('SamplerWorkletEngine — channel filter params', () => {
   it('declares filter.cutoff (default 20000, log) and filter.resonance (default 0.7)', () => {
     const eng = new SamplerWorkletEngine();
