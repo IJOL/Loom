@@ -56,6 +56,7 @@ import { CATEGORY_GAIN, SAMPLE_HEADROOM } from '../audio-dsp/gain-staging';
 import { samplePlaybackWindow } from './sampler-playback-window';
 import { withUndo } from '../save/history-wiring';
 import { guessRootNoteFromName } from './sampler';
+import type { KnobHandle } from '../core/knob';
 import { SamplerWorkletNode } from '../audio-worklet/sampler-node';
 import type { SampleSpawn } from '../audio-dsp/sample/types';
 import {
@@ -822,6 +823,29 @@ export class SamplerWorkletEngine implements SynthEngine {
       empty.textContent = 'No samples loaded yet.';
       list.appendChild(empty);
     }
+
+    // MODULATORS panel — lets LFO/ADSR route to the channel filter (Task 11b).
+    // Mirrors the drums engine pattern so the sampler filter is modulatable from
+    // the UI (acceptance #5: "modulatable" must be reachable from the editor).
+    renderModulatorsPanel(container, {
+      engineId: this.id,
+      laneId: ctx.laneId,
+      host: this.modHost,
+      registry: ctx.registry as Map<string, KnobHandle>,
+      registerKnob: (k) => ctx.registerKnob(k),
+      lookupLaneDisplayName: ctx.lookupLaneDisplayName,
+      sessionState: ctx.sessionState,
+      historyDeps: ctx.historyDeps,
+      laneInserts: ctx.laneInserts,
+      masterInserts: ctx.masterInserts,
+      fxBus: ctx.fxBus,
+      onLiveEdit: () => { if (this.currentLaneId) reapplyLaneModulations(this.currentLaneId); },
+      onChange: () => {
+        container.innerHTML = '';
+        this.buildParamUI(container, ctx);
+        if (this.currentLaneId) reapplyLaneModulations(this.currentLaneId);
+      },
+    });
   }
 
   dispose(): void {
