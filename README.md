@@ -67,7 +67,7 @@ npm run test:unit
 npm run test:fast   # everything except the slower real-DSP renders
 ```
 
-Four test layers: pure logic, scheduling (fake clock), real-DSP renders through `OfflineAudioContext`, and modulation wiring.
+Four test layers: pure logic, scheduling (fake clock), real-DSP renders through `OfflineAudioContext`, and an objective per-engine modulation render (an LFO/ADSR on each engine, measured to confirm it changes the sound).
 
 ## Stem separation (optional local service)
 
