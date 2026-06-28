@@ -38,11 +38,12 @@ export const param = (b: ParamBag, id: string, d: number): number => (b[id] ?? d
  *  AMPLITUDE envelope itself — an ADSR routed here becomes the voice's amp env). */
 export type ModTarget = keyof SubParams | 'ampGain' | 'amp' | 'filterEnv';
 
-/** Live, additive modulation offsets keyed by destination, NORMALISED (the sum
- *  of LFO `wave×depth`, roughly -1..1). The renderer scales each to the field's
- *  native units at read time (cents/semitones for pitch, ×gain for ampGain,
- *  straight 0..1 add for the rest). */
-export type VoiceModOffsets = Partial<Record<ModTarget, number>>;
+/** Live, additive modulation offsets, NORMALISED (the sum of LFO `wave×depth`,
+ *  roughly -1..1). Keyed by target NAME: a SubParams field for Subtractive, or a
+ *  param dot-id ('filter.cutoff', 'osc.morph', 'op1.level'…) for the other
+ *  engines — generic, so one VoiceManager path drives every engine. The renderer
+ *  scales each to native units at read time. */
+export type VoiceModOffsets = Record<string, number>;
 
 /** A pooled, per-sample voice. Pure: no Web Audio. */
 export interface VoiceRenderer {

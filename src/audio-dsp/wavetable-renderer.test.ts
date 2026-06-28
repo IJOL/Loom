@@ -160,6 +160,45 @@ describe('WavetableRenderer', () => {
     expect(doneTime).toBeLessThan(0.11 + 1 / SR);
   });
 
+  it('honours a live cutoff modulation offset (LFO path, keyed by param dot-id)', () => {
+    const bright = (cutMod: number): number => {
+      const v = new WavetableRenderer(
+        note(), { ...P, 'osc.waveA': 3, 'osc.waveB': 3, 'filter.cutoff': 0.15, 'filter.resonance': 0 }, SR,
+      );
+      const b: number[] = [];
+      for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR, { 'filter.cutoff': cutMod }));
+      return rms(b);
+    };
+    expect(bright(0.8)).toBeGreaterThan(bright(0) * 1.3);
+  });
+
+  it('a per-voice ADSR routed to filter.cutoff opens the filter (modulation reaches the engine)', () => {
+    const adsr = {
+      id: 'a', kind: 'adsr' as const, enabled: true, rateHz: 0, waveform: 'sine' as const,
+      attackSec: 0.001, decaySec: 0.001, sustain: 1, releaseSec: 0.1, depthByParam: { 'filter.cutoff': 1 },
+    };
+    const bright = (withAdsr: boolean): number => {
+      const v = new WavetableRenderer(
+        note(), { ...P, 'osc.waveA': 3, 'osc.waveB': 3, 'filter.cutoff': 0.15, 'filter.resonance': 0 }, SR,
+      );
+      if (withAdsr) v.setModEnvelopes([adsr]);
+      const b: number[] = [];
+      for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR));
+      return rms(b);
+    };
+    expect(bright(true)).toBeGreaterThan(bright(false) * 1.3);
+  });
+
+  it('getAdsrOffsets exposes the per-voice ADSR contribution (the knob-ring source)', () => {
+    const v = new WavetableRenderer(note({ durationSec: 10 }), P, SR);
+    v.setModEnvelopes([{
+      id: 'a', kind: 'adsr', enabled: true, rateHz: 0, waveform: 'sine',
+      attackSec: 0.001, decaySec: 0.001, sustain: 0.5, releaseSec: 0.1, depthByParam: { 'filter.cutoff': 1 },
+    }]);
+    for (let i = 0; i < SR * 0.05; i++) v.renderSample(i / SR);
+    expect((v.getAdsrOffsets() as Record<string, number>)['filter.cutoff']).toBeCloseTo(0.5, 1);
+  });
+
   it('registers under engine id "wavetable"', () => {
     // Importing WavetableRenderer above triggers its registerRenderer side-effect.
     expect(() => createRenderer('wavetable', note(), P, SR)).not.toThrow();

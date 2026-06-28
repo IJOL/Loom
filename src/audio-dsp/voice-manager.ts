@@ -1,4 +1,4 @@
-import type { NoteSpec, ParamBag, VoiceRenderer } from './types';
+import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets } from './types';
 import { createRenderer } from './renderer-registry';
 import type { ModulationRuntime, ModLite } from './modulation-runtime';
 
@@ -19,6 +19,9 @@ export class VoiceManager {
     osc1Level: 0, osc2Level: 0, subLevel: 0, noiseLevel: 0, noiseColor: 0,
     osc1Detune: 0, osc2Detune: 0, masterTune: 0, ampGain: 0,
   };
+  // Pooled generic offsets (keyed by param dot-id) for every NON-subtractive
+  // engine — filled in place each sample so the render loop allocates nothing.
+  private readonly genericOffsets: Record<string, number> = {};
   constructor(private sr: number, private engineId: string, params: ParamBag) {
     this.params = { ...params };
   }
@@ -79,7 +82,7 @@ export class VoiceManager {
     // struct is keyed by SubParams fields and only SubtractiveVoiceRenderer reads
     // modOffsets. Other engines' renderers ignore the arg, so skip the work (and
     // don't pass a misleading struct) for them.
-    let mo: typeof this.modOffsets | undefined;
+    let mo: VoiceModOffsets | undefined;
     if (this.mod && this.engineId === 'subtractive') {
       const m = this.modOffsets;
       m.filterCutoff    = this.mod.offsetFor('filterCutoff', t);
@@ -97,6 +100,10 @@ export class VoiceManager {
       m.masterTune      = this.mod.offsetFor('masterTune', t);
       m.ampGain         = this.mod.offsetFor('ampGain', t);
       mo = m;
+    } else if (this.mod) {
+      // Every other engine: generic LFO offsets keyed by param dot-id (pooled).
+      this.mod.offsetsInto(this.genericOffsets, t);
+      mo = this.genericOffsets;
     }
     let out = 0;
     for (let i = this.slots.length - 1; i >= 0; i--) {

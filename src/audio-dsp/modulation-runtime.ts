@@ -104,4 +104,22 @@ export class ModulationRuntime {
     }
     return out;
   }
+
+  /** Pooled variant of activeOffsets: fills `out` IN PLACE (zeroing its existing
+   *  keys first) so the per-sample render loop allocates nothing on the audio
+   *  thread. Generic — `out` is keyed by whatever the connections target
+   *  (SubParams fields for Subtractive, param dot-ids for the other engines), so
+   *  the same path drives every engine's LFO modulation. */
+  offsetsInto(out: Record<string, number>, t: number): void {
+    for (const k in out) out[k] = 0;
+    for (const m of this.mods) {
+      if (!m.enabled || m.kind !== 'lfo') continue;
+      const w = signal(m, (t * m.rateHz) % 1);
+      for (const field in m.depthByParam) {
+        const depth = m.depthByParam[field];
+        if (!depth) continue;
+        out[field] = (out[field] ?? 0) + w * depth;
+      }
+    }
+  }
 }

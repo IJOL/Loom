@@ -58,6 +58,19 @@ function fieldForParamId(paramId: string): ModTarget | null {
   return null;
 }
 
+/** Generic target mapper for NON-subtractive engines: resolve a connection to a
+ *  param's OWN dot-id (e.g. 'wavetable-1.filter.cutoff' → 'filter.cutoff', or
+ *  'fm-1.op1.level' → 'op1.level'), plus the synthetic envelope targets. The
+ *  renderer reads modOffsets by these dot-ids. Subtractive keeps fieldForParamId
+ *  (its renderer reads SubParams fields). */
+export function makeDotIdMapper(params: EngineParamSpec[]): (paramId: string) => string | null {
+  const targets = [...params.map((p) => p.id), 'amp', 'filter.env', 'amp.gain'];
+  return (paramId) => {
+    for (const t of targets) if (paramId === t || paramId.endsWith('.' + t)) return t;
+    return null;
+  };
+}
+
 /** Map the host's ModulatorState[] to the worklet's compact ModLite[]. Only
  *  connections that resolve to a modulation target carry depth; everything else
  *  is sent inert. (The runtime acts only on `kind:'lfo'`; ADSR mods are sent for
@@ -66,13 +79,16 @@ function fieldForParamId(paramId: string): ModTarget | null {
  *  `bpm` resolves a BPM-synced LFO's rate to free Hz here (effectiveRateHz),
  *  because the in-worklet ModulationRuntime runs at a free `rateHz`. Without
  *  this a synced LFO would send its stale free `rateHz` and ignore the tempo. */
-export function toModLite(state: ModulatorState[], bpm = 120): ModLite[] {
+export function toModLite(
+  state: ModulatorState[], bpm = 120,
+  mapTarget: (paramId: string) => string | null = fieldForParamId,
+): ModLite[] {
   return state.map((m) => {
     const depthByParam: Record<string, number> = {};
     for (const c of m.connections) {
       if (!c.depth) continue;
-      const field = fieldForParamId(c.paramId);
-      if (field) depthByParam[field as string] = (depthByParam[field as string] ?? 0) + c.depth;
+      const key = mapTarget(c.paramId);
+      if (key) depthByParam[key] = (depthByParam[key] ?? 0) + c.depth;
     }
     return {
       id: m.id,
@@ -151,6 +167,9 @@ export class WorkletLaneEngine implements SynthEngine {
   // Latest live modulation offsets reported by the worklet (field → normalised
   // -1..1), the source of truth for the UI knob rings. Empty when nothing modulates.
   private liveModOffsets: Record<string, number> = {};
+  /** Connection-paramId → modulation target name. fieldForParamId (SubParams) for
+   *  subtractive; a dot-id mapper for every other engine. */
+  private readonly mapTarget: (paramId: string) => string | null;
   private _bpm = 120;
   /** Tempo. Assigning re-posts the modulator set so BPM-synced LFOs re-resolve
    *  their rate live (bpm-broadcast assigns this on every tempo change). */
@@ -165,6 +184,7 @@ export class WorkletLaneEngine implements SynthEngine {
     this.presetsKey = cfg.presetsKey;
     this.presetKeyRemap = cfg.presetKeyRemap;
     this.modHost = new ModulationHostImpl(cfg.modulators ?? []);
+    this.mapTarget = cfg.engineId === 'subtractive' ? fieldForParamId : makeDotIdMapper(cfg.params);
     for (const s of cfg.params) this.state[s.id] = s.default;
     this.maxVoices = cfg.polyphony === 'mono' ? 1 : 8;
     this.state['poly.voices'] = this.maxVoices;   // keep the bag in sync with the authoritative cap
@@ -181,7 +201,7 @@ export class WorkletLaneEngine implements SynthEngine {
    *  modulator/connection. (In-worklet modulation is currently subtractive-only;
    *  for other engines toModLite yields inert mods until their targets are wired.) */
   private postMods(): void {
-    this.worklet.setMods(toModLite(this.modHost.modulators, this._bpm));
+    this.worklet.setMods(toModLite(this.modHost.modulators, this._bpm, this.mapTarget));
   }
 
   get presets(): EnginePreset[] { return getCachedPresets(this.presetsKey); }
@@ -194,9 +214,9 @@ export class WorkletLaneEngine implements SynthEngine {
    *  Reads the worklet's last telemetry — the REAL modulation, so the UI ring
    *  matches what is sounding. Drives the knob-ring overlay in automation-tick. */
   getLiveModOffset(paramId: string): number {
-    const field = fieldForParamId(paramId);
-    if (!field) return 0;
-    return this.liveModOffsets[field as string] ?? 0;
+    const key = this.mapTarget(paramId);
+    if (!key) return 0;
+    return this.liveModOffsets[key] ?? 0;
   }
 
   /** Snapshot of the current dot-id param state — the exact ParamBag the
