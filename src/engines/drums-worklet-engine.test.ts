@@ -145,3 +145,35 @@ describe('DrumsWorkletEngine — filter modulation destinations', () => {
     expect(res.max).toBe(18);
   });
 });
+
+describe('DrumsWorkletEngine — sample mode filter routing (cross-task fix)', () => {
+  it('setBaseValue/getBaseValue filter.cutoff round-trips through the embedded sampler in sample mode', () => {
+    const eng = new DrumsWorkletEngine();
+    eng.setKitMode('sample');
+    eng.setBaseValue('filter.cutoff', 1000);
+    // getBaseValue must read back the value stored in the sampler, not the synth filter
+    expect(eng.getBaseValue('filter.cutoff')).toBeCloseTo(1000, 3);
+  });
+
+  it('setBaseValue filter.cutoff in sample mode reaches the embedded sampler, not the (null) synth filter', () => {
+    const eng = new DrumsWorkletEngine();
+    eng.setKitMode('sample');
+    eng.setBaseValue('filter.cutoff', 500);
+    eng.setBaseValue('filter.resonance', 8);
+    // The embedded sampler should own these values
+    expect(eng.getEmbeddedSampler().getBaseValue('filter.cutoff')).toBeCloseTo(500, 3);
+    expect(eng.getEmbeddedSampler().getBaseValue('filter.resonance')).toBeCloseTo(8, 3);
+    // The drums engine's own paramValues must NOT have been written (synth mode filter bypassed)
+    const pv = (eng as unknown as { paramValues: Record<string, number> }).paramValues;
+    expect('filter.cutoff' in pv && pv['filter.cutoff'] === 500).toBe(false);
+  });
+
+  it('synth-mode filter routing is unchanged: setBaseValue writes to paramValues + live filter', () => {
+    const eng = new DrumsWorkletEngine();
+    // kitMode is 'synth' by default
+    eng.setBaseValue('filter.cutoff', 800);
+    eng.setBaseValue('filter.resonance', 6);
+    expect(eng.getBaseValue('filter.cutoff')).toBeCloseTo(800, 3);
+    expect(eng.getBaseValue('filter.resonance')).toBeCloseTo(6, 3);
+  });
+});
