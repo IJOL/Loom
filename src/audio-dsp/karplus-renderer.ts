@@ -4,8 +4,10 @@
 // legacy src/engines/karplus.ts). The renderer pre-renders the full string
 // buffer at construction time, then plays it back sample-by-sample with an
 // optional amp envelope.
-import type { NoteSpec, ParamBag, VoiceRenderer } from './types';
+import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets } from './types';
 import { param } from './types';
+import type { ModLite } from './modulation-runtime';
+import { ModEnvHost } from './mod-env-host';
 import { registerRenderer } from './renderer-registry';
 import { synthTrim } from './gain-staging';
 
@@ -105,6 +107,7 @@ export class KarplusRenderer implements VoiceRenderer {
   private level: number;
   private ampEnvOn: boolean;
   private vel: number;
+  private modEnv = new ModEnvHost();
   done = false;
 
   constructor(note: NoteSpec, p: ParamBag, sampleRate: number) {
@@ -132,10 +135,17 @@ export class KarplusRenderer implements VoiceRenderer {
     if (t < this.holdEnd) this.holdEnd = t;
   }
 
-  renderSample(t: number): number {
+  setModEnvelopes(mods: ModLite[]): void { this.modEnv.setModEnvelopes(mods); }
+  getAdsrOffsets(): VoiceModOffsets { return this.modEnv.getAdsrOffsets(); }
+
+  renderSample(t: number, moIn?: VoiceModOffsets): number {
     if (t < this.begin) return 0;
     const idx = Math.floor((t - this.begin) * this.sr);
     if (idx >= this.buf.length) { this.done = true; return 0; }
+    const gate = t <= this.holdEnd ? 1 : 0;
+    // Karplus pre-renders the plucked string, so only the playback amp is
+    // modulatable per sample: amp.level (volume / per-voice ADSR) + amp.gain (tremolo).
+    const mo = this.modEnv.active ? this.modEnv.combine(t, gate, moIn) : moIn;
     let env = 1;
     if (this.ampEnvOn) {
       const dt = t - this.begin;
@@ -149,7 +159,10 @@ export class KarplusRenderer implements VoiceRenderer {
         if (t > this.holdEnd && env < 0.001) this.done = true;
       }
     }
-    return this.buf[idx] * env * this.level * this.vel * synthTrim('karplus');
+    const level = mo?.['amp.level'] ? Math.max(0, this.level + mo['amp.level']) : this.level;
+    let out = this.buf[idx] * env * level * this.vel * synthTrim('karplus');
+    if (mo?.['amp.gain']) out *= Math.max(0, Math.min(2, 1 + mo['amp.gain']));
+    return out;
   }
 }
 
