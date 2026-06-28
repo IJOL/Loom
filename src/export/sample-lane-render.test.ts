@@ -66,4 +66,24 @@ describe('renderSampleLane (offline)', () => {
     const { l } = renderSampleLane(spawns, SR, SR);
     expect(rms(l)).toBeGreaterThan(1e-3);
   });
+
+  it('choke: a same-group hit cuts a ringing voice (CH cuts OH) — offline parity', () => {
+    // A long-gate "open hat" rings; a short "closed hat" hits at 100 ms.
+    const oh = () => spawn({ sampleId: 'oh', beginSec: 0, gateSec: 1, decay: 1, chokeGroup: 1, padNote: 46 });
+    const ch = (group: number) => spawn({ sampleId: 'ch', beginSec: 0.1, gateSec: 0.03, decay: 0.02, chokeGroup: group, padNote: 42 });
+    // Energy in 0.2..0.4 s — well past the CH, so only a still-ringing OH lives here.
+    const tailRms = (chGroup: number) => {
+      const { l } = renderSampleLane(
+        [{ kind: 'sampler', spawn: oh(), data: tone(SR) }, { kind: 'sampler', spawn: ch(chGroup), data: tone(SR) }],
+        SR, SR,
+      );
+      let s = 0, n = 0;
+      for (let i = Math.floor(0.2 * SR); i < Math.floor(0.4 * SR); i++) { s += l[i] * l[i]; n++; }
+      return Math.sqrt(s / n);
+    };
+    const choked = tailRms(1); // CH shares OH's group → OH is cut
+    const free = tailRms(2);   // CH in a different group → OH rings on
+    expect(free).toBeGreaterThan(0.02);
+    expect(choked).toBeLessThan(free * 0.2);
+  });
 });

@@ -24,6 +24,16 @@ export interface SampleSpawn {
    *  buffer end. Mirrors the legacy src.start(t, offset, duration) window so a
    *  pad's sampleEnd trim is honoured. Ignored when `loop` is set. */
   endSec?: number;
+  // ── choke (sampler pads only; audio clips/loops omit these → never choked) ────
+  /** Choke group (0/absent = none; 1..4 = a mutually-exclusive group). A new hit
+   *  fast-fades every still-ringing voice that shares its non-zero group (CH→OH). */
+  chokeGroup?: number;
+  /** The pad's trigger note — its identity for the mono (retrig) self-cut. Absent
+   *  / -1 ⇒ not a pad (audio clip), so it never matches a choke. */
+  padNote?: number;
+  /** 0/absent = poly; 1 = mono (a re-hit of the SAME pad cuts its own prior voice,
+   *  independent of any choke group). */
+  retrig?: number;
   // per-pad voice chain (sampler); audio channel sends neutral defaults
   cutoff: number;            // 0..1 → 60·300^x Hz
   res: number;               // 0..1

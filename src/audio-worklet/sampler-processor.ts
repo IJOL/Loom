@@ -25,6 +25,7 @@ import { ScheduledNoteOffs } from '../audio-dsp/scheduled-noteoffs';
 import { SamplerRenderer } from '../audio-dsp/sample/sampler-renderer';
 import { AudioClipRenderer } from '../audio-dsp/sample/audio-clip-renderer';
 import type { SampleSpawn } from '../audio-dsp/sample/types';
+import { chokesVoice } from '../engines/sampler-choke';
 
 type SamplerMsg =
   | { type: 'loadSample'; sampleId: string; channels: Float32Array[]; sampleRate: number }
@@ -39,6 +40,8 @@ type SamplerMsg =
 interface Slot {
   r: SamplerRenderer | AudioClipRenderer;
   sampler: boolean;   // true ⇒ SamplerRenderer (has per-pad FX sends); false ⇒ AudioClipRenderer
+  chokeGroup: number; // 0 = none; a new hit cuts ringing voices sharing its group (sampler only)
+  padNote: number;    // pad identity for the mono self-cut; -1 = audio clip (never choked)
 }
 
 class SamplerProcessor extends AudioWorkletProcessor {
@@ -97,7 +100,17 @@ class SamplerProcessor extends AudioWorkletProcessor {
         const r = kind === 'audio'
           ? new AudioClipRenderer(spawn, this.bank, sampleRate)
           : new SamplerRenderer(spawn, this.bank, sampleRate);
-        this.live.push({ r, sampler: kind === 'sampler' });
+        const chokeGroup = kind === 'sampler' ? (spawn.chokeGroup ?? 0) : 0;
+        const padNote = kind === 'sampler' ? (spawn.padNote ?? -1) : -1;
+        // Choke BEFORE pushing the new voice (so it never chokes itself): fast-fade
+        // every still-ringing voice this hit cuts (shared group, or mono self-cut).
+        if (kind === 'sampler' && (chokeGroup > 0 || (spawn.retrig ?? 0) >= 1)) {
+          const trig = { chokeGroup, padNote, retrig: spawn.retrig ?? 0 };
+          for (const slot of this.live) {
+            if (slot.r instanceof SamplerRenderer && chokesVoice(trig, slot)) slot.r.choke(t);
+          }
+        }
+        this.live.push({ r, sampler: kind === 'sampler', chokeGroup, padNote });
       });
       let l = 0, rr = 0;
       let revL = 0, revR = 0, dlyL = 0, dlyR = 0;

@@ -24,15 +24,23 @@ export interface PadParams {
   sampleStart: number; // 0..1 — playback start (trim in)
   sampleEnd: number;   // 0..1 — playback end (trim out)
   retrig: number;      // 0 = poly, 1 = mono (re-hit cuts previous)
+  chokeGroup: number;  // 0 = none, 1..4 = mutually-exclusive choke group (CH cuts OH)
 }
 
 export const PAD_DEFAULTS: PadParams = {
   tune: 0, cutoff: 1, res: 0, attack: 0.005, decay: 0.08,
-  level: 1, pan: 0, rev: 0, dly: 0, loop: 0, loopStart: 0, loopEnd: 1, sampleStart: 0, sampleEnd: 1, retrig: 0,
+  level: 1, pan: 0, rev: 0, dly: 0, loop: 0, loopStart: 0, loopEnd: 1, sampleStart: 0, sampleEnd: 1, retrig: 0, chokeGroup: 0,
 };
 
 const ON_OFF = [{ value: 'off', label: 'Off' }, { value: 'on', label: 'On' }];
 const POLY_MONO = [{ value: 'poly', label: 'Poly' }, { value: 'mono', label: 'Mono' }];
+// CHOKE group selector (discrete): stored value = the group number. 0 = — (none);
+// pads sharing a non-zero group cut each other (mirrors the Drums CHOKE control).
+const CHOKE_OPTIONS = [
+  { value: 'none', label: '—' },
+  { value: 'g1', label: '1' }, { value: 'g2', label: '2' },
+  { value: 'g3', label: '3' }, { value: 'g4', label: '4' },
+];
 
 /** Per-leaf spec templates; id is filled with `${padKey}.${leaf}` per pad. */
 export const PAD_LEAF_SPECS: Array<Omit<EngineParamSpec, 'id'> & { leaf: keyof PadParams }> = [
@@ -51,6 +59,7 @@ export const PAD_LEAF_SPECS: Array<Omit<EngineParamSpec, 'id'> & { leaf: keyof P
   { leaf: 'sampleStart', label: 'START',  kind: 'continuous', min: 0, max: 1, default: 0 },
   { leaf: 'sampleEnd',   label: 'END',    kind: 'continuous', min: 0, max: 1, default: 1 },
   { leaf: 'retrig',      label: 'RETRIG', kind: 'discrete',   min: 0, max: 1, default: 0, options: POLY_MONO },
+  { leaf: 'chokeGroup',  label: 'CHOKE',  kind: 'discrete',   min: 0, max: 4, default: 0, options: CHOKE_OPTIONS, selectStyle: 'dropdown', showLabel: true },
 ];
 
 /** Pad key for a trigger note — a UNIQUE per-note identity (`zone<note>`). */

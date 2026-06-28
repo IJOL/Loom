@@ -16,6 +16,7 @@ import { SampleBank } from '../audio-dsp/sample/sample-bank';
 import { SamplerRenderer } from '../audio-dsp/sample/sampler-renderer';
 import { AudioClipRenderer } from '../audio-dsp/sample/audio-clip-renderer';
 import type { SampleData, SampleSpawn } from '../audio-dsp/sample/types';
+import { chokesVoice } from '../engines/sampler-choke';
 
 export interface StereoBuffer { l: Float32Array; r: Float32Array; }
 
@@ -92,7 +93,9 @@ export interface OfflineSampleSpawn {
 /** Render a Sampler / Audio lane to stereo: each spawn through SamplerRenderer
  *  (per-pad filter/amp/pan + stereo image) or AudioClipRenderer (flat stereo),
  *  summed into the L/R pair. The per-pad reverb/delay SENDS are dropped offline
- *  (no FxBus in the kernel) — same simplification as the melodic kernel render. */
+ *  (no FxBus in the kernel) — same simplification as the melodic kernel render.
+ *  Choke groups + the mono self-cut ARE applied, mirroring the live worklet
+ *  processor so an export matches what's heard (CH cuts a ringing OH). */
 export function renderSampleLane(
   spawns: OfflineSampleSpawn[],
   frames: number,
@@ -103,7 +106,7 @@ export function renderSampleLane(
   const bank = new SampleBank();
   for (const s of spawns) if (!bank.has(s.spawn.sampleId)) bank.set(s.spawn.sampleId, s.data);
 
-  interface Live { r: SamplerRenderer | AudioClipRenderer; }
+  interface Live { r: SamplerRenderer | AudioClipRenderer; chokeGroup: number; padNote: number; }
   const live: Live[] = [];
   const pending = [...spawns].sort((a, b) => a.spawn.beginSec - b.spawn.beginSec);
   let next = 0;
@@ -111,9 +114,19 @@ export function renderSampleLane(
     const t = i / sampleRate;
     while (next < pending.length && pending[next].spawn.beginSec <= t) {
       const s = pending[next++];
+      const sampler = s.kind === 'sampler';
+      const chokeGroup = sampler ? (s.spawn.chokeGroup ?? 0) : 0;
+      const padNote = sampler ? (s.spawn.padNote ?? -1) : -1;
+      // Choke ringing group-mates / a mono re-hit BEFORE pushing the new voice.
+      if (sampler && (chokeGroup > 0 || (s.spawn.retrig ?? 0) >= 1)) {
+        const trig = { chokeGroup, padNote, retrig: s.spawn.retrig ?? 0 };
+        for (const slot of live) {
+          if (slot.r instanceof SamplerRenderer && chokesVoice(trig, slot)) slot.r.choke(t);
+        }
+      }
       live.push({ r: s.kind === 'audio'
         ? new AudioClipRenderer(s.spawn, bank, sampleRate)
-        : new SamplerRenderer(s.spawn, bank, sampleRate) });
+        : new SamplerRenderer(s.spawn, bank, sampleRate), chokeGroup, padNote });
     }
     for (let k = live.length - 1; k >= 0; k--) {
       const { l: vl, r: vr } = live[k].r.renderStereoInto(t);

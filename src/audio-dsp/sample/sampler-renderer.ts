@@ -16,6 +16,8 @@ import { Svf } from '../filter';
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
+const CHOKE_FADE = 0.006; // 6 ms linear fade-to-zero on choke (matches the drums voices)
+
 export class SamplerRenderer implements VoiceRenderer {
   private player: BufferPlayer | null;
   private filterL: Svf;
@@ -23,6 +25,12 @@ export class SamplerRenderer implements VoiceRenderer {
   private begin: number;
   private holdEnd: number;
   private s: SampleSpawn;
+  // Choke: a fast linear fade-to-zero from the amp value the env had reached
+  // (`chokeFrom`) starting at `chokeAt`. Independent of the gate/decay, so a
+  // still-ringing (or looping) voice is cut hard when a group-mate or a mono
+  // re-hit triggers. Mirrors the drums OneShot choke.
+  private chokeAt: number | null = null;
+  private chokeFrom = 0;
   // Post-pan stereo dry output of the most recent render (read by the processor).
   outL = 0;
   outR = 0;
@@ -44,9 +52,20 @@ export class SamplerRenderer implements VoiceRenderer {
 
   noteOff(t: number): void { if (t < this.holdEnd) this.holdEnd = t; }
 
+  /** Start a fast fade-to-zero at time t (choke). Idempotent: a second choke does
+   *  not restart the fade from the (already lower) current level. */
+  choke(t: number): void {
+    if (this.chokeAt == null) { this.chokeFrom = this.ampAt(t); this.chokeAt = t; }
+  }
+
   /** Linear attack → hold to the gate end → linear decay (matches the legacy
-   *  SamplerVoice envelope: attack/decay ramps around the gate). */
+   *  SamplerVoice envelope: attack/decay ramps around the gate). Once choked, the
+   *  fast 6 ms choke fade overrides the gate envelope. */
   private ampAt(t: number): number {
+    if (this.chokeAt != null) {
+      const f = (t - this.chokeAt) / CHOKE_FADE;
+      return f >= 1 ? 0 : this.chokeFrom * (1 - f);
+    }
     const dt = t - this.begin;
     const relAt = Math.max(this.s.attack, this.holdEnd - this.begin);
     if (dt < this.s.attack) return dt / Math.max(1e-4, this.s.attack);
@@ -60,7 +79,8 @@ export class SamplerRenderer implements VoiceRenderer {
   private renderStereo(t: number): void {
     if (!this.player || t < this.begin) { this.outL = 0; this.outR = 0; return; }
     const amp = this.ampAt(t);
-    if (t > this.holdEnd && amp <= 0) { this.done = true; this.outL = 0; this.outR = 0; return; }
+    const chokeDone = this.chokeAt != null && t >= this.chokeAt + CHOKE_FADE;
+    if ((t > this.holdEnd && amp <= 0) || chokeDone) { this.done = true; this.outL = 0; this.outR = 0; return; }
     this.player.update(this.s.rate);   // advances + fills lastL/lastR
     // cutoff: 0..1 → 60·300^x Hz, clamped below Nyquist (legacy SamplerVoice mapping).
     const cutoffHz = Math.min(this.sr * 0.45, 60 * Math.pow(300, this.s.cutoff));

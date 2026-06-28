@@ -8,6 +8,8 @@ describe('sampler pad params', () => {
     for (const l of leaves) expect(PAD_DEFAULTS).toHaveProperty(l);
     expect(leaves).toContain('loop');
     expect(leaves).toContain('retrig');
+    expect(leaves).toContain('chokeGroup');
+    expect(PAD_DEFAULTS.chokeGroup).toBe(0); // no choke until set (GM hats defaulted at the engine)
   });
 
   it('every leaf spec validates as an EngineParamSpec when prefixed', () => {

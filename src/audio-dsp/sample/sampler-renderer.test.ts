@@ -135,6 +135,21 @@ describe('SamplerRenderer', () => {
     expect(e(1)).toBeGreaterThan(e(0.5) * 1.5);
   });
 
+  it('choke fades a ringing voice to near-zero quickly and frees it (even with the gate open)', () => {
+    const bank = new SampleBank();
+    bank.set('s', tone(SR));
+    // Long gate + long decay: without a choke this voice keeps ringing for ~1 s.
+    const r = new SamplerRenderer(spawn({ gateSec: 1, decay: 1 }), bank, SR);
+    let before = 0;
+    for (let i = 0; i < SR * 0.02; i++) before = Math.max(before, Math.abs(r.renderSample(i / SR))); // ring ~20 ms
+    expect(before).toBeGreaterThan(0.05);
+    r.choke(0.02);
+    const after: number[] = [];
+    for (let i = SR * 0.02; i < SR * 0.05; i++) after.push(r.renderSample(i / SR)); // past the ~6 ms fade
+    expect(rms(after)).toBeLessThan(before * 0.2);
+    expect(r.done).toBe(true); // choke completion frees the voice before the gate ends
+  });
+
   it('reports the spawn pan', () => {
     const bank = new SampleBank();
     bank.set('s', tone(SR));

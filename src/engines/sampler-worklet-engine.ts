@@ -34,6 +34,7 @@ import { mirrorKeymapChange, mirrorDrumkitId, mirrorInstrumentId, mirrorPadParam
 import { fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
 import { fetchInstrumentManifest, loadInstrument } from '../samples/instrument-loader';
 import { PAD_DEFAULTS, PAD_LEAF_SPECS, padKeyForNote, noteForPadKey, nextFreePadNote, type PadParams } from './sampler-pad-params';
+import { defaultChokeGroup } from './sampler-choke';
 import { renderSamplerKeyboardMap, noteName, padColor } from './sampler-keyboard-map';
 import { renderSampleViewer } from './sampler-sample-viewer';
 import { mountKeyboardConnectors } from './sampler-keyboard-connectors';
@@ -187,10 +188,15 @@ export class SamplerWorkletEngine implements SynthEngine {
     return !muted[padKeyForNote(note)];
   }
 
-  /** Resolved pad params for a note (defaults merged with stored overrides). */
+  /** Resolved pad params for a note (defaults merged with stored overrides). The
+   *  chokeGroup default is note-aware: GM hi-hats on a drumkit start in group 1 so
+   *  a freshly-loaded kit chokes its hats with no setup (an explicit store wins). */
   getPad(note: number): PadParams {
     const canonical = noteForPadKey(padKeyForNote(note));
-    return { ...PAD_DEFAULTS, ...(this.padStore[canonical] ?? {}) };
+    const stored = this.padStore[canonical] ?? {};
+    const pad = { ...PAD_DEFAULTS, ...stored };
+    if (stored.chokeGroup == null) pad.chokeGroup = defaultChokeGroup(canonical, this.isDrumkit());
+    return pad;
   }
 
   getPadStore(): Record<number, Partial<PadParams>> { return this.padStore; }
@@ -214,7 +220,11 @@ export class SamplerWorkletEngine implements SynthEngine {
       if (leaf in PAD_DEFAULTS) {
         const note = noteForPadKey(key);
         const stored = this.padStore[note]?.[leaf];
-        return typeof stored === 'number' ? stored : PAD_DEFAULTS[leaf];
+        if (typeof stored === 'number') return stored;
+        // Note-aware default so the CHOKE dropdown shows group 1 for GM hi-hats on
+        // a drumkit out of the box (mirrors getPad); all other leaves use PAD_DEFAULTS.
+        if (leaf === 'chokeGroup') return defaultChokeGroup(note, this.isDrumkit());
+        return PAD_DEFAULTS[leaf];
       }
     }
     return SAMPLER_PARAMS.find((p) => p.id === id)?.default ?? 0;
@@ -378,6 +388,12 @@ export class SamplerWorkletEngine implements SynthEngine {
       rev: pad.rev,
       dly: pad.dly,
       gain,
+      // Choke: a non-zero group cuts ringing group-mates; retrig=mono self-cuts
+      // this pad. padNote is the pad identity for the mono cut. (Worklet path only;
+      // the offline renderer pools voices per-clip and doesn't apply choke.)
+      chokeGroup: pad.chokeGroup,
+      padNote: entry.rootNote,
+      retrig: pad.retrig,
     };
     return { kind: 'sampler', spawn, buffer: buf };
   }
