@@ -37,9 +37,10 @@ import { wireEngineParams } from './engine-ui';
 import { sampleStore } from '../samples/store-singleton';
 import { importFile } from '../samples/import';
 import { addSampleToKeymap, removeKeymapEntry, setEntryRoot, setEntryRange } from '../samples/keymap-edit';
-import { mirrorKeymapChange, mirrorDrumkitId, mirrorInstrumentId, mirrorPadParams } from '../session/session-engine-state';
+import { mirrorKeymapChange, mirrorDrumkitId, mirrorInstrumentId, mirrorSamplerPreset, mirrorPadParams } from '../session/session-engine-state';
 import { fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
-import { fetchInstrumentManifest, loadInstrument } from '../samples/instrument-loader';
+import { fetchInstrumentManifest, loadInstrument, loadPresetZones } from '../samples/instrument-loader';
+import { getCachedPresets } from '../presets/preset-loader';
 import { PAD_DEFAULTS, PAD_LEAF_SPECS, padKeyForNote, noteForPadKey, nextFreePadNote, type PadParams } from './sampler-pad-params';
 import { defaultChokeGroup } from './sampler-choke';
 import { renderSamplerKeyboardMap, noteName, padColor } from './sampler-keyboard-map';
@@ -100,7 +101,10 @@ export class SamplerWorkletEngine implements SynthEngine {
   readonly type = 'polyhost' as const;
   readonly polyphony = 'poly' as const;
   readonly editor = 'piano-roll' as const;
-  readonly presets: import('./engine-types').EnginePreset[] = [];
+  // Normal Sampler presets (public/presets/sampler.json) — melodic multi-zone
+  // instruments whose wavs load from each zone's URL. Loaded by the standard
+  // preset path (loadAllPresets at boot); applied via loadFamilyRef('preset:…').
+  get presets(): import('./engine-types').EnginePreset[] { return getCachedPresets('sampler'); }
 
   // dynamic: globals + one <padKey>.<leaf> spec per keymap entry.
   get params(): EngineParamSpec[] {
@@ -327,17 +331,35 @@ export class SamplerWorkletEngine implements SynthEngine {
     for (const [k, v] of Object.entries(p.params)) this.paramValues[k] = v;
   }
 
-  /** Load a bundled instrument by namespaced ref ('drumkit:<id>' / 'melodic:<id>'
-   *  / 'loop:<id>') — the unified PRESET path. Identical to the legacy engine. */
+  /** Load a Sampler "preset" by namespaced ref — the unified PRESET path:
+   *   - 'preset:<name>'  a normal preset from presets/sampler.json (zone URLs);
+   *   - 'drumkit:<id>'   a bundled GM drumkit;
+   *   - 'melodic:<id>' / 'loop:<id>'  a legacy bundled instrument manifest.
+   *  The three sampler sub-ids (presetName / drumkitId / instrumentId) are
+   *  mutually exclusive; each branch clears the others so the load path stays
+   *  unambiguous. */
   async loadFamilyRef(ref: string): Promise<void> {
     const ctx = this.uiCtx;
     const audioCtx = ctx?.audioContext;
     if (!ctx || !audioCtx) return;
     const sep = ref.indexOf(':');
     if (sep < 0) return;
-    const family = ref.slice(0, sep) as 'melodic' | 'drumkit' | 'loop';
+    const family = ref.slice(0, sep) as 'melodic' | 'drumkit' | 'loop' | 'preset';
     const id = ref.slice(sep + 1);
-    if (family === 'drumkit') {
+    if (family === 'preset') {
+      const preset = this.presets.find((p) => p.name === id);
+      if (preset?.zones) {
+        const km = await loadPresetZones(preset.zones, audioCtx);
+        this.setKeymap(km);
+        for (const [k, v] of Object.entries(preset.params)) this.paramValues[k] = v;
+        if (ctx.sessionState) {
+          mirrorKeymapChange(ctx.sessionState, ctx.laneId, km);
+          mirrorSamplerPreset(ctx.sessionState, ctx.laneId, id);
+          mirrorInstrumentId(ctx.sessionState, ctx.laneId, undefined);
+          mirrorDrumkitId(ctx.sessionState, ctx.laneId, undefined);
+        }
+      }
+    } else if (family === 'drumkit') {
       const manifest = await fetchDrumkitManifest(id);
       const km = await loadDrumkit(manifest, audioCtx);
       this.setKeymap(km);
@@ -345,6 +367,7 @@ export class SamplerWorkletEngine implements SynthEngine {
         mirrorKeymapChange(ctx.sessionState, ctx.laneId, km);
         mirrorDrumkitId(ctx.sessionState, ctx.laneId, id);
         mirrorInstrumentId(ctx.sessionState, ctx.laneId, undefined);
+        mirrorSamplerPreset(ctx.sessionState, ctx.laneId, undefined);
       }
     } else {
       const manifest = await fetchInstrumentManifest(id);
@@ -354,6 +377,7 @@ export class SamplerWorkletEngine implements SynthEngine {
         mirrorKeymapChange(ctx.sessionState, ctx.laneId, loaded.keymap);
         mirrorInstrumentId(ctx.sessionState, ctx.laneId, id);
         mirrorDrumkitId(ctx.sessionState, ctx.laneId, undefined);
+        mirrorSamplerPreset(ctx.sessionState, ctx.laneId, undefined);
       }
       if (family === 'melodic' && 'padParams' in loaded && loaded.padParams) {
         const pad = loaded.padParams as Record<number, Record<string, number>>;

@@ -112,6 +112,10 @@ export interface SessionLane {
       /** Mirror of `drumkitId` for bundled melodic/loop presets; mutually
        *  exclusive with `drumkitId` (drumkit wins in the load path). */
       instrumentId?: string;
+      /** A normal Sampler preset (presets/sampler.json, by name). Mutually
+       *  exclusive with drumkitId/instrumentId; on load its zones are re-fetched
+       *  from their URLs so audio self-heals like the bundled-instrument path. */
+      presetName?: string;
       padParams?: Record<number, Record<string, number>>;
     };
     /** Per-voice drum mute flags (drums-machine). Solo is live-only, not saved. */

@@ -25,6 +25,34 @@ describe('validatePresetEntry', () => {
   it('rejects missing params', () => {
     expect(validatePresetEntry({ name: 'A', gm: [0] } as unknown)).toBe(false);
   });
+
+  it('accepts a sampler preset with valid zones', () => {
+    expect(validatePresetEntry({
+      name: 'Sweep Pad', gm: [89], params: {},
+      zones: [
+        { url: 'instruments/sweep-pad/low.wav', rootNote: 36, loNote: 0, hiNote: 47 },
+        { url: 'instruments/sweep-pad/mid.wav', rootNote: 60, loNote: 48, hiNote: 127, gain: 0.8 },
+      ],
+    })).toBe(true);
+  });
+
+  it('rejects zones that are not an array', () => {
+    expect(validatePresetEntry({ name: 'A', gm: [0], params: {}, zones: 'oops' as unknown })).toBe(false);
+  });
+
+  it('rejects a zone missing its url', () => {
+    expect(validatePresetEntry({
+      name: 'A', gm: [0], params: {},
+      zones: [{ rootNote: 60, loNote: 0, hiNote: 127 }],
+    })).toBe(false);
+  });
+
+  it('rejects a zone with an out-of-range note', () => {
+    expect(validatePresetEntry({
+      name: 'A', gm: [0], params: {},
+      zones: [{ url: 'x.wav', rootNote: 128, loNote: 0, hiNote: 127 }],
+    })).toBe(false);
+  });
 });
 
 describe('loadEnginePresets', () => {

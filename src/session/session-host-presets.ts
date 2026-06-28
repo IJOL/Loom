@@ -6,7 +6,8 @@ import type { SessionHost } from './session-host';
 import type { KeymapEntry } from '../samples/types';
 import { mirrorKeymapChange, mirrorDrumkitId, mirrorPadParams } from './session-engine-state';
 import { fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
-import { fetchInstrumentManifest, loadInstrument } from '../samples/instrument-loader';
+import { fetchInstrumentManifest, loadInstrument, loadPresetZones } from '../samples/instrument-loader';
+import { getCachedPresets } from '../presets/preset-loader';
 import { sampleStore } from '../samples/store-singleton';
 import { sampleCache } from '../samples/sample-cache';
 import { buildSampleAsset, newSampleId } from '../samples/import';
@@ -86,6 +87,27 @@ export async function reloadInstrument(
     }
   } catch (err) {
     console.warn(`[instrument] failed to reload '${instrumentId}' for ${laneId}:`, err);
+  }
+}
+
+/** Re-load a normal Sampler preset (presets/sampler.json) by name into a sampler
+ *  lane: fetch its zone URLs → decode → fresh keymap, then re-mirror it. Mirror
+ *  of reloadInstrument for the normal-preset path; self-healing (fresh sampleIds
+ *  + decoded cache every call). Fire-and-forget from applyEngineState. */
+export async function reloadPreset(
+  self: SessionHost,
+  laneId: string,
+  presetName: string,
+  engine: { setKeymap(k: KeymapEntry[]): void },
+): Promise<void> {
+  try {
+    const preset = getCachedPresets('sampler').find((p) => p.name === presetName);
+    if (!preset?.zones) return;
+    const km = await loadPresetZones(preset.zones, self.deps.ctx);
+    engine.setKeymap(km);
+    mirrorKeymapChange(self.state, laneId, km);
+  } catch (err) {
+    console.warn(`[sampler-preset] failed to reload '${presetName}' for ${laneId}:`, err);
   }
 }
 

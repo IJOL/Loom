@@ -75,6 +75,21 @@ export interface EngineUIContext {
   audioContext?: AudioContext;
 }
 
+/** One zone of a Sampler preset: a wav (addressed by a path under Vite's
+ *  BASE_URL) mapped over a key range at a root note. The "normal preset" form of
+ *  a melodic Sampler instrument — the audio lives at a URL the build serves, so
+ *  the preset is self-contained JSON and loads through the standard preset path.
+ *  Like instrument-loader's MelodicZone but `url` is a full BASE_URL-relative
+ *  path (e.g. 'instruments/sweep-pad/low.wav') rather than relative to
+ *  instruments/. */
+export interface SamplerPresetZone {
+  url: string;
+  rootNote: number; // midi at which the sample plays at natural pitch
+  loNote: number;   // inclusive key-range low (0-127)
+  hiNote: number;   // inclusive key-range high (0-127)
+  gain?: number;    // optional linear gain
+}
+
 export interface EnginePreset<P = Record<string, number>> {
   name: string;
   /** Loose mapping to GM program numbers (0-127). Optional during the
@@ -84,6 +99,9 @@ export interface EnginePreset<P = Record<string, number>> {
   gm?: number[];
   params: P;
   modulators?: import('../modulation/types').ModulatorState[];
+  /** Sampler-only: a multi-zone melodic keymap whose wavs are fetched from
+   *  `zone.url` at apply time (then setKeymap). Absent for every synth engine. */
+  zones?: SamplerPresetZone[];
 }
 
 export interface SynthEngine {

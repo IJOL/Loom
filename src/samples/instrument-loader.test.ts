@@ -3,11 +3,13 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   buildMelodicKeymap,
   loadInstrument,
+  loadPresetZones,
   listInstruments,
   fetchInstrumentManifest,
   type MelodicInstrumentManifest,
   type LoopInstrumentManifest,
 } from './instrument-loader';
+import type { SamplerPresetZone } from '../engines/engine-types';
 import { SLICE_BASE_NOTE, buildSliceClip } from '../core/slice-clip';
 import { DEFAULT_METER } from '../core/meter';
 
@@ -106,6 +108,53 @@ describe('loadInstrument (melodic, impure, injected deps)', () => {
       { store: { put: vi.fn(async () => {}) }, cache: { put: vi.fn() }, fetchFn },
     );
     expect(padParams).toBeUndefined();
+  });
+});
+
+describe('loadPresetZones (impure, injected deps) — the normal-preset path', () => {
+  const fakeBuffer = { duration: 1.2, sampleRate: 44100, numberOfChannels: 2 } as unknown as AudioBuffer;
+  const ctx = { decodeAudioData: vi.fn(async () => fakeBuffer) } as unknown as AudioContext;
+
+  const ZONES2: SamplerPresetZone[] = [
+    { url: 'instruments/sweep-pad/low.wav', rootNote: 48, loNote: 0, hiNote: 59 },
+    { url: 'presets/wav/pad-high.wav', rootNote: 72, loNote: 60, hiNote: 127, gain: 0.8 },
+  ];
+
+  it('fetches each zone url verbatim under BASE_URL, decodes, stores, caches, returns a keymap', async () => {
+    const fetched: string[] = [];
+    const fetchFn = vi.fn(async (url: string) => {
+      fetched.push(url);
+      return { ok: true, arrayBuffer: async () => new ArrayBuffer(16) } as unknown as Response;
+    }) as unknown as typeof fetch;
+    const stored: string[] = [];
+    const cached: string[] = [];
+    const store = { put: vi.fn(async (a: { id: string }) => { stored.push(a.id); }) };
+    const cache = { put: vi.fn((id: string) => { cached.push(id); }) };
+
+    const keymap = await loadPresetZones(ZONES2, ctx, { store, cache, fetchFn, now: () => 1234 });
+
+    // The url is used verbatim under BASE_URL (no instruments/ prefix), unlike loadInstrument.
+    expect(fetched).toEqual(['/instruments/sweep-pad/low.wav', '/presets/wav/pad-high.wav']);
+    expect(stored).toHaveLength(2);
+    expect(cached).toEqual(stored);
+    expect(keymap.map((e) => e.rootNote)).toEqual([48, 72]);
+    expect(keymap.map((e) => [e.loNote, e.hiNote])).toEqual([[0, 59], [60, 127]]);
+    expect(keymap[1].gain).toBe(0.8);
+    expect('gain' in keymap[0]).toBe(false);
+    expect(keymap.map((e) => e.sampleId)).toEqual(stored);
+  });
+
+  it('self-heals: two loads yield distinct sampleIds but the same note↔zone mapping', async () => {
+    const fetchFn = vi.fn(async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(16) } as unknown as Response)) as unknown as typeof fetch;
+    const store = { put: vi.fn(async () => {}) };
+    const cache = { put: vi.fn() };
+
+    const a = await loadPresetZones(ZONES2, ctx, { store, cache, fetchFn });
+    const b = await loadPresetZones(ZONES2, ctx, { store, cache, fetchFn });
+
+    expect(a.map((e) => e.sampleId)).not.toEqual(b.map((e) => e.sampleId));
+    expect(a.map((e) => [e.rootNote, e.loNote, e.hiNote]))
+      .toEqual(b.map((e) => [e.rootNote, e.loNote, e.hiNote]));
   });
 });
 

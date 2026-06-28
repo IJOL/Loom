@@ -175,30 +175,34 @@ export function populatePolyPresetSelectForLane(laneId: string): void {
   if (!deps) return;
   const engineId = deps.getLaneEngineId(laneId);
 
-  // Sampler: its PRESET dropdown IS its instrument list (drumkits + melodic + loops),
-  // loaded asynchronously. Selecting one runs SamplerEngine.loadFamilyRef (see the
-  // change handler). The fill bails if the user switched lanes meanwhile.
+  // Sampler: its PRESET dropdown lists normal presets (presets/sampler.json —
+  // melodic multi-zone instruments) plus the bundled drumkits and loops. Normal
+  // presets are cached at boot so they fill synchronously; drumkits/loops load
+  // from their own indexes. Selecting one runs SamplerEngine.loadFamilyRef (see
+  // the change handler). The async fill bails if the user switched lanes.
   if (engineId === 'sampler') {
+    const group = (s: HTMLSelectElement, label: string, items: [string, string][]): void => {
+      if (!items.length) return;
+      const g = document.createElement('optgroup');
+      g.label = label;
+      for (const [val, text] of items) {
+        const o = document.createElement('option');
+        o.value = val; o.textContent = text;
+        g.appendChild(o);
+      }
+      s.appendChild(g);
+    };
+    // Synchronous: normal presets are already in the cache.
+    group(sel, 'Presets', getCachedPresets('sampler').map((p) => [`sampler:preset:${p.name}`, p.name]));
     void Promise.all([listDrumkits(), listInstruments()]).then(([kits, instruments]) => {
       if (gen !== polyPopGen) return;
       const s = document.getElementById('poly-preset-select') as HTMLSelectElement | null;
       if (!s) return;
-      const group = (label: string, items: [string, string][]): void => {
-        if (!items.length) return;
-        const g = document.createElement('optgroup');
-        g.label = label;
-        for (const [val, text] of items) {
-          const o = document.createElement('option');
-          o.value = val; o.textContent = text;
-          g.appendChild(o);
-        }
-        s.appendChild(g);
-      };
-      group('Drumkit', kits.map((k) => [`sampler:drumkit:${k.id}`, k.name]));
-      group('Melodic', instruments.filter((i) => i.family === 'melodic').map((i) => [`sampler:melodic:${i.id}`, i.name]));
-      group('Loop', instruments.filter((i) => i.family === 'loop').map((i) => [`sampler:loop:${i.id}`, i.name]));
+      group(s, 'Drumkit', kits.map((k) => [`sampler:drumkit:${k.id}`, k.name]));
+      group(s, 'Loop', instruments.filter((i) => i.family === 'loop').map((i) => [`sampler:loop:${i.id}`, i.name]));
       s.value = pagePresetName.get(laneId) ?? '__custom__';
     });
+    sel.value = pagePresetName.get(laneId) ?? '__custom__';
     return;
   }
 

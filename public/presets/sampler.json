@@ -1,0 +1,24 @@
+{
+  "engineId": "sampler",
+  "presets": [
+    {
+      "name": "Sweep Pad",
+      "gm": [88, 89, 90, 91, 95],
+      "params": {},
+      "zones": [
+        { "url": "instruments/sweep-pad/low.wav", "rootNote": 36, "loNote": 0, "hiNote": 47 },
+        { "url": "instruments/sweep-pad/mid.wav", "rootNote": 60, "loNote": 48, "hiNote": 71 },
+        { "url": "instruments/sweep-pad/high.wav", "rootNote": 84, "loNote": 72, "hiNote": 127 }
+      ]
+    },
+    {
+      "name": "Synth Bass",
+      "gm": [38, 39],
+      "params": {},
+      "zones": [
+        { "url": "instruments/synth-bass/low.wav", "rootNote": 24, "loNote": 0, "hiNote": 35 },
+        { "url": "instruments/synth-bass/mid.wav", "rootNote": 48, "loNote": 36, "hiNote": 127 }
+      ]
+    }
+  ]
+}

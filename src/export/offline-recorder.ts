@@ -38,7 +38,8 @@ import { collectSceneTriggers, type SoundingLaneClip, type OfflineTrigger } from
 import { collectSceneAutomation, type OfflineAutomationPoint } from './collect-scene-automation';
 import { loadNoteFxForLane } from '../notefx/notefx-registry';
 import { fetchDrumkitManifest, loadDrumkit } from '../samples/drumkit-loader';
-import { fetchInstrumentManifest, loadInstrument } from '../samples/instrument-loader';
+import { fetchInstrumentManifest, loadInstrument, loadPresetZones } from '../samples/instrument-loader';
+import { getCachedPresets } from '../presets/preset-loader';
 import { mirrorKeymapChange } from '../session/session-engine-state';
 import { rehydrateInsertChain } from '../session/insert-slot';
 import { velNorm, resolveVelocity, velGain } from '../core/velocity-gain';
@@ -145,6 +146,15 @@ export class OfflineSceneRecorder implements SceneRecorder {
           const { keymap } = await loadInstrument(manifest, offlineCtx as unknown as AudioContext);
           eng.setKeymap(keymap);
           mirrorKeymapChange(state, id, keymap);
+        },
+        // Normal Sampler preset (presets/sampler.json): decode its zone URLs into
+        // fresh sampleIds + mirror the resolved keymap (offline parity).
+        reloadPreset: async (id, presetName, eng: { setKeymap(k: KeymapEntry[]): void }) => {
+          const preset = getCachedPresets('sampler').find((p) => p.name === presetName);
+          if (!preset?.zones) return;
+          const km = await loadPresetZones(preset.zones, offlineCtx as unknown as AudioContext);
+          eng.setKeymap(km);
+          mirrorKeymapChange(state, id, km);
         },
       });
       // Per-lane insert plugin slots → full parity with the live mix.

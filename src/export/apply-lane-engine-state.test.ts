@@ -28,7 +28,7 @@ describe('applyLaneEngineState', () => {
         drumMutes: { kick: true },
       },
     };
-    await applyLaneEngineState(eng as never, lane, ctx, { loadNoteFx: vi.fn(), reloadDrumkit: vi.fn(), reloadInstrument: vi.fn() });
+    await applyLaneEngineState(eng as never, lane, ctx, { loadNoteFx: vi.fn(), reloadDrumkit: vi.fn(), reloadInstrument: vi.fn(), reloadPreset: vi.fn() });
     expect(eng.setKitMode).toHaveBeenCalledWith('synth');
     expect(eng.setBaseValue).toHaveBeenCalledWith('bus.level', 0.8);
     expect(eng.modulators.deserialize).toHaveBeenCalledWith(lane.engineState!.modulators);
@@ -38,7 +38,7 @@ describe('applyLaneEngineState', () => {
   it('defaults kitMode to synth when absent', async () => {
     const eng = fakeEngine();
     const lane: SessionLane = { id: 'l', engineId: 'drums-machine', clips: [] };
-    await applyLaneEngineState(eng as never, lane, ctx, { loadNoteFx: vi.fn(), reloadDrumkit: vi.fn(), reloadInstrument: vi.fn() });
+    await applyLaneEngineState(eng as never, lane, ctx, { loadNoteFx: vi.fn(), reloadDrumkit: vi.fn(), reloadInstrument: vi.fn(), reloadPreset: vi.fn() });
     expect(eng.setKitMode).toHaveBeenCalledWith('synth');
   });
 
@@ -49,7 +49,7 @@ describe('applyLaneEngineState', () => {
       id: 'l', engineId: 'sampler', clips: [],
       engineState: { sampler: { keymap: [], drumkitId: 'tr808' } },
     };
-    await applyLaneEngineState(eng as never, lane, ctx, { loadNoteFx: vi.fn(), reloadDrumkit, reloadInstrument: vi.fn() });
+    await applyLaneEngineState(eng as never, lane, ctx, { loadNoteFx: vi.fn(), reloadDrumkit, reloadInstrument: vi.fn(), reloadPreset: vi.fn() });
     expect(reloadDrumkit).toHaveBeenCalledWith('l', 'tr808', eng);
   });
 
@@ -61,7 +61,7 @@ describe('applyLaneEngineState', () => {
       engineState: { sampler: { keymap: [], instrumentId: 'sweep-pad' } },
     };
     await applyLaneEngineState(eng as never, lane, ctx, {
-      loadNoteFx: vi.fn(), reloadDrumkit: vi.fn(), reloadInstrument,
+      loadNoteFx: vi.fn(), reloadDrumkit: vi.fn(), reloadInstrument, reloadPreset: vi.fn(),
     });
     expect(reloadInstrument).toHaveBeenCalledWith('l', 'sweep-pad', eng);
   });
@@ -75,7 +75,7 @@ describe('applyLaneEngineState', () => {
       engineState: { sampler: { keymap: [], instrumentId: 'sweep-pad', padParams: { 0: { tune: 1 } } } },
     };
     await applyLaneEngineState(eng as never, lane, ctx, {
-      loadNoteFx: vi.fn(), reloadDrumkit: vi.fn(), reloadInstrument,
+      loadNoteFx: vi.fn(), reloadDrumkit: vi.fn(), reloadInstrument, reloadPreset: vi.fn(),
     });
     expect(resolved).toBe(true);
     // reloadInstrument runs before setPadStore.
@@ -92,9 +92,37 @@ describe('applyLaneEngineState', () => {
       engineState: { sampler: { keymap: [], instrumentId: 'sweep-pad' } },
     };
     await applyLaneEngineState(eng as never, lane, ctx, {
-      loadNoteFx: vi.fn(), reloadDrumkit: vi.fn(), reloadInstrument,
+      loadNoteFx: vi.fn(), reloadDrumkit: vi.fn(), reloadInstrument, reloadPreset: vi.fn(),
     });
     expect(reloadInstrument).toHaveBeenCalledWith('l', 'sweep-pad', eng);
+  });
+
+  it('reloads a normal preset when presetName is present (no drumkit)', async () => {
+    const eng = fakeEngine();
+    const reloadPreset = vi.fn(async () => { /* resolves */ });
+    const lane: SessionLane = {
+      id: 'l', engineId: 'sampler', clips: [],
+      engineState: { sampler: { keymap: [], presetName: 'Sweep Pad' } },
+    };
+    await applyLaneEngineState(eng as never, lane, ctx, {
+      loadNoteFx: vi.fn(), reloadDrumkit: vi.fn(), reloadInstrument: vi.fn(), reloadPreset,
+    });
+    expect(reloadPreset).toHaveBeenCalledWith('l', 'Sweep Pad', eng);
+  });
+
+  it('mutual exclusion: presetName wins over instrumentId', async () => {
+    const eng = fakeEngine();
+    const reloadPreset = vi.fn(async () => { /* resolves */ });
+    const reloadInstrument = vi.fn(async () => { /* resolves */ });
+    const lane: SessionLane = {
+      id: 'l', engineId: 'sampler', clips: [],
+      engineState: { sampler: { keymap: [], presetName: 'Sweep Pad', instrumentId: 'sweep-pad' } },
+    };
+    await applyLaneEngineState(eng as never, lane, ctx, {
+      loadNoteFx: vi.fn(), reloadDrumkit: vi.fn(), reloadInstrument, reloadPreset,
+    });
+    expect(reloadPreset).toHaveBeenCalledWith('l', 'Sweep Pad', eng);
+    expect(reloadInstrument).not.toHaveBeenCalled();
   });
 
   it('mutual exclusion (D9): drumkitId wins, instrumentId is ignored', async () => {
@@ -106,7 +134,7 @@ describe('applyLaneEngineState', () => {
       engineState: { sampler: { keymap: [], drumkitId: 'tr808', instrumentId: 'sweep-pad' } },
     };
     await applyLaneEngineState(eng as never, lane, ctx, {
-      loadNoteFx: vi.fn(), reloadDrumkit, reloadInstrument,
+      loadNoteFx: vi.fn(), reloadDrumkit, reloadInstrument, reloadPreset: vi.fn(),
     });
     expect(reloadDrumkit).toHaveBeenCalledWith('l', 'tr808', eng);
     expect(reloadInstrument).not.toHaveBeenCalled();

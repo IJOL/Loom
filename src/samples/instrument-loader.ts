@@ -17,6 +17,7 @@
 // loadInstrument helper lands in the following tasks.
 
 import type { KeymapEntry, SampleAsset } from './types';
+import type { SamplerPresetZone } from '../engines/engine-types';
 import type { PadParams } from '../engines/sampler-pad-params';
 import type { ResolutionKey } from '../core/drum-grid-editing';
 import { sampleStore } from './store-singleton';
@@ -116,6 +117,43 @@ export function buildMelodicKeymap(zones: MelodicZone[], sampleIds: string[]): K
     hiNote: z.hiNote,
     ...(z.gain != null ? { gain: z.gain } : {}),
   }));
+}
+
+/** IMPURE: load a Sampler PRESET's zones — the "normal preset" path. For each
+ *  zone fetch its wav from `zone.url` (verbatim under BASE_URL, NOT prefixed
+ *  with instruments/ like loadMelodicInstrument), decode it, persist to the
+ *  sample store + decoded cache with a FRESH id, and return a multi-zone melodic
+ *  keymap. Self-healing exactly like loadMelodicInstrument: fresh ids every call,
+ *  IndexedDB-only cache, so re-applying the preset on session/demo load rebuilds
+ *  playable audio from the same URLs. */
+export async function loadPresetZones(
+  zones: SamplerPresetZone[],
+  ctx: AudioContext,
+  deps: LoadDeps = {},
+): Promise<KeymapEntry[]> {
+  const store = deps.store ?? sampleStore;
+  const cache = deps.cache ?? sampleCache;
+  const fetchFn = deps.fetchFn ?? fetch;
+  const now = deps.now ?? Date.now;
+
+  const out: KeymapEntry[] = [];
+  for (const z of zones) {
+    const res = await fetchFn(`${import.meta.env.BASE_URL}${z.url}`);
+    const bytes = await res.arrayBuffer();
+    // decodeAudioData detaches its input — decode a copy, keep the original bytes.
+    const buffer = await ctx.decodeAudioData(bytes.slice(0));
+    const id = newSampleId();
+    await store.put(buildSampleAsset({ id, name: z.url, mime: 'audio/wav', bytes, buffer, createdAt: now() }));
+    cache.put(id, buffer);
+    out.push({
+      sampleId: id,
+      rootNote: z.rootNote,
+      loNote: z.loNote,
+      hiNote: z.hiNote,
+      ...(z.gain != null ? { gain: z.gain } : {}),
+    });
+  }
+  return out;
 }
 
 /** Read the bundled instrument index. Returns [] if it is missing or

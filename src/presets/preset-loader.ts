@@ -9,6 +9,26 @@ export function validatePresetEntry(raw: unknown): boolean {
     if (typeof v !== 'number' || !Number.isInteger(v) || v < 0 || v >= 128) return false;
   }
   if (typeof r.params !== 'object' || r.params === null) return false;
+  // Sampler presets carry an optional `zones` keymap (wav URL + note range per
+  // zone). When present it must be a well-formed array; synth presets omit it.
+  if (r.zones !== undefined && !validateZones(r.zones)) return false;
+  return true;
+}
+
+/** Validate a Sampler preset's `zones`: an array of { url, rootNote, loNote,
+ *  hiNote, gain? } with notes in [0,127] and a non-empty url. */
+function validateZones(raw: unknown): boolean {
+  if (!Array.isArray(raw)) return false;
+  for (const z of raw) {
+    if (typeof z !== 'object' || z === null) return false;
+    const zz = z as Record<string, unknown>;
+    if (typeof zz.url !== 'string' || zz.url.length === 0) return false;
+    for (const k of ['rootNote', 'loNote', 'hiNote'] as const) {
+      const v = zz[k];
+      if (typeof v !== 'number' || !Number.isInteger(v) || v < 0 || v > 127) return false;
+    }
+    if (zz.gain !== undefined && typeof zz.gain !== 'number') return false;
+  }
   return true;
 }
 
@@ -27,11 +47,9 @@ export async function loadEnginePresets(engineId: string): Promise<EnginePreset[
   // the standard build, so the resolved path is unchanged there.
   const url = `${import.meta.env.BASE_URL}presets/${engineId}.json`;
   const res = await fetch(url);
-  // A missing presets/<id>.json is expected for engines that don't keep their
-  // presets in the param-preset files: `audio` has no presets at all, and
-  // `sampler` carries its own elsewhere (bundled instruments via
-  // instruments/index.json + drum kits via drum-kits.json) — not param presets
-  // here. The "absent" signal differs by environment:
+  // A missing presets/<id>.json is expected for engines with no preset file —
+  // e.g. `audio` (a plain audio channel has no presets). The "absent" signal
+  // differs by environment:
   //   - production / preview: a real 404 (`!res.ok`);
   //   - Vite dev server: the SPA fallback serves index.html with a 200 and a
   //     text/html content-type (so `res.json()` would choke on `<!DOCTYPE`).

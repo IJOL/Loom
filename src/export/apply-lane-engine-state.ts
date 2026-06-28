@@ -19,6 +19,11 @@ export interface ApplyLaneEngineStateDeps {
     instrumentId: string,
     engine: { setKeymap(k: KeymapEntry[]): void },
   ) => void | Promise<void>;
+  reloadPreset: (
+    laneId: string,
+    presetName: string,
+    engine: { setKeymap(k: KeymapEntry[]): void },
+  ) => void | Promise<void>;
 }
 
 type AnyEngine = {
@@ -57,6 +62,7 @@ export async function applyLaneEngineState(
 
   const drumkitId = es?.sampler?.drumkitId;
   const instrumentId = es?.sampler?.instrumentId;
+  const presetName = es?.sampler?.presetName;
   if (drumkitId && typeof engine.setKeymap === 'function') {
     // Only yield if the callback is actually async (offline render returns a
     // Promise so samples are decoded before setPadStore; the live host's
@@ -64,10 +70,15 @@ export async function applyLaneEngineState(
     // the original ordering).
     const r = deps.reloadDrumkit(lane.id, drumkitId, engine as { setKeymap(k: KeymapEntry[]): void });
     if (r && typeof (r as Promise<void>).then === 'function') await r;
+  } else if (presetName && typeof engine.setKeymap === 'function') {
+    // Normal Sampler preset (presets/sampler.json). Mutual exclusion: drumkit
+    // wins, then preset, then legacy instrument. Re-fetches the preset's zone
+    // URLs so audio self-heals. Same sync/await semantics as the other branches.
+    const r = deps.reloadPreset(lane.id, presetName, engine as { setKeymap(k: KeymapEntry[]): void });
+    if (r && typeof (r as Promise<void>).then === 'function') await r;
   } else if (instrumentId && typeof engine.setKeymap === 'function') {
-    // Mutual exclusion (D9): drumkit wins, so this is reached only when there is
-    // no drumkitId. Same sync/await semantics as the drumkit branch (offline
-    // decodes before setPadStore; the live host fire-and-forgets).
+    // Legacy bundled melodic/loop instrument. Reached only when there is no
+    // drumkitId/presetName. Same sync/await semantics as the drumkit branch.
     const r = deps.reloadInstrument(lane.id, instrumentId, engine as { setKeymap(k: KeymapEntry[]): void });
     if (r && typeof (r as Promise<void>).then === 'function') await r;
   }

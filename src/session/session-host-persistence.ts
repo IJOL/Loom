@@ -13,7 +13,7 @@ import { rehydrateInsertChain } from './insert-slot';
 import { preloadSceneSamples } from '../export/preload-scene-samples';
 import { applyLaneEngineState } from '../export/apply-lane-engine-state';
 import { getNoteFxChain, loadNoteFxForLane } from '../notefx/notefx-registry';
-import { reloadDrumkit, reloadInstrument } from './session-host-presets';
+import { reloadDrumkit, reloadInstrument, reloadPreset } from './session-host-presets';
 
 /** Snapshot the two send buses (return level, mute, and preserved insert slots).
  *  Insert slots are session-owned (like lane/master inserts) — `prev` carries
@@ -192,6 +192,9 @@ export function applyEngineStateForLane(self: SessionHost, lane: SessionLane): v
     // drumkit reload. The persisted keymap is already applied above, so the
     // live editor renders; audio comes alive once the fetch/decode resolves.
     reloadInstrument: (laneId, id, eng) => { void reloadInstrument(self, laneId, id, eng); },
+    // Normal Sampler preset (presets/sampler.json) self-heal: fire-and-forget,
+    // re-fetches the preset's zone URLs (mirror of reloadInstrument).
+    reloadPreset: (laneId, name, eng) => { void reloadPreset(self, laneId, name, eng); },
   });
 }
 

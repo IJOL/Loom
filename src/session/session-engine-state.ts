@@ -114,6 +114,28 @@ export function readLaneInstrumentId(state: SessionState, laneId: string): strin
   return state.lanes.find((l) => l.id === laneId)?.engineState?.sampler?.instrumentId;
 }
 
+/** Mirror which normal Sampler preset (presets/sampler.json, by name) a lane
+ *  uses (undefined = a plain user keymap). Mutually exclusive with
+ *  drumkitId/instrumentId — the load path picks one. Spreads the existing
+ *  sampler sub-state so it never drops a sibling keymap/padParams. No-op if the
+ *  lane is unknown. */
+export function mirrorSamplerPreset(state: SessionState, laneId: string, presetName: string | undefined): void {
+  const lane = state.lanes.find((l) => l.id === laneId);
+  if (!lane) return;
+  if (!lane.engineState) lane.engineState = {};
+  const keymap = lane.engineState.sampler?.keymap ?? [];
+  lane.engineState.sampler = {
+    ...lane.engineState.sampler,
+    keymap,
+    presetName: presetName || undefined,
+  };
+}
+
+/** Read which normal Sampler preset a lane uses, if any. */
+export function readLaneSamplerPreset(state: SessionState, laneId: string): string | undefined {
+  return state.lanes.find((l) => l.id === laneId)?.engineState?.sampler?.presetName;
+}
+
 /** Mirror the sampler's per-pad param overrides (keyed by note) so per-pad
  *  edits persist + survive a drumkit reload-by-id. */
 export function mirrorPadParams(
