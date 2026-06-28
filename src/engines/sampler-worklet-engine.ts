@@ -651,7 +651,7 @@ export class SamplerWorkletEngine implements SynthEngine {
     knobRow.className = 'knob-row';
     container.appendChild(knobRow);
     wireEngineParams(this, ctx, knobRow, {
-      filter: (id) => SAMPLER_PARAMS.some((p) => p.id === id),
+      filter: (id) => SAMPLER_PARAMS.some((p) => p.id === id) && !id.startsWith('filter.'),
       formatter: (id, v) => {
         if (id === 'poly.voices') return `${Math.round(v)}`;
         if (id.endsWith('.attack') || id.endsWith('.release')) {
@@ -823,6 +823,26 @@ export class SamplerWorkletEngine implements SynthEngine {
       empty.textContent = 'No samples loaded yet.';
       list.appendChild(empty);
     }
+
+    // CHANNEL FILTER section — dedicated labelled section with CUTOFF + RES.
+    // filter.* are excluded from the generic knobRow above so they only appear here.
+    const filterSec = document.createElement('div');
+    filterSec.className = 'row poly-section sampler-channel-filter';
+    const filterLabel = document.createElement('div');
+    filterLabel.className = 'section-label';
+    filterLabel.textContent = 'CHANNEL FILTER';
+    filterSec.appendChild(filterLabel);
+    const filterRow = document.createElement('div');
+    filterRow.className = 'knob-row';
+    filterSec.appendChild(filterRow);
+    container.appendChild(filterSec);
+    wireEngineParams(this, ctx, filterRow, {
+      filter: (id) => id === 'filter.cutoff' || id === 'filter.resonance',
+      formatter: (id, v) =>
+        id === 'filter.cutoff'
+          ? (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`)
+          : v.toFixed(1),
+    });
 
     // MODULATORS panel — lets LFO/ADSR route to the channel filter (Task 11b).
     // Mirrors the drums engine pattern so the sampler filter is modulatable from

@@ -246,6 +246,7 @@ describe('SamplerWorkletEngine — filter modulation destinations', () => {
   });
 });
 
+
 describe('SamplerWorkletEngine — channel filter params', () => {
   it('declares filter.cutoff (default 20000, log) and filter.resonance (default 0.7)', () => {
     const eng = new SamplerWorkletEngine();
