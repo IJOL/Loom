@@ -24,6 +24,15 @@ only a mockup whose spec is still outstanding stays under `mockups/`.
 
 ## Low — minor, isolated
 
+- **Drums/sampler channel filter is live-only — not in offline export.** The channel
+  filter (cutoff + resonance, shipped 2026-06-28) is a live Web-Audio `BiquadFilter`
+  built in the engines' `ensureWired`/`ensureNode`. The offline scene/WAV render path
+  (`export/kernel-lane-render.ts`, the pure `DrumVoiceManager` / sampler renderer) never
+  instantiates `ChannelFilter`, so a scene with a dialed-in channel filter **exports
+  brighter/unfiltered** than it plays. Matches the standing "offline render ≠ live" debt
+  ([memory](project_offline_render_preset_fix.md)). The design spec listed this as risk #3;
+  the verifying test was deferred. A future export-fidelity pass should apply the same
+  lowpass (cutoff→Hz, resonance→Q) in the offline drum/sampler renderers.
 - **Preset selectors not automatable.** `#bass-preset-select` / `#poly-preset-select` /
   `#drums-preset-select` are plain `<select>`s, not wrapped in `createSelectControl`
   nor registered under a `<laneId>.preset` automation id (modular-modulators Task 19
