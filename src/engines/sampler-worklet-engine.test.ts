@@ -50,8 +50,12 @@ function fakeBufferAmp(durationSec: number, amp: number): AudioBuffer {
   } as unknown as AudioBuffer;
 }
 
-const out = () => ({ connect() {} }) as unknown as AudioNode;
-const ctx = {} as unknown as AudioContext;
+// Use a real AudioContext (from node-web-audio-api, globalized by test/setup.ts)
+// so createVoice can build a ChannelFilter node without a stub.
+const ctx = new AudioContext();
+// Use a real gain node so the ChannelFilter can connect() to it without
+// node-web-audio-api rejecting the stub as an invalid destination.
+const out = () => ctx.createGain();
 
 describe('SamplerWorkletEngine', () => {
   beforeEach(() => { loaded.length = 0; spawns.length = 0; silenceAllCalls = 0; });

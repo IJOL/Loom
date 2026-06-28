@@ -128,23 +128,45 @@ export class SamplerWorkletEngine implements SynthEngine {
   /** Channel filter on the RAW dry mix, BEFORE the lane inserts + bus EQ. */
   private channelFilter: ChannelFilter | null = null;
 
-  /** Build the worklet node + connect it (dry → lane strip, send → FxBus). The
-   *  allocator calls setOutputTarget before the first createVoice. Idempotent. */
+  /** Build the worklet node + connect it (dry → filter → lane strip, send → FxBus).
+   *  The channel filter is built here and spliced on the RAW dry mix, BEFORE the
+   *  lane InsertChain + bus ChannelStrip EQ. Idempotent. */
   private ensureNode(ctx: AudioContext): SamplerWorkletNode {
     if (this.node && this.ctx === ctx) return this.node;
     this.ctx = ctx;
     this.node = new SamplerWorkletNode(ctx);
-    if (this.dryTarget) this.node.connectDry(this.dryTarget);
+    // Channel filter on the RAW dry mix, BEFORE the lane inserts + bus EQ.
+    this.channelFilter = new ChannelFilter(ctx);
+    this.channelFilter.setCutoff(this.paramValues['filter.cutoff'] ?? FILTER_CUTOFF_DEFAULT);
+    this.channelFilter.setResonance(this.paramValues['filter.resonance'] ?? FILTER_Q_DEFAULT);
+    if (this.dryTarget) {
+      this.node.connectDry(this.channelFilter.input);
+      this.channelFilter.output.connect(this.dryTarget);
+    }
     if (this.fx) this.node.connectSend(this.fx.delayInput, this.fx.reverbInput);
     // Any buffers already in the cache for the current keymap get pushed now.
     this.pushAllKeymapBuffers();
     return this.node;
   }
 
-  /** The allocator wires the dry output to the lane insert chain / strip. */
+  /** The allocator wires the dry output to the lane insert chain / strip. A late
+   *  retarget reconnects through the filter so the chain stays intact. */
   setOutputTarget(n: AudioNode): void {
     this.dryTarget = n;
-    if (this.node) this.node.connectDry(n);
+    if (this.node && this.channelFilter) {
+      this.node.connectDry(this.channelFilter.input);
+      try { this.channelFilter.output.disconnect(); } catch { /* already disconnected */ }
+      this.channelFilter.output.connect(n);
+    } else if (this.node) {
+      this.node.connectDry(n);
+    }
+  }
+
+  /** Test seam: the raw-mix input node (the filter input). Lets a DSP test
+   *  inject a source on the channel path without a live worklet. */
+  getChannelFilterInputForTest(): AudioNode {
+    if (!this.channelFilter) throw new Error('channelFilter not built — call createVoice first');
+    return this.channelFilter.input;
   }
 
   setSharedFx(fx: FxBus): void {
@@ -758,6 +780,7 @@ export class SamplerWorkletEngine implements SynthEngine {
 
   dispose(): void {
     this.keymap = [];
+    this.channelFilter?.dispose(); this.channelFilter = null;
     this.node?.dispose();   // kill the processor, not just disconnect (phantom-processor leak)
     this.node = null;
   }
