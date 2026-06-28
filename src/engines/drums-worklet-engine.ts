@@ -48,6 +48,11 @@ import {
 } from '../modulation/voice-mod-binding';
 import { ConnectionBinder } from '../modulation/connection-binder';
 import type { KnobHandle } from '../core/knob';
+import {
+  ChannelFilter,
+  FILTER_CUTOFF_MIN, FILTER_CUTOFF_MAX, FILTER_CUTOFF_DEFAULT,
+  FILTER_Q_MIN, FILTER_Q_MAX, FILTER_Q_DEFAULT, FILTER_DETUNE_SPAN_CENTS,
+} from '../core/channel-filter';
 
 // ── Param spec (identical vocabulary to the legacy DrumsEngine) ───────────────
 // Bus-level automatable params (rendered by the static drum-master strip + the
@@ -61,6 +66,8 @@ const BUS_PARAMS: EngineParamSpec[] = [
   { id: 'bus.eq.low',      label: 'Lo',   kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
   { id: 'bus.eq.mid',      label: 'Mid',  kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
   { id: 'bus.eq.high',     label: 'Hi',   kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
+  { id: 'filter.cutoff',    label: 'CUTOFF', kind: 'continuous', min: FILTER_CUTOFF_MIN, max: FILTER_CUTOFF_MAX, default: FILTER_CUTOFF_DEFAULT, curve: 'log', unit: 'Hz' },
+  { id: 'filter.resonance', label: 'RES',    kind: 'continuous', min: FILTER_Q_MIN,      max: FILTER_Q_MAX,      default: FILTER_Q_DEFAULT },
 ];
 
 const WAVE_OPTIONS = [
@@ -180,6 +187,7 @@ class DrumsVoice implements Voice {
   constructor(
     private node: DrumsWorkletNode,
     private busStrip: ChannelStrip | null,
+    private channelFilter: ChannelFilter | null,
   ) {}
 
   /** Expose the drum-bus ChannelStrip's automatable AudioParams (modulation
@@ -194,6 +202,10 @@ class DrumsVoice implements Voice {
       m.set('bus.eq.low',     this.busStrip.getEqGainParam('low'));
       m.set('bus.eq.mid',     this.busStrip.getEqGainParam('mid'));
       m.set('bus.eq.high',    this.busStrip.getEqGainParam('high'));
+    }
+    if (this.channelFilter) {
+      m.set('filter.cutoff',    this.channelFilter.getCutoffModParam());
+      m.set('filter.resonance', this.channelFilter.getResonanceParam());
     }
     return m;
   }
@@ -280,6 +292,8 @@ export class DrumsWorkletEngine implements SynthEngine {
     return o;
   })();
 
+  private channelFilter: ChannelFilter | null = null;
+
   private sharedFx: FxBus | null = null;
   setSharedFx(fx: FxBus): void { this.sharedFx = fx; this.sampler.setSharedFx(fx); }
 
@@ -346,8 +360,11 @@ export class DrumsWorkletEngine implements SynthEngine {
   }
 
   /** bus.* range lookup for the modulation depth bridge (resolves from
-   *  DRUM_PARAMS regardless of kitMode). */
+   *  DRUM_PARAMS regardless of kitMode). Filter cutoff uses the detune cents
+   *  span (NOT 20..20000 Hz) so a bipolar LFO sweeps musically. */
   private busRangeLookup = (id: string): { min: number; max: number } => {
+    if (id === 'filter.cutoff')    return { min: 0, max: FILTER_DETUNE_SPAN_CENTS };
+    if (id === 'filter.resonance') return { min: FILTER_Q_MIN, max: FILTER_Q_MAX };
     const s = DRUM_PARAMS.find((p) => p.id === id);
     return { min: s?.min ?? 0, max: s?.max ?? 1 };
   };
@@ -355,6 +372,9 @@ export class DrumsWorkletEngine implements SynthEngine {
   // ── Param read/write ────────────────────────────────────────────────────────
   getBaseValue(id: string): number {
     if (this.kitMode === 'sample' && !id.startsWith('bus.')) return this.sampler.getBaseValue(id);
+    if (id === 'filter.cutoff' || id === 'filter.resonance') {
+      return id in this.paramValues ? this.paramValues[id] : this.specDefault(id);
+    }
     if (id.startsWith('bus.')) {
       return id in this.paramValues ? this.paramValues[id] : this.specDefault(id);
     }
@@ -371,6 +391,8 @@ export class DrumsWorkletEngine implements SynthEngine {
 
   setBaseValue(id: string, v: number): void {
     if (this.kitMode === 'sample' && !id.startsWith('bus.')) { this.sampler.setBaseValue(id, v); return; }
+    if (id === 'filter.cutoff')    { this.paramValues[id] = v; this.channelFilter?.setCutoff(v);    return; }
+    if (id === 'filter.resonance') { this.paramValues[id] = v; this.channelFilter?.setResonance(v); return; }
     if (id.startsWith('bus.')) {
       this.paramValues[id] = v;
       if (!this.busStrip) return;
@@ -463,16 +485,29 @@ export class DrumsWorkletEngine implements SynthEngine {
       throw new Error('DrumsWorkletEngine: setSharedFx must be called before createVoice');
     }
     const routingTarget = this.outputTarget ?? output;
+    // Channel filter on the RAW summed mix, BEFORE the lane inserts + bus EQ.
+    this.channelFilter = new ChannelFilter(ctx);
+    this.channelFilter.setCutoff(this.paramValues['filter.cutoff'] ?? FILTER_CUTOFF_DEFAULT);
+    this.channelFilter.setResonance(this.paramValues['filter.resonance'] ?? FILTER_Q_DEFAULT);
+    this.channelFilter.output.connect(routingTarget);
+    const filterIn = this.channelFilter.input;
     this.node = new DrumsWorkletNode(ctx);
     for (let i = 0; i < DRUM_VOICE_IDS.length; i++) {
       const voice = DRUM_VOICE_IDS[i];
-      const strip = new ChannelStrip(ctx, routingTarget, this.sharedFx);
+      const strip = new ChannelStrip(ctx, filterIn, this.sharedFx);   // strips → filter, not routingTarget
       this.voiceStrips[voice] = strip;
       this.node.connectVoice(i, strip.input);
     }
     this.wired = true;
     this.postAllVoices();
     this.applyVoiceMutes();
+  }
+
+  /** Test-only: the raw-mix input node the per-voice strips feed (the filter
+   *  input). Lets a DSP test inject a source on the channel path. */
+  getChannelFilterInputForTest(): AudioNode {
+    if (!this.channelFilter) throw new Error('channelFilter not built — call createVoice first');
+    return this.channelFilter.input;
   }
 
   createVoice(ctx: AudioContext, output: AudioNode): Voice {
@@ -503,7 +538,7 @@ export class DrumsWorkletEngine implements SynthEngine {
 
     // Synth mode → worklet.
     this.ensureWired(ctx, routingTarget);
-    const drumVoice = new DrumsVoice(this.node!, this.busStrip);
+    const drumVoice = new DrumsVoice(this.node!, this.busStrip, this.channelFilter);
     if (!this.engineModVoices) {
       this.engineModVoices = this.modHost.spawnVoice(ctx, () => this.bpm);
     }
@@ -622,6 +657,10 @@ export class DrumsWorkletEngine implements SynthEngine {
       m.set('bus.eq.mid',     this.busStrip.getEqGainParam('mid'));
       m.set('bus.eq.high',    this.busStrip.getEqGainParam('high'));
     }
+    if (this.channelFilter) {
+      m.set('filter.cutoff',    this.channelFilter.getCutoffModParam());     // .detune
+      m.set('filter.resonance', this.channelFilter.getResonanceParam());     // .Q
+    }
     return m;
   }
 
@@ -629,6 +668,7 @@ export class DrumsWorkletEngine implements SynthEngine {
     disposeEngineMods(this.engineModVoices, this.currentLaneId);
     this.engineModVoices = null;
     this.currentLaneId = null;
+    this.channelFilter?.dispose(); this.channelFilter = null;
     this.node?.dispose();   // kill the processor, not just disconnect (phantom-processor leak)
     this.node = null;
     // The embedded sampler (sample-kit mode) owns its OWN worklet node — dispose it

@@ -98,3 +98,50 @@ describe('DrumsWorkletEngine (synth mode)', () => {
     expect(eng.editor).toBe('drum-grid');
   });
 });
+
+describe('DrumsWorkletEngine — channel filter params', () => {
+  it('declares filter.cutoff (20..20000, default 20000) and filter.resonance (0.7..18, default 0.7)', () => {
+    const eng = new DrumsWorkletEngine();
+    const cutoff = eng.params.find((p) => p.id === 'filter.cutoff')!;
+    const res = eng.params.find((p) => p.id === 'filter.resonance')!;
+    expect(cutoff).toMatchObject({ kind: 'continuous', min: 20, max: 20000, default: 20000, curve: 'log' });
+    expect(res).toMatchObject({ kind: 'continuous', default: 0.7 });
+    expect(res.min).toBeCloseTo(0.7, 5);
+    expect(res.max).toBe(18);
+  });
+
+  it('get/setBaseValue round-trips the filter params and drives the live filter node', () => {
+    const { ctx, out, eng } = makeEngine();
+    eng.createVoice(ctx, out);                 // builds the filter node
+    eng.setBaseValue('filter.cutoff', 600);
+    eng.setBaseValue('filter.resonance', 8);
+    expect(eng.getBaseValue('filter.cutoff')).toBeCloseTo(600, 3);
+    expect(eng.getBaseValue('filter.resonance')).toBeCloseTo(8, 3);
+  });
+
+  it('defaults read back as fully-open passthrough before any edit', () => {
+    const eng = new DrumsWorkletEngine();
+    expect(eng.getBaseValue('filter.cutoff')).toBe(20000);
+    expect(eng.getBaseValue('filter.resonance')).toBeCloseTo(0.7, 5);
+  });
+});
+
+describe('DrumsWorkletEngine — filter modulation destinations', () => {
+  it('getSharedAudioParams exposes filter.cutoff→detune and filter.resonance→Q', () => {
+    const { ctx, out, eng } = makeEngine();
+    eng.createVoice(ctx, out);
+    const m = eng.getSharedAudioParams();
+    expect(m.has('filter.cutoff')).toBe(true);
+    expect(m.has('filter.resonance')).toBe(true);
+  });
+
+  it('the bus range lookup gives cutoff the full cents span and resonance its Q span', () => {
+    const eng = new DrumsWorkletEngine();
+    const lut = (eng as unknown as { busRangeLookup(id: string): { min: number; max: number } }).busRangeLookup;
+    const cut = lut('filter.cutoff');
+    expect(cut.max - cut.min).toBeCloseTo(1200 * Math.log2(1000), 0);
+    const res = lut('filter.resonance');
+    expect(res.min).toBeCloseTo(0.7, 5);
+    expect(res.max).toBe(18);
+  });
+});
