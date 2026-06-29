@@ -12,10 +12,7 @@ import type { ModLite } from './modulation-runtime';
 import { ModEnvHost } from './mod-env-host';
 import { registerRenderer } from './renderer-registry';
 import { synthTrim } from './gain-staging';
-
-const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
-
-const midiToFreq = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
+import { midiToFreq, clamp01 } from './dsp-util';
 
 // velGain mirrors the logic from src/core/velocity-gain.ts:
 // velToGain(v) = 0.3 + 1.1 * v (accent punch applied outside).

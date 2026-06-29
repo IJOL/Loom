@@ -10,6 +10,7 @@ import type { ModLite } from './modulation-runtime';
 import { ModEnvHost } from './mod-env-host';
 import { registerRenderer } from './renderer-registry';
 import { synthTrim } from './gain-staging';
+import { midiToFreq } from './dsp-util';
 
 // ── Karplus-Strong string renderer (offline, per note) ────────────────────
 // Verbatim copy of the pure-JS implementation from src/engines/karplus.ts.
@@ -94,8 +95,6 @@ export function renderKarplusString(opts: {
   if (pk > 1e-9) { const k = 1.0 / pk; for (let n = 0; n < N; n++) out[n] *= k; }
   return out;
 }
-
-const midiToFreq = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
 
 export class KarplusRenderer implements VoiceRenderer {
   private buf: Float32Array;

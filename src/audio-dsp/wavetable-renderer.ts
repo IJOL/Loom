@@ -12,9 +12,7 @@ import type { ModLite } from './modulation-runtime';
 import { getWaveTables } from './wavetable-data';
 import { registerRenderer } from './renderer-registry';
 import { synthTrim } from './gain-staging';
-
-const midiToFreq = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
-const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
+import { midiToFreq, clamp01 } from './dsp-util';
 // Detune modulation span: depth 1 (bipolar) sweeps ±50 cents, matching the knob.
 const MOD_DETUNE_CENTS = 50;
 

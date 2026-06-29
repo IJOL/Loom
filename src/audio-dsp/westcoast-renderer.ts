@@ -16,8 +16,7 @@ import type { ModLite } from './modulation-runtime';
 import { ModEnvHost } from './mod-env-host';
 import { registerRenderer } from './renderer-registry';
 import { synthTrim } from './gain-staging';
-
-const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
+import { midiToFreq, clamp01 } from './dsp-util';
 
 type Osc = { update(f: number): number };
 
@@ -33,8 +32,6 @@ const MOD_WAVE_OSC = [
 
 // Sub-divisor lookup: index 0..3 → divisor (0 = off)
 const SUBDIV_VALUES = [0, 2, 3, 4];
-
-const midiToFreq = (m: number): number => 440 * Math.pow(2, (m - 69) / 12);
 
 // Cutoff curve: same as westcoast.ts cutoffHz(norm) = min(18000, 60 * 220^norm)
 function cutoffHz(norm: number): number {

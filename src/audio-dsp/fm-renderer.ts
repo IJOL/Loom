@@ -17,6 +17,7 @@
 
 import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets } from './types';
 import { param } from './types';
+import { midiToFreq, clamp01 } from './dsp-util';
 import { Adsr } from './adsr';
 import type { ModLite } from './modulation-runtime';
 import { ModEnvHost } from './mod-env-host';
@@ -37,8 +38,6 @@ const CARRIERS: number[][] = [
   [0, 1, 2, 3],
 ];
 
-const midiToFreq = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
-const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 const FM_DEPTH = 4;
 const FB_DEPTH = 2;
 

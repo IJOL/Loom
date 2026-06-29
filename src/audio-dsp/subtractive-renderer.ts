@@ -1,6 +1,7 @@
 // src/audio-dsp/subtractive-renderer.ts
 import type { NoteSpec, SubParams, ParamBag, VoiceRenderer, VoiceModOffsets } from './types';
 import { param } from './types';
+import { midiToFreq, clamp01 } from './dsp-util';
 import { SawOsc, SquareOsc, TriOsc, SineOsc, WhiteNoise } from './osc';
 import { Svf } from './filter';
 import { Adsr } from './adsr';
@@ -38,9 +39,7 @@ function makeOsc(wave: number, sr: number): Osc {
     default: return new SawOsc(sr);
   }
 }
-const midiToFreq = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
 const detuneMul = (cents: number) => Math.pow(2, cents / 1200);
-const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 // Native-unit scale for modulation offsets whose param is NOT a 0..1 knob.
 // Depth 1 on a bipolar LFO ⇒ full knob sweep: master.tune ±12 st, osc detune
 // ±50 cents (matching the legacy engine's modulation ranges).
