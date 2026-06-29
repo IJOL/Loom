@@ -685,19 +685,6 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ── Deps objects for extracted UI modules ─────────────────────────────────
-function activeEnginePrefix(): string | null {
-  const laneId = sessionHost.activeEditLane;
-  if (!laneId) return null;
-  const lane = sessionHost.state.lanes.find((l) => l.id === laneId);
-  if (!lane) return null;
-  // Param IDs are prefixed by engine/lane: 'tb303.cutoff', 'main.cutoff',
-  // 'poly1.cutoff'... 'fx.reverb' and 'mix.bass' are master-level and never
-  // filtered out — but we restrict to the engine's prefix where it's clear.
-  if (lane.engineId === 'tb303') return 'tb303';
-  if (lane.engineId === 'drums-machine') return null;  // Drums has no per-param automation yet — show all
-  // Poly engines: param prefix is the lane id itself ('main', 'poly1', etc.)
-  return laneId;
-}
 
 // Engine selector UI (must come after populateAutoParamSelectWrapper is set)
 const engineSelectorDeps: EngineSelectorUIDeps = {
