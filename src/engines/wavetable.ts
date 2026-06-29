@@ -3,14 +3,14 @@
 // Phase 4 cutover: the legacy WavetableEngine + WavetableVoice (Web Audio
 // PeriodicWave morph + filter) were deleted. Wavetable lanes now synthesise
 // through the AudioWorklet (WorkletLaneEngine + audio-dsp/wavetable-renderer)
-// live and the pure kernel offline. The wave tables live in wavetable-tables.ts
-// (data) / audio-dsp/wavetable-data.ts (kernel). This file is DATA-ONLY: the
-// param spec, default modulators, and a registered descriptor.
+// live and the pure kernel offline. The wave specs + synthesised tables both
+// live in audio-dsp/wavetable-data.ts (single source). This file is DATA-ONLY:
+// the param spec, default modulators, and a registered descriptor.
 
 import type { EngineParamSpec } from './engine-params';
 import { registerEngine, registerEngineFactory } from './registry';
 import { createDescriptorEngine } from './descriptor-engine';
-import { WAVETABLES } from './wavetable-tables';
+import { WAVETABLES } from '../audio-dsp/wavetable-data';
 import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
 import type { ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
