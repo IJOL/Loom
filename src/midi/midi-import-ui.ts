@@ -44,6 +44,67 @@ export interface MidiImportUiDeps {
   /** Called after a successful import so the caller can e.g. copy to the
    *  arrangement and switch to Performance view. */
   onImported?: () => void;
+  /** Fully reset the previous session before a Replace import seeds the fresh
+   *  lanes/scene — disposes old lane resources (engines + their modulators/LFOs),
+   *  closes open synth/clip editors, stops the transport, and wipes the
+   *  arrangement. Mirrors the "New session" button. Without it, Replace left the
+   *  old engines + modular LFOs alive and the old editor open. */
+  resetSession?: () => void;
+  /** Allocate audio resources (strip + engine, applying each lane's preset) for
+   *  the freshly-seeded lanes. MUST run BEFORE onSessionChanged: renderWithMixer
+   *  asks the allocator for every lane's strip and throws on a missing one, so a
+   *  lane added to the session without a resource crashes the render. (The old
+   *  resources used to mask this; Replace's full reset disposes them.) */
+  prepareLanes?: () => void;
+}
+
+/** Build the imported lanes/scene from a chosen action and seed them into the
+ *  session. Extracted from the Load button handler so the Add/Replace branching
+ *  (and the Replace full-reset) is unit-testable without the DOM. */
+export function applyMidiImport(
+  action: 'add' | 'replace',
+  parsed: ParsedMidi,
+  indices: number[],
+  presetPerTrack: Record<number, GMMatch>,
+  deps: MidiImportUiDeps,
+): { laneCount: number } {
+  const doAdd = action === 'add';
+  // Add places the import on a NEW row (= current scene count) so its clips align
+  // with their scene's launch button; Replace builds a fresh session at row 0.
+  const sceneRow = doAdd ? deps.session.scenes.length : 0;
+  const result = midiToSession(parsed, {
+    selectedTrackIndices: indices,
+    presetPerTrack,
+    sceneRow,
+  });
+
+  if (doAdd) {
+    deps.session.lanes.push(...result.newLanes);
+    deps.session.scenes.push(result.scene);
+  } else {
+    // Replace: FULLY reset the previous session first (dispose old lane resources
+    // + their modulators/LFOs, close open editors, stop transport, wipe the
+    // arrangement) — exactly what "New session" does — THEN seed the fresh lanes
+    // + scene. Without the reset the old engines + modular LFOs lingered in the
+    // LaneResourceMap and the old synth/clip editor stayed open.
+    deps.resetSession?.();
+    deps.session.lanes = [...result.newLanes];
+    deps.session.scenes = [result.scene];
+  }
+
+  // Allocate resources for the new lanes BEFORE rendering — renderWithMixer (in
+  // onSessionChanged) asks the allocator for each lane's strip and throws on a
+  // missing one. launchScene also allocates, but it runs after the render.
+  deps.prepareLanes?.();
+
+  if (result.bpm) deps.setBpm(result.bpm);
+  // Activate (or clear) the live tempo-map readout for this import.
+  deps.setTempoMap?.(result.tempoMap, result.songTicks ?? 0);
+
+  deps.onSessionChanged();
+  deps.launchScene(result.scene.id);
+  deps.onImported?.();
+  return { laneCount: result.newLanes.length };
 }
 
 export function wireMidiImportUI(deps: MidiImportUiDeps): void {
@@ -191,31 +252,8 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
       { title: 'Import MIDI' },
     );
     if (action === null) return; // Cancelled — abort the import cleanly.
-    const doAdd = action === 'add';
 
-    const sceneRow = doAdd ? deps.session.scenes.length : 0;
-    const result = midiToSession(parsed, {
-      selectedTrackIndices: indices,
-      presetPerTrack,
-      sceneRow,
-    });
-
-    if (doAdd) {
-      deps.session.lanes.push(...result.newLanes);
-      deps.session.scenes.push(result.scene);
-    } else {
-      // Replace: a fresh session built from JUST the imported lanes + scene.
-      deps.session.lanes = [...result.newLanes];
-      deps.session.scenes = [result.scene];
-    }
-
-    if (result.bpm) deps.setBpm(result.bpm);
-    // Activate (or clear) the live tempo-map readout for this import.
-    deps.setTempoMap?.(result.tempoMap, result.songTicks ?? 0);
-
-    deps.onSessionChanged();
-    deps.launchScene(result.scene.id);
-    deps.onImported?.();
-    deps.flashButton(loadBtn, `Loaded ${result.newLanes.length} lane(s)`);
+    const { laneCount } = applyMidiImport(action === 'add' ? 'add' : 'replace', parsed, indices, presetPerTrack, deps);
+    deps.flashButton(loadBtn, `Loaded ${laneCount} lane(s)`);
   });
 }

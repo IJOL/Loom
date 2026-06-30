@@ -13,6 +13,7 @@ import { LiveVoiceRegistry } from './app/live-voice-registry';
 import { createKnobMounter } from './app/knob-mounting';
 import { createLaneHost } from './app/lane-host-wiring';
 import { createPerformanceFeature } from './app/performance-feature';
+import { prepImportedLanes } from './app/import-lane-prep';
 import {
   wireEngineSelector, wireEngineSelector303, rebuildEngineParamUI,
   type EngineSelectorUIDeps,
@@ -942,44 +943,36 @@ refreshRecButton();
 wirePolyControls(polySynthPresetsDeps);
 
 // ── MIDI import wiring (see src/midi/midi-import-ui.ts) ───────────────────
+// Allocate audio resources for any freshly-imported lanes, applying each lane's
+// preset once, when its resource is first allocated. The host's normal path runs
+// this in applyLoadedSessionState; importer-added lanes bypass that, so do it
+// here. MUST run BEFORE renderWithMixer (the mixer asks the allocator for every
+// lane's strip and throws on a missing one). Idempotent: already-allocated lanes
+// are skipped, so launching a scene never re-applies a preset.
+function prepareImportedLaneResources(): void {
+  prepImportedLanes(sessionHost.state.lanes, {
+    hasResource: (id) => !!laneResources.get(id),
+    ensureLaneResource: (id, engineId) => ensureLaneResource(id, engineId),
+    getEngineInstance: (id) => getLaneEngineInstance(id),
+    applyDrumPreset: (id, name) => { void sessionHost.applyDrumPreset(id, name); },
+    reloadDrumkit: (id, kitId, inst) =>
+      { void reloadDrumkit(sessionHost, id, kitId, inst as Parameters<typeof reloadDrumkit>[3]); },
+    // Route the synth/melodic preset through the host path so the preset dropdown
+    // reflects the imported preset (the previous direct applyPresetToEngine set the
+    // sound but left every imported synth lane showing "(custom — no preset)").
+    applyPresetForLane: (id, name) => { sessionHost.deps.applyPresetForLane?.(id, name); },
+  });
+}
+
 // Launches a scene by id from outside the session host. Resumes the audio
-// context, ensures resources for any freshly-imported lanes (applying each
-// new lane's preset once, when its resource is first allocated), runs the
-// launch runtime, and starts the transport if stopped.
+// context, ensures resources for any freshly-imported lanes, runs the launch
+// runtime, and starts the transport if stopped.
 function launchSceneById(sceneId: string): void {
   const idx = sessionHost.state.scenes.findIndex((s) => s.id === sceneId);
   if (idx < 0) return;
   const scene = sessionHost.state.scenes[idx];
   void ctx.resume();
-  // Ensure resources exist for any freshly-imported lanes BEFORE launch — the
-  // host's normal path runs this in applyLoadedSessionState; importer-added
-  // lanes bypass that, so do it here. Apply each lane's preset once, when its
-  // resource is first allocated, so imported tracks play their matched GM
-  // preset. Launching a scene never re-applies a preset to an already-allocated
-  // lane — the sound is a per-channel property.
-  for (const lane of sessionHost.state.lanes) {
-    const isNew = !laneResources.get(lane.id);
-    ensureLaneResource(lane.id, lane.engineId);
-    if (!isNew) continue;
-    const kitId = lane.engineState?.sampler?.drumkitId;
-    if (kitId && lane.engineId === 'drums-machine') {
-      // Imported percussion lane (sample-kit Drums): applyDrumPreset sets kitMode
-      // 'sample' + async fetch/decode/setKeymap + mirror, so the kit actually plays
-      // and the grid shows its pads. (applyPresetToEngine is sync and would NOT
-      // load a sample kit.)
-      const name = (lane.enginePresetName ?? '').replace(/^engine:/, '') || 'GM Percussion';
-      void sessionHost.applyDrumPreset(lane.id, name);
-    } else if (kitId) {
-      // Sampler drumkit lane: reloadDrumkit fetches+decodes + pushes to the worklet.
-      const inst = getLaneEngineInstance(lane.id);
-      if (inst && 'setKeymap' in inst) {
-        void reloadDrumkit(sessionHost, lane.id, kitId, inst as Parameters<typeof reloadDrumkit>[3]);
-      }
-    } else if (lane.enginePresetName) {
-      const inst = getLaneEngineInstance(lane.id);
-      if (inst) applyPresetToEngine(inst, lane.enginePresetName);
-    }
-  }
+  prepareImportedLaneResources();
   launchSceneRuntime(sessionHost.laneStates, sessionHost.state, scene, idx, ctx.currentTime, seq.bpm);
   if (!seq.isPlaying()) { resetAutomationPosition(); seq.start(); setPlaying(playBtn, true); }
   sessionHost.renderWithMixer();
@@ -996,6 +989,18 @@ wireMidiImportUI({
   flashButton,
   presetsReady: presetsLoaded,
   onImported: () => performanceFeature.copyFromSession(),
+  // Replace import = a clean slate. Same full wipe as the "New session" button:
+  // stop the transport + silence voices, dispose every old lane resource (engines
+  // AND their modulators/LFOs) + close open editors via applyLoadedSessionState,
+  // and reset the Performance arrangement. (No markClean — the import IS a change.)
+  resetSession: () => {
+    stopTransport();
+    sessionHost.applyLoadedSessionState(emptySessionState());
+    performanceFeature.resetArrangement();
+  },
+  // Allocate strip+engine for the freshly-seeded lanes BEFORE the import renders
+  // the mixer (renderWithMixer throws on a lane with no resource).
+  prepareLanes: () => prepareImportedLaneResources(),
 });
 
 const automationTickDeps: AutomationTickDeps = {
