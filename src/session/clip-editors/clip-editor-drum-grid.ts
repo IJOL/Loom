@@ -23,36 +23,18 @@ import { mountClipLoopOverlay } from '../../core/clip-loop-overlay';
 import { clampZoom, scrubToZoom, zoomAroundAnchor, maxZoomX } from '../../core/pianoroll-zoom';
 import { isFollowEnabled, followScrollTarget } from '../../core/clip-follow';
 import { isDrumFullKit } from '../../core/clip-drum-fullkit';
+import { LANE_LABELS, LABEL_W, RULER_H, ROW_H, VEL_LANE_H, DRUM_KEY_LEGEND, type DrumGridModel, type DrumEditorHandle } from './drum-grid-types';
+export { LANE_LABELS, LABEL_W, DRUM_KEY_LEGEND, type DrumGridModel, type DrumEditorHandle } from './drum-grid-types';
 
 // In-memory horizontal zoom/scroll per clip (mirrors the piano-roll's
 // viewStateByClip; resets on reload; no saved-state change).
 const hViewByClip = new Map<string, { zoomX: number; scrollLeft: number }>();
 
-export const LANE_LABELS: Record<DrumVoice, string> = {
-  kick: 'KICK', snare: 'SNARE', closedHat: 'CH', openHat: 'OH',
-  clap: 'CLAP', cowbell: 'COWBL', tom: 'TOM', ride: 'RIDE',
-};
-
-/** The rows the editor draws: how many (rows.count), how notes map to them, and a
- *  label per row. Defaults to the fixed 8 GM voices when the caller omits it. */
-export interface DrumGridModel { rows: DrumRows; labels: string[] }
 const GM_MODEL: DrumGridModel = { rows: gmDrumRows(), labels: DRUM_LANES.map((v) => LANE_LABELS[v]) };
-
-export const LABEL_W = 54;
-const RULER_H = 20;
-const ROW_H = 22;
-const VEL_LANE_H = 46;                       // velocity lane band
 
 type Tool = 'draw' | 'select';
 let currentTool: Tool = 'draw';          // persists across clips (session)
 let clipboard: DrumClipNote[] | null = null;
-
-// Drum-grid keyboard legend (the real key set handled in the keydown below — no
-// note-typing here). Kept next to the handler so the on-screen help cannot drift.
-export const DRUM_KEY_LEGEND =
-  'Keyboard:  1 / 2 = pencil / select · ←/→ = move · ↑/↓ = change voice\n' +
-  '           Ctrl+A = select all · Ctrl+C / Ctrl+X / Ctrl+V = copy / cut / paste\n' +
-  '           Esc = deselect · ⌫ = delete';
 
 export interface DrumEditorDeps {
   auditionNote?: (midi: number) => void;
@@ -74,7 +56,6 @@ export interface DrumEditorDeps {
     onClipLoopEdited?: () => void;
   };
 }
-export interface DrumEditorHandle { redraw: () => void; }
 
 export function renderDrumGridEditor(
   host: HTMLElement, clip: SessionClip,
