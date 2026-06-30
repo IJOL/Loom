@@ -5,6 +5,7 @@
       "name": "GTR Nylon Acoustic",
       "gm": [24],
       "params": {
+        "output.trim": 0.88,
         "string.damping": 0.55,
         "string.brightness": 0.45,
         "excite.time": 0.012,
@@ -57,6 +58,7 @@
       "name": "GTR Jazz Hollowbody",
       "gm": [26],
       "params": {
+        "output.trim": 0.92,
         "string.damping": 0.42,
         "string.brightness": 0.55,
         "excite.time": 0.01,
@@ -83,6 +85,7 @@
       "name": "GTR Muted Palm",
       "gm": [28],
       "params": {
+        "output.trim": 1.19,
         "string.damping": 0.78,
         "string.brightness": 0.4,
         "excite.time": 0.005,
@@ -135,6 +138,7 @@
       "name": "BASS Acoustic Upright",
       "gm": [32],
       "params": {
+        "output.trim": 0.71,
         "string.damping": 0.58,
         "string.brightness": 0.32,
         "excite.time": 0.02,
@@ -161,6 +165,7 @@
       "name": "BASS Slap Pluck",
       "gm": [33, 36],
       "params": {
+        "output.trim": 0.92,
         "string.damping": 0.35,
         "string.brightness": 0.78,
         "excite.time": 0.005,

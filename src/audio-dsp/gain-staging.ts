@@ -5,14 +5,15 @@
 // the master soft-clip/limiter):
 //
 //   raw voice/sample
-//     × preset.trim          ← per-PRESET balance   (lives in each preset JSON; default 1)
+//     × output.trim          ← per-PRESET balance   (preset params['output.trim']; default 1)
 //     × ENGINE_TRIM[engine]  ← per-ENGINE balance    (between synth engines)
 //     × CATEGORY_GAIN[cat]   ← per-CATEGORY balance  (synth vs drum vs sampler vs audio)
 //     × lane fader (user)
 //     × master
 //
-// To rebalance: change a number HERE (engine/category) or a preset's "trim" in
-// its JSON. Nothing else should hardcode an output trim.
+// To rebalance: change a number HERE (engine/category) or set `output.trim` in a
+// preset's `params` — read at voice spawn by each renderer (e.g. karplus/subtractive
+// `* param(p,'output.trim',1)`). Nothing else should hardcode an output trim.
 
 /** Per-engine output trim — balance BETWEEN synth engines. These are the historical
  *  per-voice output factors that used to live hardcoded in each renderer. They bake

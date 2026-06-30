@@ -763,6 +763,7 @@
         45
       ],
       "params": {
+        "output.trim": 1.22,
         "master.tune": 0,
         "osc1.wave": 3,
         "osc1.level": 0.7,

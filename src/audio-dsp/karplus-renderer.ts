@@ -106,6 +106,9 @@ export class KarplusRenderer implements VoiceRenderer {
   private level: number;
   private ampEnvOn: boolean;
   private vel: number;
+  /** Per-preset output trim (gain-staging "preset.trim" — params['output.trim'],
+   *  default 1). Read at spawn so live tweaks apply to the next note. */
+  private trim: number;
   private modEnv = new ModEnvHost();
   done = false;
 
@@ -117,6 +120,7 @@ export class KarplusRenderer implements VoiceRenderer {
     this.rel = Math.max(0.05, param(p, 'amp.release', 0.5));
     this.level = param(p, 'amp.level', 0.8);
     this.ampEnvOn = param(p, 'amp.builtinEnv', 1) >= 0.5;
+    this.trim = param(p, 'output.trim', 1);
     this.vel = note.velocity * (note.accent ? 1.3 : 1);
     const seconds = Math.min(8, Math.max(0.4, note.durationSec + this.rel + 0.3));
     this.buf = renderKarplusString({
@@ -159,7 +163,7 @@ export class KarplusRenderer implements VoiceRenderer {
       }
     }
     const level = mo?.['amp.level'] ? Math.max(0, this.level + mo['amp.level']) : this.level;
-    let out = this.buf[idx] * env * level * this.vel * synthTrim('karplus');
+    let out = this.buf[idx] * env * level * this.vel * synthTrim('karplus') * this.trim;
     if (mo?.['amp.gain']) out *= Math.max(0, Math.min(2, 1 + mo['amp.gain']));
     return out;
   }

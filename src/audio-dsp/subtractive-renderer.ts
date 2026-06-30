@@ -94,7 +94,8 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     this.filter = new Svf(sampleRate);
     // 0.4 * velGain(...) with NoteSpec.velocity already normalised 0..1.
     // velToGain(v01) = 0.3 + 1.1*v01 ; accent amp punch = 1.1 (ACCENT_PUNCH).
-    this.velPeak = synthTrim('subtractive') * (0.3 + 1.1 * note.velocity) * (note.accent ? 1.1 : 1.0);
+    // × output.trim: per-preset gain-staging lever (params['output.trim'], default 1).
+    this.velPeak = synthTrim('subtractive') * param(params, 'output.trim', 1) * (0.3 + 1.1 * note.velocity) * (note.accent ? 1.1 : 1.0);
     this.baseCutoffHz = Math.min(60 * Math.pow(220, p.filterCutoff), 18000);
     this.keySemiDelta = note.midi - 60;
     this.keyTrackHz = this.keySemiDelta * this.baseCutoffHz * (Math.pow(2, 1 / 12) - 1) * p.filterKeyTrack;
