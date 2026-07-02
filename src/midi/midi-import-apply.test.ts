@@ -26,7 +26,7 @@ function makeParsed(): ParsedMidi {
   };
 }
 
-function makeDeps(): { deps: MidiImportUiDeps; resetSession: ReturnType<typeof vi.fn>; launchScene: ReturnType<typeof vi.fn> } {
+function makeDeps(): { deps: MidiImportUiDeps; resetSession: ReturnType<typeof vi.fn>; launchScene: ReturnType<typeof vi.fn>; prepareLanes: ReturnType<typeof vi.fn>; order: string[] } {
   const session: SessionState = {
     lanes: [{ id: 'old-lane', engineId: 'tb303', clips: [] }],
     scenes: [{ id: 'old-scene', name: 'Old', clipPerLane: {} }],
