@@ -37,13 +37,20 @@ describe('KarplusRenderer', () => {
   });
 
   it('a brighter string has more high-frequency energy than a dark one', () => {
+    // The excitation is a random noise burst, so a single render's energy varies
+    // ~15% — average several so the bright-vs-dark comparison reflects brightness,
+    // not the noise seed (this assertion used to flake by a hair).
     const e = (b: number) => {
-      const v = new KarplusRenderer(note(), { ...P, 'string.brightness': b }, SR);
-      const buf: number[] = [];
-      for (let i = 0; i < SR * 0.05; i++) buf.push(v.renderSample(i / SR));
-      return rms(buf);
+      let acc = 0;
+      for (let k = 0; k < 8; k++) {
+        const v = new KarplusRenderer(note(), { ...P, 'string.brightness': b }, SR);
+        const buf: number[] = [];
+        for (let i = 0; i < SR * 0.05; i++) buf.push(v.renderSample(i / SR));
+        acc += rms(buf);
+      }
+      return acc / 8;
     };
-    // Bright string must genuinely exceed dark string (strict comparison)
+    // Bright string must genuinely exceed dark string (averaged over the noise).
     expect(e(0.95)).toBeGreaterThan(e(0.1));
   });
 
