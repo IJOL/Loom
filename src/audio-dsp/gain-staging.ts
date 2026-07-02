@@ -36,14 +36,19 @@ export const ENGINE_TRIM: Record<string, number> = {
 /** Per-category gain — the global balance BETWEEN families. `drum` carries what
  *  used to be DrumsWorkletEngine.SAMPLE_GAIN.
  *
- *  Tuned 2026-06-25 from a real hand-mix (Daft Punk "Around the World"): the user
- *  had to drop melodic faders to ~0.5 and push drum/perc to the top (~1.5 → ×2.0
- *  category ≈ 3.0) for a sensible balance. So sample drum kits read ~3 dB- ish
- *  louder, synths sit lower — half-and-half (synth ÷2, drum ×1.5). Sampler/audio
- *  stay at 1.0 (not measured yet — tune by ear here). The master soft-clip absorbs
- *  the hotter drum transients. */
+ *  drum ≈ 3.0 from a real hand-mix (Daft Punk "Around the World", 2026-06-25): the
+ *  user pushed drum/perc to the top for a sensible balance, so sample drum kits
+ *  read louder. Sampler/audio stay at 1.0 (tune by ear here). The master soft-clip
+ *  absorbs the hotter drum transients.
+ *
+ *  synth raised 0.5 → 1.2 (2026-06-30): the old 0.5 (halved for that drum-heavy
+ *  mix) left melodic-led songs far too quiet — a real MIDI import (Untitled.mid,
+ *  mostly karplus/guitars) measured its synth lanes at ~-26 dBFS (VU barely off the
+ *  floor) while the master had ~13 dB of headroom. 1.2 lifts every synth engine
+ *  ~+7.6 dB; inter-engine balance (ENGINE_TRIM) and per-preset balance (output.trim)
+ *  are unchanged since they scale together. */
 export const CATEGORY_GAIN = {
-  synth: 0.5,
+  synth: 1.2,
   drum: 3.0,
   sampler: 1.0,
   audio: 1.0,

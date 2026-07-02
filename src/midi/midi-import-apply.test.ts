@@ -36,19 +36,25 @@ function makeDeps(): { deps: MidiImportUiDeps; resetSession: ReturnType<typeof v
   // which clears session.lanes/scenes; mirror that side effect here.
   const resetSession = vi.fn(() => { session.lanes = []; session.scenes = []; });
   const launchScene = vi.fn();
+  // Record the order of the resource/render/launch steps so we can assert lane
+  // resources are allocated (prepareLanes) BEFORE the mixer renders.
+  const order: string[] = [];
+  const prepareLanes = vi.fn(() => { order.push('prepareLanes'); });
+  const onSessionChanged = vi.fn(() => { order.push('onSessionChanged'); });
   const deps = {
     session,
     setBpm: vi.fn(),
     setTempoMap: vi.fn(),
     audioContext: {} as AudioContext,
     auditionOutput: {} as AudioNode,
-    onSessionChanged: vi.fn(),
-    launchScene,
+    onSessionChanged,
+    launchScene: vi.fn(() => { order.push('launchScene'); launchScene(); }),
     flashButton: vi.fn(),
     onImported: vi.fn(),
     resetSession,
+    prepareLanes,
   } as unknown as MidiImportUiDeps;
-  return { deps, resetSession, launchScene };
+  return { deps, resetSession, launchScene, prepareLanes, order };
 }
 
 const presetPerTrack: Record<number, GMMatch> = { 0: { engineId: 'subtractive', presetName: 'Init' } };
@@ -76,4 +82,18 @@ describe('applyMidiImport', () => {
     expect(deps.session.lanes.length).toBe(2); // old + imported
     expect(deps.session.scenes.length).toBe(2); // old + imported
   });
+
+  // Regression: renderWithMixer (onSessionChanged) asks the allocator for every
+  // lane's strip and THROWS on a missing one. The new lanes only get resources in
+  // prepareLanes, so it must run BEFORE onSessionChanged or the import crashes at
+  // stripFor (Replace's full reset disposes the old resources that used to mask it).
+  for (const action of ['replace', 'add'] as const) {
+    it(`${action}: allocates lane resources (prepareLanes) before rendering (onSessionChanged)`, () => {
+      const { deps, prepareLanes, order } = makeDeps();
+      applyMidiImport(action, makeParsed(), [0], presetPerTrack, deps);
+      expect(prepareLanes).toHaveBeenCalledTimes(1);
+      expect(order.indexOf('prepareLanes')).toBeGreaterThanOrEqual(0);
+      expect(order.indexOf('prepareLanes')).toBeLessThan(order.indexOf('onSessionChanged'));
+    });
+  }
 });

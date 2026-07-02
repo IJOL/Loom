@@ -56,8 +56,12 @@ describe('output.trim scales engine output (per-preset gain-staging lever)', () 
     expect(ratio).toBeLessThan(1.001);
   });
 
-  it('karplus: trim=2 clearly raises output vs trim=1 (noise-tolerant)', () => {
-    const ratio = renderKarplus(2) / renderKarplus(1);
+  it('karplus: trim=2 ~doubles output vs trim=1 (averaged over the noise burst)', () => {
+    // Karplus' excitation is a random noise burst → each render differs ~15%.
+    // Average many renders per side so the ratio reflects the trim, not noise;
+    // wide bounds keep it from ever flaking on the residual variance.
+    const avg = (trim: number) => { let s = 0; for (let i = 0; i < 10; i++) s += renderKarplus(trim); return s / 10; };
+    const ratio = avg(2) / avg(1);
     expect(ratio).toBeGreaterThan(1.7);
     expect(ratio).toBeLessThan(2.3);
   });
