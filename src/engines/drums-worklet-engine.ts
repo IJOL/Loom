@@ -515,13 +515,17 @@ export class DrumsWorkletEngine implements SynthEngine {
 
     if (this.kitMode === 'sample') {
       const inner = this.sampler.createVoice(ctx, routingTarget);
-      if (!this.engineModVoices) this.engineModVoices = this.modHost.spawnVoice(ctx, () => this.bpm);
+      // The embedded sampler already ran bindEngineModulators for this lane,
+      // wiring the modulators the sample-mode UI actually edits (the sampler's
+      // own modHost) to its channel filter. The drums engine must NOT run a
+      // second bindEngineModulators for the same lane: in sample mode
+      // this.channelFilter is null (no ensureWired), so its shared-param map has
+      // no filter destination, and a second bind would only disposeAll() the
+      // sampler's fresh LFO→cutoff bridge and rebuild an empty one — which
+      // silently killed cutoff (and any) modulation on sample drumkits. Just
+      // track the lane so dispose() tears the sampler's bindings down.
       const laneId = getCurrentLaneForVoice();
-      let binder: ConnectionBinder | null = null;
-      if (laneId) {
-        binder = bindEngineModulators({ laneId, engine: this, voiceMods: this.engineModVoices, ctx, rangeLookup: this.busRangeLookup });
-        this.currentLaneId = laneId;
-      }
+      if (laneId) this.currentLaneId = laneId;
       return {
         trigger: (m, t, o) => inner.trigger(m, t, o),
         release: (t) => inner.release(t),
@@ -530,7 +534,6 @@ export class DrumsWorkletEngine implements SynthEngine {
         getAudioParamRange: (id) => inner.getAudioParamRange?.(id),
         dispose: () => {
           inner.dispose();
-          if (binder) binder.disposeAll();
           if (laneId) disposeLaneModulations(laneId);
         },
       };
