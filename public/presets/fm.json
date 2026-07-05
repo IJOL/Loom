@@ -257,7 +257,7 @@
         "op1.ratio": 1,    "op1.detune": 5,   "op1.level": 0.55, "op1.attack": 0.80, "op1.decay": 1.50, "op1.sustain": 0.70, "op1.release": 2.00,
         "op2.ratio": 1,    "op2.detune": -6,  "op2.level": 0.50, "op2.attack": 1.00, "op2.decay": 1.80, "op2.sustain": 0.65, "op2.release": 2.50,
         "op3.ratio": 2,    "op3.detune": 8,   "op3.level": 0.30, "op3.attack": 0.60, "op3.decay": 2.00, "op3.sustain": 0.60, "op3.release": 2.20,
-        "op4.ratio": 1,    "op4.detune": 14,  "op4.level": 0.35, "op4.attack": 1.20, "op4.decay": 2.50, "op4.sustain": 0.75, "op4.release": 3.00,
+        "op4.ratio": 0.5,  "op4.detune": -7,  "op4.level": 0.35, "op4.attack": 1.20, "op4.decay": 2.50, "op4.sustain": 0.75, "op4.release": 3.00,
         "amp.mix": 0.60, "output.trim": 1
       }
     },
@@ -319,7 +319,7 @@
         "op1.ratio": 1,    "op1.detune": 6,   "op1.level": 0.55, "op1.attack": 1.20, "op1.decay": 2.00, "op1.sustain": 0.80, "op1.release": 3.00,
         "op2.ratio": 3,    "op2.detune": -6,  "op2.level": 0.35, "op2.attack": 1.40, "op2.decay": 2.20, "op2.sustain": 0.65, "op2.release": 3.20,
         "op3.ratio": 5,    "op3.detune": 0,   "op3.level": 0.25, "op3.attack": 1.00, "op3.decay": 1.80, "op3.sustain": 0.50, "op3.release": 2.60,
-        "op4.ratio": 1,    "op4.detune": 14,  "op4.level": 0.35, "op4.attack": 1.60, "op4.decay": 2.50, "op4.sustain": 0.70, "op4.release": 3.50,
+        "op4.ratio": 0.5,  "op4.detune": 0,   "op4.level": 0.35, "op4.attack": 1.60, "op4.decay": 2.50, "op4.sustain": 0.70, "op4.release": 3.50,
         "amp.mix": 0.60, "output.trim": 0.90
       }
     },
@@ -462,8 +462,8 @@
         "op3.decay": 0.9,
         "op3.sustain": 0.7,
         "op3.release": 2.3,
-        "op4.ratio": 1,
-        "op4.detune": -14,
+        "op4.ratio": 0.5,
+        "op4.detune": 0,
         "op4.level": 0.3,
         "op4.attack": 0.65,
         "op4.decay": 0.9,

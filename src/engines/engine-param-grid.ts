@@ -1,7 +1,8 @@
 // src/engines/engine-param-grid.ts
 // Builds an engine's param controls into a container, grouped into one labelled
 // row per distinct EngineParamSpec.group (first-appearance order). Ungrouped
-// params render first in a plain knob-row. Continuous → knob; discrete → select.
+// params render first in a plain knob-row. Continuous → knob; discrete → knob
+// (formatted label) unless the spec opts into selectStyle: 'dropdown' → select.
 // Extracted from worklet-lane-engine.buildParamUI so the grouped layout is
 // unit-testable without a worklet and the engine file stays lean.
 
@@ -27,7 +28,11 @@ function buildControl(engine: GridEngine, ctx: EngineUIContext, spec: EnginePara
   const registryId = `${ctx.laneId}.${spec.id}`;
   const discrete = spec.kind === 'discrete' && !!spec.options && spec.options.length > 0;
 
-  if (discrete) {
+  // Only a discrete param explicitly opting into 'dropdown' renders as a
+  // <select> (e.g. FM's Algorithm). Every other discrete param renders as a
+  // knob, matching main's worklet grid — this keeps wavetable/westcoast/
+  // karplus/tb303's osc/wave/env selectors visually unchanged.
+  if (discrete && spec.selectStyle === 'dropdown') {
     const options = spec.options!;
     const idx = Math.max(0, Math.min(options.length - 1, Math.round(engine.getBaseValue(spec.id))));
     const { el, handle } = createSelectControl({
@@ -35,11 +40,11 @@ function buildControl(engine: GridEngine, ctx: EngineUIContext, spec: EnginePara
       label: spec.label,
       options,
       initialValue: options[idx]?.value ?? options[0].value,
-      forceSelect: spec.selectStyle === 'dropdown',
+      forceSelect: true,
       showLabel: spec.showLabel,
       onChange: (v) => {
         const i = options.findIndex((o) => o.value === v);
-        engine.setBaseValue(spec.id, i);
+        engine.setBaseValue(spec.id, Math.max(0, i));
       },
     });
     ctx.registerKnob(handle);
@@ -51,11 +56,13 @@ function buildControl(engine: GridEngine, ctx: EngineUIContext, spec: EnginePara
     label: spec.label,
     min: spec.min,
     max: spec.max,
-    step: (spec.max - spec.min) / 200,
+    step: discrete ? 1 : (spec.max - spec.min) / 200,
     value: engine.getBaseValue(spec.id),
     defaultValue: spec.default,
     color: spec.color,
-    format: spec.unit ? (v) => `${v.toFixed(2)}${spec.unit}` : undefined,
+    format: discrete
+      ? (v) => spec.options![Math.max(0, Math.min(spec.options!.length - 1, Math.round(v)))].label
+      : (spec.unit ? (v) => `${v.toFixed(2)}${spec.unit}` : undefined),
     onChange: (v) => { engine.setBaseValue(spec.id, v); },
     ...(ctx.historyDeps ? attachKnobUndo(ctx.historyDeps) : {}),
   });

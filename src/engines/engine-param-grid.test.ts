@@ -52,6 +52,17 @@ describe('buildEngineParamGrid', () => {
     expect(parent.querySelector('.knob')).toBeNull();
   });
 
+  it('renders a discrete spec WITHOUT selectStyle: dropdown as a knob, not a <select>', () => {
+    const parent = document.createElement('div');
+    const wave: EngineParamSpec = {
+      id: 'osc.wave', label: 'WAVE', kind: 'discrete', min: 0, max: 2, default: 0,
+      options: [{ value: 'sine', label: 'Sine' }, { value: 'square', label: 'Square' }, { value: 'saw', label: 'Saw' }],
+    };
+    buildEngineParamGrid(stubEngine([wave]), ctx(), parent);
+    expect(parent.querySelector('.knob')).not.toBeNull();
+    expect(parent.querySelector('select')).toBeNull();
+  });
+
   it('skips params matching opts.skip', () => {
     const parent = document.createElement('div');
     buildEngineParamGrid(stubEngine([cont('poly.voices'), cont('feedback')]), ctx(), parent,
