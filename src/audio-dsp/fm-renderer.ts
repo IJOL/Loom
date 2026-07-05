@@ -11,6 +11,11 @@
 // Here, carrier phase advances by (freq + modSample * modFreq * modLevel) per sample
 // so ratios stay musically in tune regardless of carrier frequency.
 //
+// Soft-clip and trim: the summed carrier output is soft-clipped via tanh() to prevent
+// clipping from high-level operator combinations (e.g., additive four-carrier + accent).
+// Per-preset output.trim (default 1) scales the final amplitude before synthesis trim.
+// FM_DEPTH was reviewed down to 3 to reduce harshness and modulation peaks.
+//
 // Modulation: generic per-param LFO + per-voice ADSR (ModEnvHost) reach the operator
 // LEVELS (FM index), the feedback amount and the output mix — the params that shape
 // the FM timbre. The four per-op amp envelopes stay built-in (FM has no single amp env).
@@ -38,8 +43,9 @@ const CARRIERS: number[][] = [
   [0, 1, 2, 3],
 ];
 
-const FM_DEPTH = 4;
+const FM_DEPTH = 3;    // modulation index scale (was 4 — reviewed down; tanh tames peaks)
 const FB_DEPTH = 2;
+const FM_DRIVE = 1.0;  // pre-soft-clip drive into tanh; ear-tunable
 
 class FmSine {
   private phase = 0;
@@ -70,6 +76,7 @@ export class FMRenderer implements VoiceRenderer {
   private feedback: number;
   private mix: number;
   private vel: number;
+  private outputTrim: number;
   private fbState = 0;
   private modEnv = new ModEnvHost();
   done = false;
@@ -83,6 +90,7 @@ export class FMRenderer implements VoiceRenderer {
     this.algoIdx = Math.max(0, Math.min(3, Math.round(param(p, 'algorithm', 0))));
     this.feedback = param(p, 'feedback', 0);
     this.mix = param(p, 'amp.mix', 0.7);
+    this.outputTrim = param(p, 'output.trim', 1);
     this.vel = note.velocity * (note.accent ? 1.3 : 1);
 
     this.oscs = [];
@@ -170,7 +178,8 @@ export class FMRenderer implements VoiceRenderer {
     }
 
     const mix = mo?.['amp.mix'] ? Math.max(0, this.mix + mo['amp.mix']) : this.mix;
-    let s = out * synthTrim('fm') * mix * this.vel;
+    const shaped = Math.tanh(out * FM_DRIVE);   // soft-clip: tame harsh peaks, prevent carrier-sum clipping
+    let s = shaped * this.outputTrim * synthTrim('fm') * mix * this.vel;
     if (mo?.['amp.gain']) s *= Math.max(0, Math.min(2, 1 + mo['amp.gain']));
     return s;
   }

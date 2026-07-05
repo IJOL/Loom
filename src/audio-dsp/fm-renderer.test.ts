@@ -150,6 +150,21 @@ describe('FMRenderer', () => {
     expect(rms(buf)).toBeGreaterThan(0.005);
   });
 
+  it('additive algorithm (3) at full level + accent does not clip (soft-clip)', () => {
+    const bag = base({
+      algorithm: 3, feedback: 0,
+      'op1.level': 1, 'op2.level': 1, 'op3.level': 1, 'op4.level': 1,
+      'op1.sustain': 1, 'op2.sustain': 1, 'op3.sustain': 1, 'op4.sustain': 1,
+      'amp.mix': 1,
+    });
+    const v = new FMRenderer(note({ midi: 60, durationSec: 1, velocity: 1, accent: true }), bag, SR);
+    let pk = 0;
+    for (let i = 0; i < Math.floor(SR * 0.3); i++) pk = Math.max(pk, Math.abs(v.renderSample(i / SR)));
+    // Four in-phase carriers × accent would exceed full scale without the tanh
+    // soft-clip; with it, |output| stays below 0 dBFS.
+    expect(pk).toBeLessThan(1.0);
+  });
+
   it('registers under engine id "fm"', () => {
     // Importing FMRenderer above triggers its registerRenderer side-effect.
     expect(() => createRenderer('fm', note(), base(), SR)).not.toThrow();
