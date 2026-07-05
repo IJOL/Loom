@@ -43,12 +43,12 @@ function opParamSpecs(n: number, defaults: { ratio: number; level: number }): En
 
 // Unified-param schema. Operator ids are 1-indexed (op1..op4), matching the UI.
 const FM_PARAMS: EngineParamSpec[] = [
-  { id: 'algorithm', label: 'Algorithm', kind: 'discrete', min: 0, max: ALGO_OPTIONS.length - 1, default: 0, options: ALGO_OPTIONS, selectStyle: 'dropdown' },
+  { id: 'algorithm', label: 'Algorithm', kind: 'discrete', min: 0, max: ALGO_OPTIONS.length - 1, default: 2, options: ALGO_OPTIONS, selectStyle: 'dropdown' },
   { id: 'feedback',  label: 'FB (op4)', kind: 'continuous', min: 0, max: 1, default: 0 },
   ...opParamSpecs(1, { ratio: 1, level: 0.9 }),
-  ...opParamSpecs(2, { ratio: 2, level: 0.5 }),
-  ...opParamSpecs(3, { ratio: 3, level: 0.4 }),
-  ...opParamSpecs(4, { ratio: 1, level: 0.6 }),
+  ...opParamSpecs(2, { ratio: 2, level: 0.35 }),
+  ...opParamSpecs(3, { ratio: 1, level: 0.5 }),
+  ...opParamSpecs(4, { ratio: 3, level: 0.25 }),
   { id: 'amp.mix',    label: 'Mix',       kind: 'continuous', min: 0, max: 1, default: 0.7 },
   { id: 'poly.voices', label: 'Voices',   kind: 'continuous', min: 1, max: 16, default: 6 },
 ];
