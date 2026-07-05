@@ -29,14 +29,15 @@ const ALGO_OPTIONS = ALGORITHMS.map((a, i) => ({ value: String(i), label: `${a.i
 
 // Helper to expand the 7 op params per operator.
 function opParamSpecs(n: number, defaults: { ratio: number; level: number }): EngineParamSpec[] {
+  const g = `OP${n}`;
   return [
-    { id: `op${n}.ratio`,   label: `Op${n} Ratio`, kind: 'continuous', min: 0.1, max: 16, default: defaults.ratio, curve: 'exponential' },
-    { id: `op${n}.detune`,  label: `Op${n} Det`,   kind: 'continuous', min: -50, max: 50, default: 0, unit: '¢' },
-    { id: `op${n}.level`,   label: `Op${n} Lvl`,   kind: 'continuous', min: 0,   max: 1,  default: defaults.level },
-    { id: `op${n}.attack`,  label: `Op${n} Atk`,   kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's' },
-    { id: `op${n}.decay`,   label: `Op${n} Dec`,   kind: 'continuous', min: 0.001, max: 4, default: 0.3,  unit: 's' },
-    { id: `op${n}.sustain`, label: `Op${n} Sus`,   kind: 'continuous', min: 0,   max: 1,  default: 0.7 },
-    { id: `op${n}.release`, label: `Op${n} Rel`,   kind: 'continuous', min: 0.005, max: 4, default: 0.3,  unit: 's' },
+    { id: `op${n}.ratio`,   label: `Op${n} Ratio`, kind: 'continuous', min: 0.1, max: 16, default: defaults.ratio, curve: 'exponential', group: g },
+    { id: `op${n}.detune`,  label: `Op${n} Det`,   kind: 'continuous', min: -50, max: 50, default: 0, unit: '¢', group: g },
+    { id: `op${n}.level`,   label: `Op${n} Lvl`,   kind: 'continuous', min: 0,   max: 1,  default: defaults.level, group: g },
+    { id: `op${n}.attack`,  label: `Op${n} Atk`,   kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's', group: g },
+    { id: `op${n}.decay`,   label: `Op${n} Dec`,   kind: 'continuous', min: 0.001, max: 4, default: 0.3,  unit: 's', group: g },
+    { id: `op${n}.sustain`, label: `Op${n} Sus`,   kind: 'continuous', min: 0,   max: 1,  default: 0.7, group: g },
+    { id: `op${n}.release`, label: `Op${n} Rel`,   kind: 'continuous', min: 0.005, max: 4, default: 0.3,  unit: 's', group: g },
   ];
 }
 

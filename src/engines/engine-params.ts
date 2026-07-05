@@ -17,6 +17,10 @@ export interface EngineParamSpec {
    *  the bare 'A'/'B' labels stay distinguishable, matching the master strip +
    *  mixer. Continuous params only; falls back to createKnob's default amber. */
   color?: string;
+  /** Optional layout group. Params sharing a group id render together in one
+   *  labelled row (label = the group string); ungrouped params render in the
+   *  leading row. Consumed by engine-param-grid.buildEngineParamGrid. */
+  group?: string;
   options?: Array<{ value: string; label: string }>;   // only when kind === 'discrete'
   /** Discrete only: 'dropdown' forces a native <select> instead of the default
    *  radio-button strip — for many or long-labelled options (e.g. the FM
