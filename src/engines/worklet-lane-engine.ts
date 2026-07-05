@@ -25,6 +25,7 @@ import { deriveSubtractiveEnvMods } from './subtractive';
 import { effectiveRateHz } from '../modulation/rate-sync';
 import { velNorm, resolveVelocity } from '../core/velocity-gain';
 import { renderModulatorsPanel } from '../modulation/modulation-ui';
+import { buildEngineParamGrid } from './engine-param-grid';
 import { createKnob, type KnobHandle } from '../core/knob';
 import { attachKnobUndo } from '../save/history-wiring';
 
@@ -311,32 +312,11 @@ export class WorkletLaneEngine implements SynthEngine {
 
     // Per-engine knob grid. Subtractive's osc/filter/amp/master knobs are mounted
     // separately into fixed page sections by knob-mounting.mountSubtractiveLaneKnobs;
-    // every OTHER worklet engine (fm/wavetable/karplus/westcoast/tb303) has no such
-    // section, so render a generic grid here from its param spec — otherwise the
-    // lane would show no parameter controls at all.
+    // every OTHER worklet engine (fm/wavetable/karplus/westcoast/tb303) renders a
+    // generic grouped grid here from its param spec — grouped params (e.g. FM's
+    // OP1..OP4) become one labelled row each; ungrouped params share the top row.
     if (this.id !== 'subtractive') {
-      const grid = document.createElement('div');
-      grid.className = 'row knob-row';
-      for (const spec of this.params) {
-        if (spec.id.startsWith('poly.')) continue;   // poly.* handled by the POLY header
-        const discrete = spec.kind === 'discrete' && !!spec.options && spec.options.length > 0;
-        const knob = createKnob({
-          id: `${ctx.laneId}.${spec.id}`,
-          label: spec.label,
-          min: spec.min, max: spec.max,
-          step: discrete ? 1 : (spec.max - spec.min) / 200,
-          value: this.getBaseValue(spec.id), defaultValue: spec.default,
-          color: spec.color,
-          format: discrete
-            ? (v) => spec.options![Math.max(0, Math.min(spec.options!.length - 1, Math.round(v)))].label
-            : (spec.unit ? (v) => `${v.toFixed(2)}${spec.unit}` : undefined),
-          onChange: (v) => { this.setBaseValue(spec.id, v); },
-          ...(ctx.historyDeps ? attachKnobUndo(ctx.historyDeps) : {}),
-        });
-        ctx.registerKnob(knob);
-        grid.appendChild(knob.el);
-      }
-      container.appendChild(grid);
+      buildEngineParamGrid(this, ctx, container, { skip: (id) => id.startsWith('poly.') });
     }
 
     // Modulators panel. Editing a modulator/connection re-posts the whole
