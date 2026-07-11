@@ -97,7 +97,14 @@ export class OfflineSceneRecorder implements SceneRecorder {
       if (lp?.playing) sounding.push({ laneId: lane.id, engineId: lane.engineId, clip: lp.playing });
     }
 
-    const frames = Math.max(1, Math.ceil(totalSec * sampleRate));
+    // SEAMLESS LOOP: render TWO cycles and return the SECOND. A single cycle cut to
+    // the exact musical length is NOT a seamless loop — release/decay/reverb tails of
+    // notes near the loop end get chopped, and the loop start ramps up with no
+    // overlapping tail from the previous cycle, so the WAV jumps when it repeats. The
+    // 2nd cycle is steady-state (cycle-1's tails already overlap its start), so it
+    // loops seamlessly — at the SAME exact musical length (warp ratio stays 1.0).
+    const cycleFrames = Math.max(1, Math.round(totalSec * sampleRate));
+    const frames = cycleFrames * 2;
     const offlineCtx = new OfflineAudioContext(2, frames, sampleRate);
 
     // Register the AudioWorklet processor modules on THIS fresh context BEFORE any
@@ -208,8 +215,11 @@ export class OfflineSceneRecorder implements SceneRecorder {
     const laneClips: SoundingLaneClip[] = sounding.map(
       (s) => ({ laneId: s.laneId, engineId: s.engineId, clip: s.clip }),
     );
-    const triggers = collectSceneTriggers(laneClips, bpm, meter, totalSec);
-    const autos = collectSceneAutomation(laneClips, bpm, totalSec);
+    // Window covers BOTH cycles so the clip loops twice (the 2nd cycle is the one
+    // we keep). frames === cycleFrames * 2, so windowSec === 2 · totalSec.
+    const windowSec = frames / sampleRate;
+    const triggers = collectSceneTriggers(laneClips, bpm, meter, windowSec);
+    const autos = collectSceneAutomation(laneClips, bpm, windowSec);
 
     // Walk the merged auto/trig stream in time order, applying automation to the
     // worklet lane engine (setBaseValue mutates its dot-id ParamBag) and, at each
@@ -339,11 +349,14 @@ export class OfflineSceneRecorder implements SceneRecorder {
       playStereo(laneId, renderSampleLane(spawns, frames, sr));
     }
 
-    // Render → RenderedAudio.
+    // Render → RenderedAudio. Keep the SECOND cycle [cycleFrames, 2·cycleFrames):
+    // cycle 1 starts dry (no previous-cycle tail) and its own tails spill past the
+    // boundary into cycle 2; cycle 2 therefore starts WITH those overlapping tails
+    // and ends where cycle 3 (identical) would continue — a seamless loop.
     const buffer = await offlineCtx.startRendering();
     const channels: Float32Array[] = [];
     for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
-      channels.push(buffer.getChannelData(ch).slice(0));
+      channels.push(buffer.getChannelData(ch).slice(cycleFrames, cycleFrames * 2));
     }
     return { channels, sampleRate: buffer.sampleRate };
   }

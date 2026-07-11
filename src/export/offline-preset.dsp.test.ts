@@ -56,7 +56,10 @@ async function renderWithPreset(presetName: string): Promise<number> {
   const lp = emptyLanePlayState('sub'); lp.playing = clip;
   laneStates.set('sub', lp);
   const rec = new OfflineSceneRecorder({ state, laneStates, bpm: 120, meter: DEFAULT_METER, sampleRate: 44100 });
-  const r = await rec.record(1.0);
+  // record() renders TWO cycles and returns the 2nd (seamless loop), so totalSec
+  // must be the clip's loop length — here one bar = 2.0s @ 120 BPM (the real export
+  // passes soundingSceneDurationSec). Then the note loops into the 2nd cycle.
+  const r = await rec.record(2.0);
   return rms(r.channels[0]);
 }
 
