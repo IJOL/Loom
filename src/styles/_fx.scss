@@ -74,3 +74,99 @@
   gap: 8px;
   flex-wrap: wrap;
 }
+
+/* ── Insert FX: one compact unit per effect, laid out as a horizontal bar that
+      wraps to a 2nd line (matches the approved Option B mockup). Each unit is
+      tinted by its plugin's --fx-color (dot + knob rings). ─────────────────── */
+.insert-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+.insert-unit {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 9px 14px;
+  border-right: 1px solid var(--border);
+}
+.insert-bar .insert-unit:last-child { border-right: none; }
+.insert-unit .knob-row { gap: 10px; }
+
+.insert-unit-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.insert-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--fx-color, var(--amber));
+  box-shadow: 0 0 5px -1px var(--fx-color, var(--amber));
+  flex: none;
+}
+.insert-name {
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.insert-sel {
+  margin-left: 2px;
+  background: var(--surface);
+  color: var(--fx-color, var(--amber));
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 1px 5px;
+}
+
+.insert-unit-ctl {
+  display: flex;
+  gap: 5px;
+  margin-top: 1px;
+}
+.insert-btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--fx-color, var(--amber));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.insert-btn:hover { border-color: var(--fx-color, var(--amber)); }
+.insert-btn.bypassed { color: var(--text-faint); }
+.insert-rm { color: var(--text-faint); padding: 3px 7px; }
+.insert-rm:hover { color: var(--red); border-color: var(--red); }
+
+.insert-add {
+  align-self: flex-start;
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--amber);
+  background: var(--surface);
+  border: 1px solid #4a3a1e;
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.insert-add:hover { background: var(--amber); color: var(--bg); }
+.insert-add-picker {
+  margin-top: 8px;
+  margin-left: 8px;
+  background: var(--surface);
+  color: var(--amber);
+  border: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 4px 8px;
+}

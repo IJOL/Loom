@@ -175,3 +175,61 @@ describe('buildLaneInsertUI — automation registration', () => {
     expect(ids).toContain(`${PREFIX}.fx0.mix`);
   });
 });
+
+describe('buildLaneInsertUI — compact unit layout (Option B)', () => {
+  function setup(nInserts: number) {
+    const ctx = makeCtx();
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const inputNode  = new FakeAudioNode() as unknown as AudioNode;
+    const outputNode = new FakeAudioNode() as unknown as AudioNode;
+    const chain = new InsertChain(inputNode, outputNode);
+    const slots: InsertSlot[] = [];
+    for (let i = 0; i < nInserts; i++) {
+      chain.insert(makeFakeFx());
+      slots.push({ pluginId: TEST_PLUGIN_ID, params: { drive: 0.5, mix: 1.0, mode: 0 }, bypass: false });
+    }
+    buildLaneInsertUI({ ctx, container, chain, slots, onChange: () => {} });
+    return { container, slots };
+  }
+
+  it('renders each insert as a compact unit inside a horizontal insert-bar', () => {
+    const { container } = setup(2);
+    const bar = container.querySelector('.insert-bar');
+    expect(bar).toBeTruthy();
+    const units = bar!.querySelectorAll('.insert-unit');
+    expect(units.length).toBe(2);
+    for (const u of units) {
+      // header (name) + a knob-row (compact, like the synth rows) + a control cluster
+      expect(u.querySelector('.insert-unit-head')).toBeTruthy();
+      expect(u.querySelector('.knob-row')).toBeTruthy();
+      expect(u.querySelector('.insert-unit-ctl')).toBeTruthy();
+      // the header shows the effect name
+      expect(u.querySelector('.insert-unit-head')!.textContent).toContain('Test FX');
+    }
+    // the "+ Add insert" affordance is still present
+    expect(container.querySelector('.insert-add')).toBeTruthy();
+  });
+
+  it('tints each unit with a per-effect colour (CSS var + dot)', () => {
+    const { container } = setup(1);
+    const unit = container.querySelector('.insert-unit') as HTMLElement;
+    expect(unit).toBeTruthy();
+    // a colour is assigned as a CSS custom property (real hue for known plugins,
+    // fallback for others) and surfaced as a coloured dot in the header.
+    expect(unit.style.getPropertyValue('--fx-color').trim()).not.toBe('');
+    expect(unit.querySelector('.insert-unit-head .insert-dot')).toBeTruthy();
+  });
+
+  it('keeps the bypass + remove controls inside each unit', () => {
+    const { container } = setup(1);
+    const ctl = container.querySelector('.insert-unit .insert-unit-ctl') as HTMLElement;
+    expect(ctl).toBeTruthy();
+    const btns = ctl.querySelectorAll('button');
+    // ON/BYP toggle + remove (×)
+    expect(btns.length).toBeGreaterThanOrEqual(2);
+    const texts = Array.from(btns).map((b) => b.textContent);
+    expect(texts).toContain('×');
+    expect(texts.some((t) => t === 'ON' || t === 'BYP')).toBe(true);
+  });
+});
