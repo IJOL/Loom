@@ -76,6 +76,9 @@ export interface InspectorDeps {
   /** Called after each loop edit commit. When the scene is linked the host
    *  propagates the edited clip's loop to every other clip in the scene. */
   onClipLoopEdited?: () => void;
+  /** Called when a clip is opened, so the host can make that clip's lane the
+   *  active (keyboard-driven) lane. Wired to SessionHost.focusLane. */
+  onClipFocused?: (laneId: string) => void;
 }
 
 export class SessionInspector {
@@ -158,6 +161,7 @@ export class SessionInspector {
     const lane = this.deps.state.lanes.find((l) => l.id === this.selectedClip!.laneId);
     const clip = lane?.clips[this.selectedClip.clipIdx];
     if (!clip) { panel.hidden = true; return; }
+    this.deps.onClipFocused?.(this.selectedClip.laneId);
     panel.hidden = false;
 
     // Classify the clip so the inspector can hide the note-editing controls for

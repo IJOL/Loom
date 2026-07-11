@@ -416,6 +416,7 @@ export class SessionHost {
       isSceneLinked: () => this.isSceneLinked(),
       onSetSceneLinked: (linked: boolean) => this.setSceneLoopLinked(linked),
       onClipLoopEdited: () => this.onClipLoopEdited(),
+      onClipFocused: (laneId) => this.focusLane(laneId),
       placeChordClip: (laneId, clipIdx, clip) => {
         const hd = this.deps.historyDeps;
         const run = () => {

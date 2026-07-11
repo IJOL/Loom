@@ -283,3 +283,36 @@ describe('Randomize notes respects + preserves the selected octave', () => {
     expect(rollMock.setOctaveBase).toHaveBeenCalledWith(72);              // octave restored after renderEditor reset it
   });
 });
+
+// ── Keyboard follows the open clip (MIDI live-capture Task 1) ──────────────
+// Opening a clip must focus that clip's lane so the live MIDI keyboard plays
+// the lane you're looking at, not whatever was last picked from the top
+// engine-selector tab bar.
+describe('openInspector focuses the clip\'s lane (keyboard follows the open clip)', () => {
+  beforeEach(() => {
+    mountInspectorDom();
+  });
+
+  it('calls onClipFocused with the selected clip\'s laneId', () => {
+    const clip = makeNoteClip();
+    const lane = { id: 'lane-1', engineId: 'subtractive', clips: [clip] } as unknown as SessionLane;
+    const state = { lanes: [lane] } as unknown as SessionState;
+    const onClipFocused = vi.fn();
+    const insp = new SessionInspector({
+      ctx: {} as AudioContext,
+      seq: { meter: { num: 4, den: 4 }, bpm: 120 } as unknown as InstanceType<typeof import('../core/sequencer').Sequencer>,
+      state,
+      laneStates: new Map(),
+      renderWithMixer: () => {},
+      midiLabel: (m: number) => String(m),
+      automationRegistry: new Map(),
+      getAutoAbsSubIdx: () => 0,
+      onClipFocused,
+    });
+
+    insp.setSelectedClip({ laneId: 'lane-1', clipIdx: 0 });
+    insp.openInspector();
+
+    expect(onClipFocused).toHaveBeenCalledWith('lane-1');
+  });
+});
