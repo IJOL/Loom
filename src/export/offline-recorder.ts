@@ -46,7 +46,9 @@ import { velNorm, resolveVelocity, velGain } from '../core/velocity-gain';
 import { GM_DRUM_MAP } from '../engines/drum-gm-map';
 import { DRUM_LANES } from '../core/drums';
 import { DRUM_VOICE_IDS, type DrumVoiceId } from '../audio-dsp/drums/types';
-import { extractChannels } from '../audio-worklet/sampler-node';
+import { extractChannels, loadSamplerWorklet } from '../audio-worklet/sampler-node';
+import { loadLoomWorklet } from '../audio-worklet/loom-node';
+import { loadDrumsWorklet } from '../audio-worklet/drums-node';
 import type { KeymapEntry } from '../samples/types';
 import type { ParamBag } from '../audio-dsp/types';
 
@@ -97,6 +99,33 @@ export class OfflineSceneRecorder implements SceneRecorder {
 
     const frames = Math.max(1, Math.ceil(totalSec * sampleRate));
     const offlineCtx = new OfflineAudioContext(2, frames, sampleRate);
+
+    // Register the AudioWorklet processor modules on THIS fresh context BEFORE any
+    // engine constructs its AudioWorkletNode. A browser throws
+    //   InvalidStateError: … Load a script via audioWorklet.addModule() first.
+    // when a node is built against a context whose module was never registered, and
+    // offlineCtx is brand-new so the live AudioContext's registration does NOT carry
+    // over — skipping this was the offline-export "message that flashes and vanishes"
+    // bug. Today only the melodic WorkletLaneEngine builds its node in its ctor
+    // (worklet-lane-engine.ts) — the exact node that threw; the Drums/Sampler/Audio
+    // engines build theirs lazily on createVoice, which this recorder never calls
+    // (it renders through the pure kernels). We register all three anyway: cheap,
+    // idempotent (per-ctx cached), and future-proof if the offline path ever grows
+    // real worklet nodes. allSettled so one module's failure can't abort the render;
+    // we log a rejection because otherwise a genuine load failure masquerades as the
+    // very "addModule() first" error above with no trace (mirrors main.ts's live
+    // boot). Under node-web-audio-api the TS processor can't load, but test/setup.ts
+    // stubs AudioWorkletNode so the ctors succeed regardless.
+    const workletLoads = await Promise.allSettled([
+      loadLoomWorklet(offlineCtx as unknown as BaseAudioContext),
+      loadDrumsWorklet(offlineCtx as unknown as BaseAudioContext),
+      loadSamplerWorklet(offlineCtx as unknown as BaseAudioContext),
+    ]);
+    for (const r of workletLoads) {
+      if (r.status === 'rejected') {
+        console.error('[offline-export] worklet module load failed; export may fail:', r.reason);
+      }
+    }
 
     // Parallel master graph + lane allocator against the offline ctx.
     const graph = buildAudioGraph(offlineCtx as unknown as AudioContext);

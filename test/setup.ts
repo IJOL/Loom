@@ -32,6 +32,18 @@ g.AudioWorkletNode = class {
   connect() { /* no-op */ }
   disconnect() { /* no-op */ }
 };
+// node-web-audio-api's real AudioWorklet.addModule tries to IMPORT our TS processor
+// and rejects (ERR_MODULE_NOT_FOUND). The offline scene recorder now registers the
+// worklet modules on its fresh OfflineAudioContext before building nodes (a browser
+// requires it, else InvalidStateError) — and logs a rejected load. The fake node
+// above already ignores registration, so stub addModule to RESOLVE: keeps the
+// offline-render tests quiet without changing what they exercise. Tests that need
+// the strict browser contract (offline-worklet-registration.test.ts) install their
+// own spy over this.
+const AW = g.AudioWorklet as { prototype?: Record<string, unknown> } | undefined;
+if (AW?.prototype) {
+  AW.prototype.addModule = () => Promise.resolve();
+}
 
 // Sequencer uses `window.setTimeout` — alias window to globalThis.
 if (!('window' in g)) g.window = g;
