@@ -33,7 +33,7 @@ test('live take: arm → top ▶ → Stop → take lands in a new audio channel'
   await waitForBoot(page);
 
   await expect(page.locator('.lane-engine-audio')).toHaveCount(0);
-  const lanesBefore = await page.locator('button.session-lane-tab').count();
+  const lanesBefore = await page.locator('.session-lane-header').count();
 
   await armLiveTake(page);
 
@@ -60,8 +60,8 @@ test('live take: arm → top ▶ → Stop → take lands in a new audio channel'
   // A NEW 'audio' engine lane appears holding the take as a sample-backed clip.
   const audioLane = page.locator('.lane-engine-audio');
   await expect(audioLane).toHaveCount(1, { timeout: 15_000 });
-  await expect(page.locator('button.session-lane-tab')).toHaveCount(lanesBefore + 1, { timeout: 5_000 });
-  const audioLaneId = await page.locator('button.session-lane-tab').last().getAttribute('data-lane-id');
+  await expect(page.locator('.session-lane-header')).toHaveCount(lanesBefore + 1, { timeout: 5_000 });
+  const audioLaneId = await page.locator('.session-lane-header').last().getAttribute('data-lane-id');
   expect(audioLaneId).toMatch(/^audio/);
   await expect(
     page.locator(`.session-cell-filled[data-lane-id="${audioLaneId}"]`).first(),
@@ -79,7 +79,7 @@ test('live take started by LAUNCHING A SCENE → ⏹ all → destination dialog 
   await page.goto('/');
   await waitForBoot(page);
   await expect(page.locator('.lane-engine-audio')).toHaveCount(0);
-  const lanesBefore = await page.locator('button.session-lane-tab').count();
+  const lanesBefore = await page.locator('.session-lane-header').count();
 
   await armLiveTake(page);
 
@@ -98,7 +98,7 @@ test('live take started by LAUNCHING A SCENE → ⏹ all → destination dialog 
   await page.locator('#take-dest-audio').click();
   await expect(page.locator('#take-dialog')).toBeHidden({ timeout: 5_000 });
   await expect(page.locator('.lane-engine-audio')).toHaveCount(1, { timeout: 10_000 });
-  await expect(page.locator('button.session-lane-tab')).toHaveCount(lanesBefore + 1, { timeout: 5_000 });
+  await expect(page.locator('.session-lane-header')).toHaveCount(lanesBefore + 1, { timeout: 5_000 });
 
   await expect(page.locator('#rec')).not.toHaveClass(/armed|recording/, { timeout: 5_000 });
 });
@@ -107,7 +107,7 @@ test('arming then stopping without Play tears down cleanly (no take, no audio ch
   await page.goto('/');
   await waitForBoot(page);
   await expect(page.locator('.lane-engine-audio')).toHaveCount(0);
-  const lanesBefore = await page.locator('button.session-lane-tab').count();
+  const lanesBefore = await page.locator('.session-lane-header').count();
 
   await armLiveTake(page);
 
@@ -121,5 +121,5 @@ test('arming then stopping without Play tears down cleanly (no take, no audio ch
   await expect(page.locator('#rec')).not.toHaveClass(/armed|recording/, { timeout: 3000 });
   await expect(page.locator('#take-dialog')).toHaveCount(0);
   await expect(page.locator('.lane-engine-audio')).toHaveCount(0);
-  await expect(page.locator('button.session-lane-tab')).toHaveCount(lanesBefore);
+  await expect(page.locator('.session-lane-header')).toHaveCount(lanesBefore);
 });

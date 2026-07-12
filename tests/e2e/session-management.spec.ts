@@ -23,8 +23,8 @@ async function laneIds(page: Page): Promise<string[]> {
 /** Add a lane via the tab-bar engine picker + '+' button; return its new id. */
 async function addLane(page: Page, engineId = 'subtractive'): Promise<string> {
   const before = new Set(await laneIds(page));
-  await page.locator('select.session-tabs-engine').selectOption(engineId);
-  await page.locator('button.session-tabs-add-btn').click();
+  await page.locator('.session-lane-add').click();
+  await page.locator(`.session-add-item[data-engine-id="${engineId}"]`).click();
   await expect(page.locator('.session-lane-header')).toHaveCount(before.size + 1);
   const created = (await laneIds(page)).find((id) => !before.has(id));
   if (!created) throw new Error('addLane: could not identify the new lane');

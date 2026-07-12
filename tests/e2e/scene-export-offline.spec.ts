@@ -48,7 +48,7 @@ test('offline export → dialog → "Download WAV" downloads a .wav', async ({ p
 test('offline export → dialog → "New audio channel" creates a grid-locked audio channel', async ({ page }) => {
   await launchAScene(page);
   await expect(page.locator('.lane-engine-audio')).toHaveCount(0);
-  const lanesBefore = await page.locator('button.session-lane-tab').count();
+  const lanesBefore = await page.locator('.session-lane-header').count();
 
   await runOfflineExport(page);
   await expect(page.locator('#take-dialog')).toBeVisible({ timeout: 30_000 });
@@ -58,5 +58,5 @@ test('offline export → dialog → "New audio channel" creates a grid-locked au
 
   // A NEW 'audio' engine lane appears holding the render as a clip.
   await expect(page.locator('.lane-engine-audio')).toHaveCount(1, { timeout: 10_000 });
-  await expect(page.locator('button.session-lane-tab')).toHaveCount(lanesBefore + 1, { timeout: 5_000 });
+  await expect(page.locator('.session-lane-header')).toHaveCount(lanesBefore + 1, { timeout: 5_000 });
 });

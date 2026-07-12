@@ -18,16 +18,16 @@ async function waitForBoot(page: Page): Promise<void> {
 /** Add a new lane with the given engine via the tab-bar engine picker and
  *  return the new lane's id (read from the freshly-rendered tab). */
 async function addLane(page: Page, engineId: string): Promise<string> {
-  const before = await page.$$eval('.session-lane-tab', (tabs) =>
+  const before = await page.$$eval('.session-lane-header', (tabs) =>
     tabs.map((t) => (t as HTMLElement).dataset.laneId ?? ''),
   );
-  await page.selectOption('select.session-tabs-engine', engineId);
-  await page.click('button.session-tabs-add-btn');
+  await page.click('.session-lane-add');
+  await page.click(`.session-add-item[data-engine-id="${engineId}"]`);
   await page.waitForFunction(
-    (n) => document.querySelectorAll('.session-lane-tab').length > n,
+    (n) => document.querySelectorAll('.session-lane-header').length > n,
     before.length,
   );
-  const after = await page.$$eval('.session-lane-tab', (tabs) =>
+  const after = await page.$$eval('.session-lane-header', (tabs) =>
     tabs.map((t) => (t as HTMLElement).dataset.laneId ?? ''),
   );
   const newId = after.find((id) => !before.includes(id));
@@ -36,7 +36,7 @@ async function addLane(page: Page, engineId: string): Promise<string> {
 }
 
 async function openLane(page: Page, laneId: string): Promise<void> {
-  await page.click(`button.session-lane-tab[data-lane-id="${laneId}"]`);
+  await page.click(`.session-lane-header[data-lane-id="${laneId}"]`);
 }
 
 /** First non-"custom" option value in a select (i.e. the first real preset). */
@@ -68,7 +68,7 @@ test.describe('preset recovery across tab switches', () => {
       await waitForBoot(page);
 
       // A different existing lane to switch to (any boot lane works).
-      const otherLane = (await page.$$eval('.session-lane-tab', (tabs) =>
+      const otherLane = (await page.$$eval('.session-lane-header', (tabs) =>
         tabs.map((t) => (t as HTMLElement).dataset.laneId ?? ''),
       ))[0];
 

@@ -66,10 +66,11 @@ async function openClip(page: Page, laneId: string): Promise<void> {
  *  cell (the picker now opens on cell click, not at channel creation); the clip
  *  auto-opens in the inspector. Returns once the audio clip has been imported. */
 async function addAudioChannel(page: Page): Promise<void> {
-  const lanesBefore = await page.locator('button.session-lane-tab').count();
-  await page.locator('button.session-add-audio-btn').click();
-  await expect(page.locator('button.session-lane-tab')).toHaveCount(lanesBefore + 1, { timeout: 10_000 });
-  const laneId = await page.locator('button.session-lane-tab').last().getAttribute('data-lane-id');
+  const lanesBefore = await page.locator('.session-lane-header').count();
+  await page.locator('.session-lane-add').click();
+  await page.locator('.session-lane-add-menu .session-add-item', { hasText: 'Audio channel' }).click();
+  await expect(page.locator('.session-lane-header')).toHaveCount(lanesBefore + 1, { timeout: 10_000 });
+  const laneId = await page.locator('.session-lane-header').last().getAttribute('data-lane-id');
   const cell = page.locator(`.session-cell[data-lane-id="${laneId}"][data-clip-idx="0"]`);
   const [chooser] = await Promise.all([
     page.waitForEvent('filechooser'),

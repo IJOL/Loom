@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { addLane, openLane } from './helpers';
 
 // Generates a tiny valid 0.3s/220Hz mono WAV as a Buffer for file upload.
 function makeWav(): Buffer {
@@ -20,12 +21,11 @@ test.describe('sampler', () => {
   test('add a Sampler lane, load a sample, see a keymap entry', async ({ page }) => {
     await page.goto('/');
 
-    // Add a Sampler lane via the new-lane engine picker.
-    await page.locator('select.session-tabs-engine').selectOption('sampler');
-    await page.locator('button.session-tabs-add-btn').click();
+    // Add a Sampler lane via the header "+" engine menu.
+    await addLane(page, 'sampler');
 
     // Open the lane so the engine inspector (keymap editor) renders.
-    await page.getByRole('button', { name: 'Sampler 1', exact: true }).click();
+    await openLane(page, 'sampler-1');
 
     // Before loading, the keymap editor shows the empty state.
     await expect(page.locator('.sampler-keymap')).toBeVisible();

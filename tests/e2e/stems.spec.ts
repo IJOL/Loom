@@ -150,7 +150,7 @@ test('separates a song into 4 sampler lanes (service stubbed)', async ({ page })
   // The 4 stem sampler lanes are created (session tab bar shows their labels).
   // We assert presence rather than an exact total count: a demo may be
   // auto-loaded at boot and the replace/add timing makes an exact count fragile.
-  const tabTexts = await page.locator('button.session-lane-tab').allTextContents();
+  const tabTexts = await page.locator('.session-lane-header').allTextContents();
   for (const label of ['Vocals', 'Drums', 'Bass', 'Other']) {
     expect(tabTexts).toContain(label);
   }

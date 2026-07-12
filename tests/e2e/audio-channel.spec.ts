@@ -32,10 +32,11 @@ async function waitForBoot(page: Page): Promise<void> {
 /** New flow: "+ Audio" creates an EMPTY audio channel (no file prompt); the WAV
  *  is imported per clip by clicking an empty cell, which opens the file picker. */
 async function addAudioChannelWithWav(page: Page, wav: Buffer): Promise<void> {
-  const lanesBefore = await page.locator('button.session-lane-tab').count();
-  await page.locator('button.session-add-audio-btn').click();
-  await expect(page.locator('button.session-lane-tab')).toHaveCount(lanesBefore + 1, { timeout: 10_000 });
-  const laneId = await page.locator('button.session-lane-tab').last().getAttribute('data-lane-id');
+  const lanesBefore = await page.locator('.session-lane-header').count();
+  await page.locator('.session-lane-add').click();
+  await page.locator('.session-lane-add-menu .session-add-item', { hasText: 'Audio channel' }).click();
+  await expect(page.locator('.session-lane-header')).toHaveCount(lanesBefore + 1, { timeout: 10_000 });
+  const laneId = await page.locator('.session-lane-header').last().getAttribute('data-lane-id');
   const cell = page.locator(`.session-cell[data-lane-id="${laneId}"][data-clip-idx="0"]`);
   const [chooser] = await Promise.all([
     page.waitForEvent('filechooser'),

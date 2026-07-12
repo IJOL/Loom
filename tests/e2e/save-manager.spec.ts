@@ -15,7 +15,7 @@ test.describe('save manager — in-app save', () => {
     await page.goto('/');
 
     // Wait for full session boot so the toolbar Save button is wired.
-    await page.waitForSelector('button.session-lane-tab[data-lane-id]', { timeout: 15_000 });
+    await page.waitForSelector('.session-lane-header[data-lane-id]', { timeout: 15_000 });
 
     // Click the toolbar Save button.
     await page.locator('#save').click();

@@ -16,6 +16,7 @@
 // toolbar, with NO `✂ Slice → pads` button (that slice-to-bank path was removed
 // — slicing now happens Sampler-side via "Importar loop…", see Task 13).
 import { test, expect } from '@playwright/test';
+import { addLane, addAudioChannel, openLane } from './helpers';
 
 type Page = import('@playwright/test').Page;
 
@@ -45,11 +46,10 @@ function samplerWav(freq = 220): Buffer {
  *  engine inspector (PRESET dropdown + keymap editor) renders. Returns the new
  *  lane's id (read off the now-active lane tab). */
 async function addAndOpenSamplerLane(page: Page): Promise<string> {
-  await page.locator('select.session-tabs-engine').selectOption('sampler');
-  await page.locator('button.session-tabs-add-btn').click();
+  await addLane(page, 'sampler');
   // Open the lane → its engine inspector (PRESET dropdown + keymap editor) renders.
-  await page.getByRole('button', { name: 'Sampler 1', exact: true }).click();
-  const tab = page.locator('button.session-lane-tab.active');
+  await openLane(page, 'sampler-1');
+  const tab = page.locator('.session-lane-header-active');
   await expect(tab).toBeVisible();
   return (await tab.getAttribute('data-lane-id')) ?? '';
 }
@@ -203,8 +203,8 @@ test.describe('audio channel (Task 18)', () => {
     // "+ Audio" creates an EMPTY audio channel; the WAV is imported by clicking
     // the new lane's empty cell (the picker opens there now). Importing selects
     // the clip and opens its editor in #insp-roll-host with no extra click.
-    await page.locator('button.session-add-audio-btn').click();
-    const laneId = await page.locator('button.session-lane-tab').last().getAttribute('data-lane-id');
+    await addAudioChannel(page);
+    const laneId = await page.locator('.session-lane-header').last().getAttribute('data-lane-id');
     const cell = page.locator(`.session-cell[data-lane-id="${laneId}"][data-clip-idx="0"]`);
     const [chooser] = await Promise.all([
       page.waitForEvent('filechooser'),

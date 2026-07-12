@@ -5,7 +5,7 @@ import { test, expect, type Page } from '@playwright/test';
 // ad-hoc Playwright probing we used to confirm the fixes worked.
 
 async function destinationCountsForLane(page: Page, laneId: string): Promise<number[]> {
-  await page.locator(`button.session-lane-tab[data-lane-id="${laneId}"]`).click();
+  await page.locator(`.session-lane-header[data-lane-id="${laneId}"]`).click();
   return page.evaluate(() =>
     [...document.querySelectorAll<HTMLSelectElement>('.mod-dest-select')]
       .filter((s) => s.offsetParent !== null)
@@ -48,7 +48,7 @@ test.describe('modulator destination dropdown', () => {
     await page.waitForFunction(
       () => document.querySelectorAll('.session-cell-filled').length > 0,
     );
-    await page.locator('button.session-lane-tab[data-lane-id="drums-1"]').click();
+    await page.locator('.session-lane-header[data-lane-id="drums-1"]').click();
     const options = await page.evaluate(() =>
       [...document.querySelectorAll<HTMLSelectElement>('.mod-dest-select')]
         .filter((s) => s.offsetParent !== null)
@@ -70,7 +70,7 @@ test.describe('preset selection', () => {
     await page.waitForFunction(
       () => document.querySelectorAll('.session-cell-filled').length > 0,
     );
-    await page.locator('button.session-lane-tab[data-lane-id="subtractive-1"]').click();
+    await page.locator('.session-lane-header[data-lane-id="subtractive-1"]').click();
     const sel = page.locator('#poly-preset-select');
     await expect(sel).toHaveValue('factory:LEAD Square');
   });
@@ -100,10 +100,10 @@ test.describe('demo JSON presets', () => {
     await page.goto('/');
     await waitForBoot(page);
 
-    await page.locator('button.session-lane-tab[data-lane-id="subtractive-1"]').click();
+    await page.locator('.session-lane-header[data-lane-id="subtractive-1"]').click();
     await expect(page.locator('#poly-preset-select')).toHaveValue('factory:LEAD Square');
 
-    await page.locator('button.session-lane-tab[data-lane-id="subtractive-2"]').click();
+    await page.locator('.session-lane-header[data-lane-id="subtractive-2"]').click();
     await expect(page.locator('#poly-preset-select')).toHaveValue('factory:PAD Sweep');
   });
 
@@ -115,10 +115,10 @@ test.describe('demo JSON presets', () => {
     // Index 1 = scene B.
     await page.locator('.session-scene-launch').nth(1).click();
 
-    await page.locator('button.session-lane-tab[data-lane-id="subtractive-1"]').click();
+    await page.locator('.session-lane-header[data-lane-id="subtractive-1"]').click();
     await expect(page.locator('#poly-preset-select')).toHaveValue('factory:LEAD Square');
 
-    await page.locator('button.session-lane-tab[data-lane-id="subtractive-2"]').click();
+    await page.locator('.session-lane-header[data-lane-id="subtractive-2"]').click();
     await expect(page.locator('#poly-preset-select')).toHaveValue('factory:PAD Sweep');
   });
 });
@@ -129,7 +129,7 @@ test.describe('modulator scope', () => {
     await page.waitForFunction(
       () => document.querySelectorAll('.session-cell-filled').length > 0,
     );
-    await page.locator('button.session-lane-tab[data-lane-id="subtractive-1"]').click();
+    await page.locator('.session-lane-header[data-lane-id="subtractive-1"]').click();
     // The SCOPE control is rendered as a radio-strip with buttons titled "Shared" and "PerVoice".
     // We search for any button with title="Shared" (the default SCOPE value) within an LFO card.
     const scopeButtons = await page.evaluate(() =>

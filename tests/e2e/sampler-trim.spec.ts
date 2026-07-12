@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { addLane, openLane } from './helpers';
 
 test('dragging the start handle trims the sample', async ({ page }) => {
   await page.goto('/');
-  await page.locator('select.session-tabs-engine').selectOption('sampler');
-  await page.locator('button.session-tabs-add-btn').click();
-  await page.getByRole('button', { name: 'Sampler 1', exact: true }).click();
+  await addLane(page, 'sampler');
+  await openLane(page, 'sampler-1');
 
   const sel = page.locator('#poly-preset-select');
   await expect(sel).toBeVisible();
