@@ -50,6 +50,14 @@ function makeHostStub(opts: {
     });
   }
   const launchSceneAt = vi.fn();
+  const launchClipAt = vi.fn((laneId: string, clipIdx: number) => {
+    // Mirror the production effect: the launched clip becomes the one playing on
+    // its lane with a real loopStartedAt, so posTicksFor() has a playhead to
+    // measure against (otherwise captured notes pile at tick 0).
+    const lane = opts.lanes.find((l) => l.id === laneId);
+    const clip = lane?.clips[clipIdx];
+    if (clip) laneStates.set(laneId, { laneId, playing: clip, loopStartedAt: 0 });
+  });
   const renderWithMixer = vi.fn();
   const refreshOpenEditor = vi.fn();
   const stub = {
@@ -60,9 +68,10 @@ function makeHostStub(opts: {
       refreshOpenEditor,
     },
     launchSceneAt,
+    launchClipAt,
     renderWithMixer,
   };
-  return { host: stub as unknown as SessionHost, launchSceneAt, renderWithMixer, refreshOpenEditor };
+  return { host: stub as unknown as SessionHost, launchSceneAt, launchClipAt, renderWithMixer, refreshOpenEditor };
 }
 
 function makeDeps(
@@ -160,5 +169,37 @@ describe('loom-facade — loop-record capture', () => {
     // 'replace' mode drops the pre-existing note; only the captured one remains.
     expect(existing.notes).toEqual([{ start: 96, duration: 96, midi: 64, velocity: 100 }]);
     expect(f.isCapturing()).toBe(false);
+  });
+
+  it('(e) another lane playing but the destination lane is idle: launches just the destination clip so notes anchor to the playhead (no tick-0 pileup)', () => {
+    const dest: SessionClip = { id: 'clip-1', lengthBars: 2, notes: [], color: '#fff' };
+    const sub: SessionLane = { id: 'sub', engineId: 'subtractive', clips: [dest] };
+    const drumsClip: SessionClip = { id: 'clip-d', lengthBars: 1, notes: [], color: '#000' };
+    const drums: SessionLane = { id: 'drums', engineId: 'drums-machine', clips: [drumsClip] };
+    const ctx = makeCtx(0);
+    panelHidden = false;
+    const { host, launchSceneAt, launchClipAt } = makeHostStub({
+      lanes: [drums, sub],
+      selected: { laneId: 'sub', clipIdx: 0 },
+      playing: { drums: drumsClip },          // drums is looping; the destination lane 'sub' is idle
+      loopStartedAt: { drums: 0 },
+    });
+    const f = createLoomFacade(makeDeps(host, { ctx, bpm: 120 }));
+
+    f.startCapture('replace');
+
+    // The whole scene is NOT relaunched (never disturb the running transport),
+    // but the destination clip IS launched so 'sub' gets a real loopStartedAt.
+    expect(launchSceneAt).not.toHaveBeenCalled();
+    expect(launchClipAt).toHaveBeenCalledWith('sub', 0);
+
+    (ctx as unknown as { currentTime: number }).currentTime = 0.5;   // -> 96 ticks
+    f.playLiveNote('sub', 64, 100);
+    (ctx as unknown as { currentTime: number }).currentTime = 1.0;   // -> 192 ticks
+    f.releaseLiveNote('sub', 64);
+    f.stopCapture();
+
+    // The captured note anchors to the real playhead (96), NOT piled at tick 0.
+    expect(dest.notes).toEqual([{ start: 96, duration: 96, midi: 64, velocity: 100 }]);
   });
 });

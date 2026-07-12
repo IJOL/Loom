@@ -182,9 +182,20 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
         posTicks: () => posTicksFor(dest),
       });
       if (mode === 'replace') dest.clip.notes = [];
-      // Only launch the destination's scene if nothing else is playing —
-      // never disturb an already-running transport.
-      if (!anyPlaying()) sessionHost.launchSceneAt(dest.slotIdx);
+      // Nothing playing → launch the full scene for context. Otherwise, if the
+      // destination clip isn't the one currently looping on its own lane (lane
+      // idle, or playing a DIFFERENT clip), launch just that clip so it gets a
+      // real loopStartedAt — without it, posTicksFor() has no playhead to
+      // measure against and every captured note piles up at tick 0. Launching
+      // only the destination clip (not the scene) never disturbs other lanes'
+      // already-running transport. If the destination clip is already the one
+      // playing on its lane, leave the transport alone and capture against its
+      // running loop.
+      if (!anyPlaying()) {
+        sessionHost.launchSceneAt(dest.slotIdx);
+      } else if (sessionHost.laneStates.get(dest.laneId)?.playing?.id !== dest.clip.id) {
+        sessionHost.launchClipAt(dest.laneId, dest.slotIdx);
+      }
     },
     stopCapture() {
       if (!recorder.isRecording() || !capture) { capture = null; return; }
