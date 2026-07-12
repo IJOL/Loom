@@ -12,6 +12,7 @@ import type { SessionHost } from '../session/session-host';
 import type { LaneResourceMap } from '../core/lane-resources';
 import type { KnobHandle } from '../core/knob';
 import type { Sequencer } from '../core/sequencer';
+import type { TimeSignature } from '../core/meter';
 
 // createLoomFacade's resolveDestination() reads document.getElementById('session-inspector')
 // to test whether the inspector panel is shown. Vitest runs this file under
@@ -201,5 +202,38 @@ describe('loom-facade — loop-record capture', () => {
 
     // The captured note anchors to the real playhead (96), NOT piled at tick 0.
     expect(dest.notes).toEqual([{ start: 96, duration: 96, midi: 64, velocity: 100 }]);
+  });
+
+  it('(f) count-in: startCapture from idle defers recording until the count-in completes', () => {
+    const lane: SessionLane = { id: 'sub', engineId: 'subtractive', clips: [] };
+    const { host, launchSceneAt } = makeHostStub({ lanes: [lane] });
+    let onDone: (() => void) | null = null;
+    const cancel = vi.fn();
+    const countIn = vi.fn((_bars: number, _bpm: number, _meter: TimeSignature, cb: () => void) => { onDone = cb; return cancel; });
+    const f = createLoomFacade({ ...makeDeps(host, { activeLaneId: 'sub' }), countIn });
+
+    f.startCapture('merge');
+    expect(countIn).toHaveBeenCalled();
+    expect(launchSceneAt).not.toHaveBeenCalled();   // NOT launched during the count-in
+    expect(f.isCapturing()).toBe(true);             // armed (button shows ■ Stop)
+
+    onDone!();                                       // count-in ends
+    expect(launchSceneAt).toHaveBeenCalledWith(0);   // recording begins now
+  });
+
+  it('(g) stopCapture during the count-in cancels it and drops the placed clip', () => {
+    const lane: SessionLane = { id: 'sub', engineId: 'subtractive', clips: [] };
+    const { host, launchSceneAt } = makeHostStub({ lanes: [lane] });
+    const cancel = vi.fn();
+    const countIn = vi.fn((_bars: number, _bpm: number, _meter: TimeSignature, _cb: () => void) => cancel);
+    const f = createLoomFacade({ ...makeDeps(host, { activeLaneId: 'sub' }), countIn });
+
+    f.startCapture('merge');
+    expect(lane.clips[0]).not.toBeNull();            // clip placed during the count-in
+    f.stopCapture();
+    expect(cancel).toHaveBeenCalled();               // metronome cancelled
+    expect(lane.clips[0] ?? null).toBeNull();        // placeholder dropped
+    expect(launchSceneAt).not.toHaveBeenCalled();
+    expect(f.isCapturing()).toBe(false);
   });
 });

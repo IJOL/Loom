@@ -9,7 +9,7 @@ import type { SessionHost } from '../session/session-host';
 import type { LaneResourceMap } from '../core/lane-resources';
 import type { KnobHandle } from '../core/knob';
 import type { Sequencer } from '../core/sequencer';
-import { ticksPerBar } from '../core/meter';
+import { ticksPerBar, type TimeSignature } from '../core/meter';
 import { TICKS_PER_QUARTER } from '../core/notes';
 import { emptyClip, type SessionClip, type SessionLane } from '../session/session';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
@@ -22,6 +22,10 @@ export interface LoomFacadeDeps {
   knobRegistry: Map<string, KnobHandle>;       // `${laneId}.${paramId}` → handle (automationRegistry)
   seq: Sequencer;                              // bpm source for tempo-aware note-FX (chord today, arp later)
   historyDeps?: HistoryDeps;                   // undo wrapper for loop-record commits (optional: main.ts builds it after boot)
+  /** Optional 1-bar count-in before Rec starts from idle: plays a metronome, then
+   *  calls onComplete to begin recording. Returns a cancel fn. Absent → no
+   *  count-in (immediate capture). */
+  countIn?: (bars: number, bpm: number, meter: TimeSignature, onComplete: () => void) => (() => void);
 }
 
 const MAX_GAIN = 1.5;            // volume knob full-up
@@ -59,6 +63,9 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
   // object as sessionHost.state.lanes[i], so writing laneRef.clips mutates
   // live session state directly (no separate "commit lane" step needed).
   let capture: { laneId: string; clip: SessionClip; isNew: boolean; slotIdx: number; laneRef: SessionLane } | null = null;
+  // Set while a count-in is playing (before recording actually starts) so
+  // stopCapture can cancel it and isCapturing() reflects the armed state.
+  let countInCancel: (() => void) | null = null;
 
   function anyPlaying(): boolean {
     for (const lp of sessionHost.laneStates.values()) if (lp.playing) return true;
@@ -163,7 +170,7 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
     launchScene: (sceneIdx) => sessionHost.launchSceneAt(sceneIdx),
     stopAll: () => sessionHost.stopAllClips(),
     startCapture(mode) {
-      if (recorder.isRecording()) return;
+      if (recorder.isRecording() || countInCancel) return;
       const dest = resolveDestination();
       if (!dest) return;
       capture = dest;
@@ -173,31 +180,56 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
         while (dest.laneRef.clips.length <= dest.slotIdx) dest.laneRef.clips.push(null);
         dest.laneRef.clips[dest.slotIdx] = dest.clip;
       }
-      const barTicks = ticksPerBar(deps.seq.meter);
-      recorder.start({
-        mode,
-        existingNotes: dest.clip.notes,
-        clipLengthTicks: dest.isNew ? null : dest.clip.lengthBars * barTicks,
-        barTicks,
-        posTicks: () => posTicksFor(dest),
-      });
-      if (mode === 'replace') dest.clip.notes = [];
-      // Nothing playing → launch the full scene for context. Otherwise, if the
-      // destination clip isn't the one currently looping on its own lane (lane
-      // idle, or playing a DIFFERENT clip), launch just that clip so it gets a
-      // real loopStartedAt — without it, posTicksFor() has no playhead to
-      // measure against and every captured note piles up at tick 0. Launching
-      // only the destination clip (not the scene) never disturbs other lanes'
-      // already-running transport. If the destination clip is already the one
-      // playing on its lane, leave the transport alone and capture against its
-      // running loop.
-      if (!anyPlaying()) {
-        sessionHost.launchSceneAt(dest.slotIdx);
-      } else if (sessionHost.laneStates.get(dest.laneId)?.playing?.id !== dest.clip.id) {
-        sessionHost.launchClipAt(dest.laneId, dest.slotIdx);
+      // The actual "start recording" step — deferred behind the count-in below.
+      const beginRecording = () => {
+        const barTicks = ticksPerBar(deps.seq.meter);
+        recorder.start({
+          mode,
+          existingNotes: dest.clip.notes,
+          clipLengthTicks: dest.isNew ? null : dest.clip.lengthBars * barTicks,
+          barTicks,
+          posTicks: () => posTicksFor(dest),
+        });
+        if (mode === 'replace') dest.clip.notes = [];
+        // Nothing playing → launch the full scene for context. Otherwise, if the
+        // destination clip isn't the one currently looping on its own lane (lane
+        // idle, or playing a DIFFERENT clip), launch just that clip so it gets a
+        // real loopStartedAt — without it, posTicksFor() has no playhead to
+        // measure against and every captured note piles up at tick 0. Launching
+        // only the destination clip (not the scene) never disturbs other lanes'
+        // already-running transport. If the destination clip is already the one
+        // playing on its lane, leave the transport alone and capture against its
+        // running loop.
+        if (!anyPlaying()) {
+          sessionHost.launchSceneAt(dest.slotIdx);
+        } else if (sessionHost.laneStates.get(dest.laneId)?.playing?.id !== dest.clip.id) {
+          sessionHost.launchClipAt(dest.laneId, dest.slotIdx);
+        }
+      };
+      // From idle, play a 1-bar count-in first so the performer can get in tempo.
+      // Notes played during it still SOUND (playLiveNote is unchanged) but aren't
+      // recorded — the recorder isn't started until beginRecording runs. When
+      // something is already playing (already in time), or no count-in is wired,
+      // record immediately.
+      if (!anyPlaying() && deps.countIn) {
+        countInCancel = deps.countIn(1, deps.seq.bpm, deps.seq.meter, () => {
+          countInCancel = null;
+          beginRecording();
+        });
+      } else {
+        beginRecording();
       }
     },
     stopCapture() {
+      // Cancel a running count-in (recording never started): stop the metronome,
+      // drop the placeholder clip, no commit.
+      if (countInCancel) {
+        countInCancel();
+        countInCancel = null;
+        const dest = capture; capture = null;
+        if (dest?.isNew) { dest.laneRef.clips[dest.slotIdx] = null; sessionHost.renderWithMixer(); }
+        return;
+      }
       if (!recorder.isRecording() || !capture) { capture = null; return; }
       const dest = capture;
       capture = null;
@@ -218,7 +250,7 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
       }
       if (deps.historyDeps) withUndo(deps.historyDeps, commit); else commit();
     },
-    isCapturing: () => recorder.isRecording(),
+    isCapturing: () => recorder.isRecording() || countInCancel != null,
     canCapture: () => resolveDestination() != null,
     engineParamIds: (laneId) => {
       const res = laneResources.get(laneId);
