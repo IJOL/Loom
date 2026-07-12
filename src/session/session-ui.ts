@@ -170,6 +170,19 @@ function laneHeader(lane: SessionLane, cb: SessionUICallbacks, isActive: boolean
   name.textContent = lane.name ?? lane.id.toUpperCase();
   el.appendChild(name);
 
+  // The active header carries a chevron that collapses / reopens the synth
+  // editor. Only the chevron collapses — the header click never does.
+  if (isActive) {
+    const chevron = document.createElement('button');
+    chevron.className = 'session-lane-collapse';
+    chevron.textContent = synthCollapsed ? '▸' : '▾';
+    chevron.title = synthCollapsed ? 'Show the instrument editor' : 'Collapse the instrument editor';
+    chevron.addEventListener('pointerdown', (e) => e.stopPropagation());
+    chevron.addEventListener('pointerup', (e) => e.stopPropagation());
+    chevron.addEventListener('click', (e) => { e.stopPropagation(); cb.onToggleSynthEditor?.(); });
+    el.appendChild(chevron);
+  }
+
   // Whole header selects the lane (opens its editor). A quick second click
   // renames instead — index-timed like the scene launch, because the select
   // re-renders the grid and the rename must land on the fresh element.

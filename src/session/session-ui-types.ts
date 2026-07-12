@@ -39,6 +39,8 @@ export interface SessionUICallbacks {
   ) => void;
   onAddClipRow: () => void;
   onEditLane:  (laneId: string) => void;
+  /** Collapse / reopen the synth editor of the active lane (the header chevron). */
+  onToggleSynthEditor?: () => void;
   onDeleteClip:  (laneId: string, clipIdx: number) => void;
   onDeleteLane:  (laneId: string) => void;
   onDeleteScene: (sceneIdx: number) => void;

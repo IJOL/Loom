@@ -32,3 +32,31 @@ describe('column header as lane selector', () => {
     expect(host.querySelectorAll('.session-cell-col-active').length).toBe(0);
   });
 });
+
+describe('synth collapse chevron', () => {
+  it('shows a chevron only on the active header and toggles via onToggleSynthEditor', () => {
+    const host = document.createElement('div');
+    const onToggleSynthEditor = vi.fn();
+    const onEditLane = vi.fn();
+    renderSessionGrid(host, makeState(), new Map(), noopCallbacks({ onToggleSynthEditor, onEditLane }), undefined, { activeEditLane: 'bass' });
+    const chevron = host.querySelector('.session-lane-header-active .session-lane-collapse') as HTMLButtonElement;
+    expect(chevron).toBeTruthy();
+    expect(chevron.textContent).toBe('▾');
+    chevron.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(onToggleSynthEditor).toHaveBeenCalledTimes(1);
+    expect(onEditLane).not.toHaveBeenCalled(); // chevron must not also select
+  });
+
+  it('shows ▸ when the synth is collapsed', () => {
+    const host = document.createElement('div');
+    renderSessionGrid(host, makeState(), new Map(), noopCallbacks(), undefined, { activeEditLane: 'bass', synthCollapsed: true });
+    const chevron = host.querySelector('.session-lane-collapse') as HTMLButtonElement;
+    expect(chevron.textContent).toBe('▸');
+  });
+
+  it('renders no chevron on inactive headers', () => {
+    const host = document.createElement('div');
+    renderSessionGrid(host, makeState(), new Map(), noopCallbacks(), undefined, { activeEditLane: null });
+    expect(host.querySelectorAll('.session-lane-collapse').length).toBe(0);
+  });
+});

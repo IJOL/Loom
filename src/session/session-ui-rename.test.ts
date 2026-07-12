@@ -23,6 +23,7 @@ export function noopCallbacks(over: Partial<SessionUICallbacks> = {}): SessionUI
     onDuplicateLane() {}, onDuplicateScene() {}, onCaptureScene() {},
     onAddStemLanes() {}, onAddClipRow() {}, onEditLane() {}, onDeleteClip() {},
     onDeleteLane() {}, onDeleteScene() {}, onToggleDrumsExpanded() {},
+    onToggleSynthEditor() {},
     ...over,
   };
 }
