@@ -91,6 +91,7 @@ import { createMediator } from './control/control-mediator';
 import { createMidiAccess } from './control/web-midi-access';
 import { wireControlSurfaceUI } from './control/control-surface-ui';
 import { attachComputerKeyboard } from './control/computer-keyboard';
+import { attachTransportHotkeys } from './control/transport-hotkeys';
 import { isKbInputEnabled } from './core/clip-kb-input';
 import { listProfiles } from './control/profile-registry';
 import { loadControlPrefs, saveControlPrefs } from './control/persistence';
@@ -563,6 +564,13 @@ attachComputerKeyboard({
   facade: controlFacade,
   getActiveLane: () => activeLaneStore.get(),
   isEnabled: isKbInputEnabled,
+});
+
+// Transport hotkeys: Space = global pause/resume (exact), R = Rec toggle.
+attachTransportHotkeys({
+  isTextTarget: (t) => typeof HTMLElement !== 'undefined' && isTextEditTarget(t),
+  onTogglePlay: () => sessionHost.togglePlayPause(),
+  onToggleRec: () => (controlFacade.isCapturing() ? controlFacade.stopCapture() : controlFacade.startCapture('merge')),
 });
 
 let controlMediator: ReturnType<typeof createMediator> | null = null;
