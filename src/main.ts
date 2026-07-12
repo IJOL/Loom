@@ -89,6 +89,8 @@ import { createLoomFacade } from './control/loom-facade';
 import { createMediator } from './control/control-mediator';
 import { createMidiAccess } from './control/web-midi-access';
 import { wireControlSurfaceUI } from './control/control-surface-ui';
+import { attachComputerKeyboard } from './control/computer-keyboard';
+import { isKbInputEnabled } from './core/clip-kb-input';
 import { listProfiles } from './control/profile-registry';
 import { loadControlPrefs, saveControlPrefs } from './control/persistence';
 import { clampBpm, formatBpm } from './core/bpm';
@@ -549,6 +551,15 @@ const controlFacade = createLoomFacade({
   // is built (further below), but loop-record commits happen at user-interaction
   // time, so the getter always sees the final value.
   get historyDeps() { return _discreteHistoryDeps; },
+});
+
+// The computer keyboard is a MIDI-style live input: when the ⌨ Keys toggle is on,
+// musical keys play the ACTIVE lane via the facade (so chord note-FX + ● Rec
+// loop-record apply), just like a hardware MIDI keydown — no clip typing.
+attachComputerKeyboard({
+  facade: controlFacade,
+  getActiveLane: () => activeLaneStore.get(),
+  isEnabled: isKbInputEnabled,
 });
 
 let controlMediator: ReturnType<typeof createMediator> | null = null;

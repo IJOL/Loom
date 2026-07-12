@@ -79,10 +79,11 @@ export function createFollowToggle(onChange?: (on: boolean) => void): HTMLButton
   return btn;
 }
 
-/** A "⌨ Keys" on/off pill for the piano-roll's computer-keyboard note input
- *  (musical typing). OPT-IN: OFF by default, so typing in the focused editor
- *  never inserts notes. `onChange` lets the editor react (e.g. redraw to show or
- *  hide the green insertion cursor). */
+/** A "⌨ Keys" on/off pill. OPT-IN (OFF by default): when ON, the computer
+ *  keyboard plays the ACTIVE lane live (ASDFG = notes, z/x = octave) via the
+ *  facade — the same path as a hardware MIDI keyboard, so chord note-FX + ● Rec
+ *  loop-record apply. It no longer types notes into the clip. `onChange` lets
+ *  the editor react to the toggle. */
 export function createKbInputToggle(onChange?: (on: boolean) => void): HTMLButtonElement {
   const btn = document.createElement('button');
   btn.className = 'clip-loop-toggle'; // reuse the on/off pill styling
@@ -90,8 +91,8 @@ export function createKbInputToggle(onChange?: (on: boolean) => void): HTMLButto
     btn.textContent = '⌨ Keys';
     btn.classList.toggle('on', isKbInputEnabled());
     btn.title = isKbInputEnabled()
-      ? 'Keyboard note input: ON (letter keys play / record notes)'
-      : 'Keyboard note input: OFF (typing does not insert notes)';
+      ? 'Computer keyboard: ON — ASDFG play the active lane live, z/x octave (● Rec captures it). Click to turn off.'
+      : 'Play the active lane live from the computer keyboard (ASDFG, z/x octave)';
   };
   btn.addEventListener('click', () => { toggleKbInput(); refresh(); onChange?.(isKbInputEnabled()); });
   refresh();
