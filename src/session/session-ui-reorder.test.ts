@@ -1,5 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+// Side-effect imports register real engines so the "+" menu has engine entries
+// (same pattern as session-add-lane.test.ts).
+import '../engines/subtractive';
+import '../engines/tb303';
 import { renderSessionGrid, _resetSceneClickStateForTesting } from './session-ui';
 import { makeState, noopCallbacks } from './session-ui-rename.test';
 import type { LanePlayState } from './session-runtime';
@@ -58,5 +62,30 @@ describe('synth collapse chevron', () => {
     const host = document.createElement('div');
     renderSessionGrid(host, makeState(), new Map(), noopCallbacks(), undefined, { activeEditLane: null });
     expect(host.querySelectorAll('.session-lane-collapse').length).toBe(0);
+  });
+});
+
+describe('+ add-lane engine menu', () => {
+  it('opens a menu whose Audio channel entry calls onAddAudioChannel', () => {
+    const host = document.createElement('div');
+    const onAddAudioChannel = vi.fn();
+    renderSessionGrid(host, makeState(), new Map(), noopCallbacks({ onAddAudioChannel }));
+    (host.querySelector('.session-lane-add') as HTMLButtonElement).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const items = Array.from(host.querySelectorAll('.session-add-item')) as HTMLElement[];
+    const audio = items.find((i) => /audio channel/i.test(i.textContent ?? ''));
+    expect(audio).toBeTruthy();
+    audio!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(onAddAudioChannel).toHaveBeenCalledTimes(1);
+  });
+
+  it('an engine entry calls onAddLane with the engine id', () => {
+    const host = document.createElement('div');
+    const onAddLane = vi.fn();
+    renderSessionGrid(host, makeState(), new Map(), noopCallbacks({ onAddLane }));
+    (host.querySelector('.session-lane-add') as HTMLButtonElement).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const item = host.querySelector('.session-add-item[data-engine-id]') as HTMLElement;
+    const id = item.dataset.engineId!;
+    item.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(onAddLane).toHaveBeenCalledWith(id);
   });
 });

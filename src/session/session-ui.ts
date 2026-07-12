@@ -6,6 +6,7 @@ import type { LanePlayState } from './session-runtime';
 import { openContextMenu } from '../core/context-menu';
 import { beginInlineRename } from './inline-rename';
 import { wireClipDrag } from './session-clip-drag';
+import { listEngines } from '../engines/registry';
 import type { SessionUICallbacks } from './session-ui-types';
 export type { SessionUICallbacks } from './session-ui-types';
 
@@ -81,6 +82,7 @@ export function renderSessionGrid(
   headerRow.className = 'session-row session-row-header';
   headerRow.appendChild(spacer());
   for (const lane of state.lanes) headerRow.appendChild(laneHeader(lane, cb, lane.id === opts.activeEditLane, !!opts.synthCollapsed));
+  headerRow.appendChild(addLaneHeader(cb));
   headerRow.appendChild(scenesHeader());
   table.appendChild(headerRow);
 
@@ -139,6 +141,36 @@ export function renderSessionGrid(
     d.className = 'session-spacer';
     d.textContent = text;
     return d;
+  }
+
+  function addLaneHeader(cb: SessionUICallbacks) {
+    const wrap = document.createElement('div');
+    wrap.className = 'session-lane-add-wrap';
+    const btn = document.createElement('button');
+    btn.className = 'session-lane-add';
+    btn.textContent = '+';
+    btn.title = 'Add a lane';
+    const menu = document.createElement('div');
+    menu.className = 'session-lane-add-menu';
+    menu.hidden = true;
+
+    const addItem = (label: string, onClick: () => void, engineId?: string) => {
+      const it = document.createElement('button');
+      it.className = 'session-add-item';
+      if (engineId) it.dataset.engineId = engineId;
+      it.textContent = label;
+      it.addEventListener('click', () => { menu.hidden = true; onClick(); });
+      menu.appendChild(it);
+    };
+    for (const engine of listEngines('polyhost')) {
+      if (engine.id === 'audio') continue; // audio is added via the explicit entry below
+      addItem(engine.name, () => cb.onAddLane(engine.id), engine.id);
+    }
+    if (cb.onAddAudioChannel) addItem('Audio channel', () => cb.onAddAudioChannel!());
+
+    btn.addEventListener('click', (e) => { e.stopPropagation(); menu.hidden = !menu.hidden; });
+    wrap.append(btn, menu);
+    return wrap;
   }
 
   function scenesHeader() {
