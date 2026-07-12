@@ -70,6 +70,17 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
   // Set while a count-in is playing (before recording actually starts) so
   // stopCapture can cancel it and isCapturing() reflects the armed state.
   let countInCancel: (() => void) | null = null;
+  // While a capture pass is open we hold ONE undo gesture around it: notes are
+  // appended to the live clip as they're played (so the grid shows them in real
+  // time), which would otherwise make AutoHistory checkpoint on every keyup and
+  // splinter the recording into many undo steps. The gesture bracket coalesces
+  // the whole pass — clip placement + every note — into a single undo step.
+  let recordingGestureOpen = false;
+  const closeRecordingGesture = () => {
+    if (!recordingGestureOpen) return;
+    recordingGestureOpen = false;
+    deps.historyDeps?.endGesture?.();
+  };
 
   function anyPlaying(): boolean {
     for (const lp of sessionHost.laneStates.values()) if (lp.playing) return true;
@@ -183,6 +194,10 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
       const dest = resolveDestination();
       if (!dest) return;
       capture = dest;
+      // Open ONE undo gesture for the whole pass (clip placement + count-in +
+      // every recorded note) — closed in stopCapture. See recordingGestureOpen.
+      deps.historyDeps?.beginGesture?.();
+      recordingGestureOpen = true;
       // New clip: place it now so it exists in the session (visible, playable)
       // for the duration of the capture pass.
       if (dest.isNew) {
@@ -194,10 +209,18 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
         const barTicks = ticksPerBar(deps.seq.meter);
         recorder.start({
           mode,
-          existingNotes: dest.clip.notes,
+          // Snapshot the pre-recording notes: onCapture below appends captured
+          // notes into dest.clip.notes live, so the recorder must NOT read that
+          // same (now-mutating) array as its merge base — it would double-count.
+          existingNotes: [...dest.clip.notes],
           clipLengthTicks: dest.isNew ? null : dest.clip.lengthBars * barTicks,
           barTicks,
           posTicks: () => posTicksFor(dest),
+          // Mirror each completed note into the live clip. The session-host RAF
+          // loop redraws the open piano-roll from clip.notes every frame, so the
+          // note appears on the grid the instant the key is released. stopCapture
+          // then overwrites clip.notes with the authoritative (clamped) result.
+          onCapture: (note) => { dest.clip.notes.push(note); },
         });
         if (mode === 'replace') dest.clip.notes = [];
         // Nothing playing → launch the full scene for context. Otherwise, if the
@@ -237,9 +260,10 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
         countInCancel = null;
         const dest = capture; capture = null;
         if (dest?.isNew) { dest.laneRef.clips[dest.slotIdx] = null; sessionHost.renderWithMixer(); }
+        closeRecordingGesture();
         return;
       }
-      if (!recorder.isRecording() || !capture) { capture = null; return; }
+      if (!recorder.isRecording() || !capture) { capture = null; closeRecordingGesture(); return; }
       const dest = capture;
       capture = null;
       const { notes, lengthTicks } = recorder.stop();
@@ -255,9 +279,14 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
       if (dest.isNew && notes.length === 0) {
         dest.laneRef.clips[dest.slotIdx] = null;
         sessionHost.renderWithMixer();
+        closeRecordingGesture();
         return;
       }
       if (deps.historyDeps) withUndo(deps.historyDeps, commit); else commit();
+      // Close the gesture AFTER the commit so AutoHistory's endGesture checkpoint
+      // captures the whole recording (pre-record baseline → committed notes) as
+      // one undo step.
+      closeRecordingGesture();
     },
     isCapturing: () => recorder.isRecording() || countInCancel != null,
     canCapture: () => resolveDestination() != null,

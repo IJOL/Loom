@@ -13,6 +13,7 @@ import type { LaneResourceMap } from '../core/lane-resources';
 import type { KnobHandle } from '../core/knob';
 import type { Sequencer } from '../core/sequencer';
 import type { TimeSignature } from '../core/meter';
+import type { HistoryDeps } from '../save/history-wiring';
 
 // createLoomFacade's resolveDestination() reads document.getElementById('session-inspector')
 // to test whether the inspector panel is shown. Vitest runs this file under
@@ -235,5 +236,66 @@ describe('loom-facade — loop-record capture', () => {
     expect(lane.clips[0] ?? null).toBeNull();        // placeholder dropped
     expect(launchSceneAt).not.toHaveBeenCalled();
     expect(f.isCapturing()).toBe(false);
+  });
+
+  it('(h) live: a captured note lands in clip.notes on release, BEFORE stopCapture (real-time grid)', () => {
+    const dest: SessionClip = { id: 'clip-1', lengthBars: 2, notes: [], color: '#fff' };
+    const lane: SessionLane = { id: 'sub', engineId: 'subtractive', clips: [dest] };
+    const ctx = makeCtx(0);
+    panelHidden = false;
+    const { host } = makeHostStub({
+      lanes: [lane],
+      selected: { laneId: 'sub', clipIdx: 0 },
+      playing: { sub: dest },
+      loopStartedAt: { sub: 0 },
+    });
+    const f = createLoomFacade(makeDeps(host, { ctx, bpm: 120 }));
+
+    f.startCapture('merge');
+    (ctx as unknown as { currentTime: number }).currentTime = 0.5;   // -> 96 ticks
+    f.playLiveNote('sub', 64, 100);
+    (ctx as unknown as { currentTime: number }).currentTime = 1.0;   // -> 192 ticks
+    f.releaseLiveNote('sub', 64);
+
+    // The RAF loop redraws the piano-roll from clip.notes every frame, so the
+    // note must already be present the instant the key is released — not only
+    // after stopCapture(). This is the whole point of the real-time-grid fix.
+    expect(dest.notes).toEqual([{ start: 96, duration: 96, midi: 64, velocity: 100 }]);
+
+    f.stopCapture();
+    // stop() is authoritative and must NOT double-count the live-appended note.
+    expect(dest.notes).toEqual([{ start: 96, duration: 96, midi: 64, velocity: 100 }]);
+  });
+
+  it('(i) brackets the whole capture in ONE undo gesture (beginGesture at start, endGesture at stop)', () => {
+    const dest: SessionClip = { id: 'clip-1', lengthBars: 2, notes: [], color: '#fff' };
+    const lane: SessionLane = { id: 'sub', engineId: 'subtractive', clips: [dest] };
+    const ctx = makeCtx(0);
+    panelHidden = false;
+    const { host } = makeHostStub({
+      lanes: [lane],
+      selected: { laneId: 'sub', clipIdx: 0 },
+      playing: { sub: dest },
+      loopStartedAt: { sub: 0 },
+    });
+    const beginGesture = vi.fn();
+    const endGesture = vi.fn();
+    const historyDeps = { beginGesture, endGesture } as unknown as HistoryDeps;
+    const f = createLoomFacade({ ...makeDeps(host, { ctx, bpm: 120 }), historyDeps });
+
+    f.startCapture('merge');
+    expect(beginGesture).toHaveBeenCalledTimes(1);
+    expect(endGesture).not.toHaveBeenCalled();       // still recording
+
+    (ctx as unknown as { currentTime: number }).currentTime = 0.5;
+    f.playLiveNote('sub', 64, 100);
+    (ctx as unknown as { currentTime: number }).currentTime = 1.0;
+    f.releaseLiveNote('sub', 64);
+    // A held-key release must not close the gesture — only stopCapture does.
+    expect(endGesture).not.toHaveBeenCalled();
+
+    f.stopCapture();
+    expect(endGesture).toHaveBeenCalledTimes(1);      // one undo step for the whole take
+    expect(beginGesture).toHaveBeenCalledTimes(1);
   });
 });

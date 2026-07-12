@@ -9,6 +9,12 @@ interface StartOpts {
   clipLengthTicks: number | null;   // null = new clip (round length up to bar)
   barTicks: number;
   posTicks: () => number;
+  /** Called the moment a note completes (on noteOff), with the freshly paired
+   *  NoteEvent — lets the caller mirror it into the live clip so the grid
+   *  shows recorded notes in real time instead of only on stop(). The final
+   *  stop() result is still authoritative (it clamps/merges); onCapture is a
+   *  best-effort live preview. */
+  onCapture?: (note: NoteEvent) => void;
 }
 
 export interface LiveRecorder {
@@ -39,7 +45,9 @@ export function createLiveRecorder(): LiveRecorder {
       open.delete(midi);
       const end = opts.posTicks();
       const duration = Math.max(1, end - on.start);
-      captured.push({ start: on.start, duration, midi, velocity: on.velocity });
+      const note: NoteEvent = { start: on.start, duration, midi, velocity: on.velocity };
+      captured.push(note);
+      opts.onCapture?.(note);
     },
     stop() {
       recording = false;
