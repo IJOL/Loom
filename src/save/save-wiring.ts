@@ -126,7 +126,9 @@ function closeSaveManager(): void {
   document.getElementById('save-manager-modal')!.hidden = true;
 }
 
-export function wireSaveManager(deps: SaveWiringDeps): void {
+export function wireSaveManager(
+  deps: SaveWiringDeps,
+): { openForSave: () => void; openForLoad: () => void; close: () => void } {
   const applyLoaded = (data: unknown) => applyLoadedState(data, deps);
   const openManager = () => openSaveManager(deps, applyLoaded);
 
@@ -194,6 +196,13 @@ export function wireSaveManager(deps: SaveWiringDeps): void {
     existingLoadBtn.parentNode!.replaceChild(newLoad, existingLoadBtn);
     newLoad.addEventListener('click', openManager);
   }
+
+  // Expose the openers so the menu bar can call the SAME functions (no synthetic clicks).
+  return {
+    openForSave: openManagerForSave,
+    openForLoad: openManager,
+    close: closeSaveManager,
+  };
 }
 
 export function bootRecoveryLoad(deps: SaveWiringDeps): void {

@@ -1128,8 +1128,9 @@ if (demoPicker) {
 }
 
 // New: wipe to a fresh empty session (default 303/drums/sub lanes, no clips).
-const newSessionBtn = document.getElementById('new-session');
-newSessionBtn?.addEventListener('click', async () => {
+// Named + exported-shape function so the menu bar can call the SAME function
+// the toolbar button calls (no synthetic clicks).
+async function newSession(): Promise<void> {
   if (!await confirmDialog('Start a new empty session? Unsaved changes will be lost.')) return;
   // Stop the transport + silence every lane's voices BEFORE wiping. Without this
   // the master clock keeps running and in-flight voices keep sounding after the
@@ -1142,7 +1143,8 @@ newSessionBtn?.addEventListener('click', async () => {
   // just-deleted clips).
   performanceFeature.resetArrangement();
   autoHistory.markClean();
-});
+}
+document.getElementById('new-session')?.addEventListener('click', () => { void newSession(); });
 
 // App is always in session mode — seq.sessionMode must be true at boot.
 seq.sessionMode = true;
@@ -1204,7 +1206,7 @@ sessionHost.setHistoryDeps(historyDeps);
 // Stems: transport-bar "Stems…" dialog → local separation service. Every
 // separation also transcribes each stem to a note/drums lane (always-on).
 const stemClient = new StemClient(stemServiceBaseUrl());
-wireStemDialog({
+const stemDialog = wireStemDialog({
   ctx,
   client: stemClient,
   addStemLanes: (stems, opts) => sessionHost.addStemLanes(stems, opts),
@@ -1265,7 +1267,7 @@ wireRandomizeUI({
   applyDrumKitPreset: (laneId, name) => { void sessionHost.applyDrumPreset(laneId, name); },
   historyDeps,
 });
-wireSaveManager(saveWiringDeps);
+const saveManager = wireSaveManager(saveWiringDeps);
 // Recovery can allocate a subtractive lane synchronously, so gate it on the
 // worklet module being registered (same reason as the boot demo above). On a
 // fresh boot with no autosave this is a no-op regardless of timing.

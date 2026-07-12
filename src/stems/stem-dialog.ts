@@ -20,7 +20,7 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 const fmtElapsed = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 
 /** Wire the Stems modal. Call once at boot after deps exist. */
-export function wireStemDialog(deps: StemDialogDeps): void {
+export function wireStemDialog(deps: StemDialogDeps): { open: () => void } {
   const modal = $('stems-modal');
   const fileInput = $<HTMLInputElement>('stems-file');
   const runBtn = $<HTMLButtonElement>('stems-run');
@@ -173,4 +173,6 @@ export function wireStemDialog(deps: StemDialogDeps): void {
   $('stems-open').addEventListener('click', open);
   $('stems-close').addEventListener('click', close);
   $('stems-backdrop').addEventListener('click', close);
+
+  return { open };
 }

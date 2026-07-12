@@ -14,7 +14,25 @@ export interface DemoPickerDeps {
   applyBpm?: (bpm: number) => void;
 }
 
-export function wireDemoPicker(deps: DemoPickerDeps): void {
+/** Load a demo session by path and apply it. Extracted from the picker's
+ *  `change` handler so the menu bar can call the SAME function (no synthetic
+ *  clicks / no dispatching a `change` event on the hidden `<select>`). */
+export async function loadDemoSession(
+  path: string,
+  deps: { sessionHost: { applyLoadedSessionState: (s: any) => void }; applyBpm?: (bpm: number) => void; onLoaded?: () => void },
+): Promise<void> {
+  if (!path) return;
+  try {
+    const state = await fetchDemoSession(path);
+    deps.sessionHost.applyLoadedSessionState(state);
+    if (typeof state.bpm === 'number') deps.applyBpm?.(state.bpm);
+    deps.onLoaded?.();
+  } catch (err) {
+    void alertDialog(`Demo load failed: ${(err as Error).message}`);
+  }
+}
+
+export function wireDemoPicker(deps: DemoPickerDeps): { demos: { label: string; path: string }[] } {
   const { sessionHost, selectEl, demos, onLoaded, applyBpm } = deps;
   selectEl.innerHTML = '';
   const placeholder = document.createElement('option');
@@ -27,15 +45,6 @@ export function wireDemoPicker(deps: DemoPickerDeps): void {
     o.textContent = d.label;
     selectEl.appendChild(o);
   }
-  selectEl.addEventListener('change', async () => {
-    if (!selectEl.value) return;
-    try {
-      const state = await fetchDemoSession(selectEl.value);
-      sessionHost.applyLoadedSessionState(state);
-      if (typeof state.bpm === 'number') applyBpm?.(state.bpm);
-      onLoaded?.();
-    } catch (err) {
-      void alertDialog(`Demo load failed: ${(err as Error).message}`);
-    }
-  });
+  selectEl.addEventListener('change', () => loadDemoSession(selectEl.value, { sessionHost, applyBpm, onLoaded }));
+  return { demos };
 }
