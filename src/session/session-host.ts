@@ -63,6 +63,9 @@ export class SessionHost {
    *  Starts at -1 (no scene launched) so a loaded save whose scene 0 has
    *  globalLoopEnabled doesn't wrap the playhead before any scene is launched. */
   activeSceneIdx = -1;
+  /** Space-bar pause: the saved playhead (fractional bar) + scene, so resume
+   *  seeks exactly back to it. Cleared by any other launch/stop. */
+  private paused: { posBar: number; sceneIdx: number } | null = null;
   /** Global-loop driver state owned by the host (see tickGlobalLoop). */
   private glState = { anchorSec: 0, lastIter: 0 };
   /** @internal — accessed by the extracted session-host-* sub-modules. */
@@ -138,6 +141,7 @@ export class SessionHost {
   /** Launch (or restart) a clip by lane id + clip index. Used by the MIDI mediator
    *  and any non-UI launcher. Mirrors onClipPlayPause's transport idle/running logic. */
   launchClipAt(laneId: string, clipIdx: number): void {
+    this.paused = null;                 // a manual launch discards a pending Space-pause
     const lane = this.state.lanes.find((l) => l.id === laneId);
     const clip = lane?.clips[clipIdx];
     if (!lane || !clip) return;
@@ -163,6 +167,7 @@ export class SessionHost {
 
   /** Launch a scene by index (Ableton model). */
   launchSceneAt(sceneIdx: number): void {
+    this.paused = null;                 // a manual scene launch discards a pending Space-pause
     const scene = this.state.scenes[sceneIdx];
     if (!scene) return;
     void this.deps.ctx.resume();
@@ -356,8 +361,42 @@ export class SessionHost {
 
   /** Stop every playing/queued clip. */
   stopAllClips(): void {
+    this.paused = null;                 // the transport Stop button discards a pending Space-pause
     stopAll(this.laneStates, this.deps.liveVoices, this.deps.ctx.currentTime);
     this.renderWithMixer();
+  }
+
+  private anyLanePlaying(): boolean {
+    for (const lp of this.laneStates.values()) if (lp.playing) return true;
+    return false;
+  }
+
+  /** Pause the transport, remembering the exact playhead (fractional bar) + the
+   *  launched scene so resumeTransport can seek back to it. No-op when nothing is
+   *  playing or no scene is launched. */
+  pauseTransport(): void {
+    if (this.paused || this.activeSceneIdx < 0 || !this.anyLanePlaying()) return;
+    const { bpm, meter } = this.deps.seq;
+    const posBar = (this.deps.ctx.currentTime - this.songAnchorSec) / songBarSec(bpm, meter);
+    const sceneIdx = this.activeSceneIdx;
+    this.stopAllClips();                // clears this.paused, so set it AFTER
+    this.paused = { posBar: Math.max(0, posBar), sceneIdx };
+  }
+
+  /** Resume a paused transport: re-launch the same scene and seek exactly back to
+   *  the saved position (seekToBar accepts a fractional bar). No-op if not paused. */
+  resumeTransport(): void {
+    const p = this.paused;
+    if (!p) return;
+    this.paused = null;                 // read first, then launchSceneAt clears it too
+    this.launchSceneAt(p.sceneIdx);
+    this.seekToBar(p.posBar);
+  }
+
+  /** Space-bar toggle: resume if paused, else pause if playing, else no-op. */
+  togglePlayPause(): void {
+    if (this.paused) this.resumeTransport();
+    else if (this.anyLanePlaying()) this.pauseTransport();
   }
 
   /** Append a scene capturing the currently-playing clips. Wired to the toolbar
