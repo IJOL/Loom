@@ -24,9 +24,17 @@ const COLOR_IDLE = '#c9c9c9';
 // keeps launch INSTANT on a single click while making double-click rename work.
 const sceneLastClick = new Map<number, number>();
 const SCENE_DBLCLICK_MS = 350;
-/** Test-only: clear the scene click-timing state so module state can't leak
+// Single-vs-double click disambiguation for lane headers, keyed by lane id —
+// same rationale as sceneLastClick (a select re-renders the header, so the
+// second click of a rename double lands on a fresh element).
+const laneLastClick = new Map<string, number>();
+const LANE_DBLCLICK_MS = 350;
+/** Test-only: clear the click-timing state so module state can't leak
  *  between tests (clicks in different tests would otherwise read as a double). */
-export function _resetSceneClickStateForTesting(): void { sceneLastClick.clear(); }
+export function _resetSceneClickStateForTesting(): void { sceneLastClick.clear(); laneLastClick.clear(); }
+
+/** Options for the active-lane marking + collapse state the host passes in. */
+export interface RenderGridOpts { activeEditLane?: string | null; synthCollapsed?: boolean }
 
 /** A small ✕ delete button. Stops pointer/click propagation so it never triggers
  *  the cell's clip drag nor the scene/lane click underneath it (mirrors the play
@@ -48,6 +56,7 @@ export function renderSessionGrid(
   laneStates: Map<string, LanePlayState>,
   cb: SessionUICallbacks,
   openClip?: ClipSlot,
+  opts: RenderGridOpts = {},
 ): void {
   host.innerHTML = '';
   host.classList.add('session-grid-root');
@@ -71,7 +80,7 @@ export function renderSessionGrid(
   const headerRow = document.createElement('div');
   headerRow.className = 'session-row session-row-header';
   headerRow.appendChild(spacer());
-  for (const lane of state.lanes) headerRow.appendChild(laneHeader(lane, cb));
+  for (const lane of state.lanes) headerRow.appendChild(laneHeader(lane, cb, lane.id === opts.activeEditLane, !!opts.synthCollapsed));
   headerRow.appendChild(scenesHeader());
   table.appendChild(headerRow);
 
@@ -83,7 +92,7 @@ export function renderSessionGrid(
     rowLabel.className = 'session-row-label';
     rowLabel.textContent = String(r + 1);
     row.appendChild(rowLabel);
-    for (const lane of state.lanes) row.appendChild(clipCell(lane, r, laneStates, cb, state, openClip));
+    for (const lane of state.lanes) row.appendChild(clipCell(lane, r, laneStates, cb, state, openClip, lane.id === opts.activeEditLane));
     row.appendChild(sceneLaunchCell(state.scenes[r], r, cb));
     table.appendChild(row);
   }
@@ -148,29 +157,33 @@ export function renderSessionGrid(
   }
 }
 
-function laneHeader(lane: SessionLane, cb: SessionUICallbacks): HTMLElement {
+function laneHeader(lane: SessionLane, cb: SessionUICallbacks, isActive: boolean, synthCollapsed: boolean): HTMLElement {
   const el = document.createElement('div');
   el.className = `session-lane-header lane-engine-${lane.engineId}`;
+  if (isActive) el.classList.add('session-lane-header-active');
   el.dataset.laneId = lane.id;
+  el.title = 'Click to edit this instrument · double-click the name to rename';
   el.appendChild(deleteCross('Delete track', () => cb.onDeleteLane(lane.id)));
+
   const name = document.createElement('div');
-  name.className = 'session-lane-name';
+  name.className = isActive ? 'session-lane-name session-lane-name-active' : 'session-lane-name';
   name.textContent = lane.name ?? lane.id.toUpperCase();
   el.appendChild(name);
-  name.title = 'Double-click to rename';
-  name.addEventListener('dblclick', (e) => {
-    e.stopPropagation();
-    beginInlineRename(name, lane.name ?? lane.id.toUpperCase(), {
-      commit: (v) => cb.onRenameLane?.(lane.id, v),
-    });
-  });
 
-  const edit = document.createElement('button');
-  edit.className = 'session-lane-edit';
-  edit.textContent = '⚙';
-  edit.title = 'Edit instrument (switches to Classic tab)';
-  edit.addEventListener('click', () => cb.onEditLane(lane.id));
-  el.appendChild(edit);
+  // Whole header selects the lane (opens its editor). A quick second click
+  // renames instead — index-timed like the scene launch, because the select
+  // re-renders the grid and the rename must land on the fresh element.
+  el.addEventListener('click', () => {
+    const now = performance.now();
+    const prev = laneLastClick.get(lane.id);
+    if (prev !== undefined && now - prev < LANE_DBLCLICK_MS) {
+      laneLastClick.delete(lane.id);
+      beginInlineRename(name, lane.name ?? lane.id.toUpperCase(), { commit: (v) => cb.onRenameLane?.(lane.id, v) });
+    } else {
+      laneLastClick.set(lane.id, now);
+      cb.onEditLane(lane.id);
+    }
+  });
 
   el.addEventListener('contextmenu', (e) =>
     openContextMenu(e, [
@@ -192,10 +205,12 @@ function clipCell(
   cb: SessionUICallbacks,
   state: SessionState,
   openClip?: ClipSlot,
+  colActive = false,
 ): HTMLElement {
   const clip: SessionClip | null = lane.clips[rowIdx] ?? null;
   const cell = document.createElement('div');
   cell.className = 'session-cell';
+  if (colActive) cell.classList.add('session-cell-col-active');
   cell.dataset.laneId = lane.id;
   cell.dataset.clipIdx = String(rowIdx);
 

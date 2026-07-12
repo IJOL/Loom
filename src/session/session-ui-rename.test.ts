@@ -46,12 +46,13 @@ describe('open-clip highlight', () => {
 });
 
 describe('grid in-place rename', () => {
-  it('double-clicking the lane name commits via onRenameLane', () => {
+  it('a quick second click on the lane header renames it', () => {
     const host = document.createElement('div');
     const onRenameLane = vi.fn();
     renderSessionGrid(host, makeState(), new Map(), noopCallbacks({ onRenameLane }));
     const nameEl = host.querySelector('.session-lane-name') as HTMLElement;
-    nameEl.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    nameEl.dispatchEvent(new MouseEvent('click', { bubbles: true }));   // 1st → select
+    nameEl.dispatchEvent(new MouseEvent('click', { bubbles: true }));   // 2nd (quick) → rename
     const input = host.querySelector('.inline-rename-input') as HTMLInputElement;
     expect(input).toBeTruthy();
     input.value = 'Reese';
