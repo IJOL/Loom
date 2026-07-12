@@ -44,7 +44,7 @@ export interface FxUIDeps {
 
 let _deps: FxUIDeps | null = null;
 
-export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void; rebuildSends: () => void } {
+export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void; rebuildSends: () => void; refreshMasterComp: () => void } {
   _deps = deps;
 
   const SIZE = 44;
@@ -58,22 +58,22 @@ export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void; re
   const mc = deps.masterComp;
   const init = mc.getState();
 
-  appendKnob(mcRow, { id: 'fx.mcomp.thr',  min: -60, max: 0,  step: 0.5,   value: init.threshold, defaultValue: -24,
+  const kThr = appendKnob(mcRow, { id: 'fx.mcomp.thr',  min: -60, max: 0,  step: 0.5,   value: init.threshold, defaultValue: -24,
     label: 'THR',  color: mcColor, size: SIZE, format: fmtDbSigned,
     onChange: (v) => mc.setState({ threshold: v }) }, deps.registerKnob, undoHooks);
-  appendKnob(mcRow, { id: 'fx.mcomp.rat',  min: 1,   max: 20, step: 0.1,   value: init.ratio,     defaultValue: 4,
+  const kRat = appendKnob(mcRow, { id: 'fx.mcomp.rat',  min: 1,   max: 20, step: 0.1,   value: init.ratio,     defaultValue: 4,
     label: 'RAT',  color: mcColor, size: SIZE, format: fmtRatio,
     onChange: (v) => mc.setState({ ratio: v }) }, deps.registerKnob, undoHooks);
-  appendKnob(mcRow, { id: 'fx.mcomp.atk',  min: 0.001, max: 1, step: 0.001, value: init.attack,   defaultValue: 0.003,
+  const kAtk = appendKnob(mcRow, { id: 'fx.mcomp.atk',  min: 0.001, max: 1, step: 0.001, value: init.attack,   defaultValue: 0.003,
     label: 'ATK',  color: mcColor, size: SIZE, format: (v) => v < 1 ? `${Math.round(v*1000)}ms` : `${v.toFixed(2)}s`,
     onChange: (v) => mc.setState({ attack: v }) }, deps.registerKnob, undoHooks);
-  appendKnob(mcRow, { id: 'fx.mcomp.rel',  min: 0.001, max: 1, step: 0.001, value: init.release,  defaultValue: 0.25,
+  const kRel = appendKnob(mcRow, { id: 'fx.mcomp.rel',  min: 0.001, max: 1, step: 0.001, value: init.release,  defaultValue: 0.25,
     label: 'REL',  color: mcColor, size: SIZE, format: (v) => v < 1 ? `${Math.round(v*1000)}ms` : `${v.toFixed(2)}s`,
     onChange: (v) => mc.setState({ release: v }) }, deps.registerKnob, undoHooks);
-  appendKnob(mcRow, { id: 'fx.mcomp.knee', min: 0,   max: 40, step: 0.5,   value: init.knee,     defaultValue: 30,
+  const kKnee = appendKnob(mcRow, { id: 'fx.mcomp.knee', min: 0,   max: 40, step: 0.5,   value: init.knee,     defaultValue: 30,
     label: 'KNEE', color: mcColor, size: SIZE, format: fmtDbSigned,
     onChange: (v) => mc.setState({ knee: v }) }, deps.registerKnob, undoHooks);
-  appendKnob(mcRow, { id: 'fx.mcomp.mkup', min: 0,   max: 4,  step: 0.01,  value: init.makeup,   defaultValue: 1,
+  const kMkup = appendKnob(mcRow, { id: 'fx.mcomp.mkup', min: 0,   max: 4,  step: 0.01,  value: init.makeup,   defaultValue: 1,
     label: 'MKUP', color: mcColor, size: SIZE, format: (v) => `${v.toFixed(2)}×`,
     onChange: (v) => mc.setState({ makeup: v }) }, deps.registerKnob, undoHooks);
 
@@ -87,6 +87,21 @@ export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void; re
     mcByp.classList.toggle('active', next);
   });
   mcRow.appendChild(mcByp);
+
+  // Pull the master-compressor knobs + bypass back from live state. Called after
+  // a session load / undo / redo restores the compressor (saved-state-v3 applies
+  // masterComp.setState first) so the panel reflects the recalled values instead
+  // of the stale ones the knobs were built with at boot.
+  const refreshMasterComp = (): void => {
+    const st = mc.getState();
+    kThr.setValue(st.threshold);
+    kRat.setValue(st.ratio);
+    kAtk.setValue(st.attack);
+    kRel.setValue(st.release);
+    kKnee.setValue(st.knee);
+    kMkup.setValue(st.makeup);
+    mcByp.classList.toggle('active', st.bypass);
+  };
 
   const masterFxContainer = document.getElementById('fx-filters') as HTMLDivElement;
   // Hide the static "Add Filter" button — buildLaneInsertUI provides its own.
@@ -169,5 +184,5 @@ export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void; re
   };
 
   rebuildSends();
-  return { rebuildMasterInserts, rebuildSends };
+  return { rebuildMasterInserts, rebuildSends, refreshMasterComp };
 }

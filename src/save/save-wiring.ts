@@ -34,6 +34,7 @@ export interface SaveWiringDeps {
   fx: FxBus;
   masterInsertChain: InsertChain;
   masterStrip?: import('../core/master-bus-strip').MasterBusStrip;
+  masterComp?: import('../core/fx').MasterCompressor;
   flashButton: (b: HTMLButtonElement, msg: string) => void;
   history: HistoryController<SavedStateV3>;
   /** Performance view persistence (optional). Wired for save/load only — NOT

@@ -17,6 +17,10 @@ export interface SavedStateV3 {
   masterVol: number;
   /** Master bus EQ/pan/mute — optional/additive; absent ⇒ flat/centred/unmuted. */
   masterStrip?: import('../core/master-bus-strip').MasterBusState;
+  /** Master-bus compressor (THR/RAT/ATK/REL/KNEE/MKUP + bypass) at the tail of
+   *  the master chain — optional/additive; absent ⇒ compressor keeps its
+   *  constructed defaults. Separate from masterStrip, which is EQ/pan/mute only. */
+  masterComp?: ReturnType<import('../core/fx').MasterCompressor['getState']>;
   kit: string;
   wave: Wave;
   synthParams: import('../core/synth').TB303['params'];
@@ -45,6 +49,9 @@ export interface SavedStateV3Deps {
   /** Master bus EQ/pan/mute strip — serialized/restored alongside masterVol.
    *  Optional so callers without an audio graph (tests) keep working. */
   masterStrip?: import('../core/master-bus-strip').MasterBusStrip;
+  /** Master-bus compressor — serialized/restored alongside masterStrip.
+   *  Optional so callers without an audio graph (tests) keep working. */
+  masterComp?: import('../core/fx').MasterCompressor;
   /** Performance view persistence — optional; when absent the take is not
    *  saved/restored (older callers keep working unchanged). */
   getMode?: () => 'session' | 'performance';
@@ -83,6 +90,7 @@ export function buildSavedStateV3(deps: SavedStateV3Deps): SavedStateV3 {
     timeSignature: { ...seq.meter },
     masterVol: parseFloat(volInput.value),
     masterStrip: deps.masterStrip?.serialize(),
+    masterComp: deps.masterComp?.getState(),
     kit: drums?.kitId ?? 'default',
     wave: synth?.params.wave ?? 'sawtooth',
     synthParams: synth?.params ? { ...synth.params } : {} as import('../core/synth').TB303['params'],
@@ -108,6 +116,7 @@ export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): voi
   }
   if (typeof s.masterVol === 'number') { master.gain.value = s.masterVol; volInput.value = String(s.masterVol); }
   deps.masterStrip?.restore(s.masterStrip);
+  if (s.masterComp) deps.masterComp?.setState(s.masterComp);
 
   // Session state is applied first so lane resources are allocated before
   // we try to get synth/drums instances from them.

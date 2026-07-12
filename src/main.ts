@@ -762,13 +762,16 @@ const fxUIDeps: FxUIDeps = {
   // Task 28: expose session state so master insert slots are persisted.
   getSessionState: () => sessionHost.state,
 };
-const { rebuildMasterInserts, rebuildSends } = wireFxUI(fxUIDeps);
+const { rebuildMasterInserts, rebuildSends, refreshMasterComp } = wireFxUI(fxUIDeps);
 // Task 28: rebuild master insert UI after each session load so the slots
 // array reference stays in sync with sessionHost.state.masterInserts.
 sessionHost.onStateApplied(rebuildMasterInserts);
 // Task 10: rebuild send modules after each session load so insert racks
 // reflect the loaded sessionState.sends[i].inserts.
 sessionHost.onStateApplied(rebuildSends);
+// Pull the master-comp knobs + bypass back into sync after a session load
+// (applyLoadedStateV3 has already restored the compressor via masterComp.setState).
+sessionHost.onStateApplied(refreshMasterComp);
 // Phase G: deferred to sessionHost.onStateApplied (lane not allocated at boot).
 // mountDrumMasterLaneKnobs(LANE_ID_DRUMS) — see boot section below.
 // ── Scene export (real-time live-take + offline WAV) ──────────────────────
@@ -1105,6 +1108,7 @@ const saveBaseDeps = {
   fx,
   masterInsertChain,
   masterStrip,
+  masterComp,
   flashButton,
   history,
 };
@@ -1129,7 +1133,7 @@ const autoHistory = createAutoHistory({
   history,
   snapshot: () => buildSavedStateV3(savedStateDeps),
   restore: (s) => applyLoadedStateV3(s, savedStateDeps),
-  refreshAll: () => sessionHost.refreshAfterRestore(),
+  refreshAll: () => { sessionHost.refreshAfterRestore(); refreshMasterComp(); },
 });
 autoHistory.installGlobalListeners(document);
 wireHistoryKeyboard(autoHistory);
