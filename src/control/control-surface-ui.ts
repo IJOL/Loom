@@ -3,6 +3,9 @@ export interface ControlUiDeps {
   onDisable: () => void;
   profiles: Array<{ id: string; label: string }>;
   initialEnabled: boolean;
+  /** Loop-record over live MIDI (Task 5/6). Optional so callers/tests that
+   *  don't wire capture yet still compile; the Rec button stays absent. */
+  capture?: { toggle: () => void; isRecording: () => boolean; canRecord: () => boolean };
 }
 
 export function wireControlSurfaceUI(deps: ControlUiDeps): void {
@@ -19,6 +22,9 @@ export function wireControlSurfaceUI(deps: ControlUiDeps): void {
   }
 
   const setStatus = (s: string) => { statusEl.textContent = s; };
+  // `setEnabledUI` is `const` (not reassignable), so the Rec button's `refresh()`
+  // below is called explicitly at the two places `enabled` changes instead of
+  // wrapping this function.
   const setEnabledUI = (on: boolean) => {
     enabled = on;
     enableBtn.textContent = on ? 'Disable MIDI controller' : 'Enable MIDI controller';
@@ -27,11 +33,24 @@ export function wireControlSurfaceUI(deps: ControlUiDeps): void {
   setEnabledUI(enabled);
   setStatus(enabled ? 'enabled' : 'off');
 
+  const recBtn = document.getElementById('midi-control-rec') as HTMLButtonElement | null;
+  const refreshRec = () => {
+    if (!recBtn || !deps.capture) return;
+    recBtn.disabled = !enabled || !deps.capture.canRecord();
+    recBtn.textContent = deps.capture.isRecording() ? '■ Stop' : '● Rec';
+    recBtn.classList.toggle('recording', deps.capture.isRecording());
+  };
+  if (recBtn && deps.capture) {
+    recBtn.addEventListener('click', () => { deps.capture!.toggle(); refreshRec(); });
+    refreshRec();
+  }
+
   enableBtn.addEventListener('click', async () => {
     if (enabled) {
       deps.onDisable();
       setEnabledUI(false);
       setStatus('off');
+      refreshRec();
       return;
     }
     setStatus('requesting permission…');
@@ -39,5 +58,6 @@ export function wireControlSurfaceUI(deps: ControlUiDeps): void {
     const res = await deps.onEnable(override);
     if (res.ok) { setEnabledUI(true); setStatus(res.label); }
     else { setEnabledUI(false); setStatus(res.label); }
+    refreshRec();
   });
 }

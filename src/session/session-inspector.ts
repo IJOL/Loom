@@ -87,6 +87,9 @@ export class SessionInspector {
   /** Aborted (and replaced) each time openInspector() is called so stale
    *  field-level listeners from the previous clip don't accumulate. */
   private _fieldAc: AbortController = new AbortController();
+  /** Loop-record over live MIDI (Task 5/6), bound late via setMidiCapture once
+   *  the facade exists (mirrors setHistoryDeps/setTranscribeLoop). */
+  private midiCapture: { toggle: (mode: 'merge' | 'replace') => void; isRecording: () => boolean; canRecord: () => boolean } | null = null;
 
   constructor(private deps: InspectorDeps) {
     this.wireKeyboardShortcuts();
@@ -137,6 +140,29 @@ export class SessionInspector {
    *  notes closure can be built), mirroring setHistoryDeps' late binding. */
   setTranscribeLoop(fn: InspectorDeps['transcribeLoop']): void {
     this.deps = { ...this.deps, transcribeLoop: fn };
+  }
+
+  /** Bind the loop-record capture toggle once the facade exists (mirrors
+   *  setHistoryDeps/setTranscribeLoop's late-binding). */
+  setMidiCapture(c: SessionInspector['midiCapture']): void {
+    this.midiCapture = c;
+    this.refreshRecButton();
+  }
+
+  /** Show/hide + label the clip-header Rec button and mode select. Hidden
+   *  entirely when no capture facade is bound; disabled when no clip is open
+   *  or the facade reports no capture destination available. */
+  private refreshRecButton(): void {
+    const btn = document.getElementById('insp-rec') as HTMLButtonElement | null;
+    const mode = document.getElementById('insp-rec-mode') as HTMLSelectElement | null;
+    if (!btn || !mode) return;
+    const c = this.midiCapture;
+    btn.hidden = !c;
+    mode.hidden = !c;
+    if (!c) return;
+    btn.disabled = !this.selectedClip || !c.canRecord();
+    btn.textContent = c.isRecording() ? '■ Stop' : '● Rec';
+    btn.onclick = () => { c.toggle((mode.value as 'merge' | 'replace') || 'merge'); this.refreshRecButton(); };
   }
 
   getSelectedClip(): { laneId: string; clipIdx: number } | null {
@@ -446,6 +472,7 @@ export class SessionInspector {
     updatePasteBtnState();
     this.renderTonalityOverride(lane!);
     this.renderContextHeader(lane, clip);
+    this.refreshRecButton();
 
     // Auto-render editor
     this.renderEditor();
@@ -523,6 +550,8 @@ export class SessionInspector {
 
     const rowEl = document.getElementById('insp-context-row');
     if (rowEl) rowEl.textContent = `(row ${ctx.rowNumber})`;
+
+    this.refreshRecButton();
   }
 
   /** Re-fill the breadcrumb from the current selection (after a rename). */

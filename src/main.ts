@@ -587,6 +587,19 @@ wireControlSurfaceUI({
   onDisable: disableMidiControl,
   profiles: listProfiles().map((p) => ({ id: p.id, label: p.label })),
   initialEnabled: loadControlPrefs().enabled,
+  capture: {
+    toggle: () => (controlFacade.isCapturing() ? controlFacade.stopCapture() : controlFacade.startCapture('merge')),
+    isRecording: () => controlFacade.isCapturing(),
+    canRecord: () => controlFacade.canCapture(),
+  },
+});
+
+// Clip-header Rec button (Merge/Replace) — bound once sessionHost + the facade
+// both exist (mirrors setHistoryDeps/setTranscribeLoop's late-binding).
+sessionHost.inspector.setMidiCapture({
+  toggle: (mode) => (controlFacade.isCapturing() ? controlFacade.stopCapture() : controlFacade.startCapture(mode)),
+  isRecording: () => controlFacade.isCapturing(),
+  canRecord: () => controlFacade.canCapture(),
 });
 
 // Keep LEDs in sync with clip launches: refresh after every mixer render.
