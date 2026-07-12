@@ -82,7 +82,10 @@ export function renderSessionGrid(
   headerRow.className = 'session-row session-row-header';
   headerRow.appendChild(spacer());
   for (const lane of state.lanes) headerRow.appendChild(laneHeader(lane, cb, lane.id === opts.activeEditLane, !!opts.synthCollapsed));
-  headerRow.appendChild(addLaneHeader(cb));
+  // The "+ add lane" control lives at the END of the scenes-header cell (see
+  // scenesHeader) — NOT as its own header child. As a separate child it was an
+  // (n+3)th element in an (n+2)-column grid, so it consumed the scenes column
+  // and auto-flowed the scenes header onto a wrapped second row.
   headerRow.appendChild(scenesHeader());
   table.appendChild(headerRow);
 
@@ -185,6 +188,9 @@ export function renderSessionGrid(
     cap.title = 'New scene from currently playing clips (Ctrl+I)';
     cap.addEventListener('click', cb.onCaptureScene);
     d.appendChild(cap);
+    // "+ add lane" sits at the end of this same cell (last grid column), so it
+    // shares the scenes column instead of consuming its own — no wrapped row.
+    d.appendChild(addLaneHeader(cb));
     return d;
   }
 }

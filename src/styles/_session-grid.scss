@@ -196,10 +196,14 @@
 }
 .session-del-cross:hover { opacity: 1; color: var(--red); background: var(--red-soft); }
 .session-scenes-header {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 11px;
   color: var(--text-dim);
   letter-spacing: 0.08em;
+  // "Scenes" + ⊙ on the left, the "+ add lane" pushed to the end of the cell.
+  .session-lane-add-wrap { margin-left: auto; }
 }
 .session-scene-cell { display: flex; }
 .session-scene-launch {
