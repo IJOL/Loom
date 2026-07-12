@@ -45,7 +45,6 @@ import {
   collectEngineState as collectEngineStateImpl,
   applyEngineState as applyEngineStateImpl,
 } from './session-host-persistence';
-import { renderSessionTabBar } from './session-tab-bar';
 import { buildMixerColumn } from '../core/mixer';
 import { buildMasterStrip } from '../core/master-strip';
 // session-step-scheduler is superseded by the note-based tickLane path (Phase D.3).
@@ -75,6 +74,9 @@ export class SessionHost {
    *  grid+inspector is expanded. Toggled by the master strip's FX button via
    *  toggleMasterFx(). Lives alongside activeEditLane (also UI-only). */
   masterFxOpen = false;
+  /** UI-only flag (NOT serialized): whether the active lane's synth editor is
+   *  collapsed. Only the header chevron sets it; selecting a lane clears it. */
+  synthCollapsed = false;
 
   // VU-meter teardown channel: every mixer column / master strip that mounts a
   // level meter registers its dispose() handle here. renderWithMixer disposes
@@ -99,6 +101,19 @@ export class SessionHost {
     if (panel) (panel as HTMLElement).hidden = !this.masterFxOpen;
     const btn = document.querySelector('.master-fx-toggle');
     if (btn) btn.classList.toggle('active', this.masterFxOpen);
+  }
+
+  /** Toggle the active lane's synth editor collapsed/open (the header chevron).
+   *  Hides/shows the .page and re-renders so the chevron + column marking update.
+   *  Only the chevron reaches this — a plain header click never collapses. */
+  toggleSynthEditor(): void {
+    this.synthCollapsed = !this.synthCollapsed;
+    if (this.synthCollapsed) {
+      document.querySelectorAll<HTMLElement>('.page').forEach((p) => { p.hidden = true; });
+    } else if (this.activeEditLane) {
+      this.showLaneEditor(this.activeEditLane);
+    }
+    this.renderWithMixer();
   }
 
   // Callback list fired after every applyLoadedSessionState call (boot + demo
@@ -449,7 +464,6 @@ export class SessionHost {
     };
 
     this.buildCallbacks();
-    this.refreshSynthTabs();
     this.startRenderTick();
 
     // Front D · Task 13 — the Sampler's "Importar loop…" control dispatches this
@@ -543,13 +557,13 @@ export class SessionHost {
     const openClip = (panel && !panel.hidden)
       ? (this.inspector.getSelectedClip() ?? undefined)
       : undefined;
-    renderSessionGrid(hostEl, this.state, this.laneStates, this.callbacks, openClip);
+    renderSessionGrid(hostEl, this.state, this.laneStates, this.callbacks, openClip,
+      { activeEditLane: this.activeEditLane, synthCollapsed: this.synthCollapsed });
     this.inspector.refreshContext();
   }
 
   renderWithMixer(): void {
     this.render();
-    this.refreshSynthTabs();
     const row = this.callbacks?._mixerRow;
     if (!row) return;
     // Tear down the previous render's VU meters (RAF + retained analyser)
@@ -561,7 +575,9 @@ export class SessionHost {
     sp.className = 'session-spacer';
     row.appendChild(sp);
     for (const lane of this.state.lanes) {
-      row.appendChild(buildMixerColumn(lane.id, this.deps.mixerDeps));
+      const col = buildMixerColumn(lane.id, this.deps.mixerDeps);
+      if (lane.id === this.activeEditLane) col.classList.add('session-mixer-col-active');
+      row.appendChild(col);
     }
     // Last (scenes) column: the master strip when an audio graph is wired,
     // else the old spacer (test fixtures without audio omit volInput/analyser).
@@ -593,18 +609,6 @@ export class SessionHost {
     this.renderWithMixer();
     this.inspector.refreshOpenEditor();
     if (this.activeEditLane) this.showLaneEditor(this.activeEditLane);
-  }
-
-  /** @internal — accessed by the extracted session-host-* sub-modules. */
-  refreshSynthTabs(): void {
-    const host = document.getElementById('synth-tabs');
-    if (!host) return;
-    renderSessionTabBar(host, {
-      state: this.state,
-      onPickLane: (laneId) => this.callbacks.onEditLane(laneId),
-      onAddLane:  (engineId) => this.callbacks.onAddLane(engineId),
-      onAddAudioChannel: () => this.callbacks.onAddAudioChannel?.(),
-    });
   }
 
   /** Public entry for the Stems dialog: create one audio lane per separated

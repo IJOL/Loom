@@ -267,18 +267,11 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
     },
     onAddClipRow()   { /* Task 11 */ },
     onEditLane(laneId) {
-      // Toggle off when the user clicks the already-active lane tab.
-      if (self.activeEditLane === laneId) {
-        document.querySelectorAll<HTMLElement>('.page').forEach((p) => { p.hidden = true; });
-        document.querySelectorAll<HTMLButtonElement>('.session-lane-tab').forEach((t) => {
-          t.classList.remove('active');
-        });
-        self.activeEditLane = null;
-        self.deps.onActiveLaneChanged?.();
-        return;
-      }
+      // The column header only ever SELECTS — collapsing is the chevron's job
+      // (onToggleSynthEditor). Re-clicking the active lane keeps it open.
       self.showLaneEditor(laneId);
     },
+    onToggleSynthEditor() { self.toggleSynthEditor(); },
     onDeleteClip(laneId, clipIdx) {
       const lane = self.state.lanes.find((l) => l.id === laneId);
       if (!lane || lane.clips[clipIdx] == null) return; // empty cell → no-op
@@ -312,11 +305,9 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
         self.deps.laneResources?.dispose(laneId); // frees strip + engine + inserts
         if (self.activeEditLane === laneId) {
           document.querySelectorAll<HTMLElement>('.page').forEach((p) => { p.hidden = true; });
-          document.querySelectorAll<HTMLButtonElement>('.session-lane-tab').forEach((t) => t.classList.remove('active'));
           self.activeEditLane = null;
           self.deps.onActiveLaneChanged?.();
         }
-        self.refreshSynthTabs();
         self.renderWithMixer();
       };
       if (hd) withUndo(hd, run); else run();

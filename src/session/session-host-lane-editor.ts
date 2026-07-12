@@ -21,6 +21,8 @@ import {
  *  Used by onEditLane (non-toggle path) and by the post-engine-swap re-route. */
 export function showLaneEditor(self: SessionHost, laneId: string): void {
   const lane = self.state.lanes.find((l) => l.id === laneId);
+  // Selecting a lane always OPENS its editor — clear any collapse the chevron set.
+  self.synthCollapsed = false;
 
   let polyTarget: PolySynth | null = null;
   if (lane?.engineId === 'subtractive') {
@@ -35,12 +37,11 @@ export function showLaneEditor(self: SessionHost, laneId: string): void {
     lane?.engineId === 'tb303'          ? '303'   :
     (lane?.engineId === 'drums-machine' || laneId.startsWith('drum:')) ? 'drums' :
                                                                          'poly';
+  // No lane-tabs row any more — the grid column header carries the active mark
+  // (session-lane-header-active, applied by renderSessionGrid). Only the page
+  // tab-strip buttons need toggling here.
   document.querySelectorAll<HTMLButtonElement>('.tab').forEach((t) => {
-    if (t.classList.contains('session-lane-tab')) {
-      t.classList.toggle('active', t.dataset.laneId === laneId);
-    } else {
-      t.classList.toggle('active', t.dataset.tab === targetTab && !t.classList.contains('synth-tab'));
-    }
+    t.classList.toggle('active', t.dataset.tab === targetTab && !t.classList.contains('synth-tab'));
   });
   const displayName = lane?.name ?? laneId.toUpperCase();
   if (polyTarget) {
@@ -79,6 +80,9 @@ export function showLaneEditor(self: SessionHost, laneId: string): void {
   self.activeEditLane = laneId;
   injectEngineModulatorPanel(self, laneId, targetTab);
   self.deps.onActiveLaneChanged?.();
+  // Re-render the grid so the newly-active lane's column header + cells + mixer
+  // strip get marked (renderSessionGrid reads self.activeEditLane).
+  self.renderWithMixer();
 }
 
 // ── Engine modulator panel injection ─────────────────────────────────────
