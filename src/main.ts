@@ -118,10 +118,22 @@ const $$ = <T extends HTMLElement>(sel: string) => Array.from(document.querySele
 
 // ── App version label (next to the LOOM logo) ────────────────────────────────
 // __APP_VERSION__ / __APP_STAGE__ / __APP_CODENAME__ are inlined by vite.config.ts
-// `define` from version.json, e.g. "v0.4 · alpha · Breakbeat". On-screen uses the
-// middle-dot separator.
+// `define` from version.json. Rendered as three styled parts so the version and
+// codename read prominently (amber) with the stage kept quiet — see .app-version.
 const appVersionEl = document.getElementById('app-version');
-if (appVersionEl) appVersionEl.textContent = `v${__APP_VERSION__} · ${__APP_STAGE__} · ${__APP_CODENAME__}`;
+if (appVersionEl) {
+  appVersionEl.replaceChildren();
+  const ver = document.createElement('span');
+  ver.className = 'av-ver';
+  ver.textContent = `v${__APP_VERSION__}`;
+  const name = document.createElement('span');
+  name.className = 'av-name';
+  name.textContent = __APP_CODENAME__;
+  const stage = document.createElement('span');
+  stage.className = 'av-stage';
+  stage.textContent = __APP_STAGE__;
+  appVersionEl.append(ver, name, stage);
+}
 
 // ── Plugin bootstrap (must run BEFORE preset cache + audio graph) ─────────
 bootstrapPlugins();
