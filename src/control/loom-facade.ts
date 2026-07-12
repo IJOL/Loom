@@ -4,6 +4,7 @@ import type { LoomControlFacade, SurfaceView, CellState, SceneState, KnobBank, V
 import { createLiveVoicePool } from './live-keyboard';
 import { expandChordForLane } from './live-notefx';
 import { createLiveRecorder } from './live-recorder';
+import { createLiveArp } from './live-arp';
 import type { ActiveLaneStore } from './active-lane';
 import type { SessionHost } from '../session/session-host';
 import type { LaneResourceMap } from '../core/lane-resources';
@@ -34,18 +35,21 @@ const EQ_DB = 12;               // ±12 dB at knob extremes
 export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
   const { ctx, sessionHost, laneResources, activeLane, knobRegistry } = deps;
 
+  const spawnVoice = (laneId: string) => {
+    const res = laneResources.get(laneId);
+    if (!res) return null;
+    setCurrentLaneForVoice(laneId);
+    const v = res.engine.createVoice(ctx, res.strip.input);   // same path as trigger-dispatch
+    setCurrentLaneForVoice(null);
+    return v;
+  };
   const pool = createLiveVoicePool({
-    spawnVoice: (laneId) => {
-      const res = laneResources.get(laneId);
-      if (!res) return null;
-      setCurrentLaneForVoice(laneId);
-      const v = res.engine.createVoice(ctx, res.strip.input);   // same path as trigger-dispatch
-      setCurrentLaneForVoice(null);
-      return v;
-    },
+    spawnVoice,
     now: () => ctx.currentTime,
     defer: (fn) => setTimeout(fn, 300),
   });
+  // Live arpeggiator: shares the same voice-spawn path as the pool.
+  const liveArp = createLiveArp({ spawnVoice, now: () => ctx.currentTime, bpm: () => deps.seq.bpm });
 
   function setEngineParam(laneId: string, paramId: string, value01: number): void {
     const res = laneResources.get(laneId);
@@ -145,6 +149,10 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
 
   return {
     playLiveNote: (laneId, midi, velocity) => {
+      // If the lane has an arp note-FX enabled, the held note drives a live
+      // arpeggio (from the current note, octaves collapsed to 1) instead of
+      // sounding directly. Sound-only in v1 — arp steps are not recorded yet.
+      if (liveArp.start(laneId, midi, velocity)) return;
       // `midi` (the physical key) is the group id passed straight through;
       // the chord expansion (which may transpose its root away from `midi`
       // via a nonzero octave param) is only the list of notes to sound.
@@ -158,7 +166,8 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
         for (const m of playMidis) recorder.noteOn(m, velocity);
     },
     releaseLiveNote: (laneId, midi) => {
-      pool.noteOff(laneId, midi);
+      liveArp.stop(laneId, midi);      // halt the arp if this key started it (no-op otherwise)
+      pool.noteOff(laneId, midi);      // no-op when the arp handled the key (no held group)
       if (recorder.isRecording() && capture && capture.laneId === laneId) {
         // Re-expand deterministically: chord params don't change while a key
         // is held, so this yields exactly the midis noteOn'd above.
