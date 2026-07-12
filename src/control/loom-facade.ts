@@ -2,10 +2,12 @@
 import { setCurrentLaneForVoice } from '../modulation/active-mods';
 import type { LoomControlFacade, SurfaceView, CellState, SceneState, KnobBank, Variant } from './controller-profile';
 import { createLiveVoicePool } from './live-keyboard';
+import { expandChordForLane } from './live-notefx';
 import type { ActiveLaneStore } from './active-lane';
 import type { SessionHost } from '../session/session-host';
 import type { LaneResourceMap } from '../core/lane-resources';
 import type { KnobHandle } from '../core/knob';
+import type { Sequencer } from '../core/sequencer';
 
 export interface LoomFacadeDeps {
   ctx: AudioContext;
@@ -13,6 +15,7 @@ export interface LoomFacadeDeps {
   laneResources: LaneResourceMap;
   activeLane: ActiveLaneStore;                 // bridged to SessionHost.activeEditLane in main.ts
   knobRegistry: Map<string, KnobHandle>;       // `${laneId}.${paramId}` → handle (automationRegistry)
+  seq: Sequencer;                              // bpm source for tempo-aware note-FX (chord today, arp later)
 }
 
 const MAX_GAIN = 1.5;            // volume knob full-up
@@ -82,7 +85,13 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
   }
 
   return {
-    playLiveNote: (laneId, midi, velocity) => pool.noteOn(laneId, midi, velocity),
+    playLiveNote: (laneId, midi, velocity) => {
+      // `midi` (the physical key) is the group id passed straight through;
+      // the chord expansion (which may transpose its root away from `midi`
+      // via a nonzero octave param) is only the list of notes to sound.
+      const playMidis = expandChordForLane(laneId, midi, velocity, deps.seq.bpm);
+      pool.noteOn(laneId, midi, velocity, playMidis);
+    },
     releaseLiveNote: (laneId, midi) => pool.noteOff(laneId, midi),
     setSustain: (on) => pool.setSustain(on),
     launchClip: (laneId, clipIdx) => sessionHost.launchClipAt(laneId, clipIdx),

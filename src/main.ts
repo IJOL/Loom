@@ -544,6 +544,7 @@ const controlFacade = createLoomFacade({
   laneResources,
   activeLane: activeLaneStore,
   knobRegistry: automationRegistry,   // `${laneId}.${paramId}` → KnobHandle
+  seq,
 });
 
 let controlMediator: ReturnType<typeof createMediator> | null = null;
