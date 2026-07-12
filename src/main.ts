@@ -545,6 +545,10 @@ const controlFacade = createLoomFacade({
   activeLane: activeLaneStore,
   knobRegistry: automationRegistry,   // `${laneId}.${paramId}` → KnobHandle
   seq,
+  // Late-bound via getter: _discreteHistoryDeps is assigned after historyDeps
+  // is built (further below), but loop-record commits happen at user-interaction
+  // time, so the getter always sees the final value.
+  get historyDeps() { return _discreteHistoryDeps; },
 });
 
 let controlMediator: ReturnType<typeof createMediator> | null = null;

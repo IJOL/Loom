@@ -10,6 +10,7 @@ function fakeFacade(over: Partial<LoomControlFacade> = {}): LoomControlFacade {
   return {
     playLiveNote: vi.fn(), releaseLiveNote: vi.fn(), setSustain: vi.fn(),
     launchClip: vi.fn(), launchScene: vi.fn(), stopAll: vi.fn(),
+    startCapture: vi.fn(), stopCapture: vi.fn(), isCapturing: vi.fn(() => false), canCapture: vi.fn(() => false),
     engineParamIds: vi.fn(() => ['filter.cutoff', 'filter.resonance']),
     setEngineParam: vi.fn(), setLaneVolume: vi.fn(), setLanePan: vi.fn(), setLaneEq: vi.fn(),
     getActiveLane: vi.fn(() => 'lane-b'),

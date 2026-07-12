@@ -63,6 +63,11 @@ export interface LoomControlFacade {
   launchClip(laneId: string, clipIdx: number): void;
   launchScene(sceneIdx: number): void;
   stopAll(): void;
+  // live capture (loop-record)
+  startCapture(mode: 'merge' | 'replace'): void;
+  stopCapture(): void;
+  isCapturing(): boolean;
+  canCapture(): boolean;   // MIDI enabled AND a note-capable destination exists
   // knobs (direct jump; value 0..1)
   engineParamIds(laneId: string): string[];                 // first 8 CONTINUOUS engine params
   setEngineParam(laneId: string, paramId: string, value01: number): void;
