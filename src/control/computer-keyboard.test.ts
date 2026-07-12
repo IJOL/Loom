@@ -26,6 +26,7 @@ function harness(o: { enabled?: boolean; lane?: string | null } = {}) {
   return {
     facade,
     key: (type: 'keydown' | 'keyup', k: string, extra: Record<string, unknown> = {}) => key(target, type, k, extra),
+    blur: () => target.dispatchEvent(new Event('blur')),
     setEnabled: (v: boolean) => { enabled = v; },
   };
 }
@@ -93,5 +94,25 @@ describe('attachComputerKeyboard', () => {
     h.setEnabled(false);
     h.key('keyup', 'a');
     expect(h.facade.releaseLiveNote).toHaveBeenCalledTimes(1);
+  });
+
+  it('keyup after an octave shift releases the ORIGINAL note, not the shifted one', () => {
+    const h = harness();
+    h.key('keydown', 'a');
+    const played = h.facade.playLiveNote.mock.calls[0][1];
+    h.key('keydown', 'x');          // octave up (does not release the held 'a')
+    h.key('keyup', 'a');
+    expect(h.facade.releaseLiveNote).toHaveBeenCalledWith('lane-1', played); // NOT played + 12
+  });
+
+  it('window blur releases every held note and lets the key retrigger afterwards', () => {
+    const h = harness();
+    h.key('keydown', 'a');
+    const played = h.facade.playLiveNote.mock.calls[0][1];
+    h.blur();                        // focus lost while 'a' is held
+    expect(h.facade.releaseLiveNote).toHaveBeenCalledWith('lane-1', played);
+    // held was cleared, so pressing 'a' again plays again (not blocked by a stale held entry)
+    h.key('keydown', 'a');
+    expect(h.facade.playLiveNote).toHaveBeenCalledTimes(2);
   });
 });

@@ -16,14 +16,25 @@ export interface ComputerKeyboardDeps {
 }
 
 const MIN_OCTAVE_BASE = 24; // C1
-const MAX_OCTAVE_BASE = 96; // C7 (clampOctaveBase keeps an octave of headroom)
+const MAX_OCTAVE_BASE = 96; // clampOctaveBase caps the effective base at maxMidi-12 = 84 (C6)
 
 export function attachComputerKeyboard(deps: ComputerKeyboardDeps): () => void {
-  const target = deps.target ?? document;
+  // Default to `window`: it receives keydown/keyup via bubbling AND the `blur`
+  // (focus-loss) event we use to release held notes. Tests inject a bare
+  // EventTarget, so `window` (undefined under the node test env) is never touched.
+  const target = deps.target ?? window;
   let octaveBase = deps.initialOctaveBase ?? 60; // C4
   // physical key (lowercased) → the note we triggered, so keyup releases exactly
   // what keydown played even if the octave/active-lane changed meanwhile.
   const held = new Map<string, { laneId: string; midi: number }>();
+
+  // Release every held note and forget them. Called on window blur / focus loss:
+  // otherwise a key held while Alt-Tabbing never gets its keyup, leaving a note
+  // sounding AND a stale `held` entry that blocks the key from ever retriggering.
+  const releaseAll = () => {
+    for (const h of held.values()) deps.facade.releaseLiveNote(h.laneId, h.midi);
+    held.clear();
+  };
 
   const onKeyDown = (e: Event) => {
     const ke = e as unknown as { key: string; repeat: boolean; ctrlKey?: boolean; metaKey?: boolean; altKey?: boolean; target: EventTarget | null; preventDefault(): void };
@@ -57,10 +68,14 @@ export function attachComputerKeyboard(deps: ComputerKeyboardDeps): () => void {
     deps.facade.releaseLiveNote(h.laneId, h.midi);
   };
 
+  const onBlur = () => releaseAll();
+
   target.addEventListener('keydown', onKeyDown);
   target.addEventListener('keyup', onKeyUp);
+  target.addEventListener('blur', onBlur);
   return () => {
     target.removeEventListener('keydown', onKeyDown);
     target.removeEventListener('keyup', onKeyUp);
+    target.removeEventListener('blur', onBlur);
   };
 }
