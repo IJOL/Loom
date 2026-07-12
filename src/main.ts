@@ -86,6 +86,7 @@ import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from './core/lane-ids';
 // ── Live MIDI control (src/control) ─────────────────────────────────────────
 import { createActiveLaneStore } from './control/active-lane';
 import { createLoomFacade } from './control/loom-facade';
+import { createCountIn } from './control/metronome';
 import { createMediator } from './control/control-mediator';
 import { createMidiAccess } from './control/web-midi-access';
 import { wireControlSurfaceUI } from './control/control-surface-ui';
@@ -547,6 +548,8 @@ const controlFacade = createLoomFacade({
   activeLane: activeLaneStore,
   knobRegistry: automationRegistry,   // `${laneId}.${paramId}` → KnobHandle
   seq,
+  countIn: createCountIn(ctx, ctx.destination),   // 1-bar metronome before Rec from idle
+
   // Late-bound via getter: _discreteHistoryDeps is assigned after historyDeps
   // is built (further below), but loop-record commits happen at user-interaction
   // time, so the getter always sees the final value.
