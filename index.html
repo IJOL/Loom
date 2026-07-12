@@ -34,18 +34,14 @@
       .synth > p.hint {
         display: none !important;
       }
-      /* Session-first layout: synth editor pages, when active, render below the
-         session grid instead of above it. The HTML order is fixed but flexbox
-         ordering puts session-view first visually. */
+      /* Session-view stacking order (scenes -> synth -> clip) is handled in
+         _session-grid.scss via #session-view-root; this just keeps the top
+         chrome (transport + session bar) above it. */
       .synth {
         display: flex;
         flex-direction: column;
       }
       .synth > .row.transport { order: 0; }
-      .synth > .tab-bar      { order: 1; }
-      .synth > .synth-row    { order: 2; }
-      .synth > .page         { order: 3; }
-      .synth > .session-view { order: 4; }
       /* The session/IO bar sits right under the transport row (both order:0, so
          document order keeps transport on top, session bar below). */
       .synth > .row.session-bar { order: 0; }
@@ -175,10 +171,6 @@
           <button class="rnd primary" id="demo-minimal-techno">Load Minimal Techno</button>
         </div>
       </details>
-
-      <div class="tab-bar">
-      </div>
-      <div class="synth-row" id="synth-tabs"></div>
 
       <div class="page" data-page="303" hidden>
         <div class="row poly-section">

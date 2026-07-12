@@ -20,6 +20,12 @@
 
   --green:        #7cb342; /* used sparingly for OK/active subtle */
 
+  /* Synth-zone hue: marks the lane whose instrument editor is open (column
+   * header label + column/mixer wash), tying the grid column to its editor. */
+  --z-synths:      #5bb8c4;
+  --z-synths-wash: rgba(91, 184, 196, 0.12);
+  --z-synths-line: rgba(91, 184, 196, 0.55);
+
   /* Knob accent palette — same hex values already used by mixer / FX knobs,
    * just centralised so per-section synth knobs can reuse the same palette
    * without inventing new colors. */

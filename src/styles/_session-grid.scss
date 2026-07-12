@@ -22,7 +22,19 @@
   color: var(--bg);
 }
 
-.session-view { padding: 8px; }
+/* Vertical stack of the Session view: scenes (grid) -> synth (engine editor
+ * pages) -> clip (inspector) -> master FX. The `.page` editors live as direct
+ * children of #session-view-root; `.session-view` uses display:contents so its
+ * own children (grid / inspector / master-fx) join the same flex flow and can
+ * be interleaved with the pages by `order`. */
+#session-view-root { display: flex; flex-direction: column; padding: 8px; }
+.session-view { display: contents; }
+#session-grid       { order: 0; }
+#session-view-root > .page { order: 1; }
+#session-inspector  { order: 2; }
+#master-fx-panel    { order: 3; }
+/* Hidden legacy panels (copy-row, presets, copy-track) stay display:none so
+ * their order is irrelevant. */
 .session-toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
 .session-grid {
   background: var(--bg);
@@ -63,6 +75,49 @@
   font-size: 11px; padding: 2px 6px; cursor: pointer; border-radius: 2px;
 }
 .session-lane-expand:hover, .session-lane-edit:hover { color: var(--amber); border-color: var(--amber); }
+
+/* The column header is the lane selector — clicking it opens that lane's
+ * instrument editor. The active lane is marked in the synth-zone hue. */
+.session-lane-header { cursor: pointer; }
+.session-lane-header:hover { border-color: var(--z-synths); }
+.session-lane-header-active {
+  border-left-color: var(--z-synths);
+  box-shadow: inset 0 -2px 0 var(--z-synths);
+}
+.session-lane-name-active { color: var(--z-synths); font-weight: 600; }
+/* Whole active column (clip cells + mixer strip) tinted, layered over each
+ * cell's own state colour so playing/queued borders still read. */
+.session-cell-col-active,
+.session-mixer-col-active {
+  background-image: linear-gradient(var(--z-synths-wash), var(--z-synths-wash));
+}
+.session-mixer-col-active { border-radius: 2px; }
+/* Collapse chevron on the active header (only the chevron collapses). */
+.session-lane-collapse {
+  background: transparent; border: 1px solid var(--z-synths); color: var(--z-synths);
+  border-radius: 2px; font-size: 11px; line-height: 1; padding: 1px 4px; cursor: pointer;
+}
+.session-lane-collapse:hover { background: var(--z-synths); color: var(--bg); }
+
+/* "+ add lane" header control + its engine menu (Audio channel included). */
+.session-lane-add-wrap { position: relative; display: flex; align-items: center; }
+.session-lane-add {
+  background: transparent; border: 1px dashed var(--border-soft); color: var(--text-faint);
+  border-radius: 2px; cursor: pointer; padding: 4px 10px; font-size: 13px;
+}
+.session-lane-add:hover { color: var(--amber); border-color: var(--amber); }
+.session-lane-add-menu {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 20;
+  display: flex; flex-direction: column; gap: 2px; min-width: 150px;
+  background: var(--surface-3); border: 1px solid var(--border); border-radius: 6px; padding: 5px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.55);
+}
+.session-lane-add-menu[hidden] { display: none; }
+.session-add-item {
+  text-align: left; background: transparent; border: none; color: var(--text-dim);
+  padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;
+}
+.session-add-item:hover { background: var(--surface-2); color: var(--text); }
 .session-cell {
   height: 30px; border-radius: 2px;
   display: flex; align-items: center; justify-content: space-between;
@@ -197,73 +252,8 @@
 }
 .session-add-engine-select:hover { border-color: var(--amber); }
 
-/* Session lane tabs (dynamic, populated by renderSessionTabBar). */
-#synth-tabs.session-tabs {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-.session-lane-tab {
-  background: var(--surface-2);
-  color: var(--text-dim);
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  padding: 5px 12px;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-.session-lane-tab:hover { color: var(--amber); border-color: var(--amber); }
-.session-lane-tab.active {
-  background: var(--amber);
-  color: var(--bg);
-  border-color: var(--amber);
-}
-.session-tabs-add {
-  display: inline-flex;
-  gap: 4px;
-  align-items: center;
-  margin-left: 8px;
-}
-.session-tabs-engine {
-  background: var(--surface-2);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  padding: 3px 4px;
-  font-size: 11px;
-}
-.session-tabs-add-btn {
-  background: var(--amber);
-  color: var(--bg);
-  border: 1px solid var(--amber);
-  border-radius: 2px;
-  padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.session-tabs-add-btn:hover { background: #ffb74d; }
-
-/* Second-row 'synths in this session' navigator. */
-.synth-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  margin: 0 0 8px 0;
-  padding: 4px 8px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 2px;
-}
-.synth-row .session-lane-tab.active {
-  background: var(--amber);
-  color: var(--bg);
-  border-color: var(--amber);
-}
+/* (The old #synth-tabs lane-tabs row + its add controls were removed — the grid
+ * column headers are now the lane selector; the "+" header opens the engine menu.) */
 
 /* ── Drag and drop states ──────────────────────────────────────────────── */
 
