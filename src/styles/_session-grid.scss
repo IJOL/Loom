@@ -27,7 +27,9 @@
  * children of #session-view-root; `.session-view` uses display:contents so its
  * own children (grid / inspector / master-fx) join the same flex flow and can
  * be interleaved with the pages by `order`. */
-#session-view-root { display: flex; flex-direction: column; padding: 8px; }
+/* :not([hidden]) so the mode toggle can still hide the whole view (a bare
+ * `display:flex` would override the [hidden] attribute and leak into Performance). */
+#session-view-root:not([hidden]) { display: flex; flex-direction: column; padding: 8px; }
 .session-view { display: contents; }
 #session-grid       { order: 0; }
 #session-view-root > .page { order: 1; }
