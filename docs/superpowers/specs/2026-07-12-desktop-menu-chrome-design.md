@@ -1,4 +1,4 @@
-# Desktop-style menu bar & chrome — Part 1 (menu + MIDI/musicality dialogs)
+# Desktop-style menu bar & chrome — Part 1 (menu + MIDI dialogs + Project Options)
 
 - **Date:** 2026-07-12
 - **Status:** design approved, ready for plan
@@ -26,13 +26,15 @@ minimally, then reshape the rest of the toolbar later.
    action handlers; it does not fork logic.
 2. **Import MIDI** and **MIDI Control** move out of the toolbar, from inline
    `<details>` panels into **modal dialogs** launched from the menu.
-3. **Musicality** (project key / scale / style / lock) moves out of the toolbar
-   into its own **Project Key & Style dialog** (it is per-project state, saved
-   with the session — not a global preference).
+3. **Musicality** (key / scale / style / lock) moves out of the toolbar into a
+   **Project Options dialog** in the **File** menu, which also holds the
+   **project name**. Both are per-project state saved with the session — not
+   global preferences. This requires a small model addition: a new
+   `SessionState.name` field (see *Data & state* below).
 4. **Status-chip principle:** anything whose *editing* moved into a dialog still
    shows its *state* on the toolbar as a compact, clickable chip that opens the
-   dialog. Part 1 adds two chips: a **musicality chip** (`C min · Techno · 🔒`)
-   and a **MIDI controller chip** (`MIDI ●` / `MIDI ○`).
+   dialog. Part 1 adds two chips: a **musicality chip** (`C min · Techno · 🔒`,
+   opens Project Options) and a **MIDI controller chip** (`MIDI ●` / `MIDI ○`).
 
 **Explicitly deferred to Part 2 (not built here):**
 
@@ -48,8 +50,9 @@ minimally, then reshape the rest of the toolbar later.
 they are today (the clip-editor toolbar). They are not surfaced in the menu, not
 moved, and not added to Preferences — in Part 1 or Part 2.
 
-Nothing in Part 1 changes audio, scheduling, saving, or session data. It is a
-chrome/wiring change only.
+Part 1 is a chrome/wiring change plus **one** small model addition: the
+`SessionState.name` field that backs the Project Options dialog. It does not
+change audio, scheduling, DSP, or any existing session data.
 
 ## Design
 
@@ -93,11 +96,12 @@ File                                   Edit                    View
   Save                   Ctrl+S                                  ──
   Save As…                                                       Performance diagnostics (PERF)  ☐
   ──
-  Open Demo ▸ (submenu)                Tools                   Help
-  ──                                     Project Key & Style…    Manual ↗
-  Import MIDI…                           MIDI Controller…        About Loom
-  Separate into Stems…                   Capture Scene  Ctrl+I
-  ──                                     Copy Scenes → Performance
+  Project Options…                     Tools                   Help
+  Open Demo ▸ (submenu)                  MIDI Controller…        Manual ↗
+  ──                                     Capture Scene  Ctrl+I    About Loom
+  Import MIDI…                           Copy Scenes → Performance
+  Separate into Stems…
+  ──
   Preferences…   Ctrl+,  (disabled, Part 2)
 ```
 
@@ -108,13 +112,13 @@ Handler mapping (all pre-existing except the three new dialogs):
 | New Session | existing `#new-session` handler |
 | Open… / Save As… | opens the Save Manager modal (existing `#load` / `#save` flow) |
 | Save | existing `#save` handler |
+| Project Options… | **new** Project Options dialog (project name + musicality) |
 | Open Demo ▸ | items built from the existing `#demo-picker` options; selecting one loads that demo |
 | Import MIDI… | **new** Import MIDI dialog |
 | Separate into Stems… | existing `#stems-open` → `#stems-modal` |
 | Undo / Redo | existing history controller |
 | Session / Performance | existing `#mode-toggle` mode switch |
 | Performance diagnostics | existing `perfDiagnostics.toggle()` (`#perf-toggle`) |
-| Project Key & Style… | **new** musicality dialog |
 | MIDI Controller… | **new** MIDI Control dialog |
 | Capture Scene | `sessionHost.captureScene()` (`#capture-scene`) |
 | Copy Scenes → Performance | existing `#copy-to-performance` handler |
@@ -134,11 +138,13 @@ header with title + `×`, `Esc`/backdrop-click closes).
   exactly; we only relocate the first panel into the dialog.
 - **MIDI Controller dialog** — Enable button, status text, device-override
   select, and `● Rec` mapping button move inside a modal. Same handlers.
-- **Project Key & Style dialog** — the current musicality popover content (root,
-  scale, style, lock) is rendered inside a modal. The existing
-  `renderMusicalityBar` deps (`get`/`onChange`) are reused so the dialog reads
-  and writes the same `MusicalityState`; the piano-roll's own 🔒 stays in sync
-  as today.
+- **Project Options dialog** (File ▸ Project Options…) — holds the **project
+  name** plus the current musicality controls (root, scale, style, lock). The
+  musicality controls reuse the existing `renderMusicalityBar` deps
+  (`get`/`onChange`) so they read and write the same `MusicalityState`, and the
+  piano-roll's own 🔒 stays in sync as today. The name field reads/writes the new
+  `SessionState.name` (see *Data & state*). Edits route through the existing undo
+  system like any other session mutation.
 
 ### 4. Toolbar changes (Part 1, minimal)
 
@@ -146,7 +152,7 @@ header with title + `×`, `Esc`/backdrop-click closes).
   session bar.
 - **Replace** the musicality popover button (`#musicality-bar`) in the transport
   row with a compact, read-only **musicality status chip** that opens the
-  Project Key & Style dialog on click.
+  Project Options dialog on click.
 - **Add** a small **MIDI controller status chip** (`MIDI ●` when enabled,
   `MIDI ○` when off) that opens the MIDI Controller dialog. It reflects the
   controller's live state (the state the old panel showed inline).
@@ -164,8 +170,8 @@ New modules (each focused, well under the 300-line target):
 - `src/midi/midi-import-dialog.ts` — wraps the existing import UI in a modal.
 - `src/control/midi-control-dialog.ts` — wraps the existing MIDI-control UI in a
   modal.
-- `src/session/musicality-dialog.ts` — renders the musicality controls in a
-  modal (reuses the musicality-bar renderer/deps).
+- `src/session/project-options-dialog.ts` — renders the project name + musicality
+  controls in a modal (reuses the musicality-bar renderer/deps).
 - `src/app/toolbar-status-chips.ts` — the musicality + MIDI status chips.
 - `src/styles/_menu-bar.scss` — menu bar + dropdown styling (matches the dark
   theme in the mockup).
@@ -176,8 +182,23 @@ the two `<details>` panels + old musicality button from `index.html`. Existing
 handlers keep their identity so the menu, the (still-present) buttons, and the
 keyboard shortcuts all funnel through one implementation.
 
-No changes to `SessionState`, `SaveManager`, schema version, scheduling, or DSP.
-Musicality already persists in the session; moving its UI does not touch storage.
+## Data & state — the new `SessionState.name`
+
+The only data-model change: an additive `name: string` on `SessionState`.
+
+- **Default:** `emptySessionState()` and demo loads seed `name: "Untitled"`.
+- **Migration:** `session-migration.ts` fills `name` for any loaded session that
+  lacks it (older saves) — defaulting to `"Untitled"`, or to the Save Manager
+  entry's name when available. No `schemaVersion` bump: the field is optional on
+  the wire and defaulted on load, so old and new saves interoperate.
+- **Persistence:** `buildSavedStateV3`/`applyLoadedStateV3` round-trip `name`
+  with the rest of the session.
+- **Save Manager coupling:** when the user opens Save / Save As…, the project
+  name pre-fills the save-name input (they can still override it). This is a
+  convenience, not a hard link — the two names may diverge.
+
+No other session data, `SaveManager` behaviour, scheduling, or DSP changes.
+Musicality already persisted; only its UI location moves.
 
 ## Testing (one test per user path — no `(or …)` alternatives)
 
@@ -187,7 +208,10 @@ Musicality already persists in the session; moving its UI does not touch storage
   `enabled/checked` resolvers return correct values for given state (e.g.
   Preferences disabled; Session checked in session mode).
 - Keyboard-accelerator registration maps each shortcut to its item's `run()`.
-- The musicality dialog round-trips `MusicalityState` through `get`/`onChange`.
+- The Project Options dialog round-trips `MusicalityState` through
+  `get`/`onChange`, and edits the project name.
+- `SessionState.name` round-trips through save → load; `session-migration`
+  defaults a missing `name` to `"Untitled"`.
 
 **e2e (Playwright, against a fresh `npm run build`):**
 
@@ -198,7 +222,9 @@ Musicality already persists in the session; moving its UI does not touch storage
 - **File ▸ Import MIDI…** opens the Import MIDI **dialog**; the old inline
   Import MIDI `<details>` is **gone**.
 - The **musicality chip** is present in the toolbar and clicking it opens the
-  Project Key & Style dialog; the old musicality popover button is gone.
+  **Project Options** dialog; the old musicality popover button is gone.
+- **File ▸ Project Options…** shows the project name; editing it and saving,
+  then reloading, preserves the new name.
 - **File ▸ Preferences…** is present but **disabled**.
 
 ## Visual-parity acceptance (mandatory human look)
@@ -224,4 +250,5 @@ chips). Automated tests do not verify the approved look.
 
 Preferences dialog (new-session BPM/Meter defaults + max-recording setting) ·
 live-record size meter + auto-stop at the cap · toolbar trimming & reflow ·
-possibly a Transport menu. (Follow and ⌨ Keys are out of scope in every phase.)
+possibly a Transport menu · optionally show the project name in the title/window
+chrome. (Follow and ⌨ Keys are out of scope in every phase.)
