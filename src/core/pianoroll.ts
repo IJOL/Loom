@@ -13,8 +13,8 @@ import {
   defaultViewState, type ViewState,
 } from './pianoroll-zoom';
 import {
-  notesInRect, translateGroup, serializeClipboard, pasteTranslate, midiForKey,
-  quantizeRecorded, clampOctaveBase, octaveBaseLabel, PIANO_KEY_LEGEND, snapNoteMidi, type ClipboardNote, type ScaleCtx,
+  notesInRect, translateGroup, serializeClipboard, pasteTranslate,
+  clampOctaveBase, octaveBaseLabel, PIANO_KEY_LEGEND, snapNoteMidi, type ClipboardNote, type ScaleCtx,
 } from './piano-roll-editing';
 import { isTextEditTarget, type HistoryDeps } from '../save/history-wiring';
 import {
@@ -25,7 +25,6 @@ import type { SessionClip } from '../session/session';
 import type { TimeSignature } from './meter';
 import { mountClipLoopOverlay } from './clip-loop-overlay';
 import { isFollowEnabled } from './clip-follow';
-import { isKbInputEnabled } from './clip-kb-input';
 import { resolutionToSnap, DEFAULT_RESOLUTION, type ResolutionKey } from './drum-grid-editing';
 
 type Tool = 'draw' | 'select';
@@ -233,14 +232,15 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   const tools = createToolToggle(currentTool, (t) => { currentTool = t; });
   const drawBtn = tools.drawBtn, selBtn = tools.selBtn;
 
-  // Octave stepper: ◂ [C4] ▸ (piano-roll specific — drives the computer-keyboard
-  // note typing; mirrors the z/x shortcut). Shared grid-control wrapper.
+  // Octave stepper: ◂ [C4] ▸ — shifts the reference octave used as the paste-anchor
+  // fallback (Ctrl+V with no prior mouse position) and exposed via getOctaveBase for
+  // the note-randomizer. Shared grid-control wrapper.
   const octDownBtn = document.createElement('button');
-  octDownBtn.textContent = '◂'; octDownBtn.title = 'Octave (z / x)';
+  octDownBtn.textContent = '◂'; octDownBtn.title = 'Octave down';
   const octLabel = document.createElement('span');
   octLabel.style.cssText = 'font:11px ui-monospace,monospace;color:#9a9a9a';
   const octUpBtn = document.createElement('button');
-  octUpBtn.textContent = '▸'; octUpBtn.title = 'Octave (z / x)';
+  octUpBtn.textContent = '▸'; octUpBtn.title = 'Octave up';
   const octCtl = createGridControl(octDownBtn, octLabel, octUpBtn);
 
   // Grid resolution — shared with the drum-grid so notes quantize the same way.
@@ -276,8 +276,9 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   lockBtn.hidden = !opts.scaleCtx;     // only meaningful with a tonality
 
   const followBtn = createFollowToggle();
-  // Opt-in computer-keyboard note input (OFF by default). Toggling it redraws so
-  // the green insertion cursor appears / disappears immediately.
+  // ⌨ Keys toggle (OFF by default): the piano-roll no longer inserts notes from
+  // computer-keyboard typing (superseded by the live computer-keyboard module),
+  // but the flag + toggle stay — they now gate that live module's enable state.
   const kbBtn = createKbInputToggle(() => redrawGridAndLane());
   f.toolbar.append(drawBtn, selBtn, followBtn, kbBtn, octCtl, resCtl, help.btn, lockBtn);
   // Popover lives just below the toolbar (inside the wrap), positioned by SCSS.
@@ -372,14 +373,6 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
         const target = Math.max(0, x - f.gridVp.clientWidth / 2);
         if (Math.abs(f.gridVp.scrollLeft - target) > 2) f.gridVp.scrollLeft = target;
       }
-    }
-    // Green insertion cursor — only meaningful in keyboard-input mode (it marks
-    // where a typed/step-input note lands), so hide it when that mode is off.
-    if (isKbInputEnabled()) {
-      const cx = xForTick(cursorTick);
-      gctx.strokeStyle = '#39d98a'; gctx.setLineDash([2, 2]);
-      gctx.beginPath(); gctx.moveTo(cx, 0); gctx.lineTo(cx, gridH); gctx.stroke();
-      gctx.setLineDash([]);
     }
   }
 
@@ -526,11 +519,9 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   let marquee: { tick0: number; midi0: number; tick1: number; midi1: number } | null = null;
   let groupDrag: { lastTick: number; lastMidi: number } | null = null;
   let lastMouse: { tick: number; midi: number } | null = null;
-  // Insertion cursor (ticks): paste fallback (Task 5) + step input (Task 6). Declared
-  // HERE — before the initial-mount layoutAll()/drawGrid() — because Task 6 makes
-  // drawGrid read it; a later declaration would hit its TDZ on first render.
+  // Insertion cursor (ticks): paste-anchor fallback when Ctrl+V has no prior mouse
+  // position (see the paste handler below).
   let cursorTick = 0;
-  const heldKeys = new Map<string, { midi: number; startTick: number }>();
 
   const isResizeEdge = (n: NoteEvent, tick: number) => {
     const edgeRange = Math.max(snap / 3, 6);
@@ -720,58 +711,6 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     // Clear selection
     if (e.key === 'Escape') { selection.clear(); redrawGridAndLane(); e.preventDefault(); return; }
 
-    // Octave shift via z/x — part of computer-keyboard musical typing, so only in
-    // keyboard-input mode. (The toolbar ◂/▸ stepper still shifts the octave always.)
-    if (!cmd && isKbInputEnabled() && (e.key === 'z' || e.key === 'x')) {
-      shiftOctave(e.key === 'x' ? 1 : -1);
-      e.preventDefault(); return;
-    }
-    // Move insertion cursor when nothing is selected (step-input aid — only in
-    // keyboard-input mode, where the cursor is visible).
-    if (isKbInputEnabled() && selection.size === 0 && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
-      cursorTick = Math.max(0, Math.min(opts.patternTicks - snap, cursorTick + (e.key === 'ArrowRight' ? snap : -snap)));
-      redrawGridAndLane(); e.preventDefault(); return;
-    }
-
-    // Computer-keyboard note input (musical typing + step-input) — OPT-IN. When the
-    // ⌨ Keys toggle is off, letter keys never insert notes; only mouse drawing does.
-    if (!cmd && isKbInputEnabled()) {
-      const rawMidi = midiForKey(e.key, octaveBase);
-      const midi = rawMidi === null ? null : snapMidi(rawMidi);
-      if (midi !== null && midi >= minMidi && midi <= maxMidi) {
-        e.preventDefault();
-        if (e.repeat || heldKeys.has(e.key.toLowerCase())) return;
-        opts.auditionNote?.(midi);
-        const playing = (opts.getPlayheadTick?.() ?? -1) >= 0;
-        if (playing) {
-          // Real-time record: remember the start; the note is written + wrapped
-          // in its own undo gesture on keyup (avoids nesting gestures when
-          // several keys are held at once).
-          const startTick = opts.getPlayheadTick?.() ?? 0;
-          heldKeys.set(e.key.toLowerCase(), { midi, startTick });
-        } else {
-          // Step input: write at the cursor, advance after all keys release.
-          heldKeys.set(e.key.toLowerCase(), { midi, startTick: cursorTick });
-          opts.onGestureStart?.();
-          opts.getNotes().push({ start: cursorTick, duration: snap, midi, velocity: DEFAULT_VELOCITY });
-          opts.onChange?.(); redrawGridAndLane(); opts.onGestureEnd?.();
-        }
-        return;
-      }
-      // Step-input backspace: delete last inserted note + step back (no selection)
-      if (e.key === 'Backspace' && selection.size === 0) {
-        const notes = opts.getNotes();
-        const atCursor = notes.filter((n) => n.start === Math.max(0, cursorTick - snap));
-        if (atCursor.length) {
-          opts.onGestureStart?.();
-          opts.setNotes(notes.filter((n) => n.start !== Math.max(0, cursorTick - snap)));
-          cursorTick = Math.max(0, cursorTick - snap);
-          opts.onChange?.(); redrawGridAndLane(); opts.onGestureEnd?.();
-        }
-        e.preventDefault(); return;
-      }
-    }
-
     // Delete selection
     if ((e.key === 'Delete' || e.key === 'Backspace') && selection.size > 0) {
       opts.onGestureStart?.();
@@ -793,25 +732,6 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
         opts.onChange?.(); redrawGridAndLane(); opts.onGestureEnd?.();
       }
       e.preventDefault(); return;
-    }
-  });
-
-  f.wrap.addEventListener('keyup', (e) => {
-    const k = e.key.toLowerCase();
-    const held = heldKeys.get(k);
-    if (!held) return;
-    heldKeys.delete(k);
-    const playing = (opts.getPlayheadTick?.() ?? -1) >= 0;
-    if (playing) {
-      const endTick = opts.getPlayheadTick?.() ?? held.startTick;
-      const q = quantizeRecorded(held.startTick, endTick < held.startTick ? held.startTick + snap : endTick, snap);
-      opts.onGestureStart?.();
-      opts.getNotes().push({ start: q.start, duration: q.duration, midi: held.midi, velocity: DEFAULT_VELOCITY });
-      opts.onChange?.(); redrawGridAndLane(); opts.onGestureEnd?.();
-    } else if (heldKeys.size === 0) {
-      // All step-input keys released → advance the cursor one step (chord = one advance).
-      cursorTick = Math.min(opts.patternTicks - snap, cursorTick + snap);
-      redrawGridAndLane();
     }
   });
 
