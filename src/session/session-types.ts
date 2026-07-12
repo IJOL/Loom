@@ -158,6 +158,8 @@ export interface SessionScene {
 }
 
 export interface SessionState {
+  /** Project name shown/edited in File ▸ Project Options. Backfilled on load. */
+  name?: string;
   lanes: SessionLane[];
   scenes: SessionScene[];
   globalQuantize: LaunchQuantize;

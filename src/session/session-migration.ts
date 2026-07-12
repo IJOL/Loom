@@ -17,6 +17,7 @@ export function migrateLoadedSessionState(s: SessionState): SessionState {
 
     lane.clips = lane.clips.map((c) => c ? migrateClip(c) : null);
   }
+  if (!s.name) s.name = 'Untitled';
   if (!s.musicality) s.musicality = { ...DEFAULT_MUSICALITY };
   // Scale lock is opt-in per working session: never load a session with it
   // already ON, even if an old save persisted lock:true. The user re-enables
