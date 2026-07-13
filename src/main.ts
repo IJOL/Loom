@@ -32,6 +32,7 @@ import * as laneTrackHelpers from './core/lane-display';
 import { SessionHost } from './session/session-host';
 import { emptySessionState, DEFAULT_MUSICALITY } from './session/session';
 import { renderProjectOptionsDialog } from './session/project-options-dialog';
+import { mountStatusChips } from './app/toolbar-status-chips';
 import { fetchDemoSession } from './demo/demo-loader';
 import { wireDemoPicker } from './demo/demo-picker';
 import { wireMidiImportUI } from './midi/midi-import-ui';
@@ -595,6 +596,7 @@ async function enableMidiControl(overrideProfileId: string | null): Promise<{ ok
   });
   if (!res.ok) {
     saveControlPrefs({ enabled: false, overrideProfileId });
+    statusChips.refreshMidi(false);
     const label = res.reason === 'unsupported' ? 'MIDI not supported in this browser'
       : res.reason === 'denied' ? 'permission denied'
       : 'no controller found';
@@ -606,6 +608,7 @@ async function enableMidiControl(overrideProfileId: string | null): Promise<{ ok
   });
   controlMediator.refreshLeds();
   saveControlPrefs({ enabled: true, overrideProfileId });
+  statusChips.refreshMidi(true);
   return { ok: true, label: `${profile.label} (${res.variant}) ✓` };
 }
 
@@ -614,6 +617,7 @@ function disableMidiControl(): void {
   controlMediator = null;
   midiAccess.disable();
   saveControlPrefs({ enabled: false, overrideProfileId: null });
+  statusChips.refreshMidi(false);
 }
 
 wireControlSurfaceUI({
@@ -628,6 +632,20 @@ wireControlSurfaceUI({
   },
 });
 const midiControlDialog = bindMidiControlDialog();
+
+// ── Toolbar status chips (musicality + MIDI) ────────────────────────────────
+// Read-only surface for state whose editing moved into a dialog. `enableMidiControl`/
+// `disableMidiControl` below close over `statusChips` (defined here, referenced
+// there) — safe because those functions aren't actually invoked until later
+// (earliest call is the auto-reconnect a few lines down), by which point this
+// const is already assigned.
+const statusChips = mountStatusChips(document.getElementById('toolbar-status-chips')!, {
+  getMusicality: () => sessionHost.state.musicality ?? DEFAULT_MUSICALITY,
+  onOpenProjectOptions: () => projectOptions.open(),
+  onOpenMidiController: () => midiControlDialog.open(),
+  isMidiEnabled: () => loadControlPrefs().enabled,
+});
+sessionHost.onStateApplied(() => statusChips.refreshMusicality());
 
 // Clip-header Rec button (Merge/Replace) — bound once sessionHost + the facade
 // both exist (mirrors setHistoryDeps/setTranscribeLoop's late-binding).
