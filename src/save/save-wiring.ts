@@ -180,7 +180,13 @@ export function wireSaveManager(
   });
   const openManagerForSave = () => {
     openManager();
-    if (nameInput) { nameInput.value = defaultName(); nameInput.focus(); nameInput.select(); }
+    // Pre-fill from the project name (File ▸ Project Options) so Save / Save
+    // As… defaults to something meaningful; fall back to the timestamped name
+    // when the project has none set yet.
+    if (nameInput) {
+      nameInput.value = deps.sessionHost.state.name || defaultName();
+      nameInput.focus(); nameInput.select();
+    }
   };
 
   // Replace existing Save/Load button handlers

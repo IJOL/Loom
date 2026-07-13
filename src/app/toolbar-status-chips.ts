@@ -1,6 +1,6 @@
 // src/app/toolbar-status-chips.ts
 // Read-only toolbar chips that surface state whose EDITING moved into a dialog.
-import { SCALE_CATALOG, rootName, type ScaleId } from '../core/musicality';
+import { SCALE_CATALOG, STYLE_CATALOG, rootName, type ScaleId, type StyleId } from '../core/musicality';
 import type { MusicalityState } from '../session/session-types';
 
 function shortScale(scale: ScaleId): string {
@@ -8,8 +8,13 @@ function shortScale(scale: ScaleId): string {
   return s ? s.label : String(scale);
 }
 
+function styleLabel(style: StyleId): string {
+  const s = STYLE_CATALOG.find((x) => x.id === style);
+  return s ? s.label : String(style);
+}
+
 export function musicalityChipLabel(m: MusicalityState): string {
-  return `${rootName(m.key)} ${shortScale(m.scale)}${m.lock ? ' 🔒' : ''}`;
+  return `${rootName(m.key)} ${shortScale(m.scale)} · ${styleLabel(m.style)}${m.lock ? ' · 🔒' : ''}`;
 }
 
 export interface StatusChipsDeps {

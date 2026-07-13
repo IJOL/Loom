@@ -202,10 +202,12 @@ export const SHOTS = [
   },
   {
     name: 'musicality-bar',
-    selector: '.musicality-popover',
+    selector: '#project-options-dialog',
     setup: async (page) => {
-      await page.locator('.musicality-summary').click();
-      await page.locator('.musicality-popover').waitFor({ state: 'visible' });
+      // The musicality summary/popover were replaced by the toolbar status
+      // chip (first chip = musicality) which opens the Project Options dialog.
+      await page.locator('#toolbar-status-chips .status-chip').first().click();
+      await page.locator('#project-options-dialog').waitFor({ state: 'visible' });
       await page.waitForTimeout(150);
     },
   },

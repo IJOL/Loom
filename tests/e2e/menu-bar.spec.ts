@@ -30,7 +30,7 @@ test('the musicality chip opens Project Options and shows the project name', asy
   await expect(page.locator('#project-options-body input[data-po="name"]')).toBeVisible();
 });
 
-test('File ▸ Project Options… → rename persists across a Save Manager save/load round-trip', async ({ page }) => {
+test('File ▸ Project Options… → rename persists in-session (reopen shows the new name)', async ({ page }) => {
   await page.locator('#menu-bar .menubar-top', { hasText: 'File' }).click();
   await page.locator('.menubar-item', { hasText: 'Project Options' }).click();
   const name = page.locator('#project-options-body input[data-po="name"]');

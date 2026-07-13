@@ -549,7 +549,15 @@ const projectOptions = renderProjectOptionsDialog({
   setName: (n) => sessionHost.callbacks.onRenameProject?.(n),   // undoable, re-renders
   getMusicality: () => sessionHost.state.musicality ?? DEFAULT_MUSICALITY,
   setMusicality: (next) => {
-    const run = () => { sessionHost.state.musicality = next; sessionHost.renderWithMixer(); };
+    const run = () => {
+      sessionHost.state.musicality = next;
+      sessionHost.renderWithMixer();
+      // renderWithMixer() does not fire onStateApplied, so refresh the toolbar
+      // chip explicitly (statusChips is declared later in this file, but this
+      // closure only runs on user interaction, long after boot completes —
+      // same late-binding pattern as the MIDI refresh below).
+      statusChips.refreshMusicality();
+    };
     if (_discreteHistoryDeps) withUndo(_discreteHistoryDeps, run); else run();
   },
 });

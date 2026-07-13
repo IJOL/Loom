@@ -11,6 +11,7 @@ export function createMenuBar(host: HTMLElement, menus: MenuSpec[]): { destroy()
 
   const tops: HTMLElement[] = menus.map((menu, i) => {
     const t = document.createElement('button');
+    t.type = 'button';
     t.className = 'menubar-top'; t.textContent = menu.label; t.setAttribute('role', 'menuitem');
     t.addEventListener('click', () => (openIdx === i ? close() : open(i)));
     t.addEventListener('mouseenter', () => { if (openIdx !== -1 && openIdx !== i) open(i); });
@@ -25,6 +26,7 @@ export function createMenuBar(host: HTMLElement, menus: MenuSpec[]): { destroy()
       }
       const enabled = it.enabled ? it.enabled() : true;
       const row = document.createElement('button');
+      row.type = 'button';
       row.className = 'menubar-item'; row.setAttribute('role', 'menuitem');
       if (!enabled) row.classList.add('is-disabled');
       const check = it.checked && it.checked() ? '● ' : (it.checked ? '○ ' : '');
@@ -34,6 +36,10 @@ export function createMenuBar(host: HTMLElement, menus: MenuSpec[]): { destroy()
       row.append(left, right);
       if (it.submenu) {
         row.classList.add('has-submenu');
+        // Without this, a click on a has-submenu row (no run/enabled branch
+        // below adds a handler for it) bubbles up to the top-level menu
+        // button and closes the whole menu (hover still opens the submenu).
+        row.addEventListener('click', (e) => e.stopPropagation());
         let sub: HTMLElement | null = null;
         row.addEventListener('mouseenter', () => {
           if (sub) return;

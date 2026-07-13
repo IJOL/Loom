@@ -21,22 +21,6 @@
   image-rendering: crisp-edges;
 }
 
-.midi-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  padding: 8px 12px;
-  margin-top: 8px;
-  color: var(--text);
-}
-.midi-panel summary {
-  cursor: pointer;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding: 4px 0;
-  color: var(--text-dim);
-}
 .midi-import-row {
   display: flex;
   align-items: center;

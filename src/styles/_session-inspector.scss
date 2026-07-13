@@ -569,3 +569,32 @@
   font-size: 9px; color: var(--amber); border: 1px solid var(--amber); border-radius: 2px;
   padding: 2px 6px; letter-spacing: 0.1em; text-transform: uppercase;
 }
+
+/* Inline tonality label + override button (#insp-tonality in the clip edit
+ * row). Rescued from the deleted musicality bar stylesheet — this is still a
+ * live element (renderTonalityOverride in session-inspector.ts), unlike the
+ * removed .musicality-bar/.musicality-popover picker. */
+.insp-tonality {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 11px var(--mono);
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.insp-tonality button {
+  font-family: var(--mono);
+  font-size: 10px;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.insp-tonality button:hover {
+  color: var(--amber);
+  border-color: var(--amber);
+}

@@ -24,11 +24,11 @@ describe('buildMenus', () => {
   it('File contains Project Options, Import MIDI, Stems and a disabled Preferences', () => {
     const file = buildMenus(stubActions()).find((m) => m.label === 'File')!;
     const items = file.items.filter((i): i is Exclude<typeof i, 'divider'> => i !== 'divider');
-    const byLabel = (l: string) => items.find((i) => i.label.startsWith(l))!;
-    expect(byLabel('Project Options')).toBeTruthy();
-    expect(byLabel('Import MIDI')).toBeTruthy();
-    expect(byLabel('Separate into Stems')).toBeTruthy();
-    expect(byLabel('Preferences').enabled!()).toBe(false);  // Part 2
+    const byLabel = (l: string) => items.find((i) => i.label === l)!;
+    expect(byLabel('Project Options…')).toBeTruthy();
+    expect(byLabel('Import MIDI…')).toBeTruthy();
+    expect(byLabel('Separate into Stems…')).toBeTruthy();
+    expect(byLabel('Preferences…').enabled!()).toBe(false);  // Part 2
   });
 
   it('View ▸ Session is checked when getMode() === session', () => {
@@ -41,14 +41,14 @@ describe('buildMenus', () => {
     let called = false;
     const file = buildMenus(stubActions({ captureScene: () => { called = true; } }));
     const tools = file.find((m) => m.label === 'Tools')!;
-    const capture = tools.items.filter((i) => i !== 'divider').find((i: any) => i.label.startsWith('Capture')) as any;
+    const capture = tools.items.filter((i) => i !== 'divider').find((i: any) => i.label === 'Capture Scene') as any;
     capture.run();
     expect(called).toBe(true);
   });
 
   it('the Open Demo submenu is built from listDemos()', () => {
     const file = buildMenus(stubActions()).find((m) => m.label === 'File')!;
-    const demo = file.items.filter((i) => i !== 'divider').find((i: any) => i.label.startsWith('Open Demo')) as any;
+    const demo = file.items.filter((i) => i !== 'divider').find((i: any) => i.label === 'Open Demo') as any;
     expect(demo.submenu!()).toHaveLength(1);
     expect(demo.submenu!()[0].label).toBe('Acid Rain');
   });
