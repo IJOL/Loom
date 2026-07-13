@@ -355,5 +355,10 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
       if (hd) withUndo(hd, run); else run();
     },
     onToggleDrumsExpanded() { /* drum-bus expand removed — drum-grid editor shows all voices */ },
+    onRenameProject(name) {
+      const hd = self.deps.historyDeps;
+      const run = () => { self.state.name = name || 'Untitled'; self.renderWithMixer(); };
+      if (hd) withUndo(hd, run); else run();
+    },
   };
 }

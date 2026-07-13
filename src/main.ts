@@ -31,7 +31,7 @@ import { stepsToNotes, bassStepsToNotes } from './core/notes';
 import * as laneTrackHelpers from './core/lane-display';
 import { SessionHost } from './session/session-host';
 import { emptySessionState, DEFAULT_MUSICALITY } from './session/session';
-import { renderMusicalityBar } from './session/musicality-bar';
+import { renderProjectOptionsDialog } from './session/project-options-dialog';
 import { fetchDemoSession } from './demo/demo-loader';
 import { wireDemoPicker } from './demo/demo-picker';
 import { wireMidiImportUI } from './midi/midi-import-ui';
@@ -537,21 +537,19 @@ sessionHost.init();
 laneHost.setLookupEngineId((laneId) =>
   sessionHost.state.lanes.find((l) => l.id === laneId)?.engineId ?? 'subtractive');
 
-// ── Musicality bar ────────────────────────────────────────────────────────────
-const musicalityHost = $<HTMLDivElement>('musicality-bar');
-const musicalityBar = renderMusicalityBar(musicalityHost, {
-  get: () => sessionHost.state.musicality ?? DEFAULT_MUSICALITY,
-  onChange: (next) => {
-    const run = () => {
-      sessionHost.state.musicality = next;
-      sessionHost.renderWithMixer();
-    };
+// ── Project Options dialog (File ▸ Project Options: name + key/style) ──────────
+const projectOptions = renderProjectOptionsDialog({
+  getName: () => sessionHost.state.name ?? 'Untitled',
+  setName: (n) => sessionHost.callbacks.onRenameProject?.(n),   // undoable, re-renders
+  getMusicality: () => sessionHost.state.musicality ?? DEFAULT_MUSICALITY,
+  setMusicality: (next) => {
+    const run = () => { sessionHost.state.musicality = next; sessionHost.renderWithMixer(); };
     if (_discreteHistoryDeps) withUndo(_discreteHistoryDeps, run); else run();
   },
 });
-// Refresh the summary whenever a new session is applied (boot demo, demo
-// picker, save-load, new-session) so the displayed tonality stays in sync.
-sessionHost.onStateApplied(() => musicalityBar.refresh());
+// Refresh the dialog whenever a new session is applied (boot demo, demo
+// picker, save-load, new-session) so the displayed name/tonality stays in sync.
+sessionHost.onStateApplied(() => projectOptions.refresh());
 
 // ── Live MIDI control subsystem ─────────────────────────────────────────────
 // Assemble facade → mediator → access seam → UI. activeLaneStore (declared

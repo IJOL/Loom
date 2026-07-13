@@ -48,6 +48,8 @@ export interface SessionUICallbacks {
    *  (which wires them in a later task) compile independently. */
   onRenameLane?: (laneId: string, name: string) => void;
   onRenameScene?: (sceneIdx: number, name: string) => void;
+  /** Rename the project (File ▸ Project Options). Undoable, re-renders. */
+  onRenameProject?: (name: string) => void;
   onToggleDrumsExpanded: () => void;
   _mixerRow?: HTMLElement;
 }
