@@ -31,8 +31,9 @@ test('APC Key 25: enable, launch a clip from a pad, receive LED feedback', async
   await page.goto('/');
   await waitForBoot(page);
 
-  // Open the MIDI Control disclosure and enable.
-  await page.locator('summary', { hasText: 'MIDI Control' }).click();
+  // Open the MIDI Controller dialog (Tools ▸ MIDI Controller…) and enable.
+  await page.locator('#menu-bar .menubar-top', { hasText: 'Tools' }).click();
+  await page.locator('.menubar-item', { hasText: 'MIDI Controller' }).click();
   await page.locator('#midi-control-enable').click();
   await expect(page.locator('#midi-control-status')).toContainText('APC Key 25');
 

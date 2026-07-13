@@ -147,7 +147,7 @@ test('3 · Clip buttons carry honest labels and tooltips', async ({ page }) => {
   );
 });
 
-test('4 · Octave is operable from the UI and matches the x shortcut', async ({ page }) => {
+test('4 · Octave is operable from the UI and matches the z/x keyboard shortcut', async ({ page }) => {
   await page.goto('/');
   await waitForBoot(page);
   const lane = await laneIdForEngine(page, 'tb303');
@@ -164,10 +164,14 @@ test('4 · Octave is operable from the UI and matches the x shortcut', async ({ 
   const afterClick = await octLabel.textContent();
   expect(afterClick).not.toBe(before); // C4 → C5 (or whatever the next step is)
 
-  // Pressing `x` on the focused editor wrap steps the octave the same way.
+  // z/x are the ⌨ Keys live-keyboard's octave control, now connected to the
+  // editor's octave display (a single shared octave). Enable ⌨ Keys, then step
+  // DOWN with `z`: the button already stepped up, so down has headroom no matter
+  // the clip's note range (stepping up again could clamp at the clip's top).
+  await page.locator('#insp-roll-host .pr-toolbar button', { hasText: 'Keys' }).click();
   const wrap = page.locator('#insp-roll-host div[tabindex="0"]').first();
   await wrap.focus();
-  await page.keyboard.press('x');
+  await page.keyboard.press('z');
   const afterKey = await octLabel.textContent();
   expect(afterKey).not.toBe(afterClick);
 });

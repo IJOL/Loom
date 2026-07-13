@@ -13,6 +13,13 @@ export interface ComputerKeyboardDeps {
   isEnabled: () => boolean;
   target?: EventTarget;
   initialOctaveBase?: number;
+  /** When a piano-roll editor is open, read its octave base so z/x step from —
+   *  and live notes play at — the octave you SEE. Returns null when no editor is
+   *  open (then our own module-local base is used). Connects the keyboard octave
+   *  to the editor's octave display (a single shared octave). */
+  getOctaveBase?: () => number | null;
+  /** Push the new octave to the open editor's display when z/x shift it. */
+  onOctaveChange?: (base: number) => void;
 }
 
 const MIN_OCTAVE_BASE = 24; // C1
@@ -44,12 +51,16 @@ export function attachComputerKeyboard(deps: ComputerKeyboardDeps): () => void {
     if (typeof HTMLElement !== 'undefined' && isTextEditTarget(ke.target)) return;
     if (!deps.isEnabled()) return;
     const k = ke.key.toLowerCase();
+    // When a piano-roll editor is open, step from and play at the octave shown
+    // there (one shared octave); otherwise use our own module-local base.
+    const effectiveBase = deps.getOctaveBase?.() ?? octaveBase;
     if (k === 'z' || k === 'x') {
-      octaveBase = clampOctaveBase(octaveBase + (k === 'x' ? 12 : -12), MIN_OCTAVE_BASE, MAX_OCTAVE_BASE);
+      octaveBase = clampOctaveBase(effectiveBase + (k === 'x' ? 12 : -12), MIN_OCTAVE_BASE, MAX_OCTAVE_BASE);
+      deps.onOctaveChange?.(octaveBase);
       ke.preventDefault();
       return;
     }
-    const midi = midiForKey(k, octaveBase);
+    const midi = midiForKey(k, effectiveBase);
     if (midi === null) return; // non-note key → leave it for other handlers
     ke.preventDefault();
     if (ke.repeat || held.has(k)) return; // no auto-repeat retrigger

@@ -590,6 +590,10 @@ attachComputerKeyboard({
   facade: controlFacade,
   getActiveLane: () => activeLaneStore.get(),
   isEnabled: isKbInputEnabled,
+  // Share the octave with the open piano-roll: z/x step from the octave shown in
+  // the editor and push the change back to its display (the ◂/▸ label).
+  getOctaveBase: () => sessionHost.inspectorRoll?.getOctaveBase?.() ?? null,
+  onOctaveChange: (base) => sessionHost.inspectorRoll?.setOctaveBase?.(base),
 });
 
 // Transport hotkeys: Space = global pause/resume (exact), R = Rec toggle.

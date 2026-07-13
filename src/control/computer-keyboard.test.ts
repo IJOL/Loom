@@ -12,7 +12,10 @@ function key(target: EventTarget, type: 'keydown' | 'keyup', k: string, extra: R
   return ev;
 }
 
-function harness(o: { enabled?: boolean; lane?: string | null } = {}) {
+function harness(o: {
+  enabled?: boolean; lane?: string | null;
+  getOctaveBase?: () => number | null; onOctaveChange?: (b: number) => void;
+} = {}) {
   const facade = { playLiveNote: vi.fn(), releaseLiveNote: vi.fn() };
   const target = new EventTarget();
   let enabled = o.enabled ?? true;
@@ -22,6 +25,8 @@ function harness(o: { enabled?: boolean; lane?: string | null } = {}) {
     isEnabled: () => enabled,
     target,
     initialOctaveBase: 60,
+    getOctaveBase: o.getOctaveBase,
+    onOctaveChange: o.onOctaveChange,
   });
   return {
     facade,
@@ -73,6 +78,16 @@ describe('attachComputerKeyboard', () => {
     h.key('keydown', 'a');
     const upMidi = h.facade.playLiveNote.mock.calls[1][1];
     expect(upMidi).toBe(baseMidi + 12);
+  });
+
+  it('shares the octave with an open editor: z/x step from getOctaveBase() and report via onOctaveChange', () => {
+    const onOctaveChange = vi.fn();
+    // The piano-roll display shows C5 (72); our local base is still 60.
+    const h = harness({ getOctaveBase: () => 72, onOctaveChange });
+    h.key('keydown', 'x'); // steps from the EDITOR octave (72), not local (60)
+    expect(onOctaveChange).toHaveBeenCalledWith(84); // C5 → C6
+    h.key('keydown', 'z');
+    expect(onOctaveChange).toHaveBeenLastCalledWith(60); // C5 → C4 (getter is constant 72)
   });
 
   it('non-note keys (arrows, digits) never play', () => {
