@@ -34,7 +34,7 @@ import { emptySessionState, DEFAULT_MUSICALITY } from './session/session';
 import { renderProjectOptionsDialog } from './session/project-options-dialog';
 import { mountStatusChips } from './app/toolbar-status-chips';
 import { fetchDemoSession } from './demo/demo-loader';
-import { wireDemoPicker } from './demo/demo-picker';
+import { wireDemoPicker, loadDemoSession } from './demo/demo-picker';
 import { wireMidiImportUI } from './midi/midi-import-ui';
 import { bindMidiImportDialog } from './midi/midi-import-dialog';
 import { launchScene as launchSceneRuntime, stopAll as stopAllLanes } from './session/session-runtime';
@@ -57,7 +57,7 @@ import {
 import { wireRandomizeUI } from './core/randomize-ui';
 import { wireFxUI, type FxUIDeps } from './core/fx-ui';
 import { wireTransport, setPlaying, type TransportDeps } from './core/transport';
-import { confirmDialog } from './core/dialog';
+import { confirmDialog, alertDialog } from './core/dialog';
 import { OfflineSceneRecorder } from './export/offline-recorder';
 import { soundingSceneDurationSec } from './export/scene-duration';
 import { wavEncoder } from './export/wav-encoder';
@@ -103,6 +103,11 @@ import { clampBpm, formatBpm } from './core/bpm';
 import { loadLoomWorklet } from './audio-worklet/loom-node';
 import { loadDrumsWorklet } from './audio-worklet/drums-node';
 import { loadSamplerWorklet } from './audio-worklet/sampler-node';
+// ── Desktop menu bar (chrome) ─────────────────────────────────────────────
+import { createMenuBar } from './app/menu-bar';
+import { buildMenus } from './app/menu-spec';
+import type { MenuActions } from './app/menu-actions';
+import { registerMenuShortcuts } from './app/menu-shortcuts';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -1125,6 +1130,14 @@ Promise.all([presetsLoaded, workletReady])
 // Demo picker: just the hand-built Minimal Techno showcase (also the boot
 // default). MIDI content is loaded live via the transport MIDI Import — there
 // are no pre-baked MIDI demos.
+// Lifted to a module-level const so BOTH the toolbar picker and the File >
+// Open Demo menu (menuActions.listDemos, below) share the SAME list.
+const DEMOS = [
+  { label: 'Minimal Techno', path: `${import.meta.env.BASE_URL}demos/minimal-techno.json` },
+  { label: 'Acid Rain', path: `${import.meta.env.BASE_URL}demos/acid-rain.json` },
+  { label: 'Cordillera', path: `${import.meta.env.BASE_URL}demos/cordillera.json` },
+  { label: 'Neon Drive', path: `${import.meta.env.BASE_URL}demos/neon-drive.json` },
+];
 const demoPicker = document.getElementById('demo-picker') as HTMLSelectElement | null;
 if (demoPicker) {
   // Wire the picker only after the worklet module is registered: picking a demo
@@ -1135,12 +1148,7 @@ if (demoPicker) {
     wireDemoPicker({
       sessionHost,
       selectEl: demoPicker,
-      demos: [
-        { label: 'Minimal Techno', path: `${import.meta.env.BASE_URL}demos/minimal-techno.json` },
-        { label: 'Acid Rain', path: `${import.meta.env.BASE_URL}demos/acid-rain.json` },
-        { label: 'Cordillera', path: `${import.meta.env.BASE_URL}demos/cordillera.json` },
-        { label: 'Neon Drive', path: `${import.meta.env.BASE_URL}demos/neon-drive.json` },
-      ],
+      demos: DEMOS,
       applyBpm: setTransportBpm,
       onLoaded: () => autoHistory.markClean(),
     });
@@ -1292,5 +1300,36 @@ const saveManager = wireSaveManager(saveWiringDeps);
 // worklet module being registered (same reason as the boot demo above). On a
 // fresh boot with no autosave this is a no-op regardless of timing.
 void workletReady.then(() => bootRecoveryLoad(saveWiringDeps));
+
+// ── Desktop menu bar (chrome) ──────────────────────────────────────────────
+// MenuActions is a plain object literal of ARROW FUNCTIONS (never bare method
+// references / `this`-bound class methods): menu-spec.ts pulls some fields out
+// as bare references (e.g. `run: a.undo`), so the underlying functions must be
+// `this`-free closures for that to keep working correctly.
+const menuActions: MenuActions = {
+  newSession: () => { void newSession(); },
+  openSaveForSave: () => saveManager.openForSave(),
+  openSaveForLoad: () => saveManager.openForLoad(),
+  openProjectOptions: () => projectOptions.open(),
+  listDemos: () => DEMOS,
+  loadDemo: (path) => { void loadDemoSession(path, { sessionHost, applyBpm: setTransportBpm, onLoaded: () => autoHistory.markClean() }); },
+  openImportMidi: () => midiImportDialog.open(),
+  openStems: () => stemDialog.open(),
+  undo: () => autoHistory.undo(),
+  redo: () => autoHistory.redo(),
+  canUndo: () => autoHistory.canUndo(),
+  canRedo: () => autoHistory.canRedo(),
+  setMode: (m) => performanceFeature.setMode(m),
+  getMode: () => performanceFeature.getMode(),
+  togglePerfDiagnostics: () => perfDiagnostics.toggle(),
+  isPerfOpen: () => perfDiagnostics.isOpen(),
+  openMidiController: () => midiControlDialog.open(),
+  captureScene: () => sessionHost.captureScene(),
+  copyScenesToPerformance: () => performanceFeature.copyFromSession(),
+  openManual: () => { window.open('manual/', '_blank', 'noopener'); },
+  openAbout: () => { void alertDialog(`Loom v${__APP_VERSION__} · ${__APP_STAGE__} · ${__APP_CODENAME__}`, { title: 'About Loom' }); },
+};
+createMenuBar(document.getElementById('menu-bar')!, buildMenus(menuActions));
+registerMenuShortcuts(menuActions);
 
 // App always boots in Session mode (see fetchDemoSession call above).
