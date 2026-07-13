@@ -133,23 +133,6 @@
         <button class="io" id="save" title="Save session">&#128190;</button>
         <button class="io" id="load" title="Load session">&#128193;</button>
         <select id="demo-picker" class="demo-picker" title="Load a demo"></select>
-        <details class="midi-panel" title="Import MIDI file">
-          <summary>&#11015; MIDI</summary>
-          <div class="midi-import-row">
-            <input type="file" id="poly-midi-file" accept=".mid,.midi" />
-            <button class="rnd primary" id="poly-midi-load" style="display:none;">Import MIDI</button>
-          </div>
-          <div id="poly-midi-tracklist" class="midi-tracklist" style="display:none;"></div>
-        </details>
-        <details class="midi-control-panel">
-          <summary>MIDI Control</summary>
-          <div id="midi-control-body" class="midi-control-body">
-            <button id="midi-control-enable" class="rnd">Enable MIDI controller</button>
-            <span id="midi-control-status" class="midi-control-status">off</span>
-            <select id="midi-control-override" class="midi-control-override" style="display:none;"></select>
-            <button id="midi-control-rec" class="rnd" disabled>● Rec</button>
-          </div>
-        </details>
       </div>
 
       <div id="session-view-root">
@@ -410,6 +393,37 @@
         </div>
       </div>
     </div>
+
+    <dialog id="midi-import-dialog" class="app-modal">
+      <div class="app-modal-head">
+        <h3>Import MIDI</h3>
+        <button class="app-modal-x" data-dialog-close aria-label="Close">×</button>
+      </div>
+      <div class="app-modal-body midi-import-row">
+        <input type="file" id="poly-midi-file" accept=".mid,.midi" />
+        <button class="rnd primary" id="poly-midi-load" style="display:none;">Import MIDI</button>
+        <div id="poly-midi-tracklist" class="midi-tracklist" style="display:none;"></div>
+      </div>
+      <div class="app-modal-foot">
+        <button class="rnd" data-dialog-close>Close</button>
+      </div>
+    </dialog>
+
+    <dialog id="midi-control-dialog" class="app-modal">
+      <div class="app-modal-head">
+        <h3>MIDI Controller</h3>
+        <button class="app-modal-x" data-dialog-close aria-label="Close">×</button>
+      </div>
+      <div class="app-modal-body" id="midi-control-body">
+        <button id="midi-control-enable" class="rnd">Enable MIDI controller</button>
+        <span id="midi-control-status" class="midi-control-status">off</span>
+        <select id="midi-control-override" class="midi-control-override" style="display:none;"></select>
+        <button id="midi-control-rec" class="rnd" disabled>● Rec</button>
+      </div>
+      <div class="app-modal-foot">
+        <button class="rnd" data-dialog-close>Close</button>
+      </div>
+    </dialog>
 
     <script type="module" src="/src/main.ts"></script>
   </body>

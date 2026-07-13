@@ -35,6 +35,7 @@ import { renderMusicalityBar } from './session/musicality-bar';
 import { fetchDemoSession } from './demo/demo-loader';
 import { wireDemoPicker } from './demo/demo-picker';
 import { wireMidiImportUI } from './midi/midi-import-ui';
+import { bindMidiImportDialog } from './midi/midi-import-dialog';
 import { launchScene as launchSceneRuntime, stopAll as stopAllLanes } from './session/session-runtime';
 import { reloadDrumkit } from './session/session-host-presets';
 import { applyPresetToEngine } from './presets/preset-apply';
@@ -90,6 +91,7 @@ import { createCountIn } from './control/metronome';
 import { createMediator } from './control/control-mediator';
 import { createMidiAccess } from './control/web-midi-access';
 import { wireControlSurfaceUI } from './control/control-surface-ui';
+import { bindMidiControlDialog } from './control/midi-control-dialog';
 import { attachComputerKeyboard } from './control/computer-keyboard';
 import { attachTransportHotkeys } from './control/transport-hotkeys';
 import { isKbInputEnabled } from './core/clip-kb-input';
@@ -627,6 +629,7 @@ wireControlSurfaceUI({
     canRecord: () => controlFacade.canCapture(),
   },
 });
+const midiControlDialog = bindMidiControlDialog();
 
 // Clip-header Rec button (Merge/Replace) — bound once sessionHost + the facade
 // both exist (mirrors setHistoryDeps/setTranscribeLoop's late-binding).
@@ -1057,6 +1060,7 @@ wireMidiImportUI({
   // the mixer (renderWithMixer throws on a lane with no resource).
   prepareLanes: () => prepareImportedLaneResources(),
 });
+const midiImportDialog = bindMidiImportDialog();
 
 const automationTickDeps: AutomationTickDeps = {
   seq,
