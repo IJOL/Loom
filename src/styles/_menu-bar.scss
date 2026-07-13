@@ -1,0 +1,53 @@
+// Classic desktop menu bar + dropdowns + toolbar status chips + new dialogs.
+.menubar {
+  display: flex; align-items: stretch; background: #1c1c1e;
+  border-bottom: 1px solid #101012; position: relative; z-index: 40;
+}
+.menubar-top {
+  padding: 7px 14px; background: transparent; border: 0; color: #cfcfcf;
+  font: inherit; font-size: 13px; cursor: default;
+  &:hover, &.is-open { background: #26262a; color: #fff; }
+}
+.menubar-dropdown {
+  position: absolute; top: 100%; left: 0; min-width: 250px; padding: 6px;
+  background: #202024; border: 1px solid #3a3a3e; border-top: none;
+  border-radius: 0 0 6px 6px; box-shadow: 0 16px 40px rgba(0, 0, 0, .55); z-index: 41;
+}
+.menubar-submenu { top: 0; left: 100%; border-top: 1px solid #3a3a3e; border-radius: 6px; }
+.menubar-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  width: 100%; padding: 7px 10px; background: transparent; border: 0; color: #d8d8d8;
+  font: inherit; font-size: 13px; border-radius: 5px; cursor: default; text-align: left;
+  &:hover:not(.is-disabled) { background: #6c7cff; color: #0b0b12; }
+  &.is-disabled { color: #5c5c5c; }
+}
+.menubar-item-sc { color: #8a8a8a; font-size: 11px; }
+.menubar-item:hover:not(.is-disabled) .menubar-item-sc { color: #0b0b12; }
+.menubar-divider { height: 1px; background: #33333a; margin: 6px 8px; }
+.menubar-item.has-submenu { position: relative; }
+
+// Toolbar status chips
+.status-chips { display: inline-flex; gap: 6px; align-items: center; }
+.status-chip {
+  background: #141416; border: 1px solid #33333a; border-radius: 14px;
+  padding: 4px 11px; font: inherit; font-size: 11px; color: #cfcfcf; cursor: pointer;
+  &:hover { border-color: #6c7cff; }
+  &.on { color: #7ee0ab; border-color: rgba(46, 194, 122, .5); }
+}
+
+// Native <dialog> shell for the new modals (Import MIDI / MIDI Control / Project Options)
+.app-modal {
+  background: #1c1c1e; color: #dcdcdc; border: 1px solid #3a3a3e; border-radius: 10px;
+  padding: 0; min-width: 300px; box-shadow: 0 14px 44px rgba(0, 0, 0, .5);
+  &::backdrop { background: rgba(0, 0, 0, .55); }
+}
+.app-modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 15px; border-bottom: 1px solid #2a2a2e; background: #242428;
+  h3 { margin: 0; font-size: 14px; font-weight: 500; }
+}
+.app-modal-x { background: transparent; border: 0; color: #8a8a8a; font-size: 16px; cursor: pointer; }
+.app-modal-body { padding: 14px 15px; display: flex; flex-direction: column; gap: 12px; }
+.app-modal-foot { display: flex; justify-content: flex-end; gap: 9px; padding: 12px 15px; border-top: 1px solid #2a2a2e; background: #181819; }
+.po-group { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: #6d6d72; margin-bottom: -4px; }
+.po-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
