@@ -15,6 +15,17 @@ export function migrateLoadedSessionState(s: SessionState): SessionState {
     delete (lane as { expanded?: unknown }).expanded;
     if (!lane.engineId) lane.engineId = guessEngineId(lane.id);
 
+    // Canonical preset vocabulary: every built-in / JSON preset is `engine:<name>`
+    // for ALL engines. Older saves + demos (and imported melodic lanes) stored
+    // subtractive factory presets as `factory:<name>`; fold them into `engine:`
+    // here — ONCE, at load — so nothing downstream re-prefixes. (The dropped-
+    // subtractive-preset bug came from a per-record `factory:`→`engine:` transform
+    // that didn't match subtractive's factory: options.) `user:` (subtractive
+    // localStorage) and `sampler:` (async refs) are genuinely different → untouched.
+    if (lane.enginePresetName?.startsWith('factory:')) {
+      lane.enginePresetName = `engine:${lane.enginePresetName.slice('factory:'.length)}`;
+    }
+
     lane.clips = lane.clips.map((c) => c ? migrateClip(c) : null);
   }
   if (!s.name) s.name = 'Untitled';

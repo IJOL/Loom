@@ -133,7 +133,9 @@ export function populatePolyPresetSelectForLane(laneId: string): void {
     factoryGroup.label = 'Factory';
     for (const p of getFactoryPolyPresets()) {
       const opt = document.createElement('option');
-      opt.value = `factory:${p.name}`;
+      // Unified vocabulary: subtractive factory presets are `engine:<name>` like
+      // every other engine's (they're applied the same way, engine.applyPreset).
+      opt.value = `engine:${p.name}`;
       opt.textContent = p.name;
       factoryGroup.appendChild(opt);
     }
@@ -341,13 +343,17 @@ export function markPagePresetCustom(selectId: string, laneId: string): void {
  *  select. Harmless for poly-page engines (their dropdown is
  *  poly-preset-select, which never reads pagePresetName). */
 export function recordPagePresetForLane(laneId: string, presetName: string): void {
-  const bare = presetName.replace(/^(factory:|user:|engine:)/, '');
-  const value = `engine:${bare}`;
-  pagePresetName.set(laneId, value);
+  // Record the value VERBATIM. It already carries the canonical dropdown
+  // vocabulary — `engine:<name>` for every built-in preset, `user:<name>` for
+  // subtractive user presets, `sampler:…` for the sampler — so it always matches
+  // an option. This USED to force `engine:<name>`, which matched the FM/303/drums
+  // selects but NOT subtractive's `factory:` options nor the sampler's `sampler:`
+  // options, so those lanes came up blank on load (correct sound, no preset).
+  pagePresetName.set(laneId, presetName);
   for (const [selectId, holder] of pageSelectActiveLane) {
     if (holder.laneId === laneId) {
       const sel = document.getElementById(selectId) as HTMLSelectElement | null;
-      if (sel) sel.value = value;
+      if (sel) sel.value = presetName;
     }
   }
 }

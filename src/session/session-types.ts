@@ -123,8 +123,11 @@ export interface SessionLane {
     /** Which drum source the Drums lane plays. Absent ⇒ 'synth' (façade default). */
     kitMode?: 'synth' | 'sample';
   };
-  /** Currently applied preset name for this lane (`factory:Name` /
-   *  `user:Name` / `engine:Name` — same shape as `polyPresetName` values). */
+  /** Currently applied preset name for this lane, prefix-tagged with the unified
+   *  preset vocabulary: `engine:Name` for any built-in/JSON preset (all engines),
+   *  `user:Name` for a subtractive user preset, `sampler:…` for a sampler ref.
+   *  (Legacy `factory:Name` from older saves is folded into `engine:` on load by
+   *  session-migration.) */
   enginePresetName?: string;
   /** Per-lane insert-chain slots. Added by Task 27 (formally persisted in
    *  Task 28). Defaults to [] when absent so consumers can write `??= []`

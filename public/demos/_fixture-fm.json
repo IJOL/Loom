@@ -3231,7 +3231,7 @@
     },
     {
       "id": "subtractive-2",
-      "engineId": "subtractive",
+      "engineId": "fm",
       "clips": [
         null,
         null,
@@ -3296,8 +3296,8 @@
           ]
         }
       ],
-      "name": "Sub 2",
-      "enginePresetName": "engine:PAD Sweep"
+      "name": "FM",
+      "enginePresetName": "engine:EP Classic Tine"
     }
   ],
   "scenes": [

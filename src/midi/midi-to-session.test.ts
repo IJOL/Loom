@@ -27,7 +27,7 @@ describe('midiToSession', () => {
     expect(result.newLanes[0].clips).toHaveLength(1);
     expect(result.newLanes[0].clips[0]?.notes[0].midi).toBe(36);
     expect(result.bpm).toBeCloseTo(128, 0);
-    expect(result.newLanes[0].enginePresetName).toBe('factory:BASS Acid Classic');
+    expect(result.newLanes[0].enginePresetName).toBe('engine:BASS Acid Classic');
     // The lane is titled after its instrument (the MIDI track name), not the preset.
     expect(result.newLanes[0].name).toBe('Bass');
     // The clip carries the same instrument label.
@@ -183,7 +183,7 @@ describe('midiToSession', () => {
       presetPerTrack: { 0: { engineId: 'subtractive', presetName: 'Init' } },
     });
     expect(result.newLanes[0].engineId).toBe('subtractive');
-    expect(result.newLanes[0].enginePresetName).toBe('factory:Init');
+    expect(result.newLanes[0].enginePresetName).toBe('engine:Init');
   });
 
   it('falls back to poly/Init when presetPerTrack lacks an entry', () => {
@@ -198,7 +198,7 @@ describe('midiToSession', () => {
       presetPerTrack: {},
     });
     expect(result.newLanes[0].engineId).toBe('poly');
-    expect(result.newLanes[0].enginePresetName).toBe('factory:Init');
+    expect(result.newLanes[0].enginePresetName).toBe('engine:Init');
   });
 
   it('a percussion-only ch10 track → a single sample-kit Drums lane (GM Percussion)', () => {

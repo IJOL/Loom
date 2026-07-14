@@ -34,6 +34,34 @@ describe('migrateLoadedSessionState', () => {
     expect(out.lanes[0].clips[0]!.notes).toHaveLength(1);
   });
 
+  it('canonicalises enginePresetName factory:<name> → engine:<name> (unified vocabulary)', () => {
+    const s = {
+      ...emptyState(),
+      lanes: [
+        { id: 'sub',  engineId: 'subtractive',   clips: [], enginePresetName: 'factory:LEAD Square' },
+        { id: 'tb',   engineId: 'tb303',         clips: [], enginePresetName: 'factory:BASS Acid Classic' },
+      ],
+    } as unknown as SessionState;
+    const out = migrateLoadedSessionState(s);
+    expect(out.lanes[0].enginePresetName).toBe('engine:LEAD Square');
+    expect(out.lanes[1].enginePresetName).toBe('engine:BASS Acid Classic');
+  });
+
+  it('leaves user:/engine:/sampler: preset names untouched', () => {
+    const s = {
+      ...emptyState(),
+      lanes: [
+        { id: 'a', engineId: 'subtractive', clips: [], enginePresetName: 'user:My Pad' },
+        { id: 'b', engineId: 'fm',          clips: [], enginePresetName: 'engine:EP Classic' },
+        { id: 'c', engineId: 'sampler',     clips: [], enginePresetName: 'sampler:preset:Grand Piano' },
+      ],
+    } as unknown as SessionState;
+    const out = migrateLoadedSessionState(s);
+    expect(out.lanes.map((l) => l.enginePresetName)).toEqual([
+      'user:My Pad', 'engine:EP Classic', 'sampler:preset:Grand Piano',
+    ]);
+  });
+
   it('strips legacy lane.kind and lane.expanded fields', () => {
     const s = {
       ...emptyState(),

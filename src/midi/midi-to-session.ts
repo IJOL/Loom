@@ -150,7 +150,11 @@ export function midiToSession(
     const instrument = tr.program >= 0 ? gmInstrumentName(tr.program) : undefined;
     specs.push({ notes: clipNotes, baseName: named || instrument || match.presetName, props: {
       engineId: match.engineId,
-      enginePresetName: `factory:${match.presetName}`,
+      // Unified vocabulary: a GM-matched built-in preset is `engine:<name>` for
+      // every engine (the import path bypasses the load-time migration, so tag it
+      // canonically at the source — otherwise the imported lane's preset dropdown
+      // came up blank).
+      enginePresetName: `engine:${match.presetName}`,
     } });
   }
 

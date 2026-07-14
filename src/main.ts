@@ -522,8 +522,8 @@ const sessionHost = new SessionHost({
   masterMeterAnalyser,
   masterStrip,
   applyPresetForLane: (laneId, presetName) => {
-    // presetName is a prefixed value matching the dropdown vocabulary
-    // (factory: / user: / engine:). See src/presets/preset-apply.ts.
+    // presetName is a prefixed value in the unified dropdown vocabulary
+    // (engine: / user: / sampler:). See src/presets/preset-apply.ts.
     const inst = getLaneEngineInstance(laneId);
     if (!inst) return;
     applyPresetToEngine(inst, presetName);

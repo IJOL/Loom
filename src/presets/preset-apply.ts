@@ -1,19 +1,22 @@
 // Single entry point for applying a named, prefix-tagged preset to a
 // session lane's engine instance.
 //
-// Preset names in session state and the dropdown UI carry a prefix that
-// disambiguates the storage path:
+// Preset names in session state and the dropdown UI carry a prefix from the
+// unified preset vocabulary:
 //
-//   factory:<NAME>  — PolySynth factory preset (subtractive lanes). Applied
-//                     via applyPresetByName(poly, NAME) on the lane engine's
-//                     internal PolySynth, which clobbers `poly.params`.
-//   user:<NAME>     — PolySynth user-saved preset (localStorage). Same path
-//                     as factory: from this helper's POV — applyPresetByName
-//                     reads both factory + user presets.
-//   engine:<NAME>   — SynthEngine.presets entry (flat id→value map). Applied
-//                     via engine.applyPreset(NAME) which writes each param
-//                     through setBaseValue. Used by tb303 / wavetable / fm /
-//                     karplus / drums-machine.
+//   engine:<NAME>   — a built-in / JSON preset (a SynthEngine.presets entry).
+//                     THE canonical form for every engine's factory presets —
+//                     subtractive, tb303, fm, wavetable, karplus, drums-machine.
+//                     Applied via engine.applyPreset(NAME) (writes each param
+//                     through setBaseValue).
+//   user:<NAME>     — a subtractive user-saved preset (localStorage, stored as
+//                     PolySynthParams). Genuinely different storage.
+//   sampler:<KIND>:<ID> — a sampler instrument / drumkit / loop ref (async load).
+//
+//   factory:<NAME>  — LEGACY. Older saves stored subtractive factory presets this
+//                     way; session-migration folds it into engine: on load. Still
+//                     accepted here (applied via engine.applyPreset) so an
+//                     un-migrated value can never silently no-op.
 //
 // The helper is pure WRT the UI: it does NOT refresh the preset dropdown or
 // knob handles. Call sites that need UI sync (the session-host's

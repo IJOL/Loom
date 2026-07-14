@@ -57,9 +57,11 @@ describe('SessionHost.applyLoadedSessionState — preset application', () => {
       globalQuantize: '1/1',
     };
     host.applyLoadedSessionState(state);
+    // The load-time migration canonicalises `factory:` → `engine:` (built-in
+    // presets share one vocabulary), so applyPresetForLane sees `engine:`.
     expect(applied).toEqual([
-      'subtractive-1=factory:PAD Warm',
-      'subtractive-2=factory:LEAD Soft Sine',
+      'subtractive-1=engine:PAD Warm',
+      'subtractive-2=engine:LEAD Soft Sine',
     ]);
   });
 });

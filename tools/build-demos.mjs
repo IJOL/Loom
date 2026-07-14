@@ -166,11 +166,11 @@ function acidRain() {
   ]);
 
   return demo(132, [
-    lane('tb303-1', 'tb303', '303 Acid', lead.notes, lead.lengthBars, 'factory:BASS Squelch',
+    lane('tb303-1', 'tb303', '303 Acid', lead.notes, lead.lengthBars, 'engine:BASS Squelch',
       { 'filter.resonance': 0.82, 'bus.reverbSend': 0.12, 'bus.delaySend': 0.18 }, [cut]),
-    lane('sub-1', 'subtractive', 'Sub', sub.notes, sub.lengthBars, 'factory:BASS Sub 808',
+    lane('sub-1', 'subtractive', 'Sub', sub.notes, sub.lengthBars, 'engine:BASS Sub 808',
       { 'bus.reverbSend': 0.04 }),
-    lane('drums-1', 'drums-machine', 'Drums', drums.notes, drums.lengthBars, 'factory:KIT Power',
+    lane('drums-1', 'drums-machine', 'Drums', drums.notes, drums.lengthBars, 'engine:KIT Power',
       { 'bus.reverbSend': 0.14 }),
   ]);
 }
@@ -271,11 +271,11 @@ function cordillera() {
   ]);
 
   return demo(100, [
-    lane('gtr-1', 'karplus', 'Guitar', gtr.notes, gtr.lengthBars, 'factory:GTR Nylon Soft Fingerpick',
+    lane('gtr-1', 'karplus', 'Guitar', gtr.notes, gtr.lengthBars, 'engine:GTR Nylon Soft Fingerpick',
       { 'bus.reverbSend': 0.24, 'bus.delaySend': 0.08 }, [bright]),
-    lane('bass-1', 'subtractive', 'Upright', bass.notes, bass.lengthBars, 'factory:BASS Plucky',
+    lane('bass-1', 'subtractive', 'Upright', bass.notes, bass.lengthBars, 'engine:BASS Plucky',
       { 'bus.reverbSend': 0.06 }),
-    lane('perc-1', 'drums-machine', 'Perc', percL.notes, percL.lengthBars, 'factory:KIT Jazz',
+    lane('perc-1', 'drums-machine', 'Perc', percL.notes, percL.lengthBars, 'engine:KIT Jazz',
       { 'bus.reverbSend': 0.18 }),
   ]);
 }
@@ -359,13 +359,13 @@ function neonDrive() {
   ]);
 
   return demo(115, [
-    lane('wavetable-1', 'wavetable', 'Neon Lead', lead.notes, lead.lengthBars, 'factory:LEAD Saw Classic',
+    lane('wavetable-1', 'wavetable', 'Neon Lead', lead.notes, lead.lengthBars, 'engine:LEAD Saw Classic',
       { 'filter.resonance': 0.30, 'bus.reverbSend': 0.18, 'bus.delaySend': 0.22 }, [morphEnv, cutEnv]),
-    lane('pad-1', 'subtractive', 'Pad', pad.notes, pad.lengthBars, 'factory:PAD Warm',
+    lane('pad-1', 'subtractive', 'Pad', pad.notes, pad.lengthBars, 'engine:PAD Warm',
       { 'bus.reverbSend': 0.30, 'bus.delaySend': 0.10 }),
-    lane('bass-1', 'subtractive', 'Bass', bass.notes, bass.lengthBars, 'factory:BASS Punchy',
+    lane('bass-1', 'subtractive', 'Bass', bass.notes, bass.lengthBars, 'engine:BASS Punchy',
       { 'bus.reverbSend': 0.05 }),
-    lane('drums-1', 'drums-machine', 'Drums', drums.notes, drums.lengthBars, 'factory:KIT Electronic',
+    lane('drums-1', 'drums-machine', 'Drums', drums.notes, drums.lengthBars, 'engine:KIT Electronic',
       { 'bus.reverbSend': 0.16 }),
   ]);
 }
