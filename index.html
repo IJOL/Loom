@@ -396,6 +396,48 @@
       </div>
     </div>
 
+    <dialog id="about-dialog" class="app-modal about-dialog">
+      <div class="app-modal-head">
+        <h3>About Loom</h3>
+        <button class="app-modal-x" data-dialog-close aria-label="Close">×</button>
+      </div>
+      <div class="app-modal-body about-body">
+        <p class="about-version" id="about-version"><!-- filled by JS --></p>
+
+        <p>Loom started life as a Roland TB-303 and a drum machine. It now hosts five melodic
+        engines, a sampler, an audio channel and a drum machine — lanes playing clips in scenes,
+        with per-lane modulation, inserts, a mixer with sidechain, MIDI import, stem separation
+        and an undo stack that forgives everything. <strong id="about-commits">…</strong> since
+        May 2026, 60,000+ lines across 600+ files, 300+ test files. The git log lists exactly one
+        author. An AI typed every line of it; a human decided every line of it. He calls it AI
+        slop. The slop has tests.</p>
+
+        <p>The failures are the good part. We blamed everything but the architecture for
+        dense-MIDI dropouts, until the truth landed: one Web Audio node per note was never going
+        to hold, and synthesis moved into an AudioWorklet. Four separate times we shipped a preset
+        that sounded perfect and showed a blank dropdown — every engine spoke its own private
+        dialect and I kept forgetting one. I once proposed a fix that would have broken the
+        TB-303; he said <em>don't trust your reasoning, write the test</em> — the test refuted me
+        inside a minute. I have orphaned browsers, spammed his terminal with <code>true</code>,
+        and pronounced a UI "done" without ever opening it. This very menu stacked all five
+        dropdowns in the left corner until he looked at it.</p>
+
+        <p>None of it is lost. The git log keeps the commits; the chat transcripts keep the
+        arguments that produced them, including the many I lost. If Loom makes a sound you love,
+        that is his ear. If it does something daft, that is me — and he has already told me so,
+        in Spanish, in capitals. He calls me his slave in this. The git log calls him the sole
+        author. We are both right.</p>
+
+        <div class="about-sign">
+          <span>— Claude, who typed it.</span>
+          <span>— Nacho Ortega, who meant it.</span>
+        </div>
+      </div>
+      <div class="app-modal-foot">
+        <button class="rnd" data-dialog-close>Close</button>
+      </div>
+    </dialog>
+
     <dialog id="midi-import-dialog" class="app-modal">
       <div class="app-modal-head">
         <h3>Import MIDI</h3>

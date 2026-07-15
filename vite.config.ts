@@ -1,4 +1,5 @@
 import { defineConfig, type Plugin } from 'vite';
+import { execSync } from 'node:child_process';
 import { cpSync, createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,6 +19,18 @@ const WORKTREES_DIR = join(ROOT, '.claude', 'worktrees');
 // Read it at config time and inline it into the bundle via `define` so the
 // running app can show it next to the logo. Falls back to a sane default if the
 // file is missing.
+// Commit count for the About dialog. Read from git at config time and inlined,
+// so the number is always current instead of a hardcoded lie that rots. Falls
+// back to 0 when git isn't available (e.g. building from a source tarball).
+function readGitCommits(): number {
+  try {
+    const out = execSync('git rev-list --count HEAD', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] });
+    return Number(out.toString().trim()) || 0;
+  } catch {
+    return 0;
+  }
+}
+
 function readAppVersion(): { version: string; stage: string; codename: string } {
   try {
     const v = JSON.parse(readFileSync(join(ROOT, 'version.json'), 'utf8'));
@@ -83,5 +96,6 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(APP_VERSION.version),
     __APP_STAGE__: JSON.stringify(APP_VERSION.stage),
     __APP_CODENAME__: JSON.stringify(APP_VERSION.codename),
+    __GIT_COMMITS__: JSON.stringify(readGitCommits()),
   },
 });

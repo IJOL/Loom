@@ -37,6 +37,7 @@ import { fetchDemoSession } from './demo/demo-loader';
 import { wireDemoPicker, loadDemoSession } from './demo/demo-picker';
 import { wireMidiImportUI } from './midi/midi-import-ui';
 import { bindMidiImportDialog } from './midi/midi-import-dialog';
+import { bindAboutDialog } from './app/about-dialog';
 import { launchScene as launchSceneRuntime, stopAll as stopAllLanes } from './session/session-runtime';
 import { reloadDrumkit } from './session/session-host-presets';
 import { applyPresetToEngine } from './presets/preset-apply';
@@ -1111,6 +1112,7 @@ wireMidiImportUI({
   prepareLanes: () => prepareImportedLaneResources(),
 });
 const midiImportDialog = bindMidiImportDialog();
+const aboutDialog = bindAboutDialog();
 
 const automationTickDeps: AutomationTickDeps = {
   seq,
@@ -1356,7 +1358,7 @@ const menuActions: MenuActions = {
   captureScene: () => sessionHost.captureScene(),
   copyScenesToPerformance: () => performanceFeature.copyFromSession(),
   openManual: () => { window.open('manual/', '_blank', 'noopener'); },
-  openAbout: () => { void alertDialog(`Loom v${__APP_VERSION__} · ${__APP_STAGE__} · ${__APP_CODENAME__}`, { title: 'About Loom' }); },
+  openAbout: () => aboutDialog.open(),
 };
 createMenuBar(document.getElementById('menu-bar')!, buildMenus(menuActions));
 registerMenuShortcuts(menuActions);

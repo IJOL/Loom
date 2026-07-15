@@ -5,3 +5,5 @@
 declare const __APP_VERSION__: string;
 declare const __APP_STAGE__: string;
 declare const __APP_CODENAME__: string;
+// `git rev-list --count HEAD` at config time (0 when git isn't available).
+declare const __GIT_COMMITS__: number;
