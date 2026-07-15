@@ -47,6 +47,36 @@ test('File ▸ Preferences… is present but disabled (Part 2)', async ({ page }
   await expect(page.locator('.menubar-item.is-disabled', { hasText: 'Preferences' })).toBeVisible();
 });
 
+test('Help ▸ About Loom shows the story with the build-time version and commit count', async ({ page }) => {
+  await page.locator('#menu-bar .menubar-top', { hasText: 'Help' }).click();
+  await page.locator('.menubar-item', { hasText: 'About' }).click();
+  await expect(page.locator('#about-dialog')).toBeVisible();
+  // Both are injected by vite `define`; an empty one means the build lost them.
+  await expect(page.locator('#about-version')).toHaveText(/^v\d/);
+  await expect(page.locator('#about-commits')).toHaveText(/commits$/);
+});
+
+test('the About easter egg stays hidden until the last line is clicked, and re-hides', async ({ page }) => {
+  await page.locator('#menu-bar .menubar-top', { hasText: 'Help' }).click();
+  await page.locator('.menubar-item', { hasText: 'About' }).click();
+
+  const tell = page.locator('#about-tell');
+  const truth = page.locator('#about-truth');
+
+  // Assert VISIBILITY, not the `hidden` attribute: `.about-truth`'s own
+  // `display: flex` outranks the UA's `[hidden] { display: none }`, so the
+  // attribute can read "hidden" while the egg is spoiled on screen. That
+  // shipped once — this is the assertion that would have caught it.
+  await expect(truth).toBeHidden();
+
+  await tell.click();
+  await expect(truth).toBeVisible();
+  await expect(tell).toHaveAttribute('aria-expanded', 'true');
+
+  await tell.click();
+  await expect(truth).toBeHidden();
+});
+
 // --- Visual-parity screenshots (for human review against the approved mockup) ---
 test('visual-parity screenshots: menu open, toolbar chips, Project Options dialog', async ({ page }) => {
   // 1. File menu open, showing the menu bar + dropdown. The dropdown is

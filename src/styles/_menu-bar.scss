@@ -82,6 +82,9 @@
 }
 .about-truth {
   display: flex; flex-direction: column; gap: 10px;
+  // `display: flex` here beats the UA's `[hidden] { display: none }`, so the
+  // attribute alone would never hide it. Say it explicitly.
+  &[hidden] { display: none; }
   margin: 4px 0 0; padding: 12px 14px;
   background: #0f0f11; border-left: 2px solid #f5a623; border-radius: 0 6px 6px 0;
   p { color: #a9a9b0; }
