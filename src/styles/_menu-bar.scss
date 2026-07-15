@@ -10,7 +10,7 @@
   // left edge instead of hanging under their own label.
   position: relative;
   padding: 7px 14px; background: transparent; border: 0; color: #cfcfcf;
-  font: inherit; font-size: 13px; cursor: default;
+  font: inherit; font-size: 12px; cursor: default;
   &:hover, &.is-open { background: #26262a; color: #fff; }
 }
 .menubar-dropdown {
@@ -22,7 +22,7 @@
 .menubar-item {
   display: flex; align-items: center; justify-content: space-between; gap: 20px;
   width: 100%; padding: 7px 10px; background: transparent; border: 0; color: #d8d8d8;
-  font: inherit; font-size: 13px; border-radius: 5px; cursor: default; text-align: left;
+  font: inherit; font-size: 12px; border-radius: 5px; cursor: default; text-align: left;
   &:hover:not(.is-disabled) { background: #6c7cff; color: #0b0b12; }
   &.is-disabled { color: #5c5c5c; }
 }
@@ -69,6 +69,24 @@
 .about-version {
   font-size: 11px !important; letter-spacing: .08em; text-transform: uppercase;
   color: #f5a623 !important; border-bottom: 1px solid #2a2a2e; padding-bottom: 8px;
+}
+// The tell: a button pretending to be the last line of the paragraph. No cue
+// until you hover it — an easter egg you can see is just a link.
+.about-tell {
+  padding: 0; background: transparent; border: 0; color: inherit;
+  // The global `button` rule uppercases and letter-spaces every button in the
+  // app. This one has to read as the paragraph's last sentence, not as chrome.
+  font: inherit; text-transform: none; letter-spacing: normal; cursor: default;
+  &:hover { color: #f5a623; text-decoration: underline dotted; }
+  &:focus-visible { outline: 1px dotted #f5a623; outline-offset: 2px; }
+}
+.about-truth {
+  display: flex; flex-direction: column; gap: 10px;
+  margin: 4px 0 0; padding: 12px 14px;
+  background: #0f0f11; border-left: 2px solid #f5a623; border-radius: 0 6px 6px 0;
+  p { color: #a9a9b0; }
+  em { color: #e8e8ea; font-style: normal; }
+  .about-sign { margin: 0; padding: 0; border: 0; }
 }
 .about-sign {
   display: flex; flex-direction: column; gap: 2px; margin-top: 4px;
