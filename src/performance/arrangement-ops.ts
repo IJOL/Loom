@@ -99,6 +99,19 @@ export function finalizeArrangement(s: ArrangementState, atSec: number): void {
     const last = lane.clipEvents[lane.clipEvents.length - 1];
     if (last && last.untilSec === Infinity) last.untilSec = atSec;
   }
+  recomputeDurationSec(s);
+}
+
+/**
+ * Set `durationSec` to the end of the last piece of content (clips + automation).
+ * Must run after ANY edit that moves content in time — this was only ever reached
+ * through finalizeArrangement (i.e. only after a REC take), so a band dragged
+ * longer left the arrangement believing its old length: the band rendered clipped
+ * against it, the ruler refused to grow and playback stopped at the stale end.
+ * Pure — operates on `s` in place. Ignores still-open (Infinity) events, which
+ * belong to a take that is still recording.
+ */
+export function recomputeDurationSec(s: ArrangementState): void {
   let dur = 0;
   for (const lane of s.lanes) {
     for (const ev of lane.clipEvents) {

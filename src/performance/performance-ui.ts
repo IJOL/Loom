@@ -209,7 +209,12 @@ function makeToolbar(state: ArrangementState, cb: PerfUICallbacks): HTMLElement 
   lenWrap.className = 'perf-length';
   lenWrap.append('Length: ');
   const len = document.createElement('input');
-  len.type = 'number'; len.min = '1'; len.value = String(state.lengthBars || 0);
+  // Show the length the timeline ACTUALLY has, not the raw `lengthBars`.
+  // `lengthBars` is the user's explicit MINIMUM (0 = auto//derive-from-content),
+  // so the field read "0 bars" over 8 bars of copied content. Typing still sets an
+  // explicit minimum; it just can't shrink the field below the real content.
+  len.type = 'number'; len.min = '1';
+  len.value = String(Math.ceil(effectiveDurationSec(state) / barSecOf(state.bpm)));
   len.className = 'perf-length-input';
   len.addEventListener('change', () => cb.onSetLengthBars(parseInt(len.value, 10) || 0));
   lenWrap.append(len, ' bars');

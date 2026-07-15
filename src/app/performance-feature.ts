@@ -16,7 +16,7 @@ import {
   type ArrangementState,
 } from '../performance/performance';
 import {
-  finalizeArrangement, setArrangementLengthBars,
+  finalizeArrangement, setArrangementLengthBars, recomputeDurationSec,
   addAutomationCurve, removeAutomationCurve,
   effectiveDurationSec, arrangementLoopWindowSec,
 } from '../performance/arrangement-ops';
@@ -155,6 +155,9 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     const lane = arrangement.lanes.find((l) => l.laneId === laneId);
     if (!lane) return;
     lane.clipEvents = fn(lane.clipEvents);
+    // Every band edit (resize/move/delete) routes through here, so this is the one
+    // place the arrangement's own length has to catch up with its content.
+    recomputeDurationSec(arrangement);
     refreshPerformanceView();
   }
 
@@ -465,18 +468,22 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     if (playheadRaf === 0) playheadRaf = requestAnimationFrame(rafPlayhead);
   }
   function beginArrangement() {
-    // With an active A-B loop, Play starts at A (the marked point), not at 0.
+    // With an active A-B loop, Play starts at A (the marked point); otherwise at
+    // the top.
+    //
+    // This used to seek to `ctx.currentTime - sessionHost.songAnchorSec`, meaning
+    // to resume the "shared song position" across a view switch. That position is
+    // only meaningful WHILE the transport runs: songAnchorSec is the ctx time the
+    // last playback began, and nothing rebases it on stop — so while stopped the
+    // difference kept growing with wall-clock time. Play then seeked that far in:
+    // pause 3s → start 3s late; pause longer than the arrangement → every lane's
+    // cursor lands past its last event and NOTHING sounds at all. There was no
+    // position to resume either way: arrangementPlayhead() returns 0 while
+    // stopped and the cursor is hidden, so the "preserved position" was never
+    // visible or reachable. Start from a real number instead of a stale clock.
     const lw = arrangementLoopWindowSec(arrangement);
-    if (lw.active && lw.startSec > 0) {
-      startArrangementAt(arrangementPlayState, ctx.currentTime, arrangement, lw.startSec, arrangementOnLaunchClip);
-    } else {
-      // Global transport: with no A-B loop, start from the CURRENT shared song
-      // position (the anchor Session/Arrangement share) instead of 0, so switching
-      // views and pressing Play continues where the playhead was. startArrangementAt
-      // with songSec sets startedAtCtx === sessionHost.songAnchorSec at start.
-      const songSec = Math.max(0, ctx.currentTime - sessionHost.songAnchorSec);
-      startArrangementAt(arrangementPlayState, ctx.currentTime, arrangement, songSec, arrangementOnLaunchClip);
-    }
+    const startSec = lw.active && lw.startSec > 0 ? lw.startSec : 0;
+    startArrangementAt(arrangementPlayState, ctx.currentTime, arrangement, startSec, arrangementOnLaunchClip);
     ensurePlayheadLoop();
   }
 
