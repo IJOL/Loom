@@ -403,11 +403,14 @@
       </div>
       <div class="app-modal-body midi-import-row">
         <input type="file" id="poly-midi-file" accept=".mid,.midi" />
-        <button class="rnd primary" id="poly-midi-load" style="display:none;">Import MIDI</button>
         <div id="poly-midi-tracklist" class="midi-tracklist" style="display:none;"></div>
       </div>
+      <!-- Standard dialog footer: Cancel closes; Import MIDI is the primary
+           action (enabled once a file parses — see midi-import-ui) and closes the
+           dialog once the import commits. -->
       <div class="app-modal-foot">
-        <button class="rnd" data-dialog-close>Close</button>
+        <button class="rnd" data-dialog-close>Cancel</button>
+        <button class="rnd primary" id="poly-midi-load" disabled>Import MIDI</button>
       </div>
     </dialog>
 

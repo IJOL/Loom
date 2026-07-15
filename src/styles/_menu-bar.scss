@@ -4,6 +4,11 @@
   border-bottom: 1px solid #101012; position: relative; z-index: 40;
 }
 .menubar-top {
+  // The dropdown is absolutely positioned INSIDE this button, so the button must
+  // establish the containing block — otherwise every menu's dropdown anchors to
+  // `.menubar` (the only positioned ancestor) and they all pile up at the bar's
+  // left edge instead of hanging under their own label.
+  position: relative;
   padding: 7px 14px; background: transparent; border: 0; color: #cfcfcf;
   font: inherit; font-size: 13px; cursor: default;
   &:hover, &.is-open { background: #26262a; color: #fff; }

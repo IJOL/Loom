@@ -1045,7 +1045,14 @@ function prepareImportedLaneResources(): void {
     hasResource: (id) => !!laneResources.get(id),
     ensureLaneResource: (id, engineId) => ensureLaneResource(id, engineId),
     getEngineInstance: (id) => getLaneEngineInstance(id),
-    applyDrumPreset: (id, name) => { void sessionHost.applyDrumPreset(id, name); },
+    // Sample-kit drums lane: applyDrumPreset does the async kit decode but does
+    // NOT record the dropdown selection (only the user-pick path does), so an
+    // imported percussion lane showed "(custom — no preset)". Record it here —
+    // the same thing applyPresetForLane does for the melodic lanes below.
+    applyDrumPreset: (id, name) => {
+      void sessionHost.applyDrumPreset(id, name);
+      recordPagePresetForLane(id, `engine:${name}`);
+    },
     reloadDrumkit: (id, kitId, inst) =>
       { void reloadDrumkit(sessionHost, id, kitId, inst as Parameters<typeof reloadDrumkit>[3]); },
     // Route the synth/melodic preset through the host path so the preset dropdown
@@ -1079,7 +1086,17 @@ wireMidiImportUI({
   launchScene: (sceneId: string) => launchSceneById(sceneId),
   flashButton,
   presetsReady: presetsLoaded,
-  onImported: () => performanceFeature.copyFromSession(),
+  // A committed import: mirror the arrangement onto the Performance timeline,
+  // but LAND THE USER IN SESSION — that's where the imported clips/scene are and
+  // where ▶ plays them (copyFromSession switches to Performance, so switch back).
+  // Then dismiss the dialog (Import MIDI → import + close).
+  // midiImportDialog is declared below; this only runs on a user import, long
+  // after boot, so the closure is safe.
+  onImported: () => {
+    performanceFeature.copyFromSession();
+    performanceFeature.setMode('session');
+    midiImportDialog.close();
+  },
   // Replace import = a clean slate. Same full wipe as the "New session" button:
   // stop the transport + silence voices, dispose every old lane resource (engines
   // AND their modulators/LFOs) + close open editors via applyLoadedSessionState,

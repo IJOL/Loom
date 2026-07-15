@@ -126,7 +126,14 @@ export function midiToSession(
     if (isDrumkitTrack(tr)) {
       const plan = planDrumLanes(clipNotes);
       if (plan.drum) {
-        specs.push({ notes: plan.drum, baseName: named || 'Drums', props: { engineId: 'drums-machine' } });
+        specs.push({ notes: plan.drum, baseName: named || 'Drums', props: {
+          engineId: 'drums-machine',
+          // A GM channel-10 kit track IS the GM "Standard" kit — name it, so the
+          // lane loads an EXPLICIT preset (applied + recorded through the host
+          // path) instead of riding the engine's implicit default and showing
+          // "(custom — no preset)" in the dropdown.
+          enginePresetName: 'engine:KIT Standard',
+        } });
       }
       if (plan.perc) {
         specs.push({ notes: plan.perc, baseName: named || 'Percussion', props: {
