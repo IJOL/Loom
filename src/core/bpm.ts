@@ -4,7 +4,11 @@
 // on-screen field is formatted for readability.
 
 export const BPM_MIN = 40;
-export const BPM_MAX = 240;
+// 240 shut out whole genres that Loom otherwise plays fine — drum & bass sits at
+// 160-180 but its half-time feel is written at 320+, and speedcore/gabber live
+// well past that. The scheduler is tempo-agnostic (step = 60/bpm/4), so the cap
+// is a UI choice, not a DSP limit. Keep index.html's `max` in step with this.
+export const BPM_MAX = 400;
 
 /** Clamp to the valid transport range WITHOUT rounding, so a detected fractional
  *  tempo survives and the scheduler grid matches the recorded audio. */

@@ -99,7 +99,7 @@ import { attachTransportHotkeys } from './control/transport-hotkeys';
 import { isKbInputEnabled } from './core/clip-kb-input';
 import { listProfiles } from './control/profile-registry';
 import { loadControlPrefs, saveControlPrefs } from './control/persistence';
-import { clampBpm, formatBpm } from './core/bpm';
+import { clampBpm, formatBpm, BPM_MIN, BPM_MAX } from './core/bpm';
 // ── AudioWorklet synthesis loader (live path for all subtractive lanes) ──────
 import { loadLoomWorklet } from './audio-worklet/loom-node';
 import { loadDrumsWorklet } from './audio-worklet/drums-node';
@@ -313,6 +313,12 @@ const mixerDeps: import('./core/mixer').MixerColumnDeps = {
   // time so the getter always sees the final value.
   get historyDeps() { return _discreteHistoryDeps; },
 };
+
+// The spinner's range comes from the SAME constants clampBpm enforces. When the
+// markup carried its own min/max they were free to disagree with the clamp — and
+// did: the field stopped at 240 while nothing in the DSP cared.
+bpmInput.min = String(BPM_MIN);
+bpmInput.max = String(BPM_MAX);
 
 bpmInput.addEventListener('input', () => {
   const v = parseFloat(bpmInput.value);
