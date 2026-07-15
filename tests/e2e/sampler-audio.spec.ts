@@ -63,9 +63,10 @@ test.describe('sampler instruments via the PRESET dropdown', () => {
     await expect(sel).toBeVisible();
 
     // The Sampler's instruments populate the shared preset selector as namespaced
-    // `sampler:<family>:<id>` options (grouped Drumkit / Melodic / Loop); the
-    // lists are fetched async, so retry until they fill in.
-    await expect(sel.locator('option[value^="sampler:melodic:"]')).not.toHaveCount(0);
+    // `sampler:<family>:<id>` options (grouped Presets / Drumkit / Loop); the
+    // lists are fetched async, so retry until they fill in. Melodic instruments
+    // are normal JSON presets (presets/sampler.json) → `sampler:preset:<name>`.
+    await expect(sel.locator('option[value^="sampler:preset:"]')).not.toHaveCount(0);
     await expect(sel.locator('option[value^="sampler:drumkit:"]')).not.toHaveCount(0);
     await expect(sel.locator('option[value^="sampler:loop:"]')).not.toHaveCount(0);
   });
@@ -94,7 +95,7 @@ test.describe('sampler instruments via the PRESET dropdown', () => {
     await expect(roll.locator('canvas')).not.toHaveCount(0);
 
     // Back to a melodic instrument: drumkitId cleared (mutual exclusion) → piano-roll.
-    await sel.selectOption({ value: 'sampler:melodic:sweep-pad' });
+    await sel.selectOption({ value: 'sampler:preset:Sweep Pad' });
     await expect(roll.locator('.pr-frame')).toBeVisible({ timeout: 10_000 });
   });
 

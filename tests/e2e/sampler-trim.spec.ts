@@ -8,9 +8,11 @@ test('dragging the start handle trims the sample', async ({ page }) => {
 
   const sel = page.locator('#poly-preset-select');
   await expect(sel).toBeVisible();
-  await expect(sel.locator('option[value^="sampler:melodic:"]')).not.toHaveCount(0);
+  // Melodic sampler instruments are normal JSON presets (presets/sampler.json),
+  // so they appear as `sampler:preset:<name>` (not the old `sampler:melodic:<id>`).
+  await expect(sel.locator('option[value^="sampler:preset:"]')).not.toHaveCount(0);
   // Selecting a sampler preset auto-loads it via the 'change' event listener.
-  await sel.selectOption('sampler:melodic:sweep-pad');
+  await sel.selectOption('sampler:preset:Sweep Pad');
 
   const canvas = page.locator('.ssv-canvas');
   await expect(canvas).toBeVisible({ timeout: 10_000 });
