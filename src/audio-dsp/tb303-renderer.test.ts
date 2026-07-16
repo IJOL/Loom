@@ -133,3 +133,45 @@ describe('TB303Renderer', () => {
     expect(typeof r.renderSample).toBe('function');
   });
 });
+
+describe('the 303 runs through a diode ladder, not a generic lowpass', () => {
+  const render = (over: ParamBag = {}, secs = 0.25): number[] => {
+    const v = new TB303Renderer(
+      { midi: 45, beginSec: 0, durationSec: 0.2, velocity: 0.9, accent: false, slide: false },
+      { ...P, ...over }, SR,
+    );
+    const b: number[] = [];
+    for (let i = 0; i < SR * secs; i++) b.push(v.renderSample(i / SR));
+    return b;
+  };
+  const mean = (b: number[]) => b.reduce((s, v) => s + v, 0) / b.length;
+  const rms = (b: number[]) => Math.sqrt(b.reduce((s, v) => s + v * v, 0) / b.length);
+
+  it('leaves the asymmetric residue a diode ladder leaves — the 303 bite', () => {
+    // A symmetric filter (tanh, or a plain SVF) averages a symmetric input to
+    // ~0. The diode ladder's asymmetric clipping does not, and that offset is
+    // even harmonics: the part of "acid" a clean lowpass cannot make. This is
+    // the assertion that fails if the 303 is quietly put back on the Svf.
+    const hot = render({ 'filter.resonance': 0.9, 'filter.cutoff': 0.25 });
+    expect(Math.abs(mean(hot))).toBeGreaterThan(rms(hot) * 0.01);
+  });
+
+  it('spreads the resonance knob across its whole travel', () => {
+    // The ladder's own ringing is covered in ladder.test.ts; what matters HERE
+    // is that the 303's Q (1 + res*25 + accent*6) maps onto it without
+    // saturating. Scaling by mpump's /20 pinned everything above res≈0.76 to
+    // full resonance: the last quarter of the knob was dead, and accent had no
+    // headroom left to add its 6 Q into.
+    const tone = (res: number) => rms(render({ 'filter.resonance': res, 'filter.cutoff': 0.35 }));
+    expect(tone(0.8)).not.toBeCloseTo(tone(1.0), 3);
+  });
+
+  it('stays bounded at full resonance', () => {
+    // Absolute ceiling, justified: a ladder that runs away crushes the master
+    // limiter for the whole session.
+    const b = render({ 'filter.resonance': 1, 'filter.cutoff': 0.5 });
+    const peak = b.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
+    expect(peak).toBeLessThan(4);
+    expect(Number.isFinite(peak)).toBe(true);
+  });
+});

@@ -7,7 +7,7 @@
 import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets } from './types';
 import { param } from './types';
 import { SawOsc, SquareOsc } from './osc';
-import { Svf } from './filter';
+import { LadderFilter } from './ladder';
 import type { ModLite } from './modulation-runtime';
 import { ModEnvHost } from './mod-env-host';
 import { registerRenderer } from './renderer-registry';
@@ -16,28 +16,46 @@ import { midiToFreq, clamp01 } from './dsp-util';
 
 // velGain mirrors the logic from src/core/velocity-gain.ts:
 // velToGain(v) = 0.3 + 1.1 * v (accent punch applied outside).
+//
+// The accent multiplier is the 303's own, not the shared ACCENT_PUNCH, because
+// the 303's accent also raises Q — and a ladder gets QUIETER as Q climbs (its
+// feedback is subtracted), unlike the Svf this replaced, whose resonant peak
+// added level. At 1.1 the accent came out *quieter* than the note it is meant
+// to punch. 1.3 restores "accent is louder", which on a real 303 is a large
+// VCA jump anyway (~6 dB), far more than the 0.8 dB 1.1 buys.
+const ACCENT_VCA = 1.3;
 function velGain(velocity: number, accent: boolean): number {
   const g = 0.3 + 1.1 * velocity;
-  return accent ? g * 1.1 : g;
+  return accent ? g * ACCENT_VCA : g;
 }
 
-// Map the TB-303's biquad-Q value (~1..31) to the Svf's resonance parameter.
-// The Svf uses damping: r = 0.5^((res+0.125)/0.125).
-// Empirical: Q 1 → res≈0, Q 25 → res≈0.8, capped at 1.0 to avoid blow-up.
-function qToSvfRes(q: number): number {
-  return Math.min(1.0, Math.max(0, (q - 1) / 30));
+// Map the TB-303's biquad-Q (1 + resonance*25 + accent*6, so 1..31) onto the
+// ladder's 0..1 resonance.
+//
+// The curve is concave (mpump's ^0.7) so the knob's useful range is spread out
+// rather than bunched at the top — but it is scaled over the 303's OWN Q range,
+// not mpump's. Borrowing their /20 saturated at resonance ≈0.76: the last
+// quarter of the knob did nothing, and accent (which adds up to 6 Q) had no
+// headroom left to push into.
+const Q_MIN = 1;
+const Q_MAX = 31;
+function qToLadderRes(q: number): number {
+  const norm = (Math.max(Q_MIN, q) - Q_MIN) / (Q_MAX - Q_MIN);
+  return Math.min(1, Math.pow(norm, 0.7));
 }
 
 export class TB303Renderer implements VoiceRenderer {
   private osc: SawOsc | SquareOsc;
-  private filter: Svf;
+  // The 303 filters through a diode ladder — its asymmetric clipping is the
+  // instrument's voice, not a detail. See ladder.ts.
+  private filter: LadderFilter;
   private begin: number;
   private holdEnd: number;
   private freq: number;
   private baseCutHz: number;
   private peakCutHz: number;
   private decaySec: number;
-  private svfRes: number;
+  private ladderRes: number;
   private peakAmp: number;
   private slide: boolean;
   // Saved knob bases so cutoff / env.amount / env.decay modulation can recompute
@@ -54,7 +72,7 @@ export class TB303Renderer implements VoiceRenderer {
   constructor(note: NoteSpec, p: ParamBag, private sr: number) {
     const wave = param(p, 'osc.wave', 0);
     this.osc = wave >= 0.5 ? new SquareOsc(sr) : new SawOsc(sr);
-    this.filter = new Svf(sr);
+    this.filter = new LadderFilter('diode', sr);
 
     this.begin = note.beginSec;
     this.holdEnd = note.beginSec + note.durationSec;
@@ -85,7 +103,7 @@ export class TB303Renderer implements VoiceRenderer {
 
     // Biquad Q from the legacy synth: 1 + resonance*25 + accentBoost*6
     const biquadQ = 1 + resonance * 25 + accentBoost * 6;
-    this.svfRes = qToSvfRes(biquadQ);
+    this.ladderRes = qToLadderRes(biquadQ);
 
     this.peakAmp = synthTrim('tb303') * velGain(note.velocity, note.accent);
   }
@@ -152,11 +170,10 @@ export class TB303Renderer implements VoiceRenderer {
     const decaySec = mo?.['env.decay']
       ? (0.05 + clamp01(this.decayBase + mo['env.decay']) * 1.2) * (this.accent ? 0.6 : 1) : this.decaySec;
     const cutoffHz = baseCutHz + (peakCutHz - baseCutHz) * Math.exp(-dt / decaySec);
-    const res = mo?.['filter.resonance'] ? clamp01(this.svfRes + mo['filter.resonance']) : this.svfRes;
+    const res = mo?.['filter.resonance'] ? clamp01(this.ladderRes + mo['filter.resonance']) : this.ladderRes;
 
     const oscOut = this.osc.update(this.freq);
-    this.filter.update(oscOut, cutoffHz, res);
-    let out = this.filter.lp * amp;
+    let out = this.filter.update(oscOut, cutoffHz, res) * amp;
     if (mo?.['amp.gain']) out *= Math.max(0, Math.min(2, 1 + mo['amp.gain']));
     return out;
   }

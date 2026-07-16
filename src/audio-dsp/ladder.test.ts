@@ -27,6 +27,17 @@ describe('LadderFilter', () => {
     expect(through(f, 8000, 0)).toBeGreaterThan(0);
   });
 
+  it('makes up some of the level resonance costs, but not all of it', () => {
+    // A ladder subtracts its feedback, so it thins as it resonates — measured
+    // ~2.9x from res 0 to 1. Left raw, cranking resonance quietly ducks the
+    // voice, and anything that raises Q (a 303's accent!) gets QUIETER, which
+    // is backwards. Partial makeup: keep the thinning as character, lose the duck.
+    const level = (res: number) => through(new LadderFilter('moog', SR), 800, res);
+    const drop = level(0) / level(1);
+    expect(drop).toBeGreaterThan(1);     // still thins — that is the sound
+    expect(drop).toBeLessThan(2.2);      // but nothing like the raw 2.9x duck
+  });
+
   it('cuts the highs: a closed cutoff is quieter than an open one', () => {
     const open = through(new LadderFilter('moog', SR), 12000, 0);
     const shut = through(new LadderFilter('moog', SR), 200, 0);

@@ -69,7 +69,17 @@ const CASES: Array<{ id: string; params: ParamBag; mod: Record<string, number>; 
   { id: 'wavetable',   params: { 'filter.cutoff': 0.3, 'osc.waveA': 3, 'osc.waveB': 3 }, mod: { 'filter.cutoff': 0.6 } },
   { id: 'fm',          params: { algorithm: 0, 'op1.level': 0.6, 'op2.level': 0.4 }, mod: { 'op2.level': 0.7 } },
   { id: 'karplus',     params: {}, mod: { 'amp.level': 0.6 } },
-  { id: 'tb303',       params: { 'filter.cutoff': 0.3 }, mod: { 'filter.cutoff': 0.6 } },
+  // env.amount 0 switches OFF the 303's own filter envelope, leaving the LFO as the
+  // only thing driving the cutoff — this test is about the LFO reaching the DSP, and
+  // Env Mod is a second modulator writing to that same cutoff. At its 0.5 default it
+  // adds a decaying +3000 Hz on top of the knob, flooring the sweep at ~1722 Hz: an
+  // octave above this note's 220 Hz fundamental, so the filter never closes onto the
+  // harmonics and the LOUDNESS measured here moves ~4%. (It is not masking: a ladder's
+  // level is flat once its passband already holds all the energy. The Svf this replaced
+  // sloped ~43% across that same span — an artifact, and the only reason the old params
+  // passed.) With Env Mod at 0 the LFO sweeps 80..5048 Hz, across the fundamental,
+  // and the filter audibly chokes the note: envDiff ≈ 1.0 against the 0.05 bar.
+  { id: 'tb303',       params: { 'filter.cutoff': 0.3, 'env.amount': 0 }, mod: { 'filter.cutoff': 0.6 } },
   { id: 'westcoast',   params: { 'lpg.cutoff': 0.3, 'lpg.mode': 2 }, mod: { 'lpg.cutoff': 0.6 } },
 ];
 
@@ -87,9 +97,12 @@ describe('modulation pipeline (objective, per engine)', () => {
   // switch, read once at trigger) must leave the sound untouched. This proves the
   // positive tests above measure the real modulation, not render noise — the render is
   // deterministic, so "no effect" means an envDiff of essentially zero.
+  // Same patch as the tb303 case above, so the ONLY variable is which param the LFO
+  // targets: continuous → envDiff ≈ 1.0, non-continuous → 0.
   it('control: an LFO on a non-continuous param (303 waveform switch) does NOT change the sound', () => {
-    const dry = rmsEnvelope(render('tb303', { 'filter.cutoff': 0.3 }, null, 0.4));
-    const wet = rmsEnvelope(render('tb303', { 'filter.cutoff': 0.3 }, { 'osc.wave': 0.9 }, 0.4));
+    const patch = { 'filter.cutoff': 0.3, 'env.amount': 0 };
+    const dry = rmsEnvelope(render('tb303', patch, null, 0.4));
+    const wet = rmsEnvelope(render('tb303', patch, { 'osc.wave': 0.9 }, 0.4));
     expect(envDiff(wet, dry)).toBeLessThan(0.01);
   });
 });

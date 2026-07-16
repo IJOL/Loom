@@ -27,6 +27,10 @@ const TWO_PI = Math.PI * 2;
  *  filter barely resonates at all. */
 const SELF_OSC_FEEDBACK = 4;
 
+/** Per unit of feedback, how much level to give back. Tuned so the raw ~2.9x
+ *  duck at full resonance lands near 1.5x — thinner, but not ducked. */
+const RES_MAKEUP = 0.12;
+
 export type LadderModel = 'moog' | 'diode';
 
 export class LadderFilter {
@@ -75,6 +79,11 @@ export class LadderFilter {
     this.y3 = Math.abs(s3) < 1e-15 ? 0 : s3;
 
     // Four poles lose a lot of level; 3× puts it back near unity.
-    return s3 * 3.0;
+    // The resonance term makes up part of what the feedback subtracts. Raw, a
+    // ladder is ~2.9x quieter at full resonance than at none, which means
+    // turning resonance up ducks the voice — and anything that raises Q, like a
+    // 303's accent, comes out QUIETER than the note it is meant to punch. Half
+    // makeup: the thinning stays (it is the character), the duck goes.
+    return s3 * 3.0 * (1 + k * RES_MAKEUP);
   }
 }
