@@ -12,7 +12,7 @@ const ctx = (over: Partial<GenContext> = {}): GenContext => ({
 
 describe('genre generators', () => {
   it('bass notes are all in scale and there is at least one', () => {
-    const notes = generate('bass', 'acid', ctx());
+    const notes = generate('bass', 'acid-techno', ctx());
     expect(notes.length).toBeGreaterThan(0);
     for (const n of notes) expect(inScale(n.midi, 9, 'minor')).toBe(true);
   });
@@ -27,12 +27,12 @@ describe('genre generators', () => {
     expect(kicksAtZero.length).toBeGreaterThan(0);
   });
   it('acid bass is denser than lofi bass', () => {
-    const acid = generate('bass', 'acid', ctx()).length;
-    const lofi = generate('bass', 'lofi', ctx()).length;
+    const acid = generate('bass', 'acid-techno', ctx()).length;
+    const lofi = generate('bass', 'lo-fi', ctx()).length;
     expect(acid).toBeGreaterThan(lofi);
   });
   it('is deterministic for a fixed rng seed', () => {
-    expect(generate('bass', 'acid', ctx())).toEqual(generate('bass', 'acid', ctx()));
+    expect(generate('bass', 'acid-techno', ctx())).toEqual(generate('bass', 'acid-techno', ctx()));
   });
 
   it('breakbeat bass and melody notes are all in scale', () => {

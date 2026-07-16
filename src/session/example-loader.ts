@@ -120,6 +120,9 @@ export async function loadExamples(style: StyleId): Promise<Example[]> {
   if (cache.has(style)) return cache.get(style)!;
   const url = `${import.meta.env.BASE_URL}examples/${style}.json`;
   const res = await fetch(url);
+  // Most styles ship no factory examples — that is a normal, empty gallery, not
+  // an error. Only a real failure (500, offline) is worth throwing over.
+  if (res.status === 404) { cache.set(style, []); return []; }
   if (!res.ok) throw new Error(`Failed to load ${url}: ${res.status}`);
   const body = (await res.json()) as ExampleFile;
   const out = (body.examples ?? [])

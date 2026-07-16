@@ -4,7 +4,7 @@ import type { SessionState, SessionLane } from './session';
 
 const baseState = (): SessionState => ({
   lanes: [], scenes: [], globalQuantize: 'immediate',
-  musicality: { key: 9, scale: 'minor', style: 'acid', lock: true },
+  musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: true },
 });
 
 describe('resolveTonality', () => {

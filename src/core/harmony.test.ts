@@ -109,14 +109,14 @@ describe('renderChordComp', () => {
   const base = { key: KEY, scale: SCALE, bars: BARS, barTicks: BAR_TICKS, octaveBase: OCTAVE };
 
   it('produces a note count that is a multiple of 3 per hit', () => {
-    const notes = renderChordComp([], { ...base, style: 'lofi' });
+    const notes = renderChordComp([], { ...base, style: 'lo-fi' });
     // lofi: 1 hit per bar × 3 notes × 2 bars = 6
     expect(notes.length).toBe(BARS * 3);
   });
 
   it('all notes are within [0, bars*barTicks)', () => {
     const clipEnd = BARS * BAR_TICKS;
-    for (const style of ['house', 'synthwave', 'acid', 'lofi'] as const) {
+    for (const style of ['house', 'synthwave', 'acid-techno', 'lo-fi'] as const) {
       const notes = renderChordComp([], { ...base, style });
       for (const n of notes) {
         expect(n.start).toBeGreaterThanOrEqual(0);
@@ -127,7 +127,7 @@ describe('renderChordComp', () => {
   });
 
   it('all notes are in scale', () => {
-    for (const style of ['house', 'synthwave', 'acid', 'lofi'] as const) {
+    for (const style of ['house', 'synthwave', 'acid-techno', 'lo-fi'] as const) {
       const notes = renderChordComp([], { ...base, style });
       for (const n of notes) {
         expect(inScale(n.midi, KEY, SCALE)).toBe(true);
@@ -147,7 +147,7 @@ describe('renderChordComp', () => {
   });
 
   it('lofi: exactly 1 chord (3 notes) per bar, duration = full bar', () => {
-    const notes = renderChordComp([], { ...base, style: 'lofi' });
+    const notes = renderChordComp([], { ...base, style: 'lo-fi' });
     expect(notes.length).toBe(BARS * 3);
     for (const n of notes) {
       expect(n.duration).toBe(BAR_TICKS);
@@ -164,7 +164,7 @@ describe('renderChordComp', () => {
   });
 
   it('acid: 2 hits per bar (steps 0 and 8)', () => {
-    const notes = renderChordComp([], { ...base, style: 'acid' });
+    const notes = renderChordComp([], { ...base, style: 'acid-techno' });
     // 2 hits/bar × 3 notes × 2 bars
     expect(notes.length).toBe(2 * 3 * BARS);
     const stepTicks = BAR_TICKS / 16;
@@ -196,7 +196,7 @@ describe('renderChordComp', () => {
   });
 
   it('empty melody → tonic chord (root 0)', () => {
-    const notes = renderChordComp([], { ...base, style: 'lofi' });
+    const notes = renderChordComp([], { ...base, style: 'lo-fi' });
     // Tonic triad: diatonicTriad(0, OCTAVE, KEY, SCALE)
     const expected = diatonicTriad(0, OCTAVE, KEY, SCALE);
     // 2 bars × 3 notes = 6 notes, all from root 0 triad

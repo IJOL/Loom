@@ -3,14 +3,14 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   renderExampleNotes, validateExample, type Example,
   loadUserExamples, saveUserExample, deleteUserExample,
-  loadAllExamples, clipToExample, exampleToJson,
+  loadAllExamples, clipToExample, exampleToJson, loadExamples,
   __resetExampleCache,
 } from './example-loader';
 import { inScale, snapToScale } from '../core/musicality';
 import type { NoteEvent } from '../core/notes';
 
 const melodic: Example = {
-  id: 'b1', name: 'Acid roller', style: 'acid', kind: 'bass', bars: 1,
+  id: 'b1', name: 'Acid roller', style: 'acid-techno', kind: 'bass', bars: 1,
   degrees: [{ start: 0, duration: 24, degree: 0, octave: 0, velocity: 115 },
             { start: 24, duration: 24, degree: 2, octave: 0, velocity: 80 }],
 };
@@ -21,7 +21,7 @@ const beat: Example = {
 
 // 2-bar melodic example
 const melodic2: Example = {
-  id: 'b2', name: 'Two bar roller', style: 'acid', kind: 'bass', bars: 2,
+  id: 'b2', name: 'Two bar roller', style: 'acid-techno', kind: 'bass', bars: 2,
   degrees: [
     { start: 0,   duration: 24, degree: 0, octave: 0, velocity: 100 },
     { start: 192, duration: 24, degree: 2, octave: 0, velocity: 80 },
@@ -124,7 +124,7 @@ describe('example loader', () => {
 
     it('trims a note that starts before but ends after the clip boundary', () => {
       const longNote: Example = {
-        id: 'ln', name: 'Long', style: 'acid', kind: 'bass', bars: 1,
+        id: 'ln', name: 'Long', style: 'acid-techno', kind: 'bass', bars: 1,
         degrees: [{ start: 360, duration: 100, degree: 0, octave: 0, velocity: 80 }],
       };
       const notes = renderExampleNotes(longNote, { key: 0, scale: 'minor' }, 36, 1, ticksPerBar);
@@ -136,7 +136,7 @@ describe('example loader', () => {
 
     it('drops notes that start exactly at or after the clip boundary', () => {
       const atBoundary: Example = {
-        id: 'ab', name: 'At boundary', style: 'acid', kind: 'bass', bars: 2,
+        id: 'ab', name: 'At boundary', style: 'acid-techno', kind: 'bass', bars: 2,
         degrees: [
           { start: 0,   duration: 24, degree: 0, octave: 0, velocity: 80 },
           { start: 384, duration: 24, degree: 1, octave: 0, velocity: 80 }, // exactly at 1-bar boundary
@@ -152,13 +152,13 @@ describe('example loader', () => {
 
   describe('localStorage user examples', () => {
     it('loadUserExamples returns [] when key absent', () => {
-      expect(loadUserExamples('acid')).toEqual([]);
+      expect(loadUserExamples('acid-techno')).toEqual([]);
     });
 
     it('saveUserExample appends and loadUserExamples returns it', () => {
       const ex: Example = { ...melodic, id: 'user-b1', source: 'user' };
       saveUserExample(ex);
-      const list = loadUserExamples('acid');
+      const list = loadUserExamples('acid-techno');
       expect(list.length).toBe(1);
       expect(list[0].id).toBe('user-b1');
       expect(list[0].source).toBe('user');
@@ -170,16 +170,16 @@ describe('example loader', () => {
 
     it('loadUserExamples filters invalid entries silently', () => {
       // Inject bad JSON array directly
-      localStorage.setItem('loom.examples.acid', JSON.stringify([{ id: 'bad' }, melodic]));
-      const list = loadUserExamples('acid');
+      localStorage.setItem('loom.examples.acid-techno', JSON.stringify([{ id: 'bad' }, melodic]));
+      const list = loadUserExamples('acid-techno');
       // Only the valid melodic survives
       expect(list.length).toBe(1);
       expect(list[0].id).toBe('b1');
     });
 
     it('loadUserExamples returns [] on parse error', () => {
-      localStorage.setItem('loom.examples.acid', 'not-json!!');
-      expect(loadUserExamples('acid')).toEqual([]);
+      localStorage.setItem('loom.examples.acid-techno', 'not-json!!');
+      expect(loadUserExamples('acid-techno')).toEqual([]);
     });
 
     it('saveUserExample accumulates across multiple saves', () => {
@@ -187,7 +187,7 @@ describe('example loader', () => {
       const ex2: Example = { ...melodic, id: 'user-2', source: 'user' };
       saveUserExample(ex1);
       saveUserExample(ex2);
-      const list = loadUserExamples('acid');
+      const list = loadUserExamples('acid-techno');
       expect(list.length).toBe(2);
     });
 
@@ -196,8 +196,8 @@ describe('example loader', () => {
       const ex2: Example = { ...melodic, id: 'user-del-2', source: 'user' };
       saveUserExample(ex1);
       saveUserExample(ex2);
-      deleteUserExample('acid', 'user-del-1');
-      const list = loadUserExamples('acid');
+      deleteUserExample('acid-techno', 'user-del-1');
+      const list = loadUserExamples('acid-techno');
       expect(list.length).toBe(1);
       expect(list[0].id).toBe('user-del-2');
     });
@@ -205,18 +205,18 @@ describe('example loader', () => {
     it('deleteUserExample is a no-op when id not found', () => {
       const ex: Example = { ...melodic, id: 'user-x', source: 'user' };
       saveUserExample(ex);
-      deleteUserExample('acid', 'nonexistent');
-      expect(loadUserExamples('acid').length).toBe(1);
+      deleteUserExample('acid-techno', 'nonexistent');
+      expect(loadUserExamples('acid-techno').length).toBe(1);
     });
 
     it('user examples for different styles are stored separately', () => {
-      const acidEx: Example = { ...melodic, id: 'user-acid', style: 'acid', source: 'user' };
+      const acidEx: Example = { ...melodic, id: 'user-acid', style: 'acid-techno', source: 'user' };
       const houseEx: Example = { ...melodic, id: 'user-house', style: 'house', source: 'user' };
       saveUserExample(acidEx);
       saveUserExample(houseEx);
-      expect(loadUserExamples('acid').length).toBe(1);
+      expect(loadUserExamples('acid-techno').length).toBe(1);
       expect(loadUserExamples('house').length).toBe(1);
-      expect(loadUserExamples('acid')[0].id).toBe('user-acid');
+      expect(loadUserExamples('acid-techno')[0].id).toBe('user-acid');
     });
   });
 
@@ -239,7 +239,7 @@ describe('example loader', () => {
       const ex = clipToExample({
         id: 'user-bass-test',
         name: 'Test bass',
-        style: 'acid',
+        style: 'acid-techno',
         kind: 'bass',
         notes: inScaleNotes,
         bars: 1,
@@ -304,7 +304,7 @@ describe('example loader', () => {
       const ex = clipToExample({
         id: 'user-octave-test',
         name: 'Octave test',
-        style: 'acid',
+        style: 'acid-techno',
         kind: 'bass',
         notes: inScaleNotes,
         bars: 1,
@@ -320,7 +320,7 @@ describe('example loader', () => {
       const ex = clipToExample({
         id: 'user-json-test',
         name: 'JSON export',
-        style: 'acid',
+        style: 'acid-techno',
         kind: 'bass',
         notes: inScaleNotes,
         bars: 1,
@@ -342,7 +342,7 @@ describe('example loader', () => {
       const ex = clipToExample({
         id: 'user-snap-test',
         name: 'Snap test',
-        style: 'acid',
+        style: 'acid-techno',
         kind: 'bass',
         notes: outOfScaleNotes,
         bars: 1,
@@ -352,5 +352,21 @@ describe('example loader', () => {
       const rendered = renderExampleNotes(ex, ton, octaveBase);
       expect(rendered[0].midi).toBe(snapToScale(37, ton.key, ton.scale)); // 38 (D2)
     });
+  });
+});
+
+describe('a style with no factory examples', () => {
+  it('yields an empty gallery instead of throwing', async () => {
+    // Most styles ship no example file. Fetching one 404s, and a throw here
+    // takes the whole gallery down the moment the user picks that style.
+    __resetExampleCache();
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async () => ({ ok: false, status: 404 })) as unknown as typeof fetch;
+    try {
+      await expect(loadExamples('psytrance')).resolves.toEqual([]);
+    } finally {
+      globalThis.fetch = realFetch;
+      __resetExampleCache();
+    }
   });
 });

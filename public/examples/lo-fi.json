@@ -1,10 +1,10 @@
 {
-  "style": "lofi",
+  "style": "lo-fi",
   "examples": [
     {
       "id": "lofi-bass-1",
       "name": "Sparse Roots",
-      "style": "lofi",
+      "style": "lo-fi",
       "kind": "bass",
       "bars": 1,
       "degrees": [
@@ -18,7 +18,7 @@
     {
       "id": "lofi-bass-2",
       "name": "Jazz Waltz Low",
-      "style": "lofi",
+      "style": "lo-fi",
       "kind": "bass",
       "bars": 1,
       "degrees": [
@@ -33,7 +33,7 @@
     {
       "id": "lofi-bass-3",
       "name": "Rainy Walk",
-      "style": "lofi",
+      "style": "lo-fi",
       "kind": "bass",
       "bars": 1,
       "degrees": [
@@ -46,7 +46,7 @@
     {
       "id": "lofi-bass-4",
       "name": "Minor Seventh",
-      "style": "lofi",
+      "style": "lo-fi",
       "kind": "bass",
       "bars": 1,
       "degrees": [
@@ -61,7 +61,7 @@
     {
       "id": "lofi-bass-5",
       "name": "2-Bar Story",
-      "style": "lofi",
+      "style": "lo-fi",
       "kind": "bass",
       "bars": 2,
       "degrees": [
@@ -77,7 +77,7 @@
     {
       "id": "lofi-bass-6",
       "name": "Study Session",
-      "style": "lofi",
+      "style": "lo-fi",
       "kind": "bass",
       "bars": 1,
       "degrees": [
@@ -92,7 +92,7 @@
     {
       "id": "lofi-melody-1",
       "name": "Dusty Keys",
-      "style": "lofi",
+      "style": "lo-fi",
       "kind": "melody",
       "bars": 1,
       "degrees": [
@@ -107,7 +107,7 @@
     {
       "id": "lofi-melody-2",
       "name": "Mellow Evening",
-      "style": "lofi",
+      "style": "lo-fi",
       "kind": "melody",
       "bars": 1,
       "degrees": [
@@ -120,7 +120,7 @@
     {
       "id": "lofi-melody-3",
       "name": "Tape Hum",
-      "style": "lofi",
+      "style": "lo-fi",
       "kind": "melody",
       "bars": 2,
       "degrees": [
@@ -137,7 +137,7 @@
     {
       "id": "lofi-melody-4",
       "name": "Coffee Cup",
-      "style": "lofi",
+      "style": "lo-fi",
       "kind": "melody",
       "bars": 1,
       "degrees": [
@@ -151,7 +151,7 @@
     {
       "id": "lofi-melody-5",
       "name": "Midnight Haze",
-      "style": "lofi",
+      "style": "lo-fi",
       "kind": "melody",
       "bars": 1,
       "degrees": [
@@ -166,7 +166,7 @@
     {
       "id": "lofi-beat-1",
       "name": "Head Nod",
-      "style": "lofi",
+      "style": "lo-fi",
       "kind": "beat",
       "bars": 1,
       "notes": [
@@ -185,7 +185,7 @@
     {
       "id": "lofi-beat-2",
       "name": "Swung Shuffle",
-      "style": "lofi",
+      "style": "lo-fi",
       "kind": "beat",
       "bars": 1,
       "notes": [
@@ -203,7 +203,7 @@
     {
       "id": "lofi-beat-3",
       "name": "Minimal Tap",
-      "style": "lofi",
+      "style": "lo-fi",
       "kind": "beat",
       "bars": 1,
       "notes": [
@@ -218,7 +218,7 @@
     {
       "id": "lofi-beat-4",
       "name": "Ghost Notes",
-      "style": "lofi",
+      "style": "lo-fi",
       "kind": "beat",
       "bars": 1,
       "notes": [
@@ -238,7 +238,7 @@
     {
       "id": "lofi-beat-5",
       "name": "2-Bar Boom Bap",
-      "style": "lofi",
+      "style": "lo-fi",
       "kind": "beat",
       "bars": 2,
       "notes": [

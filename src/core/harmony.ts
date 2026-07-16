@@ -11,17 +11,36 @@ import { scaleDegreeToMidi, midiToScaleDegree, scaleIntervals, type ScaleId, typ
 // is always the canonical bar length from the project meter).
 interface HitPattern { stepOffset: number; durationSteps: number; }
 
+// Four comping shapes, shared by the styles that comp alike. Named so the table
+// below reads as "what the chords do", not as a wall of numbers.
+const OFFBEAT_STABS   = [2, 6, 10, 14].map((s) => ({ stepOffset: s, durationSteps: 1 }));
+const PULSING_EIGHTHS = [0, 2, 4, 6, 8, 10, 12, 14].map((s) => ({ stepOffset: s, durationSteps: 1 }));
+const SPARSE_STABS    = [{ stepOffset: 0, durationSteps: 2 }, { stepOffset: 8, durationSteps: 2 }];
+const SUSTAINED       = [{ stepOffset: 0, durationSteps: 16 }];
+// syncopated: downbeat + 16th ahead of beat 3 (step 9) + offbeat before bar end
+const SYNCOPATED      = [{ stepOffset: 0, durationSteps: 1 }, { stepOffset: 9, durationSteps: 1 }, { stepOffset: 14, durationSteps: 1 }];
+
 const STYLE_PATTERNS: Record<StyleId, HitPattern[]> = {
-  // offbeat stabs: 8th-note offbeats in 4/4 (steps 2,6,10,14)
-  house:    [2, 6, 10, 14].map((s) => ({ stepOffset: s, durationSteps: 1 })),
-  // pulsing 8th notes
-  synthwave: [0, 2, 4, 6, 8, 10, 12, 14].map((s) => ({ stepOffset: s, durationSteps: 1 })),
-  // sparse stabs: downbeat + mid-bar
-  acid:     [{ stepOffset: 0, durationSteps: 2 }, { stepOffset: 8, durationSteps: 2 }],
-  // one sustained chord per bar
-  lofi:     [{ stepOffset: 0, durationSteps: 16 }],
-  // syncopated stabs: downbeat + 16th-note ahead of beat 3 (step 9) + offbeat before bar end
-  breakbeat: [{ stepOffset: 0, durationSteps: 1 }, { stepOffset: 9, durationSteps: 1 }, { stepOffset: 14, durationSteps: 1 }],
+  house:           OFFBEAT_STABS,
+  'deep-house':    OFFBEAT_STABS,
+  garage:          OFFBEAT_STABS,
+  techno:          SPARSE_STABS,
+  'acid-techno':   SPARSE_STABS,
+  'dub-techno':    OFFBEAT_STABS,
+  trance:          PULSING_EIGHTHS,
+  psytrance:       PULSING_EIGHTHS,
+  edm:             PULSING_EIGHTHS,
+  synthwave:       PULSING_EIGHTHS,
+  electro:         SPARSE_STABS,
+  breakbeat:       SYNCOPATED,
+  'drum-and-bass': SYNCOPATED,
+  jungle:          SYNCOPATED,
+  dubstep:         SPARSE_STABS,
+  idm:             SYNCOPATED,
+  glitch:          SYNCOPATED,
+  downtempo:       SUSTAINED,
+  'lo-fi':         SUSTAINED,
+  ambient:         SUSTAINED,
 };
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -111,7 +130,7 @@ export function renderChordComp(
   const clipEnd = bars * barTicks;
 
   const roots = melodyToChordRoots(notes, key, scale, barTicks, bars);
-  const pattern = STYLE_PATTERNS[style] ?? STYLE_PATTERNS.acid;
+  const pattern = STYLE_PATTERNS[style] ?? STYLE_PATTERNS['acid-techno'];
   const out: NoteEvent[] = [];
 
   for (let bar = 0; bar < bars; bar++) {

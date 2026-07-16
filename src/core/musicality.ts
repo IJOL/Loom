@@ -4,7 +4,16 @@
 // and the example gallery.
 
 export type ScaleId = 'minor' | 'major' | 'pentMinor' | 'phrygian' | 'dorian' | 'chromatic';
-export type StyleId = 'acid' | 'house' | 'synthwave' | 'lofi' | 'breakbeat';
+// Style ids are the genre keys of the pattern library, verbatim, so a lookup is
+// `patterns[style]` with no translation table to drift. The five original ids
+// were combined styles ("Acid / Techno", "Lo-fi / Ambient"); the library splits
+// them, so acid → acid-techno and lofi → lo-fi, with techno and ambient now
+// standing on their own.
+export type StyleId =
+  | 'techno' | 'acid-techno' | 'trance' | 'dub-techno' | 'idm' | 'edm'
+  | 'drum-and-bass' | 'house' | 'breakbeat' | 'jungle' | 'garage' | 'ambient'
+  | 'glitch' | 'electro' | 'downtempo' | 'dubstep' | 'lo-fi' | 'synthwave'
+  | 'deep-house' | 'psytrance';
 
 const INTERVALS: Record<ScaleId, number[]> = {
   major:     [0, 2, 4, 5, 7, 9, 11],
@@ -26,12 +35,29 @@ export const SCALE_CATALOG: ScaleEntry[] = [
 ];
 
 export interface StyleEntry { id: StyleId; label: string; }
+// Ordered by family (four-to-the-floor → broken → bass → downtempo → leftfield)
+// rather than alphabetically, so neighbours in the dropdown sound like neighbours.
 export const STYLE_CATALOG: StyleEntry[] = [
-  { id: 'acid',      label: 'Acid / Techno' },
-  { id: 'house',     label: 'House' },
-  { id: 'synthwave', label: 'Synthwave / Electro' },
-  { id: 'lofi',      label: 'Lo-fi / Ambient' },
-  { id: 'breakbeat', label: 'Breakbeat / Big Beat' },
+  { id: 'techno',        label: 'Techno' },
+  { id: 'acid-techno',   label: 'Acid Techno' },
+  { id: 'dub-techno',    label: 'Dub Techno' },
+  { id: 'house',         label: 'House' },
+  { id: 'deep-house',    label: 'Deep House' },
+  { id: 'garage',        label: 'Garage' },
+  { id: 'trance',        label: 'Trance' },
+  { id: 'psytrance',     label: 'Psytrance' },
+  { id: 'edm',           label: 'EDM' },
+  { id: 'breakbeat',     label: 'Breakbeat / Big Beat' },
+  { id: 'drum-and-bass', label: 'Drum & Bass' },
+  { id: 'jungle',        label: 'Jungle' },
+  { id: 'dubstep',       label: 'Dubstep' },
+  { id: 'electro',       label: 'Electro' },
+  { id: 'synthwave',     label: 'Synthwave' },
+  { id: 'idm',           label: 'IDM' },
+  { id: 'glitch',        label: 'Glitch' },
+  { id: 'downtempo',     label: 'Downtempo' },
+  { id: 'lo-fi',         label: 'Lo-fi' },
+  { id: 'ambient',       label: 'Ambient' },
 ];
 
 const ROOT_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];

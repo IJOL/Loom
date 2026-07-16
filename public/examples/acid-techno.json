@@ -1,10 +1,10 @@
 {
-  "style": "acid",
+  "style": "acid-techno",
   "examples": [
     {
       "id": "acid-bass-1",
       "name": "Roller 16th",
-      "style": "acid",
+      "style": "acid-techno",
       "kind": "bass",
       "bars": 1,
       "degrees": [
@@ -29,7 +29,7 @@
     {
       "id": "acid-bass-2",
       "name": "Squelch Riff",
-      "style": "acid",
+      "style": "acid-techno",
       "kind": "bass",
       "bars": 1,
       "degrees": [
@@ -50,7 +50,7 @@
     {
       "id": "acid-bass-3",
       "name": "Octave Stab",
-      "style": "acid",
+      "style": "acid-techno",
       "kind": "bass",
       "bars": 1,
       "degrees": [
@@ -75,7 +75,7 @@
     {
       "id": "acid-bass-4",
       "name": "303 Climber",
-      "style": "acid",
+      "style": "acid-techno",
       "kind": "bass",
       "bars": 1,
       "degrees": [
@@ -94,7 +94,7 @@
     {
       "id": "acid-bass-5",
       "name": "Dense Seventh",
-      "style": "acid",
+      "style": "acid-techno",
       "kind": "bass",
       "bars": 1,
       "degrees": [
@@ -119,7 +119,7 @@
     {
       "id": "acid-bass-6",
       "name": "2-Bar Build",
-      "style": "acid",
+      "style": "acid-techno",
       "kind": "bass",
       "bars": 2,
       "degrees": [
@@ -153,7 +153,7 @@
     {
       "id": "acid-bass-7",
       "name": "Fifth Bounce",
-      "style": "acid",
+      "style": "acid-techno",
       "kind": "bass",
       "bars": 1,
       "degrees": [
@@ -174,7 +174,7 @@
     {
       "id": "acid-melody-1",
       "name": "303 Hook",
-      "style": "acid",
+      "style": "acid-techno",
       "kind": "melody",
       "bars": 1,
       "degrees": [
@@ -193,7 +193,7 @@
     {
       "id": "acid-melody-2",
       "name": "Acid Shriek",
-      "style": "acid",
+      "style": "acid-techno",
       "kind": "melody",
       "bars": 1,
       "degrees": [
@@ -214,7 +214,7 @@
     {
       "id": "acid-melody-3",
       "name": "Climb & Drop",
-      "style": "acid",
+      "style": "acid-techno",
       "kind": "melody",
       "bars": 2,
       "degrees": [
@@ -238,7 +238,7 @@
     {
       "id": "acid-melody-4",
       "name": "Squelch Lead",
-      "style": "acid",
+      "style": "acid-techno",
       "kind": "melody",
       "bars": 1,
       "degrees": [
@@ -255,7 +255,7 @@
     {
       "id": "acid-melody-5",
       "name": "Minor Twitch",
-      "style": "acid",
+      "style": "acid-techno",
       "kind": "melody",
       "bars": 1,
       "degrees": [
@@ -275,7 +275,7 @@
     {
       "id": "acid-beat-1",
       "name": "Four-on-Floor Acid",
-      "style": "acid",
+      "style": "acid-techno",
       "kind": "beat",
       "bars": 1,
       "notes": [
@@ -304,7 +304,7 @@
     {
       "id": "acid-beat-2",
       "name": "Open Hat Storm",
-      "style": "acid",
+      "style": "acid-techno",
       "kind": "beat",
       "bars": 1,
       "notes": [
@@ -331,7 +331,7 @@
     {
       "id": "acid-beat-3",
       "name": "Clap Snare Acid",
-      "style": "acid",
+      "style": "acid-techno",
       "kind": "beat",
       "bars": 1,
       "notes": [
@@ -360,7 +360,7 @@
     {
       "id": "acid-beat-4",
       "name": "Triplet Hat Acid",
-      "style": "acid",
+      "style": "acid-techno",
       "kind": "beat",
       "bars": 2,
       "notes": [
@@ -423,7 +423,7 @@
     {
       "id": "acid-beat-5",
       "name": "Ghost Kick Acid",
-      "style": "acid",
+      "style": "acid-techno",
       "kind": "beat",
       "bars": 1,
       "notes": [

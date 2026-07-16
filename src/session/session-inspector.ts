@@ -288,7 +288,7 @@ export class SessionInspector {
         // it afterwards so the stepper (and the view) stay where the user left it.
         const octaveBase = this.roll?.getOctaveBase?.() ?? 60;
         const ton = resolveTonality(lane!, this.deps.state);
-        const style = this.deps.state.musicality?.style ?? 'acid';
+        const style = this.deps.state.musicality?.style ?? 'acid-techno';
         const stepsPerBarVal = stepsPerBar(this.deps.seq.meter);
         clip.notes = generate(genKindFor(lane!.engineId), style, {
           key: ton.key, scale: ton.scale,
@@ -301,7 +301,7 @@ export class SessionInspector {
       };
       if (d) withUndo(d, run); else run();
     };
-    const style = () => this.deps.state.musicality?.style ?? 'acid';
+    const style = () => this.deps.state.musicality?.style ?? 'acid-techno';
     const exKind = genKindFor(lane!.engineId);
     const exSelect = document.getElementById('insp-examples-select') as HTMLSelectElement;
 
@@ -358,7 +358,7 @@ export class SessionInspector {
           const chordNotes = renderChordComp(clip.notes ?? [], {
             key: ton.key,
             scale: ton.scale,
-            style: this.deps.state.musicality?.style ?? 'acid',
+            style: this.deps.state.musicality?.style ?? 'acid-techno',
             bars: clip.lengthBars,
             barTicks,
             octaveBase: 48,
