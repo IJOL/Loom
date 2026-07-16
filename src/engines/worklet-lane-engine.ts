@@ -34,8 +34,8 @@ import { attachKnobUndo } from '../save/history-wiring';
 // setBaseValue/getBaseValue.
 const DOT_TO_FIELD: Record<string, keyof SubParams> = {
   'master.tune': 'masterTune',
-  'osc1.wave': 'osc1Wave', 'osc1.level': 'osc1Level', 'osc1.detune': 'osc1Detune',
-  'osc2.wave': 'osc2Wave', 'osc2.level': 'osc2Level', 'osc2.detune': 'osc2Detune',
+  'osc1.wave': 'osc1Wave', 'osc1.level': 'osc1Level', 'osc1.detune': 'osc1Detune', 'osc1.pw': 'osc1Pw',
+  'osc2.wave': 'osc2Wave', 'osc2.level': 'osc2Level', 'osc2.detune': 'osc2Detune', 'osc2.pw': 'osc2Pw',
   'sub.level': 'subLevel', 'noise.level': 'noiseLevel', 'noise.color': 'noiseColor',
   'filter.cutoff': 'filterCutoff', 'filter.resonance': 'filterResonance',
   'filter.envAmount': 'filterEnvAmount', 'filter.drive': 'filterDrive',

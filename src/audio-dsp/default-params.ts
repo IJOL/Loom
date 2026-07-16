@@ -5,8 +5,8 @@ import type { SubParams } from './types';
 export function defaultSubParams(): SubParams {
   return {
     masterTune: 0,
-    osc1Wave: 0, osc1Level: 0.6, osc1Detune: 0,
-    osc2Wave: 1, osc2Level: 0.4, osc2Detune: 7,
+    osc1Wave: 0, osc1Level: 0.6, osc1Detune: 0, osc1Pw: 0.5,
+    osc2Wave: 1, osc2Level: 0.4, osc2Detune: 7, osc2Pw: 0.5,
     subLevel: 0.3, noiseLevel: 0, noiseColor: 0.6,
     filterCutoff: 0.55, filterResonance: 0.25, filterEnvAmount: 0.45,
     filterDrive: 0, filterKeyTrack: 0, filterBuiltinEnv: 1,

@@ -199,3 +199,87 @@ describe('SubtractiveVoiceRenderer', () => {
     expect(bright(true)).toBeGreaterThan(bright(false) * 1.3);
   });
 });
+
+describe('pulse width (PWM)', () => {
+  // SquareOsc has always been a pulse oscillator — update(freq, pw) — but the
+  // width was never exposed, so every square was stuck at a 50% duty cycle.
+  // A param the sound depends on and the UI cannot reach is a hidden param.
+  const pulse = (pw: number, wave = 1): number[] => {
+    const bag: ParamBag = {
+      ...DEFAULTS, 'osc1.wave': wave, 'osc1.level': 1, 'osc2.level': 0,
+      'sub.level': 0, 'noise.level': 0,
+      'filter.cutoff': 1, 'filter.resonance': 0, 'filter.envAmount': 0, 'filter.builtinEnv': 0,
+      'osc1.pw': pw,
+    };
+    const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.2 }), bag, SR);
+    const b: number[] = [];
+    for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR));
+    return b;
+  };
+  /** How much two renders differ, relative to their own level. */
+  const divergence = (a: number[], b: number[]): number => {
+    let d = 0; for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b[i]);
+    return d / a.length / Math.max(1e-9, rms(a));
+  };
+
+  it('a thin pulse does not sound like a square', () => {
+    expect(divergence(pulse(0.5), pulse(0.12))).toBeGreaterThan(0.5);
+  });
+
+  it('is symmetric: 0.25 and 0.75 are the same pulse, mirrored', () => {
+    // A duty cycle and its complement have the same harmonic content.
+    expect(rms(pulse(0.25))).toBeCloseTo(rms(pulse(0.75)), 1);
+  });
+
+  it('defaults to a square when no width is given', () => {
+    // Same bag as pulse(), minus osc1.pw — so the only variable is the width.
+    const bag: ParamBag = {
+      ...DEFAULTS, 'osc1.wave': 1, 'osc1.level': 1, 'osc2.level': 0,
+      'sub.level': 0, 'noise.level': 0,
+      'filter.cutoff': 1, 'filter.resonance': 0, 'filter.envAmount': 0, 'filter.builtinEnv': 0,
+    };
+    const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.2 }), bag, SR);
+    const b: number[] = []; for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR));
+    expect(divergence(b, pulse(0.5))).toBeLessThan(0.01);
+  });
+
+  it('leaves a saw alone — width is a pulse thing', () => {
+    expect(divergence(pulse(0.5, 0), pulse(0.12, 0))).toBeLessThan(0.01);
+  });
+});
+
+describe('PWM is modulation, not a knob', () => {
+  // A static width is a pulse. PWM is the width MOVING — the thing that makes a
+  // supersaw-era pad breathe. It works because osc1.pw is a continuous param,
+  // so the existing per-param LFO reaches it with no wave of its own.
+  const bag: ParamBag = {
+    ...DEFAULTS, 'osc1.wave': 1, 'osc1.level': 1, 'osc2.level': 0,
+    'sub.level': 0, 'noise.level': 0,
+    'filter.cutoff': 1, 'filter.resonance': 0, 'filter.envAmount': 0, 'filter.builtinEnv': 0,
+    'osc1.pw': 0.5,
+  };
+  const render = (mod: (t: number) => number): number[] => {
+    const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.3 }), bag, SR);
+    const b: number[] = [];
+    for (let i = 0; i < SR * 0.2; i++) {
+      const t = i / SR;
+      b.push(v.renderSample(t, { osc1Pw: mod(t) }));
+    }
+    return b;
+  };
+
+  it('an LFO on osc1.pw changes the sound over time', () => {
+    const still = render(() => 0);
+    const swept = render((t) => Math.sin(2 * Math.PI * 4 * t));   // 4 Hz sweep
+    let diff = 0;
+    for (let i = 0; i < still.length; i++) diff += Math.abs(still[i] - swept[i]);
+    expect(diff / still.length).toBeGreaterThan(0.05);
+  });
+
+  it('never lets the width reach silence, however hard the LFO pushes', () => {
+    // A full-depth LFO would drive the width past 0/1 without the clamp, and a
+    // 0-width pulse is no sound at all.
+    const slammed = render((t) => (Math.sin(2 * Math.PI * 2 * t) > 0 ? 5 : -5));
+    expect(rms(slammed)).toBeGreaterThan(0.01);
+  });
+});

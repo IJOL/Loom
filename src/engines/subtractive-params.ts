@@ -23,10 +23,16 @@ export const SUB_PARAM_SPECS: EngineParamSpec[] = [
   { id: 'osc1.detune',  label: 'Osc1 Det',  kind: 'continuous', min: -50, max: 50, default: 0, unit: '¢' },
   { id: 'osc1.wave',    label: 'Osc1 Wave', kind: 'discrete', min: 0, max: 3, default: 0,
     options: WAVE_OPTIONS },
+  // Pulse width. Continuous on purpose: an LFO on this id IS pulse-width
+  // modulation, so PWM needs no wave of its own. Only bites on a square —
+  // that is what a duty cycle means. Kept off the rails (0.05..0.95) because
+  // 0 and 1 are silence, not a sound.
+  { id: 'osc1.pw',      label: 'Osc1 PW',   kind: 'continuous', min: 0.05, max: 0.95, default: 0.5 },
   { id: 'osc2.level',   label: 'Osc2 Lvl',  kind: 'continuous', min: 0, max: 1, default: 0.4 },
   { id: 'osc2.detune',  label: 'Osc2 Det',  kind: 'continuous', min: -50, max: 50, default: 7, unit: '¢' },
   { id: 'osc2.wave',    label: 'Osc2 Wave', kind: 'discrete', min: 0, max: 3, default: 1,
     options: WAVE_OPTIONS },
+  { id: 'osc2.pw',      label: 'Osc2 PW',   kind: 'continuous', min: 0.05, max: 0.95, default: 0.5 },
   { id: 'sub.level',    label: 'Sub Lvl',   kind: 'continuous', min: 0, max: 1, default: 0.3 },
   { id: 'noise.level',  label: 'Noise Lvl', kind: 'continuous', min: 0, max: 1, default: 0 },
 

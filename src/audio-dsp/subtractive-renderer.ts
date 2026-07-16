@@ -19,6 +19,7 @@ function subParamsFromBag(b: ParamBag): SubParams {
   return {
     masterTune: param(b, 'master.tune', 0),
     osc1Wave: param(b, 'osc1.wave', 0), osc1Level: param(b, 'osc1.level', 0.6), osc1Detune: param(b, 'osc1.detune', 0),
+    osc1Pw: param(b, 'osc1.pw', 0.5), osc2Pw: param(b, 'osc2.pw', 0.5),
     osc2Wave: param(b, 'osc2.wave', 1), osc2Level: param(b, 'osc2.level', 0.4), osc2Detune: param(b, 'osc2.detune', 7),
     subLevel: param(b, 'sub.level', 0.3),
     noiseLevel: param(b, 'noise.level', 0), noiseColor: param(b, 'noise.color', 0.6),
@@ -30,7 +31,8 @@ function subParamsFromBag(b: ParamBag): SubParams {
   };
 }
 
-type Osc = { update(freq: number): number };
+// `pw` is ignored by every wave but the square, where it is the duty cycle.
+type Osc = { update(freq: number, pw?: number): number };
 function makeOsc(wave: number, sr: number): Osc {
   switch (wave) {
     case 1: return new SquareOsc(sr);
@@ -40,6 +42,11 @@ function makeOsc(wave: number, sr: number): Osc {
   }
 }
 const detuneMul = (cents: number) => Math.pow(2, cents / 1200);
+/** Pulse width lives in 0.05..0.95 — the rails of its own param spec. */
+const clampPw = (v: number) => Math.min(0.95, Math.max(0.05, v));
+/** Depth 1 on a bipolar LFO sweeps the width across most of its range, which
+ *  is what a PWM pad wants; the clamp keeps it out of silence at the extremes. */
+const MOD_PW_RANGE = 0.45;
 // Native-unit scale for modulation offsets whose param is NOT a 0..1 knob.
 // Depth 1 on a bipolar LFO ⇒ full knob sweep: master.tune ±12 st, osc detune
 // ±50 cents (matching the legacy engine's modulation ranges).
@@ -176,9 +183,13 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     const f = mo?.masterTune ? this.baseFreq * Math.pow(2, mo.masterTune * MOD_TUNE_SEMIS / 12) : this.baseFreq;
     const det1 = mo?.osc1Detune ? p.osc1Detune + mo.osc1Detune * MOD_DETUNE_CENTS : p.osc1Detune;
     const det2 = mo?.osc2Detune ? p.osc2Detune + mo.osc2Detune * MOD_DETUNE_CENTS : p.osc2Detune;
+    // Pulse width, and with an LFO on it, pulse-width MODULATION. Clamped to
+    // the param's own rails: 0 and 1 are silence, not a thinner sound.
+    const pw1 = mo?.osc1Pw ? clampPw(p.osc1Pw + mo.osc1Pw * MOD_PW_RANGE) : p.osc1Pw;
+    const pw2 = mo?.osc2Pw ? clampPw(p.osc2Pw + mo.osc2Pw * MOD_PW_RANGE) : p.osc2Pw;
     // oscillators (detune in cents; sub one octave down)
-    let mix = this.osc1.update(f * detuneMul(det1)) * osc1Level
-            + this.osc2.update(f * detuneMul(det2)) * osc2Level
+    let mix = this.osc1.update(f * detuneMul(det1), pw1) * osc1Level
+            + this.osc2.update(f * detuneMul(det2), pw2) * osc2Level
             + this.sub.update(f * 0.5) * subLevel;
     if (noiseLevel > 0) {
       const noiseColor = mo?.noiseColor ? clamp01(p.noiseColor + mo.noiseColor) : p.noiseColor;
