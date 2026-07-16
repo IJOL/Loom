@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Adapted from Strudel's dough.mjs (TwoPoleFilter) — https://codeberg.org/uzu/strudel
+// Copyright (C) Strudel contributors, licensed AGPL-3.0-or-later. Loom inherits
+// that licence here; see LICENSE.
+//
 // Two-pole state-variable filter (adapted from strudel dough.mjs TwoPoleFilter).
 // `resonance` is a 0..1 damping parameter (NOT a biquad 0..22 Q): damping
 // r = 0.5^((res+0.125)/0.125), so res=0 is heavily damped, res=1 is a strong but

@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// polyBlep band-limiting adapted from Strudel's dough.mjs — https://codeberg.org/uzu/strudel
+// Copyright (C) Strudel contributors, licensed AGPL-3.0-or-later. Loom inherits
+// that licence here; see LICENSE.
+//
 // Per-sample oscillators for the worklet voice renderer. polyBlep band-limiting
 // for saw/square (adapted from strudel dough.mjs). Pure: sampleRate is injected.
 

@@ -130,3 +130,19 @@ removed or re-credited, open an issue and it'll be swapped immediately.**
 ## Architecture
 
 See [CLAUDE.md](CLAUDE.md) for a tour of the subsystems (engine/FX/modulator registry, the `SessionState` data model, the per-lane scheduler, and the source layout under `src/`).
+
+## License
+
+**[GNU AGPL-3.0-or-later](LICENSE)** — Copyright (C) 2026 Nacho Ortega.
+
+Loom is free software: run it, study it, change it and redistribute it, as long as you pass those
+same freedoms on. If you modify Loom and let other people use it over a network, AGPL section 13
+requires you to offer them your modified source too.
+
+The licence is inherited, not chosen: Loom's worklet DSP adapts code from
+[**Strudel**](https://codeberg.org/uzu/strudel)'s `dough.mjs` (AGPL-3.0-or-later) in
+[`src/audio-dsp/filter.ts`](src/audio-dsp/filter.ts) and [`src/audio-dsp/osc.ts`](src/audio-dsp/osc.ts),
+so the whole work is AGPL-3.0-or-later. Those files carry their own attribution headers.
+
+Bundled audio samples are **not** covered by the AGPL — they keep the terms of their own sources; see
+[Credits — sample sources](#credits--sample-sources) above.

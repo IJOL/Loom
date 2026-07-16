@@ -3,6 +3,7 @@
   "version": "0.8.0",
   "type": "module",
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "scripts": {
     "bump": "node tools/bump-version.mjs",
     "dev": "vite",
