@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { euclid, euclidNotes } from './euclid';
+import { euclid, euclidNotes, euclidNotesAt } from './euclid';
 import { TICKS_PER_STEP } from './notes';
 import { VOICE_MIDI } from '../engines/drum-gm-map';
 
@@ -146,5 +146,20 @@ describe('euclidNotes', () => {
 
   it('writes nothing when the voice has no hits', () => {
     expect(euclidNotes({ voice: 'kick', hits: 0, steps: 16 })).toEqual([]);
+  });
+});
+
+describe('euclidNotesAt', () => {
+  // A sampler pad is any midi with no DrumVoice behind it, so the drum grid
+  // generates by the row's note; euclidNotes is this with the GM lookup done.
+  it('lays the cycle on any midi, DrumVoice or not', () => {
+    const notes = euclidNotesAt(61, { hits: 2, steps: 4 });
+    expect(steps(notes)).toEqual([0, 2]);
+    for (const n of notes) expect(n.midi).toBe(61);
+  });
+
+  it('is what euclidNotes writes for a voice', () => {
+    expect(euclidNotes({ voice: 'snare', hits: 3, steps: 8 }, 16))
+      .toEqual(euclidNotesAt(VOICE_MIDI.snare, { hits: 3, steps: 8 }, 16));
   });
 });

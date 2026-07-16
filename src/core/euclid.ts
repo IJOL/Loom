@@ -46,24 +46,29 @@ export function euclid(hits: number, steps: number, rotation = 0): boolean[] {
   return [...flat.slice(r), ...flat.slice(0, r)];
 }
 
-export interface EuclidSpec {
-  voice: DrumVoice;
+export interface EuclidCycle {
   hits: number;
   steps: number;
   rotation?: number;
   velocity?: number; // 0-127, >= 100 reads as an accent (see notes.ts)
 }
 
+export interface EuclidSpec extends EuclidCycle {
+  voice: DrumVoice;
+}
+
 /**
- * Fill `totalSteps` of a clip with one voice's Euclidean pattern. A cycle
- * shorter than the clip repeats, so `steps` that does not divide the clip
+ * Fill `totalSteps` of a clip with an Euclidean pattern laid on one midi. A
+ * cycle shorter than the clip repeats, so `steps` that does not divide the clip
  * length phases against it — a 5-step voice under a 16-step clip is the
  * polyrhythm you actually want, not a mistake.
+ *
+ * Midi-addressed rather than voice-addressed because a sample drumkit's pad has
+ * no DrumVoice behind it; `euclidNotes` is this with the GM lookup done.
  */
-export function euclidNotes(spec: EuclidSpec, totalSteps = spec.steps): NoteEvent[] {
+export function euclidNotesAt(midi: number, spec: EuclidCycle, totalSteps = spec.steps): NoteEvent[] {
   const cycle = euclid(spec.hits, spec.steps, spec.rotation ?? 0);
   if (cycle.length === 0) return [];
-  const midi = VOICE_MIDI[spec.voice];
   const out: NoteEvent[] = [];
   for (let i = 0; i < count(totalSteps); i++) {
     if (!cycle[i % cycle.length]) continue;
@@ -75,4 +80,9 @@ export function euclidNotes(spec: EuclidSpec, totalSteps = spec.steps): NoteEven
     });
   }
   return out;
+}
+
+/** `euclidNotesAt` for one of the synth drum voices, on its canonical GM midi. */
+export function euclidNotes(spec: EuclidSpec, totalSteps = spec.steps): NoteEvent[] {
+  return euclidNotesAt(VOICE_MIDI[spec.voice], spec, totalSteps);
 }

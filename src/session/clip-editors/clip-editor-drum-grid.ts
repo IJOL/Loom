@@ -19,6 +19,7 @@ import {
   gmDrumRows, type DrumRows, type ResolutionKey, type DrumClipNote,
 } from '../../core/drum-grid-editing';
 import { createToolToggle, createHelpButton, createResolutionSelect, createFollowToggle, createFullKitToggle } from '../../core/clip-editor-toolbar';
+import { mountDrumEuclidPanel } from './drum-euclid-panel';
 import { mountClipLoopOverlay } from '../../core/clip-loop-overlay';
 import { clampZoom, scrubToZoom, zoomAroundAnchor, maxZoomX } from '../../core/pianoroll-zoom';
 import { isFollowEnabled, followScrollTarget } from '../../core/clip-follow';
@@ -135,7 +136,17 @@ export function renderDrumGridEditor(
   // vertically. The labels canvas (flex:0 0 LABEL_W) and the grid viewport stay
   // side-by-side and scroll together; compact view (few rows) shows no scrollbar.
   Object.assign(row.style, { maxHeight: '60vh', overflowY: 'auto' } as Partial<CSSStyleDeclaration>);
-  row.append(labelsCanvas, viewport);
+  // The Euclidean fields go between the labels and the grid so a voice's numbers
+  // sit beside its name; they share the row's vertical scroll, so they stay lined
+  // up with their voice at any kit size.
+  row.append(labelsCanvas);
+  const euclidPanel = mountDrumEuclidPanel(row, {
+    rows, labels,
+    totalSteps: clip.lengthBars * stepsPerBar(meter),
+    defaultSteps: stepsPerBar(meter),
+    getNotes: notes, setNotes, onChange: () => draw(), historyDeps,
+  });
+  row.append(viewport);
 
   // Popover lives just below the toolbar (inside the wrap), positioned by SCSS.
   wrap.append(toolbar, helpPopover, row);
@@ -183,6 +194,7 @@ export function renderDrumGridEditor(
     ROWS_N = Math.max(1, rows.count);
     FRAME_H = RULER_H + ROW_H * ROWS_N + VEL_LANE_H;
     selection.clear();
+    euclidPanel.setModel(rows, labels);
     resize();
   }
 
