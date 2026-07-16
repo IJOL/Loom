@@ -31,13 +31,43 @@ const SELF_OSC_FEEDBACK = 4;
  *  duck at full resonance lands near 1.5x — thinner, but not ducked. */
 const RES_MAKEUP = 0.12;
 
+/** Which response to take out of the ladder.
+ *
+ *  A ladder is four one-pole lowpasses in a feedback loop, so its four stage
+ *  outputs ARE LP1..LP4 of the loop input — and the other responses expand
+ *  binomially straight out of them: (1-LP)^4 is a 4-pole highpass,
+ *  LP^2*(1-LP)^2 a 2-pole bandpass. This is how real multimode ladders do it
+ *  (the Oberheim Xpander/Matrix-12 derive their modes from exactly these taps);
+ *  it is not the lowpass wearing a different label.
+ *
+ *  There is deliberately NO 'notch'. Measured, a notch tap here only nulls while
+ *  the resonance is low: the ladder's own feedback fills the null as resonance
+ *  rises, and on the diode at res 0.7 it inverts into a BUMP (0.46 at the cutoff
+ *  against 0.25 three octaves below). A notch that becomes a peak is not a notch,
+ *  and no honest makeup gain fixes a filled null — so the caller keeps the
+ *  lowpass for that combination rather than being sold a lie. The Svf (filter.ts)
+ *  is a true multimode and has a real notch; use DIG when you want one. */
+export type LadderTap = 'lp' | 'hp' | 'bp';
+
+// Per-tap makeup. The lowpass keeps its own historical expression untouched (see
+// update), so these are chosen against it, from the measured raw tap gains at the
+// engine's default resonance: the lowpass passband is 0.508 raw x its 3.36 makeup
+// = 1.71, and the highpass passband is 0.771 raw, so 2.2 lands it on 1.70 — the
+// same level, and switching LP<->HP is not a jump.
+//
+// The bandpass is NOT level-matched to those and should not be: its peak lands
+// near 0.86, because a bandpass passes one band and throws the rest away. Making
+// it as loud as the lowpass would mean lying about how much it removed.
+const HP_MAKEUP = 2.2;
+const BP_MAKEUP = 3.0;
+
 export type LadderModel = 'moog' | 'diode';
 
 export class LadderFilter {
   // The four stage outputs. Plain fields, not an array: this runs per sample.
   private y0 = 0; private y1 = 0; private y2 = 0; private y3 = 0;
 
-  constructor(private model: LadderModel, private sr: number) {}
+  constructor(private model: LadderModel, private sr: number, private tap: LadderTap = 'lp') {}
 
   /** Clear the stages. A pooled voice must not inherit the last note's tail. */
   reset(): void { this.y0 = 0; this.y1 = 0; this.y2 = 0; this.y3 = 0; }
@@ -77,6 +107,12 @@ export class LadderFilter {
     this.y1 = Math.abs(s1) < 1e-15 ? 0 : s1;
     this.y2 = Math.abs(s2) < 1e-15 ? 0 : s2;
     this.y3 = Math.abs(s3) < 1e-15 ? 0 : s3;
+
+    // The non-lowpass taps, binomial in the stages (see LadderTap). Both null at
+    // DC by construction — their coefficients sum to zero — which is what makes
+    // them real responses rather than a tinted lowpass.
+    if (this.tap === 'hp') return (input - 4 * s0 + 6 * s1 - 4 * s2 + s3) * HP_MAKEUP;   // (1-LP)^4
+    if (this.tap === 'bp') return (s1 - 2 * s2 + s3) * BP_MAKEUP;                        // LP^2*(1-LP)^2
 
     // Four poles lose a lot of level; 3× puts it back near unity.
     // The resonance term makes up part of what the feedback subtracts. Raw, a

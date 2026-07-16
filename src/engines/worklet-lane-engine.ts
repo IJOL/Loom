@@ -34,10 +34,15 @@ import { attachKnobUndo } from '../save/history-wiring';
 // setBaseValue/getBaseValue.
 const DOT_TO_FIELD: Record<string, keyof SubParams> = {
   'master.tune': 'masterTune',
+  // Unison spread + drift are continuous, so they modulate like anything else.
+  // `master.unison` (the stack SIZE) is deliberately NOT here: it is read once at
+  // trigger, so a modulation connection to it could only ever be a dead control.
+  'master.detune': 'unisonDetune', 'master.drift': 'unisonDrift',
   'osc1.wave': 'osc1Wave', 'osc1.level': 'osc1Level', 'osc1.detune': 'osc1Detune', 'osc1.pw': 'osc1Pw',
   'osc2.wave': 'osc2Wave', 'osc2.level': 'osc2Level', 'osc2.detune': 'osc2Detune', 'osc2.pw': 'osc2Pw',
   'sub.level': 'subLevel', 'noise.level': 'noiseLevel', 'noise.color': 'noiseColor',
-  'filter.model': 'filterModel', 'filter.cutoff': 'filterCutoff', 'filter.resonance': 'filterResonance',
+  'filter.model': 'filterModel', 'filter.type': 'filterType',
+  'filter.cutoff': 'filterCutoff', 'filter.resonance': 'filterResonance',
   'filter.envAmount': 'filterEnvAmount', 'filter.drive': 'filterDrive',
   'filter.keyTrack': 'filterKeyTrack', 'filter.builtinEnv': 'filterBuiltinEnv',
   'filter.attack': 'filterAttack', 'filter.decay': 'filterDecay',

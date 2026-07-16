@@ -510,6 +510,54 @@
         "amp.mix": 0.55,
         "output.trim": 2.00
       }
+    },
+    {
+      "name": "BELL Digital",
+      "gm": [],
+      "params": {
+        "algorithm": 0, "feedback": 0,
+        "op1.ratio": 1,  "op1.detune": 0, "op1.level": 0.90, "op1.attack": 0.001, "op1.decay": 0.35, "op1.sustain": 0.10, "op1.release": 0.20,
+        "op2.ratio": 2,  "op2.detune": 0, "op2.level": 1.00, "op2.attack": 0.001, "op2.decay": 0.35, "op2.sustain": 1.00, "op2.release": 0.20,
+        "op3.ratio": 1,  "op3.detune": 0, "op3.level": 0.00, "op3.attack": 0.001, "op3.decay": 0.35, "op3.sustain": 0.00, "op3.release": 0.20,
+        "op4.ratio": 1,  "op4.detune": 0, "op4.level": 0.00, "op4.attack": 0.001, "op4.decay": 0.35, "op4.sustain": 0.00, "op4.release": 0.20,
+        "amp.mix": 0.70, "output.trim": 1
+      }
+    },
+    {
+      "name": "BELL Ring",
+      "gm": [],
+      "params": {
+        "algorithm": 1, "feedback": 0,
+        "op1.ratio": 1,   "op1.detune": 0, "op1.level": 0.90, "op1.attack": 0.001, "op1.decay": 0.40, "op1.sustain": 0.10, "op1.release": 0.20,
+        "op2.ratio": 3.5, "op2.detune": 0, "op2.level": 0.889, "op2.attack": 0.001, "op2.decay": 0.40, "op2.sustain": 1.00, "op2.release": 0.20,
+        "op3.ratio": 3.5, "op3.detune": 0, "op3.level": 0.889, "op3.attack": 0.001, "op3.decay": 0.40, "op3.sustain": 1.00, "op3.release": 0.20,
+        "op4.ratio": 3.5, "op4.detune": 0, "op4.level": 0.889, "op4.attack": 0.001, "op4.decay": 0.40, "op4.sustain": 1.00, "op4.release": 0.20,
+        "amp.mix": 0.70, "output.trim": 1
+      }
+    },
+    {
+      "name": "EP Lo-Fi Rhodes",
+      "gm": [],
+      "params": {
+        "algorithm": 0, "feedback": 0,
+        "op1.ratio": 1,  "op1.detune": 5, "op1.level": 0.90, "op1.attack": 0.010, "op1.decay": 0.40, "op1.sustain": 0.50, "op1.release": 0.15,
+        "op2.ratio": 1,  "op2.detune": 5, "op2.level": 0.50, "op2.attack": 0.001, "op2.decay": 0.40, "op2.sustain": 1.00, "op2.release": 0.15,
+        "op3.ratio": 1,  "op3.detune": 0, "op3.level": 0.00, "op3.attack": 0.001, "op3.decay": 0.40, "op3.sustain": 0.00, "op3.release": 0.15,
+        "op4.ratio": 1,  "op4.detune": 0, "op4.level": 0.00, "op4.attack": 0.001, "op4.decay": 0.40, "op4.sustain": 0.00, "op4.release": 0.15,
+        "amp.mix": 0.70, "output.trim": 1
+      }
+    },
+    {
+      "name": "BASS Sub Pluck",
+      "gm": [],
+      "params": {
+        "algorithm": 2, "feedback": 0,
+        "op1.ratio": 1,   "op1.detune": 0, "op1.level": 0.90, "op1.attack": 0.001, "op1.decay": 0.12, "op1.sustain": 0.20, "op1.release": 0.05,
+        "op2.ratio": 1,   "op2.detune": 0, "op2.level": 1.00, "op2.attack": 0.001, "op2.decay": 0.12, "op2.sustain": 1.00, "op2.release": 0.05,
+        "op3.ratio": 0.5, "op3.detune": 0, "op3.level": 0.45, "op3.attack": 0.001, "op3.decay": 0.12, "op3.sustain": 0.20, "op3.release": 0.05,
+        "op4.ratio": 1,   "op4.detune": 0, "op4.level": 0.00, "op4.attack": 0.001, "op4.decay": 0.12, "op4.sustain": 0.00, "op4.release": 0.05,
+        "amp.mix": 0.70, "output.trim": 1
+      }
     }
   ]
 }

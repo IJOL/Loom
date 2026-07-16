@@ -2,9 +2,10 @@
 import type { NoteSpec, SubParams, ParamBag, VoiceRenderer, VoiceModOffsets } from './types';
 import { param } from './types';
 import { midiToFreq, clamp01 } from './dsp-util';
-import { SawOsc, SquareOsc, TriOsc, SineOsc, WhiteNoise } from './osc';
+import { SineOsc, WhiteNoise } from './osc';
+import { UnisonStack, driftDepthFor } from './unison';
 import { Svf } from './filter';
-import { LadderFilter } from './ladder';
+import { LadderFilter, type LadderTap } from './ladder';
 import { Adsr } from './adsr';
 import type { ModLite } from './modulation-runtime';
 import { registerRenderer } from './renderer-registry';
@@ -19,32 +20,37 @@ interface ModEnv { adsr: Adsr; m: ModLite; }
 function subParamsFromBag(b: ParamBag): SubParams {
   return {
     masterTune: param(b, 'master.tune', 0),
+    unisonVoices: param(b, 'master.unison', 1), unisonDetune: param(b, 'master.detune', 25),
+    unisonDrift: param(b, 'master.drift', 0),
     osc1Wave: param(b, 'osc1.wave', 0), osc1Level: param(b, 'osc1.level', 0.6), osc1Detune: param(b, 'osc1.detune', 0),
     osc1Pw: param(b, 'osc1.pw', 0.5), osc2Pw: param(b, 'osc2.pw', 0.5),
     osc2Wave: param(b, 'osc2.wave', 1), osc2Level: param(b, 'osc2.level', 0.4), osc2Detune: param(b, 'osc2.detune', 7),
     subLevel: param(b, 'sub.level', 0.3),
     noiseLevel: param(b, 'noise.level', 0), noiseColor: param(b, 'noise.color', 0.6),
     filterCutoff: param(b, 'filter.cutoff', 0.55), filterResonance: param(b, 'filter.resonance', 0.25), filterEnvAmount: param(b, 'filter.envAmount', 0.45),
-    filterModel: param(b, 'filter.model', 0), filterDrive: param(b, 'filter.drive', 0), filterKeyTrack: param(b, 'filter.keyTrack', 0), filterBuiltinEnv: param(b, 'filter.builtinEnv', 1),
+    filterModel: param(b, 'filter.model', 0), filterType: param(b, 'filter.type', 0),
+    filterDrive: param(b, 'filter.drive', 0), filterKeyTrack: param(b, 'filter.keyTrack', 0), filterBuiltinEnv: param(b, 'filter.builtinEnv', 1),
     filterAttack: param(b, 'filter.attack', 0.01), filterDecay: param(b, 'filter.decay', 0.3), filterSustain: param(b, 'filter.sustain', 0.4), filterRelease: param(b, 'filter.release', 0.35),
     ampBuiltinEnv: param(b, 'amp.builtinEnv', 1),
     ampAttack: param(b, 'amp.attack', 0.01), ampDecay: param(b, 'amp.decay', 0.2), ampSustain: param(b, 'amp.sustain', 0.7), ampRelease: param(b, 'amp.release', 0.3),
   };
 }
 
-// `pw` is ignored by every wave but the square, where it is the duty cycle.
-type Osc = { update(freq: number, pw?: number): number };
-function makeOsc(wave: number, sr: number): Osc {
-  switch (wave) {
-    case 1: return new SquareOsc(sr);
-    case 2: return new TriOsc(sr);
-    case 3: return new SineOsc(sr);
-    default: return new SawOsc(sr);
-  }
-}
-const detuneMul = (cents: number) => Math.pow(2, cents / 1200);
+/** filterType (0=LP, 1=HP, 2=BP, 3=NOTCH) → the ladder tap that honestly serves
+ *  it. NOTCH maps to 'lp': a ladder's resonance feedback fills a notch's null in,
+ *  so it has no honest notch and keeps its lowpass instead of pretending (see
+ *  ladder.ts). DIG — the default model — is a true multimode and does all four. */
+const ladderTapFor = (filterType: number): LadderTap =>
+  filterType === 1 ? 'hp' : filterType === 2 ? 'bp' : 'lp';
+
 /** Pulse width lives in 0.05..0.95 — the rails of its own param spec. */
 const clampPw = (v: number) => Math.min(0.95, Math.max(0.05, v));
+/** The unison spread lives in 0..50 cents — the rails of its own param spec. A
+ *  negative spread would merely mirror the stack (the positions are symmetric),
+ *  so clamping costs nothing and keeps a deep LFO inside the knob's meaning. */
+const clampSpread = (v: number) => Math.min(50, Math.max(0, v));
+/** Depth 1 on a bipolar LFO sweeps the unison spread across its full range. */
+const MOD_UNISON_CENTS = 50;
 /** Depth 1 on a bipolar LFO sweeps the width across most of its range, which
  *  is what a PWM pad wants; the clamp keeps it out of silence at the extremes. */
 const MOD_PW_RANGE = 0.45;
@@ -60,11 +66,20 @@ function driveShape(x: number, amount: number): number {
 
 export class SubtractiveVoiceRenderer implements VoiceRenderer {
   private sr: number;
-  private osc1: Osc; private osc2: Osc; private sub: SineOsc; private noise = new WhiteNoise();
+  // osc1/osc2 are UNISON STACKS: N detuned copies each (N=1 by default, which is
+  // one oscillator at unity gain — exactly what they were before).
+  private osc1: UnisonStack; private osc2: UnisonStack;
+  /** How far this note's drift can pull the pitch — a fraction of its frequency,
+   *  fixed at trigger because it depends only on the note. */
+  private driftDepth: number;
+  private sub: SineOsc; private noise = new WhiteNoise();
   private noiseLp: Svf; private filter: Svf;
   // The ladders are built only when a patch asks for one — the Svf stays the
   // default, so nothing voiced against it changes.
   private ladder: LadderFilter | null = null;
+  // 0 = LP, 1 = HP, 2 = BP, 3 = NOTCH. Read once at trigger, like the model:
+  // which tap you take out is a topology, not a knob to sweep mid-note.
+  private filterType: number;
   private ampEnv = new Adsr(); private filtEnv = new Adsr();
   private begin: number; private holdEnd: number;
   private p: SubParams;
@@ -98,16 +113,23 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     this.begin = note.beginSec;
     this.holdEnd = note.beginSec + note.durationSec;
     this.baseFreq = midiToFreq(note.midi) * Math.pow(2, p.masterTune / 12);
-    this.osc1 = makeOsc(p.osc1Wave, sampleRate);
-    this.osc2 = makeOsc(p.osc2Wave, sampleRate);
+    // The stack size is read once, here: you cannot grow a stack mid-note without
+    // a click, so it is a trigger-time decision like the filter model.
+    this.osc1 = new UnisonStack(p.osc1Wave, p.unisonVoices, sampleRate);
+    this.osc2 = new UnisonStack(p.osc2Wave, p.unisonVoices, sampleRate);
+    this.driftDepth = driftDepthFor(this.baseFreq);
     this.sub = new SineOsc(sampleRate);
     this.noiseLp = new Svf(sampleRate);
     this.filter = new Svf(sampleRate);
     // 0 = DIG (the Svf above), 1 = MOG, 2 = 303. Read once at trigger: a filter
     // model is a topology, not a knob to sweep mid-note.
     const model = Math.round(p.filterModel);
-    if (model === 1) this.ladder = new LadderFilter('moog', sampleRate);
-    else if (model === 2) this.ladder = new LadderFilter('diode', sampleRate);
+    this.filterType = Math.round(p.filterType);
+    // The ladders are a genuine multimode via their stage taps (see ladder.ts) —
+    // except the NOTCH, which they cannot do honestly, so it keeps the lowpass.
+    if (model === 1 || model === 2) {
+      this.ladder = new LadderFilter(model === 1 ? 'moog' : 'diode', sampleRate, ladderTapFor(this.filterType));
+    }
     // 0.4 * velGain(...) with NoteSpec.velocity already normalised 0..1.
     // velToGain(v01) = 0.3 + 1.1*v01 ; accent amp punch = 1.1 (ACCENT_PUNCH).
     // × output.trim: per-preset gain-staging lever (params['output.trim'], default 1).
@@ -123,10 +145,22 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
    *
    *  DIG is the Svf: clean, cheap, and what every existing preset was voiced
    *  against — hence the default. MOG and 303 are the ladders (see ladder.ts):
-   *  four poles, and they thin as they resonate, which the Svf does not do. */
+   *  four poles, and they thin as they resonate, which the Svf does not do.
+   *
+   *  The Svf is a true multimode — it has been computing lp, bp AND hp on every
+   *  sample all along, and only .lp was ever read. filterType picks the tap.
+   *  (The notch is derived inside the Svf, where the damping term is in scope;
+   *  the textbook lp+hp does not null in that topology — see filter.ts.) */
   private filterAt(x: number, cutoffHz: number, res: number): number {
-    if (!this.ladder) { this.filter.update(x, cutoffHz, res); return this.filter.lp; }
-    return this.ladder.update(x, cutoffHz, res);
+    if (this.ladder) return this.ladder.update(x, cutoffHz, res);
+    const f = this.filter;
+    f.update(x, cutoffHz, res);
+    switch (this.filterType) {
+      case 1: return f.hp;
+      case 2: return f.bp;
+      case 3: return f.notch;
+      default: return f.lp;
+    }
   }
 
   noteOff(t: number): void { if (t < this.holdEnd) this.holdEnd = t; }
@@ -206,9 +240,21 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     // the param's own rails: 0 and 1 are silence, not a thinner sound.
     const pw1 = mo?.osc1Pw ? clampPw(p.osc1Pw + mo.osc1Pw * MOD_PW_RANGE) : p.osc1Pw;
     const pw2 = mo?.osc2Pw ? clampPw(p.osc2Pw + mo.osc2Pw * MOD_PW_RANGE) : p.osc2Pw;
-    // oscillators (detune in cents; sub one octave down)
-    let mix = this.osc1.update(f * detuneMul(det1), pw1) * osc1Level
-            + this.osc2.update(f * detuneMul(det2), pw2) * osc2Level
+    // Unison: the spread each stack fans its copies across, and the analog drift
+    // depth. Both continuous, so an LFO reaches them like any other param — on the
+    // spread that is a stack that breathes. Both default to inert (spread only
+    // bites above 1 voice; drift is 0), so nothing that exists today moves.
+    const spread = mo?.unisonDetune ? clampSpread(p.unisonDetune + mo.unisonDetune * MOD_UNISON_CENTS) : p.unisonDetune;
+    const drift = mo?.unisonDrift ? clamp01(p.unisonDrift + mo.unisonDrift) : p.unisonDrift;
+    const driftAmt = drift * this.driftDepth;
+    // oscillators (detune in cents; sub one octave down). The sub and the noise
+    // are deliberately NOT scaled by the stack's gain compensation, unlike mpump:
+    // they are single sources that never got stacked, so there is nothing to
+    // compensate, and sub.level/noise.level keep meaning exactly what they always
+    // meant. (Turning unison up therefore fattens the oscillators against them —
+    // which is what turning unison up is for.)
+    let mix = this.osc1.update(f, pw1, det1, spread, driftAmt) * osc1Level
+            + this.osc2.update(f, pw2, det2, spread, driftAmt) * osc2Level
             + this.sub.update(f * 0.5) * subLevel;
     if (noiseLevel > 0) {
       const noiseColor = mo?.noiseColor ? clamp01(p.noiseColor + mo.noiseColor) : p.noiseColor;

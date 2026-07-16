@@ -3,6 +3,9 @@
  *  used by the SubtractiveEngine param specs, with waves as 0..3 indices. */
 export interface SubParams {
   masterTune: number;       // semitones
+  unisonVoices: number;     // 1..7 stacked copies of osc1/osc2 (read at trigger)
+  unisonDetune: number;     // spread across the stack, cents
+  unisonDrift: number;      // 0..1 analog per-copy pitch wander
   osc1Wave: number; osc1Level: number; osc1Detune: number;   // wave 0..3, level 0..1, detune cents
   osc1Pw: number;                                            // pulse width 0.05..0.95 (square only)
   osc2Wave: number; osc2Level: number; osc2Detune: number;
@@ -11,6 +14,7 @@ export interface SubParams {
   noiseLevel: number; noiseColor: number;                    // color 0..1
   filterCutoff: number; filterResonance: number; filterEnvAmount: number;
   filterModel: number;      // 0 = DIG (Svf), 1 = MOG ladder, 2 = 303 diode ladder
+  filterType: number;       // 0 = LP, 1 = HP, 2 = BP, 3 = NOTCH
   filterDrive: number; filterKeyTrack: number; filterBuiltinEnv: number; // builtinEnv 0/1
   filterAttack: number; filterDecay: number; filterSustain: number; filterRelease: number;
   ampBuiltinEnv: number;                                     // 0/1
