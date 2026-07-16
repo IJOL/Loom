@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { drumPatternToNotes, melodicPatternToNotes } from './mpump-patterns';
 import { TICKS_PER_STEP } from '../core/notes';
+import { GM_DRUM_MAP } from '../engines/drum-gm-map';
 
 describe('drumPatternToNotes', () => {
   it('lands every hit of a step on that step, one NoteEvent per hit', () => {
@@ -24,6 +25,18 @@ describe('drumPatternToNotes', () => {
     const pattern = [[{ note: 50, vel: 100 }, { note: 47, vel: 90 }]];
 
     expect(drumPatternToNotes(pattern).map((n) => n.midi)).toEqual([39, 56]);
+  });
+
+  it('lands every note the library actually uses on a real Loom voice', () => {
+    // The ten distinct notes found across all 400 of mpump's drum patterns.
+    // If a future edit drops a voice from the kit, these hits would silently
+    // play nothing — this is the guard that says so out loud.
+    const USED_BY_MPUMP = [36, 37, 38, 42, 46, 47, 49, 50, 51, 56];
+    const pattern = [USED_BY_MPUMP.map((note) => ({ note, vel: 100 }))];
+
+    for (const { midi } of drumPatternToNotes(pattern)) {
+      expect(GM_DRUM_MAP[midi], `MIDI ${midi} plays no voice`).toBeDefined();
+    }
   });
 });
 
