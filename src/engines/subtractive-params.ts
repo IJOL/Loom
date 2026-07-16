@@ -15,6 +15,14 @@ export const WAVE_OPTIONS = [
   { value: 'sine',     label: 'Sin' },
 ];
 
+// Three filters, one engine. DIG (the Svf) is the default so every preset
+// voiced against it sounds exactly as it always has; the ladders are opt-in.
+export const FILTER_MODEL_OPTIONS = [
+  { value: 'dig', label: 'DIG' },   // state-variable: clean, cheap
+  { value: 'mog', label: 'MOG' },   // 4-pole Moog ladder: creamy, thins as it resonates
+  { value: '303', label: '303' },   // diode ladder: asymmetric, even harmonics, acid
+];
+
 // Unified-param schema. Dot-namespaced ids map directly onto the nested
 // polysynth.params object tree (legacy) or the flat SubParams snapshot (worklet).
 export const SUB_PARAM_SPECS: EngineParamSpec[] = [
@@ -37,6 +45,8 @@ export const SUB_PARAM_SPECS: EngineParamSpec[] = [
   { id: 'noise.level',  label: 'Noise Lvl', kind: 'continuous', min: 0, max: 1, default: 0 },
 
   // Filter
+  { id: 'filter.model',     label: 'Model',     kind: 'discrete', min: 0, max: 2, default: 0,
+    options: FILTER_MODEL_OPTIONS },
   { id: 'filter.cutoff',    label: 'Cutoff',    kind: 'continuous', min: 0, max: 1, default: 0.55 },
   { id: 'filter.resonance', label: 'Resonance', kind: 'continuous', min: 0, max: 1, default: 0.25 },
   { id: 'filter.envAmount', label: 'Env Amt',   kind: 'continuous', min: 0, max: 1, default: 0.45 },

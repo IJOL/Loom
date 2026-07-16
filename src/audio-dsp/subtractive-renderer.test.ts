@@ -283,3 +283,49 @@ describe('PWM is modulation, not a knob', () => {
     expect(rms(slammed)).toBeGreaterThan(0.01);
   });
 });
+
+describe('filter model', () => {
+  // Three filters, one engine. The Svf stays the default so every existing
+  // preset sounds exactly as it was voiced; the ladders are opt-in.
+  const bag = (model: number): ParamBag => ({
+    ...DEFAULTS, 'osc1.wave': 0, 'osc1.level': 1, 'osc2.level': 0,
+    'sub.level': 0, 'noise.level': 0,
+    'filter.cutoff': 0.4, 'filter.resonance': 0.7, 'filter.envAmount': 0, 'filter.builtinEnv': 0,
+    'filter.model': model,
+  });
+  const render = (model: number): number[] => {
+    const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.3 }), bag(model), SR);
+    const b: number[] = [];
+    for (let i = 0; i < SR * 0.15; i++) b.push(v.renderSample(i / SR));
+    return b;
+  };
+  const divergence = (a: number[], b: number[]): number => {
+    let d = 0; for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b[i]);
+    return d / a.length / Math.max(1e-9, rms(a));
+  };
+  const mean = (b: number[]) => Math.abs(b.reduce((s, v) => s + v, 0) / b.length);
+
+  it('defaults to the Svf, so nothing that exists today changes', () => {
+    const noModel: ParamBag = { ...bag(0) };
+    delete (noModel as Record<string, number>)['filter.model'];
+    const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.3 }), noModel, SR);
+    const b: number[] = []; for (let i = 0; i < SR * 0.15; i++) b.push(v.renderSample(i / SR));
+    expect(divergence(b, render(0))).toBeLessThan(0.01);
+  });
+
+  it('each model is audibly its own filter', () => {
+    expect(divergence(render(0), render(1))).toBeGreaterThan(0.1);   // svf vs moog
+    expect(divergence(render(1), render(2))).toBeGreaterThan(0.02);  // moog vs diode
+  });
+
+  it('the 303 model brings the asymmetry the others do not have', () => {
+    expect(mean(render(2))).toBeGreaterThan(mean(render(1)) * 2);
+  });
+
+  it('every model stays bounded', () => {
+    for (const m of [0, 1, 2]) {
+      const peak = render(m).reduce((p, v) => Math.max(p, Math.abs(v)), 0);
+      expect(peak, `model ${m} blew up`).toBeLessThan(4);
+    }
+  });
+});

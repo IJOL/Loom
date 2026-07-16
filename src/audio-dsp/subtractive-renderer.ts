@@ -4,6 +4,7 @@ import { param } from './types';
 import { midiToFreq, clamp01 } from './dsp-util';
 import { SawOsc, SquareOsc, TriOsc, SineOsc, WhiteNoise } from './osc';
 import { Svf } from './filter';
+import { LadderFilter } from './ladder';
 import { Adsr } from './adsr';
 import type { ModLite } from './modulation-runtime';
 import { registerRenderer } from './renderer-registry';
@@ -24,7 +25,7 @@ function subParamsFromBag(b: ParamBag): SubParams {
     subLevel: param(b, 'sub.level', 0.3),
     noiseLevel: param(b, 'noise.level', 0), noiseColor: param(b, 'noise.color', 0.6),
     filterCutoff: param(b, 'filter.cutoff', 0.55), filterResonance: param(b, 'filter.resonance', 0.25), filterEnvAmount: param(b, 'filter.envAmount', 0.45),
-    filterDrive: param(b, 'filter.drive', 0), filterKeyTrack: param(b, 'filter.keyTrack', 0), filterBuiltinEnv: param(b, 'filter.builtinEnv', 1),
+    filterModel: param(b, 'filter.model', 0), filterDrive: param(b, 'filter.drive', 0), filterKeyTrack: param(b, 'filter.keyTrack', 0), filterBuiltinEnv: param(b, 'filter.builtinEnv', 1),
     filterAttack: param(b, 'filter.attack', 0.01), filterDecay: param(b, 'filter.decay', 0.3), filterSustain: param(b, 'filter.sustain', 0.4), filterRelease: param(b, 'filter.release', 0.35),
     ampBuiltinEnv: param(b, 'amp.builtinEnv', 1),
     ampAttack: param(b, 'amp.attack', 0.01), ampDecay: param(b, 'amp.decay', 0.2), ampSustain: param(b, 'amp.sustain', 0.7), ampRelease: param(b, 'amp.release', 0.3),
@@ -61,6 +62,9 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
   private sr: number;
   private osc1: Osc; private osc2: Osc; private sub: SineOsc; private noise = new WhiteNoise();
   private noiseLp: Svf; private filter: Svf;
+  // The ladders are built only when a patch asks for one — the Svf stays the
+  // default, so nothing voiced against it changes.
+  private ladder: LadderFilter | null = null;
   private ampEnv = new Adsr(); private filtEnv = new Adsr();
   private begin: number; private holdEnd: number;
   private p: SubParams;
@@ -99,6 +103,11 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     this.sub = new SineOsc(sampleRate);
     this.noiseLp = new Svf(sampleRate);
     this.filter = new Svf(sampleRate);
+    // 0 = DIG (the Svf above), 1 = MOG, 2 = 303. Read once at trigger: a filter
+    // model is a topology, not a knob to sweep mid-note.
+    const model = Math.round(p.filterModel);
+    if (model === 1) this.ladder = new LadderFilter('moog', sampleRate);
+    else if (model === 2) this.ladder = new LadderFilter('diode', sampleRate);
     // 0.4 * velGain(...) with NoteSpec.velocity already normalised 0..1.
     // velToGain(v01) = 0.3 + 1.1*v01 ; accent amp punch = 1.1 (ACCENT_PUNCH).
     // × output.trim: per-preset gain-staging lever (params['output.trim'], default 1).
@@ -108,6 +117,16 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     this.keyTrackHz = this.keySemiDelta * this.baseCutoffHz * (Math.pow(2, 1 / 12) - 1) * p.filterKeyTrack;
     this.accentMul = note.accent ? 1.3 : 1.0;
     this.envRangeHz = Math.min(this.baseCutoffHz * 7, 16000) * p.filterEnvAmount * this.accentMul;
+  }
+
+  /** One sample through whichever filter this patch selected.
+   *
+   *  DIG is the Svf: clean, cheap, and what every existing preset was voiced
+   *  against — hence the default. MOG and 303 are the ladders (see ladder.ts):
+   *  four poles, and they thin as they resonate, which the Svf does not do. */
+  private filterAt(x: number, cutoffHz: number, res: number): number {
+    if (!this.ladder) { this.filter.update(x, cutoffHz, res); return this.filter.lp; }
+    return this.ladder.update(x, cutoffHz, res);
   }
 
   noteOff(t: number): void { if (t < this.holdEnd) this.holdEnd = t; }
@@ -233,7 +252,7 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     // 0..1 knob straight through; res=1 is already a strong, bounded resonance (peak ~2.8).
     // Modulation offset clamped to 0..1 so a deep LFO can't drive it into blow-up.
     const q = mo?.filterResonance ? clamp01(p.filterResonance + mo.filterResonance) : p.filterResonance;
-    this.filter.update(mix, cutoff, q);
+    const filtered = this.filterAt(mix, cutoff, q);
     // Amp envelope. Priority: the built-in env when enabled (presets keep
     // ampBuiltinEnv=1 → unchanged); else an ADSR routed to 'amp' BECOMES the
     // amplitude envelope (the unified pre-worklet model); else a flat gain.
@@ -245,7 +264,7 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     } else {
       ae = 1;
     }
-    let out = this.filter.lp * ae * this.velPeak;
+    let out = filtered * ae * this.velPeak;
     // amp.gain modulation = tremolo: a multiplicative gain on the output
     // (depth 1 ⇒ ±1 ⇒ 0..2×), clamped non-negative.
     if (mo?.ampGain) out *= Math.max(0, Math.min(2, 1 + mo.ampGain));
