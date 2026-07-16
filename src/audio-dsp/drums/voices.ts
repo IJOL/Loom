@@ -285,13 +285,58 @@ class RideRenderer extends OneShot {
   }
 }
 
+/** Crash — the ride's brighter, longer sibling: same metallic square bank, but
+ *  detuned up, washed with noise and opened higher, so it reads as a cymbal
+ *  crash rather than a ping. */
+class CrashRenderer extends OneShot {
+  private oscs: SquareOsc[]; private freqs: number[]; private noise = new WhiteNoise();
+  private bp: Svf; private hp: Svf;
+  constructor(hit: DrumHit, p: ParamBag, sr: number) {
+    super(hit);
+    const tune = param(p, 'tune', 1);
+    this.freqs = RIDE_FREQS.map((f) => f * tune * 1.6);
+    this.decay = param(p, 'decay', 2.5);
+    this.peak = hit.velocity * 0.6;
+    this.oscs = RIDE_FREQS.map(() => new SquareOsc(sr));
+    this.bp = new Svf(sr); this.hp = new Svf(sr);
+  }
+  protected source(_t: number): number {
+    let mix = 0;
+    for (let i = 0; i < this.oscs.length; i++) mix += this.oscs[i].update(this.freqs[i]);
+    mix = mix * 0.1 + this.noise.update() * 0.45;
+    this.bp.update(mix, 8000, 0.06);
+    this.hp.update(this.bp.bp, 4500, 0.06);
+    return this.hp.hp;
+  }
+}
+
+/** Rimshot (GM 37, side stick) — a dry click, not a drum: a short resonant
+ *  burst around `freq` with a noise transient, gone in ~30 ms. */
+class RimshotRenderer extends OneShot {
+  private o: SquareOsc; private noise = new WhiteNoise(); private bp: Svf; private hz: number;
+  constructor(hit: DrumHit, p: ParamBag, sr: number) {
+    super(hit);
+    this.hz = param(p, 'freq', 1700) * param(p, 'tune', 1);
+    this.decay = param(p, 'decay', 0.03);
+    this.peak = hit.velocity * 0.8;
+    this.o = new SquareOsc(sr); this.bp = new Svf(sr);
+  }
+  protected source(_t: number): number {
+    const mix = this.o.update(this.hz) * 0.6 + this.noise.update() * 0.4;
+    this.bp.update(mix, this.hz, 0.5);
+    return this.bp.bp;
+  }
+}
+
 export const DRUM_RENDERERS: Record<DrumVoiceId, DrumRendererCtor> = {
   kick:      (h, p, sr) => new KickRenderer(h, p, sr),
   snare:     (h, p, sr) => new SnareRenderer(h, p, sr),
+  rimshot:   (h, p, sr) => new RimshotRenderer(h, p, sr),
   closedHat: (h, p, sr) => new HatRenderer(h, p, sr),
   openHat:   (h, p, sr) => new HatRenderer(h, p, sr),
   clap:      (h, p, sr) => new ClapRenderer(h, p, sr),
   cowbell:   (h, p, sr) => new CowbellRenderer(h, p, sr),
   tom:       (h, p, sr) => new TomRenderer(h, p, sr),
   ride:      (h, p, sr) => new RideRenderer(h, p, sr),
+  crash:     (h, p, sr) => new CrashRenderer(h, p, sr),
 };

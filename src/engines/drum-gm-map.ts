@@ -6,12 +6,14 @@ import type { DrumVoice } from '../core/drums';
 
 export const GM_DRUM_MAP: Record<number, DrumVoice> = {
   35: 'kick', 36: 'kick',
+  37: 'rimshot',
   38: 'snare', 40: 'snare',
   42: 'closedHat', 44: 'closedHat',
   46: 'openHat',
   39: 'clap',
   56: 'cowbell',
   41: 'tom', 43: 'tom', 45: 'tom', 47: 'tom', 48: 'tom',
+  49: 'crash', 52: 'crash', 55: 'crash', 57: 'crash',
   51: 'ride', 53: 'ride', 59: 'ride',
 };
 
@@ -20,12 +22,14 @@ export const GM_DRUM_MAP: Record<number, DrumVoice> = {
 export const VOICE_MIDI: Record<DrumVoice, number> = {
   kick: 36,
   snare: 38,
+  rimshot: 37,
   closedHat: 42,
   openHat: 46,
   clap: 39,
   cowbell: 56,
   tom: 45,
   ride: 51,
+  crash: 49,
 };
 
 // Short English labels for the GM percussion map (channel 10), notes 27..87.

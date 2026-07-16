@@ -5,8 +5,8 @@ import type { DrumVoice } from '../../core/drums';
 import type { DrumRows } from '../../core/drum-grid-editing';
 
 export const LANE_LABELS: Record<DrumVoice, string> = {
-  kick: 'KICK', snare: 'SNARE', closedHat: 'CH', openHat: 'OH',
-  clap: 'CLAP', cowbell: 'COWBL', tom: 'TOM', ride: 'RIDE',
+  kick: 'KICK', snare: 'SNARE', rimshot: 'RIM', closedHat: 'CH', openHat: 'OH',
+  clap: 'CLAP', cowbell: 'COWBL', tom: 'TOM', ride: 'RIDE', crash: 'CRASH',
 };
 
 /** The rows the editor draws: how many (rows.count), how notes map to them, and a

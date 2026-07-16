@@ -1,5 +1,5 @@
 // AudioWorklet loader + typed node wrapper for the synth-mode drum machine
-// processor (8 mono outputs, one per DrumVoice).
+// processor (one mono output per DrumVoice).
 //
 // Loading strategy mirrors loom-node.ts: Vite bundles drums-processor.ts (+ its
 // imports) into a separate JS asset via the `?worker&url` suffix; addModule
@@ -52,10 +52,12 @@ export class DrumsWorkletNode {
   readonly node: AudioWorkletNode;
 
   constructor(ctx: BaseAudioContext) {
+    // One mono output per drum voice — derived, so adding a voice to
+    // DRUM_VOICE_IDS cannot leave it with nowhere to come out.
     this.node = new AudioWorkletNode(ctx, DRUMS_PROCESSOR_NAME, {
       numberOfInputs: 0,
-      numberOfOutputs: 8,
-      outputChannelCount: [1, 1, 1, 1, 1, 1, 1, 1],
+      numberOfOutputs: DRUM_VOICE_IDS.length,
+      outputChannelCount: DRUM_VOICE_IDS.map(() => 1),
     });
   }
 

@@ -272,8 +272,8 @@ const LANE_LABELS: Record<TrackId, string> = {
   poly5: 'POLY 5', poly6: 'POLY 6', poly7: 'POLY 7', poly8: 'POLY 8', poly9: 'POLY 9',
   poly10: 'POLY 10', poly11: 'POLY 11', poly12: 'POLY 12', poly13: 'POLY 13',
   poly14: 'POLY 14', poly15: 'POLY 15', poly16: 'POLY 16',
-  kick: 'KICK', snare: 'SNARE', closedHat: 'CH HAT', openHat: 'OP HAT',
-  clap: 'CLAP', cowbell: 'COWBLL', tom: 'TOM', ride: 'RIDE',
+  kick: 'KICK', snare: 'SNARE', rimshot: 'RIM', closedHat: 'CH HAT', openHat: 'OP HAT',
+  clap: 'CLAP', cowbell: 'COWBLL', tom: 'TOM', ride: 'RIDE', crash: 'CRASH',
 };
 
 // ── Lane-engine host ──────────────────────────────────────────────────────

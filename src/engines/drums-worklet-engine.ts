@@ -128,6 +128,15 @@ const VOICE_SYNTH_SPECS: Record<DrumVoice, EngineParamSpec[]> = {
     { id: 'tune',  label: 'TUNE',  kind: 'continuous', min: 0.5, max: 2, default: 1.5 },
     { id: 'decay', label: 'DECAY', kind: 'continuous', min: 0.2, max: 3, default: 1.2 },
   ],
+  rimshot: [
+    { id: 'tune',  label: 'TUNE',  kind: 'continuous', min: 0.5,  max: 2,    default: 1 },
+    { id: 'decay', label: 'DECAY', kind: 'continuous', min: 0.01, max: 0.15, default: 0.025 },
+    { id: 'freq',  label: 'FREQ',  kind: 'continuous', min: 800,  max: 3000, default: 1800, unit: 'Hz' },
+  ],
+  crash: [
+    { id: 'tune',  label: 'TUNE',  kind: 'continuous', min: 0.5, max: 2, default: 1.1 },
+    { id: 'decay', label: 'DECAY', kind: 'continuous', min: 0.5, max: 5, default: 2.2 },
+  ],
 };
 
 const VOICE_MIXER_SPECS: Array<Omit<EngineParamSpec, 'id'> & { leaf: string }> = [

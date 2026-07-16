@@ -6,8 +6,9 @@ import {
   gmDrumRows, noteDrumRows,
 } from './drum-grid-editing';
 import type { NoteEvent } from './notes';
+import { DRUM_LANES } from './drums';
 
-const GM = gmDrumRows();                              // 8 fixed GM rows
+const GM = gmDrumRows();                              // one fixed row per kit voice
 const kick = (start: number, vel = 80): NoteEvent => ({ start, midi: 36, duration: 12, velocity: vel });
 const snare = (start: number): NoteEvent => ({ start, midi: 38, duration: 12, velocity: 80 });
 
@@ -34,12 +35,14 @@ describe('resolution', () => {
 });
 
 describe('gmDrumRows', () => {
-  it('keeps the 8 GM rows and collapses alias notes to their canonical voice row', () => {
-    expect(GM.count).toBe(8);
+  it('gives every kit voice a row and collapses alias notes to their canonical voice row', () => {
+    expect(GM.count).toBe(DRUM_LANES.length);
     expect(GM.noteToRow(36)).toBe(0);    // kick
     expect(GM.noteToRow(35)).toBe(0);    // kick alias
     expect(GM.noteToRow(38)).toBe(1);    // snare
     expect(GM.noteToRow(40)).toBe(1);    // snare alias
+    expect(GM.noteToRow(37)).toBe(2);    // rimshot sits with the snare
+    expect(GM.noteToRow(57)).toBe(GM.noteToRow(49)); // crash alias → crash
     expect(GM.rowToNote(0)).toBe(36);
     expect(GM.rowToNote(1)).toBe(38);
     expect(GM.noteToRow(99)).toBe(-1);   // not a drum note
@@ -72,8 +75,8 @@ describe('rowMove', () => {
   it('maps a downward move to the next voice midi, clamped at the bottom', () => {
     const sel = [kick(0)];                                  // row 0
     expect(rowMove(sel, 1, GM).get(sel[0])).toBe(38);       // snare
-    const last = [{ start: 0, midi: 51, duration: 12, velocity: 80 }]; // ride = row 7
-    expect(rowMove(last, 5, GM).get(last[0])).toBe(51);     // clamped, unchanged
+    const bottom = [{ start: 0, midi: 49, duration: 12, velocity: 80 }]; // crash = last row
+    expect(rowMove(bottom, 5, GM).get(bottom[0])).toBe(49);  // clamped, unchanged
   });
 });
 
@@ -81,9 +84,9 @@ describe('clipboard (row-based) + tick clamp', () => {
   it('serialize→paste anchors to (tick,row) and preserves relative row/tick', () => {
     const sel = [kick(48), snare(72)];                      // rows 0,1 ; dStart 0,24
     const clip = serializeDrumClipboard(sel, GM);
-    const pasted = pasteDrumClipboard(clip, 96, 2, 384, GM); // anchor row 2 (closedHat)
-    expect(pasted[0]).toMatchObject({ start: 96, midi: 42 }); // row 2
-    expect(pasted[1]).toMatchObject({ start: 120, midi: 46 }); // row 3 (openHat), +24 tick
+    const pasted = pasteDrumClipboard(clip, 96, 2, 384, GM); // anchor row 2 (rimshot)
+    expect(pasted[0]).toMatchObject({ start: 96, midi: 37 }); // row 2
+    expect(pasted[1]).toMatchObject({ start: 120, midi: 42 }); // row 3 (closedHat), +24 tick
   });
   it('clampGroupTick stops the group at 0 and patternTicks', () => {
     expect(clampGroupTick([kick(24), kick(48)], -100, 384)).toBe(-24);

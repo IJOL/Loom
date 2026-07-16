@@ -7,10 +7,11 @@
 // now. This module is pure DATA + helpers.
 
 export type DrumVoice =
-  | 'kick' | 'snare' | 'closedHat' | 'openHat' | 'clap' | 'cowbell' | 'tom' | 'ride';
+  | 'kick' | 'snare' | 'closedHat' | 'openHat' | 'clap' | 'cowbell' | 'tom' | 'ride'
+  | 'rimshot' | 'crash';
 
 export const DRUM_LANES: DrumVoice[] = [
-  'kick', 'snare', 'closedHat', 'openHat', 'clap', 'cowbell', 'tom', 'ride',
+  'kick', 'snare', 'rimshot', 'closedHat', 'openHat', 'clap', 'cowbell', 'tom', 'ride', 'crash',
 ];
 
 interface KickParams    { startFreq: number; endFreq: number; pitchDecay: number; ampDecay: number; clickAmount: number; tone: OscillatorType; }
@@ -20,6 +21,8 @@ interface ClapParams    { decay: number; filterFreq: number; filterQ: number; }
 interface CowbellParams { freq1: number; freq2: number; decay: number; }
 interface TomParams     { startFreq: number; endFreq: number; pitchDecay: number; ampDecay: number; }
 interface RideParams    { tune: number; decay: number; }
+interface RimshotParams { freq: number; decay: number; }
+interface CrashParams   { tune: number; decay: number; }
 
 export interface Kit {
   id: string;
@@ -32,6 +35,8 @@ export interface Kit {
   cowbell: CowbellParams;
   tom: TomParams;
   ride: RideParams;
+  rimshot: RimshotParams;
+  crash: CrashParams;
 }
 
 export const WAVE_TYPES: OscillatorType[] = ['sine', 'triangle', 'square'];
@@ -70,6 +75,8 @@ export function seedSynthState(kit: Kit): DrumSynthState {
       freq1: kit.cowbell.freq1, freq2: kit.cowbell.freq2, chokeGroup: 0,
     },
     ride: { tune: kit.ride.tune, decay: kit.ride.decay, chokeGroup: 0 },
+    rimshot: { tune: 1, decay: kit.rimshot.decay, freq: kit.rimshot.freq, chokeGroup: 0 },
+    crash:   { tune: kit.crash.tune, decay: kit.crash.decay, chokeGroup: 0 },
   };
 }
 
@@ -92,6 +99,8 @@ export const KITS: Kit[] = [
     cowbell: { freq1: 540, freq2: 800, decay: 0.3 },
     tom:     { startFreq: 170, endFreq: 85, pitchDecay: 0.1, ampDecay: 0.6 },
     ride:    { tune: 1.4, decay: 1.5 },
+    rimshot: { freq: 1700, decay: 0.03 },
+    crash:   { tune: 1.0, decay: 2.6 },
   },
   {
     id: '909', name: 'TR-909', description: 'Punchy, electronic — house / techno',
@@ -102,6 +111,8 @@ export const KITS: Kit[] = [
     cowbell: { freq1: 587, freq2: 845, decay: 0.25 },
     tom:     { startFreq: 200, endFreq: 95, pitchDecay: 0.08, ampDecay: 0.5 },
     ride:    { tune: 1.5, decay: 1.2 },
+    rimshot: { freq: 1800, decay: 0.025 },
+    crash:   { tune: 1.1, decay: 2.2 },
   },
   {
     id: '606', name: 'TR-606', description: 'Small, snappy — pairs with 303',
@@ -112,6 +123,8 @@ export const KITS: Kit[] = [
     cowbell: { freq1: 600, freq2: 880, decay: 0.2 },
     tom:     { startFreq: 220, endFreq: 130, pitchDecay: 0.05, ampDecay: 0.3 },
     ride:    { tune: 1.4, decay: 0.8 },
+    rimshot: { freq: 1950, decay: 0.018 },
+    crash:   { tune: 1.35, decay: 1.4 },
   },
   {
     id: '78', name: 'CR-78', description: 'Vintage preset — mellow disco',
@@ -122,6 +135,8 @@ export const KITS: Kit[] = [
     cowbell: { freq1: 520, freq2: 770, decay: 0.32 },
     tom:     { startFreq: 170, endFreq: 90, pitchDecay: 0.1, ampDecay: 0.55 },
     ride:    { tune: 1.3, decay: 1.2 },
+    rimshot: { freq: 1500, decay: 0.035 },
+    crash:   { tune: 0.9, decay: 1.8 },
   },
   {
     id: 'linn', name: 'LinnDrum', description: 'Hybrid, 80s pop punch',
@@ -132,6 +147,8 @@ export const KITS: Kit[] = [
     cowbell: { freq1: 560, freq2: 820, decay: 0.28 },
     tom:     { startFreq: 190, endFreq: 90, pitchDecay: 0.08, ampDecay: 0.45 },
     ride:    { tune: 1.5, decay: 1.0 },
+    rimshot: { freq: 1600, decay: 0.03 },
+    crash:   { tune: 1.0, decay: 2.9 },
   },
 ];
 

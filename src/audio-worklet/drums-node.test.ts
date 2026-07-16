@@ -6,8 +6,10 @@ import { drumsHitMessage, drumsVoiceParamsMessage, type DrumsMsg } from './drums
 // The wrapper's posting logic is pure; test it by capturing posted messages.
 // (We don't instantiate a real AudioWorkletNode — that needs a worklet env.)
 describe('drums node message shaping', () => {
-  it('exposes the 8 drum voices in canonical order', () => {
-    expect(DRUM_VOICE_IDS).toEqual(['kick', 'snare', 'closedHat', 'openHat', 'clap', 'cowbell', 'tom', 'ride']);
+  it('exposes every drum voice in canonical order — kit order, not insertion order', () => {
+    expect(DRUM_VOICE_IDS).toEqual([
+      'kick', 'snare', 'rimshot', 'closedHat', 'openHat', 'clap', 'cowbell', 'tom', 'ride', 'crash',
+    ]);
   });
 
   it('hit + voiceParams payloads are well-shaped DrumsMsg unions', () => {

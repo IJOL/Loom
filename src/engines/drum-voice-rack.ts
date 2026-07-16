@@ -20,8 +20,8 @@ interface DrumMuteSoloEngine {
 }
 
 export const VOICE_LABELS: Record<DrumVoice, string> = {
-  kick: 'KICK', snare: 'SNARE', closedHat: 'CH', openHat: 'OH',
-  clap: 'CLAP', cowbell: 'COWBL', tom: 'TOM', ride: 'RIDE',
+  kick: 'KICK', snare: 'SNARE', rimshot: 'RIM', closedHat: 'CH', openHat: 'OH',
+  clap: 'CLAP', cowbell: 'COWBL', tom: 'TOM', ride: 'RIDE', crash: 'CRASH',
 };
 
 export interface RackLayout {

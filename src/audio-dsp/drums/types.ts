@@ -4,13 +4,14 @@
 import type { ParamBag } from '../types';
 
 export type DrumVoiceId =
-  | 'kick' | 'snare' | 'closedHat' | 'openHat' | 'clap' | 'cowbell' | 'tom' | 'ride';
+  | 'kick' | 'snare' | 'closedHat' | 'openHat' | 'clap' | 'cowbell' | 'tom' | 'ride'
+  | 'rimshot' | 'crash';
 
 /** Canonical drum-voice order. Single source of truth for the worklet's
  *  output↔voice mapping (manager render index, node connectVoice, strip wiring).
  *  Matches DRUM_LANES in src/core/drums.ts. */
 export const DRUM_VOICE_IDS: DrumVoiceId[] = [
-  'kick', 'snare', 'closedHat', 'openHat', 'clap', 'cowbell', 'tom', 'ride',
+  'kick', 'snare', 'rimshot', 'closedHat', 'openHat', 'clap', 'cowbell', 'tom', 'ride', 'crash',
 ];
 
 /** One drum hit. `velocity` already folds accent in (the engine resolves it). */
