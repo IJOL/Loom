@@ -7,7 +7,7 @@ import { resolveTonality, DEFAULT_MUSICALITY, resolveClipContext } from './sessi
 import { beginInlineRename } from './inline-rename';
 import { rootName, SCALE_CATALOG, STYLE_CATALOG, type StyleId } from '../core/musicality';
 import { patternNotes } from '../patterns/pattern-library';
-import { patternKindFor, fillStyleSelect, fillPatternSelect } from '../patterns/pattern-picker-ui';
+import { patternKindFor, fillStyleSelect, fillPatternSelect, patternRootFor } from '../patterns/pattern-picker-ui';
 import type { LanePlayState } from './session-runtime';
 import type { Sequencer } from '../core/sequencer';
 import { renderClipEditor, classifyClip, chooseClipEditor, type ClipEditorDeps } from './clip-editors/clip-editor-router';
@@ -444,7 +444,7 @@ export class SessionInspector {
           // Library patterns are one bar; clips are two by default. Tile to fill,
           // or the back half of the clip plays nothing.
           const notes = patternNotes(
-            style(), kind, index, octaveBase,
+            style(), kind, index, patternRootFor(octaveBase, ton.key),
             clip.lengthBars, ticksPerBar(this.deps.seq.meter),
             locked ? { key: ton.key, scale: ton.scale } : undefined,
           );

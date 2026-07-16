@@ -6,8 +6,8 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { setLibrary } from './pattern-library';
-import { patternKindFor, fillStyleSelect, fillPatternSelect } from './pattern-picker-ui';
+import { setLibrary, patternNotes } from './pattern-library';
+import { patternKindFor, fillStyleSelect, fillPatternSelect, patternRootFor } from './pattern-picker-ui';
 
 const dir = join(process.cwd(), 'public', 'patterns');
 const read = (f: string) => JSON.parse(readFileSync(join(dir, f), 'utf8'));
@@ -104,5 +104,31 @@ describe('one dropdown for everything that fills a clip', () => {
     fillPatternSelect(sel, 'techno', 'drums', []);
     const groups = [...sel.querySelectorAll('optgroup')].map((g) => g.label);
     expect(groups).not.toContain('Examples');
+  });
+});
+
+describe('patternRootFor', () => {
+  // A library pattern is semitone offsets from a root. If that root is just the
+  // roll's octave, the pattern always plays in C no matter what key the project
+  // is in — unlike our examples, which are scale degrees and transpose for free.
+  const C3 = 48;
+
+  it('puts the root on the project key, not on C', () => {
+    expect(patternRootFor(C3, 0)).toBe(C3);       // key C → C3
+    expect(patternRootFor(C3, 9)).toBe(C3 + 9);   // key A → A3
+  });
+
+  it('still follows the octave selector', () => {
+    expect(patternRootFor(36, 9)).toBe(45);
+    expect(patternRootFor(60, 9)).toBe(69);
+    // one octave up in the view = one octave up in the pattern
+    expect(patternRootFor(60, 9) - patternRootFor(48, 9)).toBe(12);
+  });
+
+  it('transposes the whole pattern by the same interval the key moved', () => {
+    const inC = patternNotes('acid-techno', 'bass', 0, patternRootFor(C3, 0));
+    const inA = patternNotes('acid-techno', 'bass', 0, patternRootFor(C3, 9));
+    expect(inC.length).toBeGreaterThan(0);
+    for (let i = 0; i < inC.length; i++) expect(inA[i].midi).toBe(inC[i].midi + 9);
   });
 });

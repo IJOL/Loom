@@ -18,6 +18,19 @@ export function patternKindFor(engineId: string): PatternKind {
   return 'synth';
 }
 
+/** Where a library pattern's root note sits.
+ *
+ *  A library pattern is semitone offsets from a root, so the root is what makes
+ *  it transposable. Rooting it on the octave alone would play every pattern in C
+ *  regardless of the project's key — our own examples are scale degrees and
+ *  transpose for free, and a pattern must behave the same way.
+ *
+ *  `octaveBase` keeps the octave selector honoured; `key` (0-11) moves it to the
+ *  project's tonic. */
+export function patternRootFor(octaveBase: number, key: number): number {
+  return octaveBase + key;
+}
+
 /** Fill the style dropdown with every style, selecting `current`. */
 export function fillStyleSelect(sel: HTMLSelectElement, current: StyleId): void {
   sel.innerHTML = '';
