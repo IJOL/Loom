@@ -37,10 +37,19 @@ only a mockup whose spec is still outstanding stays under `mockups/`.
   `#drums-preset-select` are plain `<select>`s, not wrapped in `createSelectControl`
   nor registered under a `<laneId>.preset` automation id (modular-modulators Task 19
   leftover).
-- **Swing slider not wired to the scheduler** (documented as such in the manual).
 
 ## Reference (kept deliberately)
 
+- **Promotion research 2026-07-15** ([report](../promo-research-2026-07-15.md)): recovered
+  from a research run that died before writing it. Not feature work, but it carries a
+  **launch-gate backlog that is code and repo work** and is tracked nowhere else — chiefly:
+  ▶ starts the clock without launching a scene, so the app is **silent on the most obvious
+  action** in Session mode (`core/transport.ts:35-42`); the shipped `index.html` carries no
+  licence notice, source link or Strudel credit though the repo now does; README credits
+  name 3 sample kits against 68 in `public/drumkits/index.json`; no CONTRIBUTING.md, no test
+  CI, zero issues ever. Same caveat as the review findings below — **verify each item against
+  the code before acting**, and read the report's §0 first: only 5 of its 13 research angles
+  were ever fact-checked.
 - **Review findings 2026-06-06** ([spec](specs/2026-06-06-loom-review-findings.md)):
   adversarial-review backlog from the five-front program; most items were addressed
   by the fronts — verify any item against the code before acting on it.

@@ -31,7 +31,9 @@ Each 16th-note step lasts `60 / bpm / 4` seconds.
 
 **Meter** (`#meter`) — sets the global time signature. The dropdown offers common meters: 4/4, 3/4, 2/4, 5/4, 6/8, 7/8, 9/8, and 12/8. The meter controls how bars map onto the 16th-step grid and how the position readout counts beats. Changing the meter takes effect on the next loop cycle.
 
-**Swing** (`#swing`) — intended to add a shuffle feel by delaying odd 16th-note steps. Range: 0 (straight) to 0.6. The value is saved and restored with the session. **Note:** swing is currently stored and persisted but is not yet read by the scheduler, so moving the slider does not change the timing you hear — full swing is planned for a future update.
+**Swing** (`#swing`) — adds a shuffle feel by delaying the off-beat 16th notes. Range: 0 (straight) to 0.6. A swing of `s` delays each off-beat 16th by `s` × one 16th step, so the off-beat lands `50 × (1 + s)` % of the way to the next on-beat — the familiar swing percentage: **0** = straight (50%), **0.33** = the classic triplet shuffle (66.7%), **0.5** = a heavy shuffle (75%), **0.6** = the hardest limp Loom offers (80%). On-beats never move.
+
+Swing applies to every lane, and to notes that do not sit exactly on a 16th too (32nds, imported MIDI, off-grid drum hits): each note is carried along with the beat it belongs to rather than left behind by it. Note lengths follow their notes, so a TB-303 slide still slides. The value is saved and restored with the session, and WAV exports render with the same swing you hear.
 
 ---
 

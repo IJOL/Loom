@@ -80,6 +80,7 @@ export interface OfflineRecorderDeps {
   laneStates: Map<string, LanePlayState>;
   bpm: number;
   meter: TimeSignature;
+  swing?: number;
   sampleRate?: number; // default 48000
 }
 
@@ -87,7 +88,7 @@ export class OfflineSceneRecorder implements SceneRecorder {
   constructor(private deps: OfflineRecorderDeps) {}
 
   async record(totalSec: number): Promise<RenderedAudio> {
-    const { state, laneStates, bpm, meter } = this.deps;
+    const { state, laneStates, bpm, meter, swing } = this.deps;
     const sampleRate = this.deps.sampleRate ?? 48000;
 
     // Sounding lanes = lanes whose lp.playing is set, with that clip.
@@ -218,7 +219,7 @@ export class OfflineSceneRecorder implements SceneRecorder {
     // Window covers BOTH cycles so the clip loops twice (the 2nd cycle is the one
     // we keep). frames === cycleFrames * 2, so windowSec === 2 · totalSec.
     const windowSec = frames / sampleRate;
-    const triggers = collectSceneTriggers(laneClips, bpm, meter, windowSec);
+    const triggers = collectSceneTriggers(laneClips, bpm, meter, windowSec, swing);
     const autos = collectSceneAutomation(laneClips, bpm, windowSec);
 
     // Walk the merged auto/trig stream in time order, applying automation to the

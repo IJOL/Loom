@@ -501,6 +501,7 @@ export class SessionHost {
         this.deps.seq.meter,
         this.deps.liveVoices,
         this.activeScene(),
+        this.deps.seq.swing,
       );
       if (this.deps.onAfterTick) this.deps.onAfterTick(now, look);
     };

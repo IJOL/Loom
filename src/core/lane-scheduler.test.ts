@@ -350,6 +350,148 @@ describe('lane-scheduler tickLane — audio clip loop sub-region', () => {
   });
 });
 
+describe('lane-scheduler tickLane — swing', () => {
+  const BPM = 120;
+  const STEP_SEC = 60 / BPM / 4;   // one 16th
+
+  /** Drive the fake clock exactly as the live transport does (25 ms tick,
+   *  120 ms look-ahead) and collect what the lane scheduled. */
+  function runLane(clip: SessionClip, swing: number | undefined, untilSec = 4.0) {
+    const fires: Array<{ midi: number; time: number; duration: number }> = [];
+    let loopStart = 0, last = -Infinity;
+    for (let now = 0; now < untilSec; now += 0.025) {
+      loopStart = tickLane(clip, {
+        bpm: BPM, lookaheadSec: 0.12, now, loopStartedAt: loopStart, lastScheduledAt: last,
+        swing,
+        onTrigger: (n, t) => {
+          fires.push({ midi: n.midi, time: t, duration: n.duration });
+          if (t > last) last = t;
+        },
+        onAutomation: () => {},
+      });
+    }
+    return fires;
+  }
+
+  /** Same, but shaped through noteTrigger exactly as tickSession does — the
+   *  gate/slide/playhead values the engines actually receive. */
+  function runTriggers(clip: SessionClip, swing: number, engineId = 'tb303') {
+    const out: Array<{ midi: number; time: number; gateSec: number; slidingIn: boolean; step: number }> = [];
+    let loopStart = 0, last = -Infinity;
+    for (let now = 0; now < 2.0; now += 0.025) {
+      const currentLoopStart = loopStart;
+      loopStart = tickLane(clip, {
+        bpm: BPM, lookaheadSec: 0.12, now, loopStartedAt: currentLoopStart, lastScheduledAt: last,
+        swing,
+        onTrigger: (n, t) => {
+          if (t > last) last = t;
+          const tr = noteTrigger(engineId, clip, n, t, currentLoopStart, BPM, undefined);
+          out.push({ midi: tr.midi, time: t, gateSec: tr.gateSec, slidingIn: tr.slidingIn, step: tr.scheduledStartTick });
+        },
+        onAutomation: () => {},
+      });
+    }
+    return out;
+  }
+
+  const twoSteps: SessionClip = {
+    id: 'sw', lengthBars: 1,
+    notes: [
+      { start: 0,               duration: TICKS_PER_STEP, midi: 60, velocity: 80 },  // on-beat
+      { start: TICKS_PER_STEP,  duration: TICKS_PER_STEP, midi: 62, velocity: 80 },  // off-beat
+    ],
+  };
+
+  it('swing 0 schedules identically to no swing at all — nothing that exists today moves', () => {
+    const offGrid: SessionClip = {
+      id: 'mixed', lengthBars: 1,
+      notes: [
+        { start: 0,                     duration: 36, midi: 36, velocity: 80 },
+        { start: TICKS_PER_STEP,        duration: 12, midi: 38, velocity: 110 },
+        { start: TICKS_PER_STEP * 2 + 7, duration: 5, midi: 42, velocity: 80 },  // off-grid
+        { start: TICKS_PER_QUARTER,     duration: TICKS_PER_QUARTER, midi: 48, velocity: 80 },
+      ],
+    };
+    expect(runLane(offGrid, 0)).toEqual(runLane(offGrid, undefined));
+  });
+
+  it('delays the off-beat 16th and leaves the on-beat exactly where it was', () => {
+    const straight = runLane(twoSteps, 0, 2.0);
+    const swung = runLane(twoSteps, 0.5, 2.0);
+    const onBeat = (f: typeof straight) => f.filter((x) => x.midi === 60).map((x) => x.time);
+    const offBeat = (f: typeof straight) => f.filter((x) => x.midi === 62).map((x) => x.time);
+
+    expect(onBeat(swung)).toEqual(onBeat(straight));                       // on-beat: untouched
+    expect(offBeat(swung)[0]).toBeGreaterThan(offBeat(straight)[0]);       // off-beat: later
+  });
+
+  it('pushes the off-beat progressively later as swing rises', () => {
+    const gaps = [0, 0.2, 0.4, 0.6].map((s) => {
+      const f = runLane(twoSteps, s, 2.0);
+      return f.find((x) => x.midi === 62)!.time - f.find((x) => x.midi === 60)!.time;
+    });
+    for (let i = 1; i < gaps.length; i++) expect(gaps[i]).toBeGreaterThan(gaps[i - 1]);
+    // The off-beat sits (1 + swing) steps after the on-beat.
+    expect(gaps[0] / STEP_SEC).toBeCloseTo(1, 6);
+    expect(gaps[3] / STEP_SEC).toBeCloseTo(1.6, 6);
+  });
+
+  it('keeps a TB-303 slide gate overlapping the next trigger at every swing', () => {
+    // Step 0 slides into step 1: its gate is 1.5 steps so it must still be open
+    // when step 1 fires — even though swing fires step 1 later.
+    const slide: SessionClip = {
+      id: 'sl', lengthBars: 1,
+      notes: [
+        { start: 0,              duration: Math.floor(TICKS_PER_STEP * 1.5), midi: 36, velocity: 80 },
+        { start: TICKS_PER_STEP, duration: 12, midi: 38, velocity: 80 },
+      ],
+    };
+    for (const swing of [0, 0.2, 0.4, 0.6]) {
+      const fires = runTriggers(slide, swing);
+      const a = fires.find((f) => f.midi === 36)!;
+      const b = fires.find((f) => f.midi === 38)!;
+      expect(a.time + a.gateSec).toBeGreaterThan(b.time);
+    }
+  });
+
+  it('reports the MUSICAL step (playhead) and slide, not the delayed time', () => {
+    const slide: SessionClip = {
+      id: 'sl2', lengthBars: 1,
+      notes: [
+        { start: 0,              duration: Math.floor(TICKS_PER_STEP * 1.5), midi: 36, velocity: 80 },
+        { start: TICKS_PER_STEP, duration: 12, midi: 38, velocity: 80 },
+      ],
+    };
+    const swung = runTriggers(slide, 0.6).find((f) => f.midi === 38)!;
+    const straight = runTriggers(slide, 0).find((f) => f.midi === 38)!;
+    // The note still BELONGS to step 1 — deriving the tick back from the swung
+    // time would report step 1.6 and silently drop the slide.
+    expect(swung.step).toBe(straight.step);
+    expect(swung.slidingIn).toBe(true);
+  });
+
+  it('does not change the loop period or the clip length', () => {
+    for (const swing of [0, 0.3, 0.6]) {
+      const fires = runLane(twoSteps, swing, 6.0);
+      const onBeat = fires.filter((f) => f.midi === 60).map((f) => f.time);
+      // 1 bar at 120 bpm = 2 s, whatever the swing.
+      expect(onBeat[1] - onBeat[0]).toBeCloseTo(2, 6);
+      expect(onBeat[2] - onBeat[1]).toBeCloseTo(2, 6);
+    }
+  });
+
+  it('never lets swing reorder notes, even off-grid ones', () => {
+    const dense: SessionClip = {
+      id: 'd', lengthBars: 1,
+      notes: Array.from({ length: 16 }, (_, i) => ({
+        start: i * 7, duration: 4, midi: 60 + i, velocity: 80,   // 7 ticks = deliberately off-grid
+      })),
+    };
+    const times = runLane(dense, 0.6, 2.0).map((f) => f.time);
+    for (let i = 1; i < times.length; i++) expect(times[i]).toBeGreaterThanOrEqual(times[i - 1]);
+  });
+});
+
 describe('noteTrigger', () => {
   // Note durations live on the TICKS_PER_QUARTER (96) grid:
   //   1 quarter = 96 ticks = 60/bpm seconds at given bpm.

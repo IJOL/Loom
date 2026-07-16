@@ -373,6 +373,8 @@ export function tickSession(
    *  every lane uses [startBar, endBar) as its effective region instead of its
    *  local loop. Absent ⇒ behaviour is byte-identical to before (additive). */
   activeScene?: SessionScene | null,
+  /** Transport shuffle amount (0 = straight). See core/swing.ts. */
+  swing = 0,
 ): void {
   // Resolve the active global loop once per tick (not per-lane).
   const globalLoop = activeScene ? effectiveGlobalLoop(activeScene) : undefined;
@@ -423,9 +425,10 @@ export function tickSession(
       now,
       loopStartedAt: currentLoopStart,
       meter,
+      swing,
       globalLoop: globalLoop?.enabled ? globalLoop : undefined,
       lastScheduledAt: lp.lastScheduledAt,
-      onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample }, scheduleTime: number) => {
+      onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample; gridTick?: number }, scheduleTime: number) => {
         if (scheduleTime > lp.lastScheduledAt) lp.lastScheduledAt = scheduleTime;
         const t = noteTrigger(lane.engineId, clip, note, scheduleTime, currentLoopStart, bpm, meter);
         onLaneTrigger(lane.id, t.midi, scheduleTime, t.gateSec, t.accent, t.slidingIn, note.sample, t.velocity);

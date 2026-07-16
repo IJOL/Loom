@@ -101,6 +101,7 @@ import { isKbInputEnabled } from './core/clip-kb-input';
 import { listProfiles } from './control/profile-registry';
 import { loadControlPrefs, saveControlPrefs } from './control/persistence';
 import { clampBpm, formatBpm, BPM_MIN, BPM_MAX } from './core/bpm';
+import { clampSwing, SWING_MAX } from './core/swing';
 // ── AudioWorklet synthesis loader (live path for all subtractive lanes) ──────
 import { loadLoomWorklet } from './audio-worklet/loom-node';
 import { loadDrumsWorklet } from './audio-worklet/drums-node';
@@ -357,7 +358,10 @@ function markTrackActive(trackId: string, audioTime: number) {
 
 // chain/loop/slot/onEnded wired in wireTransport() (see boot section)
 
-swingInput.addEventListener('input', () => { seq.swing = parseFloat(swingInput.value); });
+// Like the BPM spinner: the slider's ceiling comes from the constant the
+// scheduler itself clamps to, so the two cannot drift apart.
+swingInput.max = String(SWING_MAX);
+swingInput.addEventListener('input', () => { seq.swing = clampSwing(parseFloat(swingInput.value)); });
 
 volInput.addEventListener('input', () => {
   master.gain.value = parseFloat(volInput.value);
@@ -1001,6 +1005,7 @@ function runOfflineExport(): void {
         laneStates: sessionHost.laneStates,
         bpm: seq.bpm,
         meter: seq.meter,
+        swing: seq.swing,
       }).record(musicSec);
       deliverTake(rendered);
     } catch (err) {

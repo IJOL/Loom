@@ -418,6 +418,49 @@ describe('tickSession (note-based, Phase D.3)', () => {
   });
 });
 
+describe('tickSession — swing', () => {
+  /** One lane, one on-beat + one off-beat 16th, driven at the given swing. */
+  function run(swing: number | undefined): Array<{ midi: number; at: number }> {
+    const clip: SessionClip = {
+      id: 'sw', lengthBars: 1,
+      notes: [
+        { midi: 60, start: 0,              duration: TICKS_PER_STEP, velocity: 80 },
+        { midi: 62, start: TICKS_PER_STEP, duration: TICKS_PER_STEP, velocity: 80 },
+      ],
+    };
+    const state: SessionState = {
+      lanes: [{ id: 'l', engineId: 'subtractive', clips: [clip] }],
+      scenes: [], globalQuantize: 'immediate',
+    };
+    const laneStates = new Map<string, LanePlayState>([
+      ['l', { ...emptyLanePlayState('l'), playing: clip, startTime: 0, loopStartedAt: 0 }],
+    ]);
+    const fired: Array<{ midi: number; at: number }> = [];
+    for (let t = 0; t < SEC_PER_BAR; t += TICK) {
+      tickSession(
+        laneStates, state, t, LOOK, BPM,
+        (_id, midi, scheduleTime) => fired.push({ midi, at: scheduleTime }),
+        () => {},
+        undefined, undefined, undefined, undefined, swing,
+      );
+    }
+    return fired;
+  }
+  const timeOf = (fired: Array<{ midi: number; at: number }>, midi: number) =>
+    fired.find((f) => f.midi === midi)!.at;
+
+  it('carries the transport swing down to the lane scheduler', () => {
+    const straight = run(0);
+    const swung = run(0.5);
+    expect(timeOf(swung, 60)).toBe(timeOf(straight, 60));            // on-beat: fixed
+    expect(timeOf(swung, 62)).toBeGreaterThan(timeOf(straight, 62)); // off-beat: delayed
+  });
+
+  it('swing 0 fires exactly what the transport fires today', () => {
+    expect(run(0)).toEqual(run(undefined));
+  });
+});
+
 describe('seekSession', () => {
   function clip(lengthBars: number): SessionClip {
     return { id: 'c', lengthBars, notes: [] } as SessionClip;

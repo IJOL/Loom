@@ -32,6 +32,9 @@ export function collectSceneTriggers(
   bpm: number,
   meter: TimeSignature,
   windowSec: number,
+  /** Transport shuffle. An export that ignored it would not be the take the
+   *  user just heard. */
+  swing = 0,
 ): OfflineTrigger[] {
   const out: OfflineTrigger[] = [];
   for (const { laneId, engineId, clip } of lanes) {
@@ -42,6 +45,7 @@ export function collectSceneTriggers(
       loopStartedAt: 0,
       lastScheduledAt: -Infinity,
       meter,
+      swing,
       onTrigger: (note, scheduleTime) => {
         if (scheduleTime >= windowSec) return;
         const t = noteTrigger(engineId, clip, note, scheduleTime, 0, bpm, meter);

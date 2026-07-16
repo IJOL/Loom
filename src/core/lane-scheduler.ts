@@ -10,6 +10,7 @@ import { ticksPerBar, DEFAULT_METER, type TimeSignature } from './meter';
 import { effectiveClipLoop, laneLoopRegion, type GlobalLoopOverride } from './clip-loop';
 import { sliceMarkersToRegion } from '../samples/warp-region';
 import { tickRangeSec } from './tempo-map';
+import { swungTick, swungSpan } from './swing';
 
 export interface SchedulerContext {
   bpm: number;
@@ -34,9 +35,11 @@ export interface SchedulerContext {
    *  uses [startBar, endBar) as its effective region instead of its local loop.
    *  Absent ⇒ behaviour is identical to before (effectiveClipLoop). */
   globalLoop?: GlobalLoopOverride;
+  /** Shuffle amount (0 = straight). See core/swing.ts for the mapping. */
+  swing?: number;
   /** Called with the original note + the absolute audio time at which it
    *  should be scheduled. */
-  onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample }, scheduleTime: number) => void;
+  onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample; gridTick?: number }, scheduleTime: number) => void;
   /** Called for each clip envelope sample falling in the window. The
    *  `clipTimeNorm` is 0..1 within the clip iteration. */
   onAutomation: (env: ClipEnvelope, clipTimeNorm: number, scheduleTime: number) => void;
@@ -76,6 +79,7 @@ const DRIFT = 1e-6;
  */
 export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
   const meter = ctx.meter ?? DEFAULT_METER;
+  const swing = ctx.swing ?? 0;
   const secPerBeat = 60 / ctx.bpm;
   // Per-clip tempo map: when the clip varies tempo (imported MIDI with tempo
   // changes), time notes by integrating the map instead of the constant global
@@ -159,12 +163,22 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
       // Note clip: each note fires at its grid time.
       for (const n of clip.notes) {
         if (n.start < startTick || n.start >= endTick) continue;
+        const noteStart = swungTick(n.start, swing);
         const clipTimeSec = tmap
-          ? tickRangeSec(tmap, startTick, n.start)
-          : ((n.start - startTick) / TICKS_PER_QUARTER) * secPerBeat;
+          ? tickRangeSec(tmap, startTick, noteStart)
+          : ((noteStart - startTick) / TICKS_PER_QUARTER) * secPerBeat;
         const scheduleAt  = iterStart + clipTimeSec;
         if (scheduleAt >= windowStart && scheduleAt < windowEnd) {
-          ctx.onTrigger({ midi: n.midi, duration: n.duration, velocity: n.velocity }, scheduleAt);
+          ctx.onTrigger({
+            midi: n.midi,
+            duration: swungSpan(n.start, n.duration, swing),
+            velocity: n.velocity,
+            // A warped timeline no longer divides back into the grid tick, so
+            // hand noteTrigger the real one. Swung path ONLY: on a tempo-mapped
+            // clip the derived value disagrees with the true tick, and swing 0
+            // must stay byte-for-byte what it is today.
+            gridTick: swing > 0 ? k * loopTicks + (n.start - startTick) : undefined,
+          }, scheduleAt);
         }
       }
     }
@@ -202,7 +216,7 @@ function secPerTickLocal(bpm: number): number {
 export function noteTrigger(
   engineId: string,
   clip: SessionClip,
-  note: { midi: number; duration: number; velocity: number },
+  note: { midi: number; duration: number; velocity: number; gridTick?: number },
   scheduleTime: number,
   loopStart: number,
   bpm: number,
@@ -212,7 +226,7 @@ export function noteTrigger(
   const tickSec = secPerTickLocal(bpm);
   const accent = note.velocity >= 100;
   const gateSec = Math.max(0.01, note.duration * tickSec);
-  const scheduledStartTick = Math.round((scheduleTime - loopStart) / tickSec)
+  const scheduledStartTick = (note.gridTick ?? Math.round((scheduleTime - loopStart) / tickSec))
     % (clip.lengthBars * ticksPerBar(m));
   const slidingIn = engineId === 'tb303'
     && (clip.notes as NoteEvent[]).some(

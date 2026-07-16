@@ -35,7 +35,9 @@ const LOOKAHEAD_SEC = 0.2;   // schedule notes this far ahead — cushions tick 
 
 export class Sequencer {
   bpm = 130;
-  swing = 0;             // 0..0.6, applied to odd 16ths
+  /** Shuffle: delays the off-beat 16ths. 0 = straight, SWING_MAX = hardest.
+   *  Read at schedule time (like bpm) — see core/swing.ts for the mapping. */
+  swing = 0;
   /** Global time signature (like bpm). Read at schedule/draw time so a change
    *  takes effect on the next loop cycle. Persisted in SavedStateV3. */
   meter: TimeSignature = { ...DEFAULT_METER };
