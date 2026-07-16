@@ -21,3 +21,16 @@ export function nextLaneSlug(existingIds: ReadonlySet<string>, engineId: string)
   }
   return `${prefix}-overflow`;
 }
+
+/** True when selecting `nextLaneId` should close the open clip editor: it is
+ *  showing a clip that belongs to some other lane, so the editor and the active
+ *  lane would disagree — and the edits, generators and ▶ would land on a lane the
+ *  user is no longer looking at. Re-selecting the open clip's OWN lane (a header
+ *  click, an engine swap, the collapse chevron, an undo repaint) must never take
+ *  the editor away, so same-lane is always false. */
+export function shouldCloseClipEditorOnLaneSwitch(
+  openClip: { laneId: string } | null,
+  nextLaneId: string,
+): boolean {
+  return openClip !== null && openClip.laneId !== nextLaneId;
+}

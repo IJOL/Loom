@@ -23,6 +23,7 @@ import { variateNotes, invertMelodic, invertRetrograde } from '../core/note-tran
 import { stepsPerBar, ticksPerBar } from '../core/meter';
 import { ensureScenesForRows } from '../core/scene-ensure';
 import { alertDialog, promptDialog, choiceDialog } from '../core/dialog';
+import { shouldCloseClipEditorOnLaneSwitch } from './session-host-util';
 import { loadAllExamples, renderExampleNotes, clipToExample, exampleToJson, saveUserExample, type Example } from './example-loader';
 import { renderChordComp } from '../core/harmony';
 import { emptyClip } from './session';
@@ -205,11 +206,27 @@ export class SessionInspector {
   }
 
   /** Close the clip editor: hide the inspector panel and drop the selection.
-   *  Called when the selected clip's lane/clip vanishes (New, load, Replace). */
+   *  Called when the selected clip's lane/clip vanishes (New, load, Replace) and
+   *  when the user selects a lane that does not own the open clip. */
   closeInspector(): void {
     const panel = document.getElementById('session-inspector');
+    // Blur BEFORE hiding, while the selection still stands: the name/length
+    // fields and an in-flight inline rename commit on blur, so hiding first would
+    // strand the edit (and leave its undo gesture open).
+    const active = document.activeElement;
+    if (panel && active instanceof HTMLElement && panel.contains(active)) active.blur();
+    this._fieldAc.abort();
+    this._fieldAc = new AbortController();
     if (panel) panel.hidden = true;
     this.selectedClip = null;
+    this.refreshPlayButton();
+    this.refreshRecButton();
+  }
+
+  /** Close the editor when `laneId` is not the open clip's lane. The seam every
+   *  lane-selection path calls, so the editor always shows the active lane. */
+  closeIfOtherLane(laneId: string): void {
+    if (shouldCloseClipEditorOnLaneSwitch(this.selectedClip, laneId)) this.closeInspector();
   }
 
   openInspector(): void {

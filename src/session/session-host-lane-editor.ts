@@ -21,6 +21,10 @@ import {
  *  Used by onEditLane (non-toggle path) and by the post-engine-swap re-route. */
 export function showLaneEditor(self: SessionHost, laneId: string): void {
   const lane = self.state.lanes.find((l) => l.id === laneId);
+  // The clip editor follows the lane selection: a clip left open on ANOTHER lane
+  // would keep taking the edits, generators and ▶ meant for the lane just picked.
+  // Same-lane callers (engine swap, collapse chevron, undo repaint) are no-ops.
+  self.inspector?.closeIfOtherLane(laneId);
   // Selecting a lane always OPENS its editor — clear any collapse the chevron set.
   self.synthCollapsed = false;
 
