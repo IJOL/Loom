@@ -81,6 +81,7 @@ import type { SessionClip } from './session/session';
 import { startVisualizer } from './core/visualizer';
 import { loadAllPresets } from './presets/preset-loader';
 import { loadDrumKits } from './presets/drum-kits-loader';
+import { loadLibrary } from './patterns/pattern-library';
 import {
   startAutomationTick, resetAutomationPosition, getAutoAbsSubIdx,
   type AutomationTickDeps,
@@ -158,6 +159,10 @@ const presetsLoaded = loadAllPresets(ENGINE_IDS_FOR_PRESETS);
 // Unified Drums picker list (synth + sample kits). Fire-and-forget; the drums
 // populator re-renders when this resolves (see mountDrumsPresetSelect).
 void loadDrumKits();
+// The pattern library (1210 patterns, ~370 KB of JSON). Fire-and-forget: the
+// inspector's pattern dropdown fills on the next render, and an empty list is
+// a harmless placeholder until it lands.
+void loadLibrary(import.meta.env.BASE_URL);
 
 // ── Audio graph ────────────────────────────────────────────────────────────
 const audio = createAudioGraph();

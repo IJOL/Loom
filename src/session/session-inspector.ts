@@ -5,7 +5,9 @@
 import type { SessionState, SessionClip, SessionLane } from './session';
 import { resolveTonality, DEFAULT_MUSICALITY, resolveClipContext } from './session';
 import { beginInlineRename } from './inline-rename';
-import { rootName, SCALE_CATALOG, STYLE_CATALOG } from '../core/musicality';
+import { rootName, SCALE_CATALOG, STYLE_CATALOG, type StyleId } from '../core/musicality';
+import { patternNotes } from '../patterns/pattern-library';
+import { patternKindFor, fillStyleSelect, fillPatternSelect } from '../patterns/pattern-picker-ui';
 import type { LanePlayState } from './session-runtime';
 import type { Sequencer } from '../core/sequencer';
 import { renderClipEditor, classifyClip, chooseClipEditor, type ClipEditorDeps } from './clip-editors/clip-editor-router';
@@ -303,7 +305,6 @@ export class SessionInspector {
     };
     const style = () => this.deps.state.musicality?.style ?? 'acid-techno';
     const exKind = genKindFor(lane!.engineId);
-    const exSelect = document.getElementById('insp-examples-select') as HTMLSelectElement;
 
     // ── Vary / Mirror / Reverse ───────────────────────────────────────────────
     // Shared helper: wraps any clip-note mutation in undo + octave-restore,
@@ -343,6 +344,86 @@ export class SessionInspector {
         );
       });
     };
+
+    // ── Pattern library: style ▸ pattern ──────────────────────────────────────
+    // Two native selects. The style one drives the whole project (it is the same
+    // musicality.style the generators read), so picking a style here is not a
+    // local filter — it is the project's style, and the chips follow.
+    const styleSel = document.getElementById('insp-style-select') as HTMLSelectElement | null;
+    const patSel = document.getElementById('insp-pattern-select') as HTMLSelectElement | null;
+    // Saving an example must make it show up in the list; assigned below.
+    let reloadPatternList: () => void = () => {};
+    if (styleSel && patSel) {
+      const kind = patternKindFor(lane!.engineId);
+      // Our own examples for the style live in the same dropdown, under their
+      // own group — they do the same job, so one list, not two.
+      const exampleKinds = exKind === 'beat' ? ['beat'] : ['bass', 'melody'];
+      let ourExamples: Example[] = [];
+      const fillPatterns = (s: StyleId): void =>
+        fillPatternSelect(patSel, s, kind, ourExamples.map((e) => ({ id: e.id, name: e.name, source: e.source })));
+      const refreshExamples = (s: StyleId): void => {
+        void loadAllExamples(s)
+          .then((list) => { ourExamples = list.filter((e) => exampleKinds.includes(e.kind)); fillPatterns(s); })
+          .catch(() => { ourExamples = []; fillPatterns(s); });
+      };
+
+      reloadPatternList = () => refreshExamples(style());
+      fillStyleSelect(styleSel, style());
+      fillPatterns(style());
+      refreshExamples(style());
+
+      styleSel.onchange = () => {
+        const next = styleSel.value as StyleId;
+        const apply = (): void => {
+          this.deps.state.musicality = { ...(this.deps.state.musicality ?? DEFAULT_MUSICALITY), style: next };
+          fillPatterns(next);
+          refreshExamples(next);
+          this.deps.saveSession?.();
+        };
+        const d = this.deps.historyDeps;
+        if (d) withUndo(d, apply); else apply();
+      };
+
+      patSel.onchange = () => {
+        if (patSel.value === '') return;
+        const [source, ref] = patSel.value.split(':');
+
+        // An example of ours: scale degrees rendered into the project tonality.
+        if (source === 'ex') {
+          const chosen = ourExamples.find((e) => e.id === ref);
+          patSel.value = '';
+          if (!chosen) return;
+          const viewOctave = this.roll?.getOctaveBase?.() ?? 60;
+          withClipEdit(() => {
+            clip.notes = renderExampleNotes(
+              chosen, resolveTonality(lane!, this.deps.state), viewOctave - 12,
+              clip.lengthBars, ticksPerBar(this.deps.seq.meter),
+            );
+          });
+          return;
+        }
+
+        const index = Number(ref);
+        // Melodic patterns are semitone offsets: root them at the octave the
+        // roll is showing, minus one — same convention as the 🎲 generator.
+        const octaveBase = (this.roll?.getOctaveBase?.() ?? 60) - 12;
+        withClipEdit(() => {
+          // The lock is the only thing allowed to touch the pattern: closed, the
+          // notes are pulled into key; open, they arrive exactly as written.
+          const ton = resolveTonality(lane!, this.deps.state);
+          const locked = this.deps.state.musicality?.lock ?? false;
+          // Library patterns are one bar; clips are two by default. Tile to fill,
+          // or the back half of the clip plays nothing.
+          const notes = patternNotes(
+            style(), kind, index, octaveBase,
+            clip.lengthBars, ticksPerBar(this.deps.seq.meter),
+            locked ? { key: ton.key, scale: ton.scale } : undefined,
+          );
+          if (notes.length) clip.notes = notes;
+        });
+        patSel.value = '';   // back to the placeholder: the pick was an action
+      };
+    }
 
     // ── Chords (chord accompaniment) ──────────────────────────────────────────
     // Only show the button for melodic lanes (not drums/audio/sampler-drumkit).
@@ -390,54 +471,8 @@ export class SessionInspector {
       };
     }
 
-    // Show ALL examples regardless of the project's global style/key. Filter only by
-    // editor category: a piano-roll lane shows melodic riffs (bass+melody); a drum lane
-    // shows beats. Group by style with <optgroup> headers (like the preset picker).
-    const kindsToShow: string[] = exKind === 'beat' ? ['beat'] : ['bass', 'melody'];
-
-    const repopulate = async () => {
-      exSelect.innerHTML = '';
-      const ph = document.createElement('option');
-      ph.value = ''; ph.textContent = '— example… —';
-      exSelect.appendChild(ph);
-      const perStyle = await Promise.all(
-        STYLE_CATALOG.map((s) =>
-          loadAllExamples(s.id).then((list) => ({ s, list })).catch(() => ({ s, list: [] as Example[] }))),
-      );
-      for (const { s, list } of perStyle) {
-        const matching = list.filter((e) => kindsToShow.includes(e.kind));
-        if (matching.length === 0) continue;
-        const group = document.createElement('optgroup');
-        group.label = s.label;
-        for (const e of matching) {
-          const o = document.createElement('option');
-          o.value = e.id;
-          o.textContent = e.source === 'user' ? `★ ${e.name}` : e.name;
-          group.appendChild(o);
-        }
-        exSelect.appendChild(group);
-      }
-    };
-    void repopulate();
-
-    exSelect.onchange = async () => {
-      const id = exSelect.value;
-      exSelect.value = ''; // reset to placeholder
-      if (!id) return;
-      const perStyle = await Promise.all(STYLE_CATALOG.map((s) => loadAllExamples(s.id).catch(() => []))).catch(() => null);
-      if (!perStyle) { void alertDialog('Could not load examples.'); return; }
-      const chosen = perStyle.flat().find((e) => e.id === id);
-      if (!chosen) return;
-      const d = this.deps.historyDeps;
-      const viewOctave = this.roll?.getOctaveBase?.() ?? 60;
-      const run = () => {
-        const ton = resolveTonality(lane!, this.deps.state);
-        clip.notes = renderExampleNotes(chosen, ton, viewOctave - 12, clip.lengthBars, ticksPerBar(this.deps.seq.meter));
-        this.renderEditor();
-        this.roll?.setOctaveBase?.(viewOctave);
-      };
-      if (d) withUndo(d, run); else run();
-    };
+    // (The examples dropdown used to live here. Examples now share the pattern
+    // dropdown above — both fill the clip, so one list is enough.)
 
     document.getElementById('insp-save-example')!.onclick = async () => {
       if (!clip.notes || clip.notes.length === 0) { void alertDialog('The clip is empty: draw or generate notes before saving it as an example.'); return; }
@@ -451,7 +486,7 @@ export class SessionInspector {
         ton, octaveBase: viewOctave - 12, ticksPerBar: ticksPerBar(this.deps.seq.meter),
       });
       try { saveUserExample(ex); } catch (e) { void alertDialog((e as Error).message); return; }
-      await repopulate();
+      reloadPatternList();
     };
 
     document.getElementById('insp-export-example')!.onclick = () => {

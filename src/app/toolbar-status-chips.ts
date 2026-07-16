@@ -14,7 +14,10 @@ function styleLabel(style: StyleId): string {
 }
 
 export function musicalityChipLabel(m: MusicalityState): string {
-  return `${rootName(m.key)} ${shortScale(m.scale)} · ${styleLabel(m.style)}${m.lock ? ' · 🔒' : ''}`;
+  // Show the padlock in BOTH states. Open is not the absence of information —
+  // it is what decides whether a library pattern arrives exactly as written or
+  // gets pulled into the project's key.
+  return `${rootName(m.key)} ${shortScale(m.scale)} · ${styleLabel(m.style)} · ${m.lock ? '🔒' : '🔓'}`;
 }
 
 export interface StatusChipsDeps {
