@@ -366,6 +366,7 @@ export class SessionHost {
     this.renderWithMixer();
   }
 
+
   private anyLanePlaying(): boolean {
     for (const lp of this.laneStates.values()) if (lp.playing) return true;
     return false;
@@ -456,6 +457,14 @@ export class SessionHost {
       onSetSceneLinked: (linked: boolean) => this.setSceneLoopLinked(linked),
       onClipLoopEdited: () => this.onClipLoopEdited(),
       onClipFocused: (laneId) => this.focusLane(laneId),
+      // The same launch + stop the session grid's ▶ and ⏹ already use — the
+      // clip header is just another way in, not a second implementation.
+      onPlayClip: (laneId, clipIdx) => this.launchClipAt(laneId, clipIdx),
+      onStopClip: (laneId) => this.callbacks.onStopLane(laneId),
+      isLanePlaying: (laneId) => {
+        const lp = this.laneStates.get(laneId);
+        return !!(lp?.playing || lp?.queued);
+      },
       placeChordClip: (laneId, clipIdx, clip) => {
         const hd = this.deps.historyDeps;
         const run = () => {

@@ -81,6 +81,13 @@ export interface InspectorDeps {
   /** Called when a clip is opened, so the host can make that clip's lane the
    *  active (keyboard-driven) lane. Wired to SessionHost.focusLane. */
   onClipFocused?: (laneId: string) => void;
+  /** Audition the open clip from its own editor, so picking a pattern and
+   *  hearing it does not mean a trip back to the session grid.
+   *  Wired to SessionHost.launchClipAt / stopLaneClips. */
+  onPlayClip?: (laneId: string, clipIdx: number) => void;
+  onStopClip?: (laneId: string) => void;
+  /** True while the clip's lane is sounding — drives the ▶/■ face. */
+  isLanePlaying?: (laneId: string) => boolean;
 }
 
 export class SessionInspector {
@@ -149,6 +156,7 @@ export class SessionInspector {
   setMidiCapture(c: SessionInspector['midiCapture']): void {
     this.midiCapture = c;
     this.refreshRecButton();
+    this.refreshPlayButton();
   }
 
   /** Show/hide + label the clip-header Rec button and mode select. Hidden
@@ -165,6 +173,27 @@ export class SessionInspector {
     btn.disabled = !this.selectedClip || !c.canRecord();
     btn.textContent = c.isRecording() ? '■ Stop' : '● Rec';
     btn.onclick = () => { c.toggle((mode.value as 'merge' | 'replace') || 'merge'); this.refreshRecButton(); };
+  }
+
+  /** Play/stop the open clip from its own header. One button, two faces: it
+   *  shows ■ while the clip's lane is sounding, ▶ otherwise — so auditioning a
+   *  pattern is pick → hear → pick again, without leaving the editor. */
+  refreshPlayButton(): void {
+    const btn = document.getElementById('insp-play') as HTMLButtonElement | null;
+    if (!btn) return;
+    const sel = this.selectedClip;
+    btn.disabled = !sel || !this.deps.onPlayClip;
+    if (!sel) { btn.textContent = '▶'; return; }
+
+    const playing = this.deps.isLanePlaying?.(sel.laneId) ?? false;
+    btn.textContent = playing ? '■' : '▶';
+    btn.classList.toggle('is-playing', playing);
+    btn.title = playing ? 'Stop this clip' : 'Play this clip';
+    btn.onclick = () => {
+      if (this.deps.isLanePlaying?.(sel.laneId)) this.deps.onStopClip?.(sel.laneId);
+      else this.deps.onPlayClip?.(sel.laneId, sel.clipIdx);
+      this.refreshPlayButton();
+    };
   }
 
   getSelectedClip(): { laneId: string; clipIdx: number } | null {
@@ -508,6 +537,7 @@ export class SessionInspector {
     this.renderTonalityOverride(lane!);
     this.renderContextHeader(lane, clip);
     this.refreshRecButton();
+    this.refreshPlayButton();
 
     // Auto-render editor
     this.renderEditor();
@@ -587,6 +617,7 @@ export class SessionInspector {
     if (rowEl) rowEl.textContent = `(row ${ctx.rowNumber})`;
 
     this.refreshRecButton();
+    this.refreshPlayButton();
   }
 
   /** Re-fill the breadcrumb from the current selection (after a rename). */
