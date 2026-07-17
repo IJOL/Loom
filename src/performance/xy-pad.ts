@@ -1,9 +1,10 @@
 // src/performance/xy-pad.ts
-// The XY pad's pure core — a Kaoss-style two-axis controller where each axis is
-// LEARNED onto any automatable param. This holds only the assignment state and
-// the position→writes mapping; it touches no DOM and no AudioParam. The wiring
-// layer arms learn from the UI, feeds knob touches into learn(), and turns each
-// XyWrite's normalized value into a real one via the target knob's min/max.
+// The XY pad's pure core — a Kaoss-style two-axis controller. Each axis is bound
+// to an automatable param by PICKING it from a dropdown (the same automation
+// registry the modulation destination picker uses); there is no learn gesture.
+// This holds only the assignment state and the position→writes mapping — no DOM,
+// no AudioParam. The wiring layer turns each XyWrite's normalized value into a
+// real one via the target knob's min/max.
 export type XyAxis = 'x' | 'y';
 
 /** Which registry-key param each axis drives (null = unassigned). Serializable. */
@@ -42,41 +43,15 @@ export function applyXyWrites(writes: XyWrite[], registry: Map<string, XyTarget>
 
 export class XyPadModel {
   private state: XyPadState = { x: null, y: null };
-  private pending: XyAxis | null = null;
 
   /** The param id bound to an axis, or null. */
   target(axis: XyAxis): string | null {
     return this.state[axis];
   }
 
-  /** Arm learn for an axis; the next learn(paramId) binds it. Only one axis can
-   *  be armed, so arming supersedes any prior arm. */
-  armLearn(axis: XyAxis): void {
-    this.pending = axis;
-  }
-
-  isArmed(axis: XyAxis): boolean {
-    return this.pending === axis;
-  }
-
-  /** Disarm without binding. */
-  cancelLearn(): void {
-    this.pending = null;
-  }
-
-  /** Feed a touched knob's param id. If an axis is armed, bind it (replacing any
-   *  prior target), disarm, and return the bound axis; otherwise a no-op → null. */
-  learn(paramId: string): XyAxis | null {
-    if (this.pending === null) return null;
-    const axis = this.pending;
+  /** Bind an axis to a param id (or clear it with null). Chosen from a dropdown. */
+  setTarget(axis: XyAxis, paramId: string | null): void {
     this.state[axis] = paramId;
-    this.pending = null;
-    return axis;
-  }
-
-  /** Unbind an axis. */
-  clearTarget(axis: XyAxis): void {
-    this.state[axis] = null;
   }
 
   /** The writes for a pad position (nx, ny in 0..1, y already up = max at top).
@@ -94,6 +69,5 @@ export class XyPadModel {
 
   setState(s: XyPadState): void {
     this.state = { x: s.x ?? null, y: s.y ?? null };
-    this.pending = null;
   }
 }

@@ -6,79 +6,55 @@
 import { describe, it, expect } from 'vitest';
 import { XyPadModel, applyXyWrites } from './xy-pad';
 
-describe('XyPadModel — learn', () => {
-  it('starts with both axes unassigned and nothing armed', () => {
+describe('XyPadModel — assignment', () => {
+  it('starts with both axes unassigned', () => {
     const m = new XyPadModel();
     expect(m.target('x')).toBeNull();
     expect(m.target('y')).toBeNull();
-    expect(m.isArmed('x')).toBe(false);
-    expect(m.isArmed('y')).toBe(false);
   });
 
-  it('arming an axis then touching a knob binds it and disarms', () => {
+  it('setTarget binds an axis to a chosen param', () => {
     const m = new XyPadModel();
-    m.armLearn('x');
-    expect(m.isArmed('x')).toBe(true);
-    const bound = m.learn('bass.filter.cutoff');
-    expect(bound).toBe('x');
+    m.setTarget('x', 'bass.filter.cutoff');
     expect(m.target('x')).toBe('bass.filter.cutoff');
-    expect(m.isArmed('x')).toBe(false);
-  });
-
-  it('touching a knob while nothing is armed changes nothing', () => {
-    const m = new XyPadModel();
-    expect(m.learn('bass.filter.cutoff')).toBeNull();
-    expect(m.target('x')).toBeNull();
     expect(m.target('y')).toBeNull();
   });
 
-  it('only one axis is armed at a time — arming Y supersedes X', () => {
+  it('setTarget replaces a prior binding', () => {
     const m = new XyPadModel();
-    m.armLearn('x');
-    m.armLearn('y');
-    expect(m.isArmed('x')).toBe(false);
-    expect(m.isArmed('y')).toBe(true);
-    expect(m.learn('lead.reso')).toBe('y');
-    expect(m.target('y')).toBe('lead.reso');
-    expect(m.target('x')).toBeNull();
-  });
-
-  it('cancelLearn disarms without binding', () => {
-    const m = new XyPadModel();
-    m.armLearn('x');
-    m.cancelLearn();
-    expect(m.isArmed('x')).toBe(false);
-    expect(m.learn('bass.filter.cutoff')).toBeNull();
-    expect(m.target('x')).toBeNull();
-  });
-
-  it('re-learning an axis replaces its target', () => {
-    const m = new XyPadModel();
-    m.armLearn('x'); m.learn('a.one');
-    m.armLearn('x'); m.learn('a.two');
+    m.setTarget('x', 'a.one');
+    m.setTarget('x', 'a.two');
     expect(m.target('x')).toBe('a.two');
   });
 
-  it('clearTarget unbinds an axis', () => {
+  it('setTarget(null) clears an axis', () => {
     const m = new XyPadModel();
-    m.armLearn('x'); m.learn('a.one');
-    m.clearTarget('x');
+    m.setTarget('x', 'a.one');
+    m.setTarget('x', null);
     expect(m.target('x')).toBeNull();
+  });
+
+  it('the two axes are independent', () => {
+    const m = new XyPadModel();
+    m.setTarget('x', 'bass.cutoff');
+    m.setTarget('y', 'lead.reso');
+    expect(m.target('x')).toBe('bass.cutoff');
+    expect(m.target('y')).toBe('lead.reso');
   });
 });
 
 describe('XyPadModel — position → writes', () => {
   it('emits a write only for assigned axes', () => {
     const m = new XyPadModel();
-    m.armLearn('x'); m.learn('bass.cutoff');
+    m.setTarget('x', 'bass.cutoff');
     const w = m.writesFor(0.25, 0.9);
     expect(w).toEqual([{ axis: 'x', paramId: 'bass.cutoff', norm: 0.25 }]);
   });
 
   it('emits both writes when both axes are bound', () => {
     const m = new XyPadModel();
-    m.armLearn('x'); m.learn('bass.cutoff');
-    m.armLearn('y'); m.learn('bass.reso');
+    m.setTarget('x', 'bass.cutoff');
+    m.setTarget('y', 'bass.reso');
     const w = m.writesFor(0.1, 0.7);
     expect(w).toContainEqual({ axis: 'x', paramId: 'bass.cutoff', norm: 0.1 });
     expect(w).toContainEqual({ axis: 'y', paramId: 'bass.reso', norm: 0.7 });
@@ -86,8 +62,8 @@ describe('XyPadModel — position → writes', () => {
 
   it('clamps positions into 0..1', () => {
     const m = new XyPadModel();
-    m.armLearn('x'); m.learn('a');
-    m.armLearn('y'); m.learn('b');
+    m.setTarget('x', 'a');
+    m.setTarget('y', 'b');
     const w = m.writesFor(-0.5, 1.8);
     expect(w.find((e) => e.axis === 'x')!.norm).toBe(0);
     expect(w.find((e) => e.axis === 'y')!.norm).toBe(1);
@@ -102,8 +78,8 @@ describe('XyPadModel — position → writes', () => {
 describe('XyPadModel — serialization', () => {
   it('round-trips its assignments through get/setState', () => {
     const m = new XyPadModel();
-    m.armLearn('x'); m.learn('bass.cutoff');
-    m.armLearn('y'); m.learn('lead.reso');
+    m.setTarget('x', 'bass.cutoff');
+    m.setTarget('y', 'lead.reso');
     const snap = m.getState();
     expect(snap).toEqual({ x: 'bass.cutoff', y: 'lead.reso' });
 
