@@ -2248,6 +2248,190 @@
         "amp.sustain": 0.05,
         "amp.release": 0.03
       }
+    },
+    {
+      "name": "BASS Wobble LFO",
+      "gm": [
+        38,
+        39
+      ],
+      "params": {
+        "osc1.wave": 0,
+        "osc1.level": 0.9,
+        "osc2.level": 0,
+        "sub.level": 0.4,
+        "noise.level": 0,
+        "filter.model": 1,
+        "filter.cutoff": 0.597,
+        "filter.resonance": 0.8,
+        "filter.envAmount": 0.2,
+        "filter.drive": 0.2,
+        "amp.attack": 0.005,
+        "amp.decay": 0.15,
+        "amp.sustain": 0.7,
+        "amp.release": 0.08
+      },
+      "modulators": [
+        {
+          "id": "lfo1",
+          "kind": "lfo",
+          "enabled": true,
+          "bipolar": true,
+          "waveform": "sine",
+          "syncToBpm": true,
+          "syncBars": 2,
+          "syncSubdiv": "straight",
+          "trigger": "free",
+          "scope": "shared",
+          "connections": [
+            {
+              "id": "c1",
+              "paramId": "filter.cutoff",
+              "depth": 0.8
+            }
+          ],
+          "syncRatio": "1/8"
+        }
+      ]
+    },
+    {
+      "name": "BASS Neuro",
+      "gm": [
+        38,
+        39
+      ],
+      "params": {
+        "osc1.wave": 0,
+        "osc1.level": 0.9,
+        "osc2.wave": 0,
+        "osc2.level": 0.3,
+        "osc2.detune": 10,
+        "sub.level": 0.4,
+        "noise.level": 0,
+        "filter.model": 1,
+        "filter.cutoff": 0.725,
+        "filter.resonance": 0.8,
+        "filter.envAmount": 0.4,
+        "filter.drive": 0.3,
+        "amp.attack": 0.002,
+        "amp.decay": 0.1,
+        "amp.sustain": 0.4,
+        "amp.release": 0.05
+      },
+      "modulators": [
+        {
+          "id": "lfo1",
+          "kind": "lfo",
+          "enabled": true,
+          "bipolar": true,
+          "waveform": "sine",
+          "syncToBpm": true,
+          "syncBars": 4,
+          "syncSubdiv": "straight",
+          "trigger": "free",
+          "scope": "shared",
+          "connections": [
+            {
+              "id": "c1",
+              "paramId": "filter.cutoff",
+              "depth": 0.7
+            }
+          ],
+          "syncRatio": "1/16"
+        }
+      ]
+    },
+    {
+      "name": "PAD Shimmer",
+      "gm": [
+        89,
+        90
+      ],
+      "params": {
+        "osc1.wave": 2,
+        "osc1.level": 0.8,
+        "osc2.wave": 2,
+        "osc2.level": 0.4,
+        "sub.level": 0.5,
+        "noise.level": 0,
+        "master.unison": 3,
+        "master.detune": 20,
+        "filter.cutoff": 0.882,
+        "filter.resonance": 0.1,
+        "filter.envAmount": 0.1,
+        "amp.attack": 0.03,
+        "amp.decay": 0.3,
+        "amp.sustain": 0.5,
+        "amp.release": 0.25
+      },
+      "modulators": [
+        {
+          "id": "lfo1",
+          "kind": "lfo",
+          "enabled": true,
+          "bipolar": true,
+          "waveform": "triangle",
+          "syncToBpm": false,
+          "syncBars": 0.25,
+          "syncSubdiv": "straight",
+          "trigger": "free",
+          "scope": "shared",
+          "connections": [
+            {
+              "id": "c1",
+              "paramId": "master.tune",
+              "depth": 0.1
+            }
+          ],
+          "rateHz": 2.5
+        }
+      ]
+    },
+    {
+      "name": "PAD Cosmic",
+      "gm": [
+        89,
+        91
+      ],
+      "params": {
+        "osc1.wave": 3,
+        "osc1.level": 0.8,
+        "osc2.wave": 3,
+        "osc2.level": 0.4,
+        "sub.level": 0.3,
+        "noise.level": 0,
+        "master.unison": 3,
+        "master.detune": 25,
+        "filter.cutoff": 0.82,
+        "filter.resonance": 0.15,
+        "filter.envAmount": 0.1,
+        "amp.attack": 0.04,
+        "amp.decay": 0.4,
+        "amp.sustain": 0.8,
+        "amp.release": 0.5
+      },
+      "modulators": [
+        {
+          "id": "lfo1",
+          "kind": "lfo",
+          "enabled": true,
+          "bipolar": true,
+          "waveform": "sine",
+          "syncToBpm": false,
+          "syncBars": 0.25,
+          "syncSubdiv": "straight",
+          "trigger": "free",
+          "scope": "shared",
+          "connections": [
+            {
+              "id": "c1",
+              "paramId": "master.tune",
+              "depth": 0.2
+            }
+          ],
+          "rateHz": 0.4
+        }
+      ]
     }
   ]
 }

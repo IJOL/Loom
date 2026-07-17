@@ -137,3 +137,34 @@ describe('loadEnginePresets', () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe('validatePresetEntry — modulators (a preset can carry its LFO)', () => {
+  const lfo = {
+    id: 'lfo1', kind: 'lfo', enabled: true, rateHz: 4, waveform: 'sine',
+    connections: [{ paramId: 'filter.cutoff', depth: 0.6 }],
+  };
+
+  it('accepts a preset with a well-formed modulators array', () => {
+    expect(validatePresetEntry({ name: 'Wobble', gm: [38], params: {}, modulators: [lfo] })).toBe(true);
+  });
+
+  it('accepts a preset with no modulators field (every existing preset)', () => {
+    expect(validatePresetEntry({ name: 'Plain', gm: [0], params: {} })).toBe(true);
+  });
+
+  it('rejects modulators that is not an array', () => {
+    expect(validatePresetEntry({ name: 'X', gm: [0], params: {}, modulators: {} as unknown })).toBe(false);
+  });
+
+  it('rejects a modulator missing its id or kind', () => {
+    expect(validatePresetEntry({ name: 'X', gm: [0], params: {}, modulators: [{ enabled: true }] })).toBe(false);
+    expect(validatePresetEntry({ name: 'X', gm: [0], params: {}, modulators: [{ id: 'lfo1' }] })).toBe(false);
+  });
+
+  it('rejects a modulator whose connections is not an array', () => {
+    expect(validatePresetEntry({
+      name: 'X', gm: [0], params: {},
+      modulators: [{ id: 'lfo1', kind: 'lfo', enabled: true, connections: 'nope' }],
+    })).toBe(false);
+  });
+});

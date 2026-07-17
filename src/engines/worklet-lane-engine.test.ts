@@ -203,3 +203,37 @@ describe('toModLite', () => {
     expect(at120.rateHz).toBeGreaterThan(at60.rateHz * 1.9);   // bpm-proportional
   });
 });
+
+describe('a preset carries its own modulators', () => {
+  it('applyPreset installs the preset\'s LFO into the live host, replacing what was there', async () => {
+    const { __seedPresetCache, __resetPresetCache } = await import('../presets/preset-loader');
+    __resetPresetCache();
+    __seedPresetCache('subtractive', [
+      {
+        name: 'Wobble', gm: [38], params: { 'filter.cutoff': 0.4 },
+        modulators: [{
+          id: 'wob', kind: 'lfo', enabled: true, waveform: 'sine',
+          syncToBpm: true, syncBars: 2,
+          connections: [{ id: 'c1', paramId: 'filter.cutoff', depth: 0.8 }],
+        }],
+      } as never,
+    ]);
+    try {
+      const engine = makeEngine();
+      // It boots with the config's default modulators (an adsr + two lfos).
+      expect(engine.modulators.modulators.some((m) => m.id === 'wob')).toBe(false);
+
+      engine.applyPreset('Wobble');
+
+      // The preset's LFO is now the live set — routed to the cutoff, at depth 0.8.
+      const wob = engine.modulators.modulators.find((m) => m.id === 'wob');
+      expect(wob, 'the preset LFO did not reach the live host').toBeDefined();
+      expect(wob!.connections[0].paramId).toBe('filter.cutoff');
+      expect(wob!.connections[0].depth).toBeCloseTo(0.8, 2);
+      // The old default lfo1/lfo2 are gone — a preset replaces, it does not stack.
+      expect(engine.modulators.modulators.some((m) => m.id === 'lfo1')).toBe(false);
+    } finally {
+      __resetPresetCache();
+    }
+  });
+});

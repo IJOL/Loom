@@ -12,6 +12,26 @@ export function validatePresetEntry(raw: unknown): boolean {
   // Sampler presets carry an optional `zones` keymap (wav URL + note range per
   // zone). When present it must be a well-formed array; synth presets omit it.
   if (r.zones !== undefined && !validateZones(r.zones)) return false;
+  // A preset may carry its own modulators (an LFO on the cutoff IS the wobble).
+  // Validate them here: the engine deserializes this straight into its live host,
+  // so a malformed entry would fault at apply time rather than be caught on load.
+  if (r.modulators !== undefined && !validateModulators(r.modulators)) return false;
+  return true;
+}
+
+/** A preset's modulators: an array of entries that each at least name themselves
+ *  (id, kind) and, when present, keep connections as an array. Deep field
+ *  validation lives in the modulation layer (normalizeModulator); this is the
+ *  gate that stops a broken shape reaching the engine's deserialize. */
+function validateModulators(raw: unknown): boolean {
+  if (!Array.isArray(raw)) return false;
+  for (const m of raw) {
+    if (typeof m !== 'object' || m === null) return false;
+    const mm = m as Record<string, unknown>;
+    if (typeof mm.id !== 'string' || mm.id.length === 0) return false;
+    if (typeof mm.kind !== 'string') return false;
+    if (mm.connections !== undefined && !Array.isArray(mm.connections)) return false;
+  }
   return true;
 }
 
