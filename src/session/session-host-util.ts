@@ -34,3 +34,22 @@ export function shouldCloseClipEditorOnLaneSwitch(
 ): boolean {
   return openClip !== null && openClip.laneId !== nextLaneId;
 }
+
+/** Which scene, if any, the global ▶ should launch when it starts the transport.
+ *
+ *  Pressing ▶ with nothing launched must sound something — the first scene — or
+ *  a fresh visitor presses it, hears silence and leaves. But launching a scene
+ *  or a clip ALSO starts the transport, and those must not double-launch: by the
+ *  time this runs a scene is already active (activeSceneIdx >= 0) or a lane is
+ *  already playing/queued, so it returns null for them. Only a bare transport
+ *  start — no scene, no lane, but scenes exist — auto-launches scene 0. */
+export function sceneToAutoLaunchOnPlay(
+  activeSceneIdx: number,
+  anyLaneActive: boolean,
+  sceneCount: number,
+): number | null {
+  if (activeSceneIdx >= 0) return null;   // a scene launch / resume is already running
+  if (anyLaneActive) return null;         // a clip launch started the transport
+  if (sceneCount <= 0) return null;       // nothing to launch
+  return 0;
+}

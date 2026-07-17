@@ -14,7 +14,7 @@ import { DEFAULT_RESOLUTION } from '../core/drum-grid-editing';
 // nextLaneSlug lives in session-host-util (shared with the extracted sub-modules).
 // Re-exported here so existing importers (e.g. session-add-lane.test) keep working.
 export { nextLaneSlug } from './session-host-util';
-import { nextLaneSlug } from './session-host-util';
+import { nextLaneSlug, sceneToAutoLaunchOnPlay } from './session-host-util';
 import {
   tickSession, launchClip, launchScene, stopAll, seekSession, tickGlobalLoop,
   emptyLanePlayState,
@@ -510,6 +510,13 @@ export class SessionHost {
     this.deps.seq.onStart = () => {
       this.songAnchorSec = this.deps.ctx.currentTime;
       this.glState = { anchorSec: this.deps.ctx.currentTime, lastIter: 0 };
+      // The bare transport ▶ starts the clock but launches nothing, so a session
+      // with clips sits silent until a scene is launched by hand — a fresh
+      // visitor presses ▶, hears nothing and leaves. If ▶ started us with no
+      // scene active and no lane playing, launch the first scene so it sounds.
+      // (A scene/clip launch already set one of those, so this is a no-op there.)
+      const auto = sceneToAutoLaunchOnPlay(this.activeSceneIdx, this.anyLanePlaying(), this.state.scenes.length);
+      if (auto != null) this.launchSceneAt(auto);
       prevOnStart?.();
     };
 
