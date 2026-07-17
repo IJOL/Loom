@@ -23,6 +23,7 @@
 // only move when something is modulating them.
 
 import { SawOsc, SquareOsc, TriOsc, SineOsc } from './osc';
+import { SyncOsc } from './sync-osc';
 
 /** `pw` is ignored by every wave but the square, where it is the duty cycle. */
 export type Osc = { update(freq: number, pw?: number): number };
@@ -32,6 +33,7 @@ export function makeOsc(wave: number, sr: number): Osc {
     case 1: return new SquareOsc(sr);
     case 2: return new TriOsc(sr);
     case 3: return new SineOsc(sr);
+    case 4: return new SyncOsc(sr);   // update()'s 2nd arg is the sync ratio, not pw
     default: return new SawOsc(sr);
   }
 }

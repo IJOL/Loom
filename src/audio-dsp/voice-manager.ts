@@ -17,7 +17,7 @@ export class VoiceManager {
   private readonly modOffsets = {
     filterCutoff: 0, filterResonance: 0, filterEnvAmount: 0, filterKeyTrack: 0, filterDrive: 0,
     osc1Level: 0, osc2Level: 0, subLevel: 0, noiseLevel: 0, noiseColor: 0,
-    osc1Detune: 0, osc2Detune: 0, osc1Pw: 0, osc2Pw: 0, masterTune: 0, ampGain: 0,
+    osc1Detune: 0, osc2Detune: 0, osc1Pw: 0, osc2Pw: 0, osc1Sync: 0, osc2Sync: 0, masterTune: 0, ampGain: 0,
     unisonDetune: 0, unisonDrift: 0,
   };
   // Pooled generic offsets (keyed by param dot-id) for every NON-subtractive
@@ -98,6 +98,8 @@ export class VoiceManager {
       m.noiseColor      = this.mod.offsetFor('noiseColor', t);
       m.osc1Detune      = this.mod.offsetFor('osc1Detune', t);
       m.osc1Pw          = this.mod.offsetFor('osc1Pw', t);
+      m.osc1Sync        = this.mod.offsetFor('osc1Sync', t);
+      m.osc2Sync        = this.mod.offsetFor('osc2Sync', t);
       m.osc2Pw          = this.mod.offsetFor('osc2Pw', t);
       m.osc2Detune      = this.mod.offsetFor('osc2Detune', t);
       m.masterTune      = this.mod.offsetFor('masterTune', t);

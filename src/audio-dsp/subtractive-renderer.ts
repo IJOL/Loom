@@ -24,6 +24,7 @@ function subParamsFromBag(b: ParamBag): SubParams {
     unisonDrift: param(b, 'master.drift', 0),
     osc1Wave: param(b, 'osc1.wave', 0), osc1Level: param(b, 'osc1.level', 0.6), osc1Detune: param(b, 'osc1.detune', 0),
     osc1Pw: param(b, 'osc1.pw', 0.5), osc2Pw: param(b, 'osc2.pw', 0.5),
+    osc1Sync: param(b, 'osc1.sync', 2), osc2Sync: param(b, 'osc2.sync', 2),
     osc2Wave: param(b, 'osc2.wave', 1), osc2Level: param(b, 'osc2.level', 0.4), osc2Detune: param(b, 'osc2.detune', 7),
     subLevel: param(b, 'sub.level', 0.3),
     noiseLevel: param(b, 'noise.level', 0), noiseColor: param(b, 'noise.color', 0.6),
@@ -54,6 +55,13 @@ const MOD_UNISON_CENTS = 50;
 /** Depth 1 on a bipolar LFO sweeps the width across most of its range, which
  *  is what a PWM pad wants; the clamp keeps it out of silence at the extremes. */
 const MOD_PW_RANGE = 0.45;
+/** The Sync wave's index in WAVE_OPTIONS (Saw, Sqr, Tri, Sin, Sync). */
+const WAVE_SYNC = 4;
+/** Sync ratio lives in 1..8 (SYNC_RATIO_MIN/MAX). */
+const clampSync = (v: number) => Math.min(8, Math.max(1, v));
+/** Depth 1 on a bipolar LFO sweeps the ratio across ~4 octaves of it — the
+ *  tearing sweep, the reason to modulate sync at all. */
+const MOD_SYNC_RANGE = 3.5;
 // Native-unit scale for modulation offsets whose param is NOT a 0..1 knob.
 // Depth 1 on a bipolar LFO ⇒ full knob sweep: master.tune ±12 st, osc detune
 // ±50 cents (matching the legacy engine's modulation ranges).
@@ -238,8 +246,15 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     const det2 = mo?.osc2Detune ? p.osc2Detune + mo.osc2Detune * MOD_DETUNE_CENTS : p.osc2Detune;
     // Pulse width, and with an LFO on it, pulse-width MODULATION. Clamped to
     // the param's own rails: 0 and 1 are silence, not a thinner sound.
-    const pw1 = mo?.osc1Pw ? clampPw(p.osc1Pw + mo.osc1Pw * MOD_PW_RANGE) : p.osc1Pw;
-    const pw2 = mo?.osc2Pw ? clampPw(p.osc2Pw + mo.osc2Pw * MOD_PW_RANGE) : p.osc2Pw;
+    // The stack's second argument is pulse width for most waves, but the sync
+    // ratio for the Sync wave — SyncOsc reads it as its ratio. Both are
+    // continuous and modulatable; pick which one this oscillator wants.
+    const pw1 = p.osc1Wave === WAVE_SYNC
+      ? clampSync(mo?.osc1Sync ? p.osc1Sync + mo.osc1Sync * MOD_SYNC_RANGE : p.osc1Sync)
+      : (mo?.osc1Pw ? clampPw(p.osc1Pw + mo.osc1Pw * MOD_PW_RANGE) : p.osc1Pw);
+    const pw2 = p.osc2Wave === WAVE_SYNC
+      ? clampSync(mo?.osc2Sync ? p.osc2Sync + mo.osc2Sync * MOD_SYNC_RANGE : p.osc2Sync)
+      : (mo?.osc2Pw ? clampPw(p.osc2Pw + mo.osc2Pw * MOD_PW_RANGE) : p.osc2Pw);
     // Unison: the spread each stack fans its copies across, and the analog drift
     // depth. Both continuous, so an LFO reaches them like any other param — on the
     // spread that is a stack that breathes. Both default to inert (spread only

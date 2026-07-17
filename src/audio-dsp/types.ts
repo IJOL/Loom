@@ -7,9 +7,9 @@ export interface SubParams {
   unisonDetune: number;     // spread across the stack, cents
   unisonDrift: number;      // 0..1 analog per-copy pitch wander
   osc1Wave: number; osc1Level: number; osc1Detune: number;   // wave 0..3, level 0..1, detune cents
-  osc1Pw: number;                                            // pulse width 0.05..0.95 (square only)
+  osc1Pw: number; osc1Sync: number;                                            // pulse width 0.05..0.95 (square only)
   osc2Wave: number; osc2Level: number; osc2Detune: number;
-  osc2Pw: number;
+  osc2Pw: number; osc2Sync: number;
   subLevel: number;
   noiseLevel: number; noiseColor: number;                    // color 0..1
   filterCutoff: number; filterResonance: number; filterEnvAmount: number;

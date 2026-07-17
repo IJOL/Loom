@@ -13,6 +13,7 @@ export const WAVE_OPTIONS = [
   { value: 'square',   label: 'Sqr' },
   { value: 'triangle', label: 'Tri' },
   { value: 'sine',     label: 'Sin' },
+  { value: 'sync',     label: 'Sync' },   // hard sync — the ratio (osc*.sync) is the timbre
 ];
 
 // Three filters, one engine. DIG (the Svf) is the default so every preset
@@ -43,18 +44,22 @@ export const SUB_PARAM_SPECS: EngineParamSpec[] = [
   // Oscillators
   { id: 'osc1.level',   label: 'Osc1 Lvl',  kind: 'continuous', min: 0, max: 1, default: 0.6 },
   { id: 'osc1.detune',  label: 'Osc1 Det',  kind: 'continuous', min: -50, max: 50, default: 0, unit: '¢' },
-  { id: 'osc1.wave',    label: 'Osc1 Wave', kind: 'discrete', min: 0, max: 3, default: 0,
+  { id: 'osc1.wave',    label: 'Osc1 Wave', kind: 'discrete', min: 0, max: 4, default: 0,
     options: WAVE_OPTIONS },
   // Pulse width. Continuous on purpose: an LFO on this id IS pulse-width
   // modulation, so PWM needs no wave of its own. Only bites on a square —
   // that is what a duty cycle means. Kept off the rails (0.05..0.95) because
   // 0 and 1 are silence, not a sound.
   { id: 'osc1.pw',      label: 'Osc1 PW',   kind: 'continuous', min: 0.05, max: 0.95, default: 0.5 },
+  // Hard-sync ratio (only bites when osc1.wave = Sync). Continuous: an LFO or
+  // envelope on it is the bright tearing sweep the effect exists for.
+  { id: 'osc1.sync',    label: 'Osc1 Sync', kind: 'continuous', min: 1, max: 8, default: 2 },
   { id: 'osc2.level',   label: 'Osc2 Lvl',  kind: 'continuous', min: 0, max: 1, default: 0.4 },
   { id: 'osc2.detune',  label: 'Osc2 Det',  kind: 'continuous', min: -50, max: 50, default: 7, unit: '¢' },
-  { id: 'osc2.wave',    label: 'Osc2 Wave', kind: 'discrete', min: 0, max: 3, default: 1,
+  { id: 'osc2.wave',    label: 'Osc2 Wave', kind: 'discrete', min: 0, max: 4, default: 1,
     options: WAVE_OPTIONS },
   { id: 'osc2.pw',      label: 'Osc2 PW',   kind: 'continuous', min: 0.05, max: 0.95, default: 0.5 },
+  { id: 'osc2.sync',    label: 'Osc2 Sync', kind: 'continuous', min: 1, max: 8, default: 2 },
   { id: 'sub.level',    label: 'Sub Lvl',   kind: 'continuous', min: 0, max: 1, default: 0.3 },
   { id: 'noise.level',  label: 'Noise Lvl', kind: 'continuous', min: 0, max: 1, default: 0 },
 

@@ -19,6 +19,7 @@ const DEFAULTS: ParamBag = {
 const note = (over: Partial<NoteSpec> = {}): NoteSpec =>
   ({ midi: 57, beginSec: 0, durationSec: 0.4, velocity: 0.8, accent: false, slide: false, ...over });
 const rms = (b: number[]) => Math.sqrt(b.reduce((s, v) => s + v * v, 0) / b.length);
+const midiToFreqLocal = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
 
 describe('SubtractiveVoiceRenderer', () => {
   it('is audible during the gate and decays to ~silence + done after release', () => {
@@ -609,5 +610,73 @@ describe('unison', () => {
   it('a 7-voice stack stays bounded', () => {
     const peak = render(7, { 'master.drift': 1 }, 0.3).reduce((p, v) => Math.max(p, Math.abs(v)), 0);
     expect(peak).toBeLessThan(4);
+  });
+});
+
+describe('hard sync wave', () => {
+  // The Sync wave routes the stack's second argument to SyncOsc as its ratio.
+  // What matters end-to-end: the ratio param reaches the sound, and an LFO on
+  // osc1.sync sweeps the timbre — that sweep is the whole reason sync exists.
+  const bag = (over: ParamBag = {}): ParamBag => ({
+    ...DEFAULTS, 'osc1.wave': 4, 'osc1.level': 1, 'osc2.level': 0,
+    'sub.level': 0, 'noise.level': 0,
+    'filter.cutoff': 0.9, 'filter.resonance': 0.1, 'filter.envAmount': 0, 'filter.builtinEnv': 0,
+    ...over,
+  });
+  const render = (over: ParamBag = {}): number[] => {
+    const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.2 }), bag(over), SR);
+    const b: number[] = [];
+    for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR));
+    return b;
+  };
+  const divergence = (a: number[], b: number[]): number => {
+    let d = 0; for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b[i]);
+    return d / a.length / Math.max(1e-9, rms(a));
+  };
+
+  it('makes a sound', () => {
+    expect(rms(render({ 'osc1.sync': 3 }))).toBeGreaterThan(0);
+  });
+
+  it('the ratio param changes the timbre', () => {
+    expect(divergence(render({ 'osc1.sync': 1.5 }), render({ 'osc1.sync': 5 }))).toBeGreaterThan(0.2);
+  });
+
+  it('an LFO on osc1.sync sweeps the sound over time', () => {
+    // Same static patch, but modulate the ratio — the render must differ from
+    // the un-modulated one, which is what proves the LFO reaches the ratio.
+    const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.2 }), bag({ 'osc1.sync': 3 }), SR);
+    const still: number[] = [];
+    for (let i = 0; i < SR * 0.1; i++) still.push(v.renderSample(i / SR));
+
+    const v2 = new SubtractiveVoiceRenderer(note({ durationSec: 0.2 }), bag({ 'osc1.sync': 3 }), SR);
+    const swept: number[] = [];
+    for (let i = 0; i < SR * 0.1; i++) swept.push(v2.renderSample(i / SR, { osc1Sync: Math.sin(2 * Math.PI * 5 * i / SR) }));
+
+    expect(divergence(still, swept)).toBeGreaterThan(0.05);
+  });
+
+  it('holds the pitch as the ratio sweeps (this is what sync is)', () => {
+    // The pitch is the RESET rate, not the slave's crossing count (the ragged saw
+    // has plenty of those and they move with the ratio). The defining property is
+    // periodicity at the master period: one master period apart, the waveform
+    // repeats — and it does so at the SAME period whatever the ratio.
+    const repeatsAtMasterPeriod = (syncRatio: number): number => {
+      const b = render({ 'osc1.sync': syncRatio });
+      const period = SR / midiToFreqLocal(57);   // master period in samples
+      const at = Math.floor(period * 5), next = Math.floor(period * 6);
+      // difference relative to the signal's own level — same-period = near 0.
+      let d = 0; for (let k = 0; k < 40; k++) d += Math.abs(b[at + k] - b[next + k]);
+      return d / 40 / Math.max(1e-9, rms(b));
+    };
+    // Both ratios repeat cleanly at the master period (< 0.4 relative diff),
+    // which is only possible if the pitch did not move with the ratio.
+    expect(repeatsAtMasterPeriod(2)).toBeLessThan(0.4);
+    expect(repeatsAtMasterPeriod(6)).toBeLessThan(0.4);
+  });
+
+  it('a non-sync wave ignores osc1.sync entirely', () => {
+    const saw = (r: number) => render({ 'osc1.wave': 0, 'osc1.sync': r });
+    expect(divergence(saw(2), saw(7))).toBeLessThan(0.01);
   });
 });
