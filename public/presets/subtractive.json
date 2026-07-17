@@ -2432,6 +2432,97 @@
           "rateHz": 0.4
         }
       ]
+    },
+    {
+      "name": "LEAD Sync",
+      "gm": [
+        81,
+        82
+      ],
+      "params": {
+        "osc1.wave": 4,
+        "osc1.sync": 3,
+        "osc1.level": 0.9,
+        "osc2.wave": 4,
+        "osc2.sync": 3,
+        "osc2.level": 0.3,
+        "osc2.detune": 8,
+        "sub.level": 0.3,
+        "noise.level": 0,
+        "filter.cutoff": 0.854,
+        "filter.resonance": 0.3,
+        "filter.envAmount": 0.25,
+        "amp.attack": 0.003,
+        "amp.decay": 0.12,
+        "amp.sustain": 0.6,
+        "amp.release": 0.08
+      }
+    },
+    {
+      "name": "LEAD Sync Sweep",
+      "gm": [
+        81,
+        82
+      ],
+      "params": {
+        "osc1.wave": 4,
+        "osc1.sync": 5,
+        "osc1.level": 0.9,
+        "osc2.level": 0,
+        "sub.level": 0.3,
+        "noise.level": 0,
+        "filter.cutoff": 0.82,
+        "filter.resonance": 0.2,
+        "filter.envAmount": 0.4,
+        "amp.attack": 0.005,
+        "amp.decay": 0.2,
+        "amp.sustain": 0.5,
+        "amp.release": 0.1
+      },
+      "modulators": [
+        {
+          "id": "lfo1",
+          "kind": "lfo",
+          "enabled": true,
+          "bipolar": true,
+          "waveform": "triangle",
+          "syncToBpm": true,
+          "syncBars": 0.5,
+          "syncSubdiv": "straight",
+          "syncRatio": "1/2",
+          "trigger": "free",
+          "scope": "shared",
+          "connections": [
+            {
+              "id": "c1",
+              "paramId": "filter.cutoff",
+              "depth": 0.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "BASS Sync",
+      "gm": [
+        38,
+        39
+      ],
+      "params": {
+        "osc1.wave": 4,
+        "osc1.sync": 2.5,
+        "osc1.level": 0.9,
+        "osc2.level": 0,
+        "sub.level": 0.4,
+        "noise.level": 0,
+        "filter.cutoff": 0.692,
+        "filter.resonance": 0.6,
+        "filter.envAmount": 0.4,
+        "amp.attack": 0.001,
+        "amp.decay": 0.1,
+        "amp.sustain": 0.3,
+        "amp.release": 0.04
+      }
     }
   ]
 }
