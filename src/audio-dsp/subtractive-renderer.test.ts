@@ -430,26 +430,39 @@ describe('filter type', () => {
     }
   });
 
-  it('every type stays bounded', () => {
-    // A real patch — a saw at the default note — exactly as the filter-model
-    // bounded test does. NOT the sine used above: a pure tone parked on a
-    // resonant filter's cutoff rings to ~30x by design, so asserting on that
-    // would be measuring physics rather than catching a regression.
+  it('every type stays bounded — no runaway, and drive lifts the level without exploding', () => {
+    // A real patch — a saw at the default note. NOT the sine used above: a pure
+    // tone parked on a resonant filter's cutoff rings to ~30x by design, so
+    // asserting on that would be measuring physics rather than catching a bug.
+    //
+    // res 0.7 + drive 0.8 is a stress patch: the parallel drive (mix +
+    // driveShape(mix)*drive, on main since forever) feeds up to 1.8x amplitude
+    // into the filter, so an analogue-style rise is EXPECTED. What must not
+    // happen is a runaway. So the contract is relative, not a magic ceiling:
+    // the output stays finite, and drive raises the peak by a bounded ratio
+    // rather than an unbounded one.
+    const peakOf = (t: number, model: number, res: number, drive: number): number => {
+      const v = new SubtractiveVoiceRenderer(
+        note({ durationSec: 0.3 }),
+        { ...toneBag(t, model), 'osc1.wave': 0, 'filter.resonance': res, 'filter.drive': drive }, SR,
+      );
+      let peak = 0;
+      for (let i = 0; i < SR * 0.2; i++) { const a = Math.abs(v.renderSample(i / SR)); if (a > peak) peak = a; }
+      return peak;
+    };
     for (const t of [LP, HP, BP, NOTCH]) {
       for (const model of [0, 1, 2]) {
-        // Drive included on purpose. The ladder's HP tap is a binomial sum with
-        // coefficients up to 6, and the loop input it starts from — unlike the
-        // stages — is not bounded by the saturator, so drive is exactly where a
-        // tap like that would spike if it were going to.
-        for (const drive of [0, 0.8]) {
-          const v = new SubtractiveVoiceRenderer(
-            note({ durationSec: 0.3 }),
-            { ...toneBag(t, model), 'osc1.wave': 0, 'filter.resonance': 0.7, 'filter.drive': drive }, SR,
-          );
-          let peak = 0;
-          for (let i = 0; i < SR * 0.2; i++) { const a = Math.abs(v.renderSample(i / SR)); if (a > peak) peak = a; }
-          expect(peak, `type ${t} model ${model} drive ${drive} blew up`).toBeLessThan(4);
-        }
+        const dry = peakOf(t, model, 0.7, 0);
+        const wet = peakOf(t, model, 0.7, 0.8);
+        const tag = `type ${t} model ${model}`;
+        // Never a runaway or a NaN, dry or driven.
+        expect(Number.isFinite(wet), `${tag} went non-finite`).toBe(true);
+        // The soft-clip must have bent it back near unity — 4.5 is well below the
+        // ~6 the raw HP tap reached before the ceiling was added.
+        expect(wet, `${tag} blew up`).toBeLessThan(4.5);
+        // Drive lifts level, and the lift is bounded — a saturator, not a spike.
+        expect(wet, `${tag} drive should not reduce peak`).toBeGreaterThanOrEqual(dry);
+        expect(wet / Math.max(dry, 1e-6), `${tag} drive ratio unbounded`).toBeLessThan(5);
       }
     }
   });

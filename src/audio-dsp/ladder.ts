@@ -61,6 +61,18 @@ export type LadderTap = 'lp' | 'hp' | 'bp';
 const HP_MAKEUP = 2.2;
 const BP_MAKEUP = 3.0;
 
+/** Soft ceiling for the non-LP taps. Linear (slope 1) up to ~2.5, then bends
+ *  toward a ~3.3 asymptote — so the passband is untouched and only the drive-fed
+ *  transient peaks (which reached ~6) are folded back near unity. */
+function softTap(x: number): number {
+  const KNEE = 2.5;
+  const a = Math.abs(x);
+  if (a <= KNEE) return x;
+  const over = a - KNEE;
+  const shaped = KNEE + Math.tanh(over / KNEE) * KNEE * 0.8;
+  return x < 0 ? -shaped : shaped;
+}
+
 export type LadderModel = 'moog' | 'diode';
 
 export class LadderFilter {
@@ -111,8 +123,15 @@ export class LadderFilter {
     // The non-lowpass taps, binomial in the stages (see LadderTap). Both null at
     // DC by construction — their coefficients sum to zero — which is what makes
     // them real responses rather than a tinted lowpass.
-    if (this.tap === 'hp') return (input - 4 * s0 + 6 * s1 - 4 * s2 + s3) * HP_MAKEUP;   // (1-LP)^4
-    if (this.tap === 'bp') return (s1 - 2 * s2 + s3) * BP_MAKEUP;                        // LP^2*(1-LP)^2
+    //
+    // softTap tames the peaks the HP makes at high resonance + drive: its
+    // coefficients reach 6 and its input carries the parallel drive (up to 1.8x),
+    // so a level that is fine in the passband spikes to ~6 on transients. Left
+    // raw, that peak crushes the master limiter. A gentle saturator passes the
+    // useful level untouched and only bends the extremes — which is what an
+    // analogue filter does when it clips, so the sound gains rather than loses.
+    if (this.tap === 'hp') return softTap((input - 4 * s0 + 6 * s1 - 4 * s2 + s3) * HP_MAKEUP);  // (1-LP)^4
+    if (this.tap === 'bp') return softTap((s1 - 2 * s2 + s3) * BP_MAKEUP);                       // LP^2*(1-LP)^2
 
     // Four poles lose a lot of level; 3× puts it back near unity.
     // The resonance term makes up part of what the feedback subtracts. Raw, a

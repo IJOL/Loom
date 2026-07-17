@@ -1,32 +1,497 @@
 {
   "engineId": "wavetable",
   "presets": [
-    { "name": "LEAD Saw Classic",     "gm": [80, 81],         "params": { "osc.waveA": 2, "osc.waveB": 3, "osc.morph": 0.40, "osc.detune": 8,  "filter.cutoff": 0.75, "filter.resonance": 0.25, "amp.attack": 0.005, "amp.decay": 0.30, "amp.sustain": 0.70, "amp.release": 0.35 } },
-    { "name": "LEAD Square Bright",   "gm": [80, 87],         "params": { "osc.waveA": 3, "osc.waveB": 4, "osc.morph": 0.50, "osc.detune": 5,  "filter.cutoff": 0.80, "filter.resonance": 0.20, "amp.attack": 0.005, "amp.decay": 0.25, "amp.sustain": 0.65, "amp.release": 0.30 } },
-    { "name": "LEAD Hollow PWM",      "gm": [80, 81, 87],     "params": { "osc.waveA": 4, "osc.waveB": 3, "osc.morph": 0.45, "osc.detune": 12, "filter.cutoff": 0.70, "filter.resonance": 0.30, "amp.attack": 0.008, "amp.decay": 0.35, "amp.sustain": 0.60, "amp.release": 0.40 } },
-    { "name": "LEAD Brass Stab",      "gm": [82, 87],         "params": { "osc.waveA": 6, "osc.waveB": 2, "osc.morph": 0.55, "osc.detune": 6,  "filter.cutoff": 0.78, "filter.resonance": 0.22, "amp.attack": 0.010, "amp.decay": 0.30, "amp.sustain": 0.55, "amp.release": 0.30 } },
-    { "name": "LEAD Wide Detuned",    "gm": [81, 84],         "params": { "osc.waveA": 2, "osc.waveB": 2, "osc.morph": 0.50, "osc.detune": 22, "filter.cutoff": 0.72, "filter.resonance": 0.18, "amp.attack": 0.010, "amp.decay": 0.40, "amp.sustain": 0.70, "amp.release": 0.45 } },
-    { "name": "LEAD Vocal Solo",      "gm": [82, 85],         "params": { "osc.waveA": 7, "osc.waveB": 2, "osc.morph": 0.50, "osc.detune": 4,  "filter.cutoff": 0.68, "filter.resonance": 0.35, "amp.attack": 0.015, "amp.decay": 0.40, "amp.sustain": 0.65, "amp.release": 0.50 } },
-    { "name": "LEAD Organ Burst",     "gm": [80, 82],         "params": { "osc.waveA": 5, "osc.waveB": 3, "osc.morph": 0.40, "osc.detune": 7,  "filter.cutoff": 0.82, "filter.resonance": 0.15, "amp.attack": 0.005, "amp.decay": 0.20, "amp.sustain": 0.75, "amp.release": 0.25 } },
-
-    { "name": "PAD Warm Saw",         "gm": [88, 89, 90],     "params": { "osc.waveA": 2, "osc.waveB": 0, "osc.morph": 0.55, "osc.detune": 9,  "filter.cutoff": 0.55, "filter.resonance": 0.10, "amp.attack": 0.80, "amp.decay": 1.20, "amp.sustain": 0.80, "amp.release": 1.80 } },
-    { "name": "PAD Glass Halo",       "gm": [88, 92, 94],     "params": { "osc.waveA": 0, "osc.waveB": 1, "osc.morph": 0.50, "osc.detune": 5,  "filter.cutoff": 0.60, "filter.resonance": 0.20, "amp.attack": 1.10, "amp.decay": 1.40, "amp.sustain": 0.75, "amp.release": 2.20 } },
-    { "name": "PAD Choir Soft",       "gm": [52, 89, 91],     "params": { "osc.waveA": 7, "osc.waveB": 0, "osc.morph": 0.55, "osc.detune": 6,  "filter.cutoff": 0.50, "filter.resonance": 0.12, "amp.attack": 1.20, "amp.decay": 1.30, "amp.sustain": 0.85, "amp.release": 2.50 } },
-    { "name": "PAD Sweep Wide",       "gm": [89, 90, 95],     "params": { "osc.waveA": 2, "osc.waveB": 3, "osc.morph": 0.50, "osc.detune": 18, "filter.cutoff": 0.58, "filter.resonance": 0.25, "amp.attack": 1.40, "amp.decay": 1.60, "amp.sustain": 0.78, "amp.release": 3.00 } },
-    { "name": "PAD Organ Drift",      "gm": [89, 91, 94],     "params": { "osc.waveA": 5, "osc.waveB": 0, "osc.morph": 0.45, "osc.detune": 7,  "filter.cutoff": 0.52, "filter.resonance": 0.15, "amp.attack": 1.00, "amp.decay": 1.20, "amp.sustain": 0.82, "amp.release": 2.40 } },
-
-    { "name": "STRINGS Synth Ens",    "gm": [50, 51, 52],     "params": { "osc.waveA": 2, "osc.waveB": 7, "osc.morph": 0.55, "osc.detune": 11, "filter.cutoff": 0.60, "filter.resonance": 0.15, "amp.attack": 0.30, "amp.decay": 0.80, "amp.sustain": 0.85, "amp.release": 1.40 } },
-    { "name": "STRINGS Choir Aah",    "gm": [52, 53, 54],     "params": { "osc.waveA": 7, "osc.waveB": 5, "osc.morph": 0.45, "osc.detune": 4,  "filter.cutoff": 0.55, "filter.resonance": 0.18, "amp.attack": 0.60, "amp.decay": 1.00, "amp.sustain": 0.88, "amp.release": 1.80 } },
-    { "name": "STRINGS Voice Ooh",    "gm": [53, 54],         "params": { "osc.waveA": 7, "osc.waveB": 0, "osc.morph": 0.60, "osc.detune": 3,  "filter.cutoff": 0.48, "filter.resonance": 0.20, "amp.attack": 0.50, "amp.decay": 0.90, "amp.sustain": 0.82, "amp.release": 1.60 } },
-    { "name": "STRINGS Synth Voice",  "gm": [54],             "params": { "osc.waveA": 7, "osc.waveB": 2, "osc.morph": 0.50, "osc.detune": 6,  "filter.cutoff": 0.58, "filter.resonance": 0.22, "amp.attack": 0.40, "amp.decay": 0.85, "amp.sustain": 0.80, "amp.release": 1.50 } },
-
-    { "name": "BELL Glass Tine",      "gm": [9, 11, 14, 98],  "params": { "osc.waveA": 0, "osc.waveB": 1, "osc.morph": 0.40, "osc.detune": 7,  "filter.cutoff": 0.85, "filter.resonance": 0.45, "amp.attack": 0.005, "amp.decay": 0.60, "amp.sustain": 0.05, "amp.release": 0.80 } },
-    { "name": "BELL Crystal Pluck",   "gm": [9, 98, 99],      "params": { "osc.waveA": 1, "osc.waveB": 0, "osc.morph": 0.55, "osc.detune": 14, "filter.cutoff": 0.88, "filter.resonance": 0.50, "amp.attack": 0.003, "amp.decay": 0.50, "amp.sustain": 0.02, "amp.release": 0.70 } },
-    { "name": "BELL FM Soft",         "gm": [11, 14, 98],     "params": { "osc.waveA": 0, "osc.waveB": 6, "osc.morph": 0.45, "osc.detune": 9,  "filter.cutoff": 0.78, "filter.resonance": 0.40, "amp.attack": 0.005, "amp.decay": 0.70, "amp.sustain": 0.08, "amp.release": 1.00 } },
-
-    { "name": "FX Sweep Up",          "gm": [96, 97, 100],    "params": { "osc.waveA": 2, "osc.waveB": 4, "osc.morph": 0.50, "osc.detune": 25, "filter.cutoff": 0.45, "filter.resonance": 0.55, "amp.attack": 1.80, "amp.decay": 1.50, "amp.sustain": 0.40, "amp.release": 2.00 } },
-    { "name": "FX Atmosphere",        "gm": [99, 100, 101],   "params": { "osc.waveA": 7, "osc.waveB": 1, "osc.morph": 0.55, "osc.detune": 15, "filter.cutoff": 0.50, "filter.resonance": 0.30, "amp.attack": 1.60, "amp.decay": 1.80, "amp.sustain": 0.65, "amp.release": 3.50 } },
-    { "name": "FX Sci-Fi Drift",      "gm": [97, 102, 103],   "params": { "osc.waveA": 4, "osc.waveB": 7, "osc.morph": 0.55, "osc.detune": 30, "filter.cutoff": 0.42, "filter.resonance": 0.60, "amp.attack": 1.40, "amp.decay": 1.60, "amp.sustain": 0.55, "amp.release": 3.00 } },
-    { "name": "FX Rain Drone",        "gm": [96, 101, 103],   "params": { "osc.waveA": 6, "osc.waveB": 7, "osc.morph": 0.50, "osc.detune": 20, "filter.cutoff": 0.40, "filter.resonance": 0.35, "amp.attack": 2.00, "amp.decay": 2.00, "amp.sustain": 0.70, "amp.release": 4.00 } }
+    {
+      "name": "LEAD Saw Classic",
+      "gm": [
+        80,
+        81
+      ],
+      "params": {
+        "osc.waveA": 2,
+        "osc.waveB": 3,
+        "osc.morph": 0.4,
+        "osc.detune": 8,
+        "filter.cutoff": 0.75,
+        "filter.resonance": 0.25,
+        "amp.attack": 0.005,
+        "amp.decay": 0.3,
+        "amp.sustain": 0.7,
+        "amp.release": 0.35
+      }
+    },
+    {
+      "name": "LEAD Square Bright",
+      "gm": [
+        80,
+        87
+      ],
+      "params": {
+        "osc.waveA": 3,
+        "osc.waveB": 4,
+        "osc.morph": 0.5,
+        "osc.detune": 5,
+        "filter.cutoff": 0.8,
+        "filter.resonance": 0.2,
+        "amp.attack": 0.005,
+        "amp.decay": 0.25,
+        "amp.sustain": 0.65,
+        "amp.release": 0.3
+      }
+    },
+    {
+      "name": "LEAD Hollow PWM",
+      "gm": [
+        80,
+        81,
+        87
+      ],
+      "params": {
+        "osc.waveA": 4,
+        "osc.waveB": 3,
+        "osc.morph": 0.45,
+        "osc.detune": 12,
+        "filter.cutoff": 0.7,
+        "filter.resonance": 0.3,
+        "amp.attack": 0.008,
+        "amp.decay": 0.35,
+        "amp.sustain": 0.6,
+        "amp.release": 0.4
+      }
+    },
+    {
+      "name": "LEAD Brass Stab",
+      "gm": [
+        82,
+        87
+      ],
+      "params": {
+        "osc.waveA": 6,
+        "osc.waveB": 2,
+        "osc.morph": 0.55,
+        "osc.detune": 6,
+        "filter.cutoff": 0.78,
+        "filter.resonance": 0.22,
+        "amp.attack": 0.01,
+        "amp.decay": 0.3,
+        "amp.sustain": 0.55,
+        "amp.release": 0.3
+      }
+    },
+    {
+      "name": "LEAD Wide Detuned",
+      "gm": [
+        81,
+        84
+      ],
+      "params": {
+        "osc.waveA": 2,
+        "osc.waveB": 2,
+        "osc.morph": 0.5,
+        "osc.detune": 22,
+        "filter.cutoff": 0.72,
+        "filter.resonance": 0.18,
+        "amp.attack": 0.01,
+        "amp.decay": 0.4,
+        "amp.sustain": 0.7,
+        "amp.release": 0.45
+      }
+    },
+    {
+      "name": "LEAD Vocal Solo",
+      "gm": [
+        82,
+        85
+      ],
+      "params": {
+        "osc.waveA": 7,
+        "osc.waveB": 2,
+        "osc.morph": 0.5,
+        "osc.detune": 4,
+        "filter.cutoff": 0.68,
+        "filter.resonance": 0.35,
+        "amp.attack": 0.015,
+        "amp.decay": 0.4,
+        "amp.sustain": 0.65,
+        "amp.release": 0.5
+      }
+    },
+    {
+      "name": "LEAD Organ Burst",
+      "gm": [
+        80,
+        82
+      ],
+      "params": {
+        "osc.waveA": 5,
+        "osc.waveB": 3,
+        "osc.morph": 0.4,
+        "osc.detune": 7,
+        "filter.cutoff": 0.82,
+        "filter.resonance": 0.15,
+        "amp.attack": 0.005,
+        "amp.decay": 0.2,
+        "amp.sustain": 0.75,
+        "amp.release": 0.25
+      }
+    },
+    {
+      "name": "PAD Warm Saw",
+      "gm": [
+        88,
+        89,
+        90
+      ],
+      "params": {
+        "osc.waveA": 2,
+        "osc.waveB": 0,
+        "osc.morph": 0.55,
+        "osc.detune": 9,
+        "filter.cutoff": 0.55,
+        "filter.resonance": 0.1,
+        "amp.attack": 0.8,
+        "amp.decay": 1.2,
+        "amp.sustain": 0.8,
+        "amp.release": 1.8
+      }
+    },
+    {
+      "name": "PAD Glass Halo",
+      "gm": [
+        88,
+        92,
+        94
+      ],
+      "params": {
+        "osc.waveA": 0,
+        "osc.waveB": 1,
+        "osc.morph": 0.5,
+        "osc.detune": 5,
+        "filter.cutoff": 0.6,
+        "filter.resonance": 0.2,
+        "amp.attack": 1.1,
+        "amp.decay": 1.4,
+        "amp.sustain": 0.75,
+        "amp.release": 2.2
+      }
+    },
+    {
+      "name": "PAD Choir Soft",
+      "gm": [
+        52,
+        89,
+        91
+      ],
+      "params": {
+        "osc.waveA": 7,
+        "osc.waveB": 0,
+        "osc.morph": 0.55,
+        "osc.detune": 6,
+        "filter.cutoff": 0.5,
+        "filter.resonance": 0.12,
+        "amp.attack": 1.2,
+        "amp.decay": 1.3,
+        "amp.sustain": 0.85,
+        "amp.release": 2.5
+      }
+    },
+    {
+      "name": "PAD Sweep Wide",
+      "gm": [
+        89,
+        90,
+        95
+      ],
+      "params": {
+        "osc.waveA": 2,
+        "osc.waveB": 3,
+        "osc.morph": 0.5,
+        "osc.detune": 18,
+        "filter.cutoff": 0.58,
+        "filter.resonance": 0.25,
+        "amp.attack": 1.4,
+        "amp.decay": 1.6,
+        "amp.sustain": 0.78,
+        "amp.release": 3
+      }
+    },
+    {
+      "name": "PAD Organ Drift",
+      "gm": [
+        89,
+        91,
+        94
+      ],
+      "params": {
+        "osc.waveA": 5,
+        "osc.waveB": 0,
+        "osc.morph": 0.45,
+        "osc.detune": 7,
+        "filter.cutoff": 0.52,
+        "filter.resonance": 0.15,
+        "amp.attack": 1,
+        "amp.decay": 1.2,
+        "amp.sustain": 0.82,
+        "amp.release": 2.4
+      }
+    },
+    {
+      "name": "STRINGS Synth Ens",
+      "gm": [
+        50,
+        51,
+        52
+      ],
+      "params": {
+        "osc.waveA": 2,
+        "osc.waveB": 7,
+        "osc.morph": 0.55,
+        "osc.detune": 11,
+        "filter.cutoff": 0.6,
+        "filter.resonance": 0.15,
+        "amp.attack": 0.3,
+        "amp.decay": 0.8,
+        "amp.sustain": 0.85,
+        "amp.release": 1.4
+      }
+    },
+    {
+      "name": "STRINGS Choir Aah",
+      "gm": [
+        52,
+        53,
+        54
+      ],
+      "params": {
+        "osc.waveA": 7,
+        "osc.waveB": 5,
+        "osc.morph": 0.45,
+        "osc.detune": 4,
+        "filter.cutoff": 0.55,
+        "filter.resonance": 0.18,
+        "amp.attack": 0.6,
+        "amp.decay": 1,
+        "amp.sustain": 0.88,
+        "amp.release": 1.8
+      }
+    },
+    {
+      "name": "STRINGS Voice Ooh",
+      "gm": [
+        53,
+        54
+      ],
+      "params": {
+        "osc.waveA": 7,
+        "osc.waveB": 0,
+        "osc.morph": 0.6,
+        "osc.detune": 3,
+        "filter.cutoff": 0.48,
+        "filter.resonance": 0.2,
+        "amp.attack": 0.5,
+        "amp.decay": 0.9,
+        "amp.sustain": 0.82,
+        "amp.release": 1.6
+      }
+    },
+    {
+      "name": "STRINGS Synth Voice",
+      "gm": [
+        54
+      ],
+      "params": {
+        "osc.waveA": 7,
+        "osc.waveB": 2,
+        "osc.morph": 0.5,
+        "osc.detune": 6,
+        "filter.cutoff": 0.58,
+        "filter.resonance": 0.22,
+        "amp.attack": 0.4,
+        "amp.decay": 0.85,
+        "amp.sustain": 0.8,
+        "amp.release": 1.5
+      }
+    },
+    {
+      "name": "BELL Glass Tine",
+      "gm": [
+        9,
+        11,
+        14,
+        98
+      ],
+      "params": {
+        "osc.waveA": 0,
+        "osc.waveB": 1,
+        "osc.morph": 0.4,
+        "osc.detune": 7,
+        "filter.cutoff": 0.85,
+        "filter.resonance": 0.45,
+        "amp.attack": 0.005,
+        "amp.decay": 0.6,
+        "amp.sustain": 0.05,
+        "amp.release": 0.8
+      }
+    },
+    {
+      "name": "BELL Crystal Pluck",
+      "gm": [
+        9,
+        98,
+        99
+      ],
+      "params": {
+        "osc.waveA": 1,
+        "osc.waveB": 0,
+        "osc.morph": 0.55,
+        "osc.detune": 14,
+        "filter.cutoff": 0.88,
+        "filter.resonance": 0.5,
+        "amp.attack": 0.003,
+        "amp.decay": 0.5,
+        "amp.sustain": 0.02,
+        "amp.release": 0.7
+      }
+    },
+    {
+      "name": "BELL FM Soft",
+      "gm": [
+        11,
+        14,
+        98
+      ],
+      "params": {
+        "osc.waveA": 0,
+        "osc.waveB": 6,
+        "osc.morph": 0.45,
+        "osc.detune": 9,
+        "filter.cutoff": 0.78,
+        "filter.resonance": 0.4,
+        "amp.attack": 0.005,
+        "amp.decay": 0.7,
+        "amp.sustain": 0.08,
+        "amp.release": 1
+      }
+    },
+    {
+      "name": "FX Sweep Up",
+      "gm": [
+        96,
+        97,
+        100
+      ],
+      "params": {
+        "osc.waveA": 2,
+        "osc.waveB": 4,
+        "osc.morph": 0.5,
+        "osc.detune": 25,
+        "filter.cutoff": 0.45,
+        "filter.resonance": 0.55,
+        "amp.attack": 1.8,
+        "amp.decay": 1.5,
+        "amp.sustain": 0.4,
+        "amp.release": 2
+      }
+    },
+    {
+      "name": "FX Atmosphere",
+      "gm": [
+        99,
+        100,
+        101
+      ],
+      "params": {
+        "osc.waveA": 7,
+        "osc.waveB": 1,
+        "osc.morph": 0.55,
+        "osc.detune": 15,
+        "filter.cutoff": 0.5,
+        "filter.resonance": 0.3,
+        "amp.attack": 1.6,
+        "amp.decay": 1.8,
+        "amp.sustain": 0.65,
+        "amp.release": 3.5
+      }
+    },
+    {
+      "name": "FX Sci-Fi Drift",
+      "gm": [
+        97,
+        102,
+        103
+      ],
+      "params": {
+        "osc.waveA": 4,
+        "osc.waveB": 7,
+        "osc.morph": 0.55,
+        "osc.detune": 30,
+        "filter.cutoff": 0.42,
+        "filter.resonance": 0.6,
+        "amp.attack": 1.4,
+        "amp.decay": 1.6,
+        "amp.sustain": 0.55,
+        "amp.release": 3
+      }
+    },
+    {
+      "name": "FX Rain Drone",
+      "gm": [
+        96,
+        101,
+        103
+      ],
+      "params": {
+        "osc.waveA": 6,
+        "osc.waveB": 7,
+        "osc.morph": 0.5,
+        "osc.detune": 20,
+        "filter.cutoff": 0.5,
+        "filter.resonance": 0.35,
+        "amp.attack": 0.8,
+        "amp.decay": 2,
+        "amp.sustain": 0.7,
+        "amp.release": 4
+      }
+    },
+    {
+      "name": "PAD Downtempo",
+      "gm": [
+        89,
+        90
+      ],
+      "params": {
+        "osc.waveA": 2,
+        "osc.waveB": 2,
+        "osc.morph": 0.35,
+        "osc.detune": 14,
+        "filter.cutoff": 0.5,
+        "filter.resonance": 0.18,
+        "amp.attack": 0.4,
+        "amp.decay": 0.6,
+        "amp.sustain": 0.75,
+        "amp.release": 1.2
+      }
+    },
+    {
+      "name": "LEAD Organ House",
+      "gm": [
+        16,
+        17,
+        18,
+        19
+      ],
+      "params": {
+        "osc.waveA": 4,
+        "osc.waveB": 4,
+        "osc.morph": 0.15,
+        "osc.detune": 3,
+        "filter.cutoff": 0.8,
+        "filter.resonance": 0.1,
+        "amp.attack": 0.008,
+        "amp.decay": 0.2,
+        "amp.sustain": 0.85,
+        "amp.release": 0.12
+      }
+    }
   ]
 }
