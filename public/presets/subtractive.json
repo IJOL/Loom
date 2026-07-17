@@ -2523,6 +2523,153 @@
         "amp.sustain": 0.3,
         "amp.release": 0.04
       }
+    },
+    {
+      "name": "LEAD Supersaw 7",
+      "gm": [
+        81,
+        82
+      ],
+      "params": {
+        "osc1.wave": 0,
+        "osc1.level": 0.9,
+        "osc2.wave": 0,
+        "osc2.level": 0.5,
+        "sub.level": 0.6,
+        "noise.level": 0,
+        "master.unison": 7,
+        "master.detune": 25,
+        "filter.cutoff": 0.8,
+        "filter.resonance": 0.3,
+        "filter.envAmount": 0.2,
+        "amp.attack": 0.005,
+        "amp.decay": 0.2,
+        "amp.sustain": 0.7,
+        "amp.release": 0.1
+      }
+    },
+    {
+      "name": "LEAD Hoover Rave",
+      "gm": [
+        81,
+        63
+      ],
+      "params": {
+        "osc1.wave": 1,
+        "osc1.pw": 0.35,
+        "osc1.level": 0.9,
+        "osc2.wave": 1,
+        "osc2.pw": 0.6,
+        "osc2.level": 0.5,
+        "sub.level": 0.5,
+        "noise.level": 0,
+        "master.unison": 5,
+        "master.detune": 25,
+        "filter.model": 1,
+        "filter.cutoff": 0.779,
+        "filter.resonance": 0.5,
+        "filter.envAmount": 0.3,
+        "amp.attack": 0.005,
+        "amp.decay": 0.15,
+        "amp.sustain": 0.7,
+        "amp.release": 0.08
+      }
+    },
+    {
+      "name": "BASS Hoover",
+      "gm": [
+        38,
+        39
+      ],
+      "params": {
+        "osc1.wave": 1,
+        "osc1.pw": 0.4,
+        "osc1.level": 0.9,
+        "osc2.wave": 1,
+        "osc2.pw": 0.55,
+        "osc2.level": 0.5,
+        "sub.level": 0.6,
+        "noise.level": 0,
+        "master.unison": 5,
+        "master.detune": 30,
+        "filter.model": 1,
+        "filter.cutoff": 0.597,
+        "filter.resonance": 0.5,
+        "filter.envAmount": 0.3,
+        "amp.attack": 0.005,
+        "amp.decay": 0.2,
+        "amp.sustain": 0.7,
+        "amp.release": 0.1
+      }
+    },
+    {
+      "name": "LEAD Razor",
+      "gm": [
+        81,
+        84
+      ],
+      "params": {
+        "osc1.wave": 1,
+        "osc1.pw": 0.5,
+        "osc1.level": 1,
+        "osc2.level": 0,
+        "sub.level": 0,
+        "noise.level": 0,
+        "filter.type": 2,
+        "filter.cutoff": 0.725,
+        "filter.resonance": 0.7,
+        "filter.envAmount": 0.5,
+        "filter.drive": 0.2,
+        "amp.attack": 0.003,
+        "amp.decay": 0.06,
+        "amp.sustain": 0.3,
+        "amp.release": 0.03
+      }
+    },
+    {
+      "name": "PAD Ethereal",
+      "gm": [
+        89,
+        90
+      ],
+      "params": {
+        "osc1.wave": 2,
+        "osc1.level": 1,
+        "osc2.wave": 2,
+        "osc2.level": 0.6,
+        "sub.level": 0,
+        "noise.level": 0,
+        "master.unison": 3,
+        "master.detune": 15,
+        "filter.type": 1,
+        "filter.cutoff": 0.352,
+        "filter.resonance": 0.25,
+        "filter.envAmount": 0.1,
+        "amp.attack": 0.04,
+        "amp.decay": 0.3,
+        "amp.sustain": 0.6,
+        "amp.release": 0.4
+      },
+      "modulators": [
+        {
+          "id": "lfo1",
+          "kind": "lfo",
+          "enabled": true,
+          "bipolar": true,
+          "waveform": "sine",
+          "syncToBpm": false,
+          "rateHz": 0.5,
+          "trigger": "free",
+          "scope": "shared",
+          "connections": [
+            {
+              "id": "c1",
+              "paramId": "master.tune",
+              "depth": 0.15
+            }
+          ]
+        }
+      ]
     }
   ]
 }
