@@ -16,7 +16,7 @@ import {
 import {
   launchClip, launchScene, stopLane, stopAll, emptyLanePlayState, captureSceneFromPlaying,
 } from './session-runtime';
-import { rehydrateLane } from './session-host-persistence';
+import { rehydrateLane, modulatorsForDuplicatedLane } from './session-host-persistence';
 import { getEngine, getEngineParamIds } from '../engines/registry';
 import { withUndo } from '../save/history-wiring';
 import { nextLaneSlug } from './session-host-util';
@@ -181,6 +181,15 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
         const used = new Set(self.state.lanes.map((l) => l.id));
         const newId = nextLaneSlug(used, src.engineId);
         const clone = duplicateLane(self.state, laneId, newId);
+        // The clone's engineState.modulators is a JSON copy of the source's, which
+        // is no longer kept live (the mirror was removed). Seed it from the
+        // source's LIVE host so a lane duplicated after an LFO edit carries the
+        // real modulators, not a stale snapshot.
+        const srcHost = self.deps.laneResources?.get(laneId)?.engine?.modulators;
+        if (srcHost) {
+          clone.engineState ??= {};
+          clone.engineState.modulators = modulatorsForDuplicatedLane(srcHost, clone.engineState);
+        }
         self.laneStates.set(newId, emptyLanePlayState(newId));
         rehydrateLane(self, clone); // allocate strip+engine, rehydrate inserts/preset/state
         self.renderWithMixer();

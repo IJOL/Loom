@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { testSessionState } from './session';
-import { mirrorParamChange, syncModulators, mirrorKeymapChange, readLaneKeymap, mirrorDrumkitId, readLaneDrumkitId, mirrorInstrumentId, readLaneInstrumentId } from './session-engine-state';
+import { mirrorParamChange, mirrorKeymapChange, readLaneKeymap, mirrorDrumkitId, readLaneDrumkitId, mirrorInstrumentId, readLaneInstrumentId } from './session-engine-state';
 import type { KeymapEntry } from '../samples/types';
 import { syncNoteFx } from './session-engine-state';
 import type { NoteFxState } from '../notefx/notefx-types';
@@ -35,36 +35,8 @@ describe('per-lane engineState persistence', () => {
     expect(state.lanes.every((l) => !l.engineState?.params?.['filter.cutoff'])).toBe(true);
   });
 
-  it('syncModulators writes the modulator array into lane.engineState.modulators', () => {
-    const state = testSessionState();
-    const mods = [
-      { id: 'lfo1', kind: 'lfo' as const, enabled: true, connections: [] },
-      { id: 'adsr1', kind: 'adsr' as const, enabled: true, connections: [], attackSec: 0.05 },
-    ];
-    syncModulators(state, 'subtractive-1', mods as unknown as import('../modulation/types').ModulatorState[]);
-    const lane = state.lanes.find((l) => l.id === 'subtractive-1')!;
-    expect(lane.engineState?.modulators).toHaveLength(2);
-    expect(lane.engineState?.modulators?.[0].id).toBe('lfo1');
-    expect(lane.engineState?.modulators?.[1].id).toBe('adsr1');
-  });
 
-  it('syncModulators deep-copies the array so later mutations on the source do not leak', () => {
-    const state = testSessionState();
-    const mods = [{ id: 'lfo1', kind: 'lfo' as const, enabled: true, connections: [] }];
-    syncModulators(state, 'subtractive-1', mods as unknown as import('../modulation/types').ModulatorState[]);
-    // Mutate the source
-    (mods[0] as { enabled: boolean }).enabled = false;
-    const lane = state.lanes.find((l) => l.id === 'subtractive-1')!;
-    // Stored copy should still reflect the value at sync time.
-    expect(lane.engineState?.modulators?.[0].enabled).toBe(true);
-  });
 
-  it('syncModulators is a no-op for unknown laneId', () => {
-    const state = testSessionState();
-    syncModulators(state, 'does-not-exist', []);
-    // No exception, no lane mutated.
-    expect(state.lanes.every((l) => !l.engineState?.modulators)).toBe(true);
-  });
 
   it('mirrorKeymapChange writes the keymap onto lane.engineState.sampler.keymap', () => {
     const state = testSessionState();

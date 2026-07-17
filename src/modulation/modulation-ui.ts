@@ -11,7 +11,6 @@ import { lfoFreeRatePosToHz, lfoFreeRateHzToPos } from './rate-sync';
 import { formatParamIdForDisplay } from '../core/lane-display';
 import type { ModulationHost, ModulatorState, Waveform } from './types';
 import type { SessionState } from '../session/session';
-import { syncModulators } from '../session/session-engine-state';
 import { attachKnobUndo, withUndo, type HistoryDeps } from '../save/history-wiring';
 
 export interface ModulationUIDeps {
@@ -51,12 +50,13 @@ export interface ModulationUIDeps {
 }
 
 function sync(deps: ModulationUIDeps): void {
-  if (deps.sessionState) {
-    syncModulators(deps.sessionState, deps.laneId, deps.host.modulators);
-  }
-  // Every control calls sync() after mutating modulator state — so pushing the
-  // change to the live engine here makes ALL of them (depth, on/off, rate, wave,
-  // sync, polarity, scope…) take effect, not just add/remove which call onChange.
+  // The engine's ModulationHost is the single source of truth for modulators —
+  // deps.host, which the controls just mutated. It no longer needs mirroring into
+  // lane.engineState: save reads the live host (collectEngineState), and duplicate
+  // -lane seeds the clone from the live host too. Just push the edit to the audio.
+  // Every control calls sync() after mutating modulator state, so pushing here
+  // makes ALL of them (depth, on/off, rate, wave, sync, polarity, scope…) take
+  // effect, not just add/remove which call onChange.
   deps.onLiveEdit?.();
 }
 
