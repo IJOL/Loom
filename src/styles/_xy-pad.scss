@@ -1,0 +1,109 @@
+// The floating XY pad panel — a Kaoss-style controller. Non-modal: it sits above
+// the UI so you can still see the params it drives move.
+.xy-panel {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 60;
+  width: 240px;
+  padding: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+  display: none;
+
+  &.open { display: block; }
+
+  .xy-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+
+    .xy-title {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .xy-close {
+      background: none;
+      border: none;
+      color: var(--text-faint);
+      cursor: pointer;
+      font-size: 15px;
+      line-height: 1;
+      padding: 2px 4px;
+      &:hover { color: var(--text); }
+    }
+  }
+}
+
+.xy-pad {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.xy-surface {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background:
+    // faint centre crosshair + a corner grid
+    linear-gradient(to right, var(--border-soft) 1px, transparent 1px) 50% 0 / 50% 100%,
+    linear-gradient(to bottom, var(--border-soft) 1px, transparent 1px) 0 50% / 100% 50%,
+    radial-gradient(circle at center, rgba(255, 167, 38, 0.06), transparent 70%),
+    var(--surface);
+  cursor: crosshair;
+  touch-action: none;                     // let pointer drag work on touch
+  transition: border-color 0.12s ease;
+
+  &.active { border-color: var(--amber-soft); }
+}
+
+.xy-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;                   // centre on (left, top)
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 10px var(--amber), 0 0 2px #000;
+  pointer-events: none;
+}
+
+.xy-assign {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.xy-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .xy-axis-tag {
+    width: 16px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--amber);
+    text-align: center;
+  }
+  .xy-sel {
+    flex: 1;
+    min-width: 0;                          // let the select shrink inside flex
+    background: var(--surface-3);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 5px;
+    font-size: 11px;
+  }
+}

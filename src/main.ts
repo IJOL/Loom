@@ -108,6 +108,7 @@ import { loadDrumsWorklet } from './audio-worklet/drums-node';
 import { loadSamplerWorklet } from './audio-worklet/sampler-node';
 // ── Desktop menu bar (chrome) ─────────────────────────────────────────────
 import { createMenuBar } from './app/menu-bar';
+import { createXyPad } from './performance/xy-pad-ui';
 import { buildMenus } from './app/menu-spec';
 import type { MenuActions } from './app/menu-actions';
 import { registerMenuShortcuts } from './app/menu-shortcuts';
@@ -778,6 +779,47 @@ const copyBtn = document.getElementById('copy-to-performance');
 copyBtn?.addEventListener('click', () => performanceFeature.copyFromSession());
 
 document.getElementById('capture-scene')?.addEventListener('click', () => sessionHost.captureScene());
+
+// XY pad — a Kaoss-style controller. Two dropdowns pick automatable params (the
+// same destinations an LFO/ADSR targets); dragging the surface drives both live
+// through the automation registry. Built lazily on first open; a floating,
+// non-modal panel so the params it moves stay visible.
+{
+  const xyBtn = document.getElementById('xy-open');
+  let xyPanel: HTMLElement | null = null;
+  let xyPad: ReturnType<typeof createXyPad> | null = null;
+  xyBtn?.addEventListener('click', () => {
+    if (!xyPanel) {
+      xyPad = createXyPad({
+        registry: automationRegistry,
+        formatLabel: (id) =>
+          laneTrackHelpers.formatParamIdForDisplay(
+            id, (laneId) => sessionHost.state.lanes.find((l) => l.id === laneId)?.name,
+          ),
+      });
+      xyPanel = document.createElement('div');
+      xyPanel.className = 'xy-panel';
+      const head = document.createElement('div');
+      head.className = 'xy-panel-head';
+      const title = document.createElement('span');
+      title.className = 'xy-title';
+      title.textContent = 'XY Pad';
+      const close = document.createElement('button');
+      close.className = 'xy-close';
+      close.textContent = '✕';
+      close.title = 'Close';
+      close.addEventListener('click', () => { xyPanel!.classList.remove('open'); xyBtn.classList.remove('on'); });
+      head.appendChild(title);
+      head.appendChild(close);
+      xyPanel.appendChild(head);
+      xyPanel.appendChild(xyPad.el);
+      document.body.appendChild(xyPanel);
+    }
+    const open = xyPanel.classList.toggle('open');
+    xyBtn.classList.toggle('on', open);
+    if (open) xyPad!.refreshOptions();   // lanes/params may have changed since last open
+  });
+}
 
 // Ctrl/Cmd+I — capture currently-playing clips into a new scene. Skip while
 // typing in a text field so it never steals input from BPM / save-name inputs.
