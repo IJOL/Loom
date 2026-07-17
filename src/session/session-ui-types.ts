@@ -42,6 +42,8 @@ export interface SessionUICallbacks {
   /** Collapse / reopen the synth editor of the active lane (the header chevron). */
   onToggleSynthEditor?: () => void;
   onDeleteClip:  (laneId: string, clipIdx: number) => void;
+  /** Set a clip's colour (from the clip context menu swatch row). Undoable. */
+  onSetClipColor?: (laneId: string, clipIdx: number, color: string) => void;
   onDeleteLane:  (laneId: string) => void;
   onDeleteScene: (sceneIdx: number) => void;
   /** Rename a track / scene in place. Optional so test fixtures + the host

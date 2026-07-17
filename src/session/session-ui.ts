@@ -2,6 +2,7 @@
 // Interactivity (click handlers) is wired by the host (main.ts) via callbacks.
 
 import type { SessionState, SessionLane, SessionClip, ClipSlot } from './session';
+import { CLIP_COLOR_PALETTE } from './session';
 import type { LanePlayState } from './session-runtime';
 import { openContextMenu } from '../core/context-menu';
 import { beginInlineRename } from './inline-rename';
@@ -300,6 +301,17 @@ function clipCell(
       openContextMenu(e, [
         { label: 'Open editor', onSelect: () => cb.onClipClick(lane.id, rowIdx) },
         { label: 'Play / Stop', onSelect: () => cb.onClipPlayPause(lane.id, rowIdx) },
+        ...(cb.onSetClipColor
+          ? [{
+              label: 'Color',
+              separatorBefore: true,
+              swatches: {
+                colors: CLIP_COLOR_PALETTE,
+                current: clip.color,
+                onPick: (color: string) => cb.onSetClipColor!(lane.id, rowIdx, color),
+              },
+            }]
+          : []),
         { label: 'Delete clip', danger: true, separatorBefore: true, onSelect: () => cb.onDeleteClip(lane.id, rowIdx) },
       ]),
     );

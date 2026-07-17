@@ -38,3 +38,35 @@
   background: #3a3a42;
   pointer-events: none;
 }
+
+.context-menu-swatches {
+  padding: 6px 14px 8px;
+}
+
+.context-menu-swatches-label {
+  color: #9a9aa2;
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+
+.context-menu-swatch-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 5px;
+}
+
+.context-menu-swatch {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover { transform: scale(1.12); }
+
+  &.current {
+    outline: 2px solid #dfe0e4;
+    outline-offset: 1px;
+  }
+}

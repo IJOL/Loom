@@ -288,6 +288,18 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
       };
       if (hd) withUndo(hd, run); else run();
     },
+    onSetClipColor(laneId, clipIdx, color) {
+      const lane = self.state.lanes.find((l) => l.id === laneId);
+      const clip = lane?.clips[clipIdx];
+      if (!clip || clip.color === color) return;
+      const hd = self.deps.historyDeps;
+      const run = () => {
+        clip.color = color;
+        self.renderWithMixer();
+        self.inspector.refreshContext(); // keep the breadcrumb swatch in sync
+      };
+      if (hd) withUndo(hd, run); else run();
+    },
     async onDeleteLane(laneId) {
       const lane = self.state.lanes.find((l) => l.id === laneId);
       if (!lane) return;

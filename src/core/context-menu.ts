@@ -7,12 +7,20 @@
 
 export interface ContextMenuItem {
   label: string;
-  onSelect: () => void;
+  /** Omitted for swatch rows, which carry their own per-swatch handler. */
+  onSelect?: () => void;
   disabled?: boolean;
   /** Render in red (destructive action). */
   danger?: boolean;
   /** Draw a separator above this item. */
   separatorBefore?: boolean;
+  /** Render a row of colour swatches under the label instead of a click target.
+   *  Picking one closes the menu and calls onPick. `current` gets a ring. */
+  swatches?: {
+    colors: readonly string[];
+    current?: string;
+    onPick: (color: string) => void;
+  };
 }
 
 let openMenu: HTMLElement | null = null;
@@ -40,13 +48,34 @@ export function openContextMenu(e: MouseEvent, items: ContextMenuItem[]): void {
       sep.className = 'context-menu-sep';
       ul.appendChild(sep);
     }
+    if (item.swatches) {
+      const li = document.createElement('li');
+      li.className = 'context-menu-swatches';
+      const lbl = document.createElement('div');
+      lbl.className = 'context-menu-swatches-label';
+      lbl.textContent = item.label;
+      const row = document.createElement('div');
+      row.className = 'context-menu-swatch-row';
+      for (const color of item.swatches.colors) {
+        const sw = document.createElement('button');
+        sw.className = 'context-menu-swatch';
+        if (color === item.swatches.current) sw.classList.add('current');
+        sw.style.background = color;
+        sw.title = color;
+        sw.addEventListener('click', () => { closeContextMenu(); item.swatches!.onPick(color); });
+        row.appendChild(sw);
+      }
+      li.append(lbl, row);
+      ul.appendChild(li);
+      continue;
+    }
     const li = document.createElement('li');
     li.className = 'context-menu-item';
     if (item.disabled) li.classList.add('disabled');
     if (item.danger) li.classList.add('danger');
     li.textContent = item.label;
     if (!item.disabled) {
-      li.addEventListener('click', () => { closeContextMenu(); item.onSelect(); });
+      li.addEventListener('click', () => { closeContextMenu(); item.onSelect?.(); });
     }
     ul.appendChild(li);
   }

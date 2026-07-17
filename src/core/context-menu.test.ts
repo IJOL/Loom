@@ -48,6 +48,20 @@ describe('context menu', () => {
     expect((items[1] as HTMLElement).classList.contains('danger')).toBe(true);
   });
 
+  it('swatch row renders one button per colour, marks current, and picks + closes', () => {
+    const onPick = vi.fn();
+    openContextMenu(ctxEvent(), [
+      { label: 'Open', onSelect: () => {} },
+      { label: 'Color', separatorBefore: true, swatches: { colors: ['#aaa', '#bbb', '#ccc'], current: '#bbb', onPick } },
+    ]);
+    const swatches = document.querySelectorAll('.context-menu-swatch');
+    expect(swatches.length).toBe(3);
+    expect((swatches[1] as HTMLElement).classList.contains('current')).toBe(true);
+    (swatches[2] as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(onPick).toHaveBeenCalledWith('#ccc');
+    expect(document.querySelector('.context-menu')).toBeNull();
+  });
+
   it('Escape closes the menu', () => {
     openContextMenu(ctxEvent(), [{ label: 'A', onSelect: () => {} }]);
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
