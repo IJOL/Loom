@@ -25,6 +25,6 @@ describe('bootstrapPlugins', () => {
         applyPreset: () => {}, dispose: () => {},
       }),
     }]);
-    expect(listPlugins('fx').map((p) => p.manifest.id).sort()).toEqual(['compressor', 'delay', 'distortion', 'limiter', 'multifilter', 'noop', 'reverb']);
+    expect(listPlugins('fx').map((p) => p.manifest.id).sort()).toEqual(['bitcrusher', 'chorus', 'compressor', 'delay', 'distortion', 'flanger', 'limiter', 'multifilter', 'noop', 'phaser', 'reverb', 'tremolo']);
   });
 });
