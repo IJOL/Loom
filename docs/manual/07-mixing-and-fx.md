@@ -59,7 +59,7 @@ Every lane also has a private insert chain that sits *before* the channel strip 
 
 **Inserts vs sends:** an insert is a serial in-line processor that the signal passes *through*; a send is a parallel path that taps a copy of the signal into a shared return. Use inserts for tone-shaping a single lane; use sends when several lanes should share one effect (a common reverb space, a tempo-synced delay). Loom no longer privileges any effect — reverb and delay are ordinary inserts too, and they just happen to be the default residents of the Send A / Send B return chains.
 
-**The same picker everywhere.** Every insert rack — per lane (including audio lanes), on each send return, and on the master — draws from one unified effect picker: **Filter (multifilter)**, **Distortion**, **Reverb**, **Delay**, **Compressor**, and **Limiter**. See [Master FX panel](#master-fx-panel) below for each effect's parameters. Any insert's parameters are modulation and Performance-automation destinations, wherever the insert sits.
+**The same picker everywhere.** Every insert rack — per lane (including audio lanes), on each send return, and on the master — draws from one unified effect picker: **Filter (multifilter)**, **Distortion**, **Reverb**, **Delay**, **Compressor**, **Limiter**, **Tremolo**, **Chorus**, **Flanger**, **Phaser**, and **Bitcrusher**. See [Master FX panel](#master-fx-panel) below for each effect's parameters. Any insert's parameters are modulation and Performance-automation destinations, wherever the insert sits.
 
 ---
 
@@ -113,7 +113,7 @@ The master compressor is bypassed by default. Enable it for glue and loudness co
 
 ### INSERTS — the master rack
 
-Below MASTER COMP, the INSERTS section holds the master insert chain. Add a slot from the picker and pick its type. The **same six plugin types** are available in every rack — per lane, per send, and here on the master:
+Below MASTER COMP, the INSERTS section holds the master insert chain. Add a slot from the picker and pick its type. The **same eleven plugin types** are available in every rack — per lane, per send, and here on the master:
 
 **Filter (multifilter)**
 - Type: LP / HP / BP / Notch
@@ -132,9 +132,54 @@ Below MASTER COMP, the INSERTS section holds the master insert chain. Add a slot
 
 **Limiter** — a brickwall limiter (ratio 20:1, hard knee, near-zero attack) for catching peaks. Params: **Ceiling** (the level it will not exceed) and **Release**.
 
+**Tremolo (Trem)** — an LFO opening and closing the volume. The oldest modulation effect there is: slow and shallow it breathes, fast and deep it chops the sound into a rhythm of its own. Lovely on pads, electric-piano parts and sustained chords.
+- Rate: 0.1–12 Hz — how fast it pulses
+- Depth: 0–1 — how far it closes between pulses (at 1 it cuts to silence)
+
+**Chorus** — a delayed copy of the signal, detuned by a slow LFO and mixed back in. The two copies drift in and out of tune with each other, which the ear reads as several players at once. Thickens thin sounds and widens single-note leads without changing their pitch.
+- Rate: 0.05–8 Hz — speed of the detuning wobble
+- Depth: 0–1 — how far it detunes
+- Mix: 0–1 — dry/wet blend (start around 0.5)
+
+**Flanger** — the same idea as the chorus but with a much shorter delay and its output fed back into itself. Instead of thickening, the copies cancel each other at a comb of frequencies that sweeps up and down — the classic jet-plane whoosh. Feedback sharpens the effect from a gentle sweep to a metallic scream.
+- Rate: 0.05–8 Hz — speed of the sweep
+- Depth: 0–1 — how far the sweep travels
+- Fbk: 0–1 — feedback; the higher, the more resonant and metallic
+- Mix: 0–1 — dry/wet blend
+
+**Phaser** — four all-pass filters whose corner frequencies an LFO sweeps together. They shift phase without changing volume, so mixing them back with the dry signal creates notches that slide through the sound. Similar in spirit to the flanger but smoother and more liquid — a staple on electric pianos, funk guitar and pads.
+- Rate: 0.05–8 Hz — sweep speed
+- Depth: 0–1 — how far the notches travel
+- Fbk: 0–1 — feedback; deepens the notches
+- Mix: 0–1 — dry/wet blend
+
+**Bitcrusher (Crush)** — digital degradation. Reducing the bit depth quantises the waveform to a coarse staircase, adding the gritty, harmonic distortion of early samplers and game consoles; the tone control then dulls the result the way a low sample rate would. At extreme settings it destroys the sound completely, which is often the point.
+- Bits: 1–16 — amplitude resolution; 16 is nearly clean, 1 is a square-wave wreck
+- Tone: 200–20 000 Hz — a lowpass for the lo-fi dullness
+- Mix: 0–1 — dry/wet blend
+
 Slots in the chain are ordered in series: the output of each slot feeds the input of the next. Each slot has a bypass toggle so you can A/B it without removing it. Individual slots can be removed; adding the same type multiple times is allowed.
 
 The master insert chain processes the full mixed signal, after the EQ/pan of the master strip and before the master compressor — distinct from the Send A/B returns, which receive per-lane amounts and sum back into the master independently.
+
+---
+
+## XY pad
+
+The **▣ XY** button in the session bar opens a floating pad — a Kaoss-style controller for playing two parameters at once with a single gesture.
+
+It stays out of the way rather than taking over the screen: the panel floats above the interface and is **not modal**, so the knobs it drives stay visible and you can watch them move while you sweep.
+
+**Assign the axes.** Below the square surface are two dropdowns, **X** and **Y**. Each lists every automatable parameter in the session, grouped by lane — the same set of destinations an LFO or ADSR can target: engine parameters, channel-strip and insert controls, anything with a knob. Pick one per axis; leave an axis on *— none —* to make the pad one-dimensional.
+
+**Play it.** Drag anywhere on the square. Horizontal position sets the X parameter, vertical the Y, each mapped across that parameter's full range — bottom-left is both at minimum, top-right both at maximum. The dot follows your finger, and the assigned knobs turn with it, because the pad drives them through exactly the same path your mouse would.
+
+The classic pairing is a filter's **cutoff on X and resonance on Y**: one diagonal sweep and you have the filter gesture that defines most electronic music. But any two continuous parameters work — delay time against feedback, distortion drive against mix, two engine parameters from different lanes at once.
+
+Two things to know:
+
+- Assignments are **not saved** with the session — the pad starts empty on each reload.
+- Pad moves are **not captured** by Performance take recording; the automation recorder only follows knobs you turn directly.
 
 ---
 

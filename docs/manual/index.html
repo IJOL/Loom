@@ -1363,7 +1363,7 @@ master bus → master insert chain → master compressor → output      Send A 
 <h2>Per-lane inserts</h2>
 <p>Every lane also has a private insert chain that sits <em>before</em> the channel strip — the engine&#39;s audio passes through it first. If you open the lane&#39;s inspector and add FX to its insert list, those effects process the lane signal exclusively and do not affect any other lane.</p>
 <p><strong>Inserts vs sends:</strong> an insert is a serial in-line processor that the signal passes <em>through</em>; a send is a parallel path that taps a copy of the signal into a shared return. Use inserts for tone-shaping a single lane; use sends when several lanes should share one effect (a common reverb space, a tempo-synced delay). Loom no longer privileges any effect — reverb and delay are ordinary inserts too, and they just happen to be the default residents of the Send A / Send B return chains.</p>
-<p><strong>The same picker everywhere.</strong> Every insert rack — per lane (including audio lanes), on each send return, and on the master — draws from one unified effect picker: <strong>Filter (multifilter)</strong>, <strong>Distortion</strong>, <strong>Reverb</strong>, <strong>Delay</strong>, <strong>Compressor</strong>, and <strong>Limiter</strong>. See <a href="#master-fx-panel">Master FX panel</a> below for each effect&#39;s parameters. Any insert&#39;s parameters are modulation and Performance-automation destinations, wherever the insert sits.</p>
+<p><strong>The same picker everywhere.</strong> Every insert rack — per lane (including audio lanes), on each send return, and on the master — draws from one unified effect picker: <strong>Filter (multifilter)</strong>, <strong>Distortion</strong>, <strong>Reverb</strong>, <strong>Delay</strong>, <strong>Compressor</strong>, <strong>Limiter</strong>, <strong>Tremolo</strong>, <strong>Chorus</strong>, <strong>Flanger</strong>, <strong>Phaser</strong>, and <strong>Bitcrusher</strong>. See <a href="#master-fx-panel">Master FX panel</a> below for each effect&#39;s parameters. Any insert&#39;s parameters are modulation and Performance-automation destinations, wherever the insert sits.</p>
 <hr>
 <h2>Master FX panel</h2>
 <p>The master bus has its own strip at the foot of the <strong>scenes column</strong> of the mixer row — a full column laid out like a lane strip, so it lines up with them: a <strong>MASTER</strong> label, an <strong>EQ</strong> section (HI / MID / LO), an <strong>FX</strong> button (in the lane&#39;s SEND slot — the master has no sends), a <strong>PAN</strong> knob, a <strong>Mute</strong> button (no Solo — meaningless on the master), and a fader that mirrors the master <strong>Volume</strong> plus a VU meter. The master EQ, pan and mute shape the whole mix; they are saved with the session and the EQ/pan are undoable like any knob. Click the <strong>FX</strong> button to open the <strong>Master FX panel</strong> below the grid (click again to close it). <em>(The panel&#39;s content — SENDS, MASTER COMP, INSERTS — was previously a separate &quot;Master FX&quot; tab; the controls are identical, only the way you open them changed.)</em></p>
@@ -1488,7 +1488,7 @@ master bus → master insert chain → master compressor → output      Send A 
 </tbody></table>
 <p>The master compressor is bypassed by default. Enable it for glue and loudness control on the final mix, or to tame transient peaks before export. See <a href="#09-saving-and-export">Saving &amp; Export</a> for how the master bus feeds the offline render.</p>
 <h3>INSERTS — the master rack</h3>
-<p>Below MASTER COMP, the INSERTS section holds the master insert chain. Add a slot from the picker and pick its type. The <strong>same six plugin types</strong> are available in every rack — per lane, per send, and here on the master:</p>
+<p>Below MASTER COMP, the INSERTS section holds the master insert chain. Add a slot from the picker and pick its type. The <strong>same eleven plugin types</strong> are available in every rack — per lane, per send, and here on the master:</p>
 <p><strong>Filter (multifilter)</strong></p>
 <ul>
 <li>Type: LP / HP / BP / Notch</li>
@@ -1504,8 +1504,51 @@ master bus → master insert chain → master compressor → output      Send A 
 <p><strong>Delay</strong> — same parameters as the Send A delay (Time + SYNC, Fbk, Wet, Damp). Use as an insert for a master-bus slapback or stutter.</p>
 <p><strong>Compressor</strong> — the same <code>CompBlock</code> dynamics compressor as the channel-strip and master compressors, now insertable anywhere. Params: Bypass, Threshold, Ratio, Attack, Release, Knee, Makeup (see <a href="#master-comp">MASTER COMP</a> for ranges).</p>
 <p><strong>Limiter</strong> — a brickwall limiter (ratio 20:1, hard knee, near-zero attack) for catching peaks. Params: <strong>Ceiling</strong> (the level it will not exceed) and <strong>Release</strong>.</p>
+<p><strong>Tremolo (Trem)</strong> — an LFO opening and closing the volume. The oldest modulation effect there is: slow and shallow it breathes, fast and deep it chops the sound into a rhythm of its own. Lovely on pads, electric-piano parts and sustained chords.</p>
+<ul>
+<li>Rate: 0.1–12 Hz — how fast it pulses</li>
+<li>Depth: 0–1 — how far it closes between pulses (at 1 it cuts to silence)</li>
+</ul>
+<p><strong>Chorus</strong> — a delayed copy of the signal, detuned by a slow LFO and mixed back in. The two copies drift in and out of tune with each other, which the ear reads as several players at once. Thickens thin sounds and widens single-note leads without changing their pitch.</p>
+<ul>
+<li>Rate: 0.05–8 Hz — speed of the detuning wobble</li>
+<li>Depth: 0–1 — how far it detunes</li>
+<li>Mix: 0–1 — dry/wet blend (start around 0.5)</li>
+</ul>
+<p><strong>Flanger</strong> — the same idea as the chorus but with a much shorter delay and its output fed back into itself. Instead of thickening, the copies cancel each other at a comb of frequencies that sweeps up and down — the classic jet-plane whoosh. Feedback sharpens the effect from a gentle sweep to a metallic scream.</p>
+<ul>
+<li>Rate: 0.05–8 Hz — speed of the sweep</li>
+<li>Depth: 0–1 — how far the sweep travels</li>
+<li>Fbk: 0–1 — feedback; the higher, the more resonant and metallic</li>
+<li>Mix: 0–1 — dry/wet blend</li>
+</ul>
+<p><strong>Phaser</strong> — four all-pass filters whose corner frequencies an LFO sweeps together. They shift phase without changing volume, so mixing them back with the dry signal creates notches that slide through the sound. Similar in spirit to the flanger but smoother and more liquid — a staple on electric pianos, funk guitar and pads.</p>
+<ul>
+<li>Rate: 0.05–8 Hz — sweep speed</li>
+<li>Depth: 0–1 — how far the notches travel</li>
+<li>Fbk: 0–1 — feedback; deepens the notches</li>
+<li>Mix: 0–1 — dry/wet blend</li>
+</ul>
+<p><strong>Bitcrusher (Crush)</strong> — digital degradation. Reducing the bit depth quantises the waveform to a coarse staircase, adding the gritty, harmonic distortion of early samplers and game consoles; the tone control then dulls the result the way a low sample rate would. At extreme settings it destroys the sound completely, which is often the point.</p>
+<ul>
+<li>Bits: 1–16 — amplitude resolution; 16 is nearly clean, 1 is a square-wave wreck</li>
+<li>Tone: 200–20 000 Hz — a lowpass for the lo-fi dullness</li>
+<li>Mix: 0–1 — dry/wet blend</li>
+</ul>
 <p>Slots in the chain are ordered in series: the output of each slot feeds the input of the next. Each slot has a bypass toggle so you can A/B it without removing it. Individual slots can be removed; adding the same type multiple times is allowed.</p>
 <p>The master insert chain processes the full mixed signal, after the EQ/pan of the master strip and before the master compressor — distinct from the Send A/B returns, which receive per-lane amounts and sum back into the master independently.</p>
+<hr>
+<h2>XY pad</h2>
+<p>The <strong>▣ XY</strong> button in the session bar opens a floating pad — a Kaoss-style controller for playing two parameters at once with a single gesture.</p>
+<p>It stays out of the way rather than taking over the screen: the panel floats above the interface and is <strong>not modal</strong>, so the knobs it drives stay visible and you can watch them move while you sweep.</p>
+<p><strong>Assign the axes.</strong> Below the square surface are two dropdowns, <strong>X</strong> and <strong>Y</strong>. Each lists every automatable parameter in the session, grouped by lane — the same set of destinations an LFO or ADSR can target: engine parameters, channel-strip and insert controls, anything with a knob. Pick one per axis; leave an axis on <em>— none —</em> to make the pad one-dimensional.</p>
+<p><strong>Play it.</strong> Drag anywhere on the square. Horizontal position sets the X parameter, vertical the Y, each mapped across that parameter&#39;s full range — bottom-left is both at minimum, top-right both at maximum. The dot follows your finger, and the assigned knobs turn with it, because the pad drives them through exactly the same path your mouse would.</p>
+<p>The classic pairing is a filter&#39;s <strong>cutoff on X and resonance on Y</strong>: one diagonal sweep and you have the filter gesture that defines most electronic music. But any two continuous parameters work — delay time against feedback, distortion drive against mix, two engine parameters from different lanes at once.</p>
+<p>Two things to know:</p>
+<ul>
+<li>Assignments are <strong>not saved</strong> with the session — the pad starts empty on each reload.</li>
+<li>Pad moves are <strong>not captured</strong> by Performance take recording; the automation recorder only follows knobs you turn directly.</li>
+</ul>
 <hr>
 <h2>Sidechain compression</h2>
 <p>Loom includes a sidechain ducking system. Any lane&#39;s channel strip can be ducked by the signal level of another lane (the <em>source</em>). The ducker follows the source lane&#39;s envelope via a full-wave rectifier and two smoothing filters, then reduces the target lane&#39;s gain proportionally:</p>
@@ -1588,7 +1631,7 @@ master bus → master insert chain → master compressor → output      Send A 
 <p><img src="images/engine-sampler.png" alt="Sampler engine editor"></p>
 <p>The Sampler is a polyphonic playback engine that maps audio across the keyboard and plays it back at the correct pitch per note. A Sampler lane can be three things — a <strong>melodic instrument</strong> (samples spread across ranges of keys), a <strong>drumkit</strong> (one sample per key), or a <strong>loop</strong> (a sliced loop played as a sequence of notes) — and all three share <strong>one inspector layout</strong>.</p>
 <h3>Presets are the instruments</h3>
-<p>The Sampler&#39;s bundled instruments — drumkits, melodic instruments, and loops — <em>are</em> its presets: pick one straight from the standard <strong>PRESET</strong> dropdown at the top of the inspector (grouped <strong>Drumkit / Melodic / Loop</strong>). Selecting one downloads + decodes its WAVs into IndexedDB (so it persists across reloads) and loads it. There is no separate picker. Loom ships ready-made kits (<strong>TR-808</strong>, <strong>Acoustic</strong>, <strong>Dirt</strong>), melodic instruments, and loops — all working on the live deploy without a manual import.</p>
+<p>The Sampler&#39;s bundled instruments — drumkits, melodic instruments, and loops — <em>are</em> its presets: pick one straight from the standard <strong>PRESET</strong> dropdown at the top of the inspector (grouped <strong>Drumkit / Melodic / Loop</strong>). Selecting one downloads + decodes its WAVs into IndexedDB (so it persists across reloads) and loads it. There is no separate picker. Loom ships <strong>68 ready-made sample kits</strong>, melodic instruments, and loops — all working on the live deploy without a manual import. Most of the kits are grouped under <strong>Drum Machines</strong>: one-shot sets modelled on classic hardware (TR-808, LinnDrum, MPC60, DMX and dozens more), alongside a few hand-curated kits (<strong>TR-808</strong>, <strong>Acoustic</strong>, <strong>Dirt</strong>) and a 31-pad <strong>GM Percussion</strong> kit.</p>
 <h3>The channel layout</h3>
 <p>Whatever you load, the inspector has the same shape:</p>
 <ul>
@@ -1705,7 +1748,7 @@ master bus → master insert chain → master compressor → output      Send A 
 </tbody></table>
 <p>These live in each channel strip — drumkit, melodic, and loop all share the same per-channel rack (there is no eight-pad limit and no separate knob row).</p>
 <h3>Drumkits</h3>
-<p>A drumkit is one sample per key, edited on the <strong>drum-grid</strong> (the same grid as the Drum Machine engine). A kit holds <strong>any number of sounds</strong> — not just eight — and you grow or shrink it with the <strong>＋</strong> tile and each strip&#39;s <strong>✕</strong>. Loom ships three ready-made sample kits (<strong>TR-808</strong>, <strong>Acoustic</strong>, <strong>Dirt</strong>); pick one from the PRESET dropdown and the lane is ready to play. The kit is rebuilt fresh from its manifest on each session load, so the WAVs never need re-importing.</p>
+<p>A drumkit is one sample per key, edited on the <strong>drum-grid</strong> (the same grid as the Drum Machine engine). A kit holds <strong>any number of sounds</strong> — not just eight — and you grow or shrink it with the <strong>＋</strong> tile and each strip&#39;s <strong>✕</strong>. Loom ships <strong>68</strong> ready-made sample kits — the <strong>Drum Machines</strong> group (classic-hardware one-shot sets), three hand-curated kits (<strong>TR-808</strong>, <strong>Acoustic</strong>, <strong>Dirt</strong>) and a 31-pad <strong>GM Percussion</strong>; pick one from the PRESET dropdown and the lane is ready to play. The kit is rebuilt fresh from its manifest on each session load, so the WAVs never need re-importing.</p>
 <h3>Loops</h3>
 <p><img src="images/engine-sampler-loop.png" alt="A Sampler Loop instrument: the whole-loop overview above the per-slice strips"></p>
 <p>A loop is sliced into segments mapped to <strong>consecutive notes</strong>, so playing the keys in order replays the groove. Above the strips the <strong>whole loop</strong> is drawn as one continuous, colour-coded waveform with a cut line at every slice. Selecting a loop also <strong>drops a note clip</strong> onto the lane — one note per slice, each placed at its exact position so the notes form a continuous <strong>staircase</strong> — opened in the piano-roll; hit Play and it replays the loop, now as discrete notes you can move, mute, repitch or re-order. The clip keeps the loop&#39;s waveform as its header.</p>

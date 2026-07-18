@@ -21,13 +21,17 @@ Loom grew out of a Roland TB-303 bass synth + drum machine and still has those a
 - **Musical assistance** — set a **project key & scale** plus an editing **style** (Acid / Techno, House, Synthwave, Lo-fi, Breakbeat / Big Beat) from the tonality bar; the piano-roll highlights in-key notes, and a one-click **🎲 generator**, an **examples gallery**, pattern transforms (**Vary / Mirror / Reverse**), and a **chord maker** all stay in key. An optional **scale lock** — **off by default**, toggled from the tonality bar or the piano-roll's 🔒 button — snaps every note you place into the key when you want a safety net.
 - **TB-303 behaviors** — authentic slide (glide into the next step) and per-step accent, shared across engines.
 - **Per-lane modulation** — LFO and ADSR modulators routable to any parameter.
-- **FX & mixer** — one unified effect picker (multifilter, distortion, reverb, delay, **compressor**, **limiter**) insertable on any rack: per lane (audio included), on the master, or on the two general-purpose **Send A / Send B** return buses (seeded A = delay, B = reverb). Plus a mixer with **sidechain compression**. Any insert's params are modulation and Performance-automation destinations.
+- **FX & mixer** — one unified effect picker with **11 inserts** (multifilter, distortion, reverb, delay, compressor, limiter, **tremolo**, **chorus**, **flanger**, **phaser**, **bitcrusher**) insertable on any rack: per lane (audio included), on the master, or on the two general-purpose **Send A / Send B** return buses (seeded A = delay, B = reverb). Inserts are built from native Web Audio nodes (the synthesis itself runs in the AudioWorklet). Plus a mixer with **sidechain compression**. Any insert's params are modulation and Performance-automation destinations.
 - **MIDI import** — drop a `.mid` file and it's transformed into a session, with General MIDI instrument matching.
 - **Hardware MIDI control** — drive Loom live from an **Akai APC Key 25** (or any MIDI keyboard) over USB: play the active lane with **held, velocity-sensitive, polyphonic** notes, launch clips on the **8×5 pad grid with LED feedback**, tweak params with the 8 knobs, and fire scenes / STOP ALL. Auto-detects mk1/mk2 and falls back to a generic keyboard; see [below](#hardware-midi-control-apc-key-25).
 - **Stem separation (optional)** — drop a finished song and Loom splits it into **4 audio lanes** (vocals / drums / bass / other) so you can mute, solo and remix the parts. Optional note transcription can also generate editable note/drum lanes from stems or from an audio clip's **Transcribe loop** action. Separation/transcription run on a **small local helper you start yourself** (Demucs + transcription models; Demucs models are the same family behind [UVR](https://github.com/anjok07/ultimatevocalremovergui)); the app itself stays 100% browser. Setup below / [`tools/stem-service/`](tools/stem-service/README.md).
+- **Computer keyboard as MIDI** — the **⌨ Keys** toggle turns the typing keyboard into a live instrument: ASDFG… play the **active lane** through the same path a hardware MIDI keydown takes (so chord note-FX and loop-record apply), `z`/`x` shift the octave. Off by default.
+- **MIDI live-record** — arm **● Rec** and play (hardware keyboard, pads, or ⌨ Keys) to capture held notes straight into a clip, merged or replacing, with the notes appearing on the grid as you play.
+- **XY pad** — a floating, Kaoss-style controller: pick any two automatable params from the X and Y dropdowns (the same destinations an LFO targets) and drag the surface to sweep both live; the on-screen knobs follow.
 - **Presets** — 20+ per engine, GM-tagged.
 - **Global undo/redo** and session save/load (stored locally in your browser).
-- **Plugin architecture** — engines, FX, and modulators are discovered at build time; adding one is dropping a file, not editing the core.
+- **AudioWorklet synthesis** — the melodic engines don't build a Web Audio node graph per note; they render sample-by-sample inside a single **AudioWorklet** (`src/audio-worklet/loom-processor.ts`) with a per-renderer registry, voice manager, look-ahead scheduler queue and modulation runtime under [`src/audio-dsp/`](src/audio-dsp/). That's what keeps dense, high-polyphony material free of the dropouts a node-per-note graph produces. Inserts, mixer and sends stay on native Web Audio nodes downstream.
+- **Plugin architecture** — FX and modulators are discovered at build time by a glob scan: adding one really is dropping a file in [`src/plugins/`](src/plugins/), no core edit. **Engines are not a pure drop-in yet** — a new engine file registers itself and shows up in the lane selector, but to actually make sound it must also be added to `WORKLET_ENGINE_IDS` in [`src/app/lane-allocator.ts`](src/app/lane-allocator.ts) and its renderer side-effect-imported in [`src/audio-worklet/loom-processor.ts`](src/audio-worklet/loom-processor.ts). Skip either and the engine is selectable but silent at note time.
 
 ## Manual
 
@@ -89,7 +93,7 @@ Then click **Stems…**, pick a song, and the 4 lanes appear when it finishes. T
 
 Loom can be played from a hardware controller over **Web MIDI** (Chrome / Edge — Firefox needs the flag). Open the **MIDI Control** panel and click **Enable**; the status shows the detected device, e.g. `APC Key 25 (mk2) ✓`. Plug-and-play: unplug/replug re-binds, and the choice is remembered across reloads.
 
-It's built around an **Akai APC Key 25** (both **mk1** and **mk2** auto-detect), but any class-compliant keyboard works as a generic fallback (notes + CC knobs, no LEDs). Adding support for another controller is dropping one **profile** file in [`src/control/profiles/`](src/control/profiles/) — it's discovered at build time, just like engines and FX.
+It's built around an **Akai APC Key 25** (both **mk1** and **mk2** auto-detect), but any class-compliant keyboard works as a generic fallback (notes + CC knobs, no LEDs). Adding support for another controller is dropping one **profile** file in [`src/control/profiles/`](src/control/profiles/) — it's discovered at build time, just like FX and modulator plugins.
 
 Surface map:
 
@@ -112,20 +116,33 @@ The standard `npm run build` (base `/`) is left untouched for local preview and 
 ## Credits — sample sources
 
 The synth drum kits (808 / 909 / 606 / 78 / Linn) are **100% generated DSP** — no samples.
-The three *sample* kits bundled under [`public/drumkits/`](public/drumkits/) (`tr808`, `acoustic`,
-`dirt`) are small one-shots curated from freely-circulated, community-redistributed sources:
 
-- **`acoustic` ("Acoustic / Dirt")** and most of **`tr808`** — the [**Dirt-Samples**](https://github.com/tidalcycles/Dirt-Samples)
-  collection that ships with [TidalCycles](https://tidalcycles.org/), plus a couple of generic acoustic one-shots.
-- **`tr808` ("TR-808")** — the classic Roland **TR-808** sounds (the widely-distributed
-  *Michael Fischer 808* set and equivalents). "TR-808" is a trademark of Roland Corporation;
-  the bundled samples are decades-old, freely-circulated one-shots used here for educational/demo purposes.
-- **`tr808/ride`** uses a TR-808 crash; the acoustic ride is from Dirt-Samples.
-- **GM Percussion** drum kit samples: [VCSL](https://github.com/sgossner/VCSL) (CC0).
+Beyond those, this repo bundles **68 sample drum kits** under [`public/drumkits/`](public/drumkits/)
+(**486 audio files** in total), plus a handful of sampler instruments under
+[`public/instruments/`](public/instruments/). Their provenance:
 
-These are bundled so the sampled kits work on the live deploy. They're a tiny curated subset, not a
-redistribution of any full commercial library. **If you hold rights to any sound here and want it
-removed or re-credited, open an issue and it'll be swapped immediately.**
+- **64 of the 68 kits** (the "Drum Machines" preset group — `rolandtr808`, `linndrum`, `akaimpc60`,
+  `oberheimdmx`, …) are generated by [`tools/build-drumkits-from-tidal.mjs`](tools/build-drumkits-from-tidal.mjs),
+  which downloads one one-shot per Loom drum voice from
+  [**ritchse/tidal-drum-machines**](https://github.com/ritchse/tidal-drum-machines) — the same packs
+  [Strudel](https://codeberg.org/uzu/strudel) loads in its default prebake. As the generator's own header
+  records, that collection carries **no explicit licence**; it is community-distributed.
+- **3 hand-curated kits** (`tr808`, `acoustic`, `dirt`, 8 one-shots each) come from freely-circulated,
+  community-redistributed sources — mainly the [**Dirt-Samples**](https://github.com/tidalcycles/Dirt-Samples)
+  collection that ships with [TidalCycles](https://tidalcycles.org/), plus classic Roland **TR-808**
+  one-shots. "TR-808" is a trademark of Roland Corporation.
+- **`gm-percussion`** (31 files) is the one kit with a clear licence: [VCSL](https://github.com/sgossner/VCSL) (**CC0**).
+- **[`public/instruments/amen-175/`](public/instruments/amen-175/)** ships an **"Amen Break"** loop.
+  Its rights are **not cleared**.
+
+To be explicit about what this means: **the bundled audio is not covered by Loom's AGPL grant.** The
+AGPL applies to the source code; each sample keeps whatever terms its own source carries. For most of
+the files above those terms are **unresolved** — the upstream collections state no licence, and the
+samples have **not been individually cleared** for redistribution. They are bundled so the sampled kits
+work on the live demo deploy.
+
+**If you hold rights to any sound here and want it removed or re-credited, open an issue and it'll be
+swapped immediately.**
 
 ## Architecture
 
@@ -144,5 +161,5 @@ The licence is inherited, not chosen: Loom's worklet DSP adapts code from
 [`src/audio-dsp/filter.ts`](src/audio-dsp/filter.ts) and [`src/audio-dsp/osc.ts`](src/audio-dsp/osc.ts),
 so the whole work is AGPL-3.0-or-later. Those files carry their own attribution headers.
 
-Bundled audio samples are **not** covered by the AGPL — they keep the terms of their own sources; see
-[Credits — sample sources](#credits--sample-sources) above.
+Bundled audio samples are **not** covered by the AGPL — they keep the terms of their own sources, and
+for most of them those terms are unresolved. See [Credits — sample sources](#credits--sample-sources) above.
