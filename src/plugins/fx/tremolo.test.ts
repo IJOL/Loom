@@ -63,3 +63,70 @@ describe('tremolo', () => {
     expect(fx.getBaseValue('depth')).toBeCloseTo(0.7, 3);
   });
 });
+
+// The trance gate is this same effect with a synced rate, a square shape and
+// smoothed edges — so those three are what these cover.
+describe('tremolo as a trance gate', () => {
+  it('synced, the rate comes from the tempo: 1/16 at 120 BPM is 8 Hz', () => {
+    const ctx = new OfflineAudioContext(1, 4410, 44100);
+    const fx = inst(ctx);
+    fx.setBaseValue('sync', 5);        // index 5 = 1/16 per the options table
+    fx.setBpm?.(120);
+    expect(fx.getBaseValue('rate')).toBeCloseTo(8, 2);
+  });
+
+  it('a tempo change moves a synced gate with it', () => {
+    const ctx = new OfflineAudioContext(1, 4410, 44100);
+    const fx = inst(ctx);
+    fx.setBaseValue('sync', 2);        // 1/8
+    fx.setBpm?.(120);
+    const at120 = fx.getBaseValue('rate');
+    fx.setBpm?.(140);
+    expect(fx.getBaseValue('rate')).toBeGreaterThan(at120);
+  });
+
+  it('Free leaves the rate under the knob, tempo notwithstanding', () => {
+    const ctx = new OfflineAudioContext(1, 4410, 44100);
+    const fx = inst(ctx);
+    fx.setBaseValue('sync', 0);
+    fx.setBaseValue('rate', 3);
+    fx.setBpm?.(180);
+    expect(fx.getBaseValue('rate')).toBeCloseTo(3, 3);
+  });
+
+  it('a square shape gates harder than a sine — that is the gate sound', async () => {
+    // A square LFO sits at its extremes; a sine spends most of its time in
+    // between. At the same depth the square must swing the envelope further.
+    const sine   = spread(envelope(await render((fx) => {
+      fx.setBaseValue('rate', 6); fx.setBaseValue('depth', 0.9); fx.setBaseValue('shape', 0);
+    })));
+    const square = spread(envelope(await render((fx) => {
+      fx.setBaseValue('rate', 6); fx.setBaseValue('depth', 0.9); fx.setBaseValue('shape', 1);
+      fx.setBaseValue('smooth', 0.2);
+    })));
+    expect(square).toBeGreaterThan(sine);
+  });
+
+  it('smoothing rounds the gate edges — heavy smoothing swings less', async () => {
+    // The smoother is a lowpass on the LFO, so a long time constant blunts the
+    // square towards a sine and the envelope stops reaching the extremes.
+    const sharp = spread(envelope(await render((fx) => {
+      fx.setBaseValue('rate', 6); fx.setBaseValue('depth', 0.9);
+      fx.setBaseValue('shape', 1); fx.setBaseValue('smooth', 0.2);
+    })));
+    const soft  = spread(envelope(await render((fx) => {
+      fx.setBaseValue('rate', 6); fx.setBaseValue('depth', 0.9);
+      fx.setBaseValue('shape', 1); fx.setBaseValue('smooth', 50);
+    })));
+    expect(soft).toBeLessThan(sharp);
+  });
+
+  it('round-trips the gate params', () => {
+    const ctx = new OfflineAudioContext(1, 4410, 44100);
+    const fx = inst(ctx);
+    fx.setBaseValue('shape', 1); fx.setBaseValue('smooth', 12); fx.setBaseValue('sync', 3);
+    expect(fx.getBaseValue('shape')).toBe(1);
+    expect(fx.getBaseValue('smooth')).toBeCloseTo(12, 3);
+    expect(fx.getBaseValue('sync')).toBe(3);
+  });
+});
