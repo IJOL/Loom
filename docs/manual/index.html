@@ -1456,24 +1456,15 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 </tr>
 <tr>
 <td>TRIG</td>
-<td>⚠️ <strong>Currently has no effect</strong> — see the note below. Intended: <strong>Free</strong> runs the phase continuously; <strong>Note</strong> resets phase on every note-on.</td>
+<td><strong>Free</strong> — the phase runs continuously off the clock, like a classic analogue LFO. <strong>Note</strong> — the phase restarts on every note-on, so the LFO&#39;s shape lands the same way on each note.</td>
 </tr>
 <tr>
 <td>SCOPE</td>
-<td>⚠️ <strong>Currently has no effect</strong> — see the note below. Intended: <strong>Shared</strong> runs one LFO for the lane; <strong>PerVoice</strong> gives each played note its own.</td>
+<td><strong>Shared</strong> — one phase for the whole lane; every voice wobbles together. <strong>PerVoice</strong> — each played note gets its own phase, starting when that note starts.</td>
 </tr>
 </tbody></table>
-<blockquote>
-<p><strong>TRIG and SCOPE are not connected yet.</strong> Since synthesis moved into the
-AudioWorklet, the only LFO settings that reach the sound engine are the rate,
-the depth and the destination — the trigger mode and the scope are not sent.
-Every LFO therefore free-runs and is <strong>shared</strong> across all voices of the lane,
-whatever these two dropdowns say. They are left in place for the work that
-will wire them up; until then, do not expect a chord&#39;s notes to wobble
-independently, or an LFO peak to land on each note-on.</p>
-<p>The ADSR modulator is unaffected: it is genuinely <strong>per-voice</strong> and works as
-described below.</p>
-</blockquote>
+<p><strong>Musical difference between Shared and PerVoice:</strong> a shared LFO makes a chord breathe as one — all notes rise and fall together, which is what you want for a pad that should feel like a single instrument. PerVoice gives each note its own cycle, so notes played at different moments drift out of step with each other and the chord shimmers instead of pulsing. On fast, staccato playing the difference is dramatic; on a slow sustained chord it is subtle.</p>
+<p><strong>TRIG=Note</strong> matters most with a slow LFO and short notes: with Free, a note might catch the LFO anywhere in its cycle, so consecutive notes sound inconsistent; with Note, every note gets the same sweep from the same starting point.</p>
 <h3>ADSR</h3>
 <p>An ADSR produces a classic Attack–Decay–Sustain–Release envelope that fires once on each note trigger and follows the note&#39;s gate duration. Its default scope is <strong>PerVoice</strong>, which is almost always what you want: every note gets its own independent envelope.</p>
 <table>

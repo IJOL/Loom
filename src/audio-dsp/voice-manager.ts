@@ -1,6 +1,9 @@
 import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets } from './types';
 import { createRenderer } from './renderer-registry';
-import type { ModulationRuntime, ModLite } from './modulation-runtime';
+import type { ModulationRuntime, ModLite, PhaseOrigin } from './modulation-runtime';
+
+/** Phase origin for the all-free/all-shared fast path: the LFO ignores notes. */
+const SHARED_ORIGIN: PhaseOrigin = { voiceStartT: 0, lastNoteOnT: 0 };
 
 interface Slot { midi: number; allocatedAt: number; v: VoiceRenderer; }
 
@@ -9,6 +12,8 @@ export class VoiceManager {
   private maxVoices = 16; // default poly; mono lanes set 1 via setMaxVoices
   private params: ParamBag;
   private lastT = 0;
+  /** When the lane last received a note-on (phase origin for TRIG=note). */
+  private lastNoteOnT = 0;
   private mod: ModulationRuntime | null = null;
   // Pooled per-sample modulation-offset struct — mutated in place each render
   // sample and shared (read-only) by every voice, so the real-time render
@@ -65,6 +70,9 @@ export class VoiceManager {
     // NEXT note, matching the engine's "params read at trigger time" rule.
     const adsr = this.mod?.getAdsrMods();
     if (adsr && adsr.length) (v as { setModEnvelopes?(m: ModLite[]): void }).setModEnvelopes?.(adsr);
+    // The lane's most recent note-on — the phase origin for a shared LFO whose
+    // TRIG is 'note' (the whole lane retriggers together).
+    this.lastNoteOnT = note.beginSec;
     this.slots.push({ midi: note.midi, allocatedAt: note.beginSec, v });
   }
 
@@ -74,48 +82,59 @@ export class VoiceManager {
     for (let i = 0; i < n; i++) this.slots[i].v.noteOff(this.lastT);
   }
 
+  /** Fill the pooled offset struct for one phase origin. Reused for the shared
+   *  case (computed once per sample) and the per-voice case (once per voice) —
+   *  either way it allocates nothing on the audio thread.
+   *  In-worklet LFO modulation is SUBTRACTIVE-ONLY for the struct-keyed path:
+   *  only SubtractiveVoiceRenderer reads `VoiceModOffsets`. Other engines get the
+   *  generic dot-id map instead. */
+  private fillOffsets(t: number, o: PhaseOrigin): VoiceModOffsets | Record<string, number> | undefined {
+    if (!this.mod) return undefined;
+    if (this.engineId === 'subtractive') {
+      const m = this.modOffsets;
+      m.filterCutoff    = this.mod.offsetFor('filterCutoff', t, o);
+      m.filterResonance = this.mod.offsetFor('filterResonance', t, o);
+      m.filterEnvAmount = this.mod.offsetFor('filterEnvAmount', t, o);
+      m.filterKeyTrack  = this.mod.offsetFor('filterKeyTrack', t, o);
+      m.filterDrive     = this.mod.offsetFor('filterDrive', t, o);
+      m.osc1Level       = this.mod.offsetFor('osc1Level', t, o);
+      m.osc2Level       = this.mod.offsetFor('osc2Level', t, o);
+      m.subLevel        = this.mod.offsetFor('subLevel', t, o);
+      m.noiseLevel      = this.mod.offsetFor('noiseLevel', t, o);
+      m.noiseColor      = this.mod.offsetFor('noiseColor', t, o);
+      m.osc1Detune      = this.mod.offsetFor('osc1Detune', t, o);
+      m.osc1Pw          = this.mod.offsetFor('osc1Pw', t, o);
+      m.osc1Sync        = this.mod.offsetFor('osc1Sync', t, o);
+      m.osc2Sync        = this.mod.offsetFor('osc2Sync', t, o);
+      m.osc2Pw          = this.mod.offsetFor('osc2Pw', t, o);
+      m.osc2Detune      = this.mod.offsetFor('osc2Detune', t, o);
+      m.masterTune      = this.mod.offsetFor('masterTune', t, o);
+      m.ampGain         = this.mod.offsetFor('ampGain', t, o);
+      m.unisonDetune    = this.mod.offsetFor('unisonDetune', t, o);
+      m.unisonDrift     = this.mod.offsetFor('unisonDrift', t, o);
+      return m;
+    }
+    this.mod.offsetsInto(this.genericOffsets, t, o);
+    return this.genericOffsets;
+  }
+
   renderSample(t: number): number {
     this.lastT = t;
-    // Shared-LFO offsets: computed once per sample (same for every voice) and
-    // applied at read time. Reuses the pooled struct (no per-sample allocation);
-    // undefined when no modulation is attached.
-    // In-worklet shared-LFO modulation is currently SUBTRACTIVE-ONLY: the offset
-    // struct is keyed by SubParams fields and only SubtractiveVoiceRenderer reads
-    // modOffsets. Other engines' renderers ignore the arg, so skip the work (and
-    // don't pass a misleading struct) for them.
-    let mo: VoiceModOffsets | undefined;
-    if (this.mod && this.engineId === 'subtractive') {
-      const m = this.modOffsets;
-      m.filterCutoff    = this.mod.offsetFor('filterCutoff', t);
-      m.filterResonance = this.mod.offsetFor('filterResonance', t);
-      m.filterEnvAmount = this.mod.offsetFor('filterEnvAmount', t);
-      m.filterKeyTrack  = this.mod.offsetFor('filterKeyTrack', t);
-      m.filterDrive     = this.mod.offsetFor('filterDrive', t);
-      m.osc1Level       = this.mod.offsetFor('osc1Level', t);
-      m.osc2Level       = this.mod.offsetFor('osc2Level', t);
-      m.subLevel        = this.mod.offsetFor('subLevel', t);
-      m.noiseLevel      = this.mod.offsetFor('noiseLevel', t);
-      m.noiseColor      = this.mod.offsetFor('noiseColor', t);
-      m.osc1Detune      = this.mod.offsetFor('osc1Detune', t);
-      m.osc1Pw          = this.mod.offsetFor('osc1Pw', t);
-      m.osc1Sync        = this.mod.offsetFor('osc1Sync', t);
-      m.osc2Sync        = this.mod.offsetFor('osc2Sync', t);
-      m.osc2Pw          = this.mod.offsetFor('osc2Pw', t);
-      m.osc2Detune      = this.mod.offsetFor('osc2Detune', t);
-      m.masterTune      = this.mod.offsetFor('masterTune', t);
-      m.ampGain         = this.mod.offsetFor('ampGain', t);
-      m.unisonDetune    = this.mod.offsetFor('unisonDetune', t);
-      m.unisonDrift     = this.mod.offsetFor('unisonDrift', t);
-      mo = m;
-    } else if (this.mod) {
-      // Every other engine: generic LFO offsets keyed by param dot-id (pooled).
-      this.mod.offsetsInto(this.genericOffsets, t);
-      mo = this.genericOffsets;
-    }
+    // When every LFO is free-running and shared (the common case) the offsets are
+    // identical for all voices, so compute them ONCE. Only when a modulator asks
+    // for a per-voice phase — SCOPE=voice or TRIG=note — do we pay for a fill per
+    // voice inside the loop below.
+    const perVoice = this.mod?.needsPerVoicePhase() ?? false;
+    const shared = perVoice ? undefined : this.fillOffsets(t, SHARED_ORIGIN);
     let out = 0;
     for (let i = this.slots.length - 1; i >= 0; i--) {
       const s = this.slots[i];
-      out += s.v.renderSample(t, mo);
+      // Per-voice phase: this voice's own note-on drives SCOPE=voice, while the
+      // lane's most recent note-on drives a shared TRIG=note retrigger.
+      const mo = perVoice
+        ? this.fillOffsets(t, { voiceStartT: s.allocatedAt, lastNoteOnT: this.lastNoteOnT })
+        : shared;
+      out += s.v.renderSample(t, mo as VoiceModOffsets | undefined);
       if (s.v.done) this.slots.splice(i, 1);
     }
     return out;

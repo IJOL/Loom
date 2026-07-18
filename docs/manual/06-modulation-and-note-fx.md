@@ -36,19 +36,12 @@ An LFO generates a periodic waveform that you route to one or more target parame
 | BARS / FEEL | *(SYNC mode)* **BARS** is a free numeric input for the cycle length in bars-per-cycle (e.g. `0.25` = a quarter-bar cycle, `4` = one cycle every four bars; any value from 1/16-bar up to 64 bars). **FEEL** offsets it — **Str** (straight), **Trip** (triplet), **Dot** (dotted). This replaced the old fixed RATIO dropdown, so you can sync to any cycle length, not just preset divisions. |
 | FREE / SYNC | Toggles between the free-running bpm RATE knob (FREE) and the tempo-locked BARS + FEEL controls (SYNC). |
 | POLARITY | **-1..+1** (bipolar, default) oscillates symmetrically around the param's centre. **0..1** (unipolar) only pushes the parameter upward. |
-| TRIG | ⚠️ **Currently has no effect** — see the note below. Intended: **Free** runs the phase continuously; **Note** resets phase on every note-on. |
-| SCOPE | ⚠️ **Currently has no effect** — see the note below. Intended: **Shared** runs one LFO for the lane; **PerVoice** gives each played note its own. |
+| TRIG | **Free** — the phase runs continuously off the clock, like a classic analogue LFO. **Note** — the phase restarts on every note-on, so the LFO's shape lands the same way on each note. |
+| SCOPE | **Shared** — one phase for the whole lane; every voice wobbles together. **PerVoice** — each played note gets its own phase, starting when that note starts. |
 
-> **TRIG and SCOPE are not connected yet.** Since synthesis moved into the
-> AudioWorklet, the only LFO settings that reach the sound engine are the rate,
-> the depth and the destination — the trigger mode and the scope are not sent.
-> Every LFO therefore free-runs and is **shared** across all voices of the lane,
-> whatever these two dropdowns say. They are left in place for the work that
-> will wire them up; until then, do not expect a chord's notes to wobble
-> independently, or an LFO peak to land on each note-on.
->
-> The ADSR modulator is unaffected: it is genuinely **per-voice** and works as
-> described below.
+**Musical difference between Shared and PerVoice:** a shared LFO makes a chord breathe as one — all notes rise and fall together, which is what you want for a pad that should feel like a single instrument. PerVoice gives each note its own cycle, so notes played at different moments drift out of step with each other and the chord shimmers instead of pulsing. On fast, staccato playing the difference is dramatic; on a slow sustained chord it is subtle.
+
+**TRIG=Note** matters most with a slow LFO and short notes: with Free, a note might catch the LFO anywhere in its cycle, so consecutive notes sound inconsistent; with Note, every note gets the same sweep from the same starting point.
 
 ### ADSR
 

@@ -1,22 +1,22 @@
 // src/audio-dsp/modulation-runtime.ts
-// In-worklet modulation: SHARED LFOs over the full subtractive modulation target
-// set (every SubParams field a connection can reach, plus the synthetic
-// `ampGain` tremolo). The runtime returns NORMALISED offsets (sum of
-// wave×depth); the renderer scales each to native units (cents/semitones for
-// pitch, ×gain for ampGain, 0..1 add for the rest). `kind: 'adsr'` mods
-// contribute zero here (per-voice modular ADSR beyond the built-in amp/filter
-// envelopes is deferred — see the SCOPE note below). BPM-synced LFOs ARE
-// honoured: the host (WorkletLaneEngine.toModLite) resolves any sync→free Hz
-// via effectiveRateHz before sending, so `rateHz` here is already tempo-correct
-// and re-posted on every BPM change.
+// In-worklet LFO modulation over the full subtractive modulation target set
+// (every SubParams field a connection can reach, plus the synthetic `ampGain`
+// tremolo). The runtime returns NORMALISED offsets (sum of wave×depth); the
+// renderer scales each to native units (cents/semitones for pitch, ×gain for
+// ampGain, 0..1 add for the rest). BPM-synced LFOs ARE honoured: the host
+// (WorkletLaneEngine.toModLite) resolves any sync→free Hz via effectiveRateHz
+// before sending, so `rateHz` here is already tempo-correct and re-posted on
+// every BPM change.
 //
-// SCOPE (deferred): user-assigned ADSR→param connections beyond the engine's
-// built-in amp/filter envelopes do nothing on the worklet path. The shared
-// (not per-voice) runtime has no per-note gate to drive an envelope from; wiring
-// that needs a per-voice modulation pass, which is out of scope for this branch.
-// The descriptor engines still advertise default ADSR modulators and the mod
-// panel still lets users add ADSR connections, so those controls are currently
-// inert for non-built-in targets.
+// TRIG + SCOPE: both are honoured, and both reduce to ONE question — where does
+// the phase start (see PhaseOrigin). A free+shared LFO starts at 0 and is the
+// cheap path the render loop takes when nothing needs more; note-triggered and
+// per-voice LFOs need an origin per voice, which VoiceManager supplies from each
+// slot's note-on time. `needsPerVoicePhase()` tells the loop which path to take.
+//
+// `kind: 'adsr'` mods contribute zero HERE — they are genuinely per-voice and
+// travel a different road: getAdsrMods() hands them to the renderer at spawn,
+// which gates an envelope per note (see ModEnvHost).
 import type { ModTarget } from './types';
 
 export interface ModLite {
@@ -35,10 +35,30 @@ export interface ModLite {
   decaySec?: number;
   sustain?: number;
   releaseSec?: number;
+  /** TRIG: 'free' runs the phase off absolute time; 'note' restarts it on every
+   *  note-on. Absent ⇒ 'free' (the historical behaviour). */
+  trigger?: 'free' | 'note';
+  /** SCOPE: 'shared' is one phase for the whole lane; 'voice' gives each played
+   *  note its own phase, so voices drift apart. Absent ⇒ 'shared'. */
+  scope?: 'shared' | 'voice';
   /** SubParams field name → modulation depth (-1..1), additive in the field's
    *  native 0..1 units. */
   depthByParam: Record<string, number>;
 }
+
+/** Where a modulator's phase starts. TRIG and SCOPE both reduce to this one
+ *  question, which is why they share a code path:
+ *    free + shared → 0            (one phase for the lane, ignores notes)
+ *    note + shared → lastNoteOnT  (the lane retriggers together)
+ *    scope 'voice' → voiceStartT  (each note runs its own) */
+export interface PhaseOrigin {
+  /** When the voice being rendered was triggered. */
+  voiceStartT: number;
+  /** When the lane most recently received any note-on. */
+  lastNoteOnT: number;
+}
+
+const SHARED_FREE: PhaseOrigin = { voiceStartT: 0, lastNoteOnT: 0 };
 
 /** The modulator's signal at phase, honouring polarity: bipolar -1..+1 (raw
  *  wave), unipolar 0..1 (wave shifted/scaled so it only pushes one way). */
@@ -56,12 +76,41 @@ function wave(w: ModLite['waveform'], phase: number): number {
   }
 }
 
+/** The phase origin for one modulator. Voice scope wins over trigger: a
+ *  per-voice LFO always starts with its own note, whatever TRIG says. */
+function originFor(m: ModLite, o: PhaseOrigin): number {
+  if (m.scope === 'voice') return o.voiceStartT;
+  if (m.trigger === 'note') return o.lastNoteOnT;
+  return 0;
+}
+
+/** Phase of `m` at absolute time `t`, relative to its origin. Guarded against a
+ *  negative delta (a voice origin slightly ahead of t at spawn) so the phase
+ *  never wraps backwards into a discontinuity. */
+function phaseOf(m: ModLite, t: number, o: PhaseOrigin): number {
+  const dt = t - originFor(m, o);
+  return dt <= 0 ? 0 : (dt * m.rateHz) % 1;
+}
+
 export class ModulationRuntime {
   private mods: ModLite[] = [];
+  /** True when any enabled LFO needs a per-voice phase (SCOPE=voice or
+   *  TRIG=note). Lets the render loop keep the cheap once-per-sample shared path
+   *  when nothing asks for more. Recomputed on setMods, never per sample. */
+  private perVoicePhase = false;
   // sr is reserved for future per-sample phase accumulation (BPM sync); the
   // current free-rate implementation derives phase from absolute time directly.
   constructor(_sr: number) {}
-  setMods(mods: ModLite[]): void { this.mods = mods; }
+  setMods(mods: ModLite[]): void {
+    this.mods = mods;
+    this.perVoicePhase = mods.some(
+      (m) => m.enabled && m.kind === 'lfo' && (m.scope === 'voice' || m.trigger === 'note'),
+    );
+  }
+
+  /** Whether the render loop must compute offsets per voice rather than once per
+   *  sample. False for the common all-free/all-shared case. */
+  needsPerVoicePhase(): boolean { return this.perVoicePhase; }
 
   /** The enabled ADSR modulators (per-voice envelopes the renderer drives). LFOs
    *  stay shared in offsetFor/activeOffsets; ADSR is gated per note, so each voice
@@ -73,14 +122,13 @@ export class ModulationRuntime {
   /** Normalised additive offset (Σ wave×depth over enabled LFOs) for a
    *  modulation target at absolute time t. The renderer scales it to the
    *  target's native units. */
-  offsetFor(field: ModTarget, t: number): number {
+  offsetFor(field: ModTarget, t: number, o: PhaseOrigin = SHARED_FREE): number {
     let sum = 0;
     for (const m of this.mods) {
       if (!m.enabled || m.kind !== 'lfo') continue;
       const depth = m.depthByParam[field as string];
       if (!depth) continue;
-      const phase = (t * m.rateHz) % 1;
-      sum += signal(m, phase) * depth;
+      sum += signal(m, phaseOf(m, t, o)) * depth;
     }
     return sum;
   }
@@ -90,12 +138,11 @@ export class ModulationRuntime {
    *  returns). The worklet posts this to the main thread so the knob rings show
    *  the REAL modulation; params with no active modulation are omitted. When
    *  per-voice ADSR lands it adds its contribution here and the rings follow. */
-  activeOffsets(t: number): Record<string, number> {
+  activeOffsets(t: number, o: PhaseOrigin = SHARED_FREE): Record<string, number> {
     const out: Record<string, number> = {};
     for (const m of this.mods) {
       if (!m.enabled || m.kind !== 'lfo') continue;
-      const phase = (t * m.rateHz) % 1;
-      const w = signal(m, phase);
+      const w = signal(m, phaseOf(m, t, o));
       for (const field in m.depthByParam) {
         const depth = m.depthByParam[field];
         if (!depth) continue;
@@ -110,11 +157,11 @@ export class ModulationRuntime {
    *  thread. Generic — `out` is keyed by whatever the connections target
    *  (SubParams fields for Subtractive, param dot-ids for the other engines), so
    *  the same path drives every engine's LFO modulation. */
-  offsetsInto(out: Record<string, number>, t: number): void {
+  offsetsInto(out: Record<string, number>, t: number, o: PhaseOrigin = SHARED_FREE): void {
     for (const k in out) out[k] = 0;
     for (const m of this.mods) {
       if (!m.enabled || m.kind !== 'lfo') continue;
-      const w = signal(m, (t * m.rateHz) % 1);
+      const w = signal(m, phaseOf(m, t, o));
       for (const field in m.depthByParam) {
         const depth = m.depthByParam[field];
         if (!depth) continue;

@@ -79,8 +79,9 @@ export function makeDotIdMapper(params: EngineParamSpec[]): (paramId: string) =>
 
 /** Map the host's ModulatorState[] to the worklet's compact ModLite[]. Only
  *  connections that resolve to a modulation target carry depth; everything else
- *  is sent inert. (The runtime acts only on `kind:'lfo'`; ADSR mods are sent for
- *  completeness but contribute zero — per-voice modular ADSR is deferred.)
+ *  is sent inert. LFOs carry their TRIG + SCOPE so the runtime can place their
+ *  phase origin; ADSR mods contribute zero to the LFO sum because they travel a
+ *  different road — the renderer gates one envelope per voice from them.
  *
  *  `bpm` resolves a BPM-synced LFO's rate to free Hz here (effectiveRateHz),
  *  because the in-worklet ModulationRuntime runs at a free `rateHz`. Without
@@ -106,6 +107,12 @@ export function toModLite(
       rateHz: effectiveRateHz({ ...m, rateHz: m.rateHz ?? 4 }, bpm),
       waveform: m.waveform ?? 'sine',
       bipolar: m.bipolar !== false,   // POLARITY: default bipolar; uni maps wave to 0..1
+      // TRIG + SCOPE. Both decide where the LFO's phase starts, so the runtime
+      // needs them: without these two lines the dropdowns are inert and every
+      // LFO free-runs, shared across the lane.
+      // NOTE the rename: the UI scope is 'per-voice', the wire format is 'voice'.
+      trigger: m.trigger === 'note' ? 'note' : 'free',
+      scope: m.scope === 'per-voice' ? 'voice' : 'shared',
       // ADSR shape (inert for LFOs; the renderer reads these for kind:'adsr').
       attackSec: m.attackSec ?? 0.01,
       decaySec: m.decaySec ?? 0.3,
