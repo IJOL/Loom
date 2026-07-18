@@ -10,6 +10,7 @@ import { AudioWorkletEngine } from '../engines/audio-worklet-engine';
 import { PRESET_KEY_TO_SPEC as TB303_PRESET_KEY_TO_SPEC } from '../engines/tb303';
 import type { GlobalVoiceCap } from '../audio-worklet/global-voice-cap';
 import { setCurrentLaneForVoice } from '../modulation/active-mods';
+import { bindEngineModulators } from '../modulation/voice-mod-binding';
 import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from '../core/lane-ids';
 import type { SynthEngine, Voice } from '../engines/engine-types';
 import type { FxBus } from '../core/fx';
@@ -42,6 +43,10 @@ export interface LaneAllocatorDeps {
    *  its node so the busiest lane is told to steal when the total exceeds the
    *  budget. Absent in the offline recorder (no real-time dropout concern). */
   globalVoiceCap?: GlobalVoiceCap;
+  /** Master insert chain, so `master-insert-N:<param>` resolves as a modulation
+   *  destination. The modulation panel offers those destinations for every lane;
+   *  without this they would be selectable and dead. */
+  masterInserts?: InsertChain;
 }
 
 export interface LaneAllocator {
@@ -55,6 +60,10 @@ export interface LaneAllocator {
   ensureLaneResource(laneId: string, engineId: string): void;
   swapLaneEngine(laneId: string, newEngineId: string): void;
   getLaneEngineInstance(laneId: string): SynthEngine | null;
+  /** (Re)connect the lane's modulators to their Web-Audio destinations — the
+   *  lane/master insert params and any shared engine params. Call after the
+   *  modulator set changes; allocation and engine swap do it themselves. */
+  bindLaneModulators(laneId: string): void;
 }
 
 export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
@@ -239,6 +248,31 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     if (!engine) return;
     wireEngineIntoLane(engineId, engine, strip, inserts);
     resources.set(laneId, { strip, engine, inserts });
+    bindLaneModulators(laneId);
+  };
+
+  /** Connect this lane's modulators to their Web-Audio destinations.
+   *
+   *  This is the ONE place it happens, which is why both the live host and the
+   *  offline recorder get it: they share this allocator. Before, only the drums
+   *  and sampler engines bound anything (from inside their own createVoice), so
+   *  on the six melodic engines a modulator routed to an FX param was offered by
+   *  the panel and silently connected to nothing — and the exporter bound
+   *  nothing at all, for any engine.
+   *
+   *  Drums and Sampler still bind themselves, with their own range lookups; a
+   *  second bind here would only dispose theirs and rebuild a worse one. */
+  const bindLaneModulators = (laneId: string): void => {
+    const res = resources.get(laneId);
+    if (!res) return;
+    const engine = res.engine;
+    if (engine instanceof DrumsWorkletEngine || engine instanceof SamplerWorkletEngine) return;
+    const voiceMods = engine.modulators.spawnVoice(deps.ctx, deps.getBpm);
+    bindEngineModulators({
+      laneId, engine, voiceMods, ctx: deps.ctx,
+      laneInserts: res.inserts,
+      masterInserts: deps.masterInserts,
+    });
   };
 
   /** Replace the live engine of an already-allocated lane, reusing its strip
@@ -259,6 +293,7 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     wireEngineIntoLane(newEngineId, engine, res.strip, res.inserts);
     laneVoices.delete(laneId);                  // drop the old engine's cached voice
     resources.replaceEngine(laneId, engine);    // disposes old engine, keeps strip+inserts
+    bindLaneModulators(laneId);                 // the new engine owns a new host
   };
 
   const getLaneEngineInstance = (laneId: string): SynthEngine | null =>
@@ -269,5 +304,6 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     stripFor, ensureExtraPoly, ensureLaneStrip, ensureLaneVoice, ensureLaneResource,
     swapLaneEngine,
     getLaneEngineInstance,
+    bindLaneModulators,
   };
 }

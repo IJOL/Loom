@@ -28,6 +28,7 @@ import { renderModulatorsPanel } from '../modulation/modulation-ui';
 import { buildEngineParamGrid } from './engine-param-grid';
 import { createKnob, type KnobHandle } from '../core/knob';
 import { attachKnobUndo } from '../save/history-wiring';
+import { reapplyLaneModulations } from '../modulation/voice-mod-binding';
 
 // dot-id (SUB_PARAM_SPECS vocabulary) → flat SubParams field. Single source of
 // the mapping. Params not present here (poly.*) are handled explicitly in
@@ -345,11 +346,16 @@ export class WorkletLaneEngine implements SynthEngine {
       laneInserts: ctx.laneInserts,
       masterInserts: ctx.masterInserts,
       fxBus: ctx.fxBus,
-      onLiveEdit: () => this.postMods(),   // depth/on-off/rate/… reach the worklet live
+      // postMods reaches the IN-WORKLET runtime (engine params). Web-Audio
+      // destinations — lane/master FX params — live on the other side of the
+      // worklet and are bridged by the connection binder, so they need the
+      // reapply too; without it those routings stay as they were at allocation.
+      onLiveEdit: () => { this.postMods(); reapplyLaneModulations(ctx.laneId); },
       onChange: () => {
         container.innerHTML = '';
         this.buildParamUI(container, ctx);
         this.postMods();
+        reapplyLaneModulations(ctx.laneId);
       },
     });
   }

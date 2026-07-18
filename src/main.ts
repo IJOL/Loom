@@ -214,6 +214,7 @@ const lanes = createLaneAllocator({
   getBpm: () => seq.bpm,
   extraIds: EXTRA_IDS,
   globalVoiceCap,
+  masterInserts: masterInsertChain,
 });
 const { resources: laneResources, extraStrips, extraPolys,
         stripFor, ensureExtraPoly, ensureLaneVoice,

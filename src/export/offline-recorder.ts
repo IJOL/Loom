@@ -144,6 +144,9 @@ export class OfflineSceneRecorder implements SceneRecorder {
       sidechainBus: graph.sidechainBus,
       getBpm: () => bpm,
       extraIds: [],
+      // Modulation destinations on the master chain resolve here too, so an LFO
+      // on a master FX param survives the export instead of being dropped.
+      masterInserts: graph.masterInsertChain,
       // Phase 4 cutover: the legacy node-per-note engines are gone, so offline
       // render drives the same pure audio-dsp kernel the worklet uses (see the
       // kernel-render pass below). The allocator still builds the worklet lane
