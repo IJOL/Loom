@@ -1,6 +1,7 @@
 // src/engines/sampler-keyboard-map.ts
 // A horizontal mini-keyboard visualising a Sampler lane's keymap, matching the
-// mockup's instrument map (docs/superpowers/mockups/sampler-mockup.html).
+// approved sampler mockup's instrument map (the mockup was pruned from the tree
+// once shipped, per the design-history convention — recover it from git history).
 //   • Drumkit (single-note pads): each pad's key is tinted its sound's colour — a
 //     compact overview of where the kit sits. The sound name + key + delete live
 //     in the per-pad strips (the rack) below, not here.
