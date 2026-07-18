@@ -67,7 +67,7 @@ afterEach(() => {
 });
 
 describe('buildLaneInsertUI — automation registration', () => {
-  it('registers continuous param knobs with the prefixed id when automationIdPrefix is given', () => {
+  it('registers continuous param knobs with the prefixed id when automationScopeId is given', () => {
     const ctx = makeCtx();
     const container = document.createElement('div');
     document.body.appendChild(container);
@@ -93,7 +93,7 @@ describe('buildLaneInsertUI — automation registration', () => {
       slots,
       onChange: () => {},
       registerKnob: (k) => registered.push(k),
-      automationIdPrefix: PREFIX,
+      automationScopeId: PREFIX,
     });
 
     // Exactly 2 continuous params → 2 registered knobs (discrete 'mode' is skipped).
@@ -114,7 +114,7 @@ describe('buildLaneInsertUI — automation registration', () => {
     expect(ids.some((id) => id.endsWith('.mode'))).toBe(false);
   });
 
-  it('does NOT call registerKnob when automationIdPrefix is absent (backward compat)', () => {
+  it('does NOT call registerKnob when automationScopeId is absent (backward compat)', () => {
     const ctx = makeCtx();
     const container = document.createElement('div');
     document.body.appendChild(container);
@@ -136,7 +136,7 @@ describe('buildLaneInsertUI — automation registration', () => {
       chain,
       slots,
       onChange: () => {},
-      // NOTE: no automationIdPrefix and no registerKnob
+      // NOTE: no automationScopeId and no registerKnob
     });
 
     // Nothing registered — old behavior preserved.
@@ -167,7 +167,7 @@ describe('buildLaneInsertUI — automation registration', () => {
       slots,
       onChange: () => {},
       registerKnob: (k) => registered.push(k),
-      automationIdPrefix: PREFIX,
+      automationScopeId: PREFIX,
     });
 
     const ids = registered.map((k) => k.meta.id!);

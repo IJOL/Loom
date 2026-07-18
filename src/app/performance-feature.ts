@@ -217,6 +217,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         return 'missing';
       },
       registry: automationRegistry,
+      sessionState: sessionHost.state,
       laneIds: laneIds(),
       pxPerBar,
       getBrush: () => brush,

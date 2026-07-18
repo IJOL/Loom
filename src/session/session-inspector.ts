@@ -94,6 +94,9 @@ export interface InspectorDeps {
 export class SessionInspector {
   roll: PianoRollHandle | null = null;
   private selectedClip: { laneId: string; clipIdx: number } | null = null;
+  /** The open clip's automation panel, so its destination picker can be
+   *  rebuilt when the session gains or loses a param (e.g. a new insert). */
+  private autoBox: HTMLElement | null = null;
   /** Aborted (and replaced) each time openInspector() is called so stale
    *  field-level listeners from the previous clip don't accumulate. */
   private _fieldAc: AbortController = new AbortController();
@@ -744,15 +747,19 @@ export class SessionInspector {
     };
     this.roll = renderClipEditor(editorBox, lane, clip, editorDeps, editorOverride.get(clip.id));
 
-    // Per-clip automation lanes below the editor.
+    // Per-clip automation lanes below the editor. Kept on the instance so
+    // adding an insert can refresh the destination picker without a full
+    // editor rebuild (which would fight whatever the user is dragging).
     const autoBox = document.createElement('div');
     autoBox.className = 'insp-auto-box';
     host.appendChild(autoBox);
+    this.autoBox = autoBox;
 
     renderClipAutomationLanes(autoBox, clip, {
       seq: this.deps.seq,
       getAutoAbsSubIdx: this.deps.getAutoAbsSubIdx,
       automationRegistry: this.deps.automationRegistry,
+      sessionState: this.deps.state,
     });
   }
 
@@ -774,11 +781,30 @@ export class SessionInspector {
       container: insertsPanel,
       chain: laneRes.inserts,
       slots: sessionLane.inserts,
-      onChange: () => this.deps.saveSession?.(),
+      onChange: () => {
+        this.deps.saveSession?.();
+        // The chain just changed shape — the open clip's picker is now stale.
+        this.refreshClipAutomation();
+      },
       registerKnob: this.deps.registerKnob,
-      automationIdPrefix: this.deps.registerKnob ? `lane.${laneId}` : undefined,
+      automationScopeId: this.deps.registerKnob ? laneId : undefined,
     });
     host.appendChild(insertsPanel);
+  }
+
+  /** Rebuild the open clip's automation panel in place. No-op when no clip is
+   *  open. Cheap: it only re-renders the lanes, never the note editor. */
+  refreshClipAutomation(): void {
+    const sel = this.selectedClip;
+    if (!this.autoBox || !sel) return;
+    const clip = this.deps.state.lanes.find((l) => l.id === sel.laneId)?.clips[sel.clipIdx];
+    if (!clip) return;
+    renderClipAutomationLanes(this.autoBox, clip, {
+      seq: this.deps.seq,
+      getAutoAbsSubIdx: this.deps.getAutoAbsSubIdx,
+      automationRegistry: this.deps.automationRegistry,
+      sessionState: this.deps.state,
+    });
   }
 
   // ── Copy / paste ───────────────────────────────────────────────────────────

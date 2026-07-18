@@ -14,6 +14,7 @@ import { preloadSceneSamples } from '../export/preload-scene-samples';
 import { applyLaneEngineState } from '../export/apply-lane-engine-state';
 import { getNoteFxChain, loadNoteFxForLane } from '../notefx/notefx-registry';
 import { reloadDrumkit, reloadInstrument, reloadPreset } from './session-host-presets';
+import { pruneKnobRegistry } from '../app/knob-registry-prune';
 
 /** Snapshot the two send buses (return level, mute, and preserved insert slots).
  *  Insert slots are session-owned (like lane/master inserts) — `prev` carries
@@ -67,6 +68,10 @@ export function applyLoadedSessionState(self: SessionHost, sess: SessionState): 
   for (const id of self.deps.laneResources?.ids() ?? []) {
     if (!keep.has(id)) self.deps.laneResources?.dispose(id);
   }
+  // Drop knob handles belonging to lanes this session doesn't have. The map is
+  // keyed `<laneId>.<param>` and only ever grew, so without this every load
+  // piled the previous session's instruments onto every param picker.
+  pruneKnobRegistry(self.deps.automationRegistry, keep);
   for (const lane of self.state.lanes) {
     self.laneStates.set(lane.id, emptyLanePlayState(lane.id));
     // Every lane needs an audio resource (strip + engine instance) — without

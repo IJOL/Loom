@@ -3,7 +3,10 @@
 // instead of seq.pattern.automation, and uses clip.lengthBars instead of
 // seq.length / 16.
 
-import type { SessionClip, ClipEnvelope } from './session';
+import type { SessionClip, ClipEnvelope, SessionState } from './session';
+import {
+  listAutomationTargets, groupTargetsByLane, type AutomationTarget,
+} from '../automation/automation-targets';
 import type { KnobHandle } from '../core/knob';
 import type { Sequencer } from '../core/sequencer';
 import { AUTOMATION_SUB_RES } from '../core/pattern';
@@ -19,6 +22,9 @@ export interface ClipAutoDeps {
   seq: Sequencer;
   getAutoAbsSubIdx: () => number;
   automationRegistry: Map<string, KnobHandle>;
+  /** The session is the source of truth for WHICH params can be automated;
+   *  the registry only supplies live handles for the ones currently mounted. */
+  sessionState: SessionState;
 }
 
 // Lane shape that satisfies both drawLane (needs enabled+stepped) and
@@ -56,7 +62,9 @@ export function renderClipAutomationLanes(
   // Header row: param picker + add button + brush selector.
   const header = document.createElement('div');
   header.className = 'clip-auto-header';
-  const sel = buildParamSelect(deps.automationRegistry);
+  const targets = listAutomationTargets(deps.sessionState, deps.automationRegistry);
+  const byId = new Map(targets.map((t) => [t.id, t]));
+  const sel = buildParamSelect(targets);
   const addBtn = document.createElement('button');
   addBtn.className = 'rnd primary';
   addBtn.textContent = '+ Automation';
@@ -89,8 +97,10 @@ export function renderClipAutomationLanes(
   }
 
   clip.envelopes.forEach((env, idx) => {
-    const entry = deps.automationRegistry.get(env.paramId);
-    if (!entry) return;
+    // An envelope whose param the session no longer declares (engine swapped,
+    // insert removed) is still SHOWN — flagged, not silently swallowed, so the
+    // user can see it and delete it rather than wonder where it went.
+    const target = byId.get(env.paramId);
 
     // Default fields if missing on legacy clips.
     if (env.stepped === undefined) env.stepped = false;
@@ -109,13 +119,15 @@ export function renderClipAutomationLanes(
     // which keeps the same array reference, so env.values stays in sync.
 
     const wrap = document.createElement('div');
-    wrap.className = 'auto-lane clip-auto-lane';
+    wrap.className = 'auto-lane clip-auto-lane' + (target ? '' : ' missing');
 
     const hdr = document.createElement('div');
     hdr.className = 'auto-lane-header';
     const label = document.createElement('div');
     label.className = 'label';
-    label.textContent = `${env.paramId} — ${entry.meta.label ?? ''}`;
+    label.textContent = target
+      ? `${target.laneName} · ${target.label}`
+      : `${env.paramId} (unavailable)`;
     const enableBtn = document.createElement('button');
     enableBtn.className = 'enable' + (env.enabled ? ' active' : '');
     enableBtn.textContent = env.enabled ? 'On' : 'Off';
@@ -136,7 +148,7 @@ export function renderClipAutomationLanes(
     });
     const rangeEl = document.createElement('span');
     rangeEl.className = 'clip-auto-range';
-    rangeEl.textContent = `[${formatNum(entry.meta.min)} .. ${formatNum(entry.meta.max)}]`;
+    rangeEl.textContent = target ? `[${formatNum(target.min)} .. ${formatNum(target.max)}]` : '';
     const rmBtn = document.createElement('button');
     rmBtn.className = 'rnd';
     rmBtn.textContent = '×';
@@ -177,14 +189,19 @@ export function renderClipAutomationLanes(
   });
 }
 
-function buildParamSelect(reg: Map<string, KnobHandle>): HTMLSelectElement {
+function buildParamSelect(targets: AutomationTarget[]): HTMLSelectElement {
   const sel = document.createElement('select');
   sel.className = 'clip-auto-param-select';
-  for (const [id, k] of reg) {
-    const opt = document.createElement('option');
-    opt.value = id;
-    opt.textContent = `${id} — ${k.meta.label ?? ''}`;
-    sel.appendChild(opt);
+  for (const [laneName, group] of groupTargetsByLane(targets)) {
+    const og = document.createElement('optgroup');
+    og.label = laneName;
+    for (const t of group) {
+      const opt = document.createElement('option');
+      opt.value = t.id;
+      opt.textContent = t.label;
+      og.appendChild(opt);
+    }
+    sel.appendChild(og);
   }
   return sel;
 }

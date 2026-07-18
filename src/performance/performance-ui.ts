@@ -1,5 +1,6 @@
 import type { ArrangementState } from './performance';
 import type { KnobHandle } from '../core/knob';
+import type { SessionState } from '../session/session';
 import type { AutoBrush, PainterDeps } from '../automation/automation-painter';
 import { effectiveDurationSec } from './arrangement-ops';
 import { buildAutomationHeader, buildAutomationLane, type PerfAutoDeps } from './performance-automation-ui';
@@ -176,6 +177,8 @@ export interface PerfUICallbacks {
   resolveClipColor: (clipId: string) => string;
   resolveClipName: (clipId: string) => string;
   registry: Map<string, KnobHandle>;
+  /** Source of truth for the automation destination list. */
+  sessionState?: SessionState;
   laneIds: readonly string[];
   pxPerBar: number;
   getBrush: () => AutoBrush;
@@ -331,6 +334,7 @@ export function renderPerformanceView(host: HTMLElement, state: ArrangementState
   const totalBars = Math.ceil(dur / barSecOf(state.bpm));
   const autoDeps: PerfAutoDeps = {
     registry: cb.registry,
+    sessionState: cb.sessionState,
     laneWidthPx: totalBars * cb.pxPerBar,
     getBrush: cb.getBrush,
     painterDeps: cb.painterDeps,

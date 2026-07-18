@@ -4,6 +4,8 @@
 // ({ values, enabled, stepped }) after Task 1.
 import type { KnobHandle } from '../core/knob';
 import type { AutomationCurve } from './performance';
+import type { SessionState } from '../session/session';
+import { listAutomationTargets, groupTargetsByLane } from '../automation/automation-targets';
 import {
   drawLane, attachLanePainter, formatNum,
   type AutoBrush, type PainterDeps,
@@ -22,6 +24,8 @@ export function groupParamsByPrefix(ids: Iterable<string>): Map<string, string[]
 
 export interface PerfAutoDeps {
   registry: Map<string, KnobHandle>;
+  /** Source of truth for the destination list (see listAutomationTargets). */
+  sessionState?: SessionState;
   /** Width in px for a full-arrangement canvas at the current zoom. */
   laneWidthPx: number;
   getBrush: () => AutoBrush;
@@ -39,13 +43,19 @@ export function buildAutomationHeader(deps: PerfAutoDeps): HTMLElement {
   header.className = 'perf-auto-header';
   const sel = document.createElement('select');
   sel.className = 'perf-auto-param-select';
-  for (const [prefix, ids] of groupParamsByPrefix(deps.registry.keys())) {
+  // Destinations come from the session, not from whatever knobs are mounted:
+  // the picker must offer an insert on a channel whose editor is closed, and
+  // must not offer a lane that a previous save left behind in the registry.
+  const targets = deps.sessionState
+    ? listAutomationTargets(deps.sessionState, deps.registry)
+    : [];
+  for (const [laneName, group] of groupTargetsByLane(targets)) {
     const og = document.createElement('optgroup');
-    og.label = prefix;
-    for (const id of ids) {
+    og.label = laneName;
+    for (const t of group) {
       const opt = document.createElement('option');
-      opt.value = id;
-      opt.textContent = `${id} — ${deps.registry.get(id)?.meta.label ?? ''}`;
+      opt.value = t.id;
+      opt.textContent = t.label;
       og.appendChild(opt);
     }
     sel.appendChild(og);

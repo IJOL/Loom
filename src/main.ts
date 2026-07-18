@@ -86,6 +86,8 @@ import {
   startAutomationTick, resetAutomationPosition, getAutoAbsSubIdx,
   type AutomationTickDeps,
 } from './automation/automation-tick';
+import { listAutomationTargets } from './automation/automation-targets';
+import { applyAutomationToSession } from './automation/automation-apply';
 import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from './core/lane-ids';
 // ── Live MIDI control (src/control) ─────────────────────────────────────────
 import { createActiveLaneStore } from './control/active-lane';
@@ -1173,6 +1175,17 @@ wireMidiImportUI({
 const midiImportDialog = bindMidiImportDialog();
 const aboutDialog = bindAboutDialog();
 
+/** The insert rack an automation scope names: a lane, the master bus, or a send
+ *  return. Mirrors the scopes `listAutomationTargets` emits. */
+function insertChainFor(scopeId: string) {
+  if (scopeId === 'fx.master') return masterInsertChain;
+  if (scopeId.startsWith('fx.send.')) {
+    const busId = scopeId.slice('fx.send.'.length);
+    return fx.sends.find((b) => b.id === busId)?.inserts;
+  }
+  return laneResources.get(scopeId)?.inserts;
+}
+
 const automationTickDeps: AutomationTickDeps = {
   seq,
   automationRegistry,
@@ -1180,6 +1193,19 @@ const automationTickDeps: AutomationTickDeps = {
   ctx,
   // Lets the rAF loop read each lane's live modulation offsets for the knob rings.
   getEngineForLane: (laneId) => getLaneEngineInstance(laneId) ?? undefined,
+  // An envelope on a lane whose editor is closed has no knob to drive, so it
+  // lands on the audio object itself. Ranges come from the declared schema —
+  // the same source the destination picker uses.
+  applyUnmounted: (paramId, normalised, ranges) => {
+    applyAutomationToSession(paramId, normalised, {
+      getInsertFx: (scopeId, slotIdx) => insertChainFor(scopeId)?.list()[slotIdx]?.fx,
+      getEngine: (laneId) => laneResources.get(laneId)?.engine,
+      getRange: (id) => ranges.get(id),
+    });
+  },
+  getTargetRanges: () =>
+    new Map(listAutomationTargets(sessionHost.state, automationRegistry)
+      .map((t) => [t.id, { min: t.min, max: t.max }])),
 };
 
 startAutomationTick(automationTickDeps);

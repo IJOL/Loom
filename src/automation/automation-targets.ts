@@ -26,10 +26,19 @@ export interface AutomationTarget {
   max: number;
 }
 
-/** The insert-param id for a lane's slot. Single source of truth — knob
+/** The insert-param id for a rack slot. `scopeId` is a lane id, or `fx.master` /
+ *  `fx.send.<id>` for the global racks. Single source of truth — knob
  *  registration, the picker, and playback resolution all go through it. */
-export function insertParamId(laneId: string, slotIdx: number, paramId: string): string {
-  return `${laneId}.fx${slotIdx}.${paramId}`;
+export function insertParamId(scopeId: string, slotIdx: number, paramId: string): string {
+  return `${scopeId}.fx${slotIdx}.${paramId}`;
+}
+
+/** Continuous params an fx plugin declares. Non-fx plugin kinds (note-FX) carry
+ *  no param manifest, so they contribute nothing. */
+function fxParams(pluginId: string) {
+  const plugin = getPlugin('fx', pluginId);
+  if (!plugin || plugin.kind !== 'fx') return [];
+  return plugin.manifest.params.filter((p) => p.kind === 'continuous');
 }
 
 /** Every automatable destination the session declares, in lane order: each
@@ -63,15 +72,43 @@ export function listAutomationTargets(
     }
 
     (lane.inserts ?? []).forEach((slot, idx) => {
-      const plugin = getPlugin('fx', slot.pluginId);
-      for (const spec of plugin?.manifest.params ?? []) {
-        if (spec.kind !== 'continuous') continue;
+      for (const spec of fxParams(slot.pluginId)) {
         push(insertParamId(lane.id, idx, spec.id), spec.label, spec.min, spec.max);
       }
     });
   }
 
+  // The global racks are destinations too, grouped under their own headings.
+  pushRackTargets(targets, registry, 'fx.master', 'Master', state.masterInserts ?? []);
+  for (const send of state.sends ?? []) {
+    pushRackTargets(targets, registry, `fx.send.${send.id}`, `Send ${send.label || send.id}`, send.inserts ?? []);
+  }
+
   return targets;
+}
+
+/** Append one non-lane insert rack (master, or a send return) to `targets`. */
+function pushRackTargets(
+  targets: AutomationTarget[],
+  registry: ReadonlyMap<string, KnobHandle>,
+  scopeId: string,
+  displayName: string,
+  slots: readonly { pluginId: string }[],
+): void {
+  slots.forEach((slot, idx) => {
+    for (const spec of fxParams(slot.pluginId)) {
+      const id = insertParamId(scopeId, idx, spec.id);
+      const live = registry.get(id);
+      targets.push({
+        id,
+        laneId: scopeId,
+        laneName: displayName,
+        label: live?.meta.label ?? spec.label,
+        min: live?.meta.min ?? spec.min,
+        max: live?.meta.max ?? spec.max,
+      });
+    }
+  });
 }
 
 /** Group targets by lane for a picker's <optgroup>s, in session lane order. */

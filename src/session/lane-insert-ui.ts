@@ -4,6 +4,7 @@ import { type InsertSlot } from './insert-slot';
 import type { InsertChain } from '../plugins/fx/insert-chain';
 import { createKnob, type KnobHandle } from '../core/knob';
 import { buildFxVis, hasFxVis, VIS_W, VIS_H } from '../core/fx-vis';
+import { insertParamId } from '../automation/automation-targets';
 
 export interface LaneInsertUIDeps {
   ctx: AudioContext;
@@ -11,12 +12,14 @@ export interface LaneInsertUIDeps {
   chain: InsertChain;
   slots: InsertSlot[];
   onChange: () => void;
-  /** When provided, continuous-param knobs are given a stable id
-   *  (`${automationIdPrefix}.fx${slotIdx}.${paramId}`) and registered
-   *  with the automation recorder so they become Performance-automation
-   *  destinations.  When absent, behaviour is identical to before. */
+  /** The rack this chain belongs to: a lane id, or `fx.master` / `fx.send.<id>`
+   *  for the global racks. Continuous-param knobs then get their canonical
+   *  automation id (see `insertParamId`) and are registered so the live handle
+   *  can be found. The id depends only on the scope, never on the panel being
+   *  mounted, so it matches what `listAutomationTargets` derives from the
+   *  session — the picker offers the same id either way. */
   registerKnob?: (k: KnobHandle) => void;
-  automationIdPrefix?: string;
+  automationScopeId?: string;
 }
 
 // Per-effect accent colour (keyed by plugin id). Each insert is tinted with it —
@@ -37,7 +40,7 @@ const FX_FALLBACK = '#ffa726';
  *  rows. The bar wraps to a second line when it runs out of width. */
 export function buildLaneInsertUI(deps: LaneInsertUIDeps): void {
   const { ctx, container, chain, slots, onChange } = deps;
-  const { registerKnob, automationIdPrefix } = deps;
+  const { registerKnob, automationScopeId } = deps;
   container.replaceChildren();
 
   const bar = document.createElement('div');
@@ -101,8 +104,8 @@ export function buildLaneInsertUI(deps: LaneInsertUIDeps): void {
 
     for (const spec of factory.manifest.params) {
       if (spec.kind === 'continuous') {
-        const knobId = automationIdPrefix
-          ? `${automationIdPrefix}.fx${idx}.${spec.id}`
+        const knobId = automationScopeId
+          ? insertParamId(automationScopeId, idx, spec.id)
           : undefined;
         const handle = createKnob({
           id: knobId,
@@ -113,7 +116,7 @@ export function buildLaneInsertUI(deps: LaneInsertUIDeps): void {
           onChange: (v) => { cs.fx.setBaseValue(spec.id, v); slot.params[spec.id] = v; redrawVis(); onChange(); },
         });
         knobRow.appendChild(handle.el);
-        if (automationIdPrefix && registerKnob) registerKnob(handle);
+        if (automationScopeId && registerKnob) registerKnob(handle);
       } else if (spec.kind === 'discrete' && spec.options) {
         // Discrete params (filter type, delay sync) sit in the header as a mini select.
         const sel = document.createElement('select');
