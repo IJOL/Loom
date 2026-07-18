@@ -90,7 +90,11 @@ describe('ChannelStrip A/B sends', () => {
   beforeAll(() => { _resetRegistry(); registerPlugin(reverbPlugin); registerPlugin(delayPlugin); });
 
   it('serializes sendA/sendB and restores legacy reverbSend/delaySend', () => {
-    const ctx = new AudioContext();
+    // OFFLINE, deliberately. On a real-time AudioContext this test is a race:
+    // it writes gain.value and reads it straight back, and under suite load the
+    // read can return the audio thread's stale value (observed as "expected +0
+    // to be close to 0.2"). An offline context has no such lag.
+    const ctx = new OfflineAudioContext(1, 4410, 44100) as unknown as AudioContext;
     const fx = new FxBus(ctx, ctx.destination);
     const strip = new ChannelStrip(ctx, ctx.destination, fx);
     strip.setSendA(0.3); strip.setSendB(0.6);

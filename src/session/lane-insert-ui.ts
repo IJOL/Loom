@@ -3,6 +3,7 @@ import { listPlugins, createInstance } from '../plugins/registry';
 import { type InsertSlot } from './insert-slot';
 import type { InsertChain } from '../plugins/fx/insert-chain';
 import { createKnob, type KnobHandle } from '../core/knob';
+import { buildFxVis, hasFxVis, VIS_W, VIS_H } from '../core/fx-vis';
 
 export interface LaneInsertUIDeps {
   ctx: AudioContext;
@@ -67,6 +68,33 @@ export function buildLaneInsertUI(deps: LaneInsertUIDeps): void {
     head.appendChild(name);
     unit.appendChild(head);
 
+    // ── Thumbnail: what the current knob positions add up to ──────────────────
+    // A delay at feedback 0.8 should LOOK different from one at 0.2 before you
+    // play a note. Effects whose point is movement (chorus/flanger/phaser) get
+    // no picture — a still frame of them says nothing.
+    const NS = 'http://www.w3.org/2000/svg';
+    let redrawVis = (): void => {};
+    if (hasFxVis(factory.manifest.id)) {
+      const svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('class', 'insert-vis');
+      svg.setAttribute('viewBox', `0 0 ${VIS_W} ${VIS_H}`);
+      svg.setAttribute('preserveAspectRatio', 'none');
+      const area = document.createElementNS(NS, 'path');
+      area.setAttribute('class', 'insert-vis-area');
+      const line = document.createElementNS(NS, 'path');
+      line.setAttribute('class', 'insert-vis-line');
+      svg.appendChild(area);
+      svg.appendChild(line);
+      redrawVis = () => {
+        const vis = buildFxVis(factory.manifest.id, (id) => cs.fx.getBaseValue(id));
+        if (!vis) return;
+        area.setAttribute('d', vis.area ?? '');
+        line.setAttribute('d', vis.line);
+      };
+      redrawVis();
+      unit.appendChild(svg);
+    }
+
     // ── Knob row: one knob per continuous param (compact, like the synth rows) ──
     const knobRow = document.createElement('div');
     knobRow.className = 'knob-row';
@@ -82,7 +110,7 @@ export function buildLaneInsertUI(deps: LaneInsertUIDeps): void {
           min: spec.min, max: spec.max,
           value: cs.fx.getBaseValue(spec.id),
           color,
-          onChange: (v) => { cs.fx.setBaseValue(spec.id, v); slot.params[spec.id] = v; onChange(); },
+          onChange: (v) => { cs.fx.setBaseValue(spec.id, v); slot.params[spec.id] = v; redrawVis(); onChange(); },
         });
         knobRow.appendChild(handle.el);
         if (automationIdPrefix && registerKnob) registerKnob(handle);
@@ -97,6 +125,7 @@ export function buildLaneInsertUI(deps: LaneInsertUIDeps): void {
           const i = sel.selectedIndex;
           cs.fx.setBaseValue(spec.id, i);
           slot.params[spec.id] = i;
+          redrawVis();
           onChange();
         };
         head.appendChild(sel);

@@ -96,6 +96,30 @@
 .insert-bar .insert-unit:last-child { border-right: none; }
 .insert-unit .knob-row { gap: 10px; }
 
+// Thumbnail of what the effect's current settings add up to. Drawn in the
+// effect's own colour so a glance ties the picture to the unit it belongs to.
+.insert-vis {
+  width: 100%;
+  height: 34px;
+  display: block;
+  opacity: 0.8;
+}
+.insert-vis-line {
+  fill: none;
+  stroke: var(--fx-color, #888);
+  // 2.5 with round caps, not a hairline: the box is stretched wide and squat,
+  // and the delay's tap stems are short verticals that a 1.5px line loses.
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;   // the box is stretched; the line must not be
+}
+.insert-vis-area {
+  fill: var(--fx-color, #888);
+  opacity: 0.18;
+  stroke: none;
+}
+
 .insert-unit-head {
   display: flex;
   align-items: center;
