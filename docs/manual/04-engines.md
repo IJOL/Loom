@@ -40,10 +40,18 @@ sweep.
 | --- | --- |
 | Wave | Sawtooth or Square oscillator waveform |
 | Cutoff | Filter cutoff frequency (0–100%) |
-| Resonance | Filter Q — self-oscillates at high values |
+| Resonance | Filter Q — see the note on the diode ladder below |
 | Env Mod | How far the filter envelope opens the filter per step |
 | Decay | Filter envelope decay time |
 | Accent | Per-step level: brightens the filter, bumps Q, raises output gain |
+
+> **The filter is a diode ladder.** This is the circuit that gives the 303 its
+> voice: its asymmetric clipping adds even harmonics, which is where the
+> squelch comes from. One consequence surprises people used to other synths —
+> a ladder *loses* level as resonance rises, instead of growing a peak on top of
+> the signal. Turning Resonance up thins and quietens the sound rather than
+> making it louder. That is correct behaviour, and the engine compensates
+> internally so that accented steps still punch through.
 
 ### Slide and accent behaviour
 
@@ -71,23 +79,88 @@ Above: Subtractive editor — OSC 1/2, Sub oscillator, Noise, Filter (with
 built-in envelope), Amp, and POLY controls.
 
 The Subtractive engine is a classic analogue-style polyphonic synthesiser with
-two oscillators, a sub oscillator, a noise source, a resonant low-pass filter,
-and a full amplitude envelope. It is the most general-purpose engine in Loom
-and suits pads, leads, basses, and plucks.
+two oscillators, a sub oscillator, a noise source, a multimode filter, and a
+full amplitude envelope. It is the most general-purpose engine in Loom and
+suits pads, leads, basses, and plucks — and with **85 presets** it has by far
+the largest library of any engine here.
 
 ### Parameter sections
 
-- **OSC 1 / OSC 2** — waveform (Saw/Sqr/Tri/Sin), level, and detune in cents.
+- **OSC 1 / OSC 2** — waveform, level, detune in cents, **PW**, and **Sync**.
   Detuning the two oscillators creates the classic "supersaw" chorus effect.
+  See [Oscillator extras](#oscillator-extras-pw-and-sync) below for PW and Sync.
 - **SUB / NOISE** — sub oscillator level (one octave below OSC 1) and a
   noise generator for breath and texture.
-- **FILTER** — Cutoff, Resonance, Env Amount, Drive, Key Track, and a full
-  ADSR filter envelope (toggle with Built-in Env).
+- **FILTER** — **Model**, **Type**, Cutoff, Resonance, Env Amount, Drive, Key
+  Track, and a full ADSR filter envelope (toggle with Built-in Env). See
+  [Filter model and type](#filter-model-and-type).
 - **AMP** — Attack/Decay/Sustain/Release amplitude envelope (toggle with
   Built-in Env).
-- **MASTER** — global Tune in semitones.
+- **MASTER** — global Tune in semitones, plus **Unison**, **Detune** and
+  **Drift**. See [Unison](#unison-detune-and-drift).
 - **POLY** — voice count (1–16), poly/mono mode, and legato/retrig behaviour
   in mono mode.
+
+### Filter model and type
+
+Two dropdowns sit above the filter knobs and change its character completely.
+
+**Model** picks the circuit being emulated:
+
+| Model | Character |
+| --- | --- |
+| **DIG** (default) | A clean state-variable filter. Precise and neutral. |
+| **MOG** | A four-pole Moog-style ladder. Warmer, and it saturates as you drive it. |
+| **303** | The diode ladder from the TB-303. Asymmetric clipping adds even harmonics — the acid voice. |
+
+**Type** picks the response: **LP**, **HP**, **BP** or **Notch**.
+
+> **Important:** only **DIG** is a true multimode filter. The two ladders (MOG
+> and 303) are four-pole lowpass topologies and are **lowpass only** — with
+> Model set to MOG or 303, the Type dropdown has no effect. If you want a
+> high-pass or a notch, you need DIG.
+
+A second thing worth knowing about the ladders: they *lose* level as resonance
+climbs, rather than growing a resonant peak on top. Turning Q up on MOG or 303
+thins and quietens the sound. That is faithful to the hardware, and it is why
+the TB-303 engine compensates with a dedicated accent gain.
+
+### Oscillator extras: PW and Sync
+
+**PW (Pulse Width)** — 0.05 to 0.95, centred at 0.5. On its own it reshapes a
+square wave from a hollow, nasal thin pulse through the full-bodied square at
+0.5 and out the other side. The classic use is **PWM**: assign an LFO to
+`osc1.pw` and the width breathes back and forth, turning a static square into a
+wide, shimmering pad. This is the single most rewarding modulation target on the
+engine.
+
+**Sync (hard sync)** — select **Sync** as the waveform and the oscillator runs
+a second, faster oscillator that is force-restarted on every cycle of the first.
+The restart chops the waveform mid-cycle, producing the aggressive, tearing
+timbre of a synced lead. Here the **Sync knob (1–8)** sets the ratio between the
+two, and *that ratio is the timbre* — the pitch you hear still follows the note.
+Sweeping the Sync knob (or modulating it) gives the classic sync-sweep lead.
+Presets **LEAD Sync**, **LEAD Sync Sweep** and **BASS Sync** are built on it.
+
+### Unison, Detune and Drift
+
+In the MASTER section:
+
+| Parameter | Description |
+| --- | --- |
+| **Unison** | Stack 1–7 copies of the whole voice per note (default 1) |
+| **Detune** | How far the stack spreads apart, 0–50 cents (default 25) |
+| **Drift** | Slow, random analogue pitch wander, 0–1 (default 0) |
+
+Unison is what makes a lead enormous: seven slightly-detuned copies beating
+against each other is the supersaw sound. It costs CPU in proportion — seven
+copies is seven times the synthesis work per note — so raise it for leads, not
+for dense pads.
+
+**Unison is read once when the note is triggered**, so unlike most parameters it
+is deliberately *not* a modulation target; changing it affects the next note you
+play, not the one currently sounding. **Drift** is the opposite: a touch of it
+(0.1–0.2) keeps sustained chords from sounding sterile.
 
 For modulation routing see [Modulation & Note FX](06-modulation-and-note-fx.md).
 
@@ -191,7 +264,7 @@ Karplus suits acoustic bass, guitar, harp, and marimba-style sounds.
 
 The West Coast engine takes a fundamentally different approach to synthesis from the filter-based ("East Coast") engines above. Instead of shaping a harmonically-rich waveform by subtracting frequencies with a filter, it **adds** harmonics by routing an oscillator through a **wavefolder** and then taming the result with a **low-pass gate**. The result is highly percussive and organic — metallic plucks, woody tones, evolving bell-like pads, and abstract textures that are difficult to achieve with conventional subtractive synthesis.
 
-The engine is **monophonic** (a single voice; legato mode is planned for a future update). FM here is native-linear, not through-zero.
+The engine is **polyphonic** — up to 16 voices, 8 by default — with a Poly/Mono switch in the AMP section if you want the classic one-voice-at-a-time behaviour. FM here is native-linear, not through-zero.
 
 The signal chain is: **Complex Oscillator** → **Timbre (Wavefolder)** → **Low-Pass Gate (LPG)** driven by an **AD Contour**.
 
@@ -247,6 +320,8 @@ A single AD (attack–decay) envelope generator, similar to the contour generato
 | --- | --- |
 | Level | Master output gain (0–1) |
 | Tune | Global pitch offset in semitones (±12 st) |
+| Voices | Polyphony, 1–16 (default 8) |
+| Mode | Poly or Mono |
 
 The engine ships with **24 presets** — spanning percussive bass plucks (BASS Fold Sub, BASS Growl FM), bells (BELL Metallic, BELL Crystal Ring), pads (PAD Fold Drone, PAD Glass Air), keys (KEYS Fold E-Piano, KEYS Marimba Fold), and abstract textures (FX Cycle Burst, FX Sci-Fi Cycle) — selectable from the lane's preset dropdown. Per-section knob accent colours group the COMPLEX OSCILLATOR, TIMBRE, LOW-PASS GATE, and CONTOUR sections visually.
 
@@ -300,9 +375,10 @@ details on loading samples and building keymaps see
 Above: Drums editor — Preset row, master bus knobs (Vol/Pan/Rev/Dly/Lo/Mid/Hi),
 per-voice rack with Tune/Decay/Rev/Dly controls per voice.
 
-The Drums engine is a fully synthesised eight-voice drum machine — no samples
-required. All eight voices (Kick, Snare, Closed Hat, Open Hat, Clap, Cowbell,
-Tom, Ride) are built from oscillators, noise generators, and simple envelopes.
+The Drums engine is a fully synthesised **ten-voice** drum machine — no samples
+required. All ten voices (Kick, Snare, **Rimshot**, Closed Hat, Open Hat, Clap,
+Cowbell, Tom, Ride, **Crash**) are built from oscillators, noise generators, and
+simple envelopes.
 Each voice routes through its own channel strip and then to a shared drum bus.
 
 ### Voice synthesis rack
@@ -331,7 +407,7 @@ The preset dropdown for any drum lane lists kits from four groups:
 | Samples | TR-808 (samples), Acoustic (samples), Dirt (samples) | Real one-shot WAVs bundled with Loom |
 | Drum Machines | 64 sampled kits from classic boxes (Roland, LinnDrum, Korg, Oberheim, Casio, E-mu…) | Sampled one-shots from the **tidal-drum-machines** collection — a large library of vintage drum-machine sounds |
 
-**Synth kits** seed all eight per-voice parameters from the kit's characteristic values; you can edit individual voices on top and hit 🎲 Sound to randomise all voices at once.
+**Synth kits** seed every voice's parameters from the kit's characteristic values; you can edit individual voices on top and hit 🎲 Sound to randomise all voices at once.
 
 **Sample kits** load the matching WAV for each voice (kick, snare, closed hat, open hat, clap, tom, cowbell, ride) from `public/drumkits/` and rebuild the keymap fresh on every session load — you never need to re-import the files manually. Once a sample kit is selected, the lane uses the drum-grid editor and the full per-pad parameter rack, exactly like a Sampler lane in drumkit mode.
 

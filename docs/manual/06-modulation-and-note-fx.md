@@ -11,6 +11,20 @@ Every lane has two signal-processing layers that sit *before* its engine's audio
 
 Open any lane's engine editor and scroll to the **MODULATORS** section. Press **+ LFO** or **+ ADSR** to add a modulator; you can add as many as you need. Each modulator appears as a card with its own controls, an **ON / OFF** toggle, and a **×** remove button.
 
+**The section is not empty to begin with.** Every engine arrives with its own modulators already wired, and on some engines they are load-bearing rather than decorative:
+
+| Engine | Ships with |
+| --- | --- |
+| Subtractive | Four — two ADSRs (which **are** the amp and filter envelopes) plus two free LFOs |
+| West Coast | Two ADSRs (wavefolder + low-pass gate) plus two LFOs |
+| Wavetable | An ADSR on filter cutoff |
+| FM, Karplus | One LFO and one ADSR |
+| TB-303 | One LFO only — by design; its envelopes are part of the engine |
+
+On Subtractive in particular, deleting the two ADSRs removes the amplitude and filter envelopes: they are not extras sitting on top of the sound, they *are* the sound's shape.
+
+**A preset can carry its own modulators.** Loading one replaces the lane's modulator set with the preset's — because for some patches the modulation *is* the patch. A wobble bass is an LFO on the filter cutoff; without it there is no wobble. Six of the Subtractive presets ship one today: **BASS Wobble LFO**, **BASS Neuro**, **PAD Shimmer**, **PAD Cosmic**, **PAD Ethereal** and **LEAD Sync Sweep**. Load one and look at the MODULATORS section to see how it was built — they are the quickest way to learn what this section can do.
+
 ### LFO
 
 An LFO generates a periodic waveform that you route to one or more target parameters.
@@ -22,10 +36,19 @@ An LFO generates a periodic waveform that you route to one or more target parame
 | BARS / FEEL | *(SYNC mode)* **BARS** is a free numeric input for the cycle length in bars-per-cycle (e.g. `0.25` = a quarter-bar cycle, `4` = one cycle every four bars; any value from 1/16-bar up to 64 bars). **FEEL** offsets it — **Str** (straight), **Trip** (triplet), **Dot** (dotted). This replaced the old fixed RATIO dropdown, so you can sync to any cycle length, not just preset divisions. |
 | FREE / SYNC | Toggles between the free-running bpm RATE knob (FREE) and the tempo-locked BARS + FEEL controls (SYNC). |
 | POLARITY | **-1..+1** (bipolar, default) oscillates symmetrically around the param's centre. **0..1** (unipolar) only pushes the parameter upward. |
-| TRIG | **Free** — the LFO phase runs continuously regardless of note triggers, like a classic analogue LFO. **Note** — phase resets on every note-on, so the LFO peak always lands at the start of each note. Hidden when scope is PER-VOICE (see below). |
-| SCOPE | **Shared** — one LFO voice runs for the whole lane. **PerVoice** — an independent LFO is spawned for each played note and lives for the duration of that note. |
+| TRIG | ⚠️ **Currently has no effect** — see the note below. Intended: **Free** runs the phase continuously; **Note** resets phase on every note-on. |
+| SCOPE | ⚠️ **Currently has no effect** — see the note below. Intended: **Shared** runs one LFO for the lane; **PerVoice** gives each played note its own. |
 
-**Musical difference between Shared and PerVoice:** a shared LFO on a polyphonic lane makes all voices wobble together in phase — the whole chord breathes as one. PerVoice gives each note its own independent modulation cycle, so fast staccato chords shimmer individually rather than in unison.
+> **TRIG and SCOPE are not connected yet.** Since synthesis moved into the
+> AudioWorklet, the only LFO settings that reach the sound engine are the rate,
+> the depth and the destination — the trigger mode and the scope are not sent.
+> Every LFO therefore free-runs and is **shared** across all voices of the lane,
+> whatever these two dropdowns say. They are left in place for the work that
+> will wire them up; until then, do not expect a chord's notes to wobble
+> independently, or an LFO peak to land on each note-on.
+>
+> The ADSR modulator is unaffected: it is genuinely **per-voice** and works as
+> described below.
 
 ### ADSR
 

@@ -25,7 +25,7 @@ Both readouts update via `requestAnimationFrame` while playing and freeze on sto
 
 ## Tempo controls
 
-**BPM** (`#bpm`) — sets the tempo. Range: 40–240 BPM, default 130. The field accepts **floating-point values** (e.g. 128.57 BPM, step 0.01); tempos detected from MIDI imports or stem separation are no longer rounded to an integer. You can type a value directly or use the number-input spinners. BPM changes propagate immediately to the sequencer, all lane engines, delay/LFO sync, and stretch-mode loop buffers. The change takes effect on the next scheduled step; it does not alter a note that is already held.
+**BPM** (`#bpm`) — sets the tempo. Range: 40–400 BPM, default 130. (The ceiling is deliberately high: drum &amp; bass written at its true tempo, and the faster end of hardcore/gabber, both live above 240.) The field accepts **floating-point values** (e.g. 128.57 BPM, step 0.01); tempos detected from MIDI imports or stem separation are no longer rounded to an integer. You can type a value directly or use the number-input spinners. BPM changes propagate immediately to the sequencer, all lane engines, delay/LFO sync, and stretch-mode loop buffers. The change takes effect on the next scheduled step; it does not alter a note that is already held.
 
 Each 16th-note step lasts `60 / bpm / 4` seconds.
 
@@ -75,5 +75,33 @@ The remaining controls in the transport row are covered in dedicated chapters:
 - **WAV export** — there is no longer a standalone "↓ WAV" button. WAV export now happens through the **REC** group's mode selector (see the Mode toggle and REC section above): **⏱ live** records real-time audio to WAV, and **⚡ offline** renders the scene to WAV offline (fast). See [Saving & Export](09-saving-and-export.md).
 - **New / Save / Load** (`#new-session`, `#save`, `#load`) — session file management. See [Saving & Export](09-saving-and-export.md).
 - **— load a demo —** (`#demo-picker`) — loads a bundled demo arrangement into the session.
-- **▶ MIDI IMPORT** (`.midi-panel`) — imports a Standard MIDI File. See the MIDI Import chapter for details.
-- **☰ Stems…** (`#stems-open`) — opens the stem-separation dialog, which splits a finished song into four Sampler lanes (vocals / drums / bass / other) via a local helper service. Requires the service to be running; see [MIDI & Samples → Stem separation](08-midi-and-samples.md#stem-separation-optional-local-service).
+- **MIDI import** — there is no button for this in the transport row. It lives under **File ▸ Import MIDI…**, which opens a modal dialog. See the MIDI Import chapter for details.
+- **☰** (`#stems-open`, an icon-only button tooltipped "Separate a song into stems") — opens the stem-separation dialog, which splits a finished song into four lanes (vocals / drums / bass / other) via a local helper service. Also under **File ▸ Separate into Stems…**. Requires the service to be running; see [MIDI & Samples → Stem separation](08-midi-and-samples.md#stem-separation-optional-local-service).
+- **⊙ Capture** (`#capture-scene`) — snapshots the clips currently playing into a new scene (also `Ctrl+I`, and under Tools ▸ Capture Scene).
+- **▣ XY** (`#xy-open`) — opens the floating XY pad for sweeping two parameters at once. See [Mixing & FX → XY pad](07-mixing-and-fx.md#xy-pad).
+- **PERF** (`#perf-toggle`) — toggles the performance-diagnostics overlay (audio load, scheduler lag, FPS, voice counts). It only runs while open.
+- **↺ / ↻** (`#undo-btn`, `#redo-btn`) — global undo and redo, greyed out until there is history.
+
+---
+
+## Keyboard shortcuts
+
+| Key | Action |
+| --- | --- |
+| **Space** | Pause / resume |
+| **R** | Arm or disarm clip MIDI recording |
+| `Ctrl/Cmd+N` | New session |
+| `Ctrl/Cmd+O` | Open |
+| `Ctrl/Cmd+S` | Save |
+| `Ctrl/Cmd+Z` | Undo |
+| `Ctrl/Cmd+Shift+Z` or `Ctrl/Cmd+Y` | Redo |
+| `Ctrl/Cmd+I` | Capture playing clips into a new scene |
+
+Two things about **Space** that catch people out:
+
+- It is **pause/resume, not stop**. It remembers the exact position — including the fraction of a bar — and picks up from there, where Stop resets to the beginning.
+- It does **nothing from a standing start**. If the transport is idle, Space will not begin playback; use ▶ or launch a scene. It only pauses something already playing.
+
+Note also that after a pause/resume the position readout restarts its count from `1.1.1` even though the music continues where it left off — the readout times the current run, not the song.
+
+Shortcuts never fire while you are typing in a text field, so they can't steal input from the BPM box or a name field.

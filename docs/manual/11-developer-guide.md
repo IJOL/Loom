@@ -53,7 +53,7 @@ Each lane's `LaneResources` consists of a `ChannelStrip` (level, EQ, send levels
 
 ## The scheduler
 
-The `Sequencer` class (`src/core/sequencer.ts`) fires every 25 ms (the poll interval) and looks **120 ms** ahead. On each tick it calls `sessionTick(now, lookaheadSec)` with `lookaheadSec = 0.12`, and the session host fans that out to `tickLane` for each playing lane.
+The `Sequencer` class (`src/core/sequencer.ts`) fires every 25 ms (the poll interval) and looks **200 ms** ahead. On each tick it calls `sessionTick(now, lookaheadSec)` with `lookaheadSec = 0.2`, and the session host fans that out to `tickLane` for each playing lane.
 
 `tickLane` (`src/core/lane-scheduler.ts`) implements the Chris Wilson two-clocks pattern: for every `NoteEvent` whose absolute schedule time falls in the window `[now, now + lookaheadSec)`, it calls `ctx.onTrigger`. Schedule times are derived by converting clip-tick positions to seconds using the current BPM and projecting onto the absolute timeline from the loop-start anchor. Step duration for a 16th note is `60 / bpm / 4` seconds.
 
@@ -68,10 +68,34 @@ When `clip.loopEnabled` is set, `effectiveClipLoop` (`src/core/clip-loop.ts`) co
 
 ### Add a synth engine
 
-1. Create `src/engines/<name>.ts`. Implement `SynthEngine` and export a `PluginFactory` with `kind: 'synth'`.
-2. Call `registerEngine(instance)` and `registerEngineFactory(id, () => new YourEngine())` at module scope.
-3. Declare params as `EngineParamSpec[]` and implement `getAudioParams()` on each voice so modulation and automation work automatically.
-4. That is it. The build-time glob discovers the file; it appears in the lane engine selector without any further wiring.
+Since synthesis moved into the AudioWorklet, an engine is **two halves in two
+places**: a metadata descriptor on the main thread and a per-sample renderer
+inside the worklet bundle. There are **four** steps, and skipping any of the last
+three gives you an engine that appears in the lane selector and then plays
+**silence** — the failure is quiet, so do all four.
+
+1. **Metadata descriptor** — `src/engines/<id>.ts`. Build it with
+   `createDescriptorEngine(...)` and register it with `registerEngineFactory(id, …)`
+   + `registerEngine(...)` at module scope. Declare params as `EngineParamSpec[]`.
+   This half carries no DSP: it describes the parameters and the UI.
+2. **Renderer** — `src/audio-dsp/<id>-renderer.ts`, a pure per-sample voice
+   renderer that calls `registerRenderer(id, ctor)` at module scope. This is the
+   half that makes sound, and it is plain TypeScript — unit-test it directly, no
+   `AudioContext` required.
+3. **Side-effect import in the worklet** — add `import '../audio-dsp/<id>-renderer';`
+   to [`src/audio-worklet/loom-processor.ts`](../../src/audio-worklet/loom-processor.ts).
+   The worklet is a separate bundle; without this import the renderer never
+   registers *inside it* and `createRenderer` throws
+   `no renderer registered for engine '<id>'`.
+4. **Route the lane** — add the id to `WORKLET_ENGINE_IDS` in
+   [`src/app/lane-allocator.ts`](../../src/app/lane-allocator.ts). The allocator
+   only sends listed ids down the worklet path; an unlisted id falls through,
+   the lane gets no engine, and nothing sounds.
+
+Note that `create()` and `getAudioParams()` are **never called** on the
+registered engine any more — the descriptor's `create()` deliberately throws,
+and modulation no longer runs on Web Audio `AudioParam`s. It runs sample-accurately
+inside the worklet (`src/audio-dsp/modulation-runtime.ts`).
 
 See [Engines](04-engines.md) for the full engine catalogue.
 
@@ -130,15 +154,29 @@ src/
                   arrangement-from-session, arrangement-ops,
                   arrangement-runtime (records clip-launches + knob automation;
                   surfaced via the REC group's take mode — see performance-feature)
-  polysynth/      PolySynth poly voice host (used by Subtractive):
-                  voice stealing, mono/legato/retrig, per-voice mod bus
+  audio-dsp/      THE SYNTHESIS KERNEL. Pure per-sample DSP that the worklet
+                  runs: one <id>-renderer.ts per engine (self-registering into
+                  renderer-registry.ts), voice-manager, scheduler-queue,
+                  modulation-runtime, plus primitives (osc, filter, ladder,
+                  sync-osc, unison, adsr). No AudioContext — unit-test directly
+  audio-worklet/  The processors + typed node wrappers: loom-processor/loom-node
+                  (melodic), drums-*, sampler-*. A processor is referenced ONLY
+                  via ?worker&url and its registered name — never imported on
+                  the main thread (see processor-name.ts)
+  export/         Offline scene/WAV render + the live take recorder
+  patterns/       The pattern library (styles x patterns) + its picker UI
+  perf/           Performance diagnostics (the PERF HUD)
+  polysynth/      LEGACY/vestigial. Not the Subtractive voice host any more —
+                  Subtractive is a descriptor engine rendered in the worklet.
+                  Only the preset store + the extra-poly path still touch it
   app/            Boot factories: audio-graph, lane-allocator, trigger-dispatch,
                   knob-mounting, mute-solo, bpm-broadcast, engine-swap,
                   plugin-bootstrap, lane-host-wiring
   save/           SaveManager (schemaVersion: 3), auto-history (AutoHistory:
                   snapshot-diff undo/redo + gesture coalescing, wired to the
-                  transport-bar ↺/↻ buttons), history-wiring (legacy withUndo /
-                  attachKnobUndo — now no-op shims)
+                  transport-bar ↺/↻ buttons), history-wiring (withUndo /
+                  attachKnobUndo + the undo keyboard — LIVE and load-bearing:
+                  withUndo wraps mutation sites across the app)
   notefx/         Note-FX plugin category (arpeggiator, chord spread) — per-lane
   automation/     Clip envelope recording + read-back helpers
   control/        Live MIDI controller subsystem: APC Key 25 profile, live

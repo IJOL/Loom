@@ -88,24 +88,38 @@ To export audio, pick **⏱ live** or **⚡ offline** and press **● REC**. The
 
 ### ⏱ live (real-time WAV)
 
-The real-time backend is the ground-truth render. Loom restarts the scene from the top, taps the live master output (after all inserts, compression, and master FX), captures the audio through an `AudioWorklet` recorder, and stops the transport when the capture finishes. What you hear during the export is exactly what ends up in the file — the same signal path, the same timing, the same random variation from any voice that uses it.
+The real-time backend is the ground-truth render, and it works like a tape machine: **arm → play → stop**.
 
-Because it captures live audio, it takes exactly as long as the scene itself.
+Pressing **● REC** in this mode does not start anything — it only **arms** the recorder, and the button reads `● ARMED`. Capture begins on the next downbeat, whichever way you start the transport (the ▶ button, a clip launch, a scene launch), and the button changes to `● Recording…`. It then records **open-ended** until *you* press Stop.
+
+That is the important difference from the offline render: it is not one pass of one scene. It captures **the whole performance, including scene changes** — launch scene A, let it run, switch to B, drop a clip, then stop, and all of it is in the file. It taps the live master output after every insert, the master compression and the master FX, so what you hear is exactly what lands in the file, including any random variation from a voice that uses it.
+
+A 2-second tail is appended after you stop so reverb and delay repeats are not cut off.
 
 ### ⚡ offline (fast WAV render)
 
 The offline backend rebuilds the full audio graph — lanes, inserts, master bus — inside an `OfflineAudioContext`, applies every lane's current sound state, batch-schedules all note events, and renders faster than real time without touching the live session. It shares the same encoder and download step as the real-time path, so the output format is identical.
 
-Offline rendering is faster but it replicates the deterministic part of the signal path; any non-deterministic element (e.g. a voice with random modulation at note-on) may differ from the live sound.
+**It loops seamlessly.** The offline renderer deliberately renders **two cycles of the scene and gives you the second one**. The first cycle is thrown away because it starts from silence — no reverb tail from the previous bar, no delay repeats in flight. The second cycle inherits all of that, so the file loops without a seam. This is the reason to prefer the offline render for loop material.
+
+For the same reason it appends **no** FX tail: the render is exactly the musical, bar-aligned length. A trailing tail would round up to an extra bar and the loop would drift.
+
+**Where it differs from the live sound.** The divergence is structural, not random: per-pad FX sends and per-voice drum-strip sends/EQ are dropped offline, and sample-mode drum kits render through the sampler path. Both are approximations of the live per-voice mix, so a kit that leans on per-voice sends will not sound identical. Everything else — presets, clip automation, the worklet engines — is applied exactly as live.
 
 ### What gets exported
 
-- **One pass of the scene.** The export captures one full iteration of the longest clip across all sounding lanes. Shorter clips in the same scene loop to fill that window, matching runtime behaviour. There is no infinite-loop export.
-- **FX tail.** A 2-second tail is appended after the music ends so reverb decay and delay repeats are not cut off abruptly.
-- **A scene must be playing.** If no scene is active when you press **● REC** in a WAV mode (⏱ live or ⚡ offline), Loom shows a brief notice and does nothing. Launch a scene first (see [Sessions](03-sessions-lanes-clips-scenes.md)), then export.
-- **File name.** The download is named `loom-scene-<timestamp>.wav`.
+- **One pass of the scene (offline only).** The offline export captures one full iteration of the longest clip across all sounding lanes; shorter clips loop to fill that window. The **live** take has no such window — it runs until you stop it.
+- **A scene must be playing (offline only).** Press **● REC** in ⚡ offline mode with nothing playing and Loom shows a brief notice and does nothing; launch a scene first. In ⏱ live mode arming with nothing playing is normal — that is the point, since it starts capturing from the downbeat of whatever you launch next.
+- **Switching mode disarms.** Changing between take / live / offline clears whatever the previous mode had armed.
 
-After the export finishes the transport stops.
+### Where the recording goes
+
+When a render finishes — live or offline — Loom asks what to do with it:
+
+- **Download a WAV**, named `loom-take-<timestamp>.wav`; or
+- **Insert it back into the session** as a new audio channel, tempo-locked to the project BPM. This is how you bounce a busy scene down to a single audio lane and keep building on top of it.
+
+Cancelling the dialog discards the take and writes nothing.
 
 ---
 

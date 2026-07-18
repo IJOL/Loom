@@ -113,15 +113,77 @@ blockquote { border-left: 3px solid var(--accent); margin: .8em 0; padding: .2em
 </ol>
 <p><img src="images/app-overview.png" alt="Loom with the Minimal Techno demo loaded and the session grid visible"></p>
 <p><em>The full Loom interface. Transport across the top; coloured clips in the session grid; per-lane channel strips below.</em></p>
+<h2>The menu bar</h2>
+<p>Across the very top sits a desktop-style menu bar. Most of what it offers also has a button somewhere in the interface — the menu is the tidy, discoverable route to the same things, and the place to look when you can&#39;t remember where a control lives.</p>
+<p><strong>File</strong></p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Shortcut</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>New Session</td>
+<td><code>Ctrl+N</code></td>
+<td>Empties the session and starts fresh</td>
+</tr>
+<tr>
+<td>Open…</td>
+<td><code>Ctrl+O</code></td>
+<td>Opens the save manager to load a stored session</td>
+</tr>
+<tr>
+<td>Save</td>
+<td><code>Ctrl+S</code></td>
+<td>Opens the save manager to store the current session</td>
+</tr>
+<tr>
+<td>Save As…</td>
+<td></td>
+<td>Same panel, for storing under a new name</td>
+</tr>
+<tr>
+<td>Project Options…</td>
+<td></td>
+<td>Project-wide settings, including the name and the musical key/scale</td>
+</tr>
+<tr>
+<td>Open Demo ▸</td>
+<td></td>
+<td>A submenu of the bundled demos; picking one loads it</td>
+</tr>
+<tr>
+<td>Import MIDI…</td>
+<td></td>
+<td>Opens the MIDI import flow (<a href="#08-midi-and-samples">chapter 8</a>)</td>
+</tr>
+<tr>
+<td>Separate into Stems…</td>
+<td></td>
+<td>Opens stem separation (<a href="#08-midi-and-samples">chapter 8</a>)</td>
+</tr>
+<tr>
+<td>Preferences…</td>
+<td><code>Ctrl+,</code></td>
+<td><strong>Not yet available</strong> — greyed out, planned for a later release</td>
+</tr>
+</tbody></table>
+<p><strong>Edit</strong> — <strong>Undo</strong> (<code>Ctrl+Z</code>) and <strong>Redo</strong> (<code>Ctrl+Shift+Z</code>, or <code>Ctrl+Y</code>). Both grey out when there is nothing to undo or redo, so the menu doubles as an indicator of whether your last action was recorded.</p>
+<p><strong>View</strong> — switches between the <strong>Session</strong> and <strong>Performance</strong> views, with a tick marking the current one, and toggles the <strong>Performance diagnostics (PERF)</strong> overlay (audio load, scheduler lag, FPS, voice counts).</p>
+<p><strong>Tools</strong> — opens the <strong>MIDI Controller</strong> panel, runs <strong>Capture Scene</strong> (<code>Ctrl+I</code>, snapshots the currently playing clips into a new scene) and <strong>Copy Scenes → Performance</strong>.</p>
+<p><strong>Help</strong> — opens this <strong>Manual</strong> in a new tab, and <strong>About Loom</strong>.</p>
+<p>Sessions are stored in your browser, not as files on disk: &quot;Open&quot; and &quot;Save&quot; mean the in-browser save manager, described in <a href="#09-saving-and-export">chapter 9</a>.</p>
 <h2>The mental model</h2>
 <p>Loom organises music in three nested concepts:</p>
 <ul>
-<li>A <strong>lane</strong> is an instrument track. Each lane runs one engine (TB-303, Subtractive, FM, Wavetable, Karplus-Strong, Sampler, or Drum Machine) and has its own mixer strip with EQ, sends, pan, and fader.</li>
+<li>A <strong>lane</strong> is an instrument track. Each lane runs one engine — six melodic ones (TB-303, Subtractive, FM, Wavetable, Karplus-Strong, West Coast), the Sampler, the Drum Machine, or an Audio channel for playing a recording — and has its own mixer strip with EQ, sends, pan, and fader.</li>
 <li>A <strong>clip</strong> is a pattern of notes that lives in a lane. A lane can hold multiple clips — one per scene row.</li>
 <li>A <strong>scene</strong> is a horizontal row across all lanes. Launching a scene fires the clip in each lane at that row simultaneously, so scenes work like song sections or loop variations.</li>
 </ul>
 <p><img src="images/session-grid.png" alt="The session clip grid showing four lanes across four scenes with coloured clips"></p>
-<p><em>The session grid: lanes run left to right as columns, scenes top to bottom as rows. Click a clip to select it; click the scene launch button on the left to fire the whole row.</em></p>
+<p><em>The session grid: lanes run left to right as columns, scenes top to bottom as rows. Click a clip to select it; click the scene launch button on the right to fire the whole row.</em></p>
 <p>Click any clip cell to open its editor in the inspector below the grid. The editor shows a piano roll for melodic lanes and a drum grid for drum lanes.</p>
 <h2>Next steps</h2>
 <ul>
@@ -145,7 +207,7 @@ blockquote { border-left: 3px solid var(--accent); margin: .8em 0; padding: .2em
 <p>Both readouts update via <code>requestAnimationFrame</code> while playing and freeze on stop so you can read the final position. Because each lane has its own independent loop clock, the global position is computed from elapsed seconds rather than a single sequencer cursor. The visual playhead is similarly a display-only timer matched to scheduled audio time; it may drift slightly under browser tab throttling, but audio scheduling is unaffected.</p>
 <hr>
 <h2>Tempo controls</h2>
-<p><strong>BPM</strong> (<code>#bpm</code>) — sets the tempo. Range: 40–240 BPM, default 130. The field accepts <strong>floating-point values</strong> (e.g. 128.57 BPM, step 0.01); tempos detected from MIDI imports or stem separation are no longer rounded to an integer. You can type a value directly or use the number-input spinners. BPM changes propagate immediately to the sequencer, all lane engines, delay/LFO sync, and stretch-mode loop buffers. The change takes effect on the next scheduled step; it does not alter a note that is already held.</p>
+<p><strong>BPM</strong> (<code>#bpm</code>) — sets the tempo. Range: 40–400 BPM, default 130. (The ceiling is deliberately high: drum &amp; bass written at its true tempo, and the faster end of hardcore/gabber, both live above 240.) The field accepts <strong>floating-point values</strong> (e.g. 128.57 BPM, step 0.01); tempos detected from MIDI imports or stem separation are no longer rounded to an integer. You can type a value directly or use the number-input spinners. BPM changes propagate immediately to the sequencer, all lane engines, delay/LFO sync, and stretch-mode loop buffers. The change takes effect on the next scheduled step; it does not alter a note that is already held.</p>
 <p>Each 16th-note step lasts <code>60 / bpm / 4</code> seconds.</p>
 <p><strong>Meter</strong> (<code>#meter</code>) — sets the global time signature. The dropdown offers common meters: 4/4, 3/4, 2/4, 5/4, 6/8, 7/8, 9/8, and 12/8. The meter controls how bars map onto the 16th-step grid and how the position readout counts beats. Changing the meter takes effect on the next loop cycle.</p>
 <p><strong>Swing</strong> (<code>#swing</code>) — adds a shuffle feel by delaying the off-beat 16th notes. Range: 0 (straight) to 0.6. A swing of <code>s</code> delays each off-beat 16th by <code>s</code> × one 16th step, so the off-beat lands <code>50 × (1 + s)</code> % of the way to the next on-beat — the familiar swing percentage: <strong>0</strong> = straight (50%), <strong>0.33</strong> = the classic triplet shuffle (66.7%), <strong>0.5</strong> = a heavy shuffle (75%), <strong>0.6</strong> = the hardest limp Loom offers (80%). On-beats never move.</p>
@@ -178,9 +240,62 @@ blockquote { border-left: 3px solid var(--accent); margin: .8em 0; padding: .2em
 <li><strong>WAV export</strong> — there is no longer a standalone &quot;↓ WAV&quot; button. WAV export now happens through the <strong>REC</strong> group&#39;s mode selector (see the Mode toggle and REC section above): <strong>⏱ live</strong> records real-time audio to WAV, and <strong>⚡ offline</strong> renders the scene to WAV offline (fast). See <a href="#09-saving-and-export">Saving &amp; Export</a>.</li>
 <li><strong>New / Save / Load</strong> (<code>#new-session</code>, <code>#save</code>, <code>#load</code>) — session file management. See <a href="#09-saving-and-export">Saving &amp; Export</a>.</li>
 <li><strong>— load a demo —</strong> (<code>#demo-picker</code>) — loads a bundled demo arrangement into the session.</li>
-<li><strong>▶ MIDI IMPORT</strong> (<code>.midi-panel</code>) — imports a Standard MIDI File. See the MIDI Import chapter for details.</li>
-<li><strong>☰ Stems…</strong> (<code>#stems-open</code>) — opens the stem-separation dialog, which splits a finished song into four Sampler lanes (vocals / drums / bass / other) via a local helper service. Requires the service to be running; see <a href="#08-midi-and-samples">MIDI &amp; Samples → Stem separation</a>.</li>
+<li><strong>MIDI import</strong> — there is no button for this in the transport row. It lives under <strong>File ▸ Import MIDI…</strong>, which opens a modal dialog. See the MIDI Import chapter for details.</li>
+<li><strong>☰</strong> (<code>#stems-open</code>, an icon-only button tooltipped &quot;Separate a song into stems&quot;) — opens the stem-separation dialog, which splits a finished song into four lanes (vocals / drums / bass / other) via a local helper service. Also under <strong>File ▸ Separate into Stems…</strong>. Requires the service to be running; see <a href="#08-midi-and-samples">MIDI &amp; Samples → Stem separation</a>.</li>
+<li><strong>⊙ Capture</strong> (<code>#capture-scene</code>) — snapshots the clips currently playing into a new scene (also <code>Ctrl+I</code>, and under Tools ▸ Capture Scene).</li>
+<li><strong>▣ XY</strong> (<code>#xy-open</code>) — opens the floating XY pad for sweeping two parameters at once. See <a href="#07-mixing-and-fx">Mixing &amp; FX → XY pad</a>.</li>
+<li><strong>PERF</strong> (<code>#perf-toggle</code>) — toggles the performance-diagnostics overlay (audio load, scheduler lag, FPS, voice counts). It only runs while open.</li>
+<li><strong>↺ / ↻</strong> (<code>#undo-btn</code>, <code>#redo-btn</code>) — global undo and redo, greyed out until there is history.</li>
 </ul>
+<hr>
+<h2>Keyboard shortcuts</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Space</strong></td>
+<td>Pause / resume</td>
+</tr>
+<tr>
+<td><strong>R</strong></td>
+<td>Arm or disarm clip MIDI recording</td>
+</tr>
+<tr>
+<td><code>Ctrl/Cmd+N</code></td>
+<td>New session</td>
+</tr>
+<tr>
+<td><code>Ctrl/Cmd+O</code></td>
+<td>Open</td>
+</tr>
+<tr>
+<td><code>Ctrl/Cmd+S</code></td>
+<td>Save</td>
+</tr>
+<tr>
+<td><code>Ctrl/Cmd+Z</code></td>
+<td>Undo</td>
+</tr>
+<tr>
+<td><code>Ctrl/Cmd+Shift+Z</code> or <code>Ctrl/Cmd+Y</code></td>
+<td>Redo</td>
+</tr>
+<tr>
+<td><code>Ctrl/Cmd+I</code></td>
+<td>Capture playing clips into a new scene</td>
+</tr>
+</tbody></table>
+<p>Two things about <strong>Space</strong> that catch people out:</p>
+<ul>
+<li>It is <strong>pause/resume, not stop</strong>. It remembers the exact position — including the fraction of a bar — and picks up from there, where Stop resets to the beginning.</li>
+<li>It does <strong>nothing from a standing start</strong>. If the transport is idle, Space will not begin playback; use ▶ or launch a scene. It only pauses something already playing.</li>
+</ul>
+<p>Note also that after a pause/resume the position readout restarts its count from <code>1.1.1</code> even though the music continues where it left off — the readout times the current run, not the song.</p>
+<p>Shortcuts never fire while you are typing in a text field, so they can&#39;t steal input from the BPM box or a name field.</p>
 </section>
 <section class="chapter" id="03-sessions-lanes-clips-scenes"><h1>Sessions, Lanes, Clips &amp; Scenes</h1>
 <p>The session view is the main workspace in Loom. It organises everything you hear into a compact grid of lanes and clips that you can launch, edit, and rearrange in any order.</p>
@@ -191,7 +306,7 @@ blockquote { border-left: 3px solid var(--accent); margin: .8em 0; padding: .2em
 <p><strong>Scene</strong> — a row in the grid. Launching a scene fires one clip per lane simultaneously, aligning all starts to the same quantize boundary so the whole arrangement snaps together cleanly.</p>
 <h2>The grid</h2>
 <p><img src="images/session-grid.png" alt="Session grid"></p>
-<p>Lane names run along the top header row; row numbers (1, 2, 3 …) label the scenes down the left edge. Scenes launch buttons sit in the rightmost column. Each filled cell shows the clip&#39;s name (or its row number as a fallback) against the clip&#39;s pastel colour. A ⚙ icon in the lane header opens that lane&#39;s instrument editor.</p>
+<p>Lane names run along the top header row; row numbers (1, 2, 3 …) label the scenes down the left edge. Scenes launch buttons sit in the rightmost column. Each filled cell shows the clip&#39;s name (or its row number as a fallback) against the clip&#39;s pastel colour. <strong>Click a lane header</strong> to open that lane&#39;s instrument editor; once it is open, the <strong>▸/▾ chevron</strong> that appears on that header collapses and reopens the editor.</p>
 <p>A newly created instrument lane starts out empty — no placeholder clips are added to its column; you fill cells yourself. Audio and Sampler lanes created from a dropped WAV or loop place their clip in row 1 only. The grid always keeps at least one launchable scene available even when every lane is empty.</p>
 <p>Right-clicking grid elements opens a context menu. On a <strong>lane header</strong>: <em>Rename track</em>, <em>Edit instrument</em>, <em>Duplicate track</em>, <em>Stop track</em>, and <em>Delete track</em> (red). On a <strong>scene cell</strong>: <em>Rename scene</em>, <em>Launch scene</em>, <em>Duplicate scene</em>, <em>Capture playing -&gt; scene</em>, <em>Add scene</em>, and <em>Delete scene</em> (red). On a <strong>filled clip</strong>: <em>Open editor</em>, <em>Play / Stop</em>, and <em>Delete clip</em> (red). On an <strong>empty cell</strong>: <em>Create clip</em> — on audio lanes this entry reads <em>Import audio (WAV)...</em>.</p>
 <p>Below the scene rows there is a stop row: each lane has its own ⏹ stop button, and a global <strong>⏹ all</strong> button at the far right stops every lane at once.</p>
@@ -204,7 +319,7 @@ blockquote { border-left: 3px solid var(--accent); margin: .8em 0; padding: .2em
 <li><strong>Launching a single clip</strong> swaps it in at the end of <em>its own</em> current loop, so the new pattern enters cleanly on the downbeat rather than mid-bar.</li>
 <li><strong>Launching a scene</strong> is an <strong>atomic switch at the end of the governing loop</strong> — the longest loop currently playing (with stray outliers capped, so one odd 1-bar clip doesn&#39;t drag a 4-bar groove). Every clip in the scene changes together on that boundary, and any <strong>lane that has no clip in the new scene stops</strong> at the same moment (it pulses a &quot;stopping&quot; state until then). The result is a clean, simultaneous scene change with no lanes left hanging.</li>
 </ul>
-<p>Click the <strong>▶ N</strong> button at the right of a scene row to launch all clips in that row. The toolbar&#39;s <strong>⏹ All</strong> button stops every lane at once.</p>
+<p>Click the <strong>▶ <em>scene name</em></strong> button at the right of a scene row (it reads <code>▶ Scene 1</code>, or whatever you renamed it to — not a bare number) to launch all clips in that row. The toolbar&#39;s <strong>⏹ All</strong> button stops every lane at once.</p>
 <p>The <code>Quantize</code> setting (per clip, falling back to the lane&#39;s, then the session&#39;s global) governs <strong>cold starts</strong> — the alignment used when you launch from a stopped transport. Once the transport is running, the loop-end sync above takes over so launches stay musically aligned.</p>
 <h2>Renaming, duplicating, and capturing scenes</h2>
 <p>Track and scene names support <strong>inline rename</strong>: double-click a lane name in the header or a scene name in the scene cell, type the new label, and press Enter.</p>
@@ -322,7 +437,7 @@ sweep.</p>
 </tr>
 <tr>
 <td>Resonance</td>
-<td>Filter Q — self-oscillates at high values</td>
+<td>Filter Q — see the note on the diode ladder below</td>
 </tr>
 <tr>
 <td>Env Mod</td>
@@ -337,6 +452,15 @@ sweep.</p>
 <td>Per-step level: brightens the filter, bumps Q, raises output gain</td>
 </tr>
 </tbody></table>
+<blockquote>
+<p><strong>The filter is a diode ladder.</strong> This is the circuit that gives the 303 its
+voice: its asymmetric clipping adds even harmonics, which is where the
+squelch comes from. One consequence surprises people used to other synths —
+a ladder <em>loses</em> level as resonance rises, instead of growing a peak on top of
+the signal. Turning Resonance up thins and quietens the sound rather than
+making it louder. That is correct behaviour, and the engine compensates
+internally so that accented steps still punch through.</p>
+</blockquote>
 <h3>Slide and accent behaviour</h3>
 <p>A note&#39;s <code>slide</code> flag means &quot;slide into the next step&quot;. When the scheduler
 emits step N it checks whether step N-1 carried a slide flag; if so, it ramps
@@ -355,23 +479,105 @@ individual steps.</p>
 <p>Above: Subtractive editor — OSC 1/2, Sub oscillator, Noise, Filter (with
 built-in envelope), Amp, and POLY controls.</p>
 <p>The Subtractive engine is a classic analogue-style polyphonic synthesiser with
-two oscillators, a sub oscillator, a noise source, a resonant low-pass filter,
-and a full amplitude envelope. It is the most general-purpose engine in Loom
-and suits pads, leads, basses, and plucks.</p>
+two oscillators, a sub oscillator, a noise source, a multimode filter, and a
+full amplitude envelope. It is the most general-purpose engine in Loom and
+suits pads, leads, basses, and plucks — and with <strong>85 presets</strong> it has by far
+the largest library of any engine here.</p>
 <h3>Parameter sections</h3>
 <ul>
-<li><strong>OSC 1 / OSC 2</strong> — waveform (Saw/Sqr/Tri/Sin), level, and detune in cents.
-Detuning the two oscillators creates the classic &quot;supersaw&quot; chorus effect.</li>
+<li><strong>OSC 1 / OSC 2</strong> — waveform, level, detune in cents, <strong>PW</strong>, and <strong>Sync</strong>.
+Detuning the two oscillators creates the classic &quot;supersaw&quot; chorus effect.
+See <a href="#oscillator-extras-pw-and-sync">Oscillator extras</a> below for PW and Sync.</li>
 <li><strong>SUB / NOISE</strong> — sub oscillator level (one octave below OSC 1) and a
 noise generator for breath and texture.</li>
-<li><strong>FILTER</strong> — Cutoff, Resonance, Env Amount, Drive, Key Track, and a full
-ADSR filter envelope (toggle with Built-in Env).</li>
+<li><strong>FILTER</strong> — <strong>Model</strong>, <strong>Type</strong>, Cutoff, Resonance, Env Amount, Drive, Key
+Track, and a full ADSR filter envelope (toggle with Built-in Env). See
+<a href="#filter-model-and-type">Filter model and type</a>.</li>
 <li><strong>AMP</strong> — Attack/Decay/Sustain/Release amplitude envelope (toggle with
 Built-in Env).</li>
-<li><strong>MASTER</strong> — global Tune in semitones.</li>
+<li><strong>MASTER</strong> — global Tune in semitones, plus <strong>Unison</strong>, <strong>Detune</strong> and
+<strong>Drift</strong>. See <a href="#unison-detune-and-drift">Unison</a>.</li>
 <li><strong>POLY</strong> — voice count (1–16), poly/mono mode, and legato/retrig behaviour
 in mono mode.</li>
 </ul>
+<h3>Filter model and type</h3>
+<p>Two dropdowns sit above the filter knobs and change its character completely.</p>
+<p><strong>Model</strong> picks the circuit being emulated:</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Character</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>DIG</strong> (default)</td>
+<td>A clean state-variable filter. Precise and neutral.</td>
+</tr>
+<tr>
+<td><strong>MOG</strong></td>
+<td>A four-pole Moog-style ladder. Warmer, and it saturates as you drive it.</td>
+</tr>
+<tr>
+<td><strong>303</strong></td>
+<td>The diode ladder from the TB-303. Asymmetric clipping adds even harmonics — the acid voice.</td>
+</tr>
+</tbody></table>
+<p><strong>Type</strong> picks the response: <strong>LP</strong>, <strong>HP</strong>, <strong>BP</strong> or <strong>Notch</strong>.</p>
+<blockquote>
+<p><strong>Important:</strong> only <strong>DIG</strong> is a true multimode filter. The two ladders (MOG
+and 303) are four-pole lowpass topologies and are <strong>lowpass only</strong> — with
+Model set to MOG or 303, the Type dropdown has no effect. If you want a
+high-pass or a notch, you need DIG.</p>
+</blockquote>
+<p>A second thing worth knowing about the ladders: they <em>lose</em> level as resonance
+climbs, rather than growing a resonant peak on top. Turning Q up on MOG or 303
+thins and quietens the sound. That is faithful to the hardware, and it is why
+the TB-303 engine compensates with a dedicated accent gain.</p>
+<h3>Oscillator extras: PW and Sync</h3>
+<p><strong>PW (Pulse Width)</strong> — 0.05 to 0.95, centred at 0.5. On its own it reshapes a
+square wave from a hollow, nasal thin pulse through the full-bodied square at
+0.5 and out the other side. The classic use is <strong>PWM</strong>: assign an LFO to
+<code>osc1.pw</code> and the width breathes back and forth, turning a static square into a
+wide, shimmering pad. This is the single most rewarding modulation target on the
+engine.</p>
+<p><strong>Sync (hard sync)</strong> — select <strong>Sync</strong> as the waveform and the oscillator runs
+a second, faster oscillator that is force-restarted on every cycle of the first.
+The restart chops the waveform mid-cycle, producing the aggressive, tearing
+timbre of a synced lead. Here the <strong>Sync knob (1–8)</strong> sets the ratio between the
+two, and <em>that ratio is the timbre</em> — the pitch you hear still follows the note.
+Sweeping the Sync knob (or modulating it) gives the classic sync-sweep lead.
+Presets <strong>LEAD Sync</strong>, <strong>LEAD Sync Sweep</strong> and <strong>BASS Sync</strong> are built on it.</p>
+<h3>Unison, Detune and Drift</h3>
+<p>In the MASTER section:</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Unison</strong></td>
+<td>Stack 1–7 copies of the whole voice per note (default 1)</td>
+</tr>
+<tr>
+<td><strong>Detune</strong></td>
+<td>How far the stack spreads apart, 0–50 cents (default 25)</td>
+</tr>
+<tr>
+<td><strong>Drift</strong></td>
+<td>Slow, random analogue pitch wander, 0–1 (default 0)</td>
+</tr>
+</tbody></table>
+<p>Unison is what makes a lead enormous: seven slightly-detuned copies beating
+against each other is the supersaw sound. It costs CPU in proportion — seven
+copies is seven times the synthesis work per note — so raise it for leads, not
+for dense pads.</p>
+<p><strong>Unison is read once when the note is triggered</strong>, so unlike most parameters it
+is deliberately <em>not</em> a modulation target; changing it affects the next note you
+play, not the one currently sounding. <strong>Drift</strong> is the opposite: a touch of it
+(0.1–0.2) keeps sustained chords from sounding sterile.</p>
 <p>For modulation routing see <a href="#06-modulation-and-note-fx">Modulation &amp; Note FX</a>.</p>
 <hr>
 <h2>FM</h2>
@@ -528,7 +734,7 @@ Karplus suits acoustic bass, guitar, harp, and marimba-style sounds.</p>
 <p><img src="images/engine-westcoast.png" alt="West Coast editor panel"></p>
 <p><em>A Buchla-style &quot;West Coast&quot; voice: complex oscillator → wavefolder → low-pass gate, driven by a built-in AD contour.</em></p>
 <p>The West Coast engine takes a fundamentally different approach to synthesis from the filter-based (&quot;East Coast&quot;) engines above. Instead of shaping a harmonically-rich waveform by subtracting frequencies with a filter, it <strong>adds</strong> harmonics by routing an oscillator through a <strong>wavefolder</strong> and then taming the result with a <strong>low-pass gate</strong>. The result is highly percussive and organic — metallic plucks, woody tones, evolving bell-like pads, and abstract textures that are difficult to achieve with conventional subtractive synthesis.</p>
-<p>The engine is <strong>monophonic</strong> (a single voice; legato mode is planned for a future update). FM here is native-linear, not through-zero.</p>
+<p>The engine is <strong>polyphonic</strong> — up to 16 voices, 8 by default — with a Poly/Mono switch in the AMP section if you want the classic one-voice-at-a-time behaviour. FM here is native-linear, not through-zero.</p>
 <p>The signal chain is: <strong>Complex Oscillator</strong> → <strong>Timbre (Wavefolder)</strong> → <strong>Low-Pass Gate (LPG)</strong> driven by an <strong>AD Contour</strong>.</p>
 <h3>COMPLEX OSCILLATOR section</h3>
 <p>Two cross-coupled oscillators produce the raw material. The principal oscillator&#39;s frequency is modulated by the modulator oscillator (linear FM), optionally ring-modulated, and a sub-harmonic divider can be added below.</p>
@@ -658,6 +864,14 @@ Karplus suits acoustic bass, guitar, harp, and marimba-style sounds.</p>
 <td>Tune</td>
 <td>Global pitch offset in semitones (±12 st)</td>
 </tr>
+<tr>
+<td>Voices</td>
+<td>Polyphony, 1–16 (default 8)</td>
+</tr>
+<tr>
+<td>Mode</td>
+<td>Poly or Mono</td>
+</tr>
 </tbody></table>
 <p>The engine ships with <strong>24 presets</strong> — spanning percussive bass plucks (BASS Fold Sub, BASS Growl FM), bells (BELL Metallic, BELL Crystal Ring), pads (PAD Fold Drone, PAD Glass Air), keys (KEYS Fold E-Piano, KEYS Marimba Fold), and abstract textures (FX Cycle Burst, FX Sci-Fi Cycle) — selectable from the lane&#39;s preset dropdown. Per-section knob accent colours group the COMPLEX OSCILLATOR, TIMBRE, LOW-PASS GATE, and CONTOUR sections visually.</p>
 <hr>
@@ -740,9 +954,10 @@ details on loading samples and building keymaps see
 <p><img src="images/engine-drums.png" alt="Drums editor panel"></p>
 <p>Above: Drums editor — Preset row, master bus knobs (Vol/Pan/Rev/Dly/Lo/Mid/Hi),
 per-voice rack with Tune/Decay/Rev/Dly controls per voice.</p>
-<p>The Drums engine is a fully synthesised eight-voice drum machine — no samples
-required. All eight voices (Kick, Snare, Closed Hat, Open Hat, Clap, Cowbell,
-Tom, Ride) are built from oscillators, noise generators, and simple envelopes.
+<p>The Drums engine is a fully synthesised <strong>ten-voice</strong> drum machine — no samples
+required. All ten voices (Kick, Snare, <strong>Rimshot</strong>, Closed Hat, Open Hat, Clap,
+Cowbell, Tom, Ride, <strong>Crash</strong>) are built from oscillators, noise generators, and
+simple envelopes.
 Each voice routes through its own channel strip and then to a shared drum bus.</p>
 <h3>Voice synthesis rack</h3>
 <p>The per-voice rack exposes the key parameters for each voice:</p>
@@ -817,7 +1032,7 @@ Each voice routes through its own channel strip and then to a shared drum bus.</
 <td>Sampled one-shots from the <strong>tidal-drum-machines</strong> collection — a large library of vintage drum-machine sounds</td>
 </tr>
 </tbody></table>
-<p><strong>Synth kits</strong> seed all eight per-voice parameters from the kit&#39;s characteristic values; you can edit individual voices on top and hit 🎲 Sound to randomise all voices at once.</p>
+<p><strong>Synth kits</strong> seed every voice&#39;s parameters from the kit&#39;s characteristic values; you can edit individual voices on top and hit 🎲 Sound to randomise all voices at once.</p>
 <p><strong>Sample kits</strong> load the matching WAV for each voice (kick, snare, closed hat, open hat, clap, tom, cowbell, ride) from <code>public/drumkits/</code> and rebuild the keymap fresh on every session load — you never need to re-import the files manually. Once a sample kit is selected, the lane uses the drum-grid editor and the full per-pad parameter rack, exactly like a Sampler lane in drumkit mode.</p>
 <p>The sample WAVs are curated one-shots from the Dirt-Samples collection (used by TidalCycles), classic TR-808 recordings, and — for the <strong>Drum Machines</strong> group — the <a href="https://github.com/ritchse/tidal-drum-machines">tidal-drum-machines</a> library. Full credits are in the repo <code>README.md</code> under &quot;Credits — sample sources&quot;.</p>
 <blockquote>
@@ -906,7 +1121,7 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <li>🎨 Anything goes — chromatic (no constraint)</li>
 </ul>
 </li>
-<li><strong>Style</strong> — the rhythmic and harmonic character used by the generators (Acid / Techno, House, Synthwave, Lo-fi, and <strong>Breakbeat / Big Beat</strong>). Style affects which rhythmic patterns the chord maker lays down and sets the default feel of generated basslines and melodies — Breakbeat / Big Beat adds a broken-beat drum generator and its own curated examples (chunky beats, rolling basslines, and riff-style melodies).</li>
+<li><strong>Style</strong> — the rhythmic and harmonic character used by the generators. There are <strong>20</strong>: Techno, Acid Techno, Dub Techno, House, Deep House, Garage, Trance, Psytrance, EDM, Breakbeat / Big Beat, Drum &amp; Bass, Jungle, Dubstep, Electro, Synthwave, IDM, Glitch, Downtempo, Lo-fi and Ambient. Style affects which rhythmic patterns the chord maker lays down, sets the default feel of generated basslines and melodies, and selects which library of ready-made patterns the <strong>Pattern</strong> dropdown offers.</li>
 <li><strong>Scale lock</strong> — a checkbox that turns the piano-roll&#39;s note snapping on or off <strong>globally</strong>. It is <strong>off by default</strong>, so you can play freely; tick it when you want every placed note pulled into the key. This is the same switch as the piano-roll&#39;s 🔒 button — wherever you toggle it, the other reflects it.</li>
 </ul>
 <p>Every other musical-assistance feature — the piano-roll scale highlight, the generator, the examples, the transforms, and the chord maker — respects the active root and scale. Closing the panel without choosing commits no change.</p>
@@ -933,15 +1148,20 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 </ul>
 <p>The result is not flat random: it is constrained to the scale, shaped by the style, and proportioned to the clip length. Press 🎲 again for another variation; change the global <strong>Style</strong> in the key/style panel for a different character while keeping the same root and scale.</p>
 <hr>
-<h3>Examples gallery</h3>
-<p>An inline dropdown next to 🎲 in the toolbar lists factory riff examples <strong>grouped by style</strong> (Acid / House / Synthwave / Lo-fi section headers). The list is filtered by editor type: melodic editors show basslines and melodies; drum editors show beat patterns.</p>
-<p>Selecting an example:</p>
+<h3>Pattern library</h3>
+<p>Two dropdowns in the toolbar work as a pair:</p>
+<ul>
+<li><strong>Style</strong> picks a library — one of the 20 styles listed above. Note that changing it here also changes the <strong>project</strong> style, so the 🎲 generators follow suit.</li>
+<li><strong>Pattern</strong> lists that style&#39;s ready-made patterns, roughly twenty per style. The list is a native dropdown, so you can <strong>type to search</strong> it instead of scrolling.</li>
+</ul>
+<p>The list is filtered by editor type — melodic editors offer basslines and riffs, drum editors offer beats — and your own saved examples appear in their own group at the end.</p>
+<p>Selecting a pattern:</p>
 <ol>
 <li>Loads it into the current clip.</li>
 <li>Transposes it from its stored key into the <strong>current project key</strong>.</li>
 <li>Repeats or trims it to exactly fill the clip length — short riffs tile; long riffs are cut at the clip boundary.</li>
 </ol>
-<p>Two additional controls sit at the bottom of the dropdown:</p>
+<p>Two toolbar buttons sit alongside:</p>
 <ul>
 <li><strong>+ Example</strong> — saves the current clip&#39;s notes as your own example. It is stored in this browser (IndexedDB), persists across reloads, and is marked with a ★ in the list.</li>
 <li><strong>⤓ JSON</strong> — exports the current clip as a portable <code>.json</code> file that you can share or import into another browser.</li>
@@ -987,7 +1207,7 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <p>A plain <strong>click on the time ruler</strong> (without dragging) <strong>seeks</strong> the song to that point: the global playback position jumps there and every lane re-anchors in phase, so while the transport runs you can jump around the timeline from any clip editor. Dragging the ruler still zooms/pans as above — only a click-without-drag seeks.</p>
 <p>The <strong>drum-grid</strong> and the <strong>audio-clip editor</strong> have the same horizontal zoom and scroll: their fixed parts (the voice-name labels on the drum grid, the waveform header on an audio clip) stay pinned on the left while the timeline content scrolls and zooms beside them. The loop brace tracks the zoom in every editor.</p>
 <h3>Follow (auto-scroll)</h3>
-<p>A session-global <strong>Follow</strong> toggle keeps the playhead in view: while it&#39;s on, every clip editor auto-scrolls horizontally to follow playback. It is <strong>on by default</strong> — turn it off when you want to inspect one region while the transport runs elsewhere. The setting is shared across all editors and saved with the session.</p>
+<p>A session-global <strong>Follow</strong> toggle keeps the playhead in view: while it&#39;s on, every clip editor auto-scrolls horizontally to follow playback. It is <strong>on by default</strong> — turn it off when you want to inspect one region while the transport runs elsewhere. The setting is shared across all editors, but it is a working mode rather than part of the music: it is <strong>not saved with the session</strong> and returns to on when you reload.</p>
 <h3>Draw mode (pencil)</h3>
 <p>The default tool is <strong>Draw</strong>. Click an empty area of the grid to place a note at the snap resolution (default: 16th notes). Drag right while placing to extend its duration. Click and drag an existing note&#39;s right edge to resize it. Click and drag the body of a note to move it. Alt-click or right-click a note to delete it.</p>
 <h3>Select mode</h3>
@@ -1001,7 +1221,7 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 </ul>
 <p>The tool choice and clipboard contents persist across clip re-opens and across clips, so you can copy from one clip and paste into another.</p>
 <h3>Computer-keyboard note input</h3>
-<p>When the piano-roll has focus you can record notes directly from the computer keyboard:</p>
+<p>The <strong>⌨ Keys</strong> toggle in the clip-editor toolbar turns your computer keyboard into a live instrument. It is <strong>off by default</strong> — switch it on and the keys below play the active lane in real time:</p>
 <table>
 <thead>
 <tr>
@@ -1022,7 +1242,7 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <td>Shift input octave down / up</td>
 </tr>
 </tbody></table>
-<p>Pressing a key <strong>auditions the note</strong> immediately so you can hear it, advances the input cursor by one snap step, and <strong>records the note into the clip</strong> at the cursor position. Duration equals one snap step (quantised on key-up). This lets you step-enter a melody quickly without a MIDI controller.</p>
+<p>This is <strong>live playing, not step entry</strong> — the keys sound the lane exactly as a MIDI keyboard would, and nothing is written into the clip on its own. To capture what you play, arm <strong>● Rec</strong> in the inspector and play along with the loop; see <a href="#08-midi-and-samples">MIDI live-record</a>. (Earlier versions typed notes into the clip at a cursor; that behaviour was replaced by live playing.)</p>
 <hr>
 <h2>Drum-grid</h2>
 <p><img src="images/inspector-drum-grid.png" alt="Drum-grid editor"></p>
@@ -1066,6 +1286,30 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 </tr>
 </tbody></table>
 <p>You can mix resolutions across clips; each clip stores its own <code>gridResolution</code> setting.</p>
+<h3>Euclidean fill (H / S / R)</h3>
+<p>Every voice row has three small fields between its label and the grid: <strong>H</strong>, <strong>S</strong> and <strong>R</strong>. They generate that voice&#39;s pattern by spreading hits as evenly as possible around a cycle — the Euclidean rhythm idea, which produces a surprising number of the world&#39;s real drum patterns.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>H</strong> — hits</td>
+<td>How many onsets to place, spread as evenly as possible. <strong>0 leaves the voice alone</strong>, so you can Euclid one voice without touching the rest.</td>
+</tr>
+<tr>
+<td><strong>S</strong> — steps</td>
+<td>The length of the cycle. Shorter than the clip and it simply repeats; set it to a length that does <em>not</em> divide the clip evenly and the pattern <strong>phases</strong>, landing differently each time round.</td>
+</tr>
+<tr>
+<td><strong>R</strong> — rotate</td>
+<td>Shifts the cycle so the hits land elsewhere against the beat. Negative values rotate the other way.</td>
+</tr>
+</tbody></table>
+<p>Start with <code>H=4, S=16</code> on a kick for four-on-the-floor, then try <code>H=3, S=8</code> on a hat for the tresillo that underpins most Latin and house grooves. The classic trick is an off-divisor: <code>S=7</code> against a 16-step clip never repeats the same way twice within the bar.</p>
+<p>The fill is generated into the clip as ordinary notes, so you can edit them by hand afterwards, and the whole operation is undoable.</p>
 <h3>Placing and removing hits</h3>
 <p>Click an empty cell to place a hit. Click an existing hit to remove it. In <strong>free</strong> mode, click anywhere in the row — the hit lands at the exact tick under the pointer with no snapping.</p>
 <h3>Selection and group operations</h3>
@@ -1150,6 +1394,37 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <hr>
 <h2>Modulators</h2>
 <p>Open any lane&#39;s engine editor and scroll to the <strong>MODULATORS</strong> section. Press <strong>+ LFO</strong> or <strong>+ ADSR</strong> to add a modulator; you can add as many as you need. Each modulator appears as a card with its own controls, an <strong>ON / OFF</strong> toggle, and a <strong>×</strong> remove button.</p>
+<p><strong>The section is not empty to begin with.</strong> Every engine arrives with its own modulators already wired, and on some engines they are load-bearing rather than decorative:</p>
+<table>
+<thead>
+<tr>
+<th>Engine</th>
+<th>Ships with</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Subtractive</td>
+<td>Four — two ADSRs (which <strong>are</strong> the amp and filter envelopes) plus two free LFOs</td>
+</tr>
+<tr>
+<td>West Coast</td>
+<td>Two ADSRs (wavefolder + low-pass gate) plus two LFOs</td>
+</tr>
+<tr>
+<td>Wavetable</td>
+<td>An ADSR on filter cutoff</td>
+</tr>
+<tr>
+<td>FM, Karplus</td>
+<td>One LFO and one ADSR</td>
+</tr>
+<tr>
+<td>TB-303</td>
+<td>One LFO only — by design; its envelopes are part of the engine</td>
+</tr>
+</tbody></table>
+<p>On Subtractive in particular, deleting the two ADSRs removes the amplitude and filter envelopes: they are not extras sitting on top of the sound, they <em>are</em> the sound&#39;s shape.</p>
+<p><strong>A preset can carry its own modulators.</strong> Loading one replaces the lane&#39;s modulator set with the preset&#39;s — because for some patches the modulation <em>is</em> the patch. A wobble bass is an LFO on the filter cutoff; without it there is no wobble. Six of the Subtractive presets ship one today: <strong>BASS Wobble LFO</strong>, <strong>BASS Neuro</strong>, <strong>PAD Shimmer</strong>, <strong>PAD Cosmic</strong>, <strong>PAD Ethereal</strong> and <strong>LEAD Sync Sweep</strong>. Load one and look at the MODULATORS section to see how it was built — they are the quickest way to learn what this section can do.</p>
 <h3>LFO</h3>
 <p>An LFO generates a periodic waveform that you route to one or more target parameters.</p>
 <table>
@@ -1181,14 +1456,24 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 </tr>
 <tr>
 <td>TRIG</td>
-<td><strong>Free</strong> — the LFO phase runs continuously regardless of note triggers, like a classic analogue LFO. <strong>Note</strong> — phase resets on every note-on, so the LFO peak always lands at the start of each note. Hidden when scope is PER-VOICE (see below).</td>
+<td>⚠️ <strong>Currently has no effect</strong> — see the note below. Intended: <strong>Free</strong> runs the phase continuously; <strong>Note</strong> resets phase on every note-on.</td>
 </tr>
 <tr>
 <td>SCOPE</td>
-<td><strong>Shared</strong> — one LFO voice runs for the whole lane. <strong>PerVoice</strong> — an independent LFO is spawned for each played note and lives for the duration of that note.</td>
+<td>⚠️ <strong>Currently has no effect</strong> — see the note below. Intended: <strong>Shared</strong> runs one LFO for the lane; <strong>PerVoice</strong> gives each played note its own.</td>
 </tr>
 </tbody></table>
-<p><strong>Musical difference between Shared and PerVoice:</strong> a shared LFO on a polyphonic lane makes all voices wobble together in phase — the whole chord breathes as one. PerVoice gives each note its own independent modulation cycle, so fast staccato chords shimmer individually rather than in unison.</p>
+<blockquote>
+<p><strong>TRIG and SCOPE are not connected yet.</strong> Since synthesis moved into the
+AudioWorklet, the only LFO settings that reach the sound engine are the rate,
+the depth and the destination — the trigger mode and the scope are not sent.
+Every LFO therefore free-runs and is <strong>shared</strong> across all voices of the lane,
+whatever these two dropdowns say. They are left in place for the work that
+will wire them up; until then, do not expect a chord&#39;s notes to wobble
+independently, or an LFO peak to land on each note-on.</p>
+<p>The ADSR modulator is unaffected: it is genuinely <strong>per-voice</strong> and works as
+described below.</p>
+</blockquote>
 <h3>ADSR</h3>
 <p>An ADSR produces a classic Attack–Decay–Sustain–Release envelope that fires once on each note trigger and follows the note&#39;s gate duration. Its default scope is <strong>PerVoice</strong>, which is almost always what you want: every note gets its own independent envelope.</p>
 <table>
@@ -1927,19 +2212,28 @@ uvicorn app:app --port 8765
 </ul>
 <p>To export audio, pick <strong>⏱ live</strong> or <strong>⚡ offline</strong> and press <strong>● REC</strong>. The two WAV backends behave as described below.</p>
 <h3>⏱ live (real-time WAV)</h3>
-<p>The real-time backend is the ground-truth render. Loom restarts the scene from the top, taps the live master output (after all inserts, compression, and master FX), captures the audio through an <code>AudioWorklet</code> recorder, and stops the transport when the capture finishes. What you hear during the export is exactly what ends up in the file — the same signal path, the same timing, the same random variation from any voice that uses it.</p>
-<p>Because it captures live audio, it takes exactly as long as the scene itself.</p>
+<p>The real-time backend is the ground-truth render, and it works like a tape machine: <strong>arm → play → stop</strong>.</p>
+<p>Pressing <strong>● REC</strong> in this mode does not start anything — it only <strong>arms</strong> the recorder, and the button reads <code>● ARMED</code>. Capture begins on the next downbeat, whichever way you start the transport (the ▶ button, a clip launch, a scene launch), and the button changes to <code>● Recording…</code>. It then records <strong>open-ended</strong> until <em>you</em> press Stop.</p>
+<p>That is the important difference from the offline render: it is not one pass of one scene. It captures <strong>the whole performance, including scene changes</strong> — launch scene A, let it run, switch to B, drop a clip, then stop, and all of it is in the file. It taps the live master output after every insert, the master compression and the master FX, so what you hear is exactly what lands in the file, including any random variation from a voice that uses it.</p>
+<p>A 2-second tail is appended after you stop so reverb and delay repeats are not cut off.</p>
 <h3>⚡ offline (fast WAV render)</h3>
 <p>The offline backend rebuilds the full audio graph — lanes, inserts, master bus — inside an <code>OfflineAudioContext</code>, applies every lane&#39;s current sound state, batch-schedules all note events, and renders faster than real time without touching the live session. It shares the same encoder and download step as the real-time path, so the output format is identical.</p>
-<p>Offline rendering is faster but it replicates the deterministic part of the signal path; any non-deterministic element (e.g. a voice with random modulation at note-on) may differ from the live sound.</p>
+<p><strong>It loops seamlessly.</strong> The offline renderer deliberately renders <strong>two cycles of the scene and gives you the second one</strong>. The first cycle is thrown away because it starts from silence — no reverb tail from the previous bar, no delay repeats in flight. The second cycle inherits all of that, so the file loops without a seam. This is the reason to prefer the offline render for loop material.</p>
+<p>For the same reason it appends <strong>no</strong> FX tail: the render is exactly the musical, bar-aligned length. A trailing tail would round up to an extra bar and the loop would drift.</p>
+<p><strong>Where it differs from the live sound.</strong> The divergence is structural, not random: per-pad FX sends and per-voice drum-strip sends/EQ are dropped offline, and sample-mode drum kits render through the sampler path. Both are approximations of the live per-voice mix, so a kit that leans on per-voice sends will not sound identical. Everything else — presets, clip automation, the worklet engines — is applied exactly as live.</p>
 <h3>What gets exported</h3>
 <ul>
-<li><strong>One pass of the scene.</strong> The export captures one full iteration of the longest clip across all sounding lanes. Shorter clips in the same scene loop to fill that window, matching runtime behaviour. There is no infinite-loop export.</li>
-<li><strong>FX tail.</strong> A 2-second tail is appended after the music ends so reverb decay and delay repeats are not cut off abruptly.</li>
-<li><strong>A scene must be playing.</strong> If no scene is active when you press <strong>● REC</strong> in a WAV mode (⏱ live or ⚡ offline), Loom shows a brief notice and does nothing. Launch a scene first (see <a href="#03-sessions-lanes-clips-scenes">Sessions</a>), then export.</li>
-<li><strong>File name.</strong> The download is named <code>loom-scene-&lt;timestamp&gt;.wav</code>.</li>
+<li><strong>One pass of the scene (offline only).</strong> The offline export captures one full iteration of the longest clip across all sounding lanes; shorter clips loop to fill that window. The <strong>live</strong> take has no such window — it runs until you stop it.</li>
+<li><strong>A scene must be playing (offline only).</strong> Press <strong>● REC</strong> in ⚡ offline mode with nothing playing and Loom shows a brief notice and does nothing; launch a scene first. In ⏱ live mode arming with nothing playing is normal — that is the point, since it starts capturing from the downbeat of whatever you launch next.</li>
+<li><strong>Switching mode disarms.</strong> Changing between take / live / offline clears whatever the previous mode had armed.</li>
 </ul>
-<p>After the export finishes the transport stops.</p>
+<h3>Where the recording goes</h3>
+<p>When a render finishes — live or offline — Loom asks what to do with it:</p>
+<ul>
+<li><strong>Download a WAV</strong>, named <code>loom-take-&lt;timestamp&gt;.wav</code>; or</li>
+<li><strong>Insert it back into the session</strong> as a new audio channel, tempo-locked to the project BPM. This is how you bounce a busy scene down to a single audio lane and keep building on top of it.</li>
+</ul>
+<p>Cancelling the dialog discards the take and writes nothing.</p>
 <hr>
 <h2>Live build and GitHub Pages</h2>
 <p>The public instance of Loom is deployed automatically to <a href="https://ijol.github.io/Loom/">https://ijol.github.io/Loom/</a> — every push to <code>main</code> triggers a GitHub Actions workflow that runs <code>vite build --base=/Loom/</code> and deploys the result to GitHub Pages. The standard <code>npm run build</code> (base <code>/</code>) is for local development or self-hosting on any other path.</p>
@@ -1958,7 +2252,7 @@ uvicorn app:app --port 8765
 <li>The section length equals the longest effective clip in that scene (measured in bars). If a clip has a loop sub-region enabled, its sub-region length is used instead of the full clip length.</li>
 <li>Every lane that has a clip assigned for that scene gets a timeline band covering the section.</li>
 </ul>
-<p>After the layout is computed, Loom switches you to Performance automatically. The operation is undoable.</p>
+<p>After the layout is computed, Loom switches you to Performance automatically. <strong>This one is not undoable</strong> — it overwrites whatever arrangement was there, so copy before you start editing bands by hand, not after.</p>
 <h3>2. Record a take live</h3>
 <p>You can record the arrangement in real time while you play.</p>
 <p>Recording is driven by the unified <strong>REC</strong> control in the session bar, which has three modes selectable beside the <strong>● REC</strong> button: <strong>🎛 take</strong> (the default — captures knob moves + clip launches into a performance take, described below), <strong>⏱ live</strong> (records real-time audio to a WAV file), and <strong>⚡ offline</strong> (renders the current scene to WAV offline, faster than real time). The steps below assume <strong>🎛 take</strong> is selected.</p>
@@ -1982,7 +2276,13 @@ uvicorn app:app --port 8765
 <li><strong>Master automation</strong> — any automation curves routed to global (master) parameters appear in a separate section at the bottom.</li>
 <li><strong>Playhead</strong> — a vertical line (<code>#perf-playhead</code>) that moves in real time via <code>requestAnimationFrame</code> while the arrangement is playing.</li>
 </ul>
-<p>The timeline does not support moving or resizing bands by hand. Bands are generated by recording or Copy to Performance; to change the layout, re-record or re-copy.</p>
+<p>Bands are fully editable by hand — you do not have to re-record to change the layout:</p>
+<ul>
+<li><strong>Move</strong> — drag the body of a band. It snaps to the beat, and later bands on that lane ripple forward so the lane stays ordered and non-overlapping.</li>
+<li><strong>Resize</strong> — drag the handle at either end.</li>
+<li><strong>Delete</strong> — click the <strong>×</strong> on the band.</li>
+</ul>
+<p>All three are undoable (but see the note on Performance&#39;s separate undo stack below).</p>
 <hr>
 <h2>A–B loop brace</h2>
 <p>The <strong>Loop A–B</strong> button in the Performance toolbar toggles the arrangement-wide loop brace. When active:</p>
@@ -2025,7 +2325,9 @@ uvicorn app:app --port 8765
 <p>Mute and solo states are saved with the session.</p>
 <hr>
 <h2>Persistence</h2>
-<p>The arrangement is saved as part of the session file (schema version 3). Recorded takes — clip bands, automation curves, loop brace position — survive Save / Load and browser restarts. Undo/redo covers arrangement edits (length, zoom, adding/removing curves, drawing automation, Copy to Performance) but not the raw recording; a take is finalised on Stop and does not participate in the undo stack.</p>
+<p>The arrangement is saved as part of the session file (schema version 3). Recorded takes — clip bands, automation curves, loop brace position — survive Save / Load and browser restarts.</p>
+<p><strong>Performance has its own, separate undo stack.</strong> This surprises people, so it is worth stating plainly: while you are in Performance mode, <code>Ctrl+Z</code> / <code>Ctrl+Y</code> undo <strong>timeline edits only</strong> — moving, resizing or deleting bands, length and zoom changes, adding or removing curves, drawing automation. Those keystrokes never reach session undo, even when the timeline stack is empty and nothing happens. Conversely, session edits are invisible to Performance&#39;s undo. Switch back to Session view to undo session changes.</p>
+<p>Two things are outside undo entirely: the <strong>raw recording</strong> (a take is finalised on Stop and does not enter the stack) and <strong>Copy to Performance</strong> (it overwrites the arrangement outright).</p>
 <p>See <a href="#09-saving-and-export">Saving &amp; Export</a> for how sessions are saved and loaded.</p>
 </section>
 <section class="chapter" id="11-developer-guide"><h1>Developer Guide</h1>
@@ -2065,7 +2367,7 @@ src/plugins/modulators/   — LFO / ADSR modulators
 <p>Each lane&#39;s <code>LaneResources</code> consists of a <code>ChannelStrip</code> (level, EQ, send levels), a <code>SynthEngine</code>, and an <code>InsertChain</code> of per-lane FX. <code>LaneResourceMap.replaceEngine</code> hot-swaps only the engine while keeping the strip and inserts in place — the channel-level resources survive an engine swap.</p>
 <p><code>ensureLaneResource</code> in the lane allocator is the only place that constructs a <code>LaneResources</code>. Call it once per lane before accessing anything in the map. Test code that needs a lane wired up must call it explicitly as setup.</p>
 <h2>The scheduler</h2>
-<p>The <code>Sequencer</code> class (<code>src/core/sequencer.ts</code>) fires every 25 ms (the poll interval) and looks <strong>120 ms</strong> ahead. On each tick it calls <code>sessionTick(now, lookaheadSec)</code> with <code>lookaheadSec = 0.12</code>, and the session host fans that out to <code>tickLane</code> for each playing lane.</p>
+<p>The <code>Sequencer</code> class (<code>src/core/sequencer.ts</code>) fires every 25 ms (the poll interval) and looks <strong>200 ms</strong> ahead. On each tick it calls <code>sessionTick(now, lookaheadSec)</code> with <code>lookaheadSec = 0.2</code>, and the session host fans that out to <code>tickLane</code> for each playing lane.</p>
 <p><code>tickLane</code> (<code>src/core/lane-scheduler.ts</code>) implements the Chris Wilson two-clocks pattern: for every <code>NoteEvent</code> whose absolute schedule time falls in the window <code>[now, now + lookaheadSec)</code>, it calls <code>ctx.onTrigger</code>. Schedule times are derived by converting clip-tick positions to seconds using the current BPM and projecting onto the absolute timeline from the loop-start anchor. Step duration for a 16th note is <code>60 / bpm / 4</code> seconds.</p>
 <p>Two important consequences for contributors:</p>
 <ul>
@@ -2075,12 +2377,36 @@ src/plugins/modulators/   — LFO / ADSR modulators
 <p>When <code>clip.loopEnabled</code> is set, <code>effectiveClipLoop</code> (<code>src/core/clip-loop.ts</code>) constrains the iteration window to <code>[loopStartTick, loopEndTick)</code>. The brace UI in <code>src/core/clip-loop-brace.ts</code> is the editing surface for that region.</p>
 <h2>How-to recipes</h2>
 <h3>Add a synth engine</h3>
+<p>Since synthesis moved into the AudioWorklet, an engine is <strong>two halves in two
+places</strong>: a metadata descriptor on the main thread and a per-sample renderer
+inside the worklet bundle. There are <strong>four</strong> steps, and skipping any of the last
+three gives you an engine that appears in the lane selector and then plays
+<strong>silence</strong> — the failure is quiet, so do all four.</p>
 <ol>
-<li>Create <code>src/engines/&lt;name&gt;.ts</code>. Implement <code>SynthEngine</code> and export a <code>PluginFactory</code> with <code>kind: &#39;synth&#39;</code>.</li>
-<li>Call <code>registerEngine(instance)</code> and <code>registerEngineFactory(id, () =&gt; new YourEngine())</code> at module scope.</li>
-<li>Declare params as <code>EngineParamSpec[]</code> and implement <code>getAudioParams()</code> on each voice so modulation and automation work automatically.</li>
-<li>That is it. The build-time glob discovers the file; it appears in the lane engine selector without any further wiring.</li>
+<li><strong>Metadata descriptor</strong> — <code>src/engines/&lt;id&gt;.ts</code>. Build it with
+<code>createDescriptorEngine(...)</code> and register it with <code>registerEngineFactory(id, …)</code><ul>
+<li><code>registerEngine(...)</code> at module scope. Declare params as <code>EngineParamSpec[]</code>.
+This half carries no DSP: it describes the parameters and the UI.</li>
+</ul>
+</li>
+<li><strong>Renderer</strong> — <code>src/audio-dsp/&lt;id&gt;-renderer.ts</code>, a pure per-sample voice
+renderer that calls <code>registerRenderer(id, ctor)</code> at module scope. This is the
+half that makes sound, and it is plain TypeScript — unit-test it directly, no
+<code>AudioContext</code> required.</li>
+<li><strong>Side-effect import in the worklet</strong> — add <code>import &#39;../audio-dsp/&lt;id&gt;-renderer&#39;;</code>
+to <a href="../../src/audio-worklet/loom-processor.ts"><code>src/audio-worklet/loom-processor.ts</code></a>.
+The worklet is a separate bundle; without this import the renderer never
+registers <em>inside it</em> and <code>createRenderer</code> throws
+<code>no renderer registered for engine &#39;&lt;id&gt;&#39;</code>.</li>
+<li><strong>Route the lane</strong> — add the id to <code>WORKLET_ENGINE_IDS</code> in
+<a href="../../src/app/lane-allocator.ts"><code>src/app/lane-allocator.ts</code></a>. The allocator
+only sends listed ids down the worklet path; an unlisted id falls through,
+the lane gets no engine, and nothing sounds.</li>
 </ol>
+<p>Note that <code>create()</code> and <code>getAudioParams()</code> are <strong>never called</strong> on the
+registered engine any more — the descriptor&#39;s <code>create()</code> deliberately throws,
+and modulation no longer runs on Web Audio <code>AudioParam</code>s. It runs sample-accurately
+inside the worklet (<code>src/audio-dsp/modulation-runtime.ts</code>).</p>
 <p>See <a href="#04-engines">Engines</a> for the full engine catalogue.</p>
 <h3>Add an FX insert or modulator</h3>
 <ol>
@@ -2130,15 +2456,29 @@ src/plugins/modulators/   — LFO / ADSR modulators
                   arrangement-from-session, arrangement-ops,
                   arrangement-runtime (records clip-launches + knob automation;
                   surfaced via the REC group&#39;s take mode — see performance-feature)
-  polysynth/      PolySynth poly voice host (used by Subtractive):
-                  voice stealing, mono/legato/retrig, per-voice mod bus
+  audio-dsp/      THE SYNTHESIS KERNEL. Pure per-sample DSP that the worklet
+                  runs: one &lt;id&gt;-renderer.ts per engine (self-registering into
+                  renderer-registry.ts), voice-manager, scheduler-queue,
+                  modulation-runtime, plus primitives (osc, filter, ladder,
+                  sync-osc, unison, adsr). No AudioContext — unit-test directly
+  audio-worklet/  The processors + typed node wrappers: loom-processor/loom-node
+                  (melodic), drums-*, sampler-*. A processor is referenced ONLY
+                  via ?worker&amp;url and its registered name — never imported on
+                  the main thread (see processor-name.ts)
+  export/         Offline scene/WAV render + the live take recorder
+  patterns/       The pattern library (styles x patterns) + its picker UI
+  perf/           Performance diagnostics (the PERF HUD)
+  polysynth/      LEGACY/vestigial. Not the Subtractive voice host any more —
+                  Subtractive is a descriptor engine rendered in the worklet.
+                  Only the preset store + the extra-poly path still touch it
   app/            Boot factories: audio-graph, lane-allocator, trigger-dispatch,
                   knob-mounting, mute-solo, bpm-broadcast, engine-swap,
                   plugin-bootstrap, lane-host-wiring
   save/           SaveManager (schemaVersion: 3), auto-history (AutoHistory:
                   snapshot-diff undo/redo + gesture coalescing, wired to the
-                  transport-bar ↺/↻ buttons), history-wiring (legacy withUndo /
-                  attachKnobUndo — now no-op shims)
+                  transport-bar ↺/↻ buttons), history-wiring (withUndo /
+                  attachKnobUndo + the undo keyboard — LIVE and load-bearing:
+                  withUndo wraps mutation sites across the app)
   notefx/         Note-FX plugin category (arpeggiator, chord spread) — per-lane
   automation/     Clip envelope recording + read-back helpers
   control/        Live MIDI controller subsystem: APC Key 25 profile, live

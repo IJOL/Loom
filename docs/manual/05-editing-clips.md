@@ -30,7 +30,7 @@ The panel has three pickers and a lock toggle:
   - 🌊 Hypnotic / modal — dorian
   - 😰 Unsettling — phrygian
   - 🎨 Anything goes — chromatic (no constraint)
-- **Style** — the rhythmic and harmonic character used by the generators (Acid / Techno, House, Synthwave, Lo-fi, and **Breakbeat / Big Beat**). Style affects which rhythmic patterns the chord maker lays down and sets the default feel of generated basslines and melodies — Breakbeat / Big Beat adds a broken-beat drum generator and its own curated examples (chunky beats, rolling basslines, and riff-style melodies).
+- **Style** — the rhythmic and harmonic character used by the generators. There are **20**: Techno, Acid Techno, Dub Techno, House, Deep House, Garage, Trance, Psytrance, EDM, Breakbeat / Big Beat, Drum & Bass, Jungle, Dubstep, Electro, Synthwave, IDM, Glitch, Downtempo, Lo-fi and Ambient. Style affects which rhythmic patterns the chord maker lays down, sets the default feel of generated basslines and melodies, and selects which library of ready-made patterns the **Pattern** dropdown offers.
 - **Scale lock** — a checkbox that turns the piano-roll's note snapping on or off **globally**. It is **off by default**, so you can play freely; tick it when you want every placed note pulled into the key. This is the same switch as the piano-roll's 🔒 button — wherever you toggle it, the other reflects it.
 
 Every other musical-assistance feature — the piano-roll scale highlight, the generator, the examples, the transforms, and the chord maker — respects the active root and scale. Closing the panel without choosing commits no change.
@@ -68,17 +68,22 @@ The result is not flat random: it is constrained to the scale, shaped by the sty
 
 ---
 
-### Examples gallery
+### Pattern library
 
-An inline dropdown next to 🎲 in the toolbar lists factory riff examples **grouped by style** (Acid / House / Synthwave / Lo-fi section headers). The list is filtered by editor type: melodic editors show basslines and melodies; drum editors show beat patterns.
+Two dropdowns in the toolbar work as a pair:
 
-Selecting an example:
+- **Style** picks a library — one of the 20 styles listed above. Note that changing it here also changes the **project** style, so the 🎲 generators follow suit.
+- **Pattern** lists that style's ready-made patterns, roughly twenty per style. The list is a native dropdown, so you can **type to search** it instead of scrolling.
+
+The list is filtered by editor type — melodic editors offer basslines and riffs, drum editors offer beats — and your own saved examples appear in their own group at the end.
+
+Selecting a pattern:
 
 1. Loads it into the current clip.
 2. Transposes it from its stored key into the **current project key**.
 3. Repeats or trims it to exactly fill the clip length — short riffs tile; long riffs are cut at the clip boundary.
 
-Two additional controls sit at the bottom of the dropdown:
+Two toolbar buttons sit alongside:
 
 - **+ Example** — saves the current clip's notes as your own example. It is stored in this browser (IndexedDB), persists across reloads, and is marked with a ★ in the list.
 - **⤓ JSON** — exports the current clip as a portable `.json` file that you can share or import into another browser.
@@ -123,7 +128,7 @@ The **drum-grid** and the **audio-clip editor** have the same horizontal zoom an
 
 ### Follow (auto-scroll)
 
-A session-global **Follow** toggle keeps the playhead in view: while it's on, every clip editor auto-scrolls horizontally to follow playback. It is **on by default** — turn it off when you want to inspect one region while the transport runs elsewhere. The setting is shared across all editors and saved with the session.
+A session-global **Follow** toggle keeps the playhead in view: while it's on, every clip editor auto-scrolls horizontally to follow playback. It is **on by default** — turn it off when you want to inspect one region while the transport runs elsewhere. The setting is shared across all editors, but it is a working mode rather than part of the music: it is **not saved with the session** and returns to on when you reload.
 
 ### Draw mode (pencil)
 
@@ -144,7 +149,7 @@ The tool choice and clipboard contents persist across clip re-opens and across c
 
 ### Computer-keyboard note input
 
-When the piano-roll has focus you can record notes directly from the computer keyboard:
+The **⌨ Keys** toggle in the clip-editor toolbar turns your computer keyboard into a live instrument. It is **off by default** — switch it on and the keys below play the active lane in real time:
 
 | Key row | Notes |
 | ------- | ----- |
@@ -152,7 +157,7 @@ When the piano-roll has focus you can record notes directly from the computer ke
 | `w e t y u` (upper row) — black keys | C# D# F# G# A# |
 | `z` / `x` | Shift input octave down / up |
 
-Pressing a key **auditions the note** immediately so you can hear it, advances the input cursor by one snap step, and **records the note into the clip** at the cursor position. Duration equals one snap step (quantised on key-up). This lets you step-enter a melody quickly without a MIDI controller.
+This is **live playing, not step entry** — the keys sound the lane exactly as a MIDI keyboard would, and nothing is written into the clip on its own. To capture what you play, arm **● Rec** in the inspector and play along with the loop; see [MIDI live-record](08-midi-and-samples.md). (Earlier versions typed notes into the clip at a cursor; that behaviour was replaced by live playing.)
 
 ---
 
@@ -177,6 +182,20 @@ A resolution selector at the top of the editor sets the snap and the column widt
 | free  | No snap — place hits at any tick |
 
 You can mix resolutions across clips; each clip stores its own `gridResolution` setting.
+
+### Euclidean fill (H / S / R)
+
+Every voice row has three small fields between its label and the grid: **H**, **S** and **R**. They generate that voice's pattern by spreading hits as evenly as possible around a cycle — the Euclidean rhythm idea, which produces a surprising number of the world's real drum patterns.
+
+| Field | Meaning |
+| --- | --- |
+| **H** — hits | How many onsets to place, spread as evenly as possible. **0 leaves the voice alone**, so you can Euclid one voice without touching the rest. |
+| **S** — steps | The length of the cycle. Shorter than the clip and it simply repeats; set it to a length that does *not* divide the clip evenly and the pattern **phases**, landing differently each time round. |
+| **R** — rotate | Shifts the cycle so the hits land elsewhere against the beat. Negative values rotate the other way. |
+
+Start with `H=4, S=16` on a kick for four-on-the-floor, then try `H=3, S=8` on a hat for the tresillo that underpins most Latin and house grooves. The classic trick is an off-divisor: `S=7` against a 16-step clip never repeats the same way twice within the bar.
+
+The fill is generated into the clip as ordinary notes, so you can edit them by hand afterwards, and the whole operation is undoable.
 
 ### Placing and removing hits
 
