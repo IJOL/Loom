@@ -112,10 +112,12 @@ export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void; re
       label: 'GLUE', color: msColor, size: SIZE, format: (v) => `${Math.round(v * 100)}%`,
       onChange: (v) => shaper.setMultibandAmount(v) }, deps.registerKnob, undoHooks);
 
+    // Labelled MB, not GLUE: the knob beside it is already GLUE (how much), and
+    // two controls with one name is a control you have to guess at.
     mbBtn = document.createElement('button');
     mbBtn.className = 'rnd master-mb-toggle';
-    mbBtn.textContent = 'GLUE';
-    mbBtn.title = 'Multiband glue compression across three bands';
+    mbBtn.textContent = 'MB';
+    mbBtn.title = 'Multiband glue compression on/off — GLUE sets how hard it works';
     mbBtn.classList.toggle('active', si.mbOn);
     mbBtn.addEventListener('click', () => {
       const next = !shaper.getState().mbOn;
