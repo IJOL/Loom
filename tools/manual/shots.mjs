@@ -26,7 +26,12 @@ export async function buildShots(baseURL, only) {
       await page.goto(baseURL);
       await waitForBoot(page);
       if (shot.setup) await shot.setup(page);
-      if (shot.selector) {
+      if (shot.clip) {
+        // A viewport REGION. Needed when what we want to show is not one
+        // element's box — e.g. a menu bar together with its open dropdown, which
+        // is positioned absolutely and so falls outside the bar's own box.
+        await page.screenshot({ path: join(IMG_DIR, `${shot.name}.png`), clip: shot.clip });
+      } else if (shot.selector) {
         const loc = page.locator(shot.selector).first();
         if (await page.locator(shot.selector).count() === 0)
           throw new Error(`shot "${shot.name}": selector ${shot.selector} matched nothing`);

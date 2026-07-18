@@ -6,6 +6,13 @@
 // Selectors below come from index.html. The app boots with a demo loaded, so
 // the session grid already has filled cells (no demo-loading needed).
 
+/** Open a top-level menu (File / Edit / View / Tools / Help) and wait for its
+ *  dropdown, so a shot can frame a menu or reach an item that now lives there. */
+const openMenu = async (page, label) => {
+  await page.locator('.menubar-top', { hasText: label }).first().click();
+  await page.locator('.menubar-dropdown').first().waitFor({ state: 'visible' });
+};
+
 const openFirstClip = async (page) => {
   await page.locator('.session-cell-filled').first().click();
   await page.locator('#session-inspector').waitFor({ state: 'visible' });
@@ -25,16 +32,22 @@ const loadDemo = async (page, label) => {
 
 /** Click the first lane tab whose text matches `name` and wait for a .page to
  *  become visible. */
+/** Open a lane's instrument editor. The session-view reorder REMOVED the
+ *  '.session-lane-tab' row — the grid's column header is now what opens and
+ *  marks the active instrument, so click that instead. */
 const clickLaneTab = async (page, name) => {
-  await page.locator('.session-lane-tab', { hasText: name }).first().click();
+  await page.locator('.session-lane-header', { hasText: name }).first().click();
   await page.locator('.page:not([hidden])').first().waitFor({ state: 'visible' });
 };
 
 /** Add a new lane with the given engineId via the session-tabs add controls. */
+/** Add a lane. The session-view reorder replaced the old
+ *  '.session-tabs-engine' <select> + add-button pair with a '+' button that
+ *  opens a menu of engines, each carrying data-engine-id. */
 const addLane = async (page, engineId) => {
-  await page.locator('.session-tabs-engine').selectOption(engineId);
-  await page.locator('.session-tabs-add-btn').click();
-  // Wait for the new tab to appear and settle.
+  await page.locator('.session-lane-add').first().click();
+  await page.locator(`.session-add-item[data-engine-id="${engineId}"]`).first().click();
+  // Wait for the new lane's header to appear and settle.
   await page.waitForTimeout(300);
 };
 
@@ -51,7 +64,7 @@ const loadPolyPreset = async (page, value) => {
 const openSamplerLane = async (page) => {
   await loadDemo(page, 'Minimal Techno');
   await addLane(page, 'sampler');
-  const tabs = page.locator('.session-lane-tab');
+  const tabs = page.locator('.session-lane-header');
   const count = await tabs.count();
   await tabs.nth(count - 1).click();
   await page.locator('.page:not([hidden])').first().waitFor({ state: 'visible' });
@@ -82,7 +95,10 @@ const loopWavBase64 = () => {
  *  audio lane; a WAV is imported by clicking a cell, which opens a file picker
  *  (a transient <input type=file> the app .click()s) — caught via filechooser. */
 const addAudioChannel = async (page) => {
-  await page.locator('.session-add-audio-btn').click();
+  // The audio channel is an entry in the '+' add-lane menu (it carries no
+  // data-engine-id — it is added by its own callback, not as an engine).
+  await page.locator('.session-lane-add').first().click();
+  await page.locator('.session-add-item', { hasText: 'Audio channel' }).first().click();
   await page.waitForTimeout(300); // let the audio lane + its grid row mount
   const cell = page.locator('.session-cell[data-lane-id^="audio-"]').first();
   const fileChooser = page.waitForEvent('filechooser');
@@ -100,7 +116,10 @@ export const SHOTS = [
   { name: 'app-overview', selector: '.synth' },
   { name: 'transport', selector: '.row.transport' },
   { name: 'session-grid', selector: '#session-grid' },
-  { name: 'session-view', selector: '#session-view' },
+  // NOT '#session-view': the session-view reorder gave it `display: contents`,
+  // so it generates no box of its own and Playwright can never see it (the
+  // shot hung for 30 s and failed the whole build). Its ROOT is the real box.
+  { name: 'session-view', selector: '#session-view-root' },
   {
     name: 'inspector',
     selector: '#session-inspector',
@@ -113,9 +132,47 @@ export const SHOTS = [
     selector: '.rec-group',
   },
   {
+    // MIDI import is no longer a transport-row <details> panel — it moved to a
+    // modal opened from File ▸ Import MIDI…. The old '.midi-panel' selector
+    // matched nothing and hung the build for 30 s.
     name: 'midi-import',
-    selector: '.midi-panel',
-    setup: async (page) => { await page.locator('.midi-panel > summary').click(); },
+    selector: '#midi-import-dialog',
+    setup: async (page) => {
+      await openMenu(page, 'File');
+      await page.locator('.menubar-item', { hasText: 'Import MIDI' }).first().click();
+      await page.locator('#midi-import-dialog').waitFor({ state: 'visible' });
+    },
+  },
+  {
+    // The desktop menu bar with the File menu OPEN — the app's primary
+    // navigation, previously undocumented. Framed as a viewport region, not by
+    // selector: the dropdown is absolutely positioned and so sits outside the
+    // '.menubar' box, which would capture an empty bar.
+    name: 'menu-bar',
+    clip: { x: 0, y: 0, width: 460, height: 445 },
+    setup: async (page) => { await openMenu(page, 'File'); },
+  },
+  {
+    // The floating XY pad (session-bar "▣ XY").
+    name: 'xy-pad',
+    selector: '.xy-panel',
+    setup: async (page) => {
+      await page.locator('#xy-open').click();
+      await page.locator('.xy-panel.open').waitFor({ state: 'visible' });
+      // Assign both axes so the shot shows the pad in use rather than its empty
+      // "— none —" state. Cutoff on X and resonance on Y is the classic pairing.
+      const pick = async (axis, re) => {
+        const sel = page.locator(`.xy-sel[data-axis="${axis}"]`);
+        const value = await sel.locator('option').evaluateAll(
+          (opts, pattern) => opts.map((o) => o.value).find((v) => new RegExp(pattern).test(v)) ?? '',
+          re,
+        );
+        if (value) await sel.selectOption(value);
+      };
+      await pick('x', 'filter\\.cutoff$');
+      await pick('y', 'filter\\.reso');
+      await page.waitForTimeout(150);
+    },
   },
   {
     name: 'master-fx',
@@ -181,7 +238,7 @@ export const SHOTS = [
       await loadDemo(page, 'Minimal Techno');
       await addLane(page, 'fm');
       // The newly-added lane tab is the last one before the "+" adder.
-      const tabs = page.locator('.session-lane-tab');
+      const tabs = page.locator('.session-lane-header');
       const count = await tabs.count();
       await tabs.nth(count - 1).click();
       await page.locator('.page:not([hidden])').first().waitFor({ state: 'visible' });
@@ -193,7 +250,7 @@ export const SHOTS = [
     setup: async (page) => {
       await loadDemo(page, 'Minimal Techno');
       await addLane(page, 'westcoast');
-      const tabs = page.locator('.session-lane-tab');
+      const tabs = page.locator('.session-lane-header');
       const count = await tabs.count();
       await tabs.nth(count - 1).click();
       await page.locator('.page:not([hidden])').first().waitFor({ state: 'visible' });
@@ -238,9 +295,15 @@ export const SHOTS = [
 
   // ── Audio channel ─────────────────────────────────────────────────────────
   {
-    // The "+ Audio" control in the session tab bar.
+    // Adding a lane. The old '.session-tabs' bar is gone (session-view reorder);
+    // lanes are now added from the grid's '+' header, which opens a menu listing
+    // every engine plus "Audio channel". Frame that menu open.
     name: 'audio-channel-add',
-    selector: '.session-tabs',
+    selector: '.session-lane-add-wrap',
+    setup: async (page) => {
+      await page.locator('.session-lane-add').first().click();
+      await page.locator('.session-lane-add-menu').first().waitFor({ state: 'visible' });
+    },
   },
   {
     // The audio-clip editor (Warp toggle + waveform header), reached by adding an
