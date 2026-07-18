@@ -19,8 +19,13 @@ import { midiToFreq } from './dsp-util';
 export function renderKarplusString(opts: {
   sampleRate: number; freq: number; damping: number; brightness: number;
   exciteDur: number; noiseTone: number; seconds: number;
+  /** Noise source for the excitation burst. Defaults to Math.random, which is
+   *  what production uses — the string is meant to vary pluck to pluck. A test
+   *  can pass a deterministic one to make a render reproducible. */
+  rng?: () => number;
 }): Float32Array {
   const { sampleRate: fs, freq, damping, brightness, exciteDur, noiseTone } = opts;
+  const rng = opts.rng ?? Math.random;
   const N = Math.max(1, Math.round(opts.seconds * fs));
   const out = new Float32Array(N);
 
@@ -61,7 +66,7 @@ export function renderKarplusString(opts: {
   for (let n = 0; n < N; n++) {
     let exc = 0;
     if (n < exciteLen) {
-      const w = Math.random() * 2 - 1;
+      const w = rng() * 2 - 1;
       nlp += na * (w - nlp);
       exc = nlp;
       if (n > exciteLen - FADE) {
@@ -112,7 +117,9 @@ export class KarplusRenderer implements VoiceRenderer {
   private modEnv = new ModEnvHost();
   done = false;
 
-  constructor(note: NoteSpec, p: ParamBag, sampleRate: number) {
+  /** `rng` is a test seam: production never passes it, so the excitation stays
+   *  Math.random and every pluck differs, as a plucked string should. */
+  constructor(note: NoteSpec, p: ParamBag, sampleRate: number, rng?: () => number) {
     this.sr = sampleRate;
     this.begin = note.beginSec;
     this.holdEnd = note.beginSec + note.durationSec;
@@ -131,6 +138,7 @@ export class KarplusRenderer implements VoiceRenderer {
       exciteDur: Math.max(0.001, param(p, 'excite.time', 0.01)),
       noiseTone: param(p, 'excite.tone', 0.5),
       seconds,
+      rng,
     });
   }
 
