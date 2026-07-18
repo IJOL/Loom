@@ -28,21 +28,21 @@ they are not silently forgotten. Verify against the code before acting.
   bus, clip automation, note-FX, worklet registration, and `ModulationRuntime`
   for melodic lanes (`export/kernel-lane-render.ts:64`).
 
-  Confirmed missing — **modulation of shared params, in every engine.**
-  `src/export/` calls **no** modulation binder: neither `bindEngineModulators`
-  nor `bindVoiceModulators` appears anywhere in it. So an LFO/ADSR routed to any
-  shared Web-Audio destination — `bus.level`, `bus.pan`, the sends, the bus EQ,
-  or any `lane-insert-N:<param>` — is simply not connected when rendering
-  offline. Per-voice modulation *inside* the worklet does survive; this gap is
-  specifically the Web-Audio-side binding, and it is engine-agnostic rather than
-  a drums/sampler quirk.
+  Two symptoms are now **closed**, both by removing the divergence rather than
+  patching the exporter:
+  - *Channel filter was live-only* → `ChannelFilter` deleted outright; filtering
+    a drums/sampler lane is a `multifilter` insert like every other lane, and
+    inserts already export.
+  - *Shared-param modulation was unbound offline* → binding moved into the lane
+    allocator, which the live host and the exporter **share**, so the exporter
+    gained it without being touched. (It also turned out that the six melodic
+    engines never bound those destinations **live** either — the panel offered
+    FX destinations that were connected to nothing.)
 
-  The durable fix is a parity test, not another patch: render a scene offline,
-  capture the same scene live, and assert the two match — so the next omission
-  fails a test instead of being discovered by ear.
-
-  (The former "channel filter is live-only" entry is **closed**: `ChannelFilter`
-  was deleted rather than taught to the exporter — see the note below.)
+  **Still open: there is no parity test.** Both drifts were found by reading the
+  code, not by a failing test, and that is the actual debt — the next node the
+  exporter forgets will be found the same slow way. The durable fix is to render
+  a scene offline, capture the same scene live, and assert the two match.
 - **Preset selectors are not automatable.** The per-lane preset `<select>`s are
   plain elements — not wrapped in `createSelectControl`, not registered under a
   `<laneId>.preset` automation id — so a preset change cannot be automated or
