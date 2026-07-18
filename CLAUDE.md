@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-**Loom** — a browser-based, session-based music workstation built on Web Audio + TypeScript + Vite. It grew out of a Roland TB-303 bass synth + drum machine and still has those at its core, but is now a multi-engine instrument host: **5 melodic engines (TB-303, Subtractive, FM, Wavetable, Karplus) + a Sampler + an Audio-channel engine + a Drum machine**, arranged as **lanes** that play **clips** in **scenes**, with per-lane modulation, inserts/FX, a mixer with sidechain compression, MIDI import, and global undo. All synthesis is live in the browser; the Sampler and the Audio channel are the only things that load audio (into IndexedDB).
+**Loom** — a browser-based, session-based music workstation built on Web Audio + TypeScript + Vite. It grew out of a Roland TB-303 bass synth + drum machine and still has those at its core, but is now a multi-engine instrument host: **6 melodic engines (TB-303, Subtractive, FM, Wavetable, Karplus, Westcoast) + a Sampler + an Audio-channel engine + a Drum machine** (9 registered engines), arranged as **lanes** that play **clips** in **scenes**, with per-lane modulation, inserts/FX, a mixer with sidechain compression, MIDI import, and global undo. **Synthesis runs in an AudioWorklet** (`src/audio-worklet/` + the pure DSP kernel in `src/audio-dsp/`); the mixer, inserts and master stay native Web Audio nodes. Audio is loaded into IndexedDB by the Sampler, the Audio channel, the sample-based drum kits, and the Stems importer.
 
 Everything is a **plugin behind a registry** — engines, FX, and modulators are discovered at build time, so adding one means dropping a file, not editing the core.
 
@@ -23,6 +23,10 @@ Everything is a **plugin behind a registry** — engines, FX, and modulators are
 - `npm run test:e2e:headed` — same but with a visible browser window for debugging
 - `npm run test:wav-diff` — compares `test/output/*.wav` (last run) against `test/golden/*.wav` (committed reference) and prints peak/RMS/L2 deltas. Never fails CI — human inspection tool.
 - `npm run test:wav-bless` — overwrites `test/golden/` with the current `test/output/`. Deliberate action; commit the result.
+- `npm run build:pages` — the GitHub-Pages build (`--base=/Loom/`); what the deploy actually ships.
+- `npm run build:manual` — regenerate `docs/manual/` (+ `manual:shots`, `manual:pdf`).
+- `npm run test:watch` — Vitest in watch mode.
+- `npm run bump` — manual version bump (versioning is never automatic).
 
 **Test colour convention:** every npm test script is wired with `cross-env NO_COLOR=1` so terminal output stays grayscale. When invoking vitest directly (e.g., a single file), prefer `NO_COLOR=1 npx vitest run path/to/file.test.ts`. Do NOT add `--reporter=...` to override — the npm scripts already do the right thing.
 
@@ -53,8 +57,8 @@ Source is organised into subsystems under `src/`. The spine: a **registry of eng
 - **[src/engines/](src/engines/)** — the `SynthEngine` abstraction ([engine-types.ts](src/engines/engine-types.ts)) + [registry.ts](src/engines/registry.ts). One file per engine: `tb303`, `subtractive`, `fm`, `wavetable`, `karplus`, `sampler`, `audio` (dedicated audio channel), `drums-engine`. Params are declared as `EngineParamSpec[]` ([engine-params.ts](src/engines/engine-params.ts)); voices expose their continuous params via `Voice.getAudioParams()` and engines expose shared ones via `getSharedAudioParams()`. The lane engine selector lives in [engine-selector-ui.ts](src/engines/engine-selector-ui.ts).
 - **[src/session/](src/session/)** — the session model and its UI. [session.ts](src/session/session.ts) (`SessionState`/`SessionLane`/`SessionClip`/`SessionScene`; clips hold a unified `notes: NoteEvent[]`; `moveClip`/`copyClip`/clip colors), [session-runtime.ts](src/session/session-runtime.ts) (launch/scene/quantize/`tickSession`), `session-host.ts` (the UI controller that owns lanes), `session-ui.ts` (clip grid + drag), `session-inspector.ts`, `clip-editors/` (router → `piano-roll` or `drum-grid`), `session-engine-state.ts` (mirrors knob/modulator/sampler-keymap edits into `lane.engineState`), `session-migration.ts` (load-time normaliser).
 - **[src/modulation/](src/modulation/)** — LFO/ADSR modulators, `ModulationHost`, `ModulatorScope` (shared vs per-voice), and the connection binder that routes a modulator into a target `AudioParam` by id.
-- **[src/plugins/](src/plugins/)** — plugin SPI + registry; `fx/` (`multifilter`, `distortion`, `reverb`, `delay`, plus the generic `InsertChain`) and `modulators/` (`lfo`, `adsr`). Discovery is a build-time `import.meta.glob` scan of `src/engines/*` + `src/plugins/**` (`plugin-bootstrap`).
-- **[src/presets/](src/presets/)** — presets are **JSON assets** in `public/presets/*.json` (20+ per engine, GM-tagged), loaded/validated by `preset-loader.ts` and applied via `preset-apply.ts`.
+- **[src/plugins/](src/plugins/)** — plugin SPI + registry; `fx/` (11 inserts: `multifilter`, `distortion`, `reverb`, `delay`, `compressor`, `limiter`, `tremolo`, `chorus`, `flanger`, `phaser`, `bitcrusher` — chorus/flanger share `modulated-delay.ts` — plus the generic `InsertChain`) and `modulators/` (`lfo`, `adsr`). Discovery is a build-time `import.meta.glob` scan of `src/engines/*` + `src/plugins/**` (`plugin-bootstrap`). Inserts are native Web Audio nodes, NOT worklets — only synthesis lives in the worklet.
+- **[src/presets/](src/presets/)** — presets are **JSON assets** in `public/presets/*.json` (20+ per *melodic* engine, GM-tagged; Sampler/Drums have far fewer, and `drum-kits.json` holds 81 kits untagged), loaded/validated by `preset-loader.ts` and applied via `preset-apply.ts`. A preset may carry its own `modulators` (an LFO/ADSR shipped with the sound).
 - **[src/midi/](src/midi/)** — pure SMF parser (`midi-parse.ts`) → `midi-to-session.ts` transform, GM matching (`gm-lookup.ts`), plus the import UI + audition.
 - **[src/samples/](src/samples/)** — sample types, IndexedDB store + decoded-buffer cache, keymap resolution + repitch, import metadata.
 - **[src/performance/](src/performance/)** — the arrangement/record model: `rec-state`, `arrangement-ops`, `arrangement-runtime` (record clip-launches + knob automation, replay them). Takes now surface as timeline bands (`performance-ui.ts` `renderPerformanceView`) and persist in v3 saves (`SavedStateV3.arrangement`).
@@ -62,7 +66,12 @@ Source is organised into subsystems under `src/`. The spine: a **registry of eng
 - **[src/app/](src/app/)** — `main.ts` was decomposed into factories here: `audio-graph` (master bus → insert chain → master compressor → analyser + `SidechainBus`), `lane-allocator` (`ensureLaneResource`/`swapLaneEngine` — the sole allocation path), `trigger-dispatch`, `knob-mounting`, `mute-solo`, `bpm-broadcast`, `automation-recording`, `engine-swap`, `performance-feature`, `plugin-bootstrap`, `lane-host-wiring`.
 - **[src/save/](src/save/)** — `SaveManager` persists **session-only** state as `schemaVersion: 3` (`saved-state-v3.ts`); `history-wiring.ts` (`withUndo`/`attachKnobUndo`/keyboard) bolts undo onto every mutation site.
 - **[src/main.ts](src/main.ts)** — boot + remaining DOM glue: builds the UI, allocates lanes, wires controls, resumes the `AudioContext` on first play.
-- Also: `automation/`, `notefx/` (per-lane arp + chord note-FX, replaced the old global `arp/`), `demo/` (baked MIDI demos + picker), `styles/` (SCSS).
+- **[src/audio-dsp/](src/audio-dsp/)** — the pure DSP kernel the worklet runs: one `*-renderer.ts` per engine (self-registering into `renderer-registry.ts`), `voice-manager.ts`, `scheduler-queue.ts`, `modulation-runtime.ts`, plus primitives (`osc`, `filter`, `ladder`, `sync-osc`, `unison`, `adsr`). Plain JS/TS — unit-testable with no AudioContext.
+- **[src/audio-worklet/](src/audio-worklet/)** — the processors + their typed node wrappers: `loom-processor`/`loom-node` (melodic), `drums-*`, `sampler-*`. Processors are referenced ONLY via `?worker&url` and their registered string name — never imported on the main thread (see `processor-name.ts`).
+- **[src/export/](src/export/)** — offline scene/WAV render + live take recorder. It must replicate the LIVE path (presets, automation, worklet registration) or exports drift from what you hear.
+- **[src/control/](src/control/)** — live-MIDI control surfaces (APC Key 25 profiles, `loom-facade`) + computer-keyboard-as-MIDI + live note recording.
+- **[src/stems/](src/stems/)** — stem separation import (the local Demucs service) + system-audio capture.
+- Also: `automation/`, `notefx/` (per-lane arp + chord note-FX, replaced the old global `arp/`), `demo/` (baked MIDI demos + picker), `patterns/`, `perf/` (PERF HUD), `styles/` (SCSS).
 
 ## TB-303 behaviors that drive the design
 
@@ -73,7 +82,11 @@ These live in the TB-303 engine ([src/core/synth.ts](src/core/synth.ts) + the la
 
 ## When adding/changing things
 
-- **Add an engine** — drop a file in [src/engines/](src/engines/) that implements `SynthEngine` and calls `registerEngine` + `registerEngineFactory`. The build-time glob discovers it; it appears in the lane engine selector automatically. Declare params as `EngineParamSpec[]` and expose voice/shared `AudioParam`s so modulation + automation work for free.
+- **Add an engine — FOUR steps, not one.** Since the worklet cutover, "drop a file" is NOT enough: the glob makes the engine appear in the selector, but a lane using it stays SILENT at note time unless every step is done.
+  1. `src/engines/<id>.ts` — implements `SynthEngine`, calls `registerEngine` + `registerEngineFactory`. Declare params as `EngineParamSpec[]`.
+  2. `src/audio-dsp/<id>-renderer.ts` — the per-sample voice renderer, self-registering via `registerRenderer` so `VoiceManager.createRenderer(engineId, …)` can build it.
+  3. **Side-effect import that renderer in [src/audio-worklet/loom-processor.ts](src/audio-worklet/loom-processor.ts)** — otherwise it never registers *inside the worklet bundle*.
+  4. **Add the id to `WORKLET_ENGINE_IDS` in [src/app/lane-allocator.ts](src/app/lane-allocator.ts)** — the allocator only routes listed ids to the worklet path.
 - **Add an FX or modulator** — drop a file in [src/plugins/fx/](src/plugins/fx/) or [src/plugins/modulators/](src/plugins/modulators/) and `registerPlugin`. Inserts mount per-lane and on master; modulators appear in the modulation panel.
 - **Add a drum kit** — append an object to the `KITS` array in [src/core/drums.ts](src/core/drums.ts); kits are parameter bags over the same DSP primitives. Add a new drum *voice* by extending the `DrumVoice` union + `DRUM_LANES` + every kit + a `play<Voice>()` method + a `trigger()` case.
 - **Add a preset** — add an entry to the relevant `public/presets/<engine>.json` (with an optional `gm` program tag). JSON is the source of truth.
@@ -82,7 +95,7 @@ These live in the TB-303 engine ([src/core/synth.ts](src/core/synth.ts) + the la
 
 ## Design history
 
-Implemented design docs are intentionally **not kept in the tree** — they drift from the code and pollute context; recover them from git history if you need the rationale. Only **outstanding** design work stays under [docs/superpowers/](docs/superpowers/): the `plans/`/`specs/` still present describe unfinished features, summarised in [docs/superpowers/REMAINING-WORK.md](docs/superpowers/REMAINING-WORK.md).
+Implemented design docs are intentionally **not kept in the tree** — they drift from the code and pollute context; recover them from git history if you need the rationale (`git log --diff-filter=D --name-only -- docs/superpowers/`). As of 2026-07-18 **every spec/plan/mockup has been implemented and pruned**: [docs/superpowers/](docs/superpowers/) holds only [REMAINING-WORK.md](docs/superpowers/REMAINING-WORK.md), which records a couple of small code debts. A future spec/plan re-creates `specs/`/`plans/` under that directory.
 
 ## Approved mockups & honest "done" (process — learned the hard way 2026-06-06)
 
@@ -111,7 +124,7 @@ A real session burned ~20 turns fumbling this. Follow it verbatim.
 
 ## Dense-MIDI "cortes"/dropouts — already diagnosed, do NOT re-investigate
 
-Dropouts under dense polyphony are the **node-per-note architectural ceiling** (per-note Web Audio node churn → GC starves the main-thread scheduler), diagnosed at length (memory `project_voice_lifecycle_graph_leak`). The 9 perf fixes on `main` reduced but could not eliminate them. **The cure is the AudioWorklet engine rewrite** (`worktree-audioworklet-foundation`), proven to remove them (dense "Children" MIDI ran clean where node-per-note couldn't). Cortes on the OLD main/Pages build are expected; test the worklet build to confirm — don't re-derive the diagnosis.
+Dropouts under dense polyphony were the **node-per-note architectural ceiling** (per-note Web Audio node churn → GC starves the main-thread scheduler), diagnosed at length (memory `project_voice_lifecycle_graph_leak`). **The cure — the AudioWorklet engine rewrite — SHIPPED and is merged on `main`**: the worklet is now the sole synthesis path and the legacy node-per-note layer is deleted. Dense "Children" MIDI runs clean where node-per-note couldn't. If dropouts resurface, they are a NEW bug — don't re-derive the old diagnosis, and don't look for a "worklet build" to compare against.
 
 > **Voice cap REMOVED (commit `96b8fea`):** the spec's "global polyphony cap" was reversed — a finite per-lane cap evicted still-sounding voices (`VoiceManager.spawn` did `slots.shift()` before the voice's release rendered → a step discontinuity → audible **clicks** in dense parts). Now: poly lanes are UNCAPPED, mono lanes (`maxVoices === 1`) still steal their previous voice, global cap = `Infinity`. **Do NOT re-add a finite voice cap — it clicks.** (Details in memory `project_audioworklet_engine_rewrite`.)
 
