@@ -1,7 +1,6 @@
 import { wireEngineParams } from '../engines/engine-ui';
 import { normaliseSelectIndex } from '../core/select-control';
 import { wireDrumMasterUI } from '../core/drum-master-ui';
-import { mountDrumChannelFilter } from '../core/drum-channel-filter-ui';
 import { mountLaneFxPanel as mountLaneFxPanelInner } from '../core/lane-fx-panel';
 import { LANE_ID_BASS } from '../core/lane-ids';
 import type { KnobHandle } from '../core/knob';
@@ -112,25 +111,6 @@ export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
       fmtDb: deps.fmtDb,
       get historyDeps() { return deps.getHistoryDeps?.(); },
     });
-    // Append the CHANNEL FILTER section (CUTOFF + RES) for the drums bus engine.
-    const engine = deps.laneResources.get(laneId)?.engine;
-    const knobRow = document.getElementById('drum-master-knobs');
-    const slot = knobRow?.parentElement;
-    if (engine && slot) {
-      // Idempotent: remove a prior section if the lane is swapped.
-      slot.querySelectorAll('.drum-channel-filter').forEach((n) => n.remove());
-      mountDrumChannelFilter({
-        laneId,
-        engine: engine as { getBaseValue(id: string): number; setBaseValue(id: string, v: number): void },
-        parent: slot,
-        registerKnob: deps.registerKnob,
-        get historyDeps() { return deps.getHistoryDeps?.(); },
-        onEdit: (id, v) => {
-          const st = deps.getSessionState();
-          if (st) mirrorParamChange(st, laneId, id, v);
-        },
-      });
-    }
   };
 
   const mountLaneFxPanel = (laneId: string) => {

@@ -51,10 +51,10 @@ function fakeBufferAmp(durationSec: number, amp: number): AudioBuffer {
 }
 
 // Use a real AudioContext (from node-web-audio-api, globalized by test/setup.ts)
-// so createVoice can build a ChannelFilter node without a stub.
+// so createVoice can build its worklet node without a stub.
 const ctx = new AudioContext();
-// Use a real gain node so the ChannelFilter can connect() to it without
-// node-web-audio-api rejecting the stub as an invalid destination.
+// Use a real gain node so the engine can connect() to it without
+// node-web-audio-api rejecting a stub as an invalid destination.
 const out = () => ctx.createGain();
 
 describe('SamplerWorkletEngine', () => {
@@ -233,41 +233,5 @@ describe('SamplerWorkletEngine — choke', () => {
     v.trigger(60, 0, { gateDuration: 0.2, velocity: 90 });
     expect(spawns[0].spawn.retrig).toBe(1);
     expect(spawns[0].spawn.padNote).toBe(60);
-  });
-});
-
-describe('SamplerWorkletEngine — filter modulation destinations', () => {
-  it('getSharedAudioParams exposes filter.cutoff and filter.resonance once a voice is built', () => {
-    const eng = new SamplerWorkletEngine();
-    eng.createVoice(ctx, out());
-    const m = eng.getSharedAudioParams!();
-    expect(m.has('filter.cutoff')).toBe(true);
-    expect(m.has('filter.resonance')).toBe(true);
-  });
-});
-
-
-describe('SamplerWorkletEngine — channel filter params', () => {
-  it('declares filter.cutoff (default 20000, log) and filter.resonance (default 0.7)', () => {
-    const eng = new SamplerWorkletEngine();
-    const cutoff = eng.params.find((p) => p.id === 'filter.cutoff')!;
-    const res = eng.params.find((p) => p.id === 'filter.resonance')!;
-    expect(cutoff).toMatchObject({ kind: 'continuous', min: 20, max: 20000, default: 20000, curve: 'log' });
-    expect(res.default).toBeCloseTo(0.7, 5);
-    expect(res.max).toBe(18);
-  });
-
-  it('get/setBaseValue round-trips the filter params', () => {
-    const eng = new SamplerWorkletEngine();
-    eng.setBaseValue('filter.cutoff', 900);
-    eng.setBaseValue('filter.resonance', 5);
-    expect(eng.getBaseValue('filter.cutoff')).toBeCloseTo(900, 3);
-    expect(eng.getBaseValue('filter.resonance')).toBeCloseTo(5, 3);
-  });
-
-  it('defaults read back as passthrough before any edit', () => {
-    const eng = new SamplerWorkletEngine();
-    expect(eng.getBaseValue('filter.cutoff')).toBe(20000);
-    expect(eng.getBaseValue('filter.resonance')).toBeCloseTo(0.7, 5);
   });
 });

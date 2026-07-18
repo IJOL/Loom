@@ -60,17 +60,10 @@ import { guessRootNoteFromName } from './sampler';
 import type { KnobHandle } from '../core/knob';
 import { SamplerWorkletNode } from '../audio-worklet/sampler-node';
 import type { SampleSpawn } from '../audio-dsp/sample/types';
-import {
-  ChannelFilter,
-  FILTER_CUTOFF_MIN, FILTER_CUTOFF_MAX, FILTER_CUTOFF_DEFAULT,
-  FILTER_Q_MIN, FILTER_Q_MAX, FILTER_Q_DEFAULT, FILTER_DETUNE_SPAN_CENTS,
-} from '../core/channel-filter';
 
 const SAMPLER_PARAMS: EngineParamSpec[] = [
   { id: 'gain',            label: 'Gain',   kind: 'continuous', min: 0,              max: 1.5,             default: 1 },
   { id: 'poly.voices',     label: 'Voices', kind: 'continuous', min: 1,              max: 16,              default: 8 },
-  { id: 'filter.cutoff',   label: 'CUTOFF', kind: 'continuous', min: FILTER_CUTOFF_MIN, max: FILTER_CUTOFF_MAX, default: FILTER_CUTOFF_DEFAULT, curve: 'log', unit: 'Hz' },
-  { id: 'filter.resonance',label: 'RES',    kind: 'continuous', min: FILTER_Q_MIN,   max: FILTER_Q_MAX,    default: FILTER_Q_DEFAULT },
 ];
 
 class SamplerSequencer implements EngineSequencer {
@@ -144,48 +137,25 @@ export class SamplerWorkletEngine implements SynthEngine {
   private ctx: AudioContext | null = null;
   /** Connect targets, applied to the node when it is (re)built. */
   private dryTarget: AudioNode | null = null;
-  /** Channel filter on the RAW dry mix, BEFORE the lane inserts + bus EQ. */
-  private channelFilter: ChannelFilter | null = null;
-
-  /** Build the worklet node + connect it (dry → filter → lane strip, send → FxBus).
-   *  The channel filter is built here and spliced on the RAW dry mix, BEFORE the
-   *  lane InsertChain + bus ChannelStrip EQ. Idempotent. */
+  /** Build the worklet node + connect it (dry → lane strip, send → FxBus).
+   *  Filtering the channel is a `multifilter` in the lane insert chain like any
+   *  other lane — no engine-owned filter node here, which is what keeps the
+   *  offline render faithful (the exporter rehydrates inserts). Idempotent. */
   private ensureNode(ctx: AudioContext): SamplerWorkletNode {
     if (this.node && this.ctx === ctx) return this.node;
     this.ctx = ctx;
     this.node = new SamplerWorkletNode(ctx);
-    // Channel filter on the RAW dry mix, BEFORE the lane inserts + bus EQ.
-    this.channelFilter = new ChannelFilter(ctx);
-    this.channelFilter.setCutoff(this.paramValues['filter.cutoff'] ?? FILTER_CUTOFF_DEFAULT);
-    this.channelFilter.setResonance(this.paramValues['filter.resonance'] ?? FILTER_Q_DEFAULT);
-    if (this.dryTarget) {
-      this.node.connectDry(this.channelFilter.input);
-      this.channelFilter.output.connect(this.dryTarget);
-    }
+    if (this.dryTarget) this.node.connectDry(this.dryTarget);
     if (this.fx) this.node.connectSend(this.fx.delayInput, this.fx.reverbInput);
     // Any buffers already in the cache for the current keymap get pushed now.
     this.pushAllKeymapBuffers();
     return this.node;
   }
 
-  /** The allocator wires the dry output to the lane insert chain / strip. A late
-   *  retarget reconnects through the filter so the chain stays intact. */
+  /** The allocator wires the dry output to the lane insert chain / strip. */
   setOutputTarget(n: AudioNode): void {
     this.dryTarget = n;
-    if (this.node && this.channelFilter) {
-      this.node.connectDry(this.channelFilter.input);
-      try { this.channelFilter.output.disconnect(); } catch { /* already disconnected */ }
-      this.channelFilter.output.connect(n);
-    } else if (this.node) {
-      this.node.connectDry(n);
-    }
-  }
-
-  /** Test seam: the raw-mix input node (the filter input). Lets a DSP test
-   *  inject a source on the channel path without a live worklet. */
-  getChannelFilterInputForTest(): AudioNode {
-    if (!this.channelFilter) throw new Error('channelFilter not built — call createVoice first');
-    return this.channelFilter.input;
+    if (this.node) this.node.connectDry(n);
   }
 
   setSharedFx(fx: FxBus): void {
@@ -259,20 +229,15 @@ export class SamplerWorkletEngine implements SynthEngine {
 
   /** Expose the channel filter's AudioParams so modulation binds to the real
    *  Web-Audio nodes (cutoff → .detune cents, resonance → .Q linear). */
+  /** The engine owns no shared Web-Audio params of its own: filtering a sampler
+   *  lane is a `multifilter` insert, whose params are already modulation
+   *  destinations (`lane-insert-N:<param>`). */
   getSharedAudioParams(): Map<string, AudioParam> {
-    const m = new Map<string, AudioParam>();
-    if (this.channelFilter) {
-      m.set('filter.cutoff',    this.channelFilter.getCutoffModParam());  // .detune
-      m.set('filter.resonance', this.channelFilter.getResonanceParam()); // .Q
-    }
-    return m;
+    return new Map<string, AudioParam>();
   }
 
-  /** Range lookup for the modulation depth bridge. Cutoff uses the detune cents
-   *  span (NOT Hz) so a bipolar LFO sweeps musically — mirrors multifilter.ts. */
-  private filterRangeLookup = (id: string): { min: number; max: number } => {
-    if (id === 'filter.cutoff')    return { min: 0, max: FILTER_DETUNE_SPAN_CENTS };
-    if (id === 'filter.resonance') return { min: FILTER_Q_MIN, max: FILTER_Q_MAX };
+  /** Range lookup for the modulation depth bridge. */
+  private paramRangeLookup = (id: string): { min: number; max: number } => {
     const s = this.params.find((p) => p.id === id);
     return { min: s?.min ?? 0, max: s?.max ?? 1 };
   };
@@ -303,8 +268,6 @@ export class SamplerWorkletEngine implements SynthEngine {
   setBaseValue(id: string, v: number): void {
     if (id in this.paramValues || SAMPLER_PARAMS.some((p) => p.id === id)) {
       this.paramValues[id] = v;
-      if (id === 'filter.cutoff')    this.channelFilter?.setCutoff(v);
-      if (id === 'filter.resonance') this.channelFilter?.setResonance(v);
       return;
     }
     const dot = id.indexOf('.');
@@ -413,7 +376,7 @@ export class SamplerWorkletEngine implements SynthEngine {
     if (laneId) {
       bindEngineModulators({
         laneId, engine: this, voiceMods: this.engineModVoices, ctx,
-        rangeLookup: this.filterRangeLookup,
+        rangeLookup: this.paramRangeLookup,
       });
       this.currentLaneId = laneId;
     }
@@ -897,7 +860,6 @@ export class SamplerWorkletEngine implements SynthEngine {
     this.engineModVoices = null;
     this.currentLaneId = null;
     this.keymap = [];
-    this.channelFilter?.dispose(); this.channelFilter = null;
     this.node?.dispose();   // kill the processor, not just disconnect (phantom-processor leak)
     this.node = null;
   }
