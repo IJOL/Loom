@@ -81,7 +81,8 @@ export function listAutomationTargets(
   // The global racks are destinations too, grouped under their own headings.
   pushRackTargets(targets, registry, 'fx.master', 'Master', state.masterInserts ?? []);
   for (const send of state.sends ?? []) {
-    pushRackTargets(targets, registry, `fx.send.${send.id}`, `Send ${send.label || send.id}`, send.inserts ?? []);
+    // The bus label already reads "Send A (Delay)" — don't prefix it again.
+    pushRackTargets(targets, registry, `fx.send.${send.id}`, send.label || `Send ${send.id}`, send.inserts ?? []);
   }
 
   return targets;
