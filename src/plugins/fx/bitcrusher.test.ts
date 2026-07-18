@@ -62,3 +62,51 @@ describe('bitcrusher', () => {
     expect(fx.getBaseValue('mix')).toBeCloseTo(0.7, 3);
   });
 });
+
+// Dither is real noise summed in BEFORE the quantizer — it cannot live inside a
+// WaveShaper curve, which is a stateless lookup. These render silence so the
+// only thing that can reach the output IS the dither.
+describe('bitcrusher dither', () => {
+  async function renderSilence(dither: number, bits = 4): Promise<Float32Array> {
+    const ctx = new OfflineAudioContext(1, 4410, 44100);
+    const fx = mk(ctx);
+    fx.setBaseValue('mix', 1);
+    fx.setBaseValue('tone', 20000);
+    fx.setBaseValue('bits', bits);
+    fx.setBaseValue('dither', dither);
+    fx.output.connect(ctx.destination);   // nothing connected to fx.input
+    return (await ctx.startRendering()).getChannelData(0);
+  }
+
+  it('is OFF by default — the crusher stays exactly as clean as it was', () => {
+    const ctx = new OfflineAudioContext(1, 4410, 44100);
+    expect(mk(ctx).getBaseValue('dither')).toBe(0);
+  });
+
+  it('adds nothing at all when off: silence in, silence out', async () => {
+    expect(rms(await renderSilence(0))).toBe(0);
+  });
+
+  it('turned up, it puts noise where there was none', async () => {
+    expect(rms(await renderSilence(1))).toBeGreaterThan(0);
+  });
+
+  it('more dither means more noise', async () => {
+    expect(rms(await renderSilence(2))).toBeGreaterThan(rms(await renderSilence(0.5)));
+  });
+
+  // The level tracks the step size: dither that does not scale would vanish at
+  // 16 bits and swamp the signal at 2. Both depths here stay well inside what
+  // the 2048-point curve can resolve — past ~11 bits the staircase is finer than
+  // the curve itself and the comparison would measure the table, not the dither.
+  it('scales with the step — a coarser bit depth dithers louder', async () => {
+    expect(rms(await renderSilence(1, 3))).toBeGreaterThan(rms(await renderSilence(1, 8)));
+  });
+
+  it('round-trips', () => {
+    const ctx = new OfflineAudioContext(1, 4410, 44100);
+    const fx = mk(ctx);
+    fx.setBaseValue('dither', 1.25);
+    expect(fx.getBaseValue('dither')).toBeCloseTo(1.25, 5);
+  });
+});
