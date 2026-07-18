@@ -1,5 +1,6 @@
 import { FxBus, MasterCompressor } from '../core/fx';
 import { MasterBusStrip } from '../core/master-bus-strip';
+import { MasterShaper } from '../core/master-shaper';
 import { InsertChain } from '../plugins/fx/insert-chain';
 import { SidechainBus } from '../core/sidechain-bus';
 
@@ -15,6 +16,8 @@ export interface AudioGraph {
    *  Sits between the sum bus and the master insert chain. */
   masterStrip: MasterBusStrip;
   masterInsertChain: InsertChain;
+  /** Air / multiband glue / stereo width, between the inserts and the limiter. */
+  masterShaper: MasterShaper;
   masterComp: MasterCompressor;
   fx: FxBus;
   sidechainBus: SidechainBus;
@@ -79,14 +82,19 @@ export function buildAudioGraph(ctx: AudioContext): AudioGraph {
   softClip.connect(masterMeterAnalyser);
   // master (sum) → MasterBusStrip (EQ/pan/mute) → InsertChain → masterComp → analyser → destination.
   // FxBus returns sum into `master` (pre-strip), so the master EQ shapes the wet returns too.
+  // master (sum) → MasterBusStrip → InsertChain → MasterShaper → masterComp.
+  // The shaper sits BEFORE the limiter: air, glue and width are mix decisions,
+  // and the limiter must remain the last thing that sees the signal.
   const masterStrip = new MasterBusStrip(ctx);
   master.connect(masterStrip.input);
-  const masterInsertChain = new InsertChain(masterStrip.output, masterComp.input);
+  const masterShaper = new MasterShaper(ctx);
+  const masterInsertChain = new InsertChain(masterStrip.output, masterShaper.input);
+  masterShaper.output.connect(masterComp.input);
   const fx = new FxBus(ctx, master);
 
   const sidechainBus = new SidechainBus();
 
-  return { ctx, master, analyser, masterMeterAnalyser, masterStrip, masterInsertChain, masterComp, fx, sidechainBus };
+  return { ctx, master, analyser, masterMeterAnalyser, masterStrip, masterInsertChain, masterShaper, masterComp, fx, sidechainBus };
 }
 
 export function createAudioGraph(): AudioGraph {

@@ -171,7 +171,7 @@ const audio = createAudioGraph();
 // Phase G: audio-graph.ts is now master-only. All per-lane strips, instrument
 // instances, and configurators were removed. Lane allocation happens lazily via
 // lanes.ensureLaneResource() when applyLoadedSessionState runs.
-const { ctx, master, analyser, masterMeterAnalyser, masterStrip, masterInsertChain, fx, masterComp, sidechainBus } = audio;
+const { ctx, master, analyser, masterMeterAnalyser, masterStrip, masterInsertChain, fx, masterComp, masterShaper, sidechainBus } = audio;
 
 // Register all three AudioWorklet processors ASAP (idempotent, cached per ctx).
 // EVERY lane allocation that builds a worklet engine constructs `new
@@ -903,13 +903,13 @@ synthEditorDeps = {
 
 
 const fxUIDeps: FxUIDeps = {
-  ctx, fx, masterInsertChain, masterComp, getBpm: () => seq.bpm, registerKnob,
+  ctx, fx, masterInsertChain, masterComp, masterShaper, getBpm: () => seq.bpm, registerKnob,
   // Late-bound via getter so historyDeps is resolved at event-fire time.
   get historyDeps() { return _discreteHistoryDeps; },
   // Task 28: expose session state so master insert slots are persisted.
   getSessionState: () => sessionHost.state,
 };
-const { rebuildMasterInserts, rebuildSends, refreshMasterComp } = wireFxUI(fxUIDeps);
+const { rebuildMasterInserts, rebuildSends, refreshMasterComp, refreshMasterShaper } = wireFxUI(fxUIDeps);
 // Task 28: rebuild master insert UI after each session load so the slots
 // array reference stays in sync with sessionHost.state.masterInserts.
 sessionHost.onStateApplied(rebuildMasterInserts);
@@ -918,7 +918,7 @@ sessionHost.onStateApplied(rebuildMasterInserts);
 sessionHost.onStateApplied(rebuildSends);
 // Pull the master-comp knobs + bypass back into sync after a session load
 // (applyLoadedStateV3 has already restored the compressor via masterComp.setState).
-sessionHost.onStateApplied(refreshMasterComp);
+sessionHost.onStateApplied(() => { refreshMasterComp(); refreshMasterShaper(); });
 // Phase G: deferred to sessionHost.onStateApplied (lane not allocated at boot).
 // mountDrumMasterLaneKnobs(LANE_ID_DRUMS) — see boot section below.
 // ── Scene export (real-time live-take + offline WAV) ──────────────────────
@@ -1281,6 +1281,7 @@ const saveBaseDeps = {
   masterInsertChain,
   masterStrip,
   masterComp,
+  masterShaper,
   flashButton,
   history,
 };
@@ -1305,7 +1306,7 @@ const autoHistory = createAutoHistory({
   history,
   snapshot: () => buildSavedStateV3(savedStateDeps),
   restore: (s) => applyLoadedStateV3(s, savedStateDeps),
-  refreshAll: () => { sessionHost.refreshAfterRestore(); refreshMasterComp(); },
+  refreshAll: () => { sessionHost.refreshAfterRestore(); refreshMasterComp(); refreshMasterShaper(); },
 });
 autoHistory.installGlobalListeners(document);
 wireHistoryKeyboard(autoHistory);

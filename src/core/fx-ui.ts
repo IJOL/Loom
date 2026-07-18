@@ -29,6 +29,9 @@ export interface FxUIDeps {
   fx: FxBus;
   masterInsertChain: InsertChain;
   masterComp: import('./fx').MasterCompressor;
+  /** Air / multiband glue / stereo width. Optional so existing callers and
+   *  tests that only exercise the compressor keep working. */
+  masterShaper?: import('./master-shaper').MasterShaper;
   getBpm: () => number;
   registerKnob: (k: KnobHandle) => void;
   /** Optional undo history deps. When present, knob drags/wheel/dblclick
@@ -44,7 +47,7 @@ export interface FxUIDeps {
 
 let _deps: FxUIDeps | null = null;
 
-export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void; rebuildSends: () => void; refreshMasterComp: () => void } {
+export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void; rebuildSends: () => void; refreshMasterComp: () => void; refreshMasterShaper: () => void } {
   _deps = deps;
 
   const SIZE = 44;
@@ -87,6 +90,50 @@ export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void; re
     mcByp.classList.toggle('active', next);
   });
   mcRow.appendChild(mcByp);
+
+  // MASTER SHAPER — air / multiband glue / stereo width.
+  // Every one of these is fixed and unreachable in mpump, where the port came
+  // from. A sound parameter with no surface is one you cannot undo, so all four
+  // are knobs.
+  const msRow = document.getElementById('fx-master-shaper-knobs') as HTMLDivElement | null;
+  const shaper = deps.masterShaper;
+  const msColor = '#9b59b6';
+  let kAir: KnobHandle | null = null, kWidth: KnobHandle | null = null, kMbAmt: KnobHandle | null = null;
+  let mbBtn: HTMLButtonElement | null = null;
+  if (msRow && shaper) {
+    const si = shaper.getState();
+    kAir = appendKnob(msRow, { id: 'fx.shaper.air', min: -12, max: 12, step: 0.5, value: si.airDb, defaultValue: -3,
+      label: 'AIR', color: msColor, size: SIZE, format: fmtDbSigned,
+      onChange: (v) => shaper.setAirDb(v) }, deps.registerKnob, undoHooks);
+    kWidth = appendKnob(msRow, { id: 'fx.shaper.width', min: 0, max: 1, step: 0.01, value: si.width, defaultValue: 0,
+      label: 'WIDTH', color: msColor, size: SIZE, format: (v) => `${Math.round(v * 100)}%`,
+      onChange: (v) => shaper.setWidth(v) }, deps.registerKnob, undoHooks);
+    kMbAmt = appendKnob(msRow, { id: 'fx.shaper.glue', min: 0, max: 1, step: 0.01, value: si.mbAmount, defaultValue: 0.25,
+      label: 'GLUE', color: msColor, size: SIZE, format: (v) => `${Math.round(v * 100)}%`,
+      onChange: (v) => shaper.setMultibandAmount(v) }, deps.registerKnob, undoHooks);
+
+    mbBtn = document.createElement('button');
+    mbBtn.className = 'rnd master-mb-toggle';
+    mbBtn.textContent = 'GLUE';
+    mbBtn.title = 'Multiband glue compression across three bands';
+    mbBtn.classList.toggle('active', si.mbOn);
+    mbBtn.addEventListener('click', () => {
+      const next = !shaper.getState().mbOn;
+      shaper.setMultibandOn(next);
+      mbBtn!.classList.toggle('active', next);
+    });
+    msRow.appendChild(mbBtn);
+  }
+
+  /** Pull the shaper knobs back from live state after a load / undo / redo. */
+  const refreshMasterShaper = (): void => {
+    if (!shaper) return;
+    const st = shaper.getState();
+    kAir?.setValue(st.airDb);
+    kWidth?.setValue(st.width);
+    kMbAmt?.setValue(st.mbAmount);
+    mbBtn?.classList.toggle('active', st.mbOn);
+  };
 
   // Pull the master-compressor knobs + bypass back from live state. Called after
   // a session load / undo / redo restores the compressor (saved-state-v3 applies
@@ -184,5 +231,5 @@ export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void; re
   };
 
   rebuildSends();
-  return { rebuildMasterInserts, rebuildSends, refreshMasterComp };
+  return { rebuildMasterInserts, rebuildSends, refreshMasterComp, refreshMasterShaper };
 }

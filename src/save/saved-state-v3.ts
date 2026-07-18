@@ -21,6 +21,9 @@ export interface SavedStateV3 {
    *  the master chain — optional/additive; absent ⇒ compressor keeps its
    *  constructed defaults. Separate from masterStrip, which is EQ/pan/mute only. */
   masterComp?: ReturnType<import('../core/fx').MasterCompressor['getState']>;
+  /** Master shaper (air / multiband glue / stereo width) — optional/additive;
+   *  absent ⇒ the shaper keeps its constructed defaults. */
+  masterShaper?: import('../core/master-shaper').MasterShaperState;
   kit: string;
   wave: Wave;
   synthParams: import('../core/synth').TB303['params'];
@@ -52,6 +55,9 @@ export interface SavedStateV3Deps {
   /** Master-bus compressor — serialized/restored alongside masterStrip.
    *  Optional so callers without an audio graph (tests) keep working. */
   masterComp?: import('../core/fx').MasterCompressor;
+  /** Master shaper — serialized/restored alongside masterComp. Optional so
+   *  callers without an audio graph (tests) keep working. */
+  masterShaper?: import('../core/master-shaper').MasterShaper;
   /** Performance view persistence — optional; when absent the take is not
    *  saved/restored (older callers keep working unchanged). */
   getMode?: () => 'session' | 'performance';
@@ -91,6 +97,7 @@ export function buildSavedStateV3(deps: SavedStateV3Deps): SavedStateV3 {
     masterVol: parseFloat(volInput.value),
     masterStrip: deps.masterStrip?.serialize(),
     masterComp: deps.masterComp?.getState(),
+    masterShaper: deps.masterShaper?.getState(),
     kit: drums?.kitId ?? 'default',
     wave: synth?.params.wave ?? 'sawtooth',
     synthParams: synth?.params ? { ...synth.params } : {} as import('../core/synth').TB303['params'],
@@ -117,6 +124,7 @@ export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): voi
   if (typeof s.masterVol === 'number') { master.gain.value = s.masterVol; volInput.value = String(s.masterVol); }
   deps.masterStrip?.restore(s.masterStrip);
   if (s.masterComp) deps.masterComp?.setState(s.masterComp);
+  if (s.masterShaper) deps.masterShaper?.setState(s.masterShaper);
 
   // Session state is applied first so lane resources are allocated before
   // we try to get synth/drums instances from them.
