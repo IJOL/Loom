@@ -96,5 +96,22 @@
   padding-top: 10px; border-top: 1px solid #2a2a2e;
   font-size: 11px; color: #8a8a8e; font-style: italic;
 }
+// The AGPL notice in About. §13 attaches to network use: the deployed app must
+// state its licence and offer its source, so this is a compliance surface, not
+// decoration — keep it legible rather than tucking it away in fine print.
+.about-legal {
+  margin-top: 14px; padding-top: 10px; border-top: 1px solid #2a2a2e;
+  font-size: 11px; line-height: 1.55; color: #8a8a8e;
+
+  h4 {
+    margin: 0 0 6px; font-size: 9px; letter-spacing: .12em;
+    text-transform: uppercase; color: #6d6d72; font-weight: 600;
+  }
+  p { margin: 0 0 7px; &:last-child { margin-bottom: 0; } }
+  strong { color: #a8a8ad; }
+  code { font-size: 10px; color: #a8a8ad; }
+  a { color: #f5a623; text-decoration: none; &:hover { text-decoration: underline; } }
+}
+
 .po-group { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: #6d6d72; margin-bottom: -4px; }
 .po-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

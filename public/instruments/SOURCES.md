@@ -2,19 +2,29 @@
      Generado por el workflow wf_b792d2e6-48f: 58 candidatos, 20 fuentes usables.
      Revisar cada licencia antes de incluir muestras en el repo. -->
 
-## Presets bundled en el repo (mínimos, todos sin atribución)
+## Presets bundled en el repo
 
-Estas tres entradas se sirven desde `public/instruments/` (ver `index.json`) y son
-el contenido mínimo que consumen el e2e y el smoke del frente D. Todas son
-redistribuibles sin atribución:
+Estas entradas se sirven desde `public/instruments/` (ver `index.json`) y son el
+contenido mínimo que consumen el e2e y el smoke del frente D. **Su situación
+legal NO es uniforme** — antes esta sección decía "todas redistribuibles sin
+atribución", lo cual era falso y agrupaba bajo esa etiqueta un break cuyos
+derechos no están aclarados:
 
-- **Sweep Pad** (`sweep-pad.json`, 3 zonas melódicas) y **Synth Bass**
+- ✅ **Sweep Pad** (`sweep-pad.json`, 3 zonas melódicas) y **Synth Bass**
   (`synth-bass.json`, 2 zonas) — audio **sintetizado por Loom**
   (`tools/gen-bundled-instruments.mjs`, sin samples de terceros) ⇒ dominio
-  público / CC0. WAV mono 22.05 kHz, recortados para web.
-- **Amen Break (loop)** (`amen-175.json`, `family:'loop'`) — copia del fixture
-  ya comiteado en `test/fixtures/loops/drum/`. `slicePointsSec` FIJADO en el
-  manifiesto (determinismo nota↔slice).
+  público / CC0. WAV mono 22.05 kHz, recortados para web. Estos sí son
+  redistribuibles sin atribución, porque los generamos nosotros.
+- ⚠️ **Amen Break (loop)** (`amen-175.json`, `family:'loop'`) — **derechos NO
+  aclarados.** Es el break de "Amen, Brother" (The Winstons, 1969): ni es de
+  dominio público ni está libre de atribución, por muy sampleado que esté desde
+  hace décadas. La justificación que figuraba aquí — "copia del fixture ya
+  comiteado en `test/fixtures/loops/drum/`" — **no es una licencia**: que un
+  archivo ya estuviera en el repo no dice nada sobre el derecho a redistribuirlo.
+  Se sirve en el despliegue público y es alcanzable desde el desplegable de
+  presets. Pendiente de decisión: retirarlo, sustituirlo por un break propio
+  generado, o asumir la exposición conscientemente.
+  (`slicePointsSec` FIJADO en el manifiesto para determinismo nota↔slice.)
 
 Aquí tienes el informe completo en Markdown.
 
