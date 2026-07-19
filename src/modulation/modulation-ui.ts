@@ -350,6 +350,45 @@ function renderRoutingList(mod: ModulatorState, deps: ModulationUIDeps): HTMLEle
   adder.className = 'mod-conn-adder';
   const destSel = document.createElement('select');
   destSel.className = 'mod-dest-select';
+  // The insert chains are LIVE objects: adding an FX to the lane mutates the
+  // same chain this picker reads. Rebuild the options every time the dropdown
+  // is opened so a modulator created before the insert can still reach it —
+  // otherwise the list froze at panel-render time and the new FX params were
+  // unreachable until the whole engine editor happened to be rebuilt.
+  const repopulate = (): void => {
+    const keep = destSel.value;
+    destSel.innerHTML = '';
+    buildDestOptions(destSel, mod, deps);
+    if (keep && [...destSel.options].some((o) => o.value === keep)) destSel.value = keep;
+  };
+  destSel.addEventListener('pointerdown', repopulate);
+  destSel.addEventListener('focus', repopulate);
+  buildDestOptions(destSel, mod, deps);
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'rnd primary';
+  addBtn.textContent = '+ Destination';
+  addBtn.addEventListener('click', () => {
+    const paramId = destSel.value;
+    if (!paramId) return;
+    const run = () => {
+      const cid = `c-${Date.now().toString(36)}`;
+      deps.host.setConnection(mod.id, { id: cid, paramId, depth: 0.5 });
+      sync(deps);
+      deps.onChange();
+    };
+    if (deps.historyDeps) withUndo(deps.historyDeps, run); else run();
+  });
+  adder.appendChild(destSel);
+  adder.appendChild(addBtn);
+  list.appendChild(adder);
+
+  return list;
+}
+
+/** Fill `destSel` with every param this modulator could still target, grouped
+ *  by origin (engine / lane FX / master FX). Read fresh on every dropdown open. */
+function buildDestOptions(destSel: HTMLSelectElement, mod: ModulatorState, deps: ModulationUIDeps): void {
   const used = new Set(mod.connections.map((c) => c.paramId));
   const fmt = (id: string) =>
     deps.lookupLaneDisplayName
@@ -417,26 +456,6 @@ function renderRoutingList(mod: ModulatorState, deps: ModulationUIDeps): HTMLEle
   // The old "Master Sends" optgroup keyed on FxBus.getMasterSendInstances() was a
   // dead path (its `master-send:` destination ids were never resolved by the
   // connection binder), so it has been removed.
-
-  const addBtn = document.createElement('button');
-  addBtn.className = 'rnd primary';
-  addBtn.textContent = '+ Destination';
-  addBtn.addEventListener('click', () => {
-    const paramId = destSel.value;
-    if (!paramId) return;
-    const run = () => {
-      const cid = `c-${Date.now().toString(36)}`;
-      deps.host.setConnection(mod.id, { id: cid, paramId, depth: 0.5 });
-      sync(deps);
-      deps.onChange();
-    };
-    if (deps.historyDeps) withUndo(deps.historyDeps, run); else run();
-  });
-  adder.appendChild(destSel);
-  adder.appendChild(addBtn);
-  list.appendChild(adder);
-
-  return list;
 }
 
 function renderConnectionRow(mod: ModulatorState, conn: import('./types').ModulationConnection, deps: ModulationUIDeps): HTMLElement {
