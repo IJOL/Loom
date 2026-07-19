@@ -17,7 +17,7 @@ import { groupTargetsByLane } from '../automation/automation-targets';
 
 export interface ModulationUIDeps {
   engineId: string;
-  laneId: string;                         // for param-id prefix matching destination dropdown
+  laneId: string;                         // scopes the destination dropdown to this lane (+master) and namespaces this modulator's own knob ids
   host: ModulationHost;
   registry: Map<string, KnobHandle>;
   registerKnob: (k: KnobHandle) => void;
@@ -380,11 +380,10 @@ function renderRoutingList(mod: ModulatorState, deps: ModulationUIDeps): HTMLEle
   adder.className = 'mod-conn-adder';
   const destSel = document.createElement('select');
   destSel.className = 'mod-dest-select';
-  // The insert chains are LIVE objects: adding an FX to the lane mutates the
-  // same chain this picker reads. Rebuild the options every time the dropdown
-  // is opened so a modulator created before the insert can still reach it —
-  // otherwise the list froze at panel-render time and the new FX params were
-  // unreachable until the whole engine editor happened to be rebuilt.
+  // Destinations come from the shared DestinationRegistry, which already
+  // pushes a rebuild via subscribe() in renderModulatorsPanel — this
+  // pointerdown/focus repopulate is a belt-and-braces refresh so opening the
+  // dropdown never shows a stale list even if that subscription lapsed.
   const repopulate = (): void => {
     const keep = destSel.value;
     destSel.innerHTML = '';
@@ -423,7 +422,17 @@ function renderRoutingList(mod: ModulatorState, deps: ModulationUIDeps): HTMLEle
  *  change (see the `subscribe` call in renderModulatorsPanel). */
 function buildDestOptions(destSel: HTMLSelectElement, mod: ModulatorState, deps: ModulationUIDeps): void {
   const used = new Set(mod.connections.map((c) => c.paramId));
-  const targets = (deps.destinations?.list() ?? []).filter((t) => !used.has(t.id));
+  // The per-lane binder (voice-mod-binding.ts's applyBinder) can only ever
+  // resolve THIS lane's engine params + THIS lane's own insert chain + the
+  // master insert chain — it never receives another lane's chain, and never
+  // receives a send rack at all. A destination whose laneId is a different
+  // lane, or `fx.send.*`, therefore matches nothing in the binder's destMap:
+  // the connection would be created, look identical to a working one, and
+  // silently never bind to an AudioParam. Keep this filter — it exists so
+  // the dropdown never offers a target the binder can't reach.
+  const targets = (deps.destinations?.list() ?? [])
+    .filter((t) => t.laneId === deps.laneId || t.laneId === 'fx.master')
+    .filter((t) => !used.has(t.id));
   for (const [laneName, group] of groupTargetsByLane(targets)) {
     const grp = document.createElement('optgroup');
     grp.label = laneName;

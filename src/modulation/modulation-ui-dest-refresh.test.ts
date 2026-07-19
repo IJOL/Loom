@@ -14,6 +14,13 @@ import { registerPlugin, _resetRegistry } from '../plugins/registry';
 import { multifilterPlugin } from '../plugins/fx/multifilter';
 import type { SessionState } from '../session/session';
 import type { ModulationHost, ModulatorState } from './types';
+// Side-effect import: registers the 'subtractive' engine descriptor so
+// listAutomationTargets() can find its continuous engine params. Without
+// this, getEngine('subtractive') returns undefined and the picker would
+// silently offer zero engine params — a false negative for the "own lane's
+// engine params ARE offered" assertion below (same trap the plugin registry
+// has: silence, not an error, for an unregistered id).
+import '../engines/subtractive';
 
 function stateWith(inserts: { id: string; pluginId: string }[]): SessionState {
   return {
@@ -129,5 +136,62 @@ describe('modulator destination picker', () => {
     // one routing-list ⇒ one buildDestOptions call). Five accumulated
     // subscriptions would show up as five calls here.
     expect(listSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('scopes the destination list to this lane + master, not other lanes or sends', () => {
+    // The binder (voice-mod-binding.ts applyBinder) only ever builds its
+    // destMap from THIS lane's engine params + THIS lane's own insert chain +
+    // the master insert chain — never another lane's chain, never a send
+    // rack. So a destination whose laneId is a DIFFERENT lane, or a
+    // `fx.send.*` scope, is a target the binder can never resolve: offering
+    // it in the dropdown would be a silent dead end. This test proves the
+    // picker excludes exactly those, while still offering everything the
+    // binder CAN resolve for lane 'poly1' (its own engine params, its own
+    // insert, and the master insert).
+    const state: SessionState = {
+      lanes: [
+        {
+          id: 'poly1', name: 'Sub 1', engineId: 'subtractive', clips: [],
+          inserts: [{ id: 'slot-a', pluginId: 'multifilter', params: {}, bypass: false }],
+        },
+        {
+          id: 'poly2', name: 'Sub 2', engineId: 'subtractive', clips: [],
+          inserts: [{ id: 'slot-b', pluginId: 'multifilter', params: {}, bypass: false }],
+        },
+      ],
+      masterInserts: [{ id: 'slot-m', pluginId: 'multifilter', params: {}, bypass: false }],
+      sends: [{
+        id: 'A', label: 'Send A', returnLevel: 1, muted: false,
+        inserts: [{ id: 'slot-s', pluginId: 'multifilter', params: {}, bypass: false }],
+      }],
+    } as unknown as SessionState;
+
+    const destinations = createDestinationRegistry({
+      getState: () => state, getKnobRegistry: () => new Map(),
+    });
+    const mod = { id: 'lfo1', kind: 'lfo', enabled: true, connections: [] } as unknown as ModulatorState;
+
+    const container = document.createElement('div');
+    renderModulatorsPanel(container, {
+      engineId: 'subtractive', laneId: 'poly1', host: fakeHost([mod]),
+      registry: new Map(), registerKnob: () => {}, onChange: () => {},
+      destinations,
+    } as ModulationUIDeps);
+
+    const values = destValues(container);
+
+    // Positive: lane A's own engine params ARE offered.
+    expect(values.some((v) => v.startsWith('poly1.') && !v.includes('.fx:'))).toBe(true);
+    // Positive: lane A's own insert IS offered.
+    expect(values.some((v) => v.startsWith('poly1.fx:slot-a.'))).toBe(true);
+    // Positive: the master insert IS offered.
+    expect(values.some((v) => v.startsWith('fx.master.fx:slot-m.'))).toBe(true);
+
+    // Negative: lane B — neither its engine params nor its insert — is offered.
+    expect(values.some((v) => v.startsWith('poly2'))).toBe(false);
+    expect(values.some((v) => v.startsWith('poly2.fx:slot-b.'))).toBe(false);
+    // Negative: the send rack is not offered.
+    expect(values.some((v) => v.startsWith('fx.send.'))).toBe(false);
+    expect(values.some((v) => v.includes('slot-s'))).toBe(false);
   });
 });
