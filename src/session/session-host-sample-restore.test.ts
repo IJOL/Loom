@@ -32,7 +32,7 @@ describe('SessionHost.applyEngineState — sample-kit restore round-trip', () =>
     const host = new SessionHost({ laneResources, destinations: fakeDestinations() } as unknown as ConstructorParameters<typeof SessionHost>[0]);
     const keymap = [{ sampleId: 's-kick', rootNote: 36, loNote: 36, hiNote: 36 }];
     const padParams = { 36: { tune: 3 } };
-    host.state.lanes = [{
+    host.state.lanes = [{ inserts: [],
       id: 'drums-1', engineId: 'drums-machine', clips: [],
       engineState: { kitMode: 'sample', sampler: { drumkitId: 'tr808', keymap, padParams } },
     }];

@@ -53,10 +53,10 @@ describe('SessionHost.onEditLane — active engine lane tracking', () => {
       'subtractive-1': 'subtractive',
       'fm-4-op-1':     'fm',
     }));
-    const state: SessionState = {
+    const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
       lanes: [
-        { id: 'subtractive-1', engineId: 'subtractive', clips: [] },
-        { id: 'fm-4-op-1',     engineId: 'fm',          clips: [] },
+        { inserts: [], id: 'subtractive-1', engineId: 'subtractive', clips: [] },
+        { inserts: [], id: 'fm-4-op-1',     engineId: 'fm',          clips: [] },
       ],
       scenes: [],
       globalQuantize: '1/1',
@@ -76,7 +76,8 @@ describe('SessionHost.onEditLane — active engine lane tracking', () => {
       'wavetable-1': 'wavetable',
     }));
     host.applyLoadedSessionState({
-      lanes: [{ id: 'wavetable-1', engineId: 'wavetable', clips: [] }],
+      name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+      lanes: [{ inserts: [], id: 'wavetable-1', engineId: 'wavetable', clips: [] }],
       scenes: [],
       globalQuantize: '1/1',
     });
@@ -94,7 +95,8 @@ describe('SessionHost.onEditLane — active engine lane tracking', () => {
       'karplus-1': 'karplus',
     }));
     host.applyLoadedSessionState({
-      lanes: [{ id: 'karplus-1', engineId: 'karplus', clips: [] }],
+      name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+      lanes: [{ inserts: [], id: 'karplus-1', engineId: 'karplus', clips: [] }],
       scenes: [],
       globalQuantize: '1/1',
     });

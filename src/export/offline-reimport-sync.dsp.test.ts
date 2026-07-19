@@ -29,14 +29,14 @@ describe('offline render → audio-channel re-import sync', () => {
     const musicSec = musicBars * barSec;
 
     // A 1-bar clip with a hit on every quarter, looped to 4 bars by the window.
-    const clip: SessionClip = { id: 'c', lengthBars: 1, notes: [
+    const clip: SessionClip = { color: '#d8e8a8', gridResolution: '1/16', id: 'c', lengthBars: 1, notes: [
       { start: 0,  duration: 12, midi: 36, velocity: 120 },
       { start: 24, duration: 12, midi: 36, velocity: 120 },
       { start: 48, duration: 12, midi: 36, velocity: 120 },
       { start: 72, duration: 12, midi: 36, velocity: 120 },
     ] };
-    const state: SessionState = {
-      lanes: [{ id: 'tb-303-1', engineId: 'tb303', clips: [clip] }],
+    const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+      lanes: [{ inserts: [], id: 'tb-303-1', engineId: 'tb303', clips: [clip] }],
       scenes: [], globalQuantize: '1/1',
     };
     const laneStates = new Map<string, LanePlayState>();

@@ -25,7 +25,7 @@ describe('SessionHost.applyEngineState — kitMode restore', () => {
     };
     const host = new SessionHost({ laneResources, destinations: fakeDestinations() } as unknown as ConstructorParameters<typeof SessionHost>[0]);
     host.state.lanes = [
-      { id: 'drums-1', engineId: 'drums-machine', clips: [], engineState: { kitMode: 'sample' } },
+      { inserts: [], id: 'drums-1', engineId: 'drums-machine', clips: [], engineState: { kitMode: 'sample' } },
     ];
     (host as unknown as { applyEngineState(): void }).applyEngineState();
     expect(calls).toContain('sample');
@@ -49,7 +49,7 @@ describe('SessionHost.applyEngineState — kitMode restore', () => {
     };
     const host = new SessionHost({ laneResources, destinations: fakeDestinations() } as unknown as ConstructorParameters<typeof SessionHost>[0]);
     host.state.lanes = [
-      { id: 'drums-1', engineId: 'drums-machine', clips: [], engineState: {} }, // no kitMode
+      { inserts: [], id: 'drums-1', engineId: 'drums-machine', clips: [], engineState: {} }, // no kitMode
     ];
     (host as unknown as { applyEngineState(): void }).applyEngineState();
     expect(calls).toEqual(['synth']);

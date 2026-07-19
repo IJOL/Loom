@@ -229,7 +229,11 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
         const lanes = stems.map((s, i) => build(s, `audio-stem-${i + 1}`));
         const scene = emptyScene('Stems');
         scene.clipPerLane = Object.fromEntries(lanes.map((l) => [l.id, 0]));
+        // A stems "replace" swaps only lanes/scenes for a clean set holding the
+        // stems — the project's name/tonality/sends/master-rack are untouched,
+        // same spirit as preserving globalQuantize below.
         const newState: SessionState = {
+          ...self.state,
           lanes,
           scenes: [scene],
           globalQuantize: self.state.globalQuantize,

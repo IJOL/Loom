@@ -29,12 +29,12 @@ describe('OfflineSceneRecorder seamless loop', () => {
     // bar and holds ~1s). Cycle 1 starts silent (before the note); cycle 2 starts
     // WITH that held note still sounding — so the two cycles differ at their start,
     // and returning cycle 2 is what makes the loop seamless.
-    const clip: SessionClip = {
+    const clip: SessionClip = { color: '#a8e8b8', gridResolution: '1/16',
       id: 'c', lengthBars: 1,
       notes: [{ start: 336, duration: 192, midi: 40, velocity: 110 }],
     };
-    const state: SessionState = {
-      lanes: [{ id: 'tb-303-1', engineId: 'tb303', clips: [clip] }],
+    const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+      lanes: [{ inserts: [], id: 'tb-303-1', engineId: 'tb303', clips: [clip] }],
       scenes: [], globalQuantize: '1/1',
     };
     const laneStates = new Map<string, LanePlayState>();

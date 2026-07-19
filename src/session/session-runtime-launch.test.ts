@@ -6,10 +6,10 @@ import type { SessionState, SessionClip, SessionLane } from './session';
 const BPM = 120; // 1 bar = 2s in 4/4
 
 function setup(playingBars: number | null) {
-  const playing: SessionClip = { id: 'old', lengthBars: 2, notes: [] };
-  const next: SessionClip = { id: 'new', lengthBars: 1, notes: [] };
-  const lane: SessionLane = { id: 'L', engineId: 'subtractive', clips: [playing, next] };
-  const state: SessionState = { lanes: [lane], scenes: [], globalQuantize: 'immediate' };
+  const playing: SessionClip = { color: '#a8c8e8', gridResolution: '1/16', id: 'old', lengthBars: 2, notes: [] };
+  const next: SessionClip = { color: '#b8b8e8', gridResolution: '1/16', id: 'new', lengthBars: 1, notes: [] };
+  const lane: SessionLane = { inserts: [], id: 'L', engineId: 'subtractive', clips: [playing, next] };
+  const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [], lanes: [lane], scenes: [], globalQuantize: 'immediate' };
   const lp: LanePlayState = { ...emptyLanePlayState('L') };
   if (playingBars != null) { lp.playing = playing; lp.loopStartedAt = 0; }
   const laneStates = new Map([['L', lp]]);

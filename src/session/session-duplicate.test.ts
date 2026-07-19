@@ -2,19 +2,19 @@ import { describe, it, expect } from 'vitest';
 import { duplicateLane, duplicateScene, type SessionState } from './session';
 
 function fixture(): SessionState {
-  return {
+  return { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
     lanes: [
-      {
+      { inserts: [],
         id: 'tb-303-1', engineId: 'tb303', name: 'Bass',
         enginePresetName: 'factory:Acid',
         engineState: { params: { cutoff: 0.4 } },
         clips: [
-          { id: 'clipA', lengthBars: 1, notes: [] },
+          { color: '#a8e8b8', gridResolution: '1/16', id: 'clipA', lengthBars: 1, notes: [] },
           null,
-          { id: 'clipB', lengthBars: 2, notes: [] },
+          { color: '#a8e0d8', gridResolution: '1/16', id: 'clipB', lengthBars: 2, notes: [] },
         ],
       },
-      { id: 'drums-1', engineId: 'drums-machine', clips: [{ id: 'd1', lengthBars: 1, notes: [] }] },
+      { inserts: [], id: 'drums-1', engineId: 'drums-machine', clips: [{ color: '#a8c8e8', gridResolution: '1/16', id: 'd1', lengthBars: 1, notes: [] }] },
     ],
     scenes: [
       { id: 's1', name: 'A', clipPerLane: { 'tb-303-1': 0, 'drums-1': 0 } },

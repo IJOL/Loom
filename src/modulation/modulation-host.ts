@@ -6,7 +6,6 @@ import {
   type ModulationConnection, type ModulationHost,
   type ModulatorKind, type ModulatorState, type ModulatorVoice,
   makeDefaultLFO, makeDefaultADSR,
-  normalizeModulator,
 } from './types';
 import { LFOVoice } from './lfo-voice';
 import { ADSRVoice } from './adsr-voice';
@@ -66,10 +65,7 @@ export class ModulationHostImpl implements ModulationHost {
   }
 
   deserialize(state: ModulatorState[]): void {
-    this.modulators = state.map((m) => {
-      const norm = normalizeModulator(m);
-      return { ...norm, connections: norm.connections.map((c) => ({ ...c })) };
-    });
+    this.modulators = state.map((m) => ({ ...m, connections: m.connections.map((c) => ({ ...c })) }));
   }
 
   spawnVoice(ctx: AudioContext, bpm: () => number): Map<string, ModulatorVoice> {

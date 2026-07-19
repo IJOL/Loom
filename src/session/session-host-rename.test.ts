@@ -3,8 +3,8 @@ import { buildSessionCallbacks } from './session-host-callbacks';
 import type { SessionState } from './session';
 
 function makeSelf() {
-  const state: SessionState = {
-    lanes: [{ id: 'bass', engineId: 'tb303', name: 'BASS', clips: [] }],
+  const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+    lanes: [{ inserts: [], id: 'bass', engineId: 'tb303', name: 'BASS', clips: [] }],
     scenes: [{ id: 's0', name: 'Intro', clipPerLane: {} }],
     globalQuantize: '1/1',
   };

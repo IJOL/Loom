@@ -4,7 +4,7 @@ import { chooseClipEditor, isAudioClip, classifyClip, combineEditorHandle, sampl
 import type { SessionLane, SessionClip } from '../session';
 
 const lane = (over: Partial<SessionLane>): SessionLane => ({
-  id: 'l1', engineId: 'sampler', clips: [], ...over,
+  id: 'l1', engineId: 'sampler', clips: [], inserts: [], ...over,
 });
 
 describe('chooseClipEditor', () => {

@@ -5,7 +5,7 @@ import type { SessionClip } from '../session/session';
 import { DEFAULT_METER } from '../core/meter';
 
 const clip = (id: string, lengthBars: number, notes: SessionClip['notes']): SessionClip =>
-  ({ id, lengthBars, notes });
+  ({ color: '#c8a8e0', gridResolution: '1/16', id, lengthBars, notes });
 
 describe('collectSceneTriggers', () => {
   it('emits one trigger per note for a single-bar clip rendered once', () => {

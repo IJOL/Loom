@@ -36,7 +36,7 @@ describe('SessionHost.applyDrumPreset', () => {
       dispose: () => {},
     };
     const host = new SessionHost({ laneResources, destinations: fakeDestinations() } as unknown as ConstructorParameters<typeof SessionHost>[0]);
-    host.state.lanes = [{ id: 'drums-1', engineId: 'drums-machine', clips: [] }];
+    host.state.lanes = [{ inserts: [], id: 'drums-1', engineId: 'drums-machine', clips: [] }];
 
     await host.applyDrumPreset('drums-1', 'TR-909');
 
@@ -63,7 +63,7 @@ describe('SessionHost.applyDrumPreset', () => {
     const host = new SessionHost({ laneResources, destinations: fakeDestinations() } as unknown as ConstructorParameters<typeof SessionHost>[0]);
     // Lane was edited in synth mode: per-voice 'kick.tune' (synth range) + a
     // mode-agnostic 'bus.level' mirrored into engineState.params.
-    host.state.lanes = [{
+    host.state.lanes = [{ inserts: [],
       id: 'drums-1', engineId: 'drums-machine', clips: [],
       engineState: { kitMode: 'synth', params: { 'kick.tune': 1.6, 'bus.level': 1.2 } },
     }];

@@ -9,8 +9,8 @@ import type { LanePlayState } from './session-runtime';
 beforeEach(() => _resetSceneClickStateForTesting());
 
 export function makeState(): SessionState {
-  return {
-    lanes: [{ id: 'bass', engineId: 'tb303', name: 'BASS', clips: [{ id: 'c0', lengthBars: 1, notes: [] }] }],
+  return { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+    lanes: [{ inserts: [], id: 'bass', engineId: 'tb303', name: 'BASS', clips: [{ color: '#f4c8a8', gridResolution: '1/16', id: 'c0', lengthBars: 1, notes: [] }] }],
     scenes: [{ id: 's0', name: 'Intro', clipPerLane: {} }],
     globalQuantize: '1/1',
   };

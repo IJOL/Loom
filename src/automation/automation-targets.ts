@@ -73,7 +73,7 @@ export function listAutomationTargets(
       push(`${lane.id}.${spec.id}`, spec.label, spec.min, spec.max);
     }
 
-    (lane.inserts ?? []).forEach((slot) => {
+    lane.inserts.forEach((slot) => {
       for (const spec of fxParams(slot.pluginId)) {
         push(insertParamId(lane.id, slot.id, spec.id), spec.label, spec.min, spec.max);
       }
@@ -81,10 +81,10 @@ export function listAutomationTargets(
   }
 
   // The global racks are destinations too, grouped under their own headings.
-  pushRackTargets(targets, registry, 'fx.master', 'Master', state.masterInserts ?? []);
-  for (const send of state.sends ?? []) {
+  pushRackTargets(targets, registry, 'fx.master', 'Master', state.masterInserts);
+  for (const send of state.sends) {
     // The bus label already reads "Send A (Delay)" — don't prefix it again.
-    pushRackTargets(targets, registry, `fx.send.${send.id}`, send.label || `Send ${send.id}`, send.inserts ?? []);
+    pushRackTargets(targets, registry, `fx.send.${send.id}`, send.label || `Send ${send.id}`, send.inserts);
   }
 
   return targets;

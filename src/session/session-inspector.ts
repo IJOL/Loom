@@ -811,7 +811,6 @@ export class SessionInspector {
     const laneRes = this.deps.laneResources?.get(laneId);
     const sessionLane = this.deps.state.lanes.find((l) => l.id === laneId);
     if (!laneRes || !sessionLane) return;
-    sessionLane.inserts ??= [];
     const insertsPanel = document.createElement('div');
     insertsPanel.className = 'lane-inserts';
     buildLaneInsertUI({

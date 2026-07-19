@@ -16,15 +16,15 @@ describe('OfflineSceneRecorder (DSP)', () => {
   beforeAll(() => { bootstrapPlugins(); });
 
   it('renders a non-silent stereo buffer of the requested length for a tb303 scene', async () => {
-    const clip: SessionClip = {
+    const clip: SessionClip = { color: '#f4c8a8', gridResolution: '1/16',
       id: 'c', lengthBars: 1,
       notes: [
         { start: 0, duration: 24, midi: 40, velocity: 110 },
         { start: 48, duration: 24, midi: 43, velocity: 110 },
       ],
     };
-    const state: SessionState = {
-      lanes: [{ id: 'tb-303-1', engineId: 'tb303', clips: [clip] }],
+    const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+      lanes: [{ inserts: [], id: 'tb-303-1', engineId: 'tb303', clips: [clip] }],
       scenes: [], globalQuantize: '1/1',
     };
     const laneStates = new Map<string, LanePlayState>();
@@ -54,7 +54,7 @@ describe('OfflineSceneRecorder (DSP)', () => {
   it('renders a non-silent drums (synth-mode) scene — the Phase 4 offline regression', async () => {
     // Four-on-the-floor kick (midi 36) → must NOT export silence (the cutover
     // skipped drums offline). Synth-mode 'drums-machine' uses no external samples.
-    const clip: SessionClip = {
+    const clip: SessionClip = { color: '#f4e0a8', gridResolution: '1/16',
       id: 'dc', lengthBars: 1,
       notes: [
         { start: 0, duration: 6, midi: 36, velocity: 120 },
@@ -63,8 +63,8 @@ describe('OfflineSceneRecorder (DSP)', () => {
         { start: 72, duration: 6, midi: 36, velocity: 120 },
       ],
     };
-    const state: SessionState = {
-      lanes: [{ id: 'drums-1', engineId: 'drums-machine', clips: [clip] }],
+    const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+      lanes: [{ inserts: [], id: 'drums-1', engineId: 'drums-machine', clips: [clip] }],
       scenes: [], globalQuantize: '1/1',
     };
     const laneStates = new Map<string, LanePlayState>();

@@ -3,11 +3,11 @@ import { reconcileLaneEnvelopes } from './session';
 import type { SessionLane } from './session';
 
 function laneWithEnv(paramId: string): SessionLane {
-  return {
+  return { inserts: [],
     id: 'L',
     engineId: 'subtractive',
     clips: [
-      {
+      { color: '#c8c8a8', gridResolution: '1/16',
         id: 'c1',
         lengthBars: 1,
         notes: [],
@@ -31,10 +31,10 @@ describe('reconcileLaneEnvelopes', () => {
   });
 
   it('no-ops on clips without envelopes and on null clip slots', () => {
-    const lane: SessionLane = {
+    const lane: SessionLane = { inserts: [],
       id: 'L',
       engineId: 'fm',
-      clips: [null, { id: 'c', lengthBars: 1, notes: [] }],
+      clips: [null, { color: '#f4b8b8', gridResolution: '1/16', id: 'c', lengthBars: 1, notes: [] }],
     };
     expect(() => reconcileLaneEnvelopes(lane, new Set())).not.toThrow();
   });

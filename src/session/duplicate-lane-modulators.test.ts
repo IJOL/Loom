@@ -12,7 +12,7 @@ import { describe, it, expect } from 'vitest';
 import { modulatorsForDuplicatedLane } from './session-host-persistence';
 import type { ModulatorState } from '../modulation/types';
 
-const lfo = (id: string, rateHz: number): ModulatorState => ({
+const lfo = (id: string, rateHz: number): ModulatorState => ({ scope: 'shared',
   id, kind: 'lfo', enabled: true, connections: [], rateHz, waveform: 'sine',
 });
 

@@ -4,12 +4,12 @@ import type { SessionState } from '../session/session';
 import { DEFAULT_METER } from '../core/meter';
 
 function state(): SessionState {
-  return {
-    lanes: [{
+  return { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+    lanes: [{ inserts: [],
       id: 'L1', engineId: 'sampler', clips: [
-        { id: 'a', lengthBars: 2, notes: [], sample: { sampleId: 'smp-1', mode: 'loop', warp: true, warpMode: 'stretch', trimStart: 0, trimEnd: 4 } },
-        { id: 'b', lengthBars: 1, notes: [], sample: { sampleId: 'smp-2', mode: 'loop', warp: false, warpMode: 'stretch', trimStart: 0, trimEnd: 2 } },
-        { id: 'c', lengthBars: 1, notes: [], sample: { sampleId: 'smp-3', mode: 'loop', warp: true, trimStart: 0, trimEnd: 1 } }, // warp on but no stretch mode → skipped
+        { color: '#f4c8a8', gridResolution: '1/16', id: 'a', lengthBars: 2, notes: [], sample: { sampleId: 'smp-1', mode: 'loop', warp: true, warpMode: 'stretch', trimStart: 0, trimEnd: 4 } },
+        { color: '#f4e0a8', gridResolution: '1/16', id: 'b', lengthBars: 1, notes: [], sample: { sampleId: 'smp-2', mode: 'loop', warp: false, warpMode: 'stretch', trimStart: 0, trimEnd: 2 } },
+        { color: '#d8e8a8', gridResolution: '1/16', id: 'c', lengthBars: 1, notes: [], sample: { sampleId: 'smp-3', mode: 'loop', warp: true, trimStart: 0, trimEnd: 1 } }, // warp on but no stretch mode → skipped
       ],
     }],
     scenes: [], globalQuantize: '1/1',

@@ -12,7 +12,7 @@ function stubCanvas(): void {
 }
 
 function freshClip(): SessionClip {
-  return { id: 't', lengthBars: 1, notes: [] };
+  return { color: '#d8e8a8', gridResolution: '1/16', id: 't', lengthBars: 1, notes: [] };
 }
 
 function makeHost(): HTMLElement {
@@ -35,16 +35,18 @@ describe('clip-editor-drum-grid roll behaviour', () => {
     expect(clip.notes).toEqual([]);
   });
 
-  it('renderDrumGridEditor does NOT set clip.gridResolution when the clip has none (no phantom undo mutation)', () => {
+  it('renderDrumGridEditor does not overwrite an existing clip.gridResolution (no phantom undo mutation)', () => {
     // Root-cause test for the phantom-undo bug: the editor used to write
     // clip.gridResolution = DEFAULT_RESOLUTION on every open/render, which
     // turned into a spurious undo entry on the first real edit.  The fix reads
     // the value into a LOCAL variable and leaves clip.gridResolution untouched.
-    const clip = { id: 't', lengthBars: 1, notes: [] } as SessionClip;
-    expect(clip.gridResolution).toBeUndefined();          // pre-condition: no value
+    // gridResolution is required on SessionClip now (always set at construction),
+    // so the invariant under test is "render doesn't clobber the existing value",
+    // not "an absent value stays absent" (which is no longer representable).
+    const clip = { color: '#c8a8e0', gridResolution: '1/8', id: 't', lengthBars: 1, notes: [] } as SessionClip;
     try { renderDrumGridEditor(makeHost(), clip); } catch { /* no DOM */ }
-    // Post-condition: the clip must not have been mutated on open.
-    expect(clip.gridResolution).toBeUndefined();
+    // Post-condition: the clip's existing value must not have been mutated on open.
+    expect(clip.gridResolution).toBe('1/8');
   });
 });
 
@@ -54,7 +56,7 @@ describe('drum grid full-kit toggle', () => {
   it('renders a Full kit toggle when deps.fullKit is provided', () => {
     stubCanvas();
     const host = document.createElement('div');
-    const clip = { id: 'c', lengthBars: 1, notes: [] } as SessionClip;
+    const clip = { color: '#e0a8d0', gridResolution: '1/16', id: 'c', lengthBars: 1, notes: [] } as SessionClip;
     renderDrumGridEditor(host, clip, undefined, undefined, {
       fullKit: { build: (full) => model(full ? [36, 38, 42] : [36]) },
     }, model([36]));

@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { listAutomationTargets } from './automation-targets';
 import { registerPlugin, _resetRegistry } from '../plugins/registry';
 import type { FxInstance } from '../plugins/types';
-import type { SessionState } from '../session/session';
+import { emptySessionState, type SessionState } from '../session/session';
 import type { KnobHandle } from '../core/knob';
 
 const FX_ID = 'test-fx-for-automation-targets';
@@ -47,16 +47,20 @@ beforeEach(() => {
 afterEach(() => { _resetRegistry(); });
 
 function sessionWithInsertLane(): SessionState {
+  // Built on top of emptySessionState() rather than a bare object literal: a
+  // real SessionState always carries masterInserts/musicality/sends (set at
+  // construction, never absent now that those fields are required), and a
+  // hand-rolled fixture that skips them doesn't represent anything the app
+  // actually produces.
   return {
+    ...emptySessionState(),
     lanes: [
       {
         id: 'L1', name: 'Bass', engineId: 'tb303', clips: [],
         inserts: [{ id: 'a', pluginId: FX_ID, params: { drive: 0.5, mix: 1, mode: 0 }, bypass: false }],
       },
     ],
-    scenes: [],
-    globalQuantize: '1/1',
-  } as unknown as SessionState;
+  };
 }
 
 describe('listAutomationTargets', () => {

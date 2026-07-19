@@ -8,7 +8,7 @@ import type { ModulatorState } from './types';
 
 function lfo(partial: Partial<ModulatorState>): ModulatorState {
   return {
-    id: 'lfo1', kind: 'lfo', enabled: true, connections: [],
+    id: 'lfo1', kind: 'lfo', enabled: true, connections: [], scope: 'shared',
     rateHz: 1, waveform: 'sine', bipolar: true,
     syncToBpm: false,
     ...partial,

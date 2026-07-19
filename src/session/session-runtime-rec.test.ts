@@ -11,8 +11,8 @@ import {
 
 function withSingleLane(): { s: SessionState; clip: SessionClip } {
   const s = testSessionState();
-  s.lanes = [{ id: 'tb-303-1', engineId: 'tb303', clips: [] }];
-  const clip: SessionClip = { id: 'c1', lengthBars: 1, notes: [] };
+  s.lanes = [{ inserts: [], id: 'tb-303-1', engineId: 'tb303', clips: [] }];
+  const clip: SessionClip = { color: '#c8a8e0', gridResolution: '1/16', id: 'c1', lengthBars: 1, notes: [] };
   s.lanes[0].clips = [clip];
   return { s, clip };
 }

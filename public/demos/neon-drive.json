@@ -1,15 +1,18 @@
 {
   "bpm": 115,
+  "name": "Neon Drive",
   "lanes": [
     {
       "id": "wavetable-1",
       "engineId": "wavetable",
       "name": "Neon Lead",
+      "inserts": [],
       "clips": [
         {
           "id": "wavetable-1",
           "name": "Neon Lead",
           "color": "#a8c8e8",
+          "gridResolution": "1/16",
           "lengthBars": 16,
           "notes": [
             {
@@ -10252,11 +10255,13 @@
       "id": "pad-1",
       "engineId": "subtractive",
       "name": "Pad",
+      "inserts": [],
       "clips": [
         {
           "id": "pad-1",
           "name": "Pad",
           "color": "#a8c8e8",
+          "gridResolution": "1/16",
           "lengthBars": 16,
           "notes": [
             {
@@ -10490,11 +10495,13 @@
       "id": "bass-1",
       "engineId": "subtractive",
       "name": "Bass",
+      "inserts": [],
       "clips": [
         {
           "id": "bass-1",
           "name": "Bass",
           "color": "#a8c8e8",
+          "gridResolution": "1/16",
           "lengthBars": 16,
           "notes": [
             {
@@ -11495,11 +11502,13 @@
       "id": "drums-1",
       "engineId": "drums-machine",
       "name": "Drums",
+      "inserts": [],
       "clips": [
         {
           "id": "drums-1",
           "name": "Drums",
           "color": "#a8c8e8",
+          "gridResolution": "1/16",
           "lengthBars": 16,
           "notes": [
             {
@@ -12917,5 +12926,42 @@
       }
     }
   ],
-  "globalQuantize": "1/1"
+  "globalQuantize": "1/1",
+  "musicality": {
+    "key": 9,
+    "scale": "minor",
+    "style": "acid-techno",
+    "lock": false
+  },
+  "sends": [
+    {
+      "id": "A",
+      "label": "Send A (Delay)",
+      "returnLevel": 1,
+      "muted": false,
+      "inserts": [
+        {
+          "id": "demo-send-a",
+          "pluginId": "delay",
+          "params": {},
+          "bypass": false
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Send B (Reverb)",
+      "returnLevel": 1,
+      "muted": false,
+      "inserts": [
+        {
+          "id": "demo-send-b",
+          "pluginId": "reverb",
+          "params": {},
+          "bypass": false
+        }
+      ]
+    }
+  ],
+  "masterInserts": []
 }

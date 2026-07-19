@@ -34,7 +34,7 @@ import { createDestinationRegistry } from '../automation/destination-registry';
 import { registerPlugin, _resetRegistry } from '../plugins/registry';
 import { InsertChain } from '../plugins/fx/insert-chain';
 import type { LaneResourceMap } from '../core/lane-resources';
-import type { SessionState, SessionClip, SessionLane } from './session';
+import { emptySessionState, type SessionState, type SessionClip, type SessionLane } from './session';
 import type { FxInstance } from '../plugins/types';
 // Side-effect import: registers the 'subtractive' engine descriptor so
 // listAutomationTargets() can find its continuous engine params (same trap
@@ -121,13 +121,20 @@ afterEach(() => { _resetRegistry(); });
 
 describe('the open clip\'s automation picker refreshes through the destination registry', () => {
   it('offers a param from an insert added AFTER the picker rendered — via destinations.invalidate(), not a direct refresh call', () => {
-    const clip: SessionClip = { id: 'c0', name: 'Line', lengthBars: 1, notes: [] } as unknown as SessionClip;
+    const clip: SessionClip = {
+      id: 'c0', name: 'Line', lengthBars: 1, notes: [], color: '#a8c8e8', gridResolution: '1/16',
+    };
     const lane: SessionLane = {
       id: 'poly1', engineId: 'subtractive', name: 'Sub 1', clips: [clip], inserts: [],
-    } as unknown as SessionLane;
-    const state = {
+    };
+    // Built on emptySessionState() rather than a bare object literal: a real
+    // SessionState always carries masterInserts/musicality/sends (required,
+    // set at construction), and listAutomationTargets (reached via
+    // destinations.list() below) reads them unconditionally now.
+    const state: SessionState = {
+      ...emptySessionState(),
       lanes: [lane], scenes: [{ id: 's0', name: 'Drop', clipPerLane: {} }],
-    } as unknown as SessionState;
+    };
 
     const destinations = createDestinationRegistry({
       getState: () => state, getKnobRegistry: () => new Map(),

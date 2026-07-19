@@ -50,7 +50,7 @@ const RAMP = Array.from({ length: 256 }, (_, i) => 0.05 + (0.9 * i) / 255);
 function makeClip(): SessionClip {
   // 8 notes, one every 2 steps (every 96 ticks) across the 1-bar clip.
   const notes = Array.from({ length: 8 }, (_, k) => ({ start: k * 96, duration: 80, midi: 48, velocity: 100 }));
-  return {
+  return { color: '#f4b8b8', gridResolution: '1/16',
     id: 'c', lengthBars: 1, notes,
     envelopes: [{ paramId: 'sub.filter.cutoff', values: RAMP, enabled: true, stepped: false }],
   };
@@ -58,8 +58,8 @@ function makeClip(): SessionClip {
 
 async function renderQuarters(): Promise<{ q1: number; q4: number }> {
   const clip = makeClip();
-  const state: SessionState = {
-    lanes: [{ id: 'sub', engineId: 'subtractive', clips: [clip], enginePresetName: 'engine:Rich' }],
+  const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+    lanes: [{ inserts: [], id: 'sub', engineId: 'subtractive', clips: [clip], enginePresetName: 'engine:Rich' }],
     scenes: [], globalQuantize: '1/1',
   };
   const laneStates = new Map<string, LanePlayState>();

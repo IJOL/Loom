@@ -53,9 +53,9 @@ function makeDeps(onDestinationsChanged?: () => void):
 }
 
 function makeState(): SessionState {
-  return {
+  return { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
     lanes: [
-      { id: 'subtractive-1', engineId: 'subtractive', clips: [] },
+      { inserts: [], id: 'subtractive-1', engineId: 'subtractive', clips: [] },
     ],
     scenes: [],
     globalQuantize: '1/1',

@@ -168,7 +168,7 @@ export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void; re
   let _localMasterInsertSlots: InsertSlot[] = [];
   const getMasterSlots = (): InsertSlot[] => {
     const ss = deps.getSessionState?.();
-    if (ss) { ss.masterInserts ??= []; return ss.masterInserts; }
+    if (ss) return ss.masterInserts;
     return _localMasterInsertSlots;
   };
 

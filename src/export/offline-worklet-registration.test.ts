@@ -77,12 +77,12 @@ describe('OfflineSceneRecorder registers worklet modules on its OfflineAudioCont
   function sceneFor(engineId: string, laneId: string, midi: number): {
     state: SessionState; laneStates: Map<string, LanePlayState>;
   } {
-    const clip: SessionClip = {
+    const clip: SessionClip = { color: '#a8e0d8', gridResolution: '1/16',
       id: 'c', lengthBars: 1,
       notes: [{ start: 0, duration: 24, midi, velocity: 110 }],
     };
-    const state: SessionState = {
-      lanes: [{ id: laneId, engineId, clips: [clip] }],
+    const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+      lanes: [{ inserts: [], id: laneId, engineId, clips: [clip] }],
       scenes: [], globalQuantize: '1/1',
     };
     const laneStates = new Map<string, LanePlayState>();

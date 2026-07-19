@@ -26,11 +26,11 @@ describe('warp-marker-edit', () => {
 
   it('propagateWarp writes markers+warp to every clip in the group', () => {
     const mk = m();
-    const state: SessionState = {
+    const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
       lanes: [
-        { id: 'a', engineId: 'audio', clips: [{ id: 'c1', lengthBars: 4, notes: [], sample: { sampleId: 's1', mode: 'loop', trimStart: 0, trimEnd: 8, warpGroupId: 'g1' } }] },
-        { id: 'b', engineId: 'audio', clips: [{ id: 'c2', lengthBars: 4, notes: [], sample: { sampleId: 's2', mode: 'loop', trimStart: 0, trimEnd: 8, warpGroupId: 'g1' } }] },
-        { id: 'c', engineId: 'audio', clips: [{ id: 'c3', lengthBars: 4, notes: [], sample: { sampleId: 's3', mode: 'loop', trimStart: 0, trimEnd: 8, warpGroupId: 'OTHER' } }] },
+        { inserts: [], id: 'a', engineId: 'audio', clips: [{ color: '#d8e8a8', gridResolution: '1/16', id: 'c1', lengthBars: 4, notes: [], sample: { sampleId: 's1', mode: 'loop', trimStart: 0, trimEnd: 8, warpGroupId: 'g1' } }] },
+        { inserts: [], id: 'b', engineId: 'audio', clips: [{ color: '#a8e8b8', gridResolution: '1/16', id: 'c2', lengthBars: 4, notes: [], sample: { sampleId: 's2', mode: 'loop', trimStart: 0, trimEnd: 8, warpGroupId: 'g1' } }] },
+        { inserts: [], id: 'c', engineId: 'audio', clips: [{ color: '#a8e0d8', gridResolution: '1/16', id: 'c3', lengthBars: 4, notes: [], sample: { sampleId: 's3', mode: 'loop', trimStart: 0, trimEnd: 8, warpGroupId: 'OTHER' } }] },
       ],
       scenes: [], globalQuantize: '1/1',
     };
@@ -42,11 +42,11 @@ describe('warp-marker-edit', () => {
   });
 
   it('propagateLoop applies the loop sub-region to every clip in the group', () => {
-    const state: SessionState = {
+    const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
       lanes: [
-        { id: 'a', engineId: 'audio', clips: [{ id: 'c1', lengthBars: 4, notes: [], sample: { sampleId: 's1', mode: 'loop', trimStart: 0, trimEnd: 8, warpGroupId: 'g1' } }] },
-        { id: 'b', engineId: 'audio', clips: [{ id: 'c2', lengthBars: 4, notes: [], sample: { sampleId: 's2', mode: 'loop', trimStart: 0, trimEnd: 8, warpGroupId: 'g1' } }] },
-        { id: 'c', engineId: 'audio', clips: [{ id: 'c3', lengthBars: 4, notes: [], sample: { sampleId: 's3', mode: 'loop', trimStart: 0, trimEnd: 8, warpGroupId: 'OTHER' } }] },
+        { inserts: [], id: 'a', engineId: 'audio', clips: [{ color: '#a8c8e8', gridResolution: '1/16', id: 'c1', lengthBars: 4, notes: [], sample: { sampleId: 's1', mode: 'loop', trimStart: 0, trimEnd: 8, warpGroupId: 'g1' } }] },
+        { inserts: [], id: 'b', engineId: 'audio', clips: [{ color: '#b8b8e8', gridResolution: '1/16', id: 'c2', lengthBars: 4, notes: [], sample: { sampleId: 's2', mode: 'loop', trimStart: 0, trimEnd: 8, warpGroupId: 'g1' } }] },
+        { inserts: [], id: 'c', engineId: 'audio', clips: [{ color: '#c8a8e0', gridResolution: '1/16', id: 'c3', lengthBars: 4, notes: [], sample: { sampleId: 's3', mode: 'loop', trimStart: 0, trimEnd: 8, warpGroupId: 'OTHER' } }] },
       ],
       scenes: [], globalQuantize: '1/1',
     };

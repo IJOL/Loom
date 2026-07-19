@@ -68,7 +68,9 @@ export interface ClipSample {
 export interface SessionClip {
   id: string;
   name?: string;
-  color?: string;
+  /** Palette colour for the clip cell. Set at construction (a random pick or
+   *  a deterministic hash of the id for imports); never absent. */
+  color: string;
   lengthBars: number;
   launchQuantize?: LaunchQuantize;
   notes: NoteEvent[];
@@ -76,9 +78,10 @@ export interface SessionClip {
   /** Loop/song audio clip. When present, the scheduler fires one buffer
    *  trigger per clip iteration instead of sequencing `notes`. */
   sample?: ClipSample;
-  /** Drum-editor grid resolution key (Spec 3). Additive/optional; absent ⇒ '1/16'.
-   *  Clamped on read by the editor, so an unknown value self-corrects. */
-  gridResolution?: import('../core/drum-grid-editing').ResolutionKey;
+  /** Drum-editor grid resolution key (Spec 3), shared with the piano-roll's
+   *  snap control. Set at construction (DEFAULT_RESOLUTION); never absent.
+   *  Still clamped on read by the editor, so an unknown value self-corrects. */
+  gridResolution: import('../core/drum-grid-editing').ResolutionKey;
   /** Loop sub-region (Phase A). When loopEnabled, the scheduler repeats only
    *  [loopStartTick, loopEndTick) instead of the whole clip. Ticks are on the
    *  TICKS_PER_QUARTER grid (same as NoteEvent.start). Absent ⇒ whole clip. */
@@ -128,9 +131,9 @@ export interface SessionLane {
    *  `user:Name` for a subtractive user preset, `sampler:…` for a sampler ref. */
   enginePresetName?: string;
   /** Per-lane insert-chain slots. Added by Task 27 (formally persisted in
-   *  Task 28). Defaults to [] when absent so consumers can write `??= []`
-   *  and then push to the same array without losing the reference. */
-  inserts?: import('./insert-slot').InsertSlot[];
+   *  Task 28). Empty array when there are none — set at construction
+   *  (emptyLane et al.), never absent. */
+  inserts: import('./insert-slot').InsertSlot[];
   /** Per-lane mixer ChannelStrip snapshot (level/pan/EQ/sendA/sendB/mute/comp/
    *  sidechain). Optional/additive — absent ⇒ the strip keeps its defaults on
    *  load. Collected on save from the live strip, restored on load. */
@@ -159,16 +162,19 @@ export interface SessionScene {
 }
 
 export interface SessionState {
-  /** Project name shown/edited in File ▸ Project Options. Backfilled on load. */
-  name?: string;
+  /** Project name shown/edited in File ▸ Project Options. Set at every
+   *  construction site (emptySessionState, demo/import loaders); never absent. */
+  name: string;
   lanes: SessionLane[];
   scenes: SessionScene[];
   globalQuantize: LaunchQuantize;
-  /** Master insert-chain slots. Persisted by Task 28. Defaults to [] when absent. */
-  masterInserts?: import('./insert-slot').InsertSlot[];
-  /** Global tonality + style + scale-lock (Spec 1). Optional/additive; absent ⇒
-   *  DEFAULT_MUSICALITY (backfilled by session-migration). */
-  musicality?: MusicalityState;
-  /** FX send buses (A=delay, B=reverb). Optional/additive; absent ⇒ seeded by migration. */
-  sends?: import('../core/send-bus').SendBusState[];
+  /** Master insert-chain slots. Persisted by Task 28. Empty array when there
+   *  are none — set at construction, never absent. */
+  masterInserts: import('./insert-slot').InsertSlot[];
+  /** Global tonality + style + scale-lock (Spec 1). Set at construction
+   *  (DEFAULT_MUSICALITY or an explicit choice); never absent. */
+  musicality: MusicalityState;
+  /** FX send buses (A=delay, B=reverb). Set at construction (defaultSends());
+   *  never absent. */
+  sends: import('../core/send-bus').SendBusState[];
 }

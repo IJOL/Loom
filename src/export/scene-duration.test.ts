@@ -6,12 +6,12 @@ import type { SessionClip } from '../session/session';
 import { DEFAULT_METER, ticksPerBar } from '../core/meter';
 
 function clip(lengthBars: number): SessionClip {
-  return { id: `c${lengthBars}`, lengthBars, notes: [] };
+  return { color: '#f4c8a8', gridResolution: '1/16', id: `c${lengthBars}`, lengthBars, notes: [] };
 }
 
 /** A clip whose loop sub-region spans the first `loopBars` bars. */
 function loopClip(lengthBars: number, loopBars: number): SessionClip {
-  return {
+  return { color: '#f4e0a8', gridResolution: '1/16',
     id: `loop${lengthBars}-${loopBars}`,
     lengthBars,
     notes: [],

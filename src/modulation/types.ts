@@ -22,8 +22,9 @@ export interface ModulatorState {
   /** Where the modulator's voice lives. 'shared' = engine-owned, one
    *  instance for all notes (default for LFO). 'per-voice' = spawned per
    *  createVoice call, lives for the duration of that note (default and
-   *  only valid value for ADSR). */
-  scope?: ModulatorScope;
+   *  only valid value for ADSR). Always set at construction — see
+   *  {@link makeDefaultLFO}/{@link makeDefaultADSR}/{@link defaultScopeFor}. */
+  scope: ModulatorScope;
 
   // LFO-only
   rateHz?: number;     // free rate in Hz (knob maps a piecewise bpm scale)
@@ -88,16 +89,9 @@ export function makeDefaultADSR(id: string): ModulatorState {
   };
 }
 
-/** Default scope for a modulator kind. Used by normalizeModulator to fill in
- *  the field on older saves that pre-date the scope concept. */
+/** Default scope for a modulator kind. Used by {@link makeDefaultLFO}/
+ *  {@link makeDefaultADSR} (via their `scope:` literal) and by any custom
+ *  modulator kind that needs a sensible starting scope. */
 export function defaultScopeFor(kind: ModulatorKind): ModulatorScope {
   return kind === 'lfo' ? 'shared' : 'per-voice';
-}
-
-/** Fill in fields missing on older saves. Idempotent — calling twice is safe.
- *  Populates `scope` on saves that pre-date the scope concept. */
-export function normalizeModulator(m: ModulatorState): ModulatorState {
-  let out = m;
-  if (!out.scope) out = { ...out, scope: defaultScopeFor(out.kind) };
-  return out;
 }

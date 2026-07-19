@@ -9,7 +9,7 @@ function stubCanvas() {
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx2d as never);
 }
 
-const audioClip = (): SessionClip => ({
+const audioClip = (): SessionClip => ({ color: '#e0b8b8', gridResolution: '1/16',
   id: 'c1', name: 'beat', lengthBars: 2, notes: [],
   sample: { sampleId: 'smp-x', mode: 'loop', warp: true, warpMode: 'stretch', originalBpm: 120, trimStart: 0, trimEnd: 4 },
 });

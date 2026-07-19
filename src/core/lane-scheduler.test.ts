@@ -10,7 +10,7 @@ describe('lane-scheduler tickLane regression: overlapping windows', () => {
     // overlaps the previous by ~95ms. Without per-tick dedupe, every note
     // inside the overlap region fires once per overlapping window — i.e.
     // ~4-5× per loop iteration, which sounds like audio choppy / stuttering.
-    const clip: SessionClip = {
+    const clip: SessionClip = { color: '#f4b8b8', gridResolution: '1/16',
       id: 'c1',
       lengthBars: 1,
       notes: [{ start: 0, duration: TICKS_PER_STEP, midi: 60, velocity: 100 }],
@@ -43,7 +43,7 @@ describe('lane-scheduler tickLane regression: overlapping windows', () => {
 
 describe('lane-scheduler tickLane', () => {
   it('a 1-bar clip with one note fires 4 times across 4 bars (120 bpm)', () => {
-    const clip: SessionClip = {
+    const clip: SessionClip = { color: '#f4c8a8', gridResolution: '1/16',
       id: 'c1',
       lengthBars: 1,
       notes: [{ start: 0, duration: TICKS_PER_STEP, midi: 60, velocity: 100 }],
@@ -64,7 +64,7 @@ describe('lane-scheduler tickLane', () => {
 
   it('a clip tempo map times notes by integrating tempo (not constant bpm)', () => {
     // 120 BPM for the first beat, then 60 BPM. Notes on beats 0,1,2.
-    const clip: SessionClip = {
+    const clip: SessionClip = { color: '#f4e0a8', gridResolution: '1/16',
       id: 'tm', lengthBars: 2,
       notes: [
         { start: 0, duration: 10, midi: 60, velocity: 100 },
@@ -89,8 +89,8 @@ describe('lane-scheduler tickLane', () => {
   });
 
   it('two clips with lengths 1 and 4 loop independently', () => {
-    const oneBar: SessionClip  = { id: 'a', lengthBars: 1, notes: [{ start: 0, duration: 10, midi: 60, velocity: 100 }] };
-    const fourBar: SessionClip = { id: 'b', lengthBars: 4, notes: [{ start: 0, duration: 10, midi: 48, velocity: 100 }] };
+    const oneBar: SessionClip  = { color: '#d8e8a8', gridResolution: '1/16', id: 'a', lengthBars: 1, notes: [{ start: 0, duration: 10, midi: 60, velocity: 100 }] };
+    const fourBar: SessionClip = { color: '#a8e8b8', gridResolution: '1/16', id: 'b', lengthBars: 4, notes: [{ start: 0, duration: 10, midi: 48, velocity: 100 }] };
     const fires: Array<{ midi: number }> = [];
     let lsA = 0, lsB = 0;
     for (let now = 0; now < 8.0; now += 0.2) {
@@ -102,7 +102,7 @@ describe('lane-scheduler tickLane', () => {
   });
 
   it('a clip with multiple notes within one bar fires them all in order', () => {
-    const clip: SessionClip = {
+    const clip: SessionClip = { color: '#a8e0d8', gridResolution: '1/16',
       id: 'multi',
       lengthBars: 1,
       notes: [
@@ -126,7 +126,7 @@ describe('lane-scheduler tickLane', () => {
   });
 
   it('returns updated loopStartedAt after a loop iteration completes', () => {
-    const clip: SessionClip = { id: 'l', lengthBars: 1, notes: [] };
+    const clip: SessionClip = { color: '#a8c8e8', gridResolution: '1/16', id: 'l', lengthBars: 1, notes: [] };
     // After 2.5 seconds at 120 bpm (1 bar = 2 sec), one full iteration has completed,
     // so loopStartedAt should advance by 2.0 sec.
     const next = tickLane(clip, {
@@ -137,7 +137,7 @@ describe('lane-scheduler tickLane', () => {
   });
 
   it('does not fire notes outside the look-ahead window', () => {
-    const clip: SessionClip = {
+    const clip: SessionClip = { color: '#b8b8e8', gridResolution: '1/16',
       id: 'gap',
       lengthBars: 1,
       notes: [
@@ -155,7 +155,7 @@ describe('lane-scheduler tickLane', () => {
   });
 
   it('a 7/8 clip loops at 7/8 the duration of a 4/4 clip (120 bpm)', () => {
-    const clip: SessionClip = {
+    const clip: SessionClip = { color: '#c8a8e0', gridResolution: '1/16',
       id: '78', lengthBars: 1,
       notes: [{ start: 0, duration: TICKS_PER_STEP, midi: 60, velocity: 100 }],
     };
@@ -177,7 +177,7 @@ describe('lane-scheduler tickLane', () => {
 
 describe('lane-scheduler tickLane — audio (loop/song) clips', () => {
   it('a loop clip fires exactly one trigger per iteration carrying the sample', () => {
-    const clip: SessionClip = {
+    const clip: SessionClip = { color: '#e0a8d0', gridResolution: '1/16',
       id: 'c1', lengthBars: 1, notes: [],
       sample: { sampleId: 's1', mode: 'loop', trimStart: 0, trimEnd: 1 },
     };
@@ -205,7 +205,7 @@ describe('lane-scheduler tickLane — audio (loop/song) clips', () => {
   });
 
   it('a clip with a sample ignores its notes (only the synthetic buffer trigger fires)', () => {
-    const clip: SessionClip = {
+    const clip: SessionClip = { color: '#e0b8b8', gridResolution: '1/16',
       id: 'c2', lengthBars: 1,
       notes: [
         { start: 0, duration: TICKS_PER_STEP, midi: 64, velocity: 80 },
@@ -241,7 +241,7 @@ describe('lane-scheduler tickLane — clip loop sub-region', () => {
   const bar = ticksPerBar(DEFAULT_METER); // 384
 
   it('loops only bars 2-3 of a 4-bar clip; period = 2 bars; outside notes never fire', () => {
-    const clip: SessionClip = {
+    const clip: SessionClip = { color: '#c8c8a8', gridResolution: '1/16',
       id: 'sub', lengthBars: 4,
       loopEnabled: true, loopStartTick: bar, loopEndTick: 3 * bar,
       notes: [
@@ -274,7 +274,7 @@ describe('lane-scheduler tickLane — clip loop sub-region', () => {
   });
 
   it('loop off is byte-for-byte the current behaviour (no regression)', () => {
-    const clip: SessionClip = { id: 'whole', lengthBars: 1, notes: [{ start: 0, duration: TICKS_PER_STEP, midi: 60, velocity: 100 }] };
+    const clip: SessionClip = { color: '#f4b8b8', gridResolution: '1/16', id: 'whole', lengthBars: 1, notes: [{ start: 0, duration: TICKS_PER_STEP, midi: 60, velocity: 100 }] };
     const fires: number[] = [];
     let loopStart = 0;
     for (let now = 0; now < 8.0; now += 0.2) {
@@ -289,7 +289,7 @@ describe('lane-scheduler tickLane — audio clip loop sub-region', () => {
 
   it('plays only the buffer fraction matching the sub-region; duration = sub-region ticks', () => {
     // 2-bar clip mapped to buffer [0,4]s. Loop the 2nd bar ⇒ fraction [0.5,1] ⇒ [2,4]s.
-    const clip: SessionClip = {
+    const clip: SessionClip = { color: '#f4c8a8', gridResolution: '1/16',
       id: 'a', lengthBars: 2,
       loopEnabled: true, loopStartTick: bar, loopEndTick: 2 * bar,
       notes: [], sample: { sampleId: 's1', mode: 'loop', trimStart: 0, trimEnd: 4 },
@@ -312,7 +312,7 @@ describe('lane-scheduler tickLane — audio clip loop sub-region', () => {
   it('warped clip: a sub-region loop slices the markers (rebased), trim untouched', () => {
     // 2-bar clip = 8 quarter-beats. Markers over the whole clip; loop bar 2 ⇒
     // beats [4,8). The trigger sample must carry markers sliced + rebased to 0.
-    const clip: SessionClip = {
+    const clip: SessionClip = { color: '#f4e0a8', gridResolution: '1/16',
       id: 'w', lengthBars: 2,
       loopEnabled: true, loopStartTick: bar, loopEndTick: 2 * bar,
       notes: [],
@@ -337,7 +337,7 @@ describe('lane-scheduler tickLane — audio clip loop sub-region', () => {
   });
 
   it('loop off ⇒ original trim + full duration (no regression)', () => {
-    const clip: SessionClip = {
+    const clip: SessionClip = { color: '#d8e8a8', gridResolution: '1/16',
       id: 'b', lengthBars: 1, notes: [],
       sample: { sampleId: 's2', mode: 'loop', trimStart: 0, trimEnd: 1 },
     };
@@ -394,7 +394,7 @@ describe('lane-scheduler tickLane — swing', () => {
     return out;
   }
 
-  const twoSteps: SessionClip = {
+  const twoSteps: SessionClip = { color: '#a8e8b8', gridResolution: '1/16',
     id: 'sw', lengthBars: 1,
     notes: [
       { start: 0,               duration: TICKS_PER_STEP, midi: 60, velocity: 80 },  // on-beat
@@ -403,7 +403,7 @@ describe('lane-scheduler tickLane — swing', () => {
   };
 
   it('swing 0 schedules identically to no swing at all — nothing that exists today moves', () => {
-    const offGrid: SessionClip = {
+    const offGrid: SessionClip = { color: '#a8e0d8', gridResolution: '1/16',
       id: 'mixed', lengthBars: 1,
       notes: [
         { start: 0,                     duration: 36, midi: 36, velocity: 80 },
@@ -439,7 +439,7 @@ describe('lane-scheduler tickLane — swing', () => {
   it('keeps a TB-303 slide gate overlapping the next trigger at every swing', () => {
     // Step 0 slides into step 1: its gate is 1.5 steps so it must still be open
     // when step 1 fires — even though swing fires step 1 later.
-    const slide: SessionClip = {
+    const slide: SessionClip = { color: '#a8c8e8', gridResolution: '1/16',
       id: 'sl', lengthBars: 1,
       notes: [
         { start: 0,              duration: Math.floor(TICKS_PER_STEP * 1.5), midi: 36, velocity: 80 },
@@ -455,7 +455,7 @@ describe('lane-scheduler tickLane — swing', () => {
   });
 
   it('reports the MUSICAL step (playhead) and slide, not the delayed time', () => {
-    const slide: SessionClip = {
+    const slide: SessionClip = { color: '#b8b8e8', gridResolution: '1/16',
       id: 'sl2', lengthBars: 1,
       notes: [
         { start: 0,              duration: Math.floor(TICKS_PER_STEP * 1.5), midi: 36, velocity: 80 },
@@ -481,7 +481,7 @@ describe('lane-scheduler tickLane — swing', () => {
   });
 
   it('never lets swing reorder notes, even off-grid ones', () => {
-    const dense: SessionClip = {
+    const dense: SessionClip = { color: '#c8a8e0', gridResolution: '1/16',
       id: 'd', lengthBars: 1,
       notes: Array.from({ length: 16 }, (_, i) => ({
         start: i * 7, duration: 4, midi: 60 + i, velocity: 80,   // 7 ticks = deliberately off-grid
@@ -500,7 +500,7 @@ describe('noteTrigger', () => {
   // note[1] start=24  ticks → scheduleTime = 24 * secPerTick = 0.125 s
   const BPM = 120;
   const SEC_PER_TICK = (60 / BPM) / TICKS_PER_QUARTER; // (60/120)/96
-  const clip: SessionClip = {
+  const clip: SessionClip = { color: '#e0a8d0', gridResolution: '1/16',
     id: 'c', lengthBars: 1,
     notes: [
       { start: 0, duration: 48, midi: 36, velocity: 80 },

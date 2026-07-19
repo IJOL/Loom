@@ -96,13 +96,7 @@ export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): voi
   if (s.masterComp) deps.masterComp?.setState(s.masterComp);
   if (s.masterShaper) deps.masterShaper?.setState(s.masterShaper);
 
-  if (s.sessionState) {
-    // Normalise optional arrays so downstream code can use ??= [] safely.
-    s.sessionState.masterInserts ??= [];
-    for (const lane of s.sessionState.lanes) lane.inserts ??= [];
-    for (const bus of s.sessionState.sends ?? []) bus.inserts ??= [];
-    sessionHost.applyLoadedSessionState(s.sessionState);
-  }
+  if (s.sessionState) sessionHost.applyLoadedSessionState(s.sessionState);
 
   refreshKnobsFromSynth();
   renderLanes();

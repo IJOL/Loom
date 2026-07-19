@@ -5,7 +5,7 @@
 
 import type { SessionHost } from './session-host';
 import {
-  emptyLane, audioClip, audioChannelClip,
+  emptyLane, audioClip, audioChannelClip, pickRandomClipColor,
   type SessionClip,
 } from './session';
 import { emptyLanePlayState } from './session-runtime';
@@ -164,6 +164,7 @@ export function importLoopToSampler(self: SessionHost, laneId: string, file: Fil
       const noteClip: SessionClip = {
         id: `clip-${Date.now().toString(36)}`,
         name: `${name} loop`,
+        color: pickRandomClipColor(),
         lengthBars: built.lengthBars,
         notes: built.notes,
         gridResolution: DEFAULT_RESOLUTION,

@@ -30,7 +30,12 @@ describe('ChannelStrip.getEqGainParam', () => {
   let strip: ChannelStrip;
 
   beforeAll(() => {
-    ctx = new AudioContext();
+    // OFFLINE, deliberately — same race as the "ChannelStrip A/B sends" test
+    // below: writing an AudioParam's .value and reading it straight back on a
+    // real-time AudioContext can return the audio thread's stale value under
+    // suite load (observed as "expected +0 to be close to 6" for setEqLow).
+    // An offline context has no such lag.
+    ctx = new OfflineAudioContext(1, 4410, 44100) as unknown as AudioContext;
     const fx = new FxBus(ctx, ctx.destination);
     strip = new ChannelStrip(ctx, ctx.destination, fx);
   });

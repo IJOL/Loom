@@ -6,9 +6,9 @@ import type { SessionLane } from '../session/session';
 describe('collectSampleIds', () => {
   it('gathers keymap sampleIds and clip-sample ids from the given lanes', () => {
     const lanes: SessionLane[] = [
-      {
+      { inserts: [],
         id: 'samp', engineId: 'sampler', clips: [
-          { id: 'c1', lengthBars: 1, notes: [], sample: { sampleId: 'loopA', mode: 'loop', trimStart: 0, trimEnd: 1 } },
+          { color: '#e0a8d0', gridResolution: '1/16', id: 'c1', lengthBars: 1, notes: [], sample: { sampleId: 'loopA', mode: 'loop', trimStart: 0, trimEnd: 1 } },
         ],
         engineState: { sampler: { keymap: [
           { sampleId: 'kick', rootNote: 60, loNote: 60, hiNote: 60 },
@@ -21,7 +21,7 @@ describe('collectSampleIds', () => {
   });
 
   it('returns empty for a pure-synth lane', () => {
-    const lanes: SessionLane[] = [{ id: 'b', engineId: 'tb303', clips: [{ id: 'c', lengthBars: 1, notes: [] }] }];
+    const lanes: SessionLane[] = [{ inserts: [], id: 'b', engineId: 'tb303', clips: [{ color: '#e0b8b8', gridResolution: '1/16', id: 'c', lengthBars: 1, notes: [] }] }];
     expect(collectSampleIds(lanes).size).toBe(0);
   });
 

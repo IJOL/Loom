@@ -4,8 +4,8 @@ import type { SessionState } from '../session/session';
 
 describe('fetchDemoSession', () => {
   it('parses a SessionState from the response body', async () => {
-    const fake: SessionState = {
-      lanes: [{ id: 'tb-303-1', engineId: 'tb303', clips: [] }],
+    const fake: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+      lanes: [{ inserts: [], id: 'tb-303-1', engineId: 'tb303', clips: [] }],
       scenes: [],
       globalQuantize: '1/1',
     };

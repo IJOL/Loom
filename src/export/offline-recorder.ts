@@ -199,13 +199,13 @@ export class OfflineSceneRecorder implements SceneRecorder {
       });
       // Per-lane insert plugin slots → full parity with the live mix.
       const res = lanes.resources.get(laneId);
-      if (res?.inserts && lane.inserts && lane.inserts.length > 0) {
+      if (res?.inserts && lane.inserts.length > 0) {
         rehydrateInsertChain(offlineCtx as unknown as AudioContext, res.inserts, lane.inserts);
       }
     }
 
     // Master insert plugin slots.
-    if (state.masterInserts && state.masterInserts.length > 0) {
+    if (state.masterInserts.length > 0) {
       rehydrateInsertChain(offlineCtx as unknown as AudioContext, graph.masterInsertChain, state.masterInserts);
     }
 

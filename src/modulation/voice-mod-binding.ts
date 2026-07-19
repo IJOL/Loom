@@ -149,8 +149,7 @@ function applyBinder(
     // double-modulate the latest voice. Per-voice scope mods keep all
     // connections (their only routing path is the voice binder).
     mods = mods.map((m) => {
-      const modScope = m.scope ?? (m.kind === 'lfo' ? 'shared' : 'per-voice');
-      if (modScope !== 'shared') return m;
+      if (m.scope !== 'shared') return m;
       const filtered = m.connections.filter((c) => {
         const short = c.paramId.startsWith(`${laneId}.`) ? c.paramId.slice(laneId.length + 1) : c.paramId;
         return !excludeSharedForSharedScope.has(short) && !excludeSharedForSharedScope.has(c.paramId);

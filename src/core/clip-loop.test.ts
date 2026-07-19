@@ -5,7 +5,7 @@ import type { SessionClip } from '../session/session';
 
 const bar = ticksPerBar(DEFAULT_METER); // 384
 const clip = (over: Partial<SessionClip>): SessionClip =>
-  ({ id: 'c', lengthBars: 4, notes: [], ...over });
+  ({ id: 'c', lengthBars: 4, notes: [], color: '#a8c8e8', gridResolution: '1/16', ...over });
 
 describe('effectiveClipLoop', () => {
   it('loop off ⇒ whole clip', () => {

@@ -47,7 +47,7 @@ describe('SessionHost mixer persistence (Save/Load the full per-lane mixer)', ()
     strip.setMuted(true);
 
     const host = makeHost(strip, ctx);
-    host.state.lanes = [{ id: 'tb-303-1', engineId: 'tb303', clips: [] }];
+    host.state.lanes = [{ inserts: [], id: 'tb-303-1', engineId: 'tb303', clips: [] }];
 
     const saved = host.getStateForSave();
     const mixer = saved.lanes[0].mixer;
@@ -83,7 +83,7 @@ describe('SessionHost mixer persistence (Save/Load the full per-lane mixer)', ()
     // Destination strip starts at defaults; load must push the saved values in.
     const dst = new ChannelStrip(ctx, ctx.destination, fx);
     const host = makeHost(dst, ctx);
-    host.state.lanes = [{ id: 'tb-303-1', engineId: 'tb303', clips: [], mixer: mixerState }];
+    host.state.lanes = [{ inserts: [], id: 'tb-303-1', engineId: 'tb303', clips: [], mixer: mixerState }];
 
     host.applyEngineState();
 

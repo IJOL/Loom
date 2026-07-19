@@ -34,7 +34,9 @@
               "midi": 36,
               "velocity": 80
             }
-          ]
+          ],
+          "color": "#f4b8b8",
+          "gridResolution": "1/16"
         },
         {
           "id": "clip-mppujhch-omyga0",
@@ -136,7 +138,9 @@
               "midi": 41,
               "velocity": 80
             }
-          ]
+          ],
+          "color": "#f4c8a8",
+          "gridResolution": "1/16"
         },
         {
           "id": "clip-mppujhch-49u7sm",
@@ -262,7 +266,9 @@
               "midi": 36,
               "velocity": 80
             }
-          ]
+          ],
+          "color": "#f4e0a8",
+          "gridResolution": "1/16"
         },
         {
           "id": "clip-mppujhch-bqqz0t",
@@ -292,7 +298,9 @@
               "midi": 43,
               "velocity": 80
             }
-          ]
+          ],
+          "color": "#d8e8a8",
+          "gridResolution": "1/16"
         }
       ],
       "enginePresetName": "engine:BASS Acid Classic",
@@ -300,7 +308,8 @@
         "params": {
           "bus.reverbSend": 0.1
         }
-      }
+      },
+      "inserts": []
     },
     {
       "id": "drums-1",
@@ -407,7 +416,9 @@
               "duration": 21,
               "velocity": 80
             }
-          ]
+          ],
+          "color": "#a8e8b8",
+          "gridResolution": "1/16"
         },
         {
           "id": "clip-mppujhch-gijpuf",
@@ -557,7 +568,9 @@
               "duration": 21,
               "velocity": 80
             }
-          ]
+          ],
+          "color": "#a8e0d8",
+          "gridResolution": "1/16"
         },
         {
           "id": "clip-mppujhch-h0jevq",
@@ -767,7 +780,9 @@
               "duration": 21,
               "velocity": 80
             }
-          ]
+          ],
+          "color": "#a8c8e8",
+          "gridResolution": "1/16"
         },
         {
           "id": "clip-mppujhch-vltlik",
@@ -833,7 +848,9 @@
               "duration": 21,
               "velocity": 80
             }
-          ]
+          ],
+          "color": "#b8b8e8",
+          "gridResolution": "1/16"
         }
       ],
       "engineState": {
@@ -841,7 +858,8 @@
           "bus.reverbSend": 0.25
         }
       },
-      "enginePresetName": "engine:KIT Power"
+      "enginePresetName": "engine:KIT Power",
+      "inserts": []
     },
     {
       "id": "subtractive-1",
@@ -1397,7 +1415,9 @@
               "enabled": true,
               "stepped": false
             }
-          ]
+          ],
+          "color": "#c8a8e0",
+          "gridResolution": "1/16"
         },
         {
           "id": "clip-mppujhch-ygvsgy",
@@ -2068,7 +2088,9 @@
               "enabled": true,
               "stepped": false
             }
-          ]
+          ],
+          "color": "#e0a8d0",
+          "gridResolution": "1/16"
         },
         {
           "id": "clip-mppujhch-4j81fy",
@@ -2643,7 +2665,9 @@
               "enabled": true,
               "stepped": false
             }
-          ]
+          ],
+          "color": "#e0b8b8",
+          "gridResolution": "1/16"
         },
         {
           "id": "clip-mppujhch-ztrgjk",
@@ -3218,7 +3242,9 @@
               "enabled": true,
               "stepped": false
             }
-          ]
+          ],
+          "color": "#c8c8a8",
+          "gridResolution": "1/16"
         }
       ],
       "enginePresetName": "engine:LEAD Square",
@@ -3227,7 +3253,8 @@
           "bus.reverbSend": 0.25,
           "bus.delaySend": 0.15
         }
-      }
+      },
+      "inserts": []
     },
     {
       "id": "subtractive-2",
@@ -3263,7 +3290,9 @@
               "midi": 53,
               "velocity": 70
             }
-          ]
+          ],
+          "color": "#f4b8b8",
+          "gridResolution": "1/16"
         },
         {
           "id": "clip-mppujhch-vbcrfp",
@@ -3293,11 +3322,14 @@
               "midi": 79,
               "velocity": 80
             }
-          ]
+          ],
+          "color": "#f4c8a8",
+          "gridResolution": "1/16"
         }
       ],
       "name": "FM",
-      "enginePresetName": "engine:EP Classic Tine"
+      "enginePresetName": "engine:EP Classic Tine",
+      "inserts": []
     }
   ],
   "scenes": [
@@ -3342,5 +3374,43 @@
       }
     }
   ],
-  "globalQuantize": "1/1"
+  "globalQuantize": "1/1",
+  "name": "FM Fixture",
+  "musicality": {
+    "key": 9,
+    "scale": "minor",
+    "style": "acid-techno",
+    "lock": false
+  },
+  "sends": [
+    {
+      "id": "A",
+      "label": "Send A (Delay)",
+      "returnLevel": 1,
+      "muted": false,
+      "inserts": [
+        {
+          "id": "demo-send-a",
+          "pluginId": "delay",
+          "params": {},
+          "bypass": false
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Send B (Reverb)",
+      "returnLevel": 1,
+      "muted": false,
+      "inserts": [
+        {
+          "id": "demo-send-b",
+          "pluginId": "reverb",
+          "params": {},
+          "bypass": false
+        }
+      ]
+    }
+  ],
+  "masterInserts": []
 }

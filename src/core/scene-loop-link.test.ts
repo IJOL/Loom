@@ -6,11 +6,11 @@ import type { SessionClip, SessionLane, SessionScene, SessionState } from '../se
 const bar = ticksPerBar(DEFAULT_METER); // 384
 
 function makeClip(id: string, lengthBars: number, over: Partial<SessionClip> = {}): SessionClip {
-  return { id, lengthBars, notes: [], ...over };
+  return { id, lengthBars, notes: [], color: '#a8c8e8', gridResolution: '1/16', ...over };
 }
 
 function makeLane(id: string, clips: (SessionClip | null)[]): SessionLane {
-  return { id, engineId: 'tb303', clips };
+  return { inserts: [], id, engineId: 'tb303', clips };
 }
 
 // ── copyLoopToClip ─────────────────────────────────────────────────────────
@@ -92,7 +92,7 @@ describe('propagateLoopToSceneClips', () => {
     const laneC = makeLane('lC', [clipC]);
 
     const scene: SessionScene = { id: 's0', clipPerLane: {} };
-    const state: SessionState = {
+    const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
       lanes: [laneA, laneB, laneC],
       scenes: [scene],
       globalQuantize: '1/1',
@@ -125,7 +125,7 @@ describe('propagateLoopToSceneClips', () => {
     const scene0: SessionScene = { id: 's0', clipPerLane: {} }; // sceneIdx=0
     const scene1: SessionScene = { id: 's1', clipPerLane: {} }; // sceneIdx=1
 
-    const state: SessionState = {
+    const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
       lanes: [laneA, laneB],
       scenes: [scene0, scene1],
       globalQuantize: '1/1',
@@ -145,7 +145,7 @@ describe('propagateLoopToSceneClips', () => {
     const dst = makeClip('dst', 4); // no loop set initially
 
     const scene: SessionScene = { id: 's', clipPerLane: {} };
-    const state: SessionState = {
+    const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
       lanes: [makeLane('lSrc', [src]), makeLane('lDst', [dst])],
       scenes: [scene],
       globalQuantize: '1/1',

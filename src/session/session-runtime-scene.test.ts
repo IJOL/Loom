@@ -12,22 +12,22 @@ const BPM = 120; // 1 bar = 2s
 // Scene 0 (currently playing) = row 0 clips. Scene 1 = row 1 clips:
 //   A has a row-1 clip, B has a row-1 clip, C has NO row-1 clip (orphan → must stop).
 function setup() {
-  const aOld: SessionClip = { id: 'a0', lengthBars: 2, notes: [] };
-  const aNew: SessionClip = { id: 'a1', lengthBars: 2, notes: [] };
-  const bOld: SessionClip = { id: 'b0', lengthBars: 1, notes: [] };
-  const bNew: SessionClip = { id: 'b1', lengthBars: 1, notes: [] };
-  const cOld: SessionClip = { id: 'c0', lengthBars: 16, notes: [] };
+  const aOld: SessionClip = { color: '#e0a8d0', gridResolution: '1/16', id: 'a0', lengthBars: 2, notes: [] };
+  const aNew: SessionClip = { color: '#e0b8b8', gridResolution: '1/16', id: 'a1', lengthBars: 2, notes: [] };
+  const bOld: SessionClip = { color: '#c8c8a8', gridResolution: '1/16', id: 'b0', lengthBars: 1, notes: [] };
+  const bNew: SessionClip = { color: '#f4b8b8', gridResolution: '1/16', id: 'b1', lengthBars: 1, notes: [] };
+  const cOld: SessionClip = { color: '#f4c8a8', gridResolution: '1/16', id: 'c0', lengthBars: 16, notes: [] };
 
   const lanes: SessionLane[] = [
-    { id: 'A', engineId: 'subtractive', clips: [aOld, aNew] },
-    { id: 'B', engineId: 'subtractive', clips: [bOld, bNew] },
-    { id: 'C', engineId: 'subtractive', clips: [cOld, null] },
+    { inserts: [], id: 'A', engineId: 'subtractive', clips: [aOld, aNew] },
+    { inserts: [], id: 'B', engineId: 'subtractive', clips: [bOld, bNew] },
+    { inserts: [], id: 'C', engineId: 'subtractive', clips: [cOld, null] },
   ];
   const scenes: SessionScene[] = [
     { id: 's0', clipPerLane: {} },
     { id: 's1', clipPerLane: {} }, // positional: row 1
   ];
-  const state: SessionState = { lanes, scenes, globalQuantize: '1/1' };
+  const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [], lanes, scenes, globalQuantize: '1/1' };
 
   const laneStates = new Map<string, LanePlayState>([
     ['A', { ...emptyLanePlayState('A'), playing: aOld, loopStartedAt: 0 }],

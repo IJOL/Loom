@@ -5,7 +5,7 @@ import type { SoundingLaneClip } from './collect-scene-triggers';
 function lane(env: { paramId: string; values: number[]; enabled?: boolean }): SoundingLaneClip {
   return {
     laneId: 'sub', engineId: 'subtractive',
-    clip: { id: 'c', lengthBars: 1, notes: [], envelopes: [env] },
+    clip: { color: '#e0b8b8', gridResolution: '1/16', id: 'c', lengthBars: 1, notes: [], envelopes: [env] },
   };
 }
 
@@ -35,7 +35,7 @@ describe('collectSceneAutomation', () => {
   });
 
   it('returns nothing for a clip without envelopes', () => {
-    const noEnv: SoundingLaneClip = { laneId: 'x', engineId: 'tb303', clip: { id: 'c', lengthBars: 1, notes: [] } };
+    const noEnv: SoundingLaneClip = { laneId: 'x', engineId: 'tb303', clip: { color: '#c8c8a8', gridResolution: '1/16', id: 'c', lengthBars: 1, notes: [] } };
     expect(collectSceneAutomation([noEnv], 120, 1)).toHaveLength(0);
   });
 });

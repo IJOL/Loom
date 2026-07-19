@@ -42,8 +42,8 @@ function makeDeps(): ConstructorParameters<typeof SessionHost>[0] {
  *  renderWithMixer stubbed so addNoteLane can run without the DOM/mixer. */
 function seededHost(): SessionHost {
   const host = new SessionHost(makeDeps());
-  const state: SessionState = {
-    lanes: [{ id: 'audio-stem-1', engineId: 'audio', clips: [{ id: 'c0', name: 'Drums', lengthBars: 2, notes: [] }] }],
+  const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+    lanes: [{ inserts: [], id: 'audio-stem-1', engineId: 'audio', clips: [{ color: '#b8b8e8', gridResolution: '1/16', id: 'c0', name: 'Drums', lengthBars: 2, notes: [] }] }],
     scenes: [{ id: 'sc-stems', name: 'Stems', clipPerLane: { 'audio-stem-1': 0 } }],
     globalQuantize: '1/1',
   };

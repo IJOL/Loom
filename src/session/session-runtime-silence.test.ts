@@ -13,7 +13,7 @@ function laneStatesWith(...laneIds: string[]): Map<string, LanePlayState> {
   const m = new Map<string, LanePlayState>();
   for (const id of laneIds) {
     const lp = emptyLanePlayState(id);
-    lp.playing = { id: `clip-${id}`, lengthBars: 1, notes: [] } as SessionClip;
+    lp.playing = { color: '#c8a8e0', gridResolution: '1/16', id: `clip-${id}`, lengthBars: 1, notes: [] } as SessionClip;
     m.set(id, lp);
   }
   return m;

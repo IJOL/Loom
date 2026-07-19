@@ -4,7 +4,7 @@ import type { SessionClip } from '../session/session';
 
 const BAR = 384; // 4/4 ticks per bar (16 steps * 24)
 const clip = (over: Partial<SessionClip> = {}): SessionClip => ({
-  id: 'c', lengthBars: 1, notes: [], ...over,
+  id: 'c', lengthBars: 1, notes: [], color: '#a8c8e8', gridResolution: '1/16', ...over,
 });
 
 describe('resampleEnvelope', () => {

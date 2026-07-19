@@ -42,13 +42,13 @@ function makeTwoLaneState(
   const noteA = { midi: 60, start: 0, duration: TICKS_PER_STEP - 1, velocity: 80 };
   const noteB = { midi: 62, start: 0, duration: TICKS_PER_STEP - 1, velocity: 80 };
 
-  const clipA: SessionClip = { id: 'clip-a', lengthBars: lane1Bars, notes: [noteA] };
-  const clipB: SessionClip = { id: 'clip-b', lengthBars: lane2Bars, notes: [noteB] };
+  const clipA: SessionClip = { color: '#f4e0a8', gridResolution: '1/16', id: 'clip-a', lengthBars: lane1Bars, notes: [noteA] };
+  const clipB: SessionClip = { color: '#d8e8a8', gridResolution: '1/16', id: 'clip-b', lengthBars: lane2Bars, notes: [noteB] };
 
-  const state: SessionState = {
+  const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
     lanes: [
-      { id: 'lane-1', engineId: 'subtractive', clips: [clipA] },
-      { id: 'lane-2', engineId: 'subtractive', clips: [clipB] },
+      { inserts: [], id: 'lane-1', engineId: 'subtractive', clips: [clipA] },
+      { inserts: [], id: 'lane-2', engineId: 'subtractive', clips: [clipB] },
     ],
     scenes: [],
     globalQuantize: 'immediate',
@@ -148,12 +148,12 @@ describe('tickSession (note-based, Phase D.3)', () => {
 
   describe('queue promotion', () => {
     it('promotes a queued clip and starts firing once the boundary is reached', () => {
-      const clipA: SessionClip = {
+      const clipA: SessionClip = { color: '#a8e8b8', gridResolution: '1/16',
         id: 'qa', lengthBars: 1,
         notes: [{ midi: 48, start: 0, duration: 23, velocity: 80 }],
       };
-      const state: SessionState = {
-        lanes: [{ id: 'ql', engineId: 'subtractive', clips: [clipA] }],
+      const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+        lanes: [{ inserts: [], id: 'ql', engineId: 'subtractive', clips: [clipA] }],
         scenes: [],
         globalQuantize: 'immediate',
       };
@@ -182,12 +182,12 @@ describe('tickSession (note-based, Phase D.3)', () => {
     });
 
     it('does not fire before the queued boundary', () => {
-      const clipA: SessionClip = {
+      const clipA: SessionClip = { color: '#a8e0d8', gridResolution: '1/16',
         id: 'qb', lengthBars: 1,
         notes: [{ midi: 48, start: 0, duration: 23, velocity: 80 }],
       };
-      const state: SessionState = {
-        lanes: [{ id: 'ql2', engineId: 'subtractive', clips: [clipA] }],
+      const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+        lanes: [{ inserts: [], id: 'ql2', engineId: 'subtractive', clips: [clipA] }],
         scenes: [],
         globalQuantize: 'immediate',
       };
@@ -218,12 +218,12 @@ describe('tickSession (note-based, Phase D.3)', () => {
       const oneBeatTicks = TICKS_PER_QUARTER;
       const expectedGate = 60 / BPM; // one beat in seconds
 
-      const clip: SessionClip = {
+      const clip: SessionClip = { color: '#a8c8e8', gridResolution: '1/16',
         id: 'g1', lengthBars: 1,
         notes: [{ midi: 55, start: 0, duration: oneBeatTicks, velocity: 80 }],
       };
-      const state: SessionState = {
-        lanes: [{ id: 'gl', engineId: 'subtractive', clips: [clip] }],
+      const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+        lanes: [{ inserts: [], id: 'gl', engineId: 'subtractive', clips: [clip] }],
         scenes: [],
         globalQuantize: 'immediate',
       };
@@ -241,12 +241,12 @@ describe('tickSession (note-based, Phase D.3)', () => {
     });
 
     it('clamps gate duration to at least 0.01 s for zero-duration notes', () => {
-      const clip: SessionClip = {
+      const clip: SessionClip = { color: '#b8b8e8', gridResolution: '1/16',
         id: 'g2', lengthBars: 1,
         notes: [{ midi: 55, start: 0, duration: 0, velocity: 80 }],
       };
-      const state: SessionState = {
-        lanes: [{ id: 'gl2', engineId: 'subtractive', clips: [clip] }],
+      const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+        lanes: [{ inserts: [], id: 'gl2', engineId: 'subtractive', clips: [clip] }],
         scenes: [],
         globalQuantize: 'immediate',
       };
@@ -270,9 +270,9 @@ describe('tickSession (note-based, Phase D.3)', () => {
       // sample-clip duration formula must change together or loops shorten.
       const BARS = 2;
       const sample: ClipSample = { sampleId: 'smp-1', mode: 'loop', trimStart: 0, trimEnd: 1 };
-      const clip: SessionClip = { id: 'loopc', lengthBars: BARS, notes: [], sample };
-      const state: SessionState = {
-        lanes: [{ id: 'll', engineId: 'sampler', clips: [clip] }],
+      const clip: SessionClip = { color: '#c8a8e0', gridResolution: '1/16', id: 'loopc', lengthBars: BARS, notes: [], sample };
+      const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+        lanes: [{ inserts: [], id: 'll', engineId: 'sampler', clips: [clip] }],
         scenes: [],
         globalQuantize: 'immediate',
       };
@@ -301,15 +301,15 @@ describe('tickSession (note-based, Phase D.3)', () => {
       //   note at tick 0  → scheduleTime = 0.000 s
       //   note at tick 24 → scheduleTime = 0.500 s
       // These land in different 0.2 s windows, so we run enough ticks to catch both.
-      const clip: SessionClip = {
+      const clip: SessionClip = { color: '#e0a8d0', gridResolution: '1/16',
         id: 'sl1', lengthBars: 1,
         notes: [
           { midi: 48, start: 0,  duration: 26, velocity: 80 }, // slide-out note (ends at tick 26 > 25)
           { midi: 50, start: 24, duration: 20, velocity: 80 }, // slide-in note
         ],
       };
-      const state: SessionState = {
-        lanes: [{ id: 'sl', engineId: 'tb303', clips: [clip] }],
+      const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+        lanes: [{ inserts: [], id: 'sl', engineId: 'tb303', clips: [clip] }],
         scenes: [],
         globalQuantize: 'immediate',
       };
@@ -335,15 +335,15 @@ describe('tickSession (note-based, Phase D.3)', () => {
     });
 
     it('does NOT set slidingIn for non-tb303 engines even when notes overlap', () => {
-      const clip: SessionClip = {
+      const clip: SessionClip = { color: '#e0b8b8', gridResolution: '1/16',
         id: 'sl2', lengthBars: 1,
         notes: [
           { midi: 48, start: 0,  duration: 26, velocity: 80 },
           { midi: 50, start: 24, duration: 20, velocity: 80 },
         ],
       };
-      const state: SessionState = {
-        lanes: [{ id: 'sl2', engineId: 'subtractive', clips: [clip] }],
+      const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+        lanes: [{ inserts: [], id: 'sl2', engineId: 'subtractive', clips: [clip] }],
         scenes: [],
         globalQuantize: 'immediate',
       };
@@ -367,8 +367,8 @@ describe('tickSession (note-based, Phase D.3)', () => {
 
   describe('idle lanes', () => {
     it('does not fire when no clip is playing and none is queued', () => {
-      const state: SessionState = {
-        lanes: [{ id: 'idle', engineId: 'subtractive', clips: [] }],
+      const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+        lanes: [{ inserts: [], id: 'idle', engineId: 'subtractive', clips: [] }],
         scenes: [],
         globalQuantize: 'immediate',
       };
@@ -384,15 +384,15 @@ describe('tickSession (note-based, Phase D.3)', () => {
 
   describe('accent detection', () => {
     it('marks accent=true for notes with velocity >= 100', () => {
-      const clip: SessionClip = {
+      const clip: SessionClip = { color: '#c8c8a8', gridResolution: '1/16',
         id: 'ac1', lengthBars: 1,
         notes: [
           { midi: 60, start: 0, duration: 20, velocity: 115 }, // accent
           { midi: 62, start: TICKS_PER_STEP, duration: 20, velocity: 80 }, // no accent
         ],
       };
-      const state: SessionState = {
-        lanes: [{ id: 'ac', engineId: 'subtractive', clips: [clip] }],
+      const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+        lanes: [{ inserts: [], id: 'ac', engineId: 'subtractive', clips: [clip] }],
         scenes: [],
         globalQuantize: 'immediate',
       };
@@ -421,15 +421,15 @@ describe('tickSession (note-based, Phase D.3)', () => {
 describe('tickSession — swing', () => {
   /** One lane, one on-beat + one off-beat 16th, driven at the given swing. */
   function run(swing: number | undefined): Array<{ midi: number; at: number }> {
-    const clip: SessionClip = {
+    const clip: SessionClip = { color: '#f4b8b8', gridResolution: '1/16',
       id: 'sw', lengthBars: 1,
       notes: [
         { midi: 60, start: 0,              duration: TICKS_PER_STEP, velocity: 80 },
         { midi: 62, start: TICKS_PER_STEP, duration: TICKS_PER_STEP, velocity: 80 },
       ],
     };
-    const state: SessionState = {
-      lanes: [{ id: 'l', engineId: 'subtractive', clips: [clip] }],
+    const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+      lanes: [{ inserts: [], id: 'l', engineId: 'subtractive', clips: [clip] }],
       scenes: [], globalQuantize: 'immediate',
     };
     const laneStates = new Map<string, LanePlayState>([
@@ -463,7 +463,7 @@ describe('tickSession — swing', () => {
 
 describe('seekSession', () => {
   function clip(lengthBars: number): SessionClip {
-    return { id: 'c', lengthBars, notes: [] } as SessionClip;
+    return { color: '#e0a8d0', gridResolution: '1/16', id: 'c', lengthBars, notes: [] } as SessionClip;
   }
 
   it('re-anchors a playing lane to the target phase and resets lastScheduledAt', () => {
@@ -502,7 +502,7 @@ describe('seekSession onAudioRetrigger', () => {
   it('fires onAudioRetrigger for an audio lane (clip with sample) with correct phaseSec and time', () => {
     const sample: ClipSample = { sampleId: 's1', mode: 'loop', trimStart: 0, trimEnd: 1 };
     const lp = emptyLanePlayState('audio-lane');
-    lp.playing = { id: 'ac', lengthBars: 1, notes: [], sample } as SessionClip;
+    lp.playing = { color: '#e0b8b8', gridResolution: '1/16', id: 'ac', lengthBars: 1, notes: [], sample } as SessionClip;
     lp.loopStartedAt = 0; lp.startTime = 0; lp.lastScheduledAt = 0;
     const states = new Map([['audio-lane', lp]]);
 
@@ -522,7 +522,7 @@ describe('seekSession onAudioRetrigger', () => {
 
   it('does NOT fire onAudioRetrigger for a note lane (clip without sample)', () => {
     const lp = emptyLanePlayState('note-lane');
-    lp.playing = { id: 'nc', lengthBars: 1, notes: [] } as SessionClip;
+    lp.playing = { color: '#c8c8a8', gridResolution: '1/16', id: 'nc', lengthBars: 1, notes: [] } as SessionClip;
     lp.loopStartedAt = 0; lp.startTime = 0; lp.lastScheduledAt = 0;
     const states = new Map([['note-lane', lp]]);
 
@@ -552,7 +552,7 @@ describe('seekSession silence-before-retrigger ordering (Fix 1)', () => {
   it('calls silenceAll BEFORE onAudioRetrigger', () => {
     const sample: ClipSample = { sampleId: 'ord', mode: 'loop', trimStart: 0, trimEnd: 1 };
     const lp = emptyLanePlayState('ord-lane');
-    lp.playing = { id: 'oc', lengthBars: 1, notes: [], sample } as SessionClip;
+    lp.playing = { color: '#f4b8b8', gridResolution: '1/16', id: 'oc', lengthBars: 1, notes: [], sample } as SessionClip;
     lp.loopStartedAt = 0; lp.startTime = 0; lp.lastScheduledAt = 0;
     const states = new Map([['ord-lane', lp]]);
 
@@ -697,12 +697,12 @@ describe('global-loop uniform per-clip region', () => {
     const TICKS_PER_BAR = 384; // TICKS_PER_QUARTER(96) * 4 beats = 384
     const noteAtBar0 = { midi: 60, start: 0, duration: 23, velocity: 80 };
     const noteAtBar2 = { midi: 62, start: TICKS_PER_BAR * 2, duration: 23, velocity: 80 };
-    const clipA: SessionClip = {
+    const clipA: SessionClip = { color: '#f4c8a8', gridResolution: '1/16',
       id: 'gl-a', lengthBars: 4,
       notes: [noteAtBar0, noteAtBar2],
       // no local loop
     };
-    const clipB: SessionClip = {
+    const clipB: SessionClip = { color: '#f4e0a8', gridResolution: '1/16',
       id: 'gl-b', lengthBars: 4,
       notes: [noteAtBar0],
       // local loop at bar [0,1) — global loop MUST override this
@@ -716,10 +716,10 @@ describe('global-loop uniform per-clip region', () => {
       globalLoopStartBar: 2,
       globalLoopEndBar: 4,
     };
-    const state: SessionState = {
+    const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
       lanes: [
-        { id: 'gl-lane-a', engineId: 'subtractive', clips: [clipA] },
-        { id: 'gl-lane-b', engineId: 'subtractive', clips: [clipB] },
+        { inserts: [], id: 'gl-lane-a', engineId: 'subtractive', clips: [clipA] },
+        { inserts: [], id: 'gl-lane-b', engineId: 'subtractive', clips: [clipB] },
       ],
       scenes: [scene],
       globalQuantize: 'immediate',
@@ -803,21 +803,21 @@ describe('global-loop uniform per-clip region', () => {
     // Lane B with local loop [0,1bar)
     // NO globalLoop → behaviour identical to before
     const TICKS_PER_BAR = 384;
-    const clipA: SessionClip = {
+    const clipA: SessionClip = { color: '#d8e8a8', gridResolution: '1/16',
       id: 'reg-a', lengthBars: 4,
       notes: [{ midi: 60, start: 0, duration: 23, velocity: 80 }],
     };
-    const clipB: SessionClip = {
+    const clipB: SessionClip = { color: '#a8e8b8', gridResolution: '1/16',
       id: 'reg-b', lengthBars: 4,
       notes: [{ midi: 62, start: 0, duration: 23, velocity: 80 }],
       loopEnabled: true,
       loopStartTick: 0,
       loopEndTick: TICKS_PER_BAR, // 1 bar
     };
-    const state: SessionState = {
+    const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
       lanes: [
-        { id: 'reg-lane-a', engineId: 'subtractive', clips: [clipA] },
-        { id: 'reg-lane-b', engineId: 'subtractive', clips: [clipB] },
+        { inserts: [], id: 'reg-lane-a', engineId: 'subtractive', clips: [clipA] },
+        { inserts: [], id: 'reg-lane-b', engineId: 'subtractive', clips: [clipB] },
       ],
       scenes: [], // no scene = no global loop
       globalQuantize: 'immediate',

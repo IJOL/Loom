@@ -27,11 +27,11 @@ function makeParsed(): ParsedMidi {
 }
 
 function makeDeps(): { deps: MidiImportUiDeps; resetSession: ReturnType<typeof vi.fn>; launchScene: ReturnType<typeof vi.fn>; prepareLanes: ReturnType<typeof vi.fn>; order: string[] } {
-  const session: SessionState = {
-    lanes: [{ id: 'old-lane', engineId: 'tb303', clips: [] }],
+  const session: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+    lanes: [{ id: 'old-lane', engineId: 'tb303', clips: [], inserts: [] }],
     scenes: [{ id: 'old-scene', name: 'Old', clipPerLane: {} }],
     globalQuantize: '1/1',
-  } as SessionState;
+  };
   // The real resetSession (main.ts) routes through applyLoadedSessionState(empty),
   // which clears session.lanes/scenes; mirror that side effect here.
   const resetSession = vi.fn(() => { session.lanes = []; session.scenes = []; });

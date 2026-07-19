@@ -22,11 +22,11 @@ describe('governingLoopSec — iterative outlier cap (multiset)', () => {
 
 describe('clipLoopSec', () => {
   it('matches the scheduler: 2-bar clip at 120bpm in 4/4 = 4s', () => {
-    const clip = { id: 'c', lengthBars: 2, notes: [] } as SessionClip;
+    const clip = { color: '#a8e8b8', gridResolution: '1/16', id: 'c', lengthBars: 2, notes: [] } as SessionClip;
     expect(clipLoopSec(clip, 120)).toBeCloseTo(4, 9); // 2 bars × 2 s/bar
   });
   it('1-bar clip at 120bpm = 2s', () => {
-    const clip = { id: 'c', lengthBars: 1, notes: [] } as SessionClip;
+    const clip = { color: '#a8e0d8', gridResolution: '1/16', id: 'c', lengthBars: 1, notes: [] } as SessionClip;
     expect(clipLoopSec(clip, 120)).toBeCloseTo(2, 9);
   });
 });

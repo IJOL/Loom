@@ -3,15 +3,15 @@ import { swapLaneEngineFlow, type EngineSwapDeps } from './engine-swap';
 import type { SessionState } from '../session/session';
 
 function makeState(): SessionState {
-  return {
+  return { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
     lanes: [
-      {
+      { inserts: [],
         id: 'L',
         engineId: 'subtractive',
         engineState: { params: { 'filter.cutoff': 0.9 }, modulators: [] },
         enginePresetName: 'factory:Acid',
         clips: [
-          {
+          { color: '#f4b8b8', gridResolution: '1/16',
             id: 'c',
             lengthBars: 1,
             notes: [],

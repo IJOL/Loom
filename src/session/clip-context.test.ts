@@ -2,13 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { resolveClipContext, type SessionState } from './session';
 
 function makeState(): SessionState {
-  return {
+  return { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
     lanes: [
-      { id: 'bass', engineId: 'tb303', name: 'BASS', clips: [
-        { id: 'c0', lengthBars: 1, notes: [] },
-        { id: 'c1', name: 'Acid line', lengthBars: 1, notes: [] },
+      { inserts: [], id: 'bass', engineId: 'tb303', name: 'BASS', clips: [
+        { color: '#a8e0d8', gridResolution: '1/16', id: 'c0', lengthBars: 1, notes: [] },
+        { color: '#a8c8e8', gridResolution: '1/16', id: 'c1', name: 'Acid line', lengthBars: 1, notes: [] },
       ] },
-      { id: 'lead', engineId: 'subtractive', clips: [] },
+      { inserts: [], id: 'lead', engineId: 'subtractive', clips: [] },
     ],
     scenes: [
       { id: 's0', name: 'Intro', clipPerLane: {} },
@@ -29,7 +29,7 @@ describe('resolveClipContext', () => {
 
   it('falls back: track→ID upper-cased, clip→"Clip N"; named scene kept', () => {
     const st = makeState();
-    st.lanes[1].clips = [{ id: 'lc0', lengthBars: 1, notes: [] }];
+    st.lanes[1].clips = [{ color: '#b8b8e8', gridResolution: '1/16', id: 'lc0', lengthBars: 1, notes: [] }];
     const ctx = resolveClipContext(st, 'lead', 0)!;
     expect(ctx.trackName).toBe('LEAD');
     expect(ctx.clipName).toBe('Clip 1');

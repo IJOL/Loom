@@ -6,6 +6,7 @@ import type { SessionHostDeps } from './session-host-deps';
 import { ensureScenesForRows } from '../core/scene-ensure';
 import {
   emptySessionState, cloneSessionState, emptyLane, emptyClip, emptyScene,
+  pickRandomClipColor,
   type SessionState, type SessionClip, type SessionLane,
 } from './session';
 import { buildSliceClip } from '../core/slice-clip';
@@ -565,6 +566,7 @@ export class SessionHost {
       this.installSamplerClip(d.laneId, {
         id: `clip-${Date.now().toString(36)}`,
         name: `${lane.name ?? 'Loop'} loop`,
+        color: pickRandomClipColor(),
         lengthBars: built.lengthBars,
         notes: built.notes,
         gridResolution: DEFAULT_RESOLUTION,

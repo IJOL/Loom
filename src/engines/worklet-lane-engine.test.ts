@@ -161,7 +161,7 @@ describe('WorkletLaneEngine', () => {
 
 describe('toModLite', () => {
   const lfo = (over: Partial<ModulatorState> = {}): ModulatorState => ({
-    id: 'lfo1', kind: 'lfo', enabled: true, connections: [], rateHz: 3, waveform: 'triangle', ...over,
+    id: 'lfo1', kind: 'lfo', enabled: true, connections: [], scope: 'shared', rateHz: 3, waveform: 'triangle', ...over,
   });
 
   it('maps a lane-prefixed connection paramId to the SubParams field with its depth', () => {

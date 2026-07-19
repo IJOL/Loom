@@ -6,6 +6,8 @@
 import { barCountFor } from '../core/slice-clip';
 import type { ScaleId } from '../core/musicality';
 import { nextId } from './session-core';
+import { DEFAULT_RESOLUTION } from '../core/drum-grid-editing';
+import { defaultSends } from '../core/send-migration';
 import {
   DEFAULT_MUSICALITY,
   type SessionClip, type SessionLane, type SessionScene, type SessionState,
@@ -31,7 +33,10 @@ export function pickRandomClipColor(rng: () => number = Math.random): string {
 }
 
 export function emptyClip(lengthBars: number): SessionClip {
-  return { id: nextId('clip'), lengthBars, notes: [], color: pickRandomClipColor() };
+  return {
+    id: nextId('clip'), lengthBars, notes: [],
+    color: pickRandomClipColor(), gridResolution: DEFAULT_RESOLUTION,
+  };
 }
 
 /** Deep-clone a clip with a fresh unique id (for copy/capture). */
@@ -66,6 +71,7 @@ export function audioClip(opts: {
     id: nextId('clip'),
     name: opts.name,
     color: pickRandomClipColor(),
+    gridResolution: DEFAULT_RESOLUTION,
     lengthBars,
     notes: [],
     sample: {
@@ -105,6 +111,7 @@ export function audioChannelClip(opts: {
     id: nextId('clip'),
     name: opts.name,
     color: pickRandomClipColor(),
+    gridResolution: DEFAULT_RESOLUTION,
     lengthBars,
     notes: [],
     sample: {
@@ -124,7 +131,7 @@ export function audioChannelClip(opts: {
 }
 
 export function emptyLane(id: string, engineId: string): SessionLane {
-  return { id, engineId, clips: [] };
+  return { id, engineId, clips: [], inserts: [] };
 }
 
 export function emptyScene(name: string): SessionScene {
@@ -137,7 +144,10 @@ export function emptyScene(name: string): SessionScene {
 export function emptySessionState(): SessionState {
   // Seed the default tonality so a fresh session has the scale lock ON (matches the
   // migration default for loaded sessions). Without this, lock?? falls to false.
-  return { name: 'Untitled', lanes: [], scenes: [], globalQuantize: '1/1', musicality: { ...DEFAULT_MUSICALITY } };
+  return {
+    name: 'Untitled', lanes: [], scenes: [], globalQuantize: '1/1',
+    musicality: { ...DEFAULT_MUSICALITY }, masterInserts: [], sends: defaultSends(),
+  };
 }
 
 /** A populated fixture (one each of three engines, no clips/scenes) for tests
@@ -145,13 +155,17 @@ export function emptySessionState(): SessionState {
  *  {@link emptySessionState}. */
 export function testSessionState(): SessionState {
   return {
+    name: 'Untitled',
     lanes: [
-      { id: 'tb-303-1',      engineId: 'tb303',          name: '303 1',   clips: [] },
-      { id: 'drums-1',       engineId: 'drums-machine',  name: 'Drums 1', clips: [] },
-      { id: 'subtractive-1', engineId: 'subtractive',    name: 'Sub 1',   clips: [] },
+      { id: 'tb-303-1',      engineId: 'tb303',          name: '303 1',   clips: [], inserts: [] },
+      { id: 'drums-1',       engineId: 'drums-machine',  name: 'Drums 1', clips: [], inserts: [] },
+      { id: 'subtractive-1', engineId: 'subtractive',    name: 'Sub 1',   clips: [], inserts: [] },
     ],
     scenes: [],
     globalQuantize: '1/1',
+    musicality: { ...DEFAULT_MUSICALITY },
+    masterInserts: [],
+    sends: defaultSends(),
   };
 }
 

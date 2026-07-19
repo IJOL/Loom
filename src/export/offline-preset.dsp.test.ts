@@ -44,12 +44,12 @@ const QUIET: EnginePreset = {
 };
 
 async function renderWithPreset(presetName: string): Promise<number> {
-  const clip: SessionClip = {
+  const clip: SessionClip = { color: '#f4b8b8', gridResolution: '1/16',
     id: 'c', lengthBars: 1,
     notes: [{ start: 0, duration: 96, midi: 48, velocity: 100 }],
   };
-  const state: SessionState = {
-    lanes: [{ id: 'sub', engineId: 'subtractive', clips: [clip], enginePresetName: `engine:${presetName}` }],
+  const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+    lanes: [{ inserts: [], id: 'sub', engineId: 'subtractive', clips: [clip], enginePresetName: `engine:${presetName}` }],
     scenes: [], globalQuantize: '1/1',
   };
   const laneStates = new Map<string, LanePlayState>();

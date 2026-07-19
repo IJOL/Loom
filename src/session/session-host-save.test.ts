@@ -33,7 +33,7 @@ function makeDeps(): ConstructorParameters<typeof SessionHost>[0] {
 describe('SessionHost.getStateForSave — per-lane engine param persistence', () => {
   it('preserves engineState.params (does not clobber knob values on save)', () => {
     const host = new SessionHost(makeDeps());
-    host.state.lanes = [{ id: 'subtractive-1', engineId: 'subtractive', clips: [] }];
+    host.state.lanes = [{ inserts: [], id: 'subtractive-1', engineId: 'subtractive', clips: [] }];
 
     // User turned a knob → mirrored into engineState.params, exactly as
     // engine-ui.ts does live on every knob/select change.
@@ -47,7 +47,7 @@ describe('SessionHost.getStateForSave — per-lane engine param persistence', ()
 
   it('still refreshes modulators from the live engine alongside params', () => {
     const host = new SessionHost(makeDeps());
-    host.state.lanes = [{ id: 'subtractive-1', engineId: 'subtractive', clips: [] }];
+    host.state.lanes = [{ inserts: [], id: 'subtractive-1', engineId: 'subtractive', clips: [] }];
     mirrorParamChange(host.state, 'subtractive-1', 'filter.cutoff', 0.42);
 
     const saved = host.getStateForSave();

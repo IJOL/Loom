@@ -1,5 +1,6 @@
 import type { ParsedMidi } from './midi-parse';
 import { CLIP_COLOR_PALETTE, type SessionLane, type SessionClip, type SessionScene } from '../session/session';
+import { DEFAULT_RESOLUTION } from '../core/drum-grid-editing';
 import type { NoteEvent } from '../core/notes';
 import { TICKS_PER_STEP } from '../core/notes';
 import { findGMMatches, isDrumkitTrack, type GMMatch } from './gm-lookup';
@@ -97,13 +98,14 @@ export function midiToSession(
       id: nextId('clip'),
       name: clipName,
       color: CLIP_COLOR_PALETTE[newLanes.length % CLIP_COLOR_PALETTE.length],
+      gridResolution: DEFAULT_RESOLUTION,
       lengthBars,
       notes,
       ...(clipTempoMap ? { tempoMap: clipTempoMap } : {}),
     };
     const clips: (SessionClip | null)[] =
       sceneRow > 0 ? [...Array<SessionClip | null>(sceneRow).fill(null), clip] : [clip];
-    const lane: SessionLane = { id: nextId('lane'), clips, ...laneProps };
+    const lane: SessionLane = { id: nextId('lane'), clips, inserts: [], ...laneProps };
     newLanes.push(lane);
     clipPerLane[lane.id] = sceneRow;
   };

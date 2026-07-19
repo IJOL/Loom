@@ -19,7 +19,7 @@ const ctx = {} as AudioContext;
 describe('applyLaneEngineState', () => {
   it('applies params, modulators, mutes via feature-detected calls', async () => {
     const eng = fakeEngine();
-    const lane: SessionLane = {
+    const lane: SessionLane = { inserts: [],
       id: 'drums-1', engineId: 'drums-machine', clips: [],
       engineState: {
         kitMode: 'synth',
@@ -37,7 +37,7 @@ describe('applyLaneEngineState', () => {
 
   it('defaults kitMode to synth when absent', async () => {
     const eng = fakeEngine();
-    const lane: SessionLane = { id: 'l', engineId: 'drums-machine', clips: [] };
+    const lane: SessionLane = { inserts: [], id: 'l', engineId: 'drums-machine', clips: [] };
     await applyLaneEngineState(eng as never, lane, ctx, { loadNoteFx: vi.fn(), reloadDrumkit: vi.fn(), reloadInstrument: vi.fn(), reloadPreset: vi.fn() });
     expect(eng.setKitMode).toHaveBeenCalledWith('synth');
   });
@@ -45,7 +45,7 @@ describe('applyLaneEngineState', () => {
   it('awaits the drumkit reload when a drumkitId is present', async () => {
     const eng = fakeEngine();
     const reloadDrumkit = vi.fn(async () => { /* resolves */ });
-    const lane: SessionLane = {
+    const lane: SessionLane = { inserts: [],
       id: 'l', engineId: 'sampler', clips: [],
       engineState: { sampler: { keymap: [], drumkitId: 'tr808' } },
     };
@@ -56,7 +56,7 @@ describe('applyLaneEngineState', () => {
   it('reloads a melodic instrument when an instrumentId is present (no drumkitId)', async () => {
     const eng = fakeEngine();
     const reloadInstrument = vi.fn(async () => { /* resolves */ });
-    const lane: SessionLane = {
+    const lane: SessionLane = { inserts: [],
       id: 'l', engineId: 'sampler', clips: [],
       engineState: { sampler: { keymap: [], instrumentId: 'sweep-pad' } },
     };
@@ -70,7 +70,7 @@ describe('applyLaneEngineState', () => {
     const eng = fakeEngine();
     let resolved = false;
     const reloadInstrument = vi.fn(async () => { resolved = true; });
-    const lane: SessionLane = {
+    const lane: SessionLane = { inserts: [],
       id: 'l', engineId: 'sampler', clips: [],
       engineState: { sampler: { keymap: [], instrumentId: 'sweep-pad', padParams: { 0: { tune: 1 } } } },
     };
@@ -87,7 +87,7 @@ describe('applyLaneEngineState', () => {
   it('fire-and-forgets a sync instrument reload (live host)', async () => {
     const eng = fakeEngine();
     const reloadInstrument = vi.fn(() => { /* sync, returns undefined */ });
-    const lane: SessionLane = {
+    const lane: SessionLane = { inserts: [],
       id: 'l', engineId: 'sampler', clips: [],
       engineState: { sampler: { keymap: [], instrumentId: 'sweep-pad' } },
     };
@@ -100,7 +100,7 @@ describe('applyLaneEngineState', () => {
   it('reloads a normal preset when presetName is present (no drumkit)', async () => {
     const eng = fakeEngine();
     const reloadPreset = vi.fn(async () => { /* resolves */ });
-    const lane: SessionLane = {
+    const lane: SessionLane = { inserts: [],
       id: 'l', engineId: 'sampler', clips: [],
       engineState: { sampler: { keymap: [], presetName: 'Sweep Pad' } },
     };
@@ -114,7 +114,7 @@ describe('applyLaneEngineState', () => {
     const eng = fakeEngine();
     const reloadPreset = vi.fn(async () => { /* resolves */ });
     const reloadInstrument = vi.fn(async () => { /* resolves */ });
-    const lane: SessionLane = {
+    const lane: SessionLane = { inserts: [],
       id: 'l', engineId: 'sampler', clips: [],
       engineState: { sampler: { keymap: [], presetName: 'Sweep Pad', instrumentId: 'sweep-pad' } },
     };
@@ -129,7 +129,7 @@ describe('applyLaneEngineState', () => {
     const eng = fakeEngine();
     const reloadDrumkit = vi.fn(async () => { /* resolves */ });
     const reloadInstrument = vi.fn(async () => { /* resolves */ });
-    const lane: SessionLane = {
+    const lane: SessionLane = { inserts: [],
       id: 'l', engineId: 'sampler', clips: [],
       engineState: { sampler: { keymap: [], drumkitId: 'tr808', instrumentId: 'sweep-pad' } },
     };

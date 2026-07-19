@@ -22,7 +22,7 @@ function makeDeps(over: Partial<ImportLanePrepDeps> = {}): ImportLanePrepDeps {
 describe('prepImportedLanes', () => {
   it('applies a synth lane preset through applyPresetForLane (records the dropdown)', () => {
     const deps = makeDeps();
-    const lane: SessionLane = { id: 'l1', engineId: 'fm', clips: [], enginePresetName: 'factory:EP Classic Tine' };
+    const lane: SessionLane = { inserts: [], id: 'l1', engineId: 'fm', clips: [], enginePresetName: 'factory:EP Classic Tine' };
     prepImportedLanes([lane], deps);
     expect(deps.applyPresetForLane).toHaveBeenCalledWith('l1', 'factory:EP Classic Tine');
     expect(deps.ensureLaneResource).toHaveBeenCalledWith('l1', 'fm');
@@ -30,7 +30,7 @@ describe('prepImportedLanes', () => {
 
   it('loads a sample-kit Drums lane via applyDrumPreset', () => {
     const deps = makeDeps();
-    const lane: SessionLane = {
+    const lane: SessionLane = { inserts: [],
       id: 'd1', engineId: 'drums-machine', clips: [],
       enginePresetName: 'engine:GM Percussion',
       engineState: { kitMode: 'sample', sampler: { keymap: [], drumkitId: 'gm-percussion' } },
@@ -42,7 +42,7 @@ describe('prepImportedLanes', () => {
 
   it('reloads a Sampler drumkit lane via reloadDrumkit', () => {
     const deps = makeDeps();
-    const lane: SessionLane = {
+    const lane: SessionLane = { inserts: [],
       id: 's1', engineId: 'sampler', clips: [],
       engineState: { sampler: { keymap: [], drumkitId: 'tr-909' } },
     } as SessionLane;
@@ -53,7 +53,7 @@ describe('prepImportedLanes', () => {
 
   it('does NOT re-apply a preset to an already-allocated lane', () => {
     const deps = makeDeps({ hasResource: () => true });
-    const lane: SessionLane = { id: 'l1', engineId: 'fm', clips: [], enginePresetName: 'factory:EP Classic Tine' };
+    const lane: SessionLane = { inserts: [], id: 'l1', engineId: 'fm', clips: [], enginePresetName: 'factory:EP Classic Tine' };
     prepImportedLanes([lane], deps);
     expect(deps.ensureLaneResource).toHaveBeenCalledWith('l1', 'fm');
     expect(deps.applyPresetForLane).not.toHaveBeenCalled();

@@ -49,11 +49,11 @@ describe('SessionHost.applyLoadedSessionState — preset application', () => {
   it('calls deps.applyPresetForLane for every lane with enginePresetName', () => {
     const applied: string[] = [];
     const host = new SessionHost(makeMinimalDeps(applied));
-    const state: SessionState = {
+    const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
       lanes: [
-        { id: 'subtractive-1', engineId: 'subtractive', clips: [], enginePresetName: 'engine:PAD Warm' },
-        { id: 'subtractive-2', engineId: 'subtractive', clips: [], enginePresetName: 'engine:LEAD Soft Sine' },
-        { id: 'tb-303-1',      engineId: 'tb303',       clips: [] /* no preset */ },
+        { inserts: [], id: 'subtractive-1', engineId: 'subtractive', clips: [], enginePresetName: 'engine:PAD Warm' },
+        { inserts: [], id: 'subtractive-2', engineId: 'subtractive', clips: [], enginePresetName: 'engine:LEAD Soft Sine' },
+        { inserts: [], id: 'tb-303-1',      engineId: 'tb303',       clips: [] /* no preset */ },
       ],
       scenes: [],
       globalQuantize: '1/1',
@@ -77,8 +77,8 @@ describe('SessionHost.applyLoadedSessionState — silences live voices on load',
       liveVoices: { silenceAll, silenceLane: vi.fn(), record: vi.fn() } as never,
     });
     const host = new SessionHost(deps);
-    const state: SessionState = {
-      lanes: [{ id: 'audio-1', engineId: 'audio', clips: [] }],
+    const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+      lanes: [{ inserts: [], id: 'audio-1', engineId: 'audio', clips: [] }],
       scenes: [],
       globalQuantize: '1/1',
     };

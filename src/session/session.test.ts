@@ -24,8 +24,9 @@ describe('audioClip', () => {
 
 describe('engineState.kitMode persistence', () => {
   it('round-trips kitMode through cloneSessionState', () => {
-    const state = {
-      lanes: [{ id: 'drums-1', engineId: 'drums-machine', clips: [], engineState: { kitMode: 'sample' as const } }],
+    const state: SessionState = {
+      name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+      lanes: [{ id: 'drums-1', engineId: 'drums-machine', clips: [], inserts: [], engineState: { kitMode: 'sample' as const } }],
       scenes: [],
       globalQuantize: 'immediate' as const,
     };
@@ -35,11 +36,11 @@ describe('engineState.kitMode persistence', () => {
 });
 
 describe('deletion helpers (front A)', () => {
-  const mkClip = (id: string): SessionClip => ({ id, lengthBars: 1, notes: [] });
+  const mkClip = (id: string): SessionClip => ({ color: '#f4e0a8', gridResolution: '1/16', id, lengthBars: 1, notes: [] });
   const mkLane = (id: string, clips: (SessionClip | null)[]): SessionLane =>
-    ({ id, engineId: 'subtractive', clips });
+    ({ inserts: [], id, engineId: 'subtractive', clips });
   const mkState = (lanes: SessionLane[], scenes: SessionState['scenes']): SessionState =>
-    ({ lanes, scenes, globalQuantize: '1/1' });
+    ({ name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [], lanes, scenes, globalQuantize: '1/1' });
 
   it('deleteClipAt nulls the cell without splicing (idempotent)', () => {
     const lane = mkLane('L', [mkClip('A'), mkClip('B'), mkClip('C')]);

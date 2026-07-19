@@ -78,7 +78,7 @@ describe('ConnectionBinder', () => {
     const dest = makeMockParam('cutoff');
 
     const binder = new ConnectionBinder();
-    const mods: ModulatorState[] = [{
+    const mods: ModulatorState[] = [{ scope: 'shared',
       id: 'lfo1', kind: 'lfo', enabled: true,
       connections: [{ id: 'c1', paramId: 'cutoff', depth: 0.5 }],
     }];
@@ -110,14 +110,14 @@ describe('ConnectionBinder', () => {
     const rm = rangeMap([['cutoff', { min: 0, max: 1 }]]);
 
     const binder = new ConnectionBinder();
-    const empty: ModulatorState[] = [{
+    const empty: ModulatorState[] = [{ scope: 'shared',
       id: 'lfo1', kind: 'lfo', enabled: true, connections: [],
     }];
     binder.apply(new Map([['lfo1', voice]]), empty, pm, rm, ctx as unknown as AudioContext);
     expect(binder.activeCount()).toBe(0);
     expect(ctx.createdGains).toHaveLength(0);
 
-    const withConn: ModulatorState[] = [{
+    const withConn: ModulatorState[] = [{ scope: 'shared',
       id: 'lfo1', kind: 'lfo', enabled: true,
       connections: [{ id: 'c1', paramId: 'cutoff', depth: 1.0 }],
     }];
@@ -137,7 +137,7 @@ describe('ConnectionBinder', () => {
     const rm = rangeMap([['cutoff', { min: 0, max: 1 }]]);
 
     const binder = new ConnectionBinder();
-    const withConn: ModulatorState[] = [{
+    const withConn: ModulatorState[] = [{ scope: 'shared',
       id: 'lfo1', kind: 'lfo', enabled: true,
       connections: [{ id: 'c1', paramId: 'cutoff', depth: 0.5 }],
     }];
@@ -147,7 +147,7 @@ describe('ConnectionBinder', () => {
     expect(g.disconnected).toBe(false);
 
     // Now remove the connection
-    const noConn: ModulatorState[] = [{
+    const noConn: ModulatorState[] = [{ scope: 'shared',
       id: 'lfo1', kind: 'lfo', enabled: true, connections: [],
     }];
     binder.apply(new Map([['lfo1', voice]]), noConn, pm, rm, ctx as unknown as AudioContext);
@@ -165,12 +165,12 @@ describe('ConnectionBinder', () => {
 
     binder.apply(
       new Map([['lfo1', voice]]),
-      [{ id: 'lfo1', kind: 'lfo', enabled: true, connections: [{ id: 'c1', paramId: 'cutoff', depth: 0.2 }] }],
+      [{ scope: 'shared', id: 'lfo1', kind: 'lfo', enabled: true, connections: [{ id: 'c1', paramId: 'cutoff', depth: 0.2 }] }],
       pm, rm, ctx as unknown as AudioContext,
     );
     binder.apply(
       new Map([['lfo1', voice]]),
-      [{ id: 'lfo1', kind: 'lfo', enabled: true, connections: [{ id: 'c1', paramId: 'cutoff', depth: 0.9 }] }],
+      [{ scope: 'shared', id: 'lfo1', kind: 'lfo', enabled: true, connections: [{ id: 'c1', paramId: 'cutoff', depth: 0.9 }] }],
       pm, rm, ctx as unknown as AudioContext,
     );
 
@@ -186,7 +186,7 @@ describe('ConnectionBinder', () => {
 
     binder.apply(
       new Map([['lfo1', voice]]),
-      [{ id: 'lfo1', kind: 'lfo', enabled: true,
+      [{ scope: 'shared', id: 'lfo1', kind: 'lfo', enabled: true,
          connections: [{ id: 'c1', paramId: 'bass.filter.cutoff', depth: 0.5 }] }],
       paramMap([['bass.filter.cutoff', dest]]),
       rangeMap([['bass.filter.cutoff', { min: 0, max: 1 }]]),
@@ -205,7 +205,7 @@ describe('ConnectionBinder', () => {
 
     binder.apply(
       new Map([['lfo1', voice]]),
-      [{ id: 'lfo1', kind: 'lfo', enabled: true,
+      [{ scope: 'shared', id: 'lfo1', kind: 'lfo', enabled: true,
          connections: [{ id: 'c1', paramId: 'bass.filter.cutoff', depth: 0.5 }] }],
       paramMap([['cutoff', dest]]),       // bare key — should NOT match
       rangeMap([['cutoff', { min: 0, max: 1 }]]),
@@ -223,7 +223,7 @@ describe('ConnectionBinder', () => {
 
     binder.apply(
       new Map([['lfo1', voice]]),
-      [{ id: 'lfo1', kind: 'lfo', enabled: false,
+      [{ scope: 'shared', id: 'lfo1', kind: 'lfo', enabled: false,
          connections: [{ id: 'c1', paramId: 'cutoff', depth: 0.5 }] }],
       paramMap([['cutoff', dest]]),
       rangeMap([['cutoff', { min: 0, max: 1 }]]),

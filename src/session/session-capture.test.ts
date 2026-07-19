@@ -5,14 +5,14 @@ import { captureSceneFromPlaying, emptyLanePlayState } from './session-runtime';
 // tb-303-1 has clips on rows 0 and 2; drums-1 has one clip on row 0.
 // Three scenes are aligned with the three clip rows (clipRowCount === 3).
 function fixture(): SessionState {
-  return {
+  return { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
     lanes: [
-      { id: 'tb-303-1', engineId: 'tb303', clips: [
-        { id: 'clipA', lengthBars: 1, notes: [] },
+      { inserts: [], id: 'tb-303-1', engineId: 'tb303', clips: [
+        { color: '#f4c8a8', gridResolution: '1/16', id: 'clipA', lengthBars: 1, notes: [] },
         null,
-        { id: 'clipB', lengthBars: 2, notes: [] },
+        { color: '#f4e0a8', gridResolution: '1/16', id: 'clipB', lengthBars: 2, notes: [] },
       ] },
-      { id: 'drums-1', engineId: 'drums-machine', clips: [{ id: 'd1', lengthBars: 1, notes: [] }] },
+      { inserts: [], id: 'drums-1', engineId: 'drums-machine', clips: [{ color: '#d8e8a8', gridResolution: '1/16', id: 'd1', lengthBars: 1, notes: [] }] },
     ],
     scenes: [
       { id: 's0', clipPerLane: {} },

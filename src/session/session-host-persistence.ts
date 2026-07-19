@@ -55,10 +55,12 @@ export function applyLoadedSessionState(self: SessionHost, sess: SessionState): 
   // explicit pre-stop becomes redundant-but-harmless.
   self.deps.liveVoices?.silenceAll(self.deps.ctx.currentTime);
   const migrated = migrateLoadedSessionState(sess);
-  self.state.lanes = migrated.lanes ?? [];
-  self.state.scenes = migrated.scenes ?? [];
-  self.state.globalQuantize = migrated.globalQuantize ?? '1/1';
-  self.state.masterInserts = migrated.masterInserts ?? [];
+  self.state.name = migrated.name;
+  self.state.lanes = migrated.lanes;
+  self.state.scenes = migrated.scenes;
+  self.state.globalQuantize = migrated.globalQuantize;
+  self.state.masterInserts = migrated.masterInserts;
+  self.state.musicality = migrated.musicality;
   self.state.sends = migrated.sends;
   self.laneStates.clear();
   // Free audio resources for lanes that vanished in the new state (e.g.
@@ -104,7 +106,7 @@ export function applyLoadedSessionState(self: SessionHost, sess: SessionState): 
   // Task 28: rehydrate master insert chain before firing state-applied callbacks
   // so the UI rebuild (rebuildMasterInserts) sees a populated chain.
   const masterChain = self.deps.masterInsertChain;
-  if (masterChain && self.state.masterInserts && self.state.masterInserts.length > 0) {
+  if (masterChain && self.state.masterInserts.length > 0) {
     while (masterChain.size() > 0) masterChain.remove(0);
     rehydrateInsertChain(self.deps.ctx, masterChain, self.state.masterInserts);
   }

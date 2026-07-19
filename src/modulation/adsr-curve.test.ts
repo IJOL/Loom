@@ -4,7 +4,7 @@ import type { ModulatorState } from './types';
 
 function adsr(partial: Partial<ModulatorState>): ModulatorState {
   return {
-    id: 'adsr1', kind: 'adsr', enabled: true, connections: [],
+    id: 'adsr1', kind: 'adsr', enabled: true, connections: [], scope: 'per-voice',
     attackSec: 0.1, decaySec: 0.2, sustain: 0.5, releaseSec: 0.3,
     ...partial,
   };

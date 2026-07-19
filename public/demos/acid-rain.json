@@ -1,15 +1,18 @@
 {
   "bpm": 132,
+  "name": "Acid Rain",
   "lanes": [
     {
       "id": "tb303-1",
       "engineId": "tb303",
       "name": "303 Acid",
+      "inserts": [],
       "clips": [
         {
           "id": "tb303-1",
           "name": "303 Acid",
           "color": "#a8c8e8",
+          "gridResolution": "1/16",
           "lengthBars": 8,
           "notes": [
             {
@@ -2709,11 +2712,13 @@
       "id": "sub-1",
       "engineId": "subtractive",
       "name": "Sub",
+      "inserts": [],
       "clips": [
         {
           "id": "sub-1",
           "name": "Sub",
           "color": "#a8c8e8",
+          "gridResolution": "1/16",
           "lengthBars": 8,
           "notes": [
             {
@@ -2994,11 +2999,13 @@
       "id": "drums-1",
       "engineId": "drums-machine",
       "name": "Drums",
+      "inserts": [],
       "clips": [
         {
           "id": "drums-1",
           "name": "Drums",
           "color": "#a8c8e8",
+          "gridResolution": "1/16",
           "lengthBars": 8,
           "notes": [
             {
@@ -3695,5 +3702,42 @@
       }
     }
   ],
-  "globalQuantize": "1/1"
+  "globalQuantize": "1/1",
+  "musicality": {
+    "key": 9,
+    "scale": "minor",
+    "style": "acid-techno",
+    "lock": false
+  },
+  "sends": [
+    {
+      "id": "A",
+      "label": "Send A (Delay)",
+      "returnLevel": 1,
+      "muted": false,
+      "inserts": [
+        {
+          "id": "demo-send-a",
+          "pluginId": "delay",
+          "params": {},
+          "bypass": false
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Send B (Reverb)",
+      "returnLevel": 1,
+      "muted": false,
+      "inserts": [
+        {
+          "id": "demo-send-b",
+          "pluginId": "reverb",
+          "params": {},
+          "bypass": false
+        }
+      ]
+    }
+  ],
+  "masterInserts": []
 }

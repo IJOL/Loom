@@ -61,8 +61,11 @@ function sequenceEnv(paramId, sections) {
 }
 
 const lane = (id, engineId, name, notes, lengthBars, preset, params, envelopes) => ({
-  id, engineId, name,
-  clips: [{ id, name, color: COLORS[0], lengthBars, notes, ...(envelopes ? { envelopes } : {}) }],
+  id, engineId, name, inserts: [],
+  clips: [{
+    id, name, color: COLORS[0], gridResolution: '1/16', lengthBars, notes,
+    ...(envelopes ? { envelopes } : {}),
+  }],
   enginePresetName: preset,
   ...(params ? { engineState: { params } } : {}),
 });
@@ -73,7 +76,19 @@ const onePlay = (lanes) => [{
   clipPerLane: Object.fromEntries(lanes.map((l) => [l.id, 0])),
 }];
 
-const demo = (bpm, lanes) => ({ bpm, lanes, scenes: onePlay(lanes), globalQuantize: '1/1' });
+// Mirrors DEFAULT_MUSICALITY (src/session/session-types.ts) and defaultSends()
+// (src/core/send-migration.ts) — this is a plain Node script with no TS build
+// step, so the shapes are duplicated here rather than imported.
+const DEFAULT_MUSICALITY = { key: 9, scale: 'minor', style: 'acid-techno', lock: false };
+const defaultSends = () => [
+  { id: 'A', label: 'Send A (Delay)',  returnLevel: 1, muted: false, inserts: [{ id: 'demo-send-a', pluginId: 'delay',  params: {}, bypass: false }] },
+  { id: 'B', label: 'Send B (Reverb)', returnLevel: 1, muted: false, inserts: [{ id: 'demo-send-b', pluginId: 'reverb', params: {}, bypass: false }] },
+];
+
+const demo = (bpm, lanes, name) => ({
+  bpm, name, lanes, scenes: onePlay(lanes), globalQuantize: '1/1',
+  musicality: { ...DEFAULT_MUSICALITY }, sends: defaultSends(), masterInserts: [],
+});
 
 function writeDemo(file, d) {
   mkdirSync(OUT_DIR, { recursive: true });
@@ -172,7 +187,7 @@ function acidRain() {
       { 'bus.reverbSend': 0.04 }),
     lane('drums-1', 'drums-machine', 'Drums', drums.notes, drums.lengthBars, 'engine:KIT Power',
       { 'bus.reverbSend': 0.14 }),
-  ]);
+  ], 'Acid Rain');
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -277,7 +292,7 @@ function cordillera() {
       { 'bus.reverbSend': 0.06 }),
     lane('perc-1', 'drums-machine', 'Perc', percL.notes, percL.lengthBars, 'engine:KIT Jazz',
       { 'bus.reverbSend': 0.18 }),
-  ]);
+  ], 'Cordillera');
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -367,7 +382,7 @@ function neonDrive() {
       { 'bus.reverbSend': 0.05 }),
     lane('drums-1', 'drums-machine', 'Drums', drums.notes, drums.lengthBars, 'engine:KIT Electronic',
       { 'bus.reverbSend': 0.16 }),
-  ]);
+  ], 'Neon Drive');
 }
 
 writeDemo('acid-rain.json', acidRain());

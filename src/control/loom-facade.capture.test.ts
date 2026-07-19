@@ -98,7 +98,7 @@ describe('loom-facade — loop-record capture', () => {
   beforeEach(() => { panelHidden = true; });
 
   it('(a) no clip open + idle transport: creates a new clip in the active lane and launches its scene', () => {
-    const lane: SessionLane = { id: 'sub', engineId: 'subtractive', clips: [] };
+    const lane: SessionLane = { inserts: [], id: 'sub', engineId: 'subtractive', clips: [] };
     const { host, launchSceneAt } = makeHostStub({ lanes: [lane] });
     const f = createLoomFacade(makeDeps(host, { activeLaneId: 'sub' }));
 
@@ -111,9 +111,9 @@ describe('loom-facade — loop-record capture', () => {
   });
 
   it('(b) something already playing: does not launch the scene', () => {
-    const existing: SessionClip = { id: 'clip-1', lengthBars: 1, notes: [], color: '#fff' };
-    const lane: SessionLane = { id: 'sub', engineId: 'subtractive', clips: [existing] };
-    const drumsClip: SessionClip = { id: 'clip-d', lengthBars: 1, notes: [], color: '#000' };
+    const existing: SessionClip = { gridResolution: '1/16', id: 'clip-1', lengthBars: 1, notes: [], color: '#fff' };
+    const lane: SessionLane = { inserts: [], id: 'sub', engineId: 'subtractive', clips: [existing] };
+    const drumsClip: SessionClip = { gridResolution: '1/16', id: 'clip-d', lengthBars: 1, notes: [], color: '#000' };
     panelHidden = false;
     const { host, launchSceneAt } = makeHostStub({
       lanes: [lane],
@@ -129,11 +129,11 @@ describe('loom-facade — loop-record capture', () => {
   });
 
   it('(c) open audio clip: canCapture() is false and startCapture is a no-op', () => {
-    const audioClip: SessionClip = {
+    const audioClip: SessionClip = { gridResolution: '1/16',
       id: 'clip-a', lengthBars: 1, notes: [], color: '#fff',
       sample: { sampleId: 's1', mode: 'loop', trimStart: 0, trimEnd: 1 },
     };
-    const lane: SessionLane = { id: 'aud', engineId: 'audio', clips: [audioClip] };
+    const lane: SessionLane = { inserts: [], id: 'aud', engineId: 'audio', clips: [audioClip] };
     panelHidden = false;
     const { host, launchSceneAt } = makeHostStub({ lanes: [lane], selected: { laneId: 'aud', clipIdx: 0 } });
     const f = createLoomFacade(makeDeps(host));
@@ -146,10 +146,10 @@ describe('loom-facade — loop-record capture', () => {
   });
 
   it('(d) full round-trip: startCapture(replace) -> playLiveNote/releaseLiveNote -> stopCapture commits notes', () => {
-    const existing: SessionClip = {
+    const existing: SessionClip = { gridResolution: '1/16',
       id: 'clip-1', lengthBars: 2, notes: [{ start: 0, duration: 10, midi: 40, velocity: 80 }], color: '#fff',
     };
-    const lane: SessionLane = { id: 'sub', engineId: 'subtractive', clips: [existing] };
+    const lane: SessionLane = { inserts: [], id: 'sub', engineId: 'subtractive', clips: [existing] };
     const ctx = makeCtx(0);
     panelHidden = false;
     const { host } = makeHostStub({
@@ -176,10 +176,10 @@ describe('loom-facade — loop-record capture', () => {
   });
 
   it('(e) another lane playing but the destination lane is idle: launches just the destination clip so notes anchor to the playhead (no tick-0 pileup)', () => {
-    const dest: SessionClip = { id: 'clip-1', lengthBars: 2, notes: [], color: '#fff' };
-    const sub: SessionLane = { id: 'sub', engineId: 'subtractive', clips: [dest] };
-    const drumsClip: SessionClip = { id: 'clip-d', lengthBars: 1, notes: [], color: '#000' };
-    const drums: SessionLane = { id: 'drums', engineId: 'drums-machine', clips: [drumsClip] };
+    const dest: SessionClip = { gridResolution: '1/16', id: 'clip-1', lengthBars: 2, notes: [], color: '#fff' };
+    const sub: SessionLane = { inserts: [], id: 'sub', engineId: 'subtractive', clips: [dest] };
+    const drumsClip: SessionClip = { gridResolution: '1/16', id: 'clip-d', lengthBars: 1, notes: [], color: '#000' };
+    const drums: SessionLane = { inserts: [], id: 'drums', engineId: 'drums-machine', clips: [drumsClip] };
     const ctx = makeCtx(0);
     panelHidden = false;
     const { host, launchSceneAt, launchClipAt } = makeHostStub({
@@ -208,7 +208,7 @@ describe('loom-facade — loop-record capture', () => {
   });
 
   it('(f) count-in: startCapture from idle defers recording until the count-in completes', () => {
-    const lane: SessionLane = { id: 'sub', engineId: 'subtractive', clips: [] };
+    const lane: SessionLane = { inserts: [], id: 'sub', engineId: 'subtractive', clips: [] };
     const { host, launchSceneAt } = makeHostStub({ lanes: [lane] });
     let onDone: (() => void) | null = null;
     const cancel = vi.fn();
@@ -225,7 +225,7 @@ describe('loom-facade — loop-record capture', () => {
   });
 
   it('(g) stopCapture during the count-in cancels it and drops the placed clip', () => {
-    const lane: SessionLane = { id: 'sub', engineId: 'subtractive', clips: [] };
+    const lane: SessionLane = { inserts: [], id: 'sub', engineId: 'subtractive', clips: [] };
     const { host, launchSceneAt } = makeHostStub({ lanes: [lane] });
     const cancel = vi.fn();
     const countIn = vi.fn((_bars: number, _bpm: number, _meter: TimeSignature, _cb: () => void) => cancel);
@@ -241,8 +241,8 @@ describe('loom-facade — loop-record capture', () => {
   });
 
   it('(h) live: a captured note lands in clip.notes on release, BEFORE stopCapture (real-time grid)', () => {
-    const dest: SessionClip = { id: 'clip-1', lengthBars: 2, notes: [], color: '#fff' };
-    const lane: SessionLane = { id: 'sub', engineId: 'subtractive', clips: [dest] };
+    const dest: SessionClip = { gridResolution: '1/16', id: 'clip-1', lengthBars: 2, notes: [], color: '#fff' };
+    const lane: SessionLane = { inserts: [], id: 'sub', engineId: 'subtractive', clips: [dest] };
     const ctx = makeCtx(0);
     panelHidden = false;
     const { host } = makeHostStub({
@@ -270,8 +270,8 @@ describe('loom-facade — loop-record capture', () => {
   });
 
   it('(i) brackets the whole capture in ONE undo gesture (beginGesture at start, endGesture at stop)', () => {
-    const dest: SessionClip = { id: 'clip-1', lengthBars: 2, notes: [], color: '#fff' };
-    const lane: SessionLane = { id: 'sub', engineId: 'subtractive', clips: [dest] };
+    const dest: SessionClip = { gridResolution: '1/16', id: 'clip-1', lengthBars: 2, notes: [], color: '#fff' };
+    const lane: SessionLane = { inserts: [], id: 'sub', engineId: 'subtractive', clips: [dest] };
     const ctx = makeCtx(0);
     panelHidden = false;
     const { host } = makeHostStub({
