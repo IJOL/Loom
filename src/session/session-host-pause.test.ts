@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { SessionHost } from './session-host';
 import type { LanePlayState } from './session-runtime';
+import { fakeDestinations } from './fake-destinations';
 
 (globalThis as unknown as { document: { getElementById: () => null; querySelector: () => null; querySelectorAll: () => never[] } }).document ??= {
   getElementById: () => null,
@@ -29,6 +30,7 @@ function makeHost(): SessionHost {
     midiLabel: () => '',
     automationRegistry: new Map(),
     getAutoAbsSubIdx: () => 0,
+    destinations: fakeDestinations(),
   };
   return new SessionHost(deps as unknown as ConstructorParameters<typeof SessionHost>[0]);
 }

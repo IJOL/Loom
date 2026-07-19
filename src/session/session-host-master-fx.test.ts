@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { SessionHost } from './session-host';
+import { fakeDestinations } from './fake-destinations';
 
 // SessionHost.toggleMasterFx reflects the flag into the DOM (#master-fx-panel /
 // .master-fx-toggle); under vitest's default 'node' env there is no document, so
@@ -40,6 +41,7 @@ function makeDeps(): ConstructorParameters<typeof SessionHost>[0] {
     midiLabel: () => '',
     automationRegistry: new Map(),
     getAutoAbsSubIdx: () => 0,
+    destinations: fakeDestinations(),
   };
 }
 

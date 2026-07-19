@@ -29,14 +29,7 @@ import { SessionInspector } from './session-inspector';
 import { showLaneEditor } from './session-host-lane-editor';
 import type { SessionHost } from './session-host';
 import type { SessionState, SessionClip, SessionLane } from './session';
-import type { DestinationRegistry } from '../automation/destination-registry';
-
-// renderClipAutomationLanes is mocked to a no-op above, so the picker never
-// actually reads this — it only needs to satisfy InspectorDeps' (required)
-// destinations field.
-const fakeDestinations = (): DestinationRegistry => ({
-  list: () => [], subscribe: () => () => {}, invalidate: () => {},
-});
+import { fakeDestinations } from './fake-destinations';
 
 // ── The decision, on its own ───────────────────────────────────────────────
 

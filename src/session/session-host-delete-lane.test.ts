@@ -8,6 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import { SessionHost } from './session-host';
 import type { SessionState } from './session';
+import { fakeDestinations } from './fake-destinations';
 
 (globalThis as unknown as {
   document: {
@@ -47,6 +48,7 @@ function makeDeps(onDestinationsChanged?: () => void):
     getAutoAbsSubIdx: () => 0,
     laneResources: { dispose: () => {}, ids: () => [], get: () => undefined } as never,
     onDestinationsChanged,
+    destinations: fakeDestinations(),
   };
 }
 

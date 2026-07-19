@@ -3,7 +3,6 @@
 // then calls sessionHost.init() to activate it.
 
 import type { SessionHostDeps } from './session-host-deps';
-import { createDestinationRegistry } from '../automation/destination-registry';
 import { ensureScenesForRows } from '../core/scene-ensure';
 import {
   emptySessionState, cloneSessionState, emptyLane, emptyClip, emptyScene,
@@ -435,15 +434,6 @@ export class SessionHost {
   constructor(public readonly deps: SessionHostDeps) {}
 
   init(): void {
-    // SessionHostDeps.destinations stays optional (bare test fixtures that
-    // never touch automation UI shouldn't have to build one), but the
-    // inspector's picker needs a real DestinationRegistry unconditionally —
-    // fall back to a locally-built one over this same state + registry so
-    // there is no "silently empty because the caller forgot" path.
-    const destinations = this.deps.destinations ?? createDestinationRegistry({
-      getState: () => this.state,
-      getKnobRegistry: () => this.deps.automationRegistry,
-    });
     this.inspector = new SessionInspector({
       ctx: this.deps.ctx,
       seq: this.deps.seq,
@@ -452,7 +442,7 @@ export class SessionHost {
       renderWithMixer: () => this.renderWithMixer(),
       midiLabel: this.deps.midiLabel,
       automationRegistry: this.deps.automationRegistry,
-      destinations,
+      destinations: this.deps.destinations,
       getAutoAbsSubIdx: this.deps.getAutoAbsSubIdx,
       historyDeps: this.deps.historyDeps,
       laneResources: this.deps.laneResources,

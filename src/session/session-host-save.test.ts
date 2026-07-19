@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { SessionHost } from './session-host';
 import { mirrorParamChange } from './session-engine-state';
+import { fakeDestinations } from './fake-destinations';
 
 // Minimal DOM stub so any incidental document access is a no-op under node.
 (globalThis as unknown as { document: unknown }).document ??= {
@@ -26,7 +27,7 @@ function makeDeps(): ConstructorParameters<typeof SessionHost>[0] {
     ids: () => ['subtractive-1'],
     dispose: () => {},
   };
-  return { laneResources } as unknown as ConstructorParameters<typeof SessionHost>[0];
+  return { laneResources, destinations: fakeDestinations() } as unknown as ConstructorParameters<typeof SessionHost>[0];
 }
 
 describe('SessionHost.getStateForSave — per-lane engine param persistence', () => {

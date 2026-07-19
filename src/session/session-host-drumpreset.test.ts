@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { SessionHost } from './session-host';
 import { loadDrumKits, __resetDrumKitsCache } from '../presets/drum-kits-loader';
+import { fakeDestinations } from './fake-destinations';
 
 (globalThis as unknown as { document: unknown }).document ??= {
   getElementById: () => null,
@@ -34,7 +35,7 @@ describe('SessionHost.applyDrumPreset', () => {
       ids: () => ['drums-1'],
       dispose: () => {},
     };
-    const host = new SessionHost({ laneResources } as unknown as ConstructorParameters<typeof SessionHost>[0]);
+    const host = new SessionHost({ laneResources, destinations: fakeDestinations() } as unknown as ConstructorParameters<typeof SessionHost>[0]);
     host.state.lanes = [{ id: 'drums-1', engineId: 'drums-machine', clips: [] }];
 
     await host.applyDrumPreset('drums-1', 'TR-909');
@@ -59,7 +60,7 @@ describe('SessionHost.applyDrumPreset', () => {
       ids: () => ['drums-1'],
       dispose: () => {},
     };
-    const host = new SessionHost({ laneResources } as unknown as ConstructorParameters<typeof SessionHost>[0]);
+    const host = new SessionHost({ laneResources, destinations: fakeDestinations() } as unknown as ConstructorParameters<typeof SessionHost>[0]);
     // Lane was edited in synth mode: per-voice 'kick.tune' (synth range) + a
     // mode-agnostic 'bus.level' mirrored into engineState.params.
     host.state.lanes = [{

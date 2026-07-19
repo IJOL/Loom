@@ -10,6 +10,7 @@ vi.mock('./clip-editors/clip-editor-router', async (importOriginal) => ({
 vi.mock('./clip-automation-lanes', () => ({ renderClipAutomationLanes: () => {} }));
 
 import { renderClipEditor } from './clip-editors/clip-editor-router';
+import { fakeDestinations } from './fake-destinations';
 
 describe('SessionInspector.refreshOpenEditor', () => {
   it('re-renders the editor when the panel is open and a clip is selected', () => {
@@ -21,7 +22,7 @@ describe('SessionInspector.refreshOpenEditor', () => {
       ctx: {} as never, seq: { meter: '4/4', bpm: 120 } as never, state,
       laneStates: new Map(), renderWithMixer: () => {}, midiLabel: (m: number) => String(m),
       automationRegistry: new Map(), getAutoAbsSubIdx: () => 0,
-      destinations: { list: () => [], subscribe: () => () => {}, invalidate: () => {} },
+      destinations: fakeDestinations(),
     } as never);
     insp.setSelectedClip({ laneId: 'l1', clipIdx: 0 });
     (renderClipEditor as ReturnType<typeof vi.fn>).mockClear();
@@ -36,7 +37,7 @@ describe('SessionInspector.refreshOpenEditor', () => {
       ctx: {} as never, seq: { meter: '4/4', bpm: 120 } as never, state,
       laneStates: new Map(), renderWithMixer: () => {}, midiLabel: (m: number) => String(m),
       automationRegistry: new Map(), getAutoAbsSubIdx: () => 0,
-      destinations: { list: () => [], subscribe: () => () => {}, invalidate: () => {} },
+      destinations: fakeDestinations(),
     } as never);
     (renderClipEditor as ReturnType<typeof vi.fn>).mockClear();
     insp.refreshOpenEditor();
@@ -52,7 +53,7 @@ describe('SessionInspector.refreshOpenEditor', () => {
       ctx: {} as never, seq: { meter: '4/4', bpm: 120 } as never, state,
       laneStates: new Map(), renderWithMixer: () => {}, midiLabel: (m: number) => String(m),
       automationRegistry: new Map(), getAutoAbsSubIdx: () => 0,
-      destinations: { list: () => [], subscribe: () => () => {}, invalidate: () => {} },
+      destinations: fakeDestinations(),
     } as never);
     // No setSelectedClip call — no clip selected
     (renderClipEditor as ReturnType<typeof vi.fn>).mockClear();

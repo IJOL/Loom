@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { SessionHost } from './session-host';
 import type { SessionState } from './session';
+import { fakeDestinations } from './fake-destinations';
 
 (globalThis as unknown as {
   document: {
@@ -41,6 +42,7 @@ function makeDeps(records: ActiveLaneRecord[], engineByLane: Record<string, stri
     midiLabel: () => '',
     automationRegistry: new Map(),
     getAutoAbsSubIdx: () => 0,
+    destinations: fakeDestinations(),
   };
 }
 

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { SessionHost } from './session-host';
+import { fakeDestinations } from './fake-destinations';
 
 // Minimal DOM stub so any incidental document access is a no-op under node.
 (globalThis as unknown as { document: unknown }).document ??= {
@@ -28,7 +29,7 @@ describe('SessionHost.applyEngineState — sample-kit restore round-trip', () =>
       ids: () => ['drums-1'],
       dispose: () => {},
     };
-    const host = new SessionHost({ laneResources } as unknown as ConstructorParameters<typeof SessionHost>[0]);
+    const host = new SessionHost({ laneResources, destinations: fakeDestinations() } as unknown as ConstructorParameters<typeof SessionHost>[0]);
     const keymap = [{ sampleId: 's-kick', rootNote: 36, loNote: 36, hiNote: 36 }];
     const padParams = { 36: { tune: 3 } };
     host.state.lanes = [{

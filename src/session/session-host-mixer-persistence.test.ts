@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { OfflineAudioContext } from 'node-web-audio-api';
 import { SessionHost } from './session-host';
 import { ChannelStrip, FxBus } from '../core/fx';
+import { fakeDestinations } from './fake-destinations';
 
 // Regression: a save dropped the per-lane mixer entirely. getStateForSave only
 // collected engineState (params/modulators/noteFx) + sends; the per-lane
@@ -29,7 +30,7 @@ function makeHost(strip: ChannelStrip, ctx: AudioContext): SessionHost {
     dispose: () => {},
   };
   return new SessionHost(
-    { laneResources, ctx } as unknown as ConstructorParameters<typeof SessionHost>[0],
+    { laneResources, ctx, destinations: fakeDestinations() } as unknown as ConstructorParameters<typeof SessionHost>[0],
   );
 }
 

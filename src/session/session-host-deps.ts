@@ -118,7 +118,13 @@ export interface SessionHostDeps {
   onDestinationsChanged?: () => void;
   /** Task 6: the one destination catalogue, threaded into every lane's
    *  EngineUIContext so the modulation panel's destination dropdown reads it
-   *  instead of the retired laneInserts/masterInserts/fxBus trio. Optional so
-   *  test fixtures without the registry still compile. */
-  destinations?: import('../automation/destination-registry').DestinationRegistry;
+   *  instead of the retired laneInserts/masterInserts/fxBus trio. Required —
+   *  a DestinationRegistry owns a private listener set, and mutation sites
+   *  announce changes by calling .invalidate() on the ONE instance built in
+   *  main.ts. A "helpfully" auto-built fallback here would construct a SECOND,
+   *  disconnected registry that nobody ever invalidates: the picker it feeds
+   *  populates once and then silently stops updating — worse than an empty
+   *  picker, because it looks healthy. Test fixtures build a stub (see
+   *  fakeDestinations in fake-destinations.ts). */
+  destinations: import('../automation/destination-registry').DestinationRegistry;
 }

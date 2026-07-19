@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { SessionHost } from './session-host';
 import type { SessionState } from './session';
+import { fakeDestinations } from './fake-destinations';
 
 (globalThis as unknown as {
   document: { getElementById: () => null; querySelector: () => null; querySelectorAll: () => never[] };
@@ -33,6 +34,7 @@ function makeDeps(): ConstructorParameters<typeof SessionHost>[0] {
     midiLabel: () => '',
     automationRegistry: new Map(),
     getAutoAbsSubIdx: () => 0,
+    destinations: fakeDestinations(),
   };
 }
 

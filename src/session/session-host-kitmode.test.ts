@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { SessionHost } from './session-host';
+import { fakeDestinations } from './fake-destinations';
 
 // Minimal DOM stub so any incidental document access is a no-op under node.
 (globalThis as unknown as { document: unknown }).document ??= {
@@ -22,7 +23,7 @@ describe('SessionHost.applyEngineState — kitMode restore', () => {
       ids: () => ['drums-1'],
       dispose: () => {},
     };
-    const host = new SessionHost({ laneResources } as unknown as ConstructorParameters<typeof SessionHost>[0]);
+    const host = new SessionHost({ laneResources, destinations: fakeDestinations() } as unknown as ConstructorParameters<typeof SessionHost>[0]);
     host.state.lanes = [
       { id: 'drums-1', engineId: 'drums-machine', clips: [], engineState: { kitMode: 'sample' } },
     ];
@@ -46,7 +47,7 @@ describe('SessionHost.applyEngineState — kitMode restore', () => {
       ids: () => ['drums-1'],
       dispose: () => {},
     };
-    const host = new SessionHost({ laneResources } as unknown as ConstructorParameters<typeof SessionHost>[0]);
+    const host = new SessionHost({ laneResources, destinations: fakeDestinations() } as unknown as ConstructorParameters<typeof SessionHost>[0]);
     host.state.lanes = [
       { id: 'drums-1', engineId: 'drums-machine', clips: [], engineState: {} }, // no kitMode
     ];

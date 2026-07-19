@@ -38,14 +38,7 @@ vi.mock('./example-loader', async (importOriginal) => ({
 import { SessionInspector, _getClipClipboardForTesting } from './session-inspector';
 import type { SessionState, SessionClip, SessionLane } from './session';
 import type { NoteEvent } from '../core/notes';
-import type { DestinationRegistry } from '../automation/destination-registry';
-
-// renderClipAutomationLanes is mocked to a no-op above, so the picker never
-// actually reads this — it only needs to satisfy InspectorDeps' (required)
-// destinations field.
-const fakeDestinations = (): DestinationRegistry => ({
-  list: () => [], subscribe: () => () => {}, invalidate: () => {},
-});
+import { fakeDestinations } from './fake-destinations';
 
 // Minimal inspector chrome that openInspector() reads/wires by id.
 function mountInspectorDom(): void {

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { SessionHost } from './session-host';
 import type { SessionState } from './session';
+import { fakeDestinations } from './fake-destinations';
 
 // Minimal DOM stub so SessionHost.render() (which calls document.getElementById)
 // is a no-op under the node test environment.
@@ -36,6 +37,7 @@ function makeMinimalDeps(
     midiLabel: () => '',
     automationRegistry: new Map(),
     getAutoAbsSubIdx: () => 0,
+    destinations: fakeDestinations(),
     applyPresetForLane: (laneId: string, presetName: string) => {
       applied.push(`${laneId}=${presetName}`);
     },
