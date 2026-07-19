@@ -14,16 +14,8 @@ export type ParsedParamId =
 
 /** Split a canonical destination id. The insert marker is the first segment
  *  shaped `fx:<slotId>`; everything before it is the scope (which is itself
- *  dotted for the global racks: `fx.send.A`). Returns null if the id is shaped
- *  like the legacy positional form (`fx\d+`) because it cannot be distinguished
- *  from a valid engine param at parse time — a gap in translation would fail
- *  silently and incorrectly report "engine param not found" instead of "insert
- *  was replaced or deleted". */
+ *  dotted for the global racks: `fx.send.A`). */
 export function parseAutomationParamId(id: string): ParsedParamId | null {
-  // Reject legacy-shaped ids (e.g. 'L1.fx2.mix') upfront so they don't
-  // misclassify as engine params.
-  if (parseLegacyInsertParamId(id) !== null) return null;
-
   const parts = id.split('.');
   if (parts.length < 2) return null;
 
@@ -37,21 +29,6 @@ export function parseAutomationParamId(id: string): ParsedParamId | null {
     };
   }
   return { scopeId: parts[0], kind: 'engine', paramId: parts.slice(1).join('.') };
-}
-
-/** Read the OLD positional insert id (`<scope>.fx2.<param>`). Used only by the
- *  load-time translation in Task 3 — nothing at runtime should produce these. */
-export function parseLegacyInsertParamId(
-  id: string,
-): { scopeId: string; slotIdx: number; paramId: string } | null {
-  const parts = id.split('.');
-  const slotAt = parts.findIndex((p, i) => i > 0 && /^fx\d+$/.test(p));
-  if (slotAt <= 0 || slotAt >= parts.length - 1) return null;
-  return {
-    scopeId: parts.slice(0, slotAt).join('.'),
-    slotIdx: Number(parts[slotAt].slice(2)),
-    paramId: parts.slice(slotAt + 1).join('.'),
-  };
 }
 
 /** The minimal audio-side surface an automation value needs to land. */

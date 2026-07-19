@@ -7,7 +7,6 @@ import { LANE_ID_BASS, LANE_ID_DRUMS } from '../core/lane-ids';
 import type { TB303 } from '../core/synth';
 import type { ArrangementState } from '../performance/performance';
 import { resolveMeter, formatMeter, type TimeSignature } from '../core/meter';
-import { canonicaliseArrangementParamIds } from '../session/session-migration';
 
 export interface SavedStateV3 {
   schemaVersion: 3;
@@ -153,9 +152,6 @@ export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): voi
   // first so the view has content, then switch to the saved mode.
   if (s.arrangement && deps.setArrangement) {
     migrateArrangementCurves(s.arrangement);
-    // The session above has already been migrated in place, so its slot ids
-    // exist — repoint any performance curve still naming an insert by position.
-    if (s.sessionState) canonicaliseArrangementParamIds(s.sessionState, s.arrangement);
     deps.setArrangement(s.arrangement);
   }
   if (s.mode && deps.setMode) deps.setMode(s.mode);

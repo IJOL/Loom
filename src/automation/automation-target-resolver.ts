@@ -32,8 +32,8 @@ export function resolveAutomationTarget(input: ResolveTargetInput): AutomationTa
 
   const parsed = parseAutomationParamId(paramId);
 
-  // FINDING 1: Legacy-shaped ids (e.g. poly1.fx2.mix) parse to null.
-  // Reject upfront with a clear reason, not "track is gone".
+  // A malformed id (no lane segment at all) parses to null. Reject upfront
+  // with a clear reason, not "track is gone".
   if (!parsed) {
     return { kind: 'unavailable', reason: 'Invalid parameter format' };
   }

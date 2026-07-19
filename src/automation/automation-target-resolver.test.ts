@@ -95,17 +95,6 @@ describe('resolveAutomationTarget', () => {
     expect(t.kind).toBe('unavailable');
   });
 
-  // FINDING 1: Legacy-shaped param id (e.g. poly1.fx2.mix)
-  it('rejects legacy-shaped insert param ids with a clear reason', () => {
-    const t = resolveAutomationTarget({
-      paramId: 'poly1.fx2.mix', mode: 'session',
-      state: stateWith([{ id: 'c1' }]),
-      laneStates: new Map(), timelineParamIds: NO_TIMELINE,
-    });
-    expect(t.kind).toBe('unavailable');
-    expect((t as { reason: string }).reason).not.toMatch(/track is gone/i);
-  });
-
   // FINDING 2: Insert param (e.g. poly1.fx:slotA.freq)
   it('routes to the clip for an insert param on that lane', () => {
     const state = stateWith([{ id: 'c1', name: 'A' }, { id: 'c2', name: 'B' }]);

@@ -3,7 +3,7 @@
 // through the knob registry, so automation on an insert did nothing until you
 // opened that channel — the value silently vanished.
 import { describe, it, expect } from 'vitest';
-import { parseAutomationParamId, parseLegacyInsertParamId, applyAutomationToSession } from './automation-apply';
+import { parseAutomationParamId, applyAutomationToSession } from './automation-apply';
 import { insertParamId } from './automation-targets';
 
 function fakeFx(vals: Record<string, number>) {
@@ -40,10 +40,6 @@ describe('parseAutomationParamId', () => {
     expect(parseAutomationParamId('cutoff')).toBeNull();
   });
 
-  it('rejects a legacy-shaped insert id (positional slot)', () => {
-    expect(parseAutomationParamId('L1.fx2.mix')).toBeNull();
-  });
-
   it('still parses a genuine engine param with a dotted path (guard against over-rejection)', () => {
     expect(parseAutomationParamId('poly1.filter.cutoff'))
       .toEqual({ scopeId: 'poly1', kind: 'engine', paramId: 'filter.cutoff' });
@@ -70,35 +66,6 @@ describe('canonical destination ids', () => {
     expect(parseAutomationParamId('poly1.filter.cutoff')).toEqual({
       scopeId: 'poly1', kind: 'engine', paramId: 'filter.cutoff',
     });
-  });
-
-  it('reads the legacy positional form, for load-time translation only', () => {
-    expect(parseLegacyInsertParamId('poly1.fx2.cutoff')).toEqual({
-      scopeId: 'poly1', slotIdx: 2, paramId: 'cutoff',
-    });
-    expect(parseLegacyInsertParamId('poly1.fx:i3.cutoff')).toBeNull();
-  });
-});
-
-describe('parseLegacyInsertParamId', () => {
-  it('splits the old positional insert id', () => {
-    expect(parseLegacyInsertParamId('L1.fx2.mix'))
-      .toEqual({ scopeId: 'L1', slotIdx: 2, paramId: 'mix' });
-  });
-
-  it('keeps a dotted global scope intact', () => {
-    expect(parseLegacyInsertParamId('fx.master.fx0.mix'))
-      .toEqual({ scopeId: 'fx.master', slotIdx: 0, paramId: 'mix' });
-    expect(parseLegacyInsertParamId('fx.send.A.fx1.feedback'))
-      .toEqual({ scopeId: 'fx.send.A', slotIdx: 1, paramId: 'feedback' });
-  });
-
-  it('does not mistake an engine param that merely starts with fx', () => {
-    expect(parseLegacyInsertParamId('L1.fxAmount')).toBeNull();
-  });
-
-  it('rejects an id with no lane segment', () => {
-    expect(parseLegacyInsertParamId('cutoff')).toBeNull();
   });
 });
 
