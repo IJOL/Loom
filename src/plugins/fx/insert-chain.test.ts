@@ -37,14 +37,14 @@ describe('InsertChain', () => {
 
   it('one insert: input → fx.input, fx.output → output', () => {
     const fx = makeFx();
-    chain.insert(fx);
+    chain.insert(fx, 'a');
     expect(input.connections).toContain(fx.input);
     expect((fx.output as any as FakeNode).connections).toContain(output);
   });
 
   it('two inserts chain serially', () => {
     const a = makeFx(); const b = makeFx();
-    chain.insert(a); chain.insert(b);
+    chain.insert(a, 'a'); chain.insert(b, 'b');
     expect(input.connections).toContain(a.input);
     expect((a.output as any as FakeNode).connections).toContain(b.input);
     expect((b.output as any as FakeNode).connections).toContain(output);
@@ -52,7 +52,7 @@ describe('InsertChain', () => {
 
   it('bypass routes around a slot', () => {
     const a = makeFx(); const b = makeFx();
-    chain.insert(a); chain.insert(b);
+    chain.insert(a, 'a'); chain.insert(b, 'b');
     chain.setBypass(0, true);
     expect(input.connections).toContain(b.input);
     expect((b.output as any as FakeNode).connections).toContain(output);
@@ -62,7 +62,7 @@ describe('InsertChain', () => {
     const a = makeFx(); const b = makeFx();
     let disposed = false;
     a.dispose = () => { disposed = true; };
-    chain.insert(a); chain.insert(b);
+    chain.insert(a, 'a'); chain.insert(b, 'b');
     chain.remove(0);
     expect(disposed).toBe(true);
     expect(input.connections).toContain(b.input);
@@ -70,7 +70,7 @@ describe('InsertChain', () => {
 
   it('reorder swaps and rewires', () => {
     const a = makeFx(); const b = makeFx();
-    chain.insert(a); chain.insert(b);
+    chain.insert(a, 'a'); chain.insert(b, 'b');
     chain.reorder(0, 1);
     expect(input.connections).toContain(b.input);
     expect((b.output as any as FakeNode).connections).toContain(a.input);
@@ -79,7 +79,7 @@ describe('InsertChain', () => {
 
   it('dispose tears down all slots and clears connections', () => {
     const a = makeFx(); const b = makeFx();
-    chain.insert(a); chain.insert(b);
+    chain.insert(a, 'a'); chain.insert(b, 'b');
     chain.dispose();
     expect(chain.list().length).toBe(0);
   });
@@ -99,7 +99,7 @@ describe('InsertChain', () => {
     const fake = { input: ctx.createGain(), output: ctx.createGain(),
       getAudioParams: () => new Map(), getBaseValue: () => 0, setBaseValue: () => {},
       applyPreset: () => {}, setBpm: (b: number) => { seen = b; }, dispose: () => {} };
-    chain.insert(fake as never);
+    chain.insert(fake as never, 'a');
     chain.setBpm(140);
     expect(seen).toBe(140);
   });

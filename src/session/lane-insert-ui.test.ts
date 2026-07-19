@@ -77,10 +77,10 @@ describe('buildLaneInsertUI — automation registration', () => {
     const chain = new InsertChain(inputNode, outputNode);
 
     // Pre-populate the chain with our test plugin so buildLaneInsertUI renders it.
-    chain.insert(makeFakeFx());
+    chain.insert(makeFakeFx(), 'a');
 
     const slots: InsertSlot[] = [
-      { pluginId: TEST_PLUGIN_ID, params: { drive: 0.5, mix: 1.0, mode: 0 }, bypass: false },
+      { id: 'a', pluginId: TEST_PLUGIN_ID, params: { drive: 0.5, mix: 1.0, mode: 0 }, bypass: false },
     ];
 
     const registered: KnobHandle[] = [];
@@ -122,10 +122,10 @@ describe('buildLaneInsertUI — automation registration', () => {
     const inputNode  = new FakeAudioNode() as unknown as AudioNode;
     const outputNode = new FakeAudioNode() as unknown as AudioNode;
     const chain = new InsertChain(inputNode, outputNode);
-    chain.insert(makeFakeFx());
+    chain.insert(makeFakeFx(), 'a');
 
     const slots: InsertSlot[] = [
-      { pluginId: TEST_PLUGIN_ID, params: { drive: 0.5, mix: 1.0, mode: 0 }, bypass: false },
+      { id: 'a', pluginId: TEST_PLUGIN_ID, params: { drive: 0.5, mix: 1.0, mode: 0 }, bypass: false },
     ];
 
     const registered: KnobHandle[] = [];
@@ -151,10 +151,10 @@ describe('buildLaneInsertUI — automation registration', () => {
     const inputNode  = new FakeAudioNode() as unknown as AudioNode;
     const outputNode = new FakeAudioNode() as unknown as AudioNode;
     const chain = new InsertChain(inputNode, outputNode);
-    chain.insert(makeFakeFx());
+    chain.insert(makeFakeFx(), 'a');
 
     const slots: InsertSlot[] = [
-      { pluginId: TEST_PLUGIN_ID, params: { drive: 0.5, mix: 1.0, mode: 0 }, bypass: false },
+      { id: 'a', pluginId: TEST_PLUGIN_ID, params: { drive: 0.5, mix: 1.0, mode: 0 }, bypass: false },
     ];
 
     const registered: KnobHandle[] = [];
@@ -186,8 +186,9 @@ describe('buildLaneInsertUI — compact unit layout (Option B)', () => {
     const chain = new InsertChain(inputNode, outputNode);
     const slots: InsertSlot[] = [];
     for (let i = 0; i < nInserts; i++) {
-      chain.insert(makeFakeFx());
-      slots.push({ pluginId: TEST_PLUGIN_ID, params: { drive: 0.5, mix: 1.0, mode: 0 }, bypass: false });
+      const id = `slot-${i}`;
+      chain.insert(makeFakeFx(), id);
+      slots.push({ id, pluginId: TEST_PLUGIN_ID, params: { drive: 0.5, mix: 1.0, mode: 0 }, bypass: false });
     }
     buildLaneInsertUI({ ctx, container, chain, slots, onChange: () => {} });
     return { container, slots };

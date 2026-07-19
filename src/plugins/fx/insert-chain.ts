@@ -2,6 +2,9 @@
 import type { FxInstance } from '../types';
 
 export interface ChainSlot {
+  /** Mirrors the persisted InsertSlot.id, so anything addressing a live slot
+   *  (the modulation binder) uses the same identity the session saved. */
+  id: string;
   fx: FxInstance;
   bypass: boolean;
 }
@@ -18,9 +21,9 @@ export class InsertChain {
 
   get inputNode(): AudioNode { return this.input; }
 
-  insert(fx: FxInstance, at?: number): void {
+  insert(fx: FxInstance, id: string, at?: number): void {
     const idx = at ?? this.slots.length;
-    this.slots.splice(idx, 0, { fx, bypass: false });
+    this.slots.splice(idx, 0, { id, fx, bypass: false });
     this.rewire();
   }
 

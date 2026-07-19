@@ -11,6 +11,7 @@ import { DuckerSubgraph } from './ducker-subgraph';
 import { SidechainBus } from './sidechain-bus';
 import { SendBus } from './send-bus';
 import { createInstance } from '../plugins/registry';
+import { newInsertId } from '../session/insert-slot';
 
 // FxBus is the FX send bank: two generic send buses, A (seeded Delay) and B
 // (seeded Reverb). Kept under the name `FxBus` to bound blast radius; it is no
@@ -28,8 +29,8 @@ export class FxBus {
     // stays empty (pass-through).
     const delay  = createInstance('fx', 'delay',  ctx);
     const reverb = createInstance('fx', 'reverb', ctx);
-    if (delay)  a.inserts.insert(delay);
-    if (reverb) b.inserts.insert(reverb);
+    if (delay)  a.inserts.insert(delay, newInsertId());
+    if (reverb) b.inserts.insert(reverb, newInsertId());
     this.sends = [a, b];
   }
 

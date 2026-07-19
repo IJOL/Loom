@@ -1,6 +1,6 @@
 // src/session/lane-insert-ui.ts
 import { listPlugins, createInstance } from '../plugins/registry';
-import { type InsertSlot } from './insert-slot';
+import { type InsertSlot, newInsertId } from './insert-slot';
 import type { InsertChain } from '../plugins/fx/insert-chain';
 import { createKnob, type KnobHandle } from '../core/knob';
 import { buildFxVis, hasFxVis, VIS_W, VIS_H } from '../core/fx-vis';
@@ -188,9 +188,9 @@ export function buildLaneInsertUI(deps: LaneInsertUIDeps): void {
       const factory = listPlugins('fx').find((p) => p.manifest.id === pluginId)!;
       const params: Record<string, number> = {};
       for (const s of factory.manifest.params) params[s.id] = inst.getBaseValue(s.id);
-      const slot: InsertSlot = { pluginId, params, bypass: false };
+      const slot: InsertSlot = { id: newInsertId(), pluginId, params, bypass: false };
       slots.push(slot);
-      chain.insert(inst);
+      chain.insert(inst, slot.id);
       onChange();
       buildLaneInsertUI(deps);
     };

@@ -51,7 +51,7 @@ function sessionWithInsertLane(): SessionState {
     lanes: [
       {
         id: 'L1', name: 'Bass', engineId: 'tb303', clips: [],
-        inserts: [{ pluginId: FX_ID, params: { drive: 0.5, mix: 1, mode: 0 }, bypass: false }],
+        inserts: [{ id: 'a', pluginId: FX_ID, params: { drive: 0.5, mix: 1, mode: 0 }, bypass: false }],
       },
     ],
     scenes: [],

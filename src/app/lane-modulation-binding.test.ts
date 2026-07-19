@@ -59,7 +59,7 @@ async function renderWithModulator(mod: ModulatorState): Promise<Float32Array> {
 
   // A lowpass insert in slot 0 — the modulation destination under test.
   const inserts = lanes.resources.get(LANE)!.inserts;
-  inserts.insert(createInstance('fx', 'multifilter', ctx)!);
+  inserts.insert(createInstance('fx', 'multifilter', ctx)!, 'a');
   const slot = inserts.list()[0];
   slot.fx.setBaseValue('type', 0);      // lowpass
   slot.fx.setBaseValue('freq', 900);

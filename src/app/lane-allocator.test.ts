@@ -177,7 +177,7 @@ describe('Phase H Task 26: ensureLaneResource wires InsertChain; ensureLaneVoice
     };
 
     const mockFx = makeTrackingFxMock(ctx);
-    res.inserts.insert(mockFx);
+    res.inserts.insert(mockFx, 'mock-fx');
     // rewire() called chainEntry.connect(mockFx.input) → count incremented
     expect(upstreamConnectCount).toBeGreaterThan(0);
 

@@ -28,10 +28,10 @@ describe('insert-slot rehydration', () => {
     const inst = createInstance('fx', 'multifilter', ctx)!;
     inst.setBaseValue('freq', 800);
     inst.setBaseValue('q', 5);
-    sourceChain.insert(inst);
+    sourceChain.insert(inst, 'a');
 
     // Build the slot manually since snapshotInsertSlot expects a fresh slot shape
-    const slot: InsertSlot = { pluginId: 'multifilter', params: {}, bypass: false };
+    const slot: InsertSlot = { id: 'a', pluginId: 'multifilter', params: {}, bypass: false };
     const captured = snapshotInsertSlot(slot, inst, ['freq', 'q']);
 
     const freshChain = new InsertChain(ctx.createGain(), ctx.createGain());
@@ -48,16 +48,54 @@ describe('insert-slot rehydration', () => {
 describe('insert-slot helpers', () => {
   it('snapshot reads via getBaseValue', () => {
     const inst = fakeInst({ freq: 1234, q: 2 });
-    const slot: InsertSlot = { pluginId: 'multifilter', params: {}, bypass: false };
+    const slot: InsertSlot = { id: 'a', pluginId: 'multifilter', params: {}, bypass: false };
     const snap = snapshotInsertSlot(slot, inst, ['freq', 'q']);
     expect(snap.params).toEqual({ freq: 1234, q: 2 });
   });
 
   it('apply writes via setBaseValue', () => {
     const inst = fakeInst({});
-    const slot: InsertSlot = { pluginId: 'multifilter', params: { freq: 800, q: 5 }, bypass: true };
+    const slot: InsertSlot = { id: 'a', pluginId: 'multifilter', params: { freq: 800, q: 5 }, bypass: true };
     applyInsertSlot(slot, inst);
     expect(inst.getBaseValue('freq')).toBe(800);
     expect(inst.getBaseValue('q')).toBe(5);
+  });
+});
+
+import { newInsertId, backfillInsertIds } from './insert-slot';
+
+describe('stable insert ids', () => {
+  beforeEach(() => {
+    _resetRegistry();
+    registerPlugin(multifilterPlugin);
+  });
+
+  it('mints distinct ids', () => {
+    expect(newInsertId()).not.toBe(newInsertId());
+  });
+
+  it('backfills only slots that lack an id, leaving existing ones alone', () => {
+    const slots = [
+      { pluginId: 'delay', params: {}, bypass: false },
+      { id: 'keep-me', pluginId: 'reverb', params: {}, bypass: false },
+    ] as InsertSlot[];
+    backfillInsertIds(slots);
+    expect(slots[0].id).toBeTruthy();
+    expect(slots[1].id).toBe('keep-me');
+    expect(slots[0].id).not.toBe(slots[1].id);
+  });
+
+  it('carries the slot id onto the live chain slot', () => {
+    const ctx = new AudioContext();
+    const chain = new InsertChain(ctx.createGain(), ctx.createGain());
+    // pluginId must be one registered in this file (multifilter, via
+    // beforeEach) — 'delay' isn't, and rehydrateInsertChain silently skips
+    // slots with an unregistered plugin id (see the doc comment on it),
+    // which would make this assertion fail for a reason unrelated to ids.
+    const slots: InsertSlot[] = [
+      { id: 'slot-a', pluginId: 'multifilter', params: {}, bypass: false },
+    ];
+    rehydrateInsertChain(ctx, chain, slots);
+    expect(chain.list().map((s) => s.id)).toEqual(['slot-a']);
   });
 });
