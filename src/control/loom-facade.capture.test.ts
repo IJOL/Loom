@@ -7,6 +7,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createLoomFacade, type LoomFacadeDeps } from './loom-facade';
 import { createActiveLaneStore } from './active-lane';
+import { createDestinationRegistry } from '../automation/destination-registry';
 import type { SessionClip, SessionLane } from '../session/session';
 import type { SessionHost } from '../session/session-host';
 import type { LaneResourceMap } from '../core/lane-resources';
@@ -88,6 +89,7 @@ function makeDeps(
     laneResources: { get: () => undefined } as unknown as LaneResourceMap,
     activeLane,
     knobRegistry: new Map<string, KnobHandle>(),
+    destinations: createDestinationRegistry({ getState: () => host.state, getKnobRegistry: () => new Map() }),
     seq: { bpm: opts.bpm ?? 120, meter: { num: 4, den: 4 }, isPlaying: () => false } as unknown as Sequencer,
   };
 }

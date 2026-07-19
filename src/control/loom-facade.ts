@@ -14,6 +14,8 @@ import { ticksPerBar, type TimeSignature } from '../core/meter';
 import { TICKS_PER_QUARTER } from '../core/notes';
 import { emptyClip, type SessionClip, type SessionLane } from '../session/session';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
+import { parseAutomationParamId } from '../automation/automation-apply';
+import type { DestinationRegistry } from '../automation/destination-registry';
 
 export interface LoomFacadeDeps {
   ctx: AudioContext;
@@ -21,6 +23,7 @@ export interface LoomFacadeDeps {
   laneResources: LaneResourceMap;
   activeLane: ActiveLaneStore;                 // bridged to SessionHost.activeEditLane in main.ts
   knobRegistry: Map<string, KnobHandle>;       // `${laneId}.${paramId}` → handle (automationRegistry)
+  destinations: DestinationRegistry;           // the ONE automation-destination catalogue (built in main.ts)
   seq: Sequencer;                              // bpm source for tempo-aware note-FX (chord today, arp later)
   historyDeps?: HistoryDeps;                   // undo wrapper for loop-record commits (optional: main.ts builds it after boot)
   /** Optional 1-bar count-in before Rec starts from idle: plays a metronome, then
@@ -33,7 +36,7 @@ const MAX_GAIN = 1.5;            // volume knob full-up
 const EQ_DB = 12;               // ±12 dB at knob extremes
 
 export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
-  const { ctx, sessionHost, laneResources, activeLane, knobRegistry } = deps;
+  const { ctx, sessionHost, laneResources, activeLane, knobRegistry, destinations } = deps;
 
   const spawnVoice = (laneId: string) => {
     const res = laneResources.get(laneId);
@@ -51,15 +54,43 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
   // Live arpeggiator: shares the same voice-spawn path as the pool.
   const liveArp = createLiveArp({ spawnVoice, now: () => ctx.currentTime, bpm: () => deps.seq.bpm });
 
+  // `paramId` is EITHER a canonical destination id scoped to `laneId`
+  // (`<laneId>.<engineParam>` or `<laneId>.fx:<slotId>.<param>`, as returned
+  // by engineParamIds below) OR the legacy bare local id the profile still
+  // sends (`cutoff`, `filter.cutoff`). Deciding which by trying to PARSE the
+  // id blind is a trap: most engine param ids are themselves dotted
+  // (`filter.cutoff`, `osc1.detune` — see engine-params across every engine),
+  // so parseAutomationParamId('filter.cutoff') would misread 'filter' as a
+  // lane id and drop the param. Checking the `<laneId>.` prefix FIRST avoids
+  // that — a bare id never happens to start with this exact lane's own id.
   function setEngineParam(laneId: string, paramId: string, value01: number): void {
+    const canonical = paramId.startsWith(`${laneId}.`);
+    const parsed = canonical ? parseAutomationParamId(paramId) : null;
+
+    if (parsed?.kind === 'insert') {
+      // Scoped to the lane's OWN chain only — master/send racks never appear
+      // here because engineParamIds already filtered to `t.laneId === laneId`.
+      const chain = laneResources.get(laneId)?.inserts;
+      const slot = chain?.list().find((s) => s.id === parsed.slotId);
+      if (!slot) return;
+      const target = destinations.list().find((t) => t.id === paramId);
+      if (!target) return;
+      const real = target.min + value01 * (target.max - target.min);
+      const handle = knobRegistry.get(paramId);
+      if (handle) handle.setValue(real);          // moves the on-screen ring AND drives the fx
+      else slot.fx.setBaseValue(parsed.paramId, real);
+      return;
+    }
+
     const res = laneResources.get(laneId);
     if (!res) return;
-    const spec = res.engine.params.find((p) => p.id === paramId);
+    const localId = parsed?.kind === 'engine' ? parsed.paramId : paramId;
+    const spec = res.engine.params.find((p) => p.id === localId);
     if (!spec || spec.kind !== 'continuous') return;
     const real = spec.min + value01 * (spec.max - spec.min);
-    const handle = knobRegistry.get(`${laneId}.${paramId}`);
+    const handle = knobRegistry.get(canonical ? paramId : `${laneId}.${localId}`);
     if (handle) handle.setValue(real);          // moves the on-screen ring AND drives the engine
-    else res.engine.setBaseValue(paramId, real);
+    else res.engine.setBaseValue(localId, real);
   }
 
   const recorder = createLiveRecorder();
@@ -290,11 +321,14 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
     },
     isCapturing: () => recorder.isRecording() || countInCancel != null,
     canCapture: () => resolveDestination() != null,
-    engineParamIds: (laneId) => {
-      const res = laneResources.get(laneId);
-      if (!res) return [];
-      return res.engine.params.filter((p) => p.kind === 'continuous').slice(0, 8).map((p) => p.id);
-    },
+    // Canonical ids, engine params first then this lane's own insert params
+    // (listAutomationTargets' declared order — verified in loom-facade.test.ts),
+    // sliced to the device bank's 8 knobs. Never reaches master/send racks:
+    // the filter below only keeps targets whose laneId is this exact lane.
+    engineParamIds: (laneId) => destinations.list()
+      .filter((t) => t.laneId === laneId)
+      .map((t) => t.id)
+      .slice(0, 8),
     setEngineParam,
     setLaneVolume: (laneId, v01) => laneResources.get(laneId)?.strip.setLevel(v01 * MAX_GAIN),
     setLanePan: (laneId, v01) => laneResources.get(laneId)?.strip.setPan(v01 * 2 - 1),

@@ -606,6 +606,7 @@ const controlFacade = createLoomFacade({
   laneResources,
   activeLane: activeLaneStore,
   knobRegistry: automationRegistry,   // `${laneId}.${paramId}` → KnobHandle
+  destinations,                       // the one automation-destination catalogue (Task 4)
   seq,
   countIn: createCountIn(ctx, ctx.destination),   // 1-bar metronome before Rec from idle
 
