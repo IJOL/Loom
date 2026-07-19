@@ -158,6 +158,10 @@ export function createKnob(opts: KnobOpts): KnobHandle {
   let startVal = 0;
 
   svg.addEventListener('pointerdown', (e) => {
+    // Only the primary button drags. Without this a right-press captures the
+    // pointer and subsequent moves change the value — which the knob context
+    // menu would trigger on every use.
+    if (e.button !== 0) return;
     dragging = true;
     opts.onGestureStart?.();
     startY = e.clientY;
