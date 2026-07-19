@@ -61,9 +61,8 @@ describe('attachKnobAutomationMenu', () => {
       getState: () => state,
       getLaneStates: () => new Map([['poly1', { laneId: 'poly1', playing: clip } as never]]),
       getArrangement: () => emptyArrangementState(120),
-      laneIds: () => ['poly1'],
       openClip: () => {},
-      onArrangementEdited: () => {},
+      addTimelineCurve: () => {},
       onClipEdited: () => {},
     });
 
@@ -92,9 +91,8 @@ describe('attachKnobAutomationMenu', () => {
       getState: () => state,
       getLaneStates: () => new Map(),
       getArrangement: () => emptyArrangementState(120),
-      laneIds: () => ['poly1'],
       openClip: () => {},
-      onArrangementEdited: () => {},
+      addTimelineCurve: () => {},
       onClipEdited: () => {},
     });
 
@@ -122,9 +120,8 @@ describe('attachKnobAutomationMenu', () => {
       getState: () => state,
       getLaneStates: () => new Map([['poly1', { laneId: 'poly1', playing: clip } as never]]),
       getArrangement: () => emptyArrangementState(120),
-      laneIds: () => ['poly1'],
       openClip: () => {},
-      onArrangementEdited: () => {},
+      addTimelineCurve: () => {},
       onClipEdited: () => {},
     });
 
@@ -152,9 +149,8 @@ describe('attachKnobAutomationMenu', () => {
       getState: () => state,
       getLaneStates: () => new Map(),
       getArrangement: () => emptyArrangementState(120),
-      laneIds: () => [],
       openClip: () => {},
-      onArrangementEdited: () => {},
+      addTimelineCurve: () => {},
       onClipEdited: () => {},
     });
 
@@ -165,7 +161,11 @@ describe('attachKnobAutomationMenu', () => {
     expect(items[0].text).toContain('Performance');
   });
 
-  it('creates a timeline curve in Performance mode', () => {
+  // The timeline path must go through the injected addTimelineCurve
+  // (PerformanceFeature.addCurve in the real app) rather than mutating the
+  // arrangement itself — that's the only way the curve stays undoable
+  // (beforeEdit/commitArrUndo live in performance-feature.ts, not here).
+  it('creates a timeline curve in Performance mode via the injected operation', () => {
     const state = {
       lanes: [{ id: 'poly1', name: 'Sub 1', engineId: 'subtractive',
                 clips: [{ id: 'c1', name: 'Verse', lengthBars: 1, notes: [] }], inserts: [] }],
@@ -177,15 +177,16 @@ describe('attachKnobAutomationMenu', () => {
       min: 0, max: 1, value: 0.5, onChange: () => {} });
     document.body.appendChild(handle.el);
 
+    const addTimelineCurveCalls: string[] = [];
+
     attachKnobAutomationMenu(handle, {
       destinations: createDestinationRegistry({ getState: () => state, getKnobRegistry: () => new Map() }),
       getMode: () => 'performance',
       getState: () => state,
       getLaneStates: () => new Map(),
       getArrangement: () => arrangement,
-      laneIds: () => ['poly1'],
       openClip: () => {},
-      onArrangementEdited: () => {},
+      addTimelineCurve: (paramId) => addTimelineCurveCalls.push(paramId),
       onClipEdited: () => {},
     });
 
@@ -193,10 +194,14 @@ describe('attachKnobAutomationMenu', () => {
     expect(menuItems()[0].text).toContain('Automate on the timeline');
 
     (document.querySelector('.context-menu-item') as HTMLElement).click();
+
+    // Non-vacuity: the menu must call the injected operation with the right
+    // paramId, and must NOT mutate the arrangement itself.
+    expect(addTimelineCurveCalls).toEqual(['poly1.filter.cutoff']);
     const allParamIds = [
       ...arrangement.lanes.flatMap((l) => l.automation.map((c) => c.paramId)),
       ...arrangement.globalAutomation.map((c) => c.paramId),
     ];
-    expect(allParamIds).toContain('poly1.filter.cutoff');
+    expect(allParamIds).toEqual([]);
   });
 });

@@ -804,7 +804,6 @@ onRegisterKnob((k) => {
     getState: () => sessionHost.state,
     getLaneStates: () => sessionHost.laneStates,
     getArrangement: () => performanceFeature.arrangement,
-    laneIds: () => sessionHost.state.lanes.map((l) => l.id),
     openClip: (laneId, clipIdx) => {
       // Same four-call recipe as session-host-callbacks.ts onClipClick:
       // setSelectedClip alone shows nothing.
@@ -813,7 +812,7 @@ onRegisterKnob((k) => {
       document.getElementById('session-inspector')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       sessionHost.renderWithMixer();
     },
-    onArrangementEdited: () => performanceFeature.refreshPerformanceView(),
+    addTimelineCurve: (paramId) => performanceFeature.addCurve(paramId),
     onClipEdited: () => sessionHost.inspector.refreshContext(),
   });
 });

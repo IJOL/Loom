@@ -90,6 +90,11 @@ export interface PerformanceFeature {
   /** Toggle the Performance "take" arm (clip launches + knob automation).
    *  Returns the new armed state. Called by main's unified REC button. */
   toggleTakeRec: () => boolean;
+  /** Create a timeline automation curve for paramId — same operation as the
+   *  header's "+ Automation" button, undoable via the arrangement history.
+   *  Exposed whole (not beforeEdit/commitArrUndo) so callers outside this file
+   *  (the knob context menu) can't get the undo-snapshot sequencing wrong. */
+  addCurve: (paramId: string) => void;
 }
 
 export function createPerformanceFeature(deps: PerformanceFeatureDeps): PerformanceFeature {
@@ -155,6 +160,15 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   };
 
   const beforeEdit = () => commitArrUndo();
+
+  /** Create a timeline automation curve for paramId, undoably. The one
+   *  implementation behind both the header "+ Automation" button and the
+   *  knob context menu's timeline path — see addCurve on the interface. */
+  function addCurve(paramId: string): void {
+    beforeEdit();
+    addAutomationCurve(arrangement, paramId, laneIds());
+    refreshPerformanceView();
+  }
 
   function editBands(laneId: string, fn: (events: import('../performance/performance').ArrangementClipEvent[]) => import('../performance/performance').ArrangementClipEvent[]) {
     const lane = arrangement.lanes.find((l) => l.laneId === laneId);
@@ -230,7 +244,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       painterDeps: { seq, getAutoAbsSubIdx: () => 0 },
       onSetLengthBars: (bars) => { beforeEdit(); setArrangementLengthBars(arrangement, bars); refreshPerformanceView(); },
       onZoom: (px) => { pxPerBar = px; scheduleZoomRefresh(); },
-      onAddCurve: (paramId) => { beforeEdit(); addAutomationCurve(arrangement, paramId, laneIds()); refreshPerformanceView(); },
+      onAddCurve: (paramId) => addCurve(paramId),
       onRemoveCurve: (paramId) => { beforeEdit(); removeAutomationCurve(arrangement, paramId, laneIds()); refreshPerformanceView(); },
       onEdited: () => { onPerformanceEdited?.(); },
       loopEnabled: !!arrangement.loopEnabled,
@@ -507,5 +521,6 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     copyFromSession,
     resetArrangement,
     toggleTakeRec,
+    addCurve,
   };
 }

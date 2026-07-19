@@ -14,17 +14,22 @@ import type { SessionState } from '../session/session';
 import type { LanePlayState } from '../session/session-runtime';
 import type { ArrangementState } from '../performance/performance';
 import { addClipEnvelope } from '../session/clip-envelope-ops';
-import { addAutomationCurve } from '../performance/arrangement-ops';
 
 export interface KnobMenuDeps {
   destinations: DestinationRegistry;
   getMode: () => 'session' | 'performance';
   getState: () => SessionState;
   getLaneStates: () => ReadonlyMap<string, LanePlayState>;
+  /** Read-only: only used to compute which params already have a timeline
+   *  curve (for the "Edit" vs "Automate" label). Mutation goes through
+   *  addTimelineCurve, not this. */
   getArrangement: () => ArrangementState;
-  laneIds: () => string[];
   openClip: (laneId: string, clipIdx: number) => void;
-  onArrangementEdited: () => void;
+  /** Create (or, if one already exists, do nothing to) a timeline automation
+   *  curve for paramId — the whole undoable operation, owned by
+   *  performance-feature.ts (PerformanceFeature.addCurve). The menu never
+   *  mutates the arrangement directly, so it can't bypass arrangement undo. */
+  addTimelineCurve: (paramId: string) => void;
   onClipEdited: (laneId: string, clipIdx: number) => void;
 }
 
@@ -90,8 +95,7 @@ export function attachKnobAutomationMenu(handle: KnobHandle, deps: KnobMenuDeps)
       items.push({
         label: existing ? 'Edit automation on the timeline' : 'Automate on the timeline',
         onSelect: () => {
-          if (!existing) addAutomationCurve(deps.getArrangement(), paramId, deps.laneIds());
-          deps.onArrangementEdited();
+          if (!existing) deps.addTimelineCurve(paramId);
         },
       });
     } else {
