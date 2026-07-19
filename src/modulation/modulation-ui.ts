@@ -12,6 +12,8 @@ import { formatParamIdForDisplay } from '../core/lane-display';
 import type { ModulationHost, ModulatorState, Waveform } from './types';
 import type { SessionState } from '../session/session';
 import { attachKnobUndo, withUndo, type HistoryDeps } from '../save/history-wiring';
+import type { DestinationRegistry } from '../automation/destination-registry';
+import { groupTargetsByLane } from '../automation/automation-targets';
 
 export interface ModulationUIDeps {
   engineId: string;
@@ -37,16 +39,12 @@ export interface ModulationUIDeps {
   /** Optional undo history deps. When present, every modulator knob drag/wheel/
    *  dblclick is bracketed as a single undo entry. */
   historyDeps?: HistoryDeps;
-  /** Phase J: lane insert chain — FX params appear as "Lane FX" optgroup in
-   *  the destination dropdown. */
-  laneInserts?: import('../plugins/fx/insert-chain').InsertChain;
-  /** Phase J: master insert chain — FX params appear as "Master FX" optgroup
-   *  in the destination dropdown. */
-  masterInserts?: import('../plugins/fx/insert-chain').InsertChain;
-  /** Option B2: FxBus master sends — reverb/delay plugin instances whose
-   *  AudioParams appear as "Master Sends" optgroup in the destination dropdown.
-   *  Hidden from the insert picker to prevent double-tail bugs. */
-  fxBus?: import('../core/fx').FxBus;
+  /** Task 6: the one destination catalogue. When present, the destination
+   *  dropdown is built from `destinations.list()` (grouped by lane) instead of
+   *  scraping the knob registry + live insert chains, and the panel subscribes
+   *  to structural changes so it refreshes without waiting for the dropdown to
+   *  be opened. */
+  destinations?: DestinationRegistry;
 }
 
 function sync(deps: ModulationUIDeps): void {
@@ -60,7 +58,21 @@ function sync(deps: ModulationUIDeps): void {
   deps.onLiveEdit?.();
 }
 
+// A panel is rebuilt by wiping its host and calling this again — 48 call
+// sites across the codebase do `container.innerHTML = ''` before a rebuild.
+// That destroys DOM but NOT a subscription a previous call registered. Bind
+// each container's destinations subscription to an AbortController keyed on
+// that container, and abort the previous one at the top of every call, so a
+// rebuild (whether triggered by the caller or by the subscription itself)
+// always ends with exactly ONE live subscription, never a stack of them.
+// Mirrors the pattern at session-inspector.ts:258 / performance-ui.ts:295.
+const panelAborts = new WeakMap<HTMLElement, AbortController>();
+
 export function renderModulatorsPanel(container: HTMLElement, deps: ModulationUIDeps): void {
+  panelAborts.get(container)?.abort();
+  const ac = new AbortController();
+  panelAborts.set(container, ac);
+
   const box = document.createElement('div');
   box.className = 'mod-panel';
 
@@ -84,7 +96,25 @@ export function renderModulatorsPanel(container: HTMLElement, deps: ModulationUI
   for (const mod of deps.host.modulators) {
     box.appendChild(renderModCard(mod, deps));
   }
-  container.appendChild(box);
+
+  // Replace only the `.mod-panel` element THIS function owns. `container` is
+  // also the host for sibling panels appended by the caller (note-FX, lane
+  // inserts) — session-host-lane-editor.ts appends them to the same element
+  // AFTER buildParamUI (which renders this panel) returns. Wiping the whole
+  // container here would delete those siblings on every registry-driven
+  // rebuild.
+  const existing = container.querySelector<HTMLElement>('.mod-panel');
+  if (existing) existing.replaceWith(box); else container.appendChild(box);
+
+  // Subscribe AFTER the DOM is in place. A notification calls this function
+  // again for the SAME container, which aborts `ac` (dropping this listener)
+  // before registering its own — so the set of live listeners never grows
+  // past one per container, and a rebuild triggered by invalidate() cannot
+  // re-enter: invalidate() iterates a snapshot of listeners taken before
+  // calling any of them, so a listener that resubscribes during the call
+  // isn't visited again in the same pass.
+  const off = deps.destinations?.subscribe(() => renderModulatorsPanel(container, deps));
+  if (off) ac.signal.addEventListener('abort', off, { once: true });
 }
 
 function mkAddButton(label: string, onClick: () => void): HTMLElement {
@@ -386,76 +416,25 @@ function renderRoutingList(mod: ModulatorState, deps: ModulationUIDeps): HTMLEle
   return list;
 }
 
-/** Fill `destSel` with every param this modulator could still target, grouped
- *  by origin (engine / lane FX / master FX). Read fresh on every dropdown open. */
+/** Fill `destSel` with every param this modulator could still target, read
+ *  from the one shared DestinationRegistry and grouped by its own lane
+ *  names (session lanes first, then the global FX racks). Read fresh on
+ *  every dropdown open, and whenever the registry announces a structural
+ *  change (see the `subscribe` call in renderModulatorsPanel). */
 function buildDestOptions(destSel: HTMLSelectElement, mod: ModulatorState, deps: ModulationUIDeps): void {
   const used = new Set(mod.connections.map((c) => c.paramId));
-  const fmt = (id: string) =>
-    deps.lookupLaneDisplayName
-      ? formatParamIdForDisplay(id, deps.lookupLaneDisplayName)
-      : id;
-
-  // Engine params — optgroup "Engine"
-  const engineIds = destinationIds(deps.registry, deps.laneId).filter((id) => !used.has(id));
-  if (engineIds.length > 0) {
+  const targets = (deps.destinations?.list() ?? []).filter((t) => !used.has(t.id));
+  for (const [laneName, group] of groupTargetsByLane(targets)) {
     const grp = document.createElement('optgroup');
-    grp.label = 'Engine';
-    for (const id of engineIds) {
+    grp.label = laneName;
+    for (const t of group) {
       const opt = document.createElement('option');
-      opt.value = id;
-      opt.textContent = fmt(id);
+      opt.value = t.id;
+      opt.textContent = t.label;
       grp.appendChild(opt);
     }
     destSel.appendChild(grp);
   }
-
-  // Lane FX params — optgroup "Lane FX"
-  if (deps.laneInserts) {
-    const laneFxOpts: HTMLOptionElement[] = [];
-    deps.laneInserts.list().forEach((cs, idx) => {
-      for (const [paramId, _ap] of cs.fx.getAudioParams()) {
-        const key = `lane-insert-${idx}:${paramId}`;
-        if (used.has(key)) continue;
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.textContent = `FX${idx + 1}: ${paramId}`;
-        laneFxOpts.push(opt);
-      }
-    });
-    if (laneFxOpts.length > 0) {
-      const grp = document.createElement('optgroup');
-      grp.label = 'Lane FX';
-      for (const opt of laneFxOpts) grp.appendChild(opt);
-      destSel.appendChild(grp);
-    }
-  }
-
-  // Master FX params — optgroup "Master FX"
-  if (deps.masterInserts) {
-    const masterFxOpts: HTMLOptionElement[] = [];
-    deps.masterInserts.list().forEach((cs, idx) => {
-      for (const [paramId, _ap] of cs.fx.getAudioParams()) {
-        const key = `master-insert-${idx}:${paramId}`;
-        if (used.has(key)) continue;
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.textContent = `MFX${idx + 1}: ${paramId}`;
-        masterFxOpts.push(opt);
-      }
-    });
-    if (masterFxOpts.length > 0) {
-      const grp = document.createElement('optgroup');
-      grp.label = 'Master FX';
-      for (const opt of masterFxOpts) grp.appendChild(opt);
-      destSel.appendChild(grp);
-    }
-  }
-
-  // Reverb/delay are now ordinary inserts inside the Send A/B chains; they are
-  // modulatable wherever they're inserted (lane/master insert dropdowns above).
-  // The old "Master Sends" optgroup keyed on FxBus.getMasterSendInstances() was a
-  // dead path (its `master-send:` destination ids were never resolved by the
-  // connection binder), so it has been removed.
 }
 
 function renderConnectionRow(mod: ModulatorState, conn: import('./types').ModulationConnection, deps: ModulationUIDeps): HTMLElement {
@@ -494,9 +473,4 @@ function renderConnectionRow(mod: ModulatorState, conn: import('./types').Modula
   row.appendChild(rmBtn);
 
   return row;
-}
-
-function destinationIds(registry: Map<string, KnobHandle>, laneId: string): string[] {
-  const prefix = `${laneId}.`;
-  return [...registry.keys()].filter((id) => id.startsWith(prefix) && !id.includes('.mod.'));
 }

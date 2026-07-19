@@ -343,9 +343,7 @@ export class WorkletLaneEngine implements SynthEngine {
       lookupLaneDisplayName: ctx.lookupLaneDisplayName,
       sessionState: ctx.sessionState,
       historyDeps: ctx.historyDeps,
-      laneInserts: ctx.laneInserts,
-      masterInserts: ctx.masterInserts,
-      fxBus: ctx.fxBus,
+      destinations: ctx.destinations,
       // postMods reaches the IN-WORKLET runtime (engine params). Web-Audio
       // destinations — lane/master FX params — live on the other side of the
       // worklet and are bridged by the connection binder, so they need the

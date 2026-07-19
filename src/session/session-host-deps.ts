@@ -116,4 +116,9 @@ export interface SessionHostDeps {
    *  .invalidate() in main.ts. Optional so test fixtures without the
    *  registry still compile. */
   onDestinationsChanged?: () => void;
+  /** Task 6: the one destination catalogue, threaded into every lane's
+   *  EngineUIContext so the modulation panel's destination dropdown reads it
+   *  instead of the retired laneInserts/masterInserts/fxBus trio. Optional so
+   *  test fixtures without the registry still compile. */
+  destinations?: import('../automation/destination-registry').DestinationRegistry;
 }

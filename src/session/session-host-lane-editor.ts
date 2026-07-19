@@ -143,9 +143,7 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
         self.state.lanes.find((l) => l.id === id)?.name,
       sessionState: self.state,
       historyDeps: self.deps.historyDeps,
-      laneInserts: self.deps.laneResources?.get(laneId)?.inserts,
-      masterInserts: self.deps.masterInsertChain,
-      fxBus: self.deps.fxBus,
+      destinations: self.deps.destinations,
       audioContext: self.deps.ctx,
     });
   }

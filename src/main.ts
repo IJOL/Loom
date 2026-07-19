@@ -526,6 +526,7 @@ const sessionHost = new SessionHost({
   automationRegistry,
   getAutoAbsSubIdx,
   onDestinationsChanged: () => destinations.invalidate(),
+  destinations,
   onActiveLaneChanged: () => {
     populateAutoParamSelectWrapper();
     // Re-mount the drum-master strip UI for the active drum lane so its

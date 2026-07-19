@@ -1,89 +1,133 @@
 // @vitest-environment jsdom
 // The destination dropdown of an EXISTING modulator must offer the params of
-// an insert added AFTER the panel was rendered. The picker used to be built
-// once at render time, so adding a filter insert left a pre-existing LFO
-// unable to reach it until the whole engine editor was rebuilt.
-
-import { describe, it, expect } from 'vitest';
+// an insert added AFTER the panel was rendered, and it must do so by reading
+// the ONE shared DestinationRegistry (Task 4/6) instead of scraping a live
+// InsertChain itself. The registry is a REAL registered fx plugin
+// (multifilterPlugin), not a bare pluginId string — listAutomationTargets
+// silently returns [] for an unregistered plugin id (see fxParams() in
+// automation-targets.ts), so asserting against an unregistered id would pass
+// or fail for reasons unrelated to this module.
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderModulatorsPanel, type ModulationUIDeps } from './modulation-ui';
+import { createDestinationRegistry } from '../automation/destination-registry';
+import { registerPlugin, _resetRegistry } from '../plugins/registry';
+import { multifilterPlugin } from '../plugins/fx/multifilter';
+import type { SessionState } from '../session/session';
 import type { ModulationHost, ModulatorState } from './types';
 
-function fakeInsert(paramIds: string[]): unknown {
-  return { fx: { getAudioParams: () => new Map(paramIds.map((id) => [id, {} as AudioParam])) } };
-}
-
-/** Minimal stand-in for InsertChain: only `list()` is read by the picker. */
-function fakeChain(items: unknown[]): ModulationUIDeps['laneInserts'] {
-  return { list: () => items } as unknown as ModulationUIDeps['laneInserts'];
+function stateWith(inserts: { id: string; pluginId: string }[]): SessionState {
+  return {
+    lanes: [{
+      id: 'poly1', name: 'Sub 1', engineId: 'subtractive', clips: [],
+      inserts: inserts.map((i) => ({ ...i, params: {}, bypass: false })),
+    }],
+    masterInserts: [], sends: [],
+  } as unknown as SessionState;
 }
 
 function fakeHost(mods: ModulatorState[]): ModulationHost {
   return {
     modulators: mods,
-    addModulator: () => mods[0],
-    removeModulator: () => {},
-    setConnection: () => {},
-    removeConnection: () => {},
+    addModulator: () => mods[0], removeModulator: () => {},
+    setConnection: () => {}, removeConnection: () => {},
   } as unknown as ModulationHost;
 }
 
-function destOptionValues(container: HTMLElement): string[] {
-  const sel = container.querySelector<HTMLSelectElement>('.mod-dest-select');
-  if (!sel) throw new Error('destination select not found');
+function destValues(container: HTMLElement): string[] {
+  const sel = container.querySelector<HTMLSelectElement>('.mod-dest-select')!;
   return [...sel.options].map((o) => o.value);
 }
 
+beforeEach(() => {
+  _resetRegistry();
+  registerPlugin(multifilterPlugin);
+});
+
+afterEach(() => { _resetRegistry(); });
+
 describe('modulator destination picker', () => {
-  it('offers params of an insert added after the panel was rendered', () => {
-    const items: unknown[] = [];
-    const mod: ModulatorState = {
-      id: 'lfo1', kind: 'lfo', enabled: true, connections: [],
-    } as unknown as ModulatorState;
+  it('offers an insert added after the panel was rendered', () => {
+    let state = stateWith([]);
+    const destinations = createDestinationRegistry({
+      getState: () => state, getKnobRegistry: () => new Map(),
+    });
+    const mod = { id: 'lfo1', kind: 'lfo', enabled: true, connections: [] } as unknown as ModulatorState;
 
     const container = document.createElement('div');
     renderModulatorsPanel(container, {
-      engineId: 'subtractive',
-      laneId: 'poly1',
-      host: fakeHost([mod]),
-      registry: new Map(),
-      registerKnob: () => {},
-      onChange: () => {},
-      laneInserts: fakeChain(items),
-    });
+      engineId: 'subtractive', laneId: 'poly1', host: fakeHost([mod]),
+      registry: new Map(), registerKnob: () => {}, onChange: () => {},
+      destinations,
+    } as ModulationUIDeps);
 
-    expect(destOptionValues(container)).not.toContain('lane-insert-0:cutoff');
+    expect(destValues(container).some((v) => v.startsWith('poly1.fx:'))).toBe(false);
 
-    // User adds a filter insert to the lane while the panel stays mounted.
-    items.push(fakeInsert(['cutoff', 'resonance']));
+    state = stateWith([{ id: 'slot-a', pluginId: 'multifilter' }]);
+    destinations.invalidate();
 
-    const sel = container.querySelector<HTMLSelectElement>('.mod-dest-select')!;
-    sel.dispatchEvent(new Event('pointerdown'));
-
-    expect(destOptionValues(container)).toContain('lane-insert-0:cutoff');
-    expect(destOptionValues(container)).toContain('lane-insert-0:resonance');
+    expect(destValues(container).some((v) => v.startsWith('poly1.fx:slot-a.'))).toBe(true);
   });
 
-  it('keeps the current selection across a refresh', () => {
-    const items: unknown[] = [fakeInsert(['cutoff', 'resonance'])];
-    const mod: ModulatorState = {
-      id: 'lfo1', kind: 'lfo', enabled: true, connections: [],
-    } as unknown as ModulatorState;
+  it('does not touch sibling panels appended to the same container', () => {
+    // renderModulatorsPanel appends its own `.mod-panel`; session-host-lane-editor
+    // appends the note-FX panel + the lane-insert panel to the SAME host element.
+    // A rebuild triggered by the registry must replace only the mod-panel it owns.
+    let state = stateWith([]);
+    const destinations = createDestinationRegistry({
+      getState: () => state, getKnobRegistry: () => new Map(),
+    });
+    const mod = { id: 'lfo1', kind: 'lfo', enabled: true, connections: [] } as unknown as ModulatorState;
 
     const container = document.createElement('div');
+    const sibling = document.createElement('div');
+    sibling.className = 'lane-notefx-panel-host';
+    sibling.textContent = 'note-fx panel';
+    container.appendChild(sibling);
+
     renderModulatorsPanel(container, {
-      engineId: 'subtractive',
-      laneId: 'poly1',
-      host: fakeHost([mod]),
-      registry: new Map(),
-      registerKnob: () => {},
-      onChange: () => {},
-      laneInserts: fakeChain(items),
+      engineId: 'subtractive', laneId: 'poly1', host: fakeHost([mod]),
+      registry: new Map(), registerKnob: () => {}, onChange: () => {},
+      destinations,
+    } as ModulationUIDeps);
+
+    expect(container.querySelector('.lane-notefx-panel-host')).not.toBeNull();
+
+    state = stateWith([{ id: 'slot-a', pluginId: 'multifilter' }]);
+    destinations.invalidate();
+
+    // The rebuild happened (the new insert is now offered)...
+    expect(destValues(container).some((v) => v.startsWith('poly1.fx:slot-a.'))).toBe(true);
+    // ...but the sibling the caller owns is still there, untouched.
+    expect(container.querySelector('.lane-notefx-panel-host')).not.toBeNull();
+    expect(container.querySelectorAll('.mod-panel').length).toBe(1);
+  });
+
+  it('a rebuild does not accumulate destination subscriptions', () => {
+    // The panel is rebuilt in place by wiping+rebuilding its host in a bunch of
+    // places across the codebase (48 `innerHTML = ''` call sites). That destroys
+    // DOM but not a previously-registered subscription. If renderModulatorsPanel
+    // subscribed unconditionally, N renders of the SAME container would leave N
+    // live listeners, and one invalidate() would redraw N times instead of once.
+    let state = stateWith([]);
+    const destinations = createDestinationRegistry({
+      getState: () => state, getKnobRegistry: () => new Map(),
     });
+    const mod = { id: 'lfo1', kind: 'lfo', enabled: true, connections: [] } as unknown as ModulatorState;
+    const container = document.createElement('div');
+    const deps = {
+      engineId: 'subtractive', laneId: 'poly1', host: fakeHost([mod]),
+      registry: new Map(), registerKnob: () => {}, onChange: () => {},
+      destinations,
+    } as ModulationUIDeps;
 
-    const sel = container.querySelector<HTMLSelectElement>('.mod-dest-select')!;
-    sel.value = 'lane-insert-0:resonance';
-    sel.dispatchEvent(new Event('pointerdown'));
+    for (let i = 0; i < 5; i++) renderModulatorsPanel(container, deps);
 
-    expect(sel.value).toBe('lane-insert-0:resonance');
+    const listSpy = vi.spyOn(destinations, 'list');
+    destinations.invalidate();
+
+    // Each full render calls destinations.list() exactly once (one modulator ⇒
+    // one routing-list ⇒ one buildDestOptions call). Five accumulated
+    // subscriptions would show up as five calls here.
+    expect(listSpy).toHaveBeenCalledTimes(1);
   });
 });
