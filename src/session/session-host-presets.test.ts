@@ -51,16 +51,16 @@ describe('SessionHost.applyLoadedSessionState — preset application', () => {
     const host = new SessionHost(makeMinimalDeps(applied));
     const state: SessionState = {
       lanes: [
-        { id: 'subtractive-1', engineId: 'subtractive', clips: [], enginePresetName: 'factory:PAD Warm' },
-        { id: 'subtractive-2', engineId: 'subtractive', clips: [], enginePresetName: 'factory:LEAD Soft Sine' },
+        { id: 'subtractive-1', engineId: 'subtractive', clips: [], enginePresetName: 'engine:PAD Warm' },
+        { id: 'subtractive-2', engineId: 'subtractive', clips: [], enginePresetName: 'engine:LEAD Soft Sine' },
         { id: 'tb-303-1',      engineId: 'tb303',       clips: [] /* no preset */ },
       ],
       scenes: [],
       globalQuantize: '1/1',
     };
     host.applyLoadedSessionState(state);
-    // The load-time migration canonicalises `factory:` → `engine:` (built-in
-    // presets share one vocabulary), so applyPresetForLane sees `engine:`.
+    // enginePresetName already carries the canonical `engine:` prefix — every
+    // built-in preset uses one vocabulary.
     expect(applied).toEqual([
       'subtractive-1=engine:PAD Warm',
       'subtractive-2=engine:LEAD Soft Sine',

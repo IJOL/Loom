@@ -49,7 +49,7 @@ async function renderWithPreset(presetName: string): Promise<number> {
     notes: [{ start: 0, duration: 96, midi: 48, velocity: 100 }],
   };
   const state: SessionState = {
-    lanes: [{ id: 'sub', engineId: 'subtractive', clips: [clip], enginePresetName: `factory:${presetName}` }],
+    lanes: [{ id: 'sub', engineId: 'subtractive', clips: [clip], enginePresetName: `engine:${presetName}` }],
     scenes: [], globalQuantize: '1/1',
   };
   const laneStates = new Map<string, LanePlayState>();

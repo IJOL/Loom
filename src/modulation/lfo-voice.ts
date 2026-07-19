@@ -55,7 +55,7 @@ export class LFOVoice implements ModulatorVoice {
 
   release(_time: number): void { /* LFOs free-run */ }
 
-  /** Push the latest state.{rateHz, waveform, syncToBpm, syncRatio} into the
+  /** Push the latest state.{rateHz, waveform, syncToBpm, syncBars} into the
    *  live OscillatorNode. Called from the engine's modulators-panel onChange
    *  hook and as a side-effect of currentValue() so a rate tweak during
    *  playback actually changes what you HEAR (not just the knob arc). */

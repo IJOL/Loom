@@ -30,7 +30,8 @@ const TICKS_PER_BAR_DEFAULT = 384; // 4/4 @ 16ths: 16 steps × 24 ticks
  *  - If clipBars > ex.bars: the natural block is repeated to fill the clip.
  *  - If clipBars < ex.bars: notes are trimmed to [0, clipBars*ticksPerBar).
  *    Notes that start before but end after the boundary are duration-clamped.
- *  - If clipBars is omitted: behaves exactly as before (back-compat). */
+ *  - If clipBars is omitted: no length adaptation — the natural block is
+ *    returned as rendered. */
 export function renderExampleNotes(
   ex: Example,
   ton: { key: number; scale: ScaleId },
@@ -48,7 +49,7 @@ export function renderExampleNotes(
         midi: scaleDegreeToMidi(d.degree + d.octave * 7, octaveBase, ton.key, ton.scale),
       }));
 
-  // No length adaptation requested → return as-is (exact back-compat).
+  // No length adaptation requested → return the natural block as-is.
   if (clipBars === undefined) return naturalNotes;
 
   const naturalTicks = ex.bars * ticksPerBar;

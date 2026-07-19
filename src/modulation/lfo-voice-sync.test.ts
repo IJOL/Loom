@@ -43,12 +43,12 @@ describe('LFOVoice.syncFromState — live state propagation', () => {
     expect(osc.type).toBe('square');
   });
 
-  it('respects syncToBpm + syncRatio', () => {
+  it('respects syncToBpm + syncBars', () => {
     const osc = (lfo as unknown as { osc: OscillatorNode }).osc;
     state.syncToBpm = true;
-    state.syncRatio = '1/4';
+    state.syncBars = 0.25;
     lfo.syncFromState();
-    // 120 BPM, 1/4 ratio = 2 Hz (one quarter-note = 0.5s, so 1 cycle / 0.5s = 2 Hz).
+    // 120 BPM, 0.25 bars/cycle = one quarter-note = 0.5s, so 1 cycle / 0.5s = 2 Hz.
     expect(osc.frequency.value).toBeCloseTo(2, 1);
   });
 

@@ -1,21 +1,9 @@
 // src/modulation/rate-sync.ts
-// BPM-sync conversion for LFO rate. Cycles-per-beat map mirrors the same
-// ratio set the FX delay sync uses.
+// BPM-sync conversion for LFO rate.
 
 import type { ModulatorState } from './types';
 
-export const SYNC_RATIO_MAP: Record<string, number> = {
-  // straight
-  '4/1': 1/16, '2/1': 1/8, '1/1': 1/4, '1/2': 1/2, '1/4': 1,
-  '1/8': 2,    '1/16': 4,  '1/32': 8,
-  // triplet
-  '1/2T': 3/4, '1/4T': 3/2, '1/8T': 3, '1/16T': 6,
-  // dotted
-  '1/2.': 1/3, '1/4.': 2/3, '1/8.': 4/3, '1/16.': 8/3,
-};
-
-/** Beats per bar for sync math. 4/4 assumption — matches the legacy ratio map
- *  (where 4/1 = 4 bars = 16 beats). */
+/** Beats per bar for sync math. 4/4 assumption. */
 export const BEATS_PER_BAR = 4;
 
 const SUBDIV_FACTOR: Record<string, number> = { straight: 1, triplet: 3 / 2, dotted: 2 / 3 };
@@ -29,24 +17,7 @@ export function effectiveRateHz(state: ModulatorState, bpm: number): number {
     const cyclesPerBeat = subFactor / (state.syncBars * BEATS_PER_BAR);
     return beatHz * cyclesPerBeat;
   }
-  // Legacy: the preset ratio string (old saves before syncBars).
-  if (state.syncRatio) return beatHz * (SYNC_RATIO_MAP[state.syncRatio] ?? 1);
   return state.rateHz ?? 1;
-}
-
-/** Parse a legacy ratio label ('4/1', '1/8T', '1/4.') into bars-per-cycle +
- *  subdivision, so old saves migrate to the numeric model exactly. Returns
- *  null for unrecognised labels. */
-export function parseSyncRatioToBars(
-  ratio: string,
-): { bars: number; subdiv: 'straight' | 'triplet' | 'dotted' } | null {
-  const m = /^(\d+)\/(\d+)([T.]?)$/.exec(ratio.trim());
-  if (!m) return null;
-  const n = Number(m[1]);
-  const d = Number(m[2]);
-  if (!d) return null;
-  const subdiv = m[3] === 'T' ? 'triplet' : m[3] === '.' ? 'dotted' : 'straight';
-  return { bars: n / d, subdiv };
 }
 
 // ── FREE-mode rate knob scale ──────────────────────────────────────────────

@@ -30,19 +30,6 @@ describe('migrateLoadedSessionState', () => {
     expect(out.lanes[0].clips[0]!.notes).toHaveLength(1);
   });
 
-  it('canonicalises enginePresetName factory:<name> → engine:<name> (unified vocabulary)', () => {
-    const s = {
-      ...emptyState(),
-      lanes: [
-        { id: 'sub',  engineId: 'subtractive',   clips: [], enginePresetName: 'factory:LEAD Square' },
-        { id: 'tb',   engineId: 'tb303',         clips: [], enginePresetName: 'factory:BASS Acid Classic' },
-      ],
-    } as unknown as SessionState;
-    const out = migrateLoadedSessionState(s);
-    expect(out.lanes[0].enginePresetName).toBe('engine:LEAD Square');
-    expect(out.lanes[1].enginePresetName).toBe('engine:BASS Acid Classic');
-  });
-
   it('leaves user:/engine:/sampler: preset names untouched', () => {
     const s = {
       ...emptyState(),

@@ -59,7 +59,7 @@ function makeClip(): SessionClip {
 async function renderQuarters(): Promise<{ q1: number; q4: number }> {
   const clip = makeClip();
   const state: SessionState = {
-    lanes: [{ id: 'sub', engineId: 'subtractive', clips: [clip], enginePresetName: 'factory:Rich' }],
+    lanes: [{ id: 'sub', engineId: 'subtractive', clips: [clip], enginePresetName: 'engine:Rich' }],
     scenes: [], globalQuantize: '1/1',
   };
   const laneStates = new Map<string, LanePlayState>();

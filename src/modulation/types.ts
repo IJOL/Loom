@@ -1,8 +1,6 @@
 // src/modulation/types.ts
 // Pure type definitions for the modular LFO + ADSR system.
 
-import { parseSyncRatioToBars } from './rate-sync';
-
 export type ModulatorKind = string;
 export type Waveform = 'sine' | 'triangle' | 'square' | 'saw';
 /** LFO phase behavior on note-on. 'free' = ignore notes (classic analog),
@@ -33,16 +31,11 @@ export interface ModulatorState {
   bipolar?: boolean;
   syncToBpm?: boolean;
   /** Sync rate as BARS per LFO cycle (the "4" of 4/1 = 4 bars). Free numeric,
-   *  so the range is open (8, 16, 32… bars for slow sweeps). When present this
-   *  supersedes the legacy `syncRatio` string. */
+   *  so the range is open (8, 16, 32… bars for slow sweeps). */
   syncBars?: number;
   /** Subdivision feel applied on top of syncBars: straight, triplet (×3/2
    *  faster) or dotted (×2/3 slower). */
   syncSubdiv?: 'straight' | 'triplet' | 'dotted';
-  /** @deprecated legacy preset-dropdown ratio ('1/4', '1/8T', '1/4.'…). Still
-   *  honored by effectiveRateHz when syncBars is absent (old saves); migrated
-   *  to syncBars/syncSubdiv by normalizeModulator. */
-  syncRatio?: string;
   trigger?: LfoTriggerMode;
 
   // ADSR-only
@@ -81,7 +74,7 @@ export function makeDefaultLFO(id: string): ModulatorState {
   return {
     id, kind: 'lfo', enabled: true, connections: [],
     rateHz: 4, waveform: 'sine', bipolar: true,
-    syncToBpm: false, syncBars: 0.25, syncSubdiv: 'straight', syncRatio: '1/4',
+    syncToBpm: false, syncBars: 0.25, syncSubdiv: 'straight',
     trigger: 'free',
     scope: 'shared',
   };
@@ -102,15 +95,9 @@ export function defaultScopeFor(kind: ModulatorKind): ModulatorScope {
 }
 
 /** Fill in fields missing on older saves. Idempotent — calling twice is safe.
- *  Populates `scope`, and migrates a legacy `syncRatio` string into the
- *  numeric `syncBars`/`syncSubdiv` model so the new sync UI shows the saved
- *  value (and effectiveRateHz uses the same path everywhere). */
+ *  Populates `scope` on saves that pre-date the scope concept. */
 export function normalizeModulator(m: ModulatorState): ModulatorState {
   let out = m;
   if (!out.scope) out = { ...out, scope: defaultScopeFor(out.kind) };
-  if (out.kind === 'lfo' && out.syncBars == null && out.syncRatio) {
-    const parsed = parseSyncRatioToBars(out.syncRatio);
-    if (parsed) out = { ...out, syncBars: parsed.bars, syncSubdiv: parsed.subdiv };
-  }
   return out;
 }

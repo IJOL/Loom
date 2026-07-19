@@ -125,9 +125,7 @@ export interface SessionLane {
   };
   /** Currently applied preset name for this lane, prefix-tagged with the unified
    *  preset vocabulary: `engine:Name` for any built-in/JSON preset (all engines),
-   *  `user:Name` for a subtractive user preset, `sampler:…` for a sampler ref.
-   *  (Legacy `factory:Name` from older saves is folded into `engine:` on load by
-   *  session-migration.) */
+   *  `user:Name` for a subtractive user preset, `sampler:…` for a sampler ref. */
   enginePresetName?: string;
   /** Per-lane insert-chain slots. Added by Task 27 (formally persisted in
    *  Task 28). Defaults to [] when absent so consumers can write `??= []`
@@ -148,8 +146,8 @@ export interface SessionScene {
   /** Phase 2: per-scene global loop in SONG bars. When enabled, every lane in
    *  the scene restarts together at endBar (the window wins). Absent ⇒ no global
    *  loop (each clip loops independently, exactly Phase 1).
-   *  These fields are kept for save-file compatibility but are no longer set by
-   *  the Link model. The scheduler ignores them when loopLinked is used instead. */
+   *  Still live: session-host.ts writes these on every scene loop edit, and
+   *  core/global-loop.ts + session-runtime.ts read them to drive playback. */
   globalLoopEnabled?: boolean;
   globalLoopStartBar?: number;
   globalLoopEndBar?: number;

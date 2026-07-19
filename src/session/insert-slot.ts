@@ -6,9 +6,9 @@ import type { InsertChain } from '../plugins/fx/insert-chain';
 
 export interface InsertSlot {
   /** Stable identity, independent of position in the chain. Minted on
-   *  creation and backfilled at load for sessions saved before it existed.
-   *  Position must never be used as identity: removing a slot renumbers
-   *  every later one, which silently repoints anything addressing them. */
+   *  creation. Position must never be used as identity: removing a slot
+   *  renumbers every later one, which silently repoints anything addressing
+   *  them. */
   id: string;
   pluginId: string;
   params: Record<string, number>;
@@ -24,13 +24,6 @@ let insertIdCounter = 0;
 export function newInsertId(): string {
   insertIdCounter += 1;
   return `i${insertIdCounter.toString(36)}${Math.random().toString(36).slice(2, 7)}`;
-}
-
-/** Give an id to any slot saved before ids existed. Idempotent. */
-export function backfillInsertIds(slots: InsertSlot[] | undefined): void {
-  for (const slot of slots ?? []) {
-    if (!slot.id) slot.id = newInsertId();
-  }
 }
 
 export function applyInsertSlot(slot: InsertSlot, inst: FxInstance): void {

@@ -69,11 +69,10 @@ export function refreshPolyPresetSelect(): void {
   if (!sel) return;
   // FM / Wavetable / Karplus poly lanes have no PolySynth instance to key
   // polyPresetName by, so fall back to the lane-keyed memory (engine:<name>,
-  // filled by recordPagePresetForLane on load + on preset change). Subtractive
-  // keeps the PolySynth-keyed factory:/user: path.
-  // After the Phase 4 cutover subtractive lanes have no PolySynth target, so their
-  // selection is also tracked in the lane-keyed pagePresetName (set by the
-  // factory:/user: change handler + Save). All poly engines now read it here.
+  // filled by recordPagePresetForLane on load + on preset change). After the
+  // Phase 4 cutover subtractive lanes have no PolySynth target either, so
+  // their selection is also tracked in the lane-keyed pagePresetName (set by
+  // the user: change handler + Save). All poly engines now read it here.
   const laneId = _deps?.getActiveEngineLaneId();
   sel.value = (laneId && pagePresetName.get(laneId)) || '__custom__';
 }
@@ -540,17 +539,12 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
       return;
     }
 
-    // factory:/user: presets target the active subtractive lane's WORKLET engine
-    // (the legacy PolySynth target is gone after the Phase 4 cutover). Factory
-    // presets ARE the subtractive.json list applied by name via engine.applyPreset;
-    // user presets are stored as PolySynthParams → flattened to dot-ids and pushed
-    // through setBaseValue, then the lane knobs refresh.
+    // user: presets target the active subtractive lane's WORKLET engine (the
+    // legacy PolySynth target is gone after the Phase 4 cutover). They're
+    // stored as PolySynthParams → flattened to dot-ids and pushed through
+    // setBaseValue, then the lane knobs refresh.
     const laneId = deps.getActiveEngineLaneId();
-    if (val.startsWith('factory:')) {
-      const name = val.slice('factory:'.length);
-      applyEnginePresetForLane(name, laneId);   // engine.applyPreset(name) + refreshLaneKnobs
-      pagePresetName.set(laneId, val);
-    } else if (val.startsWith('user:')) {
+    if (val.startsWith('user:')) {
       const name = val.slice('user:'.length);
       const presets = loadUserPolyPresets();
       if (presets[name]) {

@@ -62,7 +62,7 @@ describe('insert-slot helpers', () => {
   });
 });
 
-import { newInsertId, backfillInsertIds } from './insert-slot';
+import { newInsertId } from './insert-slot';
 
 describe('stable insert ids', () => {
   beforeEach(() => {
@@ -72,17 +72,6 @@ describe('stable insert ids', () => {
 
   it('mints distinct ids', () => {
     expect(newInsertId()).not.toBe(newInsertId());
-  });
-
-  it('backfills only slots that lack an id, leaving existing ones alone', () => {
-    const slots = [
-      { pluginId: 'delay', params: {}, bypass: false },
-      { id: 'keep-me', pluginId: 'reverb', params: {}, bypass: false },
-    ] as InsertSlot[];
-    backfillInsertIds(slots);
-    expect(slots[0].id).toBeTruthy();
-    expect(slots[1].id).toBe('keep-me');
-    expect(slots[0].id).not.toBe(slots[1].id);
   });
 
   it('carries the slot id onto the live chain slot', () => {

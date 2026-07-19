@@ -2289,8 +2289,7 @@
               "paramId": "filter.cutoff",
               "depth": 0.8
             }
-          ],
-          "syncRatio": "1/8"
+          ]
         }
       ]
     },
@@ -2336,8 +2335,7 @@
               "paramId": "filter.cutoff",
               "depth": 0.7
             }
-          ],
-          "syncRatio": "1/16"
+          ]
         }
       ]
     },
@@ -2489,7 +2487,6 @@
           "syncToBpm": true,
           "syncBars": 0.5,
           "syncSubdiv": "straight",
-          "syncRatio": "1/2",
           "trigger": "free",
           "scope": "shared",
           "connections": [

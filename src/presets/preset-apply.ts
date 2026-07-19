@@ -13,11 +13,6 @@
 //                     PolySynthParams). Genuinely different storage.
 //   sampler:<KIND>:<ID> — a sampler instrument / drumkit / loop ref (async load).
 //
-//   factory:<NAME>  — LEGACY. Older saves stored subtractive factory presets this
-//                     way; session-migration folds it into engine: on load. Still
-//                     accepted here (applied via engine.applyPreset) so an
-//                     un-migrated value can never silently no-op.
-//
 // The helper is pure WRT the UI: it does NOT refresh the preset dropdown or
 // knob handles. Call sites that need UI sync (the session-host's
 // applyPresetForLane wiring) handle that themselves after calling this.
@@ -29,16 +24,14 @@ import { applyPresetByName } from '../polysynth/polysynth-presets';
 /** Apply a prefix-tagged preset name to an engine instance. Unknown preset
  *  NAMES silently no-op inside the engine. */
 export function applyPresetToEngine(engine: SynthEngine, presetName: string): void {
-  if (presetName.startsWith('factory:') || presetName.startsWith('user:')) {
-    const bare = presetName.startsWith('factory:')
-      ? presetName.slice('factory:'.length)
-      : presetName.slice('user:'.length);
+  if (presetName.startsWith('user:')) {
+    const bare = presetName.slice('user:'.length);
     const ps = (engine as { getPolySynth?(): PolySynth | null }).getPolySynth?.();
     if (ps) { applyPresetByName(ps, bare); return; }
     // Non-PolySynth engine (tb303 / karplus / fm / wavetable / drums): its
     // "factory" presets ARE the engine's own JSON preset list. Without this
     // fallback, every non-Subtractive demo lane loaded as "(custom — no
-    // preset)" because factory:/user: silently no-op'd here.
+    // preset)" because user: silently no-op'd here.
     engine.applyPreset(bare);
     return;
   }

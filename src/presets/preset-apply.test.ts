@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { applyPresetToEngine } from './preset-apply';
 import type { SynthEngine } from '../engines/engine-types';
 
-// Regression: factory:/user: presets must apply on NON-PolySynth engines
-// (tb303 / karplus / fm / wavetable / drums) too. They expose no getPolySynth,
-// so the old code hit `if (!ps) return;` and silently no-op'd — which is why
-// every demo lane that wasn't Subtractive loaded with "(custom — no preset)".
+// Regression: user: presets must apply on NON-PolySynth engines (tb303 /
+// karplus / fm / wavetable / drums) too. They expose no getPolySynth, so the
+// old code hit `if (!ps) return;` and silently no-op'd — which is why every
+// demo lane that wasn't Subtractive loaded with "(custom — no preset)".
 
 function mockEngine(withPoly = false): { engine: SynthEngine; applied: string[]; polyApplied: string[] } {
   const applied: string[] = [];
@@ -19,12 +19,6 @@ function mockEngine(withPoly = false): { engine: SynthEngine; applied: string[];
 }
 
 describe('applyPresetToEngine', () => {
-  it('factory: on an engine without getPolySynth falls back to engine.applyPreset(bare)', () => {
-    const { engine, applied } = mockEngine(false);
-    applyPresetToEngine(engine, 'factory:BASS Acid Classic');
-    expect(applied).toEqual(['BASS Acid Classic']);
-  });
-
   it('user: on an engine without getPolySynth falls back to engine.applyPreset(bare)', () => {
     const { engine, applied } = mockEngine(false);
     applyPresetToEngine(engine, 'user:My Saved Kit');
