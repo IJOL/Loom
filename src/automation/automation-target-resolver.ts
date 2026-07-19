@@ -31,8 +31,14 @@ export function resolveAutomationTarget(input: ResolveTargetInput): AutomationTa
   }
 
   const parsed = parseAutomationParamId(paramId);
-  const scopeId = parsed ? parsed.scopeId : paramId;
 
+  // FINDING 1: Legacy-shaped ids (e.g. poly1.fx2.mix) parse to null.
+  // Reject upfront with a clear reason, not "track is gone".
+  if (!parsed) {
+    return { kind: 'unavailable', reason: 'Invalid parameter format' };
+  }
+
+  const scopeId = parsed.scopeId;
   const lane = state.lanes.find((l) => l.id === scopeId);
   if (lane) {
     const playing = laneStates.get(lane.id)?.playing;
@@ -46,7 +52,9 @@ export function resolveAutomationTarget(input: ResolveTargetInput): AutomationTa
 
     const clip = lane.clips[clipIdx]!;
     const existing = (clip.envelopes ?? []).some((e) => e.paramId === paramId);
-    return { kind: 'clip', laneId: lane.id, clipIdx, clipName: clip.name ?? '', existing };
+    // FINDING 3: Fall back to a positional label for unnamed clips.
+    const clipName = clip.name ?? `Clip ${clipIdx + 1}`;
+    return { kind: 'clip', laneId: lane.id, clipIdx, clipName, existing };
   }
 
   if (scopeId === 'fx' || scopeId.startsWith('fx.')) {

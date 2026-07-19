@@ -94,4 +94,36 @@ describe('resolveAutomationTarget', () => {
     });
     expect(t.kind).toBe('unavailable');
   });
+
+  // FINDING 1: Legacy-shaped param id (e.g. poly1.fx2.mix)
+  it('rejects legacy-shaped insert param ids with a clear reason', () => {
+    const t = resolveAutomationTarget({
+      paramId: 'poly1.fx2.mix', mode: 'session',
+      state: stateWith([{ id: 'c1' }]),
+      laneStates: new Map(), timelineParamIds: NO_TIMELINE,
+    });
+    expect(t.kind).toBe('unavailable');
+    expect((t as { reason: string }).reason).not.toMatch(/track is gone/i);
+  });
+
+  // FINDING 2: Insert param (e.g. poly1.fx:slotA.freq)
+  it('routes to the clip for an insert param on that lane', () => {
+    const state = stateWith([null, { id: 'c2', name: 'B' }]);
+    const t = resolveAutomationTarget({
+      paramId: 'poly1.fx:slotA.freq', mode: 'session', state,
+      laneStates: new Map(), timelineParamIds: NO_TIMELINE,
+    });
+    expect(t).toEqual({ kind: 'clip', laneId: 'poly1', clipIdx: 1, clipName: 'B', existing: false });
+  });
+
+  // FINDING 3: Unnamed clip fallback
+  it('uses a positional label for unnamed clips', () => {
+    const state = stateWith([null, { id: 'c2' }]); // no name
+    const t = resolveAutomationTarget({
+      paramId: 'poly1.filter.cutoff', mode: 'session', state,
+      laneStates: new Map(), timelineParamIds: NO_TIMELINE,
+    });
+    expect(t).toMatchObject({ kind: 'clip', clipIdx: 1 });
+    expect((t as { clipName: string }).clipName).toBe('Clip 2');
+  });
 });
