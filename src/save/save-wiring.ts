@@ -51,11 +51,7 @@ export interface SaveWiringDeps {
 function applyLoadedState(data: unknown, deps: SaveWiringDeps): void {
   const s = parseSavedStateV3(data);
   if (!s) {
-    if (data && typeof data === 'object' && 'schemaVersion' in data) {
-      console.warn('[SaveManager] Ignoring legacy save file (schemaVersion < 3). Classic mode no longer supported.');
-    } else {
-      void alertDialog('Invalid save data');
-    }
+    void alertDialog('Invalid save data');
     return;
   }
   applyLoadedStateV3(s, deps);

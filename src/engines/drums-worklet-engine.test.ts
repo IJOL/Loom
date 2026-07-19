@@ -23,6 +23,14 @@ vi.mock('../audio-worklet/drums-node', () => ({
 import { DrumsWorkletEngine } from './drums-worklet-engine';
 import { DRUM_LANES } from '../core/drums';
 import { FxBus, ChannelStrip } from '../core/fx';
+import { loadDrumKits, __resetDrumKitsCache } from '../presets/drum-kits-loader';
+
+async function seedDrumKits() {
+  __resetDrumKitsCache();
+  await loadDrumKits((async () => ({ ok: true, json: async () => ({ presets: [
+    { name: 'TR-909', group: 'Synth', kind: 'synth', kitId: '909' },
+  ] }) })) as unknown as typeof fetch);
+}
 
 // Build an engine already wired with a real ctx + FxBus so createVoice can build
 // the per-voice ChannelStrips. (DrumsWorkletNode is mocked → no real worklet.)
@@ -72,7 +80,8 @@ describe('DrumsWorkletEngine (synth mode)', () => {
     for (const lane of DRUM_LANES) expect(voicesPushed.has(lane)).toBe(true);
   });
 
-  it('applyPreset(kit) re-pushes one param bag per drum voice', () => {
+  it('applyPreset(kit) re-pushes one param bag per drum voice', async () => {
+    await seedDrumKits();
     const { ctx, out, eng } = makeEngine();
     eng.createVoice(ctx, out);
     vparams.length = 0;

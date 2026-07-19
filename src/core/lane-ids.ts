@@ -21,20 +21,3 @@ export type BuiltinLaneId = typeof BUILTIN_LANE_IDS[number];
 export function isBuiltinLaneId(id: string): id is BuiltinLaneId {
   return (BUILTIN_LANE_IDS as readonly string[]).includes(id);
 }
-
-/** Legacy → slug rename map applied when loading older saved state. */
-export const LEGACY_LANE_ID_MAP: Record<string, string> = {
-  bass:    LANE_ID_BASS,
-  drums:   LANE_ID_DRUMS,
-  drumBus: LANE_ID_DRUMS,
-  main:    LANE_ID_POLY,
-  poly:    LANE_ID_POLY,
-  poly1:   LANE_ID_POLY2,
-};
-
-/** Translate a legacy lane id (`bass`, `main`, etc.) to the new slug; if the
- *  id is already a slug or unknown, returned unchanged. Used in migrations
- *  and at module boundaries where legacy code still emits old ids. */
-export function canonicaliseLaneId(id: string): string {
-  return LEGACY_LANE_ID_MAP[id] ?? id;
-}

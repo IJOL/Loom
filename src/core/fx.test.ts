@@ -89,7 +89,7 @@ describe('ChannelStrip compressor block', () => {
 describe('ChannelStrip A/B sends', () => {
   beforeAll(() => { _resetRegistry(); registerPlugin(reverbPlugin); registerPlugin(delayPlugin); });
 
-  it('serializes sendA/sendB and restores legacy reverbSend/delaySend', () => {
+  it('serializes sendA/sendB and restores them on a fresh strip', () => {
     // OFFLINE, deliberately. On a real-time AudioContext this test is a race:
     // it writes gain.value and reads it straight back, and under suite load the
     // read can return the audio thread's stale value (observed as "expected +0
@@ -103,11 +103,9 @@ describe('ChannelStrip A/B sends', () => {
     expect(s.sendB).toBeCloseTo(0.6, 3);
 
     const strip2 = new ChannelStrip(ctx, ctx.destination, fx);
-    // Legacy save: delaySend → sendA, reverbSend → sendB
-    strip2.restore({ ...s, sendA: undefined as unknown as number, sendB: undefined as unknown as number,
-      delaySend: 0.2, reverbSend: 0.5 } as never);
-    expect(strip2.serialize().sendA).toBeCloseTo(0.2, 3);
-    expect(strip2.serialize().sendB).toBeCloseTo(0.5, 3);
+    strip2.restore(s);
+    expect(strip2.serialize().sendA).toBeCloseTo(0.3, 3);
+    expect(strip2.serialize().sendB).toBeCloseTo(0.6, 3);
   });
 });
 

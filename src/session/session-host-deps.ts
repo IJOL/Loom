@@ -52,10 +52,6 @@ export interface SessionHostDeps {
    *  to a stale (typically subtractive-1) lane. Optional so test fixtures
    *  without the lane-host don't need to implement it. */
   setActiveEngineLane?: (laneId: string) => void;
-  // Phase G: polysynth removed — per-lane PolySynth instances are reached
-  // via laneResources.get(laneId)?.engine.getPolySynth().
-  /** @deprecated Phase G removed the singleton polysynth field. */
-  polysynth?: PolySynth;
   mixerDeps: MixerColumnDeps;
   midiLabel: (m: number) => string;
   automationRegistry: Map<string, import('../core/knob').KnobHandle>;

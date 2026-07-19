@@ -254,9 +254,8 @@ export class ChannelStrip {
   restore(s: ChannelState) {
     this.setLevel(s.level);
     if (typeof s.pan === 'number') this.setPan(s.pan);
-    const legacy = s as ChannelState & { reverbSend?: number; delaySend?: number };
-    this.setSendA(s.sendA ?? legacy.delaySend ?? 0);
-    this.setSendB(s.sendB ?? legacy.reverbSend ?? 0);
+    this.setSendA(s.sendA ?? 0);
+    this.setSendB(s.sendB ?? 0);
     this.setEqLow(s.eqLow);
     this.setEqMid(s.eqMid);
     this.setEqHigh(s.eqHigh);

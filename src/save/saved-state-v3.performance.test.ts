@@ -93,16 +93,16 @@ describe('SavedStateV3 persists mode + arrangement', () => {
 });
 
 describe('arrangement curve migration', () => {
-  it('renames legacy samples->values and defaults flags', () => {
+  it('defaults missing values/enabled/stepped flags and preserves lengthBars', () => {
     const arr: any = {
       bpm: 120, durationSec: 4, lengthBars: 0,
-      lanes: [{ laneId: 'tb-303-1', clipEvents: [], automation: [{ paramId: 'tb-303-1.cutoff', samples: [0.1, 0.2] }] }],
-      globalAutomation: [{ paramId: 'fx.reverb.wet', samples: [0.3] }],
+      lanes: [{ laneId: 'tb-303-1', clipEvents: [], automation: [{ paramId: 'tb-303-1.cutoff' }] }],
+      globalAutomation: [{ paramId: 'fx.reverb.wet', values: [0.3] }],
     };
     migrateArrangementCurves(arr);
-    expect(arr.lanes[0].automation[0].values).toEqual([0.1, 0.2]);
-    expect(arr.lanes[0].automation[0].samples).toBeUndefined();
+    expect(arr.lanes[0].automation[0].values).toEqual([]);
     expect(arr.lanes[0].automation[0].enabled).toBe(true);
+    expect(arr.lanes[0].automation[0].stepped).toBe(false);
     expect(arr.globalAutomation[0].values).toEqual([0.3]);
     expect(arr.lengthBars).toBe(0);
   });

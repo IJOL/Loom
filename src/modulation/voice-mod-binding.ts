@@ -315,21 +315,3 @@ export function clearLaneBindings(): void {
   }
   laneBindings.clear();
 }
-
-// ── Test-only back-compat aliases ─────────────────────────────────────────
-// Earlier tests imported these underscore-prefixed names. Keep them as thin
-// wrappers so existing test files (and dsp-render fixtures) keep compiling.
-
-/** Test-only: clear the per-lane bindings map. Alias for clearLaneBindings. */
-export function _resetLaneBindingsForTesting(): void {
-  clearLaneBindings();
-}
-
-/** Test-only inspector. Returns the per-voice binder for the lane (which is
- *  what the historic single-binder tests probed). */
-export function _getLaneBindingForTesting(laneId: string): { binder: ConnectionBinder } | undefined {
-  const lb = laneBindings.get(laneId);
-  if (!lb || lb.voiceBindings.length === 0) return undefined;
-  // The latest voice's binder — what the historic single-slot tests probed.
-  return { binder: lb.voiceBindings[lb.voiceBindings.length - 1].binder };
-}

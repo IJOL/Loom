@@ -28,15 +28,6 @@ export function ensureLaneSize(
   }
   const expected = lane.lengthBars * 16 * AUTOMATION_SUB_RES;
   if (lane.values.length === expected) return;
-  // Step-per-value migration: expand to sub-res.
-  if (lane.values.length === seqLength) {
-    const expanded: number[] = [];
-    for (let s = 0; s < seqLength; s++) {
-      const v = lane.values[s];
-      for (let r = 0; r < AUTOMATION_SUB_RES; r++) expanded.push(v);
-    }
-    lane.values = expanded;
-  }
   if (lane.values.length < expected) {
     const last = lane.values[lane.values.length - 1] ?? 0.5;
     while (lane.values.length < expected) lane.values.push(last);

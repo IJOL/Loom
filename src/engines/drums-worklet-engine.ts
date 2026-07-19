@@ -579,30 +579,12 @@ export class DrumsWorkletEngine implements SynthEngine {
   }
 
   applyPreset(name: string): void {
-    // 1) Unified drum-kits.json entry (the drums-page picker vocabulary).
+    // Unified drum-kits.json entry (the drums-page picker vocabulary).
     const unified = findDrumKit(name);
-    if (unified) {
-      this.kitMode = unified.kind;
-      if (unified.kind === 'synth' && unified.kitId) this.loadKit(unified.kitId);
-      // sample kit: kitMode set; async decode + engineState mirror owned elsewhere.
-      return;
-    }
-    // 2) Legacy back-compat: a GM-tagged drums-machine.json preset ("KIT *") →
-    //    kitId → synth kit, plus any numeric param overrides.
-    this.kitMode = 'synth';
-    const preset = this.presets.find((p) => p.name === name);
-    let kitId: string | undefined;
-    let overrides: Array<[string, number]> = [];
-    if (preset) {
-      const params = preset.params as Record<string, number | string>;
-      if (typeof params.kitId === 'string') kitId = params.kitId;
-      overrides = Object.entries(params)
-        .filter(([k, v]) => k !== 'kitId' && typeof v === 'number') as Array<[string, number]>;
-    }
-    // 3) Bare kit *name* fallback (direct kit selection).
-    if (!kitId) kitId = KITS_BY_NAME[name];
-    if (kitId) this.loadKit(kitId);
-    for (const [id, v] of overrides) this.setBaseValue(id, v);
+    if (!unified) return;
+    this.kitMode = unified.kind;
+    if (unified.kind === 'synth' && unified.kitId) this.loadKit(unified.kitId);
+    // sample kit: kitMode set; async decode + engineState mirror owned elsewhere.
   }
 
   /** Reload every per-voice synth bag from a kit + reset the per-voice strips to
@@ -658,11 +640,6 @@ export class DrumsWorkletEngine implements SynthEngine {
     this.voiceStrips = {};
   }
 }
-
-// Bare kit-name → id lookup (back-compat preset path #3).
-const KITS_BY_NAME: Record<string, string> = Object.fromEntries(
-  Object.values(BY_ID).map((k) => [k.name, k.id]),
-);
 
 // NOTE: this engine is NOT registered in the engine registry. Like
 // WorkletLaneEngine, it is constructed directly by the lane allocator. The

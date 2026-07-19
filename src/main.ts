@@ -28,7 +28,6 @@ import { DRUM_LANES, type DrumVoice } from './core/drums';
 import { ChannelStrip } from './core/fx';
 import { type KnobHandle } from './core/knob';
 import { PolySynth } from './polysynth/polysynth';
-import { stepsToNotes, bassStepsToNotes } from './core/notes';
 import * as laneTrackHelpers from './core/lane-display';
 import { SessionHost } from './session/session-host';
 import { emptySessionState, DEFAULT_MUSICALITY } from './session/session';

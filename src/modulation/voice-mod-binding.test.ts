@@ -7,8 +7,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   bindVoiceModulators, bindEngineModulators,
   reapplyLaneModulations, disposeLaneModulations,
-  addInsertChainParams,
-  _resetLaneBindingsForTesting, _getLaneBindingForTesting,
+  addInsertChainParams, clearLaneBindings,
 } from './voice-mod-binding';
 import type { ModulatorVoice, ModulatorState, ModulationHost } from './types';
 import type { Voice } from '../engines/engine-types';
@@ -85,7 +84,7 @@ function makeMockVoice(params: Map<string, AudioParam>): Voice {
 // ── Tests ──────────────────────────────────────────────────────────────────
 
 describe('voice-mod-binding integration', () => {
-  beforeEach(() => { _resetLaneBindingsForTesting(); });
+  beforeEach(() => { clearLaneBindings(); });
 
   it('binds an LFO routed to filter.resonance — gain bridge is created', () => {
     const ctx = makeMockCtx();
@@ -144,15 +143,15 @@ describe('voice-mod-binding integration', () => {
       host,
     );
     const voiceMods = new Map<string, ModulatorVoice>([['lfo1', makeMockModulatorVoice()]]);
-    bindVoiceModulators({ laneId: 'bass', engine, voice, voiceMods, ctx });
+    const binder = bindVoiceModulators({ laneId: 'bass', engine, voice, voiceMods, ctx });
     expect(dest.inputs).toHaveLength(0);
 
     // Simulate user wiring a new connection via the modulator panel UI.
     mods[0].connections.push({ id: 'c1', paramId: 'bass.filter.resonance', depth: 1.0 });
     reapplyLaneModulations('bass');
 
-    const lookup = _getLaneBindingForTesting('bass');
-    expect(lookup?.binder.activeCount()).toBe(1);
+    // reapplyLaneModulations() re-applies onto the SAME binder instance.
+    expect(binder.activeCount()).toBe(1);
     expect(dest.inputs).toHaveLength(1);
     expect(dest.inputs[0].gain.value).toBeCloseTo(1.0);
   });
@@ -171,11 +170,11 @@ describe('voice-mod-binding integration', () => {
     );
     const voiceMods = new Map<string, ModulatorVoice>([['lfo1', makeMockModulatorVoice()]]);
 
-    bindVoiceModulators({ laneId: 'bass', engine, voice, voiceMods, ctx });
-    expect(_getLaneBindingForTesting('bass')).toBeDefined();
+    const binder = bindVoiceModulators({ laneId: 'bass', engine, voice, voiceMods, ctx });
+    expect(binder.activeCount()).toBe(1);
 
     disposeLaneModulations('bass');
-    expect(_getLaneBindingForTesting('bass')).toBeUndefined();
+    expect(binder.activeCount()).toBe(0);
   });
 
   it('rebinding the same lane disposes the previous binder (no leak across voices)', () => {
@@ -223,7 +222,7 @@ describe('voice-mod-binding integration', () => {
 });
 
 describe('bindVoiceModulators — scope partitioning', () => {
-  beforeEach(() => { _resetLaneBindingsForTesting(); });
+  beforeEach(() => { clearLaneBindings(); });
 
   it('only wires modulators with scope=per-voice', () => {
     const ctx = new AudioContext();
@@ -258,7 +257,7 @@ describe('bindVoiceModulators — scope partitioning', () => {
 });
 
 describe('bindEngineModulators — scope partitioning', () => {
-  beforeEach(() => { _resetLaneBindingsForTesting(); });
+  beforeEach(() => { clearLaneBindings(); });
 
   it('only wires modulators with scope=shared', () => {
     const ctx = new AudioContext();

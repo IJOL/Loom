@@ -1,10 +1,7 @@
 import type { Sequencer } from '../core/sequencer';
-import type { Wave } from '../core/synth';
 import type { SessionHost } from '../session/session-host';
 import type { SessionState } from '../session/session';
 import type { LaneAllocator } from '../app/lane-allocator';
-import { LANE_ID_BASS, LANE_ID_DRUMS } from '../core/lane-ids';
-import type { TB303 } from '../core/synth';
 import type { ArrangementState } from '../performance/performance';
 import { resolveMeter, formatMeter, type TimeSignature } from '../core/meter';
 
@@ -24,9 +21,6 @@ export interface SavedStateV3 {
   /** Master shaper (air / multiband glue / stereo width) — optional/additive;
    *  absent ⇒ the shaper keeps its constructed defaults. */
   masterShaper?: import('../core/master-shaper').MasterShaperState;
-  kit: string;
-  wave: Wave;
-  synthParams: import('../core/synth').TB303['params'];
   sessionState: SessionState;
   /** Performance view — optional, absent in older saves. */
   mode?: 'session' | 'performance';
@@ -66,29 +60,8 @@ export interface SavedStateV3Deps {
   setArrangement?: (a: ArrangementState) => void;
 }
 
-// Phase 4 cutover: the legacy node-per-note TB303 / DrumMachine instances are
-// gone (lanes synthesise through the worklet). The top-level v3 `kit`/`wave`/
-// `synthParams` fields are now vestigial — the authoritative per-lane sound
-// lives in sessionState.lanes[].engineState. getSynth/getDrums therefore always
-// return null; the fields stay in the schema for back-compat with old saves
-// (load tolerates a null instance), and save writes harmless defaults.
-interface LegacyTB303Instance { params: TB303['params']; setKit?(k: string): void; }
-interface LegacyDrumsInstance { kitId?: string; setKit(k: string): void; }
-function getSynth(deps: SavedStateV3Deps): LegacyTB303Instance | null {
-  const engine = deps.lanes.resources.get(LANE_ID_BASS)?.engine as
-    { getInstance?(): LegacyTB303Instance | null } | undefined;
-  return engine?.getInstance?.() ?? null;
-}
-function getDrums(deps: SavedStateV3Deps): LegacyDrumsInstance | null {
-  const engine = deps.lanes.resources.get(LANE_ID_DRUMS)?.engine as
-    { getInstance?(): LegacyDrumsInstance | null } | undefined;
-  return engine?.getInstance?.() ?? null;
-}
-
 export function buildSavedStateV3(deps: SavedStateV3Deps): SavedStateV3 {
   const { seq, volInput, sessionHost } = deps;
-  const synth = getSynth(deps);
-  const drums = getDrums(deps);
   const state: SavedStateV3 = {
     schemaVersion: 3,
     bpm: seq.bpm,
@@ -98,9 +71,6 @@ export function buildSavedStateV3(deps: SavedStateV3Deps): SavedStateV3 {
     masterStrip: deps.masterStrip?.serialize(),
     masterComp: deps.masterComp?.getState(),
     masterShaper: deps.masterShaper?.getState(),
-    kit: drums?.kitId ?? 'default',
-    wave: synth?.params.wave ?? 'sawtooth',
-    synthParams: synth?.params ? { ...synth.params } : {} as import('../core/synth').TB303['params'],
     sessionState: sessionHost.getStateForSave(),
   };
   if (deps.getMode) state.mode = deps.getMode();
@@ -126,8 +96,6 @@ export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): voi
   if (s.masterComp) deps.masterComp?.setState(s.masterComp);
   if (s.masterShaper) deps.masterShaper?.setState(s.masterShaper);
 
-  // Session state is applied first so lane resources are allocated before
-  // we try to get synth/drums instances from them.
   if (s.sessionState) {
     // Normalise optional arrays so downstream code can use ??= [] safely.
     s.sessionState.masterInserts ??= [];
@@ -135,15 +103,6 @@ export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): voi
     for (const bus of s.sessionState.sends ?? []) bus.inserts ??= [];
     sessionHost.applyLoadedSessionState(s.sessionState);
   }
-
-  const synth = getSynth(deps);
-  const drums = getDrums(deps);
-
-  if (typeof s.kit === 'string') {
-    if (drums) { drums.setKit(s.kit); }
-  }
-  if (s.wave && synth) { synth.params.wave = s.wave; }
-  if (s.synthParams && synth) synth.params = { ...synth.params, ...s.synthParams };
 
   refreshKnobsFromSynth();
   renderLanes();
@@ -172,8 +131,7 @@ export function migrateArrangementCurves(arr: ArrangementState): void {
   if (typeof (arr as { lengthBars?: number }).lengthBars !== 'number') {
     (arr as { lengthBars: number }).lengthBars = 0;
   }
-  const fix = (c: { samples?: number[]; values?: number[]; enabled?: boolean; stepped?: boolean }) => {
-    if (!c.values && Array.isArray(c.samples)) { c.values = c.samples; delete c.samples; }
+  const fix = (c: { values?: number[]; enabled?: boolean; stepped?: boolean }) => {
     if (!c.values) c.values = [];
     if (c.enabled === undefined) c.enabled = true;
     if (c.stepped === undefined) c.stepped = false;

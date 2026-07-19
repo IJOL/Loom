@@ -3,29 +3,6 @@ import { midiToFreq } from './notes';
 import { DEFAULT_METER, type TimeSignature } from './meter';
 export { midiToFreq };
 
-// Step types retained for the load-time migration of old saves (notes.ts
-// bassStepsToNotes/stepsToNotes/drumStepsToNotes → NoteEvent[]). They are no
-// longer part of any live runtime pattern.
-export interface BassStep {
-  on: boolean;
-  note: number;     // MIDI
-  accent: boolean;
-  slide: boolean;   // glissando into NEXT step
-}
-
-export interface DrumStep {
-  on: boolean;
-  accent: boolean;
-  roll?: number;  // 0/undefined = single hit, 2 = 32nds, 4 = 64ths
-}
-
-export interface PolyStep {
-  on: boolean;
-  notes: number[];  // MIDI notes — single note = monophonic, multiple = chord
-  accent: boolean;
-  tie: boolean;     // hold gate past next step
-}
-
 // The master clock. After the Classic pattern was removed it is just a 25 ms
 // look-ahead timer that drives `sessionTick`; the Session host owns all
 // per-lane scheduling. `length` survives as the default new-clip length (bars

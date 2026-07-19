@@ -1,22 +1,15 @@
 // Load-time normaliser for SessionState. Runs on every load (save file,
-// autosave, demo JSON) and backfills fields that older formats are
-// missing — engine ids, modern `notes` array from legacy step formats,
-// and a stable palette color. It also mints stable insert-slot ids for
-// slots that predate the id field.
+// autosave, demo JSON) and backfills fields older formats may be missing —
+// a stable palette color, default FX sends. It also mints stable insert-slot
+// ids for slots that predate the id field.
 
 import { CLIP_COLOR_PALETTE, DEFAULT_MUSICALITY, type SessionClip, type SessionState } from './session';
-import { bassStepsToNotes, stepsToNotes, drumStepsToNotes } from '../core/notes';
-import type { NoteEvent } from '../core/notes';
 import { DEFAULT_RESOLUTION } from '../core/drum-grid-editing';
-import { defaultSends, remapLaneSendParams } from '../core/send-migration';
+import { defaultSends } from '../core/send-migration';
 import { backfillInsertIds } from './insert-slot';
 
 export function migrateLoadedSessionState(s: SessionState): SessionState {
   for (const lane of s.lanes) {
-    delete (lane as { kind?: unknown }).kind;
-    delete (lane as { expanded?: unknown }).expanded;
-    if (!lane.engineId) lane.engineId = guessEngineId(lane.id);
-
     // Canonical preset vocabulary: every built-in / JSON preset is `engine:<name>`
     // for ALL engines. Older saves + demos (and imported melodic lanes) stored
     // subtractive factory presets as `factory:<name>`; fold them into `engine:`
@@ -44,12 +37,6 @@ export function migrateLoadedSessionState(s: SessionState): SessionState {
   backfillInsertIds(s.masterInserts);
   for (const bus of s.sends ?? []) backfillInsertIds(bus.inserts);
   for (const lane of s.lanes) backfillInsertIds(lane.inserts);
-  // Remap legacy per-lane send knob ids (mix.<lane>.rev/.dly → .sendB/.sendA).
-  for (const lane of s.lanes) {
-    if (lane.engineState?.params) {
-      lane.engineState.params = remapLaneSendParams(lane.engineState.params);
-    }
-  }
   return s;
 }
 
@@ -61,43 +48,11 @@ function colorForClipId(id: string): string {
   return CLIP_COLOR_PALETTE[Math.abs(hash) % CLIP_COLOR_PALETTE.length];
 }
 
-function guessEngineId(laneId: string): string {
-  if (laneId === 'bass')  return 'tb303';
-  if (laneId === 'drums' || laneId.startsWith('drum:')) return 'drums-machine';
-  return 'subtractive';
-}
-
 function migrateClip(c: SessionClip): SessionClip {
-  // Modern clip: only backfill the color if it was missing (e.g. demo JSONs
-  // that predate the color field, or save files from before the palette).
-  if (Array.isArray(c.notes)) {
-    // Backfill gridResolution so the editor's first open doesn't mutate the clip
-    // and accidentally create a spurious undo entry via AutoHistory's diff check.
-    const withColor: SessionClip = c.color ? c : { ...c, color: colorForClipId(c.id) };
-    return withColor.gridResolution ? withColor : { ...withColor, gridResolution: DEFAULT_RESOLUTION };
-  }
-  type LegacyClip = SessionClip & {
-    bassNotes?: NoteEvent[];
-    polyNotes?: NoteEvent[];
-    bassSteps?: import('../core/sequencer').BassStep[];
-    polySteps?: import('../core/sequencer').PolyStep[];
-    drumSteps?: Partial<Record<import('../core/drums').DrumVoice, import('../core/sequencer').DrumStep[]>>;
-    drumLane?: import('../core/drums').DrumVoice;
-    drumLaneSteps?: import('../core/sequencer').DrumStep[];
-  };
-  const legacy = c as LegacyClip;
-  let notes: NoteEvent[] = [];
-  if      (legacy.bassNotes?.length) notes = legacy.bassNotes;
-  else if (legacy.polyNotes?.length) notes = legacy.polyNotes;
-  else if (legacy.bassSteps)         notes = bassStepsToNotes(legacy.bassSteps);
-  else if (legacy.polySteps)         notes = stepsToNotes(legacy.polySteps);
-  else if (legacy.drumSteps)         notes = drumStepsToNotes(legacy.drumSteps);
-  else if (legacy.drumLaneSteps && legacy.drumLane) {
-    notes = drumStepsToNotes({ [legacy.drumLane]: legacy.drumLaneSteps });
-  }
-  return {
-    id: c.id, name: c.name, color: c.color ?? colorForClipId(c.id),
-    lengthBars: c.lengthBars, launchQuantize: c.launchQuantize,
-    envelopes: c.envelopes, notes,
-  };
+  // Only backfill the color if it was missing (e.g. demo JSONs that predate
+  // the color field, or save files from before the palette).
+  // Backfill gridResolution so the editor's first open doesn't mutate the clip
+  // and accidentally create a spurious undo entry via AutoHistory's diff check.
+  const withColor: SessionClip = c.color ? c : { ...c, color: colorForClipId(c.id) };
+  return withColor.gridResolution ? withColor : { ...withColor, gridResolution: DEFAULT_RESOLUTION };
 }
