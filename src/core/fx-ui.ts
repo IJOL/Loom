@@ -43,6 +43,10 @@ export interface FxUIDeps {
    *  sessionState.masterInserts so they survive save/load. If absent, a local
    *  array is used (not persisted). */
   getSessionState?: () => import('../session/session').SessionState;
+  /** Fired when the SET of automation destinations changes — a master or
+   *  send-bus insert is added or removed. Drives DestinationRegistry.invalidate().
+   *  Optional so test fixtures without the registry still compile. */
+  onDestinationsChanged?: () => void;
 }
 
 let _deps: FxUIDeps | null = null;
@@ -178,6 +182,7 @@ export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void; re
       onChange: () => deps.saveSession?.(),
       registerKnob: deps.registerKnob,
       automationScopeId: 'fx.master',
+      onDestinationsChanged: deps.onDestinationsChanged,
     });
   };
 
@@ -221,6 +226,7 @@ export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void; re
       onChange: () => deps.saveSession?.(),
       registerKnob: deps.registerKnob,
       automationScopeId: `fx.send.${bus.id}`,
+      onDestinationsChanged: deps.onDestinationsChanged,
     });
   };
 

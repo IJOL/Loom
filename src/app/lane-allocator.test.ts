@@ -251,3 +251,90 @@ describe('swapLaneEngine replaces the engine in place', () => {
     expect(lanes.resources.get('nope')).toBeUndefined();
   });
 });
+
+// Review Finding 4: ensureLaneResource/swapLaneEngine call onDestinationsChanged
+// relative to their early-return guards. Get the placement wrong and either
+// every idempotent call (ensureLaneVoice re-checks ensureLaneResource on
+// essentially every trigger) spuriously invalidates the automation destination
+// registry, or a genuine allocation/swap silently fails to announce.
+describe('onDestinationsChanged announcements (Finding 4)', () => {
+  it('ensureLaneResource announces exactly once on a genuine new lane allocation', () => {
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const spy = vi.fn();
+    const lanes = createLaneAllocator({
+      ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [],
+      onDestinationsChanged: spy,
+    });
+
+    lanes.ensureLaneResource('tb-303-1', 'tb303');
+
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('ensureLaneResource does NOT announce on the idempotent no-op (lane already allocated)', () => {
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const spy = vi.fn();
+    const lanes = createLaneAllocator({
+      ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [],
+      onDestinationsChanged: spy,
+    });
+
+    lanes.ensureLaneResource('tb-303-1', 'tb303');
+    spy.mockClear(); // isolate the repeat call from the genuine allocation above
+
+    // Mirrors what ensureLaneVoice does on every trigger: re-call for a lane
+    // that's already allocated. Must hit the early-return guard and no-op.
+    lanes.ensureLaneResource('tb-303-1', 'tb303');
+
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('swapLaneEngine announces exactly once on a genuine engine swap', () => {
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const spy = vi.fn();
+    const lanes = createLaneAllocator({
+      ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [],
+      onDestinationsChanged: spy,
+    });
+    lanes.ensureLaneResource('L', 'subtractive');
+    spy.mockClear(); // isolate the swap from the allocation above
+
+    lanes.swapLaneEngine('L', 'fm');
+
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('swapLaneEngine does NOT announce when the lane has no resource (early-return guard)', () => {
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const spy = vi.fn();
+    const lanes = createLaneAllocator({
+      ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [],
+      onDestinationsChanged: spy,
+    });
+
+    lanes.swapLaneEngine('nope', 'fm');
+
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('swapLaneEngine does NOT announce when the new engineId cannot be resolved (second guard)', () => {
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const spy = vi.fn();
+    const lanes = createLaneAllocator({
+      ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [],
+      onDestinationsChanged: spy,
+    });
+    lanes.ensureLaneResource('L', 'subtractive');
+    spy.mockClear(); // isolate the failed swap from the allocation above
+
+    lanes.swapLaneEngine('L', 'no-such-engine');
+
+    expect(spy).not.toHaveBeenCalled();
+    expect(lanes.resources.get('L')!.engine.id).toBe('subtractive'); // unchanged
+  });
+});

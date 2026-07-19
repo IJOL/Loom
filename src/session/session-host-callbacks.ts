@@ -330,6 +330,11 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
           self.deps.onActiveLaneChanged?.();
         }
         self.renderWithMixer();
+        // The deleted lane's engine params + insert-chain params are no longer
+        // targetable — deleteLane/dispose above bypass ensureLaneResource/
+        // swapLaneEngine (the only other sites that invalidate), so this is the
+        // only place a lane delete gets announced.
+        self.deps.onDestinationsChanged?.();
       };
       if (hd) withUndo(hd, run); else run();
     },

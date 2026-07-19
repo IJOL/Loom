@@ -232,10 +232,10 @@ export function rehydrateLane(self: SessionHost, lane: SessionLane): void {
   }
   if (lane.enginePresetName) self.deps.applyPresetForLane?.(lane.id, lane.enginePresetName);
   applyEngineStateForLane(self, lane);
-  // ensureLaneResource above already invalidated once for the new lane itself,
-  // but that fired BEFORE the rehydrateInsertChain call on line 231 populated
-  // its cloned inserts — a listener refreshing synchronously at that point
-  // would see the lane without its copied FX. Announce again now that the
-  // whole clone (lane + inserts + preset + engine state) is in place.
-  self.deps.onDestinationsChanged?.();
+  // No second onDestinationsChanged here: listAutomationTargets derives
+  // destinations from session data (lane.inserts, a plain JSON field), never
+  // from the live audio graph, and duplicateLane (session-ops.ts) deep-clones
+  // the whole lane — including inserts — and splices it into state.lanes
+  // BEFORE this function runs. ensureLaneResource's own invalidate above
+  // already sees the fully-populated clone.
 }

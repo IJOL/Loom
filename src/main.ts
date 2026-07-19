@@ -921,6 +921,7 @@ const fxUIDeps: FxUIDeps = {
   get historyDeps() { return _discreteHistoryDeps; },
   // Task 28: expose session state so master insert slots are persisted.
   getSessionState: () => sessionHost.state,
+  onDestinationsChanged: () => destinations.invalidate(),
 };
 const { rebuildMasterInserts, rebuildSends, refreshMasterComp, refreshMasterShaper } = wireFxUI(fxUIDeps);
 // Task 28: rebuild master insert UI after each session load so the slots
