@@ -63,6 +63,11 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
   // so parseAutomationParamId('filter.cutoff') would misread 'filter' as a
   // lane id and drop the param. Checking the `<laneId>.` prefix FIRST avoids
   // that — a bare id never happens to start with this exact lane's own id.
+  // NOTE: This scheme assumes no engine declares a local param id whose first
+  // dotted segment equals a lane id. Currently true by construction: lane ids
+  // come from nextLaneSlug() in session-host-util.ts, and engine param ids
+  // are defined per engine; lane-id collision is prevented across separate
+  // files only by convention, not by a structural check.
   function setEngineParam(laneId: string, paramId: string, value01: number): void {
     const canonical = paramId.startsWith(`${laneId}.`);
     const parsed = canonical ? parseAutomationParamId(paramId) : null;
@@ -325,6 +330,14 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
     // (listAutomationTargets' declared order — verified in loom-facade.test.ts),
     // sliced to the device bank's 8 knobs. Never reaches master/send racks:
     // the filter below only keeps targets whose laneId is this exact lane.
+    //
+    // LIMITATION: the device bank is fixed at 8 slots with no paging. Engine
+    // params fill slots first; insert params only become reachable where the
+    // engine declares fewer than 8 continuous params. Lanes whose engine has
+    // 8 or more continuous params (Subtractive 30, FM 31, Wavetable 9,
+    // Westcoast 15, Drums-Machine 112) never surface an insert param on
+    // hardware. Exposing FX params on those lanes would require a paging or
+    // filtering scheme in the bank — a deliberate UX choice, not an oversight.
     engineParamIds: (laneId) => destinations.list()
       .filter((t) => t.laneId === laneId)
       .map((t) => t.id)
