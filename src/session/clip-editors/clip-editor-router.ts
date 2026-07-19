@@ -48,6 +48,11 @@ export interface ClipEditorDeps {
    *  callers/tests are unaffected. */
   laneResources?: LaneResourceMap;
   automationRegistry?: Map<string, KnobHandle>;
+  /** The single knob-mount funnel (SessionHost.registerKnobHandle in
+   *  production). The audio clip's Gain knob MUST go through this — not a
+   *  direct automationRegistry write — or right-click automation / Performance
+   *  recording never sees it (BLOCKER, final review). */
+  registerKnob?: (k: KnobHandle) => void;
   sessionState?: SessionState;
   /** When present, the audio clip editor shows a "Transcribe loop" button that
    *  sends the clip's effective loop region to the audio→notes backend. The
@@ -204,7 +209,8 @@ export function renderClipEditor(
             laneId: lane.id,
             registerKnob: (k: unknown) => {
               const h = k as KnobHandle;
-              if (h.meta?.id) deps.automationRegistry!.set(h.meta.id, h);
+              if (deps.registerKnob) deps.registerKnob(h);
+              else if (h.meta?.id) deps.automationRegistry!.set(h.meta.id, h);
             },
             registry: deps.automationRegistry as Map<string, unknown>,
             sessionState: deps.sessionState,

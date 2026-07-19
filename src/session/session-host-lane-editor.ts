@@ -135,8 +135,7 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
     engine.buildParamUI(host, {
       laneId,
       registerKnob: (k: unknown) => {
-        const handle = k as import('../core/knob').KnobHandle;
-        if (handle.meta?.id) self.deps.automationRegistry.set(handle.meta.id, handle);
+        self.registerKnobHandle(k as import('../core/knob').KnobHandle);
       },
       registry: self.deps.automationRegistry as Map<string, unknown>,
       lookupLaneDisplayName: (id: string) =>

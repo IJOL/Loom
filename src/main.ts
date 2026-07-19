@@ -533,6 +533,7 @@ const sessionHost = new SessionHost({
   mixerDeps,
   midiLabel,
   automationRegistry,
+  registerKnob,
   getAutoAbsSubIdx,
   onDestinationsChanged: () => destinations.invalidate(),
   destinations,
@@ -814,6 +815,12 @@ onRegisterKnob((k) => {
     },
     addTimelineCurve: (paramId) => performanceFeature.addCurve(paramId),
     onClipEdited: () => sessionHost.inspector.refreshContext(),
+    revealTimelineCurve: (paramId) => {
+      const row = document.querySelector<HTMLElement>(
+        `#performance-view-root [data-param-id="${CSS.escape(paramId)}"]`,
+      );
+      row?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    },
   });
 });
 (sessionHost.deps as { recHooks?: import('./session/session-runtime').RecHooks }).recHooks =

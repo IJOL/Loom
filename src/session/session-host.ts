@@ -415,6 +415,15 @@ export class SessionHost {
     this.renderWithMixer();
   }
 
+  /** The single funnel every UI knob-mount call site must use (engine param
+   *  UI, per-lane insert FX, the audio-channel Gain knob) — see
+   *  SessionHostDeps.registerKnob for why. Delegates to deps.registerKnob;
+   *  falls back to a direct Map write only when a test fixture omits it. */
+  registerKnobHandle(k: import('../core/knob').KnobHandle): void {
+    if (this.deps.registerKnob) this.deps.registerKnob(k);
+    else if (k.meta?.id) this.deps.automationRegistry.set(k.meta.id, k);
+  }
+
   /** Wire historyDeps into the inspector after construction.
    *  historyDeps closes over saveWiringDeps which closes over sessionHost,
    *  so it can only be built after sessionHost.init() returns. */
@@ -448,9 +457,7 @@ export class SessionHost {
       laneResources: this.deps.laneResources,
       saveSession: this.deps.saveSession,
       triggerForLane: this.deps.triggerForLane,
-      registerKnob: (k) => {
-        if (k.meta?.id) this.deps.automationRegistry.set(k.meta.id, k);
-      },
+      registerKnob: (k) => this.registerKnobHandle(k),
       addNoteLane: (engineId, notes, lengthBars, name) => this.addNoteLane(engineId, notes, lengthBars, name),
       transcribeLoop: this._transcribeLoop,
       onSeekBar: (bar: number) => this.seekToBar(bar),

@@ -765,6 +765,7 @@ export class SessionInspector {
       triggerForLane: this.deps.triggerForLane,
       laneResources: this.deps.laneResources,
       automationRegistry: this.deps.automationRegistry,
+      registerKnob: this.deps.registerKnob,
       sessionState: this.deps.state,
       transcribeLoop: this.deps.transcribeLoop,
       onSeekBar: this.deps.onSeekBar,

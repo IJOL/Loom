@@ -59,6 +59,18 @@ export interface SessionHostDeps {
   mixerDeps: MixerColumnDeps;
   midiLabel: (m: number) => string;
   automationRegistry: Map<string, import('../core/knob').KnobHandle>;
+  /** The ONE knob-mount notifier (main.ts's `registerKnob`, itself a thin
+   *  wrapper over automation.registerKnob). Every UI call site that mounts a
+   *  knob — engine param UI, per-lane insert FX, the audio-channel Gain knob —
+   *  MUST call this instead of writing automationRegistry directly, or every
+   *  registerKnob-wrap hook (Performance recording, the right-click automation
+   *  menu) misses knobs mounted after boot (BLOCKER found in final review:
+   *  those sites wrote the Map directly, so a knob created by a lane
+   *  re-render — engine swap, undo/redo, the synth-editor chevron — never got
+   *  the menu). Optional so bare test fixtures that never exercise those UI
+   *  panels can skip it; SessionHost.registerKnobHandle() falls back to a
+   *  direct Map write ONLY in that case — main.ts always supplies this. */
+  registerKnob?: (k: import('../core/knob').KnobHandle) => void;
   getAutoAbsSubIdx: () => number;
   onActiveLaneChanged?: () => void;
   /** Phase B: per-lane engine + strip map. Optional so test fixtures don't break. */

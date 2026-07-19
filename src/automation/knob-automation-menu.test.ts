@@ -64,6 +64,7 @@ describe('attachKnobAutomationMenu', () => {
       openClip: () => {},
       addTimelineCurve: () => {},
       onClipEdited: () => {},
+      revealTimelineCurve: () => {},
     });
 
     rightClick(handle.el);
@@ -94,6 +95,7 @@ describe('attachKnobAutomationMenu', () => {
       openClip: () => {},
       addTimelineCurve: () => {},
       onClipEdited: () => {},
+      revealTimelineCurve: () => {},
     });
 
     rightClick(handle.el);
@@ -123,6 +125,7 @@ describe('attachKnobAutomationMenu', () => {
       openClip: () => {},
       addTimelineCurve: () => {},
       onClipEdited: () => {},
+      revealTimelineCurve: () => {},
     });
 
     rightClick(handle.el);
@@ -130,6 +133,54 @@ describe('attachKnobAutomationMenu', () => {
 
     (document.querySelector('.context-menu-item') as HTMLElement).click();
     expect(clip.envelopes.length).toBe(1);
+  });
+
+  // FINDING 3 (final review): the menu captures clipIdx at OPEN time but the
+  // clip at that row can change before the user clicks (moved/replaced/
+  // deleted) — writing by position alone would land the envelope on the
+  // wrong clip. The fix captures the clip's id at open time and revalidates
+  // it at select time.
+  it('does nothing if the clip at that row was replaced between opening and selecting', () => {
+    const originalClip = {
+      id: 'c1', name: 'Verse', lengthBars: 1, notes: [],
+    };
+    const replacementClip = {
+      id: 'c-different', name: 'Verse', lengthBars: 1, notes: [],
+    };
+    const state = {
+      lanes: [{ id: 'poly1', name: 'Sub 1', engineId: 'subtractive', clips: [originalClip], inserts: [] }],
+      masterInserts: [], sends: [],
+    } as unknown as SessionState;
+
+    const handle = createKnob({ id: 'poly1.filter.cutoff', label: 'CUTOFF',
+      min: 0, max: 1, value: 0.5, onChange: () => {} });
+    document.body.appendChild(handle.el);
+
+    attachKnobAutomationMenu(handle, {
+      destinations: createDestinationRegistry({ getState: () => state, getKnobRegistry: () => new Map() }),
+      getMode: () => 'session',
+      getState: () => state,
+      getLaneStates: () => new Map(),
+      getArrangement: () => emptyArrangementState(120),
+      openClip: () => {},
+      addTimelineCurve: () => {},
+      onClipEdited: () => {},
+      revealTimelineCurve: () => {},
+    });
+
+    rightClick(handle.el);
+    expect(menuItems()[0].text).toContain('Automate in clip "Verse"');
+
+    // Between opening the menu and clicking it, clip-editing swaps out the
+    // clip at row 0 (same position, different clip — e.g. a delete+insert).
+    state.lanes[0].clips[0] = replacementClip as unknown as SessionClip;
+
+    (document.querySelector('.context-menu-item') as HTMLElement).click();
+
+    // Non-vacuity: without the id revalidation, this would write to
+    // replacementClip (matched by position) instead of doing nothing.
+    expect((originalClip as unknown as SessionClip).envelopes).toBeUndefined();
+    expect((replacementClip as unknown as SessionClip).envelopes).toBeUndefined();
   });
 
   it('shows a disabled item with the reason for a master FX knob in Session view', () => {
@@ -152,6 +203,7 @@ describe('attachKnobAutomationMenu', () => {
       openClip: () => {},
       addTimelineCurve: () => {},
       onClipEdited: () => {},
+      revealTimelineCurve: () => {},
     });
 
     rightClick(handle.el);
@@ -178,6 +230,7 @@ describe('attachKnobAutomationMenu', () => {
     document.body.appendChild(handle.el);
 
     const addTimelineCurveCalls: string[] = [];
+    const revealCalls: string[] = [];
 
     attachKnobAutomationMenu(handle, {
       destinations: createDestinationRegistry({ getState: () => state, getKnobRegistry: () => new Map() }),
@@ -188,6 +241,7 @@ describe('attachKnobAutomationMenu', () => {
       openClip: () => {},
       addTimelineCurve: (paramId) => addTimelineCurveCalls.push(paramId),
       onClipEdited: () => {},
+      revealTimelineCurve: (paramId) => revealCalls.push(paramId),
     });
 
     rightClick(handle.el);
@@ -203,5 +257,54 @@ describe('attachKnobAutomationMenu', () => {
       ...arrangement.globalAutomation.map((c) => c.paramId),
     ];
     expect(allParamIds).toEqual([]);
+    // Creating the curve also reveals it — both branches of Edit/Automate end
+    // the same way: the curve visible.
+    expect(revealCalls).toEqual(['poly1.filter.cutoff']);
+  });
+
+  // FINDING 2 (final review): "Edit automation on the timeline" on an
+  // ALREADY-EXISTING curve used to close the menu and do nothing — a live
+  // no-op. It must reveal the curve instead.
+  it('reveals (not re-creates) an already-existing timeline curve on Edit', () => {
+    const state = {
+      lanes: [{ id: 'poly1', name: 'Sub 1', engineId: 'subtractive',
+                clips: [{ id: 'c1', name: 'Verse', lengthBars: 1, notes: [] }], inserts: [] }],
+      masterInserts: [], sends: [],
+    } as unknown as SessionState;
+    const arrangement = emptyArrangementState(120);
+    arrangement.lanes.push({
+      laneId: 'poly1', clipEvents: [],
+      automation: [{ paramId: 'poly1.filter.cutoff', values: [0.5], enabled: true }],
+    } as never);
+
+    const handle = createKnob({ id: 'poly1.filter.cutoff', label: 'CUTOFF',
+      min: 0, max: 1, value: 0.5, onChange: () => {} });
+    document.body.appendChild(handle.el);
+
+    const addTimelineCurveCalls: string[] = [];
+    const revealCalls: string[] = [];
+
+    attachKnobAutomationMenu(handle, {
+      destinations: createDestinationRegistry({ getState: () => state, getKnobRegistry: () => new Map() }),
+      getMode: () => 'performance',
+      getState: () => state,
+      getLaneStates: () => new Map(),
+      getArrangement: () => arrangement,
+      openClip: () => {},
+      addTimelineCurve: (paramId) => addTimelineCurveCalls.push(paramId),
+      onClipEdited: () => {},
+      revealTimelineCurve: (paramId) => revealCalls.push(paramId),
+    });
+
+    rightClick(handle.el);
+    expect(menuItems()[0].text).toContain('Edit automation on the timeline');
+
+    (document.querySelector('.context-menu-item') as HTMLElement).click();
+
+    // Must NOT re-create the curve (it already exists)...
+    expect(addTimelineCurveCalls).toEqual([]);
+    // ...but MUST reveal it — this is the non-vacuity check: before the fix,
+    // onSelect for an existing curve called neither function at all.
+    expect(revealCalls).toEqual(['poly1.filter.cutoff']);
   });
 });

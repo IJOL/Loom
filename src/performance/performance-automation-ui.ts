@@ -65,6 +65,9 @@ export function buildAutomationHeader(deps: PerfAutoDeps): HTMLElement {
 export function buildAutomationLane(curve: AutomationCurve, deps: PerfAutoDeps): HTMLElement {
   const wrap = document.createElement('div');
   wrap.className = 'perf-auto-lane';
+  // Scroll-to-reveal target for the knob context menu's "Edit automation on
+  // the timeline" (knob-automation-menu.ts's revealTimelineCurve).
+  wrap.dataset.paramId = curve.paramId;
   const entry = deps.registry.get(curve.paramId);
   if (!entry) wrap.classList.add('missing');
 

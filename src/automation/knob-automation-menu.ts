@@ -31,6 +31,12 @@ export interface KnobMenuDeps {
    *  mutates the arrangement directly, so it can't bypass arrangement undo. */
   addTimelineCurve: (paramId: string) => void;
   onClipEdited: (laneId: string, clipIdx: number) => void;
+  /** Scroll the Performance timeline to the automation curve's row for
+   *  paramId, so "Edit automation on the timeline" actually reveals it
+   *  instead of being a no-op when the curve already exists. Called after
+   *  addTimelineCurve when the curve is freshly created too, so both branches
+   *  of the Edit/Automate item end at the same place: the curve visible. */
+  revealTimelineCurve: (paramId: string) => void;
 }
 
 /** Curve param ids already present in the arrangement (lane + global). */
@@ -76,16 +82,24 @@ export function attachKnobAutomationMenu(handle: KnobHandle, deps: KnobMenuDeps)
 
     if (target.kind === 'clip') {
       const { laneId, clipIdx, clipName, existing } = target;
+      // Capture the clip's identity NOW (menu-open time). onSelect fires later
+      // — after the menu has been open for however long the user takes to
+      // click — and a clip can move (drag, delete, insert) between rows in
+      // that window. Re-resolving by laneId+clipIdx at select time would then
+      // write into whatever clip now sits at that position, not the one the
+      // menu was opened for.
+      const openedClipId = deps.getState().lanes.find((l) => l.id === laneId)?.clips[clipIdx]?.id;
       items.push({
         label: existing
           ? `Edit automation in clip "${clipName}"`
           : `Automate in clip "${clipName}"`,
         onSelect: () => {
-          if (!existing) {
-            const lane = deps.getState().lanes.find((l) => l.id === laneId);
-            const clip = lane?.clips[clipIdx];
-            if (clip) addClipEnvelope(clip, paramId);
-          }
+          const lane = deps.getState().lanes.find((l) => l.id === laneId);
+          const clip = lane?.clips[clipIdx];
+          // The clip at this position changed since the menu opened (moved,
+          // deleted, replaced) — do nothing rather than write to the wrong clip.
+          if (!clip || clip.id !== openedClipId) return;
+          if (!existing) addClipEnvelope(clip, paramId);
           deps.openClip(laneId, clipIdx);
           deps.onClipEdited(laneId, clipIdx);
         },
@@ -96,6 +110,11 @@ export function attachKnobAutomationMenu(handle: KnobHandle, deps: KnobMenuDeps)
         label: existing ? 'Edit automation on the timeline' : 'Automate on the timeline',
         onSelect: () => {
           if (!existing) deps.addTimelineCurve(paramId);
+          // Both branches end the same way: the curve visible. Without this,
+          // "Edit" on an already-existing curve closed the menu and did
+          // nothing at all — a live no-op (the exact silent-failure pattern
+          // this menu exists to remove).
+          deps.revealTimelineCurve(paramId);
         },
       });
     } else {
