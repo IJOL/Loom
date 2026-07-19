@@ -41,8 +41,8 @@ La decisión se toma en este orden:
    canal (`laneStates.get(laneId).playing`). Si no suena nada → el **primer clip** del
    canal, y se abre en el editor.
 3. **Si no, y el parámetro es de un efecto de master o de un envío** (`fx.master.*`,
-   `fx.send.*`) → curva en la línea de tiempo, **y se cambia a vista Performance** para
-   que la curva quede a la vista.
+   `fx.send.*`) → **ítem deshabilitado**, con el motivo en la etiqueta: esos parámetros
+   solo se automatizan desde la vista Performance.
 
 El canal sale del propio identificador vía `parseAutomationParamId`; no se consulta qué
 hay seleccionado en pantalla. Un mando de `subtractive-1.filter.cutoff` escribe en el
@@ -71,6 +71,21 @@ la garantía de que la regla del punto 3 no sorprenda.
 | El canal no tiene ningún clip | Ítem deshabilitado, con el motivo escrito |
 | El mando no es un destino del catálogo | No se abre menú; no se hace `preventDefault` |
 | El insert al que pertenece el mando se borra mientras el menú está abierto | El menú se cierra al perder el foco; la acción revalida el destino antes de escribir |
+
+## Dos cosas del código actual que hay que tocar primero
+
+**1. El mando arranca un arrastre con el botón derecho.** El `pointerdown` de
+`core/knob.ts` no filtra por botón, así que una pulsación derecha captura el puntero,
+marca el mando como "arrastrando" y deja que los siguientes movimientos **cambien el
+valor**. Hoy nadie lo nota porque nadie hace clic derecho sobre un mando; en cuanto este
+menú exista, cada uso lo dispararía. Hay que ignorar los botones que no sean el primario.
+Es preexistente, pero esta función lo destapa, así que se arregla aquí.
+
+**2. Crear una envolvente de clip no tiene función.** La lógica —crear el array si falta,
+no duplicar si el parámetro ya está, rellenar con `0.5` tantos pasos como dure el clip—
+vive suelta dentro del manejador del botón "+ Automation". El menú necesita exactamente
+eso, así que se extrae a una función y el botón pasa a usarla. Sin extraerla habría dos
+copias que se desincronizarían.
 
 ## Diseño técnico
 
