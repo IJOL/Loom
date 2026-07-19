@@ -38,6 +38,14 @@ vi.mock('./example-loader', async (importOriginal) => ({
 import { SessionInspector, _getClipClipboardForTesting } from './session-inspector';
 import type { SessionState, SessionClip, SessionLane } from './session';
 import type { NoteEvent } from '../core/notes';
+import type { DestinationRegistry } from '../automation/destination-registry';
+
+// renderClipAutomationLanes is mocked to a no-op above, so the picker never
+// actually reads this — it only needs to satisfy InspectorDeps' (required)
+// destinations field.
+const fakeDestinations = (): DestinationRegistry => ({
+  list: () => [], subscribe: () => () => {}, invalidate: () => {},
+});
 
 // Minimal inspector chrome that openInspector() reads/wires by id.
 function mountInspectorDom(): void {
@@ -94,6 +102,7 @@ function makeInspector(clip: SessionClip): SessionInspector {
     renderWithMixer: () => {},
     midiLabel: (m: number) => String(m),
     automationRegistry: new Map(),
+    destinations: fakeDestinations(),
     getAutoAbsSubIdx: () => 0,
   });
   insp.setSelectedClip({ laneId: 'lane-1', clipIdx: 0 });
@@ -199,6 +208,7 @@ function mountInspectorFor(lane: SessionLane): SessionInspector {
     renderWithMixer: () => {},
     midiLabel: (m: number) => String(m),
     automationRegistry: new Map(),
+    destinations: fakeDestinations(),
     getAutoAbsSubIdx: () => 0,
   });
   insp.setSelectedClip({ laneId: lane.id, clipIdx: 0 });
@@ -306,6 +316,7 @@ describe('openInspector focuses the clip\'s lane (keyboard follows the open clip
       renderWithMixer: () => {},
       midiLabel: (m: number) => String(m),
       automationRegistry: new Map(),
+      destinations: fakeDestinations(),
       getAutoAbsSubIdx: () => 0,
       onClipFocused,
     });

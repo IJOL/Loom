@@ -16,6 +16,14 @@ vi.mock('./example-loader', async (importOriginal) => ({
 
 import { SessionInspector } from './session-inspector';
 import type { SessionState, SessionClip, SessionLane } from './session';
+import type { DestinationRegistry } from '../automation/destination-registry';
+
+// renderClipAutomationLanes is mocked to a no-op above, so the picker never
+// actually reads this — it only needs to satisfy InspectorDeps' (required)
+// destinations field.
+const fakeDestinations = (): DestinationRegistry => ({
+  list: () => [], subscribe: () => () => {}, invalidate: () => {},
+});
 
 function mountDom(): void {
   document.body.innerHTML = `
@@ -58,6 +66,7 @@ function makeInspector(over: { renderWithMixer?: () => void } = {}): { state: Se
     renderWithMixer: over.renderWithMixer ?? (() => {}),
     midiLabel: (m: number) => String(m),
     automationRegistry: new Map(),
+    destinations: fakeDestinations(),
     getAutoAbsSubIdx: () => 0,
   });
   insp.setSelectedClip({ laneId: 'bass', clipIdx: 0 });

@@ -4,28 +4,21 @@
 // ({ values, enabled, stepped }) after Task 1.
 import type { KnobHandle } from '../core/knob';
 import type { AutomationCurve } from './performance';
-import type { SessionState } from '../session/session';
-import { listAutomationTargets, groupTargetsByLane } from '../automation/automation-targets';
+import type { DestinationRegistry } from '../automation/destination-registry';
+import { groupTargetsByLane } from '../automation/automation-targets';
 import {
   drawLane, attachLanePainter, formatNum,
   type AutoBrush, type PainterDeps,
 } from '../automation/automation-painter';
 
-/** Group dotted param ids by their first segment, preserving insertion order. */
-export function groupParamsByPrefix(ids: Iterable<string>): Map<string, string[]> {
-  const groups = new Map<string, string[]>();
-  for (const id of ids) {
-    const prefix = id.split('.')[0];
-    if (!groups.has(prefix)) groups.set(prefix, []);
-    groups.get(prefix)!.push(id);
-  }
-  return groups;
-}
-
 export interface PerfAutoDeps {
   registry: Map<string, KnobHandle>;
-  /** Source of truth for the destination list (see listAutomationTargets). */
-  sessionState?: SessionState;
+  /** The one destination catalogue (Task 4/9) — replaces the optional
+   *  sessionState as the list source. Required: an absent registry used to
+   *  render this picker silently empty (sessionState was optional); a
+   *  DestinationRegistry always exists once a session is running, so there is
+   *  no legitimate caller that can't supply one. */
+  destinations: DestinationRegistry;
   /** Width in px for a full-arrangement canvas at the current zoom. */
   laneWidthPx: number;
   getBrush: () => AutoBrush;
@@ -43,12 +36,11 @@ export function buildAutomationHeader(deps: PerfAutoDeps): HTMLElement {
   header.className = 'perf-auto-header';
   const sel = document.createElement('select');
   sel.className = 'perf-auto-param-select';
-  // Destinations come from the session, not from whatever knobs are mounted:
-  // the picker must offer an insert on a channel whose editor is closed, and
-  // must not offer a lane that a previous save left behind in the registry.
-  const targets = deps.sessionState
-    ? listAutomationTargets(deps.sessionState, deps.registry)
-    : [];
+  // Destinations come from the shared catalogue, not from whatever knobs are
+  // mounted: the picker must offer an insert on a channel whose editor is
+  // closed, and must not offer a lane that a previous save left behind in
+  // the registry.
+  const targets = deps.destinations.list();
   for (const [laneName, group] of groupTargetsByLane(targets)) {
     const og = document.createElement('optgroup');
     og.label = laneName;

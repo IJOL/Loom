@@ -6,6 +6,7 @@
 import type { KnobHandle } from '../core/knob';
 import type { Sequencer } from '../core/sequencer';
 import type { SessionHost } from '../session/session-host';
+import type { DestinationRegistry } from '../automation/destination-registry';
 import {
   createRecState, armRec, disarmRec, startRecording, stopRecording,
   markParamTouched, tickRecAutomation, arrangementNow,
@@ -42,6 +43,10 @@ export interface PerformanceFeatureDeps {
   seq: Sequencer;
   sessionHost: SessionHost;
   automationRegistry: Map<string, KnobHandle>;
+  /** The one destination catalogue (Task 4/9) — the Performance "+
+   *  Automation" header's list source. Required: an absent one used to
+   *  render the header silently empty. */
+  destinations: DestinationRegistry;
   /** Called by registerKnob — performance also wants the knob events. */
   onRegisterKnob: (registerExtra: (k: KnobHandle) => void) => void;
   /** Repaint the (main-owned) shared REC button after Performance changes the
@@ -88,7 +93,7 @@ export interface PerformanceFeature {
 }
 
 export function createPerformanceFeature(deps: PerformanceFeatureDeps): PerformanceFeature {
-  const { ctx, seq, sessionHost, automationRegistry, onRegisterKnob, onPerformanceEdited } = deps;
+  const { ctx, seq, sessionHost, automationRegistry, destinations, onRegisterKnob, onPerformanceEdited } = deps;
 
   const rec = createRecState();
   const arrangement = emptyArrangementState(seq.bpm);
@@ -217,7 +222,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         return 'missing';
       },
       registry: automationRegistry,
-      sessionState: sessionHost.state,
+      destinations,
       laneIds: laneIds(),
       pxPerBar,
       getBrush: () => brush,

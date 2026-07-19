@@ -760,6 +760,7 @@ const _origStop = seq.stop.bind(seq);
 const performanceFeature = createPerformanceFeature({
   ctx, seq, sessionHost,
   automationRegistry,
+  destinations,
   // The full master strip is hidden with the session root in Performance mode;
   // these feed the compact master (VU + #volume-proxy fader) in the perf toolbar.
   masterMeterAnalyser, volInput,

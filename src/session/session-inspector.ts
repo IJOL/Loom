@@ -13,6 +13,7 @@ import type { Sequencer } from '../core/sequencer';
 import { renderClipEditor, classifyClip, chooseClipEditor, type ClipEditorDeps } from './clip-editors/clip-editor-router';
 import { getEngine } from '../engines/registry';
 import { renderClipAutomationLanes } from './clip-automation-lanes';
+import type { DestinationRegistry } from '../automation/destination-registry';
 import type { PianoRollHandle } from '../core/pianoroll';
 import type { HistoryDeps } from '../save/history-wiring';
 import { withUndo, isTextEditTarget } from '../save/history-wiring';
@@ -44,6 +45,15 @@ export interface InspectorDeps {
   midiLabel: (m: number) => string;
   automationRegistry: Map<string, import('../core/knob').KnobHandle>;
   getAutoAbsSubIdx: () => number;
+  /** The one destination catalogue (Task 4/9) — the clip automation picker's
+   *  list source, and what it subscribes to so an insert added/removed on
+   *  ANY rack refreshes the open clip's picker without this class calling out
+   *  to it by name (that used to be mountLaneInserts' onChange calling
+   *  refreshClipAutomation() directly — replaced by the subscription in
+   *  renderEditor()). SessionHost always supplies a real one (falls back to a
+   *  locally-built registry when the caller's SessionHostDeps omits it, e.g.
+   *  bare test fixtures). */
+  destinations: DestinationRegistry;
   historyDeps?: HistoryDeps;
   /** Phase H: per-lane resource map — provides the InsertChain for each lane.
    *  Optional so test fixtures without an audio graph still compile. */
@@ -105,6 +115,15 @@ export class SessionInspector {
   /** Aborted (and replaced) each time openInspector() is called so stale
    *  field-level listeners from the previous clip don't accumulate. */
   private _fieldAc: AbortController = new AbortController();
+  /** Aborted (and replaced) each time renderEditor() rebuilds the automation
+   *  panel, and aborted (not replaced) on closeInspector(). renderEditor()
+   *  builds a BRAND-NEW autoBox element every call (not a reused container),
+   *  so a WeakMap keyed on that element — the pattern modulation-ui.ts /
+   *  xy-pad-ui.ts use for a container that persists across rebuilds — would
+   *  leak one destinations subscription per re-render here instead. Owning
+   *  the controller on the instance is what actually bounds it to "the open
+   *  clip editor's lifetime". */
+  private _autoAc: AbortController = new AbortController();
   /** Loop-record over live MIDI (Task 5/6), bound late via setMidiCapture once
    *  the facade exists (mirrors setHistoryDeps/setTranscribeLoop). */
   private midiCapture: { toggle: (mode: 'merge' | 'replace') => void; isRecording: () => boolean; canRecord: () => boolean } | null = null;
@@ -225,6 +244,9 @@ export class SessionInspector {
     if (panel && active instanceof HTMLElement && panel.contains(active)) active.blur();
     this._fieldAc.abort();
     this._fieldAc = new AbortController();
+    this._autoAc.abort();
+    this._autoAc = new AbortController();
+    this.autoBox = null;
     if (panel) panel.hidden = true;
     this.selectedClip = null;
     this.refreshPlayButton();
@@ -763,9 +785,19 @@ export class SessionInspector {
     renderClipAutomationLanes(autoBox, clip, {
       seq: this.deps.seq,
       getAutoAbsSubIdx: this.deps.getAutoAbsSubIdx,
-      automationRegistry: this.deps.automationRegistry,
-      sessionState: this.deps.state,
+      destinations: this.deps.destinations,
     });
+
+    // Subscribe so a LATER structural change (an insert added/removed on any
+    // rack, an engine swap, a lane add/remove) refreshes this picker without
+    // the mutation site knowing this panel exists — replaces the old direct
+    // call from mountLaneInserts' onChange. autoBox is a fresh element every
+    // call, so the subscription's lifetime is owned by this instance
+    // (_autoAc), not by the element (see _autoAc's doc comment).
+    this._autoAc.abort();
+    this._autoAc = new AbortController();
+    const offAuto = this.deps.destinations.subscribe(() => this.refreshClipAutomation());
+    this._autoAc.signal.addEventListener('abort', offAuto, { once: true });
   }
 
   // ── Lane inserts panel ────────────────────────────────────────────────────
@@ -788,8 +820,11 @@ export class SessionInspector {
       slots: sessionLane.inserts,
       onChange: () => {
         this.deps.saveSession?.();
-        // The chain just changed shape — the open clip's picker is now stale.
-        this.refreshClipAutomation();
+        // No direct picker refresh here on purpose: onDestinationsChanged
+        // (fired below only on an actual add/remove, not a value tweak) drives
+        // DestinationRegistry.invalidate(), and the open clip's picker
+        // refreshes itself via the subscription set up in renderEditor() —
+        // this mutation site no longer needs to know that panel exists.
       },
       registerKnob: this.deps.registerKnob,
       automationScopeId: this.deps.registerKnob ? laneId : undefined,
@@ -799,7 +834,10 @@ export class SessionInspector {
   }
 
   /** Rebuild the open clip's automation panel in place. No-op when no clip is
-   *  open. Cheap: it only re-renders the lanes, never the note editor. */
+   *  open. Cheap: it only re-renders the lanes, never the note editor. Also
+   *  doubles as the destinations-subscription callback registered in
+   *  renderEditor() — it is not called directly by any mutation site
+   *  anymore. */
   refreshClipAutomation(): void {
     const sel = this.selectedClip;
     if (!this.autoBox || !sel) return;
@@ -808,8 +846,7 @@ export class SessionInspector {
     renderClipAutomationLanes(this.autoBox, clip, {
       seq: this.deps.seq,
       getAutoAbsSubIdx: this.deps.getAutoAbsSubIdx,
-      automationRegistry: this.deps.automationRegistry,
-      sessionState: this.deps.state,
+      destinations: this.deps.destinations,
     });
   }
 

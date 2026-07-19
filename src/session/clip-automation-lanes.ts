@@ -3,11 +3,9 @@
 // instead of seq.pattern.automation, and uses clip.lengthBars instead of
 // seq.length / 16.
 
-import type { SessionClip, ClipEnvelope, SessionState } from './session';
-import {
-  listAutomationTargets, groupTargetsByLane, type AutomationTarget,
-} from '../automation/automation-targets';
-import type { KnobHandle } from '../core/knob';
+import type { SessionClip, ClipEnvelope } from './session';
+import { groupTargetsByLane, type AutomationTarget } from '../automation/automation-targets';
+import type { DestinationRegistry } from '../automation/destination-registry';
 import type { Sequencer } from '../core/sequencer';
 import { AUTOMATION_SUB_RES } from '../core/pattern';
 import {
@@ -21,10 +19,12 @@ const getBrush = () => currentBrush;
 export interface ClipAutoDeps {
   seq: Sequencer;
   getAutoAbsSubIdx: () => number;
-  automationRegistry: Map<string, KnobHandle>;
-  /** The session is the source of truth for WHICH params can be automated;
-   *  the registry only supplies live handles for the ones currently mounted. */
-  sessionState: SessionState;
+  /** The one destination catalogue (Task 4/9) — replaces sessionState +
+   *  automationRegistry as the list source. The caller (session-inspector)
+   *  subscribes to it and re-renders this picker when the session's set of
+   *  automatable params changes (insert add/remove, engine swap, lane
+   *  add/remove) — see renderEditor()'s destinations.subscribe call. */
+  destinations: DestinationRegistry;
 }
 
 // Lane shape that satisfies both drawLane (needs enabled+stepped) and
@@ -62,7 +62,7 @@ export function renderClipAutomationLanes(
   // Header row: param picker + add button + brush selector.
   const header = document.createElement('div');
   header.className = 'clip-auto-header';
-  const targets = listAutomationTargets(deps.sessionState, deps.automationRegistry);
+  const targets = deps.destinations.list();
   const byId = new Map(targets.map((t) => [t.id, t]));
   const sel = buildParamSelect(targets);
   const addBtn = document.createElement('button');
