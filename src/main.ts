@@ -8,6 +8,7 @@ import { createMuteSolo } from './app/mute-solo';
 import { createLaneAllocator } from './app/lane-allocator';
 import { GlobalVoiceCap } from './audio-worklet/global-voice-cap';
 import { createAutomationRecorder } from './app/automation-recording';
+import { pruneKnobRegistryToDestinations } from './app/knob-registry-prune';
 import { createTriggerForLane } from './app/trigger-dispatch';
 import { LiveVoiceRegistry } from './app/live-voice-registry';
 import { createKnobMounter } from './app/knob-mounting';
@@ -209,6 +210,14 @@ const registerKnob = (k: KnobHandle) => automation.registerKnob(k);
 const destinations = createDestinationRegistry({
   getState: () => sessionHost.state,
   getKnobRegistry: () => automationRegistry,
+});
+// Task 11: whenever the destination set changes (an insert added/removed on a
+// lane, master, or a send), drop any registry knob for an insert slot that no
+// longer exists. This is the surviving leak `pruneKnobRegistry` (lane-based)
+// never covered: deleting an insert from a lane that's still there, or from
+// the master/send racks, left its knobs in automationRegistry forever.
+destinations.subscribe(() => {
+  pruneKnobRegistryToDestinations(automationRegistry, new Set(destinations.list().map((t) => t.id)));
 });
 const currentEngineId = 'subtractive';
 
