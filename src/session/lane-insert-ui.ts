@@ -20,6 +20,9 @@ export interface LaneInsertUIDeps {
    *  session — the picker offers the same id either way. */
   registerKnob?: (k: KnobHandle) => void;
   automationScopeId?: string;
+  /** Fired when the SET of destinations changes (an insert added or removed),
+   *  not when a value changes. Drives DestinationRegistry.invalidate(). */
+  onDestinationsChanged?: () => void;
 }
 
 // Per-effect accent colour (keyed by plugin id). Each insert is tinted with it —
@@ -40,7 +43,7 @@ const FX_FALLBACK = '#ffa726';
  *  rows. The bar wraps to a second line when it runs out of width. */
 export function buildLaneInsertUI(deps: LaneInsertUIDeps): void {
   const { ctx, container, chain, slots, onChange } = deps;
-  const { registerKnob, automationScopeId } = deps;
+  const { registerKnob, automationScopeId, onDestinationsChanged } = deps;
   container.replaceChildren();
 
   const bar = document.createElement('div');
@@ -160,6 +163,7 @@ export function buildLaneInsertUI(deps: LaneInsertUIDeps): void {
       chain.remove(idx);
       slots.splice(idx, 1);
       onChange();
+      onDestinationsChanged?.();
       buildLaneInsertUI(deps);
     };
     ctl.appendChild(rm);
@@ -192,6 +196,7 @@ export function buildLaneInsertUI(deps: LaneInsertUIDeps): void {
       slots.push(slot);
       chain.insert(inst, slot.id);
       onChange();
+      onDestinationsChanged?.();
       buildLaneInsertUI(deps);
     };
     add.insertAdjacentElement('afterend', picker);

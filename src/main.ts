@@ -88,6 +88,7 @@ import {
 } from './automation/automation-tick';
 import { listAutomationTargets } from './automation/automation-targets';
 import { applyAutomationToSession } from './automation/automation-apply';
+import { createDestinationRegistry } from './automation/destination-registry';
 import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from './core/lane-ids';
 // ── Live MIDI control (src/control) ─────────────────────────────────────────
 import { createActiveLaneStore } from './control/active-lane';
@@ -201,6 +202,14 @@ const seq = new Sequencer(ctx, 32);
 const automation = createAutomationRecorder();
 const automationRegistry = automation.registry;
 const registerKnob = (k: KnobHandle) => automation.registerKnob(k);
+// The single source of "what can be automated right now" (Task 4). sessionHost
+// is declared further down (line ~493) — referencing it here is safe because
+// getState is only ever CALLED after boot, by which point it's assigned (the
+// bpmBroadcast getSessionState getter below does the same forward reference).
+const destinations = createDestinationRegistry({
+  getState: () => sessionHost.state,
+  getKnobRegistry: () => automationRegistry,
+});
 const currentEngineId = 'subtractive';
 
 // Phase G: LaneAllocatorDeps is master-only; all per-lane strip/engine deps
@@ -217,6 +226,7 @@ const lanes = createLaneAllocator({
   extraIds: EXTRA_IDS,
   globalVoiceCap,
   masterInserts: masterInsertChain,
+  onDestinationsChanged: () => destinations.invalidate(),
 });
 const { resources: laneResources, extraStrips, extraPolys,
         stripFor, ensureExtraPoly, ensureLaneVoice,
@@ -515,6 +525,7 @@ const sessionHost = new SessionHost({
   midiLabel,
   automationRegistry,
   getAutoAbsSubIdx,
+  onDestinationsChanged: () => destinations.invalidate(),
   onActiveLaneChanged: () => {
     populateAutoParamSelectWrapper();
     // Re-mount the drum-master strip UI for the active drum lane so its

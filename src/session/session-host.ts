@@ -461,6 +461,7 @@ export class SessionHost {
       // clip header is just another way in, not a second implementation.
       onPlayClip: (laneId, clipIdx) => this.launchClipAt(laneId, clipIdx),
       onStopClip: (laneId) => this.callbacks.onStopLane(laneId),
+      onDestinationsChanged: this.deps.onDestinationsChanged,
       isLanePlaying: (laneId) => {
         const lp = this.laneStates.get(laneId);
         return !!(lp?.playing || lp?.queued);

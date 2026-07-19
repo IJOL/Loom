@@ -122,6 +122,11 @@ export function applyLoadedSessionState(self: SessionHost, sess: SessionState): 
   // alive once decode resolves.
   void preloadSceneSamples(self.deps.ctx, self.state.lanes);
   self._fireStateApplied();
+  // The load just rewrote the whole lane/insert set (rehydrateInsertChain
+  // above mutates chains directly, bypassing buildLaneInsertUI's own
+  // onDestinationsChanged) — announce once rather than relying on each
+  // per-lane ensureLaneResource/swapLaneEngine call along the way.
+  self.deps.onDestinationsChanged?.();
 }
 
 /** After a state swap (New / load / demo / stem-Replace), close any editor that
@@ -227,4 +232,10 @@ export function rehydrateLane(self: SessionHost, lane: SessionLane): void {
   }
   if (lane.enginePresetName) self.deps.applyPresetForLane?.(lane.id, lane.enginePresetName);
   applyEngineStateForLane(self, lane);
+  // ensureLaneResource above already invalidated once for the new lane itself,
+  // but that fired BEFORE the rehydrateInsertChain call on line 231 populated
+  // its cloned inserts — a listener refreshing synchronously at that point
+  // would see the lane without its copied FX. Announce again now that the
+  // whole clone (lane + inserts + preset + engine state) is in place.
+  self.deps.onDestinationsChanged?.();
 }

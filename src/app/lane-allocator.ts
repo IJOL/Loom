@@ -47,6 +47,11 @@ export interface LaneAllocatorDeps {
    *  destination. The modulation panel offers those destinations for every lane;
    *  without this they would be selectable and dead. */
   masterInserts?: InsertChain;
+  /** Fired when the SET of automation destinations changes — a lane is newly
+   *  allocated or has its engine swapped (each adds/removes a whole engine's
+   *  worth of params). Drives DestinationRegistry.invalidate(). Optional so
+   *  test fixtures without the registry still compile. */
+  onDestinationsChanged?: () => void;
 }
 
 export interface LaneAllocator {
@@ -249,6 +254,7 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     wireEngineIntoLane(engineId, engine, strip, inserts);
     resources.set(laneId, { strip, engine, inserts });
     bindLaneModulators(laneId);
+    deps.onDestinationsChanged?.();
   };
 
   /** Connect this lane's modulators to their Web-Audio destinations.
@@ -294,6 +300,7 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     laneVoices.delete(laneId);                  // drop the old engine's cached voice
     resources.replaceEngine(laneId, engine);    // disposes old engine, keeps strip+inserts
     bindLaneModulators(laneId);                 // the new engine owns a new host
+    deps.onDestinationsChanged?.();             // the new engine's params replaced the old set
   };
 
   const getLaneEngineInstance = (laneId: string): SynthEngine | null =>

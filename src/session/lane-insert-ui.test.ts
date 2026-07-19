@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // src/session/lane-insert-ui.test.ts
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { buildLaneInsertUI } from './lane-insert-ui';
 import { registerPlugin, _resetRegistry } from '../plugins/registry';
 import { InsertChain } from '../plugins/fx/insert-chain';
@@ -173,6 +173,81 @@ describe('buildLaneInsertUI — automation registration', () => {
     const ids = registered.map((k) => k.meta.id!);
     expect(ids).toContain(`${PREFIX}.fx:a.drive`);
     expect(ids).toContain(`${PREFIX}.fx:a.mix`);
+  });
+});
+
+describe('buildLaneInsertUI — announces destination-set changes', () => {
+  // Uses the locally-registered TEST_PLUGIN_ID (not 'delay' — a plugin id that
+  // isn't registered via registerPlugin in this suite's beforeEach makes
+  // listPlugins()/createInstance() return nothing and the handler silently
+  // no-ops, which would make an assertion pass for the wrong reason. Same
+  // reasoning for using the FakeAudioContext/FakeAudioNode fixtures already
+  // established in this file instead of a real `new AudioContext()`, which
+  // jsdom does not implement.
+  function setup() {
+    const ctx = makeCtx();
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const inputNode  = new FakeAudioNode() as unknown as AudioNode;
+    const outputNode = new FakeAudioNode() as unknown as AudioNode;
+    const chain = new InsertChain(inputNode, outputNode);
+    return { ctx, container, chain };
+  }
+
+  it('announces a destination change when an insert is removed', () => {
+    const { ctx, container, chain } = setup();
+    chain.insert(makeFakeFx(), 'a');
+    const slots: InsertSlot[] = [
+      { id: 'a', pluginId: TEST_PLUGIN_ID, params: { drive: 0.5, mix: 1.0, mode: 0 }, bypass: false },
+    ];
+    const onDestinationsChanged = vi.fn();
+
+    buildLaneInsertUI({
+      ctx, container, chain, slots,
+      onChange: () => {},
+      onDestinationsChanged,
+    });
+
+    container.querySelector<HTMLButtonElement>('.insert-rm')!.click();
+    expect(onDestinationsChanged).toHaveBeenCalled();
+  });
+
+  it('announces a destination change when an insert is added', () => {
+    const { ctx, container, chain } = setup();
+    const slots: InsertSlot[] = [];
+    const onDestinationsChanged = vi.fn();
+
+    buildLaneInsertUI({
+      ctx, container, chain, slots,
+      onChange: () => {},
+      onDestinationsChanged,
+    });
+
+    container.querySelector<HTMLButtonElement>('.insert-add')!.click();
+    const picker = container.querySelector<HTMLSelectElement>('.insert-add-picker')!;
+    picker.value = TEST_PLUGIN_ID;
+    picker.dispatchEvent(new Event('change'));
+
+    expect(onDestinationsChanged).toHaveBeenCalled();
+  });
+
+  it('does NOT announce a destination change on bypass — bypass keeps the param live, it does not add/remove it', () => {
+    const { ctx, container, chain } = setup();
+    chain.insert(makeFakeFx(), 'a');
+    const slots: InsertSlot[] = [
+      { id: 'a', pluginId: TEST_PLUGIN_ID, params: { drive: 0.5, mix: 1.0, mode: 0 }, bypass: false },
+    ];
+    const onDestinationsChanged = vi.fn();
+
+    buildLaneInsertUI({
+      ctx, container, chain, slots,
+      onChange: () => {},
+      onDestinationsChanged,
+    });
+
+    const bypassBtn = container.querySelector<HTMLButtonElement>('.insert-unit-ctl .insert-btn:not(.insert-rm)')!;
+    bypassBtn.click();
+    expect(onDestinationsChanged).not.toHaveBeenCalled();
   });
 });
 

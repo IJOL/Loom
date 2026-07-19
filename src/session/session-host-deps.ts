@@ -110,4 +110,10 @@ export interface SessionHostDeps {
   /** Commit an undo checkpoint after an async/programmatic mutation that does
    *  not end in a user pointer/key event (stems, transcription, import). */
   checkpointHistory?: () => void;
+  /** Fired when the SET of automation destinations changes — a lane's insert
+   *  chain gains/loses a plugin, a lane is added/removed, an engine is
+   *  swapped, or a session finishes loading. Wired to DestinationRegistry
+   *  .invalidate() in main.ts. Optional so test fixtures without the
+   *  registry still compile. */
+  onDestinationsChanged?: () => void;
 }

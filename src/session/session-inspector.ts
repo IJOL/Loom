@@ -89,6 +89,11 @@ export interface InspectorDeps {
   onStopClip?: (laneId: string) => void;
   /** True while the clip's lane is sounding — drives the ▶/■ face. */
   isLanePlaying?: (laneId: string) => boolean;
+  /** Fired when a lane's insert chain gains or loses a plugin (add/remove, not
+   *  bypass or a value edit) — drives DestinationRegistry.invalidate() so every
+   *  automation-destination picker sees the new set. Optional so test fixtures
+   *  without the registry still compile. */
+  onDestinationsChanged?: () => void;
 }
 
 export class SessionInspector {
@@ -788,6 +793,7 @@ export class SessionInspector {
       },
       registerKnob: this.deps.registerKnob,
       automationScopeId: this.deps.registerKnob ? laneId : undefined,
+      onDestinationsChanged: this.deps.onDestinationsChanged,
     });
     host.appendChild(insertsPanel);
   }
