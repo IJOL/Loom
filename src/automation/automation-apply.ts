@@ -14,8 +14,16 @@ export type ParsedParamId =
 
 /** Split a canonical destination id. The insert marker is the first segment
  *  shaped `fx:<slotId>`; everything before it is the scope (which is itself
- *  dotted for the global racks: `fx.send.A`). */
+ *  dotted for the global racks: `fx.send.A`). Returns null if the id is shaped
+ *  like the legacy positional form (`fx\d+`) because it cannot be distinguished
+ *  from a valid engine param at parse time — a gap in translation would fail
+ *  silently and incorrectly report "engine param not found" instead of "insert
+ *  was replaced or deleted". */
 export function parseAutomationParamId(id: string): ParsedParamId | null {
+  // Reject legacy-shaped ids (e.g. 'L1.fx2.mix') upfront so they don't
+  // misclassify as engine params.
+  if (parseLegacyInsertParamId(id) !== null) return null;
+
   const parts = id.split('.');
   if (parts.length < 2) return null;
 

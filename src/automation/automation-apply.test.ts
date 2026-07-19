@@ -39,6 +39,15 @@ describe('parseAutomationParamId', () => {
   it('rejects an id with no lane segment', () => {
     expect(parseAutomationParamId('cutoff')).toBeNull();
   });
+
+  it('rejects a legacy-shaped insert id (positional slot)', () => {
+    expect(parseAutomationParamId('L1.fx2.mix')).toBeNull();
+  });
+
+  it('still parses a genuine engine param with a dotted path (guard against over-rejection)', () => {
+    expect(parseAutomationParamId('poly1.filter.cutoff'))
+      .toEqual({ scopeId: 'poly1', kind: 'engine', paramId: 'filter.cutoff' });
+  });
 });
 
 describe('canonical destination ids', () => {
