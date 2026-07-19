@@ -39,7 +39,7 @@ import { GM_DRUM_MAP } from './drum-gm-map';
 import { velGain, velNorm } from '../core/velocity-gain';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
-import { renderModulatorsPanel } from '../modulation/modulation-ui';
+import { renderModulatorsPanel, type ModulationUIDeps } from '../modulation/modulation-ui';
 import { renderDrumVoiceRack } from './drum-voice-rack';
 import { getCurrentLaneForVoice } from '../modulation/active-mods';
 import { findDrumKit } from '../presets/drum-kits-loader';
@@ -550,7 +550,14 @@ export class DrumsWorkletEngine implements SynthEngine {
     container.appendChild(rackHost);
     renderDrumVoiceRack(this, ctx, rackHost);
 
-    renderModulatorsPanel(container, {
+    // onChange only needs to re-render the modulators panel itself — the
+    // engine's own param set didn't change — and renderModulatorsPanel
+    // (modulation-ui.ts) replaces only the `.mod-panel` node it owns, leaving
+    // the sibling note-FX panel and insert rack (appended into this same
+    // `container` by session-host-lane-editor.ts AFTER buildParamUI returns)
+    // untouched. Wiping the whole container here (as it used to) destroyed
+    // those siblings until the lane editor was closed and reopened.
+    const modDeps: ModulationUIDeps = {
       engineId: this.id,
       laneId: ctx.laneId,
       host: this.modHost,
@@ -564,11 +571,11 @@ export class DrumsWorkletEngine implements SynthEngine {
       // so depth/on-off/rate tweaks take effect without rebuilding the panel.
       onLiveEdit: () => { if (this.currentLaneId) reapplyLaneModulations(this.currentLaneId); },
       onChange: () => {
-        container.innerHTML = '';
-        this.buildParamUI(container, ctx);
         if (this.currentLaneId) reapplyLaneModulations(this.currentLaneId);
+        renderModulatorsPanel(container, modDeps);
       },
-    });
+    };
+    renderModulatorsPanel(container, modDeps);
   }
 
   applyPreset(name: string): void {

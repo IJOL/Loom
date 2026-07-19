@@ -24,7 +24,7 @@ import { getCachedPresets } from '../presets/preset-loader';
 import { deriveSubtractiveEnvMods } from './subtractive';
 import { effectiveRateHz } from '../modulation/rate-sync';
 import { velNorm, resolveVelocity } from '../core/velocity-gain';
-import { renderModulatorsPanel } from '../modulation/modulation-ui';
+import { renderModulatorsPanel, type ModulationUIDeps } from '../modulation/modulation-ui';
 import { buildEngineParamGrid } from './engine-param-grid';
 import { createKnob, type KnobHandle } from '../core/knob';
 import { attachKnobUndo } from '../save/history-wiring';
@@ -334,7 +334,14 @@ export class WorkletLaneEngine implements SynthEngine {
 
     // Modulators panel. Editing a modulator/connection re-posts the whole
     // modulator set to the worklet runtime (postMods) so live LFO edits sound.
-    renderModulatorsPanel(container, {
+    // onChange only needs to re-render the modulators panel itself — the
+    // engine's own param set didn't change — and renderModulatorsPanel
+    // (modulation-ui.ts) replaces only the `.mod-panel` node it owns, leaving
+    // the sibling note-FX panel and insert rack (appended into this same
+    // `container` by session-host-lane-editor.ts AFTER buildParamUI returns)
+    // untouched. Wiping the whole container here (as it used to) destroyed
+    // those siblings until the lane editor was closed and reopened.
+    const modDeps: ModulationUIDeps = {
       engineId: this.id,
       laneId: ctx.laneId,
       host: this.modHost,
@@ -350,12 +357,12 @@ export class WorkletLaneEngine implements SynthEngine {
       // reapply too; without it those routings stay as they were at allocation.
       onLiveEdit: () => { this.postMods(); reapplyLaneModulations(ctx.laneId); },
       onChange: () => {
-        container.innerHTML = '';
-        this.buildParamUI(container, ctx);
         this.postMods();
         reapplyLaneModulations(ctx.laneId);
+        renderModulatorsPanel(container, modDeps);
       },
-    });
+    };
+    renderModulatorsPanel(container, modDeps);
   }
 
   dispose(): void { this.worklet.dispose(); }   // kill the processor, not just disconnect (phantom-processor leak)
