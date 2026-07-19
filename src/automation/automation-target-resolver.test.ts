@@ -108,6 +108,17 @@ describe('resolveAutomationTarget', () => {
 
   // FINDING 2: Insert param (e.g. poly1.fx:slotA.freq)
   it('routes to the clip for an insert param on that lane', () => {
+    const state = stateWith([{ id: 'c1', name: 'A' }, { id: 'c2', name: 'B' }]);
+    const t = resolveAutomationTarget({
+      paramId: 'poly1.fx:slotA.freq', mode: 'session', state,
+      laneStates: new Map([['poly1', playState('poly1', { id: 'c2' })]]),
+      timelineParamIds: NO_TIMELINE,
+    });
+    expect(t).toEqual({ kind: 'clip', laneId: 'poly1', clipIdx: 1, clipName: 'B', existing: false });
+  });
+
+  // Fallback: insert param with no clip playing
+  it('falls back to the first clip for an insert param when nothing is playing', () => {
     const state = stateWith([null, { id: 'c2', name: 'B' }]);
     const t = resolveAutomationTarget({
       paramId: 'poly1.fx:slotA.freq', mode: 'session', state,
