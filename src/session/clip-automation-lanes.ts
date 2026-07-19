@@ -7,7 +7,7 @@ import type { SessionClip, ClipEnvelope } from './session';
 import { groupTargetsByLane, type AutomationTarget } from '../automation/automation-targets';
 import type { DestinationRegistry } from '../automation/destination-registry';
 import type { Sequencer } from '../core/sequencer';
-import { AUTOMATION_SUB_RES } from '../core/pattern';
+import { addClipEnvelope } from './clip-envelope-ops';
 import {
   ensureLaneSize, drawLane, attachLanePainter, formatNum,
   type AutoBrush, type PainterDeps,
@@ -71,15 +71,7 @@ export function renderClipAutomationLanes(
   addBtn.addEventListener('click', () => {
     const paramId = sel.value;
     if (!paramId) return;
-    if (!clip.envelopes) clip.envelopes = [];
-    if (clip.envelopes.some((e) => e.paramId === paramId)) return; // already exists
-    const stepCount = clip.lengthBars * 16 * AUTOMATION_SUB_RES;
-    clip.envelopes.push({
-      paramId,
-      enabled: true,
-      stepped: false,
-      values: Array.from({ length: stepCount }, () => 0.5),
-    });
+    if (!addClipEnvelope(clip, paramId)) return;   // already exists
     renderClipAutomationLanes(host, clip, deps);
   });
   header.appendChild(sel);
