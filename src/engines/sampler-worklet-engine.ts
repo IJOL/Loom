@@ -231,7 +231,7 @@ export class SamplerWorkletEngine implements SynthEngine {
    *  Web-Audio nodes (cutoff → .detune cents, resonance → .Q linear). */
   /** The engine owns no shared Web-Audio params of its own: filtering a sampler
    *  lane is a `multifilter` insert, whose params are already modulation
-   *  destinations (`lane-insert-N:<param>`). */
+   *  destinations (`<laneId>.fx:<slotId>.<param>`). */
   getSharedAudioParams(): Map<string, AudioParam> {
     return new Map<string, AudioParam>();
   }

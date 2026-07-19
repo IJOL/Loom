@@ -7,12 +7,19 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   bindVoiceModulators, bindEngineModulators,
   reapplyLaneModulations, disposeLaneModulations,
+  addInsertChainParams,
   _resetLaneBindingsForTesting, _getLaneBindingForTesting,
 } from './voice-mod-binding';
 import type { ModulatorVoice, ModulatorState, ModulationHost } from './types';
 import type { Voice } from '../engines/engine-types';
 import type { SynthEngine } from '../engines/engine-types';
 import type { EngineParamSpec } from '../engines/engine-params';
+import type { ParamRange } from './modulation-host';
+import { InsertChain } from '../plugins/fx/insert-chain';
+import { rehydrateInsertChain } from '../session/insert-slot';
+import { registerPlugin } from '../plugins/registry';
+import { multifilterPlugin } from '../plugins/fx/multifilter';
+import { delayPlugin } from '../plugins/fx/delay';
 
 // ── Minimal Web Audio mock ────────────────────────────────────────────────
 
@@ -305,5 +312,30 @@ describe('bindEngineModulators — scope partitioning', () => {
     expect(pan.inputs).toHaveLength(1);
     // depth 0.5 * span 2 = 1.0 — NOT 0.5 (which the buggy span-1 fallback gave).
     expect(pan.inputs[0].gain.value).toBeCloseTo(1.0);
+  });
+});
+
+describe('addInsertChainParams — keyed by stable slot id, not position', () => {
+  it('binds an insert param by its stable id, and survives an earlier slot being removed', () => {
+    registerPlugin(multifilterPlugin);
+    registerPlugin(delayPlugin);
+    const ctx = new AudioContext();
+    const chain = new InsertChain(ctx.createGain(), ctx.createGain());
+    rehydrateInsertChain(ctx, chain, [
+      { id: 'first',  pluginId: 'delay',       params: {}, bypass: false },
+      { id: 'target', pluginId: 'multifilter', params: {}, bypass: false },
+    ]);
+
+    const destMap = new Map<string, AudioParam>();
+    const rangeMap = new Map<string, ParamRange>();
+    addInsertChainParams(chain, 'poly1', destMap, rangeMap);
+    const before = destMap.get('poly1.fx:target.freq');
+    expect(before).toBeDefined();
+
+    chain.remove(0);
+    destMap.clear();
+    addInsertChainParams(chain, 'poly1', destMap, rangeMap);
+    // Same id, same AudioParam — position changed, identity did not.
+    expect(destMap.get('poly1.fx:target.freq')).toBe(before);
   });
 });

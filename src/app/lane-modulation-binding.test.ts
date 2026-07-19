@@ -18,6 +18,10 @@ import { SidechainBus } from '../core/sidechain-bus';
 import { OfflineAudioContext } from 'node-web-audio-api';
 import { createInstance, registerPlugin } from '../plugins/registry';
 import { multifilterPlugin } from '../plugins/fx/multifilter';
+import { insertParamId } from '../automation/automation-targets';
+import { migrateLoadedSessionState } from '../session/session-migration';
+import { rehydrateInsertChain } from '../session/insert-slot';
+import type { SessionState } from '../session/session';
 import type { ModulatorState } from '../modulation/types';
 
 const SR = 44100;
@@ -36,7 +40,7 @@ function lfoOnInsertCutoff(enabled: boolean): ModulatorState {
     id: 'lfo-1', kind: 'lfo', enabled,
     scope: 'shared',
     params: { rate: 6, depth: 1, wave: 'sine' },
-    connections: [{ paramId: 'lane-insert-0:freq', depth: 1, enabled: true }],
+    connections: [{ paramId: insertParamId(LANE, 'a', 'freq'), depth: 1, enabled: true }],
   } as unknown as ModulatorState;
 }
 
@@ -87,6 +91,79 @@ describe('a modulator routed to a lane-insert param is actually connected', () =
     const on  = await renderWithModulator(lfoOnInsertCutoff(true));
     // A swept cutoff passes a different amount of harmonic content than a
     // static one. Equality here means the modulator was never connected.
+    expect(totalVariation(on)).not.toBeCloseTo(totalVariation(off), 1);
+  });
+});
+
+// The loop this task closes: a session SAVED in the old scope-less modulation
+// form (`lane-insert-0:freq`, no slot id) must, after migrateLoadedSessionState
+// translates it, still resolve and sweep the insert through the binder. If the
+// binder still keyed by position this would render mute (or throw), because
+// the destMap it builds would never contain the canonical id the loader wrote.
+function legacySavedState(enabled: boolean): SessionState {
+  return {
+    lanes: [{
+      id: LANE, engineId: 'subtractive', clips: [],
+      inserts: [{ pluginId: 'multifilter', params: {}, bypass: false }],
+      engineState: { modulators: [{
+        id: 'lfo-1', kind: 'lfo', enabled, scope: 'shared',
+        params: { rate: 6, depth: 1, wave: 'sine' },
+        connections: [{ id: 'c1', paramId: 'lane-insert-0:freq', depth: 1, enabled: true }],
+      }] },
+    }],
+    scenes: [], globalQuantize: '1/1',
+  } as unknown as SessionState;
+}
+
+async function renderFromLegacySave(enabled: boolean): Promise<Float32Array> {
+  registerPlugin(multifilterPlugin);
+  const state = migrateLoadedSessionState(legacySavedState(enabled));
+  const laneState = state.lanes[0];
+  const mod = laneState.engineState!.modulators![0];
+  const slotId = laneState.inserts![0].id;
+  // Prove the migration actually ran (non-vacuity guard for this test itself):
+  // the stored id must have been rewritten to the canonical scoped-by-slot-id
+  // form, never left in its scope-less positional shape.
+  expect(mod.connections[0].paramId).toBe(insertParamId(LANE, slotId, 'freq'));
+
+  const ctx = new OfflineAudioContext(1, SR, SR) as unknown as AudioContext;
+  const master = ctx.createGain();
+  master.connect((ctx as unknown as OfflineAudioContext).destination as unknown as AudioNode);
+  const fx = new FxBus(ctx, master);
+
+  const lanes = createLaneAllocator({
+    ctx, master, fx, sidechainBus: new SidechainBus(),
+    getBpm: () => 120, extraIds: [],
+  });
+  lanes.ensureLaneResource(LANE, 'subtractive');
+  const engine = lanes.getLaneEngineInstance(LANE)!;
+
+  // Rehydrate the SAME insert list migration just backfilled an id onto —
+  // the live path (session-host applying a loaded save) does the same.
+  const inserts = lanes.resources.get(LANE)!.inserts;
+  rehydrateInsertChain(ctx, inserts, laneState.inserts!);
+  const slot = inserts.list()[0];
+  slot.fx.setBaseValue('type', 0);      // lowpass
+  slot.fx.setBaseValue('freq', 900);
+  slot.fx.setBaseValue('q', 6);
+
+  engine.modulators.deserialize(laneState.engineState!.modulators!);
+  lanes.bindLaneModulators(LANE);
+
+  const osc = (ctx as unknown as OfflineAudioContext).createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.value = 110;
+  (osc as unknown as AudioNode).connect(slot.fx.input);
+  osc.start();
+
+  const buf = await (ctx as unknown as OfflineAudioContext).startRendering();
+  return new Float32Array(buf.getChannelData(0));
+}
+
+describe('the picker→loader→binder loop is closed end to end', () => {
+  it('a legacy-format saved modulation still sweeps the insert after migrateLoadedSessionState', async () => {
+    const off = await renderFromLegacySave(false);
+    const on  = await renderFromLegacySave(true);
     expect(totalVariation(on)).not.toBeCloseTo(totalVariation(off), 1);
   });
 });

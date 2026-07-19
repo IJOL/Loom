@@ -43,9 +43,9 @@ export interface LaneAllocatorDeps {
    *  its node so the busiest lane is told to steal when the total exceeds the
    *  budget. Absent in the offline recorder (no real-time dropout concern). */
   globalVoiceCap?: GlobalVoiceCap;
-  /** Master insert chain, so `master-insert-N:<param>` resolves as a modulation
-   *  destination. The modulation panel offers those destinations for every lane;
-   *  without this they would be selectable and dead. */
+  /** Master insert chain, so `fx.master.fx:<slotId>.<param>` resolves as a
+   *  modulation destination. The modulation panel offers those destinations
+   *  for every lane; without this they would be selectable and dead. */
   masterInserts?: InsertChain;
   /** Fired when the SET of automation destinations changes — a lane is newly
    *  allocated or has its engine swapped (each adds/removes a whole engine's

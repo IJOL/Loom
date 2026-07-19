@@ -18,6 +18,7 @@ import type { ModulatorVoice } from './types';
 import type { ParamRange } from './modulation-host';
 import { ConnectionBinder } from './connection-binder';
 import type { InsertChain } from '../plugins/fx/insert-chain';
+import { insertParamId } from '../automation/automation-targets';
 
 export interface BindVoiceModulatorsOpts {
   laneId: string;
@@ -82,25 +83,26 @@ interface LaneBindings {
 
 const laneBindings = new Map<string, LaneBindings>();
 
-/** Build the FX-chain entries for destMap/rangeMap.
- *  Keys follow the pattern `lane-insert-N:paramId` / `master-insert-N:paramId`
- *  matching what the modulation-ui destination dropdown produces. */
-function addInsertChainParams(
+/** Build the FX-chain entries for destMap/rangeMap, keyed by the canonical
+ *  destination id (`insertParamId`) so a modulation and an automation curve
+ *  address an insert param the same way, by the slot's stable id — not its
+ *  position, which shifts when a neighbouring slot is removed. */
+export function addInsertChainParams(
   chain: InsertChain,
-  prefix: 'lane-insert' | 'master-insert',
+  scopeId: string,
   destMap: Map<string, AudioParam>,
   rangeMap: Map<string, ParamRange>,
 ): void {
-  chain.list().forEach((cs, idx) => {
+  for (const cs of chain.list()) {
     for (const [paramId, ap] of cs.fx.getAudioParams()) {
-      const key = `${prefix}-${idx}:${paramId}`;
+      const key = insertParamId(scopeId, cs.id, paramId);
       destMap.set(key, ap);
       // Use the FX's declared modulation range (e.g. the Filter exposes its
       // freq as .detune in cents → a full-knob exponential sweep). Falls back
       // to 0..1 for params that don't declare one.
       rangeMap.set(key, cs.fx.getAudioParamRange?.(paramId) ?? { min: 0, max: 1 });
     }
-  });
+  }
 }
 
 function applyBinder(
@@ -132,8 +134,8 @@ function applyBinder(
     rangeMap.set(shortId, r);
   }
   // Phase J: add FX-chain AudioParams.
-  if (laneInserts)   addInsertChainParams(laneInserts,   'lane-insert',   destMap, rangeMap);
-  if (masterInserts) addInsertChainParams(masterInserts, 'master-insert', destMap, rangeMap);
+  if (laneInserts)   addInsertChainParams(laneInserts,   laneId,      destMap, rangeMap);
+  if (masterInserts) addInsertChainParams(masterInserts, 'fx.master', destMap, rangeMap);
   // voiceMods is already scope-partitioned by the caller (spawnVoiceFiltered),
   // so iterating ALL modulator states is safe — connection-binder skips any
   // mod whose id isn't in voiceMods. This also lets a shared-scope LFO bind
