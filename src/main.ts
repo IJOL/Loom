@@ -1198,7 +1198,7 @@ const automationTickDeps: AutomationTickDeps = {
   // the same source the destination picker uses.
   applyUnmounted: (paramId, normalised, ranges) => {
     applyAutomationToSession(paramId, normalised, {
-      getInsertFx: (scopeId, slotIdx) => insertChainFor(scopeId)?.list()[slotIdx]?.fx,
+      getInsertFx: (scopeId, slotId) => insertChainFor(scopeId)?.list().find((s) => s.id === slotId)?.fx,
       getEngine: (laneId) => laneResources.get(laneId)?.engine,
       getRange: (id) => ranges.get(id),
     });

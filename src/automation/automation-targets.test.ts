@@ -66,15 +66,15 @@ describe('listAutomationTargets', () => {
     const targets = listAutomationTargets(sessionWithInsertLane(), new Map());
     const ids = targets.map((t) => t.id);
 
-    expect(ids).toContain('L1.fx0.drive');
-    expect(ids).toContain('L1.fx0.mix');
+    expect(ids).toContain('L1.fx:a.drive');
+    expect(ids).toContain('L1.fx:a.mix');
     // Discrete params are not continuous automation destinations.
-    expect(ids).not.toContain('L1.fx0.mode');
+    expect(ids).not.toContain('L1.fx:a.mode');
   });
 
   it('carries the param range from the manifest, not from a live knob', () => {
     const target = listAutomationTargets(sessionWithInsertLane(), new Map())
-      .find((t) => t.id === 'L1.fx0.drive');
+      .find((t) => t.id === 'L1.fx:a.drive');
 
     expect(target).toBeDefined();
     expect(target!.min).toBe(0);

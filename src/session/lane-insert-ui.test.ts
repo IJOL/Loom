@@ -143,7 +143,7 @@ describe('buildLaneInsertUI — automation registration', () => {
     expect(registered.length).toBe(0);
   });
 
-  it('knob id follows the pattern ${prefix}.fx${idx}.${paramId}', () => {
+  it('knob id follows the pattern ${prefix}.fx:${slotId}.${paramId}', () => {
     const ctx = makeCtx();
     const container = document.createElement('div');
     document.body.appendChild(container);
@@ -171,8 +171,8 @@ describe('buildLaneInsertUI — automation registration', () => {
     });
 
     const ids = registered.map((k) => k.meta.id!);
-    expect(ids).toContain(`${PREFIX}.fx0.drive`);
-    expect(ids).toContain(`${PREFIX}.fx0.mix`);
+    expect(ids).toContain(`${PREFIX}.fx:a.drive`);
+    expect(ids).toContain(`${PREFIX}.fx:a.mix`);
   });
 });
 

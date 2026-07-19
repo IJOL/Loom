@@ -3,7 +3,8 @@
 // through the knob registry, so automation on an insert did nothing until you
 // opened that channel — the value silently vanished.
 import { describe, it, expect } from 'vitest';
-import { parseAutomationParamId, applyAutomationToSession } from './automation-apply';
+import { parseAutomationParamId, parseLegacyInsertParamId, applyAutomationToSession } from './automation-apply';
+import { insertParamId } from './automation-targets';
 
 function fakeFx(vals: Record<string, number>) {
   return {
@@ -18,16 +19,16 @@ describe('parseAutomationParamId', () => {
       .toEqual({ scopeId: 'L1', kind: 'engine', paramId: 'filter.cutoff' });
   });
 
-  it('splits an insert param', () => {
-    expect(parseAutomationParamId('L1.fx2.mix'))
-      .toEqual({ scopeId: 'L1', kind: 'insert', slotIdx: 2, paramId: 'mix' });
+  it('splits an insert param addressed by stable slot id', () => {
+    expect(parseAutomationParamId('L1.fx:i3abc.mix'))
+      .toEqual({ scopeId: 'L1', kind: 'insert', slotId: 'i3abc', paramId: 'mix' });
   });
 
   it('keeps a dotted global scope intact', () => {
-    expect(parseAutomationParamId('fx.master.fx0.mix'))
-      .toEqual({ scopeId: 'fx.master', kind: 'insert', slotIdx: 0, paramId: 'mix' });
-    expect(parseAutomationParamId('fx.send.A.fx1.feedback'))
-      .toEqual({ scopeId: 'fx.send.A', kind: 'insert', slotIdx: 1, paramId: 'feedback' });
+    expect(parseAutomationParamId('fx.master.fx:i0.mix'))
+      .toEqual({ scopeId: 'fx.master', kind: 'insert', slotId: 'i0', paramId: 'mix' });
+    expect(parseAutomationParamId('fx.send.A.fx:i1.feedback'))
+      .toEqual({ scopeId: 'fx.send.A', kind: 'insert', slotId: 'i1', paramId: 'feedback' });
   });
 
   it('does not mistake an engine param that merely starts with fx', () => {
@@ -40,10 +41,62 @@ describe('parseAutomationParamId', () => {
   });
 });
 
+describe('canonical destination ids', () => {
+  it('round-trips a lane insert param', () => {
+    const id = insertParamId('poly1', 'i3abc', 'cutoff');
+    expect(id).toBe('poly1.fx:i3abc.cutoff');
+    expect(parseAutomationParamId(id)).toEqual({
+      scopeId: 'poly1', kind: 'insert', slotId: 'i3abc', paramId: 'cutoff',
+    });
+  });
+
+  it('round-trips a send-rack insert param, keeping the dotted scope intact', () => {
+    const id = insertParamId('fx.send.A', 'i9', 'mix');
+    expect(parseAutomationParamId(id)).toEqual({
+      scopeId: 'fx.send.A', kind: 'insert', slotId: 'i9', paramId: 'mix',
+    });
+  });
+
+  it('still reads an engine param', () => {
+    expect(parseAutomationParamId('poly1.filter.cutoff')).toEqual({
+      scopeId: 'poly1', kind: 'engine', paramId: 'filter.cutoff',
+    });
+  });
+
+  it('reads the legacy positional form, for load-time translation only', () => {
+    expect(parseLegacyInsertParamId('poly1.fx2.cutoff')).toEqual({
+      scopeId: 'poly1', slotIdx: 2, paramId: 'cutoff',
+    });
+    expect(parseLegacyInsertParamId('poly1.fx:i3.cutoff')).toBeNull();
+  });
+});
+
+describe('parseLegacyInsertParamId', () => {
+  it('splits the old positional insert id', () => {
+    expect(parseLegacyInsertParamId('L1.fx2.mix'))
+      .toEqual({ scopeId: 'L1', slotIdx: 2, paramId: 'mix' });
+  });
+
+  it('keeps a dotted global scope intact', () => {
+    expect(parseLegacyInsertParamId('fx.master.fx0.mix'))
+      .toEqual({ scopeId: 'fx.master', slotIdx: 0, paramId: 'mix' });
+    expect(parseLegacyInsertParamId('fx.send.A.fx1.feedback'))
+      .toEqual({ scopeId: 'fx.send.A', slotIdx: 1, paramId: 'feedback' });
+  });
+
+  it('does not mistake an engine param that merely starts with fx', () => {
+    expect(parseLegacyInsertParamId('L1.fxAmount')).toBeNull();
+  });
+
+  it('rejects an id with no lane segment', () => {
+    expect(parseLegacyInsertParamId('cutoff')).toBeNull();
+  });
+});
+
 describe('applyAutomationToSession', () => {
   it('writes a normalised value onto an insert param using its declared range', () => {
     const vals = { mix: 0 };
-    const applied = applyAutomationToSession('L1.fx0.mix', 0.25, {
+    const applied = applyAutomationToSession('L1.fx:i0.mix', 0.25, {
       getInsertFx: () => fakeFx(vals),
       getEngine: () => undefined,
       getRange: () => ({ min: 0, max: 100 }),
@@ -66,7 +119,7 @@ describe('applyAutomationToSession', () => {
   });
 
   it('reports failure when the target no longer exists', () => {
-    const applied = applyAutomationToSession('GONE.fx0.mix', 0.5, {
+    const applied = applyAutomationToSession('GONE.fx:i0.mix', 0.5, {
       getInsertFx: () => undefined,
       getEngine: () => undefined,
       getRange: () => undefined,

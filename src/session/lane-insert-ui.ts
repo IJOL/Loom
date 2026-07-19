@@ -105,7 +105,7 @@ export function buildLaneInsertUI(deps: LaneInsertUIDeps): void {
     for (const spec of factory.manifest.params) {
       if (spec.kind === 'continuous') {
         const knobId = automationScopeId
-          ? insertParamId(automationScopeId, idx, spec.id)
+          ? insertParamId(automationScopeId, slot.id, spec.id)
           : undefined;
         const handle = createKnob({
           id: knobId,

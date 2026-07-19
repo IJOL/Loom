@@ -10,25 +10,40 @@
  *  global racks. */
 export type ParsedParamId =
   | { scopeId: string; kind: 'engine'; paramId: string }
-  | { scopeId: string; kind: 'insert'; slotIdx: number; paramId: string };
+  | { scopeId: string; kind: 'insert'; slotId: string; paramId: string };
 
-/** Ids are `<scope>.<engineParam>` or `<scope>.fx<slot>.<param>`. Both the scope
- *  ('fx.master') and the engine param ('filter.cutoff') can be dotted, so the
- *  slot marker — a segment that is exactly `fx<digits>` — is what splits them. */
+/** Split a canonical destination id. The insert marker is the first segment
+ *  shaped `fx:<slotId>`; everything before it is the scope (which is itself
+ *  dotted for the global racks: `fx.send.A`). */
 export function parseAutomationParamId(id: string): ParsedParamId | null {
   const parts = id.split('.');
   if (parts.length < 2) return null;
 
-  const slotAt = parts.findIndex((p, i) => i > 0 && /^fx\d+$/.test(p));
+  const slotAt = parts.findIndex((p, i) => i > 0 && p.startsWith('fx:'));
   if (slotAt > 0 && slotAt < parts.length - 1) {
     return {
       scopeId: parts.slice(0, slotAt).join('.'),
       kind: 'insert',
-      slotIdx: Number(parts[slotAt].slice(2)),
+      slotId: parts[slotAt].slice(3),
       paramId: parts.slice(slotAt + 1).join('.'),
     };
   }
   return { scopeId: parts[0], kind: 'engine', paramId: parts.slice(1).join('.') };
+}
+
+/** Read the OLD positional insert id (`<scope>.fx2.<param>`). Used only by the
+ *  load-time translation in Task 3 — nothing at runtime should produce these. */
+export function parseLegacyInsertParamId(
+  id: string,
+): { scopeId: string; slotIdx: number; paramId: string } | null {
+  const parts = id.split('.');
+  const slotAt = parts.findIndex((p, i) => i > 0 && /^fx\d+$/.test(p));
+  if (slotAt <= 0 || slotAt >= parts.length - 1) return null;
+  return {
+    scopeId: parts.slice(0, slotAt).join('.'),
+    slotIdx: Number(parts[slotAt].slice(2)),
+    paramId: parts.slice(slotAt + 1).join('.'),
+  };
 }
 
 /** The minimal audio-side surface an automation value needs to land. */
@@ -38,7 +53,7 @@ interface ParamTarget {
 }
 
 export interface AutomationApplyDeps {
-  getInsertFx(scopeId: string, slotIdx: number): ParamTarget | undefined;
+  getInsertFx(scopeId: string, slotId: string): ParamTarget | undefined;
   getEngine(laneId: string): ParamTarget | undefined;
   /** Declared range for the id, so a 0..1 envelope maps to real units. */
   getRange(id: string): { min: number; max: number } | undefined;
@@ -56,7 +71,7 @@ export function applyAutomationToSession(
   if (!parsed) return false;
 
   const target = parsed.kind === 'insert'
-    ? deps.getInsertFx(parsed.scopeId, parsed.slotIdx)
+    ? deps.getInsertFx(parsed.scopeId, parsed.slotId)
     : deps.getEngine(parsed.scopeId);
   if (!target) return false;
 

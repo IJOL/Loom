@@ -17,7 +17,7 @@ import type { SessionState } from '../session/session';
 import type { KnobHandle } from '../core/knob';
 
 export interface AutomationTarget {
-  /** Canonical param id: `<laneId>.<engineParam>` or `<laneId>.fx<slot>.<param>`. */
+  /** Canonical param id: `<laneId>.<engineParam>` or `<laneId>.fx:<slotId>.<param>`. */
   id: string;
   label: string;
   laneId: string;
@@ -27,10 +27,12 @@ export interface AutomationTarget {
 }
 
 /** The insert-param id for a rack slot. `scopeId` is a lane id, or `fx.master` /
- *  `fx.send.<id>` for the global racks. Single source of truth — knob
- *  registration, the picker, and playback resolution all go through it. */
-export function insertParamId(scopeId: string, slotIdx: number, paramId: string): string {
-  return `${scopeId}.fx${slotIdx}.${paramId}`;
+ *  `fx.send.<id>` for the global racks. `slotId` is the slot's stable id, never
+ *  its position — position changes when a neighbour is removed. Single source
+ *  of truth — knob registration, the picker, and playback resolution all go
+ *  through it. */
+export function insertParamId(scopeId: string, slotId: string, paramId: string): string {
+  return `${scopeId}.fx:${slotId}.${paramId}`;
 }
 
 /** Continuous params an fx plugin declares. Non-fx plugin kinds (note-FX) carry
@@ -71,9 +73,9 @@ export function listAutomationTargets(
       push(`${lane.id}.${spec.id}`, spec.label, spec.min, spec.max);
     }
 
-    (lane.inserts ?? []).forEach((slot, idx) => {
+    (lane.inserts ?? []).forEach((slot) => {
       for (const spec of fxParams(slot.pluginId)) {
-        push(insertParamId(lane.id, idx, spec.id), spec.label, spec.min, spec.max);
+        push(insertParamId(lane.id, slot.id, spec.id), spec.label, spec.min, spec.max);
       }
     });
   }
@@ -94,22 +96,20 @@ function pushRackTargets(
   registry: ReadonlyMap<string, KnobHandle>,
   scopeId: string,
   displayName: string,
-  slots: readonly { pluginId: string }[],
+  slots: readonly { id: string; pluginId: string }[],
 ): void {
-  slots.forEach((slot, idx) => {
+  for (const slot of slots) {
     for (const spec of fxParams(slot.pluginId)) {
-      const id = insertParamId(scopeId, idx, spec.id);
+      const id = insertParamId(scopeId, slot.id, spec.id);
       const live = registry.get(id);
       targets.push({
-        id,
-        laneId: scopeId,
-        laneName: displayName,
+        id, laneId: scopeId, laneName: displayName,
         label: live?.meta.label ?? spec.label,
         min: live?.meta.min ?? spec.min,
         max: live?.meta.max ?? spec.max,
       });
     }
-  });
+  }
 }
 
 /** Group targets by lane for a picker's <optgroup>s, in session lane order. */
