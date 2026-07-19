@@ -89,6 +89,7 @@ import {
 } from './automation/automation-tick';
 import { applyAutomationToSession } from './automation/automation-apply';
 import { createDestinationRegistry } from './automation/destination-registry';
+import { attachKnobAutomationMenu } from './automation/knob-automation-menu';
 import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from './core/lane-ids';
 // ── Live MIDI control (src/control) ─────────────────────────────────────────
 import { createActiveLaneStore } from './control/active-lane';
@@ -766,6 +767,19 @@ const recBtn = $<HTMLButtonElement>('rec');
 const _origStart = seq.start.bind(seq);
 const _origStop = seq.stop.bind(seq);
 
+// Extracted (not inlined into createPerformanceFeature's deps) so the SAME
+// idiom — wrap registerKnob, then replay over every already-mounted knob — can
+// wire a second, independent hook below (Task 4's context menu) without
+// duplicating the wrap-and-replay logic or racing performanceFeature's own hook.
+const onRegisterKnob = (hook: (k: KnobHandle) => void) => {
+  const origRegister = automation.registerKnob.bind(automation);
+  automation.registerKnob = (k: KnobHandle) => {
+    origRegister(k);
+    hook(k);
+  };
+  for (const k of automationRegistry.values()) hook(k);
+};
+
 const performanceFeature = createPerformanceFeature({
   ctx, seq, sessionHost,
   automationRegistry,
@@ -776,15 +790,32 @@ const performanceFeature = createPerformanceFeature({
   // Arrangement reached the end (song mode): halt the engine + reset the Play
   // button so the next Play restarts from the top.
   onArrangementEnd: () => { _origStop(); setPlaying(playBtn, false); },
-  onRegisterKnob: (hook) => {
-    const origRegister = automation.registerKnob.bind(automation);
-    automation.registerKnob = (k: KnobHandle) => {
-      origRegister(k);
-      hook(k);
-    };
-    for (const k of automationRegistry.values()) hook(k);
-  },
+  onRegisterKnob,
   onRecVisualChanged: () => refreshRecButton(),
+});
+
+// Task 4: right-click a knob to jump to (or create) its automation. Uses the
+// same registerKnob wrap-and-replay idiom above so knobs mounted during boot
+// — before this line runs — still get the menu, not just knobs mounted after.
+onRegisterKnob((k) => {
+  attachKnobAutomationMenu(k, {
+    destinations,
+    getMode: () => performanceFeature.getMode(),
+    getState: () => sessionHost.state,
+    getLaneStates: () => sessionHost.laneStates,
+    getArrangement: () => performanceFeature.arrangement,
+    laneIds: () => sessionHost.state.lanes.map((l) => l.id),
+    openClip: (laneId, clipIdx) => {
+      // Same four-call recipe as session-host-callbacks.ts onClipClick:
+      // setSelectedClip alone shows nothing.
+      sessionHost.inspector.setSelectedClip({ laneId, clipIdx });
+      sessionHost.inspector.openInspector();
+      document.getElementById('session-inspector')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      sessionHost.renderWithMixer();
+    },
+    onArrangementEdited: () => performanceFeature.refreshPerformanceView(),
+    onClipEdited: () => sessionHost.inspector.refreshContext(),
+  });
 });
 (sessionHost.deps as { recHooks?: import('./session/session-runtime').RecHooks }).recHooks =
   performanceFeature.recHooks;
