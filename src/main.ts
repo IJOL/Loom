@@ -87,7 +87,6 @@ import {
   startAutomationTick, resetAutomationPosition, getAutoAbsSubIdx,
   type AutomationTickDeps,
 } from './automation/automation-tick';
-import { listAutomationTargets } from './automation/automation-targets';
 import { applyAutomationToSession } from './automation/automation-apply';
 import { createDestinationRegistry } from './automation/destination-registry';
 import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from './core/lane-ids';
@@ -1243,7 +1242,7 @@ const automationTickDeps: AutomationTickDeps = {
   // the same source the destination picker uses.
   applyUnmounted: applyUnmountedWrite,
   getTargetRanges: () =>
-    new Map(listAutomationTargets(sessionHost.state, automationRegistry)
+    new Map(destinations.list()
       .map((t) => [t.id, { min: t.min, max: t.max }])),
 };
 

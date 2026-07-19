@@ -29,6 +29,9 @@ export class FxBus {
     // stays empty (pass-through).
     const delay  = createInstance('fx', 'delay',  ctx);
     const reverb = createInstance('fx', 'reverb', ctx);
+    // These ids are placeholders; rehydrateSends overwrites them from the
+    // persisted session state on load. Nothing should address a send slot by an
+    // id minted here.
     if (delay)  a.inserts.insert(delay, newInsertId());
     if (reverb) b.inserts.insert(reverb, newInsertId());
     this.sends = [a, b];
