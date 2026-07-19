@@ -92,6 +92,7 @@ These live in the TB-303 engine ([src/core/synth.ts](src/core/synth.ts) + the la
 - **Add a preset** — add an entry to the relevant `public/presets/<engine>.json` (with an optional `gm` program tag). JSON is the source of truth.
 - **Scheduling** — `bpm`/`length` are mutable at runtime; the next scheduled step uses the new values. Step duration is `60 / bpm / 4` (16th notes). The visual playhead is a separate timer matched to the scheduled audio time and may drift under tab throttling, but audio scheduling is unaffected.
 - **Session UI** — the clip grid and inspector are rebuilt by `session-host`; clip cells cycle/launch and the inspector auto-renders the engine editor. Don't hand-roll a parallel render path — go through `session-host`.
+- **Anything that lists parameters the user can target** (a modulation dropdown, an automation picker, an XY pad axis, a MIDI mapping) MUST call `DestinationRegistry.list()` from [src/automation/destination-registry.ts](src/automation/destination-registry.ts) and `subscribe()` to stay fresh. Do NOT enumerate the knob registry and do NOT build a parallel list — that is how four inconsistent pickers happened. See [docs/automation-destinations.md](docs/automation-destinations.md).
 
 ## Design history
 
