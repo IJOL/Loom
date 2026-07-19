@@ -66,7 +66,6 @@ describe('xy pad target dropdowns', () => {
         getState: () => state, getKnobRegistry: () => new Map(),
       }),
       registry: stale as never,
-      formatLabel: (id) => id,
     });
     pad.refreshOptions();
 
@@ -88,7 +87,6 @@ describe('xy pad target dropdowns', () => {
     const pad = createXyPad({
       destinations: createDestinationRegistry({ getState: () => state, getKnobRegistry: () => new Map() }),
       registry: new Map() as never,
-      formatLabel: (id) => id,
     });
     pad.refreshOptions();
 
@@ -107,7 +105,6 @@ describe('xy pad target dropdowns', () => {
     const pad = createXyPad({
       destinations: createDestinationRegistry({ getState: () => state, getKnobRegistry: () => registry }),
       registry,
-      formatLabel: (id) => id,
     });
     pad.setState({ x: 'poly1.filter.cutoff', y: null });
 
@@ -134,7 +131,6 @@ describe('xy pad target dropdowns', () => {
     const deps: XyPadUIDeps = {
       destinations,
       registry: new Map(), // EMPTY — no knob mounted for poly1.filter.cutoff
-      formatLabel: (id) => id,
       applyUnmounted: (paramId, normalised, ranges) => {
         applyAutomationToSession(paramId, normalised, {
           getInsertFx: () => undefined,
@@ -161,7 +157,7 @@ describe('xy pad target dropdowns', () => {
   it('subscribes to the registry so an insert added while open shows up', () => {
     let state = stateWith();
     const destinations = createDestinationRegistry({ getState: () => state, getKnobRegistry: () => new Map() });
-    const pad = createXyPad({ destinations, registry: new Map() as never, formatLabel: (id) => id });
+    const pad = createXyPad({ destinations, registry: new Map() as never });
 
     let values = [...pad.el.querySelectorAll('option')].map((o) => (o as HTMLOptionElement).value);
     expect(values.some((v) => v.includes('fx:slot-a'))).toBe(false);
@@ -173,10 +169,51 @@ describe('xy pad target dropdowns', () => {
     expect(values.some((v) => v.includes('fx:slot-a'))).toBe(true);
   });
 
+  it('rebuilds options exactly once per invalidate() in the production shape (one pad, never destroyed)', () => {
+    // The property that actually holds in production: main.ts builds ONE pad,
+    // never calls destroy() on it (see the comment above the AbortController
+    // in xy-pad-ui.ts), and every destinations.invalidate() should trigger
+    // exactly one rebuild. If createXyPad ever subscribed more than once,
+    // each invalidate() would fire refreshOptions (and so list()) more than
+    // once per call — this asserts the exact count, not just "at least one".
+    const state = stateWith();
+    const destinations = createDestinationRegistry({ getState: () => state, getKnobRegistry: () => new Map() });
+    const pad = createXyPad({ destinations, registry: new Map() as never });
+    void pad; // never destroyed — this is the production shape, unlike the destroy() test below
+
+    const listSpy = vi.spyOn(destinations, 'list');
+    destinations.invalidate();
+    destinations.invalidate();
+
+    expect(listSpy).toHaveBeenCalledTimes(2); // one subscription × two invalidate() calls
+  });
+
+  it('clears an axis selection when its target disappears from the catalogue', () => {
+    // xy-pad-ui.ts:refreshOptions keeps a selection only if its id still
+    // exists in the current catalogue; otherwise it resets the <select> to
+    // "none" AND clears the model binding (`model.setTarget(axis, null)`) so
+    // the pad stops driving a destination that's gone. That logic survived
+    // the Task 8 refactor untouched but is now fed catalogue-derived ids
+    // instead of registry keys, and nothing asserted it until this test.
+    let state = stateWith();
+    const destinations = createDestinationRegistry({ getState: () => state, getKnobRegistry: () => new Map() });
+    const pad = createXyPad({ destinations, registry: new Map() as never });
+    pad.setState({ x: 'poly1.filter.cutoff', y: null });
+    expect(pad.getState().x).toBe('poly1.filter.cutoff');
+
+    // Remove the lane entirely — poly1.filter.cutoff vanishes from the catalogue.
+    state = { lanes: [], masterInserts: [], sends: [] } as unknown as SessionState;
+    destinations.invalidate();
+
+    expect(pad.getState().x).toBeNull();
+    const sel = pad.el.querySelector('select[data-axis="x"]') as HTMLSelectElement;
+    expect(sel.value).toBe('');
+  });
+
   it('does not accumulate subscriptions past what destroy() releases', () => {
     const state = stateWith();
     const destinations = createDestinationRegistry({ getState: () => state, getKnobRegistry: () => new Map() });
-    const pad = createXyPad({ destinations, registry: new Map() as never, formatLabel: (id) => id });
+    const pad = createXyPad({ destinations, registry: new Map() as never });
 
     const listSpy = vi.spyOn(destinations, 'list');
     destinations.invalidate();

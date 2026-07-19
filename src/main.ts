@@ -808,10 +808,6 @@ document.getElementById('capture-scene')?.addEventListener('click', () => sessio
       xyPad = createXyPad({
         destinations,
         registry: automationRegistry,
-        formatLabel: (id) =>
-          laneTrackHelpers.formatParamIdForDisplay(
-            id, (laneId) => sessionHost.state.lanes.find((l) => l.id === laneId)?.name,
-          ),
         // Reuses the SAME fallback playback automation uses (applyUnmountedWrite,
         // defined above near insertChainFor): the catalogue now offers every
         // destination the session declares, including ones with no mounted

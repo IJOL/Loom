@@ -18,11 +18,6 @@ export interface XyPadUIDeps {
    *  only on the write path, for a target whose knob happens to be mounted
    *  (mirrors automation-tick.ts's mounted/unmounted split). */
   registry: Map<string, KnobHandle>;
-  /** Human label for a param id (e.g. via formatParamIdForDisplay). Kept for
-   *  interface stability; the option text now comes from the catalogue's own
-   *  `label` (already the right per-param name — the optgroup carries the lane
-   *  name), so this is currently unused inside refreshOptions. */
-  formatLabel: (paramId: string) => string;
   /** Land a write on a target with NO mounted knob, straight onto the audio
    *  object — the SAME fallback automation-tick.ts uses for playback
    *  envelopes (`applyAutomationToSession` under the hood). Without this, a
@@ -57,6 +52,12 @@ export interface XyPadUI {
 export function createXyPad(deps: XyPadUIDeps): XyPadUI {
   const model = new XyPadModel();
   const registryAsTargets = deps.registry as unknown as Map<string, XyTarget>;
+  // No production caller invokes destroy() today: main.ts builds the pad
+  // lazily, once, behind `if (!xyPanel)`, and the panel lives for the app's
+  // whole session — so in production there is exactly one subscription for
+  // one pad, forever. This AbortController exists so a FUTURE caller that
+  // rebuilds/discards the pad (the moment `if (!xyPanel)` stops being true)
+  // has a way to release the subscription instead of leaking it silently.
   const ac = new AbortController();
 
   const el = document.createElement('div');
