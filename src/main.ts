@@ -806,11 +806,18 @@ document.getElementById('capture-scene')?.addEventListener('click', () => sessio
   xyBtn?.addEventListener('click', () => {
     if (!xyPanel) {
       xyPad = createXyPad({
+        destinations,
         registry: automationRegistry,
         formatLabel: (id) =>
           laneTrackHelpers.formatParamIdForDisplay(
             id, (laneId) => sessionHost.state.lanes.find((l) => l.id === laneId)?.name,
           ),
+        // Reuses the SAME fallback playback automation uses (applyUnmountedWrite,
+        // defined above near insertChainFor): the catalogue now offers every
+        // destination the session declares, including ones with no mounted
+        // knob, so dragging the pad on one of those must still land the value
+        // instead of silently no-oping.
+        applyUnmounted: applyUnmountedWrite,
       });
       xyPanel = document.createElement('div');
       xyPanel.className = 'xy-panel';
@@ -1199,6 +1206,24 @@ function insertChainFor(scopeId: string) {
   return laneResources.get(scopeId)?.inserts;
 }
 
+// Land a write on a target with NO mounted knob, straight onto the audio
+// object. Shared by playback automation (automationTickDeps.applyUnmounted,
+// below) and the XY pad's live drags (see the xy-open handler) — both need
+// the exact same scope resolution `insertChainFor`/`laneResources` already
+// provide, so this is the ONE place that resolution happens rather than two
+// copies drifting apart.
+function applyUnmountedWrite(
+  paramId: string,
+  normalised: number,
+  ranges: ReadonlyMap<string, { min: number; max: number }>,
+): void {
+  applyAutomationToSession(paramId, normalised, {
+    getInsertFx: (scopeId, slotId) => insertChainFor(scopeId)?.list().find((s) => s.id === slotId)?.fx,
+    getEngine: (laneId) => laneResources.get(laneId)?.engine,
+    getRange: (id) => ranges.get(id),
+  });
+}
+
 const automationTickDeps: AutomationTickDeps = {
   seq,
   automationRegistry,
@@ -1209,13 +1234,7 @@ const automationTickDeps: AutomationTickDeps = {
   // An envelope on a lane whose editor is closed has no knob to drive, so it
   // lands on the audio object itself. Ranges come from the declared schema —
   // the same source the destination picker uses.
-  applyUnmounted: (paramId, normalised, ranges) => {
-    applyAutomationToSession(paramId, normalised, {
-      getInsertFx: (scopeId, slotId) => insertChainFor(scopeId)?.list().find((s) => s.id === slotId)?.fx,
-      getEngine: (laneId) => laneResources.get(laneId)?.engine,
-      getRange: (id) => ranges.get(id),
-    });
-  },
+  applyUnmounted: applyUnmountedWrite,
   getTargetRanges: () =>
     new Map(listAutomationTargets(sessionHost.state, automationRegistry)
       .map((t) => [t.id, { min: t.min, max: t.max }])),

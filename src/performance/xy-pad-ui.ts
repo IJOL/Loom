@@ -6,32 +6,58 @@
 // core in xy-pad.ts. Non-modal on purpose so the rest of the UI stays usable.
 import type { KnobHandle } from '../core/knob';
 import { XyPadModel, applyXyWrites, type XyAxis, type XyTarget } from './xy-pad';
+import type { DestinationRegistry } from '../automation/destination-registry';
+import { groupTargetsByLane } from '../automation/automation-targets';
 
 export interface XyPadUIDeps {
-  /** `${laneId}.${paramId}` → KnobHandle. The list of automatable params. */
+  /** The one destination catalogue (Task 4) — every automatable param the
+   *  session currently declares, whether or not its knob is mounted. Replaces
+   *  `registry` as the *list* source (see below for the write path). */
+  destinations: DestinationRegistry;
+  /** `${laneId}.${paramId}` → KnobHandle. No longer the list source — consulted
+   *  only on the write path, for a target whose knob happens to be mounted
+   *  (mirrors automation-tick.ts's mounted/unmounted split). */
   registry: Map<string, KnobHandle>;
-  /** Human label for a param id (e.g. via formatParamIdForDisplay). */
+  /** Human label for a param id (e.g. via formatParamIdForDisplay). Kept for
+   *  interface stability; the option text now comes from the catalogue's own
+   *  `label` (already the right per-param name — the optgroup carries the lane
+   *  name), so this is currently unused inside refreshOptions. */
   formatLabel: (paramId: string) => string;
+  /** Land a write on a target with NO mounted knob, straight onto the audio
+   *  object — the SAME fallback automation-tick.ts uses for playback
+   *  envelopes (`applyAutomationToSession` under the hood). Without this, a
+   *  destination the catalogue offers but whose lane editor was never opened
+   *  would silently do nothing when dragged, which is exactly the class of
+   *  dead-option bug this task exists to remove. `ranges` is the catalogue's
+   *  declared min/max, built lazily so a drag with only mounted targets costs
+   *  nothing extra. Optional — when absent, an unmounted target is silently
+   *  skipped (matches the old registry-only behaviour). */
+  applyUnmounted?: (
+    paramId: string,
+    normalised: number,
+    ranges: ReadonlyMap<string, { min: number; max: number }>,
+  ) => void;
 }
 
 export interface XyPadUI {
   el: HTMLElement;
-  /** Rebuild the dropdowns from the current registry (call when the panel opens —
+  /** Rebuild the dropdowns from the current catalogue (call when the panel opens —
    *  lanes/engines/params change over a session). */
   refreshOptions: () => void;
   getState: () => { x: string | null; y: string | null };
   setState: (s: { x: string | null; y: string | null }) => void;
-}
-
-/** Split a registry key into its lane prefix (for grouping the dropdown). */
-function laneOf(paramId: string): string {
-  const dot = paramId.indexOf('.');
-  return dot < 0 ? '' : paramId.slice(0, dot);
+  /** Unsubscribe from the destination registry. The pad is normally built once
+   *  and lives for the app's lifetime (main.ts never calls this), but tests
+   *  and any future caller that DOES tear a pad down need a way to stop it
+   *  rebuilding after the fact — mirrors the AbortController pattern at
+   *  modulation-ui.ts / session-inspector.ts:258. */
+  destroy: () => void;
 }
 
 export function createXyPad(deps: XyPadUIDeps): XyPadUI {
   const model = new XyPadModel();
   const registryAsTargets = deps.registry as unknown as Map<string, XyTarget>;
+  const ac = new AbortController();
 
   const el = document.createElement('div');
   el.className = 'xy-pad';
@@ -68,14 +94,13 @@ export function createXyPad(deps: XyPadUIDeps): XyPadUI {
   el.appendChild(assign);
 
   function refreshOptions(): void {
-    // Group the automatable params by lane, skipping modulator-config knobs.
-    const ids = [...deps.registry.keys()].filter((id) => !id.includes('.mod.')).sort();
-    const byLane = new Map<string, string[]>();
-    for (const id of ids) {
-      const lane = laneOf(id);
-      const bucket = byLane.get(lane) ?? (byLane.set(lane, []), byLane.get(lane)!);
-      bucket.push(id);
-    }
+    // The catalogue, not the mounted-knob registry: every destination the
+    // session currently declares, grouped by its own laneName (never a
+    // first-dot split of the id — that misgroups the global racks, e.g.
+    // `fx.master.fx:slot.gain` would split to lane "fx").
+    const targets = deps.destinations.list();
+    const ids = targets.map((t) => t.id);
+    const byLane = groupTargetsByLane(targets);
     for (const axis of ['x', 'y'] as XyAxis[]) {
       const sel = selects[axis];
       const current = model.target(axis);
@@ -84,13 +109,13 @@ export function createXyPad(deps: XyPadUIDeps): XyPadUI {
       none.value = '';
       none.textContent = '— none —';
       sel.appendChild(none);
-      for (const [lane, list] of byLane) {
+      for (const [laneName, list] of byLane) {
         const grp = document.createElement('optgroup');
-        grp.label = lane || '(global)';
-        for (const id of list) {
+        grp.label = laneName;
+        for (const t of list) {
           const opt = document.createElement('option');
-          opt.value = id;
-          opt.textContent = deps.formatLabel(id);
+          opt.value = t.id;
+          opt.textContent = t.label;
           grp.appendChild(opt);
         }
         sel.appendChild(grp);
@@ -108,7 +133,22 @@ export function createXyPad(deps: XyPadUIDeps): XyPadUI {
     const r = surface.getBoundingClientRect();
     const nx = (clientX - r.left) / r.width;
     const ny = 1 - (clientY - r.top) / r.height;
-    applyXyWrites(model.writesFor(nx, ny), registryAsTargets);
+    const writes = model.writesFor(nx, ny);
+    applyXyWrites(writes, registryAsTargets);
+    // A target the catalogue offers but whose knob is NOT mounted (its lane's
+    // editor was never opened) is invisible to applyXyWrites above — it just
+    // skips it. Land those the same way playback automation does when its
+    // target knob is unmounted (automation-tick.ts): resolve straight to the
+    // audio object via applyUnmounted. `ranges` is built at most once per
+    // drag frame, only if an unmounted write is actually pending.
+    if (deps.applyUnmounted) {
+      let ranges: ReadonlyMap<string, { min: number; max: number }> | undefined;
+      for (const w of writes) {
+        if (deps.registry.has(w.paramId)) continue; // already landed via applyXyWrites
+        ranges ??= new Map(deps.destinations.list().map((t) => [t.id, { min: t.min, max: t.max }]));
+        deps.applyUnmounted(w.paramId, w.norm, ranges);
+      }
+    }
     dot.style.left = `${Math.max(0, Math.min(1, nx)) * 100}%`;
     dot.style.top = `${Math.max(0, Math.min(1, 1 - ny)) * 100}%`;
   };
@@ -130,10 +170,18 @@ export function createXyPad(deps: XyPadUIDeps): XyPadUI {
 
   refreshOptions();
 
+  // Keep the safety net (main.ts refreshes on open) AND subscribe, so an
+  // insert added while the pad is open shows up without closing it. Bound to
+  // `ac` so destroy() leaves no dangling listener (see the AbortController
+  // pattern in modulation-ui.ts / session-inspector.ts:258).
+  const off = deps.destinations.subscribe(refreshOptions);
+  ac.signal.addEventListener('abort', off, { once: true });
+
   return {
     el,
     refreshOptions,
     getState: () => model.getState(),
     setState: (s) => { model.setState(s); refreshOptions(); },
+    destroy: () => ac.abort(),
   };
 }
