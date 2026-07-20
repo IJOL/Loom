@@ -598,3 +598,37 @@
   color: var(--amber);
   border-color: var(--amber);
 }
+
+// The modulators panel renders into its own host element so a repaint patches
+// in place instead of rebuilding — and so sibling racks the caller appends to
+// the same container are never touched. `display: contents` keeps the wrapper
+// out of the layout entirely.
+.mod-panel-host {
+  display: contents;
+}
+
+// BARS: free numeric bars-per-cycle input for a BPM-synced LFO.
+// Was inline cssText in modulation-ui.ts.
+.mod-bars-field {
+  width: 4.6em;
+  background: #1b1b1b;
+  color: #eee;
+  border: 1px solid #444;
+  border-radius: 3px;
+  font: inherit;
+  text-align: center;
+  padding: 2px 3px;
+}
+
+// Wrapper the template toggles with [hidden] around a widget it does not own
+// (the knob/select is built once and cached, so its own style isn't ours to
+// set). The `[hidden]` re-assert is required, not decorative: `.knob` sets
+// `display: flex`, an AUTHOR rule, which beats the user-agent `[hidden]` rule —
+// see the same trap documented for .clip-edit-row at the top of this file.
+.mod-slot {
+  display: contents;
+
+  &[hidden] {
+    display: none;
+  }
+}
