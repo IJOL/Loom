@@ -203,15 +203,51 @@
   letter-spacing: 0.1em;
   color: var(--amber);
   font-weight: 700;
-  min-width: 84px;
-  flex: 0 0 auto;
+  flex: 0 0 auto;          // shrink-wrap the label — no fixed 84px reservation
+  align-self: flex-start;  // sit at the top-left, minimal footprint
+  padding-top: 6px;
 }
+// Shared base: ONLY the box the config occupies in the card row. LFO and ADSR
+// each lay out their own controls below, in their own classes, so one module's
+// layout can never disturb the other's — they share the size and little else.
 .mod-card-config {
   display: flex;
-  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+// ── ADSR: four knobs in a row (the module's original config layout) ──────────
+.mod-adsr-config {
   flex-wrap: wrap;
   align-items: center;
-  flex: 1;
+  gap: 6px;
+}
+
+// ── LFO: two deliberate stacked lines ───────────────────────────────────────
+// Line 1 = wave + FREE/SYNC + rate/bars; line 2 = polarity + retrig.
+.mod-lfo-lines {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+// Each line has a FIXED height = one knob's height, so switching FREE↔SYNC (a
+// tall knob vs a short BARS input) never changes the line height and nothing
+// below moves. The height matches the ADSR knob row, so the two modules read
+// consistently.
+.mod-lfo-lines .mcc-line {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: nowrap;
+  min-height: 71px;
+}
+// RATE (free) / BARS+FEEL (sync) at the END of line 1: last in its line, so it
+// changes width with the mode without pushing anything or reserving a gap.
+.mod-rate-end {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex: 0 0 auto;
 }
 .mod-card-routing {
   display: flex;
@@ -618,17 +654,4 @@
   font: inherit;
   text-align: center;
   padding: 2px 3px;
-}
-
-// Wrapper the template toggles with [hidden] around a widget it does not own
-// (the knob/select is built once and cached, so its own style isn't ours to
-// set). The `[hidden]` re-assert is required, not decorative: `.knob` sets
-// `display: flex`, an AUTHOR rule, which beats the user-agent `[hidden]` rule —
-// see the same trap documented for .clip-edit-row at the top of this file.
-.mod-slot {
-  display: contents;
-
-  &[hidden] {
-    display: none;
-  }
 }

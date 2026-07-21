@@ -123,18 +123,30 @@ test.describe('demo JSON presets', () => {
   });
 });
 
-test.describe('modulator scope', () => {
-  test('LFO defaults to scope=shared and the SCOPE label appears in the LFO card', async ({ page }) => {
+test.describe('modulator retrigger + scope', () => {
+  test('LFO shows the merged RETRIG strip (Free/Note/Voice), defaulting to Free', async ({ page }) => {
     await page.goto('/');
     await page.waitForFunction(
       () => document.querySelectorAll('.session-cell-filled').length > 0,
     );
     await page.locator('.session-lane-header[data-lane-id="subtractive-1"]').click();
-    // The SCOPE control is rendered as a radio-strip with buttons titled "Shared" and "PerVoice".
-    // We search for any button with title="Shared" (the default SCOPE value) within an LFO card.
-    const scopeButtons = await page.evaluate(() =>
-      [...document.querySelectorAll('.mod-card.mod-lfo .radio-btn')].filter((b) => (b as any).title === 'Shared'),
-    );
-    expect(scopeButtons.length).toBeGreaterThan(0);
+    // TRIG (free/note) and SCOPE (shared/per-voice) are one 3-way radio-strip:
+    // Free / Note are shared retriggers, Voice is per-voice. All three are always
+    // present (nothing hides), and a fresh LFO defaults to Free (shared, free-run).
+    const state = await page.evaluate(() => {
+      const btns = [...document.querySelectorAll('.mod-card.mod-lfo .radio-btn')] as HTMLElement[];
+      const titles = btns.map((b) => b.title);
+      const activeRetrig = btns.find((b) => ['Free', 'Note', 'Voice'].includes(b.title) && b.classList.contains('active'));
+      return {
+        hasFree: titles.includes('Free'),
+        hasNote: titles.includes('Note'),
+        hasVoice: titles.includes('Voice'),
+        active: activeRetrig?.title ?? null,
+      };
+    });
+    expect(state.hasFree).toBe(true);
+    expect(state.hasNote).toBe(true);
+    expect(state.hasVoice).toBe(true);
+    expect(state.active).toBe('Free');
   });
 });

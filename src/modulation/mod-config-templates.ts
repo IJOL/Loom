@@ -87,45 +87,40 @@ export function lfoConfigTemplate(mod: ModulatorState, ctx: PanelCtx): TemplateR
     return c;
   });
 
-  const trigger = cache.get(`${base}.trigger`, () => {
+  // RETRIG + SCOPE, merged into one 3-way control. TRIG (free/note) is the
+  // retrigger of a SHARED lane LFO; per-voice ("Voice") gives each note its own
+  // LFO, where a retrigger is redundant — the LFO is born with the note. So the
+  // three real states are Free / Note / Voice. Merging them means nothing ever
+  // hides, so the row can't reflow the way a disappearing TRIG used to make it.
+  const retrigValue = (mod.scope ?? 'shared') === 'per-voice'
+    ? 'voice'
+    : (mod.trigger === 'note' ? 'note' : 'free');
+  const retrig = cache.get(`${base}.retrig`, () => {
     const c = createSelectControl({
-      id: `${base}.trigger`,
-      label: 'TRIG',
+      id: `${base}.retrig`,
+      label: 'RETRIG',
       options: [
-        { value: 'free', label: 'Free' },
-        { value: 'note', label: 'Note' },
+        { value: 'free',  label: 'Free'  },
+        { value: 'note',  label: 'Note'  },
+        { value: 'voice', label: 'Voice' },
       ],
-      initialValue: mod.trigger ?? 'free',
-      onChange: (v) => edit(deps, () => { mod.trigger = v as 'free' | 'note'; sync(deps); }),
-    });
-    deps.registerKnob(c.handle);
-    return c;
-  });
-
-  // SCOPE: shared (one engine-wide LFO) vs per-voice (one LFO per note).
-  const scope = cache.get(`${base}.scope`, () => {
-    const c = createSelectControl({
-      id: `${base}.scope`,
-      label: 'SCOPE',
-      options: [
-        { value: 'shared',    label: 'Shared'   },
-        { value: 'per-voice', label: 'PerVoice' },
-      ],
-      initialValue: mod.scope ?? 'shared',
+      initialValue: retrigValue,
       onChange: (v) => {
+        const prevScope = mod.scope ?? 'shared';
         edit(deps, () => {
-          mod.scope = v as 'shared' | 'per-voice';
+          if (v === 'voice') {
+            mod.scope = 'per-voice';
+          } else {
+            mod.scope = 'shared';
+            mod.trigger = v as 'free' | 'note';
+          }
           sync(deps);
-          // The engine respawns modulator voices in the new scope. Note this
-          // also does `container.innerHTML = ''` + buildParamUI, so the whole
-          // panel — this host included — is rebuilt from scratch right here.
-          deps.onChange();
+          // A SCOPE change (to/from per-voice) respawns the modulator's voices,
+          // so it needs the engine rebuild. A pure Free↔Note change only alters
+          // the shared LFO's phase origin, which the live push (sync) already
+          // carries — no rebuild, so the strip's own click-state stays put.
+          if ((mod.scope ?? 'shared') !== prevScope) deps.onChange();
         });
-        // NO ctx.rerender() here. It looked like belt-and-braces but `onChange`
-        // above has already destroyed the host this closure captured, so the
-        // repaint landed on a detached node nobody sees. TRIG visibility is
-        // correct because the rebuild re-evaluates `mod.scope` — the same
-        // reason it worked before the lit-html migration.
       },
     });
     deps.registerKnob(c.handle);
@@ -142,37 +137,45 @@ export function lfoConfigTemplate(mod: ModulatorState, ctx: PanelCtx): TemplateR
     edit(deps, () => { mod.syncBars = v; sync(deps); });
   };
 
-  const perVoice = (mod.scope ?? 'shared') === 'per-voice';
-
+  // Two deliberate lines, not a wrap. Line 1 is everything about RATE — the
+  // waveform, the FREE/SYNC toggle, and its knob (free) or BARS+FEEL (sync).
+  // Line 2 is the rest: POLARITY and the merged RETRIG. The mode-variable zone
+  // sits at the END of line 1, so switching FREE↔SYNC grows/shrinks it without
+  // pushing anything or leaving a reserved gap.
   return html`
-    <div class="mod-card-config">
-      ${wave.el}
-      <div class="mod-slot" ?hidden=${mod.syncToBpm}>${rate.el}</div>
-      <div class="mod-slot" ?hidden=${!mod.syncToBpm}>
-        <div class="knob mod-bars">
-          <div class="knob-label">BARS</div>
-          <input
-            class="mod-bars-field"
-            type="number"
-            min="0.0625"
-            max="64"
-            step="0.0625"
-            .value=${String(mod.syncBars ?? 0.25)}
-            @change=${commitBars}
-          />
+    <div class="mod-card-config mod-lfo-lines">
+      <div class="mcc-line">
+        ${wave.el}
+        <button
+          class=${mod.syncToBpm ? 'rnd primary' : 'rnd'}
+          @click=${() => {
+            edit(deps, () => { mod.syncToBpm = !mod.syncToBpm; sync(deps); });
+            ctx.rerender();
+          }}
+        >${mod.syncToBpm ? 'SYNC' : 'FREE'}</button>
+        <div class="mod-rate-end">
+          ${mod.syncToBpm
+            ? html`
+                <div class="knob mod-bars">
+                  <div class="knob-label">BARS</div>
+                  <input
+                    class="mod-bars-field"
+                    type="number"
+                    min="0.0625"
+                    max="64"
+                    step="0.0625"
+                    .value=${String(mod.syncBars ?? 0.25)}
+                    @change=${commitBars}
+                  />
+                </div>
+                ${subdiv.el}`
+            : rate.el}
         </div>
       </div>
-      <div class="mod-slot" ?hidden=${!mod.syncToBpm}>${subdiv.el}</div>
-      <button
-        class=${mod.syncToBpm ? 'rnd primary' : 'rnd'}
-        @click=${() => {
-          edit(deps, () => { mod.syncToBpm = !mod.syncToBpm; sync(deps); });
-          ctx.rerender();
-        }}
-      >${mod.syncToBpm ? 'SYNC' : 'FREE'}</button>
-      ${bipolar.el}
-      <div class="mod-slot" ?hidden=${perVoice}>${trigger.el}</div>
-      ${scope.el}
+      <div class="mcc-line">
+        ${bipolar.el}
+        ${retrig.el}
+      </div>
     </div>
   `;
 }
@@ -202,7 +205,7 @@ export function adsrConfigTemplate(mod: ModulatorState, ctx: PanelCtx): Template
   });
 
   return html`
-    <div class="mod-card-config">
+    <div class="mod-card-config mod-adsr-config">
       ${knob('attackSec',  'A', 0.001, 2, 0.01, fmtTime).el}
       ${knob('decaySec',   'D', 0.001, 4, 0.3,  fmtTime).el}
       ${knob('sustain',    'S', 0,     1, 0.7,  (v) => `${Math.round(v * 100)}%`).el}

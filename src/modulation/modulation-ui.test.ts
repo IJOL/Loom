@@ -98,39 +98,67 @@ describe('modulators panel', () => {
     expect(byText(container, 'button', 'SYNC')).toBeTruthy();
   });
 
-  it('hides TRIG when the modulator is scoped per-voice, shows it when shared', () => {
-    // TRIG (free/note) is meaningless for a per-voice LFO — it is born with the
-    // note either way.
-    const perVoice = makeDefaultLFO('lfo1');
-    perVoice.scope = 'per-voice';
-    renderModulatorsPanel(container, makeDeps(makeHost([perVoice])));
-    expect(isVisible(byTitle(container, '.radio-btn', 'Free'))).toBe(false);
+  it('the merged RETRIG control reads the modulator\'s scope + trigger', () => {
+    // TRIG (free/note) and SCOPE (shared/per-voice) are one 3-way strip:
+    // Free / Note = shared with that retrigger; Voice = per-voice. Nothing hides,
+    // so the row never reflows — but the ACTIVE segment must reflect state.
+    const active = (root: ParentNode) =>
+      [...root.querySelectorAll<HTMLElement>('.mod-card.mod-lfo .radio-btn.active')]
+        .map((b) => b.getAttribute('title'));
+
+    const voice = makeDefaultLFO('lfo1');
+    voice.scope = 'per-voice';
+    renderModulatorsPanel(container, makeDeps(makeHost([voice])));
+    // All three segments are present and none is hidden.
+    expect(byTitle(container, '.radio-btn', 'Free')).toBeTruthy();
+    expect(byTitle(container, '.radio-btn', 'Note')).toBeTruthy();
+    expect(isVisible(byTitle(container, '.radio-btn', 'Voice'))).toBe(true);
+    expect(active(container)).toContain('Voice');
 
     document.body.innerHTML = '';
     container = document.createElement('div');
     document.body.appendChild(container);
 
-    renderModulatorsPanel(container, makeDeps(makeHost([makeDefaultLFO('lfo2')])));
-    expect(isVisible(byTitle(container, '.radio-btn', 'Free'))).toBe(true);
+    const noteMod = makeDefaultLFO('lfo2');
+    noteMod.trigger = 'note';
+    renderModulatorsPanel(container, makeDeps(makeHost([noteMod])));
+    expect(active(container)).toContain('Note');
   });
 
-  it('the WAVE and SCOPE controls are titled radio buttons inside the LFO card', () => {
-    // tests/e2e/lane-ui.spec.ts depends on exactly this composition, and the
-    // waveform options render as SVG glyphs with empty textContent, so `title`
-    // is the only stable handle.
-    const mod = makeDefaultLFO('lfo1');
-    const deps = makeDeps(makeHost([mod]));
+  it('picking a RETRIG segment sets scope/trigger and is audible', () => {
+    const wave = makeDefaultLFO('lfo1');
+    const deps = makeDeps(makeHost([wave]));
     renderModulatorsPanel(container, deps);
     const card = container.querySelector('.mod-card.mod-lfo')!;
 
-    expect(byTitle(card, '.radio-btn', 'Shared')).toBeTruthy();
-    expect(byTitle(card, '.radio-btn', 'PerVoice')).toBeTruthy();
+    // WAVE still renders as titled glyph buttons (empty text, an SVG inside).
     expect(byTitle(card, '.radio-btn', 'Sine').textContent?.trim()).toBe('');
     expect(byTitle(card, '.radio-btn', 'Sine').querySelector('svg')).toBeTruthy();
-
     byTitle(card, '.radio-btn', 'Tri').click();
-    expect(mod.waveform).toBe('triangle');
+    expect(wave.waveform).toBe('triangle');
     expect(deps.onLiveEdit).toHaveBeenCalled();
+
+    // Voice → per-voice scope, and it rebuilds the engine (respawns voices).
+    byTitle(card, '.radio-btn', 'Voice').click();
+    expect(wave.scope).toBe('per-voice');
+    expect(deps.onChange).toHaveBeenCalled();
+
+    // Note → shared + note retrigger. A pure trigger change is audible but needs
+    // no engine rebuild, so it does not fire onChange on its own.
+    const noteMod = makeDefaultLFO('lfo2');
+    const deps2 = makeDeps(makeHost([noteMod]));
+    document.body.innerHTML = '';
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    renderModulatorsPanel(container, deps2);
+    byTitle(container, '.mod-card.mod-lfo .radio-btn', 'Note').click();
+    expect(noteMod.scope).toBe('shared');
+    expect(noteMod.trigger).toBe('note');
+    expect(deps2.onLiveEdit).toHaveBeenCalled();
+    // The whole point of the asymmetry: a pure Free↔Note change (scope stays
+    // shared) reaches the worklet via onLiveEdit and must NOT trigger an engine
+    // rebuild. Only a scope change does.
+    expect(deps2.onChange).not.toHaveBeenCalled();
   });
 
   it('registers every control under a lane-scoped .mod. param id', () => {

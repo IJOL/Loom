@@ -108,9 +108,11 @@ export function makeDeps(
   };
 }
 
-/** Visibility without committing to the mechanism (inline style vs `hidden`),
- *  so a change from `style.display` to a `[hidden]` wrapper does not need the
- *  assertions rewritten. */
+/** Visibility without committing to the mechanism — a missing element, an
+ *  inline `display:none`, or a `[hidden]` wrapper all count as hidden — so
+ *  changing how the panel hides a control does not force the assertions to be
+ *  rewritten. jsdom loads no CSS, so this reads marker attributes / inline
+ *  styles rather than computed style. */
 export function isVisible(el: HTMLElement | null): boolean {
   if (!el) return false;
   for (let n: HTMLElement | null = el; n; n = n.parentElement) {
