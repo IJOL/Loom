@@ -47,6 +47,40 @@ function fxParams(pluginId: string) {
   return plugin.manifest.params.filter((p) => p.kind === 'continuous');
 }
 
+/** An fx plugin's display name, falling back to its id. */
+function fxPluginName(pluginId: string): string {
+  const plugin = getPlugin('fx', pluginId);
+  return plugin && plugin.kind === 'fx' ? plugin.manifest.name : pluginId;
+}
+
+/** Per-slot sub-group for a rack of inserts, keyed by the slot's stable id: the
+ *  plugin's display name, numbered ("Delay 1", "Delay 2") when that plugin
+ *  appears more than once in the rack so two of the same insert don't collapse
+ *  into one heading. Each insert's params thus sit under their own sub-heading
+ *  ("<scope> · <plugin>"), not lumped under the bare lane/rack name. */
+function insertSubGroups(
+  slots: readonly { id: string; pluginId: string }[],
+): Map<string, { key: string; label: string }> {
+  const total = new Map<string, number>();
+  for (const s of slots) {
+    const n = fxPluginName(s.pluginId);
+    total.set(n, (total.get(n) ?? 0) + 1);
+  }
+  const seen = new Map<string, number>();
+  const out = new Map<string, { key: string; label: string }>();
+  for (const s of slots) {
+    const n = fxPluginName(s.pluginId);
+    let label = n;
+    if ((total.get(n) ?? 0) > 1) {
+      const idx = (seen.get(n) ?? 0) + 1;
+      seen.set(n, idx);
+      label = `${n} ${idx}`;
+    }
+    out.set(s.id, { key: s.id, label });
+  }
+  return out;
+}
+
 /** Every automatable destination the session declares, in lane order: each
  *  lane's continuous engine params first, then its inserts slot by slot. */
 export function listAutomationTargets(
@@ -86,9 +120,11 @@ export function listAutomationTargets(
       push(`${lane.id}.${spec.id}`, spec.label, spec.min, spec.max, engine?.subGroupFor?.(spec.id));
     }
 
+    const laneInsertSubs = insertSubGroups(lane.inserts);
     lane.inserts.forEach((slot) => {
+      const subGroup = laneInsertSubs.get(slot.id);
       for (const spec of fxParams(slot.pluginId)) {
-        push(insertParamId(lane.id, slot.id, spec.id), spec.label, spec.min, spec.max);
+        push(insertParamId(lane.id, slot.id, spec.id), spec.label, spec.min, spec.max, subGroup);
       }
     });
   }
@@ -111,7 +147,9 @@ function pushRackTargets(
   displayName: string,
   slots: readonly { id: string; pluginId: string }[],
 ): void {
+  const subs = insertSubGroups(slots);
   for (const slot of slots) {
+    const subGroup = subs.get(slot.id);
     for (const spec of fxParams(slot.pluginId)) {
       const id = insertParamId(scopeId, slot.id, spec.id);
       const live = registry.get(id);
@@ -120,6 +158,7 @@ function pushRackTargets(
         label: live?.meta.label ?? spec.label,
         min: live?.meta.min ?? spec.min,
         max: live?.meta.max ?? spec.max,
+        ...(subGroup ? { subGroup } : {}),
       });
     }
   }
