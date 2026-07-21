@@ -14,11 +14,16 @@ async function destinationCountsForLane(page: Page, laneId: string): Promise<num
 }
 
 test.describe('modulator destination dropdown', () => {
-  test('TB-303 lane lists its 6 engine params', async ({ page }) => {
+  test('TB-303 lane lists its 5 continuous engine params as modulation targets', async ({ page }) => {
+    // TB-303 has 6 engine params, but `osc.wave` is DISCRETE (a waveform choice),
+    // and only CONTINUOUS params can be a modulation/automation destination — you
+    // can't smoothly sweep a waveform. So the dropdown offers 5: cutoff,
+    // resonance, and the three envelope params. (The dropdown reads the shared
+    // DestinationRegistry, which excludes discrete params.)
     await page.goto('/');
     const counts = await destinationCountsForLane(page, 'tb-303-1');
     expect(counts.length).toBeGreaterThan(0);
-    for (const c of counts) expect(c).toBeGreaterThanOrEqual(6);
+    for (const c of counts) expect(c).toBeGreaterThanOrEqual(5);
   });
 
   test('Subtractive lane 1 lists 22 destinations', async ({ page }) => {
