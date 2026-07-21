@@ -10,13 +10,11 @@
 // selector are later increments (see 2026-06-07-sampler-visual-reorg-design.md).
 
 import type { KeymapEntry } from '../samples/types';
+import { pc, noteName } from './note-name';
+export { noteName } from './note-name';
 
-const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const BLACK = new Set([1, 3, 6, 8, 10]);
-const pc = (m: number): number => ((m % 12) + 12) % 12;
 const isBlack = (m: number): boolean => BLACK.has(pc(m));
-/** e.g. 38 → "D1" (MIDI octave −1 convention used across Loom). */
-export const noteName = (m: number): string => `${NOTE_NAMES[pc(m)]}${Math.floor(m / 12) - 1}`;
 /** Even hue spread, matching the mockup's per-index colouring. */
 export const padHue = (i: number, n: number): number => Math.round((i * 360) / Math.max(1, n));
 export const padColor = (i: number, n: number): string => `hsl(${padHue(i, n)},65%,56%)`;
