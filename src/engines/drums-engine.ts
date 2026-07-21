@@ -15,6 +15,7 @@ import { DRUM_PARAMS } from './drums-worklet-engine';
 import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
 import type { ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
+import { drumSubGroupFor } from './drum-subgroups';
 
 export const DRUMS_DEFAULT_MODULATORS: ModulatorState[] = [
   makeDefaultLFO('lfo1'),
@@ -30,6 +31,7 @@ function makeDrumsDescriptor() {
     params: DRUM_PARAMS,
     presets: () => getCachedPresets('drums-machine'),
     modulators: DRUMS_DEFAULT_MODULATORS,
+    subGroupFor: drumSubGroupFor,
   });
 }
 

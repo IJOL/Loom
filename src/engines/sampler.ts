@@ -11,6 +11,7 @@
 import type { EngineParamSpec } from './engine-params';
 import { registerEngine, registerEngineFactory } from './registry';
 import { createDescriptorEngine } from './descriptor-engine';
+import { samplerDynamicParamsFor, samplerSubGroupFor } from './sampler-subgroups';
 
 const SAMPLER_PARAMS: EngineParamSpec[] = [
   { id: 'gain',        label: 'Gain',   kind: 'continuous', min: 0, max: 1.5, default: 1 },
@@ -52,6 +53,8 @@ function makeSamplerDescriptor() {
     polyphony: 'poly',
     params: SAMPLER_PARAMS,
     presets: () => [],
+    subGroupFor: samplerSubGroupFor,
+    dynamicParamsFor: samplerDynamicParamsFor,
   });
 }
 
