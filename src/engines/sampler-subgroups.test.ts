@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { samplerDynamicParamsFor, samplerSubGroupFor } from './sampler-subgroups';
+import { padKeyForNote } from './sampler-pad-params';
 import type { SessionLane } from '../session/session';
 
 function samplerLane(rootNotes: number[]): SessionLane {
@@ -29,5 +30,12 @@ describe('samplerSubGroupFor', () => {
   it('returns undefined for the sampler globals', () => {
     expect(samplerSubGroupFor('gain')).toBeUndefined();
     expect(samplerSubGroupFor('poly.voices')).toBeUndefined();
+  });
+  it('ties the pad-key match to padKeyForNote (round-trips, not a private regex)', () => {
+    // If the pad-key format ever changes in sampler-pad-params, this stays
+    // correct because it round-trips through the format's owner.
+    expect(samplerSubGroupFor(`${padKeyForNote(60)}.tune`)).toEqual({ key: 'zone60', label: 'C4' });
+    // A bare `zone` with no note number is not a pad key.
+    expect(samplerSubGroupFor('zone.tune')).toBeUndefined();
   });
 });

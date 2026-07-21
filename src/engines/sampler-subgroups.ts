@@ -28,11 +28,15 @@ export function samplerDynamicParamsFor(lane: SessionLane): EngineParamSpec[] {
   return out;
 }
 
-const PAD_KEY_RE = /^zone-?\d+$/;
-
 export function samplerSubGroupFor(paramId: string): { key: string; label: string } | undefined {
   const dot = paramId.indexOf('.');
   const seg = dot < 0 ? paramId : paramId.slice(0, dot);
-  if (!PAD_KEY_RE.test(seg)) return undefined;
-  return { key: seg, label: noteName(noteForPadKey(seg)) };
+  // Round-trip through the pad-key format's owner (padKeyForNote/noteForPadKey)
+  // rather than re-encoding `zone<note>` as a local regex: only a genuine pad
+  // key survives padKeyForNote(noteForPadKey(seg)) === seg, so the format has a
+  // single source of truth. `gain`/`poly` → NaN → mismatch → undefined; a bare
+  // `zone` (no digits) → 0 → `zone0` ≠ `zone` → undefined.
+  const note = noteForPadKey(seg);
+  if (!Number.isInteger(note) || padKeyForNote(note) !== seg) return undefined;
+  return { key: seg, label: noteName(note) };
 }
