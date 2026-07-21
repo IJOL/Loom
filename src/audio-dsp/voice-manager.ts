@@ -46,6 +46,18 @@ export class VoiceManager {
     return (last?.v as { getAdsrOffsets?(): Record<string, number> })?.getAdsrOffsets?.();
   }
 
+  /** The phase origin the live modulation telemetry should read, so the UI knob
+   *  rings / LFO graph follow TRIG and SCOPE instead of always drawing a free,
+   *  shared LFO. It tracks the MOST RECENT note (like lastVoiceAdsrOffsets): its
+   *  voiceStartT drives SCOPE=voice and its note-on drives a TRIG=note
+   *  retrigger. Before any note it is the free origin {0,0}, so a silent lane's
+   *  rings sit at the free-running position. Cheap — no per-sample use; the
+   *  worklet reads it once per ~30 Hz telemetry post. */
+  currentPhaseOrigin(): PhaseOrigin {
+    const last = this.slots[this.slots.length - 1];
+    return { voiceStartT: last?.allocatedAt ?? 0, lastNoteOnT: this.lastNoteOnT };
+  }
+
   spawn(note: NoteSpec): void {
     // same-midi steal first (MIDI imports retrigger without note-off), then cap.
     for (let i = this.slots.length - 1; i >= 0; i--) {

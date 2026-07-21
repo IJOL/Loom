@@ -77,7 +77,11 @@ class LoomProcessor extends AudioWorkletProcessor {
       // offset, summed over every source. Posted while something modulates, plus
       // one empty snapshot on the falling edge so the rings clear (no Object.keys
       // alloc on the audio thread: probe emptiness with a for-in/break).
-      const offsets = this.mod.activeOffsets(this.frame / sampleRate);
+      // Feed the SAME phase origin the audio uses (most-recent note), so a
+      // note-triggered or per-voice LFO's ring reflects the retrigger instead of
+      // free-running. Without this the telemetry defaulted to {0,0} and the graph
+      // ignored TRIG/SCOPE entirely.
+      const offsets = this.mod.activeOffsets(this.frame / sampleRate, this.vm.currentPhaseOrigin());
       // Add the most-recent voice's per-voice ADSR offsets on top of the shared LFO
       // ones, so a knob driven by an ADSR shows its ring (following the last note).
       const adsr = this.vm.lastVoiceAdsrOffsets();
