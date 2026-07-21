@@ -59,7 +59,10 @@ export function listAutomationTargets(
     const laneName = lane.name || lane.id;
 
     // A live knob, when mounted, is the authority on how the param reads.
-    const push = (id: string, label: string, min: number, max: number) => {
+    const push = (
+      id: string, label: string, min: number, max: number,
+      subGroup?: { key: string; label: string },
+    ) => {
       const live = registry.get(id);
       targets.push({
         id,
@@ -68,13 +71,19 @@ export function listAutomationTargets(
         label: live?.meta.label ?? label,
         min: live?.meta.min ?? min,
         max: live?.meta.max ?? max,
+        ...(subGroup ? { subGroup } : {}),
       });
     };
 
     const engine = getEngine(lane.engineId);
-    for (const spec of engine?.params ?? []) {
+    // Static params + any per-lane dynamic params the engine derives from the
+    // session (the sampler's per-pad params, from the lane keymap). The engine
+    // owns both the sub-group naming and the dynamic list — the catalogue never
+    // learns what a voice or a pad is.
+    const engineSpecs = [...(engine?.params ?? []), ...(engine?.dynamicParamsFor?.(lane) ?? [])];
+    for (const spec of engineSpecs) {
       if (spec.kind !== 'continuous') continue;
-      push(`${lane.id}.${spec.id}`, spec.label, spec.min, spec.max);
+      push(`${lane.id}.${spec.id}`, spec.label, spec.min, spec.max, engine?.subGroupFor?.(spec.id));
     }
 
     lane.inserts.forEach((slot) => {
