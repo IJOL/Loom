@@ -129,4 +129,14 @@ export interface SynthEngine {
    *  many notes are playing. Returns an empty Map until the engine has
    *  a voice manager instance (lazy after first createVoice). */
   getSharedAudioParams?(ctx?: AudioContext): Map<string, AudioParam>;
+  /** Optional: a presentable sub-heading for one of this engine's params, used
+   *  to group destination dropdowns by strip (a drum voice, a sampler pad).
+   *  Returns undefined for params that belong to no strip (e.g. the lane bus).
+   *  Single-strip engines don't implement it. Presentation only. */
+  subGroupFor?(paramId: string): { key: string; label: string } | undefined;
+  /** Optional: per-lane params that aren't in the static `params` list because
+   *  they depend on session state (the sampler's per-pad params, derived from
+   *  the lane keymap). The catalogue merges these with `params` when listing
+   *  destinations. */
+  dynamicParamsFor?(lane: import('../session/session').SessionLane): import('./engine-params').EngineParamSpec[];
 }

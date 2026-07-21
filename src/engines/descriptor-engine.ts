@@ -34,6 +34,10 @@ export interface DescriptorEngineConfig {
   /** Default modulator set (data) — seeds the host's serialized state used by
    *  the worklet lane to construct its in-worklet modulation. */
   modulators?: ModulatorState[];
+  /** See SynthEngine.subGroupFor. */
+  subGroupFor?: (paramId: string) => { key: string; label: string } | undefined;
+  /** See SynthEngine.dynamicParamsFor. */
+  dynamicParamsFor?: (lane: import('../session/session').SessionLane) => EngineParamSpec[];
 }
 
 const inertSequencer = (): EngineSequencer => ({
@@ -83,5 +87,7 @@ export function createDescriptorEngine(cfg: DescriptorEngineConfig): SynthEngine
       if (preset.modulators) modHost.deserialize(preset.modulators);
     },
     dispose() { /* no live resources */ },
+    subGroupFor: cfg.subGroupFor,
+    dynamicParamsFor: cfg.dynamicParamsFor,
   };
 }

@@ -24,6 +24,10 @@ export interface AutomationTarget {
   laneName: string;
   min: number;
   max: number;
+  /** Optional sub-heading within a lane: a drum voice, a sampler pad. Absent for
+   *  single-strip engines, which group by lane alone as before. Presentation
+   *  only — computed at list time, never persisted. */
+  subGroup?: { key: string; label: string };
 }
 
 /** The insert-param id for a rack slot. `scopeId` is a lane id, or `fx.master` /
