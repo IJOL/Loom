@@ -125,6 +125,16 @@ function pushRackTargets(
   }
 }
 
+/** The header text for an automation lane bound to `paramId`. Includes the
+ *  strip (drum voice / sampler pad) when the target has a sub-group, so a
+ *  created lane shows WHICH strip it edits — not just "Drums · TUNE". Falls
+ *  back to the raw id, flagged, when the session no longer declares the param. */
+export function automationTargetLabel(target: AutomationTarget | undefined, paramId: string): string {
+  if (!target) return `${paramId} (unavailable)`;
+  const head = target.subGroup ? `${target.laneName} · ${target.subGroup.label}` : target.laneName;
+  return `${head} · ${target.label}`;
+}
+
 /** Group targets by lane for a picker's <optgroup>s, in session lane order. */
 export function groupTargetsByLane(targets: AutomationTarget[]): Map<string, AutomationTarget[]> {
   const groups = new Map<string, AutomationTarget[]>();

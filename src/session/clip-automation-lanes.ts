@@ -4,7 +4,7 @@
 // seq.length / 16.
 
 import type { SessionClip, ClipEnvelope } from './session';
-import { groupTargetsByLane, type AutomationTarget } from '../automation/automation-targets';
+import { groupTargetsByLane, automationTargetLabel, type AutomationTarget } from '../automation/automation-targets';
 import type { DestinationRegistry } from '../automation/destination-registry';
 import type { Sequencer } from '../core/sequencer';
 import { addClipEnvelope } from './clip-envelope-ops';
@@ -117,9 +117,7 @@ export function renderClipAutomationLanes(
     hdr.className = 'auto-lane-header';
     const label = document.createElement('div');
     label.className = 'label';
-    label.textContent = target
-      ? `${target.laneName} · ${target.label}`
-      : `${env.paramId} (unavailable)`;
+    label.textContent = automationTargetLabel(target, env.paramId);
     const enableBtn = document.createElement('button');
     enableBtn.className = 'enable' + (env.enabled ? ' active' : '');
     enableBtn.textContent = env.enabled ? 'On' : 'Off';
