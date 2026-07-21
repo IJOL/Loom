@@ -129,8 +129,9 @@ function pushRackTargets(
 export function groupTargetsByLane(targets: AutomationTarget[]): Map<string, AutomationTarget[]> {
   const groups = new Map<string, AutomationTarget[]>();
   for (const t of targets) {
-    let g = groups.get(t.laneName);
-    if (!g) { g = []; groups.set(t.laneName, g); }
+    const key = t.subGroup ? `${t.laneName} · ${t.subGroup.label}` : t.laneName;
+    let g = groups.get(key);
+    if (!g) { g = []; groups.set(key, g); }
     g.push(t);
   }
   return groups;
