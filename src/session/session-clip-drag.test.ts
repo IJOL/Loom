@@ -127,9 +127,12 @@ describe('clip drag gesture', () => {
     (document as { elementFromPoint: typeof document.elementFromPoint }).elementFromPoint = () => null;
 
     cell.dispatchEvent(pev('pointerdown', { button: 0, clientX: 10, clientY: 10 }));
-    renderSessionGrid(host, state, new Map<string, LanePlayState>(), cb);   // discards the pressed cell
+    renderSessionGrid(host, state, new Map<string, LanePlayState>(), cb);   // re-render mid-gesture
     const freshCell = filledCell();
-    expect(freshCell).not.toBe(cell);
+    // lit patches the grid in place, so the pressed cell SURVIVES a re-render
+    // (the pre-lit grid rebuilt it wholesale). The gesture must still not
+    // strand either way: its listeners live on window, not on the cell.
+    expect(freshCell).toBe(cell);
     // The up never reached any cell; a button-less move must not start a drag.
     freshCell.dispatchEvent(pev('pointermove', { buttons: 0, clientX: 60, clientY: 60 }));
     expect(document.querySelectorAll('.session-ghost').length).toBe(0);

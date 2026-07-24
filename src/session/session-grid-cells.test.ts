@@ -26,14 +26,21 @@ describe('clip cell interactions', () => {
 
   it('a plain pointerdown+up on the clip body opens the editor (drag-click fallback)', () => {
     const host = document.createElement('div');
-    const onClipClick = vi.fn();
-    renderSessionGrid(host, makeState(), new Map(), noopCallbacks({ onClipClick }));
-    const cell = host.querySelector('.session-cell-filled') as HTMLElement;
-    // jsdom has no PointerEvent; MouseEvent carries the same fields the
-    // handlers read (button, clientX/Y, pointerId undefined on both sides).
-    cell.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
-    cell.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
-    expect(onClipClick).toHaveBeenCalledWith('bass', 0);
+    // The gesture's up/cancel listeners live on window (capture) — the host
+    // must be IN the document or the cell's pointerup never propagates there.
+    document.body.appendChild(host);
+    try {
+      const onClipClick = vi.fn();
+      renderSessionGrid(host, makeState(), new Map(), noopCallbacks({ onClipClick }));
+      const cell = host.querySelector('.session-cell-filled') as HTMLElement;
+      // jsdom has no PointerEvent; MouseEvent carries the same fields the
+      // handlers read (button, clientX/Y, pointerId undefined on both sides).
+      cell.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+      cell.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
+      expect(onClipClick).toHaveBeenCalledWith('bass', 0);
+    } finally {
+      host.remove();
+    }
   });
 
   it('the clip ✕ deletes without triggering the cell click', () => {
