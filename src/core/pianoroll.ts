@@ -3,6 +3,9 @@
 // Ableton-style zoom: scrub the time ruler (↕ zoom time, ↔ pan) and the piano
 // keyboard (↕ zoom pitch); native scrollbars pan. Snap defaults to 16th notes.
 
+import { html } from 'lit-html';
+import { renderElement } from './lit-fragment';
+import { editorFrameTemplate } from './pianoroll-templates';
 import { TICKS_PER_STEP, type NoteEvent } from './notes';
 import { velToColor } from './velocity-color';
 import { velocityToBarHeight, FAN_PX, yToVelocity, barHitTest, setVelocity, applyGroupDelta } from './velocity-lane-editing';
@@ -113,93 +116,35 @@ export interface PianoRollFrame {
 
 /** Build the 2×2 editor frame (corner / ruler / keyboard / grid-viewport)
  *  inside `host`. Ruler and keyboard live OUTSIDE the scroll viewport so they
- *  can be pinned (repositioned via transform) as the grid scrolls. */
+ *  can be pinned (repositioned via transform) as the grid scrolls.
+ *
+ *  Build-once DOM: one detached lit render (pianoroll-templates.ts), refs
+ *  pulled out, then everything is driven imperatively (canvas sizing/drawing,
+ *  transform pinning). Never rendered into `host` itself — callers wipe it
+ *  with innerHTML, which would strand a persistent lit part. */
 export function buildEditorFrame(host: HTMLElement): PianoRollFrame {
   host.innerHTML = '';
 
-  const frame = document.createElement('div');
-  frame.className = 'pr-frame';
-  Object.assign(frame.style, {
-    display: 'grid',
-    gridTemplateColumns: `${KEYS_W}px 1fr`,
-    gridTemplateRows: `${RULER_H}px 1fr ${VEL_LANE_H}px`,
-    height: `${FRAME_H + VEL_LANE_H}px`,
-    background: '#141414',
-    border: '1px solid #2a2a2a',
-    borderRadius: '6px',
-    overflow: 'hidden',
-  } as Partial<CSSStyleDeclaration>);
+  const wrap = renderElement(editorFrameTemplate({
+    keysW: KEYS_W, rulerH: RULER_H, frameH: FRAME_H, velLaneH: VEL_LANE_H,
+  })) as HTMLDivElement;
 
-  const corner = document.createElement('div');
-  corner.className = 'pr-corner';
-  Object.assign(corner.style, { background: '#202020', borderRight: '1px solid #2a2a2a', borderBottom: '1px solid #2a2a2a' } as Partial<CSSStyleDeclaration>);
-
-  const mkWrap = (cls: string, cursor: string): HTMLDivElement => {
-    const d = document.createElement('div');
-    d.className = cls;
-    Object.assign(d.style, { overflow: 'hidden', position: 'relative', cursor } as Partial<CSSStyleDeclaration>);
-    return d;
-  };
-  const mkCanvas = (absolute: boolean): HTMLCanvasElement => {
-    const c = document.createElement('canvas');
-    if (absolute) Object.assign(c.style, { position: 'absolute', top: '0', left: '0', display: 'block' } as Partial<CSSStyleDeclaration>);
-    else c.style.display = 'block';
-    return c;
-  };
-
-  const rulerWrap = mkWrap('pr-ruler', 'ns-resize');
-  rulerWrap.style.borderBottom = '1px solid #2a2a2a';
-  rulerWrap.style.background = '#181818';
-  const rulerCanvas = mkCanvas(true);
-  rulerWrap.appendChild(rulerCanvas);
-
-  const keysWrap = mkWrap('pr-keys', 'ns-resize');
-  keysWrap.style.borderRight = '1px solid #2a2a2a';
-  keysWrap.style.background = '#1a1a1a';
-  const keysCanvas = mkCanvas(true);
-  keysWrap.appendChild(keysCanvas);
-
-  const gridVp = document.createElement('div');
-  gridVp.className = 'pr-grid-vp';
-  Object.assign(gridVp.style, { overflow: 'auto', position: 'relative', background: '#0a0a0a' } as Partial<CSSStyleDeclaration>);
-  // Reserve the scrollbar gutter so clientWidth/Height stay constant whether or
-  // not a scrollbar is showing. The grid sizes its canvas to clientWidth/Height
-  // (geom()), and redraw() relays out on any change — so a scrollbar appearing
-  // and disappearing drove a relayout feedback loop (rapid flicker + the loop
-  // brace looking duplicated) the moment the loop overlay column was shown.
-  //
-  // MUST be `stable` (end-edge only), NOT `stable both-edges`: the grid canvas is
-  // the only in-flow child here, so a start-edge gutter would inset it ~15px to the
-  // right of the ruler/keys (which are left:0/top:0 absolute strips with no gutter),
-  // misaligning every bar line against the ruler. `stable` reserves only the
-  // inline-end gutter — enough to keep clientWidth constant — and leaves the grid
-  // origin flush with the strips.
+  const frame = wrap.querySelector('.pr-frame') as HTMLDivElement;
+  const toolbar = wrap.querySelector('.pr-toolbar') as HTMLDivElement;
+  const rulerWrap = wrap.querySelector('.pr-ruler') as HTMLDivElement;
+  const keysWrap = wrap.querySelector('.pr-keys') as HTMLDivElement;
+  const gridVp = wrap.querySelector('.pr-grid-vp') as HTMLDivElement;
+  // Scrollbar-gutter reservation (see pianoroll-templates.ts for the full
+  // rationale). Set here instead of in the template's style attribute: jsdom
+  // drops a whole style attribute holding a property it doesn't recognise.
   gridVp.style.setProperty('scrollbar-gutter', 'stable');
-  const gridCanvas = mkCanvas(false);
-  gridVp.appendChild(gridCanvas);
+  const velWrap = wrap.querySelector('.pr-vel') as HTMLDivElement;
+  const rulerCanvas = rulerWrap.firstElementChild as HTMLCanvasElement;
+  const keysCanvas = keysWrap.firstElementChild as HTMLCanvasElement;
+  const gridCanvas = gridVp.firstElementChild as HTMLCanvasElement;
+  const velCanvas = velWrap.firstElementChild as HTMLCanvasElement;
 
-  const velCorner = document.createElement('div');
-  velCorner.className = 'pr-velcorner';
-  Object.assign(velCorner.style, { background: '#181818', borderRight: '1px solid #2a2a2a', borderTop: '1px solid #2a2a2a' } as Partial<CSSStyleDeclaration>);
-
-  const velWrap = mkWrap('pr-vel', 'ns-resize');
-  velWrap.style.borderTop = '1px solid #2a2a2a';
-  velWrap.style.background = '#0e0e0e';
-  const velCanvas = mkCanvas(true);
-  velWrap.appendChild(velCanvas);
-
-  frame.append(corner, rulerWrap, keysWrap, gridVp, velCorner, velWrap);
-
-  const toolbar = document.createElement('div');
-  toolbar.className = 'pr-toolbar';
-  Object.assign(toolbar.style, { display: 'flex', gap: '6px', alignItems: 'center', padding: '4px 2px' } as Partial<CSSStyleDeclaration>);
-
-  const wrap = document.createElement('div');
-  wrap.tabIndex = 0; // focusable, so the keyboard handler can target it
-  wrap.style.outline = 'none';
-  wrap.append(toolbar, frame);
   host.appendChild(wrap);
-
   return { frame, wrap, toolbar, rulerWrap, keysWrap, gridVp, rulerCanvas, keysCanvas, gridCanvas, velWrap, velCanvas };
 }
 
@@ -234,13 +179,26 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
 
   // Octave stepper: ◂ [C4] ▸ — shifts the reference octave used as the paste-anchor
   // fallback (Ctrl+V with no prior mouse position) and exposed via getOctaveBase for
-  // the note-randomizer. Shared grid-control wrapper.
-  const octDownBtn = document.createElement('button');
-  octDownBtn.textContent = '◂'; octDownBtn.title = 'Octave down';
-  const octLabel = document.createElement('span');
-  octLabel.style.cssText = 'font:11px ui-monospace,monospace;color:#9a9a9a';
-  const octUpBtn = document.createElement('button');
-  octUpBtn.textContent = '▸'; octUpBtn.title = 'Octave up';
+  // the note-randomizer. Shared grid-control wrapper. Built once via a detached
+  // lit render (plus the scale-lock button below): the throwaway wrapper <div>
+  // never mounts — createGridControl re-parents the stepper pieces and the
+  // toolbar adopts the lock button.
+  let lockOn = opts.scaleLock ?? false;
+  const octTools = renderElement(html`<div>
+    <button title="Octave down" @click=${() => shiftOctave(-1)}>◂</button>
+    <span style="font:11px ui-monospace,monospace;color:#9a9a9a"></span>
+    <button title="Octave up" @click=${() => shiftOctave(1)}>▸</button>
+    <button @click=${() => {
+      lockOn = !lockOn;
+      opts.scaleLock = lockOn;          // snapMidi reads opts.scaleLock live
+      refreshLock();
+      opts.onScaleLockChange?.(lockOn);
+    }}></button>
+  </div>`);
+  const octDownBtn = octTools.children[0] as HTMLButtonElement;
+  const octLabel = octTools.children[1] as HTMLSpanElement;
+  const octUpBtn = octTools.children[2] as HTMLButtonElement;
+  const lockBtn = octTools.children[3] as HTMLButtonElement;
   const octCtl = createGridControl(octDownBtn, octLabel, octUpBtn);
 
   // Grid resolution — shared with the drum-grid so notes quantize the same way.
@@ -258,20 +216,10 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     octaveBase = clampOctaveBase(octaveBase + dir * 12, minMidi, maxMidi);
     refreshToolbar();
   };
-  octDownBtn.addEventListener('click', () => shiftOctave(-1));
-  octUpBtn.addEventListener('click', () => shiftOctave(1));
-  let lockOn = opts.scaleLock ?? false;
-  const lockBtn = document.createElement('button');
   const refreshLock = () => {
     lockBtn.textContent = lockOn ? '🔒 Scale' : '🔓 Scale';
     lockBtn.title = lockOn ? 'Scale lock ON (notes snap to key)' : 'Scale lock OFF';
   };
-  lockBtn.addEventListener('click', () => {
-    lockOn = !lockOn;
-    opts.scaleLock = lockOn;          // snapMidi reads opts.scaleLock live
-    refreshLock();
-    opts.onScaleLockChange?.(lockOn);
-  });
   refreshLock();
   lockBtn.hidden = !opts.scaleCtx;     // only meaningful with a tonality
 

@@ -2,6 +2,14 @@
 //   Drag vertically to change value (Shift = fine).
 //   Mouse wheel also adjusts (Shift = fine).
 //   Double-click resets to defaultValue (if provided).
+//
+// The DOM scaffolding is a ONE-TIME lit-html render into a detached fragment;
+// after that every update (drag frame, wheel, automation setValue) writes the
+// kept element refs imperatively. The hot path must NOT go through a template
+// re-render: a diff per drag frame is waste, and replacing the <svg> mid-drag
+// would drop its pointer capture.
+
+import { html, render as litRender, nothing } from 'lit-html';
 
 export interface KnobOpts {
   min: number;
@@ -41,8 +49,6 @@ export interface KnobHandle {
   setModulationOffset: (offsetNorm: number) => void;
 }
 
-const SVG_NS = 'http://www.w3.org/2000/svg';
-
 export function createKnob(opts: KnobOpts): KnobHandle {
   const size = opts.size ?? 40;
   const cx = size / 2;
@@ -51,62 +57,109 @@ export function createKnob(opts: KnobOpts): KnobHandle {
   const bodyR     = size * 0.32;
   const pointerLen = bodyR - 2;
 
-  const wrap = document.createElement('div');
-  wrap.className = 'knob';
-
-  if (opts.label) {
-    const lab = document.createElement('div');
-    lab.className = 'knob-label';
-    lab.textContent = opts.label;
-    wrap.appendChild(lab);
-  }
-
-  const svg = document.createElementNS(SVG_NS, 'svg');
-  svg.classList.add('knob-svg');
-  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
-  svg.setAttribute('width', String(size));
-  svg.setAttribute('height', String(size));
-
-  const track = document.createElementNS(SVG_NS, 'path');
-  track.setAttribute('class', 'knob-track');
-  track.setAttribute('d', arcPath(cx, cy, trackR, -135, 135));
-  svg.appendChild(track);
-
-  const valArc = document.createElementNS(SVG_NS, 'path');
-  valArc.setAttribute('class', 'knob-value');
-  if (opts.color) valArc.style.stroke = opts.color;
-  svg.appendChild(valArc);
-
-  const modArc = document.createElementNS(SVG_NS, 'path');
-  modArc.setAttribute('class', 'knob-modulation');
-  modArc.style.stroke = '#ffa726';
-  modArc.style.opacity = '0';
-  svg.appendChild(modArc);
-
-  const body = document.createElementNS(SVG_NS, 'circle');
-  body.setAttribute('cx', String(cx));
-  body.setAttribute('cy', String(cy));
-  body.setAttribute('r', String(bodyR));
-  body.setAttribute('class', 'knob-body');
-  svg.appendChild(body);
-
-  const ptr = document.createElementNS(SVG_NS, 'line');
-  ptr.setAttribute('x1', String(cx));
-  ptr.setAttribute('y1', String(cy));
-  ptr.setAttribute('x2', String(cx));
-  ptr.setAttribute('y2', String(cy - pointerLen));
-  ptr.setAttribute('class', 'knob-pointer');
-  if (opts.color) ptr.style.stroke = opts.color;
-  svg.appendChild(ptr);
-
-  wrap.appendChild(svg);
-
-  const valDisp = document.createElement('div');
-  valDisp.className = 'knob-value-text';
-  wrap.appendChild(valDisp);
-
   let value = opts.value;
   let lastModOffset = 0;
+
+  // --- Interaction (bound in the template below) --------------------------
+  let dragging = false;
+  let startY = 0;
+  let startVal = 0;
+
+  const onPointerDown = (e: PointerEvent) => {
+    // Only the primary button drags. Without this a right-press captures the
+    // pointer and subsequent moves change the value — which the knob context
+    // menu would trigger on every use.
+    if (e.button !== 0) return;
+    dragging = true;
+    opts.onGestureStart?.();
+    startY = e.clientY;
+    startVal = value;
+    svg.setPointerCapture(e.pointerId);
+    wrap.classList.add('dragging');
+    e.preventDefault();
+  };
+
+  const onPointerMove = (e: PointerEvent) => {
+    if (!dragging) return;
+    const deltaY = startY - e.clientY;
+    const sens = e.shiftKey ? 0.0008 : 0.005;
+    setValue(startVal + deltaY * sens * (opts.max - opts.min), true, true);
+  };
+
+  const release = (e: PointerEvent) => {
+    if (!dragging) return;
+    dragging = false;
+    try { svg.releasePointerCapture(e.pointerId); } catch {}
+    opts.onGestureEnd?.();
+    wrap.classList.remove('dragging');
+  };
+
+  const onDblClick = () => {
+    if (opts.defaultValue === undefined) return;
+    opts.onGestureStart?.();
+    setValue(opts.defaultValue, true, true);
+    opts.onGestureEnd?.();
+  };
+
+  let wheelGestureTimer: ReturnType<typeof setTimeout> | null = null;
+  let wheelGestureActive = false;
+
+  const onWheel = (e: WheelEvent) => {
+    e.preventDefault();
+    if (!wheelGestureActive) {
+      wheelGestureActive = true;
+      opts.onGestureStart?.();
+    }
+    if (wheelGestureTimer) clearTimeout(wheelGestureTimer);
+    const sens = e.shiftKey ? 0.0008 : 0.005;
+    setValue(value + -e.deltaY * sens * (opts.max - opts.min), true, true);
+    wheelGestureTimer = setTimeout(() => {
+      wheelGestureActive = false;
+      opts.onGestureEnd?.();
+    }, 250);
+  };
+
+  // --- One-time DOM build --------------------------------------------------
+  // The value arc gets no initial `d` and the value text starts empty; the
+  // first render() paints both. `nothing` on style keeps the attribute off
+  // entirely when no custom color is set (matches the pre-lit DOM).
+  const frag = document.createDocumentFragment();
+  litRender(html`
+    <div class="knob">
+      ${opts.label ? html`<div class="knob-label">${opts.label}</div>` : nothing}
+      <svg
+        class="knob-svg"
+        viewBox=${`0 0 ${size} ${size}`}
+        width=${size}
+        height=${size}
+        @pointerdown=${onPointerDown}
+        @pointermove=${onPointerMove}
+        @pointerup=${release}
+        @pointercancel=${release}
+        @dblclick=${onDblClick}
+        @wheel=${{ handleEvent: onWheel, passive: false }}
+      >
+        <path class="knob-track" d=${arcPath(cx, cy, trackR, -135, 135)} />
+        <path class="knob-value" style=${opts.color ? `stroke: ${opts.color}` : nothing} />
+        <path class="knob-modulation" style="stroke: #ffa726; opacity: 0" />
+        <circle class="knob-body" cx=${cx} cy=${cy} r=${bodyR} />
+        <line
+          class="knob-pointer"
+          x1=${cx} y1=${cy} x2=${cx} y2=${cy - pointerLen}
+          style=${opts.color ? `stroke: ${opts.color}` : nothing}
+        />
+      </svg>
+      <div class="knob-value-text"></div>
+    </div>
+  `, frag);
+
+  const wrap    = frag.firstElementChild as HTMLElement;
+  const svg     = wrap.querySelector('svg.knob-svg') as SVGSVGElement;
+  const valArc  = wrap.querySelector('.knob-value') as SVGPathElement;
+  const modArc  = wrap.querySelector('.knob-modulation') as SVGPathElement;
+  const ptr     = wrap.querySelector('.knob-pointer') as SVGLineElement;
+  const valDisp = wrap.querySelector('.knob-value-text') as HTMLDivElement;
+
   const handle: KnobHandle = {
     el: wrap,
     setValue: (v) => setValue(v, true, false),
@@ -151,67 +204,6 @@ export function createKnob(opts: KnobOpts): KnobHandle {
   }
 
   render();
-
-  // --- Interaction --------------------------------------------------------
-  let dragging = false;
-  let startY = 0;
-  let startVal = 0;
-
-  svg.addEventListener('pointerdown', (e) => {
-    // Only the primary button drags. Without this a right-press captures the
-    // pointer and subsequent moves change the value — which the knob context
-    // menu would trigger on every use.
-    if (e.button !== 0) return;
-    dragging = true;
-    opts.onGestureStart?.();
-    startY = e.clientY;
-    startVal = value;
-    svg.setPointerCapture(e.pointerId);
-    wrap.classList.add('dragging');
-    e.preventDefault();
-  });
-
-  svg.addEventListener('pointermove', (e) => {
-    if (!dragging) return;
-    const deltaY = startY - e.clientY;
-    const sens = e.shiftKey ? 0.0008 : 0.005;
-    setValue(startVal + deltaY * sens * (opts.max - opts.min), true, true);
-  });
-
-  const release = (e: PointerEvent) => {
-    if (!dragging) return;
-    dragging = false;
-    try { svg.releasePointerCapture(e.pointerId); } catch {}
-    opts.onGestureEnd?.();
-    wrap.classList.remove('dragging');
-  };
-  svg.addEventListener('pointerup', release);
-  svg.addEventListener('pointercancel', release);
-
-  svg.addEventListener('dblclick', () => {
-    if (opts.defaultValue === undefined) return;
-    opts.onGestureStart?.();
-    setValue(opts.defaultValue, true, true);
-    opts.onGestureEnd?.();
-  });
-
-  let wheelGestureTimer: ReturnType<typeof setTimeout> | null = null;
-  let wheelGestureActive = false;
-
-  svg.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    if (!wheelGestureActive) {
-      wheelGestureActive = true;
-      opts.onGestureStart?.();
-    }
-    if (wheelGestureTimer) clearTimeout(wheelGestureTimer);
-    const sens = e.shiftKey ? 0.0008 : 0.005;
-    setValue(value + -e.deltaY * sens * (opts.max - opts.min), true, true);
-    wheelGestureTimer = setTimeout(() => {
-      wheelGestureActive = false;
-      opts.onGestureEnd?.();
-    }, 250);
-  }, { passive: false });
 
   return handle;
 }

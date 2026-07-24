@@ -8,7 +8,13 @@
 // when option values match known waveform shapes, plain text otherwise);
 // with > 4 options we fall back to the native <select>. The returned `el`
 // is typed as HTMLElement either way — callers use `.el` for layout only.
+//
+// DOM is built once via a one-time lit-html render into a detached fragment;
+// the active-state refresh and data-value-norm updates stay imperative on the
+// kept refs (these controls are automation targets that must survive drags and
+// programmatic setValue without a template diff).
 
+import { html, render as litRender, type TemplateResult } from 'lit-html';
 import type { KnobHandle, KnobMeta } from './knob';
 
 export interface SelectControlOpts {
@@ -44,60 +50,42 @@ const WAVEFORM_GLYPHS: Record<string, string> = {
   saw:      'M 2 14 L 8 2 L 8 14 L 15 2 L 15 14 L 22 2 L 22 14',
 };
 
-const SVG_NS = 'http://www.w3.org/2000/svg';
-
-function makeWaveformGlyph(path: string): SVGSVGElement {
-  const svg = document.createElementNS(SVG_NS, 'svg');
-  svg.setAttribute('viewBox', '0 0 28 16');
-  svg.setAttribute('width', '24');
-  svg.setAttribute('height', '14');
-  svg.classList.add('radio-glyph');
-  const p = document.createElementNS(SVG_NS, 'path');
-  p.setAttribute('d', path);
-  p.setAttribute('fill', 'none');
-  p.setAttribute('stroke', 'currentColor');
-  p.setAttribute('stroke-width', '1.5');
-  p.setAttribute('stroke-linecap', 'round');
-  p.setAttribute('stroke-linejoin', 'round');
-  svg.appendChild(p);
-  return svg;
+function waveformGlyphTemplate(path: string): TemplateResult {
+  return html`<svg class="radio-glyph" viewBox="0 0 28 16" width="24" height="14"><path
+    d=${path} fill="none" stroke="currentColor" stroke-width="1.5"
+    stroke-linecap="round" stroke-linejoin="round" /></svg>`;
 }
 
 function createRadioStrip(opts: SelectControlOpts): { el: HTMLElement; handle: KnobHandle } {
-  const wrap = document.createElement('div');
-  wrap.className = 'radio-strip';
-
-  const buttons: HTMLButtonElement[] = [];
   const refresh = (active: string) => {
     for (let i = 0; i < buttons.length; i++) {
       buttons[i].classList.toggle('active', opts.options[i].value === active);
     }
   };
 
-  for (const o of opts.options) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'radio-btn';
-    b.title = o.label;
-    const glyph = WAVEFORM_GLYPHS[o.value];
-    if (glyph) {
-      b.appendChild(makeWaveformGlyph(glyph));
-    } else {
-      b.textContent = o.label;
-    }
-    b.addEventListener('click', () => {
-      const next = o.value;
-      refresh(next);
-      const idx = opts.options.findIndex((x) => x.value === next);
-      const v = normaliseSelectIndex(Math.max(0, idx), opts.options.length);
-      opts.onChange(next, true);
-      const norm = opts.options.length <= 1 ? 0 : Math.max(0, idx) / (opts.options.length - 1);
-      handle.el.setAttribute('data-value-norm', String(norm));
-      handle.onValueChanged?.(v, true);
-    });
-    buttons.push(b);
-    wrap.appendChild(b);
-  }
+  const onPick = (o: { value: string; label: string }) => () => {
+    const next = o.value;
+    refresh(next);
+    const idx = opts.options.findIndex((x) => x.value === next);
+    const v = normaliseSelectIndex(Math.max(0, idx), opts.options.length);
+    opts.onChange(next, true);
+    const norm = opts.options.length <= 1 ? 0 : Math.max(0, idx) / (opts.options.length - 1);
+    handle.el.setAttribute('data-value-norm', String(norm));
+    handle.onValueChanged?.(v, true);
+  };
+
+  const frag = document.createDocumentFragment();
+  litRender(html`
+    <div class="radio-strip">
+      ${opts.options.map((o) => {
+        const glyph = WAVEFORM_GLYPHS[o.value];
+        return html`<button type="button" class="radio-btn" title=${o.label}
+          @click=${onPick(o)}>${glyph ? waveformGlyphTemplate(glyph) : o.label}</button>`;
+      })}
+    </div>
+  `, frag);
+  const wrap = frag.firstElementChild as HTMLElement;
+  const buttons = [...wrap.querySelectorAll<HTMLButtonElement>('button.radio-btn')];
 
   let current = opts.initialValue;
   refresh(current);
@@ -130,14 +118,23 @@ function createRadioStrip(opts: SelectControlOpts): { el: HTMLElement; handle: K
 }
 
 function createNativeSelect(opts: SelectControlOpts): { el: HTMLElement; handle: KnobHandle } {
-  const sel = document.createElement('select');
-  sel.className = 'select-control';
-  for (const o of opts.options) {
-    const optEl = document.createElement('option');
-    optEl.value = o.value;
-    optEl.textContent = o.label;
-    sel.appendChild(optEl);
-  }
+  const onNativeChange = () => {
+    const idx = opts.options.findIndex((o) => o.value === sel.value);
+    const v = normaliseSelectIndex(Math.max(0, idx), opts.options.length);
+    opts.onChange(sel.value, true);
+    const norm = opts.options.length <= 1 ? 0 : Math.max(0, idx) / (opts.options.length - 1);
+    handle.el.setAttribute('data-value-norm', String(norm));
+    handle.onValueChanged?.(v, true);
+  };
+
+  const frag = document.createDocumentFragment();
+  litRender(html`
+    <select class="select-control" @change=${onNativeChange}>
+      ${opts.options.map((o) => html`<option value=${o.value}>${o.label}</option>`)}
+    </select>
+  `, frag);
+  const sel = frag.firstElementChild as HTMLSelectElement;
+  // Options must exist before the current value can stick.
   sel.value = opts.initialValue;
 
   const meta: KnobMeta = { id: opts.id, label: opts.label, min: 0, max: 1 };
@@ -163,15 +160,6 @@ function createNativeSelect(opts: SelectControlOpts): { el: HTMLElement; handle:
   const initialNorm = opts.options.length <= 1 ? 0 : Math.max(0, initialIdx) / (opts.options.length - 1);
   sel.setAttribute('data-value-norm', String(initialNorm));
 
-  sel.addEventListener('change', () => {
-    const idx = opts.options.findIndex((o) => o.value === sel.value);
-    const v = normaliseSelectIndex(Math.max(0, idx), opts.options.length);
-    opts.onChange(sel.value, true);
-    const norm = opts.options.length <= 1 ? 0 : Math.max(0, idx) / (opts.options.length - 1);
-    handle.el.setAttribute('data-value-norm', String(norm));
-    handle.onValueChanged?.(v, true);
-  });
-
   return { el: sel, handle };
 }
 
@@ -182,13 +170,12 @@ export function createSelectControl(opts: SelectControlOpts): { el: HTMLElement;
   // read clearly in a dense rack. handle.el stays the control (automation target);
   // only the layout `el` becomes the captioned wrapper.
   if (opts.showLabel && opts.label) {
-    const wrap = document.createElement('div');
-    wrap.className = 'select-labeled';
-    const cap = document.createElement('span');
-    cap.className = 'ctl-label';
-    cap.textContent = opts.label;
-    wrap.append(cap, built.el);
-    return { el: wrap, handle: built.handle };
+    const frag = document.createDocumentFragment();
+    litRender(
+      html`<div class="select-labeled"><span class="ctl-label">${opts.label}</span>${built.el}</div>`,
+      frag,
+    );
+    return { el: frag.firstElementChild as HTMLElement, handle: built.handle };
   }
   return built;
 }

@@ -3,7 +3,14 @@
 // and a right-anchored `.editor-grid-control`; this is the single source so they
 // cannot drift. Editor-specific controls (the piano-roll octave stepper, the
 // drum-grid/piano-roll resolution select) plug into `createGridControl`.
+//
+// These are one-shot widgets: the caller keeps the element references and
+// appends them itself, so each is instantiated once via renderElement (no
+// re-rendering host). State flips (active tool, on/off pills) stay imperative
+// refresh closures over the extracted elements.
 
+import { html } from 'lit-html';
+import { renderElement } from './lit-fragment';
 import { RESOLUTIONS, clampResolution, type ResolutionKey } from './drum-grid-editing';
 import { isFollowEnabled, toggleFollow } from './clip-follow';
 import { isKbInputEnabled, toggleKbInput } from './clip-kb-input';
@@ -23,15 +30,15 @@ export interface ToolToggle {
 /** ✏ Draw / ▭ Select toggle. `onChange` fires only on a user click. */
 export function createToolToggle(initial: EditorTool, onChange: (t: EditorTool) => void): ToolToggle {
   let tool: EditorTool = initial;
-  const drawBtn = document.createElement('button'); drawBtn.textContent = '✏ Draw';
-  const selBtn = document.createElement('button'); selBtn.textContent = '▭ Select';
+  const drawBtn = renderElement<HTMLButtonElement>(
+    html`<button @click=${() => { set('draw'); onChange('draw'); }}>✏ Draw</button>`);
+  const selBtn = renderElement<HTMLButtonElement>(
+    html`<button @click=${() => { set('select'); onChange('select'); }}>▭ Select</button>`);
   const refresh = () => {
     drawBtn.style.fontWeight = tool === 'draw' ? '700' : '400';
     selBtn.style.fontWeight = tool === 'select' ? '700' : '400';
   };
   const set = (t: EditorTool) => { tool = t; refresh(); };
-  drawBtn.addEventListener('click', () => { set('draw'); onChange('draw'); });
-  selBtn.addEventListener('click', () => { set('select'); onChange('select'); });
   refresh();
   return { drawBtn, selBtn, get: () => tool, set };
 }
@@ -39,27 +46,24 @@ export function createToolToggle(initial: EditorTool, onChange: (t: EditorTool) 
 /** A "?" help button + the popover it toggles. The caller positions the popover
  *  (both editors place it just below the toolbar). */
 export function createHelpButton(legend: string): { btn: HTMLButtonElement; popover: HTMLPreElement } {
-  const btn = document.createElement('button');
-  btn.className = 'editor-help-btn';
-  btn.textContent = '?';
-  btn.title = legend; // native multi-line tooltip fallback
-  const popover = document.createElement('pre');
-  popover.className = 'editor-help-popover';
-  popover.textContent = legend;
-  popover.hidden = true;
-  btn.addEventListener('click', (e) => { e.stopPropagation(); popover.hidden = !popover.hidden; });
-  btn.addEventListener('blur', () => { popover.hidden = true; });
+  const popover = renderElement<HTMLPreElement>(
+    html`<pre class="editor-help-popover" ?hidden=${true}>${legend}</pre>`);
+  const btn = renderElement<HTMLButtonElement>(html`<button
+    class="editor-help-btn"
+    title=${legend /* native multi-line tooltip fallback */}
+    @click=${(e: Event) => { e.stopPropagation(); popover.hidden = !popover.hidden; }}
+    @blur=${() => { popover.hidden = true; }}
+  >?</button>`);
   return { btn, popover };
 }
 
 /** The right-anchored `.editor-grid-control` wrapper (styled by Task 10 SCSS)
  *  holding an editor-specific control (octave stepper / resolution select). */
 export function createGridControl(...children: HTMLElement[]): HTMLDivElement {
-  const ctl = document.createElement('div');
-  ctl.className = 'editor-grid-control';
-  ctl.style.cssText = 'margin-left:auto;display:flex;gap:4px;align-items:center';
-  ctl.append(...children);
-  return ctl;
+  return renderElement<HTMLDivElement>(html`<div
+    class="editor-grid-control"
+    style="margin-left:auto;display:flex;gap:4px;align-items:center"
+  >${children}</div>`);
 }
 
 /** A "Follow" on/off button bound to the session-global Follow flag. Reflects
@@ -67,14 +71,15 @@ export function createGridControl(...children: HTMLElement[]): HTMLDivElement {
  *  mounted at a time (rebuilt on open), the button always shows the live flag.
  *  `onChange` lets the editor react (e.g. immediately re-evaluate scroll). */
 export function createFollowToggle(onChange?: (on: boolean) => void): HTMLButtonElement {
-  const btn = document.createElement('button');
-  btn.className = 'clip-loop-toggle'; // reuse the on/off pill styling
+  // .clip-loop-toggle reuses the on/off pill styling
+  const btn = renderElement<HTMLButtonElement>(html`<button
+    class="clip-loop-toggle"
+    @click=${() => { const on = toggleFollow(); refresh(); onChange?.(on); }}
+  >Follow</button>`);
   const refresh = () => {
-    btn.textContent = 'Follow';
     btn.classList.toggle('on', isFollowEnabled());
     btn.title = isFollowEnabled() ? 'Follow playhead: ON (view scrolls to the playhead)' : 'Follow playhead: OFF';
   };
-  btn.addEventListener('click', () => { const on = toggleFollow(); refresh(); onChange?.(on); });
   refresh();
   return btn;
 }
@@ -85,16 +90,16 @@ export function createFollowToggle(onChange?: (on: boolean) => void): HTMLButton
  *  loop-record apply. It no longer types notes into the clip. `onChange` lets
  *  the editor react to the toggle. */
 export function createKbInputToggle(onChange?: (on: boolean) => void): HTMLButtonElement {
-  const btn = document.createElement('button');
-  btn.className = 'clip-loop-toggle'; // reuse the on/off pill styling
+  const btn = renderElement<HTMLButtonElement>(html`<button
+    class="clip-loop-toggle"
+    @click=${() => { toggleKbInput(); refresh(); onChange?.(isKbInputEnabled()); }}
+  >⌨ Keys</button>`);
   const refresh = () => {
-    btn.textContent = '⌨ Keys';
     btn.classList.toggle('on', isKbInputEnabled());
     btn.title = isKbInputEnabled()
       ? 'Computer keyboard: ON — ASDFG play the active lane live, z/x octave (● Rec captures it). Click to turn off.'
       : 'Play the active lane live from the computer keyboard (ASDFG, z/x octave)';
   };
-  btn.addEventListener('click', () => { toggleKbInput(); refresh(); onChange?.(isKbInputEnabled()); });
   refresh();
   return btn;
 }
@@ -102,16 +107,16 @@ export function createKbInputToggle(onChange?: (on: boolean) => void): HTMLButto
 /** A "Full kit" pill toggle for sampler drum grids: reflects the session-global
  *  fullKit flag; onChange fires after the flag flips so the editor can rebuild. */
 export function createFullKitToggle(onChange?: (on: boolean) => void): HTMLButtonElement {
-  const btn = document.createElement('button');
-  btn.className = 'clip-loop-toggle'; // reuse the on/off pill styling
+  const btn = renderElement<HTMLButtonElement>(html`<button
+    class="clip-loop-toggle"
+    @click=${() => { setDrumFullKit(!isDrumFullKit()); refresh(); onChange?.(isDrumFullKit()); }}
+  >Full kit</button>`);
   const refresh = () => {
-    btn.textContent = 'Full kit';
     btn.classList.toggle('on', isDrumFullKit());
     btn.title = isDrumFullKit()
       ? 'Show full kit: ON (all pads)'
       : 'Show full kit: OFF (only sounds the clip uses)';
   };
-  btn.addEventListener('click', () => { setDrumFullKit(!isDrumFullKit()); refresh(); onChange?.(isDrumFullKit()); });
   refresh();
   return btn;
 }
@@ -122,16 +127,13 @@ export function createResolutionSelect(
   initial: ResolutionKey,
   onChange: (r: ResolutionKey) => void,
 ): { control: HTMLDivElement; select: HTMLSelectElement } {
-  const label = document.createElement('span');
-  label.textContent = 'Grid';
-  label.style.cssText = 'font:11px ui-monospace,monospace;color:#9a9a9a';
-  const select = document.createElement('select');
-  select.title = 'Grid resolution';
-  for (const r of RESOLUTIONS) {
-    const o = document.createElement('option'); o.value = r; o.textContent = r; select.appendChild(o);
-  }
-  select.value = initial;
-  select.addEventListener('change', () => onChange(clampResolution(select.value)));
+  const label = renderElement<HTMLSpanElement>(
+    html`<span style="font:11px ui-monospace,monospace;color:#9a9a9a">Grid</span>`);
+  const select = renderElement<HTMLSelectElement>(html`<select
+    title="Grid resolution"
+    @change=${(e: Event) => onChange(clampResolution((e.target as HTMLSelectElement).value))}
+  >${RESOLUTIONS.map((r) => html`<option value=${r}>${r}</option>`)}</select>`);
+  select.value = initial; // after the options exist — a .value binding would land before them
   const control = createGridControl(label, select);
   return { control, select };
 }

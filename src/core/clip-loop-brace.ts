@@ -2,10 +2,12 @@
 // The strip maps its OWN full width to [0, total) ticks (independent of the
 // canvas zoom) — it marks bars, not pixels. Drag the handles to set the clip's
 // loop sub-region; the toggle enables/disables it.
+import { html } from 'lit-html';
 import type { SessionClip } from '../session/session';
 import { ticksPerBar, type TimeSignature } from './meter';
 import { TICKS_PER_STEP } from './notes';
 import { effectiveClipLoop } from './clip-loop';
+import { renderElement } from './lit-fragment';
 import type { HistoryDeps } from '../save/history-wiring';
 
 export function pxToTick(px: number, widthPx: number, total: number): number {
@@ -54,38 +56,13 @@ export function mountClipLoopBrace(
   const total = clip.lengthBars * ticksPerBar(meter);
   const stepTicks = TICKS_PER_STEP; // 1/16 snap
 
-  const strip = document.createElement('div');
-  strip.className = 'clip-loop-brace';
-  const toggle = document.createElement('button');
-  toggle.className = 'clip-loop-toggle' + (clip.loopEnabled ? ' on' : '');
-  toggle.textContent = 'Loop';
-  const track = document.createElement('div');
-  track.className = 'clip-loop-track';
-  const region = document.createElement('div');
-  region.className = 'clip-loop-region';
-  const hL = document.createElement('span'); hL.className = 'clip-loop-handle l';
-  const hR = document.createElement('span'); hR.className = 'clip-loop-handle r';
-  region.append(hL, hR);
-  track.appendChild(region);
-  strip.append(toggle, track);
-  host.insertBefore(strip, host.firstChild);
-
-  const layout = () => {
-    const { startTick, endTick } = effectiveClipLoop(clip, meter);
-    const w = track.clientWidth || 1;
-    region.style.left = `${tickToPx(startTick, w, total)}px`;
-    region.style.width = `${tickToPx(endTick - startTick, w, total)}px`;
-    region.style.display = clip.loopEnabled ? '' : 'none';
-    toggle.classList.toggle('on', !!clip.loopEnabled);
-  };
-
-  toggle.addEventListener('click', () => {
+  const onToggle = () => {
     historyDeps?.beginGesture?.();
     clip.loopEnabled = !clip.loopEnabled;
     if (clip.loopEnabled && clip.loopEndTick == null) { clip.loopStartTick = 0; clip.loopEndTick = total; }
     historyDeps?.endGesture?.();
     layout(); onChange();
-  });
+  };
 
   const startDrag = (which: 'l' | 'r') => (down: PointerEvent) => {
     down.preventDefault();
@@ -109,8 +86,33 @@ export function mountClipLoopBrace(
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
   };
-  hL.addEventListener('pointerdown', startDrag('l'));
-  hR.addEventListener('pointerdown', startDrag('r'));
+
+  // Build-once DOM (detached lit render); layout() stays imperative because it
+  // repositions the region at pointer-drag rate, not on state changes.
+  const strip = renderElement(html`
+    <div class="clip-loop-brace">
+      <button class=${'clip-loop-toggle' + (clip.loopEnabled ? ' on' : '')} @click=${onToggle}>Loop</button>
+      <div class="clip-loop-track">
+        <div class="clip-loop-region">
+          <span class="clip-loop-handle l" @pointerdown=${startDrag('l')}></span>
+          <span class="clip-loop-handle r" @pointerdown=${startDrag('r')}></span>
+        </div>
+      </div>
+    </div>
+  `);
+  const toggle = strip.querySelector('.clip-loop-toggle') as HTMLButtonElement;
+  const track = strip.querySelector('.clip-loop-track') as HTMLDivElement;
+  const region = strip.querySelector('.clip-loop-region') as HTMLDivElement;
+  host.insertBefore(strip, host.firstChild);
+
+  const layout = () => {
+    const { startTick, endTick } = effectiveClipLoop(clip, meter);
+    const w = track.clientWidth || 1;
+    region.style.left = `${tickToPx(startTick, w, total)}px`;
+    region.style.width = `${tickToPx(endTick - startTick, w, total)}px`;
+    region.style.display = clip.loopEnabled ? '' : 'none';
+    toggle.classList.toggle('on', !!clip.loopEnabled);
+  };
 
   // Defer first layout to after the host has width.
   requestAnimationFrame(layout);

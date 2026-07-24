@@ -7,7 +7,14 @@
 // Both call buildMixerColumn(trackId, deps) to construct identical DOM with
 // the real knob instances (no cloning). The knobs are registered into the
 // caller-provided automation registry via deps.registerKnob.
+//
+// The column is a one-shot lit template (renderElement): callers own the node
+// and rebuild the whole column on structural change, so there is no re-render
+// path. Knobs and the VU meter are imperative widgets interpolated by node —
+// the meter's per-frame segment updates never touch the template.
 
+import { html } from 'lit-html';
+import { renderElement } from './lit-fragment';
 import type { ChannelStrip } from './fx';
 import { createKnob, type KnobHandle } from './knob';
 import { attachKnobUndo, type HistoryDeps } from '../save/history-wiring';
@@ -50,142 +57,119 @@ interface KnobOpts {
   onChange: (v: number) => void;
 }
 
-function addKnob(parent: HTMLElement, deps: MixerColumnDeps, opts: KnobOpts): void {
+/** Builds + registers a knob and hands back its root node for interpolation.
+ *  Evaluation order inside the template literal keeps the registration order
+ *  identical to the old appendChild sequence (eqhi → … → pan). */
+function knobEl(deps: MixerColumnDeps, opts: KnobOpts): HTMLElement {
   const undoHooks = deps.historyDeps ? attachKnobUndo(deps.historyDeps) : {};
   const k = createKnob({ ...opts, size: 28, ...undoHooks });
-  parent.appendChild(k.el);
   deps.registerKnob(k);
+  return k.el;
 }
 
 export function buildMixerColumn(trackId: string, deps: MixerColumnDeps): HTMLElement {
   const strip = deps.stripFor(trackId);
   const state = strip.serialize();
-  const col = document.createElement('div');
-  col.className = `mix-col ${trackId}`;
 
-  // Name header
-  const name = document.createElement('div');
-  name.className = 'mix-name';
-  name.textContent = deps.label(trackId);
-  col.appendChild(name);
-
-  // EQ (HI / MID / LO)
-  const eqSec = document.createElement('div');
-  eqSec.className = 'mix-section';
-  const eqLab = document.createElement('div');
-  eqLab.className = 'mix-sec-label';
-  eqLab.textContent = 'EQ';
-  eqSec.appendChild(eqLab);
-  addKnob(eqSec, deps, {
-    id: `mix.${trackId}.eqhi`,  label: 'HI',  min: -18, max: 18, step: 0.5,
-    value: state.eqHigh, defaultValue: 0, color: '#2ee0c0', format: fmtDb,
-    onChange: (v) => strip.setEqHigh(v),
-  });
-  addKnob(eqSec, deps, {
-    id: `mix.${trackId}.eqmid`, label: 'MID', min: -18, max: 18, step: 0.5,
-    value: state.eqMid,  defaultValue: 0, color: '#f7d000', format: fmtDb,
-    onChange: (v) => strip.setEqMid(v),
-  });
-  addKnob(eqSec, deps, {
-    id: `mix.${trackId}.eqlow`, label: 'LO',  min: -18, max: 18, step: 0.5,
-    value: state.eqLow,  defaultValue: 0, color: '#c0392b', format: fmtDb,
-    onChange: (v) => strip.setEqLow(v),
-  });
-  col.appendChild(eqSec);
-
-  // Sends
-  const sendSec = document.createElement('div');
-  sendSec.className = 'mix-section';
-  const sendLab = document.createElement('div');
-  sendLab.className = 'mix-sec-label';
-  sendLab.textContent = 'SEND';
-  sendSec.appendChild(sendLab);
-  addKnob(sendSec, deps, {
-    id: `mix.${trackId}.sendA`, label: 'A', min: 0, max: 1, step: 0.01,
-    value: state.sendA, defaultValue: 0, color: '#3498db', format: fmtPct,
-    onChange: (v) => strip.setSendA(v),
-  });
-  addKnob(sendSec, deps, {
-    id: `mix.${trackId}.sendB`, label: 'B', min: 0, max: 1, step: 0.01,
-    value: state.sendB, defaultValue: 0, color: '#9b59b6', format: fmtPct,
-    onChange: (v) => strip.setSendB(v),
-  });
-  col.appendChild(sendSec);
-
-  // Pan
-  const panSec = document.createElement('div');
-  panSec.className = 'mix-section';
-  addKnob(panSec, deps, {
-    id: `mix.${trackId}.pan`, label: 'PAN', min: -1, max: 1, step: 0.01,
-    value: state.pan ?? 0, defaultValue: 0, color: '#e67e22', format: fmtPan,
-    onChange: (v) => strip.setPan(v),
-  });
-  col.appendChild(panSec);
-
-  // Mute / Solo
-  const ms = document.createElement('div');
-  ms.className = 'mix-ms';
-  const m = document.createElement('button');
-  m.className = 'mix-btn mute';
-  m.textContent = 'M';
-  if (deps.muteState[trackId]) m.classList.add('active');
-  m.addEventListener('click', () => {
-    deps.muteState[trackId] = !deps.muteState[trackId];
-    m.classList.toggle('active', deps.muteState[trackId]);
-    deps.applyMuteSolo();
-  });
-  const s = document.createElement('button');
-  s.className = 'mix-btn solo';
-  s.textContent = 'S';
-  if (deps.soloState[trackId]) s.classList.add('active');
-  s.addEventListener('click', () => {
-    deps.soloState[trackId] = !deps.soloState[trackId];
-    s.classList.toggle('active', deps.soloState[trackId]);
-    deps.applyMuteSolo();
-  });
-  ms.append(m, s);
-  col.appendChild(ms);
-
-  // Vertical fader (level) + VU meter
-  //
-  // Layout: faderWrap (column) → faderRow (row: fader + vuHost) → faderVal
-  // The value readout sits below the fader/meter row so its 9px label stays
-  // outside the fixed-height 110 px row.
-  //
   // IMPORTANT: callers must dispose the VU meter handle when removing the
   // column (via deps.registerDisposable or manual tracking). Failing to do so
   // will keep the meter's RAF registration alive and the analyser connected.
-  const faderWrap = document.createElement('div');
-  faderWrap.className = 'mix-fader-wrap';
-
-  const faderRow = document.createElement('div');
-  faderRow.className = 'mix-fader-row';
-
-  const fader = document.createElement('input');
-  fader.type = 'range';
-  fader.className = 'mix-fader';
-  fader.min = '0'; fader.max = '1.5'; fader.step = '0.01';
-  fader.value = String(state.level);
-  fader.addEventListener('input', () => strip.setLevel(parseFloat(fader.value)));
-  fader.addEventListener('pointerdown', () => deps.historyDeps?.beginGesture?.());
-  fader.addEventListener('pointerup',   () => deps.historyDeps?.endGesture?.());
-  fader.addEventListener('focus',       () => deps.historyDeps?.beginGesture?.());
-  fader.addEventListener('blur',        () => deps.historyDeps?.endGesture?.());
-
   const vuMeter = createLevelMeter({ analyser: strip.getMeterAnalyser() });
   if (deps.registerDisposable) deps.registerDisposable(vuMeter);
 
-  faderRow.appendChild(fader);
-  faderRow.appendChild(vuMeter.el);
-  faderWrap.appendChild(faderRow);
+  // Assigned after render; the handler only fires on user input, long after.
+  let faderVal: HTMLElement | null = null;
+  const onFaderInput = (e: Event) => {
+    const fader = e.currentTarget as HTMLInputElement;
+    strip.setLevel(parseFloat(fader.value));
+    if (faderVal) faderVal.textContent = fmtPct(parseFloat(fader.value));
+  };
 
-  const faderVal = document.createElement('div');
-  faderVal.className = 'mix-fader-val';
-  const updateFaderText = () => { faderVal.textContent = fmtPct(parseFloat(fader.value)); };
-  updateFaderText();
-  fader.addEventListener('input', updateFaderText);
-  faderWrap.appendChild(faderVal);
-  col.appendChild(faderWrap);
+  // Fader layout: faderWrap (column) → faderRow (row: fader + vuHost) → faderVal
+  // The value readout sits below the fader/meter row so its 9px label stays
+  // outside the fixed-height 110 px row.
+  const col = renderElement(html`
+    <div class=${`mix-col ${trackId}`}>
+      <div class="mix-name">${deps.label(trackId)}</div>
+      <div class="mix-section">
+        <div class="mix-sec-label">EQ</div>
+        ${knobEl(deps, {
+          id: `mix.${trackId}.eqhi`,  label: 'HI',  min: -18, max: 18, step: 0.5,
+          value: state.eqHigh, defaultValue: 0, color: '#2ee0c0', format: fmtDb,
+          onChange: (v) => strip.setEqHigh(v),
+        })}
+        ${knobEl(deps, {
+          id: `mix.${trackId}.eqmid`, label: 'MID', min: -18, max: 18, step: 0.5,
+          value: state.eqMid,  defaultValue: 0, color: '#f7d000', format: fmtDb,
+          onChange: (v) => strip.setEqMid(v),
+        })}
+        ${knobEl(deps, {
+          id: `mix.${trackId}.eqlow`, label: 'LO',  min: -18, max: 18, step: 0.5,
+          value: state.eqLow,  defaultValue: 0, color: '#c0392b', format: fmtDb,
+          onChange: (v) => strip.setEqLow(v),
+        })}
+      </div>
+      <div class="mix-section">
+        <div class="mix-sec-label">SEND</div>
+        ${knobEl(deps, {
+          id: `mix.${trackId}.sendA`, label: 'A', min: 0, max: 1, step: 0.01,
+          value: state.sendA, defaultValue: 0, color: '#3498db', format: fmtPct,
+          onChange: (v) => strip.setSendA(v),
+        })}
+        ${knobEl(deps, {
+          id: `mix.${trackId}.sendB`, label: 'B', min: 0, max: 1, step: 0.01,
+          value: state.sendB, defaultValue: 0, color: '#9b59b6', format: fmtPct,
+          onChange: (v) => strip.setSendB(v),
+        })}
+      </div>
+      <div class="mix-section">
+        ${knobEl(deps, {
+          id: `mix.${trackId}.pan`, label: 'PAN', min: -1, max: 1, step: 0.01,
+          value: state.pan ?? 0, defaultValue: 0, color: '#e67e22', format: fmtPan,
+          onChange: (v) => strip.setPan(v),
+        })}
+      </div>
+      <div class="mix-ms">
+        <button
+          class=${deps.muteState[trackId] ? 'mix-btn mute active' : 'mix-btn mute'}
+          @click=${(e: Event) => {
+            deps.muteState[trackId] = !deps.muteState[trackId];
+            (e.currentTarget as HTMLElement).classList.toggle('active', deps.muteState[trackId]);
+            deps.applyMuteSolo();
+          }}
+        >M</button>
+        <button
+          class=${deps.soloState[trackId] ? 'mix-btn solo active' : 'mix-btn solo'}
+          @click=${(e: Event) => {
+            deps.soloState[trackId] = !deps.soloState[trackId];
+            (e.currentTarget as HTMLElement).classList.toggle('active', deps.soloState[trackId]);
+            deps.applyMuteSolo();
+          }}
+        >S</button>
+      </div>
+      <div class="mix-fader-wrap">
+        <div class="mix-fader-row">
+          <input
+            type="range" class="mix-fader" min="0" max="1.5" step="0.01"
+            .value=${String(state.level)}
+            @input=${onFaderInput}
+            @pointerdown=${() => deps.historyDeps?.beginGesture?.()}
+            @pointerup=${() => deps.historyDeps?.endGesture?.()}
+            @focus=${() => deps.historyDeps?.beginGesture?.()}
+            @blur=${() => deps.historyDeps?.endGesture?.()}
+          />
+          ${vuMeter.el}
+        </div>
+        <div class="mix-fader-val"></div>
+      </div>
+    </div>
+  `);
+
+  // Initial readout comes from the live input (the range clamps out-of-range
+  // levels), exactly like the old updateFaderText().
+  const fader = col.querySelector('.mix-fader') as HTMLInputElement;
+  faderVal = col.querySelector('.mix-fader-val') as HTMLElement;
+  faderVal.textContent = fmtPct(parseFloat(fader.value));
 
   return col;
 }

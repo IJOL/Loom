@@ -1,3 +1,4 @@
+import { html, render } from 'lit-html';
 import { type FxBus } from './fx';
 import type { InsertChain } from '../plugins/fx/insert-chain';
 import { createKnob, type KnobHandle } from './knob';
@@ -5,16 +6,14 @@ import { attachKnobUndo, type HistoryDeps } from '../save/history-wiring';
 import { buildLaneInsertUI } from '../session/lane-insert-ui';
 import type { InsertSlot } from '../session/insert-slot';
 
-/** Local replacement for the deleted addPolyKnob helper:
- *  builds a knob, appends to parent, registers in the automation registry. */
-function appendKnob(
-  parent: HTMLElement,
+/** Builds a knob and registers it in the automation registry; the caller's
+ *  template interpolates `k.el` (replacement for the old append helper). */
+function makeKnob(
   opts: Parameters<typeof createKnob>[0],
   registerKnob: (k: KnobHandle) => void,
   undoHooks?: { onGestureStart: () => void; onGestureEnd: () => void },
 ): KnobHandle {
   const k = createKnob({ ...opts, ...undoHooks });
-  parent.appendChild(k.el);
   registerKnob(k);
   return k;
 }
@@ -65,35 +64,39 @@ export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void; re
   const mc = deps.masterComp;
   const init = mc.getState();
 
-  const kThr = appendKnob(mcRow, { id: 'fx.mcomp.thr',  min: -60, max: 0,  step: 0.5,   value: init.threshold, defaultValue: -24,
+  const kThr = makeKnob({ id: 'fx.mcomp.thr',  min: -60, max: 0,  step: 0.5,   value: init.threshold, defaultValue: -24,
     label: 'THR',  color: mcColor, size: SIZE, format: fmtDbSigned,
     onChange: (v) => mc.setState({ threshold: v }) }, deps.registerKnob, undoHooks);
-  const kRat = appendKnob(mcRow, { id: 'fx.mcomp.rat',  min: 1,   max: 20, step: 0.1,   value: init.ratio,     defaultValue: 4,
+  const kRat = makeKnob({ id: 'fx.mcomp.rat',  min: 1,   max: 20, step: 0.1,   value: init.ratio,     defaultValue: 4,
     label: 'RAT',  color: mcColor, size: SIZE, format: fmtRatio,
     onChange: (v) => mc.setState({ ratio: v }) }, deps.registerKnob, undoHooks);
-  const kAtk = appendKnob(mcRow, { id: 'fx.mcomp.atk',  min: 0.001, max: 1, step: 0.001, value: init.attack,   defaultValue: 0.003,
-    label: 'ATK',  color: mcColor, size: SIZE, format: (v) => v < 1 ? `${Math.round(v*1000)}ms` : `${v.toFixed(2)}s`,
+  const kAtk = makeKnob({ id: 'fx.mcomp.atk',  min: 0.001, max: 1, step: 0.001, value: init.attack,   defaultValue: 0.003,
+    label: 'ATK',  color: mcColor, size: SIZE, format: fmtSec,
     onChange: (v) => mc.setState({ attack: v }) }, deps.registerKnob, undoHooks);
-  const kRel = appendKnob(mcRow, { id: 'fx.mcomp.rel',  min: 0.001, max: 1, step: 0.001, value: init.release,  defaultValue: 0.25,
-    label: 'REL',  color: mcColor, size: SIZE, format: (v) => v < 1 ? `${Math.round(v*1000)}ms` : `${v.toFixed(2)}s`,
+  const kRel = makeKnob({ id: 'fx.mcomp.rel',  min: 0.001, max: 1, step: 0.001, value: init.release,  defaultValue: 0.25,
+    label: 'REL',  color: mcColor, size: SIZE, format: fmtSec,
     onChange: (v) => mc.setState({ release: v }) }, deps.registerKnob, undoHooks);
-  const kKnee = appendKnob(mcRow, { id: 'fx.mcomp.knee', min: 0,   max: 40, step: 0.5,   value: init.knee,     defaultValue: 30,
+  const kKnee = makeKnob({ id: 'fx.mcomp.knee', min: 0,   max: 40, step: 0.5,   value: init.knee,     defaultValue: 30,
     label: 'KNEE', color: mcColor, size: SIZE, format: fmtDbSigned,
     onChange: (v) => mc.setState({ knee: v }) }, deps.registerKnob, undoHooks);
-  const kMkup = appendKnob(mcRow, { id: 'fx.mcomp.mkup', min: 0,   max: 4,  step: 0.01,  value: init.makeup,   defaultValue: 1,
+  const kMkup = makeKnob({ id: 'fx.mcomp.mkup', min: 0,   max: 4,  step: 0.01,  value: init.makeup,   defaultValue: 1,
     label: 'MKUP', color: mcColor, size: SIZE, format: (v) => `${v.toFixed(2)}×`,
     onChange: (v) => mc.setState({ makeup: v }) }, deps.registerKnob, undoHooks);
 
-  const mcByp = document.createElement('button');
-  mcByp.className = 'rnd master-comp-bypass';
-  mcByp.textContent = 'BYP';
-  mcByp.classList.toggle('active', init.bypass);
-  mcByp.addEventListener('click', () => {
-    const next = !mc.getState().bypass;
-    mc.setState({ bypass: next });
-    mcByp.classList.toggle('active', next);
-  });
-  mcRow.appendChild(mcByp);
+  // One-shot render into the static #fx-master-comp-knobs row — wireFxUI runs
+  // once per document, so this container is never rendered into twice.
+  render(html`
+    ${kThr.el}${kRat.el}${kAtk.el}${kRel.el}${kKnee.el}${kMkup.el}
+    <button
+      class=${init.bypass ? 'rnd master-comp-bypass active' : 'rnd master-comp-bypass'}
+      @click=${(e: Event) => {
+        const next = !mc.getState().bypass;
+        mc.setState({ bypass: next });
+        (e.currentTarget as HTMLElement).classList.toggle('active', next);
+      }}
+    >BYP</button>
+  `, mcRow);
+  const mcByp = mcRow.querySelector('.master-comp-bypass') as HTMLButtonElement;
 
   // MASTER SHAPER — air / multiband glue / stereo width.
   // Every one of these is fixed and unreachable in mpump, where the port came
@@ -106,29 +109,31 @@ export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void; re
   let mbBtn: HTMLButtonElement | null = null;
   if (msRow && shaper) {
     const si = shaper.getState();
-    kAir = appendKnob(msRow, { id: 'fx.shaper.air', min: -12, max: 12, step: 0.5, value: si.airDb, defaultValue: -3,
+    kAir = makeKnob({ id: 'fx.shaper.air', min: -12, max: 12, step: 0.5, value: si.airDb, defaultValue: -3,
       label: 'AIR', color: msColor, size: SIZE, format: fmtDbSigned,
       onChange: (v) => shaper.setAirDb(v) }, deps.registerKnob, undoHooks);
-    kWidth = appendKnob(msRow, { id: 'fx.shaper.width', min: 0, max: 1, step: 0.01, value: si.width, defaultValue: 0,
+    kWidth = makeKnob({ id: 'fx.shaper.width', min: 0, max: 1, step: 0.01, value: si.width, defaultValue: 0,
       label: 'WIDTH', color: msColor, size: SIZE, format: (v) => `${Math.round(v * 100)}%`,
       onChange: (v) => shaper.setWidth(v) }, deps.registerKnob, undoHooks);
-    kMbAmt = appendKnob(msRow, { id: 'fx.shaper.glue', min: 0, max: 1, step: 0.01, value: si.mbAmount, defaultValue: 0.25,
+    kMbAmt = makeKnob({ id: 'fx.shaper.glue', min: 0, max: 1, step: 0.01, value: si.mbAmount, defaultValue: 0.25,
       label: 'GLUE', color: msColor, size: SIZE, format: (v) => `${Math.round(v * 100)}%`,
       onChange: (v) => shaper.setMultibandAmount(v) }, deps.registerKnob, undoHooks);
 
     // Labelled MB, not GLUE: the knob beside it is already GLUE (how much), and
     // two controls with one name is a control you have to guess at.
-    mbBtn = document.createElement('button');
-    mbBtn.className = 'rnd master-mb-toggle';
-    mbBtn.textContent = 'MB';
-    mbBtn.title = 'Multiband glue compression on/off — GLUE sets how hard it works';
-    mbBtn.classList.toggle('active', si.mbOn);
-    mbBtn.addEventListener('click', () => {
-      const next = !shaper.getState().mbOn;
-      shaper.setMultibandOn(next);
-      mbBtn!.classList.toggle('active', next);
-    });
-    msRow.appendChild(mbBtn);
+    render(html`
+      ${kAir.el}${kWidth.el}${kMbAmt.el}
+      <button
+        class=${si.mbOn ? 'rnd master-mb-toggle active' : 'rnd master-mb-toggle'}
+        title="Multiband glue compression on/off — GLUE sets how hard it works"
+        @click=${(e: Event) => {
+          const next = !shaper.getState().mbOn;
+          shaper.setMultibandOn(next);
+          (e.currentTarget as HTMLElement).classList.toggle('active', next);
+        }}
+      >MB</button>
+    `, msRow);
+    mbBtn = msRow.querySelector('.master-mb-toggle') as HTMLButtonElement;
   }
 
   /** Pull the shaper knobs back from live state after a load / undo / redo. */
@@ -192,32 +197,34 @@ export function wireFxUI(deps: FxUIDeps): { rebuildMasterInserts: () => void; re
   const buildSendModule = (bus: import('./send-bus').SendBus, slots: InsertSlot[]) => {
     const host = document.getElementById(`fx-send-${bus.id.toLowerCase()}`) as HTMLDivElement | null;
     if (!host) return;
-    host.replaceChildren();
-    const title = document.createElement('div');
-    title.className = 'fx-send-title';
-    title.textContent = bus.label;
-    host.appendChild(title);
-    const ctrls = document.createElement('div');
-    ctrls.className = 'fx-send-ctrls';
-    appendKnob(ctrls, {
+    const ret = makeKnob({
       id: `fx.send.${bus.id}.level`, min: 0, max: 1.5, step: 0.01,
       value: bus.getReturnLevel(), defaultValue: 1, label: 'RET', size: SIZE, format: fmtPct,
       onChange: (v) => bus.setReturnLevel(v),
     }, deps.registerKnob, undoHooks);
-    const mute = document.createElement('button');
-    mute.className = 'rnd';
-    mute.textContent = 'MUTE';
-    mute.classList.toggle('active', bus.isMuted());
-    mute.onclick = () => {
-      const m = !bus.isMuted();
-      bus.setMuted(m);
-      mute.classList.toggle('active', m);
-      deps.saveSession?.();
-    };
-    ctrls.appendChild(mute);
-    host.appendChild(ctrls);
-    const rack = document.createElement('div');
-    host.appendChild(rack);
+    // rebuildSends re-runs on session load: render into a throwaway fragment
+    // each time (never twice into `host` — its wiped lit markers would break a
+    // second render) and move the children across. The unclassed trailing div
+    // is the insert rack buildLaneInsertUI renders into.
+    const frag = document.createDocumentFragment();
+    render(html`
+      <div class="fx-send-title">${bus.label}</div>
+      <div class="fx-send-ctrls">
+        ${ret.el}
+        <button
+          class=${bus.isMuted() ? 'rnd active' : 'rnd'}
+          @click=${(e: Event) => {
+            const m = !bus.isMuted();
+            bus.setMuted(m);
+            (e.currentTarget as HTMLElement).classList.toggle('active', m);
+            deps.saveSession?.();
+          }}
+        >MUTE</button>
+      </div>
+      <div></div>
+    `, frag);
+    host.replaceChildren(frag);
+    const rack = host.lastElementChild as HTMLDivElement;
     buildLaneInsertUI({
       ctx: deps.ctx,
       container: rack,

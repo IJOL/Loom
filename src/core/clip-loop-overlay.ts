@@ -8,11 +8,17 @@
 // Coordinate space: the column maps the clip's [0, total) ticks across the
 // overlay host's OWN width (zoom-independent, like the old strip brace) — it marks
 // musical bars, and lines up with editor content that spans the full width.
+//
+// DOM is built ONCE via detached lit renders (toolbar + column); layout() stays
+// imperative because it repositions at scroll/zoom/drag rate through the
+// caller's tickToX (pxPerTick), not on state changes.
+import { html } from 'lit-html';
 import type { SessionClip } from '../session/session';
 import { ticksPerBar, type TimeSignature } from './meter';
 import { TICKS_PER_QUARTER } from './notes';
 import { effectiveClipLoop } from './clip-loop';
 import { snapTick, clampLoopRegion, moveLoopRegion } from './clip-loop-brace';
+import { renderElement } from './lit-fragment';
 import type { HistoryDeps } from '../save/history-wiring';
 
 export type LoopQuantize = 'free' | 'beat' | 'bar';
@@ -55,70 +61,7 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
   const snapFor = (): number =>
     quantize === 'free' ? 1 : quantize === 'beat' ? TICKS_PER_QUARTER : ticksPerBar(meter);
 
-  // ── toolbar ──
-  const bar = document.createElement('div');
-  bar.className = 'clip-loop-bar';
-  const toggle = document.createElement('button');
-  toggle.className = 'clip-loop-toggle' + (clip.loopEnabled ? ' on' : '');
-  toggle.textContent = 'Loop';
-  const qsel = document.createElement('select');
-  qsel.className = 'clip-loop-quant';
-  qsel.title = 'Loop quantization';
-  for (const [v, label] of QUANT_LABELS) {
-    const o = document.createElement('option');
-    o.value = v; o.textContent = label;
-    if (v === quantize) o.selected = true;
-    qsel.appendChild(o);
-  }
-  bar.append(toggle, qsel);
-
-  // Global button: lit amber when this scene's loop is shared across all its clips.
-  let linkBtn: HTMLButtonElement | null = null;
-  if (deps.onToggleLink) {
-    linkBtn = document.createElement('button');
-    linkBtn.className = 'clip-loop-global' + (deps.isLinked?.() ? ' on' : '');
-    linkBtn.textContent = 'Global';
-    linkBtn.title = 'Share this loop across every clip in the scene';
-    linkBtn.addEventListener('click', () => {
-      const linked = deps.isLinked?.() ?? false;
-      deps.onToggleLink!(!linked);
-      linkBtn!.classList.toggle('on', !linked);
-    });
-    bar.append(linkBtn);
-  }
-  deps.toolbarHost.appendChild(bar);
-
-  // ── column overlay (mounted INSIDE the editor's scrollable content) ──
-  const host = deps.scrollHost;
-  if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
-  const col = document.createElement('div');
-  col.className = 'clip-loop-col';
-  // Interior move zone (between the edge handles): drag it to slide the whole
-  // loop region along the timeline, length preserved. Sits below the edges so
-  // resizing still wins at the very borders.
-  const mid = document.createElement('span'); mid.className = 'clip-loop-move';
-  const hL = document.createElement('span'); hL.className = 'clip-loop-edge l';
-  const hR = document.createElement('span'); hR.className = 'clip-loop-edge r';
-  col.append(mid, hL, hR);
-  host.appendChild(col);
-
-  const layout = () => {
-    // Always draw the LOCAL loop region (no global-loop branch).
-    const { startTick, endTick } = effectiveClipLoop(clip, meter);
-    const show = !!clip.loopEnabled;
-    const x0 = deps.tickToX(startTick);
-    const x1 = deps.tickToX(endTick);
-    col.style.left = `${x0}px`;
-    col.style.width = `${Math.max(0, x1 - x0)}px`;
-    col.style.top = `${deps.contentTop?.() ?? 0}px`;
-    col.style.height = `${deps.contentHeight()}px`;
-    col.style.display = show ? '' : 'none';
-    toggle.classList.toggle('on', !!clip.loopEnabled);
-    // Keep the Link button in sync with external state changes (e.g. undo).
-    linkBtn?.classList.toggle('on', deps.isLinked?.() ?? false);
-  };
-
-  toggle.addEventListener('click', () => {
+  const onToggle = () => {
     historyDeps?.beginGesture?.();
     clip.loopEnabled = !clip.loopEnabled;
     if (clip.loopEnabled && clip.loopEndTick == null) { clip.loopStartTick = 0; clip.loopEndTick = total; }
@@ -127,8 +70,35 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
     deps.onChange?.();
     // Notify host for propagation (always safe; host only propagates when linked).
     deps.onClipLoopEdited?.();
-  });
-  qsel.addEventListener('change', () => { quantize = (qsel.value as LoopQuantize) || 'bar'; });
+  };
+  const onQuant = () => { quantize = (qsel.value as LoopQuantize) || 'bar'; };
+  // Global button: lit amber when this scene's loop is shared across all its clips.
+  const onLink = () => {
+    const linked = deps.isLinked?.() ?? false;
+    deps.onToggleLink!(!linked);
+    linkBtn!.classList.toggle('on', !linked);
+  };
+
+  // ── toolbar ──
+  const bar = renderElement(html`
+    <div class="clip-loop-bar">
+      <button class=${'clip-loop-toggle' + (clip.loopEnabled ? ' on' : '')} @click=${onToggle}>Loop</button>
+      <select class="clip-loop-quant" title="Loop quantization" @change=${onQuant}>
+        ${QUANT_LABELS.map(([v, label]) => html`<option value=${v} ?selected=${v === quantize}>${label}</option>`)}
+      </select>
+      ${deps.onToggleLink
+        ? html`<button
+            class=${'clip-loop-global' + (deps.isLinked?.() ? ' on' : '')}
+            title="Share this loop across every clip in the scene"
+            @click=${onLink}
+          >Global</button>`
+        : null}
+    </div>
+  `);
+  const toggle = bar.querySelector('.clip-loop-toggle') as HTMLButtonElement;
+  const qsel = bar.querySelector('.clip-loop-quant') as HTMLSelectElement;
+  const linkBtn = bar.querySelector('.clip-loop-global') as HTMLButtonElement | null;
+  deps.toolbarHost.appendChild(bar);
 
   const startDrag = (which: 'l' | 'r') => (down: PointerEvent) => {
     down.preventDefault(); down.stopPropagation();
@@ -156,13 +126,11 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
   };
-  hL.addEventListener('pointerdown', startDrag('l'));
-  hR.addEventListener('pointerdown', startDrag('r'));
 
   // Drag the interior to SLIDE the whole region (length preserved). Derive the
   // current px-per-tick from tickToX so it tracks zoom; a pure screen-x delta
   // maps 1:1 to content px (scroll changes offset, not scale).
-  mid.addEventListener('pointerdown', (down: PointerEvent) => {
+  const onMidDown = (down: PointerEvent) => {
     down.preventDefault(); down.stopPropagation();
     if (!clip.loopEnabled) return;
     const cur = effectiveClipLoop(clip, meter);
@@ -187,7 +155,38 @@ export function mountClipLoopOverlay(deps: ClipLoopOverlayDeps): { redraw: () =>
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
-  });
+  };
+
+  // ── column overlay (mounted INSIDE the editor's scrollable content) ──
+  const host = deps.scrollHost;
+  if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+  // Interior move zone (between the edge handles): drag it to slide the whole
+  // loop region along the timeline, length preserved. Sits below the edges so
+  // resizing still wins at the very borders.
+  const col = renderElement(html`
+    <div class="clip-loop-col">
+      <span class="clip-loop-move" @pointerdown=${onMidDown}></span>
+      <span class="clip-loop-edge l" @pointerdown=${startDrag('l')}></span>
+      <span class="clip-loop-edge r" @pointerdown=${startDrag('r')}></span>
+    </div>
+  `);
+  host.appendChild(col);
+
+  const layout = () => {
+    // Always draw the LOCAL loop region (no global-loop branch).
+    const { startTick, endTick } = effectiveClipLoop(clip, meter);
+    const show = !!clip.loopEnabled;
+    const x0 = deps.tickToX(startTick);
+    const x1 = deps.tickToX(endTick);
+    col.style.left = `${x0}px`;
+    col.style.width = `${Math.max(0, x1 - x0)}px`;
+    col.style.top = `${deps.contentTop?.() ?? 0}px`;
+    col.style.height = `${deps.contentHeight()}px`;
+    col.style.display = show ? '' : 'none';
+    toggle.classList.toggle('on', !!clip.loopEnabled);
+    // Keep the Link button in sync with external state changes (e.g. undo).
+    linkBtn?.classList.toggle('on', deps.isLinked?.() ?? false);
+  };
 
   requestAnimationFrame(layout);
   if (typeof ResizeObserver !== 'undefined') {

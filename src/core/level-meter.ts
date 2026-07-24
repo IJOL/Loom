@@ -15,7 +15,13 @@
  *   Green  → segments 0–7  (bottom 8)
  *   Yellow → segments 8–11 (middle 4)
  *   Red    → segments 12–13 (top 2)
+ *
+ * The column is a ONE-TIME lit-html render into a detached fragment; the RAF
+ * loop then flips `lit`/`lit-peak` classes imperatively on the kept segment
+ * refs — per-frame work never goes through a template diff.
  */
+
+import { html, render as litRender } from 'lit-html';
 
 // ── Scale constants ───────────────────────────────────────────────────────────
 
@@ -173,23 +179,19 @@ function unregisterMeter(reg: MeterRegistration): void {
 export function createLevelMeter(opts: LevelMeterOpts): LevelMeterHandle {
   const { analyser } = opts;
 
-  // Root container
-  const el = document.createElement('div');
-  el.className = 'mix-vu-host';
-
-  const column = document.createElement('div');
-  column.className = 'mix-vu';
-  el.appendChild(column);
-
   // Build segments bottom-first; CSS flex-direction: column-reverse makes
-  // index 0 appear at the bottom visually.
-  const segments: HTMLDivElement[] = [];
-  for (let i = 0; i < SEGMENT_COUNT; i++) {
-    const seg = document.createElement('div');
-    seg.className = `mix-vu-seg mix-vu-seg--${SEGMENT_ZONES[i]}`;
-    column.appendChild(seg);
-    segments.push(seg);
-  }
+  // index 0 appear at the bottom visually. querySelectorAll returns document
+  // order, so segments[0] stays the bottom LED.
+  const frag = document.createDocumentFragment();
+  litRender(html`
+    <div class="mix-vu-host">
+      <div class="mix-vu">
+        ${SEGMENT_ZONES.map((zone) => html`<div class="mix-vu-seg mix-vu-seg--${zone}"></div>`)}
+      </div>
+    </div>
+  `, frag);
+  const el = frag.firstElementChild as HTMLElement;
+  const segments = [...el.querySelectorAll<HTMLDivElement>('.mix-vu-seg')];
 
   const bufferSize = analyser.fftSize; // fftSize=512 → 512 time-domain samples
   const buffer = new Float32Array(bufferSize) as Float32Array<ArrayBuffer>;

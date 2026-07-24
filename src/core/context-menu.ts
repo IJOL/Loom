@@ -5,6 +5,9 @@
 // Drive it from a `contextmenu` listener: el.addEventListener('contextmenu',
 // (e) => openContextMenu(e, items)).
 
+import { html, nothing, type TemplateResult } from 'lit-html';
+import { renderElement } from './lit-fragment';
+
 export interface ContextMenuItem {
   label: string;
   /** Omitted for swatch rows, which carry their own per-swatch handler. */
@@ -33,52 +36,41 @@ export function closeContextMenu(): void {
   openMenu = null;
 }
 
+function itemTemplate(item: ContextMenuItem): TemplateResult {
+  const sep = item.separatorBefore ? html`<li class="context-menu-sep"></li>` : nothing;
+  if (item.swatches) {
+    const { colors, current, onPick } = item.swatches;
+    return html`${sep}<li class="context-menu-swatches">
+      <div class="context-menu-swatches-label">${item.label}</div>
+      <div class="context-menu-swatch-row">
+        ${colors.map((color) => html`<button
+          class="context-menu-swatch${color === current ? ' current' : ''}"
+          style="background:${color}"
+          title=${color}
+          @click=${() => { closeContextMenu(); onPick(color); }}
+        ></button>`)}
+      </div>
+    </li>`;
+  }
+  // No listener at all on a disabled item (an undefined @click binds nothing),
+  // so clicking it neither fires nor closes the menu.
+  return html`${sep}<li
+    class="context-menu-item${item.disabled ? ' disabled' : ''}${item.danger ? ' danger' : ''}"
+    @click=${item.disabled ? undefined : () => { closeContextMenu(); item.onSelect?.(); }}
+  >${item.label}</li>`;
+}
+
 export function openContextMenu(e: MouseEvent, items: ContextMenuItem[]): void {
   e.preventDefault();
   closeContextMenu(); // supersede any menu already open
 
-  const ul = document.createElement('ul');
-  ul.className = 'context-menu';
-  ul.style.left = `${e.clientX}px`;
-  ul.style.top = `${e.clientY}px`;
-
-  for (const item of items) {
-    if (item.separatorBefore) {
-      const sep = document.createElement('li');
-      sep.className = 'context-menu-sep';
-      ul.appendChild(sep);
-    }
-    if (item.swatches) {
-      const li = document.createElement('li');
-      li.className = 'context-menu-swatches';
-      const lbl = document.createElement('div');
-      lbl.className = 'context-menu-swatches-label';
-      lbl.textContent = item.label;
-      const row = document.createElement('div');
-      row.className = 'context-menu-swatch-row';
-      for (const color of item.swatches.colors) {
-        const sw = document.createElement('button');
-        sw.className = 'context-menu-swatch';
-        if (color === item.swatches.current) sw.classList.add('current');
-        sw.style.background = color;
-        sw.title = color;
-        sw.addEventListener('click', () => { closeContextMenu(); item.swatches!.onPick(color); });
-        row.appendChild(sw);
-      }
-      li.append(lbl, row);
-      ul.appendChild(li);
-      continue;
-    }
-    const li = document.createElement('li');
-    li.className = 'context-menu-item';
-    if (item.disabled) li.classList.add('disabled');
-    if (item.danger) li.classList.add('danger');
-    li.textContent = item.label;
-    if (!item.disabled) {
-      li.addEventListener('click', () => { closeContextMenu(); item.onSelect?.(); });
-    }
-    ul.appendChild(li);
-  }
+  // Transient DOM: built once per open through a one-shot fragment render,
+  // removed wholesale on close — no mounted panel to keep in sync. Position
+  // comes straight from the event (no layout read), so it rides in the template.
+  const ul = renderElement<HTMLUListElement>(html`<ul
+    class="context-menu"
+    style="left:${e.clientX}px;top:${e.clientY}px"
+  >${items.map(itemTemplate)}</ul>`);
 
   document.body.appendChild(ul);
   openMenu = ul;
