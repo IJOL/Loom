@@ -46,6 +46,8 @@ import {
   collectEngineState as collectEngineStateImpl,
   applyEngineState as applyEngineStateImpl,
 } from './session-host-persistence';
+import { html } from 'lit-html';
+import { renderElement } from '../core/lit-fragment';
 import { buildMixerColumn } from '../core/mixer';
 import { buildMasterStrip } from '../core/master-strip';
 // session-step-scheduler is superseded by the note-based tickLane path (Phase D.3).
@@ -639,9 +641,7 @@ export class SessionHost {
     for (const d of this.mixerDisposables) d.dispose();
     this.mixerDisposables = [];
     row.innerHTML = '';
-    const sp = document.createElement('div');
-    sp.className = 'session-spacer';
-    row.appendChild(sp);
+    row.appendChild(renderElement(html`<div class="session-spacer"></div>`));
     for (const lane of this.state.lanes) {
       const col = buildMixerColumn(lane.id, this.deps.mixerDeps);
       if (lane.id === this.activeEditLane) col.classList.add('session-mixer-col-active');
@@ -660,9 +660,7 @@ export class SessionHost {
         registerDisposable: (d) => this.registerMixerDisposable(d),
       }));
     } else {
-      const sp2 = document.createElement('div');
-      sp2.className = 'session-spacer';
-      row.appendChild(sp2);
+      row.appendChild(renderElement(html`<div class="session-spacer"></div>`));
     }
     // Re-apply the (non-serialized) Master FX open flag to the panel so it
     // survives the play-state re-renders that rebuild the mixer row.

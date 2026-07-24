@@ -5,6 +5,7 @@
 // injected DrumRows model. Returns a { redraw } handle driven by the session-host
 // RAF. Pure logic in core/drum-grid-editing.ts.
 
+import { html, render, nothing } from 'lit-html';
 import { DRUM_LANES, type DrumVoice } from '../../core/drums';
 import { velToColor } from '../../core/velocity-color';
 import { velocityToBarHeight, barHitTest, yToVelocity, setVelocity, applyGroupDelta, FAN_PX } from '../../core/velocity-lane-editing';
@@ -95,10 +96,14 @@ export function renderDrumGridEditor(
   let playheadTick = -1;
 
   // ── DOM: toolbar + label column + scroll viewport ─────────────────────────
-  const wrap = document.createElement('div');
-  wrap.tabIndex = 0; wrap.style.outline = 'none';
-  const toolbar = document.createElement('div');
-  Object.assign(toolbar.style, { display: 'flex', gap: '6px', alignItems: 'center', padding: '4px 2px' } as Partial<CSSStyleDeclaration>);
+  // One-shot lit template into a throwaway fragment (this editor is rebuilt per
+  // clip open — there is no re-render pass, so the imperative toolbar widgets
+  // interpolate directly). Drawing stays imperative on the two canvases.
+  // Popover lives just below the toolbar (inside the wrap), positioned by SCSS.
+  // The row bounds the labels+grid block at 60vh and scrolls it vertically:
+  // full kit can be ~52 rows tall; the labels canvas (flex:0 0 LABEL_W) and the
+  // grid viewport stay side-by-side and scroll together; compact view (few
+  // rows) shows no scrollbar.
   const tools = createToolToggle(currentTool, (t) => { currentTool = t; });
   const drawBtn = tools.drawBtn, selBtn = tools.selBtn;
 
@@ -110,36 +115,33 @@ export function renderDrumGridEditor(
   const help = createHelpButton(DRUM_KEY_LEGEND);
   const helpPopover = help.popover;
 
-  const toolbarKids: HTMLElement[] = [drawBtn, selBtn, createFollowToggle()];
-  if (deps.fullKit) {
-    toolbarKids.push(createFullKitToggle(() => {
-      setModel(deps.fullKit!.build(isDrumFullKit()));
-      deps.fullKit!.onToggle?.();
-    }));
-  }
-  toolbarKids.push(resCtl, help.btn);
-  toolbar.append(...toolbarKids);
-
-  const labelsCanvas = document.createElement('canvas');
-  labelsCanvas.style.cssText = `display:block;flex:0 0 ${LABEL_W}px`;
-
-  const viewport = document.createElement('div');
-  viewport.className = 'drum-grid-vp';
-  Object.assign(viewport.style, { flex: '1 1 auto', overflowX: 'auto', overflowY: 'hidden', position: 'relative' } as Partial<CSSStyleDeclaration>);
-  const canvas = document.createElement('canvas');
-  canvas.style.display = 'block'; canvas.style.cursor = 'crosshair';
-  viewport.appendChild(canvas);
-
-  const row = document.createElement('div');
-  row.style.cssText = 'display:flex;align-items:flex-start';
-  // Full kit can be ~52 rows tall: bound the labels+grid block and scroll it
-  // vertically. The labels canvas (flex:0 0 LABEL_W) and the grid viewport stay
-  // side-by-side and scroll together; compact view (few rows) shows no scrollbar.
-  Object.assign(row.style, { maxHeight: '60vh', overflowY: 'auto' } as Partial<CSSStyleDeclaration>);
+  const frag = document.createDocumentFragment();
+  render(html`
+    <div tabindex="0" style="outline:none">
+      <div style="display:flex;gap:6px;align-items:center;padding:4px 2px">
+        ${drawBtn}${selBtn}${createFollowToggle()}
+        ${deps.fullKit ? createFullKitToggle(() => {
+          setModel(deps.fullKit!.build(isDrumFullKit()));
+          deps.fullKit!.onToggle?.();
+        }) : nothing}
+        ${resCtl}${help.btn}
+      </div>
+      ${helpPopover}
+      <div style="display:flex;align-items:flex-start;max-height:60vh;overflow-y:auto">
+        <canvas style="display:block;flex:0 0 ${LABEL_W}px"></canvas>
+        <div class="drum-grid-vp" style="flex:1 1 auto;overflow-x:auto;overflow-y:hidden;position:relative">
+          <canvas style="display:block;cursor:crosshair"></canvas>
+        </div>
+      </div>
+    </div>`, frag);
+  const wrap = frag.firstElementChild as HTMLElement;
+  const [labelsCanvas, canvas] = Array.from(wrap.querySelectorAll('canvas'));
+  const viewport = wrap.querySelector('.drum-grid-vp') as HTMLDivElement;
+  const row = viewport.parentElement as HTMLElement;
   // The Euclidean fields go between the labels and the grid so a voice's numbers
   // sit beside its name; they share the row's vertical scroll, so they stay lined
-  // up with their voice at any kit size.
-  row.append(labelsCanvas);
+  // up with their voice at any kit size. The panel appends itself to the row, so
+  // move the viewport back behind it to keep labels · fields · grid order.
   const euclidPanel = mountDrumEuclidPanel(row, {
     rows, labels,
     totalSteps: clip.lengthBars * stepsPerBar(meter),
@@ -147,9 +149,6 @@ export function renderDrumGridEditor(
     getNotes: notes, setNotes, onChange: () => draw(), historyDeps,
   });
   row.append(viewport);
-
-  // Popover lives just below the toolbar (inside the wrap), positioned by SCSS.
-  wrap.append(toolbar, helpPopover, row);
   host.appendChild(wrap);
 
   const c2d = canvas.getContext('2d');

@@ -2,12 +2,20 @@
 // voice row. Lives between the label column and the grid, in the same scrolling
 // flex row and on the same RULER_H + ROW_H rhythm, so a row's numbers sit beside
 // the voice they paint. Pure logic in core/euclid-row.ts.
+//
+// Rendered through mountPanel: the panel host carries the old root's class
+// ('drum-euclid') and flex styling, and setModel is a rerender instead of a
+// rebuild. Field values use live() so a model swap resets them to their
+// defaults — exactly what the old rebuild did.
 
+import { html, nothing, type TemplateResult } from 'lit-html';
+import { live } from 'lit-html/directives/live.js';
 import type { NoteEvent } from '../../core/notes';
 import type { DrumRows } from '../../core/drum-grid-editing';
 import { applyEuclidToRow } from '../../core/euclid-row';
 import { DEFAULT_VELOCITY } from '../../core/velocity-gain';
 import { withUndo, type HistoryDeps } from '../../save/history-wiring';
+import { mountPanel } from '../../core/lit-panel';
 import { RULER_H, ROW_H } from './drum-grid-types';
 
 export interface EuclidPanelDeps {
@@ -40,17 +48,17 @@ const FIELDS = [
   { cap: 'R', title: 'rotate — shift the cycle (negative rotates the other way)' },
 ] as const;
 
+const FIELD_STYLE = `width:${FIELD_W}px;height:16px;box-sizing:border-box;padding:0 2px;`
+  + 'background:#111;border:1px solid #333;border-radius:2px;color:#ddd;font:9px ui-monospace,monospace';
+
 export function mountDrumEuclidPanel(host: HTMLElement, deps: EuclidPanelDeps): EuclidPanelHandle {
   let rows = deps.rows;
   let labels = deps.labels;
 
-  const el = document.createElement('div');
-  el.className = 'drum-euclid';
-  el.style.cssText = `flex:0 0 ${PANEL_W}px;background:#0a0a0a;font:9px ui-monospace,monospace`;
-  host.appendChild(el);
-
-  function apply(row: number, inputs: HTMLInputElement[]): void {
-    const [hits, steps, rot] = inputs.map((i) => Number(i.value));   // '' → 0 → not generating
+  function apply(row: number, e: Event): void {
+    const rowEl = (e.target as HTMLElement).closest('.drum-euclid-row')!;
+    const [hits, steps, rot] =
+      [...rowEl.querySelectorAll('input')].map((i) => Number(i.value));   // '' → 0 → not generating
     const spec = { hits, steps, rotation: rot, velocity: DEFAULT_VELOCITY };
     // Synchronous on the `change` event: AutoHistory checkpoints in a microtask
     // off that same event, so a debounced paint would miss its undo step.
@@ -61,45 +69,33 @@ export function mountDrumEuclidPanel(host: HTMLElement, deps: EuclidPanelDeps): 
     deps.historyDeps ? withUndo(deps.historyDeps, run) : run();
   }
 
-  function buildRow(row: number): HTMLElement {
-    const rowEl = document.createElement('div');
-    rowEl.className = 'drum-euclid-row';
-    rowEl.style.cssText = `display:flex;gap:${GAP}px;height:${ROW_H}px;padding:0 ${PAD}px;`
-      + 'align-items:center;box-sizing:border-box;background:#202020';
-    const inputs = FIELDS.map((f, i) => {
-      const input = document.createElement('input');
-      input.type = 'number';
-      input.className = 'drum-euclid-f';
-      input.title = `${labels[row] ?? ''} · ${f.title}`;
-      if (i < 2) input.min = '0';                       // rotate wraps both ways
-      input.value = i === 1 ? String(deps.defaultSteps) : '';
-      input.style.cssText = `width:${FIELD_W}px;height:16px;box-sizing:border-box;padding:0 2px;`
-        + 'background:#111;border:1px solid #333;border-radius:2px;color:#ddd;font:9px ui-monospace,monospace';
-      rowEl.appendChild(input);
-      return input;
-    });
-    for (const input of inputs) input.addEventListener('change', () => apply(row, inputs));
-    return rowEl;
-  }
+  const rowTemplate = (r: number): TemplateResult => html`
+    <div class="drum-euclid-row"
+      style="display:flex;gap:${GAP}px;height:${ROW_H}px;padding:0 ${PAD}px;align-items:center;box-sizing:border-box;background:#202020">
+      ${FIELDS.map((f, i) => html`<input type="number" class="drum-euclid-f"
+        title="${labels[r] ?? ''} · ${f.title}"
+        min=${i < 2 ? '0' : nothing}
+        .value=${live(i === 1 ? String(deps.defaultSteps) : '')}
+        style=${FIELD_STYLE}
+        @change=${(e: Event) => apply(r, e)} />`)}
+    </div>`;
 
-  function build(): void {
-    el.innerHTML = '';
-    const hdr = document.createElement('div');
-    hdr.style.cssText = `display:flex;gap:${GAP}px;height:${RULER_H}px;padding:0 ${PAD}px;`
-      + 'align-items:center;box-sizing:border-box;color:#666';
-    for (const f of FIELDS) {
-      const cap = document.createElement('span');
-      cap.textContent = f.cap;
-      cap.title = f.title;
-      cap.style.cssText = `width:${FIELD_W}px;text-align:center`;
-      hdr.appendChild(cap);
-    }
-    el.appendChild(hdr);
-    for (let r = 0; r < rows.count; r++) el.appendChild(buildRow(r));
-  }
+  const handle = mountPanel({
+    container: host,
+    className: 'drum-euclid',
+    deps,
+    template: () => html`
+      <div style="display:flex;gap:${GAP}px;height:${RULER_H}px;padding:0 ${PAD}px;align-items:center;box-sizing:border-box;color:#666">
+        ${FIELDS.map((f) => html`<span title=${f.title} style="width:${FIELD_W}px;text-align:center">${f.cap}</span>`)}
+      </div>
+      ${Array.from({ length: rows.count }, (_, r) => rowTemplate(r))}
+    `,
+  });
+  // The panel host IS the flex item in the drum grid's label/fields/grid row,
+  // so it carries the sizing the old root element had.
+  handle.host.style.cssText = `flex:0 0 ${PANEL_W}px;background:#0a0a0a;font:9px ui-monospace,monospace`;
 
-  build();
   return {
-    setModel: (r, l) => { rows = r; labels = l; build(); },
+    setModel: (r, l) => { rows = r; labels = l; handle.rerender(); },
   };
 }

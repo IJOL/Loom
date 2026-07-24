@@ -2,6 +2,8 @@
 // interaction handlers. Extracted from session-host.ts (the body was already
 // written in terms of `self`, so it lifts out verbatim with `self` as a param).
 
+import { html } from 'lit-html';
+import { renderElement } from '../core/lit-fragment';
 import type { SessionHost } from './session-host';
 import type { SessionUICallbacks } from './session-ui';
 import { stepsPerBar } from '../core/meter';
@@ -91,15 +93,16 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
       if (lane.engineId === 'audio') {
         // Audio channels hold one WAV per clip — pick the file now (the channel
         // itself was created empty). Same load path as dropping a WAV here.
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'audio/*';
-        input.style.display = 'none';
-        input.addEventListener('change', () => {
-          const f = input.files?.[0];
-          input.remove();
+        // Transient build-once node: rendered detached, appended, self-removes.
+        const onPicked = (e: Event) => {
+          const picker = e.currentTarget as HTMLInputElement;
+          const f = picker.files?.[0];
+          picker.remove();
           if (f) self.loadAudioFileIntoCell(laneId, clipIdx, f);
-        });
+        };
+        const input = renderElement<HTMLInputElement>(
+          html`<input type="file" accept="audio/*" style="display: none" @change=${onPicked} />`,
+        );
         document.body.appendChild(input);
         input.click();
         return;

@@ -2,6 +2,8 @@
 // injecting its engine param UI + modulator/note-FX/insert panels + preset
 // dropdowns. Extracted from session-host.ts.
 
+import { html } from 'lit-html';
+import { renderElement } from '../core/lit-fragment';
 import type { SessionHost } from './session-host';
 import type { PolySynth } from '../polysynth/polysynth';
 import { getEngine } from '../engines/registry';
@@ -116,8 +118,9 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
   if (!page) return;
   let host = page.querySelector<HTMLElement>('.engine-mod-host');
   if (!host) {
-    host = document.createElement('div');
-    host.className = 'engine-mod-host';
+    // Build-once container the engines render into imperatively (buildParamUI
+    // wipes and refills it) — a detached one-shot render, not a lit panel.
+    host = renderElement(html`<div class="engine-mod-host"></div>`);
     // Place engine body BEFORE the FX row so the engine knobs render above
     // the compressor on every page: poly anchors on #poly-fx-row, while the
     // 303 / drums pages fall back to the FX row that hosts .lane-fx-knobs.
@@ -150,8 +153,7 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
   // Per-lane NOTE FX panel — mounted next to MODULATORS (which buildParamUI
   // rendered into `host`). Drum lanes are not note-transformed, so skip them.
   if (panels.noteFx) {
-    const nfHost = document.createElement('div');
-    nfHost.className = 'lane-notefx-panel-host';
+    const nfHost = renderElement(html`<div class="lane-notefx-panel-host"></div>`);
     host.appendChild(nfHost);
     renderNoteFxPanel(nfHost, {
       laneId,

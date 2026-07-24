@@ -1,10 +1,18 @@
 // src/session/lane-insert-ui.ts
+import { html, nothing, type TemplateResult } from 'lit-html';
+import { repeat } from 'lit-html/directives/repeat.js';
+import { styleMap } from 'lit-html/directives/style-map.js';
 import { listPlugins, createInstance } from '../plugins/registry';
 import { type InsertSlot, newInsertId } from './insert-slot';
-import type { InsertChain } from '../plugins/fx/insert-chain';
+import type { InsertChain, ChainSlot } from '../plugins/fx/insert-chain';
 import { createKnob, type KnobHandle } from '../core/knob';
 import { buildFxVis, hasFxVis, VIS_W, VIS_H } from '../core/fx-vis';
 import { insertParamId } from '../automation/automation-targets';
+import { mountPanel, type PanelHandle } from '../core/lit-panel';
+import { renderElement } from '../core/lit-fragment';
+import type { PluginFactory } from '../plugins/types';
+
+type FxFactory = Extract<PluginFactory, { kind: 'fx' }>;
 
 export interface LaneInsertUIDeps {
   ctx: AudioContext;
@@ -40,166 +48,172 @@ const FX_FALLBACK = '#ffa726';
 /** Render the lane's insert chain as a horizontal bar of compact units — one
  *  unit per effect (header: colour dot + name + any discrete selectors; a knob
  *  row; a control cluster with bypass + remove), reusing the synths' compact knob
- *  rows. The bar wraps to a second line when it runs out of width. */
+ *  rows. The bar wraps to a second line when it runs out of width.
+ *
+ *  The panel is a lit-html template mounted via mountPanel; knobs, the vis
+ *  thumbnail and the discrete selects are built once per slot in the panel's
+ *  ControlCache (keyed by slot id), so a bypass toggle or an add/remove repaints
+ *  around them instead of rebuilding every widget. */
 export function buildLaneInsertUI(deps: LaneInsertUIDeps): void {
-  const { ctx, container, chain, slots, onChange } = deps;
-  const { registerKnob, automationScopeId, onDestinationsChanged } = deps;
-  container.replaceChildren();
-
-  const bar = document.createElement('div');
-  bar.className = 'insert-bar';
-  container.appendChild(bar);
-
-  chain.list().forEach((cs, idx) => {
-    const slot = slots[idx];
-    if (!slot) return;
-    const factory = listPlugins('fx').find((p) => p.manifest.id === slot.pluginId);
-    if (!factory) return;
-
-    const color = FX_COLORS[slot.pluginId] ?? FX_FALLBACK;
-
-    const unit = document.createElement('div');
-    unit.className = 'insert-unit';
-    unit.style.setProperty('--fx-color', color);
-
-    // ── Header: colour dot + effect name + discrete selectors (type / sync) ──
-    const head = document.createElement('div');
-    head.className = 'insert-unit-head';
-    const dot = document.createElement('span');
-    dot.className = 'insert-dot';
-    head.appendChild(dot);
-    const name = document.createElement('b');
-    name.className = 'insert-name';
-    name.textContent = factory.manifest.name;
-    head.appendChild(name);
-    unit.appendChild(head);
-
-    // ── Thumbnail: what the current knob positions add up to ──────────────────
-    // A delay at feedback 0.8 should LOOK different from one at 0.2 before you
-    // play a note. Effects whose point is movement (chorus/flanger/phaser) get
-    // no picture — a still frame of them says nothing.
-    const NS = 'http://www.w3.org/2000/svg';
-    let redrawVis = (): void => {};
-    if (hasFxVis(factory.manifest.id)) {
-      const svg = document.createElementNS(NS, 'svg');
-      svg.setAttribute('class', 'insert-vis');
-      svg.setAttribute('viewBox', `0 0 ${VIS_W} ${VIS_H}`);
-      svg.setAttribute('preserveAspectRatio', 'none');
-      const area = document.createElementNS(NS, 'path');
-      area.setAttribute('class', 'insert-vis-area');
-      const line = document.createElementNS(NS, 'path');
-      line.setAttribute('class', 'insert-vis-line');
-      svg.appendChild(area);
-      svg.appendChild(line);
-      redrawVis = () => {
-        const vis = buildFxVis(factory.manifest.id, (id) => cs.fx.getBaseValue(id));
-        if (!vis) return;
-        area.setAttribute('d', vis.area ?? '');
-        line.setAttribute('d', vis.line);
-      };
-      redrawVis();
-      unit.appendChild(svg);
-    }
-
-    // ── Knob row: one knob per continuous param (compact, like the synth rows) ──
-    const knobRow = document.createElement('div');
-    knobRow.className = 'knob-row';
-
-    for (const spec of factory.manifest.params) {
-      if (spec.kind === 'continuous') {
-        const knobId = automationScopeId
-          ? insertParamId(automationScopeId, slot.id, spec.id)
-          : undefined;
-        const handle = createKnob({
-          id: knobId,
-          label: spec.label,
-          min: spec.min, max: spec.max,
-          value: cs.fx.getBaseValue(spec.id),
-          color,
-          onChange: (v) => { cs.fx.setBaseValue(spec.id, v); slot.params[spec.id] = v; redrawVis(); onChange(); },
-        });
-        knobRow.appendChild(handle.el);
-        if (automationScopeId && registerKnob) registerKnob(handle);
-      } else if (spec.kind === 'discrete' && spec.options) {
-        // Discrete params (filter type, delay sync) sit in the header as a mini select.
-        const sel = document.createElement('select');
-        sel.className = 'insert-sel';
-        sel.title = spec.label;
-        spec.options.forEach((opt, i) => sel.appendChild(new Option(opt.label, String(i))));
-        sel.selectedIndex = Math.round(cs.fx.getBaseValue(spec.id));
-        sel.onchange = () => {
-          const i = sel.selectedIndex;
-          cs.fx.setBaseValue(spec.id, i);
-          slot.params[spec.id] = i;
-          redrawVis();
-          onChange();
-        };
-        head.appendChild(sel);
-      }
-    }
-    unit.appendChild(knobRow);
-
-    // ── Control cluster: bypass toggle + remove ──
-    const ctl = document.createElement('div');
-    ctl.className = 'insert-unit-ctl';
-
-    const bypass = document.createElement('button');
-    bypass.className = 'insert-btn';
-    bypass.textContent = slot.bypass ? 'BYP' : 'ON';
-    bypass.classList.toggle('bypassed', slot.bypass);
-    bypass.onclick = () => {
-      slot.bypass = !slot.bypass;
-      chain.setBypass(idx, slot.bypass);
-      onChange();
-      buildLaneInsertUI(deps);
-    };
-    ctl.appendChild(bypass);
-
-    const rm = document.createElement('button');
-    rm.className = 'insert-btn insert-rm';
-    rm.textContent = '×';
-    rm.title = 'Remove insert';
-    rm.onclick = () => {
-      chain.remove(idx);
-      slots.splice(idx, 1);
-      onChange();
-      onDestinationsChanged?.();
-      buildLaneInsertUI(deps);
-    };
-    ctl.appendChild(rm);
-
-    unit.appendChild(ctl);
-    bar.appendChild(unit);
+  // Per-mount UI state: an external rebuild (a fresh call) drops an open picker,
+  // matching the old full-rebuild behaviour.
+  let pickerOpen = false;
+  const handle = mountPanel({
+    container: deps.container,
+    className: 'insert-rack',
+    deps,
+    template: (h) => rackTemplate(h, () => pickerOpen, (open) => { pickerOpen = open; }),
   });
+  // The host must not introduce a layout box: the master rack (#fx-filters) is
+  // a flex column whose gap used to separate the bar / add button / picker
+  // directly, so they must keep participating in the container's layout.
+  handle.host.style.display = 'contents';
+}
 
-  // ── "+ Add insert" (outside the bar) ──
-  const add = document.createElement('button');
-  add.className = 'insert-add';
-  add.textContent = '+ Add insert';
-  add.onclick = () => {
-    if (container.querySelector('.insert-add-picker')) return;   // one picker at a time
-    const picker = document.createElement('select');
-    picker.className = 'insert-add-picker';
-    picker.appendChild(new Option('—', ''));
-    for (const p of listPlugins('fx')) {
-      picker.appendChild(new Option(p.manifest.name, p.manifest.id));
-    }
-    picker.onchange = () => {
-      const pluginId = picker.value;
-      if (!pluginId) { picker.remove(); return; }
-      const inst = createInstance('fx', pluginId, ctx);
-      if (!inst) { picker.remove(); return; }
-      const factory = listPlugins('fx').find((p) => p.manifest.id === pluginId)!;
-      const params: Record<string, number> = {};
-      for (const s of factory.manifest.params) params[s.id] = inst.getBaseValue(s.id);
-      const slot: InsertSlot = { id: newInsertId(), pluginId, params, bypass: false };
-      slots.push(slot);
-      chain.insert(inst, slot.id);
-      onChange();
-      onDestinationsChanged?.();
-      buildLaneInsertUI(deps);
+type Rack = PanelHandle<LaneInsertUIDeps>;
+
+function rackTemplate(h: Rack, isPickerOpen: () => boolean, setPicker: (open: boolean) => void): TemplateResult {
+  const { chain, slots } = h.deps;
+  return html`
+    <div class="insert-bar">
+      ${repeat(
+        chain.list(),
+        (_cs, idx) => slots[idx]?.id ?? `idx-${idx}`,
+        (cs, idx) => unitTemplate(h, cs, idx),
+      )}
+    </div>
+    <button class="insert-add" @click=${() => {
+      if (isPickerOpen()) return;   // one picker at a time
+      setPicker(true);
+      h.rerender();
+    }}>+ Add insert</button>
+    ${isPickerOpen() ? pickerTemplate(h, setPicker) : nothing}
+  `;
+}
+
+function unitTemplate(h: Rack, cs: ChainSlot, idx: number): TemplateResult | typeof nothing {
+  const { chain, slots, onChange } = h.deps;
+  const slot = slots[idx];
+  if (!slot) return nothing;
+  const factory = listPlugins('fx').find((p) => p.manifest.id === slot.pluginId);
+  if (!factory) return nothing;
+
+  const color = FX_COLORS[slot.pluginId] ?? FX_FALLBACK;
+  const w = h.cache.get<UnitWidgets>(`unit:${slot.id}`, () => buildUnitWidgets(h.deps, cs, slot, factory, color));
+
+  return html`
+    <div class="insert-unit" style=${styleMap({ '--fx-color': color })}>
+      <div class="insert-unit-head"><span class="insert-dot"></span><b class="insert-name">${factory.manifest.name}</b>${w.discretes}</div>
+      ${w.visEl ?? nothing}
+      <div class="knob-row">${w.knobs.map((k) => k.el)}</div>
+      <div class="insert-unit-ctl">
+        <button class=${slot.bypass ? 'insert-btn bypassed' : 'insert-btn'} @click=${() => {
+          slot.bypass = !slot.bypass;
+          chain.setBypass(idx, slot.bypass);
+          onChange();
+          h.rerender();
+        }}>${slot.bypass ? 'BYP' : 'ON'}</button>
+        <button class="insert-btn insert-rm" title="Remove insert" @click=${() => {
+          chain.remove(idx);
+          slots.splice(idx, 1);
+          onChange();
+          h.deps.onDestinationsChanged?.();
+          h.rerender();
+        }}>×</button>
+      </div>
+    </div>
+  `;
+}
+
+interface UnitWidgets {
+  /** Thumbnail SVG, absent for effects with no still-frame vis. */
+  visEl?: Element;
+  knobs: KnobHandle[];
+  discretes: HTMLSelectElement[];
+}
+
+/** Create-once widgets for one insert unit. Knobs own their DOM + drag state and
+ *  the vis redraw is imperative (a knob drag repaints only the two <path>s), so
+ *  none of this can live in the template body. */
+function buildUnitWidgets(
+  deps: LaneInsertUIDeps,
+  cs: ChainSlot,
+  slot: InsertSlot,
+  factory: FxFactory,
+  color: string,
+): UnitWidgets {
+  // ── Thumbnail: what the current knob positions add up to ──────────────────
+  // A delay at feedback 0.8 should LOOK different from one at 0.2 before you
+  // play a note. Effects whose point is movement (chorus/flanger/phaser) get
+  // no picture — a still frame of them says nothing.
+  let redrawVis = (): void => {};
+  let visEl: Element | undefined;
+  if (hasFxVis(factory.manifest.id)) {
+    visEl = renderElement(html`<svg class="insert-vis" viewBox="0 0 ${VIS_W} ${VIS_H}" preserveAspectRatio="none"><path class="insert-vis-area"></path><path class="insert-vis-line"></path></svg>`);
+    const area = visEl.querySelector('.insert-vis-area')!;
+    const line = visEl.querySelector('.insert-vis-line')!;
+    redrawVis = () => {
+      const vis = buildFxVis(factory.manifest.id, (id) => cs.fx.getBaseValue(id));
+      if (!vis) return;
+      area.setAttribute('d', vis.area ?? '');
+      line.setAttribute('d', vis.line);
     };
-    add.insertAdjacentElement('afterend', picker);
+    redrawVis();
+  }
+
+  const knobs: KnobHandle[] = [];
+  const discretes: HTMLSelectElement[] = [];
+  for (const spec of factory.manifest.params) {
+    if (spec.kind === 'continuous') {
+      const knobId = deps.automationScopeId
+        ? insertParamId(deps.automationScopeId, slot.id, spec.id)
+        : undefined;
+      const handle = createKnob({
+        id: knobId,
+        label: spec.label,
+        min: spec.min, max: spec.max,
+        value: cs.fx.getBaseValue(spec.id),
+        color,
+        onChange: (v) => { cs.fx.setBaseValue(spec.id, v); slot.params[spec.id] = v; redrawVis(); deps.onChange(); },
+      });
+      knobs.push(handle);
+      if (deps.automationScopeId && deps.registerKnob) deps.registerKnob(handle);
+    } else if (spec.kind === 'discrete' && spec.options) {
+      // Discrete params (filter type, delay sync) sit in the header as a mini
+      // select. Built imperatively (not a template `.selectedIndex` binding):
+      // lit commits element parts before child parts, so the binding would land
+      // before the <option>s exist and never stick.
+      const sel = renderElement<HTMLSelectElement>(html`<select class="insert-sel" title=${spec.label}>${spec.options.map((opt, i) => html`<option value=${String(i)}>${opt.label}</option>`)}</select>`);
+      sel.selectedIndex = Math.round(cs.fx.getBaseValue(spec.id));
+      sel.onchange = () => {
+        const i = sel.selectedIndex;
+        cs.fx.setBaseValue(spec.id, i);
+        slot.params[spec.id] = i;
+        redrawVis();
+        deps.onChange();
+      };
+      discretes.push(sel);
+    }
+  }
+  return { visEl, knobs, discretes };
+}
+
+function pickerTemplate(h: Rack, setPicker: (open: boolean) => void): TemplateResult {
+  const close = () => { setPicker(false); h.rerender(); };
+  const onPick = (e: Event) => {
+    const pluginId = (e.target as HTMLSelectElement).value;
+    if (!pluginId) { close(); return; }
+    const inst = createInstance('fx', pluginId, h.deps.ctx);
+    if (!inst) { close(); return; }
+    const factory = listPlugins('fx').find((p) => p.manifest.id === pluginId)!;
+    const params: Record<string, number> = {};
+    for (const s of factory.manifest.params) params[s.id] = inst.getBaseValue(s.id);
+    const slot: InsertSlot = { id: newInsertId(), pluginId, params, bypass: false };
+    h.deps.slots.push(slot);
+    h.deps.chain.insert(inst, slot.id);
+    h.deps.onChange();
+    h.deps.onDestinationsChanged?.();
+    close();
   };
-  container.appendChild(add);
+  return html`<select class="insert-add-picker" @change=${onPick}><option value="">—</option>${listPlugins('fx').map((p) => html`<option value=${p.manifest.id}>${p.manifest.name}</option>`)}</select>`;
 }

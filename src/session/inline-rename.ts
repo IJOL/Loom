@@ -4,6 +4,9 @@
 // mutate state + re-render (which rebuilds the label); on cancel/no-change the
 // original label is simply re-shown.
 
+import { html, nothing } from 'lit-html';
+import { renderElement } from '../core/lit-fragment';
+
 export interface InlineRenameOptions {
   /** Fired with the trimmed value on Enter/blur — only when non-empty AND
    *  different from `currentValue`. */
@@ -16,20 +19,6 @@ export function beginInlineRename(
   currentValue: string,
   opts: InlineRenameOptions,
 ): HTMLInputElement {
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.className = 'inline-rename-input';
-  input.value = currentValue;
-  if (opts.placeholder) input.placeholder = opts.placeholder;
-
-  const parent = labelEl.parentElement;
-  labelEl.style.display = 'none';
-  // Insert right after the hidden label so it occupies the same slot.
-  if (parent) parent.insertBefore(input, labelEl.nextSibling);
-  else labelEl.replaceWith(input);
-  input.focus();
-  input.select();
-
   let done = false;
   const finish = (commit: boolean): void => {
     if (done) return;
@@ -44,16 +33,33 @@ export function beginInlineRename(
     if (commit && v && v !== currentValue) opts.commit(v);
   };
 
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); finish(true); }
-    else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
-    // Keep typing from reaching global shortcuts (e.g. clip Delete/Backspace).
-    e.stopPropagation();
-  });
-  input.addEventListener('blur', () => finish(true));
-  // Never let the editor's pointer events bubble to an underlying drag/launch.
-  input.addEventListener('pointerdown', (e) => e.stopPropagation());
-  input.addEventListener('click', (e) => e.stopPropagation());
+  // A transient node the caller's DOM adopts — instantiated once, never
+  // re-rendered, so a one-shot fragment render replaces createElement.
+  const input = renderElement<HTMLInputElement>(html`<input
+    type="text"
+    class="inline-rename-input"
+    .value=${currentValue}
+    placeholder=${opts.placeholder ?? nothing}
+    @keydown=${(e: KeyboardEvent) => {
+      if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+      else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+      // Keep typing from reaching global shortcuts (e.g. clip Delete/Backspace).
+      e.stopPropagation();
+    }}
+    @blur=${() => finish(true)}
+    @pointerdown=${
+      // Never let the editor's pointer events bubble to an underlying drag/launch.
+      (e: Event) => e.stopPropagation()}
+    @click=${(e: Event) => e.stopPropagation()}
+  />`);
+
+  const parent = labelEl.parentElement;
+  labelEl.style.display = 'none';
+  // Insert right after the hidden label so it occupies the same slot.
+  if (parent) parent.insertBefore(input, labelEl.nextSibling);
+  else labelEl.replaceWith(input);
+  input.focus();
+  input.select();
 
   return input;
 }

@@ -4,13 +4,20 @@
 //
 // Gesture listeners (move/up/cancel) are installed on `window` in the CAPTURE
 // phase for the duration of a gesture — never on the cell:
-//  - the grid is rebuilt wholesale (host.innerHTML = '') on many state changes,
-//    so a cell-bound pointerup could vanish mid-gesture and strand the module
-//    state; the next plain hover over any cell then resurrected it as a ghost
-//    glued to a button-less cursor ("the clip sticks to the mouse");
+//  - the grid is re-rendered on many state changes, so a cell-bound pointerup
+//    could vanish mid-gesture and strand the module state; the next plain hover
+//    over any cell then resurrected it as a ghost glued to a button-less cursor
+//    ("the clip sticks to the mouse");
 //  - the ▶/✕ cell children stopPropagation() their pointerup, which a bubble
 //    listener on the cell never saw — capture-phase runs before them.
 // Pointer capture is deliberately NOT used: it dies with the re-rendered cell.
+//
+// The cell contributes only the gesture's START. clipDragHandlers() returns the
+// pointerdown handler the grid template binds with @pointerdown — a fresh
+// closure per repaint, deriving the cell from e.currentTarget, never capturing
+// it — while the in-flight gesture state stays module-level and survives a
+// mid-gesture re-render. wireClipDrag() remains the imperative wrapper for
+// non-template call sites.
 
 import { canDropClip } from './session-ops';
 import type { ClipSlot } from './session-ops';
@@ -35,29 +42,41 @@ interface DragState {
 
 let activeDrag: DragState | null = null;
 
+export interface ClipDragHandlers {
+  pointerdown: (e: PointerEvent) => void;
+}
+
+/** Handler factory for template binding: only pointerdown lives on the cell;
+ *  the rest of the gesture rides the window capture listeners it installs. */
+export function clipDragHandlers(source: ClipSlot, cb: SessionUICallbacks, state: SessionState): ClipDragHandlers {
+  return {
+    pointerdown: (e: PointerEvent) => {
+      if (e.button !== 0) return;
+      if (activeDrag) return;
+      activeDrag = {
+        source,
+        cell: e.currentTarget as HTMLElement,
+        cb,
+        state,
+        startX: e.clientX,
+        startY: e.clientY,
+        ghost: null,
+        hoverCell: null,
+        active: false,
+        pointerId: e.pointerId,
+        onKey: () => {},
+      };
+      window.addEventListener('pointermove', onPointerMove, true);
+      window.addEventListener('pointerup', onPointerUp, true);
+      window.addEventListener('pointercancel', onPointerCancel, true);
+    },
+  };
+}
+
+/** Imperative wiring kept for non-template call sites. */
 export function wireClipDrag(cell: HTMLElement, source: ClipSlot, cb: SessionUICallbacks, state: SessionState): void {
   cell.classList.add('session-cell-draggable');
-
-  cell.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0) return;
-    if (activeDrag) return;
-    activeDrag = {
-      source,
-      cell,
-      cb,
-      state,
-      startX: e.clientX,
-      startY: e.clientY,
-      ghost: null,
-      hoverCell: null,
-      active: false,
-      pointerId: e.pointerId,
-      onKey: () => {},
-    };
-    window.addEventListener('pointermove', onPointerMove, true);
-    window.addEventListener('pointerup', onPointerUp, true);
-    window.addEventListener('pointercancel', onPointerCancel, true);
-  });
+  cell.addEventListener('pointerdown', clipDragHandlers(source, cb, state).pointerdown);
 }
 
 function onPointerMove(e: PointerEvent): void {

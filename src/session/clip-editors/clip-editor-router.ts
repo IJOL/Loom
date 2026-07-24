@@ -3,6 +3,7 @@
 // editor (piano-roll or drum-grid). Falls back to piano-roll if engine has
 // no explicit preference.
 
+import { html, render, nothing } from 'lit-html';
 import type { SessionClip, SessionLane, WarpMarker } from '../session';
 import { resolveTonality } from '../session';
 import { inScale } from '../../core/musicality';
@@ -256,17 +257,21 @@ export function renderClipEditor(
   }
 
   // Everything else: optional waveform header (when the clip references a buffer)
-  // ABOVE the normal note editor.
+  // ABOVE the normal note editor. The scaffold boxes are lit-rendered into a
+  // throwaway fragment and pulled out as plain elements: the host gets
+  // innerHTML-wiped on every rebuild, so lit's per-container part cache could
+  // never be trusted on the host itself.
+  const wantHeader = !!(clip.sample || clip.waveformRef);
+  const frag = document.createDocumentFragment();
+  render(html`${wantHeader ? html`<div></div>` : nothing}<div></div><div></div>`, frag);
+  const boxes = Array.from(frag.children) as HTMLElement[];
+  host.append(...boxes);
+  const loopBar = boxes[boxes.length - 2];
+  const bodyBox = boxes[boxes.length - 1];
   let headerHandle: { redraw: () => void } | null = null;
-  if (clip.sample || clip.waveformRef) {
-    const headerBox = document.createElement('div');
-    host.appendChild(headerBox);
-    headerHandle = mountWaveformHeader(headerBox, clip, deps.seq.meter, { getPlayheadFrac: playheadFrac });
+  if (wantHeader) {
+    headerHandle = mountWaveformHeader(boxes[0], clip, deps.seq.meter, { getPlayheadFrac: playheadFrac });
   }
-  const loopBar = document.createElement('div');
-  host.appendChild(loopBar);
-  const bodyBox = document.createElement('div');
-  host.appendChild(bodyBox);
 
   let bodyHandle: PianoRollHandle | null;
   if (editor === 'drum-grid') {

@@ -1,5 +1,6 @@
 // src/session/project-options-dialog.ts
 // File ▸ Project Options: project name + key/scale/style/lock. Per-project state.
+import { html, render } from 'lit-html';
 import { SCALE_CATALOG, STYLE_CATALOG, rootName, type ScaleId, type StyleId } from '../core/musicality';
 import type { MusicalityState } from './session-types';
 import { bindModalDialog } from '../app/modal-dialog';
@@ -15,44 +16,29 @@ export function renderProjectOptionsDialog(deps: ProjectOptionsDeps): { open(): 
   const modal = bindModalDialog('project-options-dialog');
   const body = document.getElementById('project-options-body')!;
 
-  const nameInput = document.createElement('input');
-  nameInput.type = 'text'; nameInput.dataset.po = 'name'; nameInput.className = 'po-name';
-  nameInput.placeholder = 'Untitled';
-
-  const rootSel = document.createElement('select'); rootSel.dataset.po = 'root';
-  for (let pc = 0; pc < 12; pc++) {
-    const o = document.createElement('option'); o.value = String(pc); o.textContent = rootName(pc); rootSel.appendChild(o);
-  }
-  const scaleSel = document.createElement('select'); scaleSel.dataset.po = 'scale';
-  for (const s of SCALE_CATALOG) {
-    const o = document.createElement('option'); o.value = s.id; o.textContent = `${s.mood} — ${s.label} · ${s.hint}`; scaleSel.appendChild(o);
-  }
-  const styleSel = document.createElement('select'); styleSel.dataset.po = 'style';
-  for (const s of STYLE_CATALOG) {
-    const o = document.createElement('option'); o.value = s.id; o.textContent = s.label; styleSel.appendChild(o);
-  }
-  const lockChk = document.createElement('input'); lockChk.type = 'checkbox'; lockChk.dataset.po = 'lock';
-  lockChk.title = 'When ON, notes you place snap to the project key';
-
-  const row = (label: string, el: HTMLElement) => {
-    const r = document.createElement('label'); r.className = 'po-row';
-    const s = document.createElement('span'); s.textContent = label; r.append(s, el); return r;
-  };
-  const group = (label: string) => { const g = document.createElement('div'); g.className = 'po-group'; g.textContent = label; return g; };
-
-  body.append(
-    group('Project'), row('Name', nameInput),
-    group('Key & style'), row('Root', rootSel), row('Scale', scaleSel), row('Style', styleSel), row('Lock notes to key', lockChk),
-  );
-
   const commitMus = () => deps.setMusicality({
     key: Number(rootSel.value), scale: scaleSel.value as ScaleId, style: styleSel.value as StyleId, lock: lockChk.checked,
   });
-  nameInput.addEventListener('change', () => deps.setName(nameInput.value.trim() || 'Untitled'));
-  rootSel.addEventListener('change', commitMus);
-  scaleSel.addEventListener('change', commitMus);
-  styleSel.addEventListener('change', commitMus);
-  lockChk.addEventListener('change', commitMus);
+
+  // Built ONCE into the modal body; refresh() writes the live values back
+  // imperatively on every open. (A template re-render couldn't do that job:
+  // lit dirty-checks a `.value` binding against its last commit, not against
+  // what the user typed into the field.)
+  render(html`
+    <div class="po-group">Project</div>
+    <label class="po-row"><span>Name</span><input type="text" data-po="name" class="po-name" placeholder="Untitled" @change=${() => deps.setName(nameInput.value.trim() || 'Untitled')} /></label>
+    <div class="po-group">Key & style</div>
+    <label class="po-row"><span>Root</span><select data-po="root" @change=${commitMus}>${Array.from({ length: 12 }, (_, pc) => html`<option value=${String(pc)}>${rootName(pc)}</option>`)}</select></label>
+    <label class="po-row"><span>Scale</span><select data-po="scale" @change=${commitMus}>${SCALE_CATALOG.map((s) => html`<option value=${s.id}>${`${s.mood} — ${s.label} · ${s.hint}`}</option>`)}</select></label>
+    <label class="po-row"><span>Style</span><select data-po="style" @change=${commitMus}>${STYLE_CATALOG.map((s) => html`<option value=${s.id}>${s.label}</option>`)}</select></label>
+    <label class="po-row"><span>Lock notes to key</span><input type="checkbox" data-po="lock" title="When ON, notes you place snap to the project key" @change=${commitMus} /></label>
+  `, body);
+
+  const nameInput = body.querySelector<HTMLInputElement>('input[data-po="name"]')!;
+  const rootSel   = body.querySelector<HTMLSelectElement>('select[data-po="root"]')!;
+  const scaleSel  = body.querySelector<HTMLSelectElement>('select[data-po="scale"]')!;
+  const styleSel  = body.querySelector<HTMLSelectElement>('select[data-po="style"]')!;
+  const lockChk   = body.querySelector<HTMLInputElement>('input[data-po="lock"]')!;
 
   const refresh = () => {
     nameInput.value = deps.getName();

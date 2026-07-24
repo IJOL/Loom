@@ -7,6 +7,7 @@
 //     a small toolbar (warp). BPM/length live in the inspector, not here. No
 //     note grid.
 
+import { html, render, nothing } from 'lit-html';
 import type { SessionClip } from '../session';
 import { sampleCache } from '../../samples/sample-cache';
 import { ticksPerBar, stepsPerBar, stepsPerBeat, quartersPerBar, DEFAULT_METER, type TimeSignature } from '../../core/meter';
@@ -43,10 +44,11 @@ function headerSampleId(clip: SessionClip): string | undefined {
 export function mountWaveformHeader(
   host: HTMLElement, clip: SessionClip, meter: TimeSignature = DEFAULT_METER, deps: WaveformHeaderDeps = {},
 ): WaveformHeaderHandle {
-  const canvas = document.createElement('canvas');
-  canvas.className = 'clip-waveform-header';
-  canvas.style.display = 'block';
-  canvas.style.width = '100%';
+  // Build-once canvas: lit-render into a throwaway fragment and pull the
+  // element out. The drawing below is imperative and owns the canvas wholesale.
+  const frag = document.createDocumentFragment();
+  render(html`<canvas class="clip-waveform-header" style="display:block;width:100%"></canvas>`, frag);
+  const canvas = frag.firstElementChild as HTMLCanvasElement;
   host.appendChild(canvas);
   const c2d = canvas.getContext('2d');
 
@@ -175,15 +177,18 @@ export function renderAudioClipEditor(
   host.innerHTML = '';
   const sample = clip.sample;
 
-  // Hoisted so the warpBtn click handler can call markerHandle?.redraw().
+  // Hoisted so the warpBtn click handler can call markerHandle?.redraw() and
+  // relayout() can reach the loop overlay.
   let markerHandle: { redraw: () => void } | undefined;
+  let loopHandle: { redraw: () => void } | undefined;
 
-  const toolbar = document.createElement('div');
-  toolbar.className = 'audio-clip-toolbar';
-  Object.assign(toolbar.style, { display: 'flex', gap: '8px', alignItems: 'center', padding: '4px 2px', fontSize: '11px' } as Partial<CSSStyleDeclaration>);
+  const stored = audioHViewByClip.get(clip.id);
+  let zoomX = stored?.zoomX ?? 1;
 
-  const warpBtn = document.createElement('button');
-  warpBtn.className = 'audio-clip-warp';
+  const viewportW = () => Math.max(320, viewport.clientWidth || 600);
+  const contentW = () => Math.round(viewportW() * clampZoom(zoomX, maxZoomX(viewportW())));
+  const persist = () => audioHViewByClip.set(clip.id, { zoomX, scrollLeft: viewport.scrollLeft });
+
   const refreshWarp = () => {
     const on = !!sample?.warp;
     warpBtn.textContent = on ? 'ON' : 'OFF';
@@ -193,59 +198,9 @@ export function renderAudioClipEditor(
       padding: '3px 10px', borderRadius: '3px', cursor: 'pointer',
     } as Partial<CSSStyleDeclaration>);
   };
-  warpBtn.addEventListener('click', () => { if (sample) { setAudioClipWarp(sample, !sample.warp); refreshWarp(); markerHandle?.redraw(); } });
-  const warpLbl = document.createElement('span'); warpLbl.textContent = 'WARP'; warpLbl.style.color = '#8a8a90'; warpLbl.style.fontSize = '10px';
-  refreshWarp();
-  toolbar.append(warpLbl, warpBtn);
-
-  if (deps.gain) {
-    const knobRow = document.createElement('div');
-    knobRow.className = 'knob-row';
-    wireEngineParams(deps.gain.engine, deps.gain.ctx, knobRow, { filter: (id) => id === 'gain' });
-    toolbar.append(knobRow);
-  }
-
-  // Follow button (after WARP controls)
-  toolbar.append(createFollowToggle());
-
-  host.appendChild(toolbar);
-
-  // Scroll viewport + zoomed content
-  const stored = audioHViewByClip.get(clip.id);
-  let zoomX = stored?.zoomX ?? 1;
-
-  const viewport = document.createElement('div');
-  viewport.className = 'audio-clip-vp';
-  Object.assign(viewport.style, { overflowX: 'auto', overflowY: 'hidden', position: 'relative' } as Partial<CSSStyleDeclaration>);
-  host.appendChild(viewport);
-
-  const content = document.createElement('div');
-  content.style.position = 'relative';
-  viewport.appendChild(content);
-
-  const viewportW = () => Math.max(320, viewport.clientWidth || 600);
-  const contentW = () => Math.round(viewportW() * clampZoom(zoomX, maxZoomX(viewportW())));
-  const persist = () => audioHViewByClip.set(clip.id, { zoomX, scrollLeft: viewport.scrollLeft });
-
-  const headerHost = document.createElement('div');
-  content.appendChild(headerHost);
-  const header = mountWaveformHeader(headerHost, clip, meter, {
-    getPlayheadFrac: deps.getPlayheadFrac, contentWidth: contentW,
-  });
-
-  // Hoist loopHandle so relayout() closure can call it
-  let loopHandle: { redraw: () => void } | undefined;
-
-  const relayout = () => {
-    const cw = contentW();
-    content.style.width = `${cw}px`;
-    header.redraw();
-    markerHandle?.redraw();
-    loopHandle?.redraw();
-  };
 
   // Ruler-scrub zoom on the waveform strip
-  headerHost.addEventListener('pointerdown', (e) => {
+  const onHeaderScrub = (e: PointerEvent) => {
     let lx = e.clientX, ly = e.clientY;
     headerHost.setPointerCapture(e.pointerId); e.preventDefault();
     const onMove = (ev: PointerEvent) => {
@@ -266,8 +221,53 @@ export function renderAudioClipEditor(
     headerHost.addEventListener('pointermove', onMove);
     headerHost.addEventListener('pointerup', onUp);
     headerHost.addEventListener('pointercancel', onUp);
+  };
+
+  // Static scaffolding: one-shot lit template rendered into a throwaway
+  // fragment, refs pulled out below. The host is innerHTML-wiped on every
+  // rebuild, so lit's per-container part cache could never be trusted on it.
+  // Handlers bound here only run on user events, after every ref is assigned.
+  // The second (empty) content div is the warp-marker editor's mount point,
+  // reserved only when it will actually mount.
+  const frag = document.createDocumentFragment();
+  render(html`
+    <div class="audio-clip-toolbar" style="display:flex;gap:8px;align-items:center;padding:4px 2px;font-size:11px">
+      <span style="color:#8a8a90;font-size:10px">WARP</span>
+      <button class="audio-clip-warp" @click=${() => {
+        if (sample) { setAudioClipWarp(sample, !sample.warp); refreshWarp(); markerHandle?.redraw(); }
+      }}></button>
+      ${deps.gain ? html`<div class="knob-row"></div>` : nothing}
+      ${createFollowToggle()}
+    </div>
+    <div class="audio-clip-vp" style="overflow-x:auto;overflow-y:hidden;position:relative" @scroll=${() => persist()}>
+      <div style="position:relative">
+        <div @pointerdown=${onHeaderScrub}></div>
+        ${sample?.warpRef && deps.warp ? html`<div></div>` : nothing}
+      </div>
+    </div>`, frag);
+  const toolbar = frag.children[0] as HTMLElement;
+  const viewport = frag.children[1] as HTMLDivElement;
+  const content = viewport.firstElementChild as HTMLDivElement;
+  const headerHost = content.children[0] as HTMLDivElement;
+  const warpBtn = toolbar.querySelector('.audio-clip-warp') as HTMLButtonElement;
+  refreshWarp();
+  if (deps.gain) {
+    wireEngineParams(deps.gain.engine, deps.gain.ctx,
+      toolbar.querySelector('.knob-row') as HTMLElement, { filter: (id) => id === 'gain' });
+  }
+  host.append(toolbar, viewport);
+
+  const header = mountWaveformHeader(headerHost, clip, meter, {
+    getPlayheadFrac: deps.getPlayheadFrac, contentWidth: contentW,
   });
-  viewport.addEventListener('scroll', () => persist());
+
+  const relayout = () => {
+    const cw = contentW();
+    content.style.width = `${cw}px`;
+    header.redraw();
+    markerHandle?.redraw();
+    loopHandle?.redraw();
+  };
 
   // Performance-style loop overlay inside the viewport (zoom-aware)
   if (deps.loop) {
@@ -292,20 +292,15 @@ export function renderAudioClipEditor(
 
   // Transcribe-the-loop controls: a melodic/drums toggle + a button that sends
   // the clip's effective loop region to the audio→notes backend (wired by the
-  // router, which binds this clip). Floated to the right of the top row.
+  // router, which binds this clip). Floated to the right of the top row —
+  // appended AFTER the loop overlay mounted its own toolbar controls, so the
+  // margin-left:auto keeps pushing only this row to the right edge.
   if (deps.transcribe) {
     let kind: 'melodic' | 'drums' = 'melodic';
-    const wrap = document.createElement('div');
-    wrap.className = 'audio-clip-transcribe-row';
-    Object.assign(wrap.style, { display: 'flex', gap: '4px', alignItems: 'center', marginLeft: 'auto' } as Partial<CSSStyleDeclaration>);
-
-    const lbl = document.createElement('span');
-    lbl.textContent = 'TRANSCRIBE'; lbl.style.color = '#8a8a90'; lbl.style.fontSize = '10px';
-
-    const kindBtns: Array<[HTMLButtonElement, 'melodic' | 'drums']> = [];
+    let kindBtns: HTMLButtonElement[] = [];
     const paintKind = (): void => {
-      for (const [b, k] of kindBtns) {
-        const on = kind === k;
+      for (const b of kindBtns) {
+        const on = kind === b.dataset.kind;
         Object.assign(b.style, {
           background: on ? '#4a9a6a' : 'transparent', color: on ? '#000' : '#8a8a90',
           border: on ? '1px solid #4a9a6a' : '1px solid #2c2c32', fontWeight: on ? '700' : '400',
@@ -313,35 +308,28 @@ export function renderAudioClipEditor(
         } as Partial<CSSStyleDeclaration>);
       }
     };
-    for (const [k, text] of [['melodic', 'Melodic'], ['drums', 'Drums']] as const) {
-      const b = document.createElement('button');
-      b.className = 'transcribe-kind';
-      b.dataset.kind = k;
-      b.textContent = text;
-      b.addEventListener('click', () => { kind = k; paintKind(); });
-      kindBtns.push([b, k]);
-    }
+    const tFrag = document.createDocumentFragment();
+    render(html`
+      <div class="audio-clip-transcribe-row" style="display:flex;gap:4px;align-items:center;margin-left:auto">
+        <span style="color:#8a8a90;font-size:10px">TRANSCRIBE</span>
+        ${(['melodic', 'drums'] as const).map((k) => html`<button class="transcribe-kind" data-kind=${k}
+          @click=${() => { kind = k; paintKind(); }}>${k === 'melodic' ? 'Melodic' : 'Drums'}</button>`)}
+        <button class="audio-clip-transcribe"
+          style="background:#2a3a4a;color:#cfe;border:1px solid #3a5a7a;font-weight:700;padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px"
+          @click=${(e: Event) => {
+            const go = e.currentTarget as HTMLButtonElement;
+            go.textContent = 'Transcribing…';
+            Promise.resolve(deps.transcribe!.run(kind)).finally(() => { go.textContent = 'Transcribe loop'; });
+          }}>Transcribe loop</button>
+      </div>`, tFrag);
+    const row = tFrag.firstElementChild as HTMLElement;
+    kindBtns = Array.from(row.querySelectorAll<HTMLButtonElement>('.transcribe-kind'));
     paintKind();
-
-    const go = document.createElement('button');
-    go.className = 'audio-clip-transcribe';
-    go.textContent = 'Transcribe loop';
-    Object.assign(go.style, {
-      background: '#2a3a4a', color: '#cfe', border: '1px solid #3a5a7a', fontWeight: '700',
-      padding: '3px 10px', borderRadius: '3px', cursor: 'pointer', fontSize: '10px',
-    } as Partial<CSSStyleDeclaration>);
-    go.addEventListener('click', () => {
-      go.textContent = 'Transcribing…';
-      Promise.resolve(deps.transcribe!.run(kind)).finally(() => { go.textContent = 'Transcribe loop'; });
-    });
-
-    wrap.append(lbl, kindBtns[0][0], kindBtns[1][0], go);
-    toolbar.append(wrap);
+    toolbar.append(row);
   }
 
   if (sample?.warpRef && deps.warp) {
-    const editorHost = document.createElement('div');
-    content.appendChild(editorHost);
+    const editorHost = content.children[1] as HTMLDivElement;   // reserved in the scaffold above
     // Markers are ABSOLUTE source-buffer time, same as the waveform header above:
     // use the full buffer duration (not trimEnd-trimStart) so markers line up with
     // the waveform, and pass trimStart as the downbeat (beat 0) for re-seeding.

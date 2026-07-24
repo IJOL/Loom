@@ -29,6 +29,8 @@ import { loadAllExamples, renderExampleNotes, clipToExample, exampleToJson, save
 import { renderChordComp } from '../core/harmony';
 import { emptyClip } from './session';
 import { scaleClipTempo } from '../core/clip-time-scale';
+import { html, render } from 'lit-html';
+import { renderElement } from '../core/lit-fragment';
 
 function genKindFor(engineId: string): GenKind {
   if (engineId === 'tb303') return 'bass';
@@ -576,8 +578,8 @@ export class SessionInspector {
       });
       const blob = new Blob([exampleToJson(ex)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = `${ex.id}.json`; a.click();
+      // Transient download anchor — instantiated detached, clicked, discarded.
+      renderElement<HTMLAnchorElement>(html`<a href=${url} download="${ex.id}.json"></a>`).click();
       URL.revokeObjectURL(url);
     };
     updatePasteBtnState();
@@ -606,19 +608,11 @@ export class SessionInspector {
   private renderTonalityOverride(lane: SessionLane): void {
     const host = document.getElementById('insp-tonality');
     if (!host) return;
-    host.innerHTML = '';
     const g = this.deps.state.musicality ?? DEFAULT_MUSICALITY;
     const eff = resolveTonality(lane, this.deps.state);
     const overridden = !!lane.musicalityOverride;
     const scaleLabel = (id: string) => SCALE_CATALOG.find((s) => s.id === id)?.label ?? id;
-    const label = document.createElement('span');
-    label.textContent = overridden
-      ? `Key: custom (${rootName(eff.key)} ${scaleLabel(eff.scale)})`
-      : `Key: inherits ${rootName(g.key)} ${scaleLabel(g.scale)}`;
-    const btn = document.createElement('button');
-    btn.className = 'rnd';
-    btn.textContent = overridden ? 'Use global' : 'Override';
-    btn.onclick = () => {
+    const toggle = () => {
       const d = this.deps.historyDeps;
       const run = () => {
         if (overridden) delete lane.musicalityOverride;
@@ -628,7 +622,12 @@ export class SessionInspector {
       };
       if (d) withUndo(d, run); else run();
     };
-    host.append(label, btn);
+    // Rendered straight into the (static, lit-owned) #insp-tonality span so the
+    // label + button stay its direct children — no host wrapper, the span is an
+    // inline element inside a styled row.
+    render(html`<span>${overridden
+      ? `Key: custom (${rootName(eff.key)} ${scaleLabel(eff.scale)})`
+      : `Key: inherits ${rootName(g.key)} ${scaleLabel(g.scale)}`}</span><button class="rnd" @click=${toggle}>${overridden ? 'Use global' : 'Override'}</button>`, host);
   }
 
   /** Populate the editor context breadcrumb (Track ▸ Scene ▸ Clip). The clip
@@ -751,9 +750,10 @@ export class SessionInspector {
 
     host.innerHTML = '';
 
-    // Editor area (piano-roll or drum-grid).
-    const editorBox = document.createElement('div');
-    editorBox.className = 'insp-editor-box';
+    // Editor area (piano-roll or drum-grid). A fresh box per render on purpose:
+    // renderClipEditor owns its content imperatively, so reusing a lit-patched
+    // container across rebuilds would fight it.
+    const editorBox = renderElement<HTMLDivElement>(html`<div class="insp-editor-box"></div>`);
     host.appendChild(editorBox);
 
     const editorDeps: ClipEditorDeps = {
@@ -778,8 +778,7 @@ export class SessionInspector {
     // Per-clip automation lanes below the editor. Kept on the instance so
     // adding an insert can refresh the destination picker without a full
     // editor rebuild (which would fight whatever the user is dragging).
-    const autoBox = document.createElement('div');
-    autoBox.className = 'insp-auto-box';
+    const autoBox = renderElement<HTMLDivElement>(html`<div class="insp-auto-box"></div>`);
     host.appendChild(autoBox);
     this.autoBox = autoBox;
 
@@ -811,8 +810,7 @@ export class SessionInspector {
     const laneRes = this.deps.laneResources?.get(laneId);
     const sessionLane = this.deps.state.lanes.find((l) => l.id === laneId);
     if (!laneRes || !sessionLane) return;
-    const insertsPanel = document.createElement('div');
-    insertsPanel.className = 'lane-inserts';
+    const insertsPanel = renderElement<HTMLDivElement>(html`<div class="lane-inserts"></div>`);
     buildLaneInsertUI({
       ctx: this.deps.ctx,
       container: insertsPanel,
