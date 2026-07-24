@@ -1,5 +1,6 @@
 // src/app/toolbar-status-chips.ts
 // Read-only toolbar chips that surface state whose EDITING moved into a dialog.
+import { html, render } from 'lit-html';
 import { SCALE_CATALOG, STYLE_CATALOG, rootName, type ScaleId, type StyleId } from '../core/musicality';
 import type { MusicalityState } from '../session/session-types';
 
@@ -29,22 +30,26 @@ export interface StatusChipsDeps {
 
 export function mountStatusChips(host: HTMLElement, deps: StatusChipsDeps): { refreshMusicality(): void; refreshMidi(on: boolean): void } {
   host.classList.add('status-chips');
+  let midiOn = deps.isMidiEnabled();
 
-  const mus = document.createElement('button');
-  mus.className = 'status-chip'; mus.title = 'Project key & style — open Project Options';
-  mus.addEventListener('click', deps.onOpenProjectOptions);
+  // Rendered straight into the host — no wrapper div, because `.status-chips`
+  // is the inline-flex row and the chips must stay its direct children.
+  const repaint = () => render(html`
+    <button
+      class="status-chip"
+      title="Project key & style — open Project Options"
+      @click=${deps.onOpenProjectOptions}
+    >${musicalityChipLabel(deps.getMusicality())}</button>
+    <button
+      class=${midiOn ? 'status-chip on' : 'status-chip'}
+      title="MIDI controller — open MIDI Controller"
+      @click=${deps.onOpenMidiController}
+    >${midiOn ? 'MIDI ●' : 'MIDI ○'}</button>
+  `, host);
 
-  const midi = document.createElement('button');
-  midi.className = 'status-chip'; midi.title = 'MIDI controller — open MIDI Controller';
-  midi.addEventListener('click', deps.onOpenMidiController);
-
-  host.append(mus, midi);
-
-  const refreshMusicality = () => { mus.textContent = musicalityChipLabel(deps.getMusicality()); };
-  const refreshMidi = (on: boolean) => {
-    midi.textContent = on ? 'MIDI ●' : 'MIDI ○';
-    midi.classList.toggle('on', on);
+  repaint();
+  return {
+    refreshMusicality: repaint,
+    refreshMidi: (on: boolean) => { midiOn = on; repaint(); },
   };
-  refreshMusicality(); refreshMidi(deps.isMidiEnabled());
-  return { refreshMusicality, refreshMidi };
 }

@@ -10,7 +10,10 @@
 // the current session; Replace seeds a fresh session with just the imported
 // content. Every track — drum-channel included — is treated identically.
 
-import { parseMidiFile, type ParsedMidi } from './midi-parse';
+import { html, type TemplateResult } from 'lit-html';
+import { repeat } from 'lit-html/directives/repeat.js';
+import { renderInto } from '../core/lit-fill';
+import { parseMidiFile, type ParsedMidi, type ParsedTrack } from './midi-parse';
 import { alertDialog, choiceDialog } from '../core/dialog';
 import { midiToSession } from './midi-to-session';
 import { findGMMatches, suggestDefaultMapping, isDrumkitTrack, type GMMatch } from './gm-lookup';
@@ -118,6 +121,10 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
 
   let parsed: ParsedMidi | null = null;
   let presetPerTrack: Record<number, GMMatch> = {};
+  // Bumped per parsed file so repeat() keys never match across parses: every
+  // file gets FRESH rows — checkboxes reset to checked, selects back to the
+  // suggested match — exactly like the old wipe-and-rebuild did.
+  let parseGen = 0;
 
   function buildAllPresetsList(): GMMatch[] {
     const out: GMMatch[] = [];
@@ -127,49 +134,58 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
     return out;
   }
 
-  function buildPresetSelect(
+  function presetSelectTemplate(
     programHint: number,
     current: GMMatch,
     onChange: (m: GMMatch) => void,
-  ): HTMLSelectElement {
-    const sel = document.createElement('select');
-    sel.className = 'midi-preset-picker';
-    const matches = findGMMatches(programHint);
+  ): TemplateResult {
+    // GM-suggested matches first, then a disabled divider, then every preset —
+    // deduped across the two sections, like the old imperative builder.
     const seen = new Set<string>();
-    const addOption = (m: GMMatch) => {
-      const key = `${m.engineId}/${m.presetName}`;
-      if (seen.has(key)) return;
-      seen.add(key);
-      const opt = document.createElement('option');
-      opt.value = key;
-      opt.textContent = `${m.engineId} / ${m.presetName}`;
-      sel.appendChild(opt);
+    const dedup = (list: GMMatch[]): { key: string; label: string }[] => {
+      const out: { key: string; label: string }[] = [];
+      for (const m of list) {
+        const key = `${m.engineId}/${m.presetName}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({ key, label: `${m.engineId} / ${m.presetName}` });
+      }
+      return out;
     };
-    for (const m of matches) addOption(m);
-    const divider = document.createElement('option');
-    divider.disabled = true;
-    divider.textContent = '── any preset ──';
-    sel.appendChild(divider);
-    for (const m of buildAllPresetsList()) addOption(m);
-    sel.value = `${current.engineId}/${current.presetName}`;
-    sel.addEventListener('change', () => {
-      const [engineId, ...rest] = sel.value.split('/');
-      onChange({ engineId, presetName: rest.join('/') });
-    });
-    return sel;
+    const matches = dedup(findGMMatches(programHint));
+    const rest = dedup(buildAllPresetsList());
+    const currentKey = `${current.engineId}/${current.presetName}`;
+    const opt = (o: { key: string; label: string }) =>
+      html`<option value=${o.key} ?selected=${o.key === currentKey}>${o.label}</option>`;
+    return html`<select class="midi-preset-picker" @change=${(e: Event) => {
+      const [engineId, ...restParts] = (e.target as HTMLSelectElement).value.split('/');
+      onChange({ engineId, presetName: restParts.join('/') });
+    }}>${matches.map(opt)}<option disabled>── any preset ──</option>${rest.map(opt)}</select>`;
   }
 
-  function buildAuditionButton(getMatch: () => GMMatch): HTMLButtonElement {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'midi-audition';
-    btn.textContent = '▶'; // ▶
-    btn.title = 'Audition this preset';
-    btn.addEventListener('click', () => {
-      auditionPreset(getMatch(), deps.audioContext, deps.auditionOutput);
-    });
-    return btn;
+  function trackRowTemplate(tr: ParsedTrack): TemplateResult {
+    const lo = Math.min(...tr.notes.map((n) => n.midi));
+    const hi = Math.max(...tr.notes.map((n) => n.midi));
+    // Title preference mirrors midiToSession: track name, else GM instrument
+    // (so a demultiplexed format-0 channel reads as its instrument, not "untitled").
+    const isDrum = isDrumkitTrack(tr);
+    const instrument = tr.name || (isDrum ? 'Percussion' : (tr.program >= 0 ? gmInstrumentName(tr.program) : '') || 'untitled');
+    const current = presetPerTrack[tr.index] ?? { engineId: 'subtractive', presetName: 'Init' };
+    return html`<div class="midi-track-row"><input type="checkbox" data-idx=${String(tr.index)} checked /><span> [${tr.index}] ${instrument} — ${tr.notes.length} notes, ${lo}-${hi}, prog ${tr.program}</span>${presetSelectTemplate(
+      tr.program < 0 ? 0 : tr.program,
+      current,
+      (m) => { presetPerTrack[tr.index] = m; },
+    )}<button type="button" class="midi-audition" title="Audition this preset" @click=${() =>
+      auditionPreset(presetPerTrack[tr.index] ?? current, deps.audioContext, deps.auditionOutput)
+    }>▶</button></div>`;
   }
+
+  // Arrow, not a hoisted `function`: the null-guard's narrowing of trackListEl
+  // only flows into closures created after it runs.
+  const paintTrackList = (): void => {
+    const tracks = parsed ? parsed.tracks.filter((t) => t.notes.length > 0) : [];
+    renderInto(trackListEl, html`${repeat(tracks, (tr) => `${parseGen}:${tr.index}`, trackRowTemplate)}`);
+  };
 
   fileInput.addEventListener('change', async () => {
     const f = fileInput.files?.[0];
@@ -181,43 +197,20 @@ export function wireMidiImportUI(deps: MidiImportUiDeps): void {
       void alertDialog('Not a valid SMF: ' + (err as Error).message);
       return;
     }
+    parseGen++;
 
     const initialIndices = parsed.tracks.filter((t) => t.notes.length > 0).map((t) => t.index);
     const defaults = suggestDefaultMapping(parsed, initialIndices);
     presetPerTrack = { ...defaults.presetPerTrack };
-
-    trackListEl.innerHTML = '';
+    // Seed a fallback for any playable track the suggester skipped, so the row's
+    // select and audition button read the same mapping the import will use.
     for (const tr of parsed.tracks) {
-      if (tr.notes.length === 0) continue;
-      const lo = Math.min(...tr.notes.map((n) => n.midi));
-      const hi = Math.max(...tr.notes.map((n) => n.midi));
-
-      const row = document.createElement('div');
-      row.className = 'midi-track-row';
-
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.dataset.idx = String(tr.index);
-      cb.checked = true;
-      // Title preference mirrors midiToSession: track name, else GM instrument
-      // (so a demultiplexed format-0 channel reads as its instrument, not "untitled").
-      const isDrum = isDrumkitTrack(tr);
-      const instrument = tr.name || (isDrum ? 'Percussion' : (tr.program >= 0 ? gmInstrumentName(tr.program) : '') || 'untitled');
-      const label = document.createElement('span');
-      label.textContent = ` [${tr.index}] ${instrument} — ${tr.notes.length} notes, ${lo}-${hi}, prog ${tr.program}`;
-      row.append(cb, label);
-
-      const current = presetPerTrack[tr.index] ?? { engineId: 'subtractive', presetName: 'Init' };
-      if (!presetPerTrack[tr.index]) presetPerTrack[tr.index] = current;
-      const sel = buildPresetSelect(
-        tr.program < 0 ? 0 : tr.program,
-        current,
-        (m) => { presetPerTrack[tr.index] = m; },
-      );
-      const audition = buildAuditionButton(() => presetPerTrack[tr.index] ?? current);
-      row.append(sel, audition);
-      trackListEl.appendChild(row);
+      if (tr.notes.length > 0 && !presetPerTrack[tr.index]) {
+        presetPerTrack[tr.index] = { engineId: 'subtractive', presetName: 'Init' };
+      }
     }
+
+    paintTrackList();
     trackListEl.style.display = '';
     loadBtn.style.display = '';
     loadBtn.disabled = !isPresetsReady();

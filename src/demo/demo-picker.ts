@@ -1,3 +1,5 @@
+import { html } from 'lit-html';
+import { renderInto } from '../core/lit-fill';
 import { fetchDemoSession } from './demo-loader';
 import { alertDialog } from '../core/dialog';
 import type { SessionHost } from '../session/session-host';
@@ -34,17 +36,10 @@ export async function loadDemoSession(
 
 export function wireDemoPicker(deps: DemoPickerDeps): { demos: { label: string; path: string }[] } {
   const { sessionHost, selectEl, demos, onLoaded, applyBpm } = deps;
-  selectEl.innerHTML = '';
-  const placeholder = document.createElement('option');
-  placeholder.value = '';
-  placeholder.textContent = '— load a demo —';
-  selectEl.appendChild(placeholder);
-  for (const d of demos) {
-    const o = document.createElement('option');
-    o.value = d.path;
-    o.textContent = d.label;
-    selectEl.appendChild(o);
-  }
+  renderInto(selectEl, html`<option value="">— load a demo —</option>${demos.map((d) =>
+    html`<option value=${d.path}>${d.label}</option>`)}`);
+  // The listener rides on the caller-owned <select> itself (not on anything
+  // inside the template), so it stays a plain addEventListener.
   selectEl.addEventListener('change', () => loadDemoSession(selectEl.value, { sessionHost, applyBpm, onLoaded }));
   return { demos };
 }

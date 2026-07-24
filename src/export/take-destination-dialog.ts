@@ -6,6 +6,9 @@
 // reused; stable ids (#take-dialog, #take-dest-audio, #take-dest-file) make it
 // drivable from e2e.
 
+import { html } from 'lit-html';
+import { renderElement } from '../core/lit-fragment';
+
 export type TakeDestination = 'file' | 'audio';
 
 let dialogEl: HTMLDialogElement | null = null;
@@ -19,24 +22,28 @@ function settle(choice: TakeDestination | null): void {
 }
 
 function build(): HTMLDialogElement {
-  const dlg = document.createElement('dialog');
-  dlg.id = 'take-dialog';
-  dlg.className = 'take-dialog';
-  dlg.innerHTML = `
-    <div class="take-dialog-body">
-      <h3 class="take-dialog-title">Take recorded</h3>
-      <p class="take-dialog-text">Where do you want to save it?</p>
-      <div class="take-dialog-actions">
-        <button type="button" id="take-dest-audio" class="take-dialog-btn take-dialog-primary">New audio channel</button>
-        <button type="button" id="take-dest-file" class="take-dialog-btn">Download WAV</button>
+  // Instantiated once; the <dialog> is then driven imperatively
+  // (showModal/close) for the rest of the session.
+  const dlg = renderElement<HTMLDialogElement>(html`
+    <dialog
+      id="take-dialog"
+      class="take-dialog"
+      @cancel=${(e: Event) => {
+        // Esc dismiss → cancel (the native 'cancel' event precedes the close).
+        e.preventDefault();
+        settle(null);
+      }}
+    >
+      <div class="take-dialog-body">
+        <h3 class="take-dialog-title">Take recorded</h3>
+        <p class="take-dialog-text">Where do you want to save it?</p>
+        <div class="take-dialog-actions">
+          <button type="button" id="take-dest-audio" class="take-dialog-btn take-dialog-primary" @click=${() => settle('audio')}>New audio channel</button>
+          <button type="button" id="take-dest-file" class="take-dialog-btn" @click=${() => settle('file')}>Download WAV</button>
+        </div>
+        <button type="button" id="take-dest-cancel" class="take-dialog-cancel" @click=${() => settle(null)}>Discard take</button>
       </div>
-      <button type="button" id="take-dest-cancel" class="take-dialog-cancel">Discard take</button>
-    </div>`;
-  dlg.querySelector('#take-dest-audio')!.addEventListener('click', () => settle('audio'));
-  dlg.querySelector('#take-dest-file')!.addEventListener('click', () => settle('file'));
-  dlg.querySelector('#take-dest-cancel')!.addEventListener('click', () => settle(null));
-  // Esc dismiss → cancel (the native 'cancel' event precedes the close).
-  dlg.addEventListener('cancel', (e) => { e.preventDefault(); settle(null); });
+    </dialog>`);
   document.body.appendChild(dlg);
   return dlg;
 }

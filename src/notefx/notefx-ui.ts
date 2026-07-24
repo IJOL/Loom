@@ -1,4 +1,13 @@
 // src/notefx/notefx-ui.ts
+// The per-lane NOTE FX panel (arp + chord cards), a lit-html panel mounted via
+// mountPanel: add/remove/enable-toggle repaint in place instead of the old
+// innerHTML-wipe rebuild. Param edits (selects/sliders) mutate chain state and
+// sync WITHOUT a repaint — the control the user is holding already shows the
+// value they just picked.
+
+import { html, type TemplateResult } from 'lit-html';
+import { repeat } from 'lit-html/directives/repeat.js';
+import { mountPanel, type PanelHandle } from '../core/lit-panel';
 import type { NoteFxChain } from './notefx-chain';
 import type { NoteFxState } from './notefx-types';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
@@ -25,112 +34,77 @@ const ARP_SCALES = ['major', 'minor', 'pentMinor', 'phrygian', 'chromatic'];
 const ARP_RATES = ['free', '1/4', '1/8', '1/8t', '1/16', '1/16t', '1/32'];
 const CHORD_TYPES = ['maj', 'min', 'maj7', 'min7', 'sus2', 'sus4', 'dim'];
 
+type Ctx = PanelHandle<NoteFxUIDeps>;
+
 export function renderNoteFxPanel(container: HTMLElement, deps: NoteFxUIDeps): void {
-  const box = document.createElement('div');
-  box.className = 'notefx-panel';
-  const title = document.createElement('div');
-  title.className = 'mod-panel-title';
-  title.textContent = 'NOTE FX';
-  box.appendChild(title);
+  // The mount host IS the .notefx-panel box (a grid), so the template's
+  // title/header/cards land as its direct children — same DOM shape as before.
+  mountPanel({ container, className: 'notefx-panel', deps, template: panelTemplate });
+}
 
+function panelTemplate(ctx: Ctx): TemplateResult {
+  const { deps } = ctx;
+  const add = (kind: 'arp' | 'chord') => () => {
+    withMaybeUndo(deps, () => { deps.chain.addNoteFx(kind); deps.onChange(deps.chain.serialize()); });
+    ctx.rerender();
+  };
+  return html`
+    <div class="mod-panel-title">NOTE FX</div>
+    <div class="mod-panel-header">
+      <button class="rnd" @click=${add('arp')}>+ Arp</button>
+      <button class="rnd" @click=${add('chord')}>+ Chord</button>
+    </div>
+    ${repeat(deps.chain.noteFx, (fx) => fx.id, (fx) => cardTemplate(fx, ctx))}
+  `;
+}
+
+function cardTemplate(fx: NoteFxState, ctx: Ctx): TemplateResult {
+  const { deps } = ctx;
   const sync = () => deps.onChange(deps.chain.serialize());
-  const rerender = () => { container.innerHTML = ''; renderNoteFxPanel(container, deps); };
-
-  const header = document.createElement('div');
-  header.className = 'mod-panel-header';
-  for (const kind of ['arp', 'chord'] as const) {
-    const b = document.createElement('button');
-    b.className = 'rnd';
-    b.textContent = `+ ${kind === 'arp' ? 'Arp' : 'Chord'}`;
-    b.addEventListener('click', () => {
-      withMaybeUndo(deps, () => { deps.chain.addNoteFx(kind); sync(); });
-      rerender();
-    });
-    header.appendChild(b);
-  }
-  box.appendChild(header);
-
-  for (const fx of deps.chain.noteFx) box.appendChild(renderCard(fx, deps, sync, rerender));
-  container.appendChild(box);
-}
-
-function mkSelect(
-  label: string, opts: string[], value: string, onChange: (v: string) => void,
-): HTMLElement {
-  const wrap = document.createElement('label');
-  wrap.className = 'notefx-field';
-  wrap.append(document.createTextNode(label));
-  const sel = document.createElement('select');
-  for (const o of opts) {
-    const opt = document.createElement('option');
-    opt.value = o; opt.textContent = o;
-    if (o === value) opt.selected = true;
-    sel.appendChild(opt);
-  }
-  sel.addEventListener('change', () => onChange(sel.value));
-  wrap.appendChild(sel);
-  return wrap;
-}
-
-function renderCard(
-  fx: NoteFxState, deps: NoteFxUIDeps, sync: () => void, rerender: () => void,
-): HTMLElement {
-  const card = document.createElement('div');
-  card.className = `notefx-card notefx-${fx.kind}`;
-
-  const row = document.createElement('div');
-  row.className = 'notefx-card-row';
-  const titleEl = document.createElement('span');
-  titleEl.textContent = fx.id.toUpperCase();
-  row.appendChild(titleEl);
-
-  const enable = document.createElement('button');
-  enable.className = 'rnd' + (fx.enabled ? ' primary' : '');
-  enable.textContent = fx.enabled ? 'ON' : 'OFF';
-  enable.addEventListener('click', () => {
-    withMaybeUndo(deps, () => { fx.enabled = !fx.enabled; sync(); });
-    rerender();
-  });
-  row.appendChild(enable);
-
-  const rm = document.createElement('button');
-  rm.className = 'rnd';
-  rm.textContent = '×';
-  rm.addEventListener('click', () => {
-    withMaybeUndo(deps, () => { deps.chain.removeNoteFx(fx.id); sync(); });
-    rerender();
-  });
-  row.appendChild(rm);
-  card.appendChild(row);
-
   const set = (k: string, v: string | number) => {
     withMaybeUndo(deps, () => { fx.params[k] = v; sync(); });
   };
+  return html`
+    <div class="notefx-card notefx-${fx.kind}">
+      <div class="notefx-card-row">
+        <span>${fx.id.toUpperCase()}</span>
+        <button class=${fx.enabled ? 'rnd primary' : 'rnd'} @click=${() => {
+          withMaybeUndo(deps, () => { fx.enabled = !fx.enabled; sync(); });
+          ctx.rerender();
+        }}>${fx.enabled ? 'ON' : 'OFF'}</button>
+        <button class="rnd" @click=${() => {
+          withMaybeUndo(deps, () => { deps.chain.removeNoteFx(fx.id); sync(); });
+          ctx.rerender();
+        }}>×</button>
+      </div>
+      ${fx.kind === 'arp' ? html`
+        ${selectField('PATTERN', ARP_PATTERNS, String(fx.params.pattern ?? 'up'), (v) => set('pattern', v))}
+        ${selectField('SCALE', ARP_SCALES, String(fx.params.scale ?? 'pentMinor'), (v) => set('scale', v))}
+        ${selectField('RATE', ARP_RATES, String(fx.params.rate ?? '1/16'), (v) => set('rate', v))}
+        ${numberField('OCT', 1, 4, 1, Number(fx.params.octaves ?? 2), (v) => set('octaves', v))}
+        ${numberField('GATE', 0.05, 1, 0.01, Number(fx.params.gate ?? 0.7), (v) => set('gate', v))}
+        ${numberField('FREE Hz', 0.5, 32, 0.1, Number(fx.params.rateFreeHz ?? 8), (v) => set('rateFreeHz', v))}
+      ` : html`
+        ${selectField('CHORD', CHORD_TYPES, String(fx.params.chordType ?? 'maj'), (v) => set('chordType', v))}
+        ${numberField('OCT', -2, 2, 1, Number(fx.params.octave ?? 0), (v) => set('octave', v))}
+      `}
+    </div>
+  `;
+}
 
-  if (fx.kind === 'arp') {
-    card.appendChild(mkSelect('PATTERN', ARP_PATTERNS, String(fx.params.pattern ?? 'up'), (v) => set('pattern', v)));
-    card.appendChild(mkSelect('SCALE', ARP_SCALES, String(fx.params.scale ?? 'pentMinor'), (v) => set('scale', v)));
-    card.appendChild(mkSelect('RATE', ARP_RATES, String(fx.params.rate ?? '1/16'), (v) => set('rate', v)));
-    card.appendChild(numberField('OCT', 1, 4, 1, Number(fx.params.octaves ?? 2), (v) => set('octaves', v)));
-    card.appendChild(numberField('GATE', 0.05, 1, 0.01, Number(fx.params.gate ?? 0.7), (v) => set('gate', v)));
-    card.appendChild(numberField('FREE Hz', 0.5, 32, 0.1, Number(fx.params.rateFreeHz ?? 8), (v) => set('rateFreeHz', v)));
-  } else {
-    card.appendChild(mkSelect('CHORD', CHORD_TYPES, String(fx.params.chordType ?? 'maj'), (v) => set('chordType', v)));
-    card.appendChild(numberField('OCT', -2, 2, 1, Number(fx.params.octave ?? 0), (v) => set('octave', v)));
-  }
-  return card;
+function selectField(
+  label: string, opts: string[], value: string, onChange: (v: string) => void,
+): TemplateResult {
+  return html`<label class="notefx-field">${label}<select
+    @change=${(e: Event) => onChange((e.target as HTMLSelectElement).value)}
+  >${opts.map((o) => html`<option value=${o} ?selected=${o === value}>${o}</option>`)}</select></label>`;
 }
 
 function numberField(
   label: string, min: number, max: number, step: number, value: number, onChange: (v: number) => void,
-): HTMLElement {
-  const wrap = document.createElement('label');
-  wrap.className = 'notefx-field';
-  wrap.append(document.createTextNode(label));
-  const inp = document.createElement('input');
-  inp.type = 'range';
-  inp.min = String(min); inp.max = String(max); inp.step = String(step); inp.value = String(value);
-  inp.addEventListener('input', () => onChange(Number(inp.value)));
-  wrap.appendChild(inp);
-  return wrap;
+): TemplateResult {
+  return html`<label class="notefx-field">${label}<input
+    type="range" min=${min} max=${max} step=${step} .value=${String(value)}
+    @input=${(e: Event) => onChange(Number((e.target as HTMLInputElement).value))}
+  /></label>`;
 }

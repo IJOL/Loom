@@ -7,6 +7,9 @@
 // search field of its own — and it costs no code, works on mobile, and is
 // keyboard-navigable for free.
 
+import { html, type TemplateResult } from 'lit-html';
+import { ifDefined } from 'lit-html/directives/if-defined.js';
+import { renderInto } from '../core/lit-fill';
 import { STYLE_CATALOG, type StyleId } from '../core/musicality';
 import { patternsFor, type PatternKind } from './pattern-library';
 
@@ -33,13 +36,7 @@ export function patternRootFor(octaveBase: number, key: number): number {
 
 /** Fill the style dropdown with every style, selecting `current`. */
 export function fillStyleSelect(sel: HTMLSelectElement, current: StyleId): void {
-  sel.innerHTML = '';
-  for (const { id, label } of STYLE_CATALOG) {
-    const o = document.createElement('option');
-    o.value = id;
-    o.textContent = label;
-    sel.appendChild(o);
-  }
+  renderInto(sel, html`${STYLE_CATALOG.map(({ id, label }) => html`<option value=${id}>${label}</option>`)}`);
   sel.value = current;
 }
 
@@ -66,37 +63,16 @@ export function fillPatternSelect(
   kind: PatternKind,
   examples: PickerExample[] = [],
 ): void {
-  sel.innerHTML = '';
-  const ph = document.createElement('option');
-  ph.value = '';
-  ph.textContent = '— pattern… —';
-  sel.appendChild(ph);
+  // Empty groups render nothing — the old imperative fill never appended an
+  // empty <optgroup> either.
+  const group = (label: string, items: TemplateResult[]) =>
+    items.length ? html`<optgroup label=${label}>${items}</optgroup>` : null;
 
-  const addGroup = (label: string, fill: (g: HTMLOptGroupElement) => void): void => {
-    const g = document.createElement('optgroup');
-    g.label = label;
-    fill(g);
-    if (g.children.length) sel.appendChild(g);
-  };
+  const lib = patternsFor(style, kind).map((p) =>
+    html`<option value=${`lib:${p.index}`} title=${ifDefined(p.desc || undefined)}>${p.name}</option>`);
+  const ex = examples.map((e) =>
+    html`<option value=${`ex:${e.id}`}>${e.source === 'user' ? `★ ${e.name}` : e.name}</option>`);
 
-  addGroup('Library', (g) => {
-    for (const p of patternsFor(style, kind)) {
-      const o = document.createElement('option');
-      o.value = `lib:${p.index}`;
-      o.textContent = p.name;
-      if (p.desc) o.title = p.desc;
-      g.appendChild(o);
-    }
-  });
-
-  addGroup('Examples', (g) => {
-    for (const e of examples) {
-      const o = document.createElement('option');
-      o.value = `ex:${e.id}`;
-      o.textContent = e.source === 'user' ? `★ ${e.name}` : e.name;
-      g.appendChild(o);
-    }
-  });
-
+  renderInto(sel, html`<option value="">— pattern… —</option>${group('Library', lib)}${group('Examples', ex)}`);
   sel.value = '';
 }

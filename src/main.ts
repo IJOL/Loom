@@ -109,6 +109,9 @@ import { clampSwing, SWING_MAX } from './core/swing';
 import { loadLoomWorklet } from './audio-worklet/loom-node';
 import { loadDrumsWorklet } from './audio-worklet/drums-node';
 import { loadSamplerWorklet } from './audio-worklet/sampler-node';
+// ── Static chrome templates (version label, meter options, XY panel shell) ──
+import { html, render } from 'lit-html';
+import { renderElement } from './core/lit-fragment';
 // ── Desktop menu bar (chrome) ─────────────────────────────────────────────
 import { createMenuBar } from './app/menu-bar';
 import { createXyPad } from './performance/xy-pad-ui';
@@ -138,16 +141,7 @@ const $$ = <T extends HTMLElement>(sel: string) => Array.from(document.querySele
 const appVersionEl = document.getElementById('app-version');
 if (appVersionEl) {
   appVersionEl.replaceChildren();
-  const ver = document.createElement('span');
-  ver.className = 'av-ver';
-  ver.textContent = `v${__APP_VERSION__}`;
-  const name = document.createElement('span');
-  name.className = 'av-name';
-  name.textContent = __APP_CODENAME__;
-  const stage = document.createElement('span');
-  stage.className = 'av-stage';
-  stage.textContent = __APP_STAGE__;
-  appVersionEl.append(ver, name, stage);
+  render(html`<span class="av-ver">v${__APP_VERSION__}</span><span class="av-name">${__APP_CODENAME__}</span><span class="av-stage">${__APP_STAGE__}</span>`, appVersionEl);
 }
 
 // ── Plugin bootstrap (must run BEFORE preset cache + audio graph) ─────────
@@ -285,12 +279,10 @@ const engineSel303 = $<HTMLSelectElement>('engine-select-303');
 const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const midiLabel = (m: number) => `${NOTE_NAMES[m % 12]}${Math.floor(m / 12) - 1}`;
 
-for (const m of COMMON_METERS) {
-  const o = document.createElement('option');
-  o.value = formatMeter(m);
-  o.textContent = formatMeter(m);
-  meterSel.appendChild(o);
-}
+render(
+  html`${COMMON_METERS.map((m) => html`<option value=${formatMeter(m)}>${formatMeter(m)}</option>`)}`,
+  meterSel,
+);
 meterSel.value = formatMeter(seq.meter);
 
 // ── Track rendering (with viewport) ────────────────────────────────────────
@@ -851,7 +843,7 @@ document.getElementById('capture-scene')?.addEventListener('click', () => sessio
   let xyPad: ReturnType<typeof createXyPad> | null = null;
   xyBtn?.addEventListener('click', () => {
     if (!xyPanel) {
-      xyPad = createXyPad({
+      const pad = createXyPad({
         destinations,
         registry: automationRegistry,
         // Reuses the SAME fallback playback automation uses (applyUnmountedWrite,
@@ -861,22 +853,18 @@ document.getElementById('capture-scene')?.addEventListener('click', () => sessio
         // instead of silently no-oping.
         applyUnmounted: applyUnmountedWrite,
       });
-      xyPanel = document.createElement('div');
-      xyPanel.className = 'xy-panel';
-      const head = document.createElement('div');
-      head.className = 'xy-panel-head';
-      const title = document.createElement('span');
-      title.className = 'xy-title';
-      title.textContent = 'XY Pad';
-      const close = document.createElement('button');
-      close.className = 'xy-close';
-      close.textContent = '✕';
-      close.title = 'Close';
-      close.addEventListener('click', () => { xyPanel!.classList.remove('open'); xyBtn.classList.remove('on'); });
-      head.appendChild(title);
-      head.appendChild(close);
-      xyPanel.appendChild(head);
-      xyPanel.appendChild(xyPad.el);
+      xyPad = pad;
+      // Build-once shell; the pad surface itself is an imperative widget
+      // interpolated as-is.
+      xyPanel = renderElement<HTMLElement>(html`
+        <div class="xy-panel">
+          <div class="xy-panel-head">
+            <span class="xy-title">XY Pad</span>
+            <button class="xy-close" title="Close"
+              @click=${() => { xyPanel!.classList.remove('open'); xyBtn.classList.remove('on'); }}>✕</button>
+          </div>
+          ${pad.el}
+        </div>`);
       document.body.appendChild(xyPanel);
     }
     const open = xyPanel.classList.toggle('open');

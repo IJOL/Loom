@@ -31,6 +31,8 @@ import {
   launchClipAtTime, stopLane, stopAll,
   type RecHooks,
 } from '../session/session-runtime';
+import { html } from 'lit-html';
+import { renderElement } from '../core/lit-fragment';
 import { renderPerformanceView } from '../performance/performance-ui';
 import { buildMiniMaster } from '../core/master-strip';
 import { createLevelMeter } from '../core/level-meter';
@@ -119,9 +121,10 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   const laneIds = () => sessionHost.state.lanes.map((l) => l.id);
 
   // VU meters built into the performance toolbar register here so we can tear
-  // them down before each re-render (renderPerformanceView wipes the host),
-  // mirroring the mixer row's disposal channel — otherwise each refresh would
-  // leak the meter's analyser registration with the shared RAF loop.
+  // them down before each re-render (renderPerformanceView swaps in freshly
+  // built meter elements), mirroring the mixer row's disposal channel —
+  // otherwise each refresh would leak the meter's analyser registration with
+  // the shared RAF loop.
   let perfDisposables: { dispose(): void }[] = [];
 
   // Coalesce zoom re-renders into one per animation frame. The slider uses
@@ -151,9 +154,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   }
 
   const flashToast = (msg: string) => {
-    const t = document.createElement('div');
-    t.className = 'perf-toast';
-    t.textContent = msg;
+    const t = renderElement(html`<div class="perf-toast">${msg}</div>`);
     document.body.appendChild(t);
     setTimeout(() => { t.classList.add('fade'); }, 1700);
     setTimeout(() => { t.remove(); }, 2200);
@@ -188,35 +189,32 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     const md = sessionHost.deps.mixerDeps;
     const strip = sessionHost.deps.laneResources?.get(laneId)?.strip;
     if (!md || !strip) return null;
-    const wrap = document.createElement('div');
-    wrap.className = 'perf-lane-ctrls';
-    const mkBtn = (cls: string, text: string, get: () => boolean, set: (v: boolean) => void) => {
-      const b = document.createElement('button');
-      b.className = `perf-lane-btn ${cls}`;
-      b.textContent = text;
-      if (get()) b.classList.add('active');
-      b.addEventListener('click', (e) => {
-        e.stopPropagation();
-        set(!get());
-        b.classList.toggle('active', get());
-        md.applyMuteSolo();
-      });
-      return b;
+    // One-shot build (renderElement): the view rebuilds this header on every
+    // re-render, so the buttons patch only themselves in between.
+    const toggle = (get: () => boolean, set: (v: boolean) => void) => (e: Event) => {
+      e.stopPropagation();
+      set(!get());
+      (e.currentTarget as HTMLElement).classList.toggle('active', get());
+      md.applyMuteSolo();
     };
-    const m = mkBtn('mute', 'M', () => !!md.muteState[laneId], (v) => { md.muteState[laneId] = v; });
-    const s = mkBtn('solo', 'S', () => !!md.soloState[laneId], (v) => { md.soloState[laneId] = v; });
     const vu = createLevelMeter({ analyser: strip.getMeterAnalyser() });
     perfDisposables.push(vu);
-    wrap.append(m, s, vu.el);
-    return wrap;
+    return renderElement(html`<div class="perf-lane-ctrls"><button
+        class=${'perf-lane-btn mute' + (md.muteState[laneId] ? ' active' : '')}
+        @click=${toggle(() => !!md.muteState[laneId], (v) => { md.muteState[laneId] = v; })}
+      >M</button><button
+        class=${'perf-lane-btn solo' + (md.soloState[laneId] ? ' active' : '')}
+        @click=${toggle(() => !!md.soloState[laneId], (v) => { md.soloState[laneId] = v; })}
+      >S</button>${vu.el}</div>`);
   }
 
   function refreshPerformanceView() {
     const host = document.getElementById('performance-view-root');
     if (!host) return;
     // Tear down the previous toolbar's VU meter(s) before renderPerformanceView
-    // wipes the host (host.innerHTML = ''), so they don't leak their analyser
-    // registration with the shared RAF loop across re-renders.
+    // rebuilds them (each render constructs fresh meters and lit swaps the old
+    // elements out), so they don't leak their analyser registration with the
+    // shared RAF loop across re-renders.
     for (const d of perfDisposables) d.dispose();
     perfDisposables = [];
     const findClip = (id: string) => {

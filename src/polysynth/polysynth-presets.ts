@@ -1,3 +1,6 @@
+import { html } from 'lit-html';
+import { renderInto } from '../core/lit-fill';
+import { customOption, presetGroup } from './poly-preset-templates';
 import { PolySynth, POLY_DEFAULTS, type PolySynthParams } from './polysynth';
 import { alertDialog, confirmDialog, promptDialog } from '../core/dialog';
 import { randomizePolySynth } from '../core/random';
@@ -84,16 +87,13 @@ export function refreshPolyPresetSelect(): void {
 export function populatePolyPresetSelectForLane(laneId: string): void {
   const sel = document.getElementById('poly-preset-select') as HTMLSelectElement;
   if (!sel) return;
-  sel.innerHTML = '';
   const gen = ++polyPopGen;
 
-  const custom = document.createElement('option');
-  custom.value = '__custom__';
-  custom.textContent = '(custom — no preset)';
-  sel.appendChild(custom);
-
   const deps = _deps;
-  if (!deps) return;
+  if (!deps) {
+    renderInto(sel, html`${customOption()}`);
+    return;
+  }
   const engineId = deps.getLaneEngineId(laneId);
 
   // Sampler: its PRESET dropdown lists normal presets (presets/sampler.json —
@@ -102,25 +102,20 @@ export function populatePolyPresetSelectForLane(laneId: string): void {
   // from their own indexes. Selecting one runs SamplerEngine.loadFamilyRef (see
   // the change handler). The async fill bails if the user switched lanes.
   if (engineId === 'sampler') {
-    const group = (s: HTMLSelectElement, label: string, items: [string, string][]): void => {
-      if (!items.length) return;
-      const g = document.createElement('optgroup');
-      g.label = label;
-      for (const [val, text] of items) {
-        const o = document.createElement('option');
-        o.value = val; o.textContent = text;
-        g.appendChild(o);
-      }
-      s.appendChild(g);
-    };
     // Synchronous: normal presets are already in the cache.
-    group(sel, 'Presets', getCachedPresets('sampler').map((p) => [`sampler:preset:${p.name}`, p.name]));
+    const presetItems: [string, string][] =
+      getCachedPresets('sampler').map((p) => [`sampler:preset:${p.name}`, p.name]);
+    renderInto(sel, html`${customOption()}${presetGroup('Presets', presetItems)}`);
     void Promise.all([listDrumkits(), listInstruments()]).then(([kits, instruments]) => {
       if (gen !== polyPopGen) return;
       const s = document.getElementById('poly-preset-select') as HTMLSelectElement | null;
       if (!s) return;
-      group(s, 'Drumkit', kits.map((k) => [`sampler:drumkit:${k.id}`, k.name]));
-      group(s, 'Loop', instruments.filter((i) => i.family === 'loop').map((i) => [`sampler:loop:${i.id}`, i.name]));
+      renderInto(s, html`${customOption()}${presetGroup('Presets', presetItems)}${presetGroup(
+        'Drumkit', kits.map((k) => [`sampler:drumkit:${k.id}`, k.name] as [string, string]),
+      )}${presetGroup(
+        'Loop',
+        instruments.filter((i) => i.family === 'loop').map((i) => [`sampler:loop:${i.id}`, i.name] as [string, string]),
+      )}`);
       s.value = pagePresetName.get(laneId) ?? '__custom__';
     });
     sel.value = pagePresetName.get(laneId) ?? '__custom__';
@@ -128,49 +123,22 @@ export function populatePolyPresetSelectForLane(laneId: string): void {
   }
 
   if (engineId === 'subtractive') {
-    const factoryGroup = document.createElement('optgroup');
-    factoryGroup.label = 'Factory';
-    for (const p of getFactoryPolyPresets()) {
-      const opt = document.createElement('option');
-      // Unified vocabulary: subtractive factory presets are `engine:<name>` like
-      // every other engine's (they're applied the same way, engine.applyPreset).
-      opt.value = `engine:${p.name}`;
-      opt.textContent = p.name;
-      factoryGroup.appendChild(opt);
-    }
-    sel.appendChild(factoryGroup);
-
-    const user = loadUserPolyPresets();
-    const userNames = Object.keys(user).sort();
-    if (userNames.length > 0) {
-      const userGroup = document.createElement('optgroup');
-      userGroup.label = 'User';
-      for (const name of userNames) {
-        const opt = document.createElement('option');
-        opt.value = `user:${name}`;
-        opt.textContent = name;
-        userGroup.appendChild(opt);
-      }
-      sel.appendChild(userGroup);
-    }
+    // Unified vocabulary: subtractive factory presets are `engine:<name>` like
+    // every other engine's (they're applied the same way, engine.applyPreset).
+    const factory: [string, string][] =
+      getFactoryPolyPresets().map((p) => [`engine:${p.name}`, p.name]);
+    const userNames = Object.keys(loadUserPolyPresets()).sort();
+    const user: [string, string][] = userNames.map((name) => [`user:${name}`, name]);
+    renderInto(sel, html`${customOption()}${presetGroup('Factory', factory)}${presetGroup('User', user)}`);
     return;
   }
 
   // Non-subtractive poly engine (FM, Wavetable, Karplus): pull presets
   // directly from the lane's SynthEngine instance.
-  const instance = deps.getLaneEngineInstance(laneId);
-  if (!instance) return;
-  const presets = instance.presets ?? [];
-  if (presets.length === 0) return;
-  const factoryGroup = document.createElement('optgroup');
-  factoryGroup.label = 'Factory';
-  for (const p of presets) {
-    const opt = document.createElement('option');
-    opt.value = `engine:${p.name}`;
-    opt.textContent = p.name;
-    factoryGroup.appendChild(opt);
-  }
-  sel.appendChild(factoryGroup);
+  const presets = deps.getLaneEngineInstance(laneId)?.presets ?? [];
+  renderInto(sel, html`${customOption()}${presetGroup(
+    'Factory', presets.map((p) => [`engine:${p.name}`, p.name] as [string, string]),
+  )}`);
 }
 
 export function populatePolyPresetSelect(): void {
@@ -253,29 +221,17 @@ export function populateEnginePresetSelectById(
     holder.laneId = laneId;
   }
 
-  sel.innerHTML = '';
-
-  const custom = document.createElement('option');
-  custom.value = '__custom__';
-  custom.textContent = '(custom — no preset)';
-  sel.appendChild(custom);
-
-  const deps = _deps;
-  if (!deps) return;
-  const instance = deps.getLaneEngineInstance(laneId);
-  if (!instance) return;
-  const presets = instance.presets ?? [];
-  if (presets.length === 0) return;
-
-  const factoryGroup = document.createElement('optgroup');
-  factoryGroup.label = 'Factory';
-  for (const p of presets) {
-    const opt = document.createElement('option');
-    opt.value = `engine:${p.name}`;
-    opt.textContent = p.name;
-    factoryGroup.appendChild(opt);
+  const presets = _deps?.getLaneEngineInstance(laneId)?.presets ?? [];
+  if (presets.length === 0) {
+    // Custom-only rebuild; the browser resets the selection to that first
+    // option, matching the old wipe-and-return.
+    renderInto(sel, html`${customOption()}`);
+    return;
   }
-  sel.appendChild(factoryGroup);
+
+  renderInto(sel, html`${customOption()}${presetGroup(
+    'Factory', presets.map((p) => [`engine:${p.name}`, p.name] as [string, string]),
+  )}`);
 
   // Restore previous selection if any.
   const prev = pagePresetName.get(laneId);
@@ -404,38 +360,22 @@ function populateDrumKitsSelect(laneId: string): void {
   if (!holder) { holder = { laneId }; pageSelectActiveLane.set('drums-preset-select', holder); }
   else holder.laneId = laneId;
 
-  const render = () => {
-    sel.innerHTML = '';
-    const custom = document.createElement('option');
-    custom.value = '__custom__';
-    custom.textContent = '(custom — no preset)';
-    sel.appendChild(custom);
-
-    const kits = getDrumKits();
+  const paint = () => {
     const groups = new Map<string, DrumKitPreset[]>();
-    for (const k of kits) {
+    for (const k of getDrumKits()) {
       const arr = groups.get(k.group) ?? [];
       arr.push(k);
       groups.set(k.group, arr);
     }
-    for (const [group, entries] of groups) {
-      const og = document.createElement('optgroup');
-      og.label = group;
-      for (const k of entries) {
-        const opt = document.createElement('option');
-        opt.value = `engine:${k.name}`;
-        opt.textContent = k.name;
-        og.appendChild(opt);
-      }
-      sel.appendChild(og);
-    }
+    renderInto(sel, html`${customOption()}${[...groups].map(([group, entries]) =>
+      presetGroup(group, entries.map((k) => [`engine:${k.name}`, k.name] as [string, string])))}`);
     const prev = pagePresetName.get(laneId);
     sel.value = prev ?? '__custom__';
   };
 
-  render();
+  paint();
   // If the loader hasn't resolved yet, re-render when it does (boot race).
-  if (getDrumKits().length === 0) void loadDrumKits().then(render);
+  if (getDrumKits().length === 0) void loadDrumKits().then(paint);
 }
 
 function wireDrumKitsSelect(selectId: string, loadBtnId: string): void {

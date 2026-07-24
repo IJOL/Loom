@@ -1,5 +1,7 @@
 // localStorage-backed save manager: named entries, autosave, downloads.
 
+import { downloadBlob } from '../export/download';
+
 const INDEX_KEY = 'tb303-saves';
 const ENTRY_KEY = (id: string) => `tb303-save:${id}`;
 const AUTOSAVE_KEY = 'tb303-save:autosave';
@@ -83,15 +85,9 @@ export function totalStorageKB(): number {
 
 export function downloadAsJson(filename: string, state: unknown): void {
   const json = JSON.stringify(state, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  // The anchor-click mechanics (and the deferred URL revoke) live in the one
+  // shared download helper — don't grow a second anchor builder here.
+  downloadBlob(new Blob([json], { type: 'application/json' }), filename);
 }
 
 export async function loadFromFile(file: File): Promise<unknown> {

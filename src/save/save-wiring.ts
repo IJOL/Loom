@@ -1,3 +1,5 @@
+import { html, render, type TemplateResult } from 'lit-html';
+import { repeat } from 'lit-html/directives/repeat.js';
 import {
   saveNamedEntry, readIndex, loadEntry, loadAutosave,
   deleteEntry, renameEntry, clearAll, totalStorageKB,
@@ -59,60 +61,55 @@ function applyLoadedState(data: unknown, deps: SaveWiringDeps): void {
   deps.onAfterApply?.();
 }
 
+function entryRowTemplate(
+  entry: SaveIndexEntry,
+  deps: SaveWiringDeps,
+  applyLoaded: (data: unknown) => void,
+): TemplateResult {
+  return html`
+    <div class="save-manager-row">
+      <span>${entry.name}</span>
+      <span>${new Date(entry.timestamp).toLocaleString()}</span>
+      <span>${entry.sizeKB} KB</span>
+      <button data-act="load" @click=${() => {
+        const data = loadEntry(entry.id);
+        if (data) applyLoaded(data);
+        closeSaveManager();
+      }}>Load</button>
+      <button data-act="dl" @click=${() => {
+        const data = loadEntry(entry.id);
+        if (data) downloadAsJson(`tb303-${entry.name.replace(/[^\w-]+/g, '_')}.json`, data);
+      }}>⤓</button>
+      <button data-act="ren" @click=${async () => {
+        const next = await promptDialog('Rename:', entry.name);
+        if (next) { renameEntry(entry.id, next); openSaveManager(deps, applyLoaded); }
+      }}>✎</button>
+      <button data-act="del" @click=${async () => {
+        if (await confirmDialog(`Delete "${entry.name}"?`)) { deleteEntry(entry.id); openSaveManager(deps, applyLoaded); }
+      }}>🗑</button>
+    </div>`;
+}
+
 function openSaveManager(deps: SaveWiringDeps, applyLoaded: (data: unknown) => void): void {
   const modal = document.getElementById('save-manager-modal')!;
   const list  = document.getElementById('save-manager-list')!;
   modal.hidden = false;
-  list.innerHTML = '';
-
-  const autosaveRow = document.createElement('div');
-  autosaveRow.className = 'save-manager-row autosave';
-  autosaveRow.innerHTML = `
-    <span>Auto-save (latest)</span>
-    <span>—</span>
-    <span>—</span>
-    <button data-act="load">Load</button>
-    <span></span><span></span><span></span>
-  `;
-  autosaveRow.querySelector<HTMLButtonElement>('[data-act=load]')!.onclick = () => {
-    const data = loadAutosave();
-    if (data) applyLoaded(data);
-    closeSaveManager();
-  };
-  list.appendChild(autosaveRow);
 
   const idx: SaveIndexEntry[] = readIndex().sort((a, b) => b.timestamp - a.timestamp);
-  for (const entry of idx) {
-    const row = document.createElement('div');
-    row.className = 'save-manager-row';
-    const d = new Date(entry.timestamp).toLocaleString();
-    row.innerHTML = `
-      <span>${entry.name}</span>
-      <span>${d}</span>
-      <span>${entry.sizeKB} KB</span>
-      <button data-act="load">Load</button>
-      <button data-act="dl">⤓</button>
-      <button data-act="ren">✎</button>
-      <button data-act="del">🗑</button>
-    `;
-    row.querySelector<HTMLButtonElement>('[data-act=load]')!.onclick = () => {
-      const data = loadEntry(entry.id);
-      if (data) applyLoaded(data);
-      closeSaveManager();
-    };
-    row.querySelector<HTMLButtonElement>('[data-act=dl]')!.onclick = () => {
-      const data = loadEntry(entry.id);
-      if (data) downloadAsJson(`tb303-${entry.name.replace(/[^\w-]+/g, '_')}.json`, data);
-    };
-    row.querySelector<HTMLButtonElement>('[data-act=ren]')!.onclick = async () => {
-      const next = await promptDialog('Rename:', entry.name);
-      if (next) { renameEntry(entry.id, next); openSaveManager(deps, applyLoaded); }
-    };
-    row.querySelector<HTMLButtonElement>('[data-act=del]')!.onclick = async () => {
-      if (await confirmDialog(`Delete "${entry.name}"?`)) { deleteEntry(entry.id); openSaveManager(deps, applyLoaded); }
-    };
-    list.appendChild(row);
-  }
+  render(html`
+    <div class="save-manager-row autosave">
+      <span>Auto-save (latest)</span>
+      <span>—</span>
+      <span>—</span>
+      <button data-act="load" @click=${() => {
+        const data = loadAutosave();
+        if (data) applyLoaded(data);
+        closeSaveManager();
+      }}>Load</button>
+      <span></span><span></span><span></span>
+    </div>
+    ${repeat(idx, (e) => e.id, (entry) => entryRowTemplate(entry, deps, applyLoaded))}
+  `, list);
 
   const sizeEl = document.getElementById('save-manager-size')!;
   sizeEl.textContent = `Total: ${totalStorageKB()} KB`;

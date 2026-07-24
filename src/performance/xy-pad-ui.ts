@@ -4,10 +4,17 @@
 // an LFO/ADSR can target. Dragging writes both bound params live through the
 // automation registry (one setValue moves UI ring + sound), reusing the pure
 // core in xy-pad.ts. Non-modal on purpose so the rest of the UI stays usable.
+//
+// The root `.xy-pad` element is created once (renderElement) and stays the
+// caller-owned handle; refreshOptions() re-renders the pad template INTO it, so
+// lit patches the dropdowns' option lists while the surface (and any drag in
+// progress on it) is left alone.
+import { html, render, type TemplateResult } from 'lit-html';
+import { renderElement } from '../core/lit-fragment';
 import type { KnobHandle } from '../core/knob';
 import { XyPadModel, applyXyWrites, type XyAxis, type XyTarget } from './xy-pad';
 import type { DestinationRegistry } from '../automation/destination-registry';
-import { groupTargetsByLane } from '../automation/automation-targets';
+import { groupTargetsByLane, type AutomationTarget } from '../automation/automation-targets';
 
 export interface XyPadUIDeps {
   /** The one destination catalogue (Task 4) — every automatable param the
@@ -60,77 +67,11 @@ export function createXyPad(deps: XyPadUIDeps): XyPadUI {
   // has a way to release the subscription instead of leaking it silently.
   const ac = new AbortController();
 
-  const el = document.createElement('div');
-  el.className = 'xy-pad';
-
-  // The draggable surface + the position dot.
-  const surface = document.createElement('div');
-  surface.className = 'xy-surface';
-  const dot = document.createElement('div');
-  dot.className = 'xy-dot';
-  surface.appendChild(dot);
-  el.appendChild(surface);
-
-  // Assignment rows: X and Y each a labelled <select>.
-  const assign = document.createElement('div');
-  assign.className = 'xy-assign';
-  const selects: Record<XyAxis, HTMLSelectElement> = {} as Record<XyAxis, HTMLSelectElement>;
-  for (const axis of ['x', 'y'] as XyAxis[]) {
-    const row = document.createElement('label');
-    row.className = `xy-row xy-row-${axis}`;
-    const tag = document.createElement('span');
-    tag.className = 'xy-axis-tag';
-    tag.textContent = axis.toUpperCase();
-    const sel = document.createElement('select');
-    sel.className = 'xy-sel';
-    sel.dataset.axis = axis;
-    sel.addEventListener('change', () => {
-      model.setTarget(axis, sel.value === '' ? null : sel.value);
-    });
-    selects[axis] = sel;
-    row.appendChild(tag);
-    row.appendChild(sel);
-    assign.appendChild(row);
-  }
-  el.appendChild(assign);
-
-  function refreshOptions(): void {
-    // The catalogue, not the mounted-knob registry: every destination the
-    // session currently declares, grouped by its own laneName (never a
-    // first-dot split of the id — that misgroups the global racks, e.g.
-    // `fx.master.fx:slot.gain` would split to lane "fx").
-    const targets = deps.destinations.list();
-    const ids = targets.map((t) => t.id);
-    const byLane = groupTargetsByLane(targets);
-    for (const axis of ['x', 'y'] as XyAxis[]) {
-      const sel = selects[axis];
-      const current = model.target(axis);
-      sel.textContent = '';
-      const none = document.createElement('option');
-      none.value = '';
-      none.textContent = '— none —';
-      sel.appendChild(none);
-      for (const [laneName, list] of byLane) {
-        const grp = document.createElement('optgroup');
-        grp.label = laneName;
-        for (const t of list) {
-          const opt = document.createElement('option');
-          opt.value = t.id;
-          opt.textContent = t.label;
-          grp.appendChild(opt);
-        }
-        sel.appendChild(grp);
-      }
-      // Keep the selection if its param still exists; else fall back to none and
-      // clear the stale binding so the pad doesn't drive a gone param.
-      if (current !== null && ids.includes(current)) sel.value = current;
-      else { sel.value = ''; if (current !== null) model.setTarget(axis, null); }
-    }
-  }
+  const el = renderElement(html`<div class="xy-pad"></div>`);
 
   // Pointer drag → write both bound params from the surface position (y up).
   let dragging = false;
-  const applyAt = (clientX: number, clientY: number) => {
+  const applyAt = (surface: HTMLElement, clientX: number, clientY: number) => {
     const r = surface.getBoundingClientRect();
     const nx = (clientX - r.left) / r.width;
     const ny = 1 - (clientY - r.top) / r.height;
@@ -150,24 +91,68 @@ export function createXyPad(deps: XyPadUIDeps): XyPadUI {
         deps.applyUnmounted(w.paramId, w.norm, ranges);
       }
     }
+    const dot = surface.querySelector('.xy-dot') as HTMLElement;
     dot.style.left = `${Math.max(0, Math.min(1, nx)) * 100}%`;
     dot.style.top = `${Math.max(0, Math.min(1, 1 - ny)) * 100}%`;
   };
-  surface.addEventListener('pointerdown', (e) => {
+  const onDown = (e: PointerEvent) => {
+    const surface = e.currentTarget as HTMLElement;
     dragging = true;
     surface.setPointerCapture(e.pointerId);
     surface.classList.add('active');
-    applyAt(e.clientX, e.clientY);
-  });
-  surface.addEventListener('pointermove', (e) => { if (dragging) applyAt(e.clientX, e.clientY); });
+    applyAt(surface, e.clientX, e.clientY);
+  };
+  const onMove = (e: PointerEvent) => {
+    if (dragging) applyAt(e.currentTarget as HTMLElement, e.clientX, e.clientY);
+  };
   const end = (e: PointerEvent) => {
     if (!dragging) return;
     dragging = false;
+    const surface = e.currentTarget as HTMLElement;
     try { surface.releasePointerCapture(e.pointerId); } catch { /* ok */ }
     surface.classList.remove('active');
   };
-  surface.addEventListener('pointerup', end);
-  surface.addEventListener('pointercancel', end);
+
+  const onSelChange = (e: Event) => {
+    const sel = e.currentTarget as HTMLSelectElement;
+    model.setTarget(sel.dataset.axis as XyAxis, sel.value === '' ? null : sel.value);
+  };
+
+  // Assignment rows: X and Y each a labelled <select>. Options come from the
+  // catalogue, grouped by its own laneName (never a first-dot split of the
+  // id — that misgroups the global racks, e.g. `fx.master.fx:slot.gain` would
+  // split to lane "fx").
+  const padTemplate = (byLane: Map<string, AutomationTarget[]>): TemplateResult => html`<div
+      class="xy-surface"
+      @pointerdown=${onDown}
+      @pointermove=${onMove}
+      @pointerup=${end}
+      @pointercancel=${end}
+    ><div class="xy-dot"></div></div><div class="xy-assign">${(['x', 'y'] as XyAxis[]).map((axis) => html`<label
+      class="xy-row xy-row-${axis}"
+    ><span class="xy-axis-tag">${axis.toUpperCase()}</span><select
+      class="xy-sel"
+      data-axis=${axis}
+      @change=${onSelChange}
+    ><option value="">— none —</option>${[...byLane].map(([laneName, list]) => html`<optgroup label=${laneName}>${
+      list.map((t) => html`<option value=${t.id}>${t.label}</option>`)
+    }</optgroup>`)}</select></label>`)}</div>`;
+
+  function refreshOptions(): void {
+    const targets = deps.destinations.list();
+    const ids = targets.map((t) => t.id);
+    render(padTemplate(groupTargetsByLane(targets)), el);
+    // Selection is restored AFTER the options render (a `.value` binding on the
+    // select would commit before its option children exist). Keep the selection
+    // if its param still exists; else fall back to none and clear the stale
+    // binding so the pad doesn't drive a gone param.
+    for (const axis of ['x', 'y'] as XyAxis[]) {
+      const sel = el.querySelector(`select[data-axis="${axis}"]`) as HTMLSelectElement;
+      const current = model.target(axis);
+      if (current !== null && ids.includes(current)) sel.value = current;
+      else { sel.value = ''; if (current !== null) model.setTarget(axis, null); }
+    }
+  }
 
   refreshOptions();
 
