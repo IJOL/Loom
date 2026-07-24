@@ -1,3 +1,4 @@
+import { html, render } from 'lit-html';
 import { listPlugins } from '../plugins/registry';
 import { getEngineDescriptor } from './registry';
 import { populatePolyPresetSelect, refreshPolyPresetSelect } from '../polysynth/polysynth-presets';
@@ -89,19 +90,24 @@ export function rebuildEngineParamUI(): void {
   deps.populateAutoParamSelect();
 }
 
-export function populateEngineSelect(deps: EngineSelectorUIDeps, currentEngineId: string): void {
-  deps.engineSel.innerHTML = '';
+/** Rebuild `sel`'s options with the melodic engines (manifest labels). Renders
+ *  into a fresh fragment each call: the select may be repopulated many times,
+ *  and its options can be mutated elsewhere, so lit must never own the select's
+ *  content across calls. */
+function renderMelodicOptions(sel: HTMLSelectElement, currentEngineId: string): void {
+  sel.innerHTML = '';
   // Keep the original plugin manifest labels (e.g. "TB-303", "Subtractive");
   // only the melodic-engine filter changes vs. the legacy behavior.
   const melodic = new Set(melodicSynthEngineIds());
-  for (const plugin of listPlugins('synth')) {
-    if (!melodic.has(plugin.manifest.id)) continue;
-    const opt = document.createElement('option');
-    opt.value = plugin.manifest.id;
-    opt.textContent = plugin.manifest.name;
-    if (plugin.manifest.id === currentEngineId) opt.selected = true;
-    deps.engineSel.appendChild(opt);
-  }
+  const frag = document.createDocumentFragment();
+  render(html`${listPlugins('synth')
+    .filter((p) => melodic.has(p.manifest.id))
+    .map((p) => html`<option value=${p.manifest.id} ?selected=${p.manifest.id === currentEngineId}>${p.manifest.name}</option>`)}`, frag);
+  sel.appendChild(frag);
+}
+
+export function populateEngineSelect(deps: EngineSelectorUIDeps, currentEngineId: string): void {
+  renderMelodicOptions(deps.engineSel, currentEngineId);
 }
 
 export interface EngineSelector303Deps {
@@ -114,16 +120,7 @@ export interface EngineSelector303Deps {
 
 /** Populate a <select> with the 5 melodic engines (manifest labels). */
 export function populateEngineSelect303(sel: HTMLSelectElement, currentEngineId: string): void {
-  sel.innerHTML = '';
-  const melodic = new Set(melodicSynthEngineIds());
-  for (const plugin of listPlugins('synth')) {
-    if (!melodic.has(plugin.manifest.id)) continue;
-    const opt = document.createElement('option');
-    opt.value = plugin.manifest.id;
-    opt.textContent = plugin.manifest.name;
-    if (plugin.manifest.id === currentEngineId) opt.selected = true;
-    sel.appendChild(opt);
-  }
+  renderMelodicOptions(sel, currentEngineId);
 }
 
 /** Wire the 303-page engine selector: a change swaps the engine of the lane
@@ -139,12 +136,13 @@ export function wireEngineSelector303(deps: EngineSelector303Deps): void {
 export function wireEngineSelector(deps: EngineSelectorUIDeps, initialEngineId: string): void {
   _deps = deps;
 
-  // Build the engine-params container and insert it into the poly page
+  // Build the engine-params container and insert it into the poly page.
+  // One-shot scaffolding: rendered into a fragment, the element pulled out.
   const polyPage = document.querySelector('[data-page="poly"]')!;
   _polyPage = polyPage;
-  const engineParamEl = document.createElement('div');
-  engineParamEl.id = 'engine-params';
-  engineParamEl.style.display = 'none';
+  const frag = document.createDocumentFragment();
+  render(html`<div id="engine-params" style="display:none"></div>`, frag);
+  const engineParamEl = frag.firstElementChild as HTMLDivElement;
   _engineParamEl = engineParamEl;
   const firstPolyRow = polyPage.querySelector('.poly-section')!;
   firstPolyRow.parentNode!.insertBefore(engineParamEl, firstPolyRow.nextSibling);

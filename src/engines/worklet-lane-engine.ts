@@ -24,6 +24,7 @@ import { getCachedPresets } from '../presets/preset-loader';
 import { deriveSubtractiveEnvMods } from './subtractive';
 import { effectiveRateHz } from '../modulation/rate-sync';
 import { velNorm, resolveVelocity } from '../core/velocity-gain';
+import { html, render } from 'lit-html';
 import { renderModulatorsPanel, type ModulationUIDeps } from '../modulation/modulation-ui';
 import { buildEngineParamGrid } from './engine-param-grid';
 import { createKnob, type KnobHandle } from '../core/knob';
@@ -302,15 +303,6 @@ export class WorkletLaneEngine implements SynthEngine {
     // Mono engines (TB-303) are fixed at 1 voice, so the header is omitted. The
     // lane's osc/filter/amp knobs are mounted separately by knob-mounting.
     if (this.polyphony === 'poly') {
-      const header = document.createElement('div');
-      header.className = 'row poly-section';
-      const lab = document.createElement('div');
-      lab.className = 'section-label';
-      lab.textContent = 'POLY';
-      header.appendChild(lab);
-      const knobRow = document.createElement('div');
-      knobRow.className = 'knob-row';
-      header.appendChild(knobRow);
       const voices = createKnob({
         id: `${ctx.laneId}.poly.voices`,
         label: 'VOICES', min: 1, max: 16, step: 1, value: this.getBaseValue('poly.voices'), defaultValue: 8,
@@ -319,8 +311,16 @@ export class WorkletLaneEngine implements SynthEngine {
         ...(ctx.historyDeps ? attachKnobUndo(ctx.historyDeps) : {}),
       });
       ctx.registerKnob(voices);
-      knobRow.appendChild(voices.el);
-      container.appendChild(header);
+      // One-shot header scaffolding around the imperative knob widget: rendered
+      // into a fragment (the container is innerHTML-wiped on each rebuild, so
+      // lit must never own its content), then appended.
+      const frag = document.createDocumentFragment();
+      render(html`
+        <div class="row poly-section">
+          <div class="section-label">POLY</div>
+          <div class="knob-row">${voices.el}</div>
+        </div>`, frag);
+      container.appendChild(frag);
     }
 
     // Per-engine knob grid. Subtractive's osc/filter/amp/master knobs are mounted

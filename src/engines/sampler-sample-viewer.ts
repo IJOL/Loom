@@ -5,6 +5,8 @@
 // filename lives HERE (per the user: not on the strip; a tooltip there at most).
 // Handles for trim-start/end + loop-start/end are draggable; badge toggles loop.
 
+import { html } from 'lit-html';
+import { renderElement } from '../core/lit-fragment';
 import { sampleCache } from '../samples/sample-cache';
 import { sampleStore } from '../samples/store-singleton';
 import { xToFrac, pickHandle, applyHandle, type TrimState, type WaveHandle } from './sampler-waveform-edit';
@@ -27,75 +29,31 @@ let viewerZoom = 1;
 
 export function renderSampleViewer(host: HTMLElement, opts: SampleViewerOpts): void {
   host.innerHTML = '';
-  const wrap = document.createElement('div');
-  wrap.className = 'ssv-wrap';
-
-  // ── Header ──
-  const head = document.createElement('div');
-  head.className = 'ssv-head';
-  const sw = document.createElement('span');
-  sw.className = 'ssv-sw';
-  sw.style.background = opts.color;
-  const nameEl = document.createElement('span');
-  nameEl.className = 'ssv-name';
-  nameEl.textContent = '…';
-  const keyEl = document.createElement('span');
-  keyEl.className = 'ssv-key';
-  keyEl.textContent = opts.keyLabel;
-  const badge = document.createElement('span');
-  badge.className = 'ssv-badge';
-  badge.textContent = opts.loop ? '⟳ loop' : 'one-shot';
-  if (opts.loop) badge.classList.add('loop');
-
-  const zoomCtl = document.createElement('span');
-  zoomCtl.className = 'ssv-zoom';
-  const zHint = document.createElement('span');
-  zHint.className = 'ssv-zhint';
-  zHint.textContent = 'zoom';
-  const zOut = document.createElement('button');
-  zOut.type = 'button'; zOut.className = 'ssv-zbtn'; zOut.textContent = '－';
-  const zLvl = document.createElement('span');
-  zLvl.className = 'ssv-zlvl'; zLvl.textContent = `${viewerZoom}×`;
-  const zIn = document.createElement('button');
-  zIn.type = 'button'; zIn.className = 'ssv-zbtn'; zIn.textContent = '＋';
-  zoomCtl.append(zHint, zOut, zLvl, zIn);
-  head.append(sw, nameEl, keyEl, badge, zoomCtl);
-  wrap.appendChild(head);
-
-  // ── Waveform (scrollable for zoom) ──
-  const sc = document.createElement('div');
-  sc.className = 'ssv-wave';
-  const canvas = document.createElement('canvas');
-  canvas.className = 'ssv-canvas';
-  sc.appendChild(canvas);
-  wrap.appendChild(sc);
-  host.appendChild(wrap);
 
   const buf = sampleCache.get(opts.sampleId);
+  // Refs into the one-shot template below, assigned right after renderElement.
+  // Every closure that reads them only runs on user events / rAF — after
+  // assignment — so the forward references are safe.
+  let sc!: HTMLElement;
+  let canvas!: HTMLCanvasElement;
+  let badge!: HTMLElement;
+  let zLvl!: HTMLElement;
   const draw = (): void => drawWave(canvas, sc, buf, viewerZoom, opts);
-  // Draw after layout so sc.clientWidth is known.
-  requestAnimationFrame(draw);
-
-  zOut.addEventListener('click', () => { viewerZoom = Math.max(1, viewerZoom / 2); zLvl.textContent = `${viewerZoom}×`; draw(); });
-  zIn.addEventListener('click', () => { viewerZoom = Math.min(16, viewerZoom * 2); zLvl.textContent = `${viewerZoom}×`; draw(); });
-
-  // Filename (async): the asset's original name. Falls back to the id, and tolerates
-  // a store miss / no-IndexedDB env (tests) without an unhandled rejection.
-  void sampleStore.get(opts.sampleId)
-    .then((asset) => { const label = asset?.name ?? opts.sampleId; nameEl.textContent = label; nameEl.title = label; })
-    .catch(() => { nameEl.textContent = opts.sampleId; });
+  const setZoom = (z: number): void => {
+    viewerZoom = z;
+    zLvl.textContent = `${viewerZoom}×`;
+    draw();
+  };
 
   // ── Badge: clickable loop toggle ──
-  badge.style.cursor = 'pointer';
-  badge.title = 'Click to toggle one-shot / loop';
-  badge.addEventListener('click', () => {
+  const onBadgeClick = (): void => {
     const next = opts.loop ? 0 : 1;
     opts.loop = next > 0.5;
     opts.onEdit?.('loop', next);
     draw();
     badge.textContent = opts.loop ? '⟳ loop' : 'one-shot';
     badge.classList.toggle('loop', opts.loop);
-  });
+  };
 
   // ── Pointer dragging on the canvas ──
   let dragging: WaveHandle | null = null;
@@ -107,15 +65,14 @@ export function renderSampleViewer(host: HTMLElement, opts: SampleViewerOpts): v
     const r = sc.getBoundingClientRect();
     return xToFrac(clientX, r.left, sc.scrollLeft, canvas.width);
   };
-  canvas.style.cursor = 'pointer';
-  canvas.addEventListener('pointerdown', (ev) => {
+  const onPointerDown = (ev: PointerEvent): void => {
     const h = pickHandle(fracAt(ev.clientX), stateNow(), 0.02);
     if (!h) return;
     dragging = h;
     canvas.setPointerCapture(ev.pointerId);
     ev.preventDefault();
-  });
-  canvas.addEventListener('pointermove', (ev) => {
+  };
+  const onPointerMove = (ev: PointerEvent): void => {
     if (!dragging) return;
     const next = applyHandle(dragging, fracAt(ev.clientX), stateNow());
     const leaf = dragging === 'start' ? 'sampleStart' : dragging === 'end' ? 'sampleEnd' : dragging;
@@ -123,14 +80,51 @@ export function renderSampleViewer(host: HTMLElement, opts: SampleViewerOpts): v
     (opts as unknown as Record<string, number>)[leaf] = value; // update local opts so further drags read the new value
     draw();
     opts.onEdit?.(leaf, value);
-  });
-  const endDrag = (ev: PointerEvent) => {
+  };
+  const endDrag = (ev: PointerEvent): void => {
     if (!dragging) return;
     dragging = null;
     try { canvas.releasePointerCapture(ev.pointerId); } catch { /* not captured */ }
   };
-  canvas.addEventListener('pointerup', endDrag);
-  canvas.addEventListener('pointercancel', endDrag);
+
+  // One-shot template: the viewer is rebuilt per pad selection (its old
+  // lifecycle), so it renders once and later patches (name, badge, zoom level)
+  // stay imperative on the extracted refs. Canvas drawing is untouched.
+  const wrap = renderElement(html`
+    <div class="ssv-wrap">
+      <div class="ssv-head">
+        <span class="ssv-sw" style="background:${opts.color}"></span>
+        <span class="ssv-name">…</span>
+        <span class="ssv-key">${opts.keyLabel}</span>
+        <span class=${opts.loop ? 'ssv-badge loop' : 'ssv-badge'} style="cursor:pointer"
+          title="Click to toggle one-shot / loop" @click=${onBadgeClick}>${opts.loop ? '⟳ loop' : 'one-shot'}</span>
+        <span class="ssv-zoom">
+          <span class="ssv-zhint">zoom</span>
+          <button type="button" class="ssv-zbtn" @click=${() => setZoom(Math.max(1, viewerZoom / 2))}>－</button>
+          <span class="ssv-zlvl">${viewerZoom}×</span>
+          <button type="button" class="ssv-zbtn" @click=${() => setZoom(Math.min(16, viewerZoom * 2))}>＋</button>
+        </span>
+      </div>
+      <div class="ssv-wave">
+        <canvas class="ssv-canvas" style="cursor:pointer" @pointerdown=${onPointerDown}
+          @pointermove=${onPointerMove} @pointerup=${endDrag} @pointercancel=${endDrag}></canvas>
+      </div>
+    </div>`);
+  sc = wrap.querySelector<HTMLElement>('.ssv-wave')!;
+  canvas = wrap.querySelector<HTMLCanvasElement>('.ssv-canvas')!;
+  badge = wrap.querySelector<HTMLElement>('.ssv-badge')!;
+  zLvl = wrap.querySelector<HTMLElement>('.ssv-zlvl')!;
+  const nameEl = wrap.querySelector<HTMLElement>('.ssv-name')!;
+  host.appendChild(wrap);
+
+  // Draw after layout so sc.clientWidth is known.
+  requestAnimationFrame(draw);
+
+  // Filename (async): the asset's original name. Falls back to the id, and tolerates
+  // a store miss / no-IndexedDB env (tests) without an unhandled rejection.
+  void sampleStore.get(opts.sampleId)
+    .then((asset) => { const label = asset?.name ?? opts.sampleId; nameEl.textContent = label; nameEl.title = label; })
+    .catch(() => { nameEl.textContent = opts.sampleId; });
 }
 
 function drawWave(

@@ -5,6 +5,7 @@
 // wireEngineParams so it registers under `<laneId>.<id>`, mirrors to
 // engineState, and gets undo for free.
 
+import { html, render, nothing, type TemplateResult } from 'lit-html';
 import type { SynthEngine, EngineUIContext } from './engine-types';
 import { DRUM_LANES, type DrumVoice } from '../core/drums';
 import { wireEngineParams } from './engine-ui';
@@ -62,153 +63,115 @@ export function renderDrumVoiceRack(
   opts: DrumRackOpts = {},
 ): void {
   const layout = (engine as unknown as { getRackLayout?: () => RackLayout }).getRackLayout?.() ?? DEFAULT_LAYOUT;
-
-  const rack = document.createElement('div');
-  rack.className = 'drum-voice-rack';
-
-  // Precompute which spec ids exist for each voice so we can split synth vs mixer.
-  const idsByVoice = new Map<string, string[]>(
-    voices.map((v) => [v, engine.params.map((p) => p.id).filter((id) => id.startsWith(`${v}.`))]),
-  );
   const ms = engine as unknown as DrumMuteSoloEngine;
 
-  for (const voice of voices) {
-    const col = document.createElement('div');
-    col.className = `dv-col ${voice}`;
-    col.dataset.voice = voice;
-    if (opts.isSelected?.(voice)) col.classList.add('selected');
+  // One-shot lit render into a fragment (the whole rack is rebuilt by the
+  // caller on any structural change, so no panel lifecycle is needed), then
+  // the `.drum-voice-rack` element is pulled out and appended — keeping the
+  // documented contract of appending a fresh rack to a caller-cleared host.
+  const frag = document.createDocumentFragment();
+  render(html`
+    <div class="drum-voice-rack">
+      ${voices.map((voice) => colTemplate(voice, ms, ctx, opts))}
+      ${opts.onAdd
+        // A "+" tile after the last channel adds a pad (the standard add
+        // affordance, right where the modules are). Delete is per-channel
+        // (the ✕ on each strip).
+        ? html`<button type="button" class="dv-add" title="Add a pad" @click=${() => opts.onAdd!()}>＋</button>`
+        : nothing}
+    </div>
+  `, frag);
+  const rack = frag.firstElementChild as HTMLElement;
 
-    const head = document.createElement('div');
-    head.className = 'dv-head';
-    // Actions row (▶ play / ✕ delete) centred at the TOP, separated from the name
-    // below by a divider line.
-    if (opts.onAudition || opts.onDelete) {
-      const actions = document.createElement('div');
-      actions.className = 'dv-actions';
-      if (opts.onAudition) {
-        const play = document.createElement('button');
-        play.type = 'button';
-        play.className = 'dv-play';
-        play.textContent = '▶';
-        play.title = 'Play this sample';
-        play.addEventListener('click', (e) => { e.stopPropagation(); opts.onAudition!(voice); });
-        actions.appendChild(play);
-      }
-      if (opts.onDelete) {
-        const del = document.createElement('button');
-        del.type = 'button';
-        del.className = 'dv-del';
-        del.textContent = '✕';
-        del.title = 'Delete this pad';
-        del.addEventListener('click', () => opts.onDelete!(voice));
-        actions.appendChild(del);
-      }
-      head.appendChild(actions);
-    }
-    const nameEl = document.createElement('span');
-    nameEl.className = 'dv-name';
-    nameEl.textContent = opts.labelOf?.(voice) ?? VOICE_LABELS[voice as DrumVoice] ?? voice.toUpperCase();
-    head.appendChild(nameEl);
-    if (opts.keyOf) {
-      const keyEl = document.createElement('span');
-      keyEl.className = 'dv-key';
-      keyEl.textContent = opts.keyOf(voice);
-      head.appendChild(keyEl);
-    }
-    // Clicking the header (not the ✕) selects this channel → drives the sample editor.
-    if (opts.onSelect) {
-      head.classList.add('dv-head-sel');
-      head.addEventListener('click', (e) => {
-        if ((e.target as HTMLElement).closest('button')) return;
-        rack.querySelectorAll('.dv-col.selected').forEach((c) => c.classList.remove('selected'));
-        col.classList.add('selected');
-        opts.onSelect!(voice);
-      });
-    }
-    col.appendChild(head);
-
-    // Per-voice mute/solo. Mute persists (mirrored to engineState); solo is
-    // live-only (exclusive within the kit, applied via channels[voice].setMuted).
-    const msRow = document.createElement('div');
-    msRow.className = 'dv-ms';
-    const muteBtn = document.createElement('button');
-    muteBtn.type = 'button';
-    muteBtn.className = 'dv-mute';
-    muteBtn.textContent = 'M';
-    muteBtn.title = 'Mute this voice';
-    muteBtn.classList.toggle('on', ms.getDrumVoiceMute(voice as DrumVoice));
-    const soloBtn = document.createElement('button');
-    soloBtn.type = 'button';
-    soloBtn.className = 'dv-solo';
-    soloBtn.textContent = 'S';
-    soloBtn.title = 'Solo this voice (within the kit)';
-    soloBtn.classList.toggle('on', ms.getDrumVoiceSolo(voice as DrumVoice));
-    muteBtn.addEventListener('click', () => {
-      const next = !ms.getDrumVoiceMute(voice as DrumVoice);
-      ms.setDrumVoiceMute(voice as DrumVoice, next);
-      muteBtn.classList.toggle('on', next);
-      if (ctx.sessionState) mirrorDrumMutes(ctx.sessionState, ctx.laneId, ms.getDrumVoiceMutes());
-    });
-    soloBtn.addEventListener('click', () => {
-      ms.toggleDrumVoiceSolo(voice as DrumVoice);
-      soloBtn.classList.toggle('on', ms.getDrumVoiceSolo(voice as DrumVoice));
-    });
-    msRow.appendChild(muteBtn);
-    msRow.appendChild(soloBtn);
-    col.appendChild(msRow);
-
-    const all = idsByVoice.get(voice)!;
+  // The knobs/selects are imperative widgets (wireEngineParams registers each
+  // under `<laneId>.<id>` and mirrors to engineState), so they are appended
+  // into the rendered blocks after the template pass — one build per rack,
+  // exactly as before. Split per the layout: curated synth vs curated mixer
+  // up-front, everything else into the collapsed ▸advanced block.
+  const paramIds = engine.params.map((p) => p.id);
+  for (const col of rack.querySelectorAll<HTMLElement>(':scope > .dv-col')) {
+    const voice = col.dataset.voice!;
+    const all = paramIds.filter((id) => id.startsWith(`${voice}.`));
     const curatedSynth = new Set(layout.curatedSynth.map((l) => `${voice}.${l}`));
     const curatedMixer = new Set(layout.curatedMixer.map((l) => `${voice}.${l}`));
     const advancedMixer = new Set(layout.advancedMixer.map((l) => `${voice}.${l}`));
     const advancedSynth = new Set(all.filter((id) => !curatedSynth.has(id) && !curatedMixer.has(id) && !advancedMixer.has(id)));
 
-    const synthBlock = document.createElement('div');
-    synthBlock.className = 'dv-synth';
-    col.appendChild(synthBlock);
-    wireEngineParams(engine, ctx, synthBlock, {
+    wireEngineParams(engine, ctx, col.querySelector<HTMLElement>('.dv-synth')!, {
       knobSize: KNOB, filter: (id) => curatedSynth.has(id),
     });
-
-    const mixBlock = document.createElement('div');
-    mixBlock.className = 'dv-mix';
-    col.appendChild(mixBlock);
-    wireEngineParams(engine, ctx, mixBlock, {
+    wireEngineParams(engine, ctx, col.querySelector<HTMLElement>('.dv-mix')!, {
       knobSize: KNOB, filter: (id) => curatedMixer.has(id),
     });
-
-    const toggle = document.createElement('button');
-    toggle.type = 'button';
-    toggle.className = 'dv-adv-toggle';
-    toggle.textContent = '▸ adv';
-    col.appendChild(toggle);
-
-    const adv = document.createElement('div');
-    adv.className = 'dv-advanced';
-    col.appendChild(adv);
-    wireEngineParams(engine, ctx, adv, {
+    wireEngineParams(engine, ctx, col.querySelector<HTMLElement>('.dv-advanced')!, {
       knobSize: KNOB, filter: (id) => advancedSynth.has(id) || advancedMixer.has(id),
     });
-
-    toggle.addEventListener('click', () => {
-      const open = adv.classList.toggle('open');
-      toggle.textContent = open ? '▾ adv' : '▸ adv';
-    });
-
-    rack.appendChild(col);
-  }
-
-  // A "+" tile after the last channel adds a pad (the standard add affordance,
-  // right where the modules are). Delete is per-channel (the ✕ on each strip).
-  if (opts.onAdd) {
-    const add = document.createElement('button');
-    add.type = 'button';
-    add.className = 'dv-add';
-    add.textContent = '＋';
-    add.title = 'Add a pad';
-    add.addEventListener('click', () => opts.onAdd!());
-    rack.appendChild(add);
   }
 
   host.appendChild(rack);
+}
+
+function colTemplate(
+  voice: string,
+  ms: DrumMuteSoloEngine,
+  ctx: EngineUIContext,
+  opts: DrumRackOpts,
+): TemplateResult {
+  // Clicking the header (not the ✕) selects this channel → drives the sample editor.
+  const onHeadClick = (e: Event) => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    const col = (e.currentTarget as HTMLElement).closest('.dv-col') as HTMLElement;
+    col.closest('.drum-voice-rack')!.querySelectorAll('.dv-col.selected').forEach((c) => c.classList.remove('selected'));
+    col.classList.add('selected');
+    opts.onSelect!(voice);
+  };
+  // Per-voice mute/solo. Mute persists (mirrored to engineState); solo is
+  // live-only (exclusive within the kit, applied via channels[voice].setMuted).
+  // The template renders once, so the buttons update their own .on class.
+  const onMute = (e: Event) => {
+    const next = !ms.getDrumVoiceMute(voice as DrumVoice);
+    ms.setDrumVoiceMute(voice as DrumVoice, next);
+    (e.currentTarget as HTMLElement).classList.toggle('on', next);
+    if (ctx.sessionState) mirrorDrumMutes(ctx.sessionState, ctx.laneId, ms.getDrumVoiceMutes());
+  };
+  const onSolo = (e: Event) => {
+    ms.toggleDrumVoiceSolo(voice as DrumVoice);
+    (e.currentTarget as HTMLElement).classList.toggle('on', ms.getDrumVoiceSolo(voice as DrumVoice));
+  };
+  const onAdvToggle = (e: Event) => {
+    const toggle = e.currentTarget as HTMLElement;
+    const adv = toggle.nextElementSibling as HTMLElement;   // the .dv-advanced block below
+    const open = adv.classList.toggle('open');
+    toggle.textContent = open ? '▾ adv' : '▸ adv';
+  };
+
+  return html`
+    <div class="dv-col ${voice}${opts.isSelected?.(voice) ? ' selected' : ''}" data-voice=${voice}>
+      <div class=${opts.onSelect ? 'dv-head dv-head-sel' : 'dv-head'} @click=${opts.onSelect ? onHeadClick : nothing}>
+        ${opts.onAudition || opts.onDelete
+          // Actions row (▶ play / ✕ delete) centred at the TOP, separated from
+          // the name below by a divider line.
+          ? html`
+            <div class="dv-actions">
+              ${opts.onAudition ? html`<button type="button" class="dv-play" title="Play this sample"
+                  @click=${(e: Event) => { e.stopPropagation(); opts.onAudition!(voice); }}>▶</button>` : nothing}
+              ${opts.onDelete ? html`<button type="button" class="dv-del" title="Delete this pad"
+                  @click=${() => opts.onDelete!(voice)}>✕</button>` : nothing}
+            </div>`
+          : nothing}
+        <span class="dv-name">${opts.labelOf?.(voice) ?? VOICE_LABELS[voice as DrumVoice] ?? voice.toUpperCase()}</span>
+        ${opts.keyOf ? html`<span class="dv-key">${opts.keyOf(voice)}</span>` : nothing}
+      </div>
+      <div class="dv-ms">
+        <button type="button" class="dv-mute${ms.getDrumVoiceMute(voice as DrumVoice) ? ' on' : ''}"
+            title="Mute this voice" @click=${onMute}>M</button>
+        <button type="button" class="dv-solo${ms.getDrumVoiceSolo(voice as DrumVoice) ? ' on' : ''}"
+            title="Solo this voice (within the kit)" @click=${onSolo}>S</button>
+      </div>
+      <div class="dv-synth"></div>
+      <div class="dv-mix"></div>
+      <button type="button" class="dv-adv-toggle" @click=${onAdvToggle}>▸ adv</button>
+      <div class="dv-advanced"></div>
+    </div>
+  `;
 }

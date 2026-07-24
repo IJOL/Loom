@@ -6,6 +6,7 @@
 // Extracted from worklet-lane-engine.buildParamUI so the grouped layout is
 // unit-testable without a worklet and the engine file stays lean.
 
+import { html, render, nothing } from 'lit-html';
 import { createKnob } from '../core/knob';
 import { createSelectControl } from '../core/select-control';
 import type { EngineParamSpec } from './engine-params';
@@ -89,27 +90,23 @@ export function buildEngineParamGrid(
     byGroup.get(g)!.push(spec);
   }
 
-  // Leading ungrouped row (global controls), unlabelled.
+  // The grid is a one-shot build (the caller rebuilds the whole param UI on
+  // engine swap), so the rows render once into a fragment — no panel lifecycle
+  // needed — and the fragment is appended after the caller's existing children
+  // (e.g. the POLY header). Controls stay imperative widgets; the templates
+  // only interpolate their elements. Leading ungrouped row (global controls,
+  // unlabelled) first, then one labelled section per group.
   const globals = byGroup.get(undefined);
-  if (globals && globals.length) {
-    const row = document.createElement('div');
-    row.className = 'row knob-row';
-    for (const spec of globals) row.appendChild(buildControl(engine, ctx, spec));
-    container.appendChild(row);
-  }
-
-  // One labelled section per group.
-  for (const g of order) {
-    const section = document.createElement('div');
-    section.className = 'row poly-section';
-    const lab = document.createElement('div');
-    lab.className = 'section-label';
-    lab.textContent = g;
-    section.appendChild(lab);
-    const knobRow = document.createElement('div');
-    knobRow.className = 'knob-row';
-    for (const spec of byGroup.get(g)!) knobRow.appendChild(buildControl(engine, ctx, spec));
-    section.appendChild(knobRow);
-    container.appendChild(section);
-  }
+  const frag = document.createDocumentFragment();
+  render(html`
+    ${globals && globals.length
+      ? html`<div class="row knob-row">${globals.map((spec) => buildControl(engine, ctx, spec))}</div>`
+      : nothing}
+    ${order.map((g) => html`
+      <div class="row poly-section">
+        <div class="section-label">${g}</div>
+        <div class="knob-row">${byGroup.get(g)!.map((spec) => buildControl(engine, ctx, spec))}</div>
+      </div>`)}
+  `, frag);
+  container.appendChild(frag);
 }

@@ -19,6 +19,7 @@
 // to the embedded SamplerEngine on the old path. Phase 3 moves the Sampler into
 // the worklet; only then does sample-mode drums follow.
 
+import { html, render } from 'lit-html';
 import type {
   SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, EngineUIContext,
 } from './engine-types';
@@ -545,8 +546,12 @@ export class DrumsWorkletEngine implements SynthEngine {
     container.innerHTML = '';
     if (!ctx) return;
 
-    const rackHost = document.createElement('div');
-    rackHost.className = 'drum-rack-host';
+    // One-shot host scaffolding: rendered into a fragment (the container is
+    // innerHTML-wiped on each rebuild, so lit must never own its content),
+    // element pulled out, then filled imperatively by the rack builder.
+    const frag = document.createDocumentFragment();
+    render(html`<div class="drum-rack-host"></div>`, frag);
+    const rackHost = frag.firstElementChild as HTMLElement;
     container.appendChild(rackHost);
     renderDrumVoiceRack(this, ctx, rackHost);
 

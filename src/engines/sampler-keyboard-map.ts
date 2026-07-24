@@ -9,6 +9,7 @@
 // Read-only and async-free. The per-sample zoom viewer and the Sampler|Loop top
 // selector are later increments (see 2026-06-07-sampler-visual-reorg-design.md).
 
+import { html, render, nothing, type TemplateResult } from 'lit-html';
 import type { KeymapEntry } from '../samples/types';
 import { pc, noteName } from './note-name';
 export { noteName } from './note-name';
@@ -45,48 +46,32 @@ export function renderSamplerKeyboardMap(host: HTMLElement, keymap: KeymapEntry[
   const leftPct = (m: number): number => ((m - lo) / span) * 100;
   const widthPct = (semis: number): number => (semis / span) * 100;
 
-  const wrap = document.createElement('div');
-  wrap.className = 'smk-wrap';
-
   // Pad-key → colour, so the keys can be tinted (drumkit) / a zone band drawn (melodic).
   const keyTint = new Map<number, string>();
-  let band: HTMLElement | null = null;
-  if (opts.drumkit) {
-    keymap.forEach((e, i) => keyTint.set(e.rootNote, padColor(i, n)));
-  } else {
-    band = document.createElement('div');
-    band.className = 'smk-band';
-    keymap.forEach((e, i) => {
+  if (opts.drumkit) keymap.forEach((e, i) => keyTint.set(e.rootNote, padColor(i, n)));
+
+  const band = opts.drumkit ? nothing : html`
+    <div class="smk-band">${keymap.map((e, i) => {
       const c = padColor(i, n);
-      const seg = document.createElement('div');
-      seg.className = 'smk-zone';
-      seg.style.left = `${leftPct(e.loNote)}%`;
-      seg.style.width = `${widthPct(e.hiNote - e.loNote + 1)}%`;
-      seg.style.background = `hsla(${padHue(i, n)},65%,56%,0.32)`;
-      seg.style.borderColor = c;
-      seg.title = `${noteName(e.loNote)}–${noteName(e.hiNote)} · root ${noteName(e.rootNote)}`;
-      band!.appendChild(seg);
-      const root = document.createElement('div');
-      root.className = 'smk-root';
-      root.style.left = `${leftPct(e.rootNote) + widthPct(0.5)}%`;
-      root.style.background = c;
-      band!.appendChild(root);
-    });
-  }
+      return html`<div class="smk-zone"
+          style="left:${leftPct(e.loNote)}%;width:${widthPct(e.hiNote - e.loNote + 1)}%;background:hsla(${padHue(i, n)},65%,56%,0.32);border-color:${c}"
+          title="${noteName(e.loNote)}–${noteName(e.hiNote)} · root ${noteName(e.rootNote)}"></div>
+        <div class="smk-root" style="left:${leftPct(e.rootNote) + widthPct(0.5)}%;background:${c}"></div>`;
+    })}</div>`;
 
-  // Keys (one cell per semitone in the window).
-  const keys = document.createElement('div');
-  keys.className = 'smk-keys';
+  // Keys (one cell per semitone in the window). data-note feeds the
+  // keyboard→strip connectors.
+  const keys: TemplateResult[] = [];
   for (let m = lo; m <= hi; m++) {
-    const k = document.createElement('div');
-    k.className = `smk-key${isBlack(m) ? ' black' : ''}${pc(m) === 0 ? ' c' : ''}`;
-    k.dataset.note = String(m);                  // for keyboard→strip connectors
     const tint = keyTint.get(m);
-    if (tint) { k.classList.add('pad'); k.style.background = tint; }
-    keys.appendChild(k);
+    keys.push(html`<div
+      class="smk-key${isBlack(m) ? ' black' : ''}${pc(m) === 0 ? ' c' : ''}${tint ? ' pad' : ''}"
+      data-note="${m}" style=${tint ? `background:${tint}` : nothing}></div>`);
   }
 
-  if (band) wrap.appendChild(band);
-  wrap.appendChild(keys);
-  host.appendChild(wrap);
+  // One-shot render into a throwaway fragment: a fresh fragment per call keeps
+  // lit's part state off `host`, whose innerHTML callers may wipe at will.
+  const frag = document.createDocumentFragment();
+  render(html`<div class="smk-wrap">${band}<div class="smk-keys">${keys}</div></div>`, frag);
+  host.appendChild(frag);
 }

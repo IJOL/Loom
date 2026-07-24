@@ -6,6 +6,9 @@
 //
 // The user explicitly endorsed a canvas here ("si hace falta hazlo en un canvas").
 
+import { html } from 'lit-html';
+import { renderElement } from '../core/lit-fragment';
+
 export interface ConnPad {
   note: number;     // the pad's key (matches .smk-key[data-note])
   voice: string;    // the pad's channel (matches .dv-col[data-voice])
@@ -18,8 +21,8 @@ export function mountKeyboardConnectors(
   connHost: HTMLElement, keyboardHost: HTMLElement, rackHost: HTMLElement, pads: ConnPad[],
 ): void {
   connHost.innerHTML = '';
-  const canvas = document.createElement('canvas');
-  canvas.className = 'smk-connectors';
+  // Canvas scaffold only — the curve drawing below stays imperative.
+  const canvas = renderElement<HTMLCanvasElement>(html`<canvas class="smk-connectors"></canvas>`);
   connHost.appendChild(canvas);
   const ctx = canvas.getContext('2d');
   if (!ctx) return;

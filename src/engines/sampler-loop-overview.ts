@@ -5,6 +5,8 @@
 // buffers in the sample cache (a loop's keymap is a bank of single-note slices,
 // in ascending-note order = playback order).
 
+import { html } from 'lit-html';
+import { renderElement } from '../core/lit-fragment';
 import { sampleCache } from '../samples/sample-cache';
 import { padColor } from './sampler-keyboard-map';
 import type { KeymapEntry } from '../samples/types';
@@ -17,8 +19,8 @@ export function renderLoopOverview(host: HTMLElement, keymap: KeymapEntry[]): vo
   const buffers = slices.map((s) => sampleCache.get(s.sampleId));
   const total = buffers.reduce((sum, b) => sum + (b ? b.length : 0), 0) || 1;
 
-  const canvas = document.createElement('canvas');
-  canvas.className = 'slo-canvas';
+  // Canvas scaffold only — the waveform drawing below stays imperative.
+  const canvas = renderElement<HTMLCanvasElement>(html`<canvas class="slo-canvas"></canvas>`);
   host.appendChild(canvas);
   const ctx = canvas.getContext('2d');
   if (!ctx) return;

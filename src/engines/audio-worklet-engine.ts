@@ -9,6 +9,7 @@
 // worklet backend. The legacy AudioEngine (audio.ts) keeps the 'audio' registry
 // entry as the offline-render source until Phase 4 (cutover).
 
+import { html, render } from 'lit-html';
 import type {
   SynthEngine, Voice, EngineSequencer, EngineUIContext, VoiceTriggerOptions,
 } from './engine-types';
@@ -130,8 +131,12 @@ export class AudioWorkletEngine implements SynthEngine {
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
     container.innerHTML = '';
     if (!ctx) return;
-    const row = document.createElement('div');
-    row.className = 'knob-row';
+    // One-shot row scaffolding via a fragment (the container is innerHTML-wiped
+    // on each rebuild, so lit must never own its content); the knob widget is
+    // then appended imperatively by wireEngineParams.
+    const frag = document.createDocumentFragment();
+    render(html`<div class="knob-row"></div>`, frag);
+    const row = frag.firstElementChild as HTMLElement;
     container.appendChild(row);
     wireEngineParams(this, ctx, row, { filter: (id) => id === 'gain' });
   }

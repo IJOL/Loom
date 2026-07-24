@@ -18,6 +18,9 @@
 // backend. The legacy SamplerEngine (sampler.ts) keeps the 'sampler' registry
 // entry as the offline-render source until Phase 4 (cutover).
 
+import { html, render } from 'lit-html';
+import { renderElement } from '../core/lit-fragment';
+import { samplerEditorTemplate, zoneRangeRowTemplate } from './sampler-editor-templates';
 import type {
   SynthEngine, Voice, EngineSequencer, EngineUIContext, VoiceTriggerOptions,
 } from './engine-types';
@@ -493,229 +496,42 @@ export class SamplerWorkletEngine implements SynthEngine {
     const isMelodicView = this.keymap.length > 0 && !singleNote;
     const isChannelView = this.keymap.length > 0;
 
+    // Hosts for canvas/imperative sub-renderers come from one-shot templates
+    // (renderElement) and are interpolated into the scaffold at the end; the
+    // sub-renderers themselves stay imperative (canvas drawing).
+    let loopOverview: HTMLElement | null = null;
     if (isLoop) {
-      const loHost = document.createElement('div');
-      loHost.className = 'sampler-loop-overview';
-      container.appendChild(loHost);
-      renderLoopOverview(loHost, this.keymap);
+      loopOverview = renderElement(html`<div class="sampler-loop-overview"></div>`);
+      renderLoopOverview(loopOverview, this.keymap);
     }
 
     let keyboardHost: HTMLElement | null = null;
     if (this.keymap.length) {
-      keyboardHost = document.createElement('div');
-      keyboardHost.className = 'sampler-keymap-viz';
-      container.appendChild(keyboardHost);
+      keyboardHost = renderElement(html`<div class="sampler-keymap-viz"></div>`);
       renderSamplerKeyboardMap(keyboardHost, this.keymap, { drumkit: singleNote });
     }
 
-    if (isChannelView) {
-      const connHost = document.createElement('div');
-      connHost.className = 'sampler-keyboard-conn';
-      container.appendChild(connHost);
-
-      const rackHost = document.createElement('div');
-      container.appendChild(rackHost);
-      const voices = this.keymap.map((e) => padKeyForNote(e.rootNote));
-      const voiceNote = new Map(this.keymap.map((e) => [padKeyForNote(e.rootNote), e.rootNote] as const));
-
-      const padNotes = this.keymap.map((e) => e.rootNote);
-      if (this.selectedPadNote == null || !padNotes.includes(this.selectedPadNote)) {
-        this.selectedPadNote = padNotes[0] ?? null;
-      }
-      const viewerLabel = document.createElement('div');
-      viewerLabel.className = 'label sampler-viewer-label';
-      viewerLabel.textContent = 'Selected sample';
-      const viewerHost = document.createElement('div');
-      viewerHost.className = 'sampler-sample-viewer';
-      const renderViewer = () => {
-        const note = this.selectedPadNote;
-        const idx = this.keymap.findIndex((e) => e.rootNote === note);
-        if (idx < 0) { viewerHost.innerHTML = ''; return; }
-        const entry = this.keymap[idx];
-        const pad = this.getPad(note!);
-        renderSampleViewer(viewerHost, {
-          sampleId: entry.sampleId,
-          keyLabel: noteName(note!),
-          color: padColor(idx, this.keymap.length),
-          loop: pad.loop >= 0.5,
-          loopStart: pad.loopStart,
-          loopEnd: pad.loopEnd,
-          sampleStart: pad.sampleStart,
-          sampleEnd: pad.sampleEnd,
-          onEdit: (leaf, value) => {
-            this.setBaseValue(`${padKeyForNote(note!)}.${leaf}`, value);
-          },
-        });
-        if (isMelodicView) {
-          const zr = document.createElement('div');
-          zr.className = 'ssv-zone';
-          const num = (label: string, val: number, onCh: (v: number) => void): HTMLElement => {
-            const wrap = document.createElement('label');
-            wrap.className = 'ssv-znum';
-            wrap.append(label);
-            const inp = document.createElement('input');
-            inp.type = 'number'; inp.min = '0'; inp.max = '127'; inp.value = String(val);
-            inp.addEventListener('change', () => onCh(Math.max(0, Math.min(127, Math.round(Number(inp.value))))));
-            wrap.appendChild(inp);
-            return wrap;
-          };
-          const commit = (km: typeof this.keymap) => {
-            this.setKeymap(km);
-            if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, km);
-            rebuild();
-          };
-          zr.append(
-            num('root ', entry.rootNote, (v) => { this.selectedPadNote = v; commit(setEntryRoot(this.getKeymap(), idx, v)); }),
-            num('lo ', entry.loNote, (v) => { commit(setEntryRange(this.getKeymap(), idx, v, this.keymap[idx].hiNote)); }),
-            num('hi ', entry.hiNote, (v) => { commit(setEntryRange(this.getKeymap(), idx, this.keymap[idx].loNote, v)); }),
-          );
-          viewerHost.appendChild(zr);
+    // Import status + the two hidden pickers are leaf nodes built up-front so
+    // the scaffold's buttons and the async import path can close over them.
+    const importStatus = renderElement<HTMLSpanElement>(html`<span class="sampler-import-status"></span>`);
+    const loopInput = renderElement<HTMLInputElement>(html`<input type="file" accept="audio/*"
+      class="sampler-load-loop" style="display:none" @change=${(e: Event) => {
+        const input = e.currentTarget as HTMLInputElement;
+        const file = input.files?.[0];
+        if (file) {
+          document.dispatchEvent(new CustomEvent('loom:import-loop', {
+            detail: { laneId: ctx.laneId, file },
+          }));
         }
-      };
-
-      const noteOf = (voice: string): number => voiceNote.get(voice) ?? noteForPadKey(voice);
-      const sliceIdx = new Map([...voiceNote.values()].sort((a, b) => a - b).map((n, i) => [n, i] as const));
-      const labelFor = (voice: string): string => {
-        const note = noteOf(voice);
-        if (isLoop) return `Slice ${(sliceIdx.get(note) ?? 0) + 1}`;
-        if (isDrumkitView) { const gm = GM_DRUM_MAP[note]; return gm ? VOICE_LABELS[gm] : noteName(note); }
-        return noteName(note);
-      };
-      renderDrumVoiceRack(this, ctx, rackHost, voices, {
-        labelOf: labelFor,
-        ...((isDrumkitView || isLoop) ? { keyOf: (voice: string) => noteName(noteOf(voice)) } : {}),
-        onDelete: (voice) => {
-          if (this.keymap.length <= 1) return;
-          const km = this.keymap.filter((e) => padKeyForNote(e.rootNote) !== voice);
-          this.setKeymap(km);
-          if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, this.keymap);
-          rebuild();
-        },
-        isSelected: (voice) => voiceNote.get(voice) === this.selectedPadNote,
-        onSelect: (voice) => { this.selectedPadNote = voiceNote.get(voice) ?? null; renderViewer(); },
-        onAudition: (voice) => {
-          document.dispatchEvent(new CustomEvent('loom:audition-note', { detail: { laneId: ctx.laneId, note: noteOf(voice) } }));
-        },
-        onAdd: isLoop ? undefined : (() => {
-          if (isDrumkitView) {
-            const proto = this.keymap[this.keymap.length - 1];
-            if (!proto) return;
-            const note = nextFreePadNote(this.keymap.map((e) => e.rootNote));
-            this.setKeymap([...this.keymap, { sampleId: proto.sampleId, rootNote: note, loNote: note, hiNote: note }]);
-            if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, this.keymap);
-            rebuild();
-          } else {
-            const input = document.createElement('input');
-            input.type = 'file'; input.multiple = true; input.accept = 'audio/*';
-            input.addEventListener('change', () => { const fs = Array.from(input.files ?? []); if (fs.length) void loadFiles(fs); });
-            input.click();
-          }
-        }),
-      });
-
-      if (keyboardHost) {
-        const pads = this.keymap.map((e, i) => ({
-          note: e.rootNote, voice: padKeyForNote(e.rootNote), color: padColor(i, this.keymap.length),
-        }));
-        mountKeyboardConnectors(connHost, keyboardHost, rackHost, pads);
-      }
-
-      for (const e of this.keymap) {
-        const v = padKeyForNote(e.rootNote);
-        void sampleStore.get(e.sampleId).then((asset) => {
-          if (!asset) return;
-          const col = rackHost.querySelector<HTMLElement>(`.dv-col[data-voice="${v}"]`);
-          if (col) col.title = asset.name;
-        }).catch(() => { /* no store / no IndexedDB (tests) — skip the tooltip */ });
-      }
-
-      container.appendChild(viewerLabel);
-      container.appendChild(viewerHost);
-      renderViewer();
-    }
-
-    const knobRow = document.createElement('div');
-    knobRow.className = 'knob-row';
-    container.appendChild(knobRow);
-    wireEngineParams(this, ctx, knobRow, {
-      filter: (id) => SAMPLER_PARAMS.some((p) => p.id === id) && !id.startsWith('filter.'),
-      formatter: (id, v) => {
-        if (id === 'poly.voices') return `${Math.round(v)}`;
-        if (id.endsWith('.attack') || id.endsWith('.release')) {
-          return v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed(2)}s`;
-        }
-        return `${Math.round(v * 100)}%`;
-      },
-    });
-
-    const section = document.createElement('div');
-    section.className = 'sampler-keymap';
-    container.appendChild(section);
-
-    const heading = document.createElement('div');
-    heading.className = 'label';
-    heading.textContent = isDrumkitView ? 'Load kit' : (isMelodicView ? 'Load instrument' : 'Keymap');
-    section.appendChild(heading);
-
-    if (isLoop) {
-      const loopHint = document.createElement('div');
-      loopHint.className = 'sampler-loop-hint label';
-      loopHint.textContent = 'Loop: each note is a slice. The notes are edited in the clip\'s piano-roll.';
-      section.appendChild(loopHint);
-    }
-
-    const loopInput = document.createElement('input');
-    loopInput.type = 'file';
-    loopInput.accept = 'audio/*';
-    loopInput.className = 'sampler-load-loop';
-    loopInput.style.display = 'none';
-    section.appendChild(loopInput);
-
-    const importRow = document.createElement('div');
-    importRow.className = 'sampler-import-row';
-
-    const loopBtn = document.createElement('button');
-    loopBtn.className = 'sampler-import-loop-btn';
-    loopBtn.textContent = 'Import loop…';
-    loopBtn.title = 'Import a loop: slices it and creates a note clip with its piano-roll';
-    loopBtn.addEventListener('click', () => loopInput.click());
-    importRow.appendChild(loopBtn);
-
-    loopInput.addEventListener('change', () => {
-      const file = loopInput.files?.[0];
-      if (file) {
-        document.dispatchEvent(new CustomEvent('loom:import-loop', {
-          detail: { laneId: ctx.laneId, file },
-        }));
-      }
-      loopInput.value = '';
-    });
-
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.multiple = true;
-    fileInput.accept = 'audio/*';
-    fileInput.className = 'sampler-load';
-    fileInput.style.display = 'none';
-    section.appendChild(fileInput);
-
-    const importBtn = document.createElement('button');
-    importBtn.className = 'sampler-import-btn';
-    importBtn.textContent = 'Import samples…';
-    importBtn.title = 'Import one or more audio files as keymap zones';
-    importBtn.addEventListener('click', () => fileInput.click());
-    importRow.appendChild(importBtn);
-    section.appendChild(importRow);
-
-    const importHint = document.createElement('div');
-    importHint.className = 'sampler-import-hint label';
-    importHint.textContent = 'Each audio file is added as a zone. Adjust each zone\'s range below.';
-    if (isChannelView) importHint.style.display = 'none';
-    section.appendChild(importHint);
-
-    const importStatus = document.createElement('span');
-    importStatus.className = 'sampler-import-status';
-    section.appendChild(importStatus);
+        input.value = '';
+      }}>`);
+    const fileInput = renderElement<HTMLInputElement>(html`<input type="file" multiple accept="audio/*"
+      class="sampler-load" style="display:none" @change=${(e: Event) => {
+        const input = e.currentTarget as HTMLInputElement;
+        const files = Array.from(input.files ?? []);
+        if (files.length) void loadFiles(files);
+        input.value = '';
+      }}>`);
 
     const loadFiles = async (files: File[]) => {
       const audioCtx = ctx.audioContext;
@@ -745,84 +561,129 @@ export class SamplerWorkletEngine implements SynthEngine {
       rebuild();
     };
 
-    fileInput.addEventListener('change', () => {
-      const files = Array.from(fileInput.files ?? []);
-      if (files.length) void loadFiles(files);
-      fileInput.value = '';
-    });
+    let connHost: HTMLElement | null = null;
+    let rackHost: HTMLElement | null = null;
+    let viewerHost: HTMLElement | null = null;
+    let renderViewer: () => void = () => {};
+    if (isChannelView) {
+      connHost = renderElement(html`<div class="sampler-keyboard-conn"></div>`);
 
-    const list = document.createElement('div');
-    list.className = 'sampler-keymap-list';
-    section.appendChild(list);
-    const keymap = this.getKeymap();
-    if (!isChannelView) keymap.forEach((entry, i) => {
-      const row = document.createElement('div');
-      row.className = 'sampler-keymap-row';
+      const rack = renderElement(html`<div></div>`);
+      rackHost = rack;
+      const voices = this.keymap.map((e) => padKeyForNote(e.rootNote));
+      const voiceNote = new Map(this.keymap.map((e) => [padKeyForNote(e.rootNote), e.rootNote] as const));
 
-      const name = document.createElement('span');
-      name.className = 'sampler-keymap-name';
-      name.textContent = entry.sampleId;
-      row.appendChild(name);
-
-      const rootLabel = document.createElement('label');
-      rootLabel.textContent = 'root ';
-      const root = document.createElement('input');
-      root.type = 'number';
-      root.min = '0'; root.max = '127';
-      root.value = String(entry.rootNote);
-      root.className = 'sampler-keymap-root';
-      root.addEventListener('change', () => {
-        const km = setEntryRoot(this.getKeymap(), i, Number(root.value));
-        this.setKeymap(km);
-        if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, km);
-      });
-      rootLabel.appendChild(root);
-      row.appendChild(rootLabel);
-
-      const del = document.createElement('button');
-      del.className = 'sampler-keymap-del';
-      del.textContent = '✕';
-      del.title = 'Remove';
-      del.addEventListener('click', () => {
-        const km = removeKeymapEntry(this.getKeymap(), i);
-        this.setKeymap(km);
-        if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, km);
-        rebuild();
-      });
-      row.appendChild(del);
-
-      if (!isChannelView) {
-        const zoneKey = padKeyForNote(entry.rootNote); // zone<root>
-        const params = document.createElement('div');
-        params.className = 'sampler-zone-params knob-row';
-        row.appendChild(params);
-        wireEngineParams(this, ctx, params, {
-          knobSize: 30,
-          filter: (id) => id.startsWith(`${zoneKey}.`),
+      const padNotes = this.keymap.map((e) => e.rootNote);
+      if (this.selectedPadNote == null || !padNotes.includes(this.selectedPadNote)) {
+        this.selectedPadNote = padNotes[0] ?? null;
+      }
+      const viewer = renderElement(html`<div class="sampler-sample-viewer"></div>`);
+      viewerHost = viewer;
+      renderViewer = () => {
+        const note = this.selectedPadNote;
+        const idx = this.keymap.findIndex((e) => e.rootNote === note);
+        if (idx < 0) { viewer.innerHTML = ''; return; }
+        const entry = this.keymap[idx];
+        const pad = this.getPad(note!);
+        renderSampleViewer(viewer, {
+          sampleId: entry.sampleId,
+          keyLabel: noteName(note!),
+          color: padColor(idx, this.keymap.length),
+          loop: pad.loop >= 0.5,
+          loopStart: pad.loopStart,
+          loopEnd: pad.loopEnd,
+          sampleStart: pad.sampleStart,
+          sampleEnd: pad.sampleEnd,
+          onEdit: (leaf, value) => {
+            this.setBaseValue(`${padKeyForNote(note!)}.${leaf}`, value);
+          },
         });
+        if (isMelodicView) {
+          const commit = (km: typeof this.keymap) => {
+            this.setKeymap(km);
+            if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, km);
+            rebuild();
+          };
+          viewer.appendChild(renderElement(zoneRangeRowTemplate(entry, {
+            root: (v) => { this.selectedPadNote = v; commit(setEntryRoot(this.getKeymap(), idx, v)); },
+            lo: (v) => { commit(setEntryRange(this.getKeymap(), idx, v, this.keymap[idx].hiNote)); },
+            hi: (v) => { commit(setEntryRange(this.getKeymap(), idx, this.keymap[idx].loNote, v)); },
+          })));
+        }
+      };
+
+      const noteOf = (voice: string): number => voiceNote.get(voice) ?? noteForPadKey(voice);
+      const sliceIdx = new Map([...voiceNote.values()].sort((a, b) => a - b).map((n, i) => [n, i] as const));
+      const labelFor = (voice: string): string => {
+        const note = noteOf(voice);
+        if (isLoop) return `Slice ${(sliceIdx.get(note) ?? 0) + 1}`;
+        if (isDrumkitView) { const gm = GM_DRUM_MAP[note]; return gm ? VOICE_LABELS[gm] : noteName(note); }
+        return noteName(note);
+      };
+      renderDrumVoiceRack(this, ctx, rack, voices, {
+        labelOf: labelFor,
+        ...((isDrumkitView || isLoop) ? { keyOf: (voice: string) => noteName(noteOf(voice)) } : {}),
+        onDelete: (voice) => {
+          if (this.keymap.length <= 1) return;
+          const km = this.keymap.filter((e) => padKeyForNote(e.rootNote) !== voice);
+          this.setKeymap(km);
+          if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, this.keymap);
+          rebuild();
+        },
+        isSelected: (voice) => voiceNote.get(voice) === this.selectedPadNote,
+        onSelect: (voice) => { this.selectedPadNote = voiceNote.get(voice) ?? null; renderViewer(); },
+        onAudition: (voice) => {
+          document.dispatchEvent(new CustomEvent('loom:audition-note', { detail: { laneId: ctx.laneId, note: noteOf(voice) } }));
+        },
+        onAdd: isLoop ? undefined : (() => {
+          if (isDrumkitView) {
+            const proto = this.keymap[this.keymap.length - 1];
+            if (!proto) return;
+            const note = nextFreePadNote(this.keymap.map((e) => e.rootNote));
+            this.setKeymap([...this.keymap, { sampleId: proto.sampleId, rootNote: note, loNote: note, hiNote: note }]);
+            if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, this.keymap);
+            rebuild();
+          } else {
+            // Transient picker — never attached to the DOM; clicked to open the chooser.
+            const input = renderElement<HTMLInputElement>(html`<input type="file" multiple accept="audio/*"
+              @change=${() => { const fs = Array.from(input.files ?? []); if (fs.length) void loadFiles(fs); }}>`);
+            input.click();
+          }
+        }),
+      });
+
+      if (keyboardHost) {
+        const pads = this.keymap.map((e, i) => ({
+          note: e.rootNote, voice: padKeyForNote(e.rootNote), color: padColor(i, this.keymap.length),
+        }));
+        mountKeyboardConnectors(connHost, keyboardHost, rack, pads);
       }
 
-      list.appendChild(row);
-    });
-    if (keymap.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'sampler-keymap-empty';
-      empty.textContent = 'No samples loaded yet.';
-      list.appendChild(empty);
+      for (const e of this.keymap) {
+        const v = padKeyForNote(e.rootNote);
+        void sampleStore.get(e.sampleId).then((asset) => {
+          if (!asset) return;
+          const col = rack.querySelector<HTMLElement>(`.dv-col[data-voice="${v}"]`);
+          if (col) col.title = asset.name;
+        }).catch(() => { /* no store / no IndexedDB (tests) — skip the tooltip */ });
+      }
     }
 
-    // CHANNEL FILTER section — dedicated labelled section with CUTOFF + RES.
-    // filter.* are excluded from the generic knobRow above so they only appear here.
-    const filterSec = document.createElement('div');
-    filterSec.className = 'row poly-section sampler-channel-filter';
-    const filterLabel = document.createElement('div');
-    filterLabel.className = 'section-label';
-    filterLabel.textContent = 'CHANNEL FILTER';
-    filterSec.appendChild(filterLabel);
-    const filterRow = document.createElement('div');
-    filterRow.className = 'knob-row';
-    filterSec.appendChild(filterRow);
-    container.appendChild(filterSec);
+    const knobRow = renderElement(html`<div class="knob-row"></div>`);
+    wireEngineParams(this, ctx, knobRow, {
+      filter: (id) => SAMPLER_PARAMS.some((p) => p.id === id) && !id.startsWith('filter.'),
+      formatter: (id, v) => {
+        if (id === 'poly.voices') return `${Math.round(v)}`;
+        if (id.endsWith('.attack') || id.endsWith('.release')) {
+          return v < 1 ? `${Math.round(v * 1000)}ms` : `${v.toFixed(2)}s`;
+        }
+        return `${Math.round(v * 100)}%`;
+      },
+    });
+
+    // CHANNEL FILTER row — filter.* are excluded from the generic knobRow above
+    // so they only appear inside the labelled section the scaffold renders.
+    const filterRow = renderElement(html`<div class="knob-row"></div>`);
     wireEngineParams(this, ctx, filterRow, {
       filter: (id) => id === 'filter.cutoff' || id === 'filter.resonance',
       formatter: (id, v) =>
@@ -830,6 +691,39 @@ export class SamplerWorkletEngine implements SynthEngine {
           ? (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`)
           : v.toFixed(1),
     });
+
+    // One-shot scaffold render into a throwaway fragment: every structural
+    // change funnels through rebuild() (wipe + buildParamUI), so there is no
+    // repaint lifecycle to manage — same pattern as engine-param-grid.ts.
+    const frag = document.createDocumentFragment();
+    render(samplerEditorTemplate({
+      isLoop, isDrumkitView, isMelodicView, isChannelView,
+      keymap: this.getKeymap(),
+      loopOverview, keyboardViz: keyboardHost, connHost, rackHost, viewerHost,
+      knobRow, filterRow, loopInput, fileInput, importStatus,
+      onRootChange: (i, value) => {
+        const km = setEntryRoot(this.getKeymap(), i, value);
+        this.setKeymap(km);
+        if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, km);
+      },
+      onDeleteEntry: (i) => {
+        const km = removeKeymapEntry(this.getKeymap(), i);
+        this.setKeymap(km);
+        if (ctx.sessionState) mirrorKeymapChange(ctx.sessionState, ctx.laneId, km);
+        rebuild();
+      },
+      zoneParamsFor: (entry) => {
+        const zoneKey = padKeyForNote(entry.rootNote); // zone<root>
+        const params = renderElement(html`<div class="sampler-zone-params knob-row"></div>`);
+        wireEngineParams(this, ctx, params, {
+          knobSize: 30,
+          filter: (id) => id.startsWith(`${zoneKey}.`),
+        });
+        return params;
+      },
+    }), frag);
+    container.appendChild(frag);
+    renderViewer();
 
     // MODULATORS panel — lets LFO/ADSR route to the channel filter (Task 11b).
     // Mirrors the drums engine pattern so the sampler filter is modulatable from
