@@ -91,7 +91,9 @@ describe('xy pad target dropdowns', () => {
     pad.refreshOptions();
 
     const groupLabels = [...pad.el.querySelectorAll('optgroup')].map((g) => g.label);
-    expect(groupLabels).toContain('Master');
+    // Master insert targets carry a per-insert sub-group ("Master · Filter")
+    // since the destination catalogue grew sub-group headings.
+    expect(groupLabels.some((l) => l.startsWith('Master'))).toBe(true);
     expect(groupLabels).not.toContain('fx');
   });
 
