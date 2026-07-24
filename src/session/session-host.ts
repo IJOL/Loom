@@ -375,6 +375,15 @@ export class SessionHost {
     return false;
   }
 
+  /** Playing OR queued. A clip launched from its ▶ is only QUEUED when it starts
+   *  the transport — promotion lands on the first tick — so a `playing`-only
+   *  check reads the session as idle and the ▶ auto-launches the whole scene on
+   *  top of the one clip the user asked for. */
+  private anyLaneActive(): boolean {
+    for (const lp of this.laneStates.values()) if (lp.playing || lp.queued) return true;
+    return false;
+  }
+
   /** Pause the transport, remembering the exact playhead (fractional bar) + the
    *  launched scene so resumeTransport can seek back to it. No-op when nothing is
    *  playing or no scene is launched. */
@@ -527,7 +536,7 @@ export class SessionHost {
       // visitor presses ▶, hears nothing and leaves. If ▶ started us with no
       // scene active and no lane playing, launch the first scene so it sounds.
       // (A scene/clip launch already set one of those, so this is a no-op there.)
-      const auto = sceneToAutoLaunchOnPlay(this.activeSceneIdx, this.anyLanePlaying(), this.state.scenes.length);
+      const auto = sceneToAutoLaunchOnPlay(this.activeSceneIdx, this.anyLaneActive(), this.state.scenes.length);
       if (auto != null) this.launchSceneAt(auto);
       prevOnStart?.();
     };
