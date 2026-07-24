@@ -8,7 +8,7 @@ import type { KnobHandle } from '../core/knob';
 import type { SessionState } from '../session/session';
 import type { DestinationRegistry } from '../automation/destination-registry';
 import type { ModulationHost } from './types';
-import type { ControlCache } from './control-cache';
+import type { ControlCache } from '../core/control-cache';
 
 export interface ModulationUIDeps {
   engineId: string;

@@ -1,4 +1,4 @@
-// src/modulation/control-cache.ts
+// src/core/control-cache.ts
 // Create-once storage for imperative widgets rendered inside lit-html templates.
 //
 // lit-html re-runs a template function on every render. Knobs and select-controls
