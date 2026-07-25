@@ -424,6 +424,11 @@ meterSel.addEventListener('change', () => {
   seq.setLength(bars * stepsPerBar(seq.meter));
   // The scheduler + transport read seq.meter / seq.length live on the next step.
   renderLanes();
+  // This selector sits in the always-visible transport row, so it can fire while
+  // Performance is on screen. Nothing there caches the meter any more, but the
+  // ruler/length field are only as fresh as their last paint — repaint them.
+  // (Forward reference into a closure, like bpmBroadcast's getters below.)
+  performanceFeature.refreshPerformanceView();
 });
 
 const knobs = createKnobMounter({

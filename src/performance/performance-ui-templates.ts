@@ -30,7 +30,7 @@ export function toolbarTemplate(state: ArrangementState, cb: PerfUICallbacks): T
   // `lengthBars` is the user's explicit MINIMUM (0 = auto//derive-from-content),
   // so the field read "0 bars" over 8 bars of copied content. Typing still sets an
   // explicit minimum; it just can't shrink the field below the real content.
-  const bars = Math.ceil(effectiveDurationSec(state) / songBarSec(state.bpm, state.meter));
+  const bars = Math.ceil(effectiveDurationSec(state, cb.meter) / songBarSec(state.bpm, cb.meter));
 
   // Editable A/B bar fields — dragging the brace on a long song is a pain. Typing
   // a value sets AND enables the loop (the button still toggles it off).

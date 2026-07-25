@@ -185,15 +185,15 @@ describe('arrangement length', () => {
     const s = emptyArrangementState(120);          // barSec = 2s at 120bpm
     s.durationSec = 3;
     s.lengthBars = 4;                               // 4 bars * 2s = 8s
-    expect(effectiveDurationSec(s)).toBe(8);
+    expect(effectiveDurationSec(s, DEFAULT_METER)).toBe(8);
     s.lengthBars = 1;                               // 2s < 3s recorded
-    expect(effectiveDurationSec(s)).toBe(3);
+    expect(effectiveDurationSec(s, DEFAULT_METER)).toBe(3);
   });
 
   it('setArrangementLengthBars grows curves by hold and truncates on shrink', () => {
     const s = emptyArrangementState(120);
     s.globalAutomation.push({ paramId: 'fx.reverb.wet', values: [0.2, 0.9], enabled: true });
-    setArrangementLengthBars(s, 1);                 // 1 bar -> 16*SUB_RES samples
+    setArrangementLengthBars(s, 1, DEFAULT_METER);  // 1 bar -> 16*SUB_RES samples
     const curve = s.globalAutomation[0];
     const expected = 1 * 16 * AUTOMATION_SUB_RES;
     expect(curve.values.length).toBe(expected);
@@ -208,7 +208,7 @@ describe('addAutomationCurve', () => {
   it('routes a lane-prefixed param into that lane and sizes to the arrangement', () => {
     const s = emptyArrangementState(120);
     s.lengthBars = 1;
-    addAutomationCurve(s, 'tb-303-1.cutoff', laneIds);
+    addAutomationCurve(s, 'tb-303-1.cutoff', laneIds, DEFAULT_METER);
     const lane = s.lanes.find((l) => l.laneId === 'tb-303-1')!;
     expect(lane.automation[0].paramId).toBe('tb-303-1.cutoff');
     expect(lane.automation[0].values.every((v) => v === 0.5)).toBe(true);
@@ -218,15 +218,15 @@ describe('addAutomationCurve', () => {
   it('routes a non-lane param into globalAutomation and is idempotent', () => {
     const s = emptyArrangementState(120);
     s.lengthBars = 1;
-    addAutomationCurve(s, 'fx.reverb.wet', laneIds);
-    addAutomationCurve(s, 'fx.reverb.wet', laneIds);   // no duplicate
+    addAutomationCurve(s, 'fx.reverb.wet', laneIds, DEFAULT_METER);
+    addAutomationCurve(s, 'fx.reverb.wet', laneIds, DEFAULT_METER);   // no duplicate
     expect(s.globalAutomation.length).toBe(1);
   });
 
   it('removeAutomationCurve removes by paramId from the routed list', () => {
     const s = emptyArrangementState(120);
     s.lengthBars = 1;
-    addAutomationCurve(s, 'fx.reverb.wet', laneIds);
+    addAutomationCurve(s, 'fx.reverb.wet', laneIds, DEFAULT_METER);
     removeAutomationCurve(s, 'fx.reverb.wet', laneIds);
     expect(s.globalAutomation.length).toBe(0);
   });
@@ -241,15 +241,15 @@ describe('arrangementLoopWindowSec', () => {
   };
   it('loop off ⇒ inactive, endSec = full duration', () => {
     const s = withTake();
-    expect(arrangementLoopWindowSec(s)).toEqual({ startSec: 0, endSec: 16, active: false });
+    expect(arrangementLoopWindowSec(s, DEFAULT_METER)).toEqual({ startSec: 0, endSec: 16, active: false });
   });
   it('loop on ⇒ [startBar,endBar) in seconds', () => {
     const s = withTake(); s.loopEnabled = true; s.loopStartBar = 2; s.loopEndBar = 6;
-    expect(arrangementLoopWindowSec(s)).toEqual({ startSec: 4, endSec: 12, active: true });
+    expect(arrangementLoopWindowSec(s, DEFAULT_METER)).toEqual({ startSec: 4, endSec: 12, active: true });
   });
   it('invalid (end<=start) ⇒ inactive full duration', () => {
     const s = withTake(); s.loopEnabled = true; s.loopStartBar = 6; s.loopEndBar = 2;
-    expect(arrangementLoopWindowSec(s)).toEqual({ startSec: 0, endSec: 16, active: false });
+    expect(arrangementLoopWindowSec(s, DEFAULT_METER)).toEqual({ startSec: 0, endSec: 16, active: false });
   });
 
   it('the A–B window in 3/4 matches the session global loop window', () => {
@@ -258,9 +258,8 @@ describe('arrangementLoopWindowSec', () => {
     // decode the same bar numbers into the same seconds of music.
     const meter = { num: 3, den: 4 };
     const s = withTake();
-    s.meter = meter;
     s.loopEnabled = true; s.loopStartBar = 2; s.loopEndBar = 6;
-    const w = arrangementLoopWindowSec(s);
+    const w = arrangementLoopWindowSec(s, meter);
     const session = globalLoopIteration(
       0, 0, { enabled: true, startBar: 2, endBar: 6 }, s.bpm, meter,
     );
@@ -275,11 +274,11 @@ describe('automation sizing follows the arrangement bar', () => {
     // arrangement must end where the arrangement ends, or every band edit
     // (recomputeDurationSec → automationEndSec) would inflate the timeline.
     for (const meter of [DEFAULT_METER, { num: 3, den: 4 }, { num: 7, den: 8 }]) {
-      const s = emptyArrangementState(120, meter);
+      const s = emptyArrangementState(120);
       s.lengthBars = 4;
-      addAutomationCurve(s, 'fx.reverb.wet', []);
+      addAutomationCurve(s, 'fx.reverb.wet', [], meter);
       const curveSec = s.globalAutomation[0].values.length / (stepsPerSec(s.bpm) * AUTOMATION_SUB_RES);
-      expect(curveSec / effectiveDurationSec(s)).toBeCloseTo(1, 6);
+      expect(curveSec / effectiveDurationSec(s, meter)).toBeCloseTo(1, 6);
     }
   });
 });

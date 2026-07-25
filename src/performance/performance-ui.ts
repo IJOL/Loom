@@ -13,6 +13,7 @@ import type { ArrangementState } from './performance';
 import type { KnobHandle } from '../core/knob';
 import type { DestinationRegistry } from '../automation/destination-registry';
 import type { AutoBrush } from '../automation/automation-painter';
+import type { TimeSignature } from '../core/meter';
 import { effectiveDurationSec } from './arrangement-ops';
 import { buildAutomationHeader, buildAutomationLane, type PerfAutoDeps } from './performance-automation-ui';
 import {
@@ -32,6 +33,9 @@ export interface PerfUICallbacks {
    *  empty. */
   destinations: DestinationRegistry;
   laneIds: readonly string[];
+  /** The SONG meter, read from its owner (the Sequencer) at render time. The
+   *  arrangement does not carry one — see ArrangementState. */
+  meter: TimeSignature;
   pxPerBar: number;
   getBrush: () => AutoBrush;
   setBrush: (b: AutoBrush) => void;
@@ -78,11 +82,11 @@ export function attachWheelZoom(host: HTMLElement, cb: PerfUICallbacks): void {
 }
 
 function viewTemplate(state: ArrangementState, cb: PerfUICallbacks): TemplateResult {
-  const dur = effectiveDurationSec(state);
+  const dur = effectiveDurationSec(state, cb.meter);
   if (dur === 0) return html`${toolbarTemplate(state, cb)}${emptyTemplate(cb)}`;
 
   // One bar length for the whole view: ruler, bands and lane widths all use it.
-  const barSec = songBarSec(state.bpm, state.meter);
+  const barSec = songBarSec(state.bpm, cb.meter);
   const totalBars = Math.ceil(dur / barSec);
   const autoDeps: PerfAutoDeps = {
     registry: cb.registry,
@@ -96,7 +100,7 @@ function viewTemplate(state: ArrangementState, cb: PerfUICallbacks): TemplateRes
     onAdd: cb.onAddCurve,
     onRemove: cb.onRemoveCurve,
     onEdited: cb.onEdited,
-    meter: state.meter,
+    meter: cb.meter,
   };
 
   // The automation header/lanes are freshly built elements on every render
@@ -116,6 +120,6 @@ function viewTemplate(state: ArrangementState, cb: PerfUICallbacks): TemplateRes
 
 export function renderPerformanceView(host: HTMLElement, state: ArrangementState, cb: PerfUICallbacks): void {
   host.classList.add('performance-view');
-  if (effectiveDurationSec(state) > 0) attachWheelZoom(host, cb);
+  if (effectiveDurationSec(state, cb.meter) > 0) attachWheelZoom(host, cb);
   render(viewTemplate(state, cb), host);
 }

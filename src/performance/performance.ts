@@ -1,8 +1,6 @@
 // Performance view data model. Pure types and pure helpers only — no audio
 // side effects. Mirror role of session.ts for the Session view.
 
-import { DEFAULT_METER, type TimeSignature } from '../core/meter';
-
 export interface ArrangementClipEvent {
   clipId: string;
   laneId: string;
@@ -27,15 +25,16 @@ export interface ArrangementLaneRec {
   automation: AutomationCurve[];
 }
 
+/** An arrangement does NOT carry the meter. Bars belong to the song, whose meter
+ *  the Sequencer owns: the A–B window is written straight into the scene's
+ *  global loop as bar numbers, and the ruler/playhead measure the same song
+ *  Session measures. A copy here was a cache with four writers and no
+ *  invalidation, so changing the meter from the (always visible) transport row
+ *  while sitting in Performance left the two views decoding the same bars into
+ *  different seconds. Every helper below takes the meter as an argument instead,
+ *  which keeps this layer pure AND lets the compiler name every use site. */
 export interface ArrangementState {
   bpm: number;
-  /** The session meter this take measures its bars with. Optional so a save
-   *  written before the field (and every test literal that casts its way into
-   *  this shape) still loads: every reader goes through
-   *  `songBarSec(bpm, meter)`, whose default absorbs the absence. Without it the
-   *  view could not be meter-aware at all and decoded the SAME A–B bars as
-   *  Session with a different bar length. */
-  meter?: TimeSignature;
   durationSec: number;
   /** User-set length in bars (toolbar). 0 = unset. Render/curve sizing use
    *  effectiveDurationSec = max(durationSec, lengthBars * barSec). */
@@ -49,12 +48,8 @@ export interface ArrangementState {
   loopEndBar?: number;
 }
 
-export function emptyArrangementState(
-  bpm: number, meter: TimeSignature = DEFAULT_METER,
-): ArrangementState {
-  // A COPY of the meter: the arrangement is snapshotted/restored wholesale by
-  // its undo stack, and it must never alias (and so never mutate) seq.meter.
-  return { bpm, meter: { ...meter }, durationSec: 0, lengthBars: 0, lanes: [], globalAutomation: [] };
+export function emptyArrangementState(bpm: number): ArrangementState {
+  return { bpm, durationSec: 0, lengthBars: 0, lanes: [], globalAutomation: [] };
 }
 
 export function emptyLaneRec(laneId: string): ArrangementLaneRec {

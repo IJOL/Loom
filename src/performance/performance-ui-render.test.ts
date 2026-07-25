@@ -31,6 +31,7 @@ function makeCb(over: Partial<PerfUICallbacks> = {}): PerfUICallbacks {
     registry: new Map(),
     destinations: { list: () => [], subscribe: () => () => {} },
     laneIds: ['lane1'],
+    meter: { num: 4, den: 4 },
     pxPerBar: 80,
     getBrush: () => 'line', setBrush: vi.fn(),
     onSetLengthBars: vi.fn(), onZoom: vi.fn(),
@@ -42,10 +43,10 @@ function makeCb(over: Partial<PerfUICallbacks> = {}): PerfUICallbacks {
 }
 
 describe('renderPerformanceView', () => {
-  it('rules the timeline in the arrangement meter, not in 4/4', () => {
+  it('rules the timeline in the SONG meter it is handed, not in 4/4', () => {
     const bars = (meter?: { num: number; den: number }) => {
       const host = document.createElement('div');
-      renderPerformanceView(host, makeState({ durationSec: 12, meter }), makeCb());
+      renderPerformanceView(host, makeState({ durationSec: 12 }), makeCb(meter ? { meter } : {}));
       return host.querySelectorAll('.perf-ruler .perf-bar-mark').length;
     };
     // Relative: the same span of music is more bars when a bar is shorter.

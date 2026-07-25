@@ -18,7 +18,9 @@ import { appendClipEvent, closePendingClipEvent } from './arrangement-ops';
 export function arrangementFromSession(
   state: SessionState, bpm: number, meter: TimeSignature,
 ): ArrangementState {
-  const arr = emptyArrangementState(bpm, meter);
+  // `meter` sizes the source clips (clipLoopSec); the arrangement itself keeps
+  // no meter — bars are the song's, so the view reads it from the Sequencer.
+  const arr = emptyArrangementState(bpm);
   let cursorSec = 0;
 
   state.scenes.forEach((scene, sceneIdx) => {

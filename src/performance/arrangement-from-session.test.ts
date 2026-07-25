@@ -58,10 +58,10 @@ describe('arrangementFromSession', () => {
       scenes: [{ id: 's0', clipPerLane: { A: 0 } }],
     });
     const arr = arrangementFromSession(state, 120, meter);
-    // The Performance ruler measures the timeline with the arrangement's OWN
-    // meter, so a section built from whole clips has to land on a whole number
-    // of those bars — in 3/4 a 4/4 ruler reads 1.5.
-    const bars = arr.durationSec / songBarSec(arr.bpm, arr.meter);
+    // The Performance ruler measures the timeline with the SONG's meter (the
+    // Sequencer's), so a section built from whole clips has to land on a whole
+    // number of those bars — in 3/4 a 4/4 ruler reads 1.5.
+    const bars = arr.durationSec / songBarSec(arr.bpm, meter);
     expect(bars).toBeCloseTo(Math.round(bars), 6);
     expect(Math.round(bars)).toBe(clipBars);
   });

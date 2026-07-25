@@ -1,7 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { parseSavedStateV3, migrateArrangementCurves } from './saved-state-v3';
-import { songBarSec } from '../core/song-position';
-import { DEFAULT_METER } from '../core/meter';
 
 describe('parseSavedStateV3 with arrangement + mode', () => {
   it('accepts a v3 save that includes the new arrangement and mode fields', () => {
@@ -91,24 +89,10 @@ describe('SavedStateV3 persists mode + arrangement', () => {
     expect(appliedArr?.durationSec).toBe(4);
     expect((deps as any).meterSel.value).toBe('7/8');
     expect((deps as any).seq.meter).toEqual({ num: 7, den: 8 });
-    // The restored take measures its bars with the meter the save itself carries,
-    // so the Performance ruler agrees with the Session it was saved from.
-    expect(songBarSec(130, (appliedArr as any).meter))
-      .toBe(songBarSec(130, { num: 7, den: 8 }));
-  });
-});
-
-describe('arrangement meter backfill (no migrations: decide and move on)', () => {
-  it('a take saved before the meter field takes the save\'s own time signature', () => {
-    const arr: any = { bpm: 120, durationSec: 4, lengthBars: 0, lanes: [], globalAutomation: [] };
-    migrateArrangementCurves(arr, { num: 3, den: 4 });
-    expect(songBarSec(120, arr.meter)).toBe(songBarSec(120, { num: 3, den: 4 }));
-  });
-
-  it('and falls back to the default meter when the save carries none', () => {
-    const arr: any = { bpm: 120, durationSec: 4, lanes: [], globalAutomation: [] };
-    migrateArrangementCurves(arr);
-    expect(songBarSec(120, arr.meter)).toBe(songBarSec(120, DEFAULT_METER));
+    // A save carries ONE meter: its own timeSignature, applied to seq.meter
+    // above and read from there by the Performance view. The restored take must
+    // not bring a second one that could contradict it.
+    expect((appliedArr as any).meter).toBeUndefined();
   });
 });
 

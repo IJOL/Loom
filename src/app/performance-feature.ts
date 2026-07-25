@@ -105,7 +105,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   const { ctx, seq, sessionHost, automationRegistry, destinations, onRegisterKnob, onPerformanceEdited } = deps;
 
   const rec = createRecState();
-  const arrangement = emptyArrangementState(seq.bpm, seq.meter);
+  const arrangement = emptyArrangementState(seq.bpm);
   const arrangementPlayState = createArrangementPlayState();
   const recHooks: RecHooks = { rec, arrangement };
   let mode: 'session' | 'performance' = 'session';
@@ -180,7 +180,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
    *  knob context menu's timeline path — see addCurve on the interface. */
   function addCurve(paramId: string): void {
     beforeEdit();
-    addAutomationCurve(arrangement, paramId, laneIds());
+    addAutomationCurve(arrangement, paramId, laneIds(), seq.meter);
     refreshPerformanceView();
   }
 
@@ -249,17 +249,20 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       registry: automationRegistry,
       destinations,
       laneIds: laneIds(),
+      // The meter, read from its owner on every render. Nothing caches it, so a
+      // meter chosen while Performance is on screen lands on the very next paint.
+      meter: seq.meter,
       pxPerBar,
       getBrush: () => brush,
       setBrush: (b) => { brush = b; },
-      onSetLengthBars: (bars) => { beforeEdit(); setArrangementLengthBars(arrangement, bars); refreshPerformanceView(); },
+      onSetLengthBars: (bars) => { beforeEdit(); setArrangementLengthBars(arrangement, bars, seq.meter); refreshPerformanceView(); },
       onZoom: (px) => { pxPerBar = px; scheduleZoomRefresh(); },
       onAddCurve: (paramId) => addCurve(paramId),
       onRemoveCurve: (paramId) => { beforeEdit(); removeAutomationCurve(arrangement, paramId, laneIds()); refreshPerformanceView(); },
       onEdited: () => { onPerformanceEdited?.(); },
       loopEnabled: !!arrangement.loopEnabled,
       loopStartBar: arrangement.loopStartBar ?? 0,
-      loopEndBar: arrangement.loopEndBar ?? Math.ceil(effectiveDurationSec(arrangement) / songBarSec(arrangement.bpm, arrangement.meter)),
+      loopEndBar: arrangement.loopEndBar ?? Math.ceil(effectiveDurationSec(arrangement, seq.meter) / songBarSec(arrangement.bpm, seq.meter)),
       onSetLoop: (enabled, startBar, endBar) => {
         beforeEdit();
         arrangement.loopEnabled = enabled; arrangement.loopStartBar = startBar; arrangement.loopEndBar = endBar;
@@ -293,11 +296,15 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     if (mode === 'performance') sessionHost.setSongAnchor(arrangementPlayState.startedAtCtx);
     if (next === 'performance') arrangementPlayState.startedAtCtx = sessionHost.songAnchorSec;
     if (next === 'performance') {
-      // The session's meter is the one truth; the arrangement only CACHES it so
-      // the pure layer can size a bar without a Sequencer. Refreshed here or a
-      // meter chosen after boot never reaches the ruler. (bpm has the same
-      // staleness, papered over by `arrangement.bpm || seq.bpm`.)
-      arrangement.meter = { ...seq.meter };
+      // No meter to refresh here: seq.meter is the one owner and every reader
+      // (ruler, length field, A–B window, playhead) takes it from there at use
+      // time. It used to be COPIED into the arrangement on this line, which held
+      // only until the next use of the Meter selector — that lives in the
+      // always-visible transport row, so it fires without any view switch and
+      // left this copy stale while the session moved on. (bpm is still copied
+      // into the arrangement and still has that staleness, papered over by
+      // `arrangement.bpm || seq.bpm`.)
+      //
       // Reflect the active scene's global loop into the Performance A–B loop so
       // the brace shows the same region the user already set in Session.
       const g = sessionHost.globalLoopForUI();
@@ -355,6 +362,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   }
 
   function copyFromSession() {
+    // seq.meter here sizes the SOURCE clips; the take itself stores seconds.
     const built = arrangementFromSession(sessionHost.state, seq.bpm, seq.meter);
     setArrangement(built);
     setMode('performance');
@@ -365,7 +373,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
    *  arrangement in the Performance timeline, where every band turned into an
    *  orphaned "missing" (its clipEvents pointed at deleted clips). */
   function resetArrangement() {
-    setArrangement({ ...emptyArrangementState(seq.bpm, seq.meter), loopEnabled: false, loopStartBar: 0, loopEndBar: undefined });
+    setArrangement({ ...emptyArrangementState(seq.bpm), loopEnabled: false, loopStartBar: 0, loopEndBar: undefined });
     setMode('session');
   }
 
@@ -421,7 +429,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         onLaunchClip: arrangementOnLaunchClip,
         onStopLane: arrangementOnStopLane,
         applyAutomation: arrangementApplyAutomation,
-        loopWindow: arrangementLoopWindowSec(arrangement),
+        loopWindow: arrangementLoopWindowSec(arrangement, seq.meter),
         onArrangementEnd: () => { stopAll(sessionHost.laneStates, sessionHost.deps.liveVoices, ctx.currentTime); stopArrangement(arrangementPlayState); deps.onArrangementEnd?.(); },
       });
       // Global transport: after the tick, propagate the (possibly loop-wrapped)
@@ -479,8 +487,8 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       const host = document.getElementById('performance-view-root');
       const rulerTrack = host?.querySelector('.perf-ruler .perf-track') as HTMLElement | null;
       if (animating && host && rulerTrack) {
-        const barSec = songBarSec(arrangement.bpm || seq.bpm, arrangement.meter ?? seq.meter);
-        const lw = arrangementLoopWindowSec(arrangement);
+        const barSec = songBarSec(arrangement.bpm || seq.bpm, seq.meter);
+        const lw = arrangementLoopWindowSec(arrangement, seq.meter);
         let sec = arrangementPlayhead(arrangementPlayState, ctx.currentTime);
         if (lw.active) sec = lw.startSec + ((sec - lw.startSec) % (lw.endSec - lw.startSec));
         const bars = sec / barSec;
@@ -516,7 +524,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     // position to resume either way: arrangementPlayhead() returns 0 while
     // stopped and the cursor is hidden, so the "preserved position" was never
     // visible or reachable. Start from a real number instead of a stale clock.
-    const lw = arrangementLoopWindowSec(arrangement);
+    const lw = arrangementLoopWindowSec(arrangement, seq.meter);
     const startSec = lw.active && lw.startSec > 0 ? lw.startSec : 0;
     startArrangementAt(arrangementPlayState, ctx.currentTime, arrangement, startSec, arrangementOnLaunchClip);
     ensurePlayheadLoop();

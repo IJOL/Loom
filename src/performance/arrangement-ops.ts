@@ -1,7 +1,7 @@
 import { emptyLaneRec, stepsPerSec, type ArrangementLaneRec, type ArrangementState } from './performance';
 import { AUTOMATION_SUB_RES } from '../core/pattern';
 import { songBarSec } from '../core/song-position';
-import { stepsPerBar, DEFAULT_METER, type TimeSignature } from '../core/meter';
+import { stepsPerBar, type TimeSignature } from '../core/meter';
 import type { AutomationCurve } from './performance';
 
 export function getOrCreateLane(s: ArrangementState, laneId: string): ArrangementLaneRec {
@@ -149,26 +149,27 @@ export function recomputeDurationSec(s: ArrangementState): void {
   s.durationSec = dur;
 }
 
-/** Seconds of one bar of THIS arrangement, from the one owner of the question.
- *  A missing meter reads as 4/4 through songBarSec's own default. */
-function barSecOf(s: ArrangementState): number {
-  return songBarSec(s.bpm, s.meter);
+/** Seconds of one bar of the SONG this arrangement sits in. The meter is the
+ *  caller's to supply (the Sequencer owns it) — it is never stored here, so it
+ *  cannot go stale behind a meter change. */
+function barSecOf(s: ArrangementState, meter: TimeSignature): number {
+  return songBarSec(s.bpm, meter);
 }
 
 /** Render/sizing length: the larger of the recorded duration and the
  *  user-set bar length. 0 only when nothing is recorded AND no length set. */
-export function effectiveDurationSec(s: ArrangementState): number {
-  return Math.max(s.durationSec, s.lengthBars * barSecOf(s));
+export function effectiveDurationSec(s: ArrangementState, meter: TimeSignature): number {
+  return Math.max(s.durationSec, s.lengthBars * barSecOf(s, meter));
 }
 
 /** Resolve the playback window in seconds. Loop off / invalid ⇒ inactive with
  *  endSec at the full effective duration (the song-end stop boundary). */
 export function arrangementLoopWindowSec(
-  s: ArrangementState,
+  s: ArrangementState, meter: TimeSignature,
 ): { startSec: number; endSec: number; active: boolean } {
-  const fullEnd = effectiveDurationSec(s);
+  const fullEnd = effectiveDurationSec(s, meter);
   if (!s.loopEnabled) return { startSec: 0, endSec: fullEnd, active: false };
-  const bs = barSecOf(s);
+  const bs = barSecOf(s, meter);
   const start = Math.max(0, (s.loopStartBar ?? 0) * bs);
   const end = Math.min(fullEnd, (s.loopEndBar ?? fullEnd / bs) * bs);
   if (end <= start) return { startSec: 0, endSec: fullEnd, active: false };
@@ -188,8 +189,8 @@ export function arrangementLoopWindowSec(
  *  same question for CLIP envelopes, which are indexed by clip-local step and
  *  wrap on the clip's own loop. Two different questions that happen to share an
  *  answer in 4/4. */
-export function subStepsForBars(bars: number, meter?: TimeSignature): number {
-  return Math.max(0, Math.round(bars)) * stepsPerBar(meter ?? DEFAULT_METER) * AUTOMATION_SUB_RES;
+export function subStepsForBars(bars: number, meter: TimeSignature): number {
+  return Math.max(0, Math.round(bars)) * stepsPerBar(meter) * AUTOMATION_SUB_RES;
 }
 
 function resizeCurve(curve: AutomationCurve, targetLen: number): void {
@@ -204,10 +205,12 @@ function resizeCurve(curve: AutomationCurve, targetLen: number): void {
 
 /** Set the user length (bars) and resize every curve (lane + global) to the
  *  effective length, holding the last value when growing, truncating on shrink. */
-export function setArrangementLengthBars(s: ArrangementState, bars: number): void {
+export function setArrangementLengthBars(
+  s: ArrangementState, bars: number, meter: TimeSignature,
+): void {
   s.lengthBars = Math.max(0, Math.round(bars));
-  const targetBars = Math.ceil(effectiveDurationSec(s) / barSecOf(s));
-  const targetLen = subStepsForBars(targetBars, s.meter);
+  const targetBars = Math.ceil(effectiveDurationSec(s, meter) / barSecOf(s, meter));
+  const targetLen = subStepsForBars(targetBars, meter);
   for (const lane of s.lanes) for (const c of lane.automation) resizeCurve(c, targetLen);
   for (const c of s.globalAutomation) resizeCurve(c, targetLen);
 }
@@ -215,15 +218,15 @@ export function setArrangementLengthBars(s: ArrangementState, bars: number): voi
 /** Create an empty (0.5-filled) automation curve for `paramId`, routed by
  *  prefix into its lane or globalAutomation. No-op if it already exists. */
 export function addAutomationCurve(
-  s: ArrangementState, paramId: string, laneIds: readonly string[],
+  s: ArrangementState, paramId: string, laneIds: readonly string[], meter: TimeSignature,
 ): void {
   const route = routeParamId(paramId, laneIds);
   const list = route.kind === 'lane'
     ? getOrCreateLane(s, route.laneId).automation
     : s.globalAutomation;
   if (list.some((c) => c.paramId === paramId)) return;
-  const targetBars = Math.max(1, Math.ceil(effectiveDurationSec(s) / barSecOf(s)));
-  const len = subStepsForBars(targetBars, s.meter);
+  const targetBars = Math.max(1, Math.ceil(effectiveDurationSec(s, meter) / barSecOf(s, meter)));
+  const len = subStepsForBars(targetBars, meter);
   list.push({ paramId, values: Array.from({ length: len }, () => 0.5), enabled: true, stepped: false });
 }
 
