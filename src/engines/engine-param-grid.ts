@@ -9,8 +9,8 @@
 //   'flat' — controls appended straight into the caller's own row, unquantised,
 //     and discrete → select control. The drum rack, the sampler pads, the
 //     audio-clip toolbar, the subtractive page. This layout used to be a SECOND
-//     copy of the whole walk (engine-ui.wireEngineParams), which is how the two
-//     drifted apart on units, step and index clamping.
+//     copy of the whole walk (the deleted engine-ui.wireEngineParams), which is
+//     how the two drifted apart on units, step and index clamping.
 // Every value write goes through commitParam (engine-param-commit.ts) so the
 // edit reaches BOTH the engine and lane.engineState.params — the grid used to
 // call setBaseValue directly, which is why an fm/wavetable/karplus/westcoast/

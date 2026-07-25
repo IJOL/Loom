@@ -36,7 +36,7 @@ describe('SessionHost.getStateForSave — per-lane engine param persistence', ()
     host.state.lanes = [{ inserts: [], id: 'subtractive-1', engineId: 'subtractive', clips: [] }];
 
     // User turned a knob → mirrored into engineState.params, exactly as
-    // engine-ui.ts does live on every knob/select change.
+    // commitParam does live on every knob/select change.
     mirrorParamChange(host.state, 'subtractive-1', 'filter.cutoff', 0.42);
 
     const saved = host.getStateForSave();

@@ -19,7 +19,7 @@ function stubCanvas() {
 }
 
 // A minimal engine exposing a single continuous 'gain' param — mirrors just
-// enough of the real 'audio' engine for wireEngineParams to mount one knob
+// enough of the real 'audio' engine for the param grid to mount one knob
 // and call ctx.registerKnob with it.
 function fakeAudioEngine(): SynthEngine {
   return {

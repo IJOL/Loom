@@ -30,7 +30,7 @@ export interface SamplerEditorView {
   importStatus: HTMLSpanElement;      // async import feedback (textContent set later)
   onRootChange: (index: number, value: number) => void;
   onDeleteEntry: (index: number) => void;
-  /** Builds the per-zone knob row (wireEngineParams) for a keymap-list row. */
+  /** Builds the per-zone knob row (the flat param grid) for a keymap-list row. */
   zoneParamsFor: (entry: KeymapEntry) => HTMLElement;
 }
 

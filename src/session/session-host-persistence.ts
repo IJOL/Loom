@@ -152,10 +152,6 @@ export function reconcileOpenEditors(self: SessionHost): void {
   }
 }
 
-/** Mirror live modulator + note-FX state back onto each lane before a save.
- *  Params are mirrored live on every knob change, so only modulators + noteFx
- *  are refreshed here (replacing the whole engineState object dropped per-lane
- *  knob values on save). Also refreshes send-bus return level + mute. */
 /** The modulators to seed a duplicated lane's engine with. The live host is the
  *  source of truth (a lane plays what its ModulationHost holds); the persisted
  *  `engineState.modulators` is only a fallback for a lane whose engine was never
@@ -168,6 +164,12 @@ export function modulatorsForDuplicatedLane(
   return src ? (JSON.parse(JSON.stringify(src)) as import('../modulation/types').ModulatorState[]) : [];
 }
 
+/** Mirror live modulator + note-FX state back onto each lane before a save.
+ *  Params are deliberately NOT re-read here, and no longer need to be: every UI
+ *  write path now goes through `commitParam` (src/engines/engine-param-commit.ts),
+ *  which mirrors the edit into `lane.engineState.params` the moment it happens.
+ *  Rebuilding the whole engineState object here would throw those knob values
+ *  away instead. Also refreshes send-bus return level + mute. */
 export function collectEngineState(self: SessionHost): void {
   for (const lane of self.state.lanes) {
     const engine = self.deps.laneResources?.get(lane.id)?.engine;

@@ -671,8 +671,7 @@ export class SamplerWorkletEngine implements SynthEngine {
 
     const knobRow = renderElement(html`<div class="knob-row"></div>`);
     buildEngineParamGrid(this, ctx, knobRow, {
-      layout: 'flat',
-      skip: (id) => !SAMPLER_PARAMS.some((p) => p.id === id) || id.startsWith('filter.'),
+      layout: 'flat', skip: (id) => !SAMPLER_PARAMS.some((p) => p.id === id) || id.startsWith('filter.'),
       formatter: (id, v) => {
         if (id === 'poly.voices') return `${Math.round(v)}`;
         if (id.endsWith('.attack') || id.endsWith('.release')) {
@@ -686,8 +685,7 @@ export class SamplerWorkletEngine implements SynthEngine {
     // so they only appear inside the labelled section the scaffold renders.
     const filterRow = renderElement(html`<div class="knob-row"></div>`);
     buildEngineParamGrid(this, ctx, filterRow, {
-      layout: 'flat',
-      skip: (id) => id !== 'filter.cutoff' && id !== 'filter.resonance',
+      layout: 'flat', skip: (id) => id !== 'filter.cutoff' && id !== 'filter.resonance',
       formatter: (id, v) =>
         id === 'filter.cutoff'
           ? (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`)
