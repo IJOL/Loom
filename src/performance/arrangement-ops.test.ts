@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { emptyArrangementState, emptyLaneRec } from './performance';
 import {
-  appendClipEvent, closePendingClipEvent, getOrCreateLane,
+  appendClipEvent, closePendingClipEvent, getOrCreateLane, seedClipEventsFromSounding,
 } from './arrangement-ops';
 
 describe('getOrCreateLane', () => {
@@ -248,5 +248,36 @@ describe('arrangementLoopWindowSec', () => {
   it('invalid (end<=start) ⇒ inactive full duration', () => {
     const s = withTake(); s.loopEnabled = true; s.loopStartBar = 6; s.loopEndBar = 2;
     expect(arrangementLoopWindowSec(s)).toEqual({ startSec: 0, endSec: 16, active: false });
+  });
+});
+
+describe('seedClipEventsFromSounding', () => {
+  it('opens an event at 0 for every lane already sounding when REC starts', () => {
+    const s = emptyArrangementState(120);
+    seedClipEventsFromSounding(s, [
+      { laneId: 'bass', clipId: 'c-bass' },
+      { laneId: 'drums', clipId: 'c-drums' },
+    ]);
+    expect(s.lanes).toHaveLength(2);
+    expect(s.lanes[0].clipEvents).toEqual([
+      { clipId: 'c-bass', laneId: 'bass', atSec: 0, untilSec: Infinity },
+    ]);
+    expect(s.lanes[1].clipEvents[0].clipId).toBe('c-drums');
+  });
+
+  it('is a no-op when nothing is sounding', () => {
+    const s = emptyArrangementState(120);
+    seedClipEventsFromSounding(s, []);
+    expect(s.lanes).toHaveLength(0);
+  });
+
+  it('does not duplicate a lane that already carries an open event', () => {
+    // A launch recorded microseconds earlier (promotion at the same boundary)
+    // must win: seeding is only for clips that were ALREADY sounding.
+    const s = emptyArrangementState(120);
+    appendClipEvent(s, 'bass', 'c-new', 0);
+    seedClipEventsFromSounding(s, [{ laneId: 'bass', clipId: 'c-old' }]);
+    expect(s.lanes[0].clipEvents).toHaveLength(1);
+    expect(s.lanes[0].clipEvents[0].clipId).toBe('c-new');
   });
 });

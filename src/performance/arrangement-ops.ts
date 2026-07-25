@@ -20,6 +20,30 @@ export function appendClipEvent(
   rec.clipEvents.push({ clipId, laneId, atSec, untilSec: Infinity });
 }
 
+/** Opens an event at t=0 for each clip that was ALREADY sounding when the take
+ *  started.
+ *
+ *  Clip events are otherwise only recorded on a queued→playing promotion, so a
+ *  take armed over a scene that is already running captured nothing: launching
+ *  that same scene again is a no-op by design (`launchScene` leaves an
+ *  in-phase clip running), and no other promotion ever comes. The take then
+ *  finalized empty and Performance kept showing its empty state. What the user
+ *  hears at the moment REC starts belongs in the take, so it is seeded here.
+ *
+ *  A lane whose event was already opened (a promotion landing on the very same
+ *  boundary) is left alone — that record is the more precise one. */
+export function seedClipEventsFromSounding(
+  s: ArrangementState,
+  sounding: readonly { laneId: string; clipId: string }[],
+): void {
+  for (const { laneId, clipId } of sounding) {
+    const rec = getOrCreateLane(s, laneId);
+    const last = rec.clipEvents[rec.clipEvents.length - 1];
+    if (last && last.untilSec === Infinity) continue;
+    rec.clipEvents.push({ clipId, laneId, atSec: 0, untilSec: Infinity });
+  }
+}
+
 export function closePendingClipEvent(
   s: ArrangementState, laneId: string, atSec: number,
 ): void {

@@ -19,7 +19,7 @@ import {
 import {
   finalizeArrangement, setArrangementLengthBars, recomputeDurationSec,
   addAutomationCurve, removeAutomationCurve,
-  effectiveDurationSec, arrangementLoopWindowSec,
+  effectiveDurationSec, arrangementLoopWindowSec, seedClipEventsFromSounding,
 } from '../performance/arrangement-ops';
 import type { AutoBrush } from '../automation/automation-painter';
 import {
@@ -149,8 +149,19 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   // new armed state so main can repaint the shared button.
   function toggleTakeRec(): boolean {
     if (rec.armed) { finishRecordingIfActive(); disarmRec(rec); } else armRec(rec);
-    if (rec.armed && seq.isPlaying()) startRecording(rec, ctx.currentTime);
+    if (rec.armed && seq.isPlaying()) beginTake();
     return rec.armed;
+  }
+
+  /** Starts the take and seeds it with whatever is already sounding, so arming
+   *  REC over a running scene records what the user hears instead of waiting
+   *  for a promotion that a re-launch of that same scene never produces. */
+  function beginTake(): void {
+    startRecording(rec, ctx.currentTime);
+    const sounding = [...sessionHost.laneStates.values()]
+      .filter((lp) => lp.playing)
+      .map((lp) => ({ laneId: lp.laneId, clipId: lp.playing!.id }));
+    seedClipEventsFromSounding(arrangement, sounding);
   }
 
   const flashToast = (msg: string) => {
@@ -426,7 +437,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       beginArrangement();
       return true;
     }
-    if (rec.armed) startRecording(rec, ctx.currentTime);
+    if (rec.armed) beginTake();
     return false;
   }
 
