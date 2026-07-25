@@ -27,6 +27,7 @@ import { velNorm, resolveVelocity } from '../core/velocity-gain';
 import { html, render } from 'lit-html';
 import { renderModulatorsPanel, type ModulationUIDeps } from '../modulation/modulation-ui';
 import { buildEngineParamGrid } from './engine-param-grid';
+import { commitParam } from './engine-param-commit';
 import { createKnob, type KnobHandle } from '../core/knob';
 import { attachKnobUndo } from '../save/history-wiring';
 import { reapplyLaneModulations } from '../modulation/voice-mod-binding';
@@ -307,7 +308,9 @@ export class WorkletLaneEngine implements SynthEngine {
         id: `${ctx.laneId}.poly.voices`,
         label: 'VOICES', min: 1, max: 16, step: 1, value: this.getBaseValue('poly.voices'), defaultValue: 8,
         format: (v) => String(v),
-        onChange: (v) => { this.setBaseValue('poly.voices', v); },
+        // poly.voices routes to maxVoices and never enters the ParamBag, so the
+        // engineState mirror commitParam does is the only way it can persist.
+        onChange: (v) => { commitParam(this, ctx, 'poly.voices', v); },
         ...(ctx.historyDeps ? attachKnobUndo(ctx.historyDeps) : {}),
       });
       ctx.registerKnob(voices);

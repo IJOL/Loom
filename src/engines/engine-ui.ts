@@ -12,7 +12,7 @@
 import type { SynthEngine, EngineUIContext } from './engine-types';
 import { createKnob, type KnobHandle } from '../core/knob';
 import { createSelectControl } from '../core/select-control';
-import { mirrorParamChange } from '../session/session-engine-state';
+import { commitParam } from './engine-param-commit';
 import { attachKnobUndo } from '../save/history-wiring';
 
 export interface WireEngineParamsOptions {
@@ -28,7 +28,9 @@ export interface WireEngineParamsOptions {
  * Walk engine.params, build a knob or select per spec, and append it to
  * `parent`. Each control is registered with `ctx.registerKnob` under the
  * canonical id `${ctx.laneId}.${spec.id}` so it shows up in the modulation
- * destination dropdown and automation registry.
+ * destination dropdown and automation registry. Value writes go through
+ * commitParam (engine-param-commit.ts), the one seam that also mirrors the edit
+ * into lane.engineState.params — shared with buildEngineParamGrid.
  */
 export function wireEngineParams(
   engine: SynthEngine,
@@ -50,12 +52,7 @@ export function wireEngineParams(
         defaultValue: spec.default,
         size: opts.knobSize,
         color: spec.color,
-        onChange: (v) => {
-          engine.setBaseValue(spec.id, v);
-          if (ctx.sessionState) {
-            mirrorParamChange(ctx.sessionState, ctx.laneId, spec.id, v);
-          }
-        },
+        onChange: (v) => { commitParam(engine, ctx, spec.id, v); },
         format: opts.formatter ? (v) => opts.formatter!(spec.id, v) : undefined,
         ...(ctx.historyDeps ? attachKnobUndo(ctx.historyDeps) : {}),
       });
@@ -74,10 +71,7 @@ export function wireEngineParams(
         showLabel: spec.showLabel,
         onChange: (v) => {
           const i = options.findIndex((o) => o.value === v);
-          engine.setBaseValue(spec.id, i);
-          if (ctx.sessionState) {
-            mirrorParamChange(ctx.sessionState, ctx.laneId, spec.id, i);
-          }
+          commitParam(engine, ctx, spec.id, i);
         },
       });
       ctx.registerKnob(handle);

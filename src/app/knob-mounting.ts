@@ -8,7 +8,7 @@ import type { SynthEngine, EngineUIContext } from '../engines/engine-types';
 import type { LaneResourceMap } from '../core/lane-resources';
 import type { SessionState } from '../session/session';
 import type { HistoryDeps } from '../save/history-wiring';
-import { mirrorParamChange } from '../session/session-engine-state';
+import { mirrorParamChange, withoutParamMirror } from '../session/session-engine-state';
 
 export interface KnobMounterDeps {
   registerKnob(k: KnobHandle): void;
@@ -141,16 +141,22 @@ export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
   };
 
   const refreshLaneKnobs = (laneId: string, engine: SynthEngine) => {
-    for (const spec of engine.params) {
-      const handle = deps.registry.get(`${laneId}.${spec.id}`);
-      if (!handle) continue;
-      if (spec.kind === 'discrete' && spec.options && spec.options.length > 0) {
-        const idx = Math.round(engine.getBaseValue(spec.id));
-        handle.setValue(normaliseSelectIndex(idx, spec.options.length));
-      } else {
-        handle.setValue(engine.getBaseValue(spec.id));
+    // Display-only repaint: a handle's setValue fires the same onChange a user
+    // drag does, and that onChange now mirrors into engineState.params. Left
+    // unguarded, the load path (preset recall → here → THEN replay params)
+    // would overwrite the very values it was about to restore.
+    withoutParamMirror(() => {
+      for (const spec of engine.params) {
+        const handle = deps.registry.get(`${laneId}.${spec.id}`);
+        if (!handle) continue;
+        if (spec.kind === 'discrete' && spec.options && spec.options.length > 0) {
+          const idx = Math.round(engine.getBaseValue(spec.id));
+          handle.setValue(normaliseSelectIndex(idx, spec.options.length));
+        } else {
+          handle.setValue(engine.getBaseValue(spec.id));
+        }
       }
-    }
+    });
   };
 
   return {

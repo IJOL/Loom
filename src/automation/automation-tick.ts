@@ -1,4 +1,5 @@
 import { tickSessionEnvelopes } from '../session/session-runtime';
+import { withoutParamMirror } from '../session/session-engine-state';
 import type { Sequencer } from '../core/sequencer';
 import type { KnobHandle } from '../core/knob';
 import type { LanePlayState } from '../session/session-runtime';
@@ -74,8 +75,11 @@ export function startAutomationTick(deps: AutomationTickDeps): void {
       const k = automationRegistry.get(paramId);
       if (k) {
         // A mounted knob is driven through its handle so the UI follows too.
+        // Without the mirror guard the envelope would also write itself into
+        // lane.engineState.params — automation belongs to the clip, not to the
+        // lane's base state, and the unmounted branch below never mirrored.
         const range = k.meta.max - k.meta.min;
-        k.setValue(k.meta.min + normalised * range);
+        withoutParamMirror(() => k.setValue(k.meta.min + normalised * range));
         return;
       }
       // No knob mounted (the lane's editor panel is closed). Automation is a

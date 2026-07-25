@@ -3,6 +3,8 @@ import { describe, it, expect, vi } from 'vitest';
 import type { NoteSpec, ParamBag } from '../audio-dsp/types';
 import type { EngineUIContext } from './engine-types';
 import type { ModLite } from '../audio-dsp/modulation-runtime';
+import type { KnobHandle } from '../core/knob';
+import type { SessionState } from '../session/session';
 
 // Mock the node wrapper: capture spawns/params/maxVoices/mods + the engineId
 // passed to the node constructor, without a real AudioWorkletNode (and without
@@ -144,6 +146,33 @@ describe('WorkletLaneEngine', () => {
     makeEngine({ engineId: 'tb303', name: 'TB-303', polyphony: 'mono' }).buildParamUI(container, makeUiCtx(registered));
     expect(container.querySelector('.mod-panel')).toBeTruthy();
     expect(registered).not.toContain('subtractive-1.poly.voices');
+  });
+
+  it('the VOICES knob mirrors poly.voices into the lane engineState', () => {
+    // poly.voices routes to maxVoices and never enters the ParamBag, so the
+    // engineState mirror is the ONLY way a voice-count edit reaches a save.
+    const state = {
+      lanes: [{ id: 'subtractive-1', engineId: 'subtractive', clips: [], inserts: [] }],
+    } as unknown as SessionState;
+    const handles = new Map<string, KnobHandle>();
+    const ctx = {
+      laneId: 'subtractive-1',
+      registerKnob: (k: KnobHandle) => { if (k.meta?.id) handles.set(k.meta.id, k); },
+      registry: new Map(),
+      sessionState: state,
+    } as unknown as EngineUIContext;
+
+    const eng = makeEngine();
+    const defaultVoices = eng.getBaseValue('poly.voices');
+    eng.buildParamUI(document.createElement('div'), ctx);
+
+    const voices = handles.get('subtractive-1.poly.voices');
+    expect(voices, 'the VOICES knob is not registered under its canonical id').toBeDefined();
+    voices!.setValue(defaultVoices + 4);
+
+    const mirrored = state.lanes[0].engineState?.params?.['poly.voices'];
+    expect(mirrored, 'the VOICES edit never reached engineState.params').toBeDefined();
+    expect(mirrored).not.toBe(defaultVoices);
   });
 
   it('editing the modulators panel re-posts the modulator config to the worklet', () => {

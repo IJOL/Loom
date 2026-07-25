@@ -5,6 +5,10 @@
 // (formatted label) unless the spec opts into selectStyle: 'dropdown' → select.
 // Extracted from worklet-lane-engine.buildParamUI so the grouped layout is
 // unit-testable without a worklet and the engine file stays lean.
+// Every value write goes through commitParam (engine-param-commit.ts) so the
+// edit reaches BOTH the engine and lane.engineState.params — the grid used to
+// call setBaseValue directly, which is why an fm/wavetable/karplus/westcoast/
+// tb303 knob was thrown away on save.
 
 import { html, render, nothing } from 'lit-html';
 import { createKnob } from '../core/knob';
@@ -12,6 +16,7 @@ import { createSelectControl } from '../core/select-control';
 import type { EngineParamSpec } from './engine-params';
 import type { EngineUIContext } from './engine-types';
 import { attachKnobUndo } from '../save/history-wiring';
+import { commitParam } from './engine-param-commit';
 
 interface GridEngine {
   id: string;
@@ -45,7 +50,7 @@ function buildControl(engine: GridEngine, ctx: EngineUIContext, spec: EnginePara
       showLabel: spec.showLabel,
       onChange: (v) => {
         const i = options.findIndex((o) => o.value === v);
-        engine.setBaseValue(spec.id, Math.max(0, i));
+        commitParam(engine, ctx, spec.id, Math.max(0, i));
       },
     });
     ctx.registerKnob(handle);
@@ -64,7 +69,7 @@ function buildControl(engine: GridEngine, ctx: EngineUIContext, spec: EnginePara
     format: discrete
       ? (v) => spec.options![Math.max(0, Math.min(spec.options!.length - 1, Math.round(v)))].label
       : (spec.unit ? (v) => `${v.toFixed(2)}${spec.unit}` : undefined),
-    onChange: (v) => { engine.setBaseValue(spec.id, v); },
+    onChange: (v) => { commitParam(engine, ctx, spec.id, v); },
     ...(ctx.historyDeps ? attachKnobUndo(ctx.historyDeps) : {}),
   });
   ctx.registerKnob(knob);

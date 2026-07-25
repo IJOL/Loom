@@ -9,14 +9,39 @@ import type { KeymapEntry } from '../samples/types';
 import type { NoteFxState } from '../notefx/notefx-types';
 
 
+let mirrorSuppressed = 0;
+
+/** Run `fn` with `mirrorParamChange` disabled, then restore it.
+ *
+ *  A knob handle's `setValue` fires the same onChange a user drag does, so the
+ *  paths that move a knob WITHOUT the user touching it — a preset recall
+ *  repainting the lane (knob-mounting.refreshLaneKnobs) and per-clip automation
+ *  driving a mounted knob (automation-tick) — would otherwise write their value
+ *  into `engineState.params` as if the user had set it. On load that is
+ *  destructive: applyLoadedSessionState applies each lane's preset BEFORE
+ *  replaying `engineState.params`, so the preset's values would overwrite the
+ *  saved tweak that was about to be restored. Automation is a property of the
+ *  clip, not of the lane's base state (the unmounted branch never mirrored
+ *  either). Only genuine user edits mirror. */
+export function withoutParamMirror<T>(fn: () => T): T {
+  mirrorSuppressed++;
+  try {
+    return fn();
+  } finally {
+    mirrorSuppressed--;
+  }
+}
+
 /** Writes `value` into `state.lanes[laneId].engineState.params[paramId]`,
- *  creating intermediate objects as needed. No-op if the lane is unknown. */
+ *  creating intermediate objects as needed. No-op if the lane is unknown or if
+ *  we are inside `withoutParamMirror`. */
 export function mirrorParamChange(
   state: SessionState,
   laneId: string,
   paramId: string,
   value: number,
 ): void {
+  if (mirrorSuppressed > 0) return;
   const lane = state.lanes.find((l) => l.id === laneId);
   if (!lane) return;
   if (!lane.engineState) lane.engineState = {};
