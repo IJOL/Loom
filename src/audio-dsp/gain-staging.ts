@@ -27,15 +27,23 @@ export const ENGINE_TRIM: Record<string, number> = {
                      // Around the World's subtractive leads drop too — accepted.
   fm: 0.179, // was 0.25, ÷1.4 (2026-07-25): fm scaled RAW velocity — the AudioWorklet
              // port dropped the `0.3 + 1.1·v` curve — so restoring it multiplied a
-             // full-velocity note by velGain01(1) = 1.4. Measured, not guessed: the
-             // division puts the v=1.0 level back where it was (rms ratio 1.002 vs
-             // the pre-change render) and only the quiet end of the range moves.
+             // full-velocity note by velGain01(1) = 1.4. What the division puts back
+             // is exactly the FULL-velocity level (rms ratio 1.002 vs the pre-change
+             // render) — that one point, not the range. Below it every note is now
+             // LOUDER than it was, because the restored curve has a 0.3 floor where
+             // raw velocity had none: +0.75 dB at the app's default velocity of 90,
+             // and ~+9 dB at the very bottom, growing as velocity falls. That lift is
+             // the point (a soft note was a third too quiet on fm and karplus, and
+             // MIDI-import passages went missing), but it is a change, not a
+             // restoration, and only v=1.0 is where it was.
   wavetable: 0.6,
   westcoast: 0.5,
-  karplus: 0.857, // was 1.2, ÷1.4 (2026-07-25): same restored curve as fm above
-                  // (measured ratio 1.000). And 1.2 was itself "raised from 0.8
-                  // (×1.5): sat too quiet vs the other engines" — tuned by ear
-                  // WITH the broken formula in place, which is how a lost curve
+  karplus: 0.857, // was 1.2, ÷1.4 (2026-07-25): same restored curve, same shape as
+                  // fm above — full velocity preserved (measured ratio 1.000),
+                  // everything softer lifted by the same factor, so the two engines
+                  // stay balanced against each other. And 1.2 was itself "raised
+                  // from 0.8 (×1.5): sat too quiet vs the other engines" — tuned by
+                  // ear WITH the broken formula in place, which is how a lost curve
                   // hides as a loudness complaint one layer down.
 };
 
