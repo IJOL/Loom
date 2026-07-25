@@ -24,8 +24,10 @@
 import { describe, it, expect } from 'vitest';
 import { clipLoopSec } from './launch-timing';
 import { clipLoopSourceRange } from './clip-loop';
+import { audioRetrigger } from './audio-retrigger';
 import { DEFAULT_METER, ticksPerBar } from './meter';
 import { probeLane, schedulerPeriodSec } from '../../test/scheduler-period';
+import { emptyLanePlayState, seekSession, type LanePlayState } from '../session/session-runtime';
 import type { SessionClip } from '../session/session';
 
 const BAR = ticksPerBar(DEFAULT_METER);
@@ -92,5 +94,38 @@ describe('clipLoopSec stays global-loop-blind', () => {
     const sourceFrac = (src.endSec - src.startSec) / bufDur;
     const secondsFrac = clipLoopSec(half, BPM, DEFAULT_METER) / clipLoopSec(whole, BPM, DEFAULT_METER);
     expect(sourceFrac / secondsFrac).toBeCloseTo(1, 9);
+  });
+
+  it('hands the audio re-trigger a phase inside the period it divides by', () => {
+    // The seek path spans two files: session-runtime hands out
+    // phaseSec = targetSongSec mod clipLoopSec, and session-host divides that by
+    // clipLoopSec AGAIN to address clipLoopSourceRange's span. Change one period
+    // without the other and the buffer restarts from the wrong second. Pinned on
+    // a clip carrying BOTH a sample and a tempoMap — a pairing production never
+    // builds (audio clips come from sample import, tempo maps from MIDI import)
+    // but the type permits, and the only shape where the periods could diverge.
+    const BAR = ticksPerBar(DEFAULT_METER);
+    const bufDur = 9;
+    const c: SessionClip = { color: '#a8e0d8', gridResolution: '1/16',
+      id: 'audio-tm', lengthBars: 4, notes: [],
+      sample: { sampleId: 's', mode: 'loop', trimStart: 0, trimEnd: bufDur },
+      tempoMap: [{ tick: 0, bpm: BPM }, { tick: 2 * BAR, bpm: BPM / 2 }],
+    };
+    const laneStates = new Map<string, LanePlayState>();
+    const lp = emptyLanePlayState('a'); lp.playing = c; laneStates.set('a', lp);
+
+    let phaseSec = -1;
+    seekSession(laneStates, 7.3, 100, BPM, DEFAULT_METER, undefined,
+      (_laneId, p) => { phaseSec = p; });
+
+    const period = clipLoopSec(c, BPM, DEFAULT_METER);
+    // A real phase, strictly inside one iteration — never the whole loop or more.
+    expect(phaseSec).toBeGreaterThan(0);
+    expect(phaseSec / period).toBeLessThan(1);
+    // So the offset lands strictly inside the source span, never clamped to its end.
+    const src = clipLoopSourceRange(c, DEFAULT_METER, bufDur);
+    const r = audioRetrigger(c, DEFAULT_METER, phaseSec, period, bufDur);
+    expect(r).not.toBeNull();
+    expect((r!.offsetSec - src.startSec) / (src.endSec - src.startSec)).toBeLessThan(1);
   });
 });
