@@ -71,7 +71,7 @@ export function startAutomationTick(deps: AutomationTickDeps): void {
     applyModulationRings(deps);          // modulation overlay — always (free LFO runs when stopped)
     if (!seq.isPlaying()) return;
     let ranges: ReadonlyMap<string, { min: number; max: number }> | undefined;
-    tickSessionEnvelopes(getLaneStates(), ctx.currentTime, seq.bpm, (paramId, normalised) => {
+    tickSessionEnvelopes(getLaneStates(), ctx.currentTime, seq.bpm, seq.meter, (paramId, normalised) => {
       const k = automationRegistry.get(paramId);
       if (k) {
         // A mounted knob is driven through its handle so the UI follows too.

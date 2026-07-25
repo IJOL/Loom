@@ -223,7 +223,7 @@ export class OfflineSceneRecorder implements SceneRecorder {
     // we keep). frames === cycleFrames * 2, so windowSec === 2 · totalSec.
     const windowSec = frames / sampleRate;
     const triggers = collectSceneTriggers(laneClips, bpm, meter, windowSec, swing);
-    const autos = collectSceneAutomation(laneClips, bpm, windowSec);
+    const autos = collectSceneAutomation(laneClips, bpm, windowSec, meter);
 
     // Walk the merged auto/trig stream in time order, applying automation to the
     // worklet lane engine (setBaseValue mutates its dot-id ParamBag) and, at each

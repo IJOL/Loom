@@ -6,7 +6,7 @@ import { emptyScene, clipRowCount, cloneClipWithNewId } from './session';
 import { tickLane, noteTrigger } from '../core/lane-scheduler';
 import { TICKS_PER_STEP } from '../core/notes';
 import { DEFAULT_METER, type TimeSignature } from '../core/meter';
-import { AUTOMATION_SUB_RES } from '../core/pattern';
+import { envelopeSubIndex } from '../core/clip-envelope-length';
 import { clipLoopSec, nextLoopEnd, sceneSwitchBoundary } from '../core/launch-timing';
 import { reanchorOnSeek } from '../core/song-position';
 import { effectiveGlobalLoop, globalLoopIteration } from '../core/global-loop';
@@ -448,21 +448,22 @@ export function tickSession(
 
 export type ApplyParamFn = (paramId: string, normalised: number) => void;
 
+/** Land every playing clip's envelopes on their targets for the current frame.
+ *  `meter` is what keeps the envelope's loop period equal to the clip's: tickLane
+ *  above loops the same clip every `lengthBars * ticksPerBar(meter)` ticks, and
+ *  envelopeSubIndex wraps on that same period. */
 export function tickSessionEnvelopes(
   laneStates: Map<string, LanePlayState>,
   now: number,
   bpm: number,
+  meter: TimeSignature,
   apply: ApplyParamFn,
 ): void {
-  const stepDur = 60 / bpm / 4;
   for (const lp of laneStates.values()) {
     if (!lp.playing) continue;
     const clip = lp.playing;
     if (!clip.envelopes || clip.envelopes.length === 0) continue;
-    const clipSteps = Math.max(1, clip.lengthBars * 16);
-    const totalSubs = clipSteps * AUTOMATION_SUB_RES;
-    const stepsElapsed = Math.max(0, (now - lp.startTime) / stepDur);
-    const subIdx = Math.floor(stepsElapsed * AUTOMATION_SUB_RES) % totalSubs;
+    const subIdx = envelopeSubIndex(now - lp.startTime, bpm, clip.lengthBars, meter);
     for (const env of clip.envelopes) {
       const v = env.values[subIdx] ?? 0.5;
       apply(env.paramId, v);

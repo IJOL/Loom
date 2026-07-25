@@ -1,10 +1,13 @@
 // src/export/collect-scene-automation.ts
 // Pure: sample every sounding clip's enabled envelopes across [0, windowSec) into
-// a time-sorted list of automation points. Mirrors tickSessionEnvelopes' indexing
-// (AUTOMATION_SUB_RES sub-steps per 16th step, looping with % totalSubs) so the
-// offline render's automation matches the live scheduler.
+// a time-sorted list of automation points. It walks its own sub-step counter, but
+// the length it wraps on comes from core/clip-envelope-length — the same call the
+// live tick makes — so the export cannot loop the curve on a different period
+// than the scheduler does.
 
 import { AUTOMATION_SUB_RES } from '../core/pattern';
+import { envelopeValueLength } from '../core/clip-envelope-length';
+import type { TimeSignature } from '../core/meter';
 import type { SoundingLaneClip } from './collect-scene-triggers';
 
 export interface OfflineAutomationPoint {
@@ -18,6 +21,7 @@ export function collectSceneAutomation(
   lanes: SoundingLaneClip[],
   bpm: number,
   windowSec: number,
+  meter: TimeSignature,
 ): OfflineAutomationPoint[] {
   const out: OfflineAutomationPoint[] = [];
   const stepDur = 60 / bpm / 4;
@@ -25,8 +29,7 @@ export function collectSceneAutomation(
   if (subDur <= 0) return out;
   for (const { laneId, clip } of lanes) {
     if (!clip.envelopes || clip.envelopes.length === 0) continue;
-    const clipSteps = Math.max(1, clip.lengthBars * 16);
-    const totalSubs = clipSteps * AUTOMATION_SUB_RES;
+    const totalSubs = envelopeValueLength(clip.lengthBars, meter);
     for (const env of clip.envelopes) {
       if (env.enabled === false) continue;
       // paramId is '<laneId>.<localId>'; setBaseValue wants the local id.
