@@ -191,9 +191,12 @@ function laneTemplate(
 }
 
 /** "An LFO, but drawn as automation": shape + musical rate + depth, written into
- *  the lane as a curve. Rates are divisions (4 bars … 1/16), not Hz — that IS
- *  the frequency limit: 1/16 is one cycle per step, the finest a lane can hold
- *  (see automation-lfo.ts). */
+ *  the lane as a curve. Rates are divisions of the BAR (4 bars … 1/16), not Hz,
+ *  and the fill below is handed the meter's bar — so 1/16 is 16 cycles per bar,
+ *  which is one cycle per step in 4/4 and more than one in a shorter bar. The
+ *  rate table itself is still written against a 16-step bar (see the rate-limits
+ *  note in automation-lfo.ts); until that is settled, nothing here may promise
+ *  the user a per-STEP rate. */
 function lfoBarTemplate(h: Panel, clip: SessionClip, env: ClipEnvelope, strip: AutoStrip): TemplateResult {
   const apply = () => {
     const cfg = {
@@ -236,7 +239,7 @@ function lfoBarTemplate(h: Panel, clip: SessionClip, env: ClipEnvelope, strip: A
       </select>
       <select
         class="clip-auto-lfo-rate"
-        title="Rate as a musical division. 1/16 is one cycle per step — the fastest an automation lane can hold."
+        title="Rate as a musical division of the bar. 1/16 is 16 cycles per bar — the fastest this menu offers."
         @change=${onRate}
       >
         ${LFO_RATES.map((r) => html`<option value=${r.id} ?selected=${r.id === lfoState.rateId}>${r.label}</option>`)}
