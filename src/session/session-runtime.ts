@@ -449,9 +449,12 @@ export function tickSession(
 export type ApplyParamFn = (paramId: string, normalised: number) => void;
 
 /** Land every playing clip's envelopes on their targets for the current frame.
- *  `meter` is what keeps the envelope's loop period equal to the clip's: tickLane
- *  above loops the same clip every `lengthBars * ticksPerBar(meter)` ticks, and
- *  envelopeSubIndex wraps on that same period. */
+ *  `meter` is what keeps the envelope's span equal to the clip's own: tickLane
+ *  above sizes a clip as `lengthBars * ticksPerBar(meter)` ticks and
+ *  envelopeSubIndex wraps on that same span. The two are the same PERIOD only
+ *  while the clip has no local loop region — with `loopEnabled` tickLane
+ *  iterates the shorter region and the curve slides against the notes. Known
+ *  debt, pinned in session-envelope-tick.test.ts. */
 export function tickSessionEnvelopes(
   laneStates: Map<string, LanePlayState>,
   now: number,
