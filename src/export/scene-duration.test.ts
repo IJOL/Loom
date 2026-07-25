@@ -1,9 +1,10 @@
 // src/export/scene-duration.test.ts
 import { describe, it, expect } from 'vitest';
 import { clipDurationSec, soundingSceneDurationSec } from './scene-duration';
+import { clipLoopSec } from '../core/launch-timing';
 import { emptyLanePlayState, type LanePlayState } from '../session/session-runtime';
 import type { SessionClip } from '../session/session';
-import { DEFAULT_METER, ticksPerBar } from '../core/meter';
+import { DEFAULT_METER, ticksPerBar, type TimeSignature } from '../core/meter';
 
 function clip(lengthBars: number): SessionClip {
   return { color: '#f4c8a8', gridResolution: '1/16', id: `c${lengthBars}`, lengthBars, notes: [] };
@@ -43,9 +44,30 @@ describe('clipDurationSec', () => {
   it('respects an active loop sub-region instead of the whole clip', () => {
     // A long audio clip (8 bars) looping only its first 2 bars must report the
     // LOOP length (2 bars = 4s @120 4/4), not the whole-clip length (8 bars =
-    // 16s). Mirrors tickLane's effectiveClipLoop — otherwise the offline render
-    // window blows up to the full buffer and hangs the browser.
+    // 16s) — otherwise the offline render window blows up to the full buffer
+    // and hangs the browser.
     expect(clipDurationSec(loopClip(8, 2), DEFAULT_METER, 120)).toBeCloseTo(4, 6);
+  });
+
+  it('a tempo-mapped clip reports a longer window than its constant-bpm length', () => {
+    // An imported MIDI that halves its tempo half way. The export renders two
+    // cycles and returns the second, so this window IS the period the scheduler
+    // loops on — a constant-bpm answer makes the "second cycle" not a cycle, and
+    // the WAV starts mid-phrase.
+    const BAR = ticksPerBar(DEFAULT_METER);
+    const mapped: SessionClip = { ...clip(4), id: 'tm',
+      tempoMap: [{ tick: 0, bpm: 120 }, { tick: 2 * BAR, bpm: 60 }] };
+    const ratio = clipDurationSec(mapped, DEFAULT_METER, 120)
+      / clipDurationSec(clip(4), DEFAULT_METER, 120);
+    expect(ratio).toBeGreaterThan(1);
+  });
+
+  it('agrees with clipLoopSec, the owner it delegates to', () => {
+    // The two take bpm and meter in OPPOSITE order, so the delegation is one
+    // swap away from plausible-looking wrong seconds. Pinned with a meter that
+    // is not 4/4 and a bpm that is not 120, where a swap changes the answer.
+    const meter: TimeSignature = { num: 7, den: 8 };
+    expect(clipDurationSec(clip(3), meter, 90) / clipLoopSec(clip(3), 90, meter)).toBeCloseTo(1, 9);
   });
 });
 

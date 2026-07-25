@@ -6,19 +6,14 @@
 import type { LanePlayState } from '../session/session-runtime';
 import type { SessionClip } from '../session/session';
 import { type TimeSignature } from '../core/meter';
-import { TICKS_PER_QUARTER } from '../core/notes';
-import { effectiveClipLoop } from '../core/clip-loop';
+import { clipLoopSec } from '../core/launch-timing';
 
-/** Musical length of one clip iteration, in seconds. Mirrors lane-scheduler's
- *  `tickLane`: when a loop sub-region is active the iteration is the LOOP length,
- *  not the whole clip. Without this, an audio clip looping a few bars of a long
- *  buffer reports its full `lengthBars` (hundreds of bars), so the offline render
- *  window balloons to the whole buffer and hangs the browser. For a clip with no
- *  loop `effectiveClipLoop` returns [0, lengthBars·ticksPerBar) ⇒ identical to the
- *  old `lengthBars · quartersPerBar · 60/bpm`. */
+/** Musical length of one clip iteration, in seconds. The owner is
+ *  `clipLoopSec` (core/launch-timing) — the same number the scheduler loops on,
+ *  including a tempo-mapped clip's real length and an active loop sub-region.
+ *  Note the argument order is the mirror of the owner's. */
 export function clipDurationSec(clip: SessionClip, meter: TimeSignature, bpm: number): number {
-  const { startTick, endTick } = effectiveClipLoop(clip, meter);
-  return ((endTick - startTick) / TICKS_PER_QUARTER) * (60 / bpm);
+  return clipLoopSec(clip, bpm, meter);
 }
 
 /** Longest sounding clip across all lanes, in seconds. 0 ⇒ nothing playing. */
