@@ -26,10 +26,56 @@ describe('VoiceManager', () => {
     expect(vm.activeCount).toBe(1);
   });
 
-  it('a retrigger of the same midi replaces, not stacks', () => {
+  it('a retrigger of the same midi releases the old voice — no unbounded stacking', () => {
     const vm = new VoiceManager(SR, 'subtractive', P); vm.setMaxVoices(8);
     vm.spawn(note(60)); vm.spawn(note(60)); vm.spawn(note(60));
+    // The two stolen voices stay in the loop only long enough to render their
+    // release (they were note-off'd at spawn), then self-free via done. After
+    // the release window only the live retrigger remains.
+    for (let i = 0; i < SR * 0.45; i++) vm.renderSample(i / SR);
     expect(vm.activeCount).toBe(1);
+  });
+
+  it('a same-midi retrigger does not click — the stolen voice renders its release', () => {
+    // The transcription-clip bug (tb303-bs.json): back-to-back same-pitch notes
+    // made spawn() splice the old voice out of the render loop, so its release
+    // never rendered and the discarded amplitude landed as a step (audible
+    // click, the same physics that killed the finite voice cap). Two passes:
+    // find a retrigger instant where the sustaining voice is NOT near a zero
+    // crossing (so the step can't hide), then retrigger there and compare the
+    // step across the boundary against the signal's own slew just before it —
+    // relative, not absolute: a clean steal stays within the waveform's slew
+    // scale (~3×); a splice jumps by the whole discarded amplitude (>5×).
+    // A CLOSED filter makes the tone near-sinusoidal so the local slew is a
+    // meaningful yardstick — a bright saw's own band-limited edge is already
+    // step-sized and would mask the splice.
+    const SMOOTH: ParamBag = { 'filter.cutoff': 0.2, 'filter.resonance': 0.2 };
+    const dry = new VoiceManager(SR, 'subtractive', SMOOTH); dry.setMaxVoices(8);
+    dry.spawn(note(48));
+    const probe: number[] = [];
+    for (let i = 0; i < SR * 0.35; i++) probe.push(dry.renderSample(i / SR));
+    let peak = 0;
+    for (let i = Math.floor(SR * 0.2); i < probe.length; i++) peak = Math.max(peak, Math.abs(probe[i]));
+    let retrigAt = -1;
+    for (let i = Math.floor(SR * 0.25); i < probe.length; i++) {
+      if (Math.abs(probe[i]) > peak * 0.7) { retrigAt = i; break; }
+    }
+    expect(retrigAt).toBeGreaterThan(0);
+
+    const vm = new VoiceManager(SR, 'subtractive', SMOOTH); vm.setMaxVoices(8);
+    vm.spawn(note(48));
+    const buf: number[] = [];
+    for (let i = 0; i < retrigAt + SR * 0.05; i++) {
+      if (i === retrigAt) vm.spawn(note(48, i / SR));
+      buf.push(vm.renderSample(i / SR));
+    }
+    let slewBefore = 0;
+    for (let i = retrigAt - Math.floor(SR * 0.01); i < retrigAt - 1; i++) {
+      slewBefore = Math.max(slewBefore, Math.abs(buf[i] - buf[i - 1]));
+    }
+    let step = 0;
+    for (let i = retrigAt; i < retrigAt + 4; i++) step = Math.max(step, Math.abs(buf[i] - buf[i - 1]));
+    expect(step).toBeLessThan(slewBefore * 3);
   });
 
   it('renders louder with more simultaneous voices', () => {

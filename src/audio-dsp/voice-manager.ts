@@ -59,9 +59,17 @@ export class VoiceManager {
   }
 
   spawn(note: NoteSpec): void {
-    // same-midi steal first (MIDI imports retrigger without note-off), then cap.
+    // same-midi RETRIGGER: release the previous voice of this pitch, but leave
+    // it in the render loop — it fades over its release and self-frees via
+    // `done`. Splicing it out here (the old behaviour) discarded whatever
+    // amplitude it was rendering, and that discarded amplitude landed verbatim
+    // as a step discontinuity: an audible click on every back-to-back same-pitch
+    // note (transcription clips are full of them) — the same physics that killed
+    // the finite voice cap below. MIDI imports retrigger without a note-off, so
+    // this noteOff IS the note-off; calling it on an already-releasing voice is
+    // harmless (it only ever shortens the hold).
     for (let i = this.slots.length - 1; i >= 0; i--) {
-      if (this.slots[i].midi === note.midi) { this.slots[i].v.noteOff(this.lastT); this.slots.splice(i, 1); }
+      if (this.slots[i].midi === note.midi) this.slots[i].v.noteOff(this.lastT);
     }
     // Monophonic lanes (maxVoices === 1) steal the previous voice so the line stays
     // mono (e.g. TB-303 acid bass). Polyphonic lanes are intentionally UNCAPPED: the
