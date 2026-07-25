@@ -2,10 +2,11 @@
 // functions are deterministic and unit-tested. Zoom is expressed relative to
 // "fit": zoom === 1 means the whole clip fits the viewport on that axis.
 
-export interface ViewState {
-  zoomX: number;      // horizontal zoom, >= 1 (1 = fit clip width)
+/** The VERTICAL (pitch) half of an editor's view. The horizontal half is not
+ *  here on purpose: it belongs to the clip's shared ClipAxis (clip-axis.ts), so
+ *  every view of the same clip zooms and scrolls together. */
+export interface PitchView {
   zoomY: number;      // vertical zoom, >= 1 (1 = fit all pitch rows)
-  scrollLeft: number; // px
   scrollTop: number;  // px
 }
 
@@ -14,8 +15,8 @@ export const MAX_CANVAS_PX = 32000;
 /** Tallest a single pitch row may get when zoomed in. */
 export const MAX_ROW_PX = 28;
 
-export function defaultViewState(): ViewState {
-  return { zoomX: 1, zoomY: 1, scrollLeft: 0, scrollTop: 0 };
+export function defaultPitchView(): PitchView {
+  return { zoomY: 1, scrollTop: 0 };
 }
 
 /** Max horizontal zoom so the grid canvas never exceeds MAX_CANVAS_PX. */
@@ -48,7 +49,7 @@ export function zoomAroundAnchor(scroll: number, anchorPx: number, oldDim: numbe
   return Math.max(0, (scroll + anchorPx) * ratio - anchorPx);
 }
 
-/** Stored view-state for a clip, or the fit default. */
-export function resolveViewState(map: Map<string, ViewState>, clipId: string): ViewState {
-  return map.get(clipId) ?? defaultViewState();
+/** Stored pitch view for a clip, or the fit default. */
+export function resolvePitchView(map: Map<string, PitchView>, clipId: string): PitchView {
+  return map.get(clipId) ?? defaultPitchView();
 }

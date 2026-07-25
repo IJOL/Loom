@@ -31,6 +31,7 @@ export class ClipAxis {
   private _basis = 0;
   private _zoom = 1;
   private _scroll = 0;
+  private _vp: HTMLElement | null = null;
   private listeners = new Set<ClipAxisListener>();
 
   constructor(readonly clipId: string, totalTicks: number) {
@@ -107,6 +108,18 @@ export class ClipAxis {
     if (per <= 0) return 0;
     return Math.max(0, Math.min(this._total, x / per));
   }
+
+  /** The PRIMARY editor's scrolling viewport. Followers measure their alignment
+   *  against its rect (followerGeometry), so they need no knowledge of which
+   *  editor is mounted or what gutter it has. Registered by the primary on
+   *  mount, cleared on dispose. */
+  setPrimaryViewport(el: HTMLElement | null): void {
+    if (el === this._vp) return;
+    this._vp = el;
+    this.emit();
+  }
+
+  get primaryViewport(): HTMLElement | null { return this._vp; }
 
   subscribe(cb: ClipAxisListener): () => void {
     this.listeners.add(cb);

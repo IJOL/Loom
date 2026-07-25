@@ -186,6 +186,11 @@ export class ChannelStrip {
   setCompState(s: Partial<CompState>) { this.comp.setState(s); }
   getCompState(): CompState { return this.comp.getState(); }
 
+  /** Live gain reduction of this lane's compressor (dB, ≤ 0; 0 = not
+   *  compressing). Read per animation frame by the GR meter in the lane FX
+   *  panel — the strip is what the UI holds, so it owns the passthrough. */
+  getCompReduction(): number { return this.comp.getReduction(); }
+
   setSidechain(bus: SidechainBus, state: SidechainState | null): void {
     if (this.ducker) {
       this.ducker.dispose();

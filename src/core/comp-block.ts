@@ -54,8 +54,14 @@ export class CompBlock {
 
   getState(): CompState { return { ...this.state }; }
 
-  /** Read-only compression reduction (dB, negative). Useful for a future GR meter. */
-  getReduction(): number { return this.comp.reduction; }
+  /** Read-only compression reduction (dB, ≤ 0). Drives the GR meter in the lane
+   *  FX panel. Falls back to 0 on a backend that does not implement
+   *  `DynamicsCompressorNode.reduction`, so a meter reads "not compressing"
+   *  instead of painting NaN. */
+  getReduction(): number {
+    const r = this.comp.reduction;
+    return typeof r === 'number' && Number.isFinite(r) ? r : 0;
+  }
 
   private rewire(): void {
     this.input.disconnect();

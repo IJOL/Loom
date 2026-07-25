@@ -1,0 +1,59 @@
+/* ── Clip follower strips ──────────────────────────────────────────────────
+   Surfaces that follow a clip's shared ClipAxis (core/clip-follower-strip.ts):
+   the waveform header above a note editor and every per-clip automation lane.
+   Their geometry is written INLINE by the strip (label flex-basis = the measured
+   editor gutter, window width = the editor viewport, content width = the axis
+   content width, content transform = the shared scroll) — this file only owns
+   the look. Do not put widths here: that is what drifted before. */
+
+.clip-follow-row {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.clip-follow-label {
+  /* flex-basis set inline = the editor's key/label gutter, so the timeline
+     starts at exactly the same x as the grid above. */
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding-right: 2px;
+  box-sizing: border-box;
+}
+
+.clip-follow-window {
+  /* width set inline = the primary editor's visible viewport. Clips, never
+     scrolls: the strip is moved by a transform so no second scrollbar appears
+     under the editor. */
+  flex: 0 0 auto;
+  overflow: hidden;
+  position: relative;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  box-sizing: border-box;
+}
+
+.clip-follow-content {
+  position: relative;
+  will-change: transform;
+}
+
+/* Loop region, display-only. Same amber as the editors' .clip-loop-col so the
+   region reads as ONE region across the whole clip; pointer-events:none because
+   here the drag gesture belongs to the automation painter — the loop is edited
+   in the editor above. */
+.clip-follow-loop {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  box-sizing: border-box;
+  pointer-events: none;
+  background: rgba(255, 204, 51, 0.10);
+  border-left: 2px solid #ffcc33;
+  border-right: 2px solid #ffcc33;
+}

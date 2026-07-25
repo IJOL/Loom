@@ -12,9 +12,10 @@ import { velocityToBarHeight, FAN_PX, yToVelocity, barHitTest, setVelocity, appl
 import { DEFAULT_VELOCITY } from './velocity-gain';
 import { EDITOR_MIN_MIDI, EDITOR_MAX_MIDI } from './pianoroll-range';
 import {
-  clampZoom, scrubToZoom, zoomAroundAnchor, maxZoomX, maxZoomY,
-  defaultViewState, type ViewState,
+  clampZoom, scrubToZoom, zoomAroundAnchor, maxZoomY,
+  defaultPitchView, type PitchView,
 } from './pianoroll-zoom';
+import type { ClipAxis } from './clip-axis';
 import {
   notesInRect, translateGroup, serializeClipboard, pasteTranslate,
   clampOctaveBase, octaveBaseLabel, PIANO_KEY_LEGEND, snapNoteMidi, type ClipboardNote, type ScaleCtx,
@@ -55,10 +56,16 @@ export interface PianoRollOpts {
   getPlayheadTick?: () => number; // -1 when not playing
   /** Click (no drag) on the time ruler seeks to that tick. Drag still zoom/pans. */
   onSeek?: (tick: number) => void;
-  /** Initial zoom/scroll for this clip (defaults to fit). */
-  viewState?: ViewState;
-  /** Called on every zoom/scroll so the caller can persist per-clip state. */
-  onViewChange?: (v: ViewState) => void;
+  /** The clip's SHARED horizontal time axis (clip-axis.ts). This editor is the
+   *  PRIMARY: it publishes its viewport width as the fit basis and drives
+   *  zoom/scroll. Every other view of the clip (waveform header, automation
+   *  lanes) follows the same axis, which is what keeps them aligned. */
+  axis: ClipAxis;
+  /** Initial VERTICAL view for this clip (defaults to fit). Horizontal comes
+   *  from `axis`. */
+  pitchView?: PitchView;
+  /** Called on every vertical zoom/scroll so the caller can persist it. */
+  onPitchViewChange?: (v: PitchView) => void;
   onGestureStart?: () => void;
   onGestureEnd?: () => void;
   onGestureCancel?: () => void;
@@ -96,6 +103,10 @@ export interface PianoRollHandle {
   getOctaveBase?: () => number;
   /** Restore the octave base (e.g. after a re-render reset it to the default). */
   setOctaveBase?: (midi: number) => void;
+  /** Release everything this editor holds outside its own DOM — today the
+   *  ClipAxis subscription. MUST be called before the host is wiped, or a
+   *  detached editor keeps relaying out on every axis change. */
+  dispose?: () => void;
 }
 
 const BLACK_KEY_PCS = [1, 3, 6, 8, 10];
@@ -238,8 +249,11 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   const kctx = ctx2d(f.keysCanvas);
   const vctx = ctx2d(f.velCanvas);
 
-  // View state (mutable). Initialised from the caller, defaults to fit.
-  let { zoomX, zoomY, scrollLeft, scrollTop } = opts.viewState ?? defaultViewState();
+  // Horizontal state lives on the shared axis; only the vertical pair is local.
+  const axis = opts.axis;
+  axis.setTotalTicks(opts.patternTicks);
+  axis.setPrimaryViewport(f.gridVp);          // followers align to this rect
+  let { zoomY, scrollTop } = opts.pitchView ?? defaultPitchView();
   // Geometry derived from zoom + viewport (recomputed in geom()).
   let gridW = 0, gridH = 0, pxPerTick = 0, rowHeight = 0;
 
@@ -254,11 +268,13 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   function geom(): void {
     const vw = f.gridVp.clientWidth || 1;
     const vh = f.gridVp.clientHeight || 1;
-    zoomX = clampZoom(zoomX, maxZoomX(vw));
+    // Publish this viewport as the clip's fit basis: every follower sizes itself
+    // from the axis, so they all agree on what "the whole clip" is worth in px.
+    axis.setBasisWidth(vw);
     zoomY = clampZoom(zoomY, maxZoomY(vh, noteCount));
-    gridW = Math.round(vw * zoomX);
+    gridW = axis.contentWidth();
     gridH = Math.round(vh * zoomY);
-    pxPerTick = gridW / opts.patternTicks;
+    pxPerTick = axis.pxPerTick();
     rowHeight = gridH / noteCount;
   }
 
@@ -383,7 +399,7 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     f.velCanvas.style.transform = `translateX(${-f.gridVp.scrollLeft}px)`;
   }
   function persist(): void {
-    opts.onViewChange?.({ zoomX, zoomY, scrollLeft: f.gridVp.scrollLeft, scrollTop: f.gridVp.scrollTop });
+    opts.onPitchViewChange?.({ zoomY, scrollTop: f.gridVp.scrollTop });
   }
 
   /** Full relayout: resize all canvases, redraw all four surfaces. */
@@ -400,9 +416,36 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   /** Redraw both the note grid and the velocity lane together (for note edits). */
   function redrawGridAndLane(): void { drawGrid(); drawVelLane(); }
 
-  // ── Scroll: re-pin strips + persist ───────────────────────────────────────
+  // ── The shared axis moved ─────────────────────────────────────────────────
+  // Either we moved it (ruler scrub, scroll) or something else did (a clip
+  // length edit, another view of the same clip). One handler for all of them.
+  //
+  // Re-entrancy: layoutAll → geom → axis.setBasisWidth can emit again, so the
+  // flag guards against recursion. And a pure SCROLL change must not pay for a
+  // full canvas resize + redraw, hence the contentWidth check.
+  let applyingAxis = false;
+  let lastAppliedW = -1;
+  function applyAxis(): void {
+    if (applyingAxis) return;
+    applyingAxis = true;
+    try {
+      if (axis.contentWidth() !== lastAppliedW) {
+        layoutAll();
+        lastAppliedW = axis.contentWidth();
+      }
+      if (Math.round(f.gridVp.scrollLeft) !== axis.scrollLeft) f.gridVp.scrollLeft = axis.scrollLeft;
+      syncStrips();
+      refreshLoop();
+    } finally {
+      applyingAxis = false;
+    }
+  }
+  const offAxis = axis.subscribe(() => applyAxis());
+
+  // ── Scroll: publish H to the axis, keep V local, re-pin strips ────────────
   f.gridVp.addEventListener('scroll', () => {
-    scrollLeft = f.gridVp.scrollLeft; scrollTop = f.gridVp.scrollTop;
+    scrollTop = f.gridVp.scrollTop;
+    axis.setScrollLeft(f.gridVp.scrollLeft);   // followers scroll with us
     syncStrips(); persist(); refreshLoop();
   });
 
@@ -418,14 +461,12 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     if (Math.abs(e.clientX - rDownX) > 3) rulerMoved = true;
     const dy = e.clientY - rLastY, dx = e.clientX - rLastX;
     rLastX = e.clientX; rLastY = e.clientY;
-    const oldGridW = gridW;
-    zoomX = scrubToZoom(zoomX, dy);
-    geom();
-    setSize(f.gridCanvas, gridW, gridH); setSize(f.rulerCanvas, gridW, RULER_H); setSize(f.velCanvas, gridW, VEL_LANE_H);
-    drawGrid(); drawRuler(); drawVelLane();
+    // Zoom (anchored) + pan, both through the axis. Its subscription below does
+    // the relayout, so this is the only place the gesture is expressed.
     const anchorPx = e.clientX - f.rulerWrap.getBoundingClientRect().left;
-    f.gridVp.scrollLeft = zoomAroundAnchor(f.gridVp.scrollLeft, anchorPx, oldGridW, gridW) - dx;
-    syncStrips(); persist(); refreshLoop();
+    axis.scrub(dy, anchorPx);
+    axis.setScrollLeft(axis.scrollLeft - dx);
+    applyAxis();
   });
   const rulerEnd = (e: PointerEvent) => {
     if (e.type === 'pointerup' && rulerDrag && !rulerMoved && opts.onSeek) {
@@ -734,7 +775,8 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   // ── Initial mount ─────────────────────────────────────────────────────────
   let lastVW = f.gridVp.clientWidth, lastVH = f.gridVp.clientHeight;
   layoutAll();
-  f.gridVp.scrollLeft = scrollLeft;
+  lastAppliedW = axis.contentWidth();
+  f.gridVp.scrollLeft = axis.scrollLeft;      // restore the clip's shared H scroll
   f.gridVp.scrollTop = scrollTop;
   syncStrips();
 
@@ -766,8 +808,9 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     const vw = f.gridVp.clientWidth, vh = f.gridVp.clientHeight;
     if (vw !== lastVW || vh !== lastVH) {
       lastVW = vw; lastVH = vh;
-      layoutAll();
-      f.gridVp.scrollLeft = scrollLeft; f.gridVp.scrollTop = scrollTop;
+      layoutAll();                              // geom() republishes the new basis
+      lastAppliedW = axis.contentWidth();
+      f.gridVp.scrollLeft = axis.scrollLeft; f.gridVp.scrollTop = scrollTop;
       syncStrips();
     } else {
       redrawGridAndLane();
@@ -778,5 +821,11 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     redraw,
     getOctaveBase: () => octaveBase,
     setOctaveBase: (m: number) => { octaveBase = clampOctaveBase(m, minMidi, maxMidi); refreshToolbar(); },
+    dispose: () => {
+      offAxis();
+      // Hand the axis back only if we are still the registered primary (a newer
+      // editor may already have claimed it).
+      if (axis.primaryViewport === f.gridVp) axis.setPrimaryViewport(null);
+    },
   };
 }

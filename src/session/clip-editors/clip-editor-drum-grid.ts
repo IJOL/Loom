@@ -22,7 +22,7 @@ import {
 import { createToolToggle, createHelpButton, createResolutionSelect, createFollowToggle, createFullKitToggle } from '../../core/clip-editor-toolbar';
 import { mountDrumEuclidPanel } from './drum-euclid-panel';
 import { mountClipLoopOverlay } from '../../core/clip-loop-overlay';
-import { clampZoom, scrubToZoom, zoomAroundAnchor, maxZoomX } from '../../core/pianoroll-zoom';
+import { ClipAxis } from '../../core/clip-axis';
 import { isFollowEnabled, followScrollTarget } from '../../core/clip-follow';
 import { isDrumFullKit } from '../../core/clip-drum-fullkit';
 import { LANE_LABELS, LABEL_W, RULER_H, ROW_H, VEL_LANE_H, DRUM_KEY_LEGEND, type DrumGridModel, type DrumEditorHandle } from './drum-grid-types';
@@ -41,6 +41,12 @@ let clipboard: DrumClipNote[] | null = null;
 export interface DrumEditorDeps {
   auditionNote?: (midi: number) => void;
   getPlayheadTick?: () => number;        // -1 when not playing
+  /** The clip's shared horizontal time axis. This editor is the PRIMARY: it
+   *  publishes its viewport width and drives zoom/scroll for every follower
+   *  (waveform header, automation lanes). Optional so existing tests can mount
+   *  the editor standalone; without it the grid gets its own private axis and
+   *  simply has no followers. */
+  axis?: ClipAxis;
   /** Sampler drumkit lanes only: lets the editor show a "Full kit" toggle and
    *  rebuild its row model in place. build(full) returns the model for the
    *  requested view; the global flag is owned by clip-drum-fullkit. */
@@ -157,15 +163,15 @@ export function renderDrumGridEditor(
 
   const lctx = labelsCanvas.getContext('2d')!;
 
-  // ── Zoom/scroll state + content-space coordinates ─────────────────────────
-  const stored = hViewByClip.get(clip.id);
-  let zoomX = stored?.zoomX ?? 1;
+  // ── Zoom/scroll: owned by the clip's shared axis ──────────────────────────
+  const axis = deps.axis ?? new ClipAxis(clip.id, patternTicks);
+  axis.setTotalTicks(patternTicks);
+  axis.setPrimaryViewport(viewport);
   let gridW = 600, pxPerTick = gridW / patternTicks;
   const xForTick = (t: number) => t * pxPerTick;                 // content space (no LABEL_W)
   const yForRow = (r: number) => RULER_H + r * ROW_H;
   const tickFromX = (x: number) => Math.max(0, Math.min(patternTicks - 1, x / pxPerTick));
   const rowFromY = (y: number) => Math.max(0, Math.min(ROWS_N - 1, Math.floor((y - RULER_H) / ROW_H)));
-  const persist = () => hViewByClip.set(clip.id, { zoomX, scrollLeft: viewport.scrollLeft });
   // Loop overlay handle — its column lives inside the viewport and is positioned
   // in CONTENT coords (tickToX = t·pxPerTick), so a zoom change (which changes
   // pxPerTick) must re-layout it. resize() is the single place zoom is applied,
@@ -174,9 +180,9 @@ export function renderDrumGridEditor(
 
   function resize(): void {
     const vpW = Math.max(120, viewport.clientWidth || ((wrap.clientWidth || host.clientWidth || 600) - LABEL_W));
-    zoomX = clampZoom(zoomX, maxZoomX(vpW));
-    gridW = Math.round(vpW * zoomX);
-    pxPerTick = gridW / patternTicks;
+    axis.setBasisWidth(vpW);                 // publish the fit basis for followers
+    gridW = Math.max(1, axis.contentWidth());
+    pxPerTick = axis.pxPerTick();
     canvas.width = gridW; canvas.height = FRAME_H;
     canvas.style.width = `${gridW}px`; canvas.style.height = `${FRAME_H}px`;
     labelsCanvas.width = LABEL_W; labelsCanvas.height = FRAME_H;
@@ -303,12 +309,11 @@ export function renderDrumGridEditor(
       canvas.setPointerCapture(e.pointerId); e.preventDefault();
       const onMove = (ev: PointerEvent) => {
         const dy = ev.clientY - ly, dx = ev.clientX - lx; lx = ev.clientX; ly = ev.clientY;
-        const oldGridW = gridW;
-        zoomX = scrubToZoom(zoomX, dy);
-        resize();
+        // Zoom (anchored) + pan through the shared axis; applyAxis does the rest.
         const anchorPx = ev.clientX - viewport.getBoundingClientRect().left;
-        viewport.scrollLeft = zoomAroundAnchor(viewport.scrollLeft, anchorPx, oldGridW, gridW) - dx;
-        persist();
+        axis.scrub(dy, anchorPx);
+        axis.setScrollLeft(axis.scrollLeft - dx);
+        applyAxis();
       };
       const onUp = (ev: PointerEvent) => {
         canvas.removeEventListener('pointermove', onMove);
@@ -454,10 +459,29 @@ export function renderDrumGridEditor(
   });
 
   // ── Mount + the host-RAF redraw handle (per-frame width check + playhead) ──
-  resize();
-  if (stored) viewport.scrollLeft = stored.scrollLeft;
+  // The shared axis moved: either we moved it (ruler scrub / scroll) or something
+  // else did. Guarded against re-entry because resize() republishes the basis
+  // width, and a pure scroll must not pay for a canvas resize + full redraw.
+  let applyingAxis = false;
+  let lastAppliedW = -1;
+  function applyAxis(): void {
+    if (applyingAxis) return;
+    applyingAxis = true;
+    try {
+      if (axis.contentWidth() !== lastAppliedW) { resize(); lastAppliedW = axis.contentWidth(); }
+      if (Math.round(viewport.scrollLeft) !== axis.scrollLeft) viewport.scrollLeft = axis.scrollLeft;
+      loopHandle?.redraw();
+    } finally {
+      applyingAxis = false;
+    }
+  }
+  const offAxis = axis.subscribe(() => applyAxis());
 
-  viewport.addEventListener('scroll', () => persist());
+  resize();
+  lastAppliedW = axis.contentWidth();
+  viewport.scrollLeft = axis.scrollLeft;      // restore the clip's shared H scroll
+
+  viewport.addEventListener('scroll', () => axis.setScrollLeft(viewport.scrollLeft));
 
   if (deps.loop) {
     const total = patternTicks;
@@ -482,13 +506,26 @@ export function renderDrumGridEditor(
   let lastW = viewport.clientWidth;
   function redraw(): void {
     const w = viewport.clientWidth;
-    if (w && w !== lastW) { lastW = w; resize(); if (stored) viewport.scrollLeft = Math.min(stored.scrollLeft, Math.max(0, gridW - w)); }
+    if (w && w !== lastW) {
+      lastW = w;
+      resize();                               // republishes the basis for followers
+      lastAppliedW = axis.contentWidth();
+      viewport.scrollLeft = axis.scrollLeft;
+    }
     const ph = deps.getPlayheadTick?.() ?? -1;
     if (ph !== playheadTick) { playheadTick = ph; draw(); }
     if (ph >= 0 && isFollowEnabled()) {
       const target = followScrollTarget(xForTick(ph), viewport.clientWidth, gridW, viewport.scrollLeft);
-      if (target != null) viewport.scrollLeft = target;     // fires scroll → persist
+      if (target != null) viewport.scrollLeft = target;     // fires scroll → publishes to the axis
     }
   }
-  return { redraw };
+  return {
+    redraw,
+    dispose: () => {
+      offAxis();
+      // Only give the axis back if we were the one holding it: a later editor may
+      // already have registered its own viewport.
+      if (axis.primaryViewport === viewport) axis.setPrimaryViewport(null);
+    },
+  };
 }

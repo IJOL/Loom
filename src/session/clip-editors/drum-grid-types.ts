@@ -25,4 +25,9 @@ export const DRUM_KEY_LEGEND =
   '           Ctrl+A = select all · Ctrl+C / Ctrl+X / Ctrl+V = copy / cut / paste\n' +
   '           Esc = deselect · ⌫ = delete';
 
-export interface DrumEditorHandle { redraw: () => void; }
+export interface DrumEditorHandle {
+  redraw: () => void;
+  /** Release the ClipAxis subscription + the primary-viewport registration.
+   *  Called before the host is wiped (see combineEditorHandle). */
+  dispose?: () => void;
+}

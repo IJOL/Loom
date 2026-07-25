@@ -1,12 +1,23 @@
 // Drawing helpers for automation lanes: canvas painter, lane drawing, snap.
 import { AUTOMATION_SUB_RES } from '../core/pattern';
-import type { Sequencer } from '../core/sequencer';
 
 export type AutoBrush = 'line' | 'flat';
 
-export interface PainterDeps {
-  seq: Sequencer;
-  getAutoAbsSubIdx: () => number;
+/** What drawLane needs beyond the values themselves.
+ *
+ *  Both fields used to be wrong in a way you could see: the grid lines were
+ *  hardcoded to "a bar every 16 steps" (so a 3/4 or 7/8 session drew bar lines
+ *  where there were none), and the cursor came from a GLOBAL sub-step counter
+ *  that had nothing to do with this clip — it also never animated, because
+ *  nothing repainted the canvas. Both now come from the same sources the note
+ *  editors use: the session meter and the clip's own loop-aware playhead. */
+export interface LaneDrawOpts {
+  /** 16th-note steps per bar (from the session meter). */
+  stepsPerBar: number;
+  /** 16th-note steps per beat (from the session meter). */
+  stepsPerBeat: number;
+  /** Playhead as a 0..1 fraction of the whole clip; negative when idle. */
+  playheadFrac: number;
 }
 
 export function clamp01(v: number): number { return Math.max(0, Math.min(1, v)); }

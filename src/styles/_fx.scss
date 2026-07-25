@@ -194,3 +194,108 @@
   font-size: 11px;
   padding: 4px 8px;
 }
+
+/* ── Per-lane COMP + SIDECHAIN (lane-fx-panel.ts) ─────────────────────────
+      Two rows that have to explain themselves: a two-line header, a "?" legend,
+      a live state line and a gain-reduction bar.
+
+   THE VERTICAL BUG: this box lives inside a `.knob-row` (a flex row) but had no
+   display of its own, so its `.knob` children — each `display:flex;
+   flex-direction:column` — laid out as blocks and the module came out as a tall
+   VERTICAL column. It is a row.
+   It hides through the `hidden` attribute (a `?hidden` binding in lit, no inline
+   style for lit to fight); the UA's `[hidden]{display:none}` loses to the class
+   rule above, so the hidden case must be spelled out here. */
+.lane-fx-sc-knobs {
+  display: flex;
+  flex-direction: row;
+  gap: 14px;
+  align-items: flex-end;
+
+  &[hidden] { display: none; }
+}
+
+/* Two-line section header: short name + what it actually does. Overrides
+   `.section-label`'s centred single line. */
+.lane-fx-label {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
+  line-height: 1.25;
+}
+.lane-fx-title {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+.lane-fx-sub {
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;      // .section-label uppercases; the subtitle is prose
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+/* The "?" legend drops onto its own line under the row it belongs to. Both
+   classes on purpose: `_session-inspector.scss` loads AFTER this file, so the
+   single-class form would lose its margin to the base `.editor-help-popover`. */
+.editor-help-popover.lane-fx-help-popover {
+  flex: 0 0 100%;
+  margin: 2px 0 0;
+}
+
+/* "off" / "Drums 1 → duck 60%" — what the sidechain is wired to, without
+   opening the dropdown. */
+.lane-fx-sc-state {
+  align-self: flex-end;
+  padding-bottom: 3px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+/* Gain-reduction bar. Same footprint as a 32 px knob (label / body / readout) so
+   it lines up in the COMP row. The fill hangs from the TOP: reduction pulls the
+   level down. */
+.gr-meter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  user-select: none;
+}
+.gr-meter-label {
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.gr-meter-track {
+  position: relative;
+  width: 10px;
+  height: 32px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.gr-meter-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0;
+  background: linear-gradient(180deg, var(--red), var(--amber));
+  transition: height 60ms linear;
+}
+.gr-meter-value {
+  font-size: 9px;
+  color: var(--text-dim);
+  min-width: 30px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.gr-meter.active .gr-meter-value { color: var(--red); }

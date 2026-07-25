@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import {
-  defaultViewState, maxZoomX, maxZoomY, clampZoom, scrubToZoom,
-  zoomAroundAnchor, resolveViewState, MAX_CANVAS_PX, MAX_ROW_PX,
-  type ViewState,
+  defaultPitchView, maxZoomX, maxZoomY, clampZoom, scrubToZoom,
+  zoomAroundAnchor, resolvePitchView, MAX_CANVAS_PX, MAX_ROW_PX,
+  type PitchView,
 } from './pianoroll-zoom';
 
 describe('pianoroll-zoom math', () => {
-  it('defaultViewState is the fit view (1×, no scroll)', () => {
-    expect(defaultViewState()).toEqual({ zoomX: 1, zoomY: 1, scrollLeft: 0, scrollTop: 0 });
+  it('defaultPitchView is the fit view (1×, no scroll) — horizontal lives on the ClipAxis', () => {
+    expect(defaultPitchView()).toEqual({ zoomY: 1, scrollTop: 0 });
   });
 
   it('maxZoomX bounds the grid canvas to MAX_CANVAS_PX', () => {
@@ -50,11 +50,11 @@ describe('pianoroll-zoom math', () => {
     expect(zoomAroundAnchor(0, 50, 2000, 1000)).toBe(0);
   });
 
-  it('resolveViewState returns stored state or the fit default', () => {
-    const map = new Map<string, ViewState>();
-    expect(resolveViewState(map, 'a')).toEqual(defaultViewState());
-    const v: ViewState = { zoomX: 3, zoomY: 2, scrollLeft: 40, scrollTop: 10 };
+  it('resolvePitchView returns stored state or the fit default', () => {
+    const map = new Map<string, PitchView>();
+    expect(resolvePitchView(map, 'a')).toEqual(defaultPitchView());
+    const v: PitchView = { zoomY: 2, scrollTop: 10 };
     map.set('a', v);
-    expect(resolveViewState(map, 'a')).toBe(v);
+    expect(resolvePitchView(map, 'a')).toBe(v);
   });
 });

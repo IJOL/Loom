@@ -13,12 +13,15 @@ import { createPianoRoll, type PianoRollHandle } from '../../core/pianoroll';
 import { pianoRollRange } from '../../core/pianoroll-range';
 import { TICKS_PER_STEP, type NoteEvent } from '../../core/notes';
 import { ticksPerBar, stepsPerBar, stepsPerBeat } from '../../core/meter';
-import { resolveViewState, type ViewState } from '../../core/pianoroll-zoom';
+import { resolvePitchView, type PitchView } from '../../core/pianoroll-zoom';
+import { clipAxis, type ClipAxis } from '../../core/clip-axis';
+import { clipPlayheadFrac, clipPlayheadTick } from '../../core/clip-playhead';
 import { getEngine } from '../../engines/registry';
 import { renderDrumGridEditor, LANE_LABELS, type DrumGridModel } from './clip-editor-drum-grid';
 import { noteDrumRows } from '../../core/drum-grid-editing';
 import { GM_DRUM_MAP, GM_PERCUSSION_NAMES } from '../../engines/drum-gm-map';
-import { mountWaveformHeader, renderAudioClipEditor } from './clip-waveform-header';
+import { mountWaveformHeader, renderAudioClipEditor, WAVEFORM_HEADER_H } from './clip-waveform-header';
+import { createFollowerStrip } from '../../core/clip-follower-strip';
 import type { HistoryDeps } from '../../save/history-wiring';
 import { withUndo } from '../../save/history-wiring';
 import type { LaneResourceMap } from '../../core/lane-resources';
@@ -72,9 +75,11 @@ export interface ClipEditorDeps {
 
 const AUDITION_GATE = 0.25; // seconds — short preview blip, shared by both editors
 
-// In-memory per-clip zoom/scroll. Mirrors the editorOverride map: persists for
-// the session, resets on reload. No saved-state schema change.
-const viewStateByClip = new Map<string, ViewState>();
+// In-memory per-clip VERTICAL view (pitch zoom + scrollTop). The horizontal half
+// is not here: it belongs to the clip's shared ClipAxis, which every view of the
+// clip reads. Mirrors the editorOverride map: session-lifetime, no saved-state
+// schema change.
+const pitchViewByClip = new Map<string, PitchView>();
 
 /** Decide which editor a lane's clip uses. Precedence: an explicit per-clip
  *  override → a drumkit sampler (variable-size drum grid) → the engine's native
@@ -190,14 +195,14 @@ export function renderClipEditor(
   const engine = getEngine(lane.engineId);
   const editor = chooseClipEditor(lane, engine?.editor, override, clip);
 
-  const playheadFrac = (): number => {
-    const lp = deps.laneStates.get(lane.id);
-    if (!lp || !lp.playing || lp.playing.id !== clip.id) return -1;
-    const stepDur = 60 / deps.seq.bpm / 4;
-    const stepsElapsed = Math.max(0, (deps.ctx.currentTime - lp.startTime) / stepDur);
-    const totalSteps = Math.max(1, clip.lengthBars * stepsPerBar(deps.seq.meter));
-    return loopAwareStep(clip, deps.seq.meter, stepsElapsed) / totalSteps;
-  };
+  // The clip's ONE horizontal time axis. Whichever editor mounts below is the
+  // primary (it publishes its viewport width and drives zoom/scroll); the
+  // waveform header and the automation lanes follow the same object, which is
+  // what keeps all of them aligned and zooming together.
+  const axis = clipAxis(clip.id, clip.lengthBars * ticksPerBar(deps.seq.meter));
+
+  const playheadFrac = (): number =>
+    clipPlayheadFrac(deps.laneStates.get(lane.id), clip, deps.seq.meter, deps.seq.bpm, deps.ctx.currentTime);
 
   // Audio-channel clip → waveform-only editor (no note grid). Mount the engine
   // Gain knob in its toolbar (audio lanes show controls here, not in the lane editor).
@@ -253,7 +258,7 @@ export function renderClipEditor(
     const transcribe = deps.transcribeLoop
       ? { run: (kind: 'melodic' | 'drums') => deps.transcribeLoop!(clip, kind) }
       : undefined;
-    return renderAudioClipEditor(host, clip, deps.seq.meter, { getPlayheadFrac: playheadFrac, gain, warp, loop, transcribe });
+    return renderAudioClipEditor(host, clip, deps.seq.meter, { getPlayheadFrac: playheadFrac, gain, warp, loop, transcribe, axis });
   }
 
   // Everything else: optional waveform header (when the clip references a buffer)
@@ -268,9 +273,23 @@ export function renderClipEditor(
   host.append(...boxes);
   const loopBar = boxes[boxes.length - 2];
   const bodyBox = boxes[boxes.length - 1];
-  let headerHandle: { redraw: () => void } | null = null;
+  let headerHandle: { redraw: () => void; dispose?: () => void } | null = null;
   if (wantHeader) {
-    headerHandle = mountWaveformHeader(boxes[0], clip, deps.seq.meter, { getPlayheadFrac: playheadFrac });
+    // The header is a FOLLOWER of the note editor below: same origin, same
+    // width, same zoom, same scroll. It used to size itself to its own host
+    // width while the grid used a zoomed content width — the same bar came out
+    // at two different widths, one above the other.
+    const strip = createFollowerStrip({
+      axis, height: WAVEFORM_HEADER_H, className: 'clip-wave-follow',
+    });
+    boxes[0].appendChild(strip.root);
+    const header = mountWaveformHeader(strip.content, clip, deps.seq.meter, {
+      getPlayheadFrac: playheadFrac, contentWidth: () => axis.contentWidth(),
+    });
+    headerHandle = {
+      redraw: () => { strip.layout(); header.redraw(); },
+      dispose: () => { strip.dispose(); header.dispose?.(); },
+    };
   }
 
   let bodyHandle: PianoRollHandle | null;
@@ -278,13 +297,8 @@ export function renderClipEditor(
     const audition = deps.triggerForLane
       ? (midi: number) => deps.triggerForLane!(lane.id, midi, deps.ctx.currentTime, AUDITION_GATE, false, false)
       : undefined;
-    const getPlayheadTick = (): number => {
-      const lp = deps.laneStates.get(lane.id);
-      if (!lp || !lp.playing || lp.playing.id !== clip.id) return -1;
-      const stepDur = 60 / deps.seq.bpm / 4;
-      const stepsElapsed = Math.max(0, (deps.ctx.currentTime - lp.startTime) / stepDur);
-      return loopAwareStep(clip, deps.seq.meter, stepsElapsed) * TICKS_PER_STEP;
-    };
+    const getPlayheadTick = (): number =>
+      clipPlayheadTick(deps.laneStates.get(lane.id), clip, deps.seq.meter, deps.seq.bpm, deps.ctx.currentTime);
     // A keymapped drum grid (one row per pad) applies to a sampler lane AND to a
     // Drums lane running a sample kit (kitMode 'sample' delegates to the embedded
     // sampler, whose keymap is mirrored to engineState.sampler.keymap). A synth
@@ -301,11 +315,11 @@ export function renderClipEditor(
       ? { build: (full: boolean) => samplerDrumModel(lane, clip, deps.midiLabel, full) ?? { rows: noteDrumRows([]), labels: [] } }
       : undefined;
     bodyHandle = renderDrumGridEditor(bodyBox, clip, deps.historyDeps, deps.seq.meter, {
-      auditionNote: audition, getPlayheadTick, fullKit,
+      auditionNote: audition, getPlayheadTick, fullKit, axis,
       loop: { toolbarHost: loopBar, historyDeps: deps.historyDeps, onChange: () => {}, ...clipLinkHandlers(clip, deps) },
     }, model);
   } else {
-    bodyHandle = buildPianoRoll(bodyBox, lane, clip, deps, loopBar);
+    bodyHandle = buildPianoRoll(bodyBox, lane, clip, deps, loopBar, axis);
   }
   return combineEditorHandle(headerHandle, bodyHandle);
 }
@@ -317,10 +331,16 @@ export function renderClipEditor(
  *  the note-randomizer reads & restores the editor octave through this handle,
  *  so dropping the body's methods silently broke "randomize keeps the octave". */
 export function combineEditorHandle(
-  header: { redraw: () => void } | null,
+  header: { redraw: () => void; dispose?: () => void } | null,
   body: PianoRollHandle | null,
 ): PianoRollHandle {
-  return { ...(body ?? {}), redraw: () => { header?.redraw(); body?.redraw(); } } as PianoRollHandle;
+  return {
+    ...(body ?? {}),
+    redraw: () => { header?.redraw(); body?.redraw(); },
+    // Both surfaces hold a ClipAxis subscription; the inspector calls this
+    // before it wipes the host, so a replaced editor stops relaying out.
+    dispose: () => { header?.dispose?.(); body?.dispose?.(); },
+  } as PianoRollHandle;
 }
 
 function buildPianoRoll(
@@ -329,6 +349,7 @@ function buildPianoRoll(
   clip: SessionClip,
   deps: ClipEditorDeps,
   loopBar: HTMLElement,
+  axis: ClipAxis,
 ): PianoRollHandle {
   const getNotes = (): NoteEvent[] => clip.notes ?? [];
   const setNotes = (notes: NoteEvent[]) => { clip.notes = notes; };
@@ -366,20 +387,14 @@ function buildPianoRoll(
     auditionNote: triggerForLane
       ? (midi: number) => triggerForLane(lane.id, midi, ctx.currentTime, AUDITION_GATE, false, false)
       : undefined,
-    getPlayheadTick: () => {
-      const lp = laneStates.get(lane.id);
-      if (!lp || !lp.playing || lp.playing.id !== clip.id) return -1;
-      const now = ctx.currentTime;
-      const stepDur = 60 / seq.bpm / 4;
-      const stepsElapsed = Math.max(0, (now - lp.startTime) / stepDur);
-      return loopAwareStep(clip, seq.meter, stepsElapsed) * TICKS_PER_STEP;
-    },
+    getPlayheadTick: () => clipPlayheadTick(laneStates.get(lane.id), clip, seq.meter, seq.bpm, ctx.currentTime),
     onSeek: (tick: number) => {
       const bar = tick / ticksPerBar(seq.meter);
       deps.onSeekBar?.(bar);
     },
-    viewState: resolveViewState(viewStateByClip, clip.id),
-    onViewChange: (v) => { viewStateByClip.set(clip.id, v); },
+    axis,
+    pitchView: resolvePitchView(pitchViewByClip, clip.id),
+    onPitchViewChange: (v) => { pitchViewByClip.set(clip.id, v); },
     ...(historyDeps ? {
       onGestureStart:  () => historyDeps.beginGesture?.(),
       onGestureEnd:    () => historyDeps.endGesture?.(),

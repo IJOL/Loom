@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   ClipAxis, clipAxis, releaseClipAxis, followerGeometry, _resetClipAxesForTesting,
@@ -164,6 +165,21 @@ describe('ClipAxis subscription', () => {
     a.setTotalTicks(TOTAL);
     a.setZoom(1);
     expect(hits).toBe(0);
+  });
+
+  it('publishes the primary viewport so followers can align to it', () => {
+    const a = axisAt(800);
+    let hits = 0;
+    a.subscribe(() => { hits++; });
+    const vp = document.createElement('div');
+    a.setPrimaryViewport(vp);
+    expect(a.primaryViewport).toBe(vp);
+    expect(hits).toBe(1);
+    a.setPrimaryViewport(vp);          // same element, nothing to tell anyone
+    expect(hits).toBe(1);
+    a.setPrimaryViewport(null);        // primary unmounted
+    expect(a.primaryViewport).toBe(null);
+    expect(hits).toBe(2);
   });
 
   it('hands the axis to the listener so followers can read it straight away', () => {

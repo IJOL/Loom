@@ -18,17 +18,21 @@ import type { SynthEngine, EngineUIContext } from '../../engines/engine-types';
 import { mountWarpMarkerEditor } from './warp-marker-editor';
 import { mountClipLoopOverlay } from '../../core/clip-loop-overlay';
 import type { HistoryDeps } from '../../save/history-wiring';
-import { clampZoom, scrubToZoom, zoomAroundAnchor, maxZoomX } from '../../core/pianoroll-zoom';
+import { ClipAxis } from '../../core/clip-axis';
 import { isFollowEnabled, followScrollTarget } from '../../core/clip-follow';
 import { createFollowToggle } from '../../core/clip-editor-toolbar';
 
-// Per-clip horizontal zoom/scroll (in-memory; resets on reload).
-const audioHViewByClip = new Map<string, { zoomX: number; scrollLeft: number }>();
-
 const RULER_H = 18;
 const WAVE_H = 64;
+/** Total height of the waveform strip. Exported so a caller that mounts it as a
+ *  ClipAxis follower can size the follower window to match. */
+export const WAVEFORM_HEADER_H = RULER_H + WAVE_H;
 
-export interface WaveformHeaderHandle { redraw: () => void; }
+export interface WaveformHeaderHandle {
+  redraw: () => void;
+  /** Release the ClipAxis subscription (follower strip) / primary registration. */
+  dispose?: () => void;
+}
 export interface WaveformHeaderDeps {
   getPlayheadFrac?: () => number;
   /** Zoomed content width (px). Defaults to the host width (no zoom). */
@@ -169,6 +173,11 @@ export interface AudioClipEditorDeps {
    *  sends the clip's effective loop region to the audio→notes backend. The
    *  router binds the clip; here we only choose the kind and fire `run`. */
   transcribe?: { run: (kind: 'melodic' | 'drums') => void | Promise<void> };
+  /** The clip's shared horizontal time axis. An audio clip's editor is the
+   *  PRIMARY: it publishes its viewport width and drives zoom/scroll, so the
+   *  automation lanes below line up with the waveform. Optional so tests can
+   *  mount it standalone (it then gets a private axis and has no followers). */
+  axis?: ClipAxis;
 }
 
 export function renderAudioClipEditor(
@@ -182,12 +191,12 @@ export function renderAudioClipEditor(
   let markerHandle: { redraw: () => void } | undefined;
   let loopHandle: { redraw: () => void } | undefined;
 
-  const stored = audioHViewByClip.get(clip.id);
-  let zoomX = stored?.zoomX ?? 1;
+  // Zoom/scroll live on the clip's shared axis (this editor is the primary).
+  const axis = deps.axis ?? new ClipAxis(clip.id, Math.max(1, clip.lengthBars * ticksPerBar(meter)));
+  axis.setTotalTicks(Math.max(1, clip.lengthBars * ticksPerBar(meter)));
 
   const viewportW = () => Math.max(320, viewport.clientWidth || 600);
-  const contentW = () => Math.round(viewportW() * clampZoom(zoomX, maxZoomX(viewportW())));
-  const persist = () => audioHViewByClip.set(clip.id, { zoomX, scrollLeft: viewport.scrollLeft });
+  const contentW = () => Math.max(1, axis.contentWidth());   // read-only: relayout() publishes the basis
 
   const refreshWarp = () => {
     const on = !!sample?.warp;
@@ -199,18 +208,17 @@ export function renderAudioClipEditor(
     } as Partial<CSSStyleDeclaration>);
   };
 
-  // Ruler-scrub zoom on the waveform strip
+  // Ruler-scrub zoom on the waveform strip — expressed on the shared axis, so
+  // the automation lanes below zoom with it.
   const onHeaderScrub = (e: PointerEvent) => {
     let lx = e.clientX, ly = e.clientY;
     headerHost.setPointerCapture(e.pointerId); e.preventDefault();
     const onMove = (ev: PointerEvent) => {
       const dy = ev.clientY - ly, dx = ev.clientX - lx; lx = ev.clientX; ly = ev.clientY;
-      const oldW = contentW();
-      zoomX = clampZoom(scrubToZoom(zoomX, dy), maxZoomX(viewportW()));
-      relayout();
       const anchorPx = ev.clientX - viewport.getBoundingClientRect().left;
-      viewport.scrollLeft = zoomAroundAnchor(viewport.scrollLeft, anchorPx, oldW, contentW()) - dx;
-      persist();
+      axis.scrub(dy, anchorPx);
+      axis.setScrollLeft(axis.scrollLeft - dx);
+      applyAxis();
     };
     const onUp = (ev: PointerEvent) => {
       headerHost.removeEventListener('pointermove', onMove);
@@ -239,7 +247,7 @@ export function renderAudioClipEditor(
       ${deps.gain ? html`<div class="knob-row"></div>` : nothing}
       ${createFollowToggle()}
     </div>
-    <div class="audio-clip-vp" style="overflow-x:auto;overflow-y:hidden;position:relative" @scroll=${() => persist()}>
+    <div class="audio-clip-vp" style="overflow-x:auto;overflow-y:hidden;position:relative" @scroll=${() => axis.setScrollLeft(viewport.scrollLeft)}>
       <div style="position:relative">
         <div @pointerdown=${onHeaderScrub}></div>
         ${sample?.warpRef && deps.warp ? html`<div></div>` : nothing}
@@ -262,12 +270,31 @@ export function renderAudioClipEditor(
   });
 
   const relayout = () => {
+    axis.setBasisWidth(viewportW());          // publish the fit basis for followers
     const cw = contentW();
     content.style.width = `${cw}px`;
     header.redraw();
     markerHandle?.redraw();
     loopHandle?.redraw();
   };
+
+  // The shared axis moved (our gesture, or a clip-length change). Guarded: a pure
+  // scroll must not repaint the waveform, and relayout republishes the basis.
+  let applyingAxis = false;
+  let lastAppliedW = -1;
+  function applyAxis(): void {
+    if (applyingAxis) return;
+    applyingAxis = true;
+    try {
+      if (axis.contentWidth() !== lastAppliedW) { relayout(); lastAppliedW = axis.contentWidth(); }
+      if (Math.round(viewport.scrollLeft) !== axis.scrollLeft) viewport.scrollLeft = axis.scrollLeft;
+      loopHandle?.redraw();
+    } finally {
+      applyingAxis = false;
+    }
+  }
+  const offAxis = axis.subscribe(() => applyAxis());
+  axis.setPrimaryViewport(viewport);           // followers align to this rect
 
   // Performance-style loop overlay inside the viewport (zoom-aware)
   if (deps.loop) {
@@ -345,15 +372,21 @@ export function renderAudioClipEditor(
     });
   }
 
-  if (stored) { relayout(); viewport.scrollLeft = stored.scrollLeft; } else { relayout(); }
+  relayout();
+  lastAppliedW = axis.contentWidth();
+  viewport.scrollLeft = axis.scrollLeft;      // restore the clip's shared H scroll
   let lastVpW = viewport.clientWidth;
   return {
+    dispose: () => {
+      offAxis();
+      if (axis.primaryViewport === viewport) axis.setPrimaryViewport(null);
+    },
     redraw: () => {
       // On a panel resize, re-fit the content width (relayout redraws header +
       // markers + loop); otherwise just repaint them. Without this the inner
       // canvases widen on resize but the scroll-range wrapper keeps a stale width.
       const vpw = viewport.clientWidth;
-      if (vpw && vpw !== lastVpW) { lastVpW = vpw; relayout(); }
+      if (vpw && vpw !== lastVpW) { lastVpW = vpw; relayout(); lastAppliedW = axis.contentWidth(); }
       else { header.redraw(); markerHandle?.redraw(); loopHandle?.redraw(); }
       const f = deps.getPlayheadFrac?.() ?? -1;
       if (f >= 0 && isFollowEnabled()) {
