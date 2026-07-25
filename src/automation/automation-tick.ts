@@ -1,5 +1,5 @@
 import { tickSessionEnvelopes } from '../session/session-runtime';
-import { withoutParamMirror } from '../session/session-engine-state';
+import { driveKnobFromAutomation } from './automation-knob';
 import type { Sequencer } from '../core/sequencer';
 import type { KnobHandle } from '../core/knob';
 import type { LanePlayState } from '../session/session-runtime';
@@ -72,16 +72,10 @@ export function startAutomationTick(deps: AutomationTickDeps): void {
     if (!seq.isPlaying()) return;
     let ranges: ReadonlyMap<string, { min: number; max: number }> | undefined;
     tickSessionEnvelopes(getLaneStates(), ctx.currentTime, seq.bpm, seq.meter, (paramId, normalised) => {
-      const k = automationRegistry.get(paramId);
-      if (k) {
-        // A mounted knob is driven through its handle so the UI follows too.
-        // Without the mirror guard the envelope would also write itself into
-        // lane.engineState.params — automation belongs to the clip, not to the
-        // lane's base state, and the unmounted branch below never mirrored.
-        const range = k.meta.max - k.meta.min;
-        withoutParamMirror(() => k.setValue(k.meta.min + normalised * range));
-        return;
-      }
+      // A mounted knob is driven through its handle so the UI follows too, with
+      // the engineState mirror suppressed (automation-knob.ts owns both halves;
+      // the Performance take player lands its curves the same way).
+      if (driveKnobFromAutomation(automationRegistry, paramId, normalised)) return;
       // No knob mounted (the lane's editor panel is closed). Automation is a
       // property of the session, not of what is on screen, so write straight to
       // the audio object instead of silently dropping the envelope.

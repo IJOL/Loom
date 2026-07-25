@@ -7,6 +7,7 @@ import type { KnobHandle } from '../core/knob';
 import type { Sequencer } from '../core/sequencer';
 import type { SessionHost } from '../session/session-host';
 import type { DestinationRegistry } from '../automation/destination-registry';
+import { driveKnobFromAutomation } from '../automation/automation-knob';
 import {
   createRecState, armRec, disarmRec, startRecording, stopRecording,
   markParamTouched, tickRecAutomation, arrangementNow,
@@ -387,10 +388,10 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     });
   }
   function arrangementApplyAutomation(paramId: string, valueNorm: number) {
-    const k = automationRegistry.get(paramId);
-    if (!k) return;
-    const v = k.meta.min + valueNorm * (k.meta.max - k.meta.min);
-    k.setValue(v);
+    // Mounted-only, as before: a take curve whose knob is off screen stays
+    // inert here. What changed is that landing it no longer writes the value
+    // into the lane's base state — see automation-knob.ts.
+    driveKnobFromAutomation(automationRegistry, paramId, valueNorm);
   }
 
   function onLookahead(nowCtx: number, lookaheadSec: number) {
