@@ -7,9 +7,9 @@
 import type { SessionClip, ClipEnvelope, ClipSample } from '../session/session';
 import { TICKS_PER_QUARTER, TICKS_PER_STEP, type NoteEvent } from './notes';
 import { ticksPerBar, DEFAULT_METER, type TimeSignature } from './meter';
-import { effectiveClipLoop, laneLoopRegion, type GlobalLoopOverride } from './clip-loop';
+import { laneLoopRegion, type GlobalLoopOverride } from './clip-loop';
 import { sliceMarkersToRegion } from '../samples/warp-region';
-import { tickRangeSec } from './tempo-map';
+import { clipRegionSec } from './launch-timing';
 import { swungTick, swungSpan } from './swing';
 
 export interface SchedulerContext {
@@ -70,7 +70,8 @@ const DRIFT = 1e-6;
  * position to seconds, then projecting onto the absolute timeline using the
  * current loop-start anchor.  When `clip.loopEnabled` is set, both the
  * iteration period and (for audio clips) the triggered buffer trim range
- * are bounded by the clip's effective sub-region via `effectiveClipLoop`.
+ * are bounded by the clip's effective sub-region via `laneLoopRegion` (which
+ * is `effectiveClipLoop` unless the scene's global loop overrides it).
  *
  * Loop advancement: the function derives how many full clip iterations have
  * completed since ctx.loopStartedAt (using floor division — drift-free
@@ -80,18 +81,15 @@ const DRIFT = 1e-6;
 export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
   const meter = ctx.meter ?? DEFAULT_METER;
   const swing = ctx.swing ?? 0;
-  const secPerBeat = 60 / ctx.bpm;
-  // Per-clip tempo map: when the clip varies tempo (imported MIDI with tempo
-  // changes), time notes by integrating the map instead of the constant global
-  // BPM. Absent / single-tempo ⇒ the normal linear path, unchanged.
-  const tmap = clip.tempoMap && clip.tempoMap.length > 1 ? clip.tempoMap : null;
   // Use laneLoopRegion so a global-loop override replaces the clip's local loop.
   // When ctx.globalLoop is absent/disabled, laneLoopRegion === effectiveClipLoop.
   const { startTick, endTick } = laneLoopRegion(clip, meter, ctx.globalLoop);
   const loopTicks = endTick - startTick;
-  const clipDurSec = tmap
-    ? tickRangeSec(tmap, startTick, endTick)
-    : (loopTicks / TICKS_PER_QUARTER) * secPerBeat;
+  // clipRegionSec (launch-timing) owns ticks → seconds, including the per-clip
+  // tempo map an imported MIDI carries. The region is resolved HERE, so the
+  // global-loop override reaches the seconds math without the shared owner ever
+  // learning about globalLoop — which would desync the audio re-trigger offset.
+  const clipDurSec = clipRegionSec(clip, startTick, endTick, ctx.bpm);
   if (clipDurSec <= 0) return ctx.loopStartedAt;
 
   // Derive how many full iterations have completed since the original anchor.
@@ -164,9 +162,8 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
       for (const n of clip.notes) {
         if (n.start < startTick || n.start >= endTick) continue;
         const noteStart = swungTick(n.start, swing);
-        const clipTimeSec = tmap
-          ? tickRangeSec(tmap, startTick, noteStart)
-          : ((noteStart - startTick) / TICKS_PER_QUARTER) * secPerBeat;
+        // Same owner, narrower region: the note's offset inside the iteration.
+        const clipTimeSec = clipRegionSec(clip, startTick, noteStart, ctx.bpm);
         const scheduleAt  = iterStart + clipTimeSec;
         if (scheduleAt >= windowStart && scheduleAt < windowEnd) {
           ctx.onTrigger({
