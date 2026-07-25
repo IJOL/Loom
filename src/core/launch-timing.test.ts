@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { governingLoopSec, clipLoopSec, nextLoopEnd, sceneSwitchBoundary } from './launch-timing';
+import { DEFAULT_METER, ticksPerBar } from './meter';
+import { schedulerPeriodSec } from '../../test/scheduler-period';
 import type { SessionClip } from '../session/session';
 
 describe('governingLoopSec — iterative outlier cap (multiset)', () => {
@@ -28,6 +30,25 @@ describe('clipLoopSec', () => {
   it('1-bar clip at 120bpm = 2s', () => {
     const clip = { color: '#a8e0d8', gridResolution: '1/16', id: 'c', lengthBars: 1, notes: [] } as SessionClip;
     expect(clipLoopSec(clip, 120)).toBeCloseTo(2, 9);
+  });
+
+  it("equals the scheduler's iteration for a tempo-mapped clip", () => {
+    // The drift-proof case: an imported MIDI that halves its tempo half way.
+    // tickLane integrates clip.tempoMap; every other spelling of "seconds of one
+    // iteration" multiplied by the constant session bpm and came out short, so
+    // the offline render window and the scene switch instant landed mid-phrase.
+    const BAR = ticksPerBar(DEFAULT_METER);
+    const tempoMapped: SessionClip = { color: '#f4e0a8', gridResolution: '1/16',
+      id: 'tm', lengthBars: 4,
+      notes: [{ start: 0, duration: 10, midi: 60, velocity: 100 }],
+      tempoMap: [{ tick: 0, bpm: 120 }, { tick: 2 * BAR, bpm: 60 }],
+    };
+    const constantBpm: SessionClip = { ...tempoMapped, id: 'cb', tempoMap: undefined };
+    // Measured out of tickLane itself: the gap between two consecutive fires.
+    const period = schedulerPeriodSec(tempoMapped, 120, DEFAULT_METER, 13);
+    // Guard against a vacuous pass: the map must actually stretch the iteration.
+    expect(period / clipLoopSec(constantBpm, 120, DEFAULT_METER)).toBeGreaterThan(1);
+    expect(clipLoopSec(tempoMapped, 120, DEFAULT_METER) / period).toBeCloseTo(1, 6);
   });
 });
 

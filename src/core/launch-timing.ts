@@ -1,6 +1,7 @@
 import type { SessionClip } from '../session/session';
 import { effectiveClipLoop } from './clip-loop';
 import { TICKS_PER_QUARTER } from './notes';
+import { tickRangeSec } from './tempo-map';
 import { DEFAULT_METER, type TimeSignature } from './meter';
 
 // Pure helpers for "when does a scene/clip switch happen" — the switch instant
@@ -21,16 +22,39 @@ export function governingLoopSec(lengths: number[]): number {
   return sorted[i];
 }
 
-/** Loop length in seconds — wraps effectiveClipLoop so it equals the scheduler's
- *  clipDurSec exactly (T must land on a real loop boundary, not a bar grid). */
+/**
+ * Seconds spanned by a tick region of a clip — the single owner of "ticks to
+ * seconds" for clip iterations. When the clip carries real tempo changes
+ * (an imported MIDI), the region is INTEGRATED over `clip.tempoMap` instead of
+ * multiplied by the constant session bpm.
+ *
+ * The CALLER resolves the region, and that is deliberate: it lets the scheduler
+ * pass the scene's GLOBAL loop region without globalLoop ever entering this
+ * helper. A global-loop-aware owner would desync `clipLoopSourceRange`, which
+ * session-host's audio re-trigger divides against it (see
+ * lane-scheduler-anchor.test.ts).
+ *
+ * The map is integrated over CLIP-LOCAL ticks: the MIDI importer rebases every
+ * tempo point onto the clip's own grid, so tick 0 of the map is tick 0 of the
+ * clip. A song-absolute map stored on a clip would mis-integrate here.
+ */
+export function clipRegionSec(
+  clip: SessionClip, startTick: number, endTick: number, bpm: number,
+): number {
+  const tmap = clip.tempoMap && clip.tempoMap.length > 1 ? clip.tempoMap : null;
+  if (tmap) return tickRangeSec(tmap, startTick, endTick);
+  if (bpm <= 0) return 0;
+  return ((endTick - startTick) / TICKS_PER_QUARTER) * (60 / bpm);
+}
+
+/** One iteration of the clip's OWN (local) loop, in seconds — tempo-map aware,
+ *  so it equals the scheduler's iteration and T lands on a real loop boundary
+ *  rather than a bar grid. Global-loop blind on purpose: see clipRegionSec. */
 export function clipLoopSec(
   clip: SessionClip, bpm: number, meter: TimeSignature = DEFAULT_METER,
 ): number {
-  if (bpm <= 0) return 0;
   const { startTick, endTick } = effectiveClipLoop(clip, meter);
-  const loopTicks = endTick - startTick;
-  if (loopTicks <= 0) return 0;
-  return (loopTicks / TICKS_PER_QUARTER) * (60 / bpm);
+  return Math.max(0, clipRegionSec(clip, startTick, endTick, bpm));
 }
 
 /** Next loop boundary >= now for a loop that started at loopStartedAt.
