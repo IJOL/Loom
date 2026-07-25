@@ -49,22 +49,6 @@ export interface PolySynthPresetsDeps {
 
 let _deps: PolySynthPresetsDeps | null = null;
 
-export function applyPolyParams(params: PolySynthParams): void {
-  const target = _deps!.getActivePolyTarget();
-  if (!target) return;
-  const d = JSON.parse(JSON.stringify(target.params)) as PolySynthParams;
-  target.params = {
-    master: { ...d.master, ...params.master },
-    osc1:   { ...d.osc1,   ...params.osc1 },
-    osc2:   { ...d.osc2,   ...params.osc2 },
-    sub:    { ...d.sub,    ...params.sub },
-    noise:  { ...d.noise,  ...params.noise },
-    filter: { ...d.filter, ...params.filter },
-    amp:    { ...d.amp,    ...params.amp },
-  };
-  _deps!.refreshLaneKnobs(_deps!.getActiveEngineLaneId());
-}
-
 export function applyPresetByName(poly: PolySynth, name: string): void {
   const presets = getFactoryPolyPresets();
   const p = presets.find((x) => x.name === name);
@@ -152,19 +136,6 @@ export function populatePolyPresetSelect(): void {
   const deps = _deps;
   if (!deps) return;
   populatePolyPresetSelectForLane(deps.getActiveEngineLaneId());
-}
-
-/** Apply a USER subtractive preset (nested PolySynthParams) to a lane. Bridges
- *  the module-global deps to poly-preset-apply, which owns the apply + commit
- *  invariant. */
-function applySubtractiveUserPreset(laneId: string, params: PolySynthParams): void {
-  if (_deps) applyUserPolyPresetToLane(_deps, laneId, params);
-}
-
-/** Apply an engine preset to the ACTIVE lane. */
-function applyEnginePreset(presetName: string): void {
-  const deps = _deps!;
-  applyEnginePresetForLane(presetName, deps.getActiveEngineLaneId());
 }
 
 /** Apply an engine preset by name to a specific lane. Used by the per-page
@@ -465,7 +436,7 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
       const name = val.slice('user:'.length);
       const presets = loadUserPolyPresets();
       if (presets[name]) {
-        applySubtractiveUserPreset(laneId, presets[name]);
+        applyUserPolyPresetToLane(deps, laneId, presets[name]);
         pagePresetName.set(laneId, val);
       }
     }
