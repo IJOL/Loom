@@ -41,6 +41,7 @@ import { bindAboutDialog } from './app/about-dialog';
 import { launchScene as launchSceneRuntime, stopAll as stopAllLanes } from './session/session-runtime';
 import { reloadDrumkit } from './session/session-host-presets';
 import { applyPresetToEngine } from './presets/preset-apply';
+import { commitEngineBaseValues } from './engines/engine-param-commit';
 import { wireSaveManager, bootRecoveryLoad } from './save/save-wiring';
 import { createHistory } from './core/history';
 import { createAutoHistory } from './save/auto-history';
@@ -560,6 +561,11 @@ const sessionHost = new SessionHost({
     const inst = getLaneEngineInstance(laneId);
     if (!inst) return;
     applyPresetToEngine(inst, presetName);
+    // The preset moved the engine's base values with no knob onChange firing,
+    // so mirror them explicitly — otherwise the recalled sound never reaches a
+    // save. Suppressed on the LOAD path, which replays the saved params right
+    // after this call (session-host-persistence).
+    commitEngineBaseValues(inst, sessionHost.state, laneId);
     // Mark the per-page (303/drums) preset dropdown so it reflects the
     // recalled preset on load (subtractive/poly are handled by
     // refreshPolyPresetSelect via polyPresetName).
@@ -919,6 +925,7 @@ const polySynthPresetsDeps: PolySynthPresetsDeps = {
   getLaneEngineId,
   getLaneEngineInstance,
   rebuildEngineParamUI,
+  getSessionState: () => sessionHost.state,
   refreshLaneKnobs: (laneId) => {
     const inst = getLaneEngineInstance(laneId);
     if (inst) refreshLaneKnobs(laneId, inst);

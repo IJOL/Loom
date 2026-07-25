@@ -1,10 +1,13 @@
 import { html } from 'lit-html';
 import { renderInto } from '../core/lit-fill';
 import { customOption, presetGroup } from './poly-preset-templates';
-import { PolySynth, POLY_DEFAULTS, type PolySynthParams } from './polysynth';
+import { POLY_DEFAULTS, type PolySynth, type PolySynthParams } from './polysynth';
 import { alertDialog, confirmDialog, promptDialog } from '../core/dialog';
-import { randomizePolySynth } from '../core/random';
+import {
+  applyEnginePresetToLane, applyUserPolyPresetToLane, randomizeSubtractiveLane,
+} from './poly-preset-apply';
 import type { SynthEngine } from '../engines/engine-types';
+import type { SessionState } from '../session/session';
 import { getCachedPresets } from '../presets/preset-loader';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
 import { getDrumKits, loadDrumKits, type DrumKitPreset } from '../presets/drum-kits-loader';
@@ -28,6 +31,10 @@ export interface PolySynthPresetsDeps {
   getLaneEngineId: (laneId: string) => string;
   getLaneEngineInstance: (laneId: string) => SynthEngine | null;
   rebuildEngineParamUI: () => void;
+  /** The live session. Required, not optional: it is how a preset recall or a
+   *  Randomize reaches a save (poly-preset-apply commits the applied base
+   *  values into the lane), and an absent one loses the sound silently. */
+  getSessionState: () => SessionState | undefined;
   /** Push current engine base values back into the lane's knob UI handles
    *  after a preset or randomize mutates the underlying state. */
   refreshLaneKnobs: (laneId: string) => void;
@@ -147,44 +154,24 @@ export function populatePolyPresetSelect(): void {
   populatePolyPresetSelectForLane(deps.getActiveEngineLaneId());
 }
 
-/** Apply a USER subtractive preset (stored as nested PolySynthParams) to a lane's
- *  worklet engine: flatten to dot-ids + setBaseValue each, then refresh the lane
- *  knobs. The Phase 4 cutover removed the PolySynth target these used to write to. */
+/** Apply a USER subtractive preset (nested PolySynthParams) to a lane. Bridges
+ *  the module-global deps to poly-preset-apply, which owns the apply + commit
+ *  invariant. */
 function applySubtractiveUserPreset(laneId: string, params: PolySynthParams): void {
-  const deps = _deps;
-  if (!deps) return;
-  const engine = deps.getLaneEngineInstance(laneId);
-  if (!engine) return;
-  const flat = polyParamsToFlat(params);
-  for (const [id, v] of Object.entries(flat)) engine.setBaseValue(id, v);
-  deps.refreshLaneKnobs(laneId);
+  if (_deps) applyUserPolyPresetToLane(_deps, laneId, params);
 }
 
-/** Apply a non-subtractive engine preset to the active lane's engine
- *  instance, then refresh the knob UI.
- *
- *  Delegates to `engine.applyPreset(name)` — the SAME path the session/scene
- *  loader uses (preset-apply.ts::applyPresetToEngine). Each engine owns the
- *  mapping from its preset JSON keys to its internal state; a generic
- *  `setBaseValue(jsonKey, value)` loop here is WRONG because some engines'
- *  preset keys are not setBaseValue ids (tb303: `cutoff`/`envMod`… vs
- *  `filter.cutoff`/`env.amount`; drums: `kitId`) — those silently no-op,
- *  which is why changing a 303 preset did nothing. */
+/** Apply an engine preset to the ACTIVE lane. */
 function applyEnginePreset(presetName: string): void {
   const deps = _deps!;
   applyEnginePresetForLane(presetName, deps.getActiveEngineLaneId());
 }
 
-/** Apply a non-subtractive engine preset by id to a specific named lane,
- *  refreshing the knob UI. Used by the per-page preset controls for 303
- *  and drums lanes (which are not "active poly" lanes). */
+/** Apply an engine preset by name to a specific lane. Used by the per-page
+ *  preset controls for 303 and drums lanes (which are not "active poly" lanes)
+ *  as well as by the poly dropdown for FM / Wavetable / Karplus. */
 function applyEnginePresetForLane(presetName: string, laneId: string): void {
-  const deps = _deps;
-  if (!deps) return;
-  const instance = deps.getLaneEngineInstance(laneId);
-  if (!instance) return;
-  instance.applyPreset(presetName);
-  deps.refreshLaneKnobs(laneId);
+  if (_deps) applyEnginePresetToLane(_deps, laneId, presetName);
 }
 
 // ── Per-page preset controls (TB-303, Drums) ──────────────────────────────
@@ -418,17 +405,7 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
     const laneId = deps.getActiveEngineLaneId();
     const engineId = deps.getLaneEngineId(laneId);
     if (engineId === 'subtractive') {
-      // After the Phase 4 cutover subtractive lanes have no PolySynth; randomize a
-      // fresh PolySynthParams bag (randomizePolySynth only mutates .params — no
-      // audio nodes), flatten to dot-ids and push to the worklet engine via
-      // setBaseValue (the same path the user-preset load uses).
-      const engine = deps.getLaneEngineInstance(laneId);
-      if (!engine) return;
-      const scratch = { params: JSON.parse(JSON.stringify(POLY_DEFAULTS)) as PolySynthParams } as PolySynth;
-      randomizePolySynth(scratch);
-      const flat = polyParamsToFlat(scratch.params);
-      for (const [id, v] of Object.entries(flat)) engine.setBaseValue(id, v);
-      deps.refreshLaneKnobs(laneId);
+      randomizeSubtractiveLane(deps, laneId);
       markPolyPresetCustom();
       return;
     }
