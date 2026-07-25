@@ -15,6 +15,12 @@ Esto es una auditoría de **SOLO LECTURA**. No se ha modificado, creado ni borra
 este documento es el único artefacto escrito. Todos los `file:line` han sido verificados literalmente contra
 el árbol de trabajo (`.claude/worktrees/clip-axis-automation`) durante la auditoría — no vienen de memoria.
 
+Las listas de llamantes se han vuelto a verificar contra el **call graph de GitNexus** (índice de `main` @
+`e208d45`, 9665 símbolos / 25 528 relaciones) — ver la sección **Verificación por grafo** al final.
+**Salvedad**: ese índice es de `main` y esta rama va 8 commits por delante, así que el candidato **#4** —cuyos
+`clip-automation-lanes.ts` y `automation-painter.ts` están reescritos aquí— **no** está cubierto; los otros
+cuatro sí, porque la rama no toca ninguno de sus ficheros.
+
 ---
 
 ## Tabla resumen
@@ -145,8 +151,12 @@ motor tuviese referencia a `sessionState`, lo que rompe el aislamiento del path 
       `onChange` de `engine-param-grid.ts:48` (select) y `:66` (knob) por `commitParam(engine, ctx, spec.id, …)`,
       y el `onChange` del knob `VOICES` en `worklet-lane-engine.ts:311`. **Se borra**: nada todavía; esto
       solo cierra el agujero de persistencia. *Este paso ya arregla el síntoma y debe ir en su propio commit.*
-- [ ] **2. Borrar el código muerto**: `wireLaneKnobs` en `knob-mounting.ts:66-70` y su import de
-      `mirrorParamChange` en `knob-mounting.ts:11`. **Se borra**: 1 función + 1 import.
+- [ ] **2. Borrar el código muerto**: ojo, `wireLaneKnobs` vive en **tres** sitios y hay que quitar los tres
+      o el typecheck rompe — la declaración del método en el interface `KnobMounter`
+      (`knob-mounting.ts:37`), la implementación (`:66-70`) y su entrada en el objeto que el mounter devuelve
+      a `main.ts` (`:157`) — más el import de `mirrorParamChange` en `knob-mounting.ts:11`. Que el grafo lo
+      dé con **cero llamantes** no significa que esté en un solo sitio: sigue siendo API pública del mounter.
+      **Se borra**: 1 método de interface + 1 función + 1 clave del objeto + 1 import.
 - [ ] **3. Absorber `wireEngineParams` en la rejilla**: añadir `knobSize`, `formatter` y `layout:'flat'` a
       `BuildGridOpts`; conservar la regla de discretos como `spec.selectStyle === 'dropdown'` **más** un nuevo
       `layout:'flat'` que enrute los discretos a `createSelectControl` para los llamantes que hoy usan
@@ -226,8 +236,12 @@ cada renderer *tiene* que aplicar la curva por su cuenta.
 | [westcoast-renderer.ts:251](../../../src/audio-dsp/westcoast-renderer.ts) | `(0.3+1.1v) * accentMul`, con `accentMul=1.3` definido en :221 y **reutilizado como timbre** en :222 (`driveGain`) y :233 (`cutoffEnvScale`) | `0.3+1.1v` | 1.3 |
 | [tb303-renderer.ts:27](../../../src/audio-dsp/tb303-renderer.ts) (aplicado en :108) | `velGain()` privado + `ACCENT_VCA = 1.3` | `0.3+1.1v` | 1.3 |
 
-Llamantes vivos del dueño: solo drums ([drums-worklet-engine.ts:217](../../../src/engines/drums-worklet-engine.ts))
-y sampler ([sampler-worklet-engine.ts:437](../../../src/engines/sampler-worklet-engine.ts)) — que además
+Llamantes vivos del dueño: drums ([drums-worklet-engine.ts:217](../../../src/engines/drums-worklet-engine.ts)),
+sampler ([sampler-worklet-engine.ts:437](../../../src/engines/sampler-worklet-engine.ts)) y — tercero, que el
+grafo saca y el grep de este informe no listaba — el **export offline**, que replica la fórmula de drums a
+mano: `0.65 * velGain(t.velocity, t.accent)` en
+[offline-recorder.ts:286](../../../src/export/offline-recorder.ts). Ese `0.65` es otra copia de la
+convención y hay que mirarlo si el paso 2 mueve la curva. Los tres además
 plegan el accent **en el hilo principal** y envían la ganancia ya plegada, mientras los melódicos envían
 velocity cruda y la pliegan seis veces dentro del worklet: **dos convenciones sobre *dónde* se pliega**.
 [polysynth.ts:211](../../../src/polysynth/polysynth.ts) es la rama legacy `ensureExtraPoly` y
@@ -700,9 +714,14 @@ Casos nuevos:
 
 ### Esfuerzo y radio de impacto
 
-**1-2 commits** — el más barato de los cinco. Radio: `src/core/lane-scheduler` + `launch-timing` (el corazón
-del scheduling: cualquier error aquí se oye de inmediato), `src/export/` (ventana del render offline;
-re-escuchar un export de MIDI multi-tempo), `src/session/session-runtime` (launch/seek) y
+**1-2 commits** — el diff más pequeño de los cinco, pero **no el de menos riesgo**: el grafo da a `clipLoopSec`
+**cinco** consumidores vivos, no los dos que se citan arriba —
+[`launchClip`](../../../src/session/session-runtime.ts), `launchScene`, `seekSession`, `tickGlobalLoop` y
+[`SessionHost.fireAudioRetrigger`](../../../src/session/session-host.ts) — y ese último es precisamente el
+emparejado con `clipLoopSourceRange` que esta sección advierte que **no** debe cambiar de ancla. Cada uno hay
+que mirarlo. Radio: `src/core/lane-scheduler` + `launch-timing` (el corazón del scheduling: cualquier error
+aquí se oye de inmediato), `src/export/` (ventana del render offline; re-escuchar un export de MIDI
+multi-tempo), `src/session/session-runtime` (launch/seek/loop global) + `session-host` (re-disparo de audio) y
 `src/performance/arrangement-from-session`.
 
 ### Cómo verificarlo a mano
@@ -723,6 +742,38 @@ re-escuchar un export de MIDI multi-tempo), `src/session/session-runtime` (launc
 
 ---
 
+## Verificación por grafo (GitNexus)
+
+Índice de `main` @ `e208d45` (9665 símbolos, 25 528 relaciones, 2026-07-25). Las listas de llamantes de este
+informe salieron de `grep`; esto es la segunda pasada, con el call graph. **No cubre el candidato #4**: sus
+`clip-automation-lanes.ts` y `automation-painter.ts` están reescritos en esta rama y el índice es de `main`.
+
+| Afirmación | Veredicto |
+|---|---|
+| #1 — `mirrorParamChange` es el único escritor de `engineState.params` | **Confirmado.** Un solo llamante de producción en todo el grafo: el `onChange` de `engine-ui.ts`. Ni `engine-param-grid` ni `worklet-lane-engine` aparecen. El bug de persistencia es real. |
+| #1 — los 5 llamantes de `wireEngineParams` a migrar | **Confirmado y completo.** 7 símbolos + 1 test, uno a uno los mismos sitios (los "tres del sampler" son `zoneParamsFor` + `buildParamUI`). No falta ninguno. |
+| #1 — `wireLaneKnobs` es código muerto | **Confirmado** (cero llamantes) pero **el borrado del paso 2 estaba incompleto**: vive en tres sitios (interface `:37`, impl `:66`, objeto devuelto `:157`). Corregido arriba. |
+| #2 — ningún fichero de `src/audio-dsp/` importa el dueño | **Confirmado.** Llamantes de `velGain`: `TB303.trigger`, `DrumsVoice.trigger`, `SamplerWorkletEngine.resolveSpawn`, `PolySynth.internalTrigger`, `OfflineSceneRecorder.record`. Cero renderers. La copia privada de `tb303-renderer.ts:26` existe como símbolo propio: sombreado confirmado. |
+| #2 — "llamantes vivos del dueño: solo drums y sampler" | **Ampliado**: hay un tercero, `offline-recorder.ts:286`. Integrado arriba. |
+| #3 — Performance no usa `songBarSec` | **Confirmado.** Sus llamantes son `globalLoopIteration`, `songPosBars`, `seekAnchorSec`, `SessionHost.seekToBar` y `SessionHost.pauseTransport`. Ni uno en `src/performance/` ni en `performance-feature.ts`. |
+| #4 — añadir `meter` a `tickSessionEnvelopes` es mecánico | **Confirmado** en la parte que el índice cubre: único llamante, el `tick` de `automation-tick.ts`. |
+| #5 — `clipLoopSec` tiene dos consumidores | **Refutado: son cinco.** Corregido en la sección de esfuerzo. |
+| #5 — `clipDurationSec` es de radio mínimo | **Confirmado.** Solo `soundingSceneDurationSec`. |
+
+Dos riesgos que el grafo **descarta**, por si alguien los saca en review:
+
+- **Migrar a la rejilla no pierde el undo.** `buildControl` ya llama a `attachKnobUndo`, igual que
+  `wireEngineParams`.
+- **`engine-param-commit.ts` no crea un ciclo `engines ↔ session`.** `session-engine-state.ts` solo importa
+  tipos (`session`, `modulation/types`, `samples/types`, `notefx-types`), nada de `src/engines/`.
+
+Y uno que sí existe, como contexto del barrio donde toca el #1: `gitnexus check` detecta el ciclo de imports
+`lane-allocator → engine-types → history-wiring → saved-state-v3 → lane-allocator` (más
+`performance-ui-templates ↔ performance-ui`). No lo empeora ninguno de los planes de arriba, pero conviene no
+añadirle aristas.
+
+---
+
 ## Orden recomendado
 
 1. **#1 paso 1 — el mirror de params, aislado (`commitParam`).** Es el único candidato con **pérdida de datos
@@ -730,9 +781,11 @@ re-escuchar un export de MIDI multi-tempo), `src/session/session-runtime` (launc
    líneas nuevas y tres `onChange` redirigidos, y no cambia ni un píxel ni una muestra de audio. Mejor ratio
    dolor/esfuerzo del informe, con diferencia. Los pasos 2-5 (borrar `wireEngineParams` y `wireLaneKnobs`)
    pueden ir después, sin prisa.
-2. **#5 — `clipRegionSec`.** El más barato (1-2 commits), borra dos comentarios que **mienten** sobre paridad
+2. **#5 — `clipRegionSec`.** Diff pequeño (1-2 commits), borra dos comentarios que **mienten** sobre paridad
    —el tipo de mentira que hace que el siguiente lector duplique con confianza— y arregla un export
-   demostrablemente contradictorio con MIDI multi-tempo.
+   demostrablemente contradictorio con MIDI multi-tempo. Va segundo por valor, no por comodidad: son cinco
+   consumidores vivos y uno de ellos es el re-disparo de audio, así que hazlo con el test de regresión de
+   anclaje escrito **antes** del cambio.
 3. **#2 pasos 1-2 — colapsar las cuatro copias fieles de `velGain`.** Numéricamente idéntico ⇒ riesgo cero,
    golden WAVs intactos, y deja el terreno preparado. Los pasos 3-4 (westcoast desconflacionado, fm/karplus
    recuperando la curva) exigen re-afinar `ENGINE_TRIM` y re-bendecir golden: agéndalos como trabajo de
