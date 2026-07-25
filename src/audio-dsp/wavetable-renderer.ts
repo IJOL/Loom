@@ -12,6 +12,7 @@ import type { ModLite } from './modulation-runtime';
 import { getWaveTables } from './wavetable-data';
 import { registerRenderer } from './renderer-registry';
 import { synthTrim } from './gain-staging';
+import { velGain01 } from '../core/velocity-gain';
 import { midiToFreq, clamp01 } from './dsp-util';
 // Detune modulation span: depth 1 (bipolar) sweeps ±50 cents, matching the knob.
 const MOD_DETUNE_CENTS = 50;
@@ -84,7 +85,7 @@ export class WavetableRenderer implements VoiceRenderer {
     this.aR = Math.max(0.001, param(p, 'amp.release', 0.3));
     this.ampOn = param(p, 'amp.builtinEnv', 1) >= 0.5;
 
-    this.vel = (0.3 + 1.1 * note.velocity) * (note.accent ? 1.1 : 1.0);
+    this.vel = velGain01(note.velocity, note.accent);
   }
 
   noteOff(t: number): void {

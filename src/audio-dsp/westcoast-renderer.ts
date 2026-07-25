@@ -16,6 +16,7 @@ import type { ModLite } from './modulation-runtime';
 import { ModEnvHost } from './mod-env-host';
 import { registerRenderer } from './renderer-registry';
 import { synthTrim } from './gain-staging';
+import { velGain01 } from '../core/velocity-gain';
 import { midiToFreq, clamp01 } from './dsp-util';
 
 type Osc = { update(f: number): number };
@@ -247,8 +248,10 @@ export class WestcoastRenderer implements VoiceRenderer {
 
     // Amp
     const level = param(p, 'amp.level', 0.8);
-    // velGain from legacy: 0.3 + 1.1 * vel (already 0..1 in NoteSpec)
-    const vel = (0.3 + 1.1 * note.velocity) * accentMul;
+    // accentMul is this engine's TIMBRE multiplier (fold drive + cutoff env), reused
+    // here as the amp punch — the conflation the audit's step 3 undoes by dropping
+    // this argument, which leaves the shared ACCENT_PUNCH.
+    const vel = velGain01(note.velocity, note.accent, accentMul);
     this.ampGain = level * vel * synthTrim('westcoast');
 
     // Saved bases so generic LFO/ADSR can recompute the timbre params live.

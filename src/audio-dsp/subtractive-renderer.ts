@@ -10,6 +10,7 @@ import { Adsr } from './adsr';
 import type { ModLite } from './modulation-runtime';
 import { registerRenderer } from './renderer-registry';
 import { synthTrim } from './gain-staging';
+import { velGain01 } from '../core/velocity-gain';
 
 /** One per-voice ADSR modulator: its own envelope state + the shape/depths from
  *  the ModLite. update() returns env×depth per connected field, gated by the note. */
@@ -138,10 +139,8 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     if (model === 1 || model === 2) {
       this.ladder = new LadderFilter(model === 1 ? 'moog' : 'diode', sampleRate, ladderTapFor(this.filterType));
     }
-    // 0.4 * velGain(...) with NoteSpec.velocity already normalised 0..1.
-    // velToGain(v01) = 0.3 + 1.1*v01 ; accent amp punch = 1.1 (ACCENT_PUNCH).
     // × output.trim: per-preset gain-staging lever (params['output.trim'], default 1).
-    this.velPeak = synthTrim('subtractive') * param(params, 'output.trim', 1) * (0.3 + 1.1 * note.velocity) * (note.accent ? 1.1 : 1.0);
+    this.velPeak = synthTrim('subtractive') * param(params, 'output.trim', 1) * velGain01(note.velocity, note.accent);
     this.baseCutoffHz = Math.min(60 * Math.pow(220, p.filterCutoff), 18000);
     this.keySemiDelta = note.midi - 60;
     this.keyTrackHz = this.keySemiDelta * this.baseCutoffHz * (Math.pow(2, 1 / 12) - 1) * p.filterKeyTrack;

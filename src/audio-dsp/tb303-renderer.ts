@@ -12,22 +12,8 @@ import type { ModLite } from './modulation-runtime';
 import { ModEnvHost } from './mod-env-host';
 import { registerRenderer } from './renderer-registry';
 import { synthTrim } from './gain-staging';
+import { velGain01, ACCENT_VCA_LADDER } from '../core/velocity-gain';
 import { midiToFreq, clamp01 } from './dsp-util';
-
-// velGain mirrors the logic from src/core/velocity-gain.ts:
-// velToGain(v) = 0.3 + 1.1 * v (accent punch applied outside).
-//
-// The accent multiplier is the 303's own, not the shared ACCENT_PUNCH, because
-// the 303's accent also raises Q — and a ladder gets QUIETER as Q climbs (its
-// feedback is subtracted), unlike the Svf this replaced, whose resonant peak
-// added level. At 1.1 the accent came out *quieter* than the note it is meant
-// to punch. 1.3 restores "accent is louder", which on a real 303 is a large
-// VCA jump anyway (~6 dB), far more than the 0.8 dB 1.1 buys.
-const ACCENT_VCA = 1.3;
-function velGain(velocity: number, accent: boolean): number {
-  const g = 0.3 + 1.1 * velocity;
-  return accent ? g * ACCENT_VCA : g;
-}
 
 // Map the TB-303's biquad-Q (1 + resonance*25 + accent*6, so 1..31) onto the
 // ladder's 0..1 resonance.
@@ -105,7 +91,10 @@ export class TB303Renderer implements VoiceRenderer {
     const biquadQ = 1 + resonance * 25 + accentBoost * 6;
     this.ladderRes = qToLadderRes(biquadQ);
 
-    this.peakAmp = synthTrim('tb303') * velGain(note.velocity, note.accent);
+    // The 303 declares its own amp punch: its accent raises Q, and this ladder
+    // LOSES level as Q climbs, so the shared punch left accents quieter than the
+    // notes they punch. See ACCENT_VCA_LADDER.
+    this.peakAmp = synthTrim('tb303') * velGain01(note.velocity, note.accent, ACCENT_VCA_LADDER);
   }
 
   noteOff(t: number): void {
