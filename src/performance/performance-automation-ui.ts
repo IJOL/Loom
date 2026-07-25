@@ -13,6 +13,7 @@ import type { KnobHandle } from '../core/knob';
 import type { AutomationCurve } from './performance';
 import type { DestinationRegistry } from '../automation/destination-registry';
 import { groupTargetsByLane } from '../automation/automation-targets';
+import { stepsPerBar, stepsPerBeat, DEFAULT_METER, type TimeSignature } from '../core/meter';
 import {
   drawLane, attachLanePainter, formatNum,
   type AutoBrush,
@@ -36,6 +37,8 @@ export interface PerfAutoDeps {
   onAdd: (paramId: string) => void;
   onRemove: (paramId: string) => void;
   onEdited: () => void;
+  /** The arrangement's meter, for the lane's bar/beat grid. Absent ⇒ 4/4. */
+  meter?: TimeSignature;
 }
 
 /** Build the "+ Automation" header: a grouped param select + add button, and —
@@ -91,11 +94,13 @@ export function buildAutomationLane(curve: AutomationCurve, deps: PerfAutoDeps):
   // (#perf-playhead) across every lane, so a per-canvas line is not wanted here.
   // It never worked anyway — the caller passed a `() => 0` stub for the sub-step
   // index, so the line, when drawn, sat at x=0 for the whole take.
-  // Bar/beat lines stay at 16/4: the arrangement is 4/4-only today (see the
-  // "seconds of one bar" finding in the duplicated-solutions audit).
+  // Bar/beat lines come from the arrangement's own meter: the curve is stored at
+  // stepsPerBar(meter) steps per bar (arrangement-ops.subStepsForBars), so a
+  // fixed 16 would draw its bars somewhere else than the ruler above it.
+  const m = deps.meter ?? DEFAULT_METER;
   const draw = () =>
     drawLane(canvas, { values: laneView.values, enabled: curve.enabled !== false, stepped: curve.stepped },
-      { stepsPerBar: 16, stepsPerBeat: 4, playheadFrac: -1 });
+      { stepsPerBar: stepsPerBar(m), stepsPerBeat: stepsPerBeat(m), playheadFrac: -1 });
 
   const toggleEnable = (e: Event) => {
     const btn = e.currentTarget as HTMLButtonElement;

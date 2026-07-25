@@ -17,8 +17,7 @@ import type { ArrangementState, ArrangementLaneRec, ArrangementClipEvent } from 
 import type { PerfUICallbacks } from './performance-ui';
 import { effectiveDurationSec } from './arrangement-ops';
 import { pxToBar, clampBarRegion } from './arrangement-brace';
-
-export function barSecOf(bpm: number): number { return (60 / bpm) * 4; }
+import { songBarSec } from '../core/song-position';
 
 export function labelTemplate(text: string): TemplateResult {
   return html`<div class="perf-label">${text}</div>`;
@@ -31,7 +30,7 @@ export function toolbarTemplate(state: ArrangementState, cb: PerfUICallbacks): T
   // `lengthBars` is the user's explicit MINIMUM (0 = auto//derive-from-content),
   // so the field read "0 bars" over 8 bars of copied content. Typing still sets an
   // explicit minimum; it just can't shrink the field below the real content.
-  const bars = Math.ceil(effectiveDurationSec(state) / barSecOf(state.bpm));
+  const bars = Math.ceil(effectiveDurationSec(state) / songBarSec(state.bpm, state.meter));
 
   // Editable A/B bar fields — dragging the brace on a long song is a pain. Typing
   // a value sets AND enables the loop (the button still toggles it off).
@@ -90,8 +89,12 @@ export function emptyTemplate(cb: PerfUICallbacks): TemplateResult {
 
 // ── Ruler + loop brace ─────────────────────────────────────────────────────
 
-export function rulerTemplate(durationSec: number, bpm: number, pxPerBar: number, cb: PerfUICallbacks): TemplateResult {
-  const bars = Math.ceil(durationSec / barSecOf(bpm));
+// The row templates take the already-computed `barSec` rather than a bpm: the
+// view resolves it ONCE from the arrangement (bpm + meter) and hands the same
+// number to the ruler, the bands and the lane widths, so nothing downstream can
+// quietly re-derive a bar of its own.
+export function rulerTemplate(durationSec: number, barSec: number, pxPerBar: number, cb: PerfUICallbacks): TemplateResult {
+  const bars = Math.ceil(durationSec / barSec);
   return html`<div class="perf-row perf-ruler">${labelTemplate('bars')}<div
       class="perf-track"
       style="width:${bars * pxPerBar}px"
@@ -134,11 +137,10 @@ function loopBraceTemplate(pxPerBar: number, bars: number, cb: PerfUICallbacks):
 export function clipBandTemplate(
   laneRec: ArrangementLaneRec,
   durationSec: number,
-  bpm: number,
+  barSec: number,
   pxPerBar: number,
   cb: PerfUICallbacks,
 ): TemplateResult {
-  const barSec = barSecOf(bpm);
   const totalBars = Math.ceil(durationSec / barSec);
   const secPerPx = barSec / pxPerBar; // inverse of the draw scale
   // Lane header: name + (optional) mute/solo + VU, mirroring the session mixer.

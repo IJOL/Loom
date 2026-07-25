@@ -38,6 +38,7 @@ import { buildMiniMaster } from '../core/master-strip';
 import { createLevelMeter } from '../core/level-meter';
 import { arrangementFromSession } from '../performance/arrangement-from-session';
 import { createHistory } from '../core/history';
+import { songBarSec } from '../core/song-position';
 import { moveEvent, resizeEvent, deleteEvent } from '../performance/arrangement-edit';
 
 export interface PerformanceFeatureDeps {
@@ -257,7 +258,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       onEdited: () => { onPerformanceEdited?.(); },
       loopEnabled: !!arrangement.loopEnabled,
       loopStartBar: arrangement.loopStartBar ?? 0,
-      loopEndBar: arrangement.loopEndBar ?? Math.ceil(effectiveDurationSec(arrangement) / ((60 / arrangement.bpm) * 4)),
+      loopEndBar: arrangement.loopEndBar ?? Math.ceil(effectiveDurationSec(arrangement) / songBarSec(arrangement.bpm, arrangement.meter)),
       onSetLoop: (enabled, startBar, endBar) => {
         beforeEdit();
         arrangement.loopEnabled = enabled; arrangement.loopStartBar = startBar; arrangement.loopEndBar = endBar;
@@ -478,7 +479,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       const host = document.getElementById('performance-view-root');
       const rulerTrack = host?.querySelector('.perf-ruler .perf-track') as HTMLElement | null;
       if (animating && host && rulerTrack) {
-        const barSec = (60 / (arrangement.bpm || seq.bpm)) * 4;
+        const barSec = songBarSec(arrangement.bpm || seq.bpm, arrangement.meter ?? seq.meter);
         const lw = arrangementLoopWindowSec(arrangement);
         let sec = arrangementPlayhead(arrangementPlayState, ctx.currentTime);
         if (lw.active) sec = lw.startSec + ((sec - lw.startSec) % (lw.endSec - lw.startSec));

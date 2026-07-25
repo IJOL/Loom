@@ -1,5 +1,7 @@
 import { emptyLaneRec, stepsPerSec, type ArrangementLaneRec, type ArrangementState } from './performance';
 import { AUTOMATION_SUB_RES } from '../core/pattern';
+import { songBarSec } from '../core/song-position';
+import { stepsPerBar, DEFAULT_METER, type TimeSignature } from '../core/meter';
 import type { AutomationCurve } from './performance';
 
 export function getOrCreateLane(s: ArrangementState, laneId: string): ArrangementLaneRec {
@@ -147,13 +149,16 @@ export function recomputeDurationSec(s: ArrangementState): void {
   s.durationSec = dur;
 }
 
-/** Bars * seconds-per-bar at the arrangement bpm. */
-function barSec(bpm: number): number { return (60 / bpm) * 4; }
+/** Seconds of one bar of THIS arrangement, from the one owner of the question.
+ *  A missing meter reads as 4/4 through songBarSec's own default. */
+function barSecOf(s: ArrangementState): number {
+  return songBarSec(s.bpm, s.meter);
+}
 
 /** Render/sizing length: the larger of the recorded duration and the
  *  user-set bar length. 0 only when nothing is recorded AND no length set. */
 export function effectiveDurationSec(s: ArrangementState): number {
-  return Math.max(s.durationSec, s.lengthBars * barSec(s.bpm));
+  return Math.max(s.durationSec, s.lengthBars * barSecOf(s));
 }
 
 /** Resolve the playback window in seconds. Loop off / invalid ⇒ inactive with
@@ -163,7 +168,7 @@ export function arrangementLoopWindowSec(
 ): { startSec: number; endSec: number; active: boolean } {
   const fullEnd = effectiveDurationSec(s);
   if (!s.loopEnabled) return { startSec: 0, endSec: fullEnd, active: false };
-  const bs = barSec(s.bpm);
+  const bs = barSecOf(s);
   const start = Math.max(0, (s.loopStartBar ?? 0) * bs);
   const end = Math.min(fullEnd, (s.loopEndBar ?? fullEnd / bs) * bs);
   if (end <= start) return { startSec: 0, endSec: fullEnd, active: false };
@@ -172,15 +177,19 @@ export function arrangementLoopWindowSec(
 
 /** Sub-step count for a given number of bars at AUTOMATION_SUB_RES.
  *
- *  Deliberately NOT routed through core/clip-envelope-length, which now owns the
- *  same question for CLIP envelopes. An arrangement is a different data model: it
- *  is indexed by absolute time on its own four-quarter bar (see barSec above),
- *  carries no session meter, and is coherent with itself end to end. Making this
- *  one meter-aware while its bar stays 4/4 would create the mismatch this audit
- *  removed elsewhere, not fix one. Whenever the arrangement grows a meter of its
- *  own, this and barSec move together. */
-export function subStepsForBars(bars: number): number {
-  return Math.max(0, Math.round(bars)) * 16 * AUTOMATION_SUB_RES;
+ *  This measures the SAME bar barSecOf does, and it has to: an arrangement curve
+ *  is indexed by absolute time (arrangement-runtime samples it at
+ *  `tNow * stepsPerSec(bpm) * SUB_RES`), so a curve sized for N bars only ends
+ *  where N bars end if both agree on how long one is. While they disagreed the
+ *  curve overran the timeline, recomputeDurationSec read that overrun back as
+ *  content, and every band edit stretched the song a little further.
+ *
+ *  Still deliberately NOT routed through core/clip-envelope-length: that owns the
+ *  same question for CLIP envelopes, which are indexed by clip-local step and
+ *  wrap on the clip's own loop. Two different questions that happen to share an
+ *  answer in 4/4. */
+export function subStepsForBars(bars: number, meter?: TimeSignature): number {
+  return Math.max(0, Math.round(bars)) * stepsPerBar(meter ?? DEFAULT_METER) * AUTOMATION_SUB_RES;
 }
 
 function resizeCurve(curve: AutomationCurve, targetLen: number): void {
@@ -197,8 +206,8 @@ function resizeCurve(curve: AutomationCurve, targetLen: number): void {
  *  effective length, holding the last value when growing, truncating on shrink. */
 export function setArrangementLengthBars(s: ArrangementState, bars: number): void {
   s.lengthBars = Math.max(0, Math.round(bars));
-  const targetBars = Math.ceil(effectiveDurationSec(s) / barSec(s.bpm));
-  const targetLen = subStepsForBars(targetBars);
+  const targetBars = Math.ceil(effectiveDurationSec(s) / barSecOf(s));
+  const targetLen = subStepsForBars(targetBars, s.meter);
   for (const lane of s.lanes) for (const c of lane.automation) resizeCurve(c, targetLen);
   for (const c of s.globalAutomation) resizeCurve(c, targetLen);
 }
@@ -213,8 +222,8 @@ export function addAutomationCurve(
     ? getOrCreateLane(s, route.laneId).automation
     : s.globalAutomation;
   if (list.some((c) => c.paramId === paramId)) return;
-  const targetBars = Math.max(1, Math.ceil(effectiveDurationSec(s) / barSec(s.bpm)));
-  const len = subStepsForBars(targetBars);
+  const targetBars = Math.max(1, Math.ceil(effectiveDurationSec(s) / barSecOf(s)));
+  const len = subStepsForBars(targetBars, s.meter);
   list.push({ paramId, values: Array.from({ length: len }, () => 0.5), enabled: true, stepped: false });
 }
 

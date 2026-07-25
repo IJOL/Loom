@@ -6,7 +6,8 @@
 // (explicit clipPerLane wins, else the scene row index).
 import type { SessionState } from '../session/session';
 import type { TimeSignature } from '../core/meter';
-import { ticksPerBar, quartersPerBar } from '../core/meter';
+import { ticksPerBar } from '../core/meter';
+import { songBarSec } from '../core/song-position';
 import { effectiveClipLoop } from '../core/clip-loop';
 import { emptyArrangementState, type ArrangementState } from './performance';
 import { appendClipEvent, closePendingClipEvent } from './arrangement-ops';
@@ -15,7 +16,7 @@ export function arrangementFromSession(
   state: SessionState, bpm: number, meter: TimeSignature,
 ): ArrangementState {
   const arr = emptyArrangementState(bpm, meter);
-  const barSec = (60 / bpm) * quartersPerBar(meter);
+  const barSec = songBarSec(bpm, meter);
   const tpb = ticksPerBar(meter);
   let cursorSec = 0;
 

@@ -177,6 +177,8 @@ import {
   addAutomationCurve, removeAutomationCurve,
   arrangementLoopWindowSec,
 } from './arrangement-ops';
+import { globalLoopIteration } from '../core/global-loop';
+import { DEFAULT_METER } from '../core/meter';
 
 describe('arrangement length', () => {
   it('effectiveDurationSec is max(durationSec, lengthBars*barSec)', () => {
@@ -248,6 +250,37 @@ describe('arrangementLoopWindowSec', () => {
   it('invalid (end<=start) ⇒ inactive full duration', () => {
     const s = withTake(); s.loopEnabled = true; s.loopStartBar = 6; s.loopEndBar = 2;
     expect(arrangementLoopWindowSec(s)).toEqual({ startSec: 0, endSec: 16, active: false });
+  });
+
+  it('the A–B window in 3/4 matches the session global loop window', () => {
+    // Performance writes its A–B bars straight into the scene's global loop
+    // (performance-feature → sessionHost.setGlobalLoop), so the two views MUST
+    // decode the same bar numbers into the same seconds of music.
+    const meter = { num: 3, den: 4 };
+    const s = withTake();
+    s.meter = meter;
+    s.loopEnabled = true; s.loopStartBar = 2; s.loopEndBar = 6;
+    const w = arrangementLoopWindowSec(s);
+    const session = globalLoopIteration(
+      0, 0, { enabled: true, startBar: 2, endBar: 6 }, s.bpm, meter,
+    );
+    expect((w.endSec - w.startSec) / session.lenSec).toBeCloseTo(1, 6);
+    expect(w.startSec / session.aSec).toBeCloseTo(1, 6);
+  });
+});
+
+describe('automation sizing follows the arrangement bar', () => {
+  it('a curve covers exactly the timeline it was sized for, in any meter', () => {
+    // subStepsForBars and barSec measure the SAME bar: a curve sized to the
+    // arrangement must end where the arrangement ends, or every band edit
+    // (recomputeDurationSec → automationEndSec) would inflate the timeline.
+    for (const meter of [DEFAULT_METER, { num: 3, den: 4 }, { num: 7, den: 8 }]) {
+      const s = emptyArrangementState(120, meter);
+      s.lengthBars = 4;
+      addAutomationCurve(s, 'fx.reverb.wet', []);
+      const curveSec = s.globalAutomation[0].values.length / (stepsPerSec(s.bpm) * AUTOMATION_SUB_RES);
+      expect(curveSec / effectiveDurationSec(s)).toBeCloseTo(1, 6);
+    }
   });
 });
 

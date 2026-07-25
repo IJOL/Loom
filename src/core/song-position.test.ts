@@ -10,6 +10,11 @@ describe('song-position', () => {
     expect(songBarSec(120, DEFAULT_METER)).toBeCloseTo(2, 6);
   });
 
+  it('songBarSec scales with the meter numerator', () => {
+    expect(songBarSec(120, { num: 3, den: 4 }) / songBarSec(120, DEFAULT_METER)).toBeCloseTo(3 / 4, 6);
+    expect(songBarSec(120, { num: 6, den: 8 }) / songBarSec(120, DEFAULT_METER)).toBeCloseTo(3 / 4, 6);
+  });
+
   it('songPosBars: clamps to 0 before the anchor', () => {
     expect(songPosBars(5, 10, 120)).toBe(0);
   });

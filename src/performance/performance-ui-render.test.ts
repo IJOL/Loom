@@ -42,6 +42,16 @@ function makeCb(over: Partial<PerfUICallbacks> = {}): PerfUICallbacks {
 }
 
 describe('renderPerformanceView', () => {
+  it('rules the timeline in the arrangement meter, not in 4/4', () => {
+    const bars = (meter?: { num: number; den: number }) => {
+      const host = document.createElement('div');
+      renderPerformanceView(host, makeState({ durationSec: 12, meter }), makeCb());
+      return host.querySelectorAll('.perf-ruler .perf-bar-mark').length;
+    };
+    // Relative: the same span of music is more bars when a bar is shorter.
+    expect(bars({ num: 3, den: 4 }) / bars()).toBeCloseTo(4 / 3, 6);
+  });
+
   it('renders toolbar, ruler, clip band, automation lane and playhead', () => {
     const host = document.createElement('div');
     const cb = makeCb();

@@ -16,8 +16,9 @@ import type { AutoBrush } from '../automation/automation-painter';
 import { effectiveDurationSec } from './arrangement-ops';
 import { buildAutomationHeader, buildAutomationLane, type PerfAutoDeps } from './performance-automation-ui';
 import {
-  barSecOf, toolbarTemplate, emptyTemplate, rulerTemplate, clipBandTemplate, labelTemplate,
+  toolbarTemplate, emptyTemplate, rulerTemplate, clipBandTemplate, labelTemplate,
 } from './performance-ui-templates';
+import { songBarSec } from '../core/song-position';
 
 export interface PerfUICallbacks {
   onPlay: () => void;
@@ -80,7 +81,9 @@ function viewTemplate(state: ArrangementState, cb: PerfUICallbacks): TemplateRes
   const dur = effectiveDurationSec(state);
   if (dur === 0) return html`${toolbarTemplate(state, cb)}${emptyTemplate(cb)}`;
 
-  const totalBars = Math.ceil(dur / barSecOf(state.bpm));
+  // One bar length for the whole view: ruler, bands and lane widths all use it.
+  const barSec = songBarSec(state.bpm, state.meter);
+  const totalBars = Math.ceil(dur / barSec);
   const autoDeps: PerfAutoDeps = {
     registry: cb.registry,
     destinations: cb.destinations,
@@ -93,6 +96,7 @@ function viewTemplate(state: ArrangementState, cb: PerfUICallbacks): TemplateRes
     onAdd: cb.onAddCurve,
     onRemove: cb.onRemoveCurve,
     onEdited: cb.onEdited,
+    meter: state.meter,
   };
 
   // The automation header/lanes are freshly built elements on every render
@@ -101,10 +105,10 @@ function viewTemplate(state: ArrangementState, cb: PerfUICallbacks): TemplateRes
   // patches rows instead of shifting every band's identity.
   // Single "+ Automation" control; the chosen param's prefix routes it into a
   // lane section or the master section (arrangement-ops.routeParamId).
-  return html`${toolbarTemplate(state, cb)}${rulerTemplate(dur, state.bpm, cb.pxPerBar, cb)}${buildAutomationHeader(autoDeps)}${repeat(
+  return html`${toolbarTemplate(state, cb)}${rulerTemplate(dur, barSec, cb.pxPerBar, cb)}${buildAutomationHeader(autoDeps)}${repeat(
     state.lanes,
     (lane) => lane.laneId,
-    (lane) => html`${clipBandTemplate(lane, dur, state.bpm, cb.pxPerBar, cb)}${lane.automation.map((curve) => buildAutomationLane(curve, autoDeps))}`,
+    (lane) => html`${clipBandTemplate(lane, dur, barSec, cb.pxPerBar, cb)}${lane.automation.map((curve) => buildAutomationLane(curve, autoDeps))}`,
   )}${state.globalAutomation.length > 0
     ? html`<div class="perf-row perf-master-header">${labelTemplate('MASTER')}</div>${state.globalAutomation.map((curve) => buildAutomationLane(curve, autoDeps))}`
     : nothing}<div class="perf-playhead" id="perf-playhead"></div>`;
