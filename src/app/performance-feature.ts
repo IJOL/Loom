@@ -103,7 +103,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   const { ctx, seq, sessionHost, automationRegistry, destinations, onRegisterKnob, onPerformanceEdited } = deps;
 
   const rec = createRecState();
-  const arrangement = emptyArrangementState(seq.bpm);
+  const arrangement = emptyArrangementState(seq.bpm, seq.meter);
   const arrangementPlayState = createArrangementPlayState();
   const recHooks: RecHooks = { rec, arrangement };
   let mode: 'session' | 'performance' = 'session';
@@ -291,6 +291,12 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     if (mode === 'performance') sessionHost.setSongAnchor(arrangementPlayState.startedAtCtx);
     if (next === 'performance') arrangementPlayState.startedAtCtx = sessionHost.songAnchorSec;
     if (next === 'performance') {
+      // The session's time signature is the one truth; the arrangement only
+      // CACHES it so the pure layer can size a bar without a Sequencer. Refresh
+      // it here or a meter chosen after boot never reaches the ruler (bpm has
+      // the same staleness — it is captured at creation and only re-read
+      // through the `arrangement.bpm || seq.bpm` fallbacks).
+      arrangement.meter = { ...seq.meter };
       // Reflect the active scene's global loop into the Performance A–B loop so
       // the brace shows the same region the user already set in Session.
       const g = sessionHost.globalLoopForUI();
@@ -358,7 +364,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
    *  arrangement in the Performance timeline, where every band turned into an
    *  orphaned "missing" (its clipEvents pointed at deleted clips). */
   function resetArrangement() {
-    setArrangement({ ...emptyArrangementState(seq.bpm), loopEnabled: false, loopStartBar: 0, loopEndBar: undefined });
+    setArrangement({ ...emptyArrangementState(seq.bpm, seq.meter), loopEnabled: false, loopStartBar: 0, loopEndBar: undefined });
     setMode('session');
   }
 

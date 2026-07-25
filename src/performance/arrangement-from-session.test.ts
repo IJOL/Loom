@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { arrangementFromSession } from './arrangement-from-session';
 import { DEFAULT_METER } from '../core/meter';
+import { songBarSec } from '../core/song-position';
 import type { SessionState } from '../session/session';
 
 const s = (over: Partial<SessionState>): SessionState =>
@@ -47,6 +48,22 @@ describe('arrangementFromSession', () => {
     });
     const arr = arrangementFromSession(state, 120, DEFAULT_METER);
     expect(arr.durationSec).toBe(4); // 2 bars, not 4
+  });
+
+  it('section placement and the ruler agree in 3/4', () => {
+    const meter = { num: 3, den: 4 };
+    const clipBars = 2;
+    const state = s({
+      lanes: [{ inserts: [], id: 'A', engineId: 'tb303', clips: [{ color: '#a8c8e8', gridResolution: '1/16', id: 'a1', lengthBars: clipBars, notes: [] }] }],
+      scenes: [{ id: 's0', clipPerLane: { A: 0 } }],
+    });
+    const arr = arrangementFromSession(state, 120, meter);
+    // The Performance ruler measures the timeline with the arrangement's OWN
+    // meter, so a section built from whole clips has to land on a whole number
+    // of those bars — in 3/4 a 4/4 ruler reads 1.5.
+    const bars = arr.durationSec / songBarSec(arr.bpm, arr.meter);
+    expect(bars).toBeCloseTo(Math.round(bars), 6);
+    expect(Math.round(bars)).toBe(clipBars);
   });
 
   it('MIDI-style single long clip ⇒ one pass start to end', () => {

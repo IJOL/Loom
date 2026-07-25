@@ -14,7 +14,7 @@ import { appendClipEvent, closePendingClipEvent } from './arrangement-ops';
 export function arrangementFromSession(
   state: SessionState, bpm: number, meter: TimeSignature,
 ): ArrangementState {
-  const arr = emptyArrangementState(bpm);
+  const arr = emptyArrangementState(bpm, meter);
   const barSec = (60 / bpm) * quartersPerBar(meter);
   const tpb = ticksPerBar(meter);
   let cursorSec = 0;

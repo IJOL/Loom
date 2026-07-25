@@ -3,7 +3,7 @@ import type { SessionHost } from '../session/session-host';
 import type { SessionState } from '../session/session';
 import type { LaneAllocator } from '../app/lane-allocator';
 import type { ArrangementState } from '../performance/performance';
-import { resolveMeter, formatMeter, type TimeSignature } from '../core/meter';
+import { resolveMeter, formatMeter, DEFAULT_METER, type TimeSignature } from '../core/meter';
 
 export interface SavedStateV3 {
   schemaVersion: 3;
@@ -86,11 +86,9 @@ export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): voi
 
   if (typeof s.bpm === 'number') { seq.bpm = s.bpm; bpmInput.value = String(s.bpm); }
   if (typeof s.swing === 'number') { seq.swing = s.swing; swingInput.value = String(s.swing); }
-  {
-    const m = resolveMeter(s.timeSignature);
-    seq.meter = m;
-    if (meterSel) meterSel.value = formatMeter(m);
-  }
+  const meter = resolveMeter(s.timeSignature);
+  seq.meter = meter;
+  if (meterSel) meterSel.value = formatMeter(meter);
   if (typeof s.masterVol === 'number') { master.gain.value = s.masterVol; volInput.value = String(s.masterVol); }
   deps.masterStrip?.restore(s.masterStrip);
   if (s.masterComp) deps.masterComp?.setState(s.masterComp);
@@ -104,7 +102,7 @@ export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): voi
   // Performance view (optional — older saves omit these). Restore the take
   // first so the view has content, then switch to the saved mode.
   if (s.arrangement && deps.setArrangement) {
-    migrateArrangementCurves(s.arrangement);
+    migrateArrangementCurves(s.arrangement, meter);
     deps.setArrangement(s.arrangement);
   }
   if (s.mode && deps.setMode) deps.setMode(s.mode);
@@ -120,11 +118,18 @@ export function parseSavedStateV3(raw: unknown): SavedStateV3 | null {
 
 /** Older performance takes stored automation as `samples` with no flags.
  *  Normalize to the painter-compatible `{ values, enabled, stepped }` shape and
- *  backfill `lengthBars`. Mutates in place. */
-export function migrateArrangementCurves(arr: ArrangementState): void {
+ *  backfill `lengthBars` + `meter`. Mutates in place.
+ *
+ *  There are no migrations in this project: a take saved before the arrangement
+ *  knew about meters simply adopts the meter the save itself carries (4/4 when
+ *  it carries none), which is the meter it was recorded under anyway. */
+export function migrateArrangementCurves(
+  arr: ArrangementState, meter: TimeSignature = DEFAULT_METER,
+): void {
   if (typeof (arr as { lengthBars?: number }).lengthBars !== 'number') {
     (arr as { lengthBars: number }).lengthBars = 0;
   }
+  if (!arr.meter) arr.meter = { ...meter };
   const fix = (c: { values?: number[]; enabled?: boolean; stepped?: boolean }) => {
     if (!c.values) c.values = [];
     if (c.enabled === undefined) c.enabled = true;
