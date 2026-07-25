@@ -219,6 +219,9 @@ function lfoBarTemplate(h: Panel, clip: SessionClip, env: ClipEnvelope, strip: A
     if (h.deps.historyDeps) withUndo(h.deps.historyDeps, run); else run();
   };
 
+  // "Loop only" carries `active`, not `primary`: the lane-header button rule in
+  // _session-inspector.scss owns the background in here and only lights up on
+  // .active, so a `primary` toggle looked identical on and off.
   const onShape = (e: Event) => { lfoState.shape = (e.currentTarget as HTMLSelectElement).value as LfoShape; };
   const onRate = (e: Event) => { lfoState.rateId = (e.currentTarget as HTMLSelectElement).value; };
   const onDepth = (e: Event) => { lfoState.depth = Number((e.currentTarget as HTMLSelectElement).value); };
@@ -239,7 +242,7 @@ function lfoBarTemplate(h: Panel, clip: SessionClip, env: ClipEnvelope, strip: A
         ${[1, 0.75, 0.5, 0.25].map((d) => html`<option value=${d} ?selected=${d === lfoState.depth}>${Math.round(d * 100)}%</option>`)}
       </select>
       <button
-        class=${lfoState.loopOnly ? 'rnd primary clip-auto-lfo-loop' : 'rnd clip-auto-lfo-loop'}
+        class=${lfoState.loopOnly ? 'rnd clip-auto-lfo-loop active' : 'rnd clip-auto-lfo-loop'}
         title="Draw inside the loop region only (when the clip loops)"
         @click=${() => { lfoState.loopOnly = !lfoState.loopOnly; h.rerender(); }}
       >Loop only</button>

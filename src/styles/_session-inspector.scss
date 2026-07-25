@@ -128,6 +128,19 @@
 .clip-auto-brush-bar { display: flex; gap: 4px; }
 .clip-auto-hint { color: var(--text-faint); font-size: 12px; margin: 4px 0 0; }
 .clip-auto-range { font-size: 10px; color: var(--text-dim); }
+/* The lane box must not inset its strip horizontally. The strip aligns to the
+   editor's grid by measuring the gap between its own row and the editor
+   viewport, and it can only shift RIGHT (a negative margin would spill over
+   this box). An audio clip's editor spans the whole inspector width, so any
+   padding/border on this side would put the target LEFT of the row — the strip
+   would clamp at 0 and sit a few px off. Vertical padding is fine. */
+.clip-auto-lane {
+  padding-left: 0;
+  padding-right: 0;
+  border-left: 0;
+  border-right: 0;
+}
+
 /* The canvas is exactly `axis.contentWidth()` px wide (written inline by the
    follower strip) and lives inside the clipping window: never `width: 100%`,
    which is what made the lane a private, un-zoomable geometry. */

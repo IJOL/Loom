@@ -20,8 +20,9 @@
   align-items: center;
   gap: 4px;
   min-width: 0;
-  padding-right: 2px;
   box-sizing: border-box;
+  /* No horizontal padding: this slot IS the measured gutter, so any padding
+     here shifts the timeline by exactly that much. */
 }
 
 .clip-follow-window {
