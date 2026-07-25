@@ -3,6 +3,8 @@
 
 import type { DrumVoice } from '../../core/drums';
 import type { DrumRows } from '../../core/drum-grid-editing';
+import type { ClipAxis } from '../../core/clip-axis';
+import type { HistoryDeps } from '../../save/history-wiring';
 
 export const LANE_LABELS: Record<DrumVoice, string> = {
   kick: 'KICK', snare: 'SNARE', rimshot: 'RIM', closedHat: 'CH', openHat: 'OH',
@@ -30,4 +32,31 @@ export interface DrumEditorHandle {
   /** Release the ClipAxis subscription + the primary-viewport registration.
    *  Called before the host is wiped (see combineEditorHandle). */
   dispose?: () => void;
+}
+
+export interface DrumEditorDeps {
+  auditionNote?: (midi: number) => void;
+  getPlayheadTick?: () => number;        // -1 when not playing
+  /** The clip's shared horizontal time axis. The editor is the PRIMARY: it
+   *  publishes its viewport width and drives zoom/scroll for every follower
+   *  (waveform header, automation lanes). Optional so existing tests can mount
+   *  the editor standalone; without it the grid gets its own private axis and
+   *  simply has no followers. */
+  axis?: ClipAxis;
+  /** Sampler drumkit lanes only: lets the editor show a "Full kit" toggle and
+   *  rebuild its row model in place. build(full) returns the model for the
+   *  requested view; the global flag is owned by clip-drum-fullkit. */
+  fullKit?: { build: (full: boolean) => DrumGridModel; onToggle?: () => void };
+  /** When present, mount the loop overlay over the grid (toolbar in loop.toolbarHost). */
+  loop?: {
+    toolbarHost: HTMLElement;
+    historyDeps?: HistoryDeps;
+    onChange?: () => void;
+    /** Returns true when the editing scene's loop is currently linked. */
+    isLinked?: () => boolean;
+    /** Called when the user clicks the Link toggle in the loop toolbar. */
+    onToggleLink?: (linked: boolean) => void;
+    /** Called after each loop edit commit (toggle + brace drags). */
+    onClipLoopEdited?: () => void;
+  };
 }

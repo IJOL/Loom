@@ -23,14 +23,11 @@ import { createToolToggle, createHelpButton, createResolutionSelect, createFollo
 import { mountDrumEuclidPanel } from './drum-euclid-panel';
 import { mountClipLoopOverlay } from '../../core/clip-loop-overlay';
 import { ClipAxis } from '../../core/clip-axis';
+import { attachPrimaryAxis } from '../../core/clip-axis-primary';
 import { isFollowEnabled, followScrollTarget } from '../../core/clip-follow';
 import { isDrumFullKit } from '../../core/clip-drum-fullkit';
-import { LANE_LABELS, LABEL_W, RULER_H, ROW_H, VEL_LANE_H, DRUM_KEY_LEGEND, type DrumGridModel, type DrumEditorHandle } from './drum-grid-types';
-export { LANE_LABELS, LABEL_W, DRUM_KEY_LEGEND, type DrumGridModel, type DrumEditorHandle } from './drum-grid-types';
-
-// In-memory horizontal zoom/scroll per clip (mirrors the piano-roll's
-// viewStateByClip; resets on reload; no saved-state change).
-const hViewByClip = new Map<string, { zoomX: number; scrollLeft: number }>();
+import { LANE_LABELS, LABEL_W, RULER_H, ROW_H, VEL_LANE_H, DRUM_KEY_LEGEND, type DrumGridModel, type DrumEditorHandle, type DrumEditorDeps } from './drum-grid-types';
+export { LANE_LABELS, LABEL_W, DRUM_KEY_LEGEND, type DrumGridModel, type DrumEditorHandle, type DrumEditorDeps } from './drum-grid-types';
 
 const GM_MODEL: DrumGridModel = { rows: gmDrumRows(), labels: DRUM_LANES.map((v) => LANE_LABELS[v]) };
 
@@ -38,32 +35,6 @@ type Tool = 'draw' | 'select';
 let currentTool: Tool = 'draw';          // persists across clips (session)
 let clipboard: DrumClipNote[] | null = null;
 
-export interface DrumEditorDeps {
-  auditionNote?: (midi: number) => void;
-  getPlayheadTick?: () => number;        // -1 when not playing
-  /** The clip's shared horizontal time axis. This editor is the PRIMARY: it
-   *  publishes its viewport width and drives zoom/scroll for every follower
-   *  (waveform header, automation lanes). Optional so existing tests can mount
-   *  the editor standalone; without it the grid gets its own private axis and
-   *  simply has no followers. */
-  axis?: ClipAxis;
-  /** Sampler drumkit lanes only: lets the editor show a "Full kit" toggle and
-   *  rebuild its row model in place. build(full) returns the model for the
-   *  requested view; the global flag is owned by clip-drum-fullkit. */
-  fullKit?: { build: (full: boolean) => DrumGridModel; onToggle?: () => void };
-  /** When present, mount the loop overlay over the grid (toolbar in loop.toolbarHost). */
-  loop?: {
-    toolbarHost: HTMLElement;
-    historyDeps?: HistoryDeps;
-    onChange?: () => void;
-    /** Returns true when the editing scene's loop is currently linked. */
-    isLinked?: () => boolean;
-    /** Called when the user clicks the Link toggle in the loop toolbar. */
-    onToggleLink?: (linked: boolean) => void;
-    /** Called after each loop edit commit (toggle + brace drags). */
-    onClipLoopEdited?: () => void;
-  };
-}
 
 export function renderDrumGridEditor(
   host: HTMLElement, clip: SessionClip,
@@ -166,7 +137,6 @@ export function renderDrumGridEditor(
   // ── Zoom/scroll: owned by the clip's shared axis ──────────────────────────
   const axis = deps.axis ?? new ClipAxis(clip.id, patternTicks);
   axis.setTotalTicks(patternTicks);
-  axis.setPrimaryViewport(viewport);
   let gridW = 600, pxPerTick = gridW / patternTicks;
   const xForTick = (t: number) => t * pxPerTick;                 // content space (no LABEL_W)
   const yForRow = (r: number) => RULER_H + r * ROW_H;
@@ -459,26 +429,18 @@ export function renderDrumGridEditor(
   });
 
   // ── Mount + the host-RAF redraw handle (per-frame width check + playhead) ──
-  // The shared axis moved: either we moved it (ruler scrub / scroll) or something
-  // else did. Guarded against re-entry because resize() republishes the basis
-  // width, and a pure scroll must not pay for a canvas resize + full redraw.
-  let applyingAxis = false;
-  let lastAppliedW = -1;
-  function applyAxis(): void {
-    if (applyingAxis) return;
-    applyingAxis = true;
-    try {
-      if (axis.contentWidth() !== lastAppliedW) { resize(); lastAppliedW = axis.contentWidth(); }
-      if (Math.round(viewport.scrollLeft) !== axis.scrollLeft) viewport.scrollLeft = axis.scrollLeft;
-      loopHandle?.redraw();
-    } finally {
-      applyingAxis = false;
-    }
-  }
-  const offAxis = axis.subscribe(() => applyAxis());
+  // The shared axis moved (our ruler scrub, our scroll, or another view of this
+  // clip). The guard + "skip the relayout on a plain scroll" memo + scroll
+  // mirroring all live in attachPrimaryAxis.
+  const primaryAxis = attachPrimaryAxis({
+    axis,
+    viewport,
+    relayout: () => resize(),
+    afterApply: () => loopHandle?.redraw(),
+  });
+  const applyAxis = () => primaryAxis.apply();
 
   resize();
-  lastAppliedW = axis.contentWidth();
   viewport.scrollLeft = axis.scrollLeft;      // restore the clip's shared H scroll
 
   viewport.addEventListener('scroll', () => axis.setScrollLeft(viewport.scrollLeft));
@@ -508,9 +470,8 @@ export function renderDrumGridEditor(
     const w = viewport.clientWidth;
     if (w && w !== lastW) {
       lastW = w;
-      resize();                               // republishes the basis for followers
-      lastAppliedW = axis.contentWidth();
-      viewport.scrollLeft = axis.scrollLeft;
+      primaryAxis.invalidate();               // the viewport itself resized
+      applyAxis();                            // resize() republishes the basis
     }
     const ph = deps.getPlayheadTick?.() ?? -1;
     if (ph !== playheadTick) { playheadTick = ph; draw(); }
@@ -519,13 +480,5 @@ export function renderDrumGridEditor(
       if (target != null) viewport.scrollLeft = target;     // fires scroll → publishes to the axis
     }
   }
-  return {
-    redraw,
-    dispose: () => {
-      offAxis();
-      // Only give the axis back if we were the one holding it: a later editor may
-      // already have registered its own viewport.
-      if (axis.primaryViewport === viewport) axis.setPrimaryViewport(null);
-    },
-  };
+  return { redraw, dispose: () => primaryAxis.dispose() };
 }

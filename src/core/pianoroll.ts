@@ -16,6 +16,7 @@ import {
   defaultPitchView, type PitchView,
 } from './pianoroll-zoom';
 import type { ClipAxis } from './clip-axis';
+import { attachPrimaryAxis } from './clip-axis-primary';
 import {
   notesInRect, translateGroup, serializeClipboard, pasteTranslate,
   clampOctaveBase, octaveBaseLabel, PIANO_KEY_LEGEND, snapNoteMidi, type ClipboardNote, type ScaleCtx,
@@ -252,7 +253,6 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   // Horizontal state lives on the shared axis; only the vertical pair is local.
   const axis = opts.axis;
   axis.setTotalTicks(opts.patternTicks);
-  axis.setPrimaryViewport(f.gridVp);          // followers align to this rect
   let { zoomY, scrollTop } = opts.pitchView ?? defaultPitchView();
   // Geometry derived from zoom + viewport (recomputed in geom()).
   let gridW = 0, gridH = 0, pxPerTick = 0, rowHeight = 0;
@@ -416,31 +416,16 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   /** Redraw both the note grid and the velocity lane together (for note edits). */
   function redrawGridAndLane(): void { drawGrid(); drawVelLane(); }
 
-  // ── The shared axis moved ─────────────────────────────────────────────────
-  // Either we moved it (ruler scrub, scroll) or something else did (a clip
-  // length edit, another view of the same clip). One handler for all of them.
-  //
-  // Re-entrancy: layoutAll → geom → axis.setBasisWidth can emit again, so the
-  // flag guards against recursion. And a pure SCROLL change must not pay for a
-  // full canvas resize + redraw, hence the contentWidth check.
-  let applyingAxis = false;
-  let lastAppliedW = -1;
-  function applyAxis(): void {
-    if (applyingAxis) return;
-    applyingAxis = true;
-    try {
-      if (axis.contentWidth() !== lastAppliedW) {
-        layoutAll();
-        lastAppliedW = axis.contentWidth();
-      }
-      if (Math.round(f.gridVp.scrollLeft) !== axis.scrollLeft) f.gridVp.scrollLeft = axis.scrollLeft;
-      syncStrips();
-      refreshLoop();
-    } finally {
-      applyingAxis = false;
-    }
-  }
-  const offAxis = axis.subscribe(() => applyAxis());
+  // The shared axis moved — our own ruler scrub, our scroll, a clip length edit,
+  // or another view of the same clip. attachPrimaryAxis owns the guard, the
+  // "skip the relayout on a plain scroll" memo and the scroll mirroring.
+  const primaryAxis = attachPrimaryAxis({
+    axis,
+    viewport: f.gridVp,
+    relayout: () => layoutAll(),
+    afterApply: () => { syncStrips(); refreshLoop(); },
+  });
+  const applyAxis = () => primaryAxis.apply();
 
   // ── Scroll: publish H to the axis, keep V local, re-pin strips ────────────
   f.gridVp.addEventListener('scroll', () => {
@@ -775,7 +760,6 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
   // ── Initial mount ─────────────────────────────────────────────────────────
   let lastVW = f.gridVp.clientWidth, lastVH = f.gridVp.clientHeight;
   layoutAll();
-  lastAppliedW = axis.contentWidth();
   f.gridVp.scrollLeft = axis.scrollLeft;      // restore the clip's shared H scroll
   f.gridVp.scrollTop = scrollTop;
   syncStrips();
@@ -808,10 +792,9 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     const vw = f.gridVp.clientWidth, vh = f.gridVp.clientHeight;
     if (vw !== lastVW || vh !== lastVH) {
       lastVW = vw; lastVH = vh;
-      layoutAll();                              // geom() republishes the new basis
-      lastAppliedW = axis.contentWidth();
-      f.gridVp.scrollLeft = axis.scrollLeft; f.gridVp.scrollTop = scrollTop;
-      syncStrips();
+      primaryAxis.invalidate();                 // the viewport itself resized
+      applyAxis();                              // geom() republishes the new basis
+      f.gridVp.scrollTop = scrollTop;
     } else {
       redrawGridAndLane();
     }
@@ -821,11 +804,6 @@ export function createPianoRoll(opts: PianoRollOpts): PianoRollHandle {
     redraw,
     getOctaveBase: () => octaveBase,
     setOctaveBase: (m: number) => { octaveBase = clampOctaveBase(m, minMidi, maxMidi); refreshToolbar(); },
-    dispose: () => {
-      offAxis();
-      // Hand the axis back only if we are still the registered primary (a newer
-      // editor may already have claimed it).
-      if (axis.primaryViewport === f.gridVp) axis.setPrimaryViewport(null);
-    },
+    dispose: () => primaryAxis.dispose(),
   };
 }

@@ -19,6 +19,7 @@ import { mountWarpMarkerEditor } from './warp-marker-editor';
 import { mountClipLoopOverlay } from '../../core/clip-loop-overlay';
 import type { HistoryDeps } from '../../save/history-wiring';
 import { ClipAxis } from '../../core/clip-axis';
+import { attachPrimaryAxis } from '../../core/clip-axis-primary';
 import { isFollowEnabled, followScrollTarget } from '../../core/clip-follow';
 import { createFollowToggle } from '../../core/clip-editor-toolbar';
 
@@ -278,23 +279,15 @@ export function renderAudioClipEditor(
     loopHandle?.redraw();
   };
 
-  // The shared axis moved (our gesture, or a clip-length change). Guarded: a pure
-  // scroll must not repaint the waveform, and relayout republishes the basis.
-  let applyingAxis = false;
-  let lastAppliedW = -1;
-  function applyAxis(): void {
-    if (applyingAxis) return;
-    applyingAxis = true;
-    try {
-      if (axis.contentWidth() !== lastAppliedW) { relayout(); lastAppliedW = axis.contentWidth(); }
-      if (Math.round(viewport.scrollLeft) !== axis.scrollLeft) viewport.scrollLeft = axis.scrollLeft;
-      loopHandle?.redraw();
-    } finally {
-      applyingAxis = false;
-    }
-  }
-  const offAxis = axis.subscribe(() => applyAxis());
-  axis.setPrimaryViewport(viewport);           // followers align to this rect
+  // The shared axis moved (our scrub, our scroll, a clip-length change). The
+  // guard, the relayout memo and the scroll mirroring live in attachPrimaryAxis.
+  const primaryAxis = attachPrimaryAxis({
+    axis,
+    viewport,
+    relayout: () => relayout(),
+    afterApply: () => loopHandle?.redraw(),
+  });
+  const applyAxis = () => primaryAxis.apply();
 
   // Performance-style loop overlay inside the viewport (zoom-aware)
   if (deps.loop) {
@@ -373,20 +366,16 @@ export function renderAudioClipEditor(
   }
 
   relayout();
-  lastAppliedW = axis.contentWidth();
   viewport.scrollLeft = axis.scrollLeft;      // restore the clip's shared H scroll
   let lastVpW = viewport.clientWidth;
   return {
-    dispose: () => {
-      offAxis();
-      if (axis.primaryViewport === viewport) axis.setPrimaryViewport(null);
-    },
+    dispose: () => primaryAxis.dispose(),
     redraw: () => {
       // On a panel resize, re-fit the content width (relayout redraws header +
       // markers + loop); otherwise just repaint them. Without this the inner
       // canvases widen on resize but the scroll-range wrapper keeps a stale width.
       const vpw = viewport.clientWidth;
-      if (vpw && vpw !== lastVpW) { lastVpW = vpw; relayout(); lastAppliedW = axis.contentWidth(); }
+      if (vpw && vpw !== lastVpW) { lastVpW = vpw; primaryAxis.invalidate(); applyAxis(); }
       else { header.redraw(); markerHandle?.redraw(); loopHandle?.redraw(); }
       const f = deps.getPlayheadFrac?.() ?? -1;
       if (f >= 0 && isFollowEnabled()) {
