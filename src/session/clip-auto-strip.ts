@@ -102,7 +102,8 @@ export function createAutoStrip(o: AutoStripOpts): AutoStrip {
     // The envelope must cover the clip before it is drawn or painted: a length
     // edit (or a *2 / /2 tempo scale) changes how many sub-steps a bar needs.
     // Same call the live tick indexes with, so what is drawn and what plays are
-    // the same array of the same length.
+    // the same array of the same length. This is also the moment an over-long
+    // envelope from an older save is TRIMMED for good — see ensureLaneSize.
     ensureLaneSize(painterLane, envelopeValueLength(o.clip.lengthBars, o.meter));
     painterLane.enabled = o.env.enabled !== false;
     painterLane.stepped = !!o.env.stepped;

@@ -43,6 +43,14 @@ export function ensureLaneSize(lane: { values: number[] }, expectedLength: numbe
     const last = lane.values[lane.values.length - 1] ?? 0.5;
     while (lane.values.length < expected) lane.values.push(last);
   } else {
+    // DESTRUCTIVE, and knowingly so. This is the array the live audio path
+    // reads, so the tail is not parked anywhere else: once trimmed it is gone,
+    // and the next save writes the short version. A session saved before the
+    // envelope length became meter-correct stored `lengthBars * 16 * SUB_RES`,
+    // which in any meter but 4/4 is LONGER than the clip now asks for — so the
+    // first time such a lane is drawn, the end of the user's curve is lost.
+    // Loom does no migrations by policy, so nothing rescues it; this is the
+    // record that it happens rather than a bug waiting to be rediscovered.
     lane.values.length = expected;
   }
 }
