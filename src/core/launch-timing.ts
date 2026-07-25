@@ -37,6 +37,15 @@ export function governingLoopSec(lengths: number[]): number {
  * The map is integrated over CLIP-LOCAL ticks: the MIDI importer rebases every
  * tempo point onto the clip's own grid, so tick 0 of the map is tick 0 of the
  * clip. A song-absolute map stored on a clip would mis-integrate here.
+ *
+ * `bpm <= 0` answers 0 on the CONSTANT branch only, and that asymmetry is
+ * chosen, not left over: it is the branch that divides by the bpm, so a
+ * non-positive one there means the clip has no seconds at all. The map branch
+ * never reads `bpm` — its seconds come out of the tempo points themselves — so
+ * there is nothing to guard, and answering 0 would report a clip that really
+ * does last minutes as zero-length because the transport handed over a bad
+ * tempo. clipLoopSec used to carry the guard for both; the case that pins the
+ * difference is in launch-timing.test.ts.
  */
 export function clipRegionSec(
   clip: SessionClip, startTick: number, endTick: number, bpm: number,

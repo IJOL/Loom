@@ -52,6 +52,35 @@ describe('clipLoopSec', () => {
   });
 });
 
+describe('clipLoopSec — a nonsense bpm', () => {
+  const BAR = ticksPerBar(DEFAULT_METER);
+  const constantBpm: SessionClip = { color: '#f4e0a8', gridResolution: '1/16',
+    id: 'cb', lengthBars: 4, notes: [] };
+  const tempoMapped: SessionClip = { ...constantBpm, id: 'tm',
+    tempoMap: [{ tick: 0, bpm: 120 }, { tick: 2 * BAR, bpm: 60 }] };
+
+  it('is zero for a constant-tempo clip, which has no seconds without a bpm', () => {
+    // The guard lives in clipRegionSec now, on the branch that divides by the
+    // bpm — the only place a non-positive one produces a nonsense number.
+    for (const bpm of [0, -120]) {
+      expect(clipLoopSec(constantBpm, bpm, DEFAULT_METER)).toBe(0);
+    }
+  });
+
+  it('is the clip\'s real length for a tempo-mapped one, whatever the bpm says', () => {
+    // Deliberate, not an oversight: a tempo map carries its own seconds and the
+    // session bpm never enters the integration, so there is nothing to guard —
+    // and answering 0 would report a clip that really does last 6 minutes as
+    // zero-length because the transport reported a bad tempo. Pinned here so
+    // "restore the guard at the top of clipLoopSec" fails instead of passing.
+    const real = clipLoopSec(tempoMapped, 120, DEFAULT_METER);
+    expect(real).toBeGreaterThan(0);
+    for (const bpm of [0, -120]) {
+      expect(clipLoopSec(tempoMapped, bpm, DEFAULT_METER)).toBe(real);
+    }
+  });
+});
+
 describe('nextLoopEnd', () => {
   it('mid-loop → next boundary', () => {
     expect(nextLoopEnd(0, 2, 3)).toBeCloseTo(4, 9);   // 3s into 2s loops → 4s
