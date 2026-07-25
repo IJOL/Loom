@@ -292,11 +292,10 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     if (mode === 'performance') sessionHost.setSongAnchor(arrangementPlayState.startedAtCtx);
     if (next === 'performance') arrangementPlayState.startedAtCtx = sessionHost.songAnchorSec;
     if (next === 'performance') {
-      // The session's time signature is the one truth; the arrangement only
-      // CACHES it so the pure layer can size a bar without a Sequencer. Refresh
-      // it here or a meter chosen after boot never reaches the ruler (bpm has
-      // the same staleness — it is captured at creation and only re-read
-      // through the `arrangement.bpm || seq.bpm` fallbacks).
+      // The session's meter is the one truth; the arrangement only CACHES it so
+      // the pure layer can size a bar without a Sequencer. Refreshed here or a
+      // meter chosen after boot never reaches the ruler. (bpm has the same
+      // staleness, papered over by `arrangement.bpm || seq.bpm`.)
       arrangement.meter = { ...seq.meter };
       // Reflect the active scene's global loop into the Performance A–B loop so
       // the brace shows the same region the user already set in Session.
