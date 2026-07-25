@@ -15,7 +15,6 @@ import { html, nothing, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
 import type { ArrangementState, ArrangementLaneRec, ArrangementClipEvent } from './performance';
 import type { PerfUICallbacks } from './performance-ui';
-import type { AutoBrush } from '../automation/automation-painter';
 import { effectiveDurationSec } from './arrangement-ops';
 import { pxToBar, clampBarRegion } from './arrangement-brace';
 
@@ -33,18 +32,6 @@ export function toolbarTemplate(state: ArrangementState, cb: PerfUICallbacks): T
   // so the field read "0 bars" over 8 bars of copied content. Typing still sets an
   // explicit minimum; it just can't shrink the field below the real content.
   const bars = Math.ceil(effectiveDurationSec(state) / barSecOf(state.bpm));
-
-  // Brush switching repaints only the two buttons — a full re-render here would
-  // rebuild the toolbar's VU meter for a purely local highlight change.
-  const brushBtn = (b: AutoBrush, label: string) => html`<button
-    class=${'rnd' + (cb.getBrush() === b ? ' primary' : '')}
-    @click=${(e: Event) => {
-      cb.setBrush(b);
-      const btn = e.currentTarget as HTMLElement;
-      btn.closest('.perf-brush-bar')!.querySelectorAll('button').forEach((x) => x.classList.remove('primary'));
-      btn.classList.add('primary');
-    }}
-  >${label}</button>`;
 
   // Editable A/B bar fields — dragging the brace on a long song is a pain. Typing
   // a value sets AND enables the loop (the button still toggles it off).
@@ -72,7 +59,7 @@ export function toolbarTemplate(state: ArrangementState, cb: PerfUICallbacks): T
         class="perf-zoom"
         .value=${live(String(cb.pxPerBar))}
         @change=${(e: Event) => cb.onZoom(parseInt((e.currentTarget as HTMLInputElement).value, 10))}
-      > · <span class="perf-brush-bar">${brushBtn('line', 'Line')}${brushBtn('flat', 'Flat')}</span> · <button
+      > · <button
         class=${'rnd perf-loop-toggle' + (cb.loopEnabled ? ' primary' : '')}
         @click=${() => cb.onSetLoop(!cb.loopEnabled, cb.loopStartBar, cb.loopEndBar)}
       >Loop A–B</button><span class="perf-loop-fields">A<input

@@ -122,6 +122,13 @@
   .perf-auto-header {
     display: flex; gap: 6px; align-items: center; padding: 6px 0 6px 120px;
     .perf-auto-param-select { max-width: 260px; }
+    // The brush is a modal setting for painting a lane, not an action like
+    // "+ Automation": push it away from the add control and label it, so it
+    // reads as a secondary tool rather than a second primary button.
+    .perf-brush-label {
+      margin-left: 18px; font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .perf-brush-bar { display: flex; gap: 4px; }
   }
   .perf-auto-lane {
     padding-left: 120px; overflow-x: auto; border-bottom: 1px solid #1c1c1c;

@@ -137,4 +137,59 @@ describe('renderPerformanceView', () => {
     expect(host.querySelector('.perf-loop-brace')).toBeNull();
     expect(host.querySelector('.perf-loop-span')).toBeNull();
   });
+
+  // The Line/Flat brush only affects painting an automation lane, so it belongs
+  // in the automation row next to "+ Automation" — not in the main toolbar
+  // beside Length/Zoom/Loop, and not on screen at all while nothing is paintable.
+  it('keeps the brush out of the main toolbar, next to + Automation instead', () => {
+    const host = document.createElement('div');
+    renderPerformanceView(host, makeState(), makeCb());
+    expect(host.querySelector('.perf-toolbar .perf-brush-bar')).toBeNull();
+    expect(host.querySelector('.perf-auto-header .perf-brush-bar')).toBeTruthy();
+  });
+
+  it('hides the brush when no automation curve exists', () => {
+    const host = document.createElement('div');
+    const noCurves = makeState({
+      lanes: [{
+        laneId: 'lane1',
+        clipEvents: [{ clipId: 'c1', laneId: 'lane1', atSec: 0, untilSec: 2 }],
+        automation: [],
+      }],
+    } as Partial<ArrangementState>);
+    renderPerformanceView(host, noCurves, makeCb());
+
+    expect(host.querySelector('.perf-auto-header')).toBeTruthy();  // "+ Automation" stays
+    expect(host.querySelector('.perf-brush-bar')).toBeNull();
+  });
+
+  it('shows the brush for a master curve with no per-lane curve', () => {
+    const host = document.createElement('div');
+    const globalOnly = makeState({
+      lanes: [{
+        laneId: 'lane1',
+        clipEvents: [{ clipId: 'c1', laneId: 'lane1', atSec: 0, untilSec: 2 }],
+        automation: [],
+      }],
+      globalAutomation: [{ paramId: 'master.gain', values: [0.5, 0.5], enabled: true }],
+    } as Partial<ArrangementState>);
+    renderPerformanceView(host, globalOnly, makeCb());
+    expect(host.querySelector('.perf-auto-header .perf-brush-bar')).toBeTruthy();
+  });
+
+  it('switches the brush and highlights the active button', () => {
+    const host = document.createElement('div');
+    const cb = makeCb();
+    renderPerformanceView(host, makeState(), cb);
+
+    const [line, flat] = [...host.querySelectorAll('.perf-brush-bar button')] as HTMLButtonElement[];
+    expect(line.textContent).toBe('Line');
+    expect(flat.textContent).toBe('Flat');
+    expect(line.classList.contains('primary')).toBe(true);   // getBrush() === 'line'
+
+    flat.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(cb.setBrush).toHaveBeenCalledWith('flat');
+    expect(flat.classList.contains('primary')).toBe(true);
+    expect(line.classList.contains('primary')).toBe(false);
+  });
 });

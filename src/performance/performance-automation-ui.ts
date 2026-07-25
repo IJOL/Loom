@@ -7,7 +7,7 @@
 // re-rendering panels: the Performance view rebuilds them wholesale on every
 // commit, and in between the header buttons patch their own class/text
 // imperatively (an On/Off toggle must not trigger a full view repaint).
-import { html } from 'lit-html';
+import { html, nothing } from 'lit-html';
 import { renderElement } from '../core/lit-fragment';
 import type { KnobHandle } from '../core/knob';
 import type { AutomationCurve } from './performance';
@@ -29,18 +29,39 @@ export interface PerfAutoDeps {
   /** Width in px for a full-arrangement canvas at the current zoom. */
   laneWidthPx: number;
   getBrush: () => AutoBrush;
+  setBrush: (b: AutoBrush) => void;
+  /** Whether the paint brush belongs on screen: it only affects drawing a
+   *  lane, so with zero curves there is nothing for it to paint. */
+  showBrush: boolean;
   onAdd: (paramId: string) => void;
   onRemove: (paramId: string) => void;
   onEdited: () => void;
 }
 
-/** Build the "+ Automation" header: a grouped param select + add button. */
+/** Build the "+ Automation" header: a grouped param select + add button, and —
+ *  only once a curve exists — the Line/Flat paint brush. The brush lives here,
+ *  next to what it paints, instead of in the main toolbar beside
+ *  Length/Zoom/Loop, where it read as a top-level transport control and stayed
+ *  visible over an arrangement with no automation at all. */
 export function buildAutomationHeader(deps: PerfAutoDeps): HTMLElement {
   // Destinations come from the shared catalogue, not from whatever knobs are
   // mounted: the picker must offer an insert on a channel whose editor is
   // closed, and must not offer a lane that a previous save left behind in
   // the registry.
   const targets = deps.destinations.list();
+  // Brush switching repaints only the two buttons — this header is a one-shot
+  // build, and a full view re-render for a purely local highlight change would
+  // rebuild every lane canvas and its painter.
+  const brushBtn = (b: AutoBrush, label: string) => html`<button
+    class=${'rnd' + (deps.getBrush() === b ? ' primary' : '')}
+    @click=${(e: Event) => {
+      deps.setBrush(b);
+      const btn = e.currentTarget as HTMLElement;
+      btn.closest('.perf-brush-bar')!.querySelectorAll('button').forEach((x) => x.classList.remove('primary'));
+      btn.classList.add('primary');
+    }}
+  >${label}</button>`;
+
   return renderElement(html`<div class="perf-auto-header"><select class="perf-auto-param-select">${
     [...groupTargetsByLane(targets)].map(([laneName, group]) => html`<optgroup label=${laneName}>${
       group.map((t) => html`<option value=${t.id}>${t.label}</option>`)
@@ -51,7 +72,11 @@ export function buildAutomationHeader(deps: PerfAutoDeps): HTMLElement {
         const sel = (e.currentTarget as HTMLElement).closest('.perf-auto-header')!.querySelector('select')!;
         if (sel.value) deps.onAdd(sel.value);
       }}
-    >+ Automation</button></div>`);
+    >+ Automation</button>${deps.showBrush
+      ? html`<span class="perf-brush-label">Brush</span><span
+          class="perf-brush-bar"
+        >${brushBtn('line', 'Line')}${brushBtn('flat', 'Flat')}</span>`
+      : nothing}</div>`);
 }
 
 /** Build one editable lane for a curve. The painter mutates curve.values in

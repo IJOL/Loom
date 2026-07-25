@@ -86,6 +86,10 @@ function viewTemplate(state: ArrangementState, cb: PerfUICallbacks): TemplateRes
     destinations: cb.destinations,
     laneWidthPx: totalBars * cb.pxPerBar,
     getBrush: cb.getBrush,
+    setBrush: cb.setBrush,
+    // The brush paints a lane canvas, so it only earns screen space once at
+    // least one curve exists — per-lane or on the master section.
+    showBrush: state.globalAutomation.length > 0 || state.lanes.some((l) => l.automation.length > 0),
     onAdd: cb.onAddCurve,
     onRemove: cb.onRemoveCurve,
     onEdited: cb.onEdited,
