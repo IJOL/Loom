@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { SessionHost } from './session-host';
-import type { SessionState } from './session';
+import { rehydrateLane } from './session-host-persistence';
+import { mirrorParamChange } from './session-engine-state';
+import type { SessionState, SessionLane } from './session';
 import { fakeDestinations } from './fake-destinations';
 
 // Minimal DOM stub so SessionHost.render() (which calls document.getElementById)
@@ -65,6 +67,67 @@ describe('SessionHost.applyLoadedSessionState — preset application', () => {
       'subtractive-1=engine:PAD Warm',
       'subtractive-2=engine:LEAD Soft Sine',
     ]);
+  });
+});
+
+// A lane preset is applied by `deps.applyPresetForLane`, and that path MIRRORS
+// the preset's base values into `lane.engineState.params` — otherwise a preset
+// picked live never reaches a save (nothing else writes those params for a
+// melodic lane: `enginePresetName` is only ever set by engine-swap, the drum-kit
+// picker and the MIDI importer). On LOAD the same call runs BEFORE
+// applyEngineState replays the SAVED params, so an unsuppressed mirror would
+// overwrite the very tweak it is about to restore. Both load-time callers must
+// therefore apply presets inside `withoutParamMirror`.
+//
+// SAVED and PRESET below are just two distinguishable markers; the assertion is
+// "the value that survives is the one the save carried", never a magnitude.
+const SAVED = 0.8;
+const PRESET = 0.2;
+
+function laneWithSavedParam(): SessionLane {
+  return {
+    inserts: [], id: 'subtractive-1', engineId: 'subtractive', clips: [],
+    enginePresetName: 'engine:PAD Warm',
+    engineState: { params: { 'filter.cutoff': SAVED } },
+  };
+}
+
+describe('preset application on load leaves the saved params alone', () => {
+  it('applyLoadedSessionState: a mirroring applyPresetForLane cannot beat engineState.params', () => {
+    let host!: SessionHost;
+    const deps = makeMinimalDeps([], {
+      // Stands in for the real (mirroring) apply path in main.ts.
+      applyPresetForLane: (laneId: string) => {
+        mirrorParamChange(host.state, laneId, 'filter.cutoff', PRESET);
+      },
+    });
+    host = new SessionHost(deps);
+    const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+      lanes: [laneWithSavedParam()],
+      scenes: [],
+      globalQuantize: '1/1',
+    };
+
+    host.applyLoadedSessionState(state);
+
+    expect(host.state.lanes[0].engineState?.params?.['filter.cutoff']).toBe(SAVED);
+  });
+
+  it('rehydrateLane (duplicate-lane path): same ordering, same guard', () => {
+    const lane = laneWithSavedParam();
+    const self = {
+      deps: {
+        ctx: {} as AudioContext,
+        ensureLaneResource: () => {},
+        applyPresetForLane: (laneId: string) => {
+          mirrorParamChange({ lanes: [lane] } as unknown as SessionState, laneId, 'filter.cutoff', PRESET);
+        },
+      },
+    } as unknown as SessionHost;
+
+    rehydrateLane(self, lane);
+
+    expect(lane.engineState?.params?.['filter.cutoff']).toBe(SAVED);
   });
 });
 

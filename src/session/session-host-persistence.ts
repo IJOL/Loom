@@ -15,6 +15,7 @@ import { applyLaneEngineState } from '../export/apply-lane-engine-state';
 import { getNoteFxChain, loadNoteFxForLane } from '../notefx/notefx-registry';
 import { reloadDrumkit, reloadInstrument, reloadPreset } from './session-host-presets';
 import { pruneKnobRegistry } from '../app/knob-registry-prune';
+import { withoutParamMirror } from './session-engine-state';
 
 /** Snapshot the two send buses (return level, mute, and preserved insert slots).
  *  Insert slots are session-owned (like lane/master inserts) — `prev` carries
@@ -99,7 +100,12 @@ export function applyLoadedSessionState(self: SessionHost, sess: SessionState): 
       }
     }
     if (lane.enginePresetName) {
-      self.deps.applyPresetForLane?.(lane.id, lane.enginePresetName);
+      // Suppressed: applyPresetForLane mirrors the preset's base values into
+      // engineState.params (that mirror is how a live preset pick reaches a
+      // save), and applyEngineState below replays the SAVED params. Applying
+      // the preset unguarded here would overwrite them a line before they are
+      // restored — the saved tweak must beat its lane preset.
+      withoutParamMirror(() => self.deps.applyPresetForLane?.(lane.id, lane.enginePresetName!));
     }
   }
   applyEngineState(self);
@@ -234,7 +240,11 @@ export function rehydrateLane(self: SessionHost, lane: SessionLane): void {
     const laneRes = self.deps.laneResources?.get(lane.id);
     if (laneRes?.inserts) rehydrateInsertChain(self.deps.ctx, laneRes.inserts, lane.inserts);
   }
-  if (lane.enginePresetName) self.deps.applyPresetForLane?.(lane.id, lane.enginePresetName);
+  // Same ordering as applyLoadedSessionState, so the same guard: the preset
+  // must not mirror over the params applyEngineStateForLane is about to replay.
+  if (lane.enginePresetName) {
+    withoutParamMirror(() => self.deps.applyPresetForLane?.(lane.id, lane.enginePresetName!));
+  }
   applyEngineStateForLane(self, lane);
   // No second onDestinationsChanged here: listAutomationTargets derives
   // destinations from session data (lane.inserts, a plain JSON field), never
