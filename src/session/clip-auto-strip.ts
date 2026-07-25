@@ -64,6 +64,17 @@ export function createAutoStrip(o: AutoStripOpts): AutoStrip {
   };
 
   let lastFrac = Number.NaN;
+  let lastLoopSig = '';
+
+  /** Identity of the loop region as drawn. The loop is edited in the EDITOR
+   *  above (its overlay owns that gesture) and nothing notifies this lane, so
+   *  the tick compares instead of subscribing: three numbers per frame, and it
+   *  cannot go stale the way a missed notification would. */
+  function loopSig(): string {
+    if (!o.clip.loopEnabled) return 'off';
+    const { startTick, endTick } = effectiveClipLoop(o.clip, o.meter);
+    return `${startTick}:${endTick}`;
+  }
 
   // Declared before the strip: createFollowerStrip lays out (and therefore calls
   // onLayout) during construction.
@@ -76,6 +87,7 @@ export function createAutoStrip(o: AutoStripOpts): AutoStrip {
   }
 
   function layoutLoop(): void {
+    lastLoopSig = loopSig();
     const on = !!o.clip.loopEnabled;
     loopShade.style.display = on ? '' : 'none';
     if (!on) return;
@@ -120,6 +132,9 @@ export function createAutoStrip(o: AutoStripOpts): AutoStrip {
     draw,
     tick: () => {
       strip.layout();
+      // The loop moved in the editor above: re-place the shade only (the curve
+      // itself did not change, so no canvas repaint).
+      if (loopSig() !== lastLoopSig) layoutLoop();
       const frac = o.getPlayheadFrac();
       // Repaint only when the cursor moved (or when it just went idle), so an
       // idle inspector costs nothing per frame.

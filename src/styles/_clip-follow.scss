@@ -32,9 +32,12 @@
   overflow: hidden;
   position: relative;
   background: var(--bg);
-  border: 1px solid var(--border);
   border-radius: 2px;
   box-sizing: border-box;
+  /* The frame is an INSET SHADOW, not a border: a 1px border pushes the content
+     1px to the right of the editor's grid, and 1px off is exactly the kind of
+     "nearly aligned" this whole change exists to kill. */
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .clip-follow-content {

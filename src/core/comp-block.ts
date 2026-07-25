@@ -55,10 +55,17 @@ export class CompBlock {
   getState(): CompState { return { ...this.state }; }
 
   /** Read-only compression reduction (dB, ≤ 0). Drives the GR meter in the lane
-   *  FX panel. Falls back to 0 on a backend that does not implement
+   *  FX panel and the master GR in the PERF HUD (MasterCompressor delegates
+   *  here). Falls back to 0 on a backend that does not implement
    *  `DynamicsCompressorNode.reduction`, so a meter reads "not compressing"
    *  instead of painting NaN. */
   getReduction(): number {
+    // Bypassed = out of the graph: rewire() leaves the compressor with no input
+    // and no path to the destination, so the UA stops rendering it and
+    // `comp.reduction` FREEZES at its last reading. Reporting that would paint
+    // gain reduction nothing is applying (and it would never decay), so bypass
+    // reads as what it is: no reduction.
+    if (this.state.bypass) return 0;
     const r = this.comp.reduction;
     return typeof r === 'number' && Number.isFinite(r) ? r : 0;
   }

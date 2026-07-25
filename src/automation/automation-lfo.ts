@@ -8,8 +8,11 @@
 // assumptions). The array reference is shared with the live audio path, so a
 // fill writes IN PLACE and never resizes, replaces or reallocates it.
 //
-// 'stepped' lanes are quantised afterwards by snapLaneToSteps(), which keeps the
-// first sub-sample of each step; nothing here needs to know about that.
+// 'stepped' lanes are quantised afterwards by snapLaneToSteps(), which keeps ONE
+// value per step (sub-sample 0) and throws the rest away. That is destructive, so
+// the fill has to know about it: pass `stepSubRes` and it paints the staircase
+// itself — one value per step, sampled at the step's CENTRE — which both survives
+// the snap untouched and keeps a shape at the fast rates (see the rate limits).
 
 import { clamp01 } from '../audio-dsp/dsp-util';
 
@@ -27,6 +30,13 @@ export interface LfoFill {
   phase: number;
   /** Seed for 'random', so the same fill always paints the same steps. */
   seed?: number;
+  /**
+   * Sub-samples per step on a 'stepped' lane (AUTOMATION_SUB_RES). Set it and the
+   * fill paints one value per step — sampled at the step centre and held across
+   * it — so snapLaneToSteps() has nothing left to throw away. Leave it out (or
+   * below 2) for a continuous lane, which keeps every sub-sample.
+   */
+  stepSubRes?: number;
 }
 
 export interface LfoRate {
@@ -50,8 +60,19 @@ export interface LfoRate {
 //
 // The slow end stops at 4 bars: below that the "wave" is a single ramp across
 // clips longer than anything the lane editor shows at once.
+//
+// A 'stepped' lane is one octave stricter. It keeps a single value per step, so a
+// cycle needs at least TWO steps to show a high and a low — the step Nyquist,
+// i.e. 8 cycles per bar (1/8) at 16 steps per bar. At exactly one cycle per step
+// (1/16) every step lands on the same cycle phase and the lane collapses to a
+// constant: before this was handled, "stepped + Sine + 1/16" painted a dead flat
+// 0.5 and the LFO button looked broken. maxCyclesPerBar() reports that ceiling,
+// a stepped fill clamps to it instead of aliasing, and lfoRatesFor() hands the UI
+// only the rates a given lane can actually express.
 export const LFO_MIN_CYCLES_PER_BAR = 0.25;
 export const LFO_MAX_CYCLES_PER_BAR = 16;
+/** Steps a cycle needs on a stepped lane to still read as a wave. */
+export const LFO_MIN_STEPS_PER_CYCLE = 2;
 
 export const LFO_RATES: ReadonlyArray<LfoRate> = [
   { id: '4bars', label: '4 bars', cyclesPerBar: 0.25 },
@@ -83,6 +104,37 @@ export function clampCyclesPerBar(cyclesPerBar: number): number {
 
 export function rateById(id: string): LfoRate | undefined {
   return LFO_RATES.find((r) => r.id === id);
+}
+
+/** 0 for a continuous lane; otherwise the sub-samples one step holds. */
+function stepSubResOf(stepSubRes: number | undefined): number {
+  if (stepSubRes == null || !Number.isFinite(stepSubRes)) return 0;
+  const n = Math.floor(stepSubRes);
+  return n >= 2 ? n : 0; // 1 sub-sample per step IS a continuous lane
+}
+
+/**
+ * Fastest rate this lane can express: the musical ceiling for a continuous lane,
+ * halved (per step) for a 'stepped' one, which needs LFO_MIN_STEPS_PER_CYCLE
+ * steps per cycle to avoid collapsing into a constant.
+ */
+export function maxCyclesPerBar(subResPerBar: number, stepSubRes?: number): number {
+  const perBar = subResPerBar > 0 ? subResPerBar : 1;
+  const ceiling = Math.min(LFO_MAX_CYCLES_PER_BAR, perBar);
+  const stepSub = stepSubResOf(stepSubRes);
+  if (!stepSub) return ceiling;
+  return Math.min(ceiling, perBar / (stepSub * LFO_MIN_STEPS_PER_CYCLE));
+}
+
+/**
+ * The rate list to offer for this lane: LFO_RATES minus the entries it cannot
+ * paint. A stepped lane drops the fast end instead of silently flattening it.
+ */
+export function lfoRatesFor(subResPerBar: number, stepSubRes?: number): ReadonlyArray<LfoRate> {
+  const max = maxCyclesPerBar(subResPerBar, stepSubRes);
+  const usable = LFO_RATES.filter((r) => r.cyclesPerBar <= max);
+  // never hand back an empty menu, even for an absurd lane resolution
+  return usable.length > 0 ? usable : LFO_RATES.slice(0, 1);
 }
 
 // ── Waveforms ──────────────────────────────────────────────────────────────
@@ -126,12 +178,19 @@ interface Resolved {
   center: number;
   phase: number;
   seed: number;
+  /** 0 = continuous; otherwise sub-samples per held step. */
+  stepSub: number;
 }
 
-function resolve(cfg: LfoFill): Resolved {
+function resolve(cfg: LfoFill, subResPerBar: number): Resolved {
+  const stepSub = stepSubResOf(cfg.stepSubRes);
   return {
     shape: cfg.shape,
-    cyclesPerBar: clampCyclesPerBar(cfg.cyclesPerBar),
+    // a stepped lane cannot express the fast end, so clamp instead of aliasing
+    cyclesPerBar: Math.min(
+      clampCyclesPerBar(cfg.cyclesPerBar),
+      maxCyclesPerBar(subResPerBar, stepSub),
+    ),
     // depth is peak-to-peak, so each side of center gets half of it
     half: finite(cfg.depth, DEFAULT_LFO_FILL.depth) / 2,
     center: clamp01(finite(cfg.center, DEFAULT_LFO_FILL.center)),
@@ -139,6 +198,7 @@ function resolve(cfg: LfoFill): Resolved {
     // (this is also what keeps 'random' reproducible under phase = 1)
     phase: fract(finite(cfg.phase, 0)),
     seed: Math.trunc(finite(cfg.seed ?? DEFAULT_LFO_FILL.seed ?? 0, 0)),
+    stepSub,
   };
 }
 
@@ -147,7 +207,12 @@ function fract(v: number): number {
 }
 
 function sampleAt(r: Resolved, subIdx: number, subResPerBar: number): number {
-  const cyc = (subIdx / subResPerBar) * r.cyclesPerBar + r.phase;
+  // On a stepped lane the step is the finest thing the user hears, so read the
+  // wave at the CENTRE of the step and hold that value across it: sub-sample 0 —
+  // what snapLaneToSteps keeps — would sit on the step boundary, and boundaries
+  // are exactly where fast rates repeat the same phase and flatten the curve.
+  const pos = r.stepSub > 0 ? (Math.floor(subIdx / r.stepSub) + 0.5) * r.stepSub : subIdx;
+  const cyc = (pos / subResPerBar) * r.cyclesPerBar + r.phase;
   return clamp01(r.center + bipolar(r.shape, cyc, r.seed) * r.half);
 }
 
@@ -159,14 +224,15 @@ function sampleAt(r: Resolved, subIdx: number, subResPerBar: number): number {
  */
 export function lfoValueAt(cfg: LfoFill, subIdx: number, subResPerBar: number): number {
   const perBar = subResPerBar > 0 ? subResPerBar : 1;
-  return sampleAt(resolve(cfg), Math.max(0, subIdx), perBar);
+  return sampleAt(resolve(cfg, perBar), Math.max(0, subIdx), perBar);
 }
 
 /**
  * Write the curve into `values[from, to)` in place. The window is clamped to the
  * array, so an out-of-range range is a partial fill, never a resize; `from >= to`
  * is a no-op. Sub-step 0 is bar 0 phase 0, so a windowed fill lands exactly
- * where the same fill over the whole lane would have put it.
+ * where the same fill over the whole lane would have put it. With `cfg.stepSubRes`
+ * set the result is already one held value per step (a stepped lane's own shape).
  */
 export function fillLfo(
   values: number[],
@@ -179,6 +245,6 @@ export function fillLfo(
   const hi = Math.min(values.length, Math.floor(finite(to, 0)));
   if (hi <= lo) return;
   const perBar = subResPerBar > 0 ? subResPerBar : 1;
-  const r = resolve(cfg);
+  const r = resolve(cfg, perBar);
   for (let i = lo; i < hi; i++) values[i] = sampleAt(r, i, perBar);
 }

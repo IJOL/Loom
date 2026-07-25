@@ -147,6 +147,33 @@ describe('createGrMeter', () => {
     m.dispose();
   });
 
+  it('dispose() empties the bar and leaves the element where the panel put it', () => {
+    // The owning panel owns this element (lit interpolates it), and a panel can be
+    // disposed while still on a hidden page. So dispose() must not yank the node
+    // out from under lit — and a parked bar must read EMPTY, never keep a stale
+    // reduction on screen (same lie CompBlock.getReduction() refuses to tell).
+    let db = -12;
+    const m = createGrMeter({ source: fakeStrip(() => db) });
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    host.appendChild(m.el);
+    m.sample();
+    const compressing = fillPct(m.el);
+    expect(compressing).toBeGreaterThan(0);
+
+    m.dispose();
+
+    expect(m.el.parentElement).toBe(host);
+    expect(fillPct(m.el)).toBeLessThan(compressing);
+    expect(fillPct(m.el)).toBe(0);
+    expect(m.el.classList.contains('active')).toBe(false);
+    // …and it stays empty: a disposed meter never samples again.
+    db = -24;
+    m.sample();
+    expect(fillPct(m.el)).toBe(0);
+    host.remove();
+  });
+
   it('dispose() is idempotent', () => {
     const caf = vi.fn();
     vi.stubGlobal('requestAnimationFrame', vi.fn(() => 7));

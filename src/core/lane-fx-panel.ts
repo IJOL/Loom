@@ -39,6 +39,26 @@ const fmtMult  = (v: number) => `${v.toFixed(2)}×`;
 
 const HOST_CLASS = 'lane-fx-host';
 
+// Teardown of whichever lane FX panel is live — owned per MODULE, not per
+// container, and that is the point. mountPanel's cleanup slot is keyed on the
+// CONTAINER, and this panel has one per page (knob-mounting resolves
+// `[data-page="303|drums|poly"] .lane-fx-knobs`), so moving the active lane to
+// another page mounts into a slot whose cleanup starts empty and the old page's
+// GR frame loop would run for the rest of the session. The meter's self-park
+// can't see it either: a hidden page is display:none, still `isConnected`.
+// Exactly ONE panel is ever live — a page only becomes visible through editLane,
+// which remounts this panel for the lane it shows — so "the previous mount,
+// wherever it was" is the right ownership unit.
+let livePanelTeardown: (() => void) | undefined;
+
+/** Tears down the live panel's frame loops. Every mount calls it first; exported
+ *  so a host that drops the panel for good can reclaim it too. Idempotent. */
+export function disposeLaneFxPanel(): void {
+  const fn = livePanelTeardown;
+  livePanelTeardown = undefined;
+  fn?.();
+}
+
 export interface LaneFxPanelOpts {
   laneId: string;
   strip: ChannelStrip;
@@ -102,16 +122,17 @@ function helpPair(ctx: Ctx, key: string, legend: string) {
   });
 }
 
-/** The gain-reduction bar. Built once per mount; its dispose() goes into the
- *  panel's single cleanup slot, which the NEXT mount runs before storing its
- *  own — so a rebuilt panel never leaves the old frame loop running. Registered
- *  inside the create-once factory on purpose: doing it on every repaint would
- *  dispose the very meter the repaint is about to re-interpolate. */
+/** The gain-reduction bar. Built once per mount; its dispose() becomes the
+ *  module's live teardown, which the NEXT mount runs first — whichever page that
+ *  mount lands on. Registered inside the create-once factory on purpose: doing it
+ *  on every repaint would re-register a teardown for a meter that is already the
+ *  live one. Deliberately NOT ctx.setCleanup: that slot is per container, which
+ *  is exactly the case this panel does not satisfy (see livePanelTeardown). */
 function grMeterEl(ctx: Ctx): HTMLElement {
   const { laneId, strip } = ctx.deps;
   return ctx.cache.get(`${laneId}.fx.comp.gr`, () => {
     const meter = createGrMeter({ source: strip, title: GR_TIP });
-    ctx.setCleanup(() => meter.dispose());
+    livePanelTeardown = () => meter.dispose();
     return meter;
   }).el;
 }
@@ -270,6 +291,9 @@ function scTemplate(ctx: Ctx): TemplateResult {
 }
 
 export function mountLaneFxPanel(opts: LaneFxPanelOpts): void {
+  // Stop the outgoing panel's frame loop BEFORE building the new one, wherever it
+  // was mounted — a lane switch can move this panel to another page's slot.
+  disposeLaneFxPanel();
   // Contract: each mount replaces whatever the parent held (engine editors
   // leave stale content in this slot). The wipe also detaches any previous
   // panel host, so mountPanel re-adopts with a fresh host + cache below.

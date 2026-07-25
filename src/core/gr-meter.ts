@@ -15,8 +15,11 @@
 // LIFECYCLE: each meter owns its own requestAnimationFrame chain (at most a
 // couple are ever on screen, so a shared loop like level-meter's buys nothing).
 // The caller MUST call dispose() when the widget leaves the screen — an orphaned
-// frame loop keeps reading a strip nobody is looking at, forever. Panels should
-// register the handle the way the mixer column registers its VU meter.
+// frame loop keeps reading a strip nobody is looking at, forever. A per-container
+// cleanup slot is NOT enough for that: a panel that can mount into several
+// containers (one per page, like the lane FX panel) has to own the teardown
+// across all of them. dispose() parks the bar empty and leaves the element to its
+// owner, so it is safe to call on a panel that is still in the DOM.
 
 import { html, render as litRender } from 'lit-html';
 
@@ -39,9 +42,10 @@ export interface GrMeterOpts {
 export interface GrMeterHandle {
   el: HTMLElement;
   /** Reads the source once and repaints. The frame loop calls this; it is public
-   *  so tests can drive the meter without a frame clock. */
+   *  so tests can drive the meter without a frame clock. No-op once disposed. */
   sample(): void;
-  /** Cancels the frame loop and detaches the element. Idempotent. */
+  /** Cancels the frame loop and parks the bar empty, leaving the element where
+   *  its owner mounted it. Idempotent. */
   dispose(): void;
 }
 
@@ -83,6 +87,9 @@ export function createGrMeter(opts: GrMeterOpts): GrMeterHandle {
   let disposed = false;
 
   const sample = (): void => {
+    // A disposed meter stays parked: the frame loop is already inert, and this
+    // entry point is public, so it has to hold the same line.
+    if (disposed) return;
     const db = opts.source.getCompReduction();
     const tenths = Math.round(grFillFraction(db) * 1000);
     if (tenths === lastTenths) return;
@@ -97,7 +104,15 @@ export function createGrMeter(opts: GrMeterOpts): GrMeterHandle {
     disposed = true;
     if (rafId !== null) cancelAnimationFrame(rafId);
     rafId = null;
-    el.remove();
+    // Park the bar EMPTY, and leave the element where its owner put it: the panel
+    // interpolates this node through lit and wipes it on its own terms, so
+    // detaching it here would only leave a hole the next repaint re-fills. A
+    // parked bar must not keep a reduction on screen either — that is the same
+    // lie a bypassed compressor would tell (see CompBlock.getReduction).
+    lastTenths = 0;
+    fillEl.style.height = '0%';
+    valEl.textContent = '0.0';
+    el.classList.remove('active');
   }
 
   // Self-parking backstop. The owning panel disposes the meter when it rebuilds,

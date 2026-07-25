@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import '../../test/setup';
@@ -246,6 +246,8 @@ describe('mountLaneFxPanel', () => {
 
   // ── Front D: gain-reduction meter ───────────────────────────────────────
   describe('gain-reduction meter', () => {
+    afterEach(() => { vi.unstubAllGlobals(); });
+
     it('sits in the COMP row and samples gain reduction off the strip', async () => {
       const spy = vi.spyOn(strip, 'getCompReduction');
       mount();
@@ -270,6 +272,53 @@ describe('mountLaneFxPanel', () => {
       mount(); // engine switch / lane switch remounts the panel
       expect(caf.mock.calls.length).toBeGreaterThan(before);
       caf.mockRestore();
+    });
+
+    it('cancels the old meter when the active lane moves to another PAGE', () => {
+      // knob-mounting resolves a PER-PAGE container (`[data-page="303|drums|poly"]
+      // .lane-fx-knobs` — index.html has one per page), so moving the active lane
+      // from the 303 page to a poly lane mounts this panel into a DIFFERENT
+      // container. mountPanel keys its cleanup slot on the container, so that slot
+      // starts empty there and cannot reclaim the previous page's frame loop.
+      // The meter's self-park backstop cannot cover it either: a hidden page is
+      // `display:none`, still CONNECTED, so the loop never notices.
+      const frames: FrameRequestCallback[] = [];
+      vi.stubGlobal('requestAnimationFrame', vi.fn((cb: FrameRequestCallback) => {
+        frames.push(cb);
+        return frames.length;
+      }));
+      const caf = vi.fn();
+      vi.stubGlobal('cancelAnimationFrame', caf);
+
+      const pageA = document.createElement('div');
+      const pageB = document.createElement('div');
+      document.body.append(pageA, pageB);       // both stay connected, like real pages
+      const stripB = new ChannelStrip(ctx, ctx.destination, fx, {
+        sidechain: { bus, id: 'subtractive-1', label: 'Poly 1' },
+      });
+      const readsA = vi.spyOn(strip, 'getCompReduction');
+      const readsB = vi.spyOn(stripB, 'getCompReduction');
+      const noop = () => {};
+
+      mountLaneFxPanel({ laneId: 'tb-303-1', strip, bus, parent: pageA, registerKnob: noop });
+      frames.shift()!(0);                        // one frame while the 303 page is up
+      const onA = readsA.mock.calls.length;
+      expect(onA).toBeGreaterThan(0);
+
+      mountLaneFxPanel({
+        laneId: 'subtractive-1', strip: stripB, bus, parent: pageB, registerKnob: noop,
+      });
+      expect(caf).toHaveBeenCalled();            // page A's pending frame was cancelled
+
+      // Drain every queued frame: A's must be inert, B's must keep metering.
+      for (const f of frames.splice(0)) f(0);
+      expect(readsA.mock.calls.length).toBe(onA);
+      expect(readsB.mock.calls.length).toBeGreaterThan(0);
+
+      readsA.mockRestore();
+      readsB.mockRestore();
+      pageA.remove();
+      pageB.remove();
     });
   });
 });

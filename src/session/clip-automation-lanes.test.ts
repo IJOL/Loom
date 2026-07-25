@@ -184,6 +184,23 @@ describe('renderClipAutomationLanes — follows the clip axis', () => {
     expect(parseFloat(shade.style.width)).toBeCloseTo(axis.contentWidth() / 2, 0);
   });
 
+  it('re-places the loop shade when the loop is edited in the editor above', () => {
+    // Caught by looking at the real UI: dragging the loop's right edge moved the
+    // editor's amber column but left the lane's shade at its old width, because
+    // nothing notifies the lane. The tick compares instead of subscribing.
+    const axis = makeAxis();
+    const clip = makeClip({ loopEnabled: true, loopStartTick: 0, loopEndTick: 16 * TICKS_PER_STEP });
+    const handle = renderClipAutomationLanes(host, clip, makeDeps(TARGETS, { axis }));
+    addButton(host).click();
+
+    const shade = host.querySelector<HTMLElement>('.clip-follow-loop')!;
+    expect(parseFloat(shade.style.width)).toBeCloseTo(axis.contentWidth(), 0);
+
+    clip.loopEndTick = 8 * TICKS_PER_STEP;      // as the editor's brace would write it
+    handle.tick();
+    expect(parseFloat(shade.style.width)).toBeCloseTo(axis.contentWidth() / 2, 0);
+  });
+
   it('hides the loop region when the clip does not loop', () => {
     renderClipAutomationLanes(host, makeClip(), makeDeps());
     addButton(host).click();
