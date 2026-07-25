@@ -66,6 +66,23 @@ describe('arrangementFromSession', () => {
     expect(Math.round(bars)).toBe(clipBars);
   });
 
+  it('a section spans the seconds the clip really plays, tempo map included', () => {
+    const bar = 384; // ticksPerBar 4/4
+    const mk = (tempoMap?: { tick: number; bpm: number }[]) => s({
+      lanes: [{ inserts: [], id: 'A', engineId: 'poly', clips: [{ color: '#b8b8e8', gridResolution: '1/16', id: 'a1', lengthBars: 2, notes: [], tempoMap }] }],
+      scenes: [{ id: 's0', clipPerLane: { A: 0 } }],
+    });
+    const flat = arrangementFromSession(mk(), 120, DEFAULT_METER);
+    // The second bar of this clip plays at half tempo, so it takes twice as long:
+    // two bars become three bars' worth of seconds. That is what the scheduler
+    // does with the same map, and the section has to agree with it.
+    const varying = arrangementFromSession(
+      mk([{ tick: 0, bpm: 120 }, { tick: bar, bpm: 60 }]), 120, DEFAULT_METER,
+    );
+    expect(varying.durationSec / flat.durationSec).toBeCloseTo(3 / 2, 6);
+    expect(varying.lanes[0].clipEvents[0].untilSec).toBe(varying.durationSec);
+  });
+
   it('MIDI-style single long clip ⇒ one pass start to end', () => {
     const state = s({
       lanes: [{ inserts: [], id: 'A', engineId: 'poly', clips: [{ color: '#a8e8b8', gridResolution: '1/16', id: 'song', lengthBars: 8, notes: [] }] }],
