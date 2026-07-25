@@ -91,7 +91,7 @@ export function loadAudioFileIntoCell(self: SessionHost, laneId: string, clipIdx
             name, sampleId: asset.id, durationSec: buf.duration,
             originalBpm: detectLoop(buf, seq.meter).originalBpm, projectMeter: seq.meter,
           })
-        : audioClip({ name, sampleId: asset.id, durationSec: buf.duration, bpm: seq.bpm });
+        : audioClip({ name, sampleId: asset.id, durationSec: buf.duration, bpm: seq.bpm, meter: seq.meter });
       const hd = self.deps.historyDeps;
       const run = () => {
         self.placeClipEnsuringScene(laneId, clipIdx, clip);

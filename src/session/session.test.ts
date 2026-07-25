@@ -15,6 +15,16 @@ describe('audioClip', () => {
     expect(c.name).toBe('amen');
   });
 
+  it('lengthBars is meter-aware: the same audio is more bars in 3/4', () => {
+    const opts = { name: 'amen', sampleId: 'smp-1', durationSec: 12, bpm: 120 };
+    const four = audioClip(opts);
+    const three = audioClip({ ...opts, meter: { num: 3, den: 4 } });
+    // Relative: a 3/4 bar is three quarters of a 4/4 one, so the same span of
+    // audio fills four thirds as many of them.
+    expect(three.lengthBars).toBeGreaterThan(four.lengthBars);
+    expect(three.lengthBars / four.lengthBars).toBeCloseTo(4 / 3, 6);
+  });
+
   it('clamps lengthBars to at least 1 for short samples and honors mode', () => {
     const c = audioClip({ name: 'stab', sampleId: 'smp-2', durationSec: 0.2, bpm: 120, mode: 'song' });
     expect(c.lengthBars).toBe(1);

@@ -4,6 +4,8 @@
 // id/deep-clone helpers in ./session-core.
 
 import { barCountFor } from '../core/slice-clip';
+import { songBarSec } from '../core/song-position';
+import type { TimeSignature } from '../core/meter';
 import type { ScaleId } from '../core/musicality';
 import { nextId } from './session-core';
 import { DEFAULT_RESOLUTION } from '../core/drum-grid-editing';
@@ -63,10 +65,12 @@ export function audioClip(opts: {
   sampleId: string;
   durationSec: number;
   bpm: number;
+  /** Session meter, exactly like audioChannelClip's projectMeter on the sibling
+   *  branch of the same importer. Absent ⇒ 4/4. */
+  meter?: TimeSignature;
   mode?: 'loop' | 'song';
 }): SessionClip {
-  const barSec = (4 * 60) / opts.bpm;
-  const lengthBars = Math.max(1, Math.round(opts.durationSec / barSec));
+  const lengthBars = Math.max(1, Math.round(opts.durationSec / songBarSec(opts.bpm, opts.meter)));
   return {
     id: nextId('clip'),
     name: opts.name,
