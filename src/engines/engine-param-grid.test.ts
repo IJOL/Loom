@@ -21,8 +21,26 @@ function ctx(): EngineUIContext {
   return { laneId: 'L', registerKnob: (k: unknown) => reg.set(String(reg.size), k), registry: reg } as unknown as EngineUIContext;
 }
 
+/** A ctx whose registry is keyed by the canonical `<laneId>.<spec.id>` — the id
+ *  destination-registry consumers address a control by. */
+function idKeyedCtx(): { ctx: EngineUIContext; reg: Map<string, KnobHandle> } {
+  const reg = new Map<string, KnobHandle>();
+  const c = {
+    laneId: 'L',
+    registerKnob: (k: KnobHandle) => reg.set(k.meta.id ?? String(reg.size), k),
+    registry: reg,
+  } as unknown as EngineUIContext;
+  return { ctx: c, reg };
+}
+
 const cont = (id: string, group?: string): EngineParamSpec =>
   ({ id, label: id, kind: 'continuous', min: 0, max: 1, default: 0.5, group });
+
+const discreteSpec = (id: string, extra: Partial<EngineParamSpec> = {}): EngineParamSpec => ({
+  id, label: id.toUpperCase(), kind: 'discrete', min: 0, max: 2, default: 0,
+  options: [{ value: 'sine', label: 'Sine' }, { value: 'square', label: 'Square' }, { value: 'saw', label: 'Saw' }],
+  ...extra,
+});
 
 describe('buildEngineParamGrid', () => {
   it('renders one labelled section per group plus a leading global row', () => {
@@ -71,6 +89,96 @@ describe('buildEngineParamGrid', () => {
     buildEngineParamGrid(stubEngine([cont('poly.voices'), cont('feedback')]), ctx(), parent,
       { skip: (id) => id.startsWith('poly.') });
     expect(parent.querySelectorAll('.knob').length).toBe(1);           // only feedback
+  });
+});
+
+// ── Options absorbed from the deleted wireEngineParams. The grid is now the one
+// spec-walking builder, so it has to be able to paint what the other one painted.
+describe('buildEngineParamGrid — knobSize and formatter', () => {
+  it('knobSize sizes the rendered knob SVG, smaller than the default', () => {
+    const sized = document.createElement('div');
+    const def = document.createElement('div');
+    buildEngineParamGrid(stubEngine([cont('a.b')]), ctx(), sized, { knobSize: 30 });
+    buildEngineParamGrid(stubEngine([cont('a.b')]), ctx(), def);
+    const widthOf = (host: HTMLElement) =>
+      Number((host.querySelector('svg.knob-svg') as SVGSVGElement).getAttribute('width'));
+    expect(widthOf(sized)).toBe(30);                       // the size asked for, not a magnitude
+    expect(widthOf(sized)).toBeLessThan(widthOf(def));
+  });
+
+  it('a formatter wins over spec.unit for the value readout', () => {
+    const host = document.createElement('div');
+    const spec: EngineParamSpec = { ...cont('osc.detune'), unit: '¢' };
+    buildEngineParamGrid(stubEngine([spec]), ctx(), host,
+      { formatter: (id, v) => `${id}:${Math.round(v * 100)}` });
+    const text = host.querySelector('.knob-value-text')!.textContent!;
+    expect(text).toContain('osc.detune:');
+    expect(text).not.toContain('¢');
+  });
+});
+
+// ── layout:'flat' is the shape the drum rack, the sampler pads, the audio-clip
+// toolbar and the subtractive page have always had. Their look is approved; the
+// grouped layout must NOT leak into them.
+describe("buildEngineParamGrid layout:'flat'", () => {
+  it('appends the controls straight into the container, with no row wrapper', () => {
+    const host = document.createElement('div');
+    buildEngineParamGrid(stubEngine([cont('a'), cont('b', 'GRP')]), ctx(), host, { layout: 'flat' });
+    expect(host.querySelector('.knob-row')).toBeNull();
+    expect(host.querySelector('.poly-section')).toBeNull();
+    expect(host.querySelectorAll(':scope > .knob').length).toBe(2);   // both, groups ignored
+  });
+
+  it('renders a discrete spec with no selectStyle as a select control, not a knob', () => {
+    const host = document.createElement('div');
+    buildEngineParamGrid(stubEngine([discreteSpec('osc.wave')]), ctx(), host, { layout: 'flat' });
+    expect(host.querySelector('.radio-strip')).not.toBeNull();
+    expect(host.querySelector('.knob')).toBeNull();
+  });
+
+  it("still honours selectStyle: 'dropdown' with a native <select>", () => {
+    const host = document.createElement('div');
+    buildEngineParamGrid(stubEngine([discreteSpec('algorithm', { selectStyle: 'dropdown' })]),
+      ctx(), host, { layout: 'flat' });
+    expect(host.querySelector('select.select-control')).not.toBeNull();
+  });
+
+  it('leaves the drag unquantised, unlike the grouped grid', () => {
+    // knob.ts quantises with Math.round(v / step) * step — from ZERO, not from
+    // min — so a step over a wide range (the sampler's 20..20000 cutoff) would
+    // move the low end below its own minimum. The flat callers never had one.
+    const spec = cont('filter.cutoff');
+    const between = spec.min + (spec.max - spec.min) * 0.5031;   // off the grouped step grid
+    const run = (opts: Parameters<typeof buildEngineParamGrid>[3]) => {
+      const engine = stubEngine([spec]);
+      const { ctx: c, reg } = idKeyedCtx();
+      buildEngineParamGrid(engine, c, document.createElement('div'), opts);
+      reg.get('L.filter.cutoff')!.setValue(between);
+      return engine.getBaseValue(spec.id);
+    };
+    expect(run({ layout: 'flat' })).toBe(between);
+    expect(run({})).not.toBe(between);                            // grouped snaps it
+  });
+
+  it('does not paint spec.unit, unlike the grouped grid', () => {
+    // Visual parity, not an oversight: a drum-rack knob is 34px and a sampler
+    // zone knob 30px, and both have always shown a bare number. The declared
+    // unit ('Hz', 'st') is painted only where the knobs are full size.
+    const withUnit = (): EngineParamSpec => ({ ...cont('startFreq'), unit: 'Hz' });
+    const flat = document.createElement('div');
+    const grouped = document.createElement('div');
+    buildEngineParamGrid(stubEngine([withUnit()]), ctx(), flat, { layout: 'flat' });
+    buildEngineParamGrid(stubEngine([withUnit()]), ctx(), grouped);
+    expect(flat.querySelector('.knob-value-text')!.textContent).not.toContain('Hz');
+    expect(grouped.querySelector('.knob-value-text')!.textContent).toContain('Hz');
+  });
+
+  it('registers under the same <laneId>.<spec.id> the grouped grid uses', () => {
+    const { ctx: c, reg } = idKeyedCtx();
+    buildEngineParamGrid(stubEngine([cont('filter.cutoff'), discreteSpec('osc.wave')]),
+      c, document.createElement('div'), { layout: 'flat' });
+    expect(reg.has('L.filter.cutoff')).toBe(true);
+    expect(reg.has('L.osc.wave')).toBe(true);
   });
 });
 

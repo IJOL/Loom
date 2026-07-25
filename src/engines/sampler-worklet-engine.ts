@@ -36,7 +36,7 @@ import {
 import type { KeymapEntry } from '../samples/types';
 import { sampleCache } from '../samples/sample-cache';
 import { keymapEntryFor, repitchRate } from '../samples/keymap';
-import { wireEngineParams } from './engine-ui';
+import { buildEngineParamGrid } from './engine-param-grid';
 import { sampleStore } from '../samples/store-singleton';
 import { importFile } from '../samples/import';
 import { addSampleToKeymap, removeKeymapEntry, setEntryRoot, setEntryRange } from '../samples/keymap-edit';
@@ -670,8 +670,9 @@ export class SamplerWorkletEngine implements SynthEngine {
     }
 
     const knobRow = renderElement(html`<div class="knob-row"></div>`);
-    wireEngineParams(this, ctx, knobRow, {
-      filter: (id) => SAMPLER_PARAMS.some((p) => p.id === id) && !id.startsWith('filter.'),
+    buildEngineParamGrid(this, ctx, knobRow, {
+      layout: 'flat',
+      skip: (id) => !SAMPLER_PARAMS.some((p) => p.id === id) || id.startsWith('filter.'),
       formatter: (id, v) => {
         if (id === 'poly.voices') return `${Math.round(v)}`;
         if (id.endsWith('.attack') || id.endsWith('.release')) {
@@ -684,8 +685,9 @@ export class SamplerWorkletEngine implements SynthEngine {
     // CHANNEL FILTER row — filter.* are excluded from the generic knobRow above
     // so they only appear inside the labelled section the scaffold renders.
     const filterRow = renderElement(html`<div class="knob-row"></div>`);
-    wireEngineParams(this, ctx, filterRow, {
-      filter: (id) => id === 'filter.cutoff' || id === 'filter.resonance',
+    buildEngineParamGrid(this, ctx, filterRow, {
+      layout: 'flat',
+      skip: (id) => id !== 'filter.cutoff' && id !== 'filter.resonance',
       formatter: (id, v) =>
         id === 'filter.cutoff'
           ? (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`)
@@ -715,9 +717,9 @@ export class SamplerWorkletEngine implements SynthEngine {
       zoneParamsFor: (entry) => {
         const zoneKey = padKeyForNote(entry.rootNote); // zone<root>
         const params = renderElement(html`<div class="sampler-zone-params knob-row"></div>`);
-        wireEngineParams(this, ctx, params, {
-          knobSize: 30,
-          filter: (id) => id.startsWith(`${zoneKey}.`),
+        buildEngineParamGrid(this, ctx, params, {
+          layout: 'flat', knobSize: 30,
+          skip: (id) => !id.startsWith(`${zoneKey}.`),
         });
         return params;
       },

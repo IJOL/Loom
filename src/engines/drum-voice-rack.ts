@@ -2,13 +2,13 @@
 // Renders the per-voice "mini-mixer" rack for a drums lane: one column per
 // voice with curated synth knobs + curated mixer (LEVEL/A/B) + a collapsed
 // ▸advanced block (raw synth params + PAN + EQ). Each control is built through
-// wireEngineParams so it registers under `<laneId>.<id>`, mirrors to
-// engineState, and gets undo for free.
+// buildEngineParamGrid in its flat layout, so it registers under
+// `<laneId>.<id>`, mirrors to engineState, and gets undo for free.
 
 import { html, render, nothing, type TemplateResult } from 'lit-html';
 import type { SynthEngine, EngineUIContext } from './engine-types';
 import { DRUM_LANES, type DrumVoice } from '../core/drums';
-import { wireEngineParams } from './engine-ui';
+import { buildEngineParamGrid } from './engine-param-grid';
 import { mirrorDrumMutes } from '../session/session-engine-state';
 
 /** The drum mute/solo surface the rack drives (DrumsEngine implements it). */
@@ -83,8 +83,8 @@ export function renderDrumVoiceRack(
   `, frag);
   const rack = frag.firstElementChild as HTMLElement;
 
-  // The knobs/selects are imperative widgets (wireEngineParams registers each
-  // under `<laneId>.<id>` and mirrors to engineState), so they are appended
+  // The knobs/selects are imperative widgets (the grid registers each under
+  // `<laneId>.<id>` and mirrors to engineState), so they are appended
   // into the rendered blocks after the template pass — one build per rack,
   // exactly as before. Split per the layout: curated synth vs curated mixer
   // up-front, everything else into the collapsed ▸advanced block.
@@ -97,15 +97,13 @@ export function renderDrumVoiceRack(
     const advancedMixer = new Set(layout.advancedMixer.map((l) => `${voice}.${l}`));
     const advancedSynth = new Set(all.filter((id) => !curatedSynth.has(id) && !curatedMixer.has(id) && !advancedMixer.has(id)));
 
-    wireEngineParams(engine, ctx, col.querySelector<HTMLElement>('.dv-synth')!, {
-      knobSize: KNOB, filter: (id) => curatedSynth.has(id),
-    });
-    wireEngineParams(engine, ctx, col.querySelector<HTMLElement>('.dv-mix')!, {
-      knobSize: KNOB, filter: (id) => curatedMixer.has(id),
-    });
-    wireEngineParams(engine, ctx, col.querySelector<HTMLElement>('.dv-advanced')!, {
-      knobSize: KNOB, filter: (id) => advancedSynth.has(id) || advancedMixer.has(id),
-    });
+    const block = (sel: string, keep: (id: string) => boolean) =>
+      buildEngineParamGrid(engine, ctx, col.querySelector<HTMLElement>(sel)!, {
+        layout: 'flat', knobSize: KNOB, skip: (id) => !keep(id),
+      });
+    block('.dv-synth',    (id) => curatedSynth.has(id));
+    block('.dv-mix',      (id) => curatedMixer.has(id));
+    block('.dv-advanced', (id) => advancedSynth.has(id) || advancedMixer.has(id));
   }
 
   host.appendChild(rack);

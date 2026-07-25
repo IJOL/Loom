@@ -17,7 +17,6 @@ import '../engines/westcoast';
 
 import { getEngine } from '../engines/registry';
 import { buildEngineParamGrid } from '../engines/engine-param-grid';
-import { wireEngineParams } from '../engines/engine-ui';
 import { SessionHost } from './session-host';
 import { fakeDestinations } from './fake-destinations';
 import type { EngineParamSpec } from '../engines/engine-params';
@@ -58,12 +57,12 @@ describe('a knob turned on a worklet-engine lane survives getStateForSave', () =
       sessionState: host.state,
     } as unknown as EngineUIContext;
 
-    // Each lane's REAL builder: subtractive's knobs are mounted by
-    // knob-mounting.mountSubtractiveLaneKnobs (wireEngineParams); every other
-    // worklet engine renders the generic grid.
+    // Each lane's REAL builder, now one function with two layouts:
+    // knob-mounting.mountSubtractiveLaneKnobs asks for the flat one, every
+    // other worklet engine gets the grouped grid.
     const parent = document.createElement('div');
-    if (engineId === 'subtractive') wireEngineParams(engine!, ctx, parent);
-    else buildEngineParamGrid(engine!, ctx, parent);
+    buildEngineParamGrid(engine!, ctx, parent,
+      engineId === 'subtractive' ? { layout: 'flat' } : {});
 
     const spec = engine!.params.find((p) => p.kind === 'continuous' && p.max > p.min);
     expect(spec, `${engineId} declares no continuous param to turn`).toBeDefined();

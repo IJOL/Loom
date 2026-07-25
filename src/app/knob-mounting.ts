@@ -1,4 +1,4 @@
-import { wireEngineParams } from '../engines/engine-ui';
+import { buildEngineParamGrid } from '../engines/engine-param-grid';
 import { normaliseSelectIndex } from '../core/select-control';
 import { wireDrumMasterUI } from '../core/drum-master-ui';
 import { mountLaneFxPanel as mountLaneFxPanelInner } from '../core/lane-fx-panel';
@@ -77,7 +77,12 @@ export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
       const parent = document.getElementById(divId);
       if (!parent) continue;
       parent.innerHTML = '';
-      wireEngineParams(engine, ctx, parent, { filter: (id) => id.startsWith(prefix) && !isEnvKnob(id) });
+      // Flat: the section div IS the row, and subtractive's discrete params
+      // (osc waves, filter type) are radio strips, not knobs.
+      buildEngineParamGrid(engine, ctx, parent, {
+        layout: 'flat',
+        skip: (id) => !id.startsWith(prefix) || isEnvKnob(id),
+      });
     }
     // The AMP section held only envelope knobs ⇒ now empty. Hide it + its label so
     // no orphan "AMP" header is left behind.

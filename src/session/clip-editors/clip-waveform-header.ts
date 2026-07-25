@@ -13,7 +13,7 @@ import { sampleCache } from '../../samples/sample-cache';
 import { ticksPerBar, stepsPerBar, stepsPerBeat, quartersPerBar, DEFAULT_METER, type TimeSignature } from '../../core/meter';
 import { srcSecAtBeat } from '../../samples/warp-region';
 import { setAudioClipWarp } from './audio-clip-warp';
-import { wireEngineParams } from '../../engines/engine-ui';
+import { buildEngineParamGrid } from '../../engines/engine-param-grid';
 import type { SynthEngine, EngineUIContext } from '../../engines/engine-types';
 import { mountWarpMarkerEditor } from './warp-marker-editor';
 import { mountClipLoopOverlay } from '../../core/clip-loop-overlay';
@@ -261,8 +261,9 @@ export function renderAudioClipEditor(
   const warpBtn = toolbar.querySelector('.audio-clip-warp') as HTMLButtonElement;
   refreshWarp();
   if (deps.gain) {
-    wireEngineParams(deps.gain.engine, deps.gain.ctx,
-      toolbar.querySelector('.knob-row') as HTMLElement, { filter: (id) => id === 'gain' });
+    buildEngineParamGrid(deps.gain.engine, deps.gain.ctx,
+      toolbar.querySelector('.knob-row') as HTMLElement,
+      { layout: 'flat', skip: (id) => id !== 'gain' });
   }
   host.append(toolbar, viewport);
 

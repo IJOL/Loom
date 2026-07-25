@@ -15,7 +15,7 @@ import type {
 } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
 import { ModulationHostImpl } from '../modulation/modulation-host';
-import { wireEngineParams } from './engine-ui';
+import { buildEngineParamGrid } from './engine-param-grid';
 import { resolveAudioClipPlayback } from './audio-clip-voice';
 import { neutralAudioSpawn } from './sampler-worklet-engine';
 import { CATEGORY_GAIN } from '../audio-dsp/gain-staging';
@@ -133,12 +133,12 @@ export class AudioWorkletEngine implements SynthEngine {
     if (!ctx) return;
     // One-shot row scaffolding via a fragment (the container is innerHTML-wiped
     // on each rebuild, so lit must never own its content); the knob widget is
-    // then appended imperatively by wireEngineParams.
+    // then appended imperatively into the row the grid must not wrap again.
     const frag = document.createDocumentFragment();
     render(html`<div class="knob-row"></div>`, frag);
     const row = frag.firstElementChild as HTMLElement;
     container.appendChild(row);
-    wireEngineParams(this, ctx, row, { filter: (id) => id === 'gain' });
+    buildEngineParamGrid(this, ctx, row, { layout: 'flat', skip: (id) => id !== 'gain' });
   }
   applyPreset(): void { /* audio clips have no presets */ }
   dispose(): void {
