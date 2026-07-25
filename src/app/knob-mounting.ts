@@ -8,7 +8,7 @@ import type { SynthEngine, EngineUIContext } from '../engines/engine-types';
 import type { LaneResourceMap } from '../core/lane-resources';
 import type { SessionState } from '../session/session';
 import type { HistoryDeps } from '../save/history-wiring';
-import { mirrorParamChange, withoutParamMirror } from '../session/session-engine-state';
+import { withoutParamMirror } from '../session/session-engine-state';
 
 export interface KnobMounterDeps {
   registerKnob(k: KnobHandle): void;
@@ -26,15 +26,7 @@ export interface KnobMounterDeps {
   getHistoryDeps?(): HistoryDeps | undefined;
 }
 
-export interface LaneWiringOpts {
-  laneId: string;
-  engine: SynthEngine;
-  parent: HTMLElement;
-  formatter?: (id: string, v: number) => string;
-}
-
 export interface KnobMounter {
-  wireLaneKnobs(opts: LaneWiringOpts): void;
   mountSubtractiveLaneKnobs(laneId: string): void;
   mountDrumMasterLaneKnobs(laneId: string): void;
   mountLaneFxPanel(laneId: string): void;
@@ -62,10 +54,6 @@ export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
     get sessionState() { return deps.getSessionState(); },
     get historyDeps() { return deps.getHistoryDeps?.(); },
   });
-
-  const wireLaneKnobs = (opts: LaneWiringOpts) => {
-    wireEngineParams(opts.engine, buildCtx(opts.laneId), opts.parent, { formatter: opts.formatter });
-  };
 
   const mountSubtractiveLaneKnobs = (laneId: string) => {
     const sectionMap: Array<[string, string]> = [
@@ -160,7 +148,7 @@ export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
   };
 
   return {
-    wireLaneKnobs, mountSubtractiveLaneKnobs, mountDrumMasterLaneKnobs, mountLaneFxPanel,
+    mountSubtractiveLaneKnobs, mountDrumMasterLaneKnobs, mountLaneFxPanel,
     refreshKnobsFromSynth, refreshLaneKnobs,
   };
 }
