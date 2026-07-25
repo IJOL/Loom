@@ -9,8 +9,11 @@ import { renderClipAutomationLanes, type ClipAutoDeps } from './clip-automation-
 import type { SessionClip } from './session';
 import type { AutomationTarget } from '../automation/automation-targets';
 import { ClipAxis } from '../core/clip-axis';
-import { DEFAULT_METER } from '../core/meter';
+import { DEFAULT_METER, stepsPerBar, ticksPerBar, type TimeSignature } from '../core/meter';
 import { TICKS_PER_STEP } from '../core/notes';
+import { AUTOMATION_SUB_RES } from '../core/pattern';
+
+const THREE_FOUR: TimeSignature = { num: 3, den: 4 };
 
 function stubCanvas() {
   const ctx2d = new Proxy({}, { get: () => () => {} }) as unknown as CanvasRenderingContext2D;
@@ -136,6 +139,67 @@ describe('renderClipAutomationLanes — add / toggle / remove', () => {
     expect(clip.envelopes?.length).toBe(0);
     expect(host.querySelector('.clip-auto-lane')).toBeNull();
     expect(host.querySelector('.clip-auto-hint')).toBeTruthy();
+  });
+});
+
+describe('renderClipAutomationLanes — the lane uses the session meter', () => {
+  /** Render a clip of `bars` in `m` and add one lane; returns its curve. */
+  function laneIn(bars: number, m: TimeSignature): number[] {
+    document.body.innerHTML = '<div id="h" class="insp-auto-box"></div>';
+    const h = document.getElementById('h')!;
+    const clip = makeClip({ lengthBars: bars });
+    const axis = new ClipAxis('c1', bars * ticksPerBar(m));
+    axis.setBasisWidth(800);
+    renderClipAutomationLanes(h, clip, makeDeps(TARGETS, { axis, meter: m }));
+    addButton(h).click();
+    return clip.envelopes![0].values;
+  }
+
+  it('sizes a rendered 3/4 lane to three quarters of the same lane in 4/4', () => {
+    // Creation already knows the meter; this pins the RESIZE the strip performs
+    // on every draw, which used to grow the curve straight back to 16 a bar.
+    expect(laneIn(4, THREE_FOUR).length / laneIn(4, DEFAULT_METER).length)
+      .toBeCloseTo(THREE_FOUR.num / DEFAULT_METER.num, 10);
+  });
+
+  it('sizes the lane to a whole number of the meter’s bars', () => {
+    for (const m of [DEFAULT_METER, THREE_FOUR, { num: 7, den: 8 }]) {
+      expect(laneIn(3, m).length / (stepsPerBar(m) * AUTOMATION_SUB_RES)).toBe(3);
+    }
+  });
+});
+
+describe('renderClipAutomationLanes — the drawn LFO', () => {
+  /** Index of the highest sample in [from, to). */
+  const argmax = (v: number[], from: number, to: number) => {
+    let best = from;
+    for (let i = from; i < to; i++) if (v[i] > v[best]) best = i;
+    return best;
+  };
+
+  function lfoCurve(bars: number, m: TimeSignature): number[] {
+    document.body.innerHTML = '<div id="h" class="insp-auto-box"></div>';
+    const h = document.getElementById('h')!;
+    const clip = makeClip({ lengthBars: bars });
+    const axis = new ClipAxis('c1', bars * ticksPerBar(m));
+    axis.setBasisWidth(800);
+    renderClipAutomationLanes(h, clip, makeDeps(TARGETS, { axis, meter: m }));
+    addButton(h).click();
+    h.querySelector<HTMLButtonElement>('.clip-auto-lfo-apply')!.click();
+    return clip.envelopes![0].values;
+  }
+
+  it('completes one cycle per bar of the session meter, not per 16 steps', () => {
+    // Default rate is "1 bar". The distance between consecutive peaks IS the
+    // wave's bar; it has to be the meter's bar, or the curve is out of phase
+    // with the grid lines drawn under it (those already come from stepsPerBar).
+    for (const m of [DEFAULT_METER, THREE_FOUR]) {
+      const v = lfoCurve(2, m);
+      const spacing = argmax(v, v.length / 2, v.length) - argmax(v, 0, v.length / 2);
+      expect(spacing).toBe(stepsPerBar(m) * AUTOMATION_SUB_RES);
+      // …which is also exactly one cycle per bar of the clip itself.
+      expect(spacing).toBe(v.length / 2);
+    }
   });
 });
 

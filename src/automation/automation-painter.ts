@@ -28,30 +28,33 @@ export function formatNum(v: number): string {
   return v.toFixed(2);
 }
 
-// ── Migration helpers ──────────────────────────────────────────────────────
+// ── Sizing helpers ─────────────────────────────────────────────────────────
 
-export function ensureLaneSize(
-  lane: { values: number[]; stepped?: boolean; lengthBars?: number },
-  seqLength: number,
-): void {
-  if (lane.lengthBars == null) {
-    lane.lengthBars = Math.max(1, seqLength / 16);
-  }
-  const expected = lane.lengthBars * 16 * AUTOMATION_SUB_RES;
+/** Grow or trim `lane.values` to `expectedLength` sub-samples in place, holding
+ *  the last value when it grows. The length is computed by the CALLER (through
+ *  core/clip-envelope-length) and never re-derived here: this function used to
+ *  spell out "bars * 16 * SUB_RES" a second time, so the caller and the painter
+ *  each owned half of the same rule and only agreed by luck in 4/4.
+ *  Mutates the array in place — the live audio path holds that same reference. */
+export function ensureLaneSize(lane: { values: number[] }, expectedLength: number): void {
+  const expected = Math.max(0, Math.round(expectedLength));
   if (lane.values.length === expected) return;
   if (lane.values.length < expected) {
     const last = lane.values[lane.values.length - 1] ?? 0.5;
     while (lane.values.length < expected) lane.values.push(last);
-  } else if (lane.values.length > expected) {
+  } else {
     lane.values.length = expected;
   }
 }
 
-export function snapLaneToSteps(lane: { values: number[]; lengthBars?: number }): void {
-  const totalSteps = (lane.lengthBars ?? 1) * 16;
+/** Collapse the lane to ONE value per 16th-note step (what 'stepped' means):
+ *  sub-sample 0 of each step is held across the step. The step count comes from
+ *  the array itself, so this needs no meter and no bar count — a lane IS its
+ *  values, and any length is covered whole. */
+export function snapLaneToSteps(lane: { values: number[] }): void {
+  const totalSteps = Math.ceil(lane.values.length / AUTOMATION_SUB_RES);
   for (let s = 0; s < totalSteps; s++) {
     const start = s * AUTOMATION_SUB_RES;
-    if (start >= lane.values.length) break;
     const v = lane.values[start];
     for (let i = 1; i < AUTOMATION_SUB_RES && start + i < lane.values.length; i++) {
       lane.values[start + i] = v;

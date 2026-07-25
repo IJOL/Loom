@@ -15,6 +15,7 @@
 import { html } from 'lit-html';
 import type { SessionClip, ClipEnvelope } from './session';
 import { stepsPerBar, stepsPerBeat, ticksPerBar, type TimeSignature } from '../core/meter';
+import { envelopeValueLength } from '../core/clip-envelope-length';
 import { effectiveClipLoop } from '../core/clip-loop';
 import { createFollowerStrip } from '../core/clip-follower-strip';
 import type { ClipAxis } from '../core/clip-axis';
@@ -60,7 +61,6 @@ export function createAutoStrip(o: AutoStripOpts): AutoStrip {
     values: o.env.values,
     enabled: o.env.enabled !== false,
     stepped: !!o.env.stepped,
-    lengthBars: o.clip.lengthBars,
   };
 
   let lastFrac = Number.NaN;
@@ -101,7 +101,9 @@ export function createAutoStrip(o: AutoStripOpts): AutoStrip {
   function draw(): void {
     // The envelope must cover the clip before it is drawn or painted: a length
     // edit (or a *2 / /2 tempo scale) changes how many sub-steps a bar needs.
-    ensureLaneSize(painterLane, o.clip.lengthBars * 16);
+    // Same call the live tick indexes with, so what is drawn and what plays are
+    // the same array of the same length.
+    ensureLaneSize(painterLane, envelopeValueLength(o.clip.lengthBars, o.meter));
     painterLane.enabled = o.env.enabled !== false;
     painterLane.stepped = !!o.env.stepped;
     lastFrac = o.getPlayheadFrac();

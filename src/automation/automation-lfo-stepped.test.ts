@@ -31,7 +31,7 @@ function makeBars(bars: number): number[] {
 function paintStepped(bars: number, cfg: Partial<LfoFill> = {}): number[] {
   const values = makeBars(bars);
   fillLfo(values, 0, values.length, SUB_PER_BAR, { ...BASE, stepSubRes: AUTOMATION_SUB_RES, ...cfg });
-  snapLaneToSteps({ values, lengthBars: bars });
+  snapLaneToSteps({ values });
   return values;
 }
 
@@ -106,7 +106,7 @@ describe('stepped fills are already quantised', () => {
           ...BASE, shape: id, cyclesPerBar, stepSubRes: AUTOMATION_SUB_RES,
         });
         const painted = values.slice();
-        snapLaneToSteps({ values, lengthBars: 2 });
+        snapLaneToSteps({ values });
         expect(values).toEqual(painted);
       }
     }

@@ -69,6 +69,14 @@ export interface LfoRate {
 // 0.5 and the LFO button looked broken. maxCyclesPerBar() reports that ceiling,
 // a stepped fill clamps to it instead of aliasing, and lfoRatesFor() hands the UI
 // only the rates a given lane can actually express.
+//
+// Remaining debt, deliberately not taken here: this table still assumes a bar is
+// 16 steps. `subResPerBar` is now the caller's (the clip lane passes the session
+// meter's bar), so a 3/4 lane's "1 bar" really is one cycle per 3/4 bar -- but
+// "1/16" still means 16 cycles per bar, which over a 12-step bar is no longer one
+// cycle per step. Making cyclesPerBar track stepsPerBar(meter) would change what
+// the RATE LABELS mean musically, which is an owner's call, not a mechanical
+// collapse.
 export const LFO_MIN_CYCLES_PER_BAR = 0.25;
 export const LFO_MAX_CYCLES_PER_BAR = 16;
 /** Steps a cycle needs on a stepped lane to still read as a wave. */

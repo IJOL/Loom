@@ -170,7 +170,15 @@ export function arrangementLoopWindowSec(
   return { startSec: start, endSec: end, active: true };
 }
 
-/** Sub-step count for a given number of bars at AUTOMATION_SUB_RES. */
+/** Sub-step count for a given number of bars at AUTOMATION_SUB_RES.
+ *
+ *  Deliberately NOT routed through core/clip-envelope-length, which now owns the
+ *  same question for CLIP envelopes. An arrangement is a different data model: it
+ *  is indexed by absolute time on its own four-quarter bar (see barSec above),
+ *  carries no session meter, and is coherent with itself end to end. Making this
+ *  one meter-aware while its bar stays 4/4 would create the mismatch this audit
+ *  removed elsewhere, not fix one. Whenever the arrangement grows a meter of its
+ *  own, this and barSec move together. */
 export function subStepsForBars(bars: number): number {
   return Math.max(0, Math.round(bars)) * 16 * AUTOMATION_SUB_RES;
 }

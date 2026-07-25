@@ -20,7 +20,7 @@ import type { SessionClip, ClipEnvelope } from './session';
 import { groupTargetsByLane, automationTargetLabel, type AutomationTarget } from '../automation/automation-targets';
 import type { DestinationRegistry } from '../automation/destination-registry';
 import type { ClipAxis } from '../core/clip-axis';
-import type { TimeSignature } from '../core/meter';
+import { stepsPerBar, type TimeSignature } from '../core/meter';
 import { AUTOMATION_SUB_RES } from '../core/pattern';
 import { effectiveClipLoop } from '../core/clip-loop';
 import { TICKS_PER_STEP } from '../core/notes';
@@ -174,7 +174,7 @@ function laneTemplate(
         }}>${env.enabled ? 'On' : 'Off'}</button>
         <button class=${env.stepped ? 'stepped active' : 'stepped'} @click=${() => {
           env.stepped = !env.stepped;
-          if (env.stepped) snapLaneToSteps({ values: env.values, lengthBars: clip.lengthBars });
+          if (env.stepped) snapLaneToSteps({ values: env.values });
           s.draw();
           h.rerender();
         }}>${env.stepped ? 'Stepped' : 'Smooth'}</button>
@@ -212,8 +212,11 @@ function lfoBarTemplate(h: Panel, clip: SessionClip, env: ClipEnvelope, strip: A
       to = Math.round((endTick / TICKS_PER_STEP) * AUTOMATION_SUB_RES);
     }
     const run = () => {
-      fillLfo(env.values, from, to, 16 * AUTOMATION_SUB_RES, cfg);
-      if (env.stepped) snapLaneToSteps({ values: env.values, lengthBars: clip.lengthBars });
+      // The wave's bar is the SESSION's bar. Drawn against a 16-step bar it went
+      // out of phase with the lane's own grid lines, which already come from the
+      // meter — a "1 bar" LFO that visibly did not span one bar.
+      fillLfo(env.values, from, to, stepsPerBar(h.deps.meter) * AUTOMATION_SUB_RES, cfg);
+      if (env.stepped) snapLaneToSteps({ values: env.values });
       strip.draw();
     };
     if (h.deps.historyDeps) withUndo(h.deps.historyDeps, run); else run();
