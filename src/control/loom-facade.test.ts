@@ -138,6 +138,28 @@ describe('loom-facade — reaching insert/FX params from the device-knob bank', 
     expect(fakeSetBase).toHaveBeenCalledWith('filter.cutoff', 0.4); // min 0, max 1 -> real === value01
   });
 
+  it('persists an engine param whose knob is NOT mounted, like the mounted branch does', () => {
+    // Same hardware gesture, two persistence outcomes: with the lane's editor
+    // open the surface goes through a mounted handle, whose onChange commits the
+    // value into lane.engineState.params; with it closed it fell through to a
+    // raw setBaseValue and the tweak was gone on reload. Whether a panel happens
+    // to be on screen is not a property of the sound.
+    const fakeSetBase = vi.fn();
+    const fakeEngine = {
+      params: [{ id: 'filter.cutoff', label: 'Cutoff', kind: 'continuous', min: 0, max: 1, default: 0.5 }],
+      setBaseValue: fakeSetBase,
+    } as unknown as SynthEngine;
+    const laneResources = { get: (id: string) => (id === 'poly1' ? { engine: fakeEngine } : undefined) } as unknown as LaneResourceMap;
+    const state = stateWith({ id: 'poly1', engineId: 'subtractive' });
+
+    const facade = createLoomFacade(baseDeps({ sessionHost: makeHostStub(state), laneResources }));
+    facade.setEngineParam('poly1', 'filter.cutoff', 0.4);
+
+    // Relative: what persisted is exactly what reached the engine, not a literal.
+    const written = fakeSetBase.mock.calls[0][1] as number;
+    expect(state.lanes[0].engineState?.params?.['filter.cutoff']).toBe(written);
+  });
+
   it('engineParamIds returns the same first-8 params, in the same order, as the old bare-id code for a lane with >=8 continuous params', () => {
     const state = stateWith({ id: 'poly1', engineId: 'subtractive' });
     const destinations = createDestinationRegistry({ getState: () => state, getKnobRegistry: () => new Map() });

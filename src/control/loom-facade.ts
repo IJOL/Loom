@@ -15,6 +15,7 @@ import { TICKS_PER_QUARTER } from '../core/notes';
 import { emptyClip, type SessionClip, type SessionLane } from '../session/session';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
 import { parseAutomationParamId } from '../automation/automation-apply';
+import { commitParamForLane } from '../engines/engine-param-commit';
 import type { DestinationRegistry } from '../automation/destination-registry';
 
 export interface LoomFacadeDeps {
@@ -94,8 +95,12 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
     if (!spec || spec.kind !== 'continuous') return;
     const real = spec.min + value01 * (spec.max - spec.min);
     const handle = knobRegistry.get(canonical ? paramId : `${laneId}.${localId}`);
+    // With the lane's editor open the mounted handle's onChange commits the
+    // value (engine + engineState mirror). With it closed there is no handle, so
+    // commit it here rather than writing the engine alone — the same gesture on
+    // the same hardware must persist the same either way.
     if (handle) handle.setValue(real);          // moves the on-screen ring AND drives the engine
-    else res.engine.setBaseValue(localId, real);
+    else commitParamForLane(res.engine, sessionHost.state, laneId, localId, real);
   }
 
   const recorder = createLiveRecorder();
