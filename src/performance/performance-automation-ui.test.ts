@@ -24,7 +24,6 @@ describe('performance automation header', () => {
         getState: () => state, getKnobRegistry: () => new Map(),
       }),
       laneWidthPx: 100, getBrush: () => 'line',
-      painterDeps: {} as never,
       onAdd: () => {}, onRemove: () => {}, onEdited: () => {},
     } as never);
     const values = [...header.querySelectorAll('option')].map((o) => (o as HTMLOptionElement).value);

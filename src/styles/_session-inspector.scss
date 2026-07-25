@@ -128,16 +128,38 @@
 .clip-auto-brush-bar { display: flex; gap: 4px; }
 .clip-auto-hint { color: var(--text-faint); font-size: 12px; margin: 4px 0 0; }
 .clip-auto-range { font-size: 10px; color: var(--text-dim); }
+/* The canvas is exactly `axis.contentWidth()` px wide (written inline by the
+   follower strip) and lives inside the clipping window: never `width: 100%`,
+   which is what made the lane a private, un-zoomable geometry. */
 .clip-auto-lane .auto-lane-canvas {
   display: block;
   background: var(--surface-2);
-  border-radius: 2px;
+  cursor: crosshair;
+  touch-action: none;
+  /* No border: the follower window draws it. A border here would add 2px inside
+     the window and shift every drawn tick 1px off the grid above. */
+  border: 0;
 }
 .clip-auto-lane .auto-lane-header {
   display: flex; gap: 6px; align-items: center; font-size: 11px; color: var(--text-dim);
   margin-bottom: 4px;
+  flex-wrap: wrap;
 }
-.clip-auto-lane .auto-lane-header .label { flex: 1; }
+.clip-auto-lane .auto-lane-header .label { flex: 0 1 auto; min-width: 120px; }
+
+/* LFO curve generator: shape + rate + depth + apply, in the lane header. */
+.clip-auto-lfo {
+  display: flex; align-items: center; gap: 4px; margin-left: auto;
+}
+.clip-auto-lfo select {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 1px 4px;
+  font-size: 10px;
+}
+.clip-auto-lfo-apply { font-weight: 700; }
 .clip-auto-lane .auto-lane-header button {
   background: var(--surface-3);
   color: var(--text-dim);

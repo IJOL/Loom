@@ -12,7 +12,9 @@ import type { LanePlayState } from './session-runtime';
 import type { Sequencer } from '../core/sequencer';
 import { renderClipEditor, classifyClip, chooseClipEditor, type ClipEditorDeps } from './clip-editors/clip-editor-router';
 import { getEngine } from '../engines/registry';
-import { renderClipAutomationLanes } from './clip-automation-lanes';
+import { renderClipAutomationLanes, type ClipAutoHandle } from './clip-automation-lanes';
+import { clipAxis } from '../core/clip-axis';
+import { clipPlayheadFrac } from '../core/clip-playhead';
 import type { DestinationRegistry } from '../automation/destination-registry';
 import type { PianoRollHandle } from '../core/pianoroll';
 import type { HistoryDeps } from '../save/history-wiring';
@@ -126,6 +128,10 @@ export class SessionInspector {
    *  the controller on the instance is what actually bounds it to "the open
    *  clip editor's lifetime". */
   private _autoAc: AbortController = new AbortController();
+  /** The open clip's automation lanes. Held so the render tick can animate their
+   *  playhead + keep them aligned, and so they can be disposed (each lane holds
+   *  a ClipAxis subscription) before the panel is rebuilt. */
+  private autoLanes: ClipAutoHandle | null = null;
   /** Loop-record over live MIDI (Task 5/6), bound late via setMidiCapture once
    *  the facade exists (mirrors setHistoryDeps/setTranscribeLoop). */
   private midiCapture: { toggle: (mode: 'merge' | 'replace') => void; isRecording: () => boolean; canRecord: () => boolean } | null = null;
@@ -248,6 +254,9 @@ export class SessionInspector {
     this._fieldAc = new AbortController();
     this._autoAc.abort();
     this._autoAc = new AbortController();
+    this.roll?.dispose?.();
+    this.autoLanes?.dispose();               // release the lanes' axis subscriptions
+    this.autoLanes = null;
     this.autoBox = null;
     if (panel) panel.hidden = true;
     this.selectedClip = null;
@@ -748,6 +757,13 @@ export class SessionInspector {
     const clip = lane?.clips[this.selectedClip.clipIdx];
     if (!lane || !clip) return;
 
+    // Release the previous editor + lanes BEFORE the host is wiped: both hold a
+    // ClipAxis subscription, and a detached surface that keeps relaying out is a
+    // leak that grows with every clip you open.
+    this.roll?.dispose?.();
+    this.autoLanes?.dispose();
+    this.autoLanes = null;
+
     host.innerHTML = '';
 
     // Editor area (piano-roll or drum-grid). A fresh box per render on purpose:
@@ -782,11 +798,7 @@ export class SessionInspector {
     host.appendChild(autoBox);
     this.autoBox = autoBox;
 
-    renderClipAutomationLanes(autoBox, clip, {
-      seq: this.deps.seq,
-      getAutoAbsSubIdx: this.deps.getAutoAbsSubIdx,
-      destinations: this.deps.destinations,
-    });
+    this.autoLanes = renderClipAutomationLanes(autoBox, clip, this.clipAutoDeps(lane, clip));
 
     // Subscribe so a LATER structural change (an insert added/removed on any
     // rack, an engine swap, a lane add/remove) refreshes this picker without
@@ -839,13 +851,34 @@ export class SessionInspector {
   refreshClipAutomation(): void {
     const sel = this.selectedClip;
     if (!this.autoBox || !sel) return;
-    const clip = this.deps.state.lanes.find((l) => l.id === sel.laneId)?.clips[sel.clipIdx];
-    if (!clip) return;
-    renderClipAutomationLanes(this.autoBox, clip, {
-      seq: this.deps.seq,
-      getAutoAbsSubIdx: this.deps.getAutoAbsSubIdx,
+    const lane = this.deps.state.lanes.find((l) => l.id === sel.laneId);
+    const clip = lane?.clips[sel.clipIdx];
+    if (!lane || !clip) return;
+    this.autoLanes?.dispose();               // old lanes' axis subscriptions
+    this.autoLanes = renderClipAutomationLanes(this.autoBox, clip, this.clipAutoDeps(lane, clip));
+  }
+
+  /** The automation panel's deps. One builder for both call sites (first render
+   *  and structural refresh) so they cannot drift apart. */
+  private clipAutoDeps(lane: SessionLane, clip: SessionClip) {
+    return {
       destinations: this.deps.destinations,
-    });
+      // The SAME axis object the editor above is driving — that is the whole
+      // point: identical origin, width, zoom and scroll.
+      axis: clipAxis(clip.id, clip.lengthBars * ticksPerBar(this.deps.seq.meter)),
+      meter: this.deps.seq.meter,
+      getPlayheadFrac: () => clipPlayheadFrac(
+        this.deps.laneStates.get(lane.id), clip, this.deps.seq.meter, this.deps.seq.bpm, this.deps.ctx.currentTime,
+      ),
+      historyDeps: this.deps.historyDeps,
+    };
+  }
+
+  /** Per-frame paint, driven by session-host's render tick: the open editor plus
+   *  the automation lanes (their playhead + follower alignment). */
+  tickRedraw(): void {
+    this.roll?.redraw();
+    this.autoLanes?.tick();
   }
 
   // ── Copy / paste ───────────────────────────────────────────────────────────

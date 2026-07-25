@@ -250,7 +250,6 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       pxPerBar,
       getBrush: () => brush,
       setBrush: (b) => { brush = b; },
-      painterDeps: { seq, getAutoAbsSubIdx: () => 0 },
       onSetLengthBars: (bars) => { beforeEdit(); setArrangementLengthBars(arrangement, bars); refreshPerformanceView(); },
       onZoom: (px) => { pxPerBar = px; scheduleZoomRefresh(); },
       onAddCurve: (paramId) => addCurve(paramId),

@@ -33,7 +33,6 @@ function makeCb(over: Partial<PerfUICallbacks> = {}): PerfUICallbacks {
     laneIds: ['lane1'],
     pxPerBar: 80,
     getBrush: () => 'line', setBrush: vi.fn(),
-    painterDeps: { seq: { isPlaying: () => false }, getAutoAbsSubIdx: () => 0 },
     onSetLengthBars: vi.fn(), onZoom: vi.fn(),
     onAddCurve: vi.fn(), onRemoveCurve: vi.fn(), onEdited: vi.fn(),
     loopEnabled: false, loopStartBar: 0, loopEndBar: 4,

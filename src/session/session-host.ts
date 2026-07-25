@@ -843,7 +843,9 @@ export class SessionHost {
     let lastSig = '';
     const loop = () => {
       requestAnimationFrame(loop);
-      if (this.inspector.roll) this.inspector.roll.redraw();
+      // One call: the open editor AND its automation lanes (the lanes' playhead
+      // needs a frame too — it never animated because nothing repainted them).
+      this.inspector.tickRedraw();
       const sigParts: string[] = [];
       for (const lp of this.laneStates.values()) {
         sigParts.push(`${lp.laneId}:${lp.playing?.id ?? '-'}:${lp.queued?.id ?? '-'}`);

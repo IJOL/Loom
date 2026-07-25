@@ -7,8 +7,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderClipAutomationLanes, type ClipAutoDeps } from './clip-automation-lanes';
 import type { SessionClip } from './session';
-import type { Sequencer } from '../core/sequencer';
 import type { AutomationTarget } from '../automation/automation-targets';
+import { ClipAxis } from '../core/clip-axis';
+import { DEFAULT_METER } from '../core/meter';
+import { TICKS_PER_STEP } from '../core/notes';
 
 function stubCanvas() {
   const ctx2d = new Proxy({}, { get: () => () => {} }) as unknown as CanvasRenderingContext2D;
@@ -21,16 +23,28 @@ const TARGETS: AutomationTarget[] = [
     subGroup: { key: 'fx:s1', label: 'Delay 1' } },
 ];
 
-function makeDeps(targets: AutomationTarget[] = TARGETS): ClipAutoDeps {
+/** A laid-out axis: 1 bar fitted into an 800px viewport. */
+function makeAxis(): ClipAxis {
+  const axis = new ClipAxis('c1', 1 * 4 * 96);
+  axis.setBasisWidth(800);
+  return axis;
+}
+
+function makeDeps(
+  targets: AutomationTarget[] = TARGETS,
+  over: Partial<ClipAutoDeps> = {},
+): ClipAutoDeps {
   return {
-    seq: { meter: { num: 4, den: 4 }, bpm: 120, isPlaying: () => false } as unknown as Sequencer,
-    getAutoAbsSubIdx: () => 0,
     destinations: { list: () => targets, subscribe: () => () => {}, invalidate: () => {} },
+    axis: makeAxis(),
+    meter: DEFAULT_METER,
+    getPlayheadFrac: () => -1,
+    ...over,
   };
 }
 
-function makeClip(): SessionClip {
-  return { id: 'c1', lengthBars: 1, notes: [] } as unknown as SessionClip;
+function makeClip(over: Partial<SessionClip> = {}): SessionClip {
+  return { id: 'c1', lengthBars: 1, notes: [], ...over } as unknown as SessionClip;
 }
 
 function addButton(host: HTMLElement): HTMLButtonElement {
@@ -122,6 +136,141 @@ describe('renderClipAutomationLanes — add / toggle / remove', () => {
     expect(clip.envelopes?.length).toBe(0);
     expect(host.querySelector('.clip-auto-lane')).toBeNull();
     expect(host.querySelector('.clip-auto-hint')).toBeTruthy();
+  });
+});
+
+describe('renderClipAutomationLanes — follows the clip axis', () => {
+  it('sizes the lane canvas to the shared axis, not to a private width', () => {
+    const axis = makeAxis();
+    const clip = makeClip();
+    renderClipAutomationLanes(host, clip, makeDeps(TARGETS, { axis }));
+    addButton(host).click();
+
+    const canvas = host.querySelector<HTMLCanvasElement>('canvas.auto-lane-canvas')!;
+    expect(canvas.width).toBe(axis.contentWidth());          // fitted: 800
+    // Zoom the clip: the lane grows with it (this is what "zoom linked to the
+    // clip" means — the old canvas was a fixed max(800, bars*240)).
+    axis.setZoom(4);
+    expect(canvas.width).toBe(axis.contentWidth());
+    expect(canvas.width).toBeGreaterThan(800);
+  });
+
+  it('scrolls with the clip instead of growing a second scrollbar', () => {
+    const axis = makeAxis();
+    renderClipAutomationLanes(host, makeClip(), makeDeps(TARGETS, { axis }));
+    addButton(host).click();
+
+    const content = host.querySelector<HTMLElement>('.clip-follow-content')!;
+    axis.setZoom(2);
+    axis.setScrollLeft(250);
+    expect(content.style.transform).toBe(`translateX(-${axis.scrollLeft}px)`);
+  });
+
+  it('shows the loop region, positioned in the clip axis', () => {
+    const axis = makeAxis();
+    // 1-bar clip, loop = second half → [8, 16) steps
+    const clip = makeClip({
+      loopEnabled: true,
+      loopStartTick: 8 * TICKS_PER_STEP,
+      loopEndTick: 16 * TICKS_PER_STEP,
+    });
+    renderClipAutomationLanes(host, clip, makeDeps(TARGETS, { axis }));
+    addButton(host).click();
+
+    const shade = host.querySelector<HTMLElement>('.clip-follow-loop')!;
+    expect(shade.style.display).not.toBe('none');
+    // Half-way in, half the clip wide — relative to the axis, at any zoom.
+    expect(parseFloat(shade.style.left)).toBeCloseTo(axis.contentWidth() / 2, 0);
+    expect(parseFloat(shade.style.width)).toBeCloseTo(axis.contentWidth() / 2, 0);
+  });
+
+  it('hides the loop region when the clip does not loop', () => {
+    renderClipAutomationLanes(host, makeClip(), makeDeps());
+    addButton(host).click();
+    expect(host.querySelector<HTMLElement>('.clip-follow-loop')!.style.display).toBe('none');
+  });
+
+  it('disposing stops the lanes following the axis', () => {
+    const axis = makeAxis();
+    const handle = renderClipAutomationLanes(host, makeClip(), makeDeps(TARGETS, { axis }));
+    addButton(host).click();
+    const canvas = host.querySelector<HTMLCanvasElement>('canvas.auto-lane-canvas')!;
+    const before = canvas.width;
+
+    handle.dispose();
+    axis.setZoom(3);
+    expect(canvas.width).toBe(before);
+  });
+});
+
+describe('renderClipAutomationLanes — LFO curve generator', () => {
+  function lfoApply(h: HTMLElement): HTMLButtonElement {
+    return h.querySelector<HTMLButtonElement>('.clip-auto-lfo-apply')!;
+  }
+
+  it('draws a curve into the lane, replacing the flat default', () => {
+    const clip = makeClip();
+    renderClipAutomationLanes(host, clip, makeDeps());
+    addButton(host).click();
+    const values = clip.envelopes![0].values;
+    const flat = values.every((v) => v === values[0]);
+    expect(flat).toBe(true);
+
+    lfoApply(host).click();
+    const min = Math.min(...values), max = Math.max(...values);
+    expect(max - min).toBeGreaterThan(0.5);          // a full-depth wave spans the lane
+    expect(min).toBeGreaterThanOrEqual(0);
+    expect(max).toBeLessThanOrEqual(1);
+  });
+
+  it('writes only inside the loop region when Loop only is on', () => {
+    const clip = makeClip({
+      loopEnabled: true,
+      loopStartTick: 8 * TICKS_PER_STEP,
+      loopEndTick: 16 * TICKS_PER_STEP,
+    });
+    renderClipAutomationLanes(host, clip, makeDeps());
+    addButton(host).click();
+    const values = clip.envelopes![0].values;
+    const half = Math.floor(values.length / 2);
+    const firstHalfBefore = values.slice(0, half).join(',');
+
+    lfoApply(host).click();
+    expect(values.slice(0, half).join(',')).toBe(firstHalfBefore);     // untouched
+    const tail = values.slice(half);
+    expect(Math.max(...tail) - Math.min(...tail)).toBeGreaterThan(0.5); // written
+  });
+
+  it('a faster rate fits more cycles in the same lane', () => {
+    const clip = makeClip();
+    renderClipAutomationLanes(host, clip, makeDeps());
+    addButton(host).click();
+    const values = clip.envelopes![0].values;
+    const rate = host.querySelector<HTMLSelectElement>('.clip-auto-lfo-rate')!;
+    const crossings = () => {
+      let n = 0;
+      for (let i = 1; i < values.length; i++) if ((values[i - 1] - 0.5) * (values[i] - 0.5) < 0) n++;
+      return n;
+    };
+
+    rate.value = '1bar'; rate.dispatchEvent(new Event('change'));
+    lfoApply(host).click();
+    const slow = crossings();
+
+    rate.value = '1/4'; rate.dispatchEvent(new Event('change'));
+    lfoApply(host).click();
+    expect(crossings()).toBeGreaterThan(slow);
+  });
+
+  it('never resizes the envelope array (the audio path holds that reference)', () => {
+    const clip = makeClip();
+    renderClipAutomationLanes(host, clip, makeDeps());
+    addButton(host).click();
+    const values = clip.envelopes![0].values;
+    const len = values.length;
+    lfoApply(host).click();
+    expect(clip.envelopes![0].values).toBe(values);      // same reference
+    expect(values.length).toBe(len);
   });
 });
 

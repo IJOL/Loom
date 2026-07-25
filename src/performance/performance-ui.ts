@@ -12,7 +12,7 @@ import { repeat } from 'lit-html/directives/repeat.js';
 import type { ArrangementState } from './performance';
 import type { KnobHandle } from '../core/knob';
 import type { DestinationRegistry } from '../automation/destination-registry';
-import type { AutoBrush, PainterDeps } from '../automation/automation-painter';
+import type { AutoBrush } from '../automation/automation-painter';
 import { effectiveDurationSec } from './arrangement-ops';
 import { buildAutomationHeader, buildAutomationLane, type PerfAutoDeps } from './performance-automation-ui';
 import {
@@ -34,7 +34,6 @@ export interface PerfUICallbacks {
   pxPerBar: number;
   getBrush: () => AutoBrush;
   setBrush: (b: AutoBrush) => void;
-  painterDeps: PainterDeps;
   onSetLengthBars: (bars: number) => void;
   onZoom: (pxPerBar: number) => void;
   onAddCurve: (paramId: string) => void;
@@ -87,7 +86,6 @@ function viewTemplate(state: ArrangementState, cb: PerfUICallbacks): TemplateRes
     destinations: cb.destinations,
     laneWidthPx: totalBars * cb.pxPerBar,
     getBrush: cb.getBrush,
-    painterDeps: cb.painterDeps,
     onAdd: cb.onAddCurve,
     onRemove: cb.onRemoveCurve,
     onEdited: cb.onEdited,

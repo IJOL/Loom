@@ -15,7 +15,7 @@ import type { DestinationRegistry } from '../automation/destination-registry';
 import { groupTargetsByLane } from '../automation/automation-targets';
 import {
   drawLane, attachLanePainter, formatNum,
-  type AutoBrush, type PainterDeps,
+  type AutoBrush,
 } from '../automation/automation-painter';
 
 export interface PerfAutoDeps {
@@ -29,9 +29,6 @@ export interface PerfAutoDeps {
   /** Width in px for a full-arrangement canvas at the current zoom. */
   laneWidthPx: number;
   getBrush: () => AutoBrush;
-  /** A single global playhead is used, so painterDeps.seq is the master seq
-   *  (not playing during arrangement play) → drawLane skips its intra-lane line. */
-  painterDeps: PainterDeps;
   onAdd: (paramId: string) => void;
   onRemove: (paramId: string) => void;
   onEdited: () => void;
@@ -65,8 +62,15 @@ export function buildAutomationLane(curve: AutomationCurve, deps: PerfAutoDeps):
   const laneView = curve as { values: number[]; enabled: boolean; stepped?: boolean };
 
   let canvas: HTMLCanvasElement;
+  // playheadFrac -1: the Arrangement draws ONE global cursor element
+  // (#perf-playhead) across every lane, so a per-canvas line is not wanted here.
+  // It never worked anyway — the caller passed a `() => 0` stub for the sub-step
+  // index, so the line, when drawn, sat at x=0 for the whole take.
+  // Bar/beat lines stay at 16/4: the arrangement is 4/4-only today (see the
+  // "seconds of one bar" finding in the duplicated-solutions audit).
   const draw = () =>
-    drawLane(canvas, { values: laneView.values, enabled: curve.enabled !== false, stepped: curve.stepped }, deps.painterDeps);
+    drawLane(canvas, { values: laneView.values, enabled: curve.enabled !== false, stepped: curve.stepped },
+      { stepsPerBar: 16, stepsPerBeat: 4, playheadFrac: -1 });
 
   const toggleEnable = (e: Event) => {
     const btn = e.currentTarget as HTMLButtonElement;

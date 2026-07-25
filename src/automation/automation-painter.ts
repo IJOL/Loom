@@ -64,7 +64,7 @@ export function snapLaneToSteps(lane: { values: number[]; lengthBars?: number })
 export function drawLane(
   canvas: HTMLCanvasElement,
   lane: { values: number[]; enabled: boolean; stepped?: boolean },
-  deps: PainterDeps,
+  o: LaneDrawOpts,
 ): void {
   const c = canvas.getContext('2d');
   if (!c) return;
@@ -74,11 +74,13 @@ export function drawLane(
 
   const n = lane.values.length;
   const stepCount = Math.max(1, Math.round(n / AUTOMATION_SUB_RES));
+  const barSteps = Math.max(1, Math.round(o.stepsPerBar));
+  const beatSteps = Math.max(1, Math.round(o.stepsPerBeat));
 
   for (let s = 0; s <= stepCount; s++) {
     const x = (s / stepCount) * w;
-    if (s % 16 === 0 && s > 0) c.strokeStyle = '#555';
-    else if (s % 4 === 0) c.strokeStyle = '#2a2a2a';
+    if (s % barSteps === 0 && s > 0) c.strokeStyle = '#555';
+    else if (s % beatSteps === 0) c.strokeStyle = '#2a2a2a';
     else c.strokeStyle = '#1a1a1a';
     c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke();
   }
@@ -106,9 +108,10 @@ export function drawLane(
   }
   c.stroke();
 
-  if (deps.seq.isPlaying()) {
-    const idxInLane = deps.getAutoAbsSubIdx() % n;
-    const x = xFor(idxInLane);
+  // Playhead: the clip's own loop-aware cursor, in the same place the note
+  // editor draws it (both come from core/clip-playhead.ts).
+  if (o.playheadFrac >= 0) {
+    const x = o.playheadFrac * w;
     c.strokeStyle = '#f7d000';
     c.lineWidth = 1;
     c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke();
