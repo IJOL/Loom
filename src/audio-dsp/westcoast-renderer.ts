@@ -248,10 +248,11 @@ export class WestcoastRenderer implements VoiceRenderer {
 
     // Amp
     const level = param(p, 'amp.level', 0.8);
-    // accentMul is this engine's TIMBRE multiplier (fold drive + cutoff env), reused
-    // here as the amp punch — the conflation the audit's step 3 undoes by dropping
-    // this argument, which leaves the shared ACCENT_PUNCH.
-    const vel = velGain01(note.velocity, note.accent, accentMul);
+    // accentMul above is this engine's TIMBRE multiplier — fold drive and cutoff
+    // env — and it stays out of here. The amp punch is the shared one, as the
+    // legacy WestVoice had it: an accent drives the folder harder, it does not
+    // also turn the voice up by the same factor.
+    const vel = velGain01(note.velocity, note.accent);
     this.ampGain = level * vel * synthTrim('westcoast');
 
     // Saved bases so generic LFO/ADSR can recompute the timbre params live.

@@ -2,6 +2,8 @@
 import { describe, it, expect } from 'vitest';
 import { WestcoastRenderer } from './westcoast-renderer';
 import type { NoteSpec, ParamBag } from './types';
+import { ACCENT_PUNCH } from '../core/velocity-gain';
+import { rms as rmsOf, spectralCentroid } from '../../test/dsp-asserts';
 
 const SR = 48000;
 
@@ -22,6 +24,13 @@ const note = (o: Partial<NoteSpec> = {}): NoteSpec => ({
 
 const rms = (b: number[]): number =>
   Math.sqrt(b.reduce((s, v) => s + v * v, 0) / b.length);
+
+const render = (p: ParamBag, n: NoteSpec, sec: number): Float32Array => {
+  const v = new WestcoastRenderer(n, p, SR);
+  const out = new Float32Array(Math.floor(SR * sec));
+  for (let i = 0; i < out.length; i++) out[i] = v.renderSample(i / SR);
+  return out;
+};
 
 describe('WestcoastRenderer', () => {
   it('plucks: loud at the attack, quiet later (AD contour gates the LPG)', () => {
@@ -126,6 +135,36 @@ describe('WestcoastRenderer', () => {
     const v = new WestcoastRenderer(note({ durationSec: 0.1 }), cycleP, SR);
     for (let i = 0; i < Math.floor(SR * 1.5); i++) v.renderSample(i / SR);
     expect(v.done).toBe(true);
+  });
+
+  // On this engine the accent is a TIMBRE control: it drives the wavefolder
+  // harder and opens the LPG contour further. The legacy engine kept that apart
+  // from loudness — accentMul for timbre, velGain() for the amp — and the port to
+  // the renderer collapsed both onto the same 1.3, so an accent was applied twice.
+  it('accent brightens the fold without doubling the amp punch', () => {
+    const buf = (accent: boolean, over: ParamBag = {}): Float32Array =>
+      render({ ...P, ...over }, note({ accent }), 0.1);
+
+    // Claim 1: brightness moves MORE than loudness. That is what the accent is for
+    // here; if the amp punch rides along, the two ratios move together instead.
+    const on = buf(true), off = buf(false);
+    const brighter = spectralCentroid(on, SR) / spectralCentroid(off, SR);
+    const louder = rmsOf(on) / rmsOf(off);
+    expect(brighter).toBeGreaterThan(louder);
+
+    // Claim 2: the amp punch alone is the SHARED one, measured with the timbre
+    // difference cancelled by construction. In gate-only LPG mode the accent's
+    // cutoff-env boost is out of the picture (cutoffEnvScale = 0 when filterMode
+    // is false), and the fold's drive — (0.1 + fold*0.9) * accentMul — is
+    // reproduced on the unaccented render by the fold knob alone:
+    // (0.1 + 0.5*0.9) * 1.3 = 0.715 = 0.1 + 0.683333*0.9. The two renders then
+    // differ by the amp gain and nothing else, so their RMS ratio IS the accent's
+    // amp multiplier — a ratio, never a level.
+    const GATE_ONLY: ParamBag = { 'lpg.mode': 1 };
+    const punch =
+      rmsOf(buf(true, GATE_ONLY)) /
+      rmsOf(buf(false, { ...GATE_ONLY, 'timbre.fold': 0.6833333333333333 }));
+    expect(punch / ACCENT_PUNCH).toBeCloseTo(1, 2);
   });
 
   it('registers under engine id "westcoast"', async () => {
