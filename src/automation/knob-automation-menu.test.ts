@@ -18,6 +18,7 @@ import { createDestinationRegistry } from './destination-registry';
 import { registerPlugin, _resetRegistry } from '../plugins/registry';
 import { multifilterPlugin } from '../plugins/fx/multifilter';
 import { emptyArrangementState } from '../performance/performance';
+import { DEFAULT_METER } from '../core/meter';
 import type { SessionState, SessionClip } from '../session/session';
 // Side-effect import: registers the 'subtractive' engine descriptor so
 // listAutomationTargets() can find its continuous engine params. Without this,
@@ -59,6 +60,7 @@ describe('attachKnobAutomationMenu', () => {
       destinations: createDestinationRegistry({ getState: () => state, getKnobRegistry: () => new Map() }),
       getMode: () => 'session',
       getState: () => state,
+      getMeter: () => DEFAULT_METER,
       getLaneStates: () => new Map([['poly1', { laneId: 'poly1', playing: clip } as never]]),
       getArrangement: () => emptyArrangementState(120),
       openClip: () => {},
@@ -90,6 +92,7 @@ describe('attachKnobAutomationMenu', () => {
       destinations: createDestinationRegistry({ getState: () => state, getKnobRegistry: () => new Map() }),
       getMode: () => 'session',
       getState: () => state,
+      getMeter: () => DEFAULT_METER,
       getLaneStates: () => new Map(),
       getArrangement: () => emptyArrangementState(120),
       openClip: () => {},
@@ -120,6 +123,7 @@ describe('attachKnobAutomationMenu', () => {
       destinations: createDestinationRegistry({ getState: () => state, getKnobRegistry: () => new Map() }),
       getMode: () => 'session',
       getState: () => state,
+      getMeter: () => DEFAULT_METER,
       getLaneStates: () => new Map([['poly1', { laneId: 'poly1', playing: clip } as never]]),
       getArrangement: () => emptyArrangementState(120),
       openClip: () => {},
@@ -160,6 +164,7 @@ describe('attachKnobAutomationMenu', () => {
       destinations: createDestinationRegistry({ getState: () => state, getKnobRegistry: () => new Map() }),
       getMode: () => 'session',
       getState: () => state,
+      getMeter: () => DEFAULT_METER,
       getLaneStates: () => new Map(),
       getArrangement: () => emptyArrangementState(120),
       openClip: () => {},
@@ -198,6 +203,7 @@ describe('attachKnobAutomationMenu', () => {
       destinations: createDestinationRegistry({ getState: () => state, getKnobRegistry: () => new Map() }),
       getMode: () => 'session',
       getState: () => state,
+      getMeter: () => DEFAULT_METER,
       getLaneStates: () => new Map(),
       getArrangement: () => emptyArrangementState(120),
       openClip: () => {},
@@ -236,6 +242,7 @@ describe('attachKnobAutomationMenu', () => {
       destinations: createDestinationRegistry({ getState: () => state, getKnobRegistry: () => new Map() }),
       getMode: () => 'performance',
       getState: () => state,
+      getMeter: () => DEFAULT_METER,
       getLaneStates: () => new Map(),
       getArrangement: () => arrangement,
       openClip: () => {},
@@ -288,6 +295,7 @@ describe('attachKnobAutomationMenu', () => {
       destinations: createDestinationRegistry({ getState: () => state, getKnobRegistry: () => new Map() }),
       getMode: () => 'performance',
       getState: () => state,
+      getMeter: () => DEFAULT_METER,
       getLaneStates: () => new Map(),
       getArrangement: () => arrangement,
       openClip: () => {},

@@ -1,8 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { scaleClipTempo, resampleEnvelope, tileEnvelope } from './clip-time-scale';
+import { AUTOMATION_SUB_RES } from './pattern';
+import { stepsPerBar, ticksPerBar, DEFAULT_METER, type TimeSignature } from './meter';
+import { envelopeValueLength } from './clip-envelope-length';
 import type { SessionClip } from '../session/session';
 
 const BAR = 384; // 4/4 ticks per bar (16 steps * 24)
+const THREE_FOUR: TimeSignature = { num: 3, den: 4 };
 const clip = (over: Partial<SessionClip> = {}): SessionClip => ({
   id: 'c', lengthBars: 1, notes: [], color: '#a8c8e8', gridResolution: '1/16', ...over,
 });
@@ -98,5 +102,48 @@ describe('scaleClipTempo — /2 (slower): stretch + grow length', () => {
     const c = clip({ lengthBars: 1, notes: [{ start: 0, duration: 1, midi: 60, velocity: 80 }] });
     scaleClipTempo(c, 0.5, BAR);
     expect(c.notes[0].duration).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('scaleClipTempo — the envelope follows the caller’s bar, not a 4/4 one', () => {
+  const BAR_34 = ticksPerBar(THREE_FOUR);
+  /** Bars the envelope covers, read back off the array the same way a consumer
+   *  indexes it. This is the identity the whole concern is about. */
+  const envBars = (c: SessionClip, m: TimeSignature) =>
+    c.envelopes![0].values.length / (stepsPerBar(m) * AUTOMATION_SUB_RES);
+
+  const clip34 = (bars: number): SessionClip => clip({
+    lengthBars: bars,
+    envelopes: [{
+      paramId: 'sub.filter.cutoff', enabled: true,
+      values: Array.from({ length: envelopeValueLength(bars, THREE_FOUR) }, (_, i) => i / 100),
+    }],
+  });
+
+  it('notes and envelope keep the same bar count after *2 in 3/4', () => {
+    const c = clip34(2);
+    scaleClipTempo(c, 2, BAR_34);
+    expect(envBars(c, THREE_FOUR)).toBe(c.lengthBars);
+  });
+
+  it('notes and envelope keep the same bar count after /2 in 3/4', () => {
+    const c = clip34(2);
+    scaleClipTempo(c, 0.5, BAR_34);
+    expect(envBars(c, THREE_FOUR)).toBe(c.lengthBars);
+  });
+
+  it('a 3/4 clip ends up shorter than the same clip in 4/4', () => {
+    const three = clip34(2);
+    const four = clip({
+      lengthBars: 2,
+      envelopes: [{
+        paramId: 'sub.filter.cutoff', enabled: true,
+        values: Array.from({ length: envelopeValueLength(2, DEFAULT_METER) }, (_, i) => i / 100),
+      }],
+    });
+    scaleClipTempo(three, 0.5, BAR_34);
+    scaleClipTempo(four, 0.5, BAR);
+    expect(three.envelopes![0].values.length / four.envelopes![0].values.length)
+      .toBeCloseTo(THREE_FOUR.num / DEFAULT_METER.num, 10);
   });
 });

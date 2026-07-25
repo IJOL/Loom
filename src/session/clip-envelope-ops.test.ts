@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { addClipEnvelope } from './clip-envelope-ops';
 import { AUTOMATION_SUB_RES } from '../core/pattern';
+import { envelopeValueLength } from '../core/clip-envelope-length';
+import { DEFAULT_METER, type TimeSignature } from '../core/meter';
 import type { SessionClip } from './session-types';
+
+const THREE_FOUR: TimeSignature = { num: 3, den: 4 };
 
 function clipOf(lengthBars: number): SessionClip {
   return { id: 'c1', name: 'Verse 1', lengthBars, notes: [] } as unknown as SessionClip;
@@ -31,5 +35,22 @@ describe('addClipEnvelope', () => {
     addClipEnvelope(clip, 'poly1.amp.attack');
     expect(clip.envelopes!.map((e) => e.paramId))
       .toEqual(['poly1.filter.cutoff', 'poly1.amp.attack']);
+  });
+
+  it('sizes a 3/4 clip to three quarters of the same clip in 4/4', () => {
+    const three = clipOf(4);
+    const four = clipOf(4);
+    addClipEnvelope(three, 'poly1.filter.cutoff', THREE_FOUR);
+    addClipEnvelope(four, 'poly1.filter.cutoff', DEFAULT_METER);
+    expect(three.envelopes![0].values.length / four.envelopes![0].values.length)
+      .toBeCloseTo(THREE_FOUR.num / DEFAULT_METER.num, 10);
+  });
+
+  it('sizes every meter through the one owner', () => {
+    for (const m of [DEFAULT_METER, THREE_FOUR, { num: 7, den: 8 }]) {
+      const clip = clipOf(3);
+      addClipEnvelope(clip, 'poly1.filter.cutoff', m);
+      expect(clip.envelopes![0].values.length).toBe(envelopeValueLength(3, m));
+    }
   });
 });

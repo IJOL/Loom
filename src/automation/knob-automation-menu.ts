@@ -13,12 +13,17 @@ import { resolveAutomationTarget } from './automation-target-resolver';
 import type { SessionState } from '../session/session';
 import type { LanePlayState } from '../session/session-runtime';
 import type { ArrangementState } from '../performance/performance';
+import type { TimeSignature } from '../core/meter';
 import { addClipEnvelope } from '../session/clip-envelope-ops';
 
 export interface KnobMenuDeps {
   destinations: DestinationRegistry;
   getMode: () => 'session' | 'performance';
   getState: () => SessionState;
+  /** The session meter, for sizing a freshly created clip envelope. Required,
+   *  not defaulted: a menu-created envelope sized 4/4 next to a panel-created
+   *  one sized 3/4 is precisely the divergence this dep exists to prevent. */
+  getMeter: () => TimeSignature;
   getLaneStates: () => ReadonlyMap<string, LanePlayState>;
   /** Read-only: only used to compute which params already have a timeline
    *  curve (for the "Edit" vs "Automate" label). Mutation goes through
@@ -99,7 +104,7 @@ export function attachKnobAutomationMenu(handle: KnobHandle, deps: KnobMenuDeps)
           // The clip at this position changed since the menu opened (moved,
           // deleted, replaced) — do nothing rather than write to the wrong clip.
           if (!clip || clip.id !== openedClipId) return;
-          if (!existing) addClipEnvelope(clip, paramId);
+          if (!existing) addClipEnvelope(clip, paramId, deps.getMeter());
           deps.openClip(laneId, clipIdx);
           deps.onClipEdited(laneId, clipIdx);
         },

@@ -104,7 +104,7 @@ function panelTemplate(h: Panel, clip: SessionClip, strips: Map<string, AutoStri
     const sel = h.host.querySelector<HTMLSelectElement>('.clip-auto-param-select');
     const paramId = sel?.value;
     if (!paramId) return;
-    if (!addClipEnvelope(clip, paramId)) return;   // already exists
+    if (!addClipEnvelope(clip, paramId, h.deps.meter)) return;   // already exists
     h.rerender();
   };
 

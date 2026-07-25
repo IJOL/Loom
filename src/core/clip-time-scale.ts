@@ -11,11 +11,7 @@
 // snapshots state for undo BEFORE calling.
 
 import type { SessionClip } from '../session/session';
-import { AUTOMATION_SUB_RES } from './pattern';
-
-// Mirror collect-scene-automation.ts: clip automation is 4/4-only, indexed at
-// 16 steps/bar. Envelope values length the consumer expects = bars * 16 * SUB_RES.
-const STEPS_PER_BAR = 16;
+import { envelopeValueLengthFromBarTicks } from './clip-envelope-length';
 
 /** Resample an envelope value array to `newLen` by phase (nearest-neighbor).
  *  Stretching repeats samples; compressing decimates. Robust to any old length
@@ -65,7 +61,9 @@ export function scaleClipTempo(clip: SessionClip, tempoMult: number, barTicks: n
     clip.notes = tiled;
     // Loop region + lengthBars stay as-is (a full-clip loop still spans every copy).
     if (clip.envelopes) {
-      const targetLen = clip.lengthBars * STEPS_PER_BAR * AUTOMATION_SUB_RES;
+      // The bar the caller handed us, never a 4/4 one: the notes above are tiled
+      // across `barTicks` and the envelope has to cover the same span.
+      const targetLen = envelopeValueLengthFromBarTicks(clip.lengthBars, barTicks);
       for (const env of clip.envelopes) env.values = tileEnvelope(env.values, copies, targetLen);
     }
     return;
@@ -80,7 +78,7 @@ export function scaleClipTempo(clip: SessionClip, tempoMult: number, barTicks: n
   if (clip.loopEndTick !== undefined) clip.loopEndTick = Math.round(clip.loopEndTick * timeFactor);
   const newLengthBars = Math.max(1, Math.round(clip.lengthBars * timeFactor));
   if (clip.envelopes) {
-    const targetLen = newLengthBars * STEPS_PER_BAR * AUTOMATION_SUB_RES;
+    const targetLen = envelopeValueLengthFromBarTicks(newLengthBars, barTicks);
     for (const env of clip.envelopes) env.values = resampleEnvelope(env.values, targetLen);
   }
   clip.lengthBars = newLengthBars;

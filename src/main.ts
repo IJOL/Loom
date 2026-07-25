@@ -794,6 +794,7 @@ onRegisterKnob((k) => {
     destinations,
     getMode: () => performanceFeature.getMode(),
     getState: () => sessionHost.state,
+    getMeter: () => seq.meter,
     getLaneStates: () => sessionHost.laneStates,
     getArrangement: () => performanceFeature.arrangement,
     openClip: (laneId, clipIdx) => {
