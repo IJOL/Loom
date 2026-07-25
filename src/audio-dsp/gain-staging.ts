@@ -25,12 +25,18 @@ export const ENGINE_TRIM: Record<string, number> = {
   subtractive: 0.25, // lowered from 0.4: its "Sub"/bass presets sat too loud vs the
                      // 303 in the demos (user mixed the sub to ~42%). Global, so
                      // Around the World's subtractive leads drop too — accepted.
-  fm: 0.25,
+  fm: 0.179, // was 0.25, ÷1.4 (2026-07-25): fm scaled RAW velocity — the AudioWorklet
+             // port dropped the `0.3 + 1.1·v` curve — so restoring it multiplied a
+             // full-velocity note by velGain01(1) = 1.4. Measured, not guessed: the
+             // division puts the v=1.0 level back where it was (rms ratio 1.002 vs
+             // the pre-change render) and only the quiet end of the range moves.
   wavetable: 0.6,
   westcoast: 0.5,
-  karplus: 1.2, // raised from 0.8 (×1.5): sat too quiet vs the other engines —
-                // balancing it needed the karplus lane fader at the top (1.5). Bake
-                // that ×1.5 in here so it sits right at unity fader.
+  karplus: 0.857, // was 1.2, ÷1.4 (2026-07-25): same restored curve as fm above
+                  // (measured ratio 1.000). And 1.2 was itself "raised from 0.8
+                  // (×1.5): sat too quiet vs the other engines" — tuned by ear
+                  // WITH the broken formula in place, which is how a lost curve
+                  // hides as a loudness complaint one layer down.
 };
 
 /** Per-category gain — the global balance BETWEEN families. `drum` carries what

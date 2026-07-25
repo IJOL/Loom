@@ -10,6 +10,7 @@ import type { ModLite } from './modulation-runtime';
 import { ModEnvHost } from './mod-env-host';
 import { registerRenderer } from './renderer-registry';
 import { synthTrim } from './gain-staging';
+import { velGain01 } from '../core/velocity-gain';
 import { midiToFreq } from './dsp-util';
 
 // ── Karplus-Strong string renderer (offline, per note) ────────────────────
@@ -128,7 +129,7 @@ export class KarplusRenderer implements VoiceRenderer {
     this.level = param(p, 'amp.level', 0.8);
     this.ampEnvOn = param(p, 'amp.builtinEnv', 1) >= 0.5;
     this.trim = param(p, 'output.trim', 1);
-    this.vel = note.velocity * (note.accent ? 1.3 : 1);
+    this.vel = velGain01(note.velocity, note.accent);
     const seconds = Math.min(8, Math.max(0.4, note.durationSec + this.rel + 0.3));
     this.buf = renderKarplusString({
       sampleRate,

@@ -47,11 +47,16 @@ const accentRatio = (id: string): number =>
 const accentPeakRatio = (id: string): number =>
   peakOf(makeRenderer(id, note({ accent: true }))) / peakOf(makeRenderer(id, note({ accent: false })));
 
-// Engines that already share the owner's curve (src/core/velocity-gain.ts).
-const ON_CURVE = ['tb303', 'wavetable', 'subtractive', 'westcoast'];
+// Every melodic engine shares the owner's curve (src/core/velocity-gain.ts) —
+// which is the whole claim, so the list is not maintained here.
+const ON_CURVE = MELODIC_IDS;
+// Engines whose accent touches the amp and NOTHING else, so their RMS ratio is a
+// clean read of the punch factor. tb303 and westcoast are the two that also move
+// timbre, each with its own claim below.
+const AMP_ONLY = ['wavetable', 'fm', 'karplus'];
 // Two engines "agree" within this much. Renderers are deterministic and velocity is
 // a pure gain, so agreement here is exact to floating point — measured spread 0.00%
-// across the four on-curve engines. 2% is slack, not a real tolerance.
+// across all six engines. 2% is slack, not a real tolerance.
 const AGREE = 0.02;
 // Looser band for engines whose accent ALSO changes timbre, so their RMS ratio is
 // not a clean read of the amp punch.
@@ -59,47 +64,41 @@ const AGREE_LOOSE = 0.05;
 
 describe('cross-engine velocity + accent response', () => {
   it('velocity response shape is the same across engines', () => {
-    // Measured: 0.45000 on all four on-curve engines (= velGain01(0.3)/velGain01(1)),
-    // 0.30000 on fm/karplus (raw velocity, curve lost).
+    // Measured: 0.45000 on all six (= velGain01(0.3) / velGain01(1)). fm and
+    // karplus read 0.30000 until the port's lost curve was restored — a soft note
+    // a third quieter on those two than on the rest, which is exactly how a MIDI
+    // import's quiet passages went missing when a clip was pointed at fm.
     const ref = velocityShape('wavetable');
     for (const id of ON_CURVE) {
       expect(velocityShape(id) / ref).toBeGreaterThan(1 - AGREE);
       expect(velocityShape(id) / ref).toBeLessThan(1 + AGREE);
     }
-    // DOCUMENTED REGRESSION — fm and karplus scale raw velocity (no `0.3 + 1.1·v`):
-    // the AudioWorklet port dropped the curve. A soft note is a third quieter on
-    // those two than on the four above, so re-pointing a clip at fm changes its
-    // dynamics. Step 4 of the audit fixes both; when it lands this loop goes RED —
-    // that is the signal to move 'fm' and 'karplus' into ON_CURVE and delete it.
-    for (const id of ['fm', 'karplus']) {
-      expect(velocityShape(id) / ref).toBeLessThan(1 - AGREE);
-    }
   });
 
   it('accent gain ratio is consistent across engines', () => {
-    // Measured: wavetable 1.100, subtractive 1.098, tb303 1.222, fm 1.300,
-    // karplus 1.300, westcoast 0.943 (see its own claim below).
+    // Measured: wavetable 1.100, fm 1.100, karplus 1.100, subtractive 1.098,
+    // tb303 1.222, westcoast 0.943 (the last two have their own claims below).
     const ref = accentRatio('wavetable');   // amp-only, uses the shared ACCENT_PUNCH
     // Accent must never make a note quieter — on every engine whose accent only
     // touches the amp, or brightens a filter that does not eat the extra level.
-    const AMP_LOUDER = MELODIC_IDS.filter((id) => id !== 'westcoast');
-    for (const id of AMP_LOUDER) expect(accentRatio(id)).toBeGreaterThan(1);
+    for (const id of MELODIC_IDS.filter((i) => i !== 'westcoast')) {
+      expect(accentRatio(id)).toBeGreaterThan(1);
+    }
+
+    // The three amp-only engines punch by the same factor, so accent programming
+    // survives re-pointing a clip at another engine. fm and karplus read 1.3 here
+    // until the port's lost curve was restored — the accent was carried by a stray
+    // multiplier of its own rather than by the shared ACCENT_PUNCH.
+    for (const id of AMP_ONLY) {
+      expect(accentRatio(id) / ref).toBeGreaterThan(1 - AGREE);
+      expect(accentRatio(id) / ref).toBeLessThan(1 + AGREE);
+    }
 
     // tb303 is the DECLARED EXCEPTION: its accent also raises Q, and a diode ladder
     // loses level as Q climbs, so it opts into a bigger VCA punch (ACCENT_VCA_LADDER)
     // to still read as an accent. Even after the ladder eats part of it (1.3 → 1.22
     // measured), it lands above the shared punch — which is the whole point.
     expect(accentRatio('tb303')).toBeGreaterThan(ref);
-
-    // DOCUMENTED REGRESSION — fm and karplus are the other two amp-only engines, so
-    // their RMS ratio IS their punch factor, and it is 1.3 where the shared value is
-    // 1.1: accent programming does not survive changing a clip's engine. Step 4
-    // makes all three agree, at which point these two go RED and become
-    // `toBeLessThan(1 + AGREE)`.
-    expect(accentRatio('fm') / ref).toBeGreaterThan(1 + AGREE);
-    expect(accentRatio('karplus') / ref).toBeGreaterThan(1 + AGREE);
-    // ...and they are wrong in the SAME way, which is what makes it one bug.
-    expect(accentRatio('fm') / accentRatio('karplus')).toBeCloseTo(1, 3);
 
     // subtractive also brightens on accent (filter-env range), so its RMS mixes
     // loudness with timbre. It still lands within 5% of the shared punch.
@@ -116,5 +115,26 @@ describe('cross-engine velocity + accent response', () => {
     // than read off an RMS the folder has already spent.
     expect(accentRatio('westcoast')).toBeLessThan(ref);
     expect(accentPeakRatio('westcoast')).toBeGreaterThan(1);
+  });
+
+  // Restoring the curve on fm and karplus multiplies a full-velocity note by
+  // velGain01(1) = 1.4, so both engines would have come out 2.9 dB louder against
+  // every other lane. ENGINE_TRIM.fm and ENGINE_TRIM.karplus were divided by that
+  // 1.4 to put them back — and this is the case that says "back where", because a
+  // trim is exactly the kind of number that gets nudged by ear and never checked.
+  //
+  // The two constants are MEASURED, not chosen: they are each engine's full-
+  // velocity RMS over wavetable's, read off this same fixture before the curve
+  // landed. They are ratios between engines, so they say nothing about absolute
+  // level — only that the balance between lanes is the one the demos were mixed
+  // against. Re-measure and update them deliberately if an engine is re-voiced.
+  it('the curve fix left fm and karplus sitting where they sat against wavetable', () => {
+    const fullLevel = (id: string): number => rmsOf(makeRenderer(id, note({ velocity: LOUD })));
+    const ref = fullLevel('wavetable');
+    const FM_VS_WAVETABLE = 0.16686;
+    const KARPLUS_VS_WAVETABLE = 0.47450;
+    // 1% covers rounding the two trims to three decimals (0.25/1.4 → 0.179).
+    expect(fullLevel('fm') / ref / FM_VS_WAVETABLE).toBeCloseTo(1, 2);
+    expect(fullLevel('karplus') / ref / KARPLUS_VS_WAVETABLE).toBeCloseTo(1, 2);
   });
 });

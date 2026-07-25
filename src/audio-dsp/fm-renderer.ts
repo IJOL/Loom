@@ -28,6 +28,7 @@ import type { ModLite } from './modulation-runtime';
 import { ModEnvHost } from './mod-env-host';
 import { registerRenderer } from './renderer-registry';
 import { synthTrim } from './gain-staging';
+import { velGain01 } from '../core/velocity-gain';
 
 const ALGORITHMS: number[][][] = [
   [[1], [2], [3], []],      // 0: Serial 4→3→2→1  (op0 = carrier)
@@ -91,7 +92,7 @@ export class FMRenderer implements VoiceRenderer {
     this.feedback = param(p, 'feedback', 0);
     this.mix = param(p, 'amp.mix', 0.7);
     this.outputTrim = param(p, 'output.trim', 1);
-    this.vel = note.velocity * (note.accent ? 1.3 : 1);
+    this.vel = velGain01(note.velocity, note.accent);
 
     this.oscs = [];
     this.envs = [];
