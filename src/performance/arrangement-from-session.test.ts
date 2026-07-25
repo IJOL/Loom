@@ -83,6 +83,29 @@ describe('arrangementFromSession', () => {
     expect(varying.lanes[0].clipEvents[0].untilSec).toBe(varying.durationSec);
   });
 
+  it('KNOWN DEBT: a tempo-mapped section does not land on a ruler bar line', () => {
+    // The seconds above are right — that is the fix. The BARS under them are not:
+    // the Performance ruler and the length field size a bar with songBarSec at the
+    // arrangement's single bpm, so a section whose clip changes tempo mid-way spans
+    // a fractional number of ruler bars and its boundary falls between two bar
+    // lines. ArrangementState carries bpm and meter-free bars, no tempo map, so
+    // there is nothing here to make the two agree with; recorded in
+    // docs/superpowers/REMAINING-WORK.md rather than papered over.
+    const bar = 384; // ticksPerBar 4/4
+    const clipBars = 2;
+    const state = s({
+      lanes: [{ inserts: [], id: 'A', engineId: 'poly', clips: [{ color: '#b8b8e8', gridResolution: '1/16', id: 'a1', lengthBars: clipBars, notes: [],
+        tempoMap: [{ tick: 0, bpm: 120 }, { tick: bar, bpm: 90 }] }] }],
+      scenes: [{ id: 's0', clipPerLane: { A: 0 } }],
+    });
+    const arr = arrangementFromSession(state, 120, DEFAULT_METER);
+    const bars = arr.durationSec / songBarSec(arr.bpm, DEFAULT_METER);
+    // The clip is 2 bars of music; the ruler reads it as more than 2 and less
+    // than 3 — i.e. the section ends part-way through a bar it drew.
+    expect(bars).toBeGreaterThan(clipBars);
+    expect(bars).toBeLessThan(clipBars + 1);
+  });
+
   it('MIDI-style single long clip ⇒ one pass start to end', () => {
     const state = s({
       lanes: [{ inserts: [], id: 'A', engineId: 'poly', clips: [{ color: '#a8e8b8', gridResolution: '1/16', id: 'song', lengthBars: 8, notes: [] }] }],

@@ -9,6 +9,13 @@
 // boundary and the offline renderer use — rather than a bar count times a bar
 // length. A bar product is only right while every bar is the same length, which
 // is exactly what an imported MIDI's tempo map breaks.
+//
+// Known debt that leaves behind: the seconds are then right, but the Performance
+// ruler and the length field still size a bar with songBarSec at the
+// arrangement's single bpm, so on multi-tempo material a section boundary no
+// longer lands on a drawn bar line. ArrangementState has no tempo map to fix it
+// with. Written up in docs/superpowers/REMAINING-WORK.md; pinned in
+// arrangement-from-session.test.ts.
 import type { SessionState } from '../session/session';
 import type { TimeSignature } from '../core/meter';
 import { clipLoopSec } from '../core/launch-timing';
