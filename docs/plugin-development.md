@@ -1,194 +1,78 @@
-# Cómo crear plugins
+# Writing plugins
 
-Guía práctica para añadir synths, FX o modulators a Loom usando el plugin SPI.
+A practical guide to adding an FX insert, a modulator or a note-FX to Loom
+through the plugin SPI.
 
-## Concepto
+**Synths are not in that list, and that is the most important thing on this
+page.** A synth engine is not a plugin you write against this SPI — see
+[Synth engines are not plugins](#synth-engines-are-not-plugins) before you start
+one.
 
-Un plugin es una unidad audio empaquetada con su manifest. Hay tres tipos:
+## The four kinds
 
-| Kind | Hace | Instancia |
-|---|---|---|
-| `synth` | Genera notas a partir de MIDI | `SynthInstance` con `trigger/release` |
-| `fx` | Procesa audio in→out | `FxInstance` con `input/output` |
-| `modulator` | Genera señal de control para modular AudioParams | `ModulatorInstance` con `output` |
+A plugin is an audio unit packaged with its manifest.
 
-Todos comparten:
-- **Manifest** estático: `id`, `name`, `kind`, `version`, `params[]`, `presets[]`
-- **Factory function**: `create(ctx, ...)` que construye una instancia
-- **Param spec** unificado (`EngineParamSpec` aka `ParamSpec`): los params son la fuente de verdad para knobs UI, modulación, presets y automation
+| Kind | Does | Instance |
+| --- | --- | --- |
+| `fx` | Processes audio in → out | `FxInstance` with `input` / `output` |
+| `modulator` | Generates a control signal for `AudioParam`s | `ModulatorInstance` with `output` |
+| `notefx` | Transforms notes before they reach the engine | no instance — declares `defaultParams()` |
+| `synth` | *Metadata bridge only.* See the warning below | `SynthInstance` (never constructed) |
 
-Los tipos viven en [`src/plugins/types.ts`](../src/plugins/types.ts). El registry en [`src/plugins/registry.ts`](../src/plugins/registry.ts). El bootstrap en [`src/app/plugin-bootstrap.ts`](../src/app/plugin-bootstrap.ts).
+`fx` and `modulator` share the same shape:
 
----
+- a static **manifest**: `id`, `name`, `kind`, `version`, `params[]`, `presets[]`
+- a **factory function** `create(ctx, …)` that builds one instance
+- a unified **param spec** (`EngineParamSpec`, aliased `ParamSpec`) — the params
+  are the source of truth for the UI knobs, modulation, presets and automation
 
-## Crear un synth plugin
+The types live in [`src/plugins/types.ts`](../src/plugins/types.ts), the registry
+in [`src/plugins/registry.ts`](../src/plugins/registry.ts), and the bootstrap in
+[`src/app/plugin-bootstrap.ts`](../src/app/plugin-bootstrap.ts).
 
-### 1. El archivo
+## Auto-discovery
 
-Crea `src/plugins/synths/my-synth.ts`. Tiene que vivir bajo `src/engines/` o `src/plugins/**` para que el auto-discovery del bootstrap lo escanee.
-
-```ts
-import type { PluginFactory, SynthInstance } from '../plugins/types';
-
-export const mySynthPlugin: PluginFactory = {
-  kind: 'synth',
-  manifest: {
-    id: 'my-synth',                    // único en el registry
-    name: 'My Synth',                  // se ve en el dropdown
-    kind: 'synth',
-    version: '1.0.0',
-    params: [
-      // continuous → knobs
-      { id: 'filter.cutoff', label: 'Cutoff', kind: 'continuous',
-        min: 20, max: 20000, default: 1000, curve: 'exponential', unit: 'Hz' },
-      { id: 'filter.resonance', label: 'Q', kind: 'continuous',
-        min: 0.1, max: 24, default: 1, curve: 'exponential' },
-      // discrete → select
-      { id: 'osc.wave', label: 'Wave', kind: 'discrete',
-        min: 0, max: 1, default: 0,
-        options: [
-          { value: 'saw', label: 'Saw' },
-          { value: 'square', label: 'Sqr' },
-        ] },
-    ],
-    presets: [],   // o leer de /public/presets/my-synth.json (ver más abajo)
-  },
-
-  create(ctx, output): SynthInstance {
-    // Estado por instancia (por lane)
-    let cutoff = 1000;
-    let resonance = 1;
-    let waveIdx = 0;
-
-    // Grafo de audio
-    const osc = ctx.createOscillator();
-    osc.type = 'sawtooth';
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = cutoff;
-    filter.Q.value = resonance;
-    const amp = ctx.createGain();
-    amp.gain.value = 0;
-    osc.connect(filter).connect(amp).connect(output);
-    osc.start();
-
-    return {
-      trigger(midi, time, opts) {
-        const freq = 440 * Math.pow(2, (midi - 69) / 12);
-        osc.frequency.setValueAtTime(freq, time);
-        const peak = opts.accent ? 1.0 : 0.6;
-        amp.gain.setTargetAtTime(peak, time, 0.005);
-        amp.gain.setTargetAtTime(0, time + opts.gateDuration, 0.05);
-      },
-      release(time) {
-        amp.gain.setTargetAtTime(0, time, 0.05);
-      },
-      connect(dest) { amp.connect(dest); },
-
-      // Param map: id → AudioParam. El binder de modulación conecta
-      // depth-gains aquí; las modulaciones LFO/ADSR llegan por estos puntos.
-      getAudioParams: () => new Map<string, AudioParam>([
-        ['filter.cutoff', filter.frequency],
-        ['filter.resonance', filter.Q],
-      ]),
-
-      getBaseValue: (id) => {
-        if (id === 'filter.cutoff') return cutoff;
-        if (id === 'filter.resonance') return resonance;
-        if (id === 'osc.wave') return waveIdx;
-        return 0;
-      },
-      setBaseValue: (id, v) => {
-        if (id === 'filter.cutoff') { cutoff = v; filter.frequency.value = v; }
-        if (id === 'filter.resonance') { resonance = v; filter.Q.value = v; }
-        if (id === 'osc.wave') {
-          waveIdx = v | 0;
-          osc.type = waveIdx === 1 ? 'square' : 'sawtooth';
-        }
-      },
-      applyPreset: (name) => {
-        // Busca en manifest.presets o en el cache externo y aplica params
-      },
-      dispose: () => {
-        try { osc.stop(); osc.disconnect(); filter.disconnect(); amp.disconnect(); }
-        catch { /* ok */ }
-      },
-    };
-  },
-};
-```
-
-### 2. Auto-discovery (no se registra a mano)
-
-El bootstrap ([`src/app/plugin-bootstrap.ts`](../src/app/plugin-bootstrap.ts)) escanea con `import.meta.glob` (resuelto por Vite en build) **todos** los módulos en:
+The bootstrap scans two `import.meta.glob` trees, resolved by Vite at build time:
 
 - `src/engines/*.ts`
 - `src/plugins/**/*.ts`
 
-(los `*.test.ts` se excluyen). De cada módulo recoge **cualquier export con forma de `PluginFactory`** (`{ kind, manifest, create }`) y lo registra. El array `BUILTIN` se construye solo del glob — **no edites `plugin-bootstrap.ts` ni mantengas ninguna lista**.
+(`*.test.ts` is excluded from both.) From every module it collects **any export
+shaped like a `PluginFactory`** — `kind` is `synth`, `fx` or `modulator`, there is
+a `manifest.id` string, and `create` is a function — and registers it. The
+`BUILTIN` array is built from those globs alone: **do not edit
+`plugin-bootstrap.ts` and do not maintain a list anywhere.**
 
-Único paso: **deja el archivo en una de esas carpetas exportando tu `PluginFactory`.**
+For `fx` and `modulator` that is the whole story. Dropping the file in the folder
+with an exported factory is the only step; none of the eleven shipped inserts or
+the two shipped modulators calls `registerPlugin` itself.
 
-> Para **synths**, registrarse en el plugin registry no basta para que sean instanciables como engine de lane hoy — mira «Estado actual: wrapper vs native» más abajo. Para FX y modulators, soltar el archivo es suficiente.
-
-### 3. (Opcional) Presets JSON
-
-Crea `public/presets/my-synth.json`:
-
-```json
-{
-  "engineId": "my-synth",
-  "presets": [
-    {
-      "name": "BASS Square Punch",
-      "gm": [33, 34, 35],
-      "params": { "filter.cutoff": 600, "filter.resonance": 8, "osc.wave": 1 }
-    },
-    {
-      "name": "LEAD Bright Saw",
-      "gm": [80, 81],
-      "params": { "filter.cutoff": 3000, "filter.resonance": 2, "osc.wave": 0 }
-    }
-  ]
-}
-```
-
-No hay que registrar el id en ningún sitio: [`src/main.ts`](../src/main.ts) deriva la lista de los synths ya registrados —
-
-```ts
-const ENGINE_IDS_FOR_PRESETS = listPlugins('synth').map((p) => p.manifest.id);
-```
-
-— así que en cuanto tu synth está registrado (paso 2) y existe `public/presets/<id>.json`, el preset loader lo lee al boot. El campo `gm` mapea presets a GM program numbers para el MIDI import.
-
-### 4. UI
-
-El sinte aparece **automáticamente**, sin tocar `index.html`:
-
-- En el selector de engine de lane, que se puebla dinámicamente desde el registry ([`src/engines/engine-selector-ui.ts`](../src/engines/engine-selector-ui.ts), `melodicSynthEngineIds`)
-- En el inspector de lane con preset dropdown unificado
-- Sus continuous params como destinos de modulación
-
-### 5. Listo
-
-```bash
-npm run build && npm run dev
-```
-
-Click `+` con "My Synth" seleccionado → lane nueva → sinte audible.
+**Note-FX are the exception.** A `NoteFxFactory` has `defaultParams()` and no
+`create()`, so the shape check skips it. Those files call `registerPlugin` at
+module scope themselves ([`src/plugins/notefx/arp.ts`](../src/plugins/notefx/arp.ts)),
+and the glob's only job for that category is to evaluate the module — which is
+why it has to cover the whole plugin tree, not just `fx/` and `modulators/`.
 
 ---
 
-## Crear un FX plugin
+## Writing an FX plugin
 
-Similar pero `kind: 'fx'`. La instancia expone `input` y `output` en vez de `trigger/release`. Ejemplos completos en [`src/plugins/fx/`](../src/plugins/fx/):
+`kind: 'fx'`. The instance exposes `input` and `output` instead of
+`trigger`/`release`. Complete examples in [`src/plugins/fx/`](../src/plugins/fx/):
 
-- [`multifilter.ts`](../src/plugins/fx/multifilter.ts) — biquad simple
-- [`distortion.ts`](../src/plugins/fx/distortion.ts) — waveshaper
-- [`reverb.ts`](../src/plugins/fx/reverb.ts) — convolver
-- [`delay.ts`](../src/plugins/fx/delay.ts) — delay con damping en el feedback loop
+- [`multifilter.ts`](../src/plugins/fx/multifilter.ts) — biquad, and the
+  reference for `getAudioParamRange`
+- [`distortion.ts`](../src/plugins/fx/distortion.ts) — waveshaper with a dry/wet
+  split; the clearest small template
+- [`reverb.ts`](../src/plugins/fx/reverb.ts) — convolver, with its impulse in
+  `reverb-ir.ts`
+- [`delay.ts`](../src/plugins/fx/delay.ts) — delay with damping in the feedback
+  loop
+- [`modulated-delay.ts`](../src/plugins/fx/modulated-delay.ts) — not a plugin;
+  the shared DSP that `chorus.ts` and `flanger.ts` are both built on. The example
+  to follow when two plugins want the same engine underneath.
 
-Plantilla mínima:
+Minimal template:
 
 ```ts
 export const myFxPlugin: PluginFactory = {
@@ -212,26 +96,44 @@ export const myFxPlugin: PluginFactory = {
       getBaseValue: (id) => id === 'amount' ? amount : 0,
       setBaseValue: (id, v) => { if (id === 'amount') { amount = v; node.gain.value = v; } },
       applyPreset: () => {},
-      dispose: () => { try { input.disconnect(); node.disconnect(); output.disconnect(); } catch {} },
+      dispose: () => { try { input.disconnect(); node.disconnect(); output.disconnect(); } catch { /* ok */ } },
     };
   },
 };
 ```
 
-Donde aparece automáticamente:
-- En el picker "+ Add insert" del lane inspector
-- En el picker "+ Add insert" del master FX
-- Sus continuous params como destinos de modulación en el dropdown
+Two optional members are worth knowing about:
 
-**No aparece en sends** (reverb/delay están escondidos del picker porque viven en FxBus como sends; los demás FX son inserts). Si quieres un FX-como-send tienes que cablearlo a mano contra FxBus — patrón para más adelante.
+- **`getAudioParamRange(shortId)`** — the native modulation range for a param.
+  The binder uses `max − min` as the peak gain at depth 1; omit it and it falls
+  back to `0..1`. A frequency-type param should expose a `.detune` `AudioParam`
+  from `getAudioParams()` and return a span in cents here, so a bipolar LFO
+  sweeps the filter exponentially instead of summing ±1 Hz, which is inaudible.
+- **`setBpm(bpm)`** — implement it if the effect is tempo-synced; the host calls
+  it on every tempo change.
+
+A param only needs to be in `getAudioParams()` if it is a real `AudioParam`.
+`distortion`'s `drive` rebuilds a waveshaper curve, so it lives in
+`setBaseValue` only and is not modulatable; `mix` is a gain and is.
+
+### Where it shows up
+
+Automatically, in all four insert racks. The picker is an unfiltered
+`listPlugins('fx')` ([`lane-insert-ui.ts:218`](../src/session/lane-insert-ui.ts)),
+and the same builder serves the lane inspector, the master rack and both send
+racks. Its continuous params become modulation and automation destinations by
+being declared, without any further step.
+
+Separately, `FxBus` seeds send A with `delay` and send B with `reverb` when it is
+constructed ([`src/core/fx.ts:30`](../src/core/fx.ts)). That is a default, not a
+restriction — both remain ordinary inserts you can add anywhere.
 
 ---
 
-## Crear un modulator plugin
+## Writing a modulator plugin
 
-`kind: 'modulator'`. Genera una señal de control (típicamente un `ConstantSourceNode`) que el binder de modulación conecta vía depth-gain a los AudioParams del destino. Ejemplos en [`src/plugins/modulators/`](../src/plugins/modulators/).
-
-Plantilla:
+`kind: 'modulator'`. It produces a control signal (typically a
+`ConstantSourceNode`) that the binder connects through a depth gain:
 
 ```ts
 export const myModPlugin: PluginFactory = {
@@ -241,65 +143,176 @@ export const myModPlugin: PluginFactory = {
     const output = ctx.createConstantSource();
     output.offset.value = 0;
     output.start();
-    // Tu lógica para mover output.offset al ritmo que quieras
     return {
       output,
       getAudioParams: () => new Map(),
       getBaseValue: () => 0, setBaseValue: () => {},
       applyPreset: () => {},
-      trigger: (t) => { /* en nota-on */ },
-      release: (t) => { /* en nota-off */ },
-      dispose: () => { try { output.stop(); } catch {} },
+      trigger: (t) => { /* on note-on */ },
+      release: (t) => { /* on note-off */ },
+      dispose: () => { try { output.stop(); } catch { /* ok */ } },
     };
   },
 };
 ```
 
-Donde aparece:
-- En el botón "+ Source" del modulators panel (junto a +LFO +ADSR)
-- Puede mapearse a cualquier destination del dropdown unificado (engine params + lane FX + master FX + master sends)
+**Know the ceiling before you invest in one.** A third kind of modulator is not
+currently reachable:
+
+- The MODULATORS panel offers exactly two buttons, **+ LFO** and **+ ADSR**
+  ([`modulation-ui.ts:63`](../src/modulation/modulation-ui.ts)). There is no UI
+  that adds any other kind.
+- `ModulationHost` hardcodes `LFOVoice` and `ADSRVoice`, and routes any other
+  kind through `createInstance` — which its own comment calls a stateless stub
+  whose `currentValue()` returns 0
+  ([`modulation-host.ts:85`](../src/modulation/modulation-host.ts)).
+- Inside the worklet, `ModLite.kind` is typed `'lfo' | 'adsr'`
+  ([`modulation-runtime.ts:24`](../src/audio-dsp/modulation-runtime.ts)), so a
+  custom modulator cannot reach a melodic engine's params at all.
+
+Adding a genuinely new modulator kind means changing those three places. The SPI
+is ready for it; the host is not.
+
+---
+
+## Writing a note-FX plugin
+
+`kind: 'notefx'` — a transform applied to a lane's notes before they reach the
+engine. Two ship: `arp` (arpeggiator) and `chord` (chord spread).
+
+The factory is deliberately small — it declares an id and the default params, and
+nothing else:
+
+```ts
+export const myNoteFxPlugin: NoteFxFactory = {
+  kind: 'notefx',
+  manifest: { id: 'my-notefx', name: 'My Note FX', kind: 'notefx', version: '1.0.0' },
+  defaultParams: () => ({ ...MY_PROCESSOR_DEFAULTS }),
+};
+registerPlugin(myNoteFxPlugin);   // REQUIRED — the shape check skips notefx
+```
+
+The processor that does the work lives in [`src/notefx/`](../src/notefx/) and is
+wired into the per-lane chain there. State is persisted in
+`lane.engineState.noteFx`.
+
+---
+
+## Synth engines are not plugins
+
+Registering a `kind: 'synth'` `PluginFactory` will get your synth into the engine
+selector, because the selector reads `listPlugins('synth')`
+([`engine-selector-ui.ts:42`](../src/engines/engine-selector-ui.ts)). It will
+then play **silence**, with no error.
+
+Nothing calls `create()` on a synth factory. Since the Phase 4 worklet cutover,
+the lane allocator's only synth paths are the worklet ones
+([`lane-allocator.ts:90`](../src/app/lane-allocator.ts) builds a
+`WorkletLaneEngine` for ids in `WORKLET_ENGINE_IDS`; `:111-116` build the
+dedicated drums / sampler / audio worklet engines), and an id that matches
+neither returns `null` — no engine, no sound. `createInstance` is called for
+`fx` and `modulator` only.
+The synth entries in the registry are a **metadata bridge**: `bootstrapPlugins`
+builds one factory per registered engine descriptor so `listPlugins('synth')`
+keeps working, and that factory's `create()` throws by design
+([`plugin-bootstrap.ts:81`](../src/app/plugin-bootstrap.ts)) to catch exactly
+this mistake.
+
+An engine is instead **two halves in two places** — a metadata descriptor on the
+main thread and a per-sample renderer inside the worklet bundle — and there are
+**four** steps, three of which fail silently if skipped:
+
+1. `src/engines/<id>.ts` — build it with `createDescriptorEngine(...)`, register
+   with `registerEngineFactory(id, …)` + `registerEngine(...)` at module scope.
+2. `src/audio-dsp/<id>-renderer.ts` — the pure per-sample renderer, calling
+   `registerRenderer(id, ctor)` at module scope.
+3. A side-effect `import '../audio-dsp/<id>-renderer';` in
+   [`src/audio-worklet/loom-processor.ts`](../src/audio-worklet/loom-processor.ts).
+4. The id added to `WORKLET_ENGINE_IDS` in
+   [`src/app/lane-allocator.ts`](../src/app/lane-allocator.ts).
+
+The full recipe, with what each omission looks like from the outside, is in
+[the developer guide](manual/11-developer-guide.md) under "Add a synth engine".
+Follow that, not this file.
+
+### Presets for an engine
+
+Create `public/presets/<engineId>.json`:
+
+```json
+{
+  "engineId": "my-engine",
+  "presets": [
+    {
+      "name": "BASS Square Punch",
+      "gm": [33, 34, 35],
+      "params": { "filter.cutoff": 600, "filter.resonance": 8, "osc.wave": 1 }
+    }
+  ]
+}
+```
+
+The id does not need registering anywhere. `src/main.ts:103` derives the list
+from the registry —
+
+```ts
+const ENGINE_IDS_FOR_PRESETS = listPlugins('synth').map((p) => p.manifest.id);
+```
+
+— so once the engine is registered and the JSON exists, the preset loader reads
+it at boot. `gm` maps presets to GM program numbers for MIDI import. The keys in
+`params` are that engine's own param ids.
 
 ---
 
 ## Param specs
 
-El array `manifest.params: ParamSpec[]` es la **única fuente de verdad** del sinte. Driver de:
+`manifest.params: ParamSpec[]` is the single source of truth. It drives:
 
-- **Knobs/selects UI**: la unificación de inspectors lee de aquí para construir controles automáticamente
-- **Automation registry**: cada param se registra como `${laneId}.${spec.id}` (e.g. `subtractive-1.filter.cutoff`)
-- **Modulation destinations**: continuous params salen en el dropdown
-- **Presets**: los presets JSON usan los mismos `id` keys
+- **Knobs and selects** — the inspector builds controls from it automatically
+- **Automation ids** — each continuous param becomes `${laneId}.${spec.id}`
+  (e.g. `subtractive-1.filter.cutoff`)
+- **Modulation destinations** — continuous params appear in the dropdown
+- **Presets** — preset JSON uses the same `id` keys
 
-Shape:
+Full shape ([`src/engines/engine-params.ts`](../src/engines/engine-params.ts)):
 
 ```ts
-interface ParamSpec {
+interface EngineParamSpec {
   id: string;              // dot-namespaced: 'filter.cutoff', 'amp.attack'
   label: string;           // user-facing
   kind: 'continuous' | 'discrete';
-  min: number;             // continuous: rango; discrete: 0
-  max: number;             // continuous: rango; discrete: options.length - 1
+  min: number;             // continuous: range; discrete: 0
+  max: number;             // continuous: range; discrete: options.length - 1
   default: number;
   curve?: 'linear' | 'exponential' | 'log';
   unit?: string;
-  options?: Array<{ value: string; label: string }>;   // solo discrete
+  color?: string;          // knob ring colour (carries the Send A/B colour code)
+  group?: string;          // params sharing a group render together in one row
+  options?: Array<{ value: string; label: string }>;   // discrete only
+  selectStyle?: 'radio' | 'dropdown';                  // discrete only
+  showLabel?: boolean;                                 // discrete only
 }
 ```
 
-Convenciones de naming (mira los engines existentes):
+`validateSpec` is the contract a new spec has to satisfy: an id and a label are
+required, a continuous param needs `max > min`, and a discrete one needs at
+least two options.
+
+Naming conventions, which the modulation panel groups by and the preset JSON
+uses:
+
 - `filter.cutoff`, `filter.resonance`, `filter.envAmount`
 - `amp.attack`, `amp.decay`, `amp.sustain`, `amp.release`, `amp.gain`
 - `osc.wave`, `osc.detune`, `osc.level`
-- `bus.reverbSend`, `bus.delaySend`, `bus.eq.low` (para drums-bus)
-- `opN.ratio`, `opN.detune`, `opN.level` (para FM)
-
-Estos namespaces son los que el modulation panel agrupa y el preset JSON usa.
+- `bus.reverbSend`, `bus.delaySend`, `bus.eq.low` (the drums bus)
+- `opN.ratio`, `opN.detune`, `opN.level` (FM)
 
 ---
 
-## Persistencia
+## Persistence
 
-`SessionLane.engineState` guarda el estado por lane (solo lo que el usuario ha cambiado, no defaults):
+`SessionLane.engineState` holds the per-lane state, and inserts live beside it:
 
 ```ts
 interface SessionLane {
@@ -308,133 +321,120 @@ interface SessionLane {
   engineState?: {
     params?: Record<string, number>;        // values for ParamSpec ids
     modulators?: ModulatorState[];          // LFO/ADSR + connections
+    noteFx?: NoteFxState[];
+    // …sampler keymap, drum mutes, kit mode
   };
-  enginePresetName?: string;                // 'factory:LEAD Bright Saw'
-  inserts?: InsertSlot[];                   // chain de FX inserts
+  enginePresetName?: string;                // 'engine:LEAD Bright Saw'
+  inserts?: InsertSlot[];                   // the lane's FX chain
 }
 ```
 
-`saveSession()` clona el state via `JSON.parse(JSON.stringify(...))` — todo lo que esté en SessionState se persiste automáticamente. No hay que tocar el SaveManager para un plugin nuevo.
+A save is assembled by `buildSavedStateV3`
+([`src/save/saved-state-v3.ts:63`](../src/save/saved-state-v3.ts)) from
+`sessionHost.getStateForSave()`; the deep clone is `cloneSessionState`
+([`session-core.ts:12`](../src/session/session-core.ts)), which is the
+`JSON.parse(JSON.stringify(...))`. Anything in `SessionState` persists for free —
+you never touch the SaveManager for a new plugin.
 
-`applyLoadedSessionState()` al cargar:
-1. Llama `ensureLaneResource(laneId, engineId)` por cada lane
-2. Aplica `enginePresetName` via `applyPresetForLane`
-3. Aplica `engineState.params` via `engine.setBaseValue(id, v)` por cada entrada
-4. Restaura modulators
-5. Rehydrata inserts via `rehydrateInsertChain`
+The **load** is `applyLoadedSessionState`
+([`session-host-persistence.ts:50`](../src/session/session-host-persistence.ts)),
+and its ordering is load-bearing:
 
-Tu plugin se beneficia gratis si:
-- Implementas `setBaseValue` bien (escribe state + AudioParam)
-- `getBaseValue` devuelve el valor actual
+1. Silence live voices, then run `migrateLoadedSessionState`.
+2. Per lane: allocate or swap the engine resource.
+3. Rehydrate the lane's insert chain (`rehydrateInsertChain`).
+4. Apply `enginePresetName` **inside `withoutParamMirror`**.
+5. `applyEngineState` replays the saved `engineState.params`.
+6. Rehydrate the master rack and the send buses, then announce the new
+   destination set once.
+
+Step 4's guard is the invariant to remember: **a saved param beats its lane
+preset on load.** Applying the preset unguarded would mirror its base values into
+`engineState.params` a line before the saved ones are restored.
+
+Your plugin gets all of this for free if `setBaseValue` writes both the state and
+the node, and `getBaseValue` returns the current value.
 
 ---
 
-## Modulación
+## Modulation
 
-El binder de modulación ([`src/modulation/connection-binder.ts`](../src/modulation/connection-binder.ts)):
+The binder ([`src/modulation/connection-binder.ts:44`](../src/modulation/connection-binder.ts))
+builds one gain bridge per connection:
 
+```text
+modulator.output → GainNode(depth × (max − min)) → target.getAudioParams().get(paramId)
 ```
-modulator.output → GainNode(depth) → target.getAudioParams().get(paramId)
-```
 
-Para que tu plugin sea **modulable**: declara el param en `manifest.params` con `kind: 'continuous'` Y devuélvelo en `getAudioParams()`. El modulation panel lo recogerá en el dropdown automáticamente.
+That is the **FX and channel-strip path**. To make an FX param modulatable,
+declare it `kind: 'continuous'` in the manifest *and* return it from
+`getAudioParams()`.
 
-Para que tu plugin sea **un modulator**: `kind: 'modulator'`, expone `output: AudioNode`. La señal va por el binder.
+For a **synth engine** the rule is different: declaring the param continuous in
+the spec is enough. Modulation for the six melodic engines is applied per sample
+inside the worklet by `ModulationRuntime`, and `getAudioParams()` on those
+engines is deliberately empty
+([`worklet-lane-engine.ts:150`](../src/engines/worklet-lane-engine.ts)). Only
+Drums and Sampler expose shared `AudioParam`s, via `getSharedAudioParams()`.
 
 ---
 
-## El registry y lookup
+## The registry
 
 ```ts
 import { registerPlugin, getPlugin, listPlugins, createInstance } from '../plugins/registry';
 
-registerPlugin(mySynthPlugin);                              // se hace en bootstrap
-const factory = getPlugin('synth', 'my-synth');            // el factory para un id
-const allSynths = listPlugins('synth');                    // todos los synths
-const inst = createInstance('synth', 'my-synth', ctx, out); // crear una instance
+registerPlugin(myFxPlugin);                       // done by the bootstrap for fx/modulator
+const factory = getPlugin('fx', 'my-fx');         // the factory for one id
+const allFx = listPlugins('fx');                  // every registered FX
+const inst = createInstance('fx', 'my-fx', ctx);  // build an instance
 ```
 
-El registry está keyed por `${kind}:${id}` así que el mismo id en kinds distintos no colisiona.
+The registry is keyed `${kind}:${id}`, so the same id under two kinds cannot
+collide.
 
 ---
 
-## Estado actual: wrapper vs native
+## Checklist
 
-Los 6 engines actuales (`tb303`, `subtractive`, `fm`, `wavetable`, `karplus`, `drums-machine`) son **plugins que wrappean clases legacy**. Cada `xxxPlugin.create()` instancia una `XxxEngine` (que implementa `SynthEngine`) y traduce su API al contrato `SynthInstance`:
+- [ ] `src/plugins/{fx,modulators}/<name>.ts` exporting a `PluginFactory` — the
+      glob finds it, you do not register it by hand
+- [ ] Note-FX only: call `registerPlugin` yourself at module scope
+- [ ] Continuous params you want modulatable are also in `getAudioParams()`
+- [ ] `getAudioParamRange` for anything frequency-shaped
+- [ ] `dispose()` disconnects every node it created
+- [ ] `npx tsc --noEmit`, then the tests
+- [ ] Browser smoke test: add the insert, move a param, modulate it, save and
+      reload
 
-```ts
-// src/engines/tb303.ts
-export const tb303Plugin: PluginFactory = {
-  kind: 'synth',
-  manifest: { /* ... */ },
-  create(ctx, output) {
-    const engine = new TB303Engine();              // ← clase legacy
-    const voice = engine.createVoice(ctx, output);
-    return {
-      trigger: (m, t, o) => voice.trigger(m, t, o),  // ← delega
-      // ...
-    };
-  },
-};
-```
+## Tests worth writing
 
-Esto coexiste con el registry **legacy** (`registerEngine` / `registerEngineFactory` en [`src/engines/registry.ts`](../src/engines/registry.ts)) que `audio-graph.ts` y `lane-allocator.ts` siguen usando vía `createEngineInstance(id)`. Mientras esos consumidores existan, los plugins synth tienen que ser wrappers o exponer una clase paralela.
+- **Manifest** — import the plugin, assert `manifest.params` has the expected ids
+- **Round trip** — `setBaseValue` every param, `getBaseValue` returns what was
+  written
+- **Modulation** — `getAudioParams()` includes every continuous param you intend
+  to be modulatable
+- **Dispose** — after `dispose()` the nodes are disconnected
 
-Un **plugin truly native** (no wrapper) no necesita una clase `SynthEngine`. Implementa solo la interfaz `SynthInstance` directamente desde su `create()` con DSP propio. Es lo del ejemplo arriba.
-
-Para que tu plugin native funcione con `ensureLaneResource`, ahora mismo hay que añadir un pequeño path:
-
-```ts
-// src/app/lane-allocator.ts ensureLaneResource (pseudocódigo)
-const engine = createEngineInstance(engineId);
-if (!engine) {
-  // fallback: crea desde el plugin registry directamente
-  const inst = createInstance('synth', engineId, deps.ctx, strip.input);
-  if (!inst) return;
-  // wrapping inst como SynthEngine-like para el resto del flujo
-}
-```
-
-Esto es un follow-up pequeño cuando lo necesites. Por ahora la forma más fácil de añadir un sinte nuevo es:
-
-1. Crear una clase que implemente `SynthEngine`
-2. Registrarla en el legacy registry (`registerEngine(myEngine)` + `registerEngineFactory(...)`)
-3. Crear el `PluginFactory` wrapper que la usa
-4. Añadirla a `BUILTIN` en plugin-bootstrap
-
-Mira [`src/engines/tb303.ts`](../src/engines/tb303.ts) bottom — los 3 last lines son la patrón completa de registro dual.
+[`src/plugins/registry.test.ts`](../src/plugins/registry.test.ts) and
+[`src/plugins/fx/insert-chain.test.ts`](../src/plugins/fx/insert-chain.test.ts)
+are the patterns to copy.
 
 ---
 
-## Checklist para añadir un plugin
+## Quick reference
 
-- [ ] `src/engines/<name>.ts` o `src/plugins/{fx,modulators,synths}/<name>.ts` con un `PluginFactory` exportado (el glob lo descubre — no se registra a mano)
-- [ ] (Synth, opcional) Crear `public/presets/<engineId>.json` con factory presets — se lee solo al boot
-- [ ] (Synth nativo) Si no es wrapper de un `SynthEngine` legacy, añadir el path en `lane-allocator.ts` (ver «wrapper vs native»)
-- [ ] Verificar tests + tsc + build
-- [ ] Smoke test en navegador: añadir lane, cargar preset, modular un param, guardar y reload
-
-## Tests recomendados
-
-- **Manifest test**: importa el plugin, verifica que `manifest.params` tiene las ids esperadas
-- **Round-trip test**: crea instance, `setBaseValue` cada param, `getBaseValue` debe devolver lo escrito
-- **Modulation test**: `getAudioParams()` debe incluir todos los continuous params declarados (la unificación lo asume)
-- **Dispose test**: tras `dispose()`, los nodos deben estar desconectados (verifica con un FakeNode mock)
-
-Mira [`src/plugins/registry.test.ts`](../src/plugins/registry.test.ts) y [`src/plugins/fx/insert-chain.test.ts`](../src/plugins/fx/insert-chain.test.ts) para patrones.
-
----
-
-## Referencias rápidas
-
-- **SPI types**: [`src/plugins/types.ts`](../src/plugins/types.ts)
-- **Registry**: [`src/plugins/registry.ts`](../src/plugins/registry.ts)
-- **Bootstrap**: [`src/app/plugin-bootstrap.ts`](../src/app/plugin-bootstrap.ts)
-- **FX plugins**: [`src/plugins/fx/`](../src/plugins/fx/)
-- **Modulator plugins**: [`src/plugins/modulators/`](../src/plugins/modulators/)
-- **Synth plugins (wrappers)**: [`src/engines/*.ts`](../src/engines/) (bottom of each file)
-- **Param spec**: [`src/engines/engine-params.ts`](../src/engines/engine-params.ts)
-- **Preset loader**: [`src/presets/preset-loader.ts`](../src/presets/preset-loader.ts)
-- **Modulation host**: [`src/modulation/modulation-host.ts`](../src/modulation/modulation-host.ts)
-- **Lane allocator**: [`src/app/lane-allocator.ts`](../src/app/lane-allocator.ts)
-- **Plan/spec originales del plugin-system**: en el historial de git (se eliminaron del árbol por estar ya implementados)
+- **SPI types** — [`src/plugins/types.ts`](../src/plugins/types.ts)
+- **Registry** — [`src/plugins/registry.ts`](../src/plugins/registry.ts)
+- **Bootstrap** — [`src/app/plugin-bootstrap.ts`](../src/app/plugin-bootstrap.ts)
+- **FX plugins** — [`src/plugins/fx/`](../src/plugins/fx/)
+- **Modulator plugins** — [`src/plugins/modulators/`](../src/plugins/modulators/)
+- **Note-FX plugins** — [`src/plugins/notefx/`](../src/plugins/notefx/) +
+  [`src/notefx/`](../src/notefx/)
+- **Engine descriptors** — [`src/engines/`](../src/engines/), built on
+  [`descriptor-engine.ts`](../src/engines/descriptor-engine.ts)
+- **Param spec** — [`src/engines/engine-params.ts`](../src/engines/engine-params.ts)
+- **Preset loader** — [`src/presets/preset-loader.ts`](../src/presets/preset-loader.ts)
+- **Modulation host** — [`src/modulation/modulation-host.ts`](../src/modulation/modulation-host.ts)
+- **Lane allocator** — [`src/app/lane-allocator.ts`](../src/app/lane-allocator.ts)
+- **Automation destinations** — [`automation-destinations.md`](automation-destinations.md)
