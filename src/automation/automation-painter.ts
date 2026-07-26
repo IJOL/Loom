@@ -45,12 +45,20 @@ export function ensureLaneSize(lane: { values: number[] }, expectedLength: numbe
   } else {
     // DESTRUCTIVE, and knowingly so. This is the array the live audio path
     // reads, so the tail is not parked anywhere else: once trimmed it is gone,
-    // and the next save writes the short version. A session saved before the
-    // envelope length became meter-correct stored `lengthBars * 16 * SUB_RES`,
-    // which in any meter but 4/4 is LONGER than the clip now asks for — so the
-    // first time such a lane is drawn, the end of the user's curve is lost.
-    // Loom does no migrations by policy, so nothing rescues it; this is the
-    // record that it happens rather than a bug waiting to be rediscovered.
+    // and the next save writes the short version.
+    //
+    // A session saved before the envelope length became meter-correct stored
+    // `lengthBars * 16 * SUB_RES`, and a bar is stepsPerBar = num * 16 / den
+    // steps — so which branch such a lane takes depends on which side of a WHOLE
+    // NOTE its bar sits, not on "is it 4/4". Bars shorter than a whole note make
+    // the stored array too long and lose the end of the user's curve here: 3/4
+    // (12 steps), 2/4 (8), 6/8 (12), 7/8 (14). Bars longer than one make it too
+    // short, so those meters take the grow branch above and lose nothing: 5/4
+    // (20), 9/8 (18), 12/8 (24). 4/4 is exactly 16 and is left alone.
+    //
+    // Loom does no migrations by policy, so nothing rescues the truncating half;
+    // this is the record that it happens rather than a bug waiting to be
+    // rediscovered. Both halves are pinned in automation-painter-size.test.ts.
     lane.values.length = expected;
   }
 }
