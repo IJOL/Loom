@@ -51,6 +51,7 @@ import { loadLoomWorklet } from '../audio-worklet/loom-node';
 import { loadDrumsWorklet } from '../audio-worklet/drums-node';
 import type { KeymapEntry } from '../samples/types';
 import type { ParamBag } from '../audio-dsp/types';
+import { isStripParamId, stripAutomationParams } from '../core/channel-strip-params';
 
 /** Resolve a sample/audio trigger to an OfflineSampleSpawn (spawn + decoded
  *  channels), via the engine's pure resolveSpawn path. Handles the Sampler, the
@@ -250,7 +251,20 @@ export class OfflineSceneRecorder implements SceneRecorder {
         const spec = engine.params.find((p) => p.id === ev.auto.paramId);
         const min = spec?.min ?? 0;
         const max = spec?.max ?? 1;
-        engine.setBaseValue(ev.auto.paramId, min + ev.auto.normalised * (max - min));
+        const value = min + ev.auto.normalised * (max - min);
+        // A mixer-strip param is a live Web Audio node, and this whole walk runs
+        // BEFORE startRendering — so writing .value would leave only the last
+        // point of the curve standing and an automated fade would render flat at
+        // its end value. Schedule it at its own time instead. (The engine-param
+        // branch below needs no such thing: each trigger snapshots the ParamBag
+        // as the walk reaches it.)
+        if (isStripParamId(ev.auto.paramId)) {
+          const strip = lanes.resources.get(ev.auto.laneId)?.strip;
+          const ap = strip && stripAutomationParams(strip).get(ev.auto.paramId);
+          ap?.setValueAtTime(value, ev.auto.time);
+          continue;
+        }
+        engine.setBaseValue(ev.auto.paramId, value);
       } else {
         const t = ev.trig;
         const engine = lanes.getLaneEngineInstance(t.laneId);

@@ -37,19 +37,14 @@ work is the most misleading state they can be in.
 - `specs/2026-07-25-duplicated-solutions-audit.md` records five "N solutions to
   one problem" concerns. All five collapses have landed, so this one is prunable
   on the owner's word.
-
-**Genuinely outstanding — approved design, no plan, not implemented.**
-
-- `specs/2026-07-19-mixer-automatizable-design.md` — "the mixer's parameters,
-  automatable and modulatable". The seven per-channel params (level, pan, send A,
-  send B, and the three EQ bands) are still not destinations by any route:
-  `listAutomationTargets` builds its catalogue from engine param specs, lane
-  inserts and the master/send racks, and never touches a lane's `ChannelStrip`.
-  So a drawn fade, an auto-pan, or a send that grows into the chorus still cannot
-  be recorded. The spec argues the cost is small — level and the two sends are
-  already `GainNode`s and pan/EQ already expose their param; what is missing is
-  three accessors and the catalogue entries. Verify that against the code before
-  acting on it.
+- `specs/2026-07-19-mixer-automatizable-design.md` shipped on 2026-07-26 — the
+  lane mixer's seven controls are destinations, the fader included. Its **decision
+  2 was overridden in the process**: the ids are `<lane>.bus.<param>`, reusing the
+  vocabulary `drums-machine` already had for exactly these seven params, not the
+  new `<lane>.mix.<param>` the spec prescribed. The spec predates drums having
+  them, and a second id family for one set of nodes is the duplication the audit
+  above exists to stop. The rationale now lives where the code is,
+  `src/core/channel-strip-params.ts`.
 
 Everything else that once lived here was implemented and pruned per convention —
 recover the rationale from git history

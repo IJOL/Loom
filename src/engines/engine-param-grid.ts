@@ -20,6 +20,7 @@ import { html, render, nothing } from 'lit-html';
 import { createKnob } from '../core/knob';
 import { createSelectControl } from '../core/select-control';
 import type { EngineParamSpec } from './engine-params';
+import { isStripParamId } from '../core/channel-strip-params';
 import type { EngineUIContext } from './engine-types';
 import { attachKnobUndo } from '../save/history-wiring';
 import { commitParam } from './engine-param-commit';
@@ -117,7 +118,16 @@ export function buildEngineParamGrid(
   opts: BuildGridOpts = {},
 ): void {
   const skip = opts.skip ?? (() => false);
-  const specs = engine.params.filter((spec) => !skip(spec.id));
+  // The lane's seven mixer-strip params are declared by every engine (that is how
+  // they became automation destinations), but they are NOT the engine's editor:
+  // their controls are the lane's mixer column, and drawing a second LEVEL / PAN
+  // / A / B / LO / MID / HI here would duplicate every one of them — same id, so
+  // the two copies would fight over the registry entry that automation drives.
+  //
+  // Callers that DO own a strip surface pass their own ids through `skip`; the
+  // drums voice rack is one, and it keeps working because it filters by voice
+  // prefix, not by this.
+  const specs = engine.params.filter((spec) => !skip(spec.id) && !isStripParamId(spec.id));
 
   // Flat: the CALLER owns the row element (a `.knob-row`, a `.dv-synth` block,
   // an audio-clip toolbar). Wrapping here would nest a flex row inside a flex

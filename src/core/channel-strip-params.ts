@@ -89,15 +89,38 @@ export function setStripParam(strip: ChannelStrip, id: string, v: number): boole
   }
 }
 
-/** The strip's own AudioParams, keyed by the same ids — what an engine hands to
- *  the modulation binder from getSharedAudioParams. These are the real nodes'
- *  params, so a modulator's gain bridge sums into whatever the fader is set to.
+/** The AudioParams a MODULATOR may bind to, keyed by the same ids — what an
+ *  engine hands over from getSharedAudioParams.
  *
- *  NOTE the three gains (level, the two sends) are returned here for
- *  completeness, but a bipolar modulator wired straight onto a gain can drive it
- *  negative, which inverts phase rather than lowering volume. Callers that route
- *  modulation must clamp that; see stripModulationRange. */
+ *  For pan and the EQ bands these are the params themselves: both are bipolar by
+ *  nature (−1..+1, ±18 dB), so a modulator summed onto them behaves.
+ *
+ *  For the three GAINS they are the strip's multiplicative trims, NOT
+ *  `level.gain`/`sendA.gain`/`sendB.gain`. The binder sums a bipolar modulator
+ *  into its target, and a gain driven below zero inverts the signal instead of
+ *  quietening it — which cancels against the other channels and makes
+ *  instruments vanish. A trim parked at 1 with a 0..1 modulation range swings
+ *  1 ± depth, so it never goes negative and the modulation is relative to
+ *  wherever the fader sits. Automation is unaffected: it goes through
+ *  setStripParam, straight onto the real gain. */
 export function stripAudioParams(strip: ChannelStrip): Map<string, AudioParam> {
+  return new Map<string, AudioParam>([
+    ['bus.level',      strip.levelMod.gain],
+    ['bus.pan',        strip.getPanParam()],
+    ['bus.delaySend',  strip.sendAMod.gain],
+    ['bus.reverbSend', strip.sendBMod.gain],
+    ['bus.eq.low',     strip.getEqGainParam('low')],
+    ['bus.eq.mid',     strip.getEqGainParam('mid')],
+    ['bus.eq.high',    strip.getEqGainParam('high')],
+  ]);
+}
+
+/** The AudioParams AUTOMATION addresses — the real gains and filter gains, not
+ *  the modulation trims. Live automation goes through setStripParam (a plain
+ *  value write on the audio thread's next block, which is what a knob does too);
+ *  this exists for the OFFLINE render, where every value must be SCHEDULED
+ *  before rendering starts or only the last one would survive. */
+export function stripAutomationParams(strip: ChannelStrip): Map<string, AudioParam> {
   return new Map<string, AudioParam>([
     ['bus.level',      strip.level.gain],
     ['bus.pan',        strip.getPanParam()],
@@ -107,4 +130,23 @@ export function stripAudioParams(strip: ChannelStrip): Map<string, AudioParam> {
     ['bus.eq.mid',     strip.getEqGainParam('mid')],
     ['bus.eq.high',    strip.getEqGainParam('high')],
   ]);
+}
+
+/** The range a modulator's depth is scaled by for `id` — which is NOT always the
+ *  automation range the knob shows.
+ *
+ *  The binder computes its bridge gain as `depth · (max − min)` and sums the
+ *  result into the target. For the three gains that target is a trim parked at 1
+ *  (see stripAudioParams), so 0..1 means full depth swings it 0..2: the whole
+ *  usable range, no phase inversion possible. Handing the binder the fader's own
+ *  0..1.5 instead would swing the trim to −0.5.
+ *
+ *  Pan and EQ modulate over their declared range, which is already what a user
+ *  means by "full depth". */
+export function stripModulationRange(id: string): { min: number; max: number } | undefined {
+  if (id === 'bus.level' || id === 'bus.delaySend' || id === 'bus.reverbSend') {
+    return { min: 0, max: 1 };
+  }
+  const spec = STRIP_PARAM_SPECS.find((s) => s.id === id);
+  return spec ? { min: spec.min, max: spec.max } : undefined;
 }

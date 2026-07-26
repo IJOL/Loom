@@ -18,6 +18,7 @@ import type { ModulatorVoice } from './types';
 import type { ParamRange } from './modulation-host';
 import { ConnectionBinder } from './connection-binder';
 import type { InsertChain } from '../plugins/fx/insert-chain';
+import { stripModulationRange } from '../core/channel-strip-params';
 import { insertParamId } from '../automation/automation-targets';
 
 export interface BindVoiceModulatorsOpts {
@@ -127,7 +128,11 @@ function applyBinder(
   const rangeMap = new Map<string, ParamRange>();
   for (const [shortId, param] of shortParams) {
     const fullId = `${laneId}.${shortId}`;
-    const r = rangeLookup(shortId);
+    // A mixer-strip param modulates over its OWN range, not the one its knob
+    // shows: the three gains are modulated through a multiplicative trim, and
+    // handing the binder the fader's 0..1.5 would swing that trim negative —
+    // inverted phase instead of a quieter channel. See stripModulationRange.
+    const r = stripModulationRange(shortId) ?? rangeLookup(shortId);
     destMap.set(fullId, param);
     rangeMap.set(fullId, r);
     destMap.set(shortId, param);

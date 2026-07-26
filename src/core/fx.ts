@@ -75,6 +75,21 @@ export class ChannelStrip {
   level: GainNode;
   sendA: GainNode;
   sendB: GainNode;
+  /** Modulation trims for the three GAINS, in series after each one and parked
+   *  at 1. A modulator binds HERE, never onto `level`/`sendA`/`sendB` directly,
+   *  and the reason is phase: the binder sums a bipolar modulator into its
+   *  target, so an LFO on a gain of 0.2 would swing it below zero, and a
+   *  negative gain does not lower the volume — it inverts the signal. Summed
+   *  with the other channels that cancels, and instruments go missing rather
+   *  than sounding wrong, which is the hardest kind of audio bug to trace.
+   *
+   *  A trim is MULTIPLICATIVE, so with its modulation range declared 0..1 (see
+   *  stripModulationRange) full depth gives 1 ± 1 → 0..2: the modulation is
+   *  relative to wherever the fader sits, cuts and boosts like a tremolo should,
+   *  and cannot reach a negative product because both factors stay ≥ 0. */
+  levelMod: GainNode;
+  sendAMod: GainNode;
+  sendBMod: GainNode;
   comp: CompBlock;
   sidechainTap: GainNode;
   private duckGain: GainNode;
@@ -108,8 +123,11 @@ export class ChannelStrip {
     this.muteGain = ctx.createGain(); this.muteGain.gain.value = 1;
     this.sendA = ctx.createGain(); this.sendA.gain.value = 0;
     this.sendB = ctx.createGain(); this.sendB.gain.value = 0;
+    this.levelMod = ctx.createGain(); this.levelMod.gain.value = 1;
+    this.sendAMod = ctx.createGain(); this.sendAMod.gain.value = 1;
+    this.sendBMod = ctx.createGain(); this.sendBMod.gain.value = 1;
 
-    // EQ → comp → level → pan → mute → {dry, sends}
+    // EQ → comp → level → levelMod → pan → mute → {dry, sends·sendMod}
     this.comp = new CompBlock(ctx);
 
     this.input
@@ -119,14 +137,15 @@ export class ChannelStrip {
       .connect(this.comp.input);
     this.comp.output
       .connect(this.level)
+      .connect(this.levelMod)
       .connect(this.panner)
       .connect(this.muteGain);
     this.duckGain = ctx.createGain();
     this.duckGain.gain.value = 1;
     this.muteGain.connect(this.duckGain);
     this.duckGain.connect(dry);
-    this.duckGain.connect(this.sendA).connect(fx.delayInput);   // Send A → Delay bus
-    this.duckGain.connect(this.sendB).connect(fx.reverbInput);  // Send B → Reverb bus
+    this.duckGain.connect(this.sendA).connect(this.sendAMod).connect(fx.delayInput);   // Send A → Delay bus
+    this.duckGain.connect(this.sendB).connect(this.sendBMod).connect(fx.reverbInput);  // Send B → Reverb bus
 
     // Post-mute fan-out tap for sidechain consumers. Connected to muteGain
     // (pre-duck) so a lane's outgoing tap reflects pre-duck signal — avoids
