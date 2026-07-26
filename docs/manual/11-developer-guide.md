@@ -30,14 +30,25 @@ If you are looking for the code behind a control, it is almost never in `main.ts
 `src/app/plugin-bootstrap.ts` calls `import.meta.glob` at build time over two trees:
 
 ```text
-src/engines/*.ts          — synth engines
-src/plugins/fx/*.ts       — FX inserts
-src/plugins/modulators/   — LFO / ADSR modulators
+src/engines/*.ts       — synth engines
+src/plugins/**/*.ts    — the WHOLE plugin tree: fx/, modulators/, notefx/
 ```
 
-Every module in those trees is eagerly imported. Any exported value that satisfies the `PluginFactory` shape (`{ kind, manifest, create }`) is collected and registered via `registerPlugin`. The engine registry (`src/engines/registry.ts`) supports both a **singleton** pattern (`registerEngine`) for shared instances and a **factory** pattern (`registerEngineFactory` / `createEngineInstance`) for per-lane instances that need independent state.
+(`*.test.ts` is excluded from both.) Every module in those trees is eagerly imported. Any exported value that satisfies the `PluginFactory` shape (`{ kind, manifest, create }`, with `kind` one of `synth` / `fx` / `modulator`) is collected and registered via `registerPlugin`.
 
-`listEngines()` reads from the singleton map and is the source of metadata (name, type, polyphony, parameter specs) used to populate the lane engine selector. Engines declare their parameters as `EngineParamSpec[]`; voices expose continuous `AudioParam`s via `getAudioParams()`, and engines expose shared ones via `getSharedAudioParams()`. That is the entire surface the modulation and automation systems need — nothing else.
+**Note-FX are the exception.** A `NoteFxFactory` declares `defaultParams()` instead of `create()`, so the shape check skips it (`plugin-bootstrap.ts:36`). Those files call `registerPlugin` themselves at module scope — the glob's only job for that category is to evaluate the module. That is why the second glob has to cover the whole plugin tree, not just `fx/` and `modulators/`.
+
+The engine registry (`src/engines/registry.ts`) supports both a **singleton** pattern (`registerEngine`) for shared instances and a **factory** pattern (`registerEngineFactory` / `createEngineInstance`) for per-lane instances that need independent state.
+
+`listEngines()` reads from the singleton map and is the source of metadata (name, type, polyphony, parameter specs) used to populate the lane engine selector.
+
+### What "declaring a param" actually buys you
+
+Engines declare their parameters as `EngineParamSpec[]`, and for the catalogue that is the whole story: `listAutomationTargets` walks `engine.params` and pushes `` `${lane.id}.${spec.id}` `` for every continuous one (`src/automation/automation-targets.ts:120`). Automation and the modulation dropdown both read that catalogue through `DestinationRegistry.list()`. Neither of them calls `getAudioParams()`.
+
+`getAudioParams()` / `getSharedAudioParams()` are a narrower thing — the **Web Audio binding surface**, used only where a modulator has to reach a real `AudioParam` through the depth-gain bridge in `connection-binder.ts`. That means FX inserts, channel strips, and the two engines that still expose shared params, Drums and Sampler. For the six melodic worklet engines `getAudioParams()` returns an empty `Map` on purpose (`src/engines/worklet-lane-engine.ts:150`); their modulation is applied per sample inside the worklet by `ModulationRuntime`.
+
+So: declare the param in the spec and it is automatable and modulatable. Return it from `getAudioParams()` only if it is a genuine `AudioParam` on the main thread.
 
 ## SessionState data model
 
@@ -105,18 +116,73 @@ three gives you an engine that appears in the lane selector and then plays
    only sends listed ids down the worklet path; an unlisted id falls through,
    the lane gets no engine, and nothing sounds.
 
-Note that `create()` and `getAudioParams()` are **never called** on the
-registered engine any more — the descriptor's `create()` deliberately throws,
-and modulation no longer runs on Web Audio `AudioParam`s. It runs sample-accurately
-inside the worklet (`src/audio-dsp/modulation-runtime.ts`).
+Two things about the registered descriptor are worth knowing, because they look
+like bugs otherwise:
+
+- **Its synthesis surface is inert, not throwing.** `createDescriptorEngine`
+  gives you a `createVoice()` that returns a no-op `Voice` with an empty
+  `getAudioParams()` (`src/engines/descriptor-engine.ts:48`, `:76`). Nothing on
+  the live or offline path calls it — the registered singleton is purely
+  metadata, and modulation for these engines runs sample-accurately inside the
+  worklet (`src/audio-dsp/modulation-runtime.ts`).
+- **The bridged *plugin* does throw.** `bootstrapPlugins` wraps each engine
+  descriptor in a synth `PluginFactory` so `listPlugins('synth')` keeps seeing
+  every engine, and that wrapper's `create()` throws on purpose
+  (`src/app/plugin-bootstrap.ts:81`). It is a tripwire: if you see it, something
+  called `createInstance('synth', …)` instead of going through the lane
+  allocator.
 
 See [Engines](04-engines.md) for the full engine catalogue.
 
-### Add an FX insert or modulator
+### Commit an engine param edit through one seam
 
-1. Create `src/plugins/fx/<name>.ts` or `src/plugins/modulators/<name>.ts`.
-2. Export a `PluginFactory` with `kind: 'fx'` or `kind: 'modulator'` respectively, and call `registerPlugin` at module scope.
-3. FX inserts mount per-lane and on master automatically; modulators appear in the modulation panel. See [Modulation and Note FX](06-modulation-and-note-fx.md) for the user-facing side.
+Any control you build for an engine param must write it with `commitParam` from
+[`src/engines/engine-param-commit.ts`](../../src/engines/engine-param-commit.ts),
+never `engine.setBaseValue` alone:
+
+```ts
+commitParam(engine, ctx, paramId, value);   // engine + the engineState mirror
+```
+
+`setBaseValue` moves the sound. It does **not** persist it. The mirror into
+`lane.engineState.params` is the only vehicle by which a knob value reaches a
+save, and builders that forgot it threw the edit away silently — that was the
+knob-loss bug on FM, Wavetable, Karplus, Westcoast and TB-303, fixed by routing
+every builder through this one seam.
+
+Two siblings exist for the cases a UI context cannot cover:
+
+- `commitParamForLane(engine, sessionState, laneId, id, v)` — same seam for a
+  caller that holds the session directly, e.g. a MIDI control surface writing a
+  lane whose editor is closed.
+- `commitEngineBaseValues(engine, sessionState, laneId)` — the bulk sibling for
+  the programmatic applies that move a whole sound at once (recall a preset,
+  load a user preset, Randomize). Those push values straight into the engine, so
+  no `onChange` fires and `commitParam` never runs.
+
+`withoutParamMirror(...)` suppresses the mirror. The load path uses it to apply
+a lane's preset without clobbering the saved params it is about to replay — a
+saved tweak beats its lane preset.
+
+### Add an FX insert
+
+1. Create `src/plugins/fx/<name>.ts`.
+2. Export a `PluginFactory` with `kind: 'fx'`. Do **not** call `registerPlugin` — the glob's shape check collects it for you; none of the eleven shipped inserts registers itself.
+3. That is all. The "+ Add insert" picker is an unfiltered `listPlugins('fx')` (`src/session/lane-insert-ui.ts:218`), and the same builder serves lanes, the master rack and both send racks, so a new insert appears in all four at once.
+
+Separately from the picker, the `FxBus` seeds send A with `delay` and send B with `reverb` when it is constructed (`src/core/fx.ts:30`). That is a default, not a restriction — both are offered as ordinary inserts too.
+
+### Add a modulator
+
+`kind: 'modulator'` plugins are collected the same way and bound the same way: `ConnectionBinder.apply` builds `modulator.output → GainNode(depth) → targetAudioParam` (`src/modulation/connection-binder.ts:44`).
+
+Be aware of the ceiling before you invest in one. The MODULATORS panel offers exactly two buttons, **+ LFO** and **+ ADSR** (`src/modulation/modulation-ui.ts:63`), so there is no UI path that adds a third kind. `ModulationHost` hardcodes `LFOVoice` / `ADSRVoice` and routes any other kind through `createInstance`, which its own comment describes as a stateless stub whose `currentValue()` returns 0 (`src/modulation/modulation-host.ts:85`). Inside the worklet, `ModLite.kind` is typed `'lfo' | 'adsr'` (`src/audio-dsp/modulation-runtime.ts:24`), so a custom modulator cannot reach a melodic engine's params at all. Adding a genuinely new modulator kind is a change to those three places, not a drop-in.
+
+See [Modulation and Note FX](06-modulation-and-note-fx.md) for the user-facing side.
+
+### Add a note-FX
+
+`kind: 'notefx'` is the fourth plugin kind — a transform applied to notes before they reach the engine, per lane, persisted in `lane.engineState.noteFx`. A `NoteFxFactory` declares `defaultParams()` and has no `create()`, so the bootstrap's shape check ignores it: the file **must** call `registerPlugin` itself at module scope (`src/plugins/notefx/arp.ts:11`). The processor that does the work lives beside it in `src/notefx/`.
 
 ### Add a preset
 
