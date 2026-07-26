@@ -1,16 +1,4 @@
-import type { TB303 } from './synth';
 import type { PolySynth } from '../polysynth/polysynth';
-
-/** Randomize the TB-303 bass *sound* params (filter/env) to a musical-ish
- *  starting point. Notes are not touched here — only sound parameters
- *  (filter, envelope, accent) are affected. */
-export function randomizeBassParams(synth: TB303): void {
-  synth.params.cutoff    = 0.1 + Math.random() * 0.45;
-  synth.params.resonance = 0.5 + Math.random() * 0.5;
-  synth.params.envMod    = 0.3 + Math.random() * 0.6;
-  synth.params.decay     = 0.2 + Math.random() * 0.6;
-  synth.params.accent    = 0.4 + Math.random() * 0.5;
-}
 
 // Randomize the polysynth settings to a musically reasonable starting point.
 // Biased to avoid extreme/unusable values: low resonance most of the time,

@@ -28,6 +28,7 @@ import { html, render } from 'lit-html';
 import { renderModulatorsPanel, type ModulationUIDeps } from '../modulation/modulation-ui';
 import { buildEngineParamGrid } from './engine-param-grid';
 import { commitParam } from './engine-param-commit';
+import { randomizeEngineParams } from './engine-randomize';
 import { createKnob, type KnobHandle } from '../core/knob';
 import { attachKnobUndo } from '../save/history-wiring';
 import { reapplyLaneModulations } from '../modulation/voice-mod-binding';
@@ -351,6 +352,11 @@ export class WorkletLaneEngine implements SynthEngine {
   }
 
   createVoice(_ctx: AudioContext, _output: AudioNode): Voice { return new WorkletVoice(this.worklet); }
+
+  /** "🎲 Sound" — roll a new timbre from this engine's own declared params.
+   *  Nothing engine-specific lives here: engine-randomize reads the spec, which
+   *  is why every worklet engine gets the dice, not just the bass. */
+  randomize(): void { randomizeEngineParams(this); }
 
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
     if (!ctx) return;

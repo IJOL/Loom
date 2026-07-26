@@ -1,16 +1,25 @@
-import { randomizeBassParams } from './random';
-import type { TB303 } from './synth';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
 import { markPagePresetCustom, recordPagePresetForLane } from '../polysynth/polysynth-presets';
 import { getDrumKits } from '../presets/drum-kits-loader';
+import { commitEngineBaseValues } from '../engines/engine-param-commit';
+import type { SynthEngine } from '../engines/engine-types';
+import type { SessionState } from '../session/session';
 
 // ── Per-lane "🎲 Sound" randomize ─────────────────────────────────────────
 // Randomizes the engine's *sound* (params / kit). Only sound parameters are
 // affected here; note content in clips is not touched.
+//
+// The melodic side asks the ENGINE to roll its own params (engine.randomize(),
+// generic over the declared spec — see engines/engine-randomize.ts). It used to
+// reach for the node-per-note TB303 class through a `getInstance()` no engine
+// implements, so the button had been silently dead since the worklet cutover:
+// randomizeBassSound returned at its `if (!synth)` guard on every click.
 
 export interface RandomizeUIDeps {
-  // Phase G: synth resolved lazily — null before boot lane is allocated.
-  getSynth: () => TB303 | null;
+  /** The live engine of a lane, or null before it is allocated. */
+  getEngine: (laneId: string) => SynthEngine | null;
+  /** Live session, so a rolled sound is mirrored into the lane and survives a save. */
+  getSessionState?: () => SessionState | undefined;
   /** Active bass lane id (for marking its preset select as custom). */
   getBassLaneId: () => string;
   /** Active drums lane id (for marking its preset select as custom). */
@@ -23,12 +32,16 @@ export interface RandomizeUIDeps {
   historyDeps: HistoryDeps;
 }
 
-function randomizeBassSound(deps: RandomizeUIDeps): void {
-  const synth = deps.getSynth();
-  if (!synth) return;
-  randomizeBassParams(synth);
+function randomizeMelodicSound(deps: RandomizeUIDeps, laneId: string, presetSelectId: string): void {
+  const engine = deps.getEngine(laneId);
+  if (!engine?.randomize) return;
+  engine.randomize();
+  // The engine writes through setBaseValue, so no knob onChange fires and
+  // commitParam never runs: mirror the whole bag or the rolled sound is lost on
+  // save (the bulk sibling exists for exactly this — presets, Randomize).
+  commitEngineBaseValues(engine, deps.getSessionState?.(), laneId);
   deps.refreshKnobsFromSynth();
-  markPagePresetCustom('bass-preset-select', deps.getBassLaneId());
+  markPagePresetCustom(presetSelectId, laneId);
 }
 
 /** Pick a random unified drum-kit name (synth or sample). Null if none loaded. */
@@ -53,7 +66,9 @@ export function wireRandomizeUI(deps: RandomizeUIDeps): void {
   const $btn = (id: string) => document.getElementById(id) as HTMLButtonElement | null;
 
   $btn('bass-random-sound')?.addEventListener('click', () => {
-    withUndo(deps.historyDeps, () => randomizeBassSound(deps));
+    withUndo(deps.historyDeps, () => {
+      randomizeMelodicSound(deps, deps.getBassLaneId(), 'bass-preset-select');
+    });
   });
   $btn('drums-random-sound')?.addEventListener('click', () => {
     withUndo(deps.historyDeps, () => randomizeDrumsSound(deps));

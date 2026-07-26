@@ -21,7 +21,6 @@ import { rebuildEngineParamUI } from './engines/engine-selector-ui';
 import { wireEngineSelectors } from './app/engine-selector-wiring';
 import { getEngine, getEngineParamIds } from './engines/registry';
 import { swapLaneEngineFlow, type EngineSwapDeps } from './app/engine-swap';
-import { type TB303 } from './core/synth';
 import { Sequencer } from './core/sequencer';
 import { COMMON_METERS, formatMeter } from './core/meter';
 import { DRUM_LANES } from './core/drums';
@@ -180,12 +179,6 @@ const lanes = createLaneAllocator({
 const { resources: laneResources, extraStrips, extraPolys,
         stripFor, ensureExtraPoly, ensureLaneVoice,
         ensureLaneResource, getLaneEngineInstance, swapLaneEngine } = lanes;
-
-// Phase G: lazy accessors — null before applyLoadedSessionState allocates lanes.
-const getSynthInstance = (): TB303 | null => {
-  const eng = laneResources.get(LANE_ID_BASS)?.engine as unknown as { getInstance?(): TB303 | null } | undefined;
-  return eng?.getInstance?.() ?? null;
-};
 
 // Phase G: polysynth comes from lane resources lazily; null before boot session loads.
 const bpmBroadcast = createBpmBroadcaster({
@@ -792,8 +785,10 @@ _discreteHistoryDeps = historyDeps;
 // wireRandomizeUI is here (not at its original boot position) because it needs
 // historyDeps, which closes over saveWiringDeps, which closes over sessionHost.
 wireRandomizeUI({
-  // Phase G: synth resolved lazily from lane resources.
-  getSynth: getSynthInstance,
+  // The dice asks the ENGINE to roll its own declared params, so it works for
+  // every worklet engine instead of only the one class that no longer exists.
+  getEngine: (laneId) => laneResources.get(laneId)?.engine ?? null,
+  getSessionState: () => sessionHost?.state,
   getBassLaneId: () => LANE_ID_BASS,
   getDrumsLaneId: () => LANE_ID_DRUMS,
   refreshKnobsFromSynth,
