@@ -16,26 +16,50 @@ import { velGain01 } from '../core/velocity-gain';
  *  the ModLite. update() returns env×depth per connected field, gated by the note. */
 interface ModEnv { adsr: Adsr; m: ModLite; }
 
-/** Read a dot-id ParamBag into the typed SubParams snapshot the renderer uses
- *  internally. Defaults match subtractive-params.ts / defaultSubParams(). */
-function subParamsFromBag(b: ParamBag): SubParams {
-  return {
-    masterTune: param(b, 'master.tune', 0),
-    unisonVoices: param(b, 'master.unison', 1), unisonDetune: param(b, 'master.detune', 25),
-    unisonDrift: param(b, 'master.drift', 0),
-    osc1Wave: param(b, 'osc1.wave', 0), osc1Level: param(b, 'osc1.level', 0.6), osc1Detune: param(b, 'osc1.detune', 0),
-    osc1Pw: param(b, 'osc1.pw', 0.5), osc2Pw: param(b, 'osc2.pw', 0.5),
-    osc1Sync: param(b, 'osc1.sync', 2), osc2Sync: param(b, 'osc2.sync', 2),
-    osc2Wave: param(b, 'osc2.wave', 1), osc2Level: param(b, 'osc2.level', 0.4), osc2Detune: param(b, 'osc2.detune', 7),
-    subLevel: param(b, 'sub.level', 0.3),
-    noiseLevel: param(b, 'noise.level', 0), noiseColor: param(b, 'noise.color', 0.6),
-    filterCutoff: param(b, 'filter.cutoff', 0.55), filterResonance: param(b, 'filter.resonance', 0.25), filterEnvAmount: param(b, 'filter.envAmount', 0.45),
-    filterModel: param(b, 'filter.model', 0), filterType: param(b, 'filter.type', 0),
-    filterDrive: param(b, 'filter.drive', 0), filterKeyTrack: param(b, 'filter.keyTrack', 0), filterBuiltinEnv: param(b, 'filter.builtinEnv', 1),
-    filterAttack: param(b, 'filter.attack', 0.01), filterDecay: param(b, 'filter.decay', 0.3), filterSustain: param(b, 'filter.sustain', 0.4), filterRelease: param(b, 'filter.release', 0.35),
-    ampBuiltinEnv: param(b, 'amp.builtinEnv', 1),
-    ampAttack: param(b, 'amp.attack', 0.01), ampDecay: param(b, 'amp.decay', 0.2), ampSustain: param(b, 'amp.sustain', 0.7), ampRelease: param(b, 'amp.release', 0.3),
-  };
+/** Read a dot-id ParamBag into an EXISTING SubParams — no allocation, so the
+ *  lane can refresh its live snapshot on the audio thread. Defaults match
+ *  subtractive-params.ts / defaultSubParams(). */
+export function subParamsInto(b: ParamBag, out: SubParams): SubParams {
+  out.masterTune = param(b, 'master.tune', 0);
+  out.unisonVoices = param(b, 'master.unison', 1);
+  out.unisonDetune = param(b, 'master.detune', 25);
+  out.unisonDrift = param(b, 'master.drift', 0);
+  out.osc1Wave = param(b, 'osc1.wave', 0);
+  out.osc1Level = param(b, 'osc1.level', 0.6);
+  out.osc1Detune = param(b, 'osc1.detune', 0);
+  out.osc1Pw = param(b, 'osc1.pw', 0.5);
+  out.osc2Pw = param(b, 'osc2.pw', 0.5);
+  out.osc1Sync = param(b, 'osc1.sync', 2);
+  out.osc2Sync = param(b, 'osc2.sync', 2);
+  out.osc2Wave = param(b, 'osc2.wave', 1);
+  out.osc2Level = param(b, 'osc2.level', 0.4);
+  out.osc2Detune = param(b, 'osc2.detune', 7);
+  out.subLevel = param(b, 'sub.level', 0.3);
+  out.noiseLevel = param(b, 'noise.level', 0);
+  out.noiseColor = param(b, 'noise.color', 0.6);
+  out.filterCutoff = param(b, 'filter.cutoff', 0.55);
+  out.filterResonance = param(b, 'filter.resonance', 0.25);
+  out.filterEnvAmount = param(b, 'filter.envAmount', 0.45);
+  out.filterModel = param(b, 'filter.model', 0);
+  out.filterType = param(b, 'filter.type', 0);
+  out.filterDrive = param(b, 'filter.drive', 0);
+  out.filterKeyTrack = param(b, 'filter.keyTrack', 0);
+  out.filterBuiltinEnv = param(b, 'filter.builtinEnv', 1);
+  out.filterAttack = param(b, 'filter.attack', 0.01);
+  out.filterDecay = param(b, 'filter.decay', 0.3);
+  out.filterSustain = param(b, 'filter.sustain', 0.4);
+  out.filterRelease = param(b, 'filter.release', 0.35);
+  out.ampBuiltinEnv = param(b, 'amp.builtinEnv', 1);
+  out.ampAttack = param(b, 'amp.attack', 0.01);
+  out.ampDecay = param(b, 'amp.decay', 0.2);
+  out.ampSustain = param(b, 'amp.sustain', 0.7);
+  out.ampRelease = param(b, 'amp.release', 0.3);
+  return out;
+}
+
+/** Allocating form — for a renderer's own trigger-time snapshot. */
+export function subParamsFromBag(b: ParamBag): SubParams {
+  return subParamsInto(b, {} as SubParams);
 }
 
 /** filterType (0=LP, 1=HP, 2=BP, 3=NOTCH) → the ladder tap that honestly serves
@@ -92,11 +116,29 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
   private ampEnv = new Adsr(); private filtEnv = new Adsr();
   private begin: number; private holdEnd: number;
   private p: SubParams;
-  private baseFreq: number; private velPeak: number;
-  private baseCutoffHz: number; private keyTrackHz: number; private envRangeHz: number;
+  private velPeak: number;
   // Kept for live recompute of keytrack/env ranges when cutoff/keyTrack/envAmount
   // are modulated (those ranges scale with the live base cutoff).
   private keySemiDelta: number; private accentMul: number;
+  // Trigger-time frozen structure. `this.p` becomes the LANE's live snapshot once
+  // setLiveSubParams runs, so anything that must NOT change mid-note is copied
+  // here at spawn: the two oscillator waves (a Sync wave reinterprets its second
+  // argument), the two envelope switches and all eight envelope TIMES.
+  private readonly osc1WaveFrozen: number;
+  private readonly osc2WaveFrozen: number;
+  private readonly ampBuiltinFrozen: number;
+  private readonly filterBuiltinFrozen: number;
+  private readonly ampA: number; private readonly ampD: number;
+  private readonly ampS: number; private readonly ampR: number;
+  private readonly filtA: number; private readonly filtD: number;
+  private readonly filtS: number; private readonly filtR: number;
+  /** Cached cutoff conversion: 60·220^x is not a per-sample cost while nothing moves. */
+  private cutRaw = NaN;
+  private cutHzCached = 0;
+  /** Cached master-tune conversion (the note's base frequency). */
+  private tuneRaw = NaN;
+  private baseFreqCached = 0;
+  private readonly noteHz: number;
   done = false;
   /** Per-voice ADSR modulators, handed in at spawn. Empty ⇒ LFO-only fast path. */
   private modEnvs: ModEnv[] = [];
@@ -121,12 +163,13 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     const p = subParamsFromBag(params); this.p = p;
     this.begin = note.beginSec;
     this.holdEnd = note.beginSec + note.durationSec;
-    this.baseFreq = midiToFreq(note.midi) * Math.pow(2, p.masterTune / 12);
+    this.noteHz = midiToFreq(note.midi);
+    const baseFreq = this.noteHz * Math.pow(2, p.masterTune / 12);
     // The stack size is read once, here: you cannot grow a stack mid-note without
     // a click, so it is a trigger-time decision like the filter model.
     this.osc1 = new UnisonStack(p.osc1Wave, p.unisonVoices, sampleRate);
     this.osc2 = new UnisonStack(p.osc2Wave, p.unisonVoices, sampleRate);
-    this.driftDepth = driftDepthFor(this.baseFreq);
+    this.driftDepth = driftDepthFor(baseFreq);
     this.sub = new SineOsc(sampleRate);
     this.noiseLp = new Svf(sampleRate);
     this.filter = new Svf(sampleRate);
@@ -141,11 +184,14 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     }
     // × output.trim: per-preset gain-staging lever (params['output.trim'], default 1).
     this.velPeak = synthTrim('subtractive') * param(params, 'output.trim', 1) * velGain01(note.velocity, note.accent);
-    this.baseCutoffHz = Math.min(60 * Math.pow(220, p.filterCutoff), 18000);
     this.keySemiDelta = note.midi - 60;
-    this.keyTrackHz = this.keySemiDelta * this.baseCutoffHz * (Math.pow(2, 1 / 12) - 1) * p.filterKeyTrack;
     this.accentMul = note.accent ? 1.3 : 1.0;
-    this.envRangeHz = Math.min(this.baseCutoffHz * 7, 16000) * p.filterEnvAmount * this.accentMul;
+    this.osc1WaveFrozen = p.osc1Wave;
+    this.osc2WaveFrozen = p.osc2Wave;
+    this.ampBuiltinFrozen = p.ampBuiltinEnv;
+    this.filterBuiltinFrozen = p.filterBuiltinEnv;
+    this.ampA = p.ampAttack; this.ampD = p.ampDecay; this.ampS = p.ampSustain; this.ampR = p.ampRelease;
+    this.filtA = p.filterAttack; this.filtD = p.filterDecay; this.filtS = p.filterSustain; this.filtR = p.filterRelease;
   }
 
   /** One sample through whichever filter this patch selected.
@@ -177,6 +223,10 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
   setModEnvelopes(mods: ModLite[]): void {
     this.modEnvs = mods.map((m) => ({ adsr: new Adsr(), m }));
   }
+
+  /** Swap this voice's param source for the lane's LIVE snapshot. Everything
+   *  structural was already copied out in the constructor. */
+  setLiveSubParams(live: SubParams): void { this.p = live; }
 
   /** Fold this voice's gated ADSR envelopes into the shared-LFO offsets, returning
    *  one effective offset set the rest of renderSample reads. Reuses the pooled
@@ -238,9 +288,16 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     const osc2Level = mo?.osc2Level ? clamp01(p.osc2Level + mo.osc2Level) : p.osc2Level;
     const subLevel  = mo?.subLevel  ? clamp01(p.subLevel + mo.subLevel)   : p.subLevel;
     const noiseLevel = mo?.noiseLevel ? clamp01(p.noiseLevel + mo.noiseLevel) : p.noiseLevel;
+    // Master tune is continuous, so it moves the sounding note. Cached: the pow
+    // only re-runs when the tune knob actually changes.
+    if (p.masterTune !== this.tuneRaw) {
+      this.tuneRaw = p.masterTune;
+      this.baseFreqCached = this.noteHz * Math.pow(2, p.masterTune / 12);
+    }
+    const baseFreq = this.baseFreqCached;
     // Pitch modulation: master tune (±12 st full-depth) → freq multiplier;
     // per-osc detune (±50 cents full-depth) added to the cents knob.
-    const f = mo?.masterTune ? this.baseFreq * Math.pow(2, mo.masterTune * MOD_TUNE_SEMIS / 12) : this.baseFreq;
+    const f = mo?.masterTune ? baseFreq * Math.pow(2, mo.masterTune * MOD_TUNE_SEMIS / 12) : baseFreq;
     const det1 = mo?.osc1Detune ? p.osc1Detune + mo.osc1Detune * MOD_DETUNE_CENTS : p.osc1Detune;
     const det2 = mo?.osc2Detune ? p.osc2Detune + mo.osc2Detune * MOD_DETUNE_CENTS : p.osc2Detune;
     // Pulse width, and with an LFO on it, pulse-width MODULATION. Clamped to
@@ -248,10 +305,10 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     // The stack's second argument is pulse width for most waves, but the sync
     // ratio for the Sync wave — SyncOsc reads it as its ratio. Both are
     // continuous and modulatable; pick which one this oscillator wants.
-    const pw1 = p.osc1Wave === WAVE_SYNC
+    const pw1 = this.osc1WaveFrozen === WAVE_SYNC
       ? clampSync(mo?.osc1Sync ? p.osc1Sync + mo.osc1Sync * MOD_SYNC_RANGE : p.osc1Sync)
       : (mo?.osc1Pw ? clampPw(p.osc1Pw + mo.osc1Pw * MOD_PW_RANGE) : p.osc1Pw);
-    const pw2 = p.osc2Wave === WAVE_SYNC
+    const pw2 = this.osc2WaveFrozen === WAVE_SYNC
       ? clampSync(mo?.osc2Sync ? p.osc2Sync + mo.osc2Sync * MOD_SYNC_RANGE : p.osc2Sync)
       : (mo?.osc2Pw ? clampPw(p.osc2Pw + mo.osc2Pw * MOD_PW_RANGE) : p.osc2Pw);
     // Unison: the spread each stack fans its copies across, and the analog drift
@@ -278,29 +335,25 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     // parallel drive (dry + saturated wet scaled by drive), as in PolySynth
     const drive = mo?.filterDrive ? clamp01(p.filterDrive + mo.filterDrive) : p.filterDrive;
     if (drive > 0) mix = mix + driveShape(mix, 1.0) * drive;
-    // filter cutoff = base + keytrack + envelope contribution. Each input is
-    // modulatable; keytrack/env ranges scale with the (possibly modulated) base
-    // cutoff, so recompute them only when cutoff/keyTrack/envAmount is modulated.
-    let baseCutoffHz = this.baseCutoffHz;
-    if (mo?.filterCutoff) {
-      baseCutoffHz = Math.min(60 * Math.pow(220, clamp01(p.filterCutoff + mo.filterCutoff)), 18000);
+    // Filter cutoff = base + keytrack + envelope contribution. The base is LIVE
+    // (the knob under your hand), and modulation adds on top of it. keytrack and
+    // env range scale with the base, so they follow it.
+    const cut01 = mo?.filterCutoff ? clamp01(p.filterCutoff + mo.filterCutoff) : p.filterCutoff;
+    if (cut01 !== this.cutRaw) {
+      this.cutRaw = cut01;
+      this.cutHzCached = Math.min(60 * Math.pow(220, cut01), 18000);
     }
-    let keyTrackHz = this.keyTrackHz;
-    if (mo?.filterCutoff || mo?.filterKeyTrack) {
-      const kt = mo?.filterKeyTrack ? clamp01(p.filterKeyTrack + mo.filterKeyTrack) : p.filterKeyTrack;
-      keyTrackHz = this.keySemiDelta * baseCutoffHz * (Math.pow(2, 1 / 12) - 1) * kt;
-    }
-    let envRangeHz = this.envRangeHz;
-    if (mo?.filterCutoff || mo?.filterEnvAmount) {
-      const env = mo?.filterEnvAmount ? clamp01(p.filterEnvAmount + mo.filterEnvAmount) : p.filterEnvAmount;
-      envRangeHz = Math.min(baseCutoffHz * 7, 16000) * env * this.accentMul;
-    }
+    const baseCutoffHz = this.cutHzCached;
+    const kt = mo?.filterKeyTrack ? clamp01(p.filterKeyTrack + mo.filterKeyTrack) : p.filterKeyTrack;
+    const keyTrackHz = this.keySemiDelta * baseCutoffHz * (Math.pow(2, 1 / 12) - 1) * kt;
+    const envAmt = mo?.filterEnvAmount ? clamp01(p.filterEnvAmount + mo.filterEnvAmount) : p.filterEnvAmount;
+    const envRangeHz = Math.min(baseCutoffHz * 7, 16000) * envAmt * this.accentMul;
     // Filter envelope. Like amp: the built-in env wins when enabled (presets keep
     // filterBuiltinEnv=1 → unchanged); else an ADSR routed to 'filterEnv' becomes the
     // env — scaled by the SAME envRangeHz, so it sounds identical; else 0.
     let fe: number;
-    if (p.filterBuiltinEnv >= 0.5) {
-      fe = this.filtEnv.update(t, gate, p.filterAttack, p.filterDecay, p.filterSustain, p.filterRelease);
+    if (this.filterBuiltinFrozen >= 0.5) {
+      fe = this.filtEnv.update(t, gate, this.filtA, this.filtD, this.filtS, this.filtR);
     } else if (this.filterEnvValue != null) {
       fe = this.filterEnvValue;
     } else {
@@ -317,8 +370,8 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     // ampBuiltinEnv=1 → unchanged); else an ADSR routed to 'amp' BECOMES the
     // amplitude envelope (the unified pre-worklet model); else a flat gain.
     let ae: number;
-    if (p.ampBuiltinEnv >= 0.5) {
-      ae = this.ampEnv.update(t, gate, p.ampAttack, p.ampDecay, p.ampSustain, p.ampRelease);
+    if (this.ampBuiltinFrozen >= 0.5) {
+      ae = this.ampEnv.update(t, gate, this.ampA, this.ampD, this.ampS, this.ampR);
     } else if (this.ampEnvValue != null) {
       ae = this.ampEnvValue < 0 ? 0 : this.ampEnvValue > 1 ? 1 : this.ampEnvValue;
     } else {
@@ -331,7 +384,7 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     // Done once the amplitude DRIVER has fully released after the gate: the
     // built-in env, the ADSR 'amp' envelope, or (no envelope) at gate-off. A
     // fixed-gain voice ending at gate-off keeps it from becoming immortal.
-    const ampOff = p.ampBuiltinEnv >= 0.5 ? this.ampEnv.isOff
+    const ampOff = this.ampBuiltinFrozen >= 0.5 ? this.ampEnv.isOff
       : this.ampEnvAdsr ? this.ampEnvAdsr.isOff : true;
     if (gate === 0 && ampOff && t > this.holdEnd) this.done = true;
     return out;

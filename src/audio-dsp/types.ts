@@ -81,6 +81,11 @@ export interface VoiceRenderer {
    *
    *  Optional: a renderer without it keeps the trigger-time snapshot behaviour. */
   setLiveParams?(live: ParamBag): void;
+  /** Subtractive-only: it reads a TYPED SubParams, not the dot-id bag, so the lane
+   *  keeps ONE live snapshot and every voice reads through it — refreshed once per
+   *  lane per sample, never once per voice. (The engineId special-case mirrors the
+   *  one fillOffsets already makes for the same reason.) */
+  setLiveSubParams?(live: SubParams): void;
   /** True once the release tail has fully decayed at the last rendered t. */
   readonly done: boolean;
 }

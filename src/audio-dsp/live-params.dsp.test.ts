@@ -13,6 +13,7 @@ import { registerRenderer } from './renderer-registry';
 // Side-effect imports: register the real renderers.
 import './tb303-renderer';
 import './wavetable-renderer';
+import './subtractive-renderer';
 
 const SR = 48000;
 
@@ -164,5 +165,71 @@ describe('TB-303 continuous params', () => {
     const withSwitch = renderWithTurn('tb303', BASE, SECONDS, 0.5, { 'osc.wave': 1 });
     const control = renderWithTurn('tb303', BASE, SECONDS, null, null);
     expect(withSwitch).toEqual(control);
+  });
+});
+
+describe('Subtractive continuous params', () => {
+  const BASE: ParamBag = {
+    'filter.cutoff': 0.2, 'filter.resonance': 0.2, 'filter.envAmount': 0,
+    'amp.builtinEnv': 1, 'amp.attack': 0.005, 'amp.decay': 0.5, 'amp.sustain': 1, 'amp.release': 0.2,
+    'osc1.level': 0.6, 'osc2.level': 0.4,
+  };
+  const SECONDS = 1;
+  const HALF = Math.floor(SR * SECONDS / 2);
+  const END = Math.floor(SR * SECONDS);
+  const AFTER = HALF + Math.floor(SR * 0.05);
+
+  it('opening the cutoff mid-note brightens the sounding note', () => {
+    const buf = renderWithTurn('subtractive', BASE, SECONDS, 0.5, { 'filter.cutoff': 0.95 });
+    expect(brightness(buf, AFTER, END)).toBeGreaterThan(brightness(buf, 0, HALF) * 2);
+  });
+
+  it('negative control: untouched, both halves match', () => {
+    const buf = renderWithTurn('subtractive', BASE, SECONDS, null, null);
+    const before = brightness(buf, 0, HALF);
+    const after = brightness(buf, AFTER, END);
+    expect(after).toBeLessThan(before * 1.5);
+    expect(after).toBeGreaterThan(before * 0.67);
+  });
+
+  it('an oscillator level is live', () => {
+    // osc2.detune pinned to 0 for this one: BASE's default 7-cent detune puts
+    // osc1 (saw) and osc2 (square) in a near-unison beat that, at this note's
+    // pitch through this resonant lowpass, happens to lock into a phase where
+    // osc1 partially cancels osc2 rather than adding to it — so zeroing osc1
+    // can fail to shrink total RMS even though the level IS live (verified with
+    // a static, untouched render: same near-cancellation, unrelated to Task 4).
+    // Locking both oscillators to the same pitch removes that confound.
+    const params: ParamBag = { ...BASE, 'osc2.detune': 0 };
+    const buf = renderWithTurn('subtractive', params, SECONDS, 0.5, { 'osc1.level': 0 });
+    const ctl = renderWithTurn('subtractive', params, SECONDS, null, null);
+    const rms = (b: number[]) => {
+      let s = 0;
+      for (let i = AFTER; i < END; i++) s += b[i] * b[i];
+      return Math.sqrt(s / (END - AFTER));
+    };
+    expect(rms(buf)).toBeLessThan(rms(ctl) * 0.8);
+  });
+
+  it('dropping a level to zero does not click', () => {
+    const buf = renderWithTurn('subtractive', BASE, SECONDS, 0.5, { 'osc1.level': 0 });
+    const reference = maxStep(buf, Math.floor(SR * 0.2), HALF - 32);
+    const across = maxStep(buf, HALF - 32, HALF + Math.floor(SR * 0.03));
+    expect(across).toBeLessThanOrEqual(reference);
+  });
+
+  it('the ENVELOPE times stay frozen: shortening the attack mid-note changes nothing', () => {
+    // Excluded by design — our envelopes are closed-form over elapsed time, so
+    // re-reading the attack mid-note would step the amplitude. See the spec.
+    const slow: ParamBag = { ...BASE, 'amp.attack': 0.8 };
+    const withTurn = renderWithTurn('subtractive', slow, SECONDS, 0.2, { 'amp.attack': 0.001 });
+    const control = renderWithTurn('subtractive', slow, SECONDS, null, null);
+    expect(withTurn).toEqual(control);
+  });
+
+  it('the filter MODEL stays frozen: swapping it mid-note changes nothing', () => {
+    const withTurn = renderWithTurn('subtractive', BASE, SECONDS, 0.5, { 'filter.model': 1 });
+    const control = renderWithTurn('subtractive', BASE, SECONDS, null, null);
+    expect(withTurn).toEqual(control);
   });
 });
