@@ -88,6 +88,7 @@ import {
   type AutomationTickDeps,
 } from './automation/automation-tick';
 import { applyAutomationToSession } from './automation/automation-apply';
+import { applyLiveControlWrite } from './automation/live-control-apply';
 import { createDestinationRegistry } from './automation/destination-registry';
 import { attachKnobAutomationMenu } from './automation/knob-automation-menu';
 import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from './core/lane-ids';
@@ -858,12 +859,12 @@ document.getElementById('capture-scene')?.addEventListener('click', () => sessio
       const pad = createXyPad({
         destinations,
         registry: automationRegistry,
-        // Reuses the SAME fallback playback automation uses (applyUnmountedWrite,
-        // defined above near insertChainFor): the catalogue now offers every
-        // destination the session declares, including ones with no mounted
-        // knob, so dragging the pad on one of those must still land the value
-        // instead of silently no-oping.
-        applyUnmounted: applyUnmountedWrite,
+        // Same target resolution playback automation uses, plus the mirror a
+        // mounted knob's onChange performs (applyLiveControlUnmountedWrite,
+        // defined near insertChainFor): the catalogue offers every destination
+        // the session declares, including ones with no mounted knob, so
+        // dragging the pad on one of those must land the value AND persist it.
+        applyUnmounted: applyLiveControlUnmountedWrite,
       });
       xyPad = pad;
       // Build-once shell; the pad surface itself is an imperative widget
@@ -1249,21 +1250,43 @@ function insertChainFor(scopeId: string) {
   return laneResources.get(scopeId)?.inserts;
 }
 
-// Land a write on a target with NO mounted knob, straight onto the audio
-// object. Shared by playback automation (automationTickDeps.applyUnmounted,
-// below) and the XY pad's live drags (see the xy-open handler) — both need
-// the exact same scope resolution `insertChainFor`/`laneResources` already
-// provide, so this is the ONE place that resolution happens rather than two
-// copies drifting apart.
+// How a write with NO mounted knob finds its target: the ONE place the scope
+// resolution (`insertChainFor` / `laneResources`) happens, so the two callers
+// below cannot drift apart on WHERE a value lands.
+function unmountedTargetDeps(ranges: ReadonlyMap<string, { min: number; max: number }>) {
+  return {
+    getInsertFx: (scopeId: string, slotId: string) =>
+      insertChainFor(scopeId)?.list().find((s) => s.id === slotId)?.fx,
+    getEngine: (laneId: string) => laneResources.get(laneId)?.engine,
+    getRange: (id: string) => ranges.get(id),
+  };
+}
+
+// Playback automation (automationTickDeps.applyUnmounted, below): the value
+// reaches the audio object and NOTHING else. A curve belongs to the clip or to
+// the take, both of which already store it, so it must not become the lane's
+// saved base sound.
 function applyUnmountedWrite(
   paramId: string,
   normalised: number,
   ranges: ReadonlyMap<string, { min: number; max: number }>,
 ): void {
-  applyAutomationToSession(paramId, normalised, {
-    getInsertFx: (scopeId, slotId) => insertChainFor(scopeId)?.list().find((s) => s.id === slotId)?.fx,
-    getEngine: (laneId) => laneResources.get(laneId)?.engine,
-    getRange: (id) => ranges.get(id),
+  applyAutomationToSession(paramId, normalised, unmountedTargetDeps(ranges));
+}
+
+// A LIVE gesture on an unmounted target (the XY pad — see the xy-open handler):
+// same target, same denormalisation, plus the engineState mirror a mounted
+// knob's onChange would have performed. Without it the pad changed the sound
+// and the save did not record it, purely because that lane's editor was closed
+// — the same asymmetry fe44833 closed for the MIDI surface.
+function applyLiveControlUnmountedWrite(
+  paramId: string,
+  normalised: number,
+  ranges: ReadonlyMap<string, { min: number; max: number }>,
+): void {
+  applyLiveControlWrite(paramId, normalised, {
+    ...unmountedTargetDeps(ranges),
+    sessionState: sessionHost.state,
   });
 }
 

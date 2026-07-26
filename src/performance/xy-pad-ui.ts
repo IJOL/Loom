@@ -26,14 +26,19 @@ export interface XyPadUIDeps {
    *  (mirrors automation-tick.ts's mounted/unmounted split). */
   registry: Map<string, KnobHandle>;
   /** Land a write on a target with NO mounted knob, straight onto the audio
-   *  object — the SAME fallback automation-tick.ts uses for playback
-   *  envelopes (`applyAutomationToSession` under the hood). Without this, a
-   *  destination the catalogue offers but whose lane editor was never opened
-   *  would silently do nothing when dragged, which is exactly the class of
-   *  dead-option bug this task exists to remove. `ranges` is the catalogue's
-   *  declared min/max, built lazily so a drag with only mounted targets costs
-   *  nothing extra. Optional — when absent, an unmounted target is silently
-   *  skipped (matches the old registry-only behaviour). */
+   *  object. Without this, a destination the catalogue offers but whose lane
+   *  editor was never opened would silently do nothing when dragged, which is
+   *  exactly the class of dead-option bug this task exists to remove.
+   *
+   *  A drag is a live GESTURE, so main.ts passes the live-control writer
+   *  (`applyLiveControlWrite`), not the bare replay fallback automation-tick.ts
+   *  uses: an engine param moved here has to persist, the same as one moved on a
+   *  mounted knob. See live-control-apply.ts for why those are two functions.
+   *
+   *  `ranges` is the catalogue's declared min/max, built lazily so a drag with
+   *  only mounted targets costs nothing extra. Optional — when absent, an
+   *  unmounted target is silently skipped (matches the old registry-only
+   *  behaviour). */
   applyUnmounted?: (
     paramId: string,
     normalised: number,
@@ -79,10 +84,10 @@ export function createXyPad(deps: XyPadUIDeps): XyPadUI {
     applyXyWrites(writes, registryAsTargets);
     // A target the catalogue offers but whose knob is NOT mounted (its lane's
     // editor was never opened) is invisible to applyXyWrites above — it just
-    // skips it. Land those the same way playback automation does when its
-    // target knob is unmounted (automation-tick.ts): resolve straight to the
-    // audio object via applyUnmounted. `ranges` is built at most once per
-    // drag frame, only if an unmounted write is actually pending.
+    // skips it. Land those straight on the audio object via applyUnmounted,
+    // which for this widget also commits the value (see the dep's doc).
+    // `ranges` is built at most once per drag frame, only if an unmounted
+    // write is actually pending.
     if (deps.applyUnmounted) {
       let ranges: ReadonlyMap<string, { min: number; max: number }> | undefined;
       for (const w of writes) {

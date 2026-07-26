@@ -4,6 +4,12 @@
 // once — but it only exists while the panel is mounted. Automation belongs to
 // the session, so when no handle is available we resolve the id down to the
 // live audio object and write the base value directly.
+//
+// This is the REPLAY path: it writes the audio object and nothing else, because
+// a curve belongs to the clip or the take and must never become the lane's saved
+// base sound (see automation-knob.ts). A LIVE gesture on an unmounted target has
+// the opposite obligation and goes through live-control-apply.ts, which wraps
+// this one — do not add persistence here.
 
 /** A param id decomposed into what it addresses. `scopeId` is a lane id for
  *  engine params and lane racks, or `fx.master` / `fx.send.<id>` for the

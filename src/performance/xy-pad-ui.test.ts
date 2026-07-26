@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createXyPad, type XyPadUIDeps } from './xy-pad-ui';
 import { createDestinationRegistry } from '../automation/destination-registry';
 import { applyAutomationToSession } from '../automation/automation-apply';
+import { applyLiveControlWrite } from '../automation/live-control-apply';
 import { registerPlugin, _resetRegistry } from '../plugins/registry';
 import { multifilterPlugin } from '../plugins/fx/multifilter';
 import type { SessionState } from '../session/session';
@@ -154,6 +155,82 @@ describe('xy pad target dropdowns', () => {
     // fallback actually ran (not just "not zero", which a stray write could
     // also satisfy).
     expect(vals['filter.cutoff']).toBeCloseTo(0.25, 5);
+  });
+
+  it('a drag on an unmounted ENGINE target persists, exactly as one on a mounted knob does', () => {
+    // fe44833 closed this asymmetry for the MIDI surface: one gesture must not
+    // produce two persistence outcomes decided by which panel happens to be on
+    // screen. The XY pad still had it. A MOUNTED target is driven through the
+    // knob handle, whose onChange is commitParam, so the tweak reaches
+    // `lane.engineState.params` — the ONLY vehicle by which a param value gets
+    // into a save. The UNMOUNTED branch wrote the engine alone: the sound
+    // changed and the save did not record it.
+    const state = stateWith();
+    const vals: Record<string, number> = { 'filter.cutoff': 0 };
+    const fakeEngine = {
+      getBaseValue: (id: string) => vals[id] ?? 0,
+      setBaseValue: (id: string, v: number) => { vals[id] = v; },
+    };
+
+    const destinations = createDestinationRegistry({ getState: () => state, getKnobRegistry: () => new Map() });
+    const pad = createXyPad({
+      destinations,
+      registry: new Map(), // EMPTY — poly1's editor was never opened
+      applyUnmounted: (paramId, normalised, ranges) => {
+        applyLiveControlWrite(paramId, normalised, {
+          getInsertFx: () => undefined,
+          getEngine: (laneId) => (laneId === 'poly1' ? fakeEngine : undefined),
+          getRange: (id) => ranges.get(id),
+          sessionState: state,
+        });
+      },
+    });
+    pad.setState({ x: 'poly1.filter.cutoff', y: null });
+
+    const surface = pad.el.querySelector('.xy-surface') as HTMLElement;
+    fakeSurfaceRect(surface);
+    stubPointerCapture(surface);
+    surface.dispatchEvent(new PointerEvent('pointerdown', { clientX: 25, clientY: 0, pointerId: 1, bubbles: true }));
+
+    // The sound moved off where it started...
+    expect(vals['filter.cutoff']).toBeGreaterThan(0);
+    // ...and what a save would carry is exactly what reached the engine.
+    expect(state.lanes[0].engineState?.params?.['filter.cutoff']).toBe(vals['filter.cutoff']);
+  });
+
+  it('a drag on an unmounted INSERT target leaves engineState alone (it persists through lane.inserts)', () => {
+    // The negative control for the branch above. An insert param is saved by
+    // the slot's own serialization, so mirroring it into the lane's ENGINE
+    // state would invent a param the engine does not have.
+    const state = stateWith([{ id: 'slot-a', pluginId: 'multifilter' }]);
+    const vals: Record<string, number> = { freq: 0 };   // 0 = untouched; multifilter's own min is 20
+    const fakeFx = {
+      getBaseValue: (id: string) => vals[id] ?? 0,
+      setBaseValue: (id: string, v: number) => { vals[id] = v; },
+    };
+
+    const destinations = createDestinationRegistry({ getState: () => state, getKnobRegistry: () => new Map() });
+    const pad = createXyPad({
+      destinations,
+      registry: new Map(),
+      applyUnmounted: (paramId, normalised, ranges) => {
+        applyLiveControlWrite(paramId, normalised, {
+          getInsertFx: () => fakeFx,
+          getEngine: () => undefined,
+          getRange: (id) => ranges.get(id),
+          sessionState: state,
+        });
+      },
+    });
+    pad.setState({ x: 'poly1.fx:slot-a.freq', y: null });
+
+    const surface = pad.el.querySelector('.xy-surface') as HTMLElement;
+    fakeSurfaceRect(surface);
+    stubPointerCapture(surface);
+    surface.dispatchEvent(new PointerEvent('pointerdown', { clientX: 60, clientY: 0, pointerId: 1, bubbles: true }));
+
+    expect(vals.freq).toBeGreaterThan(0);             // the fx did move
+    expect(state.lanes[0].engineState?.params).toBeUndefined();
   });
 
   it('subscribes to the registry so an insert added while open shows up', () => {
