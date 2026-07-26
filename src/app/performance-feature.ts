@@ -7,7 +7,7 @@ import type { KnobHandle } from '../core/knob';
 import type { Sequencer } from '../core/sequencer';
 import type { SessionHost } from '../session/session-host';
 import type { DestinationRegistry } from '../automation/destination-registry';
-import { driveKnobFromAutomation } from '../automation/automation-knob';
+import { createArrangementPlayback } from './arrangement-playback';
 import {
   createRecState, armRec, disarmRec, startRecording, stopRecording,
   markParamTouched, tickRecAutomation, arrangementNow,
@@ -20,18 +20,14 @@ import {
 import {
   finalizeArrangement, setArrangementLengthBars, recomputeDurationSec,
   addAutomationCurve, removeAutomationCurve,
-  effectiveDurationSec, arrangementLoopWindowSec, seedClipEventsFromSounding,
+  effectiveDurationSec, seedClipEventsFromSounding,
 } from '../performance/arrangement-ops';
 import type { AutoBrush } from '../automation/automation-painter';
 import {
-  createArrangementPlayState, startArrangementAt, stopArrangement,
-  tickArrangement, arrangementPlayhead,
+  createArrangementPlayState, stopArrangement,
   type ArrangementPlayState,
 } from '../performance/arrangement-runtime';
-import {
-  launchClipAtTime, stopLane, stopAll,
-  type RecHooks,
-} from '../session/session-runtime';
+import { stopAll, type RecHooks } from '../session/session-runtime';
 import { html } from 'lit-html';
 import { renderElement } from '../core/lit-fragment';
 import { renderPerformanceView } from '../performance/performance-ui';
@@ -121,6 +117,18 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   let pxPerBar = 80;
   let brush: AutoBrush = 'line';
   const laneIds = () => sessionHost.state.lanes.map((l) => l.id);
+
+  // Everything the take DOES while it plays — launching clips, landing curves on
+  // knobs, handing the song anchor back and forth, moving the cursor — lives in
+  // app/arrangement-playback. This file keeps the take's lifecycle: arming,
+  // recording, mode switching, undo and the view rebuild.
+  const playback = createArrangementPlayback({
+    ctx, seq, sessionHost, automationRegistry, arrangement,
+    ps: arrangementPlayState, recHooks,
+    getPxPerBar: () => pxPerBar,
+    isPerformanceMode: () => mode === 'performance',
+    onArrangementEnd: () => deps.onArrangementEnd?.(),
+  });
 
   // VU meters built into the performance toolbar register here so we can tear
   // them down before each re-render (renderPerformanceView swaps in freshly
@@ -236,7 +244,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       return null;
     };
     renderPerformanceView(host, arrangement, {
-      onPlay: () => beginArrangement(),
+      onPlay: () => playback.begin(),
       onStop: () => stopArrangement(arrangementPlayState),
       onGoToSession: () => setMode('session'),
       resolveClipColor: (id) => findClip(id)?.color ?? '',
@@ -397,31 +405,6 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     setMode('session');
   }
 
-  function arrangementOnLaunchClip(laneId: string, clipId: string, atCtx: number) {
-    const state = sessionHost.state;
-    const lane = state.lanes.find((l) => l.id === laneId);
-    if (!lane) return;
-    const clip = lane.clips.find((c) => c?.id === clipId);
-    if (!clip) return;
-    // Honour the arrangement's exact start time (startedAtCtx + atSec). Never
-    // re-quantize to the session bar grid — that snapped the first event to the
-    // next absolute bar boundary, leaving a silent first bar. Clamp to now so the
-    // very first event (atSec 0, already a hair in the past once the tick fires)
-    // schedules immediately rather than at a past time.
-    launchClipAtTime(sessionHost.laneStates, lane, clip, Math.max(atCtx, ctx.currentTime));
-  }
-  function arrangementOnStopLane(laneId: string) {
-    stopLane(sessionHost.laneStates, laneId, {
-      ...recHooks, nowCtx: ctx.currentTime, silence: sessionHost.deps.liveVoices,
-    });
-  }
-  function arrangementApplyAutomation(paramId: string, valueNorm: number) {
-    // Mounted-only, as before: a take curve whose knob is off screen stays
-    // inert here. What changed is that landing it no longer writes the value
-    // into the lane's base state — see automation-knob.ts.
-    driveKnobFromAutomation(automationRegistry, paramId, valueNorm);
-  }
-
   function onLookahead(nowCtx: number, lookaheadSec: number) {
     tickRecAutomation({
       rec, state: arrangement, nowCtx, bpm: seq.bpm,
@@ -436,29 +419,9 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         return Number.isFinite(n) ? n : 0.5;
       },
     });
-    if (mode === 'performance') {
-      // Global transport: while STOPPED, mirror a stopped-mode seek (which moved
-      // the shared anchor via seekToBar) into the Arrangement clock so the perf
-      // playhead follows it. Done BEFORE the tick (the tick is a no-op when stopped).
-      if (!arrangementPlayState.isPlaying) {
-        arrangementPlayState.startedAtCtx = sessionHost.songAnchorSec;
-      }
-      tickArrangement({
-        ps: arrangementPlayState, state: arrangement, nowCtx, lookaheadSec,
-        bpm: arrangement.bpm,
-        onLaunchClip: arrangementOnLaunchClip,
-        onStopLane: arrangementOnStopLane,
-        applyAutomation: arrangementApplyAutomation,
-        loopWindow: arrangementLoopWindowSec(arrangement, seq.meter),
-        onArrangementEnd: () => { stopAll(sessionHost.laneStates, sessionHost.deps.liveVoices, ctx.currentTime); stopArrangement(arrangementPlayState); deps.onArrangementEnd?.(); },
-      });
-      // Global transport: after the tick, propagate the (possibly loop-wrapped)
-      // Arrangement anchor BACK into the shared song anchor so the transport ruler
-      // and a later view switch read the right position while Arrangement plays.
-      if (arrangementPlayState.isPlaying) {
-        sessionHost.setSongAnchor(arrangementPlayState.startedAtCtx);
-      }
-    }
+    // The mode gate stays here; app/arrangement-playback owns what happens
+    // inside it (clip launches, automation, the anchor hand-off, the cursor).
+    if (mode === 'performance') playback.tick(nowCtx, lookaheadSec);
   }
 
   function onPlay(): boolean {
@@ -468,7 +431,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         deps.onRecVisualChanged?.();
         flashToast('REC disarmed: Performance is playing');
       }
-      beginArrangement();
+      playback.begin();
       return true;
     }
     if (rec.armed) beginTake();
@@ -492,62 +455,6 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     }
     finishRecordingIfActive();
     return false;
-  }
-
-  // The playhead RAF only runs while actually animating (Performance mode AND
-  // playing). It used to re-queue itself unconditionally and never cancel, so it
-  // did 3 DOM lookups + a style write every frame forever — even sitting idle in
-  // Session mode. ensurePlayheadLoop() (re)starts it when playback begins; the
-  // loop parks itself (one final pass to hide the cursor) when playback stops.
-  let playheadRaf = 0;
-  function rafPlayhead() {
-    const animating = mode === 'performance' && arrangementPlayState.isPlaying;
-    const el = document.getElementById('perf-playhead');
-    if (el) {
-      const host = document.getElementById('performance-view-root');
-      const rulerTrack = host?.querySelector('.perf-ruler .perf-track') as HTMLElement | null;
-      if (animating && host && rulerTrack) {
-        const barSec = songBarSec(arrangement.bpm, seq.meter);
-        const lw = arrangementLoopWindowSec(arrangement, seq.meter);
-        let sec = arrangementPlayhead(arrangementPlayState, ctx.currentTime);
-        if (lw.active) sec = lw.startSec + ((sec - lw.startSec) % (lw.endSec - lw.startSec));
-        const bars = sec / barSec;
-        // Position against the REAL ruler-track rect so the cursor lines up with
-        // bar 1 regardless of the host padding, the label column, the toolbar
-        // height or horizontal scroll. (The old hardcoded 90/26 offsets ignored
-        // all of these → the cursor sat ~20px left of bar 1 and over the toolbar.)
-        const hostRect = host.getBoundingClientRect();
-        const trackRect = rulerTrack.getBoundingClientRect();
-        el.style.left = `${(trackRect.left - hostRect.left) + bars * pxPerBar - rulerTrack.scrollLeft}px`;
-        el.style.top = `${trackRect.top - hostRect.top}px`;
-        el.style.display = 'block'; // '' would fall back to the CSS display:none
-      } else {
-        el.style.display = 'none';
-      }
-    }
-    playheadRaf = animating ? requestAnimationFrame(rafPlayhead) : 0;
-  }
-  function ensurePlayheadLoop() {
-    if (playheadRaf === 0) playheadRaf = requestAnimationFrame(rafPlayhead);
-  }
-  function beginArrangement() {
-    // With an active A-B loop, Play starts at A (the marked point); otherwise at
-    // the top.
-    //
-    // This used to seek to `ctx.currentTime - sessionHost.songAnchorSec`, meaning
-    // to resume the "shared song position" across a view switch. That position is
-    // only meaningful WHILE the transport runs: songAnchorSec is the ctx time the
-    // last playback began, and nothing rebases it on stop — so while stopped the
-    // difference kept growing with wall-clock time. Play then seeked that far in:
-    // pause 3s → start 3s late; pause longer than the arrangement → every lane's
-    // cursor lands past its last event and NOTHING sounds at all. There was no
-    // position to resume either way: arrangementPlayhead() returns 0 while
-    // stopped and the cursor is hidden, so the "preserved position" was never
-    // visible or reachable. Start from a real number instead of a stale clock.
-    const lw = arrangementLoopWindowSec(arrangement, seq.meter);
-    const startSec = lw.active && lw.startSec > 0 ? lw.startSec : 0;
-    startArrangementAt(arrangementPlayState, ctx.currentTime, arrangement, startSec, arrangementOnLaunchClip);
-    ensurePlayheadLoop();
   }
 
   refreshPerformanceView();
