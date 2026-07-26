@@ -211,7 +211,13 @@ Append an object to the `KITS` array in `src/core/drums.ts`. Kits are parameter 
 2. Add a manifest file `public/drumkits/<id>.json` with `id`, `name`, and a `samples` array. Each entry needs `voice`, `note` (GM MIDI note number), and `file` (path relative to `public/drumkits/`).
 3. Register the kit in `public/drumkits/index.json` by appending `{ "id": "<id>", "name": "<display name>" }`.
 
-The existing kits (`tr808`, `acoustic`, `dirt`) follow this layout exactly and are the reference.
+68 sampled kits ship under `public/drumkits/`; `tr808`, `acoustic` and `dirt` are the hand-curated three and the clearest reference for this layout.
+
+## Conventions
+
+**File size: 300 lines of code as a target, 500 as a hard cap.** Lines of *code* — comment lines and blank lines do not count towards either number. The distinction is not pedantry: `src/main.ts` is 820 raw lines and 488 lines of code, which is inside the cap by the rule that applies and over it by the one that does not. A file that is long because it explains itself is fine; a file that is long because it does too much is the thing the cap exists to catch. When one crosses the line, split it by concern — `src/app/` is what that looks like in practice.
+
+**Assertions are relative.** See Testing, below.
 
 ## Source layout tour
 
@@ -340,9 +346,11 @@ Loom has four test layers, one per risk class.
 
 **Scheduling with a fake clock** — `src/core/lane-scheduler.test.ts` and `src/session/session-runtime.test.ts` drive the look-ahead scheduler through a mock `AudioContext` clock. The fake clock advances in controlled steps so timing edge-cases are deterministic.
 
-**Real DSP** (`*.dsp.test.ts`) — every engine and drum kit is rendered through `OfflineAudioContext` via the [`node-web-audio-api`](https://github.com/ircam-ismm/node-web-audio-api) package, globalised in `test/setup.ts`. Use the shared battery `runStandardEngineBattery` from `test/dsp-battery.ts`. Each render writes a WAV to `test/output/` (gitignored). Compare against the committed reference in `test/golden/` with `npm run test:wav-diff`; promote with `npm run test:wav-bless`.
+**Real DSP** (`*.dsp.test.ts`) — audio actually rendered and measured, in two techniques. The **pure kernel** is driven sample by sample with no `AudioContext` at all: `src/audio-dsp/drums/new-voices.dsp.test.ts` calls `renderSample()` in a loop and asserts each voice sounds like what it claims to be. The **Web Audio nodes that stayed native** — `comp-block`, `master-comp`, `master-shaper`, `strip-ducker`, `multifilter`, the sample/warp helpers, and the offline export — render through `OfflineAudioContext` via [`node-web-audio-api`](https://github.com/ircam-ismm/node-web-audio-api), globalised in `test/setup.ts`.
 
-**Modulation wiring** (`*.wiring.test.ts`) — LFO/ADSR voices connected through a depth-gain bridge into a target `AudioParam`, verified end-to-end.
+There is no per-engine battery any more. `test/setup.ts` states the design plainly: the pure DSP kernel is tested directly and the real worklet's audio is verified in the browser via Playwright, because `node-web-audio-api` cannot run our TypeScript processor. `runStandardEngineBattery` in `test/dsp-battery.ts` survives with **no callers**, so nothing writes to `test/output/`, and `npm run test:wav-diff` / `test:wav-bless` do nothing but print "`test/output/ does not exist`". The 90 WAVs in `test/golden/` are orphans of the batteries the worklet cutover removed. Do not reach for that loop expecting it to work; reviving it is a decision, not a step.
+
+**Modulation, objective and end-to-end** — `src/audio-dsp/modulation-pipeline.test.ts` drives the real in-engine path (`ModulationRuntime` → `VoiceManager` → renderer) for each of the six melodic engines, with an LFO at full depth on a continuous param, and asserts the rendered RMS envelope differs measurably from the unmodulated render, plus a negative control. It exists because the worklet rewrite dropped the per-engine coverage the old `.wiring.test.ts` files had. One `.wiring.test.ts` remains — `src/core/ducker-subgraph.wiring.test.ts` — and it covers Web Audio subgraph wiring like the sidechain, which is the only place that pattern still applies.
 
 **Assertion rule:** always write relative assertions (`a > b`, `a > b * 2`). Never hard-code absolute magnitudes — they are a brittleness smell. If you must write one, justify it in a comment.
 
