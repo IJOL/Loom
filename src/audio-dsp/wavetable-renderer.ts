@@ -34,13 +34,10 @@ export class WavetableRenderer implements VoiceRenderer {
   private phA = 0;
   private phB = 0;
   private f0: number;                 // base note frequency (Hz), for live detune
-  private fA: number;
-  private fB: number;
   private morphBase: number;
   private detuneBase: number;
   private filter: Svf;
   private cutoffBase: number;         // 0..1 knob value (for live cutoff modulation)
-  private cutoffHz: number;
   private qBase: number;
   private ampEnv = new Adsr();
   private begin: number;
@@ -56,6 +53,15 @@ export class WavetableRenderer implements VoiceRenderer {
   private modEnvs: ModEnv[] = [];
   private readonly effMo: VoiceModOffsets = {};
   private readonly adsrOnly: VoiceModOffsets = {};
+  /** The lane's live (smoothed) knob bag, or null when this voice runs standalone
+   *  (the offline kernel builds renderers directly). */
+  private live: ParamBag | null = null;
+  // Cached expensive conversions, refreshed only when their raw input moves.
+  private cutRaw = NaN;
+  private cutHz = 0;
+  private detRaw = NaN;
+  private fACache = 0;
+  private fBCache = 0;
   done = false;
 
   constructor(note: NoteSpec, p: ParamBag, private sr: number) {
@@ -68,12 +74,9 @@ export class WavetableRenderer implements VoiceRenderer {
 
     this.detuneBase = param(p, 'osc.detune', 0);
     this.f0 = midiToFreq(note.midi);
-    this.fA = this.f0 * Math.pow(2, -this.detuneBase / 1200);
-    this.fB = this.f0 * Math.pow(2, this.detuneBase / 1200);
 
     this.filter = new Svf(sr);
     this.cutoffBase = param(p, 'filter.cutoff', 0.55);
-    this.cutoffHz = Math.min(18000, 60 * Math.pow(220, this.cutoffBase));
     this.qBase = clamp01(param(p, 'filter.resonance', 0.2));
 
     this.begin = note.beginSec;
@@ -99,6 +102,7 @@ export class WavetableRenderer implements VoiceRenderer {
 
   /** This voice's ADSR-only offsets per param dot-id (for the UI knob ring). */
   getAdsrOffsets(): VoiceModOffsets { return this.adsrOnly; }
+  setLiveParams(l: ParamBag): void { this.live = l; }
 
   /** Fold this voice's gated ADSR envelopes into the shared-LFO offsets (keyed by
    *  param dot-id), returning one effective offset set. Mirrors the subtractive
@@ -129,28 +133,40 @@ export class WavetableRenderer implements VoiceRenderer {
     // Shared-LFO offsets + this voice's per-voice ADSR, keyed by param dot-id.
     const mo = this.modEnvs.length > 0 ? this.combineMods(t, gate, moIn) : moIn;
 
+    // Live knobs: turning these moves THIS note. The trigger snapshot is the
+    // fallback when no lane bag is attached.
+    const L = this.live;
+    const morphKnob = L ? param(L, 'osc.morph', this.morphBase) : this.morphBase;
+    const detuneKnob = L ? param(L, 'osc.detune', this.detuneBase) : this.detuneBase;
+    const cutoffKnob = L ? param(L, 'filter.cutoff', this.cutoffBase) : this.cutoffBase;
+    const qKnob = L ? clamp01(param(L, 'filter.resonance', this.qBase)) : this.qBase;
+
     // Morph (equal-power crossfade), modulatable.
-    const morph = mo?.['osc.morph'] ? clamp01(this.morphBase + mo['osc.morph']) : this.morphBase;
+    const morph = mo?.['osc.morph'] ? clamp01(morphKnob + mo['osc.morph']) : morphKnob;
     const gA = Math.cos(morph * Math.PI * 0.5);
     const gB = Math.sin(morph * Math.PI * 0.5);
     const osc = sampleTable(this.tA, this.phA) * gA + sampleTable(this.tB, this.phB) * gB;
 
-    // Detune (±50¢ full-depth) → live A/B frequencies.
-    let fA = this.fA, fB = this.fB;
-    if (mo?.['osc.detune']) {
-      const det = this.detuneBase + mo['osc.detune'] * MOD_DETUNE_CENTS;
-      fA = this.f0 * Math.pow(2, -det / 1200);
-      fB = this.f0 * Math.pow(2, det / 1200);
+    // Detune (±50¢ full-depth) → live A/B frequencies. Cached: the two pow calls
+    // only re-run when the effective (knob + mod) cents value actually moves.
+    const det = mo?.['osc.detune'] ? detuneKnob + mo['osc.detune'] * MOD_DETUNE_CENTS : detuneKnob;
+    if (det !== this.detRaw) {
+      this.detRaw = det;
+      this.fACache = this.f0 * Math.pow(2, -det / 1200);
+      this.fBCache = this.f0 * Math.pow(2, det / 1200);
     }
-    this.phA = (this.phA + fA / this.sr) % 1;
-    this.phB = (this.phB + fB / this.sr) % 1;
+    this.phA = (this.phA + this.fACache / this.sr) % 1;
+    this.phB = (this.phB + this.fBCache / this.sr) % 1;
 
     // Filter cutoff (exponential, like the base) + resonance, both modulatable.
-    const cutoffHz = mo?.['filter.cutoff']
-      ? Math.min(18000, 60 * Math.pow(220, clamp01(this.cutoffBase + mo['filter.cutoff'])))
-      : this.cutoffHz;
-    const q = mo?.['filter.resonance'] ? clamp01(this.qBase + mo['filter.resonance']) : this.qBase;
-    this.filter.update(osc, cutoffHz, q);
+    // Cached: the pow only re-runs when the effective cutoff actually moves.
+    const cutoff01 = mo?.['filter.cutoff'] ? clamp01(cutoffKnob + mo['filter.cutoff']) : cutoffKnob;
+    if (cutoff01 !== this.cutRaw) {
+      this.cutRaw = cutoff01;
+      this.cutHz = Math.min(18000, 60 * Math.pow(220, cutoff01));
+    }
+    const q = mo?.['filter.resonance'] ? clamp01(qKnob + mo['filter.resonance']) : qKnob;
+    this.filter.update(osc, this.cutHz, q);
 
     // Amp envelope (built-in). amp.gain modulation = tremolo (multiplicative).
     const env = this.ampOn ? this.ampEnv.update(t, gate, this.aA, this.aD, this.aS, this.aR) : 1;

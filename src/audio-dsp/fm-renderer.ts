@@ -63,11 +63,15 @@ export class FMRenderer implements VoiceRenderer {
   private holdEnd: number;
   private oscs: FmSine[];
   private envs: Adsr[];
-  private freqs: number[];
   private ratioBase: number[] = [];
   private detuneBase: number[] = [];
   private f0 = 0;
   private readonly freqEff = new Float64Array(4);
+  // Cache for the per-operator ratio/detune → Hz conversion (a pow call), keyed
+  // on the EFFECTIVE (base + mod offset) values that actually feed it — an LFO
+  // riding detune must not read a value frozen from the last knob move.
+  private readonly opRatioRaw = new Float64Array(4).fill(NaN);
+  private readonly opDetuneRaw = new Float64Array(4).fill(NaN);
   private opA: number[];
   private opD: number[];
   private opS: number[];
@@ -80,6 +84,9 @@ export class FMRenderer implements VoiceRenderer {
   private outputTrim: number;
   private fbState = 0;
   private modEnv = new ModEnvHost();
+  /** The lane's live (smoothed) knob bag, or null when this voice runs standalone
+   *  (the offline kernel builds renderers directly). */
+  private live: ParamBag | null = null;
   done = false;
 
   constructor(note: NoteSpec, p: ParamBag, private sr: number) {
@@ -96,7 +103,6 @@ export class FMRenderer implements VoiceRenderer {
 
     this.oscs = [];
     this.envs = [];
-    this.freqs = [];
     this.opA = [];
     this.opD = [];
     this.opS = [];
@@ -107,11 +113,8 @@ export class FMRenderer implements VoiceRenderer {
       this.oscs.push(new FmSine(sr));
       this.envs.push(new Adsr());
 
-      const ratio = param(p, `op${i}.ratio`, 1);
-      const detCents = param(p, `op${i}.detune`, 0);
-      this.freqs.push(f * ratio * Math.pow(2, detCents / 1200));
-      this.ratioBase.push(ratio);
-      this.detuneBase.push(detCents);
+      this.ratioBase.push(param(p, `op${i}.ratio`, 1));
+      this.detuneBase.push(param(p, `op${i}.detune`, 0));
 
       this.opA.push(Math.max(0.001, param(p, `op${i}.attack`, 0.01)));
       this.opD.push(Math.max(0.001, param(p, `op${i}.decay`, 0.3)));
@@ -127,6 +130,7 @@ export class FMRenderer implements VoiceRenderer {
 
   setModEnvelopes(mods: ModLite[]): void { this.modEnv.setModEnvelopes(mods); }
   getAdsrOffsets(): VoiceModOffsets { return this.modEnv.getAdsrOffsets(); }
+  setLiveParams(l: ParamBag): void { this.live = l; }
 
   renderSample(t: number, moIn?: VoiceModOffsets): number {
     if (t < this.begin) return 0;
@@ -134,20 +138,33 @@ export class FMRenderer implements VoiceRenderer {
     const gate = t <= this.holdEnd ? 1 : 0;
     // Shared-LFO offsets + this voice's per-voice ADSR, keyed by param dot-id.
     const mo = this.modEnv.active ? this.modEnv.combine(t, gate, moIn) : moIn;
-    const feedback = mo?.['feedback'] ? Math.max(0, this.feedback + mo['feedback']) : this.feedback;
+    // Live knobs: turning these moves THIS note. The trigger snapshot is the
+    // fallback when no lane bag is attached.
+    const L = this.live;
+    const feedbackKnob = L ? param(L, 'feedback', this.feedback) : this.feedback;
+    const mixKnob = L ? param(L, 'amp.mix', this.mix) : this.mix;
+    const outputTrimKnob = L ? param(L, 'output.trim', this.outputTrim) : this.outputTrim;
+    const feedback = mo?.['feedback'] ? Math.max(0, feedbackKnob + mo['feedback']) : feedbackKnob;
 
     const algo = ALGORITHMS[this.algoIdx];
     const carriers = CARRIERS[this.algoIdx];
     const opOut = new Array<number>(4);
 
-    // Effective op frequencies — ratio (±2 units) and detune (±50¢) modulatable.
+    // Effective op frequencies — ratio and detune are live knobs, each also
+    // modulatable (±2 units / ±50¢). The pow conversion is cached against the
+    // EFFECTIVE value (knob + mod), so a moving LFO never reads a stale Hz.
     const fe = this.freqEff;
     for (let i = 0; i < 4; i++) {
+      const ratioKnob = L ? param(L, `op${i + 1}.ratio`, this.ratioBase[i]) : this.ratioBase[i];
+      const detuneKnob = L ? param(L, `op${i + 1}.detune`, this.detuneBase[i]) : this.detuneBase[i];
       const rMod = mo?.[`op${i + 1}.ratio`], dMod = mo?.[`op${i + 1}.detune`];
-      fe[i] = (rMod || dMod)
-        ? this.f0 * Math.max(0.01, this.ratioBase[i] + (rMod ?? 0) * 2)
-            * Math.pow(2, (this.detuneBase[i] + (dMod ?? 0) * 50) / 1200)
-        : this.freqs[i];
+      const effRatio = Math.max(0.01, ratioKnob + (rMod ?? 0) * 2);
+      const effDetune = detuneKnob + (dMod ?? 0) * 50;
+      if (effRatio !== this.opRatioRaw[i] || effDetune !== this.opDetuneRaw[i]) {
+        this.opRatioRaw[i] = effRatio;
+        this.opDetuneRaw[i] = effDetune;
+        fe[i] = this.f0 * effRatio * Math.pow(2, effDetune / 1200);
+      }
     }
 
     for (let i = 3; i >= 0; i--) {
@@ -155,8 +172,9 @@ export class FMRenderer implements VoiceRenderer {
       // FM index = modulator level, modulatable per op (base + offset, clamped 0..1).
       let fmHz = 0;
       for (const mIdx of algo[i]) {
+        const mLvlBase = L ? param(L, `op${mIdx + 1}.level`, this.lvl[mIdx]) : this.lvl[mIdx];
         const mLvlOff = mo?.[`op${mIdx + 1}.level`];
-        const mLvl = mLvlOff ? clamp01(this.lvl[mIdx] + mLvlOff) : this.lvl[mIdx];
+        const mLvl = mLvlOff ? clamp01(mLvlBase + mLvlOff) : mLvlBase;
         fmHz += opOut[mIdx] * fe[mIdx] * mLvl * FM_DEPTH;
       }
       if (i === 3 && feedback > 0) {
@@ -169,8 +187,9 @@ export class FMRenderer implements VoiceRenderer {
 
     let out = 0;
     for (const c of carriers) {
+      const lvlBase = L ? param(L, `op${c + 1}.level`, this.lvl[c]) : this.lvl[c];
       const lo = mo?.[`op${c + 1}.level`];
-      const lvl = lo ? clamp01(this.lvl[c] + lo) : this.lvl[c];
+      const lvl = lo ? clamp01(lvlBase + lo) : lvlBase;
       out += opOut[c] * lvl;
     }
 
@@ -178,9 +197,9 @@ export class FMRenderer implements VoiceRenderer {
       this.done = true;
     }
 
-    const mix = mo?.['amp.mix'] ? Math.max(0, this.mix + mo['amp.mix']) : this.mix;
+    const mix = mo?.['amp.mix'] ? Math.max(0, mixKnob + mo['amp.mix']) : mixKnob;
     const shaped = Math.tanh(out * FM_DRIVE);   // soft-clip: tame harsh peaks, prevent carrier-sum clipping
-    let s = shaped * this.outputTrim * synthTrim('fm') * mix * this.vel;
+    let s = shaped * outputTrimKnob * synthTrim('fm') * mix * this.vel;
     if (mo?.['amp.gain']) s *= Math.max(0, Math.min(2, 1 + mo['amp.gain']));
     return s;
   }

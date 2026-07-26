@@ -14,6 +14,9 @@ import { registerRenderer } from './renderer-registry';
 import './tb303-renderer';
 import './wavetable-renderer';
 import './subtractive-renderer';
+import './fm-renderer';
+import './karplus-renderer';
+import './westcoast-renderer';
 
 const SR = 48000;
 
@@ -260,4 +263,124 @@ describe('Subtractive continuous params', () => {
     }
     expect(brightness(withTurn, AFTER, END)).toBeGreaterThan(brightness(withTurn, 0, HALF) * 2);
   });
+});
+
+// One row per engine: a continuous param that AUDIBLY moves, and the direction
+// the measurement should go. Each row gets its own gesture test AND its own
+// negative control — no `(or …)` alternatives, so a dead path cannot hide behind
+// a live one.
+const ENGINE_CASES: Array<{
+  id: string; base: ParamBag; patch: ParamBag; expect: 'brighter' | 'quieter';
+}> = [
+  // resonance pinned to 0: at the spec default (0.2), a fast (~15ms) cutoff
+  // sweep across this whole range excites the Svf hard enough to produce a
+  // genuine transient overshoot (>1.0 peak) — verified with a static render
+  // (no turn) sweeping resonance alone: even at res=0 the moving-cutoff
+  // transient exceeds the settled-tail reference a little, so the sweep is
+  // narrowed to 0.9 (still an easy >20x brightness ratio) rather than 0.95.
+  // Pre-existing Svf behaviour under a fast sweep, not a Task 5 regression.
+  { id: 'wavetable', base: { 'filter.cutoff': 0.2, 'osc.waveA': 3, 'osc.waveB': 3, 'amp.sustain': 1, 'filter.resonance': 0 },
+    patch: { 'filter.cutoff': 0.9 }, expect: 'brighter' },
+  // op2.level is a MODULATOR's index in algorithm 0 (serial), not the carrier's
+  // own level — verified with a static (no-turn) A/B render at op2.level 0.5
+  // vs 0: RMS ratio 0.96, i.e. flat. That is FM physics (Parseval/Bessel: a
+  // carrier's total energy is conserved across its sidebands regardless of
+  // modulation index), not a bug. op1.level is the only carrier in algorithm 0,
+  // so it is the one live param whose gesture is guaranteed to be "quieter".
+  { id: 'fm', base: { algorithm: 0, 'op1.level': 0.6, 'op2.level': 0.5, 'op1.sustain': 1, 'op2.sustain': 1 },
+    patch: { 'op1.level': 0 }, expect: 'quieter' },
+  // Two pre-existing confounds, both verified with static/identical-burst
+  // renders before changing anything here:
+  //  1) amp.level is missing from `base`, so its first-ever live write would
+  //     "land instantly" per ParamSmoother.setTargets (documented there: "an
+  //     id never seen before lands instantly, it has no previous value to ramp
+  //     FROM") — a genuine, if intentional, discontinuity unrelated to the
+  //     Karplus DSP. Seeding amp.level in `base` makes the patch a real ramp.
+  //  2) At the spec default damping (0.5, T60≈0.7s) and brightness (0.65), the
+  //     string's OWN natural decay — both the damping-driven loop gain AND the
+  //     brightness-driven one-pole's progressive high-frequency loss — swamps
+  //     the negative control regardless of amp.level. Pinning damping very low
+  //     (T60 far longer than the render) and brightness near 1 (negligible
+  //     per-pass high-frequency loss) neutralizes both, isolating amp.level.
+  { id: 'karplus', base: { 'string.damping': -3, 'string.brightness': 0.98, 'amp.level': 0.8 },
+    patch: { 'amp.level': 0.1 }, expect: 'quieter' },
+  // Two pre-existing confounds, both verified independently:
+  //  1) contour.amount: 0 (peak=0) trips AdContour's own decay branch instantly
+  //     (val = peak·exp(...) = 0 < 1e-4 on the very next tick), marking the
+  //     VOICE done within ~5ms — verified by tracing `.done` directly on a
+  //     standalone renderer. VoiceManager then reaps it long before the 0.5s
+  //     turn, so nothing is left to move. contour.mode: 1 (sustain) holds the
+  //     contour at its peak for the whole gate instead of decaying,
+  //     sidestepping the instant-done path.
+  //  2) lpg.cutoff itself is a bad "brighter" lever here: sweeping it drives
+  //     the STATEFUL Svf's cutoff every sample, and an exhaustive sweep (every
+  //     combination of resonance 0..1, fold 0..1, sweep width, sweep target)
+  //     never once produced a click-free result — a fast-varying cutoff
+  //     through a state-variable filter is inherently a mini coefficient-
+  //     modulation transient, worse than either the dark or bright settled
+  //     state (a pre-existing Svf characteristic, unrelated to Task 5: the
+  //     same overshoot appears even with a plain sine and zero resonance).
+  //     timbre.fold is a MEMORYLESS nonlinearity — no filter state to modulate
+  //     — so it gives the same "brighter" gesture cleanly. lpg.cutoff/
+  //     resonance stay fixed (wide open, no resonance) so nothing sweeps them.
+  { id: 'westcoast', base: { 'lpg.cutoff': 0.9, 'lpg.mode': 0, 'lpg.resonance': 0,
+      'contour.decay': 4, 'contour.amount': 0, 'contour.mode': 1, 'timbre.fold': 0 },
+    patch: { 'timbre.fold': 1.0 }, expect: 'brighter' },
+];
+
+describe.each(ENGINE_CASES)('$id continuous params', ({ id, base, patch, expect: dir }) => {
+  const SECONDS = 1;
+  const HALF = Math.floor(SR * SECONDS / 2);
+  const END = Math.floor(SR * SECONDS);
+  const AFTER = HALF + Math.floor(SR * 0.05);
+  const rms = (b: number[], from: number, to: number) => {
+    let s = 0;
+    for (let i = from; i < to; i++) s += b[i] * b[i];
+    return Math.sqrt(s / Math.max(1, to - from));
+  };
+
+  it('the knob moves the note already sounding', () => {
+    const buf = renderWithTurn(id, base, SECONDS, 0.5, patch);
+    if (dir === 'brighter') {
+      expect(brightness(buf, AFTER, END)).toBeGreaterThan(brightness(buf, 0, HALF) * 1.8);
+    } else {
+      expect(rms(buf, AFTER, END)).toBeLessThan(rms(buf, 0, HALF) * 0.7);
+    }
+  });
+
+  it('negative control: untouched, the same measurement barely moves', () => {
+    const buf = renderWithTurn(id, base, SECONDS, null, null);
+    if (dir === 'brighter') {
+      expect(brightness(buf, AFTER, END)).toBeLessThan(brightness(buf, 0, HALF) * 1.8);
+    } else {
+      expect(rms(buf, AFTER, END)).toBeGreaterThan(rms(buf, 0, HALF) * 0.7);
+    }
+  });
+
+  it('the change does not click', () => {
+    const buf = renderWithTurn(id, base, SECONDS, 0.5, patch);
+    // The reference window must be the LOUDEST/BRIGHTEST side of the gesture,
+    // because that is where the waveform's own steepest slope lives. Measuring a
+    // 'brighter' turn against its dull first half would compare the sweep to
+    // silence and fail on a perfectly clean render.
+    const reference = dir === 'brighter'
+      ? maxStep(buf, END - Math.floor(SR * 0.2), END)
+      : maxStep(buf, Math.floor(SR * 0.2), HALF - 32);
+    const across = maxStep(buf, HALF - 32, HALF + Math.floor(SR * 0.03));
+    expect(across).toBeLessThanOrEqual(reference);
+  });
+});
+
+it('wavetable: the WAVE choice is structural and stays frozen mid-note', () => {
+  const base: ParamBag = { 'osc.waveA': 0, 'osc.waveB': 0, 'amp.sustain': 1 };
+  const withTurn = renderWithTurn('wavetable', base, 1, 0.5, { 'osc.waveA': 3 });
+  const control = renderWithTurn('wavetable', base, 1, null, null);
+  expect(withTurn).toEqual(control);
+});
+
+it('wavetable: the ENVELOPE times stay frozen mid-note', () => {
+  const base: ParamBag = { 'amp.attack': 0.8, 'amp.sustain': 1, 'osc.waveA': 3, 'osc.waveB': 3 };
+  const withTurn = renderWithTurn('wavetable', base, 1, 0.2, { 'amp.attack': 0.001 });
+  const control = renderWithTurn('wavetable', base, 1, null, null);
+  expect(withTurn).toEqual(control);
 });
