@@ -2438,7 +2438,8 @@ uvicorn app:app --port 8765
 <p>See <a href="#09-saving-and-export">Saving &amp; Export</a> for how sessions are saved and loaded.</p>
 </section>
 <section class="chapter" id="11-developer-guide"><h1>Developer Guide</h1>
-<p>This chapter is for contributors who want to extend Loom or understand how its internals fit together. Read it alongside <code>CLAUDE.md</code> at the repo root, which is the canonical, always-current architecture reference — this chapter expands on it in prose.</p>
+<p>This chapter is for contributors who want to extend Loom or understand how its internals fit together. Read it alongside <code>CLAUDE.md</code> at the repo root, which is the shortest architecture summary the project keeps — this chapter expands on it in prose.</p>
+<p>Both drift. Where a document and the code disagree, <strong>the code is right</strong>: every claim below carries the file it was checked against, so you can check it again.</p>
 <h2>The spine</h2>
 <p>Three structures hold everything together:</p>
 <ol>
@@ -2449,16 +2450,31 @@ uvicorn app:app --port 8765
 <li><p><strong><code>LaneResourceMap</code></strong> — owns the live Web Audio nodes for each lane. One entry per lane, holding a <code>ChannelStrip</code>, a <code>SynthEngine</code> instance, and an <code>InsertChain</code>. The lane allocator in <code>src/app/lane-allocator.ts</code> is the sole path for creating and swapping these resources; nothing else should construct them directly.</p>
 </li>
 </ol>
+<h2>Boot</h2>
+<p><code>src/main.ts</code> is a boot script, not a feature file. It builds the handful of objects everything else needs, then hands them to one wiring module per concern in <code>src/app/</code>:</p>
+<ul>
+<li><code>bootstrapPlugins()</code> first, before anything reads the registry (<code>main.ts:94</code>), then the preset cache derived from it (<code>main.ts:103</code>).</li>
+<li><code>createAudioGraph()</code> (<code>main.ts:114</code>) and the three worklet <code>addModule</code> calls, which every lane allocation waits on (<code>main.ts:129</code>).</li>
+<li>The <code>Sequencer</code> (<code>main.ts:142</code>), the automation recorder and its knob registry (<code>main.ts:143</code>), the <code>DestinationRegistry</code> (<code>main.ts:150</code>), the lane allocator (<code>main.ts:172</code>), and the <code>SessionHost</code> (<code>main.ts:379</code>).</li>
+<li>Then roughly a dozen <code>wireX(...)</code> / <code>createXFeature(...)</code> calls, each of which owns one concern end to end and lives in its own file under <code>src/app/</code>.</li>
+</ul>
+<p><strong>The order is load-bearing</strong>, and the comments in <code>main.ts</code> say why at each step. <code>wireMenuBar</code> is deliberately the last statement of boot (<code>main.ts:813</code>): its action table names a handle from nearly every feature above, so the bar appearing is the proof that boot ran start to finish.</p>
+<p>If you are looking for the code behind a control, it is almost never in <code>main.ts</code> — find the <code>wireX</code> call that mentions it and open that module.</p>
 <h2>The plugin registry</h2>
 <p><code>src/app/plugin-bootstrap.ts</code> calls <code>import.meta.glob</code> at build time over two trees:</p>
-<pre><code class="language-text">src/engines/*.ts          — synth engines
-src/plugins/fx/*.ts       — FX inserts
-src/plugins/modulators/   — LFO / ADSR modulators
+<pre><code class="language-text">src/engines/*.ts       — synth engines
+src/plugins/**/*.ts    — the WHOLE plugin tree: fx/, modulators/, notefx/
 </code></pre>
-<p>Every module in those trees is eagerly imported. Any exported value that satisfies the <code>PluginFactory</code> shape (<code>{ kind, manifest, create }</code>) is collected and registered via <code>registerPlugin</code>. The engine registry (<code>src/engines/registry.ts</code>) supports both a <strong>singleton</strong> pattern (<code>registerEngine</code>) for shared instances and a <strong>factory</strong> pattern (<code>registerEngineFactory</code> / <code>createEngineInstance</code>) for per-lane instances that need independent state.</p>
-<p><code>listEngines()</code> reads from the singleton map and is the source of metadata (name, type, polyphony, parameter specs) used to populate the lane engine selector. Engines declare their parameters as <code>EngineParamSpec[]</code>; voices expose continuous <code>AudioParam</code>s via <code>getAudioParams()</code>, and engines expose shared ones via <code>getSharedAudioParams()</code>. That is the entire surface the modulation and automation systems need — nothing else.</p>
+<p>(<code>*.test.ts</code> is excluded from both.) Every module in those trees is eagerly imported. Any exported value that satisfies the <code>PluginFactory</code> shape (<code>{ kind, manifest, create }</code>, with <code>kind</code> one of <code>synth</code> / <code>fx</code> / <code>modulator</code>) is collected and registered via <code>registerPlugin</code>.</p>
+<p><strong>Note-FX are the exception.</strong> A <code>NoteFxFactory</code> declares <code>defaultParams()</code> instead of <code>create()</code>, so the shape check skips it (<code>plugin-bootstrap.ts:36</code>). Those files call <code>registerPlugin</code> themselves at module scope — the glob&#39;s only job for that category is to evaluate the module. That is why the second glob has to cover the whole plugin tree, not just <code>fx/</code> and <code>modulators/</code>.</p>
+<p>The engine registry (<code>src/engines/registry.ts</code>) supports both a <strong>singleton</strong> pattern (<code>registerEngine</code>) for shared instances and a <strong>factory</strong> pattern (<code>registerEngineFactory</code> / <code>createEngineInstance</code>) for per-lane instances that need independent state.</p>
+<p><code>listEngines()</code> reads from the singleton map and is the source of metadata (name, type, polyphony, parameter specs) used to populate the lane engine selector.</p>
+<h3>What &quot;declaring a param&quot; actually buys you</h3>
+<p>Engines declare their parameters as <code>EngineParamSpec[]</code>, and for the catalogue that is the whole story: <code>listAutomationTargets</code> walks <code>engine.params</code> and pushes <code>`${lane.id}.${spec.id}`</code> for every continuous one (<code>src/automation/automation-targets.ts:120</code>). Automation and the modulation dropdown both read that catalogue through <code>DestinationRegistry.list()</code>. Neither of them calls <code>getAudioParams()</code>.</p>
+<p><code>getAudioParams()</code> / <code>getSharedAudioParams()</code> are a narrower thing — the <strong>Web Audio binding surface</strong>, used only where a modulator has to reach a real <code>AudioParam</code> through the depth-gain bridge in <code>connection-binder.ts</code>. That means FX inserts, channel strips, and the two engines that still expose shared params, Drums and Sampler. For the six melodic worklet engines <code>getAudioParams()</code> returns an empty <code>Map</code> on purpose (<code>src/engines/worklet-lane-engine.ts:150</code>); their modulation is applied per sample inside the worklet by <code>ModulationRuntime</code>.</p>
+<p>So: declare the param in the spec and it is automatable and modulatable. Return it from <code>getAudioParams()</code> only if it is a genuine <code>AudioParam</code> on the main thread.</p>
 <h2>SessionState data model</h2>
-<p><code>src/session/session.ts</code> defines three levels:</p>
+<p><code>src/session/session-types.ts</code> defines three levels (re-exported from <code>session.ts</code>, which holds the factories):</p>
 <ul>
 <li><strong><code>SessionLane</code></strong> — has an <code>engineId</code>, a list of <code>SessionClip | null</code> slots, and an <code>engineState</code> bag that persists knob values, modulator configs, note-FX, sampler keymap, pad params, and kit mode.</li>
 <li><strong><code>SessionClip</code></strong> — holds <code>notes: NoteEvent[]</code> (the unified note list for both melodic and drum clips), optional <code>ClipEnvelope[]</code> for per-clip automation, and an optional <code>sample</code> field for loop/song audio clips. Clips also carry <code>loopEnabled</code> / <code>loopStartTick</code> / <code>loopEndTick</code> for sub-region looping, and a <code>gridResolution</code> hint for the drum editor.</li>
@@ -2468,11 +2484,19 @@ src/plugins/modulators/   — LFO / ADSR modulators
 <p>Saves are written as <code>schemaVersion: 3</code> (<code>SavedStateV3</code> in <code>src/save/</code>). Older saves are normalised by <code>session-migration.ts</code> at load time before anything else touches the data.</p>
 <h2>LaneResourceMap and the audio graph</h2>
 <p>The master audio path assembled in <code>src/app/audio-graph.ts</code> runs:</p>
-<pre><code class="language-text">master GainNode → insert chain → MasterCompressor → AnalyserNode
-                                                   → SidechainBus
+<pre><code class="language-text">master (sum GainNode)
+  → MasterBusStrip (EQ / pan / mute)
+  → InsertChain (the master rack)
+  → MasterShaper (air / glue / width)
+  → MasterCompressor (the safety limiter)
+  → soft-clip WaveShaper (4x oversampled)
+  → AnalyserNode → ctx.destination
 </code></pre>
+<p>Two details of that chain are deliberate. The shaper sits <strong>before</strong> the limiter, because air/glue/width are mix decisions and the limiter must be the last thing that sees the signal. The soft-clip after it is the absolute ceiling: identity below ±0.8, then a tanh knee that maps everything above — including overs beyond ±1 — to about ±0.95, so the master output cannot digitally clip.</p>
+<p>A second analyser, <code>masterMeterAnalyser</code>, taps off the soft-clip and is <strong>not</strong> connected to the destination. It feeds the master VU meter and the PERF peak/clip readout, so both read the true, clip-free output.</p>
+<p><code>SidechainBus</code> is not a node in that chain at all. It is a lane-id → tap registry (<code>src/core/sidechain-bus.ts</code>): each <code>ChannelStrip</code> registers a <code>GainNode</code> fed off its post-mute output, and a ducker subgraph reads <code>getTap(sourceLaneId)</code> to drive its envelope follower. The allocator hands it to every lane strip it builds.</p>
 <p>Each lane&#39;s <code>LaneResources</code> consists of a <code>ChannelStrip</code> (level, EQ, send levels), a <code>SynthEngine</code>, and an <code>InsertChain</code> of per-lane FX. <code>LaneResourceMap.replaceEngine</code> hot-swaps only the engine while keeping the strip and inserts in place — the channel-level resources survive an engine swap.</p>
-<p><code>ensureLaneResource</code> in the lane allocator is the only place that constructs a <code>LaneResources</code>. Call it once per lane before accessing anything in the map. Test code that needs a lane wired up must call it explicitly as setup.</p>
+<p>The lane allocator (<code>src/app/lane-allocator.ts</code>) is the only module that constructs a <code>LaneResources</code>, in two places: <code>ensureLaneResource</code> for a session lane (line 255) and <code>ensureExtraPoly</code> for the legacy extra-poly strips (line 169). Call <code>ensureLaneResource</code> once per lane before accessing anything in the map. Test code that needs a lane wired up must call it explicitly as setup.</p>
 <h2>The scheduler</h2>
 <p>The <code>Sequencer</code> class (<code>src/core/sequencer.ts</code>) fires every 25 ms (the poll interval) and looks <strong>200 ms</strong> ahead. On each tick it calls <code>sessionTick(now, lookaheadSec)</code> with <code>lookaheadSec = 0.2</code>, and the session host fans that out to <code>tickLane</code> for each playing lane.</p>
 <p><code>tickLane</code> (<code>src/core/lane-scheduler.ts</code>) implements the Chris Wilson two-clocks pattern: for every <code>NoteEvent</code> whose absolute schedule time falls in the window <code>[now, now + lookaheadSec)</code>, it calls <code>ctx.onTrigger</code>. Schedule times are derived by converting clip-tick positions to seconds using the current BPM and projecting onto the absolute timeline from the loop-start anchor. Step duration for a 16th note is <code>60 / bpm / 4</code> seconds.</p>
@@ -2481,7 +2505,8 @@ src/plugins/modulators/   — LFO / ADSR modulators
 <li><code>bpm</code> and <code>length</code> are mutable at runtime; the next scheduled step picks up the new values immediately.</li>
 <li>Engine params are read at trigger time, not when a note is held. Live knob tweaks apply to the <strong>next</strong> trigger.</li>
 </ul>
-<p>When <code>clip.loopEnabled</code> is set, <code>effectiveClipLoop</code> (<code>src/core/clip-loop.ts</code>) constrains the iteration window to <code>[loopStartTick, loopEndTick)</code>. The brace UI in <code>src/core/clip-loop-brace.ts</code> is the editing surface for that region.</p>
+<p>The scheduler asks <code>laneLoopRegion</code> (<code>src/core/clip-loop.ts:40</code>) how long one iteration of a clip is, and there are <strong>two</strong> ways the answer comes back shorter than the whole clip. The active scene&#39;s global loop wins first: when <code>GlobalLoopOverride.enabled</code> is set, <code>[startBar, endBar)</code> becomes the region for every lane in the scene, whatever the clips say. Absent that, <code>effectiveClipLoop</code> (line 19) applies the clip&#39;s own <code>loopEnabled</code> / <code>[loopStartTick, loopEndTick)</code>. The brace UI in <code>src/core/clip-loop-brace.ts</code> is the editing surface for the clip&#39;s own region.</p>
+<p>That precedence has a consequence worth knowing before you touch clip automation: a clip&#39;s envelope array spans the clip&#39;s <code>lengthBars</code> and is blind to <strong>both</strong> shortenings, so inside a shorter loop the curve slides against the notes. It is written down as known debt at the top of <code>src/core/clip-envelope-length.ts</code> and pinned by tests — meet it as a decision, not a mystery.</p>
 <h2>How-to recipes</h2>
 <h3>Add a synth engine</h3>
 <p>Since synthesis moved into the AudioWorklet, an engine is <strong>two halves in two
@@ -2510,17 +2535,60 @@ registers <em>inside it</em> and <code>createRenderer</code> throws
 only sends listed ids down the worklet path; an unlisted id falls through,
 the lane gets no engine, and nothing sounds.</li>
 </ol>
-<p>Note that <code>create()</code> and <code>getAudioParams()</code> are <strong>never called</strong> on the
-registered engine any more — the descriptor&#39;s <code>create()</code> deliberately throws,
-and modulation no longer runs on Web Audio <code>AudioParam</code>s. It runs sample-accurately
-inside the worklet (<code>src/audio-dsp/modulation-runtime.ts</code>).</p>
+<p>Two things about the registered descriptor are worth knowing, because they look
+like bugs otherwise:</p>
+<ul>
+<li><strong>Its synthesis surface is inert, not throwing.</strong> <code>createDescriptorEngine</code>
+gives you a <code>createVoice()</code> that returns a no-op <code>Voice</code> with an empty
+<code>getAudioParams()</code> (<code>src/engines/descriptor-engine.ts:48</code>, <code>:76</code>). Nothing on
+the live or offline path calls it — the registered singleton is purely
+metadata, and modulation for these engines runs sample-accurately inside the
+worklet (<code>src/audio-dsp/modulation-runtime.ts</code>).</li>
+<li><strong>The bridged <em>plugin</em> does throw.</strong> <code>bootstrapPlugins</code> wraps each engine
+descriptor in a synth <code>PluginFactory</code> so <code>listPlugins(&#39;synth&#39;)</code> keeps seeing
+every engine, and that wrapper&#39;s <code>create()</code> throws on purpose
+(<code>src/app/plugin-bootstrap.ts:81</code>). It is a tripwire: if you see it, something
+called <code>createInstance(&#39;synth&#39;, …)</code> instead of going through the lane
+allocator.</li>
+</ul>
 <p>See <a href="#04-engines">Engines</a> for the full engine catalogue.</p>
-<h3>Add an FX insert or modulator</h3>
+<h3>Commit an engine param edit through one seam</h3>
+<p>Any control you build for an engine param must write it with <code>commitParam</code> from
+<a href="../../src/engines/engine-param-commit.ts"><code>src/engines/engine-param-commit.ts</code></a>,
+never <code>engine.setBaseValue</code> alone:</p>
+<pre><code class="language-ts">commitParam(engine, ctx, paramId, value);   // engine + the engineState mirror
+</code></pre>
+<p><code>setBaseValue</code> moves the sound. It does <strong>not</strong> persist it. The mirror into
+<code>lane.engineState.params</code> is the only vehicle by which a knob value reaches a
+save, and builders that forgot it threw the edit away silently — that was the
+knob-loss bug on FM, Wavetable, Karplus, Westcoast and TB-303, fixed by routing
+every builder through this one seam.</p>
+<p>Two siblings exist for the cases a UI context cannot cover:</p>
+<ul>
+<li><code>commitParamForLane(engine, sessionState, laneId, id, v)</code> — same seam for a
+caller that holds the session directly, e.g. a MIDI control surface writing a
+lane whose editor is closed.</li>
+<li><code>commitEngineBaseValues(engine, sessionState, laneId)</code> — the bulk sibling for
+the programmatic applies that move a whole sound at once (recall a preset,
+load a user preset, Randomize). Those push values straight into the engine, so
+no <code>onChange</code> fires and <code>commitParam</code> never runs.</li>
+</ul>
+<p><code>withoutParamMirror(...)</code> suppresses the mirror. The load path uses it to apply
+a lane&#39;s preset without clobbering the saved params it is about to replay — a
+saved tweak beats its lane preset.</p>
+<h3>Add an FX insert</h3>
 <ol>
-<li>Create <code>src/plugins/fx/&lt;name&gt;.ts</code> or <code>src/plugins/modulators/&lt;name&gt;.ts</code>.</li>
-<li>Export a <code>PluginFactory</code> with <code>kind: &#39;fx&#39;</code> or <code>kind: &#39;modulator&#39;</code> respectively, and call <code>registerPlugin</code> at module scope.</li>
-<li>FX inserts mount per-lane and on master automatically; modulators appear in the modulation panel. See <a href="#06-modulation-and-note-fx">Modulation and Note FX</a> for the user-facing side.</li>
+<li>Create <code>src/plugins/fx/&lt;name&gt;.ts</code>.</li>
+<li>Export a <code>PluginFactory</code> with <code>kind: &#39;fx&#39;</code>. Do <strong>not</strong> call <code>registerPlugin</code> — the glob&#39;s shape check collects it for you; none of the eleven shipped inserts registers itself.</li>
+<li>That is all. The &quot;+ Add insert&quot; picker is an unfiltered <code>listPlugins(&#39;fx&#39;)</code> (<code>src/session/lane-insert-ui.ts:218</code>), and the same builder serves lanes, the master rack and both send racks, so a new insert appears in all four at once.</li>
 </ol>
+<p>Separately from the picker, the <code>FxBus</code> seeds send A with <code>delay</code> and send B with <code>reverb</code> when it is constructed (<code>src/core/fx.ts:30</code>). That is a default, not a restriction — both are offered as ordinary inserts too.</p>
+<h3>Add a modulator</h3>
+<p><code>kind: &#39;modulator&#39;</code> plugins are collected the same way and bound the same way: <code>ConnectionBinder.apply</code> builds <code>modulator.output → GainNode(depth) → targetAudioParam</code> (<code>src/modulation/connection-binder.ts:44</code>).</p>
+<p>Be aware of the ceiling before you invest in one. The MODULATORS panel offers exactly two buttons, <strong>+ LFO</strong> and <strong>+ ADSR</strong> (<code>src/modulation/modulation-ui.ts:63</code>), so there is no UI path that adds a third kind. <code>ModulationHost</code> hardcodes <code>LFOVoice</code> / <code>ADSRVoice</code> and routes any other kind through <code>createInstance</code>, which its own comment describes as a stateless stub whose <code>currentValue()</code> returns 0 (<code>src/modulation/modulation-host.ts:85</code>). Inside the worklet, <code>ModLite.kind</code> is typed <code>&#39;lfo&#39; | &#39;adsr&#39;</code> (<code>src/audio-dsp/modulation-runtime.ts:24</code>), so a custom modulator cannot reach a melodic engine&#39;s params at all. Adding a genuinely new modulator kind is a change to those three places, not a drop-in.</p>
+<p>See <a href="#06-modulation-and-note-fx">Modulation and Note FX</a> for the user-facing side.</p>
+<h3>Add a note-FX</h3>
+<p><code>kind: &#39;notefx&#39;</code> is the fourth plugin kind — a transform applied to notes before they reach the engine, per lane, persisted in <code>lane.engineState.noteFx</code>. A <code>NoteFxFactory</code> declares <code>defaultParams()</code> and has no <code>create()</code>, so the bootstrap&#39;s shape check ignores it: the file <strong>must</strong> call <code>registerPlugin</code> itself at module scope (<code>src/plugins/notefx/arp.ts:11</code>). The processor that does the work lives beside it in <code>src/notefx/</code>.</p>
 <h3>Add a preset</h3>
 <p>Open <code>public/presets/&lt;engine&gt;.json</code> and append an entry. The <code>gm</code> field is optional (an integer GM program number for MIDI-import matching). JSON is the source of truth; <code>preset-loader.ts</code> validates and <code>preset-apply.ts</code> applies it at runtime by calling <code>engine.applyPreset</code>. Each engine&#39;s JSON keys are its own vocabulary — do not use a generic <code>setBaseValue</code> loop.</p>
 <h3>Add a synth drum kit</h3>
@@ -2531,7 +2599,10 @@ inside the worklet (<code>src/audio-dsp/modulation-runtime.ts</code>).</p>
 <li>Add a manifest file <code>public/drumkits/&lt;id&gt;.json</code> with <code>id</code>, <code>name</code>, and a <code>samples</code> array. Each entry needs <code>voice</code>, <code>note</code> (GM MIDI note number), and <code>file</code> (path relative to <code>public/drumkits/</code>).</li>
 <li>Register the kit in <code>public/drumkits/index.json</code> by appending <code>{ &quot;id&quot;: &quot;&lt;id&gt;&quot;, &quot;name&quot;: &quot;&lt;display name&gt;&quot; }</code>.</li>
 </ol>
-<p>The existing kits (<code>tr808</code>, <code>acoustic</code>, <code>dirt</code>) follow this layout exactly and are the reference.</p>
+<p>68 sampled kits ship under <code>public/drumkits/</code>; <code>tr808</code>, <code>acoustic</code> and <code>dirt</code> are the hand-curated three and the clearest reference for this layout.</p>
+<h2>Conventions</h2>
+<p><strong>File size: 300 lines of code as a target, 500 as a hard cap.</strong> Lines of <em>code</em> — comment lines and blank lines do not count towards either number. The distinction is not pedantry: <code>src/main.ts</code> is 820 raw lines and 488 lines of code, which is inside the cap by the rule that applies and over it by the one that does not. A file that is long because it explains itself is fine; a file that is long because it does too much is the thing the cap exists to catch. When one crosses the line, split it by concern — <code>src/app/</code> is what that looks like in practice.</p>
+<p><strong>Assertions are relative.</strong> See Testing, below.</p>
 <h2>Source layout tour</h2>
 <pre><code class="language-text">src/
   core/           DSP primitives + pure logic (synth, drums, sequencer,
@@ -2541,17 +2612,25 @@ inside the worklet (<code>src/audio-dsp/modulation-runtime.ts</code>).</p>
                     — note-velocity colour ramp, gain curve, lane editing helpers
                   clip-loop.ts / clip-loop-brace.ts
                     — clip sub-region resolver + drag-brace UI primitive
-  engines/        SynthEngine abstraction, registry, one file per engine
-                  (tb303, subtractive, fm, wavetable, karplus, sampler,
-                  drums-engine) + engine-selector UI
+  engines/        SynthEngine abstraction, registry, one file per engine —
+                  nine register today: tb303, subtractive, fm, wavetable,
+                  karplus, westcoast, sampler, audio (the dedicated audio
+                  channel), drums-engine — plus engine-selector UI and
+                  engine-param-commit (the one write path for a param edit)
   session/        SessionState model + all session UI
                   (session-host, session-ui, session-inspector,
                   clip-editors/, session-migration)
   modulation/     LFO/ADSR voices, ModulationHost, ModulatorScope,
                   connection binder
   plugins/        Plugin SPI + registry
-                  fx/       — multifilter, distortion, reverb, delay, InsertChain
+                  fx/       — eleven inserts: bitcrusher, chorus, compressor,
+                              delay, distortion, flanger, limiter, multifilter,
+                              phaser, reverb, tremolo. chorus and flanger share
+                              modulated-delay.ts; reverb reads reverb-ir.ts.
+                              insert-chain.ts is the generic host, not a plugin
                   modulators/ — lfo, adsr
+                  notefx/   — arp, chord (the fourth plugin kind; the
+                              processors themselves live in src/notefx/)
   presets/        Preset loader + apply logic
                   (JSON assets live in public/presets/)
   midi/           SMF parser, MIDI-to-session transform, GM lookup, import UI
@@ -2578,16 +2657,36 @@ inside the worklet (<code>src/audio-dsp/modulation-runtime.ts</code>).</p>
   polysynth/      LEGACY/vestigial. Not the Subtractive voice host any more —
                   Subtractive is a descriptor engine rendered in the worklet.
                   Only the preset store + the extra-poly path still touch it
-  app/            Boot factories: audio-graph, lane-allocator, trigger-dispatch,
-                  knob-mounting, mute-solo, bpm-broadcast, engine-swap,
-                  plugin-bootstrap, lane-host-wiring
+  app/            Boot wiring, one module per concern (37 files). main.ts calls
+                  into these; it does not contain them — see &quot;Boot&quot; above
+                  audio spine  — audio-graph, lane-allocator, engine-swap,
+                                 trigger-dispatch, live-voice-registry
+                  boot wiring  — transport-controls, engine-selector-wiring,
+                                 midi-control-wiring, midi-import-wiring,
+                                 import-lane-prep, recording-feature,
+                                 stems-feature, session-lifecycle,
+                                 save-history-wiring, menu-wiring,
+                                 xy-panel-wiring, knob-menu-wiring,
+                                 automation-writes, lane-host-wiring
+                  UI plumbing  — knob-mounting, knob-registry-prune, mute-solo,
+                                 bpm-broadcast, track-ids, toolbar-status-chips,
+                                 about-dialog, modal-dialog, and the four menu
+                                 files (menu-spec / menu-actions / menu-bar /
+                                 menu-shortcuts) that menu-wiring mounts
+                  features     — performance-feature, arrangement-playback,
+                                 automation-recording, stretch-resync,
+                                 warp-resync
+                  plugin-bootstrap — the build-time glob scan (see above)
   save/           SaveManager (schemaVersion: 3), auto-history (AutoHistory:
                   snapshot-diff undo/redo + gesture coalescing, wired to the
                   transport-bar ↺/↻ buttons), history-wiring (withUndo /
                   attachKnobUndo + the undo keyboard — LIVE and load-bearing:
                   withUndo wraps mutation sites across the app)
   notefx/         Note-FX plugin category (arpeggiator, chord spread) — per-lane
-  automation/     Clip envelope recording + read-back helpers
+  automation/     Clip envelope recording + read-back, the automation painter
+                  and its LFO, the knob right-click menu — and the
+                  DestinationRegistry, the ONE catalogue every parameter
+                  picker must read (see docs/automation-destinations.md)
   control/        Live MIDI controller subsystem: APC Key 25 profile, live
                   keyboard, LED mediator, profile registry
   demo/           Baked MIDI demos + demo picker
@@ -2602,13 +2701,42 @@ tools/
                   exposing an HTTP job queue for stem separation.
                   Run: uvicorn app:app --port 8765
                   Tests: python -m pytest test_app.py (not part of npm test)
+  manual/         The pipeline that builds the manual you are reading:
+                  assemble.mjs (chapters → one HTML document), shots.mjs
+                  (screenshots), pdf.mjs, web.mjs, shot-list.mjs (the
+                  hand-maintained list of screenshots + their selectors)
+                  and manual.css. Driven by build-manual.mjs
 </code></pre>
+<h3>Building the manual</h3>
+<p>The chapters in <code>docs/manual/*.md</code> are the only hand-written source. <code>index.html</code>, <code>Loom-Manual.pdf</code> and everything in <code>images/</code> are generated and committed — never hand-edit them.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it regenerates</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>npm run build:manual</code></td>
+<td>Everything: builds the app, then screenshots + PDF + <code>index.html</code></td>
+</tr>
+<tr>
+<td><code>npm run manual:shots</code></td>
+<td>Screenshots only</td>
+</tr>
+<tr>
+<td><code>npm run manual:pdf</code></td>
+<td>The PDF <strong>and</strong> <code>index.html</code> (no app build, no server)</td>
+</tr>
+</tbody></table>
+<p><code>manual:shots</code> photographs whatever is already in <code>dist/</code> — it does not build. Run <code>npm run build</code> immediately before it, or you will capture a stale bundle (the same trap as <code>test:e2e</code>, below). A new chapter file is invisible to both outputs until it is added to the <code>CHAPTERS</code> array in <code>tools/manual/assemble.mjs</code>.</p>
 <h2>Testing</h2>
 <p>Loom has four test layers, one per risk class.</p>
 <p><strong>Pure logic</strong> (<code>src/**/*.test.ts</code>, excluding <code>.dsp</code> and <code>.wiring</code> suffixes) — schemas, scales, migrations, session/arrangement logic, modulation math. These run fast and have no audio dependencies.</p>
 <p><strong>Scheduling with a fake clock</strong> — <code>src/core/lane-scheduler.test.ts</code> and <code>src/session/session-runtime.test.ts</code> drive the look-ahead scheduler through a mock <code>AudioContext</code> clock. The fake clock advances in controlled steps so timing edge-cases are deterministic.</p>
-<p><strong>Real DSP</strong> (<code>*.dsp.test.ts</code>) — every engine and drum kit is rendered through <code>OfflineAudioContext</code> via the <a href="https://github.com/ircam-ismm/node-web-audio-api"><code>node-web-audio-api</code></a> package, globalised in <code>test/setup.ts</code>. Use the shared battery <code>runStandardEngineBattery</code> from <code>test/dsp-battery.ts</code>. Each render writes a WAV to <code>test/output/</code> (gitignored). Compare against the committed reference in <code>test/golden/</code> with <code>npm run test:wav-diff</code>; promote with <code>npm run test:wav-bless</code>.</p>
-<p><strong>Modulation wiring</strong> (<code>*.wiring.test.ts</code>) — LFO/ADSR voices connected through a depth-gain bridge into a target <code>AudioParam</code>, verified end-to-end.</p>
+<p><strong>Real DSP</strong> (<code>*.dsp.test.ts</code>) — audio actually rendered and measured, in two techniques. The <strong>pure kernel</strong> is driven sample by sample with no <code>AudioContext</code> at all: <code>src/audio-dsp/drums/new-voices.dsp.test.ts</code> calls <code>renderSample()</code> in a loop and asserts each voice sounds like what it claims to be. The <strong>Web Audio nodes that stayed native</strong> — <code>comp-block</code>, <code>master-comp</code>, <code>master-shaper</code>, <code>strip-ducker</code>, <code>multifilter</code>, the sample/warp helpers, and the offline export — render through <code>OfflineAudioContext</code> via <a href="https://github.com/ircam-ismm/node-web-audio-api"><code>node-web-audio-api</code></a>, globalised in <code>test/setup.ts</code>.</p>
+<p>There is no per-engine battery any more. <code>test/setup.ts</code> states the design plainly: the pure DSP kernel is tested directly and the real worklet&#39;s audio is verified in the browser via Playwright, because <code>node-web-audio-api</code> cannot run our TypeScript processor. <code>runStandardEngineBattery</code> in <code>test/dsp-battery.ts</code> survives with <strong>no callers</strong>, so nothing writes to <code>test/output/</code>, and <code>npm run test:wav-diff</code> / <code>test:wav-bless</code> do nothing but print &quot;<code>test/output/ does not exist</code>&quot;. The 90 WAVs in <code>test/golden/</code> are orphans of the batteries the worklet cutover removed. Do not reach for that loop expecting it to work; reviving it is a decision, not a step.</p>
+<p><strong>Modulation, objective and end-to-end</strong> — <code>src/audio-dsp/modulation-pipeline.test.ts</code> drives the real in-engine path (<code>ModulationRuntime</code> → <code>VoiceManager</code> → renderer) for each of the six melodic engines, with an LFO at full depth on a continuous param, and asserts the rendered RMS envelope differs measurably from the unmodulated render, plus a negative control. It exists because the worklet rewrite dropped the per-engine coverage the old <code>.wiring.test.ts</code> files had. One <code>.wiring.test.ts</code> remains — <code>src/core/ducker-subgraph.wiring.test.ts</code> — and it covers Web Audio subgraph wiring like the sidechain, which is the only place that pattern still applies.</p>
 <p><strong>Assertion rule:</strong> always write relative assertions (<code>a &gt; b</code>, <code>a &gt; b * 2</code>). Never hard-code absolute magnitudes — they are a brittleness smell. If you must write one, justify it in a comment.</p>
 <p><strong>Colour-free output:</strong> every <code>npm test</code> script runs under <code>cross-env NO_COLOR=1</code>. When invoking Vitest directly, prefix with <code>NO_COLOR=1</code>. Do not add <code>--reporter=...</code> — the scripts already configure the right reporter.</p>
 <p><strong>Key commands:</strong></p>
@@ -2651,5 +2779,7 @@ tools/
 <p><strong>e2e gotcha:</strong> <code>test:e2e</code> and <code>npm test</code> serve <code>dist/</code> with no build step. Playwright boots <code>vite preview</code> over the last production bundle. If you changed <code>src/</code> without rebuilding, the newest features are absent from the bundle and tests fail with &quot;element not found&quot; — which looks like a regression. Always run <code>npm run build</code> before <code>npm run test:e2e</code>.</p>
 <p>Vitest runs test files serially (<code>fileParallelism: false</code>) because <code>node-web-audio-api</code>&#39;s <code>OfflineAudioContext</code> is not safe under parallel forks. The teardown occasionally exits non-zero with <code>ERR_IPC_CHANNEL_CLOSED</code> after all tests pass — that is a tinypool shutdown race, not a test failure; re-run to confirm green.</p>
 <hr>
-<p>For the definitive, always-up-to-date architecture reference, read <code>CLAUDE.md</code> at the repo root. Implemented design docs are intentionally removed from the tree once shipped (they drift); recover rationale from git history when you need it. Unfinished work lives in <code>docs/superpowers/REMAINING-WORK.md</code>.</p>
+<p><code>CLAUDE.md</code> at the repo root is the short-form architecture summary; this chapter is the long form. The convention is that a design doc is pruned from the tree once its work ships (specs drift faster than anything else), so recover rationale from git history when you need it: <code>git log --diff-filter=D --name-only -- docs/superpowers/</code>.</p>
+<p>What is still open — code debts, and the specs that have come back into <code>docs/superpowers/</code> since the last prune — is inventoried in <code>docs/superpowers/REMAINING-WORK.md</code>.</p>
+<p>(Links to files outside <code>docs/manual/</code> are written as plain text on purpose: the single-page build rewrites every <code>*.md</code> href into an in-page anchor, so a link to a file that is not a chapter becomes a dead one.)</p>
 </section></body></html>
