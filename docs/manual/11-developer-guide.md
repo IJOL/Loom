@@ -1,6 +1,8 @@
 # Developer Guide
 
-This chapter is for contributors who want to extend Loom or understand how its internals fit together. Read it alongside `CLAUDE.md` at the repo root, which is the canonical, always-current architecture reference — this chapter expands on it in prose.
+This chapter is for contributors who want to extend Loom or understand how its internals fit together. Read it alongside `CLAUDE.md` at the repo root, which is the shortest architecture summary the project keeps — this chapter expands on it in prose.
+
+Both drift. Where a document and the code disagree, **the code is right**: every claim below carries the file it was checked against, so you can check it again.
 
 ## The spine
 
@@ -374,4 +376,8 @@ Vitest runs test files serially (`fileParallelism: false`) because `node-web-aud
 
 ---
 
-For the definitive, always-up-to-date architecture reference, read `CLAUDE.md` at the repo root. Implemented design docs are intentionally removed from the tree once shipped (they drift); recover rationale from git history when you need it. Unfinished work lives in `docs/superpowers/REMAINING-WORK.md`.
+`CLAUDE.md` at the repo root is the short-form architecture summary; this chapter is the long form. The convention is that a design doc is pruned from the tree once its work ships (specs drift faster than anything else), so recover rationale from git history when you need it: `git log --diff-filter=D --name-only -- docs/superpowers/`.
+
+What is still open — code debts, and the specs that have come back into `docs/superpowers/` since the last prune — is inventoried in `docs/superpowers/REMAINING-WORK.md`.
+
+(Links to files outside `docs/manual/` are written as plain text on purpose: the single-page build rewrites every `*.md` href into an in-page anchor, so a link to a file that is not a chapter becomes a dead one.)
