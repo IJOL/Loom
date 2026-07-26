@@ -1065,7 +1065,7 @@ Send B (a Reverb by default).</p>
 <p><strong>Sample kits</strong> load the matching WAV for each voice (kick, snare, closed hat, open hat, clap, tom, cowbell, ride) from <code>public/drumkits/</code> and rebuild the keymap fresh on every session load — you never need to re-import the files manually. Once a sample kit is selected, the lane uses the drum-grid editor and the full per-pad parameter rack, exactly like a Sampler lane in drumkit mode.</p>
 <p>The sample WAVs are curated one-shots from the Dirt-Samples collection (used by TidalCycles), classic TR-808 recordings, and — for the <strong>Drum Machines</strong> group — the <a href="https://github.com/ritchse/tidal-drum-machines">tidal-drum-machines</a> library. Full credits are in the repo <code>README.md</code> under &quot;Credits — sample sources&quot;.</p>
 <blockquote>
-<p>Note: sample kits are loaded by the Sampler engine under the hood. For the Sampler&#39;s own Instrument family selector (Drumkit / Melodic / Loop) and per-pad parameters, see <a href="#08-midi-and-samples">MIDI &amp; Samples</a>.</p>
+<p>Note: sample kits are loaded by the Sampler engine under the hood. For the Sampler&#39;s own PRESET dropdown (grouped Presets / Drumkit / Loop) and per-pad parameters, see <a href="#08-midi-and-samples">MIDI &amp; Samples</a>.</p>
 </blockquote>
 <h3>Bus controls</h3>
 <p>The master bus row gives Vol, Pan, A, B, Lo, Mid, and Hi (±18 dB) for the whole
@@ -1977,7 +1977,7 @@ master bus → master insert chain → master compressor → output      Send A 
 <p>This chapter covers two ways to bring external material into a Loom session: importing a Standard MIDI File to populate lanes and clips automatically, and loading audio samples into the Sampler engine to build melodic instruments or drum kits.</p>
 <hr>
 <h2>MIDI Import</h2>
-<p><img src="images/midi-import.png" alt="MIDI Import panel"></p>
+<p><img src="images/midi-import.png" alt="The Import MIDI dialog"></p>
 <p>MIDI import lives under <strong>File ▸ Import MIDI…</strong>, which opens a modal dialog titled &quot;Import MIDI&quot;. There is no MIDI button in the transport row.</p>
 <h3>Loading a file</h3>
 <p>Click the file picker inside the dialog and choose a <code>.mid</code> or <code>.midi</code> file. Loom reads the file immediately — no server, no upload. The parser extracts every track&#39;s name, General MIDI programme number, and all note-on/note-off pairs (converted to start tick, duration, MIDI note, velocity, and channel).</p>

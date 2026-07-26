@@ -430,7 +430,7 @@ The preset dropdown for any drum lane lists kits from five groups:
 
 The sample WAVs are curated one-shots from the Dirt-Samples collection (used by TidalCycles), classic TR-808 recordings, and — for the **Drum Machines** group — the [tidal-drum-machines](https://github.com/ritchse/tidal-drum-machines) library. Full credits are in the repo `README.md` under "Credits — sample sources".
 
-> Note: sample kits are loaded by the Sampler engine under the hood. For the Sampler's own Instrument family selector (Drumkit / Melodic / Loop) and per-pad parameters, see [MIDI & Samples](08-midi-and-samples.md).
+> Note: sample kits are loaded by the Sampler engine under the hood. For the Sampler's own PRESET dropdown (grouped Presets / Drumkit / Loop) and per-pad parameters, see [MIDI & Samples](08-midi-and-samples.md).
 
 ### Bus controls
 

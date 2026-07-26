@@ -6,7 +6,7 @@ This chapter covers two ways to bring external material into a Loom session: imp
 
 ## MIDI Import
 
-![MIDI Import panel](images/midi-import.png)
+![The Import MIDI dialog](images/midi-import.png)
 
 MIDI import lives under **File ▸ Import MIDI…**, which opens a modal dialog titled "Import MIDI". There is no MIDI button in the transport row.
 
