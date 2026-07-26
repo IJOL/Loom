@@ -36,7 +36,7 @@ No linter is configured.
 
 - **`test:e2e` / `npm test` serve `dist/` with NO build step.** Playwright boots `vite preview`, which serves the last production build. If you changed `src/` and didn't `npm run build`, the e2e suite tests a **stale bundle** — the newest features fail with "element not found" and it looks like a regression. Always `npm run build` before `npm run test:e2e`.
 - **`test:unit` has a flaky teardown.** It occasionally exits non-zero with `ERR_IPC_CHANNEL_CLOSED` (tinypool / `node-web-audio-api` worker shutdown) **after all tests pass**. Vitest is configured to run files serially because `node-web-audio-api` is unsafe under parallel forks; the teardown error is not a test failure — re-run to confirm green.
-- **Live param tweaks apply to the *next* trigger, not the held note** — engine params are read at trigger time.
+- **Live param tweaks reach the note already sounding** — continuous engine params are read every sample from the lane's smoothed bag (`ParamSmoother` in `VoiceManager`). STRUCTURAL params still apply to the next trigger only: waveform, filter model, unison size, and every envelope TIME (our envelopes are closed-form over elapsed time, so re-reading an attack mid-note would step the amplitude). Drums is out of scope.
 
 ## Testing layout
 

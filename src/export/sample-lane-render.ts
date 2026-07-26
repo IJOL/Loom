@@ -124,6 +124,9 @@ export function renderSampleLane(
           if (slot.r instanceof SamplerRenderer && chokesVoice(trig, slot)) slot.r.choke(t);
         }
       }
+      // Built directly (not through a manager that wires setLivePad), so this
+      // renders from the trigger-time snapshot only — correct for an offline
+      // render, which has no live knob to track mid-note.
       live.push({ r: s.kind === 'audio'
         ? new AudioClipRenderer(s.spawn, bank, sampleRate)
         : new SamplerRenderer(s.spawn, bank, sampleRate), chokeGroup, padNote });
