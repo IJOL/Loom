@@ -15,10 +15,12 @@ track. See [Sessions, Lanes, Clips & Scenes](03-sessions-lanes-clips-scenes.md)
 for how to add and configure lanes.
 
 Every engine responds to **note velocity**. Velocity (0–127) scales each note's
-loudness continuously; accent (velocity ≥ 100) layers additional character on
-top — brightening the filter envelope and resonance on bass-style engines, and
-adding brightness on drums. For how to view and edit velocities in the
-piano-roll or drum-grid, see
+loudness continuously along a curve with a floor, so even the softest note still
+sounds. Accent (velocity ≥ 100) layers additional character on top, and what it
+adds is engine-specific: it brightens the filter envelope on the bass-style
+engines (and on the TB-303 alone also raises the resonance), drives the
+wavefolder harder on West Coast, and simply hits harder on drums. For how to
+view and edit velocities in the piano-roll or drum-grid, see
 [Velocity & dynamics](05-editing-clips.md#velocity--dynamics).
 
 ---

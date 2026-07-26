@@ -285,8 +285,14 @@ Above: piano-roll editor. The strip beneath the note grid is the velocity lane �
 
 Every note in Loom carries a **velocity** value from 0 to 127. Velocity is set when you draw a note (default: **90**), adjusted in the velocity lane, and captured automatically from MIDI import. It affects the sound in two complementary ways:
 
-- **Loudness** — velocity scales the note's output gain continuously via a smooth curve (`velToGain`). A velocity of 1 is near-silent; 127 is the loudest a note can be. Notes at the default of 90 sit just above the mid-point of the range, so there is clear headroom in both directions.
-- **Accent character** — notes with velocity **≥ 100** are accented. On top of the continuous gain, accent adds character to the sound: on bass-style engines (TB-303, Subtractive) it brightens the filter envelope and raises the resonance Q; on drums it increases brightness. This is the same accent model that the 303 bassline and drum sequencer have always used, now unified into the velocity scale.
+- **Loudness** — velocity scales the note's output gain continuously along a smooth curve with a **floor**: the softest possible note still sounds, at roughly a fifth of full level (about 13 dB down), rather than vanishing. 127 is the loudest a note can be. Notes at the default of 90 sit well up the range, so there is clear headroom in both directions.
+- **Accent character** — notes with velocity **≥ 100** are accented. On top of the continuous gain, accent adds character, and what it adds depends on the engine:
+  - **TB-303** — brightens the filter envelope, raises the resonance Q, and shortens the filter decay. It also gets a bigger loudness jump than the other engines, because a diode ladder loses level as Q climbs and would otherwise leave the accent quieter than the note it is meant to punch.
+  - **Subtractive** — opens the filter envelope wider. Its resonance is untouched.
+  - **West Coast** — drives the wavefolder (and its cutoff sweep) harder.
+  - **Drums** — purely a louder hit. There is no filter or tone change.
+
+  This is the same accent model that the 303 bassline and drum sequencer have always used, now unified into the velocity scale.
 
 ### Reading velocity visually
 
