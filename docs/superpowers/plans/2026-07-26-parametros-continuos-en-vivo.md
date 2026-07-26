@@ -371,8 +371,9 @@ describe('VoiceManager live param bag', () => {
     // Not there yet after one sample...
     vm.renderSample(0);
     expect(vm.liveParams['filter.cutoff']).toBeLessThan(0.3);
-    // ...and exactly there after the ramp.
-    for (let i = 1; i < SR * 0.1; i++) vm.renderSample(i / SR);
+    // ...and exactly there after the ramp. 0.3 s, not 0.1: landing on the
+    // convergence epsilon takes ~11 time constants, not the ~5 the ear needs.
+    for (let i = 1; i < SR * 0.3; i++) vm.renderSample(i / SR);
     expect(vm.liveParams['filter.cutoff']).toBe(0.9);
   });
 
