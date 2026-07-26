@@ -47,11 +47,13 @@ they are not silently forgotten. Verify against the code before acting.
   constant-bpm bars.** `arrangementFromSession` sizes each section with
   `clipLoopSec`, which integrates a clip's `tempoMap` — so an imported
   multi-tempo MIDI gets sections whose SECONDS match what the scheduler actually
-  plays (that is the fix; see `arrangement-from-session.ts`). The Performance
-  ruler (`performance-ui.ts`), the length field (`performance-ui-templates.ts`)
-  and `effectiveDurationSec` all convert those seconds to bars with
-  `songBarSec(state.bpm, meter)` — one constant bar length for the whole
-  timeline. On tempo-mapped material the two disagree: a section boundary falls
+  plays (that is the fix; see `arrangement-from-session.ts`). One constant bar
+  length is then used to relate those seconds to bar numbers, in both
+  directions: `effectiveDurationSec` sizes the timeline by multiplying the
+  user's `lengthBars` by `songBarSec(state.bpm, meter)`, and its two readers —
+  the Performance ruler (`performance-ui.ts`) and the length field
+  (`performance-ui-templates.ts`) — divide the result back by that same
+  `songBarSec`. On tempo-mapped material the two disagree: a section boundary falls
   part-way between two drawn bar lines, and the bar number under it is not the
   bar the music is in.
 

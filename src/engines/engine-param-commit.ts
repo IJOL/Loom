@@ -8,8 +8,19 @@
 // both wrote only to the engine, so those tweaks vanished on reload. Routing
 // every UI builder through one seam means no future control can forget.
 //
-// `ctx.sessionState` is optional on purpose: the offline export path builds
-// engines with no session at all and must still be able to set base values.
+// `ctx.sessionState` is optional because EngineUIContext declares it optional,
+// and the two builders that construct one can only honour that: knob-mounting
+// exposes it through a lazy getter (the context is built at boot, BEFORE
+// sessionHost exists, and consumers resolve it later at knob-event time), and
+// the clip editor router forwards its own optional `deps.sessionState`. Both
+// hand over a real session once one is running, so in practice the guard below
+// covers the boot window, not a mode of operation.
+//
+// It is NOT for the offline export, which was the previous claim here: nothing
+// under src/export/ constructs an EngineUIContext or calls commitParam at all.
+// It moves a lane's sound with applyPresetToEngine + applyLaneEngineState, which
+// write the engine directly and never need the mirror — an offline render has
+// nothing to persist.
 
 import { mirrorParamChange } from '../session/session-engine-state';
 import type { EngineUIContext } from './engine-types';
