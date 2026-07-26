@@ -72,12 +72,7 @@ import { startVisualizer } from './core/visualizer';
 import { loadAllPresets } from './presets/preset-loader';
 import { loadDrumKits } from './presets/drum-kits-loader';
 import { loadLibrary } from './patterns/pattern-library';
-import {
-  startAutomationTick, resetAutomationPosition, getAutoAbsSubIdx,
-  type AutomationTickDeps,
-} from './automation/automation-tick';
-import { applyAutomationToSession } from './automation/automation-apply';
-import { applyLiveControlWrite } from './automation/live-control-apply';
+import { resetAutomationPosition, getAutoAbsSubIdx } from './automation/automation-tick';
 import { createDestinationRegistry } from './automation/destination-registry';
 import { attachKnobAutomationMenu } from './automation/knob-automation-menu';
 import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from './core/lane-ids';
@@ -85,6 +80,7 @@ import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from './core/lane-ids';
 import { createActiveLaneStore } from './control/active-lane';
 import { wireMidiControl } from './app/midi-control-wiring';
 import { createTransportControls } from './app/transport-controls';
+import { createAutomationWrites } from './app/automation-writes';
 // ── AudioWorklet synthesis loader (live path for all subtractive lanes) ──────
 import { loadLoomWorklet } from './audio-worklet/loom-node';
 import { loadDrumsWorklet } from './audio-worklet/drums-node';
@@ -674,11 +670,13 @@ document.getElementById('capture-scene')?.addEventListener('click', () => sessio
         destinations,
         registry: automationRegistry,
         // Same target resolution playback automation uses, plus the mirror a
-        // mounted knob's onChange performs (applyLiveControlUnmountedWrite,
-        // defined near insertChainFor): the catalogue offers every destination
+        // mounted knob's onChange performs (applyLiveControlUnmountedWrite, in
+        // app/automation-writes.ts): the catalogue offers every destination
         // the session declares, including ones with no mounted knob, so
         // dragging the pad on one of those must land the value AND persist it.
-        applyUnmounted: applyLiveControlUnmountedWrite,
+        // Read through a closure, never as a bare reference: `autoWrites` is
+        // built ~180 lines below, and this handler only runs on a click.
+        applyUnmounted: (p, n, r) => autoWrites.applyLiveControlUnmountedWrite(p, n, r),
       });
       xyPad = pad;
       // Build-once shell; the pad surface itself is an imperative widget
@@ -856,74 +854,15 @@ const { midiImportDialog } = wireMidiImport({
 });
 const aboutDialog = bindAboutDialog();
 
-/** The insert rack an automation scope names: a lane, the master bus, or a send
- *  return. Mirrors the scopes `listAutomationTargets` emits. */
-function insertChainFor(scopeId: string) {
-  if (scopeId === 'fx.master') return masterInsertChain;
-  if (scopeId.startsWith('fx.send.')) {
-    const busId = scopeId.slice('fx.send.'.length);
-    return fx.sends.find((b) => b.id === busId)?.inserts;
-  }
-  return laneResources.get(scopeId)?.inserts;
-}
-
-// How a write with NO mounted knob finds its target: the ONE place the scope
-// resolution (`insertChainFor` / `laneResources`) happens, so the two callers
-// below cannot drift apart on WHERE a value lands.
-function unmountedTargetDeps(ranges: ReadonlyMap<string, { min: number; max: number }>) {
-  return {
-    getInsertFx: (scopeId: string, slotId: string) =>
-      insertChainFor(scopeId)?.list().find((s) => s.id === slotId)?.fx,
-    getEngine: (laneId: string) => laneResources.get(laneId)?.engine,
-    getRange: (id: string) => ranges.get(id),
-  };
-}
-
-// Playback automation (automationTickDeps.applyUnmounted, below): the value
-// reaches the audio object and NOTHING else. A curve belongs to the clip or to
-// the take, both of which already store it, so it must not become the lane's
-// saved base sound.
-function applyUnmountedWrite(
-  paramId: string,
-  normalised: number,
-  ranges: ReadonlyMap<string, { min: number; max: number }>,
-): void {
-  applyAutomationToSession(paramId, normalised, unmountedTargetDeps(ranges));
-}
-
-// A LIVE gesture on an unmounted target (the XY pad — see the xy-open handler):
-// same target, same denormalisation, plus the engineState mirror a mounted
-// knob's onChange would have performed. Without it the pad changed the sound
-// and the save did not record it, purely because that lane's editor was closed
-// — the same asymmetry fe44833 closed for the MIDI surface.
-function applyLiveControlUnmountedWrite(
-  paramId: string,
-  normalised: number,
-  ranges: ReadonlyMap<string, { min: number; max: number }>,
-): void {
-  applyLiveControlWrite(paramId, normalised, {
-    ...unmountedTargetDeps(ranges),
-    sessionState: sessionHost.state,
-  });
-}
-
-const automationTickDeps: AutomationTickDeps = {
-  seq,
-  automationRegistry,
-  getLaneStates: () => sessionHost.laneStates,
-  ctx,
-  // Lets the rAF loop read each lane's live modulation offsets for the knob rings.
-  getEngineForLane: (laneId) => getLaneEngineInstance(laneId) ?? undefined,
-  // An envelope on a lane whose editor is closed has no knob to drive, so it
-  // lands on the audio object itself. Ranges come from the declared schema —
-  // the same source the destination picker uses.
-  applyUnmounted: applyUnmountedWrite,
-  getTargetRanges: () =>
-    new Map(destinations.list()
-      .map((t) => [t.id, { min: t.min, max: t.max }])),
-};
-
-startAutomationTick(automationTickDeps);
+// ── Unmounted automation writes + the rAF tick (see src/app/automation-writes.ts)
+// The ONE place a value finds its target when no knob is mounted: insert-rack
+// scope resolution, the playback write, the live write with its engineState
+// mirror, and the rAF loop that drives both. Calling it here STARTS that loop,
+// so the call must stay at this point in boot.
+const autoWrites = createAutomationWrites({
+  masterInsertChain, fx, laneResources, sessionHost, seq, ctx,
+  automationRegistry, destinations, getLaneEngineInstance,
+});
 
 // Phase G: boot-eager UI deferred until applyLoadedSessionState allocates lanes.
 // Registers callbacks BEFORE the demo load so they fire on the first apply.
