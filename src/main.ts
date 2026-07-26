@@ -24,7 +24,7 @@ import { getEngine, getEngineParamIds } from './engines/registry';
 import { swapLaneEngineFlow, type EngineSwapDeps } from './app/engine-swap';
 import { type TB303 } from './core/synth';
 import { Sequencer } from './core/sequencer';
-import { COMMON_METERS, formatMeter, meterFromLabel, stepsPerBar } from './core/meter';
+import { COMMON_METERS, formatMeter } from './core/meter';
 import { DRUM_LANES, type DrumVoice } from './core/drums';
 import { ChannelStrip } from './core/fx';
 import { type KnobHandle } from './core/knob';
@@ -88,8 +88,7 @@ import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from './core/lane-ids';
 // ── Live MIDI control (src/control) ─────────────────────────────────────────
 import { createActiveLaneStore } from './control/active-lane';
 import { wireMidiControl } from './app/midi-control-wiring';
-import { clampBpm, formatBpm, BPM_MIN, BPM_MAX } from './core/bpm';
-import { clampSwing, SWING_MAX } from './core/swing';
+import { createTransportControls } from './app/transport-controls';
 // ── AudioWorklet synthesis loader (live path for all subtractive lanes) ──────
 import { loadLoomWorklet } from './audio-worklet/loom-node';
 import { loadDrumsWorklet } from './audio-worklet/drums-node';
@@ -292,6 +291,15 @@ const getLaneEngineId     = (laneId: string) => laneHost.getLaneEngineId(laneId)
 const setActiveEngineLane = (laneId: string) => laneHost.setActiveEngineLane(laneId);
 const _lehState = laneHost.state; // kept for engineSelectorDeps (uses _lehState.activeLaneId)
 
+// Holder for historyDeps for discrete selectors. historyDeps is built later
+// (it closes over saveWiringDeps / sessionHost), but event handlers fire after
+// boot, so assigning _discreteHistoryDeps after construction works correctly.
+// Declared HERE (ahead of its first reader) because the deps objects below —
+// mixerDeps, the transport controls, the knob mounter — all read it through a
+// getter; an uninitialised `let` has no side effect, so its position only
+// decides who may name it, never what anyone sees.
+let _discreteHistoryDeps: HistoryDeps | undefined;
+
 // ── Mixer ──────────────────────────────────────────────────────────────────
 
 const mixerDeps: import('./core/mixer').MixerColumnDeps = {
@@ -319,101 +327,27 @@ const mixerDeps: import('./core/mixer').MixerColumnDeps = {
   get historyDeps() { return _discreteHistoryDeps; },
 };
 
-// The spinner's range comes from the SAME constants clampBpm enforces. When the
-// markup carried its own min/max they were free to disagree with the clamp — and
-// did: the field stopped at 240 while nothing in the DSP cared.
-bpmInput.min = String(BPM_MIN);
-bpmInput.max = String(BPM_MAX);
-
-bpmInput.addEventListener('input', () => {
-  const v = parseFloat(bpmInput.value);
-  // Manual BPM edit = take constant-tempo control: drop any active song tempo map.
-  if (!isNaN(v)) { seq.setTempoMap(undefined); bpmBroadcast.broadcast(clampBpm(v)); }
+// ── Transport row inputs (BPM / swing / volume / meter) ────────────────────
+// Runs HERE and not a line later: the factory body carries the two boot-time
+// side effects that used to sit inline — the initial `bpmBroadcast.broadcast`
+// (tempo out to every insert chain and engine) and the initial master gain read
+// off #volume. Both must land before any lane can sound.
+const transportControls = createTransportControls({
+  seq, ctx, master, bpmBroadcast,
+  bpmInput, swingInput, volInput, meterSel,
+  getHistoryDeps: () => _discreteHistoryDeps,
+  // Late-bound call-site wrappers: both are assigned/constructed further down
+  // in boot and are only read at user-interaction time.
+  renderLanes: () => renderLanes(),
+  refreshPerformanceView: () => performanceFeature.refreshPerformanceView(),
 });
-bpmBroadcast.broadcast(seq.bpm);
-
-// Programmatic tempo set (MIDI import, demo load): clamp, broadcast and reflect
-// it in the visible BPM input. Distinct from the 'input' handler above, which
-// must NOT write the input back while the user is mid-type.
-function setTransportBpm(bpm: number): void {
-  // Keep the FLOAT — a detected 127.63 must not snap to 128, or native-played
-  // audio (stems/loops) drifts against the grid within a few bars.
-  const clamped = clampBpm(bpm);
-  // Default to constant tempo; a MIDI import with tempo changes re-sets a map
-  // immediately after (so demos/saves/stems, which don't, clear a stale map).
-  seq.setTempoMap(undefined);
-  bpmBroadcast.broadcast(clamped);
-  bpmInput.value = formatBpm(clamped);
-}
-
-// Track activity timestamps for visual "triggered" pulse on track headers.
-const trackActiveUntil = new Map<string, number>();
-function markTrackActive(trackId: string, audioTime: number) {
-  const delayMs = Math.max(0, (audioTime - ctx.currentTime) * 1000);
-  window.setTimeout(() => {
-    trackActiveUntil.set(trackId, performance.now() + 120);
-  }, delayMs);
-}
+const setTransportBpm = transportControls.setTransportBpm;
+const markTrackActive = transportControls.markTrackActive;
 
 // chain/loop/slot/onEnded wired in wireTransport() (see boot section)
 
-// Like the BPM spinner: the slider's ceiling comes from the constant the
-// scheduler itself clamps to, so the two cannot drift apart.
-swingInput.max = String(SWING_MAX);
-swingInput.addEventListener('input', () => { seq.swing = clampSwing(parseFloat(swingInput.value)); });
-
-volInput.addEventListener('input', () => {
-  master.gain.value = parseFloat(volInput.value);
-  // Inverse sync (#volume → master strip fader): keep the fader visually in
-  // step when the value changes here (drag, load, undo). Only assign .value —
-  // never dispatch 'input' on the fader, or we'd loop back into this handler.
-  const mf = document.querySelector('.master-strip .mix-fader') as HTMLInputElement | null;
-  if (mf && mf.value !== volInput.value) mf.value = volInput.value;
-});
-master.gain.value = parseFloat(volInput.value);
-
-// ── Gesture brackets for continuous inputs (BPM / swing / volume) ──────────
-// One drag or keyboard-edit = one undo entry. pointerdown/focus opens the
-// gesture; pointerup/blur closes it. The existing 'input' handlers above keep
-// driving live audio and must NOT call beginGesture/commitGesture themselves.
-for (const el of [bpmInput, swingInput, volInput]) {
-  el.addEventListener('pointerdown', () => {
-    if (_discreteHistoryDeps) _discreteHistoryDeps.beginGesture?.();
-  });
-  el.addEventListener('pointerup', () => {
-    if (_discreteHistoryDeps) _discreteHistoryDeps.endGesture?.();
-  });
-  el.addEventListener('focus', () => {
-    if (_discreteHistoryDeps) _discreteHistoryDeps.beginGesture?.();
-  });
-  el.addEventListener('blur', () => {
-    if (_discreteHistoryDeps) _discreteHistoryDeps.endGesture?.();
-  });
-}
-
-// Holder for historyDeps for discrete selectors. historyDeps is built later
-// (it closes over saveWiringDeps / sessionHost), but event handlers fire after
-// boot, so assigning _discreteHistoryDeps after construction works correctly.
-let _discreteHistoryDeps: HistoryDeps | undefined;
-
 // Legacy global wave selector removed — TB-303 wave is a per-lane engine param
 // (osc.wave) rendered by TB303Engine.buildParamUI, like every other engine.
-
-meterSel.addEventListener('change', () => {
-  // Keep the same number of bars across a meter change: derive the bar count
-  // from the current length under the OLD meter, then re-length under the new
-  // one. (The legacy "Bars" selector that used to drive this was removed.)
-  const bars = Math.max(1, Math.round(seq.length / stepsPerBar(seq.meter)));
-  seq.meter = meterFromLabel(meterSel.value);
-  seq.setLength(bars * stepsPerBar(seq.meter));
-  // The scheduler + transport read seq.meter / seq.length live on the next step.
-  renderLanes();
-  // This selector sits in the always-visible transport row, so it can fire while
-  // Performance is on screen. Nothing there caches the meter any more, but the
-  // ruler/length field are only as fresh as their last paint — repaint them.
-  // (Forward reference into a closure, like bpmBroadcast's getters below.)
-  performanceFeature.refreshPerformanceView();
-});
 
 const knobs = createKnobMounter({
   registerKnob,
