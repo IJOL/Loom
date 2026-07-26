@@ -59,7 +59,7 @@ import { loadDrumKits } from './presets/drum-kits-loader';
 import { loadLibrary } from './patterns/pattern-library';
 import { resetAutomationPosition, getAutoAbsSubIdx } from './automation/automation-tick';
 import { createDestinationRegistry } from './automation/destination-registry';
-import { attachKnobAutomationMenu } from './automation/knob-automation-menu';
+import { wireKnobAutomationMenu } from './app/knob-menu-wiring';
 import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from './core/lane-ids';
 // ── Live MIDI control (src/control) ─────────────────────────────────────────
 import { createActiveLaneStore } from './control/active-lane';
@@ -592,35 +592,11 @@ const performanceFeature = createPerformanceFeature({
   onRecVisualChanged: () => recording.refreshRecButton(),
 });
 
-// Task 4: right-click a knob to jump to (or create) its automation. Uses the
-// same registerKnob wrap-and-replay idiom above so knobs mounted during boot
-// — before this line runs — still get the menu, not just knobs mounted after.
-onRegisterKnob((k) => {
-  attachKnobAutomationMenu(k, {
-    destinations,
-    getMode: () => performanceFeature.getMode(),
-    getState: () => sessionHost.state,
-    getMeter: () => seq.meter,
-    getLaneStates: () => sessionHost.laneStates,
-    getArrangement: () => performanceFeature.arrangement,
-    openClip: (laneId, clipIdx) => {
-      // Same four-call recipe as session-host-callbacks.ts onClipClick:
-      // setSelectedClip alone shows nothing.
-      sessionHost.inspector.setSelectedClip({ laneId, clipIdx });
-      sessionHost.inspector.openInspector();
-      document.getElementById('session-inspector')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      sessionHost.renderWithMixer();
-    },
-    addTimelineCurve: (paramId) => performanceFeature.addCurve(paramId),
-    onClipEdited: () => sessionHost.inspector.refreshContext(),
-    revealTimelineCurve: (paramId) => {
-      const row = document.querySelector<HTMLElement>(
-        `#performance-view-root [data-param-id="${CSS.escape(paramId)}"]`,
-      );
-      row?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    },
-  });
-});
+// Right-click a knob → its automation (see src/app/knob-menu-wiring.ts). Runs
+// HERE, after createPerformanceFeature: both hooks go through onRegisterKnob's
+// wrap-and-replay, and the order they wrap in decides which one sees a
+// newly-mounted knob first.
+wireKnobAutomationMenu({ onRegisterKnob, destinations, sessionHost, seq, performanceFeature });
 (sessionHost.deps as { recHooks?: import('./session/session-runtime').RecHooks }).recHooks =
   performanceFeature.recHooks;
 (sessionHost.deps as { onAfterTick?: (n: number, l: number) => void }).onAfterTick =
