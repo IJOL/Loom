@@ -6,7 +6,7 @@ The session view is the main workspace in Loom. It organises everything you hear
 
 ## The model
 
-**Lane** — one instrument track. Each lane runs its own synthesis engine (TB-303, Drums, Subtractive, FM, Wavetable, Karplus, or Sampler) with its own mixer strip and insert chain. Lanes appear as columns in the grid.
+**Lane** — one instrument track. Each lane runs one engine — six melodic ones (TB-303, Subtractive, FM, Wavetable, Karplus-Strong, West Coast), the Sampler, the Drum Machine, or an Audio channel — with its own mixer strip and insert chain. Lanes appear as columns in the grid.
 
 **Clip** — a pattern of notes that lives at one lane × scene cell. Every clip stores a list of note events, an optional name, a colour, and a length in bars. A cell is either filled (it holds a clip) or empty.
 
@@ -20,7 +20,7 @@ Lane names run along the top header row; row numbers (1, 2, 3 …) label the sce
 
 A newly created instrument lane starts out empty — no placeholder clips are added to its column; you fill cells yourself. Audio and Sampler lanes created from a dropped WAV or loop place their clip in row 1 only. The grid always keeps at least one launchable scene available even when every lane is empty.
 
-Right-clicking grid elements opens a context menu. On a **lane header**: *Rename track*, *Edit instrument*, *Duplicate track*, *Stop track*, and *Delete track* (red). On a **scene cell**: *Rename scene*, *Launch scene*, *Duplicate scene*, *Capture playing -> scene*, *Add scene*, and *Delete scene* (red). On a **filled clip**: *Open editor*, *Play / Stop*, and *Delete clip* (red). On an **empty cell**: *Create clip* — on audio lanes this entry reads *Import audio (WAV)...*.
+Right-clicking grid elements opens a context menu. On a **lane header**: *Rename track*, *Edit instrument*, *Duplicate track*, *Stop track*, and *Delete track* (red). On a **scene cell**: *Rename scene*, *Launch scene*, *Duplicate scene*, *Capture playing -> scene*, *Add scene*, and *Delete scene* (red). On a **filled clip**: *Open editor*, *Play / Stop*, *Color* (a row of swatches), and *Delete clip* (red). On an **empty cell**: *Create clip* — on audio lanes this entry reads *Import audio (WAV)...*.
 
 Below the scene rows there is a stop row: each lane has its own ⏹ stop button, and a global **⏹ all** button at the far right stops every lane at once.
 
@@ -73,7 +73,7 @@ Clicking a clip cell body opens the inspector below the grid with controls for t
 | **Paste ▸ Replace** | Replaces the selected clip's notes with the clipboard contents. |
 | **Paste ▸ Layer** | Merges the clipboard notes into the selected clip rather than replacing them. |
 | **Duplicate** | Creates a copy of the clip in the next empty cell of the same lane. |
-| **↔ Editor** | Toggles between the piano-roll editor and the drum-grid editor. The appropriate editor is chosen automatically based on the lane's engine; use this button to switch if needed. See [Editing Clips](05-editing-clips.md) for the full editing reference. |
+| **View as grid** / **View as piano roll** | Toggles between the piano-roll editor and the drum-grid editor — the button always names the view you are *not* in. The appropriate editor is chosen automatically based on the lane's engine; use this button to switch if needed. It changes only how the clip is edited, never how it sounds. See [Editing Clips](05-editing-clips.md) for the full editing reference. |
 | **🎲 Notes** | Randomizes the clip's note content using the current scale and root settings. |
 | **Delete** | Removes the clip from the grid (also triggered by Delete/Backspace while the inspector is open). |
 
@@ -83,6 +83,6 @@ The editor embedded inside the inspector is rebuilt each time a new clip is sele
 
 You can move a clip to any other cell by dragging it. Hold **Ctrl** while dragging to copy instead of move. Clips remember their colour across moves and copies. Drag a clip onto a cell that already has a clip to swap or replace it.
 
-Each clip is assigned a colour automatically from a pastel palette. You can distinguish patterns at a glance even before you give them names.
+Each clip is assigned a colour automatically from a pastel palette, so you can distinguish patterns at a glance even before you give them names. To choose a different one, right-click the clip and pick from the **Color** swatches.
 
 For the mixer strip, insert effects, and per-lane send levels, see [Mixing & FX](07-mixing-and-fx.md). For the available synthesis engines on each lane, see [Engines](04-engines.md).

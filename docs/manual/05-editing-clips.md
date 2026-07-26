@@ -2,7 +2,7 @@
 
 Every clip in Loom holds a sequence of notes. To edit those notes, click the **body** of any filled cell in the session grid — anywhere except the ▶ play icon or the ✕ delete cross in its corner (clicking ✕ deletes the clip outright, with no confirmation). You can also **right-click** a filled cell and choose **Open editor**. The inspector panel opens below the grid and the editor renders inside it. Closing the inspector does not stop playback — launching and editing are independent.
 
-Melodic lanes (TB-303, Subtractive, FM, Wavetable, Karplus, West Coast, Sampler) open the **piano-roll**. Drum-machine lanes and sampler lanes that have a drum kit loaded open the **drum-grid**. If you want to switch between the two views for a given clip, click the **↔ Editor** button in the inspector toolbar.
+Melodic lanes (TB-303, Subtractive, FM, Wavetable, Karplus, West Coast, Sampler) open the **piano-roll**. Drum-machine lanes and sampler lanes that have a drum kit loaded open the **drum-grid**. If you want to switch between the two views for a given clip, click the button in the inspector toolbar that names the *other* view — it reads **View as grid** while you are in the piano roll and **View as piano roll** while you are in the grid. Its tooltip states the important part: "Change how this clip is EDITED; it does not change the sound."
 
 See [Sessions, Lanes, Clips & Scenes](03-sessions-lanes-clips-scenes.md) for how clips are organised, and [Engines](04-engines.md) for the controls each engine exposes.
 
@@ -25,11 +25,11 @@ The panel has three pickers and a lock toggle:
 - **Root** — the tonic note (C through B).
 - **Scale** — chosen by feel rather than by musical-theory name. Each option shows a mood label, the musical name in small print, and a one-line usage hint:
   - 🌙 Dark / tense — minor · the classic acid/techno sound
-  - 🛡️ Safe (almost anything fits) — pentatonic minor
-  - ☀️ Bright / uplifting — major
-  - 🌊 Hypnotic / modal — dorian
-  - 😰 Unsettling — phrygian
-  - 🎨 Anything goes — chromatic (no constraint)
+  - 🛡️ Safe (almost anything fits) — pentatonic minor · hard to sound wrong; riffs & basslines
+  - ☀️ Bright / open — major · pop, most "happy" music
+  - 🔥 Mysterious / hypnotic — phrygian · dark acid, EBM
+  - 🌊 Groovy / swung — dorian · house & funk
+  - 🎛️ Anything goes (no net) — chromatic · any note; no safety net
 - **Style** — the rhythmic and harmonic character used by the generators. There are **20**: Techno, Acid Techno, Dub Techno, House, Deep House, Garage, Trance, Psytrance, EDM, Breakbeat / Big Beat, Drum & Bass, Jungle, Dubstep, Electro, Synthwave, IDM, Glitch, Downtempo, Lo-fi and Ambient. Style affects which rhythmic patterns the chord maker lays down, sets the default feel of generated basslines and melodies, and selects which library of ready-made patterns the **Pattern** dropdown offers.
 - **Scale lock** — a checkbox that turns the piano-roll's note snapping on or off **globally**. It is **off by default**, so you can play freely; tick it when you want every placed note pulled into the key. This is the same switch as the piano-roll's 🔒 button — wherever you toggle it, the other reflects it.
 
@@ -136,7 +136,7 @@ The default tool is **Draw**. Click an empty area of the grid to place a note at
 
 ### Select mode
 
-Click the **Select** tool button in the toolbar to switch. In Select mode, click a note to select it. **Drag on the grid background** to draw a marquee rectangle; every note whose body intersects the rectangle is selected. Click empty space to deselect all.
+Click the **Select** tool button in the toolbar to switch, or press **2** (**1** switches back to the pencil). In Select mode, click a note to select it. **Drag on the grid background** to draw a marquee rectangle; every note whose body intersects the rectangle is selected. **Ctrl+A** selects every note in the clip; **Esc** or a click on empty space deselects all.
 
 With notes selected you can:
 
@@ -157,7 +157,18 @@ The **⌨ Keys** toggle in the clip-editor toolbar turns your computer keyboard 
 | `w e t y u` (upper row) — black keys | C# D# F# G# A# |
 | `z` / `x` | Shift input octave down / up |
 
-This is **live playing, not step entry** — the keys sound the lane exactly as a MIDI keyboard would, and nothing is written into the clip on its own. To capture what you play, arm **● Rec** in the inspector and play along with the loop; see [MIDI live-record](08-midi-and-samples.md). (Earlier versions typed notes into the clip at a cursor; that behaviour was replaced by live playing.)
+This is **live playing, not step entry** — the keys sound the lane exactly as a MIDI keyboard would, and nothing is written into the clip on its own. (Earlier versions typed notes into the clip at a cursor; that behaviour was replaced by live playing.)
+
+### Recording notes into a clip
+
+To capture what you play, use the **● Rec** button in the inspector, next to the clip's ▶ play button. Beside it is a mode selector with two entries:
+
+- **Merge** — the notes you play are added to whatever the clip already holds.
+- **Replace** — the clip's existing notes are cleared and replaced by what you play.
+
+Click **● Rec** (it becomes **■ Stop** while recording), then play along with the loop using the computer keyboard (with **⌨ Keys** on) or a connected MIDI keyboard. Click it again to finish.
+
+Pressing **R** starts and stops recording too, so you can arm and disarm without reaching for the mouse. Note that **R always records in Merge mode** whatever the selector says — the mode selector is read by the button, not by the shortcut. Like the other shortcuts, R is ignored while you are typing in a text field.
 
 ---
 
@@ -260,6 +271,8 @@ The loop region is **per-clip** and saved with the session. Two clips in the sam
 
 By default each clip's loop is its own. The brace strip also carries a **Global** button (tooltip: *"Share this loop across every clip in the scene"*). Turn it on — it lights amber — to push this clip's A–B region onto **every clip in the scene** so they all loop the same bars together, which is handy for auditioning one section across the whole arrangement. Toggle it off to return each clip to its own independent region.
 
+The scene's shared loop is the **same region** as the Performance view's **A–B** brace: set it here and the A–B brace picks it up when you switch to Performance, and setting A–B there writes it back to the scene. See [Performance & Arrangement](10-performance-and-arrangement.md).
+
 All loop-region edits (moving handles, sliding the region, toggling, and the Global share) are part of the global undo history (Ctrl+Z / Cmd+Z).
 
 For how to use an arrangement-wide A–B loop brace that repeats a section across all lanes at once, see [Performance & Arrangement](10-performance-and-arrangement.md).
@@ -273,7 +286,7 @@ Any clip that references an audio buffer shows a **waveform header** above its e
 - **Audio clips** open the dedicated **audio-clip editor** (toolbar + waveform header, no note grid).
 - **Sliced note clips** (and any normal clip that carries a display-only waveform reference) keep the header **above** the piano-roll or drum-grid, so you can edit notes against the source audio.
 
-To bring a loop into a session as a tempo-locked audio channel, see [MIDI & Samples — Audio channel](08-midi-and-samples.md#audio-channel) (the **+ Audio** control, the waveform header, the **Warp** tempo-lock). To chop a loop into individually editable note slices, load it through the Sampler's **Loop** family instead.
+To bring a loop into a session as a tempo-locked audio channel, see [MIDI & Samples — Audio channel](08-midi-and-samples.md#audio-channel) (the grid's **+ ▸ Audio channel** entry, the waveform header, the **Warp** tempo-lock). To chop a loop into individually editable note slices, load it through the Sampler's **Loop** family instead.
 
 ---
 
