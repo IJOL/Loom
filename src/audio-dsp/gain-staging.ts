@@ -31,11 +31,15 @@ export const ENGINE_TRIM: Record<string, number> = {
              // is exactly the FULL-velocity level (rms ratio 1.002 vs the pre-change
              // render) — that one point, not the range. Below it every note is now
              // LOUDER than it was, because the restored curve has a 0.3 floor where
-             // raw velocity had none: +0.75 dB at the app's default velocity of 90,
-             // and ~+9 dB at the very bottom, growing as velocity falls. That lift is
-             // the point (a soft note was a third too quiet on fm and karplus, and
+             // raw velocity had none. The lift is (0.3 + 1.1·v) / (1.4·v), which has
+             // no bound as v → 0: +0.73 dB at the app's default velocity of 90,
+             // +9.3 dB at a tenth of full scale, and ×28 (+29 dB) at MIDI velocity 1,
+             // the softest note a clip can carry. (Measured values run ~0.02 dB above
+             // those, since the trims are stored rounded to three decimals.) That lift
+             // is the point (a soft note was a third too quiet on fm and karplus, and
              // MIDI-import passages went missing), but it is a change, not a
-             // restoration, and only v=1.0 is where it was.
+             // restoration, and only v=1.0 is where it was. Pinned at each of those
+             // velocities in gain-staging-velocity.test.ts.
   wavetable: 0.6,
   westcoast: 0.5,
   karplus: 0.857, // was 1.2, ÷1.4 (2026-07-25): same restored curve, same shape as
