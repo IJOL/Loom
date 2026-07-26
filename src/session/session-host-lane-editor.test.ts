@@ -28,7 +28,6 @@ function fakeEngine(fakeKnob: KnobHandle): SynthEngine {
     params: [], presets: [], modulators: {} as never,
     getBaseValue: () => 0, setBaseValue: () => {},
     createVoice: () => ({}) as never,
-    buildSequencer: () => ({}) as never,
     buildParamUI: (_host: HTMLElement, ctx?: EngineUIContext) => { ctx!.registerKnob(fakeKnob); },
     applyPreset: () => {}, dispose: () => {},
   } as unknown as SynthEngine;

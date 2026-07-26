@@ -11,7 +11,7 @@
 
 import { html, render } from 'lit-html';
 import type {
-  SynthEngine, Voice, EngineSequencer, EngineUIContext, VoiceTriggerOptions,
+  SynthEngine, Voice, EngineUIContext, VoiceTriggerOptions,
 } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
 import { ModulationHostImpl } from '../modulation/modulation-host';
@@ -30,15 +30,6 @@ import type { FxBus } from '../core/fx';
 const AUDIO_PARAMS: EngineParamSpec[] = [
   { id: 'gain', label: 'Gain', kind: 'continuous', min: 0, max: 1.5, default: 1 },
 ];
-
-class AudioSequencer implements EngineSequencer {
-  getStepAt(): unknown { return null; }
-  setLength(): void {}
-  highlight(): void {}
-  serialize(): unknown { return null; }
-  deserialize(): void {}
-  dispose(): void {}
-}
 
 class AudioWorkletVoice implements Voice {
   constructor(private engine: AudioWorkletEngine) {}
@@ -158,7 +149,6 @@ export class AudioWorkletEngine implements SynthEngine {
    *  Routed here from the registry's stop seam via the voice's release(time). */
   silence(atSec?: number): void { this.node?.silenceAll(atSec); }
 
-  buildSequencer(_c: HTMLElement, _n: number): EngineSequencer { return new AudioSequencer(); }
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
     container.innerHTML = '';
     if (!ctx) return;

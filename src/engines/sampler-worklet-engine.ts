@@ -22,7 +22,7 @@ import { html, render } from 'lit-html';
 import { renderElement } from '../core/lit-fragment';
 import { samplerEditorTemplate, zoneRangeRowTemplate } from './sampler-editor-templates';
 import type {
-  SynthEngine, Voice, EngineSequencer, EngineUIContext, VoiceTriggerOptions,
+  SynthEngine, Voice, EngineUIContext, VoiceTriggerOptions,
 } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
 import { ModulationHostImpl } from '../modulation/modulation-host';
@@ -72,15 +72,6 @@ const SAMPLER_PARAMS: EngineParamSpec[] = [
   { id: 'gain',            label: 'Gain',   kind: 'continuous', min: 0,              max: 1.5,             default: 1 },
   { id: 'poly.voices',     label: 'Voices', kind: 'continuous', min: 1,              max: 16,              default: 8 },
 ];
-
-class SamplerSequencer implements EngineSequencer {
-  getStepAt(): unknown { return null; }
-  setLength(): void {}
-  highlight(): void {}
-  serialize(): unknown { return null; }
-  deserialize(): void {}
-  dispose(): void {}
-}
 
 /** Thin voice posting resolved spawns to the shared worklet node. One per note;
  *  the worklet pools the actual playing voices. */
@@ -494,7 +485,6 @@ export class SamplerWorkletEngine implements SynthEngine {
    *  seam routes here via the voice's release(time). */
   silence(atSec?: number): void { this.node?.silenceAll(atSec); }
 
-  buildSequencer(_c: HTMLElement, _n: number): EngineSequencer { return new SamplerSequencer(); }
 
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
     container.innerHTML = '';

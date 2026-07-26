@@ -67,7 +67,6 @@ function makeMockEngine(params: EngineParamSpec[], host: ModulationHost): SynthE
     modulators: host,
     getBaseValue: () => 0, setBaseValue: () => {},
     createVoice: () => ({}) as Voice,
-    buildSequencer: () => ({} as never),
     buildParamUI: () => {},
     applyPreset: () => {},
     dispose: () => {},

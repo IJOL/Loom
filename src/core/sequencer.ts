@@ -1,4 +1,3 @@
-import type { EngineSequencer } from '../engines/engine-types';
 import { midiToFreq } from './notes';
 import { DEFAULT_METER, type TimeSignature } from './meter';
 export { midiToFreq };
@@ -55,17 +54,6 @@ export class Sequencer {
   private timerId: number | null = null;   // main-thread fallback timer (when no Worker)
   private clock: Worker | null = null;     // background-safe tick source (lazy, reused)
   private lastTickPerf = 0;
-  private engineSequencers: EngineSequencer[] = [];
-
-  registerEngineSequencer(seq: EngineSequencer): void {
-    this.engineSequencers.push(seq);
-  }
-
-  unregisterEngineSequencer(seq: EngineSequencer): void {
-    const idx = this.engineSequencers.indexOf(seq);
-    if (idx >= 0) this.engineSequencers.splice(idx, 1);
-  }
-
   constructor(
     private ctx: AudioContext,
     length = 32,
@@ -98,9 +86,6 @@ export class Sequencer {
 
   setLength(n: number) {
     this.length = n;
-    for (const es of this.engineSequencers) {
-      es.setLength(n);
-    }
   }
 
   /** One scheduler pass: hand the session host the look-ahead window. Driven by

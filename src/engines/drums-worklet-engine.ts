@@ -21,7 +21,7 @@
 
 import { html, render } from 'lit-html';
 import type {
-  SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, EngineUIContext,
+  SynthEngine, Voice, VoiceTriggerOptions, EngineUIContext,
 } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
 import { getCachedPresets } from '../presets/preset-loader';
@@ -214,15 +214,6 @@ class DrumsVoice implements Voice {
     if (this.binder) this.binder.disposeAll();
     if (this.laneId) disposeLaneModulations(this.laneId);
   }
-}
-
-class DrumsSequencer implements EngineSequencer {
-  getStepAt(_i: number): unknown { return null; }
-  setLength(_n: number): void {}
-  highlight(_s: number): void {}
-  serialize(): unknown { return null; }
-  deserialize(_d: unknown): void {}
-  dispose(): void {}
 }
 
 export class DrumsWorkletEngine implements SynthEngine {
@@ -516,10 +507,6 @@ export class DrumsWorkletEngine implements SynthEngine {
       this.currentLaneId = laneId;
     }
     return drumVoice;
-  }
-
-  buildSequencer(_c: HTMLElement, _n: number): EngineSequencer {
-    return new DrumsSequencer();
   }
 
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {

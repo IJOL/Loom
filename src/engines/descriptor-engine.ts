@@ -12,12 +12,12 @@
 // This factory builds a thin, DATA-ONLY SynthEngine: it carries the spec +
 // preset getter + a ModulationHostImpl (state container) and serves
 // getBaseValue/setBaseValue over an in-memory ParamBag, but its synthesis
-// methods (createVoice/buildSequencer/buildParamUI) are inert — nothing on the
+// methods (createVoice/buildParamUI) are inert — nothing on the
 // live or offline path calls them on the registered singleton, which is purely a
 // metadata descriptor. Each engine file registers one of these.
 
 import type {
-  SynthEngine, Voice, EngineSequencer, EnginePreset,
+  SynthEngine, Voice, EnginePreset,
 } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
 import { ModulationHostImpl } from '../modulation/modulation-host';
@@ -40,11 +40,6 @@ export interface DescriptorEngineConfig {
   /** See SynthEngine.dynamicParamsFor. */
   dynamicParamsFor?: (lane: import('../session/session').SessionLane) => EngineParamSpec[];
 }
-
-const inertSequencer = (): EngineSequencer => ({
-  getStepAt: () => null, setLength() {}, highlight() {},
-  serialize: () => null, deserialize() {}, dispose() {},
-});
 
 const inertVoice = (): Voice => ({
   trigger() {}, release() {}, connect() {}, dispose() {},
@@ -95,7 +90,6 @@ export function createDescriptorEngine(cfg: DescriptorEngineConfig): SynthEngine
     // Inert synthesis surface — the live path never calls these on the
     // registered metadata singleton (it builds a WorkletLaneEngine instead).
     createVoice: () => inertVoice(),
-    buildSequencer: () => inertSequencer(),
     buildParamUI() { /* metadata-only */ },
     applyPreset(name: string): void {
       const preset = cfg.presets().find((p) => p.name === name);

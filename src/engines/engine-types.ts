@@ -44,15 +44,6 @@ export interface VoiceTriggerOptions {
   offsetSec?: number;
 }
 
-export interface EngineSequencer {
-  getStepAt(index: number): unknown;
-  setLength(n: number): void;
-  highlight(step: number): void;
-  serialize(): unknown;
-  deserialize(data: unknown): void;
-  dispose(): void;
-}
-
 export interface EngineUIContext {
   laneId: string;
   registerKnob: (k: unknown) => void;
@@ -127,7 +118,6 @@ export interface SynthEngine {
    *  triggers read from. */
   setBaseValue(id: string, value: number): void;
   createVoice(ctx: AudioContext, output: AudioNode): Voice;
-  buildSequencer(container: HTMLElement, stepCount: number): EngineSequencer;
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void;
   applyPreset(name: string): void;
   randomize?(): void;

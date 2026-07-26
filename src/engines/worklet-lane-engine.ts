@@ -12,7 +12,7 @@
 // (poly.mode/poly.retrig) are not yet modelled in the worklet renderer.
 
 import type {
-  SynthEngine, Voice, VoiceTriggerOptions, EngineSequencer, EngineUIContext, EnginePreset,
+  SynthEngine, Voice, VoiceTriggerOptions, EngineUIContext, EnginePreset,
 } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
 import type { ParamBag, SubParams, ModTarget } from '../audio-dsp/types';
@@ -351,13 +351,6 @@ export class WorkletLaneEngine implements SynthEngine {
   }
 
   createVoice(_ctx: AudioContext, _output: AudioNode): Voice { return new WorkletVoice(this.worklet); }
-
-  buildSequencer(): EngineSequencer {
-    return {
-      getStepAt: () => null, setLength() {}, highlight() {},
-      serialize: () => null, deserialize() {}, dispose() {},
-    };
-  }
 
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
     if (!ctx) return;

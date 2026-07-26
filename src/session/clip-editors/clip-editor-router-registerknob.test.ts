@@ -30,7 +30,6 @@ function fakeAudioEngine(): SynthEngine {
     getBaseValue: () => 1,
     setBaseValue: () => {},
     createVoice: () => ({}) as never,
-    buildSequencer: () => ({}) as never,
     buildParamUI: () => {},
     applyPreset: () => {},
     dispose: () => {},
