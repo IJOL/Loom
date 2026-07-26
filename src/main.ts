@@ -6,6 +6,7 @@ import { createAudioGraph } from './app/audio-graph';
 import { createBpmBroadcaster } from './app/bpm-broadcast';
 import { createMuteSolo } from './app/mute-solo';
 import { createLaneAllocator } from './app/lane-allocator';
+import { EXTRA_IDS, ALL_TRACKS, LANE_LABELS, type TrackId } from './app/track-ids';
 import { GlobalVoiceCap } from './audio-worklet/global-voice-cap';
 import { createAutomationRecorder } from './app/automation-recording';
 import { pruneKnobRegistryToDestinations } from './app/knob-registry-prune';
@@ -23,7 +24,7 @@ import { swapLaneEngineFlow, type EngineSwapDeps } from './app/engine-swap';
 import { type TB303 } from './core/synth';
 import { Sequencer } from './core/sequencer';
 import { COMMON_METERS, formatMeter } from './core/meter';
-import { DRUM_LANES, type DrumVoice } from './core/drums';
+import { DRUM_LANES } from './core/drums';
 import { ChannelStrip } from './core/fx';
 import { type KnobHandle } from './core/knob';
 import { PolySynth } from './polysynth/polysynth';
@@ -78,15 +79,6 @@ import { wireMenuBar } from './app/menu-wiring';
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
 
-type ExtraId =
-  | 'poly1' | 'poly2' | 'poly3' | 'poly4' | 'poly5' | 'poly6' | 'poly7' | 'poly8'
-  | 'poly9' | 'poly10' | 'poly11' | 'poly12' | 'poly13' | 'poly14' | 'poly15' | 'poly16';
-const EXTRA_IDS: ExtraId[] = [
-  'poly1','poly2','poly3','poly4','poly5','poly6','poly7','poly8',
-  'poly9','poly10','poly11','poly12','poly13','poly14','poly15','poly16',
-];
-type TrackId = 'bass' | 'poly' | 'drumBus' | ExtraId | DrumVoice;
-const ALL_TRACKS: TrackId[] = ['bass', 'poly', ...EXTRA_IDS, 'drumBus', ...DRUM_LANES];
 const $  = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const $$ = <T extends HTMLElement>(sel: string) => Array.from(document.querySelectorAll<T>(sel));
 
@@ -240,17 +232,6 @@ render(
   meterSel,
 );
 meterSel.value = formatMeter(seq.meter);
-
-// ── Track rendering (with viewport) ────────────────────────────────────────
-const LANE_LABELS: Record<TrackId, string> = {
-  bass: 'BASS', poly: 'POLY', drumBus: 'DRUM BUS',
-  poly1: 'POLY 1', poly2: 'POLY 2', poly3: 'POLY 3', poly4: 'POLY 4',
-  poly5: 'POLY 5', poly6: 'POLY 6', poly7: 'POLY 7', poly8: 'POLY 8', poly9: 'POLY 9',
-  poly10: 'POLY 10', poly11: 'POLY 11', poly12: 'POLY 12', poly13: 'POLY 13',
-  poly14: 'POLY 14', poly15: 'POLY 15', poly16: 'POLY 16',
-  kick: 'KICK', snare: 'SNARE', rimshot: 'RIM', closedHat: 'CH HAT', openHat: 'OP HAT',
-  clap: 'CLAP', cowbell: 'COWBLL', tom: 'TOM', ride: 'RIDE', crash: 'CRASH',
-};
 
 // ── Lane-engine host ──────────────────────────────────────────────────────
 const laneHost = createLaneHost({
