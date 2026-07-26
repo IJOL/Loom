@@ -70,12 +70,11 @@ import { createAutomationWrites } from './app/automation-writes';
 import { loadLoomWorklet } from './audio-worklet/loom-node';
 import { loadDrumsWorklet } from './audio-worklet/drums-node';
 import { loadSamplerWorklet } from './audio-worklet/sampler-node';
-// ── Static chrome templates (version label, meter options, XY panel shell) ──
+// ── Static chrome templates (version label, meter options) ─────────────────
 import { html, render } from 'lit-html';
-import { renderElement } from './core/lit-fragment';
 // ── Desktop menu bar (chrome) ─────────────────────────────────────────────
 import { createMenuBar } from './app/menu-bar';
-import { createXyPad } from './performance/xy-pad-ui';
+import { wireXyPanel } from './app/xy-panel-wiring';
 import { buildMenus } from './app/menu-spec';
 import type { MenuActions } from './app/menu-actions';
 import { registerMenuShortcuts } from './app/menu-shortcuts';
@@ -641,47 +640,14 @@ copyBtn?.addEventListener('click', () => performanceFeature.copyFromSession());
 
 document.getElementById('capture-scene')?.addEventListener('click', () => sessionHost.captureScene());
 
-// XY pad — a Kaoss-style controller. Two dropdowns pick automatable params (the
-// same destinations an LFO/ADSR targets); dragging the surface drives both live
-// through the automation registry. Built lazily on first open; a floating,
-// non-modal panel so the params it moves stay visible.
-{
-  const xyBtn = document.getElementById('xy-open');
-  let xyPanel: HTMLElement | null = null;
-  let xyPad: ReturnType<typeof createXyPad> | null = null;
-  xyBtn?.addEventListener('click', () => {
-    if (!xyPanel) {
-      const pad = createXyPad({
-        destinations,
-        registry: automationRegistry,
-        // Same target resolution playback automation uses, plus the mirror a
-        // mounted knob's onChange performs (applyLiveControlUnmountedWrite, in
-        // app/automation-writes.ts): the catalogue offers every destination
-        // the session declares, including ones with no mounted knob, so
-        // dragging the pad on one of those must land the value AND persist it.
-        // Read through a closure, never as a bare reference: `autoWrites` is
-        // built ~180 lines below, and this handler only runs on a click.
-        applyUnmounted: (p, n, r) => autoWrites.applyLiveControlUnmountedWrite(p, n, r),
-      });
-      xyPad = pad;
-      // Build-once shell; the pad surface itself is an imperative widget
-      // interpolated as-is.
-      xyPanel = renderElement<HTMLElement>(html`
-        <div class="xy-panel">
-          <div class="xy-panel-head">
-            <span class="xy-title">XY Pad</span>
-            <button class="xy-close" title="Close"
-              @click=${() => { xyPanel!.classList.remove('open'); xyBtn.classList.remove('on'); }}>✕</button>
-          </div>
-          ${pad.el}
-        </div>`);
-      document.body.appendChild(xyPanel);
-    }
-    const open = xyPanel.classList.toggle('open');
-    xyBtn.classList.toggle('on', open);
-    if (open) xyPad!.refreshOptions();   // lanes/params may have changed since last open
-  });
-}
+// The XY pad panel (see src/app/xy-panel-wiring.ts). Everything it owns is built
+// on first open, so the only boot-time effect is one click listener; the write
+// path is a closure because `autoWrites` is built ~180 lines below.
+wireXyPanel({
+  destinations,
+  automationRegistry,
+  applyUnmounted: (p, n, r) => autoWrites.applyLiveControlUnmountedWrite(p, n, r),
+});
 
 // Ctrl/Cmd+I — capture currently-playing clips into a new scene. Skip while
 // typing in a text field so it never steals input from BPM / save-name inputs.
