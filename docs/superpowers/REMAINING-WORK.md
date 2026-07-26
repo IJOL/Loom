@@ -1,21 +1,71 @@
 # Remaining work
 
-Audit refreshed 2026-07-18. **No outstanding design work.** Every spec, plan and
-mockup that lived here has been implemented and pruned from the tree per
-convention — recover any of them from git history if you need the rationale
-(`git log --diff-filter=D --name-only -- docs/superpowers/`).
+Audit refreshed 2026-07-26.
 
-Shipped and pruned in this pass: the AudioWorklet engine rewrite (spec + 5 phase
-plans), GM Percussion kit, drums/sampler channel filter, FM layout + musicality,
-MIDI live-record, computer-keyboard-as-MIDI, transport hotkeys, REC count-in,
-desktop menu chrome, session-view reorder, breakbeat/big-beat examples, the
-audio channel, and the sampler per-pad modulation spec — along with the sampler
-and compact-insert-FX mockups.
+The 2026-07-18 pass emptied this directory and recorded "no outstanding design
+work". That is no longer true: **nine spec and plan documents live here again**,
+all committed after that date. One of them is genuine outstanding design work;
+the rest describe work that has shipped but was never marked as such.
+
+## What is in this directory
+
+**Approved, planned, and shipped — but every task checkbox is still unticked.**
+Three spec/plan pairs whose features are demonstrably in the tree, while their
+plans read as untouched backlogs (0 of 25, 0 of 85 and 0 of 53 tasks ticked
+respectively). Tick them or prune them; leaving an all-unchecked list of finished
+work is the most misleading state they can be in.
+
+- `specs/2026-07-19-menu-contextual-automatizacion-design.md` +
+  `plans/2026-07-19-menu-contextual-automatizacion.md` — shipped as
+  `src/automation/knob-automation-menu.ts` and `src/app/knob-menu-wiring.ts`.
+- `specs/2026-07-19-registro-destinos-automatizacion-design.md` +
+  `plans/2026-07-19-registro-destinos-automatizacion.md` — shipped as
+  `src/automation/destination-registry.ts`; the rule it established is written up
+  in [docs/automation-destinations.md](../automation-destinations.md).
+- `specs/2026-07-21-destinos-multi-strip-labels-design.md` +
+  `plans/2026-07-21-multi-strip-destination-labels.md` — shipped as
+  `subGroupFor` / `dynamicParamsFor` on `SynthEngine`, covered by
+  `src/automation/automation-targets-multistrip.test.ts`.
+
+**Shipped, but the header never caught up.**
+
+- `specs/2026-07-25-clip-axis-automation-lanefx.md` still reads "PENDIENTE DE
+  APROBACIÓN". Its requirements are in the tree: `src/core/clip-axis.ts` owns the
+  shared zoom/scroll, `src/automation/automation-lfo.ts` is the LFO curve
+  generator, and the per-lane COMP/SC section and the px-level alignment landed
+  in the commits leading up to this audit.
+- `specs/2026-07-25-duplicated-solutions-audit.md` records five "N solutions to
+  one problem" concerns. All five collapses have landed, so this one is prunable
+  on the owner's word.
+
+**Genuinely outstanding — approved design, no plan, not implemented.**
+
+- `specs/2026-07-19-mixer-automatizable-design.md` — "the mixer's parameters,
+  automatable and modulatable". The seven per-channel params (level, pan, send A,
+  send B, and the three EQ bands) are still not destinations by any route:
+  `listAutomationTargets` builds its catalogue from engine param specs, lane
+  inserts and the master/send racks, and never touches a lane's `ChannelStrip`.
+  So a drawn fade, an auto-pan, or a send that grows into the chorus still cannot
+  be recorded. The spec argues the cost is small — level and the two sends are
+  already `GainNode`s and pan/EQ already expose their param; what is missing is
+  three accessors and the catalogue entries. Verify that against the code before
+  acting on it.
+
+Everything else that once lived here was implemented and pruned per convention —
+recover the rationale from git history
+(`git log --diff-filter=D --name-only -- docs/superpowers/`). That pass covered
+the AudioWorklet engine rewrite (spec + 5 phase plans), GM Percussion kit,
+drums/sampler channel filter, FM layout + musicality, MIDI live-record,
+computer-keyboard-as-MIDI, transport hotkeys, REC count-in, desktop menu chrome,
+session-view reorder, breakbeat/big-beat examples, the audio channel, and the
+sampler per-pad modulation spec — along with the sampler and compact-insert-FX
+mockups.
 
 ## Known code debts (not feature work, tracked nowhere else)
 
-Small, isolated, and verified against the code at some point — kept here only so
-they are not silently forgotten. Verify against the code before acting.
+Small, isolated, and kept here only so they are not silently forgotten. All four
+were re-verified against the code on 2026-07-26 and all four are still open —
+but verify again before acting; that is what this list is for.
 
 - **The offline render is not yet faithful to the live path.** This is the
   standing "offline render ≠ live" debt, and it should be closed as a whole
@@ -87,7 +137,17 @@ they are not silently forgotten. Verify against the code before acting.
 ## Reference (kept deliberately — not a backlog)
 
 - **Promotion research 2026-07-15** ([report](../promo-research-2026-07-15.md)):
-  not feature work, but it carries the launch-gate repo/licensing items (sample
-  credits, licence notice + Strudel credit in the shipped `index.html`, README
-  kit counts). Read its §0 first: only 5 of its 13 research angles were ever
-  fact-checked, so verify each item before acting.
+  not feature work. Its three launch-gate repo/licensing items have all landed —
+  `index.html` carries the AGPL notice and source link in the header plus a
+  "Licence & source" block in the About dialog crediting Strudel's `dough.mjs`,
+  `package.json` declares `"license": "AGPL-3.0-or-later"`, and README.md has a
+  "Credits — sample sources" section with the counts (68 sample kits, 486 audio
+  files, 64 tidal-derived, 3 hand-curated, `gm-percussion` CC0).
+
+  What stays open is the **sample-rights debt itself**: most of the bundled audio
+  remains uncleared, the upstream collections state no licence, and the Amen
+  Break loop is explicitly not cleared. Both the README and the About dialog now
+  say so plainly, which is disclosure, not clearance.
+
+  Read the report's §0 before using any of the rest of it: only 5 of its 13
+  research angles were ever fact-checked.
