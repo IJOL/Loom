@@ -1,11 +1,18 @@
 # Engines
 
-Every lane in Loom runs exactly one synthesis engine. You choose the engine
-with the ENGINE selector at the top of the lane's editor panel. Changing the
-engine replaces the sound source while preserving the lane's clips and
-modulation routing. Eight engines are available: six melodic synthesisers
-(TB-303, Subtractive, FM, Wavetable, Karplus-Strong, West Coast), a Sampler,
-and a Drum Machine.
+Every lane in Loom runs exactly one synthesis engine. You pick it when you
+create the lane, from the **+** menu at the top of the clip grid, which lists
+every engine. Afterwards you can swap a lane's engine from the **ENGINE**
+selector at the top of its editor panel — that dropdown offers the piano-roll
+engines only, so a lane can be moved between them freely but not turned into a
+Drum Machine, which edits on the drum grid. Changing the engine replaces the
+sound source while preserving the lane's clips and modulation routing.
+
+This chapter covers eight engines: six melodic synthesisers (TB-303,
+Subtractive, FM, Wavetable, Karplus-Strong, West Coast), a Sampler, and a Drum
+Machine. A ninth choice, the **Audio channel**, plays a recording rather than
+synthesising one and is covered in
+[MIDI & Samples](08-midi-and-samples.md#audio-channel).
 
 Each engine exposes a PRESET dropdown (Load / Save As / Delete) and a
 **🎲 Sound** button that randomises the patch and sets the preset name to
@@ -29,7 +36,7 @@ view and edit velocities in the piano-roll or drum-grid, see
 
 ![TB-303 editor panel](images/engine-tb303.png)
 
-Above: TB-303 editor — Wave, Cutoff, Resonance, Env Mod, Decay, Accent, and a per-lane LFO.
+Above: TB-303 editor — Wave, Cutoff, Resonance, Env, Decay, Accent, and a per-lane LFO.
 
 The TB-303 is a monophonic, resonant bass synthesiser modelled on the Roland
 TB-303. It is the natural choice for acid bass lines but works equally well for
@@ -43,7 +50,7 @@ sweep.
 | Wave | Sawtooth or Square oscillator waveform |
 | Cutoff | Filter cutoff frequency (0–100%) |
 | Resonance | Filter Q — see the note on the diode ladder below |
-| Env Mod | How far the filter envelope opens the filter per step |
+| Env | How far the filter envelope opens the filter per step (the classic "env mod") |
 | Decay | Filter envelope decay time |
 | Accent | Per-step level: brightens the filter, bumps Q, raises output gain |
 
@@ -208,7 +215,7 @@ envelope, and Voices.
 The Wavetable engine morphs between two pre-computed waveforms — Wave A and
 Wave B — using the Morph knob or an LFO/ADSR routed to it. Both waves are
 drawn from a fixed bank of eight anti-aliased tables: Sine, Triangle, Sawtooth,
-Square, Pulse (25%), Organ, Brass, and Vocal.
+Square, PWM 25%, Organ, Brass, and Vocal.
 
 ### Wavetable parameters
 
@@ -248,12 +255,13 @@ at every frequency, natural high-harmonic roll-off, and no feedback runaway.
 | Brightness | Loop filter: 0 = dark/cello, 1 = open/metallic |
 | Excite | Excitation burst length (pluck sharpness) |
 | Noise Tone | Colour of the excitation noise (dark → bright) |
+| Built-in Env | Toggle the built-in amp envelope on/off |
 | Attack / Release | Amp envelope on buffer playback |
 | Level | Output amplitude |
 | Voices | Polyphony cap (1–16; default 8) |
 
 Damping and Brightness are set per-note at the moment of the pluck (baked into
-the buffer). Level and its envelope are live AudioParams and can be modulated.
+the buffer). Level and its envelope stay live and can be modulated.
 Karplus suits acoustic bass, guitar, harp, and marimba-style sounds.
 
 ---
@@ -281,7 +289,7 @@ Two cross-coupled oscillators produce the raw material. The principal oscillator
 | Ratio | Frequency ratio of the modulator relative to the principal (0.25–16×) — integer ratios produce harmonic tones; non-integers produce inharmonic, bell-like partials |
 | FM Index | Depth of linear FM from the modulator into the principal (0–1) — higher values add more sidebands |
 | Ring/AM | Amount of ring modulation mixed in (0 = off, 1 = full ring mod) |
-| Sub ÷ | Sub-harmonic divider: Off, ÷2, ÷3, or ÷4 — adds a sub-oscillator one, two, or three octaves below |
+| Sub ÷ | Sub-harmonic divider: Off, 2, 3, or 4 — it divides the frequency, so 2 is an octave below, 3 is an octave and a fifth below, and 4 is two octaves below. 3 therefore adds a fifth rather than a plain sub |
 | Sub Lvl | Output level of the sub-harmonic oscillator (0–1) |
 | Detune | Fine-tune of the principal oscillator in cents (±50 ¢) |
 
@@ -358,7 +366,7 @@ Shown in the drum-voice rack once pads are mapped.
 | Attack / Decay | Per-pad amplitude envelope |
 | Level | Per-pad output level |
 | Pan | Stereo position |
-| A / B | Send amounts to Send A (delay by default) and Send B (reverb by default) |
+| REV / DLY | Send amounts to Send B (a Reverb by default) and Send A (a Delay by default) |
 | Loop / Loop Start / Loop End | Loop mode (one-shot or loop-while-gated) and the loop region (start/end as a fraction of the sample) |
 | Sample Start / End | Trim the played window — start/end as a fraction of the sample; draggable on the waveform in the Selected sample panel |
 | Retrig | Poly (voices overlap) or Mono (re-hit cuts the previous voice) |
@@ -374,8 +382,8 @@ details on loading samples and building keymaps see
 
 ![Drums editor panel](images/engine-drums.png)
 
-Above: Drums editor — Preset row, master bus knobs (Vol/Pan/Rev/Dly/Lo/Mid/Hi),
-per-voice rack with Tune/Decay/Rev/Dly controls per voice.
+Above: Drums editor — Preset row, master bus knobs (Vol/Pan/A/B/Lo/Mid/Hi),
+per-voice rack with each voice's own synthesis and mixer controls.
 
 The Drums engine is a fully synthesised **ten-voice** drum machine — no samples
 required. All ten voices (Kick, Snare, **Rimshot**, Closed Hat, Open Hat, Clap,
@@ -391,16 +399,22 @@ The per-voice rack exposes the key parameters for each voice:
 | --- | --- |
 | Kick | Tune, Attack (click), Decay, Start/End Freq, Sweep, Wave |
 | Snare | Tune, Tone body, Snap (noise), Body Decay, Noise Decay, Noise Tone |
-| Closed Hat | Tune, Decay |
-| Open Hat | Tune, Decay |
+| Rimshot | Tune, Decay, Freq |
+| Closed Hat | Tune, Decay, Filter |
+| Open Hat | Tune, Decay, Filter |
 | Clap | Tone, Decay, Sharp (filter Q) |
-| Tom | Tune, Decay, Sweep, Start/End Freq |
 | Cowbell | Tune, Decay, Detune |
+| Tom | Tune, Decay, Sweep, End Freq |
 | Ride | Tune, Decay |
+| Crash | Tune, Decay |
+
+Each voice also has its own mixer row — **Level, A, B, Pan, Lo, Mid, Hi** — where
+**A** and **B** are that voice's send amounts to Send A (a Delay by default) and
+Send B (a Reverb by default).
 
 ### Drum preset dropdown — synth kits and sample kits
 
-The preset dropdown for any drum lane lists kits from four groups:
+The preset dropdown for any drum lane lists kits from five groups:
 
 | Group | Kits | How it works |
 | --- | --- | --- |
@@ -408,6 +422,7 @@ The preset dropdown for any drum lane lists kits from four groups:
 | Synth | TR-909, TR-808, TR-606, CR-78, LinnDrum | 100% synthesised DSP — no samples required |
 | Samples | TR-808 (samples), Acoustic (samples), Dirt (samples) | Real one-shot WAVs bundled with Loom |
 | Drum Machines | 64 sampled kits from classic boxes (Roland, LinnDrum, Korg, Oberheim, Casio, E-mu…) | Sampled one-shots from the **tidal-drum-machines** collection — a large library of vintage drum-machine sounds |
+| Percussion | GM Percussion | A 31-pad General-MIDI percussion set (sampled) |
 
 **Synth kits** seed every voice's parameters from the kit's characteristic values; you can edit individual voices on top and hit 🎲 Sound to randomise all voices at once.
 
@@ -419,8 +434,9 @@ The sample WAVs are curated one-shots from the Dirt-Samples collection (used by 
 
 ### Bus controls
 
-The master bus row gives Vol, Pan, Rev, Dly, Lo, Mid, and Hi (±18 dB shelves)
-for the whole drum bus. These are automatable via
+The master bus row gives Vol, Pan, A, B, Lo, Mid, and Hi (±18 dB) for the whole
+drum bus — **A** and **B** being the bus's sends to Send A and Send B. Lo and Hi
+are shelves; Mid is a peaking band. These are automatable via
 [Modulation & Note FX](06-modulation-and-note-fx.md). Routing to the shared
 reverb and delay sends is covered in [Mixing & FX](07-mixing-and-fx.md).
 
@@ -436,11 +452,11 @@ The default configuration is **closed hat and open hat both in group 1**, which 
 
 | Engine | Best for | Standout parameters |
 | --- | --- | --- |
-| TB-303 | Acid bass lines, resonant leads | Slide, Accent, Env Mod |
+| TB-303 | Acid bass lines, resonant leads | Slide, Accent, Env |
 | Subtractive | Pads, leads, basses, general-purpose | Dual OSC detune, Filter Drive, Key Track, POLY mode |
 | FM | Bells, electric pianos, metallic textures | Algorithm, per-operator Ratio, FB feedback |
 | Wavetable | Evolving tones, digital leads, pads | Morph (A→B crossfade), 8-waveform bank |
 | Karplus-Strong | Plucked strings, guitar, harp | Damping (sustain), Brightness, Excitation |
 | West Coast | Percussive plucks, metallic tones, evolving textures | Wavefolder (Fold), LPG Mode, Contour Cycle |
 | Sampler | Any audio, drum kits with per-pad control | Per-pad Tune/Filter/Envelope, Loop mode |
-| Drums | Synthesised drum machine, percussion | 8-voice synth rack, kits-as-presets, bus EQ, Choke groups |
+| Drums | Synthesised drum machine, percussion | 10-voice synth rack, kits-as-presets, bus EQ, Choke groups |
