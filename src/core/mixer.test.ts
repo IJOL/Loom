@@ -30,16 +30,25 @@ function fakeStrip() {
   return strip as unknown as ChannelStrip & typeof strip;
 }
 
-function makeDeps(over: Partial<MixerColumnDeps> = {}): MixerColumnDeps & { registered: KnobHandle[] } {
+type Deps = MixerColumnDeps & {
+  registered: KnobHandle[];
+  /** The ONE fake strip every stripFor() call returns, so a test can assert on
+   *  the setters the column drove. */
+  strip: ReturnType<typeof fakeStrip>;
+};
+
+function makeDeps(over: Partial<MixerColumnDeps> = {}): Deps {
   const registered: KnobHandle[] = [];
+  const strip = fakeStrip();
   return {
-    stripFor: () => fakeStrip(),
+    stripFor: () => strip,
     label: (id) => `Label ${id}`,
     muteState: {},
     soloState: {},
     applyMuteSolo: () => {},
     registerKnob: (k) => registered.push(k),
     registered,
+    strip,
     ...over,
   };
 }
@@ -60,13 +69,52 @@ describe('buildMixerColumn', () => {
     expect(el.querySelectorAll('.knob').length).toBe(6);
   });
 
-  it('registers the six knobs under mix.<trackId>.* in build order', () => {
+  it('registers all seven controls under <trackId>.bus.* in build order', () => {
+    // The ids are `<lane>.bus.<param>`, not the old `mix.<lane>.<param>`: the
+    // first segment is the SCOPE, so a lane id there is what makes these
+    // ordinary lane params — listed by the destination catalogue, resolvable to
+    // a clip, routable on replay. With `mix` in front the scope parsed as a lane
+    // called "mix", which is why right-clicking an EQ knob opened no menu.
+    //
+    // Seven, not six: the level fader is in the list now. It is still an
+    // <input type="range">, but a synthesised KnobHandle stands in front of it.
     const deps = makeDeps();
     buildMixerColumn('poly1', deps);
     expect(deps.registered.map((k) => k.meta.id)).toEqual([
-      'mix.poly1.eqhi', 'mix.poly1.eqmid', 'mix.poly1.eqlow',
-      'mix.poly1.sendA', 'mix.poly1.sendB', 'mix.poly1.pan',
+      'poly1.bus.eq.high', 'poly1.bus.eq.mid', 'poly1.bus.eq.low',
+      'poly1.bus.delaySend', 'poly1.bus.reverbSend', 'poly1.bus.pan',
+      'poly1.bus.level',
     ]);
+  });
+
+  it('the fader handle replays a level onto the strip, slider and readout', () => {
+    // The replay path: automation and undo call setValue, and all three have to
+    // move. A handle that only moved the slider would show a fade you cannot hear.
+    const deps = makeDeps();
+    const el = buildMixerColumn('poly1', deps);
+    const handle = deps.registered.find((k) => k.meta.id === 'poly1.bus.level')!;
+
+    handle.setValue(0.4);
+    expect(deps.strip.setLevel).toHaveBeenCalledWith(0.4);
+    expect((el.querySelector('.mix-fader') as HTMLInputElement).value).toBe('0.4');
+    expect(el.querySelector('.mix-fader-val')!.textContent).toBe('40%');
+  });
+
+  it('the fader handle reports its range, so a 0..1 envelope maps to real gain', () => {
+    const deps = makeDeps();
+    buildMixerColumn('poly1', deps);
+    const handle = deps.registered.find((k) => k.meta.id === 'poly1.bus.level')!;
+    expect(handle.meta).toMatchObject({ min: 0, max: 1.5 });
+  });
+
+  it('the fader handle clamps a replayed value to the declared range', () => {
+    const deps = makeDeps();
+    buildMixerColumn('poly1', deps);
+    const handle = deps.registered.find((k) => k.meta.id === 'poly1.bus.level')!;
+    handle.setValue(99);
+    expect(deps.strip.setLevel).toHaveBeenLastCalledWith(1.5);
+    handle.setValue(-4);
+    expect(deps.strip.setLevel).toHaveBeenLastCalledWith(0);
   });
 
   it('mute button toggles muteState, reflects .active and applies', () => {

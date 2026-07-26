@@ -22,6 +22,7 @@ import type {
 import type { EngineParamSpec } from './engine-params';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import type { ModulatorState } from '../modulation/types';
+import { STRIP_PARAM_SPECS } from '../core/channel-strip-params';
 
 export interface DescriptorEngineConfig {
   id: string;
@@ -53,10 +54,28 @@ const inertVoice = (): Voice => ({
 /** Build a metadata-only SynthEngine for the registry. Synthesis is handled by
  *  the worklet engines / audio-dsp kernel — this object only answers metadata
  *  and scalar param state. */
+/** The engine's own params plus the seven its lane's ChannelStrip contributes.
+ *
+ *  Every lane has a strip — level, pan, the two sends, three EQ bands — and its
+ *  mixer column shows them, so they are automation destinations on every lane
+ *  regardless of engine. Appending them HERE rather than in each engine file is
+ *  what stops the tenth engine from silently shipping without them, which is the
+ *  state eight of the nine were in: the catalogue reads `engine.params`, so a
+ *  param no engine declared had no destination and no right-click menu.
+ *
+ *  Deduplicated because drums-machine declares the seven itself — its knobs and
+ *  its saved envelopes predate this — and two copies would list every mixer
+ *  param twice in every picker. */
+function withStripParams(own: EngineParamSpec[]): EngineParamSpec[] {
+  const declared = new Set(own.map((p) => p.id));
+  return [...own, ...STRIP_PARAM_SPECS.filter((s) => !declared.has(s.id))];
+}
+
 export function createDescriptorEngine(cfg: DescriptorEngineConfig): SynthEngine {
   const modHost = new ModulationHostImpl(cfg.modulators ?? []);
+  const params = withStripParams(cfg.params);
   const state: Record<string, number> = {};
-  for (const p of cfg.params) state[p.id] = p.default;
+  for (const p of params) state[p.id] = p.default;
 
   return {
     id: cfg.id,
@@ -64,12 +83,12 @@ export function createDescriptorEngine(cfg: DescriptorEngineConfig): SynthEngine
     type: 'polyhost',
     polyphony: cfg.polyphony,
     editor: cfg.editor ?? 'piano-roll',
-    params: cfg.params,
+    params,
     get presets(): EnginePreset[] { return cfg.presets(); },
     get modulators(): ModulationHostImpl { return modHost; },
 
     getBaseValue(id: string): number {
-      return state[id] ?? cfg.params.find((p) => p.id === id)?.default ?? 0;
+      return state[id] ?? params.find((p) => p.id === id)?.default ?? 0;
     },
     setBaseValue(id: string, v: number): void { state[id] = v; },
 

@@ -18,6 +18,10 @@ import { ModulationHostImpl } from '../modulation/modulation-host';
 import { buildEngineParamGrid } from './engine-param-grid';
 import { resolveAudioClipPlayback } from './audio-clip-voice';
 import { neutralAudioSpawn } from './sampler-worklet-engine';
+import type { ChannelStrip } from '../core/fx';
+import {
+  STRIP_PARAM_SPECS, isStripParamId, getStripParam, setStripParam, stripAudioParams,
+} from '../core/channel-strip-params';
 import { CATEGORY_GAIN } from '../audio-dsp/gain-staging';
 import { SamplerWorkletNode } from '../audio-worklet/sampler-node';
 import type { SampleSpawn } from '../audio-dsp/sample/types';
@@ -65,8 +69,35 @@ export class AudioWorkletEngine implements SynthEngine {
   private fx: FxBus | null = null;
 
   get modulators(): ModulationHostImpl { return this.modHost; }
-  getBaseValue(id: string): number { return this.values[id] ?? 0; }
-  setBaseValue(id: string, v: number): void { this.values[id] = v; }
+
+  getBaseValue(id: string): number {
+    if (isStripParamId(id)) {
+      const v = this.busStrip ? getStripParam(this.busStrip, id) : undefined;
+      return v ?? STRIP_PARAM_SPECS.find((p) => p.id === id)?.default ?? 0;
+    }
+    return this.values[id] ?? 0;
+  }
+
+  setBaseValue(id: string, v: number): void {
+    // The lane's mixer strip owns these; `values` is this engine's own bag and
+    // holding a copy would make it a second owner of the fader.
+    if (isStripParamId(id)) {
+      if (this.busStrip) setStripParam(this.busStrip, id, v);
+      return;
+    }
+    this.values[id] = v;
+  }
+
+  /** The lane's mixer channel, handed over by the allocator after construction. */
+  setBusStrip(strip: ChannelStrip): void { this.busStrip = strip; }
+  private busStrip: ChannelStrip | null = null;
+
+  /** Level/pan/sends/EQ are native Web Audio nodes on the lane's channel, so an
+   *  LFO can reach them the ordinary way. */
+  getSharedAudioParams(): Map<string, AudioParam> {
+    if (!this.busStrip) return new Map<string, AudioParam>();
+    return stripAudioParams(this.busStrip);
+  }
 
   /** The allocator wires the dry output to the lane insert chain / strip. */
   setOutputTarget(n: AudioNode): void {

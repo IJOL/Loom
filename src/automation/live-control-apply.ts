@@ -22,9 +22,16 @@
 // Only the ENGINE branch mirrors: an insert param persists through the slot's
 // own serialization in `lane.inserts`, so writing it into the lane's engine
 // state would invent a param the engine does not have.
+//
+// The seven mixer-strip params (`bus.*`) are the same kind of exception, for the
+// same reason: they already persist as `lane.mixer` (session-host-persistence
+// snapshots strip.serialize()). Mirroring them too would give one number two
+// owners, and on load whichever of restore(lane.mixer) / engineState-apply ran
+// last would win — a fader that jumps to a value the user never set.
 
 import { applyAutomationToSession, type AutomationApplyDeps } from './automation-apply';
 import { commitParamForLane } from '../engines/engine-param-commit';
+import { isStripParamId } from '../core/channel-strip-params';
 import type { SessionState } from '../session/session';
 
 export interface LiveControlApplyDeps extends AutomationApplyDeps {
@@ -51,8 +58,12 @@ export function applyLiveControlWrite(
       if (!engine) return undefined;
       return {
         getBaseValue: (paramId) => engine.getBaseValue(paramId),
-        setBaseValue: (paramId, v) =>
-          commitParamForLane(engine, deps.sessionState, laneId, paramId, v),
+        setBaseValue: (paramId, v) => {
+          // A strip param drives the sound and persists as lane.mixer; it must
+          // not ALSO be stamped into engineState.params.
+          if (isStripParamId(paramId)) { engine.setBaseValue(paramId, v); return; }
+          commitParamForLane(engine, deps.sessionState, laneId, paramId, v);
+        },
       };
     },
   });

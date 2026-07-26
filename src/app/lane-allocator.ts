@@ -119,19 +119,28 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
 
   /** Per-engine wiring against a lane's strip + inserts. Shared by
    *  ensureLaneResource (initial alloc) and swapLaneEngine (in-place swap).
-   *  WorkletLaneEngine melodic lanes self-wire in createLaneEngine, so only the
-   *  8-output drums + sampler/audio worklet engines need their shared-fx/output
-   *  targets set here. */
+   *  Every engine is handed the strip (its seven mixer params are destinations on
+   *  every lane); beyond that, WorkletLaneEngine melodic lanes self-wire their
+   *  AUDIO in createLaneEngine, so only the 8-output drums + sampler/audio worklet
+   *  engines need their shared-fx/output targets set here.
+   *
+   *  ORDER: ensureLaneResource calls this BEFORE bindLaneModulators, so the strip
+   *  is attached by the time the binder reads getSharedAudioParams(). */
   const wireEngineIntoLane = (
     engineId: string,
     engine: SynthEngine,
     strip: ChannelStrip,
     inserts: InsertChain,
   ): void => {
+    // EVERY engine gets its lane's strip, whatever it synthesises with. The seven
+    // `bus.*` params (level, pan, the two sends, three EQ bands) are destinations
+    // on every lane, and an engine that never received the strip would accept
+    // those writes and drop them — the menu would open and nothing would move.
+    // This runs before the worklet early-return below for exactly that reason.
+    (engine as unknown as { setBusStrip?(s: ChannelStrip): void }).setBusStrip?.(strip);
     if (WORKLET_ENGINE_IDS.has(engineId)) return;   // self-wiring WorkletLaneEngine
     if (engineId === 'drums-machine') {
       (engine as unknown as { setSharedFx?(fx: FxBus): void }).setSharedFx?.(deps.fx);
-      (engine as unknown as { setBusStrip?(s: ChannelStrip): void }).setBusStrip?.(strip);
       (engine as unknown as { setOutputTarget?(n: AudioNode): void }).setOutputTarget?.(inserts.inputNode);
     }
     if (engineId === 'sampler' || engineId === 'audio') {

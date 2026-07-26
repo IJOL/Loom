@@ -51,6 +51,17 @@ describe('applyLiveControlWrite', () => {
     expect(f.state.lanes[0].engineState?.params).toBeUndefined();
   });
 
+  it('leaves engineState alone for a mixer strip write (that one persists as lane.mixer)', () => {
+    // One number, one owner. session-host-persistence snapshots strip.serialize()
+    // into lane.mixer; a second copy in engineState.params would race it on load.
+    const f = fixture();
+
+    expect(applyLiveControlWrite(`${LANE}.bus.level`, 0.5, f.deps)).toBe(true);
+
+    expect(f.engineVals['bus.level']).toBeGreaterThan(0);   // the gain still moved
+    expect(saved(f.state, 'bus.level')).toBeUndefined();
+  });
+
   it('drives the engine but writes nothing when the lane is not in the session', () => {
     // A destination can outlive its lane for a frame (the catalogue is rebuilt
     // on invalidate). mirrorParamChange no-ops on an unknown lane, so the write

@@ -19,6 +19,7 @@ import type { ChannelStrip } from './fx';
 import { createKnob, type KnobHandle } from './knob';
 import { attachKnobUndo, type HistoryDeps } from '../save/history-wiring';
 import { createLevelMeter } from './level-meter';
+import { STRIP_PARAM_SPECS } from './channel-strip-params';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -57,6 +58,50 @@ interface KnobOpts {
   onChange: (v: number) => void;
 }
 
+/** The automation id of one of the lane strip's seven params, e.g.
+ *  `subtractive-1.bus.eq.high`. The lane id is the SCOPE — the first segment —
+ *  which is what makes these ordinary lane params: the catalogue lists them, the
+ *  resolver finds their clip, and the replay path routes them, all without a
+ *  special case. (They used to be `mix.<lane>.<param>`, whose scope parsed as
+ *  "mix", a lane that does not exist — hence no menu and no destination.) */
+function stripParamId(trackId: string, paramId: string): string {
+  return `${trackId}.${paramId}`;
+}
+
+/** Give the level fader the identity every other control already has.
+ *
+ *  It is an `<input type="range">`, not a knob, and it stays one — the look does
+ *  not change. What changes is that a KnobHandle now stands in front of it, so
+ *  the automation registry, the right-click menu and the replay tick can see it.
+ *  Same trick select-control.ts uses for the discrete radio strips: synthesise
+ *  the handle, do not convert the widget.
+ *
+ *  `setValue` is the REPLAY entry point (automation, undo, a session load), so it
+ *  moves the slider, refreshes the readout AND writes the gain — a handle that
+ *  only moved the slider would show a fade that cannot be heard. */
+function faderHandle(
+  fader: HTMLInputElement,
+  readout: HTMLElement,
+  strip: ChannelStrip,
+  id: string,
+): KnobHandle {
+  const spec = STRIP_PARAM_SPECS.find((s) => s.id === 'bus.level')!;
+  const handle: KnobHandle = {
+    el: fader,
+    meta: { id, label: 'LEVEL', min: spec.min, max: spec.max },
+    setValue: (v: number) => {
+      const clamped = Math.max(spec.min, Math.min(spec.max, v));
+      fader.value = String(clamped);
+      readout.textContent = fmtPct(clamped);
+      strip.setLevel(clamped);
+      fader.setAttribute('data-value-norm', String((clamped - spec.min) / (spec.max - spec.min)));
+    },
+    // A slider has no ring to draw a modulation offset on.
+    setModulationOffset: () => { /* no ring on a fader */ },
+  };
+  return handle;
+}
+
 /** Builds + registers a knob and hands back its root node for interpolation.
  *  Evaluation order inside the template literal keeps the registration order
  *  identical to the old appendChild sequence (eqhi → … → pan). */
@@ -79,10 +124,16 @@ export function buildMixerColumn(trackId: string, deps: MixerColumnDeps): HTMLEl
 
   // Assigned after render; the handler only fires on user input, long after.
   let faderVal: HTMLElement | null = null;
+  let faderKnob: KnobHandle | null = null;
   const onFaderInput = (e: Event) => {
     const fader = e.currentTarget as HTMLInputElement;
-    strip.setLevel(parseFloat(fader.value));
-    if (faderVal) faderVal.textContent = fmtPct(parseFloat(fader.value));
+    const v = parseFloat(fader.value);
+    strip.setLevel(v);
+    if (faderVal) faderVal.textContent = fmtPct(v);
+    // `fromUser: true` — this is the branch REC records and the automation writer
+    // mirrors. Programmatic moves go through the handle's setValue instead, which
+    // deliberately does not fire this.
+    faderKnob?.onValueChanged?.(v, true);
   };
 
   // Fader layout: faderWrap (column) → faderRow (row: fader + vuHost) → faderVal
@@ -94,17 +145,17 @@ export function buildMixerColumn(trackId: string, deps: MixerColumnDeps): HTMLEl
       <div class="mix-section">
         <div class="mix-sec-label">EQ</div>
         ${knobEl(deps, {
-          id: `mix.${trackId}.eqhi`,  label: 'HI',  min: -18, max: 18, step: 0.5,
+          id: stripParamId(trackId, 'bus.eq.high'), label: 'HI', min: -18, max: 18, step: 0.5,
           value: state.eqHigh, defaultValue: 0, color: '#2ee0c0', format: fmtDb,
           onChange: (v) => strip.setEqHigh(v),
         })}
         ${knobEl(deps, {
-          id: `mix.${trackId}.eqmid`, label: 'MID', min: -18, max: 18, step: 0.5,
+          id: stripParamId(trackId, 'bus.eq.mid'), label: 'MID', min: -18, max: 18, step: 0.5,
           value: state.eqMid,  defaultValue: 0, color: '#f7d000', format: fmtDb,
           onChange: (v) => strip.setEqMid(v),
         })}
         ${knobEl(deps, {
-          id: `mix.${trackId}.eqlow`, label: 'LO',  min: -18, max: 18, step: 0.5,
+          id: stripParamId(trackId, 'bus.eq.low'), label: 'LO', min: -18, max: 18, step: 0.5,
           value: state.eqLow,  defaultValue: 0, color: '#c0392b', format: fmtDb,
           onChange: (v) => strip.setEqLow(v),
         })}
@@ -112,19 +163,19 @@ export function buildMixerColumn(trackId: string, deps: MixerColumnDeps): HTMLEl
       <div class="mix-section">
         <div class="mix-sec-label">SEND</div>
         ${knobEl(deps, {
-          id: `mix.${trackId}.sendA`, label: 'A', min: 0, max: 1, step: 0.01,
+          id: stripParamId(trackId, 'bus.delaySend'), label: 'A', min: 0, max: 1, step: 0.01,
           value: state.sendA, defaultValue: 0, color: '#3498db', format: fmtPct,
           onChange: (v) => strip.setSendA(v),
         })}
         ${knobEl(deps, {
-          id: `mix.${trackId}.sendB`, label: 'B', min: 0, max: 1, step: 0.01,
+          id: stripParamId(trackId, 'bus.reverbSend'), label: 'B', min: 0, max: 1, step: 0.01,
           value: state.sendB, defaultValue: 0, color: '#9b59b6', format: fmtPct,
           onChange: (v) => strip.setSendB(v),
         })}
       </div>
       <div class="mix-section">
         ${knobEl(deps, {
-          id: `mix.${trackId}.pan`, label: 'PAN', min: -1, max: 1, step: 0.01,
+          id: stripParamId(trackId, 'bus.pan'), label: 'PAN', min: -1, max: 1, step: 0.01,
           value: state.pan ?? 0, defaultValue: 0, color: '#e67e22', format: fmtPan,
           onChange: (v) => strip.setPan(v),
         })}
@@ -170,6 +221,15 @@ export function buildMixerColumn(trackId: string, deps: MixerColumnDeps): HTMLEl
   const fader = col.querySelector('.mix-fader') as HTMLInputElement;
   faderVal = col.querySelector('.mix-fader-val') as HTMLElement;
   faderVal.textContent = fmtPct(parseFloat(fader.value));
+
+  // Registered here rather than inside the template: the handle has to wrap the
+  // real <input>, which only exists after renderElement.
+  faderKnob = faderHandle(fader, faderVal, strip, stripParamId(trackId, 'bus.level'));
+  fader.setAttribute(
+    'data-value-norm',
+    String(parseFloat(fader.value) / 1.5),
+  );
+  deps.registerKnob(faderKnob);
 
   return col;
 }

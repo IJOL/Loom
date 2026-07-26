@@ -63,6 +63,10 @@ import { guessRootNoteFromName } from './sampler';
 import type { KnobHandle } from '../core/knob';
 import { SamplerWorkletNode } from '../audio-worklet/sampler-node';
 import type { SampleSpawn } from '../audio-dsp/sample/types';
+import type { ChannelStrip } from '../core/fx';
+import {
+  STRIP_PARAM_SPECS, isStripParamId, getStripParam, setStripParam, stripAudioParams,
+} from '../core/channel-strip-params';
 
 const SAMPLER_PARAMS: EngineParamSpec[] = [
   { id: 'gain',            label: 'Gain',   kind: 'continuous', min: 0,              max: 1.5,             default: 1 },
@@ -230,14 +234,18 @@ export class SamplerWorkletEngine implements SynthEngine {
 
   get modulators(): ModulationHostImpl { return this.modHost; }
 
-  /** Expose the channel filter's AudioParams so modulation binds to the real
-   *  Web-Audio nodes (cutoff → .detune cents, resonance → .Q linear). */
-  /** The engine owns no shared Web-Audio params of its own: filtering a sampler
-   *  lane is a `multifilter` insert, whose params are already modulation
-   *  destinations (`<laneId>.fx:<slotId>.<param>`). */
+  /** The lane's mixer strip is the engine's only shared Web-Audio surface:
+   *  filtering a sampler lane is a `multifilter` insert, whose params are already
+   *  destinations (`<laneId>.fx:<slotId>.<param>`), but level/pan/sends/EQ are
+   *  native nodes on the channel and an LFO reaches them directly. */
   getSharedAudioParams(): Map<string, AudioParam> {
-    return new Map<string, AudioParam>();
+    if (!this.busStrip) return new Map<string, AudioParam>();
+    return stripAudioParams(this.busStrip);
   }
+
+  /** The lane's mixer channel, handed over by the allocator after construction. */
+  setBusStrip(strip: ChannelStrip): void { this.busStrip = strip; }
+  private busStrip: ChannelStrip | null = null;
 
   /** Range lookup for the modulation depth bridge. */
   private paramRangeLookup = (id: string): { min: number; max: number } => {
@@ -250,6 +258,13 @@ export class SamplerWorkletEngine implements SynthEngine {
   }
 
   getBaseValue(id: string): number {
+    // Strip params FIRST: their ids are dotted, and 'bus.level' would otherwise
+    // fall into the per-pad branch below (`level` IS a pad leaf) and read the
+    // pad of a note called "bus".
+    if (isStripParamId(id)) {
+      const v = this.busStrip ? getStripParam(this.busStrip, id) : undefined;
+      return v ?? STRIP_PARAM_SPECS.find((p) => p.id === id)?.default ?? 0;
+    }
     if (id in this.paramValues) return this.paramValues[id];
     const dot = id.indexOf('.');
     if (dot > 0) {
@@ -269,6 +284,10 @@ export class SamplerWorkletEngine implements SynthEngine {
   }
 
   setBaseValue(id: string, v: number): void {
+    if (isStripParamId(id)) {
+      if (this.busStrip) setStripParam(this.busStrip, id, v);
+      return;
+    }
     if (id in this.paramValues || SAMPLER_PARAMS.some((p) => p.id === id)) {
       this.paramValues[id] = v;
       return;

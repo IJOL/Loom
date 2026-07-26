@@ -31,6 +31,10 @@ import { commitParam } from './engine-param-commit';
 import { createKnob, type KnobHandle } from '../core/knob';
 import { attachKnobUndo } from '../save/history-wiring';
 import { reapplyLaneModulations } from '../modulation/voice-mod-binding';
+import type { ChannelStrip } from '../core/fx';
+import {
+  isStripParamId, getStripParam, setStripParam, stripAudioParams,
+} from '../core/channel-strip-params';
 
 // dot-id (SUB_PARAM_SPECS vocabulary) → flat SubParams field. Single source of
 // the mapping. Params not present here (poly.*) are handled explicitly in
@@ -180,6 +184,9 @@ export class WorkletLaneEngine implements SynthEngine {
   private state: ParamBag = {};
   private maxVoices: number;
   private worklet: LoomWorkletNode;
+  /** The lane's mixer channel. Attached by the allocator after construction —
+   *  see setBusStrip. Null while a lane is still being built. */
+  private busStrip: ChannelStrip | null = null;
   // Latest live modulation offsets reported by the worklet (field → normalised
   // -1..1), the source of truth for the UI knob rings. Empty when nothing modulates.
   private liveModOffsets: Record<string, number> = {};
@@ -201,7 +208,14 @@ export class WorkletLaneEngine implements SynthEngine {
     this.presetKeyRemap = cfg.presetKeyRemap;
     this.modHost = new ModulationHostImpl(cfg.modulators ?? []);
     this.mapTarget = cfg.engineId === 'subtractive' ? fieldForParamId : makeDotIdMapper(cfg.params);
-    for (const s of cfg.params) this.state[s.id] = s.default;
+    // Strip params are excluded from the bag on purpose: the bag IS the worklet
+    // renderer's input (and what the offline kernel renders from), while the seven
+    // mixer params live on the lane's native ChannelStrip. Seeding them here would
+    // hand the renderer params it does not have and make the bag a second owner
+    // of the fader.
+    for (const s of cfg.params) {
+      if (!isStripParamId(s.id)) this.state[s.id] = s.default;
+    }
     this.maxVoices = cfg.polyphony === 'mono' ? 1 : 8;
     this.state['poly.voices'] = this.maxVoices;   // keep the bag in sync with the authoritative cap
     this.worklet = new LoomWorkletNode(ctx, cfg.engineId);
@@ -246,8 +260,21 @@ export class WorkletLaneEngine implements SynthEngine {
    *  worklet runs. The offline kernel render feeds these to a ModulationRuntime. */
   getModLite(): ModLite[] { return toModLite(this.modHost.modulators, this._bpm); }
 
+  /** Hand this engine the ChannelStrip of the lane it plays into, so the seven
+   *  `bus.*` params reach real nodes. Called by the lane allocator right after
+   *  construction; until then a strip write is a no-op and a read answers the
+   *  declared default. The strip belongs to the LANE, not the engine, so it
+   *  survives an engine swap and is re-attached to the replacement. */
+  setBusStrip(strip: ChannelStrip): void { this.busStrip = strip; }
+
   getBaseValue(id: string): number {
     if (id === 'poly.voices') return this.maxVoices;
+    // The strip owns its seven values — read them off the live nodes so a knob
+    // rebuilt from here shows where the fader actually is.
+    if (isStripParamId(id)) {
+      const v = this.busStrip ? getStripParam(this.busStrip, id) : undefined;
+      return v ?? this.params.find((p) => p.id === id)?.default ?? 0;
+    }
     if (id in this.state) return this.state[id];
     return this.params.find((p) => p.id === id)?.default ?? 0;
   }
@@ -261,8 +288,25 @@ export class WorkletLaneEngine implements SynthEngine {
     // mono/legato are not modelled in the worklet renderer yet; accept-and-ignore
     // so a preset carrying them doesn't error.
     if (id === 'poly.mode' || id === 'poly.retrig') return;
+    // A strip param is a native Web Audio node on the lane's mixer channel, not
+    // a field of the worklet renderer. It must NOT enter `state` (that bag is the
+    // renderer's input, and the offline kernel reads it verbatim) and must not be
+    // posted to the worklet, which has no such param.
+    if (isStripParamId(id)) {
+      if (this.busStrip) setStripParam(this.busStrip, id, v);
+      return;
+    }
     this.state[id] = v;
     this.worklet.setParams({ [id]: v });   // dot-id straight through to the renderer's ParamBag
+  }
+
+  /** The lane strip's AudioParams — the ONLY modulation destinations a melodic
+   *  worklet engine hands to the Web-Audio binder. Its synth params modulate
+   *  inside the worklet (hence the empty getAudioParams on its voices), but the
+   *  mixer channel is native Web Audio, so an LFO can reach it the ordinary way. */
+  getSharedAudioParams(): Map<string, AudioParam> {
+    if (!this.busStrip) return new Map<string, AudioParam>();
+    return stripAudioParams(this.busStrip);
   }
 
   applyPreset(name: string): void {

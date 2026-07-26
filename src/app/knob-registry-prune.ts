@@ -2,11 +2,15 @@
 //
 // The registry is keyed by knob id and only ever grew: loading a save left the
 // previous session's lanes in it, so every param picker showed instruments that
-// no longer existed. Ids come in three shapes:
+// no longer existed. Ids come in two shapes:
 //
-//   `<laneId>.<param>`        — a lane's engine / insert / bus knob
-//   `mix.<laneId>.<param>`    — that lane's mixer strip
-//   `fx.<...>`                — master bus and sends; global, never lane-scoped
+//   `<laneId>.<param>`   — a lane's engine, insert, or mixer-strip (`bus.*`) knob
+//   `fx.<...>`           — master bus and sends; global, never lane-scoped
+//
+// There used to be a third, `mix.<laneId>.<param>`, for the mixer column. Those
+// controls are `<laneId>.bus.<param>` now — the lane back in the scope position,
+// which is what made them automatable — so they need no special case: pruning
+// them with their lane is right, because the ChannelStrip dies with the lane.
 //
 import type { KnobHandle } from '../core/knob';
 import { parseAutomationParamId } from '../automation/automation-apply';
@@ -19,8 +23,6 @@ export function laneOfKnobId(id: string): string | null {
   const parts = id.split('.');
   if (parts.length < 2) return null;
   if (GLOBAL_HEADS.has(parts[0])) return null;
-  // `mix.<laneId>.…` puts the lane in the second segment.
-  if (parts[0] === 'mix') return parts.length >= 3 ? parts[1] : null;
   return parts[0];
 }
 
@@ -55,9 +57,8 @@ function slotKey(scopeId: string, slotId: string): string {
  *
  *  Deliberately NOT "delete anything absent from validIds": the registry is
  *  the live write path for controls the destination catalogue does not (and
- *  should not) model — `mix.<laneId>.<param>` mixer knobs (six per track,
- *  never listed by `listAutomationTargets`), `<laneId>.mod.…` modulator
- *  config, and any other id shape. Only ids that parse as an insert param
+ *  should not) model — `<laneId>.mod.…` modulator config, and any other id
+ *  shape. Only ids that parse as an insert param
  *  (`parseAutomationParamId(...).kind === 'insert'`) are ever candidates for
  *  deletion; everything else is left untouched no matter what `validIds`
  *  contains. A leaked entry costs a bounded amount of memory; deleting a live

@@ -9,8 +9,13 @@ describe('laneOfKnobId', () => {
     expect(laneOfKnobId('L1.filter.cutoff')).toBe('L1');
   });
 
-  it('reads the lane out of a mixer id, where it sits second', () => {
-    expect(laneOfKnobId('mix.L1.pan')).toBe('L1');
+  it('reads the lane off a mixer-strip param, which is scoped like any other', () => {
+    // `<laneId>.bus.<param>` — the mixer column's controls used to be
+    // `mix.<laneId>.<param>`, needing their own branch here. Putting the lane
+    // back in the scope position is what made them automation destinations, and
+    // it also removed the special case.
+    expect(laneOfKnobId('L1.bus.pan')).toBe('L1');
+    expect(laneOfKnobId('L1.bus.eq.high')).toBe('L1');
   });
 
   it('treats master / send knobs as global', () => {
@@ -23,16 +28,18 @@ describe('pruneKnobRegistry', () => {
   it('drops the previous session lanes and keeps the current ones', () => {
     const reg = new Map<string, KnobHandle>([
       ['L1.cutoff',      handle('L1.cutoff')],
-      ['mix.L1.pan',     handle('mix.L1.pan')],
+      ['L1.bus.pan',     handle('L1.bus.pan')],
       ['OLD.cutoff',     handle('OLD.cutoff')],
-      ['mix.OLD.pan',    handle('mix.OLD.pan')],
+      ['OLD.bus.pan',    handle('OLD.bus.pan')],
       ['OLD.fx0.mix',    handle('OLD.fx0.mix')],
       ['fx.mcomp.thr',   handle('fx.mcomp.thr')],
     ]);
 
     pruneKnobRegistry(reg, new Set(['L1']));
 
-    expect([...reg.keys()].sort()).toEqual(['L1.cutoff', 'fx.mcomp.thr', 'mix.L1.pan']);
+    // The departed lane's strip knobs go with it — correctly: a ChannelStrip is
+    // owned by its lane and disposed with it.
+    expect([...reg.keys()].sort()).toEqual(['L1.bus.pan', 'L1.cutoff', 'fx.mcomp.thr']);
   });
 
   it('is a no-op when every lane is still present', () => {
@@ -63,20 +70,22 @@ describe('pruneKnobRegistryToDestinations', () => {
   });
 
   // This is the regression the naive "delete everything that isn't a
-  // destination" rule would have shipped: the mixer registers six knobs per
-  // track (mix.<laneId>.eqhi/eqmid/eqlow/sendA/sendB/pan — src/core/mixer.ts)
-  // and listAutomationTargets does not model mix.* at all, so an empty
-  // validIds set would classify every mixer knob as prunable. They must
-  // survive untouched no matter what the destination catalogue says, because
-  // the registry is their live write path, not just a list of automation
-  // targets.
-  it('leaves mixer knobs alone even when the destination set is empty', () => {
+  // destination" rule would have shipped. The mixer column registers seven
+  // controls per lane (`<laneId>.bus.*` — src/core/mixer.ts), and while they ARE
+  // destinations now, this pruner runs against whatever catalogue it is handed:
+  // an empty set (a load in flight, a lane not yet allocated) would classify
+  // every mixer control as prunable. Only insert-param ids are ever candidates,
+  // because the registry is these controls' live write path, not merely a list
+  // of automation targets.
+  it('leaves mixer strip controls alone even when the destination set is empty', () => {
     const registry = new Map<string, KnobHandle>([
-      ['mix.poly1.pan',   handle('mix.poly1.pan')],
-      ['mix.poly1.sendA', handle('mix.poly1.sendA')],
+      ['poly1.bus.pan',       handle('poly1.bus.pan')],
+      ['poly1.bus.delaySend', handle('poly1.bus.delaySend')],
+      ['poly1.bus.level',     handle('poly1.bus.level')],
     ]);
     pruneKnobRegistryToDestinations(registry, new Set());
-    expect([...registry.keys()].sort()).toEqual(['mix.poly1.pan', 'mix.poly1.sendA']);
+    expect([...registry.keys()].sort())
+      .toEqual(['poly1.bus.delaySend', 'poly1.bus.level', 'poly1.bus.pan']);
   });
 
   it('leaves an engine param alone even when the destination set is empty', () => {
