@@ -1,13 +1,23 @@
 // src/polysynth/poly-preset-apply.ts
 //
-// The three ways a poly lane's sound changes with nobody touching a knob:
-// recalling a factory/engine preset, loading a user subtractive preset, and
-// Randomize. All three push values straight into the engine, so no knob onChange
-// fires and `commitParam` never sees them — each must therefore COMMIT what it
-// applied (`commitEngineBaseValues`) or the new sound never reaches a save. The
-// live preset picker does not set `lane.enginePresetName` either (only
+// Three ways a poly lane's sound changes with nobody touching a knob: recalling
+// a factory/engine preset, loading a user subtractive preset, and Randomize ON A
+// SUBTRACTIVE LANE. All three push values straight into the engine, so no knob
+// onChange fires and `commitParam` never sees them — each must therefore COMMIT
+// what it applied (`commitEngineBaseValues`) or the new sound never reaches a
+// save. The live preset picker does not set `lane.enginePresetName` either (only
 // engine-swap, the drum-kit picker and the MIDI importer do), so the mirror is
 // the lane's ONLY vehicle to disk.
+//
+// That list is what this module covers, not every route into the app. Randomize
+// on any OTHER engine never arrives here and changes nothing at all:
+// polysynth-presets.ts routes only `subtractive` to randomizeSubtractiveLane and
+// answers the rest with `eng.randomize?.()` — declared optional on SynthEngine,
+// implemented by no engine — falling back to `eng.setParam?.()`, which is not
+// even a declared member (engines expose `setBaseValue`). So the 🎲 Sound button
+// on an FM / Wavetable / Karplus / Westcoast / Sampler lane only marks the preset
+// dropdown Custom. Recorded in docs/superpowers/REMAINING-WORK.md; making it work
+// means choosing musical ranges per engine, which is not a mechanical fix.
 //
 // They live here, apart from the DOM-heavy preset UI, so the invariant is
 // testable without a document: the caller passes the session in, and the mirror
