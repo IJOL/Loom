@@ -1,8 +1,6 @@
 // src/engines/engine-types.ts
 
 export type { EngineParamSpec } from './engine-params';
-// Back-compat alias: code transitioning to the new name can still reference ParamDef.
-export type ParamDef = import('./engine-params').EngineParamSpec;
 
 export interface Voice {
   trigger(midi: number, time: number, options: VoiceTriggerOptions): void;
