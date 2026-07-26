@@ -130,7 +130,14 @@ export function toModLite(
   });
 }
 
+/** Monotonic handle so each spawned voice can be released on its own. Module
+ *  scope, not per-node: ids only need to be unique within a lane, and one
+ *  counter for the whole app is the simplest thing that guarantees it. */
+let nextVoiceId = 1;
+
 class WorkletVoice implements Voice {
+  /** Set at trigger(); until then this voice owns nothing in the worklet. */
+  private voiceId: number | null = null;
   constructor(private node: LoomWorkletNode) {}
   trigger(midi: number, time: number, o: VoiceTriggerOptions): void {
     const accent = o.accent ?? false;
@@ -138,18 +145,29 @@ class WorkletVoice implements Voice {
     // velNorm/resolveVelocity). NoteSpec.velocity the renderer expects is the
     // normalised 0..1 value, so convert here (defaulting via resolveVelocity so a
     // velocity-less audition/note-FX trigger lands at the legacy loudness).
+    this.voiceId = nextVoiceId++;
     this.node.spawn({
       midi, beginSec: time, durationSec: o.gateDuration,
       velocity: velNorm(resolveVelocity(o.velocity, accent)),
       accent, slide: o.slide ?? false,
+      voiceId: this.voiceId,
     });
   }
+  /** Note-off THIS voice. A live key-up (live-keyboard's voice pool) lands here,
+   *  and the other notes of a held chord must keep sounding.
+   *
+   *  This used to call node.silenceAll() — every voice on the lane — so lifting
+   *  one key of a chord killed the chord. Measured in the app before the fix: a
+   *  3-note chord at RMS 0.1954 fell to 0.0129 when ONE key came up, while an
+   *  untouched control chord held at 0.2037. Do not route a key-up back through
+   *  silenceAll; use silenceLane() when you really mean the whole lane. */
   release(_t: number): void {
-    // Transport Stop / scene-launch boundary: the live-voice registry calls this
-    // to silence the lane. Steal every active worklet voice so a held/long note
-    // stops instead of ringing out its full gate.
-    this.node.silenceAll();
+    if (this.voiceId === null) return;   // never triggered: nothing of ours is sounding
+    this.node.releaseVoice(this.voiceId);
   }
+  /** Silence the ENTIRE lane (transport Stop / STOP ALL / scene-launch seam),
+   *  regardless of which voice this handle happens to be. */
+  silenceLane(): void { this.node.silenceAll(); }
   connect(_d: AudioNode): void { /* the lane's worklet node is already connected by the engine */ }
   getAudioParams(): Map<string, AudioParam> { return new Map(); }
   dispose(): void { /* no per-note nodes to tear down */ }

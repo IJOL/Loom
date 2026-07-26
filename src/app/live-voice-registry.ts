@@ -39,19 +39,37 @@ export class LiveVoiceRegistry implements VoiceSilencer {
     if (arr.length > this.capPerLane) arr.splice(0, arr.length - this.capPerLane);
   }
 
-  /** Immediately release every tracked voice for one lane, then forget them. */
+  /** Silence one lane. Prefers the engine's whole-lane seam when it has one:
+   *  `release()` is now strictly per-voice (so a live key-up can't kill a held
+   *  chord), which means releasing only the voices WE track would leave any the
+   *  cap above already evicted still sounding. `silenceLane()` doesn't care what
+   *  we tracked. Engines without it fall back to a per-voice sweep. */
   silenceLane(laneId: string, now: number): void {
     const arr = this.byLane.get(laneId);
     if (!arr) return;
-    for (const v of arr) { try { v.release(now); } catch { /* already gone */ } }
+    silence(arr, now);
     this.byLane.delete(laneId);
   }
 
-  /** Immediately release every tracked voice across all lanes, then clear. */
+  /** Silence every lane, then forget them all. */
   silenceAll(now: number): void {
-    for (const arr of this.byLane.values()) {
-      for (const v of arr) { try { v.release(now); } catch { /* already gone */ } }
-    }
+    for (const arr of this.byLane.values()) silence(arr, now);
     this.byLane.clear();
+  }
+}
+
+/** One lane's worth of voices. Uses the whole-lane seam once if it exists,
+ *  otherwise releases each voice individually. */
+function silence(voices: readonly Voice[], now: number): void {
+  const laneSeam = voices.find((v) => typeof v.silenceLane === 'function');
+  if (laneSeam) {
+    try { laneSeam.silenceLane!(); } catch { /* already gone */ }
+    // Voices of OTHER engine kinds can share a lane entry (an engine swap mid-
+    // session), so sweep the rest too. Releasing an already-silent voice is a
+    // documented no-op.
+  }
+  for (const v of voices) {
+    if (v === laneSeam) continue;
+    try { v.release(now); } catch { /* already gone */ }
   }
 }

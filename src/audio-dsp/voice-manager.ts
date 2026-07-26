@@ -5,7 +5,7 @@ import type { ModulationRuntime, ModLite, PhaseOrigin } from './modulation-runti
 /** Phase origin for the all-free/all-shared fast path: the LFO ignores notes. */
 const SHARED_ORIGIN: PhaseOrigin = { voiceStartT: 0, lastNoteOnT: 0 };
 
-interface Slot { midi: number; allocatedAt: number; v: VoiceRenderer; }
+interface Slot { midi: number; allocatedAt: number; v: VoiceRenderer; voiceId?: number; }
 
 export class VoiceManager {
   private slots: Slot[] = [];
@@ -15,6 +15,12 @@ export class VoiceManager {
   /** When the lane last received a note-on (phase origin for TRIG=note). */
   private lastNoteOnT = 0;
   private mod: ModulationRuntime | null = null;
+  /** Voice ids released before their spawn was drained from the scheduler queue
+   *  (a key tap shorter than one render quantum). spawn() consumes these.
+   *  Bounded: a stray id that never spawns would otherwise leak, so the oldest
+   *  entry is dropped past the cap — Set preserves insertion order. */
+  private readonly pendingReleases = new Set<number>();
+  private static readonly PENDING_RELEASE_CAP = 64;
   // Pooled per-sample modulation-offset struct — mutated in place each render
   // sample and shared (read-only) by every voice, so the real-time render
   // callback allocates nothing on the audio thread when modulation is active.
@@ -93,13 +99,43 @@ export class VoiceManager {
     // The lane's most recent note-on — the phase origin for a shared LFO whose
     // TRIG is 'note' (the whole lane retriggers together).
     this.lastNoteOnT = note.beginSec;
-    this.slots.push({ midi: note.midi, allocatedAt: note.beginSec, v });
+    this.slots.push({ midi: note.midi, allocatedAt: note.beginSec, v, voiceId: note.voiceId });
+    // A note-off that arrived before its note-on: a very short key tap can have
+    // its release message overtake the spawn, which is still sitting in the
+    // scheduler queue. Without this the voice would hold for its whole
+    // durationSec — and a held live note asks for an hour.
+    if (note.voiceId !== undefined && this.pendingReleases.has(note.voiceId)) {
+      this.pendingReleases.delete(note.voiceId);
+      v.noteOff(this.lastT);
+    }
   }
 
-  /** Release the `count` oldest voices early (global-cap stealing). */
+  /** Release the `count` oldest voices early (global-cap stealing, and the
+   *  transport Stop path via silenceAll). Addressed by AGE — for a key-up use
+   *  releaseVoice, which is addressed by identity. */
   steal(count: number): void {
     const n = Math.min(count, this.slots.length);
     for (let i = 0; i < n; i++) this.slots[i].v.noteOff(this.lastT);
+  }
+
+  /** Note-off exactly ONE voice, the one whose spawn carried `voiceId`. What a
+   *  key-up sends: the other notes of a held chord keep sounding. The voice is
+   *  left in the render loop so its release tail renders and it self-frees via
+   *  `done` — splicing it out here would drop whatever amplitude it was
+   *  rendering and land as a click (same reason spawn's retrigger path leaves
+   *  the stolen voice in place). Unknown or repeated ids are harmless. */
+  releaseVoice(voiceId: number): void {
+    let found = false;
+    for (const s of this.slots) {
+      if (s.voiceId === voiceId) { s.v.noteOff(this.lastT); found = true; }
+    }
+    // Not spawned yet — remember it so spawn() can release it on arrival.
+    if (!found) {
+      this.pendingReleases.add(voiceId);
+      if (this.pendingReleases.size > VoiceManager.PENDING_RELEASE_CAP) {
+        this.pendingReleases.delete(this.pendingReleases.values().next().value as number);
+      }
+    }
   }
 
   /** Fill the pooled offset struct for one phase origin. Reused for the shared

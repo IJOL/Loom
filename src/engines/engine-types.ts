@@ -6,7 +6,16 @@ export type ParamDef = import('./engine-params').EngineParamSpec;
 
 export interface Voice {
   trigger(midi: number, time: number, options: VoiceTriggerOptions): void;
+  /** Note-off THIS voice only. A live key-up lands here, so the other notes of a
+   *  held chord must survive it. To silence a whole lane use `silenceLane`. */
   release(time: number): void;
+  /** Optional: silence every voice of the lane this one belongs to, in one call.
+   *  Implemented by engines whose voices share a single worklet node, where the
+   *  stop seams would otherwise have to reach each voice individually — and
+   *  would miss any the live-voice registry has already evicted past its cap.
+   *  Engines with genuinely independent per-note voices omit it; the registry
+   *  then falls back to releasing each voice it tracks. */
+  silenceLane?(): void;
   connect(dest: AudioNode): void;
   dispose(): void;
   /** Per-voice AudioParams keyed by EngineParamSpec.id. The modulator binder

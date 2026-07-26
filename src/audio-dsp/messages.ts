@@ -7,6 +7,11 @@ export type MainToWorklet =
   | { type: 'mods'; mods: ModLite[] }
   | { type: 'config'; maxVoices: number }
   | { type: 'steal'; count: number }
+  // Note-off for ONE voice, addressed by the id its spawn carried. This is what
+  // lifting a single key sends. Distinct from `steal`, which is "silence the
+  // lane" and is addressed by age, not identity — using steal for a key-up is
+  // what made lifting one key of a chord kill the whole chord.
+  | { type: 'release'; voiceId: number }
   // Dispose: tell the processor to stop running. It answers by returning false
   // from process(), so the audio engine reclaims it instead of calling it forever.
   | { type: 'kill' };

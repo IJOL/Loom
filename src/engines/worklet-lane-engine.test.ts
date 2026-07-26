@@ -14,6 +14,7 @@ const params: ParamBag[] = [];
 const maxVoicesCalls: number[] = [];
 const modsCalls: ModLite[][] = [];
 let silenceAllCalls = 0;
+const releasedIds: number[] = [];
 let lastEngineId: string | undefined;
 let lastModCb: ((o: Record<string, number>) => void) | null = null;
 vi.mock('../audio-worklet/loom-node', () => ({
@@ -24,6 +25,7 @@ vi.mock('../audio-worklet/loom-node', () => ({
     setParams(p: ParamBag) { params.push(p); }
     setMaxVoices(n: number) { maxVoicesCalls.push(n); }
     setMods(m: ModLite[]) { modsCalls.push(m); }
+    releaseVoice(id: number) { releasedIds.push(id); }
     steal() {} silenceAll() { silenceAllCalls++; } onVoiceCount() {}
     onModValues(cb: (o: Record<string, number>) => void) { lastModCb = cb; }
     connect() {} disconnect() {} dispose() {}
@@ -87,12 +89,27 @@ describe('WorkletLaneEngine', () => {
     expect(v.getAudioParams().size).toBe(0);
   });
 
-  it('release() silences the worklet so a held note stops on transport Stop', () => {
+  // This assertion used to read "release() silences the worklet", which is what
+  // the transport Stop needed but ALSO what a live key-up went through — so
+  // lifting one key of a held chord killed the chord (measured: RMS 0.1954 →
+  // 0.0129). The two intents are now separate methods: release() is per-voice,
+  // silenceLane() is the whole-lane seam the stop paths use.
+  it('silenceLane() silences the worklet so a held note stops on transport Stop', () => {
     silenceAllCalls = 0;
     const v = makeEngine().createVoice({} as AudioContext, out());
     v.trigger(60, 0, { gateDuration: 10 });   // a long held note
-    v.release(0.5);
+    (v as unknown as { silenceLane(): void }).silenceLane();
     expect(silenceAllCalls).toBe(1);
+  });
+
+  it('release() does NOT silence the lane — it note-offs only its own voice', () => {
+    silenceAllCalls = 0;
+    releasedIds.length = 0;
+    const v = makeEngine().createVoice({} as AudioContext, out());
+    v.trigger(60, 0, { gateDuration: 10 });
+    v.release(0.5);
+    expect(silenceAllCalls).toBe(0);
+    expect(releasedIds).toHaveLength(1);
   });
 
   it('posts processorOptions.engineId so the worklet builds the right renderer', () => {

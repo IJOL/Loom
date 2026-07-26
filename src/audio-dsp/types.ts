@@ -30,6 +30,12 @@ export interface NoteSpec {
   velocity: number;   // 0..1
   accent: boolean;
   slide: boolean;
+  /** Caller-assigned handle so this ONE voice can be released later
+   *  (VoiceManager.releaseVoice). A held live note — a key you are still
+   *  pressing — has no known duration, so its note-off arrives as a separate
+   *  message and needs a way to name its voice. Sequenced notes carry their own
+   *  duration and never need it, so it is optional. */
+  voiceId?: number;
 }
 
 /** Generic engine parameter bag: dot-id (`'filter.cutoff'`, `'op1.ratio'`, …)

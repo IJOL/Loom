@@ -50,6 +50,7 @@ class LoomProcessor extends AudioWorkletProcessor {
         case 'params': this.vm.setParams(m.params); break;
         case 'config': this.vm.setMaxVoices(m.maxVoices); break;
         case 'steal':  this.vm.steal(m.count); break;
+        case 'release': this.vm.releaseVoice(m.voiceId); break;
         case 'mods':   this.mod.setMods(m.mods); break;
         case 'kill':   this.dead = true; break;
       }
