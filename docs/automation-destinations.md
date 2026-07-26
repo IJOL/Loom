@@ -18,7 +18,7 @@ function renderMyPicker(container: HTMLElement, destinations: DestinationRegistr
   const targets = destinations.list();     // every destination the session declares, right now
   // ...build the dropdown from targets...
   const off = destinations.subscribe(() => renderMyPicker(container, destinations));
-  // bind `off` to the panel's AbortController — see "Subscription teardown" below
+  // bind `off` to the panel's lifetime — see "Subscription teardown" below
 }
 ```
 
@@ -61,11 +61,18 @@ Canonical id, defined in [`AutomationTarget.id`](../src/automation/automation-ta
 by index meant deleting one insert silently repointed every modulation
 connection aimed at its neighbours onto the wrong slot.
 
-[`parseAutomationParamId`](../src/automation/automation-apply.ts) rejects the
-old positional shape (`<scope>.fx2.<param>`) outright — it returns `null`
-rather than guessing — so an id that never got translated to the new format
-fails visibly (the automation write is dropped) instead of silently
-resolving to a plausible but wrong target.
+[`parseAutomationParamId`](../src/automation/automation-apply.ts) finds the
+insert by looking for the first segment that literally starts with `fx:`. It
+returns `null` only for an id with fewer than two segments; there is no explicit
+rejection of the old positional shape. A legacy `poly1.fx2.drive` therefore
+parses as an *engine* param whose local id happens to be `fx2.drive`.
+
+The write is still dropped, but downstream and for a different reason:
+`applyAutomationToSession` bails when `deps.getRange(id)` returns nothing, and
+no declared spec answers for `fx2.drive`. So a stale id fails silently rather
+than visibly, and nothing pins that behaviour — there is no test for the `fx2`
+shape. If you want the failure to be loud, that needs an explicit reject for a
+segment matching `/^fx\d+$/`, plus a test.
 
 ## The change signal
 
@@ -73,10 +80,12 @@ Mutation sites call `invalidate()`; they don't know or care who's listening.
 Consumers call `subscribe()`. Call sites (see the `Drives
 DestinationRegistry.invalidate()` comments at each):
 
-- lane add/remove — [`src/app/lane-allocator.ts`](../src/app/lane-allocator.ts)
-- engine swap — same file
-- insert add/remove on a lane — [`src/session/lane-insert-ui.ts`](../src/session/lane-insert-ui.ts)
-- insert add/remove on master/send racks — [`src/core/fx-ui.ts`](../src/core/fx-ui.ts)
+- lane **add** — [`src/app/lane-allocator.ts:257`](../src/app/lane-allocator.ts), in `ensureLaneResource`
+- engine swap — same file, line 303
+- lane **delete** — [`src/session/session-host-callbacks.ts:344`](../src/session/session-host-callbacks.ts). A separate site because `deleteLane`/`dispose` bypass `ensureLaneResource` and `swapLaneEngine` entirely; the comment there says so.
+- insert add/remove on a lane — [`src/session/lane-insert-ui.ts`](../src/session/lane-insert-ui.ts) (lines 120 and 215)
+- insert add/remove on master/send racks — [`src/core/fx-ui.ts`](../src/core/fx-ui.ts), which threads the same callback into the same builder
+- session **load** / state swap — [`src/session/session-host-persistence.ts:137`](../src/session/session-host-persistence.ts). One announcement after the whole lane + insert set has been rewritten, because `rehydrateInsertChain` mutates chains directly and bypasses the UI's own hook.
 
 The destination *set* only changes for structural reasons like these.
 **Presets, drum kits, and sampler keymaps do NOT change it** — engine param
@@ -86,20 +95,25 @@ currently applied.
 ## Subscription teardown: bind it to the panel's lifetime
 
 This codebase rebuilds panels by wiping their host (`container.innerHTML =
-''` appears in dozens of files) and re-rendering. That destroys DOM but not a
+''` appears in over twenty non-test files) and re-rendering. That destroys DOM but not a
 JS closure a previous render registered with `subscribe()` — so an
 unconditional `subscribe()` on every render call leaks a listener per
 rebuild, and each leaked listener triggers its own redundant redraw on the
 next `invalidate()`.
 
-Bind every subscription to an `AbortController` scoped to the panel/container,
-aborting the previous one at the top of every render call. Two existing,
-working examples:
+Bind every subscription to the panel's own lifetime, releasing the previous one
+whenever the panel is rebuilt. There are two accepted idioms, and which one you
+want depends on how the panel is mounted:
 
-- [`src/modulation/modulation-ui.ts`](../src/modulation/modulation-ui.ts) —
-  `renderModulatorsPanel`, `panelAborts: WeakMap<HTMLElement, AbortController>`.
-- [`src/performance/xy-pad-ui.ts`](../src/performance/xy-pad-ui.ts) —
-  `createXyPad`'s `ac`, released via the returned `destroy()`.
+- **Rendered through `mountPanel`** — register the subscription in the handle's
+  cleanup slot, which drops the previous one on every render:
+  [`src/modulation/modulation-ui.ts:38-49`](../src/modulation/modulation-ui.ts)
+  is `handle.setCleanup(deps.destinations?.subscribe(handle.rerender))`. Exactly
+  one subscription per container, so a rebuild — the caller's, or one this
+  subscription itself triggered — cannot leave two listeners behind.
+- **Owning raw listeners** — scope an `AbortController` to the panel and abort
+  it on teardown: [`src/performance/xy-pad-ui.ts`](../src/performance/xy-pad-ui.ts)
+  builds `ac` at line 73 and returns `destroy: () => ac.abort()` at line 176.
 
 ## Two traps that produce green-but-meaningless tests
 
@@ -123,8 +137,8 @@ working examples:
 
 ## Known limits
 
-- **The modulation dropdown** (`src/modulation/modulation-ui.ts`,
-  `buildDestOptions`) is filtered to `t.laneId === deps.laneId ||
+- **The modulation dropdown** (`src/modulation/mod-routing-templates.ts:27-28`,
+  the local `reachable`) is filtered to `t.laneId === deps.laneId ||
   t.laneId === 'fx.master'`. The per-lane binder (`voice-mod-binding.ts`)
   can only resolve this lane's own engine params, this lane's own insert
   chain, and the master chain — never another lane, never a send rack — so
