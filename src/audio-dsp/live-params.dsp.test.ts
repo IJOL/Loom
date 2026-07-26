@@ -232,4 +232,32 @@ describe('Subtractive continuous params', () => {
     const control = renderWithTurn('subtractive', BASE, SECONDS, null, null);
     expect(withTurn).toEqual(control);
   });
+
+  it('a knob never written before still reaches the sounding note (production starts from an empty bag)', () => {
+    // The worklet builds each lane as `new VoiceManager(sr, engineId, {})` and the
+    // engine posts a param only when it is first written, so a first-ever write is
+    // the NORMAL case, not a corner one.
+    const empty: ParamBag = {};
+    const turned = renderWithTurn('subtractive', empty, SECONDS, 0.5, { 'filter.cutoff': 0.95 });
+    const control = renderWithTurn('subtractive', empty, SECONDS, null, null);
+    let diff = 0, energy = 0;
+    for (let i = AFTER; i < END; i++) { diff += Math.abs(turned[i] - control[i]); energy += Math.abs(control[i]); }
+    expect(diff / Math.max(energy, 1e-9)).toBeGreaterThan(0.1);
+  });
+
+  it('every voice of a lane follows the one shared snapshot', () => {
+    // The design's central claim: the lane owns ONE SubParams and all its voices
+    // read through it. Two voices, one knob turn, both must move.
+    const vm = new VoiceManager(SR, 'subtractive', BASE);
+    vm.spawn({ midi: 45, beginSec: 0, durationSec: SECONDS, velocity: 0.9, accent: false, slide: false });
+    vm.spawn({ midi: 52, beginSec: 0, durationSec: SECONDS, velocity: 0.9, accent: false, slide: false });
+    const total = Math.floor(SR * SECONDS);
+    const turn = Math.floor(SR * 0.5);
+    const withTurn: number[] = new Array(total);
+    for (let i = 0; i < total; i++) {
+      if (i === turn) vm.setParams({ 'filter.cutoff': 0.95 });
+      withTurn[i] = vm.renderSample(i / SR);
+    }
+    expect(brightness(withTurn, AFTER, END)).toBeGreaterThan(brightness(withTurn, 0, HALF) * 2);
+  });
 });

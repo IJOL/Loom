@@ -26,6 +26,11 @@ export class ParamSmoother {
   /** Ids still travelling toward their target. Empty ⇒ nothing to do. */
   private readonly active: string[] = [];
   private readonly coeff: number;
+  /** Set when a first-ever write landed instantly (it never enters `active`, so
+   *  `tick()` would otherwise report "nothing moved" and consumers that cache a
+   *  derived snapshot would keep a stale value until an unrelated knob moved —
+   *  losing the knob turn, then resyncing everything at once as a click). */
+  private landedInstantly = false;
 
   constructor(sr: number, timeConstantSec: number = DEFAULT_TIME_CONSTANT_SEC) {
     this.coeff = Math.exp(-1 / Math.max(1, timeConstantSec * sr));
@@ -47,6 +52,7 @@ export class ParamSmoother {
       this.targets[id] = v;
     }
     this.active.length = 0;
+    this.landedInstantly = false;
   }
 
   /** Point one or more params at a new value. An id never seen before lands
@@ -60,17 +66,21 @@ export class ParamSmoother {
       // without smoothing, a bad write used to self-correct on the next one.
       if (!Number.isFinite(v)) continue;
       this.targets[id] = v;
-      if (!(id in this.values)) { this.values[id] = v; continue; }
+      if (!(id in this.values)) { this.values[id] = v; this.landedInstantly = true; continue; }
       if (this.values[id] === v) continue;
       if (this.active.indexOf(id) < 0) this.active.push(id);
     }
   }
 
-  /** Advance every in-flight param one sample. Returns true when at least one
-   *  moved, so callers can invalidate derived caches only when they must. */
+  /** Advance every in-flight param one sample. Returns true when the live bag
+   *  CHANGED since the last tick — either a param ramped, or a first-ever write
+   *  landed instantly. Consumers that cache anything derived from `values` must
+   *  refresh on true. */
   tick(): boolean {
+    const landed = this.landedInstantly;
+    this.landedInstantly = false;
     const n = this.active.length;
-    if (n === 0) return false;
+    if (n === 0) return landed;
     // Walk backwards so splicing a converged id doesn't skip its neighbour.
     for (let i = n - 1; i >= 0; i--) {
       const id = this.active[i];

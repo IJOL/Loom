@@ -22,6 +22,19 @@ describe('ParamSmoother', () => {
     expect(s.moving).toBe(false);
   });
 
+  it('reports the change when a first-ever write lands instantly', () => {
+    // A never-seen id lands with no ramp, so it never enters the in-flight list.
+    // tick() must still report that the bag changed, or a consumer caching a
+    // derived snapshot (the subtractive lane) keeps a stale value and the write
+    // is silently lost.
+    const s = new ParamSmoother(SR);
+    s.setTargets({ 'filter.cutoff': 0.8 });
+    expect(s.moving).toBe(false);
+    expect(s.tick()).toBe(true);
+    // One-shot: the next tick has nothing to report.
+    expect(s.tick()).toBe(false);
+  });
+
   it('a change to a KNOWN param ramps instead of jumping', () => {
     const s = new ParamSmoother(SR);
     s.reset({ 'filter.cutoff': 0.2 });

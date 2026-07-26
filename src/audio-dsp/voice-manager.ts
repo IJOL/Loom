@@ -201,9 +201,10 @@ export class VoiceManager {
 
   renderSample(t: number): number {
     this.lastT = t;
-    // Advance any knob still travelling. At rest this is one integer compare.
-    // Subtractive reads a typed snapshot, so refresh the lane's ONE copy — only
-    // when something actually moved.
+    // Advance any knob still travelling; tick() also reports a first-ever write
+    // that landed instantly (it never enters the ramp list). At rest this is one
+    // boolean read plus one length compare. Subtractive reads a typed snapshot,
+    // so refresh the lane's ONE copy — only when the bag actually changed.
     if (this.smoother.tick() && this.liveSub) subParamsInto(this.smoother.values, this.liveSub);
     // When every LFO is free-running and shared (the common case) the offsets are
     // identical for all voices, so compute them ONCE. Only when a modulator asks
