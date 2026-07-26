@@ -70,7 +70,7 @@ The **Loop A–B** button in the Performance toolbar toggles the arrangement-wid
 - The playhead wraps within [A, B). When it reaches B, all lanes are stopped and playback re-anchors to A instantly. Any clip that was already active spanning A is relaunched at the wrap point so there is no gap.
 - When Loop A–B is off, Loom plays in **song mode**: the arrangement runs from the beginning to `durationSec` and stops — every lane is halted and the transport stops.
 
-This loop brace operates on the arrangement timeline as a whole, and it is **the same region** as the clip editor's **Global** loop: set A–B here and the active scene's shared loop follows, and when you switch back into Performance the brace picks up whatever the scene's shared loop is. It is still distinct from a clip's *own* (non-Global) loop brace, which repeats a sub-region inside that one clip. See [Editing Clips](05-editing-clips.md) for both.
+This loop brace operates on the arrangement timeline as a whole, and it is **the same region** as the clip editor's **Global** loop: set A–B here and the active scene's shared loop follows, and when you switch back into Performance the brace picks the scene's shared loop up — but only if that loop is switched **on**. A scene whose shared loop is off leaves the A–B window you had here untouched rather than clearing it. It is still distinct from a clip's *own* (non-Global) loop brace, which repeats a sub-region inside that one clip. See [Editing Clips](05-editing-clips.md) for both.
 
 ---
 
@@ -96,7 +96,7 @@ There is a quicker route for a knob you can see: **right-click it**. In Performa
 
 ### Drawing the shape
 
-Two brush buttons sit in that same automation header, after the **+ Automation** button and under the label **Brush**:
+Two brush buttons sit in that same automation header, after the **+ Automation** button and under the label **Brush**. They only appear once at least one curve exists — per-lane or on master — so on a fresh arrangement there is no Brush label to find:
 
 - **Line** — click and drag to draw a ramp between the start and end points of the gesture. Use this for smooth fades, filter sweeps, or any gradual change.
 - **Flat** — paints a constant value across the drag range. Use this for step-style automation or to hold a value steady across a section.

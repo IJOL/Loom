@@ -1,5 +1,12 @@
 # Auditoría — "N soluciones al mismo problema"
 
+> **APLICADA.** Los cinco concerns están colapsados y mergeados en `main`. Lo que sigue es el
+> diagnóstico tal y como se escribió, no trabajo pendiente — se conserva porque explica el *porqué*
+> de decisiones que el código ya no muestra. Algunas de sus citas apuntan a ficheros que **este mismo
+> trabajo borró** (`src/engines/engine-ui.ts` y su test, eliminados en `dc60a49`): los enlaces cuelgan
+> a propósito, y recuperar el contenido es `git show dc60a49^:src/engines/engine-ui.ts`.
+> Lo que quedó abierto está en [REMAINING-WORK.md](../REMAINING-WORK.md).
+
 Esta auditoría nació del eje temporal horizontal del clip, que existía **cuatro veces**: `viewStateByClip`
 en [clip-editor-router.ts:77](../../../src/session/clip-editors/clip-editor-router.ts) (gutter 42 px),
 `hViewByClip` en [clip-editor-drum-grid.ts:33](../../../src/session/clip-editors/clip-editor-drum-grid.ts)

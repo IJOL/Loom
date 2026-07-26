@@ -200,10 +200,18 @@ wired into the per-lane chain there. State is persisted in
 
 ## Synth engines are not plugins
 
-Registering a `kind: 'synth'` `PluginFactory` will get your synth into the engine
-selector, because the selector reads `listPlugins('synth')`
-([`engine-selector-ui.ts:42`](../src/engines/engine-selector-ui.ts)). It will
-then play **silence**, with no error.
+Registering a `kind: 'synth'` `PluginFactory` gets your synth **nowhere**: it
+never appears in any picker, and nothing tells you why.
+
+The engine selector does read `listPlugins('synth')`, but it then filters that
+list down to ids that carry an engine *descriptor* whose editor is the piano
+roll — `melodicSynthEngineIds()`
+([`engine-selector-ui.ts:41-45`](../src/engines/engine-selector-ui.ts)) — and
+emits an `<option>` only for the survivors, so a plugin with no `registerEngine`
+descriptor is dropped before it can be listed. The other place a lane is born,
+the clip grid's **+** menu, does not consult the plugin registry at all: it
+reads `listEngines('polyhost')`, the *engine* registry
+([`session-grid-templates.ts:303`](../src/session/session-grid-templates.ts)).
 
 Nothing calls `create()` on a synth factory. Since the Phase 4 worklet cutover,
 the lane allocator's only synth paths are the worklet ones

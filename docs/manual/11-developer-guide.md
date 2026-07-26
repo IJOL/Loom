@@ -18,7 +18,7 @@ Three structures hold everything together:
 
 `src/main.ts` is a boot script, not a feature file. It builds the handful of objects everything else needs, then hands them to one wiring module per concern in `src/app/`:
 
-- `bootstrapPlugins()` first, before anything reads the registry (`main.ts:94`), then the preset cache derived from it (`main.ts:103`).
+- `bootstrapPlugins()` first, before anything reads the registry (`main.ts:95`), then the preset cache derived from it (`main.ts:103`).
 - `createAudioGraph()` (`main.ts:114`) and the three worklet `addModule` calls, which every lane allocation waits on (`main.ts:129`).
 - The `Sequencer` (`main.ts:142`), the automation recorder and its knob registry (`main.ts:143`), the `DestinationRegistry` (`main.ts:150`), the lane allocator (`main.ts:172`), and the `SessionHost` (`main.ts:379`).
 - Then roughly a dozen `wireX(...)` / `createXFeature(...)` calls, each of which owns one concern end to end and lives in its own file under `src/app/`.
@@ -189,7 +189,7 @@ Separately from the picker, the `FxBus` seeds send A with `delay` and send B wit
 
 ### Add a modulator
 
-`kind: 'modulator'` plugins are collected the same way and bound the same way: `ConnectionBinder.apply` builds `modulator.output → GainNode(depth) → targetAudioParam` (`src/modulation/connection-binder.ts:44`).
+`kind: 'modulator'` plugins are collected the same way and bound the same way: `ConnectionBinder.apply` builds `modulator.output → GainNode(depth × (max − min)) → targetAudioParam` (`src/modulation/connection-binder.ts:44`).
 
 Be aware of the ceiling before you invest in one. The MODULATORS panel offers exactly two buttons, **+ LFO** and **+ ADSR** (`src/modulation/modulation-ui.ts:63`), so there is no UI path that adds a third kind. `ModulationHost` hardcodes `LFOVoice` / `ADSRVoice` and routes any other kind through `createInstance`, which its own comment describes as a stateless stub whose `currentValue()` returns 0 (`src/modulation/modulation-host.ts:85`). Inside the worklet, `ModLite.kind` is typed `'lfo' | 'adsr'` (`src/audio-dsp/modulation-runtime.ts:24`), so a custom modulator cannot reach a melodic engine's params at all. Adding a genuinely new modulator kind is a change to those three places, not a drop-in.
 
@@ -348,7 +348,7 @@ Loom has four test layers, one per risk class.
 
 **Scheduling with a fake clock** — `src/core/lane-scheduler.test.ts` and `src/session/session-runtime.test.ts` drive the look-ahead scheduler through a mock `AudioContext` clock. The fake clock advances in controlled steps so timing edge-cases are deterministic.
 
-**Real DSP** (`*.dsp.test.ts`) — audio actually rendered and measured, in two techniques. The **pure kernel** is driven sample by sample with no `AudioContext` at all: `src/audio-dsp/drums/new-voices.dsp.test.ts` calls `renderSample()` in a loop and asserts each voice sounds like what it claims to be. The **Web Audio nodes that stayed native** — `comp-block`, `master-comp`, `master-shaper`, `strip-ducker`, `multifilter`, the sample/warp helpers, and the offline export — render through `OfflineAudioContext` via [`node-web-audio-api`](https://github.com/ircam-ismm/node-web-audio-api), globalised in `test/setup.ts`.
+**Real DSP** (`*.dsp.test.ts`) — audio actually rendered and measured, in two techniques. The **pure kernel** is driven sample by sample with no `AudioContext` at all: `src/audio-dsp/drums/new-voices.dsp.test.ts` calls `renderSample()` in a loop and asserts each voice sounds like what it claims to be. `src/audio-dsp/modulation-scope.dsp.test.ts` is the same technique. The **Web Audio nodes that stayed native** render through `OfflineAudioContext` via [`node-web-audio-api`](https://github.com/ircam-ismm/node-web-audio-api), globalised in `test/setup.ts`: `comp-block`, `master-comp`, `master-shaper`, `strip-ducker`, `multifilter`, the sample/warp helpers, the offline export, and `src/polysynth/polysynth-builtin-env.dsp.test.ts`. (`src/performance/arrangement.dsp.test.ts` carries the suffix but does neither — it is arrangement maths. Glob for `*.dsp.test.ts` rather than trusting this list to stay complete.)
 
 There is no per-engine battery any more. `test/setup.ts` states the design plainly: the pure DSP kernel is tested directly and the real worklet's audio is verified in the browser via Playwright, because `node-web-audio-api` cannot run our TypeScript processor. `runStandardEngineBattery` in `test/dsp-battery.ts` survives with **no callers**, so nothing writes to `test/output/`, and `npm run test:wav-diff` / `test:wav-bless` do nothing but print "`test/output/ does not exist`". The 90 WAVs in `test/golden/` are orphans of the batteries the worklet cutover removed. Do not reach for that loop expecting it to work; reviving it is a decision, not a step.
 
@@ -380,4 +380,4 @@ Vitest runs test files serially (`fileParallelism: false`) because `node-web-aud
 
 What is still open — code debts, and the specs that have come back into `docs/superpowers/` since the last prune — is inventoried in `docs/superpowers/REMAINING-WORK.md`.
 
-(Links to files outside `docs/manual/` are written as plain text on purpose: the single-page build rewrites every `*.md` href into an in-page anchor, so a link to a file that is not a chapter becomes a dead one.)
+(Links to files outside `docs/manual/` are ordinary links: the single-page build turns a link to a sibling *chapter* into an in-page anchor and leaves everything else alone, promoting `../../…` paths to absolute GitHub URLs so they work from the shipped page too. See `rewriteChapterLinks` and `rewriteRepoLinks` in `tools/manual/assemble.mjs`.)
