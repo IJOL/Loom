@@ -136,7 +136,7 @@ like bugs otherwise:
 
 - **Its synthesis surface is inert, not throwing.** `createDescriptorEngine`
   gives you a `createVoice()` that returns a no-op `Voice` with an empty
-  `getAudioParams()` (`src/engines/descriptor-engine.ts:48`, `:76`). Nothing on
+  `getAudioParams()` (`src/engines/descriptor-engine.ts:78` → `:48-50`). Nothing on
   the live or offline path calls it — the registered singleton is purely
   metadata, and modulation for these engines runs sample-accurately inside the
   worklet (`src/audio-dsp/modulation-runtime.ts`).

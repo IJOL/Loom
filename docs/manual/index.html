@@ -2540,7 +2540,7 @@ like bugs otherwise:</p>
 <ul>
 <li><strong>Its synthesis surface is inert, not throwing.</strong> <code>createDescriptorEngine</code>
 gives you a <code>createVoice()</code> that returns a no-op <code>Voice</code> with an empty
-<code>getAudioParams()</code> (<code>src/engines/descriptor-engine.ts:48</code>, <code>:76</code>). Nothing on
+<code>getAudioParams()</code> (<code>src/engines/descriptor-engine.ts:78</code> → <code>:48-50</code>). Nothing on
 the live or offline path calls it — the registered singleton is purely
 metadata, and modulation for these engines runs sample-accurately inside the
 worklet (<code>src/audio-dsp/modulation-runtime.ts</code>).</li>
