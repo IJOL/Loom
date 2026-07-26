@@ -318,7 +318,7 @@ blockquote { border-left: 3px solid var(--accent); margin: .8em 0; padding: .2em
 <p><strong>From a cold start (transport stopped),</strong> launching a clip starts it immediately, and the <code>Quantize</code> setting decides the alignment of that first start. <strong>While the session is already playing,</strong> Loom keeps everything phase-aligned instead:</p>
 <ul>
 <li><strong>Launching a single clip</strong> swaps it in at the end of <em>its own</em> current loop, so the new pattern enters cleanly on the downbeat rather than mid-bar.</li>
-<li><strong>Launching a scene</strong> is an <strong>atomic switch at the end of the governing loop</strong> — the longest loop currently playing (with stray outliers capped, so one odd 1-bar clip doesn&#39;t drag a 4-bar groove). Every clip in the scene changes together on that boundary, and any <strong>lane that has no clip in the new scene stops</strong> at the same moment (it pulses a &quot;stopping&quot; state until then). The result is a clean, simultaneous scene change with no lanes left hanging.</li>
+<li><strong>Launching a scene</strong> is an <strong>atomic switch at the end of the governing loop</strong> — normally the longest loop currently playing, so short clips do not cut a long one off mid-phrase. One stray <em>very</em> long clip is ignored rather than allowed to hold everything up: if the longest loop is more than twice the next longest, it is dropped and the comparison repeats, so a lone 16-bar pad does not make a session of 4-bar clips wait sixteen bars to change scene. Every clip in the scene changes together on that boundary, and any <strong>lane that has no clip in the new scene stops</strong> at the same moment (it pulses a &quot;stopping&quot; state until then). The result is a clean, simultaneous scene change with no lanes left hanging.</li>
 </ul>
 <p>Click the <strong>▶ <em>scene name</em></strong> button at the right of a scene row (it reads <code>▶ Scene 1</code>, or whatever you renamed it to — not a bare number) to launch all clips in that row. The toolbar&#39;s <strong>⏹ All</strong> button stops every lane at once.</p>
 <p>The <code>Quantize</code> setting (per clip, falling back to the lane&#39;s, then the session&#39;s global) governs <strong>cold starts</strong> — the alignment used when you launch from a stopped transport. Once the transport is running, the loop-end sync above takes over so launches stay musically aligned.</p>
@@ -1223,7 +1223,7 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <td>Plays the pattern backwards in time — the last note becomes the first.</td>
 </tr>
 </tbody></table>
-<p>All three are undoable with Ctrl+Z / Cmd+Z.</p>
+<p>All three are undoable with Ctrl+Z / Cmd+Z. <strong>Mirror</strong> only appears on melodic clips — inverting a contour is meaningless for a drum pattern, where a row picks a voice rather than a pitch — so a drum clip shows Vary and Reverse alone.</p>
 <hr>
 <h3>Chords</h3>
 <p>The <strong>Chords</strong> button harmonises the current melodic clip. For each bar it picks the most characteristic <strong>diatonic triad</strong> implied by the bar&#39;s melody notes, then writes an accompaniment using a <strong>rhythm pattern drawn from the global style</strong> — for example offset stabs in House, sustained pads in Lo-fi, driving eighth notes in Synthwave.</p>

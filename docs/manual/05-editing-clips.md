@@ -100,7 +100,7 @@ Three buttons in the toolbar reshape the current pattern — all results stay wi
 | **Mirror**  | Melodic inversion | Flips the melodic contour so that rising lines fall and falling lines rise, mirrored around the first note of the clip.                     |
 | **Reverse** | Retrograde        | Plays the pattern backwards in time — the last note becomes the first.                                                                      |
 
-All three are undoable with Ctrl+Z / Cmd+Z.
+All three are undoable with Ctrl+Z / Cmd+Z. **Mirror** only appears on melodic clips — inverting a contour is meaningless for a drum pattern, where a row picks a voice rather than a pitch — so a drum clip shows Vary and Reverse alone.
 
 ---
 
