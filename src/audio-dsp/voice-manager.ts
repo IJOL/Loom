@@ -1,6 +1,7 @@
 import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets } from './types';
 import { createRenderer } from './renderer-registry';
 import type { ModulationRuntime, ModLite, PhaseOrigin } from './modulation-runtime';
+import { ParamSmoother } from './param-smoother';
 
 /** Phase origin for the all-free/all-shared fast path: the LFO ignores notes. */
 const SHARED_ORIGIN: PhaseOrigin = { voiceStartT: 0, lastNoteOnT: 0 };
@@ -11,6 +12,10 @@ export class VoiceManager {
   private slots: Slot[] = [];
   private maxVoices = 16; // default poly; mono lanes set 1 via setMaxVoices
   private params: ParamBag;
+  /** The lane's LIVE param bag: the smoothed copy voices read every sample.
+   *  `params` stays the TARGET bag — what a renderer's constructor reads for its
+   *  structural, trigger-time decisions. */
+  private readonly smoother: ParamSmoother;
   private lastT = 0;
   /** When the lane last received a note-on (phase origin for TRIG=note). */
   private lastNoteOnT = 0;
@@ -36,9 +41,17 @@ export class VoiceManager {
   private readonly genericOffsets: Record<string, number> = {};
   constructor(private sr: number, private engineId: string, params: ParamBag) {
     this.params = { ...params };
+    this.smoother = new ParamSmoother(sr);
+    this.smoother.reset(this.params);
   }
   get activeCount(): number { return this.slots.length; }
-  setParams(patch: ParamBag): void { Object.assign(this.params, patch); }
+  /** The smoothed bag handed to every voice. Read-only by convention: write
+   *  through setParams so the values ramp instead of stepping. */
+  get liveParams(): ParamBag { return this.smoother.values; }
+  setParams(patch: ParamBag): void {
+    Object.assign(this.params, patch);
+    this.smoother.setTargets(patch);
+  }
   setMaxVoices(n: number): void { this.maxVoices = Math.max(1, Math.min(64, Math.floor(n))); }
   /** Attach a shared-LFO modulation runtime. Its per-sample offsets are applied
    *  to every active voice at read time. */
@@ -91,6 +104,9 @@ export class VoiceManager {
       }
     }
     const v = createRenderer(this.engineId, note, this.params, this.sr);
+    // Hand this voice the lane's live bag so its continuous params track the
+    // knobs. Its constructor already took the structural snapshot from `params`.
+    (v as { setLiveParams?(l: ParamBag): void }).setLiveParams?.(this.smoother.values);
     // Hand this voice its per-voice ADSR envelopes (subtractive renderer only;
     // others ignore the call). Read once at spawn — live shape edits apply to the
     // NEXT note, matching the engine's "params read at trigger time" rule.
@@ -176,6 +192,8 @@ export class VoiceManager {
 
   renderSample(t: number): number {
     this.lastT = t;
+    // Advance any knob still travelling. At rest this is one integer compare.
+    this.smoother.tick();
     // When every LFO is free-running and shared (the common case) the offsets are
     // identical for all voices, so compute them ONCE. Only when a modulator asks
     // for a per-voice phase — SCOPE=voice or TRIG=note — do we pay for a fill per

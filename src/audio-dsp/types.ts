@@ -67,6 +67,20 @@ export interface VoiceRenderer {
   renderSample(t: number, modOffsets?: VoiceModOffsets): number;
   /** Live note-off: end the gate at time t (release tail still plays). */
   noteOff(t: number): void;
+  /** Receive the lane's LIVE param bag — the smoothed copy the VoiceManager
+   *  mutates in place as knobs move. A voice that implements this reads its
+   *  CONTINUOUS params from here each sample, so a knob turn reaches a note that
+   *  is already sounding (an analogue filter is always in the signal path; ours
+   *  used to be a photograph taken at trigger).
+   *
+   *  STRUCTURAL params must NOT be read from here: waveform, unison size, filter
+   *  model/type and envelope TIMES stay frozen at trigger. Envelope times are
+   *  excluded on purpose — our envelopes are a closed-form function of elapsed
+   *  time, not a charging capacitor, so re-reading the attack mid-note makes the
+   *  amplitude jump. See the design spec.
+   *
+   *  Optional: a renderer without it keeps the trigger-time snapshot behaviour. */
+  setLiveParams?(live: ParamBag): void;
   /** True once the release tail has fully decayed at the last rendered t. */
   readonly done: boolean;
 }
