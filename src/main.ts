@@ -14,6 +14,7 @@ import { LiveVoiceRegistry } from './app/live-voice-registry';
 import { createKnobMounter } from './app/knob-mounting';
 import { createLaneHost } from './app/lane-host-wiring';
 import { createPerformanceFeature } from './app/performance-feature';
+import { createRecordingFeature } from './app/recording-feature';
 import { prepImportedLanes } from './app/import-lane-prep';
 import {
   wireEngineSelector, wireEngineSelector303, rebuildEngineParamUI,
@@ -38,7 +39,7 @@ import { wireDemoPicker, loadDemoSession } from './demo/demo-picker';
 import { wireMidiImportUI } from './midi/midi-import-ui';
 import { bindMidiImportDialog } from './midi/midi-import-dialog';
 import { bindAboutDialog } from './app/about-dialog';
-import { launchScene as launchSceneRuntime, stopAll as stopAllLanes } from './session/session-runtime';
+import { launchScene as launchSceneRuntime } from './session/session-runtime';
 import { reloadDrumkit } from './session/session-host-presets';
 import { applyPresetToEngine } from './presets/preset-apply';
 import { commitEngineBaseValues } from './engines/engine-param-commit';
@@ -60,13 +61,6 @@ import { wireRandomizeUI } from './core/randomize-ui';
 import { wireFxUI, type FxUIDeps } from './core/fx-ui';
 import { wireTransport, setPlaying, type TransportDeps } from './core/transport';
 import { confirmDialog, alertDialog } from './core/dialog';
-import { OfflineSceneRecorder } from './export/offline-recorder';
-import { soundingSceneDurationSec } from './export/scene-duration';
-import { wavEncoder } from './export/wav-encoder';
-import { downloadBlob, exportTimestamp } from './export/download';
-import { LiveTakeRecorder } from './export/live-take';
-import { showTakeDestinationDialog } from './export/take-destination-dialog';
-import type { RenderedAudio } from './export/types';
 import {
   showPolyEditor,
   synthEditorState,
@@ -513,8 +507,8 @@ const sessionHost = new SessionHost({
   applyBpm: setTransportBpm,
   // Unified stop: the session "⏹ all" button finalizes any live-take recording,
   // stops the clock + every lane, and resets the Play button. stopTransport is a
-  // hoisted function declaration further down, so this arrow can call it even
-  // though it's lexically defined later (it only fires on a user click).
+  // const delegator into the recording feature further down, so this arrow can
+  // call it even though it's assigned later (it only fires on a user click).
   onStopAll: () => stopTransport(),
   triggerForLane,
   liveVoices,
@@ -758,9 +752,6 @@ const onEngineChangeUndoable = (laneId: string, newId: string) => {
 // onStep still fires for bass/drum/melody cell highlighting; the continuous
 // automation engine runs separately via rAF (see startAutomationTick).
 
-// ── REC button (arms knob → lane recording) ───────────────────────────────
-const recBtn = $<HTMLButtonElement>('rec');
-
 // ── Performance view feature ──────────────────────────────────────────────
 // REC button is wired by the Performance feature (legacy automation.wireRecButton
 // is no longer attached — the Performance recorder owns REC behaviour now).
@@ -795,7 +786,10 @@ const performanceFeature = createPerformanceFeature({
   // button so the next Play restarts from the top.
   onArrangementEnd: () => { _origStop(); setPlaying(playBtn, false); },
   onRegisterKnob,
-  onRecVisualChanged: () => refreshRecButton(),
+  // Late-bound on purpose: the recording feature (which owns the shared REC
+  // button) is created further down, so this must stay a closure — the bare
+  // value would be a TDZ crash. It only fires from onPlay/toggleTakeRec.
+  onRecVisualChanged: () => recording.refreshRecButton(),
 });
 
 // Task 4: right-click a knob to jump to (or create) its automation. Uses the
@@ -988,64 +982,18 @@ sessionHost.onStateApplied(() => { refreshMasterComp(); refreshMasterShaper(); }
 // Phase G: deferred to sessionHost.onStateApplied (lane not allocated at boot).
 // mountDrumMasterLaneKnobs(LANE_ID_DRUMS) — see boot section below.
 // ── Scene export (real-time live-take + offline WAV) ──────────────────────
-// The button + helpers are declared BEFORE the transport block because the
-// live-take recorder (and the unified stopTransport) close over them, and
-// wireTransport(transportDeps) below must see liveTake + stopTransport already.
-// One REC button (#rec) + a 3-mode selector (🎛 take / ⏱ live / ⚡ offline). All
-// three deliver via deliverTake. recBtn is declared above; the old separate
-// #export-scene control + its rt/offline menu are folded in here.
-const EXPORT_TAIL_SEC = 2;    // live take: let reverb/delay tails decay before the cut
-type RecMode = 'take' | 'live' | 'offline';
-let recMode: RecMode = 'take';
-let liveState: 'idle' | 'armed' | 'recording' = 'idle';
-let exportMsgTimer: number | undefined;
-
-// Paint the shared REC button from the active mode + its recorder state.
-function refreshRecButton(): void {
-  if (exportMsgTimer !== undefined) return; // a transient message owns the label
-  recBtn.classList.remove('armed', 'recording');
-  if (recMode === 'live') {
-    recBtn.classList.toggle('armed', liveState === 'armed');
-    recBtn.classList.toggle('recording', liveState === 'recording');
-    recBtn.textContent = liveState === 'armed' ? '● ARMED' : liveState === 'recording' ? '● Recording…' : '● REC';
-  } else if (recMode === 'take') {
-    recBtn.classList.toggle('armed', performanceFeature.rec.armed);
-    recBtn.textContent = performanceFeature.rec.armed ? '● REC ON' : '● REC';
-  } else {
-    recBtn.textContent = '● REC';
-  }
-}
-
-function showExportMessage(msg: string): void {
-  if (exportMsgTimer !== undefined) clearTimeout(exportMsgTimer);
-  recBtn.textContent = msg;
-  exportMsgTimer = window.setTimeout(() => { exportMsgTimer = undefined; refreshRecButton(); }, 1500);
-}
-
-// Real-time take: ARM → Play → Stop. Arming pre-connects the master tap; Play
-// starts the capture; the unified stop finalizes it (delivered via deliverTake).
-const liveTake = new LiveTakeRecorder({
-  ctx,
+// Created BEFORE the transport block because the live-take recorder (and the
+// unified stopTransport that finalizes it) must already exist when
+// wireTransport(transportDeps) below reads transportDeps.onStop.
+const recording = createRecordingFeature({
+  ctx, seq, playBtn, sessionHost, liveVoices,
   tap: masterComp.output,
-  tailSec: EXPORT_TAIL_SEC,
-  onState: (s) => { liveState = s; refreshRecButton(); },
-  onTake: (audio) => deliverTake(audio),
-  onError: (m) => { console.warn('[live-take]', m); showExportMessage(m); },
+  performanceFeature,
 });
-
-// Unified stop: finalize any in-progress take (delivers via onTake), then stop
-// the master clock + every lane and reset the Play button + re-render. Clearing
-// each lane's `playing` clip returns the editor playheads to -1 (cursors
-// disappear) and re-renders the clip cells as stopped. Matches "⏹ all".
-function stopTransport(): void {
-  liveTake.finish();
-  if (seq.isPlaying()) seq.stop();
-  // Pass the live-voice silencer so a long 'audio' channel clip is cut now,
-  // not when its buffer ends (it has no gate to self-terminate on Stop).
-  stopAllLanes(sessionHost.laneStates, liveVoices, ctx.currentTime);
-  setPlaying(playBtn, false);
-  sessionHost.renderWithMixer();
-}
+// One-line delegator so every existing Stop path keeps calling `stopTransport()`
+// by name: the SessionHost "⏹ all" arrow above, wireTransport's onStop below,
+// the MIDI import's resetSession and the New-session wipe.
+const stopTransport = (): void => { recording.stopTransport(); };
 
 const transportDeps: TransportDeps = {
   seq, ctx, playBtn, stopBtn,
@@ -1065,88 +1013,6 @@ document.getElementById('perf-toggle')?.addEventListener('click', (e) => {
   perfDiagnostics.toggle();
   (e.currentTarget as HTMLElement).classList.toggle('on', perfDiagnostics.isOpen());
 });
-
-// Begin capturing an armed live-take whenever the transport starts — from ANY
-// path. Wiring this to the ▶ button alone missed scene/clip launches (the most
-// natural way to start playback), so the armed take never recorded. Centralized
-// on the Sequencer's idle→playing transition; onTransportStart() is a no-op
-// unless a take is armed, so this is safe on every start.
-// Chain, don't overwrite: SessionHost.init() already installed an onStart that
-// resets the global song anchor; preserve it so the playhead anchors at the
-// downbeat. (seq.onStart is a single slot — a plain assign would drop the reset.)
-const prevOnStart = seq.onStart;
-seq.onStart = () => { prevOnStart?.(); liveTake.onTransportStart(); };
-
-// Shared delivery for a finished take/render (live OR offline): ask where it
-// goes (download a WAV vs a new audio channel) — never auto-insert. The channel
-// branch passes the project BPM so the clip locks to the grid (warp 1.0) instead
-// of re-detecting the tempo of audio we just rendered.
-function deliverTake(audio: RenderedAudio): void {
-  void (async () => {
-    const dest = await showTakeDestinationDialog();
-    if (!dest) { showExportMessage('Take discarded'); return; }
-    const blob = wavEncoder.encode(audio.channels, audio.sampleRate);
-    if (dest === 'file') {
-      downloadBlob(blob, `loom-take-${exportTimestamp()}.${wavEncoder.extension}`);
-      showExportMessage('Take → WAV file');
-    } else {
-      const file = new File([blob], `loom-take-${exportTimestamp()}.wav`, { type: 'audio/wav' });
-      sessionHost.addAudioChannel(file, { knownBpm: seq.bpm });
-      showExportMessage('Take → audio channel');
-    }
-  })();
-}
-
-function runOfflineExport(): void {
-  // Render EXACTLY the musical (bar-aligned) length — no reverb tail. At the
-  // project BPM that makes the warp ratio 1.0 and the loop seamless, so the
-  // result locks to the grid. (A trailing tail rounds up to an extra bar and
-  // drifts — the offline "no sincroniza" bug.) Then route through the dialog.
-  const musicSec = soundingSceneDurationSec(sessionHost.laneStates, seq.meter, seq.bpm);
-  if (musicSec <= 0) { showExportMessage('Launch a scene first'); return; }
-  if (exportMsgTimer !== undefined) { clearTimeout(exportMsgTimer); exportMsgTimer = undefined; }
-  recBtn.disabled = true; playBtn.disabled = true;
-  recBtn.textContent = 'Rendering…';
-  void (async () => {
-    try {
-      const rendered = await new OfflineSceneRecorder({
-        state: sessionHost.state,
-        laneStates: sessionHost.laneStates,
-        bpm: seq.bpm,
-        meter: seq.meter,
-        swing: seq.swing,
-      }).record(musicSec);
-      deliverTake(rendered);
-    } catch (err) {
-      showExportMessage('Export failed: ' + (err instanceof Error ? err.message : String(err)));
-    } finally {
-      recBtn.disabled = false; playBtn.disabled = false;
-      if (exportMsgTimer === undefined) refreshRecButton();
-    }
-  })();
-}
-
-// 3-mode selector (🎛 take / ⏱ live / ⚡ offline) — mutually exclusive: switching
-// disarms whatever the leaving mode had armed.
-const recModeBtns = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-recmode]'));
-function setRecMode(m: RecMode): void {
-  if (m === recMode) return;
-  if (recMode === 'take' && performanceFeature.rec.armed) performanceFeature.toggleTakeRec();
-  if (recMode === 'live' && liveState === 'armed') void liveTake.toggleArm();
-  recMode = m;
-  for (const b of recModeBtns) b.classList.toggle('on', b.dataset.recmode === m);
-  refreshRecButton();
-}
-for (const b of recModeBtns) b.addEventListener('click', () => setRecMode(b.dataset.recmode as RecMode));
-
-// The single REC button dispatches by the active mode.
-recBtn.addEventListener('click', () => {
-  void ctx.resume();
-  if (recMode === 'take') { performanceFeature.toggleTakeRec(); refreshRecButton(); }
-  else if (recMode === 'live') { void liveTake.toggleArm(); }
-  else runOfflineExport();
-});
-refreshRecButton();
 
 {
   const positionEl = document.getElementById('transport-position');
