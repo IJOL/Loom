@@ -37,15 +37,10 @@ import { bindAboutDialog } from './app/about-dialog';
 import { applyPresetToEngine } from './presets/preset-apply';
 import { commitEngineBaseValues } from './engines/engine-param-commit';
 import { wireSaveManager, bootRecoveryLoad } from './save/save-wiring';
-import { createHistory } from './core/history';
-import { createAutoHistory } from './save/auto-history';
+import { createSaveAndHistory } from './app/save-history-wiring';
 import {
-  wireHistoryKeyboard, withUndo, isTextEditTarget, type HistoryDeps,
+  withUndo, isTextEditTarget, type HistoryDeps,
 } from './save/history-wiring';
-import { wireUndoButtons } from './save/undo-buttons';
-import {
-  buildSavedStateV3, applyLoadedStateV3, type SavedStateV3, type SavedStateV3Deps,
-} from './save/saved-state-v3';
 import {
   wirePolyControls, refreshPolyPresetSelect, recordPagePresetForLane,
 } from './polysynth/polysynth-presets';
@@ -911,9 +906,7 @@ seq.sessionMode = true;
 startVisualizer({ ctx, analyser, vizCanvas });
 
 // ── Save Manager v2 (see src/save-wiring.ts) ──────────────────────────────
-const history = createHistory<SavedStateV3>({ maxSize: 100 });
-// Phase G: synth/drums replaced by lanes (resolved lazily inside buildSavedStateV3).
-const saveBaseDeps = {
+const { autoHistory, historyDeps, saveWiringDeps } = createSaveAndHistory({
   ctx, seq, lanes, master,
   volInput, bpmInput, swingInput, meterSel,
   sessionHost,
@@ -925,45 +918,10 @@ const saveBaseDeps = {
   masterComp,
   masterShaper,
   flashButton,
-  history,
-};
-// Save/load persists the Performance take + mode via the feature accessors.
-const saveWiringDeps: import('./save/save-wiring').SaveWiringDeps = {
-  ...saveBaseDeps,
-  getMode: () => performanceFeature.getMode(),
-  getArrangement: () => performanceFeature.arrangement,
-  setMode: (m) => performanceFeature.setMode(m),
-  setArrangement: (a) => performanceFeature.setArrangement(a),
-  onAfterApply: () => autoHistory.markClean(),
-};
-// History (undo/redo) snapshots session state only — no perf accessors, so a
-// recorded take is never wiped by undoing an unrelated session edit.
-const savedStateDeps: SavedStateV3Deps = saveBaseDeps;
-const historyDeps: HistoryDeps = {
-  history,
-  snapshot: () => buildSavedStateV3(savedStateDeps),
-  restore: (s) => applyLoadedStateV3(s, savedStateDeps),
-};
-const autoHistory = createAutoHistory({
-  history,
-  snapshot: () => buildSavedStateV3(savedStateDeps),
-  restore: (s) => applyLoadedStateV3(s, savedStateDeps),
-  refreshAll: () => { sessionHost.refreshAfterRestore(); refreshMasterComp(); refreshMasterShaper(); },
+  getPerformanceFeature: () => performanceFeature,
+  refreshMasterComp,
+  refreshMasterShaper,
 });
-autoHistory.installGlobalListeners(document);
-wireHistoryKeyboard(autoHistory);
-wireUndoButtons(autoHistory);
-// Route gesture brackets through AutoHistory's gestureDepth so pointer-capture
-// drags (piano-roll, drum-grid, knobs, faders) coalesce into one undo step.
-historyDeps.beginGesture = () => autoHistory.beginGesture();
-historyDeps.endGesture   = () => autoHistory.endGesture();
-// Wire async-mutation checkpoint: stems / transcription / import flows call this
-// after their async settle (no pointer/key event closes the event loop there).
-sessionHost.deps.checkpointHistory = () => autoHistory.checkpoint();
-// Wire historyDeps into the session inspector so drum-grid cell clicks are
-// undoable. Must happen after historyDeps is built (it closes over sessionHost
-// via savedStateDeps → saveWiringDeps).
-sessionHost.setHistoryDeps(historyDeps);
 // Stems: transport-bar "Stems…" dialog → local separation service. Every
 // separation also transcribes each stem to a note/drums lane (always-on).
 const stemClient = new StemClient(stemServiceBaseUrl());
