@@ -13,7 +13,7 @@ import type { KnobHandle } from '../core/knob';
 import type { AutomationCurve } from './performance';
 import type { DestinationRegistry } from '../automation/destination-registry';
 import { groupTargetsByLane } from '../automation/automation-targets';
-import { stepsPerBar, stepsPerBeat, DEFAULT_METER, type TimeSignature } from '../core/meter';
+import { stepsPerBar, stepsPerBeat, type TimeSignature } from '../core/meter';
 import {
   drawLane, attachLanePainter, formatNum,
   type AutoBrush,
@@ -37,8 +37,16 @@ export interface PerfAutoDeps {
   onAdd: (paramId: string) => void;
   onRemove: (paramId: string) => void;
   onEdited: () => void;
-  /** The arrangement's meter, for the lane's bar/beat grid. Absent ⇒ 4/4. */
-  meter?: TimeSignature;
+  /** The SONG's meter, for the lane's bar/beat grid. An arrangement carries no
+   *  meter of its own (that field was a stale cache — see performance.ts); the
+   *  Sequencer owns it and the view threads it down at render time.
+   *
+   *  Required, and for the same reason `destinations` above is: it used to be
+   *  optional with a silent 4/4 fallback, which is the shape that let the
+   *  original divergence hide — a caller that forgot it drew a plausible grid on
+   *  the wrong meter instead of failing. The one production caller
+   *  (performance-ui's viewTemplate) has always passed it. */
+  meter: TimeSignature;
 }
 
 /** Build the "+ Automation" header: a grouped param select + add button, and —
@@ -94,10 +102,11 @@ export function buildAutomationLane(curve: AutomationCurve, deps: PerfAutoDeps):
   // (#perf-playhead) across every lane, so a per-canvas line is not wanted here.
   // It never worked anyway — the caller passed a `() => 0` stub for the sub-step
   // index, so the line, when drawn, sat at x=0 for the whole take.
-  // Bar/beat lines come from the arrangement's own meter: the curve is stored at
-  // stepsPerBar(meter) steps per bar (arrangement-ops.subStepsForBars), so a
-  // fixed 16 would draw its bars somewhere else than the ruler above it.
-  const m = deps.meter ?? DEFAULT_METER;
+  // Bar/beat lines come from the song's meter, handed down from the Sequencer:
+  // the curve is stored at stepsPerBar(meter) steps per bar
+  // (arrangement-ops.subStepsForBars), so a fixed 16 would draw its bars
+  // somewhere else than the ruler above it.
+  const m = deps.meter;
   const draw = () =>
     drawLane(canvas, { values: laneView.values, enabled: curve.enabled !== false, stepped: curve.stepped },
       { stepsPerBar: stepsPerBar(m), stepsPerBeat: stepsPerBeat(m), playheadFrac: -1 });

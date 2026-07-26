@@ -12,6 +12,7 @@ vi.mock('../automation/automation-painter', () => ({
 import { buildAutomationHeader, buildAutomationLane } from './performance-automation-ui';
 import { drawLane } from '../automation/automation-painter';
 import { createDestinationRegistry } from '../automation/destination-registry';
+import { DEFAULT_METER, type TimeSignature } from '../core/meter';
 import type { SessionState } from '../session/session';
 // Side-effect import: registers the 'subtractive' engine descriptor so
 // listAutomationTargets() can find its continuous engine params. Without
@@ -38,7 +39,12 @@ describe('performance automation header', () => {
 });
 
 describe('performance automation lane', () => {
-  const gridFor = (meter?: { num: number; den: number }) => {
+  // `meter` is REQUIRED on PerfAutoDeps and the builder has no 4/4 fallback, so
+  // the 4/4 side of the comparison below has to be asked for by name. (The deps
+  // are cast `as never` to keep these cases to the fields they exercise, which
+  // means the compiler will not catch a missing meter here — leaving it out
+  // throws inside ticksPerBar instead, which is the intended loud failure.)
+  const gridFor = (meter: TimeSignature) => {
     vi.mocked(drawLane).mockClear();
     buildAutomationLane(
       { paramId: 'poly1.cutoff', values: [0.5, 0.5], enabled: true },
@@ -47,12 +53,12 @@ describe('performance automation lane', () => {
     return vi.mocked(drawLane).mock.calls[0][2];
   };
 
-  it('draws its bar lines on the arrangement meter, not on a 4/4 one', () => {
+  it('draws its bar lines on the song meter, not on a 4/4 one', () => {
     // Relative: the curve is stored at one bar's worth of steps per bar, so the
     // grid drawn over it has to count the same steps or the lines drift off the
     // ruler above them.
     const three = gridFor({ num: 3, den: 4 });
-    const four = gridFor();
+    const four = gridFor(DEFAULT_METER);
     expect(three.stepsPerBar / four.stepsPerBar).toBeCloseTo(3 / 4, 6);
     expect(three.stepsPerBeat).toBe(four.stepsPerBeat); // same beat unit (/4)
   });

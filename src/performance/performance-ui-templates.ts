@@ -90,9 +90,11 @@ export function emptyTemplate(cb: PerfUICallbacks): TemplateResult {
 // ── Ruler + loop brace ─────────────────────────────────────────────────────
 
 // The row templates take the already-computed `barSec` rather than a bpm: the
-// view resolves it ONCE from the arrangement (bpm + meter) and hands the same
-// number to the ruler, the bands and the lane widths, so nothing downstream can
-// quietly re-derive a bar of its own.
+// view resolves it ONCE — from the arrangement's bpm and the SONG's meter, which
+// reaches it as `cb.meter` from the Sequencer that owns it (an arrangement
+// carries no meter; see performance.ts) — and hands the same number to the
+// ruler, the bands and the lane widths, so nothing downstream can quietly
+// re-derive a bar of its own.
 export function rulerTemplate(durationSec: number, barSec: number, pxPerBar: number, cb: PerfUICallbacks): TemplateResult {
   const bars = Math.ceil(durationSec / barSec);
   return html`<div class="perf-row perf-ruler">${labelTemplate('bars')}<div
