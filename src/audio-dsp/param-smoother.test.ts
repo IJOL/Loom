@@ -94,4 +94,32 @@ describe('ParamSmoother', () => {
     s.setTargets({ x: 0.5 });
     expect(s.moving).toBe(false);
   });
+
+  it('drops a converged param without allocating (swap-and-pop keeps the bag intact)', () => {
+    const s = new ParamSmoother(SR);
+    s.reset({ a: 0, b: 0, c: 0 });
+    s.setTargets({ a: 1, b: 1, c: 1 });
+    for (let i = 0; i < SR * 0.3; i++) s.tick();
+    // Every id must land — a swap-and-pop that skipped an element would leave
+    // one behind at its start value.
+    expect(s.values.a).toBe(1);
+    expect(s.values.b).toBe(1);
+    expect(s.values.c).toBe(1);
+    expect(s.moving).toBe(false);
+  });
+
+  it('ignores a non-finite target and keeps the last good value', () => {
+    const s = new ParamSmoother(SR);
+    s.reset({ 'filter.cutoff': 0.5 });
+    s.setTargets({ 'filter.cutoff': NaN });
+    expect(s.values['filter.cutoff']).toBe(0.5);
+    expect(s.moving).toBe(false);
+    s.setTargets({ 'filter.cutoff': Infinity });
+    expect(s.values['filter.cutoff']).toBe(0.5);
+    expect(s.moving).toBe(false);
+    // Still usable afterwards: a good value ramps normally.
+    s.setTargets({ 'filter.cutoff': 0.9 });
+    for (let i = 0; i < SR * 0.3; i++) s.tick();
+    expect(s.values['filter.cutoff']).toBe(0.9);
+  });
 });

@@ -37,8 +37,14 @@ export class ParamSmoother {
    *  construction go through here — a ramp from nothing would be a fade-in. */
   reset(patch: ParamBag): void {
     for (const id in patch) {
-      this.values[id] = patch[id];
-      this.targets[id] = patch[id];
+      const v = patch[id];
+      // A non-finite target would never satisfy the exit test below (NaN
+      // comparisons are always false), stranding the id in `active` with a
+      // corrupted value forever. Ignore it and keep the last good value —
+      // without smoothing, a bad write used to self-correct on the next one.
+      if (!Number.isFinite(v)) continue;
+      this.values[id] = v;
+      this.targets[id] = v;
     }
     this.active.length = 0;
   }
@@ -48,6 +54,11 @@ export class ParamSmoother {
   setTargets(patch: ParamBag): void {
     for (const id in patch) {
       const v = patch[id];
+      // A non-finite target would never satisfy the exit test below (NaN
+      // comparisons are always false), stranding the id in `active` with a
+      // corrupted value forever. Ignore it and keep the last good value —
+      // without smoothing, a bad write used to self-correct on the next one.
+      if (!Number.isFinite(v)) continue;
       this.targets[id] = v;
       if (!(id in this.values)) { this.values[id] = v; continue; }
       if (this.values[id] === v) continue;
@@ -70,7 +81,13 @@ export class ParamSmoother {
       // "zero cost at rest" guarantee is lost.
       if (Math.abs(target - next) <= Math.abs(target) * 1e-5 + 1e-7) {
         this.values[id] = target;
-        this.active.splice(i, 1);
+        // Swap-and-pop, not splice: splice would build and discard an array of
+        // the removed element on every convergence — an allocation on the audio
+        // thread. The list is an unordered bag, so order costs nothing to lose.
+        // Walking backwards means the element swapped in from the end has
+        // already been visited this tick.
+        this.active[i] = this.active[this.active.length - 1];
+        this.active.pop();
       } else {
         this.values[id] = next;
       }
