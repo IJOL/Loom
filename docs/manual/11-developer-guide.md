@@ -52,7 +52,7 @@ So: declare the param in the spec and it is automatable and modulatable. Return 
 
 ## SessionState data model
 
-`src/session/session.ts` defines three levels:
+`src/session/session-types.ts` defines three levels (re-exported from `session.ts`, which holds the factories):
 
 - **`SessionLane`** — has an `engineId`, a list of `SessionClip | null` slots, and an `engineState` bag that persists knob values, modulator configs, note-FX, sampler keymap, pad params, and kit mode.
 - **`SessionClip`** — holds `notes: NoteEvent[]` (the unified note list for both melodic and drum clips), optional `ClipEnvelope[]` for per-clip automation, and an optional `sample` field for loop/song audio clips. Clips also carry `loopEnabled` / `loopStartTick` / `loopEndTick` for sub-region looping, and a `gridResolution` hint for the drum editor.
@@ -67,13 +67,24 @@ Saves are written as `schemaVersion: 3` (`SavedStateV3` in `src/save/`). Older s
 The master audio path assembled in `src/app/audio-graph.ts` runs:
 
 ```text
-master GainNode → insert chain → MasterCompressor → AnalyserNode
-                                                   → SidechainBus
+master (sum GainNode)
+  → MasterBusStrip (EQ / pan / mute)
+  → InsertChain (the master rack)
+  → MasterShaper (air / glue / width)
+  → MasterCompressor (the safety limiter)
+  → soft-clip WaveShaper (4x oversampled)
+  → AnalyserNode → ctx.destination
 ```
+
+Two details of that chain are deliberate. The shaper sits **before** the limiter, because air/glue/width are mix decisions and the limiter must be the last thing that sees the signal. The soft-clip after it is the absolute ceiling: identity below ±0.8, then a tanh knee that maps everything above — including overs beyond ±1 — to about ±0.95, so the master output cannot digitally clip.
+
+A second analyser, `masterMeterAnalyser`, taps off the soft-clip and is **not** connected to the destination. It feeds the master VU meter and the PERF peak/clip readout, so both read the true, clip-free output.
+
+`SidechainBus` is not a node in that chain at all. It is a lane-id → tap registry (`src/core/sidechain-bus.ts`): each `ChannelStrip` registers a `GainNode` fed off its post-mute output, and a ducker subgraph reads `getTap(sourceLaneId)` to drive its envelope follower. The allocator hands it to every lane strip it builds.
 
 Each lane's `LaneResources` consists of a `ChannelStrip` (level, EQ, send levels), a `SynthEngine`, and an `InsertChain` of per-lane FX. `LaneResourceMap.replaceEngine` hot-swaps only the engine while keeping the strip and inserts in place — the channel-level resources survive an engine swap.
 
-`ensureLaneResource` in the lane allocator is the only place that constructs a `LaneResources`. Call it once per lane before accessing anything in the map. Test code that needs a lane wired up must call it explicitly as setup.
+The lane allocator (`src/app/lane-allocator.ts`) is the only module that constructs a `LaneResources`, in two places: `ensureLaneResource` for a session lane (line 255) and `ensureExtraPoly` for the legacy extra-poly strips (line 169). Call `ensureLaneResource` once per lane before accessing anything in the map. Test code that needs a lane wired up must call it explicitly as setup.
 
 ## The scheduler
 
@@ -86,7 +97,9 @@ Two important consequences for contributors:
 - `bpm` and `length` are mutable at runtime; the next scheduled step picks up the new values immediately.
 - Engine params are read at trigger time, not when a note is held. Live knob tweaks apply to the **next** trigger.
 
-When `clip.loopEnabled` is set, `effectiveClipLoop` (`src/core/clip-loop.ts`) constrains the iteration window to `[loopStartTick, loopEndTick)`. The brace UI in `src/core/clip-loop-brace.ts` is the editing surface for that region.
+The scheduler asks `laneLoopRegion` (`src/core/clip-loop.ts:40`) how long one iteration of a clip is, and there are **two** ways the answer comes back shorter than the whole clip. The active scene's global loop wins first: when `GlobalLoopOverride.enabled` is set, `[startBar, endBar)` becomes the region for every lane in the scene, whatever the clips say. Absent that, `effectiveClipLoop` (line 19) applies the clip's own `loopEnabled` / `[loopStartTick, loopEndTick)`. The brace UI in `src/core/clip-loop-brace.ts` is the editing surface for the clip's own region.
+
+That precedence has a consequence worth knowing before you touch clip automation: a clip's envelope array spans the clip's `lengthBars` and is blind to **both** shortenings, so inside a shorter loop the curve slides against the notes. It is written down as known debt at the top of `src/core/clip-envelope-length.ts` and pinned by tests — meet it as a decision, not a mystery.
 
 ## How-to recipes
 
