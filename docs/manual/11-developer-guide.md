@@ -12,6 +12,19 @@ Three structures hold everything together:
 
 3. **`LaneResourceMap`** — owns the live Web Audio nodes for each lane. One entry per lane, holding a `ChannelStrip`, a `SynthEngine` instance, and an `InsertChain`. The lane allocator in `src/app/lane-allocator.ts` is the sole path for creating and swapping these resources; nothing else should construct them directly.
 
+## Boot
+
+`src/main.ts` is a boot script, not a feature file. It builds the handful of objects everything else needs, then hands them to one wiring module per concern in `src/app/`:
+
+- `bootstrapPlugins()` first, before anything reads the registry (`main.ts:94`), then the preset cache derived from it (`main.ts:103`).
+- `createAudioGraph()` (`main.ts:114`) and the three worklet `addModule` calls, which every lane allocation waits on (`main.ts:129`).
+- The `Sequencer` (`main.ts:142`), the automation recorder and its knob registry (`main.ts:143`), the `DestinationRegistry` (`main.ts:150`), the lane allocator (`main.ts:172`), and the `SessionHost` (`main.ts:379`).
+- Then roughly a dozen `wireX(...)` / `createXFeature(...)` calls, each of which owns one concern end to end and lives in its own file under `src/app/`.
+
+**The order is load-bearing**, and the comments in `main.ts` say why at each step. `wireMenuBar` is deliberately the last statement of boot (`main.ts:813`): its action table names a handle from nearly every feature above, so the bar appearing is the proof that boot ran start to finish.
+
+If you are looking for the code behind a control, it is almost never in `main.ts` — find the `wireX` call that mentions it and open that module.
+
 ## The plugin registry
 
 `src/app/plugin-bootstrap.ts` calls `import.meta.glob` at build time over two trees:
@@ -132,17 +145,25 @@ src/
                     — note-velocity colour ramp, gain curve, lane editing helpers
                   clip-loop.ts / clip-loop-brace.ts
                     — clip sub-region resolver + drag-brace UI primitive
-  engines/        SynthEngine abstraction, registry, one file per engine
-                  (tb303, subtractive, fm, wavetable, karplus, sampler,
-                  drums-engine) + engine-selector UI
+  engines/        SynthEngine abstraction, registry, one file per engine —
+                  nine register today: tb303, subtractive, fm, wavetable,
+                  karplus, westcoast, sampler, audio (the dedicated audio
+                  channel), drums-engine — plus engine-selector UI and
+                  engine-param-commit (the one write path for a param edit)
   session/        SessionState model + all session UI
                   (session-host, session-ui, session-inspector,
                   clip-editors/, session-migration)
   modulation/     LFO/ADSR voices, ModulationHost, ModulatorScope,
                   connection binder
   plugins/        Plugin SPI + registry
-                  fx/       — multifilter, distortion, reverb, delay, InsertChain
+                  fx/       — eleven inserts: bitcrusher, chorus, compressor,
+                              delay, distortion, flanger, limiter, multifilter,
+                              phaser, reverb, tremolo. chorus and flanger share
+                              modulated-delay.ts; reverb reads reverb-ir.ts.
+                              insert-chain.ts is the generic host, not a plugin
                   modulators/ — lfo, adsr
+                  notefx/   — arp, chord (the fourth plugin kind; the
+                              processors themselves live in src/notefx/)
   presets/        Preset loader + apply logic
                   (JSON assets live in public/presets/)
   midi/           SMF parser, MIDI-to-session transform, GM lookup, import UI
@@ -169,16 +190,36 @@ src/
   polysynth/      LEGACY/vestigial. Not the Subtractive voice host any more —
                   Subtractive is a descriptor engine rendered in the worklet.
                   Only the preset store + the extra-poly path still touch it
-  app/            Boot factories: audio-graph, lane-allocator, trigger-dispatch,
-                  knob-mounting, mute-solo, bpm-broadcast, engine-swap,
-                  plugin-bootstrap, lane-host-wiring
+  app/            Boot wiring, one module per concern (37 files). main.ts calls
+                  into these; it does not contain them — see "Boot" above
+                  audio spine  — audio-graph, lane-allocator, engine-swap,
+                                 trigger-dispatch, live-voice-registry
+                  boot wiring  — transport-controls, engine-selector-wiring,
+                                 midi-control-wiring, midi-import-wiring,
+                                 import-lane-prep, recording-feature,
+                                 stems-feature, session-lifecycle,
+                                 save-history-wiring, menu-wiring,
+                                 xy-panel-wiring, knob-menu-wiring,
+                                 automation-writes, lane-host-wiring
+                  UI plumbing  — knob-mounting, knob-registry-prune, mute-solo,
+                                 bpm-broadcast, track-ids, toolbar-status-chips,
+                                 about-dialog, modal-dialog, and the four menu
+                                 files (menu-spec / menu-actions / menu-bar /
+                                 menu-shortcuts) that menu-wiring mounts
+                  features     — performance-feature, arrangement-playback,
+                                 automation-recording, stretch-resync,
+                                 warp-resync
+                  plugin-bootstrap — the build-time glob scan (see above)
   save/           SaveManager (schemaVersion: 3), auto-history (AutoHistory:
                   snapshot-diff undo/redo + gesture coalescing, wired to the
                   transport-bar ↺/↻ buttons), history-wiring (withUndo /
                   attachKnobUndo + the undo keyboard — LIVE and load-bearing:
                   withUndo wraps mutation sites across the app)
   notefx/         Note-FX plugin category (arpeggiator, chord spread) — per-lane
-  automation/     Clip envelope recording + read-back helpers
+  automation/     Clip envelope recording + read-back, the automation painter
+                  and its LFO, the knob right-click menu — and the
+                  DestinationRegistry, the ONE catalogue every parameter
+                  picker must read (see docs/automation-destinations.md)
   control/        Live MIDI controller subsystem: APC Key 25 profile, live
                   keyboard, LED mediator, profile registry
   demo/           Baked MIDI demos + demo picker
@@ -193,7 +234,24 @@ tools/
                   exposing an HTTP job queue for stem separation.
                   Run: uvicorn app:app --port 8765
                   Tests: python -m pytest test_app.py (not part of npm test)
+  manual/         The pipeline that builds the manual you are reading:
+                  assemble.mjs (chapters → one HTML document), shots.mjs
+                  (screenshots), pdf.mjs, web.mjs, shot-list.mjs (the
+                  hand-maintained list of screenshots + their selectors)
+                  and manual.css. Driven by build-manual.mjs
 ```
+
+### Building the manual
+
+The chapters in `docs/manual/*.md` are the only hand-written source. `index.html`, `Loom-Manual.pdf` and everything in `images/` are generated and committed — never hand-edit them.
+
+| Command | What it regenerates |
+| --- | --- |
+| `npm run build:manual` | Everything: builds the app, then screenshots + PDF + `index.html` |
+| `npm run manual:shots` | Screenshots only |
+| `npm run manual:pdf` | The PDF **and** `index.html` (no app build, no server) |
+
+`manual:shots` photographs whatever is already in `dist/` — it does not build. Run `npm run build` immediately before it, or you will capture a stale bundle (the same trap as `test:e2e`, below). A new chapter file is invisible to both outputs until it is added to the `CHAPTERS` array in `tools/manual/assemble.mjs`.
 
 ## Testing
 
