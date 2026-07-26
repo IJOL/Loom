@@ -2,50 +2,65 @@
 
 **Fecha:** 2026-07-26
 **Estado:** BORRADOR — pendiente de revisión por Nacho
-**Base:** `main` @ `578545d`
+**Base:** `main` @ `578545d`; **revisado sobre `9086f99`** (2026-07-26, índice de GitNexus reconstruido)
 **Objetivo declarado:** pasar de código generado por acumulación a un framework coherente y bien ingenierizado.
+
+> **REVISIÓN 2026-07-26 — el borrador era alarmista en el hallazgo de los imports circulares.** Se ha vuelto a medir todo con el índice de GitNexus reconstruido (el anterior tenía ficheros ya borrados) y con `tools/dep-matrix.mjs` reescrito para **distinguir import de valor de `import type`**. Resultado corto: **cero ciclos de import en tiempo de ejecución en todo el código**. El detalle está en §1.1, y las consecuencias en §2, frente 5 y §5. El resto del diagnóstico aguanta la medición; dos claims suben de tamaño (`SynthEngine`, casos especiales por id) y el frente 0 ya está **hecho y en `main`**.
 
 ---
 
 ## 1. Diagnóstico
 
-Todo lo que sigue está **medido sobre `main`**, no supuesto. 400 ficheros de producción, 23 subsistemas.
+Todo lo que sigue está **medido sobre `main`**, no supuesto. 399 ficheros de producción, 23 subsistemas.
 
 ### 1.1 Los dos síntomas estructurales
 
-**No hay capas: 28 pares de subsistemas se importan mutuamente.**
+**No hay capas declaradas: 28 pares de carpetas se importan mutuamente — 16 de ellos de verdad.**
 
-`core` — la supuesta base — importa hacia arriba: `session` (17 veces), `save` (9), `engines` (5), `polysynth` (2), `samples` (2), `presets` (1). El par `core ↔ save` es 9/8, casi perfectamente simétrico. No existe ningún orden en que se puedan apilar estos 23 subsistemas: la base depende del tejado.
+La medición honesta necesita separar dos cosas que el borrador sumaba:
 
-> **PRECISIÓN IMPORTANTE (revisión con GitNexus, 2026-07-26).** Estos 28 son ciclos entre **carpetas**, no entre ficheros. A nivel de FICHERO el grafo sólo encuentra **2 ciclos de import reales**:
+- **import de valor** — sobrevive a la compilación. Es una dependencia real de carga.
+- **`import type`** (o `import('x').T` en posición de tipo) — **`tsc` lo borra**. No obliga a nada en ejecución y no puede formar un ciclo de carga.
+
+Con esa separación, sobre `main` (`node tools/dep-matrix.mjs`):
+
+- **28 pares** de carpetas se importan mutuamente contando todo.
+- **16** lo hacen con imports de **valor en ambos sentidos** → dependencia mutua real.
+- **12 son sólo de tipos** — desaparecen en el bundle. Entre ellos `engines ↔ modulation` (38/1), `session ↔ samples` (21/4), `engines ↔ samples` (20/2) y `engines ↔ presets` (11/2), que en el borrador figuraban entre los peores.
+
+Y a nivel de **fichero**, que es donde un ciclo puede hacer daño de verdad (orden de carga, `undefined` en el módulo a medio inicializar), `check({cycles: true})` de GitNexus encuentra **2**:
+
+1. `lane-allocator.ts → engine-types.ts → history-wiring.ts → saved-state-v3.ts → lane-allocator.ts`
+2. `performance-ui-templates.ts ↔ performance-ui.ts`
+
+**Los dos son de tipos.** Verificado arista por arista: [lane-allocator.ts:14](../../../src/app/lane-allocator.ts) `import type { SynthEngine, Voice }`; [engine-types.ts:61](../../../src/engines/engine-types.ts) `historyDeps?: import('../save/history-wiring').HistoryDeps` (posición de tipo — `engine-types.ts` no tiene **ni un solo `import` de valor**); [history-wiring.ts:2](../../../src/save/history-wiring.ts) `import type { SavedStateV3 }`; [saved-state-v3.ts:4](../../../src/save/saved-state-v3.ts) `import type { LaneAllocator }`. El segundo, igual: `performance-ui-templates.ts:17` importa `type PerfUICallbacks`.
+
+> **Conclusión, sin adornos: el código no tiene ciclos de import en tiempo de ejecución. Ni uno.** El borrador decía "la base depende del tejado" y "no existe ningún orden en que se puedan apilar estos 23 subsistemas". Lo primero es cierto sólo en parte y lo segundo era falso: 12 de los 28 pares no restringen nada y los 2 ciclos de fichero se evaporan al compilar. Un ciclo hecho sólo de tipos es un problema de **dónde vive el nombre**, no de arranque.
 >
-> 1. `lane-allocator.ts → engine-types.ts → history-wiring.ts → saved-state-v3.ts → lane-allocator.ts`
-> 2. `performance-ui-templates.ts ↔ performance-ui.ts`
->
-> Es una distinción que cambia el diagnóstico y hay que decirla sin adornos: **el código NO tiene una maraña de imports circulares**. Los módulos individuales están razonablemente ordenados. Lo que falta es la **capa declarada**: `core/` y `session/` se importan mutuamente porque son cajones, no porque haya bucles reales.
->
-> Consecuencia para el frente 5: su valor no es "desactivar bombas", es **impedir que el desorden crezca** y dar un sitio a cada cosa. Baja de urgencia y sube de disciplina.
->
-> Y una confirmación bonita: el ciclo de fichero nº 1 pasa **exactamente** por `engine-types.ts` → el sistema de undo → el guardado → el allocator → vuelta a `engine-types.ts`. Es el frente 2 en una línea: el contrato del motor de audio está enredado con la UI y la persistencia. Arreglarlo lo rompe.
+> Lo que **sí** queda en pie, medido: `core` importa hacia arriba con imports de valor — 7 a `save`, 3 a `session`, 3 a `engines`, 2 a `samples`. Es poco volumen y es una inversión de capa real. Curiosamente al revés de como lo contaba el borrador: `save → core` son 17 imports pero sólo **2** de valor; el tráfico de ejecución va de `core` hacia arriba, no al contrario.
 
-Esto es la firma de código que creció por acumulación: cada función nueva se puso donde cayó y se importó lo que hizo falta.
+Los diez peores pares, con las dos cuentas (total y **de valor**):
 
-Los diez peores (`A→B / B→A`):
+| Par | total A→B / B→A | **valor** A→B / B→A | ¿mutuo en ejecución? |
+|---|---|---|---|
+| `session ↔ core` | 144 / 19 | **98 / 3** | sí |
+| `engines ↔ modulation` | 38 / 1 | 24 / 0 | **no — sólo tipos** |
+| `engines ↔ core` | 33 / 6 | **23 / 3** | sí |
+| `app ↔ session` | 31 / 3 | **10 / 2** | sí |
+| `session ↔ samples` | 21 / 4 | 18 / 0 | **no — sólo tipos** |
+| `engines ↔ samples` | 20 / 2 | 15 / 0 | **no — sólo tipos** |
+| `save ↔ core` | 17 / 9 | **2 / 7** | sí |
+| `session ↔ save` | 14 / 3 | 8 / 0 | **no — sólo tipos** |
+| `engines ↔ presets` | 11 / 2 | 11 / 0 | **no — sólo tipos** |
+| `engines ↔ session` | 10 / 10 | **3 / 7** | sí |
 
-| Ciclo | Cuenta |
-|---|---|
-| `session ↔ core` | 125 / 17 |
-| `engines ↔ core` | 32 / 5 |
-| `app ↔ session` | 30 / 2 |
-| `engines ↔ samples` | 20 / 2 |
-| `session ↔ samples` | 20 / 4 |
-| `automation ↔ session` | 11 / 8 |
-| `engines ↔ presets` | 11 / 2 |
-| `core ↔ save` | **9 / 8** |
-| `session ↔ engines` | 9 / 6 |
-| `export ↔ session` | 9 / 2 |
+El único par que es de verdad grande es `session ↔ core`: **98 imports de valor** de `session` a `core` y 3 de vuelta. Ése es el hallazgo que aguanta, y es exactamente el que el paso 4 del frente 5 ataca (repartir `core/`).
 
-Medido con un script ad-hoc (matriz de imports entre carpetas de primer nivel de `src/`) que **no está versionado**: convertirlo en el test del frente 5 es precisamente parte de ese frente. Los ciclos de FICHERO se comprueban con `check({cycles: true})` de GitNexus, que sí es reproducible hoy.
+Medido con [tools/dep-matrix.mjs](../../../tools/dep-matrix.mjs), que ya clasifica valor/tipo y ya está versionado (era un script ad-hoc sin commitear; ahora la medición es reproducible por cualquiera). Convertirlo en **test** sigue siendo parte del frente 5. Los ciclos de FICHERO se comprueban con `check({cycles: true})` de GitNexus, reproducible hoy — con la advertencia de que **GitNexus no distingue `import type`**, así que su cuenta de 2 hay que leerla junto a la clasificación de arriba.
+
+Esto sigue siendo la firma de código que creció por acumulación — cada función se puso donde cayó — pero la firma está en **la ausencia de capas declaradas**, no en una maraña de bucles. Consecuencia para el frente 5: su valor no es "desactivar bombas", es **impedir que el desorden crezca** y dar un sitio a cada cosa. Baja de urgencia y sube de disciplina.
+
+Y una observación que se conserva porque ilustra bien el frente 2, ahora con su etiqueta correcta: el ciclo de fichero nº 1 pasa por `engine-types.ts` → el sistema de undo → el guardado → el allocator → vuelta. Es el contrato del motor enredado con la persistencia — **en la firma, no en la ejecución**. Arreglarlo limpia el diseño; no desactiva nada.
 
 **El sistema de plugins no es un sistema de plugins: añadir un engine son SEIS registros.**
 
@@ -66,19 +81,19 @@ CLAUDE.md ya lo confiesa: *"Add an engine — FOUR steps, not one. Since the wor
 
 Cada uno verificado; el detalle está en los frentes.
 
-- **Interfaces que mienten.** `EngineSequencer` completo (interfaz + `buildSequencer` + 5 implementaciones + 2 métodos del `Sequencer`) tiene **cero llamadas**. `Voice` tiene 3 de 5 métodos inertes en el camino vivo, y `release(time)` ignora el tiempo y silencia la pista entera.
+- **Interfaces que mienten.** ~~`EngineSequencer` completo (interfaz + `buildSequencer` + 5 implementaciones + 2 métodos del `Sequencer`) tiene **cero llamadas**.~~ **BORRADO — `d7e6272`.** `Voice` tiene 3 de 5 métodos inertes en el camino vivo, y `release(time)` ignoraba el tiempo y silenciaba la pista entera (**arreglado — `a165ec5`**, frente 2.2b).
 - **El DOM en el contrato de audio.** `SynthEngine.buildParamUI(container: HTMLElement)` obliga a que un fichero sobre osciladores importe `lit-html`, `createKnob` y el sistema de undo.
 - **Cinco vocabularios para "una nota"** en un solo camino, con dos escalas de velocity y cuatro nombres para la duración. Cuesta funcionalidad: el arpegiador no puede variar la dinámica.
 - **Cuatro escritores de params** con políticas de persistencia opuestas y no declaradas en ningún sitio.
 - **Estado que vive en el DOM** (~15-20 sitios), uno de ellos un defecto real: el save lee el volumen maestro de un `<input>`.
-- **~20 casos especiales por nombre de engine** (`engineId === 'subtractive'`) repartidos por el núcleo.
-- **Código muerto que parece vivo:** `PolySynth` se construye entero, con strip y cadena de inserts, para entregárselo a un `setPolySynth` que **ningún engine implementa**.
+- **Casos especiales por nombre de engine** (`engineId === 'subtractive'`) repartidos por el núcleo: **23 ficheros** (la cuenta de ocurrencias baila entre 54 y 63 según el patrón que se use; el número de ficheros es estable y es el que importa).
+- ~~**Código muerto que parece vivo:** `PolySynth` se construye entero…~~ **BORRADO — `df13688`.** Lo que queda en `src/polysynth/` **no es código muerto**: son cinco ficheros vivos que forman la superficie de presets del subtractive (ver §2).
 
 ### 1.3 El criterio
 
 "Bonito por dentro" no es verificable. Se traduce a cuatro leyes, y **cada una lleva su test**. Ese es el salto: hoy estas reglas existen como prosa en comentarios y en CLAUDE.md; un framework las tiene ejecutables.
 
-> **L1 — Dependencias en una sola dirección.** Ningún ciclo entre subsistemas. Cada carpeta declara su capa y sólo importa hacia abajo.
+> **L1 — Dependencias en una sola dirección.** Ninguna dependencia **de valor** mutua entre subsistemas. Cada carpeta declara su capa y sólo importa hacia abajo. Un `import type` que sube de capa no viola L1 por sí solo (no existe en ejecución), pero sí señala que el tipo está en la carpeta equivocada: se anota, no se persigue.
 >
 > **L2 — Cada interfaz dice la verdad.** Nada declarado sin usar. Nada implementado que sea inerte. Ninguna firma que prometa algo distinto de lo que hace.
 >
@@ -92,7 +107,7 @@ Cada uno verificado; el detalle está en los frentes.
 - No convierte a lit-html el canvas, la geometría del layout ni el drag por `pointermove`.
 - No introduce ninguna capa de indirección nueva sobre el DOM. La que hay (`lit-html` + `mountPanel` + `ControlCache`) es la que se usa.
 - No introduce un framework MVC formal. El modelo ya existe; lo que falta es dirección única.
-- No promete romper los 28 ciclos de golpe (ver frente 5: trinquete, no big-bang).
+- No promete romper los 28 pares mutuos de golpe (ver frente 5: trinquete, no big-bang) — y **no los trata como urgentes**, porque ninguno es un ciclo de ejecución.
 - No revive `runStandardEngineBattery` ni las baterías WAV.
 
 ---
@@ -113,10 +128,10 @@ L0  dsp         audio-dsp/, audio-worklet/     DSP puro: sin DOM, sin AudioConte
 Cambios de nombre y contenido que esto implica:
 
 - **`core/` desaparece como cajón.** Hoy tiene 100+ ficheros que van desde `NoteEvent` (datos puros, L1) hasta `pianoroll.ts` (canvas, L4). Un cajón llamado "core" es *la* señal de que no hay capas. Se reparte entre `model/`, `runtime/` y `ui/`.
-- **`session/` se parte en dos**: los tipos y operaciones del modelo (L1) y sus vistas (L4). Hoy están juntos, y es la causa del ciclo más grande (`session ↔ core`, 125/17).
-- **`polysynth/` desaparece** (frente 0: está muerto).
+- **`session/` se parte en dos**: los tipos y operaciones del modelo (L1) y sus vistas (L4). Hoy están juntos, y es la causa del único par mutuo grande de verdad (`session ↔ core`, **98 imports de valor** hacia abajo y 3 de vuelta).
+- **`polysynth/` se renombra, no desaparece.** La clase `PolySynth` murió en `df13688`, pero la carpeta conserva cinco ficheros **vivos** — `polysynth-presets.ts`, `poly-preset-apply.ts`, `poly-preset-store.ts`, `poly-preset-templates.ts`, `poly-params.ts` — que son el desplegable de presets + Randomize del subtractive, importados desde `main.ts`, `engine-selector-wiring`, `engine-selector-ui`, `midi-import-wiring`, `randomize-ui` y `session-host-lane-editor`. Con el frente 2.3 (los presets se resuelven fuera del motor) su sitio natural es `presets/` o `engines/subtractive/`; el nombre `polysynth` ya no describe nada que exista.
 
-**La regla se verifica**, no se confía: `tools/dep-matrix.mjs` pasa a ser un test que falla si aparece un ciclo nuevo o si una capa importa hacia arriba.
+**La regla se verifica**, no se confía: `tools/dep-matrix.mjs` pasa a ser un test que falla si aparece una dependencia **de valor** mutua nueva o si una capa importa hacia arriba.
 
 ---
 
@@ -124,25 +139,24 @@ Cambios de nombre y contenido que esto implica:
 
 Orden pensado para que cada uno destrabe al siguiente y para que el riesgo alto llegue con el terreno ya despejado.
 
-### Frente 0 — Código muerto
+### Frente 0 — Código muerto ✅ HECHO Y EN `main`
 
-No cambia comportamiento. Reduce el terreno de todo lo demás.
+No cambiaba comportamiento. Despejó el terreno de todo lo demás.
 
-**0.1 `EngineSequencer` — interfaz zombi completa.** Cero llamadas a `buildSequencer`, `registerEngineSequencer` y `unregisterEngineSequencer`. Se borran los ocho elementos: la interfaz, el método del contrato, las cuatro implementaciones (`SamplerSequencer`, `DrumsSequencer`, `AudioSequencer`, `inertSequencer`), el stub de `WorkletLaneEngine` y los dos métodos de `Sequencer`.
+**0.1 `EngineSequencer` — interfaz zombi completa.** ✅ **`d7e6272`** — *"fuera EngineSequencer, una interfaz entera sin una sola llamada"*. Fuera la interfaz, el método del contrato, las cuatro implementaciones (`SamplerSequencer`, `DrumsSequencer`, `AudioSequencer`, `inertSequencer`), el stub de `WorkletLaneEngine` y los dos métodos de `Sequencer`. `buildSequencer` ya no está en `SynthEngine` — eso adelanta parte del frente 2.1.
 
-**0.2 `PolySynth` — ramas protegidas por casts a métodos inexistentes.** Ningún engine implementa `getPolySynth`/`setPolySynth` (cero definiciones en `src/engines/` y `src/polysynth/`), pero cuatro sitios las invocan tras un cast defensivo: [main.ts:198](../../../src/main.ts), [main.ts:744](../../../src/main.ts), [lane-allocator.ts:176](../../../src/app/lane-allocator.ts), [preset-apply.ts:29](../../../src/presets/preset-apply.ts), [session-host-lane-editor.ts:38](../../../src/session/session-host-lane-editor.ts). Peor: `ensureExtraPoly` ([lane-allocator.ts:163](../../../src/app/lane-allocator.ts)) construye un `PolySynth` completo con su `ChannelStrip` y su `InsertChain`, y se lo intenta pasar al `setPolySynth` inexistente. Queda conectado al grafo de audio sin que nada pueda dispararlo.
+**0.2 `PolySynth` — ramas protegidas por casts a métodos inexistentes.** ✅ **`df13688`** — *"fuera la clase PolySynth y los seis caminos que colgaban de ella"*. `polysynth.ts`, `ensureExtraPoly` y los cinco casts a `getPolySynth`/`setPolySynth` ya no existen. La pregunta abierta sobre `EXTRA_IDS` / `poly1..poly16` queda **resuelta: estaba muerto** (sólo sobreviven mocks `ensureExtraPoly: () => ({})` en siete tests de `session-host`, que son basura de test a barrer cuando se toque ese fichero).
 
-> **⛔ VERIFICAR ANTES DE BORRAR:** `ensureExtraPoly` se dispara si algo pide una lane con id `poly1..poly16` (`EXTRA_IDS`). Con el modelo de lanes actual los ids son `subtractive-1`, así que probablemente nunca ocurre — pero se confirma con una traza, no se asume. Si estuviera vivo, este punto cambia de "borrar" a "arreglar".
+> **⚠️ Lo que NO se borró, y con razón:** los cinco ficheros de presets de `src/polysynth/` están vivos y en uso. El borrador los listaba como satélites a eliminar; era un error. Ver §2 — se reubican, no se borran.
 
-Si está muerto: fuera `ensureExtraPoly`, los cinco casts, `polysynth.ts` y satélites (`poly-preset-apply`, `poly-preset-store`, `polysynth-presets`) y los 6 tests que sólo prueban la clase muerta.
+**0.3 Restos menores.** ✅
 
-**0.3 Restos menores.**
-- `core/synth.ts` (clase `TB303`) — sólo la construye su test; los tres importadores vivos la usan **sólo como tipo**. El sonido lo hace `TB303Renderer`, otra clase.
-- `ParamDef` ([engine-types.ts:5](../../../src/engines/engine-types.ts)) — alias de compatibilidad con cero usos.
+- `core/synth.ts` (clase `TB303`) — fuera en **`636ab9b`**.
+- `ParamDef` (alias de compatibilidad, cero usos) — fuera en **`c7d8eb6`**.
 
-> **NO se borra `test/dsp-battery.ts`.** Un borrador anterior de este plan lo metía aquí; era un error de categorización. Ver frente 0.5.
+> **NO se borra `test/dsp-battery.ts`.** Un borrador anterior de este plan lo metía aquí; era un error de categorización. Ver frente 0.5. Sigue en el árbol con **cero llamadores**, esperando el frente 0.5.
 
-**Verificación:** `npx tsc --noEmit` + `npm run test:unit` en verde.
+**Verificación:** `npx tsc --noEmit` + `npm run test:unit` en verde. Hecha en cada commit de los tres.
 
 ---
 
@@ -214,11 +228,11 @@ export default defineEngine({
 
 ### Frente 2 — El interfaz de engine dice la verdad
 
-**2.1 Sacar el DOM del contrato de audio.** `buildParamUI(container: HTMLElement)` y `buildSequencer(container, n)` salen de `SynthEngine`. El engine declara (`editor`, `params: EngineParamSpec[]`); quien monta paneles los busca en un `EngineUiRegistry` paralelo. Cinco de los nueve engines no necesitan UI propia — `buildEngineParamGrid` ya deriva la rejilla del spec. Sólo `subtractive`, `sampler` y `drums` tienen UI de verdad.
+**2.1 Sacar el DOM del contrato de audio.** `buildSequencer(container, n)` ya salió con el frente 0 (`d7e6272`); queda `buildParamUI(container: HTMLElement, ctx?: EngineUIContext)` ([engine-types.ts:119](../../../src/engines/engine-types.ts)), con 13 ficheros de producción implicados. El engine declara (`editor`, `params: EngineParamSpec[]`); quien monta paneles los busca en un `EngineUiRegistry` paralelo. Cinco de los nueve engines no necesitan UI propia — `buildEngineParamGrid` ya deriva la rejilla del spec. Sólo `subtractive`, `sampler` y `drums` tienen UI de verdad.
 
 > **Parada obligatoria de parity visual:** abrir los 9 engines en Chrome real y comparar contra el estado actual. Los tests no comprueban si la pantalla sigue pareciéndose a lo aprobado.
 
-**2.2 `Voice` deja de mentir.** De sus cinco métodos, en el camino vivo `connect()` es no-op, `getAudioParams()` devuelve mapa vacío, `dispose()` es no-op y `createVoice(_ctx, _output)` ignora ambos parámetros. Se reduce a lo que se usa. Drums y Sampler sí entregan `AudioParam`s reales, así que `getAudioParams()` se conserva como opcional declarado.
+**2.2 `Voice` deja de mentir.** En el camino vivo `connect()` es no-op, `getAudioParams()` devuelve mapa vacío, `dispose()` es no-op y `createVoice(_ctx, _output)` ignora ambos parámetros. Se reduce a lo que se usa. Drums y Sampler sí entregan `AudioParam`s reales, así que `getAudioParams()` se conserva como opcional declarado. **Ojo al inventario actualizado:** tras `a165ec5` la interfaz tiene **siete** miembros, no cinco — se añadieron `silenceLane?()` y `getAudioParamRange?()`, ambos legítimos y ambos con dueño real. Adelgazar aquí es quitar tres, no cinco.
 
 **2.2b — `Voice.release` NO era deuda de estilo: era un DEFECTO.** ✅ **ARREGLADO Y EN `main`** (`a165ec5`, 2026-07-26, verificado a oído y pusheado).
 
@@ -292,10 +306,17 @@ Hoy una nota se dice de cinco maneras en un mismo camino:
 | [core/notes.ts:13](../../../src/core/notes.ts) `NoteEvent` | `{start, duration, midi, velocity}` — ticks, 0-127 |
 | [trigger-dispatch.ts:8](../../../src/app/trigger-dispatch.ts) `TriggerForLane` | **9 parámetros posicionales** |
 | [notefx-types.ts:5](../../../src/notefx/notefx-types.ts) `NoteFxEvent` | `{note, time, gate, accent}` — **sin velocity** |
-| [engine-types.ts:26](../../../src/engines/engine-types.ts) `VoiceTriggerOptions` | `{accent, slide, velocity, gateDuration, sample, offsetSec}` |
-| [audio-dsp/types.ts:26](../../../src/audio-dsp/types.ts) `NoteSpec` | `{midi, beginSec, durationSec, velocity 0..1, accent, slide}` |
+| [engine-types.ts:136](../../../src/engines/engine-types.ts) `VoiceTriggerOptions` | `{accent, slide, velocity, gateDuration, sample, offsetSec}` |
+| [audio-dsp/types.ts:26](../../../src/audio-dsp/types.ts) `NoteSpec` | `{midi, beginSec, durationSec, velocity 0..1, accent, slide, voiceId}` |
 
-**Cuesta funcionalidad, no sólo elegancia:** el arpegiador y el chord no pueden variar la dinámica porque `NoteFxEvent` no lleva velocity, y [trigger-dispatch.ts:54](../../../src/app/trigger-dispatch.ts) fuerza `slide = false` en cuanto hay note-FX.
+**Cuesta funcionalidad, no sólo elegancia** — reverificado sobre `main` en [trigger-dispatch.ts:53](../../../src/app/trigger-dispatch.ts):
+
+```ts
+const events = chain.process([{ note, time, gate, accent }], { bpm: deps.seq.bpm });
+for (const e of events) fire(e.note, e.time, e.gate, e.accent, false);
+```
+
+La velocity **no entra** en la cadena (no hay campo) y **no sale**: `fire` la toma de la `vel` calculada una vez fuera, así que las N notas que genere un arpegio heredan todas la dinámica de la nota original. Y el `false` de la última posición es el `slide` forzado. Los dos son exactamente el mismo defecto: el vocabulario de la cadena es más pobre que el de sus dos extremos.
 
 **Cambio:** un único `PlayedNote` en el tramo de reproducción, con las unidades declaradas una vez.
 
@@ -321,9 +342,15 @@ interface PlayedNote {
 
 ### Frente 4 — Un solo punto de escritura de params
 
-Cuatro fuentes escriben el mismo destino (knob, automatización, MIDI, XY). `setBaseValue` tiene 11 llamadores, y dos aplican políticas **opuestas** sin declararlo:
+Cuatro fuentes escriben el mismo destino (knob, automatización, MIDI, XY). Medido sobre `main`: **17 llamadas a `.setBaseValue(` en producción**, repartidas en tres grupos que el borrador metía en el mismo saco —
 
-- MIDI ([live-control-apply.ts:43](../../../src/automation/live-control-apply.ts)) → `commitParamForLane` → **persiste**.
+- **8 escriben un engine desde fuera** (los que importan aquí): [engine-param-commit.ts:50](../../../src/engines/engine-param-commit.ts) (el sancionado), [automation-apply.ts:72](../../../src/automation/automation-apply.ts), [live-control-apply.ts:64](../../../src/automation/live-control-apply.ts), [engine-randomize.ts:72 y :79](../../../src/engines/engine-randomize.ts), [apply-lane-engine-state.ts:52](../../../src/export/apply-lane-engine-state.ts), [offline-recorder.ts:267](../../../src/export/offline-recorder.ts), [poly-preset-apply.ts:75](../../../src/polysynth/poly-preset-apply.ts).
+- **4 escriben un FX, no un engine** (`loom-facade`, `insert-slot`, `lane-insert-ui` ×2) — mismo nombre de método, otro destino. Si el frente 4 los mete en el mismo `writeParam` tiene que decirlo explícitamente.
+- **5 son `this.setBaseValue(...)` dentro del propio engine** (`worklet-lane-engine` ×3, `sampler-worklet-engine`, `drums-worklet-engine`) — no son llamadores externos y **no cuentan** como incumplimiento.
+
+Dos de los ocho aplican políticas **opuestas** sin declararlo:
+
+- MIDI ([live-control-apply.ts:64](../../../src/automation/live-control-apply.ts)) → `commitParamForLane` → **persiste**.
 - Automatización ([automation-apply.ts:72](../../../src/automation/automation-apply.ts)) → `setBaseValue` directo → **no persiste**.
 
 La diferencia es casi seguro deliberada. El problema es que la regla no está escrita en ningún sitio: vive implícita en qué función eligió cada llamador — y CLAUDE.md afirma que todo pasa por `commitParam`, lo que hoy es falso.
@@ -342,20 +369,21 @@ La política (`user` y `midi` persisten; `automation` no; `preset` persiste en b
 
 ### Frente 5 — Capas y ciclos
 
-El más grande, y por eso **con trinquete, no de golpe**.
+El más grande, y por eso **con trinquete, no de golpe**. Y con la urgencia recalibrada: §1.1 mide **cero ciclos de import en ejecución**, así que este frente no arregla nada roto — **impide que se rompa** y le da un sitio a cada cosa. Si hay que sacrificar un frente por tiempo, es éste.
 
-**Paso 1 — Declarar.** Cada subsistema declara su capa (§2) en un manifiesto. `tools/dep-matrix.mjs` se convierte en test.
+**Paso 1 — Declarar.** Cada subsistema declara su capa (§2) en un manifiesto. `tools/dep-matrix.mjs` (ya versionado y ya clasifica valor/tipo) se convierte en test.
 
-**Paso 2 — Congelar.** El test registra el número actual de ciclos (28) como techo. **Sube = falla.** A partir de ese momento el problema deja de crecer, que es la mitad de la batalla.
+**Paso 2 — Congelar.** El test registra **dos** techos, y esto es el cambio de fondo de la revisión: el número de pares mutuos **de valor** (16) y el total contando tipos (28). **Sube cualquiera = falla**, pero el que se persigue es el primero. Congelar sólo el total premia convertir un import de valor en `import type` sin mover nada de sitio.
 
-**Paso 3 — Bajar el techo.** Cada frente rompe los ciclos que toca y baja el número. Los frentes 0-4 ya se llevan varios por delante:
-- frente 0 elimina `polysynth ↔ core`, `polysynth ↔ engines`, `polysynth ↔ presets`, `session ↔ polysynth` (**4 ciclos gratis**),
-- frente 2 rompe `engines ↔ presets` (el engine deja de importar el cargador) y parte de `engines ↔ core` (la UI sale del contrato),
-- frente 3 rompe parte de `session ↔ core` (el vocabulario de nota deja de cruzar).
+**Paso 3 — Bajar el techo.** Cada frente rompe los pares que toca:
 
-**Paso 4 — Repartir `core/`.** Es la causa del ciclo mayor y la señal más clara de ausencia de arquitectura: un cajón de 100+ ficheros que va desde `NoteEvent` (datos puros) hasta `pianoroll.ts` (canvas). Se reparte entre `model/`, `runtime/` y `ui/`. **Esto se hace al final**, cuando los frentes anteriores hayan reducido el enredo, y probablemente merezca su propio spec.
+- frente 0 **ya se llevó** `polysynth ↔ presets` de la lista de mutuos de valor; quedan `polysynth ↔ engines` (2/1) y `polysynth ↔ core` (2/1), que caen al reubicar la carpeta (§2), y `polysynth ↔ session` ya era sólo de tipos;
+- frente 2 rompe `engines ↔ presets` — que **es sólo de tipos** (11/0), así que baja el total, no el techo de valor — y parte de `engines ↔ core` (23/3 de valor: ahí sí se gana);
+- frente 3 rompe parte de `session ↔ core`, el único par mutuo grande de verdad (**98/3 de valor**).
 
-> **⛔ DECISIÓN:** ¿el reparto de `core/` entra en esta ronda o se queda como spec siguiente con el trinquete ya puesto? Recomiendo lo segundo: poner el trinquete ahora vale más que mover 100 ficheros ya.
+**Paso 4 — Repartir `core/`.** Es la causa del único par mutuo grande y la señal más clara de ausencia de arquitectura: un cajón de 100+ ficheros que va desde `NoteEvent` (datos puros) hasta `pianoroll.ts` (canvas). Se reparte entre `model/`, `runtime/` y `ui/`. **Esto se hace al final**, cuando los frentes anteriores hayan reducido el enredo, y probablemente merezca su propio spec.
+
+> **⛔ DECISIÓN:** ¿el reparto de `core/` entra en esta ronda o se queda como spec siguiente con el trinquete ya puesto? Recomiendo lo segundo, y la revisión de §1.1 lo refuerza: no hay bomba que desactivar, así que poner el trinquete ahora vale más que mover 100 ficheros ya.
 
 ---
 
@@ -366,9 +394,11 @@ El más grande, y por eso **con trinquete, no de golpe**.
 1. **El save lee el volumen del DOM.** [saved-state-v3.ts:70](../../../src/save/saved-state-v3.ts): `masterVol: parseFloat(volInput.value)`. Y [master-strip.ts:18](../../../src/core/master-strip.ts) lo documenta: *"el fader es un PROXY de `#volume`"* — un `<input>` de `index.html` **es** el modelo del volumen maestro y dos vistas se sincronizan despachando eventos a través de él. **Esto es un defecto, no estilo.**
 2. **La automatización lee un atributo HTML.** [performance-feature.ts:417](../../../src/app/performance-feature.ts): `k.el.getAttribute('data-value-norm')`.
 3. **Transporte:** bpm, swing y compás tienen su verdad en los `<input>`.
-4. **Pestaña activa por `dataset.page`, tres veces** — [main.ts:348](../../../src/main.ts), [session-host-lane-editor.ts:57](../../../src/session/session-host-lane-editor.ts), [synth-editor-routing.ts:51](../../../src/session/synth-editor-routing.ts).
+4. **Pestaña activa por `dataset.page`, dos veces** — [main.ts:330](../../../src/main.ts), [session-host-lane-editor.ts:44](../../../src/session/session-host-lane-editor.ts). *(El borrador decía tres y citaba `synth-editor-routing.ts`: ese fichero ya no existe.)*
 5. **Validez del drop en una clase CSS** — [session-clip-drag.ts:114](../../../src/session/session-clip-drag.ts) calcula, escribe `.drop-valid` y **relee** la clase para decidir.
 6. **Voz de drum seleccionada en `.dv-col.selected`** — [drum-voice-rack.ts:122](../../../src/engines/drum-voice-rack.ts).
+
+Los seis reverificados sobre `main` el 2026-07-26; sólo el nº 4 cambió.
 
 **Excepciones legítimas — NO se tocan.** Modelarlas duplicaría estado, que es el defecto que queremos evitar:
 - **El foco** (`document.activeElement`) — el navegador es su dueño.
@@ -382,7 +412,7 @@ El más grande, y por eso **con trinquete, no de golpe**.
 
 ## 4. Transversal — Capacidades declaradas en vez de nombres
 
-~20 comparaciones literales (`engineId === 'subtractive'` / `'drums-machine'` / `'tb303'`) repartidas por [lane-allocator](../../../src/app/lane-allocator.ts), [trigger-dispatch:48](../../../src/app/trigger-dispatch.ts), [voice-manager:113](../../../src/audio-dsp/voice-manager.ts), [session-host-lane-editor](../../../src/session/session-host-lane-editor.ts), [engine-selector-ui](../../../src/engines/engine-selector-ui.ts), [lane-editor-panels](../../../src/session/lane-editor-panels.ts), [clip-editor-router](../../../src/session/clip-editors/clip-editor-router.ts)… `subtractive` es caso especial en tres puntos del mismo fichero.
+Entre 54 y 63 comparaciones literales según el patrón (`engineId === 'subtractive'` / `'drums-machine'` / `'tb303'`), en **23 ficheros** — el borrador decía ~20 y se quedaba corto por un factor de tres. Repartidas por [lane-allocator](../../../src/app/lane-allocator.ts), [trigger-dispatch:48](../../../src/app/trigger-dispatch.ts), [voice-manager:113](../../../src/audio-dsp/voice-manager.ts), [session-host-lane-editor](../../../src/session/session-host-lane-editor.ts), [engine-selector-ui](../../../src/engines/engine-selector-ui.ts), [lane-editor-panels](../../../src/session/lane-editor-panels.ts), [clip-editor-router](../../../src/session/clip-editors/clip-editor-router.ts)… `subtractive` es caso especial en tres puntos del mismo fichero.
 
 ```ts
 capabilities: {
@@ -402,27 +432,30 @@ Se hace **dentro de cada frente**, no como paso aparte: cada frente convierte lo
 
 ## 5. Orden, riesgo y método
 
-Riesgo medido con el grafo de GitNexus (`impact upstream`), no estimado a ojo:
+Riesgo medido con el grafo de GitNexus (`impact upstream`) sobre el índice **reconstruido el 2026-07-26** (10.316 nodos / 27.392 aristas), no estimado a ojo. El índice anterior contenía ficheros ya borrados, así que las cifras del borrador estaban tomadas sobre un grafo caducado:
 
 | # | Frente | Símbolo clave | Radio real | Riesgo | Por qué ahí |
 |---|---|---|---|---|---|
-| 0 | Código muerto | `buildSequencer` | 3 (implementaciones, 0 llamadas) | **Bajo** | No cambia comportamiento. |
-| 0 | Código muerto | `PolySynth` | **51** (13 directos) | **Medio** | ⚠️ más de lo estimado — ver abajo. |
+| 0 | Código muerto | — | — | — | ✅ **HECHO** (`d7e6272`, `df13688`, `c7d8eb6`, `636ab9b`). |
 | 0.5 | Revivir la batería DSP | — | sólo tests | **Bajo** | Red de seguridad de los frentes 2 y 3. Va ANTES de tocar audio. |
-| 1 | Un solo registro | `registerEngine*` | contrato de extensión | Medio | Todo lo demás cuelga de él. |
-| 2 | Interfaz honesto | `SynthEngine` | **139** (39 directos) | **CRÍTICO** | ⚠️ subido desde "medio-alto" — ver abajo. |
-| 3 | Bus de notas | `NoteEvent` (28 ficheros) | camino de audio | **Alto** | Con el terreno ya despejado y la batería puesta. |
-| 4 | Bus de control | `setBaseValue` (34 ficheros) | 11 llamadores | Bajo-medio | Cierra un agujero de guardado real. |
-| 5 | Capas | — | 2 ciclos de fichero | Medio (trinquete) | Disciplina, no urgencia (ver §1.1). |
-| 6 | Estado fuera del DOM | — | ~15-20 sitios | Bajo | Independiente. |
+| 1 | Un solo registro | `registerEngine*` | contrato de extensión (6 registros) | Medio | Todo lo demás cuelga de él. |
+| 2 | Interfaz honesto | `SynthEngine` | **241** (39 directos, 20 módulos) | **CRÍTICO** | ⚠️ ver abajo. |
+| 3 | Bus de notas | `NoteEvent` | camino de audio | **Alto** | Con el terreno ya despejado y la batería puesta. |
+| 4 | Bus de control | `setBaseValue` | 17 llamadas, **8 externas a engine** | Bajo-medio | Cierra un agujero de guardado real. |
+| 5 | Capas | — | 16 pares mutuos de valor; **0 ciclos en ejecución** | Bajo-medio (trinquete) | Disciplina, no urgencia (§1.1). |
+| 6 | Estado fuera del DOM | — | 6 sitios concretos + transporte | Bajo | Independiente. |
 
-**Dos correcciones que salen de medir en vez de estimar:**
+**Correcciones que salen de medir en vez de estimar:**
 
-1. **`SynthEngine` es CRÍTICO, no medio-alto.** 139 símbolos impactados, 39 de ellos directos, y afecta a los procesos `swapLaneEngine` y `createLaneEngine`. Además GitNexus marca el resultado como **cota inferior**: *"es una interfaz con 4 implementaciones; los que enlazan a través de ella no se trazan hasta el símbolo concreto — el impacto real puede ser mayor"*. Por tanto el frente 2 **no se hace de una pasada**: se parte en sus tres piezas (2.1 sacar la UI, 2.2 adelgazar `Voice`, 2.3 los presets) y cada una se cierra en verde antes de empezar la siguiente.
+1. **`SynthEngine` es CRÍTICO, y más de lo que decía el borrador.** Con el índice fresco: **241** símbolos impactados (no 139), 39 directos, 39 procesos y 20 módulos. GitNexus sigue marcando el resultado como **cota inferior**: *"es una interfaz con 4 implementaciones; los que enlazan a través de ella no se trazan hasta el símbolo concreto — el impacto real puede ser mayor"*. Por tanto el frente 2 **no se hace de una pasada**: se parte en sus tres piezas (2.1 sacar la UI, 2.2 adelgazar `Voice`, 2.3 los presets) y cada una se cierra en verde antes de empezar la siguiente.
 
-2. **`PolySynth` no es un borrado trivial.** 51 símbolos, 13 directos. No es riesgo de que suene distinto (el camino está muerto), es **volumen de desenredo**: lo importan como tipo `session-host-deps`, `bpm-broadcast`, `core/random`, `preset-apply`, `synth-editor-routing`… Sigue siendo el primer frente, pero se planifica como varias sesiones, no como un `rm`.
+2. ~~**`PolySynth` no es un borrado trivial** (51 símbolos, 13 directos)…~~ **Resuelto: se hizo en un commit (`df13688`).** El radio de 51 símbolos no se tradujo en varias sesiones. Lección para leer esta tabla: `impact upstream` mide *cuántos símbolos alcanzan al objetivo*, y en un símbolo que sólo se importa **como tipo** eso sobreestima el trabajo. Aplícalo también a `SynthEngine`: su 241 incluye mucho tráfico de tipos.
 
-**Y un dato que subo al alza:** los casos especiales por id de engine no son ~20 sino **63, repartidos en 23 ficheros**. Los peores: `session-host-util` (7), `lane-allocator` (6), `session-inspector` (4), `session-host-lane-editor` (4), `clip-editor-router` (4). El trabajo transversal de §4 es mayor de lo que decía el borrador.
+3. **`setBaseValue` baja de nivel.** El borrador decía "11 llamadores"; son 17 llamadas de las que **8** escriben un engine desde fuera, 4 escriben un FX y 5 son internas del propio engine (frente 4). El agujero de política es real y está en 2 de esas 8.
+
+4. **El frente 5 baja de "Medio" a "Bajo-medio".** No porque haya menos pares, sino porque ninguno es un ciclo de carga: **cero ciclos de import en ejecución** (§1.1). Es deuda de organización, no un fallo latente.
+
+**Y un dato que se mantiene al alza, con matiz:** los casos especiales por id de engine están en **23 ficheros** — eso es firme. La cuenta de ocurrencias baila entre **54 y 63** según el patrón que se use (el borrador dio 63; un regex más estricto da 54). Los peores no cambian: `session-host-util` (7), `lane-allocator` (6), `session-inspector` (4), `clip-editor-router` (4), `session-host-lane-editor` (3). El trabajo transversal de §4 sigue siendo mayor de lo que decía el borrador original de ~20.
 
 ### Método
 
@@ -438,5 +471,7 @@ Riesgo medido con el grafo de GitNexus (`impact upstream`), no estimado a ojo:
 
 1. ~~**`test/golden/` + `dsp-battery.ts`** — ¿borrar?~~ **RESUELTO 2026-07-26: se conservan y se reviven** (frente 0.5). Borrarlas era un error de categorización por mi parte: sin uso ≠ sin valor, y son precisamente la red que hace falta para los frentes 2 y 3.
 2. ~~**`Voice.release`** — ¿`silenceLane()` o release por voz?~~ **RESUELTO 2026-07-26: es un DEFECTO, no una elección** (frente 2.2b). Soltar una nota de un acorde mata el acorde entero en las seis pistas melódicas. Se arregla con release por voz; renombrar queda descartado.
-3. **`ensureExtraPoly`** — confirmar con traza que el camino `poly1..poly16` está muerto antes de retirarlo.
-4. **Reparto de `core/`** — ¿en esta ronda o spec siguiente con el trinquete ya puesto? (recomiendo lo segundo)
+3. ~~**`ensureExtraPoly`** — confirmar con traza que el camino `poly1..poly16` está muerto antes de retirarlo.~~ **RESUELTO 2026-07-26: estaba muerto y se retiró** en `df13688`. Sólo quedan siete mocks en tests de `session-host`.
+4. **Reparto de `core/`** — ¿en esta ronda o spec siguiente con el trinquete ya puesto? (recomiendo lo segundo, y la revisión de §1.1 lo refuerza)
+5. **Nuevo — ¿dónde va la superficie de presets del subtractive?** `src/polysynth/` ya no contiene ningún `PolySynth`. Cinco ficheros vivos buscando carpeta: `presets/` (van con el cargador) o `engines/subtractive/` (van con su motor). Se decide al hacer el frente 2.3, no antes.
+6. **Nuevo — ¿el trinquete del frente 5 vigila también los `import type`?** Recomendación: cuenta los dos techos pero **sólo falla por los de valor**; los de tipos se listan en el informe del test como deuda anotada. Si falla por tipos, el atajo obvio es convertir imports en `import type` y no haber movido nada.
