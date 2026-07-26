@@ -301,9 +301,12 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       // time. It used to be COPIED into the arrangement on this line, which held
       // only until the next use of the Meter selector — that lives in the
       // always-visible transport row, so it fires without any view switch and
-      // left this copy stale while the session moved on. (bpm is still copied
-      // into the arrangement and still has that staleness, papered over by
-      // `arrangement.bpm || seq.bpm`.)
+      // left this copy stale while the session moved on.
+      //
+      // bpm is deliberately NOT refreshed the same way: it is the take's own
+      // (its curves are stored per step, so their seconds belong to the tempo
+      // they were recorded at). It is normalised once on the way in — see
+      // setArrangement — so every reader can trust the stored value.
       //
       // Reflect the active scene's global loop into the Performance A–B loop so
       // the brace shows the same region the user already set in Session.
@@ -356,8 +359,25 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     }
   }, true); // capture phase so it beats the session handler
 
+  /** The ONE door a foreign ArrangementState comes in by: the save loader
+   *  (saved-state-v3 → deps.setArrangement), the arrangement's own undo restore,
+   *  Copy-from-session and New. */
   function setArrangement(a: ArrangementState) {
     Object.assign(arrangement, a);
+    // Unlike the meter, bpm is genuinely the TAKE's own: an automation curve is
+    // stored per step, so how many seconds it covers depends on the tempo it was
+    // recorded at. It stays a stored field rather than being derived from seq.
+    //
+    // What it must not be is unusable. A falsy bpm makes a bar Infinity seconds
+    // long, which collapses the A-B window (end <= start) and inflates
+    // effectiveDurationSec — while the tick and the playhead, which used to
+    // paper over it with `arrangement.bpm || seq.bpm`, kept running at the
+    // sequencer's tempo. That guard existed at two sites and not at the five
+    // others reading the same field (arrangement-ops' barSecOf, the band
+    // move/resize snap, the ruler), which is the disagreement. Normalising here,
+    // where a take arrives, makes the field trustworthy everywhere instead of
+    // making every reader guard it — so the guards are gone.
+    if (!(arrangement.bpm > 0)) arrangement.bpm = seq.bpm;
     refreshPerformanceView();
   }
 
@@ -425,7 +445,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       }
       tickArrangement({
         ps: arrangementPlayState, state: arrangement, nowCtx, lookaheadSec,
-        bpm: arrangement.bpm || seq.bpm,
+        bpm: arrangement.bpm,
         onLaunchClip: arrangementOnLaunchClip,
         onStopLane: arrangementOnStopLane,
         applyAutomation: arrangementApplyAutomation,
@@ -487,7 +507,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       const host = document.getElementById('performance-view-root');
       const rulerTrack = host?.querySelector('.perf-ruler .perf-track') as HTMLElement | null;
       if (animating && host && rulerTrack) {
-        const barSec = songBarSec(arrangement.bpm || seq.bpm, seq.meter);
+        const barSec = songBarSec(arrangement.bpm, seq.meter);
         const lw = arrangementLoopWindowSec(arrangement, seq.meter);
         let sec = arrangementPlayhead(arrangementPlayState, ctx.currentTime);
         if (lw.active) sec = lw.startSec + ((sec - lw.startSec) % (lw.endSec - lw.startSec));
