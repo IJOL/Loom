@@ -1,7 +1,6 @@
 import { getEngine } from '../engines/registry';
 import type { FxBus } from '../core/fx';
 import type { Sequencer } from '../core/sequencer';
-import type { PolySynth } from '../polysynth/polysynth';
 import type { InsertChain } from '../plugins/fx/insert-chain';
 import type { LaneResourceMap } from '../core/lane-resources';
 import { collectStretchJobs } from './stretch-resync';
@@ -18,11 +17,6 @@ export interface BpmBroadcasterDeps {
   masterInsertChain: InsertChain;
   /** Lane resources map — forwarded to per-lane insert chains when BPM changes. */
   laneResources: LaneResourceMap;
-  // Phase G: polysynth is now a lazy getter — the boot poly lane isn't
-  // allocated until applyLoadedSessionState runs. BPM broadcast at boot
-  // (before lanes exist) skips null safely.
-  getPolysynth(): PolySynth | null;
-  getExtraPolys(): Iterable<PolySynth>;
   /** Optional: live AudioContext + session-state getter, used to re-render
    *  stretch-mode loop buffers when the tempo changes. When absent, the resync
    *  is a no-op. */
@@ -70,9 +64,6 @@ export function createBpmBroadcaster(deps: BpmBroadcasterDeps): BpmBroadcaster {
       for (const send of deps.fx.sends) send.inserts.setBpm(bpm);
       for (const [, res] of deps.laneResources) res.inserts.setBpm(bpm);
       deps.masterInsertChain.setBpm(bpm);
-      const poly = deps.getPolysynth();
-      if (poly) poly.bpm = bpm;
-      for (const p of deps.getExtraPolys()) p.bpm = bpm;
       propagateToLaneEngines(bpm);
       resyncStretches(bpm);
     },

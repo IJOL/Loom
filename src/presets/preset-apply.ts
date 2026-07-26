@@ -18,20 +18,15 @@
 // applyPresetForLane wiring) handle that themselves after calling this.
 
 import type { SynthEngine } from '../engines/engine-types';
-import type { PolySynth } from '../polysynth/polysynth';
-import { applyPresetByName } from '../polysynth/polysynth-presets';
 
 /** Apply a prefix-tagged preset name to an engine instance. Unknown preset
  *  NAMES silently no-op inside the engine. */
 export function applyPresetToEngine(engine: SynthEngine, presetName: string): void {
   if (presetName.startsWith('user:')) {
+    // `user:` and `engine:` land in the same place. There used to be a branch
+    // ahead of this one asking the engine for a PolySynth instance — no engine
+    // implements getPolySynth(), so it always fell through to exactly this call.
     const bare = presetName.slice('user:'.length);
-    const ps = (engine as { getPolySynth?(): PolySynth | null }).getPolySynth?.();
-    if (ps) { applyPresetByName(ps, bare); return; }
-    // Non-PolySynth engine (tb303 / karplus / fm / wavetable / drums): its
-    // "factory" presets ARE the engine's own JSON preset list. Without this
-    // fallback, every non-Subtractive demo lane loaded as "(custom — no
-    // preset)" because user: silently no-op'd here.
     engine.applyPreset(bare);
     return;
   }

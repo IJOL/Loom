@@ -1,7 +1,7 @@
 // src/polysynth/polysynth-presets.test.ts
 import { describe, it, expect } from 'vitest';
 import { polyParamsToFlat } from './polysynth-presets';
-import { POLY_DEFAULTS, type PolySynthParams } from './polysynth';
+import { POLY_DEFAULTS, type PolySynthParams } from './poly-params';
 
 describe('polyParamsToFlat', () => {
   it('converts the nested PolySynthParams tree to the dot-id flat vocabulary', () => {

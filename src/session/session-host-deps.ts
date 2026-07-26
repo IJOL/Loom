@@ -3,7 +3,6 @@
 
 import type { ChannelStrip } from '../core/fx';
 import type { DrumVoice } from '../core/drums';
-import type { PolySynth } from '../polysynth/polysynth';
 import type { Sequencer } from '../core/sequencer';
 import type { MixerColumnDeps } from '../core/mixer';
 
@@ -40,16 +39,12 @@ export interface SessionHostDeps {
   // res.engine.createVoice() like every other engine.
   drumLanes: readonly DrumVoice[];
   markTrackActive: (trackId: string, time: number) => void;
-  ensureExtraPoly: (id: string) => PolySynth;
   extraStrips: Partial<Record<string, ChannelStrip>>;
   getLaneEngineId: (laneId: string) => string;
   ensureLaneVoice: (laneId: string, engineId: string) => import('../engines/engine-types').Voice | null;
-  showPolyEditor: (laneId: string, target: PolySynth, displayName: string) => void;
   /** Update the active-engine-lane tracker (lane-engine-host state). Called
-   *  for FM/Wavetable/Karplus when the user opens their inspector — those
-   *  engines have no PolySynth so showPolyEditor's path doesn't fire
-   *  setActiveEngineLane, which leaves the preset dropdown applying changes
-   *  to a stale (typically subtractive-1) lane. Optional so test fixtures
+   *  when the user opens a poly lane's inspector, so the preset dropdown
+   *  applies to that lane instead of a stale one. Optional so test fixtures
    *  without the lane-host don't need to implement it. */
   setActiveEngineLane?: (laneId: string) => void;
   mixerDeps: MixerColumnDeps;

@@ -5,7 +5,6 @@
 import { html } from 'lit-html';
 import { renderElement } from '../core/lit-fragment';
 import type { SessionHost } from './session-host';
-import type { PolySynth } from '../polysynth/polysynth';
 import { getEngine } from '../engines/registry';
 import { renderNoteFxPanel } from '../notefx/notefx-ui';
 import { getNoteFxChain } from '../notefx/notefx-registry';
@@ -30,15 +29,6 @@ export function showLaneEditor(self: SessionHost, laneId: string): void {
   // Selecting a lane always OPENS its editor — clear any collapse the chevron set.
   self.synthCollapsed = false;
 
-  let polyTarget: PolySynth | null = null;
-  if (lane?.engineId === 'subtractive') {
-    // Each subtractive lane owns its PolySynth instance — reach it via
-    // the engine stored in laneResources.
-    const engine = self.deps.laneResources?.get(laneId)?.engine;
-    const getPS = (engine as unknown as { getPolySynth?(): PolySynth | null })?.getPolySynth;
-    polyTarget = getPS ? getPS.call(engine) ?? null : null;
-  }
-
   const targetTab =
     lane?.engineId === 'tb303'          ? '303'   :
     (lane?.engineId === 'drums-machine' || laneId.startsWith('drum:')) ? 'drums' :
@@ -50,21 +40,19 @@ export function showLaneEditor(self: SessionHost, laneId: string): void {
     t.classList.toggle('active', t.dataset.tab === targetTab && !t.classList.contains('synth-tab'));
   });
   const displayName = lane?.name ?? laneId.toUpperCase();
-  if (polyTarget) {
-    self.deps.showPolyEditor(laneId, polyTarget, displayName);
-  } else {
-    document.querySelectorAll<HTMLElement>('.page').forEach((p) => {
-      p.hidden = p.dataset.page !== targetTab;
-    });
-    // FM/Wavetable/Karplus poly lanes: no PolySynth target, so the
-    // showPolyEditor path above is skipped — but the preset dropdown,
-    // engine selector, and engine-mod-host all need to retarget to
-    // this lane. Calling setActiveEngineLane updates _lehState.activeLaneId
-    // so that getActiveEngineLaneId() inside polysynth-presets.ts
-    // resolves to the right lane when the user picks a preset.
-    if (targetTab === 'poly') {
-      self.deps.setActiveEngineLane?.(laneId);
-    }
+  document.querySelectorAll<HTMLElement>('.page').forEach((p) => {
+    p.hidden = p.dataset.page !== targetTab;
+  });
+  // Every poly lane retargets the preset dropdown, the engine selector and the
+  // engine-mod-host to itself: setActiveEngineLane updates the active lane id
+  // polysynth-presets reads when the user picks a preset.
+  //
+  // There used to be a `showPolyEditor(laneId, polyTarget, …)` branch ahead of
+  // this for subtractive lanes, reached only when the lane's engine answered
+  // `getPolySynth()`. No engine implements that method, so the branch never ran
+  // and every lane already took this path — the condition was decorative.
+  if (targetTab === 'poly') {
+    self.deps.setActiveEngineLane?.(laneId);
   }
   // Hide Subtractive-only knob rows when the active poly lane's engine
   // is NOT subtractive (FM / Wavetable / Karplus render their own

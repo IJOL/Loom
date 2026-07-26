@@ -10,11 +10,11 @@
 
 import { describe, it, expect } from 'vitest';
 import {
-  applyEnginePresetToLane, applyUserPolyPresetToLane, randomizeSubtractiveLane,
+  applyEnginePresetToLane, applyUserPolyPresetToLane,
   type PolyPresetApplyDeps,
 } from './poly-preset-apply';
 import { polyParamsToFlat } from './poly-preset-store';
-import { POLY_DEFAULTS, type PolySynthParams } from './polysynth';
+import { POLY_DEFAULTS, type PolySynthParams } from './poly-params';
 import { withoutParamMirror } from '../session/session-engine-state';
 import type { EngineParamSpec } from '../engines/engine-params';
 import type { SynthEngine } from '../engines/engine-types';
@@ -82,28 +82,19 @@ describe('poly preset / randomize applies reach engineState.params', () => {
     expect(paramsOf(f.state)['filter.cutoff']).toBe(user.filter.cutoff);
   });
 
-  it('randomizeSubtractiveLane mirrors whatever the dice produced', () => {
-    const f = fixture();
-    const before = { ...paramsOf(f.state) };
+  // The randomize case moved out with randomizeSubtractiveLane: the dice is one
+  // shared implementation over the engine's declared params now
+  // (engines/engine-randomize.test.ts), not a subtractive-only path here.
 
-    randomizeSubtractiveLane(f.deps, LANE);
-
-    expectMirrorsEngine(f);
-    // Randomize touches most of the bag; assert it moved SOMETHING rather than
-    // pinning any one dice roll.
-    expect(Object.keys(paramsOf(f.state)).length).toBeGreaterThan(Object.keys(before).length);
-  });
-
-  it('all three stay silent inside withoutParamMirror (the load path)', () => {
+  it('both stay silent inside withoutParamMirror (the load path)', () => {
     const f = fixture();
 
     withoutParamMirror(() => {
       applyEnginePresetToLane(f.deps, LANE, 'PAD Warm');
       applyUserPolyPresetToLane(f.deps, LANE, POLY_DEFAULTS);
-      randomizeSubtractiveLane(f.deps, LANE);
     });
 
     expect(f.state.lanes[0].engineState?.params).toBeUndefined();
-    expect(f.refreshCount(), 'the engine and the display still moved').toBe(3);
+    expect(f.refreshCount(), 'the engine and the display still moved').toBe(2);
   });
 });

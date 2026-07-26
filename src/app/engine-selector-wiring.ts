@@ -47,9 +47,6 @@ import {
 } from '../engines/engine-selector-ui';
 import { swapLaneEngineFlow, type EngineSwapDeps } from './engine-swap';
 import { refreshPolyPresetSelect, type PolySynthPresetsDeps } from '../polysynth/polysynth-presets';
-import {
-  synthEditorState, type SetActivePolyTargetDeps,
-} from '../session/synth-editor-routing';
 
 export interface EngineSelectorWiringDeps {
   engineSel: HTMLSelectElement;
@@ -89,9 +86,6 @@ export interface EngineSelectorWiring {
   /** Built here, CALLED by main (`wirePolyControls`) ~230 lines later in boot —
    *  see the ORDER note in the header. */
   polySynthPresetsDeps: PolySynthPresetsDeps;
-  /** Assign into main's `let synthEditorDeps` at the call site: showPolyEditor-
-   *  Wrapper reads it lazily and bails while it is null. */
-  synthEditorDeps: SetActivePolyTargetDeps;
 }
 
 export function wireEngineSelectors(deps: EngineSelectorWiringDeps): EngineSelectorWiring {
@@ -130,8 +124,6 @@ export function wireEngineSelectors(deps: EngineSelectorWiringDeps): EngineSelec
   });
 
   const polySynthPresetsDeps: PolySynthPresetsDeps = {
-    // Phase G: polysynth removed; getActivePolyTarget uses synthEditorState only.
-    getActivePolyTarget: () => synthEditorState.activePolyTarget ?? null,
     getActiveEngineLaneId: () => getActiveEngineLaneId(),
     getLaneEngineId,
     getLaneEngineInstance,
@@ -146,27 +138,10 @@ export function wireEngineSelectors(deps: EngineSelectorWiringDeps): EngineSelec
     applyDrumKitPreset: (laneId, name) => { void sessionHost.applyDrumPreset(laneId, name); },
   };
 
-  // Now that polySynthPresetsDeps exist, wire synthEditorDeps
-  // (referenced lazily by showPolyEditorWrapper above).
-  const synthEditorDeps: SetActivePolyTargetDeps = {
-    refreshPolyKnobsFromState: () => {
-      // Re-mount the section knobs under the active lane's id so the LFO/ADSR
-      // destination dropdown for *that* lane finds them in the registry. Only
-      // applies to subtractive lanes — other poly engines render their own UI
-      // inside engine-mod-host on every editLane click.
-      // Use synthEditorState.currentSynthLane because setActivePolyTarget sets
-      // it BEFORE invoking this callback (whereas _lehState.activeLaneId is
-      // updated by setActiveEngineLane which runs AFTER).
-      const activeLaneId = synthEditorState.currentSynthLane;
-      const engine = laneResources.get(activeLaneId)?.engine;
-      if (engine?.id === 'subtractive') {
-        mountSubtractiveLaneKnobs(activeLaneId);
-        mountLaneFxPanel(activeLaneId);
-      }
-    },
-    refreshPolyPresetSelect: () => refreshPolyPresetSelect(),
-    setActiveEngineLane: (laneId: string) => setActiveEngineLane(laneId),
-  };
-
-  return { polySynthPresetsDeps, synthEditorDeps };
+  // The `synthEditorDeps` bundle that used to be built here is gone with the
+  // PolySynth purge: its only consumer was showPolyEditor(), reached exclusively
+  // through a `getPolySynth()` branch no engine could satisfy. Subtractive knobs
+  // are re-mounted through the live path instead — engine-selector-ui calls
+  // remountSubtractiveLaneKnobs when the lane's engine changes.
+  return { polySynthPresetsDeps };
 }

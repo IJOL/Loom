@@ -1,12 +1,13 @@
 import { html } from 'lit-html';
 import { renderInto } from '../core/lit-fill';
 import { customOption, presetGroup } from './poly-preset-templates';
-import { POLY_DEFAULTS, type PolySynth, type PolySynthParams } from './polysynth';
+import { POLY_DEFAULTS, type PolySynthParams } from './poly-params';
 import { alertDialog, confirmDialog, promptDialog } from '../core/dialog';
 import {
-  applyEnginePresetToLane, applyUserPolyPresetToLane, randomizeSubtractiveLane,
+  applyEnginePresetToLane, applyUserPolyPresetToLane,
 } from './poly-preset-apply';
 import type { SynthEngine } from '../engines/engine-types';
+import { commitEngineBaseValues } from '../engines/engine-param-commit';
 import type { SessionState } from '../session/session';
 import { getCachedPresets } from '../presets/preset-loader';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
@@ -14,19 +15,17 @@ import { getDrumKits, loadDrumKits, type DrumKitPreset } from '../presets/drum-k
 import { listDrumkits } from '../samples/drumkit-loader';
 import { listInstruments } from '../samples/instrument-loader';
 import {
-  flatToPolyParams, polyParamsToFlat, getFactoryPolyPresets, polyPresetName,
+  flatToPolyParams, polyParamsToFlat, getFactoryPolyPresets,
   loadUserPolyPresets, saveUserPolyPresets,
 } from './poly-preset-store';
 // Re-export the store surface so existing importers of './polysynth-presets' keep working.
-export { polyParamsToFlat, polyPresetName, loadUserPolyPresets, saveUserPolyPresets } from './poly-preset-store';
+export { polyParamsToFlat, loadUserPolyPresets, saveUserPolyPresets } from './poly-preset-store';
 
 // Bumped on every #poly-preset-select population so a slow async fill (the
 // sampler's instrument list) bails if the user has since switched lanes.
 let polyPopGen = 0;
 
 export interface PolySynthPresetsDeps {
-  // Phase G: may return null before boot lane is allocated.
-  getActivePolyTarget: () => PolySynth | null;
   getActiveEngineLaneId: () => string;
   getLaneEngineId: (laneId: string) => string;
   getLaneEngineInstance: (laneId: string) => SynthEngine | null;
@@ -49,14 +48,6 @@ export interface PolySynthPresetsDeps {
 
 let _deps: PolySynthPresetsDeps | null = null;
 
-export function applyPresetByName(poly: PolySynth, name: string): void {
-  const presets = getFactoryPolyPresets();
-  const p = presets.find((x) => x.name === name);
-  if (p) {
-    poly.params = JSON.parse(JSON.stringify(p.params)) as PolySynthParams;
-    polyPresetName.set(poly, `factory:${name}`);
-  }
-}
 
 export function refreshPolyPresetSelect(): void {
   const sel = document.getElementById('poly-preset-select') as HTMLSelectElement;
@@ -274,10 +265,9 @@ export function recordPagePresetForLane(laneId: string, presetName: string): voi
 /** Mark the poly preset select as "custom" and forget the lane's preset
  *  binding. Called after sound-randomize on poly engines. */
 export function markPolyPresetCustom(): void {
-  const target = _deps?.getActivePolyTarget();
-  if (target) polyPresetName.delete(target);
-  // Poly lanes (incl. subtractive after the cutover) track selection in the
-  // lane-keyed pagePresetName; clear the active lane's entry too.
+  // Poly lanes track their selection in the lane-keyed pagePresetName; clear the
+  // active lane's entry. (There was a second, PolySynth-keyed map here — every
+  // lookup missed, because no engine ever produced a PolySynth to key it by.)
   const laneId = _deps?.getActiveEngineLaneId();
   if (laneId) pagePresetName.delete(laneId);
   const sel = document.getElementById('poly-preset-select') as HTMLSelectElement | null;
@@ -374,23 +364,22 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
   const btn = document.getElementById('poly-randomize') as HTMLButtonElement;
   btn.addEventListener('click', () => {
     const laneId = deps.getActiveEngineLaneId();
-    const engineId = deps.getLaneEngineId(laneId);
-    if (engineId === 'subtractive') {
-      randomizeSubtractiveLane(deps, laneId);
-      markPolyPresetCustom();
-      return;
-    }
-    const instance = deps.getLaneEngineInstance(laneId);
-    if (!instance) return;
-    const eng = instance as unknown as { randomize?: () => void; setParam?: (id: string, v: number) => void };
-    if (eng.randomize) {
-      eng.randomize();
-    } else {
-      for (const p of instance.params) {
-        const v = p.min + Math.random() * (p.max - p.min);
-        eng.setParam?.(p.id, v);
-      }
-    }
+    const engine = deps.getLaneEngineInstance(laneId);
+    // ONE dice for every engine. This used to branch: `subtractive` went to a
+    // hand-tuned randomizePolySynth, and everything else fell through to
+    // `eng.randomize?.()` (implemented by no engine) and then `eng.setParam?.()`
+    // (not even a member) — so on FM / Wavetable / Karplus / Westcoast the click
+    // marked the dropdown Custom and changed nothing. That was REMAINING-WORK's
+    // "do not let it keep lying", left open because per-engine musical ranges
+    // looked unavoidable. They aren't: engines/engine-randomize.ts biases toward
+    // each param's CURRENT value, so it needs no per-engine knowledge.
+    //
+    // The subtractive branch is gone with it. It rolled a fresh bag from
+    // POLY_DEFAULTS, discarding the loaded preset; the shared dice explores
+    // AROUND the sound you have, which keeps its character instead of replacing it.
+    if (!engine?.randomize) return;
+    engine.randomize();
+    commitEngineBaseValues(engine, deps.getSessionState(), laneId);
     deps.rebuildEngineParamUI();
     markPolyPresetCustom();
   });

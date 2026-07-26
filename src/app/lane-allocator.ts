@@ -1,6 +1,5 @@
 import { LaneResourceMap } from '../core/lane-resources';
 import { ChannelStrip } from '../core/fx';
-import { PolySynth } from '../polysynth/polysynth';
 import { InsertChain } from '../plugins/fx/insert-chain';
 import { createEngineInstance, getEngineDescriptor } from '../engines/registry';
 import { WorkletLaneEngine } from '../engines/worklet-lane-engine';
@@ -57,9 +56,7 @@ export interface LaneAllocatorDeps {
 export interface LaneAllocator {
   resources: LaneResourceMap;
   extraStrips: Partial<Record<string, ChannelStrip>>;
-  extraPolys:  Partial<Record<string, PolySynth>>;
   stripFor(t: string): ChannelStrip;
-  ensureExtraPoly(id: string): PolySynth;
   ensureLaneStrip(laneId: string): ChannelStrip;
   ensureLaneVoice(laneId: string, engineId: string): Voice | null;
   ensureLaneResource(laneId: string, engineId: string): void;
@@ -74,7 +71,6 @@ export interface LaneAllocator {
 export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
   const resources = new LaneResourceMap();
   const extraStrips: Partial<Record<string, ChannelStrip>> = {};
-  const extraPolys: Partial<Record<string, PolySynth>> = {};
   const extraLaneStrips = new Map<string, ChannelStrip>();
   const laneVoices = new Map<string, Voice>();
 
@@ -160,36 +156,12 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     return `subtractive-${n}`;
   };
 
-  const ensureExtraPoly = (id: string): PolySynth => {
-    let p = extraPolys[id];
-    if (p) return p;
-    const slug = slugFromExtraId(id);
-    const strip = new ChannelStrip(deps.ctx, deps.master, deps.fx,
-      { sidechain: { bus: deps.sidechainBus, id: slug, label: id.toUpperCase() } });
-    const inserts = new InsertChain(deps.ctx.createGain(), strip.input);
-    p = new PolySynth(deps.ctx, inserts.inputNode);
-    p.bpm = deps.getBpm();
-    extraStrips[id] = strip;
-    extraPolys[id] = p;
-    const engine = createEngineInstance('subtractive');
-    if (engine) {
-      const setPS = (engine as unknown as { setPolySynth?(p: PolySynth): void }).setPolySynth;
-      if (setPS) setPS.call(engine, p);
-      resources.set(slugFromExtraId(id), { strip, engine, inserts });
-    }
-    return p;
-  };
-
   const ensureLaneStrip = (laneId: string): ChannelStrip => {
     // Phase G: no special-cased boot-lane fallbacks (those lanes are now
     // allocated via ensureLaneResource). If the lane already has a resource,
     // return its strip; otherwise create a standalone strip for extra poly ids.
     const existing = resources.get(laneId);
     if (existing) return existing.strip;
-    if (deps.extraIds.includes(laneId)) {
-      ensureExtraPoly(laneId);
-      return extraStrips[laneId]!;
-    }
     let s = extraLaneStrips.get(laneId);
     if (!s) {
       s = new ChannelStrip(deps.ctx, deps.master, deps.fx,
@@ -223,10 +195,6 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     // Drum-voice track names ('kick', 'snare', etc.) → look up the drum lane.
     const drumLane = resources.get(LANE_ID_DRUMS);
     if (drumLane) return drumLane.strip;
-    if (deps.extraIds.includes(t)) {
-      ensureExtraPoly(t);
-      return extraStrips[t]!;
-    }
     // Deliberate throw: forces ordering bugs to surface in tests.
     // Access lanes.resources only AFTER applyLoadedSessionState has run.
     throw new Error(`stripFor: no resource for track "${t}" — was applyLoadedSessionState called?`);
@@ -316,8 +284,8 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     resources.get(laneId)?.engine ?? null;
 
   return {
-    resources, extraStrips, extraPolys,
-    stripFor, ensureExtraPoly, ensureLaneStrip, ensureLaneVoice, ensureLaneResource,
+    resources, extraStrips,
+    stripFor, ensureLaneStrip, ensureLaneVoice, ensureLaneResource,
     swapLaneEngine,
     getLaneEngineInstance,
     bindLaneModulators,

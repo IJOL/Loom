@@ -3,7 +3,7 @@
 // Split out of polysynth-presets.ts (which keeps the preset-select UI wiring).
 // Pure/storage only — no DOM.
 
-import { PolySynth, POLY_DEFAULTS, type PolySynthParams } from './polysynth';
+import { POLY_DEFAULTS, type PolySynthParams } from './poly-params';
 import { getCachedPresets } from '../presets/preset-loader';
 
 /** Convert a flat dot-path subtractive preset (e.g. `"osc1.wave": 0`,
@@ -74,10 +74,6 @@ export function getFactoryPolyPresets(): { name: string; params: PolySynthParams
 }
 
 const POLY_PRESETS_KEY = 'tb303-poly-presets-v1';
-
-// Remembers which preset is currently applied to each PolySynth so the
-// preset dropdown reflects the active synth's choice when you switch.
-export const polyPresetName = new Map<PolySynth, string>();
 
 export function loadUserPolyPresets(): Record<string, PolySynthParams> {
   const raw = localStorage.getItem(POLY_PRESETS_KEY);

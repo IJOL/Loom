@@ -26,7 +26,6 @@ import { COMMON_METERS, formatMeter } from './core/meter';
 import { DRUM_LANES } from './core/drums';
 import { ChannelStrip } from './core/fx';
 import { type KnobHandle } from './core/knob';
-import { PolySynth } from './polysynth/polysynth';
 import * as laneTrackHelpers from './core/lane-display';
 import { SessionHost } from './session/session-host';
 import { DEFAULT_MUSICALITY } from './session/session';
@@ -45,10 +44,6 @@ import {
 import { wireRandomizeUI } from './core/randomize-ui';
 import { wireFxUI, type FxUIDeps } from './core/fx-ui';
 import { wireTransport, setPlaying, type TransportDeps } from './core/transport';
-import {
-  showPolyEditor,
-  synthEditorState,
-} from './session/synth-editor-routing';
 import { createStemsFeature } from './app/stems-feature';
 import { wireSessionLifecycle } from './app/session-lifecycle';
 import { startVisualizer } from './core/visualizer';
@@ -176,21 +171,15 @@ const lanes = createLaneAllocator({
   masterInserts: masterInsertChain,
   onDestinationsChanged: () => destinations.invalidate(),
 });
-const { resources: laneResources, extraStrips, extraPolys,
-        stripFor, ensureExtraPoly, ensureLaneVoice,
+const { resources: laneResources, extraStrips,
+        stripFor, ensureLaneVoice,
         ensureLaneResource, getLaneEngineInstance, swapLaneEngine } = lanes;
 
-// Phase G: polysynth comes from lane resources lazily; null before boot session loads.
 const bpmBroadcast = createBpmBroadcaster({
   seq, fx, masterInsertChain,
   laneResources,
   ctx,
   getSessionState: () => sessionHost?.state ?? null,
-  getPolysynth: () => {
-    const eng = laneResources.get(LANE_ID_POLY)?.engine;
-    return (eng as unknown as { getPolySynth?(): PolySynth | null } | undefined)?.getPolySynth?.() ?? null;
-  },
-  getExtraPolys: () => Object.values(extraPolys).filter((p): p is PolySynth => !!p),
 });
 
 // State for mute/solo (synced into the strips on every change)
@@ -359,13 +348,6 @@ const triggerForLane = createTriggerForLane({
 });
 
 // ── Session host ───────────────────────────────────────────────────────────
-// synthEditorDeps is constructed later (after polySynthUIDeps + polySynthPresetsDeps
-// exist). showPolyEditorWrapper reads it lazily at call time.
-let synthEditorDeps: import('./session/synth-editor-routing').SetActivePolyTargetDeps | null = null;
-const showPolyEditorWrapper = (laneId: string, target: PolySynth, displayName: string) => {
-  if (!synthEditorDeps) return;
-  showPolyEditor(laneId, target, displayName, synthEditorDeps);
-};
 // Active-lane store: single source of truth bridged to SessionHost.activeEditLane
 // so the UI and the APC stay in sync. Mirrored in onActiveLaneChanged below.
 const activeLaneStore = createActiveLaneStore();
@@ -383,11 +365,9 @@ const sessionHost = new SessionHost({
   // Phase G: drums removed — triggerForLane handles drums via engine.createVoice.
   drumLanes: DRUM_LANES,
   markTrackActive,
-  ensureExtraPoly: ensureExtraPoly as (id: string) => PolySynth,
   extraStrips: extraStrips as Partial<Record<string, ChannelStrip>>,
   getLaneEngineId,
   ensureLaneVoice,
-  showPolyEditor: showPolyEditorWrapper,
   setActiveEngineLane,
   // Phase G: polysynth removed from SessionHostDeps.
   mixerDeps,
@@ -442,8 +422,6 @@ const sessionHost = new SessionHost({
     refreshLaneKnobs(laneId, inst);
   },
 });
-// Phase G: synthEditorState.activePolyTarget initialized to null at boot;
-// set to the actual PolySynth instance in sessionHost.onStateApplied (see below).
 sessionHost.init();
 // Now sessionHost is live — upgrade the lookupEngineId impl to use SessionState
 // as the source of truth (replaces the pattern-based fallback used at boot).
@@ -606,11 +584,9 @@ document.addEventListener('keydown', (e) => {
 
 // ── Deps objects for extracted UI modules ─────────────────────────────────
 
-// Both engine selectors + the deps bundles that re-mount the editor's knobs
+// Both engine selectors + the deps bundle that re-mounts the editor's knobs
 // (see src/app/engine-selector-wiring.ts). Runs HERE because the generic
-// selector must be wired after populateAutoParamSelectWrapper is set, and
-// because synthEditorDeps has to be assigned at this exact point — the
-// showPolyEditorWrapper above reads it lazily and bails while it is null.
+// selector must be wired after populateAutoParamSelectWrapper is set.
 const engineSelectors = wireEngineSelectors({
   engineSel, engineSel303,
   initialEngineId: currentEngineId,
@@ -634,7 +610,6 @@ const engineSelectors = wireEngineSelectors({
 });
 // wirePolyControls(polySynthPresetsDeps) stays where it is, ~230 lines down.
 const polySynthPresetsDeps = engineSelectors.polySynthPresetsDeps;
-synthEditorDeps = engineSelectors.synthEditorDeps;
 
 // Phase G: deferred to sessionHost.onStateApplied (lane not allocated at boot).
 // mountSubtractiveLaneKnobs(LANE_ID_POLY) — see boot section below.
@@ -732,10 +707,6 @@ sessionHost.onStateApplied(() => {
   mountDrumMasterLaneKnobs(LANE_ID_DRUMS);
   // Subtractive poly lane knobs
   mountSubtractiveLaneKnobs(LANE_ID_POLY);
-  // Set active poly target for synth editor
-  const polyEng = laneResources.get(LANE_ID_POLY)?.engine;
-  const polyInst = (polyEng as unknown as { getPolySynth?(): PolySynth | null } | undefined)?.getPolySynth?.() ?? null;
-  if (polyInst) synthEditorState.activePolyTarget = polyInst;
 });
 
 // Where a session comes FROM (see src/app/session-lifecycle.ts): the boot demo
