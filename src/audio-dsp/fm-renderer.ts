@@ -48,6 +48,13 @@ const FM_DEPTH = 3;    // modulation index scale (was 4 — reviewed down; tanh 
 const FB_DEPTH = 2;
 const FM_DRIVE = 1.0;  // pre-soft-clip drive into tanh; ear-tunable
 
+// Per-operator param ids, hoisted: building `op${i}.ratio` etc. inside
+// renderSample would allocate a string per operator per sample on the audio
+// thread. Index 0..3 matches the 0-based operator index used throughout.
+const OP_RATIO_IDS = ['op1.ratio', 'op2.ratio', 'op3.ratio', 'op4.ratio'] as const;
+const OP_DETUNE_IDS = ['op1.detune', 'op2.detune', 'op3.detune', 'op4.detune'] as const;
+const OP_LEVEL_IDS = ['op1.level', 'op2.level', 'op3.level', 'op4.level'] as const;
+
 class FmSine {
   private phase = 0;
   constructor(private sr: number) {}
@@ -87,6 +94,9 @@ export class FMRenderer implements VoiceRenderer {
   /** The lane's live (smoothed) knob bag, or null when this voice runs standalone
    *  (the offline kernel builds renderers directly). */
   private live: ParamBag | null = null;
+  // Pooled per-sample scratch — allocated once, reused every renderSample call
+  // so the audio thread allocates nothing.
+  private readonly opOut = new Float64Array(4);
   done = false;
 
   constructor(note: NoteSpec, p: ParamBag, private sr: number) {
@@ -148,16 +158,16 @@ export class FMRenderer implements VoiceRenderer {
 
     const algo = ALGORITHMS[this.algoIdx];
     const carriers = CARRIERS[this.algoIdx];
-    const opOut = new Array<number>(4);
+    const opOut = this.opOut;
 
     // Effective op frequencies — ratio and detune are live knobs, each also
     // modulatable (±2 units / ±50¢). The pow conversion is cached against the
     // EFFECTIVE value (knob + mod), so a moving LFO never reads a stale Hz.
     const fe = this.freqEff;
     for (let i = 0; i < 4; i++) {
-      const ratioKnob = L ? param(L, `op${i + 1}.ratio`, this.ratioBase[i]) : this.ratioBase[i];
-      const detuneKnob = L ? param(L, `op${i + 1}.detune`, this.detuneBase[i]) : this.detuneBase[i];
-      const rMod = mo?.[`op${i + 1}.ratio`], dMod = mo?.[`op${i + 1}.detune`];
+      const ratioKnob = L ? param(L, OP_RATIO_IDS[i], this.ratioBase[i]) : this.ratioBase[i];
+      const detuneKnob = L ? param(L, OP_DETUNE_IDS[i], this.detuneBase[i]) : this.detuneBase[i];
+      const rMod = mo?.[OP_RATIO_IDS[i]], dMod = mo?.[OP_DETUNE_IDS[i]];
       const effRatio = Math.max(0.01, ratioKnob + (rMod ?? 0) * 2);
       const effDetune = detuneKnob + (dMod ?? 0) * 50;
       if (effRatio !== this.opRatioRaw[i] || effDetune !== this.opDetuneRaw[i]) {
@@ -172,8 +182,8 @@ export class FMRenderer implements VoiceRenderer {
       // FM index = modulator level, modulatable per op (base + offset, clamped 0..1).
       let fmHz = 0;
       for (const mIdx of algo[i]) {
-        const mLvlBase = L ? param(L, `op${mIdx + 1}.level`, this.lvl[mIdx]) : this.lvl[mIdx];
-        const mLvlOff = mo?.[`op${mIdx + 1}.level`];
+        const mLvlBase = L ? param(L, OP_LEVEL_IDS[mIdx], this.lvl[mIdx]) : this.lvl[mIdx];
+        const mLvlOff = mo?.[OP_LEVEL_IDS[mIdx]];
         const mLvl = mLvlOff ? clamp01(mLvlBase + mLvlOff) : mLvlBase;
         fmHz += opOut[mIdx] * fe[mIdx] * mLvl * FM_DEPTH;
       }
@@ -187,13 +197,15 @@ export class FMRenderer implements VoiceRenderer {
 
     let out = 0;
     for (const c of carriers) {
-      const lvlBase = L ? param(L, `op${c + 1}.level`, this.lvl[c]) : this.lvl[c];
-      const lo = mo?.[`op${c + 1}.level`];
+      const lvlBase = L ? param(L, OP_LEVEL_IDS[c], this.lvl[c]) : this.lvl[c];
+      const lo = mo?.[OP_LEVEL_IDS[c]];
       const lvl = lo ? clamp01(lvlBase + lo) : lvlBase;
       out += opOut[c] * lvl;
     }
 
-    if (gate === 0 && this.envs.every((e) => e.isOff) && t > this.holdEnd) {
+    let allOff = true;
+    for (let i = 0; i < 4; i++) { if (!this.envs[i].isOff) { allOff = false; break; } }
+    if (gate === 0 && allOff && t > this.holdEnd) {
       this.done = true;
     }
 
