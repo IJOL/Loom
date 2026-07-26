@@ -10,7 +10,7 @@
 // the processor can route them to DISTINCT FxBus inputs (rev→reverb, dly→delay).
 // Pure: no Web Audio — fed a SampleBank of transferred Float32Array channels.
 import type { VoiceRenderer } from '../types';
-import type { SampleData, SampleSpawn } from './types';
+import type { SampleData, SampleSpawn, LivePadParams } from './types';
 import { BufferPlayer, SampleBank } from './sample-bank';
 import { Svf } from '../filter';
 
@@ -31,6 +31,9 @@ export class SamplerRenderer implements VoiceRenderer {
   // re-hit triggers. Mirrors the drums OneShot choke.
   private chokeAt: number | null = null;
   private chokeFrom = 0;
+  /** The pad's LIVE knob values, shared with the processor's pad table and
+   *  mutated in place there. Null ⇒ read the frozen spawn (offline path). */
+  private livePad: LivePadParams | null = null;
   // Post-pan stereo dry output of the most recent render (read by the processor).
   outL = 0;
   outR = 0;
@@ -51,6 +54,10 @@ export class SamplerRenderer implements VoiceRenderer {
   }
 
   noteOff(t: number): void { if (t < this.holdEnd) this.holdEnd = t; }
+
+  /** Point this voice at its pad's live knob values, so turning CUTOFF moves the
+   *  sample that is already playing. */
+  setLivePad(live: LivePadParams): void { this.livePad = live; }
 
   /** Start a fast fade-to-zero at time t (choke). Idempotent: a second choke does
    *  not restart the fade from the (already lower) current level. */
@@ -82,21 +89,28 @@ export class SamplerRenderer implements VoiceRenderer {
     const chokeDone = this.chokeAt != null && t >= this.chokeAt + CHOKE_FADE;
     if ((t > this.holdEnd && amp <= 0) || chokeDone) { this.done = true; this.outL = 0; this.outR = 0; return; }
     this.player.update(this.s.rate);   // advances + fills lastL/lastR
+    // Read the live pad table when set (a knob has moved since spawn); otherwise
+    // fall back to the frozen spawn (offline path / pad never touched).
+    const lp = this.livePad;
+    const cutoffKnob = lp ? lp.cutoff : this.s.cutoff;
+    const resKnob = lp ? lp.res : this.s.res;
+    const levelKnob = lp ? lp.level : this.s.level;
+    const panKnob = lp ? lp.pan : this.s.pan;
     // cutoff: 0..1 → 60·300^x Hz, clamped below Nyquist (legacy SamplerVoice mapping).
-    const cutoffHz = Math.min(this.sr * 0.45, 60 * Math.pow(300, this.s.cutoff));
-    const res = clamp01(this.s.res);
+    const cutoffHz = Math.min(this.sr * 0.45, 60 * Math.pow(300, cutoffKnob));
+    const res = clamp01(resKnob);
     // Svf resonance is a 0..1 damping parameter — pass the pad res straight
     // through (NOT scaled to a biquad Q). One filter instance per channel so a
     // stereo sample's two channels are filtered independently (same coeffs).
     this.filterL.update(this.player.lastL, cutoffHz, res);
     this.filterR.update(this.player.lastR, cutoffHz, res);
-    const g = amp * this.s.level * this.s.gain;
+    const g = amp * levelKnob * this.s.gain;
     const dl = this.filterL.lp * g;
     const dr = this.filterR.lp * g;
     // Pan via the Web Audio StereoPanner algorithm. A mono source (lastL===lastR)
     // gets equal-power panning (−3 dB centre, matching the old equal-power write);
     // a stereo source keeps its image (identity at pan=0).
-    const pan = this.s.pan;
+    const pan = panKnob;
     if (this.player.channelCount > 1) {
       // Stereo-input algorithm (W3C): preserves the image, identity at pan 0.
       if (pan <= 0) {
@@ -131,11 +145,11 @@ export class SamplerRenderer implements VoiceRenderer {
   }
 
   /** Per-pad reverb send (stereo, post-pan dry × the pad's reverb level). */
-  sendRevL(): number { return this.outL * this.s.rev; }
-  sendRevR(): number { return this.outR * this.s.rev; }
+  sendRevL(): number { return this.outL * (this.livePad ? this.livePad.rev : this.s.rev); }
+  sendRevR(): number { return this.outR * (this.livePad ? this.livePad.rev : this.s.rev); }
   /** Per-pad delay send (stereo, post-pan dry × the pad's delay level). */
-  sendDlyL(): number { return this.outL * this.s.dly; }
-  sendDlyR(): number { return this.outR * this.s.dly; }
+  sendDlyL(): number { return this.outL * (this.livePad ? this.livePad.dly : this.s.dly); }
+  sendDlyR(): number { return this.outR * (this.livePad ? this.livePad.dly : this.s.dly); }
   /** Pan (-1..1) — retained for callers/tests that inspect the spawn pan. */
   pan(): number { return this.s.pan; }
 }

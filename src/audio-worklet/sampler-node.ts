@@ -10,7 +10,7 @@
 // execute its `class extends AudioWorkletProcessor` + registerProcessor() on the
 // main thread (ReferenceError at boot).
 import samplerProcessorUrl from './sampler-processor.ts?worker&url';
-import type { SampleSpawn } from '../audio-dsp/sample/types';
+import type { SampleSpawn, LivePadParams } from '../audio-dsp/sample/types';
 
 /** Registered name of the sampler AudioWorklet processor. Kept as a plain literal
  *  on both sides (here and in sampler-processor.ts) so the main thread never
@@ -21,6 +21,10 @@ const SAMPLER_PROCESSOR_NAME = 'sampler-processor';
 export type SamplerMsg =
   | { type: 'loadSample'; sampleId: string; channels: Float32Array[]; sampleRate: number }
   | { type: 'spawn'; kind: 'sampler' | 'audio'; spawn: SampleSpawn }
+  // Live per-pad knob values. Unlike `spawn` (which freezes the trigger), this
+  // updates the pad table the SOUNDING voices read, so a knob turn is audible on
+  // a note already playing.
+  | { type: 'padParams'; padNote: number; params: LivePadParams }
   | { type: 'silence'; atSec?: number }
   // Dispose: stop the processor (its process() returns false on `kill`).
   | { type: 'kill' };
@@ -39,6 +43,11 @@ export function samplerLoadMessage(
 /** Build a spawn message (no transferables — the spawn is small POD). */
 export function samplerSpawnMessage(kind: 'sampler' | 'audio', spawn: SampleSpawn): [SamplerMsg] {
   return [{ type: 'spawn', kind, spawn }];
+}
+
+/** Build a live pad-params message (small POD, no transferables). */
+export function samplerPadParamsMessage(padNote: number, params: LivePadParams): [SamplerMsg] {
+  return [{ type: 'padParams', padNote, params }];
 }
 
 /** Build a silence message: the processor note-offs the live voices so a long
@@ -100,6 +109,11 @@ export class SamplerWorkletNode {
 
   spawn(kind: 'sampler' | 'audio', spawn: SampleSpawn): void {
     this.node.port.postMessage(...samplerSpawnMessage(kind, spawn));
+  }
+
+  /** Update one pad's live knob values — heard by the voices already sounding. */
+  setPadParams(padNote: number, params: LivePadParams): void {
+    this.node.port.postMessage(...samplerPadParamsMessage(padNote, params));
   }
 
   /** Release every live voice (transport Stop / scene-launch boundary) so a long

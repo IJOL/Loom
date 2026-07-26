@@ -157,3 +157,51 @@ describe('SamplerRenderer', () => {
     expect(r.pan()).toBe(-0.5);
   });
 });
+
+describe('SamplerRenderer live pad params', () => {
+  it('reads cutoff from the live pad table instead of the frozen spawn', () => {
+    // A bright noise buffer so a cutoff change is measurable.
+    const sr = 48000;
+    const n = sr;
+    const data = new Float32Array(n);
+    let seed = 12345;
+    for (let i = 0; i < n; i++) {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      data[i] = (seed / 0x3fffffff) - 1;
+    }
+    const bank = new SampleBank();
+    bank.set('s', { channels: [data], sampleRate: sr });
+
+    const s = spawn({ sampleId: 's', gateSec: 0.5, cutoff: 0.2, res: 0 });
+    const live = { cutoff: 0.2, res: 0, level: s.level, pan: s.pan, rev: s.rev, dly: s.dly };
+    const r = new SamplerRenderer(s, bank, sr);
+    r.setLivePad(live);
+
+    const out: number[] = [];
+    for (let i = 0; i < sr * 0.4; i++) {
+      // Open the filter half-way through by writing the LIVE table, exactly as a
+      // knob turn does — the spawn is never touched.
+      if (i === Math.floor(sr * 0.2)) live.cutoff = 1;
+      out.push(r.renderSample(i / sr));
+    }
+    const energy = (from: number, to: number) => {
+      let d = 0, e = 0;
+      for (let i = from + 1; i < to; i++) { const df = out[i] - out[i - 1]; d += df * df; e += out[i] * out[i]; }
+      return e > 1e-12 ? d / e : 0;
+    };
+    const before = energy(Math.floor(sr * 0.05), Math.floor(sr * 0.2));
+    const after = energy(Math.floor(sr * 0.25), Math.floor(sr * 0.4));
+    expect(after).toBeGreaterThan(before * 2);
+  });
+
+  it('without a live table it still plays from the spawn (offline path)', () => {
+    const sr = 48000;
+    const data = new Float32Array(sr).fill(0.5);
+    const bank = new SampleBank();
+    bank.set('s', { channels: [data], sampleRate: sr });
+    const r = new SamplerRenderer(spawn({ sampleId: 's' }), bank, sr);
+    let peak = 0;
+    for (let i = 0; i < 1000; i++) peak = Math.max(peak, Math.abs(r.renderSample(i / sr)));
+    expect(peak).toBeGreaterThan(0);
+  });
+});

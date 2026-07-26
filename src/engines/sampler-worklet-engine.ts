@@ -290,6 +290,17 @@ export class SamplerWorkletEngine implements SynthEngine {
     if (!(leaf in PAD_DEFAULTS)) return;
     const note = noteForPadKey(key);
     (this.padStore[note] ??= {})[leaf] = v;
+    // Push the pad's continuous values so the voices ALREADY sounding hear the
+    // change — the spawn only froze the trigger. getPad merges the store over the
+    // defaults, so this always sends a complete set. `node` is null before the
+    // first sound, and then there is nothing sounding to update.
+    if (this.node) {
+      const pad = this.getPad(note);
+      this.node.setPadParams(note, {
+        cutoff: pad.cutoff, res: pad.res, level: pad.level,
+        pan: pad.pan, rev: pad.rev, dly: pad.dly,
+      });
+    }
     this.onPadEdit?.();
   }
 

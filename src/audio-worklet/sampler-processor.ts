@@ -24,12 +24,16 @@ import { SchedulerQueue } from '../audio-dsp/scheduler-queue';
 import { ScheduledNoteOffs } from '../audio-dsp/scheduled-noteoffs';
 import { SamplerRenderer } from '../audio-dsp/sample/sampler-renderer';
 import { AudioClipRenderer } from '../audio-dsp/sample/audio-clip-renderer';
-import type { SampleSpawn } from '../audio-dsp/sample/types';
+import type { SampleSpawn, LivePadParams } from '../audio-dsp/sample/types';
 import { chokesVoice } from '../engines/sampler-choke';
 
 type SamplerMsg =
   | { type: 'loadSample'; sampleId: string; channels: Float32Array[]; sampleRate: number }
   | { type: 'spawn'; kind: 'sampler' | 'audio'; spawn: SampleSpawn }
+  // Live per-pad knob values. Unlike `spawn` (which freezes the trigger), this
+  // updates the pad table the SOUNDING voices read, so a knob turn is audible on
+  // a note already playing.
+  | { type: 'padParams'; padNote: number; params: LivePadParams }
   // `atSec` (audio-clock seconds): when present and still in the future, the
   // currently-live voices are note-off'd AT that frame instead of immediately —
   // the gapless scene-switch path (cut the outgoing clip exactly when the
@@ -49,6 +53,9 @@ class SamplerProcessor extends AudioWorkletProcessor {
   private bank = new SampleBank();
   private queue = new SchedulerQueue<{ kind: 'sampler' | 'audio'; spawn: SampleSpawn }>();
   private scheduledOffs = new ScheduledNoteOffs<SamplerRenderer | AudioClipRenderer>();
+  /** padNote → its live knob values. Mutated in place so the voices holding a
+   *  reference see the change on their next sample. */
+  private padParams = new Map<number, LivePadParams>();
   private live: Slot[] = [];
   private frame = Math.floor(currentTime * sampleRate);
   // Set by `kill` (lane disposed): process() then returns false so the audio engine
@@ -65,6 +72,11 @@ class SamplerProcessor extends AudioWorkletProcessor {
         this.bank.set(m.sampleId, { channels: m.channels, sampleRate: m.sampleRate });
       } else if (m.type === 'spawn') {
         this.queue.push(Math.floor(m.spawn.beginSec * sampleRate), { kind: m.kind, spawn: m.spawn });
+      } else if (m.type === 'padParams') {
+        const cur = this.padParams.get(m.padNote);
+        // Mutate in place: live voices hold this exact object.
+        if (cur) Object.assign(cur, m.params);
+        else this.padParams.set(m.padNote, { ...m.params });
       } else if (m.type === 'silence') {
         // Note-off the live voices. A long loop/song clip would otherwise play its
         // whole buffer past the cut. Each renderer's noteOff shortens its gate so
@@ -109,6 +121,16 @@ class SamplerProcessor extends AudioWorkletProcessor {
           for (const slot of this.live) {
             if (slot.r instanceof SamplerRenderer && chokesVoice(trig, slot)) slot.r.choke(t);
           }
+        }
+        if (kind === 'sampler' && padNote >= 0) {
+          let live = this.padParams.get(padNote);
+          if (!live) {
+            // First hit of this pad before any knob moved: seed the table from the
+            // spawn so the voice and the table agree.
+            live = { cutoff: spawn.cutoff, res: spawn.res, level: spawn.level, pan: spawn.pan, rev: spawn.rev, dly: spawn.dly };
+            this.padParams.set(padNote, live);
+          }
+          (r as SamplerRenderer).setLivePad(live);
         }
         this.live.push({ r, sampler: kind === 'sampler', chokeGroup, padNote });
       });

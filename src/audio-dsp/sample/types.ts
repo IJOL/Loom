@@ -45,3 +45,16 @@ export interface SampleSpawn {
   dly: number;
   gain: number;              // engine master gain × entry gain × velocity × OUTPUT_TRIM
 }
+
+/** The per-pad values a knob can move WHILE a voice sounds. Deliberately smaller
+ *  than PadParams: attack/decay are envelope times (excluded — our envelopes are
+ *  closed-form over elapsed time), and rate/offset/loop/choke describe the
+ *  trigger, not the knob. */
+export interface LivePadParams {
+  cutoff: number;
+  res: number;
+  level: number;
+  pan: number;
+  rev: number;
+  dly: number;
+}
