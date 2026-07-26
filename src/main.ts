@@ -33,7 +33,6 @@ import * as laneTrackHelpers from './core/lane-display';
 import { SessionHost } from './session/session-host';
 import { emptySessionState, DEFAULT_MUSICALITY } from './session/session';
 import { renderProjectOptionsDialog } from './session/project-options-dialog';
-import { mountStatusChips } from './app/toolbar-status-chips';
 import { fetchDemoSession } from './demo/demo-loader';
 import { wireDemoPicker, loadDemoSession } from './demo/demo-picker';
 import { wireMidiImportUI } from './midi/midi-import-ui';
@@ -88,17 +87,7 @@ import { attachKnobAutomationMenu } from './automation/knob-automation-menu';
 import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from './core/lane-ids';
 // ── Live MIDI control (src/control) ─────────────────────────────────────────
 import { createActiveLaneStore } from './control/active-lane';
-import { createLoomFacade } from './control/loom-facade';
-import { createCountIn } from './control/metronome';
-import { createMediator } from './control/control-mediator';
-import { createMidiAccess } from './control/web-midi-access';
-import { wireControlSurfaceUI } from './control/control-surface-ui';
-import { bindMidiControlDialog } from './control/midi-control-dialog';
-import { attachComputerKeyboard } from './control/computer-keyboard';
-import { attachTransportHotkeys } from './control/transport-hotkeys';
-import { isKbInputEnabled } from './core/clip-kb-input';
-import { listProfiles } from './control/profile-registry';
-import { loadControlPrefs, saveControlPrefs } from './control/persistence';
+import { wireMidiControl } from './app/midi-control-wiring';
 import { clampBpm, formatBpm, BPM_MIN, BPM_MAX } from './core/bpm';
 import { clampSwing, SWING_MAX } from './core/swing';
 // ── AudioWorklet synthesis loader (live path for all subtractive lanes) ──────
@@ -605,124 +594,25 @@ const projectOptions = renderProjectOptionsDialog({
 sessionHost.onStateApplied(() => projectOptions.refresh());
 
 // ── Live MIDI control subsystem ─────────────────────────────────────────────
-// Assemble facade → mediator → access seam → UI. activeLaneStore (declared
-// above) is mirrored from SessionHost.activeEditLane in onActiveLaneChanged.
-const controlFacade = createLoomFacade({
+// Facade → mediator → access seam → UI, plus the toolbar chips, the clip-header
+// Rec binding and the LED refresh. It runs HERE, right after sessionHost.init(),
+// because it wraps sessionHost.renderWithMixer and registers an onStateApplied
+// callback — both order-sensitive. activeLaneStore stays in this file because
+// SessionHost's deps object (built above) mirrors activeEditLane into it from
+// onActiveLaneChanged, so the store has to exist before that object does.
+const { statusChips, midiControlDialog } = wireMidiControl({
   ctx,
   sessionHost,
   laneResources,
+  seq,
+  destinations,
   activeLane: activeLaneStore,
   knobRegistry: automationRegistry,   // `${laneId}.${paramId}` → KnobHandle
-  destinations,                       // the one automation-destination catalogue (Task 4)
-  seq,
-  countIn: createCountIn(ctx, ctx.destination),   // 1-bar metronome before Rec from idle
-
-  // Late-bound via getter: _discreteHistoryDeps is assigned after historyDeps
-  // is built (further below), but loop-record commits happen at user-interaction
-  // time, so the getter always sees the final value.
-  get historyDeps() { return _discreteHistoryDeps; },
+  // Late-bound: _discreteHistoryDeps is assigned near the end of boot, but the
+  // facade only reads it at user-interaction time.
+  getHistoryDeps: () => _discreteHistoryDeps,
+  openProjectOptions: () => projectOptions.open(),
 });
-
-// The computer keyboard is a MIDI-style live input: when the ⌨ Keys toggle is on,
-// musical keys play the ACTIVE lane via the facade (so chord note-FX + ● Rec
-// loop-record apply), just like a hardware MIDI keydown — no clip typing.
-attachComputerKeyboard({
-  facade: controlFacade,
-  getActiveLane: () => activeLaneStore.get(),
-  isEnabled: isKbInputEnabled,
-  // Share the octave with the open piano-roll: z/x step from the octave shown in
-  // the editor and push the change back to its display (the ◂/▸ label).
-  getOctaveBase: () => sessionHost.inspectorRoll?.getOctaveBase?.() ?? null,
-  onOctaveChange: (base) => sessionHost.inspectorRoll?.setOctaveBase?.(base),
-});
-
-// Transport hotkeys: Space = global pause/resume (exact), R = Rec toggle.
-attachTransportHotkeys({
-  isTextTarget: (t) => typeof HTMLElement !== 'undefined' && isTextEditTarget(t),
-  onTogglePlay: () => sessionHost.togglePlayPause(),
-  onToggleRec: () => (controlFacade.isCapturing() ? controlFacade.stopCapture() : controlFacade.startCapture('merge')),
-});
-
-let controlMediator: ReturnType<typeof createMediator> | null = null;
-const midiAccess = createMidiAccess();   // uses globalThis.navigator
-
-async function enableMidiControl(overrideProfileId: string | null): Promise<{ ok: boolean; label: string }> {
-  const res = await midiAccess.enable({
-    forceProfileId: overrideProfileId ?? undefined,
-    onEvent: (ev) => controlMediator?.handle(ev),
-  });
-  if (!res.ok) {
-    saveControlPrefs({ enabled: false, overrideProfileId });
-    statusChips.refreshMidi(false);
-    const label = res.reason === 'unsupported' ? 'MIDI not supported in this browser'
-      : res.reason === 'denied' ? 'permission denied'
-      : 'no controller found';
-    return { ok: false, label };
-  }
-  const profile = listProfiles().find((p) => p.id === res.profileId)!;
-  controlMediator = createMediator({
-    facade: controlFacade, profile, send: (b) => midiAccess.send(b), variant: res.variant,
-  });
-  controlMediator.refreshLeds();
-  saveControlPrefs({ enabled: true, overrideProfileId });
-  statusChips.refreshMidi(true);
-  return { ok: true, label: `${profile.label} (${res.variant}) ✓` };
-}
-
-function disableMidiControl(): void {
-  controlMediator?.dispose();
-  controlMediator = null;
-  midiAccess.disable();
-  saveControlPrefs({ enabled: false, overrideProfileId: null });
-  statusChips.refreshMidi(false);
-}
-
-wireControlSurfaceUI({
-  onEnable: enableMidiControl,
-  onDisable: disableMidiControl,
-  profiles: listProfiles().map((p) => ({ id: p.id, label: p.label })),
-  initialEnabled: loadControlPrefs().enabled,
-  capture: {
-    toggle: () => (controlFacade.isCapturing() ? controlFacade.stopCapture() : controlFacade.startCapture('merge')),
-    isRecording: () => controlFacade.isCapturing(),
-    canRecord: () => controlFacade.canCapture(),
-  },
-});
-const midiControlDialog = bindMidiControlDialog();
-
-// ── Toolbar status chips (musicality + MIDI) ────────────────────────────────
-// Read-only surface for state whose editing moved into a dialog. `enableMidiControl`/
-// `disableMidiControl` below close over `statusChips` (defined here, referenced
-// there) — safe because those functions aren't actually invoked until later
-// (earliest call is the auto-reconnect a few lines down), by which point this
-// const is already assigned.
-const statusChips = mountStatusChips(document.getElementById('toolbar-status-chips')!, {
-  getMusicality: () => sessionHost.state.musicality ?? DEFAULT_MUSICALITY,
-  onOpenProjectOptions: () => projectOptions.open(),
-  onOpenMidiController: () => midiControlDialog.open(),
-  isMidiEnabled: () => loadControlPrefs().enabled,
-});
-sessionHost.onStateApplied(() => statusChips.refreshMusicality());
-
-// Clip-header Rec button (Merge/Replace) — bound once sessionHost + the facade
-// both exist (mirrors setHistoryDeps/setTranscribeLoop's late-binding).
-sessionHost.inspector.setMidiCapture({
-  toggle: (mode) => (controlFacade.isCapturing() ? controlFacade.stopCapture() : controlFacade.startCapture(mode)),
-  isRecording: () => controlFacade.isCapturing(),
-  canRecord: () => controlFacade.canCapture(),
-});
-
-// Keep LEDs in sync with clip launches: refresh after every mixer render.
-const _origRenderWithMixer = sessionHost.renderWithMixer.bind(sessionHost);
-sessionHost.renderWithMixer = () => { _origRenderWithMixer(); controlMediator?.refreshLeds(); };
-
-// Clean the device on page unload.
-window.addEventListener('beforeunload', () => disableMidiControl());
-
-// Auto-reconnect if the user had it enabled (browser remembers the permission grant).
-if (loadControlPrefs().enabled) {
-  void enableMidiControl(loadControlPrefs().overrideProfileId);
-}
 
 // Engine swap: change the engine of an existing lane in place.
 const engineSwapDeps: EngineSwapDeps = {
