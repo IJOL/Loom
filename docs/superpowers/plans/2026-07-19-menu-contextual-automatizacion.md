@@ -14,7 +14,7 @@
 - Test commands colour-free: `NO_COLOR=1 npx vitest run <path>`. Never add `--reporter=`.
 - `ERR_IPC_CHANNEL_CLOSED` **after** all tests pass is a known flaky teardown — re-run to confirm; it is not a failure.
 - UI strings and code comments in English. Conversation is Spanish; the code is not.
-- Source files ≤300 lines target, 500 hard limit.
+- Source files ≤300 lines of CODE target, 500 hard cap. Comment and blank lines do not count.
 - Test assertions relative, never absolute magnitudes, unless justified in a comment.
 - Deps are threaded explicitly. **No module-level singletons** — this branch just deleted a fallback that silently built a second registry.
 - DOM tests need `// @vitest-environment jsdom` on line 1.

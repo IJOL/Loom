@@ -13,7 +13,7 @@
 - **UI text in English.** Labels, headings, catalogue strings — all English. Spanish is for conversation only.
 - **No migrations, ever.** Nothing here reads or translates an old saved format. Per-pad sampler params are derived fresh from `lane.engineState.sampler.keymap`.
 - **Presentation only.** No paramId, no saved data, no engine binding changes. `subGroup` is computed at list time, never persisted.
-- **Source files ≤300 lines (target), 500 hard.** New helpers are small, focused modules.
+- **Source files ≤300 lines of CODE (target), 500 hard cap** — comment and blank lines do not count. New helpers are small, focused modules.
 - **Tests colour-free.** Single file: `NO_COLOR=1 npx vitest run <path>`. Never add `--reporter=…`.
 - **Boundary rule (from the spec):** strip-naming logic lives on the ENGINE (`subGroupFor` / `dynamicParamsFor`), never in the catalogue. `listAutomationTargets` only asks the engine; it must not learn what a drum voice or a sampler pad is.
 

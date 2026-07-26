@@ -14,7 +14,7 @@
 - The worktree has no `node_modules`. Run `npm install` there once before Task 1.
 - Test commands are colour-free: prefix direct vitest calls with `NO_COLOR=1`.
 - UI strings in English. Code comments in English.
-- Source files ≤300 lines target, 500 hard limit (CLAUDE.md).
+- Source files ≤300 lines of CODE target, 500 hard cap. Comment and blank lines do not count.
 - Assertions relative, never absolute magnitudes.
 - No user-facing migration prompts. Load-time normalisation happens silently.
 - Commit after every task. Rebase onto `main` after every commit.
