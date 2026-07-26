@@ -29,10 +29,9 @@ import { type KnobHandle } from './core/knob';
 import { PolySynth } from './polysynth/polysynth';
 import * as laneTrackHelpers from './core/lane-display';
 import { SessionHost } from './session/session-host';
-import { emptySessionState, DEFAULT_MUSICALITY } from './session/session';
+import { DEFAULT_MUSICALITY } from './session/session';
 import { renderProjectOptionsDialog } from './session/project-options-dialog';
-import { fetchDemoSession } from './demo/demo-loader';
-import { wireDemoPicker, loadDemoSession } from './demo/demo-picker';
+import { loadDemoSession } from './demo/demo-picker';
 import { bindAboutDialog } from './app/about-dialog';
 import { applyPresetToEngine } from './presets/preset-apply';
 import { commitEngineBaseValues } from './engines/engine-param-commit';
@@ -47,12 +46,13 @@ import {
 import { wireRandomizeUI } from './core/randomize-ui';
 import { wireFxUI, type FxUIDeps } from './core/fx-ui';
 import { wireTransport, setPlaying, type TransportDeps } from './core/transport';
-import { confirmDialog, alertDialog } from './core/dialog';
+import { alertDialog } from './core/dialog';
 import {
   showPolyEditor,
   synthEditorState,
 } from './session/synth-editor-routing';
 import { createStemsFeature } from './app/stems-feature';
+import { wireSessionLifecycle } from './app/session-lifecycle';
 import { startVisualizer } from './core/visualizer';
 import { loadAllPresets } from './presets/preset-loader';
 import { loadDrumKits } from './presets/drum-kits-loader';
@@ -827,72 +827,16 @@ sessionHost.onStateApplied(() => {
   if (polyInst) synthEditorState.activePolyTarget = polyInst;
 });
 
-// Boot demo: fetched as a static JSON asset rather than constructed
-// programmatically. The JSON drives the SessionState; applyLoadedSessionState
-// reads each lane.enginePresetName to set that channel's sound.
-//
-// We gate the demo apply on `presetsLoaded` so the engine preset cache is
-// populated before applyLoadedSessionState calls applyPresetByName.
-// Gate the demo apply on BOTH the preset cache AND the worklet module: the demo
-// allocates a subtractive lane (LANE_ID_POLY) whose WorkletLaneEngine needs the
-// processor registered before it constructs its AudioWorkletNode.
-Promise.all([presetsLoaded, workletReady])
-  .then(() => fetchDemoSession(`${import.meta.env.BASE_URL}demos/minimal-techno.json`))
-  .then((state) => {
-    sessionHost.applyLoadedSessionState(state);
-    if (typeof state.bpm === 'number') setTransportBpm(state.bpm);
-    autoHistory.markClean();
-  })
-  .catch((err: unknown) => {
-    console.error('Demo load failed; falling back to empty session.', err);
-  });
-
-// Demo picker: just the hand-built Minimal Techno showcase (also the boot
-// default). MIDI content is loaded live via the transport MIDI Import — there
-// are no pre-baked MIDI demos.
-// Lifted to a module-level const so BOTH the toolbar picker and the File >
-// Open Demo menu (menuActions.listDemos, below) share the SAME list.
-const DEMOS = [
-  { label: 'Minimal Techno', path: `${import.meta.env.BASE_URL}demos/minimal-techno.json` },
-  { label: 'Acid Rain', path: `${import.meta.env.BASE_URL}demos/acid-rain.json` },
-  { label: 'Cordillera', path: `${import.meta.env.BASE_URL}demos/cordillera.json` },
-  { label: 'Neon Drive', path: `${import.meta.env.BASE_URL}demos/neon-drive.json` },
-];
-const demoPicker = document.getElementById('demo-picker') as HTMLSelectElement | null;
-if (demoPicker) {
-  // Wire the picker only after the worklet module is registered: picking a demo
-  // runs applyLoadedSessionState synchronously, which allocates a subtractive
-  // WorkletLaneEngine (→ new AudioWorkletNode). Doing so before addModule
-  // resolves would throw. On a normal load this resolves in ms.
-  void workletReady.then(() => {
-    wireDemoPicker({
-      sessionHost,
-      selectEl: demoPicker,
-      demos: DEMOS,
-      applyBpm: setTransportBpm,
-      onLoaded: () => autoHistory.markClean(),
-    });
-  });
-}
-
-// New: wipe to a fresh empty session (default 303/drums/sub lanes, no clips).
-// Named + exported-shape function so the menu bar can call the SAME function
-// the toolbar button calls (no synthetic clicks).
-async function newSession(): Promise<void> {
-  if (!await confirmDialog('Start a new empty session? Unsaved changes will be lost.')) return;
-  // Stop the transport + silence every lane's voices BEFORE wiping. Without this
-  // the master clock keeps running and in-flight voices keep sounding after the
-  // old lanes are disposed → the "New leaves the old synths playing" bug.
-  stopTransport();
-  sessionHost.applyLoadedSessionState(emptySessionState());
-  // Also wipe the Performance take + leave Performance mode. Without this New
-  // cleared the session but left the old arrangement in the timeline, where
-  // every band turned into an orphaned "missing" (clipEvents pointing at the
-  // just-deleted clips).
-  performanceFeature.resetArrangement();
-  autoHistory.markClean();
-}
-document.getElementById('new-session')?.addEventListener('click', () => { void newSession(); });
+// Where a session comes FROM (see src/app/session-lifecycle.ts): the boot demo
+// behind the presets+worklet gate, the shared demo list, the picker behind the
+// worklet gate, and the New wipe. It runs HERE, after the onStateApplied
+// registrations above, so those fire on the demo's first apply. `markClean` is a
+// thunk because AutoHistory is only built further down.
+const { demos: DEMOS, newSession } = wireSessionLifecycle({
+  sessionHost, presetsLoaded, workletReady, setTransportBpm,
+  markClean: () => autoHistory.markClean(),
+  performanceFeature, stopTransport,
+});
 
 // App is always in session mode — seq.sessionMode must be true at boot.
 seq.sessionMode = true;
