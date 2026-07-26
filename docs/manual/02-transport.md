@@ -8,7 +8,7 @@ The header runs across the top of the interface in two rows. The first row (tran
 
 ## Play / Stop
 
-Press **▶** (`#play`, title "Play — arranca el transporte") to start playback, and **⏹** (`#stop`, title "Stop — detiene el transporte") to stop it. Play and Stop are now two separate buttons — Play is no longer a play/stop toggle. When you press Play the browser's `AudioContext` resumes automatically if it was suspended (a browser policy requirement on first interaction).
+Press **▶** (`#play`, title "Play — start the transport") to start playback, and **⏹** (`#stop`, title "Stop — stop the transport") to stop it. Play and Stop are now two separate buttons — Play is no longer a play/stop toggle. When you press Play the browser's `AudioContext` resumes automatically if it was suspended (a browser policy requirement on first interaction).
 
 ---
 
@@ -47,12 +47,12 @@ Swing applies to every lane, and to notes that do not sit exactly on a 16th too 
 
 **Session / Performance** (`#mode-toggle`) — switches the main view between the Session clip grid and the Performance arrangement view.
 
-**⤉ Copy to Performance** (`#copy-to-performance`) — an icon-only button (tooltip "Copiar las escenas a la timeline de Performance") that copies the current scenes onto the Performance timeline. See [Performance & Arrangement](10-performance-and-arrangement.md).
+**⤉ Copy to Performance** (`#copy-to-performance`) — an icon-only button (tooltip "Copy the scenes to the Performance timeline") that copies the current scenes onto the Performance timeline. See [Performance & Arrangement](10-performance-and-arrangement.md).
 
 - **Session** is the default mode: you see the clip grid and can trigger scenes, edit clips, and record automation in real time.
 - **Performance** shows the arrangement timeline where recorded takes are displayed as timeline bands and automation curves can be drawn directly. See [Performance & Arrangement](10-performance-and-arrangement.md) for the full workflow.
 
-**● REC** (`#rec`, tooltip "Grabar — el modo se elige al lado") arms recording; the **mode selector** (`#rec-mode`) beside it chooses what gets recorded:
+**● REC** (`#rec`, tooltip "Record — pick the mode beside it") arms recording; the **mode selector** (`#rec-mode`) beside it chooses what gets recorded:
 
 - **🎛 take** (`data-recmode="take"`, the default) — records knob moves and clip launches into a performance take. See [Modulation & Note FX](06-modulation-and-note-fx.md) for how automation lanes work.
 - **⏱ live** (`data-recmode="live"`) — records the real-time audio output to a WAV.

@@ -14,7 +14,7 @@ The arrangement starts empty. There are three ways to give it content.
 
 ### 1. Copy to Performance
 
-The fastest route from a working session to a playable song is the **⤉ Copy-to-Performance** button (`#copy-to-performance`) in the session bar of the header — now an icon-only button with the tooltip "Copiar las escenas a la timeline de Performance". Clicking it calls `arrangementFromSession`, which walks your scenes in order and lays them out as a linear song:
+The fastest route from a working session to a playable song is the **⤉ Copy-to-Performance** button (`#copy-to-performance`) in the session bar of the header — now an icon-only button with the tooltip "Copy the scenes to the Performance timeline". Clicking it calls `arrangementFromSession`, which walks your scenes in order and lays them out as a linear song:
 
 - Each scene becomes one section.
 - The section length equals the longest effective clip in that scene (measured in bars). If a clip has a loop sub-region enabled, its sub-region length is used instead of the full clip length.
@@ -37,7 +37,7 @@ If you arm REC and then switch to Performance mode before pressing Play, the arm
 
 ### 3. MIDI import
 
-When you import a Standard MIDI File via the **MIDI Import** panel (see [MIDI & Samples](08-midi-and-samples.md)), Loom calls the same `arrangementFromSession` logic after building the session. Because an imported MIDI file produces a single scene whose clips span the full song, the arrangement comes out as one long section per lane — the complete track laid out linearly from bar 1.
+When you import a Standard MIDI File via **File ▸ Import MIDI…** (see [MIDI & Samples](08-midi-and-samples.md)), Loom calls the same `arrangementFromSession` logic after building the session. Because an imported MIDI file produces a single scene whose clips span the full song, the arrangement comes out as one long section per lane — the complete track laid out linearly from bar 1.
 
 ---
 
@@ -45,7 +45,7 @@ When you import a Standard MIDI File via the **MIDI Import** panel (see [MIDI & 
 
 Once the arrangement has content, the Performance view shows:
 
-- **Toolbar** — Length (bars), Zoom slider, automation brush (Line / Flat), Loop A–B toggle, and a readout showing total bars and BPM.
+- **Toolbar** — Length (bars), a Zoom slider (16–400 pixels per bar), the **Loop A–B** toggle with numeric **A** and **B** bar fields beside it, and a readout showing total bars and BPM.
 - **Ruler** — a bar-numbered ruler across the top. When the A–B loop is active, a loop brace with two drag handles sits on the ruler.
 - **Clip bands** — one row per lane. Each recorded or copied clip event is shown as a coloured block, labelled with the clip name, spanning the bars it occupies.
 - **Automation curves** — below each clip band, any recorded or drawn automation curves appear. Each curve corresponds to one parameter (identified by its ID). You can draw into curves directly using the Line or Flat brush.
@@ -66,11 +66,11 @@ All three are undoable (but see the note on Performance's separate undo stack be
 
 The **Loop A–B** button in the Performance toolbar toggles the arrangement-wide loop brace. When active:
 
-- Two drag handles on the ruler mark the loop start (A) and loop end (B). Drag either handle to set the window; handles snap to whole bars.
+- Two drag handles on the ruler mark the loop start (A) and loop end (B). Drag either handle to set the window; handles snap to whole bars. You can also **type the bars** into the **A** and **B** fields next to the Loop A–B button, which is far easier on a long song — typing a value also switches the loop on.
 - The playhead wraps within [A, B). When it reaches B, all lanes are stopped and playback re-anchors to A instantly. Any clip that was already active spanning A is relaunched at the wrap point so there is no gap.
 - When Loop A–B is off, Loom plays in **song mode**: the arrangement runs from the beginning to `durationSec` and stops — every lane is halted and the transport stops.
 
-This loop brace operates on the arrangement timeline as a whole. It is distinct from the **per-clip loop brace** available inside the piano-roll and drum-grid editors, which loops a sub-region within a single clip. See [Editing Clips](05-editing-clips.md) for the per-clip loop.
+This loop brace operates on the arrangement timeline as a whole, and it is **the same region** as the clip editor's **Global** loop: set A–B here and the active scene's shared loop follows, and when you switch back into Performance the brace picks up whatever the scene's shared loop is. It is still distinct from a clip's *own* (non-Global) loop brace, which repeats a sub-region inside that one clip. See [Editing Clips](05-editing-clips.md) for both.
 
 ---
 
@@ -92,14 +92,16 @@ Automation curves can be added by hand — you do not have to record a take firs
 
 The header row contains a grouped parameter dropdown and a **+ Automation** button. The dropdown lists every automatable parameter in the project, organised by prefix (lane ID or `master`). Each entry shows the parameter ID and its label — for example `lane-1.fx.reverb.wet — WET`. Select the parameter you want, then click **+ Automation**. A new lane appears below the clip band for that lane (or in the Master section for global parameters). The curve starts flat at the parameter's current value.
 
+There is a quicker route for a knob you can see: **right-click it**. In Performance view the menu offers *Automate on the timeline* (or *Edit automation on the timeline* if a curve already exists) and jumps you straight to it. The same menu in Session view targets the open clip instead — see [Modulation & Note FX](06-modulation-and-note-fx.md).
+
 ### Drawing the shape
 
-Two brush buttons in the toolbar control how you paint:
+Two brush buttons sit in that same automation header, after the **+ Automation** button and under the label **Brush**:
 
 - **Line** — click and drag to draw a ramp between the start and end points of the gesture. Use this for smooth fades, filter sweeps, or any gradual change.
 - **Flat** — paints a constant value across the drag range. Use this for step-style automation or to hold a value steady across a section.
 
-The active brush is highlighted. Each lane also exposes **On / Off** and **Smooth / Stepped** toggles in its header. **On / Off** mutes the curve without deleting it. **Stepped** switches interpolation from smooth linear to staircase, snapping the value at each sub-step boundary — useful for parameter jumps that should be instantaneous.
+The active brush is highlighted, and the choice applies to every curve. Each lane also exposes **On / Off** and **Smooth / Stepped** toggles in its header. **On / Off** mutes the curve without deleting it. **Stepped** switches interpolation from smooth linear to staircase, snapping the value at each sub-step boundary — useful for parameter jumps that should be instantaneous.
 
 ### Removing a lane
 

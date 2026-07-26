@@ -12,7 +12,7 @@ Three buttons on the session bar (the second header row) drive session managemen
 
 | Button | What it does |
 | --- | --- |
-| **🗋 New** | Discards the current session and starts a blank, empty one (tooltip "Nueva sesión vacía"). |
+| **🗋 New** | Discards the current session and starts a blank, empty one (tooltip "New empty session"). |
 | **Save** | Opens the Save Manager with the name field ready to type. |
 | **Load** | Opens the Save Manager to browse and restore a saved session. |
 
@@ -30,7 +30,7 @@ Clicking **Save** or **Load** opens the Save Manager modal. It is the single pla
 
 Type a name in the text field at the top and click **Save current** (or press Enter). Loom writes the full session state — BPM, time signature, every lane's engine + inserts + clips + scenes, the mixer state, and the arrangement take if one exists — into `localStorage` under a unique key, and also updates the autosave slot. The entry appears in the list immediately.
 
-The save format is versioned (`schemaVersion: 3`). When you load an older file Loom migrates it automatically; saves with an unrecognised schema version are rejected with a warning rather than loading broken state.
+The save format is versioned (`schemaVersion: 3`). Only version-3 saves load: anything else is refused outright with an **"Invalid save data"** alert rather than loading broken state. There is no conversion from older formats. What *is* handled is a version-3 save written before some field existed — those are backfilled on load, so a session saved months ago still opens with its insert racks and preset dropdowns intact.
 
 ### The saved-session list
 
@@ -78,7 +78,7 @@ Capture is automatic — Loom snapshots the session after each interaction and c
 
 ![The REC group on the session bar — REC button plus the take / live / offline mode selector](images/rec-group.png)
 
-WAV export is part of the unified **REC** group on the session bar (second header row), not a separate button. The **● REC** button (tooltip "Grabar — el modo se elige al lado") records using whichever mode is selected in the adjacent **mode selector** (`#rec-mode`):
+WAV export is part of the unified **REC** group on the session bar (second header row), not a separate button. The **● REC** button (tooltip "Record — pick the mode beside it") records using whichever mode is selected in the adjacent **mode selector** (`#rec-mode`):
 
 - **🎛 take** (default) — records knob moves and clip launches into a performance take (not a WAV).
 - **⏱ live** — records the live master output in real time to a stereo 16-bit WAV file.
