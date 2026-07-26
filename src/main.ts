@@ -31,7 +31,6 @@ import * as laneTrackHelpers from './core/lane-display';
 import { SessionHost } from './session/session-host';
 import { DEFAULT_MUSICALITY } from './session/session';
 import { renderProjectOptionsDialog } from './session/project-options-dialog';
-import { loadDemoSession } from './demo/demo-picker';
 import { bindAboutDialog } from './app/about-dialog';
 import { applyPresetToEngine } from './presets/preset-apply';
 import { commitEngineBaseValues } from './engines/engine-param-commit';
@@ -73,11 +72,8 @@ import { loadSamplerWorklet } from './audio-worklet/sampler-node';
 // ── Static chrome templates (version label, meter options) ─────────────────
 import { html, render } from 'lit-html';
 // ── Desktop menu bar (chrome) ─────────────────────────────────────────────
-import { createMenuBar } from './app/menu-bar';
 import { wireXyPanel } from './app/xy-panel-wiring';
-import { buildMenus } from './app/menu-spec';
-import type { MenuActions } from './app/menu-actions';
-import { registerMenuShortcuts } from './app/menu-shortcuts';
+import { wireMenuBar } from './app/menu-wiring';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -825,35 +821,14 @@ const saveManager = wireSaveManager(saveWiringDeps);
 // fresh boot with no autosave this is a no-op regardless of timing.
 void workletReady.then(() => bootRecoveryLoad(saveWiringDeps));
 
-// ── Desktop menu bar (chrome) ──────────────────────────────────────────────
-// MenuActions is a plain object literal of ARROW FUNCTIONS (never bare method
-// references / `this`-bound class methods): menu-spec.ts pulls some fields out
-// as bare references (e.g. `run: a.undo`), so the underlying functions must be
-// `this`-free closures for that to keep working correctly.
-const menuActions: MenuActions = {
-  newSession: () => { void newSession(); },
-  openSaveForSave: () => saveManager.openForSave(),
-  openSaveForLoad: () => saveManager.openForLoad(),
-  openProjectOptions: () => projectOptions.open(),
-  listDemos: () => DEMOS,
-  loadDemo: (path) => { void loadDemoSession(path, { sessionHost, applyBpm: setTransportBpm, onLoaded: () => autoHistory.markClean() }); },
-  openImportMidi: () => midiImportDialog.open(),
-  openStems: () => stemDialog.open(),
-  undo: () => autoHistory.undo(),
-  redo: () => autoHistory.redo(),
-  canUndo: () => autoHistory.canUndo(),
-  canRedo: () => autoHistory.canRedo(),
-  setMode: (m) => performanceFeature.setMode(m),
-  getMode: () => performanceFeature.getMode(),
-  togglePerfDiagnostics: () => perfDiagnostics.toggle(),
-  isPerfOpen: () => perfDiagnostics.isOpen(),
-  openMidiController: () => midiControlDialog.open(),
-  captureScene: () => sessionHost.captureScene(),
-  copyScenesToPerformance: () => performanceFeature.copyFromSession(),
-  openManual: () => { window.open('manual/', '_blank', 'noopener'); },
-  openAbout: () => aboutDialog.open(),
-};
-createMenuBar(document.getElementById('menu-bar')!, buildMenus(menuActions));
-registerMenuShortcuts(menuActions);
+// ── Desktop menu bar (chrome) — see src/app/menu-wiring.ts ─────────────────
+// LAST statement of boot on purpose: the MenuActions table names a handle from
+// nearly every feature above, and the bar reaching the DOM is the only proof
+// that this module ran start to finish.
+wireMenuBar({
+  sessionHost, saveManager, projectOptions, autoHistory, performanceFeature,
+  perfDiagnostics, midiImportDialog, midiControlDialog, stemDialog, aboutDialog,
+  demos: DEMOS, newSession, setTransportBpm,
+});
 
 // App always boots in Session mode (see fetchDemoSession call above).
