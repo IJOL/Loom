@@ -16,10 +16,8 @@ import { createLaneHost } from './app/lane-host-wiring';
 import { createPerformanceFeature } from './app/performance-feature';
 import { createRecordingFeature } from './app/recording-feature';
 import { wireMidiImport } from './app/midi-import-wiring';
-import {
-  wireEngineSelector, wireEngineSelector303, rebuildEngineParamUI,
-  type EngineSelectorUIDeps,
-} from './engines/engine-selector-ui';
+import { rebuildEngineParamUI } from './engines/engine-selector-ui';
+import { wireEngineSelectors } from './app/engine-selector-wiring';
 import { getEngine, getEngineParamIds } from './engines/registry';
 import { swapLaneEngineFlow, type EngineSwapDeps } from './app/engine-swap';
 import { type TB303 } from './core/synth';
@@ -50,7 +48,6 @@ import {
 } from './save/saved-state-v3';
 import {
   wirePolyControls, refreshPolyPresetSelect, recordPagePresetForLane,
-  type PolySynthPresetsDeps,
 } from './polysynth/polysynth-presets';
 import { wireRandomizeUI } from './core/randomize-ui';
 import { wireFxUI, type FxUIDeps } from './core/fx-ui';
@@ -281,7 +278,7 @@ const laneHost = createLaneHost({
 });
 const getLaneEngineId     = (laneId: string) => laneHost.getLaneEngineId(laneId);
 const setActiveEngineLane = (laneId: string) => laneHost.setActiveEngineLane(laneId);
-const _lehState = laneHost.state; // kept for engineSelectorDeps (uses _lehState.activeLaneId)
+const _lehState = laneHost.state; // kept for the engine-selector wiring (reads _lehState.activeLaneId)
 
 // Holder for historyDeps for discrete selectors. historyDeps is built later
 // (it closes over saveWiringDeps / sessionHost), but event handlers fire after
@@ -710,70 +707,35 @@ document.addEventListener('keydown', (e) => {
 
 // ── Deps objects for extracted UI modules ─────────────────────────────────
 
-// Engine selector UI (must come after populateAutoParamSelectWrapper is set)
-const engineSelectorDeps: EngineSelectorUIDeps = {
-  engineSel,
-  getActiveLaneId: () => _lehState.activeLaneId,
+// Both engine selectors + the deps bundles that re-mount the editor's knobs
+// (see src/app/engine-selector-wiring.ts). Runs HERE because the generic
+// selector must be wired after populateAutoParamSelectWrapper is set, and
+// because synthEditorDeps has to be assigned at this exact point — the
+// showPolyEditorWrapper above reads it lazily and bails while it is null.
+const engineSelectors = wireEngineSelectors({
+  engineSel, engineSel303,
+  initialEngineId: currentEngineId,
+  getActiveEngineLaneId: () => _lehState.activeLaneId,
   getLaneEngineId,
   automationRegistry,
   registerKnob,
+  // Late-bound call-site wrapper: populateAutoParamSelectWrapper is a `let`
+  // populated at boot, so it is read at event-fire time.
   populateAutoParamSelect: () => populateAutoParamSelectWrapper(),
-  remountSubtractiveLaneKnobs: (laneId) => mountSubtractiveLaneKnobs(laneId),
-  remountLaneFxPanel: (laneId) => mountLaneFxPanel(laneId),
-  // Late-bound via getter: _discreteHistoryDeps is assigned after historyDeps
-  // is built (further below), but the change handler fires at user-interaction
-  // time, so the getter always sees the final value.
-  get historyDeps() { return _discreteHistoryDeps; },
-  // Raw flow here — the poly selector's change handler already wraps in withUndo
-  // via historyDeps above.
-  onEngineChange: (laneId, newId) => { swapLaneEngineFlow(engineSwapDeps, laneId, newId); },
-};
-wireEngineSelector(engineSelectorDeps, currentEngineId);
-
-wireEngineSelector303({
-  engineSel303,
-  getActiveLaneId: () => sessionHost.activeEditLane,
-  onEngineChange: onEngineChangeUndoable,
-});
-
-const polySynthPresetsDeps: PolySynthPresetsDeps = {
-  // Phase G: polysynth removed; getActivePolyTarget uses synthEditorState only.
-  getActivePolyTarget: () => synthEditorState.activePolyTarget ?? null,
-  getActiveEngineLaneId: () => _lehState.activeLaneId,
-  getLaneEngineId,
+  mountSubtractiveLaneKnobs,
+  mountLaneFxPanel,
+  getHistoryDeps: () => _discreteHistoryDeps,
+  engineSwapDeps,
+  onEngineChangeUndoable,
+  sessionHost,
   getLaneEngineInstance,
-  rebuildEngineParamUI,
-  getSessionState: () => sessionHost.state,
-  refreshLaneKnobs: (laneId) => {
-    const inst = getLaneEngineInstance(laneId);
-    if (inst) refreshLaneKnobs(laneId, inst);
-  },
-  // Late-bound via getter so historyDeps is resolved at event-fire time.
-  get historyDeps() { return _discreteHistoryDeps; },
-  applyDrumKitPreset: (laneId, name) => { void sessionHost.applyDrumPreset(laneId, name); },
-};
-
-// Now that polySynthPresetsDeps exist, wire synthEditorDeps
-// (referenced lazily by showPolyEditorWrapper above).
-synthEditorDeps = {
-  refreshPolyKnobsFromState: () => {
-    // Re-mount the section knobs under the active lane's id so the LFO/ADSR
-    // destination dropdown for *that* lane finds them in the registry. Only
-    // applies to subtractive lanes — other poly engines render their own UI
-    // inside engine-mod-host on every editLane click.
-    // Use synthEditorState.currentSynthLane because setActivePolyTarget sets
-    // it BEFORE invoking this callback (whereas _lehState.activeLaneId is
-    // updated by setActiveEngineLane which runs AFTER).
-    const activeLaneId = synthEditorState.currentSynthLane;
-    const engine = laneResources.get(activeLaneId)?.engine;
-    if (engine?.id === 'subtractive') {
-      mountSubtractiveLaneKnobs(activeLaneId);
-      mountLaneFxPanel(activeLaneId);
-    }
-  },
-  refreshPolyPresetSelect: () => refreshPolyPresetSelect(),
-  setActiveEngineLane: (laneId: string) => setActiveEngineLane(laneId),
-};
+  refreshLaneKnobs,
+  laneResources,
+  setActiveEngineLane,
+});
+// wirePolyControls(polySynthPresetsDeps) stays where it is, ~230 lines down.
+const polySynthPresetsDeps = engineSelectors.polySynthPresetsDeps;
+synthEditorDeps = engineSelectors.synthEditorDeps;
 
 // Phase G: deferred to sessionHost.onStateApplied (lane not allocated at boot).
 // mountSubtractiveLaneKnobs(LANE_ID_POLY) — see boot section below.
