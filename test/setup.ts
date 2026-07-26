@@ -5,6 +5,15 @@ import * as nwa from 'node-web-audio-api';
 
 const g = globalThis as unknown as Record<string, unknown>;
 
+// lit-html's dev build announces itself on stderr the first time any test file
+// imports it ("Lit is in dev mode..."), attributed to whichever file got there
+// first. Its OTHER dev warnings — malformed templates, duplicate bindings — are
+// worth having, so don't resolve the production build; silence just the banner
+// through the hook lit provides for it: development/lit-html.js checks both the
+// full text AND the short code against this set before printing.
+const litWarnings = (g.litIssuedWarnings ??= new Set<string>()) as Set<string>;
+litWarnings.add('dev-mode');
+
 for (const [name, value] of Object.entries(nwa)) {
   if (typeof value === 'function' && !(name in g)) {
     g[name] = value;
