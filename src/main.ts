@@ -46,7 +46,6 @@ import {
 import { wireRandomizeUI } from './core/randomize-ui';
 import { wireFxUI, type FxUIDeps } from './core/fx-ui';
 import { wireTransport, setPlaying, type TransportDeps } from './core/transport';
-import { alertDialog } from './core/dialog';
 import {
   showPolyEditor,
   synthEditorState,
@@ -767,7 +766,12 @@ const { autoHistory, historyDeps, saveWiringDeps } = createSaveAndHistory({
   volInput, bpmInput, swingInput, meterSel,
   sessionHost,
   refreshKnobsFromSynth,
-  renderLanes,
+  // A thunk, not the value: `renderLanes` is a `let` whose comment above promises
+  // it is assigned during boot. Snapshotting it here would freeze whatever it held
+  // at this line, while transport-controls (which takes the same binding) reads it
+  // lazily — so an assignment would reach one caller and not the other. Same shape
+  // in both places means the question cannot come up.
+  renderLanes: () => renderLanes(),
   fx,
   masterInsertChain,
   masterStrip,

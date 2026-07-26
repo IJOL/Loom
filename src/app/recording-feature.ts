@@ -131,6 +131,18 @@ export function createRecordingFeature(deps: RecordingFeatureDeps): RecordingFea
   // Chain, don't overwrite: SessionHost.init() already installed an onStart that
   // resets the global song anchor; preserve it so the playhead anchors at the
   // downbeat. (seq.onStart is a single slot — a plain assign would drop the reset.)
+  //
+  // ORDER, the one thing the extraction genuinely moved: in boot glue this chain
+  // used to be installed AFTER wireTransport and createPerfDiagnostics; folding it
+  // into this factory runs it BEFORE them. That is safe, and here is the proof, so
+  // the next person to move this block does not have to re-derive it: seq.onStart
+  // has exactly three producers in src/ — the Sequencer's own slot, SessionHost's
+  // anchor reset (installed by init(), which still runs first), and this line.
+  // wireTransport has its own unrelated `deps.onStart` field that main never sets,
+  // and perf-diagnostics only forwards `deps.seq`. Neither reads or writes this
+  // slot, so the chain still sits on top of SessionHost's reset, in that order.
+  // Get this wrong and an armed live take silently records nothing — and no test
+  // covers it, so the compiler and the suite would both stay quiet.
   const prevOnStart = seq.onStart;
   seq.onStart = () => { prevOnStart?.(); liveTake.onTransportStart(); };
 

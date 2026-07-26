@@ -26,6 +26,7 @@ const ROOT = join(HERE, '..');
 const VERSION_PATH = join(ROOT, 'version.json');
 const CODENAMES_PATH = join(HERE, 'version-codenames.json');
 const PACKAGE_PATH = join(ROOT, 'package.json');
+const LOCK_PATH = join(ROOT, 'package-lock.json');
 
 function fail(msg, err) {
   console.error(`bump-version: ${msg}`);
@@ -93,6 +94,22 @@ try {
   writeFileSync(PACKAGE_PATH, JSON.stringify(pkg, null, 2) + '\n');
 } catch (err) {
   fail('could not write package.json', err);
+}
+
+// 3) package-lock.json carries the root version TWICE — the top-level field and
+//    packages[""].version — and npm rewrites both on the next install. Leaving
+//    them behind meant every `npm install` after a bump produced a spurious
+//    2-line diff that looked like someone had touched dependencies. Not fatal
+//    (npm ci compares the dependency tree, not this field), just noise that
+//    outlives the bump. Absent or malformed is tolerated: the lockfile is
+//    generated, so a bump must never be the thing that fails over it.
+try {
+  const lock = JSON.parse(readFileSync(LOCK_PATH, 'utf8'));
+  lock.version = pkg.version;
+  if (lock.packages && lock.packages['']) lock.packages[''].version = pkg.version;
+  writeFileSync(LOCK_PATH, JSON.stringify(lock, null, 2) + '\n');
+} catch (err) {
+  console.warn(`bump-version: left package-lock.json alone (${err instanceof Error ? err.message : String(err)})`);
 }
 
 console.log(`Bumped to v${nextVersion} · alpha · ${codename}`);
