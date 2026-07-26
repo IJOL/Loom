@@ -110,20 +110,6 @@ but verify again before acting; that is what this list is for.
   Pinned as current behaviour in `arrangement-from-session.test.ts` ("KNOWN DEBT:
   a tempo-mapped section does not land on a ruler bar line") so the next reader
   meets it as a decision rather than a mystery.
-- **The 🎲 Sound button does nothing on five of the engines.** `#poly-randomize`
-  is one shared button over whichever lane is active, but only `subtractive` is
-  routed to a real implementation (`randomizeSubtractiveLane`). Every other
-  engine takes the fallback branch in `polysynth/polysynth-presets.ts`, which
-  calls `eng.randomize?.()` — declared optional on `SynthEngine` and implemented
-  by NO engine in `src/` — and then `eng.setParam?.()`, which is not a member at
-  all (engines expose `setBaseValue`). Both are optional calls on an object that
-  has neither, so on FM / Wavetable / Karplus / Westcoast / Sampler the click
-  rebuilds the param UI, marks the preset dropdown Custom, and changes not one
-  value. Deliberately left dead rather than wired up: randomising every param of
-  an FM or Karplus voice is a musical decision about per-param ranges (the
-  subtractive path has a hand-tuned `randomizePolySynth` for exactly that
-  reason), not a mechanical fix. Either give each engine its own ranges or drop
-  the button for engines that have none — but do not let it keep lying.
 - **Preset selectors are not automatable.** The per-lane preset `<select>`s are
   plain elements — not wrapped in `createSelectControl`, not registered under a
   `<laneId>.preset` automation id — so a preset change cannot be automated or
