@@ -105,8 +105,11 @@ describe('ParamSmoother', () => {
     const s = new ParamSmoother(SR);
     s.reset({ 'filter.cutoff': 0.2 });
     s.setTargets({ 'filter.cutoff': 0.9 });
-    // 0.1 s is ~6.7 time constants — comfortably converged.
-    for (let i = 0; i < SR * 0.1; i++) s.tick();
+    // 0.3 s. Landing on the epsilon is NOT the same as sounding settled: the ear
+    // is done after ~5 time constants (75 ms), but reaching |target|*1e-5 from a
+    // 0.7 distance takes ~11 (169 ms), and the 1->0 case below needs ~16 because
+    // its epsilon collapses to the absolute floor. 0.3 s clears all of them.
+    for (let i = 0; i < SR * 0.3; i++) s.tick();
     expect(s.values['filter.cutoff']).toBe(0.9);
     expect(s.moving).toBe(false);
     expect(s.tick()).toBe(false);
@@ -117,7 +120,9 @@ describe('ParamSmoother', () => {
     s.reset({ 'amp.level': 1 });
     s.setTargets({ 'amp.level': 0 });
     let prev = 1;
-    for (let i = 0; i < SR * 0.1; i++) {
+    // 0.3 s: a target of exactly 0 collapses the relative epsilon to its absolute
+    // floor (1e-7), so this is the slowest case to land — ~16 time constants.
+    for (let i = 0; i < SR * 0.3; i++) {
       s.tick();
       const v = s.values['amp.level'];
       expect(v).toBeLessThanOrEqual(prev);
@@ -131,7 +136,7 @@ describe('ParamSmoother', () => {
     s.reset({ a: 0, b: 0, c: 0 });
     s.setTargets({ a: 1, b: 1 });
     expect(s.moving).toBe(true);
-    for (let i = 0; i < SR * 0.1; i++) s.tick();
+    for (let i = 0; i < SR * 0.3; i++) s.tick();
     expect(s.values.a).toBe(1);
     expect(s.values.b).toBe(1);
     expect(s.values.c).toBe(0);
