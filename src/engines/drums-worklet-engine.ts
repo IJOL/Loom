@@ -49,20 +49,19 @@ import {
 } from '../modulation/voice-mod-binding';
 import { ConnectionBinder } from '../modulation/connection-binder';
 import type { KnobHandle } from '../core/knob';
+import {
+  STRIP_PARAM_SPECS, isStripParamId, setStripParam, stripAudioParams,
+} from '../core/channel-strip-params';
 
 // ── Param spec (identical vocabulary to the legacy DrumsEngine) ───────────────
 // Bus-level automatable params (rendered by the static drum-master strip + the
 // LFO/ADSR destination dropdown). Per-voice synth + mixer leaves are appended
 // below; they drive the worklet bag (synth) and the per-voice strip (mixer).
-const BUS_PARAMS: EngineParamSpec[] = [
-  { id: 'bus.level',       label: 'Vol',  kind: 'continuous', min: 0,   max: 1.5, default: 1 },
-  { id: 'bus.pan',         label: 'Pan',  kind: 'continuous', min: -1,  max: 1,   default: 0 },
-  { id: 'bus.delaySend',   label: 'A',    kind: 'continuous', min: 0,   max: 1,   default: 0 },
-  { id: 'bus.reverbSend',  label: 'B',    kind: 'continuous', min: 0,   max: 1,   default: 0 },
-  { id: 'bus.eq.low',      label: 'Lo',   kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
-  { id: 'bus.eq.mid',      label: 'Mid',  kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
-  { id: 'bus.eq.high',     label: 'Hi',   kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
-];
+//
+// The seven bus params live in core/channel-strip-params.ts now: they describe a
+// lane's ChannelStrip, which every lane has, so every engine declares the same
+// list from there instead of drums owning the only copy.
+const BUS_PARAMS: EngineParamSpec[] = [...STRIP_PARAM_SPECS];
 
 const WAVE_OPTIONS = [
   { value: 'sine', label: 'Sin' },
@@ -195,17 +194,8 @@ class DrumsVoice implements Voice {
   /** Expose the drum-bus ChannelStrip's automatable AudioParams (modulation
    *  targets). Per-voice levels are not modulatable (same as the legacy engine). */
   getAudioParams(): Map<string, AudioParam> {
-    const m = new Map<string, AudioParam>();
-    if (this.busStrip) {
-      m.set('bus.level',      this.busStrip.level.gain);
-      m.set('bus.pan',        this.busStrip.getPanParam());
-      m.set('bus.reverbSend', this.busStrip.sendB.gain);
-      m.set('bus.delaySend',  this.busStrip.sendA.gain);
-      m.set('bus.eq.low',     this.busStrip.getEqGainParam('low'));
-      m.set('bus.eq.mid',     this.busStrip.getEqGainParam('mid'));
-      m.set('bus.eq.high',    this.busStrip.getEqGainParam('high'));
-    }
-    return m;
+    if (!this.busStrip) return new Map<string, AudioParam>();
+    return stripAudioParams(this.busStrip);
   }
 
   trigger(midi: number, time: number, opts: VoiceTriggerOptions): void {
@@ -365,8 +355,8 @@ export class DrumsWorkletEngine implements SynthEngine {
 
   // ── Param read/write ────────────────────────────────────────────────────────
   getBaseValue(id: string): number {
-    if (this.kitMode === 'sample' && !id.startsWith('bus.')) return this.sampler.getBaseValue(id);
-    if (id.startsWith('bus.')) {
+    if (this.kitMode === 'sample' && !isStripParamId(id)) return this.sampler.getBaseValue(id);
+    if (isStripParamId(id)) {
       return id in this.paramValues ? this.paramValues[id] : this.specDefault(id);
     }
     const dot = id.indexOf('.');
@@ -381,19 +371,10 @@ export class DrumsWorkletEngine implements SynthEngine {
   }
 
   setBaseValue(id: string, v: number): void {
-    if (this.kitMode === 'sample' && !id.startsWith('bus.')) { this.sampler.setBaseValue(id, v); return; }
-    if (id.startsWith('bus.')) {
+    if (this.kitMode === 'sample' && !isStripParamId(id)) { this.sampler.setBaseValue(id, v); return; }
+    if (isStripParamId(id)) {
       this.paramValues[id] = v;
-      if (!this.busStrip) return;
-      switch (id) {
-        case 'bus.level':      this.busStrip.setLevel(v);  return;
-        case 'bus.pan':        this.busStrip.setPan(v);    return;
-        case 'bus.reverbSend': this.busStrip.setSendB(v);  return;
-        case 'bus.delaySend':  this.busStrip.setSendA(v);  return;
-        case 'bus.eq.low':     this.busStrip.setEqLow(v);  return;
-        case 'bus.eq.mid':     this.busStrip.setEqMid(v);  return;
-        case 'bus.eq.high':    this.busStrip.setEqHigh(v); return;
-      }
+      if (this.busStrip) setStripParam(this.busStrip, id, v);
       return;
     }
     const dot = id.indexOf('.');
@@ -619,17 +600,8 @@ export class DrumsWorkletEngine implements SynthEngine {
   }
 
   getSharedAudioParams(): Map<string, AudioParam> {
-    const m = new Map<string, AudioParam>();
-    if (this.busStrip) {
-      m.set('bus.level',      this.busStrip.level.gain);
-      m.set('bus.pan',        this.busStrip.getPanParam());
-      m.set('bus.reverbSend', this.busStrip.sendB.gain);
-      m.set('bus.delaySend',  this.busStrip.sendA.gain);
-      m.set('bus.eq.low',     this.busStrip.getEqGainParam('low'));
-      m.set('bus.eq.mid',     this.busStrip.getEqGainParam('mid'));
-      m.set('bus.eq.high',    this.busStrip.getEqGainParam('high'));
-    }
-    return m;
+    if (!this.busStrip) return new Map<string, AudioParam>();
+    return stripAudioParams(this.busStrip);
   }
 
   dispose(): void {
