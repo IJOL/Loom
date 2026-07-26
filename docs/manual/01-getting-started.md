@@ -23,6 +23,8 @@ When the app opens it loads the *Minimal Techno* demo automatically, so there is
 
 Across the very top sits a desktop-style menu bar. Most of what it offers also has a button somewhere in the interface — the menu is the tidy, discoverable route to the same things, and the place to look when you can't remember where a control lives.
 
+![The menu bar with the File menu open](images/menu-bar.png)
+
 **File**
 
 | Item | Shortcut | What it does |

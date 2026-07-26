@@ -59,7 +59,7 @@ Every lane also has a private insert chain that sits *before* the channel strip 
 
 **Inserts vs sends:** an insert is a serial in-line processor that the signal passes *through*; a send is a parallel path that taps a copy of the signal into a shared return. Use inserts for tone-shaping a single lane; use sends when several lanes should share one effect (a common reverb space, a tempo-synced delay). Loom no longer privileges any effect — reverb and delay are ordinary inserts too, and they just happen to be the default residents of the Send A / Send B return chains.
 
-**The same picker everywhere.** Every insert rack — per lane (including audio lanes), on each send return, and on the master — draws from one unified effect picker: **Filter (multifilter)**, **Distortion**, **Reverb**, **Delay**, **Compressor**, **Limiter**, **Tremolo**, **Chorus**, **Flanger**, **Phaser**, and **Bitcrusher**. See [Master FX panel](#master-fx-panel) below for each effect's parameters. Any insert's parameters are modulation and Performance-automation destinations, wherever the insert sits.
+**The same picker everywhere.** Every insert rack — per lane (including audio lanes), on each send return, and on the master — draws from one unified effect picker, whose eleven entries read: **Filter**, **Dist**, **Reverb**, **Delay**, **Compressor**, **Limiter**, **Trem/Gate**, **Chorus**, **Flanger**, **Phaser**, and **Crush**. See [Master FX panel](#master-fx-panel) below for each effect's parameters. Any insert's parameters are modulation and Performance-automation destinations, wherever the insert sits.
 
 ---
 
@@ -83,17 +83,20 @@ The default reverb and delay expose the parameters below (and behave like any ot
 | PreD | 0–0.5 s | Pre-delay before the reverb tail starts |
 | Size | 0.05–8 s | Impulse response length (room size) |
 | Decay | 0.1–10 | Tail decay shape (higher = longer tail) |
+| Type | ROOM / HALL / PLATE / SPRING | The character of the generated space |
 
-The reverb is a convolution reverb with a procedurally generated impulse response. Size and Decay rebuild the impulse in real time when adjusted.
+The reverb is a convolution reverb with a procedurally generated impulse response. Size, Decay and Type rebuild the impulse in real time when adjusted.
 
 **DELAY** parameters:
 
 | Param | Range | Description |
 |-------|-------|-------------|
-| Time | 0.01–2 s | Delay time. A **SYNC** toggle on the delay insert locks the time to the project tempo and re-locks whenever the BPM changes |
+| Time | 0.01–2 s | Delay time, used when Sync is Free |
+| Sync | Free, 1/4, 1/8, 1/8., 1/8t, 1/16, 1/16t | Pick a musical division and the delay time locks to the project tempo, re-locking on every BPM change. **Free** uses the Time knob instead |
 | Fbk | 0–0.95 | Feedback amount |
 | Wet | 0–1.5 | Wet output level |
 | Damp | 200–12 000 Hz | Low-pass filter on the feedback loop; lower values darken repeats |
+| Width | 0–1 | Stereo width of the repeats (default 1) |
 
 ### MASTER COMP
 
@@ -124,17 +127,33 @@ Below MASTER COMP, the INSERTS section holds the master insert chain. Add a slot
 - Drive: 0–1 — waveshaper saturation amount (4x oversampled)
 - Mix: 0–1 — dry/wet blend
 
-**Reverb** — same parameters as the Send B reverb above (Wet, PreD, Size, Decay). Use as an insert to reverb the full master rather than via a send.
+**Reverb** — same parameters as the Send B reverb above (Wet, PreD, Size, Decay, Type). Use as an insert to reverb the full master rather than via a send.
 
-**Delay** — same parameters as the Send A delay (Time + SYNC, Fbk, Wet, Damp). Use as an insert for a master-bus slapback or stutter.
+**Delay** — same parameters as the Send A delay (Time, Sync, Fbk, Wet, Damp, Width). Use as an insert for a master-bus slapback or stutter.
 
-**Compressor** — the same `CompBlock` dynamics compressor as the channel-strip and master compressors, now insertable anywhere. Params: Bypass, Threshold, Ratio, Attack, Release, Knee, Makeup (see [MASTER COMP](#master-comp) for ranges).
+**Compressor** — the same `CompBlock` dynamics compressor as the channel-strip and master compressors, now insertable anywhere. Its own ranges are narrower than the master's:
 
-**Limiter** — a brickwall limiter (ratio 20:1, hard knee, near-zero attack) for catching peaks. Params: **Ceiling** (the level it will not exceed) and **Release**.
+- Thr: −60 to 0 dB (default −24)
+- Ratio: 1–20 (default 4)
+- Atk: 0.001–1 s (default 0.003)
+- Rel: 0.001–1 s (default 0.25)
+- Knee: 0–40 dB (default 30)
+- Mkup: 0–4 (default 1)
 
-**Tremolo (Trem)** — an LFO opening and closing the volume. The oldest modulation effect there is: slow and shallow it breathes, fast and deep it chops the sound into a rhythm of its own. Lovely on pads, electric-piano parts and sustained chords.
-- Rate: 0.1–12 Hz — how fast it pulses
+There is no Bypass among them — to A/B an insert, use the slot's own bypass toggle described at the end of this section.
+
+**Limiter** — a brickwall limiter (ratio 20:1, hard knee, near-zero attack) for catching peaks.
+
+- Ceil: −30 to 0 dB — the level it will not exceed
+- Rel: 0.001–0.5 s — how quickly it lets go
+
+**Tremolo (Trem/Gate)** — an LFO opening and closing the volume. The oldest modulation effect there is: slow and shallow it breathes, fast and deep it chops the sound into a rhythm of its own. Lovely on pads, electric-piano parts and sustained chords. It is also the trance gate: **Square shape + a 1/16 Sync + a little Smth** is that sound, which is why there is no separate gate effect.
+
+- Rate: 0.1–12 Hz — how fast it pulses, used when Sync is Free
 - Depth: 0–1 — how far it closes between pulses (at 1 it cuts to silence)
+- Shape: SIN / SQR / TRI / SAW — the wave it opens and closes with
+- Sync: Free, 1/4, 1/8, 1/8., 1/8t, 1/16, 1/16t — lock the pulse to the project tempo instead of the Rate knob
+- Smth: 0.2–50 ms — smooths the LFO, so a square shape does not click at the edges
 
 **Chorus** — a delayed copy of the signal, detuned by a slow LFO and mixed back in. The two copies drift in and out of tune with each other, which the ear reads as several players at once. Thickens thin sounds and widens single-note leads without changing their pitch.
 - Rate: 0.05–8 Hz — speed of the detuning wobble
@@ -157,6 +176,7 @@ Below MASTER COMP, the INSERTS section holds the master insert chain. Add a slot
 - Bits: 1–16 — amplitude resolution; 16 is nearly clean, 1 is a square-wave wreck
 - Tone: 200–20 000 Hz — a lowpass for the lo-fi dullness
 - Mix: 0–1 — dry/wet blend
+- Dith: 0–2 — noise summed in *before* the bit reduction, scaled to the step size. It trades the gritty, signal-locked distortion of low bit depths for an even hiss, which usually sounds better on quiet material
 
 Slots in the chain are ordered in series: the output of each slot feeds the input of the next. Each slot has a bypass toggle so you can A/B it without removing it. Individual slots can be removed; adding the same type multiple times is allowed.
 
@@ -167,6 +187,8 @@ The master insert chain processes the full mixed signal, after the EQ/pan of the
 ## XY pad
 
 The **▣ XY** button in the session bar opens a floating pad — a Kaoss-style controller for playing two parameters at once with a single gesture.
+
+![The floating XY pad with both axes assigned](images/xy-pad.png)
 
 It stays out of the way rather than taking over the screen: the panel floats above the interface and is **not modal**, so the knobs it drives stay visible and you can watch them move while you sweep.
 
