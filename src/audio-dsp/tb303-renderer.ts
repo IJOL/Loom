@@ -38,20 +38,26 @@ export class TB303Renderer implements VoiceRenderer {
   private begin: number;
   private holdEnd: number;
   private freq: number;
-  private baseCutHz: number;
-  private peakCutHz: number;
-  private decaySec: number;
-  private ladderRes: number;
   private peakAmp: number;
   private slide: boolean;
-  // Saved knob bases so cutoff / env.amount / env.decay modulation can recompute
-  // the filter contour live. (waveform + accent aren't continuous → not modulatable.)
+  // Trigger-time knob snapshot. Used as the fallback when no live bag is attached
+  // (the offline kernel builds renderers directly) and as the base the modulation
+  // offsets are added to.
   private cutoffBase: number;
-  private envAmountHz: number;
-  private accentBoost: number;
+  private resBase: number;
   private envModBase: number;
   private decayBase: number;
+  private accentBoost: number;
   private accent: boolean;
+  /** The lane's live (smoothed) knob bag, or null when this voice runs standalone. */
+  private live: ParamBag | null = null;
+  // Cached expensive conversions, refreshed only when their raw input moves.
+  // 80·100^x and the Q→ladder curve are per-sample costs we refuse to pay while
+  // nothing is turning.
+  private cutRaw = NaN;
+  private cutHz = 0;
+  private resRaw = NaN;
+  private resLadder = 0;
   private modEnv = new ModEnvHost();
   done = false;
 
@@ -72,24 +78,13 @@ export class TB303Renderer implements VoiceRenderer {
     const decay = param(p, 'env.decay', 0.4);
     const accentAmt = param(p, 'env.accent', 0.6);
 
-    this.baseCutHz = 80 * Math.pow(100, cutoff);
-    const envAmount = envMod * 6000;
-    this.decaySec = 0.05 + decay * 1.2;
-
     const accentBoost = note.accent ? accentAmt : 0;
-    this.peakCutHz = Math.min(this.baseCutHz + envAmount * (1 + accentBoost), 18000);
     this.cutoffBase = cutoff;
-    this.envAmountHz = envAmount;
-    this.accentBoost = accentBoost;
+    this.resBase = resonance;
     this.envModBase = envMod;
     this.decayBase = decay;
     this.accent = note.accent;
-    // accent shortens the filter decay (as in the real synth)
-    if (note.accent) this.decaySec *= 0.6;
-
-    // Biquad Q from the legacy synth: 1 + resonance*25 + accentBoost*6
-    const biquadQ = 1 + resonance * 25 + accentBoost * 6;
-    this.ladderRes = qToLadderRes(biquadQ);
+    this.accentBoost = accentBoost;
 
     // The 303 declares its own amp punch: its accent raises Q, and this ladder
     // LOSES level as Q climbs, so the shared punch left accents quieter than the
@@ -103,6 +98,7 @@ export class TB303Renderer implements VoiceRenderer {
 
   setModEnvelopes(mods: ModLite[]): void { this.modEnv.setModEnvelopes(mods); }
   getAdsrOffsets(): VoiceModOffsets { return this.modEnv.getAdsrOffsets(); }
+  setLiveParams(live: ParamBag): void { this.live = live; }
 
   renderSample(t: number, moIn?: VoiceModOffsets): number {
     if (this.done) return 0;
@@ -145,21 +141,34 @@ export class TB303Renderer implements VoiceRenderer {
       }
     }
 
-    // Filter cutoff envelope: opens to peak at note start, decays to base
-    // exponentially over decaySec. The base+peak are shifted by any cutoff
-    // modulation (LFO/ADSR layered on top of the 303's own contour).
-    // env.amount (Env Mod) = how high the cutoff jumps; modulatable.
-    const envAmountHz = mo?.['env.amount']
-      ? clamp01(this.envModBase + mo['env.amount']) * 6000 : this.envAmountHz;
-    let baseCutHz = this.baseCutHz;
-    if (mo?.['filter.cutoff']) baseCutHz = 80 * Math.pow(100, clamp01(this.cutoffBase + mo['filter.cutoff']));
-    const peakCutHz = (mo?.['filter.cutoff'] || mo?.['env.amount'])
-      ? Math.min(baseCutHz + envAmountHz * (1 + this.accentBoost), 18000) : this.peakCutHz;
-    // env.decay (Decay) = how fast the cutoff closes; modulatable (accent shortens it).
-    const decaySec = mo?.['env.decay']
-      ? (0.05 + clamp01(this.decayBase + mo['env.decay']) * 1.2) * (this.accent ? 0.6 : 1) : this.decaySec;
+    // Filter contour. The knob values come from the lane's LIVE bag, so turning
+    // cutoff/res/env moves THIS note; modulation offsets are added on top exactly
+    // as before, which is why a hand on the knob and an LFO simply sum.
+    const L = this.live;
+    const cutKnob = L ? param(L, 'filter.cutoff', this.cutoffBase) : this.cutoffBase;
+    const resKnob = L ? param(L, 'filter.resonance', this.resBase) : this.resBase;
+    const envKnob = L ? param(L, 'env.amount', this.envModBase) : this.envModBase;
+    const decKnob = L ? param(L, 'env.decay', this.decayBase) : this.decayBase;
+
+    const cutoff01 = mo?.['filter.cutoff'] ? clamp01(cutKnob + mo['filter.cutoff']) : cutKnob;
+    if (cutoff01 !== this.cutRaw) { this.cutRaw = cutoff01; this.cutHz = 80 * Math.pow(100, cutoff01); }
+    const baseCutHz = this.cutHz;
+
+    const envMod01 = mo?.['env.amount'] ? clamp01(envKnob + mo['env.amount']) : envKnob;
+    const peakCutHz = Math.min(baseCutHz + envMod01 * 6000 * (1 + this.accentBoost), 18000);
+
+    // env.decay = how fast the cutoff closes; accent shortens it, as on the real synth.
+    const decay01 = mo?.['env.decay'] ? clamp01(decKnob + mo['env.decay']) : decKnob;
+    const decaySec = (0.05 + decay01 * 1.2) * (this.accent ? 0.6 : 1);
     const cutoffHz = baseCutHz + (peakCutHz - baseCutHz) * Math.exp(-dt / decaySec);
-    const res = mo?.['filter.resonance'] ? clamp01(this.ladderRes + mo['filter.resonance']) : this.ladderRes;
+
+    // Biquad Q from the legacy synth (1 + res*25 + accent*6) mapped onto the
+    // ladder's 0..1. Cached: the pow in qToLadderRes is not a per-sample cost.
+    if (resKnob !== this.resRaw) {
+      this.resRaw = resKnob;
+      this.resLadder = qToLadderRes(1 + resKnob * 25 + this.accentBoost * 6);
+    }
+    const res = mo?.['filter.resonance'] ? clamp01(this.resLadder + mo['filter.resonance']) : this.resLadder;
 
     const oscOut = this.osc.update(this.freq);
     let out = this.filter.update(oscOut, cutoffHz, res) * amp;
