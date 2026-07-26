@@ -8,11 +8,13 @@ This chapter covers two ways to bring external material into a Loom session: imp
 
 ![MIDI Import panel](images/midi-import.png)
 
-The MIDI Import panel lives in the toolbar at the top of the screen, next to the demo picker. Click **MIDI Import** to expand it.
+MIDI import lives under **File ▸ Import MIDI…**, which opens a modal dialog titled "Import MIDI". There is no MIDI button in the transport row.
 
 ### Loading a file
 
-Click the file picker and choose a `.mid` or `.midi` file. Loom reads the file immediately — no server, no upload. The parser extracts every track's name, General MIDI programme number, and all note-on/note-off pairs (converted to start tick, duration, MIDI note, velocity, and channel). Only the first tempo event in the file is used; if no tempo is present, the session BPM stays as it is.
+Click the file picker inside the dialog and choose a `.mid` or `.midi` file. Loom reads the file immediately — no server, no upload. The parser extracts every track's name, General MIDI programme number, and all note-on/note-off pairs (converted to start tick, duration, MIDI note, velocity, and channel).
+
+Loom reads **every** tempo change in the file, not just the first. The session BPM is set from the *effective starting* tempo: exporters often cram several tempo events at bar 1 (say seven at 100 followed by the real 128), and Loom collapses such a cluster to its last value rather than believing the literal first event. A file that genuinely changes tempo keeps its whole tempo map, so the transport BPM follows the song. If no tempo is present at all, the session BPM stays as it is.
 
 Empty tracks (those with no note events) are silently skipped.
 
@@ -27,10 +29,11 @@ After parsing, a row appears for each non-empty track showing:
 
 ### Importing
 
-Click **Import MIDI**. A confirmation dialog asks whether to **Add** or **Replace**:
+Click **Import MIDI**. A second dialog asks what to do with the tracks, with three named buttons:
 
-- **OK (Add)** appends the imported lanes and a new scene to the current session. The new clips are placed on the new scene row so they line up correctly with the scene's launch button.
-- **Cancel (Replace)** clears the session and seeds it with only the imported content.
+- **Add** appends the imported lanes and a new scene to the current session. The new clips are placed on the new scene row so they line up correctly with the scene's launch button.
+- **Replace** clears the session and seeds it with only the imported content.
+- **Cancel** aborts the import and changes nothing.
 
 Loom creates one lane per selected track. The lane's name is taken from the matched preset (e.g. "TB Bass"), while the clip inside it keeps the original track name. If the file contained a tempo, the session BPM is updated to match. The import launches the new scene immediately.
 
@@ -48,7 +51,7 @@ The Sampler is a polyphonic playback engine that maps audio across the keyboard 
 
 ### Presets are the instruments
 
-The Sampler's bundled instruments — drumkits, melodic instruments, and loops — *are* its presets: pick one straight from the standard **PRESET** dropdown at the top of the inspector (grouped **Drumkit / Melodic / Loop**). Selecting one downloads + decodes its WAVs into IndexedDB (so it persists across reloads) and loads it. There is no separate picker. Loom ships **68 ready-made sample kits**, melodic instruments, and loops — all working on the live deploy without a manual import. Most of the kits are grouped under **Drum Machines**: one-shot sets modelled on classic hardware (TR-808, LinnDrum, MPC60, DMX and dozens more), alongside a few hand-curated kits (**TR-808**, **Acoustic**, **Dirt**) and a 31-pad **GM Percussion** kit.
+The Sampler's bundled instruments — drumkits, melodic instruments, and loops — *are* its presets: pick one straight from the standard **PRESET** dropdown at the top of the inspector, which is grouped **Presets / Drumkit / Loop** (the **Presets** group holds the melodic multi-zone instruments). Selecting one downloads + decodes its WAVs into IndexedDB (so it persists across reloads) and loads it. There is no separate picker. Loom ships **68 ready-made sample kits**, plus a small set of melodic instruments and loops — all working on the live deploy without a manual import. Most of the kits are grouped under **Drum Machines**: one-shot sets modelled on classic hardware (TR-808, LinnDrum, MPC60, DMX and dozens more), alongside a few hand-curated kits (**TR-808**, **Acoustic**, **Dirt**) and a 31-pad **GM Percussion** kit.
 
 ### The channel layout
 
@@ -81,14 +84,17 @@ Every sound — a drumkit pad, a melodic zone, or a loop slice — has its own s
 | DECAY | 0.005–4 s | 0.08 s | Release tail after the gate closes |
 | LEVEL | 0–1.5 | 1 | Pad output level |
 | PAN | −1 to +1 | 0 | Stereo pan position |
-| REV | 0–1 | 0 | Send level to the lane's reverb insert |
-| DLY | 0–1 | 0 | Send level to the lane's delay insert |
+| REV | 0–1 | 0 | How much of this sound goes to **Send B** (a Reverb by default) |
+| DLY | 0–1 | 0 | How much of this sound goes to **Send A** (a Delay by default) |
 | LOOP | Off / On | Off | When On, the sample loops while the gate is held |
 | LSTART | 0–1 | 0 | Loop start point as a fraction of sample duration |
 | LEND | 0–1 | 1 | Loop end point as a fraction of sample duration |
 | START | 0–1 | 0 | Trim in — playback start as a fraction of sample duration |
 | END | 0–1 | 1 | Trim out — playback end as a fraction of sample duration |
 | RETRIG | Poly / Mono | Poly | Mono cuts the previous hit on re-trigger; Poly layers them |
+| CHOKE | — / 1 / 2 / 3 / 4 | — | Sounds sharing the same non-zero group cut each other |
+
+REV and DLY feed the two shared session send buses, not an insert on this lane — see [Send A and Send B](07-mixing-and-fx.md) for what lives in each. CHOKE is the same mutual-exclusion mechanism the Drum Machine uses: on a drumkit the GM closed and open hi-hats start in group 1, so a closed hat silences the open hat's ring.
 
 These live in each channel strip — drumkit, melodic, and loop all share the same per-channel rack (there is no eight-pad limit and no separate knob row).
 
@@ -110,14 +116,16 @@ See [Editing Clips](05-editing-clips.md) for drawing patterns in the drum grid, 
 
 The **audio channel** is the first-class way to bring a finished loop into a Loom session: drop a WAV and it plays **tempo-locked to the project without changing pitch**, with its waveform shown as a header above the clip editor. It stays a pure audio loop; to chop a loop into individually editable note slices, load it through the Sampler's **Loop** family instead (see [Sampler](#sampler)).
 
-![The + Audio control in the session tab bar](images/audio-channel-add.png)
+![The + control that adds a lane, at the top of the clip grid](images/audio-channel-add.png)
 
 ### Creating an audio channel
 
-There are two ways to add one:
+Adding one takes two steps: make the lane, then give it a WAV.
 
-- **+ Audio button** — at the end of the lane tab row, next to the engine picker, sits a **+ Audio** button. Click it and pick a WAV. Loom decodes the file, stores it in IndexedDB (so it survives a reload), estimates its original tempo, and creates a **new audio lane** holding the loop as an audio clip. The clip opens automatically in the inspector.
-- **Drag onto an audio-lane cell** — once an audio lane exists, you can drag another WAV directly onto one of its grid cells to place a second audio clip there.
+1. **Make the lane.** Click the **+** at the top of the clip grid. It opens a menu listing every engine plus a final **Audio channel** entry — pick that and an empty audio lane appears.
+2. **Give it a WAV.** Click any empty cell in that lane (or right-click it and choose *Import audio (WAV)…*) to open a file picker, or simply drag a WAV straight onto the cell. Loom decodes the file, stores it in IndexedDB (so it survives a reload), estimates its original tempo, and places the loop as an audio clip in that cell. The clip opens in the inspector.
+
+An audio lane holds **one WAV per clip**, so you can fill several of its cells with different loops and launch them like any other clip.
 
 Each new audio lane gets a launch button on its scene row, so it is immediately playable alongside the rest of the session.
 
@@ -154,7 +162,7 @@ The audio channel itself is a pure WAV loop. To chop a loop into individually ed
 
 An audio clip can carry **warp markers** — sparse reference points that pin specific audio beats to exact positions on the session grid. With markers in place, the WSOLA time-stretcher locks each inter-marker region independently, so the groove tracks the grid precisely rather than relying on a single global stretch ratio.
 
-**Auto-seeding on stem import.** When you separate a track into stems (see [Stem separation](#stem-separation-optional-local-service)), Loom analyses the drums stem (the most rhythmically reliable) and seeds quarter-bar warp markers automatically across all stems of that import. The drums stem becomes the **warp reference** for the group; its clip is the one with a fully editable marker overlay in the waveform header.
+**Auto-seeding on stem import.** When you separate a track into stems (see [Stem separation](#stem-separation-optional-local-service)), Loom analyses the drums stem (the most rhythmically reliable) and seeds a warp marker every **four bars** across all stems of that import — a sparse starting point you then refine by hand, not a marker on every beat. The drums stem becomes the **warp reference** for the group; its clip is the one with a fully editable marker overlay in the waveform header.
 
 **Editing markers.** Open the drums-stem clip in the inspector. In the waveform header you will see amber vertical lines at each marker. You can:
 
@@ -170,39 +178,49 @@ Edits to the reference clip's markers propagate automatically to the other stems
 
 ## Stem separation (optional, local service)
 
-Stem separation lets you drop a finished song into Loom and get it back as four separate Sampler lanes — **Vocals**, **Drums**, **Bass**, and **Other** — so you can mute, solo, and remix each part inside the existing session.
+Stem separation lets you drop a finished song into Loom and get it back as four separate **audio lanes** — **Vocals**, **Drums**, **Bass**, and **Other** — so you can mute, solo, and remix each part inside the existing session.
 
 ![Stems modal](images/stems-modal.png)
 
 ### How it works
 
-Click **☰ Stems…** in the session bar (the second header row, alongside Save / Load / MIDI). A dialog titled "Separate into stems" opens and immediately checks whether the local helper service is reachable:
+Click the **☰** button in the session bar (tooltip "Separate a song into stems (local service)"), or use **File ▸ Separate into Stems…**. A dialog titled "Separate into stems" opens and immediately checks whether the local helper service is reachable:
 
 - **Service found** — the hint line reads "4 tracks (Vocals / Drums / Bass / Other) via the local service." and the **Separate** button becomes active once you pick a file.
 - **Service not found** — the hint reads "Can't find the stems service at localhost:8765. Is it running?" and Separate stays disabled. Start the service (see below), then re-open the dialog.
 
-To separate a track: pick an audio file with the file picker, then click **Separate**. The dialog shows a progress bar:
+There are two ways to feed it material:
+
+- **Pick an audio file** with the file picker, then click **Separate**.
+- **🎙 Capture PC audio** — records whatever your computer is playing (you must tick "share audio" in the browser's capture prompt). The button becomes **■ Stop and separate**; press it when you have enough and the recording goes straight into the same separation flow, no file needed.
+
+A **Replace the session with the stems** checkbox sits above the buttons and is **on** by default; see below for what each setting leaves you with.
+
+Either way, the dialog then shows a progress bar:
 
 1. **"Uploading…"** — the file is being uploaded to the local service.
 2. **"Separating… m:ss"** — the service is running Demucs; the counter shows elapsed time. The bar may be indeterminate if the model does not report fine-grained progress.
-3. On success the dialog closes automatically and four new **audio lanes** appear in the session — one per stem (**Vocals**, **Drums**, **Bass**, **Other**). Each lane holds a full-length audio clip downbeat-anchored to bar 1 and tempo-warped to the session BPM. Hitting Play reconstructs the original mix; mute or solo any lane to isolate parts.
+3. **"Transcribing notes…"** — only when you asked for transcription (see below).
+4. On success the dialog closes automatically and four new **audio lanes** appear in the session — one per stem (**Vocals**, **Drums**, **Bass**, **Other**). Each lane holds a full-length audio clip downbeat-anchored to bar 1 and tempo-warped to the session BPM. Hitting Play reconstructs the original mix; mute or solo any lane to isolate parts.
 
-The session BPM is updated to the **detected floating-point tempo** of the imported track on import, so the warp ratio starts at exactly 1.0 and the grooves lock to the grid from the first bar.
+With **Replace the session with the stems** ticked you are left with a clean session holding just the four stems in a single scene named **Stems** (the project name, key, sends and master rack are kept). Untick it and the stem lanes are added to the session you already had.
+
+With **Replace** ticked, the session BPM is conformed to the **detected floating-point tempo** of the imported track, so the warp ratio starts at exactly 1.0 and the grooves lock to the grid from the first bar. When you add stems to an existing session instead, the project tempo is authoritative and is left alone — the stems are warped to it.
 
 The entire lane-creation is a **single undo step**, so you can undo all four lanes at once.
 
-**Transcribe to notes (opt-in).** A **"Transcribe to notes"** checkbox in the Separate dialog (off by default) tells the service to additionally analyse each stem and create a note clip alongside the audio:
+**Transcribe to notes (opt-in).** A **"Transcribe to notes (experimental)"** checkbox in the Separate dialog (off by default) tells the service to additionally analyse each stem and create a note clip alongside the audio:
 
 - Pitched stems (Vocals, Bass, Other) → melodic note clips, with pitches estimated via pYIN onset detection.
 - The Drums stem → a drum-machine pattern, with hits mapped to the Drum Machine engine.
 
-The note clips are placed on a second layer within each stem lane and are immediately editable in the piano-roll or drum-grid. They are a convenience starting point, not a perfect transcription — pitch detection works best on monophonic or sparse material.
+Each transcription lands as **its own new lane**, named after the stem it came from (*Notes: Drums*, *Notes: Bass*, …), in a **separate scene called "Transcription"** — kept apart from the audio stems so you can A/B the two against each other. The clips are immediately editable in the piano-roll or drum-grid. They are a convenience starting point, not a perfect transcription — pitch detection works best on monophonic or sparse material.
 
-**Cancelar** aborts a running job and frees the temporary files on the service. **Cerrar** closes the dialog (only available when no job is running).
+**Cancel** aborts a running job and frees the temporary files on the service. **Close** closes the dialog (only available when no job is running).
 
 ### Opt-in nature
 
-The feature is entirely opt-in. If you never start the service, nothing else in Loom changes — the ☰ Stems… button is the only touch point, and it degrades gracefully to a clear "service not found" message.
+The feature is entirely opt-in. If you never start the service, nothing else in Loom changes — the ☰ button (and its File-menu twin) is the only touch point, and it degrades gracefully to a clear "service not found" message.
 
 Stems land in IndexedDB as ordinary sample assets: they survive browser reloads just like any other sample you import.
 
