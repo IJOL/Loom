@@ -451,10 +451,18 @@ export type ApplyParamFn = (paramId: string, normalised: number) => void;
 /** Land every playing clip's envelopes on their targets for the current frame.
  *  `meter` is what keeps the envelope's span equal to the clip's own: tickLane
  *  above sizes a clip as `lengthBars * ticksPerBar(meter)` ticks and
- *  envelopeSubIndex wraps on that same span. The two are the same PERIOD only
- *  while the clip has no local loop region — with `loopEnabled` tickLane
- *  iterates the shorter region and the curve slides against the notes. Known
- *  debt, pinned in session-envelope-tick.test.ts. */
+ *  envelopeSubIndex wraps on that same span.
+ *
+ *  The two are the same PERIOD only while laneLoopRegion answers with the whole
+ *  clip, and TWO things shorten it: the clip's own `loopEnabled`, and the active
+ *  scene's global loop — which tickSession above threads into tickLane as
+ *  `globalLoop`, and which applies with `loopEnabled` false. Either way tickLane
+ *  iterates the shorter region while the curve keeps wrapping on the full
+ *  length, so it slides against the notes.
+ *
+ *  Note that `lp.startTime` is no help under the global loop: session-host runs
+ *  tickGlobalLoop (which would re-anchor it every lap) only while that loop is
+ *  OFF. Known debt, both doors pinned in session-envelope-tick.test.ts. */
 export function tickSessionEnvelopes(
   laneStates: Map<string, LanePlayState>,
   now: number,

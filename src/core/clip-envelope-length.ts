@@ -11,13 +11,25 @@
 //
 // What that fixed is the BAR, not the loop: the array now spans exactly the
 // clip's own `lengthBars` in the session's meter, which is the period
-// lane-scheduler.ts iterates a clip on WHEN THE CLIP HAS NO LOCAL LOOP REGION.
-// A clip with `loopEnabled` loops [loopStartTick, loopEndTick) instead (through
-// laneLoopRegion → effectiveClipLoop), and the envelope still wraps on the full
-// length — so the curve slides against the notes there, in any meter including
-// 4/4. Known debt, older than this file and deliberately not changed here:
-// deciding what a whole-clip curve should do inside a shorter loop is an
-// audible choice, not a mechanical collapse. Pinned in
+// lane-scheduler.ts iterates a clip on ONLY WHILE laneLoopRegion ANSWERS WITH
+// THE WHOLE CLIP. It has TWO ways to answer with something shorter, and the
+// envelope is blind to both, so the curve slides against the notes in either —
+// in any meter, 4/4 included:
+//
+//   1. The clip's own `loopEnabled`, which loops [loopStartTick, loopEndTick)
+//      (laneLoopRegion → effectiveClipLoop).
+//   2. The active scene's GLOBAL loop, threaded into tickLane by
+//      session-runtime as a `GlobalLoopOverride` and taken by laneLoopRegion
+//      BEFORE it ever looks at the clip — so a clip with `loopEnabled` false
+//      lands here too. This is the more reachable door: the Performance A–B
+//      brace writes that scene loop (session-host's setGlobalLoop), and
+//      session-host calls tickGlobalLoop — the only thing that re-anchors a
+//      lane's `startTime` — precisely when the global loop is OFF, so with it
+//      on nothing rebases the elapsed time envelopeSubIndex counts from.
+//
+// Known debt, older than this file and deliberately not changed here: deciding
+// what a whole-clip curve should do inside a shorter loop is an audible choice,
+// not a mechanical collapse. Both doors are pinned in
 // session/session-envelope-tick.test.ts.
 //
 // envelopeSubIndex is built ON TOP of envelopeValueLength on purpose: the array
@@ -53,8 +65,9 @@ export function envelopeValueLengthFromBarTicks(lengthBars: number, barTicks: nu
 }
 
 /** Sub-sample `elapsedSec` points at, wrapped by the clip's own FULL length —
- *  which equals the period lane-scheduler.ts loops the clip on only while the
- *  clip has no local loop region (see the loopEnabled debt in the header). */
+ *  which equals the period lane-scheduler.ts loops the clip on only while
+ *  neither the clip's `loopEnabled` nor the scene's global loop has shortened
+ *  the region (see the two doors in the header). */
 export function envelopeSubIndex(
   elapsedSec: number, bpm: number, lengthBars: number, meter?: TimeSignature,
 ): number {

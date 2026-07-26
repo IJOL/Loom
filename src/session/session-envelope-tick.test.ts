@@ -8,15 +8,18 @@
 // made to agree by editing this file.
 //
 // The first describe block covers clips with no local loop region, where the two
-// periods really are one number. The second pins the case where they are not: a
-// clip with `loopEnabled` loops its sub-region while the envelope keeps wrapping
-// on the full length. That gap is older than this file and is not fixed here.
+// periods really are one number. The last two pin the cases where they are not,
+// and there are TWO of them, because laneLoopRegion has two ways to answer with
+// a region shorter than the clip: the clip's own `loopEnabled`, and the active
+// scene's GLOBAL loop threaded in as an override. Either way the envelope keeps
+// wrapping on the full length. That gap is older than this file and is not fixed
+// here.
 import { describe, it, expect } from 'vitest';
 import { tickSessionEnvelopes, emptyLanePlayState, type LanePlayState } from './session-runtime';
 import { ticksPerBar, DEFAULT_METER, type TimeSignature } from '../core/meter';
 import { TICKS_PER_STEP } from '../core/notes';
 import { envelopeValueLength } from '../core/clip-envelope-length';
-import { laneLoopRegion } from '../core/clip-loop';
+import { laneLoopRegion, type GlobalLoopOverride } from '../core/clip-loop';
 import { clipRegionSec } from '../core/launch-timing';
 import type { SessionClip } from './session';
 
@@ -181,6 +184,58 @@ describe('tickSessionEnvelopes — a clip with a local loop region (KNOWN DEBT)'
     for (const m of METERS) {
       const clip = halfLoopClip(4, m);
       const lap = schedulerLapSec(clip, m);
+      expect(appliedAt(clip, 2 * lap, m)).toBe(appliedAt(clip, 0, m));
+    }
+  });
+});
+
+describe('tickSessionEnvelopes — a scene GLOBAL loop (KNOWN DEBT, the same gap)', () => {
+  /** The scene's A–B window, mapped onto the first half of a 4-bar clip. This is
+   *  the override session-runtime hands tickLane on the live path when the active
+   *  scene's global loop is on — `clip.loopEnabled` stays FALSE throughout. */
+  const FIRST_HALF: GlobalLoopOverride = { enabled: true, startBar: 0, endBar: 2 };
+
+  /** The scheduler's real lap under that override, read out of the same two
+   *  owners the loop-off helper above uses. */
+  function globalLapSec(clip: SessionClip, m: TimeSignature): number {
+    const { startTick, endTick } = laneLoopRegion(clip, m, FIRST_HALF);
+    return clipRegionSec(clip, startTick, endTick, BPM);
+  }
+
+  it('shortens the lap with the clip\'s OWN loop switched off', () => {
+    // The reachability point: nothing about the clip is looping here. Without
+    // this guard the two cases below would pass vacuously if laneLoopRegion ever
+    // stopped honouring the override.
+    for (const m of METERS) {
+      const clip = rampClip(4, m);
+      expect(clip.loopEnabled).toBeFalsy();
+      expect(globalLapSec(clip, m) / clipLapSec(4, m)).toBeCloseTo(0.5, 9);
+    }
+  });
+
+  it('slides exactly like a local loop — the envelope never sees the override', () => {
+    // Same debt, second door, and this one is the more reachable of the two: the
+    // Performance A–B brace writes the scene's global loop (session-host's
+    // setGlobalLoop), so a user who never opens a clip's loop UI can still land
+    // here. Worse, session-host calls tickGlobalLoop — the one thing that
+    // re-anchors lp.startTime — ONLY while the global loop is off (it would
+    // double-trigger audio buffers at B otherwise), so with the loop on nothing
+    // rebases the `now - startTime` that envelopeSubIndex counts from.
+    for (const m of METERS) {
+      const clip = rampClip(4, m);
+      const values = clip.envelopes![0].values;
+      const lap = globalLapSec(clip, m);
+      // The ramp only ever increases, so "further along the array" is observable.
+      expect(appliedAt(clip, lap, m)).toBeGreaterThan(appliedAt(clip, 0, m));
+      // Precisely: half an array on, because the audio lap is half the envelope's.
+      expect(appliedAt(clip, lap, m)).toBe(values[values.length / 2]);
+    }
+  });
+
+  it('realigns only after as many audio laps as the envelope is long', () => {
+    for (const m of METERS) {
+      const clip = rampClip(4, m);
+      const lap = globalLapSec(clip, m);
       expect(appliedAt(clip, 2 * lap, m)).toBe(appliedAt(clip, 0, m));
     }
   });
