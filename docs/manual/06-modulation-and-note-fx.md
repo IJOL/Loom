@@ -17,7 +17,7 @@ Open any lane's engine editor and scroll to the **MODULATORS** section. Press **
 | --- | --- |
 | Subtractive | Four — two ADSRs (which **are** the amp and filter envelopes) plus two free LFOs |
 | West Coast | Two ADSRs (wavefolder + low-pass gate) plus two LFOs |
-| Wavetable | An ADSR on filter cutoff |
+| Wavetable | An ADSR on filter cutoff, plus a free LFO |
 | FM, Karplus | One LFO and one ADSR |
 | TB-303 | One LFO only — by design; its envelopes are part of the engine |
 
@@ -36,16 +36,15 @@ An LFO generates a periodic waveform that you route to one or more target parame
 | BARS / FEEL | *(SYNC mode)* **BARS** is a free numeric input for the cycle length in bars-per-cycle (e.g. `0.25` = a quarter-bar cycle, `4` = one cycle every four bars; any value from 1/16-bar up to 64 bars). **FEEL** offsets it — **Str** (straight), **Trip** (triplet), **Dot** (dotted). This replaced the old fixed RATIO dropdown, so you can sync to any cycle length, not just preset divisions. |
 | FREE / SYNC | Toggles between the free-running bpm RATE knob (FREE) and the tempo-locked BARS + FEEL controls (SYNC). |
 | POLARITY | **-1..+1** (bipolar, default) oscillates symmetrically around the param's centre. **0..1** (unipolar) only pushes the parameter upward. |
-| TRIG | **Free** — the phase runs continuously off the clock, like a classic analogue LFO. **Note** — the phase restarts on every note-on, so the LFO's shape lands the same way on each note. |
-| SCOPE | **Shared** — one phase for the whole lane; every voice wobbles together. **PerVoice** — each played note gets its own phase, starting when that note starts. |
+| RETRIG | One 3-way control with three states: **Free** — one lane-wide LFO whose phase runs continuously off the clock, like a classic analogue LFO. **Note** — one lane-wide LFO whose phase restarts on every note-on, so its shape lands the same way on each note. **Voice** — each played note gets its own LFO, born with the note. |
 
-**Musical difference between Shared and PerVoice:** a shared LFO makes a chord breathe as one — all notes rise and fall together, which is what you want for a pad that should feel like a single instrument. PerVoice gives each note its own cycle, so notes played at different moments drift out of step with each other and the chord shimmers instead of pulsing. On fast, staccato playing the difference is dramatic; on a slow sustained chord it is subtle.
+**Musical difference between the lane-wide settings and Voice:** with Free or Note the whole lane shares one LFO, so a chord breathes as one — all notes rise and fall together, which is what you want for a pad that should feel like a single instrument. **Voice** gives each note its own cycle, so notes played at different moments drift out of step with each other and the chord shimmers instead of pulsing. On fast, staccato playing the difference is dramatic; on a slow sustained chord it is subtle.
 
-**TRIG=Note** matters most with a slow LFO and short notes: with Free, a note might catch the LFO anywhere in its cycle, so consecutive notes sound inconsistent; with Note, every note gets the same sweep from the same starting point.
+**Free vs Note** matters most with a slow LFO and short notes: with Free, a note might catch the LFO anywhere in its cycle, so consecutive notes sound inconsistent; with Note, every note gets the same sweep from the same starting point. (On **Voice** a retrigger setting would be redundant — the LFO already starts with the note — which is why the three states share one control rather than two.)
 
 ### ADSR
 
-An ADSR produces a classic Attack–Decay–Sustain–Release envelope that fires once on each note trigger and follows the note's gate duration. Its default scope is **PerVoice**, which is almost always what you want: every note gets its own independent envelope.
+An ADSR produces a classic Attack–Decay–Sustain–Release envelope that fires once on each note trigger and follows the note's gate duration. Every note always gets its own independent envelope — unlike the LFO, an ADSR has no RETRIG control, because per-note is the only behaviour that makes sense for it. Its card carries the four knobs and nothing else.
 
 | Control | Range | Default |
 |---------|-------|---------|
@@ -53,8 +52,6 @@ An ADSR produces a classic Attack–Decay–Sustain–Release envelope that fire
 | D (Decay) | 1 ms – 4 s | 300 ms |
 | S (Sustain) | 0 – 100 % | 70 % |
 | R (Release) | 1 ms – 8 s | 300 ms |
-
-You can switch an ADSR to **Shared** scope if you want a single envelope that re-triggers on each note but whose shape is not tied to any individual voice. In practice PerVoice is the natural choice for most envelopes.
 
 ### Destinations and depth
 
@@ -109,7 +106,34 @@ Loom records parameter automation in two ways:
 
 **Real-time knob recording (Performance view):** in the session/I-O header row, make sure the REC mode selector beside **● REC** is set to **🎛 take** (the default), then press **● REC** to arm recording and press Play. While recording in take mode, every knob you move *and* every clip launch is captured as automation in the current take. Automation is written at a sub-step resolution derived from the BPM. Press **● REC** again to disarm. (The other two REC modes — **⏱ live** and **⚡ offline** — export WAV audio instead of recording automation; see [Transport](02-transport.md) for the unified REC group.)
 
-**Per-clip envelopes (Session view):** each clip can carry automation lanes independent of the Performance take system. Open the inspector for a clip and scroll below the note editor to the automation section. Select a parameter from the dropdown and click the add button to create an envelope lane for that clip. The envelope draws a curve over the clip's length (in bars) and plays back each time the clip loops. Envelopes are stored alongside the clip's notes in the session file.
+**Per-clip envelopes (Session view):** each clip can carry automation lanes independent of the Performance take system. Open the inspector for a clip and scroll below the note editor to the automation section. Select a parameter from the dropdown and click the add button to create an envelope lane for that clip. Envelopes are stored alongside the clip's notes in the session file.
+
+The quickest way in is not that dropdown at all: **right-click the knob you want to automate**. The menu offers *Automate in clip "&lt;name&gt;"* (or *Edit automation in clip …* if a lane already exists) and takes you straight to it. A knob that cannot be automated says so instead of offering a dead entry.
+
+### Drawing into a clip envelope
+
+Each lane sits below the note editor with its own header:
+
+- **Line / Flat** — the two brush buttons at the top of the automation section. **Line** draws a ramp between where you press and where you release; **Flat** paints one constant value across the drag. The choice applies to every lane.
+- **On / Off** — mutes the curve without deleting it.
+- **Smooth / Stepped** — switches interpolation from smooth to a staircase that holds one value per step.
+- **×** — removes the lane.
+
+### The LFO generator
+
+Rather than draw a repeating shape by hand, each lane's header carries a small generator that writes one for you:
+
+- **Shape** — Sine, Triangle, Saw up, Saw down, Square or Random.
+- **Rate** — a musical division of the **bar**: 4 bars, 2 bars, 1 bar, 1/2, 1/4, 1/8 or 1/16. 1/16 means sixteen cycles per bar, the fastest this menu offers.
+- **Depth** — 100 %, 75 %, 50 % or 25 % of the lane's full height.
+- **Loop only** — when the clip has a loop region, confines the fill to it instead of the whole lane.
+- **LFO** — the button that actually draws it. One press is one undoable step.
+
+On a **Stepped** lane the wave is sampled once per step, so a rate faster than the step grid cannot show a full cycle.
+
+### The length an envelope runs on
+
+An envelope spans the clip's **full length in bars** and repeats on that period. That matches the notes only while the whole clip is playing. If you shorten what plays — either with the clip's own loop region or with the scene's Global loop — the notes repeat on the shorter window but the envelope keeps running on the full clip, so the curve gradually slides against them. Set the loop first, then draw.
 
 When you move a clip to a lane running a different engine, envelopes whose parameter ID no longer exists in the new engine are disabled automatically (they remain in the clip but do not play back until re-enabled or deleted).
 
