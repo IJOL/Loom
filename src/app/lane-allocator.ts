@@ -18,7 +18,11 @@ import type { SidechainBus } from '../core/sidechain-bus';
 // Melodic engines that have a per-sample worklet renderer (Phase 1 subtractive +
 // Phase 2 ports). These route to WorkletLaneEngine on the live path; drums /
 // sampler / audio remain legacy until their own phases.
-const WORKLET_ENGINE_IDS = new Set(['subtractive', 'tb303', 'fm', 'wavetable', 'karplus', 'westcoast']);
+// Exported so a registry-driven test (audio-dsp/live-params.dsp.test.ts) can
+// assert EVERY id here produces a renderer implementing the live-params hook —
+// a hand-written engine list would just reproduce the gap it exists to catch
+// (I4, 2026-07-26 continuous-params review).
+export const WORKLET_ENGINE_IDS = new Set(['subtractive', 'tb303', 'fm', 'wavetable', 'karplus', 'westcoast']);
 
 // Phase G: LaneAllocatorDeps is now master-only — no per-lane strips,
 // instrument singletons, or boot configurators. ensureLaneResource() is

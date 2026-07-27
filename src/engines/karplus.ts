@@ -3,9 +3,11 @@
 // Phase 4 cutover: the legacy KarplusEngine + KarplusVoice (offline per-note
 // renderKarplusString into an AudioBuffer + Web Audio amp) were deleted. Karplus
 // lanes now synthesise through the AudioWorklet (WorkletLaneEngine +
-// audio-dsp/karplus-renderer) live and the pure kernel offline. The shared
-// renderKarplusString DSP lives in audio-dsp/karplus-renderer.ts. This file is
-// DATA-ONLY: the param spec, default modulators, and a registered descriptor.
+// audio-dsp/karplus-renderer) live and the pure kernel offline. The per-sample
+// DSP lives in the KarplusRenderer class in audio-dsp/karplus-renderer.ts (the
+// standalone renderKarplusString function it used to be was deleted with the
+// live-continuous-params rewrite). This file is DATA-ONLY: the param spec,
+// default modulators, and a registered descriptor.
 
 import type { EngineParamSpec } from './engine-params';
 import { registerEngine, registerEngineFactory } from './registry';

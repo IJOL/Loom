@@ -340,7 +340,10 @@ export class WestcoastRenderer implements VoiceRenderer {
     }
     const cutoffBaseHz = this.cutHzCached;
     const cutoffEnvScale = this.filterMode ? cutoffBaseHz * CUTOFF_ENV_SCALE * this.accentMul : 0;
-    const resKnob = L ? param(L, 'lpg.resonance', this.lpgResBase) : this.lpgResBase;
+    // Clamp the LIVE read: the constructor clamps this.lpgResBase 0..1, but the
+    // live bag is a raw knob write with no such guarantee — filter.ts warns res
+    // above ~1.5 blows up the Svf. See I-hardening, 2026-07-26 review.
+    const resKnob = L ? clamp01(param(L, 'lpg.resonance', this.lpgResBase)) : this.lpgResBase;
     const lpgRes = mo?.['lpg.resonance'] ? clamp01(resKnob + mo['lpg.resonance']) : resKnob;
     const dynamicCutoff = cutoffBaseHz + contourVal * cutoffEnvScale;
     this.filter.update(folded, dynamicCutoff, lpgRes);

@@ -9,8 +9,9 @@
 import { describe, it, expect } from 'vitest';
 import { VoiceManager } from './voice-manager';
 import type { NoteSpec, ParamBag, VoiceRenderer } from './types';
-import { registerRenderer } from './renderer-registry';
+import { registerRenderer, createRenderer } from './renderer-registry';
 import { ModulationRuntime, type ModLite } from './modulation-runtime';
+import { WORKLET_ENGINE_IDS } from '../app/lane-allocator';
 // Side-effect imports: register the real renderers.
 import './tb303-renderer';
 import './wavetable-renderer';
@@ -84,6 +85,22 @@ describe('VoiceManager live param bag', () => {
     // so this render has to match the untouched one sample for sample.
     const b = renderWithTurn('tb303', params, 0.3, 0.1, { 'filter.cutoff': 0.4 });
     expect(b).toEqual(a);
+  });
+});
+
+// I4 (2026-07-26 continuous-params review): VoiceRenderer.setLiveParams /
+// setLiveSubParams are both OPTIONAL, so a seventh worklet engine that omits
+// the hook compiles clean and passes every other test — it would just be the
+// one engine whose knobs go dead mid-note. ENGINE_CASES below is a
+// hand-written literal and would silently miss a new row; this test instead
+// walks the SAME registry the lane allocator routes through
+// (WORKLET_ENGINE_IDS), so a new engine added there without wiring live params
+// fails HERE, not in production.
+describe('every worklet engine implements a live-params hook', () => {
+  it.each([...WORKLET_ENGINE_IDS])('%s renderer implements setLiveParams or setLiveSubParams', (id) => {
+    const v = createRenderer(id, note(), {}, SR);
+    const hasHook = typeof v.setLiveParams === 'function' || typeof v.setLiveSubParams === 'function';
+    expect(hasHook, `${id} renderer implements neither hook — its knobs would be dead mid-note`).toBe(true);
   });
 });
 

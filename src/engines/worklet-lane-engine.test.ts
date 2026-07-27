@@ -67,6 +67,22 @@ describe('WorkletLaneEngine', () => {
     expect(spawns[0].velocity).toBeCloseTo(90 / 127, 3);     // resolveVelocity(undefined,false)=90
   });
 
+  // I1 (2026-07-26 continuous-params review): loom-processor.ts builds the
+  // worklet's VoiceManager from an EMPTY ParamBag, so without this every id is a
+  // "first-ever write" as far as ParamSmoother is concerned — including
+  // `output.trim` (not a declared spec param) the first time a preset carrying
+  // it loads over an already-held note, landing as an instant gain step instead
+  // of a ramp. The constructor must post the full seeded bag once, up front,
+  // with an explicit output.trim default of 1.
+  it('constructor posts the full seeded bag once, including an explicit output.trim default of 1', () => {
+    params.length = 0;
+    makeEngine();
+    expect(params).toHaveLength(1);
+    expect(params[0]['output.trim']).toBe(1);
+    const defaultCutoff = SUB_PARAM_SPECS.find((p) => p.id === 'filter.cutoff')!.default;
+    expect(params[0]['filter.cutoff']).toBe(defaultCutoff);
+  });
+
   it('setBaseValue posts the dot-id straight through to the worklet ParamBag', () => {
     params.length = 0;
     const eng = makeEngine();
@@ -76,8 +92,9 @@ describe('WorkletLaneEngine', () => {
   });
 
   it('poly.voices routes to the worklet voice cap (not a param post)', () => {
-    params.length = 0; maxVoicesCalls.length = 0;
+    maxVoicesCalls.length = 0;
     const eng = makeEngine();
+    params.length = 0; // isolate the construction-time seed post (I1) from this call
     eng.setBaseValue('poly.voices', 5);
     expect(maxVoicesCalls.at(-1)).toBe(5);
     expect(params).toHaveLength(0);

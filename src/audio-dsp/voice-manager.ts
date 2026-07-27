@@ -111,10 +111,12 @@ export class VoiceManager {
     const v = createRenderer(this.engineId, note, this.params, this.sr);
     // Hand this voice the lane's live bag so its continuous params track the
     // knobs. Its constructor already took the structural snapshot from `params`.
-    (v as { setLiveParams?(l: ParamBag): void }).setLiveParams?.(this.smoother.values);
+    // Both hooks are declared right on VoiceRenderer (optional) — this IS the
+    // contract every renderer opts into, not an ad-hoc extension worth casting.
+    v.setLiveParams?.(this.smoother.values);
     if (this.engineId === 'subtractive') {
       if (!this.liveSub) this.liveSub = subParamsFromBag(this.smoother.values);
-      (v as { setLiveSubParams?(l: SubParams): void }).setLiveSubParams?.(this.liveSub);
+      v.setLiveSubParams?.(this.liveSub);
     }
     // Hand this voice its per-voice ADSR envelopes (subtractive renderer only;
     // others ignore the call). Read once at spawn — live shape edits apply to the

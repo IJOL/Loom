@@ -25,6 +25,8 @@ import { ScheduledNoteOffs } from '../audio-dsp/scheduled-noteoffs';
 import { SamplerRenderer } from '../audio-dsp/sample/sampler-renderer';
 import { AudioClipRenderer } from '../audio-dsp/sample/audio-clip-renderer';
 import type { SampleSpawn, LivePadParams } from '../audio-dsp/sample/types';
+import { ParamSmoother } from '../audio-dsp/param-smoother';
+import type { ParamBag } from '../audio-dsp/types';
 import { chokesVoice } from '../engines/sampler-choke';
 
 type SamplerMsg =
@@ -53,9 +55,16 @@ class SamplerProcessor extends AudioWorkletProcessor {
   private bank = new SampleBank();
   private queue = new SchedulerQueue<{ kind: 'sampler' | 'audio'; spawn: SampleSpawn }>();
   private scheduledOffs = new ScheduledNoteOffs<SamplerRenderer | AudioClipRenderer>();
-  /** padNote → its live knob values. Mutated in place so the voices holding a
-   *  reference see the change on their next sample. */
-  private padParams = new Map<number, LivePadParams>();
+  /** padNote → its live knob smoother. `.values` is the object voices hold a
+   *  reference to and read every sample (mutated in place); `level`/`pan` are
+   *  pure amplitude scalars, so an unslewed jump there is a zipper (~16 ms knob
+   *  messages) or a click (a fast flick) — the same reason the six melodic
+   *  engines ramp. Created lazily: a pad nothing has touched costs nothing. */
+  private padSmoothers = new Map<number, ParamSmoother>();
+  /** Smoothers currently ramping — the ONLY ones ticked each sample. Swap-and-pop
+   *  (never spliced), so a lane at rest (nothing moving) costs one length check
+   *  per sample and the render path allocates nothing. */
+  private movingPads: ParamSmoother[] = [];
   private live: Slot[] = [];
   private frame = Math.floor(currentTime * sampleRate);
   // Set by `kill` (lane disposed): process() then returns false so the audio engine
@@ -73,10 +82,18 @@ class SamplerProcessor extends AudioWorkletProcessor {
       } else if (m.type === 'spawn') {
         this.queue.push(Math.floor(m.spawn.beginSec * sampleRate), { kind: m.kind, spawn: m.spawn });
       } else if (m.type === 'padParams') {
-        const cur = this.padParams.get(m.padNote);
-        // Mutate in place: live voices hold this exact object.
-        if (cur) Object.assign(cur, m.params);
-        else this.padParams.set(m.padNote, { ...m.params });
+        let sm = this.padSmoothers.get(m.padNote);
+        if (!sm) {
+          // First-ever value for this pad and no voice has spawned it yet (a
+          // knob touched before the pad's first hit): nothing is sounding, so
+          // land instantly — mirrors ParamSmoother.reset's boot/construction case.
+          sm = new ParamSmoother(sampleRate);
+          sm.reset(m.params as unknown as ParamBag);
+          this.padSmoothers.set(m.padNote, sm);
+        } else {
+          sm.setTargets(m.params as unknown as ParamBag);
+          if (sm.moving && this.movingPads.indexOf(sm) < 0) this.movingPads.push(sm);
+        }
       } else if (m.type === 'silence') {
         // Note-off the live voices. A long loop/song clip would otherwise play its
         // whole buffer past the cut. Each renderer's noteOff shortens its gate so
@@ -104,6 +121,17 @@ class SamplerProcessor extends AudioWorkletProcessor {
     const n = dry[0].length;
     for (let i = 0; i < n; i++) {
       const t = this.frame / sampleRate;
+      // Advance every pad smoother still ramping (a knob turn in flight). At rest
+      // this is one length check — the render path pays exactly what it paid
+      // before I2 (2026-07-26 continuous-params review).
+      for (let p = this.movingPads.length - 1; p >= 0; p--) {
+        const sm = this.movingPads[p];
+        sm.tick();
+        if (!sm.moving) {
+          this.movingPads[p] = this.movingPads[this.movingPads.length - 1];
+          this.movingPads.pop();
+        }
+      }
       // Fire any scheduled note-offs due at this frame (gapless scene switch): the
       // outgoing voices fade exactly at T, the same frame the incoming clip spawns.
       this.scheduledOffs.drainDue(this.frame, sampleRate);
@@ -123,14 +151,22 @@ class SamplerProcessor extends AudioWorkletProcessor {
           }
         }
         if (kind === 'sampler' && padNote >= 0) {
-          let live = this.padParams.get(padNote);
-          if (!live) {
+          let sm = this.padSmoothers.get(padNote);
+          if (!sm) {
             // First hit of this pad before any knob moved: seed the table from the
-            // spawn so the voice and the table agree.
-            live = { cutoff: spawn.cutoff, res: spawn.res, level: spawn.level, pan: spawn.pan, rev: spawn.rev, dly: spawn.dly };
-            this.padParams.set(padNote, live);
+            // spawn so the voice and the table agree, landing instantly (nothing
+            // is sounding yet for this pad — a ramp from silence would be wrong).
+            sm = new ParamSmoother(sampleRate);
+            sm.reset({
+              cutoff: spawn.cutoff, res: spawn.res, level: spawn.level,
+              pan: spawn.pan, rev: spawn.rev, dly: spawn.dly,
+            });
+            this.padSmoothers.set(padNote, sm);
           }
-          (r as SamplerRenderer).setLivePad(live);
+          // The smoother's `values` always carries exactly the 6 LivePadParams
+          // fields — every seed/patch above is a complete set (see setBaseValue /
+          // setPadStore in sampler-worklet-engine.ts).
+          (r as SamplerRenderer).setLivePad(sm.values as unknown as LivePadParams);
         }
         this.live.push({ r, sampler: kind === 'sampler', chokeGroup, padNote });
       });

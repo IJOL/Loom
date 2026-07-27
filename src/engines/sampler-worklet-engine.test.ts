@@ -10,6 +10,7 @@ import type { SampleSpawn } from '../audio-dsp/sample/types';
 const loaded: string[] = [];
 const spawns: Array<{ kind: 'sampler' | 'audio'; spawn: SampleSpawn }> = [];
 let silenceAllCalls = 0;
+const padParamPosts: Array<{ padNote: number; params: Record<string, number> }> = [];
 
 vi.mock('../audio-worklet/sampler-node', () => ({
   loadSamplerWorklet: vi.fn().mockResolvedValue(undefined),
@@ -18,6 +19,7 @@ vi.mock('../audio-worklet/sampler-node', () => ({
     loadSample(id: string) { this.sent.add(id); loaded.push(id); }
     hasSample(id: string) { return this.sent.has(id); }
     spawn(kind: 'sampler' | 'audio', spawn: SampleSpawn) { spawns.push({ kind, spawn }); }
+    setPadParams(padNote: number, params: Record<string, number>) { padParamPosts.push({ padNote, params }); }
     silenceAll() { silenceAllCalls++; }
     connectDry() {}
     connectSend() {}
@@ -58,7 +60,43 @@ const ctx = new AudioContext();
 const out = () => ctx.createGain();
 
 describe('SamplerWorkletEngine', () => {
-  beforeEach(() => { loaded.length = 0; spawns.length = 0; silenceAllCalls = 0; });
+  beforeEach(() => { loaded.length = 0; spawns.length = 0; silenceAllCalls = 0; padParamPosts.length = 0; });
+
+  // C1 regression (2026-07-26 review): a bulk pad-store restore (undo/redo,
+  // session/demo load, family switch) used to update ONLY this.padStore — the
+  // worklet's live per-pad table (seeded once from the first spawn) never heard
+  // about it, so a sounding/next-triggered voice kept the pre-restore value
+  // forever. setPadStore must now push every affected pad's resolved values.
+  it('setPadStore posts the restored values so the worklet live table cannot go stale', () => {
+    sampleCache.put('swe-restore', fakeBuffer(0.5));
+    const eng = new SamplerWorkletEngine();
+    eng.setKeymap([{ sampleId: 'swe-restore', rootNote: 36, loNote: 36, hiNote: 36 }]);
+    eng.createVoice(ctx, out());          // builds the worklet node (setPadParams needs it)
+    eng.setBaseValue('zone36.level', 0.2); // simulate the knob drag that went quiet
+    padParamPosts.length = 0;              // isolate the restore's own posts
+
+    eng.setPadStore({});                   // undo: the override is gone, level reverts to default (1)
+
+    expect(padParamPosts.length).toBeGreaterThan(0);
+    const post = padParamPosts.find((p) => p.padNote === 36);
+    expect(post).toBeDefined();
+    expect(post!.params.level).toBeCloseTo(1, 4);
+  });
+
+  it('setPadStore also resyncs a pad whose override CHANGES (not just clears)', () => {
+    sampleCache.put('swe-restore2', fakeBuffer(0.5));
+    const eng = new SamplerWorkletEngine();
+    eng.setKeymap([{ sampleId: 'swe-restore2', rootNote: 40, loNote: 40, hiNote: 40 }]);
+    eng.createVoice(ctx, out());
+    eng.setBaseValue('zone40.level', 0.2);
+    padParamPosts.length = 0;
+
+    eng.setPadStore({ 40: { level: 0.7 } }); // restore to a DIFFERENT stored value
+
+    const post = padParamPosts.find((p) => p.padNote === 40);
+    expect(post).toBeDefined();
+    expect(post!.params.level).toBeCloseTo(0.7, 4);
+  });
 
   it('release() silences the worklet so a long loop/song clip stops on transport Stop', () => {
     const eng = new SamplerWorkletEngine();

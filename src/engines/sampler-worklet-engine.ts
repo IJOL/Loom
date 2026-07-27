@@ -218,9 +218,22 @@ export class SamplerWorkletEngine implements SynthEngine {
   }
 
   getPadStore(): Record<number, Partial<PadParams>> { return this.padStore; }
+  /** Bulk-replace the WHOLE pad store — undo/redo restore, session/demo load, and
+   *  a family switch (loadFamilyRef) all land here without touching a single
+   *  knob. Unlike setBaseValue's single-pad edit, nothing else pushes these
+   *  values to the worklet's live table, which otherwise seeds a pad ONCE from
+   *  its first spawn and never again (C1, 2026-07-26 continuous-params review):
+   *  a knob could be dragged, then undone, and the sounding/next-triggered voice
+   *  would keep reading the pre-undo value forever. Resync every pad the OLD or
+   *  NEW store touches (their union) so a value that reverts to default — not
+   *  just one that changes — is pushed too. */
   setPadStore(store: Record<number, Partial<PadParams>>): void {
+    const affected = new Set<number>();
+    for (const k of Object.keys(this.padStore)) affected.add(Number(k));
+    for (const k of Object.keys(store)) affected.add(Number(k));
     this.padStore = {};
     for (const [k, v] of Object.entries(store)) this.padStore[Number(k)] = { ...v };
+    for (const note of affected) this.pushPadParams(note);
   }
 
   get modulators(): ModulationHostImpl { return this.modHost; }
@@ -290,18 +303,22 @@ export class SamplerWorkletEngine implements SynthEngine {
     if (!(leaf in PAD_DEFAULTS)) return;
     const note = noteForPadKey(key);
     (this.padStore[note] ??= {})[leaf] = v;
-    // Push the pad's continuous values so the voices ALREADY sounding hear the
-    // change — the spawn only froze the trigger. getPad merges the store over the
-    // defaults, so this always sends a complete set. `node` is null before the
-    // first sound, and then there is nothing sounding to update.
-    if (this.node) {
-      const pad = this.getPad(note);
-      this.node.setPadParams(note, {
-        cutoff: pad.cutoff, res: pad.res, level: pad.level,
-        pan: pad.pan, rev: pad.rev, dly: pad.dly,
-      });
-    }
+    this.pushPadParams(note);
     this.onPadEdit?.();
+  }
+
+  /** Push one pad's resolved continuous values to the worklet's live table — the
+   *  voices ALREADY sounding hear the change (the spawn only froze the trigger).
+   *  getPad merges the store over the defaults, so this always sends a complete
+   *  set. `node` is null before the first sound, and then there is nothing
+   *  sounding to update. */
+  private pushPadParams(note: number): void {
+    if (!this.node) return;
+    const pad = this.getPad(note);
+    this.node.setPadParams(note, {
+      cutoff: pad.cutoff, res: pad.res, level: pad.level,
+      pan: pad.pan, rev: pad.rev, dly: pad.dly,
+    });
   }
 
   setKeymap(entries: KeymapEntry[]): void {
