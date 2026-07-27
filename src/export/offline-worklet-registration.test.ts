@@ -18,9 +18,9 @@
 // the exact node that threw. Drums/Sampler/Audio engines build their nodes lazily
 // on createVoice, which the recorder never calls (it renders through pure kernels),
 // so the strict node below only ever fires for the loom path. To ALSO guard the
-// drums/sampler registrations (defensive today, load-bearing if the offline path
+// drums/sampler/duck registrations (defensive today, load-bearing if the offline path
 // ever grows real worklet nodes), we assert the EXACT module count: the fix must
-// register all three, so dropping any loader from record() drops the count below 3
+// register all four, so dropping any loader from record() drops the count below 4
 // and fails — `toHaveBeenCalled()` alone would stay green on loom's load.
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
@@ -98,19 +98,19 @@ describe('OfflineSceneRecorder registers worklet modules on its OfflineAudioCont
     const { state, laneStates } = sceneFor('tb303', 'tb-303-1', 40);
     const rec = new OfflineSceneRecorder({ state, laneStates, bpm: 120, meter: DEFAULT_METER, sampleRate: 44100 });
     await expect(rec.record(1.0)).resolves.toBeDefined();
-    // Exactly loom + drums + sampler registered on the fresh ctx — dropping any
-    // loader from record() drops this below 3 and fails.
-    expect(addModuleSpy).toHaveBeenCalledTimes(3);
+    // Exactly loom + drums + sampler + duck-detector registered on the fresh ctx —
+    // dropping any loader from record() drops this below 4 and fails.
+    expect(addModuleSpy).toHaveBeenCalledTimes(4);
   });
 
-  it('registers all three worklet modules (loom + drums + sampler), not just loom', async () => {
+  it('registers all four worklet modules (loom + drums + sampler + duck), not just loom', async () => {
     // Pins the exact module set independently of the melodic node above, so a future
-    // refactor that removes loadDrumsWorklet/loadSamplerWorklet is caught even though
+    // refactor that removes loadDrumsWorklet/loadSamplerWorklet/loadDuckWorklet is caught even though
     // those nodes are not constructed offline today. A drums lane still exercises the
     // recorder's pure DrumVoiceManager path end-to-end.
     const { state, laneStates } = sceneFor('drums-machine', 'drums-1', 36);
     const rec = new OfflineSceneRecorder({ state, laneStates, bpm: 120, meter: DEFAULT_METER, sampleRate: 44100 });
     await expect(rec.record(1.0)).resolves.toBeDefined();
-    expect(addModuleSpy).toHaveBeenCalledTimes(3);
+    expect(addModuleSpy).toHaveBeenCalledTimes(4);
   });
 });

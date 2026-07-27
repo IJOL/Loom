@@ -56,8 +56,13 @@ async function armSidechain(page: Page): Promise<void> {
   await page.locator('[data-page="303"] .lane-fx-sc-src').selectOption('drums-1');
 }
 
-const launchScene2 = (page: Page) =>
-  page.locator('.session-scene-launch', { hasText: 'Scene 2' }).first().click();
+/** Launch scene 2 and let the analyser fill with REAL data. Without the settle the
+ *  first frames still read the tap's initial zeros, and a zero-filled buffer would
+ *  satisfy "it ducks" all by itself — the artifact that made `min: 0` meaningless. */
+async function launchScene2(page: Page): Promise<void> {
+  await page.locator('.session-scene-launch', { hasText: 'Scene 2' }).first().click();
+  await page.waitForTimeout(700);
+}
 
 test.describe('sidechain ducking', () => {
   test('the duck multiplier stays in [0,1] and survives stop + relaunch', async ({ page }) => {
@@ -69,6 +74,7 @@ test.describe('sidechain ducking', () => {
 
     await launchScene2(page);
     const first = await measureDuck(page, 6000);
+    console.log('[sidechain] first pass', JSON.stringify(first));
 
     // The invariant the old biquad follower broke.
     expect(first.min).toBeGreaterThanOrEqual(-0.01);
@@ -85,6 +91,7 @@ test.describe('sidechain ducking', () => {
 
     await launchScene2(page);
     const second = await measureDuck(page, 6000);
+    console.log('[sidechain] idle', JSON.stringify(idle), 'second pass', JSON.stringify(second));
     expect(second.min).toBeGreaterThanOrEqual(-0.01);
     expect(second.max).toBeLessThanOrEqual(1.01);
     expect(second.min).toBeLessThan(0.95);
