@@ -1,9 +1,9 @@
 // src/notefx/notefx-registry.test.ts
 import { describe, it, expect, beforeEach } from 'vitest';
-import { getNoteFxChain, loadNoteFxForLane, _resetNoteFxRegistry } from './notefx-registry';
+import { getNoteFxChain, loadNoteFxForLane, clearNoteFxChains } from './notefx-registry';
 
 describe('notefx-registry', () => {
-  beforeEach(() => { _resetNoteFxRegistry(); });
+  beforeEach(() => { clearNoteFxChains(); });
 
   it('getNoteFxChain returns the same instance per lane', () => {
     const a = getNoteFxChain('sub-1');

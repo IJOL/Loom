@@ -18,5 +18,8 @@ export function loadNoteFxForLane(laneId: string, state: NoteFxState[] | undefin
   getNoteFxChain(laneId).deserialize(state ?? []);
 }
 
-/** Test-only. */
-export function _resetNoteFxRegistry(): void { chains.clear(); }
+/** Drop every lane's chain. The registry is keyed by lane id and only ever
+ *  grew, so a chain outlived the lane that owned it — `resetAllResources`
+ *  (New / any session load) calls this so note-FX don't ride into the next
+ *  session. Also the reset seam tests use between cases. */
+export function clearNoteFxChains(): void { chains.clear(); }

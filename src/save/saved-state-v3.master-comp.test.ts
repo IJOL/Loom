@@ -40,7 +40,7 @@ describe('SavedStateV3 persists the master compressor', () => {
     const deps = {
       seq: { bpm: 0 }, volInput: { value: '' }, bpmInput: { value: '' },
       swingInput: { value: '' }, meterSel: { value: '' },
-      sessionHost: { applyLoadedSessionState: () => {} },
+      sessionHost: { replaceSession: () => {} },
       lanes: { resources: new Map() },
       refreshKnobsFromSynth: () => {}, renderLanes: () => {},
       fx: {}, master: { gain: { value: 0 } },
@@ -60,7 +60,7 @@ describe('SavedStateV3 persists the master compressor', () => {
     const deps = {
       seq: { bpm: 0 }, volInput: { value: '' }, bpmInput: { value: '' },
       swingInput: { value: '' }, meterSel: { value: '' },
-      sessionHost: { applyLoadedSessionState: () => {} },
+      sessionHost: { replaceSession: () => {} },
       lanes: { resources: new Map() },
       refreshKnobsFromSynth: () => {}, renderLanes: () => {},
       fx: {}, master: { gain: { value: 0 } },

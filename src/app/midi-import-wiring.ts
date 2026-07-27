@@ -148,7 +148,7 @@ export function wireMidiImport(deps: MidiImportWiringDeps): MidiImportWiring {
     // and reset the Performance arrangement. (No markClean — the import IS a change.)
     resetSession: () => {
       stopTransport();
-      sessionHost.applyLoadedSessionState(emptySessionState());
+      sessionHost.replaceSession(emptySessionState());
       performanceFeature.resetArrangement();
     },
     // Allocate strip+engine for the freshly-seeded lanes BEFORE the import renders

@@ -46,6 +46,7 @@ import {
   collectEngineState as collectEngineStateImpl,
   applyEngineState as applyEngineStateImpl,
 } from './session-host-persistence';
+import { resetAllResources as resetAllResourcesImpl } from './session-host-reset';
 import { html } from 'lit-html';
 import { renderElement } from '../core/lit-fragment';
 import { buildMixerColumn } from '../core/mixer';
@@ -608,9 +609,30 @@ export class SessionHost {
   }
 
   /** Replace the session with a loaded/migrated SessionState (lane allocation +
-   *  insert/engine rehydration). Impl in session-host-persistence. */
+   *  insert/engine rehydration). Impl in session-host-persistence.
+   *
+   *  ADDITIVE by nature: it pushes what the incoming state carries and leaves
+   *  the rest of the desk as it is. That is right for the paths that mean to
+   *  keep the desk — the stems "replace" swap, which preserves the project's
+   *  sends and master rack on purpose. Every path that means a NEW session must
+   *  call {@link replaceSession} instead. */
   applyLoadedSessionState(sess: SessionState): void {
     applyLoadedSessionStateImpl(this, sess);
+  }
+
+  /** New / boot demo / demo picker / save load / import-replace: release EVERY
+   *  live resource, then apply the incoming state. Loading IS New + load, so a
+   *  field the new session does not mention lands on its default instead of the
+   *  previous session's value. */
+  replaceSession(sess: SessionState): void {
+    resetAllResourcesImpl(this);
+    applyLoadedSessionStateImpl(this, sess);
+  }
+
+  /** Tear the desk down to boot state without applying anything. Public for the
+   *  reset seam's own tests; production callers want {@link replaceSession}. */
+  resetAllResources(): void {
+    resetAllResourcesImpl(this);
   }
 
   /** @internal — push persisted engine state onto live engines (load path).

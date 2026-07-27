@@ -1,7 +1,7 @@
 // src/app/trigger-dispatch.test.ts
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createTriggerForLane } from './trigger-dispatch';
-import { getNoteFxChain, _resetNoteFxRegistry } from '../notefx/notefx-registry';
+import { getNoteFxChain, clearNoteFxChains } from '../notefx/notefx-registry';
 
 function fakeDeps(fired: Array<{ note: number; time: number }>) {
   const engine = {
@@ -31,7 +31,7 @@ describe('createTriggerForLane velocity', () => {
 });
 
 describe('createTriggerForLane note-FX integration', () => {
-  beforeEach(() => { _resetNoteFxRegistry(); });
+  beforeEach(() => { clearNoteFxChains(); });
 
   it('with an empty chain, fires exactly the input note (passthrough)', () => {
     const fired: Array<{ note: number; time: number }> = [];

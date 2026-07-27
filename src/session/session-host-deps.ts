@@ -75,6 +75,12 @@ export interface SessionHostDeps {
    *  .swapLaneEngine). Used to reconcile a lane whose engineId changed via
    *  undo/redo or a loaded session. Optional so test fixtures can skip it. */
   swapLaneEngine?: (laneId: string, newEngineId: string) => void;
+  /** Free EVERYTHING the allocator holds for a lane (allocator .releaseLane):
+   *  the resource plus the caches it keeps outside `laneResources` — the cached
+   *  voice, any standalone strip, and the global voice-cap registration.
+   *  Preferred over `laneResources.dispose`, which only frees the first of
+   *  those. Optional so fixtures without an allocator fall back to it. */
+  releaseLane?: (laneId: string) => void;
   /** Apply a preset to a lane by name. Called by applyLoadedSessionState
    *  for every lane.enginePresetName. Optional so test fixtures without
    *  audio can skip it. */
@@ -110,6 +116,12 @@ export interface SessionHostDeps {
   /** Master bus EQ/pan/mute strip the master mixer module's tone controls drive.
    *  Optional, paired with volInput/masterMeterAnalyser. */
   masterStrip?: import('../core/master-bus-strip').MasterBusStrip;
+  /** Master-bus compressor and shaper, held for ONE reason: a New / session load
+   *  has to release them like every other resource (see session-host-reset).
+   *  Optional so fixtures without an audio graph keep working — the save layer
+   *  owns their persistence, not the host. */
+  masterComp?: import('../core/fx').MasterCompressor;
+  masterShaper?: import('../core/master-shaper').MasterShaper;
   /** Commit an undo checkpoint after an async/programmatic mutation that does
    *  not end in a user pointer/key event (stems, transcription, import). */
   checkpointHistory?: () => void;

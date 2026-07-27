@@ -15,6 +15,7 @@ import { applyLaneEngineState } from '../export/apply-lane-engine-state';
 import { getNoteFxChain, loadNoteFxForLane } from '../notefx/notefx-registry';
 import { reloadDrumkit, reloadInstrument, reloadPreset } from './session-host-presets';
 import { pruneKnobRegistry } from '../app/knob-registry-prune';
+import { releaseLane } from './session-host-reset';
 import { withoutParamMirror } from './session-engine-state';
 
 /** Snapshot the two send buses (return level, mute, and preserved insert slots).
@@ -69,7 +70,7 @@ export function applyLoadedSessionState(self: SessionHost, sess: SessionState): 
   // engine instances each time the user cycles add → undo → add.
   const keep = new Set(self.state.lanes.map((l) => l.id));
   for (const id of self.deps.laneResources?.ids() ?? []) {
-    if (!keep.has(id)) self.deps.laneResources?.dispose(id);
+    if (!keep.has(id)) releaseLane(self, id);
   }
   // Drop knob handles belonging to lanes this session doesn't have. The map is
   // keyed `<laneId>.<param>` and only ever grew, so without this every load

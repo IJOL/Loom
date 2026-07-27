@@ -85,7 +85,7 @@ export function wireSessionLifecycle(deps: SessionLifecycleDeps): SessionLifecyc
   Promise.all([presetsLoaded, workletReady])
     .then(() => fetchDemoSession(`${import.meta.env.BASE_URL}demos/minimal-techno.json`))
     .then((state) => {
-      sessionHost.applyLoadedSessionState(state);
+      sessionHost.replaceSession(state);
       if (typeof state.bpm === 'number') setTransportBpm(state.bpm);
       markClean();
     })
@@ -130,7 +130,12 @@ export function wireSessionLifecycle(deps: SessionLifecycleDeps): SessionLifecyc
     // the master clock keeps running and in-flight voices keep sounding after the
     // old lanes are disposed → the "New leaves the old synths playing" bug.
     stopTransport();
-    sessionHost.applyLoadedSessionState(emptySessionState());
+    // replaceSession, not applyLoadedSessionState: New releases EVERY live
+    // resource first (lane strips + engines, note-FX, master/send racks, the
+    // master processors, mute/solo, knob handles). Without that, everything the
+    // empty state does not mention — the whole mixer, chiefly the sends — rode
+    // through untouched, and so did every later demo load.
+    sessionHost.replaceSession(emptySessionState());
     // Also wipe the Performance take + leave Performance mode. Without this New
     // cleared the session but left the old arrangement in the timeline, where
     // every band turned into an orphaned "missing" (clipEvents pointing at the

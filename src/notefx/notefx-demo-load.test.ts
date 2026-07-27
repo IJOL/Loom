@@ -2,14 +2,14 @@
 // Regression: the arp kept the first demo's configuration. Note-FX now live
 // in lane.engineState and load per demo via loadNoteFxForLane.
 import { describe, it, expect, beforeEach } from 'vitest';
-import { getNoteFxChain, loadNoteFxForLane, _resetNoteFxRegistry } from './notefx-registry';
+import { getNoteFxChain, loadNoteFxForLane, clearNoteFxChains } from './notefx-registry';
 import type { NoteFxState } from './notefx-types';
 
 const demoA: NoteFxState[] = [{ id: 'arp1', kind: 'arp', enabled: true, params: { octaves: 3 } }];
 const demoB: NoteFxState[] = [{ id: 'chord1', kind: 'chord', enabled: true, params: { chordType: 'min7', octave: 0 } }];
 
 describe('note-FX follow demo loads', () => {
-  beforeEach(() => { _resetNoteFxRegistry(); });
+  beforeEach(() => { clearNoteFxChains(); });
 
   it('loading demo A then demo B replaces the chain (no stale config)', () => {
     loadNoteFxForLane('sub-1', demoA);

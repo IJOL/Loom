@@ -7,8 +7,8 @@ const flush = () => new Promise((r) => setTimeout(r, 0));
 
 describe('wireDemoPicker', () => {
   it('applies the demo bpm after loading when the demo carries one', async () => {
-    const applyLoadedSessionState = vi.fn();
-    const sessionHost = { applyLoadedSessionState } as unknown as SessionHost;
+    const replaceSession = vi.fn();
+    const sessionHost = { replaceSession } as unknown as SessionHost;
     const applyBpm = vi.fn();
     const selectEl = document.createElement('select');
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
@@ -25,13 +25,13 @@ describe('wireDemoPicker', () => {
     selectEl.dispatchEvent(new Event('change'));
     await flush();
 
-    expect(applyLoadedSessionState).toHaveBeenCalledOnce();
+    expect(replaceSession).toHaveBeenCalledOnce();
     expect(applyBpm).toHaveBeenCalledWith(84);
     vi.unstubAllGlobals();
   });
 
   it('does not call applyBpm when the demo has no bpm', async () => {
-    const sessionHost = { applyLoadedSessionState: vi.fn() } as unknown as SessionHost;
+    const sessionHost = { replaceSession: vi.fn() } as unknown as SessionHost;
     const applyBpm = vi.fn();
     const selectEl = document.createElement('select');
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({

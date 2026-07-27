@@ -90,11 +90,16 @@ export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): voi
   seq.meter = meter;
   if (meterSel) meterSel.value = formatMeter(meter);
   if (typeof s.masterVol === 'number') { master.gain.value = s.masterVol; volInput.value = String(s.masterVol); }
+
+  // ORDER MATTERS, and it is the reverse of what it used to be. `replaceSession`
+  // releases the whole desk — including the master strip/comp/shaper — before
+  // applying, so restoring those first would hand them straight to the reset.
+  // The session goes in first; the master fields this file owns go on top.
+  if (s.sessionState) sessionHost.replaceSession(s.sessionState);
+
   deps.masterStrip?.restore(s.masterStrip);
   if (s.masterComp) deps.masterComp?.setState(s.masterComp);
   if (s.masterShaper) deps.masterShaper?.setState(s.masterShaper);
-
-  if (s.sessionState) sessionHost.applyLoadedSessionState(s.sessionState);
 
   refreshKnobsFromSynth();
   renderLanes();

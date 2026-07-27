@@ -65,6 +65,9 @@ export interface LaneAllocator {
   ensureLaneVoice(laneId: string, engineId: string): Voice | null;
   ensureLaneResource(laneId: string, engineId: string): void;
   swapLaneEngine(laneId: string, newEngineId: string): void;
+  /** Free everything this allocator holds for a lane (resource + cached voice +
+   *  standalone strip + voice-cap registration). The ONE way a lane goes away. */
+  releaseLane(laneId: string): void;
   getLaneEngineInstance(laneId: string): SynthEngine | null;
   /** (Re)connect the lane's modulators to their Web-Audio destinations — the
    *  lane/master insert params and any shared engine params. Call after the
@@ -287,10 +290,25 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
   const getLaneEngineInstance = (laneId: string): SynthEngine | null =>
     resources.get(laneId)?.engine ?? null;
 
+  /** Release EVERY per-lane resource this allocator holds — not just the entry
+   *  in `resources`. `resources.dispose(id)` frees the strip/engine/inserts but
+   *  knows nothing about the three caches that live out here: the cached voice
+   *  (a later ensureLaneVoice would hand back a voice belonging to a disposed
+   *  engine), the standalone strip in `extraLaneStrips`, and the lane's entry in
+   *  the global voice cap (a dead worklet node still counted). Every caller that
+   *  means "this lane is gone" must come through here. */
+  const releaseLane = (laneId: string): void => {
+    resources.dispose(laneId);
+    laneVoices.delete(laneId);
+    deps.globalVoiceCap?.unregister(laneId);
+    extraLaneStrips.get(laneId)?.dispose();
+    extraLaneStrips.delete(laneId);
+  };
+
   return {
     resources, extraStrips,
     stripFor, ensureLaneStrip, ensureLaneVoice, ensureLaneResource,
-    swapLaneEngine,
+    swapLaneEngine, releaseLane,
     getLaneEngineInstance,
     bindLaneModulators,
   };

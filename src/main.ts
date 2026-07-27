@@ -173,7 +173,7 @@ const lanes = createLaneAllocator({
 });
 const { resources: laneResources, extraStrips,
         stripFor, ensureLaneVoice,
-        ensureLaneResource, getLaneEngineInstance, swapLaneEngine } = lanes;
+        ensureLaneResource, getLaneEngineInstance, swapLaneEngine, releaseLane } = lanes;
 
 const bpmBroadcast = createBpmBroadcaster({
   seq, fx, masterInsertChain,
@@ -395,6 +395,7 @@ const sessionHost = new SessionHost({
   laneResources,
   ensureLaneResource,
   swapLaneEngine,
+  releaseLane,
   masterInsertChain,
   fxBus: fx,
   // Master strip in the last mixer column: a full lane-style column — the fader
@@ -403,6 +404,10 @@ const sessionHost = new SessionHost({
   volInput,
   masterMeterAnalyser,
   masterStrip,
+  // Held only so a New / session load can release them with everything else
+  // (session-host-reset.ts). Their persistence stays in the save layer.
+  masterComp,
+  masterShaper,
   applyPresetForLane: (laneId, presetName) => {
     // presetName is a prefixed value in the unified dropdown vocabulary
     // (engine: / user: / sampler:). See src/presets/preset-apply.ts.

@@ -21,12 +21,15 @@ export interface DemoPickerDeps {
  *  clicks / no dispatching a `change` event on the hidden `<select>`). */
 export async function loadDemoSession(
   path: string,
-  deps: { sessionHost: { applyLoadedSessionState: (s: any) => void }; applyBpm?: (bpm: number) => void; onLoaded?: () => void },
+  deps: { sessionHost: { replaceSession: (s: any) => void }; applyBpm?: (bpm: number) => void; onLoaded?: () => void },
 ): Promise<void> {
   if (!path) return;
   try {
     const state = await fetchDemoSession(path);
-    deps.sessionHost.applyLoadedSessionState(state);
+    // replaceSession = New + load. A demo carries no per-lane mixer, no master
+    // rack and no master processing, so anything the previous session left on
+    // the desk would otherwise still be colouring this demo's sound.
+    deps.sessionHost.replaceSession(state);
     if (typeof state.bpm === 'number') deps.applyBpm?.(state.bpm);
     deps.onLoaded?.();
   } catch (err) {
