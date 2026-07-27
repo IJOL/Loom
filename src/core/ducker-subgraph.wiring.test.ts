@@ -3,87 +3,79 @@ import '../../test/setup';
 import { DuckerSubgraph } from './ducker-subgraph';
 import { DEFAULT_SIDECHAIN_STATE } from './comp-state';
 
-function rms(buf: Float32Array, from: number, to: number): number {
-  let s = 0;
-  const n = to - from;
-  for (let i = from; i < to; i++) s += buf[i] * buf[i];
-  return Math.sqrt(s / n);
-}
+// The DUCKING ITSELF is no longer testable here. It moved into the duck-detector
+// AudioWorklet, and node-web-audio-api cannot run our TS processor (test/setup.ts
+// stubs AudioWorkletNode + resolves addModule), exactly like the engine renderers
+// after the worklet cutover. So the coverage is split three ways:
+//   • the follower's math          → audio-dsp/duck-detector.test.ts (pure, 10 cases)
+//   • it ducks and stays in [0,1]  → tests/e2e/sidechain-duck.spec.ts (real Chrome)
+//   • the graph contract below     → who owns duckGain.gain, and giving it back
+// The contract matters because the processor emits the multiplier itself: while it
+// is attached the param's intrinsic value MUST be 0, and on teardown the lane must
+// get its gain back — otherwise disposing a ducker leaves a lane silent forever.
 
-describe('DuckerSubgraph wiring', () => {
-  it('duck.gain dips when the source signal is loud and recovers when it stops', async () => {
-    const sr = 44100;
-    const dur = 1.0;
-    const ctx = new OfflineAudioContext(1, Math.floor(sr * dur), sr);
+const tick = () => new Promise((r) => setTimeout(r, 0));
 
-    const target = ctx.createOscillator();
-    target.frequency.value = 440;
+describe('DuckerSubgraph graph contract', () => {
+  it('a detector that cannot be built leaves the lane at unity, not silent', async () => {
+    // This environment is exactly that case: test/setup.ts's AudioWorkletNode stub
+    // is not a real audio node, so wiring the tap into it throws. The lane must
+    // then play UN-DUCKED — the failure mode to avoid is a lane stuck at gain 0
+    // because the param was handed to a processor that never arrived.
+    const ctx = new OfflineAudioContext(1, 128, 44100);
     const duckGain = ctx.createGain();
     duckGain.gain.value = 1;
-
-    const sourceBuf = ctx.createBuffer(1, Math.floor(sr * dur), sr);
-    const srcData = sourceBuf.getChannelData(0);
-    const burstStart = Math.floor(sr * 0.2);
-    const burstEnd   = Math.floor(sr * 0.4);
-    for (let i = burstStart; i < burstEnd; i++) srcData[i] = (Math.random() * 2 - 1) * 0.9;
-    const sourceNode = ctx.createBufferSource();
-    sourceNode.buffer = sourceBuf;
     const sourceTap = ctx.createGain();
-    sourceNode.connect(sourceTap);
-
-    const ducker = new DuckerSubgraph(ctx, {
-      sourceTap,
-      duckGain,
-      state: { ...DEFAULT_SIDECHAIN_STATE, source: 'ignored', depth: 0.8, attack: 0.003, release: 0.05 },
-    });
-    expect(ducker).toBeDefined();
-
-    target.connect(duckGain).connect(ctx.destination);
-    target.start(0);
-    target.stop(dur);
-    sourceNode.start(0);
-
-    const rendered = await ctx.startRendering();
-    const data = rendered.getChannelData(0);
-
-    const duckedRms = rms(data, Math.floor(sr * 0.25), Math.floor(sr * 0.38));
-    const cleanRms  = rms(data, Math.floor(sr * 0.05), Math.floor(sr * 0.18));
-
-    expect(duckedRms / cleanRms).toBeLessThan(0.85);
-  });
-
-  it('dispose() detaches the follower so duck.gain recovers to 1.0', async () => {
-    const sr = 44100;
-    const dur = 0.5;
-    const ctx = new OfflineAudioContext(1, Math.floor(sr * dur), sr);
-
-    const target = ctx.createOscillator();
-    target.frequency.value = 440;
-    const duckGain = ctx.createGain();
-    duckGain.gain.value = 1;
-
-    const sourceBuf = ctx.createBuffer(1, Math.floor(sr * dur), sr);
-    const srcData = sourceBuf.getChannelData(0);
-    for (let i = 0; i < srcData.length; i++) srcData[i] = (Math.random() * 2 - 1) * 0.9;
-    const sourceNode = ctx.createBufferSource();
-    sourceNode.buffer = sourceBuf;
-    const sourceTap = ctx.createGain();
-    sourceNode.connect(sourceTap);
 
     const ducker = new DuckerSubgraph(ctx, {
       sourceTap, duckGain,
-      state: { ...DEFAULT_SIDECHAIN_STATE, source: 'ignored', depth: 0.9 },
+      state: { ...DEFAULT_SIDECHAIN_STATE, source: 'kick', depth: 0.8 },
     });
+    // Attachment waits on addModule, so it lands a microtask later.
+    await tick();
+    expect(duckGain.gain.value).toBe(1);
+    expect(ducker).toBeDefined();
+  });
+
+  it('dispose() gives the lane its gain back', async () => {
+    const ctx = new OfflineAudioContext(1, 128, 44100);
+    const duckGain = ctx.createGain();
+    duckGain.gain.value = 1;
+    const sourceTap = ctx.createGain();
+
+    const ducker = new DuckerSubgraph(ctx, {
+      sourceTap, duckGain,
+      state: { ...DEFAULT_SIDECHAIN_STATE, source: 'kick', depth: 0.9 },
+    });
+    await tick();
     ducker.dispose();
+    expect(duckGain.gain.value).toBe(1);
+  });
 
-    target.connect(duckGain).connect(ctx.destination);
-    target.start(0);
-    target.stop(dur);
-    sourceNode.start(0);
+  it('dispose() before the module resolves still leaves the lane audible', async () => {
+    const ctx = new OfflineAudioContext(1, 128, 44100);
+    const duckGain = ctx.createGain();
+    duckGain.gain.value = 1;
+    const sourceTap = ctx.createGain();
 
-    const rendered = await ctx.startRendering();
-    const data = rendered.getChannelData(0);
-    const fullRms = rms(data, Math.floor(sr * 0.05), Math.floor(sr * 0.45));
-    expect(fullRms).toBeGreaterThan(0.5);
+    const ducker = new DuckerSubgraph(ctx, {
+      sourceTap, duckGain,
+      state: { ...DEFAULT_SIDECHAIN_STATE, source: 'kick', depth: 0.9 },
+    });
+    ducker.dispose();          // same tick — the attach() promise is still pending
+    await tick();
+    expect(duckGain.gain.value).toBe(1);
+  });
+
+  it('setState before attachment does not throw', async () => {
+    const ctx = new OfflineAudioContext(1, 128, 44100);
+    const duckGain = ctx.createGain();
+    const sourceTap = ctx.createGain();
+    const ducker = new DuckerSubgraph(ctx, {
+      sourceTap, duckGain, state: { ...DEFAULT_SIDECHAIN_STATE, source: 'kick' },
+    });
+    expect(() => ducker.setState({ ...DEFAULT_SIDECHAIN_STATE, source: 'kick', depth: 0.3 })).not.toThrow();
+    await tick();
+    ducker.dispose();
   });
 });

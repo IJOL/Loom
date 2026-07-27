@@ -3,6 +3,13 @@ import '../../test/setup';
 import { ChannelStrip, FxBus } from './fx';
 import { SidechainBus } from './sidechain-bus';
 
+// Strip-level sidechain contract. The audible ducking is NOT measured here any
+// more: the follower is an AudioWorklet processor and node-web-audio-api can't run
+// it (see ducker-subgraph.wiring.test.ts for how the coverage is split). What a
+// node render CAN still prove is the thing that used to break lanes silently — a
+// strip whose ducker is torn down, or whose source does not exist, must keep
+// passing audio at unity instead of going quiet.
+
 function rms(buf: Float32Array, from: number, to: number): number {
   let s = 0;
   const n = to - from;
@@ -10,78 +17,60 @@ function rms(buf: Float32Array, from: number, to: number): number {
   return Math.sqrt(s / n);
 }
 
-describe('ChannelStrip ducker integration', () => {
-  it('a target strip ducks when sidechain.source = source lane id', async () => {
-    const sr = 44100;
-    const dur = 1.0;
-    const offCtx = new OfflineAudioContext(1, Math.floor(sr * dur), sr);
-    const ctx = offCtx as unknown as AudioContext;
-    const bus = new SidechainBus();
-    const fx = new FxBus(ctx, offCtx.destination);
+async function renderStrip(configure: (strip: ChannelStrip, bus: SidechainBus) => void): Promise<number> {
+  const sr = 44100;
+  const dur = 0.4;
+  const offCtx = new OfflineAudioContext(1, Math.floor(sr * dur), sr);
+  const ctx = offCtx as unknown as AudioContext;
+  const bus = new SidechainBus();
+  const fx = new FxBus(ctx, offCtx.destination);
 
-    // Sink for the source strip — keeps source audio out of the rendered
-    // destination so duckedRms reflects only the (attenuated) target.
-    const sourceSink = offCtx.createGain();
-    sourceSink.gain.value = 0;
-    sourceSink.connect(offCtx.destination);
+  new ChannelStrip(ctx, offCtx.destination, fx, { sidechain: { bus, id: 'kick', label: 'KICK' } });
+  const target = new ChannelStrip(ctx, offCtx.destination, fx, { sidechain: { bus, id: 'lead', label: 'LEAD' } });
+  configure(target, bus);
 
-    const sourceStrip = new ChannelStrip(ctx, sourceSink, fx, {
-      sidechain: { bus, id: 'kick', label: 'KICK' },
+  const osc = offCtx.createOscillator();
+  osc.frequency.value = 440;
+  osc.connect(target.input);
+  osc.start(0);
+  osc.stop(dur);
+
+  const rendered = await offCtx.startRendering();
+  // The threshold below is loose (0.3) on purpose — the exact value depends on the
+  // mono downmix of the StereoPanner at centre pan.
+  return rms(rendered.getChannelData(0), 0, rendered.length);
+}
+
+describe('ChannelStrip sidechain contract', () => {
+  it('setSidechain(bus, null) tears the ducker down — the lane is back at unity', async () => {
+    const level = await renderStrip((strip, bus) => {
+      strip.setSidechain(bus, { source: 'kick', depth: 0.9, attack: 0.003, release: 0.06, threshold: -60 });
+      strip.setSidechain(bus, null);
     });
-    const targetStrip = new ChannelStrip(ctx, offCtx.destination, fx, {
-      sidechain: { bus, id: 'lead', label: 'LEAD' },
-    });
-    targetStrip.setSidechain(bus, {
-      source: 'kick', depth: 0.85, attack: 0.003, release: 0.06, threshold: -60,
-    });
-
-    const target = offCtx.createOscillator();
-    target.frequency.value = 440;
-    target.connect(targetStrip.input);
-    target.start(0);
-    target.stop(dur);
-
-    const sb = offCtx.createBuffer(1, Math.floor(sr * dur), sr);
-    const sd = sb.getChannelData(0);
-    for (let i = Math.floor(sr * 0.2); i < Math.floor(sr * 0.4); i++) {
-      sd[i] = (Math.random() * 2 - 1) * 0.9;
-    }
-    const sourceNode = offCtx.createBufferSource();
-    sourceNode.buffer = sb;
-    sourceNode.connect(sourceStrip.input);
-    sourceNode.start(0);
-
-    const rendered = await offCtx.startRendering();
-    const data = rendered.getChannelData(0);
-
-    const duckedRms = rms(data, Math.floor(sr * 0.25), Math.floor(sr * 0.38));
-    const cleanRms  = rms(data, Math.floor(sr * 0.05), Math.floor(sr * 0.18));
-    expect(duckedRms / cleanRms).toBeLessThan(0.9);
+    expect(level).toBeGreaterThan(0.3);
   });
 
-  it('setSidechain(bus, null) tears the ducker down — no further reduction', async () => {
+  it('an unknown source id leaves the lane audible, not silent', async () => {
+    const level = await renderStrip((strip, bus) => {
+      strip.setSidechain(bus, { source: 'does-not-exist', depth: 0.9, attack: 0.003, release: 0.06, threshold: -60 });
+    });
+    expect(level).toBeGreaterThan(0.3);
+  });
+
+  it('keeps the sidechain state it was given, and clears it', async () => {
     const sr = 44100;
-    const dur = 0.5;
-    const offCtx = new OfflineAudioContext(1, Math.floor(sr * dur), sr);
+    const offCtx = new OfflineAudioContext(1, 128, sr);
     const ctx = offCtx as unknown as AudioContext;
     const bus = new SidechainBus();
     const fx = new FxBus(ctx, offCtx.destination);
-
     new ChannelStrip(ctx, offCtx.destination, fx, { sidechain: { bus, id: 'kick', label: 'KICK' } });
-    const targetStrip = new ChannelStrip(ctx, offCtx.destination, fx, { sidechain: { bus, id: 'lead', label: 'LEAD' } });
-    targetStrip.setSidechain(bus, { source: 'kick', depth: 0.9, attack: 0.003, release: 0.06, threshold: -60 });
-    targetStrip.setSidechain(bus, null);
+    const strip = new ChannelStrip(ctx, offCtx.destination, fx, { sidechain: { bus, id: 'lead', label: 'LEAD' } });
 
-    const target = offCtx.createOscillator();
-    target.frequency.value = 440;
-    target.connect(targetStrip.input);
-    target.start(0);
-    target.stop(dur);
-
-    const rendered = await offCtx.startRendering();
-    // A non-zero signal proves duckGain recovered to 1 after teardown.
-    // The threshold is intentionally loose (0.3) — the exact value depends
-    // on mono downmix of the StereoPannerNode at centre pan.
-    expect(rms(rendered.getChannelData(0), 0, rendered.length)).toBeGreaterThan(0.3);
+    const state = { source: 'kick', depth: 0.42, attack: 0.01, release: 0.3, threshold: -60 };
+    strip.setSidechain(bus, state);
+    expect(strip.getSidechain()).toEqual(state);
+    expect(strip.serialize().sidechain).toEqual(state);
+    strip.setSidechain(bus, null);
+    expect(strip.getSidechain()).toBeNull();
   });
 });

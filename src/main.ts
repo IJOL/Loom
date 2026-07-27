@@ -63,6 +63,7 @@ import { createAutomationWrites } from './app/automation-writes';
 import { loadLoomWorklet } from './audio-worklet/loom-node';
 import { loadDrumsWorklet } from './audio-worklet/drums-node';
 import { loadSamplerWorklet } from './audio-worklet/sampler-node';
+import { loadDuckWorklet } from './audio-worklet/duck-node';
 // ── Static chrome templates (version label, meter options) ─────────────────
 import { html, render } from 'lit-html';
 // ── Desktop menu bar (chrome) ─────────────────────────────────────────────
@@ -124,6 +125,9 @@ const workletReady: Promise<void> = Promise.all([
   loadLoomWorklet(ctx),
   loadDrumsWorklet(ctx),
   loadSamplerWorklet(ctx),
+  // The sidechain duck detector: registered up front so arming SIDECHAIN on a lane
+  // attaches instantly instead of waiting on a first-use addModule round trip.
+  loadDuckWorklet(ctx),
 ]).then(() => undefined).catch((err: unknown) => {
   console.error('[worklet] addModule failed; worklet lanes will not sound.', err);
 });

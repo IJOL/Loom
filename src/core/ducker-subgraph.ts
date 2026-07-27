@@ -1,23 +1,23 @@
 import type { SidechainState } from './comp-state';
+import { loadDuckWorklet } from '../audio-worklet/duck-node';
+import { DUCK_PROCESSOR_NAME } from '../audio-worklet/processor-name';
+import type { DuckMsg } from '../audio-worklet/duck-processor';
 
-// Build/teardown an envelope-follower subgraph whose output modulates
-// `duckGain.gain` so the effective gain is approximately:
+// Build/teardown the subgraph that ducks one lane from another's signal:
 //
-//     duckGain.gain ≈ 1 − depth · env(source)
+//   sourceTap → duck-detector worklet → duckGain.gain   (duckGain.gain.value = 0)
 //
-// Graph:
+// The processor emits the MULTIPLIER itself (1 − depth·env, always in [0, 1]), so
+// the param's intrinsic value is 0 and its computed value is that signal. There is
+// no ConstantSource and no filter chain any more.
 //
-//   sourceTap
-//     → WaveShaper (curve: y = |x|; full-wave rectify)
-//     → BiquadFilter (lowpass; freq from release time constant)
-//     → BiquadFilter (lowpass; freq from attack time constant; extra smoothing)
-//     → Gain (-depth)             ─┐
-//                                   ├──→ duckGain.gain (AudioParam)
-//   ConstantSourceNode(1.0)        ─┘
-//
-// v1 approximation: a single one-pole LP whose frequency is derived from
-// `release` (the more audible side). `attack` clamps a small extra smoothing
-// stage. A proper detector with separate up/down constants is a follow-up.
+// The previous version was all native nodes: a rectifier WaveShaper → two
+// BiquadFilter lowpasses whose cutoff came from the time constants. At REL 0.25 s
+// that first lowpass sits at 0.64 Hz, where a float32 biquad stops filtering and
+// starts integrating: measured in Chrome, its output grew 1.06 → 17.3 in 4 s with
+// the input at exactly zero, so the multiplier drifted 0.99 → 0 → −3.0 and the
+// "ducked" lane came back phase-inverted and +9.5 dB LOUDER. Stopping the transport
+// did not reset it. See audio-dsp/duck-detector.ts for the full autopsy.
 
 export interface DuckerOpts {
   sourceTap: GainNode;
@@ -25,80 +25,73 @@ export interface DuckerOpts {
   state: SidechainState;
 }
 
-const ABS_CURVE_LEN = 2048;
-function makeAbsCurve(): Float32Array<ArrayBuffer> {
-  const c = new Float32Array(ABS_CURVE_LEN);
-  for (let i = 0; i < ABS_CURVE_LEN; i++) {
-    const x = (i / (ABS_CURVE_LEN - 1)) * 2 - 1;
-    c[i] = Math.abs(x);
-  }
-  return c;
-}
-
-function timeToCutoffHz(timeSec: number): number {
-  const safe = Math.max(timeSec, 0.001);
-  return Math.min(20000, Math.max(0.5, 1 / (2 * Math.PI * safe)));
-}
-
 export class DuckerSubgraph {
-  private rectify: WaveShaperNode;
-  private envelopeLp: BiquadFilterNode;
-  private smoothLp: BiquadFilterNode;
-  private scale: GainNode;
-  private constOne: ConstantSourceNode;
+  private node: AudioWorkletNode | null = null;
+  private disposed = false;
+  private state: SidechainState;
+  private sourceTap: GainNode;
   private duckGain: GainNode;
   private duckGainRestoreValue: number;
 
   constructor(private ctx: BaseAudioContext, opts: DuckerOpts) {
-    const { sourceTap, duckGain, state } = opts;
-
-    this.duckGain = duckGain;
-    this.duckGainRestoreValue = duckGain.gain.value;
-
-    this.rectify = ctx.createWaveShaper();
-    this.rectify.curve = makeAbsCurve();
-
-    this.envelopeLp = ctx.createBiquadFilter();
-    this.envelopeLp.type = 'lowpass';
-    this.envelopeLp.frequency.value = timeToCutoffHz(state.release);
-    this.envelopeLp.Q.value = 0.707;
-
-    this.smoothLp = ctx.createBiquadFilter();
-    this.smoothLp.type = 'lowpass';
-    this.smoothLp.frequency.value = timeToCutoffHz(Math.max(state.attack, 0.0005));
-    this.smoothLp.Q.value = 0.707;
-
-    this.scale = ctx.createGain();
-    this.scale.gain.value = -state.depth;
-
-    this.constOne = ctx.createConstantSource();
-    this.constOne.offset.value = 1;
-    this.constOne.start();
-
-    sourceTap.connect(this.rectify);
-    this.rectify.connect(this.envelopeLp);
-    this.envelopeLp.connect(this.smoothLp);
-    this.smoothLp.connect(this.scale);
-    this.scale.connect(duckGain.gain);
-    this.constOne.connect(duckGain.gain);
-
-    duckGain.gain.value = 0;
+    this.duckGain = opts.duckGain;
+    this.duckGainRestoreValue = opts.duckGain.gain.value;
+    this.sourceTap = opts.sourceTap;
+    this.state = opts.state;
+    // Registering the module is async. Until the detector is actually connected the
+    // lane must sound NORMAL — so the intrinsic gain is left alone, and only zeroed
+    // (handing the param over to the processor) at the moment of connection.
+    void this.attach();
   }
 
+  private async attach(): Promise<void> {
+    try {
+      await loadDuckWorklet(this.ctx);
+    } catch {
+      return;   // no worklet → the lane simply isn't ducked; never silent
+    }
+    if (this.disposed) return;
+    let node: AudioWorkletNode;
+    try {
+      node = new AudioWorkletNode(this.ctx, DUCK_PROCESSOR_NAME, {
+        numberOfInputs: 1,
+        numberOfOutputs: 1,
+        outputChannelCount: [1],
+        processorOptions: { params: this.state },
+      });
+      this.sourceTap.connect(node);
+      // The processor emits the whole multiplier, so the param's own value must be
+      // 0 — computedValue = intrinsic + Σ(connected inputs). Set it only now that
+      // the detector is really feeding it, never before.
+      this.duckGain.gain.value = 0;
+      node.connect(this.duckGain.gain);
+    } catch {
+      // A lane that cannot build its detector plays UN-DUCKED. Restoring the gain
+      // here is what keeps a failure from turning into a silent lane.
+      this.duckGain.gain.value = this.duckGainRestoreValue;
+      return;
+    }
+    this.node = node;
+  }
+
+  private post(m: DuckMsg): void { this.node?.port.postMessage(m); }
+
   setState(state: SidechainState): void {
-    const t = this.ctx.currentTime;
-    this.envelopeLp.frequency.setTargetAtTime(timeToCutoffHz(state.release), t, 0.01);
-    this.smoothLp.frequency.setTargetAtTime(timeToCutoffHz(Math.max(state.attack, 0.0005)), t, 0.01);
-    this.scale.gain.setTargetAtTime(-state.depth, t, 0.01);
+    this.state = state;
+    this.post({ type: 'params', params: state });
   }
 
   dispose(): void {
-    try { this.constOne.stop(); } catch { /* already stopped */ }
-    try { this.rectify.disconnect(); } catch { /* */ }
-    try { this.envelopeLp.disconnect(); } catch { /* */ }
-    try { this.smoothLp.disconnect(); } catch { /* */ }
-    try { this.scale.disconnect(); } catch { /* */ }
-    try { this.constOne.disconnect(); } catch { /* */ }
+    this.disposed = true;
+    if (this.node) {
+      // Kill first (its process() returns false) THEN disconnect, or the disposed
+      // processor keeps running for the context's lifetime — same contract as the
+      // other worklet nodes in this app.
+      this.post({ type: 'kill' });
+      try { this.sourceTap.disconnect(this.node); } catch { /* already gone */ }
+      try { this.node.disconnect(); } catch { /* */ }
+      this.node = null;
+    }
     this.duckGain.gain.value = this.duckGainRestoreValue;
   }
 }

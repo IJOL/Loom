@@ -6,3 +6,7 @@
 // loom-node.ts, so it is bundled as a separate worklet chunk and never runs on
 // the main thread.
 export const LOOM_PROCESSOR_NAME = 'loom-processor';
+
+/** Registered name of the sidechain duck detector (duck-processor.ts). Same
+ *  reasoning: the ducker lives in core/, which must not import worklet code. */
+export const DUCK_PROCESSOR_NAME = 'duck-detector';

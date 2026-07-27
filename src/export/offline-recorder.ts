@@ -49,6 +49,7 @@ import { DRUM_VOICE_IDS, type DrumVoiceId } from '../audio-dsp/drums/types';
 import { extractChannels, loadSamplerWorklet } from '../audio-worklet/sampler-node';
 import { loadLoomWorklet } from '../audio-worklet/loom-node';
 import { loadDrumsWorklet } from '../audio-worklet/drums-node';
+import { loadDuckWorklet } from '../audio-worklet/duck-node';
 import type { KeymapEntry } from '../samples/types';
 import type { ParamBag } from '../audio-dsp/types';
 import { isStripParamId, stripAutomationParams } from '../core/channel-strip-params';
@@ -129,6 +130,9 @@ export class OfflineSceneRecorder implements SceneRecorder {
       loadLoomWorklet(offlineCtx as unknown as BaseAudioContext),
       loadDrumsWorklet(offlineCtx as unknown as BaseAudioContext),
       loadSamplerWorklet(offlineCtx as unknown as BaseAudioContext),
+      // A lane with SIDECHAIN armed builds a duck-detector node when its strip is
+      // restored, so the export needs this module too or the render loses the duck.
+      loadDuckWorklet(offlineCtx as unknown as BaseAudioContext),
     ]);
     for (const r of workletLoads) {
       if (r.status === 'rejected') {
