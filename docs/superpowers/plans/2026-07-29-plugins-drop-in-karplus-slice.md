@@ -30,7 +30,7 @@ Nada de lo que sigue es una suposición. Cada línea se comprobó ejecutándola 
 
 | Hecho | Cómo se comprobó |
 |---|---|
-| Un módulo añadido al AudioWorklet en runtime **publica en el scope global**, y un SEGUNDO módulo llega al mismo registro. Vale tanto `blob:` como http. La factoría que cruza la frontera es invocable. | [tests/e2e/worklet-external-module.spec.ts](../../../tests/e2e/worklet-external-module.spec.ts), verde en Chromium: `host-blob ok, plugin-blob ok, plugin-http ok, construct-node ok`, `ids ["from-blob","from-http"]`, `sample 0.25`. Commit `c556b2c`. |
+| Un módulo añadido al AudioWorklet en runtime **publica en el scope global**, y un SEGUNDO módulo llega al mismo registro. Vale tanto `blob:` como http. La factoría que cruza la frontera es invocable. | [tests/e2e/worklet-external-module.spec.ts](../../../tests/e2e/worklet-external-module.spec.ts), verde en Chromium: `host-blob ok, plugin-blob ok, plugin-http ok, construct-node ok`, `ids ["from-blob","from-http"]`, `sample 0.25`. |
 | `page.route()` de Playwright **no** intercepta las peticiones de módulo del worklet. | El primer intento del spike fallaba con `Unable to load a worklet's module`; sirviendo el fichero de verdad desde `dist/`, pasa. |
 | **`VoiceManager` NO aplica ningún trim**: cada renderer llama a `synthTrim(<su id>)` por su cuenta (`tb303:92`, `subtractive:186`, `fm:214`, `wavetable:174`, `westcoast:252`, `karplus:229`). El único punto de suma es `renderSample`, línea 225: `out += s.v.renderSample(t, mo)`. | `grep synthTrim src/` + lectura de `voice-manager.ts`. |
 | `VoiceManager` se construye en exactamente **dos** sitios: `loom-processor.ts:44` (`new VoiceManager(sampleRate, engineId, {})`) y `kernel-lane-render.ts:61` (`new VoiceManager(sampleRate, spec.engineId, spec.params)`). | `grep "new VoiceManager("`. |
@@ -100,7 +100,7 @@ entierre.
 
 ---
 
-### Task 1: Spike — ¿puede el AudioWorklet cargar DSP externo? — ✅ HECHA (`c556b2c`)
+### Task 1: Spike — ¿puede el AudioWorklet cargar DSP externo? — ✅ HECHA
 
 Era lo único capaz de tumbar el diseño entero, así que se hizo **antes** de dar el plan por bueno, con un test real en un navegador real.
 
@@ -109,7 +109,7 @@ Era lo único capaz de tumbar el diseño entero, así que se hizo **antes** de d
 
 - [x] **Step 1: Write the test** — hecho.
 - [x] **Step 2: Run it** — `npm run build` ya estaba hecho; `npx playwright test tests/e2e/worklet-external-module.spec.ts` → **1 passed**.
-- [x] **Step 3: Commit** — `c556b2c`.
+- [x] **Step 3: Commit** — hecho. (Sin hash a propósito: este plan vive en la misma rama que el commit, y un rebase lo invalidaría — ya pasó dos veces el mismo día. El test es la referencia estable.)
 
 **Resultado, literal:**
 
