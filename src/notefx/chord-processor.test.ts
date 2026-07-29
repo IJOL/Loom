@@ -25,8 +25,8 @@ describe('ChordProcessor', () => {
     expect(out.every((e) => e.accent === true)).toBe(true);
   });
 
-  it('octave shift transposes the whole chord', () => {
-    const p = new ChordProcessor({ ...CHORD_PROCESSOR_DEFAULTS, chordType: 'maj', octave: 1 });
+  it('octave shift transposes the whole chord — only once switched on', () => {
+    const p = new ChordProcessor({ ...CHORD_PROCESSOR_DEFAULTS, chordType: 'maj', octaveOn: true, octave: 1 });
     expect(p.process([ev(60)], { bpm: 120 }).map((e) => e.note)).toEqual([72, 76, 79]);
   });
 });

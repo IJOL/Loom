@@ -23,5 +23,5 @@ export interface NoteFxState {
   id: string;                 // 'arp1', 'chord1', …
   kind: NoteFxKind;
   enabled: boolean;
-  params: Record<string, number | string>;
+  params: Record<string, number | string | boolean>;
 }

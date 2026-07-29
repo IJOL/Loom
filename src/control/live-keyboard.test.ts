@@ -86,7 +86,8 @@ describe('live-keyboard voice pool', () => {
   it('an octave-shifted chord (root != physical key) still releases fully via the physical key (no stuck notes)', () => {
     const chain = getNoteFxChain('lane-octave-regression');
     const chordFx = chain.addNoteFx('chord');
-    chordFx.params.octave = 1; // transposes the WHOLE chord, including the root
+    chordFx.params.octaveOn = true;  // the transpose only happens once switched on
+    chordFx.params.octave = 1;       // …and then it moves the WHOLE chord, root included
     chordFx.enabled = true;
 
     const released: string[] = [];

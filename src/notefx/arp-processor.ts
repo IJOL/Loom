@@ -15,7 +15,9 @@ export interface ArpProcessorParams {
 }
 
 export const ARP_PROCESSOR_DEFAULTS: ArpProcessorParams = {
-  pattern: 'up', scale: 'pentMinor', rate: '1/16', rateFreeHz: 8, octaves: 2, gate: 0.7,
+  // octaves: 1 by default — the arp walks the scale from the note you played and
+  // never leaves its octave unless you ask for it. Climbing octaves is opt-in.
+  pattern: 'up', scale: 'pentMinor', rate: '1/16', rateFreeHz: 8, octaves: 1, gate: 0.7,
 };
 
 const SCALE_INTERVALS: Record<ArpScale, number[]> = {

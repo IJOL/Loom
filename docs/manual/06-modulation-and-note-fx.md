@@ -81,7 +81,7 @@ The Arp takes each held note and generates a rapid sequence of notes from it acc
 | PATTERN | up, down, updown, random, cosmic | Direction of the arpeggio. **cosmic** adds occasional octave jumps and random steps for an unpredictable feel. |
 | SCALE | major, minor, pentMinor, phrygian, chromatic | Scale from which arp notes are drawn, starting from the held root note. |
 | RATE | free, 1/4, 1/8, 1/8t, 1/16, 1/16t, 1/32 | Step rate in musical divisions (BPM-synced), or free Hz. |
-| OCT | 1–4 | Number of octaves the arp spans. Higher values cycle the scale across more octaves before repeating. |
+| OCT | 1–4 | Number of octaves the arp spans, **1 by default**: the run stays in the octave you played. Higher values are opt-in and cycle the scale across more octaves before repeating. |
 | GATE | 0.05–1.0 | Fraction of the step interval during which each arp note is held. Lower values create a more staccato feel. |
 | FREE Hz | 0.5–32 Hz | Rate used when RATE is set to *free*. |
 
@@ -89,12 +89,13 @@ The Arp fires as many notes as fit inside the original note's gate duration, so 
 
 ### Chord
 
-The Chord processor replaces each incoming note with a chord built on that note as the root.
+The Chord processor expands each incoming note into a chord built on that note as the root. Out of the box the note you played is part of what you hear — the octave shift is a switch you throw deliberately, never something the processor does behind your back.
 
 | Control | Options | Description |
 |---------|---------|-------------|
 | CHORD | maj, min, maj7, min7, sus2, sus4, dim | Chord voicing to generate |
-| OCT | –2 to +2 | Octave offset applied to all notes in the chord |
+| OCT SHIFT | ON / OFF (off by default) | Enables the octave shift. While off the OCT slider is hidden and completely bypassed, so the chord stays rooted on the note you played. |
+| OCT | –2 to +2 | Only with OCT SHIFT on: transposes the whole chord, root included, that many octaves. |
 
 All notes in the chord share the original note's timing and gate length.
 

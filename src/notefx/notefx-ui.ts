@@ -61,9 +61,10 @@ function panelTemplate(ctx: Ctx): TemplateResult {
 function cardTemplate(fx: NoteFxState, ctx: Ctx): TemplateResult {
   const { deps } = ctx;
   const sync = () => deps.onChange(deps.chain.serialize());
-  const set = (k: string, v: string | number) => {
+  const set = (k: string, v: string | number | boolean) => {
     withMaybeUndo(deps, () => { fx.params[k] = v; sync(); });
   };
+  const octaveOn = fx.params.octaveOn === true;
   return html`
     <div class="notefx-card notefx-${fx.kind}">
       <div class="notefx-card-row">
@@ -86,7 +87,16 @@ function cardTemplate(fx: NoteFxState, ctx: Ctx): TemplateResult {
         ${numberField('FREE Hz', 0.5, 32, 0.1, Number(fx.params.rateFreeHz ?? 8), (v) => set('rateFreeHz', v))}
       ` : html`
         ${selectField('CHORD', CHORD_TYPES, String(fx.params.chordType ?? 'maj'), (v) => set('chordType', v))}
-        ${numberField('OCT', -2, 2, 1, Number(fx.params.octave ?? 0), (v) => set('octave', v))}
+        <div class="notefx-field notefx-oct-toggle">
+          <span>OCT SHIFT</span>
+          <button class=${octaveOn ? 'rnd primary' : 'rnd'} @click=${() => {
+            set('octaveOn', !octaveOn);
+            ctx.rerender();
+          }}>${octaveOn ? 'ON' : 'OFF'}</button>
+        </div>
+        ${octaveOn
+          ? numberField('OCT', -2, 2, 1, Number(fx.params.octave ?? 0), (v) => set('octave', v))
+          : ''}
       `}
     </div>
   `;

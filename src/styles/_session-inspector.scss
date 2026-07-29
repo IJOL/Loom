@@ -400,6 +400,14 @@
   flex: 1;
   margin-left: auto;
 }
+/* The chord card's opt-in octave switch, sitting where the other fields put
+ * their control. */
+.notefx-oct-toggle button {
+  margin-left: auto;
+  font-size: 10px;
+  padding: 2px 6px;
+  height: 22px;
+}
 
 /* Compact buttons inside note-FX cards (add/remove/enable) — the
  * `.mod-card-row button` rule does not reach `.notefx-card-row`. */

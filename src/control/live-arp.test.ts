@@ -20,7 +20,7 @@ describe('liveArpParamsFor', () => {
     const chain = getNoteFxChain('lane-arp-on');
     const s = chain.addNoteFx('arp');
     s.enabled = true;
-    expect(ARP_PROCESSOR_DEFAULTS.octaves).toBeGreaterThan(1);   // the default really spans octaves
+    s.params.octaves = 3;                  // the lane opted INTO an octave span…
     const p = liveArpParamsFor('lane-arp-on');
     expect(p).not.toBeNull();
     expect(p!.octaves).toBe(1);

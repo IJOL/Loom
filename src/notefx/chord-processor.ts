@@ -5,10 +5,17 @@ export type ChordType = 'maj' | 'min' | 'maj7' | 'min7' | 'sus2' | 'sus4' | 'dim
 
 export interface ChordProcessorParams {
   chordType: ChordType;
-  octave: number;       // -2..+2 octave shift applied to all chord notes
+  /** OCT is opt-in. While this is false the octave control is bypassed entirely —
+   *  a note-FX must never transpose the played note away behind your back. */
+  octaveOn: boolean;
+  /** -2..+2 octave shift applied to the whole chord. Only read when `octaveOn`
+   *  is true — switching it on is you asking for the transpose. */
+  octave: number;
 }
 
-export const CHORD_PROCESSOR_DEFAULTS: ChordProcessorParams = { chordType: 'maj', octave: 0 };
+export const CHORD_PROCESSOR_DEFAULTS: ChordProcessorParams = {
+  chordType: 'maj', octaveOn: false, octave: 0,
+};
 
 const CHORD_INTERVALS: Record<ChordType, number[]> = {
   maj:  [0, 4, 7],
@@ -25,7 +32,9 @@ export class ChordProcessor implements NoteFxProcessor {
 
   process(input: NoteFxEvent[], _ctx: NoteFxContext): NoteFxEvent[] {
     const intervals = CHORD_INTERVALS[this.params.chordType];
-    const shift = this.params.octave * 12;
+    // Bypassed unless explicitly switched on: with the switch OFF the chord is
+    // rooted on the note you played, which is the default.
+    const shift = this.params.octaveOn ? Math.round(this.params.octave) * 12 : 0;
     const out: NoteFxEvent[] = [];
     for (const e of input) {
       for (const iv of intervals) {
