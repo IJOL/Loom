@@ -52,6 +52,8 @@ Engines declare their parameters as `EngineParamSpec[]`, and for the catalogue t
 
 So: declare the param in the spec and it is automatable and modulatable. Return it from `getAudioParams()` only if it is a genuine `AudioParam` on the main thread.
 
+That rule is why the lane **mixer** is automatable at all. The seven strip controls — level, pan, sends A and B, and the three EQ bands — were once declared inline by `drums-machine` alone, which is why a drum lane's volume could be automated and a Subtractive lane's could not: the capability belonged to one engine's source file rather than to the mixer. They now live in `src/core/channel-strip-params.ts` and every engine with a `ChannelStrip` spreads `STRIP_PARAM_SPECS` into its own params, keeping the original `bus.*` ids so existing drum-lane envelopes and connections still resolve. One caveat if you touch the binder side: a **modulator** binds to the strip's multiplicative trims, not to the real gains, because a bipolar modulator summed onto a gain can drive it below zero — which inverts phase instead of quietening, and the lane cancels against the rest of the mix. Automation writes the real gains through `setStripParam`.
+
 ## SessionState data model
 
 `src/session/session-types.ts` defines three levels (re-exported from `session.ts`, which holds the factories):
@@ -63,6 +65,8 @@ So: declare the param in the spec and it is automatable and modulatable. Return 
 Notes carry a `velocity` field (0–127). The `velToColor` function in `src/core/velocity-color.ts` maps velocity to a blue-to-yellow ramp used by both the piano roll and the drum grid.
 
 Saves are written as `schemaVersion: 3` (`SavedStateV3` in `src/save/`). Older saves are normalised by `session-migration.ts` at load time before anything else touches the data.
+
+**Replacing the session is New plus a load, in that order.** Every route that swaps the whole session — New, the boot demo, the demo picker, a save or autosave load, an import that replaces — calls `resetAllResources` (`src/session/session-host-reset.ts`) *first*, and only then applies the incoming state. The reason is that applying a session only ever pushes the fields the incoming JSON happens to carry, and `ensureLaneResource` is idempotent: a lane id present in both the old and the new state used to keep its live `ChannelStrip`, so level, pan, EQ, sends, mute, compressor and sidechain rode straight through New and through every demo switch — as did the master rack, the send buses, mute/solo and the note-FX chains. The fix is not a longer list of restores at the apply site (that list goes stale the next time something joins the desk); it is that a load starts from a released desk, so anything the new state does not set sits at its constructed default. The one deliberate exception is the master **volume** fader: that is the listening level of the room, not a property of the song.
 
 ## LaneResourceMap and the audio graph
 
@@ -84,9 +88,11 @@ A second analyser, `masterMeterAnalyser`, taps off the soft-clip and is **not** 
 
 `SidechainBus` is not a node in that chain at all. It is a lane-id → tap registry (`src/core/sidechain-bus.ts`): each `ChannelStrip` registers a `GainNode` fed off its post-mute output, and a ducker subgraph reads `getTap(sourceLaneId)` to drive its envelope follower. The allocator hands it to every lane strip it builds.
 
+That follower is an **AudioWorklet** (`duck-processor` / `duck-node`, wrapping the pure `DuckDetector` in `src/audio-dsp/duck-detector.ts`), not a filter chain. It was two `BiquadFilterNode` lowpasses until 2026-07-27: at a 0.25 s release the cutoff is 0.64 Hz, the pole pair sits a hair from z=1, and in the float32 node graph the rounding error accumulated like an integrator — the "envelope" grew without bound with the input at exactly zero, so the duck multiplier drifted past 0 and came back negative, i.e. the ducked lane went silent and then returned phase-inverted and louder. A one-pole follower is a convex combination of the input and itself, so it is bounded by construction at any time constant and returns to zero when the source stops. Keep the multiplier's `[0, 1]` invariant if you touch it; `src/audio-dsp/duck-detector.test.ts` and `src/core/strip-ducker.dsp.test.ts` pin it.
+
 Each lane's `LaneResources` consists of a `ChannelStrip` (level, EQ, send levels), a `SynthEngine`, and an `InsertChain` of per-lane FX. `LaneResourceMap.replaceEngine` hot-swaps only the engine while keeping the strip and inserts in place — the channel-level resources survive an engine swap.
 
-The lane allocator (`src/app/lane-allocator.ts`) is the only module that constructs a `LaneResources`, in two places: `ensureLaneResource` for a session lane (line 255) and `ensureExtraPoly` for the legacy extra-poly strips (line 169). Call `ensureLaneResource` once per lane before accessing anything in the map. Test code that needs a lane wired up must call it explicitly as setup.
+The lane allocator (`src/app/lane-allocator.ts`) is the only module that constructs a `LaneResources`, in exactly one place: `ensureLaneResource` (line 228). The second entry point, `ensureExtraPoly`, went with the `PolySynth` class it existed to feed. Call `ensureLaneResource` once per lane before accessing anything in the map. Test code that needs a lane wired up must call it explicitly as setup.
 
 ## The scheduler
 
@@ -97,7 +103,7 @@ The `Sequencer` class (`src/core/sequencer.ts`) fires every 25 ms (the poll inte
 Two important consequences for contributors:
 
 - `bpm` and `length` are mutable at runtime; the next scheduled step picks up the new values immediately.
-- Engine params are read at trigger time, not when a note is held. Live knob tweaks apply to the **next** trigger.
+- **Continuous** engine params reach the note already sounding. Each lane keeps a smoothed live bag (`ParamSmoother`, driven by `VoiceManager`) that every voice re-reads per sample, so turning a knob bends the held note instead of waiting for the next trigger. **Structural** params are the exception and still apply to the next trigger only: waveform, filter model, unison size, and every envelope *time* — the envelopes are closed-form over elapsed time, so re-reading an attack mid-note would step the amplitude. Drums is deliberately outside this: its params are read at trigger time.
 
 The scheduler asks `laneLoopRegion` (`src/core/clip-loop.ts:40`) how long one iteration of a clip is, and there are **two** ways the answer comes back shorter than the whole clip. The active scene's global loop wins first: when `GlobalLoopOverride.enabled` is set, `[startBar, endBar)` becomes the region for every lane in the scene, whatever the clips say. Absent that, `effectiveClipLoop` (line 19) applies the clip's own `loopEnabled` / `[loopStartTick, loopEndTick)`. The brace UI in `src/core/clip-loop-brace.ts` is the editing surface for the clip's own region.
 
@@ -109,9 +115,9 @@ That precedence has a consequence worth knowing before you touch clip automation
 
 Since synthesis moved into the AudioWorklet, an engine is **two halves in two
 places**: a metadata descriptor on the main thread and a per-sample renderer
-inside the worklet bundle. There are **four** steps, and skipping any of the last
-three gives you an engine that appears in the lane selector and then plays
-**silence** — the failure is quiet, so do all four.
+inside the worklet bundle. There are **five** steps, and skipping either of the
+last two gives you an engine that appears in the lane selector and then plays
+**silence** — the failure is quiet, so do all five.
 
 1. **Metadata descriptor** — `src/engines/<id>.ts`. Build it with
    `createDescriptorEngine(...)` and register it with `registerEngineFactory(id, …)`
@@ -121,12 +127,23 @@ three gives you an engine that appears in the lane selector and then plays
    renderer that calls `registerRenderer(id, ctor)` at module scope. This is the
    half that makes sound, and it is plain TypeScript — unit-test it directly, no
    `AudioContext` required.
-3. **Side-effect import in the worklet** — add `import '../audio-dsp/<id>-renderer';`
+3. **Implement the live-params hook** — `setLiveParams` (and `setLiveSubParams`
+   where the engine has per-slot params) on `VoiceRenderer`
+   (`src/audio-dsp/types.ts`). Read your **continuous** params out of the live bag
+   every sample so a knob moves the note already sounding; copy the
+   **structural** ones — waveform, filter model, unison size, envelope times —
+   into your own fields once, at construction, from the trigger-time snapshot.
+   Both hooks are optional on the interface, so a renderer that skips this
+   compiles clean and passes the whole suite; it is just the one engine whose
+   knobs go dead mid-note. The registry-driven test in
+   `src/audio-dsp/live-params.dsp.test.ts` walks `WORKLET_ENGINE_IDS` and catches
+   the omission — but only once step 5 is done.
+4. **Side-effect import in the worklet** — add `import '../audio-dsp/<id>-renderer';`
    to [`src/audio-worklet/loom-processor.ts`](../../src/audio-worklet/loom-processor.ts).
    The worklet is a separate bundle; without this import the renderer never
    registers *inside it* and `createRenderer` throws
    `no renderer registered for engine '<id>'`.
-4. **Route the lane** — add the id to `WORKLET_ENGINE_IDS` in
+5. **Route the lane** — add the id to `WORKLET_ENGINE_IDS` in
    [`src/app/lane-allocator.ts`](../../src/app/lane-allocator.ts). The allocator
    only sends listed ids down the worklet path; an unlisted id falls through,
    the lane gets no engine, and nothing sounds.
@@ -225,21 +242,32 @@ Append an object to the `KITS` array in `src/core/drums.ts`. Kits are parameter 
 
 ```text
 src/
-  core/           DSP primitives + pure logic (synth, drums, sequencer,
+  core/           DSP primitives + pure logic (drums, sequencer,
                   lane-scheduler, lane-resources, fx, meter, notes,
-                  history, knob, pianoroll, …)
+                  history, knob, pianoroll, …). The reference TB303 class that
+                  used to live here (synth.ts) is gone with the last
+                  node-per-note path; the renderer is the reference now
                   velocity-color.ts / velocity-gain.ts / velocity-lane-editing.ts
                     — note-velocity colour ramp, gain curve, lane editing helpers
                   clip-loop.ts / clip-loop-brace.ts
                     — clip sub-region resolver + drag-brace UI primitive
+                  channel-strip-params.ts
+                    — the seven strip params (level, pan, sends A/B, EQ x3)
+                      declared ONCE: engine params, automation targets,
+                      modulation targets and mixer knob ids all read this
   engines/        SynthEngine abstraction, registry, one file per engine —
                   nine register today: tb303, subtractive, fm, wavetable,
                   karplus, westcoast, sampler, audio (the dedicated audio
-                  channel), drums-engine — plus engine-selector UI and
-                  engine-param-commit (the one write path for a param edit)
+                  channel), drums-engine — plus engine-selector UI,
+                  engine-param-commit (the one write path for a param edit) and
+                  engine-randomize (the 🎲 dice, derived from each engine's
+                  declared EngineParamSpec rather than per-engine knowledge)
   session/        SessionState model + all session UI
                   (session-host, session-ui, session-inspector,
                   clip-editors/, session-migration)
+                  session-host-reset.ts — resetAllResources(): the ONE teardown
+                    every route that replaces the session runs FIRST, so a load
+                    starts from a released desk
   modulation/     LFO/ADSR voices, ModulationHost, ModulatorScope,
                   connection binder
   plugins/        Plugin SPI + registry
@@ -267,16 +295,24 @@ src/
                   renderer-registry.ts), voice-manager, scheduler-queue,
                   modulation-runtime, plus primitives (osc, filter, ladder,
                   sync-osc, unison, adsr). No AudioContext — unit-test directly
+                  param-smoother.ts — the lane's live param bag: slews only the
+                    params still in flight, and is what makes a knob move the
+                    note already sounding
+                  duck-detector.ts — the sidechain envelope follower (one-pole,
+                    asymmetric attack/release), run by the duck worklet
   audio-worklet/  The processors + typed node wrappers: loom-processor/loom-node
-                  (melodic), drums-*, sampler-*. A processor is referenced ONLY
-                  via ?worker&url and its registered name — never imported on
-                  the main thread (see processor-name.ts)
+                  (melodic), drums-*, sampler-*, duck-* (the sidechain
+                  follower). A processor is referenced ONLY via ?worker&url and
+                  its registered name — never imported on the main thread
+                  (see processor-name.ts)
   export/         Offline scene/WAV render + the live take recorder
   patterns/       The pattern library (styles x patterns) + its picker UI
   perf/           Performance diagnostics (the PERF HUD)
-  polysynth/      LEGACY/vestigial. Not the Subtractive voice host any more —
-                  Subtractive is a descriptor engine rendered in the worklet.
-                  Only the preset store + the extra-poly path still touch it
+  polysynth/      The Subtractive lane's PRESET SURFACE, and nothing else: the
+                  preset dropdown + Randomize (polysynth-presets), apply, store,
+                  templates and the param id list (poly-params). The PolySynth
+                  class that once hosted the voices is gone — Subtractive is a
+                  descriptor engine rendered in the worklet like the other five
   app/            Boot wiring, one module per concern (37 files). main.ts calls
                   into these; it does not contain them — see "Boot" above
                   audio spine  — audio-graph, lane-allocator, engine-swap,
@@ -348,7 +384,7 @@ Loom has four test layers, one per risk class.
 
 **Scheduling with a fake clock** — `src/core/lane-scheduler.test.ts` and `src/session/session-runtime.test.ts` drive the look-ahead scheduler through a mock `AudioContext` clock. The fake clock advances in controlled steps so timing edge-cases are deterministic.
 
-**Real DSP** (`*.dsp.test.ts`) — audio actually rendered and measured, in two techniques. The **pure kernel** is driven sample by sample with no `AudioContext` at all: `src/audio-dsp/drums/new-voices.dsp.test.ts` calls `renderSample()` in a loop and asserts each voice sounds like what it claims to be. `src/audio-dsp/modulation-scope.dsp.test.ts` is the same technique. The **Web Audio nodes that stayed native** render through `OfflineAudioContext` via [`node-web-audio-api`](https://github.com/ircam-ismm/node-web-audio-api), globalised in `test/setup.ts`: `comp-block`, `master-comp`, `master-shaper`, `strip-ducker`, `multifilter`, the sample/warp helpers, the offline export, and `src/polysynth/polysynth-builtin-env.dsp.test.ts`. (`src/performance/arrangement.dsp.test.ts` carries the suffix but does neither — it is arrangement maths. Glob for `*.dsp.test.ts` rather than trusting this list to stay complete.)
+**Real DSP** (`*.dsp.test.ts`) — audio actually rendered and measured, in two techniques. The **pure kernel** is driven sample by sample with no `AudioContext` at all: `src/audio-dsp/drums/new-voices.dsp.test.ts` calls `renderSample()` in a loop and asserts each voice sounds like what it claims to be. `src/audio-dsp/modulation-scope.dsp.test.ts` is the same technique, and so is `src/audio-dsp/live-params.dsp.test.ts` — the registry-driven one that renders every engine in `WORKLET_ENGINE_IDS` twice, moving a knob mid-note in the second render, and fails the engine whose sound does not change. The **Web Audio nodes that stayed native** render through `OfflineAudioContext` via [`node-web-audio-api`](https://github.com/ircam-ismm/node-web-audio-api), globalised in `test/setup.ts`: `comp-block`, `master-comp`, `master-shaper`, `strip-ducker`, `multifilter`, the sample/warp helpers and the offline export. (`src/performance/arrangement.dsp.test.ts` carries the suffix but does neither — it is arrangement maths. Glob for `*.dsp.test.ts` rather than trusting this list to stay complete.)
 
 There is no per-engine battery any more. `test/setup.ts` states the design plainly: the pure DSP kernel is tested directly and the real worklet's audio is verified in the browser via Playwright, because `node-web-audio-api` cannot run our TypeScript processor. `runStandardEngineBattery` in `test/dsp-battery.ts` survives with **no callers**, so nothing writes to `test/output/`, and `npm run test:wav-diff` / `test:wav-bless` do nothing but print "`test/output/ does not exist`". The 90 WAVs in `test/golden/` are orphans of the batteries the worklet cutover removed. Do not reach for that loop expecting it to work; reviving it is a decision, not a step.
 
