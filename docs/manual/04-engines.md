@@ -21,6 +21,14 @@ tags so that MIDI import can auto-assign the best engine and preset for each
 track. See [Sessions, Lanes, Clips & Scenes](03-sessions-lanes-clips-scenes.md)
 for how to add and configure lanes.
 
+The dice rolls the *instrument*, not the desk: it leaves the lane's mixer column
+(volume, pan, sends, EQ), the polyphony setting and the master tune exactly where
+you put them, so a randomised sound stays at the level and in the tuning the rest
+of the mix expects. Rolls are biased towards each parameter's current value
+rather than spread flat across its range, so most of them land near a sound that
+works and the extremes are the tail, not the norm. Hit it repeatedly: it is the
+fastest way to find out what an engine can do.
+
 Every engine responds to **note velocity**. Velocity (0–127) scales each note's
 loudness continuously along a curve with a floor, so even the softest note still
 sounds. Accent (velocity ≥ 100) layers additional character on top, and what it
@@ -29,6 +37,28 @@ engines (and on the TB-303 alone also raises the resonance), drives the
 wavefolder harder on West Coast, and simply hits harder on drums. For how to
 view and edit velocities in the piano-roll or drum-grid, see
 [Velocity & dynamics](05-editing-clips.md#velocity--dynamics).
+
+---
+
+## Turning a knob while a note is sounding
+
+Loom's continuous parameters are **live**. Hold a note — or let a pattern run —
+and move a cutoff, a resonance, an FM ratio, a wavefolder amount: the sound
+already playing bends with your hand, the way it does on hardware. You do not
+have to wait for the next note.
+
+A few parameters deliberately do not work that way, and they are the ones where
+changing mid-note would produce a click rather than a sweep:
+
+- **Waveform** and **filter model** — the shape itself, not a value on it.
+- **Unison size** — how many copies make up a voice.
+- **Every envelope time** — attack, decay, release. The envelope is computed from
+  how long the note has been held, so re-reading an attack halfway through would
+  jump the level instead of gliding it.
+
+Those apply from the next note you play. Everything else is immediate. (The Drum
+Machine is the exception to the whole section: its parameters are read when the
+hit fires.)
 
 ---
 
@@ -166,9 +196,11 @@ against each other is the supersaw sound. It costs CPU in proportion — seven
 copies is seven times the synthesis work per note — so raise it for leads, not
 for dense pads.
 
-**Unison is read once when the note is triggered**, so unlike most parameters it
-is deliberately *not* a modulation target; changing it affects the next note you
-play, not the one currently sounding. **Drift** is the opposite: a touch of it
+**Unison is read once when the note is triggered** — it is one of the structural
+parameters listed in [Turning a knob while a note is
+sounding](#turning-a-knob-while-a-note-is-sounding), so it is deliberately *not*
+a modulation target and changing it affects the next note you play, not the one
+currently sounding. **Drift** is the opposite: a touch of it
 (0.1–0.2) keeps sustained chords from sounding sterile.
 
 For modulation routing see [Modulation & Note FX](06-modulation-and-note-fx.md).
