@@ -24,6 +24,39 @@
 
 ---
 
+## Hechos verificados antes de escribir esto
+
+Nada de lo que sigue es una suposición. Cada línea se comprobó ejecutándola o leyendo el código, el 2026-07-29.
+
+| Hecho | Cómo se comprobó |
+|---|---|
+| Un módulo añadido al AudioWorklet en runtime **publica en el scope global**, y un SEGUNDO módulo llega al mismo registro. Vale tanto `blob:` como http. La factoría que cruza la frontera es invocable. | [tests/e2e/worklet-external-module.spec.ts](../../../tests/e2e/worklet-external-module.spec.ts), verde en Chromium: `host-blob ok, plugin-blob ok, plugin-http ok, construct-node ok`, `ids ["from-blob","from-http"]`, `sample 0.25`. Commit `c556b2c`. |
+| `page.route()` de Playwright **no** intercepta las peticiones de módulo del worklet. | El primer intento del spike fallaba con `Unable to load a worklet's module`; sirviendo el fichero de verdad desde `dist/`, pasa. |
+| **`VoiceManager` NO aplica ningún trim**: cada renderer llama a `synthTrim(<su id>)` por su cuenta (`tb303:92`, `subtractive:186`, `fm:214`, `wavetable:174`, `westcoast:252`, `karplus:229`). El único punto de suma es `renderSample`, línea 225: `out += s.v.renderSample(t, mo)`. | `grep synthTrim src/` + lectura de `voice-manager.ts`. |
+| `VoiceManager` se construye en exactamente **dos** sitios: `loom-processor.ts:44` (`new VoiceManager(sampleRate, engineId, {})`) y `kernel-lane-render.ts:61` (`new VoiceManager(sampleRate, spec.engineId, spec.params)`). | `grep "new VoiceManager("`. |
+| `LoomWorkletNode` se construye en **un** sitio de producción: `worklet-lane-engine.ts:240`, `new LoomWorkletNode(ctx, cfg.engineId)`. | `grep "new LoomWorkletNode"`. |
+| **`LANE_HOST_ENGINE_IDS` está muerto.** Su bucle escribe `.bpm` sobre lo que devuelve `getEngine(id)`, que es el descriptor de `createDescriptorEngine` — un objeto sin propiedad `bpm`. Los únicos objetos con `bpm` son `WorkletLaneEngine`, `DrumsWorkletEngine` y `SamplerWorkletEngine`, que son **instancias por pista**, no lo que hay en el registro. | `grep -i bpm src/engines/` + `grep "\.bpm\s*=[^=]" src/`: el único escritor es ese bucle. |
+| El único consumidor de `WORKLET_ENGINE_IDS` que hace algo distinto de `.has()` es `live-params.dsp.test.ts:100`, que lo expande con `[...WORKLET_ENGINE_IDS]`. | `grep WORKLET_ENGINE_IDS`. |
+| El selector de motor es **`#engine-select`** (`index.html:208`); hay un segundo, `#engine-select-303` (`index.html:167`), para el carril del 303. | `grep` en `index.html` + `main.ts:205-206`. |
+| **esbuild 0.21.5 ya está instalado** (transitivo de Vite), soporta `--alias:`, deja `Loom.x` como global libre con `platform: neutral`, y su `metafile.inputs` da rutas **relativas al cwd del proceso** — que es lo que hace correcta la comprobación "no importes `src/` del host". | Bundle real ejecutado en el scratchpad. |
+| El selector `#engine-select` se rellena desde `melodicSynthEngineIds()`, que filtra por `getEngineDescriptor(id)?.editor === 'piano-roll'`. Un motor de plugin aparece ahí en cuanto su descriptor se registra. | `engine-selector-ui.ts:41-45`. |
+| **Ocho ficheros** importan Karplus, y en cinco tests es una **fila de tabla**, no solo un import. `KARPLUS_DEFAULT_MODULATORS` no lo importa nadie fuera de su propio fichero. La lista exacta está en la Task 9. | `grep -n "engines/karplus\|karplus-renderer\|KARPLUS_DEFAULT_MODULATORS"`. |
+| **`gain-staging-velocity.test.ts` se rompe por un motivo aparte**: su `levelRatio` lee `ENGINE_TRIM['karplus']` (líneas 16-21), así que borrar esa entrada lo vuelve `NaN` y caen cinco casos. | Lectura del fichero. |
+| `tsconfig.json` **no** tiene `resolveJsonModule`, y el `main.ts` de un plugin importa su `plugin.json`. | Lectura de `tsconfig.json`. |
+| esbuild 0.21 bundlea JSON de forma nativa; la sintaxis de atributos de import (`with { type: 'json' }`) es más nueva que esta cadena de herramientas, así que el plan usa el import plano. | Versión comprobada + documentación de esbuild. |
+
+### Un bug latente encontrado por el camino (FUERA de este plan)
+
+Como `LANE_HOST_ENGINE_IDS` escribe sobre los descriptores del registro y no sobre las
+instancias por pista, **nadie asigna nunca `WorkletLaneEngine.bpm`** — cuyo setter existe
+precisamente para re-postear los modulators y que un LFO sincronizado al tempo vuelva a
+resolver su frecuencia (`worklet-lane-engine.ts:216-219`). Es decir: **un LFO en modo SYNC
+sobre uno de los seis motores melódicos no sigue los cambios de tempo.** No se arregla
+aquí — este plan solo borra el bucle muerto — pero queda anotado para que el borrado no lo
+entierre.
+
+---
+
 ## File Structure
 
 **Paquete nuevo — el SDK que se publica a los autores** (`packages/loom-plugin-sdk/src/`):
@@ -67,86 +100,28 @@
 
 ---
 
-### Task 1: Spike — ¿puede el AudioWorklet cargar DSP externo?
+### Task 1: Spike — ¿puede el AudioWorklet cargar DSP externo? — ✅ HECHA (`c556b2c`)
 
-Es la única cosa que puede tumbar el diseño entero. Se mata primero y con un test real en un navegador real, no razonando. Prueba tres cosas a la vez: que un segundo `addModule` ve los globales que puso el primero, que una **blob URL** vale como módulo, y que un procesador construido después encuentra lo que registró el módulo externo.
+Era lo único capaz de tumbar el diseño entero, así que se hizo **antes** de dar el plan por bueno, con un test real en un navegador real.
 
 **Files:**
-- Create: `tests/e2e/worklet-external-module.spec.ts`
+- Created: [tests/e2e/worklet-external-module.spec.ts](../../../tests/e2e/worklet-external-module.spec.ts)
 
-**Interfaces:**
-- Consumes: nada.
-- Produces: nada de código. Produce la decisión GO/NO-GO. Si falla, PARA y escala: el diseño necesita otra forma.
+- [x] **Step 1: Write the test** — hecho.
+- [x] **Step 2: Run it** — `npm run build` ya estaba hecho; `npx playwright test tests/e2e/worklet-external-module.spec.ts` → **1 passed**.
+- [x] **Step 3: Commit** — `c556b2c`.
 
-- [ ] **Step 1: Write the failing test**
+**Resultado, literal:**
 
-```ts
-// tests/e2e/worklet-external-module.spec.ts
-import { test, expect } from '@playwright/test';
-
-// The whole plugin design rests on this: a module added to the AudioWorklet at
-// runtime must be able to publish into the worklet's global scope, and a LATER
-// module (and any processor built afterwards) must see it. Separately-added
-// modules do NOT share module instances, so a plain imported registry would give
-// each one its own copy — which is exactly why the ABI is a global object.
-test('an externally added worklet module registers into the shared global scope', async ({ page }) => {
-  await page.goto('/');
-
-  const seen = await page.evaluate(async () => {
-    const hostModule = `
-      globalThis.LoomProbe = { renderers: {} };
-      class ProbeProcessor extends AudioWorkletProcessor {
-        constructor() {
-          super();
-          this.port.postMessage(Object.keys(globalThis.LoomProbe.renderers));
-        }
-        process() { return false; }
-      }
-      registerProcessor('probe-processor', ProbeProcessor);
-    `;
-    const pluginModule = `
-      globalThis.LoomProbe.renderers['karplus'] = () => 0.5;
-    `;
-    const url = (src: string) => URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
-
-    const ctx = new AudioContext();
-    await ctx.audioWorklet.addModule(url(hostModule));
-    await ctx.audioWorklet.addModule(url(pluginModule));
-
-    const node = new AudioWorkletNode(ctx, 'probe-processor');
-    const keys: string[] = await new Promise((resolve) => {
-      node.port.onmessage = (e) => resolve(e.data as string[]);
-    });
-    await ctx.close();
-    return keys;
-  });
-
-  expect(seen).toContain('karplus');
-});
+```
+addModule steps: { "host-blob": "ok", "plugin-blob": "ok",
+                   "plugin-http": "ok", "construct-node": "ok" }
+msg: {"ids":["from-blob","from-http"],"sample":0.25,"apiVersion":1}
 ```
 
-- [ ] **Step 2: Build, then run the spike**
+Los dos módulos de plugin —uno servido como `blob:` y otro por http normal desde `dist/`— alcanzaron el **mismo** registro que creó el módulo del host, y la factoría que cruzó la frontera se pudo invocar (devolvió `0.25`). **GO.**
 
-```bash
-npm run build
-NO_COLOR=1 npx playwright test tests/e2e/worklet-external-module.spec.ts
-```
-
-Expected: **PASS**. Si falla, para el plan aquí y escala el resultado — no sigas con la Task 2.
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add tests/e2e/worklet-external-module.spec.ts
-git commit -F - <<'EOF'
-test(plugins): spike — un modulo externo del worklet publica en el scope global
-
-Es el riesgo que puede tumbar el diseno de plugins: dos addModule distintos NO
-comparten instancias de modulo, asi que el registro tiene que ser un objeto
-global del realm y no un modulo importado. Este test lo demuestra en un
-navegador real, con blob URLs, antes de construir nada encima.
-EOF
-```
+Un detalle que costó el primer intento y conviene no re-descubrir: `page.route()` de Playwright **no** intercepta las peticiones de módulo del worklet. El fichero http hay que servirlo de verdad.
 
 ---
 
@@ -247,11 +222,14 @@ export { ModEnvHost } from './dsp/mod-env-host';
     "noEmit": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "baseUrl": ".",
-    "paths": { "@loom/plugin-sdk": ["packages/loom-plugin-sdk/src/index.ts"] }
+    "paths": { "@loom/plugin-sdk": ["packages/loom-plugin-sdk/src/index.ts"] },
+    "resolveJsonModule": true
   },
   "include": ["src", "test", "scripts", "packages", "plugins"]
 }
 ```
+
+> `resolveJsonModule` no es opcional: el `main.ts` de un plugin importa su propio `plugin.json` (Task 6), y un test de gain-staging pasará a leer el trim desde ese mismo JSON (Task 9). Sin esta línea, `tsc` falla en las dos.
 
 `vite.config.ts` — dentro de `defineConfig({...})`, junto a `plugins`:
 
@@ -919,8 +897,10 @@ EOF
 - [ ] **Step 1: Add esbuild and the scripts**
 
 ```bash
-npm install --save-dev esbuild@^0.25.0
+npm install --save-dev esbuild@^0.21.5
 ```
+
+> Esa versión **ya está** en `node_modules` (Vite la trae). Declararla explícitamente en la misma línea evita instalar una segunda copia, y es la versión con la que se comprobó que `--alias:` funciona, que `platform: neutral` deja `Loom.x` como global libre y que `metafile.inputs` da rutas relativas al cwd del proceso.
 
 En `package.json`, dentro de `scripts`, añade y ajusta:
 
@@ -1179,8 +1159,8 @@ const manifest = (id) => JSON.stringify({
   }],
 }, null, 2);
 
-const MAIN = (id) => `// Main-thread half: hand the host this engine's metadata.
-import manifest from './plugin.json' with { type: 'json' };
+const MAIN = () => `// Main-thread half: hand the host this engine's metadata.
+import manifest from './plugin.json';
 
 Loom.registerEngine(manifest.engines[0]);
 `;
@@ -1320,21 +1300,47 @@ cp public/presets/karplus.json plugins/karplus/presets.json
         { "id": "amp.level",         "label": "Level",       "kind": "continuous", "min": 0,     "max": 1,   "default": 0.8 },
         { "id": "poly.voices",       "label": "Voices",      "kind": "continuous", "min": 1,     "max": 16,  "default": 8 }
       ],
-      "modulators": []
+      "modulators": [
+        {
+          "id": "lfo1",
+          "kind": "lfo",
+          "enabled": true,
+          "connections": [],
+          "rateHz": 4,
+          "waveform": "sine",
+          "bipolar": true,
+          "syncToBpm": false,
+          "syncBars": 0.25,
+          "syncSubdiv": "straight",
+          "trigger": "free",
+          "scope": "shared"
+        },
+        {
+          "id": "adsr1",
+          "kind": "adsr",
+          "enabled": true,
+          "connections": [],
+          "attackSec": 0.01,
+          "decaySec": 0.3,
+          "sustain": 0.7,
+          "releaseSec": 0.3,
+          "scope": "per-voice"
+        }
+      ]
     }
   ]
 }
 ```
 
-> **Nota sobre `modulators`:** `src/engines/karplus.ts` declara hoy `[makeDefaultLFO('lfo1'), makeDefaultADSR('adsr1')]`. En el Step 3 se serializa ese par tal cual y se pega aquí como JSON. Ejecuta
-> `NO_COLOR=1 npx tsx -e "import {makeDefaultLFO,makeDefaultADSR} from './src/modulation/types';console.log(JSON.stringify([makeDefaultLFO('lfo1'),makeDefaultADSR('adsr1')]))"`
-> y sustituye `"modulators": []` por su salida. Sin esto, una pista de Karplus arrancaría sin sus dos modulators y el panel saldría vacío.
+> Ese bloque `modulators` **no hay que calcularlo**: es la serialización literal de `[makeDefaultLFO('lfo1'), makeDefaultADSR('adsr1')]`, lo que `src/engines/karplus.ts` declara hoy, obtenida ejecutándolo el 2026-07-29. Sin él, una pista de Karplus arrancaría con el panel de modulación vacío.
 
 - [ ] **Step 3: Escribe `main.ts`**
 
 ```ts
 // plugins/karplus/main.ts — main-thread half: metadata only.
-import manifest from './plugin.json' with { type: 'json' };
+// Plain JSON import, NOT `with { type: 'json' }`: esbuild 0.21 bundles JSON
+// natively, and the import-attribute syntax is newer than the toolchain here.
+import manifest from './plugin.json';
 
 Loom.registerEngine(manifest.engines[0] as never);
 ```
@@ -1576,23 +1582,80 @@ Expected: PASS.
 
 - [ ] **Step 5: Enchufa las capacidades en los cinco puntos del core**
 
-`src/audio-dsp/gain-staging.ts` — `synthTrim` consulta primero el manifiesto:
+**El trim del motor: por qué NO se toca `synthTrim`.** El renderer de un plugin no puede aplicar su propio trim — el número vive en el manifiesto y duplicarlo en el JS compilado sería dos fuentes de verdad. Así que lo aplica el host. Pero `synthTrim` lo llaman los renderers **dentro del worklet**, y `plugin-capabilities` arrastra `loom-api` → `engines/registry` → `preset-loader` (`fetch`, `import.meta.env`): meter eso en el bundle del worklet sería un error. Por eso `gain-staging.ts` se queda como está salvo por una línea, y el trim del plugin viaja como **dato**, desde el hilo principal hasta el procesador.
+
+En `src/audio-dsp/gain-staging.ts`, **solo** borra la entrada `karplus: 0.857` de `ENGINE_TRIM` (su comentario histórico se conserva en el commit; el valor vive ahora en el manifiesto del plugin).
+
+En `src/plugin-host/plugin-capabilities.ts` añade el único traductor:
 
 ```ts
-import { outputTrimFor } from '../plugin-host/plugin-capabilities';
+import { CATEGORY_GAIN } from '../audio-dsp/gain-staging';
 
-/** Output trim for a synth engine = its per-engine trim × the synth category
- *  gain. A plugin engine declares its trim in its manifest (`outputTrim`); the
- *  ENGINE_TRIM table below is what remains for the engines still in-tree. */
-export function synthTrim(engineId: string): number {
-  const fromPlugin = outputTrimFor(engineId);
-  return (fromPlugin ?? ENGINE_TRIM[engineId] ?? 1) * CATEGORY_GAIN.synth;
+/** What the host must multiply a PLUGIN engine's voices by: the engine's own
+ *  declared balance times the synth category gain — exactly what synthTrim()
+ *  computes for an in-tree engine. Undefined for an engine that is not a
+ *  plugin, so callers fall back to 1 and the in-tree renderer's own
+ *  multiplication stands. */
+export function pluginSynthTrim(engineId: string): number | undefined {
+  const t = outputTrimFor(engineId);
+  return t === undefined ? undefined : t * CATEGORY_GAIN.synth;
 }
 ```
 
-Y borra la entrada `karplus: 0.857` de `ENGINE_TRIM`, dejando su comentario histórico en el manifiesto del plugin si se quiere conservar.
+Y el dato recorre los cinco eslabones, todos verificados como puntos únicos:
 
-> El renderer del plugin ya no aplica trim (Task 6). Quien lo aplica es el host: `VoiceManager` multiplica la salida de cada voz por `synthTrim(engineId)`. Comprueba con `grep -n "synthTrim" src/audio-dsp/voice-manager.ts` — **si `VoiceManager` no lo aplica**, añádelo ahí (una multiplicación en el sumatorio por voz) y cubre el caso con un test que compare la salida de un renderer de plugin con `outputTrim: 0.5` frente a uno con `1`, verificando la razón 0.5. Sin este paso Karplus sonaría a trim 1 y saldría mucho más alto.
+1. `src/app/lane-allocator.ts` — en `createLaneEngine`, la construcción del `WorkletLaneEngine` gana un campo: `outputTrim: pluginSynthTrim(engineId) ?? 1`.
+2. `src/engines/worklet-lane-engine.ts` — `WorkletLaneEngineConfig` gana `outputTrim?: number`, y la línea 240 pasa a `this.worklet = new LoomWorkletNode(ctx, cfg.engineId, cfg.outputTrim ?? 1);`.
+3. `src/audio-worklet/loom-node.ts` — el constructor gana el tercer parámetro y lo mete en las opciones del procesador:
+
+   ```ts
+   constructor(ctx: BaseAudioContext, engineId = 'subtractive', outputTrim = 1) {
+     this.node = new AudioWorkletNode(ctx, LOOM_PROCESSOR_NAME, {
+       outputChannelCount: [2],
+       // outputTrim is STRUCTURAL (it comes from the plugin manifest, not a
+       // knob), so it travels once at construction rather than as a param.
+       processorOptions: { engineId, outputTrim },
+     });
+   ```
+
+4. `src/audio-worklet/loom-processor.ts` — lo lee junto al `engineId` y lo pasa al `VoiceManager`:
+
+   ```ts
+   const opts = (options as { processorOptions?: { engineId?: string; outputTrim?: number } } | undefined)?.processorOptions;
+   const engineId = opts?.engineId ?? 'subtractive';
+   this.vm = new VoiceManager(sampleRate, engineId, {}, opts?.outputTrim ?? 1);
+   ```
+
+5. `src/audio-dsp/voice-manager.ts` — el constructor gana el parámetro y `renderSample` lo aplica en el único punto de suma (línea 225):
+
+   ```ts
+   constructor(private sr: number, private engineId: string, params: ParamBag,
+               private readonly outputTrim = 1) {
+   ```
+
+   ```ts
+   out += s.v.renderSample(t, mo as VoiceModOffsets | undefined) * this.outputTrim;
+   ```
+
+   El valor por defecto de 1 es lo que deja intactos a los seis motores del árbol, que siguen aplicándose su `synthTrim` dentro del renderer. Cuando migren (trozo 2), esa multiplicación interna desaparece y todos pasan por aquí.
+
+Y el camino offline: en `src/export/kernel-lane-render.ts`, `KernelLaneSpec` gana `outputTrim?: number` y la línea 61 pasa a `new VoiceManager(sampleRate, spec.engineId, spec.params, spec.outputTrim ?? 1)`. **El campo lo rellena quien construye el spec** (`offline-recorder.ts`, hilo principal, con `pluginSynthTrim(engineId) ?? 1`); `kernel-lane-render.ts` NO importa `plugin-capabilities`, para que siga siendo puro y testeable sin `fetch`.
+
+Cúbrelo con un test en `src/audio-dsp/voice-manager.test.ts` (o créalo):
+
+```ts
+it('scales every voice by the engine output trim the host handed it', () => {
+  registerRenderer('probe-trim', (): VoiceRenderer => ({
+    done: false, noteOff() {}, renderSample() { return 1; },
+  }));
+  const note = { midi: 60, beginSec: 0, durationSec: 1, velocity: 1, accent: false, slide: false };
+  const full = new VoiceManager(48000, 'probe-trim', {});
+  const half = new VoiceManager(48000, 'probe-trim', {}, 0.5);
+  full.spawn(note); half.spawn(note);
+  // Relative: the trimmed lane must be exactly half the untrimmed one.
+  expect(half.renderSample(0) / full.renderSample(0)).toBeCloseTo(0.5, 10);
+});
+```
 
 `src/session/session-host-util.ts` — `nextLaneSlug` pregunta antes de mirar su tabla:
 
@@ -1668,11 +1731,11 @@ export const WORKLET_ENGINE_IDS = {
 };
 ```
 
-> Comprueba los consumidores con `grep -rn "WORKLET_ENGINE_IDS" src/`. Si alguno hace algo distinto de `.has(...)` o de iterar, adáptalo en esta misma tarea; `src/audio-dsp/live-params.dsp.test.ts` itera el set y ahora recorrerá solo los built-ins — correcto, porque el renderer de Karplus ya no vive en `src/` y su equivalente lo cubre el test de paridad de la Task 6.
+Los consumidores ya están verificados: **todos usan `.has(...)` salvo uno**, `src/audio-dsp/live-params.dsp.test.ts:100`, que lo expande con `[...WORKLET_ENGINE_IDS]` — de ahí el `[Symbol.iterator]` de arriba. Ese test recorrerá a partir de ahora solo los cinco built-ins, que es lo correcto: el renderer de Karplus ya no vive en `src/`, y su equivalente lo cubre el test de paridad de la Task 6.
 
 `src/app/bpm-broadcast.ts` — borra `LANE_HOST_ENGINE_IDS`, la función `propagateToLaneEngines`, su llamada dentro de `broadcast`, y el `import { getEngine }`.
 
-> **Verifica antes de borrar** que de verdad está muerto: `getEngine(id)` devuelve el descriptor de `createDescriptorEngine`, que no tiene propiedad `bpm`, así que `typeof eng.bpm === 'number'` es siempre falso. Confírmalo con `grep -n "bpm" src/engines/descriptor-engine.ts` (sin resultados) antes de quitarlo, y deja constancia en el mensaje del commit.
+> **Está muerto, ya verificado** (ver "Hechos verificados"): el bucle escribe `.bpm` sobre lo que devuelve `getEngine(id)` — el descriptor de `createDescriptorEngine`, que no tiene esa propiedad. Los únicos objetos con `bpm` son las instancias POR PISTA (`WorkletLaneEngine`, `DrumsWorkletEngine`, `SamplerWorkletEngine`), que nunca están en el registro. **No arregles el bug latente aquí** (que `WorkletLaneEngine.bpm` no lo asigne nadie, y por tanto un LFO en SYNC no siga el tempo en los seis motores melódicos): eso es otro trabajo, con su propio test. Menciónalo en el mensaje del commit para que el borrado no lo entierre.
 
 `src/presets/preset-loader.ts` — el sembrado deja de ser solo-para-tests:
 
@@ -2009,7 +2072,7 @@ import { loadPlugins } from './plugin-host/plugin-host';
 import { loadPluginDspModules, importPluginDspOnMainThread } from './plugin-host/plugin-dsp';
 ```
 
-> Comprueba la forma exacta del `Promise.all` existente antes de editar (`grep -n "workletReady" -A 12 src/main.ts`): si ya termina en `.then(() => undefined)` o similar, conserva esa forma y limítate a envolver `loadLoomWorklet(ctx)`.
+> El bloque original (`main.ts:124-130`) es `Promise.all([loadLoomWorklet(ctx), loadDrumsWorklet(ctx), loadSamplerWorklet(ctx), loadDuckWorklet(ctx)])`. El único cambio es envolver el primer elemento; conserva el resto tal cual, incluido el comentario sobre el detector de sidechain que precede a `loadDuckWorklet`.
 
 - [ ] **Step 6: Build + full suite + a real listen**
 
@@ -2078,11 +2141,52 @@ Reescribe `plugins/karplus/karplus-parity.dsp.test.ts` para comparar contra ese 
 git rm src/engines/karplus.ts src/audio-dsp/karplus-renderer.ts public/presets/karplus.json
 ```
 
-Quita también:
-- `import '../audio-dsp/karplus-renderer';` de `src/audio-worklet/loom-processor.ts`
-- `import '../audio-dsp/karplus-renderer';` de `src/export/kernel-lane-render.ts`
+**Los ocho ficheros que lo importan, enumerados** (`grep` ejecutado el 2026-07-29; `KARPLUS_DEFAULT_MODULATORS` no lo importa nadie fuera de su propio fichero):
 
-Y revisa `grep -rn "KARPLUS_DEFAULT_MODULATORS\|engines/karplus" src/ tests/` por si algún fichero lo importaba.
+| Fichero | Qué quitar |
+|---|---|
+| `src/audio-worklet/loom-processor.ts:20` | el `import '../audio-dsp/karplus-renderer';` |
+| `src/export/kernel-lane-render.ts:29` | el mismo import |
+| `src/app/lane-allocator.test.ts:8,117` | el import y la fila `['karplus'],` de la tabla |
+| `src/engines/registry-descriptor.test.ts:13,25` | el import y la fila `['karplus', 'poly'],` |
+| `src/engines/registry-boot.test.ts:16,29,42` | el import y **dos** filas `['karplus'],` |
+| `src/session/engine-param-persistence.test.ts:14,41` | el import y `'karplus'` de `ENGINE_IDS` |
+| `src/session/session-add-lane.test.ts:6,33-35` | el import; el test se **reescribe**, ver abajo |
+| `test/engine-fixtures.ts:13,65-69,73,84` | el import, el bag `karplus:` de `DEFAULT_BAGS`, `'karplus'` de `MELODIC_IDS` y el `case 'karplus':` de `makeRenderer` |
+
+**`session-add-lane.test.ts` se reescribe en vez de borrarse.** Su caso de hoy (`nextLaneSlug(new Set([]), 'karplus') === 'karplus-1'`) seguiría pasando por pura casualidad — sin plugins cargados, el prefijo cae al `engineId` por defecto. Cámbialo por el caso que de verdad importa ahora: que el `shortLabel` del manifiesto manda.
+
+```ts
+import { installMainThreadLoomApi, __resetPluginEngines } from '../plugin-host/loom-api';
+
+it('a plugin engine takes its lane prefix from the manifest shortLabel', () => {
+  __resetPluginEngines();
+  installMainThreadLoomApi();
+  (globalThis as unknown as { Loom: { registerEngine(m: unknown): void } }).Loom.registerEngine({
+    id: 'karplus', name: 'Karp', polyphony: 'poly', clipEditor: 'piano-roll',
+    outputTrim: 0.857, shortLabel: 'karplus', params: [],
+  });
+  expect(nextLaneSlug(new Set([]), 'karplus')).toBe('karplus-1');
+});
+```
+
+**`src/audio-dsp/gain-staging-velocity.test.ts` también se rompe**, y no por el import: su `levelRatio` lee `ENGINE_TRIM[id]` para `id ∈ {fm, karplus}` (líneas 16-21), así que borrar `ENGINE_TRIM.karplus` lo convierte en `NaN` y caen cinco casos. La solución conserva la cobertura **y la mejora**: que lea el trim de Karplus del manifiesto del plugin, con lo que el test pasa a vigilar que el número afinado a oído en su día siga ahí.
+
+```ts
+import karplusPlugin from '../../plugins/karplus/plugin.json';
+
+/** The per-engine trims this test compares against history. Karplus's now lives
+ *  in its plugin manifest, so reading it HERE is also what keeps the ported
+ *  plugin honest about the value that was tuned by ear. */
+const TRIM: Record<string, number> = {
+  fm: ENGINE_TRIM.fm,
+  karplus: karplusPlugin.engines[0].outputTrim,
+};
+
+function levelRatio(id: string, v01: number): number {
+  return (TRIM[id] * velGain01(v01, false)) / (PRE_FIX_TRIM[id] * v01);
+}
+```
 
 - [ ] **Step 3: Criterio de aceptación 1 — cero menciones**
 
@@ -2122,7 +2226,11 @@ test('the Karplus plugin appears as a selectable engine', async ({ page }) => {
   });
   expect(ids).toContain('karplus');
 
-  const options = await page.locator('select').first().locator('option').allTextContents();
+  // #engine-select is the main lane's engine selector (index.html:208). It is
+  // filled from melodicSynthEngineIds(), which lists every registered engine
+  // whose descriptor asks for the piano-roll editor — so a plugin engine shows
+  // up there with no extra wiring.
+  const options = await page.locator('#engine-select option').allTextContents();
   expect(options.join('|').toLowerCase()).toContain('karp');
   expect(errors).toEqual([]);
 });
@@ -2136,13 +2244,11 @@ test('a missing plugin directory removes the engine and logs no error', async ({
   await page.goto('/');
   await page.waitForTimeout(1500);
 
-  const options = await page.locator('select').first().locator('option').allTextContents();
+  const options = await page.locator('#engine-select option').allTextContents();
   expect(options.join('|').toLowerCase()).not.toContain('karp');
   expect(errors).toEqual([]);
 });
 ```
-
-> El primer test asume que el primer `<select>` de la página es un selector de motor. Verifícalo antes con `grep -rn "engine-select\|engineSel" src/engines/engine-selector-ui.ts` y usa el selector CSS real que encuentres en lugar de `select` a secas.
 
 - [ ] **Step 6: Run the e2e (build first — Playwright serves `dist/`)**
 
@@ -2210,7 +2316,8 @@ EOF
 
 **Consistencia de tipos:** `EngineManifest` (Task 3) es lo que consumen `adoptEngine` (4), los lectores de capacidades (7) y el manifiesto de Karplus (6) — mismos nombres de campo en los cuatro sitios. `RendererFactory` (3) coincide con el `Ctor` de `registerRenderer` en `src/audio-dsp/renderer-registry.ts`. `seedEnginePresets` se define en 7 y se consume en 8. `registeredPluginEngines` se define en 4 y se consume en 7. `PluginLoadReport.dspUrls` se produce en 8 y se consume en el mismo `main.ts` de 8.
 
-**Riesgos vivos, con su mitigación dentro del plan:**
-- El alias `@loom/plugin-sdk` tiene que resolver en tsc, Vite y Vitest — los tres se tocan en la Task 2 Step 3 y se verifican en el Step 6.
-- `VoiceManager` podría no aplicar `synthTrim`; la Task 7 Step 5 obliga a comprobarlo por `grep` y a añadirlo con test si falta, porque de lo contrario Karplus sale mucho más alto.
-- El primer `<select>` del e2e puede no ser el selector de motor: la Task 9 Step 5 obliga a verificar el selector real antes de dar el test por bueno.
+**Riesgos: qué se cerró antes de escribir esto, y qué queda vivo.**
+
+Cerrados con evidencia (ver "Hechos verificados"): el `addModule` externo dentro del worklet, el `blob:` y el http como fuentes de módulo, el trim que `VoiceManager` no aplicaba, la muerte de `LANE_HOST_ENGINE_IDS`, los consumidores de `WORKLET_ENGINE_IDS`, el selector `#engine-select`, y el soporte de `--alias` y `metafile` en el esbuild ya instalado.
+
+Queda **un** riesgo real, y es de configuración, no de diseño: que el alias `@loom/plugin-sdk` resuelva a la vez en `tsc`, Vite y Vitest. Los tres se tocan en la Task 2 Step 3 y el Step 6 los ejecuta los tres seguidos (`tsc --noEmit`, el test del SDK, y la suite entera), así que un fallo aparece dentro de la propia tarea y no más tarde. Si `tsc` se resistiera con `paths`, la salida es un `tsconfig` con `references` o mover el SDK a un workspace de npm — pero no hay motivo para creer que haga falta.
