@@ -49,7 +49,29 @@ All three bands are ±dB adjustments. EQ gain AudioParams are exposed to modulat
 
 ### Send A and Send B
 
-The two send knobs — **A** and **B** — control how much of this lane's post-duck signal is fed into the two shared send buses. They replaced the old fixed REV/DLY knobs. Send A and Send B are general-purpose return channels, seeded **A = Delay** and **B = Reverb**, but you can change what effect lives in each — see [Send A / Send B return modules](#sends--send-a-and-send-b). The knobs are independent wet levels: 0 = dry only, higher values mix more of the lane into that send's effect. Sends are post-fader, so they follow the lane's level and sidechain ducking. (Saved knob ids are `mix.<lane>.sendA` / `mix.<lane>.sendB`; old saves with `…rev` / `…dly` amounts migrate automatically — reverb→B, delay→A.)
+The two send knobs — **A** and **B** — control how much of this lane's post-duck signal is fed into the two shared send buses. They replaced the old fixed REV/DLY knobs. Send A and Send B are general-purpose return channels, seeded **A = Delay** and **B = Reverb**, but you can change what effect lives in each — see [Send A / Send B return modules](#sends--send-a-and-send-b). The knobs are independent wet levels: 0 = dry only, higher values mix more of the lane into that send's effect. Sends are post-fader, so they follow the lane's level and sidechain ducking. (Old saves with `…rev` / `…dly` amounts migrate automatically — reverb→B, delay→A.)
+
+### The mixer column is automatable — all seven controls, on every lane
+
+Level, pan, both sends and the three EQ bands are ordinary lane parameters, which
+means each of them shows up in the automation destination picker, in the XY pad's
+axis lists, in the modulation panel's target dropdown and in the knob's own
+right-click menu — on **every** lane, whatever engine it runs. This used to be
+true of drum lanes only, so a drum lane's volume could be automated and a
+Subtractive lane's could not; the mixer now declares its parameters once for
+everybody. Their automation ids are `<lane>.bus.level`, `<lane>.bus.pan`,
+`<lane>.bus.delaySend`, `<lane>.bus.reverbSend` and `<lane>.bus.eq.low` / `.mid` /
+`.high` — the lane id first, exactly like an engine param. (Sessions saved before
+this carry the old `mix.<lane>.<param>` form for drum lanes; they load, but the
+ids you see in the picker today are the `bus.*` ones.)
+
+One difference worth knowing between **automating** a fader and **modulating**
+it: automation writes the gain directly, while a modulator is summed onto a trim
+that sits in front of it. That is deliberate — a bipolar LFO summed straight onto
+a gain would push it below zero on the trough, which does not quieten the lane, it
+flips its phase and makes it cancel against everything else in the mix. With the
+trim, full depth swings the lane between silence and double its fader position,
+and the modulation stays relative to wherever you left the fader.
 
 ---
 
@@ -207,11 +229,13 @@ Two things to know:
 
 ## Sidechain compression
 
-Loom includes a sidechain ducking system. Any lane's channel strip can be ducked by the signal level of another lane (the *source*). The ducker follows the source lane's envelope via a full-wave rectifier and two smoothing filters, then reduces the target lane's gain proportionally:
+Loom includes a sidechain ducking system. Any lane's channel strip can be ducked by the signal level of another lane (the *source*). A small envelope follower rectifies the source, chases it upwards at the **Attack** time constant and falls back at the **Release** one, and turns whatever exceeds the threshold into a gain multiplier for the target lane:
 
 ```
-duckGain ≈ 1 − depth × env(source)
+duckGain = 1 − depth × (env(source) − threshold)     clamped to [0, 1]
 ```
+
+The multiplier can never leave `[0, 1]`: at worst the lane goes silent, and when the source stops the follower returns to zero and the lane comes back. That is a guarantee, not an observation — it is why the follower is a one-pole running in its own audio worklet rather than a pair of filter nodes, which is what it was until 2026-07-27. A filter slow enough to smooth a 0.25 s release sits at 0.64 Hz, close enough to the edge of stability that single-precision rounding error accumulated instead of decaying: the "envelope" grew without bound even with the source at exactly zero, the multiplier drifted past zero into negative territory, and the ducked lane first disappeared and then came back **phase-inverted and louder** — a fault that survived pressing stop, which is why relaunching a loop could sound completely different from letting it run.
 
 Sidechain parameters (set per lane in the lane inspector):
 
@@ -219,8 +243,8 @@ Sidechain parameters (set per lane in the lane inspector):
 |-------|-------|---------|-------------|
 | Source | lane selector | — | Which lane's post-mute tap drives the duck |
 | Depth | 0–1 | 0.6 | How deep the gain dips at full envelope |
-| Attack | s | 0.005 s | How quickly the ducker opens (gain rises) |
-| Release | s | 0.25 s | How quickly the ducker closes (gain falls) |
+| Attack | s | 0.005 s | How fast the duck clamps down when the source hits |
+| Release | s | 0.25 s | How fast the lane comes back up once the source falls |
 | Threshold | dB | −40 dB | Source envelope must exceed this to duck at all |
 
 A typical use case is kick-drum ducking: set a bass or pad lane's sidechain source to the kick lane. Every kick hit momentarily ducks the bass, creating a pumping effect common in electronic music. Because the tap is taken from the source lane post-mute (but pre-duck), muting the source stops the ducking without feedback loops.
