@@ -18,6 +18,8 @@ Three buttons on the session bar (the second header row) drive session managemen
 
 See [Transport](02-transport.md) for the full two-row header layout (transport & tempo on top, session & I/O below).
 
+**New and Load both start from an empty desk.** Whatever replaces the session — New, loading a save or the autosave, picking a demo, or a MIDI import in Replace mode — first releases everything the old session was holding: every lane's channel strip (level, pan, EQ, both sends, mute, compressor and sidechain), the master rack, the send buses, the master processors, mute/solo and the per-lane note-FX chains. Nothing rides through. It is worth stating because the opposite used to be true: a lane whose id existed in both sessions kept its live strip, so a demo you loaded could arrive already panned and EQ'd by the song before it, and pressing New did not put the mixer back to flat. The single deliberate survivor is the **master volume fader** — that is how loud your speakers are, not part of the song.
+
 ---
 
 ## Save Manager
@@ -104,7 +106,7 @@ The offline backend rebuilds the full audio graph — lanes, inserts, master bus
 
 For the same reason it appends **no** FX tail: the render is exactly the musical, bar-aligned length. A trailing tail would round up to an extra bar and the loop would drift.
 
-**Where it differs from the live sound.** The divergence is structural, not random: per-pad FX sends and per-voice drum-strip sends/EQ are dropped offline, and sample-mode drum kits render through the sampler path. Both are approximations of the live per-voice mix, so a kit that leans on per-voice sends will not sound identical. Everything else — presets, clip automation, the worklet engines — is applied exactly as live.
+**Where it differs from the live sound.** The divergence is structural, not random: per-pad FX sends and per-voice drum-strip sends/EQ are dropped offline, and sample-mode drum kits render through the sampler path. Both are approximations of the live per-voice mix, so a kit that leans on per-voice sends will not sound identical. Everything else — presets, clip automation, the worklet engines — is applied exactly as live. That includes automation drawn on the mixer column: a level fade or a pan sweep is scheduled point by point, so it renders as the move you drew rather than jumping to its end value.
 
 ### What gets exported
 
