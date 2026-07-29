@@ -73,7 +73,7 @@ A sound's **keymap entry** has a root note and a low/high key range. When a note
 
 ### Per-sound parameters
 
-Every sound — a drumkit pad, a melodic zone, or a loop slice — has its own set of parameters, all read at trigger time:
+Every sound — a drumkit pad, a melodic zone, or a loop slice — has its own set of parameters:
 
 | Parameter | Range | Default | Description |
 | --- | --- | --- | --- |
@@ -93,6 +93,8 @@ Every sound — a drumkit pad, a melodic zone, or a loop slice — has its own s
 | END | 0–1 | 1 | Trim out — playback end as a fraction of sample duration |
 | RETRIG | Poly / Mono | Poly | Mono cuts the previous hit on re-trigger; Poly layers them |
 | CHOKE | — / 1 / 2 / 3 / 4 | — | Sounds sharing the same non-zero group cut each other |
+
+**CUTOFF, RES, LEVEL, PAN, REV and DLY are live**: turn one while a pad is ringing and you hear it on the sound already playing. The rest are read when the hit fires — ATTACK and DECAY because they are envelope times, TUNE, the trim/loop points and RETRIG/CHOKE because they decide how the voice is built.
 
 REV and DLY feed the two shared session send buses, not an insert on this lane — see [Send A and Send B](07-mixing-and-fx.md) for what lives in each. CHOKE is the same mutual-exclusion mechanism the Drum Machine uses: on a drumkit the GM closed and open hi-hats start in group 1, so a closed hat silences the open hat's ring.
 

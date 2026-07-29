@@ -2067,7 +2067,7 @@ and the modulation stays relative to wherever you left the fader.</p>
 <h3 id="08-midi-and-samples--keymap-and-repitch">Keymap and repitch</h3>
 <p>A sound&#39;s <strong>keymap entry</strong> has a root note and a low/high key range. When a note falls in the range, the sample plays at a rate of <code>2^((midi − rootNote) / 12)</code> — equal-temperament repitching — so a melodic instrument&#39;s zones span the keyboard chromatically while a drumkit pad or a loop slice sits on a single key.</p>
 <h3 id="08-midi-and-samples--per-sound-parameters">Per-sound parameters</h3>
-<p>Every sound — a drumkit pad, a melodic zone, or a loop slice — has its own set of parameters, all read at trigger time:</p>
+<p>Every sound — a drumkit pad, a melodic zone, or a loop slice — has its own set of parameters:</p>
 <table>
 <thead>
 <tr>
@@ -2174,6 +2174,7 @@ and the modulation stays relative to wherever you left the fader.</p>
 <td>Sounds sharing the same non-zero group cut each other</td>
 </tr>
 </tbody></table>
+<p><strong>CUTOFF, RES, LEVEL, PAN, REV and DLY are live</strong>: turn one while a pad is ringing and you hear it on the sound already playing. The rest are read when the hit fires — ATTACK and DECAY because they are envelope times, TUNE, the trim/loop points and RETRIG/CHOKE because they decide how the voice is built.</p>
 <p>REV and DLY feed the two shared session send buses, not an insert on this lane — see <a href="#07-mixing-and-fx">Send A and Send B</a> for what lives in each. CHOKE is the same mutual-exclusion mechanism the Drum Machine uses: on a drumkit the GM closed and open hi-hats start in group 1, so a closed hat silences the open hat&#39;s ring.</p>
 <p>These live in each channel strip — drumkit, melodic, and loop all share the same per-channel rack (there is no eight-pad limit and no separate knob row).</p>
 <h3 id="08-midi-and-samples--drumkits">Drumkits</h3>
