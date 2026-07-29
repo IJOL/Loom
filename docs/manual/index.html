@@ -412,6 +412,13 @@ synthesising one and is covered in
 tags so that MIDI import can auto-assign the best engine and preset for each
 track. See <a href="#03-sessions-lanes-clips-scenes">Sessions, Lanes, Clips &amp; Scenes</a>
 for how to add and configure lanes.</p>
+<p>The dice rolls the <em>instrument</em>, not the desk: it leaves the lane&#39;s mixer column
+(volume, pan, sends, EQ), the polyphony setting and the master tune exactly where
+you put them, so a randomised sound stays at the level and in the tuning the rest
+of the mix expects. Rolls are biased towards each parameter&#39;s current value
+rather than spread flat across its range, so most of them land near a sound that
+works and the extremes are the tail, not the norm. Hit it repeatedly: it is the
+fastest way to find out what an engine can do.</p>
 <p>Every engine responds to <strong>note velocity</strong>. Velocity (0–127) scales each note&#39;s
 loudness continuously along a curve with a floor, so even the softest note still
 sounds. Accent (velocity ≥ 100) layers additional character on top, and what it
@@ -420,6 +427,24 @@ engines (and on the TB-303 alone also raises the resonance), drives the
 wavefolder harder on West Coast, and simply hits harder on drums. For how to
 view and edit velocities in the piano-roll or drum-grid, see
 <a href="#05-editing-clips--velocity--dynamics">Velocity &amp; dynamics</a>.</p>
+<hr>
+<h2 id="04-engines--turning-a-knob-while-a-note-is-sounding">Turning a knob while a note is sounding</h2>
+<p>Loom&#39;s continuous parameters are <strong>live</strong>. Hold a note — or let a pattern run —
+and move a cutoff, a resonance, an FM ratio, a wavefolder amount: the sound
+already playing bends with your hand, the way it does on hardware. You do not
+have to wait for the next note.</p>
+<p>A few parameters deliberately do not work that way, and they are the ones where
+changing mid-note would produce a click rather than a sweep:</p>
+<ul>
+<li><strong>Waveform</strong> and <strong>filter model</strong> — the shape itself, not a value on it.</li>
+<li><strong>Unison size</strong> — how many copies make up a voice.</li>
+<li><strong>Every envelope time</strong> — attack, decay, release. The envelope is computed from
+how long the note has been held, so re-reading an attack halfway through would
+jump the level instead of gliding it.</li>
+</ul>
+<p>Those apply from the next note you play. Everything else is immediate. (The Drum
+Machine is the exception to the whole section: its parameters are read when the
+hit fires.)</p>
 <hr>
 <h2 id="04-engines--tb-303">TB-303</h2>
 <p><img src="images/engine-tb303.png" alt="TB-303 editor panel"></p>
@@ -583,9 +608,11 @@ Presets <strong>LEAD Sync</strong>, <strong>LEAD Sync Sweep</strong> and <strong
 against each other is the supersaw sound. It costs CPU in proportion — seven
 copies is seven times the synthesis work per note — so raise it for leads, not
 for dense pads.</p>
-<p><strong>Unison is read once when the note is triggered</strong>, so unlike most parameters it
-is deliberately <em>not</em> a modulation target; changing it affects the next note you
-play, not the one currently sounding. <strong>Drift</strong> is the opposite: a touch of it
+<p><strong>Unison is read once when the note is triggered</strong> — it is one of the structural
+parameters listed in <a href="#04-engines--turning-a-knob-while-a-note-is-sounding">Turning a knob while a note is
+sounding</a>, so it is deliberately <em>not</em>
+a modulation target and changing it affects the next note you play, not the one
+currently sounding. <strong>Drift</strong> is the opposite: a touch of it
 (0.1–0.2) keeps sustained chords from sounding sterile.</p>
 <p>For modulation routing see <a href="#06-modulation-and-note-fx">Modulation &amp; Note FX</a>.</p>
 <hr>
@@ -1543,7 +1570,7 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <h3 id="06-modulation-and-note-fx--destinations-and-depth">Destinations and depth</h3>
 <p>Below each modulator card&#39;s controls is a destination list. To route the modulator:</p>
 <ol>
-<li>Select a target from the dropdown — it lists all automatable parameters for the lane&#39;s engine, plus any lane inserts, master inserts, and master sends (reverb, delay).</li>
+<li>Select a target from the dropdown — it lists all automatable parameters for the lane&#39;s engine, the lane&#39;s own mixer column (level, pan, both sends, the three EQ bands), plus any lane inserts, master inserts, and master sends (reverb, delay). Modulating the lane&#39;s level or a send is how you get tremolo, auto-pan or a rhythmic send; it swings around wherever the fader sits rather than replacing it — see <a href="#07-mixing-and-fx--automating-and-modulating-the-mixer-column">Automating and modulating the mixer column</a>.</li>
 <li>Press <strong>+ Destination</strong>. A new row appears showing the target name and a <strong>DEPTH</strong> knob (range –1 to +1, default 0.5).</li>
 </ol>
 <p>The depth knob scales the modulator&#39;s effect. A value of 1.0 means the full output range of the modulator sweeps the full range of the destination parameter (in the parameter&#39;s native units). –1.0 inverts the modulation direction. Multiple destinations can share the same modulator at different depth values.</p>
@@ -1698,7 +1725,26 @@ master bus → master insert chain → master compressor → output      Send A 
 </tbody></table>
 <p>All three bands are ±dB adjustments. EQ gain AudioParams are exposed to modulation so you can automate filter sweeps from the modulation panel.</p>
 <h3 id="07-mixing-and-fx--send-a-and-send-b">Send A and Send B</h3>
-<p>The two send knobs — <strong>A</strong> and <strong>B</strong> — control how much of this lane&#39;s post-duck signal is fed into the two shared send buses. They replaced the old fixed REV/DLY knobs. Send A and Send B are general-purpose return channels, seeded <strong>A = Delay</strong> and <strong>B = Reverb</strong>, but you can change what effect lives in each — see <a href="#07-mixing-and-fx--sends--send-a-and-send-b">Send A / Send B return modules</a>. The knobs are independent wet levels: 0 = dry only, higher values mix more of the lane into that send&#39;s effect. Sends are post-fader, so they follow the lane&#39;s level and sidechain ducking. (Saved knob ids are <code>mix.&lt;lane&gt;.sendA</code> / <code>mix.&lt;lane&gt;.sendB</code>; old saves with <code>…rev</code> / <code>…dly</code> amounts migrate automatically — reverb→B, delay→A.)</p>
+<p>The two send knobs — <strong>A</strong> and <strong>B</strong> — control how much of this lane&#39;s post-duck signal is fed into the two shared send buses. They replaced the old fixed REV/DLY knobs. Send A and Send B are general-purpose return channels, seeded <strong>A = Delay</strong> and <strong>B = Reverb</strong>, but you can change what effect lives in each — see <a href="#07-mixing-and-fx--sends--send-a-and-send-b">Send A / Send B return modules</a>. The knobs are independent wet levels: 0 = dry only, higher values mix more of the lane into that send&#39;s effect. Sends are post-fader, so they follow the lane&#39;s level and sidechain ducking. (Old saves with <code>…rev</code> / <code>…dly</code> amounts migrate automatically — reverb→B, delay→A.)</p>
+<h3 id="07-mixing-and-fx--automating-and-modulating-the-mixer-column">Automating and modulating the mixer column</h3>
+<p>Level, pan, both sends and the three EQ bands are ordinary lane parameters, which
+means each of them shows up in the automation destination picker, in the XY pad&#39;s
+axis lists, in the modulation panel&#39;s target dropdown and in the knob&#39;s own
+right-click menu — on <strong>every</strong> lane, whatever engine it runs. This used to be
+true of drum lanes only, so a drum lane&#39;s volume could be automated and a
+Subtractive lane&#39;s could not; the mixer now declares its parameters once for
+everybody. Their automation ids are <code>&lt;lane&gt;.bus.level</code>, <code>&lt;lane&gt;.bus.pan</code>,
+<code>&lt;lane&gt;.bus.delaySend</code>, <code>&lt;lane&gt;.bus.reverbSend</code> and <code>&lt;lane&gt;.bus.eq.low</code> / <code>.mid</code> /
+<code>.high</code> — the lane id first, exactly like an engine param. (Sessions saved before
+this carry the old <code>mix.&lt;lane&gt;.&lt;param&gt;</code> form for drum lanes; they load, but the
+ids you see in the picker today are the <code>bus.*</code> ones.)</p>
+<p>One difference worth knowing between <strong>automating</strong> a fader and <strong>modulating</strong>
+it: automation writes the gain directly, while a modulator is summed onto a trim
+that sits in front of it. That is deliberate — a bipolar LFO summed straight onto
+a gain would push it below zero on the trough, which does not quieten the lane, it
+flips its phase and makes it cancel against everything else in the mix. With the
+trim, full depth swings the lane between silence and double its fader position,
+and the modulation stays relative to wherever you left the fader.</p>
 <hr>
 <h2 id="07-mixing-and-fx--per-lane-inserts">Per-lane inserts</h2>
 <p>Every lane also has a private insert chain that sits <em>before</em> the channel strip — the engine&#39;s audio passes through it first. If you open the lane&#39;s inspector and add FX to its insert list, those effects process the lane signal exclusively and do not affect any other lane.</p>
@@ -1924,9 +1970,10 @@ master bus → master insert chain → master compressor → output      Send A 
 </ul>
 <hr>
 <h2 id="07-mixing-and-fx--sidechain-compression">Sidechain compression</h2>
-<p>Loom includes a sidechain ducking system. Any lane&#39;s channel strip can be ducked by the signal level of another lane (the <em>source</em>). The ducker follows the source lane&#39;s envelope via a full-wave rectifier and two smoothing filters, then reduces the target lane&#39;s gain proportionally:</p>
-<pre><code>duckGain ≈ 1 − depth × env(source)
+<p>Loom includes a sidechain ducking system. Any lane&#39;s channel strip can be ducked by the signal level of another lane (the <em>source</em>). A small envelope follower rectifies the source, chases it upwards at the <strong>Attack</strong> time constant and falls back at the <strong>Release</strong> one, and turns whatever exceeds the threshold into a gain multiplier for the target lane:</p>
+<pre><code>duckGain = 1 − depth × (env(source) − threshold)     clamped to [0, 1]
 </code></pre>
+<p>The multiplier can never leave <code>[0, 1]</code>: at worst the lane goes silent, and when the source stops the follower returns to zero and the lane comes back. That is a guarantee, not an observation — it is why the follower is a one-pole running in its own audio worklet rather than a pair of filter nodes, which is what it was until 2026-07-27. A filter slow enough to smooth a 0.25 s release sits at 0.64 Hz, close enough to the edge of stability that single-precision rounding error accumulated instead of decaying: the &quot;envelope&quot; grew without bound even with the source at exactly zero, the multiplier drifted past zero into negative territory, and the ducked lane first disappeared and then came back <strong>phase-inverted and louder</strong> — a fault that survived pressing stop, which is why relaunching a loop could sound completely different from letting it run.</p>
 <p>Sidechain parameters (set per lane in the lane inspector):</p>
 <table>
 <thead>
@@ -1953,13 +2000,13 @@ master bus → master insert chain → master compressor → output      Send A 
 <td>Attack</td>
 <td>s</td>
 <td>0.005 s</td>
-<td>How quickly the ducker opens (gain rises)</td>
+<td>How fast the duck clamps down when the source hits</td>
 </tr>
 <tr>
 <td>Release</td>
 <td>s</td>
 <td>0.25 s</td>
-<td>How quickly the ducker closes (gain falls)</td>
+<td>How fast the lane comes back up once the source falls</td>
 </tr>
 <tr>
 <td>Threshold</td>
@@ -2263,6 +2310,7 @@ uvicorn app:app --port 8765
 </tr>
 </tbody></table>
 <p>See <a href="#02-transport">Transport</a> for the full two-row header layout (transport &amp; tempo on top, session &amp; I/O below).</p>
+<p><strong>New and Load both start from an empty desk.</strong> Whatever replaces the session — New, loading a save or the autosave, picking a demo, or a MIDI import in Replace mode — first releases everything the old session was holding: every lane&#39;s channel strip (level, pan, EQ, both sends, mute, compressor and sidechain), the master rack, the send buses, the master processors, mute/solo and the per-lane note-FX chains. Nothing rides through. It is worth stating because the opposite used to be true: a lane whose id existed in both sessions kept its live strip, so a demo you loaded could arrive already panned and EQ&#39;d by the song before it, and pressing New did not put the mixer back to flat. The single deliberate survivor is the <strong>master volume fader</strong> — that is how loud your speakers are, not part of the song.</p>
 <hr>
 <h2 id="09-saving-and-export--save-manager">Save Manager</h2>
 <p><img src="images/save-manager.png" alt="Save Manager dialog"></p>
@@ -2326,7 +2374,7 @@ uvicorn app:app --port 8765
 <p>The offline backend rebuilds the full audio graph — lanes, inserts, master bus — inside an <code>OfflineAudioContext</code>, applies every lane&#39;s current sound state, batch-schedules all note events, and renders faster than real time without touching the live session. It shares the same encoder and download step as the real-time path, so the output format is identical.</p>
 <p><strong>It loops seamlessly.</strong> The offline renderer deliberately renders <strong>two cycles of the scene and gives you the second one</strong>. The first cycle is thrown away because it starts from silence — no reverb tail from the previous bar, no delay repeats in flight. The second cycle inherits all of that, so the file loops without a seam. This is the reason to prefer the offline render for loop material.</p>
 <p>For the same reason it appends <strong>no</strong> FX tail: the render is exactly the musical, bar-aligned length. A trailing tail would round up to an extra bar and the loop would drift.</p>
-<p><strong>Where it differs from the live sound.</strong> The divergence is structural, not random: per-pad FX sends and per-voice drum-strip sends/EQ are dropped offline, and sample-mode drum kits render through the sampler path. Both are approximations of the live per-voice mix, so a kit that leans on per-voice sends will not sound identical. Everything else — presets, clip automation, the worklet engines — is applied exactly as live.</p>
+<p><strong>Where it differs from the live sound.</strong> The divergence is structural, not random: per-pad FX sends and per-voice drum-strip sends/EQ are dropped offline, and sample-mode drum kits render through the sampler path. Both are approximations of the live per-voice mix, so a kit that leans on per-voice sends will not sound identical. Everything else — presets, clip automation, the worklet engines — is applied exactly as live. That includes automation drawn on the mixer column: a level fade or a pan sweep is scheduled point by point, so it renders as the move you drew rather than jumping to its end value.</p>
 <h3 id="09-saving-and-export--what-gets-exported">What gets exported</h3>
 <ul>
 <li><strong>One pass of the scene (offline only).</strong> The offline export captures one full iteration of the longest clip across all sounding lanes; shorter clips loop to fill that window. The <strong>live</strong> take has no such window — it runs until you stop it.</li>
@@ -2407,7 +2455,7 @@ uvicorn app:app --port 8765
 <h2 id="10-performance-and-arrangement--automation-lanes">Automation lanes</h2>
 <p>Automation curves can be added by hand — you do not have to record a take first. Set a non-zero <strong>Length</strong> in the toolbar (or record/copy content so the arrangement has a duration), then use the automation header that appears just below the ruler.</p>
 <h3 id="10-performance-and-arrangement--adding-a-lane">Adding a lane</h3>
-<p>The header row contains a grouped parameter dropdown and a <strong>+ Automation</strong> button. The dropdown lists every automatable parameter in the project, organised by prefix (lane ID or <code>master</code>). Each entry shows the parameter ID and its label — for example <code>lane-1.fx.reverb.wet — WET</code>. Select the parameter you want, then click <strong>+ Automation</strong>. A new lane appears below the clip band for that lane (or in the Master section for global parameters). The curve starts flat at the parameter&#39;s current value.</p>
+<p>The header row contains a grouped parameter dropdown and a <strong>+ Automation</strong> button. The dropdown lists every automatable parameter in the project, organised by prefix (lane ID or <code>master</code>). Each entry shows the parameter ID and its label — for example <code>lane-1.fx.reverb.wet — WET</code>. Each lane&#39;s <strong>mixer column is in there too</strong>: <code>bus.level</code>, <code>bus.pan</code>, <code>bus.delaySend</code>, <code>bus.reverbSend</code> and the three <code>bus.eq.*</code> bands, so a fade-in, a pan sweep or a send that opens up over eight bars is drawn here like any other curve. Select the parameter you want, then click <strong>+ Automation</strong>. A new lane appears below the clip band for that lane (or in the Master section for global parameters). The curve starts flat at the parameter&#39;s current value.</p>
 <p>There is a quicker route for a knob you can see: <strong>right-click it</strong>. In Performance view the menu offers <em>Automate on the timeline</em> (or <em>Edit automation on the timeline</em> if a curve already exists) and jumps you straight to it. The same menu in Session view targets the open clip instead — see <a href="#06-modulation-and-note-fx">Modulation &amp; Note FX</a>.</p>
 <h3 id="10-performance-and-arrangement--drawing-the-shape">Drawing the shape</h3>
 <p>Two brush buttons sit in that same automation header, after the <strong>+ Automation</strong> button and under the label <strong>Brush</strong>. They only appear once at least one curve exists — per-lane or on master — so on a fresh arrangement there is no Brush label to find:</p>
@@ -2473,6 +2521,7 @@ src/plugins/**/*.ts    — the WHOLE plugin tree: fx/, modulators/, notefx/
 <p>Engines declare their parameters as <code>EngineParamSpec[]</code>, and for the catalogue that is the whole story: <code>listAutomationTargets</code> walks <code>engine.params</code> and pushes <code>`${lane.id}.${spec.id}`</code> for every continuous one (<code>src/automation/automation-targets.ts:120</code>). Automation and the modulation dropdown both read that catalogue through <code>DestinationRegistry.list()</code>. Neither of them calls <code>getAudioParams()</code>.</p>
 <p><code>getAudioParams()</code> / <code>getSharedAudioParams()</code> are a narrower thing — the <strong>Web Audio binding surface</strong>, used only where a modulator has to reach a real <code>AudioParam</code> through the depth-gain bridge in <code>connection-binder.ts</code>. That means FX inserts, channel strips, and the two engines that still expose shared params, Drums and Sampler. For the six melodic worklet engines <code>getAudioParams()</code> returns an empty <code>Map</code> on purpose (<code>src/engines/worklet-lane-engine.ts:150</code>); their modulation is applied per sample inside the worklet by <code>ModulationRuntime</code>.</p>
 <p>So: declare the param in the spec and it is automatable and modulatable. Return it from <code>getAudioParams()</code> only if it is a genuine <code>AudioParam</code> on the main thread.</p>
+<p>That rule is why the lane <strong>mixer</strong> is automatable at all. The seven strip controls — level, pan, sends A and B, and the three EQ bands — were once declared inline by <code>drums-machine</code> alone, which is why a drum lane&#39;s volume could be automated and a Subtractive lane&#39;s could not: the capability belonged to one engine&#39;s source file rather than to the mixer. They now live in <code>src/core/channel-strip-params.ts</code> and every engine with a <code>ChannelStrip</code> spreads <code>STRIP_PARAM_SPECS</code> into its own params, keeping the original <code>bus.*</code> ids so existing drum-lane envelopes and connections still resolve. One caveat if you touch the binder side: a <strong>modulator</strong> binds to the strip&#39;s multiplicative trims, not to the real gains, because a bipolar modulator summed onto a gain can drive it below zero — which inverts phase instead of quietening, and the lane cancels against the rest of the mix. Automation writes the real gains through <code>setStripParam</code>.</p>
 <h2 id="11-developer-guide--sessionstate-data-model">SessionState data model</h2>
 <p><code>src/session/session-types.ts</code> defines three levels (re-exported from <code>session.ts</code>, which holds the factories):</p>
 <ul>
@@ -2482,6 +2531,7 @@ src/plugins/**/*.ts    — the WHOLE plugin tree: fx/, modulators/, notefx/
 </ul>
 <p>Notes carry a <code>velocity</code> field (0–127). The <code>velToColor</code> function in <code>src/core/velocity-color.ts</code> maps velocity to a blue-to-yellow ramp used by both the piano roll and the drum grid.</p>
 <p>Saves are written as <code>schemaVersion: 3</code> (<code>SavedStateV3</code> in <code>src/save/</code>). Older saves are normalised by <code>session-migration.ts</code> at load time before anything else touches the data.</p>
+<p><strong>Replacing the session is New plus a load, in that order.</strong> Every route that swaps the whole session — New, the boot demo, the demo picker, a save or autosave load, an import that replaces — calls <code>resetAllResources</code> (<code>src/session/session-host-reset.ts</code>) <em>first</em>, and only then applies the incoming state. The reason is that applying a session only ever pushes the fields the incoming JSON happens to carry, and <code>ensureLaneResource</code> is idempotent: a lane id present in both the old and the new state used to keep its live <code>ChannelStrip</code>, so level, pan, EQ, sends, mute, compressor and sidechain rode straight through New and through every demo switch — as did the master rack, the send buses, mute/solo and the note-FX chains. The fix is not a longer list of restores at the apply site (that list goes stale the next time something joins the desk); it is that a load starts from a released desk, so anything the new state does not set sits at its constructed default. The one deliberate exception is the master <strong>volume</strong> fader: that is the listening level of the room, not a property of the song.</p>
 <h2 id="11-developer-guide--laneresourcemap-and-the-audio-graph">LaneResourceMap and the audio graph</h2>
 <p>The master audio path assembled in <code>src/app/audio-graph.ts</code> runs:</p>
 <pre><code class="language-text">master (sum GainNode)
@@ -2495,15 +2545,16 @@ src/plugins/**/*.ts    — the WHOLE plugin tree: fx/, modulators/, notefx/
 <p>Two details of that chain are deliberate. The shaper sits <strong>before</strong> the limiter, because air/glue/width are mix decisions and the limiter must be the last thing that sees the signal. The soft-clip after it is the absolute ceiling: identity below ±0.8, then a tanh knee that maps everything above — including overs beyond ±1 — to about ±0.95, so the master output cannot digitally clip.</p>
 <p>A second analyser, <code>masterMeterAnalyser</code>, taps off the soft-clip and is <strong>not</strong> connected to the destination. It feeds the master VU meter and the PERF peak/clip readout, so both read the true, clip-free output.</p>
 <p><code>SidechainBus</code> is not a node in that chain at all. It is a lane-id → tap registry (<code>src/core/sidechain-bus.ts</code>): each <code>ChannelStrip</code> registers a <code>GainNode</code> fed off its post-mute output, and a ducker subgraph reads <code>getTap(sourceLaneId)</code> to drive its envelope follower. The allocator hands it to every lane strip it builds.</p>
+<p>That follower is an <strong>AudioWorklet</strong> (<code>duck-processor</code> / <code>duck-node</code>, wrapping the pure <code>DuckDetector</code> in <code>src/audio-dsp/duck-detector.ts</code>), not a filter chain. It was two <code>BiquadFilterNode</code> lowpasses until 2026-07-27: at a 0.25 s release the cutoff is 0.64 Hz, the pole pair sits a hair from z=1, and in the float32 node graph the rounding error accumulated like an integrator — the &quot;envelope&quot; grew without bound with the input at exactly zero, so the duck multiplier drifted past 0 and came back negative, i.e. the ducked lane went silent and then returned phase-inverted and louder. A one-pole follower is a convex combination of the input and itself, so it is bounded by construction at any time constant and returns to zero when the source stops. Keep the multiplier&#39;s <code>[0, 1]</code> invariant if you touch it; <code>src/audio-dsp/duck-detector.test.ts</code> and <code>src/core/strip-ducker.dsp.test.ts</code> pin it.</p>
 <p>Each lane&#39;s <code>LaneResources</code> consists of a <code>ChannelStrip</code> (level, EQ, send levels), a <code>SynthEngine</code>, and an <code>InsertChain</code> of per-lane FX. <code>LaneResourceMap.replaceEngine</code> hot-swaps only the engine while keeping the strip and inserts in place — the channel-level resources survive an engine swap.</p>
-<p>The lane allocator (<code>src/app/lane-allocator.ts</code>) is the only module that constructs a <code>LaneResources</code>, in two places: <code>ensureLaneResource</code> for a session lane (line 255) and <code>ensureExtraPoly</code> for the legacy extra-poly strips (line 169). Call <code>ensureLaneResource</code> once per lane before accessing anything in the map. Test code that needs a lane wired up must call it explicitly as setup.</p>
+<p>The lane allocator (<code>src/app/lane-allocator.ts</code>) is the only module that constructs a <code>LaneResources</code>, in exactly one place: <code>ensureLaneResource</code> (line 228). The second entry point, <code>ensureExtraPoly</code>, went with the <code>PolySynth</code> class it existed to feed. Call <code>ensureLaneResource</code> once per lane before accessing anything in the map. Test code that needs a lane wired up must call it explicitly as setup.</p>
 <h2 id="11-developer-guide--the-scheduler">The scheduler</h2>
 <p>The <code>Sequencer</code> class (<code>src/core/sequencer.ts</code>) fires every 25 ms (the poll interval) and looks <strong>200 ms</strong> ahead. On each tick it calls <code>sessionTick(now, lookaheadSec)</code> with <code>lookaheadSec = 0.2</code>, and the session host fans that out to <code>tickLane</code> for each playing lane.</p>
 <p><code>tickLane</code> (<code>src/core/lane-scheduler.ts</code>) implements the Chris Wilson two-clocks pattern: for every <code>NoteEvent</code> whose absolute schedule time falls in the window <code>[now, now + lookaheadSec)</code>, it calls <code>ctx.onTrigger</code>. Schedule times are derived by converting clip-tick positions to seconds using the current BPM and projecting onto the absolute timeline from the loop-start anchor. Step duration for a 16th note is <code>60 / bpm / 4</code> seconds.</p>
 <p>Two important consequences for contributors:</p>
 <ul>
 <li><code>bpm</code> and <code>length</code> are mutable at runtime; the next scheduled step picks up the new values immediately.</li>
-<li>Engine params are read at trigger time, not when a note is held. Live knob tweaks apply to the <strong>next</strong> trigger.</li>
+<li><strong>Continuous</strong> engine params reach the note already sounding. Each lane keeps a smoothed live bag (<code>ParamSmoother</code>, driven by <code>VoiceManager</code>) that every voice re-reads per sample, so turning a knob bends the held note instead of waiting for the next trigger. <strong>Structural</strong> params are the exception and still apply to the next trigger only: waveform, filter model, unison size, and every envelope <em>time</em> — the envelopes are closed-form over elapsed time, so re-reading an attack mid-note would step the amplitude. Drums is deliberately outside this: its params are read at trigger time.</li>
 </ul>
 <p>The scheduler asks <code>laneLoopRegion</code> (<code>src/core/clip-loop.ts:40</code>) how long one iteration of a clip is, and there are <strong>two</strong> ways the answer comes back shorter than the whole clip. The active scene&#39;s global loop wins first: when <code>GlobalLoopOverride.enabled</code> is set, <code>[startBar, endBar)</code> becomes the region for every lane in the scene, whatever the clips say. Absent that, <code>effectiveClipLoop</code> (line 19) applies the clip&#39;s own <code>loopEnabled</code> / <code>[loopStartTick, loopEndTick)</code>. The brace UI in <code>src/core/clip-loop-brace.ts</code> is the editing surface for the clip&#39;s own region.</p>
 <p>That precedence has a consequence worth knowing before you touch clip automation: a clip&#39;s envelope array spans the clip&#39;s <code>lengthBars</code> and is blind to <strong>both</strong> shortenings, so inside a shorter loop the curve slides against the notes. It is written down as known debt at the top of <code>src/core/clip-envelope-length.ts</code> and pinned by tests — meet it as a decision, not a mystery.</p>
@@ -2511,9 +2562,9 @@ src/plugins/**/*.ts    — the WHOLE plugin tree: fx/, modulators/, notefx/
 <h3 id="11-developer-guide--add-a-synth-engine">Add a synth engine</h3>
 <p>Since synthesis moved into the AudioWorklet, an engine is <strong>two halves in two
 places</strong>: a metadata descriptor on the main thread and a per-sample renderer
-inside the worklet bundle. There are <strong>four</strong> steps, and skipping any of the last
-three gives you an engine that appears in the lane selector and then plays
-<strong>silence</strong> — the failure is quiet, so do all four.</p>
+inside the worklet bundle. There are <strong>five</strong> steps, and skipping either of the
+last two gives you an engine that appears in the lane selector and then plays
+<strong>silence</strong> — the failure is quiet, so do all five.</p>
 <ol>
 <li><strong>Metadata descriptor</strong> — <code>src/engines/&lt;id&gt;.ts</code>. Build it with
 <code>createDescriptorEngine(...)</code> and register it with <code>registerEngineFactory(id, …)</code><ul>
@@ -2525,6 +2576,17 @@ This half carries no DSP: it describes the parameters and the UI.</li>
 renderer that calls <code>registerRenderer(id, ctor)</code> at module scope. This is the
 half that makes sound, and it is plain TypeScript — unit-test it directly, no
 <code>AudioContext</code> required.</li>
+<li><strong>Implement the live-params hook</strong> — <code>setLiveParams</code> (and <code>setLiveSubParams</code>
+where the engine has per-slot params) on <code>VoiceRenderer</code>
+(<code>src/audio-dsp/types.ts</code>). Read your <strong>continuous</strong> params out of the live bag
+every sample so a knob moves the note already sounding; copy the
+<strong>structural</strong> ones — waveform, filter model, unison size, envelope times —
+into your own fields once, at construction, from the trigger-time snapshot.
+Both hooks are optional on the interface, so a renderer that skips this
+compiles clean and passes the whole suite; it is just the one engine whose
+knobs go dead mid-note. The registry-driven test in
+<code>src/audio-dsp/live-params.dsp.test.ts</code> walks <code>WORKLET_ENGINE_IDS</code> and catches
+the omission — but only once step 5 is done.</li>
 <li><strong>Side-effect import in the worklet</strong> — add <code>import &#39;../audio-dsp/&lt;id&gt;-renderer&#39;;</code>
 to <a href="https://github.com/IJOL/Loom/blob/main/src/audio-worklet/loom-processor.ts"><code>src/audio-worklet/loom-processor.ts</code></a>.
 The worklet is a separate bundle; without this import the renderer never
@@ -2605,21 +2667,32 @@ saved tweak beats its lane preset.</p>
 <p><strong>Assertions are relative.</strong> See Testing, below.</p>
 <h2 id="11-developer-guide--source-layout-tour">Source layout tour</h2>
 <pre><code class="language-text">src/
-  core/           DSP primitives + pure logic (synth, drums, sequencer,
+  core/           DSP primitives + pure logic (drums, sequencer,
                   lane-scheduler, lane-resources, fx, meter, notes,
-                  history, knob, pianoroll, …)
+                  history, knob, pianoroll, …). The reference TB303 class that
+                  used to live here (synth.ts) is gone with the last
+                  node-per-note path; the renderer is the reference now
                   velocity-color.ts / velocity-gain.ts / velocity-lane-editing.ts
                     — note-velocity colour ramp, gain curve, lane editing helpers
                   clip-loop.ts / clip-loop-brace.ts
                     — clip sub-region resolver + drag-brace UI primitive
+                  channel-strip-params.ts
+                    — the seven strip params (level, pan, sends A/B, EQ x3)
+                      declared ONCE: engine params, automation targets,
+                      modulation targets and mixer knob ids all read this
   engines/        SynthEngine abstraction, registry, one file per engine —
                   nine register today: tb303, subtractive, fm, wavetable,
                   karplus, westcoast, sampler, audio (the dedicated audio
-                  channel), drums-engine — plus engine-selector UI and
-                  engine-param-commit (the one write path for a param edit)
+                  channel), drums-engine — plus engine-selector UI,
+                  engine-param-commit (the one write path for a param edit) and
+                  engine-randomize (the 🎲 dice, derived from each engine&#39;s
+                  declared EngineParamSpec rather than per-engine knowledge)
   session/        SessionState model + all session UI
                   (session-host, session-ui, session-inspector,
                   clip-editors/, session-migration)
+                  session-host-reset.ts — resetAllResources(): the ONE teardown
+                    every route that replaces the session runs FIRST, so a load
+                    starts from a released desk
   modulation/     LFO/ADSR voices, ModulationHost, ModulatorScope,
                   connection binder
   plugins/        Plugin SPI + registry
@@ -2647,16 +2720,24 @@ saved tweak beats its lane preset.</p>
                   renderer-registry.ts), voice-manager, scheduler-queue,
                   modulation-runtime, plus primitives (osc, filter, ladder,
                   sync-osc, unison, adsr). No AudioContext — unit-test directly
+                  param-smoother.ts — the lane&#39;s live param bag: slews only the
+                    params still in flight, and is what makes a knob move the
+                    note already sounding
+                  duck-detector.ts — the sidechain envelope follower (one-pole,
+                    asymmetric attack/release), run by the duck worklet
   audio-worklet/  The processors + typed node wrappers: loom-processor/loom-node
-                  (melodic), drums-*, sampler-*. A processor is referenced ONLY
-                  via ?worker&amp;url and its registered name — never imported on
-                  the main thread (see processor-name.ts)
+                  (melodic), drums-*, sampler-*, duck-* (the sidechain
+                  follower). A processor is referenced ONLY via ?worker&amp;url and
+                  its registered name — never imported on the main thread
+                  (see processor-name.ts)
   export/         Offline scene/WAV render + the live take recorder
   patterns/       The pattern library (styles x patterns) + its picker UI
   perf/           Performance diagnostics (the PERF HUD)
-  polysynth/      LEGACY/vestigial. Not the Subtractive voice host any more —
-                  Subtractive is a descriptor engine rendered in the worklet.
-                  Only the preset store + the extra-poly path still touch it
+  polysynth/      The Subtractive lane&#39;s PRESET SURFACE, and nothing else: the
+                  preset dropdown + Randomize (polysynth-presets), apply, store,
+                  templates and the param id list (poly-params). The PolySynth
+                  class that once hosted the voices is gone — Subtractive is a
+                  descriptor engine rendered in the worklet like the other five
   app/            Boot wiring, one module per concern (37 files). main.ts calls
                   into these; it does not contain them — see &quot;Boot&quot; above
                   audio spine  — audio-graph, lane-allocator, engine-swap,
@@ -2734,7 +2815,7 @@ tools/
 <p>Loom has four test layers, one per risk class.</p>
 <p><strong>Pure logic</strong> (<code>src/**/*.test.ts</code>, excluding <code>.dsp</code> and <code>.wiring</code> suffixes) — schemas, scales, migrations, session/arrangement logic, modulation math. These run fast and have no audio dependencies.</p>
 <p><strong>Scheduling with a fake clock</strong> — <code>src/core/lane-scheduler.test.ts</code> and <code>src/session/session-runtime.test.ts</code> drive the look-ahead scheduler through a mock <code>AudioContext</code> clock. The fake clock advances in controlled steps so timing edge-cases are deterministic.</p>
-<p><strong>Real DSP</strong> (<code>*.dsp.test.ts</code>) — audio actually rendered and measured, in two techniques. The <strong>pure kernel</strong> is driven sample by sample with no <code>AudioContext</code> at all: <code>src/audio-dsp/drums/new-voices.dsp.test.ts</code> calls <code>renderSample()</code> in a loop and asserts each voice sounds like what it claims to be. <code>src/audio-dsp/modulation-scope.dsp.test.ts</code> is the same technique. The <strong>Web Audio nodes that stayed native</strong> render through <code>OfflineAudioContext</code> via <a href="https://github.com/ircam-ismm/node-web-audio-api"><code>node-web-audio-api</code></a>, globalised in <code>test/setup.ts</code>: <code>comp-block</code>, <code>master-comp</code>, <code>master-shaper</code>, <code>strip-ducker</code>, <code>multifilter</code>, the sample/warp helpers, the offline export, and <code>src/polysynth/polysynth-builtin-env.dsp.test.ts</code>. (<code>src/performance/arrangement.dsp.test.ts</code> carries the suffix but does neither — it is arrangement maths. Glob for <code>*.dsp.test.ts</code> rather than trusting this list to stay complete.)</p>
+<p><strong>Real DSP</strong> (<code>*.dsp.test.ts</code>) — audio actually rendered and measured, in two techniques. The <strong>pure kernel</strong> is driven sample by sample with no <code>AudioContext</code> at all: <code>src/audio-dsp/drums/new-voices.dsp.test.ts</code> calls <code>renderSample()</code> in a loop and asserts each voice sounds like what it claims to be. <code>src/audio-dsp/modulation-scope.dsp.test.ts</code> is the same technique, and so is <code>src/audio-dsp/live-params.dsp.test.ts</code> — the registry-driven one that renders every engine in <code>WORKLET_ENGINE_IDS</code> twice, moving a knob mid-note in the second render, and fails the engine whose sound does not change. The <strong>Web Audio nodes that stayed native</strong> render through <code>OfflineAudioContext</code> via <a href="https://github.com/ircam-ismm/node-web-audio-api"><code>node-web-audio-api</code></a>, globalised in <code>test/setup.ts</code>: <code>comp-block</code>, <code>master-comp</code>, <code>master-shaper</code>, <code>strip-ducker</code>, <code>multifilter</code>, the sample/warp helpers and the offline export. (<code>src/performance/arrangement.dsp.test.ts</code> carries the suffix but does neither — it is arrangement maths. Glob for <code>*.dsp.test.ts</code> rather than trusting this list to stay complete.)</p>
 <p>There is no per-engine battery any more. <code>test/setup.ts</code> states the design plainly: the pure DSP kernel is tested directly and the real worklet&#39;s audio is verified in the browser via Playwright, because <code>node-web-audio-api</code> cannot run our TypeScript processor. <code>runStandardEngineBattery</code> in <code>test/dsp-battery.ts</code> survives with <strong>no callers</strong>, so nothing writes to <code>test/output/</code>, and <code>npm run test:wav-diff</code> / <code>test:wav-bless</code> do nothing but print &quot;<code>test/output/ does not exist</code>&quot;. The 90 WAVs in <code>test/golden/</code> are orphans of the batteries the worklet cutover removed. Do not reach for that loop expecting it to work; reviving it is a decision, not a step.</p>
 <p><strong>Modulation, objective and end-to-end</strong> — <code>src/audio-dsp/modulation-pipeline.test.ts</code> drives the real in-engine path (<code>ModulationRuntime</code> → <code>VoiceManager</code> → renderer) for each of the six melodic engines, with an LFO at full depth on a continuous param, and asserts the rendered RMS envelope differs measurably from the unmodulated render, plus a negative control. It exists because the worklet rewrite dropped the per-engine coverage the old <code>.wiring.test.ts</code> files had. One <code>.wiring.test.ts</code> remains — <code>src/core/ducker-subgraph.wiring.test.ts</code> — and it covers Web Audio subgraph wiring like the sidechain, which is the only place that pattern still applies.</p>
 <p><strong>Assertion rule:</strong> always write relative assertions (<code>a &gt; b</code>, <code>a &gt; b * 2</code>). Never hard-code absolute magnitudes — they are a brittleness smell. If you must write one, justify it in a comment.</p>

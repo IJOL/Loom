@@ -51,7 +51,7 @@ All three bands are ±dB adjustments. EQ gain AudioParams are exposed to modulat
 
 The two send knobs — **A** and **B** — control how much of this lane's post-duck signal is fed into the two shared send buses. They replaced the old fixed REV/DLY knobs. Send A and Send B are general-purpose return channels, seeded **A = Delay** and **B = Reverb**, but you can change what effect lives in each — see [Send A / Send B return modules](#sends--send-a-and-send-b). The knobs are independent wet levels: 0 = dry only, higher values mix more of the lane into that send's effect. Sends are post-fader, so they follow the lane's level and sidechain ducking. (Old saves with `…rev` / `…dly` amounts migrate automatically — reverb→B, delay→A.)
 
-### The mixer column is automatable — all seven controls, on every lane
+### Automating and modulating the mixer column
 
 Level, pan, both sends and the three EQ bands are ordinary lane parameters, which
 means each of them shows up in the automation destination picker, in the XY pad's
