@@ -53,6 +53,7 @@ import { loadDuckWorklet } from '../audio-worklet/duck-node';
 import type { KeymapEntry } from '../samples/types';
 import type { ParamBag } from '../audio-dsp/types';
 import { isStripParamId, stripAutomationParams } from '../core/channel-strip-params';
+import { pluginSynthTrim } from '../plugin-host/plugin-capabilities';
 
 /** Resolve a sample/audio trigger to an OfflineSampleSpawn (spawn + decoded
  *  channels), via the engine's pure resolveSpawn path. Handles the Sampler, the
@@ -328,6 +329,9 @@ export class OfflineSceneRecorder implements SceneRecorder {
         params: engine.getParamBag(),
         maxVoices: engine.getMaxVoices(),
         mods: engine.getModLite(),
+        // The offline render must replicate the LIVE path exactly, and live the
+        // host multiplies a plugin engine's trim in at the sum point.
+        outputTrim: pluginSynthTrim(engine.id) ?? 1,
         notes,
       };
       const mono = renderKernelLane(spec, frames, sr);

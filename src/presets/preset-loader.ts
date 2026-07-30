@@ -120,9 +120,13 @@ export function __resetPresetCache(): void {
   ready = false;
 }
 
-/** Test-only — seed the cache directly so engine.presets (which reads
- *  getCachedPresets) is non-empty without a fetch. Pair with
- *  beforeEach(__resetPresetCache) to stay isolated from other test files. */
-export function __seedPresetCache(engineId: string, presets: EnginePreset[]): void {
+/** Seed the cache directly, bypassing the fetch. Two callers: the plugin host
+ *  (a plugin ships its presets inside its own directory, not in public/presets)
+ *  and tests — where you pair it with beforeEach(__resetPresetCache) to stay
+ *  isolated from other test files. */
+export function seedEnginePresets(engineId: string, presets: EnginePreset[]): void {
   cache.set(engineId, presets);
 }
+
+/** @deprecated Use seedEnginePresets. Kept so existing tests keep compiling. */
+export const __seedPresetCache = seedEnginePresets;

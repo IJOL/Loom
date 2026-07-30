@@ -44,7 +44,13 @@ export class VoiceManager {
   // Pooled generic offsets (keyed by param dot-id) for every NON-subtractive
   // engine — filled in place each sample so the render loop allocates nothing.
   private readonly genericOffsets: Record<string, number> = {};
-  constructor(private sr: number, private engineId: string, params: ParamBag) {
+  /** Per-engine output balance the HOST applies at the sum point, for engines
+   *  whose renderer does not apply its own — i.e. PLUGINS, whose trim lives in
+   *  their manifest rather than in their compiled JS. The default of 1 is what
+   *  leaves the six in-tree engines untouched: they still call synthTrim()
+   *  inside their own renderSample. */
+  constructor(private sr: number, private engineId: string, params: ParamBag,
+              private readonly outputTrim = 1) {
     this.params = { ...params };
     this.smoother = new ParamSmoother(sr);
     this.smoother.reset(this.params);
@@ -222,7 +228,7 @@ export class VoiceManager {
       const mo = perVoice
         ? this.fillOffsets(t, { voiceStartT: s.allocatedAt, lastNoteOnT: this.lastNoteOnT })
         : shared;
-      out += s.v.renderSample(t, mo as VoiceModOffsets | undefined);
+      out += s.v.renderSample(t, mo as VoiceModOffsets | undefined) * this.outputTrim;
       if (s.v.done) this.slots.splice(i, 1);
     }
     return out;

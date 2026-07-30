@@ -34,10 +34,12 @@ export class LoomWorkletNode {
   private countCb: ((n: number) => void) | null = null;
   private modCb: ((offsets: Record<string, number>) => void) | null = null;
 
-  constructor(ctx: BaseAudioContext, engineId = 'subtractive') {
+  constructor(ctx: BaseAudioContext, engineId = 'subtractive', outputTrim = 1) {
     this.node = new AudioWorkletNode(ctx, LOOM_PROCESSOR_NAME, {
       outputChannelCount: [2],
-      processorOptions: { engineId },   // tells the worklet which renderer to build
+      // outputTrim is STRUCTURAL (it comes from the plugin manifest, not a
+      // knob), so it travels once at construction rather than as a param.
+      processorOptions: { engineId, outputTrim },   // engineId tells the worklet which renderer to build
     });
     this.node.port.onmessage = (e: MessageEvent<WorkletToMain>) => {
       if (e.data.type === 'voices') this.countCb?.(e.data.active);

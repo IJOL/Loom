@@ -1,4 +1,3 @@
-import { getEngine } from '../engines/registry';
 import type { FxBus } from '../core/fx';
 import type { Sequencer } from '../core/sequencer';
 import type { InsertChain } from '../plugins/fx/insert-chain';
@@ -28,15 +27,7 @@ export interface BpmBroadcaster {
   broadcast(bpm: number): void;
 }
 
-const LANE_HOST_ENGINE_IDS = ['fm', 'karplus', 'subtractive', 'wavetable', 'drums-machine', 'westcoast'];
-
 export function createBpmBroadcaster(deps: BpmBroadcasterDeps): BpmBroadcaster {
-  const propagateToLaneEngines = (bpm: number): void => {
-    for (const id of LANE_HOST_ENGINE_IDS) {
-      const eng = getEngine(id) as unknown as { bpm?: number } | undefined;
-      if (eng && typeof eng.bpm === 'number') eng.bpm = bpm;
-    }
-  };
   let resyncTimer: ReturnType<typeof setTimeout> | null = null;
   const resyncStretches = (bpm: number): void => {
     if (!deps.ctx || !deps.getSessionState) return;
@@ -64,7 +55,6 @@ export function createBpmBroadcaster(deps: BpmBroadcasterDeps): BpmBroadcaster {
       for (const send of deps.fx.sends) send.inserts.setBpm(bpm);
       for (const [, res] of deps.laneResources) res.inserts.setBpm(bpm);
       deps.masterInsertChain.setBpm(bpm);
-      propagateToLaneEngines(bpm);
       resyncStretches(bpm);
     },
   };

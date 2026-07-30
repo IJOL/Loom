@@ -186,6 +186,10 @@ export interface WorkletEngineConfig {
    *  dot-id param spec (e.g. TB-303's 'cutoff' → 'filter.cutoff'). Engines whose
    *  preset JSON already uses dot-ids omit it. */
   presetKeyRemap?: Record<string, string>;
+  /** Per-engine output balance the HOST applies, for engines whose renderer does
+   *  not apply its own (i.e. plugins — the number lives in their manifest).
+   *  Default 1 leaves the six in-tree engines exactly as they were. */
+  outputTrim?: number;
 }
 
 export class WorkletLaneEngine implements SynthEngine {
@@ -237,7 +241,7 @@ export class WorkletLaneEngine implements SynthEngine {
     }
     this.maxVoices = cfg.polyphony === 'mono' ? 1 : 8;
     this.state['poly.voices'] = this.maxVoices;   // keep the bag in sync with the authoritative cap
-    this.worklet = new LoomWorkletNode(ctx, cfg.engineId);
+    this.worklet = new LoomWorkletNode(ctx, cfg.engineId, cfg.outputTrim ?? 1);
     this.worklet.connect(output);
     // Post the FULL spec-default bag once, right away. loom-processor.ts builds
     // its VoiceManager from an empty ParamBag ({}), so — absent this — every id

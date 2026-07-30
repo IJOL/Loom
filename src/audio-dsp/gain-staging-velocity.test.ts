@@ -10,14 +10,23 @@
 import { describe, it, expect } from 'vitest';
 import { ENGINE_TRIM } from './gain-staging';
 import { velGain01, velNorm, DEFAULT_VELOCITY } from '../core/velocity-gain';
+import karplusPlugin from '../../plugins/karplus/plugin.json';
 
 /** The trims as they stood while the curve was missing, straight off the
  *  comments in gain-staging.ts: they multiplied v01 with nothing in front. */
 const PRE_FIX_TRIM: Record<string, number> = { fm: 0.25, karplus: 1.2 };
 
+/** The per-engine trims this test compares against history. Karplus's now lives
+ *  in its plugin manifest, so reading it HERE is also what keeps the ported
+ *  plugin honest about the value that was tuned by ear. */
+const TRIM: Record<string, number> = {
+  fm: ENGINE_TRIM.fm,
+  karplus: karplusPlugin.engines[0].outputTrim,
+};
+
 /** Level now over level then, at the same note velocity. */
 function levelRatio(id: string, v01: number): number {
-  return (ENGINE_TRIM[id] * velGain01(v01, false)) / (PRE_FIX_TRIM[id] * v01);
+  return (TRIM[id] * velGain01(v01, false)) / (PRE_FIX_TRIM[id] * v01);
 }
 
 /** The lift in closed form — the restored curve over the raw velocity it

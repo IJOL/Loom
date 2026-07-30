@@ -42,13 +42,10 @@ export const ENGINE_TRIM: Record<string, number> = {
              // velocities in gain-staging-velocity.test.ts.
   wavetable: 0.6,
   westcoast: 0.5,
-  karplus: 0.857, // was 1.2, ÷1.4 (2026-07-25): same restored curve, same shape as
-                  // fm above — full velocity preserved (measured ratio 1.000),
-                  // everything softer lifted by the same factor, so the two engines
-                  // stay balanced against each other. And 1.2 was itself "raised
-                  // from 0.8 (×1.5): sat too quiet vs the other engines" — tuned by
-                  // ear WITH the broken formula in place, which is how a lost curve
-                  // hides as a loudness complaint one layer down.
+  // karplus is NOT here any more: it ships as a plugin, and its balance lives in
+  // its manifest as `outputTrim` (plugins/karplus/plugin.json). The host reads it
+  // through plugin-capabilities.pluginSynthTrim and multiplies it in, so there is
+  // still exactly one owner of the number — just no longer this table.
 };
 
 /** Per-category gain — the global balance BETWEEN families. `drum` carries what

@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { VoiceManager } from './voice-manager';
 import './subtractive-renderer';   // side-effect: registers the 'subtractive' renderer
-import type { ParamBag, NoteSpec } from './types';
+import { registerRenderer } from './renderer-registry';
+import type { ParamBag, NoteSpec, VoiceRenderer } from './types';
 
 const SR = 48000;
 // Empty bag → the subtractive renderer fills its own defaults via param().
@@ -98,5 +99,17 @@ describe('VoiceManager', () => {
     vm.steal(2);
     for (let i = SR * 0.05; i < SR * 0.6; i++) vm.renderSample(i / SR);
     expect(vm.activeCount).toBeLessThanOrEqual(1);
+  });
+
+  it('scales every voice by the engine output trim the host handed it', () => {
+    registerRenderer('probe-trim', (): VoiceRenderer => ({
+      done: false, noteOff() {}, renderSample() { return 1; },
+    }));
+    const n = { midi: 60, beginSec: 0, durationSec: 1, velocity: 1, accent: false, slide: false };
+    const full = new VoiceManager(SR, 'probe-trim', {});
+    const half = new VoiceManager(SR, 'probe-trim', {}, 0.5);
+    full.spawn(n); half.spawn(n);
+    // Relative: the trimmed lane must be exactly half the untrimmed one.
+    expect(half.renderSample(0) / full.renderSample(0)).toBeCloseTo(0.5, 10);
   });
 });

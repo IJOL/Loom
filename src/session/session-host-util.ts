@@ -1,4 +1,5 @@
 // Pure helpers shared by SessionHost and its extracted sub-modules.
+import { shortLabelFor } from '../plugin-host/plugin-capabilities';
 
 /** Returns the next available slug id for a new lane of the given engineId.
  *  The loop starts at 1, so for engines with no existing lane the first id is
@@ -7,14 +8,14 @@
  *  already in `existingIds` so the first added extra will be "-2". */
 export function nextLaneSlug(existingIds: ReadonlySet<string>, engineId: string): string {
   const prefix =
-    engineId === 'tb303'         ? 'tb-303'      :
-    engineId === 'drums-machine' ? 'drums'       :
-    engineId === 'subtractive'   ? 'subtractive' :
-    engineId === 'wavetable'     ? 'wavetable'   :
-    engineId === 'fm'            ? 'fm-4-op'     :
-    engineId === 'karplus'       ? 'karplus'     :
-    engineId === 'westcoast'     ? 'west'        :
-                                   engineId;
+    shortLabelFor(engineId) ??
+    (engineId === 'tb303'         ? 'tb-303'      :
+     engineId === 'drums-machine' ? 'drums'       :
+     engineId === 'subtractive'   ? 'subtractive' :
+     engineId === 'wavetable'     ? 'wavetable'   :
+     engineId === 'fm'            ? 'fm-4-op'     :
+     engineId === 'westcoast'     ? 'west'        :
+                                    engineId);
   for (let i = 1; i <= 99; i++) {
     const candidate = `${prefix}-${i}`;
     if (!existingIds.has(candidate)) return candidate;

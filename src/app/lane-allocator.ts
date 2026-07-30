@@ -14,6 +14,7 @@ import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from '../core/lane-ids';
 import type { SynthEngine, Voice } from '../engines/engine-types';
 import type { FxBus } from '../core/fx';
 import type { SidechainBus } from '../core/sidechain-bus';
+import { isWorkletHosted, pluginSynthTrim } from '../plugin-host/plugin-capabilities';
 
 // Melodic engines that have a per-sample worklet renderer (Phase 1 subtractive +
 // Phase 2 ports). These route to WorkletLaneEngine on the live path; drums /
@@ -22,7 +23,16 @@ import type { SidechainBus } from '../core/sidechain-bus';
 // assert EVERY id here produces a renderer implementing the live-params hook —
 // a hand-written engine list would just reproduce the gap it exists to catch
 // (I4, 2026-07-26 continuous-params review).
-export const WORKLET_ENGINE_IDS = new Set(['subtractive', 'tb303', 'fm', 'wavetable', 'karplus', 'westcoast']);
+const BUILTIN_WORKLET_ENGINE_IDS = new Set(['subtractive', 'tb303', 'fm', 'wavetable', 'westcoast']);
+
+/** Built-ins are still listed above; a PLUGIN engine qualifies by having shipped
+ *  a renderer, so nothing has to be added by hand when one is installed. The
+ *  iterator walks the BUILT-INS only — that is what the registry-driven
+ *  live-params test needs, since a plugin's renderer no longer lives in src/. */
+export const WORKLET_ENGINE_IDS = {
+  has: (id: string): boolean => BUILTIN_WORKLET_ENGINE_IDS.has(id) || isWorkletHosted(id),
+  [Symbol.iterator]: (): Iterator<string> => BUILTIN_WORKLET_ENGINE_IDS[Symbol.iterator](),
+};
 
 // Phase G: LaneAllocatorDeps is now master-only — no per-lane strips,
 // instrument singletons, or boot configurators. ensureLaneResource() is
@@ -96,6 +106,11 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
         const eng = new WorkletLaneEngine(deps.ctx, inserts.inputNode, {
           engineId, name: spec.name, presetsKey: engineId, polyphony: spec.polyphony,
           params: spec.params, modulators: spec.modulators,
+          // A plugin engine's renderer does NOT multiply by its own engine trim
+          // (the number lives in its manifest, not its compiled JS), so the host
+          // carries it down to the sum point. 1 for a built-in, whose renderer
+          // still calls synthTrim() itself.
+          outputTrim: pluginSynthTrim(engineId) ?? 1,
           // TB-303 preset JSON uses legacy flat keys; remap them to dot-ids so
           // presets actually apply on the worklet path (other engines' JSON is
           // already dot-id keyed).

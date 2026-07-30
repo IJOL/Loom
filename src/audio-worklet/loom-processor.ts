@@ -54,11 +54,12 @@ class LoomProcessor extends AudioWorkletProcessor {
 
   constructor(options?: unknown) {
     super(options);
-    const engineId = (options as { processorOptions?: { engineId?: string } } | undefined)
-      ?.processorOptions?.engineId ?? 'subtractive';
+    const opts = (options as { processorOptions?: { engineId?: string; outputTrim?: number } } | undefined)
+      ?.processorOptions;
+    const engineId = opts?.engineId ?? 'subtractive';
     // Start with an empty param bag — each renderer fills its own defaults via
     // param(); the lane engine posts the real values immediately after.
-    this.vm = new VoiceManager(sampleRate, engineId, {});
+    this.vm = new VoiceManager(sampleRate, engineId, {}, opts?.outputTrim ?? 1);
     this.vm.setModulation(this.mod);
     this.port.onmessage = (e: MessageEvent<MainToWorklet>) => {
       const m = e.data;

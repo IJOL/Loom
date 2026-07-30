@@ -16,6 +16,14 @@
 import { describe, it, expect } from 'vitest';
 import type { VoiceRenderer } from './types';
 import { SR, note, makeRenderer, MELODIC_IDS } from '../../test/engine-fixtures';
+import karplusPlugin from '../../plugins/karplus/plugin.json';
+
+/** Karplus ships as a PLUGIN now, so its per-engine trim is not inside its
+ *  renderer any more — it is a manifest capability the HOST multiplies in at the
+ *  sum point (VoiceManager.outputTrim). The fixture builds a bare voice with no
+ *  host, so the level cases below put it back to compare production levels.
+ *  Every RATIO case is unaffected: a constant factor cancels. */
+const KARPLUS_HOST_TRIM = karplusPlugin.engines[0].outputTrim;
 
 const WINDOW_SEC = 0.05;
 
@@ -135,6 +143,8 @@ describe('cross-engine velocity + accent response', () => {
     const KARPLUS_VS_WAVETABLE = 0.47450;
     // 1% covers rounding the two trims to three decimals (0.25/1.4 → 0.179).
     expect(fullLevel('fm') / ref / FM_VS_WAVETABLE).toBeCloseTo(1, 2);
-    expect(fullLevel('karplus') / ref / KARPLUS_VS_WAVETABLE).toBeCloseTo(1, 2);
+    // × the host trim: see KARPLUS_HOST_TRIM. The balance being pinned is the
+    // one a listener hears, which is the renderer AND the host's multiplication.
+    expect(fullLevel('karplus') * KARPLUS_HOST_TRIM / ref / KARPLUS_VS_WAVETABLE).toBeCloseTo(1, 2);
   });
 });

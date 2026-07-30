@@ -15,6 +15,9 @@ import { SidechainBus } from '../core/sidechain-bus';
 import { OfflineAudioContext } from 'node-web-audio-api';
 import type { FxInstance } from '../plugins/types';
 import * as registry from '../engines/registry';
+import { installMainThreadLoomApi, __resetPluginEngines } from '../plugin-host/loom-api';
+import karplusPlugin from '../../plugins/karplus/plugin.json';
+import type { EngineManifest } from '@loom/plugin-sdk';
 
 function makeCtx() {
   return new OfflineAudioContext(1, 128, 44100) as unknown as AudioContext;
@@ -107,7 +110,16 @@ describe('drums-machine routes to the 8-output DrumsWorkletEngine', () => {
 });
 
 describe('Phase 4 Task 1: live worklet backend constructs only worklet engines', () => {
-  beforeEach(() => { vi.restoreAllMocks(); });
+  // karplus is in this table as a PLUGIN, not a built-in: it qualifies for the
+  // worklet path through isWorkletHosted (its manifest), which is the branch
+  // that replaced the hand-written id list.
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    __resetPluginEngines();
+    installMainThreadLoomApi();
+    (globalThis as unknown as { Loom: { registerEngine(m: EngineManifest): void } })
+      .Loom.registerEngine(karplusPlugin.engines[0] as unknown as EngineManifest);
+  });
 
   it.each([
     ['subtractive'],

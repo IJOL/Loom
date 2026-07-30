@@ -46,6 +46,11 @@ export interface KernelLaneSpec {
   maxVoices: number;
   /** Shared-LFO modulation set (in-worklet modulation), or [] for none. */
   mods: ModLite[];
+  /** Per-engine output balance the HOST applies (plugins declare it in their
+   *  manifest instead of multiplying it in themselves). Filled in by WHOEVER
+   *  BUILDS THE SPEC — this module deliberately does not import
+   *  plugin-capabilities, so it stays pure and testable with no fetch. */
+  outputTrim?: number;
   notes: KernelNote[];
 }
 
@@ -58,7 +63,7 @@ export function renderKernelLane(
   sampleRate: number,
 ): Float32Array {
   const out = new Float32Array(frames);
-  const vm = new VoiceManager(sampleRate, spec.engineId, spec.params);
+  const vm = new VoiceManager(sampleRate, spec.engineId, spec.params, spec.outputTrim ?? 1);
   vm.setMaxVoices(spec.maxVoices);
   if (spec.mods.length > 0) {
     const runtime = new ModulationRuntime(sampleRate);

@@ -4,9 +4,13 @@
 // program). The name decides the engine family; within that engine the GM
 // program still picks the preset (falling back to a name match, then the first).
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../engines/registry', () => ({
+  // The plugin host bridges a manifest into the registry, so the two register
+  // functions have to exist even though this file only cares about listEngines.
+  registerEngine: () => {},
+  registerEngineFactory: () => {},
   listEngines: () => [
     { id: 'subtractive',   presets: [{ name: 'KEY Acoustic Piano', gm: [0], params: {} }, { name: 'PAD Warm', gm: [89], params: {} }] },
     { id: 'karplus',       presets: [{ name: 'Nylon Guitar', gm: [24], params: {} }, { name: 'Steel String', gm: [25], params: {} }] },
@@ -16,9 +20,23 @@ vi.mock('../engines/registry', () => ({
 }));
 
 import { engineHintFromName, suggestDefaultMapping } from './gm-lookup';
+import { installMainThreadLoomApi, __resetPluginEngines } from '../plugin-host/loom-api';
+import karplusPlugin from '../../plugins/karplus/plugin.json';
+import type { EngineManifest } from '@loom/plugin-sdk';
 import type { ParsedMidi } from './midi-parse';
 
 const note = { startTick: 0, duration: 48, midi: 60, velocity: 90, channel: 0 };
+
+// Karplus's guitar keywords are no longer a hardcoded row in gm-lookup — they
+// are `gm.keywords` in its plugin manifest, merged in by priority. Registering
+// the REAL manifest keeps the behavioural claims below intact and makes them
+// cover the manifest route rather than a table that no longer exists.
+beforeEach(() => {
+  __resetPluginEngines();
+  installMainThreadLoomApi();
+  (globalThis as unknown as { Loom: { registerEngine(m: EngineManifest): void } })
+    .Loom.registerEngine(karplusPlugin.engines[0] as unknown as EngineManifest);
+});
 
 describe('engineHintFromName', () => {
   it('maps guitar-named tracks to karplus', () => {
