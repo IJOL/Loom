@@ -3,6 +3,7 @@
 // (globalThis.Loom) carries no DSP, which is what keeps it small enough to hold
 // stable across versions.
 export * from './types';
+export * from './manifest';
 export * from './dsp/util';
 export * from './dsp/velocity';
 export { Adsr } from './dsp/adsr';
