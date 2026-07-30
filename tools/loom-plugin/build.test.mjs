@@ -1,0 +1,74 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { join, dirname, resolve, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { tmpdir } from 'node:os';
+import { buildPlugin, writePluginIndex } from './build.mjs';
+
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+let root;
+beforeEach(() => { root = mkdtempSync(join(tmpdir(), 'loom-plugin-')); });
+afterEach(() => { rmSync(root, { recursive: true, force: true }); });
+
+function writePlugin(dir, extra = {}) {
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'plugin.json'), JSON.stringify({
+    id: 'probe', name: 'Probe', version: '1.0.0', loomApi: 1,
+    main: 'main.js', dsp: 'dsp.js',
+    engines: [{
+      id: 'probe', name: 'Probe', polyphony: 'poly', clipEditor: 'piano-roll',
+      outputTrim: 0.5, shortLabel: 'probe',
+      params: [{ id: 'amp.level', label: 'Level', kind: 'continuous', min: 0, max: 1, default: 0.8 }],
+    }],
+    ...extra,
+  }));
+  writeFileSync(join(dir, 'main.ts'), `Loom.registerEngine(${JSON.stringify({ id: 'probe' })});\n`);
+  writeFileSync(join(dir, 'dsp.ts'), `Loom.registerRenderer('probe', () => ({ renderSample: () => 0, noteOff() {}, done: false }));\n`);
+}
+
+describe('loom-plugin build', () => {
+  it('emits plugin.json, main.js and dsp.js into the output directory', async () => {
+    const src = join(root, 'src', 'probe');
+    writePlugin(src);
+    const out = join(root, 'out');
+    const res = await buildPlugin({ srcDir: src, outDir: out });
+    expect(res.id).toBe('probe');
+    for (const f of ['plugin.json', 'main.js', 'dsp.js']) {
+      expect(existsSync(join(out, 'probe', f))).toBe(true);
+    }
+  });
+
+  it('rejects a manifest the host would refuse', async () => {
+    const src = join(root, 'src', 'probe');
+    writePlugin(src, { loomApi: 99 });
+    await expect(buildPlugin({ srcDir: src, outDir: join(root, 'out') })).rejects.toThrow(/loomApi/);
+  });
+
+  it('refuses a bundle that reaches into the host source tree', async () => {
+    const src = join(root, 'src', 'probe');
+    writePlugin(src);
+    // The path has to be computed, not written by hand: this fixture lives in a
+    // temp directory, so a hand-written '../../../src/…' resolves to nothing and
+    // esbuild would fail with "could not resolve" — which is NOT the guard we
+    // are testing. This reaches the REAL host source, so the metafile records it
+    // and the guard is the thing that rejects the build.
+    const hostModule = relative(src, join(REPO_ROOT, 'src', 'core', 'velocity-gain')).replaceAll('\\', '/');
+    writeFileSync(join(src, 'dsp.ts'),
+      `import { velGain01 } from '${hostModule}';\nLoom.registerRenderer('probe', () => ({ renderSample: () => velGain01(1, false), noteOff() {}, done: false }));\n`);
+    await expect(buildPlugin({ srcDir: src, outDir: join(root, 'out') })).rejects.toThrow(/host source/i);
+  });
+
+  it('writes an index listing every built plugin', async () => {
+    const out = join(root, 'out');
+    for (const id of ['probe', 'other']) {
+      const src = join(root, 'src', id);
+      writePlugin(src);
+      writeFileSync(join(src, 'plugin.json'), readFileSync(join(root, 'src', 'probe', 'plugin.json'), 'utf8').replaceAll('probe', id));
+      await buildPlugin({ srcDir: src, outDir: out });
+    }
+    const ids = await writePluginIndex(out);
+    expect(ids.sort()).toEqual(['other', 'probe']);
+    expect(JSON.parse(readFileSync(join(out, 'index.json'), 'utf8')).plugins.sort()).toEqual(['other', 'probe']);
+  });
+});
