@@ -20,6 +20,23 @@ import '../audio-dsp/fm-renderer';
 import '../audio-dsp/karplus-renderer';
 import '../audio-dsp/wavetable-renderer';
 import '../audio-dsp/westcoast-renderer';
+import { registerRenderer } from '../audio-dsp/renderer-registry';
+import { LOOM_API_VERSION } from '@loom/plugin-sdk';
+
+// The worklet half of the runtime handshake. A plugin's dsp.js is addModule'd
+// SEPARATELY, so it shares this realm's globals but not this module's instance —
+// reaching registerRenderer through a global is the only thing that works. This
+// must be installed before any plugin module is added, which the host guarantees
+// by awaiting this module's addModule first.
+Object.defineProperty(globalThis, 'Loom', {
+  value: {
+    apiVersion: LOOM_API_VERSION,
+    registerEngine: () => { /* main-thread only; harmless no-op inside the worklet */ },
+    registerRenderer,
+  },
+  writable: false,
+  configurable: true,
+});
 
 class LoomProcessor extends AudioWorkletProcessor {
   private vm: VoiceManager;
