@@ -7,7 +7,10 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "noEmit": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "baseUrl": ".",
+    "paths": { "@loom/plugin-sdk": ["packages/loom-plugin-sdk/src/index.ts"] },
+    "resolveJsonModule": true
   },
-  "include": ["src", "test", "scripts"]
+  "include": ["src", "test", "scripts", "packages", "plugins"]
 }

@@ -1,9 +1,20 @@
 import { defineConfig } from 'vitest/config';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+const ROOT = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  resolve: {
+    alias: { '@loom/plugin-sdk': join(ROOT, 'packages', 'loom-plugin-sdk', 'src', 'index.ts') },
+  },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts', 'src/**/*.dsp.test.ts', 'src/**/*.wiring.test.ts', 'tools/**/*.test.mjs'],
+    include: [
+      'src/**/*.test.ts', 'src/**/*.dsp.test.ts', 'src/**/*.wiring.test.ts',
+      'packages/**/*.test.ts', 'plugins/**/*.test.ts',
+      'tools/**/*.test.mjs',
+    ],
     globals: false,
     setupFiles: ['test/setup.ts'],
     testTimeout: 15000,

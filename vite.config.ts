@@ -89,6 +89,12 @@ function manualPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [manualPlugin()],
+  // The plugin SDK is a workspace package, not a published dependency: an alias
+  // is what lets `src/` and a plugin's own source share ONE copy of the DSP
+  // primitives instead of drifting apart.
+  resolve: {
+    alias: { '@loom/plugin-sdk': join(ROOT, 'packages', 'loom-plugin-sdk', 'src', 'index.ts') },
+  },
   // Ignore OTHER git worktrees so creating/installing one never thrashes this
   // server's watcher (see WORKTREES_DIR). A path predicate is robust on Windows.
   server: { watch: { ignored: (file: string) => file.startsWith(WORKTREES_DIR) } },

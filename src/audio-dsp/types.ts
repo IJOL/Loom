@@ -21,71 +21,25 @@ export interface SubParams {
   ampAttack: number; ampDecay: number; ampSustain: number; ampRelease: number;
 }
 
-/** One scheduled note. beginSec/durationSec are AudioContext seconds; the
- *  processor converts to sample frames. */
-export interface NoteSpec {
-  midi: number;
-  beginSec: number;
-  durationSec: number;
-  velocity: number;   // 0..1
-  accent: boolean;
-  slide: boolean;
-  /** Caller-assigned handle so this ONE voice can be released later
-   *  (VoiceManager.releaseVoice). A held live note — a key you are still
-   *  pressing — has no known duration, so its note-off arrives as a separate
-   *  message and needs a way to name its voice. Sequenced notes carry their own
-   *  duration and never need it, so it is optional. */
-  voiceId?: number;
-}
-
-/** Generic engine parameter bag: dot-id (`'filter.cutoff'`, `'op1.ratio'`, …)
- *  → value. Replaces the typed SubParams as the cross-engine param carrier so
- *  one VoiceManager/worklet drives any engine kind. */
-export type ParamBag = Record<string, number>;
-
-/** Read a ParamBag value with a default fallback. */
-export const param = (b: ParamBag, id: string, d: number): number => (b[id] ?? d);
+// The plugin-facing half of this module now lives in @loom/plugin-sdk (a plugin
+// compiles against it). Re-exported so every existing import keeps working.
+export type { NoteSpec, ParamBag, VoiceModOffsets, ModLite } from '@loom/plugin-sdk';
+export { param } from '@loom/plugin-sdk';
+import type { VoiceRenderer as SdkVoiceRenderer } from '@loom/plugin-sdk';
 
 /** A modulation destination: any SubParams field, plus two synthetic targets:
  *  `ampGain` (a multiplicative output gain — tremolo), and `amp` (the per-voice
  *  AMPLITUDE envelope itself — an ADSR routed here becomes the voice's amp env). */
 export type ModTarget = keyof SubParams | 'ampGain' | 'amp' | 'filterEnv';
 
-/** Live, additive modulation offsets, NORMALISED (the sum of LFO `wave×depth`,
- *  roughly -1..1). Keyed by target NAME: a SubParams field for Subtractive, or a
- *  param dot-id ('filter.cutoff', 'osc.morph', 'op1.level'…) for the other
- *  engines — generic, so one VoiceManager path drives every engine. The renderer
- *  scales each to native units at read time. */
-export type VoiceModOffsets = Record<string, number>;
-
-/** A pooled, per-sample voice. Pure: no Web Audio. */
-export interface VoiceRenderer {
-  /** Render one mono sample at absolute time t (seconds). `modOffsets` are the
-   *  shared-LFO offsets computed once per sample by the VoiceManager and applied
-   *  at read time on top of the voice's spawned-snapshot params. Omitted ⇒ no
-   *  modulation. */
-  renderSample(t: number, modOffsets?: VoiceModOffsets): number;
-  /** Live note-off: end the gate at time t (release tail still plays). */
-  noteOff(t: number): void;
-  /** Receive the lane's LIVE param bag — the smoothed copy the VoiceManager
-   *  mutates in place as knobs move. A voice that implements this reads its
-   *  CONTINUOUS params from here each sample, so a knob turn reaches a note that
-   *  is already sounding (an analogue filter is always in the signal path; ours
-   *  used to be a photograph taken at trigger).
-   *
-   *  STRUCTURAL params must NOT be read from here: waveform, unison size, filter
-   *  model/type and envelope TIMES stay frozen at trigger. Envelope times are
-   *  excluded on purpose — our envelopes are a closed-form function of elapsed
-   *  time, not a charging capacitor, so re-reading the attack mid-note makes the
-   *  amplitude jump. See the design spec.
-   *
-   *  Optional: a renderer without it keeps the trigger-time snapshot behaviour. */
-  setLiveParams?(live: ParamBag): void;
+/** The host's renderer interface: the published contract plus the one hook that
+ *  is deliberately NOT public — Subtractive reads a typed SubParams instead of
+ *  the dot-id bag, an internal optimisation no plugin should depend on.
+ *  `SubParams` stays declared in this same file. */
+export interface VoiceRenderer extends SdkVoiceRenderer {
   /** Subtractive-only: it reads a TYPED SubParams, not the dot-id bag, so the lane
    *  keeps ONE live snapshot and every voice reads through it — refreshed once per
    *  lane per sample, never once per voice. (The engineId special-case mirrors the
    *  one fillOffsets already makes for the same reason.) */
   setLiveSubParams?(live: SubParams): void;
-  /** True once the release tail has fully decayed at the last rendered t. */
-  readonly done: boolean;
 }
