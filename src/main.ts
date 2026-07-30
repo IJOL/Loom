@@ -48,6 +48,8 @@ import { createStemsFeature } from './app/stems-feature';
 import { wireSessionLifecycle } from './app/session-lifecycle';
 import { startVisualizer } from './core/visualizer';
 import { loadAllPresets } from './presets/preset-loader';
+import { loadPlugins } from './plugin-host/plugin-host';
+import { loadPluginDspModules, importPluginDspOnMainThread } from './plugin-host/plugin-dsp';
 import { loadDrumKits } from './presets/drum-kits-loader';
 import { loadLibrary } from './patterns/pattern-library';
 import { resetAutomationPosition, getAutoAbsSubIdx } from './automation/automation-tick';
@@ -89,14 +91,23 @@ if (appVersionEl) {
 // ── Plugin bootstrap (must run BEFORE preset cache + audio graph) ─────────
 bootstrapPlugins();
 
+// Runtime plugins: fetched, validated and imported before anything reads the
+// engine registry. Everything downstream chains off this promise instead of
+// awaiting at module scope, so boot order stays explicit and top-level await
+// stays out of the bundle.
+const pluginsReady = loadPlugins();
+
 // ── Preset cache ───────────────────────────────────────────────────────────
 // Derived from the plugin registry so adding a new synth plugin automatically
 // triggers its JSON preset file load (if /public/presets/<id>.json exists).
 // Missing JSON files log a warning but never throw.
+// A runtime plugin ships its own presets and has already seeded the cache, so
+// it is skipped here.
 // The legacy 'poly' engineId was merged into 'subtractive' (the polysynth
 // host IS the subtractive engine's voice allocator).
-const ENGINE_IDS_FOR_PRESETS = listPlugins('synth').map((p) => p.manifest.id);
-const presetsLoaded = loadAllPresets(ENGINE_IDS_FOR_PRESETS);
+const presetsLoaded = pluginsReady.then((report) => loadAllPresets(
+  listPlugins('synth').map((p) => p.manifest.id).filter((id) => !report.loaded.includes(id)),
+));
 // Unified Drums picker list (synth + sample kits). Fire-and-forget; the drums
 // populator re-renders when this resolves (see mountDrumsPresetSelect).
 void loadDrumKits();
@@ -122,7 +133,13 @@ const { ctx, master, analyser, masterMeterAnalyser, masterStrip, masterInsertCha
 // this combined promise covers later user-triggered allocations (New / picker /
 // swap / sample import) too — by then it has long resolved.
 const workletReady: Promise<void> = Promise.all([
-  loadLoomWorklet(ctx),
+  loadLoomWorklet(ctx).then(async () => {
+    // Strictly after the host module: it is what installs globalThis.Loom inside
+    // the worklet, and a plugin dsp.js added before it would find no registry.
+    const report = await pluginsReady;
+    await loadPluginDspModules(ctx, report.dspUrls);
+    await importPluginDspOnMainThread(report.dspUrls);
+  }),
   loadDrumsWorklet(ctx),
   loadSamplerWorklet(ctx),
   // The sidechain duck detector: registered up front so arming SIDECHAIN on a lane
