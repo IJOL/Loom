@@ -3,12 +3,17 @@
 // ORDER MATTERS in the worklet: loom-processor.ts installs globalThis.Loom
 // there, so its addModule must have resolved before any plugin dsp.js is added.
 // Callers pass a context whose Loom module is already loaded.
+//
+// Both paths go through module-loader: a plugin lives in public/, which the Vite
+// dev server refuses to serve as a module, so the source is fetched and
+// evaluated through a blob: URL instead. Same behaviour in dev and in the build.
+import { addPluginWorkletModule, importPluginModule } from './module-loader';
 
 /** Add every plugin dsp.js to a context's AudioWorklet, sequentially. */
 export async function loadPluginDspModules(ctx: BaseAudioContext, urls: string[]): Promise<void> {
   for (const url of urls) {
     try {
-      await ctx.audioWorklet.addModule(url);
+      await addPluginWorkletModule(ctx, url);
     } catch (e) {
       console.warn(`[plugin-host] worklet module failed: ${url}`, e);
     }
@@ -21,7 +26,7 @@ export async function loadPluginDspModules(ctx: BaseAudioContext, urls: string[]
 export async function importPluginDspOnMainThread(urls: string[]): Promise<void> {
   for (const url of urls) {
     try {
-      await import(/* @vite-ignore */ url);
+      await importPluginModule(url);
     } catch (e) {
       console.warn(`[plugin-host] main-thread dsp import failed: ${url}`, e);
     }

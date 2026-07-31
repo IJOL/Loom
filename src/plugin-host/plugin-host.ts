@@ -6,6 +6,7 @@
 // take the app down with it.
 import { validatePluginManifest } from './manifest-validate';
 import { installMainThreadLoomApi } from './loom-api';
+import { importPluginModule } from './module-loader';
 import { seedEnginePresets, validatePresetEntry } from '../presets/preset-loader';
 import type { EnginePreset } from '../engines/engine-types';
 
@@ -28,7 +29,11 @@ const errText = (e: unknown): string => (e instanceof Error ? e.message : String
 export async function loadPlugins(opts: LoadPluginsOptions = {}): Promise<PluginLoadReport> {
   const base = opts.baseUrl ?? import.meta.env.BASE_URL;
   const doFetch = opts.fetchImpl ?? fetch;
-  const doImport = opts.importImpl ?? ((url: string) => import(/* @vite-ignore */ url));
+  // NOT a bare `import(url)`: a plugin lives in public/, and the Vite dev server
+  // refuses to serve such a file as a module. importPluginModule fetches the
+  // source and evaluates it through a blob: URL, which works identically in dev and
+  // in the build. See module-loader.ts.
+  const doImport = opts.importImpl ?? ((url: string) => importPluginModule(url, doFetch));
 
   installMainThreadLoomApi();
 
