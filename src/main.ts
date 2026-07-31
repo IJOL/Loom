@@ -17,7 +17,7 @@ import { createLaneHost } from './app/lane-host-wiring';
 import { createPerformanceFeature } from './app/performance-feature';
 import { createRecordingFeature } from './app/recording-feature';
 import { wireMidiImport } from './app/midi-import-wiring';
-import { rebuildEngineParamUI } from './engines/engine-selector-ui';
+import { rebuildEngineParamUI, refreshMelodicEngineOptions } from './engines/engine-selector-ui';
 import { wireEngineSelectors } from './app/engine-selector-wiring';
 import { getEngine, getEngineParamIds } from './engines/registry';
 import { swapLaneEngineFlow, type EngineSwapDeps } from './app/engine-swap';
@@ -636,6 +636,16 @@ const engineSelectors = wireEngineSelectors({
 });
 // wirePolyControls(polySynthPresetsDeps) stays where it is, ~230 lines down.
 const polySynthPresetsDeps = engineSelectors.polySynthPresetsDeps;
+
+// The two engine selectors were just painted from the registry as it stands
+// RIGHT NOW — which is before loadPlugins() has resolved, so it holds only the
+// built-ins. Repaint once the runtime plugins have registered, or a dropped-in
+// engine loads, registers and synthesises while staying unpickable: the drop-in
+// promise failing at the last inch. Preserves each select's current value.
+void pluginsReady.then(() => {
+  refreshMelodicEngineOptions(engineSel, engineSel.value);
+  refreshMelodicEngineOptions(engineSel303, engineSel303.value);
+});
 
 // Phase G: deferred to sessionHost.onStateApplied (lane not allocated at boot).
 // mountSubtractiveLaneKnobs(LANE_ID_POLY) — see boot section below.

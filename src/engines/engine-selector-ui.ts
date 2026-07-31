@@ -120,6 +120,17 @@ export function populateEngineSelect(deps: EngineSelectorUIDeps, currentEngineId
   renderMelodicOptions(deps.engineSel, currentEngineId);
 }
 
+/** Rebuild a melodic-engine `<select>` from the registry AS IT IS NOW.
+ *
+ *  Boot paints these selects synchronously, long before `loadPlugins()` resolves,
+ *  so an engine that arrives as a runtime plugin is simply not in the list yet —
+ *  and nothing repaints it. Without this call the whole drop-in promise fails at
+ *  the last inch: the plugin loads, registers, synthesises, and the user still
+ *  cannot pick it. Caller: main.ts, off `pluginsReady`. */
+export function refreshMelodicEngineOptions(sel: HTMLSelectElement, currentEngineId: string): void {
+  renderMelodicOptions(sel, currentEngineId);
+}
+
 export interface EngineSelector303Deps {
   engineSel303: HTMLSelectElement;
   /** The lane currently being edited (sessionHost.activeEditLane). */
