@@ -6,7 +6,19 @@
 // Every "it changed" test carries a negative control, because a brightness
 // measurement drifts on its own as an envelope decays: without the control, a
 // test can pass while the knob does nothing.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+// Karplus ships as a PLUGIN now, and its dsp.ts calls Loom.registerRenderer at
+// module scope. The global has to exist before the import graph is evaluated,
+// and vi.hoisted is the only hook that runs that early. A no-op is enough: the
+// renderer is registered explicitly below, which keeps it visible here rather
+// than hiding it inside a stub.
+vi.hoisted(() => {
+  (globalThis as unknown as { Loom: unknown }).Loom = {
+    apiVersion: 1, registerEngine: () => {}, registerRenderer: () => {},
+  };
+});
+
 import { VoiceManager } from './voice-manager';
 import type { NoteSpec, ParamBag, VoiceRenderer } from './types';
 import { registerRenderer, createRenderer } from './renderer-registry';
@@ -17,8 +29,13 @@ import './tb303-renderer';
 import './wavetable-renderer';
 import './subtractive-renderer';
 import './fm-renderer';
-import './karplus-renderer';
 import './westcoast-renderer';
+import { KarplusRenderer } from '../../plugins/karplus/dsp';
+
+// The karplus row below drives the SHIPPED plugin renderer through the same
+// VoiceManager path the worklet uses — the coverage did not move out of this
+// file just because the engine moved out of src/.
+registerRenderer('karplus', (n, p, sr) => new KarplusRenderer(n, p, sr));
 
 const SR = 48000;
 
