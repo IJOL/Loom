@@ -5,7 +5,6 @@ import '../engines/drums-engine';
 import '../engines/subtractive';
 import '../engines/fm';
 import '../engines/wavetable';
-import '../engines/karplus';
 import '../engines/westcoast';
 import { DrumsWorkletEngine } from '../engines/drums-worklet-engine';
 import { WorkletLaneEngine } from '../engines/worklet-lane-engine';

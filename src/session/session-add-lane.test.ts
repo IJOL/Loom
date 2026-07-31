@@ -3,11 +3,11 @@ import { describe, it, expect } from 'vitest';
 import '../engines/subtractive';
 import '../engines/wavetable';
 import '../engines/fm';
-import '../engines/karplus';
 import '../engines/tb303';
 import '../engines/drums-engine';
 import { listEngines } from '../engines/registry';
 import { nextLaneSlug } from './session-host';
+import { installMainThreadLoomApi, __resetPluginEngines } from '../plugin-host/loom-api';
 
 describe('nextLaneSlug — slug id generation', () => {
   it('returns subtractive-2 for first added subtractive (subtractive-1 already exists)', () => {
@@ -30,8 +30,20 @@ describe('nextLaneSlug — slug id generation', () => {
     expect(nextLaneSlug(new Set([]), 'wavetable')).toBe('wavetable-1');
   });
 
-  it('Karplus lane gets karplus-1 when none exist', () => {
-    expect(nextLaneSlug(new Set([]), 'karplus')).toBe('karplus-1');
+  // The old case here asserted nextLaneSlug(…, 'karplus') === 'karplus-1', which
+  // would still pass by ACCIDENT with no plugins loaded — the prefix falls back
+  // to the engine id. What actually matters now is that a plugin's manifest
+  // decides its own prefix, so that is what this asserts, with a shortLabel
+  // deliberately different from the id.
+  it('a plugin engine takes its lane prefix from the manifest shortLabel', () => {
+    __resetPluginEngines();
+    installMainThreadLoomApi();
+    (globalThis as unknown as { Loom: { registerEngine(m: unknown): void } }).Loom.registerEngine({
+      id: 'probe-engine', name: 'Probe', polyphony: 'poly', clipEditor: 'piano-roll',
+      outputTrim: 0.5, shortLabel: 'prb', params: [],
+    });
+    expect(nextLaneSlug(new Set([]), 'probe-engine')).toBe('prb-1');
+    expect(nextLaneSlug(new Set(['prb-1']), 'probe-engine')).toBe('prb-2');
   });
 
   it('drums-machine lane gets drums-2 when drums-1 is present', () => {

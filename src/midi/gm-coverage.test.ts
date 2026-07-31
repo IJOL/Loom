@@ -5,11 +5,19 @@ import { resolve } from 'node:path';
 const TONAL_ENGINES = ['tb303', 'fm', 'wavetable', 'karplus', 'subtractive', 'westcoast'];
 const DRUM_ENGINES  = ['drums', 'drums-machine']; // accept whichever filename exists
 
+/** A built-in engine keeps its presets in public/presets/<id>.json; a PLUGIN
+ *  ships them inside its own directory. Both are real sources of GM coverage —
+ *  the plucked-string plugin is what covers the guitar programs (24-31), so
+ *  looking in only one place would silently open a hole in the claim below. */
 function loadPresets(engineId: string): { name: string; gm: number[] }[] {
-  const path = resolve('public/presets', `${engineId}.json`);
-  if (!existsSync(path)) return [];
-  const text = readFileSync(path, 'utf8');
-  return JSON.parse(text).presets ?? [];
+  for (const path of [
+    resolve('public/presets', `${engineId}.json`),
+    resolve('plugins', engineId, 'presets.json'),
+  ]) {
+    if (!existsSync(path)) continue;
+    return JSON.parse(readFileSync(path, 'utf8')).presets ?? [];
+  }
+  return [];
 }
 
 describe('GM coverage', () => {

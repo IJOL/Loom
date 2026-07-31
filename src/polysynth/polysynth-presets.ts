@@ -52,7 +52,7 @@ let _deps: PolySynthPresetsDeps | null = null;
 export function refreshPolyPresetSelect(): void {
   const sel = document.getElementById('poly-preset-select') as HTMLSelectElement;
   if (!sel) return;
-  // FM / Wavetable / Karplus poly lanes have no PolySynth instance to key
+  // FM / Wavetable poly lanes have no PolySynth instance to key
   // polyPresetName by, so fall back to the lane-keyed memory (engine:<name>,
   // filled by recordPagePresetForLane on load + on preset change). After the
   // Phase 4 cutover subtractive lanes have no PolySynth target either, so
@@ -64,7 +64,7 @@ export function refreshPolyPresetSelect(): void {
 
 /** Core implementation: populate #poly-preset-select using an explicit laneId.
  *  Exposed as a separate helper so injectEngineModulatorPanel can call it for
- *  FM/Wavetable/Karplus poly lanes without relying on getActiveEngineLaneId()
+ *  FM/Wavetable poly lanes without relying on getActiveEngineLaneId()
  *  (which is only updated for subtractive via the showPolyEditor path). */
 export function populatePolyPresetSelectForLane(laneId: string): void {
   const sel = document.getElementById('poly-preset-select') as HTMLSelectElement;
@@ -115,7 +115,7 @@ export function populatePolyPresetSelectForLane(laneId: string): void {
     return;
   }
 
-  // Non-subtractive poly engine (FM, Wavetable, Karplus): pull presets
+  // Non-subtractive poly engine (FM, Wavetable): pull presets
   // directly from the lane's SynthEngine instance.
   const presets = deps.getLaneEngineInstance(laneId)?.presets ?? [];
   renderInto(sel, html`${customOption()}${presetGroup(
@@ -131,7 +131,7 @@ export function populatePolyPresetSelect(): void {
 
 /** Apply an engine preset by name to a specific lane. Used by the per-page
  *  preset controls for 303 and drums lanes (which are not "active poly" lanes)
- *  as well as by the poly dropdown for FM / Wavetable / Karplus. */
+ *  as well as by the poly dropdown for FM / Wavetable. */
 function applyEnginePresetForLane(presetName: string, laneId: string): void {
   if (_deps) applyEnginePresetToLane(_deps, laneId, presetName);
 }
@@ -368,7 +368,7 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
     // ONE dice for every engine. This used to branch: `subtractive` went to a
     // hand-tuned randomizePolySynth, and everything else fell through to
     // `eng.randomize?.()` (implemented by no engine) and then `eng.setParam?.()`
-    // (not even a member) — so on FM / Wavetable / Karplus / Westcoast the click
+    // (not even a member) — so on FM / Wavetable / Westcoast the click
     // marked the dropdown Custom and changed nothing. That was REMAINING-WORK's
     // "do not let it keep lying", left open because per-engine musical ranges
     // looked unavoidable. They aren't: engines/engine-randomize.ts biases toward
@@ -403,13 +403,13 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
     }
 
     // Handle engine-prefixed presets FIRST — they resolve via getLaneEngineInstance
-    // and do NOT need a PolySynth target. (FM, Wavetable, Karplus all reach this path.)
+    // and do NOT need a PolySynth target. (FM and Wavetable both reach this path.)
     if (val.startsWith('engine:')) {
       const name = val.slice('engine:'.length);
       const laneId = deps.getActiveEngineLaneId();
       applyEnginePresetForLane(name, laneId);
       // Record the selection so refreshPolyPresetSelect restores it when the
-      // lane is re-activated (tab switch). Without this, FM/Wavetable/Karplus
+      // lane is re-activated (tab switch). Without this, FM/Wavetable
       // lanes always came back showing "(custom — no preset)". `val` is already
       // the `engine:<name>` dropdown vocabulary pagePresetName is keyed by.
       pagePresetName.set(laneId, val);

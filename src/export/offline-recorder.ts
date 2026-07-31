@@ -7,7 +7,7 @@
 // Implements the Phase 1 SceneRecorder so orchestrator/encoder/download reuse.
 //
 // SCOPE NOTE (Phase 4 cutover): every sounding lane is now rendered offline.
-// Melodic worklet engines (subtractive/tb303/fm/karplus/wavetable/westcoast) go
+// Melodic worklet engines (subtractive/tb303/fm/wavetable/westcoast) go
 // through the per-sample melodic kernel (kernel-lane-render). Drums (synth mode),
 // the Sampler, and the Audio channel are rendered through the SAME pure drum/
 // sample renderers the worklet uses (sample-lane-render), so a drum/sampler/audio

@@ -26,7 +26,6 @@ import { VoiceManager } from '../audio-dsp/voice-manager';
 import '../audio-dsp/subtractive-renderer';
 import '../audio-dsp/tb303-renderer';
 import '../audio-dsp/fm-renderer';
-import '../audio-dsp/karplus-renderer';
 import '../audio-dsp/wavetable-renderer';
 import '../audio-dsp/westcoast-renderer';
 

@@ -17,7 +17,6 @@ import { LOOM_PROCESSOR_NAME } from './processor-name';
 import '../audio-dsp/subtractive-renderer';
 import '../audio-dsp/tb303-renderer';
 import '../audio-dsp/fm-renderer';
-import '../audio-dsp/karplus-renderer';
 import '../audio-dsp/wavetable-renderer';
 import '../audio-dsp/westcoast-renderer';
 import { registerRenderer } from '../audio-dsp/renderer-registry';

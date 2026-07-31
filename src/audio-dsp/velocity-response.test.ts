@@ -16,14 +16,6 @@
 import { describe, it, expect } from 'vitest';
 import type { VoiceRenderer } from './types';
 import { SR, note, makeRenderer, MELODIC_IDS } from '../../test/engine-fixtures';
-import karplusPlugin from '../../plugins/karplus/plugin.json';
-
-/** Karplus ships as a PLUGIN now, so its per-engine trim is not inside its
- *  renderer any more — it is a manifest capability the HOST multiplies in at the
- *  sum point (VoiceManager.outputTrim). The fixture builds a bare voice with no
- *  host, so the level cases below put it back to compare production levels.
- *  Every RATIO case is unaffected: a constant factor cancels. */
-const KARPLUS_HOST_TRIM = karplusPlugin.engines[0].outputTrim;
 
 const WINDOW_SEC = 0.05;
 
@@ -61,7 +53,7 @@ const ON_CURVE = MELODIC_IDS;
 // Engines whose accent touches the amp and NOTHING else, so their RMS ratio is a
 // clean read of the punch factor. tb303 and westcoast are the two that also move
 // timbre, each with its own claim below.
-const AMP_ONLY = ['wavetable', 'fm', 'karplus'];
+const AMP_ONLY = ['wavetable', 'fm'];
 // Two engines "agree" within this much. Renderers are deterministic and velocity is
 // a pure gain, so agreement here is exact to floating point — measured spread 0.00%
 // across all six engines. 2% is slack, not a real tolerance.
@@ -125,26 +117,26 @@ describe('cross-engine velocity + accent response', () => {
     expect(accentPeakRatio('westcoast')).toBeGreaterThan(1);
   });
 
-  // Restoring the curve on fm and karplus multiplies a full-velocity note by
-  // velGain01(1) = 1.4, so both engines would have come out 2.9 dB louder against
-  // every other lane. ENGINE_TRIM.fm and ENGINE_TRIM.karplus were divided by that
-  // 1.4 to put them back — and this is the case that says "back where", because a
-  // trim is exactly the kind of number that gets nudged by ear and never checked.
+  // Restoring the curve on fm multiplies a full-velocity note by velGain01(1) =
+  // 1.4, so the engine would have come out 2.9 dB louder against every other
+  // lane. ENGINE_TRIM.fm was divided by that 1.4 to put it back — and this is
+  // the case that says "back where", because a trim is exactly the kind of
+  // number that gets nudged by ear and never checked.
   //
-  // The two constants are MEASURED, not chosen: they are each engine's full-
-  // velocity RMS over wavetable's, read off this same fixture before the curve
-  // landed. They are ratios between engines, so they say nothing about absolute
-  // level — only that the balance between lanes is the one the demos were mixed
-  // against. Re-measure and update them deliberately if an engine is re-voiced.
-  it('the curve fix left fm and karplus sitting where they sat against wavetable', () => {
+  // The constant is MEASURED, not chosen: fm's full-velocity RMS over
+  // wavetable's, read off this same fixture before the curve landed. It is a
+  // ratio between engines, so it says nothing about absolute level — only that
+  // the balance between lanes is the one the demos were mixed against.
+  // Re-measure and update it deliberately if an engine is re-voiced.
+  //
+  // The plucked string got the SAME ÷1.4 at the same time and its half of this
+  // claim still exists — it moved to plugins/karplus/dsp.test.ts, because its
+  // renderer is no longer importable from src/.
+  it('the curve fix left fm sitting where it sat against wavetable', () => {
     const fullLevel = (id: string): number => rmsOf(makeRenderer(id, note({ velocity: LOUD })));
     const ref = fullLevel('wavetable');
     const FM_VS_WAVETABLE = 0.16686;
-    const KARPLUS_VS_WAVETABLE = 0.47450;
-    // 1% covers rounding the two trims to three decimals (0.25/1.4 → 0.179).
+    // 1% covers rounding the trim to three decimals (0.25/1.4 → 0.179).
     expect(fullLevel('fm') / ref / FM_VS_WAVETABLE).toBeCloseTo(1, 2);
-    // × the host trim: see KARPLUS_HOST_TRIM. The balance being pinned is the
-    // one a listener hears, which is the renderer AND the host's multiplication.
-    expect(fullLevel('karplus') * KARPLUS_HOST_TRIM / ref / KARPLUS_VS_WAVETABLE).toBeCloseTo(1, 2);
   });
 });

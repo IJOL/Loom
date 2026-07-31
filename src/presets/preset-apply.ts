@@ -6,7 +6,7 @@
 //
 //   engine:<NAME>   — a built-in / JSON preset (a SynthEngine.presets entry).
 //                     THE canonical form for every engine's factory presets —
-//                     subtractive, tb303, fm, wavetable, karplus, drums-machine.
+//                     subtractive, tb303, fm, wavetable, drums-machine.
 //                     Applied via engine.applyPreset(NAME) (writes each param
 //                     through setBaseValue).
 //   user:<NAME>     — a subtractive user-saved preset (localStorage, stored as

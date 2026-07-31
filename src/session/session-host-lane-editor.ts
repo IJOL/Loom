@@ -55,7 +55,7 @@ export function showLaneEditor(self: SessionHost, laneId: string): void {
     self.deps.setActiveEngineLane?.(laneId);
   }
   // Hide Subtractive-only knob rows when the active poly lane's engine
-  // is NOT subtractive (FM / Wavetable / Karplus render their own
+  // is NOT subtractive (FM / Wavetable render their own
   // controls inside engine-mod-host; the legacy `data-engine="subtractive"`
   // rows shouldn't leak in on top). The toggle runs unconditionally so
   // switching back to a subtractive lane re-shows them.
@@ -158,9 +158,9 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
 
   // Populate the correct preset dropdown for each page type.
   // The poly page's #poly-preset-select is populated here for ALL poly-engine
-  // lanes (subtractive, fm, wavetable, karplus). For subtractive, the existing
+  // lanes (subtractive, fm, wavetable). For subtractive, the existing
   // showPolyEditor → rebuildEngineParamUI path also populates it (harmless
-  // double call). For FM/Wavetable/Karplus, showPolyEditor is NOT called so
+  // double call). For FM/Wavetable, showPolyEditor is NOT called so
   // without this call those engines would show stale Subtractive presets.
   // Hide the poly page's ENGINE/PRESET/🎲 header row for audio lanes (an audio
   // channel is not an instrument). The subtractive knob rows are already hidden

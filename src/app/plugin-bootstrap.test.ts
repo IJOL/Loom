@@ -9,9 +9,15 @@ describe('bootstrapPlugins', () => {
   it('registers all built-in synth engines as plugins', () => {
     bootstrapPlugins();
     const ids = listPlugins('synth').map((p) => p.manifest.id);
-    // The six core engines must always be present; additional plugin files
+    // The core BUILT-IN engines must always be present; additional plugin files
     // discovered via import.meta.glob may appear too.
-    const CORE = ['drums-machine', 'fm', 'karplus', 'subtractive', 'tb303', 'wavetable'];
+    //
+    // A runtime plugin is deliberately NOT in this list: bootstrapPlugins is the
+    // build-time glob over src/, and a plugin arrives later through loadPlugins
+    // (see plugin-host.test.ts). The plucked string left this list when it became
+    // one — registering its manifest here would not put it in listPlugins('synth')
+    // either, because that registry is the glob's, not the engine registry's.
+    const CORE = ['drums-machine', 'fm', 'subtractive', 'tb303', 'wavetable'];
     for (const id of CORE) expect(ids).toContain(id);
   });
 

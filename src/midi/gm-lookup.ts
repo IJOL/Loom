@@ -84,7 +84,8 @@ export function pickPresetForGM(program: number, rng: () => number): GMMatch {
 // Track-name → engine-family hints. Order matters (first hit wins), so each
 // entry carries a priority: plugins declare theirs in their manifest and get
 // merged into this list instead of being hardcoded here. (Original ordering
-// preserved: karplus 10, fm 20/30, subtractive 40–70.)
+// preserved: a plugin claiming priority 10 runs first, then fm 20/30,
+// subtractive 40–70.)
 const STATIC_HINTS: { kw: string[]; engineId: string; priority: number }[] = [
   { kw: ['rhodes', 'wurli', 'wurlitzer', 'tine', 'epiano', 'e.piano', 'e piano'], engineId: 'fm', priority: 20 },
   { kw: ['bell', 'glock', 'chime', 'mallet', 'vibe', 'marimba', 'kalimba'],   engineId: 'fm', priority: 30 },

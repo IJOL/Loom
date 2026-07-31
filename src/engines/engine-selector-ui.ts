@@ -1,6 +1,5 @@
 import { html, render } from 'lit-html';
-import { listPlugins } from '../plugins/registry';
-import { getEngineDescriptor } from './registry';
+import { getEngineDescriptor, listEngines } from './registry';
 import { populatePolyPresetSelect, refreshPolyPresetSelect } from '../polysynth/polysynth-presets';
 import type { KnobHandle } from '../core/knob';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
@@ -35,12 +34,20 @@ export interface EngineSelectorUIDeps {
   onEngineChange?: (laneId: string, newEngineId: string) => void;
 }
 
-/** EngineIds eligible for the swap dropdown: registered 'synth' plugins whose
- *  engine uses the piano-roll editor. drum-grid engines (drums-machine) edit
- *  on the drum-grid page and are excluded. */
+/** EngineIds eligible for the swap dropdown: every registered ENGINE that uses
+ *  the piano-roll editor. drum-grid engines (drums-machine) edit on the
+ *  drum-grid page and are excluded.
+ *
+ *  The source list is the ENGINE registry, not listPlugins('synth'). Those are
+ *  two different registries: listPlugins holds what the build-time
+ *  `import.meta.glob` over src/ found, so a RUNTIME plugin — which registers its
+ *  engine through Loom.registerEngine and never appears in that glob — could
+ *  never show up in the selector while this read from there. That is not a
+ *  cosmetic difference: it is the whole "a plugin is a first-class engine"
+ *  claim, and it was broken for every plugin engine. */
 export function melodicSynthEngineIds(): string[] {
-  return listPlugins('synth')
-    .map((p) => p.manifest.id)
+  return listEngines('polyhost')
+    .map((e) => e.id)
     .filter((id) => getEngineDescriptor(id)?.editor === 'piano-roll');
 }
 
@@ -100,9 +107,12 @@ function renderMelodicOptions(sel: HTMLSelectElement, currentEngineId: string): 
   // only the melodic-engine filter changes vs. the legacy behavior.
   const melodic = new Set(melodicSynthEngineIds());
   const frag = document.createDocumentFragment();
-  render(html`${listPlugins('synth')
-    .filter((p) => melodic.has(p.manifest.id))
-    .map((p) => html`<option value=${p.manifest.id} ?selected=${p.manifest.id === currentEngineId}>${p.manifest.name}</option>`)}`, frag);
+  // Same registry as melodicSynthEngineIds, for the same reason — the labels
+  // have to come from wherever the ids came from, or a plugin engine would be
+  // listed with no option to render.
+  render(html`${listEngines('polyhost')
+    .filter((e) => melodic.has(e.id))
+    .map((e) => html`<option value=${e.id} ?selected=${e.id === currentEngineId}>${e.name}</option>`)}`, frag);
   sel.appendChild(frag);
 }
 

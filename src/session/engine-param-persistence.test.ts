@@ -11,7 +11,6 @@ import { describe, it, expect } from 'vitest';
 import '../engines/subtractive';
 import '../engines/wavetable';
 import '../engines/fm';
-import '../engines/karplus';
 import '../engines/tb303';
 import '../engines/westcoast';
 
@@ -38,7 +37,7 @@ function awayFromDefault(spec: EngineParamSpec): number {
     : spec.default - (spec.default - spec.min) / 2;
 }
 
-const ENGINE_IDS = ['fm', 'wavetable', 'karplus', 'westcoast', 'tb303', 'subtractive'] as const;
+const ENGINE_IDS = ['fm', 'wavetable', 'westcoast', 'tb303', 'subtractive'] as const;
 
 describe('a knob turned on a worklet-engine lane survives getStateForSave', () => {
   it.each(ENGINE_IDS)('%s', (engineId) => {

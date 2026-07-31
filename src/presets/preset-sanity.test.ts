@@ -8,11 +8,17 @@ const ENGINES = ['tb303', 'fm', 'wavetable', 'karplus', 'subtractive', 'drums-ma
 
 interface Preset { name: string; gm?: number[]; params: unknown }
 
+/** Built-in engines keep their presets in public/presets/<id>.json; a PLUGIN
+ *  ships them inside its own directory. The sanity rules apply to both. */
 function loadPresets(engineId: string): Preset[] {
-  const path = resolve('public/presets', `${engineId}.json`);
-  if (!existsSync(path)) return [];
-  const text = readFileSync(path, 'utf8');
-  return JSON.parse(text).presets ?? [];
+  for (const path of [
+    resolve('public/presets', `${engineId}.json`),
+    resolve('plugins', engineId, 'presets.json'),
+  ]) {
+    if (!existsSync(path)) continue;
+    return JSON.parse(readFileSync(path, 'utf8')).presets ?? [];
+  }
+  return [];
 }
 
 describe.each(ENGINES)('preset sanity: %s', (engineId) => {

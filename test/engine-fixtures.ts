@@ -10,20 +10,12 @@ import { WavetableRenderer } from '../src/audio-dsp/wavetable-renderer';
 import { SubtractiveVoiceRenderer } from '../src/audio-dsp/subtractive-renderer';
 import { WestcoastRenderer } from '../src/audio-dsp/westcoast-renderer';
 import { FMRenderer } from '../src/audio-dsp/fm-renderer';
-import { KarplusRenderer } from '../src/audio-dsp/karplus-renderer';
 
 export const SR = 48000;
 
 export const note = (o: Partial<NoteSpec> = {}): NoteSpec => ({
   midi: 45, beginSec: 0, durationSec: 0.4, velocity: 0.8, accent: false, slide: false, ...o,
 });
-
-/** Deterministic PRNG so karplus's noise excitation is identical across renders —
- *  otherwise the pluck seed, not the velocity, would move the measurement. */
-export function seededRng(): () => number {
-  let s = 0x2f6e2b1;
-  return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 0x100000000; };
-}
 
 export const ENGINE_PARAMS: Record<string, ParamBag> = {
   tb303: {
@@ -62,15 +54,13 @@ export const ENGINE_PARAMS: Record<string, ParamBag> = {
     'op3.ratio': 3, 'op3.level': 0.4, 'op3.attack': 0.01, 'op3.decay': 0.3, 'op3.sustain': 0.7, 'op3.release': 0.2, 'op3.detune': 0,
     'op4.ratio': 1, 'op4.level': 0.6, 'op4.attack': 0.01, 'op4.decay': 0.3, 'op4.sustain': 0.7, 'op4.release': 0.2, 'op4.detune': 0,
   },
-  karplus: {
-    'string.damping': 0.4, 'string.brightness': 0.7, 'excite.time': 0.01,
-    'excite.tone': 0.5, 'amp.attack': 0.005, 'amp.release': 0.5,
-    'amp.level': 0.8, 'amp.builtinEnv': 1,
-  },
 };
 
 /** Every engine whose voice gain comes from the velocity + accent pair. */
-export const MELODIC_IDS = ['tb303', 'wavetable', 'subtractive', 'westcoast', 'fm', 'karplus'];
+/** Every BUILT-IN engine whose voice gain comes from the velocity + accent pair.
+ *  A plugin engine's renderer does not live in src/, so it is measured next to
+ *  its own source instead (see plugins/<id>/). */
+export const MELODIC_IDS = ['tb303', 'wavetable', 'subtractive', 'westcoast', 'fm'];
 
 /** Build one voice. `over` patches the engine's default bag (e.g. output.trim). */
 export function makeRenderer(id: string, n: NoteSpec, over: ParamBag = {}): VoiceRenderer {
@@ -81,7 +71,6 @@ export function makeRenderer(id: string, n: NoteSpec, over: ParamBag = {}): Voic
     case 'subtractive': return new SubtractiveVoiceRenderer(n, p, SR);
     case 'westcoast':   return new WestcoastRenderer(n, p, SR);
     case 'fm':          return new FMRenderer(n, p, SR);
-    case 'karplus':     return new KarplusRenderer(n, p, SR, seededRng());
     default: throw new Error(`no fixture for engine '${id}'`);
   }
 }

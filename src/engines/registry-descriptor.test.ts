@@ -10,7 +10,6 @@ import { describe, it, expect, vi } from 'vitest';
 import '../engines/subtractive';
 import '../engines/wavetable';
 import '../engines/fm';
-import '../engines/karplus';
 import '../engines/tb303';
 import '../engines/westcoast';
 
@@ -22,7 +21,6 @@ describe('getEngineDescriptor — metadata without legacy construction', () => {
     ['tb303', 'mono'],
     ['subtractive', 'poly'],
     ['fm', 'poly'],
-    ['karplus', 'poly'],
     ['wavetable', 'poly'],
     ['westcoast', 'poly'],
   ])('returns a descriptor for %s with id/params/polyphony', (id, polyphony) => {

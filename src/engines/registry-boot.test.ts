@@ -13,7 +13,6 @@ import { describe, it, expect } from 'vitest';
 import '../engines/subtractive';
 import '../engines/wavetable';
 import '../engines/fm';
-import '../engines/karplus';
 import '../engines/tb303';
 import '../engines/drums-engine';
 import '../engines/westcoast';
@@ -26,7 +25,6 @@ describe('engine registry after side-effect imports', () => {
     ['subtractive'],
     ['wavetable'],
     ['fm'],
-    ['karplus'],
     ['drums-machine'],
     ['westcoast'],
   ])('getEngine(%s) returns a registered instance', (id) => {
@@ -39,7 +37,6 @@ describe('engine registry after side-effect imports', () => {
     ['subtractive'],
     ['wavetable'],
     ['fm'],
-    ['karplus'],
     ['westcoast'],
   ])('createEngineInstance(%s) produces a fresh instance', (id) => {
     const inst = createEngineInstance(id);

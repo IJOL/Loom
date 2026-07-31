@@ -4,7 +4,7 @@
 //
 // That mirror is the ONLY vehicle by which a knob value reaches a save, and a
 // builder that forgot it threw the edit away silently: engine-param-grid.ts
-// (fm / wavetable / karplus / westcoast / tb303) and the hand-rolled VOICES knob
+// (fm / wavetable / westcoast / tb303) and the hand-rolled VOICES knob
 // both wrote only to the engine, so those tweaks vanished on reload. Routing
 // every UI builder through one seam means no future control can forget.
 //

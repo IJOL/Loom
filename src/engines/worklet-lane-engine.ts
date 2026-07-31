@@ -407,7 +407,7 @@ export class WorkletLaneEngine implements SynthEngine {
 
     // Per-engine knob grid. Subtractive's osc/filter/amp/master knobs are mounted
     // separately into fixed page sections by knob-mounting.mountSubtractiveLaneKnobs;
-    // every OTHER worklet engine (fm/wavetable/karplus/westcoast/tb303) renders a
+    // every OTHER worklet engine (fm/wavetable/westcoast/tb303) renders a
     // generic grouped grid here from its param spec — grouped params (e.g. FM's
     // OP1..OP4) become one labelled row each; ungrouped params share the top row.
     if (this.id !== 'subtractive') {

@@ -13,7 +13,7 @@
 //     how the two drifted apart on units, step and index clamping.
 // Every value write goes through commitParam (engine-param-commit.ts) so the
 // edit reaches BOTH the engine and lane.engineState.params — the grid used to
-// call setBaseValue directly, which is why an fm/wavetable/karplus/westcoast/
+// call setBaseValue directly, which is why an fm/wavetable/westcoast/
 // tb303 knob was thrown away on save.
 
 import { html, render, nothing } from 'lit-html';
@@ -61,7 +61,7 @@ function buildControl(
 
   // Grouped: only a discrete param explicitly opting into 'dropdown' renders as
   // a <select> (e.g. FM's Algorithm); every other discrete param renders as a
-  // knob, keeping wavetable/westcoast/karplus/tb303's osc/wave/env selectors
+  // knob, keeping wavetable/westcoast/tb303's osc/wave/env selectors
   // visually unchanged. Flat: every discrete param is a select control (a radio
   // strip up to 4 options), which is what a drum WAVE or a sampler LOOP is.
   if (discrete && (flat || spec.selectStyle === 'dropdown')) {

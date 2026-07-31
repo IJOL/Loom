@@ -12,12 +12,12 @@
 //     × master
 //
 // To rebalance: change a number HERE (engine/category) or set `output.trim` in a
-// preset's `params` — read at voice spawn by each renderer (e.g. karplus/subtractive
+// preset's `params` — read at voice spawn by each renderer (e.g. subtractive
 // `* param(p,'output.trim',1)`). Nothing else should hardcode an output trim.
 
 /** Per-engine output trim — balance BETWEEN synth engines. These are the historical
  *  per-voice output factors that used to live hardcoded in each renderer. They bake
- *  in each engine's voicing (e.g. FM sums 4 carriers → 0.25; Karplus is peak-
+ *  in each engine's voicing (e.g. FM sums 4 carriers → 0.25; a plucked-string
  *  normalized to 0.8 headroom). Tune these to make one engine sit with the others. */
 export const ENGINE_TRIM: Record<string, number> = {
   tb303: 0.45, // raised from 0.3 (×1.5): after the synth-0.5 rebalance the TB-303
@@ -36,16 +36,17 @@ export const ENGINE_TRIM: Record<string, number> = {
              // +9.3 dB at a tenth of full scale, and ×28 (+29 dB) at MIDI velocity 1,
              // the softest note a clip can carry. (Measured values run ~0.02 dB above
              // those, since the trims are stored rounded to three decimals.) That lift
-             // is the point (a soft note was a third too quiet on fm and karplus, and
-             // MIDI-import passages went missing), but it is a change, not a
+             // is the point (a soft note was a third too quiet on the two engines
+             // that lost the curve, and MIDI-import passages went missing —
+             // the other was the plucked string, now a plugin), but it is a change, not a
              // restoration, and only v=1.0 is where it was. Pinned at each of those
              // velocities in gain-staging-velocity.test.ts.
   wavetable: 0.6,
   westcoast: 0.5,
-  // karplus is NOT here any more: it ships as a plugin, and its balance lives in
-  // its manifest as `outputTrim` (plugins/karplus/plugin.json). The host reads it
-  // through plugin-capabilities.pluginSynthTrim and multiplies it in, so there is
-  // still exactly one owner of the number — just no longer this table.
+  // Only BUILT-IN engines belong here. A plugin engine declares its balance in
+  // its own manifest as `outputTrim`, which the host reads through
+  // plugin-capabilities.pluginSynthTrim and multiplies in at the sum point — so
+  // there is still exactly one owner of the number, just not this table.
 };
 
 /** Per-category gain — the global balance BETWEEN families. `drum` carries what
@@ -58,7 +59,7 @@ export const ENGINE_TRIM: Record<string, number> = {
  *
  *  synth raised 0.5 → 1.2 (2026-06-30): the old 0.5 (halved for that drum-heavy
  *  mix) left melodic-led songs far too quiet — a real MIDI import (Untitled.mid,
- *  mostly karplus/guitars) measured its synth lanes at ~-26 dBFS (VU barely off the
+ *  mostly plucked guitars) measured its synth lanes at ~-26 dBFS (VU barely off the
  *  floor) while the master had ~13 dB of headroom. 1.2 lifts every synth engine
  *  ~+7.6 dB; inter-engine balance (ENGINE_TRIM) and per-preset balance (output.trim)
  *  are unchanged since they scale together. */
