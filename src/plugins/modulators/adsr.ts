@@ -2,6 +2,8 @@
 import { ADSRVoice } from '../../modulation/adsr-voice';
 import { makeDefaultADSR } from '../../modulation/types';
 import type { ModulatorInstance, PluginFactory } from '../types';
+import { registerModulator } from '../../modulation/modulator-registry';
+import { adsrConfigTemplate } from '../../modulation/mod-config-templates';
 
 export const adsrPlugin: PluginFactory = {
   kind: 'modulator',
@@ -27,3 +29,14 @@ export const adsrPlugin: PluginFactory = {
     };
   },
 };
+
+registerModulator({
+  id: 'adsr',
+  name: 'ADSR',
+  driver: 'gate',
+  scopes: ['per-voice'],
+  idPrefix: 'adsr',
+  defaultState: (id) => makeDefaultADSR(id),
+  configTemplate: (mod, ctx) => adsrConfigTemplate(mod, ctx),
+  createVoice: (ctx, { state }) => new ADSRVoice(ctx, state),
+});

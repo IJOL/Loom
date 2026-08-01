@@ -2,6 +2,8 @@
 import { LFOVoice } from '../../modulation/lfo-voice';
 import { makeDefaultLFO } from '../../modulation/types';
 import type { ModulatorInstance, PluginFactory } from '../types';
+import { registerModulator } from '../../modulation/modulator-registry';
+import { lfoConfigTemplate } from '../../modulation/mod-config-templates';
 
 export const lfoPlugin: PluginFactory = {
   kind: 'modulator',
@@ -27,3 +29,14 @@ export const lfoPlugin: PluginFactory = {
     };
   },
 };
+
+registerModulator({
+  id: 'lfo',
+  name: 'LFO',
+  driver: 'time',
+  scopes: ['shared', 'per-voice'],
+  idPrefix: 'lfo',
+  defaultState: (id) => makeDefaultLFO(id),
+  configTemplate: (mod, ctx) => lfoConfigTemplate(mod, ctx),
+  createVoice: (ctx, { state, bpm }) => new LFOVoice(ctx, state, bpm),
+});
