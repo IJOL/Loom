@@ -30,7 +30,7 @@ const ALGO_OPTIONS = ALGORITHMS.map((a, i) => ({ value: String(i), label: `${a.i
 
 // Helper to expand the 7 op params per operator.
 function opParamSpecs(n: number, defaults: { ratio: number; level: number }): EngineParamSpec[] {
-  const g = `OP${n}`;
+  const g = `op${n}`;
   return [
     { id: `op${n}.ratio`,   label: `Op${n} Ratio`, kind: 'continuous', min: 0.1, max: 16, default: defaults.ratio, curve: 'exponential', group: g },
     { id: `op${n}.detune`,  label: `Op${n} Det`,   kind: 'continuous', min: -50, max: 50, default: 0, unit: '¢', group: g },
@@ -43,7 +43,11 @@ function opParamSpecs(n: number, defaults: { ratio: number; level: number }): En
 }
 
 // Unified-param schema. Operator ids are 1-indexed (op1..op4), matching the UI.
-const FM_PARAMS: EngineParamSpec[] = [
+// algorithm/feedback/amp.mix have no dot-prefix of their own — they are global
+// controls (which routing, how much op4 feeds back into itself, the final
+// output mix), not an operator's parameter, so they stay in the leading
+// ungrouped row rather than being forced into a section.
+export const FM_PARAMS: EngineParamSpec[] = [
   { id: 'algorithm', label: 'Algorithm', kind: 'discrete', min: 0, max: ALGO_OPTIONS.length - 1, default: 2, options: ALGO_OPTIONS, selectStyle: 'dropdown' },
   { id: 'feedback',  label: 'FB (op4)', kind: 'continuous', min: 0, max: 1, default: 0 },
   ...opParamSpecs(1, { ratio: 1, level: 0.9 }),
@@ -54,7 +58,14 @@ const FM_PARAMS: EngineParamSpec[] = [
   { id: 'poly.voices', label: 'Voices',   kind: 'continuous', min: 1, max: 16, default: 6, group: 'poly' },
 ];
 
-const FM_GROUPS: EngineParamGroup[] = [{ id: 'poly', title: 'POLY' }];
+// Four operators, two per row, instead of stacking four deep.
+export const FM_GROUPS: EngineParamGroup[] = [
+  { id: 'op1', title: 'OP 1', row: 0, color: 'var(--knob-cyan)' },
+  { id: 'op2', title: 'OP 2', row: 0, color: 'var(--knob-yellow)' },
+  { id: 'op3', title: 'OP 3', row: 1, color: 'var(--knob-blue)' },
+  { id: 'op4', title: 'OP 4', row: 1, color: 'var(--knob-purple)' },
+  { id: 'poly', title: 'POLY' },
+];
 
 /** A FUNCTION, not a computed constant — see SUBTRACTIVE_DEFAULT_MODULATORS
  *  (subtractive.ts) for why: this file's own registerEngine(...) below runs at
