@@ -3,6 +3,7 @@ import {
   registerPlugin, getPlugin, listPlugins, createInstance, _resetRegistry,
 } from './registry';
 import type { PluginFactory } from './types';
+import type { ModulatorState } from '../modulation/types';
 
 function engine(id: string): PluginFactory {
   return {
@@ -24,6 +25,23 @@ function fx(id: string): PluginFactory {
       input: {} as any, output: {} as any,
       getAudioParams: () => new Map(), getBaseValue: () => 0, setBaseValue: () => {},
       applyPreset: () => {}, dispose: () => {},
+    }),
+  };
+}
+
+// Reads state.rateHz through the closure captured at create() time — the
+// point of the {state, bpm} SPI is that this closure sees a LIVE reference,
+// not a value snapshot, so an edit made after create() still reaches it.
+function modulator(id: string): PluginFactory {
+  return {
+    kind: 'modulator',
+    manifest: { id, name: id, kind: 'modulator', version: '1.0.0', params: [], presets: [] },
+    create: (_ctx, opts) => ({
+      output: {} as AudioNode,
+      getAudioParams: () => new Map(),
+      getBaseValue: () => opts.state.rateHz ?? 0, setBaseValue: () => {},
+      applyPreset: () => {},
+      dispose: () => {},
     }),
   };
 }
@@ -56,5 +74,20 @@ describe('plugin registry', () => {
 
   it('createInstance returns undefined for unknown id', () => {
     expect(createInstance('engine', 'nope', {} as any, {} as any)).toBeUndefined();
+  });
+
+  it('hands a modulator plugin its live state, so an edit after create() still reaches it', () => {
+    // With the old create(ctx, bpm) SPI a modulator plugin could not be handed
+    // a state object at all — only a bpm number — so any modulator other than
+    // the two built-ins (which bypassed the SPI entirely) came out mute.
+    registerPlugin(modulator('probe'));
+    const state: ModulatorState = {
+      id: 'probe1', kind: 'probe', enabled: true, connections: [], scope: 'shared', rateHz: 2,
+    };
+    const inst = createInstance('modulator', 'probe', {} as AudioContext, { state, bpm: () => 120 });
+    expect(inst).toBeDefined();
+
+    state.rateHz = 8;
+    expect(inst!.getBaseValue('rateHz')).toBe(8);
   });
 });

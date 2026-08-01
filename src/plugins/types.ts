@@ -82,5 +82,5 @@ export type PluginFactory =
   | { kind: 'fx';        manifest: PluginManifest;
       create(ctx: AudioContext): FxInstance }
   | { kind: 'modulator'; manifest: PluginManifest;
-      create(ctx: AudioContext, bpm: number): ModulatorInstance }
+      create(ctx: AudioContext, opts: { state: ModulatorState; bpm: () => number }): ModulatorInstance }
   | NoteFxFactory;

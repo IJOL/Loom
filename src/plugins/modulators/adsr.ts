@@ -4,7 +4,6 @@ import { ADSRVoice } from '../../modulation/adsr-voice';
 import { createKnob } from '../../core/knob';
 import { attachKnobUndo } from '../../save/history-wiring';
 import type { ModulatorState } from '../../modulation/types';
-import type { ModulatorInstance, PluginFactory } from '../types';
 import { registerModulator } from '../../modulation/modulator-registry';
 import { type PanelCtx, sync } from '../../modulation/mod-ui-shared';
 
@@ -18,31 +17,6 @@ export function makeDefaultADSR(id: string): ModulatorState {
     scope: 'per-voice',
   };
 }
-
-export const adsrPlugin: PluginFactory = {
-  kind: 'modulator',
-  manifest: {
-    id: 'adsr',
-    name: 'ADSR',
-    kind: 'modulator',
-    version: '1.0.0',
-    params: [],
-    presets: [],
-  },
-  create(ctx, _bpm): ModulatorInstance {
-    const state = makeDefaultADSR('adsr-tmp');
-    const voice = new ADSRVoice(ctx, state);
-    return {
-      output: voice.output,
-      getAudioParams: () => new Map(),
-      getBaseValue: () => 0, setBaseValue: () => {},
-      applyPreset: () => {},
-      trigger: (t, o) => voice.trigger(t, o),
-      release: (t)    => voice.release(t),
-      dispose: ()     => voice.dispose(),
-    };
-  },
-};
 
 // The per-modulator config row: A/D/S/R. Knobs are built once and held in the
 // panel's ControlCache; the template only interpolates their DOM nodes.
