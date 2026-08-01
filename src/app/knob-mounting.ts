@@ -36,9 +36,8 @@ export interface KnobMounter {
 
 function pageForLane(laneId: string): string {
   // Map canonical lane ids to the corresponding `data-page` attribute.
-  // Bass (LANE_ID_BASS='tb-303-1') -> '303'; drums (LANE_ID_DRUMS='drums-1') -> 'drums';
-  // every other lane (subtractive-1, subtractive-2, …) -> 'poly'.
-  if (laneId === 'tb-303-1') return '303';
+  // Drums (LANE_ID_DRUMS='drums-1') -> 'drums'; everything else -> 'poly',
+  // INCLUDING the bass: the TB-303 no longer has a page of its own.
   if (laneId === 'drums-1')  return 'drums';
   return 'poly';
 }

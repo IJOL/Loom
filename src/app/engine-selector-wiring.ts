@@ -1,15 +1,14 @@
-// The two engine selectors, and the two deps bundles that hang off them.
+// The engine selector, and the deps bundles that hang off it.
 //
 // The cohesion is "which engine is the user editing, and what has to be re-mounted
-// when that answer changes". Three things answer it together:
+// when that answer changes". Two things answer it together:
 //
-//  1. The GENERIC selector (#engine-select on the poly page) swaps the active
-//     lane's engine and, through rebuildEngineParamUI, decides which param UI is
-//     on screen. It is the owner of the remount hooks.
-//  2. The 303 PAGE selector (#engine-select-303) is the same swap from the other
-//     page, differing only in which lane it means (sessionHost.activeEditLane
-//     rather than the engine host's active lane) and in already being undoable.
-//  3. The poly/preset deps and the synth-editor routing deps are the other half
+//  1. The selector (#engine-select on the poly page) swaps the active lane's
+//     engine and, through rebuildEngineParamUI, decides which param UI is on
+//     screen. It is the owner of the remount hooks. There used to be a SECOND
+//     one (#engine-select-303) doing the same swap from the TB-303's own page,
+//     differing only in which lane it meant; that page is gone and so is it.
+//  2. The poly/preset deps and the synth-editor routing deps are the other half
 //     of the same remount: when the editor re-points at a lane, the subtractive
 //     section knobs have to be re-mounted UNDER THAT LANE'S ID or the LFO/ADSR
 //     destination dropdown comes up empty. That is the same failure the
@@ -42,7 +41,7 @@ import type { HistoryDeps } from '../save/history-wiring';
 import type { SynthEngine } from '../engines/engine-types';
 import type { SessionHost } from '../session/session-host';
 import {
-  wireEngineSelector, wireEngineSelector303, rebuildEngineParamUI,
+  wireEngineSelector, rebuildEngineParamUI,
   type EngineSelectorUIDeps,
 } from '../engines/engine-selector-ui';
 import { swapLaneEngineFlow, type EngineSwapDeps } from './engine-swap';
@@ -50,7 +49,6 @@ import { refreshPolyPresetSelect, type PolySynthPresetsDeps } from '../polysynth
 
 export interface EngineSelectorWiringDeps {
   engineSel: HTMLSelectElement;
-  engineSel303: HTMLSelectElement;
   /** Engine id the generic selector is seeded with at boot ('subtractive'). */
   initialEngineId: string;
   /** The lane the ENGINE HOST considers active (laneHost.state.activeLaneId).
@@ -90,7 +88,7 @@ export interface EngineSelectorWiring {
 
 export function wireEngineSelectors(deps: EngineSelectorWiringDeps): EngineSelectorWiring {
   const {
-    engineSel, engineSel303, initialEngineId, getActiveEngineLaneId, getLaneEngineId,
+    engineSel, initialEngineId, getActiveEngineLaneId, getLaneEngineId,
     automationRegistry, registerKnob, populateAutoParamSelect,
     mountSubtractiveLaneKnobs, mountLaneFxPanel, getHistoryDeps,
     engineSwapDeps, onEngineChangeUndoable, sessionHost,
@@ -116,12 +114,6 @@ export function wireEngineSelectors(deps: EngineSelectorWiringDeps): EngineSelec
     onEngineChange: (laneId, newId) => { swapLaneEngineFlow(engineSwapDeps, laneId, newId); },
   };
   wireEngineSelector(engineSelectorDeps, initialEngineId);
-
-  wireEngineSelector303({
-    engineSel303,
-    getActiveLaneId: () => sessionHost.activeEditLane,
-    onEngineChange: onEngineChangeUndoable,
-  });
 
   const polySynthPresetsDeps: PolySynthPresetsDeps = {
     getActiveEngineLaneId: () => getActiveEngineLaneId(),

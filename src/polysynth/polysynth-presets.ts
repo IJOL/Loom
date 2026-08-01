@@ -149,86 +149,11 @@ const pagePresetName = new Map<string, string>();
  *  lanes of the same engine type share the same static select element. */
 const pageSelectActiveLane = new Map<string, { laneId: string }>();
 
-/** Populate the preset <select> identified by `selectId` with presets for
- *  the given engineId. Adds a leading "(custom — no preset)" option, then
- *  a Factory optgroup. */
-export function populateEnginePresetSelectById(
-  selectId: string,
-  engineId: string,
-  laneId: string,
-): void {
-  const sel = document.getElementById(selectId) as HTMLSelectElement | null;
-  if (!sel) return;
-
-  // Update the mutable active-lane holder so the pre-wired listener targets
-  // the newly activated lane.
-  let holder = pageSelectActiveLane.get(selectId);
-  if (!holder) {
-    holder = { laneId };
-    pageSelectActiveLane.set(selectId, holder);
-  } else {
-    holder.laneId = laneId;
-  }
-
-  const presets = _deps?.getLaneEngineInstance(laneId)?.presets ?? [];
-  if (presets.length === 0) {
-    // Custom-only rebuild; the browser resets the selection to that first
-    // option, matching the old wipe-and-return.
-    renderInto(sel, html`${customOption()}`);
-    return;
-  }
-
-  renderInto(sel, html`${customOption()}${presetGroup(
-    'Factory', presets.map((p) => [`engine:${p.name}`, p.name] as [string, string]),
-  )}`);
-
-  // Restore previous selection if any.
-  const prev = pagePresetName.get(laneId);
-  if (prev) sel.value = prev;
-  else sel.value = '__custom__';
-}
-
-/** Wire the change + Load button listeners for a per-page preset select.
- *  Safe to call multiple times — guards against double-wiring with a data
- *  attribute on the element. The listener reads from the shared active-lane
- *  holder (set by populateEnginePresetSelectById) so it always applies to
- *  the currently displayed lane even if two lanes share the same element. */
-export function wireEnginePresetSelectById(
-  selectId: string,
-  loadBtnId: string,
-): void {
-  const sel = document.getElementById(selectId) as HTMLSelectElement | null;
-  if (!sel) return;
-  // Guard: only wire the element once across all lane activations.
-  if (sel.dataset.presetWired === '1') return;
-  sel.dataset.presetWired = '1';
-
-  const applySelected = () => {
-    const holder = pageSelectActiveLane.get(selectId);
-    if (!holder) return;
-    const activeLaneId = holder.laneId;
-    const val = sel.value;
-    if (!val || val === '__custom__') return;
-    if (val.startsWith('engine:')) {
-      const name = val.slice('engine:'.length);
-      applyEnginePresetForLane(name, activeLaneId);
-      pagePresetName.set(activeLaneId, val);
-    }
-  };
-
-  sel.addEventListener('change', () => {
-    if (_deps?.historyDeps) withUndo(_deps.historyDeps, applySelected);
-    else applySelected();
-  });
-
-  const loadBtn = document.getElementById(loadBtnId) as HTMLButtonElement | null;
-  if (loadBtn) {
-    loadBtn.addEventListener('click', () => {
-      if (_deps?.historyDeps) withUndo(_deps.historyDeps, applySelected);
-      else applySelected();
-    });
-  }
-}
+// `populateEnginePresetSelectById` and `wireEnginePresetSelectById` lived here.
+// Their ONLY caller was mountBassPresetSelect — the TB-303's own page: a second
+// preset dropdown, with its own ids and its own wiring, doing the job
+// #poly-preset-select already does for every other melodic lane. That page is
+// gone, and they went with it.
 
 /** Forget a lane's preset binding and show "(custom — no preset)" on every
  *  select currently displaying that lane. Called after a dice roll: the sound
@@ -282,13 +207,6 @@ export function refreshEnginePresetSelectById(selectId: string, laneId: string):
   if (!sel) return;
   const prev = pagePresetName.get(laneId);
   sel.value = prev ?? '__custom__';
-}
-
-/** Called by injectEngineModulatorPanel when the 303 page is activated for
- *  a TB-303 lane. Populates + wires (on first visit) the bass preset select. */
-export function mountBassPresetSelect(laneId: string): void {
-  populateEnginePresetSelectById('bass-preset-select', 'tb303', laneId);
-  wireEnginePresetSelectById('bass-preset-select', 'bass-preset-load');
 }
 
 /** Called by injectEngineModulatorPanel when the drums page is activated.

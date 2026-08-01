@@ -132,28 +132,10 @@ export function refreshMelodicEngineOptions(sel: HTMLSelectElement, currentEngin
   renderMelodicOptions(sel, currentEngineId);
 }
 
-export interface EngineSelector303Deps {
-  engineSel303: HTMLSelectElement;
-  /** The lane currently being edited (sessionHost.activeEditLane). */
-  getActiveLaneId: () => string | null;
-  /** Wrap-in-undo swap entry point. Receives the lane id + chosen engine id. */
-  onEngineChange: (laneId: string, newEngineId: string) => void;
-}
-
-/** Populate a <select> with the 5 melodic engines (manifest labels). */
-export function populateEngineSelect303(sel: HTMLSelectElement, currentEngineId: string): void {
-  renderMelodicOptions(sel, currentEngineId);
-}
-
-/** Wire the 303-page engine selector: a change swaps the engine of the lane
- *  currently in edit. */
-export function wireEngineSelector303(deps: EngineSelector303Deps): void {
-  populateEngineSelect303(deps.engineSel303, 'tb303');
-  deps.engineSel303.addEventListener('change', () => {
-    const laneId = deps.getActiveLaneId();
-    if (laneId) deps.onEngineChange(laneId, deps.engineSel303.value);
-  });
-}
+// There is no second engine selector. `wireEngineSelector303` lived here and did
+// the same swap as the generic one, differing only in which lane it meant —
+// because the TB-303 had a page of its own. That page is gone, so the bass lane
+// is swapped by `#engine-select` like every other melodic lane.
 
 export function wireEngineSelector(deps: EngineSelectorUIDeps, initialEngineId: string): void {
   _deps = deps;

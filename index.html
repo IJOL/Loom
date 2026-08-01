@@ -22,13 +22,9 @@
       #pager,
       label:has(> #bars),
       .vert-divider,
-      #bass-tracks,
       #drum-tracks,
       #poly-tracks,
-      button.tab[data-tab="303"],
       button.tab[data-tab="drums"],
-      #bass-mode-step,
-      #bass-mode-piano,
       #poly-mode-step,
       #poly-mode-piano,
       .synth > p.hint {
@@ -161,28 +157,10 @@
         </div>
       </details>
 
-      <div class="page" data-page="303" hidden>
-        <div class="row poly-section">
-          <span class="section-label">ENGINE</span>
-          <span id="engine-lane-label-303" class="active-edit-label">303</span>
-          <select id="engine-select-303"></select>
-          <div class="vert-divider"></div>
-          <span class="section-label">PRESET</span>
-          <select id="bass-preset-select" class="engine-preset-select"></select>
-          <button class="rnd" id="bass-preset-load">Load</button>
-          <button class="rnd" id="bass-preset-save">Save As…</button>
-          <button class="rnd" id="bass-preset-delete">Delete</button>
-          <button class="rnd primary" id="bass-random-sound" title="Randomize sound (sets preset to Custom)">🎲 Sound</button>
-        </div>
-        <!-- Engine knobs (Wave / Cutoff / Resonance / Env / Decay / Accent) are
-             rendered per-lane by TB303Engine.buildParamUI into .engine-mod-host
-             (like FM/Karplus/Wavetable) — no static, tb-303-1-only knob row. -->
-        <div class="row poly-section">
-          <div class="section-label">FX</div>
-          <div class="lane-fx-knobs knob-row"></div>
-        </div>
-        <div id="bass-tracks" class="tracks"></div>
-      </div>
+      <!-- There is no `data-page="303"`. The TB-303 is edited in the poly page
+           like every other melodic engine: its knobs come from buildParamUI, so
+           the page it used to own was a strict subset of that one and bought
+           nothing but a second copy of every header control. -->
 
       <div class="page" data-page="drums" hidden>
         <div class="row poly-section">

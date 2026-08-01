@@ -11,7 +11,6 @@ import { getNoteFxChain } from '../notefx/notefx-registry';
 import { syncNoteFx } from './session-engine-state';
 import { laneEditorPanels } from './lane-editor-panels';
 import {
-  mountBassPresetSelect,
   mountDrumsPresetSelect,
   populatePolyPresetSelectForLane,
   refreshPolyPresetSelect,
@@ -29,10 +28,16 @@ export function showLaneEditor(self: SessionHost, laneId: string): void {
   // Selecting a lane always OPENS its editor — clear any collapse the chevron set.
   self.synthCollapsed = false;
 
+  // TWO pages, not three. The TB-303 used to route to a page of its own — a
+  // leftover from when Loom WAS a 303 + a drum machine. By the time it died that
+  // page was a strict subset of the poly one (same ENGINE/PRESET row with other
+  // ids, same FX row), because its only bespoke content — the static Wave /
+  // Cutoff / Resonance / Env / Decay / Accent row — had already moved into
+  // buildParamUI like every other engine. All it still bought us was a second
+  // copy of every header control, and the copies drifted: the dice on one page
+  // repainted the knobs while the dice on the other unregistered them.
   const targetTab =
-    lane?.engineId === 'tb303'          ? '303'   :
-    (lane?.engineId === 'drums-machine' || laneId.startsWith('drum:')) ? 'drums' :
-                                                                         'poly';
+    (lane?.engineId === 'drums-machine' || laneId.startsWith('drum:')) ? 'drums' : 'poly';
   // No lane-tabs row any more — the grid column header carries the active mark
   // (session-lane-header-active, applied by renderSessionGrid). Only the page
   // tab-strip buttons need toggling here.
@@ -171,7 +176,6 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
   }
   if (panels.preset) {
     if (targetTab === 'poly') { populatePolyPresetSelectForLane(laneId); refreshPolyPresetSelect(); }
-    if (targetTab === '303') mountBassPresetSelect(laneId);
     if (targetTab === 'drums') mountDrumsPresetSelect(laneId);
   }
 }

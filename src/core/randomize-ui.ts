@@ -1,7 +1,6 @@
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
 import { markPresetCustomForLane } from '../polysynth/polysynth-presets';
 import { commitEngineBaseValues } from '../engines/engine-param-commit';
-import { LANE_ID_BASS } from './lane-ids';
 import type { SynthEngine } from '../engines/engine-types';
 import type { SessionState } from '../session/session';
 
@@ -69,12 +68,15 @@ export function randomizeLane(laneId: string): void {
   if (_deps) randomizeLaneSound(_deps, laneId);
 }
 
-/** Wire the "🎲 Sound" buttons. Call once at boot, after initRandomize.
- *  Both buttons run the SAME action — that is the point of this module. */
+/** Wire the "🎲 Sound" button. Call once at boot, after initRandomize.
+ *
+ *  There is exactly ONE. There used to be three — one per page — because each
+ *  page hand-copied the PRESET row: the TB-303's (whose page is now gone, the
+ *  bass being edited in the common panel like every other melodic lane), the
+ *  drums one (deleted: a kit is a preset, not a bag of params) and this one. */
 export function wireRandomizeUI(): void {
-  const $btn = (id: string) => document.getElementById(id) as HTMLButtonElement | null;
-  $btn('bass-random-sound')?.addEventListener('click', () => randomizeLane(LANE_ID_BASS));
-  $btn('poly-randomize')?.addEventListener('click', () => {
+  const btn = document.getElementById('poly-randomize') as HTMLButtonElement | null;
+  btn?.addEventListener('click', () => {
     if (_deps) randomizeLane(_deps.getActiveLaneId());
   });
 }

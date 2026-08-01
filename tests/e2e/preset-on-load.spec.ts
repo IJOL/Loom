@@ -10,9 +10,10 @@ import { test, expect, type Page } from '@playwright/test';
 // has selectedIndex === -1 → text "" → the assertion fails, naming the engine.
 
 function selectIdFor(engine: string): string {
-  if (engine === 'tb303') return '#bass-preset-select';
   if (engine === 'drums-machine') return '#drums-preset-select';
-  return '#poly-preset-select'; // subtractive / fm / wavetable / karplus / sampler
+  // Every melodic engine, TB-303 included: the bass lost its own page, so it is
+  // edited — and its preset picked — in the common panel like the rest.
+  return '#poly-preset-select';
 }
 
 async function waitForBoot(page: Page): Promise<void> {

@@ -220,7 +220,6 @@ const volInput = $<HTMLInputElement>('volume');
 const meterSel = $<HTMLSelectElement>('meter');
 const vizCanvas    = $<HTMLCanvasElement>('viz');
 const engineSel    = $<HTMLSelectElement>('engine-select');
-const engineSel303 = $<HTMLSelectElement>('engine-select-303');
 
 // ── Populate selects ───────────────────────────────────────────────────────
 // Drum kit selector removed: presets dropdown (drums-machine.json) covers
@@ -407,7 +406,6 @@ const sessionHost = new SessionHost({
     if (active) {
       const engineId = sessionHost.state.lanes.find((l) => l.id === active)?.engineId;
       if (engineId === 'drums-machine') mountDrumMasterLaneKnobs(active);
-      if (engineId === 'tb303') engineSel303.value = 'tb303';
       mountLaneFxPanel(active);
     }
     // Mirror the active lane into the control store (guarded → no UI↔APC loop).
@@ -508,7 +506,6 @@ const engineSwapDeps: EngineSwapDeps = {
     // keep both engine selectors in sync with the swapped lane.
     sessionHost.showLaneEditor(laneId);
     engineSel.value = newId;
-    engineSel303.value = newId;
   },
   // saveSession is intentionally omitted: SessionHost has no autosave callback
   // wired here; the swap mutates SessionState (engineId/engineState), which is
@@ -614,7 +611,7 @@ document.addEventListener('keydown', (e) => {
 // (see src/app/engine-selector-wiring.ts). Runs HERE because the generic
 // selector must be wired after populateAutoParamSelectWrapper is set.
 const engineSelectors = wireEngineSelectors({
-  engineSel, engineSel303,
+  engineSel,
   initialEngineId: currentEngineId,
   getActiveEngineLaneId: () => _lehState.activeLaneId,
   getLaneEngineId,
@@ -644,7 +641,6 @@ const polySynthPresetsDeps = engineSelectors.polySynthPresetsDeps;
 // promise failing at the last inch. Preserves each select's current value.
 void pluginsReady.then(() => {
   refreshMelodicEngineOptions(engineSel, engineSel.value);
-  refreshMelodicEngineOptions(engineSel303, engineSel303.value);
 });
 
 // Phase G: deferred to sessionHost.onStateApplied (lane not allocated at boot).

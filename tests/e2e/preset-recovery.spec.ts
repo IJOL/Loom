@@ -57,7 +57,7 @@ const ENGINES: { engineId: string; label: string; selectId: string }[] = [
   { engineId: 'fm',            label: 'FM',          selectId: '#poly-preset-select' },
   { engineId: 'wavetable',     label: 'Wavetable',   selectId: '#poly-preset-select' },
   { engineId: 'karplus',       label: 'Karplus',     selectId: '#poly-preset-select' },
-  { engineId: 'tb303',         label: 'TB-303',      selectId: '#bass-preset-select' },
+  { engineId: 'tb303',         label: 'TB-303',      selectId: '#poly-preset-select' },
   { engineId: 'drums-machine', label: 'Drums',       selectId: '#drums-preset-select' },
 ];
 
