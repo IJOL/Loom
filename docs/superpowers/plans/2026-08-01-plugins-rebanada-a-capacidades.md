@@ -821,7 +821,182 @@ EOF
 
 ---
 
-### Task 6: Los consumidores dejan de comparar ids
+### Task 6: La naturaleza deja de derivarse de la UI
+
+**Files:**
+- Modify: \`packages/loom-plugin-sdk/src/manifest.ts\`
+- Modify: \`src/plugin-host/manifest-validate.ts\` + su test
+- Modify: \`src/plugins/capabilities.ts\` + su test
+- Modify: \`src/plugin-host/loom-api.ts\`
+- Modify: \`src/engines/audio.ts\`, \`src/engines/sampler.ts\`, \`src/engines/drums-engine.ts\`
+- Modify: \`src/engines/engine-types.ts\`, \`src/engines/registry.ts\`, \`src/engines/descriptor-engine.ts\`
+- Modify: \`src/session/clip-editors/clip-editor-router.ts\`
+- Modify: \`plugins/karplus/plugin.json\` + \`public/plugins/karplus/plugin.json\`
+
+**Por qué existe esta tarea.** Las tareas 1-5 shippearon \`clipEditor\`, y con él
+\`isAudioClip\` decidía **qué es** un clip preguntando **qué editor** quería el
+motor. Eso invierte la dependencia: el editor es presentación, la naturaleza es
+comportamiento. Un plugin podía volverse un canal de audio sólo por pedir un
+editor. Esta tarea lo corrige en el código ya commiteado.
+
+**La forma correcta es binaria y ya estaba en el código.** Dos tipos de pista:
+**notes** y **audio**. El Sampler es notes (sus clips contienen notas que
+direccionan pads o zonas); la batería es notes. \`pitches\`/\`pads\` son **dos
+estados del mismo editor de notas**, y \`editorOverride\` —un
+\`Map<clipId, 'piano-roll' | 'drum-grid'>\` cuyo tipo NO incluye \`'audio'\`— ya deja
+al usuario alternarlos por clip.
+
+**Interfaces:**
+- Consume: la puerta de la Task 2.
+- Produce: \`clipContentOf(id)\`, \`isAudioEngine(id)\`, \`defaultNoteViewOf(id)\`.
+
+- [ ] **Step 1: Write the failing tests**
+
+En \`src/plugins/capabilities.test.ts\`:
+
+\`\`\`ts
+it('an engine that asks for a waveform view is not an audio lane by that alone', () => {
+  __resetCapabilities();
+  // The whole point: a UI preference must never decide what a clip IS.
+  registerEngineCapabilities('note-engine', {
+    clipContent: 'notes', defaultNoteView: 'pads', shortLabel: 'n', outputTrim: 1,
+  });
+  expect(isAudioEngine('note-engine')).toBe(false);
+  expect(defaultNoteViewOf('note-engine')).toBe('pads');
+});
+
+it('an unknown engine is a notes lane showing pitches', () => {
+  __resetCapabilities();
+  expect(clipContentOf('nope')).toBe('notes');
+  expect(defaultNoteViewOf('nope')).toBe('pitches');
+  expect(isAudioEngine('nope')).toBe(false);
+});
+
+it('the sampler is a notes lane, like any other instrument', () => {
+  // It accepts dropped audio files, which is a DIFFERENT question; if the two
+  // were the same datum the sampler would be an audio channel.
+  expect(isAudioEngine('sampler')).toBe(false);
+  expect(acceptsAudioFile('sampler')).toBe(true);
+});
+\`\`\`
+
+- [ ] **Step 2: Run and watch them fail**
+
+\`NO_COLOR=1 npx vitest run src/plugins/capabilities.test.ts\`
+Esperado: FAIL — \`clipContentOf\`/\`isAudioEngine\`/\`defaultNoteViewOf\` no existen.
+
+- [ ] **Step 3: The manifest**
+
+En \`packages/loom-plugin-sdk/src/manifest.ts\`, dentro de \`EngineCapabilities\`,
+**sustituye** \`clipEditor\` por:
+
+\`\`\`ts
+  /** What a clip of this engine CONTAINS, and therefore what kind of lane it is.
+   *  Binary on purpose: 'notes' is any instrument — melodic, sampler or drum
+   *  machine, all of them addressing pitches or pads; 'audio' is a channel whose
+   *  clips ARE whole files. The host derives the editor from this. Never the
+   *  other way round: a UI preference must not decide what a clip is. */
+  clipContent: 'notes' | 'audio';
+  /** Which of the note editor's two views a clip opens in. Only meaningful when
+   *  clipContent is 'notes'. NOT a nature: the user flips between the two per
+   *  clip (see editorOverride in session-inspector.ts). Default: 'pitches'. */
+  defaultNoteView?: 'pitches' | 'pads';
+\`\`\`
+
+- [ ] **Step 4: The validator**
+
+En \`manifest-validate.ts\`, sustituye la comprobación de \`clipEditor\` por:
+
+\`\`\`ts
+  if (c.clipContent !== 'notes' && c.clipContent !== 'audio') {
+    return \`components[${i}].capabilities.clipContent must be notes|audio\`;
+  }
+  if (c.defaultNoteView !== undefined
+      && c.defaultNoteView !== 'pitches' && c.defaultNoteView !== 'pads') {
+    return \`components[${i}].capabilities.defaultNoteView must be pitches|pads\`;
+  }
+\`\`\`
+
+Actualiza los tests del validador que usaban \`clipEditor\`, incluido el que
+aceptaba \`clipEditor: 'audio'\` → ahora \`clipContent: 'audio'\`.
+
+- [ ] **Step 5: The door**
+
+En \`src/plugins/capabilities.ts\`, **sustituye** \`clipEditorFor\` por:
+
+\`\`\`ts
+export function clipContentOf(id: string): 'notes' | 'audio' {
+  return caps.get(id)?.clipContent ?? 'notes';
+}
+export function isAudioEngine(id: string): boolean {
+  return clipContentOf(id) === 'audio';
+}
+export function defaultNoteViewOf(id: string): 'pitches' | 'pads' {
+  return caps.get(id)?.defaultNoteView ?? 'pitches';
+}
+\`\`\`
+
+- [ ] **Step 6: The three in-tree engines and Karplus**
+
+- \`audio.ts\`: \`clipEditor: 'audio'\` → \`clipContent: 'audio'\` (sin \`defaultNoteView\`).
+- \`sampler.ts\`: \`clipEditor: 'piano-roll'\` → \`clipContent: 'notes'\`.
+- \`drums-engine.ts\`: \`clipEditor: 'drum-grid'\` → \`clipContent: 'notes', defaultNoteView: 'pads'\`.
+- Los dos \`plugin.json\` de Karplus: \`"clipEditor": "piano-roll"\` → \`"clipContent": "notes"\`.
+
+- [ ] **Step 7: Narrow \`editor\` back and derive it**
+
+La Task 4 ensanchó \`SynthEngine.editor\`/\`EngineDescriptor.editor\` a tres valores.
+Vuelven a **dos** (\`'piano-roll' | 'drum-grid'\`) y pasan a significar **la vista de
+notas por defecto**, derivada — no declarada:
+
+\`\`\`ts
+// loom-api.ts, en adoptComponent y adoptEngine
+editor: m.capabilities.defaultNoteView === 'pads' ? 'drum-grid' : 'piano-roll',
+\`\`\`
+
+Y en \`clip-editor-router.ts\`, \`isAudioClip\` pregunta por la naturaleza:
+
+\`\`\`ts
+export function isAudioClip(lane: SessionLane, clip: SessionClip): boolean {
+  return isAudioEngine(lane.engineId) && !!clip.sample && (clip.notes?.length ?? 0) === 0;
+}
+\`\`\`
+
+- [ ] **Step 8: Verify**
+
+\`NO_COLOR=1 npx vitest run src/plugins/ src/plugin-host/ src/session/clip-editors/\`,
+\`npx tsc --noEmit\`, \`npm run test:unit\`, \`npm run build\`, y
+\`grep -rn "clipEditor" src/ packages/ plugins/ public/plugins/\` → sin resultados.
+
+- [ ] **Step 9: Commit**
+
+\`\`\`bash
+git add -A
+git commit -F - <<'EOF'
+fix(plugins): a lane is notes or audio, and the editor derives from that
+
+clipEditor made the host decide what a clip IS by asking which editor the
+engine WANTED. That inverts the dependency: the editor is presentation, the
+nature is behaviour — and a plugin could become an audio channel just by asking
+for a waveform view. Same disease as comparing the id, only disguised.
+
+The right shape is binary and was already in the code: two kinds of lane, notes
+and audio. The sampler is notes, the drum machine is notes; only the audio
+channel is something else. pitches and pads are two views of the SAME note
+editor, and editorOverride — a Map<clipId, 'piano-roll' | 'drum-grid'> whose type
+does not include 'audio' — already lets the user flip between them per clip.
+
+So defaultNoteView is a starting view, not a nature, and accepts:['audio-file']
+survives untouched: it answers what you can DROP on a lane. The sampler accepts
+audio files and its clips contain notes.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+EOF
+\`\`\`
+
+---
+
+### Task 7: Los consumidores dejan de comparar ids
 
 **Files:**
 - Modify: `src/session/session-grid-templates.ts:130,152,304`
@@ -883,7 +1058,7 @@ import { clipEditorFor, acceptsNoteFx } from '../plugins/capabilities';
 export function laneEditorPanels(engineId: string): LaneEditorPanels {
   // An engine whose clips ARE audio files is not an instrument: no engine knobs,
   // no preset, no selector. Only its inserts.
-  const isAudio = clipEditorFor(engineId) === 'audio';
+  const isAudio = isAudioEngine(engineId);
   return {
     engineParams: !isAudio,
     noteFx: !isAudio && acceptsNoteFx(engineId),
@@ -896,7 +1071,7 @@ export function laneEditorPanels(engineId: string): LaneEditorPanels {
 
 `session-grid-templates.ts`:
 - `:130` → `const acceptsFileDrop = acceptsAudioFile(lane.engineId) && !!cb.onCellDropAudio;`
-- `:152` → `const isAudio = clipEditorFor(lane.engineId) === 'audio';`
+- `:152` → `const isAudio = isAudioEngine(lane.engineId);`
 - `:304` → `.filter((engine) => isListedInSelector(engine.id))`
 
 `session-host-audio-import.ts:80` →
@@ -910,14 +1085,25 @@ const chain = sample == null && acceptsNoteFx(engineId) ? getNoteFxChain(laneId)
 
 `session-inspector.ts`:
 - `:519` → `chordsBtn.hidden = exKind === 'beat' || !isHarmonic(lane!.engineId);`
-- `:536` → `(l) => isHarmonic(l.engineId) && clipEditorFor(l.engineId) === 'piano-roll',`
+- `:536` → `(l) => isHarmonic(l.engineId) && !isAudioEngine(l.engineId),`
 
-`engine-swap.ts:38` → **borrar la línea**, dejando este comentario en su lugar:
+`engine-swap.ts:38` → **NO se borra: se convierte en una pregunta a la puerta.**
+
+Esto cambió por la Task 6. El plan original decía borrarla, porque las
+comprobaciones de editor de las líneas 39-40 rechazaban un canal de audio cuando
+`editor` podía valer `'audio'`. Tras la Task 6 **`editor` sólo distingue las dos
+vistas de notas**, así que ya no lo rechazan y borrar la guarda dejaría
+intercambiable justo lo que no debe serlo:
 
 ```ts
-  // No id guard: an audio channel declares clipEditor:'audio', so the two editor
-  // checks below already reject it in both directions.
+  // An audio channel is not a swappable instrument, and an instrument cannot
+  // become one. Asked of the capability door, never of the engine's name.
+  if (isAudioEngine(lane.engineId) || isAudioEngine(newEngineId)) return false;
 ```
+
+Su test comprueba el rechazo **sin nombrar ningún id**: registra un motor de
+prueba con `clipContent: 'audio'` y verifica que no se puede intercambiar en
+ninguna de las dos direcciones.
 
 - [ ] **Step 4: Green**
 
@@ -951,7 +1137,7 @@ EOF
 
 ---
 
-### Task 7: Karplus pasa a la forma de componentes
+### Task 8: Karplus pasa a la forma de componentes
 
 **Files:**
 - Modify: `plugins/karplus/plugin.json`, `plugins/karplus/main.ts`
@@ -1028,7 +1214,7 @@ EOF
 
 ---
 
-### Task 8: El plugin sonda de canal de audio — la prueba de aceptación
+### Task 9: El plugin sonda de canal de audio — la prueba de aceptación
 
 **Files:**
 - Create: `plugins/audio-probe/plugin.json`, `plugins/audio-probe/main.ts`

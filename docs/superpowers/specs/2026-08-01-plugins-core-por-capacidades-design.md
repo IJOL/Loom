@@ -185,7 +185,8 @@ pregunta primero "¿esto es un plugin?" — el reflejo exacto que estamos quitan
 
 | capacidad | sustituye a |
 |---|---|
-| `clipEditor: 'piano-roll' \| 'drum-grid' \| 'audio'` | ya existe y es obligatoria, pero [loom-api.ts:30](../../../src/plugin-host/loom-api.ts) convierte `'audio'` en `'piano-roll'` en silencio |
+| `clipContent: 'notes' \| 'audio'` | la NATURALEZA de la pista, binaria. El host deriva de ella el editor |
+| `defaultNoteView: 'pitches' \| 'pads'` | sólo si `clipContent` es `notes`: la vista inicial. Por defecto `pitches` |
 | `editorPage: 'poly' \| '303' \| 'drums'` | `session-host-lane-editor.ts:33-34`, `knob-mounting.ts:132`, `main.ts:409-410` |
 | `accepts: ['audio-file']` | `=== 'sampler' \|\| === 'audio'` en `session-grid-templates.ts:130`, `session-host-audio-import.ts:80` |
 | `acceptsNoteFx: boolean` | `lane-editor-panels.ts:19`, `trigger-dispatch.ts:48` |
@@ -220,6 +221,36 @@ fichero.
 `clipEditor` y `editorPage` **no** hacen la UI extensible: el plugin elige de un
 catálogo cerrado que publica el host. Es la decisión ya tomada en el trozo 1 — la
 UI grande no es enchufable, sólo se elige por capacidad en vez de por nombre.
+
+#### La naturaleza no se deriva de la UI (corrección de Nacho, 2026-08-01)
+
+El primer diseño tenía `clipEditor: 'piano-roll' | 'drum-grid' | 'audio'` y decidía
+**qué es** un clip mirando **qué editor** pedía el motor. Eso invierte la
+dependencia: el editor es una elección de presentación y la naturaleza es un hecho
+de comportamiento. Derivar el hecho de la elección de UI es la misma enfermedad
+que comparar el id, sólo que disimulada — un plugin podía volverse un canal de
+audio con sólo pedir un editor.
+
+Un intento intermedio añadía un campo `plays` junto a `clipEditor`. Peor: dos
+campos que siempre coincidían, y la cadena `audio` escrita en tres sitios del
+manifiesto.
+
+**La forma final es binaria, y ya estaba en el código.** Hay dos tipos de pista:
+**notes** y **audio**. El Sampler es notes — sus clips contienen notas que
+direccionan pads o zonas. La batería es notes. Sólo el canal de audio es otra
+cosa: sus clips **son** ficheros.
+
+`pitches` y `pads` **no son naturalezas, son dos estados del mismo editor de
+notas**, intercambiables por clip. Eso no hay que inventarlo: `editorOverride` en
+[session-inspector.ts:930](../../../src/session/session-inspector.ts) es
+literalmente un `Map<clipId, 'piano-roll' | 'drum-grid'>` que el usuario cambia
+desde la UI — y su tipo **no incluye `'audio'`**. El código ya traza la frontera
+exactamente donde está. `defaultNoteView` sólo dice con cuál de las dos vistas se
+abre.
+
+`accepts: ['audio-file']` sobrevive y no es duplicación: responde a otra pregunta
+— qué puedes **soltar encima**. El Sampler acepta ficheros de audio y sus clips
+contienen notas; si fueran el mismo dato, el Sampler sería un canal de audio.
 
 ### Roles
 
