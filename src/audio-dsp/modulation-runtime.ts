@@ -24,7 +24,7 @@
 // which gates an envelope per note (see ModEnvHost). That road is unchanged by
 // this file's kernel lookup — ADSR has no 'time'-driver kernel to look up.
 import type { ModTarget } from './types';
-import { getModulatorKernel } from './modulator-kernels';
+import { getModulatorKernel, type ModulatorKernel } from './modulator-kernels';
 
 export interface ModLite {
   id: string;
@@ -75,20 +75,40 @@ function originFor(m: ModLite, o: PhaseOrigin): number {
   return 0;
 }
 
+/** One modulator paired with the kernel that renders it. Resolved once, in
+ *  setMods — NEVER per sample: VoiceManager calls offsetFor twenty times per
+ *  sample per voice, so a registry lookup inside those loops would run tens of
+ *  thousands of map probes a second on the audio thread. */
+interface ActiveMod {
+  m: ModLite;
+  kernel: ModulatorKernel;
+}
+
 export class ModulationRuntime {
   private mods: ModLite[] = [];
-  /** True when any enabled LFO needs a per-voice phase (SCOPE=voice or
-   *  TRIG=note). Lets the render loop keep the cheap once-per-sample shared path
-   *  when nothing asks for more. Recomputed on setMods, never per sample. */
+  /** The enabled modulators that have a kernel, paired with it. The three
+   *  per-sample loops iterate THIS, so they do no lookups and skip nothing:
+   *  disabled and kernel-less mods are already gone. */
+  private active: ActiveMod[] = [];
+  /** True when any enabled time-driven modulator needs a per-voice phase
+   *  (SCOPE=voice or TRIG=note). Lets the render loop keep the cheap
+   *  once-per-sample shared path when nothing asks for more. Recomputed on
+   *  setMods, never per sample. */
   private perVoicePhase = false;
   // sr is reserved for future per-sample phase accumulation (BPM sync); the
   // current free-rate implementation derives phase from absolute time directly.
   constructor(_sr: number) {}
   setMods(mods: ModLite[]): void {
     this.mods = mods;
-    this.perVoicePhase = mods.some(
-      (m) => m.enabled && getModulatorKernel(m.kind) !== undefined
-        && (m.scope === 'voice' || m.trigger === 'note'),
+    this.active = [];
+    for (const m of mods) {
+      if (!m.enabled) continue;
+      const kernel = getModulatorKernel(m.kind);
+      if (!kernel) continue;          // an unknown kind contributes nothing
+      this.active.push({ m, kernel });
+    }
+    this.perVoicePhase = this.active.some(
+      ({ m }) => m.scope === 'voice' || m.trigger === 'note',
     );
   }
 
@@ -108,10 +128,7 @@ export class ModulationRuntime {
    *  target's native units. */
   offsetFor(field: ModTarget, t: number, o: PhaseOrigin = SHARED_FREE): number {
     let sum = 0;
-    for (const m of this.mods) {
-      if (!m.enabled) continue;
-      const kernel = getModulatorKernel(m.kind);
-      if (!kernel) continue;
+    for (const { m, kernel } of this.active) {
       const depth = m.depthByParam[field as string];
       if (!depth) continue;
       sum += kernel.valueAt(m, t, originFor(m, o)) * depth;
@@ -126,10 +143,7 @@ export class ModulationRuntime {
    *  per-voice ADSR lands it adds its contribution here and the rings follow. */
   activeOffsets(t: number, o: PhaseOrigin = SHARED_FREE): Record<string, number> {
     const out: Record<string, number> = {};
-    for (const m of this.mods) {
-      if (!m.enabled) continue;
-      const kernel = getModulatorKernel(m.kind);
-      if (!kernel) continue;
+    for (const { m, kernel } of this.active) {
       const w = kernel.valueAt(m, t, originFor(m, o));
       for (const field in m.depthByParam) {
         const depth = m.depthByParam[field];
@@ -147,10 +161,7 @@ export class ModulationRuntime {
    *  the same path drives every engine's LFO modulation. */
   offsetsInto(out: Record<string, number>, t: number, o: PhaseOrigin = SHARED_FREE): void {
     for (const k in out) out[k] = 0;
-    for (const m of this.mods) {
-      if (!m.enabled) continue;
-      const kernel = getModulatorKernel(m.kind);
-      if (!kernel) continue;
+    for (const { m, kernel } of this.active) {
       const w = kernel.valueAt(m, t, originFor(m, o));
       for (const field in m.depthByParam) {
         const depth = m.depthByParam[field];
