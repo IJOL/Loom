@@ -191,7 +191,7 @@ pregunta primero "¿esto es un plugin?" — el reflejo exacto que estamos quitan
 | `accepts: ['audio-file']` | `=== 'sampler' \|\| === 'audio'` en `session-grid-templates.ts:130`, `session-host-audio-import.ts:80` |
 | `acceptsNoteFx: boolean` | `lane-editor-panels.ts:19`, `trigger-dispatch.ts:48` |
 | `listedInSelector: boolean` | `session-grid-templates.ts:304` |
-| `isRandomizable: boolean` | el dado "🎲 Sound". Por defecto `true`; lo niegan sampler, drums y audio. **Sólo se DECLARA en la rebanada A; conectar el botón es posterior** |
+| `isRandomizable: boolean` | el dado "🎲 Sound". La tienen los motores de notas melódicos; el sampler, la batería y el canal de audio no la tienen. **Sólo se DECLARA en la rebanada A; conectar el botón es posterior** |
 | `harmonic: boolean` | `session-inspector.ts:519,536` (botón de acordes y filtro de pistas) |
 | `slideOnOverlap: boolean` | `lane-scheduler.ts:228` (el 303 deja de ser un nombre en el scheduler) |
 | `shortLabel: string` | ya existe y aún convive con la cadena de seis `? :` de `session-host-util.ts:12-17` |

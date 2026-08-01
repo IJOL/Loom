@@ -1025,10 +1025,11 @@ hace nada**: `laneEditorPanels` sólo oculta la cabecera para audio.
 En `EngineCapabilities`:
 
 ```ts
-  /** Whether the "🎲 Sound" dice means anything for this engine. Notes lanes are
-   *  randomizable by default; the sampler and the drum machine are not (their
-   *  sound is a loaded kit or keymap, not a bag of rollable params), and neither
-   *  is an audio channel. Default: true. */
+  /** Whether the "🎲 Sound" dice means anything for this engine. A melodic
+   *  instrument has this: its sound is a bag of params the dice can roll. The
+   *  sampler and the drum machine do not — their sound is a loaded kit or
+   *  keymap, and there is nothing to roll. Neither does an audio channel.
+   *  Default: true, so an instrument that says nothing gets its dice. */
   isRandomizable?: boolean;
 ```
 
