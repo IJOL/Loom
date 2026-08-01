@@ -257,3 +257,43 @@ describe('buildEngineParamGrid mirrors into sessionState', () => {
     expect(paramsOf(state)!['filter.cutoff']).toBe(afterEdit);
   });
 });
+
+// ── Declared groups (Task 4): the grid now renders resolveParamRows' output
+// instead of bucketing by spec.group itself.
+describe('buildEngineParamGrid — declared groups', () => {
+  it('renders two declared groups on one row, divider between them', () => {
+    const parent = document.createElement('div');
+    const engine = stubEngine([cont('osc1.level', 'osc1'), cont('osc2.level', 'osc2')]);
+    buildEngineParamGrid(engine, ctx(), parent, {
+      groups: [{ id: 'osc1', title: 'OSC 1', row: 0 }, { id: 'osc2', title: 'OSC 2', row: 0 }],
+    });
+
+    const rows = parent.querySelectorAll('.poly-section');
+    expect(rows.length).toBe(1);
+    expect([...rows[0].querySelectorAll('.section-label')].map((e) => e.textContent))
+      .toEqual(['OSC 1', 'OSC 2']);
+    expect(rows[0].querySelectorAll('.vert-divider').length).toBe(1);
+  });
+
+  it('paints the group colour on its knobs, and a param colour still wins', () => {
+    const parent = document.createElement('div');
+    const engine = stubEngine([
+      cont('osc1.level', 'osc1'),
+      { ...cont('osc1.detune', 'osc1'), color: '#ff0000' },
+    ]);
+    buildEngineParamGrid(engine, ctx(), parent, { groups: [{ id: 'osc1', title: 'OSC 1', color: '#2ee0c0' }] });
+
+    const strokes = [...parent.querySelectorAll('.knob-value')].map((e) => (e as SVGElement).style.stroke);
+    expect(strokes[0]).toBe('#2ee0c0');
+    expect(strokes[1]).toBe('#ff0000');
+  });
+
+  it('does not draw a param owned by another surface', () => {
+    const parent = document.createElement('div');
+    buildEngineParamGrid(
+      stubEngine([cont('osc1.level', 'osc1'), { ...cont('amp.attack', 'amp'), drawnBy: 'modulators' }]),
+      ctx(), parent, { groups: [{ id: 'osc1', title: 'OSC 1' }, { id: 'amp', title: 'AMP' }] });
+
+    expect([...parent.querySelectorAll('.section-label')].map((e) => e.textContent)).toEqual(['OSC 1']);
+  });
+});
