@@ -17,6 +17,7 @@ import { withUndo, type HistoryDeps } from '../save/history-wiring';
 import { parseAutomationParamId } from '../automation/automation-apply';
 import { commitParamForLane } from '../engines/engine-param-commit';
 import type { DestinationRegistry } from '../automation/destination-registry';
+import { isAudioEngine } from '../plugins/capabilities';
 
 export interface LoomFacadeDeps {
   ctx: AudioContext;
@@ -138,13 +139,13 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
     if (sel && panel && !panel.hidden) {
       const lane = sessionHost.state.lanes.find((l) => l.id === sel.laneId);
       const clip = lane?.clips[sel.clipIdx];
-      if (lane && clip && lane.engineId !== 'audio' && !clip.sample)
+      if (lane && clip && !isAudioEngine(lane.engineId) && !clip.sample)
         return { laneId: lane.id, clip, isNew: false, slotIdx: sel.clipIdx, laneRef: lane };
       return null; // audio/sample clip open → not note-capturable
     }
     const laneId = activeLane.get();
     const lane = laneId ? sessionHost.state.lanes.find((l) => l.id === laneId) : null;
-    if (!lane || lane.engineId === 'audio') return null;
+    if (!lane || isAudioEngine(lane.engineId)) return null;
     let slot = lane.clips.findIndex((c) => c == null);
     if (slot < 0) slot = lane.clips.length;
     return { laneId: lane.id, clip: emptyClip(1), isNew: true, slotIdx: slot, laneRef: lane };

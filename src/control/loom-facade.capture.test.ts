@@ -15,6 +15,15 @@ import type { KnobHandle } from '../core/knob';
 import type { Sequencer } from '../core/sequencer';
 import type { TimeSignature } from '../core/meter';
 import type { HistoryDeps } from '../save/history-wiring';
+import { registerEngineCapabilities } from '../plugins/capabilities';
+
+// The whole point of this id: it is NOT 'audio', so any check that
+// pattern-matches on the literal engine id (instead of asking the capability
+// door, isAudioEngine()) would misclassify this lane as note-capturable.
+const PLUGIN_AUDIO_ENGINE_ID = 'test-plugin-audio-engine';
+registerEngineCapabilities(PLUGIN_AUDIO_ENGINE_ID, {
+  clipContent: 'audio', shortLabel: 'tpa', outputTrim: 1,
+});
 
 // createLoomFacade's resolveDestination() reads document.getElementById('session-inspector')
 // to test whether the inspector panel is shown. Vitest runs this file under
@@ -142,6 +151,39 @@ describe('loom-facade — loop-record capture', () => {
     f.startCapture('merge');
 
     expect(f.isCapturing()).toBe(false);
+    expect(launchSceneAt).not.toHaveBeenCalled();
+  });
+
+  it('(c2) open clip on a PLUGIN audio-channel lane (id != "audio"): canCapture() is false and startCapture is a no-op', () => {
+    // Deliberately NO `.sample` on this clip — that field alone already gates
+    // the inspector-open branch, so leaving it out isolates the engine-id
+    // check this test exists to cover (an audio-channel clip before a sample
+    // is loaded is still not note-capturable).
+    const audioClip: SessionClip = { gridResolution: '1/16',
+      id: 'clip-a', lengthBars: 1, notes: [], color: '#fff',
+    };
+    const lane: SessionLane = { inserts: [], id: 'aud', engineId: PLUGIN_AUDIO_ENGINE_ID, clips: [audioClip] };
+    panelHidden = false;
+    const { host, launchSceneAt } = makeHostStub({ lanes: [lane], selected: { laneId: 'aud', clipIdx: 0 } });
+    const f = createLoomFacade(makeDeps(host));
+
+    expect(f.canCapture()).toBe(false);
+    f.startCapture('merge');
+
+    expect(f.isCapturing()).toBe(false);
+    expect(launchSceneAt).not.toHaveBeenCalled();
+  });
+
+  it('(c3) a PLUGIN audio-channel lane (id != "audio") as the active lane with no inspector open: canCapture() is false', () => {
+    const lane: SessionLane = { inserts: [], id: 'aud', engineId: PLUGIN_AUDIO_ENGINE_ID, clips: [] };
+    const { host, launchSceneAt } = makeHostStub({ lanes: [lane] });
+    const f = createLoomFacade(makeDeps(host, { activeLaneId: 'aud' }));
+
+    expect(f.canCapture()).toBe(false);
+    f.startCapture('merge');
+
+    expect(f.isCapturing()).toBe(false);
+    expect(lane.clips[0] ?? null).toBeNull();
     expect(launchSceneAt).not.toHaveBeenCalled();
   });
 
