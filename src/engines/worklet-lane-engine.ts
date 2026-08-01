@@ -8,8 +8,11 @@
 //
 // Phase 1 scope: modulation (LFO/ADSR) moves in-worklet in Task 10, so
 // getAudioParams() returns an empty Map and buildParamUI() is a stub here.
-// Per-lane voice cap (poly.voices) maps to the worklet's maxVoices; mono/legato
-// (poly.mode/poly.retrig) are not yet modelled in the worklet renderer.
+// Per-lane voice cap (poly.voices) maps to the worklet's maxVoices. poly.mode
+// and poly.retrig were never modelled in the worklet renderer and are now
+// deleted from every engine's params — setBaseValue still accepts-and-ignores
+// either id so a pre-deletion save carrying them in engineState.params loads
+// without error.
 
 import type {
   SynthEngine, Voice, VoiceTriggerOptions, EngineUIContext, EnginePreset,
@@ -25,13 +28,10 @@ import { getCachedPresets } from '../presets/preset-loader';
 import { deriveSubtractiveEnvMods } from './subtractive';
 import { velNorm, resolveVelocity } from '../core/velocity-gain';
 import { fieldForParamId, makeDotIdMapper, toModLite } from './mod-lite';
-import { html, render } from 'lit-html';
 import { renderModulatorsPanel, type ModulationUIDeps } from '../modulation/modulation-ui';
 import { buildEngineParamGrid } from './engine-param-grid';
-import { commitParam } from './engine-param-commit';
 import { randomizeEngineParams } from './engine-randomize';
-import { createKnob, type KnobHandle } from '../core/knob';
-import { attachKnobUndo } from '../save/history-wiring';
+import type { KnobHandle } from '../core/knob';
 import { reapplyLaneModulations } from '../modulation/voice-mod-binding';
 import type { ChannelStrip } from '../core/fx';
 import {
@@ -238,8 +238,12 @@ export class WorkletLaneEngine implements SynthEngine {
       this.worklet.setMaxVoices(this.maxVoices);
       return;
     }
-    // mono/legato are not modelled in the worklet renderer yet; accept-and-ignore
-    // so a preset carrying them doesn't error.
+    // poly.mode / poly.retrig are dead ids — deleted from every engine's params
+    // (no control ever drew them, and mono/legato were never modelled in the
+    // worklet renderer) — but a save written before the deletion can still carry
+    // either in lane.engineState.params, and applyLaneEngineState replays every
+    // key it finds. Keep accepting-and-ignoring them so that load path never
+    // throws on an old save.
     if (id === 'poly.mode' || id === 'poly.retrig') return;
     // A strip param is a native Web Audio node on the lane's mixer channel, not
     // a field of the worklet renderer. It must NOT enter `state` (that bag is the
@@ -295,40 +299,22 @@ export class WorkletLaneEngine implements SynthEngine {
   buildParamUI(container: HTMLElement, ctx?: EngineUIContext): void {
     if (!ctx) return;
     container.innerHTML = '';
-    // POLY header (poly engines only): a VOICES knob → the worklet voice cap.
-    // Mono engines (TB-303) are fixed at 1 voice, so the header is omitted. The
-    // lane's osc/filter/amp knobs are mounted separately by knob-mounting.
-    if (this.polyphony === 'poly') {
-      const voices = createKnob({
-        id: `${ctx.laneId}.poly.voices`,
-        label: 'VOICES', min: 1, max: 16, step: 1, value: this.getBaseValue('poly.voices'), defaultValue: 8,
-        format: (v) => String(v),
-        // poly.voices routes to maxVoices and never enters the ParamBag, so the
-        // engineState mirror commitParam does is the only way it can persist.
-        onChange: (v) => { commitParam(this, ctx, 'poly.voices', v); },
-        ...(ctx.historyDeps ? attachKnobUndo(ctx.historyDeps) : {}),
-      });
-      ctx.registerKnob(voices);
-      // One-shot header scaffolding around the imperative knob widget: rendered
-      // into a fragment (the container is innerHTML-wiped on each rebuild, so
-      // lit must never own its content), then appended.
-      const frag = document.createDocumentFragment();
-      render(html`
-        <div class="row poly-section">
-          <div class="section-label">POLY</div>
-          <div class="knob-row">${voices.el}</div>
-        </div>`, frag);
-      container.appendChild(frag);
-    }
-
-    // Per-engine knob grid. Subtractive's osc/filter/amp/master knobs are mounted
-    // separately into fixed page sections by knob-mounting.mountSubtractiveLaneKnobs;
-    // every OTHER worklet engine (fm/wavetable/westcoast/tb303) renders a
-    // generic grouped grid here from its param spec — grouped params (e.g. FM's
-    // OP1..OP4) become one labelled row each; ungrouped params share the top row.
-    if (this.id !== 'subtractive') {
-      buildEngineParamGrid(this, ctx, container, { skip: (id) => id.startsWith('poly.') });
-    }
+    // Per-engine knob grid, driven entirely by each engine's declared params +
+    // groups table — including POLY (the VOICES knob → the worklet voice cap),
+    // which used to be hand-rolled markup here. A poly engine gets POLY only
+    // when it declares a 'poly' group (subtractive/fm/wavetable/westcoast do;
+    // TB-303 is mono and declares no poly.voices, so it renders nothing here
+    // for that group — no polyphony branch needed, the data already says so).
+    //
+    // Subtractive's osc/filter/amp/master knobs are mounted separately into
+    // fixed page sections by knob-mounting.mountSubtractiveLaneKnobs, so this
+    // grid must draw ONLY its poly.* params here or every one of those knobs
+    // would render twice; every OTHER worklet engine (fm/wavetable/westcoast/
+    // tb303) renders its full grouped grid — grouped params (e.g. FM's
+    // OP1..OP4) become one labelled row each, ungrouped params share the top row.
+    buildEngineParamGrid(this, ctx, container, {
+      skip: this.id === 'subtractive' ? (id) => !id.startsWith('poly.') : undefined,
+    });
 
     // Modulators panel. Editing a modulator/connection re-posts the whole
     // modulator set to the worklet runtime (postMods) so live LFO edits sound.

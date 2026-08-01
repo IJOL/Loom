@@ -37,6 +37,14 @@ import { SUB_PARAM_SPECS } from './subtractive-params';
 import type { ModulatorState } from '../modulation/types';
 import { makeDefaultLFO } from '../plugins/modulators/lfo';
 import { makeDefaultADSR } from '../plugins/modulators/adsr';
+// Side-effect imports register the real engine descriptors (mirrors main.ts /
+// registry-descriptor.test.ts), so makeWorkletEngine below can build a
+// WorkletLaneEngine from each engine's ACTUAL params + groups table, not a
+// hand-picked spec — the POLY-section tests need the real descriptor because
+// they assert on what subtractive.ts / tb303.ts declare, not on a fixture.
+import '../engines/subtractive';
+import '../engines/tb303';
+import { getEngineDescriptor } from './registry';
 
 const subMods = (): ModulatorState[] => [
   { ...makeDefaultADSR('adsr-amp'), connections: [{ id: 'c-amp', paramId: 'amp.gain', depth: 0 }] },
@@ -51,6 +59,26 @@ const subCfg = (over: Partial<WorkletEngineConfig> = {}): WorkletEngineConfig =>
 const out = () => ({ connect() {} }) as unknown as AudioNode;
 const makeEngine = (over: Partial<WorkletEngineConfig> = {}) =>
   new WorkletLaneEngine({} as AudioContext, out(), subCfg(over));
+
+/** Build a WorkletLaneEngine straight from the registered engine descriptor
+ *  (same config shape lane-allocator.ts assembles), so a test exercises the
+ *  REAL params/groups an engine file declares. */
+const makeWorkletEngine = (engineId: string): WorkletLaneEngine => {
+  const spec = getEngineDescriptor(engineId);
+  if (!spec) throw new Error(`no descriptor for '${engineId}' — is it side-effect imported above?`);
+  return new WorkletLaneEngine({} as AudioContext, out(), {
+    engineId, name: spec.name, presetsKey: engineId, polyphony: spec.polyphony,
+    params: spec.params, groups: spec.groups, modulators: spec.modulators,
+  });
+};
+
+/** Minimal EngineUIContext for a given laneId, tracking registered knob ids. */
+const testCtx = (laneId: string, registered: string[] = []): EngineUIContext => ({
+  laneId,
+  registerKnob: (k: { meta?: { id?: string } }) => { if (k.meta?.id) registered.push(k.meta.id); },
+  registry: new Map(),
+  lookupLaneDisplayName: () => undefined,
+} as unknown as EngineUIContext);
 
 describe('WorkletLaneEngine', () => {
   it('a triggered voice posts a spawn with note + gate and a normalised 0..1 velocity', () => {
@@ -194,9 +222,61 @@ describe('WorkletLaneEngine', () => {
   it('a mono engine omits the VOICES knob', () => {
     const registered: string[] = [];
     const container = document.createElement('div');
-    makeEngine({ engineId: 'tb303', name: 'TB-303', polyphony: 'mono' }).buildParamUI(container, makeUiCtx(registered));
+    // A mono config with no 'poly' group declared (the real tb303 shape) →
+    // the generic grid renders no POLY section. This used to be gated by an
+    // explicit `if (this.polyphony === 'poly')` branch; it is data-driven now,
+    // so the fixture must actually omit the group rather than rely on the
+    // engine's `polyphony` flag alone (SUB_PARAM_SPECS still declares its own
+    // 'poly' group and would render it here otherwise).
+    const params = SUB_PARAM_SPECS.filter((p) => p.group !== 'poly');
+    makeEngine({ engineId: 'tb303', name: 'TB-303', polyphony: 'mono', params, groups: undefined })
+      .buildParamUI(container, makeUiCtx(registered));
     expect(container.querySelector('.mod-panel')).toBeTruthy();
     expect(registered).not.toContain('subtractive-1.poly.voices');
+  });
+
+  // Task 6: the POLY row is a declared group (subtractive-params.ts /
+  // fm.ts / wavetable.ts / westcoast.ts), not hand-rolled markup in
+  // buildParamUI. These two exercise the REAL registered descriptors (see
+  // makeWorkletEngine above), so they pin what subtractive.ts and tb303.ts
+  // actually declare, not a hand-picked fixture.
+  it('renders VOICES from the declared POLY group, not from hand-rolled markup', () => {
+    const container = document.createElement('div');
+    const engine = makeWorkletEngine('subtractive');
+    engine.buildParamUI(container, testCtx('sub-1'));
+
+    const poly = [...container.querySelectorAll('.poly-section')]
+      .find((s) => s.querySelector('.section-label')?.textContent === 'POLY');
+    expect(poly).toBeDefined();
+    // The label is 'Voices' (matching every other spec's Title Case label);
+    // .knob-label is CSS text-transform: uppercase, so it PAINTS as "VOICES"
+    // without the DOM text itself being upper case — assert case-insensitively.
+    expect(poly!.querySelector('.knob-label')?.textContent?.toUpperCase()).toBe('VOICES');
+  });
+
+  it('a mono engine renders no POLY section', () => {
+    const container = document.createElement('div');
+    makeWorkletEngine('tb303').buildParamUI(container, testCtx('tb-1'));
+    expect([...container.querySelectorAll('.section-label')].map((e) => e.textContent))
+      .not.toContain('POLY');
+  });
+
+  // Trap 3 (task-6 brief): poly.mode / poly.retrig are deleted from every
+  // engine's params, but applyLaneEngineState (export/apply-lane-engine-state.ts)
+  // blindly replays every key in a saved lane.engineState.params via
+  // engine.setBaseValue(id, v) — including a key no engine declares any more.
+  // A save written before this deletion can still carry either id, so
+  // setBaseValue must keep silently accepting-and-ignoring them instead of
+  // letting them fall through to `this.state[id] = v` / worklet.setParams,
+  // which the worklet renderer has never modelled.
+  it('setBaseValue accepts-and-ignores poly.mode / poly.retrig (dead ids an old save may still carry)', () => {
+    const eng = makeEngine();
+    params.length = 0; // isolate the construction-time seed post (I1) from this call
+    eng.setBaseValue('poly.mode', 1);
+    eng.setBaseValue('poly.retrig', 0);
+    expect(params).toHaveLength(0);                       // never posted to the worklet
+    expect(eng.getParamBag()).not.toHaveProperty('poly.mode');
+    expect(eng.getParamBag()).not.toHaveProperty('poly.retrig');
   });
 
   it('the VOICES knob mirrors poly.voices into the lane engineState', () => {

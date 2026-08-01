@@ -7,6 +7,7 @@
 // param spec, the default modulators, and a registered metadata descriptor.
 
 import type { EngineParamSpec } from './engine-params';
+import type { EngineParamGroup } from './engine-param-groups';
 import { registerEngine, registerEngineFactory } from './registry';
 import { createDescriptorEngine } from './descriptor-engine';
 import { requireModulator } from '../modulation/modulator-registry';
@@ -50,8 +51,10 @@ const FM_PARAMS: EngineParamSpec[] = [
   ...opParamSpecs(3, { ratio: 1, level: 0.5 }),
   ...opParamSpecs(4, { ratio: 3, level: 0.25 }),
   { id: 'amp.mix',    label: 'Mix',       kind: 'continuous', min: 0, max: 1, default: 0.7 },
-  { id: 'poly.voices', label: 'Voices',   kind: 'continuous', min: 1, max: 16, default: 6 },
+  { id: 'poly.voices', label: 'Voices',   kind: 'continuous', min: 1, max: 16, default: 6, group: 'poly' },
 ];
+
+const FM_GROUPS: EngineParamGroup[] = [{ id: 'poly', title: 'POLY' }];
 
 /** A FUNCTION, not a computed constant — see SUBTRACTIVE_DEFAULT_MODULATORS
  *  (subtractive.ts) for why: this file's own registerEngine(...) below runs at
@@ -72,6 +75,7 @@ function makeFMDescriptor() {
     name: 'FM',
     polyphony: 'poly',
     params: FM_PARAMS,
+    groups: FM_GROUPS,
     presets: () => getCachedPresets('fm'),
     modulators: FM_DEFAULT_MODULATORS,
   });

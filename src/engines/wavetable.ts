@@ -8,6 +8,7 @@
 // the param spec, default modulators, and a registered descriptor.
 
 import type { EngineParamSpec } from './engine-params';
+import type { EngineParamGroup } from './engine-param-groups';
 import { registerEngine, registerEngineFactory } from './registry';
 import { createDescriptorEngine } from './descriptor-engine';
 import { WAVETABLES } from '../audio-dsp/wavetable-data';
@@ -34,8 +35,10 @@ const WT_PARAMS: EngineParamSpec[] = [
   { id: 'amp.sustain',      label: 'Sustain',   kind: 'continuous', min: 0,    max: 1,  default: 0.7 },
   { id: 'amp.release',      label: 'Release',   kind: 'continuous', min: 0.005, max: 4, default: 0.3,  unit: 's', curve: 'exponential' },
   // Polyphony cap
-  { id: 'poly.voices',      label: 'Voices',    kind: 'continuous', min: 1, max: 16, default: 8 },
+  { id: 'poly.voices',      label: 'Voices',    kind: 'continuous', min: 1, max: 16, default: 8, group: 'poly' },
 ];
+
+const WT_GROUPS: EngineParamGroup[] = [{ id: 'poly', title: 'POLY' }];
 
 /** A FUNCTION, not a computed constant — see SUBTRACTIVE_DEFAULT_MODULATORS
  *  (subtractive.ts) for why: this file's own registerEngine(...) below runs at
@@ -59,6 +62,7 @@ function makeWavetableDescriptor() {
     name: 'Wave',
     polyphony: 'poly',
     params: WT_PARAMS,
+    groups: WT_GROUPS,
     presets: () => getCachedPresets('wavetable'),
     modulators: WAVETABLE_DEFAULT_MODULATORS,
   });

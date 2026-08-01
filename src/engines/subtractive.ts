@@ -15,6 +15,13 @@ import { requireModulator } from '../modulation/modulator-registry';
 import type { ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
 import { SUB_PARAM_SPECS } from './subtractive-params';
+import type { EngineParamGroup } from './engine-param-groups';
+
+/** The one declared section on the subtractive editor: its osc/filter/amp/master
+ *  knobs are mounted into fixed page divs by knob-mounting.mountSubtractiveLaneKnobs,
+ *  not by the grouped grid — POLY is the only section that grid draws for this
+ *  engine (WorkletLaneEngine.buildParamUI filters everything else out). */
+const SUB_GROUPS: EngineParamGroup[] = [{ id: 'poly', title: 'POLY' }];
 
 /** The subtractive engine's DEFAULT modulator set: the two ADSRs ARE the amp /
  *  filter envelopes (the pre-worklet model, git 29a342c). adsr-amp drives the
@@ -80,6 +87,7 @@ function makeSubtractiveDescriptor() {
     name: 'Sub',
     polyphony: 'poly',
     params: SUB_PARAM_SPECS,
+    groups: SUB_GROUPS,
     presets: () => getCachedPresets('subtractive'),
     modulators: SUBTRACTIVE_DEFAULT_MODULATORS,
   });

@@ -8,6 +8,7 @@
 // DATA-ONLY: the param spec, default modulators, and a registered descriptor.
 
 import type { EngineParamSpec } from './engine-params';
+import type { EngineParamGroup } from './engine-param-groups';
 import { registerEngine, registerEngineFactory } from './registry';
 import { createDescriptorEngine } from './descriptor-engine';
 import { requireModulator } from '../modulation/modulator-registry';
@@ -34,7 +35,6 @@ const CONTOUR_MODE_OPTIONS = [
   { value: 'pluck', label: 'Pluck' }, { value: 'sustain', label: 'Sus' },
 ];
 const ONOFF_OPTIONS = [{ value: 'off', label: 'Off' }, { value: 'on', label: 'On' }];
-const POLY_MODE_OPTIONS = [{ value: 'poly', label: 'Poly' }, { value: 'mono', label: 'Mono' }];
 
 const WEST_PARAMS: EngineParamSpec[] = [
   // Complex oscillator
@@ -62,10 +62,12 @@ const WEST_PARAMS: EngineParamSpec[] = [
   // Amp / master
   { id: 'amp.level',   label: 'Level', kind: 'continuous', min: 0, max: 1, default: 0.8 },
   { id: 'master.tune', label: 'Tune',  kind: 'continuous', min: -12, max: 12, default: 0, unit: 'st' },
-  // Poly
-  { id: 'poly.voices', label: 'Voices', kind: 'continuous', min: 1, max: 16, default: 8 },
-  { id: 'poly.mode',   label: 'Mode',   kind: 'discrete', min: 0, max: 1, default: 0, options: POLY_MODE_OPTIONS },
+  // Poly. poly.mode used to live here too — a VISIBLE Mode dropdown whose value
+  // WorkletLaneEngine.setBaseValue discarded on write — deleted rather than wired up.
+  { id: 'poly.voices', label: 'Voices', kind: 'continuous', min: 1, max: 16, default: 8, group: 'poly' },
 ];
+
+const WEST_GROUPS: EngineParamGroup[] = [{ id: 'poly', title: 'POLY' }];
 
 /** A FUNCTION, not a computed constant — see SUBTRACTIVE_DEFAULT_MODULATORS
  *  (subtractive.ts) for why: this file's own registerEngine(...) below runs at
@@ -88,6 +90,7 @@ function makeWestcoastDescriptor() {
     name: 'West',
     polyphony: 'poly',
     params: WEST_PARAMS,
+    groups: WEST_GROUPS,
     presets: () => getCachedPresets('westcoast'),
     modulators: WESTCOAST_DEFAULT_MODULATORS,
   });

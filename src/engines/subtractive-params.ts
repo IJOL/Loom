@@ -106,7 +106,10 @@ export const SUB_PARAM_SPECS: EngineParamSpec[] = [
   // never has. Off by default — it is character, not correctness.
   { id: 'master.drift',  label: 'Drift',  kind: 'continuous', min: 0, max: 1, default: 0 },
 
-  { id: 'poly.mode',   label: 'Mode',   kind: 'continuous', min: 0, max: 1,  default: 0 },
-  { id: 'poly.retrig', label: 'Retrig', kind: 'continuous', min: 0, max: 1,  default: 1 },
-  { id: 'poly.voices', label: 'Voices', kind: 'continuous', min: 1, max: 16, default: 8 },
+  // poly.mode / poly.retrig were declared here but dead on both sides — no
+  // control ever drew them, and WorkletLaneEngine.setBaseValue accepted and
+  // discarded a write to either — so they were deleted outright rather than
+  // wired up. poly.voices is the one poly.* param with a real control (the
+  // POLY section's VOICES knob) and a real effect (the worklet's voice cap).
+  { id: 'poly.voices', label: 'Voices', kind: 'continuous', min: 1, max: 16, default: 8, group: 'poly' },
 ];
