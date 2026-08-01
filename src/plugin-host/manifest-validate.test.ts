@@ -49,14 +49,14 @@ describe('validatePluginManifest', () => {
   });
 
   it('rejects the OLD shape loudly instead of registering nothing', () => {
-    // Sin `components` un manifiesto de la forma antigua validaria y registraria
-    // CERO componentes: el plugin cargaria y su motor no apareceria, sin un solo
-    // mensaje. Por eso `components` es obligatorio.
-    const viejo = {
+    // Without `components`, an old-shape manifest would validate and register
+    // ZERO components: the plugin would load and its engine would vanish from
+    // the selector without a single message. That's why `components` is required.
+    const oldShape = {
       id: 'p', name: 'P', version: '1.0.0', loomApi: 1, main: 'main.js',
       engines: [{ id: 'x', name: 'X' }],
     };
-    const r = validatePluginManifest(viejo);
+    const r = validatePluginManifest(oldShape);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toMatch(/components/);
   });
@@ -79,12 +79,12 @@ describe('validatePluginManifest', () => {
     if (!r.ok) expect(r.error).toMatch(/accepts/);
   });
 
-  it('defaults the optional capabilities so a plain manifest is a normal instrument', () => {
+  it('leaves optional capabilities absent so the READER can apply the defaults', () => {
     const r = validatePluginManifest(ok());
     expect(r.ok).toBe(true);
     if (r.ok) {
       const c = r.manifest.components![0];
-      // Ausentes en el JSON: el LECTOR aplica los defaults, no el validador.
+      // Absent in the JSON: the READER applies the defaults, not the validator.
       expect(c.capabilities.acceptsNoteFx).toBeUndefined();
     }
   });

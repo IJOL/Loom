@@ -6,9 +6,9 @@
 /** Bumped only on an INCOMPATIBLE change. The host refuses to execute a plugin
  *  whose `loomApi` differs, so a stale plugin fails loudly instead of silently
  *  half-working.
- *  SIN CAMBIOS: sigue en 1. Es la primera implementación — no hay ningún plugin
- *  publicado ahí fuera cuya compatibilidad haya que preservar, y el único que
- *  existe se convierte en la Task 7 de esta misma rama. */
+ *  UNCHANGED: stays at 1. This is the first implementation — there is no
+ *  published plugin whose compatibility we'd need to preserve, and the only
+ *  one that exists is converted on this same branch (Task 7). */
 export const LOOM_API_VERSION = 1;
 
 export interface EngineParamSpec {
@@ -37,8 +37,8 @@ export interface GmHint {
   priority: number;
 }
 
-/** @deprecated Forma v1. La Task 2 mueve sus dos consumidores a
- *  ComponentManifest y entonces esto se borra. */
+/** @deprecated The v1 shape. Task 2 moves its two consumers over to
+ *  ComponentManifest and then this is deleted. */
 export interface EngineManifest {
   id: string;
   name: string;
@@ -60,8 +60,8 @@ export interface EngineManifest {
 export type AssetKind = 'audio-file';
 
 /** Every question the host used to answer comparing engine ids.
- *  OMITIR es lo normal: un manifiesto que calla se comporta como un
- *  instrumento melódico corriente. Sólo lo raro se declara. */
+ *  OMITTING is the normal case: a manifest that says nothing behaves like an
+ *  ordinary melodic instrument. Only the unusual gets declared. */
 export interface EngineCapabilities {
   /** Which host clip editor this engine wants. */
   clipEditor: 'piano-roll' | 'drum-grid' | 'audio';
@@ -103,9 +103,9 @@ export interface PluginManifestFile {
   dsp?: string;
   /** Preset file, relative to the plugin directory. */
   presets?: string;
-  /** OBLIGATORIO. Un manifiesto sin componentes no aporta nada, y hacerlo
-   *  opcional convierte la forma antigua (`engines`) en un fallo MUDO: valida,
-   *  carga y registra cero. */
+  /** REQUIRED. A manifest with no components contributes nothing, and making
+   *  it optional would turn the old shape (`engines`) into a SILENT failure:
+   *  it validates, loads, and registers zero. */
   components: ComponentManifest[];
 }
 
@@ -114,8 +114,8 @@ export interface PluginManifestFile {
 export interface LoomApi {
   readonly apiVersion: number;
   registerComponent(manifest: ComponentManifest): void;
-  /** @deprecated Forma v1, conservada mientras loom-api.ts y
-   *  plugin-capabilities.ts la sigan usando. La Task 2 la retira. */
+  /** @deprecated The v1 shape, kept while loom-api.ts and
+   *  plugin-capabilities.ts still use it. Task 2 removes it. */
   registerEngine(manifest: EngineManifest): void;
   registerRenderer(engineId: string, make: RendererFactory): void;
 }

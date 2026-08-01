@@ -32,8 +32,8 @@ function capabilitiesError(c: unknown, i: number): string | null {
     return `components[${i}].capabilities.clipEditor must be ${CLIP_EDITORS.join('|')}`;
   }
   if (!isStr(c.shortLabel)) return `components[${i}].capabilities.shortLabel must be a non-empty string`;
-  // Sin default: un trim ausente es un plugin que no pensó en el gain staging,
-  // y adivinar 1 lo publica más alto que todo lo demás.
+  // No default: a missing trim is a plugin that never thought about gain
+  // staging, and guessing 1 would ship it louder than everything else.
   if (!isNum(c.outputTrim)) return `components[${i}].capabilities.outputTrim must be a number`;
   if (c.accepts !== undefined) {
     if (!Array.isArray(c.accepts) || c.accepts.some((a) => !ASSET_KINDS.includes(a as string))) {
