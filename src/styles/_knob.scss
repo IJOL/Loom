@@ -155,11 +155,6 @@
  * MODULATORS panel, `drawnBy: 'modulators'`) sat in this same row and made
  * those four the "last four" instead. Deliberate: all of FILTER is orange now. */
 
-@mixin knob-accent($color) {
-  .knob-value   { stroke: $color; }
-  .knob-pointer { stroke: $color; }
-}
-
 /* Modulator cards: ADSR knobs red, LFO rate cyan. Depth knob in routing
  * rows gets yellow so it's visually distinct from the default amber UI
  * accent and reads as part of the connection block. */
@@ -176,10 +171,9 @@
   .knob-pointer { stroke: var(--knob-yellow); }
 }
 
-/* West Coast engine — per-section knob accents (classes, not ids, because
- * the engine renders per-lane and ids must stay unique). */
-.west-osc-knobs     { @include knob-accent(var(--knob-cyan));   }
-.west-timbre-knobs  { @include knob-accent(var(--knob-orange)); }
-.west-lpg-knobs     { @include knob-accent(var(--knob-purple)); }
-.west-contour-knobs { @include knob-accent(var(--knob-red));    }
-.west-amp-knobs     { @include knob-accent(var(--knob-green));  }
+// West Coast's per-section knob accents used to be five `.west-*-knobs`
+// rules here (a hand-rolled page, classes not ids because the engine
+// rendered per-lane). Westcoast now declares its section colors as data
+// (engines/westcoast.ts) and engine-param-grid.ts applies them inline — the
+// colors on this line were the source the data copy was taken FROM. Deleted
+// with the `knob-accent` mixin, whose only consumers these five rules were.
