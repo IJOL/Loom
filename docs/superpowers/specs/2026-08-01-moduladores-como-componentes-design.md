@@ -353,7 +353,9 @@ Cada criterio es un camino de usuario con su propio test. Sin alternativas
 3. **El export offline lo lleva.** La misma escena por `renderKernelLane` produce
    la modulación del S&H — mismo kernel, mismo resultado que en vivo.
 4. **El censo baja a cero.** `node tools/plugin-id-census.mjs --group modulator`
-   da **0** en `core-decides` (partida: 18).
+   da **0** en `core-decides` (partida: 18). ⚠️ **No se cumple tal cual** — se
+   convierte el sitio que la tarea 11 nombraba explícitamente y el censo baja,
+   pero se queda en 34, no en 0; ver §7 para el porqué y la deuda declarada.
 5. **El Subtractive y el Westcoast siguen sonando.** Test de caracterización de
    sus envolventes por defecto: el ADSR de amplitud sigue modelando `amp`
    (sube en el ataque, cae al sustain, cae a ~0 en el release) y el de filtro
@@ -411,6 +413,40 @@ la que una pista quede muda.
   Si algún día se unifica, va en rebanada aparte con la red del paso 1 ya verde.
 - **Siguen existiendo tres matemáticas del LFO** (§2.1). Ahora con un dueño cada
   una, pero tres.
-- **`tools/plugin-id-census.mjs` escribe su salida en castellano.** Es un
-  artefacto del repo y debería estar en inglés; se corrige en el primer commit de
-  esta rebanada.
+- **`tools/plugin-id-census.mjs` escribía su salida en castellano.** Corregido
+  en la tarea 11 (commit `2c85316`): mismo comportamiento, mismas flags, salida
+  en inglés.
+- **El censo `--group modulator` no llega a cero — se queda en 34, no 18.**
+  La tarea 11 convirtió el único sitio que su brief nombraba explícitamente
+  (`ModulationRuntime.getAdsrMods()`, commit `57804cd`: ahora pregunta
+  `driver === 'gate'`, no `kind === 'adsr'`), y de paso confirmó que el censo
+  había subido de 18 (línea base de §2.6) a 35 durante las tareas 1-10: ocho
+  ficheros de motor (`subtractive.ts` ×2 funciones, `drums-engine.ts`,
+  `drums-worklet-engine.ts`, `fm.ts`, `sampler-worklet-engine.ts`,
+  `wavetable.ts`, `westcoast.ts`, `tb303.ts`) construyen su set de moduladores
+  por defecto (las dos ADSR de amp/filtro + dos LFO, fiel al modelo
+  pre-worklet) llamando a `getModulator('lfo')`/`getModulator('adsr')` por id
+  literal — el mismo patrón, repetido, que `makeDefaultLFO`/`makeDefaultADSR`
+  dejaron atrás en la tarea 6.
+  Evaluado y **dejado tal cual, a propósito**: el mismo truco que arregló
+  `getAdsrMods` (preguntar el `driver` en vez del id) sólo es sólido para la
+  mitad `adsr` de este patrón — hoy `driver: 'gate'` identifica sin ambigüedad
+  al ADSR porque es el único componente registrado con ese driver (§3.3, el
+  camino de puerta sigue cerrado) — pero **no** para la mitad `lfo`: desde que
+  esta misma rebanada registró el S&H con `driver: 'time'` (tarea 9), ese
+  driver ya no es único — LFO y S&H lo comparten — así que
+  `listModulators().find(driver === 'time')` elegiría uno de los dos por orden
+  de registro, no por lo que estos ocho ficheros realmente piden ("el
+  oscilador LFO, específicamente", no "cualquier cosa que corra por reloj").
+  Convertir sólo la mitad `adsr` de un patrón simétrico repetido ocho veces,
+  dejando la mitad `lfo` con el mismo `getModulator(id)` de siempre, cambia el
+  número del censo sin cambiar la naturaleza del sitio — ambas mitades son la
+  misma decisión de diseño (una plantilla de sonido por defecto necesita un
+  componente CONCRETO, no una propiedad genérica), así que se deja como un
+  bloque. Si se quiere de verdad a cero, la vía limpia es sacar esa plantilla
+  de 4 moduladores UNA vez a un sitio compartido (ahora está copiada y pegada
+  ocho veces) y decidir allí si un `idPrefix`/nombre por componente es
+  aceptable como excepción declarada del censo o si el propio censo necesita
+  una categoría para "un consumidor pide un componente concreto por diseño",
+  no sólo "own-file"/"comment"/"test". Ninguna de las dos es un cambio de una
+  línea, así que queda fuera de esta rebanada.
