@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { openLane } from './helpers';
 
 // Regression coverage for the "loaded lane shows the CORRECT sound but the preset
 // dropdown is empty" bug. When a session/demo (or a MIDI import) loads a lane with
@@ -23,7 +24,7 @@ async function waitForBoot(page: Page): Promise<void> {
 /** Open a lane's editor and return the text of its preset dropdown's selected
  *  option ("" when nothing is selected — i.e. the empty-dropdown bug). */
 async function selectedPresetText(page: Page, laneId: string, engine: string): Promise<string> {
-  await page.locator(`.session-lane-header[data-lane-id="${laneId}"]`).click();
+  await openLane(page, laneId);
   const sel = page.locator(selectIdFor(engine));
   await expect(sel).toBeVisible();
   return sel.evaluate((s: HTMLSelectElement) => (s.selectedIndex >= 0 ? s.options[s.selectedIndex].text : ''));

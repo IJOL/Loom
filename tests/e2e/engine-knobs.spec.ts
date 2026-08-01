@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { openLane } from './helpers';
 
 // Every melodic engine must render ITS OWN knobs when its lane is opened, and
 // show the "🎲 Sound" dice; the engines whose sound is a loaded thing must show
@@ -50,10 +51,6 @@ async function addLane(page: Page, engineId: string): Promise<string> {
   return newId;
 }
 
-async function openLane(page: Page, laneId: string): Promise<void> {
-  await page.click(`.session-lane-header[data-lane-id="${laneId}"]`);
-}
-
 /** The lane editor lives on the poly page — for EVERY melodic engine, the
  *  TB-303 included. There is no second page. */
 function editor(page: Page) {
@@ -78,10 +75,13 @@ for (const eng of MELODIC) {
     await expect(editor(page)).toBeVisible();
 
     for (const label of eng.knobs) {
-      // `:visible` is load-bearing, not decoration. Subtractive's section knobs
-      // stay MOUNTED for every lane and are merely hidden by CSS, so a page
-      // showing a TB-303 holds two "Cutoff" labels — the hidden subtractive one
-      // and the real one. Without `:visible` this matches the corpse.
+      // `:visible` used to be load-bearing: Subtractive's section knobs stayed
+      // MOUNTED for every lane, merely hidden by CSS, so a page showing a TB-303
+      // held two "Cutoff" labels — the hidden subtractive one and the real one.
+      // That static markup is gone (this branch): every engine now builds its
+      // knobs from its own declared spec, so only the active lane's knobs exist
+      // in the DOM at all. `:visible` is kept anyway as belt-and-braces — it is
+      // still correct, just no longer covering a live corpse.
       await expect(
         editor(page).locator('.knob-label:visible', { hasText: new RegExp(`^${escapeRe(label)}$`, 'i') }).first(),
         `${eng.id} should render a visible "${label}" knob`,

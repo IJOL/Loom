@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openLane } from './helpers';
 
 // Proof that a modulator kind the core does NOT know can be dropped into
 // plugins/ and work end to end: the button appears in the panel, clicking it
@@ -24,7 +25,7 @@ test('the S&H plugin modulator loads from disk and works in the panel', async ({
   // 'tb-303-1' is a melodic lane that exists at boot (see engine-knobs.spec.ts)
   // — opening it routes to the shared poly editor page and injects the
   // modulators panel at the bottom, the same panel every melodic lane gets.
-  await page.click('.session-lane-header[data-lane-id="tb-303-1"]');
+  await openLane(page, 'tb-303-1');
   const editor = page.locator('[data-page="poly"]');
   await expect(editor).toBeVisible();
 

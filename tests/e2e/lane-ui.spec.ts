@@ -1,11 +1,12 @@
 import { test, expect, type Page } from '@playwright/test';
+import { openLane } from './helpers';
 
 // End-to-end UI tests that codify the bugs we hit during the lane unification:
 // each one would have failed before the fix and passes after. They replace the
 // ad-hoc Playwright probing we used to confirm the fixes worked.
 
 async function destinationCountsForLane(page: Page, laneId: string): Promise<number[]> {
-  await page.locator(`.session-lane-header[data-lane-id="${laneId}"]`).click();
+  await openLane(page, laneId);
   return page.evaluate(() =>
     [...document.querySelectorAll<HTMLSelectElement>('.mod-dest-select')]
       .filter((s) => s.offsetParent !== null)
@@ -53,7 +54,7 @@ test.describe('modulator destination dropdown', () => {
     await page.waitForFunction(
       () => document.querySelectorAll('.session-cell-filled').length > 0,
     );
-    await page.locator('.session-lane-header[data-lane-id="drums-1"]').click();
+    await openLane(page, 'drums-1');
     const options = await page.evaluate(() =>
       [...document.querySelectorAll<HTMLSelectElement>('.mod-dest-select')]
         .filter((s) => s.offsetParent !== null)
@@ -75,7 +76,7 @@ test.describe('preset selection', () => {
     await page.waitForFunction(
       () => document.querySelectorAll('.session-cell-filled').length > 0,
     );
-    await page.locator('.session-lane-header[data-lane-id="subtractive-1"]').click();
+    await openLane(page, 'subtractive-1');
     const sel = page.locator('#poly-preset-select');
     await expect(sel).toHaveValue('engine:LEAD Square');
   });
@@ -105,10 +106,10 @@ test.describe('demo JSON presets', () => {
     await page.goto('/');
     await waitForBoot(page);
 
-    await page.locator('.session-lane-header[data-lane-id="subtractive-1"]').click();
+    await openLane(page, 'subtractive-1');
     await expect(page.locator('#poly-preset-select')).toHaveValue('engine:LEAD Square');
 
-    await page.locator('.session-lane-header[data-lane-id="subtractive-2"]').click();
+    await openLane(page, 'subtractive-2');
     await expect(page.locator('#poly-preset-select')).toHaveValue('engine:PAD Sweep');
   });
 
@@ -120,10 +121,10 @@ test.describe('demo JSON presets', () => {
     // Index 1 = scene B.
     await page.locator('.session-scene-launch').nth(1).click();
 
-    await page.locator('.session-lane-header[data-lane-id="subtractive-1"]').click();
+    await openLane(page, 'subtractive-1');
     await expect(page.locator('#poly-preset-select')).toHaveValue('engine:LEAD Square');
 
-    await page.locator('.session-lane-header[data-lane-id="subtractive-2"]').click();
+    await openLane(page, 'subtractive-2');
     await expect(page.locator('#poly-preset-select')).toHaveValue('engine:PAD Sweep');
   });
 });
@@ -134,7 +135,7 @@ test.describe('modulator retrigger + scope', () => {
     await page.waitForFunction(
       () => document.querySelectorAll('.session-cell-filled').length > 0,
     );
-    await page.locator('.session-lane-header[data-lane-id="subtractive-1"]').click();
+    await openLane(page, 'subtractive-1');
     // TRIG (free/note) and SCOPE (shared/per-voice) are one 3-way radio-strip:
     // Free / Note are shared retriggers, Voice is per-voice. All three are always
     // present (nothing hides), and a fresh LFO defaults to Free (shared, free-run).

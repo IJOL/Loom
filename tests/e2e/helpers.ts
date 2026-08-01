@@ -17,9 +17,28 @@ export async function addAudioChannel(page: Page): Promise<void> {
   await page.locator('.session-lane-add-menu .session-add-item', { hasText: 'Audio channel' }).click();
 }
 
-/** Open a lane's instrument editor by clicking its grid column header. */
+/** Open a lane's editor AND wait until it is really the active one.
+ *
+ *  The wait is not politeness, it is the difference between testing something
+ *  and testing nothing. Clicking a lane header re-renders the session grid,
+ *  which replaces the header nodes; a second click issued immediately lands on a
+ *  node that is already detached and is simply lost. Verified on `main`, so
+ *  the swallowed click is not particular to any one branch — but without this
+ *  wait a "switch away and back" sequence never comes back, and the assertion
+ *  passes by reading a dropdown nothing had touched.
+ *
+ *  The active class lands DURING the re-render, not after it, so returning the
+ *  moment it appears hands the next click a node that is about to be replaced —
+ *  and that click is silently lost too. Measured: with a settle here the switch
+ *  always takes; without it, a third switch in a row never does. */
 export async function openLane(page: Page, laneId: string): Promise<void> {
   await page.locator(`.session-lane-header[data-lane-id="${laneId}"]`).click();
+  await page.waitForFunction(
+    (id) => !!document.querySelector(`.session-lane-header-active[data-lane-id="${id}"]`),
+    laneId,
+    { timeout: 5000 },
+  );
+  await page.waitForTimeout(250);
 }
 
 export interface MasterLevels {
