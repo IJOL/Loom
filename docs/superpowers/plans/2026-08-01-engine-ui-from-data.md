@@ -931,7 +931,19 @@ git commit -m "feat(ui): the param grid draws declared groups, shared rows and s
 - Modify: `src/engines/engine-types.ts`
 - Modify: `src/engines/descriptor-engine.ts:28-42,75-90`
 - Modify: `src/engines/worklet-lane-engine.ts` (carry the descriptor's table onto the live engine)
+- Modify: `src/engines/registry.ts` — `EngineDescriptor` must carry `groups` too
+- Modify: `src/app/lane-allocator.ts:120-132` — the allocator constructs the live
+  `WorkletLaneEngine`, so it must pass `groups: spec.groups` alongside the params
 - Test: `src/engines/descriptor-engine.test.ts` (extend)
+- Test: `src/engines/worklet-lane-engine.test.ts` (extend)
+
+**The table has to survive FOUR hops, not two.** Descriptor config → registry
+`EngineDescriptor` → allocator → live `WorkletLaneEngine`. The editor calls
+`buildParamUI` on the LIVE engine, so a table that stops at any earlier hop is
+silently empty in production while every unit test still passes. The failure
+would surface for the first time in Task 8's Chrome check and would look like a
+Task 8 defect. Assert the table on the engine the ALLOCATOR built, not only on
+the descriptor.
 
 **Interfaces:**
 - Consumes: `EngineParamGroup` (Task 3).
