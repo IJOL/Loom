@@ -28,6 +28,10 @@ import '../audio-dsp/tb303-renderer';
 import '../audio-dsp/fm-renderer';
 import '../audio-dsp/wavetable-renderer';
 import '../audio-dsp/westcoast-renderer';
+// Same reasoning for the modulator kernel: the worklet thread registers it via
+// loom-processor.ts; the offline recorder runs on the MAIN thread, so import
+// it here too — otherwise the offline render's LFO goes silent.
+import '../audio-dsp/modulators/lfo-kernel';
 
 /** One scheduled kernel note for a lane. `params` (when present) is the lane's
  *  ParamBag snapshot AT THIS NOTE'S TRIGGER TIME — applied to the VoiceManager

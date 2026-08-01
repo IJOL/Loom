@@ -11,6 +11,8 @@ import { describe, it, expect } from 'vitest';
 import { VoiceManager } from './voice-manager';
 import { ModulationRuntime, type ModLite } from './modulation-runtime';
 import './tb303-renderer';   // register the renderer so spawn() can build a voice
+// Side-effect import: registers the 'lfo' kernel ModulationRuntime looks up.
+import './modulators/lfo-kernel';
 
 const SR = 44100;
 

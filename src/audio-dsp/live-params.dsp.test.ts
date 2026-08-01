@@ -23,6 +23,8 @@ import { VoiceManager } from './voice-manager';
 import type { NoteSpec, ParamBag, VoiceRenderer } from './types';
 import { registerRenderer, createRenderer } from './renderer-registry';
 import { ModulationRuntime, type ModLite } from './modulation-runtime';
+// Side-effect import: registers the 'lfo' kernel ModulationRuntime looks up.
+import './modulators/lfo-kernel';
 import { WORKLET_ENGINE_IDS } from '../app/lane-allocator';
 // Side-effect imports: register the real renderers.
 import './tb303-renderer';

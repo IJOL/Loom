@@ -32,6 +32,8 @@ import './wavetable-renderer';
 import './fm-renderer';
 import './tb303-renderer';
 import './westcoast-renderer';
+// Side-effect import: registers the 'lfo' kernel ModulationRuntime looks up.
+import './modulators/lfo-kernel';
 import { KarplusRenderer } from '../../plugins/karplus/dsp';
 
 // The karplus row below drives the SHIPPED plugin renderer through the real

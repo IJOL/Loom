@@ -9,6 +9,8 @@ import { VoiceManager } from './voice-manager';
 import { ModulationRuntime, type ModLite } from './modulation-runtime';
 import type { NoteSpec } from './types';
 import './subtractive-renderer';
+// Side-effect import: registers the 'lfo' kernel ModulationRuntime looks up.
+import './modulators/lfo-kernel';
 
 const SR = 48000;
 const note = (o: Partial<NoteSpec> = {}): NoteSpec =>

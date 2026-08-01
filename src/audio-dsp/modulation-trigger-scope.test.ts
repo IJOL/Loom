@@ -8,6 +8,8 @@
 // free-ran and was shared regardless of what the UI said.
 import { describe, it, expect } from 'vitest';
 import { ModulationRuntime, type ModLite } from './modulation-runtime';
+// Side-effect import: registers the 'lfo' kernel ModulationRuntime looks up.
+import './modulators/lfo-kernel';
 
 const lfo = (over: Partial<ModLite> = {}): ModLite => ({
   id: 'l1', kind: 'lfo', enabled: true, rateHz: 1, waveform: 'sine',

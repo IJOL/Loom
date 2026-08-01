@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { ModulationRuntime } from './modulation-runtime';
+import { registerModulatorKernel } from './modulator-kernels';
+// Side-effect import: registers the 'lfo' kernel so the tests below that use
+// kind: 'lfo' exercise the real registry lookup, not a hardcoded comparison.
+import './modulators/lfo-kernel';
+
+// A kernel registered under a kind that is neither 'lfo' nor 'adsr', purely
+// to prove the runtime does a REAL registry lookup by kind. Its signal is a
+// constant, not a wave — the point is the lookup, not the maths.
+registerModulatorKernel({ id: 'echo-test-kernel', valueAt: () => 0.7 });
 
 const SR = 48000;
 describe('ModulationRuntime (shared LFO)', () => {
@@ -84,5 +93,35 @@ describe('ModulationRuntime.activeOffsets (UI telemetry)', () => {
       { id: 'b', kind: 'lfo', enabled: true, rateHz: 1, waveform: 'square', depthByParam: { osc1Level: 0.3 } },
     ]);
     expect(r.activeOffsets(0.1).osc1Level).toBeCloseTo(0.5, 6);
+  });
+});
+
+// The runtime used to decide by comparing `m.kind !== 'lfo'`, which happened to
+// also exclude any unknown kind — so a naive "unknown kind contributes zero"
+// test would pass for the WRONG reason (it never proved a real lookup runs).
+// These two tests together are the actual proof: a kind that IS registered but
+// is NOT 'lfo' must contribute (only possible via a genuine registry lookup),
+// while a kind that is NOT registered must not.
+describe('ModulationRuntime (kernel registry — real lookup, not a hardcoded kind check)', () => {
+  it('a kernel registered under a kind other than lfo/adsr DOES contribute', () => {
+    const rt = new ModulationRuntime(44100);
+    rt.setMods([{
+      id: 'e1', kind: 'echo-test-kernel', enabled: true, rateHz: 4,
+      waveform: 'sine', depthByParam: { 'filter.cutoff': 0.4 },
+    } as never]);
+    // echo-test-kernel's valueAt is a constant 0.7, so the offset is 0.7 × 0.4.
+    // The old `m.kind !== 'lfo'` check would have skipped this entirely (0).
+    expect(rt.offsetFor('filter.cutoff' as never, 0.25)).toBeCloseTo(0.28, 9);
+  });
+
+  it('ignores a modulator whose kind has no kernel instead of treating it as an LFO', () => {
+    const rt = new ModulationRuntime(44100);
+    rt.setMods([{
+      id: 'x1', kind: 'no-such-kernel', enabled: true, rateHz: 4,
+      waveform: 'sine', depthByParam: { 'filter.cutoff': 1 },
+    } as never]);
+    // A kind with no kernel contributes nothing. The old code compared against
+    // 'lfo' and would have summed this one's sine.
+    expect(rt.offsetFor('filter.cutoff' as never, 0.25)).toBe(0);
   });
 });

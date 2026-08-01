@@ -1,7 +1,12 @@
 // src/audio-dsp/modulation-runtime.ts
-// In-worklet LFO modulation over the full subtractive modulation target set
-// (every SubParams field a connection can reach, plus the synthetic `ampGain`
-// tremolo). The runtime returns NORMALISED offsets (sum of wave×depth); the
+// In-worklet time-driven modulation (LFO and any other 'time'-driver kernel)
+// over the full subtractive modulation target set (every SubParams field a
+// connection can reach, plus the synthetic `ampGain` tremolo). The runtime
+// no longer knows what an LFO is: for each enabled modulator it looks up a
+// ModulatorKernel by `kind` (modulator-kernels.ts) and asks it for the
+// normalised signal at the resolved phase origin. A kind with no registered
+// kernel contributes nothing — it is ignored, not folded into another kind.
+// The runtime returns NORMALISED offsets (sum of kernel-value×depth); the
 // renderer scales each to native units (cents/semitones for pitch, ×gain for
 // ampGain, 0..1 add for the rest). BPM-synced LFOs ARE honoured: the host
 // (WorkletLaneEngine.toModLite) resolves any sync→free Hz via effectiveRateHz
@@ -16,8 +21,10 @@
 //
 // `kind: 'adsr'` mods contribute zero HERE — they are genuinely per-voice and
 // travel a different road: getAdsrMods() hands them to the renderer at spawn,
-// which gates an envelope per note (see ModEnvHost).
+// which gates an envelope per note (see ModEnvHost). That road is unchanged by
+// this file's kernel lookup — ADSR has no 'time'-driver kernel to look up.
 import type { ModTarget } from './types';
+import { getModulatorKernel } from './modulator-kernels';
 
 export interface ModLite {
   id: string;
@@ -60,36 +67,12 @@ export interface PhaseOrigin {
 
 const SHARED_FREE: PhaseOrigin = { voiceStartT: 0, lastNoteOnT: 0 };
 
-/** The modulator's signal at phase, honouring polarity: bipolar -1..+1 (raw
- *  wave), unipolar 0..1 (wave shifted/scaled so it only pushes one way). */
-function signal(m: ModLite, phase: number): number {
-  const w = wave(m.waveform, phase);
-  return m.bipolar === false ? (w + 1) / 2 : w;
-}
-
-function wave(w: ModLite['waveform'], phase: number): number {
-  switch (w) {
-    case 'square':   return phase < 0.5 ? 1 : -1;
-    case 'saw':      return phase * 2 - 1;
-    case 'triangle': return phase < 0.5 ? phase * 4 - 1 : 3 - phase * 4;
-    default:         return Math.sin(phase * 2 * Math.PI);
-  }
-}
-
 /** The phase origin for one modulator. Voice scope wins over trigger: a
  *  per-voice LFO always starts with its own note, whatever TRIG says. */
 function originFor(m: ModLite, o: PhaseOrigin): number {
   if (m.scope === 'voice') return o.voiceStartT;
   if (m.trigger === 'note') return o.lastNoteOnT;
   return 0;
-}
-
-/** Phase of `m` at absolute time `t`, relative to its origin. Guarded against a
- *  negative delta (a voice origin slightly ahead of t at spawn) so the phase
- *  never wraps backwards into a discontinuity. */
-function phaseOf(m: ModLite, t: number, o: PhaseOrigin): number {
-  const dt = t - originFor(m, o);
-  return dt <= 0 ? 0 : (dt * m.rateHz) % 1;
 }
 
 export class ModulationRuntime {
@@ -104,7 +87,8 @@ export class ModulationRuntime {
   setMods(mods: ModLite[]): void {
     this.mods = mods;
     this.perVoicePhase = mods.some(
-      (m) => m.enabled && m.kind === 'lfo' && (m.scope === 'voice' || m.trigger === 'note'),
+      (m) => m.enabled && getModulatorKernel(m.kind) !== undefined
+        && (m.scope === 'voice' || m.trigger === 'note'),
     );
   }
 
@@ -125,10 +109,12 @@ export class ModulationRuntime {
   offsetFor(field: ModTarget, t: number, o: PhaseOrigin = SHARED_FREE): number {
     let sum = 0;
     for (const m of this.mods) {
-      if (!m.enabled || m.kind !== 'lfo') continue;
+      if (!m.enabled) continue;
+      const kernel = getModulatorKernel(m.kind);
+      if (!kernel) continue;
       const depth = m.depthByParam[field as string];
       if (!depth) continue;
-      sum += signal(m, phaseOf(m, t, o)) * depth;
+      sum += kernel.valueAt(m, t, originFor(m, o)) * depth;
     }
     return sum;
   }
@@ -141,8 +127,10 @@ export class ModulationRuntime {
   activeOffsets(t: number, o: PhaseOrigin = SHARED_FREE): Record<string, number> {
     const out: Record<string, number> = {};
     for (const m of this.mods) {
-      if (!m.enabled || m.kind !== 'lfo') continue;
-      const w = signal(m, phaseOf(m, t, o));
+      if (!m.enabled) continue;
+      const kernel = getModulatorKernel(m.kind);
+      if (!kernel) continue;
+      const w = kernel.valueAt(m, t, originFor(m, o));
       for (const field in m.depthByParam) {
         const depth = m.depthByParam[field];
         if (!depth) continue;
@@ -160,8 +148,10 @@ export class ModulationRuntime {
   offsetsInto(out: Record<string, number>, t: number, o: PhaseOrigin = SHARED_FREE): void {
     for (const k in out) out[k] = 0;
     for (const m of this.mods) {
-      if (!m.enabled || m.kind !== 'lfo') continue;
-      const w = signal(m, phaseOf(m, t, o));
+      if (!m.enabled) continue;
+      const kernel = getModulatorKernel(m.kind);
+      if (!kernel) continue;
+      const w = kernel.valueAt(m, t, originFor(m, o));
       for (const field in m.depthByParam) {
         const depth = m.depthByParam[field];
         if (!depth) continue;
