@@ -29,7 +29,7 @@ export interface EngineDescriptor {
   id: string;
   name: string;
   polyphony: 'mono' | 'poly';
-  editor: 'piano-roll' | 'drum-grid' | 'audio';
+  editor: 'piano-roll' | 'drum-grid';
   params: EngineParamSpec[];
   presets: EnginePreset[];
   /** The engine's DEFAULT modulator set (serialized state), used to seed a

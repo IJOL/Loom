@@ -63,7 +63,7 @@ registerEngineFactory('sampler', makeSamplerDescriptor);
 registerEngine(makeSamplerDescriptor());
 
 registerEngineCapabilities('sampler', {
-  clipEditor: 'piano-roll', shortLabel: 'sampler', outputTrim: 1,
+  clipContent: 'notes', shortLabel: 'sampler', outputTrim: 1,
   accepts: ['audio-file'],
   harmonic: false,
 });

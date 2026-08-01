@@ -40,6 +40,6 @@ registerEngineFactory('drums-machine', makeDrumsDescriptor);
 registerEngine(makeDrumsDescriptor());
 
 registerEngineCapabilities('drums-machine', {
-  clipEditor: 'drum-grid', shortLabel: 'drums', outputTrim: 1,
+  clipContent: 'notes', defaultNoteView: 'pads', shortLabel: 'drums', outputTrim: 1,
   acceptsNoteFx: false,
 });

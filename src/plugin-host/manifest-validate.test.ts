@@ -5,7 +5,7 @@ const engineComponent = {
   kind: 'engine' as const,
   id: 'karplus', name: 'Karplus', polyphony: 'poly' as const,
   params: [{ id: 'a', label: 'A', kind: 'continuous' as const, min: 0, max: 1, default: 0 }],
-  capabilities: { clipEditor: 'piano-roll' as const, shortLabel: 'karp', outputTrim: 0.857 },
+  capabilities: { clipContent: 'notes' as const, shortLabel: 'karp', outputTrim: 0.857 },
 };
 const ok = (over: Record<string, unknown> = {}) => ({
   id: 'p', name: 'P', version: '1.0.0', loomApi: 1, main: 'main.js',
@@ -61,8 +61,8 @@ describe('validatePluginManifest', () => {
     if (!r.ok) expect(r.error).toMatch(/components/);
   });
 
-  it('accepts clipEditor audio', () => {
-    const caps = { ...engineComponent.capabilities, clipEditor: 'audio' as const };
+  it('accepts clipContent audio', () => {
+    const caps = { ...engineComponent.capabilities, clipContent: 'audio' as const };
     expect(validatePluginManifest(ok({ components: [{ ...engineComponent, capabilities: caps }] })).ok).toBe(true);
   });
 

@@ -10,8 +10,8 @@ import { reconcileLaneEnvelopes } from '../session/session';
 
 export interface EngineSwapDeps {
   state: SessionState;
-  /** Editor kind for an engineId ('piano-roll' | 'drum-grid' | 'audio' | undefined). */
-  getEngineEditor: (engineId: string) => 'piano-roll' | 'drum-grid' | 'audio' | undefined;
+  /** Editor kind for an engineId ('piano-roll' | 'drum-grid' | undefined). */
+  getEngineEditor: (engineId: string) => 'piano-roll' | 'drum-grid' | undefined;
   /** Automatable paramIds the engine exposes (for envelope reconciliation). */
   getEngineParamIds: (engineId: string) => ReadonlySet<string>;
   /** Replace the live audio engine for the lane (allocator.swapLaneEngine). */

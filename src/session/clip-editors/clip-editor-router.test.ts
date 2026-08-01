@@ -179,10 +179,10 @@ describe('combineEditorHandle', () => {
 // Last in the file: __resetCapabilities() wipes the real 'audio' registration
 // the earlier tests rely on, so nothing after this block may depend on it.
 describe('isAudioClip via the capability door', () => {
-  it('a clip on ANY engine declaring clipEditor audio is an audio clip', () => {
+  it('a clip on ANY engine declaring clipContent audio is an audio clip', () => {
     __resetCapabilities();
     registerEngineCapabilities('probe-audio', {
-      clipEditor: 'audio', shortLabel: 'p', outputTrim: 1,
+      clipContent: 'audio', shortLabel: 'p', outputTrim: 1,
     });
     const lane = { id: 'l1', engineId: 'probe-audio', clips: [], inserts: [] } as unknown as SessionLane;
     const clip = { id: 'c1', lengthBars: 1, notes: [], sample: { id: 's' } } as unknown as SessionClip;

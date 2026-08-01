@@ -47,8 +47,10 @@ export interface EngineManifest {
   id: string;
   name: string;
   polyphony: 'mono' | 'poly';
-  /** Which host clip editor this engine wants. */
-  clipEditor: 'piano-roll' | 'drum-grid' | 'audio';
+  /** What a clip of this engine CONTAINS — see EngineCapabilities.clipContent. */
+  clipContent: 'notes' | 'audio';
+  /** See EngineCapabilities.defaultNoteView. */
+  defaultNoteView?: 'pitches' | 'pads';
   params: EngineParamSpec[];
   /** Default modulator set, serialized — seeds the lane's modulation host. */
   modulators?: unknown[];
@@ -67,8 +69,16 @@ export type AssetKind = 'audio-file';
  *  OMITTING is the normal case: a manifest that says nothing behaves like an
  *  ordinary melodic instrument. Only the unusual gets declared. */
 export interface EngineCapabilities {
-  /** Which host clip editor this engine wants. */
-  clipEditor: 'piano-roll' | 'drum-grid' | 'audio';
+  /** What a clip of this engine CONTAINS, and therefore what kind of lane it is.
+   *  Binary on purpose: 'notes' is any instrument — melodic, sampler or drum
+   *  machine, all of them addressing pitches or pads; 'audio' is a channel whose
+   *  clips ARE whole files. The host derives the editor from this. Never the
+   *  other way round: a UI preference must not decide what a clip is. */
+  clipContent: 'notes' | 'audio';
+  /** Which of the note editor's two views a clip opens in. Only meaningful when
+   *  clipContent is 'notes'. NOT a nature: the user flips between the two per
+   *  clip (see editorOverride in session-inspector.ts). Default: 'pitches'. */
+  defaultNoteView?: 'pitches' | 'pads';
   /** Prefix for generated lane ids ("karplus" → "karplus-1"). */
   shortLabel: string;
   /** Output balance against the other engines. */

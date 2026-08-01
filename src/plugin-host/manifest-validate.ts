@@ -24,12 +24,17 @@ function paramError(p: unknown, i: number): string | null {
 }
 
 const ASSET_KINDS = ['audio-file'];
-const CLIP_EDITORS = ['piano-roll', 'drum-grid', 'audio'];
+const CLIP_CONTENTS = ['notes', 'audio'];
+const NOTE_VIEWS = ['pitches', 'pads'];
 
 function capabilitiesError(c: unknown, i: number): string | null {
   if (!isObj(c)) return `components[${i}].capabilities is not an object`;
-  if (typeof c.clipEditor !== 'string' || !CLIP_EDITORS.includes(c.clipEditor)) {
-    return `components[${i}].capabilities.clipEditor must be ${CLIP_EDITORS.join('|')}`;
+  if (c.clipContent !== 'notes' && c.clipContent !== 'audio') {
+    return `components[${i}].capabilities.clipContent must be ${CLIP_CONTENTS.join('|')}`;
+  }
+  if (c.defaultNoteView !== undefined
+      && c.defaultNoteView !== 'pitches' && c.defaultNoteView !== 'pads') {
+    return `components[${i}].capabilities.defaultNoteView must be ${NOTE_VIEWS.join('|')}`;
   }
   if (!isStr(c.shortLabel)) return `components[${i}].capabilities.shortLabel must be a non-empty string`;
   // No default: a missing trim is a plugin that never thought about gain

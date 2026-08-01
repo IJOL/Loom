@@ -102,7 +102,11 @@ export interface SynthEngine {
   readonly name: string;
   readonly type: 'polyhost' | 'tab';
   readonly polyphony: 'mono' | 'poly';
-  readonly editor: 'piano-roll' | 'drum-grid' | 'audio';
+  /** The engine's default NOTE editor view — derived from
+   *  EngineCapabilities.defaultNoteView, never declared independently. NOT a
+   *  nature: whether a lane is audio at all is EngineCapabilities.clipContent,
+   *  consulted through isAudioEngine() in plugins/capabilities.ts. */
+  readonly editor: 'piano-roll' | 'drum-grid';
   readonly params: import('./engine-params').EngineParamSpec[];
   readonly presets: EnginePreset[];
   /** Engine's modulation host — read by the voice-mod binder to enumerate

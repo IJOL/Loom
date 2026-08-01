@@ -26,8 +26,14 @@ export function engineCapabilities(id: string): EngineCapabilities | undefined {
 // engine not yet registered would blank out its lane's UI, and that failure is
 // silent. The safe default is "normal".
 
-export function clipEditorFor(id: string): 'piano-roll' | 'drum-grid' | 'audio' {
-  return caps.get(id)?.clipEditor ?? 'piano-roll';
+export function clipContentOf(id: string): 'notes' | 'audio' {
+  return caps.get(id)?.clipContent ?? 'notes';
+}
+export function isAudioEngine(id: string): boolean {
+  return clipContentOf(id) === 'audio';
+}
+export function defaultNoteViewOf(id: string): 'pitches' | 'pads' {
+  return caps.get(id)?.defaultNoteView ?? 'pitches';
 }
 export function acceptsAudioFile(id: string): boolean {
   return caps.get(id)?.accepts?.includes('audio-file') ?? false;

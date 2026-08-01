@@ -39,7 +39,7 @@ describe('nextLaneSlug — slug id generation', () => {
     __resetPluginEngines();
     installMainThreadLoomApi();
     (globalThis as unknown as { Loom: { registerEngine(m: unknown): void } }).Loom.registerEngine({
-      id: 'probe-engine', name: 'Probe', polyphony: 'poly', clipEditor: 'piano-roll',
+      id: 'probe-engine', name: 'Probe', polyphony: 'poly', clipContent: 'notes',
       outputTrim: 0.5, shortLabel: 'prb', params: [],
     });
     expect(nextLaneSlug(new Set([]), 'probe-engine')).toBe('prb-1');

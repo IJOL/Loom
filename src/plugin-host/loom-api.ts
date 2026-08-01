@@ -18,13 +18,14 @@ import type { ModulatorState } from '../modulation/types';
  *  adoptComponent so a v1 plugin is not a second-class citizen while it lasts. */
 function adoptEngine(m: EngineManifest): void {
   registerEngineCapabilities(m.id, {
-    clipEditor: m.clipEditor, shortLabel: m.shortLabel, outputTrim: m.outputTrim, gm: m.gm,
+    clipContent: m.clipContent, defaultNoteView: m.defaultNoteView,
+    shortLabel: m.shortLabel, outputTrim: m.outputTrim, gm: m.gm,
   }, true);
   const make = () => createDescriptorEngine({
     id: m.id,
     name: m.name,
     polyphony: m.polyphony,
-    editor: m.clipEditor,
+    editor: m.defaultNoteView === 'pads' ? 'drum-grid' : 'piano-roll',
     params: m.params,
     presets: () => getCachedPresets(m.id),
     modulators: (m.modulators ?? []) as ModulatorState[],
@@ -39,8 +40,9 @@ function adoptComponent(m: ComponentManifest): void {
     id: m.id,
     name: m.name,
     polyphony: m.polyphony,
-    // The host owns the clip editors; the plugin only says which one it wants.
-    editor: m.capabilities.clipEditor,
+    // Derived, not declared: the plugin says what a clip of this engine IS
+    // (clipContent) and, when it's notes, which view opens by default.
+    editor: m.capabilities.defaultNoteView === 'pads' ? 'drum-grid' : 'piano-roll',
     params: m.params,
     presets: () => getCachedPresets(m.id),
     modulators: (m.modulators ?? []) as ModulatorState[],

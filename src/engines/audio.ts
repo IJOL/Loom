@@ -28,7 +28,7 @@ function makeAudioDescriptor() {
 registerEngineFactory('audio', makeAudioDescriptor);
 registerEngine(makeAudioDescriptor());
 
-// The capability door (Task 4): isAudioClip() now asks clipEditorFor(engineId)
+// The capability door (Task 4): isAudioClip() now asks isAudioEngine(engineId)
 // instead of comparing lane.engineId === 'audio' literally. The built-in audio
 // channel has to answer through the same door a plugin would, or its own real
 // clips would stop being recognised as audio clips the moment the router
@@ -36,7 +36,7 @@ registerEngine(makeAudioDescriptor());
 // piece could not wait — without it the router change breaks the live audio
 // channel and every pre-existing test exercising it.
 registerEngineCapabilities('audio', {
-  clipEditor: 'audio',
+  clipContent: 'audio',
   shortLabel: 'audio',
   outputTrim: 1,
   accepts: ['audio-file'],

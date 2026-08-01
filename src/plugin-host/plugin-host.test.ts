@@ -7,7 +7,7 @@ import { getCachedPresets, __resetPresetCache } from '../presets/preset-loader';
 // Shape the FAKE main.js hands to Loom.registerEngine — still the v1
 // EngineManifest shape, since registerEngine is unchanged in this task.
 const probeEngineManifest = {
-  id: 'probe', name: 'Probe', polyphony: 'poly', clipEditor: 'piano-roll',
+  id: 'probe', name: 'Probe', polyphony: 'poly', clipContent: 'notes',
   outputTrim: 0.5, shortLabel: 'probe',
   params: [{ id: 'amp.level', label: 'Level', kind: 'continuous', min: 0, max: 1, default: 0.8 }],
 };
@@ -18,7 +18,7 @@ const MANIFEST = {
   components: [{
     kind: 'engine', id: 'probe', name: 'Probe', polyphony: 'poly',
     params: [{ id: 'amp.level', label: 'Level', kind: 'continuous', min: 0, max: 1, default: 0.8 }],
-    capabilities: { clipEditor: 'piano-roll', outputTrim: 0.5, shortLabel: 'probe' },
+    capabilities: { clipContent: 'notes', outputTrim: 0.5, shortLabel: 'probe' },
   }],
 };
 

@@ -13,7 +13,7 @@ var plugin_default = {
       id: "karplus",
       name: "Karp",
       polyphony: "poly",
-      clipEditor: "piano-roll",
+      clipContent: "notes",
       outputTrim: 0.857,
       shortLabel: "karplus",
       gm: { keywords: ["guitar", "gtr", "pluck", "nylon"], priority: 10 },

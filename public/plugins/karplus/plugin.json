@@ -12,7 +12,7 @@
       "id": "karplus",
       "name": "Karp",
       "polyphony": "poly",
-      "clipEditor": "piano-roll",
+      "clipContent": "notes",
       "outputTrim": 0.857,
       "shortLabel": "karplus",
       "gm": {

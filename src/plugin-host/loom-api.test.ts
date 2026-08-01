@@ -7,7 +7,7 @@ import { LOOM_API_VERSION, type ComponentManifest } from '@loom/plugin-sdk';
 const manifest: ComponentManifest = {
   kind: 'engine', id: 'probe', name: 'Probe', polyphony: 'poly',
   params: [{ id: 'amp.level', label: 'Level', kind: 'continuous', min: 0, max: 1, default: 0.8 }],
-  capabilities: { clipEditor: 'piano-roll', outputTrim: 0.5, shortLabel: 'probe' },
+  capabilities: { clipContent: 'notes', outputTrim: 0.5, shortLabel: 'probe' },
 };
 
 describe('the main-thread Loom API', () => {
