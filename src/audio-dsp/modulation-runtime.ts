@@ -19,10 +19,12 @@
 // per-voice LFOs need an origin per voice, which VoiceManager supplies from each
 // slot's note-on time. `needsPerVoicePhase()` tells the loop which path to take.
 //
-// `kind: 'adsr'` mods contribute zero HERE — they are genuinely per-voice and
-// travel a different road: getAdsrMods() hands them to the renderer at spawn,
+// A gate-driven mod (driver:'gate' — today always the ADSR, the only component
+// registered that way) contributes zero HERE — it is genuinely per-voice and
+// travels a different road: getAdsrMods() hands it to the renderer at spawn,
 // which gates an envelope per note (see ModEnvHost). That road is unchanged by
-// this file's kernel lookup — ADSR has no 'time'-driver kernel to look up.
+// this file's kernel lookup — a gate driver has no 'time'-driver kernel to
+// look up, by design (§3.3 of the design doc: the gate road stays closed).
 import type { ModTarget } from './types';
 import { getModulatorKernel, type ModulatorKernel } from './modulator-kernels';
 
@@ -33,6 +35,14 @@ export interface ModLite {
    *  It used to be 'lfo' | 'adsr', and toModLite coerced anything else into
    *  'adsr' — a third modulator silently became an envelope. */
   kind: string;
+  /** Mirrors ModulatorComponent.driver (modulator-registry.ts), carried through
+   *  so the per-voice gate road (getAdsrMods below) can be identified by this
+   *  property instead of a hardcoded 'adsr' comparison — the runtime has no
+   *  business knowing which id means "envelope". Populated by the host's
+   *  toModLite (mod-lite.ts), which has the registry; absent on a hand-built
+   *  ModLite (tests that skip toModLite), which then correctly counts as
+   *  "not a gate mod". */
+  driver?: 'time' | 'gate';
   enabled: boolean;
   rateHz: number;
   waveform: 'sine' | 'triangle' | 'square' | 'saw';
@@ -124,12 +134,16 @@ export class ModulationRuntime {
    *  sample. False for the common all-free/all-shared case. */
   needsPerVoicePhase(): boolean { return this.perVoicePhase; }
 
-  /** The enabled ADSR modulators (per-voice envelopes the renderer drives). LFOs
-   *  stay shared in offsetFor/activeOffsets; ADSR is gated per note, so each voice
-   *  runs its own envelope from these — the VoiceManager hands them to the renderer
-   *  at spawn. */
+  /** The enabled gate-driven modulators (per-voice envelopes the renderer
+   *  drives) — today that is always the ADSR, the only component registered
+   *  with driver:'gate' (§3.3: the gate road stays closed in this slice). LFOs
+   *  stay shared in offsetFor/activeOffsets; a gate mod is gated per note, so
+   *  each voice runs its own envelope from these — the VoiceManager hands them
+   *  to the renderer at spawn. Asks the DRIVER, not the id: this is still the
+   *  same per-voice envelope road, unmoved — only how the runtime recognises
+   *  a mod belongs on it. */
   getAdsrMods(): ModLite[] {
-    return this.mods.filter((m) => m.kind === 'adsr' && m.enabled);
+    return this.mods.filter((m) => m.driver === 'gate' && m.enabled);
   }
   /** Normalised additive offset (Σ wave×depth over enabled LFOs) for a
    *  modulation target at absolute time t. The renderer scales it to the

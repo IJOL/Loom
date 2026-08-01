@@ -275,6 +275,26 @@ describe('toModLite', () => {
     expect(mods[0].kind).toBe('sh');
   });
 
+  it("resolves driver from the registry: 'time' for lfo, 'gate' for adsr, undefined for an unregistered kind", () => {
+    // ModulationRuntime.getAdsrMods asks m.driver === 'gate', not m.kind ===
+    // 'adsr' — this is the one place that fills driver in, from the real
+    // registry (makeDefaultADSR's component registers driver:'gate' at import
+    // time, same as makeDefaultLFO registers driver:'time' — both imported at
+    // the top of this file).
+    const [lfoMod] = toModLite([lfo()]);
+    expect(lfoMod.driver).toBe('time');
+
+    const [adsrMod] = toModLite([{
+      id: 'adsr1', kind: 'adsr', enabled: true, connections: [], scope: 'per-voice',
+    } as never]);
+    expect(adsrMod.driver).toBe('gate');
+
+    const [unknownMod] = toModLite([{
+      id: 'x1', kind: 'no-such-modulator', enabled: true, connections: [], scope: 'shared',
+    } as never]);
+    expect(unknownMod.driver).toBeUndefined();
+  });
+
   it('carries a plugin modulator\'s params bag through to the worklet wire format', () => {
     // Without this a plugin's kernel reaches the audio thread with no way to
     // read what the user configured for it — the bag exists (types.ts) but a

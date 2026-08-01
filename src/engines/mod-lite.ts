@@ -10,6 +10,7 @@ import type { SubParams, ModTarget } from '../audio-dsp/types';
 import type { ModLite } from '../audio-dsp/modulation-runtime';
 import { type ModulatorState } from '../modulation/types';
 import { effectiveRateHz } from '../modulation/rate-sync';
+import { getModulator } from '../modulation/modulator-registry';
 
 // dot-id (SUB_PARAM_SPECS vocabulary) → flat SubParams field. Single source of
 // the mapping. Params not present here (poly.*) are handled explicitly in
@@ -82,6 +83,13 @@ export function toModLite(
     return {
       id: m.id,
       kind: m.kind,
+      // The kind's driver ('time' runs off the clock, 'gate' is the per-voice
+      // envelope road) — a registry question, resolved once here where the
+      // main thread still has the registry, so ModulationRuntime.getAdsrMods
+      // downstream can ask a property instead of comparing kind === 'adsr'.
+      // Undefined for an unregistered kind (nothing to ask), same as a kernel
+      // miss elsewhere in this file's output.
+      driver: getModulator(m.kind)?.driver,
       enabled: m.enabled !== false,
       // effectiveRateHz returns the free rateHz when syncToBpm is unset, so a
       // free LFO is unchanged; a synced LFO gets the bpm-derived rate. Keep the

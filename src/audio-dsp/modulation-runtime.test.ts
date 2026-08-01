@@ -125,3 +125,39 @@ describe('ModulationRuntime (kernel registry — real lookup, not a hardcoded ki
     expect(rt.offsetFor('filter.cutoff' as never, 0.25)).toBe(0);
   });
 });
+
+// getAdsrMods used to decide by comparing `m.kind === 'adsr'`. It now asks the
+// DRIVER (ModLite.driver, mirroring ModulatorComponent.driver) instead — same
+// trick as the kernel-registry tests above: naming something 'adsr' proves
+// nothing on its own, so both directions are tested.
+describe('ModulationRuntime.getAdsrMods (driver, not id)', () => {
+  it("a mod with driver:'gate' is returned, whatever its kind is named", () => {
+    const rt = new ModulationRuntime(44100);
+    rt.setMods([{
+      id: 'g1', kind: 'totally-not-called-adsr', driver: 'gate', enabled: true,
+      rateHz: 0, waveform: 'sine', depthByParam: {},
+    } as never]);
+    expect(rt.getAdsrMods().map((m) => m.id)).toEqual(['g1']);
+  });
+
+  it("a mod literally kind:'adsr' but WITHOUT driver:'gate' is NOT returned", () => {
+    const rt = new ModulationRuntime(44100);
+    rt.setMods([{
+      id: 'a1', kind: 'adsr', enabled: true,
+      rateHz: 0, waveform: 'sine', depthByParam: {},
+    } as never]);
+    // No `driver` field at all (a hand-built ModLite that skipped toModLite,
+    // exactly like this file's other literals) — the old `kind === 'adsr'`
+    // check would have returned this one; asking the driver correctly does not.
+    expect(rt.getAdsrMods()).toEqual([]);
+  });
+
+  it('a disabled gate mod is excluded', () => {
+    const rt = new ModulationRuntime(44100);
+    rt.setMods([{
+      id: 'g1', kind: 'x', driver: 'gate', enabled: false,
+      rateHz: 0, waveform: 'sine', depthByParam: {},
+    } as never]);
+    expect(rt.getAdsrMods()).toEqual([]);
+  });
+});
