@@ -62,15 +62,16 @@ export interface EngineCapabilities {
   accepts?: AssetKind[];
   /** False for engines that are not note-transformed (drums, audio). Default true. */
   acceptsNoteFx?: boolean;
-  /** False hides it from the "add lane" engine list. Default true. */
-  listedInSelector?: boolean;
   /** False for engines that cannot host a chord accompaniment. Default true. */
   harmonic?: boolean;
   /** Whether the "🎲 Sound" dice means anything for this engine. A melodic
    *  instrument has this: its sound is a bag of params the dice can roll. The
    *  sampler and the drum machine do not — their sound is a loaded kit or
    *  keymap, and there is nothing to roll. Neither does an audio channel.
-   *  Default: true, so an instrument that says nothing gets its dice. */
+   *  Default: true, so an instrument that says nothing gets its dice.
+   *  NOT read by any consumer yet — declared ahead of its reader on purpose.
+   *  Its reader is the "🎲 Sound" dice (`#poly-randomize`), deliberately left
+   *  unwired: hiding or disabling it is a separate UI decision (slice C). */
   isRandomizable?: boolean;
   gm?: GmHint;
 }

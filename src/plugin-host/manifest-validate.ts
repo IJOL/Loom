@@ -45,7 +45,7 @@ function capabilitiesError(c: unknown, i: number): string | null {
       return `components[${i}].capabilities.accepts must be an array of ${ASSET_KINDS.join('|')}`;
     }
   }
-  for (const k of ['acceptsNoteFx', 'listedInSelector', 'harmonic', 'isRandomizable'] as const) {
+  for (const k of ['acceptsNoteFx', 'harmonic', 'isRandomizable'] as const) {
     if (c[k] !== undefined && typeof c[k] !== 'boolean') {
       return `components[${i}].capabilities.${k} must be a boolean when present`;
     }

@@ -13,7 +13,17 @@ import { beginInlineRename } from './inline-rename';
 import { clipDragHandlers } from './session-clip-drag';
 import { listEngines } from '../engines/registry';
 import type { SessionUICallbacks } from './session-ui-types';
-import { acceptsAudioFile, isAudioEngine, isListedInSelector } from '../plugins/capabilities';
+import { acceptsAudioFile, isAudioEngine } from '../plugins/capabilities';
+
+// The audio channel gets its OWN entry in the "+" menu, appended right below
+// the engine list (see addLaneHeaderTemplate). That is a layout decision made
+// BY THE MENU, not a property of the engine — an engine cannot know it will be
+// given a second, explicit entry elsewhere in the same menu, so it has no
+// business declaring that fact about itself in its manifest. A local constant
+// means the one thing that owns "audio gets its own row" is this file, in one
+// place, for both halves of the decision: the filter below and the explicit
+// item further down.
+const EXPLICIT_ENTRY_ENGINE = 'audio';
 
 // Fallback fill for a filled clip that carries no `clip.color`. Filled cells force
 // dark text (`color: #111`, see _session-grid.scss) so it reads against the light
@@ -302,7 +312,7 @@ function addLaneHeaderTemplate(cb: SessionUICallbacks): TemplateResult {
     >${label}</button>`;
 
   const engineItems = listEngines('polyhost')
-    .filter((engine) => isListedInSelector(engine.id)) // audio is added via the explicit entry below
+    .filter((engine) => engine.id !== EXPLICIT_ENTRY_ENGINE) // audio is added via the explicit entry below
     .map((engine) => item(engine.name, () => cb.onAddLane(engine.id), engine.id));
 
   return html`<div class="session-lane-add-wrap"><button

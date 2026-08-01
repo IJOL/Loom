@@ -25,10 +25,16 @@ import { isWorkletHosted, pluginSynthTrim } from '../plugins/capabilities';
 // (I4, 2026-07-26 continuous-params review).
 const BUILTIN_WORKLET_ENGINE_IDS = new Set(['subtractive', 'tb303', 'fm', 'wavetable', 'westcoast']);
 
-/** Built-ins are still listed above; a PLUGIN engine qualifies by having shipped
- *  a renderer, so nothing has to be added by hand when one is installed. The
- *  iterator walks the BUILT-INS only — that is what the registry-driven
- *  live-params test needs, since a plugin's renderer no longer lives in src/. */
+/** Built-ins are still listed above; a PLUGIN engine qualifies by having
+ *  arrived through a plugin manifest (`isWorkletHosted`, backed by the set of
+ *  ids `adoptComponent` registered), NOT by having shipped a renderer — the
+ *  allocator never sees `PluginManifestFile.dsp`, only the `ComponentManifest`,
+ *  so it cannot tell. `audio-probe` ships no renderer at all and still
+ *  qualifies. Nothing has to be added by hand when a plugin is installed, but
+ *  it also means a plugin with real DSP and a plugin with none are routed
+ *  identically today. The iterator walks the BUILT-INS only — that is what the
+ *  registry-driven live-params test needs, since a plugin's renderer no longer
+ *  lives in src/. */
 export const WORKLET_ENGINE_IDS = {
   has: (id: string): boolean => BUILTIN_WORKLET_ENGINE_IDS.has(id) || isWorkletHosted(id),
   [Symbol.iterator]: (): Iterator<string> => BUILTIN_WORKLET_ENGINE_IDS[Symbol.iterator](),

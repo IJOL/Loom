@@ -167,9 +167,9 @@ este trozo existe para evitar.
 
 ### Una puerta
 
-`src/plugins/capabilities.ts` — `capabilityOf(kind, id)` — con **accesores con
-nombre** (`clipEditorFor`, `acceptsFileDrop`, `scopesFor`). Nunca un `switch`
-suelto en el core.
+`src/plugins/capabilities.ts` — con **accesores con nombre**
+(`clipContentOf`, `isAudioEngine`, `acceptsAudioFile`, `scopesFor`). Nunca un
+`switch` suelto en el core.
 
 Responde de dos fuentes y el que pregunta **no sabe cuál**: manifiesto de fichero
 si el componente es un plugin, registro en código si es integrado. Ésa es la
@@ -190,13 +190,25 @@ pregunta primero "¿esto es un plugin?" — el reflejo exacto que estamos quitan
 | `editorPage: 'poly' \| '303' \| 'drums'` | `session-host-lane-editor.ts:33-34`, `knob-mounting.ts:132`, `main.ts:409-410` |
 | `accepts: ['audio-file']` | `=== 'sampler' \|\| === 'audio'` en `session-grid-templates.ts:130`, `session-host-audio-import.ts:80` |
 | `acceptsNoteFx: boolean` | `lane-editor-panels.ts:19`, `trigger-dispatch.ts:48` |
-| `listedInSelector: boolean` | `session-grid-templates.ts:304` |
 | `isRandomizable: boolean` | el dado "🎲 Sound". La tienen los motores de notas melódicos; el sampler, la batería y el canal de audio no la tienen. **Sólo se DECLARA en la rebanada A; conectar el botón es posterior** |
 | `harmonic: boolean` | `session-inspector.ts:519,536` (botón de acordes y filtro de pistas) |
 | `slideOnOverlap: boolean` | `lane-scheduler.ts:228` (el 303 deja de ser un nombre en el scheduler) |
 | `shortLabel: string` | ya existe y aún convive con la cadena de seis `? :` de `session-host-util.ts:12-17` |
 | `patternCategory: string` | `pattern-picker-ui.ts:19-20` |
 | `roles: string[]` | los defaults de producto: `main.ts:177,455`, `lane-host-wiring.ts:20`, `midi-import-ui.ts:173,209`, `transcribe-to-clip.ts`, `session-inspector.ts:549`, `midi-to-session.ts:132,142` |
+
+**`listedInSelector` se borró (decisión de Nacho, review de la rebanada A).**
+Estuvo en el catálogo y se implementó, pero resultó ser disposición del host
+disfrazada de propiedad del motor: la confesión estaba en el propio
+consumidor, `session-grid-templates.ts:305`, con un comentario que decía "audio
+is added via the explicit entry below" — eso no describe el motor, describe
+que **el menú** decidió darle una entrada propia. La consecuencia real: el
+plugin sonda `audio-probe` copió `listedInSelector: false` del motor `audio`
+integrado y quedó **inalcanzable desde cualquier ruta de usuario**, porque
+nada más lo excluía del "+". El motor `audio` sigue sin aparecer en la lista
+general — el menú le añade su propia entrada explícita debajo — pero eso ahora
+lo decide una constante local del menú (`EXPLICIT_ENTRY_ENGINE` en
+`session-grid-templates.ts`), no una capacidad del manifiesto.
 
 **modulator** (1): `scopes: ('shared' | 'per-voice')[]`, el primero es el inicial.
 No hay `configEditor`: los mandos salen de `params: ParamSpec[]` por el grid
@@ -207,21 +219,48 @@ medida, un `configEditor` sería el id escrito de otra manera.
 existe igualmente para que el componente número 12 tenga dónde declarar sin abrir
 otro mecanismo.
 
-**No hay `swappable`.** Se cayó al escribir el plan, leyendo el código:
-[engine-swap.ts:39-40](../../../src/app/engine-swap.ts) ya rechaza el intercambio
-cuando el editor del origen o del destino no es `piano-roll`, en las dos
-direcciones. En cuanto `clipEditor: 'audio'` deja de mentir, la guarda por id de
-la línea 38 es redundante — **se borra sin sustituto**. Una capacidad que no
-existe es una que nadie tiene que mantener coherente.
+**No hay `swappable`. (Corrección post-implementación, ver más abajo.)** Se
+cayó al escribir el plan, leyendo el código:
+[engine-swap.ts:39-40](../../../src/app/engine-swap.ts) ya rechaza el
+intercambio cuando el editor del origen o del destino no es `piano-roll`, en
+las dos direcciones — y el razonamiento de este párrafo era que, en cuanto
+`clipEditor: 'audio'` dejase de mentir, esas dos comprobaciones de editor
+cubrirían también el caso de audio, dejando la guarda por id de la línea 38
+redundante.
+
+**Ese razonamiento dejó de valer con la corrección de la sección "La
+naturaleza no se deriva de la UI" (más abajo, también 2026-08-01): `editor`
+NO terminó admitiendo `'audio'`.** Se ensanchó a tres valores brevemente en
+la Task 4 de la rebanada A y se **volvió a estrechar** a dos
+(`'piano-roll' | 'drum-grid'`) en la Task 6, pasando a significar sólo cuál de
+las dos vistas de notas abre un clip — nunca la naturaleza del motor. Con
+`editor` limitado a esos dos valores, las comprobaciones de
+`engine-swap.ts:39-40` ya NO rechazan un canal de audio (su `editor` por
+defecto es `'piano-roll'`, como el de cualquier instrumento). La guarda por id
+de la línea 38 **sigue en el código**, convertida en una pregunta a la puerta:
+
+```ts
+if (isAudioEngine(lane.engineId) || isAudioEngine(newEngineId)) return false;
+```
+
+Sigue siendo cero identificadores comparados por nombre — pero es la capacidad
+correcta la que hace falta preguntar, y `swappable` como capacidad aparte
+habría sido redundante con `isAudioEngine`, no con las comprobaciones de
+`editor`.
 
 Del mismo modo, "clic en celda vacía abre el selector de fichero"
-(`session-grid-templates.ts:152`) **se deriva** de `clipEditor === 'audio'` y no
-necesita bandera: si tus clips son ficheros de audio, la celda vacía pide un
-fichero.
+(`session-grid-templates.ts:152` en el momento de escribir esto) **NO se
+deriva** de la capacidad: `session-host-callbacks.ts:93` sigue haciendo
+`lane.engineId === 'audio'` a mano. Queda pendiente de la rebanada C. Su efecto
+real hoy: la celda vacía de la pista de un plugin de audio (p. ej.
+`audio-probe`) abre el editor de notas normal en vez de pedir un fichero — el
+único de los tres criterios de "sólo inserts, sin knobs" de la Task 9 que SÍ
+depende de un `engineId === 'audio'` sin corregir.
 
-`clipEditor` y `editorPage` **no** hacen la UI extensible: el plugin elige de un
-catálogo cerrado que publica el host. Es la decisión ya tomada en el trozo 1 — la
-UI grande no es enchufable, sólo se elige por capacidad en vez de por nombre.
+`clipContent` y `editorPage` **no** hacen la UI extensible: el plugin elige de
+un catálogo cerrado que publica el host. Es la decisión ya tomada en el
+trozo 1 — la UI grande no es enchufable, sólo se elige por capacidad en vez de
+por nombre.
 
 #### La naturaleza no se deriva de la UI (corrección de Nacho, 2026-08-01)
 
@@ -263,7 +302,8 @@ registran en el arranque, los plugins se cargan después, así que **instalar un
 plugin no puede cambiar en silencio el motor por defecto**. Sin números de
 prioridad ni desempates. Si nadie reclama un rol, cae al primer componente
 registrado que cumpla el requisito estructural (para `default-melodic`:
-`clipEditor === 'piano-roll'`).
+`editor === 'piano-roll'`, campo que hoy sólo distingue la vista de notas —
+ver la corrección de "La naturaleza no se deriva de la UI" más arriba).
 
 ## Las tres rebanadas
 
@@ -275,12 +315,29 @@ Cada rebanada termina en algo que se oye o se ve.
 ### A — Un plugin puede ser una caja de ritmos o un canal de audio
 
 Manifiesto unificado + la puerta + las capacidades de motor de ese camino:
-`clipEditor` (con el `'audio'` que hoy se tira), `accepts`, `acceptsNoteFx`,
-`swappable`, `listedInSelector`, `harmonic`.
+`clipContent`, `defaultNoteView`, `accepts`, `acceptsNoteFx`, `harmonic`.
+(`swappable` y `listedInSelector` estaban en esta lista al escribir el spec;
+la primera resultó redundante con `isAudioEngine` — ver "No hay `swappable`"
+más arriba — y la segunda se borró tras la implementación, ver la nota bajo el
+catálogo de capacidades.)
 
-**Aceptación:** un plugin sonda declara canal de audio; se le arrastra un fichero
-a su pista y **suena**, sin que ningún fichero de `src/` lo nombre. Un segundo
-plugin sonda declara `clipEditor: 'drum-grid'` y recibe la rejilla de batería.
+**Aceptación (reescrita — la original afirmaba algo que esta rebanada no
+hace):** un plugin sonda declara canal de audio (`clipContent: 'audio'`) y
+**se le puede crear** desde el menú "+" de añadir pista como cualquier otro
+motor, sin que ningún fichero de `src/` lo nombre — la celda vacía de su
+pista acepta el drop de un fichero, el clip resultante abre el editor de
+forma de onda (no el piano-roll) y el editor de pista se reduce a sus
+inserts. **No suena**: los backends (`DrumsWorkletEngine`, `SamplerWorkletEngine`,
+`AudioWorkletEngine`) siguen construyéndose por `if (engineId === …)` en el
+allocator — Decisión 2 de este mismo spec — así que un plugin de audio de
+verdad no tiene motor de audio detrás hasta el trozo 3. El criterio original
+("se le arrastra un fichero... y suena") describía el trozo 3, no éste.
+
+El segundo criterio — "un segundo plugin sonda declara `drum-grid` y recibe la
+rejilla de batería" — **se cayó de esta rebanada** y no se implementó: no hay
+un segundo plugin sonda, ni un test que ejercite `clipContent: 'notes'` +
+`defaultNoteView: 'pads'` desde un plugin real. Queda pendiente, sin rama
+asignada.
 
 ### B — El LFO y el ADSR salen del árbol
 
@@ -300,7 +357,11 @@ que es la prueba de que el SPI dejó de producir moduladores mudos.
 ### C — El barrido
 
 Lo que queda del censo: `shortLabel`, `editorPage`, `patternCategory`,
-`slideOnOverlap`, `roles`.
+`slideOnOverlap`, `roles`. Y una tarea de UI que no es censo pero quedó
+pendiente a propósito en la rebanada A: **cablear el dado "🎲 Sound"
+(`#poly-randomize`) a `isRandomizable`** — la capacidad se declara y valida
+desde la Task 7, pero hoy no la lee ningún consumidor; ocultar o deshabilitar
+el dado en sampler/batería/audio es la decisión de UI que esta tarea cierra.
 
 **Aceptación:** `node tools/plugin-id-census.mjs` baja a su mínimo y **cada línea
 que sobrevive tiene escrita la razón** — en el código o en este spec. Ésa es la
@@ -329,6 +390,28 @@ descubrirlo a mitad.
 - **No arregla** el LFO cuyos anillos se congelan tras Random (preexistente en
   `main`, verificado) ni el `WorkletLaneEngine.bpm` que nadie asigna y que deja
   un LFO en SYNC sin seguir el tempo. Cada uno necesita su propia rama.
+
+## Agujero conocido del modelo de confianza: dos copias del manifiesto
+
+Verificado en el código (review de la rebanada A, 2026-08-01), sin cerrar
+todavía. El preflight del host valida `public/<id>/plugin.json` — el fichero
+publicado — y **descarta ese objeto validado**; el manifiesto que de verdad
+llega a `registerComponent` (y por tanto a la puerta de capacidades) es el
+que **esbuild incrusta en `main.js`** a partir de la copia FUENTE
+(`plugins/<id>/plugin.json`) en tiempo de build. Para el caso de uso entero
+de "drop-in" — un autor de terceros que entrega un directorio `public/plugins/`
+ya construido, sin el fuente — eso significa: **el host valida un fichero y
+ejecuta unas capacidades que nunca ha visto**. Nada impide que las dos copias
+diverjan; el manifiesto validado es una fachada.
+
+Hoy no muerde: los dos plugins publicados (`karplus`, `audio-probe`) son
+nuestros, y `tools/loom-plugin/cli.mjs build` genera las dos copias a partir
+del mismo objeto fuente en el mismo paso, así que nunca hay tiempo para que
+diverjan. Pero el modelo de confianza no impide que un tercero entregue un
+`public/plugins/evil/plugin.json` inocente y un `main.js` cuyo
+`registerComponent` declare otra cosa. Cerrarlo (validar el manifiesto que de
+verdad se ejecuta, no una copia aparte) es trabajo de la rebanada B o C — no
+de ésta, que sólo lo documenta.
 
 ## Hechos verificados
 

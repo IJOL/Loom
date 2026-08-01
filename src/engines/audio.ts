@@ -42,6 +42,5 @@ registerEngineCapabilities('audio', {
   accepts: ['audio-file'],
   acceptsNoteFx: false,      // a whole file is not transformed note by note
   harmonic: false,           // cannot host a chord accompaniment
-  listedInSelector: false,   // added through its own explicit entry, not the list
   isRandomizable: false,     // no bag of params for the dice to roll
 });

@@ -44,9 +44,9 @@ export function acceptsNoteFx(id: string): boolean {
 export function isHarmonic(id: string): boolean {
   return caps.get(id)?.harmonic ?? true;
 }
-export function isListedInSelector(id: string): boolean {
-  return caps.get(id)?.listedInSelector ?? true;
-}
+/** NOT read by any consumer yet — declared ahead of its reader on purpose. Its
+ *  reader is the "🎲 Sound" dice (`#poly-randomize`), deliberately left
+ *  unwired: hiding or disabling it is a separate UI decision. */
 export function isRandomizable(id: string): boolean {
   return caps.get(id)?.isRandomizable ?? true;
 }
@@ -54,8 +54,15 @@ export function shortLabelFor(id: string): string | undefined {
   return caps.get(id)?.shortLabel;
 }
 
-/** A plugin component synthesises in the worklet exactly when it arrived by
- *  manifest: its renderer ships in the same bundle. */
+/** True for every engine that arrived through a plugin manifest — the ONLY
+ *  thing this checks. It does NOT check whether the plugin actually shipped a
+ *  renderer (`PluginManifestFile.dsp`): the allocator never sees that field,
+ *  only the `ComponentManifest` passed to `adoptComponent`, so this cannot
+ *  distinguish "brought DSP" from "brought none" (audio-probe qualifies with
+ *  neither). Today EVERY plugin engine is routed through WorkletLaneEngine
+ *  regardless of what it declares, so a plugin declaring `clipContent: 'audio'`
+ *  with real per-sample DSP would still get the wrong backend — a gap slice 3
+ *  closes when the backends stop being hard-coded in the allocator. */
 export function isWorkletHosted(id: string): boolean {
   return fromPlugin.has(id);
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   registerEngineCapabilities, clipContentOf, isAudioEngine, defaultNoteViewOf, acceptsAudioFile,
-  acceptsNoteFx, isHarmonic, isListedInSelector, isRandomizable, __resetCapabilities,
+  acceptsNoteFx, isHarmonic, isRandomizable, __resetCapabilities,
 } from './capabilities';
 import { getEngine } from '../engines/registry';
 import '../engines/audio';
@@ -15,12 +15,11 @@ describe('the three non-melodic in-tree engines', () => {
   // resetting describe below: this checks the real registrations made by the
   // imported engine files above, which a later __resetCapabilities() would wipe.
 
-  it('los tres motores no-melodicos del arbol declaran sus capacidades', () => {
+  it('the three non-melodic in-tree engines declare their own capabilities', () => {
     expect(isAudioEngine('audio')).toBe(true);
     expect(acceptsAudioFile('audio')).toBe(true);
     expect(acceptsNoteFx('audio')).toBe(false);
     expect(isHarmonic('audio')).toBe(false);
-    expect(isListedInSelector('audio')).toBe(false);
 
     expect(isAudioEngine('sampler')).toBe(false);
     expect(acceptsAudioFile('sampler')).toBe(true);
@@ -64,7 +63,6 @@ describe('the capability door', () => {
     expect(defaultNoteViewOf('quiet')).toBe('pitches');
     expect(acceptsNoteFx('quiet')).toBe(true);
     expect(isHarmonic('quiet')).toBe(true);
-    expect(isListedInSelector('quiet')).toBe(true);
     expect(acceptsAudioFile('quiet')).toBe(false);
   });
 
@@ -87,14 +85,13 @@ describe('the capability door', () => {
   it('an audio channel declares its own shape and the door honours it', () => {
     registerEngineCapabilities('probe-audio', {
       clipContent: 'audio', shortLabel: 'aud', outputTrim: 1,
-      accepts: ['audio-file'], acceptsNoteFx: false, harmonic: false, listedInSelector: false,
+      accepts: ['audio-file'], acceptsNoteFx: false, harmonic: false,
     });
     expect(clipContentOf('probe-audio')).toBe('audio');
     expect(isAudioEngine('probe-audio')).toBe(true);
     expect(acceptsAudioFile('probe-audio')).toBe(true);
     expect(acceptsNoteFx('probe-audio')).toBe(false);
     expect(isHarmonic('probe-audio')).toBe(false);
-    expect(isListedInSelector('probe-audio')).toBe(false);
   });
 
   it('the last registration wins, so a plugin can replace a built-in', () => {

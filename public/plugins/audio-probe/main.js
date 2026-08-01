@@ -19,8 +19,7 @@ var plugin_default = {
         outputTrim: 1,
         accepts: ["audio-file"],
         acceptsNoteFx: false,
-        harmonic: false,
-        listedInSelector: false
+        harmonic: false
       }
     }
   ]
