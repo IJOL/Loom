@@ -417,11 +417,18 @@ de ésta, que sólo lo documenta.
 
 Comprobados en el código el 2026-08-01, no inferidos.
 
-| hecho | dónde |
-|---|---|
-| `chooseClipEditor` YA consulta el editor declarado por el motor | `clip-editor-router.ts:108` |
-| `clipEditor` ya es campo obligatorio y validado del manifiesto | `manifest-validate.ts:31` |
-| …y `'audio'` se convierte en `'piano-roll'` en silencio | `loom-api.ts:30` |
+> **Las tres primeras filas son el estado ANTES de la rebanada A, no el de ahora.**
+> Se conservan porque son el diagnóstico que la justificó — la mentira de
+> `clipEditor` — pero ya no describen el código: `clipEditor` no existe, lo
+> sustituyó `clipContent`, y la conversión silenciosa a `'piano-roll'` está
+> muerta. Una tabla que dice "verificado" y no lo está es peor que no tenerla, así
+> que van marcadas.
+
+| hecho | dónde | ¿sigue siendo cierto? |
+|---|---|---|
+| `chooseClipEditor` YA consulta el editor declarado por el motor | `session/clip-editors/clip-editor-router.ts` | ⛔ **ya no**: el editor se deriva de `clipContent`/`defaultNoteView` |
+| `clipEditor` ya es campo obligatorio y validado del manifiesto | `manifest-validate.ts` | ⛔ **ya no**: el campo obligatorio es `clipContent` |
+| …y `'audio'` se convierte en `'piano-roll'` en silencio | `loom-api.ts` | ⛔ **arreglado**: era el defecto que la rebanada A mató |
 | `ModulatorKind` YA es `string`, no una unión cerrada | `modulation/types.ts:4` |
 | `NoteFxKind` SÍ es una unión cerrada | `notefx-types.ts:20` |
 | `scope` es campo por instancia y el usuario lo cambia | `mod-config-templates.ts:90-116` |
