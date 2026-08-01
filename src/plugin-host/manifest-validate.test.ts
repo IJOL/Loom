@@ -1,49 +1,91 @@
 import { describe, it, expect } from 'vitest';
 import { validatePluginManifest } from './manifest-validate';
 
-const good = {
-  id: 'karplus', name: 'Karp', version: '1.0.0', loomApi: 1,
-  main: 'main.js', dsp: 'dsp.js', presets: 'presets.json',
-  engines: [{
-    id: 'karplus', name: 'Karp', polyphony: 'poly', clipEditor: 'piano-roll',
-    outputTrim: 0.857, shortLabel: 'karplus',
-    params: [{ id: 'amp.level', label: 'Level', kind: 'continuous', min: 0, max: 1, default: 0.8 }],
-  }],
+const engineComponent = {
+  kind: 'engine' as const,
+  id: 'karplus', name: 'Karplus', polyphony: 'poly' as const,
+  params: [{ id: 'a', label: 'A', kind: 'continuous' as const, min: 0, max: 1, default: 0 }],
+  capabilities: { clipEditor: 'piano-roll' as const, shortLabel: 'karp', outputTrim: 0.857 },
 };
+const ok = (over: Record<string, unknown> = {}) => ({
+  id: 'p', name: 'P', version: '1.0.0', loomApi: 1, main: 'main.js',
+  components: [engineComponent], ...over,
+});
 
 describe('validatePluginManifest', () => {
   it('accepts a well-formed manifest', () => {
-    const r = validatePluginManifest(good);
+    const r = validatePluginManifest(ok());
     expect(r.ok).toBe(true);
   });
 
   it('rejects a manifest built for a different API version', () => {
-    const r = validatePluginManifest({ ...good, loomApi: 99 });
+    const r = validatePluginManifest(ok({ loomApi: 99 }));
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toContain('loomApi');
   });
 
   it('rejects a manifest with no id', () => {
-    const r = validatePluginManifest({ ...good, id: '' });
+    const r = validatePluginManifest(ok({ id: '' }));
     expect(r.ok).toBe(false);
   });
 
-  it('rejects an engine whose param spec is malformed', () => {
-    const bad = { ...good, engines: [{ ...good.engines[0], params: [{ id: 'x' }] }] };
+  it('rejects a component whose param spec is malformed', () => {
+    const bad = ok({ components: [{ ...engineComponent, params: [{ id: 'x' }] }] });
     const r = validatePluginManifest(bad);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toContain('params');
   });
 
-  it('rejects an engine with no outputTrim, rather than guessing one', () => {
-    const e = { ...good.engines[0] } as Record<string, unknown>;
-    delete e.outputTrim;
-    const r = validatePluginManifest({ ...good, engines: [e] });
+  it('rejects a component with no outputTrim, rather than guessing one', () => {
+    const caps = { ...engineComponent.capabilities } as Record<string, unknown>;
+    delete caps.outputTrim;
+    const r = validatePluginManifest(ok({ components: [{ ...engineComponent, capabilities: caps }] }));
     expect(r.ok).toBe(false);
   });
 
   it('rejects a non-object', () => {
     expect(validatePluginManifest(null).ok).toBe(false);
     expect(validatePluginManifest('nope').ok).toBe(false);
+  });
+
+  it('rejects the OLD shape loudly instead of registering nothing', () => {
+    // Sin `components` un manifiesto de la forma antigua validaria y registraria
+    // CERO componentes: el plugin cargaria y su motor no apareceria, sin un solo
+    // mensaje. Por eso `components` es obligatorio.
+    const viejo = {
+      id: 'p', name: 'P', version: '1.0.0', loomApi: 1, main: 'main.js',
+      engines: [{ id: 'x', name: 'X' }],
+    };
+    const r = validatePluginManifest(viejo);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/components/);
+  });
+
+  it('accepts clipEditor audio', () => {
+    const caps = { ...engineComponent.capabilities, clipEditor: 'audio' as const };
+    expect(validatePluginManifest(ok({ components: [{ ...engineComponent, capabilities: caps }] })).ok).toBe(true);
+  });
+
+  it('rejects an unknown component kind', () => {
+    const r = validatePluginManifest(ok({ components: [{ ...engineComponent, kind: 'wat' }] }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/kind/);
+  });
+
+  it('rejects an accepts entry that is not a known asset kind', () => {
+    const caps = { ...engineComponent.capabilities, accepts: ['midi-file'] };
+    const r = validatePluginManifest(ok({ components: [{ ...engineComponent, capabilities: caps }] }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/accepts/);
+  });
+
+  it('defaults the optional capabilities so a plain manifest is a normal instrument', () => {
+    const r = validatePluginManifest(ok());
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      const c = r.manifest.components![0];
+      // Ausentes en el JSON: el LECTOR aplica los defaults, no el validador.
+      expect(c.capabilities.acceptsNoteFx).toBeUndefined();
+    }
   });
 });

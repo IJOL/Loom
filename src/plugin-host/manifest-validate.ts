@@ -23,29 +23,48 @@ function paramError(p: unknown, i: number): string | null {
   return null;
 }
 
-function engineError(e: unknown, i: number): string | null {
-  if (!isObj(e)) return `engines[${i}] is not an object`;
-  if (!isStr(e.id)) return `engines[${i}].id must be a non-empty string`;
-  if (!isStr(e.name)) return `engines[${i}].name must be a non-empty string`;
-  if (e.polyphony !== 'mono' && e.polyphony !== 'poly') return `engines[${i}].polyphony must be mono|poly`;
-  if (e.clipEditor !== 'piano-roll' && e.clipEditor !== 'drum-grid' && e.clipEditor !== 'audio') {
-    return `engines[${i}].clipEditor must be piano-roll|drum-grid|audio`;
+const ASSET_KINDS = ['audio-file'];
+const CLIP_EDITORS = ['piano-roll', 'drum-grid', 'audio'];
+
+function capabilitiesError(c: unknown, i: number): string | null {
+  if (!isObj(c)) return `components[${i}].capabilities is not an object`;
+  if (typeof c.clipEditor !== 'string' || !CLIP_EDITORS.includes(c.clipEditor)) {
+    return `components[${i}].capabilities.clipEditor must be ${CLIP_EDITORS.join('|')}`;
   }
-  // No default: a missing trim is a plugin that never thought about gain
-  // staging, and guessing 1 would ship it louder than everything else.
-  if (!isNum(e.outputTrim)) return `engines[${i}].outputTrim must be a number`;
-  if (!isStr(e.shortLabel)) return `engines[${i}].shortLabel must be a non-empty string`;
-  if (!Array.isArray(e.params)) return `engines[${i}].params must be an array`;
-  for (let j = 0; j < e.params.length; j++) {
-    const err = paramError(e.params[j], j);
-    if (err) return `engines[${i}].${err}`;
+  if (!isStr(c.shortLabel)) return `components[${i}].capabilities.shortLabel must be a non-empty string`;
+  // Sin default: un trim ausente es un plugin que no pensó en el gain staging,
+  // y adivinar 1 lo publica más alto que todo lo demás.
+  if (!isNum(c.outputTrim)) return `components[${i}].capabilities.outputTrim must be a number`;
+  if (c.accepts !== undefined) {
+    if (!Array.isArray(c.accepts) || c.accepts.some((a) => !ASSET_KINDS.includes(a as string))) {
+      return `components[${i}].capabilities.accepts must be an array of ${ASSET_KINDS.join('|')}`;
+    }
   }
-  if (e.gm !== undefined) {
-    if (!isObj(e.gm) || !Array.isArray(e.gm.keywords) || !isNum(e.gm.priority)) {
-      return `engines[${i}].gm must be { keywords: string[], priority: number }`;
+  for (const k of ['acceptsNoteFx', 'listedInSelector', 'harmonic'] as const) {
+    if (c[k] !== undefined && typeof c[k] !== 'boolean') {
+      return `components[${i}].capabilities.${k} must be a boolean when present`;
+    }
+  }
+  if (c.gm !== undefined) {
+    if (!isObj(c.gm) || !Array.isArray(c.gm.keywords) || !isNum(c.gm.priority)) {
+      return `components[${i}].capabilities.gm must be { keywords: string[], priority: number }`;
     }
   }
   return null;
+}
+
+function componentError(c: unknown, i: number): string | null {
+  if (!isObj(c)) return `components[${i}] is not an object`;
+  if (c.kind !== 'engine') return `components[${i}].kind must be engine`;
+  if (!isStr(c.id)) return `components[${i}].id must be a non-empty string`;
+  if (!isStr(c.name)) return `components[${i}].name must be a non-empty string`;
+  if (c.polyphony !== 'mono' && c.polyphony !== 'poly') return `components[${i}].polyphony must be mono|poly`;
+  if (!Array.isArray(c.params)) return `components[${i}].params must be an array`;
+  for (let j = 0; j < c.params.length; j++) {
+    const err = paramError(c.params[j], j);
+    if (err) return `components[${i}].${err}`;
+  }
+  return capabilitiesError(c.capabilities, i);
 }
 
 export function validatePluginManifest(raw: unknown): ValidationResult {
@@ -59,16 +78,12 @@ export function validatePluginManifest(raw: unknown): ValidationResult {
   for (const k of ['dsp', 'presets'] as const) {
     if (raw[k] !== undefined && !isStr(raw[k])) return { ok: false, error: `${k} must be a string when present` };
   }
-  if (raw.engines !== undefined) {
-    if (!Array.isArray(raw.engines)) return { ok: false, error: 'engines must be an array' };
-    for (let i = 0; i < raw.engines.length; i++) {
-      const err = engineError(raw.engines[i], i);
-      if (err) return { ok: false, error: err };
-    }
+  if (!Array.isArray(raw.components)) return { ok: false, error: 'components must be an array' };
+  for (let i = 0; i < raw.components.length; i++) {
+    const err = componentError(raw.components[i], i);
+    if (err) return { ok: false, error: err };
   }
   return { ok: true, manifest: raw as unknown as PluginManifestFile };
 }
 
-/** Narrowed accessor used by the capability readers. */
-export function enginesOf(m: PluginManifestFile): EngineManifest[] { return m.engines ?? []; }
 export type { EngineManifest, EngineParamSpec };

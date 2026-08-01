@@ -4,13 +4,21 @@ import { __resetPluginEngines } from './loom-api';
 import { getEngineDescriptor } from '../engines/registry';
 import { getCachedPresets, __resetPresetCache } from '../presets/preset-loader';
 
+// Shape the FAKE main.js hands to Loom.registerEngine — still the v1
+// EngineManifest shape, since registerEngine is unchanged in this task.
+const probeEngineManifest = {
+  id: 'probe', name: 'Probe', polyphony: 'poly', clipEditor: 'piano-roll',
+  outputTrim: 0.5, shortLabel: 'probe',
+  params: [{ id: 'amp.level', label: 'Level', kind: 'continuous', min: 0, max: 1, default: 0.8 }],
+};
+
 const MANIFEST = {
   id: 'probe', name: 'Probe', version: '1.0.0', loomApi: 1,
   main: 'main.js', dsp: 'dsp.js', presets: 'presets.json',
-  engines: [{
-    id: 'probe', name: 'Probe', polyphony: 'poly', clipEditor: 'piano-roll',
-    outputTrim: 0.5, shortLabel: 'probe',
+  components: [{
+    kind: 'engine', id: 'probe', name: 'Probe', polyphony: 'poly',
     params: [{ id: 'amp.level', label: 'Level', kind: 'continuous', min: 0, max: 1, default: 0.8 }],
+    capabilities: { clipEditor: 'piano-roll', outputTrim: 0.5, shortLabel: 'probe' },
   }],
 };
 
@@ -35,7 +43,7 @@ describe('loadPlugins', () => {
       }),
       importImpl: async () => {
         (globalThis as unknown as { Loom: { registerEngine(m: unknown): void } })
-          .Loom.registerEngine(MANIFEST.engines[0]);
+          .Loom.registerEngine(probeEngineManifest);
       },
     });
     expect(report.loaded).toEqual(['probe']);
@@ -56,7 +64,7 @@ describe('loadPlugins', () => {
       importImpl: async (url: string) => {
         if (url.includes('boom')) throw new Error('kaboom');
         (globalThis as unknown as { Loom: { registerEngine(m: unknown): void } })
-          .Loom.registerEngine(MANIFEST.engines[0]);
+          .Loom.registerEngine(probeEngineManifest);
       },
     });
     expect(report.loaded).toEqual(['probe']);

@@ -5,7 +5,10 @@
 
 /** Bumped only on an INCOMPATIBLE change. The host refuses to execute a plugin
  *  whose `loomApi` differs, so a stale plugin fails loudly instead of silently
- *  half-working. */
+ *  half-working.
+ *  SIN CAMBIOS: sigue en 1. Es la primera implementación — no hay ningún plugin
+ *  publicado ahí fuera cuya compatibilidad haya que preservar, y el único que
+ *  existe se convierte en la Task 7 de esta misma rama. */
 export const LOOM_API_VERSION = 1;
 
 export interface EngineParamSpec {
@@ -34,6 +37,8 @@ export interface GmHint {
   priority: number;
 }
 
+/** @deprecated Forma v1. La Task 2 mueve sus dos consumidores a
+ *  ComponentManifest y entonces esto se borra. */
 export interface EngineManifest {
   id: string;
   name: string;
@@ -51,6 +56,40 @@ export interface EngineManifest {
   gm?: GmHint;
 }
 
+/** Assets a component accepts by drag-and-drop. */
+export type AssetKind = 'audio-file';
+
+/** Every question the host used to answer comparing engine ids.
+ *  OMITIR es lo normal: un manifiesto que calla se comporta como un
+ *  instrumento melódico corriente. Sólo lo raro se declara. */
+export interface EngineCapabilities {
+  /** Which host clip editor this engine wants. */
+  clipEditor: 'piano-roll' | 'drum-grid' | 'audio';
+  /** Prefix for generated lane ids ("karplus" → "karplus-1"). */
+  shortLabel: string;
+  /** Output balance against the other engines. */
+  outputTrim: number;
+  /** Drag-and-drop targets. Default: none. */
+  accepts?: AssetKind[];
+  /** False for engines that are not note-transformed (drums, audio). Default true. */
+  acceptsNoteFx?: boolean;
+  /** False hides it from the "add lane" engine list. Default true. */
+  listedInSelector?: boolean;
+  /** False for engines that cannot host a chord accompaniment. Default true. */
+  harmonic?: boolean;
+  gm?: GmHint;
+}
+
+export interface ComponentManifestBase {
+  id: string;
+  name: string;
+  params: EngineParamSpec[];
+}
+
+export type ComponentManifest =
+  | (ComponentManifestBase & { kind: 'engine'; polyphony: 'mono' | 'poly';
+      modulators?: unknown[]; capabilities: EngineCapabilities });
+
 export interface PluginManifestFile {
   id: string;
   name: string;
@@ -64,13 +103,19 @@ export interface PluginManifestFile {
   dsp?: string;
   /** Preset file, relative to the plugin directory. */
   presets?: string;
-  engines?: EngineManifest[];
+  /** OBLIGATORIO. Un manifiesto sin componentes no aporta nada, y hacerlo
+   *  opcional convierte la forma antigua (`engines`) en un fallo MUDO: valida,
+   *  carga y registra cero. */
+  components: ComponentManifest[];
 }
 
 /** The runtime handshake. Installed by the host on globalThis in BOTH realms
  *  before any plugin code runs; a plugin never imports anything from the host. */
 export interface LoomApi {
   readonly apiVersion: number;
+  registerComponent(manifest: ComponentManifest): void;
+  /** @deprecated Forma v1, conservada mientras loom-api.ts y
+   *  plugin-capabilities.ts la sigan usando. La Task 2 la retira. */
   registerEngine(manifest: EngineManifest): void;
   registerRenderer(engineId: string, make: RendererFactory): void;
 }
