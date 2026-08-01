@@ -9,10 +9,13 @@ import { describe, it, expect } from 'vitest';
 import { AUTOMATION_SUB_RES } from '../core/pattern';
 import { snapLaneToSteps } from './automation-painter';
 import {
-  fillLfo, lfoValueAt, lfoRatesFor, maxCyclesPerBar,
-  LFO_RATES, LFO_SHAPES, LFO_MAX_CYCLES_PER_BAR,
+  fillLfo, lfoValueAt, maxCyclesPerBar, maxCyclesInRegion,
+  LFO_SHAPES, LFO_MAX_CYCLES_PER_BAR,
   type LfoFill,
 } from './automation-lfo';
+
+/** The musical rates the old fixed menu used to offer, kept as a coverage grid. */
+const RATES = [0.25, 0.5, 1, 2, 4, 8, 16];
 
 const STEPS_PER_BAR = 16;
 const SUB_PER_BAR = STEPS_PER_BAR * AUTOMATION_SUB_RES;
@@ -67,15 +70,15 @@ function barsForTwoCycles(cyclesPerBar: number): number {
 
 describe('stepped lanes never flatten the curve', () => {
   for (const { id } of LFO_SHAPES) {
-    for (const rate of LFO_RATES) {
-      it(`${id} @ ${rate.label} still moves after the lane is snapped to steps`, () => {
-        const bars = barsForTwoCycles(rate.cyclesPerBar);
-        const v = paintStepped(bars, { shape: id, cyclesPerBar: rate.cyclesPerBar });
+    for (const cyclesPerBar of RATES) {
+      it(`${id} @ ${cyclesPerBar}/bar still moves after the lane is snapped to steps`, () => {
+        const bars = barsForTwoCycles(cyclesPerBar);
+        const v = paintStepped(bars, { shape: id, cyclesPerBar });
         expect(distinct(v)).toBeGreaterThan(1);
         // and it moves by a comparable amount to the un-stepped curve, not by a
         // rounding crumb (random is excluded: its span is a roll of the dice)
         if (id !== 'random') {
-          const cont = paintContinuous(bars, { shape: id, cyclesPerBar: rate.cyclesPerBar });
+          const cont = paintContinuous(bars, { shape: id, cyclesPerBar });
           expect(span(v) * 4).toBeGreaterThan(span(cont));
         }
       });
@@ -143,15 +146,31 @@ describe('the stepped rate ceiling', () => {
     }
   });
 
-  it('lfoRatesFor hands the UI only the rates a stepped lane can express', () => {
-    expect(lfoRatesFor(SUB_PER_BAR)).toEqual(LFO_RATES);
-    const stepped = lfoRatesFor(SUB_PER_BAR, AUTOMATION_SUB_RES);
-    const max = maxCyclesPerBar(SUB_PER_BAR, AUTOMATION_SUB_RES);
-    expect(stepped.length).toBeLessThan(LFO_RATES.length);
-    expect(stepped.length).toBeGreaterThan(1);
-    expect(stepped.every((r) => r.cyclesPerBar <= max)).toBe(true);
-    // a prefix of the full list: only the fast end is dropped
-    expect(stepped.map((r) => r.id)).toEqual(LFO_RATES.slice(0, stepped.length).map((r) => r.id));
+  it('shows up as half the cycles the user may ask for in a region', () => {
+    const regionSubs = 2 * SUB_PER_BAR;
+    const stepped = maxCyclesInRegion(regionSubs, SUB_PER_BAR, AUTOMATION_SUB_RES);
+    expect(stepped * 2).toBe(maxCyclesInRegion(regionSubs, SUB_PER_BAR));
+  });
+});
+
+describe('a stepped fill anchored elsewhere keeps the step grid', () => {
+  // originSub moves the PHASE, not the staircase: the step centres are still
+  // read off the absolute index, so an origin that is not a whole number of
+  // steps must not smear one step's value into its neighbour.
+  it('still paints one held value per step, whatever the origin', () => {
+    for (const originSub of [0, 7, AUTOMATION_SUB_RES, 137]) {
+      const values = makeBars(2);
+      fillLfo(values, 0, values.length, SUB_PER_BAR, {
+        ...BASE, cyclesPerBar: 4, stepSubRes: AUTOMATION_SUB_RES, originSub,
+      });
+      for (let step = 0; step * AUTOMATION_SUB_RES < values.length; step++) {
+        const slice = values.slice(step * AUTOMATION_SUB_RES, (step + 1) * AUTOMATION_SUB_RES);
+        expect(distinct(slice)).toBe(1);
+      }
+      const painted = values.slice();
+      snapLaneToSteps({ values });
+      expect(values).toEqual(painted); // and the snap still has nothing to do
+    }
   });
 });
 

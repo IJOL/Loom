@@ -1,13 +1,15 @@
 // The "LFO" button on an automation lane paints a periodic curve instead of
 // making the user draw one by hand. These tests pin the maths: shape identity,
-// how many cycles a rate really produces, depth/center/phase semantics, the
-// musical rate ceiling, and — most important for the live audio path — that the
-// fill writes in place inside its window and never resizes the envelope.
+// how many cycles the user asked for, depth/center/phase semantics, where the
+// wave starts, the musical rate ceiling, and — most important for the live audio
+// path — that the fill writes in place inside its window and never resizes the
+// envelope.
 import { describe, it, expect } from 'vitest';
 import { AUTOMATION_SUB_RES } from '../core/pattern';
 import {
   fillLfo, lfoValueAt, clampCyclesPerBar,
-  LFO_RATES, LFO_SHAPES, LFO_MIN_CYCLES_PER_BAR, LFO_MAX_CYCLES_PER_BAR,
+  cyclesToCyclesPerBar, maxCyclesInRegion, clampCyclesInRegion,
+  LFO_SHAPES, LFO_MIN_CYCLES, LFO_MAX_CYCLES_PER_BAR,
   type LfoFill,
 } from './automation-lfo';
 
@@ -115,11 +117,11 @@ describe('shapes', () => {
 });
 
 describe('rate → cycle count', () => {
-  for (const rate of LFO_RATES) {
-    it(`${rate.label} paints ${rate.cyclesPerBar} cycle(s) per bar`, () => {
+  for (const cyclesPerBar of [0.25, 0.5, 1, 2, 4, 8, 16]) {
+    it(`${cyclesPerBar} cycle(s) per bar paints that many per bar`, () => {
       const bars = 4;
-      const v = paint(bars, { cyclesPerBar: rate.cyclesPerBar });
-      expect(upwardCrossings(v, DEFAULTS.center)).toBe(Math.round(rate.cyclesPerBar * bars));
+      const v = paint(bars, { cyclesPerBar });
+      expect(upwardCrossings(v, DEFAULTS.center)).toBe(Math.round(cyclesPerBar * bars));
     });
   }
 
@@ -134,18 +136,6 @@ describe('rate → cycle count', () => {
 });
 
 describe('rate limits', () => {
-  it('offers 4 bars … 1/16 and stops at one cycle per 1/16 step', () => {
-    expect(LFO_RATES.map((r) => r.cyclesPerBar)).toEqual([0.25, 0.5, 1, 2, 4, 8, 16]);
-    const fastest = LFO_RATES[LFO_RATES.length - 1];
-    expect(fastest.cyclesPerBar).toBe(LFO_MAX_CYCLES_PER_BAR);
-    expect(fastest.cyclesPerBar / 16).toBe(1); // a bar is 16 steps → one cycle per step
-    expect(LFO_RATES[0].cyclesPerBar).toBe(LFO_MIN_CYCLES_PER_BAR);
-    for (const r of LFO_RATES) {
-      expect(r.cyclesPerBar).toBeLessThanOrEqual(LFO_MAX_CYCLES_PER_BAR);
-      expect(r.cyclesPerBar).toBeGreaterThanOrEqual(LFO_MIN_CYCLES_PER_BAR);
-    }
-  });
-
   it('at the ceiling one cycle still occupies a full step worth of sub-samples', () => {
     expect(SUB_PER_BAR / LFO_MAX_CYCLES_PER_BAR).toBe(AUTOMATION_SUB_RES);
   });
@@ -156,9 +146,124 @@ describe('rate limits', () => {
       .toEqual(paint(1, { cyclesPerBar: LFO_MAX_CYCLES_PER_BAR }));
   });
 
-  it('clamps a slower-than-4-bars request up to the floor', () => {
-    expect(clampCyclesPerBar(LFO_MIN_CYCLES_PER_BAR / 8)).toBe(LFO_MIN_CYCLES_PER_BAR);
-    expect(paint(4, { cyclesPerBar: 0 })).toEqual(paint(4, { cyclesPerBar: LFO_MIN_CYCLES_PER_BAR }));
+  it('has no slow floor of its own: how slow is useful is the region\'s call', () => {
+    // the old floor existed because the rate MENU stopped at "4 bars"; with the
+    // count expressed per region there is nothing left for it to protect
+    const slow = 1 / 64;
+    expect(clampCyclesPerBar(slow)).toBe(slow);
+    expect(span(paint(1, { cyclesPerBar: slow }))).toBeGreaterThan(0);
+  });
+
+  it('falls back to one cycle per bar for a nonsense rate', () => {
+    for (const bad of [0, -3, NaN, Infinity]) {
+      expect(paint(2, { cyclesPerBar: bad })).toEqual(paint(2, { cyclesPerBar: 1 }));
+    }
+  });
+});
+
+describe('originSub — where the wave starts', () => {
+  it('defaults to the clip start, exactly as before', () => {
+    expect(paint(2, { cyclesPerBar: 2, originSub: 0 })).toEqual(paint(2, { cyclesPerBar: 2 }));
+  });
+
+  it('puts phase 0 at the window start, even off the bar grid', () => {
+    const from = 100, to = 100 + SUB_PER_BAR; // a bar-long window that starts mid-bar
+    const values = makeBars(3);
+    fillLfo(values, from, to, SUB_PER_BAR, { ...DEFAULTS, cyclesPerBar: 2, originSub: from });
+    // the window reproduces the wave as if the clip had started there
+    const full = paint(3, { cyclesPerBar: 2 });
+    for (let i = 0; i < to - from; i++) expect(values[from + i]).toBe(full[i]);
+  });
+
+  it('shifting the origin by whole cycles changes nothing', () => {
+    const cyclesPerBar = 2;
+    const cycleSubs = SUB_PER_BAR / cyclesPerBar;
+    const base = paint(2, { cyclesPerBar, originSub: 0 });
+    expect(paint(2, { cyclesPerBar, originSub: 3 * cycleSubs })).toEqual(base);
+  });
+
+  it('an origin is worth the same as the matching phase', () => {
+    const cyclesPerBar = 2;
+    const quarterCycle = SUB_PER_BAR / cyclesPerBar / 4;
+    const byOrigin = paint(2, { cyclesPerBar, originSub: quarterCycle });
+    const byPhase = paint(2, { cyclesPerBar, phase: -0.25 });
+    const s = span(byOrigin);
+    byOrigin.forEach((x, i) => expect(Math.abs(x - byPhase[i])).toBeLessThan(s * 1e-9));
+  });
+});
+
+describe('cycles counted over the painted region', () => {
+  const asCyclesPerBar = (cycles: number, bars: number) =>
+    cyclesToCyclesPerBar(cycles, bars * SUB_PER_BAR, SUB_PER_BAR);
+
+  it('N cycles fill the region exactly, whatever the region is worth', () => {
+    for (const [bars, cycles] of [[1, 3], [2, 3], [4, 5], [2, 7]] as const) {
+      const v = paint(bars, { cyclesPerBar: asCyclesPerBar(cycles, bars) });
+      expect(upwardCrossings(v, DEFAULTS.center)).toBe(cycles);
+    }
+  });
+
+  it('counts the same when the region does not start on a bar', () => {
+    const bars = 3, cycles = 4;
+    const from = 137, regionSubs = 2 * SUB_PER_BAR;
+    const values = makeBars(bars);
+    fillLfo(values, from, from + regionSubs, SUB_PER_BAR, {
+      ...DEFAULTS,
+      cyclesPerBar: cyclesToCyclesPerBar(cycles, regionSubs, SUB_PER_BAR),
+      originSub: from,
+    });
+    expect(upwardCrossings(values.slice(from, from + regionSubs), DEFAULTS.center)).toBe(cycles);
+  });
+
+  it('accepts a fraction of a cycle — half a wave is one hump, no trough', () => {
+    const d = deltas(paint(1, { cyclesPerBar: asCyclesPerBar(0.5, 1) }));
+    let peaks = 0, troughs = 0;
+    for (let i = 1; i < d.length; i++) {
+      if (d[i - 1] > 0 && d[i] < 0) peaks++;
+      if (d[i - 1] < 0 && d[i] > 0) troughs++;
+    }
+    expect(peaks).toBe(1);
+    expect(troughs).toBe(0);
+  });
+
+  it('a fractional count wraps the right number of times', () => {
+    for (const cycles of [2, 2.5, 3]) {
+      const v = paint(2, { shape: 'sawUp', cyclesPerBar: asCyclesPerBar(cycles, 2) });
+      const drops = deltas(v).filter((x) => x < 0).length;
+      expect(drops).toBe(Math.ceil(cycles) - 1); // the last wrap falls outside the window
+    }
+  });
+});
+
+describe('the ceiling, in cycles the user can type', () => {
+  it('scales with the region: four times the bars, four times the cycles', () => {
+    const one = maxCyclesInRegion(SUB_PER_BAR, SUB_PER_BAR);
+    expect(one).toBe(LFO_MAX_CYCLES_PER_BAR);
+    expect(maxCyclesInRegion(4 * SUB_PER_BAR, SUB_PER_BAR)).toBe(one * 4);
+  });
+
+  it('a stepped lane may ask for half as many', () => {
+    const regionSubs = 2 * SUB_PER_BAR;
+    const stepped = maxCyclesInRegion(regionSubs, SUB_PER_BAR, AUTOMATION_SUB_RES);
+    expect(stepped * 2).toBe(maxCyclesInRegion(regionSubs, SUB_PER_BAR));
+  });
+
+  it('clamping keeps the count inside [floor, region ceiling]', () => {
+    const regionSubs = 2 * SUB_PER_BAR;
+    const max = maxCyclesInRegion(regionSubs, SUB_PER_BAR);
+    expect(clampCyclesInRegion(max * 10, regionSubs, SUB_PER_BAR)).toBe(max);
+    expect(clampCyclesInRegion(0, regionSubs, SUB_PER_BAR)).toBe(LFO_MIN_CYCLES);
+    expect(clampCyclesInRegion(-4, regionSubs, SUB_PER_BAR)).toBe(LFO_MIN_CYCLES);
+    expect(clampCyclesInRegion(NaN, regionSubs, SUB_PER_BAR)).toBe(1);
+    expect(clampCyclesInRegion(3.5, regionSubs, SUB_PER_BAR)).toBe(3.5);
+  });
+
+  it('a stepped lane clamps a count a continuous one would have allowed', () => {
+    const regionSubs = 2 * SUB_PER_BAR;
+    const asked = maxCyclesInRegion(regionSubs, SUB_PER_BAR); // fine on a smooth lane
+    const stepped = clampCyclesInRegion(asked, regionSubs, SUB_PER_BAR, AUTOMATION_SUB_RES);
+    expect(stepped).toBe(maxCyclesInRegion(regionSubs, SUB_PER_BAR, AUTOMATION_SUB_RES));
+    expect(stepped).toBeLessThan(asked);
   });
 });
 
@@ -284,13 +389,5 @@ describe('catalogues', () => {
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids).toEqual(['sine', 'triangle', 'sawUp', 'sawDown', 'square', 'random']);
     expect(LFO_SHAPES.every((s) => s.label.length > 0)).toBe(true);
-  });
-
-  it('has unique rate ids ordered slow → fast', () => {
-    const ids = LFO_RATES.map((r) => r.id);
-    expect(new Set(ids).size).toBe(ids.length);
-    for (let i = 1; i < LFO_RATES.length; i++) {
-      expect(LFO_RATES[i].cyclesPerBar).toBeGreaterThan(LFO_RATES[i - 1].cyclesPerBar);
-    }
   });
 });

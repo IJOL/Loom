@@ -20,7 +20,11 @@ export type LfoShape = 'sine' | 'triangle' | 'sawUp' | 'sawDown' | 'square' | 'r
 
 export interface LfoFill {
   shape: LfoShape;
-  /** Cycles per bar. Pick one from LFO_RATES; out-of-range values are clamped. */
+  /**
+   * Cycles per bar. The UI thinks in cycles per REGION and converts with
+   * cyclesToCyclesPerBar(); anything above the ceiling is clamped, and a
+   * nonsense value falls back to one cycle per bar.
+   */
   cyclesPerBar: number;
   /** Peak-to-peak amount: depth 1 around center 0.5 spans the whole 0..1 lane. */
   depth: number;
@@ -28,6 +32,14 @@ export interface LfoFill {
   center: number;
   /** Rotation of the wave, in cycles. Whole cycles are equivalent to no shift. */
   phase: number;
+  /**
+   * Sub-step that counts as phase 0. Default 0 — the clip start, which keeps the
+   * wave in phase with the bars. Set it to the start of the window when the user
+   * asked for "N cycles inside THIS region": a count only means something if the
+   * first cycle begins where the region does. Affects the phase only; on a
+   * stepped lane the staircase is still read off the absolute index.
+   */
+  originSub?: number;
   /** Seed for 'random', so the same fill always paints the same steps. */
   seed?: number;
   /**
@@ -39,58 +51,43 @@ export interface LfoFill {
   stepSubRes?: number;
 }
 
-export interface LfoRate {
-  id: string;
-  label: string;
-  cyclesPerBar: number;
-}
-
 // ── Rate limits ────────────────────────────────────────────────────────────
 //
-// Rates are musical divisions, not Hz: the curve has to line up with bars and
-// steps to be useful, and an envelope has no sample rate of its own.
+// The user asks for a number of CYCLES over the region being painted; internally
+// that is still a rate against the bar, because the curve has to line up with
+// bars and steps to be useful and an envelope has no sample rate of its own.
 //
-// The fast end stops at 1/16 = 16 cycles per bar, which is exactly ONE cycle per
-// 1/16 step. That is the ceiling the automation resolution can express: a step
-// is the finest position the lane addresses (and a 'stepped' lane literally
-// collapses to one value per step), so anything faster has less than one step
-// per cycle and aliases into a slower, arbitrary-looking pattern instead of the
-// shape the user picked. It is therefore not offered — and clampCyclesPerBar
-// enforces it for values arriving from elsewhere.
+// The fast end stops at 16 cycles per bar, which is exactly ONE cycle per 1/16
+// step. That is the ceiling the automation resolution can express: a step is the
+// finest position the lane addresses (and a 'stepped' lane literally collapses to
+// one value per step), so anything faster has less than one step per cycle and
+// aliases into a slower, arbitrary-looking pattern instead of the shape the user
+// picked. clampCyclesPerBar enforces it.
 //
-// The slow end stops at 4 bars: below that the "wave" is a single ramp across
-// clips longer than anything the lane editor shows at once.
+// There is no slow floor in here any more. The old one (4 bars) existed because
+// the fixed rate MENU had to stop somewhere; with the count expressed per region
+// "how slow is still useful" is the region's business, and the UI enforces its
+// own LFO_MIN_CYCLES against what the user can see.
 //
 // A 'stepped' lane is one octave stricter. It keeps a single value per step, so a
 // cycle needs at least TWO steps to show a high and a low — the step Nyquist,
-// i.e. 8 cycles per bar (1/8) at 16 steps per bar. At exactly one cycle per step
-// (1/16) every step lands on the same cycle phase and the lane collapses to a
-// constant: before this was handled, "stepped + Sine + 1/16" painted a dead flat
-// 0.5 and the LFO button looked broken. maxCyclesPerBar() reports that ceiling,
-// a stepped fill clamps to it instead of aliasing, and lfoRatesFor() hands the UI
-// only the rates a given lane can actually express.
+// i.e. 8 cycles per bar at 16 steps per bar. At exactly one cycle per step every
+// step lands on the same cycle phase and the lane collapses to a constant: before
+// this was handled, "stepped + Sine + 1/16" painted a dead flat 0.5 and the LFO
+// button looked broken. maxCyclesPerBar() reports that ceiling and a stepped fill
+// clamps to it instead of aliasing.
 //
-// Remaining debt, deliberately not taken here: this table still assumes a bar is
-// 16 steps. `subResPerBar` is now the caller's (the clip lane passes the session
-// meter's bar), so a 3/4 lane's "1 bar" really is one cycle per 3/4 bar -- but
-// "1/16" still means 16 cycles per bar, which over a 12-step bar is no longer one
-// cycle per step. Making cyclesPerBar track stepsPerBar(meter) would change what
-// the RATE LABELS mean musically, which is an owner's call, not a mechanical
-// collapse.
-export const LFO_MIN_CYCLES_PER_BAR = 0.25;
+// Remaining debt, deliberately not taken here: LFO_MAX_CYCLES_PER_BAR still
+// assumes a bar is 16 steps. `subResPerBar` is the caller's (the clip lane passes
+// the session meter's bar), so in 3/4 the same 16 cycles land on a 12-step bar —
+// more than one cycle per step. Lowering the cap to stepsPerBar(meter) would
+// change the ceiling in every non-4/4 session, which is an owner's call.
+// Pinned by automation-lfo-meter.test.ts so it is found, not rediscovered.
 export const LFO_MAX_CYCLES_PER_BAR = 16;
 /** Steps a cycle needs on a stepped lane to still read as a wave. */
 export const LFO_MIN_STEPS_PER_CYCLE = 2;
-
-export const LFO_RATES: ReadonlyArray<LfoRate> = [
-  { id: '4bars', label: '4 bars', cyclesPerBar: 0.25 },
-  { id: '2bars', label: '2 bars', cyclesPerBar: 0.5 },
-  { id: '1bar', label: '1 bar', cyclesPerBar: 1 },
-  { id: '1/2', label: '1/2', cyclesPerBar: 2 },
-  { id: '1/4', label: '1/4', cyclesPerBar: 4 },
-  { id: '1/8', label: '1/8', cyclesPerBar: 8 },
-  { id: '1/16', label: '1/16', cyclesPerBar: 16 },
-];
+/** Fewest cycles the UI lets you ask for over a region — a quarter of a wave. */
+export const LFO_MIN_CYCLES = 0.25;
 
 export const LFO_SHAPES: ReadonlyArray<{ id: LfoShape; label: string }> = [
   { id: 'sine', label: 'Sine' },
@@ -102,16 +99,14 @@ export const LFO_SHAPES: ReadonlyArray<{ id: LfoShape; label: string }> = [
 ];
 
 export const DEFAULT_LFO_FILL: LfoFill = {
-  shape: 'sine', cyclesPerBar: 1, depth: 1, center: 0.5, phase: 0, seed: 1,
+  shape: 'sine', cyclesPerBar: 1, depth: 1, center: 0.5, phase: 0, seed: 1, originSub: 0,
 };
 
+/** Ceiling only: a rate that is zero, negative or not a number is meaningless,
+ *  so it falls back to one cycle per bar rather than to some arbitrary edge. */
 export function clampCyclesPerBar(cyclesPerBar: number): number {
-  if (!Number.isFinite(cyclesPerBar)) return DEFAULT_LFO_FILL.cyclesPerBar;
-  return Math.max(LFO_MIN_CYCLES_PER_BAR, Math.min(LFO_MAX_CYCLES_PER_BAR, cyclesPerBar));
-}
-
-export function rateById(id: string): LfoRate | undefined {
-  return LFO_RATES.find((r) => r.id === id);
+  if (!Number.isFinite(cyclesPerBar) || cyclesPerBar <= 0) return DEFAULT_LFO_FILL.cyclesPerBar;
+  return Math.min(LFO_MAX_CYCLES_PER_BAR, cyclesPerBar);
 }
 
 /** 0 for a continuous lane; otherwise the sub-samples one step holds. */
@@ -134,15 +129,49 @@ export function maxCyclesPerBar(subResPerBar: number, stepSubRes?: number): numb
   return Math.min(ceiling, perBar / (stepSub * LFO_MIN_STEPS_PER_CYCLE));
 }
 
+// ── Cycles over a region ───────────────────────────────────────────────────
+//
+// The UI counts cycles over the stretch it is about to paint ("4 cycles in this
+// loop"), which is the only count that makes a wave close cleanly inside a loop.
+// The fill still works in cycles per bar, so these three translate between the
+// two — and they are the single owner of that arithmetic, so nothing downstream
+// gets to re-derive it.
+
+/** Bars a region is worth. 0 for a degenerate region, so callers can guard. */
+function regionBars(regionSubs: number, subResPerBar: number): number {
+  if (!(regionSubs > 0) || !(subResPerBar > 0)) return 0;
+  return regionSubs / subResPerBar;
+}
+
+/** "N cycles over this region" as the per-bar rate the fill actually uses. */
+export function cyclesToCyclesPerBar(
+  cycles: number, regionSubs: number, subResPerBar: number,
+): number {
+  const bars = regionBars(regionSubs, subResPerBar);
+  if (!bars || !Number.isFinite(cycles)) return DEFAULT_LFO_FILL.cyclesPerBar;
+  return cycles / bars;
+}
+
+/** Most cycles this lane can express over `regionSubs`, in the user's unit. */
+export function maxCyclesInRegion(
+  regionSubs: number, subResPerBar: number, stepSubRes?: number,
+): number {
+  const bars = regionBars(regionSubs, subResPerBar);
+  if (!bars) return LFO_MIN_CYCLES;
+  return maxCyclesPerBar(subResPerBar, stepSubRes) * bars;
+}
+
 /**
- * The rate list to offer for this lane: LFO_RATES minus the entries it cannot
- * paint. A stepped lane drops the fast end instead of silently flattening it.
+ * The cycle count the UI is allowed to hold: at least LFO_MIN_CYCLES, at most
+ * what the lane can paint. The ceiling wins if the region is too short to hold
+ * even the floor, so this never returns something the fill would alias.
  */
-export function lfoRatesFor(subResPerBar: number, stepSubRes?: number): ReadonlyArray<LfoRate> {
-  const max = maxCyclesPerBar(subResPerBar, stepSubRes);
-  const usable = LFO_RATES.filter((r) => r.cyclesPerBar <= max);
-  // never hand back an empty menu, even for an absurd lane resolution
-  return usable.length > 0 ? usable : LFO_RATES.slice(0, 1);
+export function clampCyclesInRegion(
+  cycles: number, regionSubs: number, subResPerBar: number, stepSubRes?: number,
+): number {
+  const max = maxCyclesInRegion(regionSubs, subResPerBar, stepSubRes);
+  const wanted = Number.isFinite(cycles) ? cycles : DEFAULT_LFO_FILL.cyclesPerBar;
+  return Math.min(max, Math.max(LFO_MIN_CYCLES, wanted));
 }
 
 // ── Waveforms ──────────────────────────────────────────────────────────────
@@ -188,6 +217,8 @@ interface Resolved {
   seed: number;
   /** 0 = continuous; otherwise sub-samples per held step. */
   stepSub: number;
+  /** Sub-step that counts as phase 0. */
+  origin: number;
 }
 
 function resolve(cfg: LfoFill, subResPerBar: number): Resolved {
@@ -207,6 +238,7 @@ function resolve(cfg: LfoFill, subResPerBar: number): Resolved {
     phase: fract(finite(cfg.phase, 0)),
     seed: Math.trunc(finite(cfg.seed ?? DEFAULT_LFO_FILL.seed ?? 0, 0)),
     stepSub,
+    origin: finite(cfg.originSub ?? 0, 0),
   };
 }
 
@@ -220,7 +252,9 @@ function sampleAt(r: Resolved, subIdx: number, subResPerBar: number): number {
   // what snapLaneToSteps keeps — would sit on the step boundary, and boundaries
   // are exactly where fast rates repeat the same phase and flatten the curve.
   const pos = r.stepSub > 0 ? (Math.floor(subIdx / r.stepSub) + 0.5) * r.stepSub : subIdx;
-  const cyc = (pos / subResPerBar) * r.cyclesPerBar + r.phase;
+  // `origin` shifts the PHASE only — `pos` above stays absolute, so the staircase
+  // keeps landing on the lane's own step grid whatever the origin is.
+  const cyc = ((pos - r.origin) / subResPerBar) * r.cyclesPerBar + r.phase;
   return clamp01(r.center + bipolar(r.shape, cyc, r.seed) * r.half);
 }
 
@@ -238,9 +272,11 @@ export function lfoValueAt(cfg: LfoFill, subIdx: number, subResPerBar: number): 
 /**
  * Write the curve into `values[from, to)` in place. The window is clamped to the
  * array, so an out-of-range range is a partial fill, never a resize; `from >= to`
- * is a no-op. Sub-step 0 is bar 0 phase 0, so a windowed fill lands exactly
- * where the same fill over the whole lane would have put it. With `cfg.stepSubRes`
- * set the result is already one held value per step (a stepped lane's own shape).
+ * is a no-op. Phase 0 sits at `cfg.originSub` (default sub-step 0), so leaving it
+ * alone makes a windowed fill land exactly where the same fill over the whole
+ * lane would have put it, while passing `from` makes the wave start at the
+ * window. With `cfg.stepSubRes` set the result is already one held value per
+ * step (a stepped lane's own shape).
  */
 export function fillLfo(
   values: number[],
