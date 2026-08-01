@@ -124,6 +124,9 @@ export function renderDrumGridEditor(
     totalSteps: clip.lengthBars * stepsPerBar(meter),
     defaultSteps: stepsPerBar(meter),
     getNotes: notes, setNotes, onChange: () => draw(), historyDeps,
+    // Folding the fields away hands their width back to the grid viewport, so
+    // the axis basis has to be re-measured and both canvases redrawn.
+    onToggleOpen: () => resize(),
   });
   row.append(viewport);
   host.appendChild(wrap);

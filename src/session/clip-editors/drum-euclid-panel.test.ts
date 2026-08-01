@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mountDrumEuclidPanel } from './drum-euclid-panel';
+import { setDrumEuclidOpen } from '../../core/clip-drum-euclid';
 import { gmDrumRows, noteDrumRows } from '../../core/drum-grid-editing';
 import { VOICE_MIDI } from '../../engines/drum-gm-map';
 import { DRUM_LANES } from '../../core/drums';
@@ -15,10 +16,21 @@ const note = (midi: number, step: number): NoteEvent =>
 const stepsOn = (notes: readonly NoteEvent[], midi: number): number[] =>
   notes.filter((n) => n.midi === midi).map((n) => n.start / TICKS_PER_STEP).sort((a, b) => a - b);
 
-function setup(opts: { notes?: NoteEvent[]; totalSteps?: number; defaultSteps?: number } = {}) {
+interface SetupOpts {
+  notes?: NoteEvent[];
+  totalSteps?: number;
+  defaultSteps?: number;
+  /** The fields ship CLOSED; every test about the fields themselves opens them.
+   *  'inherit' mounts without touching the flag — how a second editor opens. */
+  open?: boolean | 'inherit';
+}
+
+function setup(opts: SetupOpts = {}) {
   const host = document.createElement('div');
   let notes: NoteEvent[] = opts.notes ?? [];
   let redraws = 0;
+  let relayouts = 0;
+  if (opts.open !== 'inherit') setDrumEuclidOpen(opts.open ?? true);
   const handle = mountDrumEuclidPanel(host, {
     rows: gmDrumRows(),
     labels: DRUM_LANES.map((v) => v.toUpperCase()),
@@ -27,9 +39,15 @@ function setup(opts: { notes?: NoteEvent[]; totalSteps?: number; defaultSteps?: 
     getNotes: () => notes,
     setNotes: (n) => { notes = n; },
     onChange: () => { redraws++; },
+    onToggleOpen: () => { relayouts++; },
   });
-  return { host, handle, notes: () => notes, redraws: () => redraws };
+  return { host, handle, notes: () => notes, redraws: () => redraws, relayouts: () => relayouts };
 }
+
+const rail = (host: HTMLElement) => host.querySelector('.drum-euclid-rail') as HTMLButtonElement;
+const rowCount = (host: HTMLElement) => host.querySelectorAll('.drum-euclid-row').length;
+
+beforeEach(() => setDrumEuclidOpen(false));
 
 function fields(host: HTMLElement, row: number) {
   const el = host.querySelectorAll('.drum-euclid-row')[row];
@@ -43,6 +61,52 @@ const type = (input: HTMLInputElement, v: string | number): void => {
   input.value = String(v);
   input.dispatchEvent(new Event('change', { bubbles: true }));
 };
+
+describe('the Euclidean fields\' vertical rail', () => {
+  it('starts folded — the rail is there, the fields are not', () => {
+    const s = setup({ open: false });
+    expect(rail(s.host)).toBeTruthy();
+    expect(rowCount(s.host)).toBe(0);
+  });
+
+  it('unfolds the fields when the rail is clicked', () => {
+    const s = setup({ open: false });
+    rail(s.host).click();
+    expect(rowCount(s.host)).toBe(DRUM_LANES.length);
+  });
+
+  it('folds them away again on a second click', () => {
+    const s = setup({ open: false });
+    rail(s.host).click();
+    rail(s.host).click();
+    expect(rowCount(s.host)).toBe(0);
+  });
+
+  it('says whether it is open, for the screen reader and the pointer', () => {
+    const s = setup({ open: false });
+    expect(rail(s.host).getAttribute('aria-expanded')).toBe('false');
+    rail(s.host).click();
+    expect(rail(s.host).getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('asks the grid to re-lay out — the fields column changes the viewport width', () => {
+    const s = setup({ open: false });
+    rail(s.host).click();
+    expect(s.relayouts()).toBe(1);
+  });
+
+  it('opens the next clip\'s editor the way you left this one', () => {
+    const s = setup({ open: false });
+    rail(s.host).click();
+    const next = setup({ open: 'inherit' });   // a fresh editor, flag untouched
+    expect(rowCount(next.host)).toBe(DRUM_LANES.length);
+  });
+
+  it('keeps the rail visible while the fields are open', () => {
+    const s = setup();
+    expect(rail(s.host)).toBeTruthy();
+  });
+});
 
 describe('the drum grid\'s per-voice Euclidean fields', () => {
   it('gives every voice row its own hits / steps / rotate fields', () => {
