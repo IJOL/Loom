@@ -187,6 +187,22 @@ describe('modulators panel', () => {
     expect(deps2.onChange).not.toHaveBeenCalled();
   });
 
+  // Task 8b fix round 2: the compact/vertical radio-strip modifier is for
+  // param-editing surfaces ONLY (buildControl, the FX insert rack). It leaked
+  // here once — the base .radio-strip briefly WAS the vertical shape — and
+  // stretched the LFO card, whose strips (WAVE, POLARITY, RETRIG) lay out in
+  // a horizontal row. This pins the boundary from the other side of it.
+  it('the LFO card\'s radio strips (WAVE, POLARITY, RETRIG) stay the base horizontal shape, not compact', () => {
+    renderModulatorsPanel(container, makeDeps(makeHost([makeDefaultLFO('lfo1')])));
+    const strips = container.querySelectorAll('.mod-card.mod-lfo .radio-strip');
+    expect(strips.length).toBeGreaterThan(0);
+    for (const strip of strips) {
+      expect(strip.classList.contains('radio-strip--compact'),
+        `${strip.querySelector('.radio-btn')?.getAttribute('title')} strip must not opt into the compact param-control modifier`)
+        .toBe(false);
+    }
+  });
+
   it('registers every control under a lane-scoped .mod. param id', () => {
     const deps = makeDeps(makeHost([makeDefaultLFO('lfo1')]));
     renderModulatorsPanel(container, deps);

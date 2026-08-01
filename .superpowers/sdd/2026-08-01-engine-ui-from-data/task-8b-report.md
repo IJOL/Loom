@@ -236,3 +236,133 @@ Per the brief's own "Scope of visible change," now implemented:
 - The `.radio-btn` glyph SVGs (sine/triangle/square/saw shapes, 24×14px)
   now render inside a 15px-tall, ~38-46px-wide button — tighter than before
   but should still fit; worth a visual spot-check on an OSC waveform strip.
+
+## Fix round 2 — the vertical strip leaked into the modulator-config panel
+
+The coordinator's live browser check found the engine grid/FX rack render
+correctly (Filter Model 3 opts = 50×51, Filter Type 4 opts = 50×67 vs a
+knob's 50×71, zero discrete params as knobs, 5-option waves as 61×26 native
+selects), but flagged a real regression: `flex-direction: column` had been
+put on the BASE `.radio-strip` rule, and the LFO modulator-config panel
+(`src/modulation/mod-config-templates.ts`) builds its WAVE/POLARITY/RETRIG
+strips through the exact same `createSelectControl`. Those three controls
+are not engine params — they're a horizontally-laid-out card row — and
+flipping vertical stretched the WAVE strip to ~95px and the others to ~49px,
+wrecking the card.
+
+### Root cause
+
+`createSelectControl` had no way to distinguish "a param control" from "a
+modulator-config control" — both calls looked identical, so a layout change
+meant for one bled into the other silently. That is the actual bug: not the
+specific CSS values, but the missing seam between the two call sites.
+
+### Fix
+
+1. **`src/styles/_knob.scss`** — `.radio-strip` reverted to its original
+   horizontal shape (no `flex-direction` declared, `gap: 2px`, no fixed
+   `width`) and `.radio-btn` reverted to `min-width: 28px; height: 22px;
+   padding: 0 6px; font-size: 10px` (all as they were before this task).
+   Added a NEW modifier class, `.radio-strip--compact`
+   (`flex-direction: column; width: 50px; gap: 1px`) and
+   `.radio-strip--compact .radio-btn` (`width: 100%; height: 15px;
+   padding: 0 4px; font-size: 9px`) carrying everything the previous round
+   put on the base rule.
+2. **`src/core/select-control.ts`** — added `compact?: boolean` to
+   `SelectControlOpts` (doc comment states explicitly: opt in ONLY from a
+   param-editing surface, never from the modulator-config panel).
+   `createRadioStrip` now renders `class="radio-strip"` or
+   `class="radio-strip radio-strip--compact"` depending on `opts.compact`.
+   Header comment rewritten to describe the base shape as the default and
+   `compact` as the explicit param-control opt-in.
+3. **`src/engines/engine-param-grid.ts`** — `buildControl`'s
+   `createSelectControl` call now passes `compact: true`.
+4. **`src/session/lane-insert-ui.ts`** — the FX insert rack's discrete
+   branch now passes `compact: true` too.
+5. **`src/modulation/mod-config-templates.ts`** — **untouched**. Its four
+   `createSelectControl` calls (WAVE, FEEL/subdiv, POLARITY, RETRIG) pass no
+   `compact` option, so they get the reverted base horizontal strip — back
+   to exactly how they rendered before Task 8b started.
+
+### Which surfaces get which strip
+
+**Vertical/compact (`.radio-strip--compact`)** — param-editing surfaces
+only:
+
+- The grouped engine-param grid (all six melodic engines' discrete params).
+- The flat layout (drum rack, sampler pads, audio-clip toolbar,
+  Subtractive).
+- The FX insert rack (Reverb/Multifilter/Tremolo's ≤4-option params).
+
+**Horizontal (base `.radio-strip`, unchanged from before Task 8b)** —
+everything else that was already using a radio strip and is NOT a param
+editor:
+
+- The LFO modulator-config card: WAVE (4 waveforms), FEEL/sync-subdiv (3),
+  POLARITY (2), RETRIG (3).
+- Any other future `createSelectControl` caller that doesn't opt into
+  `compact` gets this same horizontal default — the safe fallback.
+
+### New test: pins the boundary this regression crossed
+
+- `src/core/select-control.test.ts`, `describe('createSelectControl compact
+  opt-in')`: two tests — `compact: true` produces
+  `classList.contains('radio-strip--compact') === true`; omitting `compact`
+  produces `false`. Also re-split the CSS-source tests into "base layout
+  stays horizontal" (asserts `.radio-strip` has NO `flex-direction` and NO
+  `width: 50px`, and `.radio-btn` is back to `22px`) and
+  "`.radio-strip--compact` layout" (asserts the vertical/50px/15px trio on
+  the modifier instead).
+- `src/engines/engine-param-grid.test.ts` — the ≤4-option grouped-layout
+  test now also asserts `.radio-strip.classList.contains('radio-strip--
+  compact') === true`.
+- `src/session/lane-insert-ui.test.ts` — the "4-option FX insert param" test
+  now also asserts the strip has `radio-strip--compact`.
+- `src/modulation/modulation-ui.test.ts` — **new test**, "the LFO card's
+  radio strips (WAVE, POLARITY, RETRIG) stay the base horizontal shape, not
+  compact": renders a real LFO card and asserts every `.radio-strip` inside
+  `.mod-card.mod-lfo` does NOT carry `radio-strip--compact`. This is the
+  test that would have caught the regression the coordinator found.
+
+### Test output (fix round 2)
+
+Gate files + `src/modulation/`:
+
+```text
+ RUN  v3.2.4
+ ✓ src/modulation/modulation-ui.test.ts (19 tests) 155ms
+ ✓ src/session/engine-param-persistence.test.ts (5 tests) 179ms
+ ✓ src/session/lane-insert-ui.test.ts (11 tests) 112ms
+ ✓ src/engines/engine-param-grid.test.ts (22 tests) 101ms
+ ✓ src/modulation/modulation-ui-dest-refresh.test.ts (4 tests) 77ms
+ ✓ src/modulation/modulation-ui-onchange-siblings.test.ts (1 test) 47ms
+ ✓ src/core/select-control.test.ts (9 tests) 20ms
+ ✓ src/engines/subtractive-layout.test.ts (4 tests) 4ms
+ ✓ src/modulation/lfo-voice-sync.test.ts (4 tests) 85ms
+ ✓ src/modulation/voice-mod-binding.test.ts (10 tests) 75ms
+ ✓ src/modulation/modulation-host-registry.test.ts (1 test) 41ms
+ ✓ src/modulation/lfo-trigger-mode.test.ts (2 tests) 42ms
+ ✓ src/modulation/connection-binder.test.ts (8 tests) 5ms
+ ✓ src/modulation/modulation-host.test.ts (9 tests) 4ms
+ ✓ src/modulation/rate-sync.test.ts (13 tests) 3ms
+ ✓ src/modulation/adsr-curve.test.ts (10 tests) 3ms
+ ✓ src/modulation/waveform.test.ts (11 tests) 4ms
+ ✓ src/modulation/types.test.ts (3 tests) 2ms
+
+ Test Files  18 passed (18)
+      Tests  146 passed (146)
+```
+
+Also re-ran the pre-existing `src/core/select-control-dom.test.ts`
+(characterisation tests for `createSelectControl`'s DOM contract, not in the
+gate list but exercises the same function): 8/8 passed, unaffected — none of
+its calls pass `compact`, so they get the reverted base horizontal strip and
+none of its assertions touch the new modifier class.
+
+`npx tsc --noEmit`: clean, no output.
+
+Along the way, one test file needed an added `/** @vitest-environment jsdom
+*/` pragma — `select-control.test.ts` had only ever tested pure functions
+before this task, and the new `createSelectControl` DOM tests failed with
+`ReferenceError: document is not defined` under the default (non-jsdom)
+Vitest environment until that was added.

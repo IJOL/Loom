@@ -76,17 +76,16 @@
   transition: opacity 80ms ease;
 }
 
-/* ── Radio strip (Task 8b: THE control for every discrete param, ≤4 options,
- * on every surface — the grouped grid, the flat layout, the FX insert rack) ──
- * Stacked VERTICALLY (not a row) and fixed to a knob's own width so a strip
- * sitting next to knobs in a `.knob-row` lines up instead of stretching the
- * row wider than everything around it. Buttons render either a built-in
- * waveform glyph (sine / triangle / square / saw) or a plain text label. */
+/* ── Radio strip ── Used for waveform selection on LFOs and OSC, and any
+ * other small discrete control. Buttons render either a built-in waveform
+ * glyph (sine / triangle / square / saw) or a plain text label. Base shape
+ * is HORIZONTAL — this is what the modulator-config panel (LFO wave/
+ * polarity/retrig strips) uses and MUST keep using; its cards lay out in a
+ * row and a vertical strip stretches them (Task 8b fix round 2 — this leaked
+ * once already). */
 .radio-strip {
   display: inline-flex;
-  flex-direction: column;
-  width: 50px;              // matches createKnob's own footprint (~50px)
-  gap: 1px;
+  gap: 2px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 2px;
@@ -96,16 +95,37 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 15px;              // 4 buttons stack to ~67px — under a 68px knob
-  padding: 0 4px;
+  min-width: 28px;
+  height: 22px;
+  padding: 0 6px;
   background: transparent;
   color: var(--text-dim);
   border: 1px solid transparent;
   border-radius: 2px;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 10px;
   cursor: pointer;
+}
+
+/* ── Compact modifier (Task 8b): THE control for every discrete PARAM, ≤4
+ * options, on every surface that draws a param — the grouped grid, the flat
+ * layout, the FX insert rack (see engine-param-grid.ts's header). Stacked
+ * VERTICALLY and fixed to a knob's own footprint so a strip sitting next to
+ * knobs in a `.knob-row` lines up instead of stretching the row wider than
+ * everything around it. Opt-in only: createSelectControl({ compact: true }),
+ * wired from buildControl (engine-param-grid.ts) and the FX insert rack
+ * (lane-insert-ui.ts) — NOT from the modulator-config panel, whose strips
+ * (WAVE, POLARITY, RETRIG) stay the base horizontal shape above. */
+.radio-strip--compact {
+  flex-direction: column;
+  width: 50px;              // matches createKnob's own footprint (~50px)
+  gap: 1px;
+}
+.radio-strip--compact .radio-btn {
+  width: 100%;
+  height: 15px;              // 4 buttons stack to ~67px — under a 68px knob
+  padding: 0 4px;
+  font-size: 9px;
 }
 .radio-btn:hover {
   color: var(--amber);

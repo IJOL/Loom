@@ -4,14 +4,20 @@
 // mid-bucket normalized value so the registered current value roundtrips
 // through automation cleanly.
 //
-// THE one rendering rule for every discrete param, on every surface that
-// draws one (see engine-param-grid.ts's header for the full list, which
-// includes the FX insert rack): with ≤ 4 options we paint a vertical radio
-// strip (graphical when option values match known waveform shapes, plain
-// text otherwise), sized to match a knob's footprint (~50px wide) so a row
-// of mixed controls aligns; with > 4 options, or `forceSelect`, we fall back
-// to the native <select>. The returned `el` is typed as HTMLElement either
-// way — callers use `.el` for layout only.
+// Rendering: with ≤ 4 options we paint a radio strip (graphical when option
+// values match known waveform shapes, plain text otherwise); with > 4
+// options, or `forceSelect`, we fall back to the native <select>. The
+// returned `el` is typed as HTMLElement either way — callers use `.el` for
+// layout only.
+//
+// THE rule for every discrete PARAM control, on every surface that draws one
+// (see engine-param-grid.ts's header for the full list, which includes the
+// FX insert rack): pass `compact: true`. That strip stacks VERTICALLY and is
+// fixed to a knob's footprint (~50px wide) so a row of mixed controls
+// aligns. Without `compact`, the strip stays the base HORIZONTAL shape — the
+// modulator-config panel (LFO WAVE/POLARITY/RETRIG) relies on that default
+// and must NOT opt in: its cards lay out in a row, and the vertical strip
+// stretched them the one time this leaked (Task 8b fix round 2).
 //
 // DOM is built once via a one-time lit-html render into a detached fragment;
 // the active-state refresh and data-value-norm updates stay imperative on the
@@ -33,6 +39,12 @@ export interface SelectControlOpts {
   /** Show the param label above the control. Off by default (WAVE/FM render
    *  bare); on for controls whose option text isn't self-describing (CHOKE). */
   showLabel?: boolean;
+  /** Radio-strip only: stack vertically at a fixed ~50px width (a knob's own
+   *  footprint) instead of the base horizontal strip. Opt-in — pass `true`
+   *  ONLY from a param-editing surface (buildControl in engine-param-grid.ts,
+   *  the FX insert rack). The modulator-config panel must leave this unset;
+   *  its horizontally-laid-out cards break when the strip goes vertical. */
+  compact?: boolean;
 }
 
 export function quantiseSelectValue(norm: number, optionCount: number): number {
@@ -78,9 +90,10 @@ function createRadioStrip(opts: SelectControlOpts): { el: HTMLElement; handle: K
     handle.onValueChanged?.(v, true);
   };
 
+  const stripClass = opts.compact ? 'radio-strip radio-strip--compact' : 'radio-strip';
   const frag = document.createDocumentFragment();
   litRender(html`
-    <div class="radio-strip">
+    <div class=${stripClass}>
       ${opts.options.map((o) => {
         const glyph = WAVEFORM_GLYPHS[o.value];
         return html`<button type="button" class="radio-btn" title=${o.label}

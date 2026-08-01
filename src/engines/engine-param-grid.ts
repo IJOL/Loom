@@ -89,6 +89,7 @@ function buildControl(
       initialValue: options[idx]?.value ?? options[0].value,
       forceSelect: spec.selectStyle === 'dropdown',
       showLabel: spec.showLabel,
+      compact: true,
       onChange: (v) => {
         const i = options.findIndex((o) => o.value === v);
         commitParam(engine, ctx, spec.id, Math.max(0, i));

@@ -345,9 +345,13 @@ describe('buildLaneInsertUI — the FX rack obeys the one select-control rule', 
     ];
     buildLaneInsertUI({ ctx, container, chain, slots, onChange: () => {} });
 
-    expect(container.querySelector('.insert-unit-head .radio-strip')).not.toBeNull();
+    const strip = container.querySelector('.insert-unit-head .radio-strip');
+    expect(strip).not.toBeNull();
     expect(container.querySelector('.insert-unit-head select')).toBeNull();
     expect(container.querySelector('.insert-unit-head .knob')).toBeNull();
+    // Fix round 2: this is a param-editing surface, so it must opt into the
+    // compact modifier itself — the base .radio-strip stays horizontal.
+    expect(strip!.classList.contains('radio-strip--compact')).toBe(true);
   });
 
   it('renders the same control (.radio-strip) as an engine param of the identical 4-option shape', () => {

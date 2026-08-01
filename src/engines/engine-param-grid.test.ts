@@ -88,6 +88,11 @@ describe('buildEngineParamGrid', () => {
     buildEngineParamGrid(stubEngine([wave]), ctx(), parent);
     expect(parent.querySelector('.knob')).toBeNull();
     expect(parent.querySelector('.radio-strip')).not.toBeNull();
+    // Fix round 2: the compact modifier is what makes it vertical/50px — it
+    // must come from THIS path (a param control), not leak from elsewhere.
+    // See select-control.test.ts and modulation-ui.test.ts for the boundary
+    // this pins on the other side (the modulator-config panel stays plain).
+    expect(parent.querySelector('.radio-strip')!.classList.contains('radio-strip--compact')).toBe(true);
   });
 
   it('renders a discrete spec with >4 options and no selectStyle as a native <select>, not a knob (grouped layout)', () => {

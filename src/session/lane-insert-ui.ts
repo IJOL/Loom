@@ -195,6 +195,7 @@ function buildUnitWidgets(
         id: `${slot.id}.${spec.id}`,
         options,
         initialValue: options[idx]?.value ?? options[0].value,
+        compact: true,
         onChange: (v) => {
           const i = options.findIndex((o) => o.value === v);
           const clamped = Math.max(0, i);
