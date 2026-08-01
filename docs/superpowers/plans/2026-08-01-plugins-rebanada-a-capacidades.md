@@ -531,14 +531,24 @@ EOF
 En `src/app/plugin-bootstrap.test.ts`, añade:
 
 ```ts
-it('lists engine components under the kind the rest of the app uses', () => {
+import { registerPlugin, listPlugins, _resetRegistry } from '../plugins/registry';
+
+it('lists an engine component under the kind the rest of the app uses', () => {
   // Los dos registros usaban nombres distintos para lo mismo. Este test fija
   // cual gana, para que no vuelva a haber dos.
-  expect(listPlugins('engine')).toBeDefined();
-  // @ts-expect-error 'synth' ya no es un PluginKind
-  expect(() => listPlugins('synth')).toBeDefined();
+  _resetRegistry();
+  registerPlugin({
+    kind: 'engine',
+    manifest: { id: 'probe', name: 'Probe', kind: 'engine', version: '1.0.0', params: [], presets: [] },
+    create: () => { throw new Error('not built in this test'); },
+  } as never);
+  expect(listPlugins('engine').map((p) => p.manifest.id)).toEqual(['probe']);
 });
 ```
+
+> El test comprueba que un componente registrado **sale** por el kind nuevo. No
+> vale un `expect(...).toBeDefined()` sobre la llamada: eso pasa siempre y no
+> distingue el antes del después.
 
 - [ ] **Step 2: Run and watch it fail**
 
