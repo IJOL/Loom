@@ -81,7 +81,7 @@ export function toModLite(
     }
     return {
       id: m.id,
-      kind: m.kind === 'lfo' ? 'lfo' : 'adsr',
+      kind: m.kind,
       enabled: m.enabled !== false,
       // effectiveRateHz returns the free rateHz when syncToBpm is unset, so a
       // free LFO is unchanged; a synced LFO gets the bpm-derived rate. Keep the

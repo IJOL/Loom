@@ -265,6 +265,13 @@ describe('toModLite', () => {
     expect(at120.rateHz).not.toBeCloseTo(3, 3);   // NOT the free rate
     expect(at120.rateHz).toBeGreaterThan(at60.rateHz * 1.9);   // bpm-proportional
   });
+
+  it('carries an unknown modulator kind through instead of turning it into an ADSR', () => {
+    const mods = toModLite([{
+      id: 'sh1', kind: 'sh', enabled: true, connections: [], scope: 'shared',
+    } as never]);
+    expect(mods[0].kind).toBe('sh');
+  });
 });
 
 describe('a preset carries its own modulators', () => {

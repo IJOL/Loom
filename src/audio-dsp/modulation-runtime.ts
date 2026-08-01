@@ -28,7 +28,11 @@ import { getModulatorKernel, type ModulatorKernel } from './modulator-kernels';
 
 export interface ModLite {
   id: string;
-  kind: 'lfo' | 'adsr';
+  /** The modulator component's id. NOT a closed union: the runtime resolves it
+   *  through the kernel registry, so a plugin's kind travels here untouched.
+   *  It used to be 'lfo' | 'adsr', and toModLite coerced anything else into
+   *  'adsr' — a third modulator silently became an envelope. */
+  kind: string;
   enabled: boolean;
   rateHz: number;
   waveform: 'sine' | 'triangle' | 'square' | 'saw';
