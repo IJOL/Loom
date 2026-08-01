@@ -17,7 +17,7 @@
 import type { KnobHandle } from '../core/knob';
 import type { Sequencer } from '../core/sequencer';
 import type { SessionHost } from '../session/session-host';
-import { driveKnobFromAutomation } from '../automation/automation-knob';
+import { landAutomationValue } from '../automation/automation-knob';
 import type { ArrangementState } from '../performance/performance';
 import { arrangementLoopWindowSec } from '../performance/arrangement-ops';
 import {
@@ -47,6 +47,14 @@ export interface ArrangementPlaybackDeps {
   /** Fired when playback runs off the end (song mode) so the host can reset its
    *  transport button. */
   onArrangementEnd?: () => void;
+  /** Late-bound: automation-writes is built AFTER the performance feature, so
+   *  main hands this in as a closure, never as a bare reference. Absent in test
+   *  fixtures with no audio graph. */
+  applyUnmounted?: (
+    paramId: string, normalised: number,
+    ranges: ReadonlyMap<string, { min: number; max: number }>,
+  ) => void;
+  getTargetRanges?: () => ReadonlyMap<string, { min: number; max: number }>;
 }
 
 export interface ArrangementPlayback {
@@ -79,10 +87,13 @@ export function createArrangementPlayback(deps: ArrangementPlaybackDeps): Arrang
   }
 
   function applyAutomation(paramId: string, valueNorm: number) {
-    // Mounted-only, as before: a take curve whose knob is off screen stays
-    // inert here. What changed is that landing it no longer writes the value
-    // into the lane's base state — see automation-knob.ts.
-    driveKnobFromAutomation(automationRegistry, paramId, valueNorm);
+    // A take curve is a property of the take, not of what is on screen: when
+    // the lane's editor is closed there is no knob, and the value must still
+    // reach the audio object. It used to be dropped here.
+    landAutomationValue(
+      { registry: automationRegistry, applyUnmounted: deps.applyUnmounted, getTargetRanges: deps.getTargetRanges },
+      paramId, valueNorm,
+    );
   }
 
   function tick(nowCtx: number, lookaheadSec: number) {

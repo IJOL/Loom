@@ -1,5 +1,5 @@
 import { tickSessionEnvelopes } from '../session/session-runtime';
-import { driveKnobFromAutomation } from './automation-knob';
+import { landAutomationValue } from './automation-knob';
 import type { Sequencer } from '../core/sequencer';
 import type { KnobHandle } from '../core/knob';
 import type { LanePlayState } from '../session/session-runtime';
@@ -71,18 +71,15 @@ export function startAutomationTick(deps: AutomationTickDeps): void {
     applyModulationRings(deps);          // modulation overlay — always (free LFO runs when stopped)
     if (!seq.isPlaying()) return;
     let ranges: ReadonlyMap<string, { min: number; max: number }> | undefined;
-    tickSessionEnvelopes(getLaneStates(), ctx.currentTime, seq.bpm, seq.meter, (paramId, normalised) => {
-      // A mounted knob is driven through its handle so the UI follows too, with
-      // the engineState mirror suppressed (automation-knob.ts owns both halves;
-      // the Performance take player lands its curves the same way).
-      if (driveKnobFromAutomation(automationRegistry, paramId, normalised)) return;
-      // No knob mounted (the lane's editor panel is closed). Automation is a
-      // property of the session, not of what is on screen, so write straight to
-      // the audio object instead of silently dropping the envelope.
-      if (!deps.applyUnmounted || !deps.getTargetRanges) return;
-      ranges ??= deps.getTargetRanges();
-      deps.applyUnmounted(paramId, normalised, ranges);
-    });
+    const landing = {
+      registry: automationRegistry,
+      applyUnmounted: deps.applyUnmounted,
+      // Memoised for the frame: built lazily so a frame with no unmounted
+      // envelope costs nothing, then reused by every later value in it.
+      getTargetRanges: () => (ranges ??= deps.getTargetRanges?.() ?? new Map()),
+    };
+    tickSessionEnvelopes(getLaneStates(), ctx.currentTime, seq.bpm, seq.meter,
+      (paramId, normalised) => landAutomationValue(landing, paramId, normalised));
   };
   requestAnimationFrame(tick);
 }

@@ -63,6 +63,16 @@ export interface AutomationWrites {
     normalised: number,
     ranges: ReadonlyMap<string, { min: number; max: number }>,
   ): void;
+  /** Playback semantics: the value reaches the audio object and NOTHING else —
+   *  no engineState mirror, because a curve belongs to the clip or the take.
+   *  Handed to the arrangement player, which had no unmounted path at all. */
+  applyPlaybackUnmountedWrite(
+    paramId: string,
+    normalised: number,
+    ranges: ReadonlyMap<string, { min: number; max: number }>,
+  ): void;
+  /** The declared min/max of every destination the session offers. */
+  targetRanges(): ReadonlyMap<string, { min: number; max: number }>;
 }
 
 export function createAutomationWrites(deps: AutomationWritesDeps): AutomationWrites {
@@ -122,6 +132,12 @@ export function createAutomationWrites(deps: AutomationWritesDeps): AutomationWr
     });
   }
 
+  // The declared min/max of every destination the session offers — the same
+  // source the destination picker uses. Shared by the rAF tick's per-frame
+  // memo and the arrangement player, so both denormalise against one table.
+  const targetRanges = () =>
+    new Map(destinations.list().map((t) => [t.id, { min: t.min, max: t.max }]));
+
   const automationTickDeps: AutomationTickDeps = {
     seq,
     automationRegistry,
@@ -130,15 +146,16 @@ export function createAutomationWrites(deps: AutomationWritesDeps): AutomationWr
     // Lets the rAF loop read each lane's live modulation offsets for the knob rings.
     getEngineForLane: (laneId) => getLaneEngineInstance(laneId) ?? undefined,
     // An envelope on a lane whose editor is closed has no knob to drive, so it
-    // lands on the audio object itself. Ranges come from the declared schema —
-    // the same source the destination picker uses.
+    // lands on the audio object itself.
     applyUnmounted: applyUnmountedWrite,
-    getTargetRanges: () =>
-      new Map(destinations.list()
-        .map((t) => [t.id, { min: t.min, max: t.max }])),
+    getTargetRanges: targetRanges,
   };
 
   startAutomationTick(automationTickDeps);
 
-  return { applyLiveControlUnmountedWrite };
+  return {
+    applyLiveControlUnmountedWrite,
+    applyPlaybackUnmountedWrite: applyUnmountedWrite,
+    targetRanges,
+  };
 }

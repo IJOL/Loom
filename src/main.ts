@@ -60,7 +60,7 @@ import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from './core/lane-ids';
 import { createActiveLaneStore } from './control/active-lane';
 import { wireMidiControl } from './app/midi-control-wiring';
 import { createTransportControls } from './app/transport-controls';
-import { createAutomationWrites } from './app/automation-writes';
+import { createAutomationWrites, type AutomationWrites } from './app/automation-writes';
 // ── AudioWorklet synthesis loader (live path for all subtractive lanes) ──────
 import { loadLoomWorklet } from './audio-worklet/loom-node';
 import { loadDrumsWorklet } from './audio-worklet/drums-node';
@@ -545,6 +545,11 @@ const onRegisterKnob = (hook: (k: KnobHandle) => void) => {
   for (const k of automationRegistry.values()) hook(k);
 };
 
+// Late-bound: automation-writes (below) is built AFTER performanceFeature, so
+// its playback-unmounted write and range table reach performanceFeature only
+// as closures over this — see src/app/automation-writes.ts's header comment.
+let writes: AutomationWrites | undefined;
+
 const performanceFeature = createPerformanceFeature({
   ctx, seq, sessionHost,
   automationRegistry,
@@ -560,6 +565,8 @@ const performanceFeature = createPerformanceFeature({
   // button) is created further down, so this must stay a closure — the bare
   // value would be a TDZ crash. It only fires from onPlay/toggleTakeRec.
   onRecVisualChanged: () => recording.refreshRecButton(),
+  applyUnmounted: (id, n, r) => writes?.applyPlaybackUnmountedWrite(id, n, r),
+  getTargetRanges: () => writes?.targetRanges() ?? new Map(),
 });
 
 // Right-click a knob → its automation (see src/app/knob-menu-wiring.ts). Runs
@@ -588,11 +595,11 @@ document.getElementById('capture-scene')?.addEventListener('click', () => sessio
 
 // The XY pad panel (see src/app/xy-panel-wiring.ts). Everything it owns is built
 // on first open, so the only boot-time effect is one click listener; the write
-// path is a closure because `autoWrites` is built ~180 lines below.
+// path is a closure because `writes` is built ~180 lines below.
 wireXyPanel({
   destinations,
   automationRegistry,
-  applyUnmounted: (p, n, r) => autoWrites.applyLiveControlUnmountedWrite(p, n, r),
+  applyUnmounted: (p, n, r) => writes?.applyLiveControlUnmountedWrite(p, n, r),
 });
 
 // Ctrl/Cmd+I — capture currently-playing clips into a new scene. Skip while
@@ -727,7 +734,7 @@ const aboutDialog = bindAboutDialog();
 // scope resolution, the playback write, the live write with its engineState
 // mirror, and the rAF loop that drives both. Calling it here STARTS that loop,
 // so the call must stay at this point in boot.
-const autoWrites = createAutomationWrites({
+writes = createAutomationWrites({
   masterInsertChain, fx, laneResources, sessionHost, seq, ctx,
   automationRegistry, destinations, getLaneEngineInstance,
 });

@@ -31,3 +31,31 @@ export function driveKnobFromAutomation(
   withoutParamMirror(() => k.setValue(k.meta.min + normalised * (k.meta.max - k.meta.min)));
   return true;
 }
+
+export interface LandingDeps {
+  registry: ReadonlyMap<string, KnobHandle>;
+  /** Where a value goes when no knob is mounted. Absent in test fixtures that
+   *  do not build an audio graph, in which case the write is dropped — the
+   *  behaviour every caller had before this existed. */
+  applyUnmounted?: (
+    paramId: string,
+    normalised: number,
+    ranges: ReadonlyMap<string, { min: number; max: number }>,
+  ) => void;
+  getTargetRanges?: () => ReadonlyMap<string, { min: number; max: number }>;
+}
+
+/** Land an automation value on its target: the mounted knob when there is one
+ *  (so the UI follows), the audio object itself when there is not. Automation
+ *  is a property of the session, not of what happens to be on screen — the two
+ *  players used to disagree about that, and the take player simply dropped the
+ *  value. Callers that land many values in one frame should memoise
+ *  `getTargetRanges` themselves; this function calls it at most once per value
+ *  and only when it is needed. */
+export function landAutomationValue(
+  deps: LandingDeps, paramId: string, normalised: number,
+): void {
+  if (driveKnobFromAutomation(deps.registry, paramId, normalised)) return;
+  if (!deps.applyUnmounted || !deps.getTargetRanges) return;
+  deps.applyUnmounted(paramId, normalised, deps.getTargetRanges());
+}

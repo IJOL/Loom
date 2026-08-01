@@ -64,6 +64,14 @@ export interface PerformanceFeatureDeps {
   masterMeterAnalyser?: AnalyserNode;
   /** Optional #volume input — the Performance mini master fader proxies it. */
   volInput?: HTMLInputElement;
+  /** Land a take curve whose knob is unmounted. Late-bound: automation-writes
+   *  is built AFTER this feature, so main hands in a closure. Absent in test
+   *  fixtures with no audio graph. */
+  applyUnmounted?: (
+    paramId: string, normalised: number,
+    ranges: ReadonlyMap<string, { min: number; max: number }>,
+  ) => void;
+  getTargetRanges?: () => ReadonlyMap<string, { min: number; max: number }>;
 }
 
 export interface PerformanceFeature {
@@ -128,6 +136,8 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     getPxPerBar: () => pxPerBar,
     isPerformanceMode: () => mode === 'performance',
     onArrangementEnd: () => deps.onArrangementEnd?.(),
+    applyUnmounted: deps.applyUnmounted,
+    getTargetRanges: deps.getTargetRanges,
   });
 
   // VU meters built into the performance toolbar register here so we can tear
