@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
-import { join, dirname, resolve, relative } from 'node:path';
+import { join, dirname, resolve, relative, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
-import { buildPlugin, writePluginIndex } from './build.mjs';
+import { buildPlugin, writePluginIndex, listPluginDirs } from './build.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -91,5 +91,54 @@ describe('loom-plugin build', () => {
     const ids = await writePluginIndex(out);
     expect(ids.sort()).toEqual(['other', 'probe']);
     expect(JSON.parse(readFileSync(join(out, 'index.json'), 'utf8')).plugins.sort()).toEqual(['other', 'probe']);
+  });
+
+  // The `private` field (PluginManifestFile.private): a plugin that exists only
+  // to exercise the host — the fixture the audio-channel e2e builds — must never
+  // reach a real user via the `plugins/*` sweep or the index, but must still be
+  // buildable when a caller (a test) asks for it by name.
+  describe('private plugins', () => {
+    it('a `plugins/*` sweep of two directories, one private, builds and indexes only the normal one', async () => {
+      const parent = join(root, 'src');
+      writePlugin(join(parent, 'normal'));
+      writeFileSync(join(parent, 'normal', 'plugin.json'),
+        readFileSync(join(parent, 'normal', 'plugin.json'), 'utf8').replaceAll('probe', 'normal'));
+      writePlugin(join(parent, 'hidden'));
+      writeFileSync(join(parent, 'hidden', 'plugin.json'), JSON.stringify({
+        ...JSON.parse(readFileSync(join(parent, 'hidden', 'plugin.json'), 'utf8').replaceAll('probe', 'hidden')),
+        private: true,
+      }));
+
+      // This is the sweep itself: what `cli.mjs`'s `expand('plugins/*')` walks.
+      const dirs = listPluginDirs(parent);
+      expect(dirs.map((d) => basename(d)).sort()).toEqual(['normal']);
+
+      const out = join(root, 'out');
+      for (const dir of dirs) await buildPlugin({ srcDir: dir, outDir: out });
+      const ids = await writePluginIndex(out);
+      expect(ids).toEqual(['normal']);
+      expect(JSON.parse(readFileSync(join(out, 'index.json'), 'utf8')).plugins).toEqual(['normal']);
+    });
+
+    it('a private plugin still builds when asked for by name, the way the e2e fixture needs', async () => {
+      const src = join(root, 'src', 'hidden');
+      writePlugin(src);
+      writeFileSync(join(src, 'plugin.json'), JSON.stringify({
+        ...JSON.parse(readFileSync(join(src, 'plugin.json'), 'utf8')),
+        private: true,
+      }));
+
+      const out = join(root, 'out');
+      const res = await buildPlugin({ srcDir: src, outDir: out });
+      expect(res.id).toBe('probe');
+      for (const f of ['plugin.json', 'main.js', 'dsp.js']) {
+        expect(existsSync(join(out, 'probe', f))).toBe(true);
+      }
+
+      // Even built into the same outDir the real index lives in, it must not
+      // be listed — building by name is not the same as shipping.
+      const ids = await writePluginIndex(out);
+      expect(ids).toEqual([]);
+    });
   });
 });

@@ -83,6 +83,9 @@ export function validatePluginManifest(raw: unknown): ValidationResult {
   for (const k of ['dsp', 'presets'] as const) {
     if (raw[k] !== undefined && !isStr(raw[k])) return { ok: false, error: `${k} must be a string when present` };
   }
+  if (raw.private !== undefined && typeof raw.private !== 'boolean') {
+    return { ok: false, error: 'private must be a boolean when present' };
+  }
   if (!Array.isArray(raw.components)) return { ok: false, error: 'components must be an array' };
   for (let i = 0; i < raw.components.length; i++) {
     const err = componentError(raw.components[i], i);

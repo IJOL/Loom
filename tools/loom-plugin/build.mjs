@@ -95,11 +95,35 @@ export async function buildPlugin({ srcDir, outDir }) {
   return { id: manifest.id, files };
 }
 
+/** Directories under `parent` that the `plugins/*` sweep should build: each has
+ *  a `plugin.json` and is not marked `private`. A private plugin (see
+ *  `PluginManifestFile.private`) exists only for tests/tooling to build BY
+ *  NAME — `buildPlugin` itself does not check the flag — so it must never be
+ *  picked up by the glob. */
+export function listPluginDirs(parent) {
+  return readdirSync(parent, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => join(parent, d.name))
+    .filter((dir) => {
+      const manifestPath = join(dir, 'plugin.json');
+      if (!existsSync(manifestPath)) return false;
+      return readManifest(manifestPath).private !== true;
+    });
+}
+
+function readManifest(manifestPath) {
+  return JSON.parse(readFileSync(manifestPath, 'utf8'));
+}
+
 /** Rewrite `<outRoot>/index.json` from whatever plugin directories exist. The
- *  browser cannot list a directory, so this file IS the discovery mechanism. */
+ *  browser cannot list a directory, so this file IS the discovery mechanism.
+ *  A `private` plugin may be BUILT into `outRoot` (a caller asked for it by
+ *  name — see `listPluginDirs`), but it must never be listed here: the index
+ *  is what makes a plugin reachable to a real user. */
 export async function writePluginIndex(outRoot) {
   const ids = readdirSync(outRoot, { withFileTypes: true })
     .filter((d) => d.isDirectory() && existsSync(join(outRoot, d.name, 'plugin.json')))
+    .filter((d) => readManifest(join(outRoot, d.name, 'plugin.json')).private !== true)
     .map((d) => d.name)
     .sort();
   writeFileSync(join(outRoot, 'index.json'), JSON.stringify({ plugins: ids }, null, 2));

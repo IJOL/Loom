@@ -3,24 +3,24 @@
 //
 //   node tools/loom-plugin/cli.mjs build plugins/*        → public/plugins/
 //   node tools/loom-plugin/cli.mjs new plugins/my-synth --js
-import { readdirSync, existsSync, mkdirSync } from 'node:fs';
-import { join, dirname, resolve, basename } from 'node:path';
+import { existsSync, mkdirSync } from 'node:fs';
+import { dirname, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildPlugin, writePluginIndex } from './build.mjs';
+import { buildPlugin, writePluginIndex, listPluginDirs } from './build.mjs';
 import { scaffoldPlugin } from './scaffold.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const DEFAULT_OUT = join(REPO_ROOT, 'public', 'plugins');
+const DEFAULT_OUT = resolve(REPO_ROOT, 'public', 'plugins');
 
 function expand(pattern) {
   // Only the trailing `*` form is supported — enough for `plugins/*`, and a real
-  // glob dependency for one shape would be silly.
+  // glob dependency for one shape would be silly. A plugin marked `private` in
+  // its own manifest is skipped here — the sweep is not how you build one, see
+  // `listPluginDirs`; ask for it by name instead.
   if (!pattern.endsWith('*')) return [resolve(REPO_ROOT, pattern)];
   const parent = resolve(REPO_ROOT, pattern.slice(0, -1));
   if (!existsSync(parent)) return [];
-  return readdirSync(parent, { withFileTypes: true })
-    .filter((d) => d.isDirectory() && existsSync(join(parent, d.name, 'plugin.json')))
-    .map((d) => join(parent, d.name));
+  return listPluginDirs(parent);
 }
 
 const [, , cmd, ...rest] = process.argv;

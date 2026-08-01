@@ -5,6 +5,7 @@
   "loomApi": 1,
   "author": "Loom",
   "main": "main.js",
+  "private": true,
   "components": [
     {
       "kind": "engine",

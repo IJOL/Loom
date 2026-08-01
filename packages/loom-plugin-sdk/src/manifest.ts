@@ -99,6 +99,10 @@ export interface PluginManifestFile {
   dsp?: string;
   /** Preset file, relative to the plugin directory. */
   presets?: string;
+  /** A plugin that exists only to exercise the host: built on demand by tests,
+   *  never written into plugins/index.json and never shipped. Absent means a
+   *  normal plugin, so nothing an author writes has to opt IN to being real. */
+  private?: boolean;
   /** REQUIRED. A manifest with no components contributes nothing, and making
    *  it optional would turn the old shape (`engines`) into a SILENT failure:
    *  it validates, loads, and registers zero. */
