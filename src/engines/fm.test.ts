@@ -5,12 +5,20 @@ import { FMRenderer } from '../audio-dsp/fm-renderer';
 import type { ParamBag } from '../audio-dsp/types';
 
 describe('FM param groups', () => {
-  it('tags each operator param with its OPn group', () => {
+  // Group id and display title are two different things since Task 9 declared
+  // FM's groups table: the id (op1..op4, lowercase, matching each operator's
+  // own dot-prefix) is a stable key nothing renders, and the title ('OP 1'..
+  // 'OP 4') is what the user actually sees painted as the section header. Pin
+  // both — the id alone doesn't catch a title typo/regression, and the title
+  // is the one a reviewer or a screenshot would actually notice.
+  it('tags each operator param with its opN group id, titled OP N', () => {
     const fm = getEngine('fm')!;
     const groupOf = (id: string) => fm.params.find((p) => p.id === id)?.group;
+    const titleOf = (groupId: string) => fm.groups?.find((g) => g.id === groupId)?.title;
     for (let n = 1; n <= 4; n++) {
-      expect(groupOf(`op${n}.ratio`)).toBe(`OP${n}`);
-      expect(groupOf(`op${n}.release`)).toBe(`OP${n}`);
+      expect(groupOf(`op${n}.ratio`)).toBe(`op${n}`);
+      expect(groupOf(`op${n}.release`)).toBe(`op${n}`);
+      expect(titleOf(`op${n}`)).toBe(`OP ${n}`);
     }
   });
 
