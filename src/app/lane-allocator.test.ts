@@ -6,8 +6,10 @@ import '../engines/subtractive';
 import '../engines/fm';
 import '../engines/wavetable';
 import '../engines/westcoast';
+import '../engines/audio';
 import { DrumsWorkletEngine } from '../engines/drums-worklet-engine';
 import { WorkletLaneEngine } from '../engines/worklet-lane-engine';
+import { AudioWorkletEngine } from '../engines/audio-worklet-engine';
 import { createLaneAllocator } from './lane-allocator';
 import { FxBus } from '../core/fx';
 import { SidechainBus } from '../core/sidechain-bus';
@@ -16,7 +18,9 @@ import type { FxInstance } from '../plugins/types';
 import * as registry from '../engines/registry';
 import { installMainThreadLoomApi, __resetPluginEngines } from '../plugin-host/loom-api';
 import karplusPlugin from '../../plugins/karplus/plugin.json';
+import audioProbePlugin from '../../plugins/audio-probe/plugin.json';
 import type { ComponentManifest } from '@loom/plugin-sdk';
+import { registerEngineCapabilities } from '../plugins/capabilities';
 
 function makeCtx() {
   return new OfflineAudioContext(1, 128, 44100) as unknown as AudioContext;
@@ -149,6 +153,60 @@ describe('Phase 4 Task 1: live worklet backend constructs only worklet engines',
     lanes.ensureLaneResource('L', 'subtractive');
     expect(lanes.resources.get('L')!.engine).toBeInstanceOf(WorkletLaneEngine);
     expect(createSpy).not.toHaveBeenCalledWith('subtractive');
+  });
+});
+
+describe('backend routing by capability, not by hard-coded id (audio slice)', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    // __resetPluginEngines() wipes the whole capabilities map, including the
+    // built-in 'audio' entry that ../engines/audio registered once at import
+    // time (a side effect that never re-runs). Re-register it here so the
+    // non-regression test below still sees the built-in's real capabilities,
+    // matching src/engines/audio.ts exactly.
+    __resetPluginEngines();
+    installMainThreadLoomApi();
+    registerEngineCapabilities('audio', {
+      clipContent: 'audio', shortLabel: 'audio', outputTrim: 1,
+      accepts: ['audio-file'], acceptsNoteFx: false, harmonic: false, isRandomizable: false,
+    });
+  });
+
+  // The bug: a plugin engine declaring clipContent: 'audio' fell into the
+  // WORKLET_ENGINE_IDS branch (isWorkletHosted is true for ANY plugin id) and
+  // got a WorkletLaneEngine — the notes backend — instead of an
+  // AudioWorkletEngine. Using the built-in id 'audio' here would pass even
+  // with the bug still in place (the allocator's literal 'audio' branch would
+  // catch it), so the fixture MUST use a different id — audio-probe does.
+  it('routes a plugin engine with clipContent: audio to AudioWorkletEngine, not WorkletLaneEngine', () => {
+    (globalThis as unknown as { Loom: { registerComponent(m: ComponentManifest): void } })
+      .Loom.registerComponent(audioProbePlugin.components[0] as unknown as ComponentManifest);
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [] });
+
+    lanes.ensureLaneResource('L', 'audio-probe');
+
+    const res = lanes.resources.get('L')!;
+    expect(res).toBeDefined();
+    expect(res.engine).toBeInstanceOf(AudioWorkletEngine);
+    expect(res.engine).not.toBeInstanceOf(WorkletLaneEngine);
+  });
+
+  it('non-regression: the built-in audio channel still gets AudioWorkletEngine, and the six melodic engines still get WorkletLaneEngine', () => {
+    (globalThis as unknown as { Loom: { registerComponent(m: ComponentManifest): void } })
+      .Loom.registerComponent(karplusPlugin.components[0] as unknown as ComponentManifest);
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [] });
+
+    lanes.ensureLaneResource('audio-1', 'audio');
+    expect(lanes.resources.get('audio-1')!.engine).toBeInstanceOf(AudioWorkletEngine);
+
+    for (const engineId of ['subtractive', 'tb303', 'fm', 'wavetable', 'karplus', 'westcoast']) {
+      lanes.ensureLaneResource(`${engineId}-lane`, engineId);
+      expect(lanes.resources.get(`${engineId}-lane`)!.engine).toBeInstanceOf(WorkletLaneEngine);
+    }
   });
 });
 

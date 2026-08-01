@@ -14,7 +14,7 @@ import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from '../core/lane-ids';
 import type { SynthEngine, Voice } from '../engines/engine-types';
 import type { FxBus } from '../core/fx';
 import type { SidechainBus } from '../core/sidechain-bus';
-import { isWorkletHosted, pluginSynthTrim } from '../plugins/capabilities';
+import { isAudioEngine, isWorkletHosted, pluginSynthTrim } from '../plugins/capabilities';
 
 // Melodic engines that have a per-sample worklet renderer (Phase 1 subtractive +
 // Phase 2 ports). These route to WorkletLaneEngine on the live path; drums /
@@ -106,6 +106,14 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     // WorkletLaneEngine, which constructs its own LoomWorkletNode and self-wires
     // to inserts.inputNode. Config (name/polyphony/params/modulators) is read
     // from the pure-data registry descriptor — never a synthesising engine class.
+    // Capability check FIRST: an audio-channel engine (built-in 'audio' or any
+    // plugin declaring clipContent: 'audio') plays whole clip buffers, never
+    // notes, so it must never reach WorkletLaneEngine — even though a plugin id
+    // also satisfies WORKLET_ENGINE_IDS.has() below (isWorkletHosted is true for
+    // ANY plugin id, DSP or not). Checked by capability, not by literal id, so a
+    // plugin audio channel is routed correctly under its own id, not just under
+    // the built-in 'audio'.
+    if (isAudioEngine(engineId)) return new AudioWorkletEngine();
     if (WORKLET_ENGINE_IDS.has(engineId)) {
       const spec = getEngineDescriptor(engineId);
       if (spec) {
@@ -133,11 +141,9 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     // it builds its node + strips on first createVoice. Not enrolled in the
     // global voice cap (which is LoomWorkletNode-only).
     if (engineId === 'drums-machine') return new DrumsWorkletEngine();
-    // Sampler + Audio channel use their own worklet engines (each owns a
-    // SamplerWorkletNode; dry → lane insert chain, send → FxBus). Wired by the
-    // sampler/audio branch in wireEngineIntoLane.
+    // Sampler still selects by literal id — out of scope for the audio-capability
+    // cutover (drums/sampler are their own slice).
     if (engineId === 'sampler') return new SamplerWorkletEngine();
-    if (engineId === 'audio') return new AudioWorkletEngine();
     return null;
   };
 
@@ -162,14 +168,24 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     // those writes and drop them — the menu would open and nothing would move.
     // This runs before the worklet early-return below for exactly that reason.
     (engine as unknown as { setBusStrip?(s: ChannelStrip): void }).setBusStrip?.(strip);
+    // Audio-capability check FIRST, same reasoning as createLaneEngine: a
+    // plugin audio channel must get its setSharedFx/setOutputTarget wiring
+    // regardless of id, and must NOT fall into the "self-wiring worklet engine"
+    // early return below (it is an AudioWorkletEngine, not a WorkletLaneEngine).
+    if (isAudioEngine(engineId)) {
+      (engine as unknown as { setSharedFx?(fx: FxBus): void }).setSharedFx?.(deps.fx);
+      (engine as unknown as { setOutputTarget?(n: AudioNode): void }).setOutputTarget?.(inserts.inputNode);
+      return;
+    }
     if (WORKLET_ENGINE_IDS.has(engineId)) return;   // self-wiring WorkletLaneEngine
     if (engineId === 'drums-machine') {
       (engine as unknown as { setSharedFx?(fx: FxBus): void }).setSharedFx?.(deps.fx);
       (engine as unknown as { setOutputTarget?(n: AudioNode): void }).setOutputTarget?.(inserts.inputNode);
     }
-    if (engineId === 'sampler' || engineId === 'audio') {
-      // SamplerWorkletEngine / AudioWorkletEngine own a SamplerWorkletNode: dry →
-      // lane insert chain, send → FxBus.
+    if (engineId === 'sampler') {
+      // SamplerWorkletEngine owns a SamplerWorkletNode: dry → lane insert
+      // chain, send → FxBus. Still selects by literal id — sampler is its own
+      // slice, out of scope here.
       (engine as unknown as { setSharedFx?(fx: FxBus): void }).setSharedFx?.(deps.fx);
       (engine as unknown as { setOutputTarget?(n: AudioNode): void }).setOutputTarget?.(inserts.inputNode);
     }
