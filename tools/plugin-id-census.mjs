@@ -33,7 +33,7 @@ if (!IDS) {
   console.error(`--group must be one of: ${Object.keys(GROUPS).join(', ')}`);
   process.exit(1);
 }
-console.log(`grupo: ${group}\n`);
+console.log(`group: ${group}\n`);
 
 // 'audio' and 'fm' are short enough to hit unrelated words, so a mention only
 // counts when the id is a whole quoted string.
@@ -77,7 +77,7 @@ for (const file of walk('src')) {
 
 const kinds = new Map();
 for (const h of hits) kinds.set(h.kind, (kinds.get(h.kind) ?? 0) + 1);
-console.log('--- clasificacion ---');
+console.log('--- classification ---');
 for (const [k, n] of [...kinds].sort((a, b) => b[1] - a[1])) console.log(String(n).padStart(4), k);
 console.log();
 
@@ -87,15 +87,15 @@ for (const h of prod) byFile.set(h.file, (byFile.get(h.file) ?? 0) + 1);
 const byId = new Map();
 for (const h of prod) for (const id of h.ids) byId.set(id, (byId.get(id) ?? 0) + 1);
 
-console.log(`lineas con un id de motor: ${hits.length} (produccion ${prod.length}, tests ${hits.length - prod.length})`);
-console.log(`ficheros de produccion afectados: ${byFile.size}`);
-console.log('\n--- por id (solo produccion) ---');
+console.log(`lines with an engine id: ${hits.length} (production ${prod.length}, tests ${hits.length - prod.length})`);
+console.log(`production files affected: ${byFile.size}`);
+console.log('\n--- by id (production only) ---');
 for (const [id, n] of [...byId].sort((a, b) => b[1] - a[1])) console.log(String(n).padStart(4), id);
-console.log('\n--- por fichero (solo produccion) ---');
+console.log('\n--- by file (production only) ---');
 for (const [f, n] of [...byFile].sort((a, b) => b[1] - a[1])) console.log(String(n).padStart(4), f);
 
 if (process.argv.includes('--lines')) {
-  console.log('\n--- todas las lineas de produccion ---');
+  console.log('\n--- all production lines ---');
   for (const h of prod) console.log(`${h.file}:${h.line}  ${h.text}`);
 }
 const jsonAt = process.argv.indexOf('--json');
