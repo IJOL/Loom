@@ -84,6 +84,49 @@ describe('buildEngineParamGrid', () => {
     expect(parent.querySelector('select')).toBeNull();
   });
 
+  // Regression: the grouped branch used to test only `selectStyle === 'dropdown'`,
+  // so a param declaring 'radio' (Subtractive's Osc1/Osc2 Wave, Filter Model,
+  // Filter Type) fell through to the knob path and silently became a knob on
+  // the grouped worklet-lane pages — even though 'flat' callers (the drum rack,
+  // the sampler pads) always honoured it correctly. No existing test asserted
+  // the CONTROL TYPE for a radio-declared param in the grouped layout, which is
+  // exactly why it shipped broken.
+  it("renders a discrete spec with selectStyle: 'radio' as a radio strip, not a knob", () => {
+    const parent = document.createElement('div');
+    const model: EngineParamSpec = {
+      id: 'filter.model', label: 'Model', kind: 'discrete', min: 0, max: 2, default: 0,
+      selectStyle: 'radio',
+      options: [{ value: 'lp', label: 'LP' }, { value: 'hp', label: 'HP' }, { value: 'bp', label: 'BP' }],
+    };
+    buildEngineParamGrid(stubEngine([model]), ctx(), parent);
+    expect(parent.querySelector('.knob')).toBeNull();
+    expect(parent.querySelector('.radio-strip')).not.toBeNull();
+  });
+
+  it('a discrete spec declaring no selectStyle still renders as a knob (radio must not become the new default)', () => {
+    const parent = document.createElement('div');
+    buildEngineParamGrid(stubEngine([discreteSpec('env.shape')]), ctx(), parent);
+    expect(parent.querySelector('.knob')).not.toBeNull();
+    expect(parent.querySelector('.radio-strip')).toBeNull();
+    expect(parent.querySelector('select')).toBeNull();
+  });
+
+  it("renders a discrete spec with selectStyle: 'radio' and >4 options as a native <select>, matching createSelectControl's own rule", () => {
+    const parent = document.createElement('div');
+    const wave: EngineParamSpec = {
+      id: 'osc1.wave', label: 'Wave', kind: 'discrete', min: 0, max: 4, default: 0,
+      selectStyle: 'radio',
+      options: [
+        { value: 'sine', label: 'Sine' }, { value: 'tri', label: 'Tri' }, { value: 'saw', label: 'Saw' },
+        { value: 'square', label: 'Square' }, { value: 'pulse', label: 'Pulse' },
+      ],
+    };
+    buildEngineParamGrid(stubEngine([wave]), ctx(), parent);
+    expect(parent.querySelector('.knob')).toBeNull();
+    expect(parent.querySelector('.radio-strip')).toBeNull();
+    expect(parent.querySelector('select.select-control')).not.toBeNull();
+  });
+
   it('skips params matching opts.skip', () => {
     const parent = document.createElement('div');
     buildEngineParamGrid(stubEngine([cont('poly.voices'), cont('feedback')]), ctx(), parent,

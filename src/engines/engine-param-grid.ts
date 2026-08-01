@@ -67,12 +67,17 @@ function buildControl(
   const flat = opts.layout === 'flat';
   const discrete = spec.kind === 'discrete' && !!spec.options && spec.options.length > 0;
 
-  // Grouped: only a discrete param explicitly opting into 'dropdown' renders as
-  // a <select> (e.g. FM's Algorithm); every other discrete param renders as a
-  // knob, keeping wavetable/westcoast/tb303's osc/wave/env selectors
-  // visually unchanged. Flat: every discrete param is a select control (a radio
-  // strip up to 4 options), which is what a drum WAVE or a sampler LOOP is.
-  if (discrete && (flat || spec.selectStyle === 'dropdown')) {
+  // Grouped: a discrete param renders as a <select>/radio-strip only if it
+  // explicitly opts in — 'dropdown' (e.g. FM's Algorithm) or 'radio' (e.g.
+  // Subtractive's Osc1/Osc2 Wave, Filter Model, Filter Type). Any other
+  // discrete param renders as a knob, keeping wavetable/westcoast/tb303's
+  // osc/wave/env selectors visually unchanged — a param declaring no
+  // `selectStyle` must NOT be swept into this branch by a layout change.
+  // Flat: every discrete param is a select control (a radio strip up to 4
+  // options, else a native select), which is what a drum WAVE or a sampler
+  // LOOP is — 'radio'/'dropdown' don't matter there, `forceSelect` below
+  // decides the widget in both layouts.
+  if (discrete && (flat || spec.selectStyle === 'dropdown' || spec.selectStyle === 'radio')) {
     const options = spec.options!;
     const idx = Math.max(0, Math.min(options.length - 1, Math.round(engine.getBaseValue(spec.id))));
     const { el, handle } = createSelectControl({
