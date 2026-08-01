@@ -2,6 +2,12 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **DOCUMENTO HISTÓRICO.** Esto es lo que se planeó y ejecutó, no la API final.
+> Dos capacidades que aparecen aquí **ya no existen**: `clipEditor` la sustituyó
+> `clipContent` a mitad de la rebanada (Task 6), y `listedInSelector` se borró al
+> cerrarla — era una decisión de disposición del menú, no una propiedad del motor.
+> La referencia viva es el [spec](../specs/2026-08-01-plugins-core-por-capacidades-design.md).
+
 **Goal:** que un plugin declare que es un canal de audio o una caja de ritmos y el
 host se comporte en consecuencia, sin que ningún fichero de `src/` lo nombre.
 
