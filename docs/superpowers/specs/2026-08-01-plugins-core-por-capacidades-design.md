@@ -248,14 +248,18 @@ correcta la que hace falta preguntar, y `swappable` como capacidad aparte
 habría sido redundante con `isAudioEngine`, no con las comprobaciones de
 `editor`.
 
-Del mismo modo, "clic en celda vacía abre el selector de fichero"
-(`session-grid-templates.ts:152` en el momento de escribir esto) **NO se
-deriva** de la capacidad: `session-host-callbacks.ts:93` sigue haciendo
-`lane.engineId === 'audio'` a mano. Queda pendiente de la rebanada C. Su efecto
-real hoy: la celda vacía de la pista de un plugin de audio (p. ej.
-`audio-probe`) abre el editor de notas normal en vez de pedir un fichero — el
-único de los tres criterios de "sólo inserts, sin knobs" de la Task 9 que SÍ
-depende de un `engineId === 'audio'` sin corregir.
+Del mismo modo, "clic en celda vacía abre el selector de fichero" **tampoco se
+derivaba** de la capacidad: `session-host-callbacks.ts` comparaba
+`lane.engineId === 'audio'` a mano, y el efecto se vio al mirar la app — la celda
+vacía de la pista de un plugin de audio abría el editor de notas en vez de pedir
+un fichero. **ARREGLADO al cerrar la rebanada A** (`isAudioEngine(...)`), con su
+test en `session-host-callbacks.test.ts`, que usa a propósito un motor cuyo id
+NO es `'audio'` — con el id integrado el test pasaría igual y no probaría nada.
+
+Merece quedar escrito por qué sobrevivió tanto: **el motor `audio` integrado se
+llama exactamente como la cadena que el `if` buscaba**, así que el fallo era
+invisible con los motores del árbol. Hizo falta un componente con otro id para
+destaparlo. Haz la rebanada C con un plugin de prueba delante.
 
 `clipContent` y `editorPage` **no** hacen la UI extensible: el plugin elige de
 un catálogo cerrado que publica el host. Es la decisión ya tomada en el
@@ -391,6 +395,24 @@ descubrirlo a mitad.
   `main`, verificado) ni el `WorkletLaneEngine.bpm` que nadie asigna y que deja
   un LFO en SYNC sin seguir el tempo. Cada uno necesita su propia rama.
 
+## Agujero conocido: un plugin de audio recibiría el backend equivocado
+
+Verificado en el review de la rebanada A. `isWorkletHosted(id)` es **incondicional
+para todo id que llegó por manifiesto de plugin**: no comprueba —ni puede— si el
+plugin trae DSP, porque `dsp` es campo de `PluginManifestFile` y la puerta sólo
+ve el `ComponentManifest`. Consecuencia: `lane-allocator` construye un
+`WorkletLaneEngine` —el camino de síntesis de NOTAS— para cualquier motor de
+plugin, incluido uno que declare `clipContent: 'audio'`. Las ramas que sí
+construyen `SamplerWorkletEngine`/`AudioWorkletEngine` sólo se alcanzan por
+`engineId === 'sampler'` / `=== 'audio'`, o sea nunca para un plugin.
+
+Hoy no muerde porque el único plugin de audio es el sonda y no trae DSP: no suena
+nada, así que nada suena mal. Pero **acota lo que esta rebanada puede afirmar**: un
+plugin de terceros ya puede declararse canal de audio y ser creído para el editor,
+el drop, los paneles, los note-FX, los acordes, el intercambio y la creación de la
+pista — **no para sonar**. Es coherente con la Decisión 2 (los backends se quedan
+en el host hasta el trozo 3), y es ahí donde se cierra.
+
 ## Agujero conocido del modelo de confianza: dos copias del manifiesto
 
 Verificado en el código (review de la rebanada A, 2026-08-01), sin cerrar
@@ -404,10 +426,10 @@ ya construido, sin el fuente — eso significa: **el host valida un fichero y
 ejecuta unas capacidades que nunca ha visto**. Nada impide que las dos copias
 diverjan; el manifiesto validado es una fachada.
 
-Hoy no muerde: los dos plugins publicados (`karplus`, `audio-probe`) son
-nuestros, y `tools/loom-plugin/cli.mjs build` genera las dos copias a partir
-del mismo objeto fuente en el mismo paso, así que nunca hay tiempo para que
-diverjan. Pero el modelo de confianza no impide que un tercero entregue un
+Hoy no muerde: el único plugin publicado (`karplus`) es nuestro — el sonda
+`audio-probe` lleva `private: true` y no se publica, sólo lo construye el e2e —
+y `tools/loom-plugin/cli.mjs build` genera las dos copias a partir del mismo
+objeto fuente en el mismo paso, así que nunca hay tiempo para que diverjan. Pero el modelo de confianza no impide que un tercero entregue un
 `public/plugins/evil/plugin.json` inocente y un `main.js` cuyo
 `registerComponent` declare otra cosa. Cerrarlo (validar el manifiesto que de
 verdad se ejecuta, no una copia aparte) es trabajo de la rebanada B o C — no
