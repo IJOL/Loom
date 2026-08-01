@@ -119,7 +119,7 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
       if (spec) {
         const eng = new WorkletLaneEngine(deps.ctx, inserts.inputNode, {
           engineId, name: spec.name, presetsKey: engineId, polyphony: spec.polyphony,
-          params: spec.params, modulators: spec.modulators,
+          params: spec.params, groups: spec.groups, modulators: spec.modulators,
           // A plugin engine's renderer does NOT multiply by its own engine trim
           // (the number lives in its manifest, not its compiled JS), so the host
           // carries it down to the sum point. 1 for a built-in, whose renderer

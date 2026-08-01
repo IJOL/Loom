@@ -28,6 +28,8 @@ import karplusPlugin from '../../plugins/karplus/plugin.json';
 import audioProbePlugin from '../../plugins/audio-probe/plugin.json';
 import type { ComponentManifest } from '@loom/plugin-sdk';
 import { registerEngineCapabilities } from '../plugins/capabilities';
+import { createDescriptorEngine } from '../engines/descriptor-engine';
+import type { EngineParamGroup } from '../engines/engine-param-groups';
 
 function makeCtx() {
   return new OfflineAudioContext(1, 128, 44100) as unknown as AudioContext;
@@ -431,5 +433,43 @@ describe('onDestinationsChanged announcements (Finding 4)', () => {
 
     expect(spy).not.toHaveBeenCalled();
     expect(lanes.resources.get('L')!.engine.id).toBe('subtractive'); // unchanged
+  });
+});
+
+// Task 5 fix round 1: the plan originally listed only two of the four hops a
+// declared `groups` table has to survive (descriptor config -> live
+// WorkletLaneEngine). It never named the two in between: registry.ts's
+// EngineDescriptor projection, and lane-allocator.ts, which is what actually
+// builds the WorkletLaneEngine the lane editor calls buildParamUI on. A table
+// that stops at either of those hops is silently empty in production while
+// descriptor-engine.test.ts and worklet-lane-engine.test.ts (which construct
+// their objects directly, skipping the registry+allocator) still pass.
+//
+// This registers a throwaway engine id through the REAL registerEngine +
+// registerEngineCapabilities entry points (the same ones a plugin or an
+// in-tree engine file uses), then drives the actual createLaneAllocator ->
+// ensureLaneResource path — no stub stands in for any hop.
+describe('Task 5 fix round 1: the declared groups table survives every hop to the live engine', () => {
+  it('descriptor config -> registry.EngineDescriptor -> allocator -> live WorkletLaneEngine.groups', () => {
+    const groups: EngineParamGroup[] = [{ id: 'osc1', title: 'OSC 1', row: 0, color: '#2ee0c0' }];
+    // isPlugin: true makes isWorkletHosted('groups-chain-test') true, which is
+    // what routes the allocator into the WorkletLaneEngine branch for an id
+    // that isn't one of the hard-coded built-ins.
+    registerEngineCapabilities('groups-chain-test', { clipContent: 'notes', shortLabel: 'gct', outputTrim: 1 }, true);
+    registry.registerEngine(createDescriptorEngine({
+      id: 'groups-chain-test', name: 'Groups Chain Test', polyphony: 'poly',
+      params: [{ id: 'osc1.level', label: 'L', kind: 'continuous', min: 0, max: 1, default: 0.5, group: 'osc1' }],
+      groups,
+      presets: () => [],
+    }));
+
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [] });
+    lanes.ensureLaneResource('L', 'groups-chain-test');
+
+    const res = lanes.resources.get('L')!;
+    expect(res.engine).toBeInstanceOf(WorkletLaneEngine);
+    expect(res.engine.groups).toEqual(groups);
   });
 });

@@ -16,6 +16,7 @@ import type { SynthEngine } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
 import type { EnginePreset } from './engine-types';
 import type { ModulatorState } from '../modulation/types';
+import type { EngineParamGroup } from './engine-param-groups';
 
 const engines = new Map<string, SynthEngine>();
 const factories = new Map<string, () => SynthEngine>();
@@ -31,6 +32,12 @@ export interface EngineDescriptor {
   polyphony: 'mono' | 'poly';
   editor: 'piano-roll' | 'drum-grid';
   params: EngineParamSpec[];
+  /** Declared editor layout for `params` (see SynthEngine.groups). Must reach
+   *  the live engine the allocator builds — omitting it here or in
+   *  lane-allocator.ts's WorkletEngineConfig means the editor silently falls
+   *  back to the pre-groups rendering (one row per group, first-appearance
+   *  order) even though the engine declared a table. */
+  groups?: EngineParamGroup[];
   presets: EnginePreset[];
   /** The engine's DEFAULT modulator set (serialized state), used to seed a
    *  worklet lane's ModulationHost. */
@@ -82,6 +89,7 @@ export function getEngineDescriptor(id: string): EngineDescriptor | undefined {
     polyphony: eng.polyphony,
     editor: eng.editor,
     params: eng.params,
+    groups: eng.groups,
     presets: eng.presets,
     modulators: eng.modulators.serialize(),
   };
