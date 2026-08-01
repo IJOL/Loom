@@ -29,15 +29,20 @@ export interface EngineParamSpec {
   drawnBy?: 'mixer' | 'modulators';
   options?: Array<{ value: string; label: string }>;   // only when kind === 'discrete'
   /** Discrete only. THE rule, for every discrete param on every surface that
-   *  draws one (the grouped grid, the flat layout, the FX insert rack — see
-   *  engine-param-grid.ts's header): it renders through createSelectControl,
-   *  NEVER a knob. ≤4 options draw a vertical radio strip; more than that
-   *  draw a native <select>. 'dropdown' forces the native <select> at ANY
-   *  option count — for many or long-labelled options (e.g. the FM
-   *  algorithm) so the control stays compact. There used to be a 'radio'
-   *  value that opted a param INTO this same behaviour when the default was
-   *  still a knob; now that select-control is the only path, opting in is
-   *  meaningless and the value was removed from this type (Task 8b). */
+   *  draws one — the grouped grid, the flat layout, the FX insert rack (see
+   *  engine-param-grid.ts's header), and a modulator's own config card too:
+   *  it renders through createSelectControl, NEVER a knob. ≤4 options draw a
+   *  radio strip; more than that draw a native <select>. The strip stacks
+   *  VERTICALLY only on the engine grid and the FX insert rack — those two
+   *  pass `compact: true`; every other surface leaves it unset and stays
+   *  HORIZONTAL (see select-control.ts's header for that boundary — it is
+   *  NOT the same rule as select-vs-knob above, which holds everywhere).
+   *  'dropdown' forces the native <select> at ANY option count — for many or
+   *  long-labelled options (e.g. the FM algorithm) so the control stays
+   *  narrow. There used to be a 'radio' value that opted a param INTO this
+   *  same behaviour when the default was still a knob; now that
+   *  select-control is the only path, opting in is meaningless and the
+   *  value was removed from this type (Task 8b). */
   selectStyle?: 'dropdown';
   /** Discrete only: show the param label above the control (default off). For
    *  controls whose option text isn't self-describing, e.g. CHOKE (—/1/2/3/4). */

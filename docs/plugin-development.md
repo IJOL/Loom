@@ -308,12 +308,23 @@ required, a continuous param needs `max > min`, and a discrete one needs at
 least two options.
 
 **Every discrete param renders as a select control, everywhere — never a
-knob.** ≤4 options draw a compact vertical strip; more than 4, or
-`selectStyle: 'dropdown'`, draw a native `<select>`. This holds on every
-surface: the inspector's grouped grid, the flat layout (drum rack, sampler
-pads), and the FX insert rack. If you're choosing how many options to give a
-discrete param, 4 is the threshold that decides strip vs. dropdown — keep
-that in mind picking option counts, not just labels.
+knob.** ≤4 options draw a radio strip; more than 4, or `selectStyle:
+'dropdown'`, draw a native `<select>`. That much holds on every surface a
+discrete param can be drawn on: the inspector's grouped grid, the flat
+layout (drum rack, sampler pads), the FX insert rack, and a modulator's own
+config card.
+
+The strip's *shape* is not universal, though. The engine param grid and the
+FX insert rack stack it VERTICALLY, at a fixed ~50px width (a knob's own
+footprint), by passing `compact: true` to `createSelectControl`. A
+modulator's config card leaves `compact` unset and keeps the base
+HORIZONTAL strip — its layout is a row, not a knob grid, and the vertical
+shape stretches it. That includes a plugin modulator's own declared
+`params`: they render through the same select-control rule, via
+`generic-mod-config.ts`, horizontally like every other modulator card. If
+you're choosing how many options to give a discrete param, 4 is the
+threshold that decides strip vs. dropdown — keep that in mind picking option
+counts, not just labels.
 
 Naming conventions, which the modulation panel groups by and the preset JSON
 uses:

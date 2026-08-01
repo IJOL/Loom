@@ -10,14 +10,17 @@
 // returned `el` is typed as HTMLElement either way — callers use `.el` for
 // layout only.
 //
-// THE rule for every discrete PARAM control, on every surface that draws one
-// (see engine-param-grid.ts's header for the full list, which includes the
-// FX insert rack): pass `compact: true`. That strip stacks VERTICALLY and is
-// fixed to a knob's footprint (~50px wide) so a row of mixed controls
-// aligns. Without `compact`, the strip stays the base HORIZONTAL shape — the
-// modulator-config panel (LFO WAVE/POLARITY/RETRIG) relies on that default
-// and must NOT opt in: its cards lay out in a row, and the vertical strip
-// stretched them the one time this leaked (Task 8b fix round 2).
+// THE rule for a discrete control, but ONLY in the engine param grid or the
+// FX insert rack (see engine-param-grid.ts's header for the full list): pass
+// `compact: true`. That strip stacks VERTICALLY and is fixed to a knob's
+// footprint (~50px wide) so a row of mixed controls aligns. It is NOT the
+// rule for every discrete control everywhere — every OTHER surface that
+// draws one leaves `compact` unset and keeps the base HORIZONTAL shape: both
+// the hand-built modulator-config panels (LFO WAVE/POLARITY/RETRIG, ADSR)
+// and the generic one for a modulator whose params are declared rather than
+// hand-templated (generic-mod-config.ts — the route a plugin modulator must
+// take) lay their cards out in a row, and the vertical strip stretched the
+// LFO one the one time this leaked (Task 8b fix round 2).
 //
 // DOM is built once via a one-time lit-html render into a detached fragment;
 // the active-state refresh and data-value-norm updates stay imperative on the
@@ -41,9 +44,11 @@ export interface SelectControlOpts {
   showLabel?: boolean;
   /** Radio-strip only: stack vertically at a fixed ~50px width (a knob's own
    *  footprint) instead of the base horizontal strip. Opt-in — pass `true`
-   *  ONLY from a param-editing surface (buildControl in engine-param-grid.ts,
-   *  the FX insert rack). The modulator-config panel must leave this unset;
-   *  its horizontally-laid-out cards break when the strip goes vertical. */
+   *  ONLY from the engine param grid (buildControl in engine-param-grid.ts)
+   *  or the FX insert rack. Every other discrete-control surface — the
+   *  hand-built modulator-config panels and the generic one
+   *  (generic-mod-config.ts) — must leave this unset; their
+   *  horizontally-laid-out cards break when the strip goes vertical. */
   compact?: boolean;
 }
 

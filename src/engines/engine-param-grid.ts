@@ -8,8 +8,12 @@
 // layouts below, AND the FX insert rack (src/session/lane-insert-ui.ts) —
 // comes from one function, createSelectControl (src/core/select-control.ts):
 // discrete always renders a select control, NEVER a knob; ≤4 options draw a
-// vertical radio strip; more than that, or `selectStyle: 'dropdown'`, draw a
-// native <select>. A knob is for continuous params only.
+// radio strip; more than that, or `selectStyle: 'dropdown'`, draw a native
+// <select>. A knob is for continuous params only. This builder always passes
+// `compact: true`, the modifier that stacks a ≤4-option strip VERTICALLY —
+// that modifier is scoped to here and the FX insert rack ONLY; a modulator's
+// own config card (hand-built, or generic-mod-config.ts for a plugin's
+// declared params) must leave it unset, see select-control.ts's header.
 //
 // Two layouts, both approved and both still shipping:
 //   'grouped' (default) — one labelled row per spec.group, quantised drag.
