@@ -73,10 +73,28 @@ export class ModulationHostImpl implements ModulationHost {
       // to special-case lfo/adsr because the plugin SPI could not receive
       // state at all.
       const comp = getModulator(m.kind);
-      if (comp) out.set(m.id, comp.createVoice(ctx, { state: m, bpm }));
+      if (!comp) { warnUnknownKind(m.kind); continue; }
+      out.set(m.id, comp.createVoice(ctx, { state: m, bpm }));
     }
     return out;
   }
+}
+
+/** Kinds already reported, so a lane that rebinds on every engine swap does not
+ *  fill the console with the same line. */
+const warnedKinds = new Set<string>();
+
+/** A saved session can name a modulator whose plugin is no longer installed.
+ *  Skipping it is right — a missing plugin must not take the session down — but
+ *  skipping it SILENTLY is not: the user would see a modulator listed in the
+ *  panel doing nothing at all, with no way to tell why. Say it once per kind. */
+function warnUnknownKind(kind: string): void {
+  if (warnedKinds.has(kind)) return;
+  warnedKinds.add(kind);
+  console.warn(
+    `[modulation] no component registered for modulator kind "${kind}" — ` +
+    'its instances are inert. A plugin that used to provide it may be missing.',
+  );
 }
 
 export interface ParamRange { min: number; max: number; }
