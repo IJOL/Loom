@@ -1,7 +1,6 @@
 import type {
-  PluginFactory, PluginKind, SynthInstance, FxInstance, ModulatorInstance,
+  PluginFactory, PluginKind, SynthInstance, FxInstance,
 } from './types';
-import type { ModulatorState } from '../modulation/types';
 
 const plugins = new Map<string, PluginFactory>();
 const key = (kind: PluginKind, id: string) => `${kind}:${id}`;
@@ -25,13 +24,11 @@ export function listPlugins(kind?: PluginKind): PluginFactory[] {
 
 export function createInstance(kind: 'engine',    id: string, ctx: AudioContext, output: AudioNode): SynthInstance | undefined;
 export function createInstance(kind: 'fx',        id: string, ctx: AudioContext): FxInstance | undefined;
-export function createInstance(kind: 'modulator', id: string, ctx: AudioContext, opts: { state: ModulatorState; bpm: () => number }): ModulatorInstance | undefined;
 export function createInstance(kind: PluginKind, id: string, ctx: AudioContext, arg?: unknown): unknown {
   const p = plugins.get(key(kind, id));
   if (!p) return undefined;
   if (p.kind === 'engine')    return p.create(ctx, arg as AudioNode);
   if (p.kind === 'fx')        return p.create(ctx);
-  if (p.kind === 'modulator') return p.create(ctx, arg as { state: ModulatorState; bpm: () => number });
   return undefined;
 }
 

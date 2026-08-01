@@ -3,10 +3,15 @@
 // Plugin file convention:
 //   - Engines:          src/engines/<name>.ts          (register an engine descriptor)
 //   - FX plugins:       src/plugins/fx/<name>.ts
-//   - Modulator plugs:  src/plugins/modulators/<name>.ts
+//   - Modulators:       src/plugins/modulators/<name>.ts
 //
-// FX / modulator modules export a value satisfying the PluginFactory shape
+// FX modules export a value satisfying the PluginFactory shape
 // ({ kind, manifest, create }); this file scans them via import.meta.glob.
+//
+// Modulators do NOT go through this registry: they call registerModulator at
+// module scope into src/modulation/modulator-registry.ts, their own door. The
+// eager glob below still IMPORTS their files, which is what makes that
+// module-scope registration run — the shape check simply does not match them.
 //
 // Phase 4 cutover: the engines no longer export a node-per-note
 // PluginFactory (the legacy classes were deleted). Each engine file now
@@ -36,7 +41,7 @@ function isPluginFactory(v: unknown): v is PluginFactory {
   if (v === null || typeof v !== 'object') return false;
   const o = v as Record<string, unknown>;
   return (
-    (o['kind'] === 'engine' || o['kind'] === 'fx' || o['kind'] === 'modulator') &&
+    (o['kind'] === 'engine' || o['kind'] === 'fx') &&
     typeof o['manifest'] === 'object' && o['manifest'] !== null &&
     typeof (o['manifest'] as Record<string, unknown>)['id'] === 'string' &&
     typeof o['create'] === 'function'
