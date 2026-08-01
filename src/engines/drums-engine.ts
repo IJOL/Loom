@@ -28,7 +28,6 @@ function makeDrumsDescriptor() {
     id: 'drums-machine',
     name: 'Drums',
     polyphony: 'poly',
-    editor: 'drum-grid',
     params: DRUM_PARAMS,
     presets: () => getCachedPresets('drums-machine'),
     modulators: DRUMS_DEFAULT_MODULATORS,

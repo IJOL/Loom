@@ -3,6 +3,7 @@ import {
   registerEngineCapabilities, clipContentOf, isAudioEngine, defaultNoteViewOf, acceptsAudioFile,
   acceptsNoteFx, isHarmonic, isListedInSelector, __resetCapabilities,
 } from './capabilities';
+import { getEngine } from '../engines/registry';
 import '../engines/audio';
 import '../engines/sampler';
 import '../engines/drums-engine';
@@ -35,6 +36,13 @@ describe('the three non-melodic in-tree engines', () => {
     // were the same datum the sampler would be an audio channel.
     expect(isAudioEngine('sampler')).toBe(false);
     expect(acceptsAudioFile('sampler')).toBe(true);
+  });
+
+  it('the drum machine opens in the pad view, derived from its capability alone', () => {
+    // One datum, one owner: `editor` is computed from defaultNoteView, so the two
+    // cannot drift apart the way a hand-kept literal could.
+    expect(getEngine('drums-machine')?.editor).toBe('drum-grid');
+    expect(defaultNoteViewOf('drums-machine')).toBe('pads');
   });
 });
 

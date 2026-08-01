@@ -23,12 +23,12 @@ import type { EngineParamSpec } from './engine-params';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import type { ModulatorState } from '../modulation/types';
 import { STRIP_PARAM_SPECS } from '../core/channel-strip-params';
+import { defaultNoteViewOf } from '../plugins/capabilities';
 
 export interface DescriptorEngineConfig {
   id: string;
   name: string;
   polyphony: 'mono' | 'poly';
-  editor?: 'piano-roll' | 'drum-grid';
   params: EngineParamSpec[];
   /** Lazy preset getter (usually getCachedPresets(<id>)). */
   presets: () => EnginePreset[];
@@ -77,7 +77,13 @@ export function createDescriptorEngine(cfg: DescriptorEngineConfig): SynthEngine
     name: cfg.name,
     type: 'polyhost',
     polyphony: cfg.polyphony,
-    editor: cfg.editor ?? 'piano-roll',
+    /** Derived, never declared: the note view comes from the engine's
+     *  `defaultNoteView` capability. A getter rather than a value so it does not
+     *  depend on whether the capability was registered before this descriptor
+     *  was built. */
+    get editor(): 'piano-roll' | 'drum-grid' {
+      return defaultNoteViewOf(cfg.id) === 'pads' ? 'drum-grid' : 'piano-roll';
+    },
     params,
     get presets(): EnginePreset[] { return cfg.presets(); },
     get modulators(): ModulationHostImpl { return modHost; },

@@ -21,11 +21,13 @@ function adoptEngine(m: EngineManifest): void {
     clipContent: m.clipContent, defaultNoteView: m.defaultNoteView,
     shortLabel: m.shortLabel, outputTrim: m.outputTrim, gm: m.gm,
   }, true);
+  // editor is NOT passed here: createDescriptorEngine derives it from the
+  // capability (defaultNoteView) just registered above, through the same
+  // door a built-in engine goes through — one datum, one owner.
   const make = () => createDescriptorEngine({
     id: m.id,
     name: m.name,
     polyphony: m.polyphony,
-    editor: m.defaultNoteView === 'pads' ? 'drum-grid' : 'piano-roll',
     params: m.params,
     presets: () => getCachedPresets(m.id),
     modulators: (m.modulators ?? []) as ModulatorState[],
@@ -36,13 +38,12 @@ function adoptEngine(m: EngineManifest): void {
 
 function adoptComponent(m: ComponentManifest): void {
   registerEngineCapabilities(m.id, m.capabilities, true);
+  // Same as adoptEngine above: editor derives from defaultNoteView via
+  // createDescriptorEngine's getter, not declared here.
   const make = () => createDescriptorEngine({
     id: m.id,
     name: m.name,
     polyphony: m.polyphony,
-    // Derived, not declared: the plugin says what a clip of this engine IS
-    // (clipContent) and, when it's notes, which view opens by default.
-    editor: m.capabilities.defaultNoteView === 'pads' ? 'drum-grid' : 'piano-roll',
     params: m.params,
     presets: () => getCachedPresets(m.id),
     modulators: (m.modulators ?? []) as ModulatorState[],
