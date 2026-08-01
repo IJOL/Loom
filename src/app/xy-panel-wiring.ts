@@ -12,7 +12,7 @@
 //
 // `applyUnmounted` is a thunk-shaped dep for a reason that travels with the code:
 // in main.ts the pad is wired ~180 lines BEFORE `createAutomationWrites` runs, so
-// the caller hands in a closure `(p, n, r) => autoWrites.applyLiveControlUnmountedWrite(p, n, r)`
+// the caller hands in a closure `(p, n, r) => writes?.applyLiveControlUnmountedWrite(p, n, r)`
 // rather than the bare function. Reading it at use time is what makes the early
 // wiring legal, and it works precisely because the pad only ever calls it from
 // inside a drag.
@@ -58,7 +58,7 @@ export function wireXyPanel(deps: XyPanelDeps): void {
         // app/automation-writes.ts): the catalogue offers every destination
         // the session declares, including ones with no mounted knob, so
         // dragging the pad on one of those must land the value AND persist it.
-        // Read through a closure, never as a bare reference: `autoWrites` is
+        // Read through a closure, never as a bare reference: `writes` is
         // built ~180 lines below this wiring's call site in main.ts, and this
         // handler only runs on a click.
         applyUnmounted: (p, n, r) => deps.applyUnmounted(p, n, r),
