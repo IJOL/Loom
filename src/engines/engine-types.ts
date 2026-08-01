@@ -108,6 +108,9 @@ export interface SynthEngine {
    *  consulted through isAudioEngine() in plugins/capabilities.ts. */
   readonly editor: 'piano-roll' | 'drum-grid';
   readonly params: import('./engine-params').EngineParamSpec[];
+  /** Declared editor layout for `params`. Read by buildEngineParamGrid; absent
+   *  means the pre-groups behaviour (one row per group, first-appearance order). */
+  groups?: import('./engine-param-groups').EngineParamGroup[];
   readonly presets: EnginePreset[];
   /** Engine's modulation host — read by the voice-mod binder to enumerate
    *  enabled modulators when (re)applying gain bridges. Each engine owns

@@ -131,6 +131,21 @@ describe('WorkletLaneEngine', () => {
     expect(releasedIds).toHaveLength(1);
   });
 
+  // The descriptor's `groups` table is metadata-only until it also reaches the
+  // LIVE engine — buildEngineParamGrid reads `engine.groups` off the object it
+  // was called on (WorkletLaneEngine, not the registry's descriptor singleton).
+  // A table that only survives on the descriptor is silently dropped here.
+  it('carries the declared groups table onto the live engine instance', () => {
+    const groups = [{ id: 'osc1', title: 'OSC 1', row: 0, color: '#2ee0c0' }];
+    const eng = makeEngine({ groups });
+    expect(eng.groups).toEqual(groups);
+  });
+
+  it('has no groups when the config declares none', () => {
+    const eng = makeEngine();
+    expect(eng.groups).toBeUndefined();
+  });
+
   it('posts processorOptions.engineId so the worklet builds the right renderer', () => {
     makeEngine({ engineId: 'fm', name: 'FM' });
     expect(lastEngineId).toBe('fm');

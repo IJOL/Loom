@@ -20,6 +20,7 @@ import type {
   SynthEngine, Voice, EnginePreset,
 } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
+import type { EngineParamGroup } from './engine-param-groups';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import type { ModulatorState } from '../modulation/types';
 import { STRIP_PARAM_SPECS } from '../core/channel-strip-params';
@@ -30,6 +31,8 @@ export interface DescriptorEngineConfig {
   name: string;
   polyphony: 'mono' | 'poly';
   params: EngineParamSpec[];
+  /** Declared editor layout for `params`. See SynthEngine.groups. */
+  groups?: EngineParamGroup[];
   /** Lazy preset getter (usually getCachedPresets(<id>)). */
   presets: () => EnginePreset[];
   /** Default modulator set (data) — seeds the host's serialized state used by
@@ -107,6 +110,7 @@ export function createDescriptorEngine(cfg: DescriptorEngineConfig): SynthEngine
       return defaultNoteViewOf(cfg.id) === 'pads' ? 'drum-grid' : 'piano-roll';
     },
     params,
+    groups: cfg.groups,
     get presets(): EnginePreset[] { return cfg.presets(); },
     get modulators(): ModulationHostImpl { return ensureModHost(); },
 

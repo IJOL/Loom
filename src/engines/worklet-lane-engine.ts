@@ -17,6 +17,7 @@ import type {
 import type { EngineParamSpec } from './engine-params';
 import type { ParamBag } from '../audio-dsp/types';
 import type { ModLite } from '../audio-dsp/modulation-runtime';
+import type { EngineParamGroup } from './engine-param-groups';
 import { LoomWorkletNode } from '../audio-worklet/loom-node';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import { type ModulatorState } from '../modulation/types';
@@ -90,6 +91,8 @@ export interface WorkletEngineConfig {
   engineId: string;
   name: string;
   params: EngineParamSpec[];
+  /** Declared editor layout for `params`. See SynthEngine.groups. */
+  groups?: EngineParamGroup[];
   presetsKey: string;          // preset cache key (engine id)
   polyphony: 'mono' | 'poly';
   modulators?: ModulatorState[];
@@ -110,6 +113,7 @@ export class WorkletLaneEngine implements SynthEngine {
   readonly polyphony: 'mono' | 'poly';
   readonly editor = 'piano-roll' as const;
   readonly params: EngineParamSpec[];
+  readonly groups?: EngineParamGroup[];
   private readonly presetsKey: string;
   private readonly presetKeyRemap?: Record<string, string>;
   private modHost: ModulationHostImpl;
@@ -138,6 +142,7 @@ export class WorkletLaneEngine implements SynthEngine {
     this.name = cfg.name;
     this.polyphony = cfg.polyphony;
     this.params = cfg.params;
+    this.groups = cfg.groups;
     this.presetsKey = cfg.presetsKey;
     this.presetKeyRemap = cfg.presetKeyRemap;
     this.modHost = new ModulationHostImpl(cfg.modulators ?? []);

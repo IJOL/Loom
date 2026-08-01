@@ -24,4 +24,19 @@ describe('createDescriptorEngine hook passthrough', () => {
     expect(eng.subGroupFor).toBeUndefined();
     expect(eng.dynamicParamsFor).toBeUndefined();
   });
+
+  it('carries the declared groups through to the engine', () => {
+    const e = createDescriptorEngine({
+      id: 'x', name: 'X', polyphony: 'poly',
+      params: [{ id: 'osc1.level', label: 'L', kind: 'continuous', min: 0, max: 1, default: 0.5, group: 'osc1' }],
+      groups: [{ id: 'osc1', title: 'OSC 1', row: 0, color: '#2ee0c0' }],
+      presets: () => [],
+    });
+    expect(e.groups).toEqual([{ id: 'osc1', title: 'OSC 1', row: 0, color: '#2ee0c0' }]);
+  });
+
+  it('has no groups when none are declared', () => {
+    const e = createDescriptorEngine({ id: 'y', name: 'Y', polyphony: 'poly', params: [], presets: () => [] });
+    expect(e.groups).toBeUndefined();
+  });
 });
