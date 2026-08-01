@@ -42,54 +42,54 @@ export const FILTER_TYPE_OPTIONS = [
 // polysynth.params object tree (legacy) or the flat SubParams snapshot (worklet).
 export const SUB_PARAM_SPECS: EngineParamSpec[] = [
   // Oscillators
-  { id: 'osc1.level',   label: 'Osc1 Lvl',  kind: 'continuous', min: 0, max: 1, default: 0.6 },
-  { id: 'osc1.detune',  label: 'Osc1 Det',  kind: 'continuous', min: -50, max: 50, default: 0, unit: '¢' },
+  { id: 'osc1.level',   label: 'Osc1 Lvl',  kind: 'continuous', min: 0, max: 1, default: 0.6, group: 'osc1' },
+  { id: 'osc1.detune',  label: 'Osc1 Det',  kind: 'continuous', min: -50, max: 50, default: 0, unit: '¢', group: 'osc1' },
   { id: 'osc1.wave',    label: 'Osc1 Wave', kind: 'discrete', min: 0, max: 4, default: 0,
-    options: WAVE_OPTIONS },
+    options: WAVE_OPTIONS, selectStyle: 'radio', group: 'osc1' },
   // Pulse width. Continuous on purpose: an LFO on this id IS pulse-width
   // modulation, so PWM needs no wave of its own. Only bites on a square —
   // that is what a duty cycle means. Kept off the rails (0.05..0.95) because
   // 0 and 1 are silence, not a sound.
-  { id: 'osc1.pw',      label: 'Osc1 PW',   kind: 'continuous', min: 0.05, max: 0.95, default: 0.5 },
+  { id: 'osc1.pw',      label: 'Osc1 PW',   kind: 'continuous', min: 0.05, max: 0.95, default: 0.5, group: 'osc1' },
   // Hard-sync ratio (only bites when osc1.wave = Sync). Continuous: an LFO or
   // envelope on it is the bright tearing sweep the effect exists for.
-  { id: 'osc1.sync',    label: 'Osc1 Sync', kind: 'continuous', min: 1, max: 8, default: 2 },
-  { id: 'osc2.level',   label: 'Osc2 Lvl',  kind: 'continuous', min: 0, max: 1, default: 0.4 },
-  { id: 'osc2.detune',  label: 'Osc2 Det',  kind: 'continuous', min: -50, max: 50, default: 7, unit: '¢' },
+  { id: 'osc1.sync',    label: 'Osc1 Sync', kind: 'continuous', min: 1, max: 8, default: 2, group: 'osc1' },
+  { id: 'osc2.level',   label: 'Osc2 Lvl',  kind: 'continuous', min: 0, max: 1, default: 0.4, group: 'osc2' },
+  { id: 'osc2.detune',  label: 'Osc2 Det',  kind: 'continuous', min: -50, max: 50, default: 7, unit: '¢', group: 'osc2' },
   { id: 'osc2.wave',    label: 'Osc2 Wave', kind: 'discrete', min: 0, max: 4, default: 1,
-    options: WAVE_OPTIONS },
-  { id: 'osc2.pw',      label: 'Osc2 PW',   kind: 'continuous', min: 0.05, max: 0.95, default: 0.5 },
-  { id: 'osc2.sync',    label: 'Osc2 Sync', kind: 'continuous', min: 1, max: 8, default: 2 },
-  { id: 'sub.level',    label: 'Sub Lvl',   kind: 'continuous', min: 0, max: 1, default: 0.3 },
-  { id: 'noise.level',  label: 'Noise Lvl', kind: 'continuous', min: 0, max: 1, default: 0 },
+    options: WAVE_OPTIONS, selectStyle: 'radio', group: 'osc2' },
+  { id: 'osc2.pw',      label: 'Osc2 PW',   kind: 'continuous', min: 0.05, max: 0.95, default: 0.5, group: 'osc2' },
+  { id: 'osc2.sync',    label: 'Osc2 Sync', kind: 'continuous', min: 1, max: 8, default: 2, group: 'osc2' },
+  { id: 'sub.level',    label: 'Sub Lvl',   kind: 'continuous', min: 0, max: 1, default: 0.3, group: 'sub' },
+  { id: 'noise.level',  label: 'Noise Lvl', kind: 'continuous', min: 0, max: 1, default: 0, group: 'noise' },
 
   // Filter
   { id: 'filter.model',     label: 'Model',     kind: 'discrete', min: 0, max: 2, default: 0,
-    options: FILTER_MODEL_OPTIONS },
+    options: FILTER_MODEL_OPTIONS, selectStyle: 'radio', group: 'filter' },
   { id: 'filter.type',      label: 'Type',      kind: 'discrete', min: 0, max: 3, default: 0,
-    options: FILTER_TYPE_OPTIONS },
-  { id: 'filter.cutoff',    label: 'Cutoff',    kind: 'continuous', min: 0, max: 1, default: 0.55 },
-  { id: 'filter.resonance', label: 'Resonance', kind: 'continuous', min: 0, max: 1, default: 0.25 },
-  { id: 'filter.envAmount', label: 'Env Amt',   kind: 'continuous', min: 0, max: 1, default: 0.45 },
-  { id: 'filter.drive',     label: 'Drive',     kind: 'continuous', min: 0, max: 1, default: 0 },
-  { id: 'filter.keyTrack',  label: 'Key Track', kind: 'continuous', min: 0, max: 1, default: 0 },
+    options: FILTER_TYPE_OPTIONS, selectStyle: 'radio', group: 'filter' },
+  { id: 'filter.cutoff',    label: 'Cutoff',    kind: 'continuous', min: 0, max: 1, default: 0.55, group: 'filter' },
+  { id: 'filter.resonance', label: 'Resonance', kind: 'continuous', min: 0, max: 1, default: 0.25, group: 'filter' },
+  { id: 'filter.envAmount', label: 'Env Amt',   kind: 'continuous', min: 0, max: 1, default: 0.45, group: 'filter' },
+  { id: 'filter.drive',     label: 'Drive',     kind: 'continuous', min: 0, max: 1, default: 0, group: 'filter' },
+  { id: 'filter.keyTrack',  label: 'Key Track', kind: 'continuous', min: 0, max: 1, default: 0, group: 'filter' },
   { id: 'filter.builtinEnv', label: 'Built-in Env', kind: 'discrete', min: 0, max: 1, default: 1,
-    options: [{ value: 'off', label: 'Off' }, { value: 'on', label: 'On' }] },
-  { id: 'filter.attack',    label: 'F Atk',     kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's' },
-  { id: 'filter.decay',     label: 'F Dec',     kind: 'continuous', min: 0.001, max: 4, default: 0.3,  unit: 's' },
-  { id: 'filter.sustain',   label: 'F Sus',     kind: 'continuous', min: 0, max: 1, default: 0.4 },
-  { id: 'filter.release',   label: 'F Rel',     kind: 'continuous', min: 0.005, max: 4, default: 0.35, unit: 's' },
+    options: [{ value: 'off', label: 'Off' }, { value: 'on', label: 'On' }], drawnBy: 'modulators' },
+  { id: 'filter.attack',    label: 'F Atk',     kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's', drawnBy: 'modulators' },
+  { id: 'filter.decay',     label: 'F Dec',     kind: 'continuous', min: 0.001, max: 4, default: 0.3,  unit: 's', drawnBy: 'modulators' },
+  { id: 'filter.sustain',   label: 'F Sus',     kind: 'continuous', min: 0, max: 1, default: 0.4, drawnBy: 'modulators' },
+  { id: 'filter.release',   label: 'F Rel',     kind: 'continuous', min: 0.005, max: 4, default: 0.35, unit: 's', drawnBy: 'modulators' },
 
   // Amp env
   { id: 'amp.builtinEnv', label: 'Built-in Env', kind: 'discrete', min: 0, max: 1, default: 1,
-    options: [{ value: 'off', label: 'Off' }, { value: 'on', label: 'On' }] },
-  { id: 'amp.attack',  label: 'A Atk', kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's' },
-  { id: 'amp.decay',   label: 'A Dec', kind: 'continuous', min: 0.001, max: 4, default: 0.2,  unit: 's' },
-  { id: 'amp.sustain', label: 'A Sus', kind: 'continuous', min: 0, max: 1, default: 0.7 },
-  { id: 'amp.release', label: 'A Rel', kind: 'continuous', min: 0.005, max: 4, default: 0.3,  unit: 's' },
+    options: [{ value: 'off', label: 'Off' }, { value: 'on', label: 'On' }], drawnBy: 'modulators' },
+  { id: 'amp.attack',  label: 'A Atk', kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's', drawnBy: 'modulators' },
+  { id: 'amp.decay',   label: 'A Dec', kind: 'continuous', min: 0.001, max: 4, default: 0.2,  unit: 's', drawnBy: 'modulators' },
+  { id: 'amp.sustain', label: 'A Sus', kind: 'continuous', min: 0, max: 1, default: 0.7, drawnBy: 'modulators' },
+  { id: 'amp.release', label: 'A Rel', kind: 'continuous', min: 0.005, max: 4, default: 0.3,  unit: 's', drawnBy: 'modulators' },
 
   // Master
-  { id: 'master.tune', label: 'Tune', kind: 'continuous', min: -12, max: 12, default: 0, unit: 'st' },
+  { id: 'master.tune', label: 'Tune', kind: 'continuous', min: -12, max: 12, default: 0, unit: 'st', group: 'master' },
 
   // Unison: osc1 and osc2 each stacked N times across a detune spread — a
   // supersaw, which two detuned oscillators cannot make. Lives under `master.`
@@ -100,11 +100,11 @@ export const SUB_PARAM_SPECS: EngineParamSpec[] = [
   // mid-note without a click — so, exactly like poly.voices, it is stepped rather
   // than a modulation target and is deliberately absent from DOT_TO_FIELD.
   // Defaults to 1, which makes Detune inert and leaves every preset untouched.
-  { id: 'master.unison', label: 'Unison', kind: 'continuous', min: 1, max: 7, default: 1 },
-  { id: 'master.detune', label: 'Detune', kind: 'continuous', min: 0, max: 50, default: 25, unit: '¢' },
+  { id: 'master.unison', label: 'Unison', kind: 'continuous', min: 1, max: 7, default: 1, group: 'master' },
+  { id: 'master.detune', label: 'Detune', kind: 'continuous', min: 0, max: 50, default: 25, unit: '¢', group: 'master' },
   // Analog drift: the slow random per-copy pitch wander a digital oscillator
   // never has. Off by default — it is character, not correctness.
-  { id: 'master.drift',  label: 'Drift',  kind: 'continuous', min: 0, max: 1, default: 0 },
+  { id: 'master.drift',  label: 'Drift',  kind: 'continuous', min: 0, max: 1, default: 0, group: 'master' },
 
   // poly.mode / poly.retrig were declared here but dead on both sides — no
   // control ever drew them, and WorkletLaneEngine.setBaseValue accepted and

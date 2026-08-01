@@ -17,11 +17,22 @@ import { getCachedPresets } from '../presets/preset-loader';
 import { SUB_PARAM_SPECS } from './subtractive-params';
 import type { EngineParamGroup } from './engine-param-groups';
 
-/** The one declared section on the subtractive editor: its osc/filter/amp/master
- *  knobs are mounted into fixed page divs by knob-mounting.mountSubtractiveLaneKnobs,
- *  not by the grouped grid — POLY is the only section that grid draws for this
- *  engine (WorkletLaneEngine.buildParamUI filters everything else out). */
-const SUB_GROUPS: EngineParamGroup[] = [{ id: 'poly', title: 'POLY' }];
+/** The page, as data. The seven sections used to be three rows of hand-written
+ *  markup in index.html, and their colours were seven CSS rules keyed on the
+ *  div ids (`#poly-osc1-knobs { @include knob-accent(var(--knob-cyan)) }`).
+ *  Both are gone: this table is the whole layout, and it is what every other
+ *  engine can now declare too. AMP is deliberately absent — its four envelope
+ *  params are drawn by the MODULATORS panel (`drawnBy: 'modulators'`), so a
+ *  section here would be an empty header. */
+export const SUB_PARAM_GROUPS: EngineParamGroup[] = [
+  { id: 'osc1',   title: 'OSC 1',  row: 0, color: 'var(--knob-cyan)' },
+  { id: 'osc2',   title: 'OSC 2',  row: 0, color: 'var(--knob-yellow)' },
+  { id: 'sub',    title: 'SUB',    row: 0, color: 'var(--knob-blue)' },
+  { id: 'noise',  title: 'NOISE',  row: 0, color: 'var(--knob-purple)' },
+  { id: 'filter', title: 'FILTER', row: 1, color: 'var(--knob-orange)' },
+  { id: 'master', title: 'MASTER', row: 2, color: 'var(--knob-green)' },
+  { id: 'poly',   title: 'POLY',   row: 3 },
+];
 
 /** The subtractive engine's DEFAULT modulator set: the two ADSRs ARE the amp /
  *  filter envelopes (the pre-worklet model, git 29a342c). adsr-amp drives the
@@ -87,7 +98,7 @@ function makeSubtractiveDescriptor() {
     name: 'Sub',
     polyphony: 'poly',
     params: SUB_PARAM_SPECS,
-    groups: SUB_GROUPS,
+    groups: SUB_PARAM_GROUPS,
     presets: () => getCachedPresets('subtractive'),
     modulators: SUBTRACTIVE_DEFAULT_MODULATORS,
   });
