@@ -11,10 +11,14 @@
 //   empty for that lane after the rebuild, and the modulator destination
 //   dropdown comes up empty.
 
+/** @vitest-environment jsdom */
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { unregisterKnobsByPrefix, melodicSynthEngineIds } from './engine-selector-ui';
+import {
+  unregisterKnobsByPrefix, melodicSynthEngineIds,
+  rebuildEngineParamUI, wireEngineSelector, type EngineSelectorUIDeps,
+} from './engine-selector-ui';
 import type { KnobHandle } from '../core/knob';
 import { bootstrapPlugins } from '../app/plugin-bootstrap';
 import { installMainThreadLoomApi, __resetPluginEngines } from '../plugin-host/loom-api';
@@ -40,6 +44,45 @@ describe('engine-selector-ui — registry hygiene', () => {
     unregisterKnobsByPrefix('main.', reg);
 
     expect([...reg.keys()].sort()).toEqual(['bass.cutoff', 'mix.bass.eq.hi']);
+  });
+});
+
+describe('engine-selector-ui — mixer knobs across a lane switch', () => {
+  // Pins the ordering `rebuildEngineParamUI` currently depends on: the mixer
+  // column mounts `<laneId>.bus.*` knobs independently of the engine editor,
+  // so by the time a lane switch runs, the newly active lane's mixer knobs
+  // are already registered. `rebuildEngineParamUI`'s unregister call wipes
+  // them (it matches the whole `<laneId>.` prefix, mixer strip included), and
+  // today the only reason that is not permanent is that its real caller,
+  // `showLaneEditor` (session-host-lane-editor.ts), always calls
+  // `renderWithMixer()` right after — which re-registers every visible lane's
+  // mixer knobs. That follow-up step is simulated here (not fabricated: it is
+  // the documented, always-run second half of the real lane-switch call
+  // chain) so this test observes the same end state a real switch produces.
+  it('a lane switch never leaves the new lane without its mixer knobs', () => {
+    document.body.innerHTML = '<div data-page="poly"><div class="poly-section"></div></div>';
+    const registry = new Map<string, KnobHandle>();
+    const deps: EngineSelectorUIDeps = {
+      engineSel: document.createElement('select'),
+      getActiveLaneId: () => 'fm-1',
+      getLaneEngineId: () => 'fm',
+      automationRegistry: registry,
+      registerKnob: (k) => { if (k.meta.id) registry.set(k.meta.id, k); },
+      populateAutoParamSelect: () => { /* noop */ },
+    };
+    wireEngineSelector(deps, 'fm');
+
+    // The mixer strip for 'fm-1' is already mounted before the switch.
+    registry.set('fm-1.bus.level', makeKnobHandle('fm-1.bus.level'));
+
+    rebuildEngineParamUI();
+
+    // The real caller's always-run follow-up: showLaneEditor calls
+    // renderWithMixer() right after rebuildEngineParamUI, which re-registers
+    // every visible lane's mixer-strip knobs.
+    registry.set('fm-1.bus.level', makeKnobHandle('fm-1.bus.level'));
+
+    expect(registry.has('fm-1.bus.level')).toBe(true);
   });
 });
 

@@ -58,13 +58,19 @@ export function rebuildEngineParamUI(): void {
   const engineParamEl = _engineParamEl!;
 
   engineParamEl.innerHTML = '';
-  // Drop any previously-registered knobs for this lane so we don't accumulate
-  // stale handles in the automation registry.
   const activeLaneId = deps.getActiveLaneId();
-  unregisterKnobsByPrefix(`${activeLaneId}.`, deps.automationRegistry);
 
   // Re-mount the per-lane FX panel unconditionally so its knobs (laneId.fx.*)
-  // are re-registered after the prefix unregister above, regardless of engine.
+  // stay in the registry across a rebuild, regardless of engine. There used
+  // to be an `unregisterKnobsByPrefix('<activeLaneId>.')` call right here, to
+  // drop stale knobs before remounting — but it deleted every registry entry
+  // under the lane's id, mixer strip included (`<laneId>.bus.*`), which is
+  // mounted in the mixer column, not here. It only "worked" because
+  // showLaneEditor (session-host-lane-editor.ts) always calls
+  // renderWithMixer() right after this, which re-registers the mixer knobs.
+  // Ownership-scoped unmount is `injectEngineModulatorPanel`'s job now (see
+  // `idsOwnedByHost` there) — this function no longer needs to clear anything
+  // itself.
   deps.remountLaneFxPanel?.(activeLaneId);
   // The modulators panel is rendered via SessionHost.injectEngineModulatorPanel
   // for ALL lanes (single source of truth). engine-params is no longer used by
