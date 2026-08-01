@@ -219,21 +219,20 @@ describe('WorkletLaneEngine', () => {
     expect(registered).toContain('subtractive-1.poly.voices');
   });
 
-  it('a mono engine omits the VOICES knob', () => {
-    const registered: string[] = [];
-    const container = document.createElement('div');
-    // A mono config with no 'poly' group declared (the real tb303 shape) →
-    // the generic grid renders no POLY section. This used to be gated by an
-    // explicit `if (this.polyphony === 'poly')` branch; it is data-driven now,
-    // so the fixture must actually omit the group rather than rely on the
-    // engine's `polyphony` flag alone (SUB_PARAM_SPECS still declares its own
-    // 'poly' group and would render it here otherwise).
-    const params = SUB_PARAM_SPECS.filter((p) => p.group !== 'poly');
-    makeEngine({ engineId: 'tb303', name: 'TB-303', polyphony: 'mono', params, groups: undefined })
-      .buildParamUI(container, makeUiCtx(registered));
-    expect(container.querySelector('.mod-panel')).toBeTruthy();
-    expect(registered).not.toContain('subtractive-1.poly.voices');
-  });
+  // 'a mono engine omits the VOICES knob' used to live here, built from a
+  // fixture ('tb303' id + 'mono' flag, but SUB_PARAM_SPECS as its params)
+  // with the poly-group member filtered out by hand to keep it passing. That
+  // filter made `expect(registered).not.toContain('subtractive-1.poly.voices')`
+  // TAUTOLOGICAL: with 'poly.voices' removed from the fixture's own params,
+  // it was mathematically impossible for that id to ever appear, so the test
+  // could not fail regardless of how buildParamUI/resolveParamRows behaved —
+  // it only proved Array.prototype.filter works. Deleted rather than "fixed"
+  // again: a test that cannot fail reports coverage it does not provide,
+  // which is worse than no test. The real invariant — a mono engine with no
+  // declared 'poly' group renders no POLY section — is covered properly by
+  // 'a mono engine renders no POLY section' below, against the REAL
+  // registered tb303 descriptor (which truly declares no poly.voices),
+  // not a hand-patched fixture.
 
   // Task 6: the POLY row is a declared group (subtractive-params.ts /
   // fm.ts / wavetable.ts / westcoast.ts), not hand-rolled markup in
