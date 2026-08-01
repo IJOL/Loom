@@ -12,6 +12,12 @@
 // modulator off.
 import { describe, it, expect } from 'vitest';
 import '../engines/subtractive';
+// Side-effect only: registers 'lfo'/'adsr' with the modulator-registry.
+// subtractive's descriptor builds its default modulator set LAZILY from that
+// registry (Task 5) — ensureLaneResource is what triggers the build, so
+// vitest's per-file module isolation means this file must import them itself.
+import '../plugins/modulators/lfo';
+import '../plugins/modulators/adsr';
 import { createLaneAllocator } from './lane-allocator';
 import { FxBus } from '../core/fx';
 import { SidechainBus } from '../core/sidechain-bus';

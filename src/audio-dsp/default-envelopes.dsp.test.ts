@@ -21,6 +21,13 @@ import type { NoteSpec, ParamBag } from './types';
 import type { ModulatorState } from '../modulation/types';
 import './subtractive-renderer';
 import './westcoast-renderer';
+// Side-effect only: registers the 'lfo'/'adsr' components so
+// SUBTRACTIVE_DEFAULT_MODULATORS()/WESTCOAST_DEFAULT_MODULATORS() below
+// (both lazy — they read the registry, not a module-scope constant) resolve.
+// Vitest isolates modules per file, so nothing else in this file's import
+// graph registers them.
+import '../plugins/modulators/lfo';
+import '../plugins/modulators/adsr';
 import { SUBTRACTIVE_DEFAULT_MODULATORS } from '../engines/subtractive';
 import { WESTCOAST_DEFAULT_MODULATORS } from '../engines/westcoast';
 import { toModLite } from '../engines/mod-lite';
@@ -105,7 +112,7 @@ describe('default envelopes — characterisation net, not TDD (must be green aga
     const HOLD = 0.6, TOTAL = 1.5;
 
     it('subtractive: the default amp ADSR shapes the note (attack → sustain → release)', () => {
-      const env = rmsEnvelope(render('subtractive', P, SUBTRACTIVE_DEFAULT_MODULATORS, subtractiveMapTarget, HOLD, TOTAL));
+      const env = rmsEnvelope(render('subtractive', P, SUBTRACTIVE_DEFAULT_MODULATORS(), subtractiveMapTarget, HOLD, TOTAL));
       const peak = Math.max(...env);
       // 1. Attack: the very first window (still ramping from 0) sits below the peak.
       expect(env[0]).toBeLessThan(peak);
@@ -122,9 +129,9 @@ describe('default envelopes — characterisation net, not TDD (must be green aga
     });
 
     it('control: disabling the amp ADSR (enabled: false) changes the measured envelope', () => {
-      const withoutAmpAdsr = SUBTRACTIVE_DEFAULT_MODULATORS.map((m) =>
+      const withoutAmpAdsr = SUBTRACTIVE_DEFAULT_MODULATORS().map((m) =>
         m.id === 'adsr-amp' ? { ...m, enabled: false } : m);
-      const normal = rmsEnvelope(render('subtractive', P, SUBTRACTIVE_DEFAULT_MODULATORS, subtractiveMapTarget, HOLD, TOTAL));
+      const normal = rmsEnvelope(render('subtractive', P, SUBTRACTIVE_DEFAULT_MODULATORS(), subtractiveMapTarget, HOLD, TOTAL));
       const disabled = rmsEnvelope(render('subtractive', P, withoutAmpAdsr, subtractiveMapTarget, HOLD, TOTAL));
       // Disabled: 'amp' has no envelope routed to it, and with the built-in amp
       // env off too, SubtractiveVoiceRenderer falls back to a flat gain of 1 —
@@ -159,7 +166,7 @@ describe('default envelopes — characterisation net, not TDD (must be green aga
        'lpg.cutoff but contribute env × 0 (worklet-lane-engine.ts toModLite/ModEnvHost both ' +
        'skip a falsy depth), so the note\'s shape comes entirely from the built-in AD contour ' +
        'above, not from these modulators', () => {
-      const withMods = rmsEnvelope(render('westcoast', P, WESTCOAST_DEFAULT_MODULATORS, westcoastMapTarget, HOLD, TOTAL));
+      const withMods = rmsEnvelope(render('westcoast', P, WESTCOAST_DEFAULT_MODULATORS(), westcoastMapTarget, HOLD, TOTAL));
       const withoutMods = rmsEnvelope(render('westcoast', P, null, westcoastMapTarget, HOLD, TOTAL));
       expect(envDiff(withMods, withoutMods)).toBeLessThan(0.01);
     });
@@ -167,11 +174,11 @@ describe('default envelopes — characterisation net, not TDD (must be green aga
     it('the ADSR → timbre.fold/lpg.cutoff WIRING is live: a nonzero depth measurably ' +
        'changes the sound (so a later regression in the connection path, not just a ' +
        'depth default, still surfaces here)', () => {
-      const wired = WESTCOAST_DEFAULT_MODULATORS.map((m) => ({
+      const wired = WESTCOAST_DEFAULT_MODULATORS().map((m) => ({
         ...m,
         connections: m.connections.map((c) => ({ ...c, depth: c.depth === 0 ? 1 : c.depth })),
       }));
-      const zeroDepth = rmsEnvelope(render('westcoast', P, WESTCOAST_DEFAULT_MODULATORS, westcoastMapTarget, HOLD, TOTAL));
+      const zeroDepth = rmsEnvelope(render('westcoast', P, WESTCOAST_DEFAULT_MODULATORS(), westcoastMapTarget, HOLD, TOTAL));
       const nonZeroDepth = rmsEnvelope(render('westcoast', P, wired, westcoastMapTarget, HOLD, TOTAL));
       expect(envDiff(nonZeroDepth, zeroDepth)).toBeGreaterThan(0.05);
     });

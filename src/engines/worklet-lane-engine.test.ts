@@ -34,7 +34,9 @@ vi.mock('../audio-worklet/loom-node', () => ({
 
 import { WorkletLaneEngine, toModLite, type WorkletEngineConfig } from './worklet-lane-engine';
 import { SUB_PARAM_SPECS } from './subtractive-params';
-import { makeDefaultLFO, makeDefaultADSR, type ModulatorState } from '../modulation/types';
+import type { ModulatorState } from '../modulation/types';
+import { makeDefaultLFO } from '../plugins/modulators/lfo';
+import { makeDefaultADSR } from '../plugins/modulators/adsr';
 
 const subMods = (): ModulatorState[] => [
   { ...makeDefaultADSR('adsr-amp'), connections: [{ id: 'c-amp', paramId: 'amp.gain', depth: 0 }] },

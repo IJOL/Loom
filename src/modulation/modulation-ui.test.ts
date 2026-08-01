@@ -11,7 +11,8 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderModulatorsPanel } from './modulation-ui';
-import { makeDefaultLFO, makeDefaultADSR } from './types';
+import { makeDefaultLFO } from '../plugins/modulators/lfo';
+import { makeDefaultADSR } from '../plugins/modulators/adsr';
 import {
   makeHost, makeDeps, makeDestinations, target,
   isVisible, byText, byTitle, knobByLabel, knobHandleById,

@@ -26,7 +26,7 @@ import type {
 } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
 import { ModulationHostImpl } from '../modulation/modulation-host';
-import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
+import { getModulator } from '../modulation/modulator-registry';
 import type { ModulatorVoice } from '../modulation/types';
 import { renderModulatorsPanel, type ModulationUIDeps } from '../modulation/modulation-ui';
 import { getCurrentLaneForVoice } from '../modulation/active-mods';
@@ -117,10 +117,21 @@ export class SamplerWorkletEngine implements SynthEngine {
   private selectedPadNote: number | null = null;
   private uiCtx: EngineUIContext | null = null;
   private uiRebuild: (() => void) | null = null;
-  private modHost = new ModulationHostImpl([
-    makeDefaultLFO('lfo1'),
-    makeDefaultADSR('adsr1'),
-  ]);
+  // Lazy — see DescriptorEngineConfig.modulators (descriptor-engine.ts) for
+  // why: getModulator('lfo')/('adsr') must not be read at module/construction
+  // scope, since nothing orders this file's eager glob against the modulator
+  // components' eager glob. Built once, on first real access.
+  private _modHost: ModulationHostImpl | undefined;
+  private getModHost(): ModulationHostImpl {
+    if (!this._modHost) {
+      const lfo = getModulator('lfo');
+      const adsr = getModulator('adsr');
+      if (!lfo) throw new Error("unknown modulator kind: 'lfo'");
+      if (!adsr) throw new Error("unknown modulator kind: 'adsr'");
+      this._modHost = new ModulationHostImpl([lfo.defaultState('lfo1'), adsr.defaultState('adsr1')]);
+    }
+    return this._modHost;
+  }
   /** Tempo for LFO BPM sync — updated by main.ts when seq.bpm changes. */
   bpm = 120;
   private engineModVoices: Map<string, ModulatorVoice> | null = null;
@@ -236,7 +247,7 @@ export class SamplerWorkletEngine implements SynthEngine {
     for (const note of affected) this.pushPadParams(note);
   }
 
-  get modulators(): ModulationHostImpl { return this.modHost; }
+  get modulators(): ModulationHostImpl { return this.getModHost(); }
 
   /** The lane's mixer strip is the engine's only shared Web-Audio surface:
    *  filtering a sampler lane is a `multifilter` insert, whose params are already
@@ -411,7 +422,7 @@ export class SamplerWorkletEngine implements SynthEngine {
     this.ensureNode(ctx);
     // Spawn engine-level modulators (LFO/ADSR) once and bind them to the filter.
     if (!this.engineModVoices) {
-      this.engineModVoices = this.modHost.spawnVoice(ctx, () => this.bpm);
+      this.engineModVoices = this.getModHost().spawnVoice(ctx, () => this.bpm);
     }
     const laneId = getCurrentLaneForVoice();
     if (laneId) {
@@ -775,7 +786,7 @@ export class SamplerWorkletEngine implements SynthEngine {
     const modDeps: ModulationUIDeps = {
       engineId: this.id,
       laneId: ctx.laneId,
-      host: this.modHost,
+      host: this.getModHost(),
       registry: ctx.registry as Map<string, KnobHandle>,
       registerKnob: (k) => ctx.registerKnob(k),
       lookupLaneDisplayName: ctx.lookupLaneDisplayName,

@@ -23,6 +23,13 @@ vi.mock('../audio-worklet/sampler-node', () => ({
 }));
 
 import { SamplerWorkletEngine } from './sampler-worklet-engine';
+// Side-effect only: registers 'lfo'/'adsr' with the modulator-registry.
+// SamplerWorkletEngine builds its default modHost lazily from that registry
+// (Task 5) — buildParamUI() below (via renderModulatorsPanel) is what
+// triggers the build, so vitest's per-file module isolation means this file
+// must import them itself.
+import '../plugins/modulators/lfo';
+import '../plugins/modulators/adsr';
 
 const drumkit = (): KeymapEntry[] => [
   { sampleId: 'ui-kick', rootNote: 36, loNote: 36, hiNote: 36 },

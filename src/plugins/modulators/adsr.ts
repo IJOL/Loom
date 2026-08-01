@@ -1,9 +1,20 @@
 // src/plugins/modulators/adsr.ts
 import { ADSRVoice } from '../../modulation/adsr-voice';
-import { makeDefaultADSR } from '../../modulation/types';
+import type { ModulatorState } from '../../modulation/types';
 import type { ModulatorInstance, PluginFactory } from '../types';
 import { registerModulator } from '../../modulation/modulator-registry';
 import { adsrConfigTemplate } from '../../modulation/mod-config-templates';
+
+/** Fresh ADSR state for a new instance. Moved from modulation/types.ts — the
+ *  ADSR component owns its own defaults now; the registry's `defaultState`
+ *  below is the only door callers should use to reach it. */
+export function makeDefaultADSR(id: string): ModulatorState {
+  return {
+    id, kind: 'adsr', enabled: true, connections: [],
+    attackSec: 0.01, decaySec: 0.3, sustain: 0.7, releaseSec: 0.3,
+    scope: 'per-voice',
+  };
+}
 
 export const adsrPlugin: PluginFactory = {
   kind: 'modulator',

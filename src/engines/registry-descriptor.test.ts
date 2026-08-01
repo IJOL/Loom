@@ -13,6 +13,23 @@ import '../engines/fm';
 import '../engines/tb303';
 import '../engines/westcoast';
 
+// Deliberately AFTER the five engine imports above, not before. Each engine
+// file's own registerEngine(makeXDescriptor()) call runs at module scope —
+// the same moment this ordering puts the modulator components' registration
+// LATER. That reproduces a cold start where the modulator-components glob
+// (plugin-bootstrap) has not run yet when an engine glob member loads: real
+// risk this codebase actually hit (Task 5's amendment; makeDefaultLFO/
+// makeDefaultADSR were CRITICAL — 12/148 and 11/139 dependants). Before Task
+// 5 made the descriptor's modHost LAZY (built on first `.modulators` access,
+// not at createDescriptorEngine() call time), this exact import order threw
+// "unknown modulator kind: 'lfo'" here — proven by running this file with
+// the eager construction reverted. With laziness, `getEngineDescriptor`
+// below (called from inside `it()`, i.e. after every import in this file —
+// engines AND modulators — has already resolved) succeeds regardless of
+// which glob the app's real plugin-bootstrap happens to run first.
+import '../plugins/modulators/lfo';
+import '../plugins/modulators/adsr';
+
 import * as registry from './registry';
 import { getEngineDescriptor } from './registry';
 
@@ -34,6 +51,22 @@ describe('getEngineDescriptor — metadata without legacy construction', () => {
     expect(d!.editor).toBe('piano-roll');
     // modulators is a data array (ModulatorState[]); melodic engines ship defaults.
     expect(Array.isArray(d!.modulators)).toBe(true);
+  });
+
+  it('cold start: an engine imported before the modulator components still ends up ' +
+     'with real default modulators, not an empty array (the failure mode a silent ' +
+     '`?? []` fallback would produce)', () => {
+    // Every one of these five descriptors ships at least one default modulator
+    // (see SUBTRACTIVE_DEFAULT_MODULATORS/TB303_DEFAULT_MODULATORS/etc.). If the
+    // module-order race this file's import order reproduces (see the comment
+    // above the modulator imports) had been papered over with a fallback
+    // instead of fixed with laziness, this would quietly read `[]` instead of
+    // throwing — a synth with no envelope, discovered only by ear.
+    for (const id of ['tb303', 'subtractive', 'fm', 'wavetable', 'westcoast']) {
+      const d = getEngineDescriptor(id)!;
+      expect(d.modulators.length, `${id} shipped with zero default modulators`).toBeGreaterThan(0);
+      expect(d.modulators.some((m) => m.kind === 'lfo'), `${id} is missing its default LFO`).toBe(true);
+    }
   });
 
   it('reading a descriptor does NOT call the legacy engine factory', () => {

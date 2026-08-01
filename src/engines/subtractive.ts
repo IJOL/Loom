@@ -11,7 +11,7 @@
 
 import { registerEngine, registerEngineFactory } from './registry';
 import { createDescriptorEngine } from './descriptor-engine';
-import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
+import { getModulator } from '../modulation/modulator-registry';
 import type { ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
 import { SUB_PARAM_SPECS } from './subtractive-params';
@@ -22,19 +22,31 @@ import { SUB_PARAM_SPECS } from './subtractive-params';
  *  (the filter envelope, scaled by Env Amt exactly like the old built-in), both at
  *  full depth. The built-in amp/filter env stays as a fallback for older saves
  *  (ampBuiltinEnv/filterBuiltinEnv default 1); a preset/Init turns it off via
- *  applyPreset → deriveSubtractiveEnvMods. */
-export const SUBTRACTIVE_DEFAULT_MODULATORS: ModulatorState[] = [
-  {
-    ...makeDefaultADSR('adsr-amp'), decaySec: 0.2,                         // amp env defaults
-    connections: [{ id: 'c-amp', paramId: 'amp', depth: 1 }],
-  },
-  {
-    ...makeDefaultADSR('adsr-filter'), sustain: 0.4, releaseSec: 0.35,     // filter env defaults
-    connections: [{ id: 'c-filter', paramId: 'filter.env', depth: 1 }],
-  },
-  makeDefaultLFO('lfo1'),
-  { ...makeDefaultLFO('lfo2'), rateHz: 2, waveform: 'triangle' },
-];
+ *  applyPreset → deriveSubtractiveEnvMods.
+ *
+ *  A FUNCTION, not a computed constant: it reads getModulator('lfo')/('adsr'),
+ *  and this file's own registerEngine(...) below runs at module scope — the
+ *  same moment the lfo/adsr components register from a separate eager glob,
+ *  in an order nothing guarantees (see DescriptorEngineConfig.modulators).
+ *  Calling this only happens lazily, well after both globs have settled. */
+export function SUBTRACTIVE_DEFAULT_MODULATORS(): ModulatorState[] {
+  const lfo = getModulator('lfo');
+  const adsr = getModulator('adsr');
+  if (!lfo) throw new Error("unknown modulator kind: 'lfo'");
+  if (!adsr) throw new Error("unknown modulator kind: 'adsr'");
+  return [
+    {
+      ...adsr.defaultState('adsr-amp'), decaySec: 0.2,                         // amp env defaults
+      connections: [{ id: 'c-amp', paramId: 'amp', depth: 1 }],
+    },
+    {
+      ...adsr.defaultState('adsr-filter'), sustain: 0.4, releaseSec: 0.35,     // filter env defaults
+      connections: [{ id: 'c-filter', paramId: 'filter.env', depth: 1 }],
+    },
+    lfo.defaultState('lfo1'),
+    { ...lfo.defaultState('lfo2'), rateHz: 2, waveform: 'triangle' },
+  ];
+}
 
 /** Build the unified-model modulators for a preset from its built-in env params:
  *  adsr-amp ← amp.attack/decay/sustain/release → 'amp'; adsr-filter ← filter.* →
@@ -44,21 +56,25 @@ export const SUBTRACTIVE_DEFAULT_MODULATORS: ModulatorState[] = [
  *  envelopes — no need to rewrite the 44 preset JSONs. */
 export function deriveSubtractiveEnvMods(params: Record<string, number>): ModulatorState[] {
   const n = (id: string, d: number): number => (typeof params[id] === 'number' ? params[id] : d);
+  const lfo = getModulator('lfo');
+  const adsr = getModulator('adsr');
+  if (!lfo) throw new Error("unknown modulator kind: 'lfo'");
+  if (!adsr) throw new Error("unknown modulator kind: 'adsr'");
   return [
     {
-      ...makeDefaultADSR('adsr-amp'),
+      ...adsr.defaultState('adsr-amp'),
       attackSec: n('amp.attack', 0.01), decaySec: n('amp.decay', 0.2),
       sustain: n('amp.sustain', 0.7), releaseSec: n('amp.release', 0.3),
       connections: [{ id: 'c-amp', paramId: 'amp', depth: 1 }],
     },
     {
-      ...makeDefaultADSR('adsr-filter'),
+      ...adsr.defaultState('adsr-filter'),
       attackSec: n('filter.attack', 0.01), decaySec: n('filter.decay', 0.3),
       sustain: n('filter.sustain', 0.4), releaseSec: n('filter.release', 0.35),
       connections: [{ id: 'c-filter', paramId: 'filter.env', depth: 1 }],
     },
-    makeDefaultLFO('lfo1'),
-    { ...makeDefaultLFO('lfo2'), rateHz: 2, waveform: 'triangle' },
+    lfo.defaultState('lfo1'),
+    { ...lfo.defaultState('lfo2'), rateHz: 2, waveform: 'triangle' },
   ];
 }
 

@@ -22,8 +22,9 @@ export interface ModulatorState {
   /** Where the modulator's voice lives. 'shared' = engine-owned, one
    *  instance for all notes (default for LFO). 'per-voice' = spawned per
    *  createVoice call, lives for the duration of that note (default and
-   *  only valid value for ADSR). Always set at construction — see
-   *  {@link makeDefaultLFO}/{@link makeDefaultADSR}/{@link defaultScopeFor}. */
+   *  only valid value for ADSR). Always set at construction — a freshly
+   *  added instance takes its owning component's declared `scopes[0]`
+   *  (see ModulatorComponent in modulator-registry.ts). */
   scope: ModulatorScope;
 
   // LFO-only
@@ -70,28 +71,3 @@ export interface ModulationHost {
   deserialize(state: ModulatorState[]): void;
 }
 
-// Default modulator factory shapes (used by engines + add buttons).
-export function makeDefaultLFO(id: string): ModulatorState {
-  return {
-    id, kind: 'lfo', enabled: true, connections: [],
-    rateHz: 4, waveform: 'sine', bipolar: true,
-    syncToBpm: false, syncBars: 0.25, syncSubdiv: 'straight',
-    trigger: 'free',
-    scope: 'shared',
-  };
-}
-
-export function makeDefaultADSR(id: string): ModulatorState {
-  return {
-    id, kind: 'adsr', enabled: true, connections: [],
-    attackSec: 0.01, decaySec: 0.3, sustain: 0.7, releaseSec: 0.3,
-    scope: 'per-voice',
-  };
-}
-
-/** Default scope for a modulator kind. Used by {@link makeDefaultLFO}/
- *  {@link makeDefaultADSR} (via their `scope:` literal) and by any custom
- *  modulator kind that needs a sensible starting scope. */
-export function defaultScopeFor(kind: ModulatorKind): ModulatorScope {
-  return kind === 'lfo' ? 'shared' : 'per-voice';
-}

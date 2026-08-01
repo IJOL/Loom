@@ -24,6 +24,12 @@ import { DrumsWorkletEngine } from './drums-worklet-engine';
 import { DRUM_LANES } from '../core/drums';
 import { FxBus, ChannelStrip } from '../core/fx';
 import { loadDrumKits, __resetDrumKitsCache } from '../presets/drum-kits-loader';
+// Side-effect only: registers 'lfo'/'adsr' with the modulator-registry.
+// DrumsWorkletEngine builds its default modHost lazily from that registry
+// (Task 5) — createVoice() below is what triggers the build, so vitest's
+// per-file module isolation means this file must import them itself.
+import '../plugins/modulators/lfo';
+import '../plugins/modulators/adsr';
 
 async function seedDrumKits() {
   __resetDrumKitsCache();

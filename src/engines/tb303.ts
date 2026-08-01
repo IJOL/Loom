@@ -12,7 +12,7 @@ import type { EngineParamSpec } from './engine-params';
 import { registerEngine, registerEngineFactory } from './registry';
 import { createDescriptorEngine } from './descriptor-engine';
 import { getCachedPresets } from '../presets/preset-loader';
-import { makeDefaultLFO } from '../modulation/types';
+import { getModulator } from '../modulation/modulator-registry';
 import type { ModulatorState } from '../modulation/types';
 
 const PARAMS: EngineParamSpec[] = [
@@ -42,7 +42,15 @@ export const PRESET_KEY_TO_SPEC: Record<string, string> = {
 
 // LFO only — the 303's filter envelope is baked into the renderer and is part of
 // the 303 character. A free LFO lets the user add dub-style cutoff wobbles.
-export const TB303_DEFAULT_MODULATORS: ModulatorState[] = [makeDefaultLFO('lfo1')];
+// A FUNCTION, not a computed constant — see SUBTRACTIVE_DEFAULT_MODULATORS
+// (subtractive.ts) for why: this file's own registerEngine(...) below runs at
+// module scope, the same moment the lfo component registers from a separate
+// eager glob in an order nothing guarantees.
+export function TB303_DEFAULT_MODULATORS(): ModulatorState[] {
+  const lfo = getModulator('lfo');
+  if (!lfo) throw new Error("unknown modulator kind: 'lfo'");
+  return [lfo.defaultState('lfo1')];
+}
 
 function makeTB303Descriptor() {
   return createDescriptorEngine({

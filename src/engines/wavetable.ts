@@ -11,7 +11,7 @@ import type { EngineParamSpec } from './engine-params';
 import { registerEngine, registerEngineFactory } from './registry';
 import { createDescriptorEngine } from './descriptor-engine';
 import { WAVETABLES } from '../audio-dsp/wavetable-data';
-import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
+import { getModulator } from '../modulation/modulator-registry';
 import type { ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
 
@@ -37,13 +37,23 @@ const WT_PARAMS: EngineParamSpec[] = [
   { id: 'poly.voices',      label: 'Voices',    kind: 'continuous', min: 1, max: 16, default: 8 },
 ];
 
-export const WAVETABLE_DEFAULT_MODULATORS: ModulatorState[] = [
-  {
-    ...makeDefaultADSR('adsr1'),
-    connections: [{ id: 'c-cutoff', paramId: 'filter.cutoff', depth: 0.5 }],
-  },
-  makeDefaultLFO('lfo1'),
-];
+/** A FUNCTION, not a computed constant — see SUBTRACTIVE_DEFAULT_MODULATORS
+ *  (subtractive.ts) for why: this file's own registerEngine(...) below runs at
+ *  module scope, the same moment the lfo/adsr components register from a
+ *  separate eager glob in an order nothing guarantees. */
+export function WAVETABLE_DEFAULT_MODULATORS(): ModulatorState[] {
+  const lfo = getModulator('lfo');
+  const adsr = getModulator('adsr');
+  if (!lfo) throw new Error("unknown modulator kind: 'lfo'");
+  if (!adsr) throw new Error("unknown modulator kind: 'adsr'");
+  return [
+    {
+      ...adsr.defaultState('adsr1'),
+      connections: [{ id: 'c-cutoff', paramId: 'filter.cutoff', depth: 0.5 }],
+    },
+    lfo.defaultState('lfo1'),
+  ];
+}
 
 function makeWavetableDescriptor() {
   return createDescriptorEngine({

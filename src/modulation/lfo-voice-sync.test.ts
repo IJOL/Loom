@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import '../../test/setup';
 import { LFOVoice } from './lfo-voice';
-import { makeDefaultLFO, type ModulatorState } from './types';
+import type { ModulatorState } from './types';
+import { makeDefaultLFO } from '../plugins/modulators/lfo';
 
 // Regression test for the "LFO rate doesn't take effect" bug. The LFO's
 // OscillatorNode is constructed once with the initial state.rateHz; changing

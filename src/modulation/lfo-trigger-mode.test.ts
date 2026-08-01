@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import '../../test/setup';
 import { LFOVoice } from './lfo-voice';
-import { makeDefaultLFO } from './types';
+import { makeDefaultLFO } from '../plugins/modulators/lfo';
 
 // The LFO trigger mode controls whether the LFO phase resets on every
 // note-on or runs free. The retrigger behavior produces a "stuttered" sweep

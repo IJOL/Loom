@@ -7,6 +7,13 @@ import '../engines/fm';
 import '../engines/wavetable';
 import '../engines/westcoast';
 import '../engines/audio';
+// Side-effect only: registers 'lfo'/'adsr' with the modulator-registry. Every
+// engine descriptor above builds its default modulator set LAZILY from that
+// registry (Task 5) — ensureLaneResource below is what triggers the build
+// (via getEngineDescriptor), so vitest's per-file module isolation means this
+// file must import them itself.
+import '../plugins/modulators/lfo';
+import '../plugins/modulators/adsr';
 import { DrumsWorkletEngine } from '../engines/drums-worklet-engine';
 import { WorkletLaneEngine } from '../engines/worklet-lane-engine';
 import { AudioWorkletEngine } from '../engines/audio-worklet-engine';

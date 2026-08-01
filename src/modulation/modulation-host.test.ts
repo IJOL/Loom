@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { ModulationHostImpl } from './modulation-host';
-import { makeDefaultLFO, makeDefaultADSR } from './types';
+import { registerModulator } from './modulator-registry';
+import type { ModulatorComponent } from './modulator-registry';
+import type { ModulatorState, ModulatorVoice } from './types';
+// Side-effect only: registers the 'lfo'/'adsr' components. Vitest isolates
+// modules per file, so this file must import them itself for addModulator/
+// spawnVoiceFiltered (both registry-driven now) to see 'lfo'/'adsr' at all.
+import { makeDefaultLFO } from '../plugins/modulators/lfo';
+import { makeDefaultADSR } from '../plugins/modulators/adsr';
 
 describe('ModulationHostImpl', () => {
   it('starts empty with no defaults', () => {
@@ -62,6 +69,35 @@ describe('ModulationHostImpl', () => {
     const h2 = new ModulationHostImpl([]);
     h2.deserialize(snapshot);
     expect(h2.modulators).toEqual(snapshot);
+  });
+
+  // A fake THIRD kind, registered here (not at module scope) — vitest
+  // isolates modules per file, so this file's registry already holds only
+  // 'lfo'/'adsr' (from the side-effect imports above) plus whatever this
+  // test file itself registers. Adding 'sh' does not disturb either real
+  // component, so no teardown/reset is needed.
+  const shStub: ModulatorComponent = {
+    id: 'sh', name: 'S&H', driver: 'time', scopes: ['shared', 'per-voice'], idPrefix: 'sh',
+    defaultState: (id): ModulatorState => ({ id, kind: 'sh', enabled: true, connections: [], scope: 'shared' }),
+    createVoice: (): ModulatorVoice => ({
+      output: {} as AudioNode, trigger: () => {}, release: () => {}, dispose: () => {}, currentValue: () => 0,
+    }),
+  };
+  registerModulator(shStub);
+
+  describe('addModulator reads the registry — any kind, not just lfo/adsr', () => {
+    it('adds a modulator of any registered kind, not just lfo and adsr', () => {
+      const host = new ModulationHostImpl([]);
+      const fresh = host.addModulator('sh');
+      expect(fresh.kind).toBe('sh');
+      expect(fresh.id).toBe('sh1');
+      expect(fresh.scope).toBe('shared');   // the first declared scope
+    });
+
+    it('refuses an unregistered kind instead of inventing an ADSR', () => {
+      const host = new ModulationHostImpl([]);
+      expect(() => host.addModulator('nope')).toThrow();
+    });
   });
 
   describe('ModulationHostImpl.spawnVoiceFiltered', () => {

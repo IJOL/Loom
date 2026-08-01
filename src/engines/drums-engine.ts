@@ -12,16 +12,26 @@
 import { registerEngine, registerEngineFactory } from './registry';
 import { createDescriptorEngine } from './descriptor-engine';
 import { DRUM_PARAMS } from './drums-worklet-engine';
-import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
+import { getModulator } from '../modulation/modulator-registry';
 import type { ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
 import { drumSubGroupFor } from './drum-subgroups';
 import { registerEngineCapabilities } from '../plugins/capabilities';
 
-export const DRUMS_DEFAULT_MODULATORS: ModulatorState[] = [
-  makeDefaultLFO('lfo1'),
-  makeDefaultADSR('adsr1'),
-];
+/** A FUNCTION, not a computed constant — see SUBTRACTIVE_DEFAULT_MODULATORS
+ *  (subtractive.ts, src/engines/) for why: this file's own registerEngine(...)
+ *  below runs at module scope, the same moment the lfo/adsr components
+ *  register from a separate eager glob in an order nothing guarantees. */
+export function DRUMS_DEFAULT_MODULATORS(): ModulatorState[] {
+  const lfo = getModulator('lfo');
+  const adsr = getModulator('adsr');
+  if (!lfo) throw new Error("unknown modulator kind: 'lfo'");
+  if (!adsr) throw new Error("unknown modulator kind: 'adsr'");
+  return [
+    lfo.defaultState('lfo1'),
+    adsr.defaultState('adsr1'),
+  ];
+}
 
 function makeDrumsDescriptor() {
   return createDescriptorEngine({

@@ -33,8 +33,19 @@ export interface DescriptorEngineConfig {
   /** Lazy preset getter (usually getCachedPresets(<id>)). */
   presets: () => EnginePreset[];
   /** Default modulator set (data) — seeds the host's serialized state used by
-   *  the worklet lane to construct its in-worklet modulation. */
-  modulators?: ModulatorState[];
+   *  the worklet lane to construct its in-worklet modulation. Accepts a lazy
+   *  thunk because the sets engines actually pass are built by calling
+   *  getModulator('lfo')/('adsr').defaultState(...): this factory runs at
+   *  MODULE SCOPE for every one of the nine engines (registerEngine(...) is
+   *  called at the top of each engine file), while the lfo/adsr COMPONENTS
+   *  register themselves from src/plugins/modulators/*, discovered by a
+   *  SEPARATE eager glob (plugin-bootstrap). Nothing orders those two globs
+   *  against each other. Evaluating the modulator set right here would race
+   *  that order and could throw (or, worse, silently ship a lane with no
+   *  envelope) depending on which glob happens to run first. A thunk defers
+   *  the read to the first real access — see ensureModHost below — by which
+   *  point every eager module in the app has already finished loading. */
+  modulators?: ModulatorState[] | (() => ModulatorState[]);
   /** See SynthEngine.subGroupFor. */
   subGroupFor?: (paramId: string) => { key: string; label: string } | undefined;
   /** See SynthEngine.dynamicParamsFor. */
@@ -67,7 +78,18 @@ function withStripParams(own: EngineParamSpec[]): EngineParamSpec[] {
 }
 
 export function createDescriptorEngine(cfg: DescriptorEngineConfig): SynthEngine {
-  const modHost = new ModulationHostImpl(cfg.modulators ?? []);
+  // Lazy on purpose — see DescriptorEngineConfig.modulators. Built on first
+  // real access (the `modulators` getter below, or applyPreset), never at
+  // this function's own call time, which for every in-tree engine IS module
+  // scope (registerEngine(makeXDescriptor()) runs at import).
+  let modHost: ModulationHostImpl | undefined;
+  function ensureModHost(): ModulationHostImpl {
+    if (!modHost) {
+      const defaults = typeof cfg.modulators === 'function' ? cfg.modulators() : (cfg.modulators ?? []);
+      modHost = new ModulationHostImpl(defaults);
+    }
+    return modHost;
+  }
   const params = withStripParams(cfg.params);
   const state: Record<string, number> = {};
   for (const p of params) state[p.id] = p.default;
@@ -86,7 +108,7 @@ export function createDescriptorEngine(cfg: DescriptorEngineConfig): SynthEngine
     },
     params,
     get presets(): EnginePreset[] { return cfg.presets(); },
-    get modulators(): ModulationHostImpl { return modHost; },
+    get modulators(): ModulationHostImpl { return ensureModHost(); },
 
     getBaseValue(id: string): number {
       return state[id] ?? params.find((p) => p.id === id)?.default ?? 0;
@@ -103,7 +125,7 @@ export function createDescriptorEngine(cfg: DescriptorEngineConfig): SynthEngine
       for (const [id, val] of Object.entries(preset.params as Record<string, number>)) {
         if (typeof val === 'number') state[id] = val;
       }
-      if (preset.modulators) modHost.deserialize(preset.modulators);
+      if (preset.modulators) ensureModHost().deserialize(preset.modulators);
     },
     dispose() { /* no live resources */ },
     subGroupFor: cfg.subGroupFor,

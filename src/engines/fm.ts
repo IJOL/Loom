@@ -9,7 +9,7 @@
 import type { EngineParamSpec } from './engine-params';
 import { registerEngine, registerEngineFactory } from './registry';
 import { createDescriptorEngine } from './descriptor-engine';
-import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
+import { getModulator } from '../modulation/modulator-registry';
 import type { ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
 
@@ -53,10 +53,20 @@ const FM_PARAMS: EngineParamSpec[] = [
   { id: 'poly.voices', label: 'Voices',   kind: 'continuous', min: 1, max: 16, default: 6 },
 ];
 
-export const FM_DEFAULT_MODULATORS: ModulatorState[] = [
-  makeDefaultLFO('lfo1'),
-  makeDefaultADSR('adsr1'),
-];
+/** A FUNCTION, not a computed constant — see SUBTRACTIVE_DEFAULT_MODULATORS
+ *  (subtractive.ts) for why: this file's own registerEngine(...) below runs at
+ *  module scope, the same moment the lfo/adsr components register from a
+ *  separate eager glob in an order nothing guarantees. */
+export function FM_DEFAULT_MODULATORS(): ModulatorState[] {
+  const lfo = getModulator('lfo');
+  const adsr = getModulator('adsr');
+  if (!lfo) throw new Error("unknown modulator kind: 'lfo'");
+  if (!adsr) throw new Error("unknown modulator kind: 'adsr'");
+  return [
+    lfo.defaultState('lfo1'),
+    adsr.defaultState('adsr1'),
+  ];
+}
 
 function makeFMDescriptor() {
   return createDescriptorEngine({

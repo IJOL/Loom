@@ -1,9 +1,22 @@
 // src/plugins/modulators/lfo.ts
 import { LFOVoice } from '../../modulation/lfo-voice';
-import { makeDefaultLFO } from '../../modulation/types';
+import type { ModulatorState } from '../../modulation/types';
 import type { ModulatorInstance, PluginFactory } from '../types';
 import { registerModulator } from '../../modulation/modulator-registry';
 import { lfoConfigTemplate } from '../../modulation/mod-config-templates';
+
+/** Fresh LFO state for a new instance. Moved from modulation/types.ts — the
+ *  LFO component owns its own defaults now; the registry's `defaultState`
+ *  below is the only door callers should use to reach it. */
+export function makeDefaultLFO(id: string): ModulatorState {
+  return {
+    id, kind: 'lfo', enabled: true, connections: [],
+    rateHz: 4, waveform: 'sine', bipolar: true,
+    syncToBpm: false, syncBars: 0.25, syncSubdiv: 'straight',
+    trigger: 'free',
+    scope: 'shared',
+  };
+}
 
 export const lfoPlugin: PluginFactory = {
   kind: 'modulator',

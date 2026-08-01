@@ -10,7 +10,7 @@
 import type { EngineParamSpec } from './engine-params';
 import { registerEngine, registerEngineFactory } from './registry';
 import { createDescriptorEngine } from './descriptor-engine';
-import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
+import { getModulator } from '../modulation/modulator-registry';
 import type { ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
 
@@ -67,12 +67,22 @@ const WEST_PARAMS: EngineParamSpec[] = [
   { id: 'poly.mode',   label: 'Mode',   kind: 'discrete', min: 0, max: 1, default: 0, options: POLY_MODE_OPTIONS },
 ];
 
-export const WESTCOAST_DEFAULT_MODULATORS: ModulatorState[] = [
-  { ...makeDefaultADSR('adsr1'), connections: [{ id: 'c-fold', paramId: 'timbre.fold', depth: 0 }] },
-  { ...makeDefaultADSR('adsr2'), connections: [{ id: 'c-cut', paramId: 'lpg.cutoff', depth: 0 }] },
-  makeDefaultLFO('lfo1'),
-  { ...makeDefaultLFO('lfo2'), rateHz: 2, waveform: 'triangle' },
-];
+/** A FUNCTION, not a computed constant — see SUBTRACTIVE_DEFAULT_MODULATORS
+ *  (subtractive.ts) for why: this file's own registerEngine(...) below runs at
+ *  module scope, the same moment the lfo/adsr components register from a
+ *  separate eager glob in an order nothing guarantees. */
+export function WESTCOAST_DEFAULT_MODULATORS(): ModulatorState[] {
+  const lfo = getModulator('lfo');
+  const adsr = getModulator('adsr');
+  if (!lfo) throw new Error("unknown modulator kind: 'lfo'");
+  if (!adsr) throw new Error("unknown modulator kind: 'adsr'");
+  return [
+    { ...adsr.defaultState('adsr1'), connections: [{ id: 'c-fold', paramId: 'timbre.fold', depth: 0 }] },
+    { ...adsr.defaultState('adsr2'), connections: [{ id: 'c-cut', paramId: 'lpg.cutoff', depth: 0 }] },
+    lfo.defaultState('lfo1'),
+    { ...lfo.defaultState('lfo2'), rateHz: 2, waveform: 'triangle' },
+  ];
+}
 
 function makeWestcoastDescriptor() {
   return createDescriptorEngine({

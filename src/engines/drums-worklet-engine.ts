@@ -39,7 +39,7 @@ import type { PadParams } from './sampler-pad-params';
 import { GM_DRUM_MAP } from './drum-gm-map';
 import { velGain, velNorm } from '../core/velocity-gain';
 import { ModulationHostImpl } from '../modulation/modulation-host';
-import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
+import { getModulator } from '../modulation/modulator-registry';
 import { renderModulatorsPanel, type ModulationUIDeps } from '../modulation/modulation-ui';
 import { renderDrumVoiceRack } from './drum-voice-rack';
 import { getCurrentLaneForVoice } from '../modulation/active-mods';
@@ -324,11 +324,22 @@ export class DrumsWorkletEngine implements SynthEngine {
     this.applyVoiceMutes();
   }
 
-  private modHost = new ModulationHostImpl([
-    makeDefaultLFO('lfo1'),
-    makeDefaultADSR('adsr1'),
-  ]);
-  get modulators() { return this.modHost; }
+  // Lazy — see DescriptorEngineConfig.modulators (descriptor-engine.ts) for
+  // why: getModulator('lfo')/('adsr') must not be read at module/construction
+  // scope, since nothing orders this file's eager glob against the modulator
+  // components' eager glob. Built once, on first real access.
+  private _modHost: ModulationHostImpl | undefined;
+  private getModHost(): ModulationHostImpl {
+    if (!this._modHost) {
+      const lfo = getModulator('lfo');
+      const adsr = getModulator('adsr');
+      if (!lfo) throw new Error("unknown modulator kind: 'lfo'");
+      if (!adsr) throw new Error("unknown modulator kind: 'adsr'");
+      this._modHost = new ModulationHostImpl([lfo.defaultState('lfo1'), adsr.defaultState('adsr1')]);
+    }
+    return this._modHost;
+  }
+  get modulators() { return this.getModHost(); }
 
   /** Tempo for LFO BPM sync. main.ts updates this when seq.bpm changes. */
   bpm = 120;
@@ -493,7 +504,7 @@ export class DrumsWorkletEngine implements SynthEngine {
     this.ensureWired(ctx, routingTarget);
     const drumVoice = new DrumsVoice(this.node!, this.busStrip);
     if (!this.engineModVoices) {
-      this.engineModVoices = this.modHost.spawnVoice(ctx, () => this.bpm);
+      this.engineModVoices = this.getModHost().spawnVoice(ctx, () => this.bpm);
     }
     const laneId = getCurrentLaneForVoice();
     if (laneId) {
@@ -533,7 +544,7 @@ export class DrumsWorkletEngine implements SynthEngine {
     const modDeps: ModulationUIDeps = {
       engineId: this.id,
       laneId: ctx.laneId,
-      host: this.modHost,
+      host: this.getModHost(),
       registry: ctx.registry as Map<string, KnobHandle>,
       registerKnob: (k) => ctx.registerKnob(k),
       lookupLaneDisplayName: ctx.lookupLaneDisplayName,

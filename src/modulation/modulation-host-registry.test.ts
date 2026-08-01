@@ -1,28 +1,27 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import '../../test/setup';
 import { ModulationHostImpl } from './modulation-host';
-import { makeDefaultLFO } from './types';
-import { registerPlugin, _resetRegistry } from '../plugins/registry';
-import { lfoPlugin } from '../plugins/modulators/lfo';
+import { makeDefaultLFO } from '../plugins/modulators/lfo';
 
 // Regression for "LFO rate/on-off do nothing in the app, but work in tests":
 //
-// In the browser the plugin registry IS bootstrapped, so spawnVoiceFiltered
-// took the registry path and wrapped the instance in a stateless stub
-// (currentValue: () => 0, no osc, no state, no syncFromState). That stub:
-//   - never reflects mod.rateHz / waveform edits (its LFOVoice used a
-//     throwaway 'lfo-tmp' state), and
-//   - makes the rAF tick read 0, so the knob ring froze.
-// In unit tests the registry is empty, so it fell back to `new LFOVoice(ctx, m)`
-// (correct) and the bug was invisible. This test registers the real plugin —
-// matching the app — and asserts the spawned voice is wired to the live state.
-
-describe('ModulationHostImpl.spawnVoice with the LFO plugin registered (app parity)', () => {
-  afterEach(() => { _resetRegistry(); });
-
+// Before Task 5, spawnVoiceFiltered special-cased 'lfo'/'adsr' with `new
+// LFOVoice(ctx, m, bpm)` (correct, state-connected) and fell back to the
+// OLD plugin SPI (plugins/registry.ts's createInstance) for anything else —
+// a stateless stub whose currentValue() always read 0 and never reflected a
+// rate/waveform edit. In the browser the plugin registry WAS bootstrapped
+// (registerPlugin(lfoPlugin) ran at boot), so a real LFO modulator took that
+// dead-stub path there while unit tests (empty plugin registry) took the
+// correct one — invisible in the suite, dead knobs in the app.
+//
+// Since Task 5, spawnVoiceFiltered ALWAYS asks the modulator-registry
+// component (getModulator(m.kind).createVoice(ctx, { state: m, bpm })) —
+// there is no second, stub-producing path left to fall into, for 'lfo' or
+// any other kind. This test pins that: the registry-driven voice is
+// constructed from the host's LIVE state object, so an edit to it reaches
+// the running oscillator.
+describe('ModulationHostImpl.spawnVoice via the modulator-registry component', () => {
   it('spawns a state-connected LFOVoice (rate edits reach the oscillator)', () => {
-    registerPlugin(lfoPlugin); // app bootstraps this; tests normally don't
-
     const state = makeDefaultLFO('lfo1');
     state.scope = 'shared';
     state.rateHz = 7;
@@ -33,16 +32,13 @@ describe('ModulationHostImpl.spawnVoice with the LFO plugin registered (app pari
     const voice = voices.get('lfo1');
     expect(voice).toBeDefined();
 
-    // Assert the BEHAVIOURAL contract the regression broke, not `instanceof`
-    // (brittle here: Vitest can load lfo-voice.ts twice across the serial test
-    // process, so the constructor identity differs even for a genuine
-    // LFOVoice). The stateless registry stub fails every check below: it has
-    // no oscillator and its currentValue() is a constant 0.
+    // Assert the BEHAVIOURAL contract, not `instanceof` (brittle here: Vitest
+    // can load lfo-voice.ts twice across the serial test process, so the
+    // constructor identity differs even for a genuine LFOVoice).
     const v = voice as unknown as { osc?: OscillatorNode; syncFromState?: () => void };
-    expect(typeof v.syncFromState).toBe('function');   // real LFOVoice, not the stub
+    expect(typeof v.syncFromState).toBe('function');   // real LFOVoice, not a stub
     expect(v.osc).toBeDefined();
-    // Constructed from the live state's rate (7 Hz), not the plugin's
-    // throwaway 'lfo-tmp' default (4 Hz).
+    // Constructed from the live state's rate (7 Hz), not some throwaway default.
     expect(v.osc!.frequency.value).toBeCloseTo(7, 3);
 
     // Mutating the modulator the host owns (what the rate knob does) and

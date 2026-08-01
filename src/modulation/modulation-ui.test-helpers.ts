@@ -6,9 +6,10 @@
 import { vi } from 'vitest';
 import type { ModulationUIDeps } from './modulation-ui';
 import {
-  makeDefaultLFO, makeDefaultADSR,
   type ModulationHost, type ModulatorState, type ModulationConnection,
 } from './types';
+import { makeDefaultLFO } from '../plugins/modulators/lfo';
+import { makeDefaultADSR } from '../plugins/modulators/adsr';
 import type { KnobHandle } from '../core/knob';
 import type { AutomationTarget } from '../automation/automation-targets';
 import type { DestinationRegistry } from '../automation/destination-registry';

@@ -17,7 +17,7 @@
 import { describe, it, expect } from 'vitest';
 import { renderKernelLane, type KernelLaneSpec } from '../export/kernel-lane-render';
 import { toModLite } from '../engines/worklet-lane-engine';
-import { makeDefaultLFO } from '../modulation/types';
+import { makeDefaultLFO } from '../plugins/modulators/lfo';
 import type { NoteSpec } from './types';
 
 const SR = 44100;
