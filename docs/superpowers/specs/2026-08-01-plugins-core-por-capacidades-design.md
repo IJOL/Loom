@@ -183,7 +183,6 @@ pregunta primero "¿esto es un plugin?" — el reflejo exacto que estamos quitan
 | `editorPage: 'poly' \| '303' \| 'drums'` | `session-host-lane-editor.ts:33-34`, `knob-mounting.ts:132`, `main.ts:409-410` |
 | `accepts: ['audio-file']` | `=== 'sampler' \|\| === 'audio'` en `session-grid-templates.ts:130`, `session-host-audio-import.ts:80` |
 | `acceptsNoteFx: boolean` | `lane-editor-panels.ts:19`, `trigger-dispatch.ts:48` |
-| `swappable: boolean` | `engine-swap.ts:38` |
 | `listedInSelector: boolean` | `session-grid-templates.ts:304` |
 | `harmonic: boolean` | `session-inspector.ts:519,536` (botón de acordes y filtro de pistas) |
 | `slideOnOverlap: boolean` | `lane-scheduler.ts:228` (el 303 deja de ser un nombre en el scheduler) |
@@ -199,6 +198,18 @@ medida, un `configEditor` sería el id escrito de otra manera.
 **notefx** (0 propias hoy) y **fx** (0 propias hoy): el registro de capacidades
 existe igualmente para que el componente número 12 tenga dónde declarar sin abrir
 otro mecanismo.
+
+**No hay `swappable`.** Se cayó al escribir el plan, leyendo el código:
+[engine-swap.ts:39-40](../../../src/app/engine-swap.ts) ya rechaza el intercambio
+cuando el editor del origen o del destino no es `piano-roll`, en las dos
+direcciones. En cuanto `clipEditor: 'audio'` deja de mentir, la guarda por id de
+la línea 38 es redundante — **se borra sin sustituto**. Una capacidad que no
+existe es una que nadie tiene que mantener coherente.
+
+Del mismo modo, "clic en celda vacía abre el selector de fichero"
+(`session-grid-templates.ts:152`) **se deriva** de `clipEditor === 'audio'` y no
+necesita bandera: si tus clips son ficheros de audio, la celda vacía pide un
+fichero.
 
 `clipEditor` y `editorPage` **no** hacen la UI extensible: el plugin elige de un
 catálogo cerrado que publica el host. Es la decisión ya tomada en el trozo 1 — la
