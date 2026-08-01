@@ -6,11 +6,12 @@ import type { EngineParamSpec } from './engine-params';
 import type { EngineUIContext } from './engine-types';
 import type { KnobHandle } from '../core/knob';
 import type { SessionState } from '../session/session';
+import type { EngineParamGroup } from './engine-param-groups';
 
-function stubEngine(params: EngineParamSpec[]) {
+function stubEngine(params: EngineParamSpec[], groups?: EngineParamGroup[]) {
   const state = new Map(params.map((p) => [p.id, p.default] as const));
   return {
-    id: 'stub', params,
+    id: 'stub', params, groups,
     getBaseValue: (id: string) => state.get(id) ?? 0,
     setBaseValue: (id: string, v: number) => { state.set(id, v); },
   };
@@ -336,10 +337,11 @@ describe('buildEngineParamGrid mirrors into sessionState', () => {
 describe('buildEngineParamGrid — declared groups', () => {
   it('renders two declared groups on one row, divider between them', () => {
     const parent = document.createElement('div');
-    const engine = stubEngine([cont('osc1.level', 'osc1'), cont('osc2.level', 'osc2')]);
-    buildEngineParamGrid(engine, ctx(), parent, {
-      groups: [{ id: 'osc1', title: 'OSC 1', row: 0 }, { id: 'osc2', title: 'OSC 2', row: 0 }],
-    });
+    const engine = stubEngine(
+      [cont('osc1.level', 'osc1'), cont('osc2.level', 'osc2')],
+      [{ id: 'osc1', title: 'OSC 1', row: 0 }, { id: 'osc2', title: 'OSC 2', row: 0 }],
+    );
+    buildEngineParamGrid(engine, ctx(), parent);
 
     const rows = parent.querySelectorAll('.poly-section');
     expect(rows.length).toBe(1);
@@ -353,8 +355,8 @@ describe('buildEngineParamGrid — declared groups', () => {
     const engine = stubEngine([
       cont('osc1.level', 'osc1'),
       { ...cont('osc1.detune', 'osc1'), color: '#ff0000' },
-    ]);
-    buildEngineParamGrid(engine, ctx(), parent, { groups: [{ id: 'osc1', title: 'OSC 1', color: '#2ee0c0' }] });
+    ], [{ id: 'osc1', title: 'OSC 1', color: '#2ee0c0' }]);
+    buildEngineParamGrid(engine, ctx(), parent);
 
     const strokes = [...parent.querySelectorAll('.knob-value')].map((e) => (e as SVGElement).style.stroke);
     expect(strokes[0]).toBe('#2ee0c0');
@@ -364,8 +366,11 @@ describe('buildEngineParamGrid — declared groups', () => {
   it('does not draw a param owned by another surface', () => {
     const parent = document.createElement('div');
     buildEngineParamGrid(
-      stubEngine([cont('osc1.level', 'osc1'), { ...cont('amp.attack', 'amp'), drawnBy: 'modulators' }]),
-      ctx(), parent, { groups: [{ id: 'osc1', title: 'OSC 1' }, { id: 'amp', title: 'AMP' }] });
+      stubEngine(
+        [cont('osc1.level', 'osc1'), { ...cont('amp.attack', 'amp'), drawnBy: 'modulators' }],
+        [{ id: 'osc1', title: 'OSC 1' }, { id: 'amp', title: 'AMP' }],
+      ),
+      ctx(), parent);
 
     expect([...parent.querySelectorAll('.section-label')].map((e) => e.textContent)).toEqual(['OSC 1']);
   });

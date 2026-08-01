@@ -56,13 +56,11 @@ describe('a knob turned on a worklet-engine lane survives getStateForSave', () =
       sessionState: host.state,
     } as unknown as EngineUIContext;
 
-    // Each lane's REAL builder, now one function with two layouts: the
-    // subtractive lane asks for the flat one (it always did — the flat layout
-    // is not exclusive to it, but it is the one lane that opts in), every
-    // other worklet engine gets the grouped grid.
+    // Each lane's REAL builder, now one function: every worklet engine,
+    // subtractive included, gets the grouped grid — the flat layout is used
+    // by other surfaces (the drum rack, sampler pads), not a lane page.
     const parent = document.createElement('div');
-    buildEngineParamGrid(engine!, ctx, parent,
-      engineId === 'subtractive' ? { layout: 'flat' } : {});
+    buildEngineParamGrid(engine!, ctx, parent);
 
     const spec = engine!.params.find((p) => p.kind === 'continuous' && p.max > p.min);
     expect(spec, `${engineId} declares no continuous param to turn`).toBeDefined();

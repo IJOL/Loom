@@ -16,7 +16,9 @@
 // declared params) must leave it unset, see select-control.ts's header.
 //
 // Two layouts, both approved and both still shipping:
-//   'grouped' (default) — one labelled row per spec.group, quantised drag.
+//   'grouped' (default) — rows built by resolveParamRows (engine-param-groups.ts)
+//     from the engine's declared `groups` table (order, titles, colour, which
+//     sections share a row) plus each spec's `group` key; quantised drag.
 //     The worklet lane pages.
 //   'flat' — controls appended straight into the caller's own row,
 //     unquantised. The drum rack, the sampler pads, the audio-clip toolbar.
@@ -56,7 +58,8 @@ export interface BuildGridOpts {
   /** Value-readout formatter keyed by spec id. Wins over `spec.unit`. */
   formatter?: (specId: string, v: number) => string;
   /**
-   * 'grouped' (default): one labelled row per `spec.group`, quantised drags.
+   * 'grouped' (default): rows built from the engine's declared `groups` table
+   * (see resolveParamRows), quantised drags.
    * 'flat': controls are appended straight into the caller's own row, in
    * declaration order, unquantised. That is the approved look of the drum
    * rack, the sampler pads and the audio-clip toolbar, which used to get it
@@ -65,9 +68,6 @@ export interface BuildGridOpts {
    * buildControl for the one rule that holds regardless of layout.
    */
   layout?: 'grouped' | 'flat';
-  /** Overrides the engine's own table. Used by callers that build a grid for a
-   *  subset of an engine's params (the drum voice rack). */
-  groups?: EngineParamGroup[];
 }
 
 function buildControl(
@@ -160,10 +160,12 @@ export function buildEngineParamGrid(
   // needed — and the fragment is appended after the caller's existing children
   // (e.g. the POLY header). Controls stay imperative widgets; the templates
   // only interpolate their elements. Row/section shape comes from
-  // resolveParamRows: nothing declares groups yet, so this walks the exact
-  // same leading-ungrouped-row-then-one-section-per-group order the old
-  // hand-rolled bucketing produced.
-  const rows = resolveParamRows(specs, opts.groups ?? engine.groups);
+  // resolveParamRows, driven by the engine's own `groups` table: ungrouped
+  // params first, then each declared group (title, colour, row-packing),
+  // then any group a spec references but nobody declared, in first-appearance
+  // order — an engine with no table renders exactly as it did before groups
+  // were declarable at all.
+  const rows = resolveParamRows(specs, engine.groups);
   const frag = document.createDocumentFragment();
   render(html`
     ${rows.map((row) => {
