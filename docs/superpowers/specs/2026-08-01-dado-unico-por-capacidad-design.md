@@ -49,19 +49,30 @@ Arreglar sólo el camino roto deja las tres copias en pie para que vuelvan a div
 
 ## La regla
 
-> **El 🎲 se muestra si y sólo si el motor de la pista implementa `randomize()`.**
+> **El 🎲 se muestra si y sólo si el motor de la pista declara `isRandomizable`.**
 
-Capacidad, no identidad — la misma línea que el core ya tomó en `7434cdf`
-("el core pregunta capacidades en vez de comparar ids") y el frente 2 del
+Capacidad **declarada**, no identidad ni husmeo de métodos. Se pregunta por la puerta
+única, `isRandomizable(engineId)` de [`src/plugins/capabilities.ts`](../../../src/plugins/capabilities.ts)
+— la misma línea de la rebanada de capacidades (`26db8d9`, "seven core sites stop
+comparing engine ids") y del frente 2 del
 [master plan de simetría](2026-07-26-architecture-symmetry-master-plan.md).
 
-Verificado en código: `randomize()` lo implementa **sólo `WorkletLaneEngine`**
-(`src/engines/worklet-lane-engine.ts`), delegando en `randomizeEngineParams`, que lee
-el spec declarado. Eso cubre los seis motores melódicos — incluido karplus, que ya es
-un plugin externo pero recibe un `WorkletLaneEngine` porque el allocator lo admite
-por capacidad (`isWorkletHosted`). `SamplerWorkletEngine`, `AudioWorkletEngine` y
-`DrumsWorkletEngine` no lo implementan y no lo implementarán: **el dado es de los
-sintes**.
+**La capacidad ya existe y está esperando a este spec.** Su docstring dice que su
+lector es el dado y que se dejó sin cablear a propósito porque esconderlo era una
+decisión de UI aparte. Esta es esa decisión. Estado verificado en `main`:
+
+- `audio`, `drums-machine` y `sampler` declaran **`isRandomizable: false`**, con el
+  motivo escrito ("sound is a loaded kit/keymap, not a bag of params");
+- todo lo demás hereda el **`true`** por defecto — los seis melódicos, incluido
+  karplus como plugin externo;
+- hay tests que ya afirman esas tres declaraciones, y `manifest-validate` acepta la
+  clave, así que un plugin de terceros puede declararla igual que un motor interno.
+
+Corrobora, pero **no es el criterio**: `randomize()` lo implementa sólo
+`WorkletLaneEngine`. Las dos vías coinciden hoy en los nueve motores. La capacidad
+manda porque es una **declaración** que un plugin puede hacer sin heredar de nada; el
+método sigue siendo la implementación, y el handler se protege igual con
+`if (!engine?.randomize) return;` por si alguna vez divergen.
 
 ## Qué cambia
 
@@ -71,15 +82,20 @@ sintes**.
    `rebuildEngineParamUI` desaparece del camino del dado.
 2. **Un único botón, definido una vez.** Los tres `<button>` estáticos salen de
    `index.html`; cada fila PRESET deja un ancla vacía y el módulo del dado monta ahí
-   **el** botón, sólo si el motor de la pista activa puede tirarse los dados. El
-   Sampler deja de enseñar un botón que miente, sin que nadie tenga que acordarse de
-   esconderlo.
+   **el** botón, y sólo si `isRandomizable(engineId)` de la pista activa. El Sampler
+   deja de enseñar un botón que miente, sin que nadie tenga que acordarse de
+   esconderlo: ya declara que no se randomiza.
 3. **El dado de drums se borra.** Nunca fue un randomize: era un selector de preset
-   disfrazado. El desplegable de kits ya cubre ese gesto. Se van con él
-   `randomizeDrumsSound` y `pickRandomDrumKit` si no les queda otro llamador.
+   disfrazado, y `drums-machine` ya declara `isRandomizable: false`. El desplegable de
+   kits cubre ese gesto. Se van con él `randomizeDrumsSound` y `pickRandomDrumKit` si
+   no les queda otro llamador.
 4. **`refreshKnobsFromSynth()`** queda revisado: hoy sólo sirve al bajo y sólo si el
    motor es `tb303`. Si tras el cambio no le queda ningún llamador legítimo (lo usa
    el cargado de sesión), se va.
+5. **Las dos docstrings dejan de mentir.** `capabilities.ts` y el `manifest.ts` del
+   SDK dicen que `isRandomizable` *"NOT read by any consumer yet"*. En cuanto el dado
+   la lea, eso es falso y hay que corregirlo en el mismo commit — este repo ya tiene
+   commits dedicados a docstrings que mentían (`d5bd814`).
 
 ## Qué NO entra
 
@@ -104,8 +120,10 @@ mismo test:
 2. **Los knobs se repintan.** Tras el dado, el handle muestra el nuevo
    `getBaseValue`. Falla hoy.
 3. **El dado es deshacible** desde el inspector — deja una entrada de undo. Falla hoy.
-4. **El botón aparece por capacidad**: se monta para un motor con `randomize`, no se
-   monta para uno sin él (Sampler).
+4. **El botón aparece por capacidad**: se monta para un motor que declara
+   `isRandomizable` y no se monta para el Sampler, que declara lo contrario. El test
+   registra sus capacidades por la puerta, sin nombrar motores concretos en el
+   assert más de lo imprescindible.
 5. **Drums no tiene dado.**
 
 Y una comprobación a ojo en Chrome, porque es UI: pista FM con un LFO sobre el
