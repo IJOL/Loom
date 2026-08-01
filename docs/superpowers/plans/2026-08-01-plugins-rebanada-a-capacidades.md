@@ -1004,12 +1004,67 @@ EOF
 - Modify: `src/session/lane-editor-panels.ts:15-24`
 - Modify: `src/app/trigger-dispatch.ts:48`
 - Modify: `src/session/session-inspector.ts:519,536`
-- Modify: `src/app/engine-swap.ts:38` (**se borra**)
-- Test: `src/session/lane-editor-panels.test.ts`, `src/app/engine-swap.test.ts`
+- Modify: `src/app/engine-swap.ts:38` (**NO se borra** — ver más abajo)
+- Modify: `packages/loom-plugin-sdk/src/manifest.ts`, `src/plugin-host/manifest-validate.ts`,
+  `src/plugins/capabilities.ts`, `src/engines/{audio,sampler,drums-engine}.ts` (Step 0)
+- Test: `src/session/lane-editor-panels.test.ts`, `src/app/engine-swap.test.ts`,
+  `src/plugins/capabilities.test.ts`
 
 **Interfaces:**
 - Consume: `acceptsAudioFile`, `acceptsNoteFx`, `isHarmonic`,
-  `isListedInSelector`, `clipEditorFor` (Task 2).
+  `isListedInSelector`, `isAudioEngine` (tareas 2 y 6).
+- Produce: `isRandomizable(id)`.
+
+- [ ] **Step 0: La capacidad `isRandomizable` — SÓLO DECLARARLA**
+
+Hoy el dado "🎲 Sound" (`#poly-randomize`) hace `if (!engine?.randomize) return;`, y
+el único que implementa `randomize()` es `WorkletLaneEngine` — los seis motores
+melódicos. O sea que **en una pista de Sampler el botón se pinta, se pulsa y no
+hace nada**: `laneEditorPanels` sólo oculta la cabecera para audio.
+
+En `EngineCapabilities`:
+
+```ts
+  /** Whether the "🎲 Sound" dice means anything for this engine. Notes lanes are
+   *  randomizable by default; the sampler and the drum machine are not (their
+   *  sound is a loaded kit or keymap, not a bag of rollable params), and neither
+   *  is an audio channel. Default: true. */
+  isRandomizable?: boolean;
+```
+
+En el validador, añade `isRandomizable` a la lista de campos booleanos opcionales
+que ya se comprueba (`acceptsNoteFx`, `listedInSelector`, `harmonic`).
+
+En la puerta:
+
+```ts
+export function isRandomizable(id: string): boolean {
+  return caps.get(id)?.isRandomizable ?? true;
+}
+```
+
+Y declara `isRandomizable: false` en `audio.ts`, `sampler.ts` y `drums-engine.ts`.
+
+Test en `capabilities.test.ts`:
+
+```ts
+it('the sampler and the drum machine are notes lanes that cannot be randomized', () => {
+  // Not derivable from clipContent: both are notes, and neither rolls a sound.
+  expect(isRandomizable('sampler')).toBe(false);
+  expect(isRandomizable('drums-machine')).toBe(false);
+  expect(isRandomizable('audio')).toBe(false);
+});
+
+it('an engine that says nothing is randomizable', () => {
+  __resetCapabilities();
+  registerEngineCapabilities('quiet', { clipContent: 'notes', shortLabel: 'q', outputTrim: 1 });
+  expect(isRandomizable('quiet')).toBe(true);
+});
+```
+
+> **NO conectes el botón en esta tarea.** Sólo se declara la capacidad. Ocultar
+> o deshabilitar el dado es una decisión de UI aparte, y Nacho la quiere separada
+> de esto.
 
 - [ ] **Step 1: Write the failing tests**
 
