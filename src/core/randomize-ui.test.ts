@@ -24,8 +24,6 @@ function makeDeps(engine: SynthEngine | null) {
   const refreshLaneKnobs = vi.fn();
   const deps: RandomizeDeps = {
     getEngine: () => engine,
-    getLaneEngineId: () => 'fm',
-    getActiveLaneId: () => 'fm-1',
     getSessionState: () => undefined,
     refreshLaneKnobs,
     // withUndo is a pass-through today (save/history-wiring.ts): the real undo

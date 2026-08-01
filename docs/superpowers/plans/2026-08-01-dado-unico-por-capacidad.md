@@ -320,190 +320,48 @@ git commit -m "fix(randomize): the dice repaints the knobs instead of unregister
 
 ---
 
-### Task 2: Un solo botón, mostrado por capacidad
+### Task 2: Simetría total — muere la página 303, y queda UN botón
+
+**Ampliación de alcance decidida por Nacho a media implementación** (*"debería haber
+sólo 1, no entiendo cómo el 303 tiene uno propio"* → *"sí, simetría total"*). El
+borrador de esta tarea montaba el botón en DOS anclas, una por página; eso dejaba en
+pie la razón de que hubiera dos. Lo que se hizo en su lugar:
 
 **Files:**
-- Modify: `index.html:175, 192, 215` (los tres `<button>`)
-- Modify: `src/core/randomize-ui.ts` (montaje del botón)
-- Modify: `src/engines/engine-selector-ui.ts:57-91` (gancho de resync)
-- Modify: `src/plugins/capabilities.ts:47-49` y
-  `packages/loom-plugin-sdk/src/manifest.ts:72-74` (docstrings que dejan de mentir)
-- Modify: `src/main.ts` (una llamada de resync al terminar el boot)
-- Test: `src/core/randomize-ui.test.ts` (añadir el bloque de montaje)
+- Modify: `index.html` (borrado el bloque `data-page="303"` + sus restos de CSS; el
+  `<button id="poly-randomize">` sustituido por `<span class="dice-slot" data-dice-slot>`)
+- Modify: `src/session/session-host-lane-editor.ts` (el router pasa de 3 páginas a 2;
+  monta el dado)
+- Modify: `src/session/lane-editor-panels.ts` (+ su test) — el campo `dice`
+- Modify: `src/core/randomize-ui.ts` — `mountRandomizeButton`
+- Modify: `src/engines/engine-selector-ui.ts`, `src/app/engine-selector-wiring.ts`,
+  `src/polysynth/polysynth-presets.ts`, `src/app/knob-mounting.ts`, `src/main.ts`
+- Modify: `src/plugins/capabilities.ts`, `packages/loom-plugin-sdk/src/manifest.ts`
+  (docstrings que dejaban de ser ciertas)
+- Modify: `tests/e2e/preset-on-load.spec.ts`, `tests/e2e/preset-recovery.spec.ts`
 
-**Interfaces:**
-- Consumes: `isRandomizable(engineId)` de `src/plugins/capabilities`;
-  `randomizeLane(laneId)` de la Task 1.
-- Produces: `syncRandomizeButtons(): void` — recorre los slots declarados y monta o
-  quita el botón según la capacidad del motor de la pista de cada slot.
+**La decisión de diseño que cambió respecto al borrador:** el botón NO lo monta un
+`syncRandomizeButtons()` que escanea slots por el documento. Lo monta el **editor de
+pista**, que ya decide qué paneles tiene una pista preguntando capacidades
+(`laneEditorPanels`). El dado es una decisión más de esa lista — `dice:
+!isAudio && isRandomizable(engineId)` — no un mecanismo aparte. Menos código, y la
+pregunta vive donde ya viven sus hermanas.
 
-- [ ] **Step 1: Escribir los tests que fallan**
-
-Añade a `src/core/randomize-ui.test.ts`:
-
-```ts
-import { initRandomize, syncRandomizeButtons } from './randomize-ui';
-import { registerEngineCapabilities, __resetCapabilities } from '../plugins/capabilities';
-
-describe('the dice button is mounted by capability', () => {
-  beforeEach(() => {
-    __resetCapabilities();
-    document.body.innerHTML = '<span data-dice-slot="poly-1"></span>';
-  });
-
-  it('user: an engine that declares it can be randomized gets a dice', () => {
-    registerEngineCapabilities('fm', { clipContent: 'notes', shortLabel: 'fm', outputTrim: 1 });
-    initRandomize({
-      getEngine: () => null, getLaneEngineId: () => 'fm',
-      refreshLaneKnobs: () => {}, historyDeps: {} as never,
-    });
-
-    syncRandomizeButtons();
-
-    const btn = document.querySelector('[data-dice-slot] button');
-    expect(btn).not.toBeNull();
-    expect(btn!.textContent).toBe('🎲 Sound');
-  });
-
-  it('user: the sampler declares it cannot, so it shows no dice at all', () => {
-    registerEngineCapabilities('sampler', {
-      clipContent: 'notes', shortLabel: 'sampler', outputTrim: 1, isRandomizable: false,
-    });
-    initRandomize({
-      getEngine: () => null, getLaneEngineId: () => 'sampler',
-      refreshLaneKnobs: () => {}, historyDeps: {} as never,
-    });
-
-    syncRandomizeButtons();
-
-    expect(document.querySelector('[data-dice-slot] button')).toBeNull();
-  });
-});
-```
-
-⚠️ El `data-dice-slot="poly-1"` del test lleva el **laneId** como valor. Antes de
-escribir esto, decide cómo el slot conoce su pista y hazlo igual en `index.html`:
-el slot del 303 sirve siempre a `LANE_ID_BASS`, el de la página poly sirve a la
-pista activa del editor. Si el valor del atributo no es el laneId sino un rol
-(`"bass"` / `"active"`), ajusta el test A LA IMPLEMENTACIÓN QUE ELIJAS, pero elige
-antes de escribir el test, no después de verlo fallar.
-
-- [ ] **Step 2: Ejecutar y verificar que falla**
-
-```bash
-NO_COLOR=1 npx vitest run src/core/randomize-ui.test.ts
-```
-
-Esperado: FAIL — `syncRandomizeButtons` no existe.
-
-- [ ] **Step 3: Quitar los tres botones estáticos del HTML**
-
-En `index.html`:
-- línea 175: sustituye el `<button id="bass-random-sound">` por
-  `<span class="dice-slot" data-dice-slot="bass"></span>`
-- línea 215: sustituye el `<button id="poly-randomize">` por
-  `<span class="dice-slot" data-dice-slot="active"></span>`
-- línea 192: **borra** el `<button id="drums-random-sound">` sin dejar slot. Drums
-  declara `isRandomizable: false`; no hay dado que montar.
-
-- [ ] **Step 4: Implementar el montaje**
-
-En `src/core/randomize-ui.ts`:
-
-```ts
-/** Mount (or remove) the dice in every declared slot, by capability. The button
- *  is defined HERE and only here: index.html carries empty anchors, not copies of
- *  a widget that then drift apart. */
-export function syncRandomizeButtons(): void {
-  if (!_deps) return;
-  for (const slot of document.querySelectorAll<HTMLElement>('[data-dice-slot]')) {
-    const laneId = slot.dataset.diceSlot === 'bass' ? LANE_ID_BASS : _activeLaneId();
-    slot.innerHTML = '';
-    if (!laneId || !isRandomizable(_deps.getLaneEngineId(laneId))) continue;
-    const btn = document.createElement('button');
-    btn.className = 'rnd primary';
-    btn.textContent = '🎲 Sound';
-    btn.title = 'Randomize sound (sets preset to Custom)';
-    btn.addEventListener('click', () => randomizeLane(laneId));
-    slot.appendChild(btn);
-  }
-}
-```
-
-`_activeLaneId()` es `_deps.getActiveLaneId()`, ya declarado y cableado en la Task 1
-(`() => _lehState.activeLaneId`, el mismo binding que recibe `wireEngineSelectors`
-en `main.ts:619`). No hace falta tocar la forma de las deps aquí.
-
-- [ ] **Step 5: Llamar al resync donde ya se reacciona al cambio de motor**
-
-En `src/engines/engine-selector-ui.ts`, dentro de `rebuildEngineParamUI()`, justo
-después de `deps.remountLaneFxPanel?.(activeLaneId)`:
-
-```ts
-  // The dice is capability-gated, and the active lane's engine just changed.
-  deps.syncRandomizeButtons?.();
-```
-
-Declara el gancho como opcional en `EngineSelectorUIDeps`, igual que sus vecinos
-`remountSubtractiveLaneKnobs` / `remountLaneFxPanel`, y pásalo desde
-`src/app/engine-selector-wiring.ts`. Añade además una llamada suelta a
-`syncRandomizeButtons()` en `main.ts` justo después de `wireRandomizeUI()`, para el
-primer pintado del boot.
-
-- [ ] **Step 6: (hecho en la Task 1) Borrar el camino del dado de drums**
-
-Ya no queda nada que hacer aquí: la Task 1 borró `randomizeDrumsSound`,
-`pickRandomDrumKit`, sus tests y el `<button id="drums-random-sound">`, para que la
-rama no pasara ningún commit con un botón visible que no hace nada. `applyDrumKitPreset`
-sigue vivo en `polysynth-presets.ts` (lo usa el desplegable de kits): sólo salió de
-las deps del dado. Verifícalo y sigue:
-
-```bash
-grep -rn "pickRandomDrumKit\|randomizeDrumsSound\|drums-random-sound" src/ tests/ index.html
-```
-
-Esperado: sin resultados.
-
-- [ ] **Step 7: Corregir las dos docstrings que pasan a mentir**
-
-En `src/plugins/capabilities.ts:47-49` y en
-`packages/loom-plugin-sdk/src/manifest.ts:72-74`, la frase *"NOT read by any
-consumer yet — declared ahead of its reader on purpose"* deja de ser cierta. Pon en
-las dos:
-
-```
-/** Read by the "🎲 Sound" dice: a lane whose engine declares false shows no
- *  dice at all (core/randomize-ui.ts syncRandomizeButtons).
- *  Default: true, so an instrument that says nothing gets its dice. */
-```
-
-- [ ] **Step 8: Revisar `refreshKnobsFromSynth`**
-
-```bash
-grep -rn "refreshKnobsFromSynth" src/
-```
-
-Si tras la Task 1 sólo le queda el uso del cargado de sesión
-(`save/saved-state-v3.ts:104`), déjalo y no lo toques. Si no le queda **ninguno**,
-bórralo de `app/knob-mounting.ts` y de las interfaces que lo declaran
-(`save/saved-state-v3.ts:41`, `save/save-wiring.ts:34`,
-`app/save-history-wiring.ts:53`). No lo dejes muerto "por si acaso".
-
-- [ ] **Step 9: Ejecutar todo y verificar verde**
-
-```bash
-NO_COLOR=1 npx vitest run src/core/randomize-ui.test.ts src/plugins/capabilities.test.ts
-NO_COLOR=1 npx tsc --noEmit
-```
-
-- [ ] **Step 10: Commit**
-
-```bash
-git add index.html src/core/randomize-ui.ts src/core/randomize-ui.test.ts \
-        src/engines/engine-selector-ui.ts src/app/engine-selector-wiring.ts \
-        src/main.ts src/plugins/capabilities.ts packages/loom-plugin-sdk/src/manifest.ts
-git commit -m "feat(randomize): one dice, mounted only where the engine declares it"
-```
+- [x] **Step 1: El rojo** — añadir `dice` a los objetos esperados de
+  `lane-editor-panels.test.ts` (4 tests comparan el objeto entero, así que caen) más
+  un test de que el Sampler no lo tiene y otro de que quien no declara nada sí.
+- [x] **Step 2: Verificar el rojo** — `NO_COLOR=1 npx vitest run src/session/lane-editor-panels.test.ts`
+- [x] **Step 3: `laneEditorPanels` gana `dice`**, leyendo `isRandomizable`.
+- [x] **Step 4: Matar la página 303** — router, HTML, y en cadena
+  `wireEngineSelector303` / `populateEngineSelect303` / `mountBassPresetSelect` /
+  `populateEnginePresetSelectById` / `wireEnginePresetSelectById` / `engineSel303`.
+- [x] **Step 5: `mountRandomizeButton(slot, laneId, show)`** en `randomize-ui`, y el
+  editor de pista lo llama con `panels.dice`.
+- [x] **Step 6: Las dos docstrings** de `capabilities.ts` y del SDK dejan de decir
+  "NOT read by any consumer yet".
+- [x] **Step 7: e2e** — los dos specs que mapeaban `tb303 → #bass-preset-select`
+  pasan a `#poly-preset-select`.
+- [x] **Step 8: Verde** — `tsc --noEmit` limpio y la suite de unidad completa.
 
 ---
 
@@ -547,12 +405,21 @@ En Chrome de verdad (no el navegador embebido de VS Code), sobre `npm run dev`:
 2. Pulsa **🎲 Sound**. Esperado: los knobs **se mueven** al valor nuevo **y** el
    anillo **sigue girando**. Ese es el bug del spec, y es lo único que prueba que
    está muerto.
-3. Cambia el motor de esa pista a **Sampler**. Esperado: **no hay botón de dado**.
-4. Ve a la página **drums**. Esperado: **no hay botón de dado**.
-5. Ve a la página **303**. Esperado: hay dado, y al pulsarlo los knobs se mueven.
-6. **Ctrl+Z**. Esperado: el sonido vuelve al de antes de la tirada.
+3. Cambia el motor de esa pista a **Sampler**. Esperado: **el dado desaparece**.
+   Vuelve a FM: reaparece.
+4. Edita la pista de **drums**. Esperado: **no hay dado**.
+5. Edita la pista del **bajo (TB-303)**. Esperado, y es el punto sin cobertura
+   automática de toda la rama: se abre **el panel común**, con su fila
+   ENGINE/PRESET, sus knobs (Wave, Cutoff, Resonance, Env, Decay, Accent) y **su
+   dado**. El desplegable de presets debe traer los del 303, y cargar uno debe
+   cambiar el sonido.
+6. Con el bajo abierto, **cambia su motor** en el desplegable ENGINE y vuelve a
+   `tb303`. Esperado: sin pantallas en blanco ni knobs huérfanos.
+7. **Ctrl+Z** tras una tirada. Esperado: el sonido vuelve al de antes.
 
 - [ ] **Step 5: Informe honesto**
 
-Escribe qué pasó en cada uno de los seis puntos. Si alguno falla, NO lo des por
-bueno: es un fallo de esta rama, no "un preexistente".
+Escribe qué pasó en cada uno de los siete puntos. Si alguno falla, NO lo des por
+bueno: es un fallo de esta rama, no "un preexistente". El punto 5 es el que más
+importa: la ruta del 303 **no tenía ni un test** antes de esta rama, así que el ojo
+es la única red.

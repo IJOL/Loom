@@ -194,7 +194,10 @@
           <button class="rnd" id="poly-preset-load">Load</button>
           <button class="rnd" id="poly-preset-save">Save As…</button>
           <button class="rnd" id="poly-preset-delete">Delete</button>
-          <button class="rnd primary" id="poly-randomize" title="Randomize sound (sets preset to Custom)">🎲 Sound</button>
+          <!-- The "🎲 Sound" button is mounted here by core/randomize-ui.ts, and
+               only for a lane whose engine declares isRandomizable. It is not
+               written in the markup because a static button cannot know that. -->
+          <span class="dice-slot" data-dice-slot></span>
         </div>
         <div class="row poly-section" data-engine="subtractive">
           <div class="section-label">OSC 1</div>

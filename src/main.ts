@@ -41,7 +41,7 @@ import {
 import {
   wirePolyControls, refreshPolyPresetSelect, recordPagePresetForLane,
 } from './polysynth/polysynth-presets';
-import { initRandomize, wireRandomizeUI } from './core/randomize-ui';
+import { initRandomize } from './core/randomize-ui';
 import { wireFxUI, type FxUIDeps } from './core/fx-ui';
 import { wireTransport, setPlaying, type TransportDeps } from './core/transport';
 import { createStemsFeature } from './app/stems-feature';
@@ -791,13 +791,10 @@ _discreteHistoryDeps = historyDeps;
 // every worklet engine instead of only the one class that no longer exists.
 initRandomize({
   getEngine: (laneId) => laneResources.get(laneId)?.engine ?? null,
-  getLaneEngineId,
-  getActiveLaneId: () => _lehState.activeLaneId,
   getSessionState: () => sessionHost?.state,
   refreshLaneKnobs,
   historyDeps,
 });
-wireRandomizeUI();
 const saveManager = wireSaveManager(saveWiringDeps);
 // Recovery can allocate a subtractive lane synchronously, so gate it on the
 // worklet module being registered (same reason as the boot demo above). On a

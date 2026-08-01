@@ -107,15 +107,49 @@ método sigue siendo la implementación, y el handler se protege igual con
    la lea, eso es falso y hay que corregirlo en el mismo commit — este repo ya tiene
    commits dedicados a docstrings que mentían (`d5bd814`).
 
+## Simetría total: muere la página 303
+
+**Ampliación de alcance decidida por Nacho el 2026-08-01**, a media implementación:
+*"debería haber sólo 1 [botón], no entiendo cómo el 303 tiene uno propio"* → *"sí,
+simetría total"*. El alcance original (un botón definido una vez, montado en dos
+anclas) dejaba en pie la razón de que hubiera dos anclas.
+
+**Por qué había tres botones: porque había tres páginas**, y cada una se copió a mano
+la fila `PRESET`. La del 303 existe desde antes de que hubiera pistas con motor
+intercambiable, y al medirla resultó ser un **subconjunto estricto** de la poly: la
+misma fila ENGINE/PRESET con otros ids, la misma fila FX. Lo único suyo —la fila
+estática de knobs Wave/Cutoff/Resonance/Env/Decay/Accent— ya se había mudado a
+`buildParamUI` como en los demás motores. Y su pestaña estaba **oculta por CSS**
+(`button.tab[data-tab="303"] { display: none !important }`), así que no era ni
+navegable: la página la elegía el router según la pista editada.
+
+Coste medido antes de decidir: **28 referencias** a ids que sólo ella usaba.
+
+Se van con ella: un segundo selector de motor (`#engine-select-303`,
+`wireEngineSelector303`, `populateEngineSelect303`), un segundo desplegable de
+presets (`#bass-preset-select`, `mountBassPresetSelect` y, en cadena,
+`populateEnginePresetSelectById` + `wireEnginePresetSelectById`, de los que era el
+único llamador), el segundo dado, `#bass-tracks` (que no referenciaba ni un `.ts`) y
+el espejado de `engineSel303` repartido por `main.ts`. El router de `showLaneEditor`
+pierde una de sus dos comparaciones por `engineId`: una pista es `drums` o es `poly`.
+
+**Queda UN botón.** No "uno definido una vez y montado en dos sitios": uno.
+
+Nada de audio cambia. Editar el bajo abre el panel común con los mismos controles,
+pintados por su propio motor.
+
 ## Qué NO entra
 
 Se nombra para que no se cuele por el camino:
 
-- **El catálogo de presets.** El `select` + Load/Save As/Delete siguen triplicados y
-  con tres implementaciones (presets de motor, presets de usuario poly, kits de
-  drums). Es deuda real y reconocida, pero es **otro concern** — ahí sí viven
-  diferencias por motor que hay que diseñar, no unificar a ciegas.
-- **Matar la página 303** y editar el bajo en el inspector como el resto.
+- **El catálogo de presets.** El `select` + Load/Save As/Delete siguen duplicados
+  entre la página poly y la de drums, con implementaciones distintas (presets de
+  motor, presets de usuario poly, kits de drums). Es deuda real y reconocida, pero es
+  **otro concern** — ahí sí viven diferencias por motor que hay que diseñar, no
+  unificar a ciegas.
+- **La página de drums.** Sí tiene contenido propio de verdad (pads, kits, los knobs
+  del bus de drums), así que su separación no es un accidente histórico como lo era
+  la del 303.
 - **El `if (engineId === 'subtractive')` de `rebuildEngineParamUI`** y el montaje en
   secciones fijas de Subtractive. Siguen siendo correctos para el cambio de motor,
   que es su trabajo; dejan de ser dañinos en cuanto el dado no pasa por ahí.

@@ -69,9 +69,8 @@ export interface EngineCapabilities {
    *  sampler and the drum machine do not — their sound is a loaded kit or
    *  keymap, and there is nothing to roll. Neither does an audio channel.
    *  Default: true, so an instrument that says nothing gets its dice.
-   *  NOT read by any consumer yet — declared ahead of its reader on purpose.
-   *  Its reader is the "🎲 Sound" dice (`#poly-randomize`), deliberately left
-   *  unwired: hiding or disabling it is a separate UI decision (slice C). */
+   *  Declaring false hides the button entirely — the host shows no dice rather
+   *  than a dead one. */
   isRandomizable?: boolean;
   gm?: GmHint;
 }

@@ -29,10 +29,6 @@ import type { SessionState } from '../session/session';
 export interface RandomizeDeps {
   /** The live engine of a lane, or null before it is allocated. */
   getEngine: (laneId: string) => SynthEngine | null;
-  /** The lane's engine id — the key the capability door is asked about. */
-  getLaneEngineId: (laneId: string) => string;
-  /** The lane the poly-page editor is currently pointing at. */
-  getActiveLaneId: () => string;
   /** Live session, so a rolled sound is mirrored into the lane and survives a save. */
   getSessionState?: () => SessionState | undefined;
   /** Repaint the lane's mounted knobs from the engine's base values. IN PLACE:
@@ -68,15 +64,26 @@ export function randomizeLane(laneId: string): void {
   if (_deps) randomizeLaneSound(_deps, laneId);
 }
 
-/** Wire the "🎲 Sound" button. Call once at boot, after initRandomize.
+/** Put the "🎲 Sound" button in `slot` for `laneId`, or leave the slot empty.
+ *  Called by the lane editor, which already decides every other panel the same
+ *  way (session/lane-editor-panels.ts).
  *
- *  There is exactly ONE. There used to be three — one per page — because each
- *  page hand-copied the PRESET row: the TB-303's (whose page is now gone, the
- *  bass being edited in the common panel like every other melodic lane), the
- *  drums one (deleted: a kit is a preset, not a bag of params) and this one. */
-export function wireRandomizeUI(): void {
-  const btn = document.getElementById('poly-randomize') as HTMLButtonElement | null;
-  btn?.addEventListener('click', () => {
-    if (_deps) randomizeLane(_deps.getActiveLaneId());
-  });
+ *  There is exactly ONE button, defined here. There used to be three — one per
+ *  page — because each page hand-copied the PRESET row: the TB-303's (whose page
+ *  is gone, the bass being edited in the common panel like every other melodic
+ *  lane), the drums one (deleted: a kit is a preset, not a bag of params), and
+ *  this one. Three copies of one gesture is how they drifted apart.
+ *
+ *  `show` comes from the capability door, so an engine that cannot roll shows no
+ *  dice instead of a dead one. */
+export function mountRandomizeButton(slot: HTMLElement, laneId: string, show: boolean): void {
+  slot.innerHTML = '';
+  if (!show) return;
+  const btn = document.createElement('button');
+  btn.className = 'rnd primary';
+  btn.id = 'poly-randomize';
+  btn.textContent = '🎲 Sound';
+  btn.title = 'Randomize sound (sets preset to Custom)';
+  btn.addEventListener('click', () => randomizeLane(laneId));
+  slot.appendChild(btn);
 }

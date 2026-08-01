@@ -10,6 +10,7 @@ import { renderNoteFxPanel } from '../notefx/notefx-ui';
 import { getNoteFxChain } from '../notefx/notefx-registry';
 import { syncNoteFx } from './session-engine-state';
 import { laneEditorPanels } from './lane-editor-panels';
+import { mountRandomizeButton } from '../core/randomize-ui';
 import {
   mountDrumsPresetSelect,
   populatePolyPresetSelectForLane,
@@ -174,6 +175,10 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
     const headerRow = page.querySelector<HTMLElement>('#poly-engine-row');
     if (headerRow) headerRow.style.display = panels.engineHeaderRow ? '' : 'none';
   }
+  // The "🎲 Sound" button is mounted, not written in the markup: whether a lane
+  // has one is a capability of its engine, and a static button cannot know that.
+  const diceSlot = page.querySelector<HTMLElement>('[data-dice-slot]');
+  if (diceSlot) mountRandomizeButton(diceSlot, laneId, panels.dice);
   if (panels.preset) {
     if (targetTab === 'poly') { populatePolyPresetSelectForLane(laneId); refreshPolyPresetSelect(); }
     if (targetTab === 'drums') mountDrumsPresetSelect(laneId);

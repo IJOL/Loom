@@ -44,9 +44,11 @@ export function acceptsNoteFx(id: string): boolean {
 export function isHarmonic(id: string): boolean {
   return caps.get(id)?.harmonic ?? true;
 }
-/** NOT read by any consumer yet — declared ahead of its reader on purpose. Its
- *  reader is the "🎲 Sound" dice (`#poly-randomize`), deliberately left
- *  unwired: hiding or disabling it is a separate UI decision. */
+/** Read by the "🎲 Sound" dice: a lane whose engine declares false shows no dice
+ *  at all, rather than a dead one. The lane editor asks through
+ *  `session/lane-editor-panels.ts` and mounts it via
+ *  `core/randomize-ui.ts mountRandomizeButton`.
+ *  Default: true, so an instrument that says nothing gets its dice. */
 export function isRandomizable(id: string): boolean {
   return caps.get(id)?.isRandomizable ?? true;
 }
