@@ -21,8 +21,12 @@ Spec: [2026-08-01-plugins-core-por-capacidades-design.md](../specs/2026-08-01-pl
   una pregunta nueva, nace como capacidad en la puerta.
 - **Los defaults son los de un instrumento melódico normal.** Un manifiesto que no
   dice nada se comporta como Subtractive. Sólo lo raro se declara.
-- **`loomApi` pasa a 2.** El validador rechaza la 1 con un mensaje que nombra la
-  versión. Sin migración: sólo existe un plugin publicado y es nuestro.
+- **`loomApi` SE QUEDA EN 1.** Esto es la primera implementación: el único plugin
+  del mundo es el nuestro y se convierte en esta misma rama. La versión existe
+  para que un plugin viejo falle a gritos, y no hay ninguno viejo. En su lugar,
+  **`components` es obligatorio** — así un manifiesto con la forma antigua
+  (`engines`) falla con "components must be an array" en vez de validar y
+  registrar cero componentes, que sería un fallo mudo.
 - **`engine` gana a `synth`** como nombre del `PluginKind`.
 - **Fuera de alcance en esta rebanada:** los backends del allocator, `editorPage`,
   `patternCategory`, `slideOnOverlap`, `roles`, y los moduladores/note-FX.
@@ -57,7 +61,7 @@ Comprobados en el código el 2026-08-01. No inferidos.
 
 **Modificar:**
 - `packages/loom-plugin-sdk/src/manifest.ts` — `ComponentManifest`,
-  `EngineCapabilities`, `LOOM_API_VERSION = 2`, `PluginManifestFile.components`.
+  `EngineCapabilities`, `PluginManifestFile.components` (obligatorio).
 - `src/plugin-host/manifest-validate.ts` — valida `components` + capacidades.
 - `src/plugin-host/loom-api.ts` — deja de aplastar `'audio'`; alimenta la puerta.
 - `src/plugin-host/plugin-capabilities.ts` — **se borra**; su contenido vive ahora
@@ -70,13 +74,13 @@ Comprobados en el código el 2026-08-01. No inferidos.
 - Consumidores: `session-grid-templates.ts`, `session-host-audio-import.ts`,
   `lane-editor-panels.ts`, `engine-swap.ts`, `session-inspector.ts`,
   `trigger-dispatch.ts`, `clip-editor-router.ts`.
-- `plugins/karplus/plugin.json` + `public/plugins/karplus/plugin.json` → v2.
+- `plugins/karplus/plugin.json` + `public/plugins/karplus/plugin.json` → forma de componentes.
 
 **Borrar:** `src/plugins/synths/` (vacío).
 
 ---
 
-### Task 1: El manifiesto v2 y su validador
+### Task 1: El manifiesto por componentes y su validador
 
 **Files:**
 - Modify: `packages/loom-plugin-sdk/src/manifest.ts`
@@ -84,13 +88,14 @@ Comprobados en el código el 2026-08-01. No inferidos.
 - Test: `src/plugin-host/manifest-validate.test.ts`
 
 **Interfaces:**
-- Produce: `EngineCapabilities`, `ComponentManifest`, `LOOM_API_VERSION = 2`,
-  `PluginManifestFile.components?: ComponentManifest[]`.
+- Produce: `EngineCapabilities`, `ComponentManifest`,
+  `PluginManifestFile.components: ComponentManifest[]` (obligatorio).
+  `LOOM_API_VERSION` NO cambia: sigue en 1.
 
 - [ ] **Step 1: Write the failing tests**
 
 En `src/plugin-host/manifest-validate.test.ts`, sustituye el `baseEngine` por un
-componente v2 y añade estos casos:
+componente con capacidades y añade estos casos:
 
 ```ts
 const engineComponent = {
@@ -99,37 +104,42 @@ const engineComponent = {
   params: [{ id: 'a', label: 'A', kind: 'continuous' as const, min: 0, max: 1, default: 0 }],
   capabilities: { clipEditor: 'piano-roll' as const, shortLabel: 'karp', outputTrim: 0.857 },
 };
-const v2 = (over: Record<string, unknown> = {}) => ({
-  id: 'p', name: 'P', version: '1.0.0', loomApi: 2, main: 'main.js',
+const ok = (over: Record<string, unknown> = {}) => ({
+  id: 'p', name: 'P', version: '1.0.0', loomApi: 1, main: 'main.js',
   components: [engineComponent], ...over,
 });
 
-it('rejects a v1 manifest naming both versions', () => {
-  const r = validatePluginManifest({ ...v2(), loomApi: 1 });
+it('rejects the OLD shape loudly instead of registering nothing', () => {
+  // Sin `components` un manifiesto de la forma antigua validaria y registraria
+  // CERO componentes: el plugin cargaria y su motor no apareceria, sin un solo
+  // mensaje. Por eso `components` es obligatorio.
+  const viejo = { id: 'p', name: 'P', version: '1.0.0', loomApi: 1, main: 'main.js',
+    engines: [{ id: 'x', name: 'X' }] };
+  const r = validatePluginManifest(viejo);
   expect(r.ok).toBe(false);
-  if (!r.ok) expect(r.error).toMatch(/loomApi 1 .*2/);
+  if (!r.ok) expect(r.error).toMatch(/components/);
 });
 
 it('accepts clipEditor audio', () => {
   const caps = { ...engineComponent.capabilities, clipEditor: 'audio' as const };
-  expect(validatePluginManifest(v2({ components: [{ ...engineComponent, capabilities: caps }] })).ok).toBe(true);
+  expect(validatePluginManifest(ok({ components: [{ ...engineComponent, capabilities: caps }] })).ok).toBe(true);
 });
 
 it('rejects an unknown component kind', () => {
-  const r = validatePluginManifest(v2({ components: [{ ...engineComponent, kind: 'wat' }] }));
+  const r = validatePluginManifest(ok({ components: [{ ...engineComponent, kind: 'wat' }] }));
   expect(r.ok).toBe(false);
   if (!r.ok) expect(r.error).toMatch(/kind/);
 });
 
 it('rejects an accepts entry that is not a known asset kind', () => {
   const caps = { ...engineComponent.capabilities, accepts: ['midi-file'] };
-  const r = validatePluginManifest(v2({ components: [{ ...engineComponent, capabilities: caps }] }));
+  const r = validatePluginManifest(ok({ components: [{ ...engineComponent, capabilities: caps }] }));
   expect(r.ok).toBe(false);
   if (!r.ok) expect(r.error).toMatch(/accepts/);
 });
 
 it('defaults the optional capabilities so a plain manifest is a normal instrument', () => {
-  const r = validatePluginManifest(v2());
+  const r = validatePluginManifest(ok());
   expect(r.ok).toBe(true);
   if (r.ok) {
     const c = r.manifest.components![0];
@@ -142,7 +152,8 @@ it('defaults the optional capabilities so a plain manifest is a normal instrumen
 - [ ] **Step 2: Run and watch them fail**
 
 `NO_COLOR=1 npx vitest run src/plugin-host/manifest-validate.test.ts`
-Esperado: FAIL — `loomApi 2` no está soportado, `components` no se valida.
+Esperado: FAIL — `components` no se valida todavía, así que el manifiesto de
+forma antigua pasa la validación en vez de ser rechazado.
 
 - [ ] **Step 3: The SDK types**
 
@@ -151,7 +162,10 @@ capacidades. `EngineManifest` desaparece; su contenido se reparte entre el
 componente y sus capacidades.
 
 ```ts
-export const LOOM_API_VERSION = 2;
+// SIN CAMBIOS: sigue en 1. Es la primera implementacion — no hay ningun plugin
+// publicado ahi fuera cuya compatibilidad haya que preservar, y el unico que
+// existe se convierte en la Task 7 de esta misma rama.
+export const LOOM_API_VERSION = 1;
 
 /** Assets a component accepts by drag-and-drop. */
 export type AssetKind = 'audio-file';
@@ -196,7 +210,10 @@ export interface PluginManifestFile {
   main: string;
   dsp?: string;
   presets?: string;
-  components?: ComponentManifest[];
+  /** OBLIGATORIO. Un manifiesto sin componentes no aporta nada, y hacerlo
+   *  opcional convierte la forma antigua (`engines`) en un fallo MUDO: valida,
+   *  carga y registra cero. */
+  components: ComponentManifest[];
 }
 ```
 
@@ -269,9 +286,19 @@ function componentError(c: unknown, i: number): string | null {
 }
 ```
 
-En `validatePluginManifest`, cambia el bucle de `raw.engines` por `raw.components`
-y deja el chequeo de versión como está (ya nombra las dos versiones:
-`` `loomApi ${String(raw.loomApi)} is not supported (host speaks ${LOOM_API_VERSION})` ``).
+En `validatePluginManifest`, deja el chequeo de versión **exactamente como está**
+y sustituye el bloque de `raw.engines` por uno que exige `components`:
+
+```ts
+if (!Array.isArray(raw.components)) return { ok: false, error: 'components must be an array' };
+for (let i = 0; i < raw.components.length; i++) {
+  const err = componentError(raw.components[i], i);
+  if (err) return { ok: false, error: err };
+}
+```
+
+Fíjate en que **ya no es `if (raw.components !== undefined)`**: ausente es
+inválido. Ésa es la sustituta del bump de versión.
 
 - [ ] **Step 5: Green**
 
@@ -283,7 +310,7 @@ Esperado: PASS.
 ```bash
 git add packages/loom-plugin-sdk src/plugin-host/manifest-validate.ts src/plugin-host/manifest-validate.test.ts
 git commit -F - <<'EOF'
-feat(plugins): manifiesto v2 — componentes con capacidades
+feat(plugins): el manifiesto pasa a ser un paquete de componentes
 
 Un manifiesto pasa a ser un paquete de COMPONENTES discriminados por kind,
 y cada uno declara sus capacidades. Los opcionales se omiten: un manifiesto
@@ -904,7 +931,7 @@ EOF
 
 ---
 
-### Task 7: Karplus pasa a v2
+### Task 7: Karplus pasa a la forma de componentes
 
 **Files:**
 - Modify: `plugins/karplus/plugin.json`, `plugins/karplus/main.ts`
@@ -914,13 +941,13 @@ EOF
 
 - [ ] **Step 1: Convert the manifest**
 
-En `plugins/karplus/plugin.json`: `"loomApi": 2`, y `engines: [...]` pasa a
+En `plugins/karplus/plugin.json`, `engines: [...]` pasa a
 `components: [...]` con `kind: 'engine'` y las tres claves de capacidad movidas
 dentro de `capabilities`:
 
 ```jsonc
 {
-  "loomApi": 2,
+  "loomApi": 1,
   "components": [{
     "kind": "engine",
     "id": "karplus",
@@ -967,7 +994,7 @@ apareciendo en el selector.
 ```bash
 git add -A
 git commit -F - <<'EOF'
-feat(plugins): Karplus habla la v2 del manifiesto
+feat(plugins): Karplus pasa a la forma de componentes
 
 Sin migracion: solo existe un plugin publicado y es este. El test de
 paridad muestra a muestra sigue verde, o sea que el sonido no cambio.
@@ -1023,7 +1050,7 @@ Esperado: FAIL — el plugin no existe todavía.
   "id": "audio-probe",
   "name": "Audio Probe",
   "version": "1.0.0",
-  "loomApi": 2,
+  "loomApi": 1,
   "main": "main.js",
   "components": [{
     "kind": "engine",

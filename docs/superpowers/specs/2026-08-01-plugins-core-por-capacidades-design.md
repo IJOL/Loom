@@ -139,9 +139,15 @@ Un `plugin.json` pasa a ser un **paquete de componentes**: `components: [...]` e
 lugar de `engines: [...]`. Un componente integrado registra la misma forma desde
 código.
 
-Eso sube **`loomApi` a 2**. Sólo existe un plugin publicado y es nuestro
-(Karplus), así que se convierte y el validador rechaza la v1 con un mensaje
-claro. Sin migración.
+**`loomApi` NO sube.** Es la primera implementación: no hay ningún plugin
+publicado ahí fuera cuya compatibilidad haya que preservar, y el único que existe
+(Karplus) se convierte en la misma rama. Un número de versión que nadie puede
+haber consumido todavía no protege de nada.
+
+Lo que sí cambia: **`components` es obligatorio**. Si fuese opcional, un
+manifiesto con la forma antigua validaría, cargaría y registraría **cero**
+componentes — su motor desaparecería del selector sin un solo mensaje. Obligarlo
+da el fallo ruidoso que el bump de versión iba a dar, sin la maquinaria.
 
 #### Colisión de nombres: `synth` vs `engine`
 
