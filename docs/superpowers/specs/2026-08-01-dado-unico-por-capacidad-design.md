@@ -38,12 +38,22 @@ distintos**:
 
 | Botón | Qué hace hoy |
 |---|---|
-| `#bass-random-sound` (303) | `engine.randomize()` → repinta con `refreshKnobsFromSynth` → marca Custom → `withUndo` ✅ |
-| `#poly-randomize` (poly) | `engine.randomize()` → **`rebuildEngineParamUI()`** → marca Custom → **sin `withUndo`** ❌ |
+| `#bass-random-sound` (303) | `engine.randomize()` → repinta con `refreshKnobsFromSynth` → marca Custom → envuelto en `withUndo` ✅ |
+| `#poly-randomize` (poly) | `engine.randomize()` → **`rebuildEngineParamUI()`** → marca Custom → sin `withUndo` ❌ |
 | `#drums-random-sound` (drums) | no toca el motor: elige un kit al azar desde la UI |
 
 Además, en una pista **Sampler** (que vive en la página poly) el dado se muestra y
 **no hace nada**: el handler se sale por `if (!engine?.randomize) return;`.
+
+**Matiz sobre el `withUndo`, comprobado en el código y no supuesto:**
+`withUndo<R>(_d, fn) { return fn(); }` es hoy un **paso a través** que ignora sus
+deps (`save/history-wiring.ts:58`). El deshacer real lo produce AutoHistory con su
+checkpoint por microtarea, para las dos rutas por igual. O sea que la divergencia del
+`withUndo` es **cosmética, no de comportamiento**: el dado del inspector SÍ se
+deshace hoy. Se unifica igual — que dos llamadas al mismo gesto se escriban distinto
+es la clase de detalle que se vuelve real el día que `withUndo` deje de ser un
+no-op — pero **no se le vende al usuario como un bug arreglado**, y no lleva test
+propio: un test sobre un no-op no afirma nada.
 
 Arreglar sólo el camino roto deja las tres copias en pie para que vuelvan a divergir.
 
@@ -119,12 +129,11 @@ mismo test:
    el dado → siguen en el `automationRegistry`. Falla hoy.
 2. **Los knobs se repintan.** Tras el dado, el handle muestra el nuevo
    `getBaseValue`. Falla hoy.
-3. **El dado es deshacible** desde el inspector — deja una entrada de undo. Falla hoy.
-4. **El botón aparece por capacidad**: se monta para un motor que declara
+3. **El botón aparece por capacidad**: se monta para un motor que declara
    `isRandomizable` y no se monta para el Sampler, que declara lo contrario. El test
    registra sus capacidades por la puerta, sin nombrar motores concretos en el
    assert más de lo imprescindible.
-5. **Drums no tiene dado.**
+4. **Drums no tiene dado.**
 
 Y una comprobación a ojo en Chrome, porque es UI: pista FM con un LFO sobre el
 cutoff → 🎲 → los knobs se mueven **y** el anillo sigue girando.
