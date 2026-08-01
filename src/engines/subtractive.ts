@@ -11,7 +11,7 @@
 
 import { registerEngine, registerEngineFactory } from './registry';
 import { createDescriptorEngine } from './descriptor-engine';
-import { getModulator } from '../modulation/modulator-registry';
+import { requireModulator } from '../modulation/modulator-registry';
 import type { ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
 import { SUB_PARAM_SPECS } from './subtractive-params';
@@ -30,10 +30,8 @@ import { SUB_PARAM_SPECS } from './subtractive-params';
  *  in an order nothing guarantees (see DescriptorEngineConfig.modulators).
  *  Calling this only happens lazily, well after both globs have settled. */
 export function SUBTRACTIVE_DEFAULT_MODULATORS(): ModulatorState[] {
-  const lfo = getModulator('lfo');
-  const adsr = getModulator('adsr');
-  if (!lfo) throw new Error("unknown modulator kind: 'lfo'");
-  if (!adsr) throw new Error("unknown modulator kind: 'adsr'");
+  const lfo = requireModulator('lfo');
+  const adsr = requireModulator('adsr');
   return [
     {
       ...adsr.defaultState('adsr-amp'), decaySec: 0.2,                         // amp env defaults
@@ -56,10 +54,8 @@ export function SUBTRACTIVE_DEFAULT_MODULATORS(): ModulatorState[] {
  *  envelopes — no need to rewrite the 44 preset JSONs. */
 export function deriveSubtractiveEnvMods(params: Record<string, number>): ModulatorState[] {
   const n = (id: string, d: number): number => (typeof params[id] === 'number' ? params[id] : d);
-  const lfo = getModulator('lfo');
-  const adsr = getModulator('adsr');
-  if (!lfo) throw new Error("unknown modulator kind: 'lfo'");
-  if (!adsr) throw new Error("unknown modulator kind: 'adsr'");
+  const lfo = requireModulator('lfo');
+  const adsr = requireModulator('adsr');
   return [
     {
       ...adsr.defaultState('adsr-amp'),

@@ -12,7 +12,7 @@ import type { EngineParamSpec } from './engine-params';
 import { registerEngine, registerEngineFactory } from './registry';
 import { createDescriptorEngine } from './descriptor-engine';
 import { getCachedPresets } from '../presets/preset-loader';
-import { getModulator } from '../modulation/modulator-registry';
+import { requireModulator } from '../modulation/modulator-registry';
 import type { ModulatorState } from '../modulation/types';
 
 const PARAMS: EngineParamSpec[] = [
@@ -47,8 +47,7 @@ export const PRESET_KEY_TO_SPEC: Record<string, string> = {
 // module scope, the same moment the lfo component registers from a separate
 // eager glob in an order nothing guarantees.
 export function TB303_DEFAULT_MODULATORS(): ModulatorState[] {
-  const lfo = getModulator('lfo');
-  if (!lfo) throw new Error("unknown modulator kind: 'lfo'");
+  const lfo = requireModulator('lfo');
   return [lfo.defaultState('lfo1')];
 }
 

@@ -12,7 +12,7 @@
 import { registerEngine, registerEngineFactory } from './registry';
 import { createDescriptorEngine } from './descriptor-engine';
 import { DRUM_PARAMS } from './drums-worklet-engine';
-import { getModulator } from '../modulation/modulator-registry';
+import { requireModulator } from '../modulation/modulator-registry';
 import type { ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
 import { drumSubGroupFor } from './drum-subgroups';
@@ -23,10 +23,8 @@ import { registerEngineCapabilities } from '../plugins/capabilities';
  *  below runs at module scope, the same moment the lfo/adsr components
  *  register from a separate eager glob in an order nothing guarantees. */
 export function DRUMS_DEFAULT_MODULATORS(): ModulatorState[] {
-  const lfo = getModulator('lfo');
-  const adsr = getModulator('adsr');
-  if (!lfo) throw new Error("unknown modulator kind: 'lfo'");
-  if (!adsr) throw new Error("unknown modulator kind: 'adsr'");
+  const lfo = requireModulator('lfo');
+  const adsr = requireModulator('adsr');
   return [
     lfo.defaultState('lfo1'),
     adsr.defaultState('adsr1'),

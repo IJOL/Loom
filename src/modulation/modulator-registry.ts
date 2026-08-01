@@ -44,6 +44,17 @@ export function getModulator(id: string): ModulatorComponent | undefined {
   return components.get(id);
 }
 
+/** The component `id`, or a throw naming it. For a caller that cannot carry on
+ *  without it — an engine building the default modulator set it ships with. The
+ *  guard used to be written out at every such call site, which meant the same
+ *  three lines and the same id-inside-an-error-string repeated in eight engine
+ *  files. */
+export function requireModulator(id: string): ModulatorComponent {
+  const c = components.get(id);
+  if (!c) throw new Error(`unknown modulator kind: ${id}`);
+  return c;
+}
+
 export function listModulators(): ModulatorComponent[] {
   return [...components.values()];
 }

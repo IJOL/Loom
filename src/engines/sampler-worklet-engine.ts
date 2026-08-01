@@ -26,7 +26,7 @@ import type {
 } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
 import { ModulationHostImpl } from '../modulation/modulation-host';
-import { getModulator } from '../modulation/modulator-registry';
+import { requireModulator } from '../modulation/modulator-registry';
 import type { ModulatorVoice } from '../modulation/types';
 import { renderModulatorsPanel, type ModulationUIDeps } from '../modulation/modulation-ui';
 import { getCurrentLaneForVoice } from '../modulation/active-mods';
@@ -124,10 +124,8 @@ export class SamplerWorkletEngine implements SynthEngine {
   private _modHost: ModulationHostImpl | undefined;
   private getModHost(): ModulationHostImpl {
     if (!this._modHost) {
-      const lfo = getModulator('lfo');
-      const adsr = getModulator('adsr');
-      if (!lfo) throw new Error("unknown modulator kind: 'lfo'");
-      if (!adsr) throw new Error("unknown modulator kind: 'adsr'");
+      const lfo = requireModulator('lfo');
+      const adsr = requireModulator('adsr');
       this._modHost = new ModulationHostImpl([lfo.defaultState('lfo1'), adsr.defaultState('adsr1')]);
     }
     return this._modHost;
