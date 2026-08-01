@@ -10,12 +10,12 @@
 //
 // Harness copied from modulation-pipeline.test.ts: the REAL path
 // (ModulationRuntime → VoiceManager → renderer), no invented plumbing. The
-// ModulatorState[] → ModLite[] conversion below is a local, minimal mirror of
-// engines/worklet-lane-engine.ts's toModLite — deliberately NOT imported, so
-// this net does not drag in that module's Web-Audio/lit-html dependency chain
-// (LoomWorkletNode, lit-html…) just to reach a pure-data mapper.
+// ModulatorState[] → ModLite[] conversion is the REAL converter (engines/
+// mod-lite.ts's toModLite) — a pure data mapper with no Web Audio / DOM, so
+// importing it here does not drag in worklet-lane-engine.ts's Web-Audio/
+// lit-html dependency chain (LoomWorkletNode, lit-html…).
 import { describe, it, expect } from 'vitest';
-import { ModulationRuntime, type ModLite } from './modulation-runtime';
+import { ModulationRuntime } from './modulation-runtime';
 import { VoiceManager } from './voice-manager';
 import type { NoteSpec, ParamBag } from './types';
 import type { ModulatorState } from '../modulation/types';
@@ -23,38 +23,12 @@ import './subtractive-renderer';
 import './westcoast-renderer';
 import { SUBTRACTIVE_DEFAULT_MODULATORS } from '../engines/subtractive';
 import { WESTCOAST_DEFAULT_MODULATORS } from '../engines/westcoast';
+import { toModLite } from '../engines/mod-lite';
 
 const SR = 44100;
 
 const note = (durationSec: number): NoteSpec =>
   ({ midi: 57, beginSec: 0, durationSec, velocity: 0.9, accent: false, slide: false });
-
-/** ModulatorState[] → ModLite[], keeping only connections with a nonzero
- *  depth (same rule toModLite applies). `mapTarget` resolves a connection's
- *  paramId to the modulation-target key the renderer reads. */
-function toModLiteLocal(
-  state: ModulatorState[],
-  mapTarget: (paramId: string) => string | null,
-): ModLite[] {
-  return state.map((m) => {
-    const depthByParam: Record<string, number> = {};
-    for (const c of m.connections) {
-      if (!c.depth) continue;
-      const key = mapTarget(c.paramId);
-      if (key) depthByParam[key] = (depthByParam[key] ?? 0) + c.depth;
-    }
-    return {
-      id: m.id,
-      kind: m.kind === 'lfo' ? 'lfo' : 'adsr',
-      enabled: m.enabled !== false,
-      rateHz: m.rateHz ?? 4,
-      waveform: m.waveform ?? 'sine',
-      bipolar: m.bipolar !== false,
-      attackSec: m.attackSec, decaySec: m.decaySec, sustain: m.sustain, releaseSec: m.releaseSec,
-      depthByParam,
-    };
-  });
-}
 
 // Subtractive's renderer reads the synthetic 'amp' / 'filterEnv' targets by
 // these exact keys (subtractive-renderer.ts combineMods) — matches
@@ -82,7 +56,7 @@ function render(
   const vm = new VoiceManager(SR, engineId, params);
   if (mods) {
     const runtime = new ModulationRuntime(SR);
-    runtime.setMods(toModLiteLocal(mods, mapTarget));
+    runtime.setMods(toModLite(mods, 120, mapTarget));
     vm.setModulation(runtime);
   }
   vm.spawn(note(holdSec));
