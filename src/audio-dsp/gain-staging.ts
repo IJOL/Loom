@@ -45,8 +45,8 @@ export const ENGINE_TRIM: Record<string, number> = {
   westcoast: 0.5,
   // Only BUILT-IN engines belong here. A plugin engine declares its balance in
   // its own manifest as `outputTrim`, which the host reads through
-  // plugin-capabilities.pluginSynthTrim and multiplies in at the sum point — so
-  // there is still exactly one owner of the number, just not this table.
+  // plugins/capabilities.pluginSynthTrim and multiplies in at the sum point —
+  // so there is still exactly one owner of the number, just not this table.
 };
 
 /** Per-category gain — the global balance BETWEEN families. `drum` carries what

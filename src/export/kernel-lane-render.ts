@@ -48,7 +48,7 @@ export interface KernelLaneSpec {
   /** Per-engine output balance the HOST applies (plugins declare it in their
    *  manifest instead of multiplying it in themselves). Filled in by WHOEVER
    *  BUILDS THE SPEC — this module deliberately does not import
-   *  plugin-capabilities, so it stays pure and testable with no fetch. */
+   *  plugins/capabilities, so it stays pure and testable with no fetch. */
   outputTrim?: number;
   notes: KernelNote[];
 }

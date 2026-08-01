@@ -5,29 +5,51 @@
 // worklet half lives in loom-processor.ts and installs the same shape there —
 // separately addModule'd worklet modules do not share module instances, so a
 // global is the ONLY place both halves can meet.
-import { LOOM_API_VERSION, type EngineManifest, type RendererFactory } from '@loom/plugin-sdk';
+import { LOOM_API_VERSION, type ComponentManifest, type EngineManifest, type RendererFactory } from '@loom/plugin-sdk';
 import { registerEngine, registerEngineFactory } from '../engines/registry';
 import { createDescriptorEngine } from '../engines/descriptor-engine';
 import { registerRenderer } from '../audio-dsp/renderer-registry';
 import { getCachedPresets } from '../presets/preset-loader';
+import { registerEngineCapabilities, __resetCapabilities } from '../plugins/capabilities';
 import type { ModulatorState } from '../modulation/types';
 
-const pluginEngines = new Map<string, EngineManifest>();
-
-/** Every engine manifest a plugin has registered, by engine id. The capability
- *  readers ask this; nothing else should reach for it. */
-export function registeredPluginEngines(): ReadonlyMap<string, EngineManifest> {
-  return pluginEngines;
+/** SynthEngine.editor only distinguishes note-grid shapes (piano-roll vs
+ *  drum-grid); the 'audio' clip editor is chosen independently, by
+ *  isAudioClip() in clip-editor-router.ts, not by this field. A component
+ *  whose capability is 'audio' still needs an editor value here, so it
+ *  collapses to the note-grid default like any non-drum engine did before. */
+function descriptorEditor(clipEditor: 'piano-roll' | 'drum-grid' | 'audio'): 'piano-roll' | 'drum-grid' {
+  return clipEditor === 'drum-grid' ? 'drum-grid' : 'piano-roll';
 }
 
+/** @deprecated The v1 path: `plugins/karplus/main.ts` still speaks this shape
+ *  (Task 7 converts it to registerComponent). It feeds the SAME door as
+ *  adoptComponent so a v1 plugin is not a second-class citizen while it lasts. */
 function adoptEngine(m: EngineManifest): void {
-  pluginEngines.set(m.id, m);
+  registerEngineCapabilities(m.id, {
+    clipEditor: m.clipEditor, shortLabel: m.shortLabel, outputTrim: m.outputTrim, gm: m.gm,
+  }, true);
+  const make = () => createDescriptorEngine({
+    id: m.id,
+    name: m.name,
+    polyphony: m.polyphony,
+    editor: descriptorEditor(m.clipEditor),
+    params: m.params,
+    presets: () => getCachedPresets(m.id),
+    modulators: (m.modulators ?? []) as ModulatorState[],
+  });
+  registerEngineFactory(m.id, make);
+  registerEngine(make());
+}
+
+function adoptComponent(m: ComponentManifest): void {
+  registerEngineCapabilities(m.id, m.capabilities, true);
   const make = () => createDescriptorEngine({
     id: m.id,
     name: m.name,
     polyphony: m.polyphony,
     // The host owns the clip editors; the plugin only says which one it wants.
-    editor: m.clipEditor === 'drum-grid' ? 'drum-grid' : 'piano-roll',
+    editor: descriptorEditor(m.capabilities.clipEditor),
     params: m.params,
     presets: () => getCachedPresets(m.id),
     modulators: (m.modulators ?? []) as ModulatorState[],
@@ -44,6 +66,7 @@ export function installMainThreadLoomApi(): void {
   Object.defineProperty(globalThis, 'Loom', {
     value: {
       apiVersion: LOOM_API_VERSION,
+      registerComponent: (m: ComponentManifest) => adoptComponent(m),
       registerEngine: (m: EngineManifest) => adoptEngine(m),
       // The main thread needs renderers too: the offline exporter runs the same
       // pure kernel here, not in the worklet.
@@ -56,6 +79,6 @@ export function installMainThreadLoomApi(): void {
 
 /** Test-only. */
 export function __resetPluginEngines(): void {
-  pluginEngines.clear();
+  __resetCapabilities();
   installed = false;
 }

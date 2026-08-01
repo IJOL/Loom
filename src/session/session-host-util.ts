@@ -1,5 +1,5 @@
 // Pure helpers shared by SessionHost and its extracted sub-modules.
-import { shortLabelFor } from '../plugin-host/plugin-capabilities';
+import { shortLabelFor } from '../plugins/capabilities';
 
 /** Returns the next available slug id for a new lane of the given engineId.
  *  The loop starts at 1, so for engines with no existing lane the first id is

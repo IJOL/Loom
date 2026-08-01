@@ -14,7 +14,7 @@ import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from '../core/lane-ids';
 import type { SynthEngine, Voice } from '../engines/engine-types';
 import type { FxBus } from '../core/fx';
 import type { SidechainBus } from '../core/sidechain-bus';
-import { isWorkletHosted, pluginSynthTrim } from '../plugin-host/plugin-capabilities';
+import { isWorkletHosted, pluginSynthTrim } from '../plugins/capabilities';
 
 // Melodic engines that have a per-sample worklet renderer (Phase 1 subtractive +
 // Phase 2 ports). These route to WorkletLaneEngine on the live path; drums /

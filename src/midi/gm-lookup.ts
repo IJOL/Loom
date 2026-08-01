@@ -1,5 +1,5 @@
 import { listEngines } from '../engines/registry';
-import { pluginGmHints } from '../plugin-host/plugin-capabilities';
+import { pluginGmHints } from '../plugins/capabilities';
 import type { ParsedMidi, ParsedTrack } from './midi-parse';
 
 export interface GMMatch {

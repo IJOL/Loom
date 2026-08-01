@@ -37,8 +37,12 @@ export interface GmHint {
   priority: number;
 }
 
-/** @deprecated The v1 shape. Task 2 moves its two consumers over to
- *  ComponentManifest and then this is deleted. */
+/** @deprecated The v1 shape. Task 2 moved its two IN-TREE consumers
+ *  (loom-api.ts, plugin-capabilities.ts) over to ComponentManifest, but
+ *  `plugins/karplus/main.ts` still builds one from the OLD `engines` shape of
+ *  plugin.json — that conversion is Task 7's. Delete this once
+ *  `grep -rn 'EngineManifest\|Loom.registerEngine'` outside this file comes
+ *  back empty. */
 export interface EngineManifest {
   id: string;
   name: string;
@@ -114,8 +118,9 @@ export interface PluginManifestFile {
 export interface LoomApi {
   readonly apiVersion: number;
   registerComponent(manifest: ComponentManifest): void;
-  /** @deprecated The v1 shape, kept while loom-api.ts and
-   *  plugin-capabilities.ts still use it. Task 2 removes it. */
+  /** @deprecated The v1 shape, kept while `plugins/karplus/main.ts` still
+   *  calls it (Task 7 converts the karplus plugin itself to registerComponent
+   *  and this is deleted). */
   registerEngine(manifest: EngineManifest): void;
   registerRenderer(engineId: string, make: RendererFactory): void;
 }

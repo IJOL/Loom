@@ -53,7 +53,7 @@ import { loadDuckWorklet } from '../audio-worklet/duck-node';
 import type { KeymapEntry } from '../samples/types';
 import type { ParamBag } from '../audio-dsp/types';
 import { isStripParamId, stripAutomationParams } from '../core/channel-strip-params';
-import { pluginSynthTrim } from '../plugin-host/plugin-capabilities';
+import { pluginSynthTrim } from '../plugins/capabilities';
 
 /** Resolve a sample/audio trigger to an OfflineSampleSpawn (spawn + decoded
  *  channels), via the engine's pure resolveSpawn path. Handles the Sampler, the
