@@ -1449,3 +1449,73 @@ git commit -m "docs: the hand-written engine page is gone, and the list says so"
   whether `createKnob` strokes `.knob-pointer` as well as `.knob-value` for a
   custom colour (Task 4 Step 3), and where `WorkletLaneEngine` stores the
   descriptor's param list so `groups` can ride along (Task 5 Step 3).
+
+---
+
+## Task 8b: one rule for every discrete control
+
+Added 2026-08-01 after the owner saw the rebuilt page. Subtractive's discrete
+params had regressed to knobs (fixed in Task 8's fix round 1), and looking at the
+result raised the real question: the same choice is drawn four different ways
+across the app, and none of them is compact.
+
+**Audited inventory: 27 discrete params, five different renderings.** An
+oscillator waveform is a native select in Subtractive, a knob in Westcoast, an
+8-position knob in Wavetable, a 2-position knob in TB-303, and a radio strip in
+Drums — with no functional difference between them.
+
+**A third render path exists and was undocumented.** `src/session/lane-insert-ui.ts:181-195`
+builds its own `<select class="insert-sel">` for FX insert params, bypassing
+`createSelectControl` entirely. Reverb's and Multifilter's 4-option `Type` are
+forced dropdowns purely because they live in the insert chain. Any single rule
+must cover this path or the FX rack keeps diverging.
+
+### The rule (owner decision, measured)
+
+A vertical strip is `24·N − 2` px tall; a full knob is 68 px. So:
+
+| options | stacked height (22px button) | with a 15px button |
+|---|---|---|
+| 2 | 46 | 32 |
+| 3 | 70 (over) | 47 |
+| 4 | 94 (over) | **62 — fits under 68** |
+| 5+ | 118+ | 77+ (over) |
+
+**Therefore:**
+
+1. **Every discrete param renders as a select control. The knob branch for
+   discrete params is deleted.** `selectStyle: 'radio'` stops being an opt-in and
+   becomes the default; only `'dropdown'` remains, as a force.
+2. **≤ 4 options → a VERTICAL radio strip**, `flex-direction: column`, button
+   height ~15px, strip width equal to a knob's (50px) so a row of mixed controls
+   aligns.
+3. **> 4 options, or `selectStyle: 'dropdown'` → native select**, which is
+   already compact. This covers Wavetable's 8 waveforms, the 5-option CHOKEs, the
+   7-option Syncs and FM's long-labelled Algorithm (where stacking would not fix
+   the width anyway).
+4. **All three paths obey it** — the grouped grid, the flat layout, and the FX
+   insert rack. `lane-insert-ui.ts` must route through `createSelectControl`
+   instead of hand-rolling a `<select>`.
+
+### Scope of visible change
+
+Westcoast (6 params), Wavetable (3), TB-303 (1) currently draw discrete params as
+knobs and will become strips or selects. Reverb / Multifilter / Tremolo gain
+strips for their ≤4-option params. This is deliberate: it is what "the same
+choice looks the same everywhere" costs.
+
+### Tests
+
+- a discrete param with ≤4 options renders a strip, not a knob, in BOTH layouts;
+- a discrete param with >4 options renders a native select in both;
+- `selectStyle: 'dropdown'` still forces a select at any option count;
+- the strip is `flex-direction: column`;
+- an FX insert param with 4 options renders the same control as an engine param
+  with 4 options — the assertion that pins the third path to the rule;
+- no discrete param anywhere produces a `.knob` element.
+
+### Verification
+
+Coordinator opens the six engine pages plus a drum lane, a sampler pad and an FX
+insert in Chrome, and measures: every discrete control's width ≤ a knob's, and
+its height ≤ a knob's for ≤4 options.
