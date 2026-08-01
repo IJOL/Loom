@@ -5,9 +5,10 @@
 > posteriores hasta `6f42967`. Spec hermano:
 > [2026-08-01-plugins-core-por-capacidades-design.md](2026-08-01-plugins-core-por-capacidades-design.md).
 
-**Objetivo en una frase:** que exista un **tercer modulador**. Hoy no puede
-existir: el vocabulario de modulador está cerrado en cuatro sitios y el worklet
-convierte en silencio cualquier tipo desconocido en un ADSR.
+**Objetivo en una frase:** que un **modulador que el core no conoce** se suelte
+en un directorio y funcione. Hoy no puede: el vocabulario está cerrado en cinco
+sitios, el worklet convierte en silencio cualquier tipo desconocido en un ADSR, y
+el cargador de plugins registra como MOTOR cualquier componente que llegue.
 
 **Idioma:** la prosa de este documento va en castellano, igual que sus hermanos.
 **Todo lo que sea código va en inglés** — identificadores, comentarios, nombres
@@ -152,8 +153,14 @@ export interface ModulatorComponent {
   idPrefix: string;
   /** Fresh state for a new instance. Replaces makeDefaultLFO/makeDefaultADSR. */
   defaultState(id: string): ModulatorState;
-  /** This modulator's own config row. NOT the generic param grid — see §4. */
-  configTemplate(mod: ModulatorState, ctx: PanelCtx): TemplateResult;
+  /** The modulator's settings, for the panel the host builds when the component
+   *  brings no template of its own. A plugin can only take this route: its
+   *  compiled main.js cannot import our bundled lit-html. */
+  params?: EngineParamSpec[];
+  /** OPTIONAL hand-built config row, for a panel the generic grid cannot
+   *  express. The LFO has one BY LEGACY, not by rule — see §4. A component that
+   *  omits this gets a host-built grid from `params`. */
+  configTemplate?(mod: ModulatorState, ctx: PanelCtx): TemplateResult;
   /** The Web-Audio voice: FX-param modulation on every lane, plus drums and
    *  sampler engine params. Receives the LIVE state, which the old SPI could
    *  not — that is why a third modulator was mute. */
@@ -196,6 +203,10 @@ export function registerModulatorKernel(k: ModulatorKernel): void;
 kernel por `m.kind`. Un tipo sin kernel **no contribuye** (se ignora, no se
 disfraza de otra cosa).
 
+`ModLite` —el formato compacto que viaja al worklet— lleva también el cajón de
+params de §3.5, y `toModLite` lo pasa tal cual. Sin eso el kernel de un plugin
+llegaría al hilo de audio sin sus ajustes.
+
 ### 3.3 El camino `'gate'` se queda EXACTAMENTE como está
 
 El ADSR no viaja por `valueAt`: el renderer instancia una envolvente **por voz**
@@ -218,7 +229,58 @@ de seguridad. Va escrito en §7.
 | [modulation-ui.ts](../../../src/modulation/modulation-ui.ts) | botones `+ LFO`/`+ ADSR` fijos, plantilla por ternario | `listModulators()` |
 | [types.ts](../../../src/modulation/types.ts) | `makeDefaultLFO`/`makeDefaultADSR`/`defaultScopeFor` | los dueña cada componente |
 
-### 3.5 El tercer modulador: S&H
+### 3.5 Dónde viven los ajustes de un modulador de plugin
+
+`ModulatorState` guarda hoy los ajustes **sueltos**, y su tipo es la **suma de
+los moduladores que llevamos**: en [types.ts](../../../src/modulation/types.ts)
+hay un bloque `// LFO-only` y otro `// ADSR-only`. Un plugin no puede añadir
+campos a ese tipo —sus campos no existen cuando compilamos Loom—, así que un
+modulador de terceros **no tiene dónde guardar su rate**.
+
+Se añade **un campo opcional**: `params?: Record<string, number>`. Un S&H se
+guarda así:
+
+```json
+{ "id": "sh1", "kind": "sh", "enabled": true, "scope": "shared",
+  "connections": [{ "id": "c1", "paramId": "filter.cutoff", "depth": 0.5 }],
+  "params": { "rate": 6, "bipolar": 1 } }
+```
+
+Alcance, exacto:
+
+- **No mueve ni cambia ningún campo existente.** El LFO sigue escribiendo
+  `rateHz` y `waveform` igual que hoy, y en todo lo ya guardado `params`
+  simplemente no está. **Cero conversión al cargar.**
+- **Añadir un campo opcional no es cambiar el tipo.** El CRITICAL de 200
+  dependientes es el precio de reformarlo; ninguno de los 200 mira el campo
+  nuevo, así que ninguno cambia.
+- El cajón es **numérico**, así que los discretos de un modulador nuevo son
+  índices desde el primer día — que es lo que el grid genérico y el SPI de params
+  ya saben manejar (§4).
+
+**La regla que lo mantiene honesto:** el cajón es el único sitio para lo que
+venga; **los campos con nombre quedan cerrados y no crecen nunca más.** El LFO y
+el ADSR son los dos últimos que tendrán campos propios, por haber llegado antes.
+La deuda que eso deja está en §7.
+
+### 3.6 Lo que falta para que un modulador pueda ser plugin
+
+Menos de lo que parece. La maquinaria de plugins ya descubre, valida, carga el
+`main.js` en el hilo principal y añade el `dsp.js` al worklet **y** al hilo
+principal (para el export). Lo que falta:
+
+1. `ComponentManifest` es hoy una unión de **un solo miembro**, `kind: 'engine'`.
+   Gana el miembro `kind: 'modulator'`.
+2. `adoptComponent` en
+   [loom-api.ts:16](../../../src/plugin-host/loom-api.ts#L16) **no mira
+   `m.kind`**: registra como motor cualquier componente que llegue. Eso es un bug
+   hoy, no trabajo futuro — un plugin de modulador aparecería en el selector de
+   motores. Pasa a repartir por tipo.
+3. La ABI gana la puerta del kernel (`registerModulatorKernel`) en los dos
+   realms. Es un calco de `registerRenderer`.
+4. El cajón de params de §3.5, para que el plugin tenga dónde guardar lo suyo.
+
+### 3.7 El tercer modulador: S&H, y va como PLUGIN
 
 Sample & Hold: a `rateHz`, engancha un valor aleatorio y lo mantiene hasta el
 siguiente paso. Params mínimos: **rate** y **polaridad**. Es la prueba de que el
@@ -232,9 +294,15 @@ Sin esa pureza el render offline y el vivo divergirían, porque no recorren la
 misma secuencia de llamadas. Ficheros: su componente en
 `src/plugins/modulators/sh.ts` y su kernel en `src/audio-dsp/modulators/sh.ts`.
 
-Va **en el árbol**, no como plugin cargado de disco: la ABI todavía no expone
-`registerModulator` dentro del worklet, y abrirla es el trozo 3. Que esté en el
-árbol no lo hace privilegiado — lo que lo demuestra es el censo (§5.4).
+**Vive en `plugins/sh/`, se carga de disco como Karplus.** Es lo único que
+demuestra de verdad lo que este proyecto promete: un componente cuyo id el core
+**no conoce**, que se suelta en un directorio y funciona. Un fixture con un id
+desconocido destapa lo que los componentes del árbol esconden — es la lección
+que costó cara en la rebanada A, donde el bug de la celda vacía era invisible
+porque el id del motor integrado ERA la cadena que el `if` buscaba.
+
+Cabe en el grid genérico (rate y polaridad), así que **no trae plantilla
+propia** — y de paso prueba el camino del §3.1 que un plugin sí puede recorrer.
 
 ---
 
@@ -242,24 +310,22 @@ Va **en el árbol**, no como plugin cargado de disco: la ABI todavía no expone
 
 - **No fusiona el LFO y el ADSR.**
 - **No los saca del árbol.**
-- **No cambia `ModulatorState`** (CRITICAL, 200 dependientes, y escrito en
-  sesiones guardadas). Los campos siguen donde están; lo que cambia es quién los
-  declara y quién los lee.
-- **No pasa los mandos por el grid genérico de params.** Dos razones
-  independientes, cada una suficiente:
-  1. El grid es **índice numérico** de punta a punta (`min: 0`,
-     `max: options.length - 1`, `default` = índice, y lee
-     `options[Math.round(engine.getBaseValue(id))]`). `getBaseValue(id): number`
-     es la firma sobre la que se apoyan automatización, mapeo MIDI, pads XY y el
-     registro de destinos. Un param con valor de cadena no es un retoque del
-     grid: es romper el contrato numérico del SPI entero.
-  2. Aunque fuera gratis, **el grid no puede expresar el panel del LFO**:
-     FREE/SYNC cambia qué controles existen, RETRIG es un control de tres
-     posiciones que escribe **dos** campos (`scope` y `trigger`), BARS es un
-     campo de texto y RATE tiene una escala a trozos propia.
-
-  Cada componente se queda con su plantilla de configuración. Es lo que también
-  traería un plugin de verdad.
+- **No reforma `ModulatorState`** (CRITICAL, 200 dependientes, y escrito en
+  sesiones guardadas). Los campos existentes siguen donde están y significando lo
+  mismo; lo único que se añade es el cajón opcional de §3.5.
+- **No admite params con valor de cadena.** El grid genérico es **índice
+  numérico** de punta a punta (`min: 0`, `max: options.length - 1`, `default` =
+  índice, y lee `options[Math.round(engine.getBaseValue(id))]`), y
+  `getBaseValue(id): number` es la firma sobre la que se apoyan automatización,
+  mapeo MIDI, pads XY y el registro de destinos. Un param con valor de cadena no
+  es un retoque del grid: rompe el contrato numérico del SPI entero. Por eso el
+  cajón de §3.5 es numérico, y por eso los campos de cadena del LFO se quedan
+  congelados donde están en vez de convertirse.
+- **No mete el panel del LFO en el grid genérico.** El grid no sabe expresarlo:
+  FREE/SYNC cambia qué controles existen, RETRIG es un control de tres posiciones
+  que escribe **dos** campos (`scope` y `trigger`), BARS es un campo de texto y
+  RATE tiene una escala a trozos propia. Conserva su plantilla **por legado, no
+  por norma** — un modulador que quepa en el grid (el S&H) no trae plantilla.
 - **No abre el camino `driver: 'gate'`** a moduladores nuevos (§3.3).
 - **No unifica las tres implementaciones de la matemática del LFO.** La del
   worklet pasa a ser el kernel; la de Web Audio y la del anillo se quedan, ahora
@@ -272,6 +338,10 @@ Va **en el árbol**, no como plugin cargado de disco: la ABI todavía no expone
 Cada criterio es un camino de usuario con su propio test. Sin alternativas
 `(o …)`.
 
+0. **El S&H se carga de disco.** El plugin vive en `plugins/sh/`, se descubre por
+   `plugins/index.json` y su componente aparece en el panel de moduladores
+   (botón `+ S&H`) **sin que ningún fichero de `src/` mencione su id**. Es una
+   aserción de PRESENCIA: un plugin roto tiene que poner el test en rojo.
 1. **El S&H se oye en un motor melódico.** Render DSP de un motor con un S&H
    conectado a `filter.cutoff` con profundidad, contra el mismo render con
    profundidad 0: el audio **difiere**. Aserción relativa, nunca un umbral
@@ -313,8 +383,13 @@ la que una pista quede muda.
    `makeDefaultLFO`/`makeDefaultADSR`/`defaultScopeFor`.
 6. El SPI pasa a `create(ctx, { state, bpm })`; los dos stubs de 29 líneas
    desaparecen absorbidos por sus componentes.
-7. El S&H: componente + kernel + sus tests (§5.1, §5.2, §5.3).
-8. El arreglo del `'saw'` (§2.7) y el censo a cero (§5.4).
+7. El cajón `params` (§3.5) y el panel que el host construye de los `params` de
+   un componente sin plantilla propia.
+8. La vía de plugin (§3.6): el miembro `kind: 'modulator'` del manifiesto, el
+   reparto por tipo en `adoptComponent` —que hoy manda todo al registro de
+   motores— y la puerta del kernel en la ABI.
+9. El S&H como plugin en `plugins/sh/`, con sus tests (§5.0 a §5.3).
+10. El arreglo del `'saw'` (§2.7) y el censo a cero (§5.4).
 
 ---
 
@@ -326,9 +401,15 @@ la que una pista quede muda.
 - **`driver: 'gate'` sigue cerrado.** Al terminar la B se puede añadir un
   modulador de tiempo, no uno de puerta. Es una limitación declarada, no un
   descuido; se abre cuando alguien la necesite, con la red del paso 1 ya puesta.
-- **La ABI del worklet todavía no expone `registerModulator`**, así que un
-  modulador de terceros aún no puede cargarse de disco. Trozo 3.
-- **Siguen existiendo tres matemáticas del LFO** (§4). Ahora con un dueño cada
+- **Dos sitios donde viven los ajustes de un modulador**: los campos con nombre
+  (LFO, ADSR) y el cajón (todo lo nuevo). Es un concepto duplicado, aceptado a
+  sabiendas, y sólo se sostiene con la regla de §3.5: los campos con nombre
+  quedan cerrados. La alternativa limpia —meter también el LFO y el ADSR en el
+  cajón— exige convertir al cargar cada sesión guardada y los 6 presets del
+  Subtractive que traen `modulators`, y ese convertidor pasaría por encima de la
+  envolvente de amplitud del Subtractive: dos riesgos apilados en la misma pieza.
+  Si algún día se unifica, va en rebanada aparte con la red del paso 1 ya verde.
+- **Siguen existiendo tres matemáticas del LFO** (§2.1). Ahora con un dueño cada
   una, pero tres.
 - **`tools/plugin-id-census.mjs` escribe su salida en castellano.** Es un
   artefacto del repo y debería estar en inglés; se corrige en el primer commit de
