@@ -69,6 +69,9 @@ export interface ClipEditorDeps {
   isSceneLinked?: () => boolean;
   /** Called when the user toggles the Link button in the loop overlay. */
   onSetSceneLinked?: (linked: boolean) => void;
+  /** The drum grid resized the clip itself ("Fit clip"): re-read clip.lengthBars
+   *  wherever it is shown. */
+  onClipResized?: () => void;
   /** Called after each loop edit commit (toggle + brace drags). When the scene is
    *  linked the host propagates the edited clip's loop to every other clip in the scene. */
   onClipLoopEdited?: () => void;
@@ -318,6 +321,7 @@ export function renderClipEditor(
       : undefined;
     bodyHandle = renderDrumGridEditor(bodyBox, clip, deps.historyDeps, deps.seq.meter, {
       auditionNote: audition, getPlayheadTick, fullKit, axis,
+      onClipResized: deps.onClipResized,
       loop: { toolbarHost: loopBar, historyDeps: deps.historyDeps, onChange: () => {}, ...clipLinkHandlers(clip, deps) },
     }, model);
   } else {

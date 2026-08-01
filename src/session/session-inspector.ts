@@ -111,6 +111,14 @@ export interface InspectorDeps {
   onDestinationsChanged?: () => void;
 }
 
+/** Show `clip.lengthBars` in the Length field. The clip is the owner; the field
+ *  is a view of it, and the drum grid's "Fit clip" moves the owner on its own —
+ *  never while the user is typing in the field. */
+function syncLengthField(clip: SessionClip): void {
+  const el = document.getElementById('insp-length') as HTMLInputElement | null;
+  if (el && document.activeElement !== el) el.value = String(clip.lengthBars);
+}
+
 export class SessionInspector {
   roll: PianoRollHandle | null = null;
   private selectedClip: { laneId: string; clipIdx: number } | null = null;
@@ -296,7 +304,7 @@ export class SessionInspector {
     const qEl    = document.getElementById('insp-quantize') as HTMLSelectElement;
 
     nameEl.value = clip.name ?? '';
-    lenEl.value  = String(clip.lengthBars);
+    syncLengthField(clip);
     qEl.value    = clip.launchQuantize ?? '';
 
     // Abort previous field listeners so re-opening the inspector for a
@@ -794,6 +802,7 @@ export class SessionInspector {
       isSceneLinked: this.deps.isSceneLinked,
       onSetSceneLinked: this.deps.onSetSceneLinked,
       onClipLoopEdited: this.deps.onClipLoopEdited,
+      onClipResized: () => syncLengthField(clip),
     };
     this.roll = renderClipEditor(editorBox, lane, clip, editorDeps, editorOverride.get(clip.id));
 

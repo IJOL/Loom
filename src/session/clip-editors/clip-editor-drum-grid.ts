@@ -178,6 +178,7 @@ export function renderDrumGridEditor(
     patternTicks = Math.max(1, next * ticksPerBar(meter));
     axis.setTotalTicks(patternTicks);        // followers (automation lanes) re-fit
     resize();
+    deps.onClipResized?.();                  // the inspector's Length field, etc.
   }
 
   // Swap the row model in place (the "Full kit" toggle). Recomputes row count +

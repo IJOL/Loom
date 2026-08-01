@@ -47,6 +47,10 @@ export interface DrumEditorDeps {
    *  rebuild its row model in place. build(full) returns the model for the
    *  requested view; the global flag is owned by clip-drum-fullkit. */
   fullKit?: { build: (full: boolean) => DrumGridModel; onToggle?: () => void };
+  /** The editor changed the clip's length itself ("Fit clip" in the Euclidean
+   *  panel). Whoever shows the length elsewhere — the inspector's Length field —
+   *  re-reads the clip; nobody else knows it moved. */
+  onClipResized?: () => void;
   /** When present, mount the loop overlay over the grid (toolbar in loop.toolbarHost). */
   loop?: {
     toolbarHost: HTMLElement;

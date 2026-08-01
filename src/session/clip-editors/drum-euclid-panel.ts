@@ -17,7 +17,8 @@
 
 import { html, nothing, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
-import type { NoteEvent } from '../../core/notes';
+import { TICKS_PER_STEP, type NoteEvent } from '../../core/notes';
+import { tileNotesToLength } from '../../core/note-tile';
 import type { DrumRows } from '../../core/drum-grid-editing';
 import { applyEuclidToRow } from '../../core/euclid-row';
 import { DEFAULT_VELOCITY } from '../../core/velocity-gain';
@@ -118,18 +119,24 @@ export function mountDrumEuclidPanel(host: HTMLElement, deps: EuclidPanelDeps): 
     const targets = resized ? generating.map((s) => s.row) : (editedRow == null ? [] : [editedRow]);
 
     let out = deps.getNotes();
+    // Everything else in the clip repeats across the new length first — a clip
+    // that grew with the hats left in its first two bars doesn't join end to
+    // start, which is the only reason it grew. The generating rows are replaced
+    // wholesale right after, so tiling them too costs nothing.
+    if (resized) {
+      const period = Math.max(1, Math.round(before * deps.stepsPerBar)) * TICKS_PER_STEP;
+      out = tileNotesToLength(out, period, total * TICKS_PER_STEP);
+    }
     for (const r of targets) {
       const spec = specs[r];
       if (spec) out = applyEuclidToRow(out, r, cycleOf(spec), total, rows);
     }
-    if (targets.length) deps.setNotes(out);
-    if (targets.length || resized) deps.onChange();
+    if (targets.length || resized) { deps.setNotes(out); deps.onChange(); }
   }
 
   // Synchronous on the `change` event: AutoHistory checkpoints in a microtask
   // off that same event, so a debounced paint would miss its undo step.
-  function apply(row: number, e: Event): void {
-    void e;
+  function apply(row: number): void {
     const run = () => commit(row);
     deps.historyDeps ? withUndo(deps.historyDeps, run) : run();
   }
@@ -150,7 +157,7 @@ export function mountDrumEuclidPanel(host: HTMLElement, deps: EuclidPanelDeps): 
         min=${i < 2 ? '0' : nothing}
         .value=${live(i === 1 ? String(deps.stepsPerBar) : '')}
         style=${FIELD_STYLE}
-        @change=${(e: Event) => apply(r, e)} />`)}
+        @change=${() => apply(r)} />`)}
     </div>`;
 
   function toggleOpen(): void {

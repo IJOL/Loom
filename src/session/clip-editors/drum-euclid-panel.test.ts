@@ -233,6 +233,25 @@ describe('"Fit clip" — growing the clip until the cycle joins end to start', (
     expect(stepsOn(s.notes(), VOICE_MIDI.snare).length).toBe(20);
   });
 
+  it('repeats what was already drawn across the length it grew to', () => {
+    // A hand-drawn hat on step 4 of a one-bar clip: growing to 5 bars has to
+    // carry it into the four new bars or the clip stops looping.
+    const s = setup({ fit: true, notes: [note(VOICE_MIDI.closedHat, 4)] });
+    type(fields(s.host, KICK).steps, 5);
+    type(fields(s.host, KICK).hits, 2);
+    expect(s.bars()).toBe(5);
+    expect(stepsOn(s.notes(), VOICE_MIDI.closedHat)).toEqual([4, 20, 36, 52, 68]);
+  });
+
+  it('drops the copies again when it shrinks back', () => {
+    const s = setup({ fit: true, notes: [note(VOICE_MIDI.closedHat, 4)] });
+    type(fields(s.host, KICK).steps, 5);
+    type(fields(s.host, KICK).hits, 2);
+    type(fields(s.host, KICK).hits, 0);
+    expect(s.bars()).toBe(1);
+    expect(stepsOn(s.notes(), VOICE_MIDI.closedHat)).toEqual([4]);
+  });
+
   it('leaves a clip alone when every cycle already fits the bar', () => {
     const s = setup({ fit: true, lengthBars: 2 });
     type(fields(s.host, KICK).hits, 4);
