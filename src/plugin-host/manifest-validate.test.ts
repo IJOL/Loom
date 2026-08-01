@@ -85,6 +85,37 @@ describe('validatePluginManifest', () => {
     if (!r.ok) expect(r.error).toMatch(/accepts/);
   });
 
+  it('accepts a component that declares a groups table with a matching param group', () => {
+    const withGroups = {
+      ...engineComponent,
+      params: [{ ...engineComponent.params[0], group: 'osc' }],
+      groups: [{ id: 'osc', title: 'OSC', row: 0, color: 'var(--knob-cyan)' }],
+    };
+    const r = validatePluginManifest(ok({ components: [withGroups] }));
+    expect(r.ok).toBe(true);
+  });
+
+  it('rejects a groups table that is not an array', () => {
+    const bad = ok({ components: [{ ...engineComponent, groups: { id: 'osc' } }] });
+    const r = validatePluginManifest(bad);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toContain('groups');
+  });
+
+  it('rejects a group entry missing a title', () => {
+    const bad = ok({ components: [{ ...engineComponent, groups: [{ id: 'osc' }] }] });
+    const r = validatePluginManifest(bad);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toContain('title');
+  });
+
+  it('rejects a param whose group is not a string', () => {
+    const bad = ok({ components: [{ ...engineComponent, params: [{ ...engineComponent.params[0], group: 3 }] }] });
+    const r = validatePluginManifest(bad);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toContain('group');
+  });
+
   it('leaves optional capabilities absent so the READER can apply the defaults', () => {
     const r = validatePluginManifest(ok());
     expect(r.ok).toBe(true);

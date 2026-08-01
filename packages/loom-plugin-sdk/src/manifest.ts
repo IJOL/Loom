@@ -20,6 +20,25 @@ export interface EngineParamSpec {
   default: number;
   unit?: string;
   options?: { value: string; label: string }[];
+  /** Layout group this param belongs to — an id from the component's own
+   *  `groups` table. Absent ⇒ the param renders in the leading ungrouped row,
+   *  exactly like a built-in engine's param with no `group`. */
+  group?: string;
+}
+
+/** One editor section a component's params can belong to. Mirrors
+ *  src/engines/engine-param-groups.ts's EngineParamGroup on the host, so a
+ *  plugin can declare its editor layout exactly like a built-in engine. */
+export interface EngineParamGroup {
+  /** Key referenced by an EngineParamSpec's own `group`. */
+  id: string;
+  /** Printed as the section header. */
+  title: string;
+  /** Groups sharing a row index render side by side on one line. Default: a
+   *  row of its own, in declaration order. */
+  row?: number;
+  /** CSS colour for this section's knob rings. A param's own `color` wins. */
+  color?: string;
 }
 
 export interface PresetEntry {
@@ -79,6 +98,10 @@ export interface ComponentManifestBase {
   id: string;
   name: string;
   params: EngineParamSpec[];
+  /** Declared editor layout for `params`. Optional: a manifest that omits it
+   *  renders one row per raw `group` string, in first-appearance order — the
+   *  same fallback a built-in engine gets when it declares no groups. */
+  groups?: EngineParamGroup[];
 }
 
 /** What a modulator component declares beyond the common fields. The host

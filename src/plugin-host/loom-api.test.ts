@@ -46,6 +46,19 @@ describe('the main-thread Loom API', () => {
     expect(engineCapabilities('probe')?.outputTrim).toBe(0.5);
   });
 
+  it('carries a declared groups table onto the registered engine, exactly like params', () => {
+    const withGroups: ComponentManifest = {
+      ...manifest,
+      id: 'probe-grouped',
+      params: [{ id: 'amp.level', label: 'Level', kind: 'continuous', min: 0, max: 1, default: 0.8, group: 'amp' }],
+      groups: [{ id: 'amp', title: 'AMP', row: 0, color: 'var(--knob-purple)' }],
+    };
+    (globalThis as unknown as { Loom: { registerComponent(m: ComponentManifest): void } }).Loom.registerComponent(withGroups);
+    const d = getEngineDescriptor('probe-grouped');
+    expect(d?.groups?.map((g) => g.title)).toEqual(['AMP']);
+    expect(d?.groups?.[0].color).toBe('var(--knob-purple)');
+  });
+
   it('is idempotent — installing twice keeps one object', () => {
     const first = (globalThis as unknown as { Loom: unknown }).Loom;
     installMainThreadLoomApi();

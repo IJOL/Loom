@@ -20,6 +20,24 @@ function paramError(p: unknown, i: number): string | null {
   for (const k of ['min', 'max', 'default'] as const) {
     if (!isNum(p[k])) return `params[${i}].${k} must be a number`;
   }
+  if (p.group !== undefined && !isStr(p.group)) return `params[${i}].group must be a string when present`;
+  return null;
+}
+
+/** `groups` is optional — a manifest that omits it gets the pre-groups
+ *  fallback (see manifest.ts) — but a DECLARED entry must have the same shape
+ *  a built-in engine's table has, checked exactly like `params` above. */
+function groupsError(c: unknown, i: number): string | null {
+  if (!isObj(c) || c.groups === undefined) return null;
+  if (!Array.isArray(c.groups)) return `components[${i}].groups must be an array`;
+  for (let j = 0; j < c.groups.length; j++) {
+    const g = c.groups[j];
+    if (!isObj(g)) return `components[${i}].groups[${j}] is not an object`;
+    if (!isStr(g.id)) return `components[${i}].groups[${j}].id must be a non-empty string`;
+    if (!isStr(g.title)) return `components[${i}].groups[${j}].title must be a non-empty string`;
+    if (g.row !== undefined && !isNum(g.row)) return `components[${i}].groups[${j}].row must be a number when present`;
+    if (g.color !== undefined && !isStr(g.color)) return `components[${i}].groups[${j}].color must be a string when present`;
+  }
   return null;
 }
 
@@ -84,8 +102,12 @@ function componentError(c: unknown, i: number): string | null {
     const err = paramError(c.params[j], j);
     if (err) return `components[${i}].${err}`;
   }
+  // A modulator component declares neither polyphony nor an editor layout, so
+  // it returns before either is checked.
   if (c.kind === 'modulator') return modulatorDeclarationError(c.modulator, i);
   if (c.polyphony !== 'mono' && c.polyphony !== 'poly') return `components[${i}].polyphony must be mono|poly`;
+  const gErr = groupsError(c, i);
+  if (gErr) return gErr;
   return capabilitiesError(c.capabilities, i);
 }
 

@@ -15,10 +15,10 @@ var plugin_default = {
       name: "Karp",
       polyphony: "poly",
       params: [
-        { id: "string.damping", label: "Damping", kind: "continuous", min: 0, max: 1, default: 0.5 },
-        { id: "string.brightness", label: "Brightness", kind: "continuous", min: 0, max: 1, default: 0.65 },
-        { id: "excite.time", label: "Excite", kind: "continuous", min: 1e-3, max: 0.1, default: 0.01, unit: "s" },
-        { id: "excite.tone", label: "Noise Tone", kind: "continuous", min: 0, max: 1, default: 0.5 },
+        { id: "string.damping", label: "Damping", kind: "continuous", min: 0, max: 1, default: 0.5, group: "string" },
+        { id: "string.brightness", label: "Brightness", kind: "continuous", min: 0, max: 1, default: 0.65, group: "string" },
+        { id: "excite.time", label: "Excite", kind: "continuous", min: 1e-3, max: 0.1, default: 0.01, unit: "s", group: "excite" },
+        { id: "excite.tone", label: "Noise Tone", kind: "continuous", min: 0, max: 1, default: 0.5, group: "excite" },
         {
           id: "amp.builtinEnv",
           label: "Built-in Env",
@@ -26,12 +26,19 @@ var plugin_default = {
           min: 0,
           max: 1,
           default: 1,
+          group: "amp",
           options: [{ value: "off", label: "Off" }, { value: "on", label: "On" }]
         },
-        { id: "amp.attack", label: "Attack", kind: "continuous", min: 1e-3, max: 0.5, default: 5e-3, unit: "s" },
-        { id: "amp.release", label: "Release", kind: "continuous", min: 0.05, max: 4, default: 0.5, unit: "s" },
-        { id: "amp.level", label: "Level", kind: "continuous", min: 0, max: 1, default: 0.8 },
-        { id: "poly.voices", label: "Voices", kind: "continuous", min: 1, max: 16, default: 8 }
+        { id: "amp.attack", label: "Attack", kind: "continuous", min: 1e-3, max: 0.5, default: 5e-3, unit: "s", group: "amp" },
+        { id: "amp.release", label: "Release", kind: "continuous", min: 0.05, max: 4, default: 0.5, unit: "s", group: "amp" },
+        { id: "amp.level", label: "Level", kind: "continuous", min: 0, max: 1, default: 0.8, group: "amp" },
+        { id: "poly.voices", label: "Voices", kind: "continuous", min: 1, max: 16, default: 8, group: "poly" }
+      ],
+      groups: [
+        { id: "string", title: "STRING", row: 0, color: "var(--knob-cyan)" },
+        { id: "excite", title: "EXCITE", row: 0, color: "var(--knob-orange)" },
+        { id: "amp", title: "AMP", row: 1, color: "var(--knob-purple)" },
+        { id: "poly", title: "POLY", row: 1 }
       ],
       modulators: [
         {

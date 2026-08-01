@@ -20,7 +20,8 @@
           "kind": "continuous",
           "min": 0,
           "max": 1,
-          "default": 0.5
+          "default": 0.5,
+          "group": "string"
         },
         {
           "id": "string.brightness",
@@ -28,7 +29,8 @@
           "kind": "continuous",
           "min": 0,
           "max": 1,
-          "default": 0.65
+          "default": 0.65,
+          "group": "string"
         },
         {
           "id": "excite.time",
@@ -37,7 +39,8 @@
           "min": 0.001,
           "max": 0.1,
           "default": 0.01,
-          "unit": "s"
+          "unit": "s",
+          "group": "excite"
         },
         {
           "id": "excite.tone",
@@ -45,7 +48,8 @@
           "kind": "continuous",
           "min": 0,
           "max": 1,
-          "default": 0.5
+          "default": 0.5,
+          "group": "excite"
         },
         {
           "id": "amp.builtinEnv",
@@ -54,6 +58,7 @@
           "min": 0,
           "max": 1,
           "default": 1,
+          "group": "amp",
           "options": [
             {
               "value": "off",
@@ -72,7 +77,8 @@
           "min": 0.001,
           "max": 0.5,
           "default": 0.005,
-          "unit": "s"
+          "unit": "s",
+          "group": "amp"
         },
         {
           "id": "amp.release",
@@ -81,7 +87,8 @@
           "min": 0.05,
           "max": 4,
           "default": 0.5,
-          "unit": "s"
+          "unit": "s",
+          "group": "amp"
         },
         {
           "id": "amp.level",
@@ -89,7 +96,8 @@
           "kind": "continuous",
           "min": 0,
           "max": 1,
-          "default": 0.8
+          "default": 0.8,
+          "group": "amp"
         },
         {
           "id": "poly.voices",
@@ -97,7 +105,33 @@
           "kind": "continuous",
           "min": 1,
           "max": 16,
-          "default": 8
+          "default": 8,
+          "group": "poly"
+        }
+      ],
+      "groups": [
+        {
+          "id": "string",
+          "title": "STRING",
+          "row": 0,
+          "color": "var(--knob-cyan)"
+        },
+        {
+          "id": "excite",
+          "title": "EXCITE",
+          "row": 0,
+          "color": "var(--knob-orange)"
+        },
+        {
+          "id": "amp",
+          "title": "AMP",
+          "row": 1,
+          "color": "var(--knob-purple)"
+        },
+        {
+          "id": "poly",
+          "title": "POLY",
+          "row": 1
         }
       ],
       "modulators": [

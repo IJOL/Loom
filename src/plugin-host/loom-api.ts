@@ -25,6 +25,10 @@ function adoptEngine(m: ComponentManifest & { kind: 'engine' }): void {
     name: m.name,
     polyphony: m.polyphony,
     params: m.params,
+    // Carried exactly like `params`: a manifest that declares no groups still
+    // gets the pre-groups fallback (one row per raw group string), the same
+    // as a built-in engine that never adopted the table.
+    groups: m.groups,
     presets: () => getCachedPresets(m.id),
     modulators: (m.modulators ?? []) as ModulatorState[],
   });

@@ -1,7 +1,32 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
 import { velGain01, midiToFreq, param, Adsr, ModEnvHost } from './index';
+import type { PluginManifestFile, ComponentManifest } from './manifest';
+
+// Loads a REAL shipped plugin's source manifest (plugins/<id>/plugin.json),
+// not the built copy in public/plugins/ — this is a type/shape parity check
+// against the SDK, not a test of the runtime load path (that belongs to
+// src/plugin-host/*.test.ts, which drives the actual loader).
+function loadManifest(id: string): ComponentManifest {
+  const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+  const file = resolve(repoRoot, 'plugins', id, 'plugin.json');
+  const raw = JSON.parse(readFileSync(file, 'utf-8')) as PluginManifestFile;
+  return raw.components[0];
+}
 
 describe('@loom/plugin-sdk', () => {
+  it('a plugin engine can declare its editor layout like a built-in one', () => {
+    const manifest = loadManifest('karplus');
+    expect(manifest.groups?.map((g) => g.title)).toBeDefined();
+    expect(manifest.groups?.length).toBeGreaterThan(0);
+    // Every group the manifest declares must have at least one param
+    // pointing at it, or the table is decoration nobody can reach.
+    const referenced = new Set(manifest.params.map((p) => p.group).filter(Boolean));
+    for (const g of manifest.groups ?? []) expect(referenced.has(g.id)).toBe(true);
+  });
+
   it('exports the velocity curve the renderers were tuned against', () => {
     // Relative: full velocity must sit above the 0.3 floor by the curve's own
     // ratio (0.3 + 1.1) / 0.3, not an absolute number.

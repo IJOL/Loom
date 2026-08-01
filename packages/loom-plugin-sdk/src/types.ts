@@ -3,6 +3,11 @@
 // compiles against THESE; src/audio-dsp/types.ts re-exports them so the host and
 // every plugin speak one language with one owner.
 
+// EngineParamGroup is DEFINED in manifest.ts, next to the EngineParamSpec it
+// groups — re-exported here so both the DSP vocabulary and the manifest ABI
+// resolve it from one name.
+export type { EngineParamGroup } from './manifest';
+
 /** One scheduled note. beginSec/durationSec are AudioContext seconds; the
  *  processor converts to sample frames. */
 export interface NoteSpec {
