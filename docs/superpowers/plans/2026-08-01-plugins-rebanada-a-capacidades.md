@@ -1251,7 +1251,7 @@ En `plugins/karplus/main.ts`, `Loom.registerEngine(...)` → `Loom.registerCompo
 - [ ] **Step 2: Rebuild the plugin**
 
 ```bash
-node tools/loom-plugin/cli.mjs build plugins/karplus --out public/plugins/karplus
+node tools/loom-plugin/cli.mjs build plugins/karplus
 ```
 
 - [ ] **Step 3: Verify by ear-proxy, then by browser**
@@ -1363,7 +1363,23 @@ Loom.registerComponent(manifest.components[0] as never);
 Constrúyelo y añádelo al índice:
 
 ```bash
-node tools/loom-plugin/cli.mjs build plugins/audio-probe --out public/plugins/audio-probe
+node tools/loom-plugin/cli.mjs build plugins/audio-probe
+```
+
+**Y arregla el validador del empaquetador, que hoy no valida nada.**
+`assertValidManifest` en [tools/loom-plugin/build.mjs:24](../../../tools/loom-plugin/build.mjs)
+recorre `m.engines ?? []` — con la forma de componentes eso es **siempre un array
+vacío**, así que el CLI que publicamos para autores de plugins acepta cualquier
+manifiesto y calla. Es la misma clase de mentira que esta rebanada persigue: una
+herramienta que dice comprobar y no comprueba. Que recorra `m.components ?? []` y
+valide, como mínimo, que cada componente tiene `kind`, `id`, `name` y
+`capabilities.clipContent`.
+
+Test en `tools/loom-plugin/build.test.mjs`: un manifiesto sin `components` — o con
+un componente sin `capabilities` — debe hacer fallar el build con un mensaje que
+nombre el campo.
+
+```bash
 ```
 
 `public/plugins/index.json` → `{ "plugins": ["karplus", "audio-probe"] }`.
