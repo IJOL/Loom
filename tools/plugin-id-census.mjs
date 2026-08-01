@@ -51,13 +51,33 @@ function walk(dir, out = []) {
   return out;
 }
 
-// A mention is only a DEFECT when the core is deciding behaviour from a name.
-// Three kinds are not:
-//   comment  — prose that happens to name an engine
-//   own-file — a plugin's own file declaring its own id (leaves in trozo 3)
+// A mention is only a DEFECT when the core DECIDES BEHAVIOUR from a name — a
+// comparison against the literal id, which is the thing that makes a component
+// impossible to replace with another. Four kinds of mention are not that:
+//   comment  — prose that happens to name a component
+//   own-file — a component's own file declaring its own id
 //   test     — a test naming the id it exercises, which is correct
+//   declares — NAMING a component to look it up or to list it as default
+//              content. An engine saying "I ship with an LFO and an ADSR" is a
+//              reference, not a branch: it is the same statement a plugin
+//              manifest makes in JSON (see plugins/karplus/plugin.json's
+//              `modulators`), and something must say it. Counting it as a
+//              decision made the number mean "every line that mentions an id",
+//              which is not what anyone reads it as.
+//
+// `core-decides` used to be the residual bucket — everything that was not one
+// of the first three — so it silently absorbed lookups and error-message text.
+// It is now positive: a line only lands there if it COMPARES.
 const isComment = (t) => /^(\/\/|\/\*|\*)/.test(t.trim());
 const ownsId = (rel, id) => path.basename(rel).replace(/\.ts$/, '').includes(id);
+
+/** Does this line branch on the id, rather than merely name it? Equality and
+ *  inequality against the quoted literal, a `case` label, or the id used as a
+ *  ternary condition. */
+const comparesId = (t, id) => {
+  const q = `['"\`]${id}['"\`]`;
+  return new RegExp(`([=!]==?\\s*${q})|(${q}\\s*[=!]==?)|(case\\s+${q})|(includes\\(\\s*${q})`).test(t);
+};
 
 const hits = [];
 for (const file of walk('src')) {
@@ -70,7 +90,8 @@ for (const file of walk('src')) {
     const kind = isTest ? 'test'
       : isComment(text) ? 'comment'
       : matched.every((id) => ownsId(rel, id)) ? 'own-file'
-      : 'core-decides';
+      : matched.some((id) => comparesId(text, id)) ? 'core-decides'
+      : 'declares';
     hits.push({ file: rel, isTest, kind, line: i + 1, ids: matched, text: text.trim() });
   });
 }
