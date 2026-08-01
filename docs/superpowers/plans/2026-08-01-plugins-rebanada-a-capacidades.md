@@ -1139,6 +1139,19 @@ export function laneEditorPanels(engineId: string): LaneEditorPanels {
 const chain = sample == null && acceptsNoteFx(engineId) ? getNoteFxChain(laneId) : null;
 ```
 
+`engine-selector-ui.ts:51` → `melodicSynthEngineIds()` filtra hoy sólo por
+`editor === 'piano-roll'`, y eso **no basta**: un plugin que declare
+`clipContent: 'audio'` sin `defaultNoteView` recibe `editor: 'piano-roll'` por
+defecto y aparecería en el selector de intercambio de motor. Añade la pregunta a
+la puerta:
+
+```ts
+    .filter((id) => !isAudioEngine(id) && getEngineDescriptor(id)?.editor === 'piano-roll');
+```
+
+(Encontrado por la revisión de la Task 6. Ya pasaba antes con el motor `audio`
+del árbol, y sólo lo tapaba la guarda por id de `engine-swap`.)
+
 `session-inspector.ts`:
 - `:519` → `chordsBtn.hidden = exKind === 'beat' || !isHarmonic(lane!.engineId);`
 - `:536` → `(l) => isHarmonic(l.engineId) && !isAudioEngine(l.engineId),`
