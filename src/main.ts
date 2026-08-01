@@ -106,7 +106,7 @@ const pluginsReady = loadPlugins();
 // The legacy 'poly' engineId was merged into 'subtractive' (the polysynth
 // host IS the subtractive engine's voice allocator).
 const presetsLoaded = pluginsReady.then((report) => loadAllPresets(
-  listPlugins('synth').map((p) => p.manifest.id).filter((id) => !report.loaded.includes(id)),
+  listPlugins('engine').map((p) => p.manifest.id).filter((id) => !report.loaded.includes(id)),
 ));
 // Unified Drums picker list (synth + sample kits). Fire-and-forget; the drums
 // populator re-renders when this resolves (see mountDrumsPresetSelect).

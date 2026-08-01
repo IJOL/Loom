@@ -2,7 +2,7 @@ import type { EngineParamSpec } from '../engines/engine-params';
 import type { VoiceTriggerOptions } from '../engines/engine-types';
 import type { ModulatorState } from '../modulation/types';
 
-export type PluginKind = 'synth' | 'fx' | 'modulator' | 'notefx';
+export type PluginKind = 'engine' | 'fx' | 'modulator' | 'notefx';
 
 /** Alias the unified param spec under a kind-neutral name. EngineParamSpec
  *  stays the canonical type. */
@@ -77,7 +77,7 @@ export interface NoteFxFactory {
 }
 
 export type PluginFactory =
-  | { kind: 'synth';     manifest: PluginManifest;
+  | { kind: 'engine';    manifest: PluginManifest;
       create(ctx: AudioContext, output: AudioNode): SynthInstance }
   | { kind: 'fx';        manifest: PluginManifest;
       create(ctx: AudioContext): FxInstance }

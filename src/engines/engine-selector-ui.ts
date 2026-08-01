@@ -38,7 +38,7 @@ export interface EngineSelectorUIDeps {
  *  the piano-roll editor. drum-grid engines (drums-machine) edit on the
  *  drum-grid page and are excluded.
  *
- *  The source list is the ENGINE registry, not listPlugins('synth'). Those are
+ *  The source list is the ENGINE registry, not listPlugins('engine'). Those are
  *  two different registries: listPlugins holds what the build-time
  *  `import.meta.glob` over src/ found, so a RUNTIME plugin — which registers its
  *  engine through Loom.registerEngine and never appears in that glob — could

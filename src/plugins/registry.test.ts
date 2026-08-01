@@ -4,10 +4,10 @@ import {
 } from './registry';
 import type { PluginFactory } from './types';
 
-function synth(id: string): PluginFactory {
+function engine(id: string): PluginFactory {
   return {
-    kind: 'synth',
-    manifest: { id, name: id, kind: 'synth', version: '1.0.0', params: [], presets: [] },
+    kind: 'engine',
+    manifest: { id, name: id, kind: 'engine', version: '1.0.0', params: [], presets: [] },
     create: () => ({
       trigger: () => {}, release: () => {}, connect: () => {},
       getAudioParams: () => new Map(), getBaseValue: () => 0, setBaseValue: () => {},
@@ -32,29 +32,29 @@ describe('plugin registry', () => {
   beforeEach(() => _resetRegistry());
 
   it('register + getPlugin by (kind,id)', () => {
-    const p = synth('tb303');
+    const p = engine('tb303');
     registerPlugin(p);
-    expect(getPlugin('synth', 'tb303')).toBe(p);
+    expect(getPlugin('engine', 'tb303')).toBe(p);
     expect(getPlugin('fx', 'tb303')).toBeUndefined();
   });
 
   it('listPlugins filters by kind', () => {
-    registerPlugin(synth('a'));
-    registerPlugin(synth('b'));
+    registerPlugin(engine('a'));
+    registerPlugin(engine('b'));
     registerPlugin(fx('reverb'));
-    expect(listPlugins('synth').map((p) => p.manifest.id).sort()).toEqual(['a', 'b']);
+    expect(listPlugins('engine').map((p) => p.manifest.id).sort()).toEqual(['a', 'b']);
     expect(listPlugins('fx').map((p) => p.manifest.id)).toEqual(['reverb']);
     expect(listPlugins().length).toBe(3);
   });
 
   it('createInstance dispatches by kind', () => {
-    registerPlugin(synth('tb303'));
-    const inst = createInstance('synth', 'tb303', {} as AudioContext, {} as AudioNode);
+    registerPlugin(engine('tb303'));
+    const inst = createInstance('engine', 'tb303', {} as AudioContext, {} as AudioNode);
     expect(inst).toBeDefined();
     expect(typeof inst!.trigger).toBe('function');
   });
 
   it('createInstance returns undefined for unknown id', () => {
-    expect(createInstance('synth', 'nope', {} as any, {} as any)).toBeUndefined();
+    expect(createInstance('engine', 'nope', {} as any, {} as any)).toBeUndefined();
   });
 });

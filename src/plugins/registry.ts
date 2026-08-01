@@ -22,13 +22,13 @@ export function listPlugins(kind?: PluginKind): PluginFactory[] {
   return kind ? all.filter((p) => p.kind === kind) : all;
 }
 
-export function createInstance(kind: 'synth',     id: string, ctx: AudioContext, output: AudioNode): SynthInstance | undefined;
+export function createInstance(kind: 'engine',    id: string, ctx: AudioContext, output: AudioNode): SynthInstance | undefined;
 export function createInstance(kind: 'fx',        id: string, ctx: AudioContext): FxInstance | undefined;
 export function createInstance(kind: 'modulator', id: string, ctx: AudioContext, bpm: number): ModulatorInstance | undefined;
 export function createInstance(kind: PluginKind, id: string, ctx: AudioContext, arg?: unknown): unknown {
   const p = plugins.get(key(kind, id));
   if (!p) return undefined;
-  if (p.kind === 'synth')     return p.create(ctx, arg as AudioNode);
+  if (p.kind === 'engine')    return p.create(ctx, arg as AudioNode);
   if (p.kind === 'fx')        return p.create(ctx);
   if (p.kind === 'modulator') return p.create(ctx, arg as number);
   return undefined;
