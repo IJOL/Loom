@@ -36,7 +36,23 @@ SVG), Vitest + jsdom for unit tests, Playwright for e2e, SCSS.
 
 ---
 
-## ⛔ CONFIRMAR before Phase 2 (two decisions that are the owner's, not the implementer's)
+## Decided by the owner, 2026-08-01 — implement these, do not re-open them
+
+**1. FILTER is orange, all of it.** The teal knobs are an accident (see below);
+the intent is restored. **This is the one deliberate visual change of Phase 2**,
+and it is the only difference from the reference screenshots that is not one of
+the three agreed convention shifts. Four knobs — Resonance, Env Amt, Drive, Key
+Track — go from teal to orange.
+
+**2. Dead params are deleted, not documented.** `poly.mode` and `poly.retrig`
+leave `SUB_PARAM_SPECS`, and `poly.mode` leaves `westcoast.ts`. No engine
+declares a param its own `setBaseValue` discards. Check for saved sessions
+carrying the ids — they must load without error (the loader ignores unknown
+param ids; verify, do not assume).
+
+**3. Execution is subagent-per-task**, with review between tasks.
+
+The reasoning behind 1 and 2, kept because both look like bugs when read cold:
 
 **1. The FILTER section's teal knobs are an accident, and reproducing the page
 faithfully means reproducing the accident.**
@@ -976,8 +992,12 @@ The hand-rolled POLY header in `WorkletLaneEngine.buildParamUI` is scaffolding
 for a single knob, with its own `createKnob` call, its own lit fragment and a
 `skip: id.startsWith('poly.')` to keep the grid off it. With groups it is data.
 
-**Do not start** until ⛔ CONFIRMAR #2 (`poly.mode` / `poly.retrig`) is answered;
-this task implements the chosen answer.
+This task also deletes `poly.mode` and `poly.retrig` (decision 2): both are
+dead on both sides — `WorkletLaneEngine.setBaseValue` returns early on them
+(`worklet-lane-engine.ts:327`, "accept-and-ignore") and neither has a control.
+`westcoast.ts` loses its `poly.mode` spec too, which removes a *visible* Mode
+control whose value the engine discards. Update the header comment at
+`worklet-lane-engine.ts:11-12`, which still describes them as pending work.
 
 **Files:**
 - Modify: `src/engines/worklet-lane-engine.ts:379-414`
@@ -1139,8 +1159,9 @@ envelope leaves (`filter.attack/decay/sustain/release/builtinEnv`,
 `osc2.wave`, `filter.model` and `filter.type` so they stay radio strips under the
 grouped conventions.
 
-Apply the ⛔ CONFIRMAR #1 decision here: option (b) needs nothing extra; option
-(a) needs a seventh group for the four teal params.
+Decision 1 needs nothing extra here: one FILTER group, orange, and the
+`nth-last-child` teal rule dies with the rest of the per-id CSS in Task 8.
+Record in the Task 8 commit that four knobs changed colour on purpose.
 
 - [ ] **Step 5: Run the tests**
 
