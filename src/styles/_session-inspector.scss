@@ -211,31 +211,74 @@
   border-color: var(--amber);
 }
 
-/* The three sliders share whatever the row has left, so they stay as long as
-   the panel allows instead of being pinned to a fixed width. `min-width: 0` is
-   what actually lets a flex item shrink below its content — without it the row
-   would overflow on a narrow inspector rather than give the tracks back. */
+/* Fixed-width sliders, packed left: they do NOT grow to fill the lane. A track
+   that stretches to whatever the inspector happens to be wide reads as the main
+   event; these are a small generator control sitting under the curve, and they
+   should look like one at any panel width. */
 .clip-auto-lfo-slider {
   display: flex;
   align-items: center;
   gap: 5px;
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 0 0 auto;
 }
 .clip-auto-lfo-slider-name { flex: 0 0 auto; }
-.clip-auto-lfo-slider input[type=range] {
-  flex: 1 1 auto;
-  width: auto;
-  min-width: 0;
-  height: 14px;      /* keeps the row one line tall */
-  margin: 0;
-  padding: 0;
-}
 .clip-auto-lfo-slider-read {
   flex: 0 0 30px;
   text-align: right;
   color: var(--text);
   font-variant-numeric: tabular-nums;
+}
+
+/* Hairline track + a thin vertical bar for a thumb. The native control is far
+   too chunky for a 25px row, and `accent-color` alone cannot reshape it — the
+   thumb has to be redrawn, which means dropping the platform appearance and
+   restating the track for BOTH engines (WebKit puts the thumb's box relative to
+   the track and needs the negative margin to re-centre it; Firefox centres it
+   itself, so the same margin there would push it off). */
+.clip-auto-lfo-slider input[type=range] {
+  flex: 0 0 auto;
+  width: 88px;
+  height: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.clip-auto-lfo-slider input[type=range]::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 1px;
+  /* NOT var(--border): #2a221c against --surface-2 #1c1814 is a six-value step,
+     which simply does not register over 2px of height — the track read as empty
+     space. Dimmed text colour instead, kept as a mix so the token stays the one
+     source for the hue. */
+  background: color-mix(in srgb, var(--text-dim) 40%, transparent);
+}
+.clip-auto-lfo-slider input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 3px;
+  height: 10px;
+  margin-top: -4px;          /* (10 - 2) / 2 — centres the bar on the track */
+  border: 0;
+  border-radius: 1px;
+  background: var(--amber);
+}
+.clip-auto-lfo-slider input[type=range]::-moz-range-track {
+  height: 2px;
+  border-radius: 1px;
+  /* NOT var(--border): #2a221c against --surface-2 #1c1814 is a six-value step,
+     which simply does not register over 2px of height — the track read as empty
+     space. Dimmed text colour instead, kept as a mix so the token stays the one
+     source for the hue. */
+  background: color-mix(in srgb, var(--text-dim) 40%, transparent);
+}
+.clip-auto-lfo-slider input[type=range]::-moz-range-thumb {
+  width: 3px;
+  height: 10px;
+  border: 0;
+  border-radius: 1px;
+  background: var(--amber);
 }
 
 .clip-auto-lane .auto-lane-header button {
