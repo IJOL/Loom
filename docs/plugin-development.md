@@ -283,7 +283,8 @@ it at boot. `gm` maps presets to GM program numbers for MIDI import. The keys in
 - **Modulation destinations** — continuous params appear in the dropdown
 - **Presets** — preset JSON uses the same `id` keys
 
-Full shape ([`src/engines/engine-params.ts`](../src/engines/engine-params.ts)):
+Full host-internal shape
+([`src/engines/engine-params.ts`](../src/engines/engine-params.ts)):
 
 ```ts
 interface EngineParamSpec {
@@ -296,12 +297,22 @@ interface EngineParamSpec {
   curve?: 'linear' | 'exponential' | 'log';
   unit?: string;
   color?: string;          // knob ring colour (carries the Send A/B colour code)
-  group?: string;          // params sharing a group render together in one row
+  group?: string;          // an id from the component's own `groups` table; absent
+                            // ⇒ the leading ungrouped row (see "Editor layout" below)
   options?: Array<{ value: string; label: string }>;   // discrete only
   selectStyle?: 'dropdown';                            // discrete only
   showLabel?: boolean;                                 // discrete only
 }
 ```
+
+An in-tree `fx`/`modulator`/`notefx` plugin gets this whole shape — it shares
+the host's real type. A plugin built against the external, manifest-based
+`@loom/plugin-sdk` ABI (e.g. [`plugins/karplus/`](../plugins/karplus/), an
+`engine` component) type-checks against a smaller `EngineParamSpec`
+([`packages/loom-plugin-sdk/src/manifest.ts`](../packages/loom-plugin-sdk/src/manifest.ts)):
+only `id`, `label`, `kind`, `min`, `max`, `default`, `unit?`, `options?` and
+`group?`. `curve`, `color`, `drawnBy`, `selectStyle` and `showLabel` are not
+declared there — an external engine or modulator manifest cannot set them.
 
 `validateSpec` is the contract a new spec has to satisfy: an id and a label are
 required, a continuous param needs `max > min`, and a discrete one needs at
@@ -334,6 +345,59 @@ uses:
 - `osc.wave`, `osc.detune`, `osc.level`
 - `bus.reverbSend`, `bus.delaySend`, `bus.eq.low` (the drums bus)
 - `opN.ratio`, `opN.detune`, `opN.level` (FM)
+
+### Editor layout: `groups`
+
+`groups` is how an `engine` component lays its params out as labelled
+sections instead of one flat list. It means nothing for `fx`, `modulator` or
+`notefx` — those render through a generic panel with no section layout, so a
+`groups` table on anything but an `engine` component is simply never read.
+
+A component that declares no `groups` still renders: every param lands in
+one row per raw `group` string (or the leading ungrouped row when a param has
+none), in first-appearance order — the same fallback a built-in engine gets
+when it has no table either. `groups` exists for when that fallback is not
+what you want: named sections, in a chosen order, several packed onto one
+line, coloured knob rings.
+
+```ts
+interface EngineParamGroup {
+  id: string;      // the key an EngineParamSpec's own `group` points at
+  title: string;   // the section header
+  row?: number;    // groups sharing a row index render side by side,
+                    // divided by a rule; default: a row of its own,
+                    // in declaration order
+  color?: string;   // CSS colour for the section's knob rings; a param's
+                    // own `color` (host engines only) wins when both are set
+}
+```
+
+[`plugins/karplus/plugin.json`](../plugins/karplus/plugin.json) is the
+shipped example: STRING and EXCITE share row 0, AMP and POLY share row 1,
+and each param points back at its section by id:
+
+```json
+{
+  "params": [
+    { "id": "string.damping", "label": "Damping", "kind": "continuous",
+      "min": 0, "max": 1, "default": 0.5, "group": "string" },
+    { "id": "excite.time", "label": "Excite", "kind": "continuous",
+      "min": 0.001, "max": 0.1, "default": 0.01, "unit": "s", "group": "excite" },
+    { "id": "amp.attack", "label": "Attack", "kind": "continuous",
+      "min": 0.001, "max": 0.5, "default": 0.005, "unit": "s", "group": "amp" }
+  ],
+  "groups": [
+    { "id": "string", "title": "STRING", "row": 0, "color": "var(--knob-cyan)" },
+    { "id": "excite", "title": "EXCITE", "row": 0, "color": "var(--knob-orange)" },
+    { "id": "amp",    "title": "AMP",    "row": 1, "color": "var(--knob-purple)" }
+  ]
+}
+```
+
+A group with no member param, or a param whose `group` names no declared
+entry, is not an error — see the fallback above — but it is dead weight:
+every declared group should have at least one param pointing at it, and vice
+versa.
 
 ---
 

@@ -9,16 +9,20 @@ import type { PluginManifestFile, ComponentManifest } from './manifest';
 // not the built copy in public/plugins/ — this is a type/shape parity check
 // against the SDK, not a test of the runtime load path (that belongs to
 // src/plugin-host/*.test.ts, which drives the actual loader).
-function loadManifest(id: string): ComponentManifest {
+// Narrowed to the engine arm: every caller here loads a melodic-engine
+// plugin, and `groups` (below) only exists on that arm of the union.
+function loadEngineManifest(id: string): ComponentManifest & { kind: 'engine' } {
   const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
   const file = resolve(repoRoot, 'plugins', id, 'plugin.json');
   const raw = JSON.parse(readFileSync(file, 'utf-8')) as PluginManifestFile;
-  return raw.components[0];
+  const component = raw.components[0];
+  if (component.kind !== 'engine') throw new Error(`${id}: expected an engine component, got ${component.kind}`);
+  return component;
 }
 
 describe('@loom/plugin-sdk', () => {
   it('a plugin engine can declare its editor layout like a built-in one', () => {
-    const manifest = loadManifest('karplus');
+    const manifest = loadEngineManifest('karplus');
     expect(manifest.groups?.map((g) => g.title)).toBeDefined();
     expect(manifest.groups?.length).toBeGreaterThan(0);
     // Every group the manifest declares must have at least one param

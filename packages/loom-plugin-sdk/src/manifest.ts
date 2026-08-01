@@ -98,10 +98,6 @@ export interface ComponentManifestBase {
   id: string;
   name: string;
   params: EngineParamSpec[];
-  /** Declared editor layout for `params`. Optional: a manifest that omits it
-   *  renders one row per raw `group` string, in first-appearance order — the
-   *  same fallback a built-in engine gets when it declares no groups. */
-  groups?: EngineParamGroup[];
 }
 
 /** What a modulator component declares beyond the common fields. The host
@@ -123,7 +119,13 @@ export interface ModulatorDeclaration {
 
 export type ComponentManifest =
   | (ComponentManifestBase & { kind: 'engine'; polyphony: 'mono' | 'poly';
-      modulators?: unknown[]; capabilities: EngineCapabilities })
+      modulators?: unknown[]; capabilities: EngineCapabilities;
+      /** Declared editor layout for `params`. Optional: a manifest that omits
+       *  it renders one row per raw `group` string, in first-appearance order
+       *  — the same fallback a built-in engine gets when it declares no
+       *  groups. Engine-only: a modulator's params render through the host's
+       *  generic panel, which has no section layout to declare one for. */
+      groups?: EngineParamGroup[] })
   | (ComponentManifestBase & { kind: 'modulator'; modulator: ModulatorDeclaration });
 
 export interface PluginManifestFile {
