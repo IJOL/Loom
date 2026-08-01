@@ -353,9 +353,12 @@ Cada criterio es un camino de usuario con su propio test. Sin alternativas
 3. **El export offline lo lleva.** La misma escena por `renderKernelLane` produce
    la modulación del S&H — mismo kernel, mismo resultado que en vivo.
 4. **El censo baja a cero.** `node tools/plugin-id-census.mjs --group modulator`
-   da **0** en `core-decides` (partida: 18). ⚠️ **No se cumple tal cual** — se
-   convierte el sitio que la tarea 11 nombraba explícitamente y el censo baja,
-   pero se queda en 34, no en 0; ver §7 para el porqué y la deuda declarada.
+   da **0** en `core-decides`. ✅ Cumplido — pero léase junto a §7: el criterio
+   destapó que la propia métrica estaba mal definida (`core-decides` era un cajón
+   residual que se tragaba lookups y texto de errores), así que además de
+   convertir los sitios reales hubo que **arreglar la vara de medir**. Las 17
+   líneas que quedan son declaraciones, no decisiones, y salen ya en su propia
+   categoría.
 5. **El Subtractive y el Westcoast siguen sonando.** Test de caracterización de
    sus envolventes por defecto: el ADSR de amplitud sigue modelando `amp`
    (sube en el ataque, cae al sustain, cae a ~0 en el release) y el de filtro
@@ -416,37 +419,31 @@ la que una pista quede muda.
 - **`tools/plugin-id-census.mjs` escribía su salida en castellano.** Corregido
   en la tarea 11 (commit `2c85316`): mismo comportamiento, mismas flags, salida
   en inglés.
-- **El censo `--group modulator` no llega a cero — se queda en 34, no 18.**
-  La tarea 11 convirtió el único sitio que su brief nombraba explícitamente
-  (`ModulationRuntime.getAdsrMods()`, commit `57804cd`: ahora pregunta
-  `driver === 'gate'`, no `kind === 'adsr'`), y de paso confirmó que el censo
-  había subido de 18 (línea base de §2.6) a 35 durante las tareas 1-10: ocho
-  ficheros de motor (`subtractive.ts` ×2 funciones, `drums-engine.ts`,
-  `drums-worklet-engine.ts`, `fm.ts`, `sampler-worklet-engine.ts`,
-  `wavetable.ts`, `westcoast.ts`, `tb303.ts`) construyen su set de moduladores
-  por defecto (las dos ADSR de amp/filtro + dos LFO, fiel al modelo
-  pre-worklet) llamando a `getModulator('lfo')`/`getModulator('adsr')` por id
-  literal — el mismo patrón, repetido, que `makeDefaultLFO`/`makeDefaultADSR`
-  dejaron atrás en la tarea 6.
-  Evaluado y **dejado tal cual, a propósito**: el mismo truco que arregló
-  `getAdsrMods` (preguntar el `driver` en vez del id) sólo es sólido para la
-  mitad `adsr` de este patrón — hoy `driver: 'gate'` identifica sin ambigüedad
-  al ADSR porque es el único componente registrado con ese driver (§3.3, el
-  camino de puerta sigue cerrado) — pero **no** para la mitad `lfo`: desde que
-  esta misma rebanada registró el S&H con `driver: 'time'` (tarea 9), ese
-  driver ya no es único — LFO y S&H lo comparten — así que
-  `listModulators().find(driver === 'time')` elegiría uno de los dos por orden
-  de registro, no por lo que estos ocho ficheros realmente piden ("el
-  oscilador LFO, específicamente", no "cualquier cosa que corra por reloj").
-  Convertir sólo la mitad `adsr` de un patrón simétrico repetido ocho veces,
-  dejando la mitad `lfo` con el mismo `getModulator(id)` de siempre, cambia el
-  número del censo sin cambiar la naturaleza del sitio — ambas mitades son la
-  misma decisión de diseño (una plantilla de sonido por defecto necesita un
-  componente CONCRETO, no una propiedad genérica), así que se deja como un
-  bloque. Si se quiere de verdad a cero, la vía limpia es sacar esa plantilla
-  de 4 moduladores UNA vez a un sitio compartido (ahora está copiada y pegada
-  ocho veces) y decidir allí si un `idPrefix`/nombre por componente es
-  aceptable como excepción declarada del censo o si el propio censo necesita
-  una categoría para "un consumidor pide un componente concreto por diseño",
-  no sólo "own-file"/"comment"/"test". Ninguna de las dos es un cambio de una
-  línea, así que queda fuera de esta rebanada.
+- **La vara de medir estaba mal, y se ha cambiado.** Al cerrar la rebanada el
+  censo del grupo `modulator` marcaba **34**, no 0 — y la lectura obvia ("queda
+  deuda") era falsa. De esas 34 líneas, la mitad eran el id dentro del **texto
+  de un mensaje de error** (`throw new Error("unknown modulator kind: 'lfo'")`)
+  y la otra mitad eran ocho motores **declarando** su juego de moduladores por
+  defecto (`getModulator('lfo')`). Ninguna de las dos cosas es el core decidiendo
+  comportamiento por un nombre.
+
+  La causa: `core-decides` era el **cajón residual** del clasificador — todo lo
+  que no fuese test, comentario o fichero propio caía ahí. Con ese nombre, el
+  número no medía lo que cualquiera lee al verlo.
+
+  Corregido en dos pasos:
+  1. `requireModulator(id)` en el registro absorbe la guarda que ocho ficheros
+     escribían a mano, y con ella desaparecen los ocho mensajes de error que
+     repetían el id. Eso era duplicación real, no ruido de la métrica.
+  2. `core-decides` pasa a ser **positivo**: una línea sólo cuenta si
+     **compara** contra el literal (`===`, `!==`, `case`, `includes`). Nombrar
+     un componente para pedirlo o para listarlo como contenido por defecto tiene
+     ahora su propia categoría, `declares` — es una referencia, no una rama, y
+     es exactamente la misma frase que `plugins/karplus/plugin.json` ya escribe
+     en JSON con su campo `modulators`. Algo tiene que decir de qué viene
+     equipado un motor.
+
+  Resultado: **`core-decides` = 0** en el grupo `modulator`, con 17 en
+  `declares`. Y el grupo `engine` pasa a enseñar su deuda real —**44**
+  comparaciones de verdad en vez de un montón que mezclaba declaraciones y
+  texto de errores—, que es con lo que tiene que trabajar la rebanada C.
