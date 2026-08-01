@@ -2,9 +2,18 @@
 // Web Audio LFO voice with a JS-mirrored phase so the rAF UI loop can
 // poll currentValue() for knob animation.
 
-import type { ModulatorState, ModulatorVoice } from './types';
+import type { ModulatorState, ModulatorVoice, Waveform } from './types';
 import { computeWaveform } from './waveform';
 import { effectiveRateHz } from './rate-sync';
+
+/** Our waveform vocabulary → the Web Audio enum. They agree on three names and
+ *  disagree on the fourth: ours is 'saw', the spec's is 'sawtooth'. The old
+ *  `as OscillatorType` cast hid that, and an invalid enum assignment is
+ *  ignored rather than thrown, so choosing Saw silently kept the previous
+ *  shape on this path while the worklet produced a real sawtooth. */
+function oscType(w: Waveform | undefined): OscillatorType {
+  return w === 'saw' ? 'sawtooth' : (w ?? 'sine');
+}
 
 export class LFOVoice implements ModulatorVoice {
   output: AudioNode;
@@ -38,7 +47,7 @@ export class LFOVoice implements ModulatorVoice {
       this.osc.disconnect();
     }
     this.osc = this.ctx.createOscillator();
-    this.osc.type = (this.state.waveform ?? 'sine') as OscillatorType;
+    this.osc.type = oscType(this.state.waveform);
     this.osc.frequency.value = effectiveRateHz(this.state, this.bpmGetter());
     this.osc.connect(this.gain);
     this.osc.start(time);
@@ -64,7 +73,7 @@ export class LFOVoice implements ModulatorVoice {
     if (Math.abs(this.osc.frequency.value - rate) > 1e-4) {
       this.osc.frequency.value = rate;
     }
-    const wave = (this.state.waveform ?? 'sine') as OscillatorType;
+    const wave = oscType(this.state.waveform);
     if (this.osc.type !== wave) this.osc.type = wave;
   }
 
