@@ -160,24 +160,25 @@
 }
 .clip-auto-lane .auto-lane-header .label { flex: 0 1 auto; min-width: 120px; }
 
-/* LFO curve generator. It is its OWN row under the lane header, unfolded by the
-   header's "▾ LFO" button: shape + a free cycle count over the painted region,
-   then the three continuous controls. It does not live in the header any more
-   because three usable sliders do not fit in a row that already carries the
-   label, On, Stepped and the value range. */
+/* LFO curve generator: ONE line under the lane header, unfolded by the header's
+   "▾ LFO" button — shape, a free cycle count over the painted region, and the
+   three continuous controls, all side by side and one row tall. It is its own
+   line rather than part of the header because the header already carries the
+   label, On, Stepped and the value range; but it must stay as flat and quiet as
+   the header itself, so nothing here may add a second row. */
 .clip-auto-lfo {
-  display: grid;
-  gap: 3px 8px;
-  max-width: 480px;
-  margin: 0 0 6px;
-  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  padding: 2px 6px;
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 3px;
   font-size: 10px;
+  line-height: 1;
   color: var(--text-dim);
 }
-.clip-auto-lfo-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .clip-auto-lfo select,
 .clip-auto-lfo input[type=number] {
   background: var(--surface-3);
@@ -186,10 +187,11 @@
   border-radius: 2px;
   padding: 1px 4px;
   font-size: 10px;
+  flex: 0 0 auto;   /* only the sliders give width back when the panel narrows */
 }
-.clip-auto-lfo input[type=number] { width: 58px; }
-.clip-auto-lfo-cycles { display: flex; align-items: center; gap: 4px; }
-.clip-auto-lfo-apply { font-weight: 700; margin-left: auto; }
+.clip-auto-lfo input[type=number] { width: 46px; }
+.clip-auto-lfo-cycles { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+.clip-auto-lfo-apply { font-weight: 700; }
 
 /* The row sits outside .auto-lane-header, so it needs the header's button look
    rather than inheriting it. */
@@ -198,9 +200,10 @@
   color: var(--text-dim);
   border: 1px solid var(--border);
   border-radius: 2px;
-  padding: 2px 6px;
-  font-size: 11px;
+  padding: 1px 6px;
+  font-size: 10px;
   cursor: pointer;
+  flex: 0 0 auto;
 }
 .clip-auto-lfo button.active {
   background: var(--amber);
@@ -208,15 +211,28 @@
   border-color: var(--amber);
 }
 
-/* name | slider | read-out: fixed side columns so the three tracks line up. */
+/* The three sliders share whatever the row has left, so they stay as long as
+   the panel allows instead of being pinned to a fixed width. `min-width: 0` is
+   what actually lets a flex item shrink below its content — without it the row
+   would overflow on a narrow inspector rather than give the tracks back. */
 .clip-auto-lfo-slider {
-  display: grid;
-  grid-template-columns: 42px minmax(60px, 1fr) 38px;
+  display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
+  flex: 1 1 0;
+  min-width: 0;
 }
-.clip-auto-lfo-slider input[type=range] { width: 100%; min-width: 0; }
+.clip-auto-lfo-slider-name { flex: 0 0 auto; }
+.clip-auto-lfo-slider input[type=range] {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  height: 14px;      /* keeps the row one line tall */
+  margin: 0;
+  padding: 0;
+}
 .clip-auto-lfo-slider-read {
+  flex: 0 0 30px;
   text-align: right;
   color: var(--text);
   font-variant-numeric: tabular-nums;

@@ -306,7 +306,6 @@ function lfoRowTemplate(h: Panel, clip: SessionClip, env: ClipEnvelope, strip: A
   // .active, so a `primary` toggle looked identical on and off.
   return html`
     <div class="clip-auto-lfo">
-      <div class="clip-auto-lfo-top">
         <select class="clip-auto-lfo-shape" title="LFO waveform to draw"
           @change=${(e: Event) => {
             lfoState.shape = (e.currentTarget as HTMLSelectElement).value as LfoShape;
@@ -324,13 +323,6 @@ function lfoRowTemplate(h: Panel, clip: SessionClip, env: ClipEnvelope, strip: A
             }}
           >
         </label>
-        <button
-          class=${lfoState.loopOnly ? 'rnd clip-auto-lfo-loop active' : 'rnd clip-auto-lfo-loop'}
-          title="Draw inside the loop region only (when the clip loops)"
-          @click=${() => { lfoState.loopOnly = !lfoState.loopOnly; h.rerender(); }}
-        >Loop only</button>
-        <button class="rnd clip-auto-lfo-apply" title="Draw the curve into this lane" @click=${repaint}>LFO</button>
-      </div>
       ${slider('Size', 'Peak-to-peak: how much of the lane the wave spans',
         lfoState.depth, 1, `${Math.round(lfoState.depth * 100)}%`,
         (v) => { lfoState.depth = v; })}
@@ -340,6 +332,12 @@ function lfoRowTemplate(h: Panel, clip: SessionClip, env: ClipEnvelope, strip: A
       ${slider('Phase', 'Rotation of the wave inside the region',
         lfoState.phase, 1, `${Math.round(lfoState.phase * 360)}°`,
         (v) => { lfoState.phase = v; })}
+      <button
+        class=${lfoState.loopOnly ? 'rnd clip-auto-lfo-loop active' : 'rnd clip-auto-lfo-loop'}
+        title="Draw inside the loop region only (when the clip loops)"
+        @click=${() => { lfoState.loopOnly = !lfoState.loopOnly; h.rerender(); }}
+      >Loop</button>
+      <button class="rnd clip-auto-lfo-apply" title="Draw the curve into this lane" @click=${repaint}>LFO</button>
     </div>
   `;
 }

@@ -94,20 +94,25 @@ así lo quiere el usuario, pero "qué filas están desplegadas" es estado de vis
 de un inspector concreto, y un inspector recién abierto debe salir plegado.
 Varias lanes pueden estar abiertas a la vez.
 
-**Segunda fila** (se renderiza sólo si la lane está abierta):
+**Segunda línea** (se renderiza sólo si la lane está abierta). Todo va en **una
+sola línea de la altura de una fila** — 25 px contra los 20 px del header:
 
 ```
-┌─ auto-lane ─────────────────────────────────────┐
-│ Cutoff  [On][Smooth] [0..1]        [▾ LFO] [×]  │
-├─────────────────────────────────────────────────┤
-│ [Sine ▾]  Cycles [ 4 ]                          │
-│ Size   ──────●────  100%                        │
-│ Height ────●──────   50%    [Loop only] [LFO]   │
-│ Phase  ●──────────    0°                        │
-├─────────────────────────────────────────────────┤
-│  (la curva dibujada)                            │
-└─────────────────────────────────────────────────┘
+┌─ auto-lane ───────────────────────────────────────────────────────────────┐
+│ Cutoff  [On][Smooth] [0..1]                                  [▾ LFO] [×]  │
+├───────────────────────────────────────────────────────────────────────────┤
+│ [Sine▾] Cycles[4]  Size ────●── 100% Height ──●──── 50% Phase ●──── 0° [LOOP][LFO] │
+├───────────────────────────────────────────────────────────────────────────┤
+│  (la curva dibujada)                                                      │
+└───────────────────────────────────────────────────────────────────────────┘
 ```
+
+Corregido 2026-08-01 tras verlo montado: la primera versión apilaba los tres
+sliders en filas propias y ocupaba cuatro líneas. Nacho lo rechazó por
+aparatoso — *"esperaba algo mucho más compacto, discreto"*. Los tres sliders
+comparten a partes iguales el espacio que sobra (`flex: 1 1 0` + `min-width: 0`)
+y lo devuelven al estrecharse el panel, así que la línea nunca se desborda ni se
+parte: a 1150 px de inspector cada slider mide ~215 px, a 900 px ~130 px.
 
 - **Size** — `depth`, `<input type=range>` 0..1, leído como 0–100 %.
 - **Height** — `center`, 0..1, leído como 0–100 %.
