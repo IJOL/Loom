@@ -21,9 +21,24 @@ function assertValidManifest(m) {
   if (m.loomApi !== LOOM_API_VERSION) {
     throw new Error(`plugin.json: loomApi ${m.loomApi} is not supported (tooling speaks ${LOOM_API_VERSION})`);
   }
-  for (const e of m.engines ?? []) {
-    if (typeof e.outputTrim !== 'number') throw new Error(`plugin.json: engine ${e.id} needs a numeric outputTrim`);
-    if (typeof e.shortLabel !== 'string' || !e.shortLabel) throw new Error(`plugin.json: engine ${e.id} needs a shortLabel`);
+  // REQUIRED, not `m.components ?? []`: with the component shape, a manifest
+  // that forgot `components` (or still speaks the dead `engines` v1 shape)
+  // would silently walk zero entries and pass — exactly the lie this fix
+  // exists to end.
+  if (!Array.isArray(m.components)) {
+    throw new Error('plugin.json: components must be an array');
+  }
+  for (const c of m.components) {
+    if (!c || typeof c !== 'object') throw new Error('plugin.json: components entries must be objects');
+    if (typeof c.kind !== 'string' || !c.kind) throw new Error('plugin.json: component kind must be a non-empty string');
+    if (typeof c.id !== 'string' || !c.id) throw new Error('plugin.json: component id must be a non-empty string');
+    if (typeof c.name !== 'string' || !c.name) throw new Error(`plugin.json: component ${c.id ?? '?'} needs a name`);
+    if (!c.capabilities || typeof c.capabilities !== 'object') {
+      throw new Error(`plugin.json: component ${c.id} needs a capabilities object`);
+    }
+    if (c.capabilities.clipContent !== 'notes' && c.capabilities.clipContent !== 'audio') {
+      throw new Error(`plugin.json: component ${c.id} capabilities.clipContent must be notes|audio`);
+    }
   }
 }
 

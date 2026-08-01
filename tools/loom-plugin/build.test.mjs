@@ -16,10 +16,10 @@ function writePlugin(dir, extra = {}) {
   writeFileSync(join(dir, 'plugin.json'), JSON.stringify({
     id: 'probe', name: 'Probe', version: '1.0.0', loomApi: 1,
     main: 'main.js', dsp: 'dsp.js',
-    engines: [{
-      id: 'probe', name: 'Probe', polyphony: 'poly', clipEditor: 'piano-roll',
-      outputTrim: 0.5, shortLabel: 'probe',
+    components: [{
+      kind: 'engine', id: 'probe', name: 'Probe', polyphony: 'poly',
       params: [{ id: 'amp.level', label: 'Level', kind: 'continuous', min: 0, max: 1, default: 0.8 }],
+      capabilities: { clipContent: 'notes', shortLabel: 'probe', outputTrim: 0.5 },
     }],
     ...extra,
   }));
@@ -43,6 +43,27 @@ describe('loom-plugin build', () => {
     const src = join(root, 'src', 'probe');
     writePlugin(src, { loomApi: 99 });
     await expect(buildPlugin({ srcDir: src, outDir: join(root, 'out') })).rejects.toThrow(/loomApi/);
+  });
+
+  it('rejects a manifest with no components — the dead v1 `engines` shape included', async () => {
+    const src = join(root, 'src', 'probe');
+    // Simulates a plugin author still on the old v1 shape: `engines` instead of
+    // `components`. Before this fix, `m.engines ?? []` walked zero entries and
+    // the build sailed through silently — the exact lie this validator exists
+    // to end.
+    writePlugin(src, {
+      components: undefined,
+      engines: [{ id: 'probe', name: 'Probe', polyphony: 'poly', clipEditor: 'piano-roll', outputTrim: 0.5, shortLabel: 'probe', params: [] }],
+    });
+    await expect(buildPlugin({ srcDir: src, outDir: join(root, 'out') })).rejects.toThrow(/components/);
+  });
+
+  it('rejects a component with no capabilities', async () => {
+    const src = join(root, 'src', 'probe');
+    writePlugin(src, {
+      components: [{ kind: 'engine', id: 'probe', name: 'Probe', polyphony: 'poly', params: [] }],
+    });
+    await expect(buildPlugin({ srcDir: src, outDir: join(root, 'out') })).rejects.toThrow(/capabilities/);
   });
 
   it('refuses a bundle that reaches into the host source tree', async () => {
