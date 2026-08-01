@@ -15,6 +15,7 @@ import { html, type TemplateResult } from 'lit-html';
 import type { ModulatorState } from './types';
 import { mountPanel } from '../core/lit-panel';
 import { getModulator, listModulators } from './modulator-registry';
+import { genericModConfigTemplate } from './generic-mod-config';
 import { routingTemplate } from './mod-routing-templates';
 import { type PanelCtx, type ModulationUIDeps, sync, edit } from './mod-ui-shared';
 
@@ -76,11 +77,7 @@ function configRowFor(mod: ModulatorState, ctx: PanelCtx): TemplateResult {
   const comp = getModulator(mod.kind);
   if (!comp) return html`<div class="mod-card-config">unknown modulator: ${mod.kind}</div>`;
   if (comp.configTemplate) return comp.configTemplate(mod, ctx);
-  // TODO: Task 8 — replace with genericModConfigTemplate(comp, mod, ctx), the
-  // host-built grid from the component's declared `params`. Every registered
-  // component today (LFO, ADSR) has its own configTemplate, so this branch is
-  // unreachable in production until a params-only component is registered.
-  return html`<div class="mod-card-config"></div>`;
+  return genericModConfigTemplate(comp, mod, ctx);
 }
 
 function modCardTemplate(mod: ModulatorState, ctx: PanelCtx): TemplateResult {

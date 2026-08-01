@@ -101,6 +101,10 @@ export function toModLite(
       sustain: m.sustain ?? 0.7,
       releaseSec: m.releaseSec ?? 0.3,
       depthByParam,
+      // A plugin kernel's own settings, carried through untouched — without
+      // this a plugin's kernel would reach the audio thread with no way to
+      // read what the user configured for it.
+      params: m.params,
     };
   });
 }

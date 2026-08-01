@@ -45,6 +45,16 @@ export interface ModulatorState {
   decaySec?: number;
   sustain?: number;    // 0..1
   releaseSec?: number;
+
+  /** Settings of a modulator the core does not know — a plugin's. The named
+   *  fields above are the sum of the modulators we happen to ship, so a plugin
+   *  has nowhere to put its own; this bag is that place, and it is NUMERIC, so
+   *  a discrete param is an index like everywhere else in the param SPI.
+   *
+   *  The named fields above are CLOSED: nothing new is ever added to them.
+   *  They stay only because saved sessions and 6 Subtractive presets are
+   *  written in terms of them. See §3.5 and §7 of the design doc. */
+  params?: Record<string, number>;
 }
 
 export interface ModulatorVoice {

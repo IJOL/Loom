@@ -55,6 +55,10 @@ export interface ModLite {
   /** SubParams field name → modulation depth (-1..1), additive in the field's
    *  native 0..1 units. */
   depthByParam: Record<string, number>;
+  /** A plugin modulator's own settings (ModulatorState.params, carried through
+   *  unchanged). No built-in kernel reads this — LFO and ADSR keep their named
+   *  fields above — but a plugin kernel has nowhere else to find its rate. */
+  params?: Record<string, number>;
 }
 
 /** Where a modulator's phase starts. TRIG and SCOPE both reduce to this one

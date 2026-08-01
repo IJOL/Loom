@@ -274,6 +274,22 @@ describe('toModLite', () => {
     } as never]);
     expect(mods[0].kind).toBe('sh');
   });
+
+  it('carries a plugin modulator\'s params bag through to the worklet wire format', () => {
+    // Without this a plugin's kernel reaches the audio thread with no way to
+    // read what the user configured for it — the bag exists (types.ts) but a
+    // kernel can only see the ModLite it's handed.
+    const [m] = toModLite([{
+      id: 'sh1', kind: 'sh', enabled: true, connections: [], scope: 'shared',
+      params: { rate: 6, bipolar: 1 },
+    } as never]);
+    expect(m.params).toEqual({ rate: 6, bipolar: 1 });
+  });
+
+  it('leaves params undefined for a modulator with no bag (LFO/ADSR today)', () => {
+    const [m] = toModLite([lfo()]);
+    expect(m.params).toBeUndefined();
+  });
 });
 
 describe('a preset carries its own modulators', () => {
