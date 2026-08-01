@@ -9,23 +9,35 @@
 // metadata descriptor.
 
 import type { EngineParamSpec } from './engine-params';
+import type { EngineParamGroup } from './engine-param-groups';
 import { registerEngine, registerEngineFactory } from './registry';
 import { createDescriptorEngine } from './descriptor-engine';
 import { getCachedPresets } from '../presets/preset-loader';
 import { requireModulator } from '../modulation/modulator-registry';
 import type { ModulatorState } from '../modulation/types';
 
-const PARAMS: EngineParamSpec[] = [
-  { id: 'filter.cutoff',    label: 'Cutoff',    kind: 'continuous', min: 0, max: 1, default: 0.42 },
-  { id: 'filter.resonance', label: 'Resonance', kind: 'continuous', min: 0, max: 1, default: 0.55 },
-  { id: 'env.amount',       label: 'Env',       kind: 'continuous', min: 0, max: 1, default: 0.5  },
-  { id: 'env.decay',        label: 'Decay',     kind: 'continuous', min: 0, max: 1, default: 0.4  },
-  { id: 'env.accent',       label: 'Accent',    kind: 'continuous', min: 0, max: 1, default: 0.6  },
+export const TB303_PARAMS: EngineParamSpec[] = [
+  { id: 'filter.cutoff',    label: 'Cutoff',    kind: 'continuous', min: 0, max: 1, default: 0.42, group: 'filter' },
+  { id: 'filter.resonance', label: 'Resonance', kind: 'continuous', min: 0, max: 1, default: 0.55, group: 'filter' },
+  { id: 'env.amount',       label: 'Env',       kind: 'continuous', min: 0, max: 1, default: 0.5,  group: 'env' },
+  { id: 'env.decay',        label: 'Decay',     kind: 'continuous', min: 0, max: 1, default: 0.4,  group: 'env' },
+  { id: 'env.accent',       label: 'Accent',    kind: 'continuous', min: 0, max: 1, default: 0.6,  group: 'env' },
   {
     id: 'osc.wave', label: 'Wave', kind: 'discrete',
     min: 0, max: 1, default: 0,
     options: [{ value: 'sawtooth', label: 'Saw' }, { value: 'square', label: 'Sqr' }],
+    group: 'osc',
   },
+];
+
+// One row — the 303 is a small, single-page synth: the OSC/FILTER/ENV split
+// used to be a flat Wave/Cutoff/Resonance/Env/Decay/Accent knob row with no
+// section headers at all (see 55a9b9b). No POLY here on purpose: the 303 is
+// mono, so it declares no poly.voices param and this table stays silent about it.
+export const TB303_GROUPS: EngineParamGroup[] = [
+  { id: 'osc',    title: 'OSC',    row: 0, color: 'var(--knob-cyan)' },
+  { id: 'filter', title: 'FILTER', row: 0, color: 'var(--knob-orange)' },
+  { id: 'env',    title: 'ENV',    row: 0, color: 'var(--knob-purple)' },
 ];
 
 // TB-303 preset JSON keys are the legacy TB303 synth's internal field names; map
@@ -56,7 +68,8 @@ function makeTB303Descriptor() {
     id: 'tb303',
     name: '303',
     polyphony: 'mono',
-    params: PARAMS,
+    params: TB303_PARAMS,
+    groups: TB303_GROUPS,
     presets: () => getCachedPresets('tb303'),
     modulators: TB303_DEFAULT_MODULATORS,
   });
