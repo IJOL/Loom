@@ -17,6 +17,7 @@ import { resolvePitchView, type PitchView } from '../../core/pianoroll-zoom';
 import { clipAxis, type ClipAxis } from '../../core/clip-axis';
 import { clipPlayheadFrac, clipPlayheadTick } from '../../core/clip-playhead';
 import { getEngine } from '../../engines/registry';
+import { clipEditorFor } from '../../plugins/capabilities';
 import { renderDrumGridEditor, LANE_LABELS, type DrumGridModel } from './clip-editor-drum-grid';
 import { noteDrumRows } from '../../core/drum-grid-editing';
 import { GM_DRUM_MAP, GM_PERCUSSION_NAMES } from '../../engines/drum-gm-map';
@@ -86,10 +87,10 @@ const pitchViewByClip = new Map<string, PitchView>();
  *  editor → piano-roll. Pure so it can be unit-tested without the DOM. */
 export function chooseClipEditor(
   lane: SessionLane,
-  engineEditor: 'piano-roll' | 'drum-grid' | undefined,
+  engineEditor: 'piano-roll' | 'drum-grid' | 'audio' | undefined,
   override?: 'piano-roll' | 'drum-grid',
   clip?: SessionClip,
-): 'piano-roll' | 'drum-grid' {
+): 'piano-roll' | 'drum-grid' | 'audio' {
   // A sampler drumkit edits on the drum grid; a melodic sampler stays on the
   // piano roll. Detection is note-agnostic so a variable-size kit (>8 pads, off
   // the GM map) still routes here: a loaded kit (drumkitId) OR a keymap whose
@@ -151,9 +152,11 @@ export function samplerDrumModel(
   return { rows: noteDrumRows(notes), labels };
 }
 
-/** An audio-channel clip: lives on an `audio` lane, has a sample, no notes. */
+/** An audio-channel clip: its engine says its clips ARE audio files, it has a
+ *  sample, and no notes. */
 export function isAudioClip(lane: SessionLane, clip: SessionClip): boolean {
-  return lane.engineId === 'audio' && !!clip.sample && (clip.notes?.length ?? 0) === 0;
+  return clipEditorFor(lane.engineId) === 'audio'
+    && !!clip.sample && (clip.notes?.length ?? 0) === 0;
 }
 
 /** The three high-level clip kinds the inspector UI cares about. */
@@ -165,7 +168,7 @@ export type ClipKind = 'notes' | 'drums' | 'audio';
 export function classifyClip(
   lane: SessionLane,
   clip: SessionClip,
-  engineEditor: 'piano-roll' | 'drum-grid' | undefined,
+  engineEditor: 'piano-roll' | 'drum-grid' | 'audio' | undefined,
   override?: 'piano-roll' | 'drum-grid',
 ): ClipKind {
   if (isAudioClip(lane, clip)) return 'audio';

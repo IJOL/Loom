@@ -12,6 +12,10 @@ import type { SessionLane, SessionClip } from '../session';
 import type { KnobHandle } from '../../core/knob';
 import type { SynthEngine } from '../../engines/engine-types';
 import { DEFAULT_METER } from '../../core/meter';
+// Side-effect: registers the real 'audio' engine's capabilities. isAudioClip
+// now asks the capability door instead of comparing lane.engineId === 'audio'
+// literally, so this fixture's real engineId: 'audio' lane needs it in place.
+import '../../engines/audio';
 
 function stubCanvas() {
   const ctx2d = new Proxy({}, { get: () => () => {} }) as unknown as CanvasRenderingContext2D;

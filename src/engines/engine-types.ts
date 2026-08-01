@@ -102,7 +102,7 @@ export interface SynthEngine {
   readonly name: string;
   readonly type: 'polyhost' | 'tab';
   readonly polyphony: 'mono' | 'poly';
-  readonly editor: 'piano-roll' | 'drum-grid';
+  readonly editor: 'piano-roll' | 'drum-grid' | 'audio';
   readonly params: import('./engine-params').EngineParamSpec[];
   readonly presets: EnginePreset[];
   /** Engine's modulation host — read by the voice-mod binder to enumerate

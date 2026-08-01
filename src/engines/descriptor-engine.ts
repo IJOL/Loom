@@ -28,7 +28,7 @@ export interface DescriptorEngineConfig {
   id: string;
   name: string;
   polyphony: 'mono' | 'poly';
-  editor?: 'piano-roll' | 'drum-grid';
+  editor?: 'piano-roll' | 'drum-grid' | 'audio';
   params: EngineParamSpec[];
   /** Lazy preset getter (usually getCachedPresets(<id>)). */
   presets: () => EnginePreset[];

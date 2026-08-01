@@ -23,6 +23,10 @@ import type { SessionState, SessionClip, SessionLane } from './session';
 import type { KnobHandle } from '../core/knob';
 import type { SynthEngine } from '../engines/engine-types';
 import { fakeDestinations } from './fake-destinations';
+// Side-effect: registers the real 'audio' engine's capabilities. isAudioClip
+// now asks the capability door instead of comparing lane.engineId === 'audio'
+// literally, so this fixture's real engineId: 'audio' lane needs it in place.
+import '../engines/audio';
 
 function mountInspectorDom(): void {
   document.body.innerHTML = `

@@ -1,6 +1,12 @@
 // src/session/clip-editors/clip-editor-router.test.ts
 import { describe, it, expect, vi } from 'vitest';
 import { chooseClipEditor, isAudioClip, classifyClip, combineEditorHandle, samplerDrumModel } from './clip-editor-router';
+import { registerEngineCapabilities, __resetCapabilities } from '../../plugins/capabilities';
+// Side-effect: registers the real 'audio' engine's capabilities. isAudioClip
+// now asks the capability door instead of comparing lane.engineId === 'audio'
+// literally, so the pre-existing tests below (which build a real engineId:
+// 'audio' lane, not a probe) need the built-in engine's registration in place.
+import '../../engines/audio';
 import type { SessionLane, SessionClip } from '../session';
 
 const lane = (over: Partial<SessionLane>): SessionLane => ({
@@ -167,5 +173,20 @@ describe('combineEditorHandle', () => {
     expect(h.getOctaveBase?.()).toBe(60);
     h.redraw();
     expect(body).toBe(1);
+  });
+});
+
+// Last in the file: __resetCapabilities() wipes the real 'audio' registration
+// the earlier tests rely on, so nothing after this block may depend on it.
+describe('isAudioClip via the capability door', () => {
+  it('a clip on ANY engine declaring clipEditor audio is an audio clip', () => {
+    __resetCapabilities();
+    registerEngineCapabilities('probe-audio', {
+      clipEditor: 'audio', shortLabel: 'p', outputTrim: 1,
+    });
+    const lane = { id: 'l1', engineId: 'probe-audio', clips: [], inserts: [] } as unknown as SessionLane;
+    const clip = { id: 'c1', lengthBars: 1, notes: [], sample: { id: 's' } } as unknown as SessionClip;
+    // Before this task this was false: isAudioClip compared against the id 'audio'.
+    expect(isAudioClip(lane, clip)).toBe(true);
   });
 });

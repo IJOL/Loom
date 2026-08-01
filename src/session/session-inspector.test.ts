@@ -38,6 +38,10 @@ vi.mock('./example-loader', async (importOriginal) => ({
 import { SessionInspector, _getClipClipboardForTesting } from './session-inspector';
 import type { SessionState, SessionClip, SessionLane } from './session';
 import type { NoteEvent } from '../core/notes';
+// Side-effect: registers the real 'audio' engine's capabilities. isAudioClip
+// (used by classifyClip, which gates the edit-toggle button) now asks the
+// capability door instead of comparing lane.engineId === 'audio' literally.
+import '../engines/audio';
 import { fakeDestinations } from './fake-destinations';
 
 // Minimal inspector chrome that openInspector() reads/wires by id.
