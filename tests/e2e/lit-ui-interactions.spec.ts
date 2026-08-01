@@ -33,7 +33,10 @@ test('dragging a knob changes its value and marks the gesture', async ({ page })
   await waitForBoot(page);
   await openLane(page, 'tb-303-1');
 
-  const knob = page.locator('.knob').first();
+  // `:visible` matters: Subtractive's section knobs stay MOUNTED for every lane
+  // and are merely hidden by CSS, so the first `.knob` in the document is one
+  // nobody can see — and dragging it is dragging nothing.
+  const knob = page.locator('.knob:visible').first();
   const before = Number(await knob.getAttribute('data-value-norm'));
 
   await knob.scrollIntoViewIfNeeded();
@@ -57,7 +60,7 @@ test('a knob drag survives an unrelated repaint of the panel around it', async (
   await waitForBoot(page);
   await openLane(page, 'tb-303-1');
 
-  const knob = page.locator('.knob').first();
+  const knob = page.locator('.knob:visible').first();   // see the note above
   const raised = async () => Number(await knob.getAttribute('data-value-norm'));
   await dragKnob(page, knob, -50);
   const afterDrag = await raised();

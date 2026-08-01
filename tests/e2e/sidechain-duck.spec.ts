@@ -53,7 +53,9 @@ async function measureDuck(page: Page, ms: number): Promise<DuckStats> {
 
 async function armSidechain(page: Page): Promise<void> {
   await openLane(page, 'tb-303-1');
-  await page.locator('[data-page="303"] .lane-fx-sc-src').selectOption('drums-1');
+  // The bass is edited on the poly page like every other melodic lane; the
+  // `data-page="303"` this used to read no longer exists.
+  await page.locator('[data-page="poly"] .lane-fx-sc-src').selectOption('drums-1');
 }
 
 /** Launch scene 2 and let the analyser fill with REAL data. Without the settle the

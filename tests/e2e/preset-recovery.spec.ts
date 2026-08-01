@@ -35,8 +35,33 @@ async function addLane(page: Page, engineId: string): Promise<string> {
   return newId;
 }
 
+/** Open a lane's editor AND wait until it is really the active one.
+ *
+ *  The wait is not politeness, it is the difference between testing something
+ *  and testing nothing. Clicking a lane header re-renders the session grid,
+ *  which replaces the header nodes; a second click issued immediately lands on a
+ *  node that is already detached and is simply lost. Verified on `main` as well
+ *  as here, so it is not this branch's doing — but without this wait the
+ *  "switch away and BACK" below never came back, and the assertion passed by
+ *  reading a dropdown nothing had touched. */
 async function openLane(page: Page, laneId: string): Promise<void> {
   await page.click(`.session-lane-header[data-lane-id="${laneId}"]`);
+  // Wait until the lane really IS the one being edited. Without this the test
+  // was vacuous: clicking a lane header re-renders the session grid, a click
+  // issued immediately after another one is swallowed, and the "switch away and
+  // BACK" below never came back — so the assertion read a dropdown that nothing
+  // had touched. Verified on `main` too, so the swallowed click is not this
+  // branch's doing; it only became visible once the TB-303 shared this dropdown.
+  await page.waitForFunction(
+    (id) => !!document.querySelector(`.session-lane-header-active[data-lane-id="${id}"]`),
+    laneId,
+    { timeout: 5000 },
+  );
+  // The active class lands DURING the re-render, not after it, so returning the
+  // moment it appears hands the next click a node that is about to be replaced —
+  // and that click is silently lost. Measured: with a settle here the switch
+  // always takes; without it, the third one never does.
+  await page.waitForTimeout(250);
 }
 
 /** First non-"custom" option value in a select (i.e. the first real preset). */
