@@ -16,6 +16,7 @@ import { makeDefaultLFO, makeDefaultADSR } from '../modulation/types';
 import type { ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
 import { drumSubGroupFor } from './drum-subgroups';
+import { registerEngineCapabilities } from '../plugins/capabilities';
 
 export const DRUMS_DEFAULT_MODULATORS: ModulatorState[] = [
   makeDefaultLFO('lfo1'),
@@ -37,3 +38,8 @@ function makeDrumsDescriptor() {
 
 registerEngineFactory('drums-machine', makeDrumsDescriptor);
 registerEngine(makeDrumsDescriptor());
+
+registerEngineCapabilities('drums-machine', {
+  clipEditor: 'drum-grid', shortLabel: 'drums', outputTrim: 1,
+  acceptsNoteFx: false,
+});

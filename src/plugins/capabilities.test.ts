@@ -3,8 +3,31 @@ import {
   registerEngineCapabilities, clipEditorFor, acceptsAudioFile,
   acceptsNoteFx, isHarmonic, isListedInSelector, __resetCapabilities,
 } from './capabilities';
+import '../engines/audio';
+import '../engines/sampler';
+import '../engines/drums-engine';
 
 const melodic = { clipEditor: 'piano-roll' as const, shortLabel: 'm', outputTrim: 1 };
+
+describe('the three non-melodic in-tree engines', () => {
+  // No beforeEach(__resetCapabilities) here on purpose, and placed before the
+  // resetting describe below: this checks the real registrations made by the
+  // imported engine files above, which a later __resetCapabilities() would wipe.
+
+  it('los tres motores no-melodicos del arbol declaran sus capacidades', () => {
+    expect(clipEditorFor('audio')).toBe('audio');
+    expect(acceptsAudioFile('audio')).toBe(true);
+    expect(acceptsNoteFx('audio')).toBe(false);
+    expect(isHarmonic('audio')).toBe(false);
+    expect(isListedInSelector('audio')).toBe(false);
+
+    expect(acceptsAudioFile('sampler')).toBe(true);
+    expect(isHarmonic('sampler')).toBe(false);
+
+    expect(clipEditorFor('drums-machine')).toBe('drum-grid');
+    expect(acceptsNoteFx('drums-machine')).toBe(false);
+  });
+});
 
 describe('the capability door', () => {
   beforeEach(() => __resetCapabilities());

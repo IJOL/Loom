@@ -12,6 +12,7 @@ import type { EngineParamSpec } from './engine-params';
 import { registerEngine, registerEngineFactory } from './registry';
 import { createDescriptorEngine } from './descriptor-engine';
 import { samplerDynamicParamsFor, samplerSubGroupFor } from './sampler-subgroups';
+import { registerEngineCapabilities } from '../plugins/capabilities';
 
 const SAMPLER_PARAMS: EngineParamSpec[] = [
   { id: 'gain',        label: 'Gain',   kind: 'continuous', min: 0, max: 1.5, default: 1 },
@@ -60,3 +61,9 @@ function makeSamplerDescriptor() {
 
 registerEngineFactory('sampler', makeSamplerDescriptor);
 registerEngine(makeSamplerDescriptor());
+
+registerEngineCapabilities('sampler', {
+  clipEditor: 'piano-roll', shortLabel: 'sampler', outputTrim: 1,
+  accepts: ['audio-file'],
+  harmonic: false,
+});
