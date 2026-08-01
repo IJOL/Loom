@@ -3,20 +3,22 @@
 //   The modulators-panel destination dropdown is populated by filtering the
 //   automationRegistry for `${laneId}.` entries (see modulation-ui.ts).
 //
-//   `rebuildEngineParamUI` calls `unregisterKnobsByPrefix(laneId, registry)`
-//   to evict a stale engine's knobs when switching engines. For Subtractive
-//   the knobs are mounted ONCE at boot (into the per-section divs declared
-//   in index.html) and never re-registered by buildParamUI — so without an
-//   explicit "rehydrate Subtractive main knobs" step the registry comes up
-//   empty for that lane after the rebuild, and the modulator destination
-//   dropdown comes up empty.
+//   `rebuildEngineParamUI` used to call `unregisterKnobsByPrefix(laneId,
+//   registry)` to evict a stale engine's knobs when switching engines. That
+//   function is gone now (dead since the engine-swap path stopped calling
+//   it), but the reason it existed still matters below: for Subtractive the
+//   knobs used to be mounted ONCE at boot (into per-section divs declared in
+//   index.html) and never re-registered by buildParamUI — so without an
+//   explicit "rehydrate Subtractive main knobs" step the registry came up
+//   empty for that lane after a rebuild, and the modulator destination
+//   dropdown came up empty with it.
 
 /** @vitest-environment jsdom */
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
-  unregisterKnobsByPrefix, melodicSynthEngineIds,
+  melodicSynthEngineIds,
   rebuildEngineParamUI, wireEngineSelector, type EngineSelectorUIDeps,
 } from './engine-selector-ui';
 import type { KnobHandle } from '../core/knob';
@@ -32,20 +34,6 @@ function makeKnobHandle(id: string): KnobHandle {
     setModulationOffset: () => { /* noop */ },
   };
 }
-
-describe('engine-selector-ui — registry hygiene', () => {
-  it('unregisterKnobsByPrefix removes only entries with the matching prefix', () => {
-    const reg = new Map<string, KnobHandle>();
-    reg.set('main.osc1.level',      makeKnobHandle('main.osc1.level'));
-    reg.set('main.filter.cutoff',   makeKnobHandle('main.filter.cutoff'));
-    reg.set('bass.cutoff',          makeKnobHandle('bass.cutoff'));
-    reg.set('mix.bass.eq.hi',       makeKnobHandle('mix.bass.eq.hi'));
-
-    unregisterKnobsByPrefix('main.', reg);
-
-    expect([...reg.keys()].sort()).toEqual(['bass.cutoff', 'mix.bass.eq.hi']);
-  });
-});
 
 describe('engine-selector-ui — mixer knobs across a lane switch', () => {
   // Pins the ordering `rebuildEngineParamUI` currently depends on: the mixer

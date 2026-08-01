@@ -47,12 +47,6 @@ export function melodicSynthEngineIds(): string[] {
 let _deps: EngineSelectorUIDeps | null = null;
 let _engineParamEl: HTMLDivElement | null = null;
 
-export function unregisterKnobsByPrefix(prefix: string, automationRegistry: Map<string, KnobHandle>): void {
-  for (const id of Array.from(automationRegistry.keys())) {
-    if (id.startsWith(prefix)) automationRegistry.delete(id);
-  }
-}
-
 export function rebuildEngineParamUI(): void {
   const deps = _deps!;
   const engineParamEl = _engineParamEl!;
