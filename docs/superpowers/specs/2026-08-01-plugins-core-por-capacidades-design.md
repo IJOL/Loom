@@ -74,17 +74,18 @@ No re-discutir. Cada una tiene fecha 2026-08-01 y salió de una pregunta directa
    engine/fx/modulator/notefx, para que el trozo 3 no invente un segundo.
 6. **Un plugin es 100% autocontenido.** El plugin del LFO contiene *todo* el LFO.
 
-Y dos correcciones al diseño que salieron durante la revisión:
+Y dos correcciones al diseño que salieron durante la revisión, ambas de Nacho y
+ambas quitando cosas que yo había propuesto de más:
 
-7. **`scope` no es una capacidad, es dato de sesión.** Es un campo por instancia
-   de `ModulatorState`, editable por el usuario: el control RETRIG del LFO es un
-   3-vías Free/Note/Voice donde "Voice" hace `mod.scope = 'per-voice'`
-   ([mod-config-templates.ts:90-116](../../../src/modulation/mod-config-templates.ts)).
-   Un mismo LFO usa los dos scopes.
-8. **No hay `defaultScope`.** La capacidad es `scopes: ScopeName[]` y **el primero
-   de la lista es el valor inicial**. LFO → `["shared","per-voice"]`, ADSR →
-   `["per-voice"]`, que es exactamente lo que hacen hoy `makeDefaultLFO` /
-   `makeDefaultADSR`.
+- **(7) `scope` no es una capacidad, es dato de sesión.** Es un campo por
+  instancia de `ModulatorState`, editable por el usuario: el control RETRIG del
+  LFO es un 3-vías Free/Note/Voice donde "Voice" hace `mod.scope = 'per-voice'`
+  ([mod-config-templates.ts:90-116](../../../src/modulation/mod-config-templates.ts)).
+  Un mismo LFO usa los dos scopes.
+- **(8) No hay `defaultScope`.** La capacidad es `scopes: ScopeName[]` y **el
+  primero de la lista es el valor inicial**. LFO → `["shared","per-voice"]`,
+  ADSR → `["per-voice"]`, que es exactamente lo que hacen hoy `makeDefaultLFO` /
+  `makeDefaultADSR`.
 
 ## Un plugin contiene lo suyo
 
@@ -141,6 +142,22 @@ código.
 Eso sube **`loomApi` a 2**. Sólo existe un plugin publicado y es nuestro
 (Karplus), así que se convierte y el validador rechaza la v1 con un mensaje
 claro. Sin migración.
+
+#### Colisión de nombres: `synth` vs `engine`
+
+Los dos registros usan **nombres distintos para lo mismo**. `PluginKind` de
+[src/plugins/types.ts](../../../src/plugins/types.ts) dice `'synth'`; el registro
+de motores y el manifiesto del trozo 1 dicen `engine`. Hay consumidores vivos de
+la primera forma: `listPlugins('synth')` en [main.ts:109](../../../src/main.ts) y
+en [plugin-bootstrap.ts](../../../src/app/plugin-bootstrap.ts).
+
+**Gana `engine`**, que es el nombre que usa todo lo demás (el registro de
+motores, `EngineManifest`, `engineId` en la sesión, el `plugin.json` publicado).
+`'synth'` desaparece del `PluginKind` en la rebanada A y sus dos consumidores se
+actualizan. `src/plugins/synths/` es un directorio **vacío** y se borra.
+
+Dejarlo sin decidir garantizaba una tercera forma más, que es exactamente lo que
+este trozo existe para evitar.
 
 ### Una puerta
 
