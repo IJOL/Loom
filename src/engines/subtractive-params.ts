@@ -45,7 +45,7 @@ export const SUB_PARAM_SPECS: EngineParamSpec[] = [
   { id: 'osc1.level',   label: 'Osc1 Lvl',  kind: 'continuous', min: 0, max: 1, default: 0.6, group: 'osc1' },
   { id: 'osc1.detune',  label: 'Osc1 Det',  kind: 'continuous', min: -50, max: 50, default: 0, unit: '¢', group: 'osc1' },
   { id: 'osc1.wave',    label: 'Osc1 Wave', kind: 'discrete', min: 0, max: 4, default: 0,
-    options: WAVE_OPTIONS, selectStyle: 'radio', group: 'osc1' },
+    options: WAVE_OPTIONS, group: 'osc1' },
   // Pulse width. Continuous on purpose: an LFO on this id IS pulse-width
   // modulation, so PWM needs no wave of its own. Only bites on a square —
   // that is what a duty cycle means. Kept off the rails (0.05..0.95) because
@@ -57,7 +57,7 @@ export const SUB_PARAM_SPECS: EngineParamSpec[] = [
   { id: 'osc2.level',   label: 'Osc2 Lvl',  kind: 'continuous', min: 0, max: 1, default: 0.4, group: 'osc2' },
   { id: 'osc2.detune',  label: 'Osc2 Det',  kind: 'continuous', min: -50, max: 50, default: 7, unit: '¢', group: 'osc2' },
   { id: 'osc2.wave',    label: 'Osc2 Wave', kind: 'discrete', min: 0, max: 4, default: 1,
-    options: WAVE_OPTIONS, selectStyle: 'radio', group: 'osc2' },
+    options: WAVE_OPTIONS, group: 'osc2' },
   { id: 'osc2.pw',      label: 'Osc2 PW',   kind: 'continuous', min: 0.05, max: 0.95, default: 0.5, group: 'osc2' },
   { id: 'osc2.sync',    label: 'Osc2 Sync', kind: 'continuous', min: 1, max: 8, default: 2, group: 'osc2' },
   { id: 'sub.level',    label: 'Sub Lvl',   kind: 'continuous', min: 0, max: 1, default: 0.3, group: 'sub' },
@@ -65,9 +65,9 @@ export const SUB_PARAM_SPECS: EngineParamSpec[] = [
 
   // Filter
   { id: 'filter.model',     label: 'Model',     kind: 'discrete', min: 0, max: 2, default: 0,
-    options: FILTER_MODEL_OPTIONS, selectStyle: 'radio', group: 'filter' },
+    options: FILTER_MODEL_OPTIONS, group: 'filter' },
   { id: 'filter.type',      label: 'Type',      kind: 'discrete', min: 0, max: 3, default: 0,
-    options: FILTER_TYPE_OPTIONS, selectStyle: 'radio', group: 'filter' },
+    options: FILTER_TYPE_OPTIONS, group: 'filter' },
   { id: 'filter.cutoff',    label: 'Cutoff',    kind: 'continuous', min: 0, max: 1, default: 0.55, group: 'filter' },
   { id: 'filter.resonance', label: 'Resonance', kind: 'continuous', min: 0, max: 1, default: 0.25, group: 'filter' },
   { id: 'filter.envAmount', label: 'Env Amt',   kind: 'continuous', min: 0, max: 1, default: 0.45, group: 'filter' },

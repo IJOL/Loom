@@ -4,9 +4,12 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { buildLaneInsertUI } from './lane-insert-ui';
 import { registerPlugin, _resetRegistry } from '../plugins/registry';
 import { InsertChain } from '../plugins/fx/insert-chain';
+import { buildEngineParamGrid } from '../engines/engine-param-grid';
 import type { InsertSlot } from './insert-slot';
 import type { KnobHandle } from '../core/knob';
 import type { FxInstance } from '../plugins/types';
+import type { EngineParamSpec } from '../engines/engine-params';
+import type { EngineUIContext } from '../engines/engine-types';
 
 // ── Minimal fake AudioContext ───────────────────────────────────────────────
 
@@ -40,6 +43,15 @@ function makeFakeFx(): FxInstance {
 
 const TEST_PLUGIN_ID = 'test-fx-for-insert-ui';
 
+// 4 options — the boundary the one rule (Task 8b) draws a vertical strip at,
+// used both in the fake plugin's manifest below and to build the SAME shape
+// of discrete param through the engine grid, so the two render paths can be
+// compared directly.
+const MODE_OPTIONS = [
+  { label: 'A', value: '0' }, { label: 'B', value: '1' },
+  { label: 'C', value: '2' }, { label: 'D', value: '3' },
+];
+
 beforeEach(() => {
   _resetRegistry();
   registerPlugin({
@@ -52,8 +64,8 @@ beforeEach(() => {
       params: [
         { id: 'drive', label: 'Drive', kind: 'continuous', min: 0, max: 1, default: 0.5 },
         { id: 'mix',   label: 'Mix',   kind: 'continuous', min: 0, max: 1, default: 1.0 },
-        { id: 'mode',  label: 'Mode',  kind: 'discrete',   min: 0, max: 2, default: 0,
-          options: [{ label: 'A', value: '0' }, { label: 'B', value: '1' }, { label: 'C', value: '2' }] },
+        { id: 'mode',  label: 'Mode',  kind: 'discrete',   min: 0, max: 3, default: 0,
+          options: MODE_OPTIONS },
       ],
       presets: [],
     },
@@ -307,5 +319,61 @@ describe('buildLaneInsertUI — compact unit layout (Option B)', () => {
     const texts = Array.from(btns).map((b) => b.textContent);
     expect(texts).toContain('×');
     expect(texts.some((t) => t === 'ON' || t === 'BYP')).toBe(true);
+  });
+});
+
+// ── Task 8b: the third render path (this file used to hand-roll its own
+// <select> here) must obey the SAME rule as the other two — the grouped and
+// flat engine-param grids. This is the assertion that pins it: the identical
+// shape of discrete param (4 options) must draw the identical control.
+describe('buildLaneInsertUI — the FX rack obeys the one select-control rule', () => {
+  function setup() {
+    const ctx = makeCtx();
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const inputNode  = new FakeAudioNode() as unknown as AudioNode;
+    const outputNode = new FakeAudioNode() as unknown as AudioNode;
+    const chain = new InsertChain(inputNode, outputNode);
+    return { ctx, container, chain };
+  }
+
+  it('a 4-option FX insert param renders a .radio-strip, not a hand-rolled <select>', () => {
+    const { ctx, container, chain } = setup();
+    chain.insert(makeFakeFx(), 'a');
+    const slots: InsertSlot[] = [
+      { id: 'a', pluginId: TEST_PLUGIN_ID, params: { drive: 0.5, mix: 1.0, mode: 0 }, bypass: false },
+    ];
+    buildLaneInsertUI({ ctx, container, chain, slots, onChange: () => {} });
+
+    expect(container.querySelector('.insert-unit-head .radio-strip')).not.toBeNull();
+    expect(container.querySelector('.insert-unit-head select')).toBeNull();
+    expect(container.querySelector('.insert-unit-head .knob')).toBeNull();
+  });
+
+  it('renders the same control (.radio-strip) as an engine param of the identical 4-option shape', () => {
+    const { ctx, container, chain } = setup();
+    chain.insert(makeFakeFx(), 'a');
+    const slots: InsertSlot[] = [
+      { id: 'a', pluginId: TEST_PLUGIN_ID, params: { drive: 0.5, mix: 1.0, mode: 0 }, bypass: false },
+    ];
+    buildLaneInsertUI({ ctx, container, chain, slots, onChange: () => {} });
+
+    const modeSpec: EngineParamSpec = {
+      id: 'mode', label: 'Mode', kind: 'discrete', min: 0, max: 3, default: 0, options: MODE_OPTIONS,
+    };
+    const stubEngine = {
+      id: 'stub', params: [modeSpec],
+      getBaseValue: () => 0, setBaseValue: () => {},
+    };
+    const stubCtx = { laneId: 'L', registerKnob: () => {}, registry: new Map() } as unknown as EngineUIContext;
+    const grouped = document.createElement('div');
+    const flat = document.createElement('div');
+    buildEngineParamGrid(stubEngine, stubCtx, grouped);
+    buildEngineParamGrid(stubEngine, stubCtx, flat, { layout: 'flat' });
+
+    const insertControl = container.querySelector('.insert-unit-head .radio-strip');
+    expect(insertControl).not.toBeNull();
+    expect(grouped.querySelector('.radio-strip')).not.toBeNull();
+    expect(flat.querySelector('.radio-strip')).not.toBeNull();
   });
 });

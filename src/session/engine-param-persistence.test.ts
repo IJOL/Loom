@@ -56,8 +56,9 @@ describe('a knob turned on a worklet-engine lane survives getStateForSave', () =
       sessionState: host.state,
     } as unknown as EngineUIContext;
 
-    // Each lane's REAL builder, now one function with two layouts:
-    // knob-mounting.mountSubtractiveLaneKnobs asks for the flat one, every
+    // Each lane's REAL builder, now one function with two layouts: the
+    // subtractive lane asks for the flat one (it always did — the flat layout
+    // is not exclusive to it, but it is the one lane that opts in), every
     // other worklet engine gets the grouped grid.
     const parent = document.createElement('div');
     buildEngineParamGrid(engine!, ctx, parent,

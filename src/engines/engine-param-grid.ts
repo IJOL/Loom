@@ -1,16 +1,24 @@
 // src/engines/engine-param-grid.ts
 // THE builder that turns an engine's EngineParamSpec[] into UI controls: one
-// knob or select per spec, registered under the canonical `<laneId>.<spec.id>`
-// so modulation/automation pickers can address it, with undo attached.
+// knob (continuous) or select control (discrete) per spec, registered under
+// the canonical `<laneId>.<spec.id>` so modulation/automation pickers can
+// address it, with undo attached.
+//
+// THE rule for a discrete param, on EVERY surface that draws one — both
+// layouts below, AND the FX insert rack (src/session/lane-insert-ui.ts) —
+// comes from one function, createSelectControl (src/core/select-control.ts):
+// discrete always renders a select control, NEVER a knob; ≤4 options draw a
+// vertical radio strip; more than that, or `selectStyle: 'dropdown'`, draw a
+// native <select>. A knob is for continuous params only.
 //
 // Two layouts, both approved and both still shipping:
-//   'grouped' (default) — one labelled row per spec.group, quantised drag, and
-//     discrete → knob unless selectStyle 'dropdown'. The worklet lane pages.
-//   'flat' — controls appended straight into the caller's own row, unquantised,
-//     and discrete → select control. The drum rack, the sampler pads, the
-//     audio-clip toolbar, the subtractive page. This layout used to be a SECOND
-//     copy of the whole walk (the deleted engine-ui.wireEngineParams), which is
-//     how the two drifted apart on units, step and index clamping.
+//   'grouped' (default) — one labelled row per spec.group, quantised drag.
+//     The worklet lane pages.
+//   'flat' — controls appended straight into the caller's own row,
+//     unquantised. The drum rack, the sampler pads, the audio-clip toolbar.
+//     This layout used to be a SECOND copy of the whole walk (the deleted
+//     engine-ui.wireEngineParams), which is how the two drifted apart on
+//     units, step and index clamping.
 // Every value write goes through commitParam (engine-param-commit.ts) so the
 // edit reaches BOTH the engine and lane.engineState.params — the grid used to
 // call setBaseValue directly, which is why an fm/wavetable/westcoast/
@@ -44,14 +52,13 @@ export interface BuildGridOpts {
   /** Value-readout formatter keyed by spec id. Wins over `spec.unit`. */
   formatter?: (specId: string, v: number) => string;
   /**
-   * 'grouped' (default): one labelled row per `spec.group`, quantised drags,
-   * and a discrete param renders as a KNOB unless it opts into
-   * `selectStyle: 'dropdown'` — the approved worklet-lane look.
+   * 'grouped' (default): one labelled row per `spec.group`, quantised drags.
    * 'flat': controls are appended straight into the caller's own row, in
-   * declaration order, unquantised, and EVERY discrete param renders as a
-   * select control. That is the approved look of the drum rack, the sampler
-   * pads, the audio-clip toolbar and the subtractive page, which used to get
-   * it from a second spec-walking builder.
+   * declaration order, unquantised. That is the approved look of the drum
+   * rack, the sampler pads and the audio-clip toolbar, which used to get it
+   * from a second spec-walking builder.
+   * Discrete params render IDENTICALLY in both — see this file's header and
+   * buildControl for the one rule that holds regardless of layout.
    */
   layout?: 'grouped' | 'flat';
   /** Overrides the engine's own table. Used by callers that build a grid for a
@@ -67,17 +74,12 @@ function buildControl(
   const flat = opts.layout === 'flat';
   const discrete = spec.kind === 'discrete' && !!spec.options && spec.options.length > 0;
 
-  // Grouped: a discrete param renders as a <select>/radio-strip only if it
-  // explicitly opts in — 'dropdown' (e.g. FM's Algorithm) or 'radio' (e.g.
-  // Subtractive's Osc1/Osc2 Wave, Filter Model, Filter Type). Any other
-  // discrete param renders as a knob, keeping wavetable/westcoast/tb303's
-  // osc/wave/env selectors visually unchanged — a param declaring no
-  // `selectStyle` must NOT be swept into this branch by a layout change.
-  // Flat: every discrete param is a select control (a radio strip up to 4
-  // options, else a native select), which is what a drum WAVE or a sampler
-  // LOOP is — 'radio'/'dropdown' don't matter there, `forceSelect` below
-  // decides the widget in both layouts.
-  if (discrete && (flat || spec.selectStyle === 'dropdown' || spec.selectStyle === 'radio')) {
+  // A discrete param ALWAYS renders as a select control — a vertical radio
+  // strip (≤4 options) or a native <select> (more, or `selectStyle:
+  // 'dropdown'`) — in BOTH layouts. No discrete param ever renders as a knob;
+  // a knob is for continuous params only. See this file's header for the
+  // full rule, which also covers the FX insert rack.
+  if (discrete) {
     const options = spec.options!;
     const idx = Math.max(0, Math.min(options.length - 1, Math.round(engine.getBaseValue(spec.id))));
     const { el, handle } = createSelectControl({
@@ -104,19 +106,17 @@ function buildControl(
     // Flat drags stay unquantised: knob.ts rounds to `Math.round(v/step)*step`
     // from ZERO rather than from `min`, so a step over a wide range (the
     // sampler's 20..20000 cutoff) would snap the low end below its own minimum.
-    step: discrete ? 1 : (flat ? undefined : (spec.max - spec.min) / 200),
+    step: flat ? undefined : (spec.max - spec.min) / 200,
     value: engine.getBaseValue(spec.id),
     defaultValue: spec.default,
     size: opts.knobSize,
     color: spec.color ?? sectionColor,
     format: opts.formatter
       ? (v) => opts.formatter!(spec.id, v)
-      : discrete
-        ? (v) => spec.options![Math.max(0, Math.min(spec.options!.length - 1, Math.round(v)))].label
-        // Flat knobs show a bare number: a drum-rack knob is 34px and a sampler
-        // zone knob 30px, and both were approved without the declared unit
-        // suffix. The grouped grid, whose knobs are full size, paints it.
-        : (!flat && spec.unit ? (v) => `${v.toFixed(2)}${spec.unit}` : undefined),
+      // Flat knobs show a bare number: a drum-rack knob is 34px and a sampler
+      // zone knob 30px, and both were approved without the declared unit
+      // suffix. The grouped grid, whose knobs are full size, paints it.
+      : (!flat && spec.unit ? (v) => `${v.toFixed(2)}${spec.unit}` : undefined),
     onChange: (v) => { commitParam(engine, ctx, spec.id, v); },
     ...(ctx.historyDeps ? attachKnobUndo(ctx.historyDeps) : {}),
   });

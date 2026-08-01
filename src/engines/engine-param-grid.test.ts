@@ -73,49 +73,27 @@ describe('buildEngineParamGrid', () => {
     expect(parent.querySelector('.knob')).toBeNull();
   });
 
-  it('renders a discrete spec WITHOUT selectStyle: dropdown as a knob, not a <select>', () => {
+  // Task 8b: the knob branch for discrete params is GONE. Every discrete spec
+  // renders through createSelectControl — a vertical strip at ≤4 options, a
+  // native <select> above that — on EVERY surface, whether or not it opts
+  // into a `selectStyle`. 'radio' is retired (it was the old opt-in for this
+  // exact behaviour, now the only behaviour); only 'dropdown' still means
+  // anything, as a force.
+  it('renders a discrete spec with ≤4 options and no selectStyle as a radio strip, not a knob (grouped layout)', () => {
     const parent = document.createElement('div');
     const wave: EngineParamSpec = {
       id: 'osc.wave', label: 'WAVE', kind: 'discrete', min: 0, max: 2, default: 0,
       options: [{ value: 'sine', label: 'Sine' }, { value: 'square', label: 'Square' }, { value: 'saw', label: 'Saw' }],
     };
     buildEngineParamGrid(stubEngine([wave]), ctx(), parent);
-    expect(parent.querySelector('.knob')).not.toBeNull();
-    expect(parent.querySelector('select')).toBeNull();
-  });
-
-  // Regression: the grouped branch used to test only `selectStyle === 'dropdown'`,
-  // so a param declaring 'radio' (Subtractive's Osc1/Osc2 Wave, Filter Model,
-  // Filter Type) fell through to the knob path and silently became a knob on
-  // the grouped worklet-lane pages — even though 'flat' callers (the drum rack,
-  // the sampler pads) always honoured it correctly. No existing test asserted
-  // the CONTROL TYPE for a radio-declared param in the grouped layout, which is
-  // exactly why it shipped broken.
-  it("renders a discrete spec with selectStyle: 'radio' as a radio strip, not a knob", () => {
-    const parent = document.createElement('div');
-    const model: EngineParamSpec = {
-      id: 'filter.model', label: 'Model', kind: 'discrete', min: 0, max: 2, default: 0,
-      selectStyle: 'radio',
-      options: [{ value: 'lp', label: 'LP' }, { value: 'hp', label: 'HP' }, { value: 'bp', label: 'BP' }],
-    };
-    buildEngineParamGrid(stubEngine([model]), ctx(), parent);
     expect(parent.querySelector('.knob')).toBeNull();
     expect(parent.querySelector('.radio-strip')).not.toBeNull();
   });
 
-  it('a discrete spec declaring no selectStyle still renders as a knob (radio must not become the new default)', () => {
-    const parent = document.createElement('div');
-    buildEngineParamGrid(stubEngine([discreteSpec('env.shape')]), ctx(), parent);
-    expect(parent.querySelector('.knob')).not.toBeNull();
-    expect(parent.querySelector('.radio-strip')).toBeNull();
-    expect(parent.querySelector('select')).toBeNull();
-  });
-
-  it("renders a discrete spec with selectStyle: 'radio' and >4 options as a native <select>, matching createSelectControl's own rule", () => {
+  it('renders a discrete spec with >4 options and no selectStyle as a native <select>, not a knob (grouped layout)', () => {
     const parent = document.createElement('div');
     const wave: EngineParamSpec = {
       id: 'osc1.wave', label: 'Wave', kind: 'discrete', min: 0, max: 4, default: 0,
-      selectStyle: 'radio',
       options: [
         { value: 'sine', label: 'Sine' }, { value: 'tri', label: 'Tri' }, { value: 'saw', label: 'Saw' },
         { value: 'square', label: 'Square' }, { value: 'pulse', label: 'Pulse' },
@@ -125,6 +103,38 @@ describe('buildEngineParamGrid', () => {
     expect(parent.querySelector('.knob')).toBeNull();
     expect(parent.querySelector('.radio-strip')).toBeNull();
     expect(parent.querySelector('select.select-control')).not.toBeNull();
+  });
+
+  it("selectStyle: 'dropdown' forces a native <select> even at 2 options (grouped layout)", () => {
+    const parent = document.createElement('div');
+    const algo: EngineParamSpec = {
+      id: 'algorithm', label: 'Algorithm', kind: 'discrete', min: 0, max: 1, default: 0,
+      selectStyle: 'dropdown',
+      options: [{ value: '0', label: 'A' }, { value: '1', label: 'B' }],
+    };
+    buildEngineParamGrid(stubEngine([algo]), ctx(), parent);
+    expect(parent.querySelector('.knob')).toBeNull();
+    expect(parent.querySelector('.radio-strip')).toBeNull();
+    expect(parent.querySelector('select.select-control')).not.toBeNull();
+  });
+
+  it('no discrete param, at any option count or selectStyle, ever produces a .knob element — grouped or flat', () => {
+    const dropdownSpec: EngineParamSpec = { ...discreteSpec('d'), selectStyle: 'dropdown' };
+    const twoOptionSpec: EngineParamSpec = {
+      ...discreteSpec('b'),
+      options: [{ value: 'x', label: 'X' }, { value: 'y', label: 'Y' }],
+    };
+    const fiveOptionSpec: EngineParamSpec = {
+      id: 'c', label: 'C', kind: 'discrete', min: 0, max: 4, default: 0,
+      options: [0, 1, 2, 3, 4].map((n) => ({ value: String(n), label: String(n) })),
+    };
+    const specs = [discreteSpec('a'), twoOptionSpec, fiveOptionSpec, dropdownSpec];
+
+    for (const layout of ['grouped', 'flat'] as const) {
+      const parent = document.createElement('div');
+      buildEngineParamGrid(stubEngine(specs), ctx(), parent, layout === 'flat' ? { layout } : {});
+      expect(parent.querySelector('.knob'), `layout ${layout} drew a discrete param as a knob`).toBeNull();
+    }
   });
 
   it('skips params matching opts.skip', () => {
@@ -183,6 +193,21 @@ describe("buildEngineParamGrid layout:'flat'", () => {
     const host = document.createElement('div');
     buildEngineParamGrid(stubEngine([discreteSpec('algorithm', { selectStyle: 'dropdown' })]),
       ctx(), host, { layout: 'flat' });
+    expect(host.querySelector('select.select-control')).not.toBeNull();
+  });
+
+  it('renders a discrete spec with >4 options as a native <select>, not a knob or a strip', () => {
+    const host = document.createElement('div');
+    const wave: EngineParamSpec = {
+      id: 'osc1.wave', label: 'Wave', kind: 'discrete', min: 0, max: 4, default: 0,
+      options: [
+        { value: 'sine', label: 'Sine' }, { value: 'tri', label: 'Tri' }, { value: 'saw', label: 'Saw' },
+        { value: 'square', label: 'Square' }, { value: 'pulse', label: 'Pulse' },
+      ],
+    };
+    buildEngineParamGrid(stubEngine([wave]), ctx(), host, { layout: 'flat' });
+    expect(host.querySelector('.knob')).toBeNull();
+    expect(host.querySelector('.radio-strip')).toBeNull();
     expect(host.querySelector('select.select-control')).not.toBeNull();
   });
 

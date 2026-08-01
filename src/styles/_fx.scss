@@ -139,8 +139,16 @@
   text-transform: uppercase;
   color: var(--text);
 }
+// Task 8b: the discrete param header control now comes from
+// createSelectControl, which returns EITHER a native <select> or a
+// `.radio-strip` div depending on option count — both get the `insert-sel`
+// class for spacing, but only the <select> case gets its full themed look;
+// `.radio-strip` already carries its own compact chrome (src/styles/_knob.scss)
+// consistent with every other surface that draws a discrete param.
 .insert-sel {
   margin-left: 2px;
+}
+select.insert-sel {
   background: var(--surface);
   color: var(--fx-color, var(--amber));
   border: 1px solid var(--border);

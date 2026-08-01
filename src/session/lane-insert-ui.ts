@@ -6,6 +6,7 @@ import { listPlugins, createInstance } from '../plugins/registry';
 import { type InsertSlot, newInsertId } from './insert-slot';
 import type { InsertChain, ChainSlot } from '../plugins/fx/insert-chain';
 import { createKnob, type KnobHandle } from '../core/knob';
+import { createSelectControl } from '../core/select-control';
 import { buildFxVis, hasFxVis, VIS_W, VIS_H } from '../core/fx-vis';
 import { insertParamId } from '../automation/automation-targets';
 import { mountPanel, type PanelHandle } from '../core/lit-panel';
@@ -129,7 +130,10 @@ interface UnitWidgets {
   /** Thumbnail SVG, absent for effects with no still-frame vis. */
   visEl?: Element;
   knobs: KnobHandle[];
-  discretes: HTMLSelectElement[];
+  /** A native <select> (>4 options / forceSelect) or a `.radio-strip` div
+   *  (≤4) — whichever createSelectControl picks; see engine-param-grid.ts's
+   *  header for the rule this rack now also obeys (Task 8b). */
+  discretes: HTMLElement[];
 }
 
 /** Create-once widgets for one insert unit. Knobs own their DOM + drag state and
@@ -162,7 +166,7 @@ function buildUnitWidgets(
   }
 
   const knobs: KnobHandle[] = [];
-  const discretes: HTMLSelectElement[] = [];
+  const discretes: HTMLElement[] = [];
   for (const spec of factory.manifest.params) {
     if (spec.kind === 'continuous') {
       const knobId = deps.automationScopeId
@@ -179,20 +183,30 @@ function buildUnitWidgets(
       knobs.push(handle);
       if (deps.automationScopeId && deps.registerKnob) deps.registerKnob(handle);
     } else if (spec.kind === 'discrete' && spec.options) {
-      // Discrete params (filter type, delay sync) sit in the header as a mini
-      // select. Built imperatively (not a template `.selectedIndex` binding):
-      // lit commits element parts before child parts, so the binding would land
-      // before the <option>s exist and never stick.
-      const sel = renderElement<HTMLSelectElement>(html`<select class="insert-sel" title=${spec.label}>${spec.options.map((opt, i) => html`<option value=${String(i)}>${opt.label}</option>`)}</select>`);
-      sel.selectedIndex = Math.round(cs.fx.getBaseValue(spec.id));
-      sel.onchange = () => {
-        const i = sel.selectedIndex;
-        cs.fx.setBaseValue(spec.id, i);
-        slot.params[spec.id] = i;
-        redrawVis();
-        deps.onChange();
-      };
-      discretes.push(sel);
+      // Discrete params (filter type, delay sync) sit in the header, drawn
+      // through the SAME select-control builder every other surface uses
+      // (Task 8b) — this rack no longer hand-rolls its own <select>. ≤4
+      // options draw a vertical strip, more draw a native <select>; either
+      // way the widget gets the `insert-sel` class for header spacing (its
+      // full themed look is `select`-only — see _fx.scss).
+      const options = spec.options;
+      const idx = Math.max(0, Math.min(options.length - 1, Math.round(cs.fx.getBaseValue(spec.id))));
+      const { el } = createSelectControl({
+        id: `${slot.id}.${spec.id}`,
+        options,
+        initialValue: options[idx]?.value ?? options[0].value,
+        onChange: (v) => {
+          const i = options.findIndex((o) => o.value === v);
+          const clamped = Math.max(0, i);
+          cs.fx.setBaseValue(spec.id, clamped);
+          slot.params[spec.id] = clamped;
+          redrawVis();
+          deps.onChange();
+        },
+      });
+      el.classList.add('insert-sel');
+      el.title = spec.label;
+      discretes.push(el);
     }
   }
   return { visEl, knobs, discretes };

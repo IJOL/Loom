@@ -4,10 +4,14 @@
 // mid-bucket normalized value so the registered current value roundtrips
 // through automation cleanly.
 //
-// Rendering: with ≤ 4 options we paint a horizontal radio strip (graphical
-// when option values match known waveform shapes, plain text otherwise);
-// with > 4 options we fall back to the native <select>. The returned `el`
-// is typed as HTMLElement either way — callers use `.el` for layout only.
+// THE one rendering rule for every discrete param, on every surface that
+// draws one (see engine-param-grid.ts's header for the full list, which
+// includes the FX insert rack): with ≤ 4 options we paint a vertical radio
+// strip (graphical when option values match known waveform shapes, plain
+// text otherwise), sized to match a knob's footprint (~50px wide) so a row
+// of mixed controls aligns; with > 4 options, or `forceSelect`, we fall back
+// to the native <select>. The returned `el` is typed as HTMLElement either
+// way — callers use `.el` for layout only.
 //
 // DOM is built once via a one-time lit-html render into a detached fragment;
 // the active-state refresh and data-value-norm updates stay imperative on the
