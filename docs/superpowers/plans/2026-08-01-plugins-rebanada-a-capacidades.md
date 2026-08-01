@@ -50,8 +50,8 @@ Comprobados en el código el 2026-08-01. No inferidos.
 | `loom-api` convierte `clipEditor:'audio'` en `'piano-roll'` en silencio | `loom-api.ts:30` |
 | `engine-swap` ya rechaza por editor ≠ `piano-roll` en las dos direcciones | `engine-swap.ts:39-40` |
 | el clic en celda vacía abre el picker sólo por `engineId === 'audio'` | `session-grid-templates.ts:152` |
-| `PluginKind` dice `'synth'`; hay 2 consumidores vivos | `plugins/types.ts:5`, `main.ts:109`, `plugin-bootstrap.ts` |
-| `src/plugins/synths/` está VACÍO | `ls src/plugins/synths/` |
+| `PluginKind` dice `'synth'`; hay 3+ consumidores (la lista del brief se quedó corta) | `plugins/types.ts:5`, `main.ts:109`, `plugin-bootstrap.ts` |
+| `src/plugins/synths/` NO existe en git (dir vacío = no versionado) | `ls` en el worktree |
 | `SynthEngine.editor` sólo admite `'piano-roll' \| 'drum-grid'` | `engine-types.ts:105` |
 | `registerEngineFactory` existe y sus factorías devuelven descriptores inertes | `registry.ts:47` |
 | `createEngineInstance` está importado sin usarse en el allocator | `lane-allocator.ts:4` |
@@ -82,7 +82,9 @@ Comprobados en el código el 2026-08-01. No inferidos.
   `trigger-dispatch.ts`, `clip-editor-router.ts`.
 - `plugins/karplus/plugin.json` + `public/plugins/karplus/plugin.json` → forma de componentes.
 
-**Borrar:** `src/plugins/synths/` (vacío).
+**Borrar:** nada. `src/plugins/synths/` sólo existe como carpeta vacía sin
+trackear en el checkout principal; git no versiona directorios vacíos, así que en
+esta rama no hay nada que borrar.
 
 ---
 
@@ -316,15 +318,18 @@ Esperado: PASS.
 ```bash
 git add packages/loom-plugin-sdk src/plugin-host/manifest-validate.ts src/plugin-host/manifest-validate.test.ts
 git commit -F - <<'EOF'
-feat(plugins): el manifiesto pasa a ser un paquete de componentes
+feat(plugins): the manifest becomes a bundle of components
 
-Un manifiesto pasa a ser un paquete de COMPONENTES discriminados por kind,
-y cada uno declara sus capacidades. Los opcionales se omiten: un manifiesto
-que calla se comporta como un instrumento melodico corriente, que es el
-default correcto.
+A plugin.json now declares `components: [...]`, each with a `kind`, an id and
+a `capabilities` record, replacing the engine-only `engines: [...]`. Optional
+capabilities are omitted: a manifest that says nothing behaves like an ordinary
+melodic instrument, which is the right default.
 
-La union ComponentManifest tiene un solo miembro a proposito; las rebanadas
-B y C anaden modulator y notefx sin cambiarle la forma.
+`components` is REQUIRED, so a manifest in the old shape fails loudly with
+"components must be an array" instead of registering zero components.
+
+The ComponentManifest union deliberately has one member; slices B and C add
+modulator and notefx without changing its shape.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 EOF
@@ -530,17 +535,16 @@ Esperado: todo verde. Si algo importa `plugin-capabilities`, sale aquí.
 ```bash
 git add -A
 git commit -F - <<'EOF'
-feat(plugins): una sola puerta de capacidades, sobre componentes
+feat(plugins): a single capability door, over components
 
-plugin-capabilities.ts se llamaba asi porque preguntaba primero "es esto un
-plugin?" — el reflejo exacto que estamos quitando. Ahora la puerta es
-plugins/capabilities.ts y responde de dos fuentes sin que el llamante sepa
-cual: manifiesto si el componente es plugin, registro en codigo si es
-integrado.
+plugin-capabilities.ts was named that way because it asked "is this a plugin?"
+first — the very reflex we are removing. The door is now plugins/capabilities.ts
+and answers from two sources without the caller knowing which: a manifest when
+the component is a plugin, a code registration when it is built in.
 
-Los accesores nunca devuelven undefined para un id desconocido: responden
-como instrumento melodico corriente. Un motor aun sin registrar apagaria la
-UI de su pista, y ese fallo seria mudo.
+Its accessors never return undefined for an unknown id: they answer like an
+ordinary melodic instrument. An engine not yet registered would blank out its
+lane's UI, and that failure would be silent.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 EOF
@@ -606,11 +610,11 @@ Esperado: FAIL — `'engine'` no es asignable a `PluginKind`.
 ```bash
 git add -A
 git commit -F - <<'EOF'
-fix(plugins): un solo nombre para lo mismo — gana `engine`
+fix(plugins): one name for one thing — `engine` wins
 
-PluginKind decia 'synth' y el registro de motores, engineId y el plugin.json
-publicado decian engine. Dos nombres para una cosa es como se llega a tres.
-src/plugins/synths/ estaba vacio y se borra.
+PluginKind said 'synth' while the engine registry, engineId in the session and
+the published plugin.json all said engine. Two names for one thing is how you
+end up with three.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 EOF
@@ -681,6 +685,15 @@ export function isAudioClip(lane: SessionLane, clip: SessionClip): boolean {
 `chooseClipEditor` ya consulta `engineEditor` y no necesita cambios; su firma
 pasa a admitir `'audio'` y devolverlo tal cual.
 
+> **BORRA `descriptorEditor()` de [src/plugin-host/loom-api.ts](../../../src/plugin-host/loom-api.ts).**
+> La Task 2 lo introdujo como puente: `SynthEngine.editor` todavía no admitía
+> `'audio'`, así que aplastaba `'audio' → 'piano-roll'` para ese campo. En cuanto
+> el tipo se ensancha en el Step 3, el puente sobra — y si se queda, hemos
+> recreado exactamente la mentira que esta tarea existe para matar, sólo que con
+> un comentario mejor. Sustituye las dos llamadas por el valor directo
+> (`editor: m.capabilities.clipEditor` y `editor: m.clipEditor`) y comprueba con
+> grep que no queda ninguna.
+
 - [ ] **Step 4: Green**
 
 `NO_COLOR=1 npx vitest run src/session/clip-editors/` → PASS.
@@ -691,12 +704,13 @@ pasa a admitir `'audio'` y devolverlo tal cual.
 ```bash
 git add -A
 git commit -F - <<'EOF'
-fix(plugins): clipEditor 'audio' deja de convertirse en 'piano-roll'
+fix(plugins): clipEditor 'audio' stops being turned into 'piano-roll'
 
-El validador aceptaba 'audio' como legal y el host lo aplastaba a
-'piano-roll' sin decir nada: una mentira en el codigo, y la razon de que un
-plugin no pudiera ser un canal de audio. isAudioClip pregunta ahora a la
-puerta en vez de comparar con el id 'audio'.
+The validator accepted 'audio' as legal and the host silently flattened it to
+'piano-roll': a lie in the code, and the reason a plugin could not be an audio
+channel. isAudioClip now asks the capability door instead of comparing against
+the id 'audio', and descriptorEditor() — the bridge Task 2 needed while the type
+was still narrow — is gone.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 EOF
@@ -795,11 +809,11 @@ registerEngineCapabilities('drums-machine', {
 ```bash
 git add -A
 git commit -F - <<'EOF'
-feat(plugins): audio, sampler y drums declaran sus capacidades
+feat(plugins): audio, sampler and drums declare their own capabilities
 
-Siguen siendo integrados, pero contestan por la misma puerta que un plugin.
-Cuando migren en el trozo 3, su respuesta se muda de fuente y el core no se
-entera — que es justamente la propiedad que buscabamos.
+They are still built in, but they answer through the same door a plugin does.
+When they migrate in slice 3 their answer moves from one source to the other and
+the core never notices — which is exactly the property we were after.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 EOF
@@ -920,16 +934,16 @@ la cifra en el commit.
 ```bash
 git add -A
 git commit -F - <<'EOF'
-refactor(plugins): siete sitios del core dejan de comparar ids de motor
+refactor(plugins): seven core sites stop comparing engine ids
 
-Drop de ficheros, panel de note-FX, boton de acordes, filtro de pistas,
-lista del selector y la cadena de note-FX preguntan ahora a la puerta.
+File drop, the note-FX panel, the chords button, the lane filter, the selector
+list and the note-FX chain now ask the capability door.
 
-La guarda de engine-swap por 'audio' se BORRA sin sustituto: las dos
-comprobaciones de editor que ya habia cubrian las dos direcciones en cuanto
-clipEditor:'audio' dejo de mentir. Una capacidad menos que mantener.
+The engine-swap guard against 'audio' is DELETED with no replacement: the two
+editor checks already there covered both directions once clipEditor:'audio'
+stopped lying. One less capability to keep coherent.
 
-Censo de engines: 116 -> N lineas core-decides.
+Engine census: 116 -> N core-decides lines.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 EOF
@@ -1000,10 +1014,13 @@ apareciendo en el selector.
 ```bash
 git add -A
 git commit -F - <<'EOF'
-feat(plugins): Karplus pasa a la forma de componentes
+feat(plugins): Karplus speaks the component shape
 
-Sin migracion: solo existe un plugin publicado y es este. El test de
-paridad muestra a muestra sigue verde, o sea que el sonido no cambio.
+No migration: only one plugin is published and it is this one. The
+sample-by-sample parity test stays green, so the sound did not change.
+
+This also kills the v1 path: EngineManifest, LoomApi.registerEngine and
+adoptEngine go with it, since Karplus was their last consumer.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 EOF
@@ -1116,11 +1133,11 @@ una celda y comprueba que:
 ```bash
 git add -A
 git commit -F - <<'EOF'
-test(plugins): un plugin declara que es canal de audio y el host le cree
+test(plugins): a plugin declares itself an audio channel and the host believes it
 
-Prueba de aceptacion de la rebanada A: el motor sonda no trae DSP y aun asi
-recibe el editor de forma de onda, el drop de ficheros y el editor de pista
-reducido a sus inserts, sin que ningun fichero de src/ lo nombre.
+Slice A's acceptance proof: the probe engine ships no DSP and still gets the
+waveform editor, the file drop and a lane editor reduced to its inserts, without
+any file under src/ naming it.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 EOF
