@@ -1,5 +1,6 @@
 // src/automation/automation-knob.ts
-// Landing an automation value on a knob that IS on screen.
+// Landing an automation value on its target, mounted or not: the knob when one
+// is on screen, the audio object directly when it is not.
 //
 // The mounted branch of both automation players — per-clip envelopes
 // (automation-tick) and Performance take curves (performance-feature) — does the
@@ -20,8 +21,9 @@ import type { KnobHandle } from '../core/knob';
 
 /** Drive a mounted knob from an automation value (0..1), display included, with
  *  the engineState mirror suppressed. Returns false when no knob is mounted for
- *  `paramId`, so the caller can run its own unmounted fallback. */
-export function driveKnobFromAutomation(
+ *  `paramId`, so landAutomationValue (the only caller) can fall through to its
+ *  unmounted path. */
+function driveKnobFromAutomation(
   registry: ReadonlyMap<string, KnobHandle>,
   paramId: string,
   normalised: number,

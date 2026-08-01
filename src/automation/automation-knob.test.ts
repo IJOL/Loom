@@ -36,7 +36,7 @@ describe('landAutomationValue', () => {
     expect(applyUnmounted).toHaveBeenCalledWith('L.filter.cutoff', 0.25, ranges);
   });
 
-  it('asks for the range table at most once across many unmounted writes', () => {
+  it('asks for the range table once per unmounted write, not memoised internally', () => {
     const getTargetRanges = vi.fn(() => new Map());
     const land = { registry: new Map(), applyUnmounted: vi.fn(), getTargetRanges };
 

@@ -142,7 +142,6 @@ describe('lane editor mount transaction', () => {
     expect(registry.has('fm-1.op1.ratio')).toBe(false);
 
     const engine = makeEngine(0.2);
-    const state = { lanes: [{ id: 'fm-1' }] } as unknown as SessionState;
     landAutomationValue(
       {
         registry,
@@ -160,7 +159,13 @@ describe('lane editor mount transaction', () => {
 
     expect(engine.value).toBeCloseTo(0.6);
     // Playback semantics: the value reaches the engine and nothing else — a
-    // curve belongs to the clip/take, not to the lane's saved base sound.
-    expect(state.lanes[0].engineState).toBeUndefined();
+    // curve belongs to the clip/take, not to the lane's saved base sound. That
+    // guarantee is structural, not something this test can exercise: unlike
+    // LiveControlApplyDeps (live-control-apply.ts), AutomationApplyDeps
+    // (automation-apply.ts) carries no sessionState at all, so there is no
+    // handle through which this call could reach lane.engineState even by
+    // accident — asserting on a `state` object that was never wired into the
+    // deps above would only prove the test's own fixture is inert, not that
+    // the production path doesn't mirror.
   });
 });
