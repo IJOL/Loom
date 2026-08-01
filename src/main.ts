@@ -55,7 +55,7 @@ import { loadLibrary } from './patterns/pattern-library';
 import { resetAutomationPosition, getAutoAbsSubIdx } from './automation/automation-tick';
 import { createDestinationRegistry } from './automation/destination-registry';
 import { wireKnobAutomationMenu } from './app/knob-menu-wiring';
-import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from './core/lane-ids';
+import { LANE_ID_BASS, LANE_ID_DRUMS } from './core/lane-ids';
 // ── Live MIDI control (src/control) ─────────────────────────────────────────
 import { createActiveLaneStore } from './control/active-lane';
 import { wireMidiControl } from './app/midi-control-wiring';
@@ -314,7 +314,6 @@ const knobs = createKnobMounter({
   sidechainBus,
   getHistoryDeps: () => _discreteHistoryDeps,
 });
-const mountSubtractiveLaneKnobs = knobs.mountSubtractiveLaneKnobs;
 const mountDrumMasterLaneKnobs = knobs.mountDrumMasterLaneKnobs;
 const mountLaneFxPanel = knobs.mountLaneFxPanel;
 const refreshKnobsFromSynth = knobs.refreshKnobsFromSynth;
@@ -627,7 +626,6 @@ const engineSelectors = wireEngineSelectors({
   // Late-bound call-site wrapper: populateAutoParamSelectWrapper is a `let`
   // populated at boot, so it is read at event-fire time.
   populateAutoParamSelect: () => populateAutoParamSelectWrapper(),
-  mountSubtractiveLaneKnobs,
   mountLaneFxPanel,
   getHistoryDeps: () => _discreteHistoryDeps,
   engineSwapDeps,
@@ -649,10 +647,6 @@ const polySynthPresetsDeps = engineSelectors.polySynthPresetsDeps;
 void pluginsReady.then(() => {
   refreshMelodicEngineOptions(engineSel, engineSel.value);
 });
-
-// Phase G: deferred to sessionHost.onStateApplied (lane not allocated at boot).
-// mountSubtractiveLaneKnobs(LANE_ID_POLY) — see boot section below.
-
 
 const fxUIDeps: FxUIDeps = {
   ctx, fx, masterInsertChain, masterComp, masterShaper, getBpm: () => seq.bpm, registerKnob,
@@ -744,8 +738,6 @@ writes = createAutomationWrites({
 sessionHost.onStateApplied(() => {
   // Drum master knobs
   mountDrumMasterLaneKnobs(LANE_ID_DRUMS);
-  // Subtractive poly lane knobs
-  mountSubtractiveLaneKnobs(LANE_ID_POLY);
 });
 
 // Where a session comes FROM (see src/app/session-lifecycle.ts): the boot demo

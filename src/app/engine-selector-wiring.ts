@@ -9,11 +9,11 @@
 //     one (#engine-select-303) doing the same swap from the TB-303's own page,
 //     differing only in which lane it meant; that page is gone and so is it.
 //  2. The poly/preset deps and the synth-editor routing deps are the other half
-//     of the same remount: when the editor re-points at a lane, the subtractive
-//     section knobs have to be re-mounted UNDER THAT LANE'S ID or the LFO/ADSR
-//     destination dropdown comes up empty. That is the same failure the
-//     selector's remountSubtractiveLaneKnobs hook exists to prevent, so the two
-//     hooks belong in one place where they cannot drift apart.
+//     of the same remount: when the editor re-points at a lane, the per-lane FX
+//     panel has to be re-mounted UNDER THAT LANE'S ID or its knobs come up
+//     unregistered. That is the same failure the selector's remountLaneFxPanel
+//     hook exists to prevent, so the two hooks belong in one place where they
+//     cannot drift apart.
 //
 // ORDER, and what deliberately stayed in main.ts:
 //
@@ -61,7 +61,6 @@ export interface EngineSelectorWiringDeps {
   /** Late-bound: main's populateAutoParamSelectWrapper is a `let` populated at
    *  boot, so this must be a thunk read at event-fire time. */
   populateAutoParamSelect: () => void;
-  mountSubtractiveLaneKnobs: (laneId: string) => void;
   mountLaneFxPanel: (laneId: string) => void;
   /** Late-bound: _discreteHistoryDeps is assigned after historyDeps is built,
    *  which is much further down boot. Read at event-fire time, never captured. */
@@ -90,7 +89,7 @@ export function wireEngineSelectors(deps: EngineSelectorWiringDeps): EngineSelec
   const {
     engineSel, initialEngineId, getActiveEngineLaneId, getLaneEngineId,
     automationRegistry, registerKnob, populateAutoParamSelect,
-    mountSubtractiveLaneKnobs, mountLaneFxPanel, getHistoryDeps,
+    mountLaneFxPanel, getHistoryDeps,
     engineSwapDeps, onEngineChangeUndoable, sessionHost,
     getLaneEngineInstance, refreshLaneKnobs, laneResources, setActiveEngineLane,
   } = deps;
@@ -103,7 +102,6 @@ export function wireEngineSelectors(deps: EngineSelectorWiringDeps): EngineSelec
     automationRegistry,
     registerKnob,
     populateAutoParamSelect: () => populateAutoParamSelect(),
-    remountSubtractiveLaneKnobs: (laneId) => mountSubtractiveLaneKnobs(laneId),
     remountLaneFxPanel: (laneId) => mountLaneFxPanel(laneId),
     // Late-bound via getter: _discreteHistoryDeps is assigned after historyDeps
     // is built (further below), but the change handler fires at user-interaction
@@ -131,8 +129,8 @@ export function wireEngineSelectors(deps: EngineSelectorWiringDeps): EngineSelec
 
   // The `synthEditorDeps` bundle that used to be built here is gone with the
   // PolySynth purge: its only consumer was showPolyEditor(), reached exclusively
-  // through a `getPolySynth()` branch no engine could satisfy. Subtractive knobs
-  // are re-mounted through the live path instead — engine-selector-ui calls
-  // remountSubtractiveLaneKnobs when the lane's engine changes.
+  // through a `getPolySynth()` branch no engine could satisfy. Every engine's
+  // knobs, Subtractive included, are drawn by buildParamUI from the engine's
+  // declared params — there is no separate remount path for it any more.
   return { polySynthPresetsDeps };
 }

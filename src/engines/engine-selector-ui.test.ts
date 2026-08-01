@@ -12,6 +12,8 @@
 //   dropdown comes up empty.
 
 import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 import { unregisterKnobsByPrefix, melodicSynthEngineIds } from './engine-selector-ui';
 import type { KnobHandle } from '../core/knob';
 import { bootstrapPlugins } from '../app/plugin-bootstrap';
@@ -63,5 +65,38 @@ describe('engine-selector-ui — melodic engine filter', () => {
     (globalThis as unknown as { Loom: { registerComponent(m: unknown): void } })
       .Loom.registerComponent(karplusPlugin.components[0]);
     expect(melodicSynthEngineIds()).toContain('karplus');
+  });
+});
+
+describe('engine-selector-ui — no static subtractive markup', () => {
+  // Subtractive's OSC/FILTER/AMP rows used to be hand-written HTML on the poly
+  // page (three `data-engine="subtractive"` rows, each holding a `#poly-*-knobs`
+  // div that knob-mounting.mountSubtractiveLaneKnobs painted knobs into). Every
+  // other melodic engine draws its knobs from its declared params via
+  // buildEngineParamGrid, and Subtractive now does too (worklet-lane-engine.ts
+  // no longer skips its own grid) — so the static rows became dead markup that
+  // painted a SECOND, hidden "Cutoff"/"Resonance"/etc. next to the real one.
+  // This reads the real index.html (not a fixture) so a partial revert of the
+  // deletion — the markup restored, the mount function not — fails here.
+  const html = fs.readFileSync(path.resolve('index.html'), 'utf8');
+
+  it('leaves no subtractive-only rows in the document', () => {
+    expect(html).not.toContain('data-engine="subtractive"');
+  });
+
+  it('leaves no orphan per-section knob-row divs behind', () => {
+    for (const id of [
+      'poly-osc1-knobs', 'poly-osc2-knobs', 'poly-sub-knobs', 'poly-noise-knobs',
+      'poly-filter-knobs', 'poly-amp-knobs', 'poly-master-knobs',
+    ]) {
+      expect(html).not.toContain(`id="${id}"`);
+    }
+  });
+
+  it('non-vacuity: the poly page and its shared FX row are still there', () => {
+    // Proves the two checks above fail for the RIGHT reason (dead rows gone),
+    // not because the whole poly page was accidentally deleted with them.
+    expect(html).toContain('data-page="poly"');
+    expect(html).toContain('id="poly-fx-row"');
   });
 });

@@ -118,27 +118,22 @@
 /* ── Per-section knob accent colors ──────────────────────────────────────
  * Default knob stroke is amber. These scoped overrides reuse the palette
  * already used by mixer / FX knobs (cyan / yellow / red / purple / blue /
- * orange / teal) — no new colors invented. Colors are applied to the
- * stroke only; labels and value text stay neutral. */
+ * orange) — no new colors invented. Colors are applied to the stroke only;
+ * labels and value text stay neutral.
+ *
+ * Subtractive's own per-section colors are no longer CSS rules keyed on
+ * div ids — they are declared once, as data, in SUB_PARAM_GROUPS
+ * (src/engines/subtractive.ts) and applied inline by engine-param-grid.ts.
+ * FILTER (Cutoff, Resonance, Env Amt, Drive, Key Track) is one section and
+ * one color, orange: Resonance / Env Amt / Drive / Key Track used to render
+ * teal (the old `:nth-last-child(-n+4)` rule below), a leftover from when
+ * the filter's four ADSR knobs (F Atk/Dec/Sus/Rel — now drawn by the
+ * MODULATORS panel, `drawnBy: 'modulators'`) sat in this same row and made
+ * those four the "last four" instead. Deliberate: all of FILTER is orange now. */
 
 @mixin knob-accent($color) {
   .knob-value   { stroke: $color; }
   .knob-pointer { stroke: $color; }
-}
-
-#poly-osc1-knobs   { @include knob-accent(var(--knob-cyan));   }
-#poly-osc2-knobs   { @include knob-accent(var(--knob-yellow)); }
-#poly-sub-knobs    { @include knob-accent(var(--knob-blue));   }
-#poly-noise-knobs  { @include knob-accent(var(--knob-purple)); }
-#poly-filter-knobs { @include knob-accent(var(--knob-orange)); }
-#poly-amp-knobs    { @include knob-accent(var(--knob-red));    }
-#poly-master-knobs { @include knob-accent(var(--knob-green));  }
-
-/* FILTER envelope subgroup (last four knobs F ATK / F DEC / F SUS / F REL)
- * teal — distinct from the main filter controls in orange. */
-#poly-filter-knobs .knob:nth-last-child(-n+4) {
-  .knob-value   { stroke: var(--knob-teal); }
-  .knob-pointer { stroke: var(--knob-teal); }
 }
 
 /* Modulator cards: ADSR knobs red, LFO rate cyan. Depth knob in routing

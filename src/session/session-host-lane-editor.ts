@@ -60,17 +60,6 @@ export function showLaneEditor(self: SessionHost, laneId: string): void {
   if (targetTab === 'poly') {
     self.deps.setActiveEngineLane?.(laneId);
   }
-  // Hide Subtractive-only knob rows when the active poly lane's engine
-  // is NOT subtractive (FM / Wavetable render their own
-  // controls inside engine-mod-host; the legacy `data-engine="subtractive"`
-  // rows shouldn't leak in on top). The toggle runs unconditionally so
-  // switching back to a subtractive lane re-shows them.
-  const polyPage = document.querySelector('[data-page="poly"]');
-  if (polyPage) {
-    const subRows = polyPage.querySelectorAll<HTMLElement>('[data-engine="subtractive"]');
-    const showSubRows = lane?.engineId === 'subtractive';
-    for (const row of subRows) row.style.display = showSubRows ? '' : 'none';
-  }
   // Keep #engine-lane-label in sync for non-poly lanes too (no-op if the
   // active page doesn't include it).
   const laneLabelEl = document.getElementById('engine-lane-label');
@@ -187,14 +176,11 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
   self.inspector.mountLaneInserts(laneId, host, registerOwned);
 
   // Populate the correct preset dropdown for each page type.
-  // The poly page's #poly-preset-select is populated here for ALL poly-engine
-  // lanes (subtractive, fm, wavetable). For subtractive, the existing
-  // showPolyEditor → rebuildEngineParamUI path also populates it (harmless
-  // double call). For FM/Wavetable, showPolyEditor is NOT called so
-  // without this call those engines would show stale Subtractive presets.
+  // The poly page's #poly-preset-select is populated here for EVERY poly-engine
+  // lane (subtractive, fm, wavetable, …) so none of them show a stale previous
+  // engine's presets.
   // Hide the poly page's ENGINE/PRESET/🎲 header row for audio lanes (an audio
-  // channel is not an instrument). The subtractive knob rows are already hidden
-  // for non-subtractive engines elsewhere.
+  // channel is not an instrument).
   if (targetTab === 'poly') {
     const headerRow = page.querySelector<HTMLElement>('#poly-engine-row');
     if (headerRow) headerRow.style.display = panels.engineHeaderRow ? '' : 'none';

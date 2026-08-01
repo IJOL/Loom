@@ -12,14 +12,6 @@ export interface EngineSelectorUIDeps {
   automationRegistry: Map<string, KnobHandle>;
   registerKnob: (k: KnobHandle) => void;
   populateAutoParamSelect: () => void;
-  /** Called by `rebuildEngineParamUI` when the active engine is Subtractive
-   *  to re-mount the per-section knobs into the index.html divs and
-   *  re-register their handles in the automation registry. The Subtractive
-   *  knobs are stable in DOM but their registry entries get evicted by
-   *  `unregisterKnobsByPrefix` (which exists to clear knobs from other
-   *  engines), so this hook re-populates them so the modulator destination
-   *  dropdown isn't empty. */
-  remountSubtractiveLaneKnobs?: (laneId: string) => void;
   /** Called UNCONDITIONALLY by `rebuildEngineParamUI` (for every engine) after
    *  the prefix unregister, so the per-lane FX panel's knobs (which sit at
    *  `<laneId>.fx.*` and would otherwise be lost across engine switches) get
@@ -54,7 +46,6 @@ export function melodicSynthEngineIds(): string[] {
 
 let _deps: EngineSelectorUIDeps | null = null;
 let _engineParamEl: HTMLDivElement | null = null;
-let _polyPage: Element | null = null;
 
 export function unregisterKnobsByPrefix(prefix: string, automationRegistry: Map<string, KnobHandle>): void {
   for (const id of Array.from(automationRegistry.keys())) {
@@ -65,7 +56,6 @@ export function unregisterKnobsByPrefix(prefix: string, automationRegistry: Map<
 export function rebuildEngineParamUI(): void {
   const deps = _deps!;
   const engineParamEl = _engineParamEl!;
-  const polyPage = _polyPage!;
 
   engineParamEl.innerHTML = '';
   // Drop any previously-registered knobs for this lane so we don't accumulate
@@ -73,19 +63,9 @@ export function rebuildEngineParamUI(): void {
   const activeLaneId = deps.getActiveLaneId();
   unregisterKnobsByPrefix(`${activeLaneId}.`, deps.automationRegistry);
 
-  // Show/hide subtractive-specific rows based on the ACTIVE lane's engine
-  const engineId = deps.getLaneEngineId(activeLaneId);
-  const subtractiveRows = polyPage.querySelectorAll<HTMLElement>('[data-engine="subtractive"]');
-  for (const row of subtractiveRows) {
-    row.style.display = engineId === 'subtractive' ? '' : 'none';
-  }
   // Re-mount the per-lane FX panel unconditionally so its knobs (laneId.fx.*)
   // are re-registered after the prefix unregister above, regardless of engine.
   deps.remountLaneFxPanel?.(activeLaneId);
-  // Re-mount Subtractive per-section knobs so their registry entries are
-  // alive again after the prefix unregister above. Without this the
-  // modulator destination dropdown comes up empty for Subtractive lanes.
-  if (engineId === 'subtractive') deps.remountSubtractiveLaneKnobs?.(activeLaneId);
   // The modulators panel is rendered via SessionHost.injectEngineModulatorPanel
   // for ALL lanes (single source of truth). engine-params is no longer used by
   // the modulators UI; hide it to avoid an empty container in the layout.
@@ -143,7 +123,6 @@ export function wireEngineSelector(deps: EngineSelectorUIDeps, initialEngineId: 
   // Build the engine-params container and insert it into the poly page.
   // One-shot scaffolding: rendered into a fragment, the element pulled out.
   const polyPage = document.querySelector('[data-page="poly"]')!;
-  _polyPage = polyPage;
   const frag = document.createDocumentFragment();
   render(html`<div id="engine-params" style="display:none"></div>`, frag);
   const engineParamEl = frag.firstElementChild as HTMLDivElement;

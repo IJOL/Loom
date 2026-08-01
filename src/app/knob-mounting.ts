@@ -1,10 +1,9 @@
-import { buildEngineParamGrid } from '../engines/engine-param-grid';
 import { normaliseSelectIndex } from '../core/select-control';
 import { wireDrumMasterUI } from '../core/drum-master-ui';
 import { mountLaneFxPanel as mountLaneFxPanelInner } from '../core/lane-fx-panel';
 import { LANE_ID_BASS } from '../core/lane-ids';
 import type { KnobHandle } from '../core/knob';
-import type { SynthEngine, EngineUIContext } from '../engines/engine-types';
+import type { SynthEngine } from '../engines/engine-types';
 import type { LaneResourceMap } from '../core/lane-resources';
 import type { SessionState } from '../session/session';
 import type { HistoryDeps } from '../save/history-wiring';
@@ -27,7 +26,6 @@ export interface KnobMounterDeps {
 }
 
 export interface KnobMounter {
-  mountSubtractiveLaneKnobs(laneId: string): void;
   mountDrumMasterLaneKnobs(laneId: string): void;
   mountLaneFxPanel(laneId: string): void;
   refreshKnobsFromSynth(): void;
@@ -43,56 +41,6 @@ function pageForLane(laneId: string): string {
 }
 
 export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
-  const buildCtx = (laneId: string): EngineUIContext => ({
-    laneId,
-    registerKnob: (k) => deps.registerKnob(k as KnobHandle),
-    registry: deps.registry as unknown as Map<string, unknown>,
-    lookupLaneDisplayName: deps.getLaneDisplayName,
-    // Lazy getters so we can build ctx before sessionHost / history are
-    // initialized — consumers read them later, at knob-event time.
-    get sessionState() { return deps.getSessionState(); },
-    get historyDeps() { return deps.getHistoryDeps?.(); },
-  });
-
-  const mountSubtractiveLaneKnobs = (laneId: string) => {
-    const sectionMap: Array<[string, string]> = [
-      ['osc1.',   'poly-osc1-knobs'],
-      ['osc2.',   'poly-osc2-knobs'],
-      ['sub.',    'poly-sub-knobs'],
-      ['noise.',  'poly-noise-knobs'],
-      ['filter.', 'poly-filter-knobs'],
-      ['amp.',    'poly-amp-knobs'],
-      ['master.', 'poly-master-knobs'],
-    ];
-    const engine = deps.laneResources.get(laneId)?.engine;
-    if (!engine) return;
-    const ctx = buildCtx(laneId);
-    // Unified envelope model: the amp/filter ADSR + Built-in Env toggle now live in
-    // the MODULATORS panel (the panel ADSRs ARE the envelopes), so don't mount the
-    // duplicate built-in env knobs here.
-    const ENV_LEAVES = new Set(['attack', 'decay', 'sustain', 'release', 'builtinEnv']);
-    const isEnvKnob = (id: string): boolean => ENV_LEAVES.has(id.slice(id.indexOf('.') + 1));
-    for (const [prefix, divId] of sectionMap) {
-      const parent = document.getElementById(divId);
-      if (!parent) continue;
-      parent.innerHTML = '';
-      // Flat: the section div IS the row, and subtractive's discrete params
-      // (osc waves, filter type) are radio strips, not knobs.
-      buildEngineParamGrid(engine, ctx, parent, {
-        layout: 'flat',
-        skip: (id) => !id.startsWith(prefix) || isEnvKnob(id),
-      });
-    }
-    // The AMP section held only envelope knobs ⇒ now empty. Hide it + its label so
-    // no orphan "AMP" header is left behind.
-    const ampDiv = document.getElementById('poly-amp-knobs');
-    if (ampDiv) {
-      ampDiv.style.display = 'none';
-      const lbl = ampDiv.previousElementSibling;
-      if (lbl?.classList.contains('section-label')) (lbl as HTMLElement).style.display = 'none';
-    }
-  };
-
   const mountDrumMasterLaneKnobs = (laneId: string) => {
     const strip = deps.laneResources.get(laneId)?.strip;
     if (!strip) return;
@@ -152,7 +100,7 @@ export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
   };
 
   return {
-    mountSubtractiveLaneKnobs, mountDrumMasterLaneKnobs, mountLaneFxPanel,
+    mountDrumMasterLaneKnobs, mountLaneFxPanel,
     refreshKnobsFromSynth, refreshLaneKnobs,
   };
 }

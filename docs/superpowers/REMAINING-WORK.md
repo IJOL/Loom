@@ -58,10 +58,9 @@ mockups.
 
 ## Known code debts (not feature work, tracked nowhere else)
 
-Small, isolated, and kept here only so they are not silently forgotten. The
-first three were re-verified against the code on 2026-07-26 and are still open;
-the last was found on 2026-08-01. Verify again before acting on any of them —
-that is what this list is for.
+Small, isolated, and kept here only so they are not silently forgotten. All
+three were re-verified against the code on 2026-07-26 and are still open — but
+verify again before acting; that is what this list is for.
 
 - **The offline render is not yet faithful to the live path.** This is the
   standing "offline render ≠ live" debt, and it should be closed as a whole
@@ -115,36 +114,6 @@ that is what this list is for.
   plain elements — not wrapped in `createSelectControl`, not registered under a
   `<laneId>.preset` automation id — so a preset change cannot be automated or
   recorded like every other control.
-- **Subtractive's knobs are hand-written in `index.html`, and they stay mounted
-  under every other engine.** It is the only engine whose UI is static markup:
-  the `data-engine="subtractive"` rows and their `#poly-osc1-knobs` …
-  `#poly-master-knobs` divs. Every other engine builds its knobs from its
-  declared spec through `buildParamUI` into `.engine-mod-host`. Opening a
-  non-subtractive lane does not empty those divs, it only sets
-  `display: none` on the rows — so the previously-shown subtractive lane's knobs
-  stay in the DOM, invisible.
-
-  Measured 2026-08-01: opening a TB-303 lane leaves the poly page holding **35**
-  `.knob-label` elements, the first **19** of them Subtractive's.
-
-  One consequence is proven and now defended: the page holds **two** knobs
-  labelled "Cutoff" and the first in DOM order is the invisible one, so any e2e
-  locator for a knob needs `:visible`. That cost two passing specs during the
-  2026-08-01 dice work (`lit-ui-interactions.spec.ts`), and the note lives in
-  those files now.
-
-  Two things were **not** verified and should be before acting: whether the
-  per-frame modulation-ring painter (`automation/automation-tick.ts`) walks the
-  hidden knobs every frame, and whether they remain in the destination registry
-  under their own lane id. If they do remain, that is probably CORRECT — a lane
-  you are not looking at should stay automatable — so this is not obviously a
-  leak to plug.
-
-  It is the same asymmetry that produced the frozen-modulation-rings bug: the
-  `if (engineId === 'subtractive')` branches exist because this one engine is
-  mounted differently. Closing it means giving Subtractive the same treatment as
-  the other five and dropping the static rows — a visible UI change, so a
-  decision for the owner rather than a chore.
 
 ## Reference (kept deliberately — not a backlog)
 

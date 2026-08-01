@@ -306,15 +306,11 @@ export class WorkletLaneEngine implements SynthEngine {
     // TB-303 is mono and declares no poly.voices, so it renders nothing here
     // for that group — no polyphony branch needed, the data already says so).
     //
-    // Subtractive's osc/filter/amp/master knobs are mounted separately into
-    // fixed page sections by knob-mounting.mountSubtractiveLaneKnobs, so this
-    // grid must draw ONLY its poly.* params here or every one of those knobs
-    // would render twice; every OTHER worklet engine (fm/wavetable/westcoast/
-    // tb303) renders its full grouped grid — grouped params (e.g. FM's
-    // OP1..OP4) become one labelled row each, ungrouped params share the top row.
-    buildEngineParamGrid(this, ctx, container, {
-      skip: this.id === 'subtractive' ? (id) => !id.startsWith('poly.') : undefined,
-    });
+    // Every worklet engine, Subtractive included, renders its full grouped
+    // grid here — grouped params (e.g. FM's OP1..OP4, Subtractive's OSC 1/
+    // OSC 2/SUB/NOISE/FILTER/MASTER) become one labelled row each, ungrouped
+    // params share the top row.
+    buildEngineParamGrid(this, ctx, container);
 
     // Modulators panel. Editing a modulator/connection re-posts the whole
     // modulator set to the worklet runtime (postMods) so live LFO edits sound.
