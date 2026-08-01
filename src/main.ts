@@ -41,7 +41,7 @@ import {
 import {
   wirePolyControls, refreshPolyPresetSelect, recordPagePresetForLane,
 } from './polysynth/polysynth-presets';
-import { wireRandomizeUI } from './core/randomize-ui';
+import { initRandomize, wireRandomizeUI } from './core/randomize-ui';
 import { wireFxUI, type FxUIDeps } from './core/fx-ui';
 import { wireTransport, setPlaying, type TransportDeps } from './core/transport';
 import { createStemsFeature } from './app/stems-feature';
@@ -791,17 +791,17 @@ const { stemDialog } = createStemsFeature({ ctx, seq, sessionHost, setTransportB
 _discreteHistoryDeps = historyDeps;
 // wireRandomizeUI is here (not at its original boot position) because it needs
 // historyDeps, which closes over saveWiringDeps, which closes over sessionHost.
-wireRandomizeUI({
-  // The dice asks the ENGINE to roll its own declared params, so it works for
-  // every worklet engine instead of only the one class that no longer exists.
+// The dice asks the ENGINE to roll its own declared params, so it works for
+// every worklet engine instead of only the one class that no longer exists.
+initRandomize({
   getEngine: (laneId) => laneResources.get(laneId)?.engine ?? null,
+  getLaneEngineId,
+  getActiveLaneId: () => _lehState.activeLaneId,
   getSessionState: () => sessionHost?.state,
-  getBassLaneId: () => LANE_ID_BASS,
-  getDrumsLaneId: () => LANE_ID_DRUMS,
-  refreshKnobsFromSynth,
-  applyDrumKitPreset: (laneId, name) => { void sessionHost.applyDrumPreset(laneId, name); },
+  refreshLaneKnobs,
   historyDeps,
 });
+wireRandomizeUI();
 const saveManager = wireSaveManager(saveWiringDeps);
 // Recovery can allocate a subtractive lane synchronously, so gate it on the
 // worklet module being registered (same reason as the boot demo above). On a

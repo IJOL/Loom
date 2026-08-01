@@ -37,9 +37,19 @@ lit-html para plantillas, Playwright para e2e.
 
 ### Task 1: La acción única — `randomizeLaneSound`
 
-Mata el bug. El botón sigue siendo estático en `index.html` en esta tarea; lo único
-que cambia es **qué hace** al pulsarlo, y que hay un solo sitio donde eso está
-escrito.
+Mata el bug. Los dos botones melódicos siguen siendo estáticos en `index.html` en
+esta tarea; lo único que cambia es **qué hacen** al pulsarlos, y que hay un solo
+sitio donde eso está escrito.
+
+**Dos desviaciones sobre el borrador de este plan, decididas al implementar:**
+
+1. **El listener del inspector se lo queda `wireRandomizeUI`**, y
+   `polysynth-presets.ts` pierde el suyo del todo. El borrador hacía que
+   `polysynth-presets` llamara a la acción, lo que creaba un **ciclo de imports**
+   (ese módulo ya es importado por `randomize-ui`). Así no hay ciclo, no hace falta
+   un campo de deps que la Task 2 borraría, y es un paso hacia el botón único.
+2. **El dado de drums se borra aquí, no en la Task 2.** Si se dejara para después,
+   la rama pasaría un commit entero con un botón visible que ya no hace nada.
 
 **Files:**
 - Modify: `src/core/randomize-ui.ts` (reescritura casi total del módulo)
@@ -440,20 +450,19 @@ Declara el gancho como opcional en `EngineSelectorUIDeps`, igual que sus vecinos
 `syncRandomizeButtons()` en `main.ts` justo después de `wireRandomizeUI()`, para el
 primer pintado del boot.
 
-- [ ] **Step 6: Borrar el camino del dado de drums**
+- [ ] **Step 6: (hecho en la Task 1) Borrar el camino del dado de drums**
 
-En `src/core/randomize-ui.ts` borra `randomizeDrumsSound` y `pickRandomDrumKit`, el
-import de `getDrumKits` y el de `recordPagePresetForLane` si se queda sin uso, y el
-listener de `drums-random-sound`. Borra también sus tests (el bloque
-`describe('pickRandomDrumKit')` del fichero de test). Comprueba antes que nadie más
-los importa:
+Ya no queda nada que hacer aquí: la Task 1 borró `randomizeDrumsSound`,
+`pickRandomDrumKit`, sus tests y el `<button id="drums-random-sound">`, para que la
+rama no pasara ningún commit con un botón visible que no hace nada. `applyDrumKitPreset`
+sigue vivo en `polysynth-presets.ts` (lo usa el desplegable de kits): sólo salió de
+las deps del dado. Verifícalo y sigue:
 
 ```bash
-grep -rn "pickRandomDrumKit\|randomizeDrumsSound\|applyDrumKitPreset" src/ tests/
+grep -rn "pickRandomDrumKit\|randomizeDrumsSound\|drums-random-sound" src/ tests/ index.html
 ```
 
-`applyDrumKitPreset` sigue vivo en `polysynth-presets.ts` (lo usa el desplegable de
-kits): sólo sale de las deps del dado.
+Esperado: sin resultados.
 
 - [ ] **Step 7: Corregir las dos docstrings que pasan a mentir**
 

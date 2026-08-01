@@ -1,76 +1,80 @@
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
-import { markPagePresetCustom, recordPagePresetForLane } from '../polysynth/polysynth-presets';
-import { getDrumKits } from '../presets/drum-kits-loader';
+import { markPresetCustomForLane } from '../polysynth/polysynth-presets';
 import { commitEngineBaseValues } from '../engines/engine-param-commit';
+import { LANE_ID_BASS } from './lane-ids';
 import type { SynthEngine } from '../engines/engine-types';
 import type { SessionState } from '../session/session';
 
-// ── Per-lane "🎲 Sound" randomize ─────────────────────────────────────────
-// Randomizes the engine's *sound* (params / kit). Only sound parameters are
-// affected here; note content in clips is not touched.
+// ── The "🎲 Sound" dice ────────────────────────────────────────────────────
+// ONE action, for every lane and every page. It rolls the engine's declared
+// params (engine.randomize() → engines/engine-randomize.ts, generic over the
+// spec) and repaints the lane's knobs IN PLACE. Note content is not touched.
 //
-// The melodic side asks the ENGINE to roll its own params (engine.randomize(),
-// generic over the declared spec — see engines/engine-randomize.ts). It used to
-// reach for the node-per-note TB303 class through a `getInstance()` no engine
-// implements, so the button had been silently dead since the worklet cutover:
-// randomizeBassSound returned at its `if (!synth)` guard on every click.
+// It used to be written twice, and the two copies had drifted:
+//
+//   #bass-random-sound (303 page)  repainted with refreshKnobsFromSynth  ✅
+//   #poly-randomize    (inspector) called rebuildEngineParamUI           ❌
+//
+// rebuildEngineParamUI is the ENGINE-SWAP tool: it unregisters every knob of
+// the lane and only re-mounts them for Subtractive. On fm / wavetable /
+// westcoast / karplus that left the knobs on screen but OUT of the automation
+// registry — and automation-tick.ts walks that registry every frame to paint
+// the amber modulation rings, so the rings froze and the knobs kept showing the
+// value from before the roll. Same bug, two faces.
+//
+// The drums dice used to live here too. It never called engine.randomize(): it
+// picked a kit at random from the UI layer. `drums-machine` declares
+// `isRandomizable: false` (a kit is a loaded preset, not a bag of params), so
+// it is gone — the kit dropdown covers that gesture.
 
-export interface RandomizeUIDeps {
+export interface RandomizeDeps {
   /** The live engine of a lane, or null before it is allocated. */
   getEngine: (laneId: string) => SynthEngine | null;
+  /** The lane's engine id — the key the capability door is asked about. */
+  getLaneEngineId: (laneId: string) => string;
+  /** The lane the poly-page editor is currently pointing at. */
+  getActiveLaneId: () => string;
   /** Live session, so a rolled sound is mirrored into the lane and survives a save. */
   getSessionState?: () => SessionState | undefined;
-  /** Active bass lane id (for marking its preset select as custom). */
-  getBassLaneId: () => string;
-  /** Active drums lane id (for marking its preset select as custom). */
-  getDrumsLaneId: () => string;
-  refreshKnobsFromSynth: () => void;
-  /** Apply a unified drum-kit preset by name (session-host.applyDrumPreset).
-   *  The orchestrator handles the rack/panel rebuild, so the drums path no
-   *  longer needs getDrums()/refreshDrumsRack(). */
-  applyDrumKitPreset?: (laneId: string, name: string) => void;
+  /** Repaint the lane's mounted knobs from the engine's base values. IN PLACE:
+   *  that is the whole point. Rebuilding instead would evict them from the
+   *  automation registry, and a knob outside it never gets its modulation ring
+   *  painted again. */
+  refreshLaneKnobs: (laneId: string, engine: SynthEngine) => void;
   historyDeps: HistoryDeps;
 }
 
-function randomizeMelodicSound(deps: RandomizeUIDeps, laneId: string, presetSelectId: string): void {
+/** The ONE dice action. Rolls `laneId`'s engine and leaves its UI consistent. */
+export function randomizeLaneSound(deps: RandomizeDeps, laneId: string): void {
   const engine = deps.getEngine(laneId);
   if (!engine?.randomize) return;
-  engine.randomize();
-  // The engine writes through setBaseValue, so no knob onChange fires and
-  // commitParam never runs: mirror the whole bag or the rolled sound is lost on
-  // save (the bulk sibling exists for exactly this — presets, Randomize).
-  commitEngineBaseValues(engine, deps.getSessionState?.(), laneId);
-  deps.refreshKnobsFromSynth();
-  markPagePresetCustom(presetSelectId, laneId);
-}
-
-/** Pick a random unified drum-kit name (synth or sample). Null if none loaded. */
-export function pickRandomDrumKit(rng: () => number = Math.random): string | null {
-  const kits = getDrumKits();
-  if (kits.length === 0) return null;
-  return kits[Math.floor(rng() * kits.length)].name;
-}
-
-function randomizeDrumsSound(deps: RandomizeUIDeps): void {
-  const name = pickRandomDrumKit();
-  if (!name) return;
-  const laneId = deps.getDrumsLaneId();
-  deps.applyDrumKitPreset?.(laneId, name);
-  // Sync the drums preset dropdown to the picked kit (the orchestrator only
-  // updates lane state + the inspector body, not the <select> selection).
-  recordPagePresetForLane(laneId, `engine:${name}`);
-}
-
-/** Wire the "🎲 Sound" buttons. Call once at boot. */
-export function wireRandomizeUI(deps: RandomizeUIDeps): void {
-  const $btn = (id: string) => document.getElementById(id) as HTMLButtonElement | null;
-
-  $btn('bass-random-sound')?.addEventListener('click', () => {
-    withUndo(deps.historyDeps, () => {
-      randomizeMelodicSound(deps, deps.getBassLaneId(), 'bass-preset-select');
-    });
+  withUndo(deps.historyDeps, () => {
+    engine.randomize!();
+    // The engine writes through setBaseValue, so no knob onChange fires and
+    // commitParam never runs: mirror the whole bag or the rolled sound is lost
+    // on save (the bulk sibling exists for exactly this — presets, Randomize).
+    commitEngineBaseValues(engine, deps.getSessionState?.(), laneId);
+    deps.refreshLaneKnobs(laneId, engine);
+    markPresetCustomForLane(laneId);
   });
-  $btn('drums-random-sound')?.addEventListener('click', () => {
-    withUndo(deps.historyDeps, () => randomizeDrumsSound(deps));
+}
+
+let _deps: RandomizeDeps | null = null;
+
+/** Hand the dice its dependencies once, at boot. */
+export function initRandomize(deps: RandomizeDeps): void { _deps = deps; }
+
+/** The wired action for a lane. A no-op before boot has run. */
+export function randomizeLane(laneId: string): void {
+  if (_deps) randomizeLaneSound(_deps, laneId);
+}
+
+/** Wire the "🎲 Sound" buttons. Call once at boot, after initRandomize.
+ *  Both buttons run the SAME action — that is the point of this module. */
+export function wireRandomizeUI(): void {
+  const $btn = (id: string) => document.getElementById(id) as HTMLButtonElement | null;
+  $btn('bass-random-sound')?.addEventListener('click', () => randomizeLane(LANE_ID_BASS));
+  $btn('poly-randomize')?.addEventListener('click', () => {
+    if (_deps) randomizeLane(_deps.getActiveLaneId());
   });
 }

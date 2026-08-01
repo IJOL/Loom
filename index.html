@@ -189,7 +189,11 @@
           <span class="section-label">PRESET</span>
           <select id="drums-preset-select" class="engine-preset-select"></select>
           <button class="rnd" id="drums-preset-load">Load</button>
-          <button class="rnd primary" id="drums-random-sound" title="Randomize drum kit (sets preset to Custom)">🎲 Sound</button>
+          <!-- No dice here: `drums-machine` declares isRandomizable: false — a
+               kit is a loaded preset, not a bag of params to roll. The button
+               that used to sit here picked a random kit from the UI layer,
+               which the dropdown above already does. -->
+
         </div>
         <div class="row knobs">
           <div id="drum-master-knobs" class="knob-row"></div>

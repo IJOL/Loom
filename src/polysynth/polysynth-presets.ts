@@ -7,7 +7,6 @@ import {
   applyEnginePresetToLane, applyUserPolyPresetToLane,
 } from './poly-preset-apply';
 import type { SynthEngine } from '../engines/engine-types';
-import { commitEngineBaseValues } from '../engines/engine-param-commit';
 import type { SessionState } from '../session/session';
 import { getCachedPresets } from '../presets/preset-loader';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
@@ -29,13 +28,14 @@ export interface PolySynthPresetsDeps {
   getActiveEngineLaneId: () => string;
   getLaneEngineId: (laneId: string) => string;
   getLaneEngineInstance: (laneId: string) => SynthEngine | null;
-  rebuildEngineParamUI: () => void;
-  /** The live session. Required, not optional: it is how a preset recall or a
-   *  Randomize reaches a save (poly-preset-apply commits the applied base
-   *  values into the lane), and an absent one loses the sound silently. */
+  /** The live session. Required, not optional: it is how a preset recall
+   *  reaches a save (poly-preset-apply commits the applied base values into the
+   *  lane), and an absent one loses the sound silently. */
   getSessionState: () => SessionState | undefined;
-  /** Push current engine base values back into the lane's knob UI handles
-   *  after a preset or randomize mutates the underlying state. */
+  /** Push current engine base values back into the lane's knob UI handles after
+   *  a preset mutates the underlying state. (`rebuildEngineParamUI` used to sit
+   *  next to this and is gone: its only caller here was the dice, and rebuilding
+   *  is what unregistered the lane's knobs. Repaint, never rebuild.) */
   refreshLaneKnobs: (laneId: string) => void;
   /** When provided, user-initiated preset changes (dropdown select / Load
    *  button click) are wrapped with withUndo so each becomes one undoable
@@ -230,13 +230,26 @@ export function wireEnginePresetSelectById(
   }
 }
 
-/** Mark a per-page preset select as "custom" (no preset). Called after a
- *  sound-randomize action so the dropdown reflects that the current sound
- *  no longer matches any saved preset. */
-export function markPagePresetCustom(selectId: string, laneId: string): void {
+/** Forget a lane's preset binding and show "(custom — no preset)" on every
+ *  select currently displaying that lane. Called after a dice roll: the sound
+ *  no longer matches any saved preset.
+ *
+ *  This replaced two functions that differed only in how they found the select
+ *  — one took its id, the other assumed "the active lane". They existed because
+ *  the dice itself was written twice. */
+export function markPresetCustomForLane(laneId: string): void {
   pagePresetName.delete(laneId);
-  const sel = document.getElementById(selectId) as HTMLSelectElement | null;
-  if (sel) sel.value = '__custom__';
+  const setCustom = (selectId: string) => {
+    const sel = document.getElementById(selectId) as HTMLSelectElement | null;
+    if (sel) sel.value = '__custom__';
+  };
+  for (const [selectId, holder] of pageSelectActiveLane) {
+    if (holder.laneId === laneId) setCustom(selectId);
+  }
+  // #poly-preset-select never registers a holder in pageSelectActiveLane (it is
+  // populated per-lane by populatePolyPresetSelectForLane), so it is synced
+  // explicitly when the lane it shows is the active one.
+  if (_deps?.getActiveEngineLaneId() === laneId) setCustom('poly-preset-select');
 }
 
 /** Record a lane's per-page (303 / drums) preset selection so the dropdown
@@ -260,18 +273,6 @@ export function recordPagePresetForLane(laneId: string, presetName: string): voi
       if (sel) sel.value = presetName;
     }
   }
-}
-
-/** Mark the poly preset select as "custom" and forget the lane's preset
- *  binding. Called after sound-randomize on poly engines. */
-export function markPolyPresetCustom(): void {
-  // Poly lanes track their selection in the lane-keyed pagePresetName; clear the
-  // active lane's entry. (There was a second, PolySynth-keyed map here — every
-  // lookup missed, because no engine ever produced a PolySynth to key it by.)
-  const laneId = _deps?.getActiveEngineLaneId();
-  if (laneId) pagePresetName.delete(laneId);
-  const sel = document.getElementById('poly-preset-select') as HTMLSelectElement | null;
-  if (sel) sel.value = '__custom__';
 }
 
 /** Refresh the selection indicator on a per-page preset select after an
@@ -361,28 +362,19 @@ function wireDrumKitsSelect(selectId: string, loadBtnId: string): void {
 export function wirePolyControls(deps: PolySynthPresetsDeps): void {
   _deps = deps;
 
-  const btn = document.getElementById('poly-randomize') as HTMLButtonElement;
-  btn.addEventListener('click', () => {
-    const laneId = deps.getActiveEngineLaneId();
-    const engine = deps.getLaneEngineInstance(laneId);
-    // ONE dice for every engine. This used to branch: `subtractive` went to a
-    // hand-tuned randomizePolySynth, and everything else fell through to
-    // `eng.randomize?.()` (implemented by no engine) and then `eng.setParam?.()`
-    // (not even a member) — so on FM / Wavetable / Westcoast the click
-    // marked the dropdown Custom and changed nothing. That was REMAINING-WORK's
-    // "do not let it keep lying", left open because per-engine musical ranges
-    // looked unavoidable. They aren't: engines/engine-randomize.ts biases toward
-    // each param's CURRENT value, so it needs no per-engine knowledge.
-    //
-    // The subtractive branch is gone with it. It rolled a fresh bag from
-    // POLY_DEFAULTS, discarding the loaded preset; the shared dice explores
-    // AROUND the sound you have, which keeps its character instead of replacing it.
-    if (!engine?.randomize) return;
-    engine.randomize();
-    commitEngineBaseValues(engine, deps.getSessionState(), laneId);
-    deps.rebuildEngineParamUI();
-    markPolyPresetCustom();
-  });
+  // The "🎲 Sound" dice is NOT wired here. It lives in core/randomize-ui.ts,
+  // which owns the one action both dice buttons run. It used to be duplicated
+  // here, and this copy was the broken one: it called rebuildEngineParamUI —
+  // the engine-swap tool — which unregisters the lane's knobs and only re-mounts
+  // them for Subtractive, freezing every other engine's modulation rings.
+  //
+  // The per-engine branching that USED to sit here is gone for good and must not
+  // come back: `subtractive` had a hand-tuned randomizePolySynth that rolled a
+  // fresh bag from POLY_DEFAULTS (discarding the loaded preset), and every other
+  // engine fell through to methods no engine implemented, so the click marked the
+  // dropdown Custom and changed nothing. engines/engine-randomize.ts biases toward
+  // each param's CURRENT value, so it explores AROUND the sound you have and
+  // needs no per-engine knowledge.
 
   populatePolyPresetSelect();
 

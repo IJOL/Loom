@@ -127,7 +127,6 @@ export function wireEngineSelectors(deps: EngineSelectorWiringDeps): EngineSelec
     getActiveEngineLaneId: () => getActiveEngineLaneId(),
     getLaneEngineId,
     getLaneEngineInstance,
-    rebuildEngineParamUI,
     getSessionState: () => sessionHost.state,
     refreshLaneKnobs: (laneId) => {
       const inst = getLaneEngineInstance(laneId);
