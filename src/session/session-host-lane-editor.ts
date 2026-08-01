@@ -90,6 +90,16 @@ export function showLaneEditor(self: SessionHost, laneId: string): void {
 // drums, and every poly lane regardless of engine) gets its panel injected
 // into the bottom of the currently-shown page.
 
+/** Ids the lane editor's host registered on its last build, per host element.
+ *  Weak-keyed so a discarded page takes its bookkeeping with it.
+ *
+ *  Ownership, not prefix: `unregisterKnobsByPrefix('<laneId>.')` would also
+ *  delete `<laneId>.bus.*`, which is the mixer column — mounted elsewhere,
+ *  still on screen, and automatable. Deleting a live knob handle silently
+ *  breaks the control it belongs to; that too-wide hammer is what produced the
+ *  frozen-modulation-rings bug. */
+const idsOwnedByHost = new WeakMap<HTMLElement, Set<string>>();
+
 export function injectEngineModulatorPanel(self: SessionHost, laneId: string, targetTab: string): void {
   // Phase B: engine comes from laneResources (single source of truth). No
   // more singleton/extra split — every lane has its own instance.
@@ -124,6 +134,20 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
     if (anchor) page.insertBefore(host, anchor);
     else page.appendChild(host);
   }
+
+  // Everything this host registered last time is about to be detached with the
+  // wipe below, so its registry entries go with it. Automation for a lane whose
+  // editor is closed reaches the audio object through the unmounted path.
+  const previouslyOwned = idsOwnedByHost.get(host);
+  if (previouslyOwned) {
+    for (const id of previouslyOwned) self.deps.automationRegistry.delete(id);
+  }
+  const owned = new Set<string>();
+  idsOwnedByHost.set(host, owned);
+  const registerOwned = (k: import('../core/knob').KnobHandle) => {
+    if (k.meta?.id) owned.add(k.meta.id);
+    self.registerKnobHandle(k);
+  };
   host.innerHTML = '';
 
   const panels = laneEditorPanels(lane?.engineId ?? engine.id);
@@ -132,7 +156,7 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
     engine.buildParamUI(host, {
       laneId,
       registerKnob: (k: unknown) => {
-        self.registerKnobHandle(k as import('../core/knob').KnobHandle);
+        registerOwned(k as import('../core/knob').KnobHandle);
       },
       registry: self.deps.automationRegistry as Map<string, unknown>,
       lookupLaneDisplayName: (id: string) =>
@@ -160,7 +184,7 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
   // Phase H: mount the insert-chain panel below the engine controls.
   // Every active lane has an InsertChain (allocated in ensureLaneResource)
   // so there is no boot-lane special case.
-  self.inspector.mountLaneInserts(laneId, host);
+  self.inspector.mountLaneInserts(laneId, host, registerOwned);
 
   // Populate the correct preset dropdown for each page type.
   // The poly page's #poly-preset-select is populated here for ALL poly-engine

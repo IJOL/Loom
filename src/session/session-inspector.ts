@@ -832,8 +832,17 @@ export class SessionInspector {
   /** Mount the insert-chain panel for `laneId` into `host`.
    *  Called from SessionHost.injectEngineModulatorPanel after the engine
    *  controls are placed so the insert strip appears below them for every
-   *  active lane (no boot-lane carve-out). */
-  mountLaneInserts(laneId: string, host: HTMLElement): void {
+   *  active lane (no boot-lane carve-out).
+   *
+   *  `registerKnob` defaults to `this.deps.registerKnob` (every caller but
+   *  the lane editor gets that), but the lane editor passes its own
+   *  ownership-tracking wrapper so the ids this call registers are unregistered
+   *  along with the rest of the lane's panel when the editor re-points. */
+  mountLaneInserts(
+    laneId: string,
+    host: HTMLElement,
+    registerKnob: InspectorDeps['registerKnob'] = this.deps.registerKnob,
+  ): void {
     const laneRes = this.deps.laneResources?.get(laneId);
     const sessionLane = this.deps.state.lanes.find((l) => l.id === laneId);
     if (!laneRes || !sessionLane) return;
@@ -851,8 +860,8 @@ export class SessionInspector {
         // refreshes itself via the subscription set up in renderEditor() —
         // this mutation site no longer needs to know that panel exists.
       },
-      registerKnob: this.deps.registerKnob,
-      automationScopeId: this.deps.registerKnob ? laneId : undefined,
+      registerKnob,
+      automationScopeId: registerKnob ? laneId : undefined,
       onDestinationsChanged: this.deps.onDestinationsChanged,
     });
     host.appendChild(insertsPanel);
