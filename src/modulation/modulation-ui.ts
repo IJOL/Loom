@@ -14,7 +14,7 @@
 import { html, type TemplateResult } from 'lit-html';
 import type { ModulatorState } from './types';
 import { mountPanel } from '../core/lit-panel';
-import { lfoConfigTemplate, adsrConfigTemplate } from './mod-config-templates';
+import { getModulator, listModulators } from './modulator-registry';
 import { routingTemplate } from './mod-routing-templates';
 import { type PanelCtx, type ModulationUIDeps, sync, edit } from './mod-ui-shared';
 
@@ -50,7 +50,7 @@ export function renderModulatorsPanel(container: HTMLElement, deps: ModulationUI
 
 function panelTemplate(ctx: PanelCtx): TemplateResult {
   const { deps } = ctx;
-  const add = (kind: 'lfo' | 'adsr') => () => edit(deps, () => {
+  const add = (kind: string) => () => edit(deps, () => {
     deps.host.addModulator(kind);
     sync(deps);
     deps.onChange();
@@ -60,12 +60,27 @@ function panelTemplate(ctx: PanelCtx): TemplateResult {
     <div class="mod-panel">
       <div class="mod-panel-title">MODULATORS</div>
       <div class="mod-panel-header">
-        <button class="rnd" @click=${add('lfo')}>+ LFO</button>
-        <button class="rnd" @click=${add('adsr')}>+ ADSR</button>
+        ${listModulators().map(
+          (c) => html`<button class="rnd" @click=${add(c.id)}>+ ${c.name}</button>`,
+        )}
       </div>
       ${deps.host.modulators.map((mod) => modCardTemplate(mod, ctx))}
     </div>
   `;
+}
+
+/** A component's own config row when it brings one; otherwise the panel the
+ *  host builds from its declared params. A plugin can only take the second
+ *  route — its compiled main.js cannot import our bundled lit-html. */
+function configRowFor(mod: ModulatorState, ctx: PanelCtx): TemplateResult {
+  const comp = getModulator(mod.kind);
+  if (!comp) return html`<div class="mod-card-config">unknown modulator: ${mod.kind}</div>`;
+  if (comp.configTemplate) return comp.configTemplate(mod, ctx);
+  // TODO: Task 8 — replace with genericModConfigTemplate(comp, mod, ctx), the
+  // host-built grid from the component's declared `params`. Every registered
+  // component today (LFO, ADSR) has its own configTemplate, so this branch is
+  // unreachable in production until a params-only component is registered.
+  return html`<div class="mod-card-config"></div>`;
 }
 
 function modCardTemplate(mod: ModulatorState, ctx: PanelCtx): TemplateResult {
@@ -74,7 +89,7 @@ function modCardTemplate(mod: ModulatorState, ctx: PanelCtx): TemplateResult {
     <div class="mod-card mod-${mod.kind}">
       <div class="mod-card-row">
         <div class="mod-card-title">${mod.id.toUpperCase()}</div>
-        ${mod.kind === 'lfo' ? lfoConfigTemplate(mod, ctx) : adsrConfigTemplate(mod, ctx)}
+        ${configRowFor(mod, ctx)}
         <button
           class=${mod.enabled ? 'rnd primary' : 'rnd'}
           @click=${() => {

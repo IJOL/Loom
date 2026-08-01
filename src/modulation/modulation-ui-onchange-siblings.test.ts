@@ -20,6 +20,12 @@
 import { describe, it, expect } from 'vitest';
 import { renderModulatorsPanel, type ModulationUIDeps } from './modulation-ui';
 import type { ModulationHost, ModulatorState } from './types';
+// Side-effect only: registers the 'lfo'/'adsr' components. Vitest isolates
+// modules per file, and the header's "+ LFO"/"+ ADSR" buttons are now built
+// from listModulators(), so without these this file's registry is empty and
+// no such button exists to click.
+import '../plugins/modulators/lfo';
+import '../plugins/modulators/adsr';
 
 function fakeHost(mods: ModulatorState[]): ModulationHost {
   return {

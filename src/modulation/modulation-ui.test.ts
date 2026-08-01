@@ -13,11 +13,28 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { renderModulatorsPanel } from './modulation-ui';
 import { makeDefaultLFO } from '../plugins/modulators/lfo';
 import { makeDefaultADSR } from '../plugins/modulators/adsr';
+import { registerModulator } from './modulator-registry';
+import type { ModulatorComponent } from './modulator-registry';
+import type { ModulatorState, ModulatorVoice } from './types';
 import {
   makeHost, makeDeps, makeDestinations, target,
   isVisible, byText, byTitle, knobByLabel, knobHandleById,
   destOptionValues, destGroupLabels,
 } from './modulation-ui.test-helpers';
+
+// A fake THIRD kind, registered here (not at module scope) — vitest isolates
+// modules per file, so this file's registry already holds only 'lfo'/'adsr'
+// (from the side-effect imports above) plus whatever this test file itself
+// registers. It deliberately brings no configTemplate, matching the shape a
+// generic-grid modulator (e.g. the real future S&H) would have.
+const shStub: ModulatorComponent = {
+  id: 'sh', name: 'S&H', driver: 'time', scopes: ['shared', 'per-voice'], idPrefix: 'sh',
+  defaultState: (id): ModulatorState => ({ id, kind: 'sh', enabled: true, connections: [], scope: 'shared' }),
+  createVoice: (): ModulatorVoice => ({
+    output: {} as AudioNode, trigger: () => {}, release: () => {}, dispose: () => {}, currentValue: () => 0,
+  }),
+};
+registerModulator(shStub);
 
 let container: HTMLElement;
 beforeEach(() => {
@@ -58,6 +75,14 @@ describe('modulators panel', () => {
     byText(container, 'button', '+ ADSR').click();
     expect(host.addModulator).toHaveBeenCalledWith('adsr');
     expect(deps.onLiveEdit).toHaveBeenCalled();
+  });
+
+  it('offers a + button for every registered modulator, not a hardcoded pair', () => {
+    const deps = makeDeps(makeHost());
+    renderModulatorsPanel(container, deps);
+    const labels = [...container.querySelectorAll('.mod-panel-header button')]
+      .map((b) => b.textContent?.trim());
+    expect(labels).toContain('+ S&H');
   });
 
   it('the card × button removes that modulator', () => {
