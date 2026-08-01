@@ -47,4 +47,34 @@ describe('resolveParamRows', () => {
     const rows = resolveParamRows([p('a', 'osc1')], [{ id: 'osc1', title: 'OSC 1' }, { id: 'ghost', title: 'GHOST' }]);
     expect(rows).toHaveLength(1);
   });
+
+  it('two declared groups sharing a title but different row values do not merge', () => {
+    const groups: EngineParamGroup[] = [
+      { id: 'a', title: 'DUP', row: 0 },
+      { id: 'b', title: 'DUP', row: 1 },
+    ];
+    const rows = resolveParamRows([p('x', 'a'), p('y', 'b')], groups);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].sections.map((s) => s.specs[0].id)).toEqual(['x']);
+    expect(rows[1].sections.map((s) => s.specs[0].id)).toEqual(['y']);
+  });
+
+  it("an undeclared group's raw string equal to a declared group's title does not join that group's row", () => {
+    const groups: EngineParamGroup[] = [{ id: 'a', title: 'DUP', row: 0 }];
+    const rows = resolveParamRows([p('x', 'a'), p('y', 'DUP')], groups);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].sections.map((s) => s.specs[0].id)).toEqual(['x']);
+    expect(rows[1].sections.map((s) => s.specs[0].id)).toEqual(['y']);
+  });
+
+  it('a declared group with row 0 coexisting with an undeclared group stays apart even when raw group text collides', () => {
+    const groups: EngineParamGroup[] = [
+      { id: 'a', title: 'ROW', row: 0 },
+      { id: 'b', title: 'FILTER', row: 0 },
+    ];
+    const rows = resolveParamRows([p('x', 'a'), p('y', 'b'), p('z', 'ROW')], groups);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].sections.map((s) => s.specs[0].id)).toEqual(['x', 'y']);
+    expect(rows[1].sections.map((s) => s.specs[0].id)).toEqual(['z']);
+  });
 });

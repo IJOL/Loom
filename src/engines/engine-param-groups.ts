@@ -23,6 +23,9 @@ export interface EngineParamGroup {
 }
 
 export interface ParamSection {
+  /** The declared group's id, and the ONLY key row packing may use. Absent for
+   *  the leading ungrouped row and for a group nobody declared. */
+  id?: string;
   /** Absent for the leading row of ungrouped params, which has no header. */
   title?: string;
   color?: string;
@@ -52,7 +55,7 @@ export function resolveParamRows(
   if (byKey.has('')) ordered.push({ specs: byKey.get('')! });
   for (const g of declared) {
     const members = byKey.get(g.id);
-    if (members?.length) ordered.push({ title: g.title, color: g.color, specs: members });
+    if (members?.length) ordered.push({ id: g.id, title: g.title, color: g.color, specs: members });
   }
   for (const key of seen) {
     if (key === '' || declaredIds.has(key)) continue;
@@ -62,12 +65,18 @@ export function resolveParamRows(
   // Row packing. A section whose group declares `row` joins that row; every
   // other section keeps a row to itself, so an engine that declares nothing
   // renders exactly as it does today.
+  //
+  // Keyed by group ID, never by title. Two declared groups may legitimately
+  // share a title, and an UNDECLARED group's raw string may collide with a
+  // declared group's title — keying by title silently packs unrelated sections
+  // into one row. `id` is the stable key the type's own doc comment promises;
+  // `ParamSection` therefore carries it, and an undeclared section has none.
   const rowOf = new Map<string, number>();
-  for (const g of declared) if (g.row !== undefined) rowOf.set(g.title, g.row);
+  for (const g of declared) if (g.row !== undefined) rowOf.set(g.id, g.row);
   const rows: ParamRow[] = [];
   const byRowIndex = new Map<number, ParamRow>();
   for (const section of ordered) {
-    const idx = section.title !== undefined ? rowOf.get(section.title) : undefined;
+    const idx = section.id !== undefined ? rowOf.get(section.id) : undefined;
     if (idx === undefined) { rows.push({ sections: [section] }); continue; }
     let row = byRowIndex.get(idx);
     if (!row) { row = { sections: [] }; byRowIndex.set(idx, row); rows.push(row); }
