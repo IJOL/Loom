@@ -7,20 +7,20 @@ import { join } from 'node:path';
 const manifest = (id) => JSON.stringify({
   id, name: id, version: '0.1.0', loomApi: 1,
   main: 'main.js', dsp: 'dsp.js',
-  engines: [{
-    id, name: id, polyphony: 'poly', clipEditor: 'piano-roll',
-    outputTrim: 0.5, shortLabel: id,
+  components: [{
+    kind: 'engine', id, name: id, polyphony: 'poly',
     params: [
       { id: 'amp.level', label: 'Level', kind: 'continuous', min: 0, max: 1, default: 0.8 },
       { id: 'amp.release', label: 'Release', kind: 'continuous', min: 0.02, max: 4, default: 0.4, unit: 's' },
     ],
+    capabilities: { clipContent: 'notes', outputTrim: 0.5, shortLabel: id },
   }],
 }, null, 2);
 
 const MAIN = () => `// Main-thread half: hand the host this engine's metadata.
 import manifest from './plugin.json';
 
-Loom.registerEngine(manifest.engines[0]);
+Loom.registerComponent(manifest.components[0]);
 `;
 
 const DSP_JS = (id) => `// Per-sample DSP half. Runs inside the AudioWorklet, and on the main thread

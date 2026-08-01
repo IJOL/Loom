@@ -22,7 +22,7 @@ vi.mock('../engines/registry', () => ({
 import { engineHintFromName, suggestDefaultMapping } from './gm-lookup';
 import { installMainThreadLoomApi, __resetPluginEngines } from '../plugin-host/loom-api';
 import karplusPlugin from '../../plugins/karplus/plugin.json';
-import type { EngineManifest } from '@loom/plugin-sdk';
+import type { ComponentManifest } from '@loom/plugin-sdk';
 import type { ParsedMidi } from './midi-parse';
 
 const note = { startTick: 0, duration: 48, midi: 60, velocity: 90, channel: 0 };
@@ -34,8 +34,8 @@ const note = { startTick: 0, duration: 48, midi: 60, velocity: 90, channel: 0 };
 beforeEach(() => {
   __resetPluginEngines();
   installMainThreadLoomApi();
-  (globalThis as unknown as { Loom: { registerEngine(m: EngineManifest): void } })
-    .Loom.registerEngine(karplusPlugin.engines[0] as unknown as EngineManifest);
+  (globalThis as unknown as { Loom: { registerComponent(m: ComponentManifest): void } })
+    .Loom.registerComponent(karplusPlugin.components[0] as unknown as ComponentManifest);
 });
 
 describe('engineHintFromName', () => {

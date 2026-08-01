@@ -16,7 +16,7 @@ import type { FxInstance } from '../plugins/types';
 import * as registry from '../engines/registry';
 import { installMainThreadLoomApi, __resetPluginEngines } from '../plugin-host/loom-api';
 import karplusPlugin from '../../plugins/karplus/plugin.json';
-import type { EngineManifest } from '@loom/plugin-sdk';
+import type { ComponentManifest } from '@loom/plugin-sdk';
 
 function makeCtx() {
   return new OfflineAudioContext(1, 128, 44100) as unknown as AudioContext;
@@ -116,8 +116,8 @@ describe('Phase 4 Task 1: live worklet backend constructs only worklet engines',
     vi.restoreAllMocks();
     __resetPluginEngines();
     installMainThreadLoomApi();
-    (globalThis as unknown as { Loom: { registerEngine(m: EngineManifest): void } })
-      .Loom.registerEngine(karplusPlugin.engines[0] as unknown as EngineManifest);
+    (globalThis as unknown as { Loom: { registerComponent(m: ComponentManifest): void } })
+      .Loom.registerComponent(karplusPlugin.components[0] as unknown as ComponentManifest);
   });
 
   it.each([

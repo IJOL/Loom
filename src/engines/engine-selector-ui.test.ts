@@ -53,15 +53,15 @@ describe('engine-selector-ui — melodic engine filter', () => {
 
   // Acceptance criterion: a PLUGIN engine is a first-class citizen of the lane
   // selector with no extra wiring — melodicSynthEngineIds filters the engine
-  // registry by `editor === 'piano-roll'`, and registerEngine puts a manifest
-  // there like any built-in. This is the unit-level half of the e2e check.
+  // registry by `editor === 'piano-roll'`, and registerComponent puts a
+  // manifest there like any built-in. This is the unit-level half of the e2e check.
   it('includes a plugin engine as soon as its manifest is registered', () => {
     bootstrapPlugins();
     __resetPluginEngines();
     installMainThreadLoomApi();
     expect(melodicSynthEngineIds()).not.toContain('karplus');
-    (globalThis as unknown as { Loom: { registerEngine(m: unknown): void } })
-      .Loom.registerEngine(karplusPlugin.engines[0]);
+    (globalThis as unknown as { Loom: { registerComponent(m: unknown): void } })
+      .Loom.registerComponent(karplusPlugin.components[0]);
     expect(melodicSynthEngineIds()).toContain('karplus');
   });
 });

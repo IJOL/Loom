@@ -3,4 +3,4 @@
 // natively, and the import-attribute syntax is newer than the toolchain here.
 import manifest from './plugin.json';
 
-Loom.registerEngine(manifest.engines[0] as never);
+Loom.registerComponent(manifest.components[0] as never);

@@ -18,7 +18,7 @@ import { describe, it, expect, vi } from 'vitest';
 // than hiding it inside a stub.
 vi.hoisted(() => {
   (globalThis as unknown as { Loom: unknown }).Loom = {
-    apiVersion: 1, registerEngine: () => {}, registerRenderer: () => {},
+    apiVersion: 1, registerRenderer: () => {},
   };
 });
 

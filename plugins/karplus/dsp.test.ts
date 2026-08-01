@@ -11,7 +11,6 @@ import { describe, it, expect, vi } from 'vitest';
 vi.hoisted(() => {
   (globalThis as unknown as { Loom: unknown }).Loom = {
     apiVersion: 1,
-    registerEngine: () => {},
     registerRenderer: () => {},
   };
 });
@@ -181,7 +180,7 @@ describe('the plugin sits where the in-tree engine sat, against wavetable', () =
     // window where the in-tree renderer still existed but had lost its
     // ENGINE_TRIM entry, the compensation was only the manifest number; that
     // was right for that renderer and is wrong for this one.)
-    const hostTrim = manifest.engines[0].outputTrim * CATEGORY_GAIN.synth;
+    const hostTrim = manifest.components[0].capabilities.outputTrim * CATEGORY_GAIN.synth;
     const plugin = rmsOf(new KarplusRenderer(n, P, FIXTURE_SR, fixtureRng())) * hostTrim;
 
     // 1% covers rounding the trim to three decimals (1.2/1.4 → 0.857).

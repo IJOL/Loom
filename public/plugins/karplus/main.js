@@ -8,15 +8,12 @@ var plugin_default = {
   main: "main.js",
   dsp: "dsp.js",
   presets: "presets.json",
-  engines: [
+  components: [
     {
+      kind: "engine",
       id: "karplus",
       name: "Karp",
       polyphony: "poly",
-      clipContent: "notes",
-      outputTrim: 0.857,
-      shortLabel: "karplus",
-      gm: { keywords: ["guitar", "gtr", "pluck", "nylon"], priority: 10 },
       params: [
         { id: "string.damping", label: "Damping", kind: "continuous", min: 0, max: 1, default: 0.5 },
         { id: "string.brightness", label: "Brightness", kind: "continuous", min: 0, max: 1, default: 0.65 },
@@ -62,10 +59,16 @@ var plugin_default = {
           releaseSec: 0.3,
           scope: "per-voice"
         }
-      ]
+      ],
+      capabilities: {
+        clipContent: "notes",
+        shortLabel: "karplus",
+        outputTrim: 0.857,
+        gm: { keywords: ["guitar", "gtr", "pluck", "nylon"], priority: 10 }
+      }
     }
   ]
 };
 
 // plugins/karplus/main.ts
-Loom.registerEngine(plugin_default.engines[0]);
+Loom.registerComponent(plugin_default.components[0]);

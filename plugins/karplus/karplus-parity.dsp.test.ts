@@ -9,7 +9,6 @@ const registered = vi.hoisted(() => {
   const seen = new Map<string, unknown>();
   (globalThis as unknown as { Loom: unknown }).Loom = {
     apiVersion: 1,
-    registerEngine: () => {},
     registerRenderer: (id: string, make: unknown) => { seen.set(id, make); },
   };
   return seen;

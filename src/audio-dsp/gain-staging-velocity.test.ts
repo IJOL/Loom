@@ -21,7 +21,7 @@ const PRE_FIX_TRIM: Record<string, number> = { fm: 0.25, karplus: 1.2 };
  *  plugin honest about the value that was tuned by ear. */
 const TRIM: Record<string, number> = {
   fm: ENGINE_TRIM.fm,
-  karplus: karplusPlugin.engines[0].outputTrim,
+  karplus: karplusPlugin.components[0].capabilities.outputTrim,
 };
 
 /** Level now over level then, at the same note velocity. */

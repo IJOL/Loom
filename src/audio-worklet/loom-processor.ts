@@ -30,7 +30,6 @@ import { LOOM_API_VERSION } from '@loom/plugin-sdk';
 Object.defineProperty(globalThis, 'Loom', {
   value: {
     apiVersion: LOOM_API_VERSION,
-    registerEngine: () => { /* main-thread only; harmless no-op inside the worklet */ },
     registerRenderer,
   },
   writable: false,

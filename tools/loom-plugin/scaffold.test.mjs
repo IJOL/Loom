@@ -29,7 +29,7 @@ describe('loom-plugin new', () => {
     scaffoldPlugin({ dir, id: 'my-synth', lang: 'js' });
     const m = JSON.parse(readFileSync(join(dir, 'plugin.json'), 'utf8'));
     expect(m.id).toBe('my-synth');
-    expect(m.engines[0].id).toBe('my-synth');
+    expect(m.components[0].id).toBe('my-synth');
     expect(m.loomApi).toBe(1);
   });
 

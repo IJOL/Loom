@@ -1,7 +1,7 @@
 // Validates a plugin.json that came from OUTSIDE. Runs before a single line of
 // plugin code is evaluated, so a malformed or incompatible plugin fails as data
 // rather than as a mid-boot exception.
-import { LOOM_API_VERSION, type PluginManifestFile, type EngineManifest, type EngineParamSpec } from '@loom/plugin-sdk';
+import { LOOM_API_VERSION, type PluginManifestFile, type EngineParamSpec } from '@loom/plugin-sdk';
 
 export type ValidationResult =
   | { ok: true; manifest: PluginManifestFile }
@@ -91,4 +91,4 @@ export function validatePluginManifest(raw: unknown): ValidationResult {
   return { ok: true, manifest: raw as unknown as PluginManifestFile };
 }
 
-export type { EngineManifest, EngineParamSpec };
+export type { EngineParamSpec };

@@ -37,31 +37,6 @@ export interface GmHint {
   priority: number;
 }
 
-/** @deprecated The v1 shape. Task 2 moved its two IN-TREE consumers
- *  (loom-api.ts, plugin-capabilities.ts) over to ComponentManifest, but
- *  `plugins/karplus/main.ts` still builds one from the OLD `engines` shape of
- *  plugin.json — that conversion is Task 7's. Delete this once
- *  `grep -rn 'EngineManifest\|Loom.registerEngine'` outside this file comes
- *  back empty. */
-export interface EngineManifest {
-  id: string;
-  name: string;
-  polyphony: 'mono' | 'poly';
-  /** What a clip of this engine CONTAINS — see EngineCapabilities.clipContent. */
-  clipContent: 'notes' | 'audio';
-  /** See EngineCapabilities.defaultNoteView. */
-  defaultNoteView?: 'pitches' | 'pads';
-  params: EngineParamSpec[];
-  /** Default modulator set, serialized — seeds the lane's modulation host. */
-  modulators?: unknown[];
-  /** Per-engine output balance against the other engines (what the host's
-   *  ENGINE_TRIM table used to hold for built-ins). */
-  outputTrim: number;
-  /** Prefix for generated lane ids ("karplus" → "karplus-1"). */
-  shortLabel: string;
-  gm?: GmHint;
-}
-
 /** Assets a component accepts by drag-and-drop. */
 export type AssetKind = 'audio-file';
 
@@ -134,10 +109,6 @@ export interface PluginManifestFile {
 export interface LoomApi {
   readonly apiVersion: number;
   registerComponent(manifest: ComponentManifest): void;
-  /** @deprecated The v1 shape, kept while `plugins/karplus/main.ts` still
-   *  calls it (Task 7 converts the karplus plugin itself to registerComponent
-   *  and this is deleted). */
-  registerEngine(manifest: EngineManifest): void;
   registerRenderer(engineId: string, make: RendererFactory): void;
 }
 
