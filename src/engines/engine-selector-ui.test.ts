@@ -36,17 +36,18 @@ function makeKnobHandle(id: string): KnobHandle {
 }
 
 describe('engine-selector-ui — mixer knobs across a lane switch', () => {
-  // Pins the ordering `rebuildEngineParamUI` currently depends on: the mixer
-  // column mounts `<laneId>.bus.*` knobs independently of the engine editor,
-  // so by the time a lane switch runs, the newly active lane's mixer knobs
-  // are already registered. `rebuildEngineParamUI`'s unregister call wipes
-  // them (it matches the whole `<laneId>.` prefix, mixer strip included), and
-  // today the only reason that is not permanent is that its real caller,
-  // `showLaneEditor` (session-host-lane-editor.ts), always calls
-  // `renderWithMixer()` right after — which re-registers every visible lane's
-  // mixer knobs. That follow-up step is simulated here (not fabricated: it is
-  // the documented, always-run second half of the real lane-switch call
-  // chain) so this test observes the same end state a real switch produces.
+  // Proves `rebuildEngineParamUI` does not delete knobs it does not own. The
+  // mixer column mounts `<laneId>.bus.*` knobs independently of the engine
+  // editor, so by the time a lane switch runs, the newly active lane's mixer
+  // knobs are already registered — this holds by construction now: nothing in
+  // `rebuildEngineParamUI` touches the registry by lane prefix any more. (It
+  // used to: a `unregisterKnobsByPrefix('<activeLaneId>.')` call matched the
+  // whole `<laneId>.` prefix, mixer strip included, and only looked harmless
+  // because its real caller, `showLaneEditor` in session-host-lane-editor.ts,
+  // always re-registered the mixer knobs in a `renderWithMixer()` call
+  // straight after. That made the loss invisible to any caller, but it was
+  // still a real deletion in between — this test intentionally does not
+  // simulate that follow-up step, so it fails if the hammer ever comes back.)
   it('a lane switch never leaves the new lane without its mixer knobs', () => {
     document.body.innerHTML = '<div data-page="poly"><div class="poly-section"></div></div>';
     const registry = new Map<string, KnobHandle>();
@@ -64,11 +65,6 @@ describe('engine-selector-ui — mixer knobs across a lane switch', () => {
     registry.set('fm-1.bus.level', makeKnobHandle('fm-1.bus.level'));
 
     rebuildEngineParamUI();
-
-    // The real caller's always-run follow-up: showLaneEditor calls
-    // renderWithMixer() right after rebuildEngineParamUI, which re-registers
-    // every visible lane's mixer-strip knobs.
-    registry.set('fm-1.bus.level', makeKnobHandle('fm-1.bus.level'));
 
     expect(registry.has('fm-1.bus.level')).toBe(true);
   });
