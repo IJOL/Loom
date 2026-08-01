@@ -21,6 +21,12 @@ export interface EngineParamSpec {
    *  labelled row (label = the group string); ungrouped params render in the
    *  leading row. Consumed by engine-param-grid.buildEngineParamGrid. */
   group?: string;
+  /** This param is declared for automation / modulation / presets / saves, but
+   *  the editor grid does not draw it — the named surface does. It NEVER means
+   *  "drawn nowhere": a sound param with no control at all is a bug, not a
+   *  feature. 'modulators' = the ADSR/LFO panel owns it (the subtractive amp and
+   *  filter envelope leaves); 'mixer' = the lane's mixer column owns it. */
+  drawnBy?: 'mixer' | 'modulators';
   options?: Array<{ value: string; label: string }>;   // only when kind === 'discrete'
   /** Discrete only: 'dropdown' forces a native <select> instead of the default
    *  radio-button strip — for many or long-labelled options (e.g. the FM
