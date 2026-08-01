@@ -30,6 +30,12 @@ Spec: [2026-08-01-plugins-core-por-capacidades-design.md](../specs/2026-08-01-pl
 - **`engine` gana a `synth`** como nombre del `PluginKind`.
 - **Fuera de alcance en esta rebanada:** los backends del allocator, `editorPage`,
   `patternCategory`, `slideOnOverlap`, `roles`, y los moduladores/note-FX.
+- **TODO EL CÓDIGO VA EN INGLÉS: identificadores, comentarios y nombres de test.**
+  Los bloques de código de este plan llevan algunos comentarios en español por
+  descuido del autor — **tradúcelos al escribirlos, no los copies tal cual**. Un
+  comentario en inglés que ya exista en el fichero NO se traduce jamás. (La
+  Task 1 tradujo uno al español y hubo que revertirlo.) Los mensajes de commit
+  también van en inglés.
 - Tests sin color: `NO_COLOR=1 npx vitest run <fichero>`.
 - **`npm run build` antes de cualquier e2e** — Playwright sirve `dist/` sin
   construir.
@@ -110,9 +116,9 @@ const ok = (over: Record<string, unknown> = {}) => ({
 });
 
 it('rejects the OLD shape loudly instead of registering nothing', () => {
-  // Sin `components` un manifiesto de la forma antigua validaria y registraria
-  // CERO componentes: el plugin cargaria y su motor no apareceria, sin un solo
-  // mensaje. Por eso `components` es obligatorio.
+  // Without `components`, a manifest in the old shape would validate and
+  // register ZERO components: the plugin would load and its engine would never
+  // appear, without a single message. That is why `components` is required.
   const viejo = { id: 'p', name: 'P', version: '1.0.0', loomApi: 1, main: 'main.js',
     engines: [{ id: 'x', name: 'X' }] };
   const r = validatePluginManifest(viejo);
@@ -138,12 +144,12 @@ it('rejects an accepts entry that is not a known asset kind', () => {
   if (!r.ok) expect(r.error).toMatch(/accepts/);
 });
 
-it('defaults the optional capabilities so a plain manifest is a normal instrument', () => {
+it('leaves optional capabilities absent so the READER can apply the defaults', () => {
   const r = validatePluginManifest(ok());
   expect(r.ok).toBe(true);
   if (r.ok) {
     const c = r.manifest.components![0];
-    // Ausentes en el JSON: el LECTOR aplica los defaults, no el validador.
+    // Absent from the JSON: the READER applies the defaults, not the validator.
     expect(c.capabilities.acceptsNoteFx).toBeUndefined();
   }
 });
@@ -162,9 +168,9 @@ capacidades. `EngineManifest` desaparece; su contenido se reparte entre el
 componente y sus capacidades.
 
 ```ts
-// SIN CAMBIOS: sigue en 1. Es la primera implementacion — no hay ningun plugin
-// publicado ahi fuera cuya compatibilidad haya que preservar, y el unico que
-// existe se convierte en la Task 7 de esta misma rama.
+// UNCHANGED: still 1. This is the first implementation — no published plugin
+// exists whose compatibility we could break, and the only one there is gets
+// converted in Task 7 of this same branch.
 export const LOOM_API_VERSION = 1;
 
 /** Assets a component accepts by drag-and-drop. */
@@ -210,9 +216,9 @@ export interface PluginManifestFile {
   main: string;
   dsp?: string;
   presets?: string;
-  /** OBLIGATORIO. Un manifiesto sin componentes no aporta nada, y hacerlo
-   *  opcional convierte la forma antigua (`engines`) en un fallo MUDO: valida,
-   *  carga y registra cero. */
+  /** REQUIRED. A manifest with no components carries nothing, and making it
+   *  optional turns the old shape (`engines`) into a SILENT failure: it
+   *  validates, loads, and registers zero. */
   components: ComponentManifest[];
 }
 ```
@@ -250,8 +256,8 @@ function capabilitiesError(c: unknown, i: number): string | null {
     return `components[${i}].capabilities.clipEditor must be ${CLIP_EDITORS.join('|')}`;
   }
   if (!isStr(c.shortLabel)) return `components[${i}].capabilities.shortLabel must be a non-empty string`;
-  // Sin default: un trim ausente es un plugin que no pensó en el gain staging,
-  // y adivinar 1 lo publica más alto que todo lo demás.
+  // No default: a missing trim is a plugin that never thought about gain
+  // staging, and guessing 1 would ship it louder than everything else.
   if (!isNum(c.outputTrim)) return `components[${i}].capabilities.outputTrim must be a number`;
   if (c.accepts !== undefined) {
     if (!Array.isArray(c.accepts) || c.accepts.some((a) => !ASSET_KINDS.includes(a as string))) {
@@ -354,10 +360,10 @@ import {
 
 const melodic = { clipEditor: 'piano-roll' as const, shortLabel: 'm', outputTrim: 1 };
 
-describe('la puerta de capacidades', () => {
+describe('the capability door', () => {
   beforeEach(() => __resetCapabilities());
 
-  it('un componente que calla es un instrumento melodico normal', () => {
+  it('a component that says nothing is an ordinary melodic instrument', () => {
     registerEngineCapabilities('quiet', melodic);
     expect(clipEditorFor('quiet')).toBe('piano-roll');
     expect(acceptsNoteFx('quiet')).toBe(true);
@@ -366,13 +372,13 @@ describe('la puerta de capacidades', () => {
     expect(acceptsAudioFile('quiet')).toBe(false);
   });
 
-  it('un id desconocido responde como melodico, nunca undefined', () => {
-    // Un motor que aun no se ha registrado NO debe apagar la UI de su pista.
+  it('an unknown id answers as melodic, never undefined', () => {
+    // An engine not yet registered must NOT blank out its lane's UI.
     expect(clipEditorFor('nope')).toBe('piano-roll');
     expect(acceptsNoteFx('nope')).toBe(true);
   });
 
-  it('un canal de audio declara lo suyo y la puerta lo respeta', () => {
+  it('an audio channel declares its own shape and the door honours it', () => {
     registerEngineCapabilities('probe-audio', {
       clipEditor: 'audio', shortLabel: 'aud', outputTrim: 1,
       accepts: ['audio-file'], acceptsNoteFx: false, harmonic: false, listedInSelector: false,
@@ -384,7 +390,7 @@ describe('la puerta de capacidades', () => {
     expect(isListedInSelector('probe-audio')).toBe(false);
   });
 
-  it('el ultimo registro gana, para que un plugin pueda sustituir a un integrado', () => {
+  it('the last registration wins, so a plugin can replace a built-in', () => {
     registerEngineCapabilities('dup', melodic);
     registerEngineCapabilities('dup', { ...melodic, clipEditor: 'drum-grid' });
     expect(clipEditorFor('dup')).toBe('drum-grid');
@@ -402,18 +408,18 @@ Esperado: FAIL — `Cannot find module './capabilities'`.
 ```ts
 // src/plugins/capabilities.ts
 //
-// La UNICA puerta por la que el core pregunta que sabe hacer un componente.
-// Cada `engineId === '…'` que quede fuera de aqui es un bug.
+// The ONE door through which the core asks what a component can do. Every
+// `engineId === '…'` left outside this file is a bug.
 //
-// Dos fuentes, y el que pregunta no sabe cual: un componente integrado se
-// registra desde codigo, uno de plugin desde su manifiesto. Migrar un motor en
-// el trozo 3 muda su respuesta de una fuente a la otra SIN tocar el core.
+// Two sources, and the caller cannot tell which: a built-in component registers
+// from code, a plugin one from its manifest. Migrating an engine in slice 3
+// moves its answer from one source to the other WITHOUT touching the core.
 import type { EngineCapabilities, GmHint } from '@loom/plugin-sdk';
 import { CATEGORY_GAIN } from '../audio-dsp/gain-staging';
 
 const caps = new Map<string, EngineCapabilities>();
-/** Ids que llegaron por manifiesto de plugin. Separado del mapa porque
- *  "es un plugin" NO es una capacidad: es como se cargo. */
+/** Ids that arrived through a plugin manifest. Kept apart from the map because
+ *  "is a plugin" is NOT a capability: it is how the thing was loaded. */
 const fromPlugin = new Set<string>();
 
 export function registerEngineCapabilities(id: string, c: EngineCapabilities, isPlugin = false): void {
@@ -425,10 +431,10 @@ export function engineCapabilities(id: string): EngineCapabilities | undefined {
   return caps.get(id);
 }
 
-// ── Accesores con nombre ───────────────────────────────────────────────────
-// Un id desconocido responde como un instrumento melodico corriente. NUNCA
-// undefined: un motor todavia sin registrar apagaria la UI de su pista, y ese
-// fallo es mudo. El default seguro es "normal".
+// ── Named accessors ────────────────────────────────────────────────────────
+// An unknown id answers like an ordinary melodic instrument. NEVER undefined: an
+// engine not yet registered would blank out its lane's UI, and that failure is
+// silent. The safe default is "normal".
 
 export function clipEditorFor(id: string): 'piano-roll' | 'drum-grid' | 'audio' {
   return caps.get(id)?.clipEditor ?? 'piano-roll';
@@ -449,16 +455,16 @@ export function shortLabelFor(id: string): string | undefined {
   return caps.get(id)?.shortLabel;
 }
 
-/** Un componente de plugin sintetiza en el worklet exactamente cuando llego por
- *  manifiesto: su renderer viene en el mismo paquete. */
+/** A plugin component synthesises in the worklet exactly when it arrived by
+ *  manifest: its renderer ships in the same bundle. */
 export function isWorkletHosted(id: string): boolean {
   return fromPlugin.has(id);
 }
 
-/** Lo que el host debe multiplicar a las voces de un motor de PLUGIN: su balance
- *  declarado por la ganancia de categoria — justo lo que synthTrim() calcula
- *  para un motor integrado. undefined si no es plugin, para que el llamante caiga
- *  a 1 y la multiplicacion del renderer integrado siga valiendo. */
+/** What the host must multiply a PLUGIN engine's voices by: its declared
+ *  balance times the category gain — exactly what synthTrim() computes for an
+ *  in-tree engine. undefined when it is not a plugin, so callers fall back to 1
+ *  and the in-tree renderer's own multiplication still stands. */
 export function pluginSynthTrim(id: string): number | undefined {
   if (!fromPlugin.has(id)) return undefined;
   const t = caps.get(id)?.outputTrim;
@@ -561,8 +567,8 @@ En `src/app/plugin-bootstrap.test.ts`, añade:
 import { registerPlugin, listPlugins, _resetRegistry } from '../plugins/registry';
 
 it('lists an engine component under the kind the rest of the app uses', () => {
-  // Los dos registros usaban nombres distintos para lo mismo. Este test fija
-  // cual gana, para que no vuelva a haber dos.
+  // The two registries used different names for the same thing. This test pins
+  // which one wins, so there is never a second one again.
   _resetRegistry();
   registerPlugin({
     kind: 'engine',
@@ -637,7 +643,7 @@ it('a clip on ANY engine declaring clipEditor audio is an audio clip', () => {
   });
   const lane = { id: 'l1', engineId: 'probe-audio', clips: [], inserts: [] } as unknown as SessionLane;
   const clip = { id: 'c1', lengthBars: 1, notes: [], sample: { id: 's' } } as unknown as SessionClip;
-  // Hoy esto es false: isAudioClip compara con el id 'audio'.
+  // Today this is false: isAudioClip compares against the id 'audio'.
   expect(isAudioClip(lane, clip)).toBe(true);
 });
 ```
@@ -751,9 +757,9 @@ registerEngineCapabilities('audio', {
   shortLabel: 'audio',
   outputTrim: 1,
   accepts: ['audio-file'],
-  acceptsNoteFx: false,      // un fichero entero no se transforma nota a nota
-  harmonic: false,           // no puede alojar un acompañamiento de acordes
-  listedInSelector: false,   // se añade por su entrada explícita, no por la lista
+  acceptsNoteFx: false,      // a whole file is not transformed note by note
+  harmonic: false,           // cannot host a chord accompaniment
+  listedInSelector: false,   // added through its own explicit entry, not the list
 });
 ```
 
@@ -843,7 +849,7 @@ it('an audio-editor engine gets only its inserts', () => {
 ```ts
 // engine-swap.test.ts
 it('rejects a swap into an audio-editor engine without naming any id', () => {
-  // La guarda por id se borra: la guarda por editor ya cubria las dos direcciones.
+  // The id guard is deleted: the editor guard already covered both directions.
   expect(swapLaneEngineFlow(depsWith({ getEngineEditor: () => 'audio' }), 'l1', 'probe-audio')).toBe(false);
 });
 ```
@@ -861,8 +867,8 @@ Esperado: FAIL.
 import { clipEditorFor, acceptsNoteFx } from '../plugins/capabilities';
 
 export function laneEditorPanels(engineId: string): LaneEditorPanels {
-  // Un motor cuyos clips SON ficheros de audio no es un instrumento: no tiene
-  // knobs de motor, ni preset, ni selector. Sólo sus inserts.
+  // An engine whose clips ARE audio files is not an instrument: no engine knobs,
+  // no preset, no selector. Only its inserts.
   const isAudio = clipEditorFor(engineId) === 'audio';
   return {
     engineParams: !isAudio,
@@ -895,8 +901,8 @@ const chain = sample == null && acceptsNoteFx(engineId) ? getNoteFxChain(laneId)
 `engine-swap.ts:38` → **borrar la línea**, dejando este comentario en su lugar:
 
 ```ts
-  // Sin guarda por id: un canal de audio declara clipEditor:'audio', asi que las
-  // dos comprobaciones de editor de abajo ya lo rechazan en ambas direcciones.
+  // No id guard: an audio channel declares clipEditor:'audio', so the two editor
+  // checks below already reject it in both directions.
 ```
 
 - [ ] **Step 4: Green**
@@ -1074,8 +1080,8 @@ Esperado: FAIL — el plugin no existe todavía.
 `plugins/audio-probe/main.ts`:
 
 ```ts
-// Un canal de audio SIN DSP propio: existe para demostrar que las capacidades
-// bastan. No trae `dsp`, asi que el host no le pide renderer.
+// An audio channel with NO DSP of its own: it exists to prove the capabilities
+// alone are enough. It ships no `dsp`, so the host never asks it for a renderer.
 declare const Loom: import('@loom/plugin-sdk').LoomApi;
 import manifest from './plugin.json';
 
