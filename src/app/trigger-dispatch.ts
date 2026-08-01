@@ -4,6 +4,7 @@ import { resolveVelocity } from '../core/velocity-gain';
 import type { LaneResourceMap } from '../core/lane-resources';
 import type { Sequencer } from '../core/sequencer';
 import type { LiveVoiceRegistry } from './live-voice-registry';
+import { acceptsNoteFx } from '../plugins/capabilities';
 
 export type TriggerForLane = (
   laneId: string, note: number, time: number, gate: number,
@@ -44,10 +45,8 @@ export function createTriggerForLane(deps: TriggerDispatchDeps): TriggerForLane 
       deps.onVoiceFired?.(laneId, g);
     };
 
-    // Audio clips bypass note-FX; drums lanes are not note-transformed.
-    const chain = sample == null && engineId !== 'drums-machine'
-      ? getNoteFxChain(laneId)
-      : null;
+    // Audio clips bypass note-FX; an engine that declares none is not note-transformed.
+    const chain = sample == null && acceptsNoteFx(engineId) ? getNoteFxChain(laneId) : null;
 
     if (chain && chain.noteFx.some((s) => s.enabled)) {
       const events = chain.process([{ note, time, gate, accent }], { bpm: deps.seq.bpm });

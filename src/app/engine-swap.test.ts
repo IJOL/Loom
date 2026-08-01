@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { swapLaneEngineFlow, type EngineSwapDeps } from './engine-swap';
 import type { SessionState } from '../session/session';
+import { registerEngineCapabilities, __resetCapabilities } from '../plugins/capabilities';
 
 function makeState(): SessionState {
   return { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
@@ -102,6 +103,29 @@ describe('swapLaneEngineFlow', () => {
     const state = makeState();
     const deps = makeDeps(state);
     expect(swapLaneEngineFlow(deps, 'ghost', 'fm')).toBe(false);
+    expect(deps.swapLaneEngine).not.toHaveBeenCalled();
+  });
+
+  it('rejects a swap into or out of an audio-editor engine, without naming any id', () => {
+    // Since Task 6, `editor` only distinguishes the two NOTES views: an audio
+    // engine can still answer 'piano-roll' (as it does here), so the editor
+    // checks alone would let it through. Only the capability door's
+    // isAudioEngine() catches it — that is exactly what this test proves by
+    // making the editor check useless as a discriminator.
+    __resetCapabilities();
+    registerEngineCapabilities('probe-audio', { clipContent: 'audio', shortLabel: 'p', outputTrim: 1 });
+    const state = makeState();
+    const editors: Record<string, 'piano-roll' | 'drum-grid'> = {
+      subtractive: 'piano-roll',
+      'probe-audio': 'piano-roll',
+    };
+    const deps = makeDeps(state, { getEngineEditor: (id) => editors[id] });
+
+    expect(swapLaneEngineFlow(deps, 'L', 'probe-audio')).toBe(false); // instrument -> audio
+    expect(deps.swapLaneEngine).not.toHaveBeenCalled();
+
+    state.lanes[0].engineId = 'probe-audio';
+    expect(swapLaneEngineFlow(deps, 'L', 'subtractive')).toBe(false); // audio -> instrument
     expect(deps.swapLaneEngine).not.toHaveBeenCalled();
   });
 });

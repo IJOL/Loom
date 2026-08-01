@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   registerEngineCapabilities, clipContentOf, isAudioEngine, defaultNoteViewOf, acceptsAudioFile,
-  acceptsNoteFx, isHarmonic, isListedInSelector, __resetCapabilities,
+  acceptsNoteFx, isHarmonic, isListedInSelector, isRandomizable, __resetCapabilities,
 } from './capabilities';
 import { getEngine } from '../engines/registry';
 import '../engines/audio';
@@ -29,6 +29,7 @@ describe('the three non-melodic in-tree engines', () => {
     expect(isAudioEngine('drums-machine')).toBe(false);
     expect(defaultNoteViewOf('drums-machine')).toBe('pads');
     expect(acceptsNoteFx('drums-machine')).toBe(false);
+    expect(isHarmonic('drums-machine')).toBe(false);
   });
 
   it('the sampler is a notes lane, like any other instrument', () => {
@@ -43,6 +44,13 @@ describe('the three non-melodic in-tree engines', () => {
     // cannot drift apart the way a hand-kept literal could.
     expect(getEngine('drums-machine')?.editor).toBe('drum-grid');
     expect(defaultNoteViewOf('drums-machine')).toBe('pads');
+  });
+
+  it('the sampler and the drum machine are notes lanes that cannot be randomized', () => {
+    // Not derivable from clipContent: both are notes, and neither rolls a sound.
+    expect(isRandomizable('sampler')).toBe(false);
+    expect(isRandomizable('drums-machine')).toBe(false);
+    expect(isRandomizable('audio')).toBe(false);
   });
 });
 
@@ -93,5 +101,11 @@ describe('the capability door', () => {
     registerEngineCapabilities('dup', melodic);
     registerEngineCapabilities('dup', { ...melodic, defaultNoteView: 'pads' });
     expect(defaultNoteViewOf('dup')).toBe('pads');
+  });
+
+  it('an engine that says nothing is randomizable', () => {
+    __resetCapabilities();
+    registerEngineCapabilities('quiet', { clipContent: 'notes', shortLabel: 'q', outputTrim: 1 });
+    expect(isRandomizable('quiet')).toBe(true);
   });
 });

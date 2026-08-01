@@ -13,6 +13,7 @@ import { beginInlineRename } from './inline-rename';
 import { clipDragHandlers } from './session-clip-drag';
 import { listEngines } from '../engines/registry';
 import type { SessionUICallbacks } from './session-ui-types';
+import { acceptsAudioFile, isAudioEngine, isListedInSelector } from '../plugins/capabilities';
 
 // Fallback fill for a filled clip that carries no `clip.color`. Filled cells force
 // dark text (`color: #111`, see _session-grid.scss) so it reads against the light
@@ -127,7 +128,7 @@ export function clipCellTemplate(
   // Sampler and audio lanes accept an audio file dropped onto ANY cell (empty or
   // filled) → create/replace a loop clip. Guarded to file drags so it does not
   // interfere with the internal clip-move drag (clipDragHandlers) on filled cells.
-  const acceptsFileDrop = (lane.engineId === 'sampler' || lane.engineId === 'audio') && !!cb.onCellDropAudio;
+  const acceptsFileDrop = acceptsAudioFile(lane.engineId) && !!cb.onCellDropAudio;
   const isFileDrag = (e: DragEvent) =>
     !!e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files');
   const onDragOver = acceptsFileDrop ? (e: DragEvent) => {
@@ -149,7 +150,7 @@ export function clipCellTemplate(
   if (!clip) {
     // Audio lanes pick a WAV per clip: clicking the empty cell opens the file
     // picker (you can also drop a WAV). Every other engine creates an empty clip.
-    const isAudio = lane.engineId === 'audio';
+    const isAudio = isAudioEngine(lane.engineId);
     return html`<div
       class=${`session-cell session-cell-empty${colActive ? ' session-cell-col-active' : ''}`}
       data-lane-id=${lane.id}
@@ -301,7 +302,7 @@ function addLaneHeaderTemplate(cb: SessionUICallbacks): TemplateResult {
     >${label}</button>`;
 
   const engineItems = listEngines('polyhost')
-    .filter((engine) => engine.id !== 'audio') // audio is added via the explicit entry below
+    .filter((engine) => isListedInSelector(engine.id)) // audio is added via the explicit entry below
     .map((engine) => item(engine.name, () => cb.onAddLane(engine.id), engine.id));
 
   return html`<div class="session-lane-add-wrap"><button

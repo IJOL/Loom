@@ -3,6 +3,7 @@ import { getEngineDescriptor, listEngines } from './registry';
 import { populatePolyPresetSelect, refreshPolyPresetSelect } from '../polysynth/polysynth-presets';
 import type { KnobHandle } from '../core/knob';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
+import { isAudioEngine } from '../plugins/capabilities';
 
 export interface EngineSelectorUIDeps {
   engineSel: HTMLSelectElement;
@@ -48,7 +49,7 @@ export interface EngineSelectorUIDeps {
 export function melodicSynthEngineIds(): string[] {
   return listEngines('polyhost')
     .map((e) => e.id)
-    .filter((id) => getEngineDescriptor(id)?.editor === 'piano-roll');
+    .filter((id) => !isAudioEngine(id) && getEngineDescriptor(id)?.editor === 'piano-roll');
 }
 
 let _deps: EngineSelectorUIDeps | null = null;

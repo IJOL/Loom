@@ -33,6 +33,7 @@ import { emptyClip } from './session';
 import { scaleClipTempo } from '../core/clip-time-scale';
 import { html, render } from 'lit-html';
 import { renderElement } from '../core/lit-fragment';
+import { isHarmonic, isAudioEngine } from '../plugins/capabilities';
 
 function genKindFor(engineId: string): GenKind {
   if (engineId === 'tb303') return 'bass';
@@ -516,7 +517,7 @@ export class SessionInspector {
     // Only show the button for melodic lanes (not drums/audio/sampler-drumkit).
     const chordsBtn = document.getElementById('insp-chords') as HTMLButtonElement | null;
     if (chordsBtn) {
-      chordsBtn.hidden = exKind === 'beat' || lane!.engineId === 'audio' || lane!.engineId === 'sampler';
+      chordsBtn.hidden = exKind === 'beat' || !isHarmonic(lane!.engineId);
       chordsBtn.onclick = () => {
         // Guard the INPUT: an empty melody has nothing to harmonise.
         if (!clip.notes || clip.notes.length === 0) { void alertDialog('Draw or generate a melody first.'); return; }
@@ -533,7 +534,7 @@ export class SessionInspector {
           });
           // Build choice list: melodic lanes (not drums/audio/sampler) + new lane
           const melodicLanes = this.deps.state.lanes.filter(
-            (l) => l.engineId !== 'drums-machine' && l.engineId !== 'audio' && l.engineId !== 'sampler',
+            (l) => isHarmonic(l.engineId) && !isAudioEngine(l.engineId),
           );
           const choices = [
             ...melodicLanes.map((l) => ({ id: l.id, label: l.name ?? l.id })),

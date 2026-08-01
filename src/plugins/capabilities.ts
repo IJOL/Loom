@@ -47,6 +47,9 @@ export function isHarmonic(id: string): boolean {
 export function isListedInSelector(id: string): boolean {
   return caps.get(id)?.listedInSelector ?? true;
 }
+export function isRandomizable(id: string): boolean {
+  return caps.get(id)?.isRandomizable ?? true;
+}
 export function shortLabelFor(id: string): string | undefined {
   return caps.get(id)?.shortLabel;
 }

@@ -8,6 +8,7 @@ import {
   emptyLane, audioClip, audioChannelClip, pickRandomClipColor,
   type SessionClip,
 } from './session';
+import { acceptsAudioFile, isAudioEngine } from '../plugins/capabilities';
 import { emptyLanePlayState } from './session-runtime';
 import { ensureScenesForRows } from '../core/scene-ensure';
 import { nextLaneSlug } from './session-host-util';
@@ -77,7 +78,7 @@ export function addAudioChannel(self: SessionHost, file: File, opts?: { knownBpm
 export function loadAudioFileIntoCell(self: SessionHost, laneId: string, clipIdx: number, file: File): void {
   const { ctx, seq } = self.deps;
   const lane = self.state.lanes.find((l) => l.id === laneId);
-  if (!lane || (lane.engineId !== 'sampler' && lane.engineId !== 'audio')) return;
+  if (!lane || !acceptsAudioFile(lane.engineId)) return;
   void ctx.resume();
   void (async () => {
     try {
@@ -86,7 +87,7 @@ export function loadAudioFileIntoCell(self: SessionHost, laneId: string, clipIdx
       const buf = await ctx.decodeAudioData(asset.bytes.slice(0));
       sampleCache.put(asset.id, buf);
       const name = file.name.replace(/\.[^.]+$/, '');
-      const clip = lane.engineId === 'audio'
+      const clip = isAudioEngine(lane.engineId)
         ? audioChannelClip({
             name, sampleId: asset.id, durationSec: buf.duration,
             originalBpm: detectLoop(buf, seq.meter).originalBpm, projectMeter: seq.meter,

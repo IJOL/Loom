@@ -4,6 +4,8 @@
 // keep everything except NOTE FX (drums aren't note-transformed). Pure so the
 // lane-editor wiring is testable.
 
+import { isAudioEngine, acceptsNoteFx } from '../plugins/capabilities';
+
 export interface LaneEditorPanels {
   engineParams: boolean;    // the engine's knob UI (e.g. the audio Gain) in the lane editor
   noteFx: boolean;          // the per-lane NOTE FX (arp/chord) panel
@@ -13,10 +15,12 @@ export interface LaneEditorPanels {
 }
 
 export function laneEditorPanels(engineId: string): LaneEditorPanels {
-  const isAudio = engineId === 'audio';
+  // An engine whose clips ARE audio files is not an instrument: no engine knobs,
+  // no preset, no selector. Only its inserts.
+  const isAudio = isAudioEngine(engineId);
   return {
     engineParams: !isAudio,
-    noteFx: !isAudio && engineId !== 'drums-machine',
+    noteFx: !isAudio && acceptsNoteFx(engineId),
     preset: !isAudio,
     inserts: true,
     engineHeaderRow: !isAudio,

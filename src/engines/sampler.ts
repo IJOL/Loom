@@ -66,4 +66,5 @@ registerEngineCapabilities('sampler', {
   clipContent: 'notes', shortLabel: 'sampler', outputTrim: 1,
   accepts: ['audio-file'],
   harmonic: false,
+  isRandomizable: false, // sound is a loaded keymap, not a bag of params
 });

@@ -41,4 +41,6 @@ registerEngine(makeDrumsDescriptor());
 registerEngineCapabilities('drums-machine', {
   clipContent: 'notes', defaultNoteView: 'pads', shortLabel: 'drums', outputTrim: 1,
   acceptsNoteFx: false,
+  harmonic: false,        // hits, not pitches: cannot host a chord accompaniment
+  isRandomizable: false,  // sound is a loaded kit, not a bag of params
 });
