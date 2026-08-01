@@ -298,7 +298,7 @@ interface EngineParamSpec {
   color?: string;          // knob ring colour (carries the Send A/B colour code)
   group?: string;          // params sharing a group render together in one row
   options?: Array<{ value: string; label: string }>;   // discrete only
-  selectStyle?: 'radio' | 'dropdown';                  // discrete only
+  selectStyle?: 'dropdown';                            // discrete only
   showLabel?: boolean;                                 // discrete only
 }
 ```
@@ -306,6 +306,14 @@ interface EngineParamSpec {
 `validateSpec` is the contract a new spec has to satisfy: an id and a label are
 required, a continuous param needs `max > min`, and a discrete one needs at
 least two options.
+
+**Every discrete param renders as a select control, everywhere — never a
+knob.** ≤4 options draw a compact vertical strip; more than 4, or
+`selectStyle: 'dropdown'`, draw a native `<select>`. This holds on every
+surface: the inspector's grouped grid, the flat layout (drum rack, sampler
+pads), and the FX insert rack. If you're choosing how many options to give a
+discrete param, 4 is the threshold that decides strip vs. dropdown — keep
+that in mind picking option counts, not just labels.
 
 Naming conventions, which the modulation panel groups by and the preset JSON
 uses:

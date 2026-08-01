@@ -366,3 +366,60 @@ Along the way, one test file needed an added `/** @vitest-environment jsdom
 before this task, and the new `createSelectControl` DOM tests failed with
 `ReferenceError: document is not defined` under the default (non-jsdom)
 Vitest environment until that was added.
+
+## Fix round 1 (docs)
+
+Code review flagged one Important finding: `docs/plugin-development.md:301`
+still documented `selectStyle?: 'radio' | 'dropdown';  // discrete only` in
+the `EngineParamSpec` shape shown to plugin authors — live developer-facing
+reference that directly contradicted `src/engines/engine-params.ts:41`
+(`selectStyle?: 'dropdown'`) after this task's own change. It slipped
+through because both grep passes during the task (mine and the earlier
+audit) covered `src/` and tests, never `docs/`.
+
+**Fix:**
+
+- `docs/plugin-development.md:301` — corrected the type to
+  `selectStyle?: 'dropdown';` (matching `engine-params.ts` exactly).
+- Added a short paragraph right after the `EngineParamSpec` shape stating
+  the actual rendering rule a plugin author needs: every discrete param
+  renders as a select control everywhere (never a knob); ≤4 options draw a
+  compact vertical strip; more than 4, or `selectStyle: 'dropdown'`, draw a
+  native `<select>`; holds on every surface (grouped grid, flat layout, FX
+  insert rack). Called out explicitly that 4 is the threshold to keep in
+  mind when choosing how many options to give a param.
+
+**`docs/` grep for anything else** (`selectStyle: 'radio'`, or discrete
+params documented as rendering as knobs), recursive over the whole `docs/`
+tree:
+
+- `docs/plugin-development.md:301` — the one fixed above.
+- `docs/superpowers/plans/2026-08-01-engine-ui-from-data.md` (multiple
+  lines) and `docs/superpowers/specs/2026-08-01-engine-ui-from-data-design.md`
+  — this task's OWN plan/spec, describing (accurately, as history) the
+  'radio' opt-in that existed before this task and the audit that led to
+  removing it. Left untouched: per this repo's convention (CLAUDE.md
+  "Design history" — implemented plans are pruned once shipped, not edited
+  to stay current; they're a record of the decision, not live reference).
+- `docs/superpowers/specs/2026-07-25-duplicated-solutions-audit.md` — an
+  earlier audit describing the SAME pre-existing "discrete renders as knob
+  unless `selectStyle: 'dropdown'`" behaviour as a historical finding
+  (dated before this task existed). Same reasoning: historical record, not
+  live reference.
+- `docs/superpowers/plans/2026-07-19-menu-contextual-automatizacion.md` —
+  one incidental match, unrelated context (not about `EngineParamSpec`).
+- `docs/automation-destinations.md`, `docs/promo-research-2026-07-15.md`,
+  `docs/manual/**` — no matches.
+
+**Nothing else needed a code-level fix.** The only *live* reference doc in
+the tree is `docs/plugin-development.md`; everything else that matched is
+`docs/superpowers/{plans,specs}/*` — dated planning/audit documents this
+project treats as historical narrative (recoverable from git history,
+pruned rather than kept current), not as reference a plugin author would
+read today.
+
+### Verification
+
+`npx tsc --noEmit`: clean, no output (docs-only change, no code touched).
+No test files changed this round — nothing to re-run beyond the sanity
+typecheck the coordinator asked for.
