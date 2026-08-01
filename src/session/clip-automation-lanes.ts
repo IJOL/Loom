@@ -30,15 +30,34 @@ import { withUndo, type HistoryDeps } from '../save/history-wiring';
 import { createAutoStrip, type AutoStrip } from './clip-auto-strip';
 import { formatNum, snapLaneToSteps, type AutoBrush } from '../automation/automation-painter';
 import {
-  fillLfo, LFO_RATES, LFO_SHAPES, DEFAULT_LFO_FILL, rateById, type LfoShape,
+  fillLfo, LFO_SHAPES, DEFAULT_LFO_FILL, LFO_MIN_CYCLES,
+  cyclesToCyclesPerBar, maxCyclesInRegion, clampCyclesInRegion, type LfoShape,
 } from '../automation/automation-lfo';
 
 let currentBrush: AutoBrush = 'line';
 const getBrush = () => currentBrush;
 
-// LFO generator settings. Module-level like the brush: they persist while you
-// work across lanes and clips instead of resetting on every repaint.
-const lfoState = { shape: 'sine' as LfoShape, rateId: '1bar', depth: 1, loopOnly: true };
+// LFO generator settings. Module-level like the brush: ONE wave shared by every
+// lane, so you dial it in once and paint lane after lane. They persist while you
+// work across lanes and clips instead of resetting on every repaint, and they are
+// deliberately not saved with the session.
+const lfoState = {
+  shape: 'sine' as LfoShape,
+  /** Cycles across the region being painted — not per bar. */
+  cycles: 4,
+  /** Peak-to-peak share of the lane. */
+  depth: 1,
+  /** Where the wave sits vertically, in lane units. */
+  center: 0.5,
+  /** Rotation, in cycles. */
+  phase: 0,
+  loopOnly: true,
+};
+
+/** paramIds whose LFO row is unfolded. Unlike the wave itself this is view state
+ *  of ONE panel — a fresh inspector opens with every row folded — so it is held
+ *  in the render closure, not up here. */
+type LfoOpen = Set<string>;
 
 export interface ClipAutoDeps {
   /** The one destination catalogue — the picker's list source. The caller
@@ -73,6 +92,7 @@ export function renderClipAutomationLanes(
 ): ClipAutoHandle {
   // paramId -> strip. Create-once, explicitly disposed.
   const strips = new Map<string, AutoStrip>();
+  const lfoOpen: LfoOpen = new Set();
   const disposeAll = () => {
     for (const s of strips.values()) s.dispose();
     strips.clear();
@@ -82,7 +102,7 @@ export function renderClipAutomationLanes(
     container: host,
     className: 'clip-auto-lanes',
     deps,
-    template: (h) => panelTemplate(h, clip, strips),
+    template: (h) => panelTemplate(h, clip, strips, lfoOpen),
   });
   // Belt and braces: a later mount with fresh deps runs this first, so even a
   // caller that forgets to dispose cannot leave subscriptions behind.
@@ -96,7 +116,9 @@ export function renderClipAutomationLanes(
 
 type Panel = PanelHandle<ClipAutoDeps>;
 
-function panelTemplate(h: Panel, clip: SessionClip, strips: Map<string, AutoStrip>): TemplateResult {
+function panelTemplate(
+  h: Panel, clip: SessionClip, strips: Map<string, AutoStrip>, lfoOpen: LfoOpen,
+): TemplateResult {
   const targets = h.deps.destinations.list();
   const byId = new Map(targets.map((t) => [t.id, t]));
 
@@ -120,7 +142,7 @@ function panelTemplate(h: Panel, clip: SessionClip, strips: Map<string, AutoStri
       : repeat(
           envelopes,
           (env) => env.paramId,
-          (env, idx) => laneTemplate(h, clip, env, idx, byId.get(env.paramId), strips),
+          (env, idx) => laneTemplate(h, clip, env, idx, byId.get(env.paramId), strips, lfoOpen),
         )}
   `;
 
@@ -140,6 +162,7 @@ function laneTemplate(
   idx: number,
   target: AutomationTarget | undefined,
   strips: Map<string, AutoStrip>,
+  lfoOpen: LfoOpen,
 ): TemplateResult {
   // An envelope whose param the session no longer declares (engine swapped,
   // insert removed) is still SHOWN — flagged, not silently swallowed, so the
@@ -179,81 +202,145 @@ function laneTemplate(
           h.rerender();
         }}>${env.stepped ? 'Stepped' : 'Smooth'}</button>
         <span class="clip-auto-range">${target ? `[${formatNum(target.min)} .. ${formatNum(target.max)}]` : ''}</span>
-        ${lfoBarTemplate(h, clip, env, s)}
+        <button
+          class=${lfoOpen.has(env.paramId) ? 'rnd clip-auto-lfo-toggle active' : 'rnd clip-auto-lfo-toggle'}
+          title="Draw an LFO-shaped curve into this lane"
+          @click=${() => {
+            if (!lfoOpen.delete(env.paramId)) lfoOpen.add(env.paramId);
+            h.rerender();
+          }}
+        >${lfoOpen.has(env.paramId) ? '▴' : '▾'} LFO</button>
         <button class="rnd" title="Remove this lane" @click=${() => {
           clip.envelopes!.splice(idx, 1);
+          lfoOpen.delete(env.paramId);
           h.rerender();
         }}>×</button>
       </div>
+      ${lfoOpen.has(env.paramId) ? lfoRowTemplate(h, clip, env, s) : ''}
       ${s.root}
     </div>
   `;
 }
 
-/** "An LFO, but drawn as automation": shape + musical rate + depth, written into
- *  the lane as a curve. Rates are divisions of the BAR (4 bars … 1/16), not Hz,
- *  and the fill below is handed the meter's bar — so 1/16 is 16 cycles per bar,
- *  which is one cycle per step in 4/4 and more than one in a shorter bar. The
- *  rate table itself is still written against a 16-step bar (see the rate-limits
- *  note in automation-lfo.ts); until that is settled, nothing here may promise
- *  the user a per-STEP rate. */
-function lfoBarTemplate(h: Panel, clip: SessionClip, env: ClipEnvelope, strip: AutoStrip): TemplateResult {
-  const apply = () => {
-    const cfg = {
+/** The stretch the LFO paints into: the loop region when the clip loops and
+ *  "Loop only" is on, else the whole lane. Clamped to the array, so the cycle
+ *  count is measured against the sub-steps that really get written. */
+function lfoRegion(clip: SessionClip, meter: TimeSignature, env: ClipEnvelope): { from: number; to: number } {
+  const len = env.values.length;
+  if (!(lfoState.loopOnly && clip.loopEnabled)) return { from: 0, to: len };
+  const { startTick, endTick } = effectiveClipLoop(clip, meter);
+  const from = Math.max(0, Math.min(len, Math.round((startTick / TICKS_PER_STEP) * AUTOMATION_SUB_RES)));
+  const to = Math.max(from, Math.min(len, Math.round((endTick / TICKS_PER_STEP) * AUTOMATION_SUB_RES)));
+  return from < to ? { from, to } : { from: 0, to: len };
+}
+
+/** "An LFO, but drawn as automation": shape, how many cycles fit in the region,
+ *  and three continuous controls — size, height and phase — written into the lane
+ *  as a curve.
+ *
+ *  The count is cycles over the REGION, not per bar, because that is the only
+ *  count that makes a wave close cleanly inside a loop; `originSub: from` is what
+ *  makes it true (the first cycle starts where the region does). The conversion
+ *  and the ceiling both live in automation-lfo.ts — nothing here re-derives them.
+ *
+ *  Every control repaints immediately: `fillLfo` overwrites the whole region, so
+ *  repainting is idempotent and a drag cannot accumulate drift. The gesture
+ *  bracket collapses a whole drag into one undo step, exactly like a knob. */
+function lfoRowTemplate(h: Panel, clip: SessionClip, env: ClipEnvelope, strip: AutoStrip): TemplateResult {
+  const subResPerBar = stepsPerBar(h.deps.meter) * AUTOMATION_SUB_RES;
+  const { from, to } = lfoRegion(clip, h.deps.meter, env);
+  const regionSubs = to - from;
+  // A stepped lane keeps one value per step, so the fill has to paint the
+  // staircase itself — otherwise snapLaneToSteps below throws the shape away and
+  // the fast end collapses to a flat line.
+  const stepSubRes = env.stepped ? AUTOMATION_SUB_RES : undefined;
+  const maxCycles = maxCyclesInRegion(regionSubs, subResPerBar, stepSubRes);
+  // Read live, never captured: a handler runs BEFORE the re-render, so a value
+  // frozen at template time would paint the count the user just replaced.
+  const cycles = () => clampCyclesInRegion(lfoState.cycles, regionSubs, subResPerBar, stepSubRes);
+
+  const paint = () => {
+    // The wave's bar is the SESSION's bar: drawn against a fixed 16-step bar the
+    // curve went out of phase with the lane's own grid lines, which already come
+    // from the meter.
+    fillLfo(env.values, from, to, subResPerBar, {
       ...DEFAULT_LFO_FILL,
       shape: lfoState.shape,
-      cyclesPerBar: rateById(lfoState.rateId)?.cyclesPerBar ?? 1,
+      cyclesPerBar: cyclesToCyclesPerBar(cycles(), regionSubs, subResPerBar),
       depth: lfoState.depth,
-    };
-    // Scope: the loop region when the clip loops and "Loop only" is on, else the
-    // whole lane. Sub-step 0 is bar 0 phase 0, so a windowed fill lands exactly
-    // where the full-lane fill would have — the curve stays in phase with the bars.
-    let from = 0, to = env.values.length;
-    if (lfoState.loopOnly && clip.loopEnabled) {
-      const { startTick, endTick } = effectiveClipLoop(clip, h.deps.meter);
-      from = Math.round((startTick / TICKS_PER_STEP) * AUTOMATION_SUB_RES);
-      to = Math.round((endTick / TICKS_PER_STEP) * AUTOMATION_SUB_RES);
-    }
-    const run = () => {
-      // The wave's bar is the SESSION's bar. Drawn against a 16-step bar it went
-      // out of phase with the lane's own grid lines, which already come from the
-      // meter — a "1 bar" LFO that visibly did not span one bar.
-      fillLfo(env.values, from, to, stepsPerBar(h.deps.meter) * AUTOMATION_SUB_RES, cfg);
-      if (env.stepped) snapLaneToSteps({ values: env.values });
-      strip.draw();
-    };
-    if (h.deps.historyDeps) withUndo(h.deps.historyDeps, run); else run();
+      center: lfoState.center,
+      phase: lfoState.phase,
+      originSub: from,
+      stepSubRes,
+    });
+    if (env.stepped) snapLaneToSteps({ values: env.values });
+    strip.draw();
   };
+  const repaint = () => {
+    if (h.deps.historyDeps) withUndo(h.deps.historyDeps, paint); else paint();
+    h.rerender();
+  };
+
+  // Same bracket the knobs and faders use: everything painted between pointerdown
+  // and pointerup coalesces into a single undo step.
+  const grab = () => h.deps.historyDeps?.beginGesture?.();
+  const drop = () => h.deps.historyDeps?.endGesture?.();
+
+  const slider = (
+    label: string, title: string, value: number, max: number, read: string,
+    set: (v: number) => void,
+  ) => html`
+    <label class="clip-auto-lfo-slider" title=${title}>
+      <span class="clip-auto-lfo-slider-name">${label}</span>
+      <input
+        type="range" min="0" max=${max} step="0.001" .value=${String(value)}
+        @pointerdown=${grab} @pointerup=${drop} @pointercancel=${drop}
+        @input=${(e: Event) => { set(Number((e.currentTarget as HTMLInputElement).value)); repaint(); }}
+      >
+      <span class="clip-auto-lfo-slider-read">${read}</span>
+    </label>
+  `;
 
   // "Loop only" carries `active`, not `primary`: the lane-header button rule in
   // _session-inspector.scss owns the background in here and only lights up on
   // .active, so a `primary` toggle looked identical on and off.
-  const onShape = (e: Event) => { lfoState.shape = (e.currentTarget as HTMLSelectElement).value as LfoShape; };
-  const onRate = (e: Event) => { lfoState.rateId = (e.currentTarget as HTMLSelectElement).value; };
-  const onDepth = (e: Event) => { lfoState.depth = Number((e.currentTarget as HTMLSelectElement).value); };
-
   return html`
-    <span class="clip-auto-lfo">
-      <select class="clip-auto-lfo-shape" title="LFO waveform to draw" @change=${onShape}>
-        ${LFO_SHAPES.map((s) => html`<option value=${s.id} ?selected=${s.id === lfoState.shape}>${s.label}</option>`)}
-      </select>
-      <select
-        class="clip-auto-lfo-rate"
-        title="Rate as a musical division of the bar. 1/16 is 16 cycles per bar — the fastest this menu offers."
-        @change=${onRate}
-      >
-        ${LFO_RATES.map((r) => html`<option value=${r.id} ?selected=${r.id === lfoState.rateId}>${r.label}</option>`)}
-      </select>
-      <select class="clip-auto-lfo-depth" title="How much of the lane the wave spans" @change=${onDepth}>
-        ${[1, 0.75, 0.5, 0.25].map((d) => html`<option value=${d} ?selected=${d === lfoState.depth}>${Math.round(d * 100)}%</option>`)}
-      </select>
-      <button
-        class=${lfoState.loopOnly ? 'rnd clip-auto-lfo-loop active' : 'rnd clip-auto-lfo-loop'}
-        title="Draw inside the loop region only (when the clip loops)"
-        @click=${() => { lfoState.loopOnly = !lfoState.loopOnly; h.rerender(); }}
-      >Loop only</button>
-      <button class="rnd clip-auto-lfo-apply" title="Draw the curve into this lane" @click=${apply}>LFO</button>
-    </span>
+    <div class="clip-auto-lfo">
+      <div class="clip-auto-lfo-top">
+        <select class="clip-auto-lfo-shape" title="LFO waveform to draw"
+          @change=${(e: Event) => {
+            lfoState.shape = (e.currentTarget as HTMLSelectElement).value as LfoShape;
+            repaint();
+          }}>
+          ${LFO_SHAPES.map((s) => html`<option value=${s.id} ?selected=${s.id === lfoState.shape}>${s.label}</option>`)}
+        </select>
+        <label class="clip-auto-lfo-cycles" title=${`Whole cycles across the region being painted. This lane tops out at ${formatNum(maxCycles)}.`}>
+          <span>Cycles</span>
+          <input
+            type="number" min=${LFO_MIN_CYCLES} max=${maxCycles} step="any" .value=${String(cycles())}
+            @change=${(e: Event) => {
+              lfoState.cycles = Number((e.currentTarget as HTMLInputElement).value);
+              repaint();
+            }}
+          >
+        </label>
+        <button
+          class=${lfoState.loopOnly ? 'rnd clip-auto-lfo-loop active' : 'rnd clip-auto-lfo-loop'}
+          title="Draw inside the loop region only (when the clip loops)"
+          @click=${() => { lfoState.loopOnly = !lfoState.loopOnly; h.rerender(); }}
+        >Loop only</button>
+        <button class="rnd clip-auto-lfo-apply" title="Draw the curve into this lane" @click=${repaint}>LFO</button>
+      </div>
+      ${slider('Size', 'Peak-to-peak: how much of the lane the wave spans',
+        lfoState.depth, 1, `${Math.round(lfoState.depth * 100)}%`,
+        (v) => { lfoState.depth = v; })}
+      ${slider('Height', 'Where the wave sits vertically. Size that overshoots is flattened against the edge',
+        lfoState.center, 1, `${Math.round(lfoState.center * 100)}%`,
+        (v) => { lfoState.center = v; })}
+      ${slider('Phase', 'Rotation of the wave inside the region',
+        lfoState.phase, 1, `${Math.round(lfoState.phase * 360)}°`,
+        (v) => { lfoState.phase = v; })}
+    </div>
   `;
 }
 

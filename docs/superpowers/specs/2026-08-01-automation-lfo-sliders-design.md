@@ -88,9 +88,11 @@ a otro— produce controles que se mueven solos.
 ### 2. UI — [src/session/clip-automation-lanes.ts](../../../src/session/clip-automation-lanes.ts)
 
 **Header.** Pierde los tres desplegables y se queda con un botón desplegable
-`▾ LFO` y el `×` de siempre. El estado abierto/cerrado vive en un
-`Set<paramId>` a nivel de módulo, así que varias lanes pueden estar abiertas a
-la vez.
+`▾ LFO` y el `×` de siempre. El estado abierto/cerrado es un `Set<paramId>`
+**del cierre del panel**, no de módulo: la onda se comparte entre lanes porque
+así lo quiere el usuario, pero "qué filas están desplegadas" es estado de vista
+de un inspector concreto, y un inspector recién abierto debe salir plegado.
+Varias lanes pueden estar abiertas a la vez.
 
 **Segunda fila** (se renderiza sólo si la lane está abierta):
 
@@ -117,6 +119,14 @@ la vez.
 **Estado.** `lfoState` sigue siendo uno compartido a nivel de módulo:
 `{ shape, cycles, depth, center, phase, loopOnly, seed }`. No toca
 `SavedStateV3` ni se persiste.
+
+**Bug arreglado de paso: el motor *stepped* estaba desconectado.** La UI
+anterior nunca pasaba `stepSubRes` a `fillLfo` — sólo llamaba a
+`snapLaneToSteps()` después. Es decir, toda la maquinaria de escalera de
+`automation-lfo.ts` (y su ceiling de dos pasos por ciclo) no llegaba a
+ejecutarse nunca desde la aplicación, que es exactamente el modo de fallo que el
+propio módulo documenta: *stepped* + rate rápido = línea plana. La fila nueva lo
+pasa.
 
 **Repintado en vivo.** Un único `repaint()` alimenta el `@input` de los tres
 sliders, el `@change` de forma y ciclos, y el botón `LFO`. Como `fillLfo`

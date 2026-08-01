@@ -54,6 +54,60 @@ function addButton(host: HTMLElement): HTMLButtonElement {
   return [...host.querySelectorAll('button')].find((b) => b.textContent === '+ Automation') as HTMLButtonElement;
 }
 
+// ── LFO row helpers ────────────────────────────────────────────────────────
+// The row is folded away by default, so every LFO test unfolds it first. The
+// wave itself (shape, cycles, size, height, phase) is module-level and SHARED
+// across lanes by design, which means it also survives from test to test —
+// setLfo() states every control a test depends on so order cannot matter.
+
+function lfoToggle(h: HTMLElement): HTMLButtonElement {
+  return h.querySelector<HTMLButtonElement>('.clip-auto-lfo-toggle')!;
+}
+function lfoApply(h: HTMLElement): HTMLButtonElement {
+  return h.querySelector<HTMLButtonElement>('.clip-auto-lfo-apply')!;
+}
+function lfoCyclesInput(h: HTMLElement): HTMLInputElement {
+  return h.querySelector<HTMLInputElement>('.clip-auto-lfo-cycles input')!;
+}
+/** Size / Height / Phase, in the order the row lays them out. */
+function lfoSlider(h: HTMLElement, name: 'Size' | 'Height' | 'Phase'): HTMLInputElement {
+  const row = [...h.querySelectorAll('.clip-auto-lfo-slider')]
+    .find((el) => el.querySelector('.clip-auto-lfo-slider-name')?.textContent === name)!;
+  return row.querySelector('input')!;
+}
+
+function openLfo(h: HTMLElement): void {
+  if (!h.querySelector('.clip-auto-lfo')) lfoToggle(h).click();
+}
+
+/** Cycles measured the way the maths tests do: crossings of the centre going up. */
+function upwardCrossings(v: number[], center = 0.5): number {
+  let n = 0;
+  for (let i = 0; i + 1 < v.length; i++) if (v[i] <= center && v[i + 1] > center) n++;
+  return n;
+}
+
+function setRange(input: HTMLInputElement, value: number): void {
+  input.value = String(value);
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+/** Put every LFO control in a known state (and repaint through the real UI). */
+function setLfo(
+  h: HTMLElement,
+  o: { shape?: string; cycles?: number; size?: number; height?: number; phase?: number } = {},
+): void {
+  openLfo(h);
+  const { shape = 'sine', cycles = 4, size = 1, height = 0.5, phase = 0 } = o;
+  const sel = h.querySelector<HTMLSelectElement>('.clip-auto-lfo-shape')!;
+  sel.value = shape; sel.dispatchEvent(new Event('change'));
+  setRange(lfoSlider(h, 'Size'), size);
+  setRange(lfoSlider(h, 'Height'), height);
+  setRange(lfoSlider(h, 'Phase'), phase);
+  const c = lfoCyclesInput(h);
+  c.value = String(cycles); c.dispatchEvent(new Event('change'));
+}
+
 let host: HTMLElement;
 beforeEach(() => {
   stubCanvas();
@@ -177,7 +231,7 @@ describe('renderClipAutomationLanes — the drawn LFO', () => {
     return best;
   };
 
-  function lfoCurve(bars: number, m: TimeSignature): number[] {
+  function lfoCurve(bars: number, m: TimeSignature, cycles: number): number[] {
     document.body.innerHTML = '<div id="h" class="insp-auto-box"></div>';
     const h = document.getElementById('h')!;
     const clip = makeClip({ lengthBars: bars });
@@ -185,20 +239,28 @@ describe('renderClipAutomationLanes — the drawn LFO', () => {
     axis.setBasisWidth(800);
     renderClipAutomationLanes(h, clip, makeDeps(TARGETS, { axis, meter: m }));
     addButton(h).click();
-    h.querySelector<HTMLButtonElement>('.clip-auto-lfo-apply')!.click();
+    setLfo(h, { cycles });
     return clip.envelopes![0].values;
   }
 
-  it('completes one cycle per bar of the session meter, not per 16 steps', () => {
-    // Default rate is "1 bar". The distance between consecutive peaks IS the
-    // wave's bar; it has to be the meter's bar, or the curve is out of phase
-    // with the grid lines drawn under it (those already come from stepsPerBar).
+  it('fits the requested cycles into the clip, in any meter', () => {
+    // The count is over the REGION, so two cycles across a 2-bar clip means the
+    // peaks sit one clip-half apart whether the bar is 16 steps or 12. That also
+    // keeps the curve in phase with the grid lines drawn under it, which already
+    // come from stepsPerBar.
     for (const m of [DEFAULT_METER, THREE_FOUR]) {
-      const v = lfoCurve(2, m);
+      const v = lfoCurve(2, m, 2);
       const spacing = argmax(v, v.length / 2, v.length) - argmax(v, 0, v.length / 2);
-      expect(spacing).toBe(stepsPerBar(m) * AUTOMATION_SUB_RES);
-      // …which is also exactly one cycle per bar of the clip itself.
       expect(spacing).toBe(v.length / 2);
+      expect(spacing).toBe(stepsPerBar(m) * AUTOMATION_SUB_RES); // one cycle per bar here
+    }
+  });
+
+  it('paints exactly the number of cycles asked for, in any meter', () => {
+    for (const m of [DEFAULT_METER, THREE_FOUR]) {
+      for (const cycles of [1, 3, 8]) {
+        expect(upwardCrossings(lfoCurve(2, m, cycles))).toBe(cycles);
+      }
     }
   });
 });
@@ -285,9 +347,18 @@ describe('renderClipAutomationLanes — follows the clip axis', () => {
 });
 
 describe('renderClipAutomationLanes — LFO curve generator', () => {
-  function lfoApply(h: HTMLElement): HTMLButtonElement {
-    return h.querySelector<HTMLButtonElement>('.clip-auto-lfo-apply')!;
-  }
+  it('keeps the row folded away until the header button asks for it', () => {
+    renderClipAutomationLanes(host, makeClip(), makeDeps());
+    addButton(host).click();
+    expect(host.querySelector('.clip-auto-lfo')).toBeNull();
+
+    lfoToggle(host).click();
+    expect(host.querySelector('.clip-auto-lfo')).not.toBeNull();
+    expect(host.querySelectorAll('.clip-auto-lfo-slider').length).toBe(3);
+
+    lfoToggle(host).click();
+    expect(host.querySelector('.clip-auto-lfo')).toBeNull();
+  });
 
   it('draws a curve into the lane, replacing the flat default', () => {
     const clip = makeClip();
@@ -297,6 +368,7 @@ describe('renderClipAutomationLanes — LFO curve generator', () => {
     const flat = values.every((v) => v === values[0]);
     expect(flat).toBe(true);
 
+    openLfo(host);
     lfoApply(host).click();
     const min = Math.min(...values), max = Math.max(...values);
     expect(max - min).toBeGreaterThan(0.5);          // a full-depth wave spans the lane
@@ -316,31 +388,98 @@ describe('renderClipAutomationLanes — LFO curve generator', () => {
     const half = Math.floor(values.length / 2);
     const firstHalfBefore = values.slice(0, half).join(',');
 
-    lfoApply(host).click();
+    setLfo(host);
     expect(values.slice(0, half).join(',')).toBe(firstHalfBefore);     // untouched
     const tail = values.slice(half);
     expect(Math.max(...tail) - Math.min(...tail)).toBeGreaterThan(0.5); // written
   });
 
-  it('a faster rate fits more cycles in the same lane', () => {
+  it('fits the whole cycle count inside the loop region, not the clip', () => {
+    // What "cycles over the region" buys: the wave closes cleanly in the loop.
+    const clip = makeClip({
+      loopEnabled: true,
+      loopStartTick: 8 * TICKS_PER_STEP,
+      loopEndTick: 16 * TICKS_PER_STEP,
+    });
+    renderClipAutomationLanes(host, clip, makeDeps());
+    addButton(host).click();
+    setLfo(host, { cycles: 3 });
+    const values = clip.envelopes![0].values;
+    expect(upwardCrossings(values.slice(Math.floor(values.length / 2)))).toBe(3);
+  });
+
+  it('the cycles field is what sets the count', () => {
     const clip = makeClip();
     renderClipAutomationLanes(host, clip, makeDeps());
     addButton(host).click();
     const values = clip.envelopes![0].values;
-    const rate = host.querySelector<HTMLSelectElement>('.clip-auto-lfo-rate')!;
-    const crossings = () => {
-      let n = 0;
-      for (let i = 1; i < values.length; i++) if ((values[i - 1] - 0.5) * (values[i] - 0.5) < 0) n++;
-      return n;
+
+    setLfo(host, { cycles: 2 });
+    expect(upwardCrossings(values)).toBe(2);
+    setLfo(host, { cycles: 6 });
+    expect(upwardCrossings(values)).toBe(6);
+  });
+
+  it('the Size slider is what sets how much of the lane the wave spans', () => {
+    const clip = makeClip();
+    renderClipAutomationLanes(host, clip, makeDeps());
+    addButton(host).click();
+    const values = clip.envelopes![0].values;
+    const span = () => Math.max(...values) - Math.min(...values);
+
+    setLfo(host, { size: 1 });
+    const full = span();
+    setRange(lfoSlider(host, 'Size'), 0.25);
+    expect(span()).toBeLessThan(full / 2);
+    expect(span()).toBeGreaterThan(0);
+  });
+
+  it('the Height slider is what moves the wave up the lane', () => {
+    const clip = makeClip();
+    renderClipAutomationLanes(host, clip, makeDeps());
+    addButton(host).click();
+    const values = clip.envelopes![0].values;
+    const mean = () => values.reduce((a, b) => a + b, 0) / values.length;
+
+    setLfo(host, { size: 0.4, height: 0.25 });
+    const low = mean();
+    setRange(lfoSlider(host, 'Height'), 0.75);
+    expect(mean()).toBeGreaterThan(low);
+  });
+
+  it('the Phase slider is what rotates the wave', () => {
+    const clip = makeClip();
+    renderClipAutomationLanes(host, clip, makeDeps());
+    addButton(host).click();
+    const values = clip.envelopes![0].values;
+
+    setLfo(host, { cycles: 1, phase: 0 });
+    const before = values.slice();
+    setRange(lfoSlider(host, 'Phase'), 0.25);
+    expect(values).not.toEqual(before);
+    // a WHOLE cycle of rotation is no rotation at all
+    setRange(lfoSlider(host, 'Phase'), 1);
+    expect(values).toEqual(before);
+  });
+
+  it('brackets a slider drag into a single undo step', () => {
+    const clip = makeClip();
+    const calls: string[] = [];
+    const historyDeps = {
+      history: {} as never, snapshot: () => ({}) as never, restore: () => {},
+      beginGesture: () => calls.push('begin'),
+      endGesture: () => calls.push('end'),
     };
+    renderClipAutomationLanes(host, clip, makeDeps(TARGETS, { historyDeps }));
+    addButton(host).click();
+    openLfo(host);
 
-    rate.value = '1bar'; rate.dispatchEvent(new Event('change'));
-    lfoApply(host).click();
-    const slow = crossings();
-
-    rate.value = '1/4'; rate.dispatchEvent(new Event('change'));
-    lfoApply(host).click();
-    expect(crossings()).toBeGreaterThan(slow);
+    const slider = lfoSlider(host, 'Size');
+    slider.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    setRange(slider, 0.8);
+    setRange(slider, 0.6);
+    slider.dispatchEvent(new Event('pointerup', { bubbles: true }));
+    expect(calls).toEqual(['begin', 'end']);   // one bracket, not one per sample
   });
 
   it('never resizes the envelope array (the audio path holds that reference)', () => {
@@ -349,6 +488,7 @@ describe('renderClipAutomationLanes — LFO curve generator', () => {
     addButton(host).click();
     const values = clip.envelopes![0].values;
     const len = values.length;
+    setLfo(host);
     lfoApply(host).click();
     expect(clip.envelopes![0].values).toBe(values);      // same reference
     expect(values.length).toBe(len);

@@ -160,19 +160,68 @@
 }
 .clip-auto-lane .auto-lane-header .label { flex: 0 1 auto; min-width: 120px; }
 
-/* LFO curve generator: shape + rate + depth + apply, in the lane header. */
+/* LFO curve generator. It is its OWN row under the lane header, unfolded by the
+   header's "▾ LFO" button: shape + a free cycle count over the painted region,
+   then the three continuous controls. It does not live in the header any more
+   because three usable sliders do not fit in a row that already carries the
+   label, On, Stepped and the value range. */
 .clip-auto-lfo {
-  display: flex; align-items: center; gap: 4px; margin-left: auto;
-}
-.clip-auto-lfo select {
+  display: grid;
+  gap: 3px 8px;
+  max-width: 480px;
+  margin: 0 0 6px;
+  padding: 6px 8px;
   background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+.clip-auto-lfo-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.clip-auto-lfo select,
+.clip-auto-lfo input[type=number] {
+  background: var(--surface-3);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 2px;
   padding: 1px 4px;
   font-size: 10px;
 }
-.clip-auto-lfo-apply { font-weight: 700; }
+.clip-auto-lfo input[type=number] { width: 58px; }
+.clip-auto-lfo-cycles { display: flex; align-items: center; gap: 4px; }
+.clip-auto-lfo-apply { font-weight: 700; margin-left: auto; }
+
+/* The row sits outside .auto-lane-header, so it needs the header's button look
+   rather than inheriting it. */
+.clip-auto-lfo button {
+  background: var(--surface-3);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 2px 6px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.clip-auto-lfo button.active {
+  background: var(--amber);
+  color: var(--bg);
+  border-color: var(--amber);
+}
+
+/* name | slider | read-out: fixed side columns so the three tracks line up. */
+.clip-auto-lfo-slider {
+  display: grid;
+  grid-template-columns: 42px minmax(60px, 1fr) 38px;
+  align-items: center;
+  gap: 8px;
+}
+.clip-auto-lfo-slider input[type=range] { width: 100%; min-width: 0; }
+.clip-auto-lfo-slider-read {
+  text-align: right;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
 .clip-auto-lane .auto-lane-header button {
   background: var(--surface-3);
   color: var(--text-dim);
