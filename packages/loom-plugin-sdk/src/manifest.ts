@@ -81,9 +81,27 @@ export interface ComponentManifestBase {
   params: EngineParamSpec[];
 }
 
+/** What a modulator component declares beyond the common fields. The host
+ *  renders its params with the generic panel: a plugin cannot ship a
+ *  template — its compiled main.js cannot import our bundled lit-html. */
+export interface ModulatorDeclaration {
+  /** What drives the value. 'time' runs off the clock and travels the
+   *  worklet's per-sample kernel (registerModulatorKernel); 'gate' is driven
+   *  by the note and travels the renderer's per-voice envelope road instead
+   *  (ModEnvSpec/ModEnvHost) — that road stays closed to plugins for now (see
+   *  the design doc §3.3). */
+  driver: 'time' | 'gate';
+  /** Scopes this modulator supports. The FIRST is the default for a new
+   *  instance; there is deliberately no separate defaultScope field. */
+  scopes: ('shared' | 'per-voice')[];
+  /** Prefix for generated instance ids ('sh' → sh1, sh2…). */
+  idPrefix: string;
+}
+
 export type ComponentManifest =
   | (ComponentManifestBase & { kind: 'engine'; polyphony: 'mono' | 'poly';
-      modulators?: unknown[]; capabilities: EngineCapabilities });
+      modulators?: unknown[]; capabilities: EngineCapabilities })
+  | (ComponentManifestBase & { kind: 'modulator'; modulator: ModulatorDeclaration });
 
 export interface PluginManifestFile {
   id: string;
@@ -114,6 +132,12 @@ export interface LoomApi {
   readonly apiVersion: number;
   registerComponent(manifest: ComponentManifest): void;
   registerRenderer(engineId: string, make: RendererFactory): void;
+  /** A copy of registerRenderer for a driver:'time' modulator's per-sample
+   *  kernel. `id` matches the modulator component's `id`. */
+  registerModulatorKernel(kernel: {
+    id: string;
+    valueAt(m: import('./types').ModLiteLike, t: number, origin: number): number;
+  }): void;
 }
 
 export type RendererFactory = (

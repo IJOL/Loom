@@ -17,7 +17,7 @@
 // by a fraction of a sample — an accepted trade-off of a real analogue-style
 // tone control living inside the resonator, not a bug.
 import { param, midiToFreq, velGain01, ModEnvHost } from '@loom/plugin-sdk';
-import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets, ModLite } from '@loom/plugin-sdk';
+import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets, ModEnvSpec } from '@loom/plugin-sdk';
 
 const DC_R = 0.997;   // DC-blocker pole (one-pole high-pass)
 
@@ -179,7 +179,7 @@ export class KarplusRenderer implements VoiceRenderer {
     if (t < this.holdEnd) this.holdEnd = t;
   }
 
-  setModEnvelopes(mods: ModLite[]): void { this.modEnv.setModEnvelopes(mods); }
+  setModEnvelopes(mods: ModEnvSpec[]): void { this.modEnv.setModEnvelopes(mods); }
   getAdsrOffsets(): VoiceModOffsets { return this.modEnv.getAdsrOffsets(); }
   setLiveParams(l: ParamBag): void { this.live = l; }
 

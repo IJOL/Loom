@@ -9,9 +9,9 @@
 // minus the subtractive-specific 'amp'/'filterEnv' targets (those engines apply
 // the envelope multiplicatively; here every target is an additive param offset).
 import { Adsr } from './adsr';
-import type { ModLite, VoiceModOffsets } from '../types';
+import type { ModEnvSpec, VoiceModOffsets } from '../types';
 
-interface ModEnv { adsr: Adsr; m: ModLite; }
+interface ModEnv { adsr: Adsr; m: ModEnvSpec; }
 
 export class ModEnvHost {
   private modEnvs: ModEnv[] = [];
@@ -19,7 +19,7 @@ export class ModEnvHost {
   private readonly adsrOnly: Record<string, number> = {};
 
   /** Hand this voice its per-voice ADSR modulators (one Adsr each), at spawn. */
-  setModEnvelopes(mods: ModLite[]): void {
+  setModEnvelopes(mods: ModEnvSpec[]): void {
     this.modEnvs = mods.map((m) => ({ adsr: new Adsr(), m }));
   }
 

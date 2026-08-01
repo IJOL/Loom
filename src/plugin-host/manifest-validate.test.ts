@@ -7,6 +7,12 @@ const engineComponent = {
   params: [{ id: 'a', label: 'A', kind: 'continuous' as const, min: 0, max: 1, default: 0 }],
   capabilities: { clipContent: 'notes' as const, shortLabel: 'karp', outputTrim: 0.857 },
 };
+const modulatorComponent = {
+  kind: 'modulator' as const,
+  id: 'sh', name: 'S&H',
+  params: [{ id: 'rate', label: 'Rate', kind: 'continuous' as const, min: 0.1, max: 20, default: 6 }],
+  modulator: { driver: 'time' as const, scopes: ['shared' as const, 'per-voice' as const], idPrefix: 'sh' },
+};
 const ok = (over: Record<string, unknown> = {}) => ({
   id: 'p', name: 'P', version: '1.0.0', loomApi: 1, main: 'main.js',
   components: [engineComponent], ...over,
@@ -84,8 +90,44 @@ describe('validatePluginManifest', () => {
     expect(r.ok).toBe(true);
     if (r.ok) {
       const c = r.manifest.components![0];
+      if (c.kind !== 'engine') throw new Error('expected an engine component');
       // Absent in the JSON: the READER applies the defaults, not the validator.
       expect(c.capabilities.acceptsNoteFx).toBeUndefined();
     }
+  });
+
+  it('accepts a well-formed modulator component', () => {
+    const r = validatePluginManifest(ok({ components: [modulatorComponent] }));
+    expect(r.ok).toBe(true);
+  });
+
+  it('rejects a modulator component with a bad driver', () => {
+    const bad = { ...modulatorComponent, modulator: { ...modulatorComponent.modulator, driver: 'clock' } };
+    const r = validatePluginManifest(ok({ components: [bad] }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toContain('driver');
+  });
+
+  it('rejects a modulator component with an empty scopes array', () => {
+    const bad = { ...modulatorComponent, modulator: { ...modulatorComponent.modulator, scopes: [] } };
+    const r = validatePluginManifest(ok({ components: [bad] }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toContain('scopes');
+  });
+
+  it('rejects a modulator component with no idPrefix', () => {
+    const modulator = { ...modulatorComponent.modulator } as Record<string, unknown>;
+    delete modulator.idPrefix;
+    const r = validatePluginManifest(ok({ components: [{ ...modulatorComponent, modulator }] }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toContain('idPrefix');
+  });
+
+  it('rejects a modulator component with no modulator declaration at all', () => {
+    const bad = { ...modulatorComponent } as Record<string, unknown>;
+    delete bad.modulator;
+    const r = validatePluginManifest(ok({ components: [bad] }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toContain('modulator');
   });
 });

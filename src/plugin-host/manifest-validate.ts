@@ -58,17 +58,34 @@ function capabilitiesError(c: unknown, i: number): string | null {
   return null;
 }
 
+const DRIVERS = ['time', 'gate'];
+const SCOPES = ['shared', 'per-voice'];
+
+function modulatorDeclarationError(m: unknown, i: number): string | null {
+  if (!isObj(m)) return `components[${i}].modulator is not an object`;
+  if (m.driver !== 'time' && m.driver !== 'gate') {
+    return `components[${i}].modulator.driver must be ${DRIVERS.join('|')}`;
+  }
+  if (!Array.isArray(m.scopes) || m.scopes.length === 0
+      || m.scopes.some((s) => !SCOPES.includes(s as string))) {
+    return `components[${i}].modulator.scopes must be a non-empty array of ${SCOPES.join('|')}`;
+  }
+  if (!isStr(m.idPrefix)) return `components[${i}].modulator.idPrefix must be a non-empty string`;
+  return null;
+}
+
 function componentError(c: unknown, i: number): string | null {
   if (!isObj(c)) return `components[${i}] is not an object`;
-  if (c.kind !== 'engine') return `components[${i}].kind must be engine`;
+  if (c.kind !== 'engine' && c.kind !== 'modulator') return `components[${i}].kind must be engine|modulator`;
   if (!isStr(c.id)) return `components[${i}].id must be a non-empty string`;
   if (!isStr(c.name)) return `components[${i}].name must be a non-empty string`;
-  if (c.polyphony !== 'mono' && c.polyphony !== 'poly') return `components[${i}].polyphony must be mono|poly`;
   if (!Array.isArray(c.params)) return `components[${i}].params must be an array`;
   for (let j = 0; j < c.params.length; j++) {
     const err = paramError(c.params[j], j);
     if (err) return `components[${i}].${err}`;
   }
+  if (c.kind === 'modulator') return modulatorDeclarationError(c.modulator, i);
+  if (c.polyphony !== 'mono' && c.polyphony !== 'poly') return `components[${i}].polyphony must be mono|poly`;
   return capabilitiesError(c.capabilities, i);
 }
 

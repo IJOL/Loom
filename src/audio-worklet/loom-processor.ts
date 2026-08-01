@@ -23,7 +23,8 @@ import '../audio-dsp/westcoast-renderer';
 // ModulationRuntime's registry lookup finds them inside the worklet bundle.
 import '../audio-dsp/modulators/lfo-kernel';
 import { registerRenderer } from '../audio-dsp/renderer-registry';
-import { LOOM_API_VERSION } from '@loom/plugin-sdk';
+import { registerModulatorKernel } from '../audio-dsp/modulator-kernels';
+import { LOOM_API_VERSION, type ModLiteLike } from '@loom/plugin-sdk';
 
 // The worklet half of the runtime handshake. A plugin's dsp.js is addModule'd
 // SEPARATELY, so it shares this realm's globals but not this module's instance —
@@ -34,6 +35,11 @@ Object.defineProperty(globalThis, 'Loom', {
   value: {
     apiVersion: LOOM_API_VERSION,
     registerRenderer,
+    // A copy of registerRenderer for a driver:'time' modulator's per-sample
+    // kernel — the worklet half of the same door installMainThreadLoomApi
+    // opens on the main thread.
+    registerModulatorKernel: (kernel: { id: string; valueAt(m: ModLiteLike, t: number, origin: number): number }) =>
+      registerModulatorKernel(kernel),
   },
   writable: false,
   configurable: true,

@@ -35,14 +35,39 @@ export const param = (b: ParamBag, id: string, d: number): number => (b[id] ?? d
  *  scales each to native units at read time. */
 export type VoiceModOffsets = Record<string, number>;
 
-/** The per-voice slice of a modulator the worklet hands to a renderer at spawn:
- *  its envelope times plus how deep it drives each param dot-id. */
-export interface ModLite {
+/** The per-voice slice of a driver:'gate' modulator (an ADSR) the worklet hands
+ *  to a renderer at spawn: its envelope times plus how deep it drives each
+ *  param dot-id. This is the shape ModEnvHost consumes — an envelope spec, not
+ *  a modulator kernel's input. See ModLiteLike for that. */
+export interface ModEnvSpec {
   attackSec?: number;
   decaySec?: number;
   sustain?: number;
   releaseSec?: number;
   depthByParam: Record<string, number>;
+}
+
+/** The input a driver:'time' modulator kernel's `valueAt(m, t, origin)`
+ *  receives — the resolved wire-format modulator state, limited to the fields
+ *  a kernel may legitimately read. TRIG and SCOPE are excluded on purpose: the
+ *  runtime already resolves them into the `origin` argument before calling the
+ *  kernel, so a kernel never needs to re-derive a phase origin itself.
+ *  Gate-only (ADSR) fields are excluded too — driver:'gate' never reaches a
+ *  kernel (see the design doc §3.3): that road stays the per-voice envelope
+ *  ModEnvHost drives from ModEnvSpec. */
+export interface ModLiteLike {
+  id: string;
+  kind: string;
+  enabled: boolean;
+  /** The built-in LFO's own fields, carried with their wire-format defaults
+   *  even for a non-LFO kind. A plugin modulator's OWN settings live in
+   *  `params` below, not here — these three exist for the LFO kernel. */
+  rateHz: number;
+  waveform: 'sine' | 'triangle' | 'square' | 'saw';
+  bipolar?: boolean;
+  /** A plugin modulator's own settings (ModulatorState.params, carried
+   *  through unchanged) — where a plugin kernel finds its own rate/shape. */
+  params?: Record<string, number>;
 }
 
 /** A pooled, per-sample voice. Pure: no Web Audio. */

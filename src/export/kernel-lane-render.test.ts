@@ -6,6 +6,9 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { renderKernelLane, type KernelLaneSpec } from './kernel-lane-render';
 import type { NoteSpec } from '../audio-dsp/types';
+import type { ModLite } from '../audio-dsp/modulation-runtime';
+import { __resetModulatorKernels } from '../audio-dsp/modulator-kernels';
+import { installMainThreadLoomApi, __resetPluginEngines } from '../plugin-host/loom-api';
 // Register the kernel renderers (side-effect imports).
 import '../audio-dsp/subtractive-renderer';
 import '../audio-dsp/tb303-renderer';
@@ -91,6 +94,48 @@ describe('renderKernelLane (pure kernel offline synthesis)', () => {
     const soft = rms(renderKernelLane(mk(40), frames, SR));
     const loud = rms(renderKernelLane(mk(120), frames, SR));
     expect(loud).toBeGreaterThan(soft * 1.2);
+  });
+
+  it('a plugin kernel registered ONLY through the Loom ABI reaches the offline export path', () => {
+    // Proves the main-thread ABI half (installMainThreadLoomApi in
+    // plugin-host/loom-api.ts) is enough for a plugin modulator kernel to be
+    // heard by renderKernelLane — the SAME main-thread realm and the SAME
+    // audio-dsp/modulator-kernels registry singleton, with no separate
+    // install site needed inside this file.
+    __resetPluginEngines();
+    __resetModulatorKernels();
+    installMainThreadLoomApi();
+    (globalThis as unknown as { Loom: { registerModulatorKernel(k: unknown): void } })
+      .Loom.registerModulatorKernel({ id: 'probe-kernel', valueAt: () => 1 });
+
+    const mkMod = (depth: number): ModLite => ({
+      // Subtractive's VoiceManager reads modulation offsets keyed by the
+      // SubParams field name (filterCutoff), not the dot-id (filter.cutoff)
+      // used in the KernelLaneSpec.params ParamBag below.
+      id: 'm1', kind: 'probe-kernel', enabled: true, rateHz: 4, waveform: 'sine',
+      depthByParam: { filterCutoff: depth },
+    });
+    const mk = (depth: number): KernelLaneSpec => ({
+      engineId: 'subtractive',
+      params: { 'osc1.wave': 0, 'osc1.level': 0.9, 'osc2.level': 0, 'sub.level': 0,
+        'filter.resonance': 0.1, 'filter.envAmount': 0, 'amp.sustain': 0.9,
+        'filter.builtinEnv': 1, 'filter.cutoff': 0.1 },
+      maxVoices: 4, mods: [mkMod(depth)],
+      notes: [{ note: note(0, 0.5, 48) }],
+    });
+    const frames = Math.ceil(0.6 * SR);
+    const unmodulated = renderKernelLane(mk(0), frames, SR);
+    const modulated = renderKernelLane(mk(1), frames, SR);
+    // Relative, not a direction: the depth-0 and depth-1 renders must differ by
+    // a non-negligible fraction of the signal's own level — the same "the audio
+    // DIFFERS" criterion the design doc uses for a modulator's DSP acceptance.
+    let diffSq = 0, refSq = 0;
+    for (let i = 0; i < frames; i++) {
+      const d = modulated[i] - unmodulated[i];
+      diffSq += d * d;
+      refSq += unmodulated[i] * unmodulated[i];
+    }
+    expect(Math.sqrt(diffSq)).toBeGreaterThan(Math.sqrt(refSq) * 0.1);
   });
 
   it('renders a tb303 lane non-silent', () => {
