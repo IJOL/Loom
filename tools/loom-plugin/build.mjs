@@ -33,11 +33,31 @@ function assertValidManifest(m) {
     if (typeof c.kind !== 'string' || !c.kind) throw new Error('plugin.json: component kind must be a non-empty string');
     if (typeof c.id !== 'string' || !c.id) throw new Error('plugin.json: component id must be a non-empty string');
     if (typeof c.name !== 'string' || !c.name) throw new Error(`plugin.json: component ${c.id ?? '?'} needs a name`);
-    if (!c.capabilities || typeof c.capabilities !== 'object') {
-      throw new Error(`plugin.json: component ${c.id} needs a capabilities object`);
-    }
-    if (c.capabilities.clipContent !== 'notes' && c.capabilities.clipContent !== 'audio') {
-      throw new Error(`plugin.json: component ${c.id} capabilities.clipContent must be notes|audio`);
+    // capabilities is an ENGINE concept (what kind of lane/clip it makes) — a
+    // modulator component has no lane of its own and declares `modulator`
+    // instead (checked below), so it is exempt from this block.
+    if (c.kind === 'engine') {
+      if (!c.capabilities || typeof c.capabilities !== 'object') {
+        throw new Error(`plugin.json: component ${c.id} needs a capabilities object`);
+      }
+      if (c.capabilities.clipContent !== 'notes' && c.capabilities.clipContent !== 'audio') {
+        throw new Error(`plugin.json: component ${c.id} capabilities.clipContent must be notes|audio`);
+      }
+    } else if (c.kind === 'modulator') {
+      if (!c.modulator || typeof c.modulator !== 'object') {
+        throw new Error(`plugin.json: component ${c.id} needs a modulator object`);
+      }
+      if (c.modulator.driver !== 'time' && c.modulator.driver !== 'gate') {
+        throw new Error(`plugin.json: component ${c.id} modulator.driver must be time|gate`);
+      }
+      if (!Array.isArray(c.modulator.scopes) || c.modulator.scopes.length === 0) {
+        throw new Error(`plugin.json: component ${c.id} modulator.scopes must be a non-empty array`);
+      }
+      if (typeof c.modulator.idPrefix !== 'string' || !c.modulator.idPrefix) {
+        throw new Error(`plugin.json: component ${c.id} modulator.idPrefix must be a non-empty string`);
+      }
+    } else {
+      throw new Error(`plugin.json: component ${c.id} has unknown kind ${c.kind}`);
     }
   }
 }

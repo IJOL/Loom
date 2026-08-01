@@ -66,6 +66,32 @@ describe('loom-plugin build', () => {
     await expect(buildPlugin({ srcDir: src, outDir: join(root, 'out') })).rejects.toThrow(/capabilities/);
   });
 
+  // A modulator component is not a lane — it has no capabilities object, and
+  // requiring one would make every modulator plugin manifest unbuildable.
+  it('builds a modulator component with no capabilities object', async () => {
+    const src = join(root, 'src', 'probe');
+    writePlugin(src, {
+      components: [{
+        kind: 'modulator', id: 'probe', name: 'Probe',
+        params: [{ id: 'rate', label: 'Rate', kind: 'continuous', min: 0.1, max: 20, default: 6 }],
+        modulator: { driver: 'time', scopes: ['shared', 'per-voice'], idPrefix: 'probe' },
+      }],
+    });
+    const res = await buildPlugin({ srcDir: src, outDir: join(root, 'out') });
+    expect(res.id).toBe('probe');
+  });
+
+  it('rejects a modulator component with no modulator declaration', async () => {
+    const src = join(root, 'src', 'probe');
+    writePlugin(src, {
+      components: [{
+        kind: 'modulator', id: 'probe', name: 'Probe',
+        params: [{ id: 'rate', label: 'Rate', kind: 'continuous', min: 0.1, max: 20, default: 6 }],
+      }],
+    });
+    await expect(buildPlugin({ srcDir: src, outDir: join(root, 'out') })).rejects.toThrow(/modulator object/);
+  });
+
   it('refuses a bundle that reaches into the host source tree', async () => {
     const src = join(root, 'src', 'probe');
     writePlugin(src);
