@@ -8,7 +8,7 @@
     "bump": "node tools/bump-version.mjs",
     "dev": "vite",
     "plugin": "node tools/loom-plugin/cli.mjs",
-    "build:plugins": "node tools/loom-plugin/cli.mjs build plugins/*",
+    "build:plugins": "node tools/loom-plugin/cli.mjs build plugins/karplus",
     "build": "npm run build:plugins && tsc && vite build",
     "build:pages": "npm run build:plugins && tsc && vite build --base=/Loom/",
     "preview": "vite preview",

@@ -20,6 +20,7 @@ import {
 } from './session-runtime';
 import { rehydrateLane, modulatorsForDuplicatedLane } from './session-host-persistence';
 import { getEngine, getEngineParamIds } from '../engines/registry';
+import { isAudioEngine } from '../plugins/capabilities';
 import { withUndo } from '../save/history-wiring';
 import { nextLaneSlug } from './session-host-util';
 import { buildStemAudioLane } from './stem-lane-builder';
@@ -90,7 +91,7 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
     onCellClick(laneId, clipIdx) {
       const lane = self.state.lanes.find((l) => l.id === laneId);
       if (!lane) return;
-      if (lane.engineId === 'audio') {
+      if (isAudioEngine(lane.engineId)) {
         // Audio channels hold one WAV per clip — pick the file now (the channel
         // itself was created empty). Same load path as dropping a WAV here.
         // Transient build-once node: rendered detached, appended, self-removes.

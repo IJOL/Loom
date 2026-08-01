@@ -1,4 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { join, dirname, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
+import { buildPlugin } from '../../tools/loom-plugin/build.mjs';
 
 // Slice A's REAL acceptance proof — deleting the `listedInSelector` capability
 // (a host-menu decision that had leaked into the manifest as an engine
@@ -13,6 +18,43 @@ import { test, expect, type Page } from '@playwright/test';
 // which cannot tell "the host honoured a capability" apart from "the plugin
 // never loaded" — and it asserted the very bug (unreachability) as if it were
 // the feature.
+//
+// audio-probe is a DSP-less test fixture: no real user should ever see it, so
+// it does NOT ship — `public/plugins/index.json` lists only `karplus`, and
+// `public/plugins/audio-probe/` (the built artifact) does not exist. Its
+// SOURCE stays at `plugins/audio-probe/` for exactly this test to build. This
+// test therefore does double duty: it still proves the capability-driven menu,
+// but it now ALSO proves the drop-in contract end-to-end — a plugin can be
+// installed at runtime, with the served tree completely untouched, which is
+// the real shape of the feature (a user installing a plugin later never edits
+// `public/`). It installs audio-probe itself via `page.route`: intercept
+// `plugins/index.json` to add it to the list, intercept
+// `plugins/audio-probe/**` to serve the files built (by this test, into a
+// scratch dir) from `plugins/audio-probe/` — never touching the checked-in
+// `public/plugins/`.
+//
+// Why this works: `plugin-host.ts` fetches `plugin.json` and `main.js` with a
+// plain `fetch()` on the main thread (see `module-loader.ts`'s
+// `moduleBlobUrl`), which `page.route` intercepts like any other network
+// request. audio-probe ships no `dsp` field, so it never reaches
+// `addPluginWorkletModule` (`ctx.audioWorklet.addModule`) — the one loading
+// path verified elsewhere NOT to be interceptable by `page.route`. Had this
+// probe carried DSP, that path would need a different proof.
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+let builtDir: string;
+let scratchRoot: string;
+
+test.beforeAll(async () => {
+  scratchRoot = mkdtempSync(join(tmpdir(), 'loom-plugin-audio-probe-'));
+  await buildPlugin({ srcDir: join(REPO_ROOT, 'plugins', 'audio-probe'), outDir: scratchRoot });
+  builtDir = join(scratchRoot, 'audio-probe');
+});
+
+test.afterAll(() => {
+  rmSync(scratchRoot, { recursive: true, force: true });
+});
+
 async function waitForBoot(page: Page): Promise<void> {
   await page.waitForFunction(
     () => document.querySelectorAll('.session-cell-filled').length > 0,
@@ -20,13 +62,30 @@ async function waitForBoot(page: Page): Promise<void> {
   );
 }
 
+async function installAudioProbeAtRuntime(page: Page): Promise<void> {
+  await page.route('**/plugins/index.json', (route) =>
+    route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ plugins: ['karplus', 'audio-probe'] }),
+    }));
+  await page.route('**/plugins/audio-probe/**', (route) => {
+    const url = new URL(route.request().url());
+    const marker = '/plugins/audio-probe/';
+    const rel = url.pathname.slice(url.pathname.indexOf(marker) + marker.length);
+    return route.fulfill({ path: join(builtDir, rel) });
+  });
+}
+
 test('a plugin that declares itself an audio channel can be created and behaves like one', async ({ page }) => {
   const errors: string[] = [];
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  await installAudioProbeAtRuntime(page);
   await page.goto('/');
   await waitForBoot(page);
 
-  // 1. The probe is published and its index entry is real.
+  // 1. The probe is "published" for this run — installed at test time, not
+  //    baked into the served tree. (The real public/plugins/index.json lists
+  //    only karplus; see public/plugins/index.json.)
   const ids = await page.evaluate(async () => (await (await fetch('plugins/index.json')).json()).plugins);
   expect(ids).toContain('audio-probe');
 
