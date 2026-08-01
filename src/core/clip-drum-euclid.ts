@@ -6,3 +6,11 @@
 let euclidOpen = false;
 export function isDrumEuclidOpen(): boolean { return euclidOpen; }
 export function setDrumEuclidOpen(v: boolean): void { euclidOpen = v; }
+
+// "Fit clip": grow the clip in whole bars until every generating cycle finishes
+// on the loop point, so the pattern joins end to start instead of being cut
+// mid-cycle. On by default — a phasing cycle in a clip that chops it is the
+// surprise, not the feature — and switchable per the same session-global rule.
+let euclidFit = true;
+export function isDrumEuclidFit(): boolean { return euclidFit; }
+export function setDrumEuclidFit(v: boolean): void { euclidFit = v; }

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mountDrumEuclidPanel } from './drum-euclid-panel';
-import { setDrumEuclidOpen } from '../../core/clip-drum-euclid';
+import { setDrumEuclidOpen, setDrumEuclidFit } from '../../core/clip-drum-euclid';
 import { gmDrumRows, noteDrumRows } from '../../core/drum-grid-editing';
 import { VOICE_MIDI } from '../../engines/drum-gm-map';
 import { DRUM_LANES } from '../../core/drums';
@@ -18,8 +18,11 @@ const stepsOn = (notes: readonly NoteEvent[], midi: number): number[] =>
 
 interface SetupOpts {
   notes?: NoteEvent[];
-  totalSteps?: number;
-  defaultSteps?: number;
+  lengthBars?: number;
+  stepsPerBar?: number;
+  /** Omit the resize hook — a host that won't let the clip be resized. */
+  noResize?: boolean;
+  fit?: boolean;
   /** The fields ship CLOSED; every test about the fields themselves opens them.
    *  'inherit' mounts without touching the flag — how a second editor opens. */
   open?: boolean | 'inherit';
@@ -28,26 +31,36 @@ interface SetupOpts {
 function setup(opts: SetupOpts = {}) {
   const host = document.createElement('div');
   let notes: NoteEvent[] = opts.notes ?? [];
+  let bars = opts.lengthBars ?? 1;
   let redraws = 0;
   let relayouts = 0;
   if (opts.open !== 'inherit') setDrumEuclidOpen(opts.open ?? true);
+  if (opts.fit !== undefined) setDrumEuclidFit(opts.fit);
   const handle = mountDrumEuclidPanel(host, {
     rows: gmDrumRows(),
     labels: DRUM_LANES.map((v) => v.toUpperCase()),
-    totalSteps: opts.totalSteps ?? 16,
-    defaultSteps: opts.defaultSteps ?? 16,
+    stepsPerBar: opts.stepsPerBar ?? 16,
+    getLengthBars: () => bars,
+    setLengthBars: opts.noResize ? undefined : (b) => { bars = b; },
     getNotes: () => notes,
     setNotes: (n) => { notes = n; },
     onChange: () => { redraws++; },
     onToggleOpen: () => { relayouts++; },
   });
-  return { host, handle, notes: () => notes, redraws: () => redraws, relayouts: () => relayouts };
+  return {
+    host, handle,
+    notes: () => notes, bars: () => bars,
+    redraws: () => redraws, relayouts: () => relayouts,
+  };
 }
 
 const rail = (host: HTMLElement) => host.querySelector('.drum-euclid-rail') as HTMLButtonElement;
 const rowCount = (host: HTMLElement) => host.querySelectorAll('.drum-euclid-row').length;
 
-beforeEach(() => setDrumEuclidOpen(false));
+const fitBox = (host: HTMLElement) =>
+  host.querySelector('.drum-euclid-fit input') as HTMLInputElement;
+
+beforeEach(() => { setDrumEuclidOpen(false); setDrumEuclidFit(false); });
 
 function fields(host: HTMLElement, row: number) {
   const el = host.querySelectorAll('.drum-euclid-row')[row];
@@ -142,7 +155,7 @@ describe('the drum grid\'s per-voice Euclidean fields', () => {
   });
 
   it('fills a two-bar clip by tiling the one-bar cycle', () => {
-    const s = setup({ totalSteps: 32, defaultSteps: 16 });
+    const s = setup({ lengthBars: 2, stepsPerBar: 16 });
     type(fields(s.host, KICK).hits, 4);
     expect(stepsOn(s.notes(), VOICE_MIDI.kick)).toEqual([0, 4, 8, 12, 16, 20, 24, 28]);
   });
@@ -189,5 +202,87 @@ describe('the drum grid\'s per-voice Euclidean fields', () => {
     s.handle.setModel(noteDrumRows([60, 61]), ['HI', 'LO']);
     type(fields(s.host, 1).hits, 2);
     expect(stepsOn(s.notes(), 61)).toEqual([0, 8]);
+  });
+});
+
+const SNARE = DRUM_LANES.indexOf('snare');
+
+describe('"Fit clip" — growing the clip until the cycle joins end to start', () => {
+  it('grows a one-bar clip to five for a five-step cycle', () => {
+    const s = setup({ fit: true });
+    type(fields(s.host, KICK).steps, 5);
+    type(fields(s.host, KICK).hits, 2);
+    expect(s.bars()).toBe(5);
+  });
+
+  it('fills the length it just grew to', () => {
+    const s = setup({ fit: true });
+    type(fields(s.host, KICK).steps, 5);
+    type(fields(s.host, KICK).hits, 2);
+    // 5 bars = 80 steps, a 5-step cycle tiling 16 times, 2 hits each.
+    expect(stepsOn(s.notes(), VOICE_MIDI.kick).length).toBe(32);
+    expect(Math.max(...stepsOn(s.notes(), VOICE_MIDI.kick))).toBeGreaterThan(64);
+  });
+
+  it('re-tiles the voices that were already generating over the new length', () => {
+    const s = setup({ fit: true });
+    type(fields(s.host, SNARE).hits, 4);              // 4 on the floor, one bar
+    expect(stepsOn(s.notes(), VOICE_MIDI.snare).length).toBe(4);
+    type(fields(s.host, KICK).steps, 5);
+    type(fields(s.host, KICK).hits, 2);               // clip grows to 5 bars
+    expect(stepsOn(s.notes(), VOICE_MIDI.snare).length).toBe(20);
+  });
+
+  it('leaves a clip alone when every cycle already fits the bar', () => {
+    const s = setup({ fit: true, lengthBars: 2 });
+    type(fields(s.host, KICK).hits, 4);
+    expect(s.bars()).toBe(2);
+  });
+
+  it('shrinks back to the length the clip had once the fields are cleared', () => {
+    const s = setup({ fit: true });
+    type(fields(s.host, KICK).steps, 5);
+    type(fields(s.host, KICK).hits, 2);
+    expect(s.bars()).toBe(5);
+    type(fields(s.host, KICK).hits, 0);
+    expect(s.bars()).toBe(1);
+  });
+
+  it('never shrinks below the length the clip already had', () => {
+    const s = setup({ fit: true, lengthBars: 4 });
+    type(fields(s.host, KICK).hits, 4);
+    expect(s.bars()).toBe(4);
+  });
+
+  it('does not touch the clip while the check is off', () => {
+    const s = setup({ fit: false });
+    type(fields(s.host, KICK).steps, 5);
+    type(fields(s.host, KICK).hits, 2);
+    expect(s.bars()).toBe(1);
+  });
+
+  it('fits what is already in the fields the moment you tick it', () => {
+    const s = setup({ fit: false });
+    type(fields(s.host, KICK).steps, 5);
+    type(fields(s.host, KICK).hits, 2);
+    expect(s.bars()).toBe(1);
+    fitBox(s.host).checked = true;
+    fitBox(s.host).dispatchEvent(new Event('change', { bubbles: true }));
+    expect(s.bars()).toBe(5);
+  });
+
+  it('offers no check when the host cannot resize the clip', () => {
+    const s = setup({ noResize: true });
+    expect(fitBox(s.host)).toBeNull();
+  });
+
+  it('redraws the grid when only the length moved', () => {
+    const s = setup({ fit: false });
+    type(fields(s.host, KICK).steps, 5);
+    type(fields(s.host, KICK).hits, 2);
+    const before = s.redraws();
+    fitBox(s.host).checked = true;
+    fitBox(s.host).dispatchEvent(new Event('change', { bubbles: true }));
+    expect(s.redraws()).toBeGreaterThan(before);
   });
 });

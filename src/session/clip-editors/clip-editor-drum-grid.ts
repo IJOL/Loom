@@ -60,7 +60,9 @@ export function renderDrumGridEditor(
   let resolution: ResolutionKey = clampResolution(clip.gridResolution ?? DEFAULT_RESOLUTION);
   const snap = () => resolutionToSnap(resolution);
 
-  const patternTicks = Math.max(1, clip.lengthBars * ticksPerBar(meter));
+  // Mutable: the Euclidean panel's "Fit clip" grows the clip in whole bars so a
+  // phasing cycle still joins end to start. Everything reads it at call time.
+  let patternTicks = Math.max(1, clip.lengthBars * ticksPerBar(meter));
   const barTicks = ticksPerBar(meter);
   const beatsPerBar = stepsPerBar(meter) / stepsPerBeat(meter);
   const beatTicks = barTicks / beatsPerBar;
@@ -121,8 +123,9 @@ export function renderDrumGridEditor(
   // move the viewport back behind it to keep labels · fields · grid order.
   const euclidPanel = mountDrumEuclidPanel(row, {
     rows, labels,
-    totalSteps: clip.lengthBars * stepsPerBar(meter),
-    defaultSteps: stepsPerBar(meter),
+    stepsPerBar: stepsPerBar(meter),
+    getLengthBars: () => clip.lengthBars,
+    setLengthBars: (bars) => setClipLengthBars(bars),
     getNotes: notes, setNotes, onChange: () => draw(), historyDeps,
     // Folding the fields away hands their width back to the grid viewport, so
     // the axis basis has to be re-measured and both canvases redrawn.
@@ -162,6 +165,19 @@ export function renderDrumGridEditor(
     labelsCanvas.style.width = `${LABEL_W}px`; labelsCanvas.style.height = `${FRAME_H}px`;
     drawLabels(); draw();
     loopHandle?.redraw();   // re-layout the loop column for the new pxPerTick (zoom)
+  }
+
+  // Grow (or shrink) the clip in whole bars — the Euclidean panel's "Fit clip".
+  // The axis content width is basis·zoom and does NOT depend on the length, so
+  // its own subscription would skip the relayout: what changed is pxPerTick, and
+  // only resize() re-derives that and redraws both canvases + the loop column.
+  function setClipLengthBars(bars: number): void {
+    const next = Math.max(1, Math.round(bars));
+    if (next === clip.lengthBars) return;
+    clip.lengthBars = next;
+    patternTicks = Math.max(1, next * ticksPerBar(meter));
+    axis.setTotalTicks(patternTicks);        // followers (automation lanes) re-fit
+    resize();
   }
 
   // Swap the row model in place (the "Full kit" toggle). Recomputes row count +
@@ -449,7 +465,6 @@ export function renderDrumGridEditor(
   viewport.addEventListener('scroll', () => axis.setScrollLeft(viewport.scrollLeft));
 
   if (deps.loop) {
-    const total = patternTicks;
     loopHandle = mountClipLoopOverlay({
       toolbarHost: deps.loop.toolbarHost,
       scrollHost: viewport,
@@ -462,7 +477,8 @@ export function renderDrumGridEditor(
       tickToX: (t) => xForTick(t),
       tickFromClientX: (cx) => {
         const x = cx - canvas.getBoundingClientRect().left;
-        return pxPerTick > 0 ? Math.max(0, Math.min(total, x / pxPerTick)) : 0;
+        // patternTicks, not a captured copy: "Fit clip" can grow it under us.
+        return pxPerTick > 0 ? Math.max(0, Math.min(patternTicks, x / pxPerTick)) : 0;
       },
       contentHeight: () => FRAME_H,
     });

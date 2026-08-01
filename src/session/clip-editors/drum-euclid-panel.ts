@@ -23,17 +23,24 @@ import { applyEuclidToRow } from '../../core/euclid-row';
 import { DEFAULT_VELOCITY } from '../../core/velocity-gain';
 import { withUndo, type HistoryDeps } from '../../save/history-wiring';
 import { mountPanel } from '../../core/lit-panel';
-import { isDrumEuclidOpen, setDrumEuclidOpen } from '../../core/clip-drum-euclid';
-import { RULER_H, ROW_H } from './drum-grid-types';
+import { euclidFitBars, MAX_FIT_BARS } from '../../core/euclid-fit';
+import {
+  isDrumEuclidOpen, setDrumEuclidOpen, isDrumEuclidFit, setDrumEuclidFit,
+} from '../../core/clip-drum-euclid';
+import { RULER_H, ROW_H, VEL_LANE_H } from './drum-grid-types';
 
 export interface EuclidPanelDeps {
   rows: DrumRows;
   labels: string[];
-  /** Steps in the whole clip — what a paint fills, tiling its cycle to get there. */
-  totalSteps: number;
-  /** What the steps field starts on: one bar, so 4 hits reads as four on the
-   *  floor whatever the clip's length (a longer clip tiles the same cycle). */
-  defaultSteps: number;
+  /** 16th-note steps in one bar of the session meter. Also what the steps field
+   *  starts on, so 4 hits reads as four on the floor whatever the clip's length
+   *  (a longer clip tiles the same cycle). */
+  stepsPerBar: number;
+  /** The clip's length, read fresh: "Fit clip" moves it under our feet. */
+  getLengthBars: () => number;
+  /** Resize the clip (whole bars) so the cycles finish on the loop point.
+   *  Omitted → no "Fit clip" check, and the clip's length is never touched. */
+  setLengthBars?: (bars: number) => void;
   getNotes: () => NoteEvent[];
   setNotes: (n: NoteEvent[]) => void;
   onChange: () => void;
@@ -74,17 +81,64 @@ export function mountDrumEuclidPanel(host: HTMLElement, deps: EuclidPanelDeps): 
   let rows = deps.rows;
   let labels = deps.labels;
 
+  // The length the clip had when this editor opened — the floor "Fit clip"
+  // shrinks back to when you clear the fields. It never crushes a clip you sized
+  // by hand; re-opening the editor simply adopts the grown length as the new
+  // floor, which is also what makes the growth stick.
+  const baseBars = Math.max(1, deps.getLengthBars());
+
+  /** Every row's fields, read straight off the DOM ('' → 0 → not generating). */
+  function readSpecs(): { hits: number; steps: number; rotation: number }[] {
+    return [...handle.host.querySelectorAll('.drum-euclid-row')].map((el) => {
+      const [hits, steps, rotation] = [...el.querySelectorAll('input')].map((i) => Number(i.value));
+      return { hits, steps, rotation };
+    });
+  }
+
+  const cycleOf = (s: { hits: number; steps: number; rotation: number }) =>
+    ({ ...s, velocity: DEFAULT_VELOCITY });
+
+  /**
+   * Repaint, and — with "Fit clip" on — resize the clip first so every cycle
+   * finishes on the loop point. A resize changes how far a cycle tiles, so the
+   * OTHER generating rows have to be repainted over the new length too, or the
+   * clip grows and only the row you touched fills it.
+   */
+  function commit(editedRow: number | null): void {
+    const specs = readSpecs();
+    const generating = specs.map((s, r) => ({ ...s, row: r })).filter((s) => s.hits >= 1 && s.steps >= 1);
+    const before = Math.max(1, deps.getLengthBars());
+    let bars = before;
+    if (isDrumEuclidFit() && deps.setLengthBars) {
+      bars = euclidFitBars(generating.map((s) => s.steps), deps.stepsPerBar, baseBars);
+      if (bars !== before) deps.setLengthBars(bars);
+    }
+    const resized = bars !== before;
+    const total = Math.max(1, Math.round(bars * deps.stepsPerBar));
+    const targets = resized ? generating.map((s) => s.row) : (editedRow == null ? [] : [editedRow]);
+
+    let out = deps.getNotes();
+    for (const r of targets) {
+      const spec = specs[r];
+      if (spec) out = applyEuclidToRow(out, r, cycleOf(spec), total, rows);
+    }
+    if (targets.length) deps.setNotes(out);
+    if (targets.length || resized) deps.onChange();
+  }
+
+  // Synchronous on the `change` event: AutoHistory checkpoints in a microtask
+  // off that same event, so a debounced paint would miss its undo step.
   function apply(row: number, e: Event): void {
-    const rowEl = (e.target as HTMLElement).closest('.drum-euclid-row')!;
-    const [hits, steps, rot] =
-      [...rowEl.querySelectorAll('input')].map((i) => Number(i.value));   // '' → 0 → not generating
-    const spec = { hits, steps, rotation: rot, velocity: DEFAULT_VELOCITY };
-    // Synchronous on the `change` event: AutoHistory checkpoints in a microtask
-    // off that same event, so a debounced paint would miss its undo step.
-    const run = () => {
-      deps.setNotes(applyEuclidToRow(deps.getNotes(), row, spec, deps.totalSteps, rows));
-      deps.onChange();
-    };
+    void e;
+    const run = () => commit(row);
+    deps.historyDeps ? withUndo(deps.historyDeps, run) : run();
+  }
+
+  function toggleFit(e: Event): void {
+    setDrumEuclidFit((e.target as HTMLInputElement).checked);
+    // Ticking it is itself the instruction: fit the clip to what's already in
+    // the fields instead of waiting for the next edit.
+    const run = () => commit(null);
     deps.historyDeps ? withUndo(deps.historyDeps, run) : run();
   }
 
@@ -94,7 +148,7 @@ export function mountDrumEuclidPanel(host: HTMLElement, deps: EuclidPanelDeps): 
       ${FIELDS.map((f, i) => html`<input type="number" class="drum-euclid-f"
         title="${labels[r] ?? ''} · ${f.title}"
         min=${i < 2 ? '0' : nothing}
-        .value=${live(i === 1 ? String(deps.defaultSteps) : '')}
+        .value=${live(i === 1 ? String(deps.stepsPerBar) : '')}
         style=${FIELD_STYLE}
         @change=${(e: Event) => apply(r, e)} />`)}
     </div>`;
@@ -112,7 +166,21 @@ export function mountDrumEuclidPanel(host: HTMLElement, deps: EuclidPanelDeps): 
         ${FIELDS.map((f) => html`<span title=${f.title} style="width:${FIELD_W}px;text-align:center">${f.cap}</span>`)}
       </div>
       ${Array.from({ length: rows.count }, (_, r) => rowTemplate(r))}
+      ${deps.setLengthBars ? fitTemplate() : nothing}
     </div>`;
+
+  // Sits below the last voice, in the band the velocity lane occupies on the
+  // canvas — the one place a control fits without pushing the rows off the
+  // voices they belong to.
+  const fitTemplate = (): TemplateResult => html`
+    <label class="drum-euclid-fit"
+      title=${'Fit clip — grow the clip in whole bars until every cycle finishes on the loop point, '
+        + `so it joins end to start (up to ${MAX_FIT_BARS} bars; cycles that would need more are left alone)`}
+      style="display:flex;align-items:center;gap:4px;height:${VEL_LANE_H}px;padding:0 ${PAD}px;box-sizing:border-box;color:#8a8a8a;cursor:pointer">
+      <input type="checkbox" .checked=${live(isDrumEuclidFit())} @change=${toggleFit}
+        style="width:12px;height:12px;margin:0;accent-color:#6a8fbf" />
+      FIT CLIP
+    </label>`;
 
   const handle = mountPanel({
     container: host,
@@ -136,8 +204,9 @@ export function mountDrumEuclidPanel(host: HTMLElement, deps: EuclidPanelDeps): 
   function sizeHost(): void {
     const w = RAIL_W + (isDrumEuclidOpen() ? FIELDS_W : 0);
     // Folded there is no fields column to give the flex host its height, so the
-    // rail would collapse to nothing: pin the host to the frame's row block.
-    const h = RULER_H + ROW_H * Math.max(1, rows.count);
+    // rail would collapse to nothing: pin the host to the canvas frame — ruler,
+    // voice rows and the velocity band the FIT check sits in.
+    const h = RULER_H + ROW_H * Math.max(1, rows.count) + VEL_LANE_H;
     handle.host.style.cssText = `flex:0 0 ${w}px;min-height:${h}px;display:flex;align-items:stretch;`
       + 'background:#0a0a0a;font:9px ui-monospace,monospace';
   }
