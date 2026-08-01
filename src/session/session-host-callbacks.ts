@@ -124,6 +124,10 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
     onCellDropAudio(laneId, clipIdx, file) {
       self.loadAudioFileIntoCell(laneId, clipIdx, file);
     },
+    // Literal 'audio' by design: this is the menu's explicit "Audio channel"
+    // entry (session-grid-templates.ts's EXPLICIT_ENTRY_ENGINE) — it always
+    // adds the BUILT-IN channel, never a plugin that merely declares
+    // clipContent: 'audio'. A product/UI choice, not a capability check.
     onAddAudioChannel() { self.callbacks.onAddLane('audio'); },
     onStopLane(laneId) {
       stopLane(self.laneStates, laneId, stopHooks());
@@ -247,6 +251,10 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
       };
 
       const runAdd = () => {
+        // Literal 'audio' by design: a stem-separation import always lands
+        // each stem on the BUILT-IN Audio channel (buildStemAudioLane does
+        // the same) — there is no plugin picker in this flow. Not a
+        // capability check.
         for (const stem of stems) {
           const used = new Set(self.state.lanes.map((l) => l.id));
           const newId = nextLaneSlug(used, 'audio');

@@ -282,6 +282,11 @@ export class SessionInspector {
 
     // Classify the clip so the inspector can hide the note-editing controls for
     // audio-channel clips (which have no note editor). notes/drums → show.
+    // `kind` is a ClipKind ('notes'|'drums'|'audio'), already resolved through
+    // the capability door by classifyClip → isAudioClip → isAudioEngine(lane.
+    // engineId) — every `kind === 'audio'` check below reads that resolved
+    // value, not a literal engine id, so it also works for a plugin declaring
+    // clipContent: 'audio' under its own id.
     const kind = classifyClip(lane, clip, getEngine(lane.engineId)?.editor, editorOverride.get(clip.id));
     const editRow = document.getElementById('insp-edit-row');
     if (editRow) editRow.hidden = kind === 'audio';

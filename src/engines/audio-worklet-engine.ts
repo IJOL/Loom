@@ -44,7 +44,17 @@ class AudioWorkletVoice implements Voice {
 }
 
 export class AudioWorkletEngine implements SynthEngine {
-  readonly id = 'audio';
+  // The real lane engineId — the built-in Audio channel ('audio') or a plugin
+  // that declares clipContent: 'audio'. Defaults to 'audio' for callers (tests,
+  // any leftover direct construction) that don't pass one; the allocator
+  // (lane-allocator.ts createLaneEngine) always does, mirroring how
+  // WorkletLaneEngine takes its id via cfg.engineId. A fixed 'audio' here used
+  // to make session-host-persistence's engine-swap reconciliation see every
+  // plugin audio-channel lane as "always different from its saved engineId" —
+  // triggering an unnecessary swapLaneEngine on every load — and made
+  // trigger-dispatch resolve note-FX capability against the built-in 'audio'
+  // registration instead of the plugin's own.
+  readonly id: string;
   readonly name = 'Audio';
   readonly type = 'polyhost' as const;
   readonly polyphony = 'mono' as const;
@@ -58,6 +68,10 @@ export class AudioWorkletEngine implements SynthEngine {
   private ctx: AudioContext | null = null;
   private dryTarget: AudioNode | null = null;
   private fx: FxBus | null = null;
+
+  constructor(engineId: string = 'audio') {
+    this.id = engineId;
+  }
 
   get modulators(): ModulationHostImpl { return this.modHost; }
 

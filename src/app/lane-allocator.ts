@@ -113,7 +113,7 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     // ANY plugin id, DSP or not). Checked by capability, not by literal id, so a
     // plugin audio channel is routed correctly under its own id, not just under
     // the built-in 'audio'.
-    if (isAudioEngine(engineId)) return new AudioWorkletEngine();
+    if (isAudioEngine(engineId)) return new AudioWorkletEngine(engineId);
     if (WORKLET_ENGINE_IDS.has(engineId)) {
       const spec = getEngineDescriptor(engineId);
       if (spec) {

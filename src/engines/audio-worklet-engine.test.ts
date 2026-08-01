@@ -105,4 +105,14 @@ describe('AudioWorkletEngine', () => {
     expect(eng.id).toBe('audio');
     expect(eng.polyphony).toBe('mono');
   });
+
+  // A plugin declaring clipContent: 'audio' is also backed by this class
+  // (lane-allocator.ts createLaneEngine), so its live engine must report the
+  // plugin's OWN id — a fixed 'audio' here used to make every reader of
+  // `.id` (session-host-persistence's swap reconciliation, trigger-dispatch's
+  // note-FX capability lookup) think it was the built-in channel.
+  it('reports the id passed to its constructor, for a plugin audio channel', () => {
+    const eng = new AudioWorkletEngine('my-plugin-audio');
+    expect(eng.id).toBe('my-plugin-audio');
+  });
 });

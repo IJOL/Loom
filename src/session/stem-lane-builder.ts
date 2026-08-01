@@ -10,6 +10,9 @@ export function buildStemAudioLane(
   id: string,
   opts: { bpm: number; meter: TimeSignature; anchorSec: number; warpMarkers?: import('./session').WarpMarker[]; warpGroupId?: string; warpRef?: boolean },
 ): SessionLane {
+  // Literal 'audio' by design: stems always become the BUILT-IN Audio
+  // channel, never a plugin that merely declares clipContent: 'audio' — this
+  // flow has no plugin picker. Not a capability check.
   const lane = emptyLane(id, 'audio');
   lane.name = stem.label;
   const hasWarp = !!opts.warpMarkers && opts.warpMarkers.length >= 2;

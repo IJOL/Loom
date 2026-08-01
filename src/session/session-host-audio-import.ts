@@ -50,6 +50,11 @@ export function addAudioChannel(self: SessionHost, file: File, opts?: { knownBpm
       const hd = self.deps.historyDeps;
       const run = () => {
         const used = new Set(self.state.lanes.map((l) => l.id));
+        // Literal 'audio' by design, not a capability check: this flow (the
+        // dedicated "Add audio channel" action) always creates the BUILT-IN
+        // channel — there is no picker here for a plugin engine that also
+        // declares clipContent: 'audio'. A product choice, not a stand-in for
+        // isAudioEngine().
         const newId = nextLaneSlug(used, 'audio');
         const lane = emptyLane(newId, 'audio');
         lane.name = name;

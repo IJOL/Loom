@@ -193,6 +193,25 @@ describe('backend routing by capability, not by hard-coded id (audio slice)', ()
     expect(res.engine).not.toBeInstanceOf(WorkletLaneEngine);
   });
 
+  // AudioWorkletEngine used to hardcode `id = 'audio'`, so a plugin audio
+  // channel's live engine reported the wrong id — session-host-persistence's
+  // engine-swap reconciliation (`existing.engine.id !== lane.engineId`) then
+  // saw 'audio' !== 'audio-probe' and swapped on every load, and
+  // trigger-dispatch resolved note-FX capability against the built-in
+  // 'audio' registration instead of audio-probe's own.
+  it('a plugin audio-channel engine reports its OWN id, not the built-in "audio"', () => {
+    (globalThis as unknown as { Loom: { registerComponent(m: ComponentManifest): void } })
+      .Loom.registerComponent(audioProbePlugin.components[0] as unknown as ComponentManifest);
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [] });
+
+    lanes.ensureLaneResource('L', 'audio-probe');
+
+    const res = lanes.resources.get('L')!;
+    expect(res.engine.id).toBe('audio-probe');
+  });
+
   it('non-regression: the built-in audio channel still gets AudioWorkletEngine, and the six melodic engines still get WorkletLaneEngine', () => {
     (globalThis as unknown as { Loom: { registerComponent(m: ComponentManifest): void } })
       .Loom.registerComponent(karplusPlugin.components[0] as unknown as ComponentManifest);
