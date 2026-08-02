@@ -332,26 +332,63 @@ for e in tb303 subtractive fm wavetable westcoast; do node tools/param-read-benc
 Sustituye la tabla de abajo por los valores reales. Es el punto de comparación
 del resto del trabajo; sin él, la Task 9 no puede afirmar nada.
 
-Medido el 2026-08-01 con `npx tsx tools/param-read-bench.ts <id>`, 10 s de audio
-× 8 voces a 48 kHz, mediana de 5 tiradas, sobre esta rama **antes de tocar
-producción** (idéntica a `main` en el camino de audio):
+> ## ⛔ ESTA TABLA DE PARTIDA ES INVÁLIDA — NO LA USES
+>
+> Medida el 2026-08-01 con `tools/param-read-bench.ts`: tb303 48,5 · subtractive
+> 460,1 · fm 962,4 · wavetable 502,1 · westcoast 894,6.
+>
+> Tiene **dos defectos**, y cada uno por separado ya la invalidaba:
+>
+> 1. **El banco enchufaba los params vivos él mismo**, llamando al hook del
+>    renderer. Subtractive **nunca implementó `setLiveParams`** — tenía el suyo,
+>    `setLiveSubParams`, que reparte el `VoiceManager` —, así que la llamada era
+>    un no-op silencioso y lo que se midió fue su camino CONGELADO, con la caché
+>    de `Math.pow` sin invalidarse nunca porque nadie leía el mando que se movía.
+> 2. **Las voces se morían.** El banco pasaba `NOTE` con su duración corta, así
+>    que al cabo de ~1 s las ocho voces estaban `done` y los otros nueve segundos
+>    no renderizaban nada. Cada motor medía una fracción distinta del tiempo:
+>    eso explica el "tb303 es 9,5× más rápido que subtractive", que no era una
+>    propiedad del 303 sino de cuánto vivían sus voces.
+>
+> La lección: **un banco que decide él cómo conectar el sistema mide su propia
+> decisión.** El sustituto, `tools/lane-bench.ts`, conduce un `VoiceManager` de
+> verdad — es producción quien elige el contrato — y sostiene las notas los 10 s.
+> Ver más abajo la medición buena.
 
-| motor | mediana ANTES (ms) | mediana DESPUÉS (ms) |
-| --- | --- | --- |
-| tb303 | 48,5 | _(Task 9)_ |
-| subtractive | 460,1 | _(Task 9)_ |
-| fm | 962,4 | _(Task 9)_ |
-| wavetable | 502,1 | _(Task 9)_ |
-| westcoast | 894,6 | _(Task 9)_ |
+**La medición buena (Task 9)** — `npx tsx tools/lane-bench.ts <id>`, 10 s × 8
+voces a 48 kHz, mediana de 5, misma máquina, sin nada más corriendo, y **los dos
+lados con el mismo fichero**: el "antes" en un worktree en `1a7de68`, el
+"después" en `3323b78`.
 
-**Lo que estos números ya dicen, y conviene leer antes de prometer nada:**
-Subtractive **no** es el motor rápido pese a su struct — es 9,5× más lento que
-el 303 y sólo algo mejor que Wavetable. El coste está dominado por su propio DSP
-(dos osciladores, sub, ruido, unison y filtro), no por cómo lee sus params. Así
-que la ganancia del cambio a índices se medirá en **puntos porcentuales**, no en
-múltiplos, y la Task 9 debe juzgar con esa vara: lo que hay que demostrar es que
-Subtractive **no empeora** al soltar el struct y que los otros **mejoran algo**,
-no una revolución que estos números no permiten.
+| motor | ANTES (ms) | DESPUÉS (ms) | |
+| --- | --- | --- | --- |
+| tb303 | 765,2 | 698,5 | −8,7 % |
+| subtractive | 757,6 | 669,8 | −11,6 % |
+| fm | 1081,5 | 518,8 | **−52,0 %** |
+| wavetable | 508,8 | 429,7 | −15,5 % |
+| westcoast | 123,0 | 85,5 | −30,5 % |
+
+**Veredicto: los cinco mejoran, y el que más tenía que perder es de los que más
+gana.** Subtractive era el motor con la optimización privada — un struct tipado
+que el spec describía como algo "de lo que ningún plugin debería depender" — y
+soltarlo por slots le da un 11,6 %. La hipótesis cómoda era que empataría; leer
+por índice es más rápido que leer campos de un struct que además había que
+refrescar entero, una vez por lane y por muestra, con 35 lecturas por nombre.
+
+FM se parte por la mitad porque era el que más nombres buscaba: tres por lane más
+tres por operador, quince por voz y por muestra.
+
+**Una asimetría que hay que declarar:** el arnés construye el índice con
+`Object.keys(params)`, que no incluye `output.trim`. En el lado nuevo FM y
+Karplus se quedan con slot -1 para ese id y caen al valor congelado; en el lado
+viejo hacían una búsqueda fallida en la tabla. Producción **sí** le da slot (la
+lane lo añade a la semilla), así que el arnés subestima ligeramente el trabajo
+del lado nuevo. Va en la dirección conservadora sólo para ese id, y no explica
+ninguna de las cinco diferencias.
+
+**Westcoast rinde poco trabajo medido**: su contorno AD termina y las voces se
+reaprovechan antes de los 10 s, en ambos lados por igual. La comparación es
+válida; la magnitud absoluta, pequeña.
 
 - [ ] **Step 4: Commit**
 
