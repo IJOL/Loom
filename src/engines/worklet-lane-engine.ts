@@ -157,7 +157,14 @@ export class WorkletLaneEngine implements SynthEngine {
     }
     this.maxVoices = cfg.polyphony === 'mono' ? 1 : 8;
     this.state['poly.voices'] = this.maxVoices;   // keep the bag in sync with the authoritative cap
-    this.worklet = new LoomWorkletNode(ctx, cfg.engineId, cfg.outputTrim ?? 1);
+    // The lane's DECLARED live param set, built ONCE and used for both jobs it
+    // has: seeding the worklet's values, and numbering them. It is NOT
+    // cfg.params — strip params are excluded (they live on the ChannelStrip),
+    // `poly.voices` is added, and `output.trim` is a live param that fm-renderer
+    // and plugins/karplus read but NO engine declares. Deriving the numbering
+    // from the same object is what keeps that third case from going dead.
+    const seed: ParamBag = { ...this.state, 'output.trim': 1 };
+    this.worklet = new LoomWorkletNode(ctx, cfg.engineId, cfg.outputTrim ?? 1, Object.keys(seed));
     this.worklet.connect(output);
     // Post the FULL spec-default bag once, right away. loom-processor.ts builds
     // its VoiceManager from an empty ParamBag ({}), so — absent this — every id
@@ -172,7 +179,7 @@ export class WorkletLaneEngine implements SynthEngine {
     // click the smoother exists to prevent. Seeding `output.trim` to 1 here too
     // means the preset's later write is an ordinary ramped update instead.
     // Nothing is sounding at construction, so landing instantly here is correct.
-    this.worklet.setParams({ ...this.state, 'output.trim': 1 });
+    this.worklet.setParams(seed);
     // Receive live modulation telemetry so the UI can draw the REAL knob rings.
     this.worklet.onModValues((o) => { this.liveModOffsets = o; });
     if (cfg.polyphony === 'mono') this.worklet.setMaxVoices(1);

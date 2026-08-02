@@ -61,12 +61,15 @@ class LoomProcessor extends AudioWorkletProcessor {
 
   constructor(options?: unknown) {
     super(options);
-    const opts = (options as { processorOptions?: { engineId?: string; outputTrim?: number } } | undefined)
-      ?.processorOptions;
+    const opts = (options as {
+      processorOptions?: { engineId?: string; outputTrim?: number; paramIds?: string[] };
+    } | undefined)?.processorOptions;
     const engineId = opts?.engineId ?? 'subtractive';
     // Start with an empty param bag — each renderer fills its own defaults via
-    // param(); the lane engine posts the real values immediately after.
-    this.vm = new VoiceManager(sampleRate, engineId, {}, opts?.outputTrim ?? 1);
+    // param(); the lane engine posts the real values immediately after. The bag
+    // being empty is exactly why the declared param ids have to travel here
+    // separately: there is nothing to infer the numbering from.
+    this.vm = new VoiceManager(sampleRate, engineId, {}, opts?.outputTrim ?? 1, opts?.paramIds ?? []);
     this.vm.setModulation(this.mod);
     this.port.onmessage = (e: MessageEvent<MainToWorklet>) => {
       const m = e.data;

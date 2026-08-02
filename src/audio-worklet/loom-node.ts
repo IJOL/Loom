@@ -34,12 +34,23 @@ export class LoomWorkletNode {
   private countCb: ((n: number) => void) | null = null;
   private modCb: ((offsets: Record<string, number>) => void) | null = null;
 
-  constructor(ctx: BaseAudioContext, engineId = 'subtractive', outputTrim = 1) {
+  /** @param paramIds the lane's DECLARED live param set. The worklet numbers
+   *  exactly this list and addresses the live values by slot, so an id outside
+   *  it has no slot and is dropped with a warning. It is REQUIRED, and it is not
+   *  inferred from the first `params` message: inferring works today and breaks
+   *  silently — on the audio path — the day a key arrives out of order.
+   *
+   *  REQUIRED, with no default, on purpose. An empty default would compile at a
+   *  second construction site and mute that lane's every knob at runtime; a
+   *  missing argument is a type error instead. */
+  constructor(ctx: BaseAudioContext, engineId: string, outputTrim: number,
+              paramIds: readonly string[]) {
     this.node = new AudioWorkletNode(ctx, LOOM_PROCESSOR_NAME, {
       outputChannelCount: [2],
       // outputTrim is STRUCTURAL (it comes from the plugin manifest, not a
-      // knob), so it travels once at construction rather than as a param.
-      processorOptions: { engineId, outputTrim },   // engineId tells the worklet which renderer to build
+      // knob), so it travels once at construction rather than as a param —
+      // and so does the param numbering.
+      processorOptions: { engineId, outputTrim, paramIds },   // engineId tells the worklet which renderer to build
     });
     this.node.port.onmessage = (e: MessageEvent<WorkletToMain>) => {
       if (e.data.type === 'voices') this.countCb?.(e.data.active);

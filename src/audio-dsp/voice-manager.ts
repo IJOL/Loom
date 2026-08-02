@@ -1,7 +1,8 @@
 import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets, SubParams } from './types';
 import { createRenderer } from './renderer-registry';
 import type { ModulationRuntime, ModLite, PhaseOrigin } from './modulation-runtime';
-import { ParamSmoother } from './param-smoother';
+import { buildParamIndex, type ParamIndex } from './param-index';
+import { SlotSmoother } from './slot-smoother';
 import { subParamsInto, subParamsFromBag } from './subtractive-renderer';
 
 /** Phase origin for the all-free/all-shared fast path: the LFO ignores notes. */
@@ -13,10 +14,23 @@ export class VoiceManager {
   private slots: Slot[] = [];
   private maxVoices = 16; // default poly; mono lanes set 1 via setMaxVoices
   private params: ParamBag;
-  /** The lane's LIVE param bag: the smoothed copy voices read every sample.
-   *  `params` stays the TARGET bag — what a renderer's constructor reads for its
-   *  structural, trigger-time decisions. */
-  private readonly smoother: ParamSmoother;
+  /** The lane's LIVE param values, by slot: the smoothed copy voices read every
+   *  sample. `params` stays the TARGET bag — what a renderer's constructor reads
+   *  for its structural, trigger-time decisions. */
+  private readonly smoother: SlotSmoother;
+  /** The numbering of this lane's declared params. Handed to every voice
+   *  alongside the values so a renderer resolves its slots once. */
+  private readonly index: ParamIndex;
+  /** slot → declared id. Only the DECLARED params get an entry: the synthetic
+   *  modulation targets buildParamIndex appends are not param ids and have no
+   *  business in a name-keyed bag. */
+  private readonly slotIds: string[] = [];
+  /** TRANSITIONAL: a name-keyed view of `smoother.values`, mutated IN PLACE so
+   *  the renderers still on setLiveParams keep reading through the one reference
+   *  they took at spawn. It dies with that contract — nothing here is the source
+   *  of truth, the Float64Array is. Refreshed only when the smoother reports a
+   *  change, so a lane at rest pays nothing. */
+  private readonly legacyBag: ParamBag = {};
   /** The lane's live SubParams (subtractive only), refreshed from the smoothed bag
    *  whenever a knob moves. Built on first spawn: a non-subtractive lane never
    *  allocates it. */
@@ -48,20 +62,41 @@ export class VoiceManager {
    *  whose renderer does not apply its own — i.e. PLUGINS, whose trim lives in
    *  their manifest rather than in their compiled JS. The default of 1 is what
    *  leaves the six in-tree engines untouched: they still call synthTrim()
-   *  inside their own renderSample. */
+   *  inside their own renderSample.
+   *
+   *  @param paramIds the lane's DECLARED live param set, in declaration order —
+   *  the ids that get a slot. An id outside it is dropped with a warning instead
+   *  of entering a bag nobody reads. Production callers pass it explicitly (the
+   *  worklet's bag starts EMPTY, so there is nothing to infer it from); the
+   *  default serves the in-process callers whose initial bag IS the full set. */
   constructor(private sr: number, private engineId: string, params: ParamBag,
-              private readonly outputTrim = 1) {
+              private readonly outputTrim = 1,
+              paramIds: readonly string[] = Object.keys(params)) {
     this.params = { ...params };
-    this.smoother = new ParamSmoother(sr);
+    this.index = buildParamIndex(paramIds);
+    for (const id of paramIds) this.slotIds[this.index.slot[id]] = id;
+    this.smoother = new SlotSmoother(sr, this.index);
     this.smoother.reset(this.params);
+    this.mirrorLegacyBag();
   }
   get activeCount(): number { return this.slots.length; }
-  /** The smoothed bag handed to every voice. Read-only by convention: write
-   *  through setParams so the values ramp instead of stepping. */
-  get liveParams(): ParamBag { return this.smoother.values; }
+  /** The smoothed values handed to every voice, and their numbering. Read-only
+   *  by convention: write through setParams so the values ramp instead of
+   *  stepping. */
+  get liveValues(): Float64Array { return this.smoother.values; }
+  get paramIndex(): ParamIndex { return this.index; }
+  /** TRANSITIONAL name-keyed view of the above — see `legacyBag`. */
+  get liveParams(): ParamBag { return this.legacyBag; }
   setParams(patch: ParamBag): void {
     Object.assign(this.params, patch);
     this.smoother.setTargets(patch);
+    // Control-rate (one knob message), not per-sample: refresh eagerly so a
+    // spawn that lands between two render samples never reads a stale name.
+    this.mirrorLegacyBag();
+  }
+  private mirrorLegacyBag(): void {
+    const v = this.smoother.values;
+    for (let i = 0; i < this.slotIds.length; i++) this.legacyBag[this.slotIds[i]] = v[i];
   }
   setMaxVoices(n: number): void { this.maxVoices = Math.max(1, Math.min(64, Math.floor(n))); }
   /** Attach a shared-LFO modulation runtime. Its per-sample offsets are applied
@@ -119,9 +154,9 @@ export class VoiceManager {
     // knobs. Its constructor already took the structural snapshot from `params`.
     // Both hooks are declared right on VoiceRenderer (optional) — this IS the
     // contract every renderer opts into, not an ad-hoc extension worth casting.
-    v.setLiveParams?.(this.smoother.values);
+    v.setLiveParams?.(this.legacyBag);
     if (this.engineId === 'subtractive') {
-      if (!this.liveSub) this.liveSub = subParamsFromBag(this.smoother.values);
+      if (!this.liveSub) this.liveSub = subParamsFromBag(this.legacyBag);
       v.setLiveSubParams?.(this.liveSub);
     }
     // Hand this voice its per-voice ADSR envelopes (subtractive renderer only;
@@ -213,7 +248,10 @@ export class VoiceManager {
     // that landed instantly (it never enters the ramp list). At rest this is one
     // boolean read plus one length compare. Subtractive reads a typed snapshot,
     // so refresh the lane's ONE copy — only when the bag actually changed.
-    if (this.smoother.tick() && this.liveSub) subParamsInto(this.smoother.values, this.liveSub);
+    if (this.smoother.tick()) {
+      this.mirrorLegacyBag();
+      if (this.liveSub) subParamsInto(this.legacyBag, this.liveSub);
+    }
     // When every LFO is free-running and shared (the common case) the offsets are
     // identical for all voices, so compute them ONCE. Only when a modulator asks
     // for a per-voice phase — SCOPE=voice or TRIG=note — do we pay for a fill per

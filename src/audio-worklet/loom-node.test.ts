@@ -27,7 +27,7 @@ describe('loom-node message shaping', () => {
   it('silenceAll posts a steal covering every active voice (the Stop path)', () => {
     // The global AudioWorkletNode stub (test/setup.ts) lets the node construct;
     // capture what silenceAll posts to the worklet.
-    const node = new LoomWorkletNode({} as BaseAudioContext, 'subtractive');
+    const node = new LoomWorkletNode({} as BaseAudioContext, 'subtractive', 1, []);
     const posted: MainToWorklet[] = [];
     node.node.port.postMessage = (m: MainToWorklet) => posted.push(m);
     node.silenceAll();

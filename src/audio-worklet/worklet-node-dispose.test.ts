@@ -41,7 +41,7 @@ import { SamplerWorkletNode } from './sampler-node';
 // `kill` message it answers with `return false`), THEN disconnect.
 describe('worklet node dispose() shuts the processor down (not just disconnect)', () => {
   it('LoomWorkletNode.dispose posts a kill message AND disconnects', () => {
-    const n = new LoomWorkletNode({} as BaseAudioContext, 'subtractive');
+    const n = new LoomWorkletNode({} as BaseAudioContext, 'subtractive', 1, []);
     n.dispose();
     expect(posted).toContainEqual({ type: 'kill' });
     expect(disconnects).toBe(1);

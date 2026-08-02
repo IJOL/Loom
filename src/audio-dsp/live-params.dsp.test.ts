@@ -45,12 +45,19 @@ const note = (o: Partial<NoteSpec> = {}): NoteSpec =>
   ({ midi: 45, beginSec: 0, durationSec: 2, velocity: 0.9, accent: false, slide: false, ...o });
 
 /** Render one sustained note, optionally turning a knob part-way through.
- *  `turnAtSec` null ⇒ the negative control: same note, nobody touches anything. */
+ *  `turnAtSec` null ⇒ the negative control: same note, nobody touches anything.
+ *
+ *  The DECLARED param set is the seed keys PLUS the keys the turn writes: an id
+ *  a lane declares but has not written yet is the normal case (the worklet's bag
+ *  starts empty), and it must still have a slot. Leaving the turn's keys out
+ *  would drop them at the smoother — and a dropped STRUCTURAL param makes the
+ *  "nothing changes mid-note" assertions pass for the wrong reason. */
 export function renderWithTurn(
   engineId: string, params: ParamBag, seconds: number,
   turnAtSec: number | null, patch: ParamBag | null,
 ): number[] {
-  const vm = new VoiceManager(SR, engineId, params);
+  const declared = [...Object.keys(params), ...Object.keys(patch ?? {})];
+  const vm = new VoiceManager(SR, engineId, params, 1, declared);
   vm.spawn(note({ durationSec: seconds }));
   const total = Math.floor(SR * seconds);
   const turnSample = turnAtSec == null ? -1 : Math.floor(turnAtSec * SR);
