@@ -1,5 +1,17 @@
 // src/audio-dsp/param-smoother.ts
-// Per-sample knob slew for LIVE param changes.
+// Per-sample knob slew for LIVE param changes, addressed by NAME.
+//
+// ⚠️ ONE consumer left: the sampler's per-pad table in
+// audio-worklet/sampler-processor.ts. The melodic path moved to SlotSmoother
+// (slot-smoother.ts), which is the same maths over a Float64Array addressed by
+// slot — see the params-by-index work.
+//
+// This one survives because sampler-processor hands `sm.values` to a renderer as
+// `setLivePad(... as unknown as LivePadParams)`: a CAST to a typed struct. A
+// cast does not fail to compile when the object underneath becomes an array, it
+// just reads garbage — so converting the sampler belongs with the sampler
+// backend (chunk 3, second half), where it has a parity net of its own. This
+// file goes with it. Do not grow a third smoother.
 //
 // A lane's params used to be read once, at trigger: turning the cutoff did
 // nothing to a note already sounding. This class keeps a SECOND copy of the bag
