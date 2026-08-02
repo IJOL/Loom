@@ -390,6 +390,45 @@ ninguna de las cinco diferencias.
 reaprovechan antes de los 10 s, en ambos lados por igual. La comparación es
 válida; la magnitud absoluta, pequeña.
 
+### El camino de MODULACIÓN, medido aparte (Task 8)
+
+El arnés no enganchaba un `ModulationRuntime`, así que la mitad de modulación del
+bucle caliente era invisible: `fillOffsets` se saltaba entera y cada `mo?.<name>`
+de los renderers cortocircuitaba. **Producción engancha uno SIEMPRE**, así que eso
+no era simplificar, era medir un camino que no se envía. Dos modos desde
+`3323b78`: `none` (runtime con CERO moduladores — el caso común) y `lfo` (uno
+sobre el param que se mueve).
+
+| motor | none: partida → guarda → +unificación | lfo: partida → guarda → +unificación |
+| --- | --- | --- |
+| tb303 | 723,4 → 707,9 → **697,1** | 796,1 → 804,6 → **788,0** |
+| subtractive | 759,3 → 681,5 → **675,3** | 869,4 → 844,1 → **813,9** |
+| fm | 801,1 → 538,3 → **533,8** | 930,5 → 920,0 → **921,9** |
+| wavetable | 452,7 → 451,9 → **436,0** | 516,4 → 514,5 → **517,4** |
+| westcoast | 85,1 → 82,7 → **80,0** | 147,5 → 144,2 → **138,4** |
+
+**La guarda de una línea (`07eda6f`) es la que paga**: devolver *nada* en vez de
+una bolsa de ceros cuando no hay moduladores da **fm −32,8 %** y **subtractive
+−10,2 %** en una lane sin modulación. Una bolsa vacía no es gratis: hace que cada
+`mo?.<target>` se ejecute y falle en vez de cortocircuitar — unas 120 búsquedas
+fallidas por muestra en una lane de FM a 8 voces.
+
+**La unificación del vocabulario (`1562324`) compra entre 1 y 4 %**, casi ruido.
+Su valor es estructural, y hay que decirlo así: mata el último `=== 'subtractive'`
+del camino de audio, mata `fieldForParamId`, y destapó que el **render offline /
+export perdía la modulación** de cualquier param fuera de la tabla de Subtractive.
+
+**Lo que queda, y por qué merece la pena:** el sobrecoste de tener UN solo LFO
+activo es +73 % en fm (+388 ms) y en westcoast, +21 % en subtractive, +19 % en
+wavetable, +13 % en tb303. Un LFO no puede costar eso. Son las lecturas por
+nombre que siguen en el camino de modulación — `offsetsInto` escribiendo una
+bolsa por nombre y cada renderer leyéndola por nombre, por voz y por muestra.
+Pasarlas a slots es el resto de la Task 8: el runtime resuelve nombre→slot UNA
+vez en `setMods` (por eso necesita el `ParamIndex` de la lane), llena un
+`Float64Array`, y cada renderer lee `off[i]` con el slot que ya resolvió en
+`setLiveValues`. Toca además el `ModEnvHost` del SDK, que mezcla los ADSR por voz
+en esa misma bolsa.
+
 - [ ] **Step 4: Commit**
 
 ```bash
