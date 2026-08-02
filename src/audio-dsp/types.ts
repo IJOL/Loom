@@ -32,14 +32,14 @@ import type { VoiceRenderer as SdkVoiceRenderer } from '@loom/plugin-sdk';
  *  AMPLITUDE envelope itself — an ADSR routed here becomes the voice's amp env). */
 export type ModTarget = keyof SubParams | 'ampGain' | 'amp' | 'filterEnv';
 
-/** The host's renderer interface: the published contract plus the one hook that
- *  is deliberately NOT public — Subtractive reads a typed SubParams instead of
- *  the dot-id bag, an internal optimisation no plugin should depend on.
- *  `SubParams` stays declared in this same file. */
-export interface VoiceRenderer extends SdkVoiceRenderer {
-  /** Subtractive-only: it reads a TYPED SubParams, not the dot-id bag, so the lane
-   *  keeps ONE live snapshot and every voice reads through it — refreshed once per
-   *  lane per sample, never once per voice. (The engineId special-case mirrors the
-   *  one fillOffsets already makes for the same reason.) */
-  setLiveSubParams?(live: SubParams): void;
-}
+/** The host's renderer interface. It used to add one hook that was deliberately
+ *  NOT public — setLiveSubParams, by which Subtractive read a typed SubParams
+ *  instead of the dot-id bag, "an internal optimisation no plugin should depend
+ *  on". That asymmetry is what the params-by-index work removed: the optimisation
+ *  was given to everyone as a Float64Array read by slot, so Subtractive reads
+ *  exactly what a plugin reads and the host adds nothing of its own here.
+ *
+ *  SubParams survives above, but only as the subtractive MODULATION vocabulary
+ *  (ModTarget / mod-lite's DOT_TO_FIELD) and as that renderer's own trigger-time
+ *  snapshot. It is no longer on the live path. */
+export type VoiceRenderer = SdkVoiceRenderer;

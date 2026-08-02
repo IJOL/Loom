@@ -122,17 +122,15 @@ describe('VoiceManager live param bag', () => {
 // lane allocator routes through (WORKLET_ENGINE_IDS), so a new engine added
 // there without wiring live params fails HERE, not in production.
 //
-// setLiveValues (slots) is the hook to implement; setLiveParams (names) and
-// setLiveSubParams (the subtractive struct) are the two the params-by-index work
-// is retiring. All three count while the conversion is in flight — when the last
-// one is gone this test tightens to setLiveValues alone.
+// setLiveValues (slots) is now the ONLY hook this asserts. It was briefly a
+// three-way OR while the six renderers crossed one at a time; setLiveParams
+// (names) survives on the interface for a plugin that has not been rebuilt, but
+// nothing in tree may reach for it, and this is what says so.
 describe('every worklet engine implements a live-params hook', () => {
-  it.each([...WORKLET_ENGINE_IDS])('%s renderer implements a live-params hook', (id) => {
+  it.each([...WORKLET_ENGINE_IDS])('%s renderer reads its live params by slot', (id) => {
     const v = createRenderer(id, note(), {}, SR);
-    const hasHook = typeof v.setLiveValues === 'function'
-      || typeof v.setLiveParams === 'function'
-      || typeof v.setLiveSubParams === 'function';
-    expect(hasHook, `${id} renderer implements no live-params hook — its knobs would be dead mid-note`).toBe(true);
+    expect(typeof v.setLiveValues,
+      `${id} renderer has no setLiveValues — its knobs would be dead mid-note`).toBe('function');
   });
 });
 

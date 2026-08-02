@@ -1,9 +1,8 @@
-import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets, SubParams } from './types';
+import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets } from './types';
 import { createRenderer } from './renderer-registry';
 import type { ModulationRuntime, ModLite, PhaseOrigin } from './modulation-runtime';
 import { buildParamIndex, type ParamIndex } from './param-index';
 import { SlotSmoother } from './slot-smoother';
-import { subParamsInto, subParamsFromBag } from './subtractive-renderer';
 
 /** Phase origin for the all-free/all-shared fast path: the LFO ignores notes. */
 const SHARED_ORIGIN: PhaseOrigin = { voiceStartT: 0, lastNoteOnT: 0 };
@@ -31,10 +30,6 @@ export class VoiceManager {
    *  of truth, the Float64Array is. Refreshed only when the smoother reports a
    *  change, so a lane at rest pays nothing. */
   private readonly legacyBag: ParamBag = {};
-  /** The lane's live SubParams (subtractive only), refreshed from the smoothed bag
-   *  whenever a knob moves. Built on first spawn: a non-subtractive lane never
-   *  allocates it. */
-  private liveSub: SubParams | null = null;
   private lastT = 0;
   /** When the lane last received a note-on (phase origin for TRIG=note). */
   private lastNoteOnT = 0;
@@ -159,10 +154,6 @@ export class VoiceManager {
     // two paths at once. The name-keyed branch is the transitional one.
     if (v.setLiveValues) v.setLiveValues(this.smoother.values, this.index);
     else v.setLiveParams?.(this.legacyBag);
-    if (this.engineId === 'subtractive') {
-      if (!this.liveSub) this.liveSub = subParamsFromBag(this.legacyBag);
-      v.setLiveSubParams?.(this.liveSub);
-    }
     // Hand this voice its per-voice ADSR envelopes (subtractive renderer only;
     // others ignore the call). Read once at spawn — live shape edits apply to the
     // NEXT note, matching the engine's "params read at trigger time" rule.
@@ -252,10 +243,7 @@ export class VoiceManager {
     // that landed instantly (it never enters the ramp list). At rest this is one
     // boolean read plus one length compare. Subtractive reads a typed snapshot,
     // so refresh the lane's ONE copy — only when the bag actually changed.
-    if (this.smoother.tick()) {
-      this.mirrorLegacyBag();
-      if (this.liveSub) subParamsInto(this.legacyBag, this.liveSub);
-    }
+    if (this.smoother.tick()) this.mirrorLegacyBag();
     // When every LFO is free-running and shared (the common case) the offsets are
     // identical for all voices, so compute them ONCE. Only when a modulator asks
     // for a per-voice phase — SCOPE=voice or TRIG=note — do we pay for a fill per
