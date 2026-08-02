@@ -39,8 +39,13 @@ export interface SelectControlOpts {
   /** Force the native <select> rendering even with ≤4 options (used for
    *  long-labelled option sets like the FM algorithm). */
   forceSelect?: boolean;
-  /** Show the param label above the control. Off by default (WAVE/FM render
-   *  bare); on for controls whose option text isn't self-describing (CHOKE). */
+  /** Show the param label above the control. Off by default at THIS layer —
+   *  callers that don't ask stay bare (the FX insert rack; a modulator's own
+   *  config card). The engine param grid (buildControl in
+   *  engine-param-grid.ts) is the one caller that flips its own default to ON
+   *  for every discrete param it draws, so a strip/select carries a name the
+   *  same way a knob's `.knob-label` always does — a regression once left
+   *  every discrete control unlabelled while its knob siblings kept theirs. */
   showLabel?: boolean;
   /** Radio-strip only: stack vertically at a fixed ~50px width (a knob's own
    *  footprint) instead of the base horizontal strip. Opt-in — pass `true`

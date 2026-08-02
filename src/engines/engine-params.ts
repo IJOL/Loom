@@ -48,8 +48,12 @@ export interface EngineParamSpec {
    *  select-control is the only path, opting in is meaningless and the
    *  value was removed from this type (Task 8b). */
   selectStyle?: 'dropdown';
-  /** Discrete only: show the param label above the control (default off). For
-   *  controls whose option text isn't self-describing, e.g. CHOKE (—/1/2/3/4). */
+  /** Discrete only: show the param label above the control. The engine param
+   *  grid (engine-param-grid.ts buildControl) treats this as ON by default —
+   *  every discrete control gets a caption, matching the knob's own
+   *  `.knob-label` — so this field only needs setting to opt a param OUT with
+   *  `showLabel: false`. (Other callers of createSelectControl, e.g. the FX
+   *  insert rack, keep that function's own off-by-default instead.) */
   showLabel?: boolean;
 }
 

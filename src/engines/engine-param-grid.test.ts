@@ -143,6 +143,61 @@ describe('buildEngineParamGrid', () => {
     }
   });
 
+  // The regression this pins: every discrete control lost its `.knob-label`-
+  // equivalent when the whole engine grid switched from knobs to select
+  // controls, while every continuous knob beside it kept its own label. This
+  // asserts the fix would FAIL against the pre-fix code, where buildControl
+  // passed `showLabel: spec.showLabel` (undefined ⇒ off) straight through.
+  it('a discrete param with no showLabel still shows its name (grouped layout)', () => {
+    const parent = document.createElement('div');
+    buildEngineParamGrid(stubEngine([discreteSpec('osc.wave')]), ctx(), parent);
+    const labeled = parent.querySelector('.select-labeled');
+    expect(labeled, 'discrete control never wrapped in the captioned .select-labeled').not.toBeNull();
+    expect(labeled!.querySelector('.ctl-label')?.textContent).toBe('OSC.WAVE');
+    // The label wraps the actual control (the radio strip) rather than
+    // replacing it.
+    expect(labeled!.querySelector('.radio-strip')).not.toBeNull();
+  });
+
+  it('a discrete param with no showLabel still shows its name (flat layout)', () => {
+    const host = document.createElement('div');
+    buildEngineParamGrid(stubEngine([discreteSpec('osc.wave')]), ctx(), host, { layout: 'flat' });
+    const labeled = host.querySelector('.select-labeled');
+    expect(labeled).not.toBeNull();
+    expect(labeled!.querySelector('.ctl-label')?.textContent).toBe('OSC.WAVE');
+  });
+
+  it('a native <select> discrete param (>4 options) also gets the caption by default', () => {
+    const parent = document.createElement('div');
+    const wave: EngineParamSpec = {
+      id: 'osc1.wave', label: 'Osc1 Wave', kind: 'discrete', min: 0, max: 4, default: 0,
+      options: [
+        { value: 'sine', label: 'Sine' }, { value: 'tri', label: 'Tri' }, { value: 'saw', label: 'Saw' },
+        { value: 'square', label: 'Square' }, { value: 'pulse', label: 'Pulse' },
+      ],
+    };
+    buildEngineParamGrid(stubEngine([wave]), ctx(), parent);
+    const labeled = parent.querySelector('.select-labeled');
+    expect(labeled).not.toBeNull();
+    expect(labeled!.querySelector('.ctl-label')?.textContent).toBe('Osc1 Wave');
+    expect(labeled!.querySelector('select.select-control')).not.toBeNull();
+  });
+
+  it('an explicit showLabel: false still suppresses the caption', () => {
+    const parent = document.createElement('div');
+    buildEngineParamGrid(stubEngine([discreteSpec('osc.wave', { showLabel: false })]), ctx(), parent);
+    expect(parent.querySelector('.select-labeled')).toBeNull();
+    expect(parent.querySelector('.radio-strip')).not.toBeNull();
+  });
+
+  it('an explicit showLabel: true keeps working as before (e.g. CHOKE)', () => {
+    const parent = document.createElement('div');
+    buildEngineParamGrid(stubEngine([discreteSpec('chokeGroup', { showLabel: true })]), ctx(), parent);
+    const labeled = parent.querySelector('.select-labeled');
+    expect(labeled).not.toBeNull();
+    expect(labeled!.querySelector('.ctl-label')?.textContent).toBe('CHOKEGROUP');
+  });
+
   it('skips params matching opts.skip', () => {
     const parent = document.createElement('div');
     buildEngineParamGrid(stubEngine([cont('poly.voices'), cont('feedback')]), ctx(), parent,

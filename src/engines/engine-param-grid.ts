@@ -14,6 +14,12 @@
 // that modifier is scoped to here and the FX insert rack ONLY; a modulator's
 // own config card (hand-built, or generic-mod-config.ts for a plugin's
 // declared params) must leave it unset, see select-control.ts's header.
+// This builder also defaults `showLabel` to true — a discrete control always
+// carries its name above it, exactly like a knob's `.knob-label` — unless the
+// spec opts out with `showLabel: false`. That default is set HERE, not inside
+// createSelectControl, whose own default stays off (see select-control.ts's
+// header): a caption was missing on every discrete control in the grid until
+// this was added, while every knob beside it kept its own label.
 //
 // Two layouts, both approved and both still shipping:
 //   'grouped' (default) — rows built by resolveParamRows (engine-param-groups.ts)
@@ -92,7 +98,11 @@ function buildControl(
       options,
       initialValue: options[idx]?.value ?? options[0].value,
       forceSelect: spec.selectStyle === 'dropdown',
-      showLabel: spec.showLabel,
+      // Every discrete control in the grid carries its name, exactly like a
+      // knob's `.knob-label` — default ON here (unlike createSelectControl's
+      // own default, which stays off for callers that don't want it, e.g. the
+      // FX insert rack). A spec can still opt out with `showLabel: false`.
+      showLabel: spec.showLabel !== false,
       compact: true,
       onChange: (v) => {
         const i = options.findIndex((o) => o.value === v);

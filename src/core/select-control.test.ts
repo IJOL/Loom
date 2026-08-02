@@ -86,6 +86,36 @@ describe('.radio-strip--compact layout (CSS, read from the stylesheet)', () => {
   });
 });
 
+// Task (discrete-labels fix): the engine grid now wraps every discrete
+// control in `.select-labeled` (a caption above the control) by default. The
+// worry was height: does a captioned compact strip still fit the ~93px grid
+// row a knob defines? jsdom runs no layout (getBoundingClientRect is always
+// 0), so this reads the DECLARED CSS the same way the block above does and
+// does the arithmetic by hand — a real-browser look confirmed the same
+// numbers (see the discrete-labels report).
+//   .select-labeled            → flex column, gap: 1px (no fixed height)
+//   .ctl-label                 → font-size: 9px            (~13px w/ line-height, per the task's own measurement)
+//   .radio-strip--compact      → 4 buttons × 15px + 3 × 1px gap = 63px (measured ~67px incl. border/padding)
+//   caption + gap + strip      → ~13 + 1 + 67 = 81px
+//   knob (the row's tallest sibling) → ~71px + row padding 20px + border 2px = ~93px row height
+// 81px < 93px: the captioned strip stays shorter than the knob that already
+// sets the row's height, so the row does not grow.
+describe('.select-labeled caption does not exceed the knob-driven row height (CSS arithmetic)', () => {
+  it('.select-labeled has no fixed/min height of its own (content-driven)', () => {
+    const DRUM_RACK_SCSS = readFileSync(resolve(process.cwd(), 'src/styles/_drum-rack.scss'), 'utf8');
+    const block = scssBlock(DRUM_RACK_SCSS, '.select-labeled');
+    expect(block, '.select-labeled rule not found').toBeTruthy();
+    expect(block!).not.toMatch(/height/);
+  });
+
+  it('.ctl-label is a small caption (9px), not a full-size label', () => {
+    const DRUM_RACK_SCSS = readFileSync(resolve(process.cwd(), 'src/styles/_drum-rack.scss'), 'utf8');
+    const block = scssBlock(DRUM_RACK_SCSS, '.select-labeled .ctl-label');
+    expect(block, '.select-labeled .ctl-label rule not found').toBeTruthy();
+    expect(block!).toMatch(/font-size:\s*9px/);
+  });
+});
+
 // The regression that just happened: createSelectControl building a strip
 // through the param path (compact: true) must get the vertical/compact
 // class; building one the modulator-config way (no `compact`) must NOT.
