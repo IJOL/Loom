@@ -63,16 +63,6 @@ export const SUB_PARAM_SPECS: EngineParamSpec[] = [
   // Choose MOG and the NOTCH button is not there, rather than being there and
   // quietly handing back a lowpass, which is what the old grid did.
   // max: 3 -- four modes (DIG/MOG/303/COMB).
-  //
-  // ORDER IS LOAD-BEARING: filter.model must stay declared BEFORE filter.type
-  // in this array (and filter2.model before filter2.type below). A preset
-  // apply walks specs in array order; when it reaches filter.model it commits
-  // the new mode AND, because filter.type's optionsFrom points at
-  // filter.model, triggers a full engine-param-grid rebuild
-  // (injectEngineModulatorPanel) so the Type strip repaints from the NEW
-  // mode's taps before filter.type itself is applied. Reorder this pair and
-  // Type would repaint from the OLD mode's tap list instead — the exact
-  // lying-button bug this optionsFrom mechanism exists to prevent.
   { id: 'filter.model', label: 'Mode', kind: 'discrete', min: 0, max: 3, default: 0,
     options: FILTER_MODE_OPTIONS, group: 'filter' },
   { id: 'filter.type',  label: 'Type', kind: 'discrete', min: 0, max: 3, default: 0,
@@ -97,11 +87,6 @@ export const SUB_PARAM_SPECS: EngineParamSpec[] = [
   // at trigger, for the reason the filter model has always been: a topology is
   // not something you sweep mid-note. Cutoff, Res, Track and Blend are
   // continuous, read every sample, and modulation destinations for free.
-  //
-  // ORDER IS LOAD-BEARING here too: filter2.model must stay declared BEFORE
-  // filter2.type, same reason as the filter.model/filter.type pair above —
-  // it is what makes the Type-B strip rebuild from the NEW mode's taps
-  // instead of the old one on preset apply.
   { id: 'filter.routing',    label: 'Routing', kind: 'discrete', min: 0, max: 3, default: 0,
     options: FILTER_ROUTING_OPTIONS, group: 'filter2' },
   { id: 'filter2.model',     label: 'Mode',    kind: 'discrete', min: 0, max: 3, default: 0,
