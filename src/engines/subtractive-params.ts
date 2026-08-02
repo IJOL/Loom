@@ -60,6 +60,15 @@ export const SUB_PARAM_SPECS: EngineParamSpec[] = [
     options: WAVE_OPTIONS, group: 'osc2' },
   { id: 'osc2.pw',      label: 'Osc2 PW',   kind: 'continuous', min: 0.05, max: 0.95, default: 0.5, group: 'osc2' },
   { id: 'osc2.sync',    label: 'Osc2 Sync', kind: 'continuous', min: 1, max: 8, default: 2, group: 'osc2' },
+  // Ring modulation: osc1 × osc2, as its OWN mixer source rather than a switch
+  // that hijacks osc2. That is the honest topology (MS-20, Prophet, SH-101 all
+  // mix the ring output next to the oscillators): turn both osc levels down and
+  // Ring alone gives you the pure inharmonic product, leave them up and it sits
+  // on top. The timbre is osc2's DETUNE — the further the two oscillators are
+  // apart, the more clangorous the sum/difference tones. Continuous, so an LFO
+  // or envelope on it fades the metal in and out; 0 by default, so no existing
+  // preset moves.
+  { id: 'ring.level',   label: 'Ring',      kind: 'continuous', min: 0, max: 1, default: 0, group: 'ring' },
   { id: 'sub.level',    label: 'Sub Lvl',   kind: 'continuous', min: 0, max: 1, default: 0.3, group: 'sub' },
   { id: 'noise.level',  label: 'Noise Lvl', kind: 'continuous', min: 0, max: 1, default: 0, group: 'noise' },
   // The colour of the noise: a one-pole low-pass from 200 Hz (dark) to 15 kHz

@@ -10,6 +10,7 @@ export interface SubParams {
   osc1Pw: number; osc1Sync: number;                                            // pulse width 0.05..0.95 (square only)
   osc2Wave: number; osc2Level: number; osc2Detune: number;
   osc2Pw: number; osc2Sync: number;
+  ringLevel: number;        // 0..1 level of the osc1 × osc2 product in the mix
   subLevel: number;
   noiseLevel: number; noiseColor: number;                    // color 0..1
   filterCutoff: number; filterResonance: number; filterEnvAmount: number;

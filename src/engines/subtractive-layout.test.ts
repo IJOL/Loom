@@ -5,15 +5,17 @@ import { SUB_PARAM_SPECS } from './subtractive-params';
 import { SUB_PARAM_GROUPS } from './subtractive';
 
 describe('the subtractive page, from data', () => {
-  it('puts OSC 1, OSC 2, SUB and NOISE on one row, in that order', () => {
+  // RING sits between the oscillators and the other mixer sources because that
+  // is what it is: OSC 1 × OSC 2, mixed in beside SUB and NOISE.
+  it('puts OSC 1, OSC 2, RING, SUB and NOISE on one row, in that order', () => {
     const rows = resolveParamRows(SUB_PARAM_SPECS, SUB_PARAM_GROUPS);
-    expect(rows[0].sections.map((s) => s.title)).toEqual(['OSC 1', 'OSC 2', 'SUB', 'NOISE']);
+    expect(rows[0].sections.map((s) => s.title)).toEqual(['OSC 1', 'OSC 2', 'RING', 'SUB', 'NOISE']);
   });
 
   it('gives FILTER and MASTER their own rows', () => {
     const rows = resolveParamRows(SUB_PARAM_SPECS, SUB_PARAM_GROUPS);
     expect(rows.map((r) => r.sections.map((s) => s.title))).toEqual([
-      ['OSC 1', 'OSC 2', 'SUB', 'NOISE'], ['FILTER'], ['MASTER'], ['POLY'],
+      ['OSC 1', 'OSC 2', 'RING', 'SUB', 'NOISE'], ['FILTER'], ['MASTER'], ['POLY'],
     ]);
   });
 
@@ -22,6 +24,7 @@ describe('the subtractive page, from data', () => {
     const byTitle = new Map(rows.flatMap((r) => r.sections).map((s) => [s.title, s.color]));
     expect(byTitle.get('OSC 1')).toBe('var(--knob-cyan)');
     expect(byTitle.get('OSC 2')).toBe('var(--knob-yellow)');
+    expect(byTitle.get('RING')).toBe('var(--knob-red)');
     expect(byTitle.get('SUB')).toBe('var(--knob-blue)');
     expect(byTitle.get('NOISE')).toBe('var(--knob-purple)');
     expect(byTitle.get('FILTER')).toBe('var(--knob-orange)');

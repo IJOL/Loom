@@ -40,6 +40,7 @@ export function subParamsInto(b: ParamBag, out: SubParams): SubParams {
   out.osc2Wave = param(b, 'osc2.wave', 1);
   out.osc2Level = param(b, 'osc2.level', 0.4);
   out.osc2Detune = param(b, 'osc2.detune', 7);
+  out.ringLevel = param(b, 'ring.level', 0);
   out.subLevel = param(b, 'sub.level', 0.3);
   out.noiseLevel = param(b, 'noise.level', 0);
   out.noiseColor = param(b, 'noise.color', 0.6);
@@ -140,6 +141,7 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
   private sOsc2Detune = -1;
   private sOsc2Pw = -1;
   private sOsc2Sync = -1;
+  private sRingLevel = -1;
   private sSubLevel = -1;
   private sNoiseLevel = -1;
   private sNoiseColor = -1;
@@ -303,6 +305,7 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     this.sOsc2Detune = slotOf(index, 'osc2.detune');
     this.sOsc2Pw = slotOf(index, 'osc2.pw');
     this.sOsc2Sync = slotOf(index, 'osc2.sync');
+    this.sRingLevel = slotOf(index, 'ring.level');
     this.sSubLevel = slotOf(index, 'sub.level');
     this.sNoiseLevel = slotOf(index, 'noise.level');
     this.sNoiseColor = slotOf(index, 'noise.color');
@@ -374,6 +377,7 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     const osc1Level = mo?.[this.sOsc1Level] ? clamp01((L && this.sOsc1Level >= 0 ? L[this.sOsc1Level] : p.osc1Level) + mo[this.sOsc1Level]) : (L && this.sOsc1Level >= 0 ? L[this.sOsc1Level] : p.osc1Level);
     const osc2Level = mo?.[this.sOsc2Level] ? clamp01((L && this.sOsc2Level >= 0 ? L[this.sOsc2Level] : p.osc2Level) + mo[this.sOsc2Level]) : (L && this.sOsc2Level >= 0 ? L[this.sOsc2Level] : p.osc2Level);
     const subLevel  = mo?.[this.sSubLevel]  ? clamp01((L && this.sSubLevel >= 0 ? L[this.sSubLevel] : p.subLevel) + mo[this.sSubLevel])   : (L && this.sSubLevel >= 0 ? L[this.sSubLevel] : p.subLevel);
+    const ringLevel = mo?.[this.sRingLevel] ? clamp01((L && this.sRingLevel >= 0 ? L[this.sRingLevel] : p.ringLevel) + mo[this.sRingLevel]) : (L && this.sRingLevel >= 0 ? L[this.sRingLevel] : p.ringLevel);
     const noiseLevel = mo?.[this.sNoiseLevel] ? clamp01((L && this.sNoiseLevel >= 0 ? L[this.sNoiseLevel] : p.noiseLevel) + mo[this.sNoiseLevel]) : (L && this.sNoiseLevel >= 0 ? L[this.sNoiseLevel] : p.noiseLevel);
     // Master tune is continuous, so it moves the sounding note. Cached: the pow
     // only re-runs when the tune knob actually changes.
@@ -411,9 +415,15 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     // compensate, and sub.level/noise.level keep meaning exactly what they always
     // meant. (Turning unison up therefore fattens the oscillators against them —
     // which is what turning unison up is for.)
-    let mix = this.osc1.update(f, pw1, det1, spread, driftAmt) * osc1Level
-            + this.osc2.update(f, pw2, det2, spread, driftAmt) * osc2Level
-            + this.sub.update(f * 0.5) * subLevel;
+    const o1 = this.osc1.update(f, pw1, det1, spread, driftAmt);
+    const o2 = this.osc2.update(f, pw2, det2, spread, driftAmt);
+    let mix = o1 * osc1Level + o2 * osc2Level + this.sub.update(f * 0.5) * subLevel;
+    // Ring modulation: the PRODUCT of the two oscillators, mixed in as its own
+    // source. Multiplying the raw outputs (not the level-scaled ones) is what
+    // makes Ring independent: with osc1/osc2 at 0 you hear the ring alone, which
+    // is the sound the knob is for. Both are ±1, so the product is too — no
+    // gain-staging surprise. Skipped entirely at 0, the default.
+    if (ringLevel > 0) mix += o1 * o2 * ringLevel;
     if (noiseLevel > 0) {
       const noiseColor = mo?.[this.sNoiseColor] ? clamp01((L && this.sNoiseColor >= 0 ? L[this.sNoiseColor] : p.noiseColor) + mo[this.sNoiseColor]) : (L && this.sNoiseColor >= 0 ? L[this.sNoiseColor] : p.noiseColor);
       this.noiseLp.update(this.noise.update(), 200 + noiseColor * 14800, 0);

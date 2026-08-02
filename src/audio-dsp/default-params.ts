@@ -10,7 +10,7 @@ export function defaultSubParams(): SubParams {
     unisonVoices: 1, unisonDetune: 25, unisonDrift: 0,
     osc1Wave: 0, osc1Level: 0.6, osc1Detune: 0, osc1Pw: 0.5, osc1Sync: 2,
     osc2Wave: 1, osc2Level: 0.4, osc2Detune: 7, osc2Pw: 0.5, osc2Sync: 2,
-    subLevel: 0.3, noiseLevel: 0, noiseColor: 0.6,
+    ringLevel: 0, subLevel: 0.3, noiseLevel: 0, noiseColor: 0.6,
     filterModel: 0, filterType: 0, filterCutoff: 0.55, filterResonance: 0.25, filterEnvAmount: 0.45,
     filterDrive: 0, filterKeyTrack: 0, filterBuiltinEnv: 1,
     filterAttack: 0.01, filterDecay: 0.3, filterSustain: 0.4, filterRelease: 0.35,

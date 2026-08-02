@@ -27,6 +27,7 @@ import type { EngineParamGroup } from './engine-param-groups';
 export const SUB_PARAM_GROUPS: EngineParamGroup[] = [
   { id: 'osc1',   title: 'OSC 1',  row: 0, color: 'var(--knob-cyan)' },
   { id: 'osc2',   title: 'OSC 2',  row: 0, color: 'var(--knob-yellow)' },
+  { id: 'ring',   title: 'RING',   row: 0, color: 'var(--knob-red)' },
   { id: 'sub',    title: 'SUB',    row: 0, color: 'var(--knob-blue)' },
   { id: 'noise',  title: 'NOISE',  row: 0, color: 'var(--knob-purple)' },
   { id: 'filter', title: 'FILTER', row: 1, color: 'var(--knob-orange)' },

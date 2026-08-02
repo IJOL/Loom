@@ -128,6 +128,8 @@ the largest library of any engine here.
 - **OSC 1 / OSC 2** — waveform, level, detune in cents, **PW**, and **Sync**.
   Detuning the two oscillators creates the classic "supersaw" chorus effect.
   See [Oscillator extras](#oscillator-extras-pw-and-sync) below for PW and Sync.
+- **RING** — level of the ring modulator, OSC 1 × OSC 2. See
+  [Ring modulation](#ring-modulation) below.
 - **SUB / NOISE** — sub oscillator level (one octave below OSC 1) and a
   noise generator for breath and texture.
 - **FILTER** — **Model**, **Type**, Cutoff, Resonance, Env Amount, Drive, Key
@@ -180,6 +182,29 @@ timbre of a synced lead. Here the **Sync knob (1–8)** sets the ratio between t
 two, and *that ratio is the timbre* — the pitch you hear still follows the note.
 Sweeping the Sync knob (or modulating it) gives the classic sync-sweep lead.
 Presets **LEAD Sync**, **LEAD Sync Sweep** and **BASS Sync** are built on it.
+
+### Ring modulation
+
+**Ring** (0–1, default 0) multiplies OSC 1 by OSC 2 and mixes the result in as
+a source of its own, alongside Sub and Noise — it does not replace either
+oscillator. Multiplying two tones produces their **sum and difference**
+frequencies instead of their harmonics, so the result is inharmonic: bells,
+gongs, metallic clangs and robot voices.
+
+Two things drive the sound:
+
+- **The interval between the oscillators.** A few cents of Osc2 Det gives a
+  slow beat and a tone an octave up; wide detunes turn it clangorous. The
+  interval *is* the timbre, so a note played higher changes the character as
+  well as the pitch — which is exactly why ring mod sounds inharmonic.
+- **The oscillator levels, which Ring ignores.** The product is taken before
+  the level knobs, so you can pull OSC 1 and OSC 2 down to zero and hear the
+  ring modulator alone — the classic bell — or leave them up and let the metal
+  sit on top of the raw oscillators.
+
+Ring is continuous, so it is a modulation target like any other: an ADSR on
+`ring.level` gives a metallic attack that decays into a clean tone, and a slow
+LFO breathes the clang in and out.
 
 ### Unison, Detune and Drift
 

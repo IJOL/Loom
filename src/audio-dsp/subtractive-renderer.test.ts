@@ -258,6 +258,83 @@ describe('pulse width (PWM)', () => {
   });
 });
 
+/** Magnitude at one frequency (a single Goertzel-style correlation), normalised
+ *  by the buffer length so two renders are comparable. */
+const energyAt = (buf: number[], freq: number): number => {
+  let re = 0, im = 0;
+  for (let i = 0; i < buf.length; i++) {
+    const a = 2 * Math.PI * freq * i / SR;
+    re += buf[i] * Math.cos(a);
+    im += buf[i] * Math.sin(a);
+  }
+  return Math.hypot(re, im) / buf.length;
+};
+
+describe('ring modulation', () => {
+  // Ring is osc1 × osc2, mixed in as its OWN source next to sub and noise —
+  // not a switch that replaces osc2. Everything below is that claim, split into
+  // the four things it means.
+  const SINES: ParamBag = {
+    ...DEFAULTS, 'osc1.wave': 3, 'osc2.wave': 3,
+    'sub.level': 0, 'noise.level': 0,
+    'filter.cutoff': 1, 'filter.resonance': 0, 'filter.envAmount': 0, 'filter.builtinEnv': 0,
+  };
+  const render = (bag: ParamBag, sec = 0.25): number[] => {
+    const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.5 }), bag, SR);
+    const b: number[] = [];
+    for (let i = 0; i < SR * sec; i++) b.push(v.renderSample(i / SR));
+    return b;
+  };
+
+  it('is off by default — a patch that never mentions Ring is bit-identical', () => {
+    const a = render(DEFAULTS);
+    const b = render({ ...DEFAULTS, 'ring.level': 0 });
+    let d = 0; for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b[i]);
+    expect(d).toBe(0);
+  });
+
+  it('survives both oscillators being muted — it is a source, not a modifier', () => {
+    // The product is taken from the RAW oscillators, so Ring alone is a sound.
+    // Multiplying the level-scaled outputs instead would make this silent, and
+    // the knob would be useless in exactly the patch it exists for.
+    const bag: ParamBag = { ...SINES, 'osc1.level': 0, 'osc2.level': 0 };
+    expect(rms(render({ ...bag, 'ring.level': 0 }))).toBe(0);
+    expect(rms(render({ ...bag, 'ring.level': 1 }))).toBeGreaterThan(0.02);
+  });
+
+  it('makes tones neither oscillator has — the sum tone, an octave up', () => {
+    // Two sines multiplied are cos(f1−f2) − cos(f1+f2): a slow beat and a tone
+    // at f1+f2. The sum tone is the audible half, and it is the proof — adding
+    // the two sines can never put energy there, however loud they get.
+    const f1 = midiToFreqLocal(57);
+    const f2 = f1 * Math.pow(2, 7 / 1200);            // osc2.detune = 7 cents
+    const sum = f1 + f2;
+    const plain = energyAt(render({ ...SINES, 'osc1.level': 1, 'osc2.level': 1 }), sum);
+    const ringed = energyAt(render({ ...SINES, 'osc1.level': 0, 'osc2.level': 0, 'ring.level': 1 }), sum);
+    expect(ringed).toBeGreaterThan(plain * 20);
+  });
+
+  it('is continuous, so an LFO fades the metal in and out', () => {
+    const bag: ParamBag = { ...SINES, 'osc1.level': 0.6, 'osc2.level': 0.4, 'ring.level': 0.5 };
+    const sweep = (mod: (t: number) => number): number[] => {
+      const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.5 }), bag, SR);
+      const { index: ix, mo } = attachSlots(v, bag);
+      const off = mo({ 'ring.level': 0 });
+      const b: number[] = [];
+      for (let i = 0; i < SR * 0.2; i++) {
+        const t = i / SR;
+        off[ix.slot['ring.level']] = mod(t);
+        b.push(v.renderSample(t, off));
+      }
+      return b;
+    };
+    const still = sweep(() => 0);
+    const swept = sweep((t) => Math.sin(2 * Math.PI * 3 * t));
+    let diff = 0; for (let i = 0; i < still.length; i++) diff += Math.abs(still[i] - swept[i]);
+    expect(diff / still.length).toBeGreaterThan(0.02);
+  });
+});
+
 describe('PWM is modulation, not a knob', () => {
   // A static width is a pulse. PWM is the width MOVING — the thing that makes a
   // supersaw-era pad breathe. It works because osc1.pw is a continuous param,
