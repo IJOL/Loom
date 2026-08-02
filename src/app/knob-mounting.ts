@@ -89,9 +89,21 @@ export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
       for (const spec of engine.params) {
         const handle = deps.registry.get(`${laneId}.${spec.id}`);
         if (!handle) continue;
-        if (spec.kind === 'discrete' && spec.options && spec.options.length > 0) {
+        // Resolve the SAME option list the live control was built from
+        // (engine-param-grid.ts's buildControl): `optionsFrom`, when present,
+        // rebuilds from another param's current value and can be a DIFFERENT
+        // length than the static `spec.options` (e.g. the Subtractive filter
+        // Type strip: 4 taps under DIG, 3 under MOG/303/COMB). Normalising
+        // against the wrong length disagrees with the control's own
+        // quantiseSelectValue and both paints and commits the wrong option.
+        const options = spec.kind === 'discrete'
+          ? (spec.optionsFrom
+              ? spec.optionsFrom.build(engine.getBaseValue(spec.optionsFrom.paramId))
+              : spec.options)
+          : undefined;
+        if (options && options.length > 0) {
           const idx = Math.round(engine.getBaseValue(spec.id));
-          handle.setValue(normaliseSelectIndex(idx, spec.options.length));
+          handle.setValue(normaliseSelectIndex(idx, options.length));
         } else {
           handle.setValue(engine.getBaseValue(spec.id));
         }
