@@ -77,4 +77,24 @@ describe('resolveParamRows', () => {
     expect(rows[0].sections.map((s) => s.specs[0].id)).toEqual(['x', 'y']);
     expect(rows[1].sections.map((s) => s.specs[0].id)).toEqual(['z']);
   });
+
+  // PIN, not a spec: `row` is a grouping KEY, not a position. Output order
+  // follows the order a row is first ENCOUNTERED while walking the declared
+  // groups array, never the numeric row value. Every current engine happens
+  // to declare ascending rows (0, 1, 2, ...), which hides this — this test
+  // proves it with a declared array in descending numeric order. If this
+  // starts failing, `row`'s meaning changed; that is a deliberate semantics
+  // change, not a bug fix, and needs its own decision.
+  it('row output order follows first-encounter in the declared array, not the numeric row value', () => {
+    const groups: EngineParamGroup[] = [
+      { id: 'a', title: 'A', row: 2 },
+      { id: 'b', title: 'B', row: 0 },
+    ];
+    const rows = resolveParamRows([p('x', 'a'), p('y', 'b')], groups);
+    expect(rows).toHaveLength(2);
+    // 'a' (row: 2) is declared first, so its row comes out first — even
+    // though 'b' declares the numerically smaller row: 0.
+    expect(rows[0].sections.map((s) => s.title)).toEqual(['A']);
+    expect(rows[1].sections.map((s) => s.title)).toEqual(['B']);
+  });
 });

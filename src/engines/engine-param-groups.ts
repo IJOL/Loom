@@ -16,7 +16,16 @@ export interface EngineParamGroup {
    *  without touching every param that belongs to it. */
   title: string;
   /** Groups sharing a row index render side by side on one line, separated by a
-   *  vertical divider. Default: a row of its own, in declaration order. */
+   *  vertical divider. Default: a row of its own, in declaration order.
+   *
+   *  `row` is a grouping KEY, not a position: it guarantees which sections
+   *  share a line, and nothing about which line comes first or second. Output
+   *  row order follows the order a row is first ENCOUNTERED while walking the
+   *  `groups` array (declaration order), never the numeric value — a group
+   *  declaring `row: 2` before one declaring `row: 0` renders ABOVE it. Every
+   *  engine today declares ascending rows, so this is latent; see
+   *  engine-param-groups.test.ts's "row output order follows first-encounter"
+   *  test for the pin. */
   row?: number;
   /** CSS colour for this section's knob rings. A param's own `color` wins. */
   color?: string;
