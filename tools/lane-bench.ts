@@ -22,7 +22,19 @@
 // hoisted out of the loop — which is the property the measurement needs (see the
 // refuted "39x" in param-read-bench.ts).
 
+// MODULATION MODES. Production ALWAYS attaches a ModulationRuntime — the worklet
+// does it unconditionally (loom-processor.ts) — so a run without one measures a
+// path that never ships, and it hides the whole modulation half of the hot loop:
+// VoiceManager.fillOffsets is skipped entirely, and every renderer's `mo?.name`
+// read short-circuits on an undefined. Two modes, because they cost differently
+// and both are real:
+//   none — a runtime with NO modulators. The COMMON case, and the interesting
+//          one: subtractive still pays 20 named offsetFor calls per sample,
+//          each walking an empty list, for nothing at all.
+//   lfo  — one LFO on the engine's moving param. What a modulated lane costs.
 import { VoiceManager } from '../src/audio-dsp/voice-manager';
+import { ModulationRuntime, type ModLite } from '../src/audio-dsp/modulation-runtime';
+import '../src/audio-dsp/modulators/lfo-kernel';
 import { referenceFor, defaultParams, NOTE, SR } from './gen-engine-reference';
 import type { ParamBag } from '../src/audio-dsp/types';
 
@@ -44,9 +56,38 @@ const MOVING: Record<string, string> = {
   karplus:     'string.damping',
 };
 
-function once(engineId: string, params: ParamBag): number {
+/** The name a modulator addresses the moving param by. Subtractive's renderer
+ *  reads SubParams FIELD names; every other engine reads param dot-ids — the
+ *  same split worklet-lane-engine.ts makes when it picks a target mapper. */
+const MOD_TARGET: Record<string, string> = {
+  tb303:       'filter.cutoff',
+  subtractive: 'filterCutoff',
+  fm:          'amp.mix',
+  wavetable:   'filter.cutoff',
+  westcoast:   'lpg.cutoff',
+  karplus:     'string.damping',
+};
+
+function makeLfo(engineId: string): ModLite {
+  return {
+    id: 'bench-lfo',
+    kind: 'lfo',
+    driver: 'time',
+    enabled: true,
+    rateHz: 3,
+    waveform: 'sine',
+    depthByParam: { [MOD_TARGET[engineId]]: 0.4 },
+  };
+}
+
+function once(engineId: string, params: ParamBag, mode: 'none' | 'lfo'): number {
   const vm = new VoiceManager(SR, engineId, params);
   vm.setMaxVoices(VOICES);
+  // Always attached, like production. `none` means an EMPTY modulator set, not
+  // an absent runtime — the difference is the point.
+  const runtime = new ModulationRuntime(SR);
+  runtime.setMods(mode === 'lfo' ? [makeLfo(engineId)] : []);
+  vm.setModulation(runtime);
   for (let v = 0; v < VOICES; v++) {
     vm.spawn({ ...NOTE, midi: NOTE.midi + v, durationSec: SECONDS });
   }
@@ -77,12 +118,17 @@ function median(xs: number[]): number {
 }
 
 const engineId = process.argv[2];
+const mode = (process.argv[3] ?? 'none') as 'none' | 'lfo';
 if (!engineId) {
-  console.error('usage: npx tsx tools/lane-bench.ts <engineId>');
+  console.error('usage: npx tsx tools/lane-bench.ts <engineId> [none|lfo]');
   process.exit(2);
 }
 if (!(engineId in MOVING)) {
   console.error(`no moving param declared for '${engineId}' — add one to MOVING`);
+  process.exit(2);
+}
+if (mode !== 'none' && mode !== 'lfo') {
+  console.error(`unknown mode '${mode}' — expected none or lfo`);
   process.exit(2);
 }
 
@@ -92,9 +138,9 @@ await referenceFor(engineId);
 const params = defaultParams(engineId);
 
 const times: number[] = [];
-for (let r = 0; r < RUNS; r++) times.push(once(engineId, params));
+for (let r = 0; r < RUNS; r++) times.push(once(engineId, params, mode));
 console.log(
-  `${engineId.padEnd(12)} median ${median(times).toFixed(1)} ms   ` +
+  `${engineId.padEnd(12)} mods=${mode.padEnd(4)} median ${median(times).toFixed(1)} ms   ` +
   `(${times.map((t) => t.toFixed(0)).join(', ')})   ` +
   `${SECONDS}s x ${VOICES} voices @ ${SR}`,
 );
