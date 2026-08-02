@@ -434,6 +434,30 @@ Su valor es estructural, y hay que decirlo así: mata el último `=== 'subtracti
 del camino de audio, mata `fieldForParamId`, y destapó que el **render offline /
 export perdía la modulación** de cualquier param fuera de la tabla de Subtractive.
 
+### Resultado final del camino de modulación (`7409958`)
+
+| motor | none: partida → final | lfo: partida → final | coste de UN LFO |
+| --- | --- | --- | --- |
+| tb303 | 723,4 → **701,7** (−3,0 %) | 796,1 → **742,5** (−6,7 %) | +13 % → **+6 %** |
+| subtractive | 759,3 → **676,9** (−10,9 %) | 869,4 → **786,1** (−9,6 %) | +21 % → **+16 %** |
+| fm | 801,1 → **521,6** (−34,9 %) | 930,5 → **630,6** (−32,2 %) | **+73 % → +21 %** |
+| wavetable | 452,7 → **437,2** (−3,4 %) | 516,4 → **460,4** (−10,8 %) | +19 % → **+5 %** |
+| westcoast | 85,1 → **85,8** (≈0) | 147,5 → **111,8** (−24,2 %) | +73 % → **+30 %** |
+
+**Lo que había que demostrar, demostrado:** un LFO en FM costaba un 73 % del
+motor y ahora cuesta un 21 %. En wavetable pasa del 19 % al 5 %.
+
+**Dos fallos que la propia instrumentación destapó al medir:**
+
+1. `MOD_TARGET` en el banco seguía nombrando el destino de Subtractive como
+   `filterCutoff`, así que sus tiradas `lfo` se midieron con un modulador
+   **inerte** — el aviso `[modulation] no slot for target` lo cantó. Corregido y
+   vuelto a medir; el 813,9 → 786,1 de arriba ya es con un modulador real.
+2. `hasActive` decía "sí" para un modulador cuyos destinos no resuelven ninguno,
+   lo que costaba un llenado y una tanda entera de lecturas por muestra para
+   producir un array de ceros. Ahora, con índice enlazado, significa "activo en
+   el camino de slots".
+
 **Lo que queda, y por qué merece la pena:** el sobrecoste de tener UN solo LFO
 activo es +73 % en fm (+388 ms) y en westcoast, +21 % en subtractive, +19 % en
 wavetable, +13 % en tb303. Un LFO no puede costar eso. Son las lecturas por

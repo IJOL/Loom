@@ -56,12 +56,14 @@ const MOVING: Record<string, string> = {
   karplus:     'string.damping',
 };
 
-/** The name a modulator addresses the moving param by. Subtractive's renderer
- *  reads SubParams FIELD names; every other engine reads param dot-ids — the
- *  same split worklet-lane-engine.ts makes when it picks a target mapper. */
+/** The name a modulator addresses the moving param by — a param's own dot-id,
+ *  for every engine. Subtractive used to be the exception (flat SubParams field
+ *  names), and this table kept saying 'filterCutoff' after that stopped being
+ *  true: its `lfo` runs were measured with an INERT modulator. The runtime's
+ *  "no slot for target" warning is what surfaced it. */
 const MOD_TARGET: Record<string, string> = {
   tb303:       'filter.cutoff',
-  subtractive: 'filterCutoff',
+  subtractive: 'filter.cutoff',
   fm:          'amp.mix',
   wavetable:   'filter.cutoff',
   westcoast:   'lpg.cutoff',

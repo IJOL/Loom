@@ -207,7 +207,13 @@ export class ModulationRuntime {
    *  lookups actually run and miss, where `undefined` short-circuits. Gate
    *  modulators (ADSR) are correctly absent from `active` — they have no kernel
    *  and travel the per-voice envelope road instead. */
-  get hasActive(): boolean { return this.active.length > 0; }
+  get hasActive(): boolean {
+    // Once a lane has bound its numbering, "active" means active ON THE SLOT
+    // PATH: a modulator whose every target failed to resolve contributes exactly
+    // zero, and answering true for it would cost a fill and a full set of reads
+    // per sample to produce an array of zeroes.
+    return this.index ? this.slotted.length > 0 : this.active.length > 0;
+  }
 
   /** Whether the render loop must compute offsets per voice rather than once per
    *  sample. False for the common all-free/all-shared case. */
