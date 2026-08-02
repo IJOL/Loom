@@ -14,6 +14,9 @@ export default defineConfig({
       'src/**/*.test.ts', 'src/**/*.dsp.test.ts', 'src/**/*.wiring.test.ts',
       'packages/**/*.test.ts', 'plugins/**/*.test.ts',
       'tools/**/*.test.mjs',
+      // A tool that drives the DSP kernel has to be TypeScript — it imports the
+      // renderers and their types — so tools/ carries both extensions.
+      'tools/**/*.test.ts',
     ],
     globals: false,
     setupFiles: ['test/setup.ts'],
