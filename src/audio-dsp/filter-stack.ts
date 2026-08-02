@@ -8,7 +8,9 @@
 import { Svf } from './filter';
 import { LadderFilter, type LadderTap } from './ladder';
 import { CombFilter } from './comb';
-import { FILTER_MODES, ROUTING_OFF, tapFor, type FilterTap } from './filter-kinds';
+import {
+  FILTER_MODES, ROUTING_OFF, ROUTING_SER, ROUTING_PAR, ROUTING_DIFF, tapFor, type FilterTap,
+} from './filter-kinds';
 
 export * from './filter-kinds';
 
@@ -94,12 +96,20 @@ export class FilterStack {
     return this.combine(a, x, b, cutB, resB, blend);
   }
 
-  /** The three real routing modes. Task 3 writes their tests and then this
-   *  body; until then OFF is the only mode a stack can be built in, and the
-   *  three constants below are what the routing param will select. */
+  /** The three real routing modes, plus OFF's fallthrough (unreachable: `update`
+   *  never calls this without a B block, but `default` keeps it total). */
   private combine(
     a: number, x: number, b: FilterBlock, cutB: number, resB: number, blend: number,
   ): number {
-    return a;
+    switch (this.routing) {
+      // A feeds B. Lerped, so blend 0 is A untouched rather than a hard switch.
+      case ROUTING_SER: { const chained = b.update(a, cutB, resB); return a + blend * (chained - a); }
+      // Both see the same input. At blend 0.5 this is their average; at 1 it is B.
+      case ROUTING_PAR: { const parallel = b.update(x, cutB, resB); return a + blend * (parallel - a); }
+      // A minus B: what A passes and B does not. Two lowpasses this way are a
+      // band-pass between their cutoffs, which no single circuit here is.
+      case ROUTING_DIFF: return a - blend * b.update(x, cutB, resB);
+      default: return a;
+    }
   }
 }

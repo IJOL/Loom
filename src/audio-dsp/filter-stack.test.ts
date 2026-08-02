@@ -1,7 +1,9 @@
 // src/audio-dsp/filter-stack.test.ts
 import { describe, it, expect } from 'vitest';
 import { FILTER_MODES, tapFor, typeOptionsFor, type FilterTap } from './filter-kinds';
-import { FilterStack, ROUTING_OFF, trackedCutoff } from './filter-stack';
+import {
+  FilterStack, ROUTING_OFF, ROUTING_SER, ROUTING_PAR, ROUTING_DIFF, trackedCutoff,
+} from './filter-stack';
 
 const SR = 48000;
 const CUTOFF = 880;
@@ -162,6 +164,72 @@ describe('routing OFF', () => {
     const a = run(0), b = run(1);
     for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b[i]);
     expect(d).toBe(0);
+  });
+});
+
+describe('routing', () => {
+  const CLOSED = 300, OPEN = 4000;
+  const DIG = 0, LP = 0;
+  const tone = (hz: number, n: number): number[] =>
+    Array.from({ length: n }, (_, i) => Math.sin(2 * Math.PI * hz * i / SR));
+
+  /** RMS of a steady tone through a stack, past the run-in. About the mean, for
+   *  the same reason `passes` is: an asymmetric circuit rectifies. */
+  const through = (
+    routing: number, cutA: number, cutB: number, blend: number, hz: number,
+  ): number => {
+    const s = new FilterStack(DIG, LP, DIG, LP, routing, SR);
+    const input = tone(hz, SR * 0.25);
+    const kept: number[] = [];
+    for (let i = 0; i < input.length; i++) {
+      const y = s.update(input[i], cutA, 0.25, cutB, 0.25, blend);
+      if (i > SR * 0.02) kept.push(y);
+    }
+    const mean = kept.reduce((a, b) => a + b, 0) / kept.length;
+    return Math.sqrt(kept.reduce((a, v) => a + (v - mean) * (v - mean), 0) / kept.length);
+  };
+
+  it('blend 0 is filter A alone, in every mode', () => {
+    const solo = through(ROUTING_OFF, CLOSED, OPEN, 0, 440);
+    for (const routing of [ROUTING_SER, ROUTING_PAR, ROUTING_DIFF]) {
+      expect(through(routing, CLOSED, OPEN, 0, 440), `routing ${routing}`).toBeCloseTo(solo, 10);
+    }
+  });
+
+  it('SERIES removes more than A alone — two lowpasses in a row', () => {
+    expect(through(ROUTING_SER, OPEN, CLOSED, 1, 7040))
+      .toBeLessThan(through(ROUTING_OFF, OPEN, CLOSED, 1, 7040) * 0.5);
+  });
+
+  it('PARALLEL passes what either branch passes', () => {
+    // A closed, B open, the tone above A's cutoff and under B's: A alone loses
+    // it and the parallel sum brings it back.
+    expect(through(ROUTING_PAR, CLOSED, OPEN, 0.5, 2000))
+      .toBeGreaterThan(through(ROUTING_OFF, CLOSED, OPEN, 0.5, 2000) * 2);
+  });
+
+  it('DIFFERENCE of two lowpasses is a band-pass between their cutoffs', () => {
+    // This is why having the same filter twice is worth it: A minus B is a
+    // response neither one can produce alone.
+    const band = (hz: number) => through(ROUTING_DIFF, OPEN, CLOSED, 1, hz);
+    expect(band(1200)).toBeGreaterThan(band(80) * 5);
+    expect(band(1200)).toBeGreaterThan(band(12000) * 5);
+  });
+
+  it('every mode stays bounded with both filters resonant', () => {
+    const input = noise(SR * 0.05);
+    for (const routing of [ROUTING_SER, ROUTING_PAR, ROUTING_DIFF]) {
+      for (const [mi, ti] of PAIRS.map(([m, t]) => [m, t] as const)) {
+        const s = new FilterStack(mi, ti, (mi + 2) % 4, 0, routing, SR);
+        let peak = 0;
+        for (const x of input) {
+          const y = s.update(x * 1.8, 900, 0.95, 300, 0.95, 1);
+          expect(Number.isFinite(y), `routing ${routing} pair ${mi}/${ti} went non-finite`).toBe(true);
+          const a = Math.abs(y); if (a > peak) peak = a;
+        }
+        expect(peak, `routing ${routing} pair ${mi}/${ti} blew up`).toBeLessThan(20);
+      }
+    }
   });
 });
 
