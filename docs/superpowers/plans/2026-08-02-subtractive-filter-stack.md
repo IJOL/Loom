@@ -71,9 +71,12 @@ const PAIRS: Array<[number, number, string]> = FILTER_MODES.flatMap((m, mi) =>
 );
 
 describe('the mode table', () => {
-  it('is four circuits and every one declares at least two taps', () => {
-    expect(FILTER_MODES).toHaveLength(4);
-    // A one-option control is a label pretending to be a choice.
+  it('is three circuits and every one declares at least two taps', () => {
+    // COMB is deliberately NOT here yet: its DSP is the next task, and a mode
+    // declared before its circuit exists is a Mode button whose three Type
+    // buttons all fall through to a lowpass. A one-option control would be its
+    // own smaller lie — a label pretending to be a choice.
+    expect(FILTER_MODES).toHaveLength(3);
     for (const m of FILTER_MODES) expect(m.taps.length, m.label).toBeGreaterThan(1);
   });
 
@@ -85,7 +88,7 @@ describe('the mode table', () => {
   it('keeps every existing preset value meaning what it meant', () => {
     // DIG/MOG/303 at 0/1/2, and each declaring its taps in the order the old
     // Type control used. Six values in the preset pack depend on this.
-    expect(FILTER_MODES.map((m) => m.value)).toEqual(['dig', 'mog', 'acid', 'comb']);
+    expect(FILTER_MODES.map((m) => m.value)).toEqual(['dig', 'mog', 'acid']);
     expect(FILTER_MODES[0].taps).toEqual(['lp', 'hp', 'bp', 'notch']);
     expect(FILTER_MODES[1].taps).toEqual(['lp', 'hp', 'bp']);
     expect(FILTER_MODES[2].taps).toEqual(['lp', 'hp', 'bp']);
@@ -198,9 +201,10 @@ export const FILTER_MODES: readonly FilterMode[] = [
   { value: 'dig',  label: 'DIG',  taps: ['lp', 'hp', 'bp', 'notch'] },
   { value: 'mog',  label: 'MOG',  taps: ['lp', 'hp', 'bp'] },
   { value: 'acid', label: '303',  taps: ['lp', 'hp', 'bp'] },
-  // COMB arrives in Task 2. Declared here with its three responses so the table
-  // is the one place the shape lives; its DSP is the next task.
-  { value: 'comb', label: 'COMB', taps: ['comb+', 'comb-', 'combff'] },
+  // COMB is NOT here yet. Its row and its DSP land together in Task 2, because
+  // a mode declared before its circuit exists is a Mode button whose three Type
+  // buttons all fall through to a lowpass — three lying buttons, which is the
+  // one thing this round exists to remove.
 ];
 
 const TAP_LABELS: Record<FilterTap, string> = {
@@ -234,8 +238,6 @@ In `src/audio-dsp/filter-stack.ts`, `FilterBlock`'s constructor takes `(model: n
   constructor(model: number, type: number, sr: number) {
     const mode = FILTER_MODES[Math.max(0, Math.min(FILTER_MODES.length - 1, Math.round(model)))];
     this.tap = tapFor(model, type);
-    // COMB's DSP arrives in the next task; until then it falls back to the Svf
-    // so the table can declare the mode without the stack pretending to have it.
     if (mode.value === 'mog' || mode.value === 'acid') {
       this.ladder = new LadderFilter(mode.value === 'mog' ? 'moog' : 'diode', sr, this.tap as LadderTap);
     } else {
@@ -256,7 +258,8 @@ In `src/engines/subtractive-params.ts`, replace the single `filter.kind` spec wi
   // the responses that circuit can honestly produce (audio-dsp/filter-kinds.ts).
   // Choose MOG and the NOTCH button is not there, rather than being there and
   // quietly handing back a lowpass, which is what the old grid did.
-  { id: 'filter.model', label: 'Mode', kind: 'discrete', min: 0, max: 3, default: 0,
+  // max is the highest index that EXISTS. Task 2 raises it to 3 when COMB does.
+  { id: 'filter.model', label: 'Mode', kind: 'discrete', min: 0, max: 2, default: 0,
     options: FILTER_MODE_OPTIONS, group: 'filter' },
   { id: 'filter.type',  label: 'Type', kind: 'discrete', min: 0, max: 3, default: 0,
     options: typeOptionsFor(0), optionsFrom: { paramId: 'filter.model', build: typeOptionsFor },
@@ -383,14 +386,23 @@ EOF
 
 ### Task 2: COMB, the fourth circuit
 
+The mode's table row and its DSP land in the SAME commit, on purpose: a mode
+declared before its circuit exists is a Mode button whose three Type buttons all
+fall through to a lowpass, and "no lying buttons" does not have an exception for
+work in progress. (Task 1 tried it the other way round; its own alias test caught
+it.)
+
 **Files:**
 - Create: `src/audio-dsp/comb.ts`
+- Modify: `src/audio-dsp/filter-kinds.ts` (the fourth row)
 - Modify: `src/audio-dsp/filter-stack.ts`
+- Modify: `src/engines/subtractive-params.ts` (`filter.model` max 2 → 3)
 - Test: `src/audio-dsp/comb.test.ts`, `src/audio-dsp/filter-stack.test.ts`
 
 **Interfaces:**
-- Consumes: `FilterTap`, `FILTER_MODES` from Task 1.
-- Produces: `class CombFilter { constructor(sr: number); update(x: number, tuneHz: number, feedback: number, tap: FilterTap): number }`
+- Consumes: `FilterTap`, `FILTER_MODES` from Task 1 — the comb taps are already
+  in the `FilterTap` union and in `TAP_LABELS`, with no table row using them yet.
+- Produces: `class CombFilter { constructor(sr: number); update(x: number, tuneHz: number, feedback: number, tap: FilterTap): number }`, and the fourth `FILTER_MODES` entry.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -565,7 +577,18 @@ Expected: PASS.
 
 If "reinforces the ODD harmonics" fails, check the sign, not the threshold. If "cannot ring" fails, the feed-forward path is writing the output.
 
-- [ ] **Step 5: Wire it into the stack**
+- [ ] **Step 5: Declare the mode and wire it into the stack**
+
+Now — and only now, with a real circuit behind it — add the fourth row to
+`FILTER_MODES` in `src/audio-dsp/filter-kinds.ts`, replacing the comment that
+says it is coming:
+
+```ts
+  { value: 'comb', label: 'COMB', taps: ['comb+', 'comb-', 'combff'] },
+```
+
+Raise `filter.model`'s `max` from 2 to 3 in `src/engines/subtractive-params.ts`
+(and drop the comment saying Task 2 would).
 
 In `src/audio-dsp/filter-stack.ts`, `FilterBlock` gains a comb branch:
 
@@ -573,13 +596,17 @@ In `src/audio-dsp/filter-stack.ts`, `FilterBlock` gains a comb branch:
   private comb: CombFilter | null = null;
 ```
 
-in the constructor, replacing the "COMB falls back to the Svf" placeholder from Task 1:
+and in the constructor:
 
 ```ts
     if (mode.value === 'comb') this.comb = new CombFilter(sr);
     else if (mode.value === 'mog' || mode.value === 'acid') { /* ...ladder as before... */ }
     else this.svf = new Svf(sr);
 ```
+
+Update the two mode-table tests in `filter-stack.test.ts` that Task 1 pinned at
+three circuits: the count becomes 4 and the `value` list gains `'comb'`. Their
+"COMB is deliberately not here yet" comments come out — the reason is spent.
 
 and in `update`, before the ladder branch:
 
