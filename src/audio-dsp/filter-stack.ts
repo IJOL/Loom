@@ -105,8 +105,9 @@ export class FilterStack {
     switch (this.routing) {
       // A feeds B. Lerped, so blend 0 is A untouched rather than a hard switch.
       case ROUTING_SER: { const chained = b.update(a, cutB, resB); return a + blend * (chained - a); }
-      // Both see the same input. At blend 0.5 this is their average; at 1 it is B.
-      case ROUTING_PAR: { const parallel = b.update(x, cutB, resB); return a + blend * (parallel - a); }
+      // Both see the same input. B is added on top of A, so A never leaves the
+      // mix -- DIFF's formula with the sign flipped.
+      case ROUTING_PAR: return a + blend * b.update(x, cutB, resB);
       // A minus B: what A passes and B does not. Two lowpasses this way are a
       // band-pass between their cutoffs, which no single circuit here is.
       case ROUTING_DIFF: return a - blend * b.update(x, cutB, resB);
