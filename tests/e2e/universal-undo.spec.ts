@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { addLane } from './helpers';
 
 // Verifies the header #undo-btn / #redo-btn are wired end-to-end.
 // These complement the keyboard-shortcut tests in undo.spec.ts — we test
@@ -7,32 +8,13 @@ import { test, expect } from '@playwright/test';
 // Mutation chosen: Add Scene (session-add-scene) — always visible on the
 // session grid without any extra navigation, deterministic, selector-friendly.
 // Pattern mirrors undo.spec.ts + session-management.spec.ts (waitForBoot,
-// .session-scene-launch count, .session-add-scene, addLane helpers).
+// .session-scene-launch count, .session-add-scene, the shared addLane helper).
 
 async function waitForBoot(page: import('@playwright/test').Page): Promise<void> {
   await page.waitForFunction(
     () => document.querySelectorAll('.session-cell-filled').length > 0,
     { timeout: 10_000 },
   );
-}
-
-async function laneIds(page: import('@playwright/test').Page): Promise<string[]> {
-  return page.locator('.session-lane-header').evaluateAll(
-    (els) => els.map((e) => (e as HTMLElement).dataset.laneId!),
-  );
-}
-
-async function addLane(
-  page: import('@playwright/test').Page,
-  engineId = 'subtractive',
-): Promise<string> {
-  const before = new Set(await laneIds(page));
-  await page.locator('.session-lane-add').click();
-  await page.locator(`.session-add-item[data-engine-id="${engineId}"]`).click();
-  await expect(page.locator('.session-lane-header')).toHaveCount(before.size + 1);
-  const created = (await laneIds(page)).find((id) => !before.has(id));
-  if (!created) throw new Error('addLane: could not identify the new lane');
-  return created;
 }
 
 test('header #undo-btn reverts an Add Scene mutation', async ({ page }) => {
@@ -92,7 +74,7 @@ test('header #undo-btn reverts an Add Lane mutation', async ({ page }) => {
   await page.goto('/');
   await waitForBoot(page);
 
-  const beforeCount = (await laneIds(page)).length;
+  const beforeCount = await page.locator('.session-lane-header').count();
   expect(beforeCount).toBeGreaterThan(0);
 
   // Add a lane via the tab-bar '+' button.

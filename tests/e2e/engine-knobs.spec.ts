@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { openLane } from './helpers';
+import { addLane, openLane } from './helpers';
 
 // Every melodic engine must render ITS OWN knobs when its lane is opened, and
 // show the "🎲 Sound" dice; the engines whose sound is a loaded thing must show
@@ -31,25 +31,6 @@ const MELODIC: EngineCase[] = [
   { id: 'westcoast',   knobs: ['Fold', 'Symmetry', 'Ratio'] },
   { id: 'karplus',     knobs: ['Damping', 'Brightness', 'Excite'] },
 ];
-
-/** Add a lane with `engineId` via the "+" menu and return the new lane's id. */
-async function addLane(page: Page, engineId: string): Promise<string> {
-  const before = await page.$$eval('.session-lane-header', (tabs) =>
-    tabs.map((t) => (t as HTMLElement).dataset.laneId ?? ''),
-  );
-  await page.click('.session-lane-add');
-  await page.click(`.session-add-item[data-engine-id="${engineId}"]`);
-  await page.waitForFunction(
-    (n) => document.querySelectorAll('.session-lane-header').length > n,
-    before.length,
-  );
-  const after = await page.$$eval('.session-lane-header', (tabs) =>
-    tabs.map((t) => (t as HTMLElement).dataset.laneId ?? ''),
-  );
-  const newId = after.find((id) => !before.includes(id));
-  if (!newId) throw new Error(`addLane(${engineId}): could not find the new lane id`);
-  return newId;
-}
 
 /** The lane editor lives on the poly page — for EVERY melodic engine, the
  *  TB-303 included. There is no second page. */

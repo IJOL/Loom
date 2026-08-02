@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { openLane } from './helpers';
+import { addLane, openLane } from './helpers';
 
 // Regression: selecting a preset on a lane, switching to another tab, then
 // switching back must restore the SAME preset in the dropdown — it must not
@@ -14,26 +14,6 @@ async function waitForBoot(page: Page): Promise<void> {
   await page.waitForFunction(
     () => document.querySelectorAll('.session-cell-filled').length > 0,
   );
-}
-
-/** Add a new lane with the given engine via the tab-bar engine picker and
- *  return the new lane's id (read from the freshly-rendered tab). */
-async function addLane(page: Page, engineId: string): Promise<string> {
-  const before = await page.$$eval('.session-lane-header', (tabs) =>
-    tabs.map((t) => (t as HTMLElement).dataset.laneId ?? ''),
-  );
-  await page.click('.session-lane-add');
-  await page.click(`.session-add-item[data-engine-id="${engineId}"]`);
-  await page.waitForFunction(
-    (n) => document.querySelectorAll('.session-lane-header').length > n,
-    before.length,
-  );
-  const after = await page.$$eval('.session-lane-header', (tabs) =>
-    tabs.map((t) => (t as HTMLElement).dataset.laneId ?? ''),
-  );
-  const newId = after.find((id) => !before.includes(id));
-  if (!newId) throw new Error(`addLane(${engineId}): could not find new lane id`);
-  return newId;
 }
 
 /** First non-"custom" option value in a select (i.e. the first real preset). */

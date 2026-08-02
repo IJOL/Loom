@@ -1,14 +1,30 @@
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 
 // Shared e2e helpers for the Session view. After the lane-tabs row was folded
 // into the grid column headers, adding a lane goes through the header "+" menu
 // (no more session-tabs engine-select + add-button), and a lane is opened by
 // clicking its column header (a div, not a button).
 
-/** Add a lane via the grid header "+" engine menu. */
-export async function addLane(page: Page, engineId: string): Promise<void> {
+/** Ids of every lane header currently on the grid, in DOM order. */
+async function laneIds(page: Page): Promise<string[]> {
+  return page.locator('.session-lane-header').evaluateAll(
+    (els) => els.map((e) => (e as HTMLElement).dataset.laneId ?? ''),
+  );
+}
+
+/** Add a lane via the grid header "+" engine menu; returns the new lane's id.
+ *  (Previously defined independently in four different specs — consolidated
+ *  here, same as `openLane`, so there is one place that knows how a lane gets
+ *  added and how its id is recovered.) */
+export async function addLane(page: Page, engineId = 'subtractive'): Promise<string> {
+  const before = await laneIds(page);
   await page.locator('.session-lane-add').click();
   await page.locator(`.session-add-item[data-engine-id="${engineId}"]`).click();
+  await expect(page.locator('.session-lane-header')).toHaveCount(before.length + 1, { timeout: 10_000 });
+  const after = await laneIds(page);
+  const newId = after.find((id) => !before.includes(id));
+  if (!newId) throw new Error(`addLane(${engineId}): could not find the new lane id`);
+  return newId;
 }
 
 /** Add an audio channel via the "+" menu's Audio channel entry. */

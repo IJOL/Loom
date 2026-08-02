@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { addLane } from './helpers';
 
 // Front A · session management e2e. Each case codifies a behaviour the front
 // introduced: ✕ delete crosses (clip/lane/scene), confirm-only-when-content,
@@ -12,23 +13,6 @@ async function waitForBoot(page: Page): Promise<void> {
     () => document.querySelectorAll('.session-cell-filled').length > 0,
     { timeout: 10_000 },
   );
-}
-
-async function laneIds(page: Page): Promise<string[]> {
-  return page.locator('.session-lane-header').evaluateAll(
-    (els) => els.map((e) => (e as HTMLElement).dataset.laneId!),
-  );
-}
-
-/** Add a lane via the tab-bar engine picker + '+' button; return its new id. */
-async function addLane(page: Page, engineId = 'subtractive'): Promise<string> {
-  const before = new Set(await laneIds(page));
-  await page.locator('.session-lane-add').click();
-  await page.locator(`.session-add-item[data-engine-id="${engineId}"]`).click();
-  await expect(page.locator('.session-lane-header')).toHaveCount(before.size + 1);
-  const created = (await laneIds(page)).find((id) => !before.has(id));
-  if (!created) throw new Error('addLane: could not identify the new lane');
-  return created;
 }
 
 /** Lane id of the first filled clip in the demo (a lane that has content). */
