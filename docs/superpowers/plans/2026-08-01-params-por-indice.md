@@ -390,6 +390,22 @@ ninguna de las cinco diferencias.
 reaprovechan antes de los 10 s, en ambos lados por igual. La comparación es
 válida; la magnitud absoluta, pequeña.
 
+### ✅ Verificado A OÍDO — Nacho, 2026-08-02, en `1dfeb34`
+
+Demo de arranque (TB-303 + batería + **dos lanes de Subtractive**, el motor que
+más cambió), Escena 1 lanzada por el botón de escena y Escena 2 conmutada **en
+caliente por Nacho**. Veredicto suyo: *"va perfecto"*, y **los LFOs también**
+(comprobación no exhaustiva, dicho por él).
+
+Medición objetiva en la misma tirada, tap en el bus máster: **pico 0,963, 0
+recortes, 0 frames casi mudos de 4834, 0 errores de consola** — el cambio de
+escena en caliente cayó DENTRO de esa ventana y no metió ningún hueco.
+
+Y la señal que más vale: los dos avisos que este trabajo introdujo —
+`[slot-smoother] no slot for param` y `[modulation] no slot for target` — **no
+aparecen ni una vez**. Si algún mando o alguna conexión se hubiera quedado
+descolgada al pasar a índices, habría gritado ahí.
+
 ### El camino de MODULACIÓN, medido aparte (Task 8)
 
 El arnés no enganchaba un `ModulationRuntime`, así que la mitad de modulación del
