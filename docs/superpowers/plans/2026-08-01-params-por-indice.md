@@ -22,6 +22,42 @@ tendrá su propio plan, escrito cuando ésta esté verde. Esta fase entrega
 software que funciona por sí sola: los mismos nueve motores, el mismo sonido,
 el bucle caliente más rápido.
 
+## Estado a 2026-08-01 (rama `feat/engines-as-plugins`)
+
+**Hechas y commiteadas, suite entera verde (426 ficheros / 3552 tests):**
+
+- **Task 1** `5766653` — el generador de referencias (`tools/gen-engine-reference.ts`).
+- **Task 2** `141c738` — referencias de los cinco motores congeladas.
+- **Task 3** `1a7de68` — medición de partida (tabla más abajo).
+- **Task 4** `bb4ff40` — `ParamIndex` (`src/audio-dsp/param-index.ts`).
+- **Task 5** `30adfd9` — `SlotSmoother` (`src/audio-dsp/slot-smoother.ts`).
+
+**Tres correcciones que la ejecución impuso sobre lo escrito aquí:**
+
+1. **La validación contra Karplus NO puede ser bit a bit**: el plugin dejó de
+   aplicar su propio trim (lo hace el host), así que se compara la FORMA
+   normalizada al pico, el mismo criterio que ya usaba su test.
+2. **La medición de partida desmiente la expectativa cómoda**: Subtractive no es
+   el motor rápido pese a su struct — 9,5× más lento que el 303. La ganancia se
+   medirá en puntos porcentuales, no en múltiplos.
+3. **`ParamSmoother` no se convirtió en el sitio**: el Sampler también lo usa y
+   le hace `setLivePad(sm.values as unknown as LivePadParams)` — un cast que NO
+   falla al compilar si debajo hay un `Float64Array`, sólo lee basura.
+   `SlotSmoother` es clase nueva; el viejo se queda con el Sampler hasta que su
+   backend se mude. Escrito en ambos ficheros.
+
+**Siguiente paso concreto (Task 6):** el `VoiceManager` vive en el worklet y
+**no conoce la lista de params declarados** de su motor, sólo recibe una bolsa de
+valores. Decisión tomada: **el motor le envía la lista de ids explícitamente** en
+el mensaje de construcción, en vez de deducirla del orden de las claves de esa
+bolsa. Deducirlo funciona hoy y se rompe en silencio, en el camino de audio, el
+día que alguien añada una clave fuera del orden del spec.
+
+Orden del tramo acoplado: el motor envía sus ids → el `VoiceManager` construye
+índice y `SlotSmoother` → se añade `setLiveValues` **junto** al método viejo →
+se convierten los seis renderers de uno en uno con su paridad verde → y sólo
+entonces se borra el camino viejo y los offsets de modulación pasan a slots.
+
 ## Global Constraints
 
 - **Ni una muestra de diferencia.** La red es la paridad muestra a muestra, y se
