@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { ModulationRuntime } from './modulation-runtime';
+import { ModulationRuntime, type ModLite } from './modulation-runtime';
+import { buildParamIndex } from './param-index';
 import { registerModulatorKernel } from './modulator-kernels';
 // Side-effect import: registers the 'lfo' kernel so the tests below that use
 // kind: 'lfo' exercise the real registry lookup, not a hardcoded comparison.
@@ -159,5 +160,71 @@ describe('ModulationRuntime.getAdsrMods (driver, not id)', () => {
       rateHz: 0, waveform: 'sine', depthByParam: {},
     } as never]);
     expect(rt.getAdsrMods()).toEqual([]);
+  });
+});
+
+// ── Slot-addressed offsets ─────────────────────────────────────────────────
+// The same sums, indexed instead of named. The resolution from a target name to
+// a slot happens ONCE, when the modulator set or the numbering changes — doing
+// it per sample would cost exactly what reading params by name used to.
+describe('offsetsIntoSlots', () => {
+  const IX = buildParamIndex(['filter.cutoff', 'osc1.level']);
+  const lfo = (depthByParam: Record<string, number>, over: Partial<ModLite> = {}): ModLite => ({
+    id: 'l', kind: 'echo-test-kernel', enabled: true, rateHz: 0, waveform: 'sine',
+    depthByParam, ...over,
+  });
+
+  it('writes each target at its slot, and leaves untargeted slots at zero', () => {
+    const r = new ModulationRuntime(SR);
+    r.bindIndex(IX);
+    r.setMods([lfo({ 'filter.cutoff': 0.5 })]);
+    const out = new Float64Array(IX.length);
+    r.offsetsIntoSlots(out, 0);
+    expect(out[IX.slot['filter.cutoff']]).toBeCloseTo(0.35, 6);   // 0.7 × 0.5
+    expect(out[IX.slot['osc1.level']]).toBe(0);
+  });
+
+  it('agrees with the name-keyed fill, sum for sum', () => {
+    const r = new ModulationRuntime(SR);
+    r.bindIndex(IX);
+    r.setMods([lfo({ 'filter.cutoff': 0.5 }), lfo({ 'filter.cutoff': 0.2, 'osc1.level': -0.4 }, { id: 'l2' })]);
+    const byName: Record<string, number> = {};
+    r.offsetsInto(byName, 0);
+    const bySlot = new Float64Array(IX.length);
+    r.offsetsIntoSlots(bySlot, 0);
+    for (const id of ['filter.cutoff', 'osc1.level']) {
+      expect(bySlot[IX.slot[id]]).toBeCloseTo(byName[id], 12);
+    }
+  });
+
+  it('clears the previous sample before adding — a pooled array is reused', () => {
+    const r = new ModulationRuntime(SR);
+    r.bindIndex(IX);
+    r.setMods([lfo({ 'filter.cutoff': 0.5 })]);
+    const out = new Float64Array(IX.length);
+    out.fill(99);
+    r.offsetsIntoSlots(out, 0);
+    expect(out[IX.slot['osc1.level']]).toBe(0);
+  });
+
+  it('binding the index AFTER the mods still resolves them (order must not matter)', () => {
+    const r = new ModulationRuntime(SR);
+    r.setMods([lfo({ 'filter.cutoff': 0.5 })]);
+    const out = new Float64Array(IX.length);
+    r.offsetsIntoSlots(out, 0);
+    expect(out[IX.slot['filter.cutoff']], 'no index bound yet ⇒ nothing resolved').toBe(0);
+    r.bindIndex(IX);
+    r.offsetsIntoSlots(out, 0);
+    expect(out[IX.slot['filter.cutoff']]).toBeCloseTo(0.35, 6);
+  });
+
+  it('a target the lane does not declare is inert, not a crash or a stray write', () => {
+    const r = new ModulationRuntime(SR);
+    r.bindIndex(IX);
+    r.setMods([lfo({ 'no.such.param': 1, 'filter.cutoff': 0.5 })]);
+    const out = new Float64Array(IX.length);
+    r.offsetsIntoSlots(out, 0);
+    expect(out[IX.slot['filter.cutoff']]).toBeCloseTo(0.35, 6);
+    expect(out.every((v, i) => i === IX.slot['filter.cutoff'] || v === 0)).toBe(true);
   });
 });

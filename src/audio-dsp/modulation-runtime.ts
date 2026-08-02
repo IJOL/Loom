@@ -25,7 +25,7 @@
 // which gates an envelope per note (see ModEnvHost). That road is unchanged by
 // this file's kernel lookup — a gate driver has no 'time'-driver kernel to
 // look up, by design (§3.3 of the design doc: the gate road stays closed).
-import type { ModTarget } from './types';
+import type { ModTarget, ParamIndex } from './types';
 import { getModulatorKernel, type ModulatorKernel } from './modulator-kernels';
 
 export interface ModLite {
@@ -102,6 +102,18 @@ interface ActiveMod {
   kernel: ModulatorKernel;
 }
 
+/** One active modulator with its targets already resolved to SLOTS. `depthByParam`
+ *  is keyed by name, so translating it per sample would cost exactly what reading
+ *  params by name used to: the resolution happens ONCE, here, whenever the
+ *  modulator set or the lane's numbering changes. Parallel arrays rather than
+ *  objects so the per-sample loop walks two typed arrays and allocates nothing. */
+interface SlottedMod {
+  m: ModLite;
+  kernel: ModulatorKernel;
+  slots: Int32Array;
+  depths: Float64Array;
+}
+
 export class ModulationRuntime {
   private mods: ModLite[] = [];
   /** The enabled modulators that have a kernel, paired with it. The three
@@ -113,6 +125,15 @@ export class ModulationRuntime {
    *  once-per-sample shared path when nothing asks for more. Recomputed on
    *  setMods, never per sample. */
   private perVoicePhase = false;
+  /** The same active set with its targets resolved to slots — empty until a lane
+   *  binds its numbering. */
+  private slotted: SlottedMod[] = [];
+  /** The lane's param numbering, or null when nobody bound one (the name-keyed
+   *  callers do not need it). */
+  private index: ParamIndex | null = null;
+  /** Targets with no slot, warned about once each: a modulation connection to an
+   *  id the engine does not declare would otherwise vanish without a word. */
+  private readonly warned = new Set<string>();
   // sr is reserved for future per-sample phase accumulation (BPM sync); the
   // current free-rate implementation derives phase from absolute time directly.
   constructor(_sr: number) {}
@@ -128,6 +149,54 @@ export class ModulationRuntime {
     this.perVoicePhase = this.active.some(
       ({ m }) => m.scope === 'voice' || m.trigger === 'note',
     );
+    this.resolveSlots();
+  }
+
+  /** Hand this runtime the lane's param numbering, so its targets can be resolved
+   *  to slots. Called once, when the lane attaches the runtime; re-resolves if the
+   *  modulator set was already set. */
+  bindIndex(index: ParamIndex): void {
+    this.index = index;
+    this.resolveSlots();
+  }
+
+  private resolveSlots(): void {
+    this.slotted = [];
+    const ix = this.index;
+    if (!ix) return;
+    for (const { m, kernel } of this.active) {
+      const slots: number[] = [];
+      const depths: number[] = [];
+      for (const id in m.depthByParam) {
+        const depth = m.depthByParam[id];
+        if (!depth) continue;
+        const slot = ix.slot[id];
+        if (slot === undefined) {
+          if (!this.warned.has(id)) {
+            this.warned.add(id);
+            console.warn(`[modulation] no slot for target '${id}' — this connection is inert`);
+          }
+          continue;
+        }
+        slots.push(slot);
+        depths.push(depth);
+      }
+      if (slots.length) {
+        this.slotted.push({ m, kernel, slots: Int32Array.from(slots), depths: Float64Array.from(depths) });
+      }
+    }
+  }
+
+  /** Slot-addressed twin of offsetsInto: fills `out` IN PLACE, indexed by the
+   *  bound ParamIndex. Names were resolved once in resolveSlots, so this walks
+   *  two typed arrays per modulator and touches no string at all. */
+  offsetsIntoSlots(out: Float64Array, t: number, o: PhaseOrigin = SHARED_FREE): void {
+    out.fill(0);
+    for (const s of this.slotted) {
+      const w = s.kernel.valueAt(s.m, t, originFor(s.m, o));
+      const { slots, depths } = s;
+      for (let i = 0; i < slots.length; i++) out[slots[i]] += w * depths[i];
+    }
   }
 
   /** Whether ANY enabled modulator with a kernel would contribute an offset.
