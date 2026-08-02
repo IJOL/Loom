@@ -3178,7 +3178,7 @@
       }
     },
     {
-      "name": "STRING Comb Pluck",
+      "name": "STRINGS Comb Pluck",
       "gm": [],
       "params": {
         "master.tune": 0,

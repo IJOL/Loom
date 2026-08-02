@@ -78,7 +78,7 @@ const STACK_PRESETS = [
   'BASS Hollow Sub',
   'PAD Phase Ghost',
   'LEAD Moog Cream',
-  'STRING Comb Pluck',
+  'STRINGS Comb Pluck',
   'PAD Clarinet Comb',
   'FX Metal Comb',
   'KEY Bell Ring',

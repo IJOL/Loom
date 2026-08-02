@@ -36,6 +36,20 @@ export function trackedCutoff(baseBHz: number, aRatio: number, track: number): n
   return hz < CUTOFF_MIN_HZ ? CUTOFF_MIN_HZ : hz > CUTOFF_MAX_HZ ? CUTOFF_MAX_HZ : hz;
 }
 
+/** Narrows a `FilterTap` to what a ladder can honestly produce (`LadderTap`,
+ *  ladder.ts — deliberately lp/hp/bp only, no notch: see that type's doc for
+ *  why). `tapFor` clamps its index into WHATEVER taps the mode declares in
+ *  FILTER_MODES, so if a 'notch' or comb tap were ever added to MOG's/303's
+ *  list, `tapFor` would happily hand it back here. A plain `as LadderTap`
+ *  would compile that through silently and LadderFilter.update would fall
+ *  through to its lowpass default — reintroducing, at the DSP layer, the exact
+ *  lie (a button that doesn't do what it says) this filter-stack rewrite
+ *  removed from the UI. Fail loudly instead. */
+function assertLadderTap(tap: FilterTap): LadderTap {
+  if (tap === 'lp' || tap === 'hp' || tap === 'bp') return tap;
+  throw new Error(`ladder filter has no honest '${tap}' tap (see LadderTap in ladder.ts)`);
+}
+
 /** One filter: a circuit plus the response taken out of it. */
 class FilterBlock {
   private svf: Svf | null = null;
@@ -48,7 +62,7 @@ class FilterBlock {
     this.tap = tapFor(model, type);
     if (mode.value === 'comb') this.comb = new CombFilter(sr);
     else if (mode.value === 'mog' || mode.value === 'acid') {
-      this.ladder = new LadderFilter(mode.value === 'mog' ? 'moog' : 'diode', sr, this.tap as LadderTap);
+      this.ladder = new LadderFilter(mode.value === 'mog' ? 'moog' : 'diode', sr, assertLadderTap(this.tap));
     } else this.svf = new Svf(sr);
   }
 

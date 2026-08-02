@@ -120,7 +120,7 @@ built-in envelope), Amp, and POLY controls.
 The Subtractive engine is a classic analogue-style polyphonic synthesiser with
 two oscillators, a sub oscillator, a noise source, a multimode filter, and a
 full amplitude envelope. It is the most general-purpose engine in Loom and
-suits pads, leads, basses, and plucks — and with **85 presets** it has by far
+suits pads, leads, basses, and plucks — and with **102 presets** it has by far
 the largest library of any engine here.
 
 ### Parameter sections
