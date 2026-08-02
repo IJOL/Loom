@@ -11,7 +11,18 @@
 // is exactly what produced the impossible "39x" (0.08 ns per read, less than one
 // clock cycle) that got thrown away. So each sample writes one param first.
 
+// RETARGETED 2026-08-02, and the two numbers are still comparable. It used to
+// hand each voice a name-keyed bag through setLiveParams and write one KEY per
+// sample; it now hands a Float64Array + ParamIndex through setLiveValues and
+// writes one SLOT per sample. That swap is not a change of methodology — it IS
+// the change under measurement, and everything else is held fixed: same engines,
+// same 10 s, same 8 voices, same median of 5, same moving param, same machine.
+//
+// Leaving the old call in would have been worse than useless: no renderer
+// implements setLiveParams any more, so it would have silently timed the FROZEN
+// trigger-snapshot path — a much faster number that measures nothing.
 import { createRenderer } from '../src/audio-dsp/renderer-registry';
+import { buildParamIndex } from '../src/audio-dsp/param-index';
 import { referenceFor, defaultParams, NOTE, SR } from './gen-engine-reference';
 import type { ParamBag, VoiceRenderer } from '../src/audio-dsp/types';
 
@@ -30,19 +41,30 @@ const MOVING: Record<string, string> = {
   karplus:     'string.damping',
 };
 
+/** The two ids a LANE adds on top of its engine's specs, so the index here
+ *  covers what production's does — fm and karplus read `output.trim` live and no
+ *  engine declares it. Same list as declared-params.dsp.test.ts. */
+const LANE_EXTRAS = ['poly.voices', 'output.trim'];
+
 function once(engineId: string, params: ParamBag): number {
-  // ONE shared bag, handed to every voice — the same object the ParamSmoother
-  // mutates in place in production.
-  const live: ParamBag = { ...params };
+  // ONE shared values array, handed to every voice — the same object the
+  // SlotSmoother mutates in place in production.
+  const index = buildParamIndex([...Object.keys(params), ...LANE_EXTRAS]);
+  const live = new Float64Array(index.length);
+  for (const [id, i] of Object.entries(index.slot)) live[i] = params[id] ?? 0;
+
   const voices: VoiceRenderer[] = [];
   for (let v = 0; v < VOICES; v++) {
     const r = createRenderer(engineId, NOTE, params, SR);
-    r.setLiveParams?.(live);
+    if (!r.setLiveValues) throw new Error(`${engineId} has no setLiveValues — nothing to measure`);
+    r.setLiveValues(live, index);
     voices.push(r);
   }
 
   const moving = MOVING[engineId];
-  const base = live[moving] ?? 0.5;
+  const slot = index.slot[moving];
+  if (slot === undefined) throw new Error(`'${moving}' has no slot for ${engineId}`);
+  const base = live[slot] || 0.5;
   const n = SR * SECONDS;
 
   const t0 = process.hrtime.bigint();
@@ -50,7 +72,7 @@ function once(engineId: string, params: ParamBag): number {
   for (let i = 0; i < n; i++) {
     // The knob under a hand: one param changes every sample, so no read of it
     // can be hoisted out of the loop.
-    live[moving] = base * (1 + 0.001 * (i & 255));
+    live[slot] = base * (1 + 0.001 * (i & 255));
     const t = i / SR;
     for (let v = 0; v < VOICES; v++) sink += voices[v].renderSample(t);
   }
