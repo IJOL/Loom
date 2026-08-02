@@ -109,10 +109,11 @@ describe('.select-labeled caption does not exceed the knob-driven row height (CS
   });
 
   it('.ctl-label is a small caption (9px), not a full-size label', () => {
-    const DRUM_RACK_SCSS = readFileSync(resolve(process.cwd(), 'src/styles/_drum-rack.scss'), 'utf8');
-    const block = scssBlock(DRUM_RACK_SCSS, '.select-labeled .ctl-label');
-    expect(block, '.select-labeled .ctl-label rule not found').toBeTruthy();
+    const KNOB_SCSS = readFileSync(resolve(process.cwd(), 'src/styles/_knob.scss'), 'utf8');
+    const block = scssBlock(KNOB_SCSS, '.ctl-label');
+    expect(block, '.ctl-label rule not found').toBeTruthy();
     expect(block!).toMatch(/font-size:\s*9px/);
+    expect(block!).toMatch(/text-transform:\s*uppercase/);
   });
 });
 

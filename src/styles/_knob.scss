@@ -14,7 +14,8 @@
   gap: 2px;
   user-select: none;
 }
-.knob-label {
+.knob-label,
+.ctl-label {
   font-size: 9px;
   color: var(--text-dim);
   letter-spacing: 0.1em;
