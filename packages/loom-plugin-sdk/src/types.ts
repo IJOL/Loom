@@ -41,7 +41,14 @@ export const param = (b: ParamBag, id: string, d: number): number => (b[id] ?? d
  *
  *  An id with no slot is not addressable, and that is the point: it means the
  *  lane never declared it, and the host drops the write with a warning rather
- *  than storing a value nobody reads. */
+ *  than storing a value nobody reads.
+ *
+ *  ⚠️ Resolve ONLY ids your manifest declares. The index also numbers the
+ *  synthetic MODULATION targets ('amp', 'ampGain', 'filterEnv'), which are not
+ *  params: they have real slots, so the -1 guard does NOT fire for them, but
+ *  nothing ever writes them into the values array — you would read a permanent
+ *  0 instead of your own fallback, silently. Those slots address the modulation
+ *  offsets, not the knobs. */
 export interface ParamIndex {
   readonly slot: Readonly<Record<string, number>>;
   readonly length: number;

@@ -62,6 +62,12 @@ export const SUB_PARAM_SPECS: EngineParamSpec[] = [
   { id: 'osc2.sync',    label: 'Osc2 Sync', kind: 'continuous', min: 1, max: 8, default: 2, group: 'osc2' },
   { id: 'sub.level',    label: 'Sub Lvl',   kind: 'continuous', min: 0, max: 1, default: 0.3, group: 'sub' },
   { id: 'noise.level',  label: 'Noise Lvl', kind: 'continuous', min: 0, max: 1, default: 0, group: 'noise' },
+  // The colour of the noise: a one-pole low-pass from 200 Hz (dark) to 15 kHz
+  // (bright). The renderer has read this live since the worklet cutover and
+  // mod-lite has always mapped it as a modulation target, but NOTHING declared
+  // it — so it sat frozen at 0.6 with no knob and no LFO able to reach it.
+  // Declared here at that same 0.6, which is why the sound does not change.
+  { id: 'noise.color',  label: 'Noise Tone', kind: 'continuous', min: 0, max: 1, default: 0.6, group: 'noise' },
 
   // Filter
   { id: 'filter.model',     label: 'Model',     kind: 'discrete', min: 0, max: 2, default: 0,

@@ -69,7 +69,13 @@ class LoomProcessor extends AudioWorkletProcessor {
     // param(); the lane engine posts the real values immediately after. The bag
     // being empty is exactly why the declared param ids have to travel here
     // separately: there is nothing to infer the numbering from.
-    this.vm = new VoiceManager(sampleRate, engineId, {}, opts?.outputTrim ?? 1, opts?.paramIds ?? []);
+    const paramIds = opts?.paramIds;
+    // Absent ids means an index with only the synthetic slots: every knob on
+    // this lane dead mid-note, plus one console.warn per id from the audio
+    // thread. LoomWorkletNode refuses to default it for that reason, so say so
+    // ONCE here rather than let the lane sound subtly wrong and quiet about it.
+    if (!paramIds) console.error(`[loom-processor] '${engineId}' got no paramIds — its live knobs will be dead`);
+    this.vm = new VoiceManager(sampleRate, engineId, {}, opts?.outputTrim ?? 1, paramIds ?? []);
     this.vm.setModulation(this.mod);
     this.port.onmessage = (e: MessageEvent<MainToWorklet>) => {
       const m = e.data;

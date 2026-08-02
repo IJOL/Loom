@@ -30,6 +30,9 @@ export class VoiceManager {
    *  of truth, the Float64Array is. Refreshed only when the smoother reports a
    *  change, so a lane at rest pays nothing. */
   private readonly legacyBag: ParamBag = {};
+  /** Set the first time a renderer turns up that does NOT speak slots. Until
+   *  then the mirror above is never written on the audio path. */
+  private legacyReaders = false;
   private lastT = 0;
   /** When the lane last received a note-on (phase origin for TRIG=note). */
   private lastNoteOnT = 0;
@@ -72,7 +75,8 @@ export class VoiceManager {
     for (const id of paramIds) this.slotIds[this.index.slot[id]] = id;
     this.smoother = new SlotSmoother(sr, this.index);
     this.smoother.reset(this.params);
-    this.mirrorLegacyBag();
+    // No legacyBag fill here on purpose: nothing reads it until a renderer that
+    // does not speak slots turns up, and spawn() fills it then.
   }
   get activeCount(): number { return this.slots.length; }
   /** The smoothed values handed to every voice, and their numbering. Read-only
@@ -80,8 +84,9 @@ export class VoiceManager {
    *  stepping. */
   get liveValues(): Float64Array { return this.smoother.values; }
   get paramIndex(): ParamIndex { return this.index; }
-  /** TRANSITIONAL name-keyed view of the above — see `legacyBag`. */
-  get liveParams(): ParamBag { return this.legacyBag; }
+  /** TRANSITIONAL name-keyed view of the above — see `legacyBag`. Refreshed on
+   *  demand because it is NOT on the audio path: only tests read it directly. */
+  get liveParams(): ParamBag { this.writeLegacyBag(); return this.legacyBag; }
   setParams(patch: ParamBag): void {
     Object.assign(this.params, patch);
     this.smoother.setTargets(patch);
@@ -89,7 +94,16 @@ export class VoiceManager {
     // spawn that lands between two render samples never reads a stale name.
     this.mirrorLegacyBag();
   }
+  /** Mirror for the audio path. Nobody on the old contract ⇒ nothing to mirror,
+   *  and that guard is the whole reason the transitional bag is not a per-sample
+   *  tax: no in-tree renderer implements setLiveParams any more, so for every
+   *  engine we ship this never runs. It costs an out-of-tree plugin that has not
+   *  been rebuilt one string-keyed store per declared param per moving sample —
+   *  what it was already paying by name — and it stops when that plugin is. */
   private mirrorLegacyBag(): void {
+    if (this.legacyReaders) this.writeLegacyBag();
+  }
+  private writeLegacyBag(): void {
     const v = this.smoother.values;
     for (let i = 0; i < this.slotIds.length; i++) this.legacyBag[this.slotIds[i]] = v[i];
   }
@@ -152,8 +166,15 @@ export class VoiceManager {
     // Slot-addressed if the renderer speaks it, name-keyed otherwise. Exactly
     // one of the two, so a half-converted renderer cannot read a knob through
     // two paths at once. The name-keyed branch is the transitional one.
-    if (v.setLiveValues) v.setLiveValues(this.smoother.values, this.index);
-    else v.setLiveParams?.(this.legacyBag);
+    if (v.setLiveValues) {
+      v.setLiveValues(this.smoother.values, this.index);
+    } else if (v.setLiveParams) {
+      // First voice on the old contract: start maintaining the name-keyed view,
+      // and fill it BEFORE handing the reference over — this voice reads through
+      // that one object for its whole life.
+      if (!this.legacyReaders) { this.legacyReaders = true; this.writeLegacyBag(); }
+      v.setLiveParams(this.legacyBag);
+    }
     // Hand this voice its per-voice ADSR envelopes (subtractive renderer only;
     // others ignore the call). Read once at spawn — live shape edits apply to the
     // NEXT note, matching the engine's "params read at trigger time" rule.
