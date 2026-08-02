@@ -22,15 +22,35 @@ tendrá su propio plan, escrito cuando ésta esté verde. Esta fase entrega
 software que funciona por sí sola: los mismos nueve motores, el mismo sonido,
 el bucle caliente más rápido.
 
-## Estado a 2026-08-01 (rama `feat/engines-as-plugins`)
+## Estado a 2026-08-02 (rama `feat/engines-as-plugins`)
 
-**Hechas y commiteadas, suite entera verde (426 ficheros / 3552 tests):**
+**Hechas y commiteadas:**
 
 - **Task 1** `5766653` — el generador de referencias (`tools/gen-engine-reference.ts`).
 - **Task 2** `141c738` — referencias de los cinco motores congeladas.
 - **Task 3** `1a7de68` — medición de partida (tabla más abajo).
 - **Task 4** `bb4ff40` — `ParamIndex` (`src/audio-dsp/param-index.ts`).
 - **Task 5** `30adfd9` — `SlotSmoother` (`src/audio-dsp/slot-smoother.ts`).
+- **Task 6** `0e44183` + `59efb05` — los ids declarados viajan al worklet, el
+  `VoiceManager` suaviza sobre `Float64Array`, y el SDK publica
+  `setLiveValues(values, index)` + `slotOf`. Karplus es el primero en cruzar.
+- **Task 7** `218c34c` + `21687ef` — los cinco motores en árbol cruzan;
+  Subtractive el último, y con él muere `setLiveSubParams`. `VoiceRenderer` del
+  host ya no añade nada al del SDK.
+
+Suite entera verde en `0e44183` (426 ficheros / 3552 tests); desde entonces,
+verdes las suites `audio-dsp` + `plugins` + `audio-worklet` + `engines` (93
+ficheros / 830 tests) con **paridad muestra a muestra intacta** en los cinco
+motores y en Karplus.
+
+**Lo que Task 6 destapó, y que no estaba en el plan:** el conjunto declarado de
+una lane **no es** `cfg.params`. Se excluyen los params de mezcla, se añade
+`poly.voices`, y `output.trim` es un param VIVO que leen `fm-renderer` y
+`plugins/karplus` **sin que ningún motor lo declare** — entraba en la bolsa por
+la puerta de atrás. Semilla y numeración salen ahora del mismo objeto.
+
+**Qué queda:** Task 8 (los offsets de modulación pasan a slots y muere el caso
+especial de `fillOffsets`), Task 9 (**la medición**) y Task 10.
 
 **Tres correcciones que la ejecución impuso sobre lo escrito aquí:**
 
