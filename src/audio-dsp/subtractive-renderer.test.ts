@@ -741,24 +741,17 @@ describe('the second filter', () => {
     expect(diff / still.length).toBeGreaterThan(0.01);
   });
 
-  it('Track 0 leaves B still while A sweeps; Track 1 makes it follow', () => {
-    // Under a sum (PAR is now `a + blend*b`, not a crossfade to B alone), A's own
-    // swept output is in the mix at every track setting, so measuring each run's
-    // own "does it change across the note" no longer isolates B: A's sweep leaks
-    // into both. What DOES isolate B is that A's rendered output is IDENTICAL in
-    // the track=0 and track=1 runs -- `filter2.track` only feeds B's cutoff via
-    // `trackedCutoff`, nothing else -- so subtracting the two full renders
-    // sample-for-sample cancels A exactly and leaves only what changed in B.
-    //
-    // Sustain is 0 here so the filter envelope returns to EXACTLY its resting
-    // ratio (1) once decay finishes: at that point trackedCutoff(base, 1, track)
-    // is the same base cutoff whatever `track` is, so B's cutoff in the two runs
-    // converges to the identical value and the difference collapses towards
-    // zero. Early in the note (envelope near its peak) the two cutoffs are far
-    // apart, so the difference is large. If Track were ignored, B's cutoff would
-    // be the same fixed value in both runs for the ENTIRE note, and the
-    // difference would be ~0 early too, not just late -- so this fails clearly if
-    // Track is dropped, not just weakened.
+  it('Track 0 leaves B fixed; Track 1 makes it follow A UPWARD, cutting more low end', () => {
+    // Sign, not just difference: `rms(moving - still)` cannot tell which way
+    // cutoff2 moved, so Track applied BACKWARDS (1 behaving as 0 and vice
+    // versa) would still pass a magnitude-only check. The physics gives a
+    // direction for free: B here is a HIGHPASS, and A's envelope is a decaying
+    // OPENING sweep (cutoff starts high, aRatio > 1, and falls toward 1 as it
+    // decays). At Track 1, trackedCutoff scales B's cutoff by that same
+    // aRatio, so while the envelope is open B's cutoff sits ABOVE its Track-0
+    // resting value -- a highpass moving its cutoff UP removes MORE low end,
+    // so the Track-1 render must be measurably QUIETER than Track-0's, not
+    // merely different, at a moment while A's envelope is still open.
     const renderTrack = (track: number): number[] => render({
       'filter.routing': 2, 'filter.blend': 1,
       'filter2.model': 0, 'filter2.type': 1, 'filter2.cutoff': 0.35, 'filter2.track': track,
@@ -767,13 +760,13 @@ describe('the second filter', () => {
     }, 0.3);
     const still = renderTrack(0);
     const moving = renderTrack(1);
-    const diff = moving.map((v, i) => v - still[i]);
-    const half = Math.floor(diff.length / 2);
-    const early = rms(diff.slice(0, half));
-    const late = rms(diff.slice(half));
-    // Measured: early ~0.22, late ~1.4e-12 (float noise once the two cutoffs are
-    // exactly equal) -- a ratio around 1.6e11. 1e6 leaves enormous headroom while
-    // still requiring the "converges once the sweep settles" shape, not a fluke.
-    expect(early).toBeGreaterThan(late * 1e6);
+    // 5-50 ms: past the 1 ms attack, well before the 100 ms decay settles, so
+    // the envelope (and aRatio) is still clearly above its resting value.
+    const window = (b: number[]) => b.slice(Math.floor(0.005 * SR), Math.floor(0.05 * SR));
+    // Measured: rms(moving)/rms(still) ~= 0.63 here (and flips to ~1.6 if
+    // `trackedCutoff`'s use of `track` is inverted -- verified by hand). 0.85
+    // leaves headroom below the real number while still requiring the
+    // quieter-because-higher-highpass direction, not just any difference.
+    expect(rms(window(moving))).toBeLessThan(rms(window(still)) * 0.85);
   });
 });

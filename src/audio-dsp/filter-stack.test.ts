@@ -219,6 +219,24 @@ describe('routing', () => {
       .toBeGreaterThan(through(ROUTING_OFF, CLOSED, OPEN, 0.5, 2000) * 2);
   });
 
+  it('PARALLEL is a SUM, not a crossfade — full blend is twice one filter, not just B', () => {
+    // The two PAR candidates only disagree by blend*a: a crossfade
+    // (a + blend*(parallel-a)) reaches exactly B at blend 1, discarding A;
+    // a sum (a + blend*parallel) reaches A+B. Every other PAR test in this file
+    // puts A's cutoff CLOSED and the tone above it, so A's own contribution is
+    // ~0 there and both formulas coincide — they cannot tell sum from
+    // crossfade apart. This test is the one that can: both filters OPEN, same
+    // cutoff and resonance, tone comfortably under both, so A and B each pass
+    // it at essentially the same, near-full level. Under the sum, PAR's output
+    // is ~twice filter A alone; under a crossfade it would be ~once (it IS B,
+    // and B ≈ A here). Measured: ratio is exactly 2.0 at 110/220/440 Hz (and
+    // exactly 1.0 if the crossfade formula is swapped back in — verified by
+    // hand). Asserting 1.6x leaves headroom without weakening what this test
+    // is actually for.
+    const soloA = through(ROUTING_OFF, OPEN, OPEN, 1, 220);
+    expect(through(ROUTING_PAR, OPEN, OPEN, 1, 220)).toBeGreaterThan(soloA * 1.6);
+  });
+
   it('DIFFERENCE of two lowpasses is a band-pass between their cutoffs', () => {
     // This is why having the same filter twice is worth it: A minus B is a
     // response neither one can produce alone.
@@ -275,3 +293,4 @@ describe('trackedCutoff', () => {
     expect(trackedCutoff(400, 0, 1)).toBe(20);
   });
 });
+
