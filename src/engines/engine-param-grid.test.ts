@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { buildEngineParamGrid } from './engine-param-grid';
 import { withoutParamMirror } from '../session/session-engine-state';
 import type { EngineParamSpec } from './engine-params';
@@ -452,5 +452,46 @@ describe('buildEngineParamGrid — a control whose options depend on another par
     const typeWrap = typeLabel!.closest('.select-labeled')!;
     const typeButtons = typeWrap.querySelectorAll('button, option');
     expect(typeButtons.length).toBe(3);
+  });
+
+  it('fires rebuildParamUI on a REAL click of the source control, and only that control', () => {
+    // The static-options test above only proves the LIST is right at a fixed
+    // mode; it says nothing about the trigger line in buildControl's onChange
+    // (`if (engine.params.some(s => s.optionsFrom?.paramId === spec.id))
+    // ctx.rebuildParamUI?.()`). Drive it through an actual DOM click on the
+    // rendered Mode button — both Mode and Type are radio strips (≤4 options)
+    // — with rebuildParamUI wired to really wipe-and-rebuild the same host,
+    // the same contract session-host-lane-editor.ts's own rebuild gives it,
+    // so this proves the Type strip repaints live, not just that a callback
+    // fired. The negative half (a control nothing derives from) is what stops
+    // the trigger line degenerating into "rebuild on every write".
+    const engine = stubEngine([
+      { id: 'filter.model', label: 'Mode', kind: 'discrete', min: 0, max: 2, default: 0,
+        options: FILTER_MODE_OPTIONS },
+      { id: 'filter.type', label: 'Type', kind: 'discrete', min: 0, max: 3, default: 0,
+        options: typeOptionsFor(0), optionsFrom: { paramId: 'filter.model', build: typeOptionsFor } },
+      discreteSpec('other.discrete', { label: 'Other' }),
+    ]);
+    const host = document.createElement('div');
+    let c: EngineUIContext;
+    const build = () => { host.innerHTML = ''; buildEngineParamGrid(engine, c, host, {}); };
+    const rebuildSpy = vi.fn(build);
+    c = { ...ctx(), rebuildParamUI: rebuildSpy };
+    build();   // initial render, NOT through the spy
+
+    const buttonsUnder = (label: string): HTMLButtonElement[] => {
+      const el = [...host.querySelectorAll('.ctl-label')].find((n) => n.textContent === label)!;
+      return [...el.closest('.select-labeled')!.querySelectorAll<HTMLButtonElement>('button')];
+    };
+    expect(buttonsUnder('Type').length).toBe(4);   // DIG: lp/hp/bp/notch
+
+    // A control nothing derives its options from: no rebuild.
+    buttonsUnder('Other')[1].click();
+    expect(rebuildSpy).not.toHaveBeenCalled();
+
+    // Mode -> MOG (three taps, not four). The click must repaint Type live.
+    buttonsUnder('Mode')[1].click();
+    expect(rebuildSpy).toHaveBeenCalledTimes(1);
+    expect(buttonsUnder('Type').length).toBe(3);
   });
 });
