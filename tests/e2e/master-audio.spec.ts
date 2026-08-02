@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { installMasterTap, measureMaster } from './helpers';
+import { installMasterTap, measureMaster, waitForMasterAudible } from './helpers';
 
 // Does the app actually make sound? Every other spec asserts DOM; this one taps
 // the master bus and measures the signal, which is the only way to catch a UI
@@ -24,7 +24,7 @@ test('launching a scene produces continuous, unclipped audio on master', async (
 
   // A trusted click is what resumes the AudioContext; a synthetic one does not.
   await page.locator('.session-scene-launch').first().click();
-  await page.waitForTimeout(1200);   // let the first loop get going
+  await waitForMasterAudible(page);  // start measuring where the sound starts
 
   const levels = await measureMaster(page, 3000);
 
@@ -43,7 +43,7 @@ test('the transport Stop button silences the master', async ({ page }) => {
   await waitForBoot(page);
 
   await page.locator('.session-scene-launch').first().click();
-  await page.waitForTimeout(1200);
+  await waitForMasterAudible(page);
   const playing = await measureMaster(page, 800);
   expect(playing.peak).toBeGreaterThan(0.01);
 

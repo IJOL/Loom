@@ -86,3 +86,31 @@ export async function measureMaster(page: Page, ms: number): Promise<MasterLevel
     return { peak, avgRms: rmsSum / frames, frames, nearSilent };
   }, ms);
 }
+
+/**
+ * Blocks until the master tap actually carries sound, so a measurement window
+ * opens on the first audible frame rather than on a fixed guess at how long a
+ * launch takes.
+ *
+ * A fixed settle is what made `master-audio` fragile: launching takes ~400 ms
+ * on a fast box and several times that in a headless container, and whatever
+ * silence is left over lands INSIDE the window, where it is indistinguishable
+ * from a dropout. Waiting on the signal removes the guess.
+ *
+ * This does not weaken "does it sound?" — a master that never rises above the
+ * audible floor times out here, and a timeout is still a failed test.
+ */
+export async function waitForMasterAudible(page: Page, timeout = 15_000): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      const an = (window as unknown as { __masterTap?: AnalyserNode }).__masterTap;
+      if (!an) throw new Error('installMasterTap was not called before page.goto');
+      const buf = new Float32Array(an.fftSize);
+      an.getFloatTimeDomainData(buf);
+      for (const v of buf) if (Math.abs(v) > 0.01) return true;
+      return false;
+    },
+    undefined,
+    { timeout, polling: 'raf' },
+  );
+}

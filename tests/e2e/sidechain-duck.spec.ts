@@ -66,6 +66,13 @@ async function launchScene2(page: Page): Promise<void> {
 
 test.describe('sidechain ducking', () => {
   test('the duck multiplier stays in [0,1] and survives stop + relaunch', async ({ page }) => {
+    // 13 s of measurement windows plus ~4 s of settles are fixed costs here, so
+    // the 30 s default leaves the boot almost no room: in a headless container
+    // it expires mid-measurement with every invariant above still holding —
+    // a red test that says nothing about the sidechain. The run itself takes
+    // ~30 s there, so this is headroom, not a licence to hang.
+    test.setTimeout(120_000);
+
     await installDuckTap(page);
     await page.goto('/');
     // The boot demo (Minimal Techno) needs its presets + worklet module.
