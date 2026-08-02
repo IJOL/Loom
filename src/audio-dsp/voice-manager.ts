@@ -154,7 +154,11 @@ export class VoiceManager {
     // knobs. Its constructor already took the structural snapshot from `params`.
     // Both hooks are declared right on VoiceRenderer (optional) — this IS the
     // contract every renderer opts into, not an ad-hoc extension worth casting.
-    v.setLiveParams?.(this.legacyBag);
+    // Slot-addressed if the renderer speaks it, name-keyed otherwise. Exactly
+    // one of the two, so a half-converted renderer cannot read a knob through
+    // two paths at once. The name-keyed branch is the transitional one.
+    if (v.setLiveValues) v.setLiveValues(this.smoother.values, this.index);
+    else v.setLiveParams?.(this.legacyBag);
     if (this.engineId === 'subtractive') {
       if (!this.liveSub) this.liveSub = subParamsFromBag(this.legacyBag);
       v.setLiveSubParams?.(this.liveSub);

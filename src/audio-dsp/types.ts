@@ -23,8 +23,8 @@ export interface SubParams {
 
 // The plugin-facing half of this module now lives in @loom/plugin-sdk (a plugin
 // compiles against it). Re-exported so every existing import keeps working.
-export type { NoteSpec, ParamBag, VoiceModOffsets, ModEnvSpec } from '@loom/plugin-sdk';
-export { param } from '@loom/plugin-sdk';
+export type { NoteSpec, ParamBag, VoiceModOffsets, ModEnvSpec, ParamIndex } from '@loom/plugin-sdk';
+export { param, slotOf } from '@loom/plugin-sdk';
 import type { VoiceRenderer as SdkVoiceRenderer } from '@loom/plugin-sdk';
 
 /** A modulation destination: any SubParams field, plus two synthetic targets:

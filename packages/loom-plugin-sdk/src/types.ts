@@ -33,6 +33,24 @@ export type ParamBag = Record<string, number>;
 /** Read a ParamBag value with a default fallback. */
 export const param = (b: ParamBag, id: string, d: number): number => (b[id] ?? d);
 
+/** The numbering of one lane's DECLARED params. Names stay at the edges — the
+ *  manifest, presets, session state, the messages the host posts — and the hot
+ *  loop reads a Float64Array by slot. The host builds this once per lane and
+ *  hands it to every voice; a plugin resolves the slots it cares about ONCE and
+ *  never touches a string again per sample.
+ *
+ *  An id with no slot is not addressable, and that is the point: it means the
+ *  lane never declared it, and the host drops the write with a warning rather
+ *  than storing a value nobody reads. */
+export interface ParamIndex {
+  readonly slot: Readonly<Record<string, number>>;
+  readonly length: number;
+}
+
+/** Resolve a slot, or -1 when the lane does not declare the id. The `-1` guard
+ *  is the plugin's job to write once, in setLiveValues, not per sample. */
+export const slotOf = (ix: ParamIndex, id: string): number => (ix.slot[id] ?? -1);
+
 /** Live, additive modulation offsets, NORMALISED (the sum of LFO `wave×depth`,
  *  roughly -1..1). Keyed by target NAME: a SubParams field for Subtractive, or a
  *  param dot-id ('filter.cutoff', 'osc.morph', 'op1.level'…) for the other
@@ -96,8 +114,20 @@ export interface VoiceRenderer {
    *  time, not a charging capacitor, so re-reading the attack mid-note makes the
    *  amplitude jump. See the design spec.
    *
-   *  Optional: a renderer without it keeps the trigger-time snapshot behaviour. */
+   *  Optional: a renderer without it keeps the trigger-time snapshot behaviour.
+   *
+   *  @deprecated Implement setLiveValues instead. Both are honoured while the
+   *  in-tree renderers convert one at a time; the name-keyed bag is a view over
+   *  the values array and goes away with the last caller. */
   setLiveParams?(live: ParamBag): void;
+  /** The same contract as setLiveParams, addressed by SLOT. `values` is the
+   *  lane's live array, mutated in place — keep the reference and read
+   *  `values[i]` per sample. `index` is stable for the lane's lifetime, so
+   *  resolve every slot you need HERE, once, and never look up a name again in
+   *  renderSample. The STRUCTURAL exclusions above apply unchanged.
+   *
+   *  A renderer that implements this does NOT also get setLiveParams called. */
+  setLiveValues?(values: Float64Array, index: ParamIndex): void;
   /** True once the release tail has fully decayed at the last rendered t. */
   readonly done: boolean;
 }

@@ -16,8 +16,10 @@
 // feedback gain move live, so an extreme brightness sweep can drift the pitch
 // by a fraction of a sample — an accepted trade-off of a real analogue-style
 // tone control living inside the resonator, not a bug.
-import { param, midiToFreq, velGain01, ModEnvHost } from '@loom/plugin-sdk';
-import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets, ModEnvSpec } from '@loom/plugin-sdk';
+import { param, slotOf, midiToFreq, velGain01, ModEnvHost } from '@loom/plugin-sdk';
+import type {
+  NoteSpec, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets, ModEnvSpec,
+} from '@loom/plugin-sdk';
 
 const DC_R = 0.997;   // DC-blocker pole (one-pole high-pass)
 
@@ -101,9 +103,16 @@ export class KarplusRenderer implements VoiceRenderer {
   private dampRaw = NaN;
   private gCache = 0;
   private modEnv = new ModEnvHost();
-  /** The lane's live (smoothed) knob bag, or null when this voice runs standalone
-   *  (the offline kernel builds renderers directly). */
-  private live: ParamBag | null = null;
+  /** The lane's live (smoothed) values, or null when this voice runs standalone
+   *  (the offline kernel builds renderers directly). Addressed by the four slots
+   *  below, resolved ONCE in setLiveValues — renderSample never sees a string.
+   *  A slot of -1 means the lane does not declare that id, so the frozen
+   *  trigger-time value stands. */
+  private live: Float64Array | null = null;
+  private sLevel = -1;
+  private sTrim = -1;
+  private sDamping = -1;
+  private sBrightness = -1;
   done = false;
 
   /** `rng` is a test seam: production never passes it, so the excitation stays
@@ -181,7 +190,13 @@ export class KarplusRenderer implements VoiceRenderer {
 
   setModEnvelopes(mods: ModEnvSpec[]): void { this.modEnv.setModEnvelopes(mods); }
   getAdsrOffsets(): VoiceModOffsets { return this.modEnv.getAdsrOffsets(); }
-  setLiveParams(l: ParamBag): void { this.live = l; }
+  setLiveValues(values: Float64Array, index: ParamIndex): void {
+    this.live = values;
+    this.sLevel = slotOf(index, 'amp.level');
+    this.sTrim = slotOf(index, 'output.trim');
+    this.sDamping = slotOf(index, 'string.damping');
+    this.sBrightness = slotOf(index, 'string.brightness');
+  }
 
   renderSample(t: number, moIn?: VoiceModOffsets): number {
     if (t < this.begin) return 0;
@@ -193,10 +208,10 @@ export class KarplusRenderer implements VoiceRenderer {
     // Live knobs: turning these moves THIS note. The trigger snapshot is the
     // fallback when no lane bag is attached.
     const L = this.live;
-    const levelKnob = L ? param(L, 'amp.level', this.levelBase) : this.levelBase;
-    const trim = L ? param(L, 'output.trim', this.trimBase) : this.trimBase;
-    const damping = L ? param(L, 'string.damping', this.dampingBase) : this.dampingBase;
-    const brightness = L ? param(L, 'string.brightness', this.brightnessBase) : this.brightnessBase;
+    const levelKnob = L && this.sLevel >= 0 ? L[this.sLevel] : this.levelBase;
+    const trim = L && this.sTrim >= 0 ? L[this.sTrim] : this.trimBase;
+    const damping = L && this.sDamping >= 0 ? L[this.sDamping] : this.dampingBase;
+    const brightness = L && this.sBrightness >= 0 ? L[this.sBrightness] : this.brightnessBase;
 
     // Cached: gFromDamping (pow+exp+log) only re-runs when damping actually moves.
     if (damping !== this.dampRaw) {
