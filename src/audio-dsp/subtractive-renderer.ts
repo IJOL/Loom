@@ -5,7 +5,7 @@ import { midiToFreq, clamp01 } from './dsp-util';
 import { SineOsc, WhiteNoise } from './osc';
 import { UnisonStack, driftDepthFor } from './unison';
 import { Svf } from './filter';
-import { LadderFilter, type LadderTap } from './ladder';
+import { FilterStack, ROUTING_OFF } from './filter-stack';
 import { Adsr } from './adsr';
 import type { ModLite } from './modulation-runtime';
 import { registerRenderer } from './renderer-registry';
@@ -47,8 +47,7 @@ export function subParamsInto(b: ParamBag, out: SubParams): SubParams {
   out.filterCutoff = param(b, 'filter.cutoff', 0.55);
   out.filterResonance = param(b, 'filter.resonance', 0.25);
   out.filterEnvAmount = param(b, 'filter.envAmount', 0.45);
-  out.filterModel = param(b, 'filter.model', 0);
-  out.filterType = param(b, 'filter.type', 0);
+  out.filterKind = param(b, 'filter.kind', 0);
   out.filterDrive = param(b, 'filter.drive', 0);
   out.filterKeyTrack = param(b, 'filter.keyTrack', 0);
   out.filterBuiltinEnv = param(b, 'filter.builtinEnv', 1);
@@ -68,13 +67,6 @@ export function subParamsInto(b: ParamBag, out: SubParams): SubParams {
 export function subParamsFromBag(b: ParamBag): SubParams {
   return subParamsInto(b, {} as SubParams);
 }
-
-/** filterType (0=LP, 1=HP, 2=BP, 3=NOTCH) → the ladder tap that honestly serves
- *  it. NOTCH maps to 'lp': a ladder's resonance feedback fills a notch's null in,
- *  so it has no honest notch and keeps its lowpass instead of pretending (see
- *  ladder.ts). DIG — the default model — is a true multimode and does all four. */
-const ladderTapFor = (filterType: number): LadderTap =>
-  filterType === 1 ? 'hp' : filterType === 2 ? 'bp' : 'lp';
 
 /** Pulse width lives in 0.05..0.95 — the rails of its own param spec. */
 const clampPw = (v: number) => Math.min(0.95, Math.max(0.05, v));
@@ -113,17 +105,14 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
    *  fixed at trigger because it depends only on the note. */
   private driftDepth: number;
   private sub: SineOsc; private noise = new WhiteNoise();
-  private noiseLp: Svf; private filter: Svf;
-  // The ladders are built only when a patch asks for one — the Svf stays the
-  // default, so nothing voiced against it changes.
-  private ladder: LadderFilter | null = null;
-  // 0 = LP, 1 = HP, 2 = BP, 3 = NOTCH. Read once at trigger, like the model:
-  // which tap you take out is a topology, not a knob to sweep mid-note.
-  private filterType: number;
+  private noiseLp: Svf;
+  /** Both filter blocks and the routing between them. Built once, at trigger:
+   *  a topology is not something you sweep mid-note. */
+  private stack: FilterStack;
   private ampEnv = new Adsr(); private filtEnv = new Adsr();
   private begin: number; private holdEnd: number;
   /** The trigger-time snapshot. It is the FROZEN structural source (waveform,
-   *  filter model, envelope times) AND the fallback for a live param whose slot
+   *  filter kind, envelope times) AND the fallback for a live param whose slot
    *  the lane does not declare — the same role `xBase` plays in the other
    *  renderers, which is all this struct is now. */
   private p: SubParams;
@@ -209,22 +198,14 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     this.noteHz = midiToFreq(note.midi);
     const baseFreq = this.noteHz * Math.pow(2, p.masterTune / 12);
     // The stack size is read once, here: you cannot grow a stack mid-note without
-    // a click, so it is a trigger-time decision like the filter model.
+    // a click, so it is a trigger-time decision like the filter kind.
     this.osc1 = new UnisonStack(p.osc1Wave, p.unisonVoices, sampleRate);
     this.osc2 = new UnisonStack(p.osc2Wave, p.unisonVoices, sampleRate);
     this.driftDepth = driftDepthFor(baseFreq);
     this.sub = new SineOsc(sampleRate);
     this.noiseLp = new Svf(sampleRate);
-    this.filter = new Svf(sampleRate);
-    // 0 = DIG (the Svf above), 1 = MOG, 2 = 303. Read once at trigger: a filter
-    // model is a topology, not a knob to sweep mid-note.
-    const model = Math.round(p.filterModel);
-    this.filterType = Math.round(p.filterType);
-    // The ladders are a genuine multimode via their stage taps (see ladder.ts) —
-    // except the NOTCH, which they cannot do honestly, so it keeps the lowpass.
-    if (model === 1 || model === 2) {
-      this.ladder = new LadderFilter(model === 1 ? 'moog' : 'diode', sampleRate, ladderTapFor(this.filterType));
-    }
+    // Filter B and the routing arrive in a later task; OFF is filter A alone.
+    this.stack = new FilterStack(p.filterKind, 0, ROUTING_OFF, sampleRate);
     // × output.trim: per-preset gain-staging lever (params['output.trim'], default 1).
     this.velPeak = synthTrim('subtractive') * param(params, 'output.trim', 1) * velGain01(note.velocity, note.accent);
     this.keySemiDelta = note.midi - 60;
@@ -235,28 +216,6 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     this.filterBuiltinFrozen = p.filterBuiltinEnv;
     this.ampA = p.ampAttack; this.ampD = p.ampDecay; this.ampS = p.ampSustain; this.ampR = p.ampRelease;
     this.filtA = p.filterAttack; this.filtD = p.filterDecay; this.filtS = p.filterSustain; this.filtR = p.filterRelease;
-  }
-
-  /** One sample through whichever filter this patch selected.
-   *
-   *  DIG is the Svf: clean, cheap, and what every existing preset was voiced
-   *  against — hence the default. MOG and 303 are the ladders (see ladder.ts):
-   *  four poles, and they thin as they resonate, which the Svf does not do.
-   *
-   *  The Svf is a true multimode — it has been computing lp, bp AND hp on every
-   *  sample all along, and only .lp was ever read. filterType picks the tap.
-   *  (The notch is derived inside the Svf, where the damping term is in scope;
-   *  the textbook lp+hp does not null in that topology — see filter.ts.) */
-  private filterAt(x: number, cutoffHz: number, res: number): number {
-    if (this.ladder) return this.ladder.update(x, cutoffHz, res);
-    const f = this.filter;
-    f.update(x, cutoffHz, res);
-    switch (this.filterType) {
-      case 1: return f.hp;
-      case 2: return f.bp;
-      case 3: return f.notch;
-      default: return f.lp;
-    }
   }
 
   noteOff(t: number): void { if (t < this.holdEnd) this.holdEnd = t; }
@@ -462,7 +421,7 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     // 0..1 knob straight through; res=1 is already a strong, bounded resonance (peak ~2.8).
     // Modulation offset clamped to 0..1 so a deep LFO can't drive it into blow-up.
     const q = mo?.[this.sFilterResonance] ? clamp01((L && this.sFilterResonance >= 0 ? L[this.sFilterResonance] : p.filterResonance) + mo[this.sFilterResonance]) : (L && this.sFilterResonance >= 0 ? L[this.sFilterResonance] : p.filterResonance);
-    const filtered = this.filterAt(mix, cutoff, q);
+    const filtered = this.stack.update(mix, cutoff, q, cutoff, q, 0);
     // Amp envelope. Priority: the built-in env when enabled (presets keep
     // ampBuiltinEnv=1 → unchanged); else an ADSR routed to 'amp' BECOMES the
     // amplitude envelope (the unified pre-worklet model); else a flat gain.

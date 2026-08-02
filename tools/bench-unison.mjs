@@ -24,8 +24,8 @@ const bag = (voices, drift) => ({
   'amp.builtinEnv': 1, 'amp.attack': 0.01, 'amp.decay': 0.2, 'amp.sustain': 0.7, 'amp.release': 0.3,
 });
 
-function bench(voices, drift, model = 0, type = 0) {
-  const vm = new VoiceManager(SR, 'subtractive', { ...bag(voices, drift), 'filter.model': model, 'filter.type': type });
+function bench(voices, drift, kind = 0) {
+  const vm = new VoiceManager(SR, 'subtractive', { ...bag(voices, drift), 'filter.kind': kind });
   for (const midi of CHORD) {
     vm.spawn({ midi, beginSec: 0, durationSec: SECS, velocity: 0.8, accent: false, slide: false });
   }
@@ -41,8 +41,8 @@ const rows = [
   ['unison 1 (today\'s default)', bench(1, 0)],
   ['unison 7', bench(7, 0)],
   ['unison 7 + drift', bench(7, 1)],
-  ['unison 7 + drift + MOG ladder', bench(7, 1, 1)],
-  ['unison 7 + drift + MOG ladder HP', bench(7, 1, 1, 1)],
+  ['unison 7 + drift + MOG ladder', bench(7, 1, 1)],       // kind 1 = LP 24 MOG
+  ['unison 7 + drift + MOG ladder HP', bench(7, 1, 4)],    // kind 4 = HP 24 MOG
 ];
 console.log(`16-note chord, ${SECS}s of audio @ ${SR} Hz, through the real VoiceManager\n`);
 for (const [label, r] of rows) {

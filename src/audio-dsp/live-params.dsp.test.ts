@@ -279,7 +279,7 @@ describe('Subtractive continuous params', () => {
   });
 
   it('the filter MODEL stays frozen: swapping it mid-note changes nothing', () => {
-    const withTurn = renderWithTurn('subtractive', BASE, SECONDS, 0.5, { 'filter.model': 1 });
+    const withTurn = renderWithTurn('subtractive', BASE, SECONDS, 0.5, { 'filter.kind': 1 });
     const control = renderWithTurn('subtractive', BASE, SECONDS, null, null);
     expect(withTurn).toEqual(control);
   });

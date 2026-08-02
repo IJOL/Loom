@@ -14,8 +14,7 @@ export interface SubParams {
   subLevel: number;
   noiseLevel: number; noiseColor: number;                    // color 0..1
   filterCutoff: number; filterResonance: number; filterEnvAmount: number;
-  filterModel: number;      // 0 = DIG (Svf), 1 = MOG ladder, 2 = 303 diode ladder
-  filterType: number;       // 0 = LP, 1 = HP, 2 = BP, 3 = NOTCH
+  filterKind: number;       // index into FILTER_KINDS (audio-dsp/filter-kinds.ts)
   filterDrive: number; filterKeyTrack: number; filterBuiltinEnv: number; // builtinEnv 0/1
   filterAttack: number; filterDecay: number; filterSustain: number; filterRelease: number;
   ampBuiltinEnv: number;                                     // 0/1

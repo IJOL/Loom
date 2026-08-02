@@ -7,6 +7,7 @@
 // without updating both backends.
 
 import type { EngineParamSpec } from './engine-params';
+import { FILTER_KIND_OPTIONS } from '../audio-dsp/filter-kinds';
 
 export const WAVE_OPTIONS = [
   { value: 'sawtooth', label: 'Saw' },
@@ -14,28 +15,6 @@ export const WAVE_OPTIONS = [
   { value: 'triangle', label: 'Tri' },
   { value: 'sine',     label: 'Sin' },
   { value: 'sync',     label: 'Sync' },   // hard sync — the ratio (osc*.sync) is the timbre
-];
-
-// Three filters, one engine. DIG (the Svf) is the default so every preset
-// voiced against it sounds exactly as it always has; the ladders are opt-in.
-export const FILTER_MODEL_OPTIONS = [
-  { value: 'dig', label: 'DIG' },   // state-variable: clean, cheap
-  { value: 'mog', label: 'MOG' },   // 4-pole Moog ladder: creamy, thins as it resonates
-  { value: '303', label: '303' },   // diode ladder: asymmetric, even harmonics, acid
-];
-
-// The Svf computed lp/bp/hp all along — the renderer only ever read .lp, so two
-// thirds of the filter were unreachable. LP is the default, so every preset
-// voiced against it is untouched. Ordering matches mpump's FTYPE_* so a ported
-// preset means the same thing in both codebases.
-//
-// HONEST LIMIT: only DIG is a true multimode. The ladders (MOG/303) are a
-// four-pole lowpass topology and are lowpass ONLY — see FILTER_MODEL_OPTIONS.
-export const FILTER_TYPE_OPTIONS = [
-  { value: 'lp',    label: 'LP' },      // the default: what every preset was voiced against
-  { value: 'hp',    label: 'HP' },
-  { value: 'bp',    label: 'BP' },
-  { value: 'notch', label: 'NOTCH' },   // lp + hp — the SVF-native notch
 ];
 
 // Unified-param schema. Dot-namespaced ids map directly onto the nested
@@ -79,10 +58,11 @@ export const SUB_PARAM_SPECS: EngineParamSpec[] = [
   { id: 'noise.color',  label: 'Noise Tone', kind: 'continuous', min: 0, max: 1, default: 0.6, group: 'noise' },
 
   // Filter
-  { id: 'filter.model',     label: 'Model',     kind: 'discrete', min: 0, max: 2, default: 0,
-    options: FILTER_MODEL_OPTIONS, group: 'filter' },
-  { id: 'filter.type',      label: 'Type',      kind: 'discrete', min: 0, max: 3, default: 0,
-    options: FILTER_TYPE_OPTIONS, group: 'filter' },
+  // One list, ten entries, every one of which works — see audio-dsp/filter-kinds.ts.
+  // It replaces Model x Type, a grid two of whose twelve points quietly handed
+  // back the lowpass because a ladder has no honest notch.
+  { id: 'filter.kind',      label: 'Type',      kind: 'discrete', min: 0, max: 9, default: 0,
+    options: FILTER_KIND_OPTIONS, group: 'filter' },
   { id: 'filter.cutoff',    label: 'Cutoff',    kind: 'continuous', min: 0, max: 1, default: 0.55, group: 'filter' },
   { id: 'filter.resonance', label: 'Resonance', kind: 'continuous', min: 0, max: 1, default: 0.25, group: 'filter' },
   { id: 'filter.envAmount', label: 'Env Amt',   kind: 'continuous', min: 0, max: 1, default: 0.45, group: 'filter' },
