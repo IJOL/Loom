@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 // Shared e2e helpers for the Session view. After the lane-tabs row was folded
 // into the grid column headers, adding a lane goes through the header "+" menu
@@ -20,7 +20,18 @@ export async function addLane(page: Page, engineId = 'subtractive'): Promise<str
   const before = await laneIds(page);
   await page.locator('.session-lane-add').click();
   await page.locator(`.session-add-item[data-engine-id="${engineId}"]`).click();
-  await expect(page.locator('.session-lane-header')).toHaveCount(before.length + 1, { timeout: 10_000 });
+  // "> before.length", not "=== before.length + 1": engine-knobs.spec.ts and
+  // preset-recovery.spec.ts call this right after page.goto, with no prior
+  // waitForBoot, so the demo session's own lanes can still be arriving
+  // asynchronously while `before` is snapshotted. An exact-count wait races
+  // that load and times out (proven: 4/26 failures under `--reporter=line`
+  // before this was caught). A ">" wait is what those two specs' original,
+  // independently-written addLane already did.
+  await page.waitForFunction(
+    (n) => document.querySelectorAll('.session-lane-header').length > n,
+    before.length,
+    { timeout: 10_000 },
+  );
   const after = await laneIds(page);
   const newId = after.find((id) => !before.includes(id));
   if (!newId) throw new Error(`addLane(${engineId}): could not find the new lane id`);
