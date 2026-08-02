@@ -66,6 +66,12 @@ export interface EngineUIContext {
   destinations?: import('../automation/destination-registry').DestinationRegistry;
   /** Live AudioContext — sampler/UI code uses it to decode imported audio. */
   audioContext?: AudioContext;
+  /** Rebuild the whole engine param UI. Provided by whoever owns the container
+   *  the grid was built into. The grid calls it when a param changes that another
+   *  param's options are derived from (see EngineParamSpec.optionsFrom) — the
+   *  controls are built once into a detached fragment (select-control.ts), so a
+   *  changed option list means a new control, not a mutated one. */
+  rebuildParamUI?: () => void;
 }
 
 /** One zone of a Sampler preset: a wav (addressed by a path under Vite's

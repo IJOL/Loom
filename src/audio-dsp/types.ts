@@ -14,7 +14,8 @@ export interface SubParams {
   subLevel: number;
   noiseLevel: number; noiseColor: number;                    // color 0..1
   filterCutoff: number; filterResonance: number; filterEnvAmount: number;
-  filterKind: number;       // index into FILTER_KINDS (audio-dsp/filter-kinds.ts)
+  filterModel: number;      // index into FILTER_MODES (audio-dsp/filter-kinds.ts)
+  filterType: number;       // index into THAT mode's own taps, clamped
   filterDrive: number; filterKeyTrack: number; filterBuiltinEnv: number; // builtinEnv 0/1
   filterAttack: number; filterDecay: number; filterSustain: number; filterRelease: number;
   ampBuiltinEnv: number;                                     // 0/1

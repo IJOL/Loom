@@ -1,52 +1,76 @@
 // src/audio-dsp/filter-kinds.ts
-// The filter list, as data. ONE table, read by the dropdown and by the DSP that
-// builds the filter — so the label and the circuit cannot drift apart.
+// The filter table, as data. ONE table, read by the Mode/Type controls and by
+// the DSP that builds the filter — so the labels and the circuit cannot drift
+// apart.
 //
-// It replaces a 3x4 grid of Model x Type, two of whose twelve points were lies:
-// a ladder has no honest notch (its resonance feedback fills the null, and on
-// the diode model at res 0.7 the null inverts into a BUMP), so choosing NOTCH on
-// MOG or 303 quietly handed back the LOWPASS. A list cannot express that: an
-// entry either works or it is not in it.
-//
-// Duplicates ARE the point. Three lowpasses and three highpasses is not
-// redundancy — 12 dB/oct state-variable, 24 dB/oct Moog ladder and 24 dB/oct
-// diode ladder are three different sounds, and the label says which is which.
+// Mode picks the circuit; Type picks the response taken out of it. Two of the
+// twelve points of the old Model x Type grid were lies: a ladder has no honest
+// notch (its resonance feedback fills the null, and on the diode model at res
+// 0.7 the null inverts into a BUMP), so choosing NOTCH on MOG or 303 quietly
+// handed back the LOWPASS. The fix is not a flat list of the ten that work —
+// that grows multiplicatively with every circuit added, and degrades from two
+// glanceable button strips into a dropdown the moment it passes four options
+// (core/select-control.ts). Instead each mode DECLARES the taps it can
+// honestly produce, and the Type control is built from THAT mode's list: pick
+// MOG and the NOTCH button is not present, rather than present and lying.
 //
 // Data only, no classes: the main-thread param spec imports this for the
-// dropdown, and pulling the ladder DSP into that bundle would be a waste.
+// Mode/Type controls, and pulling the ladder DSP into that bundle would be a
+// waste.
 
-export interface FilterKind {
-  /** Stable id, written into presets and saves. Never renumber; append. */
+export type FilterTap = 'lp' | 'hp' | 'bp' | 'notch' | 'comb+' | 'comb-' | 'combff';
+
+export interface FilterMode {
+  /** Stable id for presets and saves. */
   value: string;
-  /** What the dropdown shows: response, then slope, then circuit — what it does
-   *  first, what it costs second, what it is made of last. */
+  /** What the Mode control shows. Short: the Type control says the response. */
   label: string;
-  /** Which circuit: the state-variable filter, or one of the two ladders. */
-  model: 'dig' | 'moog' | 'diode';
-  /** Which response is taken out of it. */
-  tap: 'lp' | 'hp' | 'bp' | 'notch';
+  /** The responses this circuit produces HONESTLY, in the order the Type
+   *  control paints them. It is the option list, so a tap that is not here is
+   *  not a button — which is the whole point. */
+  taps: FilterTap[];
 }
 
-/** Index = the `filter.kind` / `filter2.kind` param value. Index 0 is the
- *  pre-list default (DIG + LP), so a patch that never mentions the filter keeps
- *  the sound it was voiced with. */
-export const FILTER_KINDS: readonly FilterKind[] = [
-  { value: 'lp12dig',  label: 'LP 12 DIG',  model: 'dig',   tap: 'lp' },
-  { value: 'lp24mog',  label: 'LP 24 MOG',  model: 'moog',  tap: 'lp' },
-  { value: 'lp24acid', label: 'LP 24 303',  model: 'diode', tap: 'lp' },
-  { value: 'hp12dig',  label: 'HP 12 DIG',  model: 'dig',   tap: 'hp' },
-  { value: 'hp24mog',  label: 'HP 24 MOG',  model: 'moog',  tap: 'hp' },
-  { value: 'hp24acid', label: 'HP 24 303',  model: 'diode', tap: 'hp' },
-  { value: 'bp12dig',  label: 'BP 12 DIG',  model: 'dig',   tap: 'bp' },
-  { value: 'bp12mog',  label: 'BP 12 MOG',  model: 'moog',  tap: 'bp' },
-  { value: 'bp12acid', label: 'BP 12 303',  model: 'diode', tap: 'bp' },
-  // The notch is DIG only, and deliberately last: it is the one response the
-  // ladders cannot do honestly, so it has no MOG/303 siblings to sit next to.
-  { value: 'notchdig', label: 'NOTCH DIG',  model: 'dig',   tap: 'notch' },
+/** Index = the `filter.model` / `filter2.model` param value. 0..2 are DIG, MOG
+ *  and 303 exactly as they have always been numbered, and each declares its taps
+ *  in the order the old Type control used — so every preset value and every old
+ *  save keeps the sound it stored. */
+export const FILTER_MODES: readonly FilterMode[] = [
+  { value: 'dig',  label: 'DIG',  taps: ['lp', 'hp', 'bp', 'notch'] },
+  { value: 'mog',  label: 'MOG',  taps: ['lp', 'hp', 'bp'] },
+  { value: 'acid', label: '303',  taps: ['lp', 'hp', 'bp'] },
+  // COMB is deliberately NOT declared yet: its DSP (CombFilter) is the next
+  // task. A mode whose Type buttons all fall through to a lowpass is three
+  // lying buttons, and "no lying buttons" is this round's whole acceptance
+  // criterion — so the row and its DSP land together, in Task 2.
 ];
 
-/** The dropdown, straight off the table. */
-export const FILTER_KIND_OPTIONS = FILTER_KINDS.map((k) => ({ value: k.value, label: k.label }));
+// comb+/comb-/combff stay in FilterTap and here even with no mode declaring
+// them yet: the next task's CombFilter is typed against FilterTap, and an
+// unused union member paints no button — it costs nothing to have it early.
+const TAP_LABELS: Record<FilterTap, string> = {
+  lp: 'LP', hp: 'HP', bp: 'BP', notch: 'NOTCH',
+  'comb+': 'POS', 'comb-': 'NEG', combff: 'FF',
+};
+
+const clampIdx = (v: number, n: number) => Math.max(0, Math.min(n - 1, Math.round(v)));
+
+/** The tap a (model, type) pair names. `type` indexes the MODE'S OWN taps and is
+ *  clamped, so every pair — including one a hand-edited preset invented — names a
+ *  response that mode really has. There is no invalid pair to resolve. */
+export function tapFor(model: number, type: number): FilterTap {
+  const m = FILTER_MODES[clampIdx(model, FILTER_MODES.length)];
+  return m.taps[clampIdx(type, m.taps.length)];
+}
+
+/** The Type control's options for a mode. The UI builds its buttons from this
+ *  and nothing else. */
+export function typeOptionsFor(model: number): Array<{ value: string; label: string }> {
+  const m = FILTER_MODES[clampIdx(model, FILTER_MODES.length)];
+  return m.taps.map((t) => ({ value: t, label: TAP_LABELS[t] }));
+}
+
+export const FILTER_MODE_OPTIONS = FILTER_MODES.map((m) => ({ value: m.value, label: m.label }));
 
 /** How filter B is wired to filter A. Index = the `filter.routing` param value.
  *  OFF is index 0 and the default: filter B is never built and never runs. */

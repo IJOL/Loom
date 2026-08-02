@@ -37,8 +37,8 @@ describe('the five unison / filter-type presets', () => {
     ['LEAD Supersaw 7', (p) => expect(p.params['master.unison'], 'needs unison').toBeGreaterThanOrEqual(5)],
     ['LEAD Hoover Rave', (p) => expect(p.params['master.unison'], 'needs unison').toBeGreaterThanOrEqual(3)],
     ['BASS Hoover', (p) => expect(p.params['master.unison'], 'needs unison').toBeGreaterThanOrEqual(3)],
-    ['LEAD Razor', (p) => expect(p.params['filter.kind'], 'needs bandpass').toBe(6)],
-    ['PAD Ethereal', (p) => expect(p.params['filter.kind'], 'needs highpass').toBe(3)],
+    ['LEAD Razor', (p) => expect(p.params['filter.type'], 'needs bandpass').toBe(2)],
+    ['PAD Ethereal', (p) => expect(p.params['filter.type'], 'needs highpass').toBe(1)],
   ];
   for (const [needle, check] of CASES) {
     it(`${needle} has the feature that unblocked it, and is audible + bounded`, () => {

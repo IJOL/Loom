@@ -32,6 +32,13 @@ export interface EngineParamSpec {
    *  by this tag. */
   drawnBy?: 'mixer' | 'modulators';
   options?: Array<{ value: string; label: string }>;   // only when kind === 'discrete'
+  /** Discrete params only: build this control's options from ANOTHER param's
+   *  current value, and rebuild the control when that param changes. It is how
+   *  a control offers only what the rest of the patch makes honest — the filter
+   *  Type offers only the taps the chosen Mode has. `options` stays as the list
+   *  for the source param's DEFAULT value, so anything that reads the spec
+   *  statically (a destination catalogue, a test) still sees a valid list. */
+  optionsFrom?: { paramId: string; build: (value: number) => Array<{ value: string; label: string }> };
   /** Discrete only. THE rule, for every discrete param on every surface that
    *  draws one — the grouped grid, the flat layout, the FX insert rack (see
    *  engine-param-grid.ts's header), and a modulator's own config card too:

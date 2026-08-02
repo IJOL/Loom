@@ -7,7 +7,7 @@
 // without updating both backends.
 
 import type { EngineParamSpec } from './engine-params';
-import { FILTER_KIND_OPTIONS } from '../audio-dsp/filter-kinds';
+import { FILTER_MODE_OPTIONS, typeOptionsFor } from '../audio-dsp/filter-kinds';
 
 export const WAVE_OPTIONS = [
   { value: 'sawtooth', label: 'Saw' },
@@ -58,11 +58,17 @@ export const SUB_PARAM_SPECS: EngineParamSpec[] = [
   { id: 'noise.color',  label: 'Noise Tone', kind: 'continuous', min: 0, max: 1, default: 0.6, group: 'noise' },
 
   // Filter
-  // One list, ten entries, every one of which works — see audio-dsp/filter-kinds.ts.
-  // It replaces Model x Type, a grid two of whose twelve points quietly handed
-  // back the lowpass because a ladder has no honest notch.
-  { id: 'filter.kind',      label: 'Type',      kind: 'discrete', min: 0, max: 9, default: 0,
-    options: FILTER_KIND_OPTIONS, group: 'filter' },
+  // Mode picks the circuit; Type picks the response — and Type offers EXACTLY
+  // the responses that circuit can honestly produce (audio-dsp/filter-kinds.ts).
+  // Choose MOG and the NOTCH button is not there, rather than being there and
+  // quietly handing back a lowpass, which is what the old grid did.
+  // max: 2 -- three modes (DIG/MOG/303). Task 2 raises this to 3 when COMB's
+  // DSP lands alongside its row in the table.
+  { id: 'filter.model', label: 'Mode', kind: 'discrete', min: 0, max: 2, default: 0,
+    options: FILTER_MODE_OPTIONS, group: 'filter' },
+  { id: 'filter.type',  label: 'Type', kind: 'discrete', min: 0, max: 3, default: 0,
+    options: typeOptionsFor(0), optionsFrom: { paramId: 'filter.model', build: typeOptionsFor },
+    group: 'filter' },
   { id: 'filter.cutoff',    label: 'Cutoff',    kind: 'continuous', min: 0, max: 1, default: 0.55, group: 'filter' },
   { id: 'filter.resonance', label: 'Resonance', kind: 'continuous', min: 0, max: 1, default: 0.25, group: 'filter' },
   { id: 'filter.envAmount', label: 'Env Amt',   kind: 'continuous', min: 0, max: 1, default: 0.45, group: 'filter' },

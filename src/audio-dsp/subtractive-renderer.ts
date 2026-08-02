@@ -47,7 +47,8 @@ export function subParamsInto(b: ParamBag, out: SubParams): SubParams {
   out.filterCutoff = param(b, 'filter.cutoff', 0.55);
   out.filterResonance = param(b, 'filter.resonance', 0.25);
   out.filterEnvAmount = param(b, 'filter.envAmount', 0.45);
-  out.filterKind = param(b, 'filter.kind', 0);
+  out.filterModel = param(b, 'filter.model', 0);
+  out.filterType = param(b, 'filter.type', 0);
   out.filterDrive = param(b, 'filter.drive', 0);
   out.filterKeyTrack = param(b, 'filter.keyTrack', 0);
   out.filterBuiltinEnv = param(b, 'filter.builtinEnv', 1);
@@ -205,7 +206,7 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     this.sub = new SineOsc(sampleRate);
     this.noiseLp = new Svf(sampleRate);
     // Filter B and the routing arrive in a later task; OFF is filter A alone.
-    this.stack = new FilterStack(p.filterKind, 0, ROUTING_OFF, sampleRate);
+    this.stack = new FilterStack(p.filterModel, p.filterType, 0, 0, ROUTING_OFF, sampleRate);
     // × output.trim: per-preset gain-staging lever (params['output.trim'], default 1).
     this.velPeak = synthTrim('subtractive') * param(params, 'output.trim', 1) * velGain01(note.velocity, note.accent);
     this.keySemiDelta = note.midi - 60;

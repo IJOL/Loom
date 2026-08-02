@@ -43,13 +43,13 @@ const SR = 48000;
 const note = (over = {}) => ({ midi: 57, beginSec: 0, durationSec: 0.4, velocity: 0.8, accent: false, slide: false, ...over });
 
 // The engine defaults, exactly as a real lane sends them — with NO unison and
-// filter.kind at its default, i.e. every preset that exists today.
+// filter.model/filter.type at their defaults, i.e. every preset that exists today.
 const DEFAULTS = {
   'master.tune': 0,
   'osc1.wave': 0, 'osc1.level': 0.6, 'osc1.detune': 0, 'osc1.pw': 0.5,
   'osc2.wave': 1, 'osc2.level': 0.4, 'osc2.detune': 7, 'osc2.pw': 0.5,
   'sub.level': 0.3, 'noise.level': 0, 'noise.color': 0.6,
-  'filter.kind': 0,
+  'filter.model': 0, 'filter.type': 0,
   'filter.cutoff': 0.55, 'filter.resonance': 0.25, 'filter.envAmount': 0.45,
   'filter.drive': 0, 'filter.keyTrack': 0, 'filter.builtinEnv': 1,
   'filter.attack': 0.01, 'filter.decay': 0.3, 'filter.sustain': 0.4, 'filter.release': 0.35,
@@ -60,8 +60,8 @@ const DEFAULTS = {
 const CASES = [
   ['engine defaults', DEFAULTS, {}],
   ['DIG + resonance 1.0', { ...DEFAULTS, 'filter.resonance': 1.0 }, {}],
-  ['MOG ladder', { ...DEFAULTS, 'filter.kind': 1 }, {}],
-  ['303 diode ladder', { ...DEFAULTS, 'filter.kind': 2 }, {}],
+  ['MOG ladder', { ...DEFAULTS, 'filter.model': 1 }, {}],
+  ['303 diode ladder', { ...DEFAULTS, 'filter.model': 2 }, {}],
   ['noise + drive', { ...DEFAULTS, 'noise.level': 0.5, 'filter.drive': 0.6 }, {}],
   ['square/PWM patch', { ...DEFAULTS, 'osc1.wave': 1, 'osc1.pw': 0.3 }, {}],
   ['tri + sine, detuned', { ...DEFAULTS, 'osc1.wave': 2, 'osc2.wave': 3, 'osc2.detune': 12 }, {}],

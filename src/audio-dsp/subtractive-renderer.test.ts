@@ -376,22 +376,24 @@ describe('PWM is modulation, not a knob', () => {
   });
 });
 
-// Kind indices, from filter-kinds.ts. Named here so a test reads as a sentence.
-const LP12DIG = 0, LP24MOG = 1, LP24ACID = 2, HP12DIG = 3, BP12DIG = 6, NOTCHDIG = 9;
+// Mode/type indices, from filter-kinds.ts. Named here so a test reads as a
+// sentence. Types are indexed within DIG's own tap list (lp, hp, bp, notch).
+const DIG = 0, MOG = 1, ACID = 2;
+const LP = 0, HP = 1, BP = 2, NOTCH = 3;
 
-describe('filter kind', () => {
-  // One dropdown, ten entries. The engine end of it: that the renderer builds
-  // the filter the kind names, and that the default is still what every preset
-  // was voiced against. The per-entry response measurements live in
-  // filter-stack.test.ts, where they can be made without an oscillator.
-  const bag = (kind: number): ParamBag => ({
+describe('filter mode and type', () => {
+  // Two controls, not one. The engine end of it: that the renderer builds
+  // the filter the (model, type) pair names, and that the default is still
+  // what every preset was voiced against. The per-pair response measurements
+  // live in filter-stack.test.ts, where they can be made without an oscillator.
+  const bag = (model: number, type: number): ParamBag => ({
     ...DEFAULTS, 'osc1.wave': 0, 'osc1.level': 1, 'osc2.level': 0,
     'sub.level': 0, 'noise.level': 0,
     'filter.cutoff': 0.4, 'filter.resonance': 0.7, 'filter.envAmount': 0, 'filter.builtinEnv': 0,
-    'filter.kind': kind,
+    'filter.model': model, 'filter.type': type,
   });
-  const render = (kind: number): number[] => {
-    const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.3 }), bag(kind), SR);
+  const render = (model: number, type: number): number[] => {
+    const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.3 }), bag(model, type), SR);
     const b: number[] = [];
     for (let i = 0; i < SR * 0.15; i++) b.push(v.renderSample(i / SR));
     return b;
@@ -402,40 +404,48 @@ describe('filter kind', () => {
   };
   const mean = (b: number[]) => Math.abs(b.reduce((s, v) => s + v, 0) / b.length);
 
-  it('defaults to LP 12 DIG, so nothing that exists today changes', () => {
-    const noKind: ParamBag = { ...bag(LP12DIG) };
-    delete (noKind as Record<string, number>)['filter.kind'];
-    const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.3 }), noKind, SR);
+  it('defaults to DIG LP, so nothing that exists today changes', () => {
+    const noModel: ParamBag = { ...bag(DIG, LP) };
+    delete (noModel as Record<string, number>)['filter.model'];
+    delete (noModel as Record<string, number>)['filter.type'];
+    const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.3 }), noModel, SR);
     const b: number[] = []; for (let i = 0; i < SR * 0.15; i++) b.push(v.renderSample(i / SR));
-    expect(divergence(b, render(LP12DIG))).toBeLessThan(0.01);
+    expect(divergence(b, render(DIG, LP))).toBeLessThan(0.01);
   });
 
   it('each lowpass is audibly its own filter', () => {
-    expect(divergence(render(LP12DIG), render(LP24MOG))).toBeGreaterThan(0.1);   // svf vs moog
-    expect(divergence(render(LP24MOG), render(LP24ACID))).toBeGreaterThan(0.02); // moog vs diode
+    expect(divergence(render(DIG, LP), render(MOG, LP))).toBeGreaterThan(0.1);   // svf vs moog
+    expect(divergence(render(MOG, LP), render(ACID, LP))).toBeGreaterThan(0.02); // moog vs diode
   });
 
   it('the 303 lowpass brings the asymmetry the others do not have', () => {
-    expect(mean(render(LP24ACID))).toBeGreaterThan(mean(render(LP24MOG)) * 2);
+    expect(mean(render(ACID, LP))).toBeGreaterThan(mean(render(MOG, LP)) * 2);
   });
 
-  it('every kind stays bounded through the engine, drive and resonance up', () => {
+  it('every pair stays bounded through the engine, drive and resonance up', () => {
     // res 0.7 + drive 0.8 is a stress patch: the parallel drive feeds up to 1.8x
     // amplitude into the filter, so an analogue-style rise is EXPECTED. What must
     // not happen is a runaway, so the contract is relative: finite, bounded, and
     // drive raises the peak by a bounded ratio rather than an unbounded one.
-    const peakOf = (kind: number, drive: number): number => {
+    const peakOf = (model: number, type: number, drive: number): number => {
       const v = new SubtractiveVoiceRenderer(
-        note({ durationSec: 0.3 }), { ...bag(kind), 'filter.drive': drive }, SR,
+        note({ durationSec: 0.3 }), { ...bag(model, type), 'filter.drive': drive }, SR,
       );
       let peak = 0;
       for (let i = 0; i < SR * 0.2; i++) { const a = Math.abs(v.renderSample(i / SR)); if (a > peak) peak = a; }
       return peak;
     };
-    for (let kind = 0; kind < 10; kind++) {
-      const dry = peakOf(kind, 0);
-      const wet = peakOf(kind, 0.8);
-      const tag = `kind ${kind}`;
+    // Every (model, type) pair the old flat list enumerated: DIG's four taps,
+    // plus MOG's and ACID's three each.
+    const pairs: Array<[number, number]> = [
+      [DIG, LP], [DIG, HP], [DIG, BP], [DIG, NOTCH],
+      [MOG, LP], [MOG, HP], [MOG, BP],
+      [ACID, LP], [ACID, HP], [ACID, BP],
+    ];
+    for (const [model, type] of pairs) {
+      const dry = peakOf(model, type, 0);
+      const wet = peakOf(model, type, 0.8);
+      const tag = `model ${model} type ${type}`;
       expect(Number.isFinite(wet), `${tag} went non-finite`).toBe(true);
       expect(wet, `${tag} blew up`).toBeLessThan(4.5);
       expect(wet, `${tag} drive should not reduce peak`).toBeGreaterThanOrEqual(dry);
@@ -444,12 +454,12 @@ describe('filter kind', () => {
   });
 
   it('the notch reaches the engine — it is not the lowpass wearing a label', () => {
-    expect(divergence(render(NOTCHDIG), render(LP12DIG))).toBeGreaterThan(0.1);
+    expect(divergence(render(DIG, NOTCH), render(DIG, LP))).toBeGreaterThan(0.1);
   });
 
   it('the highpass and the bandpass reach the engine too', () => {
-    expect(divergence(render(HP12DIG), render(LP12DIG))).toBeGreaterThan(0.1);
-    expect(divergence(render(BP12DIG), render(LP12DIG))).toBeGreaterThan(0.1);
+    expect(divergence(render(DIG, HP), render(DIG, LP))).toBeGreaterThan(0.1);
+    expect(divergence(render(DIG, BP), render(DIG, LP))).toBeGreaterThan(0.1);
   });
 
   // Guards the derivation in filter.ts: the textbook `lp + hp` is structurally

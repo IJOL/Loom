@@ -90,7 +90,9 @@ function buildControl(
   // a knob is for continuous params only. See this file's header for the
   // full rule, which also covers the FX insert rack.
   if (discrete) {
-    const options = spec.options!;
+    const options = spec.optionsFrom
+      ? spec.optionsFrom.build(engine.getBaseValue(spec.optionsFrom.paramId))
+      : spec.options!;
     const idx = Math.max(0, Math.min(options.length - 1, Math.round(engine.getBaseValue(spec.id))));
     const { el, handle } = createSelectControl({
       id: registryId,
@@ -107,6 +109,10 @@ function buildControl(
       onChange: (v) => {
         const i = options.findIndex((o) => o.value === v);
         commitParam(engine, ctx, spec.id, Math.max(0, i));
+        // If another param's options are derived from this one, its control is
+        // now showing a stale list — rebuild the grid rather than surgically
+        // replacing it (the caller already rebuilds on engine swap).
+        if (engine.params.some((s) => s.optionsFrom?.paramId === spec.id)) ctx.rebuildParamUI?.();
       },
     });
     ctx.registerKnob(handle);

@@ -154,6 +154,10 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
       historyDeps: self.deps.historyDeps,
       destinations: self.deps.destinations,
       audioContext: self.deps.ctx,
+      // A param whose options depend on another (filter.type on filter.model)
+      // needs the whole host torn down and rebuilt — the same thing an engine
+      // swap already does here.
+      rebuildParamUI: () => injectEngineModulatorPanel(self, laneId, targetTab),
     });
   }
 

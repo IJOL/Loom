@@ -7,6 +7,7 @@ import type { EngineUIContext } from './engine-types';
 import type { KnobHandle } from '../core/knob';
 import type { SessionState } from '../session/session';
 import type { EngineParamGroup } from './engine-param-groups';
+import { FILTER_MODE_OPTIONS, typeOptionsFor } from '../audio-dsp/filter-kinds';
 
 function stubEngine(params: EngineParamSpec[], groups?: EngineParamGroup[]) {
   const state = new Map(params.map((p) => [p.id, p.default] as const));
@@ -428,5 +429,28 @@ describe('buildEngineParamGrid — declared groups', () => {
       ctx(), parent);
 
     expect([...parent.querySelectorAll('.section-label')].map((e) => e.textContent)).toEqual(['OSC 1']);
+  });
+});
+
+describe('buildEngineParamGrid — a control whose options depend on another param', () => {
+  it("builds a dependent control's options from the param it derives from", () => {
+    // The filter Type offers only the taps the chosen Mode has. Built at
+    // mode 1 (MOG), the strip must have three buttons, not four.
+    // Rendered controls carry no `data-param` hook (createSelectControl /
+    // select-control.ts), so the Type control is found by its `.ctl-label`
+    // caption text instead, matching how a real user would locate it.
+    const engine = stubEngine([
+      { id: 'filter.model', label: 'Mode', kind: 'discrete', min: 0, max: 3, default: 1,
+        options: FILTER_MODE_OPTIONS },
+      { id: 'filter.type', label: 'Type', kind: 'discrete', min: 0, max: 3, default: 0,
+        options: typeOptionsFor(0), optionsFrom: { paramId: 'filter.model', build: typeOptionsFor } },
+    ]);
+    const host = document.createElement('div');
+    buildEngineParamGrid(engine, ctx(), host, {});
+
+    const typeLabel = [...host.querySelectorAll('.ctl-label')].find((el) => el.textContent === 'Type');
+    const typeWrap = typeLabel!.closest('.select-labeled')!;
+    const typeButtons = typeWrap.querySelectorAll('button, option');
+    expect(typeButtons.length).toBe(3);
   });
 });

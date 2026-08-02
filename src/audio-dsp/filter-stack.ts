@@ -7,7 +7,7 @@
 
 import { Svf } from './filter';
 import { LadderFilter, type LadderTap } from './ladder';
-import { FILTER_KINDS, ROUTING_OFF, type FilterKind } from './filter-kinds';
+import { FILTER_MODES, ROUTING_OFF, tapFor, type FilterTap } from './filter-kinds';
 
 export * from './filter-kinds';
 
@@ -37,15 +37,16 @@ export function trackedCutoff(baseBHz: number, aRatio: number, track: number): n
 class FilterBlock {
   private svf: Svf | null = null;
   private ladder: LadderFilter | null = null;
-  private readonly tap: FilterKind['tap'];
+  private readonly tap: FilterTap;
 
-  constructor(kind: number, sr: number) {
-    const k = FILTER_KINDS[Math.round(kind)] ?? FILTER_KINDS[0];
-    this.tap = k.tap;
-    if (k.model === 'dig') this.svf = new Svf(sr);
-    // A ladder entry never declares 'notch' (filter-kinds.ts, asserted in
-    // filter-stack.test.ts), so the tap is always one a ladder can take.
-    else this.ladder = new LadderFilter(k.model === 'moog' ? 'moog' : 'diode', sr, k.tap as LadderTap);
+  constructor(model: number, type: number, sr: number) {
+    const mode = FILTER_MODES[Math.max(0, Math.min(FILTER_MODES.length - 1, Math.round(model)))];
+    this.tap = tapFor(model, type);
+    if (mode.value === 'mog' || mode.value === 'acid') {
+      this.ladder = new LadderFilter(mode.value === 'mog' ? 'moog' : 'diode', sr, this.tap as LadderTap);
+    } else {
+      this.svf = new Svf(sr);
+    }
   }
 
   update(x: number, cutoffHz: number, res: number): number {
@@ -68,10 +69,10 @@ export class FilterStack {
   private readonly b: FilterBlock | null;
   private readonly routing: number;
 
-  constructor(kindA: number, kindB: number, routing: number, sr: number) {
+  constructor(modelA: number, typeA: number, modelB: number, typeB: number, routing: number, sr: number) {
     this.routing = Math.round(routing);
-    this.a = new FilterBlock(kindA, sr);
-    this.b = this.routing === ROUTING_OFF ? null : new FilterBlock(kindB, sr);
+    this.a = new FilterBlock(modelA, typeA, sr);
+    this.b = this.routing === ROUTING_OFF ? null : new FilterBlock(modelB, typeB, sr);
   }
 
   /**
