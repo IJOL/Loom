@@ -215,6 +215,30 @@ committed artifact like any other. After Phase 3, compare side by side. Any
 difference that is not one of the three agreed convention shifts (unit suffix,
 quantised drag, radio strips) is a defect, not a detail.
 
+> **OWNER DECISION (2026-08-01): no "before" screenshots.** The owner waived
+> the committed-image requirement above and had the assistant perform the
+> visual check directly in Chrome when Task 8 landed, reporting what it saw
+> instead of diffing stored files (`.superpowers/sdd/2026-08-01-engine-ui-from-data/progress.md:37,41-44`).
+> That check — dev server on `:5199`, subtractive-1 editor — is what the
+> criterion above was actually verified by:
+>
+> - 4 sections on row 0 with 3 dividers, matching the declared `groups` table;
+> - group colours measured against the CSS they replaced, exact matches:
+>   cyan `#2ee0c0`, yellow `#f7d000`, blue `#3498db`, purple `#9b59b6`,
+>   orange `#e67e22`, green `#7cb342`;
+> - FILTER rendered as one group, all orange (the old teal-accent split was
+>   an intentional convention shift, not a defect);
+> - MASTER green; POLY/VOICES present; exactly one "Cutoff" control (the
+>   pre-existing duplicate is gone);
+> - zero `[data-engine=subtractive]` nodes left over from the hand-written
+>   page; zero console errors; unit suffixes present (`0.00¢` / `0.00st` /
+>   `25.00¢`).
+>
+> A follow-up defect from that same check (discrete params rendering as
+> knobs instead of radio strips) was fixed in Task 8's fix round 1 and
+> re-verified live. The criterion is **MET by direct visual inspection**, not
+> skipped — the owner substituted the verification method, not the bar.
+
 **e2e**: the suite must pass without any locator depending on a duplicate
 "Cutoff" existing — the duplicate is gone.
 
