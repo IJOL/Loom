@@ -229,7 +229,13 @@ export class VoiceManager {
    *  only SubtractiveVoiceRenderer reads `VoiceModOffsets`. Other engines get the
    *  generic dot-id map instead. */
   private fillOffsets(t: number, o: PhaseOrigin): VoiceModOffsets | Record<string, number> | undefined {
-    if (!this.mod) return undefined;
+    // Nothing modulating ⇒ hand back NOTHING, not a bag of zeroes. The worklet
+    // attaches a runtime to every lane whether or not it has modulators, so this
+    // is the COMMON case, and the difference is large: with an empty bag every
+    // `mo?.<target>` test in every renderer runs and misses instead of
+    // short-circuiting — 120 failed lookups per sample for an 8-voice FM lane,
+    // measured at +54% on a lane with no modulation at all.
+    if (!this.mod?.hasActive) return undefined;
     if (this.engineId === 'subtractive') {
       const m = this.modOffsets;
       m.filterCutoff    = this.mod.offsetFor('filterCutoff', t, o);

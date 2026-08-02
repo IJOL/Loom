@@ -130,6 +130,16 @@ export class ModulationRuntime {
     );
   }
 
+  /** Whether ANY enabled modulator with a kernel would contribute an offset.
+   *  False ⇒ every offset this runtime can produce is exactly zero, so the
+   *  caller should hand the renderers nothing at all rather than a bag of
+   *  zeroes. That distinction is not cosmetic: a renderer tests `mo?.<target>`
+   *  per target per voice per sample, and an EMPTY BAG makes every one of those
+   *  lookups actually run and miss, where `undefined` short-circuits. Gate
+   *  modulators (ADSR) are correctly absent from `active` — they have no kernel
+   *  and travel the per-voice envelope road instead. */
+  get hasActive(): boolean { return this.active.length > 0; }
+
   /** Whether the render loop must compute offsets per voice rather than once per
    *  sample. False for the common all-free/all-shared case. */
   needsPerVoicePhase(): boolean { return this.perVoicePhase; }
