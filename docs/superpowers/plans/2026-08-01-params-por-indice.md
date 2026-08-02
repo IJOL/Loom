@@ -434,6 +434,22 @@ Su valor es estructural, y hay que decirlo así: mata el último `=== 'subtracti
 del camino de audio, mata `fieldForParamId`, y destapó que el **render offline /
 export perdía la modulación** de cualquier param fuera de la tabla de Subtractive.
 
+### ✅ Modulación verificada A OÍDO — Nacho, 2026-08-02
+
+La escucha anterior sólo cubría el camino de params: el demo de arranque **no
+trae ningún modulador**. Así que se añadió a mano un LFO sobre `filter.cutoff` de
+Sub 1 (profundidad 0,5 sobre −1..+1, barrido amplio) y se lanzó la **Escena 2**,
+que es la escena de referencia de Nacho. Veredicto suyo: *"cojonudo"*.
+
+Medición en la misma tirada, ventana limpia con la música ya sonando: **pico
+0,974, 0 recortes, 0 frames casi mudos de 4310, 0 errores de consola**.
+
+Y el dato que cierra el círculo: **el anillo ámbar de modulación dibuja en vivo**
+(`path.knob-modulation` con opacidad > 0). Esta misma sesión empezó por un bug
+que dejaba esos anillos CONGELADOS; ahora se mueven con el vocabulario unificado
+y los offsets direccionados por slot debajo. Eso prueba la cadena entera —
+worklet → telemetría → knob—, no sólo el DSP.
+
 ### Resultado final del camino de modulación (`7409958`)
 
 | motor | none: partida → final | lfo: partida → final | coste de UN LFO |
