@@ -30,7 +30,8 @@ export const SUB_PARAM_GROUPS: EngineParamGroup[] = [
   { id: 'ring',   title: 'RING',   row: 0, color: 'var(--knob-red)' },
   { id: 'sub',    title: 'SUB',    row: 0, color: 'var(--knob-blue)' },
   { id: 'noise',  title: 'NOISE',  row: 0, color: 'var(--knob-purple)' },
-  { id: 'filter', title: 'FILTER', row: 1, color: 'var(--knob-orange)' },
+  { id: 'filter',  title: 'FILTER A', row: 1, color: 'var(--knob-orange)' },
+  { id: 'filter2', title: 'FILTER B', row: 1, color: 'var(--knob-teal)' },
   { id: 'master', title: 'MASTER', row: 2, color: 'var(--knob-green)' },
   { id: 'poly',   title: 'POLY',   row: 3 },
 ];

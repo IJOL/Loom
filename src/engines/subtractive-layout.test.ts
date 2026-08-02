@@ -15,7 +15,7 @@ describe('the subtractive page, from data', () => {
   it('gives FILTER and MASTER their own rows', () => {
     const rows = resolveParamRows(SUB_PARAM_SPECS, SUB_PARAM_GROUPS);
     expect(rows.map((r) => r.sections.map((s) => s.title))).toEqual([
-      ['OSC 1', 'OSC 2', 'RING', 'SUB', 'NOISE'], ['FILTER'], ['MASTER'], ['POLY'],
+      ['OSC 1', 'OSC 2', 'RING', 'SUB', 'NOISE'], ['FILTER A', 'FILTER B'], ['MASTER'], ['POLY'],
     ]);
   });
 
@@ -27,7 +27,8 @@ describe('the subtractive page, from data', () => {
     expect(byTitle.get('RING')).toBe('var(--knob-red)');
     expect(byTitle.get('SUB')).toBe('var(--knob-blue)');
     expect(byTitle.get('NOISE')).toBe('var(--knob-purple)');
-    expect(byTitle.get('FILTER')).toBe('var(--knob-orange)');
+    expect(byTitle.get('FILTER A')).toBe('var(--knob-orange)');
+    expect(byTitle.get('FILTER B')).toBe('var(--knob-teal)');
     expect(byTitle.get('MASTER')).toBe('var(--knob-green)');
   });
 

@@ -665,3 +665,96 @@ describe('hard sync wave', () => {
     expect(divergence(saw(2), saw(7))).toBeLessThan(0.01);
   });
 });
+
+describe('the second filter', () => {
+  const base: ParamBag = {
+    ...DEFAULTS, 'osc1.wave': 0, 'osc1.level': 1, 'osc2.level': 0,
+    'sub.level': 0, 'noise.level': 0,
+    'filter.cutoff': 0.55, 'filter.resonance': 0.25, 'filter.envAmount': 0,
+    'filter.builtinEnv': 0, 'amp.builtinEnv': 0,
+  };
+  const render = (over: ParamBag, sec = 0.15): number[] => {
+    const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.4 }), { ...base, ...over }, SR);
+    const b: number[] = [];
+    for (let i = 0; i < SR * sec; i++) b.push(v.renderSample(i / SR));
+    return b;
+  };
+
+  it('is off by default — a patch that never mentions it is bit-identical', () => {
+    const a = render({});
+    const b = render({ 'filter.routing': 0, 'filter2.model': 0, 'filter2.type': 1, 'filter2.cutoff': 0.4 });
+    let d = 0; for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b[i]);
+    expect(d).toBe(0);
+  });
+
+  it('changes the sound once the routing turns it on', () => {
+    // Series into a highpass: the low end goes, so this cannot be a no-op.
+    const on = render({ 'filter.routing': 1, 'filter2.model': 0, 'filter2.type': 1, 'filter2.cutoff': 0.6, 'filter.blend': 1 });
+    expect(rms(on)).toBeLessThan(rms(render({ 'filter.routing': 0 })) * 0.8);
+  });
+
+  it('honours Blend — half of B is between none and all of it', () => {
+    // RMS is the wrong yardstick here: mixing the dry lowpass with a heavily
+    // phase-shifted resonant-highpass cascade of it can partially CANCEL at an
+    // intermediate blend even though the SERIES formula itself
+    // (a + blend*(chained-a)) is a plain per-sample crossfade — verified
+    // directly: at blend 0.5 the deviation from the exact linear prediction
+    // is ~1e-14 (float noise), and divergence-from-A at 0.5 is exactly half
+    // of divergence-from-A at 1. So "how much of B is in the result" is
+    // measured against the blend-0 (A alone) render, not the output's own
+    // loudness, which a resonant intermediate blend can drive briefly quieter
+    // than either end.
+    const at = (blend: number) => render({
+      'filter.routing': 1, 'filter2.model': 0, 'filter2.type': 1, 'filter2.cutoff': 0.6, 'filter.blend': blend,
+    });
+    const dry = at(0);
+    const divergenceFromDry = (wet: number[]) => {
+      let d = 0; for (let i = 0; i < dry.length; i++) d += Math.abs(wet[i] - dry[i]);
+      return d;
+    };
+    const half = divergenceFromDry(at(0.5));
+    const full = divergenceFromDry(at(1));
+    expect(half).toBeGreaterThan(0);
+    expect(half).toBeLessThan(full);
+  });
+
+  it('reaches Blend live, so an LFO moves the routing itself', () => {
+    const bag: ParamBag = {
+      ...base, 'filter.routing': 1, 'filter2.model': 0, 'filter2.type': 1,
+      'filter2.cutoff': 0.6, 'filter.blend': 0.5,
+    };
+    const sweep = (mod: (t: number) => number): number[] => {
+      const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.4 }), bag, SR);
+      const { index: ix, mo } = attachSlots(v, bag);
+      const off = mo({ 'filter.blend': 0 });
+      const b: number[] = [];
+      for (let i = 0; i < SR * 0.2; i++) {
+        const t = i / SR;
+        off[ix.slot['filter.blend']] = mod(t);
+        b.push(v.renderSample(t, off));
+      }
+      return b;
+    };
+    const still = sweep(() => 0);
+    const swept = sweep((t) => Math.sin(2 * Math.PI * 3 * t) * 0.5);
+    let diff = 0; for (let i = 0; i < still.length; i++) diff += Math.abs(still[i] - swept[i]);
+    expect(diff / still.length).toBeGreaterThan(0.01);
+  });
+
+  it('Track 0 leaves B still while A sweeps; Track 1 makes it follow', () => {
+    // Parallel at full blend means the output IS filter B, while A's envelope
+    // still drives the tracking ratio: a still B is a still sound, a following
+    // B is a sound that changes across the note.
+    const variation = (track: number): number => {
+      const b = render({
+        'filter.routing': 2, 'filter.blend': 1,
+        'filter2.model': 0, 'filter2.type': 1, 'filter2.cutoff': 0.35, 'filter2.track': track,
+        'filter.builtinEnv': 1, 'filter.envAmount': 0.9, 'filter.cutoff': 0.3,
+        'filter.attack': 0.001, 'filter.decay': 0.35, 'filter.sustain': 0.05, 'filter.release': 0.2,
+      }, 0.3);
+      const half = Math.floor(b.length / 2);
+      return Math.abs(rms(b.slice(half)) - rms(b.slice(0, half))) / Math.max(1e-9, rms(b));
+    };
+    expect(variation(1)).toBeGreaterThan(variation(0) * 3);
+  });
+});

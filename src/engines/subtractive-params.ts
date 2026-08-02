@@ -7,7 +7,7 @@
 // without updating both backends.
 
 import type { EngineParamSpec } from './engine-params';
-import { FILTER_MODE_OPTIONS, typeOptionsFor } from '../audio-dsp/filter-kinds';
+import { FILTER_MODE_OPTIONS, FILTER_ROUTING_OPTIONS, typeOptionsFor } from '../audio-dsp/filter-kinds';
 
 export const WAVE_OPTIONS = [
   { value: 'sawtooth', label: 'Saw' },
@@ -78,6 +78,32 @@ export const SUB_PARAM_SPECS: EngineParamSpec[] = [
   { id: 'filter.envAmount', label: 'Env Amt',   kind: 'continuous', min: 0, max: 1, default: 0.45, group: 'filter' },
   { id: 'filter.drive',     label: 'Drive',     kind: 'continuous', min: 0, max: 1, default: 0, group: 'filter' },
   { id: 'filter.keyTrack',  label: 'Key Track', kind: 'continuous', min: 0, max: 1, default: 0, group: 'filter' },
+
+  // Filter B and the routing between the two. Routing OFF is the default and
+  // means filter B is never built, so a patch that says nothing about it renders
+  // exactly what it always did.
+  //
+  // Routing, both models and both types are discrete AND structural — read once
+  // at trigger, for the reason the filter model has always been: a topology is
+  // not something you sweep mid-note. Cutoff, Res, Track and Blend are
+  // continuous, read every sample, and modulation destinations for free.
+  { id: 'filter.routing',    label: 'Routing', kind: 'discrete', min: 0, max: 3, default: 0,
+    options: FILTER_ROUTING_OPTIONS, group: 'filter2' },
+  { id: 'filter2.model',     label: 'Mode',    kind: 'discrete', min: 0, max: 3, default: 0,
+    options: FILTER_MODE_OPTIONS, group: 'filter2' },
+  { id: 'filter2.type',      label: 'Type',    kind: 'discrete', min: 0, max: 3, default: 1,
+    options: typeOptionsFor(0), optionsFrom: { paramId: 'filter2.model', build: typeOptionsFor },
+    group: 'filter2' },
+  { id: 'filter2.cutoff',    label: 'Cutoff',  kind: 'continuous', min: 0, max: 1, default: 0.25, group: 'filter2' },
+  { id: 'filter2.resonance', label: 'Res',     kind: 'continuous', min: 0, max: 1, default: 0.2, group: 'filter2' },
+  // How much of everything that MOVES filter A (its envelope, its key tracking)
+  // filter B follows. 0 is a filter nailed where its knob puts it; 1 keeps the
+  // interval between the two constant in octaves as both sweep.
+  { id: 'filter2.track',     label: 'Track',   kind: 'continuous', min: 0, max: 1, default: 0, group: 'filter2' },
+  // How much of filter B is in the result — the same meaning in every routing
+  // mode, so 0 is filter A alone whatever the dropdown says.
+  { id: 'filter.blend',      label: 'Blend',   kind: 'continuous', min: 0, max: 1, default: 1, group: 'filter2' },
+
   { id: 'filter.builtinEnv', label: 'Built-in Env', kind: 'discrete', min: 0, max: 1, default: 1,
     options: [{ value: 'off', label: 'Off' }, { value: 'on', label: 'On' }], drawnBy: 'modulators' },
   { id: 'filter.attack',    label: 'F Atk',     kind: 'continuous', min: 0.001, max: 2, default: 0.01, unit: 's', drawnBy: 'modulators' },

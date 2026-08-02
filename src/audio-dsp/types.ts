@@ -16,6 +16,11 @@ export interface SubParams {
   filterCutoff: number; filterResonance: number; filterEnvAmount: number;
   filterModel: number;      // index into FILTER_MODES (audio-dsp/filter-kinds.ts)
   filterType: number;       // index into THAT mode's own taps, clamped
+  filterRouting: number;    // 0 = off, 1 = series, 2 = parallel, 3 = difference
+  filterBlend: number;      // 0..1 how much of filter B is in the result
+  filter2Model: number; filter2Type: number;
+  filter2Cutoff: number; filter2Resonance: number;
+  filter2Track: number;     // 0..1 how far B follows A's envelope + key track
   filterDrive: number; filterKeyTrack: number; filterBuiltinEnv: number; // builtinEnv 0/1
   filterAttack: number; filterDecay: number; filterSustain: number; filterRelease: number;
   ampBuiltinEnv: number;                                     // 0/1

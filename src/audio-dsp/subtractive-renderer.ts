@@ -5,7 +5,7 @@ import { midiToFreq, clamp01 } from './dsp-util';
 import { SineOsc, WhiteNoise } from './osc';
 import { UnisonStack, driftDepthFor } from './unison';
 import { Svf } from './filter';
-import { FilterStack, ROUTING_OFF } from './filter-stack';
+import { FilterStack, trackedCutoff } from './filter-stack';
 import { Adsr } from './adsr';
 import type { ModLite } from './modulation-runtime';
 import { registerRenderer } from './renderer-registry';
@@ -49,6 +49,13 @@ export function subParamsInto(b: ParamBag, out: SubParams): SubParams {
   out.filterEnvAmount = param(b, 'filter.envAmount', 0.45);
   out.filterModel = param(b, 'filter.model', 0);
   out.filterType = param(b, 'filter.type', 0);
+  out.filterRouting = param(b, 'filter.routing', 0);
+  out.filterBlend = param(b, 'filter.blend', 1);
+  out.filter2Model = param(b, 'filter2.model', 0);
+  out.filter2Type = param(b, 'filter2.type', 1);
+  out.filter2Cutoff = param(b, 'filter2.cutoff', 0.25);
+  out.filter2Resonance = param(b, 'filter2.resonance', 0.2);
+  out.filter2Track = param(b, 'filter2.track', 0);
   out.filterDrive = param(b, 'filter.drive', 0);
   out.filterKeyTrack = param(b, 'filter.keyTrack', 0);
   out.filterBuiltinEnv = param(b, 'filter.builtinEnv', 1);
@@ -140,6 +147,10 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
   private sFilterEnvAmount = -1;
   private sFilterDrive = -1;
   private sFilterKeyTrack = -1;
+  private sFilter2Cutoff = -1;
+  private sFilter2Resonance = -1;
+  private sFilter2Track = -1;
+  private sFilterBlend = -1;
   /** The synthetic tremolo target. */
   private sAmpGain = -1;
   private velPeak: number;
@@ -161,6 +172,9 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
   /** Cached cutoff conversion: 60·220^x is not a per-sample cost while nothing moves. */
   private cutRaw = NaN;
   private cutHzCached = 0;
+  /** Same cache, for filter B's own cutoff knob (before Track is applied). */
+  private cut2Raw = NaN;
+  private cut2HzCached = 0;
   /** Cached master-tune conversion (the note's base frequency). */
   private tuneRaw = NaN;
   private baseFreqCached = 0;
@@ -205,8 +219,9 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     this.driftDepth = driftDepthFor(baseFreq);
     this.sub = new SineOsc(sampleRate);
     this.noiseLp = new Svf(sampleRate);
-    // Filter B and the routing arrive in a later task; OFF is filter A alone.
-    this.stack = new FilterStack(p.filterModel, p.filterType, 0, 0, ROUTING_OFF, sampleRate);
+    this.stack = new FilterStack(
+      p.filterModel, p.filterType, p.filter2Model, p.filter2Type, p.filterRouting, sampleRate,
+    );
     // × output.trim: per-preset gain-staging lever (params['output.trim'], default 1).
     this.velPeak = synthTrim('subtractive') * param(params, 'output.trim', 1) * velGain01(note.velocity, note.accent);
     this.keySemiDelta = note.midi - 60;
@@ -274,6 +289,10 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     this.sFilterEnvAmount = slotOf(index, 'filter.envAmount');
     this.sFilterDrive = slotOf(index, 'filter.drive');
     this.sFilterKeyTrack = slotOf(index, 'filter.keyTrack');
+    this.sFilter2Cutoff = slotOf(index, 'filter2.cutoff');
+    this.sFilter2Resonance = slotOf(index, 'filter2.resonance');
+    this.sFilter2Track = slotOf(index, 'filter2.track');
+    this.sFilterBlend = slotOf(index, 'filter.blend');
     this.sAmpGain = slotOf(index, 'amp.gain');
   }
 
@@ -422,7 +441,19 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     // 0..1 knob straight through; res=1 is already a strong, bounded resonance (peak ~2.8).
     // Modulation offset clamped to 0..1 so a deep LFO can't drive it into blow-up.
     const q = mo?.[this.sFilterResonance] ? clamp01((L && this.sFilterResonance >= 0 ? L[this.sFilterResonance] : p.filterResonance) + mo[this.sFilterResonance]) : (L && this.sFilterResonance >= 0 ? L[this.sFilterResonance] : p.filterResonance);
-    const filtered = this.stack.update(mix, cutoff, q, cutoff, q, 0);
+    // Filter B. Its cutoff is its own knob, and Track says how much of A's
+    // movement (envelope + key tracking, as one ratio against A's own base) it
+    // follows: 0 is a fixed filter under a sweeping one, 1 keeps the interval.
+    const cut2Raw01 = mo?.[this.sFilter2Cutoff] ? clamp01((L && this.sFilter2Cutoff >= 0 ? L[this.sFilter2Cutoff] : p.filter2Cutoff) + mo[this.sFilter2Cutoff]) : (L && this.sFilter2Cutoff >= 0 ? L[this.sFilter2Cutoff] : p.filter2Cutoff);
+    if (cut2Raw01 !== this.cut2Raw) {
+      this.cut2Raw = cut2Raw01;
+      this.cut2HzCached = Math.min(60 * Math.pow(220, cut2Raw01), 18000);
+    }
+    const track = mo?.[this.sFilter2Track] ? clamp01((L && this.sFilter2Track >= 0 ? L[this.sFilter2Track] : p.filter2Track) + mo[this.sFilter2Track]) : (L && this.sFilter2Track >= 0 ? L[this.sFilter2Track] : p.filter2Track);
+    const q2 = mo?.[this.sFilter2Resonance] ? clamp01((L && this.sFilter2Resonance >= 0 ? L[this.sFilter2Resonance] : p.filter2Resonance) + mo[this.sFilter2Resonance]) : (L && this.sFilter2Resonance >= 0 ? L[this.sFilter2Resonance] : p.filter2Resonance);
+    const blend = mo?.[this.sFilterBlend] ? clamp01((L && this.sFilterBlend >= 0 ? L[this.sFilterBlend] : p.filterBlend) + mo[this.sFilterBlend]) : (L && this.sFilterBlend >= 0 ? L[this.sFilterBlend] : p.filterBlend);
+    const cutoff2 = trackedCutoff(this.cut2HzCached, cutoff / Math.max(1e-9, baseCutoffHz), track);
+    const filtered = this.stack.update(mix, cutoff, q, cutoff2, q2, blend);
     // Amp envelope. Priority: the built-in env when enabled (presets keep
     // ampBuiltinEnv=1 → unchanged); else an ADSR routed to 'amp' BECOMES the
     // amplitude envelope (the unified pre-worklet model); else a flat gain.
