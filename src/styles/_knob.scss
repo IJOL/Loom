@@ -150,8 +150,8 @@
  * (src/engines/subtractive.ts) and applied inline by engine-param-grid.ts.
  * FILTER (Cutoff, Resonance, Env Amt, Drive, Key Track) is one section and
  * one color, orange: Resonance / Env Amt / Drive / Key Track used to render
- * teal (the old `:nth-last-child(-n+4)` rule below), a leftover from when
- * the filter's four ADSR knobs (F Atk/Dec/Sus/Rel — now drawn by the
+ * teal (an old `:nth-last-child(-n+4)` rule, since deleted), a leftover from
+ * when the filter's four ADSR knobs (F Atk/Dec/Sus/Rel — now drawn by the
  * MODULATORS panel, `drawnBy: 'modulators'`) sat in this same row and made
  * those four the "last four" instead. Deliberate: all of FILTER is orange now. */
 

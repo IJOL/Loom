@@ -82,11 +82,11 @@ export function showLaneEditor(self: SessionHost, laneId: string): void {
 /** Ids the lane editor's host registered on its last build, per host element.
  *  Weak-keyed so a discarded page takes its bookkeeping with it.
  *
- *  Ownership, not prefix: `unregisterKnobsByPrefix('<laneId>.')` would also
- *  delete `<laneId>.bus.*`, which is the mixer column — mounted elsewhere,
- *  still on screen, and automatable. Deleting a live knob handle silently
- *  breaks the control it belongs to; that too-wide hammer is what produced the
- *  frozen-modulation-rings bug. */
+ *  Ownership, not prefix: unregistering everything under `<laneId>.` would
+ *  also delete `<laneId>.bus.*`, which is the mixer column — mounted
+ *  elsewhere, still on screen, and automatable. Deleting a live knob handle
+ *  silently breaks the control it belongs to; that too-wide hammer is what
+ *  produced the frozen-modulation-rings bug. */
 const idsOwnedByHost = new WeakMap<HTMLElement, Set<string>>();
 
 export function injectEngineModulatorPanel(self: SessionHost, laneId: string, targetTab: string): void {

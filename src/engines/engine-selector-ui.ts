@@ -12,10 +12,10 @@ export interface EngineSelectorUIDeps {
   automationRegistry: Map<string, KnobHandle>;
   registerKnob: (k: KnobHandle) => void;
   populateAutoParamSelect: () => void;
-  /** Called UNCONDITIONALLY by `rebuildEngineParamUI` (for every engine) after
-   *  the prefix unregister, so the per-lane FX panel's knobs (which sit at
-   *  `<laneId>.fx.*` and would otherwise be lost across engine switches) get
-   *  re-registered. The hook also re-paints the FX panel DOM. */
+  /** Called UNCONDITIONALLY by `rebuildEngineParamUI` (for every engine) so
+   *  the per-lane FX panel's knobs (which sit at `<laneId>.fx.*`) get
+   *  re-registered across engine switches. The hook also re-paints the FX
+   *  panel DOM. */
   remountLaneFxPanel?: (laneId: string) => void;
   /** When provided, user-initiated engine changes are wrapped with withUndo
    *  so each selection becomes one undoable entry. Omit for programmatic/

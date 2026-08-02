@@ -17,15 +17,19 @@ export interface EngineParamSpec {
    *  the bare 'A'/'B' labels stay distinguishable, matching the master strip +
    *  mixer. Continuous params only; falls back to createKnob's default amber. */
   color?: string;
-  /** Optional layout group. Params sharing a group id render together in one
-   *  labelled row (label = the group string); ungrouped params render in the
-   *  leading row. Consumed by engine-param-grid.buildEngineParamGrid. */
+  /** Key into the engine's own declared `groups` table (EngineParamGroup[]).
+   *  Title, row-packing and knob-ring colour all come from that table entry,
+   *  not from this field — `group` only points at it. Absent ⇒ the param
+   *  renders in the leading ungrouped row. Consumed by
+   *  engine-param-grid.buildEngineParamGrid / resolveParamRows. */
   group?: string;
   /** This param is declared for automation / modulation / presets / saves, but
    *  the editor grid does not draw it — the named surface does. It NEVER means
    *  "drawn nowhere": a sound param with no control at all is a bug, not a
    *  feature. 'modulators' = the ADSR/LFO panel owns it (the subtractive amp and
-   *  filter envelope leaves); 'mixer' = the lane's mixer column owns it. */
+   *  filter envelope leaves); 'mixer' is RESERVED and not yet set by any spec —
+   *  strip params are still filtered by `isStripParamId` inside the grid, not
+   *  by this tag. */
   drawnBy?: 'mixer' | 'modulators';
   options?: Array<{ value: string; label: string }>;   // only when kind === 'discrete'
   /** Discrete only. THE rule, for every discrete param on every surface that

@@ -64,7 +64,7 @@ export const FM_GROUPS: EngineParamGroup[] = [
   { id: 'op2', title: 'OP 2', row: 0, color: 'var(--knob-yellow)' },
   { id: 'op3', title: 'OP 3', row: 1, color: 'var(--knob-blue)' },
   { id: 'op4', title: 'OP 4', row: 1, color: 'var(--knob-purple)' },
-  { id: 'poly', title: 'POLY' },
+  { id: 'poly', title: 'POLY', row: 2 },
 ];
 
 /** A FUNCTION, not a computed constant — see SUBTRACTIVE_DEFAULT_MODULATORS

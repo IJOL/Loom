@@ -191,8 +191,14 @@ function buildUnitWidgets(
       // full themed look is `select`-only — see _fx.scss).
       const options = spec.options;
       const idx = Math.max(0, Math.min(options.length - 1, Math.round(cs.fx.getBaseValue(spec.id))));
+      // Same id scheme as the continuous knobs above (insertParamId), for
+      // consistency — but note the `handle` this returns is discarded below
+      // (only `el` is kept): discrete FX-insert params are not yet wired into
+      // automation, unlike their continuous siblings three lines up.
       const { el } = createSelectControl({
-        id: `${slot.id}.${spec.id}`,
+        id: deps.automationScopeId
+          ? insertParamId(deps.automationScopeId, slot.id, spec.id)
+          : `${slot.id}.${spec.id}`,
         options,
         initialValue: options[idx]?.value ?? options[0].value,
         compact: true,
