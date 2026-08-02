@@ -35,7 +35,7 @@ Both were read to derive these — no value was eyeballed:
 | `unison: 2` + `unisonSpread` | `osc1.detune` / `osc2.detune` | exact: two detuned oscillators at `∓spread` cents |
 | `unison: 3` | two oscillators at `∓spread` | **lossy** — the centre voice is gone |
 | `oscType: pwm` | `osc1.wave: 1` + `osc1.pw` | same saw-minus-shifted-saw pulse; the width is **static** (see below) |
-| `filterModel: mog` / `303` | `filter.cutoff` + `filter.drive` | **lossy** — 4-pole saturating ladder → Loom's 2-pole SVF; drive stands in for the saturation |
+| `filterModel: mog` / `303` | `filter.model: 1` (MOG) / `2` (303) + `filter.cutoff` + `filter.drive` | Loom's own 4-pole ladders (Moog-style / diode) — a real match, not a stand-in |
 | `filterOn: false` | `filter.cutoff: 1` | 13.2 kHz 2-pole ≈ open |
 | `detune` (unison 1) | `osc1.detune` | exact (cents) |
 | `gain` | — | **not** carried. It is staged against mpump's own mix; Loom stages presets with `output.trim`, and every port measured inside the existing pack's range, so none needed one |

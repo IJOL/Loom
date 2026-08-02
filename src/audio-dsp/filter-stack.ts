@@ -57,7 +57,8 @@ class FilterBlock {
     // TUNING (the frequency its peaks are spaced by) and res is its feedback.
     // Declared, not hidden here -- see the filter.cutoff/filter.resonance
     // param comments in subtractive-params.ts, the place a reader actually
-    // looks for what a knob does.
+    // looks for what a knob does, and docs/manual/04-engines.md#the-comb-and-its-two-borrowed-knobs
+    // for the player-facing version of the same explanation.
     if (this.comb) return this.comb.update(x, cutoffHz, res, this.tap);
     if (this.ladder) return this.ladder.update(x, cutoffHz, res);
     const f = this.svf!;

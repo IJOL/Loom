@@ -132,9 +132,14 @@ the largest library of any engine here.
   [Ring modulation](#ring-modulation) below.
 - **SUB / NOISE** — sub oscillator level (one octave below OSC 1) and a
   noise generator for breath and texture.
-- **FILTER** — **Model**, **Type**, Cutoff, Resonance, Env Amount, Drive, Key
+- **FILTER A** — **Mode**, **Type**, Cutoff, Resonance, Env Amount, Drive, Key
   Track, and a full ADSR filter envelope (toggle with Built-in Env). See
-  [Filter model and type](#filter-model-and-type).
+  [Mode and Type](#mode-and-type) and
+  [The comb, and its two borrowed knobs](#the-comb-and-its-two-borrowed-knobs).
+- **FILTER B** — a second filter with its own Mode, Type, Cutoff and Res, plus
+  **Routing**, **Blend** and **Track**, which decide how it combines with
+  Filter A. See
+  [Two filters, and how they are wired](#two-filters-and-how-they-are-wired).
 - **AMP** — Attack/Decay/Sustain/Release amplitude envelope (toggle with
   Built-in Env).
 - **MASTER** — global Tune in semitones, plus **Unison**, **Detune** and
@@ -142,29 +147,97 @@ the largest library of any engine here.
 - **POLY** — voice count (1–16), poly/mono mode, and legato/retrig behaviour
   in mono mode.
 
-### Filter model and type
+### Mode and Type
 
-Two dropdowns sit above the filter knobs and change its character completely.
+Two controls. **Mode** picks the circuit; **Type** picks the response you take
+out of it — and Type only ever offers the responses that circuit can honestly
+produce.
 
-**Model** picks the circuit being emulated:
+| Mode | Slope | Character | Types it offers |
+| --- | --- | --- | --- |
+| **DIG** (default) | 12 dB/oct | A clean state-variable filter. Precise and neutral, and what most presets are voiced against. | LP, HP, BP, NOTCH |
+| **MOG** | 24 dB/oct | A four-pole Moog-style ladder. Warmer, and it thins as it resonates. | LP, HP, BP |
+| **303** | 24 dB/oct | The diode ladder from the TB-303. Asymmetric clipping adds even harmonics — the acid voice. | LP, HP, BP |
+| **COMB** | — | A delay summed back on itself: a whole series of peaks instead of one corner. Metallic and hollow. | POS, NEG, FF |
 
-| Model | Character |
-| --- | --- |
-| **DIG** (default) | A clean state-variable filter. Precise and neutral. |
-| **MOG** | A four-pole Moog-style ladder. Warmer, and it saturates as you drive it. |
-| **303** | The diode ladder from the TB-303. Asymmetric clipping adds even harmonics — the acid voice. |
+**Why the ladders have no NOTCH.** A ladder's resonance feedback fills a notch's
+null in, and on the diode model at high resonance the null inverts into a *peak*.
+A notch that becomes a bump is not a notch, so under MOG or 303 the button is
+not there — rather than being there and quietly handing you the lowpass, which
+is what this used to do.
 
-**Type** picks the response: **LP**, **HP**, **BP** or **Notch**.
-
-> **Important:** only **DIG** is a true multimode filter. The two ladders (MOG
-> and 303) are four-pole lowpass topologies and are **lowpass only** — with
-> Model set to MOG or 303, the Type dropdown has no effect. If you want a
-> high-pass or a notch, you need DIG.
+The ladders' HP and BP are the real thing, not the lowpass relabelled: a ladder
+is four one-pole filters in a feedback loop, and the other responses come out of
+its stage taps the same way the Oberheim Xpander derives its modes.
 
 A second thing worth knowing about the ladders: they *lose* level as resonance
 climbs, rather than growing a resonant peak on top. Turning Q up on MOG or 303
 thins and quietens the sound. That is faithful to the hardware, and it is why
 the TB-303 engine compensates with a dedicated accent gain.
+
+### The comb, and its two borrowed knobs
+
+Under **COMB** the filter delays the signal and adds it back to itself. The
+delayed copy reinforces every frequency whose period fits the delay and cancels
+the ones that fall between, so instead of one corner you get a series of evenly
+spaced peaks — which is why it sounds like a plucked string or a hollow tube
+rather than a filter.
+
+Its three types are three different instruments:
+
+| Type | What it does | Sounds like |
+| --- | --- | --- |
+| **POS** | Peaks on every harmonic of the tuning | a plucked string |
+| **NEG** | Peaks on the ODD harmonics only | a stopped pipe, a clarinet |
+| **FF** | No feedback: notches instead of peaks | a flanger frozen mid-sweep |
+
+POS and NEG differ by a single sign and sound nothing alike — cancelling the
+even harmonics is what makes a clarinet a clarinet.
+
+Two knobs mean something else while COMB is selected, and it is worth knowing
+before you reach for them:
+
+- **Cutoff is the comb's TUNING** — the frequency its peaks are spaced by, not a
+  corner frequency. Sweeping it slides the whole series.
+- **Resonance is the feedback** — how much comes back round, so how long it
+  rings and how sharp the peaks are. Under **FF** there is no feedback path at
+  all, so it sets how deep the notches cut and cannot ring however far you push
+  it.
+
+### Two filters, and how they are wired
+
+**FILTER B** is a second filter with its own Mode, Type, Cutoff and Res. It is
+off until **Routing** says otherwise:
+
+| Routing | What comes out |
+| --- | --- |
+| **Off** (default) | Filter A alone. Filter B is not even built. |
+| **Series** | A feeds B — two filters in a row, steeper and darker. |
+| **Parallel** | Both filters see the same signal and the results are summed. |
+| **Difference** | A minus B. |
+
+**Blend** always means the same thing: how much of B is in the result. At 0 all
+three modes sound exactly like Off, so you can bring the second filter in by
+hand — or put an LFO on Blend and have the routing itself breathe.
+
+**Difference is the one worth explaining.** Subtracting one lowpass from another
+leaves only what sits between their two cutoffs: a band-pass whose two edges you
+set separately, with its own resonance on each. No single circuit here produces
+that, and it is why having the same filter in both slots is useful rather than
+redundant.
+
+**A comb added to a filter needs no special setting** — that is Filter A = DIG,
+Filter B = COMB, Routing = Parallel, which IS a sum. Series combs what the
+filter left, and Difference removes exactly what the comb reinforces.
+
+**Track** (0–1) decides how filter B moves. Everything that sweeps filter A —
+its envelope and its key tracking — is expressed as a ratio, and Track is how
+much of that ratio B follows:
+
+- **0** — B stays exactly where its knob puts it. The classic fixed high-pass
+  sitting under a low-pass that sweeps.
+- **1** — B moves by the same ratio as A, so the interval between the two stays
+  constant in octaves. Two formants sweeping as a block.
 
 ### Oscillator extras: PW and Sync
 
