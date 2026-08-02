@@ -4,8 +4,8 @@
 // Ported from src/engines/wavetable.ts WavetableVoice.
 //
 // Pure: no Web Audio / worklet globals. Sample rate injected via constructor.
-import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets } from './types';
-import { param } from './types';
+import type { NoteSpec, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets } from './types';
+import { param, slotOf } from './types';
 import { Svf } from './filter';
 import { Adsr } from './adsr';
 import type { ModLite } from './modulation-runtime';
@@ -53,9 +53,15 @@ export class WavetableRenderer implements VoiceRenderer {
   private modEnvs: ModEnv[] = [];
   private readonly effMo: VoiceModOffsets = {};
   private readonly adsrOnly: VoiceModOffsets = {};
-  /** The lane's live (smoothed) knob bag, or null when this voice runs standalone
-   *  (the offline kernel builds renderers directly). */
-  private live: ParamBag | null = null;
+  /** The lane's live (smoothed) values, or null when this voice runs standalone
+   *  (the offline kernel builds renderers directly). Addressed by the slots
+   *  below, resolved ONCE in setLiveValues; -1 means the lane does not declare
+   *  that id, so the trigger snapshot stands. */
+  private live: Float64Array | null = null;
+  private sMorph = -1;
+  private sDetune = -1;
+  private sCutoff = -1;
+  private sRes = -1;
   // Cached expensive conversions, refreshed only when their raw input moves.
   private cutRaw = NaN;
   private cutHz = 0;
@@ -102,7 +108,13 @@ export class WavetableRenderer implements VoiceRenderer {
 
   /** This voice's ADSR-only offsets per param dot-id (for the UI knob ring). */
   getAdsrOffsets(): VoiceModOffsets { return this.adsrOnly; }
-  setLiveParams(l: ParamBag): void { this.live = l; }
+  setLiveValues(values: Float64Array, index: ParamIndex): void {
+    this.live = values;
+    this.sMorph = slotOf(index, 'osc.morph');
+    this.sDetune = slotOf(index, 'osc.detune');
+    this.sCutoff = slotOf(index, 'filter.cutoff');
+    this.sRes = slotOf(index, 'filter.resonance');
+  }
 
   /** Fold this voice's gated ADSR envelopes into the shared-LFO offsets (keyed by
    *  param dot-id), returning one effective offset set. Mirrors the subtractive
@@ -136,10 +148,10 @@ export class WavetableRenderer implements VoiceRenderer {
     // Live knobs: turning these moves THIS note. The trigger snapshot is the
     // fallback when no lane bag is attached.
     const L = this.live;
-    const morphKnob = L ? param(L, 'osc.morph', this.morphBase) : this.morphBase;
-    const detuneKnob = L ? param(L, 'osc.detune', this.detuneBase) : this.detuneBase;
-    const cutoffKnob = L ? param(L, 'filter.cutoff', this.cutoffBase) : this.cutoffBase;
-    const qKnob = L ? clamp01(param(L, 'filter.resonance', this.qBase)) : this.qBase;
+    const morphKnob = L && this.sMorph >= 0 ? L[this.sMorph] : this.morphBase;
+    const detuneKnob = L && this.sDetune >= 0 ? L[this.sDetune] : this.detuneBase;
+    const cutoffKnob = L && this.sCutoff >= 0 ? L[this.sCutoff] : this.cutoffBase;
+    const qKnob = L && this.sRes >= 0 ? clamp01(L[this.sRes]) : this.qBase;
 
     // Morph (equal-power crossfade), modulatable.
     const morph = mo?.['osc.morph'] ? clamp01(morphKnob + mo['osc.morph']) : morphKnob;

@@ -4,8 +4,8 @@
 // Slide = pitch glide (approximated as instant for per-note rendering; cross-
 // note glide is a VoiceManager concern at integration time) + no amp re-attack.
 // Pure: no Web Audio globals. Sample rate injected via constructor.
-import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets } from './types';
-import { param } from './types';
+import type { NoteSpec, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets } from './types';
+import { param, slotOf } from './types';
 import { SawOsc, SquareOsc } from './osc';
 import { LadderFilter } from './ladder';
 import type { ModLite } from './modulation-runtime';
@@ -49,8 +49,14 @@ export class TB303Renderer implements VoiceRenderer {
   private decayBase: number;
   private accentBoost: number;
   private accent: boolean;
-  /** The lane's live (smoothed) knob bag, or null when this voice runs standalone. */
-  private live: ParamBag | null = null;
+  /** The lane's live (smoothed) values, or null when this voice runs standalone.
+   *  Addressed by the slots below, resolved ONCE in setLiveValues; -1 means the
+   *  lane does not declare that id, so the trigger snapshot stands. */
+  private live: Float64Array | null = null;
+  private sCutoff = -1;
+  private sRes = -1;
+  private sEnvAmount = -1;
+  private sEnvDecay = -1;
   // Cached expensive conversions, refreshed only when their raw input moves.
   // 80·100^x and the Q→ladder curve are per-sample costs we refuse to pay while
   // nothing is turning.
@@ -98,7 +104,13 @@ export class TB303Renderer implements VoiceRenderer {
 
   setModEnvelopes(mods: ModLite[]): void { this.modEnv.setModEnvelopes(mods); }
   getAdsrOffsets(): VoiceModOffsets { return this.modEnv.getAdsrOffsets(); }
-  setLiveParams(live: ParamBag): void { this.live = live; }
+  setLiveValues(values: Float64Array, index: ParamIndex): void {
+    this.live = values;
+    this.sCutoff = slotOf(index, 'filter.cutoff');
+    this.sRes = slotOf(index, 'filter.resonance');
+    this.sEnvAmount = slotOf(index, 'env.amount');
+    this.sEnvDecay = slotOf(index, 'env.decay');
+  }
 
   renderSample(t: number, moIn?: VoiceModOffsets): number {
     if (this.done) return 0;
@@ -145,10 +157,10 @@ export class TB303Renderer implements VoiceRenderer {
     // cutoff/res/env moves THIS note; modulation offsets are added on top exactly
     // as before, which is why a hand on the knob and an LFO simply sum.
     const L = this.live;
-    const cutKnob = L ? param(L, 'filter.cutoff', this.cutoffBase) : this.cutoffBase;
-    const resKnob = L ? param(L, 'filter.resonance', this.resBase) : this.resBase;
-    const envKnob = L ? param(L, 'env.amount', this.envModBase) : this.envModBase;
-    const decKnob = L ? param(L, 'env.decay', this.decayBase) : this.decayBase;
+    const cutKnob = L && this.sCutoff >= 0 ? L[this.sCutoff] : this.cutoffBase;
+    const resKnob = L && this.sRes >= 0 ? L[this.sRes] : this.resBase;
+    const envKnob = L && this.sEnvAmount >= 0 ? L[this.sEnvAmount] : this.envModBase;
+    const decKnob = L && this.sEnvDecay >= 0 ? L[this.sEnvDecay] : this.decayBase;
 
     const cutoff01 = mo?.['filter.cutoff'] ? clamp01(cutKnob + mo['filter.cutoff']) : cutKnob;
     if (cutoff01 !== this.cutRaw) { this.cutRaw = cutoff01; this.cutHz = 80 * Math.pow(100, cutoff01); }

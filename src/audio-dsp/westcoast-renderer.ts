@@ -7,8 +7,8 @@
 //   → low-pass gate (SVF + VCA driven by AD contour)
 // Pure — no Web Audio. Sample rate is injected.
 
-import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets } from './types';
-import { param } from './types';
+import type { NoteSpec, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets } from './types';
+import { param, slotOf } from './types';
 import { SineOsc, TriOsc, SawOsc } from './osc';
 import { Svf } from './filter';
 import { fold } from './fold';
@@ -176,9 +176,22 @@ export class WestcoastRenderer implements VoiceRenderer {
   private ampTrim: number;          // vel * synthTrim — the frozen part of the amp scalar
   private accentMul: number;
 
-  /** The lane's live (smoothed) knob bag, or null when this voice runs standalone
-   *  (the offline kernel builds renderers directly). */
-  private live: ParamBag | null = null;
+  /** The lane's live (smoothed) values, or null when this voice runs standalone
+   *  (the offline kernel builds renderers directly). Addressed by the slots
+   *  below, resolved ONCE in setLiveValues; -1 means the lane does not declare
+   *  that id, so the trigger snapshot stands. */
+  private live: Float64Array | null = null;
+  private sTune = -1;
+  private sDetune = -1;
+  private sRatio = -1;
+  private sFmIndex = -1;
+  private sRing = -1;
+  private sSubLevel = -1;
+  private sSymmetry = -1;
+  private sFold = -1;
+  private sCutoff = -1;
+  private sLpgRes = -1;
+  private sLevel = -1;
   // Cached expensive conversions, refreshed only when their raw input moves.
   private pitchRaw = NaN;
   private freqEffCache = 0;
@@ -262,7 +275,20 @@ export class WestcoastRenderer implements VoiceRenderer {
 
   setModEnvelopes(mods: ModLite[]): void { this.modEnv.setModEnvelopes(mods); }
   getAdsrOffsets(): VoiceModOffsets { return this.modEnv.getAdsrOffsets(); }
-  setLiveParams(l: ParamBag): void { this.live = l; }
+  setLiveValues(values: Float64Array, index: ParamIndex): void {
+    this.live = values;
+    this.sTune = slotOf(index, 'master.tune');
+    this.sDetune = slotOf(index, 'osc.detune');
+    this.sRatio = slotOf(index, 'osc.ratio');
+    this.sFmIndex = slotOf(index, 'osc.fmIndex');
+    this.sRing = slotOf(index, 'osc.ring');
+    this.sSubLevel = slotOf(index, 'osc.subLevel');
+    this.sSymmetry = slotOf(index, 'timbre.symmetry');
+    this.sFold = slotOf(index, 'timbre.fold');
+    this.sCutoff = slotOf(index, 'lpg.cutoff');
+    this.sLpgRes = slotOf(index, 'lpg.resonance');
+    this.sLevel = slotOf(index, 'amp.level');
+  }
 
   renderSample(t: number, moIn?: VoiceModOffsets): number {
     if (t < this.begin) return 0;
@@ -277,9 +303,9 @@ export class WestcoastRenderer implements VoiceRenderer {
     // --- Pitch: master.tune + osc.detune, live, cached (pow is not a per-
     // sample cost while the knobs are settled). osc.ratio is live too, cheap
     // (a multiply), so it is read fresh each sample.
-    const tuneKnob = L ? param(L, 'master.tune', this.tuneBase) : this.tuneBase;
-    const detuneKnob = L ? param(L, 'osc.detune', this.detuneBase) : this.detuneBase;
-    const ratioKnob = L ? param(L, 'osc.ratio', this.ratioBase) : this.ratioBase;
+    const tuneKnob = L && this.sTune >= 0 ? L[this.sTune] : this.tuneBase;
+    const detuneKnob = L && this.sDetune >= 0 ? L[this.sDetune] : this.detuneBase;
+    const ratioKnob = L && this.sRatio >= 0 ? L[this.sRatio] : this.ratioBase;
     const pitchCents = tuneKnob * 100 + detuneKnob;
     if (pitchCents !== this.pitchRaw) {
       this.pitchRaw = pitchCents;
@@ -291,7 +317,7 @@ export class WestcoastRenderer implements VoiceRenderer {
 
     // --- Complex oscillator (FM index modulatable) ---
     // Mod osc runs at modFreq, feeds linear FM into main osc via fmDepthHz.
-    const fmIndexKnob = L ? param(L, 'osc.fmIndex', this.fmIndexBase) : this.fmIndexBase;
+    const fmIndexKnob = L && this.sFmIndex >= 0 ? L[this.sFmIndex] : this.fmIndexBase;
     const fmFactor = freq * ratioKnob * 2;
     const fmIndexEff = mo?.['osc.fmIndex'] ? Math.max(0, fmIndexKnob + mo['osc.fmIndex']) : fmIndexKnob;
     const fmDepthHz = fmIndexEff * fmFactor;
@@ -302,22 +328,22 @@ export class WestcoastRenderer implements VoiceRenderer {
     // Ring/AM: ringMod.gain = modSample, so ring = mainSample * modSample * ringAmt
     // In the original: mainOsc → ringMod (gain.value = 0 initially), modOsc → ringMod.gain
     // → ringGain (gain.value = ring param). So ring output = mainSample * modSample * ringAmt.
-    const ringKnob = L ? param(L, 'osc.ring', this.ringBase) : this.ringBase;
+    const ringKnob = L && this.sRing >= 0 ? L[this.sRing] : this.ringBase;
     const ringSample = mainSample * modSample * ringKnob;
 
     // Sub osc — subDiv (whether a sub voice exists at all) is structural/frozen;
     // subLevel is live. The oscillator always advances (even at level 0) so a
     // live level turn from 0 never has to resume from a frozen phase.
-    const subLevelKnob = L ? param(L, 'osc.subLevel', this.subLevelBase) : this.subLevelBase;
+    const subLevelKnob = L && this.sSubLevel >= 0 ? L[this.sSubLevel] : this.subLevelBase;
     const subSample = this.subDiv > 0 ? this.sub.update(subFreq) * subLevelKnob : 0;
 
     // Mix: mainGain*main + ringGain*ring + sub + bias
     // Original: mainGain=0.7, ringGain=ring param, subGain=subLevel
-    const symmetryKnob = L ? param(L, 'timbre.symmetry', this.symmetryBase) : this.symmetryBase;
+    const symmetryKnob = L && this.sSymmetry >= 0 ? L[this.sSymmetry] : this.symmetryBase;
     const mixRaw = mainSample * this.mainGain + ringSample + subSample + symmetryKnob * 0.5;
 
     // --- Wavefolder (fold amount modulatable) ---
-    const foldKnob = L ? param(L, 'timbre.fold', this.foldBase) : this.foldBase;
+    const foldKnob = L && this.sFold >= 0 ? L[this.sFold] : this.foldBase;
     const foldEff = mo?.['timbre.fold'] ? clamp01(foldKnob + mo['timbre.fold']) : foldKnob;
     const driveGain = (0.1 + foldEff * 0.9) * this.accentMul;
     const folded = fold(mixRaw, driveGain);
@@ -332,7 +358,7 @@ export class WestcoastRenderer implements VoiceRenderer {
 
     // --- Low-pass gate (cutoff + resonance modulatable) ---
     // Cutoff conversion cached: the pow only re-runs when the effective knob moves.
-    const cutoffKnob = L ? param(L, 'lpg.cutoff', this.cutoffNorm) : this.cutoffNorm;
+    const cutoffKnob = L && this.sCutoff >= 0 ? L[this.sCutoff] : this.cutoffNorm;
     const cutoffEff = mo?.['lpg.cutoff'] ? clamp01(cutoffKnob + mo['lpg.cutoff']) : cutoffKnob;
     if (cutoffEff !== this.cutRaw) {
       this.cutRaw = cutoffEff;
@@ -343,7 +369,7 @@ export class WestcoastRenderer implements VoiceRenderer {
     // Clamp the LIVE read: the constructor clamps this.lpgResBase 0..1, but the
     // live bag is a raw knob write with no such guarantee — filter.ts warns res
     // above ~1.5 blows up the Svf. See I-hardening, 2026-07-26 review.
-    const resKnob = L ? clamp01(param(L, 'lpg.resonance', this.lpgResBase)) : this.lpgResBase;
+    const resKnob = L && this.sLpgRes >= 0 ? clamp01(L[this.sLpgRes]) : this.lpgResBase;
     const lpgRes = mo?.['lpg.resonance'] ? clamp01(resKnob + mo['lpg.resonance']) : resKnob;
     const dynamicCutoff = cutoffBaseHz + contourVal * cutoffEnvScale;
     this.filter.update(folded, dynamicCutoff, lpgRes);
@@ -352,7 +378,7 @@ export class WestcoastRenderer implements VoiceRenderer {
     const vca = this.vcaMode ? contourVal : 1;
 
     // --- Output (amp.level live, amp.gain tremolo) ---
-    const levelKnob = L ? param(L, 'amp.level', this.levelBase) : this.levelBase;
+    const levelKnob = L && this.sLevel >= 0 ? L[this.sLevel] : this.levelBase;
     let out = this.filter.lp * vca * levelKnob * this.ampTrim;
     if (mo?.['amp.gain']) out *= Math.max(0, Math.min(2, 1 + mo['amp.gain']));
 

@@ -20,8 +20,8 @@
 // LEVELS (FM index), the feedback amount and the output mix — the params that shape
 // the FM timbre. The four per-op amp envelopes stay built-in (FM has no single amp env).
 
-import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets } from './types';
-import { param } from './types';
+import type { NoteSpec, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets } from './types';
+import { param, slotOf } from './types';
 import { midiToFreq, clamp01 } from './dsp-util';
 import { Adsr } from './adsr';
 import type { ModLite } from './modulation-runtime';
@@ -91,9 +91,18 @@ export class FMRenderer implements VoiceRenderer {
   private outputTrim: number;
   private fbState = 0;
   private modEnv = new ModEnvHost();
-  /** The lane's live (smoothed) knob bag, or null when this voice runs standalone
-   *  (the offline kernel builds renderers directly). */
-  private live: ParamBag | null = null;
+  /** The lane's live (smoothed) values, or null when this voice runs standalone
+   *  (the offline kernel builds renderers directly). Addressed by the slots
+   *  below, resolved ONCE in setLiveValues; -1 means the lane does not declare
+   *  that id, so the trigger snapshot stands. The per-op ones matter most here:
+   *  three string lookups per operator per sample used to be twelve. */
+  private live: Float64Array | null = null;
+  private sFeedback = -1;
+  private sMix = -1;
+  private sTrim = -1;
+  private readonly sRatio = new Int32Array(4).fill(-1);
+  private readonly sDetune = new Int32Array(4).fill(-1);
+  private readonly sLevel = new Int32Array(4).fill(-1);
   // Pooled per-sample scratch — allocated once, reused every renderSample call
   // so the audio thread allocates nothing.
   private readonly opOut = new Float64Array(4);
@@ -140,7 +149,17 @@ export class FMRenderer implements VoiceRenderer {
 
   setModEnvelopes(mods: ModLite[]): void { this.modEnv.setModEnvelopes(mods); }
   getAdsrOffsets(): VoiceModOffsets { return this.modEnv.getAdsrOffsets(); }
-  setLiveParams(l: ParamBag): void { this.live = l; }
+  setLiveValues(values: Float64Array, index: ParamIndex): void {
+    this.live = values;
+    this.sFeedback = slotOf(index, 'feedback');
+    this.sMix = slotOf(index, 'amp.mix');
+    this.sTrim = slotOf(index, 'output.trim');
+    for (let i = 0; i < 4; i++) {
+      this.sRatio[i] = slotOf(index, OP_RATIO_IDS[i]);
+      this.sDetune[i] = slotOf(index, OP_DETUNE_IDS[i]);
+      this.sLevel[i] = slotOf(index, OP_LEVEL_IDS[i]);
+    }
+  }
 
   renderSample(t: number, moIn?: VoiceModOffsets): number {
     if (t < this.begin) return 0;
@@ -151,9 +170,9 @@ export class FMRenderer implements VoiceRenderer {
     // Live knobs: turning these moves THIS note. The trigger snapshot is the
     // fallback when no lane bag is attached.
     const L = this.live;
-    const feedbackKnob = L ? param(L, 'feedback', this.feedback) : this.feedback;
-    const mixKnob = L ? param(L, 'amp.mix', this.mix) : this.mix;
-    const outputTrimKnob = L ? param(L, 'output.trim', this.outputTrim) : this.outputTrim;
+    const feedbackKnob = L && this.sFeedback >= 0 ? L[this.sFeedback] : this.feedback;
+    const mixKnob = L && this.sMix >= 0 ? L[this.sMix] : this.mix;
+    const outputTrimKnob = L && this.sTrim >= 0 ? L[this.sTrim] : this.outputTrim;
     const feedback = mo?.['feedback'] ? Math.max(0, feedbackKnob + mo['feedback']) : feedbackKnob;
 
     const algo = ALGORITHMS[this.algoIdx];
@@ -165,8 +184,8 @@ export class FMRenderer implements VoiceRenderer {
     // EFFECTIVE value (knob + mod), so a moving LFO never reads a stale Hz.
     const fe = this.freqEff;
     for (let i = 0; i < 4; i++) {
-      const ratioKnob = L ? param(L, OP_RATIO_IDS[i], this.ratioBase[i]) : this.ratioBase[i];
-      const detuneKnob = L ? param(L, OP_DETUNE_IDS[i], this.detuneBase[i]) : this.detuneBase[i];
+      const ratioKnob = L && this.sRatio[i] >= 0 ? L[this.sRatio[i]] : this.ratioBase[i];
+      const detuneKnob = L && this.sDetune[i] >= 0 ? L[this.sDetune[i]] : this.detuneBase[i];
       const rMod = mo?.[OP_RATIO_IDS[i]], dMod = mo?.[OP_DETUNE_IDS[i]];
       const effRatio = Math.max(0.01, ratioKnob + (rMod ?? 0) * 2);
       const effDetune = detuneKnob + (dMod ?? 0) * 50;
@@ -182,7 +201,7 @@ export class FMRenderer implements VoiceRenderer {
       // FM index = modulator level, modulatable per op (base + offset, clamped 0..1).
       let fmHz = 0;
       for (const mIdx of algo[i]) {
-        const mLvlBase = L ? param(L, OP_LEVEL_IDS[mIdx], this.lvl[mIdx]) : this.lvl[mIdx];
+        const mLvlBase = L && this.sLevel[mIdx] >= 0 ? L[this.sLevel[mIdx]] : this.lvl[mIdx];
         const mLvlOff = mo?.[OP_LEVEL_IDS[mIdx]];
         const mLvl = mLvlOff ? clamp01(mLvlBase + mLvlOff) : mLvlBase;
         fmHz += opOut[mIdx] * fe[mIdx] * mLvl * FM_DEPTH;
@@ -197,7 +216,7 @@ export class FMRenderer implements VoiceRenderer {
 
     let out = 0;
     for (const c of carriers) {
-      const lvlBase = L ? param(L, OP_LEVEL_IDS[c], this.lvl[c]) : this.lvl[c];
+      const lvlBase = L && this.sLevel[c] >= 0 ? L[this.sLevel[c]] : this.lvl[c];
       const lo = mo?.[OP_LEVEL_IDS[c]];
       const lvl = lo ? clamp01(lvlBase + lo) : lvlBase;
       out += opOut[c] * lvl;

@@ -114,19 +114,25 @@ describe('VoiceManager live param bag', () => {
   });
 });
 
-// I4 (2026-07-26 continuous-params review): VoiceRenderer.setLiveParams /
-// setLiveSubParams are both OPTIONAL, so a seventh worklet engine that omits
-// the hook compiles clean and passes every other test — it would just be the
-// one engine whose knobs go dead mid-note. ENGINE_CASES below is a
-// hand-written literal and would silently miss a new row; this test instead
-// walks the SAME registry the lane allocator routes through
-// (WORKLET_ENGINE_IDS), so a new engine added there without wiring live params
-// fails HERE, not in production.
+// I4 (2026-07-26 continuous-params review): every live-params hook on
+// VoiceRenderer is OPTIONAL, so a seventh worklet engine that omits all of them
+// compiles clean and passes every other test — it would just be the one engine
+// whose knobs go dead mid-note. ENGINE_CASES below is a hand-written literal and
+// would silently miss a new row; this test instead walks the SAME registry the
+// lane allocator routes through (WORKLET_ENGINE_IDS), so a new engine added
+// there without wiring live params fails HERE, not in production.
+//
+// setLiveValues (slots) is the hook to implement; setLiveParams (names) and
+// setLiveSubParams (the subtractive struct) are the two the params-by-index work
+// is retiring. All three count while the conversion is in flight — when the last
+// one is gone this test tightens to setLiveValues alone.
 describe('every worklet engine implements a live-params hook', () => {
-  it.each([...WORKLET_ENGINE_IDS])('%s renderer implements setLiveParams or setLiveSubParams', (id) => {
+  it.each([...WORKLET_ENGINE_IDS])('%s renderer implements a live-params hook', (id) => {
     const v = createRenderer(id, note(), {}, SR);
-    const hasHook = typeof v.setLiveParams === 'function' || typeof v.setLiveSubParams === 'function';
-    expect(hasHook, `${id} renderer implements neither hook — its knobs would be dead mid-note`).toBe(true);
+    const hasHook = typeof v.setLiveValues === 'function'
+      || typeof v.setLiveParams === 'function'
+      || typeof v.setLiveSubParams === 'function';
+    expect(hasHook, `${id} renderer implements no live-params hook — its knobs would be dead mid-note`).toBe(true);
   });
 });
 
