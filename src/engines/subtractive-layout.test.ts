@@ -5,17 +5,21 @@ import { SUB_PARAM_SPECS } from './subtractive-params';
 import { SUB_PARAM_GROUPS } from './subtractive';
 
 describe('the subtractive page, from data', () => {
-  // RING sits between the oscillators and the other mixer sources because that
-  // is what it is: OSC 1 × OSC 2, mixed in beside SUB and NOISE.
-  it('puts OSC 1, OSC 2, RING, SUB and NOISE on one row, in that order', () => {
+  // The two oscillators share a line; the three MIXER SOURCES they feed — ring
+  // (OSC 1 × OSC 2), sub and noise — share the next.
+  it('puts the two oscillators on one row and the three mixer sources on the next', () => {
     const rows = resolveParamRows(SUB_PARAM_SPECS, SUB_PARAM_GROUPS);
-    expect(rows[0].sections.map((s) => s.title)).toEqual(['OSC 1', 'OSC 2', 'RING', 'SUB', 'NOISE']);
+    expect(rows[0].sections.map((s) => s.title)).toEqual(['OSC 1', 'OSC 2']);
+    expect(rows[1].sections.map((s) => s.title)).toEqual(['RING', 'SUB', 'NOISE']);
   });
 
-  it('gives FILTER and MASTER their own rows', () => {
+  // A filter block per row: seven controls each, two of them radio strips, and a
+  // filter reads as one unit rather than as something to scan across a divider.
+  it('gives each filter, MASTER and POLY a row of its own', () => {
     const rows = resolveParamRows(SUB_PARAM_SPECS, SUB_PARAM_GROUPS);
     expect(rows.map((r) => r.sections.map((s) => s.title))).toEqual([
-      ['OSC 1', 'OSC 2', 'RING', 'SUB', 'NOISE'], ['FILTER A', 'FILTER B'], ['MASTER'], ['POLY'],
+      ['OSC 1', 'OSC 2'], ['RING', 'SUB', 'NOISE'],
+      ['FILTER A'], ['FILTER B'], ['MASTER'], ['POLY'],
     ]);
   });
 

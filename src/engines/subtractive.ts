@@ -25,15 +25,23 @@ import type { EngineParamGroup } from './engine-param-groups';
  *  params are drawn by the MODULATORS panel (`drawnBy: 'modulators'`), so a
  *  section here would be an empty header. */
 export const SUB_PARAM_GROUPS: EngineParamGroup[] = [
+  // Two oscillators on their own line; the three MIXER SOURCES they feed —
+  // ring, sub, noise — on the next. Packing all five onto one row (which is how
+  // it shipped when RING arrived) needs ~1300px, so below that the NOISE knobs
+  // wrapped away from their own section label and the row read as broken rather
+  // than as a deliberate second line.
   { id: 'osc1',   title: 'OSC 1',  row: 0, color: 'var(--knob-cyan)' },
   { id: 'osc2',   title: 'OSC 2',  row: 0, color: 'var(--knob-yellow)' },
-  { id: 'ring',   title: 'RING',   row: 0, color: 'var(--knob-red)' },
-  { id: 'sub',    title: 'SUB',    row: 0, color: 'var(--knob-blue)' },
-  { id: 'noise',  title: 'NOISE',  row: 0, color: 'var(--knob-purple)' },
-  { id: 'filter',  title: 'FILTER A', row: 1, color: 'var(--knob-orange)' },
-  { id: 'filter2', title: 'FILTER B', row: 1, color: 'var(--knob-teal)' },
-  { id: 'master', title: 'MASTER', row: 2, color: 'var(--knob-green)' },
-  { id: 'poly',   title: 'POLY',   row: 3 },
+  { id: 'ring',   title: 'RING',   row: 1, color: 'var(--knob-red)' },
+  { id: 'sub',    title: 'SUB',    row: 1, color: 'var(--knob-blue)' },
+  { id: 'noise',  title: 'NOISE',  row: 1, color: 'var(--knob-purple)' },
+  // A filter block per row. They fit side by side at a wide window, but each
+  // carries seven controls including two radio strips, and a filter is a thing
+  // you read as a unit — not something to scan across a divider.
+  { id: 'filter',  title: 'FILTER A', row: 2, color: 'var(--knob-orange)' },
+  { id: 'filter2', title: 'FILTER B', row: 3, color: 'var(--knob-teal)' },
+  { id: 'master', title: 'MASTER', row: 4, color: 'var(--knob-green)' },
+  { id: 'poly',   title: 'POLY',   row: 5 },
 ];
 
 /** The subtractive engine's DEFAULT modulator set: the two ADSRs ARE the amp /
