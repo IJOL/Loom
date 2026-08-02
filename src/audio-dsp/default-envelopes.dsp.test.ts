@@ -60,10 +60,15 @@ function render(
   engineId: string, params: ParamBag, mods: ModulatorState[] | null,
   mapTarget: (paramId: string) => string | null, holdSec: number, totalSec: number,
 ): number[] {
-  const vm = new VoiceManager(SR, engineId, params);
+  // The lane must DECLARE what the modulators target: offsets are addressed by
+  // the ParamIndex, so an id with no slot is inert — the contract production
+  // follows, where the seed and the numbering come from the same object.
+  const wire = mods ? toModLite(mods, 120, mapTarget) : [];
+  const targets = wire.flatMap((m) => Object.keys(m.depthByParam));
+  const vm = new VoiceManager(SR, engineId, params, 1, [...Object.keys(params), ...targets]);
   if (mods) {
     const runtime = new ModulationRuntime(SR);
-    runtime.setMods(toModLite(mods, 120, mapTarget));
+    runtime.setMods(wire);
     vm.setModulation(runtime);
   }
   vm.spawn(note(holdSec));

@@ -1,5 +1,6 @@
 // src/audio-dsp/subtractive-renderer.test.ts
 import { describe, it, expect } from 'vitest';
+import { attachSlots } from '../../test/slot-offsets';
 import { SubtractiveVoiceRenderer } from './subtractive-renderer';
 import { Svf } from './filter';
 import type { NoteSpec, ParamBag } from './types';
@@ -72,8 +73,10 @@ describe('SubtractiveVoiceRenderer', () => {
       const v = new SubtractiveVoiceRenderer(
         note(), { ...DEFAULTS, 'filter.cutoff': 0.15, 'filter.resonance': 0, 'filter.envAmount': 0 }, SR,
       );
+      const { mo } = attachSlots(v, { ...DEFAULTS, 'filter.cutoff': 0.15, 'filter.resonance': 0, 'filter.envAmount': 0 });
+      const off = mo({ 'filter.cutoff': cutMod });
       const b: number[] = [];
-      for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR, { 'filter.cutoff': cutMod }));
+      for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR, off));
       return rms(b);
     };
     expect(bright(0.8)).toBeGreaterThan(bright(0) * 1.3);
@@ -84,9 +87,11 @@ describe('SubtractiveVoiceRenderer', () => {
       const v = new SubtractiveVoiceRenderer(
         note(), { ...DEFAULTS, 'osc1.wave': 3, 'osc1.level': 0.8, 'osc2.level': 0, 'sub.level': 0, 'noise.level': 0, 'filter.cutoff': 0.95, 'filter.resonance': 0, 'filter.envAmount': 0 }, SR,
       );
+      const { mo } = attachSlots(v, { ...DEFAULTS, 'osc1.wave': 3, 'osc1.level': 0.8, 'osc2.level': 0, 'sub.level': 0, 'noise.level': 0, 'filter.cutoff': 0.95, 'filter.resonance': 0, 'filter.envAmount': 0 });
+      const off = mo({ 'master.tune': tuneMod });
       let prev = 0, zc = 0;
       for (let i = 0; i < SR * 0.1; i++) {
-        const s = v.renderSample(i / SR, { 'master.tune': tuneMod });
+        const s = v.renderSample(i / SR, off);
         if (prev < 0 && s >= 0) zc++;
         prev = s;
       }
@@ -99,8 +104,10 @@ describe('SubtractiveVoiceRenderer', () => {
   it('amp-gain modulation scales output loudness (tremolo), down to silence at -1', () => {
     const loud = (g: number) => {
       const v = new SubtractiveVoiceRenderer(note(), DEFAULTS, SR);
+      const { mo } = attachSlots(v, DEFAULTS);
+      const off = mo({ 'amp.gain': g });
       const b: number[] = [];
-      for (let i = 0; i < SR * 0.05; i++) b.push(v.renderSample(i / SR, { 'amp.gain': g }));
+      for (let i = 0; i < SR * 0.05; i++) b.push(v.renderSample(i / SR, off));
       return rms(b);
     };
     expect(loud(1)).toBeGreaterThan(loud(0) * 1.5);   // +1 → ~×2
@@ -135,7 +142,7 @@ describe('SubtractiveVoiceRenderer', () => {
       const v = new SubtractiveVoiceRenderer(
         note(), { ...DEFAULTS, 'filter.cutoff': 0.15, 'filter.resonance': 0, 'filter.envAmount': 0 }, SR,
       );
-      if (depth > 0) v.setModEnvelopes([adsrMod(depth)]);
+      if (depth > 0) v.setModEnvelopes([adsrMod(depth)], attachSlots(v, { ...DEFAULTS, 'filter.cutoff': 0.15, 'filter.resonance': 0, 'filter.envAmount': 0 }).index);
       const b: number[] = [];
       for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR));
       return rms(b);
@@ -145,14 +152,15 @@ describe('SubtractiveVoiceRenderer', () => {
 
   it('getAdsrOffsets follows the gated envelope (the knob-ring source)', () => {
     const v = new SubtractiveVoiceRenderer(note({ durationSec: 10 }), DEFAULTS, SR);
-    v.setModEnvelopes([{ ...adsrMod(1), sustain: 0.5 }]);
+    const { index: ringIx } = attachSlots(v, DEFAULTS);
+    v.setModEnvelopes([{ ...adsrMod(1), sustain: 0.5 }], ringIx);
     for (let i = 0; i < SR * 0.05; i++) v.renderSample(i / SR);   // settle into sustain
-    const off = v.getAdsrOffsets() as Record<string, number>;
-    expect(off['filter.cutoff']).toBeCloseTo(0.5, 1);             // sustain 0.5 × depth 1
+    const ring = v.getAdsrOffsets();
+    expect(ring[ringIx.slot['filter.cutoff']]).toBeCloseTo(0.5, 1);   // sustain 0.5 × depth 1
     // After note-off the envelope releases → the ring contribution falls back toward 0.
     v.noteOff(0.05);
     for (let i = SR * 0.05; i < SR * 0.4; i++) v.renderSample(i / SR);
-    expect((v.getAdsrOffsets() as Record<string, number>)['filter.cutoff']).toBeLessThan(0.1);
+    expect(v.getAdsrOffsets()[ringIx.slot['filter.cutoff']]).toBeLessThan(0.1);
   });
 
   const ampAdsr = {
@@ -162,7 +170,7 @@ describe('SubtractiveVoiceRenderer', () => {
 
   it("an ADSR routed to 'amp' becomes the amplitude envelope when the built-in is off", () => {
     const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.2 }), { ...DEFAULTS, 'amp.builtinEnv': 0 }, SR);
-    v.setModEnvelopes([ampAdsr]);
+    v.setModEnvelopes([ampAdsr], attachSlots(v, { ...DEFAULTS, 'amp.builtinEnv': 0 }).index);
     const gate: number[] = [];
     for (let i = 0; i < SR * 0.15; i++) gate.push(v.renderSample(i / SR));
     expect(rms(gate)).toBeGreaterThan(0.02);        // audible while the envelope is open
@@ -177,7 +185,7 @@ describe('SubtractiveVoiceRenderer', () => {
     // the 'amp' ADSR is inert, so existing presets sound exactly as before.
     const r = (withAdsr: boolean) => {
       const v = new SubtractiveVoiceRenderer(note(), DEFAULTS, SR);
-      if (withAdsr) v.setModEnvelopes([{ ...ampAdsr, sustain: 0, releaseSec: 0.001 }]); // would silence if applied
+      if (withAdsr) v.setModEnvelopes([{ ...ampAdsr, sustain: 0, releaseSec: 0.001 }], attachSlots(v, DEFAULTS).index); // would silence if applied
       const b: number[] = []; for (let i = 0; i < SR * 0.05; i++) b.push(v.renderSample(i / SR));
       return rms(b);
     };
@@ -194,7 +202,7 @@ describe('SubtractiveVoiceRenderer', () => {
       if (withEnv) v.setModEnvelopes([{
         id: 'fe', kind: 'adsr', enabled: true, rateHz: 0, waveform: 'sine',
         attackSec: 0.001, decaySec: 0.001, sustain: 1, releaseSec: 0.1, depthByParam: { 'filter.env': 1 },
-      }]);
+      }], attachSlots(v, { ...DEFAULTS, 'filter.cutoff': 0.15, 'filter.resonance': 0, 'filter.envAmount': 0.8, 'filter.builtinEnv': 0 }).index);
       const b: number[] = []; for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR));
       return rms(b);
     };
@@ -262,10 +270,15 @@ describe('PWM is modulation, not a knob', () => {
   };
   const render = (mod: (t: number) => number): number[] => {
     const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.3 }), bag, SR);
+    // ONE pooled offsets array, one slot rewritten per sample — the audio path
+    // never allocates here either.
+    const { index: ix, mo } = attachSlots(v, bag);
+    const off = mo({ 'osc1.pw': 0 });
     const b: number[] = [];
     for (let i = 0; i < SR * 0.2; i++) {
       const t = i / SR;
-      b.push(v.renderSample(t, { 'osc1.pw': mod(t) }));
+      off[ix.slot['osc1.pw']] = mod(t);
+      b.push(v.renderSample(t, off));
     }
     return b;
   };
@@ -519,6 +532,7 @@ describe('unison', () => {
     'sub.level': 0, 'noise.level': 0,
     'filter.cutoff': 1, 'filter.resonance': 0, 'filter.envAmount': 0, 'filter.builtinEnv': 0,
     'amp.builtinEnv': 0,   // flat gain: the level must only move because the STACK moves
+    'master.detune': 25,   // declared so an LFO can reach the unison spread
     'master.unison': voices, ...over,
   });
   const render = (voices: number, over: ParamBag = {}, secs = 1): number[] => {
@@ -600,8 +614,14 @@ describe('unison', () => {
   it('an LFO on unison.detune sweeps the spread — it is modulation, not a knob', () => {
     const swept = (mod: (t: number) => number): number[] => {
       const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.6 }), uniBag(7), SR);
+      const { index: ix, mo } = attachSlots(v, uniBag(7));
+      const off = mo({ 'master.detune': 0 });
       const b: number[] = [];
-      for (let i = 0; i < SR * 0.4; i++) { const t = i / SR; b.push(v.renderSample(t, { 'master.detune': mod(t) })); }
+      for (let i = 0; i < SR * 0.4; i++) {
+        const t = i / SR;
+        off[ix.slot['master.detune']] = mod(t);
+        b.push(v.renderSample(t, off));
+      }
       return b;
     };
     expect(divergence(swept(() => 0), swept((t) => Math.sin(2 * Math.PI * 3 * t)))).toBeGreaterThan(0.1);
@@ -650,8 +670,13 @@ describe('hard sync wave', () => {
     for (let i = 0; i < SR * 0.1; i++) still.push(v.renderSample(i / SR));
 
     const v2 = new SubtractiveVoiceRenderer(note({ durationSec: 0.2 }), bag({ 'osc1.sync': 3 }), SR);
+    const { index: ix2, mo: mo2 } = attachSlots(v2, bag({ 'osc1.sync': 3 }));
+    const off2 = mo2({ 'osc1.sync': 0 });
     const swept: number[] = [];
-    for (let i = 0; i < SR * 0.1; i++) swept.push(v2.renderSample(i / SR, { 'osc1.sync': Math.sin(2 * Math.PI * 5 * i / SR) }));
+    for (let i = 0; i < SR * 0.1; i++) {
+      off2[ix2.slot['osc1.sync']] = Math.sin(2 * Math.PI * 5 * i / SR);
+      swept.push(v2.renderSample(i / SR, off2));
+    }
 
     expect(divergence(still, swept)).toBeGreaterThan(0.05);
   });

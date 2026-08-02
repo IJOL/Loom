@@ -60,9 +60,14 @@ describe('@loom/plugin-sdk', () => {
   it('folds ADSR offsets on top of the shared-LFO offsets', () => {
     const h = new ModEnvHost();
     expect(h.active).toBe(false);
-    h.setModEnvelopes([{ attackSec: 0.01, decaySec: 0.1, sustain: 1, releaseSec: 0.1, depthByParam: { 'amp.level': 0.5 } }]);
+    // The host addresses offsets by SLOT, so it needs the lane's numbering — the
+    // same contract the renderers get in setLiveValues.
+    const index = { slot: { 'amp.level': 0 }, length: 1 };
+    h.setModEnvelopes([{ attackSec: 0.01, decaySec: 0.1, sustain: 1, releaseSec: 0.1, depthByParam: { 'amp.level': 0.5 } }], index);
     h.combine(0, 1);
-    const out = h.combine(0.5, 1, { 'amp.level': 0.1 });
-    expect(out['amp.level']).toBeGreaterThan(0.1);
+    const lfoBase = new Float64Array(1);
+    lfoBase[0] = 0.1;
+    const out = h.combine(0.5, 1, lfoBase);
+    expect(out[index.slot['amp.level']]).toBeGreaterThan(0.1);
   });
 });

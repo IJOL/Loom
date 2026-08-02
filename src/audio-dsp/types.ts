@@ -27,10 +27,17 @@ export type { NoteSpec, ParamBag, VoiceModOffsets, ModEnvSpec, ParamIndex } from
 export { param, slotOf } from '@loom/plugin-sdk';
 import type { VoiceRenderer as SdkVoiceRenderer } from '@loom/plugin-sdk';
 
-/** A modulation destination: any SubParams field, plus two synthetic targets:
- *  `ampGain` (a multiplicative output gain — tremolo), and `amp` (the per-voice
- *  AMPLITUDE envelope itself — an ADSR routed here becomes the voice's amp env). */
-export type ModTarget = keyof SubParams | 'ampGain' | 'amp' | 'filterEnv';
+/** A modulation destination: a param's own dot-id, plus the three synthetic
+ *  targets in SYNTHETIC_TARGETS — `amp.gain` (a multiplicative output gain,
+ *  i.e. tremolo), `amp` (the per-voice AMPLITUDE envelope itself: an ADSR routed
+ *  here BECOMES the voice's amp env) and `filter.env` (the same for the filter).
+ *
+ *  It used to be `keyof SubParams | …`, which only ever described SUBTRACTIVE's
+ *  vocabulary while every other engine already used dot-ids. It is now what it
+ *  always was in practice: a name, resolved to a slot at the one boundary that
+ *  can do it (ModulationRuntime.bindIndex). ModulationRuntime itself is
+ *  deliberately vocabulary-agnostic — it sums whatever names it is handed. */
+export type ModTarget = string;
 
 /** The host's renderer interface. It used to add one hook that was deliberately
  *  NOT public — setLiveSubParams, by which Subtractive read a typed SubParams

@@ -57,6 +57,9 @@ export class TB303Renderer implements VoiceRenderer {
   private sRes = -1;
   private sEnvAmount = -1;
   private sEnvDecay = -1;
+  /** The synthetic tremolo target. Not a declared param — the index appends it,
+   *  which is what those three synthetic slots are for. */
+  private sAmpGain = -1;
   // Cached expensive conversions, refreshed only when their raw input moves.
   // 80·100^x and the Q→ladder curve are per-sample costs we refuse to pay while
   // nothing is turning.
@@ -102,7 +105,7 @@ export class TB303Renderer implements VoiceRenderer {
     if (t < this.holdEnd) this.holdEnd = t;
   }
 
-  setModEnvelopes(mods: ModLite[]): void { this.modEnv.setModEnvelopes(mods); }
+  setModEnvelopes(mods: ModLite[], index: ParamIndex): void { this.modEnv.setModEnvelopes(mods, index); }
   getAdsrOffsets(): VoiceModOffsets { return this.modEnv.getAdsrOffsets(); }
   setLiveValues(values: Float64Array, index: ParamIndex): void {
     this.live = values;
@@ -110,6 +113,7 @@ export class TB303Renderer implements VoiceRenderer {
     this.sRes = slotOf(index, 'filter.resonance');
     this.sEnvAmount = slotOf(index, 'env.amount');
     this.sEnvDecay = slotOf(index, 'env.decay');
+    this.sAmpGain = slotOf(index, 'amp.gain');
   }
 
   renderSample(t: number, moIn?: VoiceModOffsets): number {
@@ -162,15 +166,15 @@ export class TB303Renderer implements VoiceRenderer {
     const envKnob = L && this.sEnvAmount >= 0 ? L[this.sEnvAmount] : this.envModBase;
     const decKnob = L && this.sEnvDecay >= 0 ? L[this.sEnvDecay] : this.decayBase;
 
-    const cutoff01 = mo?.['filter.cutoff'] ? clamp01(cutKnob + mo['filter.cutoff']) : cutKnob;
+    const cutoff01 = mo?.[this.sCutoff] ? clamp01(cutKnob + mo[this.sCutoff]) : cutKnob;
     if (cutoff01 !== this.cutRaw) { this.cutRaw = cutoff01; this.cutHz = 80 * Math.pow(100, cutoff01); }
     const baseCutHz = this.cutHz;
 
-    const envMod01 = mo?.['env.amount'] ? clamp01(envKnob + mo['env.amount']) : envKnob;
+    const envMod01 = mo?.[this.sEnvAmount] ? clamp01(envKnob + mo[this.sEnvAmount]) : envKnob;
     const peakCutHz = Math.min(baseCutHz + envMod01 * 6000 * (1 + this.accentBoost), 18000);
 
     // env.decay = how fast the cutoff closes; accent shortens it, as on the real synth.
-    const decay01 = mo?.['env.decay'] ? clamp01(decKnob + mo['env.decay']) : decKnob;
+    const decay01 = mo?.[this.sEnvDecay] ? clamp01(decKnob + mo[this.sEnvDecay]) : decKnob;
     const decaySec = (0.05 + decay01 * 1.2) * (this.accent ? 0.6 : 1);
     const cutoffHz = baseCutHz + (peakCutHz - baseCutHz) * Math.exp(-dt / decaySec);
 
@@ -180,11 +184,11 @@ export class TB303Renderer implements VoiceRenderer {
       this.resRaw = resKnob;
       this.resLadder = qToLadderRes(1 + resKnob * 25 + this.accentBoost * 6);
     }
-    const res = mo?.['filter.resonance'] ? clamp01(this.resLadder + mo['filter.resonance']) : this.resLadder;
+    const res = mo?.[this.sRes] ? clamp01(this.resLadder + mo[this.sRes]) : this.resLadder;
 
     const oscOut = this.osc.update(this.freq);
     let out = this.filter.update(oscOut, cutoffHz, res) * amp;
-    if (mo?.['amp.gain']) out *= Math.max(0, Math.min(2, 1 + mo['amp.gain']));
+    if (mo?.[this.sAmpGain]) out *= Math.max(0, Math.min(2, 1 + mo[this.sAmpGain]));
     return out;
   }
 }

@@ -14,7 +14,13 @@ import { velGain01 } from '../core/velocity-gain';
 
 /** One per-voice ADSR modulator: its own envelope state + the shape/depths from
  *  the ModLite. update() returns env×depth per connected field, gated by the note. */
-interface ModEnv { adsr: Adsr; m: ModLite; }
+/** One per-voice ADSR modulator with its targets already resolved to SLOTS —
+ *  once, at spawn. Subtractive keeps its own combine rather than using
+ *  ModEnvHost because two of its targets are not additive offsets at all: 'amp'
+ *  and 'filter.env' BECOME the voice's envelopes. */
+interface ModEnv { adsr: Adsr; m: ModLite; slots: Int32Array; depths: Float64Array; }
+
+const NO_SLOTS = new Float64Array(0);
 
 /** Read a dot-id ParamBag into an EXISTING SubParams — no allocation, so the
  *  lane can refresh its live snapshot on the audio thread. Defaults match
@@ -142,6 +148,8 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
   private sFilterEnvAmount = -1;
   private sFilterDrive = -1;
   private sFilterKeyTrack = -1;
+  /** The synthetic tremolo target. */
+  private sAmpGain = -1;
   private velPeak: number;
   // Kept for live recompute of keytrack/env ranges when cutoff/keyTrack/envAmount
   // are modulated (those ranges scale with the live base cutoff).
@@ -170,11 +178,18 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
   private modEnvs: ModEnv[] = [];
   /** Pooled effective-offset struct (shared LFO + this voice's ADSR), reused each
    *  sample so the render loop allocates nothing on the audio thread. */
-  private readonly effMo: VoiceModOffsets = {};
-  /** This voice's ADSR-only contribution per field (NOT including the LFO),
+  private effMo: VoiceModOffsets = NO_SLOTS;
+  /** This voice's ADSR-only contribution per slot (NOT including the LFO),
    *  refreshed each sample. The worklet reads the most-recent voice's copy to
    *  drive the knob ring (the LFO part is added from the shared activeOffsets). */
-  private readonly adsrOnly: VoiceModOffsets = {};
+  private adsrOnly: VoiceModOffsets = NO_SLOTS;
+  /** Every ADDITIVE slot this voice's envelopes write — 'amp' and 'filter.env'
+   *  excluded, since those become envelopes rather than offsets. */
+  private touched: Int32Array = new Int32Array(0);
+  /** The two envelope targets, resolved once so the per-sample loop compares
+   *  numbers instead of strings. */
+  private sAmpTarget = -1;
+  private sFilterEnvTarget = -1;
   /** When an ADSR is routed to the 'amp' target it BECOMES this voice's amplitude
    *  envelope (multiplicative 0..1), replacing the built-in amp env. null ⇒ none. */
   private ampEnvValue: number | null = null;
@@ -245,9 +260,32 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
   noteOff(t: number): void { if (t < this.holdEnd) this.holdEnd = t; }
 
   /** Receive this voice's per-voice ADSR modulators (one Adsr each). Called once
-   *  at spawn by the VoiceManager. LFOs are NOT here — they stay shared. */
-  setModEnvelopes(mods: ModLite[]): void {
-    this.modEnvs = mods.map((m) => ({ adsr: new Adsr(), m }));
+   *  at spawn by the VoiceManager. LFOs are NOT here — they stay shared. The
+   *  lane's numbering comes with them so each target resolves to a slot HERE,
+   *  not on every sample. */
+  setModEnvelopes(mods: ModLite[], index: ParamIndex): void {
+    this.effMo = new Float64Array(index.length);
+    this.adsrOnly = new Float64Array(index.length);
+    this.sAmpTarget = slotOf(index, 'amp');
+    this.sFilterEnvTarget = slotOf(index, 'filter.env');
+    const touched = new Set<number>();
+    this.modEnvs = mods.map((m) => {
+      const slots: number[] = [];
+      const depths: number[] = [];
+      for (const id in m.depthByParam) {
+        const depth = m.depthByParam[id];
+        if (!depth) continue;
+        const slot = index.slot[id];
+        if (slot === undefined) continue;   // a target this lane does not declare
+        slots.push(slot);
+        depths.push(depth);
+        // The two envelope targets are handled apart, so they must not be
+        // cleared or summed as additive offsets.
+        if (slot !== this.sAmpTarget && slot !== this.sFilterEnvTarget) touched.add(slot);
+      }
+      return { adsr: new Adsr(), m, slots: Int32Array.from(slots), depths: Float64Array.from(depths) };
+    });
+    this.touched = Int32Array.from(touched);
   }
 
   /** Swap this voice's param source for the lane's LIVE snapshot. Everything
@@ -273,6 +311,7 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     this.sFilterEnvAmount = slotOf(index, 'filter.envAmount');
     this.sFilterDrive = slotOf(index, 'filter.drive');
     this.sFilterKeyTrack = slotOf(index, 'filter.keyTrack');
+    this.sAmpGain = slotOf(index, 'amp.gain');
   }
 
   /** Fold this voice's gated ADSR envelopes into the shared-LFO offsets, returning
@@ -280,41 +319,41 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
    *  struct; `moIn` carries the full 14-field subtractive set, so copying it first
    *  resets every field before the ADSR contributions are added on top. */
   private combineMods(t: number, gate: number, moIn?: VoiceModOffsets): VoiceModOffsets {
-    const e = this.effMo as Record<string, number>;
-    const a = this.adsrOnly as Record<string, number>;
-    // Recompute the ADSR-only contribution (cleared first; fields are fixed by the
-    // connection set, so this loop is tiny — 1-2 entries).
-    for (const k in a) a[k] = 0;
+    const e = this.effMo;
+    const a = this.adsrOnly;
+    // Recompute the ADSR-only contribution (cleared first). `touched` is tiny —
+    // the slots this voice's connections actually drive, usually one or two.
+    for (const s of this.touched) a[s] = 0;
     this.ampEnvValue = null; this.ampEnvAdsr = null; this.filterEnvValue = null;
     for (const me of this.modEnvs) {
       const env = me.adsr.update(
         t, gate, me.m.attackSec ?? 0.01, me.m.decaySec ?? 0.3, me.m.sustain ?? 0.7, me.m.releaseSec ?? 0.3,
       );
-      const depths = me.m.depthByParam;
-      for (const field in depths) {
-        const depth = depths[field];
-        if (!depth) continue;
-        if (field === 'amp') {
+      const { slots, depths } = me;
+      for (let i = 0; i < slots.length; i++) {
+        const slot = slots[i];
+        const depth = depths[i];
+        if (slot === this.sAmpTarget) {
           // 'amp' is the per-voice AMPLITUDE envelope (multiplicative 0..1), not an
-          // additive param offset — keep it out of the offset struct.
+          // additive param offset — keep it out of the offset array.
           this.ampEnvValue = (this.ampEnvValue ?? 0) + env * depth;
           this.ampEnvAdsr = me.adsr;
           continue;
         }
-        if (field === 'filter.env') {
-          // 'filterEnv' is the per-voice FILTER envelope (0..1, scaled by envRangeHz
+        if (slot === this.sFilterEnvTarget) {
+          // 'filter.env' is the per-voice FILTER envelope (0..1, scaled by envRangeHz
           // downstream — same as the built-in), not an additive offset.
           this.filterEnvValue = (this.filterEnvValue ?? 0) + env * depth;
           continue;
         }
-        a[field] = (a[field] ?? 0) + env * depth;
+        a[slot] += env * depth;
       }
     }
-    // Effective offsets = shared-LFO base + this voice's ADSR. moIn carries all 14
-    // subtractive fields, so copying it resets every field before adding the ADSR.
-    if (moIn) Object.assign(e, moIn); else for (const k in e) e[k] = 0;
-    for (const k in a) e[k] = (e[k] ?? 0) + a[k];
-    return this.effMo;
+    // Effective offsets = shared-LFO base + this voice's ADSR. set() is a memcpy
+    // and fill(0) a memset; only the ADSR-touched slots then need adding.
+    if (moIn) e.set(moIn); else e.fill(0);
+    for (const s of this.touched) e[s] += a[s];
+    return e;
   }
 
   /** This voice's ADSR-only offsets (for the UI knob ring). The worklet reads the
@@ -332,10 +371,10 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     // Live shared-LFO offsets (normalised) applied on top of the spawned-snapshot
     // params at read time, each scaled to its native units and clamped. A falsy
     // (incl. 0) offset takes the cached/base value — the unmodulated path.
-    const osc1Level = mo?.['osc1.level'] ? clamp01((L && this.sOsc1Level >= 0 ? L[this.sOsc1Level] : p.osc1Level) + mo['osc1.level']) : (L && this.sOsc1Level >= 0 ? L[this.sOsc1Level] : p.osc1Level);
-    const osc2Level = mo?.['osc2.level'] ? clamp01((L && this.sOsc2Level >= 0 ? L[this.sOsc2Level] : p.osc2Level) + mo['osc2.level']) : (L && this.sOsc2Level >= 0 ? L[this.sOsc2Level] : p.osc2Level);
-    const subLevel  = mo?.['sub.level']  ? clamp01((L && this.sSubLevel >= 0 ? L[this.sSubLevel] : p.subLevel) + mo['sub.level'])   : (L && this.sSubLevel >= 0 ? L[this.sSubLevel] : p.subLevel);
-    const noiseLevel = mo?.['noise.level'] ? clamp01((L && this.sNoiseLevel >= 0 ? L[this.sNoiseLevel] : p.noiseLevel) + mo['noise.level']) : (L && this.sNoiseLevel >= 0 ? L[this.sNoiseLevel] : p.noiseLevel);
+    const osc1Level = mo?.[this.sOsc1Level] ? clamp01((L && this.sOsc1Level >= 0 ? L[this.sOsc1Level] : p.osc1Level) + mo[this.sOsc1Level]) : (L && this.sOsc1Level >= 0 ? L[this.sOsc1Level] : p.osc1Level);
+    const osc2Level = mo?.[this.sOsc2Level] ? clamp01((L && this.sOsc2Level >= 0 ? L[this.sOsc2Level] : p.osc2Level) + mo[this.sOsc2Level]) : (L && this.sOsc2Level >= 0 ? L[this.sOsc2Level] : p.osc2Level);
+    const subLevel  = mo?.[this.sSubLevel]  ? clamp01((L && this.sSubLevel >= 0 ? L[this.sSubLevel] : p.subLevel) + mo[this.sSubLevel])   : (L && this.sSubLevel >= 0 ? L[this.sSubLevel] : p.subLevel);
+    const noiseLevel = mo?.[this.sNoiseLevel] ? clamp01((L && this.sNoiseLevel >= 0 ? L[this.sNoiseLevel] : p.noiseLevel) + mo[this.sNoiseLevel]) : (L && this.sNoiseLevel >= 0 ? L[this.sNoiseLevel] : p.noiseLevel);
     // Master tune is continuous, so it moves the sounding note. Cached: the pow
     // only re-runs when the tune knob actually changes.
     if ((L && this.sMasterTune >= 0 ? L[this.sMasterTune] : p.masterTune) !== this.tuneRaw) {
@@ -345,26 +384,26 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     const baseFreq = this.baseFreqCached;
     // Pitch modulation: master tune (±12 st full-depth) → freq multiplier;
     // per-osc detune (±50 cents full-depth) added to the cents knob.
-    const f = mo?.['master.tune'] ? baseFreq * Math.pow(2, mo['master.tune'] * MOD_TUNE_SEMIS / 12) : baseFreq;
-    const det1 = mo?.['osc1.detune'] ? (L && this.sOsc1Detune >= 0 ? L[this.sOsc1Detune] : p.osc1Detune) + mo['osc1.detune'] * MOD_DETUNE_CENTS : (L && this.sOsc1Detune >= 0 ? L[this.sOsc1Detune] : p.osc1Detune);
-    const det2 = mo?.['osc2.detune'] ? (L && this.sOsc2Detune >= 0 ? L[this.sOsc2Detune] : p.osc2Detune) + mo['osc2.detune'] * MOD_DETUNE_CENTS : (L && this.sOsc2Detune >= 0 ? L[this.sOsc2Detune] : p.osc2Detune);
+    const f = mo?.[this.sMasterTune] ? baseFreq * Math.pow(2, mo[this.sMasterTune] * MOD_TUNE_SEMIS / 12) : baseFreq;
+    const det1 = mo?.[this.sOsc1Detune] ? (L && this.sOsc1Detune >= 0 ? L[this.sOsc1Detune] : p.osc1Detune) + mo[this.sOsc1Detune] * MOD_DETUNE_CENTS : (L && this.sOsc1Detune >= 0 ? L[this.sOsc1Detune] : p.osc1Detune);
+    const det2 = mo?.[this.sOsc2Detune] ? (L && this.sOsc2Detune >= 0 ? L[this.sOsc2Detune] : p.osc2Detune) + mo[this.sOsc2Detune] * MOD_DETUNE_CENTS : (L && this.sOsc2Detune >= 0 ? L[this.sOsc2Detune] : p.osc2Detune);
     // Pulse width, and with an LFO on it, pulse-width MODULATION. Clamped to
     // the param's own rails: 0 and 1 are silence, not a thinner sound.
     // The stack's second argument is pulse width for most waves, but the sync
     // ratio for the Sync wave — SyncOsc reads it as its ratio. Both are
     // continuous and modulatable; pick which one this oscillator wants.
     const pw1 = this.osc1WaveFrozen === WAVE_SYNC
-      ? clampSync(mo?.['osc1.sync'] ? (L && this.sOsc1Sync >= 0 ? L[this.sOsc1Sync] : p.osc1Sync) + mo['osc1.sync'] * MOD_SYNC_RANGE : (L && this.sOsc1Sync >= 0 ? L[this.sOsc1Sync] : p.osc1Sync))
-      : (mo?.['osc1.pw'] ? clampPw((L && this.sOsc1Pw >= 0 ? L[this.sOsc1Pw] : p.osc1Pw) + mo['osc1.pw'] * MOD_PW_RANGE) : (L && this.sOsc1Pw >= 0 ? L[this.sOsc1Pw] : p.osc1Pw));
+      ? clampSync(mo?.[this.sOsc1Sync] ? (L && this.sOsc1Sync >= 0 ? L[this.sOsc1Sync] : p.osc1Sync) + mo[this.sOsc1Sync] * MOD_SYNC_RANGE : (L && this.sOsc1Sync >= 0 ? L[this.sOsc1Sync] : p.osc1Sync))
+      : (mo?.[this.sOsc1Pw] ? clampPw((L && this.sOsc1Pw >= 0 ? L[this.sOsc1Pw] : p.osc1Pw) + mo[this.sOsc1Pw] * MOD_PW_RANGE) : (L && this.sOsc1Pw >= 0 ? L[this.sOsc1Pw] : p.osc1Pw));
     const pw2 = this.osc2WaveFrozen === WAVE_SYNC
-      ? clampSync(mo?.['osc2.sync'] ? (L && this.sOsc2Sync >= 0 ? L[this.sOsc2Sync] : p.osc2Sync) + mo['osc2.sync'] * MOD_SYNC_RANGE : (L && this.sOsc2Sync >= 0 ? L[this.sOsc2Sync] : p.osc2Sync))
-      : (mo?.['osc2.pw'] ? clampPw((L && this.sOsc2Pw >= 0 ? L[this.sOsc2Pw] : p.osc2Pw) + mo['osc2.pw'] * MOD_PW_RANGE) : (L && this.sOsc2Pw >= 0 ? L[this.sOsc2Pw] : p.osc2Pw));
+      ? clampSync(mo?.[this.sOsc2Sync] ? (L && this.sOsc2Sync >= 0 ? L[this.sOsc2Sync] : p.osc2Sync) + mo[this.sOsc2Sync] * MOD_SYNC_RANGE : (L && this.sOsc2Sync >= 0 ? L[this.sOsc2Sync] : p.osc2Sync))
+      : (mo?.[this.sOsc2Pw] ? clampPw((L && this.sOsc2Pw >= 0 ? L[this.sOsc2Pw] : p.osc2Pw) + mo[this.sOsc2Pw] * MOD_PW_RANGE) : (L && this.sOsc2Pw >= 0 ? L[this.sOsc2Pw] : p.osc2Pw));
     // Unison: the spread each stack fans its copies across, and the analog drift
     // depth. Both continuous, so an LFO reaches them like any other param — on the
     // spread that is a stack that breathes. Both default to inert (spread only
     // bites above 1 voice; drift is 0), so nothing that exists today moves.
-    const spread = mo?.['master.detune'] ? clampSpread((L && this.sUnisonDetune >= 0 ? L[this.sUnisonDetune] : p.unisonDetune) + mo['master.detune'] * MOD_UNISON_CENTS) : (L && this.sUnisonDetune >= 0 ? L[this.sUnisonDetune] : p.unisonDetune);
-    const drift = mo?.['master.drift'] ? clamp01((L && this.sUnisonDrift >= 0 ? L[this.sUnisonDrift] : p.unisonDrift) + mo['master.drift']) : (L && this.sUnisonDrift >= 0 ? L[this.sUnisonDrift] : p.unisonDrift);
+    const spread = mo?.[this.sUnisonDetune] ? clampSpread((L && this.sUnisonDetune >= 0 ? L[this.sUnisonDetune] : p.unisonDetune) + mo[this.sUnisonDetune] * MOD_UNISON_CENTS) : (L && this.sUnisonDetune >= 0 ? L[this.sUnisonDetune] : p.unisonDetune);
+    const drift = mo?.[this.sUnisonDrift] ? clamp01((L && this.sUnisonDrift >= 0 ? L[this.sUnisonDrift] : p.unisonDrift) + mo[this.sUnisonDrift]) : (L && this.sUnisonDrift >= 0 ? L[this.sUnisonDrift] : p.unisonDrift);
     const driftAmt = drift * this.driftDepth;
     // oscillators (detune in cents; sub one octave down). The sub and the noise
     // are deliberately NOT scaled by the stack's gain compensation, unlike mpump:
@@ -376,25 +415,25 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
             + this.osc2.update(f, pw2, det2, spread, driftAmt) * osc2Level
             + this.sub.update(f * 0.5) * subLevel;
     if (noiseLevel > 0) {
-      const noiseColor = mo?.['noise.color'] ? clamp01((L && this.sNoiseColor >= 0 ? L[this.sNoiseColor] : p.noiseColor) + mo['noise.color']) : (L && this.sNoiseColor >= 0 ? L[this.sNoiseColor] : p.noiseColor);
+      const noiseColor = mo?.[this.sNoiseColor] ? clamp01((L && this.sNoiseColor >= 0 ? L[this.sNoiseColor] : p.noiseColor) + mo[this.sNoiseColor]) : (L && this.sNoiseColor >= 0 ? L[this.sNoiseColor] : p.noiseColor);
       this.noiseLp.update(this.noise.update(), 200 + noiseColor * 14800, 0);
       mix += this.noiseLp.lp * noiseLevel;
     }
     // parallel drive (dry + saturated wet scaled by drive), as in PolySynth
-    const drive = mo?.['filter.drive'] ? clamp01((L && this.sFilterDrive >= 0 ? L[this.sFilterDrive] : p.filterDrive) + mo['filter.drive']) : (L && this.sFilterDrive >= 0 ? L[this.sFilterDrive] : p.filterDrive);
+    const drive = mo?.[this.sFilterDrive] ? clamp01((L && this.sFilterDrive >= 0 ? L[this.sFilterDrive] : p.filterDrive) + mo[this.sFilterDrive]) : (L && this.sFilterDrive >= 0 ? L[this.sFilterDrive] : p.filterDrive);
     if (drive > 0) mix = mix + driveShape(mix, 1.0) * drive;
     // Filter cutoff = base + keytrack + envelope contribution. The base is LIVE
     // (the knob under your hand), and modulation adds on top of it. keytrack and
     // env range scale with the base, so they follow it.
-    const cut01 = mo?.['filter.cutoff'] ? clamp01((L && this.sFilterCutoff >= 0 ? L[this.sFilterCutoff] : p.filterCutoff) + mo['filter.cutoff']) : (L && this.sFilterCutoff >= 0 ? L[this.sFilterCutoff] : p.filterCutoff);
+    const cut01 = mo?.[this.sFilterCutoff] ? clamp01((L && this.sFilterCutoff >= 0 ? L[this.sFilterCutoff] : p.filterCutoff) + mo[this.sFilterCutoff]) : (L && this.sFilterCutoff >= 0 ? L[this.sFilterCutoff] : p.filterCutoff);
     if (cut01 !== this.cutRaw) {
       this.cutRaw = cut01;
       this.cutHzCached = Math.min(60 * Math.pow(220, cut01), 18000);
     }
     const baseCutoffHz = this.cutHzCached;
-    const kt = mo?.['filter.keyTrack'] ? clamp01((L && this.sFilterKeyTrack >= 0 ? L[this.sFilterKeyTrack] : p.filterKeyTrack) + mo['filter.keyTrack']) : (L && this.sFilterKeyTrack >= 0 ? L[this.sFilterKeyTrack] : p.filterKeyTrack);
+    const kt = mo?.[this.sFilterKeyTrack] ? clamp01((L && this.sFilterKeyTrack >= 0 ? L[this.sFilterKeyTrack] : p.filterKeyTrack) + mo[this.sFilterKeyTrack]) : (L && this.sFilterKeyTrack >= 0 ? L[this.sFilterKeyTrack] : p.filterKeyTrack);
     const keyTrackHz = this.keySemiDelta * baseCutoffHz * (Math.pow(2, 1 / 12) - 1) * kt;
-    const envAmt = mo?.['filter.envAmount'] ? clamp01((L && this.sFilterEnvAmount >= 0 ? L[this.sFilterEnvAmount] : p.filterEnvAmount) + mo['filter.envAmount']) : (L && this.sFilterEnvAmount >= 0 ? L[this.sFilterEnvAmount] : p.filterEnvAmount);
+    const envAmt = mo?.[this.sFilterEnvAmount] ? clamp01((L && this.sFilterEnvAmount >= 0 ? L[this.sFilterEnvAmount] : p.filterEnvAmount) + mo[this.sFilterEnvAmount]) : (L && this.sFilterEnvAmount >= 0 ? L[this.sFilterEnvAmount] : p.filterEnvAmount);
     const envRangeHz = Math.min(baseCutoffHz * 7, 16000) * envAmt * this.accentMul;
     // Filter envelope. Like amp: the built-in env wins when enabled (presets keep
     // filterBuiltinEnv=1 → unchanged); else an ADSR routed to 'filterEnv' becomes the
@@ -412,7 +451,7 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     // so res>~1 makes it near-undamped → resonant blow-up (peak 9× at res=2.475). Map the
     // 0..1 knob straight through; res=1 is already a strong, bounded resonance (peak ~2.8).
     // Modulation offset clamped to 0..1 so a deep LFO can't drive it into blow-up.
-    const q = mo?.['filter.resonance'] ? clamp01((L && this.sFilterResonance >= 0 ? L[this.sFilterResonance] : p.filterResonance) + mo['filter.resonance']) : (L && this.sFilterResonance >= 0 ? L[this.sFilterResonance] : p.filterResonance);
+    const q = mo?.[this.sFilterResonance] ? clamp01((L && this.sFilterResonance >= 0 ? L[this.sFilterResonance] : p.filterResonance) + mo[this.sFilterResonance]) : (L && this.sFilterResonance >= 0 ? L[this.sFilterResonance] : p.filterResonance);
     const filtered = this.filterAt(mix, cutoff, q);
     // Amp envelope. Priority: the built-in env when enabled (presets keep
     // ampBuiltinEnv=1 → unchanged); else an ADSR routed to 'amp' BECOMES the
@@ -428,7 +467,7 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     let out = filtered * ae * this.velPeak;
     // amp.gain modulation = tremolo: a multiplicative gain on the output
     // (depth 1 ⇒ ±1 ⇒ 0..2×), clamped non-negative.
-    if (mo?.['amp.gain']) out *= Math.max(0, Math.min(2, 1 + mo['amp.gain']));
+    if (mo?.[this.sAmpGain]) out *= Math.max(0, Math.min(2, 1 + mo[this.sAmpGain]));
     // Done once the amplitude DRIVER has fully released after the gate: the
     // built-in env, the ADSR 'amp' envelope, or (no envelope) at gate-off. A
     // fixed-gain voice ending at gate-off keeps it from becoming immortal.

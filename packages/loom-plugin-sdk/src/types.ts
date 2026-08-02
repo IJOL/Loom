@@ -59,11 +59,19 @@ export interface ParamIndex {
 export const slotOf = (ix: ParamIndex, id: string): number => (ix.slot[id] ?? -1);
 
 /** Live, additive modulation offsets, NORMALISED (the sum of LFO `wave×depth`,
- *  roughly -1..1). Keyed by target NAME: a SubParams field for Subtractive, or a
- *  param dot-id ('filter.cutoff', 'osc.morph', 'op1.level'…) for the other
- *  engines — generic, so one VoiceManager path drives every engine. The renderer
- *  scales each to native units at read time. */
-export type VoiceModOffsets = Record<string, number>;
+ *  roughly -1..1), addressed by the SAME ParamIndex as the live values. A
+ *  renderer reads `mo[this.sCutoff]` with the slot it already resolved in
+ *  setLiveValues — modulation targets are the engine's own param ids, plus the
+ *  three synthetic ones the index appends, so there is no second numbering.
+ *
+ *  Undefined means NOTHING is modulating, and that is not the same as an array
+ *  of zeroes: the host hands back undefined so a renderer's per-target reads
+ *  short-circuit instead of running and finding nothing. Test `mo` once, not
+ *  per target.
+ *
+ *  It used to be a Record keyed by target name, with Subtractive keyed by flat
+ *  SubParams fields and everyone else by dot-id. One numbering replaced both. */
+export type VoiceModOffsets = Float64Array;
 
 /** The per-voice slice of a driver:'gate' modulator (an ADSR) the worklet hands
  *  to a renderer at spawn: its envelope times plus how deep it drives each

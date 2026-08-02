@@ -192,6 +192,9 @@ export class WestcoastRenderer implements VoiceRenderer {
   private sCutoff = -1;
   private sLpgRes = -1;
   private sLevel = -1;
+  /** The synthetic tremolo target. Not a declared param — the index appends it,
+   *  which is what those three synthetic slots are for. */
+  private sAmpGain = -1;
   // Cached expensive conversions, refreshed only when their raw input moves.
   private pitchRaw = NaN;
   private freqEffCache = 0;
@@ -273,7 +276,7 @@ export class WestcoastRenderer implements VoiceRenderer {
     }
   }
 
-  setModEnvelopes(mods: ModLite[]): void { this.modEnv.setModEnvelopes(mods); }
+  setModEnvelopes(mods: ModLite[], index: ParamIndex): void { this.modEnv.setModEnvelopes(mods, index); }
   getAdsrOffsets(): VoiceModOffsets { return this.modEnv.getAdsrOffsets(); }
   setLiveValues(values: Float64Array, index: ParamIndex): void {
     this.live = values;
@@ -288,6 +291,7 @@ export class WestcoastRenderer implements VoiceRenderer {
     this.sCutoff = slotOf(index, 'lpg.cutoff');
     this.sLpgRes = slotOf(index, 'lpg.resonance');
     this.sLevel = slotOf(index, 'amp.level');
+    this.sAmpGain = slotOf(index, 'amp.gain');
   }
 
   renderSample(t: number, moIn?: VoiceModOffsets): number {
@@ -319,7 +323,7 @@ export class WestcoastRenderer implements VoiceRenderer {
     // Mod osc runs at modFreq, feeds linear FM into main osc via fmDepthHz.
     const fmIndexKnob = L && this.sFmIndex >= 0 ? L[this.sFmIndex] : this.fmIndexBase;
     const fmFactor = freq * ratioKnob * 2;
-    const fmIndexEff = mo?.['osc.fmIndex'] ? Math.max(0, fmIndexKnob + mo['osc.fmIndex']) : fmIndexKnob;
+    const fmIndexEff = mo?.[this.sFmIndex] ? Math.max(0, fmIndexKnob + mo[this.sFmIndex]) : fmIndexKnob;
     const fmDepthHz = fmIndexEff * fmFactor;
     const modSample = this.mod.update(modFreq);
     const mainFreq = freq + modSample * fmDepthHz;
@@ -344,7 +348,7 @@ export class WestcoastRenderer implements VoiceRenderer {
 
     // --- Wavefolder (fold amount modulatable) ---
     const foldKnob = L && this.sFold >= 0 ? L[this.sFold] : this.foldBase;
-    const foldEff = mo?.['timbre.fold'] ? clamp01(foldKnob + mo['timbre.fold']) : foldKnob;
+    const foldEff = mo?.[this.sFold] ? clamp01(foldKnob + mo[this.sFold]) : foldKnob;
     const driveGain = (0.1 + foldEff * 0.9) * this.accentMul;
     const folded = fold(mixRaw, driveGain);
 
@@ -359,7 +363,7 @@ export class WestcoastRenderer implements VoiceRenderer {
     // --- Low-pass gate (cutoff + resonance modulatable) ---
     // Cutoff conversion cached: the pow only re-runs when the effective knob moves.
     const cutoffKnob = L && this.sCutoff >= 0 ? L[this.sCutoff] : this.cutoffNorm;
-    const cutoffEff = mo?.['lpg.cutoff'] ? clamp01(cutoffKnob + mo['lpg.cutoff']) : cutoffKnob;
+    const cutoffEff = mo?.[this.sCutoff] ? clamp01(cutoffKnob + mo[this.sCutoff]) : cutoffKnob;
     if (cutoffEff !== this.cutRaw) {
       this.cutRaw = cutoffEff;
       this.cutHzCached = cutoffHz(cutoffEff);
@@ -370,7 +374,7 @@ export class WestcoastRenderer implements VoiceRenderer {
     // live bag is a raw knob write with no such guarantee — filter.ts warns res
     // above ~1.5 blows up the Svf. See I-hardening, 2026-07-26 review.
     const resKnob = L && this.sLpgRes >= 0 ? clamp01(L[this.sLpgRes]) : this.lpgResBase;
-    const lpgRes = mo?.['lpg.resonance'] ? clamp01(resKnob + mo['lpg.resonance']) : resKnob;
+    const lpgRes = mo?.[this.sLpgRes] ? clamp01(resKnob + mo[this.sLpgRes]) : resKnob;
     const dynamicCutoff = cutoffBaseHz + contourVal * cutoffEnvScale;
     this.filter.update(folded, dynamicCutoff, lpgRes);
 
@@ -380,7 +384,7 @@ export class WestcoastRenderer implements VoiceRenderer {
     // --- Output (amp.level live, amp.gain tremolo) ---
     const levelKnob = L && this.sLevel >= 0 ? L[this.sLevel] : this.levelBase;
     let out = this.filter.lp * vca * levelKnob * this.ampTrim;
-    if (mo?.['amp.gain']) out *= Math.max(0, Math.min(2, 1 + mo['amp.gain']));
+    if (mo?.[this.sAmpGain]) out *= Math.max(0, Math.min(2, 1 + mo[this.sAmpGain]));
 
     // Mark done:
     // - In pluck (gate-independent) mode: done when contour finishes, regardless of gate

@@ -53,7 +53,10 @@ function render(engineId: string, params: ParamBag, depthByParam: Record<string,
     const lfo: ModLite = { id: 'l', kind: 'lfo', enabled: true, rateHz: 6, waveform: 'sine', depthByParam };
     runtime.setMods([lfo]);
   }
-  const vm = new VoiceManager(SR, engineId, params);
+  // Declared set = the seeded params PLUS whatever the modulator targets: an id
+  // with no slot has no offset, which is the contract, not a workaround.
+  const declared = [...Object.keys(params), ...Object.keys(depthByParam ?? {})];
+  const vm = new VoiceManager(SR, engineId, params, 1, declared);
   vm.setModulation(runtime);
   vm.spawn(note({ durationSec: seconds }));
   const out: number[] = [];

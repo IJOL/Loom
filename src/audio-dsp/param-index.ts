@@ -18,7 +18,13 @@
  *  envelope. They are appended AFTER the declared ids so that adding one can
  *  never renumber a declared param — renderers resolve their slots once and
  *  hold them for the life of the voice. */
-export const SYNTHETIC_TARGETS = ['amp', 'ampGain', 'filterEnv'] as const;
+// Spelled as DOT-IDS, like every other modulation target. They used to be
+// 'ampGain' / 'filterEnv' — the flat SubParams spelling, back when subtractive's
+// connections were translated into struct field names. When that translator went,
+// these were left behind, and the two of them silently lost their slot: the
+// tremolo and the filter envelope went dead. declared-params.dsp.test.ts caught
+// it, which is exactly what it is for.
+export const SYNTHETIC_TARGETS = ['amp', 'amp.gain', 'filter.env'] as const;
 
 // ParamIndex itself is DECLARED IN THE SDK, next to the VoiceRenderer hook that
 // receives it: a plugin compiles against that shape, so the host must not own a

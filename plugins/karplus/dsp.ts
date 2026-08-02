@@ -113,6 +113,9 @@ export class KarplusRenderer implements VoiceRenderer {
   private sTrim = -1;
   private sDamping = -1;
   private sBrightness = -1;
+  /** The synthetic tremolo target. Not a declared param — the index appends it,
+   *  which is what those three synthetic slots are for. */
+  private sAmpGain = -1;
   done = false;
 
   /** `rng` is a test seam: production never passes it, so the excitation stays
@@ -188,7 +191,7 @@ export class KarplusRenderer implements VoiceRenderer {
     if (t < this.holdEnd) this.holdEnd = t;
   }
 
-  setModEnvelopes(mods: ModEnvSpec[]): void { this.modEnv.setModEnvelopes(mods); }
+  setModEnvelopes(mods: ModEnvSpec[], index: ParamIndex): void { this.modEnv.setModEnvelopes(mods, index); }
   getAdsrOffsets(): VoiceModOffsets { return this.modEnv.getAdsrOffsets(); }
   setLiveValues(values: Float64Array, index: ParamIndex): void {
     this.live = values;
@@ -196,6 +199,7 @@ export class KarplusRenderer implements VoiceRenderer {
     this.sTrim = slotOf(index, 'output.trim');
     this.sDamping = slotOf(index, 'string.damping');
     this.sBrightness = slotOf(index, 'string.brightness');
+    this.sAmpGain = slotOf(index, 'amp.gain');
   }
 
   renderSample(t: number, moIn?: VoiceModOffsets): number {
@@ -235,12 +239,12 @@ export class KarplusRenderer implements VoiceRenderer {
         if (t > this.holdEnd && env < 0.001) this.done = true;
       }
     }
-    const level = mo?.['amp.level'] ? Math.max(0, levelKnob + mo['amp.level']) : levelKnob;
+    const level = mo?.[this.sLevel] ? Math.max(0, levelKnob + mo[this.sLevel]) : levelKnob;
     // No engine trim here: it is a manifest capability (`outputTrim`) that the
     // host multiplies in, together with its synth category gain. `trim` below is
     // the per-PRESET balance (params['output.trim']), which IS the plugin's.
     let out = raw * env * level * this.vel * trim;
-    if (mo?.['amp.gain']) out *= Math.max(0, Math.min(2, 1 + mo['amp.gain']));
+    if (mo?.[this.sAmpGain]) out *= Math.max(0, Math.min(2, 1 + mo[this.sAmpGain]));
     return out;
   }
 }

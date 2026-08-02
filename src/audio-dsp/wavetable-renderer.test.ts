@@ -1,5 +1,6 @@
 // src/audio-dsp/wavetable-renderer.test.ts
 import { describe, it, expect } from 'vitest';
+import { attachSlots } from '../../test/slot-offsets';
 import { WavetableRenderer } from './wavetable-renderer';
 import { getWaveTables } from './wavetable-data';
 import { createRenderer } from './renderer-registry';
@@ -165,8 +166,10 @@ describe('WavetableRenderer', () => {
       const v = new WavetableRenderer(
         note(), { ...P, 'osc.waveA': 3, 'osc.waveB': 3, 'filter.cutoff': 0.15, 'filter.resonance': 0 }, SR,
       );
+      const { mo } = attachSlots(v, { ...P, 'osc.waveA': 3, 'osc.waveB': 3, 'filter.cutoff': 0.15, 'filter.resonance': 0 });
+      const off = mo({ 'filter.cutoff': cutMod });
       const b: number[] = [];
-      for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR, { 'filter.cutoff': cutMod }));
+      for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR, off));
       return rms(b);
     };
     expect(bright(0.8)).toBeGreaterThan(bright(0) * 1.3);
@@ -181,7 +184,9 @@ describe('WavetableRenderer', () => {
       const v = new WavetableRenderer(
         note(), { ...P, 'osc.waveA': 3, 'osc.waveB': 3, 'filter.cutoff': 0.15, 'filter.resonance': 0 }, SR,
       );
-      if (withAdsr) v.setModEnvelopes([adsr]);
+      if (withAdsr) {
+        v.setModEnvelopes([adsr], attachSlots(v, { ...P, 'osc.waveA': 3, 'osc.waveB': 3, 'filter.cutoff': 0.15, 'filter.resonance': 0 }).index);
+      }
       const b: number[] = [];
       for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR));
       return rms(b);
@@ -191,12 +196,13 @@ describe('WavetableRenderer', () => {
 
   it('getAdsrOffsets exposes the per-voice ADSR contribution (the knob-ring source)', () => {
     const v = new WavetableRenderer(note({ durationSec: 10 }), P, SR);
+    const { index } = attachSlots(v, P);
     v.setModEnvelopes([{
       id: 'a', kind: 'adsr', enabled: true, rateHz: 0, waveform: 'sine',
       attackSec: 0.001, decaySec: 0.001, sustain: 0.5, releaseSec: 0.1, depthByParam: { 'filter.cutoff': 1 },
-    }]);
+    }], index);
     for (let i = 0; i < SR * 0.05; i++) v.renderSample(i / SR);
-    expect((v.getAdsrOffsets() as Record<string, number>)['filter.cutoff']).toBeCloseTo(0.5, 1);
+    expect(v.getAdsrOffsets()[index.slot['filter.cutoff']]).toBeCloseTo(0.5, 1);
   });
 
   it('registers under engine id "wavetable"', () => {

@@ -103,6 +103,9 @@ export class FMRenderer implements VoiceRenderer {
   private readonly sRatio = new Int32Array(4).fill(-1);
   private readonly sDetune = new Int32Array(4).fill(-1);
   private readonly sLevel = new Int32Array(4).fill(-1);
+  /** The synthetic tremolo target. Not a declared param — the index appends it,
+   *  which is what those three synthetic slots are for. */
+  private sAmpGain = -1;
   // Pooled per-sample scratch — allocated once, reused every renderSample call
   // so the audio thread allocates nothing.
   private readonly opOut = new Float64Array(4);
@@ -147,13 +150,14 @@ export class FMRenderer implements VoiceRenderer {
     if (t < this.holdEnd) this.holdEnd = t;
   }
 
-  setModEnvelopes(mods: ModLite[]): void { this.modEnv.setModEnvelopes(mods); }
+  setModEnvelopes(mods: ModLite[], index: ParamIndex): void { this.modEnv.setModEnvelopes(mods, index); }
   getAdsrOffsets(): VoiceModOffsets { return this.modEnv.getAdsrOffsets(); }
   setLiveValues(values: Float64Array, index: ParamIndex): void {
     this.live = values;
     this.sFeedback = slotOf(index, 'feedback');
     this.sMix = slotOf(index, 'amp.mix');
     this.sTrim = slotOf(index, 'output.trim');
+    this.sAmpGain = slotOf(index, 'amp.gain');
     for (let i = 0; i < 4; i++) {
       this.sRatio[i] = slotOf(index, OP_RATIO_IDS[i]);
       this.sDetune[i] = slotOf(index, OP_DETUNE_IDS[i]);
@@ -173,7 +177,7 @@ export class FMRenderer implements VoiceRenderer {
     const feedbackKnob = L && this.sFeedback >= 0 ? L[this.sFeedback] : this.feedback;
     const mixKnob = L && this.sMix >= 0 ? L[this.sMix] : this.mix;
     const outputTrimKnob = L && this.sTrim >= 0 ? L[this.sTrim] : this.outputTrim;
-    const feedback = mo?.['feedback'] ? Math.max(0, feedbackKnob + mo['feedback']) : feedbackKnob;
+    const feedback = mo?.[this.sFeedback] ? Math.max(0, feedbackKnob + mo[this.sFeedback]) : feedbackKnob;
 
     const algo = ALGORITHMS[this.algoIdx];
     const carriers = CARRIERS[this.algoIdx];
@@ -186,7 +190,7 @@ export class FMRenderer implements VoiceRenderer {
     for (let i = 0; i < 4; i++) {
       const ratioKnob = L && this.sRatio[i] >= 0 ? L[this.sRatio[i]] : this.ratioBase[i];
       const detuneKnob = L && this.sDetune[i] >= 0 ? L[this.sDetune[i]] : this.detuneBase[i];
-      const rMod = mo?.[OP_RATIO_IDS[i]], dMod = mo?.[OP_DETUNE_IDS[i]];
+      const rMod = mo?.[this.sRatio[i]], dMod = mo?.[this.sDetune[i]];
       const effRatio = Math.max(0.01, ratioKnob + (rMod ?? 0) * 2);
       const effDetune = detuneKnob + (dMod ?? 0) * 50;
       if (effRatio !== this.opRatioRaw[i] || effDetune !== this.opDetuneRaw[i]) {
@@ -202,7 +206,7 @@ export class FMRenderer implements VoiceRenderer {
       let fmHz = 0;
       for (const mIdx of algo[i]) {
         const mLvlBase = L && this.sLevel[mIdx] >= 0 ? L[this.sLevel[mIdx]] : this.lvl[mIdx];
-        const mLvlOff = mo?.[OP_LEVEL_IDS[mIdx]];
+        const mLvlOff = mo?.[this.sLevel[mIdx]];
         const mLvl = mLvlOff ? clamp01(mLvlBase + mLvlOff) : mLvlBase;
         fmHz += opOut[mIdx] * fe[mIdx] * mLvl * FM_DEPTH;
       }
@@ -217,7 +221,7 @@ export class FMRenderer implements VoiceRenderer {
     let out = 0;
     for (const c of carriers) {
       const lvlBase = L && this.sLevel[c] >= 0 ? L[this.sLevel[c]] : this.lvl[c];
-      const lo = mo?.[OP_LEVEL_IDS[c]];
+      const lo = mo?.[this.sLevel[c]];
       const lvl = lo ? clamp01(lvlBase + lo) : lvlBase;
       out += opOut[c] * lvl;
     }
@@ -228,10 +232,10 @@ export class FMRenderer implements VoiceRenderer {
       this.done = true;
     }
 
-    const mix = mo?.['amp.mix'] ? Math.max(0, mixKnob + mo['amp.mix']) : mixKnob;
+    const mix = mo?.[this.sMix] ? Math.max(0, mixKnob + mo[this.sMix]) : mixKnob;
     const shaped = Math.tanh(out * FM_DRIVE);   // soft-clip: tame harsh peaks, prevent carrier-sum clipping
     let s = shaped * outputTrimKnob * synthTrim('fm') * mix * this.vel;
-    if (mo?.['amp.gain']) s *= Math.max(0, Math.min(2, 1 + mo['amp.gain']));
+    if (mo?.[this.sAmpGain]) s *= Math.max(0, Math.min(2, 1 + mo[this.sAmpGain]));
     return s;
   }
 }

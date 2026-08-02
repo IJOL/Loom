@@ -43,16 +43,20 @@ export class VoiceManager {
    *  entry is dropped past the cap — Set preserves insertion order. */
   private readonly pendingReleases = new Set<number>();
   private static readonly PENDING_RELEASE_CAP = 64;
-  // Pooled per-sample modulation offsets, keyed by param dot-id — mutated in
-  // place each render sample and shared (read-only) by every voice, so the
-  // real-time render callback allocates nothing on the audio thread.
+  // Pooled per-sample modulation offsets, addressed by the SAME slots as the
+  // live values — mutated in place each render sample and shared (read-only) by
+  // every voice, so the real-time render callback allocates nothing.
   //
-  // There used to be TWO of these: this one, and a hand-written struct with the
-  // twenty flat SubParams field names, filled by twenty individually-named
-  // offsetFor calls. That existed only because subtractive's renderer read those
-  // names. It reads dot-ids now, like every other engine, so one pooled bag and
-  // one generic fill serve all of them.
-  private readonly modOffsets: Record<string, number> = {};
+  // There used to be TWO of these, and both were keyed by name: this one, and a
+  // hand-written struct of twenty flat SubParams fields filled by twenty
+  // individually-named offsetFor calls, which existed only because subtractive's
+  // renderer read those names. One numbering replaced both — and a renderer needs
+  // no new slots for it, because a modulation target IS a param id.
+  private readonly modOffsets: Float64Array;
+  /** slot → target id, for EVERY slot including the synthetic ones. Only used at
+   *  telemetry rate (~30 Hz) to name the knob rings; the audio path never reads
+   *  it. `slotIds` above is the declared-only prefix, for the legacy bag. */
+  private readonly targetIds: string[] = [];
   /** Per-engine output balance the HOST applies at the sum point, for engines
    *  whose renderer does not apply its own — i.e. PLUGINS, whose trim lives in
    *  their manifest rather than in their compiled JS. The default of 1 is what
@@ -70,6 +74,8 @@ export class VoiceManager {
     this.params = { ...params };
     this.index = buildParamIndex(paramIds);
     for (const id of paramIds) this.slotIds[this.index.slot[id]] = id;
+    for (const id in this.index.slot) this.targetIds[this.index.slot[id]] = id;
+    this.modOffsets = new Float64Array(this.index.length);
     this.smoother = new SlotSmoother(sr, this.index);
     this.smoother.reset(this.params);
     // No legacyBag fill here on purpose: nothing reads it until a renderer that
@@ -107,14 +113,30 @@ export class VoiceManager {
   setMaxVoices(n: number): void { this.maxVoices = Math.max(1, Math.min(64, Math.floor(n))); }
   /** Attach a shared-LFO modulation runtime. Its per-sample offsets are applied
    *  to every active voice at read time. */
-  setModulation(m: ModulationRuntime): void { this.mod = m; }
+  setModulation(m: ModulationRuntime): void {
+    this.mod = m;
+    // Hand it this lane's numbering so its targets resolve to slots once, rather
+    // than by name on every sample.
+    m.bindIndex(this.index);
+  }
 
-  /** ADSR-only modulation offsets of the MOST RECENT voice — the UI knob ring
-   *  follows the last note (the ADSR is per-voice; the legacy engine showed the
-   *  last note too). Undefined when no live voice carries an ADSR. */
+  /** ADSR-only modulation offsets of the MOST RECENT voice, BY NAME — the UI knob
+   *  ring follows the last note (the ADSR is per-voice; the legacy engine showed
+   *  the last note too). Undefined when no live voice carries an ADSR.
+   *
+   *  The voice holds these by slot, like everything else on the audio path; the
+   *  naming happens HERE because this is telemetry, read ~30 times a second by
+   *  the worklet's reporter, never per sample. Only non-zero slots are named, so
+   *  a lane with one modulated param posts one key, as it did before. */
   lastVoiceAdsrOffsets(): Record<string, number> | undefined {
     const last = this.slots[this.slots.length - 1];
-    return (last?.v as { getAdsrOffsets?(): Record<string, number> })?.getAdsrOffsets?.();
+    const bySlot = (last?.v as { getAdsrOffsets?(): Float64Array })?.getAdsrOffsets?.();
+    if (!bySlot || bySlot.length === 0) return undefined;
+    const out: Record<string, number> = {};
+    for (let i = 0; i < bySlot.length; i++) {
+      if (bySlot[i]) out[this.targetIds[i]] = bySlot[i];
+    }
+    return out;
   }
 
   /** The phase origin the live modulation telemetry should read, so the UI knob
@@ -176,7 +198,11 @@ export class VoiceManager {
     // others ignore the call). Read once at spawn — live shape edits apply to the
     // NEXT note, matching the engine's "params read at trigger time" rule.
     const adsr = this.mod?.getAdsrMods();
-    if (adsr && adsr.length) (v as { setModEnvelopes?(m: ModLite[]): void }).setModEnvelopes?.(adsr);
+    // The index travels with them: a spec's depths are keyed by target name, and
+    // resolving those to slots is a per-spawn job, not a per-sample one.
+    if (adsr && adsr.length) {
+      (v as { setModEnvelopes?(m: ModLite[], ix: ParamIndex): void }).setModEnvelopes?.(adsr, this.index);
+    }
     // The lane's most recent note-on — the phase origin for a shared LFO whose
     // TRIG is 'note' (the whole lane retriggers together).
     this.lastNoteOnT = note.beginSec;
@@ -225,7 +251,7 @@ export class VoiceManager {
    *  In-worklet LFO modulation is SUBTRACTIVE-ONLY for the struct-keyed path:
    *  only SubtractiveVoiceRenderer reads `VoiceModOffsets`. Other engines get the
    *  generic dot-id map instead. */
-  private fillOffsets(t: number, o: PhaseOrigin): VoiceModOffsets | Record<string, number> | undefined {
+  private fillOffsets(t: number, o: PhaseOrigin): VoiceModOffsets | undefined {
     // Nothing modulating ⇒ hand back NOTHING, not a bag of zeroes. The worklet
     // attaches a runtime to every lane whether or not it has modulators, so this
     // is the COMMON case, and the difference is large: with an empty bag every
@@ -236,7 +262,7 @@ export class VoiceManager {
     // One fill for every engine. It writes only the targets a modulator actually
     // drives, where the subtractive branch wrote all twenty every sample whether
     // anything reached them or not.
-    this.mod.offsetsInto(this.modOffsets, t, o);
+    this.mod.offsetsIntoSlots(this.modOffsets, t, o);
     return this.modOffsets;
   }
 
@@ -260,7 +286,7 @@ export class VoiceManager {
       const mo = perVoice
         ? this.fillOffsets(t, { voiceStartT: s.allocatedAt, lastNoteOnT: this.lastNoteOnT })
         : shared;
-      out += s.v.renderSample(t, mo as VoiceModOffsets | undefined) * this.outputTrim;
+      out += s.v.renderSample(t, mo) * this.outputTrim;
       if (s.v.done) this.slots.splice(i, 1);
     }
     return out;

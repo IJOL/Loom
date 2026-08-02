@@ -36,7 +36,9 @@ const V2_AT = CYCLE * 0.75;
 function render(mods: ModLite[], secs = 0.5): Float32Array {
   const mod = new ModulationRuntime(SR);
   mod.setMods(mods);
-  const vm = new VoiceManager(SR, 'subtractive', {});
+  // The lane must DECLARE the target: modulation offsets are addressed by the
+  // ParamIndex, so an id with no slot is inert — the same contract production has.
+  const vm = new VoiceManager(SR, 'subtractive', {}, 1, ['filter.cutoff']);
   vm.setModulation(mod);
   const n = Math.floor(SR * secs);
   const out = new Float32Array(n);
