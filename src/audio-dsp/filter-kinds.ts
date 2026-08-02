@@ -39,15 +39,9 @@ export const FILTER_MODES: readonly FilterMode[] = [
   { value: 'dig',  label: 'DIG',  taps: ['lp', 'hp', 'bp', 'notch'] },
   { value: 'mog',  label: 'MOG',  taps: ['lp', 'hp', 'bp'] },
   { value: 'acid', label: '303',  taps: ['lp', 'hp', 'bp'] },
-  // COMB is deliberately NOT declared yet: its DSP (CombFilter) is the next
-  // task. A mode whose Type buttons all fall through to a lowpass is three
-  // lying buttons, and "no lying buttons" is this round's whole acceptance
-  // criterion — so the row and its DSP land together, in Task 2.
+  { value: 'comb', label: 'COMB', taps: ['comb+', 'comb-', 'combff'] },
 ];
 
-// comb+/comb-/combff stay in FilterTap and here even with no mode declaring
-// them yet: the next task's CombFilter is typed against FilterTap, and an
-// unused union member paints no button — it costs nothing to have it early.
 const TAP_LABELS: Record<FilterTap, string> = {
   lp: 'LP', hp: 'HP', bp: 'BP', notch: 'NOTCH',
   'comb+': 'POS', 'comb-': 'NEG', combff: 'FF',

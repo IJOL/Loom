@@ -58,10 +58,8 @@ const PAIRS: Array<[number, number, string]> = FILTER_MODES.flatMap((m, mi) =>
 );
 
 describe('the mode table', () => {
-  it('is three circuits, and every one declares at least two taps', () => {
-    // COMB is deliberately NOT here yet: its DSP is the next task, and a mode
-    // whose buttons all fall through to a lowpass is three lying buttons.
-    expect(FILTER_MODES).toHaveLength(3);
+  it('is four circuits, and every one declares at least two taps', () => {
+    expect(FILTER_MODES).toHaveLength(4);
     for (const m of FILTER_MODES) expect(m.taps.length, m.label).toBeGreaterThan(1);
   });
 
@@ -73,10 +71,11 @@ describe('the mode table', () => {
   it('keeps every existing preset value meaning what it meant', () => {
     // DIG/MOG/303 at 0/1/2, and each declaring its taps in the order the old
     // Type control used. Six values in the preset pack depend on this.
-    expect(FILTER_MODES.map((m) => m.value)).toEqual(['dig', 'mog', 'acid']);
+    expect(FILTER_MODES.map((m) => m.value)).toEqual(['dig', 'mog', 'acid', 'comb']);
     expect(FILTER_MODES[0].taps).toEqual(['lp', 'hp', 'bp', 'notch']);
     expect(FILTER_MODES[1].taps).toEqual(['lp', 'hp', 'bp']);
     expect(FILTER_MODES[2].taps).toEqual(['lp', 'hp', 'bp']);
+    expect(FILTER_MODES[3].taps).toEqual(['comb+', 'comb-', 'combff']);
   });
 
   it('never lets a ladder declare a notch — the one response they cannot do', () => {

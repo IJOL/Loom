@@ -7,6 +7,7 @@
 
 import { Svf } from './filter';
 import { LadderFilter, type LadderTap } from './ladder';
+import { CombFilter } from './comb';
 import { FILTER_MODES, ROUTING_OFF, tapFor, type FilterTap } from './filter-kinds';
 
 export * from './filter-kinds';
@@ -37,19 +38,22 @@ export function trackedCutoff(baseBHz: number, aRatio: number, track: number): n
 class FilterBlock {
   private svf: Svf | null = null;
   private ladder: LadderFilter | null = null;
+  private comb: CombFilter | null = null;
   private readonly tap: FilterTap;
 
   constructor(model: number, type: number, sr: number) {
     const mode = FILTER_MODES[Math.max(0, Math.min(FILTER_MODES.length - 1, Math.round(model)))];
     this.tap = tapFor(model, type);
-    if (mode.value === 'mog' || mode.value === 'acid') {
+    if (mode.value === 'comb') this.comb = new CombFilter(sr);
+    else if (mode.value === 'mog' || mode.value === 'acid') {
       this.ladder = new LadderFilter(mode.value === 'mog' ? 'moog' : 'diode', sr, this.tap as LadderTap);
-    } else {
-      this.svf = new Svf(sr);
-    }
+    } else this.svf = new Svf(sr);
   }
 
   update(x: number, cutoffHz: number, res: number): number {
+    // Under COMB the two knobs mean something else, and the manual says so:
+    // cutoffHz is the comb's TUNING and res is its feedback.
+    if (this.comb) return this.comb.update(x, cutoffHz, res, this.tap);
     if (this.ladder) return this.ladder.update(x, cutoffHz, res);
     const f = this.svf!;
     f.update(x, cutoffHz, res);

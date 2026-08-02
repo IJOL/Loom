@@ -62,9 +62,8 @@ export const SUB_PARAM_SPECS: EngineParamSpec[] = [
   // the responses that circuit can honestly produce (audio-dsp/filter-kinds.ts).
   // Choose MOG and the NOTCH button is not there, rather than being there and
   // quietly handing back a lowpass, which is what the old grid did.
-  // max: 2 -- three modes (DIG/MOG/303). Task 2 raises this to 3 when COMB's
-  // DSP lands alongside its row in the table.
-  { id: 'filter.model', label: 'Mode', kind: 'discrete', min: 0, max: 2, default: 0,
+  // max: 3 -- four modes (DIG/MOG/303/COMB).
+  { id: 'filter.model', label: 'Mode', kind: 'discrete', min: 0, max: 3, default: 0,
     options: FILTER_MODE_OPTIONS, group: 'filter' },
   { id: 'filter.type',  label: 'Type', kind: 'discrete', min: 0, max: 3, default: 0,
     options: typeOptionsFor(0), optionsFrom: { paramId: 'filter.model', build: typeOptionsFor },
