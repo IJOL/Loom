@@ -58,6 +58,23 @@ Orden del tramo acoplado: el motor envía sus ids → el `VoiceManager` construy
 se convierten los seis renderers de uno en uno con su paridad verde → y sólo
 entonces se borra el camino viejo y los offsets de modulación pasan a slots.
 
+### La medición de CPU es LA entrega, no el epílogo
+
+El cambio no tiene efecto visible: mismo sonido, misma UI, mismos tests. **Lo
+único que justifica haberlo hecho es el número de la Task 9.** Por eso la partida
+se midió antes de tocar producción (Task 3) y por eso la comparación cierra el
+trabajo. Reglas que no se negocian:
+
+- **Mismo comando, misma máquina, misma metodología** que la partida — 10 s de
+  audio, 8 voces, mediana de 5 pasadas — o los dos números no se pueden restar.
+  El comando real es `npx tsx tools/param-read-bench.ts <id>`: el plan lo
+  escribió `.mjs` y la ejecución entregó `.ts`; la Task 9 usa el `.ts`.
+- **Se informan los cinco motores**, no sólo los que mejoraron.
+- **Un empate o un empeoramiento se publica igual y se para.** No se ensancha
+  el contrato ni se relaja la paridad para conseguir un número bonito. La
+  medición de la Task 3 ya desmintió una hipótesis cómoda (el `39×` del
+  micro-bench); ésta tiene el mismo derecho a desmentir el diseño.
+
 ## Global Constraints
 
 - **Ni una muestra de diferencia.** La red es la paridad muestra a muestra, y se
@@ -602,10 +619,14 @@ git commit -m "refactor(dsp): one offsets array by slot, for every engine alike"
 - Modify: `docs/superpowers/plans/2026-08-01-params-por-indice.md` (la tabla de
   la Task 3)
 
+**Esta tarea es el motivo del plan entero.** Ver _«La medición de CPU es LA
+entrega»_ en la sección Estado: misma máquina, misma metodología que la Task 3,
+los cinco motores informados, y un empeoramiento se publica y para el trabajo.
+
 - [ ] **Step 1: Medir el "después"**
 
 ```bash
-for e in tb303 subtractive fm wavetable westcoast; do node tools/param-read-bench.mjs $e; done
+for e in tb303 subtractive fm wavetable westcoast; do npx tsx tools/param-read-bench.ts $e; done
 ```
 
 - [ ] **Step 2: Rellenar la tabla y juzgar**
