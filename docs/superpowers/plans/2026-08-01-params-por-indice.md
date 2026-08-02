@@ -259,13 +259,26 @@ for e in tb303 subtractive fm wavetable westcoast; do node tools/param-read-benc
 Sustituye la tabla de abajo por los valores reales. Es el punto de comparación
 del resto del trabajo; sin él, la Task 9 no puede afirmar nada.
 
+Medido el 2026-08-01 con `npx tsx tools/param-read-bench.ts <id>`, 10 s de audio
+× 8 voces a 48 kHz, mediana de 5 tiradas, sobre esta rama **antes de tocar
+producción** (idéntica a `main` en el camino de audio):
+
 | motor | mediana ANTES (ms) | mediana DESPUÉS (ms) |
 | --- | --- | --- |
-| tb303 | _(rellenar)_ | |
-| subtractive | _(rellenar)_ | |
-| fm | _(rellenar)_ | |
-| wavetable | _(rellenar)_ | |
-| westcoast | _(rellenar)_ | |
+| tb303 | 48,5 | _(Task 9)_ |
+| subtractive | 460,1 | _(Task 9)_ |
+| fm | 962,4 | _(Task 9)_ |
+| wavetable | 502,1 | _(Task 9)_ |
+| westcoast | 894,6 | _(Task 9)_ |
+
+**Lo que estos números ya dicen, y conviene leer antes de prometer nada:**
+Subtractive **no** es el motor rápido pese a su struct — es 9,5× más lento que
+el 303 y sólo algo mejor que Wavetable. El coste está dominado por su propio DSP
+(dos osciladores, sub, ruido, unison y filtro), no por cómo lee sus params. Así
+que la ganancia del cambio a índices se medirá en **puntos porcentuales**, no en
+múltiplos, y la Task 9 debe juzgar con esa vara: lo que hay que demostrar es que
+Subtractive **no empeora** al soltar el struct y que los otros **mejoran algo**,
+no una revolución que estos números no permiten.
 
 - [ ] **Step 4: Commit**
 
