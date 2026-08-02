@@ -76,4 +76,23 @@ describe('every comb stays bounded', () => {
     const c = new CombFilter(SR);
     for (let i = 0; i < 100; i++) expect(Number.isFinite(c.update(1, 1, 0.9, 'comb+'))).toBe(true);
   });
+
+  it('holds its tuning at the top of the knob too', () => {
+    // Cutoff alone reaches ~13 kHz, and the filter envelope can add ~16 kHz
+    // more on top of it -- a deep, fast envelope on a comb voice is a real
+    // path past sr*0.45 (21.6 kHz at 48 kHz), straight into the top clamp.
+    // Driving tuneHz at sr itself is well past that clamp on every tap.
+    for (const tap of ['comb+', 'comb-', 'combff'] as const) {
+      const c = new CombFilter(SR);
+      let peak = 0;
+      for (let i = 0; i < SR * 0.2; i++) {
+        const y = c.update(Math.sin(2 * Math.PI * 200 * i / SR), SR, 0.9, tap);
+        expect(Number.isFinite(y), `${tap} went non-finite above sr*0.45`).toBe(true);
+        const a = Math.abs(y); if (a > peak) peak = a;
+      }
+      // Same runaway detector as the bottom-of-knob/max-feedback case above,
+      // not a claim about the tone at that tuning.
+      expect(peak, `${tap} blew up above sr*0.45`).toBeLessThan(20);
+    }
+  });
 });

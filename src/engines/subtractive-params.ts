@@ -68,6 +68,11 @@ export const SUB_PARAM_SPECS: EngineParamSpec[] = [
   { id: 'filter.type',  label: 'Type', kind: 'discrete', min: 0, max: 3, default: 0,
     options: typeOptionsFor(0), optionsFrom: { paramId: 'filter.model', build: typeOptionsFor },
     group: 'filter' },
+  // Under the COMB mode these two mean something else, and that is stated
+  // rather than silent: Cutoff is the comb's TUNING (the frequency its peaks
+  // are spaced by, not a corner) and Resonance is its feedback. The engine
+  // already does this once elsewhere -- the Sync wave reads osc*.pw as its
+  // ratio -- and it is honest exactly as long as it is written down.
   { id: 'filter.cutoff',    label: 'Cutoff',    kind: 'continuous', min: 0, max: 1, default: 0.55, group: 'filter' },
   { id: 'filter.resonance', label: 'Resonance', kind: 'continuous', min: 0, max: 1, default: 0.25, group: 'filter' },
   { id: 'filter.envAmount', label: 'Env Amt',   kind: 'continuous', min: 0, max: 1, default: 0.45, group: 'filter' },

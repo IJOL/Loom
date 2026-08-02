@@ -51,8 +51,11 @@ class FilterBlock {
   }
 
   update(x: number, cutoffHz: number, res: number): number {
-    // Under COMB the two knobs mean something else, and the manual says so:
-    // cutoffHz is the comb's TUNING and res is its feedback.
+    // Under COMB the two knobs mean something else: cutoffHz is the comb's
+    // TUNING (the frequency its peaks are spaced by) and res is its feedback.
+    // Declared, not hidden here -- see the filter.cutoff/filter.resonance
+    // param comments in subtractive-params.ts, the place a reader actually
+    // looks for what a knob does.
     if (this.comb) return this.comb.update(x, cutoffHz, res, this.tap);
     if (this.ladder) return this.ladder.update(x, cutoffHz, res);
     const f = this.svf!;
