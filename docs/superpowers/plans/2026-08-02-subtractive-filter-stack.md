@@ -2,421 +2,378 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace the Subtractive engine's Model x Type filter grid with one ten-entry list where every entry works, add a second filter block, and route the two with OFF / series / parallel / difference plus a Blend knob.
+**Goal:** Give the Subtractive engine a Mode x Type filter choice where no button can lie, a fourth circuit (COMB) with three responses of its own, a second filter block, and a routing control over the two.
 
-**Architecture:** A new pure-DSP module `src/audio-dsp/filter-stack.ts` owns both filter blocks and the routing; a sibling data module `src/audio-dsp/filter-kinds.ts` owns the ten-entry table that the dropdown and the DSP both read, so they cannot drift. `subtractive-renderer.ts` LOSES its filter code (it is at 321 code lines against a 300 target) and gains one `FilterStack` field. Filter kinds and the routing mode are structural — read once at trigger, like the filter model is today. The four new continuous params are read live by slot, so they move the note already sounding and become modulation destinations for free.
+**Architecture:** `src/audio-dsp/filter-kinds.ts` holds the data — a table of circuits, each declaring the taps it can honestly produce — and `src/audio-dsp/filter-stack.ts` holds the DSP: one `FilterBlock` per slot, plus the routing between them. The UI's Type control builds its option list from the chosen Mode's taps, so an impossible pair is not merely unreachable, it cannot be represented: `type` indexes the mode's own tap list and is clamped.
 
-**Tech Stack:** TypeScript, Vitest, no new dependencies. The DSP primitives (`Svf` in `filter.ts`, `LadderFilter` in `ladder.ts`) are unchanged — this plan only changes who selects and combines them.
+**Tech Stack:** TypeScript, Vitest, no new dependencies.
+
+## Where this starts
+
+Two commits are already on the branch:
+
+- `cb4c1df` — the ring modulator (`ring.level`), finished and independent.
+- `7cfb100` — this work so far: the spec (final shape), this plan's predecessor, and code in a **superseded** shape. `filter-kinds.ts` + `filter-stack.ts` exist with a FLAT ten-entry `FILTER_KINDS` list and one `filter.kind` param; `subtractive-renderer.ts` is already off its own filter code and onto `FilterStack`; `ladderTapFor` and its NOTCH-on-a-ladder lie are already deleted.
+
+Task 1 below reshapes that table and those params into Mode x Type. Everything else in those two files — `FilterBlock`, `FilterStack`, `trackedCutoff`, the no-silent-alias test — survives.
 
 ## Global Constraints
 
 - **Spec:** `docs/superpowers/specs/2026-08-02-subtractive-filter-stack-design.md`. Read it before Task 1.
-- **Branch:** work stays on `worktree-subtractive-ringmod`, in the worktree at `.claude/worktrees/subtractive-ringmod`. Do NOT create another branch or worktree, and do NOT merge to `main` — the user merges when the whole thing is done.
-- **Language:** all code, comments, labels and commit messages in **English**. No Spanish in any artifact.
-- **Assertions are relative.** Ratios (`>`, `<`, `> x * 2`), never absolute magnitudes. If an absolute number is unavoidable, justify it in a comment.
+- **Branch:** stay on `worktree-subtractive-ringmod`, in the worktree at `.claude/worktrees/subtractive-ringmod`. Do NOT change branch, do NOT create a worktree, do NOT merge to `main`.
+- **Language:** all code, comments, labels and commit messages in **English**.
+- **No lying buttons.** This is the acceptance criterion the whole round exists for: a control must never paint an option that does not do what it says. When in doubt, do not paint it.
+- **TDD:** failing test first, run it, see it fail for the stated reason, then implement.
+- **Assertions are relative** (ratios, ordering), never absolute magnitudes unless justified in a comment.
 - **One test per user path.** No `(or ...)` alternatives inside a test.
-- **File size:** target 300 code lines, hard cap 500. Comment and blank lines do not count.
-- **Every UI write of an engine param goes through `commitParam`** — not touched by this plan, but do not regress it.
-- **Test colour:** run single files as `NO_COLOR=1 npx vitest run <path>`. Never add `--reporter=`.
-- **Commit after every task.** Use a heredoc for the message (`git commit -F-` with `<<'EOF'`), never a PowerShell here-string.
-- **Do not run `npm run test:e2e`** in this plan: it serves the last `dist/` build with no build step, and nothing here changes e2e-visible behaviour until Task 5's manual check.
+- Run single test files as `NO_COLOR=1 npx vitest run <path>`. Never add `--reporter=`.
+- Commit with a heredoc (`git commit -F- <<'EOF'`), never a PowerShell here-string.
+- Do NOT run `npm run test:e2e` — it serves a stale `dist/` with no build step.
+- `npm run test:unit` sometimes exits non-zero with `ERR_IPC_CHANNEL_CLOSED` AFTER every test passes. Known flaky teardown; re-run once to confirm.
+- **File size:** target 300 code lines, hard cap 500 (comments and blanks do not count).
+- **Every UI write of an engine param goes through `commitParam`** (`engine-param-commit.ts`) — never `setBaseValue` alone, or the edit is thrown away on save.
 
 ---
 
-### Task 1: The kind table and a one-block filter stack
+### Task 1: Mode x Type, with Type filtered by Mode
 
-Creates the two new modules with routing OFF only. At the end of this task nothing uses them yet — it is a self-contained, tested unit.
+Reshapes the flat list into a table of circuits-with-taps, brings back `filter.model` / `filter.type`, and teaches the param grid to build one control's options from another param's value.
 
 **Files:**
-- Create: `src/audio-dsp/filter-kinds.ts`
-- Create: `src/audio-dsp/filter-stack.ts`
-- Test: `src/audio-dsp/filter-stack.test.ts`
+- Modify: `src/audio-dsp/filter-kinds.ts` (the table)
+- Modify: `src/audio-dsp/filter-stack.ts` (`FilterBlock` takes a model + tap)
+- Modify: `src/audio-dsp/filter-stack.test.ts`
+- Modify: `src/engines/engine-params.ts` (the `optionsFrom` field)
+- Modify: `src/engines/engine-param-grid.ts` (build options from it; rebuild on change)
+- Modify: `src/engines/engine-types.ts` (`EngineUIContext.rebuildParamUI`)
+- Modify: `src/engines/subtractive-params.ts`, `src/audio-dsp/types.ts`, `src/audio-dsp/default-params.ts`, `src/audio-dsp/subtractive-renderer.ts`
+- Modify: `src/audio-dsp/subtractive-renderer.test.ts`, `src/presets/subtractive-unison-presets.test.ts`, `src/audio-dsp/live-params.dsp.test.ts`, `tools/verify-defaults-unchanged.mjs`, `tools/param-access-bench.mjs`, `tools/bench-unison.mjs`
+- Test: `src/engines/engine-param-grid.test.ts` (the dependent-options case)
 
-**Interfaces:**
-- Consumes: `Svf` from `./filter`, `LadderFilter` / `LadderTap` from `./ladder`.
-- Produces:
-  - `FilterKind = { value: string; label: string; model: 'dig'|'moog'|'diode'; tap: 'lp'|'hp'|'bp'|'notch' }`
-  - `FILTER_KINDS: readonly FilterKind[]` (10 entries, index = param value)
-  - `FILTER_KIND_OPTIONS: { value: string; label: string }[]`
-  - `FILTER_ROUTING_OPTIONS: { value: string; label: string }[]`
-  - `ROUTING_OFF = 0`, `ROUTING_SER = 1`, `ROUTING_PAR = 2`, `ROUTING_DIFF = 3`
-  - `class FilterStack { constructor(kindA: number, kindB: number, routing: number, sr: number); update(x: number, cutA: number, resA: number, cutB: number, resB: number, blend: number): number }`
-  - `trackedCutoff(baseBHz: number, aRatio: number, track: number): number`
+**Interfaces produced (later tasks depend on these):**
+- `FILTER_MODES: readonly FilterMode[]` where `FilterMode = { value, label, taps: FilterTap[] }`
+- `FilterTap = 'lp' | 'hp' | 'bp' | 'notch' | 'comb+' | 'comb-' | 'combff'`
+- `tapFor(model: number, type: number): FilterTap`
+- `typeOptionsFor(model: number): { value: string; label: string }[]`
+- params `filter.model` (0..3) and `filter.type` (0..3), replacing `filter.kind`
+- `SubParams.filterModel` / `SubParams.filterType`, replacing `filterKind`
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Write the failing tests**
 
-Create `src/audio-dsp/filter-stack.test.ts`:
+Replace the two describes in `src/audio-dsp/filter-stack.test.ts` that walk `FILTER_KINDS` (`the filter kind table` and `every entry in the list does what its label says`, plus `no entry is a silent alias of another`) with these. Keep `passes()`, `noise()`, `throughKind()`, `rms`, `divergence` and the `trackedCutoff` describe exactly as they are — only their inputs change from a kind index to a (model, type) pair.
 
 ```ts
-// src/audio-dsp/filter-stack.test.ts
-import { describe, it, expect } from 'vitest';
-import { FILTER_KINDS, FILTER_KIND_OPTIONS } from './filter-kinds';
-import { FilterStack, ROUTING_OFF, trackedCutoff } from './filter-stack';
+import { FILTER_MODES, tapFor, typeOptionsFor, type FilterTap } from './filter-kinds';
 
-const SR = 48000;
-const CUTOFF = 880;
-// A2 (110 Hz), A5 (880 Hz), A8 (7040 Hz): three octaves under the cutoff, on it,
-// three over. The same three tones the renderer's filter tests use.
-const LOW = 110, AT = 880, HIGH = 7040;
+/** Every (mode, tap) pair the table declares, as [modelIdx, typeIdx, label]. */
+const PAIRS: Array<[number, number, string]> = FILTER_MODES.flatMap((m, mi) =>
+  m.taps.map((t, ti) => [mi, ti, `${m.label} ${t}`] as [number, number, string]),
+);
 
-/** How much of a steady sine at `hz` survives `kind`, at the engine's default
- *  resonance. The first 20 ms are dropped: the filter states start at zero, so
- *  the run-in is a transient, not the steady-state response being measured. */
-const passes = (kind: number, hz: number): number => {
-  const s = new FilterStack(kind, 0, ROUTING_OFF, SR);
-  let acc = 0, n = 0;
-  for (let i = 0; i < SR * 0.25; i++) {
-    const y = s.update(Math.sin(2 * Math.PI * hz * i / SR), CUTOFF, 0.25, CUTOFF, 0.25, 0);
-    if (i > SR * 0.02) { acc += y * y; n++; }
-  }
-  return Math.sqrt(acc / n);
-};
-
-/** A deterministic broadband signal — a seeded LCG, so every run compares the
- *  same input and two kinds differ only by what the filter did to it. */
-const noise = (n: number): number[] => {
-  let s = 12345;
-  const out: number[] = [];
-  for (let i = 0; i < n; i++) { s = (s * 1103515245 + 12345) & 0x7fffffff; out.push(s / 0x40000000 - 1); }
-  return out;
-};
-
-const throughKind = (kind: number, input: number[]): number[] => {
-  const s = new FilterStack(kind, 0, ROUTING_OFF, SR);
-  return input.map((x) => s.update(x, CUTOFF, 0.4, CUTOFF, 0.4, 0));
-};
-
-const rms = (b: number[]) => Math.sqrt(b.reduce((s, v) => s + v * v, 0) / b.length);
-/** How much two renders differ, relative to their own level. Same helper the
- *  renderer tests use, and 0.01 is the threshold that file already treats as
- *  "these are the same sound". */
-const divergence = (a: number[], b: number[]): number => {
-  let d = 0; for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b[i]);
-  return d / a.length / Math.max(1e-9, rms(a));
-};
-
-const kindsWithTap = (tap: string): number[] =>
-  FILTER_KINDS.map((k, i) => [k, i] as const).filter(([k]) => k.tap === tap).map(([, i]) => i);
-
-describe('the filter kind table', () => {
-  it('is ten entries and the dropdown is built from it', () => {
-    expect(FILTER_KINDS).toHaveLength(10);
-    expect(FILTER_KIND_OPTIONS).toEqual(FILTER_KINDS.map((k) => ({ value: k.value, label: k.label })));
+describe('the mode table', () => {
+  it('is four circuits and every one declares at least two taps', () => {
+    expect(FILTER_MODES).toHaveLength(4);
+    // A one-option control is a label pretending to be a choice.
+    for (const m of FILTER_MODES) expect(m.taps.length, m.label).toBeGreaterThan(1);
   });
 
   it('starts at the current default, so a patch that says nothing is unchanged', () => {
-    expect(FILTER_KINDS[0]).toMatchObject({ model: 'dig', tap: 'lp' });
+    expect(FILTER_MODES[0].value).toBe('dig');
+    expect(FILTER_MODES[0].taps[0]).toBe('lp');
   });
 
-  it('never offers a notch on a ladder — the one response they cannot do honestly', () => {
-    // A ladder's resonance feedback fills a notch's null, and on the diode at
-    // res 0.7 it inverts into a bump. The old grid let you pick that and quietly
-    // handed back the lowpass; the list simply does not contain it.
-    const lie = FILTER_KINDS.filter((k) => k.model !== 'dig' && k.tap === 'notch');
-    expect(lie, 'a ladder notch is not an honest response').toEqual([]);
+  it('keeps every existing preset value meaning what it meant', () => {
+    // DIG/MOG/303 at 0/1/2, and each declaring its taps in the order the old
+    // Type control used. Six values in the preset pack depend on this.
+    expect(FILTER_MODES.map((m) => m.value)).toEqual(['dig', 'mog', 'acid', 'comb']);
+    expect(FILTER_MODES[0].taps).toEqual(['lp', 'hp', 'bp', 'notch']);
+    expect(FILTER_MODES[1].taps).toEqual(['lp', 'hp', 'bp']);
+    expect(FILTER_MODES[2].taps).toEqual(['lp', 'hp', 'bp']);
   });
 
-  it('has unique values and unique labels', () => {
-    expect(new Set(FILTER_KINDS.map((k) => k.value)).size).toBe(10);
-    expect(new Set(FILTER_KINDS.map((k) => k.label)).size).toBe(10);
+  it('never lets a ladder declare a notch — the one response they cannot do', () => {
+    for (const m of FILTER_MODES) {
+      if (m.value === 'mog' || m.value === 'acid') expect(m.taps).not.toContain('notch');
+    }
   });
 });
 
-describe('every entry in the list does what its label says', () => {
-  it('the lowpasses pass what is under the cutoff and stop what is over it', () => {
-    for (const k of kindsWithTap('lp')) {
-      expect(passes(k, LOW), FILTER_KINDS[k].label).toBeGreaterThan(passes(k, HIGH) * 10);
+describe('tapFor', () => {
+  it('names a tap the mode really has, for every model and every type', () => {
+    for (let mi = 0; mi < FILTER_MODES.length; mi++) {
+      for (const ti of [-3, 0, 1, 2, 3, 9]) {
+        expect(FILTER_MODES[mi].taps, `mode ${mi} type ${ti}`).toContain(tapFor(mi, ti));
+      }
     }
+  });
+
+  it('clamps rather than wrapping, so an out-of-range type lands on the last tap', () => {
+    expect(tapFor(1, 9)).toBe('bp');    // MOG has lp, hp, bp
+    expect(tapFor(1, -1)).toBe('lp');
+  });
+});
+
+describe('the Type control offers exactly the declared taps', () => {
+  // No lying buttons, as an assertion: the option list the UI builds must be
+  // the mode's tap list, no extra button and no missing one.
+  it.each(FILTER_MODES.map((m, i) => [m.label, i] as const))('%s', (_label, mi) => {
+    expect(typeOptionsFor(mi)).toHaveLength(FILTER_MODES[mi].taps.length);
+    expect(typeOptionsFor(mi).map((o) => o.value)).toEqual(FILTER_MODES[mi].taps);
+  });
+});
+
+describe('every declared pair does what it says', () => {
+  const lp = PAIRS.filter(([m, t]) => tapFor(m, t) === 'lp');
+  const hp = PAIRS.filter(([m, t]) => tapFor(m, t) === 'hp');
+  const bp = PAIRS.filter(([m, t]) => tapFor(m, t) === 'bp');
+  const notch = PAIRS.filter(([m, t]) => tapFor(m, t) === 'notch');
+
+  it('the lowpasses pass what is under the cutoff and stop what is over it', () => {
+    for (const [m, t, label] of lp) expect(passes(m, t, LOW), label).toBeGreaterThan(passes(m, t, HIGH) * 10);
   });
 
   it('the highpasses are the mirror image', () => {
-    for (const k of kindsWithTap('hp')) {
-      expect(passes(k, HIGH), FILTER_KINDS[k].label).toBeGreaterThan(passes(k, LOW) * 10);
-    }
+    for (const [m, t, label] of hp) expect(passes(m, t, HIGH), label).toBeGreaterThan(passes(m, t, LOW) * 10);
   });
 
   it('the bandpasses pass the cutoff and reject both sides', () => {
-    for (const k of kindsWithTap('bp')) {
-      expect(passes(k, AT), FILTER_KINDS[k].label).toBeGreaterThan(passes(k, LOW) * 5);
-      expect(passes(k, AT), FILTER_KINDS[k].label).toBeGreaterThan(passes(k, HIGH) * 5);
+    for (const [m, t, label] of bp) {
+      expect(passes(m, t, AT), label).toBeGreaterThan(passes(m, t, LOW) * 5);
+      expect(passes(m, t, AT), label).toBeGreaterThan(passes(m, t, HIGH) * 5);
     }
   });
 
   it('the notch is a hole where the bandpass has its peak', () => {
-    for (const k of kindsWithTap('notch')) {
-      expect(passes(k, AT), FILTER_KINDS[k].label).toBeLessThan(passes(k, LOW) * 0.2);
-      expect(passes(k, AT), FILTER_KINDS[k].label).toBeLessThan(passes(k, HIGH) * 0.2);
+    for (const [m, t, label] of notch) {
+      expect(passes(m, t, AT), label).toBeLessThan(passes(m, t, LOW) * 0.2);
+      expect(passes(m, t, AT), label).toBeLessThan(passes(m, t, HIGH) * 0.2);
     }
   });
 });
 
-describe('no entry is a silent alias of another', () => {
-  // This is the "everything in the list actually works" requirement as an
-  // assertion: it is the test that would have caught NOTCH-on-a-ladder handing
-  // back the lowpass, because the two would have been bit-identical.
-  it('all ten differ from each other through the same signal', () => {
+describe('no declared pair is a silent alias of another', () => {
+  it('all of them differ from each other through the same signal', () => {
     const input = noise(SR * 0.1);
-    const rendered = FILTER_KINDS.map((_, i) => throughKind(i, input));
+    const rendered = PAIRS.map(([m, t]) => throughPair(m, t, input));
     for (let a = 0; a < rendered.length; a++) {
       for (let b = a + 1; b < rendered.length; b++) {
-        const tag = `${FILTER_KINDS[a].label} vs ${FILTER_KINDS[b].label}`;
-        expect(divergence(rendered[a], rendered[b]), tag).toBeGreaterThan(0.01);
+        expect(divergence(rendered[a], rendered[b]), `${PAIRS[a][2]} vs ${PAIRS[b][2]}`)
+          .toBeGreaterThan(0.01);
       }
     }
   });
 });
-
-describe('routing OFF', () => {
-  it('is filter A alone — B is not in the path at any blend', () => {
-    const input = noise(SR * 0.05);
-    const run = (blend: number): number[] => {
-      const s = new FilterStack(0, 3, ROUTING_OFF, SR);
-      return input.map((x) => s.update(x, CUTOFF, 0.3, 200, 0.3, blend));
-    };
-    let d = 0;
-    const a = run(0), b = run(1);
-    for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b[i]);
-    expect(d).toBe(0);
-  });
-});
-
-describe('trackedCutoff', () => {
-  // How far filter B follows everything that MOVES filter A (its envelope and
-  // key tracking), expressed as a ratio against A's own base so the interval
-  // between them is preserved in OCTAVES rather than in Hz.
-  it('leaves B where its knob puts it at track 0', () => {
-    expect(trackedCutoff(400, 4, 0)).toBe(400);
-  });
-
-  it('preserves the interval at track 1 — B moves by the same ratio as A', () => {
-    expect(trackedCutoff(400, 4, 1)).toBe(1600);
-  });
-
-  it('follows part of the way in between', () => {
-    expect(trackedCutoff(400, 3, 0.5)).toBe(800);   // 400 * (1 + 0.5*2)
-  });
-
-  it('stays inside the audible range however far A swings', () => {
-    expect(trackedCutoff(400, 200, 1)).toBe(18000);
-    expect(trackedCutoff(400, 0, 1)).toBe(20);
-  });
-});
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+Change the two helpers to take a pair instead of a kind index — `passes(model, type, hz)` and `throughPair(model, type, input)` — building the stack as `new FilterStack(model, type, 0, 0, ROUTING_OFF, SR)` (the new constructor, see Step 3). Keep `passes()`'s RMS-about-the-mean and its comment: the diode ladder rectifies, and that is still true.
+
+- [ ] **Step 2: Run the tests to verify they fail**
 
 Run: `NO_COLOR=1 npx vitest run src/audio-dsp/filter-stack.test.ts`
-Expected: FAIL — `Failed to resolve import "./filter-kinds"`.
+Expected: FAIL — `FILTER_MODES` / `tapFor` / `typeOptionsFor` are not exported.
 
-- [ ] **Step 3: Write the kind table**
+- [ ] **Step 3: Reshape the table and the block**
 
-Create `src/audio-dsp/filter-kinds.ts`:
+Rewrite `src/audio-dsp/filter-kinds.ts`'s table half. Keep the file's header comment about why the notch is missing from the ladders; replace the `FilterKind` interface, `FILTER_KINDS` and `FILTER_KIND_OPTIONS` with:
 
 ```ts
-// src/audio-dsp/filter-kinds.ts
-// The filter list, as data. ONE table, read by the dropdown and by the DSP that
-// builds the filter — so the label and the circuit cannot drift apart.
-//
-// It replaces a 3x4 grid of Model x Type, two of whose twelve points were lies:
-// a ladder has no honest notch (its resonance feedback fills the null, and on
-// the diode model at res 0.7 the null inverts into a BUMP), so choosing NOTCH on
-// MOG or 303 quietly handed back the LOWPASS. A list cannot express that: an
-// entry either works or it is not in it.
-//
-// Duplicates ARE the point. Three lowpasses and three highpasses is not
-// redundancy — 12 dB/oct state-variable, 24 dB/oct Moog ladder and 24 dB/oct
-// diode ladder are three different sounds, and the label says which is which.
-//
-// Data only, no classes: the main-thread param spec imports this for the
-// dropdown, and pulling the ladder DSP into that bundle would be a waste.
+export type FilterTap = 'lp' | 'hp' | 'bp' | 'notch' | 'comb+' | 'comb-' | 'combff';
 
-export interface FilterKind {
-  /** Stable id, written into presets and saves. Never renumber; append. */
+export interface FilterMode {
+  /** Stable id for presets and saves. */
   value: string;
-  /** What the dropdown shows: response, then slope, then circuit — what it does
-   *  first, what it costs second, what it is made of last. */
+  /** What the Mode control shows. Short: the Type control says the response. */
   label: string;
-  /** Which circuit: the state-variable filter, or one of the two ladders. */
-  model: 'dig' | 'moog' | 'diode';
-  /** Which response is taken out of it. */
-  tap: 'lp' | 'hp' | 'bp' | 'notch';
+  /** The responses this circuit produces HONESTLY, in the order the Type
+   *  control paints them. It is the option list, so a tap that is not here is
+   *  not a button — which is the whole point. */
+  taps: FilterTap[];
 }
 
-/** Index = the `filter.kind` / `filter2.kind` param value. Index 0 is the
- *  pre-list default (DIG + LP), so a patch that never mentions the filter keeps
- *  the sound it was voiced with. */
-export const FILTER_KINDS: readonly FilterKind[] = [
-  { value: 'lp12dig',  label: 'LP 12 DIG',  model: 'dig',   tap: 'lp' },
-  { value: 'lp24mog',  label: 'LP 24 MOG',  model: 'moog',  tap: 'lp' },
-  { value: 'lp24acid', label: 'LP 24 303',  model: 'diode', tap: 'lp' },
-  { value: 'hp12dig',  label: 'HP 12 DIG',  model: 'dig',   tap: 'hp' },
-  { value: 'hp24mog',  label: 'HP 24 MOG',  model: 'moog',  tap: 'hp' },
-  { value: 'hp24acid', label: 'HP 24 303',  model: 'diode', tap: 'hp' },
-  { value: 'bp12dig',  label: 'BP 12 DIG',  model: 'dig',   tap: 'bp' },
-  { value: 'bp12mog',  label: 'BP 12 MOG',  model: 'moog',  tap: 'bp' },
-  { value: 'bp12acid', label: 'BP 12 303',  model: 'diode', tap: 'bp' },
-  // The notch is DIG only, and deliberately last: it is the one response the
-  // ladders cannot do honestly, so it has no MOG/303 siblings to sit next to.
-  { value: 'notchdig', label: 'NOTCH DIG',  model: 'dig',   tap: 'notch' },
+/** Index = the `filter.model` / `filter2.model` param value. 0..2 are DIG, MOG
+ *  and 303 exactly as they have always been numbered, and each declares its taps
+ *  in the order the old Type control used — so every preset value and every old
+ *  save keeps the sound it stored. */
+export const FILTER_MODES: readonly FilterMode[] = [
+  { value: 'dig',  label: 'DIG',  taps: ['lp', 'hp', 'bp', 'notch'] },
+  { value: 'mog',  label: 'MOG',  taps: ['lp', 'hp', 'bp'] },
+  { value: 'acid', label: '303',  taps: ['lp', 'hp', 'bp'] },
+  // COMB arrives in Task 2. Declared here with its three responses so the table
+  // is the one place the shape lives; its DSP is the next task.
+  { value: 'comb', label: 'COMB', taps: ['comb+', 'comb-', 'combff'] },
 ];
 
-/** The dropdown, straight off the table. */
-export const FILTER_KIND_OPTIONS = FILTER_KINDS.map((k) => ({ value: k.value, label: k.label }));
+const TAP_LABELS: Record<FilterTap, string> = {
+  lp: 'LP', hp: 'HP', bp: 'BP', notch: 'NOTCH',
+  'comb+': 'POS', 'comb-': 'NEG', combff: 'FF',
+};
 
-/** How filter B is wired to filter A. Index = the `filter.routing` param value.
- *  OFF is index 0 and the default: filter B is never built and never runs. */
-export const FILTER_ROUTING_OPTIONS = [
-  { value: 'off',  label: 'Off' },
-  { value: 'ser',  label: 'Series' },
-  { value: 'par',  label: 'Parallel' },
-  { value: 'diff', label: 'Difference' },
-];
+const clampIdx = (v: number, n: number) => Math.max(0, Math.min(n - 1, Math.round(v)));
 
-export const ROUTING_OFF = 0;
-export const ROUTING_SER = 1;
-export const ROUTING_PAR = 2;
-export const ROUTING_DIFF = 3;
+/** The tap a (model, type) pair names. `type` indexes the MODE'S OWN taps and is
+ *  clamped, so every pair — including one a hand-edited preset invented — names a
+ *  response that mode really has. There is no invalid pair to resolve. */
+export function tapFor(model: number, type: number): FilterTap {
+  const m = FILTER_MODES[clampIdx(model, FILTER_MODES.length)];
+  return m.taps[clampIdx(type, m.taps.length)];
+}
+
+/** The Type control's options for a mode. The UI builds its buttons from this
+ *  and nothing else. */
+export function typeOptionsFor(model: number): Array<{ value: string; label: string }> {
+  const m = FILTER_MODES[clampIdx(model, FILTER_MODES.length)];
+  return m.taps.map((t) => ({ value: t, label: TAP_LABELS[t] }));
+}
+
+export const FILTER_MODE_OPTIONS = FILTER_MODES.map((m) => ({ value: m.value, label: m.label }));
 ```
 
-- [ ] **Step 4: Write the stack (routing OFF only)**
-
-Create `src/audio-dsp/filter-stack.ts`:
+In `src/audio-dsp/filter-stack.ts`, `FilterBlock`'s constructor takes `(model: number, type: number, sr: number)` and resolves through the table:
 
 ```ts
-// src/audio-dsp/filter-stack.ts
-// Everything the Subtractive voice knows about filtering: which circuit a kind
-// selects, and how the two blocks combine.
-//
-// It exists so the renderer does not have to. Hand it a sample and six numbers
-// and it hands a sample back; it knows nothing about notes, envelopes or params.
-
-import { Svf } from './filter';
-import { LadderFilter, type LadderTap } from './ladder';
-import { FILTER_KINDS, ROUTING_OFF, type FilterKind } from './filter-kinds';
-
-export * from './filter-kinds';
-
-/** The cutoff rails the engine has always used: 60 * 220^x, capped at 18 kHz. */
-const CUTOFF_MIN_HZ = 20;
-const CUTOFF_MAX_HZ = 18000;
-
-/**
- * Where filter B's cutoff lands, given how far filter A has moved from its own
- * base (`aRatio` = A's final cutoff / A's base cutoff — its envelope and key
- * tracking, as one number).
- *
- * MULTIPLICATIVE on purpose. Following A additively in Hz would collapse the
- * interval between the two the moment the envelope opened: B a tenth of an
- * octave over A at rest would be a hair over it at full sweep. A ratio keeps the
- * interval in OCTAVES, which is the interval you hear.
- *
- * track 0 = B is nailed where its knob puts it (a fixed high-pass under a
- * sweeping low-pass). track 1 = B moves by exactly A's ratio.
- */
-export function trackedCutoff(baseBHz: number, aRatio: number, track: number): number {
-  const hz = baseBHz * (1 + track * (aRatio - 1));
-  return hz < CUTOFF_MIN_HZ ? CUTOFF_MIN_HZ : hz > CUTOFF_MAX_HZ ? CUTOFF_MAX_HZ : hz;
-}
-
-/** One filter: a circuit plus the response taken out of it. */
-class FilterBlock {
-  private svf: Svf | null = null;
-  private ladder: LadderFilter | null = null;
-  private readonly tap: FilterKind['tap'];
-
-  constructor(kind: number, sr: number) {
-    const k = FILTER_KINDS[Math.round(kind)] ?? FILTER_KINDS[0];
-    this.tap = k.tap;
-    if (k.model === 'dig') this.svf = new Svf(sr);
-    // A ladder entry never declares 'notch' (filter-kinds.ts, asserted in
-    // filter-stack.test.ts), so the tap is always one a ladder can take.
-    else this.ladder = new LadderFilter(k.model === 'moog' ? 'moog' : 'diode', sr, k.tap as LadderTap);
-  }
-
-  update(x: number, cutoffHz: number, res: number): number {
-    if (this.ladder) return this.ladder.update(x, cutoffHz, res);
-    const f = this.svf!;
-    f.update(x, cutoffHz, res);
-    switch (this.tap) {
-      case 'hp': return f.hp;
-      case 'bp': return f.bp;
-      case 'notch': return f.notch;
-      default: return f.lp;
+  constructor(model: number, type: number, sr: number) {
+    const mode = FILTER_MODES[Math.max(0, Math.min(FILTER_MODES.length - 1, Math.round(model)))];
+    this.tap = tapFor(model, type);
+    // COMB's DSP arrives in the next task; until then it falls back to the Svf
+    // so the table can declare the mode without the stack pretending to have it.
+    if (mode.value === 'mog' || mode.value === 'acid') {
+      this.ladder = new LadderFilter(mode.value === 'mog' ? 'moog' : 'diode', sr, this.tap as LadderTap);
+    } else {
+      this.svf = new Svf(sr);
     }
   }
-}
-
-export class FilterStack {
-  private readonly a: FilterBlock;
-  /** Built only when the routing asks for it: OFF costs exactly what one filter
-   *  cost before this module existed. */
-  private readonly b: FilterBlock | null;
-  private readonly routing: number;
-
-  constructor(kindA: number, kindB: number, routing: number, sr: number) {
-    this.routing = Math.round(routing);
-    this.a = new FilterBlock(kindA, sr);
-    this.b = this.routing === ROUTING_OFF ? null : new FilterBlock(kindB, sr);
-  }
-
-  /**
-   * One sample through both blocks.
-   * @param blend how much of B is in the result, in EVERY mode: 0 is filter A
-   *              alone whatever the routing says, 1 is the mode at full.
-   */
-  update(x: number, cutA: number, resA: number, cutB: number, resB: number, blend: number): number {
-    const a = this.a.update(x, cutA, resA);
-    const b = this.b;
-    if (!b) return a;                    // routing OFF: filter A alone
-    return this.combine(a, x, b, cutB, resB, blend);
-  }
-
-  /** The three real routing modes. Task 3 writes their tests and then this
-   *  body; until then OFF is the only mode a stack can be built in, and the
-   *  three constants below are what the routing param will select. */
-  private combine(
-    a: number, x: number, b: FilterBlock, cutB: number, resB: number, blend: number,
-  ): number {
-    return a;
-  }
-}
 ```
 
-**Stop here.** The three real modes are Task 3, which writes their tests FIRST —
-that is the plan's TDD constraint, and it is why `combine` is a seam rather than
-a switch you fill in now. `ROUTING_SER`, `ROUTING_PAR` and `ROUTING_DIFF` are
-exported by `filter-kinds.ts` and unused in this file until then; drop them from
-this file's import for now and add them back in Task 3.
+and `FilterStack`'s constructor becomes
+`constructor(modelA: number, typeA: number, modelB: number, typeB: number, routing: number, sr: number)`.
 
-- [ ] **Step 5: Run the test to verify it passes**
+- [ ] **Step 4: Bring back the two params**
 
-Run: `NO_COLOR=1 npx vitest run src/audio-dsp/filter-stack.test.ts`
-Expected: PASS, all tests.
+In `src/engines/subtractive-params.ts`, replace the single `filter.kind` spec with two. The `optionsFrom` field is new — Step 5 adds it to the type and the grid:
 
-If "no entry is a silent alias of another" fails for a specific pair, do NOT
-lower the threshold: report which pair collided and stop. A collision means two
-list entries are the same filter, which is the exact defect this work removes.
+```ts
+  // Mode picks the circuit; Type picks the response — and Type offers EXACTLY
+  // the responses that circuit can honestly produce (audio-dsp/filter-kinds.ts).
+  // Choose MOG and the NOTCH button is not there, rather than being there and
+  // quietly handing back a lowpass, which is what the old grid did.
+  { id: 'filter.model', label: 'Mode', kind: 'discrete', min: 0, max: 3, default: 0,
+    options: FILTER_MODE_OPTIONS, group: 'filter' },
+  { id: 'filter.type',  label: 'Type', kind: 'discrete', min: 0, max: 3, default: 0,
+    options: typeOptionsFor(0), optionsFrom: { paramId: 'filter.model', build: typeOptionsFor },
+    group: 'filter' },
+```
 
-- [ ] **Step 6: Typecheck**
+In `src/audio-dsp/types.ts`, `SubParams.filterKind` becomes two fields:
 
-Run: `npx tsc --noEmit`
-Expected: no output.
+```ts
+  filterModel: number;      // index into FILTER_MODES (audio-dsp/filter-kinds.ts)
+  filterType: number;       // index into THAT mode's own taps, clamped
+```
 
-- [ ] **Step 7: Commit**
+In `src/audio-dsp/default-params.ts`, `filterKind: 0` becomes `filterModel: 0, filterType: 0`.
+
+In `src/audio-dsp/subtractive-renderer.ts`: `subParamsInto` reads `out.filterModel = param(b, 'filter.model', 0)` and `out.filterType = param(b, 'filter.type', 0)`, and the constructor builds `new FilterStack(p.filterModel, p.filterType, 0, 0, ROUTING_OFF, sampleRate)`.
+
+- [ ] **Step 5: Teach the grid to build options from another param**
+
+In `src/engines/engine-params.ts`, add to `EngineParamSpec`:
+
+```ts
+  /** Discrete params only: build this control's options from ANOTHER param's
+   *  current value, and rebuild the control when that param changes. It is how
+   *  a control offers only what the rest of the patch makes honest — the filter
+   *  Type offers only the taps the chosen Mode has. `options` stays as the list
+   *  for the source param's DEFAULT value, so anything that reads the spec
+   *  statically (a destination catalogue, a test) still sees a valid list. */
+  optionsFrom?: { paramId: string; build: (value: number) => Array<{ value: string; label: string }> };
+```
+
+In `src/engines/engine-types.ts`, add to `EngineUIContext`:
+
+```ts
+  /** Rebuild the whole engine param UI. Provided by whoever owns the container
+   *  the grid was built into. The grid calls it when a param changes that another
+   *  param's options are derived from (see EngineParamSpec.optionsFrom) — the
+   *  controls are built once into a detached fragment (select-control.ts), so a
+   *  changed option list means a new control, not a mutated one. */
+  rebuildParamUI?: () => void;
+```
+
+In `src/engines/engine-param-grid.ts`'s `buildControl`, inside the `if (discrete)` branch:
+
+```ts
+    const options = spec.optionsFrom
+      ? spec.optionsFrom.build(engine.getBaseValue(spec.optionsFrom.paramId))
+      : spec.options!;
+```
+
+and in that branch's `onChange`, after the `commitParam` call:
+
+```ts
+        // If another param's options are derived from this one, its control is
+        // now showing a stale list — rebuild the grid rather than surgically
+        // replacing it (the caller already rebuilds on engine swap).
+        if (engine.params.some((s) => s.optionsFrom?.paramId === spec.id)) ctx.rebuildParamUI?.();
+```
+
+Then find the caller that owns the container it builds into (start at `src/session/session-inspector.ts` and `src/session/lane-editor-panels.ts`; `grep -rn "buildParamUI\|buildEngineParamGrid" src/`) and pass `rebuildParamUI` in the context it constructs, pointing at its own existing "rebuild this lane's param UI" path. If no such path exists at that call site, report DONE_WITH_CONCERNS describing what you found rather than inventing a lifecycle.
+
+- [ ] **Step 6: Write the grid's own test**
+
+Add to `src/engines/engine-param-grid.test.ts`:
+
+```ts
+  it('builds a dependent control\'s options from the param it derives from', () => {
+    // The filter Type offers only the taps the chosen Mode has. Built at
+    // mode 1 (MOG), the strip must have three buttons, not four.
+    const engine = makeGridEngine([
+      { id: 'filter.model', label: 'Mode', kind: 'discrete', min: 0, max: 3, default: 0,
+        options: FILTER_MODE_OPTIONS },
+      { id: 'filter.type', label: 'Type', kind: 'discrete', min: 0, max: 3, default: 0,
+        options: typeOptionsFor(0), optionsFrom: { paramId: 'filter.model', build: typeOptionsFor } },
+    ], { 'filter.model': 1 });
+    const host = document.createElement('div');
+    buildEngineParamGrid(engine, makeCtx(), host, {});
+    const typeButtons = host.querySelectorAll('[data-param="filter.type"] button, [data-param="filter.type"] option');
+    expect(typeButtons.length).toBe(3);
+  });
+```
+
+Follow the file's existing helpers for building a fake engine and context — read the top of `engine-param-grid.test.ts` and reuse whatever it already has rather than adding new fakes. If the rendered DOM does not carry a `data-param` hook, select the control by its label text instead and say so in your report.
+
+- [ ] **Step 7: Update the callers of the old id**
+
+`filter.kind` disappears. Update: `src/audio-dsp/subtractive-renderer.test.ts` (its `filter kind` describe becomes `filter mode and type`, with `'filter.model'` / `'filter.type'` in the bags — the LP/HP/BP/NOTCH indices are 0/1/2/3 under DIG), `src/presets/subtractive-unison-presets.test.ts` (back to `p.params['filter.type']` being 2 for `LEAD Razor` and 1 for `PAD Ethereal`), `src/audio-dsp/live-params.dsp.test.ts` (`{ 'filter.model': 1 }`), and the three `tools/*.mjs` scripts.
+
+**The preset pack needs NO edit.** The six values that name the filter were converted to `filter.kind` by the superseded task; convert them BACK: `"filter.kind": 1` → `"filter.model": 1` (four presets), `"filter.kind": 6` → `"filter.type": 2` (`LEAD Razor`), `"filter.kind": 3` → `"filter.type": 1` (`PAD Ethereal`). Then `grep -c 'filter\.kind' public/presets/subtractive.json` must return `0`.
+
+- [ ] **Step 8: Run everything**
+
+Run: `npx tsc --noEmit && NO_COLOR=1 npm run test:unit`
+Expected: typecheck silent, suite green.
+
+- [ ] **Step 9: Commit**
 
 ```bash
-git add src/audio-dsp/filter-kinds.ts src/audio-dsp/filter-stack.ts src/audio-dsp/filter-stack.test.ts
+git add -A
 git commit -F- <<'EOF'
-feat(subtractive): the filter list, as one table plus a stack that reads it
+feat(subtractive): Mode x Type, with Type offering only what Mode can do
 
-Ten entries, every one of which works. The Model x Type grid had twelve
-points and two of them lied: a ladder has no honest notch, so NOTCH on MOG
-or 303 quietly handed back the lowpass. A list cannot express that -- an
-entry either works or it is not in it -- and the no-silent-alias test is
-what proves it, pair by pair.
+The flat ten-entry list is gone. Mode picks the circuit and Type picks the
+response -- but Type's buttons ARE the chosen mode's declared taps, so
+under MOG or 303 there is no NOTCH button to press. The old grid's defect
+was never that it had two controls; it was that it offered twelve
+combinations and only ten worked.
 
-Nothing uses this yet. FilterStack only implements routing OFF, which is
-filter A alone: exactly what the renderer does today.
+`type` indexes the mode's OWN tap list and is clamped, which makes an
+invalid pair unrepresentable rather than merely unreachable -- no
+resolution rule, no fallback, nothing to test for a state that cannot
+exist. The ids stay filter.model and filter.type with DIG/MOG/303 at
+0/1/2, so all six preset values and every old save keep their meaning.
+
+EngineParamSpec.optionsFrom is the general mechanism: a discrete control
+whose options are built from another param's value, rebuilt when it
+changes. The filter Type is its first user.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
 EOF
@@ -424,354 +381,245 @@ EOF
 
 ---
 
-### Task 2: The renderer switches to `filter.kind`
-
-Deletes `filter.model` and `filter.type` everywhere and moves the renderer onto
-`FilterStack`. The sound does not change: this is a vocabulary swap.
+### Task 2: COMB, the fourth circuit
 
 **Files:**
-- Modify: `src/engines/subtractive-params.ts` (delete `FILTER_MODEL_OPTIONS` / `FILTER_TYPE_OPTIONS`, add `filter.kind`)
-- Modify: `src/audio-dsp/types.ts` (`SubParams`: `filterModel`/`filterType` -> `filterKind`)
-- Modify: `src/audio-dsp/default-params.ts`
-- Modify: `src/audio-dsp/subtractive-renderer.ts`
-- Modify: `src/audio-dsp/subtractive-renderer.test.ts` (rewrite the `filter model` and `filter type` describes)
-- Modify: `public/presets/subtractive.json` (6 values)
-- Modify: `src/presets/subtractive-unison-presets.test.ts:40-41`
-- Modify: `src/audio-dsp/live-params.dsp.test.ts:282`
-- Modify: `tools/verify-defaults-unchanged.mjs`, `tools/param-access-bench.mjs`, `tools/bench-unison.mjs`
+- Create: `src/audio-dsp/comb.ts`
+- Modify: `src/audio-dsp/filter-stack.ts`
+- Test: `src/audio-dsp/comb.test.ts`, `src/audio-dsp/filter-stack.test.ts`
 
 **Interfaces:**
-- Consumes: `FILTER_KIND_OPTIONS`, `FilterStack`, `ROUTING_OFF` from Task 1.
-- Produces: the param id `filter.kind` (discrete 0..9, default 0) and the
-  `SubParams.filterKind` field, both consumed by Task 4.
+- Consumes: `FilterTap`, `FILTER_MODES` from Task 1.
+- Produces: `class CombFilter { constructor(sr: number); update(x: number, tuneHz: number, feedback: number, tap: FilterTap): number }`
 
-- [ ] **Step 1: Write the failing test — rewrite the renderer's filter describes**
+- [ ] **Step 1: Write the failing test**
 
-In `src/audio-dsp/subtractive-renderer.test.ts`, DELETE the whole
-`describe('filter model', ...)` block (currently lines 379-423) and the whole
-`describe('filter type', ...)` block (currently lines 429-600) together with the
-`const LP = 0, HP = 1, BP = 2, NOTCH = 3;` line between them, and put this in
-their place:
+Create `src/audio-dsp/comb.test.ts`:
 
 ```ts
-// Kind indices, from filter-kinds.ts. Named here so a test reads as a sentence.
-const LP12DIG = 0, LP24MOG = 1, LP24ACID = 2, HP12DIG = 3, BP12DIG = 6, NOTCHDIG = 9;
+// src/audio-dsp/comb.test.ts
+// A comb is a delay summed back on itself, so it does not shape one corner --
+// it shapes a whole series of evenly spaced peaks. Its three taps differ by
+// WHERE those peaks land, which is what these tests measure.
+import { describe, it, expect } from 'vitest';
+import { CombFilter } from './comb';
 
-describe('filter kind', () => {
-  // One dropdown, ten entries. The engine end of it: that the renderer builds
-  // the filter the kind names, and that the default is still what every preset
-  // was voiced against. The per-entry response measurements live in
-  // filter-stack.test.ts, where they can be made without an oscillator.
-  const bag = (kind: number): ParamBag => ({
-    ...DEFAULTS, 'osc1.wave': 0, 'osc1.level': 1, 'osc2.level': 0,
-    'sub.level': 0, 'noise.level': 0,
-    'filter.cutoff': 0.4, 'filter.resonance': 0.7, 'filter.envAmount': 0, 'filter.builtinEnv': 0,
-    'filter.kind': kind,
+const SR = 48000;
+const TUNE = 200;   // peaks spaced 200 Hz apart
+
+/** Level of a steady sine at `hz` through the comb, past the run-in. */
+const passes = (tap: 'comb+' | 'comb-' | 'combff', hz: number, fb = 0.8): number => {
+  const c = new CombFilter(SR);
+  let acc = 0, n = 0;
+  for (let i = 0; i < SR * 0.3; i++) {
+    const y = c.update(Math.sin(2 * Math.PI * hz * i / SR), TUNE, fb, tap);
+    if (i > SR * 0.15) { acc += y * y; n++; }   // long run-in: the loop has to settle
+  }
+  return Math.sqrt(acc / n);
+};
+
+describe('the positive comb', () => {
+  it('reinforces every harmonic of its tuning', () => {
+    // 200, 400 and 600 all sit on peaks; 300 sits between two of them.
+    expect(passes('comb+', 400)).toBeGreaterThan(passes('comb+', 300) * 3);
+    expect(passes('comb+', 600)).toBeGreaterThan(passes('comb+', 300) * 3);
   });
-  const render = (kind: number): number[] => {
-    const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.3 }), bag(kind), SR);
-    const b: number[] = [];
-    for (let i = 0; i < SR * 0.15; i++) b.push(v.renderSample(i / SR));
-    return b;
-  };
-  const divergence = (a: number[], b: number[]): number => {
-    let d = 0; for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b[i]);
-    return d / a.length / Math.max(1e-9, rms(a));
-  };
-  const mean = (b: number[]) => Math.abs(b.reduce((s, v) => s + v, 0) / b.length);
+});
 
-  it('defaults to LP 12 DIG, so nothing that exists today changes', () => {
-    const noKind: ParamBag = { ...bag(LP12DIG) };
-    delete (noKind as Record<string, number>)['filter.kind'];
-    const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.3 }), noKind, SR);
-    const b: number[] = []; for (let i = 0; i < SR * 0.15; i++) b.push(v.renderSample(i / SR));
-    expect(divergence(b, render(LP12DIG))).toBeLessThan(0.01);
-  });
-
-  it('each lowpass is audibly its own filter', () => {
-    expect(divergence(render(LP12DIG), render(LP24MOG))).toBeGreaterThan(0.1);   // svf vs moog
-    expect(divergence(render(LP24MOG), render(LP24ACID))).toBeGreaterThan(0.02); // moog vs diode
+describe('the negative comb', () => {
+  it('reinforces the ODD harmonics and cancels the even ones', () => {
+    // This is the difference between a plucked string and a stopped pipe, and
+    // it is the whole reason NEG is its own tap rather than a variant of POS.
+    expect(passes('comb-', 300)).toBeGreaterThan(passes('comb-', 400) * 3);
   });
 
-  it('the 303 lowpass brings the asymmetry the others do not have', () => {
-    expect(mean(render(LP24ACID))).toBeGreaterThan(mean(render(LP24MOG)) * 2);
+  it('is a different sound from the positive comb at the same tuning', () => {
+    expect(passes('comb-', 400)).toBeLessThan(passes('comb+', 400) * 0.4);
+  });
+});
+
+describe('the feed-forward comb', () => {
+  it('notches instead of ringing', () => {
+    // No feedback path, so the peaks do not grow; what it does is cut.
+    expect(passes('combff', 300)).toBeLessThan(passes('combff', 400) * 0.5);
   });
 
-  it('every kind stays bounded through the engine, drive and resonance up', () => {
-    // res 0.7 + drive 0.8 is a stress patch: the parallel drive feeds up to 1.8x
-    // amplitude into the filter, so an analogue-style rise is EXPECTED. What must
-    // not happen is a runaway, so the contract is relative: finite, bounded, and
-    // drive raises the peak by a bounded ratio rather than an unbounded one.
-    const peakOf = (kind: number, drive: number): number => {
-      const v = new SubtractiveVoiceRenderer(
-        note({ durationSec: 0.3 }), { ...bag(kind), 'filter.drive': drive }, SR,
-      );
+  it('cannot ring however hard the feedback knob is pushed', () => {
+    // Its peak level barely moves with feedback, because there is none.
+    const soft = passes('combff', 400, 0.1);
+    const hard = passes('combff', 400, 0.99);
+    expect(hard).toBeLessThan(soft * 2);
+  });
+});
+
+describe('every comb stays bounded', () => {
+  it('does not run away at maximum feedback', () => {
+    for (const tap of ['comb+', 'comb-', 'combff'] as const) {
+      const c = new CombFilter(SR);
       let peak = 0;
-      for (let i = 0; i < SR * 0.2; i++) { const a = Math.abs(v.renderSample(i / SR)); if (a > peak) peak = a; }
-      return peak;
-    };
-    for (let kind = 0; kind < 10; kind++) {
-      const dry = peakOf(kind, 0);
-      const wet = peakOf(kind, 0.8);
-      const tag = `kind ${kind}`;
-      expect(Number.isFinite(wet), `${tag} went non-finite`).toBe(true);
-      expect(wet, `${tag} blew up`).toBeLessThan(4.5);
-      expect(wet, `${tag} drive should not reduce peak`).toBeGreaterThanOrEqual(dry);
-      expect(wet / Math.max(dry, 1e-6), `${tag} drive ratio unbounded`).toBeLessThan(5);
+      for (let i = 0; i < SR * 0.5; i++) {
+        const y = c.update(Math.sin(2 * Math.PI * 200 * i / SR), TUNE, 1.5, tap);
+        expect(Number.isFinite(y), `${tap} went non-finite`).toBe(true);
+        const a = Math.abs(y); if (a > peak) peak = a;
+      }
+      // A resonant comb legitimately rings well above unity; what must not
+      // happen is unbounded growth. 20x is a runaway detector, not a target.
+      expect(peak, `${tap} blew up`).toBeLessThan(20);
     }
   });
 
-  it('the notch reaches the engine — it is not the lowpass wearing a label', () => {
-    expect(divergence(render(NOTCHDIG), render(LP12DIG))).toBeGreaterThan(0.1);
-  });
-
-  it('the highpass and the bandpass reach the engine too', () => {
-    expect(divergence(render(HP12DIG), render(LP12DIG))).toBeGreaterThan(0.1);
-    expect(divergence(render(BP12DIG), render(LP12DIG))).toBeGreaterThan(0.1);
+  it('holds its tuning at the bottom of the knob', () => {
+    // The delay line is sized once, so the lowest tuning is capped in the DSP
+    // rather than left to the knob: a per-voice buffer times an uncapped poly
+    // lane is real memory.
+    const c = new CombFilter(SR);
+    for (let i = 0; i < 100; i++) expect(Number.isFinite(c.update(1, 1, 0.9, 'comb+'))).toBe(true);
   });
 });
 ```
 
-Keep the `it('the notch actually nulls, instead of merely tilting', ...)` test —
-it measures the `Svf` directly and does not mention `filter.type`. Move it,
-unchanged, into the new `describe('filter kind', ...)` block, and keep the `Svf`
-import and the `CUTOFF_HZ` constant it needs:
+- [ ] **Step 2: Run it to verify it fails**
+
+Run: `NO_COLOR=1 npx vitest run src/audio-dsp/comb.test.ts`
+Expected: FAIL — `Failed to resolve import "./comb"`.
+
+- [ ] **Step 3: Write the comb**
+
+Create `src/audio-dsp/comb.ts`:
 
 ```ts
-  // Guards the derivation in filter.ts: the textbook `lp + hp` is structurally
-  // pinned at -6 dB in this topology (its bandpass peaks at 0.5/r, not 1/r), so
-  // it can never null however the resonance is set.
-  it('the notch actually nulls, instead of merely tilting', () => {
-    const CUTOFF_HZ = 880;
-    const depthAt = (res: number, hz: number): number => {
-      const s = new Svf(SR);
-      let acc = 0, n = 0;
-      for (let i = 0; i < SR * 0.2; i++) {
-        s.update(Math.sin(2 * Math.PI * hz * i / SR), CUTOFF_HZ, res);
-        if (i > SR * 0.05) { acc += s.notch * s.notch; n++; }
-      }
-      return Math.sqrt(acc / n);
-    };
-    for (const res of [0, 0.25, 0.6]) {
-      expect(depthAt(res, CUTOFF_HZ), `res ${res}`).toBeLessThan(depthAt(res, CUTOFF_HZ * 8) * 0.4);
+// src/audio-dsp/comb.ts
+// A comb filter: the signal plus a delayed copy of itself. Where the three
+// existing circuits shape ONE corner, this one shapes a whole harmonic series
+// at once -- the delayed copy reinforces every frequency whose period fits the
+// delay and cancels the ones that fall between.
+//
+// Three taps, three genuinely different responses:
+//   comb+   y = x + g*y[n-D]   peaks on EVERY harmonic of the tuning (a string)
+//   comb-   y = x - g*y[n-D]   peaks on the ODD harmonics only (a stopped pipe)
+//   combff  y = x + g*x[n-D]   no feedback at all: notches, and no ringing
+//
+// POS and NEG differ by a sign and sound nothing alike; cancelling the even
+// harmonics is what makes a clarinet a clarinet.
+
+import type { FilterTap } from './filter-kinds';
+
+/** The lowest tuning the comb will accept. The delay line is sized for it once,
+ *  per voice, and poly lanes are uncapped by design -- 30 Hz at 48 kHz is 1600
+ *  samples, which is a buffer worth allocating; 5 Hz would be six times that for
+ *  a pitch nobody plays. */
+const MIN_TUNE_HZ = 30;
+
+export class CombFilter {
+  private readonly buf: Float32Array;
+  private readonly size: number;
+  private w = 0;
+
+  constructor(private sr: number) {
+    // +2 so the read index can never collide with the write index after rounding.
+    this.size = Math.ceil(sr / MIN_TUNE_HZ) + 2;
+    this.buf = new Float32Array(this.size);
+  }
+
+  /**
+   * One sample.
+   * @param tuneHz    the frequency the peaks are spaced by (the Cutoff knob)
+   * @param feedback  0..1 how much comes back (the Resonance knob)
+   */
+  update(x: number, tuneHz: number, feedback: number, tap: FilterTap): number {
+    const hz = tuneHz < MIN_TUNE_HZ ? MIN_TUNE_HZ : tuneHz > this.sr * 0.45 ? this.sr * 0.45 : tuneHz;
+    const delay = Math.min(this.size - 1, Math.max(1, Math.round(this.sr / hz)));
+    let r = this.w - delay;
+    if (r < 0) r += this.size;
+    const delayed = this.buf[r];
+
+    // Strictly under 1: at 1 the loop never decays and the comb becomes an
+    // oscillator that outlives the note.
+    const g = feedback < 0 ? 0 : feedback > 0.97 ? 0.97 : feedback;
+
+    let out: number;
+    if (tap === 'combff') {
+      // Feed-FORWARD: the delayed INPUT, not the delayed output. Nothing
+      // circulates, so this one cannot ring however far the knob is pushed.
+      out = x + g * delayed;
+      this.buf[this.w] = x;
+    } else {
+      const s = tap === 'comb-' ? -1 : 1;
+      out = x + s * g * delayed;
+      this.buf[this.w] = out;
     }
-  });
+    this.w = this.w + 1 >= this.size ? 0 : this.w + 1;
+    // Two paths summed can reach 2x before the feedback even starts; halving
+    // keeps a comb roughly level with the other three circuits.
+    return out * 0.5;
+  }
+}
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+Note for the implementer: `combff` writes the INPUT to the buffer and the others write the OUTPUT. That is the whole difference between a feed-forward and a feedback comb, and getting it backwards makes `combff` ring — which its own test catches.
 
-Run: `NO_COLOR=1 npx vitest run src/audio-dsp/subtractive-renderer.test.ts`
-Expected: FAIL — the `filter.kind` bag renders the default lowpass for every
-kind, so "the notch reaches the engine" and "the highpass and the bandpass reach
-the engine too" fail (the renderer still reads `filter.model` / `filter.type`,
-which the new bags do not set).
+- [ ] **Step 4: Run it to verify it passes**
 
-- [ ] **Step 3: Swap the param spec**
-
-In `src/engines/subtractive-params.ts`:
-
-Delete the `FILTER_MODEL_OPTIONS` and `FILTER_TYPE_OPTIONS` consts and their
-comment blocks. Add at the top:
-
-```ts
-import { FILTER_KIND_OPTIONS } from '../audio-dsp/filter-kinds';
-```
-
-Replace the two spec entries
-
-```ts
-  { id: 'filter.model',     label: 'Model',     kind: 'discrete', min: 0, max: 2, default: 0,
-    options: FILTER_MODEL_OPTIONS, group: 'filter' },
-  { id: 'filter.type',      label: 'Type',      kind: 'discrete', min: 0, max: 3, default: 0,
-    options: FILTER_TYPE_OPTIONS, group: 'filter' },
-```
-
-with one:
-
-```ts
-  // One list, ten entries, every one of which works — see audio-dsp/filter-kinds.ts.
-  // It replaces Model x Type, a grid two of whose twelve points quietly handed
-  // back the lowpass because a ladder has no honest notch.
-  { id: 'filter.kind',      label: 'Type',      kind: 'discrete', min: 0, max: 9, default: 0,
-    options: FILTER_KIND_OPTIONS, group: 'filter' },
-```
-
-- [ ] **Step 4: Swap the flat snapshot**
-
-In `src/audio-dsp/types.ts`, replace these two `SubParams` lines
-
-```ts
-  filterModel: number;      // 0 = DIG (Svf), 1 = MOG ladder, 2 = 303 diode ladder
-  filterType: number;       // 0 = LP, 1 = HP, 2 = BP, 3 = NOTCH
-```
-
-with:
-
-```ts
-  filterKind: number;       // index into FILTER_KINDS (audio-dsp/filter-kinds.ts)
-```
-
-In `src/audio-dsp/default-params.ts`, replace `filterModel: 0, filterType: 0,`
-with `filterKind: 0,`.
-
-- [ ] **Step 5: Move the renderer onto FilterStack**
-
-In `src/audio-dsp/subtractive-renderer.ts`:
-
-Replace the ladder import with the stack (keep the `Svf` import — `noiseLp` is
-one):
-
-```ts
-import { Svf } from './filter';
-import { FilterStack, ROUTING_OFF } from './filter-stack';
-```
-
-Delete the `ladderTapFor` helper and its comment block entirely.
-
-In `subParamsInto`, replace
-
-```ts
-  out.filterModel = param(b, 'filter.model', 0);
-  out.filterType = param(b, 'filter.type', 0);
-```
-
-with:
-
-```ts
-  out.filterKind = param(b, 'filter.kind', 0);
-```
-
-Replace the fields
-
-```ts
-  private noiseLp: Svf; private filter: Svf;
-  private ladder: LadderFilter | null = null;
-  private filterType: number;
-```
-
-with:
-
-```ts
-  private noiseLp: Svf;
-  /** Both filter blocks and the routing between them. Built once, at trigger:
-   *  a topology is not something you sweep mid-note. */
-  private stack: FilterStack;
-```
-
-In the constructor, replace the filter construction
-
-```ts
-    this.filter = new Svf(sampleRate);
-    const model = Math.round(p.filterModel);
-    this.filterType = Math.round(p.filterType);
-    if (model === 1 || model === 2) {
-      this.ladder = new LadderFilter(model === 1 ? 'moog' : 'diode', sampleRate, ladderTapFor(this.filterType));
-    }
-```
-
-with:
-
-```ts
-    // Filter B and the routing arrive in a later task; OFF is filter A alone.
-    this.stack = new FilterStack(p.filterKind, 0, ROUTING_OFF, sampleRate);
-```
-
-Delete the whole `filterAt` method, and in `renderSample` replace
-
-```ts
-    const filtered = this.filterAt(mix, cutoff, q);
-```
-
-with:
-
-```ts
-    const filtered = this.stack.update(mix, cutoff, q, cutoff, q, 0);
-```
-
-- [ ] **Step 6: Run the renderer tests**
-
-Run: `NO_COLOR=1 npx vitest run src/audio-dsp/subtractive-renderer.test.ts src/audio-dsp/filter-stack.test.ts`
+Run: `NO_COLOR=1 npx vitest run src/audio-dsp/comb.test.ts`
 Expected: PASS.
 
-- [ ] **Step 7: Convert the six preset values**
+If "reinforces the ODD harmonics" fails, check the sign, not the threshold. If "cannot ring" fails, the feed-forward path is writing the output.
 
-In `public/presets/subtractive.json`, exactly six values change. No preset sets
-both keys, so each is a one-line rename (verified 2026-08-02):
+- [ ] **Step 5: Wire it into the stack**
 
-| Preset | Was | Becomes |
-|--------|-----|---------|
-| `BASS Wobble LFO` | `"filter.model": 1` | `"filter.kind": 1` |
-| `BASS Neuro` | `"filter.model": 1` | `"filter.kind": 1` |
-| `LEAD Hoover Rave` | `"filter.model": 1` | `"filter.kind": 1` |
-| `BASS Hoover` | `"filter.model": 1` | `"filter.kind": 1` |
-| `LEAD Razor` | `"filter.type": 2` | `"filter.kind": 6` |
-| `PAD Ethereal` | `"filter.type": 1` | `"filter.kind": 3` |
-
-Then confirm nothing is left behind:
-
-```bash
-grep -c 'filter\.model\|filter\.type' public/presets/subtractive.json
-```
-
-Expected: `0`.
-
-- [ ] **Step 8: Update the tests and tools that named the old ids**
-
-`src/presets/subtractive-unison-presets.test.ts`, lines 40-41:
+In `src/audio-dsp/filter-stack.ts`, `FilterBlock` gains a comb branch:
 
 ```ts
-    ['LEAD Razor', (p) => expect(p.params['filter.kind'], 'needs bandpass').toBe(6)],
-    ['PAD Ethereal', (p) => expect(p.params['filter.kind'], 'needs highpass').toBe(3)],
+  private comb: CombFilter | null = null;
 ```
 
-`src/audio-dsp/live-params.dsp.test.ts`, line 282: `{ 'filter.model': 1 }`
-becomes `{ 'filter.kind': 1 }`.
+in the constructor, replacing the "COMB falls back to the Svf" placeholder from Task 1:
 
-`tools/verify-defaults-unchanged.mjs`, lines 62-63:
-
-```js
-  ['MOG ladder', { ...DEFAULTS, 'filter.kind': 1 }, {}],
-  ['303 diode ladder', { ...DEFAULTS, 'filter.kind': 2 }, {}],
+```ts
+    if (mode.value === 'comb') this.comb = new CombFilter(sr);
+    else if (mode.value === 'mog' || mode.value === 'acid') { /* ...ladder as before... */ }
+    else this.svf = new Svf(sr);
 ```
 
-and in its DEFAULTS map replace the `'filter.model': 0, 'filter.type': 0` entries
-with `'filter.kind': 0`.
+and in `update`, before the ladder branch:
 
-`tools/param-access-bench.mjs`: in the id list replace `'filter.model', 'filter.type',`
-with `'filter.kind',`, and in the struct literal replace
-`filterModel: Math.random(), filterType: Math.random(),` with
-`filterKind: Math.random(),`.
+```ts
+    // Under COMB the two knobs mean something else, and the manual says so:
+    // cutoffHz is the comb's TUNING and res is its feedback.
+    if (this.comb) return this.comb.update(x, cutoffHz, res, this.tap);
+```
 
-`tools/bench-unison.mjs`, line 28: replace
-`{ ...bag(voices, drift), 'filter.model': model, 'filter.type': type }` with
-`{ ...bag(voices, drift), 'filter.kind': kind }`, and rename the function's
-`model`/`type` parameters to a single `kind` at its call sites in that file.
+- [ ] **Step 6: Run the stack tests**
 
-- [ ] **Step 9: Run the whole unit suite and typecheck**
+Run: `NO_COLOR=1 npx vitest run src/audio-dsp/filter-stack.test.ts src/audio-dsp/comb.test.ts`
+Expected: PASS — including "no declared pair is a silent alias of another", which now covers the three comb taps against the other seven pairs.
+
+- [ ] **Step 7: Full suite and typecheck**
 
 Run: `npx tsc --noEmit && NO_COLOR=1 npm run test:unit`
 Expected: typecheck silent, suite green.
 
-If `test:unit` exits non-zero with `ERR_IPC_CHANNEL_CLOSED` AFTER all tests
-report passing, that is the known flaky teardown — re-run to confirm.
-
-- [ ] **Step 10: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add -A
 git commit -F- <<'EOF'
-feat(subtractive)!: one filter list replaces the Model x Type grid
+feat(subtractive): COMB, a fourth circuit with three responses of its own
 
-filter.model and filter.type are gone; filter.kind indexes the ten-entry
-table. Every preset keeps the sound it was voiced with: the six values in
-the 85 presets that named the old ids convert exactly, and no preset used
-the NOTCH-on-a-ladder combination that was silently a lowpass.
+Where DIG, MOG and 303 all shape one corner, a comb shapes a whole
+harmonic series: the delayed copy reinforces every frequency whose period
+fits the delay and cancels the ones between.
 
-The renderer LOSES its filter code to FilterStack -- ladderTapFor and its
-lie, filterAt, and both filter fields -- and gains one stack field.
+Three taps because they are three different instruments, not three
+settings. POS reinforces every harmonic and sounds like a plucked string;
+NEG cancels the even ones and sounds like a stopped pipe -- the difference
+is a sign, and it is the difference between a string and a clarinet; FF
+has no feedback path at all, so it notches without ringing however far the
+knob is pushed, which its own test pins.
 
-Old saves carrying filter.model/filter.type fall back to LP 12 DIG. That
-is deliberate: this project does not do migrations.
+Under COMB the Cutoff knob is the tuning and Resonance is the feedback.
+Reinterpreting a knob is honest when it is said out loud, and the manual
+says it.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
 EOF
@@ -781,117 +629,94 @@ EOF
 
 ### Task 3: Series, parallel and difference
 
-Pure DSP. Fills in `FilterStack.combine`, the seam Task 1 left returning filter
-A unchanged; still nothing in the engine reaches it.
+Fills in `FilterStack.combine`, the seam that currently returns filter A unchanged.
 
 **Files:**
-- Modify: `src/audio-dsp/filter-stack.ts` (the `combine` body and the import)
+- Modify: `src/audio-dsp/filter-stack.ts`
 - Test: `src/audio-dsp/filter-stack.test.ts`
-
-**Interfaces:**
-- Consumes: `FilterStack` and `ROUTING_OFF` from Task 1; `ROUTING_SER`,
-  `ROUTING_PAR`, `ROUTING_DIFF` are exported by `filter-kinds.ts` and re-exported
-  by `filter-stack.ts`, unused until now.
-- Produces: nothing new — the routing contract these tests pin is what Task 4 wires up.
 
 - [ ] **Step 1: Write the failing test**
 
-Append to `src/audio-dsp/filter-stack.test.ts`:
+Append to `src/audio-dsp/filter-stack.test.ts`. `DIG_LP` is mode 0, type 0:
 
 ```ts
 describe('routing', () => {
-  // Cutoffs in Hz, straight into the stack — no oscillator, no envelope.
   const CLOSED = 300, OPEN = 4000;
-  const LP = 0;                      // LP 12 DIG
+  const DIG = 0, LP = 0;
   const tone = (hz: number, n: number): number[] =>
     Array.from({ length: n }, (_, i) => Math.sin(2 * Math.PI * hz * i / SR));
 
-  /** RMS of a steady tone at `hz` through a stack, past the run-in. */
+  /** RMS of a steady tone through a stack, past the run-in. About the mean, for
+   *  the same reason `passes` is: an asymmetric circuit rectifies. */
   const through = (
-    routing: number, kindA: number, cutA: number, kindB: number, cutB: number,
-    blend: number, hz: number,
+    routing: number, cutA: number, cutB: number, blend: number, hz: number,
   ): number => {
-    const s = new FilterStack(kindA, kindB, routing, SR);
+    const s = new FilterStack(DIG, LP, DIG, LP, routing, SR);
     const input = tone(hz, SR * 0.25);
-    let acc = 0, n = 0;
+    const kept: number[] = [];
     for (let i = 0; i < input.length; i++) {
       const y = s.update(input[i], cutA, 0.25, cutB, 0.25, blend);
-      if (i > SR * 0.02) { acc += y * y; n++; }
+      if (i > SR * 0.02) kept.push(y);
     }
-    return Math.sqrt(acc / n);
+    const mean = kept.reduce((a, b) => a + b, 0) / kept.length;
+    return Math.sqrt(kept.reduce((a, v) => a + (v - mean) * (v - mean), 0) / kept.length);
   };
 
   it('blend 0 is filter A alone, in every mode', () => {
-    const solo = through(ROUTING_OFF, LP, CLOSED, LP, OPEN, 0, 440);
+    const solo = through(ROUTING_OFF, CLOSED, OPEN, 0, 440);
     for (const routing of [ROUTING_SER, ROUTING_PAR, ROUTING_DIFF]) {
-      expect(through(routing, LP, CLOSED, LP, OPEN, 0, 440), `routing ${routing}`).toBeCloseTo(solo, 10);
+      expect(through(routing, CLOSED, OPEN, 0, 440), `routing ${routing}`).toBeCloseTo(solo, 10);
     }
   });
 
   it('SERIES removes more than A alone — two lowpasses in a row', () => {
-    // A tone above BOTH cutoffs: A attenuates it, then B attenuates what is left.
-    const soloA = through(ROUTING_OFF, LP, OPEN, LP, CLOSED, 1, 7040);
-    const chained = through(ROUTING_SER, LP, OPEN, LP, CLOSED, 1, 7040);
-    expect(chained).toBeLessThan(soloA * 0.5);
+    expect(through(ROUTING_SER, OPEN, CLOSED, 1, 7040))
+      .toBeLessThan(through(ROUTING_OFF, OPEN, CLOSED, 1, 7040) * 0.5);
   });
 
   it('PARALLEL passes what either branch passes', () => {
-    // A is closed, B is open, the tone sits above A's cutoff and under B's: A
-    // alone loses it, and the parallel sum brings it back.
-    const soloA = through(ROUTING_OFF, LP, CLOSED, LP, OPEN, 1, 2000);
-    const summed = through(ROUTING_PAR, LP, CLOSED, LP, OPEN, 0.5, 2000);
-    expect(summed).toBeGreaterThan(soloA * 2);
+    // A closed, B open, the tone above A's cutoff and under B's: A alone loses
+    // it and the parallel sum brings it back.
+    expect(through(ROUTING_PAR, CLOSED, OPEN, 0.5, 2000))
+      .toBeGreaterThan(through(ROUTING_OFF, CLOSED, OPEN, 0.5, 2000) * 2);
   });
 
   it('DIFFERENCE of two lowpasses is a band-pass between their cutoffs', () => {
-    // This is why the list allows duplicates: A minus B is a response neither
-    // entry can produce alone.
-    const band = (hz: number) => through(ROUTING_DIFF, LP, OPEN, LP, CLOSED, 1, hz);
-    expect(band(1200)).toBeGreaterThan(band(80) * 5);      // above B's cutoff, under A's
+    // This is why having the same filter twice is worth it: A minus B is a
+    // response neither one can produce alone.
+    const band = (hz: number) => through(ROUTING_DIFF, OPEN, CLOSED, 1, hz);
+    expect(band(1200)).toBeGreaterThan(band(80) * 5);
     expect(band(1200)).toBeGreaterThan(band(12000) * 5);
   });
 
   it('every mode stays bounded with both filters resonant', () => {
     const input = noise(SR * 0.05);
     for (const routing of [ROUTING_SER, ROUTING_PAR, ROUTING_DIFF]) {
-      for (let kindA = 0; kindA < 10; kindA++) {
-        const s = new FilterStack(kindA, (kindA + 5) % 10, routing, SR);
+      for (const [mi, ti] of PAIRS.map(([m, t]) => [m, t] as const)) {
+        const s = new FilterStack(mi, ti, (mi + 2) % 4, 0, routing, SR);
         let peak = 0;
         for (const x of input) {
           const y = s.update(x * 1.8, 900, 0.95, 300, 0.95, 1);
-          expect(Number.isFinite(y), `routing ${routing} kindA ${kindA} went non-finite`).toBe(true);
+          expect(Number.isFinite(y), `routing ${routing} pair ${mi}/${ti} went non-finite`).toBe(true);
           const a = Math.abs(y); if (a > peak) peak = a;
         }
-        // 9 is generous headroom over the ~4.5 a single driven filter reaches;
-        // it is a runaway detector, not a level target.
-        expect(peak, `routing ${routing} kindA ${kindA} blew up`).toBeLessThan(9);
+        expect(peak, `routing ${routing} pair ${mi}/${ti} blew up`).toBeLessThan(20);
       }
     }
   });
 });
 ```
 
-Add `ROUTING_SER, ROUTING_PAR, ROUTING_DIFF` to the existing import from
-`./filter-stack` at the top of the file.
+Add `ROUTING_SER, ROUTING_PAR, ROUTING_DIFF` to the file's import from `./filter-stack`.
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [ ] **Step 2: Run it to verify it fails**
 
 Run: `NO_COLOR=1 npx vitest run src/audio-dsp/filter-stack.test.ts`
-Expected: FAIL — `combine` returns filter A unchanged, so SERIES removes nothing,
-PARALLEL passes nothing extra and DIFFERENCE is not a band. ("blend 0 is filter A
-alone" passes already: that is the one thing the seam does get right.)
+Expected: FAIL — `combine` returns filter A unchanged, so SERIES removes nothing, PARALLEL adds nothing and DIFFERENCE is not a band. ("blend 0 is filter A alone" passes already: it is the one thing the seam gets right.)
 
 - [ ] **Step 3: Fill in the three modes**
 
-In `src/audio-dsp/filter-stack.ts`, extend the import back to
-
-```ts
-import {
-  FILTER_KINDS, ROUTING_OFF, ROUTING_SER, ROUTING_PAR, ROUTING_DIFF, type FilterKind,
-} from './filter-kinds';
-```
-
-and replace the `combine` body with the three modes:
+Extend `filter-stack.ts`'s import to include `ROUTING_SER, ROUTING_PAR, ROUTING_DIFF`, and replace `combine`'s body:
 
 ```ts
   private combine(
@@ -903,34 +728,30 @@ and replace the `combine` body with the three modes:
       // Both see the same input. At blend 0.5 this is their average; at 1 it is B.
       case ROUTING_PAR: { const parallel = b.update(x, cutB, resB); return a + blend * (parallel - a); }
       // A minus B: what A passes and B does not. Two lowpasses this way are a
-      // band-pass between their cutoffs, which no single entry in the list is.
+      // band-pass between their cutoffs, which no single circuit here is.
       case ROUTING_DIFF: return a - blend * b.update(x, cutB, resB);
       default: return a;
     }
   }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [ ] **Step 4: Run it to verify it passes**
 
 Run: `NO_COLOR=1 npx vitest run src/audio-dsp/filter-stack.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Typecheck**
-
-Run: `npx tsc --noEmit`
-Expected: no output.
-
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Typecheck and commit**
 
 ```bash
-git add src/audio-dsp/filter-stack.test.ts src/audio-dsp/filter-stack.ts
+npx tsc --noEmit
+git add -A
 git commit -F- <<'EOF'
 feat(subtractive): series, parallel and difference between the two filters
 
 Blend 0 is filter A alone in every mode, series removes more than A alone,
 parallel passes what either branch passes, and the difference of two
 lowpasses is a band-pass between their cutoffs -- the response that makes
-two identical entries in the list worth having.
+having the same filter in both slots worth something.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
 EOF
@@ -940,23 +761,12 @@ EOF
 
 ### Task 4: Filter B reaches the engine
 
-Declares the six new params, wires them through the renderer (live and
-modulatable), and implements TRACK.
-
 **Files:**
-- Modify: `src/engines/subtractive-params.ts`
-- Modify: `src/engines/subtractive.ts` (`SUB_PARAM_GROUPS`)
-- Modify: `src/audio-dsp/types.ts`, `src/audio-dsp/default-params.ts`
-- Modify: `src/audio-dsp/subtractive-renderer.ts`
+- Modify: `src/engines/subtractive-params.ts`, `src/engines/subtractive.ts`
+- Modify: `src/audio-dsp/types.ts`, `src/audio-dsp/default-params.ts`, `src/audio-dsp/subtractive-renderer.ts`
 - Test: `src/audio-dsp/subtractive-renderer.test.ts`, `src/engines/subtractive-layout.test.ts`
 
-**Interfaces:**
-- Consumes: `FilterStack`, `trackedCutoff`, `FILTER_KIND_OPTIONS`,
-  `FILTER_ROUTING_OPTIONS` from Task 1.
-- Produces: param ids `filter.routing`, `filter.blend`, `filter2.kind`,
-  `filter2.cutoff`, `filter2.resonance`, `filter2.track`; `SubParams` fields
-  `filterRouting`, `filterBlend`, `filter2Kind`, `filter2Cutoff`,
-  `filter2Resonance`, `filter2Track`.
+**Interfaces produced:** params `filter.routing`, `filter.blend`, `filter2.model`, `filter2.type`, `filter2.cutoff`, `filter2.resonance`, `filter2.track`; the matching `SubParams` fields.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -964,8 +774,6 @@ Append to `src/audio-dsp/subtractive-renderer.test.ts`:
 
 ```ts
 describe('the second filter', () => {
-  // A patch with the amp env flat and no filter envelope, so what changes is
-  // the filtering and nothing else.
   const base: ParamBag = {
     ...DEFAULTS, 'osc1.wave': 0, 'osc1.level': 1, 'osc2.level': 0,
     'sub.level': 0, 'noise.level': 0,
@@ -981,28 +789,29 @@ describe('the second filter', () => {
 
   it('is off by default — a patch that never mentions it is bit-identical', () => {
     const a = render({});
-    const b = render({ 'filter.routing': 0, 'filter2.kind': 3, 'filter2.cutoff': 0.4 });
+    const b = render({ 'filter.routing': 0, 'filter2.model': 0, 'filter2.type': 1, 'filter2.cutoff': 0.4 });
     let d = 0; for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b[i]);
     expect(d).toBe(0);
   });
 
   it('changes the sound once the routing turns it on', () => {
-    const off = render({ 'filter.routing': 0 });
-    // Series into a high-pass: the low end goes, so this cannot be a no-op.
-    const on = render({ 'filter.routing': 1, 'filter2.kind': 3, 'filter2.cutoff': 0.6, 'filter.blend': 1 });
-    expect(rms(on)).toBeLessThan(rms(off) * 0.8);
+    // Series into a highpass: the low end goes, so this cannot be a no-op.
+    const on = render({ 'filter.routing': 1, 'filter2.model': 0, 'filter2.type': 1, 'filter2.cutoff': 0.6, 'filter.blend': 1 });
+    expect(rms(on)).toBeLessThan(rms(render({ 'filter.routing': 0 })) * 0.8);
   });
 
   it('honours Blend — half of B is between none and all of it', () => {
-    const level = (blend: number) =>
-      rms(render({ 'filter.routing': 1, 'filter2.kind': 3, 'filter2.cutoff': 0.6, 'filter.blend': blend }));
+    const level = (blend: number) => rms(render({
+      'filter.routing': 1, 'filter2.model': 0, 'filter2.type': 1, 'filter2.cutoff': 0.6, 'filter.blend': blend,
+    }));
     expect(level(0.5)).toBeLessThan(level(0));
     expect(level(0.5)).toBeGreaterThan(level(1));
   });
 
   it('reaches Blend live, so an LFO moves the routing itself', () => {
     const bag: ParamBag = {
-      ...base, 'filter.routing': 1, 'filter2.kind': 3, 'filter2.cutoff': 0.6, 'filter.blend': 0.5,
+      ...base, 'filter.routing': 1, 'filter2.model': 0, 'filter2.type': 1,
+      'filter2.cutoff': 0.6, 'filter.blend': 0.5,
     };
     const sweep = (mod: (t: number) => number): number[] => {
       const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.4 }), bag, SR);
@@ -1024,54 +833,48 @@ describe('the second filter', () => {
 
   it('Track 0 leaves B still while A sweeps; Track 1 makes it follow', () => {
     // Parallel at full blend means the output IS filter B, while A's envelope
-    // still drives the tracking ratio. So a still B means a still sound, and a
-    // following B means a sound that changes across the note.
+    // still drives the tracking ratio: a still B is a still sound, a following
+    // B is a sound that changes across the note.
     const variation = (track: number): number => {
       const b = render({
         'filter.routing': 2, 'filter.blend': 1,
-        'filter2.kind': 3, 'filter2.cutoff': 0.35, 'filter2.track': track,
-        // A real filter envelope on A: something for B to follow.
+        'filter2.model': 0, 'filter2.type': 1, 'filter2.cutoff': 0.35, 'filter2.track': track,
         'filter.builtinEnv': 1, 'filter.envAmount': 0.9, 'filter.cutoff': 0.3,
         'filter.attack': 0.001, 'filter.decay': 0.35, 'filter.sustain': 0.05, 'filter.release': 0.2,
       }, 0.3);
       const half = Math.floor(b.length / 2);
-      const first = rms(b.slice(0, half)), second = rms(b.slice(half));
-      return Math.abs(second - first) / Math.max(1e-9, rms(b));
+      return Math.abs(rms(b.slice(half)) - rms(b.slice(0, half))) / Math.max(1e-9, rms(b));
     };
     expect(variation(1)).toBeGreaterThan(variation(0) * 3);
   });
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [ ] **Step 2: Run it to verify it fails**
 
 Run: `NO_COLOR=1 npx vitest run src/audio-dsp/subtractive-renderer.test.ts`
-Expected: FAIL — "changes the sound once the routing turns it on" fails, because
-`filter.routing` is not a param the renderer reads yet.
+Expected: FAIL — "changes the sound once the routing turns it on" fails; `filter.routing` is not a param the renderer reads yet.
 
-- [ ] **Step 3: Declare the six params**
+- [ ] **Step 3: Declare the seven params**
 
-In `src/engines/subtractive-params.ts`, extend the import:
-
-```ts
-import { FILTER_KIND_OPTIONS, FILTER_ROUTING_OPTIONS } from '../audio-dsp/filter-kinds';
-```
-
-and add, immediately after the `filter.keyTrack` entry:
+In `src/engines/subtractive-params.ts`, after `filter.keyTrack`:
 
 ```ts
   // Filter B and the routing between the two. Routing OFF is the default and
   // means filter B is never built, so a patch that says nothing about it renders
   // exactly what it always did.
   //
-  // Routing and both kinds are discrete AND structural — read once at trigger,
-  // for the reason the filter model has always been: a topology is not something
-  // you sweep mid-note. Cutoff, Res, Track and Blend are continuous, so they are
-  // read every sample and an LFO reaches them like any other knob.
+  // Routing, both models and both types are discrete AND structural — read once
+  // at trigger, for the reason the filter model has always been: a topology is
+  // not something you sweep mid-note. Cutoff, Res, Track and Blend are
+  // continuous, read every sample, and modulation destinations for free.
   { id: 'filter.routing',    label: 'Routing', kind: 'discrete', min: 0, max: 3, default: 0,
     options: FILTER_ROUTING_OPTIONS, group: 'filter2' },
-  { id: 'filter2.kind',      label: 'Type',    kind: 'discrete', min: 0, max: 9, default: 3,
-    options: FILTER_KIND_OPTIONS, group: 'filter2' },
+  { id: 'filter2.model',     label: 'Mode',    kind: 'discrete', min: 0, max: 3, default: 0,
+    options: FILTER_MODE_OPTIONS, group: 'filter2' },
+  { id: 'filter2.type',      label: 'Type',    kind: 'discrete', min: 0, max: 3, default: 1,
+    options: typeOptionsFor(0), optionsFrom: { paramId: 'filter2.model', build: typeOptionsFor },
+    group: 'filter2' },
   { id: 'filter2.cutoff',    label: 'Cutoff',  kind: 'continuous', min: 0, max: 1, default: 0.25, group: 'filter2' },
   { id: 'filter2.resonance', label: 'Res',     kind: 'continuous', min: 0, max: 1, default: 0.2, group: 'filter2' },
   // How much of everything that MOVES filter A (its envelope, its key tracking)
@@ -1083,58 +886,39 @@ and add, immediately after the `filter.keyTrack` entry:
   { id: 'filter.blend',      label: 'Blend',   kind: 'continuous', min: 0, max: 1, default: 1, group: 'filter2' },
 ```
 
-- [ ] **Step 4: Declare the FILTER B section**
-
-In `src/engines/subtractive.ts`, replace the `filter` line of
-`SUB_PARAM_GROUPS` with two entries:
+In `src/engines/subtractive.ts`, split the `filter` group row into two:
 
 ```ts
   { id: 'filter',  title: 'FILTER A', row: 1, color: 'var(--knob-orange)' },
   { id: 'filter2', title: 'FILTER B', row: 1, color: 'var(--knob-teal)' },
 ```
 
-- [ ] **Step 5: Extend the flat snapshot**
+- [ ] **Step 4: Extend the snapshot**
 
-In `src/audio-dsp/types.ts`, add to `SubParams` right after `filterKind`:
+`src/audio-dsp/types.ts`, after `filterType`:
 
 ```ts
   filterRouting: number;    // 0 = off, 1 = series, 2 = parallel, 3 = difference
   filterBlend: number;      // 0..1 how much of filter B is in the result
-  filter2Kind: number;      // index into FILTER_KINDS
+  filter2Model: number; filter2Type: number;
   filter2Cutoff: number; filter2Resonance: number;
   filter2Track: number;     // 0..1 how far B follows A's envelope + key track
 ```
 
-In `src/audio-dsp/default-params.ts`, after `filterKind: 0,`:
+`src/audio-dsp/default-params.ts`, after `filterModel: 0, filterType: 0,`:
 
 ```ts
     filterRouting: 0, filterBlend: 1,
-    filter2Kind: 3, filter2Cutoff: 0.25, filter2Resonance: 0.2, filter2Track: 0,
+    filter2Model: 0, filter2Type: 1, filter2Cutoff: 0.25, filter2Resonance: 0.2, filter2Track: 0,
 ```
 
-- [ ] **Step 6: Wire the renderer**
+- [ ] **Step 5: Wire the renderer**
 
-In `src/audio-dsp/subtractive-renderer.ts`:
+Import `trackedCutoff` alongside `FilterStack` and drop `ROUTING_OFF`.
 
-Import `trackedCutoff` alongside `FilterStack` (`ROUTING_OFF` is no longer used
-here — drop it from the import):
+`subParamsInto` gains the seven reads (`param(b, 'filter.routing', 0)`, `param(b, 'filter.blend', 1)`, `param(b, 'filter2.model', 0)`, `param(b, 'filter2.type', 1)`, `param(b, 'filter2.cutoff', 0.25)`, `param(b, 'filter2.resonance', 0.2)`, `param(b, 'filter2.track', 0)`).
 
-```ts
-import { FilterStack, trackedCutoff } from './filter-stack';
-```
-
-In `subParamsInto`, after the `filterKind` line:
-
-```ts
-  out.filterRouting = param(b, 'filter.routing', 0);
-  out.filterBlend = param(b, 'filter.blend', 1);
-  out.filter2Kind = param(b, 'filter2.kind', 3);
-  out.filter2Cutoff = param(b, 'filter2.cutoff', 0.25);
-  out.filter2Resonance = param(b, 'filter2.resonance', 0.2);
-  out.filter2Track = param(b, 'filter2.track', 0);
-```
-
-Add the four live slots next to the existing ones:
+Four new live slots beside the existing ones, resolved in `setLiveValues`:
 
 ```ts
   private sFilter2Cutoff = -1;
@@ -1143,8 +927,6 @@ Add the four live slots next to the existing ones:
   private sFilterBlend = -1;
 ```
 
-and resolve them in `setLiveValues`, next to `sFilterKeyTrack`:
-
 ```ts
     this.sFilter2Cutoff = slotOf(index, 'filter2.cutoff');
     this.sFilter2Resonance = slotOf(index, 'filter2.resonance');
@@ -1152,26 +934,22 @@ and resolve them in `setLiveValues`, next to `sFilterKeyTrack`:
     this.sFilterBlend = slotOf(index, 'filter.blend');
 ```
 
-Add a cache pair for filter B's cutoff conversion, next to `cutRaw`/`cutHzCached`:
+A cache pair beside `cutRaw` / `cutHzCached`:
 
 ```ts
   private cut2Raw = NaN;
   private cut2HzCached = 0;
 ```
 
-In the constructor, build the real stack:
+The constructor builds the real stack:
 
 ```ts
-    this.stack = new FilterStack(p.filterKind, p.filter2Kind, p.filterRouting, sampleRate);
+    this.stack = new FilterStack(
+      p.filterModel, p.filterType, p.filter2Model, p.filter2Type, p.filterRouting, sampleRate,
+    );
 ```
 
-In `renderSample`, replace the single-filter call
-
-```ts
-    const filtered = this.stack.update(mix, cutoff, q, cutoff, q, 0);
-```
-
-with filter B's three live reads and the real call:
+And in `renderSample`, replace the single-filter call with filter B's live reads and the real one:
 
 ```ts
     // Filter B. Its cutoff is its own knob, and Track says how much of A's
@@ -1189,61 +967,40 @@ with filter B's three live reads and the real call:
     const filtered = this.stack.update(mix, cutoff, q, cutoff2, q2, blend);
 ```
 
-- [ ] **Step 7: Run the renderer tests**
+- [ ] **Step 6: Update the layout test**
 
-Run: `NO_COLOR=1 npx vitest run src/audio-dsp/subtractive-renderer.test.ts`
-Expected: PASS.
-
-- [ ] **Step 8: Update the layout test**
-
-In `src/engines/subtractive-layout.test.ts`, the FILTER row now holds two
-sections. Change the two row assertions:
+In `src/engines/subtractive-layout.test.ts`, the FILTER row now holds two sections:
 
 ```ts
-  it('gives the two filters a row, and MASTER its own', () => {
-    const rows = resolveParamRows(SUB_PARAM_SPECS, SUB_PARAM_GROUPS);
-    expect(rows.map((r) => r.sections.map((s) => s.title))).toEqual([
       ['OSC 1', 'OSC 2', 'RING', 'SUB', 'NOISE'], ['FILTER A', 'FILTER B'], ['MASTER'], ['POLY'],
-    ]);
-  });
 ```
 
-and in the colour test replace the `FILTER` line with:
+and in the colour test replace the `FILTER` line with `FILTER A` → `var(--knob-orange)` and `FILTER B` → `var(--knob-teal)`.
 
-```ts
-    expect(byTitle.get('FILTER A')).toBe('var(--knob-orange)');
-    expect(byTitle.get('FILTER B')).toBe('var(--knob-teal)');
-```
-
-- [ ] **Step 9: Run the whole unit suite and typecheck**
+- [ ] **Step 7: Run everything**
 
 Run: `npx tsc --noEmit && NO_COLOR=1 npm run test:unit`
-Expected: typecheck silent, suite green. `declared-params.dsp.test.ts` and
-`live-params.dsp.test.ts` are the two that matter most here: the first proves
-every id the renderer reads live is declared, the second that the new continuous
-params move a sounding note.
+Expected: typecheck silent, suite green. `declared-params.dsp.test.ts` and `live-params.dsp.test.ts` matter most here.
 
-- [ ] **Step 10: Check the renderer is still under the cap**
+- [ ] **Step 8: Check the renderer's size**
 
 ```bash
 grep -vcE '^\s*(//|/\*|\*|$)' src/audio-dsp/subtractive-renderer.ts
 ```
 
-Expected: under 500, and lower than the 321 it started at plus what this task
-added — the filter code moved out. If it is over 350, report the number rather
-than refactoring on your own initiative.
+Report the number. Under 500 is the cap; if it is over 380, report it rather than refactoring on your own initiative.
 
-- [ ] **Step 11: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
 git add -A
 git commit -F- <<'EOF'
 feat(subtractive): a second filter, and a routing control over the two
 
-FILTER B with its own kind, cutoff and resonance, plus Track -- how much of
-everything that MOVES filter A (its envelope, its key tracking) B follows,
-as a ratio, so the interval between the two stays constant in octaves
-rather than collapsing the moment the envelope opens.
+FILTER B with its own Mode, Type, Cutoff and Res, plus Track -- how much
+of everything that MOVES filter A (its envelope, its key tracking) B
+follows, as a RATIO, so the interval between the two stays constant in
+octaves instead of collapsing the moment the envelope opens.
 
 Routing is OFF by default and filter B is not even built there, so every
 existing patch is bit-identical. Cutoff, Res, Track and Blend are
@@ -1256,64 +1013,77 @@ EOF
 
 ---
 
-### Task 5: The manual, and a look at the real screen
-
-The engine manual currently states something that is already false, and this is
-the change that makes it worse if left alone. It also carries the rule that a UI
-feature is not done until someone opens it and looks.
+### Task 5: The manual
 
 **Files:**
-- Modify: `docs/manual/04-engines.md`
-- Modify: `public/presets/ATTRIBUTION.md` (one stale line)
+- Modify: `docs/manual/04-engines.md`, `public/presets/ATTRIBUTION.md`
 
-**Interfaces:**
-- Consumes: everything from Tasks 1-4. Produces: nothing code depends on.
+- [ ] **Step 1: Replace the filter section**
 
-- [ ] **Step 1: Replace the filter section of the manual**
-
-In `docs/manual/04-engines.md`, replace the whole `### Filter model and type`
-section — including its "only DIG is a true multimode filter ... with Model set
-to MOG or 303, the Type dropdown has no effect" warning, which has been false
-since the ladders got honest HP and BP taps — with:
+In `docs/manual/04-engines.md`, replace the whole `### Filter model and type` section — including its "only DIG is a true multimode filter … with Model set to MOG or 303, the Type dropdown has no effect" warning, which has been false since the ladders got honest HP and BP taps — with:
 
 ```markdown
-### The filter list
+### Mode and Type
 
-One dropdown, ten entries, and every one of them works. The label reads
-response, then slope, then circuit:
+Two controls. **Mode** picks the circuit; **Type** picks the response you take
+out of it — and Type only ever offers the responses that circuit can honestly
+produce.
 
-| Entry | What it is |
-| --- | --- |
-| **LP 12 DIG** | Two-pole state-variable lowpass. Clean and neutral — the default, and what most presets are voiced against. |
-| **LP 24 MOG** | Four-pole Moog ladder. Warmer, and it thins as it resonates. |
-| **LP 24 303** | Four-pole diode ladder. Asymmetric clipping adds even harmonics — the acid voice. |
-| **HP 12 DIG** | The state-variable highpass. |
-| **HP 24 MOG** | A real four-pole ladder highpass, derived from the stage taps — not the lowpass relabelled. |
-| **HP 24 303** | The same, with the diode ladder's bite. |
-| **BP 12 DIG** | Two-pole bandpass. |
-| **BP 12 MOG** | The Moog ladder's bandpass tap. |
-| **BP 12 303** | The diode ladder's bandpass tap. |
-| **NOTCH DIG** | A true notch, and the one response only DIG has. |
+| Mode | Slope | Character | Types it offers |
+| --- | --- | --- | --- |
+| **DIG** (default) | 12 dB/oct | A clean state-variable filter. Precise and neutral, and what most presets are voiced against. | LP, HP, BP, NOTCH |
+| **MOG** | 24 dB/oct | A four-pole Moog-style ladder. Warmer, and it thins as it resonates. | LP, HP, BP |
+| **303** | 24 dB/oct | The diode ladder from the TB-303. Asymmetric clipping adds even harmonics — the acid voice. | LP, HP, BP |
+| **COMB** | — | A delay summed back on itself: a whole series of peaks instead of one corner. Metallic and hollow. | POS, NEG, FF |
 
-Three lowpasses and three highpasses is not redundancy: 12 dB/oct against
-24 dB/oct, and state-variable against ladder, are different sounds, and the
-label tells you which you are picking.
-
-**Why there is no ladder notch.** A ladder's resonance feedback fills a notch's
+**Why the ladders have no NOTCH.** A ladder's resonance feedback fills a notch's
 null in, and on the diode model at high resonance the null inverts into a *peak*.
-A notch that becomes a bump is not a notch, so it is not in the list — rather
-than sitting there and quietly handing you the lowpass, which is what the old
-Model x Type grid did.
+A notch that becomes a bump is not a notch, so under MOG or 303 the button is
+not there — rather than being there and quietly handing you the lowpass, which
+is what this used to do.
+
+The ladders' HP and BP are the real thing, not the lowpass relabelled: a ladder
+is four one-pole filters in a feedback loop, and the other responses come out of
+its stage taps the same way the Oberheim Xpander derives its modes.
 
 A second thing worth knowing about the ladders: they *lose* level as resonance
 climbs, rather than growing a resonant peak on top. Turning Q up on MOG or 303
 thins and quietens the sound. That is faithful to the hardware, and it is why
 the TB-303 engine compensates with a dedicated accent gain.
 
+### The comb, and its two borrowed knobs
+
+Under **COMB** the filter delays the signal and adds it back to itself. The
+delayed copy reinforces every frequency whose period fits the delay and cancels
+the ones that fall between, so instead of one corner you get a series of evenly
+spaced peaks — which is why it sounds like a plucked string or a hollow tube
+rather than a filter.
+
+Its three types are three different instruments:
+
+| Type | What it does | Sounds like |
+| --- | --- | --- |
+| **POS** | Peaks on every harmonic of the tuning | a plucked string |
+| **NEG** | Peaks on the ODD harmonics only | a stopped pipe, a clarinet |
+| **FF** | No feedback: notches instead of peaks | a flanger frozen mid-sweep |
+
+POS and NEG differ by a single sign and sound nothing alike — cancelling the
+even harmonics is what makes a clarinet a clarinet.
+
+Two knobs mean something else while COMB is selected, and it is worth knowing
+before you reach for them:
+
+- **Cutoff is the comb's TUNING** — the frequency its peaks are spaced by, not a
+  corner frequency. Sweeping it slides the whole series.
+- **Resonance is the feedback** — how much comes back round, so how long it
+  rings and how sharp the peaks are. Under **FF** there is no feedback path at
+  all, so it sets how deep the notches cut and cannot ring however far you push
+  it.
+
 ### Two filters, and how they are wired
 
-**FILTER B** is a second filter with its own entry from the same list, its own
-Cutoff and Res. It is off until **Routing** says otherwise:
+**FILTER B** is a second filter with its own Mode, Type, Cutoff and Res. It is
+off until **Routing** says otherwise:
 
 | Routing | What comes out |
 | --- | --- |
@@ -1328,66 +1098,53 @@ hand — or put an LFO on Blend and have the routing itself breathe.
 
 **Difference is the one worth explaining.** Subtracting one lowpass from another
 leaves only what sits between their two cutoffs: a band-pass whose two edges you
-set separately, with its own resonance on each. That is a response no single
-entry in the list can produce, and it is why having three lowpasses to choose
-from is useful rather than redundant.
+set separately, with its own resonance on each. No single circuit here produces
+that, and it is why having the same filter in both slots is useful rather than
+redundant.
+
+**A comb added to a filter needs no special setting** — that is Filter A = DIG,
+Filter B = COMB, Routing = Parallel, which IS a sum. Series combs what the
+filter left, and Difference removes exactly what the comb reinforces.
 
 **Track** (0–1) decides how filter B moves. Everything that sweeps filter A —
 its envelope and its key tracking — is expressed as a ratio, and Track is how
 much of that ratio B follows:
 
-- **0** — B stays exactly where its knob puts it. This is the classic fixed
-  high-pass sitting under a low-pass that sweeps.
+- **0** — B stays exactly where its knob puts it. The classic fixed high-pass
+  sitting under a low-pass that sweeps.
 - **1** — B moves by the same ratio as A, so the interval between the two stays
   constant in octaves. Two formants sweeping as a block.
-- In between, B follows part of the way.
 ```
 
-Then update the parameter-sections list near the top of the Subtractive chapter:
-replace the single `- **FILTER**` bullet with
-
-```markdown
-- **FILTER A** — the filter list, Cutoff, Resonance, Env Amount, Drive, Key
-  Track, and a full ADSR filter envelope (toggle with Built-in Env). See
-  [The filter list](#the-filter-list).
-- **FILTER B** — Routing, a second filter from the same list, Cutoff, Res,
-  Track and Blend. Off by default. See
-  [Two filters](#two-filters-and-how-they-are-wired).
-```
+Then update the parameter-sections list near the top of the Subtractive chapter,
+replacing the single `- **FILTER**` bullet with FILTER A and FILTER B bullets
+that link to the two sections above.
 
 - [ ] **Step 2: Fix the stale attribution line**
 
-In `public/presets/ATTRIBUTION.md`, the mpump porting table says the ladder
-models are "**lossy** — 4-pole saturating ladder -> Loom's 2-pole SVF; drive
-stands in for the saturation". Loom has had real ladders since. Replace that
-row's mapping with `filter.kind: 1` (MOG) / `filter.kind: 2` (303) and drop the
-"lossy" note for those two.
+In `public/presets/ATTRIBUTION.md`, the mpump porting table calls the ladder
+models "**lossy** — 4-pole saturating ladder → Loom's 2-pole SVF". Loom has had
+real ladders since. Point that row at `filter.model: 1` (MOG) / `2` (303) and
+drop the "lossy" note for those two.
 
 - [ ] **Step 3: Do NOT open a browser**
 
-A UI feature is not done until someone opens it and looks — but that look is the
-CONTROLLER's job, not yours, and it happens once at the end over the finished
-branch. Starting a dev server from inside a task races the other tasks' writes
-(Vite reloads mid-edit) and the ear check is a taste call the user makes.
+The visual check is the controller's job, once, over the finished branch —
+starting a dev server inside a task races the other tasks' writes. Note in your
+report that it is pending, and stop.
 
-Leave it. Note in your report that the visual check is pending, and stop.
-
-- [ ] **Step 4: Full suite, one last time**
-
-Run: `npx tsc --noEmit && NO_COLOR=1 npm run test:unit`
-Expected: typecheck silent, suite green.
-
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add -A
 git commit -F- <<'EOF'
-docs(manual): the filter list and the two-filter routing
+docs(manual): Mode x Type, the comb's three responses, and the routing
 
 The chapter claimed only DIG was a true multimode and that Type did
 nothing on a ladder. That has been false since the ladders got honest HP
-and BP taps; it is now replaced by the list itself, entry by entry, plus
-why there is no ladder notch and what Difference is for.
+and BP taps; it is replaced by what each mode actually offers, why the
+ladders have no notch, the comb's three types and its two borrowed knobs,
+and what Difference is for.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
 EOF
@@ -1395,146 +1152,58 @@ EOF
 
 ---
 
-### Task 6: Sixteen presets that exercise the whole thing
+### Task 6: Presets that exercise the whole thing
 
-A feature nobody can hear is not shipped. These sixteen cover **all ten entries
-in the list, all four routing modes and both ends of Track**, and six of them
-carry a modulator so the moving parts move. Three go further and cover what the
-engine already had but no preset ever demonstrated: the **ring modulator** (new
-on this branch, and with no preset at all today) and **PWM** — `ATTRIBUTION.md`
-literally tells the reader to "put an LFO on `osc1.pw`" to hear it, and until now
-not one preset did.
-
-| Preset | Filter A | Routing | Filter B | Track | Modulator |
-|---|---|---|---|---|---|
-| `PAD Glass Air` | 4 `HP 24 MOG` | Off | — | — | — |
-| `PAD Hollow Band` | 0 `LP 12 DIG` | Series | 3 `HP 12 DIG` | 0 | — |
-| `LEAD Notch Vox` | 9 `NOTCH DIG` | Off | — | — | LFO -> `filter.cutoff` |
-| `BASS Twin Growl` | 2 `LP 24 303` | Difference | 1 `LP 24 MOG` | 0.5 | LFO -> `filter.blend` |
-| `KEY Morph Two Ways` | 5 `HP 24 303` | Parallel | 6 `BP 12 DIG` | 0.6 | ADSR -> `filter.blend` |
-| `LEAD BP Sweep` | 7 `BP 12 MOG` | Parallel | 8 `BP 12 303` | 1 | LFO -> `filter.cutoff` |
-| `BASS Acid Diode` | 2 `LP 24 303` | Off | — | — | — |
-| `PLUCK Thin Air` | 3 `HP 12 DIG` | Off | — | — | — |
-| `LEAD Formant Two` | 6 `BP 12 DIG` | Parallel | 7 `BP 12 MOG` | 0 | — |
-| `BASS Hollow Sub` | 9 `NOTCH DIG` | Series | 0 `LP 12 DIG` | 0.3 | — |
-| `PAD Phase Ghost` | 0 `LP 12 DIG` | Difference | 0 `LP 12 DIG` | 0 | LFO -> `filter2.cutoff` |
-| `LEAD Moog Cream` | 1 `LP 24 MOG` | Off | — | — | — |
-| `FX Metal Comb` | 8 `BP 12 303` | Difference | 6 `BP 12 DIG` | 0 | — (Ring 0.8) |
-| `PAD Wide Split` | 3 `HP 12 DIG` | Parallel | 1 `LP 24 MOG` | 1 | — |
-| `KEY Bell Ring` | 6 `BP 12 DIG` | Off | — | — | ADSR -> `ring.level` |
-| `PAD PWM Breather` | 0 `LP 12 DIG` | Off | — | — | LFO -> `osc1.pw` |
-
-`PAD Phase Ghost` is the one to notice: **both filters are the same entry**,
-`LP 12 DIG`, at different cutoffs, subtracted. It is the answer to "why would I
-want two identical lowpasses in the list" — the difference between them is a
-moving band, and no single entry can make it.
+Sixteen presets covering **every declared (mode, tap) pair, all four routing
+modes and both ends of Track**, with the coverage asserted rather than trusted.
 
 **Files:**
 - Modify: `public/presets/subtractive.json`
 - Test: `src/presets/subtractive-filter-presets.test.ts`
 
-**Interfaces:**
-- Consumes: every param id from Tasks 2 and 4.
-- Produces: six preset names, asserted by the test below.
+| Preset | A | Routing | B | Track | Modulator |
+|---|---|---|---|---|---|
+| `PAD Glass Air` | MOG HP | Off | — | — | — |
+| `PAD Hollow Band` | DIG LP | Series | DIG HP | 0 | — |
+| `LEAD Notch Vox` | DIG NOTCH | Off | — | — | LFO → `filter.cutoff` |
+| `BASS Twin Growl` | 303 LP | Difference | MOG LP | 0.5 | LFO → `filter.blend` |
+| `KEY Morph Two Ways` | 303 HP | Parallel | DIG BP | 0.6 | ADSR → `filter.blend` |
+| `LEAD BP Sweep` | MOG BP | Parallel | 303 BP | 1 | LFO → `filter.cutoff` |
+| `BASS Acid Diode` | 303 LP | Off | — | — | — |
+| `PLUCK Thin Air` | DIG HP | Off | — | — | — |
+| `LEAD Formant Two` | DIG BP | Parallel | MOG BP | 0 | — |
+| `BASS Hollow Sub` | DIG NOTCH | Series | DIG LP | 0.3 | — |
+| `PAD Phase Ghost` | DIG LP | Difference | DIG LP | 0 | LFO → `filter2.cutoff` |
+| `LEAD Moog Cream` | MOG LP | Off | — | — | — |
+| `STRING Comb Pluck` | COMB POS | Off | — | — | — |
+| `PAD Clarinet Comb` | COMB NEG | Series | DIG LP | 0 | — |
+| `FX Metal Comb` | DIG LP | Parallel | COMB FF | 1 | — (Ring 0.8) |
+| `KEY Bell Ring` | DIG BP | Off | — | — | ADSR → `ring.level` |
+
+Plus `PAD PWM Breather` (DIG LP, Off, LFO → `osc1.pw`) — the seventeenth, and the
+first preset ever to put an LFO on the pulse width, which `ATTRIBUTION.md` has
+been telling readers to do by hand since the width was exposed.
 
 - [ ] **Step 1: Write the failing test**
 
-Create `src/presets/subtractive-filter-presets.test.ts`:
+Create `src/presets/subtractive-filter-presets.test.ts` with: the preset-name
+list; an `it.each` that each one exists; an `it.each` that each renders above the
+same silence floor the rest of the pack is held to (`rms > 0.01`, rendered
+exactly as `subtractive-presets.test.ts` does — read that file and reuse its
+`render` shape); and the coverage assertions:
 
 ```ts
-// src/presets/subtractive-filter-presets.test.ts
-//
-// The six presets that exercise the filter stack. A feature nobody can hear is
-// not shipped, and "the presets cover it" is a claim worth asserting rather
-// than believing: between them these six must touch every entry in the list and
-// every routing mode, and the three that carry a modulator must actually move.
-import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { SUB_PARAM_SPECS } from '../engines/subtractive-params';
-import { FILTER_KINDS } from '../audio-dsp/filter-kinds';
-import { SubtractiveVoiceRenderer } from '../audio-dsp/subtractive-renderer';
-import { buildParamIndex } from '../audio-dsp/param-index';
-import type { ParamBag } from '../audio-dsp/types';
-
-interface Mod {
-  id: string; kind: string; enabled: boolean;
-  connections: { id: string; paramId: string; depth: number }[];
-}
-interface Preset { name: string; params: Record<string, number>; modulators?: Mod[] }
-const PRESETS: Preset[] = JSON.parse(
-  readFileSync(resolve('public/presets/subtractive.json'), 'utf8'),
-).presets;
-
-const STACK_PRESETS = [
-  'PAD Glass Air', 'PAD Hollow Band', 'LEAD Notch Vox',
-  'BASS Twin Growl', 'KEY Morph Two Ways', 'LEAD BP Sweep',
-  'BASS Acid Diode', 'PLUCK Thin Air', 'LEAD Formant Two', 'BASS Hollow Sub',
-  'PAD Phase Ghost', 'LEAD Moog Cream', 'FX Metal Comb', 'PAD Wide Split',
-  'KEY Bell Ring', 'PAD PWM Breather',
-];
-const byName = (name: string): Preset => {
-  const p = PRESETS.find((x) => x.name === name);
-  if (!p) throw new Error(`preset "${name}" is missing`);
-  return p;
-};
-
-const SR = 48000;
-const MIDI = 48;
-const DEFAULT_BAG: ParamBag = Object.fromEntries(SUB_PARAM_SPECS.map((s) => [s.id, s.default]));
-const rms = (b: number[]) => Math.sqrt(b.reduce((s, v) => s + v * v, 0) / b.length);
-
-/** Render a preset, optionally driving one modulation target by hand — the
- *  preset's own modulators are state, not a running LFO, so a test that wants
- *  to prove the movement has to supply it. */
-function render(preset: Preset, seconds: number, drive?: { paramId: string; at: (t: number) => number }): number[] {
-  const bag: ParamBag = { ...DEFAULT_BAG, ...preset.params };
-  const v = new SubtractiveVoiceRenderer(
-    { midi: MIDI, beginSec: 0, durationSec: seconds * 0.6, velocity: 0.8, accent: false, slide: false },
-    bag, SR,
-  );
-  const index = buildParamIndex([...Object.keys(bag), 'output.trim']);
-  const live = new Float64Array(index.length);
-  for (const id in bag) live[index.slot[id]] = bag[id];
-  v.setLiveValues?.(live, index);
-  const mo = new Float64Array(index.length);
-  const slot = drive ? index.slot[drive.paramId] : -1;
-  const out: number[] = [];
-  for (let i = 0; i < SR * seconds; i++) {
-    const t = i / SR;
-    if (drive && slot >= 0) mo[slot] = drive.at(t);
-    out.push(v.renderSample(t, drive ? mo : undefined));
-  }
-  return out;
-}
-
-describe('the filter-stack presets exist and are audible', () => {
-  it.each(STACK_PRESETS)('%s is in the pack', (name) => {
-    expect(PRESETS.some((p) => p.name === name)).toBe(true);
-  });
-
-  it.each(STACK_PRESETS)('%s makes a sound', (name) => {
-    // Same floor the rest of the pack is held to (subtractive-presets.test.ts):
-    // measured against silence, not against another preset.
-    expect(rms(render(byName(name), 0.5))).toBeGreaterThan(0.01);
-  });
-});
-
-describe('between them the presets exercise the whole filter stack', () => {
-  const kindsUsed = (): Set<number> => {
-    const s = new Set<number>();
+  it('covers every (mode, tap) pair the table declares', () => {
+    const used = new Set<string>();
     for (const name of STACK_PRESETS) {
       const p = byName(name).params;
-      s.add(p['filter.kind'] ?? 0);
-      if ((p['filter.routing'] ?? 0) !== 0) s.add(p['filter2.kind'] ?? 3);
+      used.add(`${p['filter.model'] ?? 0}/${p['filter.type'] ?? 0}`);
+      if ((p['filter.routing'] ?? 0) !== 0) used.add(`${p['filter2.model'] ?? 0}/${p['filter2.type'] ?? 1}`);
     }
-    return s;
-  };
-
-  it('covers every entry in the list', () => {
-    const used = kindsUsed();
-    const missing = FILTER_KINDS.map((k, i) => [k.label, i] as const).filter(([, i]) => !used.has(i));
-    expect(missing.map(([label]) => label), 'no preset demonstrates these').toEqual([]);
+    const missing = FILTER_MODES.flatMap((m, mi) =>
+      m.taps.map((t, ti) => (used.has(`${mi}/${ti}`) ? null : `${m.label} ${t}`)),
+    ).filter(Boolean);
+    expect(missing, 'no preset demonstrates these').toEqual([]);
   });
 
   it('covers every routing mode', () => {
@@ -1543,476 +1212,113 @@ describe('between them the presets exercise the whole filter stack', () => {
   });
 
   it('demonstrates both ends of Track', () => {
-    const tracks = STACK_PRESETS.map((n) => byName(n).params['filter2.track']).filter((v) => v !== undefined);
-    expect(Math.min(...tracks as number[])).toBe(0);
-    expect(Math.max(...tracks as number[])).toBe(1);
+    const t = STACK_PRESETS.map((n) => byName(n).params['filter2.track']).filter((v) => v !== undefined) as number[];
+    expect(Math.min(...t)).toBe(0);
+    expect(Math.max(...t)).toBe(1);
   });
 
-  const connectedTo = (name: string, paramId: string, kind: string): boolean =>
-    (byName(name).modulators ?? []).some(
-      (m) => m.kind === kind && m.enabled && m.connections.some((c) => c.paramId === paramId && c.depth !== 0),
-    );
-
-  it('ships a modulator on Blend, from an LFO and from an ADSR', () => {
-    expect(connectedTo('BASS Twin Growl', 'filter.blend', 'lfo'), 'LFO on Blend').toBe(true);
-    expect(connectedTo('KEY Morph Two Ways', 'filter.blend', 'adsr'), 'ADSR on Blend').toBe(true);
-  });
-
-  it('demonstrates the duplicate case the list exists to allow', () => {
-    // Both filters the SAME entry, at different cutoffs, subtracted. If nobody
-    // ships this patch, "why would I want two identical lowpasses" has no answer
-    // in the pack.
+  it('demonstrates the duplicate case the two slots exist to allow', () => {
+    // The SAME filter in both slots at different cutoffs, subtracted.
     const p = byName('PAD Phase Ghost').params;
-    expect(p['filter.kind']).toBe(p['filter2.kind']);
+    expect(p['filter.model']).toBe(p['filter2.model']);
+    expect(p['filter.type']).toBe(p['filter2.type']);
     expect(p['filter.routing']).toBe(3);
     expect(p['filter.cutoff']).not.toBe(p['filter2.cutoff']);
-    expect(connectedTo('PAD Phase Ghost', 'filter2.cutoff', 'lfo'), 'LFO on B cutoff').toBe(true);
   });
 
-  it('demonstrates the ring modulator, which had no preset at all', () => {
+  it('demonstrates the ring modulator and PWM, which had no preset at all', () => {
     expect(byName('FX Metal Comb').params['ring.level']).toBeGreaterThan(0.5);
-    expect(connectedTo('KEY Bell Ring', 'ring.level', 'adsr'), 'ADSR on Ring').toBe(true);
-  });
-
-  it('demonstrates PWM — an LFO on the width, which is what makes it PWM', () => {
-    // ATTRIBUTION.md tells the reader to put an LFO on osc1.pw to hear the real
-    // thing, and until this pack not one preset did.
+    expect(connectedTo('KEY Bell Ring', 'ring.level', 'adsr')).toBe(true);
     expect(byName('PAD PWM Breather').params['osc1.wave'], 'width only bites on a square').toBe(1);
-    expect(connectedTo('PAD PWM Breather', 'osc1.pw', 'lfo'), 'LFO on the width').toBe(true);
-  });
-});
-
-describe('the modulated presets actually move', () => {
-  it('BASS Twin Growl changes as its Blend LFO sweeps', () => {
-    const still = render(byName('BASS Twin Growl'), 0.4);
-    const swept = render(byName('BASS Twin Growl'), 0.4, {
-      paramId: 'filter.blend', at: (t) => Math.sin(2 * Math.PI * 2 * t) * 0.4,
-    });
-    let diff = 0; for (let i = 0; i < still.length; i++) diff += Math.abs(still[i] - swept[i]);
-    expect(diff / still.length).toBeGreaterThan(0.01);
+    expect(connectedTo('PAD PWM Breather', 'osc1.pw', 'lfo')).toBe(true);
   });
 
-  it('KEY Morph Two Ways morphs from filter A to filter B as Blend rises', () => {
-    // Blend at 0 is filter A alone; at 1 the parallel path is filter B alone.
-    // The two are a 4-pole highpass and a clean bandpass — if the morph were a
-    // no-op these would be the same sound.
-    const at = (blend: number) => render(
-      { ...byName('KEY Morph Two Ways'), params: { ...byName('KEY Morph Two Ways').params, 'filter.blend': blend } },
-      0.3,
-    );
-    const a = at(0), b = at(1);
-    let diff = 0; for (let i = 0; i < a.length; i++) diff += Math.abs(a[i] - b[i]);
-    expect(diff / a.length / Math.max(1e-9, rms(a))).toBeGreaterThan(0.1);
+  it('ships a modulator on Blend, from an LFO and from an ADSR', () => {
+    expect(connectedTo('BASS Twin Growl', 'filter.blend', 'lfo')).toBe(true);
+    expect(connectedTo('KEY Morph Two Ways', 'filter.blend', 'adsr')).toBe(true);
   });
-
-  it('LEAD BP Sweep keeps both bandpasses moving together at Track 1', () => {
-    expect(byName('LEAD BP Sweep').params['filter2.track']).toBe(1);
-    expect(byName('LEAD BP Sweep').params['filter.envAmount']).toBeGreaterThan(0.5);
-  });
-});
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+where `connectedTo(name, paramId, kind)` checks the preset's `modulators` array
+for an enabled modulator of that kind with a non-zero connection to that param.
+
+- [ ] **Step 2: Run it to verify it fails**
 
 Run: `NO_COLOR=1 npx vitest run src/presets/subtractive-filter-presets.test.ts`
 Expected: FAIL — `preset "PAD Glass Air" is missing`.
 
-- [ ] **Step 3: Add the six presets**
+- [ ] **Step 3: Write the presets**
 
-Append these to the `presets` array in `public/presets/subtractive.json`:
+Append them to the `presets` array in `public/presets/subtractive.json`. Every
+preset is `{ name, gm, params, modulators? }`; copy the shape from `BASS Wobble
+LFO`, which is already in the file and carries an LFO. The filter fields to set
+per preset are in the table above (`filter.model`, `filter.type`,
+`filter.routing`, `filter2.model`, `filter2.type`, `filter2.cutoff`,
+`filter2.resonance`, `filter2.track`, `filter.blend`); everything else — the
+oscillators, the envelopes, unison — is yours to voice, following the style of
+the presets already in the pack for that category (a BASS is short and low, a PAD
+is slow and wide).
 
-```json
-    {
-      "name": "PAD Glass Air",
-      "gm": [89, 92],
-      "params": {
-        "osc1.wave": 0, "osc1.level": 0.7, "osc1.detune": -6,
-        "osc2.wave": 0, "osc2.level": 0.6, "osc2.detune": 8,
-        "sub.level": 0.3, "noise.level": 0.06, "noise.color": 0.85,
-        "master.unison": 5, "master.detune": 16, "master.drift": 0.3,
-        "filter.kind": 4, "filter.cutoff": 0.28, "filter.resonance": 0.3,
-        "filter.envAmount": 0.2, "filter.drive": 0.05,
-        "filter.attack": 0.4, "filter.decay": 1.0, "filter.sustain": 0.6, "filter.release": 1.2,
-        "amp.attack": 0.25, "amp.decay": 1.2, "amp.sustain": 0.8, "amp.release": 1.2,
-        "output.trim": 1.5
-      }
-    },
-    {
-      "name": "PAD Hollow Band",
-      "gm": [90, 95],
-      "params": {
-        "osc1.wave": 0, "osc1.level": 0.7, "osc1.detune": -5,
-        "osc2.wave": 1, "osc2.level": 0.45, "osc2.detune": 7, "osc2.pw": 0.35,
-        "sub.level": 0.3, "noise.level": 0,
-        "master.unison": 3, "master.detune": 14, "master.drift": 0.2,
-        "filter.kind": 0, "filter.cutoff": 0.55, "filter.resonance": 0.3,
-        "filter.envAmount": 0.5, "filter.drive": 0.05,
-        "filter.attack": 0.3, "filter.decay": 1.1, "filter.sustain": 0.45, "filter.release": 1.0,
-        "filter.routing": 1, "filter2.kind": 3, "filter2.cutoff": 0.3,
-        "filter2.resonance": 0.25, "filter2.track": 0, "filter.blend": 1,
-        "amp.attack": 0.2, "amp.decay": 1.0, "amp.sustain": 0.8, "amp.release": 1.1
-      }
-    },
-    {
-      "name": "LEAD Notch Vox",
-      "gm": [85, 86],
-      "params": {
-        "osc1.wave": 0, "osc1.level": 0.9, "osc1.detune": -4,
-        "osc2.wave": 1, "osc2.level": 0.5, "osc2.detune": 12, "osc2.pw": 0.4,
-        "sub.level": 0.2, "noise.level": 0,
-        "master.unison": 2, "master.detune": 12,
-        "filter.kind": 9, "filter.cutoff": 0.5, "filter.resonance": 0.6,
-        "filter.envAmount": 0.3, "filter.drive": 0.15,
-        "filter.attack": 0.01, "filter.decay": 0.4, "filter.sustain": 0.5, "filter.release": 0.3,
-        "amp.attack": 0.01, "amp.decay": 0.3, "amp.sustain": 0.8, "amp.release": 0.25
-      },
-      "modulators": [
-        {
-          "id": "lfo1", "kind": "lfo", "enabled": true, "bipolar": true,
-          "waveform": "sine", "syncToBpm": true, "syncBars": 1, "syncSubdiv": "straight",
-          "trigger": "free", "scope": "shared",
-          "connections": [{ "id": "c1", "paramId": "filter.cutoff", "depth": 0.35 }]
-        }
-      ]
-    },
-    {
-      "name": "BASS Twin Growl",
-      "gm": [38, 39],
-      "params": {
-        "osc1.wave": 0, "osc1.level": 0.9, "osc1.detune": 0,
-        "osc2.wave": 1, "osc2.level": 0.35, "osc2.detune": -7,
-        "sub.level": 0.45, "noise.level": 0,
-        "filter.kind": 2, "filter.cutoff": 0.62, "filter.resonance": 0.7,
-        "filter.envAmount": 0.25, "filter.drive": 0.25,
-        "filter.attack": 0.005, "filter.decay": 0.25, "filter.sustain": 0.4, "filter.release": 0.15,
-        "filter.routing": 3, "filter2.kind": 1, "filter2.cutoff": 0.3,
-        "filter2.resonance": 0.45, "filter2.track": 0.5, "filter.blend": 0.55,
-        "amp.attack": 0.005, "amp.decay": 0.2, "amp.sustain": 0.75, "amp.release": 0.1
-      },
-      "modulators": [
-        {
-          "id": "lfo1", "kind": "lfo", "enabled": true, "bipolar": true,
-          "waveform": "sine", "syncToBpm": true, "syncBars": 2, "syncSubdiv": "straight",
-          "trigger": "free", "scope": "shared",
-          "connections": [{ "id": "c1", "paramId": "filter.blend", "depth": 0.4 }]
-        }
-      ]
-    },
-    {
-      "name": "KEY Morph Two Ways",
-      "gm": [4, 5],
-      "params": {
-        "osc1.wave": 0, "osc1.level": 0.8, "osc1.detune": -4,
-        "osc2.wave": 2, "osc2.level": 0.5, "osc2.detune": 6,
-        "sub.level": 0.25, "noise.level": 0.03, "noise.color": 0.7,
-        "master.unison": 3, "master.detune": 12, "master.drift": 0.15,
-        "filter.kind": 5, "filter.cutoff": 0.35, "filter.resonance": 0.4,
-        "filter.envAmount": 0.3, "filter.drive": 0.1,
-        "filter.attack": 0.02, "filter.decay": 0.8, "filter.sustain": 0.5, "filter.release": 0.6,
-        "filter.routing": 2, "filter2.kind": 6, "filter2.cutoff": 0.55,
-        "filter2.resonance": 0.55, "filter2.track": 0.6, "filter.blend": 0,
-        "amp.attack": 0.05, "amp.decay": 0.9, "amp.sustain": 0.7, "amp.release": 0.7,
-        "output.trim": 1.3
-      },
-      "modulators": [
-        {
-          "id": "adsr-blend", "kind": "adsr", "enabled": true, "scope": "per-voice",
-          "attackSec": 0.6, "decaySec": 1.2, "sustain": 0.35, "releaseSec": 0.8,
-          "connections": [{ "id": "c1", "paramId": "filter.blend", "depth": 1 }]
-        }
-      ]
-    },
-    {
-      "name": "LEAD BP Sweep",
-      "gm": [81, 82],
-      "params": {
-        "osc1.wave": 0, "osc1.level": 0.9, "osc1.detune": -6,
-        "osc2.wave": 0, "osc2.level": 0.7, "osc2.detune": 9,
-        "sub.level": 0.2, "noise.level": 0,
-        "master.unison": 3, "master.detune": 18,
-        "filter.kind": 7, "filter.cutoff": 0.35, "filter.resonance": 0.6,
-        "filter.envAmount": 0.85, "filter.drive": 0.15,
-        "filter.attack": 0.01, "filter.decay": 0.6, "filter.sustain": 0.25, "filter.release": 0.4,
-        "filter.routing": 2, "filter2.kind": 8, "filter2.cutoff": 0.5,
-        "filter2.resonance": 0.55, "filter2.track": 1, "filter.blend": 0.5,
-        "amp.attack": 0.01, "amp.decay": 0.5, "amp.sustain": 0.7, "amp.release": 0.3,
-        "output.trim": 1.4
-      },
-      "modulators": [
-        {
-          "id": "lfo1", "kind": "lfo", "enabled": true, "bipolar": true,
-          "waveform": "triangle", "syncToBpm": true, "syncBars": 0.5, "syncSubdiv": "straight",
-          "trigger": "free", "scope": "shared",
-          "connections": [{ "id": "c1", "paramId": "filter.cutoff", "depth": 0.25 }]
-        }
-      ]
-    },
-    {
-      "name": "BASS Acid Diode",
-      "gm": [38, 87],
-      "params": {
-        "osc1.wave": 0, "osc1.level": 1, "osc1.detune": 0,
-        "osc2.wave": 1, "osc2.level": 0.25, "osc2.detune": -12,
-        "sub.level": 0.35, "noise.level": 0,
-        "filter.kind": 2, "filter.cutoff": 0.42, "filter.resonance": 0.8,
-        "filter.envAmount": 0.7, "filter.drive": 0.35,
-        "filter.attack": 0.002, "filter.decay": 0.18, "filter.sustain": 0.15, "filter.release": 0.12,
-        "amp.attack": 0.003, "amp.decay": 0.25, "amp.sustain": 0.7, "amp.release": 0.1
-      }
-    },
-    {
-      "name": "PLUCK Thin Air",
-      "gm": [45, 46],
-      "params": {
-        "osc1.wave": 0, "osc1.level": 0.85, "osc1.detune": -3,
-        "osc2.wave": 2, "osc2.level": 0.4, "osc2.detune": 5,
-        "sub.level": 0, "noise.level": 0.08, "noise.color": 0.9,
-        "filter.kind": 3, "filter.cutoff": 0.4, "filter.resonance": 0.5,
-        "filter.envAmount": 0.4, "filter.drive": 0.05,
-        "filter.attack": 0.002, "filter.decay": 0.22, "filter.sustain": 0.1, "filter.release": 0.2,
-        "amp.attack": 0.002, "amp.decay": 0.28, "amp.sustain": 0.05, "amp.release": 0.22,
-        "output.trim": 1.3
-      }
-    },
-    {
-      "name": "LEAD Formant Two",
-      "gm": [85, 54],
-      "params": {
-        "osc1.wave": 0, "osc1.level": 0.9, "osc1.detune": -5,
-        "osc2.wave": 0, "osc2.level": 0.6, "osc2.detune": 10,
-        "sub.level": 0.15, "noise.level": 0,
-        "master.unison": 2, "master.detune": 12,
-        "filter.kind": 6, "filter.cutoff": 0.42, "filter.resonance": 0.7,
-        "filter.envAmount": 0.15, "filter.drive": 0.1,
-        "filter.attack": 0.01, "filter.decay": 0.4, "filter.sustain": 0.6, "filter.release": 0.3,
-        "filter.routing": 2, "filter2.kind": 7, "filter2.cutoff": 0.62,
-        "filter2.resonance": 0.7, "filter2.track": 0, "filter.blend": 0.5,
-        "amp.attack": 0.01, "amp.decay": 0.4, "amp.sustain": 0.8, "amp.release": 0.25,
-        "output.trim": 1.3
-      }
-    },
-    {
-      "name": "BASS Hollow Sub",
-      "gm": [38, 33],
-      "params": {
-        "osc1.wave": 0, "osc1.level": 0.8, "osc1.detune": 0,
-        "osc2.wave": 1, "osc2.level": 0.3, "osc2.detune": -7,
-        "sub.level": 0.5, "noise.level": 0,
-        "filter.kind": 9, "filter.cutoff": 0.45, "filter.resonance": 0.5,
-        "filter.envAmount": 0.3, "filter.drive": 0.15,
-        "filter.attack": 0.004, "filter.decay": 0.3, "filter.sustain": 0.4, "filter.release": 0.15,
-        "filter.routing": 1, "filter2.kind": 0, "filter2.cutoff": 0.5,
-        "filter2.resonance": 0.3, "filter2.track": 0.3, "filter.blend": 1,
-        "amp.attack": 0.004, "amp.decay": 0.3, "amp.sustain": 0.75, "amp.release": 0.12
-      }
-    },
-    {
-      "name": "PAD Phase Ghost",
-      "gm": [95, 89],
-      "params": {
-        "osc1.wave": 0, "osc1.level": 0.75, "osc1.detune": -7,
-        "osc2.wave": 0, "osc2.level": 0.65, "osc2.detune": 9,
-        "sub.level": 0.25, "noise.level": 0,
-        "master.unison": 5, "master.detune": 15, "master.drift": 0.25,
-        "filter.kind": 0, "filter.cutoff": 0.75, "filter.resonance": 0.35,
-        "filter.envAmount": 0.15, "filter.drive": 0.05,
-        "filter.attack": 0.3, "filter.decay": 1.0, "filter.sustain": 0.7, "filter.release": 1.0,
-        "filter.routing": 3, "filter2.kind": 0, "filter2.cutoff": 0.35,
-        "filter2.resonance": 0.35, "filter2.track": 0, "filter.blend": 0.9,
-        "amp.attack": 0.25, "amp.decay": 1.1, "amp.sustain": 0.8, "amp.release": 1.2
-      },
-      "modulators": [
-        {
-          "id": "lfo1", "kind": "lfo", "enabled": true, "bipolar": true,
-          "waveform": "triangle", "syncToBpm": true, "syncBars": 4, "syncSubdiv": "straight",
-          "trigger": "free", "scope": "shared",
-          "connections": [{ "id": "c1", "paramId": "filter2.cutoff", "depth": 0.25 }]
-        }
-      ]
-    },
-    {
-      "name": "LEAD Moog Cream",
-      "gm": [81, 80],
-      "params": {
-        "osc1.wave": 0, "osc1.level": 0.9, "osc1.detune": -4,
-        "osc2.wave": 0, "osc2.level": 0.6, "osc2.detune": 7,
-        "sub.level": 0.3, "noise.level": 0,
-        "master.unison": 3, "master.detune": 15,
-        "filter.kind": 1, "filter.cutoff": 0.5, "filter.resonance": 0.7,
-        "filter.envAmount": 0.5, "filter.drive": 0.2,
-        "filter.attack": 0.01, "filter.decay": 0.45, "filter.sustain": 0.45, "filter.release": 0.3,
-        "amp.attack": 0.01, "amp.decay": 0.4, "amp.sustain": 0.8, "amp.release": 0.25
-      }
-    },
-    {
-      "name": "FX Metal Comb",
-      "gm": [98, 121],
-      "params": {
-        "osc1.wave": 0, "osc1.level": 0.5, "osc1.detune": 0,
-        "osc2.wave": 1, "osc2.level": 0.5, "osc2.detune": 40,
-        "ring.level": 0.8,
-        "sub.level": 0, "noise.level": 0.05, "noise.color": 0.75,
-        "filter.kind": 8, "filter.cutoff": 0.55, "filter.resonance": 0.6,
-        "filter.envAmount": 0.35, "filter.drive": 0.15,
-        "filter.attack": 0.01, "filter.decay": 0.5, "filter.sustain": 0.4, "filter.release": 0.5,
-        "filter.routing": 3, "filter2.kind": 6, "filter2.cutoff": 0.3,
-        "filter2.resonance": 0.5, "filter2.track": 0, "filter.blend": 0.7,
-        "amp.attack": 0.005, "amp.decay": 0.7, "amp.sustain": 0.5, "amp.release": 0.6,
-        "output.trim": 1.3
-      }
-    },
-    {
-      "name": "PAD Wide Split",
-      "gm": [91, 89],
-      "params": {
-        "osc1.wave": 0, "osc1.level": 0.7, "osc1.detune": -8,
-        "osc2.wave": 0, "osc2.level": 0.65, "osc2.detune": 10,
-        "sub.level": 0.3, "noise.level": 0.04, "noise.color": 0.8,
-        "master.unison": 5, "master.detune": 18, "master.drift": 0.3,
-        "filter.kind": 3, "filter.cutoff": 0.3, "filter.resonance": 0.3,
-        "filter.envAmount": 0.3, "filter.drive": 0.05,
-        "filter.attack": 0.35, "filter.decay": 1.2, "filter.sustain": 0.6, "filter.release": 1.2,
-        "filter.routing": 2, "filter2.kind": 1, "filter2.cutoff": 0.45,
-        "filter2.resonance": 0.4, "filter2.track": 1, "filter.blend": 0.5,
-        "amp.attack": 0.25, "amp.decay": 1.2, "amp.sustain": 0.8, "amp.release": 1.3
-      }
-    },
-    {
-      "name": "KEY Bell Ring",
-      "gm": [14, 9],
-      "params": {
-        "osc1.wave": 3, "osc1.level": 0.75, "osc1.detune": 0,
-        "osc2.wave": 3, "osc2.level": 0.3, "osc2.detune": 35,
-        "ring.level": 0.6,
-        "sub.level": 0, "noise.level": 0,
-        "filter.kind": 6, "filter.cutoff": 0.6, "filter.resonance": 0.4,
-        "filter.envAmount": 0.25, "filter.drive": 0.05,
-        "filter.attack": 0.002, "filter.decay": 0.8, "filter.sustain": 0.3, "filter.release": 0.8,
-        "amp.attack": 0.002, "amp.decay": 1.2, "amp.sustain": 0.25, "amp.release": 1.0,
-        "output.trim": 1.4
-      },
-      "modulators": [
-        {
-          "id": "adsr-ring", "kind": "adsr", "enabled": true, "scope": "per-voice",
-          "attackSec": 0.002, "decaySec": 0.5, "sustain": 0, "releaseSec": 0.4,
-          "connections": [{ "id": "c1", "paramId": "ring.level", "depth": 0.4 }]
-        }
-      ]
-    },
-    {
-      "name": "PAD PWM Breather",
-      "gm": [90, 89],
-      "params": {
-        "osc1.wave": 1, "osc1.level": 0.9, "osc1.detune": -5, "osc1.pw": 0.5,
-        "osc2.wave": 1, "osc2.level": 0.5, "osc2.detune": 7, "osc2.pw": 0.45,
-        "sub.level": 0.25, "noise.level": 0,
-        "master.unison": 3, "master.detune": 14, "master.drift": 0.2,
-        "filter.kind": 0, "filter.cutoff": 0.5, "filter.resonance": 0.3,
-        "filter.envAmount": 0.35, "filter.drive": 0.05,
-        "filter.attack": 0.3, "filter.decay": 1.0, "filter.sustain": 0.6, "filter.release": 1.0,
-        "amp.attack": 0.2, "amp.decay": 1.0, "amp.sustain": 0.8, "amp.release": 1.0
-      },
-      "modulators": [
-        {
-          "id": "lfo1", "kind": "lfo", "enabled": true, "bipolar": true,
-          "waveform": "sine", "syncToBpm": true, "syncBars": 4, "syncSubdiv": "straight",
-          "trigger": "free", "scope": "shared",
-          "connections": [{ "id": "c1", "paramId": "osc1.pw", "depth": 0.6 }]
-        }
-      ]
-    }
-```
+Two constraints, both enforced by the existing suite:
 
-- [ ] **Step 4: Run the preset tests**
+- Every param id must exist in `SUB_PARAM_SPECS`, every value inside its declared
+  range, and every discrete value an integer.
+- The comb presets tune with `filter.cutoff`, which under COMB is the comb's
+  tuning: `0.35` is roughly 250 Hz, `0.5` roughly 900 Hz. Pick tunings that sit
+  near the notes the preset is for.
+
+- [ ] **Step 4: Run the preset suites**
 
 Run: `NO_COLOR=1 npx vitest run src/presets/`
-Expected: PASS, including the existing `subtractive-presets.test.ts` schema,
-range, integer, audibility and boundedness checks — now over 101 presets.
+Expected: PASS, including the existing schema, range, integer, audibility and
+boundedness checks over all 102 presets.
 
-Two failures are plausible and each has one honest fix:
+Two failures are plausible, each with one honest fix:
 
-- **`rms` under 0.01** on a highpass preset (`PAD Glass Air`, `PLUCK Thin Air`,
-  `KEY Morph Two Ways`, `PAD Wide Split`): a highpass throws the fundamental
-  away, so these are quiet by construction. RAISE that preset's `output.trim`
-  (the per-preset gain-staging lever, capped at 4 by the schema test) until it
-  clears the floor. Do NOT lower the floor.
-- **`peak` over 4.0** on a DIFFERENCE preset (`BASS Twin Growl`,
-  `PAD Phase Ghost`, `FX Metal Comb`): subtracting two resonant filters lets
-  their peaks add. LOWER `filter.resonance` / `filter2.resonance` in 0.05 steps,
-  or add `"output.trim": 0.8`. Do NOT raise `BLOW_UP`.
+- **`rms` under 0.01** on a highpass or comb preset: they are quiet by
+  construction. RAISE that preset's `output.trim` (the per-preset gain-staging
+  lever, capped at 4 by the schema test). Do NOT lower the floor.
+- **`peak` over 4.0** on a DIFFERENCE or comb preset: subtracting two resonant
+  filters lets their peaks add, and a comb at high feedback rings. LOWER the
+  resonances in 0.05 steps or add `"output.trim": 0.8`. Do NOT raise `BLOW_UP`.
 
 Report every preset you retuned and to what.
 
 - [ ] **Step 5: Full suite and typecheck**
 
 Run: `npx tsc --noEmit && NO_COLOR=1 npm run test:unit`
-Expected: typecheck silent, suite green.
 
-- [ ] **Step 6: Do NOT listen to them yourself — write down what to listen FOR**
+- [ ] **Step 6: Do NOT listen to them yourself**
 
-The presets are judged by ear, and the ear belongs to the user. Do not start a
-dev server. Instead, copy the list below into your report verbatim, so the
-controller's listening pass has the acceptance criteria in front of it.
-
-What each one must sound like:
-
-- `PAD Glass Air` — airy and thin, no boom. A pad with its bottom removed, not a
-  quiet pad.
-- `PAD Hollow Band` — the low-pass sweeps and the high-pass does NOT: the body
-  moves while the bottom edge stays put. That is Track 0.
-- `LEAD Notch Vox` — a moving hole in the middle, vowel-ish. If it sounds like a
-  plain low-pass sweep, the notch is not reaching the engine.
-- `BASS Twin Growl` — the growl comes from the BAND opening and closing, not
-  from a cutoff wobble. Wider and hollower than a normal wobble bass.
-- `KEY Morph Two Ways` — starts thin and highpassed, arrives somewhere nasal and
-  bandpassed as the note holds. The ADSR is doing that.
-- `LEAD BP Sweep` — two bandpasses sweeping together, keeping their interval.
-- `BASS Acid Diode` — squelch, with the diode ladder's bite. It should sound like
-  the 303 engine's cousin, not like a clean bass.
-- `PLUCK Thin Air` — a short, bodyless pluck. All attack, no fundamental.
-- `LEAD Formant Two` — two fixed peaks: nasal, vowel-like, and it does NOT move.
-- `BASS Hollow Sub` — a sub with a hole punched in its middle, then rounded off.
-- `PAD Phase Ghost` — a slow phaser-like sweep with no phaser in the chain. The
-  moving band between two identical lowpasses IS the effect.
-- `LEAD Moog Cream` — creamy, and it THINS as the resonance bites. That thinning
-  is the ladder being faithful, not a bug.
-- `FX Metal Comb` — inharmonic and metallic, the ring modulator through a band.
-- `PAD Wide Split` — wide, with a scooped middle: a highpass and a lowpass side
-  by side, sweeping together.
-- `KEY Bell Ring` — a metallic strike that decays into a clean tone. The ADSR on
-  Ring is what makes the strike metallic and the tail clean.
-- `PAD PWM Breather` — the width breathes. If it sits still, the LFO is not
-  reaching `osc1.pw` and the preset is a plain square pad.
-
-Report anything that sounds wrong rather than silently retuning it — these are
-taste calls and the user is the one who makes them.
+The presets are judged by ear and the ear belongs to the user. Do not start a dev
+server. Instead, write into your report one line per preset saying what it should
+sound like, so the controller's listening pass has the acceptance criteria in
+front of it.
 
 - [ ] **Step 7: Commit**
 
 ```bash
 git add -A
 git commit -F- <<'EOF'
-feat(presets): sixteen subtractive presets that exercise the whole engine
+feat(presets): seventeen subtractive presets that exercise the whole engine
 
-Between them they touch all ten entries in the filter list, all four
-routing modes and both ends of Track, and the test asserts that coverage
-rather than trusting it: an entry nobody demonstrates fails the suite.
+Between them they touch every (mode, tap) pair the table declares, all
+four routing modes and both ends of Track, and the test asserts that
+coverage rather than trusting it: a pair nobody demonstrates fails the
+suite.
 
-The ones that carry the argument: PAD Phase Ghost puts the SAME lowpass in
-both slots at different cutoffs and subtracts them, which is the answer to
-"why would I want two identical entries" -- the moving band between them is
-a phaser with no phaser in the chain. BASS Twin Growl growls by opening
-and closing that band with an LFO on Blend rather than on a cutoff. KEY
-Morph Two Ways walks from a four-pole highpass to a clean bandpass across
-the note with an ADSR on Blend. PAD Hollow Band is the fixed highpass under
-a sweeping lowpass that Track 0 exists for; LEAD BP Sweep is the same pair
-moving as a block at Track 1.
+The ones that carry the argument: PAD Phase Ghost puts the SAME filter in
+both slots at different cutoffs and subtracts them, which is a phaser with
+no phaser in the chain. BASS Twin Growl growls by opening and closing that
+band with an LFO on Blend rather than on a cutoff. KEY Morph Two Ways
+walks from a four-pole highpass to a clean bandpass across the note with
+an ADSR on Blend. STRING Comb Pluck and PAD Clarinet Comb are the same
+comb a sign apart, and they sound nothing alike.
 
 Three of them cover what the engine already had and no preset ever
 demonstrated: FX Metal Comb and KEY Bell Ring are the first presets to use
-the ring modulator at all, and PAD PWM Breather is the first to put an LFO
-on osc1.pw -- which ATTRIBUTION.md has been telling readers to do by hand
-since the pulse width was exposed.
+the ring modulator at all, and PAD PWM Breather the first to put an LFO on
+osc1.pw.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
 EOF
@@ -2024,11 +1330,14 @@ EOF
 
 Report to the user:
 
-- The suite result (file count and test count), and the screenshot from Task 5.
-- The renderer's code-line count before and after.
-- That the branch is `worktree-subtractive-ringmod`, holding BOTH the ring
-  modulator and this work, and that **nothing has been merged** — the merge is
-  the user's call.
+- The suite result (file count and test count).
+- The renderer's code-line count.
+- That the branch is `worktree-subtractive-ringmod`, holding the ring modulator
+  and this work, and that **nothing has been merged**.
+
+Then the controller — not a subagent — does the two checks no test can make: open
+the real screen and confirm the FILTER row reads right and no Type button appears
+that the chosen Mode cannot honestly do, and play the presets.
 
 Do NOT merge to `main`, do NOT switch branch or worktree, and do NOT call
 `ExitWorktree` while the user is still reviewing.
