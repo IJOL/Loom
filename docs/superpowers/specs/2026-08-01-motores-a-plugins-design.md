@@ -22,8 +22,8 @@ identificadores, comentarios, nombres de test y mensajes de commit.
 **Todo como Karplus.** No se diseña una segunda forma de empaquetar un motor.
 
 **No hay compatibilidad que respetar.** La aplicación se está construyendo; no se
-diseñan migraciones ni rutas de escape. Regla permanente del proyecto, y es lo
-que hace barato el cambio de ABI de §4.
+diseñan migraciones, ni rutas de escape, **ni versiones de ABI**. Regla
+permanente del proyecto: lo que cambia, cambia entero y en el mismo commit.
 
 **Los params se leen por índice en el camino de audio.** Decisión de Nacho tras
 ver la medición de §3: no se sacrifica la velocidad de Subtractive, se le da a
@@ -153,16 +153,17 @@ estado de sesión y en los mensajes hacia el worklet. Lo único que cambia es el
 `worklet-lane-engine.ts:149,280`). Subtractive deja de ser especial **donde más
 importa**, y no por renunciar a nada.
 
-### 4.1 Esto cambia el ABI, y hay que decirlo
+### 4.1 Cambia el contrato del SDK — y NO se versiona
 
-Karplus **ya está fuera del árbol**, así que su `dsp.ts` se escribe contra este
-contrato: cambiarlo es cambiar el ABI, no sólo la tripa. `loomApi` sube a **2** y
-el `VoiceRenderer` publicado por el SDK cambia de forma. Cualquier plugin escrito
-contra la 1 dejaría de valer.
+Karplus **ya está fuera del árbol**, así que su `dsp.ts` está escrito contra el
+`VoiceRenderer` que publica el SDK. Ese tipo cambia de forma, y `plugins/karplus`
+y `plugins/sh` cambian **en el mismo commit** que lo cambia.
 
-Hoy eso es gratis — los únicos plugins son nuestros. Dentro de seis meses, con un
-plugin de terceros vivo, sería caro. **Es un argumento para hacerlo ahora**, y es
-la razón por la que va junto y no después.
+**`loomApi` no sube.** Versionar un ABI es un mecanismo para convivir con código
+que no puedes tocar; aquí no existe tal código — los únicos plugins son nuestros
+y viajan en el mismo repositorio. Subir el número no protegería a nadie: sólo
+dejaría por escrito una promesa de compatibilidad que este proyecto ha decidido
+no hacer. El campo se queda como está y este spec no lo toca.
 
 ---
 
