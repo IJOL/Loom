@@ -752,8 +752,10 @@ Extend `filter-stack.ts`'s import to include `ROUTING_SER, ROUTING_PAR, ROUTING_
     switch (this.routing) {
       // A feeds B. Lerped, so blend 0 is A untouched rather than a hard switch.
       case ROUTING_SER: { const chained = b.update(a, cutB, resB); return a + blend * (chained - a); }
-      // Both see the same input. At blend 0.5 this is their average; at 1 it is B.
-      case ROUTING_PAR: { const parallel = b.update(x, cutB, resB); return a + blend * (parallel - a); }
+      // Both see the same input and B is ADDED on top, so A never leaves. This
+      // is DIFF's formula with the sign flipped — which is what the two modes
+      // always meant, and what makes "Parallel" mean parallel at every blend.
+      case ROUTING_PAR: return a + blend * b.update(x, cutB, resB);
       // A minus B: what A passes and B does not. Two lowpasses this way are a
       // band-pass between their cutoffs, which no single circuit here is.
       case ROUTING_DIFF: return a - blend * b.update(x, cutB, resB);

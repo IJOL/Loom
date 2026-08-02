@@ -195,7 +195,7 @@ Routing is four discrete modes:
 |---|---------|-----------|
 | 0 | `off` | `out = A(x)` — B is never built, never runs |
 | 1 | `ser` | `a = A(x); out = a + blend * (B(a) - a)` |
-| 2 | `par` | `a = A(x); out = a + blend * (B(x) - a)` |
+| 2 | `par` | `a = A(x); out = a + blend * B(x)` |
 | 3 | `diff` | `out = A(x) - blend * B(x)` |
 
 `blend` is how much of B is in the result, in every mode. At 0 all three modes
