@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { openLane } from './helpers';
+import { openLane, waitForBoot } from './helpers';
 
 // Regression coverage for the "loaded lane shows the CORRECT sound but the preset
 // dropdown is empty" bug. When a session/demo (or a MIDI import) loads a lane with
@@ -15,10 +15,6 @@ function selectIdFor(engine: string): string {
   // Every melodic engine, TB-303 included: the bass lost its own page, so it is
   // edited — and its preset picked — in the common panel like the rest.
   return '#poly-preset-select';
-}
-
-async function waitForBoot(page: Page): Promise<void> {
-  await page.waitForFunction(() => document.querySelectorAll('.session-cell-filled').length > 0, { timeout: 10_000 });
 }
 
 /** Open a lane's editor and return the text of its preset dropdown's selected

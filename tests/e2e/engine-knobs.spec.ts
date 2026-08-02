@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { addLane, openLane } from './helpers';
+import { addLane, openLane, waitForBoot } from './helpers';
 
 // Every melodic engine must render ITS OWN knobs when its lane is opened, and
 // show the "🎲 Sound" dice; the engines whose sound is a loaded thing must show
@@ -27,7 +27,15 @@ const MELODIC: EngineCase[] = [
   // NOT 'Algorithm': it is a discrete param that opts into `selectStyle:
   // 'dropdown'`, so it renders as a <select>, not a knob (engine-param-grid.ts).
   { id: 'fm',          knobs: ['Mix', 'Op1 Ratio', 'Op4 Rel'] },
-  { id: 'wavetable',   knobs: ['Wave A', 'Wave B', 'Morph'] },
+  // NOT 'Wave A' / 'Wave B': also discrete (osc.waveA/waveB in wavetable.ts),
+  // and unlike 'Algorithm' they render with `showLabel` left at its default
+  // (off — "WAVE/FM render bare", select-control.ts), so there is no caption
+  // in the DOM at all, not even a non-knob one. Asserting on them here always
+  // failed, independent of which lane was actually open — proven by running
+  // this suite 10x after the addLane race (below) was fixed: westcoast/karplus
+  // went green every time, wavetable kept failing on 'Wave A' 10/10, with the
+  // CORRECT lane open and the assertion itself simply wrong.
+  { id: 'wavetable',   knobs: ['Morph', 'Detune', 'Res'] },
   { id: 'westcoast',   knobs: ['Fold', 'Symmetry', 'Ratio'] },
   { id: 'karplus',     knobs: ['Damping', 'Brightness', 'Excite'] },
 ];
@@ -48,6 +56,10 @@ for (const eng of MELODIC) {
     const errors: string[] = [];
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
     await page.goto('/');
+    // Boot must have settled before addLane snapshots the lane-id list, or its
+    // before/after diff can't tell the boot demo's own lanes from the one this
+    // test just added — see waitForBoot's doc in helpers.ts.
+    await waitForBoot(page);
 
     const laneId = await addLane(page, eng.id);
     await openLane(page, laneId);
@@ -79,6 +91,7 @@ for (const eng of MELODIC) {
 
 test('the TB-303 has no page of its own', async ({ page }) => {
   await page.goto('/');
+  await waitForBoot(page);
   // The lane exists at boot; the point is that editing it does not open a
   // `data-page="303"`, because there is no such page any more.
   await expect(page.locator('[data-page="303"]')).toHaveCount(0);
@@ -89,6 +102,7 @@ test('the TB-303 has no page of its own', async ({ page }) => {
 
 test('an engine whose sound is a loaded thing shows NO dice', async ({ page }) => {
   await page.goto('/');
+  await waitForBoot(page);
 
   // Sampler: its sound is a keymap, not a bag of params — isRandomizable: false.
   const samplerLane = await addLane(page, 'sampler');
@@ -105,6 +119,7 @@ test('an engine whose sound is a loaded thing shows NO dice', async ({ page }) =
 
 test('the drum machine shows no dice either', async ({ page }) => {
   await page.goto('/');
+  await waitForBoot(page);
   await openLane(page, 'drums-1');
   // Drums keep their own page (pads, kits, bus knobs are genuinely different),
   // and `drums-machine` declares isRandomizable: false — a kit is a preset.

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { addLane, openLane } from './helpers';
+import { addLane, openLane, waitForBoot } from './helpers';
 
 // Regression: selecting a preset on a lane, switching to another tab, then
 // switching back must restore the SAME preset in the dropdown — it must not
@@ -8,13 +8,6 @@ import { addLane, openLane } from './helpers';
 // the sound but never recorded the selection, so re-activating the lane showed
 // "custom" even though nothing had been modified. The bug is engine-agnostic in
 // spirit, so this test exercises EVERY engine that has a preset dropdown.
-
-async function waitForBoot(page: Page): Promise<void> {
-  // The demo SessionState is fetched async; wait until it has populated.
-  await page.waitForFunction(
-    () => document.querySelectorAll('.session-cell-filled').length > 0,
-  );
-}
 
 /** First non-"custom" option value in a select (i.e. the first real preset). */
 async function firstPresetValue(page: Page, selectId: string): Promise<string> {

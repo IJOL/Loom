@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { waitForBoot } from './helpers';
 
 // Reproduction tests for the three Performance-mode bugs reported by the user:
 //  1. Performance playback makes no sound (the sequencer engine never starts in
@@ -6,13 +7,6 @@ import { test, expect, type Page } from '@playwright/test';
 //  2. Copy-to-Performance clip bands show raw clip ids ("clip-…") not names.
 //  3. The Play button doesn't stop the playhead (seq.isPlaying() stays false in
 //     Performance, so the toggle keeps re-starting instead of stopping).
-
-async function waitForBoot(page: Page): Promise<void> {
-  await page.waitForFunction(
-    () => document.querySelectorAll('.session-cell-filled').length > 0,
-    { timeout: 10_000 },
-  );
-}
 
 /** Patch the AudioContext prototype to count scheduled source nodes. Must run
  *  before playback. Counts node CREATION (independent of suspended state). */

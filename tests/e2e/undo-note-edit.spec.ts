@@ -32,16 +32,10 @@
 
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
+import { waitForBoot } from './helpers';
 
 const RULER_H = 20;
 const ROW_H   = 26;
-
-async function waitForBoot(page: Page): Promise<void> {
-  await page.waitForFunction(
-    () => document.querySelectorAll('.session-cell-filled').length > 0,
-    { timeout: 10_000 },
-  );
-}
 
 /** Lane id of the drums-machine lane in the boot demo. */
 async function drumsLaneId(page: Page): Promise<string> {

@@ -12,21 +12,59 @@ async function laneIds(page: Page): Promise<string[]> {
   );
 }
 
+/** Wait for the async boot demo (minimal-techno.json) to have actually applied.
+ *
+ *  `page.goto('/')` resolves once the page's load event fires — it says nothing
+ *  about `wireSessionLifecycle`'s boot chain (`Promise.all([presetsLoaded,
+ *  workletReady]).then(fetch demo).then(sessionHost.replaceSession(...))`),
+ *  which is still in flight. Any test that interacts with the session grid
+ *  right after `goto` is racing that chain: `replaceSession` swaps in every
+ *  boot lane in one shot at some non-deterministic point during the test, not
+ *  before it.
+ *
+ *  This was proven, not assumed: instrumenting `addLane` to log its before/after
+ *  lane-id snapshots caught runs where `before` was `[]` (captured before the
+ *  demo had landed) while `after` held all four boot lanes PLUS the one the
+ *  test had just added — because the demo's `replaceSession` fired in the
+ *  middle of the click sequence. `addLane`'s diff then saw multiple "new" ids
+ *  and had no way to tell the boot lanes from the one the test asked for, so it
+ *  could return e.g. the boot session's own `tb-303-1` for a test that asked to
+ *  add `wavetable`. That is the exact, reproduced mechanism behind the flaky
+ *  wavetable/westcoast/karplus failures in engine-knobs.spec.ts — they are the
+ *  LAST entries in the MELODIC list, so by the time their test runs the most
+ *  boot-loading time has had a chance to still be outstanding.
+ *
+ *  `.session-cell-filled` is the signal because the demo ships clips, not just
+ *  lanes: waiting for a filled clip cell is proof `replaceSession` completed,
+ *  where waiting for lane headers is not (a lane can exist before its clips are
+ *  painted). This mirrors a pattern that had already been hand-copied into 20+
+ *  spec files (session-management.spec.ts, lane-ui.spec.ts, undo.spec.ts, …) —
+ *  it is centralized here, once, so it can't drift between copies the way the
+ *  four independent `addLane`s once did.
+ */
+export async function waitForBoot(page: Page, timeout = 10_000): Promise<void> {
+  await page.waitForFunction(
+    () => document.querySelectorAll('.session-cell-filled').length > 0,
+    { timeout },
+  );
+}
+
 /** Add a lane via the grid header "+" engine menu; returns the new lane's id.
  *  (Previously defined independently in four different specs — consolidated
  *  here, same as `openLane`, so there is one place that knows how a lane gets
- *  added and how its id is recovered.) */
+ *  added and how its id is recovered.)
+ *
+ *  Callers MUST have awaited `waitForBoot` (or otherwise know the session is
+ *  settled) before calling this — see `waitForBoot`'s doc for why an unsettled
+ *  boot makes the before/after id diff below unreliable. */
 export async function addLane(page: Page, engineId = 'subtractive'): Promise<string> {
   const before = await laneIds(page);
   await page.locator('.session-lane-add').click();
   await page.locator(`.session-add-item[data-engine-id="${engineId}"]`).click();
-  // "> before.length", not "=== before.length + 1": engine-knobs.spec.ts and
-  // preset-recovery.spec.ts call this right after page.goto, with no prior
-  // waitForBoot, so the demo session's own lanes can still be arriving
-  // asynchronously while `before` is snapshotted. An exact-count wait races
-  // that load and times out (proven: 4/26 failures under `--reporter=line`
-  // before this was caught). A ">" wait is what those two specs' original,
-  // independently-written addLane already did.
+  // "> before.length", not "=== before.length + 1": a caller that skipped
+  // waitForBoot could still have the demo add more than one lane in this
+  // window. ">" is a floor, not a fix — waitForBoot is what makes `before`
+  // trustworthy; this is just belt-and-braces.
   await page.waitForFunction(
     (n) => document.querySelectorAll('.session-lane-header').length > n,
     before.length,

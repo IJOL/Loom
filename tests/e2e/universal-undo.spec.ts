@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { addLane } from './helpers';
+import { addLane, waitForBoot } from './helpers';
 
 // Verifies the header #undo-btn / #redo-btn are wired end-to-end.
 // These complement the keyboard-shortcut tests in undo.spec.ts — we test
@@ -9,13 +9,6 @@ import { addLane } from './helpers';
 // session grid without any extra navigation, deterministic, selector-friendly.
 // Pattern mirrors undo.spec.ts + session-management.spec.ts (waitForBoot,
 // .session-scene-launch count, .session-add-scene, the shared addLane helper).
-
-async function waitForBoot(page: import('@playwright/test').Page): Promise<void> {
-  await page.waitForFunction(
-    () => document.querySelectorAll('.session-cell-filled').length > 0,
-    { timeout: 10_000 },
-  );
-}
 
 test('header #undo-btn reverts an Add Scene mutation', async ({ page }) => {
   await page.goto('/');

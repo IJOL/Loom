@@ -1,17 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { waitForBoot } from './helpers';
 
 // Exercises the Performance View: mode toggle, empty-state path, REC arming,
 // and the full record→surface round-trip (arm REC → launch a scene → stop →
 // switch to Performance → the recorded take renders as clip bands). The
 // round-trip drives a real audio-context boundary cycle, so it uses a
 // generous wait for the launched clips to promote and get captured.
-
-async function waitForBoot(page: import('@playwright/test').Page): Promise<void> {
-  await page.waitForFunction(
-    () => document.querySelectorAll('.session-cell-filled').length > 0,
-    { timeout: 10_000 },
-  );
-}
 
 test('Session is visible on boot; Performance is hidden', async ({ page }) => {
   await page.goto('/');

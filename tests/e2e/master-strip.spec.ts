@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { waitForBoot } from './helpers';
 
 // End-to-end contract for the relocated master mixer (frente C):
 //   - the master strip lives at the foot of the scenes column of the mixer row,
@@ -9,12 +10,6 @@ import { test, expect } from '@playwright/test';
 //
 // Pattern mirrors lane-ui.spec.ts: wait for the async demo loader to populate
 // the grid before asserting on rendered columns.
-
-async function waitForBoot(page: import('@playwright/test').Page): Promise<void> {
-  await page.waitForFunction(
-    () => document.querySelectorAll('.session-cell-filled').length > 0,
-  );
-}
 
 test.describe('master strip', () => {
   test('exists at the foot of the grid with a MASTER label', async ({ page }) => {

@@ -1,11 +1,5 @@
 import { test, expect } from '@playwright/test';
-
-async function waitForBoot(page: import('@playwright/test').Page): Promise<void> {
-  await page.waitForFunction(
-    () => document.querySelectorAll('.session-cell-filled').length > 0,
-    { timeout: 10_000 },
-  );
-}
+import { waitForBoot } from './helpers';
 
 // Helper: drag-and-drop using raw pointer events (Playwright's locator.dragTo
 // uses HTML5 DnD which doesn't fire on our pointer-based handler).

@@ -1,8 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
+import { waitForBoot } from './helpers';
 
-async function waitForBoot(page: Page): Promise<void> {
-  await page.waitForFunction(() => document.querySelectorAll('.session-cell-filled').length > 0, { timeout: 10_000 });
-}
 async function openPerf(page: Page): Promise<void> {
   await page.goto('/'); await waitForBoot(page);
   await page.locator('#copy-to-performance').click();

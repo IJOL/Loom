@@ -1,5 +1,6 @@
 // tests/e2e/audio-channel.spec.ts
 import { test, expect, type Page } from '@playwright/test';
+import { waitForBoot } from './helpers';
 
 /** A ~2s 16-bit PCM mono WAV at 44.1k with two onset bursts so detection finds
  *  slices. Returned as a Buffer for setInputFiles. */
@@ -20,13 +21,6 @@ function loopWav(): Buffer {
     buf.writeInt16LE(Math.round(s), 44 + i * 2);
   }
   return buf;
-}
-
-async function waitForBoot(page: Page): Promise<void> {
-  await page.waitForFunction(
-    () => document.querySelectorAll('.session-cell-filled').length > 0,
-    { timeout: 10_000 },
-  );
 }
 
 /** New flow: "+ Audio" creates an EMPTY audio channel (no file prompt); the WAV

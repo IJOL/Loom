@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { addLane } from './helpers';
+import { addLane, waitForBoot } from './helpers';
 
 // Front A · session management e2e. Each case codifies a behaviour the front
 // introduced: ✕ delete crosses (clip/lane/scene), confirm-only-when-content,
@@ -7,13 +7,6 @@ import { addLane } from './helpers';
 // a lane delete. The confirmation is Loom's own <dialog> facility (#app-dialog),
 // NOT a native window.confirm — so we drive it by clicking #app-dialog-ok, never
 // page.on('dialog').
-
-async function waitForBoot(page: Page): Promise<void> {
-  await page.waitForFunction(
-    () => document.querySelectorAll('.session-cell-filled').length > 0,
-    { timeout: 10_000 },
-  );
-}
 
 /** Lane id of the first filled clip in the demo (a lane that has content). */
 async function laneOfFirstClip(page: Page): Promise<string> {

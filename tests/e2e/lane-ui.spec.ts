@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { openLane } from './helpers';
+import { openLane, waitForBoot } from './helpers';
 
 // End-to-end UI tests that codify the bugs we hit during the lane unification:
 // each one would have failed before the fix and passes after. They replace the
@@ -96,12 +96,6 @@ test.describe('mixer mutes', () => {
 
 test.describe('demo JSON presets', () => {
   // Wait for the async demo-loader to populate the dropdown before asserting.
-  async function waitForBoot(page: import('@playwright/test').Page): Promise<void> {
-    await page.waitForFunction(
-      () => document.querySelectorAll('.session-cell-filled').length > 0,
-    );
-  }
-
   test('every poly lane shows its boot preset in the dropdown', async ({ page }) => {
     await page.goto('/');
     await waitForBoot(page);

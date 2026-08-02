@@ -1,11 +1,5 @@
 import { test, expect } from '@playwright/test';
-
-async function waitForBoot(page: import('@playwright/test').Page): Promise<void> {
-  await page.waitForFunction(
-    () => document.querySelectorAll('.session-cell-filled').length > 0,
-    { timeout: 10_000 },
-  );
-}
+import { waitForBoot } from './helpers';
 
 test('Copy to Performance populates the arrangement and switches view', async ({ page }) => {
   await page.goto('/');

@@ -16,6 +16,7 @@
 
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
+import { waitForBoot } from './helpers';
 
 /** A ~2s 16-bit PCM mono WAV with decaying onset bursts so detection finds
  *  slices. Returned as a Buffer for setInputFiles. (Mirrors audio-channel.spec.) */
@@ -35,13 +36,6 @@ function loopWav(): Buffer {
     buf.writeInt16LE(Math.round(s), 44 + i * 2);
   }
   return buf;
-}
-
-async function waitForBoot(page: Page): Promise<void> {
-  await page.waitForFunction(
-    () => document.querySelectorAll('.session-cell-filled').length > 0,
-    { timeout: 10_000 },
-  );
 }
 
 /** Lane id of the first lane whose header carries the given engine class

@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { waitForBoot } from './helpers';
 
 // Reproductions for the Performance bugs reported 2026-07-15: copy the session's
 // scenes into Performance, resize a band, press Play — the cursor starts in the
@@ -8,13 +9,6 @@ import { test, expect, type Page } from '@playwright/test';
 // `goto('/')` → click Play immediately, so ctx.currentTime is ~0 and the drifting
 // song position happens to be ~0 too. The bugs need TIME to pass — exactly what a
 // human does and a test never did. These tests pause on purpose.
-
-async function waitForBoot(page: Page): Promise<void> {
-  await page.waitForFunction(
-    () => document.querySelectorAll('.session-cell-filled').length > 0,
-    { timeout: 10_000 },
-  );
-}
 
 /** Count NOTES actually triggered, by tapping the worklet message port.
  *

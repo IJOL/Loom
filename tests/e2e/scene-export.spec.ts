@@ -12,13 +12,7 @@
 // ▶ and the playing state is the `is-playing` class (no ▶/■ toggle). The old
 // standalone #export-scene menu is gone; arming lives on the REC button.
 import { test, expect } from '@playwright/test';
-
-async function waitForBoot(page: import('@playwright/test').Page): Promise<void> {
-  await page.waitForFunction(
-    () => document.querySelectorAll('.session-cell-filled').length > 0,
-    { timeout: 10_000 },
-  );
-}
+import { waitForBoot } from './helpers';
 
 async function armLiveTake(page: import('@playwright/test').Page): Promise<void> {
   // Select the ⏱ live REC mode, then press REC to arm (the real clicks also

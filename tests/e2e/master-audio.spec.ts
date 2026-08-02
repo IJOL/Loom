@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { installMasterTap, measureMaster } from './helpers';
+import { installMasterTap, measureMaster, waitForBoot } from './helpers';
 
 // Does the app actually make sound? Every other spec asserts DOM; this one taps
 // the master bus and measures the signal, which is the only way to catch a UI
@@ -9,13 +9,6 @@ import { installMasterTap, measureMaster } from './helpers';
 //
 // Thresholds are deliberately coarse — audible-vs-silent and clipping-vs-not,
 // not a fixed level, which would break the moment a preset is retuned.
-
-async function waitForBoot(page: Page): Promise<void> {
-  await page.waitForFunction(
-    () => document.querySelectorAll('.session-cell-filled').length > 0,
-    { timeout: 10_000 },
-  );
-}
 
 test('launching a scene produces continuous, unclipped audio on master', async ({ page }) => {
   await installMasterTap(page);

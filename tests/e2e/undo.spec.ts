@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { waitForBoot } from './helpers';
 
 // Verifies the undo/redo keyboard shortcuts are wired end-to-end.
 // Mutation: Add Scene (session-add-scene button) — always visible on the session
@@ -7,13 +8,6 @@ import { test, expect } from '@playwright/test';
 //
 // We wait for the async demo boot (minimal-techno.json) to settle before
 // interacting, matching the pattern used in lane-ui.spec.ts.
-
-async function waitForBoot(page: import('@playwright/test').Page): Promise<void> {
-  await page.waitForFunction(
-    () => document.querySelectorAll('.session-cell-filled').length > 0,
-    { timeout: 10_000 },
-  );
-}
 
 test('Ctrl+Z reverts an Add Scene mutation', async ({ page }) => {
   await page.goto('/');

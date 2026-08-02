@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { waitForBoot } from './helpers';
 
 // Inject a fake Web MIDI device before the app's modules run.
 const installFakeMidi = () => {
@@ -16,15 +17,6 @@ const installFakeMidi = () => {
     sentCount: () => sent.length,
   };
 };
-
-// Wait for the boot demo to populate the clip grid (the same signal the other
-// e2e specs use). The minimal-techno demo fills lane 0 / scene 0.
-async function waitForBoot(page: import('@playwright/test').Page): Promise<void> {
-  await page.waitForFunction(
-    () => document.querySelectorAll('.session-cell-filled').length > 0,
-    { timeout: 10_000 },
-  );
-}
 
 test('APC Key 25: enable, launch a clip from a pad, receive LED feedback', async ({ page }) => {
   await page.addInitScript(installFakeMidi);

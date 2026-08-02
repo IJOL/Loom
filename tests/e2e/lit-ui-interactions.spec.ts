@@ -1,5 +1,5 @@
 import { test, expect, type Page, type Locator } from '@playwright/test';
-import { openLane } from './helpers';
+import { openLane, waitForBoot } from './helpers';
 
 // The interactions the lit-html migration rewired from addEventListener to
 // template bindings, and which no automated test covered before: a knob drag,
@@ -7,13 +7,6 @@ import { openLane } from './helpers';
 // insert rack. Each one is a place where a repaint could plausibly drop a
 // listener, reset a control mid-gesture, or rebuild a widget that owns pointer
 // capture — none of which a render-structure assertion would catch.
-
-async function waitForBoot(page: Page): Promise<void> {
-  await page.waitForFunction(
-    () => document.querySelectorAll('.session-cell-filled').length > 0,
-    { timeout: 10_000 },
-  );
-}
 
 /** Drags a knob's SVG vertically. `page.mouse` does not auto-scroll the way
  *  locator actions do, so an off-screen knob would silently receive nothing. */

@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { waitForBoot } from './helpers';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -54,13 +55,6 @@ test.beforeAll(async () => {
 test.afterAll(() => {
   rmSync(scratchRoot, { recursive: true, force: true });
 });
-
-async function waitForBoot(page: Page): Promise<void> {
-  await page.waitForFunction(
-    () => document.querySelectorAll('.session-cell-filled').length > 0,
-    { timeout: 10_000 },
-  );
-}
 
 async function installAudioProbeAtRuntime(page: Page): Promise<void> {
   await page.route('**/plugins/index.json', (route) =>

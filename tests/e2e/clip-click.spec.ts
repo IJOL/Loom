@@ -1,17 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { waitForBoot } from './helpers';
 
 // Verifies the session-cell click semantics:
 //   - clicking the cell body opens the inspector and does NOT start playback
 //   - clicking the ▶ icon launches the clip (and toggles to ⏸ once playing)
 //   - clicking ⏸ stops the lane and toggles back to ▶
 //   - launching with the transport stopped starts immediately (sync fix)
-
-async function waitForBoot(page: import('@playwright/test').Page): Promise<void> {
-  await page.waitForFunction(
-    () => document.querySelectorAll('.session-cell-filled').length > 0,
-    { timeout: 10_000 },
-  );
-}
 
 test('clicking the cell body opens the inspector without launching', async ({ page }) => {
   await page.goto('/');
