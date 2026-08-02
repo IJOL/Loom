@@ -301,7 +301,7 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
           this.ampEnvAdsr = me.adsr;
           continue;
         }
-        if (field === 'filterEnv') {
+        if (field === 'filter.env') {
           // 'filterEnv' is the per-voice FILTER envelope (0..1, scaled by envRangeHz
           // downstream — same as the built-in), not an additive offset.
           this.filterEnvValue = (this.filterEnvValue ?? 0) + env * depth;
@@ -332,10 +332,10 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     // Live shared-LFO offsets (normalised) applied on top of the spawned-snapshot
     // params at read time, each scaled to its native units and clamped. A falsy
     // (incl. 0) offset takes the cached/base value — the unmodulated path.
-    const osc1Level = mo?.osc1Level ? clamp01((L && this.sOsc1Level >= 0 ? L[this.sOsc1Level] : p.osc1Level) + mo.osc1Level) : (L && this.sOsc1Level >= 0 ? L[this.sOsc1Level] : p.osc1Level);
-    const osc2Level = mo?.osc2Level ? clamp01((L && this.sOsc2Level >= 0 ? L[this.sOsc2Level] : p.osc2Level) + mo.osc2Level) : (L && this.sOsc2Level >= 0 ? L[this.sOsc2Level] : p.osc2Level);
-    const subLevel  = mo?.subLevel  ? clamp01((L && this.sSubLevel >= 0 ? L[this.sSubLevel] : p.subLevel) + mo.subLevel)   : (L && this.sSubLevel >= 0 ? L[this.sSubLevel] : p.subLevel);
-    const noiseLevel = mo?.noiseLevel ? clamp01((L && this.sNoiseLevel >= 0 ? L[this.sNoiseLevel] : p.noiseLevel) + mo.noiseLevel) : (L && this.sNoiseLevel >= 0 ? L[this.sNoiseLevel] : p.noiseLevel);
+    const osc1Level = mo?.['osc1.level'] ? clamp01((L && this.sOsc1Level >= 0 ? L[this.sOsc1Level] : p.osc1Level) + mo['osc1.level']) : (L && this.sOsc1Level >= 0 ? L[this.sOsc1Level] : p.osc1Level);
+    const osc2Level = mo?.['osc2.level'] ? clamp01((L && this.sOsc2Level >= 0 ? L[this.sOsc2Level] : p.osc2Level) + mo['osc2.level']) : (L && this.sOsc2Level >= 0 ? L[this.sOsc2Level] : p.osc2Level);
+    const subLevel  = mo?.['sub.level']  ? clamp01((L && this.sSubLevel >= 0 ? L[this.sSubLevel] : p.subLevel) + mo['sub.level'])   : (L && this.sSubLevel >= 0 ? L[this.sSubLevel] : p.subLevel);
+    const noiseLevel = mo?.['noise.level'] ? clamp01((L && this.sNoiseLevel >= 0 ? L[this.sNoiseLevel] : p.noiseLevel) + mo['noise.level']) : (L && this.sNoiseLevel >= 0 ? L[this.sNoiseLevel] : p.noiseLevel);
     // Master tune is continuous, so it moves the sounding note. Cached: the pow
     // only re-runs when the tune knob actually changes.
     if ((L && this.sMasterTune >= 0 ? L[this.sMasterTune] : p.masterTune) !== this.tuneRaw) {
@@ -345,26 +345,26 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     const baseFreq = this.baseFreqCached;
     // Pitch modulation: master tune (±12 st full-depth) → freq multiplier;
     // per-osc detune (±50 cents full-depth) added to the cents knob.
-    const f = mo?.masterTune ? baseFreq * Math.pow(2, mo.masterTune * MOD_TUNE_SEMIS / 12) : baseFreq;
-    const det1 = mo?.osc1Detune ? (L && this.sOsc1Detune >= 0 ? L[this.sOsc1Detune] : p.osc1Detune) + mo.osc1Detune * MOD_DETUNE_CENTS : (L && this.sOsc1Detune >= 0 ? L[this.sOsc1Detune] : p.osc1Detune);
-    const det2 = mo?.osc2Detune ? (L && this.sOsc2Detune >= 0 ? L[this.sOsc2Detune] : p.osc2Detune) + mo.osc2Detune * MOD_DETUNE_CENTS : (L && this.sOsc2Detune >= 0 ? L[this.sOsc2Detune] : p.osc2Detune);
+    const f = mo?.['master.tune'] ? baseFreq * Math.pow(2, mo['master.tune'] * MOD_TUNE_SEMIS / 12) : baseFreq;
+    const det1 = mo?.['osc1.detune'] ? (L && this.sOsc1Detune >= 0 ? L[this.sOsc1Detune] : p.osc1Detune) + mo['osc1.detune'] * MOD_DETUNE_CENTS : (L && this.sOsc1Detune >= 0 ? L[this.sOsc1Detune] : p.osc1Detune);
+    const det2 = mo?.['osc2.detune'] ? (L && this.sOsc2Detune >= 0 ? L[this.sOsc2Detune] : p.osc2Detune) + mo['osc2.detune'] * MOD_DETUNE_CENTS : (L && this.sOsc2Detune >= 0 ? L[this.sOsc2Detune] : p.osc2Detune);
     // Pulse width, and with an LFO on it, pulse-width MODULATION. Clamped to
     // the param's own rails: 0 and 1 are silence, not a thinner sound.
     // The stack's second argument is pulse width for most waves, but the sync
     // ratio for the Sync wave — SyncOsc reads it as its ratio. Both are
     // continuous and modulatable; pick which one this oscillator wants.
     const pw1 = this.osc1WaveFrozen === WAVE_SYNC
-      ? clampSync(mo?.osc1Sync ? (L && this.sOsc1Sync >= 0 ? L[this.sOsc1Sync] : p.osc1Sync) + mo.osc1Sync * MOD_SYNC_RANGE : (L && this.sOsc1Sync >= 0 ? L[this.sOsc1Sync] : p.osc1Sync))
-      : (mo?.osc1Pw ? clampPw((L && this.sOsc1Pw >= 0 ? L[this.sOsc1Pw] : p.osc1Pw) + mo.osc1Pw * MOD_PW_RANGE) : (L && this.sOsc1Pw >= 0 ? L[this.sOsc1Pw] : p.osc1Pw));
+      ? clampSync(mo?.['osc1.sync'] ? (L && this.sOsc1Sync >= 0 ? L[this.sOsc1Sync] : p.osc1Sync) + mo['osc1.sync'] * MOD_SYNC_RANGE : (L && this.sOsc1Sync >= 0 ? L[this.sOsc1Sync] : p.osc1Sync))
+      : (mo?.['osc1.pw'] ? clampPw((L && this.sOsc1Pw >= 0 ? L[this.sOsc1Pw] : p.osc1Pw) + mo['osc1.pw'] * MOD_PW_RANGE) : (L && this.sOsc1Pw >= 0 ? L[this.sOsc1Pw] : p.osc1Pw));
     const pw2 = this.osc2WaveFrozen === WAVE_SYNC
-      ? clampSync(mo?.osc2Sync ? (L && this.sOsc2Sync >= 0 ? L[this.sOsc2Sync] : p.osc2Sync) + mo.osc2Sync * MOD_SYNC_RANGE : (L && this.sOsc2Sync >= 0 ? L[this.sOsc2Sync] : p.osc2Sync))
-      : (mo?.osc2Pw ? clampPw((L && this.sOsc2Pw >= 0 ? L[this.sOsc2Pw] : p.osc2Pw) + mo.osc2Pw * MOD_PW_RANGE) : (L && this.sOsc2Pw >= 0 ? L[this.sOsc2Pw] : p.osc2Pw));
+      ? clampSync(mo?.['osc2.sync'] ? (L && this.sOsc2Sync >= 0 ? L[this.sOsc2Sync] : p.osc2Sync) + mo['osc2.sync'] * MOD_SYNC_RANGE : (L && this.sOsc2Sync >= 0 ? L[this.sOsc2Sync] : p.osc2Sync))
+      : (mo?.['osc2.pw'] ? clampPw((L && this.sOsc2Pw >= 0 ? L[this.sOsc2Pw] : p.osc2Pw) + mo['osc2.pw'] * MOD_PW_RANGE) : (L && this.sOsc2Pw >= 0 ? L[this.sOsc2Pw] : p.osc2Pw));
     // Unison: the spread each stack fans its copies across, and the analog drift
     // depth. Both continuous, so an LFO reaches them like any other param — on the
     // spread that is a stack that breathes. Both default to inert (spread only
     // bites above 1 voice; drift is 0), so nothing that exists today moves.
-    const spread = mo?.unisonDetune ? clampSpread((L && this.sUnisonDetune >= 0 ? L[this.sUnisonDetune] : p.unisonDetune) + mo.unisonDetune * MOD_UNISON_CENTS) : (L && this.sUnisonDetune >= 0 ? L[this.sUnisonDetune] : p.unisonDetune);
-    const drift = mo?.unisonDrift ? clamp01((L && this.sUnisonDrift >= 0 ? L[this.sUnisonDrift] : p.unisonDrift) + mo.unisonDrift) : (L && this.sUnisonDrift >= 0 ? L[this.sUnisonDrift] : p.unisonDrift);
+    const spread = mo?.['master.detune'] ? clampSpread((L && this.sUnisonDetune >= 0 ? L[this.sUnisonDetune] : p.unisonDetune) + mo['master.detune'] * MOD_UNISON_CENTS) : (L && this.sUnisonDetune >= 0 ? L[this.sUnisonDetune] : p.unisonDetune);
+    const drift = mo?.['master.drift'] ? clamp01((L && this.sUnisonDrift >= 0 ? L[this.sUnisonDrift] : p.unisonDrift) + mo['master.drift']) : (L && this.sUnisonDrift >= 0 ? L[this.sUnisonDrift] : p.unisonDrift);
     const driftAmt = drift * this.driftDepth;
     // oscillators (detune in cents; sub one octave down). The sub and the noise
     // are deliberately NOT scaled by the stack's gain compensation, unlike mpump:
@@ -376,25 +376,25 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
             + this.osc2.update(f, pw2, det2, spread, driftAmt) * osc2Level
             + this.sub.update(f * 0.5) * subLevel;
     if (noiseLevel > 0) {
-      const noiseColor = mo?.noiseColor ? clamp01((L && this.sNoiseColor >= 0 ? L[this.sNoiseColor] : p.noiseColor) + mo.noiseColor) : (L && this.sNoiseColor >= 0 ? L[this.sNoiseColor] : p.noiseColor);
+      const noiseColor = mo?.['noise.color'] ? clamp01((L && this.sNoiseColor >= 0 ? L[this.sNoiseColor] : p.noiseColor) + mo['noise.color']) : (L && this.sNoiseColor >= 0 ? L[this.sNoiseColor] : p.noiseColor);
       this.noiseLp.update(this.noise.update(), 200 + noiseColor * 14800, 0);
       mix += this.noiseLp.lp * noiseLevel;
     }
     // parallel drive (dry + saturated wet scaled by drive), as in PolySynth
-    const drive = mo?.filterDrive ? clamp01((L && this.sFilterDrive >= 0 ? L[this.sFilterDrive] : p.filterDrive) + mo.filterDrive) : (L && this.sFilterDrive >= 0 ? L[this.sFilterDrive] : p.filterDrive);
+    const drive = mo?.['filter.drive'] ? clamp01((L && this.sFilterDrive >= 0 ? L[this.sFilterDrive] : p.filterDrive) + mo['filter.drive']) : (L && this.sFilterDrive >= 0 ? L[this.sFilterDrive] : p.filterDrive);
     if (drive > 0) mix = mix + driveShape(mix, 1.0) * drive;
     // Filter cutoff = base + keytrack + envelope contribution. The base is LIVE
     // (the knob under your hand), and modulation adds on top of it. keytrack and
     // env range scale with the base, so they follow it.
-    const cut01 = mo?.filterCutoff ? clamp01((L && this.sFilterCutoff >= 0 ? L[this.sFilterCutoff] : p.filterCutoff) + mo.filterCutoff) : (L && this.sFilterCutoff >= 0 ? L[this.sFilterCutoff] : p.filterCutoff);
+    const cut01 = mo?.['filter.cutoff'] ? clamp01((L && this.sFilterCutoff >= 0 ? L[this.sFilterCutoff] : p.filterCutoff) + mo['filter.cutoff']) : (L && this.sFilterCutoff >= 0 ? L[this.sFilterCutoff] : p.filterCutoff);
     if (cut01 !== this.cutRaw) {
       this.cutRaw = cut01;
       this.cutHzCached = Math.min(60 * Math.pow(220, cut01), 18000);
     }
     const baseCutoffHz = this.cutHzCached;
-    const kt = mo?.filterKeyTrack ? clamp01((L && this.sFilterKeyTrack >= 0 ? L[this.sFilterKeyTrack] : p.filterKeyTrack) + mo.filterKeyTrack) : (L && this.sFilterKeyTrack >= 0 ? L[this.sFilterKeyTrack] : p.filterKeyTrack);
+    const kt = mo?.['filter.keyTrack'] ? clamp01((L && this.sFilterKeyTrack >= 0 ? L[this.sFilterKeyTrack] : p.filterKeyTrack) + mo['filter.keyTrack']) : (L && this.sFilterKeyTrack >= 0 ? L[this.sFilterKeyTrack] : p.filterKeyTrack);
     const keyTrackHz = this.keySemiDelta * baseCutoffHz * (Math.pow(2, 1 / 12) - 1) * kt;
-    const envAmt = mo?.filterEnvAmount ? clamp01((L && this.sFilterEnvAmount >= 0 ? L[this.sFilterEnvAmount] : p.filterEnvAmount) + mo.filterEnvAmount) : (L && this.sFilterEnvAmount >= 0 ? L[this.sFilterEnvAmount] : p.filterEnvAmount);
+    const envAmt = mo?.['filter.envAmount'] ? clamp01((L && this.sFilterEnvAmount >= 0 ? L[this.sFilterEnvAmount] : p.filterEnvAmount) + mo['filter.envAmount']) : (L && this.sFilterEnvAmount >= 0 ? L[this.sFilterEnvAmount] : p.filterEnvAmount);
     const envRangeHz = Math.min(baseCutoffHz * 7, 16000) * envAmt * this.accentMul;
     // Filter envelope. Like amp: the built-in env wins when enabled (presets keep
     // filterBuiltinEnv=1 → unchanged); else an ADSR routed to 'filterEnv' becomes the
@@ -412,7 +412,7 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     // so res>~1 makes it near-undamped → resonant blow-up (peak 9× at res=2.475). Map the
     // 0..1 knob straight through; res=1 is already a strong, bounded resonance (peak ~2.8).
     // Modulation offset clamped to 0..1 so a deep LFO can't drive it into blow-up.
-    const q = mo?.filterResonance ? clamp01((L && this.sFilterResonance >= 0 ? L[this.sFilterResonance] : p.filterResonance) + mo.filterResonance) : (L && this.sFilterResonance >= 0 ? L[this.sFilterResonance] : p.filterResonance);
+    const q = mo?.['filter.resonance'] ? clamp01((L && this.sFilterResonance >= 0 ? L[this.sFilterResonance] : p.filterResonance) + mo['filter.resonance']) : (L && this.sFilterResonance >= 0 ? L[this.sFilterResonance] : p.filterResonance);
     const filtered = this.filterAt(mix, cutoff, q);
     // Amp envelope. Priority: the built-in env when enabled (presets keep
     // ampBuiltinEnv=1 → unchanged); else an ADSR routed to 'amp' BECOMES the
@@ -428,7 +428,7 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     let out = filtered * ae * this.velPeak;
     // amp.gain modulation = tremolo: a multiplicative gain on the output
     // (depth 1 ⇒ ±1 ⇒ 0..2×), clamped non-negative.
-    if (mo?.ampGain) out *= Math.max(0, Math.min(2, 1 + mo.ampGain));
+    if (mo?.['amp.gain']) out *= Math.max(0, Math.min(2, 1 + mo['amp.gain']));
     // Done once the amplitude DRIVER has fully released after the gate: the
     // built-in env, the ADSR 'amp' envelope, or (no envelope) at gate-off. A
     // fixed-gain voice ending at gate-off keeps it from becoming immortal.

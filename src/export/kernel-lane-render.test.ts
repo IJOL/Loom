@@ -109,11 +109,12 @@ describe('renderKernelLane (pure kernel offline synthesis)', () => {
       .Loom.registerModulatorKernel({ id: 'probe-kernel', valueAt: () => 1 });
 
     const mkMod = (depth: number): ModLite => ({
-      // Subtractive's VoiceManager reads modulation offsets keyed by the
-      // SubParams field name (filterCutoff), not the dot-id (filter.cutoff)
-      // used in the KernelLaneSpec.params ParamBag below.
+      // Keyed by the param's own dot-id — the SAME vocabulary as
+      // KernelLaneSpec.params below. Subtractive used to be the exception here,
+      // reading offsets by flat SubParams field name ('filterCutoff'); it reads
+      // dot-ids now, like every other engine.
       id: 'm1', kind: 'probe-kernel', enabled: true, rateHz: 4, waveform: 'sine',
-      depthByParam: { filterCutoff: depth },
+      depthByParam: { 'filter.cutoff': depth },
     });
     const mk = (depth: number): KernelLaneSpec => ({
       engineId: 'subtractive',

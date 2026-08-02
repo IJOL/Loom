@@ -18,7 +18,7 @@ const note = (o: Partial<NoteSpec> = {}): NoteSpec =>
 
 const lfo = (over: Partial<ModLite> = {}): ModLite => ({
   id: 'l1', kind: 'lfo', enabled: true, rateHz: 6, waveform: 'sine',
-  depthByParam: { filterCutoff: 0.9 }, ...over,
+  depthByParam: { 'filter.cutoff': 0.9 }, ...over,
 });
 
 // The LFO runs at 6 Hz, so one cycle is 1/6 s. The two notes are placed a QUARTER

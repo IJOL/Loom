@@ -73,7 +73,7 @@ describe('SubtractiveVoiceRenderer', () => {
         note(), { ...DEFAULTS, 'filter.cutoff': 0.15, 'filter.resonance': 0, 'filter.envAmount': 0 }, SR,
       );
       const b: number[] = [];
-      for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR, { filterCutoff: cutMod }));
+      for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR, { 'filter.cutoff': cutMod }));
       return rms(b);
     };
     expect(bright(0.8)).toBeGreaterThan(bright(0) * 1.3);
@@ -86,7 +86,7 @@ describe('SubtractiveVoiceRenderer', () => {
       );
       let prev = 0, zc = 0;
       for (let i = 0; i < SR * 0.1; i++) {
-        const s = v.renderSample(i / SR, { masterTune: tuneMod });
+        const s = v.renderSample(i / SR, { 'master.tune': tuneMod });
         if (prev < 0 && s >= 0) zc++;
         prev = s;
       }
@@ -100,7 +100,7 @@ describe('SubtractiveVoiceRenderer', () => {
     const loud = (g: number) => {
       const v = new SubtractiveVoiceRenderer(note(), DEFAULTS, SR);
       const b: number[] = [];
-      for (let i = 0; i < SR * 0.05; i++) b.push(v.renderSample(i / SR, { ampGain: g }));
+      for (let i = 0; i < SR * 0.05; i++) b.push(v.renderSample(i / SR, { 'amp.gain': g }));
       return rms(b);
     };
     expect(loud(1)).toBeGreaterThan(loud(0) * 1.5);   // +1 → ~×2
@@ -124,7 +124,7 @@ describe('SubtractiveVoiceRenderer', () => {
   const adsrMod = (depth: number) => ({
     id: 'a', kind: 'adsr' as const, enabled: true, rateHz: 0, waveform: 'sine' as const,
     attackSec: 0.001, decaySec: 0.001, sustain: 1, releaseSec: 0.1,
-    depthByParam: { filterCutoff: depth },
+    depthByParam: { 'filter.cutoff': depth },
   });
 
   it('a per-voice ADSR modulator brightens the cutoff while gated (envelope-driven)', () => {
@@ -148,11 +148,11 @@ describe('SubtractiveVoiceRenderer', () => {
     v.setModEnvelopes([{ ...adsrMod(1), sustain: 0.5 }]);
     for (let i = 0; i < SR * 0.05; i++) v.renderSample(i / SR);   // settle into sustain
     const off = v.getAdsrOffsets() as Record<string, number>;
-    expect(off.filterCutoff).toBeCloseTo(0.5, 1);                 // sustain 0.5 × depth 1
+    expect(off['filter.cutoff']).toBeCloseTo(0.5, 1);             // sustain 0.5 × depth 1
     // After note-off the envelope releases → the ring contribution falls back toward 0.
     v.noteOff(0.05);
     for (let i = SR * 0.05; i < SR * 0.4; i++) v.renderSample(i / SR);
-    expect((v.getAdsrOffsets() as Record<string, number>).filterCutoff).toBeLessThan(0.1);
+    expect((v.getAdsrOffsets() as Record<string, number>)['filter.cutoff']).toBeLessThan(0.1);
   });
 
   const ampAdsr = {
@@ -193,7 +193,7 @@ describe('SubtractiveVoiceRenderer', () => {
       );
       if (withEnv) v.setModEnvelopes([{
         id: 'fe', kind: 'adsr', enabled: true, rateHz: 0, waveform: 'sine',
-        attackSec: 0.001, decaySec: 0.001, sustain: 1, releaseSec: 0.1, depthByParam: { filterEnv: 1 },
+        attackSec: 0.001, decaySec: 0.001, sustain: 1, releaseSec: 0.1, depthByParam: { 'filter.env': 1 },
       }]);
       const b: number[] = []; for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR));
       return rms(b);
@@ -265,7 +265,7 @@ describe('PWM is modulation, not a knob', () => {
     const b: number[] = [];
     for (let i = 0; i < SR * 0.2; i++) {
       const t = i / SR;
-      b.push(v.renderSample(t, { osc1Pw: mod(t) }));
+      b.push(v.renderSample(t, { 'osc1.pw': mod(t) }));
     }
     return b;
   };
@@ -601,7 +601,7 @@ describe('unison', () => {
     const swept = (mod: (t: number) => number): number[] => {
       const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.6 }), uniBag(7), SR);
       const b: number[] = [];
-      for (let i = 0; i < SR * 0.4; i++) { const t = i / SR; b.push(v.renderSample(t, { unisonDetune: mod(t) })); }
+      for (let i = 0; i < SR * 0.4; i++) { const t = i / SR; b.push(v.renderSample(t, { 'master.detune': mod(t) })); }
       return b;
     };
     expect(divergence(swept(() => 0), swept((t) => Math.sin(2 * Math.PI * 3 * t)))).toBeGreaterThan(0.1);
@@ -651,7 +651,7 @@ describe('hard sync wave', () => {
 
     const v2 = new SubtractiveVoiceRenderer(note({ durationSec: 0.2 }), bag({ 'osc1.sync': 3 }), SR);
     const swept: number[] = [];
-    for (let i = 0; i < SR * 0.1; i++) swept.push(v2.renderSample(i / SR, { osc1Sync: Math.sin(2 * Math.PI * 5 * i / SR) }));
+    for (let i = 0; i < SR * 0.1; i++) swept.push(v2.renderSample(i / SR, { 'osc1.sync': Math.sin(2 * Math.PI * 5 * i / SR) }));
 
     expect(divergence(still, swept)).toBeGreaterThan(0.05);
   });

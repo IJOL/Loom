@@ -43,19 +43,16 @@ export class VoiceManager {
    *  entry is dropped past the cap — Set preserves insertion order. */
   private readonly pendingReleases = new Set<number>();
   private static readonly PENDING_RELEASE_CAP = 64;
-  // Pooled per-sample modulation-offset struct — mutated in place each render
-  // sample and shared (read-only) by every voice, so the real-time render
-  // callback allocates nothing on the audio thread when modulation is active.
-  // Covers the full subtractive modulation target set (+ ampGain tremolo).
-  private readonly modOffsets = {
-    filterCutoff: 0, filterResonance: 0, filterEnvAmount: 0, filterKeyTrack: 0, filterDrive: 0,
-    osc1Level: 0, osc2Level: 0, subLevel: 0, noiseLevel: 0, noiseColor: 0,
-    osc1Detune: 0, osc2Detune: 0, osc1Pw: 0, osc2Pw: 0, osc1Sync: 0, osc2Sync: 0, masterTune: 0, ampGain: 0,
-    unisonDetune: 0, unisonDrift: 0,
-  };
-  // Pooled generic offsets (keyed by param dot-id) for every NON-subtractive
-  // engine — filled in place each sample so the render loop allocates nothing.
-  private readonly genericOffsets: Record<string, number> = {};
+  // Pooled per-sample modulation offsets, keyed by param dot-id — mutated in
+  // place each render sample and shared (read-only) by every voice, so the
+  // real-time render callback allocates nothing on the audio thread.
+  //
+  // There used to be TWO of these: this one, and a hand-written struct with the
+  // twenty flat SubParams field names, filled by twenty individually-named
+  // offsetFor calls. That existed only because subtractive's renderer read those
+  // names. It reads dot-ids now, like every other engine, so one pooled bag and
+  // one generic fill serve all of them.
+  private readonly modOffsets: Record<string, number> = {};
   /** Per-engine output balance the HOST applies at the sum point, for engines
    *  whose renderer does not apply its own — i.e. PLUGINS, whose trim lives in
    *  their manifest rather than in their compiled JS. The default of 1 is what
@@ -236,40 +233,18 @@ export class VoiceManager {
     // short-circuiting — 120 failed lookups per sample for an 8-voice FM lane,
     // measured at +54% on a lane with no modulation at all.
     if (!this.mod?.hasActive) return undefined;
-    if (this.engineId === 'subtractive') {
-      const m = this.modOffsets;
-      m.filterCutoff    = this.mod.offsetFor('filterCutoff', t, o);
-      m.filterResonance = this.mod.offsetFor('filterResonance', t, o);
-      m.filterEnvAmount = this.mod.offsetFor('filterEnvAmount', t, o);
-      m.filterKeyTrack  = this.mod.offsetFor('filterKeyTrack', t, o);
-      m.filterDrive     = this.mod.offsetFor('filterDrive', t, o);
-      m.osc1Level       = this.mod.offsetFor('osc1Level', t, o);
-      m.osc2Level       = this.mod.offsetFor('osc2Level', t, o);
-      m.subLevel        = this.mod.offsetFor('subLevel', t, o);
-      m.noiseLevel      = this.mod.offsetFor('noiseLevel', t, o);
-      m.noiseColor      = this.mod.offsetFor('noiseColor', t, o);
-      m.osc1Detune      = this.mod.offsetFor('osc1Detune', t, o);
-      m.osc1Pw          = this.mod.offsetFor('osc1Pw', t, o);
-      m.osc1Sync        = this.mod.offsetFor('osc1Sync', t, o);
-      m.osc2Sync        = this.mod.offsetFor('osc2Sync', t, o);
-      m.osc2Pw          = this.mod.offsetFor('osc2Pw', t, o);
-      m.osc2Detune      = this.mod.offsetFor('osc2Detune', t, o);
-      m.masterTune      = this.mod.offsetFor('masterTune', t, o);
-      m.ampGain         = this.mod.offsetFor('ampGain', t, o);
-      m.unisonDetune    = this.mod.offsetFor('unisonDetune', t, o);
-      m.unisonDrift     = this.mod.offsetFor('unisonDrift', t, o);
-      return m;
-    }
-    this.mod.offsetsInto(this.genericOffsets, t, o);
-    return this.genericOffsets;
+    // One fill for every engine. It writes only the targets a modulator actually
+    // drives, where the subtractive branch wrote all twenty every sample whether
+    // anything reached them or not.
+    this.mod.offsetsInto(this.modOffsets, t, o);
+    return this.modOffsets;
   }
 
   renderSample(t: number): number {
     this.lastT = t;
     // Advance any knob still travelling; tick() also reports a first-ever write
     // that landed instantly (it never enters the ramp list). At rest this is one
-    // boolean read plus one length compare. Subtractive reads a typed snapshot,
-    // so refresh the lane's ONE copy — only when the bag actually changed.
+    // boolean read plus one length compare.
     if (this.smoother.tick()) this.mirrorLegacyBag();
     // When every LFO is free-running and shared (the common case) the offsets are
     // identical for all voices, so compute them ONCE. Only when a modulator asks

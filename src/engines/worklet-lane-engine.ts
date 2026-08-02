@@ -27,7 +27,7 @@ import { type ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
 import { deriveSubtractiveEnvMods } from './subtractive';
 import { velNorm, resolveVelocity } from '../core/velocity-gain';
-import { fieldForParamId, makeDotIdMapper, toModLite } from './mod-lite';
+import { makeDotIdMapper, toModLite } from './mod-lite';
 import { renderModulatorsPanel, type ModulationUIDeps } from '../modulation/modulation-ui';
 import { buildEngineParamGrid } from './engine-param-grid';
 import { randomizeEngineParams } from './engine-randomize';
@@ -146,7 +146,13 @@ export class WorkletLaneEngine implements SynthEngine {
     this.presetsKey = cfg.presetsKey;
     this.presetKeyRemap = cfg.presetKeyRemap;
     this.modHost = new ModulationHostImpl(cfg.modulators ?? []);
-    this.mapTarget = cfg.engineId === 'subtractive' ? fieldForParamId : makeDotIdMapper(cfg.params);
+    // ONE vocabulary for every engine: a modulation connection targets a param's
+    // own dot-id. Subtractive used to be translated into flat SubParams field
+    // names by fieldForParamId — the last thing keeping it a special case, and
+    // the reason its offsets could not be numbered by the lane's ParamIndex,
+    // which is keyed by dot-ids. Nothing persisted changes: a saved connection
+    // always stored the dot-id, and the translation only ever happened in flight.
+    this.mapTarget = makeDotIdMapper(cfg.params);
     // Strip params are excluded from the bag on purpose: the bag IS the worklet
     // renderer's input (and what the offline kernel renders from), while the seven
     // mixer params live on the lane's native ChannelStrip. Seeding them here would
@@ -217,8 +223,15 @@ export class WorkletLaneEngine implements SynthEngine {
   /** Current per-lane voice cap (mirrors the worklet's maxVoices). */
   getMaxVoices(): number { return this.maxVoices; }
   /** Compact in-worklet modulation set (shared LFOs) — the same ModLite[] the
-   *  worklet runs. The offline kernel render feeds these to a ModulationRuntime. */
-  getModLite(): ModLite[] { return toModLite(this.modHost.modulators, this._bpm); }
+   *  worklet runs. The offline kernel render feeds these to a ModulationRuntime.
+   *
+   *  BUG, fixed here: this used to omit the target mapper and take toModLite's
+   *  default, which was subtractive's translator. For any other engine that
+   *  returned null for a param outside subtractive's table, the connection was
+   *  dropped, and the OFFLINE render came out with the modulation missing while
+   *  the live lane had it. postMods below always passed this.mapTarget; only the
+   *  export path did not, which is why it never showed up in a listening test. */
+  getModLite(): ModLite[] { return toModLite(this.modHost.modulators, this._bpm, this.mapTarget); }
 
   /** Hand this engine the ChannelStrip of the lane it plays into, so the seven
    *  `bus.*` params reach real nodes. Called by the lane allocator right after

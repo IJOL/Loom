@@ -81,11 +81,13 @@ function envDiff(a: number[], b: number[]): number {
   return e > 1e-9 ? d / e : 0;   // normalised by the unmodulated energy
 }
 
-// Each engine: a continuous param the renderer reads per sample. depthByParam uses
-// the key the engine's modOffsets are keyed by (SubParams field for subtractive,
-// param dot-id for the others). Base params nudge the target so the sweep is audible.
+// Each engine: a continuous param the renderer reads per sample. depthByParam is
+// keyed by the param's own dot-id — for EVERY engine now. Subtractive used to be
+// the exception (flat SubParams field names, translated in flight by
+// fieldForParamId); that translator is gone with the struct it served. Base
+// params nudge the target so the sweep is audible.
 const CASES: Array<{ id: string; params: ParamBag; mod: Record<string, number>; }> = [
-  { id: 'subtractive', params: { 'filter.cutoff': 0.3, 'filter.resonance': 0.2, 'amp.builtinEnv': 1 }, mod: { filterCutoff: 0.6 } },
+  { id: 'subtractive', params: { 'filter.cutoff': 0.3, 'filter.resonance': 0.2, 'amp.builtinEnv': 1 }, mod: { 'filter.cutoff': 0.6 } },
   { id: 'wavetable',   params: { 'filter.cutoff': 0.3, 'osc.waveA': 3, 'osc.waveB': 3 }, mod: { 'filter.cutoff': 0.6 } },
   { id: 'fm',          params: { algorithm: 0, 'op1.level': 0.6, 'op2.level': 0.4 }, mod: { 'op2.level': 0.7 } },
   { id: 'karplus',     params: {}, mod: { 'amp.level': 0.6 } },

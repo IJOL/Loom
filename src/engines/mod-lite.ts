@@ -6,52 +6,22 @@
 // in that module's Web-Audio/lit-html dependency chain (LoomWorkletNode,
 // lit-html…).
 import type { EngineParamSpec } from './engine-params';
-import type { SubParams, ModTarget } from '../audio-dsp/types';
 import type { ModLite } from '../audio-dsp/modulation-runtime';
 import { type ModulatorState } from '../modulation/types';
 import { effectiveRateHz } from '../modulation/rate-sync';
 import { getModulator } from '../modulation/modulator-registry';
 
-// dot-id (SUB_PARAM_SPECS vocabulary) → flat SubParams field. Single source of
-// the mapping. Params not present here (poly.*) are handled explicitly in
-// setBaseValue/getBaseValue.
-const DOT_TO_FIELD: Record<string, keyof SubParams> = {
-  'master.tune': 'masterTune',
-  // Unison spread + drift are continuous, so they modulate like anything else.
-  // `master.unison` (the stack SIZE) is deliberately NOT here: it is read once at
-  // trigger, so a modulation connection to it could only ever be a dead control.
-  'master.detune': 'unisonDetune', 'master.drift': 'unisonDrift',
-  'osc1.wave': 'osc1Wave', 'osc1.level': 'osc1Level', 'osc1.detune': 'osc1Detune', 'osc1.pw': 'osc1Pw', 'osc1.sync': 'osc1Sync',
-  'osc2.wave': 'osc2Wave', 'osc2.level': 'osc2Level', 'osc2.detune': 'osc2Detune', 'osc2.pw': 'osc2Pw', 'osc2.sync': 'osc2Sync',
-  'sub.level': 'subLevel', 'noise.level': 'noiseLevel', 'noise.color': 'noiseColor',
-  'filter.model': 'filterModel', 'filter.type': 'filterType',
-  'filter.cutoff': 'filterCutoff', 'filter.resonance': 'filterResonance',
-  'filter.envAmount': 'filterEnvAmount', 'filter.drive': 'filterDrive',
-  'filter.keyTrack': 'filterKeyTrack', 'filter.builtinEnv': 'filterBuiltinEnv',
-  'filter.attack': 'filterAttack', 'filter.decay': 'filterDecay',
-  'filter.sustain': 'filterSustain', 'filter.release': 'filterRelease',
-  'amp.builtinEnv': 'ampBuiltinEnv', 'amp.attack': 'ampAttack', 'amp.decay': 'ampDecay',
-  'amp.sustain': 'ampSustain', 'amp.release': 'ampRelease',
-};
-
-/** Resolve a modulation connection's paramId (possibly lane-prefixed, e.g.
- *  "subtractive-1.filter.cutoff") to a modulation target via the dot-id suffix.
- *  `amp.gain` is the synthetic tremolo target (not a stored SubParams field). */
-export function fieldForParamId(paramId: string): ModTarget | null {
-  if (paramId === 'amp.gain' || paramId.endsWith('.amp.gain')) return 'ampGain';
-  if (paramId === 'amp' || paramId.endsWith('.amp')) return 'amp';   // amp ENVELOPE target
-  if (paramId === 'filter.env' || paramId.endsWith('.filter.env')) return 'filterEnv';   // filter ENVELOPE target
-  for (const dotId in DOT_TO_FIELD) {
-    if (paramId === dotId || paramId.endsWith('.' + dotId)) return DOT_TO_FIELD[dotId];
-  }
-  return null;
-}
-
-/** Generic target mapper for NON-subtractive engines: resolve a connection to a
- *  param's OWN dot-id (e.g. 'wavetable-1.filter.cutoff' → 'filter.cutoff', or
- *  'fm-1.op1.level' → 'op1.level'), plus the synthetic envelope targets. The
- *  renderer reads modOffsets by these dot-ids. Subtractive keeps fieldForParamId
- *  (its renderer reads SubParams fields). */
+/** Target mapper for EVERY engine: resolve a connection to a param's OWN dot-id
+ *  (e.g. 'wavetable-1.filter.cutoff' → 'filter.cutoff', or 'fm-1.op1.level' →
+ *  'op1.level'), plus the three synthetic envelope/gain targets. Renderers read
+ *  their offsets by these same dot-ids.
+ *
+ *  Subtractive used to have its own: fieldForParamId translated a connection into
+ *  a flat SubParams field name ('filter.cutoff' → 'filterCutoff') because its
+ *  renderer read that struct. That translation table is gone with the struct. It
+ *  was also what stopped the modulation offsets being numbered by the lane's
+ *  ParamIndex, which is keyed by dot-ids — one vocabulary is the price of one
+ *  numbering. Nothing persisted changes: a connection always stored the dot-id. */
 export function makeDotIdMapper(params: EngineParamSpec[]): (paramId: string) => string | null {
   const targets = [...params.map((p) => p.id), 'amp', 'filter.env', 'amp.gain'];
   return (paramId) => {
@@ -71,7 +41,11 @@ export function makeDotIdMapper(params: EngineParamSpec[]): (paramId: string) =>
  *  this a synced LFO would send its stale free `rateHz` and ignore the tempo. */
 export function toModLite(
   state: ModulatorState[], bpm = 120,
-  mapTarget: (paramId: string) => string | null = fieldForParamId,
+  // No default: the mapper needs the engine's declared params to resolve a
+  // connection to a target, so only the caller that has them can supply it.
+  // It used to default to subtractive's translator, which quietly made every
+  // caller that forgot the argument behave like a subtractive lane.
+  mapTarget: (paramId: string) => string | null,
 ): ModLite[] {
   return state.map((m) => {
     const depthByParam: Record<string, number> = {};

@@ -34,6 +34,7 @@ vi.mock('../audio-worklet/loom-node', () => ({
 
 import { WorkletLaneEngine, toModLite, type WorkletEngineConfig } from './worklet-lane-engine';
 import { SUB_PARAM_SPECS } from './subtractive-params';
+import { makeDotIdMapper } from './mod-lite';
 import type { ModulatorState } from '../modulation/types';
 import { makeDefaultLFO } from '../plugins/modulators/lfo';
 import { makeDefaultADSR } from '../plugins/modulators/adsr';
@@ -193,14 +194,16 @@ describe('WorkletLaneEngine', () => {
     expect(modsCalls[0].every((m) => Object.keys(m.depthByParam).length === 0)).toBe(true);
   });
 
-  it('getLiveModOffset maps a worklet modValues report (field) to the param dot-id', () => {
+  it('getLiveModOffset resolves a worklet modValues report to the param dot-id', () => {
     lastModCb = null;
     const eng = makeEngine();
     // The engine subscribed to onModValues in its constructor — simulate the
-    // worklet posting a live offset for the filterCutoff field.
+    // worklet posting a live offset. The telemetry is keyed by the SAME dot-id
+    // the knob uses now; it used to arrive as the flat SubParams field name
+    // ('filterCutoff') and be translated back here.
     expect(lastModCb).toBeTypeOf('function');
-    lastModCb!({ filterCutoff: 0.4 });
-    expect(eng.getLiveModOffset('filter.cutoff')).toBeCloseTo(0.4, 6);   // mapped via field
+    lastModCb!({ 'filter.cutoff': 0.4 });
+    expect(eng.getLiveModOffset('filter.cutoff')).toBeCloseTo(0.4, 6);
     expect(eng.getLiveModOffset('osc1.level')).toBe(0);                  // not reported → ring hidden
   });
 
@@ -319,14 +322,19 @@ describe('WorkletLaneEngine', () => {
 });
 
 describe('toModLite', () => {
+  // toModLite no longer defaults its target mapper: the default used to be
+  // subtractive's translator, which quietly made every caller that omitted the
+  // argument behave like a subtractive lane — including the offline render path.
+  // Tests build the real one, from the real specs.
+  const mapper = makeDotIdMapper(SUB_PARAM_SPECS);
   const lfo = (over: Partial<ModulatorState> = {}): ModulatorState => ({
     id: 'lfo1', kind: 'lfo', enabled: true, connections: [], scope: 'shared', rateHz: 3, waveform: 'triangle', ...over,
   });
 
-  it('maps a lane-prefixed connection paramId to the SubParams field with its depth', () => {
-    const [m] = toModLite([lfo({ connections: [{ id: 'c', paramId: 'subtractive-1.filter.cutoff', depth: 0.4 }] })]);
+  it('maps a lane-prefixed connection paramId to the param dot-id with its depth', () => {
+    const [m] = toModLite([lfo({ connections: [{ id: 'c', paramId: 'subtractive-1.filter.cutoff', depth: 0.4 }] })], 120, mapper);
     expect(m).toMatchObject({ id: 'lfo1', kind: 'lfo', enabled: true, rateHz: 3, waveform: 'triangle' });
-    expect(m.depthByParam).toEqual({ filterCutoff: 0.4 });
+    expect(m.depthByParam).toEqual({ 'filter.cutoff': 0.4 });
   });
 
   it('maps an unprefixed paramId and drops depth-0 / unresolved connections', () => {
@@ -334,8 +342,8 @@ describe('toModLite', () => {
       { id: 'a', paramId: 'osc1.level', depth: 0.2 },
       { id: 'b', paramId: 'filter.resonance', depth: 0 },     // depth 0 → dropped
       { id: 'c', paramId: 'totally.unknown', depth: 0.5 },    // unresolved → dropped
-    ] })]);
-    expect(m.depthByParam).toEqual({ osc1Level: 0.2 });
+    ] })], 120, mapper);
+    expect(m.depthByParam).toEqual({ 'osc1.level': 0.2 });
   });
 
   it('maps the pitch + tremolo targets (master.tune, osc detune, amp.gain)', () => {
@@ -343,12 +351,12 @@ describe('toModLite', () => {
       { id: 'a', paramId: 'subtractive-1.master.tune', depth: 0.3 },
       { id: 'b', paramId: 'osc1.detune', depth: -0.5 },
       { id: 'c', paramId: 'amp.gain', depth: 0.6 },           // synthetic tremolo target
-    ] })]);
-    expect(m.depthByParam).toEqual({ masterTune: 0.3, osc1Detune: -0.5, ampGain: 0.6 });
+    ] })], 120, mapper);
+    expect(m.depthByParam).toEqual({ 'master.tune': 0.3, 'osc1.detune': -0.5, 'amp.gain': 0.6 });
   });
 
   it('passes the free rateHz through when not BPM-synced (bpm ignored)', () => {
-    const [m] = toModLite([lfo({ rateHz: 3, syncToBpm: false })], 120);
+    const [m] = toModLite([lfo({ rateHz: 3, syncToBpm: false })], 120, mapper);
     expect(m.rateHz).toBeCloseTo(3, 6);
   });
 
@@ -356,8 +364,8 @@ describe('toModLite', () => {
     // 1 bar per cycle at 120 BPM = 4 beats/cycle = 2 s/cycle = 0.5 Hz, regardless
     // of the stale free rateHz (3). At 60 BPM the same sync is half as fast.
     const synced = lfo({ rateHz: 3, syncToBpm: true, syncBars: 1, syncSubdiv: 'straight' });
-    const [at120] = toModLite([synced], 120);
-    const [at60] = toModLite([synced], 60);
+    const [at120] = toModLite([synced], 120, mapper);
+    const [at60] = toModLite([synced], 60, mapper);
     expect(at120.rateHz).not.toBeCloseTo(3, 3);   // NOT the free rate
     expect(at120.rateHz).toBeGreaterThan(at60.rateHz * 1.9);   // bpm-proportional
   });
@@ -365,7 +373,7 @@ describe('toModLite', () => {
   it('carries an unknown modulator kind through instead of turning it into an ADSR', () => {
     const mods = toModLite([{
       id: 'sh1', kind: 'sh', enabled: true, connections: [], scope: 'shared',
-    } as never]);
+    } as never], 120, mapper);
     expect(mods[0].kind).toBe('sh');
   });
 
@@ -375,17 +383,17 @@ describe('toModLite', () => {
     // registry (makeDefaultADSR's component registers driver:'gate' at import
     // time, same as makeDefaultLFO registers driver:'time' — both imported at
     // the top of this file).
-    const [lfoMod] = toModLite([lfo()]);
+    const [lfoMod] = toModLite([lfo()], 120, mapper);
     expect(lfoMod.driver).toBe('time');
 
     const [adsrMod] = toModLite([{
       id: 'adsr1', kind: 'adsr', enabled: true, connections: [], scope: 'per-voice',
-    } as never]);
+    } as never], 120, mapper);
     expect(adsrMod.driver).toBe('gate');
 
     const [unknownMod] = toModLite([{
       id: 'x1', kind: 'no-such-modulator', enabled: true, connections: [], scope: 'shared',
-    } as never]);
+    } as never], 120, mapper);
     expect(unknownMod.driver).toBeUndefined();
   });
 
@@ -396,12 +404,12 @@ describe('toModLite', () => {
     const [m] = toModLite([{
       id: 'sh1', kind: 'sh', enabled: true, connections: [], scope: 'shared',
       params: { rate: 6, bipolar: 1 },
-    } as never]);
+    } as never], 120, mapper);
     expect(m.params).toEqual({ rate: 6, bipolar: 1 });
   });
 
   it('leaves params undefined for a modulator with no bag (LFO/ADSR today)', () => {
-    const [m] = toModLite([lfo()]);
+    const [m] = toModLite([lfo()], 120, mapper);
     expect(m.params).toBeUndefined();
   });
 });
