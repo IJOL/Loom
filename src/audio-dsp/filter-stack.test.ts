@@ -201,6 +201,17 @@ describe('routing', () => {
       .toBeLessThan(through(ROUTING_OFF, OPEN, CLOSED, 1, 7040) * 0.5);
   });
 
+  it('SERIES feeds B with A\'s output, not the raw signal', () => {
+    // A closed, B open, tone at 2000 Hz: A already strips it, so under a real
+    // cascade B receives almost nothing and passes almost nothing. Under PAR
+    // (or a SER that mistakenly fed B the raw input) B sees the full tone and
+    // its open cutoff lets it straight through. This is the case "blend 0" and
+    // the plain removal test above cannot catch: both are satisfied even if
+    // `combine` silently fed B the raw `x` instead of A's output `a`.
+    expect(through(ROUTING_SER, CLOSED, OPEN, 1, 2000))
+      .toBeLessThan(through(ROUTING_PAR, CLOSED, OPEN, 1, 2000) * 0.3);
+  });
+
   it('PARALLEL passes what either branch passes', () => {
     // A closed, B open, the tone above A's cutoff and under B's: A alone loses
     // it and the parallel sum brings it back.
@@ -219,15 +230,25 @@ describe('routing', () => {
   it('every mode stays bounded with both filters resonant', () => {
     const input = noise(SR * 0.05);
     for (const routing of [ROUTING_SER, ROUTING_PAR, ROUTING_DIFF]) {
-      for (const [mi, ti] of PAIRS.map(([m, t]) => [m, t] as const)) {
-        const s = new FilterStack(mi, ti, (mi + 2) % 4, 0, routing, SR);
+      // B is a DIFFERENT declared pair from A, offset by one around PAIRS, so
+      // across the loop every pair takes a turn on both sides (A and B) rather
+      // than B being nailed to a single tap the whole run — a single nesting,
+      // rotated, not a second full nesting.
+      for (let i = 0; i < PAIRS.length; i++) {
+        const [mi, ti] = PAIRS[i];
+        const [mb, tb] = PAIRS[(i + 1) % PAIRS.length];
+        const s = new FilterStack(mi, ti, mb, tb, routing, SR);
         let peak = 0;
         for (const x of input) {
           const y = s.update(x * 1.8, 900, 0.95, 300, 0.95, 1);
-          expect(Number.isFinite(y), `routing ${routing} pair ${mi}/${ti} went non-finite`).toBe(true);
+          expect(Number.isFinite(y), `routing ${routing} pair ${mi}/${ti}+${mb}/${tb} went non-finite`).toBe(true);
           const a = Math.abs(y); if (a > peak) peak = a;
         }
-        expect(peak, `routing ${routing} pair ${mi}/${ti} blew up`).toBeLessThan(20);
+        // A runaway detector, not a level target: 20 is generous headroom over
+        // what a single driven filter reaches (unit-ish input), so it flags an
+        // actual blow-up (feedback that escapes to infinity) without being
+        // tripped by a merely loud but stable resonant peak.
+        expect(peak, `routing ${routing} pair ${mi}/${ti}+${mb}/${tb} blew up`).toBeLessThan(20);
       }
     }
   });
