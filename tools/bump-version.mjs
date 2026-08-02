@@ -2,11 +2,17 @@
 /**
  * bump-version.mjs — advances Loom's app version by one minor step.
  *
- * Scheme: `v0.N · alpha · Codename`. v0.1 is the first version (codename
- * "Downbeat"). Each minor gets a music/rhythm codename from
- * tools/version-codenames.json (ordered; index 0 = v0.1, index 1 = v0.2, …), so
- * the codename for minor N is codenames[N - 1]. The project is in the "alpha"
- * stage, recorded alongside the version.
+ * Scheme: `vMAJOR.MINOR · stage · Codename`. v0.1 was the first version
+ * (codename "Downbeat"); v1.0 "Modulator" is the first beta. Each bump takes
+ * the NEXT music/rhythm codename from tools/version-codenames.json and CARRIES
+ * OVER the current stage.
+ *
+ * Neither the codename nor the stage is derived from the number any more. The
+ * codename used to be `codenames[minor - 1]` and the stage was hardcoded to
+ * 'alpha', which worked only while the app stayed on 0.x: the first bump after
+ * v1.0 would have restarted the list at "Downbeat" AND demoted beta back to
+ * alpha. Moving between stages is a deliberate edit of version.json, never
+ * something a routine bump decides.
  *
  * It rewrites:
  *   - version.json            (the source of truth: { version, stage, codename })
@@ -70,17 +76,23 @@ if (!Array.isArray(codenames) || codenames.length === 0) {
 }
 
 const nextMinor = minor + 1;
-// Codename for minor M is codenames[M - 1]; wrap with modulo if we run out so a
-// bump can never crash once the list is exhausted.
-const idx = nextMinor - 1;
-const codename = idx < codenames.length
-  ? codenames[idx]
-  : codenames[idx % codenames.length];
+// The codename is the one AFTER the current one in the list — it is not derived
+// from the version number. It used to be `codenames[minor - 1]`, which tied the
+// two together and silently broke at the 1.0 boundary: the first bump after
+// v1.0 would have restarted the list at "Downbeat". Falling back to the old
+// index keeps a version.json whose codename is not in the list working.
+const currentIdx = codenames.indexOf(current.codename);
+const idx = currentIdx >= 0 ? currentIdx + 1 : nextMinor - 1;
+const codename = codenames[idx % codenames.length];
 
 const nextVersion = `${major}.${nextMinor}`;
 
-// 1) version.json — the source of truth. The project stays in the "alpha" stage.
-const nextVersionJson = { ...current, version: nextVersion, stage: 'alpha', codename };
+// 1) version.json — the source of truth. The stage is CARRIED OVER, not forced:
+// it used to be hardcoded to 'alpha', so the first bump after the move to beta
+// would have quietly demoted the app back to alpha. Changing stage is a
+// deliberate act — edit version.json — not something a routine bump decides.
+const stage = typeof current.stage === 'string' && current.stage ? current.stage : 'alpha';
+const nextVersionJson = { ...current, version: nextVersion, stage, codename };
 try {
   writeFileSync(VERSION_PATH, JSON.stringify(nextVersionJson, null, 2) + '\n');
 } catch (err) {
