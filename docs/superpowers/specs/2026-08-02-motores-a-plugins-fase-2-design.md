@@ -276,8 +276,17 @@ no declara ninguno.
 
 Un manifiesto es JSON, así que esa asimetría significa que **un plugin no puede
 usar campos de los que los cinco dependen**: `curve` (fm 1, wavetable 3,
-westcoast 2), `drawnBy` (subtractive **10**, wavetable 1), `selectStyle` (fm 1)
-y `color` (los cuatro). Conteo verificado el 2026-08-02.
+westcoast 2), `drawnBy` (subtractive **10**) y `selectStyle` (fm 1).
+
+⚠️ **Corrección de un conteo mío.** La primera versión de esta sección añadía
+"`color` (los cuatro)" y "`drawnBy` … wavetable 1". Ninguna de las dos es
+cierta: **ningún param de los cinco declara `color`** — los colores viven en las
+tablas de *grupos*, que el SDK ya sabía declarar — y el `drawnBy` de wavetable
+estaba dentro de un comentario. El conteo original fue un `grep -c` sobre el
+fichero entero en vez de sobre las declaraciones de params. La decisión no
+cambia (con `curve`, `drawnBy` y `selectStyle` sobra), y `color` sigue en el
+tipo porque los knobs del mezclador de drums lo usan para el código de color de
+los Sends A/B; pero el dato era falso y estaba escrito.
 
 Todos son declarativos — cadenas y enumerados — así que no hay ningún problema
 de fondo, sólo un hueco: **el SDK pasa a ser el dueño del tipo** y el host lo

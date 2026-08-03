@@ -1184,7 +1184,10 @@ Para un motor `<id>`:
    ```
 
 4. **Crea `plugins/<id>/dsp.ts`** moviendo `src/audio-dsp/<id>-renderer.ts`. Tres
-   cambios, y sólo tres:
+   cambios — más un CUARTO que la ejecución descubrió: si el renderer tipa algo
+   como `ModLite` (de `src/audio-dsp/modulation-runtime`), pásalo a `ModEnvSpec`
+   del SDK. Un plugin no puede importar ese módulo, y `ModEnvSpec` es el nombre
+   del SDK para la misma forma. Sin cambio en tiempo de ejecución. Los tres:
    - Los imports pasan de `./osc`, `./filter`, … a `@loom/plugin-sdk`.
    - Fuera `import { synthTrim } from './gain-staging'` y **fuera su
      multiplicación**: el host aplica `capabilities.outputTrim`. Esto es lo que
@@ -1386,6 +1389,50 @@ EOF
 - [ ] **Suite entera verde**: `npm run build && npm run test:unit && npm run test:e2e && npx tsc --noEmit`.
 - [ ] **A oído**, en Chrome real (NO el navegador de VS Code), **Escena 2** de la demo de arranque.
 - [ ] **Poda**: este plan y su spec se borran del árbol cuando el trabajo esté mergeado — es el paso que siempre se salta.
+
+## RESULTADO — 2026-08-02, los cinco mudados
+
+**`src/` no contiene ni un motor melódico.** `src/audio-dsp` es `voice-manager`,
+`scheduler-queue`, `modulation-runtime`, `renderer-registry` y los backends de
+drums/sampler: el host, sin un instrumento dentro.
+
+Gates: **unit 438 ficheros / 3728 tests**, **e2e 128**, `tsc --noEmit` limpio,
+`npm run build` limpio. Paridad de forma verde en los seis plugins.
+
+**CPU — ser plugin no cuesta nada medible.** Medido con tiradas EMPAREJADAS y
+alternadas entre los dos worktrees, porque la varianza entre dos medidas
+idénticas de la misma máquina llega al 6% y se traga la señal:
+
+| motor | antes | después |
+| --- | --- | --- |
+| tb303 | 732,5 / 715,0 / 718,5 ms | 731,3 / 715,1 / 730,2 ms |
+| subtractive | 740,9 / 746,9 / 753,2 ms | 751,9 / 765,4 / 747,6 ms |
+
+⛔ Una primera tabla daba subtractive **+8,4 %**. Era falsa: se midió con un
+`tsc` mío corriendo en paralelo. El mismo error que invalidó la medición de
+partida de la fase 1 — un banco contaminado por el trabajo del que mide.
+
+### Lo que la ejecución corrigió (no re-derivar)
+
+- **El 303 fue el único motor donde quitar el trim NO es un cambio de escala.**
+  Su release apunta a un 0,001 **absoluto** y la voz se recoge en ese mismo
+  valor, así que el umbral vivía en el dominio ya multiplicado. `AMP_FLOOR` es
+  ahora `0.001 / 0.54`, y **0,54 = ENGINE_TRIM 0,45 × CATEGORY_GAIN.synth 1,2**
+  — derivarlo del `outputTrim` del manifiesto seguía fallando, que es lo que
+  destapó la ganancia de categoría. Es constante fija a propósito: la cola es
+  parte de la voz y no debe moverse si alguien reequilibra el nivel del 303.
+- **Los tres acoplamientos murieron sin inventar ninguna capacidad.** El
+  `else if (id === 'subtractive')` era un problema de DATOS (moduladores
+  horneados en sus 102 presets; 89 tocados, los 13 que ya traían los suyos se
+  dejaron intactos porque hornearlos les habría cambiado el sonido). El
+  `presetKeyRemap` del 303 murió por sustracción al reescribir su banco a
+  dot-ids. Y `refreshKnobsFromSynth` resultó **viva pero un no-op demostrable**:
+  se borró, no se generalizó.
+- **El banco de CPU estaba roto y `tsc` no lo veía.** `tools/` nunca estuvo en
+  el `include` del tsconfig. Ya está, y meterlo destapó dos errores más.
+- **El aviso de motor ausente sólo se veía al ABRIR la pista.** Un e2e lo
+  destapó en el primer intento: la rejilla mostraba una pista que no sonaba y
+  no decía por qué. Ahora la cabecera lo marca.
 
 ## Hallazgos de la escritura de este plan (no re-derivar)
 
