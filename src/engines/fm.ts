@@ -10,6 +10,7 @@ import type { EngineParamSpec } from './engine-params';
 import type { EngineParamGroup } from './engine-param-groups';
 import { registerEngine, registerEngineFactory } from './registry';
 import { createDescriptorEngine } from './descriptor-engine';
+import { registerEngineCapabilities } from '../plugins/capabilities';
 import { requireModulator } from '../modulation/modulator-registry';
 import type { ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
@@ -94,3 +95,13 @@ function makeFMDescriptor() {
 
 registerEngineFactory('fm', makeFMDescriptor);
 registerEngine(makeFMDescriptor());
+
+// Declared, not defaulted — the two numbers this engine's future manifest
+// carries. The slug prefix used to be a ternary chain in session-host-util.ts;
+// the trim still lives in ENGINE_TRIM, which the in-tree renderer reads through
+// synthTrim() until the engine leaves the tree.
+registerEngineCapabilities('fm', {
+  clipContent: 'notes',
+  shortLabel: 'fm-4-op',
+  outputTrim: 0.179,
+});

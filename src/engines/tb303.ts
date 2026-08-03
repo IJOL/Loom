@@ -12,6 +12,7 @@ import type { EngineParamSpec } from './engine-params';
 import type { EngineParamGroup } from './engine-param-groups';
 import { registerEngine, registerEngineFactory } from './registry';
 import { createDescriptorEngine } from './descriptor-engine';
+import { registerEngineCapabilities } from '../plugins/capabilities';
 import { getCachedPresets } from '../presets/preset-loader';
 import { requireModulator } from '../modulation/modulator-registry';
 import type { ModulatorState } from '../modulation/types';
@@ -77,3 +78,20 @@ function makeTB303Descriptor() {
 
 registerEngineFactory('tb303', makeTB303Descriptor);
 registerEngine(makeTB303Descriptor());
+
+// Declared, not defaulted: these are the numbers the engine's future manifest
+// will carry, and they must already be answered by the engine rather than by a
+// table in the host. The slug prefix used to live in a ternary chain in
+// session-host-util.ts; the trim still lives in ENGINE_TRIM, which the in-tree
+// renderer reads through synthTrim() — that second owner disappears when the
+// engine becomes a plugin and the host applies outputTrim instead.
+//
+// `slide: 'overlap'` is the 303's defining musical rule, and it used to be an
+// `engineId === 'tb303'` in the lane scheduler. There is no slide flag on a
+// note: a note slides when a previous one still covers its start tick.
+registerEngineCapabilities('tb303', {
+  clipContent: 'notes',
+  shortLabel: 'tb-303',
+  outputTrim: 0.45,
+  slide: 'overlap',
+});

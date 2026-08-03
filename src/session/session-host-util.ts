@@ -7,15 +7,10 @@ import { shortLabelFor } from '../plugins/capabilities';
  *  subtractive → "subtractive-1", drums-machine → "drums-1"), the default is
  *  already in `existingIds` so the first added extra will be "-2". */
 export function nextLaneSlug(existingIds: ReadonlySet<string>, engineId: string): string {
-  const prefix =
-    shortLabelFor(engineId) ??
-    (engineId === 'tb303'         ? 'tb-303'      :
-     engineId === 'drums-machine' ? 'drums'       :
-     engineId === 'subtractive'   ? 'subtractive' :
-     engineId === 'wavetable'     ? 'wavetable'   :
-     engineId === 'fm'            ? 'fm-4-op'     :
-     engineId === 'westcoast'     ? 'west'        :
-                                    engineId);
+  // Every engine answers for itself now — a built-in through
+  // registerEngineCapabilities, a plugin through its manifest. An engine that
+  // declares no shortLabel falls back to its own id, which is a readable slug.
+  const prefix = shortLabelFor(engineId) ?? engineId;
   for (let i = 1; i <= 99; i++) {
     const candidate = `${prefix}-${i}`;
     if (!existingIds.has(candidate)) return candidate;

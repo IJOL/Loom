@@ -11,6 +11,7 @@ import { laneLoopRegion, type GlobalLoopOverride } from './clip-loop';
 import { sliceMarkersToRegion } from '../samples/warp-region';
 import { clipRegionSec } from './launch-timing';
 import { swungTick, swungSpan } from './swing';
+import { slidesOnOverlap } from '../plugins/capabilities';
 
 export interface SchedulerContext {
   bpm: number;
@@ -225,7 +226,7 @@ export function noteTrigger(
   const gateSec = Math.max(0.01, note.duration * tickSec);
   const scheduledStartTick = (note.gridTick ?? Math.round((scheduleTime - loopStart) / tickSec))
     % (clip.lengthBars * ticksPerBar(m));
-  const slidingIn = engineId === 'tb303'
+  const slidingIn = slidesOnOverlap(engineId)
     && (clip.notes as NoteEvent[]).some(
       (other) => other.start < scheduledStartTick
         && (other.start + other.duration) > scheduledStartTick + 1,

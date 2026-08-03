@@ -3,6 +3,11 @@ import { tickLane, noteTrigger, type SchedulerContext } from './lane-scheduler';
 import type { SessionClip } from '../session/session';
 import { TICKS_PER_STEP, TICKS_PER_QUARTER } from './notes';
 import { ticksPerBar, DEFAULT_METER } from './meter';
+import { registerEngineCapabilities } from '../plugins/capabilities';
+// Registers the 303's capabilities as a module side effect — including
+// slide: 'overlap', which the existing tb303 cases below assert on. Without it
+// the engine would answer for nothing, exactly like an uninstalled plugin.
+import '../engines/tb303';
 
 describe('lane-scheduler tickLane regression: overlapping windows', () => {
   it('a single note fires EXACTLY ONCE per loop iteration when tick=25ms, lookahead=120ms', () => {
@@ -526,5 +531,38 @@ describe('noteTrigger', () => {
     const bSub = noteTrigger('subtractive', clip, clip.notes[1], note1Time, 0, BPM, undefined);
     expect(bTb.slidingIn).toBe(true);
     expect(bSub.slidingIn).toBe(false);
+  });
+});
+
+describe('slide is a declared capability, not an engine id', () => {
+  // These ids exist only here, so they are registered once and left registered:
+  // __resetCapabilities() would also wipe what `import '../engines/tb303'` above
+  // registered at module scope, and a module side effect cannot be re-run.
+  registerEngineCapabilities('any-slider', {
+    clipContent: 'notes', shortLabel: 'sl', outputTrim: 1, slide: 'overlap',
+  });
+  registerEngineCapabilities('no-slider', {
+    clipContent: 'notes', shortLabel: 'ns', outputTrim: 1,
+  });
+
+  // Two notes where the first still covers the second's start. That overlap IS
+  // the slide on a 303 — there is no slide flag on a note.
+  const clip: SessionClip = { color: '#e0a8d0', gridResolution: '1/16',
+    id: 'slide', lengthBars: 1,
+    notes: [
+      { start: 0, duration: 24, midi: 36, velocity: 90 },
+      { start: 16, duration: 16, midi: 43, velocity: 90 },
+    ],
+  };
+  const note1Time = 16 * ((60 / 120) / TICKS_PER_QUARTER);
+
+  it('an engine that declares slide gets slidingIn from an overlapping note', () => {
+    const t = noteTrigger('any-slider', clip, clip.notes[1], note1Time, 0, 120, undefined);
+    expect(t.slidingIn).toBe(true);
+  });
+
+  it('an engine that declares nothing never slides, however the notes overlap', () => {
+    const t = noteTrigger('no-slider', clip, clip.notes[1], note1Time, 0, 120, undefined);
+    expect(t.slidingIn).toBe(false);
   });
 });

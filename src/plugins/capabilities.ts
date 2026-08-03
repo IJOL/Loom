@@ -55,6 +55,12 @@ export function isRandomizable(id: string): boolean {
 export function shortLabelFor(id: string): string | undefined {
   return caps.get(id)?.shortLabel;
 }
+/** Whether an overlapping previous note makes this engine's note slide.
+ *  Default false: an engine that says nothing never slides, which is what
+ *  every engine but the 303 has always done. */
+export function slidesOnOverlap(id: string): boolean {
+  return caps.get(id)?.slide === 'overlap';
+}
 
 /** True for every engine that arrived through a plugin manifest — the ONLY
  *  thing this checks. It does NOT check whether the plugin actually shipped a

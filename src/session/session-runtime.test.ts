@@ -18,6 +18,10 @@ import {
 } from './session-runtime';
 import type { SessionState, SessionClip, SessionScene, ClipSample } from './session';
 import { TICKS_PER_STEP, TICKS_PER_QUARTER } from '../core/notes';
+// Registers the 303's capabilities as a module side effect — including
+// slide: 'overlap', which the slide cases below assert on. Sliding is a declared
+// capability now, so an engine nothing registered never slides.
+import '../engines/tb303';
 
 // ── Constants ─────────────────────────────────────────────────────────────
 
