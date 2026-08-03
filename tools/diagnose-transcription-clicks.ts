@@ -18,7 +18,7 @@ import { VoiceManager } from '../src/audio-dsp/voice-manager';
 import { createRenderer } from '../src/audio-dsp/renderer-registry';
 import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets } from '../src/audio-dsp/types';
 import type { ModLite } from '../src/audio-dsp/modulation-runtime';
-import { toModLite } from '../src/engines/worklet-lane-engine';
+import { toModLite, makeDotIdMapper } from '../src/engines/worklet-lane-engine';
 import type { EngineParamSpec } from '../src/engines/engine-params';
 import subtractiveManifest from '../plugins/subtractive/plugin.json';
 import { TICKS_PER_QUARTER } from '../src/core/notes';
@@ -51,7 +51,7 @@ interface Ev { t: number; kind: string; midi: number; amp: number; }
  *  full event logging. Uses the same createRenderer + per-voice ADSR handoff. */
 function renderClip(policy: 'splice' | 'release'): { buf: Float32Array; events: Ev[] } {
   const runtime = new ModulationRuntime(SR);
-  runtime.setMods(toModLite(lane.engineState.modulators ?? [], bpm));
+  runtime.setMods(toModLite(lane.engineState.modulators ?? [], bpm, makeDotIdMapper(SUB_PARAM_SPECS)));
   const adsrMods: ModLite[] = runtime.getAdsrMods();
 
   const specs: NoteSpec[] = notes.map((n) => ({
@@ -109,7 +109,7 @@ function stepNear(buf: Float32Array, t: number): number {
  *  end-to-end validation render. */
 function renderViaVoiceManager(): Float32Array {
   const runtime = new ModulationRuntime(SR);
-  runtime.setMods(toModLite(lane.engineState.modulators ?? [], bpm));
+  runtime.setMods(toModLite(lane.engineState.modulators ?? [], bpm, makeDotIdMapper(SUB_PARAM_SPECS)));
   const vm = new VoiceManager(SR, 'subtractive', bag);
   vm.setModulation(runtime);
   const specs: NoteSpec[] = notes.map((n) => ({

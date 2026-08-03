@@ -23,7 +23,7 @@
 // trigger-snapshot path — a much faster number that measures nothing.
 import { createRenderer } from '../src/audio-dsp/renderer-registry';
 import { buildParamIndex } from '../src/audio-dsp/param-index';
-import { referenceFor, defaultParams, NOTE, SR } from './gen-engine-reference';
+import { referenceFor, pluginDefaultParams, NOTE, SR } from './gen-engine-reference';
 import type { ParamBag, VoiceRenderer } from '../src/audio-dsp/types';
 
 const SECONDS = 10;
@@ -98,7 +98,7 @@ if (!(engineId in MOVING)) {
 // Touch the reference path so the engine (and, for a plugin, its DSP) is loaded
 // through exactly the same door the parity test uses.
 await referenceFor(engineId);
-const params = defaultParams(engineId);
+const params = await pluginDefaultParams(engineId);
 
 const times: number[] = [];
 for (let r = 0; r < RUNS; r++) times.push(once(engineId, params));

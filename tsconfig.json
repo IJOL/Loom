@@ -12,5 +12,5 @@
     "paths": { "@loom/plugin-sdk": ["packages/loom-plugin-sdk/src/index.ts"] },
     "resolveJsonModule": true
   },
-  "include": ["src", "test", "scripts", "packages", "plugins"]
+  "include": ["src", "test", "scripts", "packages", "plugins", "tools"]
 }
