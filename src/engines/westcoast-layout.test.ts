@@ -1,7 +1,14 @@
 /** @vitest-environment jsdom */
+// The host's row/section resolver, fed by West Coast's own declared layout. The
+// engine ships as a plugin now, so that layout IS plugins/westcoast/plugin.json.
 import { describe, it, expect } from 'vitest';
 import { resolveParamRows } from './engine-param-groups';
-import { WEST_PARAMS, WEST_GROUPS } from './westcoast';
+import type { EngineParamSpec } from './engine-params';
+import type { EngineParamGroup } from './engine-param-groups';
+import manifest from '../../plugins/westcoast/plugin.json';
+
+const WEST_PARAMS = manifest.components[0].params as unknown as EngineParamSpec[];
+const WEST_GROUPS = manifest.components[0].groups as unknown as EngineParamGroup[];
 
 describe('the westcoast page, from data', () => {
   it('gives OSC and CONTOUR their own rows, packs TIMBRE+LPG and AMP+MASTER, POLY last', () => {

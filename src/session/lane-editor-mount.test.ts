@@ -10,9 +10,12 @@ import { applyAutomationToSession } from '../automation/automation-apply';
 import { commitParamForLane } from '../engines/engine-param-commit';
 // Registers the two descriptors this fixture's lanes name. The lane editor
 // draws no instrument for an engine nobody registered — it says so instead —
-// so without these the fake engines' buildParamUI is never called.
-import '../engines/fm';
+// so without these the fake engines' buildParamUI is never called. fm is a
+// plugin, so it comes in through its manifest.
 import '../engines/subtractive';
+import { registerPluginEngine } from '../../test/plugin-fixtures';
+
+registerPluginEngine('fm');
 
 const knob = (id: string): KnobHandle =>
   ({ el: document.createElement('div'), setValue() {}, meta: { id, label: id, min: 0, max: 1 } }) as unknown as KnobHandle;

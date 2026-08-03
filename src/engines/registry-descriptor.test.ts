@@ -8,10 +8,7 @@ import { describe, it, expect, vi } from 'vitest';
 
 // Side-effect imports register engines + descriptors (mirror main.ts).
 import '../engines/subtractive';
-import '../engines/wavetable';
-import '../engines/fm';
 import '../engines/tb303';
-import '../engines/westcoast';
 
 // Deliberately AFTER the five engine imports above, not before. Each engine
 // file's own registerEngine(makeXDescriptor()) call runs at module scope —
@@ -32,6 +29,15 @@ import '../plugins/modulators/adsr';
 
 import * as registry from './registry';
 import { getEngineDescriptor } from './registry';
+import { registerPluginEngine } from '../../test/plugin-fixtures';
+
+// wavetable, fm and westcoast ship as PLUGINS and arrive through their real
+// manifests. Note what this does NOT reproduce: an import is hoisted and a call
+// is not, so these three necessarily register AFTER the modulator components
+// above, not before. The cold-start race the import order below stages is
+// therefore carried by tb303 and subtractive alone — which is enough, since the
+// laziness it guards lives in createDescriptorEngine, one owner for all five.
+for (const id of ['wavetable', 'fm', 'westcoast']) registerPluginEngine(id);
 
 describe('getEngineDescriptor — metadata without legacy construction', () => {
   it.each([

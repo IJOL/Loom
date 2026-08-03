@@ -1,29 +1,35 @@
-// src/presets/wavetable-presets.test.ts
+// plugins/wavetable/presets.test.ts
 //
-// Guards public/presets/wavetable.json against the engine's own param schema and
-// against silence — the sibling of subtractive-presets.test.ts. JSON is the source
-// of truth for presets, which means a typo'd param id is silently ignored by
+// Guards this plugin's presets.json against its OWN manifest and against silence
+// — the sibling of subtractive-presets.test.ts. JSON is the source of truth for
+// presets, which means a typo'd param id is silently ignored by
 // `param(bag, id, default)` and an out-of-range value is silently clamped (or not)
 // — neither throws, both just sound wrong. This test is the thing that notices.
 //
 // Deliberately NOT re-tested here (preset-sanity.test.ts already covers it for
-// every engine): the file parses, names are unique, gm entries are valid ints.
+// every engine, plugins included): the file parses, names are unique, gm entries
+// are valid ints.
 
-import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import '../engines/wavetable';               // registers the wavetable descriptor engine
-import { getEngine } from '../engines/registry';
-import { WavetableRenderer } from '../audio-dsp/wavetable-renderer';
-import type { ParamBag } from '../audio-dsp/types';
+import { describe, it, expect, vi } from 'vitest';
+
+// `dsp.ts` calls Loom.registerRenderer at module scope — the ABI — so the global
+// has to exist before the import graph is evaluated.
+vi.hoisted(() => {
+  (globalThis as unknown as { Loom: unknown }).Loom = {
+    apiVersion: 1, registerRenderer: () => {},
+  };
+});
+
+import { WavetableRenderer } from './dsp';
+import manifest from './plugin.json';
+import presetFile from './presets.json';
+import type { ParamBag, EngineParamSpec } from '@loom/plugin-sdk';
 
 interface Preset { name: string; gm?: number[]; params: Record<string, number> }
-const PRESETS: Preset[] = JSON.parse(
-  readFileSync(resolve('public/presets/wavetable.json'), 'utf8'),
-).presets;
+const PRESETS = presetFile.presets as unknown as Preset[];
 
-// The engine's own schema, via the registry — i.e. exactly what the UI can reach.
-const SPECS = getEngine('wavetable')!.params;
+// The engine's own schema, via its manifest — i.e. exactly what the UI can reach.
+const SPECS = manifest.components[0].params as unknown as EngineParamSpec[];
 const SPEC_BY_ID = new Map(SPECS.map((s) => [s.id, s]));
 
 // NOTE — there is deliberately NO `output.trim` exception here, unlike the

@@ -1,34 +1,48 @@
-// src/audio-dsp/fm-renderer.ts
+// plugins/fm/dsp.ts
 // 4-operator FM voice renderer. Pure per-sample DSP — no Web Audio / worklet globals.
-// Ports FMVoice from src/engines/fm.ts with corrected FM tuning: per-sample linear-FM
-// so carrier ratios stay in tune across all algorithms.
+// Ports FMVoice from the legacy node-per-note engine with corrected FM tuning:
+// per-sample linear-FM so carrier ratios stay in tune across all algorithms.
 //
-// ALGORITHMS and CARRIERS are copied from src/engines/fm.ts (0-indexed ops 0..3):
-//   ALGORITHMS[algo][i] = list of op indices that modulate op i (matching fm.ts ops[i].modulators)
-//   CARRIERS[algo]      = op indices that go to the final mix    (matching fm.ts ops[i].isCarrier)
+// ALGORITHMS and CARRIERS use 0-indexed ops 0..3 (the manifest's op1..op4):
+//   ALGORITHMS[algo][i] = list of op indices that modulate op i
+//   CARRIERS[algo]      = op indices that go to the final mix
 //
-// FM tuning fix: in the node version, modulator output is scaled by (opFreq * 4) Hz.
+// FM tuning fix: in the node version, modulator output was scaled by (opFreq * 4) Hz.
 // Here, carrier phase advances by (freq + modSample * modFreq * modLevel) per sample
 // so ratios stay musically in tune regardless of carrier frequency.
 //
 // Soft-clip and trim: the summed carrier output is soft-clipped via tanh() to prevent
 // clipping from high-level operator combinations (e.g., additive four-carrier + accent).
-// Per-preset output.trim (default 1) scales the final amplitude before synthesis trim.
+// Per-preset output.trim (default 1) scales the final amplitude. The per-ENGINE trim
+// is NOT applied here — it is the manifest's `outputTrim`, which the host multiplies in.
 // FM_DEPTH was reviewed down to 3 to reduce harshness and modulation peaks.
+//
+// ⚠️ WHY outputTrim IS 0.179 AND NOT A ROUNDED 0.25 — copied from the ENGINE_TRIM
+// table it came from, because this is exactly the kind of number someone "cleans
+// up" to 0.18 six months later if the reasoning is nowhere near it:
+//   It was 0.25, then ÷1.4 (2026-07-25). FM used to scale RAW velocity — the
+//   AudioWorklet port dropped the `0.3 + 1.1·v` curve — so restoring the curve
+//   multiplied a full-velocity note by velGain01(1) = 1.4. What the division puts
+//   back is exactly the FULL-velocity level (rms ratio 1.002 vs the pre-change
+//   render): that ONE point, not the range. Below it every note is now LOUDER than
+//   it was, because the restored curve has a 0.3 floor where raw velocity had none.
+//   The lift is (0.3 + 1.1·v) / (1.4·v), unbounded as v → 0: +0.73 dB at the app's
+//   default velocity of 90, +9.3 dB at a tenth of full scale, and ×28 (+29 dB) at
+//   MIDI velocity 1, the softest note a clip can carry. (Measured values run ~0.02 dB
+//   above those, since the trims are stored rounded to three decimals.) That lift is
+//   the point — a soft note was a third too quiet on the two engines that lost the
+//   curve, and MIDI-import passages went missing — but it is a change, not a
+//   restoration, and only v = 1.0 is where it was. Pinned at each of those
+//   velocities in the host's gain-staging-velocity.test.ts.
 //
 // Modulation: generic per-param LFO + per-voice ADSR (ModEnvHost) reach the operator
 // LEVELS (FM index), the feedback amount and the output mix — the params that shape
 // the FM timbre. The four per-op amp envelopes stay built-in (FM has no single amp env).
 
-import type { NoteSpec, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets } from './types';
-import { param, slotOf } from './types';
-import { midiToFreq, clamp01 } from './dsp-util';
-import { Adsr } from './adsr';
-import type { ModLite } from './modulation-runtime';
-import { ModEnvHost } from './mod-env-host';
-import { registerRenderer } from './renderer-registry';
-import { synthTrim } from './gain-staging';
-import { velGain01 } from '../core/velocity-gain';
+import { param, slotOf, midiToFreq, clamp01, Adsr, ModEnvHost, velGain01 } from '@loom/plugin-sdk';
+import type {
+  NoteSpec, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets, ModEnvSpec,
+} from '@loom/plugin-sdk';
 
 const ALGORITHMS: number[][][] = [
   [[1], [2], [3], []],      // 0: Serial 4→3→2→1  (op0 = carrier)
@@ -150,7 +164,7 @@ export class FMRenderer implements VoiceRenderer {
     if (t < this.holdEnd) this.holdEnd = t;
   }
 
-  setModEnvelopes(mods: ModLite[], index: ParamIndex): void { this.modEnv.setModEnvelopes(mods, index); }
+  setModEnvelopes(mods: ModEnvSpec[], index: ParamIndex): void { this.modEnv.setModEnvelopes(mods, index); }
   getAdsrOffsets(): VoiceModOffsets { return this.modEnv.getAdsrOffsets(); }
   setLiveValues(values: Float64Array, index: ParamIndex): void {
     this.live = values;
@@ -234,10 +248,13 @@ export class FMRenderer implements VoiceRenderer {
 
     const mix = mo?.[this.sMix] ? Math.max(0, mixKnob + mo[this.sMix]) : mixKnob;
     const shaped = Math.tanh(out * FM_DRIVE);   // soft-clip: tame harsh peaks, prevent carrier-sum clipping
-    let s = shaped * outputTrimKnob * synthTrim('fm') * mix * this.vel;
+    // No engine trim here: it is a manifest capability (`outputTrim`) that the
+    // host multiplies in, together with its synth category gain. `outputTrimKnob`
+    // is the per-PRESET balance (params['output.trim']), which IS the plugin's.
+    let s = shaped * outputTrimKnob * mix * this.vel;
     if (mo?.[this.sAmpGain]) s *= Math.max(0, Math.min(2, 1 + mo[this.sAmpGain]));
     return s;
   }
 }
 
-registerRenderer('fm', (n, p, sr) => new FMRenderer(n, p, sr));
+Loom.registerRenderer('fm', (n, p, sr) => new FMRenderer(n, p, sr));

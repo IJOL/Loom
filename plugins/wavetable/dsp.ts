@@ -1,20 +1,14 @@
-// src/audio-dsp/wavetable-renderer.ts
+// plugins/wavetable/dsp.ts
 // Per-sample wavetable voice renderer. Two single-cycle tables crossfaded by
 // morph (equal-power), slight A/B detune, → Svf lowpass → amp ADSR.
 // Ported from src/engines/wavetable.ts WavetableVoice.
 //
 // Pure: no Web Audio / worklet globals. Sample rate injected via constructor.
-import type { NoteSpec, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets } from './types';
-import { param, slotOf } from './types';
-import { Svf } from './filter';
-import { Adsr } from './adsr';
-import type { ModLite } from './modulation-runtime';
-import { ModEnvHost } from './mod-env-host';
+import { param, slotOf, Svf, Adsr, ModEnvHost, midiToFreq, clamp01, velGain01 } from '@loom/plugin-sdk';
+import type {
+  NoteSpec, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets, ModEnvSpec,
+} from '@loom/plugin-sdk';
 import { getWaveTables } from './wavetable-data';
-import { registerRenderer } from './renderer-registry';
-import { synthTrim } from './gain-staging';
-import { velGain01 } from '../core/velocity-gain';
-import { midiToFreq, clamp01 } from './dsp-util';
 // Detune modulation span: depth 1 (bipolar) sweeps ±50 cents, matching the knob.
 const MOD_DETUNE_CENTS = 50;
 
@@ -102,7 +96,7 @@ export class WavetableRenderer implements VoiceRenderer {
 
   /** Receive this voice's per-voice ADSR modulators (one Adsr each), at spawn,
    *  with the lane's numbering so their targets resolve to slots once. */
-  setModEnvelopes(mods: ModLite[], index: ParamIndex): void { this.modEnv.setModEnvelopes(mods, index); }
+  setModEnvelopes(mods: ModEnvSpec[], index: ParamIndex): void { this.modEnv.setModEnvelopes(mods, index); }
 
   /** This voice's ADSR-only offsets by slot (for the UI knob ring). */
   getAdsrOffsets(): VoiceModOffsets { return this.modEnv.getAdsrOffsets(); }
@@ -159,10 +153,12 @@ export class WavetableRenderer implements VoiceRenderer {
     // Amp envelope (built-in). amp.gain modulation = tremolo (multiplicative).
     const env = this.ampOn ? this.ampEnv.update(t, gate, this.aA, this.aD, this.aS, this.aR) : 1;
     if (gate === 0 && this.ampEnv.isOff && t > this.holdEnd) this.done = true;
-    let out = this.filter.lp * env * this.vel * synthTrim('wavetable');
+    // No engine trim here: it is a manifest capability (`outputTrim`) that the
+    // host multiplies in, together with its synth category gain.
+    let out = this.filter.lp * env * this.vel;
     if (mo?.[this.sAmpGain]) out *= Math.max(0, Math.min(2, 1 + mo[this.sAmpGain]));
     return out;
   }
 }
 
-registerRenderer('wavetable', (n, p, sr) => new WavetableRenderer(n, p, sr));
+Loom.registerRenderer('wavetable', (n, p, sr) => new WavetableRenderer(n, p, sr));

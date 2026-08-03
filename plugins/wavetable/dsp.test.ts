@@ -1,10 +1,23 @@
-// src/audio-dsp/wavetable-renderer.test.ts
-import { describe, it, expect } from 'vitest';
+// plugins/wavetable/dsp.test.ts
+// Behaviour of the Wavetable plugin's renderer. These assertions used to live in
+// src/audio-dsp/wavetable-renderer.test.ts, against the in-tree engine; the
+// shipped plugin is the only Wavetable there is, so the coverage moved with it.
+import { describe, it, expect, vi } from 'vitest';
+
+// `dsp.ts` calls Loom.registerRenderer at module scope — that is the ABI — so
+// the global must exist before the import graph is evaluated. vi.hoisted is the
+// only hook that runs that early. Same two-line stub the parity test next door
+// installs, for the same reason.
+vi.hoisted(() => {
+  (globalThis as unknown as { Loom: unknown }).Loom = {
+    apiVersion: 1, registerRenderer: () => {},
+  };
+});
+
 import { attachSlots } from '../../test/slot-offsets';
-import { WavetableRenderer } from './wavetable-renderer';
+import { WavetableRenderer } from './dsp';
 import { getWaveTables } from './wavetable-data';
-import { createRenderer } from './renderer-registry';
-import type { NoteSpec, ParamBag } from './types';
+import type { NoteSpec, ParamBag } from '@loom/plugin-sdk';
 
 const SR = 48000;
 
@@ -197,16 +210,19 @@ describe('WavetableRenderer', () => {
   it('getAdsrOffsets exposes the per-voice ADSR contribution (the knob-ring source)', () => {
     const v = new WavetableRenderer(note({ durationSec: 10 }), P, SR);
     const { index } = attachSlots(v, P);
+    // A ModEnvSpec, not a ModLite: the in-tree renderer took the whole modulator
+    // state and read five of its fields, the plugin takes only the envelope
+    // slice the SDK publishes. id/kind/enabled/rateHz/waveform were never read
+    // here, so dropping them changes nothing this test measures.
     v.setModEnvelopes([{
-      id: 'a', kind: 'adsr', enabled: true, rateHz: 0, waveform: 'sine',
       attackSec: 0.001, decaySec: 0.001, sustain: 0.5, releaseSec: 0.1, depthByParam: { 'filter.cutoff': 1 },
     }], index);
     for (let i = 0; i < SR * 0.05; i++) v.renderSample(i / SR);
     expect(v.getAdsrOffsets()[index.slot['filter.cutoff']]).toBeCloseTo(0.5, 1);
   });
 
-  it('registers under engine id "wavetable"', () => {
-    // Importing WavetableRenderer above triggers its registerRenderer side-effect.
-    expect(() => createRenderer('wavetable', note(), P, SR)).not.toThrow();
-  });
+  // The "registers under engine id wavetable" case that used to close this file
+  // is gone: it asserted a side effect on the HOST registry, which a plugin's
+  // dsp.ts no longer touches — it calls Loom.registerRenderer instead, and
+  // wavetable-parity.dsp.test.ts asserts exactly that, at the right door.
 });

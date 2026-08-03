@@ -1,7 +1,14 @@
 /** @vitest-environment jsdom */
+// The host's row/section resolver, fed by Wavetable's own declared layout. The
+// engine ships as a plugin now, so that layout IS plugins/wavetable/plugin.json.
 import { describe, it, expect } from 'vitest';
 import { resolveParamRows } from './engine-param-groups';
-import { WT_PARAMS, WT_GROUPS } from './wavetable';
+import type { EngineParamSpec } from './engine-params';
+import type { EngineParamGroup } from './engine-param-groups';
+import manifest from '../../plugins/wavetable/plugin.json';
+
+const WT_PARAMS = manifest.components[0].params as unknown as EngineParamSpec[];
+const WT_GROUPS = manifest.components[0].groups as unknown as EngineParamGroup[];
 
 describe('the wavetable page, from data', () => {
   it('puts OSC and FILTER on one row, then AMP, then POLY', () => {

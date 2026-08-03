@@ -1,23 +1,16 @@
-// src/audio-dsp/westcoast-renderer.ts
+// plugins/westcoast/dsp.ts
 // Per-sample Westcoast (Buchla-style) voice renderer.
-// Ports WestVoice from src/engines/westcoast.ts faithfully:
+// Ports WestVoice from the legacy node-per-note engine faithfully:
 //   complex osc (main lin-FM'd by mod, ring/AM, sub-divider)
 //   → DC-bias (symmetry)
 //   → wavefolder (Timbre)
 //   → low-pass gate (SVF + VCA driven by AD contour)
 // Pure — no Web Audio. Sample rate is injected.
 
-import type { NoteSpec, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets } from './types';
-import { param, slotOf } from './types';
-import { SineOsc, TriOsc, SawOsc } from './osc';
-import { Svf } from './filter';
-import { fold } from './fold';
-import type { ModLite } from './modulation-runtime';
-import { ModEnvHost } from './mod-env-host';
-import { registerRenderer } from './renderer-registry';
-import { synthTrim } from './gain-staging';
-import { velGain01 } from '../core/velocity-gain';
-import { midiToFreq, clamp01 } from './dsp-util';
+import { param, slotOf, SineOsc, TriOsc, SawOsc, Svf, fold, ModEnvHost, velGain01, midiToFreq, clamp01 } from '@loom/plugin-sdk';
+import type {
+  NoteSpec, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets, ModEnvSpec,
+} from '@loom/plugin-sdk';
 
 type Osc = { update(f: number): number };
 
@@ -34,18 +27,16 @@ const MOD_WAVE_OSC = [
 // Sub-divisor lookup: index 0..3 → divisor (0 = off)
 const SUBDIV_VALUES = [0, 2, 3, 4];
 
-// Cutoff curve: same as westcoast.ts cutoffHz(norm) = min(18000, 60 * 220^norm)
+// Cutoff curve: cutoffHz(norm) = min(18000, 60 * 220^norm)
 function cutoffHz(norm: number): number {
   return Math.min(18000, 60 * Math.pow(220, norm));
 }
 
-// CUTOFF_ENV_SCALE from westcoast.ts: multiplier on base cutoff for the
-// contour's filter sweep.
+// Multiplier on base cutoff for the contour's filter sweep.
 const CUTOFF_ENV_SCALE = 3;
-// Per-engine output trim now lives in gain-staging.ts — synthTrim('westcoast').
 
 /** Simple AD + optional sustain contour, clocked per-sample. Mirrors the
- *  ConstantSource automation schedule in WestVoice.trigger. */
+ *  ConstantSource automation schedule in the legacy WestVoice.trigger. */
 class AdContour {
   private val = 0;
   private phase: 'idle' | 'attack' | 'decay' | 'sustain' | 'release' | 'done' = 'idle';
@@ -173,7 +164,7 @@ export class WestcoastRenderer implements VoiceRenderer {
   private subLevelBase: number;
   private symmetryBase: number;     // raw 0..1 knob (the ×0.5 DC-bias scale is applied at read time)
   private levelBase: number;
-  private ampTrim: number;          // vel * synthTrim — the frozen part of the amp scalar
+  private ampTrim: number;          // velocity gain — the frozen part of the amp scalar
   private accentMul: number;
 
   /** The lane's live (smoothed) values, or null when this voice runs standalone
@@ -259,13 +250,15 @@ export class WestcoastRenderer implements VoiceRenderer {
     const cycle = Math.round(param(p, 'contour.cycle', 0)) >= 1;
     this.contour = new AdContour(atk, dec, amount, cmode, cycle, this.holdEnd);
 
-    // Amp — level is LIVE; vel/synthTrim are frozen at trigger.
+    // Amp — level is LIVE; the velocity gain is frozen at trigger. No engine
+    // trim here: it is a manifest capability (`outputTrim`) the host multiplies
+    // in, together with its synth category gain.
     this.levelBase = param(p, 'amp.level', 0.8);
     // accentMul above is this engine's TIMBRE multiplier — fold drive and cutoff
     // env — and it stays out of here. The amp punch is the shared one, as the
     // legacy WestVoice had it: an accent drives the folder harder, it does not
     // also turn the voice up by the same factor.
-    this.ampTrim = velGain01(note.velocity, note.accent) * synthTrim('westcoast');
+    this.ampTrim = velGain01(note.velocity, note.accent);
     this.accentMul = accentMul;
   }
 
@@ -276,7 +269,7 @@ export class WestcoastRenderer implements VoiceRenderer {
     }
   }
 
-  setModEnvelopes(mods: ModLite[], index: ParamIndex): void { this.modEnv.setModEnvelopes(mods, index); }
+  setModEnvelopes(mods: ModEnvSpec[], index: ParamIndex): void { this.modEnv.setModEnvelopes(mods, index); }
   getAdsrOffsets(): VoiceModOffsets { return this.modEnv.getAdsrOffsets(); }
   setLiveValues(values: Float64Array, index: ParamIndex): void {
     this.live = values;
@@ -397,4 +390,4 @@ export class WestcoastRenderer implements VoiceRenderer {
   }
 }
 
-registerRenderer('westcoast', (n, p, sr) => new WestcoastRenderer(n, p, sr));
+Loom.registerRenderer('westcoast', (n, p, sr) => new WestcoastRenderer(n, p, sr));

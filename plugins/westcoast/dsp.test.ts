@@ -1,8 +1,22 @@
-// src/audio-dsp/westcoast-renderer.test.ts
-import { describe, it, expect } from 'vitest';
-import { WestcoastRenderer } from './westcoast-renderer';
-import type { NoteSpec, ParamBag } from './types';
-import { ACCENT_PUNCH } from '../core/velocity-gain';
+// plugins/westcoast/dsp.test.ts
+// Behaviour of the West Coast plugin's renderer. These assertions used to live
+// in src/audio-dsp/westcoast-renderer.test.ts, against the in-tree engine; the
+// shipped plugin is the only West Coast there is, so the coverage moved with it.
+import { describe, it, expect, vi } from 'vitest';
+
+// `dsp.ts` calls Loom.registerRenderer at module scope — that is the ABI — so
+// the global must exist before the import graph is evaluated. vi.hoisted is the
+// only hook that runs that early. Same two-line stub the parity test next door
+// installs, for the same reason.
+vi.hoisted(() => {
+  (globalThis as unknown as { Loom: unknown }).Loom = {
+    apiVersion: 1, registerRenderer: () => {},
+  };
+});
+
+import { WestcoastRenderer } from './dsp';
+import type { NoteSpec, ParamBag } from '@loom/plugin-sdk';
+import { ACCENT_PUNCH } from '../../src/core/velocity-gain';
 import { rms as rmsOf, spectralCentroid } from '../../test/dsp-asserts';
 
 const SR = 48000;
@@ -167,8 +181,8 @@ describe('WestcoastRenderer', () => {
     expect(punch / ACCENT_PUNCH).toBeCloseTo(1, 2);
   });
 
-  it('registers under engine id "westcoast"', async () => {
-    const { hasRenderer } = await import('./renderer-registry');
-    expect(hasRenderer('westcoast')).toBe(true);
-  });
+  // The "registers under engine id westcoast" case that used to close this file
+  // is gone: it asked the HOST registry, which a plugin's dsp.ts no longer
+  // touches — it calls Loom.registerRenderer instead, and
+  // westcoast-parity.dsp.test.ts asserts exactly that, at the right door.
 });

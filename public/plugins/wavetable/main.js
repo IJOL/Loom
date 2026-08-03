@@ -1,0 +1,119 @@
+// plugins/wavetable/plugin.json
+var plugin_default = {
+  id: "wavetable",
+  name: "Wave",
+  version: "1.0.0",
+  loomApi: 1,
+  author: "Loom",
+  main: "main.js",
+  dsp: "dsp.js",
+  presets: "presets.json",
+  components: [
+    {
+      kind: "engine",
+      id: "wavetable",
+      name: "Wave",
+      polyphony: "poly",
+      params: [
+        {
+          id: "osc.waveA",
+          label: "Wave A",
+          kind: "discrete",
+          min: 0,
+          max: 7,
+          default: 2,
+          group: "osc",
+          options: [
+            { value: "0", label: "Sine" },
+            { value: "1", label: "Triangle" },
+            { value: "2", label: "Sawtooth" },
+            { value: "3", label: "Square" },
+            { value: "4", label: "PWM 25%" },
+            { value: "5", label: "Organ" },
+            { value: "6", label: "Brass" },
+            { value: "7", label: "Vocal" }
+          ]
+        },
+        {
+          id: "osc.waveB",
+          label: "Wave B",
+          kind: "discrete",
+          min: 0,
+          max: 7,
+          default: 3,
+          group: "osc",
+          options: [
+            { value: "0", label: "Sine" },
+            { value: "1", label: "Triangle" },
+            { value: "2", label: "Sawtooth" },
+            { value: "3", label: "Square" },
+            { value: "4", label: "PWM 25%" },
+            { value: "5", label: "Organ" },
+            { value: "6", label: "Brass" },
+            { value: "7", label: "Vocal" }
+          ]
+        },
+        { id: "osc.morph", label: "Morph", kind: "continuous", min: 0, max: 1, default: 0, group: "osc" },
+        { id: "osc.detune", label: "Detune", kind: "continuous", min: -50, max: 50, default: 0, unit: "\xA2", group: "osc" },
+        { id: "filter.cutoff", label: "Cutoff", kind: "continuous", min: 0, max: 1, default: 0.55, group: "filter" },
+        { id: "filter.resonance", label: "Res", kind: "continuous", min: 0, max: 1, default: 0.2, group: "filter" },
+        {
+          id: "amp.builtinEnv",
+          label: "Built-in Env",
+          kind: "discrete",
+          min: 0,
+          max: 1,
+          default: 1,
+          group: "amp",
+          options: [{ value: "off", label: "Off" }, { value: "on", label: "On" }]
+        },
+        { id: "amp.attack", label: "Attack", kind: "continuous", min: 1e-3, max: 2, default: 0.01, unit: "s", curve: "exponential", group: "amp" },
+        { id: "amp.decay", label: "Decay", kind: "continuous", min: 1e-3, max: 2, default: 0.3, unit: "s", curve: "exponential", group: "amp" },
+        { id: "amp.sustain", label: "Sustain", kind: "continuous", min: 0, max: 1, default: 0.7, group: "amp" },
+        { id: "amp.release", label: "Release", kind: "continuous", min: 5e-3, max: 4, default: 0.3, unit: "s", curve: "exponential", group: "amp" },
+        { id: "poly.voices", label: "Voices", kind: "continuous", min: 1, max: 16, default: 8, group: "poly" }
+      ],
+      groups: [
+        { id: "osc", title: "OSC", row: 0, color: "var(--knob-cyan)" },
+        { id: "filter", title: "FILTER", row: 0, color: "var(--knob-orange)" },
+        { id: "amp", title: "AMP", row: 1, color: "var(--knob-green)" },
+        { id: "poly", title: "POLY", row: 2 }
+      ],
+      modulators: [
+        {
+          id: "adsr1",
+          kind: "adsr",
+          enabled: true,
+          connections: [{ id: "c-cutoff", paramId: "filter.cutoff", depth: 0.5 }],
+          attackSec: 0.01,
+          decaySec: 0.3,
+          sustain: 0.7,
+          releaseSec: 0.3,
+          scope: "per-voice"
+        },
+        {
+          id: "lfo1",
+          kind: "lfo",
+          enabled: true,
+          connections: [],
+          rateHz: 4,
+          waveform: "sine",
+          bipolar: true,
+          syncToBpm: false,
+          syncBars: 0.25,
+          syncSubdiv: "straight",
+          trigger: "free",
+          scope: "shared"
+        }
+      ],
+      capabilities: {
+        clipContent: "notes",
+        shortLabel: "wavetable",
+        outputTrim: 0.6
+      }
+    }
+  ]
+};
+
+// plugins/wavetable/main.ts
+Loom.registerComponent(plugin_default.components[0]);

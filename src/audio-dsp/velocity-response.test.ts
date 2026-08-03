@@ -15,7 +15,7 @@
 // so it is a pure output gain and rms(lo)/rms(hi) IS the gain ratio.
 import { describe, it, expect } from 'vitest';
 import type { VoiceRenderer } from './types';
-import { SR, note, makeRenderer, MELODIC_IDS } from '../../test/engine-fixtures';
+import { SR, note, makeRenderer, MELODIC_IDS, hostTrim } from '../../test/engine-fixtures';
 
 const WINDOW_SEC = 0.05;
 
@@ -133,7 +133,12 @@ describe('cross-engine velocity + accent response', () => {
   // claim still exists — it moved to plugins/karplus/dsp.test.ts, because its
   // renderer is no longer importable from src/.
   it('the curve fix left fm sitting where it sat against wavetable', () => {
-    const fullLevel = (id: string): number => rmsOf(makeRenderer(id, note({ velocity: LOUD })));
+    // The only claim in this file about LEVELS rather than ratios, so the only
+    // one that has to put the host's trim back on: both engines ship as plugins
+    // now and neither multiplies its own trim any more (see engine-fixtures'
+    // hostTrim). Without it this would measure the packaging, not the balance.
+    const fullLevel = (id: string): number =>
+      rmsOf(makeRenderer(id, note({ velocity: LOUD }))) * hostTrim(id);
     const ref = fullLevel('wavetable');
     const FM_VS_WAVETABLE = 0.16686;
     // 1% covers rounding the trim to three decimals (0.25/1.4 → 0.179).

@@ -1,6 +1,9 @@
 {
   "plugins": [
+    "fm",
     "karplus",
-    "sh"
+    "sh",
+    "wavetable",
+    "westcoast"
   ]
 }

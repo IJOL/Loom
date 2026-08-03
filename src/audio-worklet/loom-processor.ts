@@ -16,9 +16,6 @@ import { LOOM_PROCESSOR_NAME } from './processor-name';
 // so VoiceManager.createRenderer(engineId, …) can build any engine's voice.
 import '../audio-dsp/subtractive-renderer';
 import '../audio-dsp/tb303-renderer';
-import '../audio-dsp/fm-renderer';
-import '../audio-dsp/wavetable-renderer';
-import '../audio-dsp/westcoast-renderer';
 // Same pattern for modulator kernels: registered by side-effect import so
 // ModulationRuntime's registry lookup finds them inside the worklet bundle.
 import '../audio-dsp/modulators/lfo-kernel';

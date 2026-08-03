@@ -14,16 +14,13 @@
 //   - the note and the params, which come from each engine's DECLARED defaults
 //     so the reference tracks the engine's own idea of itself.
 
-import { createRenderer, registerRenderer } from '../src/audio-dsp/renderer-registry';
+import { createRenderer } from '../src/audio-dsp/renderer-registry';
 import { getEngineDescriptor } from '../src/engines/registry';
 import type { NoteSpec, ParamBag } from '../src/audio-dsp/types';
 
 // Side-effect imports: every in-tree renderer self-registers on import.
 import '../src/audio-dsp/tb303-renderer';
 import '../src/audio-dsp/subtractive-renderer';
-import '../src/audio-dsp/fm-renderer';
-import '../src/audio-dsp/wavetable-renderer';
-import '../src/audio-dsp/westcoast-renderer';
 // Side-effect imports: the modulator components. Reading a descriptor builds its
 // modulator host, which resolves every declared modulator kind through the
 // registry — so without these, asking tb303 for its defaults throws
@@ -33,9 +30,15 @@ import '../src/plugins/modulators/adsr';
 // Side-effect imports: the engine descriptors, which carry the param defaults.
 import '../src/engines/tb303';
 import '../src/engines/subtractive';
-import '../src/engines/fm';
-import '../src/engines/wavetable';
-import '../src/engines/westcoast';
+// A plugin's renderer arrives through the Loom global instead, and that global
+// is installed by importing this module — see test/plugin-dsp.ts.
+import { loadPluginRenderers } from '../test/plugin-dsp';
+
+// Re-exported so a caller that has this module already does not need to know
+// where the loader lives. It walks plugins/*/plugin.json and imports the `dsp`
+// of every one that declares it — four engines and a modulator today, and
+// whatever lands tomorrow without this file being edited.
+export { loadPluginRenderers };
 
 /** One of every 512 samples: enough to pin the shape, small enough to commit.
  *  Matches what plugins/karplus/reference-render.json already holds. */
@@ -90,18 +93,6 @@ export function renderReference(engineId: string, params?: ParamBag): number[] {
   }
 }
 
-/** Load the plugin engines whose DSP registers itself through the Loom global.
- *  The stub forwards into the host registry, so `renderReference` treats a
- *  plugin engine and an in-tree one through exactly one code path. */
-export async function loadPluginRenderers(): Promise<void> {
-  (globalThis as unknown as { Loom?: unknown }).Loom = {
-    apiVersion: 1,
-    registerRenderer,
-    registerComponent: () => { /* the descriptor is read from plugin.json below */ },
-  };
-  await import('../plugins/karplus/dsp');
-}
-
 /** A plugin's declared defaults, read from its manifest. */
 export async function pluginDefaultParams(pluginId: string): Promise<ParamBag> {
   const manifest = (await import(`../plugins/${pluginId}/plugin.json`)).default as {
@@ -114,7 +105,7 @@ export async function pluginDefaultParams(pluginId: string): Promise<ParamBag> {
 
 /** Engines whose renderer lives in the tree. Anything else is looked for as a
  *  plugin under plugins/<id>/. */
-const IN_TREE = new Set(['tb303', 'subtractive', 'fm', 'wavetable', 'westcoast']);
+const IN_TREE = new Set(['tb303', 'subtractive']);
 
 /** Render `engineId` and return its reference, resolving the params from
  *  wherever that engine declares them. */

@@ -1,21 +1,38 @@
-import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import '../engines/fm';                     // registers the FM descriptor engine
-import { getEngine } from '../engines/registry';
-import { FMRenderer } from './fm-renderer';
-import type { NoteSpec, ParamBag } from './types';
+// plugins/fm/presets.test.ts
+// Guards this plugin's presets.json against its OWN manifest — both files ship
+// inside the plugin, so a preset naming a param the manifest does not declare is
+// broken at the source, not against some host-side copy of the schema.
+import { describe, it, expect, vi } from 'vitest';
+
+// `dsp.ts` calls Loom.registerRenderer at module scope — the ABI — so the global
+// has to exist before the import graph is evaluated.
+vi.hoisted(() => {
+  (globalThis as unknown as { Loom: unknown }).Loom = {
+    apiVersion: 1, registerRenderer: () => {},
+  };
+});
+
+import { FMRenderer } from './dsp';
+import manifest from './plugin.json';
+import presetFile from './presets.json';
+import type { NoteSpec, ParamBag, EngineParamSpec } from '@loom/plugin-sdk';
+import { CATEGORY_GAIN } from '../../src/audio-dsp/gain-staging';
 
 const SR = 48000;
 
 interface Preset { name: string; gm?: number[]; params: Record<string, number> }
-const PRESETS: Preset[] = JSON.parse(
-  readFileSync(resolve('public/presets/fm.json'), 'utf8'),
-).presets;
+const PRESETS = presetFile.presets as unknown as Preset[];
 
-// The engine's own schema, via the registry — i.e. exactly what the UI can reach.
-const SPECS = getEngine('fm')!.params;
+// The engine's own schema, via its manifest — i.e. exactly what the UI can reach.
+const SPECS = manifest.components[0].params as unknown as EngineParamSpec[];
 const SPEC_BY_ID = new Map(SPECS.map((s) => [s.id, s]));
+
+/** What the HOST multiplies this plugin's voice by, which the renderer no longer
+ *  does itself. 0.179 is not a typo for 0.18: it is 0.25 ÷ 1.4, because the
+ *  restored velocity curve multiplies a full-velocity note by velGain01(1) = 1.4
+ *  and the division puts exactly that point back where it was. Rounding it would
+ *  make every full-velocity FM note ~0.5% loud — see src/audio-dsp/gain-staging.ts. */
+const HOST_TRIM = manifest.components[0].capabilities.outputTrim * CATEGORY_GAIN.synth;
 
 // The one param a preset may carry that is NOT in the schema: the per-preset
 // gain-staging lever documented in audio-dsp/gain-staging.ts and read by the
@@ -111,10 +128,16 @@ describe('FM presets — objective musicality guard', () => {
     const buf = render(bagOf(preset), MIDI, 0.5);
     expect(rms(buf)).toBeGreaterThan(0.002);   // audible
     // Unlike the subtractive's (which rings above unity on a resonant SVF), an FM
-    // voice has no filter: it is tanh-limited and trimmed to 0.25 x the synth
+    // voice has no filter: it is tanh-limited and trimmed to 0.179 x the synth
     // category gain, so it cannot legitimately reach unity. The pack measures
     // peak <= 0.21. This bound is the FM renderer's, and does not transfer.
-    expect(peak(buf)).toBeLessThan(1.0);       // no clipping
+    //
+    // HOST_TRIM is what makes that still true: the plugin no longer multiplies
+    // its own trim into every sample — the host applies capabilities.outputTrim
+    // at the sum point — so this is the voice measured where the listener meets
+    // it. Without it, KEY Harpsichord reads 1.0017 and the claim would look
+    // broken by a change that only moved WHERE one multiplication happens.
+    expect(peak(buf) * HOST_TRIM).toBeLessThan(1.0);   // no clipping
   });
 
   const melodic = PRESETS.filter((p) => isMelodic(p.name));

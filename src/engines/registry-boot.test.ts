@@ -11,13 +11,16 @@ import { describe, it, expect } from 'vitest';
 
 // Side-effect imports — must mirror main.ts.
 import '../engines/subtractive';
-import '../engines/wavetable';
-import '../engines/fm';
 import '../engines/tb303';
 import '../engines/drums-engine';
-import '../engines/westcoast';
+// wavetable, fm and westcoast ship as PLUGINS: main.ts gets them from the
+// plugin loader, not from a module in src/, so the equivalent here is the same
+// manifest going through the same registerComponent door.
+import { registerPluginEngine } from '../../test/plugin-fixtures';
 
 import { getEngine, createEngineInstance } from './registry';
+
+for (const id of ['wavetable', 'fm', 'westcoast']) registerPluginEngine(id);
 
 describe('engine registry after side-effect imports', () => {
   it.each([

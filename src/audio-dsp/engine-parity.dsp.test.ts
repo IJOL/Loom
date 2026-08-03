@@ -14,11 +14,13 @@ import { referenceFor } from '../../tools/gen-engine-reference';
 
 import tb303 from './reference/tb303.json';
 import subtractive from './reference/subtractive.json';
-import fm from './reference/fm.json';
-import wavetable from './reference/wavetable.json';
-import westcoast from './reference/westcoast.json';
 
-const COMMITTED: Record<string, number[]> = { tb303, subtractive, fm, wavetable, westcoast };
+// Only the engines still IN the tree are defended here. fm, wavetable and
+// westcoast ship as plugins now: their reference travelled with them to
+// plugins/<id>/reference-render.json and is checked by that plugin's own
+// <id>-parity.dsp.test.ts. Keeping a second copy here would have been two
+// owners for one fact.
+const COMMITTED: Record<string, number[]> = { tb303, subtractive };
 
 describe('engine render parity', () => {
   for (const [id, committed] of Object.entries(COMMITTED)) {

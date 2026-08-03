@@ -3,9 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import '../engines/tb303';
 import '../engines/drums-engine';
 import '../engines/subtractive';
-import '../engines/fm';
-import '../engines/wavetable';
-import '../engines/westcoast';
 import '../engines/audio';
 // Side-effect only: registers 'lfo'/'adsr' with the modulator-registry. Every
 // engine descriptor above builds its default modulator set LAZILY from that
@@ -30,6 +27,17 @@ import type { ComponentManifest } from '@loom/plugin-sdk';
 import { registerEngineCapabilities } from '../plugins/capabilities';
 import { createDescriptorEngine } from '../engines/descriptor-engine';
 import type { EngineParamGroup } from '../engines/engine-param-groups';
+import { registerPluginEngine } from '../../test/plugin-fixtures';
+
+/** fm, wavetable and westcoast ship as PLUGINS: there is no module in src/ to
+ *  side-effect import any more, so they arrive through their real manifests.
+ *  A function rather than three top-level calls because __resetPluginEngines()
+ *  wipes the capabilities map, so every describe that resets has to re-register
+ *  them — the same reason the karplus line below is repeated per beforeEach. */
+function registerPluginEngines(): void {
+  for (const id of ['fm', 'wavetable', 'westcoast']) registerPluginEngine(id);
+}
+registerPluginEngines();
 
 function makeCtx() {
   return new OfflineAudioContext(1, 128, 44100) as unknown as AudioContext;
@@ -172,6 +180,7 @@ describe('Phase 4 Task 1: live worklet backend constructs only worklet engines',
     installMainThreadLoomApi();
     (globalThis as unknown as { Loom: { registerComponent(m: ComponentManifest): void } })
       .Loom.registerComponent(karplusPlugin.components[0] as unknown as ComponentManifest);
+    registerPluginEngines();
   });
 
   it.each([
@@ -220,6 +229,7 @@ describe('backend routing by capability, not by hard-coded id (audio slice)', ()
       clipContent: 'audio', shortLabel: 'audio', outputTrim: 1,
       accepts: ['audio-file'], acceptsNoteFx: false, harmonic: false, isRandomizable: false,
     });
+    registerPluginEngines();
   });
 
   // The bug: a plugin engine declaring clipContent: 'audio' fell into the

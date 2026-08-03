@@ -16,14 +16,15 @@ import type { FxBus } from '../core/fx';
 import type { SidechainBus } from '../core/sidechain-bus';
 import { isAudioEngine, isWorkletHosted, pluginSynthTrim } from '../plugins/capabilities';
 
-// Melodic engines that have a per-sample worklet renderer (Phase 1 subtractive +
-// Phase 2 ports). These route to WorkletLaneEngine on the live path; drums /
-// sampler / audio remain legacy until their own phases.
+// Melodic engines whose per-sample renderer still lives in src/. These route to
+// WorkletLaneEngine on the live path; drums / sampler / audio remain legacy
+// until their own phases. fm, wavetable and westcoast left this set when they
+// became plugins — they qualify through isWorkletHosted below instead.
 // Exported so a registry-driven test (audio-dsp/live-params.dsp.test.ts) can
 // assert EVERY id here produces a renderer implementing the live-params hook —
 // a hand-written engine list would just reproduce the gap it exists to catch
 // (I4, 2026-07-26 continuous-params review).
-const BUILTIN_WORKLET_ENGINE_IDS = new Set(['subtractive', 'tb303', 'fm', 'wavetable', 'westcoast']);
+const BUILTIN_WORKLET_ENGINE_IDS = new Set(['subtractive', 'tb303']);
 
 /** Built-ins are still listed above; a PLUGIN engine qualifies by having
  *  arrived through a plugin manifest (`isWorkletHosted`, backed by the set of

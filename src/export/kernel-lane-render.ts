@@ -25,9 +25,6 @@ import { VoiceManager } from '../audio-dsp/voice-manager';
 // them when the kernel render runs.
 import '../audio-dsp/subtractive-renderer';
 import '../audio-dsp/tb303-renderer';
-import '../audio-dsp/fm-renderer';
-import '../audio-dsp/wavetable-renderer';
-import '../audio-dsp/westcoast-renderer';
 // Same reasoning for the modulator kernel: the worklet thread registers it via
 // loom-processor.ts; the offline recorder runs on the MAIN thread, so import
 // it here too — otherwise the offline render's LFO goes silent.

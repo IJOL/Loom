@@ -15,22 +15,32 @@
 // importing it here does not drag in worklet-lane-engine.ts's Web-Audio/
 // lit-html dependency chain (LoomWorkletNode, lit-html…).
 import { describe, it, expect } from 'vitest';
+// Westcoast ships as a plugin, and its dsp.ts registers itself through the Loom
+// global at module scope — `test/plugin-dsp` installs that global, so it stays
+// above the plugin import below.
+import '../../test/plugin-dsp';
 import { ModulationRuntime } from './modulation-runtime';
 import { VoiceManager } from './voice-manager';
 import type { NoteSpec, ParamBag } from './types';
 import type { ModulatorState } from '../modulation/types';
 import './subtractive-renderer';
-import './westcoast-renderer';
+import '../../plugins/westcoast/dsp';
 // Side-effect only: registers the 'lfo'/'adsr' components so
-// SUBTRACTIVE_DEFAULT_MODULATORS()/WESTCOAST_DEFAULT_MODULATORS() below
-// (both lazy — they read the registry, not a module-scope constant) resolve.
-// Vitest isolates modules per file, so nothing else in this file's import
-// graph registers them.
+// SUBTRACTIVE_DEFAULT_MODULATORS() below (lazy — it reads the registry, not a
+// module-scope constant) resolves. Vitest isolates modules per file, so nothing
+// else in this file's import graph registers them.
 import '../plugins/modulators/lfo';
 import '../plugins/modulators/adsr';
 import { SUBTRACTIVE_DEFAULT_MODULATORS } from '../engines/subtractive';
-import { WESTCOAST_DEFAULT_MODULATORS } from '../engines/westcoast';
+import westcoastManifest from '../../plugins/westcoast/plugin.json';
 import { toModLite } from '../engines/mod-lite';
+
+// Westcoast's defaults used to be a function in src/engines/westcoast.ts. They
+// are now DATA in the plugin's manifest, which is the whole point of the move —
+// so read them from there rather than re-typing them here. Each call returns a
+// fresh deep copy because two tests below edit the states they are handed.
+const WESTCOAST_DEFAULT_MODULATORS = (): ModulatorState[] =>
+  JSON.parse(JSON.stringify(westcoastManifest.components[0].modulators)) as ModulatorState[];
 
 const SR = 44100;
 

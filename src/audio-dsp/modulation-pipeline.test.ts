@@ -9,37 +9,28 @@
 // The check is relative + robust: with the LFO at full depth on a target param the
 // per-window RMS envelope must differ MEASURABLY from the unmodulated render. That
 // proves the modulation reaches the sound — for every engine — without ear-checking.
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
-// Karplus ships as a PLUGIN now, and its dsp.ts calls Loom.registerRenderer at
-// module scope. The global has to exist before the import graph is evaluated,
-// and vi.hoisted is the only hook that runs that early. A no-op is enough: the
-// renderer is registered explicitly below, which keeps it visible here rather
-// than hiding it inside a stub.
-vi.hoisted(() => {
-  (globalThis as unknown as { Loom: unknown }).Loom = {
-    apiVersion: 1, registerRenderer: () => {},
-  };
-});
-
+// Four of the engines below ship as PLUGINS, and a plugin's dsp.ts calls
+// Loom.registerRenderer at module scope. `test/plugin-dsp` installs that global
+// as its own side effect and forwards into the renderer registry, so it MUST
+// stay above the plugin imports — ESM evaluates in source order.
+import '../../test/plugin-dsp';
 import { ModulationRuntime, type ModLite } from './modulation-runtime';
 import { VoiceManager } from './voice-manager';
 import type { NoteSpec, ParamBag } from './types';
-import { registerRenderer } from './renderer-registry';
 // Side-effect imports: register every renderer so createRenderer(engineId, …) works.
 import './subtractive-renderer';
-import './wavetable-renderer';
-import './fm-renderer';
 import './tb303-renderer';
-import './westcoast-renderer';
+// The plugin rows below drive the SHIPPED plugin renderers through the real
+// ModulationRuntime → VoiceManager path, so moving those engines out of src/ did
+// not cost this file its per-engine modulation coverage.
+import '../../plugins/wavetable/dsp';
+import '../../plugins/fm/dsp';
+import '../../plugins/westcoast/dsp';
+import '../../plugins/karplus/dsp';
 // Side-effect import: registers the 'lfo' kernel ModulationRuntime looks up.
 import './modulators/lfo-kernel';
-import { KarplusRenderer } from '../../plugins/karplus/dsp';
-
-// The karplus row below drives the SHIPPED plugin renderer through the real
-// ModulationRuntime → VoiceManager path, so moving the engine out of src/ did
-// not cost this file its per-engine modulation coverage.
-registerRenderer('karplus', (n, p, sr) => new KarplusRenderer(n, p, sr));
 
 const SR = 48000;
 const note = (o: Partial<NoteSpec> = {}): NoteSpec =>

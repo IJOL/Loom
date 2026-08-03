@@ -13,20 +13,16 @@
 // worklet-lane-engine.ts): the engine's own specs minus the mixer params, plus
 // the two the lane adds. A renderer reaching for an id nobody declares fails
 // HERE — which is how noise.color surfaced, dead since the worklet cutover.
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
-// Same reason as live-params.dsp.test.ts: the karplus plugin calls
+// Same reason as live-params.dsp.test.ts: a plugin's dsp.ts calls
 // Loom.registerRenderer at module scope, so the global has to exist before the
-// import graph is evaluated.
-vi.hoisted(() => {
-  (globalThis as unknown as { Loom: unknown }).Loom = {
-    apiVersion: 1, registerRenderer: () => {},
-  };
-});
-
+// import graph is evaluated. `test/plugin-dsp` installs it and forwards into the
+// renderer registry, so it MUST stay above the plugin imports.
+import '../../test/plugin-dsp';
 import type { NoteSpec, ParamIndex } from './types';
 import { buildParamIndex } from './param-index';
-import { registerRenderer, createRenderer } from './renderer-registry';
+import { createRenderer } from './renderer-registry';
 import { getEngineDescriptor } from '../engines/registry';
 import { isStripParamId } from '../core/channel-strip-params';
 // Side-effect imports: the LFO and ADSR plugin modulators. Asking an engine for
@@ -35,29 +31,29 @@ import { isStripParamId } from '../core/channel-strip-params';
 // before a single param id is read.
 import '../plugins/modulators/lfo';
 import '../plugins/modulators/adsr';
-// Side-effect imports: the five built-in descriptors (for their declared params)
-// and the five renderers (for what they actually read).
+// Side-effect imports: the two built-in descriptors (for their declared params)
+// and their renderers (for what those actually read).
 import '../engines/tb303';
 import '../engines/subtractive';
-import '../engines/fm';
-import '../engines/wavetable';
-import '../engines/westcoast';
 import './tb303-renderer';
 import './subtractive-renderer';
-import './fm-renderer';
-import './wavetable-renderer';
-import './westcoast-renderer';
-import { KarplusRenderer } from '../../plugins/karplus/dsp';
+// The plugin half of the same pair: the dsp registers the renderer, the manifest
+// declares the params. Four engines, one contract, two doors.
+import '../../plugins/fm/dsp';
+import '../../plugins/wavetable/dsp';
+import '../../plugins/westcoast/dsp';
+import '../../plugins/karplus/dsp';
+import fmManifest from '../../plugins/fm/plugin.json';
+import wavetableManifest from '../../plugins/wavetable/plugin.json';
+import westcoastManifest from '../../plugins/westcoast/plugin.json';
 import karplusManifest from '../../plugins/karplus/plugin.json';
-
-registerRenderer('karplus', (n, p, sr) => new KarplusRenderer(n, p, sr));
 
 const SR = 48000;
 const note: NoteSpec =
   { midi: 45, beginSec: 0, durationSec: 1, velocity: 0.9, accent: false, slide: false };
 
 /** The two ids a LANE adds on top of its engine's specs (worklet-lane-engine.ts).
- *  `output.trim` is the interesting one: fm-renderer and plugins/karplus read it
+ *  `output.trim` is the interesting one: plugins/fm and plugins/karplus read it
  *  live and no engine declares it, so it only has a slot because the lane seeds
  *  it. Keep this list and the seed in step. */
 const LANE_EXTRAS = ['poly.voices', 'output.trim'];
@@ -94,9 +90,9 @@ function probeIndex(real: ParamIndex): { index: ParamIndex; asked: string[] } {
 const CASES: [string, () => string[]][] = [
   ['tb303', () => builtinIds('tb303')],
   ['subtractive', () => builtinIds('subtractive')],
-  ['fm', () => builtinIds('fm')],
-  ['wavetable', () => builtinIds('wavetable')],
-  ['westcoast', () => builtinIds('westcoast')],
+  ['fm', () => manifestIds(fmManifest as never)],
+  ['wavetable', () => manifestIds(wavetableManifest as never)],
+  ['westcoast', () => manifestIds(westcoastManifest as never)],
   ['karplus', () => manifestIds(karplusManifest as never)],
 ];
 

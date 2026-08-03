@@ -9,12 +9,14 @@ import { describe, it, expect } from 'vitest';
 
 // Side-effect imports so getEngine() answers with the real param specs.
 import '../engines/subtractive';
-import '../engines/wavetable';
-import '../engines/fm';
 import '../engines/tb303';
-import '../engines/westcoast';
+// wavetable, fm and westcoast are plugins now: same param specs, read from the
+// manifest the plugin actually ships.
+import { registerPluginEngine } from '../../test/plugin-fixtures';
 
 import { getEngine } from '../engines/registry';
+
+for (const id of ['wavetable', 'fm', 'westcoast']) registerPluginEngine(id);
 import { buildEngineParamGrid } from '../engines/engine-param-grid';
 import { SessionHost } from './session-host';
 import { fakeDestinations } from './fake-destinations';

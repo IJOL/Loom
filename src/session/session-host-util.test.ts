@@ -2,9 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { nextLaneSlug } from './session-host-util';
 import '../engines/tb303';
 import '../engines/subtractive';
-import '../engines/fm';
-import '../engines/wavetable';
-import '../engines/westcoast';
+import { registerPluginEngine } from '../../test/plugin-fixtures';
+
+// Three of the five are plugins now, so their prefix comes from the manifest's
+// capabilities rather than from a module in src/. The claim below does not
+// change: the ENGINE answers, not a ternary chain in the host.
+for (const id of ['fm', 'wavetable', 'westcoast']) registerPluginEngine(id);
 
 describe('nextLaneSlug after the five declare their capabilities', () => {
   it('reads every prefix from the capability, with no hardcoded chain left', () => {

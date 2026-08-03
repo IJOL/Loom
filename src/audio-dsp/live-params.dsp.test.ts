@@ -6,19 +6,13 @@
 // Every "it changed" test carries a negative control, because a brightness
 // measurement drifts on its own as an envelope decays: without the control, a
 // test can pass while the knob does nothing.
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
-// Karplus ships as a PLUGIN now, and its dsp.ts calls Loom.registerRenderer at
-// module scope. The global has to exist before the import graph is evaluated,
-// and vi.hoisted is the only hook that runs that early. A no-op is enough: the
-// renderer is registered explicitly below, which keeps it visible here rather
-// than hiding it inside a stub.
-vi.hoisted(() => {
-  (globalThis as unknown as { Loom: unknown }).Loom = {
-    apiVersion: 1, registerRenderer: () => {},
-  };
-});
-
+// Four of the engines below ship as PLUGINS, and a plugin's dsp.ts calls
+// Loom.registerRenderer at module scope. `test/plugin-dsp` installs that global
+// as its own side effect and forwards into this registry, so it MUST stay above
+// the plugin imports — ESM evaluates in source order.
+import '../../test/plugin-dsp';
 import { VoiceManager } from './voice-manager';
 import type { NoteSpec, ParamBag, VoiceRenderer } from './types';
 import { registerRenderer, createRenderer } from './renderer-registry';
@@ -26,18 +20,16 @@ import { ModulationRuntime, type ModLite } from './modulation-runtime';
 // Side-effect import: registers the 'lfo' kernel ModulationRuntime looks up.
 import './modulators/lfo-kernel';
 import { WORKLET_ENGINE_IDS } from '../app/lane-allocator';
-// Side-effect imports: register the real renderers.
+// Side-effect imports: register the real renderers, in-tree ones first.
 import './tb303-renderer';
-import './wavetable-renderer';
 import './subtractive-renderer';
-import './fm-renderer';
-import './westcoast-renderer';
-import { KarplusRenderer } from '../../plugins/karplus/dsp';
-
-// The karplus row below drives the SHIPPED plugin renderer through the same
+// The plugin rows below drive the SHIPPED plugin renderers through the same
 // VoiceManager path the worklet uses — the coverage did not move out of this
-// file just because the engine moved out of src/.
-registerRenderer('karplus', (n, p, sr) => new KarplusRenderer(n, p, sr));
+// file just because the engines moved out of src/.
+import '../../plugins/wavetable/dsp';
+import '../../plugins/fm/dsp';
+import '../../plugins/westcoast/dsp';
+import '../../plugins/karplus/dsp';
 
 const SR = 48000;
 

@@ -4,6 +4,7 @@ var slotOf = (ix, id) => ix.slot[id] ?? -1;
 
 // packages/loom-plugin-sdk/src/dsp/util.ts
 var midiToFreq = (m) => 440 * Math.pow(2, (m - 69) / 12);
+var clamp01 = (v) => v < 0 ? 0 : v > 1 ? 1 : v;
 
 // packages/loom-plugin-sdk/src/dsp/velocity.ts
 var ACCENT_PUNCH = 1.1;
@@ -190,139 +191,115 @@ function typeOptionsFor(model) {
 var TYPE_OPTIONS_BY_MODE = Object.fromEntries(FILTER_MODES.map((_m, i) => [String(i), typeOptionsFor(i)]));
 var FILTER_MODE_OPTIONS = FILTER_MODES.map((m) => ({ value: m.value, label: m.label }));
 
-// plugins/karplus/dsp.ts
-var DC_R = 0.997;
-var KsLoop = class {
-  constructor(Li, frac, dlSize) {
-    this.Li = Li;
-    this.frac = frac;
-    this.dl = new Float32Array(dlSize);
+// plugins/fm/dsp.ts
+var ALGORITHMS = [
+  [[1], [2], [3], []],
+  // 0: Serial 4→3→2→1  (op0 = carrier)
+  [[1, 2, 3], [], [], []],
+  // 1: Parallel mods → op0  (op0 = carrier)
+  [[1], [], [3], []],
+  // 2: Two pairs (op3→op2, op1→op0)  (op0, op2 = carriers)
+  [[], [], [], []]
+  // 3: Additive — all four are carriers
+];
+var CARRIERS = [
+  [0],
+  [0],
+  [0, 2],
+  [0, 1, 2, 3]
+];
+var FM_DEPTH = 3;
+var FB_DEPTH = 2;
+var FM_DRIVE = 1;
+var OP_RATIO_IDS = ["op1.ratio", "op2.ratio", "op3.ratio", "op4.ratio"];
+var OP_DETUNE_IDS = ["op1.detune", "op2.detune", "op3.detune", "op4.detune"];
+var OP_LEVEL_IDS = ["op1.level", "op2.level", "op3.level", "op4.level"];
+var FmSine = class {
+  constructor(sr) {
+    this.sr = sr;
   }
-  dl;
-  widx = 0;
-  lp = 0;
-  dcX = 0;
-  dcY = 0;
-  step(exc, a, g) {
-    const dl = this.dl, dlSize = dl.length;
-    const i0 = (this.widx - this.Li + dlSize) % dlSize;
-    const i1 = (i0 - 1 + dlSize) % dlSize;
-    const read = dl[i0] * (1 - this.frac) + dl[i1] * this.frac;
-    this.lp += a * (read - this.lp);
-    const s = exc + g * this.lp;
-    dl[this.widx] = s;
-    this.widx = this.widx + 1 === dlSize ? 0 : this.widx + 1;
-    const y = s - this.dcX + DC_R * this.dcY;
-    this.dcX = s;
-    this.dcY = y;
-    return y;
+  phase = 0;
+  next(freq, fmHz = 0) {
+    const v = Math.sin(this.phase * 2 * Math.PI);
+    this.phase = (this.phase + (freq + fmHz) / this.sr) % 1;
+    return v;
   }
 };
-function aFromBrightness(brightness) {
-  return 0.15 + brightness * 0.8;
-}
-function gFromDamping(damping, freq) {
-  const t60 = 4 * Math.pow(0.03, damping);
-  return Math.min(0.9995, Math.exp(Math.log(1e-3) / (Math.max(20, freq) * t60)));
-}
-var KarplusRenderer = class {
-  sr;
+var FMRenderer = class {
+  constructor(note, p, sr) {
+    this.sr = sr;
+    this.begin = note.beginSec;
+    this.holdEnd = note.beginSec + note.durationSec;
+    const f = midiToFreq(note.midi);
+    this.f0 = f;
+    this.algoIdx = Math.max(0, Math.min(3, Math.round(param(p, "algorithm", 0))));
+    this.feedback = param(p, "feedback", 0);
+    this.mix = param(p, "amp.mix", 0.7);
+    this.outputTrim = param(p, "output.trim", 1);
+    this.vel = velGain01(note.velocity, note.accent);
+    this.oscs = [];
+    this.envs = [];
+    this.opA = [];
+    this.opD = [];
+    this.opS = [];
+    this.opR = [];
+    this.lvl = [];
+    for (let i = 1; i <= 4; i++) {
+      this.oscs.push(new FmSine(sr));
+      this.envs.push(new Adsr());
+      this.ratioBase.push(param(p, `op${i}.ratio`, 1));
+      this.detuneBase.push(param(p, `op${i}.detune`, 0));
+      this.opA.push(Math.max(1e-3, param(p, `op${i}.attack`, 0.01)));
+      this.opD.push(Math.max(1e-3, param(p, `op${i}.decay`, 0.3)));
+      this.opS.push(param(p, `op${i}.sustain`, 0.7));
+      this.opR.push(Math.max(5e-3, param(p, `op${i}.release`, 0.3)));
+      this.lvl.push(param(p, `op${i}.level`, 0.6));
+    }
+  }
   begin;
   holdEnd;
-  atk;
-  rel;
-  levelBase;
-  ampEnvOn;
+  oscs;
+  envs;
+  ratioBase = [];
+  detuneBase = [];
+  f0 = 0;
+  freqEff = new Float64Array(4);
+  // Cache for the per-operator ratio/detune → Hz conversion (a pow call), keyed
+  // on the EFFECTIVE (base + mod offset) values that actually feed it — an LFO
+  // riding detune must not read a value frozen from the last knob move.
+  opRatioRaw = new Float64Array(4).fill(NaN);
+  opDetuneRaw = new Float64Array(4).fill(NaN);
+  opA;
+  opD;
+  opS;
+  opR;
+  lvl;
+  algoIdx;
+  feedback;
+  mix;
   vel;
-  /** Per-preset output trim (gain-staging "preset.trim" — params['output.trim'],
-   *  default 1). */
-  trimBase;
-  dampingBase;
-  brightnessBase;
-  freq;
-  // Excitation burst — frozen: the pluck is over by the time a knob can move.
-  excBurst;
-  exciteLen;
-  totalSamples;
-  // Fixed headroom scalar, derived once from a dry run at the trigger-time
-  // snapshot (see the constructor) so a single note can never clip regardless
-  // of the resonance the live knobs later dial in.
-  normGain;
-  // The REAL playback loop — persistent per-sample state, live coefficients.
-  loop;
-  // Cached expensive conversion: gFromDamping (pow+exp+log) is not a
-  // per-sample cost while the damping knob is settled.
-  dampRaw = NaN;
-  gCache = 0;
+  outputTrim;
+  fbState = 0;
   modEnv = new ModEnvHost();
   /** The lane's live (smoothed) values, or null when this voice runs standalone
-   *  (the offline kernel builds renderers directly). Addressed by the four slots
-   *  below, resolved ONCE in setLiveValues — renderSample never sees a string.
-   *  A slot of -1 means the lane does not declare that id, so the frozen
-   *  trigger-time value stands. */
+   *  (the offline kernel builds renderers directly). Addressed by the slots
+   *  below, resolved ONCE in setLiveValues; -1 means the lane does not declare
+   *  that id, so the trigger snapshot stands. The per-op ones matter most here:
+   *  three string lookups per operator per sample used to be twelve. */
   live = null;
-  sLevel = -1;
+  sFeedback = -1;
+  sMix = -1;
   sTrim = -1;
-  sDamping = -1;
-  sBrightness = -1;
+  sRatio = new Int32Array(4).fill(-1);
+  sDetune = new Int32Array(4).fill(-1);
+  sLevel = new Int32Array(4).fill(-1);
   /** The synthetic tremolo target. Not a declared param — the index appends it,
    *  which is what those three synthetic slots are for. */
   sAmpGain = -1;
+  // Pooled per-sample scratch — allocated once, reused every renderSample call
+  // so the audio thread allocates nothing.
+  opOut = new Float64Array(4);
   done = false;
-  /** `rng` is a test seam: production never passes it, so the excitation stays
-   *  Math.random and every pluck differs, as a plucked string should. */
-  constructor(note, p, sampleRate, rng) {
-    const fs = this.sr = sampleRate;
-    this.begin = note.beginSec;
-    this.holdEnd = note.beginSec + note.durationSec;
-    this.atk = Math.max(1e-3, param(p, "amp.attack", 5e-3));
-    this.rel = Math.max(0.05, param(p, "amp.release", 0.5));
-    this.levelBase = param(p, "amp.level", 0.8);
-    this.ampEnvOn = param(p, "amp.builtinEnv", 1) >= 0.5;
-    this.trimBase = param(p, "output.trim", 1);
-    this.dampingBase = param(p, "string.damping", 0.5);
-    this.brightnessBase = param(p, "string.brightness", 0.65);
-    this.vel = velGain01(note.velocity, note.accent);
-    this.freq = midiToFreq(note.midi);
-    const a0 = aFromBrightness(this.brightnessBase);
-    const period = fs / Math.max(20, this.freq);
-    const Ldelay = Math.max(1, period - (1 - a0) / a0);
-    const Li = Math.floor(Ldelay);
-    const frac = Ldelay - Li;
-    const dlSize = Li + 2;
-    this.totalSamples = Math.max(1, Math.round(
-      Math.min(8, Math.max(0.4, note.durationSec + this.rel + 0.3)) * fs
-    ));
-    const exciteDur = Math.max(1e-3, param(p, "excite.time", 0.01));
-    const noiseTone = param(p, "excite.tone", 0.5);
-    this.exciteLen = Math.min(this.totalSamples, Math.max(4, Math.round(exciteDur * fs)));
-    const noiseHz = Math.min(fs * 0.45, 200 * Math.pow(60, noiseTone));
-    const na = 1 - Math.exp(-2 * Math.PI * noiseHz / fs);
-    const gen = rng ?? Math.random;
-    const excBurst = new Float32Array(this.exciteLen);
-    const FADE = 32;
-    let nlp = 0;
-    for (let n = 0; n < this.exciteLen; n++) {
-      const w = gen() * 2 - 1;
-      nlp += na * (w - nlp);
-      let e = nlp;
-      if (n > this.exciteLen - FADE) {
-        e *= 0.5 - 0.5 * Math.cos(Math.PI * (this.exciteLen - n) / FADE);
-      }
-      excBurst[n] = e;
-    }
-    this.excBurst = excBurst;
-    const g0 = gFromDamping(this.dampingBase, this.freq);
-    const dry = new KsLoop(Li, frac, dlSize);
-    let pk = 0;
-    for (let n = 0; n < this.totalSamples; n++) {
-      const exc = n < this.exciteLen ? excBurst[n] : 0;
-      const s = Math.abs(dry.step(exc, a0, g0));
-      if (s > pk) pk = s;
-    }
-    this.normGain = pk > 1e-9 ? 1 / pk : 1;
-    this.loop = new KsLoop(Li, frac, dlSize);
-  }
   noteOff(t) {
     if (t < this.holdEnd) this.holdEnd = t;
   }
@@ -334,53 +311,81 @@ var KarplusRenderer = class {
   }
   setLiveValues(values, index) {
     this.live = values;
-    this.sLevel = slotOf(index, "amp.level");
+    this.sFeedback = slotOf(index, "feedback");
+    this.sMix = slotOf(index, "amp.mix");
     this.sTrim = slotOf(index, "output.trim");
-    this.sDamping = slotOf(index, "string.damping");
-    this.sBrightness = slotOf(index, "string.brightness");
     this.sAmpGain = slotOf(index, "amp.gain");
+    for (let i = 0; i < 4; i++) {
+      this.sRatio[i] = slotOf(index, OP_RATIO_IDS[i]);
+      this.sDetune[i] = slotOf(index, OP_DETUNE_IDS[i]);
+      this.sLevel[i] = slotOf(index, OP_LEVEL_IDS[i]);
+    }
   }
   renderSample(t, moIn) {
     if (t < this.begin) return 0;
-    const idx = Math.floor((t - this.begin) * this.sr);
-    if (idx >= this.totalSamples) {
-      this.done = true;
-      return 0;
-    }
     const gate = t <= this.holdEnd ? 1 : 0;
     const mo = this.modEnv.active ? this.modEnv.combine(t, gate, moIn) : moIn;
     const L = this.live;
-    const levelKnob = L && this.sLevel >= 0 ? L[this.sLevel] : this.levelBase;
-    const trim = L && this.sTrim >= 0 ? L[this.sTrim] : this.trimBase;
-    const damping = L && this.sDamping >= 0 ? L[this.sDamping] : this.dampingBase;
-    const brightness = L && this.sBrightness >= 0 ? L[this.sBrightness] : this.brightnessBase;
-    if (damping !== this.dampRaw) {
-      this.dampRaw = damping;
-      this.gCache = gFromDamping(damping, this.freq);
-    }
-    const a = aFromBrightness(brightness);
-    const exc = idx < this.exciteLen ? this.excBurst[idx] : 0;
-    const raw = this.loop.step(exc, a, this.gCache) * this.normGain;
-    let env = 1;
-    if (this.ampEnvOn) {
-      const dt = t - this.begin;
-      const relStart = this.holdEnd - this.begin;
-      if (dt < this.atk) {
-        env = dt / this.atk;
-      } else if (dt < relStart) {
-        env = 1;
-      } else {
-        env = Math.exp(-(dt - relStart) / this.rel);
-        if (t > this.holdEnd && env < 1e-3) this.done = true;
+    const feedbackKnob = L && this.sFeedback >= 0 ? L[this.sFeedback] : this.feedback;
+    const mixKnob = L && this.sMix >= 0 ? L[this.sMix] : this.mix;
+    const outputTrimKnob = L && this.sTrim >= 0 ? L[this.sTrim] : this.outputTrim;
+    const feedback = mo?.[this.sFeedback] ? Math.max(0, feedbackKnob + mo[this.sFeedback]) : feedbackKnob;
+    const algo = ALGORITHMS[this.algoIdx];
+    const carriers = CARRIERS[this.algoIdx];
+    const opOut = this.opOut;
+    const fe = this.freqEff;
+    for (let i = 0; i < 4; i++) {
+      const ratioKnob = L && this.sRatio[i] >= 0 ? L[this.sRatio[i]] : this.ratioBase[i];
+      const detuneKnob = L && this.sDetune[i] >= 0 ? L[this.sDetune[i]] : this.detuneBase[i];
+      const rMod = mo?.[this.sRatio[i]], dMod = mo?.[this.sDetune[i]];
+      const effRatio = Math.max(0.01, ratioKnob + (rMod ?? 0) * 2);
+      const effDetune = detuneKnob + (dMod ?? 0) * 50;
+      if (effRatio !== this.opRatioRaw[i] || effDetune !== this.opDetuneRaw[i]) {
+        this.opRatioRaw[i] = effRatio;
+        this.opDetuneRaw[i] = effDetune;
+        fe[i] = this.f0 * effRatio * Math.pow(2, effDetune / 1200);
       }
     }
-    const level = mo?.[this.sLevel] ? Math.max(0, levelKnob + mo[this.sLevel]) : levelKnob;
-    let out = raw * env * level * this.vel * trim;
-    if (mo?.[this.sAmpGain]) out *= Math.max(0, Math.min(2, 1 + mo[this.sAmpGain]));
-    return out;
+    for (let i = 3; i >= 0; i--) {
+      const env = this.envs[i].update(t, gate, this.opA[i], this.opD[i], this.opS[i], this.opR[i]);
+      let fmHz = 0;
+      for (const mIdx of algo[i]) {
+        const mLvlBase = L && this.sLevel[mIdx] >= 0 ? L[this.sLevel[mIdx]] : this.lvl[mIdx];
+        const mLvlOff = mo?.[this.sLevel[mIdx]];
+        const mLvl = mLvlOff ? clamp01(mLvlBase + mLvlOff) : mLvlBase;
+        fmHz += opOut[mIdx] * fe[mIdx] * mLvl * FM_DEPTH;
+      }
+      if (i === 3 && feedback > 0) {
+        fmHz += this.fbState * fe[3] * feedback * FB_DEPTH;
+      }
+      opOut[i] = this.oscs[i].next(fe[i], fmHz) * env;
+      if (i === 3) this.fbState = opOut[3];
+    }
+    let out = 0;
+    for (const c of carriers) {
+      const lvlBase = L && this.sLevel[c] >= 0 ? L[this.sLevel[c]] : this.lvl[c];
+      const lo = mo?.[this.sLevel[c]];
+      const lvl = lo ? clamp01(lvlBase + lo) : lvlBase;
+      out += opOut[c] * lvl;
+    }
+    let allOff = true;
+    for (let i = 0; i < 4; i++) {
+      if (!this.envs[i].isOff) {
+        allOff = false;
+        break;
+      }
+    }
+    if (gate === 0 && allOff && t > this.holdEnd) {
+      this.done = true;
+    }
+    const mix = mo?.[this.sMix] ? Math.max(0, mixKnob + mo[this.sMix]) : mixKnob;
+    const shaped = Math.tanh(out * FM_DRIVE);
+    let s = shaped * outputTrimKnob * mix * this.vel;
+    if (mo?.[this.sAmpGain]) s *= Math.max(0, Math.min(2, 1 + mo[this.sAmpGain]));
+    return s;
   }
 };
-Loom.registerRenderer("karplus", (n, p, sr) => new KarplusRenderer(n, p, sr));
+Loom.registerRenderer("fm", (n, p, sr) => new FMRenderer(n, p, sr));
 export {
-  KarplusRenderer
+  FMRenderer
 };

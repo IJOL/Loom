@@ -1,4 +1,8 @@
-// src/audio-dsp/wavetable-data.ts
+// plugins/wavetable/wavetable-data.ts
+// These tables ARE this engine's sound, so they live inside the plugin rather
+// than in the SDK: what earns a place in @loom/plugin-sdk is a primitive that
+// fits ANY engine, and a wave table is an identity, not a primitive.
+//
 // Single source of truth for the wavetable harmonic specs AND their synthesised
 // single-cycle (2048-sample) Float32Arrays. Pure — no Web Audio dependency.
 //   - WAVETABLES: the {name, real, imag} Fourier specs (used for UI labels and

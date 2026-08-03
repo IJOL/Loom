@@ -17,7 +17,8 @@ describe('bootstrapPlugins', () => {
     // (see plugin-host.test.ts). The plucked string left this list when it became
     // one — registering its manifest here would not put it in listPlugins('engine')
     // either, because that registry is the glob's, not the engine registry's.
-    const CORE = ['drums-machine', 'fm', 'subtractive', 'tb303', 'wavetable'];
+    // fm, wavetable and westcoast left it the same way and for the same reason.
+    const CORE = ['drums-machine', 'subtractive', 'tb303'];
     for (const id of CORE) expect(ids).toContain(id);
   });
 

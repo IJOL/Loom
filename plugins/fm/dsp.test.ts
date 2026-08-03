@@ -1,8 +1,23 @@
-// src/audio-dsp/fm-renderer.test.ts
-import { describe, it, expect } from 'vitest';
-import { FMRenderer } from './fm-renderer';
-import { createRenderer } from './renderer-registry';
-import type { NoteSpec, ParamBag } from './types';
+// plugins/fm/dsp.test.ts
+// Behaviour of the FM plugin's renderer. These assertions used to live in
+// src/audio-dsp/fm-renderer.test.ts, against the in-tree engine; the shipped
+// plugin is the only FM there is, so the coverage moved with it.
+import { describe, it, expect, vi } from 'vitest';
+
+// `dsp.ts` calls Loom.registerRenderer at module scope — that is the ABI — so
+// the global must exist before the import graph is evaluated. vi.hoisted is the
+// only hook that runs that early. Same two-line stub the parity test next door
+// installs, for the same reason.
+vi.hoisted(() => {
+  (globalThis as unknown as { Loom: unknown }).Loom = {
+    apiVersion: 1, registerRenderer: () => {},
+  };
+});
+
+import { FMRenderer } from './dsp';
+import manifest from './plugin.json';
+import type { NoteSpec, ParamBag } from '@loom/plugin-sdk';
+import { CATEGORY_GAIN } from '../../src/audio-dsp/gain-staging';
 
 const SR = 48000;
 
@@ -161,12 +176,16 @@ describe('FMRenderer', () => {
     let pk = 0;
     for (let i = 0; i < Math.floor(SR * 0.3); i++) pk = Math.max(pk, Math.abs(v.renderSample(i / SR)));
     // Four in-phase carriers × accent would exceed full scale without the tanh
-    // soft-clip; with it, |output| stays below 0 dBFS.
-    expect(pk).toBeLessThan(1.0);
+    // soft-clip; with it, |output| stays below 0 dBFS — measured where the
+    // listener meets it, i.e. after the trim the HOST now applies. The plugin
+    // stopped multiplying its own trim in when it left the tree, so a raw peak
+    // here reads 1.53 and would look like a clip that is not one.
+    const HOST_TRIM = manifest.components[0].capabilities.outputTrim * CATEGORY_GAIN.synth;
+    expect(pk * HOST_TRIM).toBeLessThan(1.0);
   });
 
-  it('registers under engine id "fm"', () => {
-    // Importing FMRenderer above triggers its registerRenderer side-effect.
-    expect(() => createRenderer('fm', note(), base(), SR)).not.toThrow();
-  });
+  // The "registers under engine id fm" case that used to close this file is
+  // gone: it asserted a side effect on the HOST registry, which a plugin's
+  // dsp.ts no longer touches — it calls Loom.registerRenderer instead, and
+  // fm-parity.dsp.test.ts asserts exactly that, at the right door.
 });

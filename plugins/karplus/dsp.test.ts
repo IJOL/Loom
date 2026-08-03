@@ -17,7 +17,7 @@ vi.hoisted(() => {
 
 import { KarplusRenderer } from './dsp';
 import manifest from './plugin.json';
-import { SR as FIXTURE_SR, note as fixtureNote, makeRenderer } from '../../test/engine-fixtures';
+import { SR as FIXTURE_SR, note as fixtureNote, makeRenderer, hostTrim } from '../../test/engine-fixtures';
 import { CATEGORY_GAIN } from '../../src/audio-dsp/gain-staging';
 import type { NoteSpec, ParamBag } from '@loom/plugin-sdk';
 
@@ -170,7 +170,10 @@ describe('the plugin sits where the in-tree engine sat, against wavetable', () =
     // MEASURED, not chosen: read off this same fixture before the curve landed.
     const KARPLUS_VS_WAVETABLE = 0.47450;
     const n = fixtureNote({ velocity: 1.0 });
-    const wavetable = rmsOf(makeRenderer('wavetable', n));
+    // Wavetable is a plugin too now, so its renderer stopped multiplying its own
+    // trim in — hostTrim puts back exactly what the host applies, which is what
+    // keeps this a comparison of BALANCE rather than of packaging.
+    const wavetable = rmsOf(makeRenderer('wavetable', n)) * hostTrim('wavetable');
 
     // RE-DERIVED for the plugin. The in-tree renderer multiplied its own
     // `synthTrim('karplus')` = ENGINE_TRIM.karplus × CATEGORY_GAIN.synth into
@@ -179,9 +182,11 @@ describe('the plugin sits where the in-tree engine sat, against wavetable', () =
     // so BOTH factors go back on here, not just the manifest number. (In the
     // window where the in-tree renderer still existed but had lost its
     // ENGINE_TRIM entry, the compensation was only the manifest number; that
-    // was right for that renderer and is wrong for this one.)
-    const hostTrim = manifest.components[0].capabilities.outputTrim * CATEGORY_GAIN.synth;
-    const plugin = rmsOf(new KarplusRenderer(n, P, FIXTURE_SR, fixtureRng())) * hostTrim;
+    // was right for that renderer and is wrong for this one.) Read from the
+    // manifest here rather than through the fixture's hostTrim(), because THIS
+    // renderer is built by hand a line below, not by makeRenderer.
+    const karplusHostTrim = manifest.components[0].capabilities.outputTrim * CATEGORY_GAIN.synth;
+    const plugin = rmsOf(new KarplusRenderer(n, P, FIXTURE_SR, fixtureRng())) * karplusHostTrim;
 
     // 1% covers rounding the trim to three decimals (1.2/1.4 → 0.857).
     expect(plugin / wavetable / KARPLUS_VS_WAVETABLE).toBeCloseTo(1, 2);

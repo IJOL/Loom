@@ -1,0 +1,404 @@
+{
+  "id": "westcoast",
+  "name": "West",
+  "version": "1.0.0",
+  "loomApi": 1,
+  "author": "Loom",
+  "main": "main.js",
+  "dsp": "dsp.js",
+  "presets": "presets.json",
+  "components": [
+    {
+      "kind": "engine",
+      "id": "westcoast",
+      "name": "West",
+      "polyphony": "poly",
+      "params": [
+        {
+          "id": "osc.mainWave",
+          "label": "Princ Wave",
+          "kind": "discrete",
+          "min": 0,
+          "max": 2,
+          "default": 0,
+          "group": "osc",
+          "options": [
+            {
+              "value": "sine",
+              "label": "Sin"
+            },
+            {
+              "value": "triangle",
+              "label": "Tri"
+            },
+            {
+              "value": "sawtooth",
+              "label": "Saw"
+            }
+          ]
+        },
+        {
+          "id": "osc.modWave",
+          "label": "Mod Wave",
+          "kind": "discrete",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "group": "osc",
+          "options": [
+            {
+              "value": "sine",
+              "label": "Sin"
+            },
+            {
+              "value": "triangle",
+              "label": "Tri"
+            }
+          ]
+        },
+        {
+          "id": "osc.ratio",
+          "label": "Ratio",
+          "kind": "continuous",
+          "min": 0.25,
+          "max": 16,
+          "default": 2,
+          "unit": "×",
+          "group": "osc"
+        },
+        {
+          "id": "osc.fmIndex",
+          "label": "FM Index",
+          "kind": "continuous",
+          "min": 0,
+          "max": 1,
+          "default": 0.2,
+          "group": "osc"
+        },
+        {
+          "id": "osc.ring",
+          "label": "Ring/AM",
+          "kind": "continuous",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "group": "osc"
+        },
+        {
+          "id": "osc.subDiv",
+          "label": "Sub ÷",
+          "kind": "discrete",
+          "min": 0,
+          "max": 3,
+          "default": 0,
+          "group": "osc",
+          "options": [
+            {
+              "value": "off",
+              "label": "Off"
+            },
+            {
+              "value": "2",
+              "label": "2"
+            },
+            {
+              "value": "3",
+              "label": "3"
+            },
+            {
+              "value": "4",
+              "label": "4"
+            }
+          ]
+        },
+        {
+          "id": "osc.subLevel",
+          "label": "Sub Lvl",
+          "kind": "continuous",
+          "min": 0,
+          "max": 1,
+          "default": 0.3,
+          "group": "osc"
+        },
+        {
+          "id": "osc.detune",
+          "label": "Detune",
+          "kind": "continuous",
+          "min": -50,
+          "max": 50,
+          "default": 0,
+          "unit": "¢",
+          "group": "osc"
+        },
+        {
+          "id": "timbre.fold",
+          "label": "Fold",
+          "kind": "continuous",
+          "min": 0,
+          "max": 1,
+          "default": 0.5,
+          "group": "timbre"
+        },
+        {
+          "id": "timbre.symmetry",
+          "label": "Symmetry",
+          "kind": "continuous",
+          "min": -1,
+          "max": 1,
+          "default": 0,
+          "group": "timbre"
+        },
+        {
+          "id": "lpg.mode",
+          "label": "Mode",
+          "kind": "discrete",
+          "min": 0,
+          "max": 2,
+          "default": 2,
+          "group": "lpg",
+          "options": [
+            {
+              "value": "lp",
+              "label": "LP"
+            },
+            {
+              "value": "gate",
+              "label": "Gate"
+            },
+            {
+              "value": "both",
+              "label": "Both"
+            }
+          ]
+        },
+        {
+          "id": "lpg.cutoff",
+          "label": "Cutoff",
+          "kind": "continuous",
+          "min": 0,
+          "max": 1,
+          "default": 0.6,
+          "group": "lpg"
+        },
+        {
+          "id": "lpg.resonance",
+          "label": "Resonance",
+          "kind": "continuous",
+          "min": 0,
+          "max": 1,
+          "default": 0.2,
+          "group": "lpg"
+        },
+        {
+          "id": "contour.mode",
+          "label": "Mode",
+          "kind": "discrete",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "group": "contour",
+          "options": [
+            {
+              "value": "pluck",
+              "label": "Pluck"
+            },
+            {
+              "value": "sustain",
+              "label": "Sus"
+            }
+          ]
+        },
+        {
+          "id": "contour.attack",
+          "label": "Attack",
+          "kind": "continuous",
+          "min": 0.001,
+          "max": 2,
+          "default": 0.005,
+          "unit": "s",
+          "curve": "exponential",
+          "group": "contour"
+        },
+        {
+          "id": "contour.decay",
+          "label": "Decay",
+          "kind": "continuous",
+          "min": 0.005,
+          "max": 4,
+          "default": 0.4,
+          "unit": "s",
+          "curve": "exponential",
+          "group": "contour"
+        },
+        {
+          "id": "contour.amount",
+          "label": "Amount",
+          "kind": "continuous",
+          "min": 0,
+          "max": 1,
+          "default": 0.9,
+          "group": "contour"
+        },
+        {
+          "id": "contour.cycle",
+          "label": "Cycle",
+          "kind": "discrete",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "group": "contour",
+          "options": [
+            {
+              "value": "off",
+              "label": "Off"
+            },
+            {
+              "value": "on",
+              "label": "On"
+            }
+          ]
+        },
+        {
+          "id": "amp.level",
+          "label": "Level",
+          "kind": "continuous",
+          "min": 0,
+          "max": 1,
+          "default": 0.8,
+          "group": "amp"
+        },
+        {
+          "id": "master.tune",
+          "label": "Tune",
+          "kind": "continuous",
+          "min": -12,
+          "max": 12,
+          "default": 0,
+          "unit": "st",
+          "group": "master"
+        },
+        {
+          "id": "poly.voices",
+          "label": "Voices",
+          "kind": "continuous",
+          "min": 1,
+          "max": 16,
+          "default": 8,
+          "group": "poly"
+        }
+      ],
+      "groups": [
+        {
+          "id": "osc",
+          "title": "OSC",
+          "row": 0,
+          "color": "var(--knob-cyan)"
+        },
+        {
+          "id": "timbre",
+          "title": "TIMBRE",
+          "row": 1,
+          "color": "var(--knob-orange)"
+        },
+        {
+          "id": "lpg",
+          "title": "LPG",
+          "row": 1,
+          "color": "var(--knob-purple)"
+        },
+        {
+          "id": "contour",
+          "title": "CONTOUR",
+          "row": 2,
+          "color": "var(--knob-red)"
+        },
+        {
+          "id": "amp",
+          "title": "AMP",
+          "row": 3,
+          "color": "var(--knob-green)"
+        },
+        {
+          "id": "master",
+          "title": "MASTER",
+          "row": 3,
+          "color": "var(--knob-teal)"
+        },
+        {
+          "id": "poly",
+          "title": "POLY",
+          "row": 4
+        }
+      ],
+      "modulators": [
+        {
+          "id": "adsr1",
+          "kind": "adsr",
+          "enabled": true,
+          "connections": [
+            {
+              "id": "c-fold",
+              "paramId": "timbre.fold",
+              "depth": 0
+            }
+          ],
+          "attackSec": 0.01,
+          "decaySec": 0.3,
+          "sustain": 0.7,
+          "releaseSec": 0.3,
+          "scope": "per-voice"
+        },
+        {
+          "id": "adsr2",
+          "kind": "adsr",
+          "enabled": true,
+          "connections": [
+            {
+              "id": "c-cut",
+              "paramId": "lpg.cutoff",
+              "depth": 0
+            }
+          ],
+          "attackSec": 0.01,
+          "decaySec": 0.3,
+          "sustain": 0.7,
+          "releaseSec": 0.3,
+          "scope": "per-voice"
+        },
+        {
+          "id": "lfo1",
+          "kind": "lfo",
+          "enabled": true,
+          "connections": [],
+          "rateHz": 4,
+          "waveform": "sine",
+          "bipolar": true,
+          "syncToBpm": false,
+          "syncBars": 0.25,
+          "syncSubdiv": "straight",
+          "trigger": "free",
+          "scope": "shared"
+        },
+        {
+          "id": "lfo2",
+          "kind": "lfo",
+          "enabled": true,
+          "connections": [],
+          "rateHz": 2,
+          "waveform": "triangle",
+          "bipolar": true,
+          "syncToBpm": false,
+          "syncBars": 0.25,
+          "syncSubdiv": "straight",
+          "trigger": "free",
+          "scope": "shared"
+        }
+      ],
+      "capabilities": {
+        "clipContent": "notes",
+        "shortLabel": "west",
+        "outputTrim": 0.5
+      }
+    }
+  ]
+}
