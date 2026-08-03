@@ -186,9 +186,15 @@ export function collectEngineState(self: SessionHost): void {
       lane.engineState.modulators =
         host.serialize() as import('../modulation/types').ModulatorState[];
     }
-    // Mirror the lane's note-FX chain so it persists on save.
-    if (!lane.engineState) lane.engineState = {};
-    lane.engineState.noteFx = getNoteFxChain(lane.id).serialize();
+    // Mirror the lane's note-FX chain so it persists on save — but only for a
+    // lane that HAS one. A lane whose engine is not installed never built a
+    // chain, so getNoteFxChain would mint an empty one right here and stamp it
+    // over what the save is carrying: the one place on this path that loses a
+    // missing engine's state. Guarded like its neighbours above and below.
+    if (engine) {
+      if (!lane.engineState) lane.engineState = {};
+      lane.engineState.noteFx = getNoteFxChain(lane.id).serialize();
+    }
     // Snapshot the live mixer strip (level/pan/EQ/sends/mute/comp/sidechain).
     // Without this a save dropped the whole per-lane mixer ("Save doesn't save
     // the full mixer state").

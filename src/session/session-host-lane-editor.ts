@@ -94,14 +94,16 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
   // more singleton/extra split — every lane has its own instance.
   const lane = self.state.lanes.find((l) => l.id === laneId);
   let engine = self.deps.laneResources?.get(laneId)?.engine;
-  if (!engine) {
-    // Fallback (e.g. drum sub-voice laneIds starting with `drum:` aren't in
-    // laneResources). Use the engine for the lane's declared engineId.
-    const engineId = lane?.engineId
-      ?? (laneId.startsWith('drum:') ? 'drums-machine' : 'subtractive');
-    engine = getEngine(engineId);
-    if (!engine) return;
-  }
+  // Fallback (e.g. drum sub-voice laneIds starting with `drum:` aren't in
+  // laneResources). Use the engine for the lane's declared engineId.
+  const engineId = lane?.engineId
+    ?? (laneId.startsWith('drum:') ? 'drums-machine' : 'subtractive');
+  if (!engine) engine = getEngine(engineId);
+  const panels = laneEditorPanels(lane?.engineId ?? engine?.id ?? engineId);
+  // No engine AND none missing is nothing to say — bail as before. A MISSING
+  // engine carries on: its lane still mounts, keeps its inserts, and gets told
+  // why it is silent, instead of the editor returning here without a word.
+  if (!engine && !panels.missingEngine) return;
 
   // Mount or reuse a container. Place the modulators panel BELOW the main
   // synth controls — for poly we anchor on #poly-seq-mode-row so the panel
@@ -139,9 +141,19 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
   };
   host.innerHTML = '';
 
-  const panels = laneEditorPanels(lane?.engineId ?? engine.id);
+  // Nothing registered this engine, so there is no instrument to draw. Say it
+  // instead of drawing an empty page: the lane is not broken and its settings
+  // are not lost — the plugin that plays it is simply not installed here.
+  if (panels.missingEngine) {
+    const notice = renderElement(html`<div
+      class="lane-missing-engine"
+      style="opacity:.7;font-style:italic;padding:.5rem;"
+      title="This lane keeps its settings. Install the plugin and reload to hear it again."
+    >Engine not installed: ${engineId}</div>`);
+    host.appendChild(notice);
+  }
 
-  if (panels.engineParams) {
+  if (panels.engineParams && engine) {
     engine.buildParamUI(host, {
       laneId,
       registerKnob: (k: unknown) => {

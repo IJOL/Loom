@@ -19,6 +19,10 @@ import type { SessionState } from './session';
 import type { KnobHandle } from '../core/knob';
 import type { SynthEngine, EngineUIContext } from '../engines/engine-types';
 import { fakeDestinations } from './fake-destinations';
+// Registers the drums descriptor this fixture's lane names. The lane editor
+// draws no instrument for an engine nobody registered — it says so instead —
+// so without this the fake engine's buildParamUI is never called.
+import '../engines/drums-engine';
 
 // A fake engine whose buildParamUI directly exercises the EngineUIContext
 // handed to it by injectEngineModulatorPanel — the exact seam under test.
