@@ -24,6 +24,31 @@ export interface EngineParamSpec {
    *  `groups` table. Absent ⇒ the param renders in the leading ungrouped row,
    *  exactly like a built-in engine's param with no `group`. */
   group?: string;
+  /** Knob taper. Absent ⇒ linear. */
+  curve?: 'linear' | 'exponential' | 'log';
+  /** Knob ring colour (any CSS colour, including a custom property). Overrides
+   *  the colour this param's group declares. */
+  color?: string;
+  /** Declared for automation / modulation / presets / saves, but NOT drawn by
+   *  the editor grid — the named surface draws it. NEVER means "drawn
+   *  nowhere": a sound param with no control at all is a bug, not a feature.
+   *  'modulators' = the ADSR/LFO panel owns it. */
+  drawnBy?: 'mixer' | 'modulators';
+  /** Discrete only: force a native <select> instead of the radio strip. */
+  selectStyle?: 'dropdown';
+  /** Discrete only: suppress the control's own name. Default true in the grid. */
+  showLabel?: boolean;
+  /** Discrete params only: this control's options come from ANOTHER param's
+   *  current value, and the control is rebuilt when that param changes. It is
+   *  how a control offers only what the rest of the patch makes honest — the
+   *  filter Type offers only the taps the chosen Mode has.
+   *
+   *  A TABLE, not a function: a plugin declares its params in plugin.json, and
+   *  JSON carries neither functions nor numeric keys. The key is the source
+   *  param's value as a string; a value with no entry falls back to `options`.
+   *  `options` stays as the list for the source param's DEFAULT value, so
+   *  anything reading the spec statically still sees a valid list. */
+  optionsFrom?: { paramId: string; table: Record<string, Array<{ value: string; label: string }>> };
 }
 
 /** One editor section a component's params can belong to. Mirrors
@@ -91,6 +116,11 @@ export interface EngineCapabilities {
    *  Declaring false hides the button entirely — the host shows no dice rather
    *  than a dead one. */
   isRandomizable?: boolean;
+  /** How this engine decides a note slides into the previous one. 'overlap':
+   *  a note slides when another note in the clip started earlier and still
+   *  covers this note's start tick — the TB-303 rule, and the reason a slide
+   *  is not a flag on a NoteEvent. Absent ⇒ this engine never slides. */
+  slide?: 'overlap';
   gm?: GmHint;
 }
 
