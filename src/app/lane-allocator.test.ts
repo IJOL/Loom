@@ -75,7 +75,7 @@ describe('Phase G: ensureLaneResource is the sole allocation path', () => {
     lanes.ensureLaneResource('tb-303-1', 'tb303');
     const res = lanes.resources.get('tb-303-1');
     expect(res).toBeDefined();
-    expect(res!.engine.id).toBe('tb303');
+    expect(res!.engine!.id).toBe('tb303');
   });
 
   it('ensureLaneResource is idempotent (second call same lane is no-op)', () => {
@@ -86,6 +86,47 @@ describe('Phase G: ensureLaneResource is the sole allocation path', () => {
     const first = lanes.resources.get('tb-303-1');
     lanes.ensureLaneResource('tb-303-1', 'tb303');
     expect(lanes.resources.get('tb-303-1')).toBe(first); // same reference
+  });
+
+  it('a lane whose engine is not installed still gets its strip and its inserts', () => {
+    // The state a deleted plugin folder produces. The strip and the insert
+    // chain are the HOST's, not the engine's, so the lane keeps its mixer
+    // settings and its FX rack while the plugin is missing. Before this, the
+    // allocator returned before registering anything and the lane had neither.
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [] });
+    lanes.ensureLaneResource('ghost-1', 'not-installed');
+    const res = lanes.resources.get('ghost-1');
+    expect(res).toBeDefined();
+    expect(res!.strip).toBeDefined();
+    expect(res!.inserts).toBeDefined();
+    expect(res!.engine).toBeUndefined();
+  });
+
+  it('fills the engine in later if the id registers, keeping the same strip', () => {
+    // Without this, a lane allocated before its plugin loaded would stay mute
+    // for the whole session: ensureLaneResource used to return on the first
+    // sight of a resource and nothing else ever revisited it.
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [] });
+    lanes.ensureLaneResource('late-1', 'late-arrival');
+    const before = lanes.resources.get('late-1')!;
+    expect(before.engine).toBeUndefined();
+
+    registerEngineCapabilities('late-arrival', { clipContent: 'notes', shortLabel: 'late', outputTrim: 1 }, true);
+    registry.registerEngine(createDescriptorEngine({
+      id: 'late-arrival', name: 'Late Arrival', polyphony: 'poly',
+      params: [{ id: 'osc1.level', label: 'L', kind: 'continuous', min: 0, max: 1, default: 0.5 }],
+      presets: () => [],
+    }));
+
+    lanes.ensureLaneResource('late-1', 'late-arrival');
+    const after = lanes.resources.get('late-1')!;
+    expect(after.engine!.id).toBe('late-arrival');
+    expect(after.strip).toBe(before.strip);      // the channel survived the wait
+    expect(after.inserts).toBe(before.inserts);
   });
 });
 
@@ -99,10 +140,10 @@ describe('drums-machine routes to the 8-output DrumsWorkletEngine', () => {
     lanes.ensureLaneResource('drums-1', 'drums-machine');
     const res = lanes.resources.get('drums-1')!;
     expect(res).toBeDefined();
-    expect(res.engine.id).toBe('drums-machine');
+    expect(res.engine!.id).toBe('drums-machine');
     expect(res.engine).toBeInstanceOf(DrumsWorkletEngine);
     // createVoice builds the 8-output node + per-voice strips without throwing.
-    expect(() => res.engine.createVoice(ctx, res.inserts.inputNode)).not.toThrow();
+    expect(() => res.engine!.createVoice(ctx, res.inserts.inputNode)).not.toThrow();
   });
 
   it('setSharedFx is wired before any createVoice on a drums-machine lane', () => {
@@ -115,7 +156,7 @@ describe('drums-machine routes to the 8-output DrumsWorkletEngine', () => {
     expect(setSharedFxSpy).toHaveBeenCalledWith(fx);
     expect(createVoiceSpy).not.toHaveBeenCalled();
     const res = lanes.resources.get('drums-2')!;
-    expect(() => res.engine.createVoice(ctx, res.inserts.inputNode)).not.toThrow();
+    expect(() => res.engine!.createVoice(ctx, res.inserts.inputNode)).not.toThrow();
     expect(setSharedFxSpy.mock.invocationCallOrder[0])
       .toBeLessThan(createVoiceSpy.mock.invocationCallOrder[0]!);
   });
@@ -147,7 +188,7 @@ describe('Phase 4 Task 1: live worklet backend constructs only worklet engines',
     lanes.ensureLaneResource('L', engineId);
     const res = lanes.resources.get('L')!;
     expect(res).toBeDefined();
-    expect(res.engine.id).toBe(engineId);
+    expect(res.engine!.id).toBe(engineId);
     expect(res.engine).toBeInstanceOf(WorkletLaneEngine);
   });
 
@@ -218,7 +259,7 @@ describe('backend routing by capability, not by hard-coded id (audio slice)', ()
     lanes.ensureLaneResource('L', 'audio-probe');
 
     const res = lanes.resources.get('L')!;
-    expect(res.engine.id).toBe('audio-probe');
+    expect(res.engine!.id).toBe('audio-probe');
   });
 
   it('non-regression: the built-in audio channel still gets AudioWorkletEngine, and the six melodic engines still get WorkletLaneEngine', () => {
@@ -304,7 +345,7 @@ describe('Phase G save → load round-trip with collapsed allocator shape', () =
       const res = lanes.resources.get(id);
       expect(res).toBeDefined();
       // And createVoice must not throw for any of them.
-      expect(() => res!.engine.createVoice(ctx, res!.strip.input)).not.toThrow();
+      expect(() => res!.engine!.createVoice(ctx, res!.strip.input)).not.toThrow();
     }
   });
 });
@@ -318,12 +359,12 @@ describe('swapLaneEngine replaces the engine in place', () => {
     const before = lanes.resources.get('L')!;
     const stripRef = before.strip;
     const insertsRef = before.inserts;
-    expect(before.engine.id).toBe('subtractive');
+    expect(before.engine!.id).toBe('subtractive');
 
     lanes.swapLaneEngine('L', 'fm');
 
     const after = lanes.resources.get('L')!;
-    expect(after.engine.id).toBe('fm');
+    expect(after.engine!.id).toBe('fm');
     expect(after.strip).toBe(stripRef);     // strip preserved
     expect(after.inserts).toBe(insertsRef); // inserts preserved
   });
@@ -432,7 +473,7 @@ describe('onDestinationsChanged announcements (Finding 4)', () => {
     lanes.swapLaneEngine('L', 'no-such-engine');
 
     expect(spy).not.toHaveBeenCalled();
-    expect(lanes.resources.get('L')!.engine.id).toBe('subtractive'); // unchanged
+    expect(lanes.resources.get('L')!.engine!.id).toBe('subtractive'); // unchanged
   });
 });
 
@@ -470,6 +511,6 @@ describe('Task 5 fix round 1: the declared groups table survives every hop to th
 
     const res = lanes.resources.get('L')!;
     expect(res.engine).toBeInstanceOf(WorkletLaneEngine);
-    expect(res.engine.groups).toEqual(groups);
+    expect(res.engine!.groups).toEqual(groups);
   });
 });

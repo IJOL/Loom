@@ -42,7 +42,8 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
 
   const spawnVoice = (laneId: string) => {
     const res = laneResources.get(laneId);
-    if (!res) return null;
+    // No engine ⇒ its plugin is not installed; nothing to play from a pad.
+    if (!res?.engine) return null;
     setCurrentLaneForVoice(laneId);
     const v = res.engine.createVoice(ctx, res.strip.input);   // same path as trigger-dispatch
     setCurrentLaneForVoice(null);
@@ -90,9 +91,13 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
     }
 
     const res = laneResources.get(laneId);
-    if (!res) return;
+    // No engine ⇒ no declared params, so a hardware knob aimed at this lane has
+    // nothing to move. Its mixer strip is still there and is addressed by its
+    // own bus.* ids, which do not come through here.
+    if (!res?.engine) return;
+    const engine = res.engine;
     const localId = parsed?.kind === 'engine' ? parsed.paramId : paramId;
-    const spec = res.engine.params.find((p) => p.id === localId);
+    const spec = engine.params.find((p) => p.id === localId);
     if (!spec || spec.kind !== 'continuous') return;
     const real = spec.min + value01 * (spec.max - spec.min);
     const handle = knobRegistry.get(canonical ? paramId : `${laneId}.${localId}`);
@@ -101,7 +106,7 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
     // commit it here rather than writing the engine alone — the same gesture on
     // the same hardware must persist the same either way.
     if (handle) handle.setValue(real);          // moves the on-screen ring AND drives the engine
-    else commitParamForLane(res.engine, sessionHost.state, laneId, localId, real);
+    else commitParamForLane(engine, sessionHost.state, laneId, localId, real);
   }
 
   const recorder = createLiveRecorder();

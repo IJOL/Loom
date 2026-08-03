@@ -263,7 +263,22 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
   };
 
   const ensureLaneResource = (laneId: string, engineId: string): void => {
-    if (resources.get(laneId)) return;
+    const already = resources.get(laneId);
+    if (already) {
+      // Idempotent, EXCEPT for a lane allocated without an engine because its
+      // plugin was not installed at the time. Left as a bare early return, that
+      // lane would stay mute for the rest of the session even once the engine
+      // registers, since nothing else ever revisits it. Try once more, keeping
+      // the strip and the inserts it already owns.
+      if (already.engine) return;
+      const late = createLaneEngine(laneId, engineId, already.inserts);
+      if (!late) return;
+      wireEngineIntoLane(engineId, late, already.strip, already.inserts);
+      already.engine = late;
+      bindLaneModulators(laneId);
+      deps.onDestinationsChanged?.();
+      return;
+    }
     const strip = new ChannelStrip(deps.ctx, deps.master, deps.fx,
       { sidechain: { bus: deps.sidechainBus, id: laneId, label: laneId.toUpperCase() } });
     // Phase H: every lane gets an InsertChain between the engine voice and the
@@ -271,7 +286,16 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     // empty); its output is strip.input.
     const inserts = new InsertChain(deps.ctx.createGain(), strip.input);
     const engine = createLaneEngine(laneId, engineId, inserts);
-    if (!engine) return;
+    // No engine — nothing registered this id, i.e. its plugin is not installed.
+    // The lane is STILL allocated: the strip and the insert chain belong to the
+    // host, not to the engine, so its mixer settings and its FX rack stay live
+    // and stay saved while the plugin is missing. What it does not do is sound,
+    // and the lane editor says so rather than leaving the user guessing.
+    if (!engine) {
+      resources.set(laneId, { strip, inserts });
+      deps.onDestinationsChanged?.();
+      return;
+    }
     wireEngineIntoLane(engineId, engine, strip, inserts);
     resources.set(laneId, { strip, engine, inserts });
     bindLaneModulators(laneId);
@@ -291,7 +315,7 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
    *  second bind here would only dispose theirs and rebuild a worse one. */
   const bindLaneModulators = (laneId: string): void => {
     const res = resources.get(laneId);
-    if (!res) return;
+    if (!res?.engine) return;
     const engine = res.engine;
     if (engine instanceof DrumsWorkletEngine || engine instanceof SamplerWorkletEngine) return;
     const voiceMods = engine.modulators.spawnVoice(deps.ctx, deps.getBpm);

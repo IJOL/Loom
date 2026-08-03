@@ -87,8 +87,12 @@ export function applyLoadedSessionState(self: SessionHost, sess: SessionState): 
     // or a loaded session): if a resource exists but its live engine differs
     // from the lane's engineId, swap it in place rather than skip (the
     // idempotent ensureLaneResource would otherwise leave the old engine).
+    // `existing.engine` is absent when the lane's plugin is not installed. That
+    // is NOT a mismatch to swap — there is nothing to swap from — so it falls
+    // to ensureLaneResource, which retries building the engine and fills it in
+    // if the id has since registered.
     const existing = self.deps.laneResources?.get(lane.id);
-    if (existing && existing.engine.id !== lane.engineId) {
+    if (existing?.engine && existing.engine.id !== lane.engineId) {
       self.deps.swapLaneEngine?.(lane.id, lane.engineId);
     } else {
       self.deps.ensureLaneResource?.(lane.id, lane.engineId);

@@ -31,13 +31,17 @@ export interface TriggerDispatchDeps {
 export function createTriggerForLane(deps: TriggerDispatchDeps): TriggerForLane {
   return (laneId, note, time, gate, accent, slidingIn = false, sample, velocity, offsetSec) => {
     const res = deps.laneResources.get(laneId);
-    if (!res) return;
-    const engineId = res.engine.id;
+    // No engine ⇒ its plugin is not installed. The lane exists and keeps its
+    // strip, its inserts and its clips; it just cannot make a sound, so a note
+    // aimed at it is dropped here rather than crashing the scheduler.
+    if (!res?.engine) return;
+    const engine = res.engine;
+    const engineId = engine.id;
     const vel = resolveVelocity(velocity, accent);
 
     const fire = (m: number, t: number, g: number, a: boolean, sl: boolean) => {
       setCurrentLaneForVoice(laneId);
-      const v = res.engine.createVoice(deps.ctx, res.strip.input);
+      const v = engine.createVoice(deps.ctx, res.strip.input);
       setCurrentLaneForVoice(null);
       // Track the live voice so any Stop path can release it immediately.
       deps.liveVoices?.record(laneId, v);

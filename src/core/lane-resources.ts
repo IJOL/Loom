@@ -8,7 +8,12 @@ import type { InsertChain } from '../plugins/fx/insert-chain';
 
 export interface LaneResources {
   strip:   ChannelStrip;
-  engine:  SynthEngine;
+  /** Absent when no plugin registered this lane's engine. The lane still owns
+   *  its strip and its insert chain — they are the HOST's, not the engine's —
+   *  so its mixer settings and its FX rack stay editable and stay saved while
+   *  the plugin is missing. Every reader must handle undefined: a lane with no
+   *  engine makes no sound, which is stated in the editor, not silently. */
+  engine?: SynthEngine;
   inserts: InsertChain;
 }
 
@@ -23,7 +28,7 @@ export class LaneResourceMap {
     const existing = this.inner.get(laneId);
     if (existing) {
       (existing.strip as { dispose?(): void }).dispose?.();
-      existing.engine.dispose?.();
+      existing.engine?.dispose?.();
       existing.inserts.dispose();
     }
     this.inner.set(laneId, res);
@@ -35,7 +40,7 @@ export class LaneResourceMap {
   replaceEngine(laneId: string, engine: SynthEngine): void {
     const res = this.inner.get(laneId);
     if (!res) return;
-    res.engine.dispose?.();
+    res.engine?.dispose?.();
     res.engine = engine;
   }
 
@@ -43,7 +48,7 @@ export class LaneResourceMap {
     const res = this.inner.get(laneId);
     if (!res) return;
     (res.strip as { dispose?(): void }).dispose?.();
-    res.engine.dispose?.();
+    res.engine?.dispose?.();
     res.inserts.dispose();
     this.inner.delete(laneId);
   }
