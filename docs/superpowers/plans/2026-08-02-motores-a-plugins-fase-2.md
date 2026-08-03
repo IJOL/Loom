@@ -1396,8 +1396,13 @@ EOF
 `scheduler-queue`, `modulation-runtime`, `renderer-registry` y los backends de
 drums/sampler: el host, sin un instrumento dentro.
 
-Gates: **unit 438 ficheros / 3728 tests**, **e2e 128**, `tsc --noEmit` limpio,
-`npm run build` limpio. Paridad de forma verde en los seis plugins.
+Gates: **unit 438 ficheros / 3728 tests**, **e2e 128 + 2**, `tsc --noEmit`
+limpio, `npm run build` limpio. Paridad de forma verde en los seis plugins.
+
+**✅ VERIFICADO A OÍDO por Nacho (2026-08-03), en Chrome real.** Probó varios
+motores ya como plugins externos: *"suena de cojones todo lo que he probado"*.
+Es el criterio que ninguna prueba automática cubre — la paridad compara 57
+muestras de una nota sola, no un arreglo tocando.
 
 **CPU — ser plugin no cuesta nada medible.** Medido con tiradas EMPAREJADAS y
 alternadas entre los dos worktrees, porque la varianza entre dos medidas
