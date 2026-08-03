@@ -98,7 +98,8 @@ export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
         // quantiseSelectValue and both paints and commits the wrong option.
         const options = spec.kind === 'discrete'
           ? (spec.optionsFrom
-              ? spec.optionsFrom.build(engine.getBaseValue(spec.optionsFrom.paramId))
+              ? (spec.optionsFrom.table[String(Math.round(engine.getBaseValue(spec.optionsFrom.paramId)))]
+                 ?? spec.options)
               : spec.options)
           : undefined;
         if (options && options.length > 0) {

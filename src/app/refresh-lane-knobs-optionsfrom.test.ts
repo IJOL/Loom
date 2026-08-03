@@ -6,8 +6,8 @@
 // own declared taps: 4 under DIG, 3 under MOG/303/COMB). When the live list
 // is shorter than the static one, normaliseSelectIndex/quantiseSelectValue
 // disagree and the refresh both PAINTS the wrong option and WRITES it back
-// via commitParam's onChange — see filter-kinds.ts and engine-params.ts's
-// `optionsFrom` doc. This pins that refreshLaneKnobs resolves the SAME list
+// via commitParam's onChange — see filter-kinds.ts and the `optionsFrom` doc
+// on the SDK's EngineParamSpec. This pins that refreshLaneKnobs resolves the SAME list
 // the control was built from.
 
 import { describe, it, expect } from 'vitest';
@@ -18,7 +18,7 @@ import type { EngineUIContext } from '../engines/engine-types';
 import type { SynthEngine } from '../engines/engine-types';
 import type { KnobHandle } from '../core/knob';
 import type { SessionState } from '../session/session';
-import { FILTER_MODE_OPTIONS, typeOptionsFor } from '../audio-dsp/filter-kinds';
+import { FILTER_MODE_OPTIONS, TYPE_OPTIONS_BY_MODE } from '../audio-dsp/filter-kinds';
 
 // Mirrors the real filter.model / filter.type pair from subtractive-params.ts:
 // `options` is the 4-tap DIG list (the source param's default), `optionsFrom`
@@ -29,8 +29,8 @@ const MODEL: EngineParamSpec = {
 };
 const TYPE: EngineParamSpec = {
   id: 'filter.type', label: 'Type', kind: 'discrete', min: 0, max: 3, default: 0,
-  options: typeOptionsFor(0), // DIG's 4 taps: lp hp bp notch
-  optionsFrom: { paramId: 'filter.model', build: typeOptionsFor },
+  options: TYPE_OPTIONS_BY_MODE['0'], // DIG's 4 taps: lp hp bp notch
+  optionsFrom: { paramId: 'filter.model', table: TYPE_OPTIONS_BY_MODE },
 };
 
 function stubEngine(params: EngineParamSpec[]) {

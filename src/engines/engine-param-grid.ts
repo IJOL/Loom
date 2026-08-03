@@ -91,7 +91,8 @@ function buildControl(
   // full rule, which also covers the FX insert rack.
   if (discrete) {
     const options = spec.optionsFrom
-      ? spec.optionsFrom.build(engine.getBaseValue(spec.optionsFrom.paramId))
+      ? (spec.optionsFrom.table[String(Math.round(engine.getBaseValue(spec.optionsFrom.paramId)))]
+         ?? spec.options!)
       : spec.options!;
     const idx = Math.max(0, Math.min(options.length - 1, Math.round(engine.getBaseValue(spec.id))));
     const { el, handle } = createSelectControl({

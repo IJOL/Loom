@@ -3,66 +3,22 @@
 // registry ids, modulator destination ids, and voice AudioParam lookup.
 // One id per param, used in every layer.
 
-export interface EngineParamSpec {
-  id: string;              // dot-namespaced within engine: 'filter.cutoff', 'amp.attack', 'osc1.level'
-  label: string;           // user-facing
-  kind: 'continuous' | 'discrete';
-  min: number;             // continuous: param range; discrete: 0
-  max: number;             // continuous: param range; discrete: options.length - 1
-  default: number;         // continuous: initial value; discrete: index of default option
-  curve?: 'linear' | 'exponential' | 'log';
-  unit?: string;
-  /** Optional knob ring colour (CSS colour). Used to carry the Send A/B colour
-   *  code (A=delay blue, B=reverb purple) onto the per-voice drum mixer knobs so
-   *  the bare 'A'/'B' labels stay distinguishable, matching the master strip +
-   *  mixer. Continuous params only; falls back to createKnob's default amber. */
-  color?: string;
-  /** Key into the engine's own declared `groups` table (EngineParamGroup[]).
-   *  Title, row-packing and knob-ring colour all come from that table entry,
-   *  not from this field — `group` only points at it. Absent ⇒ the param
-   *  renders in the leading ungrouped row. Consumed by
-   *  engine-param-grid.buildEngineParamGrid / resolveParamRows. */
-  group?: string;
-  /** This param is declared for automation / modulation / presets / saves, but
-   *  the editor grid does not draw it — the named surface does. It NEVER means
-   *  "drawn nowhere": a sound param with no control at all is a bug, not a
-   *  feature. 'modulators' = the ADSR/LFO panel owns it (the subtractive amp and
-   *  filter envelope leaves); 'mixer' is RESERVED and not yet set by any spec —
-   *  strip params are still filtered by `isStripParamId` inside the grid, not
-   *  by this tag. */
-  drawnBy?: 'mixer' | 'modulators';
-  options?: Array<{ value: string; label: string }>;   // only when kind === 'discrete'
-  /** Discrete params only: build this control's options from ANOTHER param's
-   *  current value, and rebuild the control when that param changes. It is how
-   *  a control offers only what the rest of the patch makes honest — the filter
-   *  Type offers only the taps the chosen Mode has. `options` stays as the list
-   *  for the source param's DEFAULT value, so anything that reads the spec
-   *  statically (a destination catalogue, a test) still sees a valid list. */
-  optionsFrom?: { paramId: string; build: (value: number) => Array<{ value: string; label: string }> };
-  /** Discrete only. THE rule, for every discrete param on every surface that
-   *  draws one — the grouped grid, the flat layout, the FX insert rack (see
-   *  engine-param-grid.ts's header), and a modulator's own config card too:
-   *  it renders through createSelectControl, NEVER a knob. ≤4 options draw a
-   *  radio strip; more than that draw a native <select>. The strip stacks
-   *  VERTICALLY only on the engine grid and the FX insert rack — those two
-   *  pass `compact: true`; every other surface leaves it unset and stays
-   *  HORIZONTAL (see select-control.ts's header for that boundary — it is
-   *  NOT the same rule as select-vs-knob above, which holds everywhere).
-   *  'dropdown' forces the native <select> at ANY option count — for many or
-   *  long-labelled options (e.g. the FM algorithm) so the control stays
-   *  narrow. There used to be a 'radio' value that opted a param INTO this
-   *  same behaviour when the default was still a knob; now that
-   *  select-control is the only path, opting in is meaningless and the
-   *  value was removed from this type (Task 8b). */
-  selectStyle?: 'dropdown';
-  /** Discrete only: show the param label above the control. The engine param
-   *  grid (engine-param-grid.ts buildControl) treats this as ON by default —
-   *  every discrete control gets a caption, matching the knob's own
-   *  `.knob-label` — so this field only needs setting to opt a param OUT with
-   *  `showLabel: false`. (Other callers of createSelectControl, e.g. the FX
-   *  insert rack, keep that function's own off-by-default instead.) */
-  showLabel?: boolean;
-}
+import type { EngineParamSpec } from '@loom/plugin-sdk';
+
+// The shape is owned by @loom/plugin-sdk: it is what a plugin's manifest
+// declares, so the host cannot honour a field the SDK does not publish — that
+// asymmetry is exactly what kept curve/color/drawnBy out of reach of a plugin.
+// Re-exported under the same name so no importer in src/ changes.
+//
+// Two rules that live on the host side and are not visible from the type:
+//   * A discrete param ALWAYS renders through createSelectControl, never a
+//     knob — see engine-param-grid.ts's header for the full rule (≤4 options
+//     draw a radio strip, more draw a native <select>, and `selectStyle:
+//     'dropdown'` forces the <select> at any count).
+//   * `drawnBy` NEVER means "drawn nowhere": a sound param with no control at
+//     all is a bug. 'mixer' is RESERVED and set by no spec yet — strip params
+//     are still filtered by `isStripParamId` inside the grid.
+export type { EngineParamSpec } from '@loom/plugin-sdk';
 
 export function isContinuous(s: EngineParamSpec): boolean {
   return s.kind === 'continuous';

@@ -7,7 +7,7 @@
 // without updating both backends.
 
 import type { EngineParamSpec } from './engine-params';
-import { FILTER_MODE_OPTIONS, FILTER_ROUTING_OPTIONS, typeOptionsFor } from '../audio-dsp/filter-kinds';
+import { FILTER_MODE_OPTIONS, FILTER_ROUTING_OPTIONS, TYPE_OPTIONS_BY_MODE } from '../audio-dsp/filter-kinds';
 
 export const WAVE_OPTIONS = [
   { value: 'sawtooth', label: 'Saw' },
@@ -66,7 +66,7 @@ export const SUB_PARAM_SPECS: EngineParamSpec[] = [
   { id: 'filter.model', label: 'Mode', kind: 'discrete', min: 0, max: 3, default: 0,
     options: FILTER_MODE_OPTIONS, group: 'filter' },
   { id: 'filter.type',  label: 'Type', kind: 'discrete', min: 0, max: 3, default: 0,
-    options: typeOptionsFor(0), optionsFrom: { paramId: 'filter.model', build: typeOptionsFor },
+    options: TYPE_OPTIONS_BY_MODE['0'], optionsFrom: { paramId: 'filter.model', table: TYPE_OPTIONS_BY_MODE },
     group: 'filter' },
   // Under the COMB mode these two mean something else, and that is stated
   // rather than silent: Cutoff is the comb's TUNING (the frequency its peaks
@@ -92,7 +92,7 @@ export const SUB_PARAM_SPECS: EngineParamSpec[] = [
   { id: 'filter2.model',     label: 'Mode',    kind: 'discrete', min: 0, max: 3, default: 0,
     options: FILTER_MODE_OPTIONS, group: 'filter2' },
   { id: 'filter2.type',      label: 'Type',    kind: 'discrete', min: 0, max: 3, default: 1,
-    options: typeOptionsFor(0), optionsFrom: { paramId: 'filter2.model', build: typeOptionsFor },
+    options: TYPE_OPTIONS_BY_MODE['0'], optionsFrom: { paramId: 'filter2.model', table: TYPE_OPTIONS_BY_MODE },
     group: 'filter2' },
   { id: 'filter2.cutoff',    label: 'Cutoff',  kind: 'continuous', min: 0, max: 1, default: 0.25, group: 'filter2' },
   { id: 'filter2.resonance', label: 'Res',     kind: 'continuous', min: 0, max: 1, default: 0.2, group: 'filter2' },

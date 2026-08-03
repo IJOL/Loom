@@ -7,7 +7,7 @@ import type { EngineUIContext } from './engine-types';
 import type { KnobHandle } from '../core/knob';
 import type { SessionState } from '../session/session';
 import type { EngineParamGroup } from './engine-param-groups';
-import { FILTER_MODE_OPTIONS, typeOptionsFor } from '../audio-dsp/filter-kinds';
+import { FILTER_MODE_OPTIONS, TYPE_OPTIONS_BY_MODE } from '../audio-dsp/filter-kinds';
 
 function stubEngine(params: EngineParamSpec[], groups?: EngineParamGroup[]) {
   const state = new Map(params.map((p) => [p.id, p.default] as const));
@@ -433,6 +433,32 @@ describe('buildEngineParamGrid — declared groups', () => {
 });
 
 describe('buildEngineParamGrid — a control whose options depend on another param', () => {
+  it('builds a derived control from the table, not a function', () => {
+    // The manifest of a plugin is JSON: it cannot carry `build`. The grid must
+    // read the SAME derivation from data, or Subtractive cannot be a plugin.
+    const specs: EngineParamSpec[] = [
+      { id: 'filter.model', label: 'Mode', kind: 'discrete', min: 0, max: 3, default: 1,
+        options: FILTER_MODE_OPTIONS, group: 'filter' },
+      { id: 'filter.type', label: 'Type', kind: 'discrete', min: 0, max: 3, default: 0,
+        options: TYPE_OPTIONS_BY_MODE['0'],
+        optionsFrom: { paramId: 'filter.model', table: TYPE_OPTIONS_BY_MODE },
+        group: 'filter' },
+    ];
+    const host = document.createElement('div');
+    buildEngineParamGrid(stubEngine(specs), ctx(), host, {});
+
+    // Rendered controls carry no `data-param` hook, so the Type control is
+    // found by its `.ctl-label` caption, exactly like the test below.
+    const typeLabel = [...host.querySelectorAll('.ctl-label')].find((el) => el.textContent === 'Type');
+    const typeWrap = typeLabel!.closest('.select-labeled')!;
+    // Mode 1 (MOG) offers three taps, not the four DIG offers. Relative
+    // assertion: the derived list must differ in length from the static one.
+    expect(typeWrap.querySelectorAll('button, option').length)
+      .toBe(TYPE_OPTIONS_BY_MODE['1'].length);
+    expect(TYPE_OPTIONS_BY_MODE['1'].length)
+      .toBeLessThan(TYPE_OPTIONS_BY_MODE['0'].length);
+  });
+
   it("builds a dependent control's options from the param it derives from", () => {
     // The filter Type offers only the taps the chosen Mode has. Built at
     // mode 1 (MOG), the strip must have three buttons, not four.
@@ -443,7 +469,7 @@ describe('buildEngineParamGrid — a control whose options depend on another par
       { id: 'filter.model', label: 'Mode', kind: 'discrete', min: 0, max: 3, default: 1,
         options: FILTER_MODE_OPTIONS },
       { id: 'filter.type', label: 'Type', kind: 'discrete', min: 0, max: 3, default: 0,
-        options: typeOptionsFor(0), optionsFrom: { paramId: 'filter.model', build: typeOptionsFor } },
+        options: TYPE_OPTIONS_BY_MODE['0'], optionsFrom: { paramId: 'filter.model', table: TYPE_OPTIONS_BY_MODE } },
     ]);
     const host = document.createElement('div');
     buildEngineParamGrid(engine, ctx(), host, {});
@@ -469,7 +495,7 @@ describe('buildEngineParamGrid — a control whose options depend on another par
       { id: 'filter.model', label: 'Mode', kind: 'discrete', min: 0, max: 2, default: 0,
         options: FILTER_MODE_OPTIONS },
       { id: 'filter.type', label: 'Type', kind: 'discrete', min: 0, max: 3, default: 0,
-        options: typeOptionsFor(0), optionsFrom: { paramId: 'filter.model', build: typeOptionsFor } },
+        options: TYPE_OPTIONS_BY_MODE['0'], optionsFrom: { paramId: 'filter.model', table: TYPE_OPTIONS_BY_MODE } },
       discreteSpec('other.discrete', { label: 'Other' }),
     ]);
     const host = document.createElement('div');

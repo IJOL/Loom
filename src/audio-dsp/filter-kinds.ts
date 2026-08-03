@@ -64,6 +64,13 @@ export function typeOptionsFor(model: number): Array<{ value: string; label: str
   return m.taps.map((t) => ({ value: t, label: TAP_LABELS[t] }));
 }
 
+/** The Type control's options for EVERY mode, keyed by the mode's index as a
+ *  string. This is the form a manifest can carry — JSON has no numeric keys and
+ *  no functions — and it is what `optionsFrom.table` reads. `typeOptionsFor`
+ *  stays as the generator that builds it, and as the accessor the DSP uses. */
+export const TYPE_OPTIONS_BY_MODE: Record<string, Array<{ value: string; label: string }>> =
+  Object.fromEntries(FILTER_MODES.map((_m, i) => [String(i), typeOptionsFor(i)]));
+
 export const FILTER_MODE_OPTIONS = FILTER_MODES.map((m) => ({ value: m.value, label: m.label }));
 
 /** How filter B is wired to filter A. Index = the `filter.routing` param value.
