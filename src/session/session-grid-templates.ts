@@ -11,7 +11,7 @@ import type { LanePlayState } from './session-runtime';
 import { openContextMenu } from '../core/context-menu';
 import { beginInlineRename } from './inline-rename';
 import { clipDragHandlers } from './session-clip-drag';
-import { listEngines } from '../engines/registry';
+import { listEngines, getEngine } from '../engines/registry';
 import type { SessionUICallbacks } from './session-ui-types';
 import { acceptsAudioFile, isAudioEngine } from '../plugins/capabilities';
 
@@ -113,15 +113,30 @@ export function laneHeaderTemplate(
       >${synthCollapsed ? '▸' : '▾'}</button>`
     : nothing;
 
+  // Nothing registered this engine — its plugin is not installed here. The lane
+  // editor says so too, but that only shows once you OPEN the lane, and the
+  // whole point is that a silent lane must be legible from the session grid:
+  // otherwise the user just sees a track that mysteriously does not sound.
+  // Its settings are intact; only the thing that plays them is missing.
+  const missing = !getEngine(lane.engineId);
+  const missingMark = missing
+    ? html`<span
+        class="session-lane-missing"
+        title=${`Engine not installed: ${lane.engineId}. This lane keeps its settings — install the plugin and reload.`}
+      >⚠</span>`
+    : nothing;
+
   return html`<div
-    class=${`session-lane-header lane-engine-${lane.engineId}${isActive ? ' session-lane-header-active' : ''}`}
+    class=${`session-lane-header lane-engine-${lane.engineId}${isActive ? ' session-lane-header-active' : ''}${missing ? ' session-lane-header-missing' : ''}`}
     data-lane-id=${lane.id}
-    title="Click to edit this instrument · double-click the name to rename"
+    title=${missing
+      ? `Engine not installed: ${lane.engineId} — this lane keeps its settings`
+      : 'Click to edit this instrument · double-click the name to rename'}
     @click=${onHeaderClick}
     @contextmenu=${onCtx}
   >${deleteCross('Delete track', () => cb.onDeleteLane(lane.id))}<div
       class=${isActive ? 'session-lane-name session-lane-name-active' : 'session-lane-name'}
-    >${displayName}</div>${chevron}</div>`;
+    >${missingMark}${displayName}</div>${chevron}</div>`;
 }
 
 export function clipCellTemplate(
