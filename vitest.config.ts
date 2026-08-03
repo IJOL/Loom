@@ -17,6 +17,11 @@ export default defineConfig({
       // A tool that drives the DSP kernel has to be TypeScript — it imports the
       // renderers and their types — so tools/ carries both extensions.
       'tools/**/*.test.ts',
+      // test/ is the shared-fixture directory, so most of it is helpers with no
+      // test of their own. A fixture that reads a real file off disk is the
+      // exception: it needs its own cover, and without this glob it would be
+      // collected by nothing and pass by never running.
+      'test/**/*.test.ts',
     ],
     globals: false,
     setupFiles: ['test/setup.ts'],

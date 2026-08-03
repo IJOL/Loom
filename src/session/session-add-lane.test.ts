@@ -5,9 +5,16 @@ import '../engines/wavetable';
 import '../engines/fm';
 import '../engines/tb303';
 import '../engines/drums-engine';
-import { listEngines } from '../engines/registry';
+// Reading a descriptor builds the engine's modulator host, and subtractive ships
+// an LFO with the sound — so these two have to be registered or the read throws
+// "unknown modulator kind: lfo". In the app that is plugin-bootstrap's glob; in a
+// test it is the same side-effect import 19 other files already write.
+import '../plugins/modulators/lfo';
+import '../plugins/modulators/adsr';
+import { listEngines, getEngineDescriptor } from '../engines/registry';
 import { nextLaneSlug } from './session-host';
 import { installMainThreadLoomApi, __resetPluginEngines } from '../plugin-host/loom-api';
+import { registerPluginEngine } from '../../test/plugin-fixtures';
 
 describe('nextLaneSlug — slug id generation', () => {
   it('returns subtractive-2 for first added subtractive (subtractive-1 already exists)', () => {
@@ -30,11 +37,24 @@ describe('nextLaneSlug — slug id generation', () => {
     expect(nextLaneSlug(new Set([]), 'wavetable')).toBe('wavetable-1');
   });
 
+  it('drums-machine lane gets drums-2 when drums-1 is present', () => {
+    expect(nextLaneSlug(new Set(['drums-1']), 'drums-machine')).toBe('drums-2');
+  });
+
+  it('unknown engineId falls back to engineId as prefix', () => {
+    expect(nextLaneSlug(new Set([]), 'my-engine')).toBe('my-engine-1');
+  });
+
   // The old case here asserted nextLaneSlug(…, 'karplus') === 'karplus-1', which
   // would still pass by ACCIDENT with no plugins loaded — the prefix falls back
   // to the engine id. What actually matters now is that a plugin's manifest
   // decides its own prefix, so that is what this asserts, with a shortLabel
   // deliberately different from the id.
+  //
+  // LAST in this describe on purpose: __resetPluginEngines() wipes the WHOLE
+  // capabilities map, built-ins included, and the side-effect imports at the top
+  // of the file cannot be re-run to put them back. Every case that reads a
+  // built-in prefix therefore has to run before it.
   it('a plugin engine takes its lane prefix from the manifest shortLabel', () => {
     __resetPluginEngines();
     installMainThreadLoomApi();
@@ -44,14 +64,6 @@ describe('nextLaneSlug — slug id generation', () => {
     });
     expect(nextLaneSlug(new Set([]), 'probe-engine')).toBe('prb-1');
     expect(nextLaneSlug(new Set(['prb-1']), 'probe-engine')).toBe('prb-2');
-  });
-
-  it('drums-machine lane gets drums-2 when drums-1 is present', () => {
-    expect(nextLaneSlug(new Set(['drums-1']), 'drums-machine')).toBe('drums-2');
-  });
-
-  it('unknown engineId falls back to engineId as prefix', () => {
-    expect(nextLaneSlug(new Set([]), 'my-engine')).toBe('my-engine-1');
   });
 });
 
@@ -67,5 +79,16 @@ describe('engine registry feeds the + Add selector', () => {
     for (const e of listEngines('polyhost')) {
       expect(e.name).toBeTruthy();
     }
+  });
+
+  // The 21 files that register an engine by importing its module have to migrate
+  // one at a time, not in one jump — so the two registration paths must be able
+  // to share a single test file. This asserts exactly that: the manifest read off
+  // disk and the side-effect imports at the top of this file both land in the SAME
+  // registry, neither one clearing the other.
+  it('the plugin fixture registers alongside the in-tree engines', () => {
+    registerPluginEngine('karplus');
+    expect(getEngineDescriptor('karplus')).toBeDefined();
+    expect(getEngineDescriptor('subtractive')).toBeDefined();
   });
 });
