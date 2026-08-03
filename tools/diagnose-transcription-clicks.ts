@@ -19,10 +19,15 @@ import { createRenderer } from '../src/audio-dsp/renderer-registry';
 import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets } from '../src/audio-dsp/types';
 import type { ModLite } from '../src/audio-dsp/modulation-runtime';
 import { toModLite } from '../src/engines/worklet-lane-engine';
-import { SUB_PARAM_SPECS } from '../src/engines/subtractive-params';
+import type { EngineParamSpec } from '../src/engines/engine-params';
+import subtractiveManifest from '../plugins/subtractive/plugin.json';
 import { TICKS_PER_QUARTER } from '../src/core/notes';
 import { writeWav } from '../test/wav';
-import '../src/audio-dsp/subtractive-renderer';
+import '../test/plugin-dsp';
+import '../plugins/subtractive/dsp';
+
+// Subtractive ships as a plugin, so its declared params ARE its manifest.
+const SUB_PARAM_SPECS = subtractiveManifest.components[0].params as unknown as EngineParamSpec[];
 
 const SR = 48000;
 const savePath = process.argv[2] ?? 'C:/Users/nacho/Downloads/tb303-bs.json';

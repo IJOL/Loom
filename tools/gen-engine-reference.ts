@@ -15,21 +15,14 @@
 //     so the reference tracks the engine's own idea of itself.
 
 import { createRenderer } from '../src/audio-dsp/renderer-registry';
-import { getEngineDescriptor } from '../src/engines/registry';
 import type { NoteSpec, ParamBag } from '../src/audio-dsp/types';
 
-// Side-effect imports: every in-tree renderer self-registers on import.
-import '../src/audio-dsp/tb303-renderer';
-import '../src/audio-dsp/subtractive-renderer';
-// Side-effect imports: the modulator components. Reading a descriptor builds its
-// modulator host, which resolves every declared modulator kind through the
-// registry — so without these, asking tb303 for its defaults throws
-// "unknown modulator kind: lfo" long before any sample is rendered.
+// Side-effect imports: the modulator components. A plugin manifest can declare
+// modulators of its own, and resolving one goes through this registry — so
+// without these, an engine that ships an LFO throws "unknown modulator kind:
+// lfo" long before any sample is rendered.
 import '../src/plugins/modulators/lfo';
 import '../src/plugins/modulators/adsr';
-// Side-effect imports: the engine descriptors, which carry the param defaults.
-import '../src/engines/tb303';
-import '../src/engines/subtractive';
 // A plugin's renderer arrives through the Loom global instead, and that global
 // is installed by importing this module — see test/plugin-dsp.ts.
 import { loadPluginRenderers } from '../test/plugin-dsp';
@@ -60,22 +53,9 @@ function seeded(): () => number {
   return () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
 }
 
-/** An engine's declared defaults, as a param bag. Reading them from the
- *  descriptor rather than hard-coding a bag per engine means a reference is
- *  captured at the engine's own defaults, and a default that changes shows up
- *  as a parity failure instead of hiding. */
-export function defaultParams(engineId: string): ParamBag {
-  const spec = getEngineDescriptor(engineId);
-  if (!spec) throw new Error(`no engine descriptor registered for '${engineId}'`);
-  const bag: ParamBag = {};
-  for (const p of spec.params) bag[p.id] = p.default;
-  return bag;
-}
-
 /** Render `engineId` and return every STRIDE-th sample — a bare number[], the
  *  shape plugins/karplus/reference-render.json already uses. */
-export function renderReference(engineId: string, params?: ParamBag): number[] {
-  const bag = params ?? defaultParams(engineId);
+export function renderReference(engineId: string, bag: ParamBag): number[] {
   const realRandom = Math.random;
   const rng = seeded();
   Math.random = rng;                       // pin the excitation for this render
@@ -103,14 +83,11 @@ export async function pluginDefaultParams(pluginId: string): Promise<ParamBag> {
   return bag;
 }
 
-/** Engines whose renderer lives in the tree. Anything else is looked for as a
- *  plugin under plugins/<id>/. */
-const IN_TREE = new Set(['tb303', 'subtractive']);
-
-/** Render `engineId` and return its reference, resolving the params from
- *  wherever that engine declares them. */
+/** Render `engineId` and return its reference. Every engine is a plugin now, so
+ *  there is one path: load the installed plugin renderers, then render at the
+ *  defaults its own manifest declares. The IN_TREE branch this used to open
+ *  with is gone with the last built-in melodic engine. */
 export async function referenceFor(engineId: string): Promise<number[]> {
-  if (IN_TREE.has(engineId)) return renderReference(engineId);
   await loadPluginRenderers();
   return renderReference(engineId, await pluginDefaultParams(engineId));
 }

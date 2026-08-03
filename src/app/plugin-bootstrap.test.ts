@@ -17,8 +17,10 @@ describe('bootstrapPlugins', () => {
     // (see plugin-host.test.ts). The plucked string left this list when it became
     // one — registering its manifest here would not put it in listPlugins('engine')
     // either, because that registry is the glob's, not the engine registry's.
-    // fm, wavetable and westcoast left it the same way and for the same reason.
-    const CORE = ['drums-machine', 'subtractive', 'tb303'];
+    // fm, wavetable, westcoast, subtractive and tb303 left it the same way and
+    // for the same reason — every melodic engine is a plugin now, so what the
+    // glob still owns is drums, the sampler and the audio channel.
+    const CORE = ['drums-machine', 'sampler', 'audio'];
     for (const id of CORE) expect(ids).toContain(id);
   });
 

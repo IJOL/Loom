@@ -6,7 +6,6 @@ import { WorkletLaneEngine } from '../engines/worklet-lane-engine';
 import { DrumsWorkletEngine } from '../engines/drums-worklet-engine';
 import { SamplerWorkletEngine } from '../engines/sampler-worklet-engine';
 import { AudioWorkletEngine } from '../engines/audio-worklet-engine';
-import { PRESET_KEY_TO_SPEC as TB303_PRESET_KEY_TO_SPEC } from '../engines/tb303';
 import type { GlobalVoiceCap } from '../audio-worklet/global-voice-cap';
 import { setCurrentLaneForVoice } from '../modulation/active-mods';
 import { bindEngineModulators } from '../modulation/voice-mod-binding';
@@ -14,31 +13,26 @@ import { LANE_ID_BASS, LANE_ID_DRUMS, LANE_ID_POLY } from '../core/lane-ids';
 import type { SynthEngine, Voice } from '../engines/engine-types';
 import type { FxBus } from '../core/fx';
 import type { SidechainBus } from '../core/sidechain-bus';
-import { isAudioEngine, isWorkletHosted, pluginSynthTrim } from '../plugins/capabilities';
+import { isAudioEngine, isWorkletHosted, workletHostedIds, pluginSynthTrim } from '../plugins/capabilities';
 
-// Melodic engines whose per-sample renderer still lives in src/. These route to
-// WorkletLaneEngine on the live path; drums / sampler / audio remain legacy
-// until their own phases. fm, wavetable and westcoast left this set when they
-// became plugins — they qualify through isWorkletHosted below instead.
-// Exported so a registry-driven test (audio-dsp/live-params.dsp.test.ts) can
-// assert EVERY id here produces a renderer implementing the live-params hook —
-// a hand-written engine list would just reproduce the gap it exists to catch
-// (I4, 2026-07-26 continuous-params review).
-const BUILTIN_WORKLET_ENGINE_IDS = new Set(['subtractive', 'tb303']);
-
-/** Built-ins are still listed above; a PLUGIN engine qualifies by having
- *  arrived through a plugin manifest (`isWorkletHosted`, backed by the set of
- *  ids `adoptComponent` registered), NOT by having shipped a renderer — the
- *  allocator never sees `PluginManifestFile.dsp`, only the `ComponentManifest`,
- *  so it cannot tell. `audio-probe` ships no renderer at all and still
- *  qualifies. Nothing has to be added by hand when a plugin is installed, but
- *  it also means a plugin with real DSP and a plugin with none are routed
- *  identically today. The iterator walks the BUILT-INS only — that is what the
- *  registry-driven live-params test needs, since a plugin's renderer no longer
- *  lives in src/. */
+/** The engines the worklet path routes. There is no hand-written list behind it
+ *  any more: the host holds no melodic engine, so an engine qualifies purely by
+ *  having arrived through a plugin manifest (`isWorkletHosted`, backed by the
+ *  ids `adoptComponent` registered).
+ *
+ *  Qualifying is NOT the same as having shipped a renderer — the allocator never
+ *  sees `PluginManifestFile.dsp`, only the `ComponentManifest`, so it cannot
+ *  tell. `audio-probe` ships no renderer at all and still qualifies. Nothing has
+ *  to be added by hand when a plugin is installed, but it also means a plugin
+ *  with real DSP and a plugin with none are routed identically today.
+ *
+ *  Iterable so a registry-driven test (audio-dsp/live-params.dsp.test.ts) can
+ *  assert EVERY routed engine produces a renderer implementing the live-params
+ *  hook — a hand-written engine list would just reproduce the gap it exists to
+ *  catch (I4, 2026-07-26 continuous-params review). */
 export const WORKLET_ENGINE_IDS = {
-  has: (id: string): boolean => BUILTIN_WORKLET_ENGINE_IDS.has(id) || isWorkletHosted(id),
-  [Symbol.iterator]: (): Iterator<string> => BUILTIN_WORKLET_ENGINE_IDS[Symbol.iterator](),
+  has: (id: string): boolean => isWorkletHosted(id),
+  [Symbol.iterator]: (): Iterator<string> => workletHostedIds()[Symbol.iterator](),
 };
 
 // Phase G: LaneAllocatorDeps is now master-only — no per-lane strips,
@@ -123,13 +117,10 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
           params: spec.params, groups: spec.groups, modulators: spec.modulators,
           // A plugin engine's renderer does NOT multiply by its own engine trim
           // (the number lives in its manifest, not its compiled JS), so the host
-          // carries it down to the sum point. 1 for a built-in, whose renderer
-          // still calls synthTrim() itself.
+          // carries it down to the sum point. The `?? 1` is the floor for a
+          // manifest that declares no outputTrim, not a built-in fallback —
+          // there are no built-in melodic engines left.
           outputTrim: pluginSynthTrim(engineId) ?? 1,
-          // TB-303 preset JSON uses legacy flat keys; remap them to dot-ids so
-          // presets actually apply on the worklet path (other engines' JSON is
-          // already dot-id keyed).
-          presetKeyRemap: engineId === 'tb303' ? TB303_PRESET_KEY_TO_SPEC : undefined,
         });
         // Enrol this lane's worklet node in the global voice cap.
         deps.globalVoiceCap?.register(laneId, eng.getWorkletNode());

@@ -33,7 +33,11 @@ vi.mock('../audio-worklet/loom-node', () => ({
 }));
 
 import { WorkletLaneEngine, toModLite, type WorkletEngineConfig } from './worklet-lane-engine';
-import { SUB_PARAM_SPECS } from './subtractive-params';
+import type { EngineParamSpec } from './engine-params';
+import subtractiveManifest from '../../plugins/subtractive/plugin.json';
+
+// Subtractive ships as a plugin, so its declared params ARE its manifest.
+const SUB_PARAM_SPECS = subtractiveManifest.components[0].params as unknown as EngineParamSpec[];
 import { makeDotIdMapper } from './mod-lite';
 import type { ModulatorState } from '../modulation/types';
 import { makeDefaultLFO } from '../plugins/modulators/lfo';
@@ -43,9 +47,14 @@ import { makeDefaultADSR } from '../plugins/modulators/adsr';
 // WorkletLaneEngine from each engine's ACTUAL params + groups table, not a
 // hand-picked spec — the POLY-section tests need the real descriptor because
 // they assert on what subtractive.ts / tb303.ts declare, not on a fixture.
-import '../engines/subtractive';
-import '../engines/tb303';
 import { getEngineDescriptor } from './registry';
+import { registerPluginEngine } from '../../test/plugin-fixtures';
+
+// subtractive and tb303 ship as plugins: the equivalent of the old
+// side-effect import is that manifest going through the same registerComponent
+// door the plugin loader uses.
+registerPluginEngine('subtractive');
+registerPluginEngine('tb303');
 
 const subMods = (): ModulatorState[] => [
   { ...makeDefaultADSR('adsr-amp'), connections: [{ id: 'c-amp', paramId: 'amp.gain', depth: 0 }] },

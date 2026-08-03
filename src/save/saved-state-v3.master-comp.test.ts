@@ -42,7 +42,7 @@ describe('SavedStateV3 persists the master compressor', () => {
       swingInput: { value: '' }, meterSel: { value: '' },
       sessionHost: { replaceSession: () => {} },
       lanes: { resources: new Map() },
-      refreshKnobsFromSynth: () => {}, renderLanes: () => {},
+      renderLanes: () => {},
       fx: {}, master: { gain: { value: 0 } },
       masterComp: { setState: (s: unknown) => { applied = s; } },
     } as any;
@@ -62,7 +62,7 @@ describe('SavedStateV3 persists the master compressor', () => {
       swingInput: { value: '' }, meterSel: { value: '' },
       sessionHost: { replaceSession: () => {} },
       lanes: { resources: new Map() },
-      refreshKnobsFromSynth: () => {}, renderLanes: () => {},
+      renderLanes: () => {},
       fx: {}, master: { gain: { value: 0 } },
       masterComp: { setState: () => { called = true; } },
     } as any;

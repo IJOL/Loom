@@ -1,12 +1,16 @@
-// tools/tb303-preset-audit.ts
+// plugins/tb303/preset-audit.ts
 // Renders every TB-303 preset through the REAL renderer and reports what the
 // knob values actually become in DSP: ladder resonance, base/peak cutoff, filter
 // decay vs. the step length, plus measured low-band vs high-band energy.
 //
-// Run: npx vite-node tools/tb303-preset-audit.ts
+// It lives INSIDE the plugin because that is where both halves it reads now
+// live: the renderer and the bank. It moved here from tools/ with the engine.
+//
+// Run: npx vite-node plugins/tb303/preset-audit.ts
 import { readFileSync } from 'node:fs';
-import { TB303Renderer } from '../src/audio-dsp/tb303-renderer';
-import { PRESET_KEY_TO_SPEC } from '../src/engines/tb303';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { TB303Renderer } from './dsp';
 
 const SR = 44100;
 const BPM = 130;
@@ -15,12 +19,17 @@ const TAIL = 0.35;
 const MIDI = 33;                     // A1, 55 Hz — bass register
 
 interface Preset { name: string; params: Record<string, number> }
-const bank = JSON.parse(readFileSync('public/presets/tb303.json', 'utf8')) as { presets: Preset[] };
+// The bank to audit. Defaults to this plugin's own; an argument lets the same
+// audit run over another bank and be diffed against this one — identical output
+// means the rewrite changed no sound. That is how the flat-key → dot-id rewrite
+// of this very file's bank was checked.
+const HERE = dirname(fileURLToPath(import.meta.url));
+const BANK = process.argv[2] ? resolve(process.argv[2]) : join(HERE, 'presets.json');
+const bank = JSON.parse(readFileSync(BANK, 'utf8')) as { presets: Preset[] };
 
+// A preset's keys ARE the engine's param ids — no remap left to apply.
 function toBag(p: Preset): Record<string, number> {
-  const bag: Record<string, number> = {};
-  for (const [k, v] of Object.entries(p.params)) bag[PRESET_KEY_TO_SPEC[k] ?? k] = v;
-  return bag;
+  return { ...p.params };
 }
 
 function render(bag: Record<string, number>, accent: boolean): Float32Array {

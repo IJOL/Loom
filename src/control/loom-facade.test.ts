@@ -22,12 +22,17 @@ import type { LaneResourceMap } from '../core/lane-resources';
 import type { KnobHandle } from '../core/knob';
 import type { Sequencer } from '../core/sequencer';
 import type { SynthEngine } from '../engines/engine-types';
+import { registerPluginEngine } from '../../test/plugin-fixtures';
+
+// subtractive ships as a plugin: the equivalent of the old
+// side-effect import is that manifest going through the same registerComponent
+// door the plugin loader uses.
+registerPluginEngine('subtractive');
 // Side-effect import: registers the 'subtractive' engine descriptor so
 // listAutomationTargets() can find its continuous engine params, and so a
 // fake SynthEngine for the bare-id test can borrow its real (dotted) param
 // ids. Without this getEngine('subtractive') returns undefined and the
 // catalogue silently offers zero engine params for 'poly1'.
-import '../engines/subtractive';
 
 beforeEach(() => {
   _resetRegistry();

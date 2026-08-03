@@ -11,7 +11,6 @@
 // not. Relative assertions only — the control is the same graph with the
 // modulator off.
 import { describe, it, expect } from 'vitest';
-import '../engines/subtractive';
 // Side-effect only: registers 'lfo'/'adsr' with the modulator-registry.
 // subtractive's descriptor builds its default modulator set LAZILY from that
 // registry (Task 5) — ensureLaneResource is what triggers the build, so
@@ -26,6 +25,12 @@ import { createInstance, registerPlugin } from '../plugins/registry';
 import { multifilterPlugin } from '../plugins/fx/multifilter';
 import { insertParamId } from '../automation/automation-targets';
 import type { ModulatorState } from '../modulation/types';
+import { registerPluginEngine } from '../../test/plugin-fixtures';
+
+// subtractive ships as a plugin: the equivalent of the old
+// side-effect import is that manifest going through the same registerComponent
+// door the plugin loader uses.
+registerPluginEngine('subtractive');
 
 const SR = 44100;
 const LANE = 'subtractive-1';

@@ -10,6 +10,15 @@
 // BEFORE the fix both ignore the preset → identical default render → fails.
 
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
+// The melodic engines these scenes use ship as PLUGINS, so no renderer arrives
+// by side-effect import any more. In production the offline exporter calls
+// importPluginDspOnMainThread (plugin-host/plugin-dsp.ts); here `test/plugin-dsp`
+// installs the same Loom global and the plugin dsp registers through it.
+import '../../test/plugin-dsp';
+// …and the manifest half, which is what puts the engine in the registry the
+// recorder resolves lanes through. In production loadPlugins does both.
+import { registerPluginEngine } from '../../test/plugin-fixtures';
+import '../../plugins/subtractive/dsp';
 import { OfflineSceneRecorder } from './offline-recorder';
 import { bootstrapPlugins } from '../app/plugin-bootstrap';
 import { emptyLanePlayState, type LanePlayState } from '../session/session-runtime';
@@ -64,7 +73,7 @@ async function renderWithPreset(presetName: string): Promise<number> {
 }
 
 describe('OfflineSceneRecorder applies the lane preset (DSP)', () => {
-  beforeAll(() => { bootstrapPlugins(); });
+  beforeAll(() => { bootstrapPlugins(); registerPluginEngine('subtractive'); });
   beforeEach(() => { __resetPresetCache(); __seedPresetCache('subtractive', [LOUD, QUIET]); });
 
   it('two materially-different presets produce materially-different renders', async () => {

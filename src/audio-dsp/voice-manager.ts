@@ -57,11 +57,10 @@ export class VoiceManager {
    *  telemetry rate (~30 Hz) to name the knob rings; the audio path never reads
    *  it. `slotIds` above is the declared-only prefix, for the legacy bag. */
   private readonly targetIds: string[] = [];
-  /** Per-engine output balance the HOST applies at the sum point, for engines
-   *  whose renderer does not apply its own — i.e. PLUGINS, whose trim lives in
-   *  their manifest rather than in their compiled JS. The default of 1 is what
-   *  leaves the six in-tree engines untouched: they still call synthTrim()
-   *  inside their own renderSample.
+  /** Per-engine output balance the HOST applies at the sum point. Every melodic
+   *  engine is a PLUGIN, and a plugin's renderer never applies its own trim —
+   *  the number lives in its manifest, not in its compiled JS. The default of 1
+   *  is the floor for an engine that declares none, not a built-in fallback.
    *
    *  @param paramIds the lane's DECLARED live param set, in declaration order —
    *  the ids that get a slot. An id outside it is dropped with a warning instead

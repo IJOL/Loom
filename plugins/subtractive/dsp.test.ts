@@ -1,11 +1,34 @@
-// src/audio-dsp/subtractive-renderer.test.ts
-import { describe, it, expect } from 'vitest';
+// plugins/subtractive/dsp.test.ts
+// Behaviour of the Subtractive plugin's renderer. These assertions used to live
+// in src/audio-dsp/subtractive-renderer.test.ts, against the in-tree engine; the
+// shipped plugin is the only Subtractive there is, so the coverage moved with it.
+import { describe, it, expect, vi } from 'vitest';
+
+// `dsp.ts` calls Loom.registerRenderer at module scope — that is the ABI — so
+// the global must exist before the import graph is evaluated. vi.hoisted is the
+// only hook that runs that early. Same two-line stub the parity test next door
+// installs, for the same reason.
+vi.hoisted(() => {
+  (globalThis as unknown as { Loom: unknown }).Loom = {
+    apiVersion: 1, registerRenderer: () => {},
+  };
+});
+
 import { attachSlots } from '../../test/slot-offsets';
-import { SubtractiveVoiceRenderer } from './subtractive-renderer';
-import { Svf } from './filter';
-import type { NoteSpec, ParamBag } from './types';
+import manifest from './plugin.json';
+import { CATEGORY_GAIN } from '../../src/audio-dsp/gain-staging';
+import { SubtractiveVoiceRenderer } from './dsp';
+import { Svf } from '@loom/plugin-sdk';
+import type { NoteSpec, ParamBag, ModEnvSpec } from '@loom/plugin-sdk';
 
 const SR = 48000;
+
+/** What the HOST multiplies this plugin's voice by, which the renderer no longer
+ *  does itself: the manifest's outputTrim times the synth category gain. The
+ *  absolute peak ceilings below were calibrated where the listener meets the
+ *  voice, so they are compared against a level with it applied. */
+const HOST_TRIM = manifest.components[0].capabilities.outputTrim * CATEGORY_GAIN.synth;
+
 // Dot-id ParamBag with the subtractive defaults — the shape a real lane sends.
 const DEFAULTS: ParamBag = {
   'master.tune': 0,
@@ -124,12 +147,14 @@ describe('SubtractiveVoiceRenderer', () => {
       for (let i = 0; i < SR * 0.6; i++) { const a = Math.abs(v.renderSample(i / SR)); if (a > peak) peak = a; }
       return peak;
     };
-    expect(peakOf(0.25)).toBeLessThan(1.5);   // default resonance ~0.99
-    expect(peakOf(1.0)).toBeLessThan(4.0);    // max resonance ~2.8, still bounded
+    expect(peakOf(0.25) * HOST_TRIM).toBeLessThan(1.5);   // default resonance ~0.99
+    expect(peakOf(1.0) * HOST_TRIM).toBeLessThan(4.0);    // max resonance ~2.8, still bounded
   });
 
-  const adsrMod = (depth: number) => ({
-    id: 'a', kind: 'adsr' as const, enabled: true, rateHz: 0, waveform: 'sine' as const,
+  // A ModEnvSpec, not a whole ModLite: setModEnvelopes takes the SDK type, which
+  // carries only the four times and the depths. A plugin cannot see the host's
+  // ModLite, and never needed to.
+  const adsrMod = (depth: number): ModEnvSpec => ({
     attackSec: 0.001, decaySec: 0.001, sustain: 1, releaseSec: 0.1,
     depthByParam: { 'filter.cutoff': depth },
   });
@@ -163,8 +188,7 @@ describe('SubtractiveVoiceRenderer', () => {
     expect(v.getAdsrOffsets()[ringIx.slot['filter.cutoff']]).toBeLessThan(0.1);
   });
 
-  const ampAdsr = {
-    id: 'amp', kind: 'adsr' as const, enabled: true, rateHz: 0, waveform: 'sine' as const,
+  const ampAdsr: ModEnvSpec = {
     attackSec: 0.005, decaySec: 0.01, sustain: 1, releaseSec: 0.05, depthByParam: { amp: 1 },
   };
 
@@ -200,7 +224,6 @@ describe('SubtractiveVoiceRenderer', () => {
         note(), { ...DEFAULTS, 'filter.cutoff': 0.15, 'filter.resonance': 0, 'filter.envAmount': 0.8, 'filter.builtinEnv': 0 }, SR,
       );
       if (withEnv) v.setModEnvelopes([{
-        id: 'fe', kind: 'adsr', enabled: true, rateHz: 0, waveform: 'sine',
         attackSec: 0.001, decaySec: 0.001, sustain: 1, releaseSec: 0.1, depthByParam: { 'filter.env': 1 },
       }], attachSlots(v, { ...DEFAULTS, 'filter.cutoff': 0.15, 'filter.resonance': 0, 'filter.envAmount': 0.8, 'filter.builtinEnv': 0 }).index);
       const b: number[] = []; for (let i = 0; i < SR * 0.1; i++) b.push(v.renderSample(i / SR));
@@ -443,8 +466,8 @@ describe('filter mode and type', () => {
       [ACID, LP], [ACID, HP], [ACID, BP],
     ];
     for (const [model, type] of pairs) {
-      const dry = peakOf(model, type, 0);
-      const wet = peakOf(model, type, 0.8);
+      const dry = peakOf(model, type, 0) * HOST_TRIM;
+      const wet = peakOf(model, type, 0.8) * HOST_TRIM;
       const tag = `model ${model} type ${type}`;
       expect(Number.isFinite(wet), `${tag} went non-finite`).toBe(true);
       expect(wet, `${tag} blew up`).toBeLessThan(4.5);
@@ -589,7 +612,7 @@ describe('unison', () => {
 
   it('a 7-voice stack stays bounded', () => {
     const peak = render(7, { 'master.drift': 1 }, 0.3).reduce((p, v) => Math.max(p, Math.abs(v)), 0);
-    expect(peak).toBeLessThan(4);
+    expect(peak * HOST_TRIM).toBeLessThan(4);
   });
 });
 

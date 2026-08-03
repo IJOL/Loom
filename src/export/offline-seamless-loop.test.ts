@@ -12,6 +12,15 @@
 // the scheduler actually loops on, or the "second cycle" is not a cycle at all.
 
 import { describe, it, expect, beforeAll, vi } from 'vitest';
+// The melodic engines these scenes use ship as PLUGINS, so no renderer arrives
+// by side-effect import any more. In production the offline exporter calls
+// importPluginDspOnMainThread (plugin-host/plugin-dsp.ts); here `test/plugin-dsp`
+// installs the same Loom global and the plugin dsp registers through it.
+import '../../test/plugin-dsp';
+// …and the manifest half, which is what puts the engine in the registry the
+// recorder resolves lanes through. In production loadPlugins does both.
+import { registerPluginEngine } from '../../test/plugin-fixtures';
+import '../../plugins/tb303/dsp';
 import { OfflineSceneRecorder } from './offline-recorder';
 import { clipDurationSec } from './scene-duration';
 import { bootstrapPlugins } from '../app/plugin-bootstrap';
@@ -65,7 +74,7 @@ async function renderTwoCycles(clip: SessionClip, totalSec: number, bpm = 120) {
 }
 
 describe('OfflineSceneRecorder seamless loop', () => {
-  beforeAll(() => { bootstrapPlugins(); });
+  beforeAll(() => { bootstrapPlugins(); registerPluginEngine('tb303'); });
 
   it('renders two cycles and returns the SECOND, at the exact musical length', async () => {
     // A tb303 note whose gate crosses the loop boundary (starts at 1.75s of a 2s

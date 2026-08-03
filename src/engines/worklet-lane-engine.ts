@@ -25,7 +25,6 @@ import { LoomWorkletNode } from '../audio-worklet/loom-node';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import { type ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
-import { deriveSubtractiveEnvMods } from './subtractive';
 import { velNorm, resolveVelocity } from '../core/velocity-gain';
 import { makeDotIdMapper, toModLite } from './mod-lite';
 import { renderModulatorsPanel, type ModulationUIDeps } from '../modulation/modulation-ui';
@@ -96,10 +95,6 @@ export interface WorkletEngineConfig {
   presetsKey: string;          // preset cache key (engine id)
   polyphony: 'mono' | 'poly';
   modulators?: ModulatorState[];
-  /** Optional remap from a preset JSON's legacy flat keys to the engine's
-   *  dot-id param spec (e.g. TB-303's 'cutoff' → 'filter.cutoff'). Engines whose
-   *  preset JSON already uses dot-ids omit it. */
-  presetKeyRemap?: Record<string, string>;
   /** Per-engine output balance the HOST applies, for engines whose renderer does
    *  not apply its own (i.e. plugins — the number lives in their manifest).
    *  Default 1 leaves the six in-tree engines exactly as they were. */
@@ -115,7 +110,6 @@ export class WorkletLaneEngine implements SynthEngine {
   readonly params: EngineParamSpec[];
   readonly groups?: EngineParamGroup[];
   private readonly presetsKey: string;
-  private readonly presetKeyRemap?: Record<string, string>;
   private modHost: ModulationHostImpl;
   // Current scalar param state as a dot-id ParamBag, seeded from the spec
   // defaults. setBaseValue mirrors here and posts the same dot-id to the worklet.
@@ -128,8 +122,8 @@ export class WorkletLaneEngine implements SynthEngine {
   // Latest live modulation offsets reported by the worklet (field → normalised
   // -1..1), the source of truth for the UI knob rings. Empty when nothing modulates.
   private liveModOffsets: Record<string, number> = {};
-  /** Connection-paramId → modulation target name. fieldForParamId (SubParams) for
-   *  subtractive; a dot-id mapper for every other engine. */
+  /** Connection-paramId → modulation target name. One dot-id mapper for every
+   *  engine (subtractive once had a translator of its own — see below). */
   private readonly mapTarget: (paramId: string) => string | null;
   private _bpm = 120;
   /** Tempo. Assigning re-posts the modulator set so BPM-synced LFOs re-resolve
@@ -144,7 +138,6 @@ export class WorkletLaneEngine implements SynthEngine {
     this.params = cfg.params;
     this.groups = cfg.groups;
     this.presetsKey = cfg.presetsKey;
-    this.presetKeyRemap = cfg.presetKeyRemap;
     this.modHost = new ModulationHostImpl(cfg.modulators ?? []);
     // ONE vocabulary for every engine: a modulation connection targets a param's
     // own dot-id. Subtractive used to be translated into flat SubParams field
@@ -289,23 +282,19 @@ export class WorkletLaneEngine implements SynthEngine {
   applyPreset(name: string): void {
     const preset = this.presets.find((p) => p.name === name);
     if (!preset) return;
+    // A preset's keys ARE the engine's param ids. There is no per-engine
+    // translation left: the last bank that needed one (TB-303's flat 'cutoff',
+    // 'envMod', …) was rewritten to dot-ids when it became a plugin.
     for (const [id, val] of Object.entries(preset.params as Record<string, number>)) {
       if (typeof val !== 'number') continue;
-      // Remap legacy flat preset keys to the engine's dot-id spec when needed
-      // (e.g. TB-303's 'cutoff' → 'filter.cutoff'); other engines pass through.
-      this.setBaseValue(this.presetKeyRemap?.[id] ?? id, val);
+      this.setBaseValue(id, val);
     }
-    if (preset.modulators) {
-      this.modHost.deserialize(preset.modulators);
-    } else if (this.id === 'subtractive') {
-      // Unified envelope model: the panel ADSRs ARE the amp/filter envelopes.
-      // Derive them from the preset's built-in env params and switch the built-in
-      // off — the preset sounds identical (same Adsr, same mapping) with the ADSRs
-      // driving. Saves carry their own modulators, so they take the branch above.
-      this.modHost.deserialize(deriveSubtractiveEnvMods(preset.params as Record<string, number>));
-      this.setBaseValue('amp.builtinEnv', 0);
-      this.setBaseValue('filter.builtinEnv', 0);
-    }
+    // A preset brings its own modulators or it brings none — no engine gets its
+    // set derived here. Subtractive used to, because its bank predated the
+    // unified envelope model and carried no `modulators`; the derivation is now
+    // baked into plugins/subtractive/presets.json, which is where a preset's
+    // data belongs. That was the last comparison by engine id on the audio path.
+    if (preset.modulators) this.modHost.deserialize(preset.modulators);
     this.postMods();
   }
 

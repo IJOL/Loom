@@ -62,12 +62,12 @@ describe('the engine reference generator', () => {
     expect(a).toEqual(b);
   });
 
-  it('renders every in-tree melodic engine from its declared defaults', () => {
-    // Only two are left in the tree; fm, wavetable and westcoast now render
-    // through the plugin path above, and each defends its own reference in
-    // plugins/<id>/<id>-parity.dsp.test.ts.
-    for (const id of ['tb303', 'subtractive']) {
-      const out = renderReference(id);
+  it('renders every installed melodic plugin from the defaults its manifest declares', async () => {
+    // No in-tree engine is left to walk: all five moved out, and each defends
+    // its own reference in plugins/<id>/<id>-parity.dsp.test.ts. What this
+    // checks is that the GENERATOR can still produce one for each of them.
+    for (const id of ['tb303', 'subtractive', 'fm', 'wavetable', 'westcoast']) {
+      const out = renderReference(id, await pluginDefaultParams(id));
       expect(out.length, `${id} should render ${committed.length} kept samples`).toBe(committed.length);
       expect(out.every(Number.isFinite), `${id} rendered a non-finite sample`).toBe(true);
       expect(peakOf(out), `${id} rendered silence at its own defaults`).toBeGreaterThan(0);

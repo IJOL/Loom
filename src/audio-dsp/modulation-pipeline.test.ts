@@ -11,7 +11,7 @@
 // proves the modulation reaches the sound — for every engine — without ear-checking.
 import { describe, it, expect } from 'vitest';
 
-// Four of the engines below ship as PLUGINS, and a plugin's dsp.ts calls
+// Every engine below ships as a PLUGIN, and a plugin's dsp.ts calls
 // Loom.registerRenderer at module scope. `test/plugin-dsp` installs that global
 // as its own side effect and forwards into the renderer registry, so it MUST
 // stay above the plugin imports — ESM evaluates in source order.
@@ -19,12 +19,11 @@ import '../../test/plugin-dsp';
 import { ModulationRuntime, type ModLite } from './modulation-runtime';
 import { VoiceManager } from './voice-manager';
 import type { NoteSpec, ParamBag } from './types';
-// Side-effect imports: register every renderer so createRenderer(engineId, …) works.
-import './subtractive-renderer';
-import './tb303-renderer';
 // The plugin rows below drive the SHIPPED plugin renderers through the real
 // ModulationRuntime → VoiceManager path, so moving those engines out of src/ did
 // not cost this file its per-engine modulation coverage.
+import '../../plugins/subtractive/dsp';
+import '../../plugins/tb303/dsp';
 import '../../plugins/wavetable/dsp';
 import '../../plugins/fm/dsp';
 import '../../plugins/westcoast/dsp';

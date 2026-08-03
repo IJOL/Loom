@@ -4,10 +4,15 @@ import type { SessionClip } from '../session/session';
 import { TICKS_PER_STEP, TICKS_PER_QUARTER } from './notes';
 import { ticksPerBar, DEFAULT_METER } from './meter';
 import { registerEngineCapabilities } from '../plugins/capabilities';
+import { registerPluginEngine } from '../../test/plugin-fixtures';
+
+// tb303 ships as a plugin: the equivalent of the old
+// side-effect import is that manifest going through the same registerComponent
+// door the plugin loader uses.
+registerPluginEngine('tb303');
 // Registers the 303's capabilities as a module side effect — including
 // slide: 'overlap', which the existing tb303 cases below assert on. Without it
 // the engine would answer for nothing, exactly like an uninstalled plugin.
-import '../engines/tb303';
 
 describe('lane-scheduler tickLane regression: overlapping windows', () => {
   it('a single note fires EXACTLY ONCE per loop iteration when tick=25ms, lookahead=120ms', () => {

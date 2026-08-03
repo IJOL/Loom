@@ -19,13 +19,12 @@ import type { NoteSpec, ParamBag } from '../audio-dsp/types';
 import type { ModLite } from '../audio-dsp/modulation-runtime';
 import { ModulationRuntime } from '../audio-dsp/modulation-runtime';
 import { VoiceManager } from '../audio-dsp/voice-manager';
-// Side-effect imports: each melodic renderer self-registers into the renderer
-// registry. The worklet thread imports these via loom-processor.ts; the offline
-// recorder runs on the MAIN thread, so import them here so createRenderer finds
-// them when the kernel render runs.
-import '../audio-dsp/subtractive-renderer';
-import '../audio-dsp/tb303-renderer';
-// Same reasoning for the modulator kernel: the worklet thread registers it via
+// No melodic renderer is imported here any more: every one of them is a plugin,
+// and a plugin's dsp module is loaded by the offline recorder's own plugin
+// bootstrap, not by a side-effect import in the host. This block used to hold
+// one line per built-in engine.
+//
+// The modulator kernel still needs one: the worklet thread registers it via
 // loom-processor.ts; the offline recorder runs on the MAIN thread, so import
 // it here too — otherwise the offline render's LFO goes silent.
 import '../audio-dsp/modulators/lfo-kernel';

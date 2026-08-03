@@ -1,7 +1,6 @@
 import { normaliseSelectIndex } from '../core/select-control';
 import { wireDrumMasterUI } from '../core/drum-master-ui';
 import { mountLaneFxPanel as mountLaneFxPanelInner } from '../core/lane-fx-panel';
-import { LANE_ID_BASS } from '../core/lane-ids';
 import type { KnobHandle } from '../core/knob';
 import type { SynthEngine } from '../engines/engine-types';
 import type { LaneResourceMap } from '../core/lane-resources';
@@ -13,8 +12,6 @@ export interface KnobMounterDeps {
   registerKnob(k: KnobHandle): void;
   registry: Map<string, KnobHandle>;
   laneResources: LaneResourceMap;
-  // Phase G: synth field removed; refreshKnobsFromSynth now resolves the
-  // TB303 instance lazily from laneResources at call time.
   fmtPct(v: number): string;
   fmtDb(v: number): string;
   getSessionState(): SessionState | undefined;
@@ -28,7 +25,6 @@ export interface KnobMounterDeps {
 export interface KnobMounter {
   mountDrumMasterLaneKnobs(laneId: string): void;
   mountLaneFxPanel(laneId: string): void;
-  refreshKnobsFromSynth(): void;
   refreshLaneKnobs(laneId: string, engine: SynthEngine): void;
 }
 
@@ -71,14 +67,13 @@ export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
     });
   };
 
-  const refreshKnobsFromSynth = () => {
-    // Phase 4 cutover: the bass lane's engine is a worklet engine. Refresh its
-    // TB-303 knobs from the engine's scalar param state (getBaseValue) — the same
-    // generic path as refreshLaneKnobs, no legacy TB303 instance needed.
-    const engine = deps.laneResources.get(LANE_ID_BASS)?.engine;
-    if (!engine || engine.id !== 'tb303') return;
-    refreshLaneKnobs(LANE_ID_BASS, engine);
-  };
+  // refreshKnobsFromSynth is GONE. It repainted one hardcoded lane
+  // ('tb-303-1') and only when its engine was literally 'tb303' — leftover glue
+  // from the days the 303 had a page of its own. It was still called, from
+  // applyLoadedStateV3, but by then applyLoadedSessionState has already run
+  // applyEngineState() and THEN renderWithMixer(), which rebuilds every lane's
+  // param grid from engine.getBaseValue. It repainted correct values onto one
+  // lane, and it was the last `engine.id === 'tb303'` in src/app.
 
   const refreshLaneKnobs = (laneId: string, engine: SynthEngine) => {
     // Display-only repaint: a handle's setValue fires the same onChange a user
@@ -114,6 +109,6 @@ export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
 
   return {
     mountDrumMasterLaneKnobs, mountLaneFxPanel,
-    refreshKnobsFromSynth, refreshLaneKnobs,
+    refreshLaneKnobs,
   };
 }

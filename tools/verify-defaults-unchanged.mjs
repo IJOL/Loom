@@ -20,24 +20,27 @@ const BASE = resolve(ROOT, '.baseline');
 
 rmSync(BASE, { recursive: true, force: true });
 mkdirSync(BASE, { recursive: true });
-// Unpack the ref's src/ verbatim. Relative imports resolve inside the copy, and
+// Unpack the ref's src/ + plugins/ verbatim. Relative imports resolve inside the copy, and
 // node_modules still resolves by walking up to the repo root. Written as two
 // pipe-free calls so it does not depend on which shell node happens to spawn.
 // Both run WITH cwd set and relative paths: GNU tar reads a leading `C:\` as a
 // remote host:path and refuses it.
 const TAR = resolve(BASE, '_src.tar');
-execSync(`git archive ${REF} src --format=tar --output="${TAR}"`, { cwd: ROOT, stdio: 'inherit' });
+execSync(`git archive ${REF} src plugins --format=tar --output="${TAR}"`, { cwd: ROOT, stdio: 'inherit' });
 execSync('tar -xf _src.tar', { cwd: BASE, stdio: 'inherit' });
 rmSync(TAR, { force: true });
-if (!existsSync(resolve(BASE, 'src/audio-dsp/subtractive-renderer.ts'))) {
-  console.error(`could not extract src/ from ${REF}`);
+if (!existsSync(resolve(BASE, 'plugins/subtractive/dsp.ts'))) {
+  console.error(`could not extract plugins/ from ${REF} — note that subtractive`);
+  console.error('left src/ when it became a plugin, so a ref older than that move');
+  console.error('cannot be compared by this tool.');
   process.exit(2);
 }
 const sha = execSync(`git rev-parse --short ${REF}`, { cwd: ROOT }).toString().trim();
 
 // Dynamic, so the baseline exists before the module is resolved.
-const { SubtractiveVoiceRenderer: Head } = await import('../.baseline/src/audio-dsp/subtractive-renderer.ts');
-const { SubtractiveVoiceRenderer: Work } = await import('../src/audio-dsp/subtractive-renderer.ts');
+await import('../test/plugin-dsp.ts');   // the Loom global both copies register through
+const { SubtractiveVoiceRenderer: Head } = await import('../.baseline/plugins/subtractive/dsp.ts');
+const { SubtractiveVoiceRenderer: Work } = await import('../plugins/subtractive/dsp.ts');
 
 const SR = 48000;
 const note = (over = {}) => ({ midi: 57, beginSec: 0, durationSec: 0.4, velocity: 0.8, accent: false, slide: false, ...over });

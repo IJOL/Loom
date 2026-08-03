@@ -15,6 +15,11 @@
 // inert on the live path — the bug.
 
 import { describe, it, expect } from 'vitest';
+// The 303 ships as a plugin, and kernel-lane-render no longer side-effect-imports
+// any renderer. `test/plugin-dsp` installs the Loom global the plugin's dsp.ts
+// registers through, so it MUST stay above the plugin import.
+import '../../test/plugin-dsp';
+import '../../plugins/tb303/dsp';
 import { renderKernelLane, type KernelLaneSpec } from '../export/kernel-lane-render';
 import { toModLite } from '../engines/worklet-lane-engine';
 import { makeDefaultLFO } from '../plugins/modulators/lfo';

@@ -1,0 +1,126 @@
+{
+  "id": "tb303",
+  "name": "303",
+  "version": "1.0.0",
+  "loomApi": 1,
+  "author": "Loom",
+  "main": "main.js",
+  "dsp": "dsp.js",
+  "presets": "presets.json",
+  "components": [
+    {
+      "kind": "engine",
+      "id": "tb303",
+      "name": "303",
+      "polyphony": "mono",
+      "params": [
+        {
+          "id": "filter.cutoff",
+          "label": "Cutoff",
+          "kind": "continuous",
+          "min": 0,
+          "max": 1,
+          "default": 0.42,
+          "group": "filter"
+        },
+        {
+          "id": "filter.resonance",
+          "label": "Resonance",
+          "kind": "continuous",
+          "min": 0,
+          "max": 1,
+          "default": 0.55,
+          "group": "filter"
+        },
+        {
+          "id": "env.amount",
+          "label": "Env",
+          "kind": "continuous",
+          "min": 0,
+          "max": 1,
+          "default": 0.5,
+          "group": "env"
+        },
+        {
+          "id": "env.decay",
+          "label": "Decay",
+          "kind": "continuous",
+          "min": 0,
+          "max": 1,
+          "default": 0.4,
+          "group": "env"
+        },
+        {
+          "id": "env.accent",
+          "label": "Accent",
+          "kind": "continuous",
+          "min": 0,
+          "max": 1,
+          "default": 0.6,
+          "group": "env"
+        },
+        {
+          "id": "osc.wave",
+          "label": "Wave",
+          "kind": "discrete",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "group": "osc",
+          "options": [
+            {
+              "value": "sawtooth",
+              "label": "Saw"
+            },
+            {
+              "value": "square",
+              "label": "Sqr"
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "id": "osc",
+          "title": "OSC",
+          "row": 0,
+          "color": "var(--knob-cyan)"
+        },
+        {
+          "id": "filter",
+          "title": "FILTER",
+          "row": 0,
+          "color": "var(--knob-orange)"
+        },
+        {
+          "id": "env",
+          "title": "ENV",
+          "row": 0,
+          "color": "var(--knob-purple)"
+        }
+      ],
+      "modulators": [
+        {
+          "id": "lfo1",
+          "kind": "lfo",
+          "enabled": true,
+          "connections": [],
+          "rateHz": 4,
+          "waveform": "sine",
+          "bipolar": true,
+          "syncToBpm": false,
+          "syncBars": 0.25,
+          "syncSubdiv": "straight",
+          "trigger": "free",
+          "scope": "shared"
+        }
+      ],
+      "capabilities": {
+        "clipContent": "notes",
+        "shortLabel": "tb-303",
+        "outputTrim": 0.45,
+        "slide": "overlap"
+      }
+    }
+  ]
+}

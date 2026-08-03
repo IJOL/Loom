@@ -1,30 +1,56 @@
-// src/audio-dsp/subtractive-renderer.ts
-import type { NoteSpec, SubParams, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets } from './types';
-import { param, slotOf } from './types';
-import { midiToFreq, clamp01 } from './dsp-util';
-import { SineOsc, WhiteNoise } from './osc';
-import { UnisonStack, driftDepthFor } from './unison';
-import { Svf } from './filter';
-import { FilterStack, trackedCutoff } from './filter-stack';
-import { Adsr } from './adsr';
-import type { ModLite } from './modulation-runtime';
-import { registerRenderer } from './renderer-registry';
-import { synthTrim } from './gain-staging';
-import { velGain01 } from '../core/velocity-gain';
+// plugins/subtractive/dsp.ts
+// Per-sample subtractive voice renderer: two unison-stacked oscillators + ring +
+// sub + noise → drive → two filter blocks with a routing between them → amp.
+// Pure — no Web Audio. Sample rate is injected.
 
-/** One per-voice ADSR modulator: its own envelope state + the shape/depths from
- *  the ModLite. update() returns env×depth per connected field, gated by the note. */
+import {
+  param, slotOf, midiToFreq, clamp01, velGain01,
+  SineOsc, WhiteNoise, UnisonStack, driftDepthFor, Svf, FilterStack, trackedCutoff, Adsr,
+} from '@loom/plugin-sdk';
+import type {
+  NoteSpec, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets, ModEnvSpec,
+} from '@loom/plugin-sdk';
+
+/** Flat per-voice subtractive parameter snapshot, in the dot-id vocabulary of
+ *  this engine's own manifest with waves as indices. It stays INSIDE the plugin:
+ *  it is this engine's identity, not a shape any other engine could reuse. */
+export interface SubParams {
+  masterTune: number;       // semitones
+  unisonVoices: number;     // 1..7 stacked copies of osc1/osc2 (read at trigger)
+  unisonDetune: number;     // spread across the stack, cents
+  unisonDrift: number;      // 0..1 analog per-copy pitch wander
+  osc1Wave: number; osc1Level: number; osc1Detune: number;   // wave 0..4, level 0..1, detune cents
+  osc1Pw: number; osc1Sync: number;                          // pulse width 0.05..0.95 (square only)
+  osc2Wave: number; osc2Level: number; osc2Detune: number;
+  osc2Pw: number; osc2Sync: number;
+  ringLevel: number;        // 0..1 level of the osc1 × osc2 product in the mix
+  subLevel: number;
+  noiseLevel: number; noiseColor: number;                    // color 0..1
+  filterCutoff: number; filterResonance: number; filterEnvAmount: number;
+  filterModel: number;      // index into FILTER_MODES (@loom/plugin-sdk filter-kinds)
+  filterType: number;       // index into THAT mode's own taps, clamped
+  filterRouting: number;    // 0 = off, 1 = series, 2 = parallel, 3 = difference
+  filterBlend: number;      // 0..1 how much of filter B is in the result
+  filter2Model: number; filter2Type: number;
+  filter2Cutoff: number; filter2Resonance: number;
+  filter2Track: number;     // 0..1 how far B follows A's envelope + key track
+  filterDrive: number; filterKeyTrack: number; filterBuiltinEnv: number; // builtinEnv 0/1
+  filterAttack: number; filterDecay: number; filterSustain: number; filterRelease: number;
+  ampBuiltinEnv: number;                                     // 0/1
+  ampAttack: number; ampDecay: number; ampSustain: number; ampRelease: number;
+}
+
 /** One per-voice ADSR modulator with its targets already resolved to SLOTS —
  *  once, at spawn. Subtractive keeps its own combine rather than using
  *  ModEnvHost because two of its targets are not additive offsets at all: 'amp'
  *  and 'filter.env' BECOME the voice's envelopes. */
-interface ModEnv { adsr: Adsr; m: ModLite; slots: Int32Array; depths: Float64Array; }
+interface ModEnv { adsr: Adsr; m: ModEnvSpec; slots: Int32Array; depths: Float64Array; }
 
 const NO_SLOTS = new Float64Array(0);
 
 /** Read a dot-id ParamBag into an EXISTING SubParams — no allocation, so the
- *  lane can refresh its live snapshot on the audio thread. Defaults match
- *  subtractive-params.ts / defaultSubParams(). */
+ *  lane can refresh its live snapshot on the audio thread. Defaults match the
+ *  manifest's own declared defaults. */
 export function subParamsInto(b: ParamBag, out: SubParams): SubParams {
   out.masterTune = param(b, 'master.tune', 0);
   out.unisonVoices = param(b, 'master.unison', 1);
@@ -87,7 +113,7 @@ const MOD_UNISON_CENTS = 50;
 /** Depth 1 on a bipolar LFO sweeps the width across most of its range, which
  *  is what a PWM pad wants; the clamp keeps it out of silence at the extremes. */
 const MOD_PW_RANGE = 0.45;
-/** The Sync wave's index in WAVE_OPTIONS (Saw, Sqr, Tri, Sin, Sync). */
+/** The Sync wave's index in the osc wave options (Saw, Sqr, Tri, Sin, Sync). */
 const WAVE_SYNC = 4;
 /** Sync ratio lives in 1..8 (SYNC_RATIO_MIN/MAX). */
 const clampSync = (v: number) => Math.min(8, Math.max(1, v));
@@ -158,7 +184,7 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
   // are modulated (those ranges scale with the live base cutoff).
   private keySemiDelta: number; private accentMul: number;
   // Trigger-time frozen structure. `this.p` becomes the LANE's live snapshot once
-  // setLiveSubParams runs, so anything that must NOT change mid-note is copied
+  // setLiveValues runs, so anything that must NOT change mid-note is copied
   // here at spawn: the two oscillator waves (a Sync wave reinterprets its second
   // argument), the two envelope switches and all eight envelope TIMES.
   private readonly osc1WaveFrozen: number;
@@ -223,7 +249,9 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
       p.filterModel, p.filterType, p.filter2Model, p.filter2Type, p.filterRouting, sampleRate,
     );
     // × output.trim: per-preset gain-staging lever (params['output.trim'], default 1).
-    this.velPeak = synthTrim('subtractive') * param(params, 'output.trim', 1) * velGain01(note.velocity, note.accent);
+    // The per-ENGINE trim is NOT here: the host applies capabilities.outputTrim from
+    // the manifest, so a plugin never multiplies by its own balance.
+    this.velPeak = param(params, 'output.trim', 1) * velGain01(note.velocity, note.accent);
     this.keySemiDelta = note.midi - 60;
     this.accentMul = note.accent ? 1.3 : 1.0;
     this.osc1WaveFrozen = p.osc1Wave;
@@ -240,7 +268,7 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
    *  at spawn by the VoiceManager. LFOs are NOT here — they stay shared. The
    *  lane's numbering comes with them so each target resolves to a slot HERE,
    *  not on every sample. */
-  setModEnvelopes(mods: ModLite[], index: ParamIndex): void {
+  setModEnvelopes(mods: ModEnvSpec[], index: ParamIndex): void {
     this.effMo = new Float64Array(index.length);
     this.adsrOnly = new Float64Array(index.length);
     this.sAmpTarget = slotOf(index, 'amp');
@@ -298,7 +326,7 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
 
   /** Fold this voice's gated ADSR envelopes into the shared-LFO offsets, returning
    *  one effective offset set the rest of renderSample reads. Reuses the pooled
-   *  struct; `moIn` carries the full 14-field subtractive set, so copying it first
+   *  struct; `moIn` carries the full subtractive set, so copying it first
    *  resets every field before the ADSR contributions are added on top. */
   private combineMods(t: number, gate: number, moIn?: VoiceModOffsets): VoiceModOffsets {
     const e = this.effMo;
@@ -389,11 +417,11 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     const drift = mo?.[this.sUnisonDrift] ? clamp01((L && this.sUnisonDrift >= 0 ? L[this.sUnisonDrift] : p.unisonDrift) + mo[this.sUnisonDrift]) : (L && this.sUnisonDrift >= 0 ? L[this.sUnisonDrift] : p.unisonDrift);
     const driftAmt = drift * this.driftDepth;
     // oscillators (detune in cents; sub one octave down). The sub and the noise
-    // are deliberately NOT scaled by the stack's gain compensation, unlike mpump:
-    // they are single sources that never got stacked, so there is nothing to
-    // compensate, and sub.level/noise.level keep meaning exactly what they always
-    // meant. (Turning unison up therefore fattens the oscillators against them —
-    // which is what turning unison up is for.)
+    // are deliberately NOT scaled by the stack's gain compensation: they are
+    // single sources that never got stacked, so there is nothing to compensate,
+    // and sub.level/noise.level keep meaning exactly what they always meant.
+    // (Turning unison up therefore fattens the oscillators against them — which
+    // is what turning unison up is for.)
     const o1 = this.osc1.update(f, pw1, det1, spread, driftAmt);
     const o2 = this.osc2.update(f, pw2, det2, spread, driftAmt);
     let mix = o1 * osc1Level + o2 * osc2Level + this.sub.update(f * 0.5) * subLevel;
@@ -479,4 +507,4 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
   }
 }
 
-registerRenderer('subtractive', (n, p, sr) => new SubtractiveVoiceRenderer(n, p, sr));
+Loom.registerRenderer('subtractive', (n, p, sr) => new SubtractiveVoiceRenderer(n, p, sr));

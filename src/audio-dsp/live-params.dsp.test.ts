@@ -8,7 +8,7 @@
 // test can pass while the knob does nothing.
 import { describe, it, expect } from 'vitest';
 
-// Four of the engines below ship as PLUGINS, and a plugin's dsp.ts calls
+// Every engine below ships as a PLUGIN, and a plugin's dsp.ts calls
 // Loom.registerRenderer at module scope. `test/plugin-dsp` installs that global
 // as its own side effect and forwards into this registry, so it MUST stay above
 // the plugin imports — ESM evaluates in source order.
@@ -20,16 +20,27 @@ import { ModulationRuntime, type ModLite } from './modulation-runtime';
 // Side-effect import: registers the 'lfo' kernel ModulationRuntime looks up.
 import './modulators/lfo-kernel';
 import { WORKLET_ENGINE_IDS } from '../app/lane-allocator';
-// Side-effect imports: register the real renderers, in-tree ones first.
-import './tb303-renderer';
-import './subtractive-renderer';
+// WORKLET_ENGINE_IDS is now backed purely by which plugin engines are installed
+// (there is no built-in melodic engine left to hard-code), so the ids only exist
+// here once their manifests have gone through registerComponent.
+import { registerPluginEngine } from '../../test/plugin-fixtures';
 // The plugin rows below drive the SHIPPED plugin renderers through the same
 // VoiceManager path the worklet uses — the coverage did not move out of this
 // file just because the engines moved out of src/.
+import '../../plugins/tb303/dsp';
+import '../../plugins/subtractive/dsp';
 import '../../plugins/wavetable/dsp';
 import '../../plugins/fm/dsp';
 import '../../plugins/westcoast/dsp';
 import '../../plugins/karplus/dsp';
+
+// The manifest half of each plugin, so WORKLET_ENGINE_IDS answers with them. The
+// dsp imports above register the RENDERERS; this registers the COMPONENTS, and
+// the registry-driven case at the bottom needs both — an engine listed with no
+// renderer, or a renderer nothing lists, is exactly the gap it exists to catch.
+for (const id of ['tb303', 'subtractive', 'wavetable', 'fm', 'westcoast', 'karplus']) {
+  registerPluginEngine(id);
+}
 
 const SR = 48000;
 

@@ -11,7 +11,7 @@ import type { SessionState } from '../session/session';
 //
 // It used to be written twice, and the two copies had drifted:
 //
-//   #bass-random-sound (303 page)  repainted with refreshKnobsFromSynth  ✅
+//   #bass-random-sound (303 page)  repainted the bass knobs directly  ✅
 //   #poly-randomize    (inspector) called rebuildEngineParamUI           ❌
 //
 // rebuildEngineParamUI is the ENGINE-SWAP tool: it unregisters every knob of

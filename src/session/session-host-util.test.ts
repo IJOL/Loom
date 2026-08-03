@@ -1,8 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { nextLaneSlug } from './session-host-util';
-import '../engines/tb303';
-import '../engines/subtractive';
 import { registerPluginEngine } from '../../test/plugin-fixtures';
+
+// tb303 and subtractive ship as plugins: the equivalent of the old
+// side-effect import is that manifest going through the same registerComponent
+// door the plugin loader uses.
+registerPluginEngine('tb303');
+registerPluginEngine('subtractive');
 
 // Three of the five are plugins now, so their prefix comes from the manifest's
 // capabilities rather than from a module in src/. The claim below does not

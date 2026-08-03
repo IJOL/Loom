@@ -12,6 +12,15 @@
 // the quarters match.
 
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
+// The melodic engines these scenes use ship as PLUGINS, so no renderer arrives
+// by side-effect import any more. In production the offline exporter calls
+// importPluginDspOnMainThread (plugin-host/plugin-dsp.ts); here `test/plugin-dsp`
+// installs the same Loom global and the plugin dsp registers through it.
+import '../../test/plugin-dsp';
+// …and the manifest half, which is what puts the engine in the registry the
+// recorder resolves lanes through. In production loadPlugins does both.
+import { registerPluginEngine } from '../../test/plugin-fixtures';
+import '../../plugins/subtractive/dsp';
 import { OfflineSceneRecorder } from './offline-recorder';
 import { bootstrapPlugins } from '../app/plugin-bootstrap';
 import { emptyLanePlayState, type LanePlayState } from '../session/session-runtime';
@@ -73,7 +82,7 @@ async function renderQuarters(): Promise<{ q1: number; q4: number }> {
 }
 
 describe('OfflineSceneRecorder applies clip automation (DSP)', () => {
-  beforeAll(() => { bootstrapPlugins(); });
+  beforeAll(() => { bootstrapPlugins(); registerPluginEngine('subtractive'); });
   beforeEach(() => { __resetPresetCache(); __seedPresetCache('subtractive', [RICH]); });
 
   it('a rising cutoff envelope makes the last quarter brighter than the first', async () => {

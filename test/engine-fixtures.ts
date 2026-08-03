@@ -5,40 +5,44 @@
 //
 // The param bags are each engine's own defaults, as used by its renderer test.
 //
-// Three of the five renderers below now live in plugins/, and a plugin's dsp.ts
+// EVERY renderer below now lives in plugins/, and a plugin's dsp.ts
 // registers itself through the Loom global at module scope. `./plugin-dsp` is
 // what installs that global, so it MUST stay the first import here — ESM
 // evaluates in source order, and moving it below would leave the plugin modules
 // reaching for a global nobody put there.
 import './plugin-dsp';
 import type { NoteSpec, ParamBag, VoiceRenderer } from '../src/audio-dsp/types';
-import { TB303Renderer } from '../src/audio-dsp/tb303-renderer';
-import { SubtractiveVoiceRenderer } from '../src/audio-dsp/subtractive-renderer';
+import { TB303Renderer } from '../plugins/tb303/dsp';
+import { SubtractiveVoiceRenderer } from '../plugins/subtractive/dsp';
 import { WavetableRenderer } from '../plugins/wavetable/dsp';
 import { WestcoastRenderer } from '../plugins/westcoast/dsp';
 import { FMRenderer } from '../plugins/fm/dsp';
 import wavetableManifest from '../plugins/wavetable/plugin.json';
 import westcoastManifest from '../plugins/westcoast/plugin.json';
 import fmManifest from '../plugins/fm/plugin.json';
+import tb303Manifest from '../plugins/tb303/plugin.json';
+import subtractiveManifest from '../plugins/subtractive/plugin.json';
 import { CATEGORY_GAIN } from '../src/audio-dsp/gain-staging';
 
 export const SR = 48000;
 
 /** The gain the HOST puts on this engine's voice, which the renderer itself does
- *  NOT apply. An in-tree renderer still multiplies its own synthTrim() into every
- *  sample, so its answer is 1; a plugin renderer multiplies neither factor — its
- *  trim is a manifest capability the host applies at the sum point — so both go
- *  back on here.
+ *  NOT apply. A plugin renderer multiplies in neither its engine trim nor the
+ *  category gain — its trim is a manifest capability the host applies at the sum
+ *  point — so both go back on here, and every melodic engine is now a plugin.
+ *  An id with no manifest entry (a built-in, should one ever return) answers 1.
  *
- *  Without this the fixture would be silently inconsistent: three engines at
- *  voice level and two at host level, so any assertion comparing LEVELS across
- *  the boundary would measure the packaging instead of the voicing. Ratios taken
+ *  Without this the fixture would measure voices at voice level while the
+ *  listener meets them at host level, so any assertion comparing LEVELS between
+ *  engines would measure the packaging instead of the voicing. Ratios taken
  *  WITHIN one engine (velocity shape, accent punch) cancel it and need not care. */
 export function hostTrim(id: string): number {
   const declared: Record<string, number> = {
     wavetable: wavetableManifest.components[0].capabilities.outputTrim,
     westcoast: westcoastManifest.components[0].capabilities.outputTrim,
     fm: fmManifest.components[0].capabilities.outputTrim,
+    tb303: tb303Manifest.components[0].capabilities.outputTrim,
+    subtractive: subtractiveManifest.components[0].capabilities.outputTrim,
   };
   return id in declared ? declared[id] * CATEGORY_GAIN.synth : 1;
 }
@@ -87,9 +91,9 @@ export const ENGINE_PARAMS: Record<string, ParamBag> = {
 };
 
 /** Every melodic engine whose voice gain comes from the velocity + accent pair.
- *  Three of them ship as plugins; that is a packaging fact, and the claim this
+ *  All of them ship as plugins now; that is a packaging fact, and the claim this
  *  list serves — pointing one clip at another engine must not change its
- *  dynamics — is exactly the kind that has to span the boundary. karplus is the
+ *  dynamics — is exactly the kind that has to span engines. karplus is the
  *  exception: it is measured next to its own source (plugins/karplus/dsp.test.ts)
  *  because its excitation is random and needs a seed this fixture does not take. */
 export const MELODIC_IDS = ['tb303', 'wavetable', 'subtractive', 'westcoast', 'fm'];

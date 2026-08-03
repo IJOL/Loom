@@ -11,7 +11,10 @@
 // exactly that one.
 import { describe, it, expect } from 'vitest';
 import { VoiceManager } from './voice-manager';
-import './subtractive-renderer';   // side-effect: registers the 'subtractive' renderer
+// `test/plugin-dsp` installs the Loom global a plugin's dsp.ts registers
+// through, so it MUST stay above the plugin import below.
+import '../../test/plugin-dsp';
+import '../../plugins/subtractive/dsp';   // side-effect: registers the 'subtractive' renderer
 import type { ParamBag, NoteSpec } from './types';
 
 const SR = 48000;

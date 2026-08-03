@@ -1,19 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { defaultSubParams } from '../audio-dsp/default-params';
 import type { MainToWorklet } from '../audio-dsp/messages';
 import { LoomWorkletNode } from './loom-node';
 
 // The wrapper's posting logic is pure; test it by capturing posted messages.
 // (We don't instantiate a real AudioWorkletNode — that needs a worklet env.)
 describe('loom-node message shaping', () => {
-  it('defaultSubParams returns a complete SubParams snapshot', () => {
-    const p = defaultSubParams();
-    expect(p.osc1Level).toBeGreaterThan(0);
-    expect(p.filterCutoff).toBeGreaterThan(0);
-    expect(p.ampSustain).toBeGreaterThan(0);
-  });
-
   it('postMessage payloads are well-typed spawn/params/config/steal unions', () => {
     const posted: MainToWorklet[] = [];
     const fakePort = { postMessage: (m: MainToWorklet) => posted.push(m) };

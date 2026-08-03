@@ -75,10 +75,19 @@ export function isWorkletHosted(id: string): boolean {
   return fromPlugin.has(id);
 }
 
+/** Every id `isWorkletHosted` answers true for. The host has no melodic engine
+ *  of its own any more, so this IS the set of engines the worklet path routes —
+ *  which is what a registry-driven test (audio-dsp/live-params.dsp.test.ts) has
+ *  to walk. Read through `WORKLET_ENGINE_IDS` in the allocator, never here. */
+export function workletHostedIds(): string[] {
+  return [...fromPlugin];
+}
+
 /** What the host must multiply a PLUGIN engine's voices by: its declared
- *  balance times the category gain — exactly what synthTrim() computes for an
- *  in-tree engine. undefined when it is not a plugin, so callers fall back to 1
- *  and the in-tree renderer's own multiplication still stands. */
+ *  balance times the category gain. This is the ONLY place that product is
+ *  formed now — the host-side ENGINE_TRIM table it used to mirror went with the
+ *  last built-in melodic engine. undefined when the id is not a plugin, so
+ *  callers fall back to 1. */
 export function pluginSynthTrim(id: string): number | undefined {
   if (!fromPlugin.has(id)) return undefined;
   const t = caps.get(id)?.outputTrim;

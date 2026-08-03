@@ -9,9 +9,12 @@ import type { NoteSpec } from '../audio-dsp/types';
 import type { ModLite } from '../audio-dsp/modulation-runtime';
 import { __resetModulatorKernels } from '../audio-dsp/modulator-kernels';
 import { installMainThreadLoomApi, __resetPluginEngines } from '../plugin-host/loom-api';
-// Register the kernel renderers (side-effect imports).
-import '../audio-dsp/subtractive-renderer';
-import '../audio-dsp/tb303-renderer';
+// Register the kernel renderers (side-effect imports). Both engines are plugins
+// now, so `test/plugin-dsp` installs the Loom global their dsp.ts registers
+// through and must stay above them.
+import '../../test/plugin-dsp';
+import '../../plugins/subtractive/dsp';
+import '../../plugins/tb303/dsp';
 
 function rms(ch: Float32Array): number {
   let s = 0;

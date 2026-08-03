@@ -1,6 +1,6 @@
-// src/presets/subtractive-presets.test.ts
+// plugins/subtractive/presets.test.ts
 //
-// Guards public/presets/subtractive.json against the engine's own param schema
+// Guards this plugin's presets.json against its OWN manifest
 // and against silence. JSON is the source of truth for presets, which means a
 // typo'd param id is silently ignored by `param(bag, id, default)` and an
 // out-of-range value is silently clamped (or not) — neither throws, both just
@@ -9,19 +9,36 @@
 // Deliberately NOT re-tested here (preset-sanity.test.ts already covers it for
 // every engine): the file parses, names are unique, gm entries are valid ints.
 
-import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { SUB_PARAM_SPECS } from '../engines/subtractive-params';
-import { SubtractiveVoiceRenderer } from '../audio-dsp/subtractive-renderer';
-import type { ParamBag } from '../audio-dsp/types';
+import { describe, it, expect, vi } from 'vitest';
+
+// `dsp.ts` calls Loom.registerRenderer at module scope — that is the ABI — so
+// the global must exist before the import graph is evaluated.
+vi.hoisted(() => {
+  (globalThis as unknown as { Loom: unknown }).Loom = {
+    apiVersion: 1, registerRenderer: () => {},
+  };
+});
+
+import { SubtractiveVoiceRenderer } from './dsp';
+import manifest from './plugin.json';
+import presetFile from './presets.json';
+import type { ParamBag, EngineParamSpec } from '@loom/plugin-sdk';
+import { CATEGORY_GAIN } from '../../src/audio-dsp/gain-staging';
 
 interface Preset { name: string; gm?: number[]; params: Record<string, number> }
-const PRESETS: Preset[] = JSON.parse(
-  readFileSync(resolve('public/presets/subtractive.json'), 'utf8'),
-).presets;
+const PRESETS = presetFile.presets as unknown as Preset[];
 
+// The engine's own schema, via its manifest — i.e. exactly what the UI can reach.
+const SUB_PARAM_SPECS = manifest.components[0].params as unknown as EngineParamSpec[];
 const SPEC_BY_ID = new Map(SUB_PARAM_SPECS.map((s) => [s.id, s]));
+
+/** What the HOST multiplies this plugin's voice by, which the renderer no longer
+ *  does itself: the manifest's outputTrim times the synth category gain. Every
+ *  LEVEL threshold below was calibrated where the listener meets the voice, so
+ *  it is applied before comparing — otherwise these would measure the packaging
+ *  (a plugin renderer keeps neither factor) instead of the sound. */
+const HOST_TRIM = manifest.components[0].capabilities.outputTrim * CATEGORY_GAIN.synth;
+
 
 // The one param a preset may carry that is NOT in SUB_PARAM_SPECS: the per-preset
 // gain-staging lever documented in audio-dsp/gain-staging.ts and read by the
@@ -95,7 +112,7 @@ describe('subtractive presets — every param is one the engine actually has', (
 // BLOW_UP: NOT a 0 dBFS clip test. A subtractive voice is not the output: it runs
 //   into the lane fader and the master soft-clip, and a resonant SVF legitimately
 //   rings above unity (the pack peaks at ~2.5 on the acid presets). The real
-//   contract is the renderer's own resonance bound — subtractive-renderer.test.ts
+//   contract is the renderer's own resonance bound — dsp.test.ts next door
 //   asserts peak < 4.0 at max resonance. Above that is an undamped-filter bug.
 const SILENT = 0.01;
 const BLOW_UP = 4.0;
@@ -103,8 +120,8 @@ const BLOW_UP = 4.0;
 describe('subtractive presets — every preset makes a sound', () => {
   it.each(PRESETS.map((p) => [p.name, p] as const))('%s is audible and stays bounded', (_name, preset) => {
     const buf = render(preset, 0.5);
-    expect(rms(buf)).toBeGreaterThan(SILENT);
-    expect(peak(buf)).toBeLessThan(BLOW_UP);
+    expect(rms(buf) * HOST_TRIM).toBeGreaterThan(SILENT);
+    expect(peak(buf) * HOST_TRIM).toBeLessThan(BLOW_UP);
   });
 });
 

@@ -3,18 +3,34 @@
 // the Sync wave exists. Each must select the Sync wave (index 4) and set a real
 // ratio, or it is not the patch.
 
-import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { validatePresetEntry } from './preset-loader';
-import { SubtractiveVoiceRenderer } from '../audio-dsp/subtractive-renderer';
-import type { ParamBag, NoteSpec } from '../audio-dsp/types';
+import { describe, it, expect, vi } from 'vitest';
+// `dsp.ts` calls Loom.registerRenderer at module scope — that is the ABI — so
+// the global must exist before the import graph is evaluated.
+vi.hoisted(() => {
+  (globalThis as unknown as { Loom: unknown }).Loom = {
+    apiVersion: 1, registerRenderer: () => {},
+  };
+});
 
-const presets: Array<{ name: string; params: Record<string, number>; modulators?: unknown[] }> =
-  JSON.parse(readFileSync(join(process.cwd(), 'public/presets/subtractive.json'), 'utf8')).presets;
+import { validatePresetEntry } from '../../src/presets/preset-loader';
+import { SubtractiveVoiceRenderer } from './dsp';
+import manifest from './plugin.json';
+import { CATEGORY_GAIN } from '../../src/audio-dsp/gain-staging';
+import presetFile from './presets.json';
+import type { ParamBag, NoteSpec } from '@loom/plugin-sdk';
+
+const presets = presetFile.presets as unknown as
+  Array<{ name: string; params: Record<string, number>; modulators?: unknown[] }>;
 const find = (needle: string) => presets.find((p) => p.name.includes(needle));
 
 const SR = 48000;
+
+/** What the HOST multiplies this plugin's voice by, which the renderer no longer
+ *  does itself: the manifest's outputTrim times the synth category gain. The
+ *  absolute peak ceilings below were calibrated where the listener meets the
+ *  voice, so they are compared against a level with it applied. */
+const HOST_TRIM = manifest.components[0].capabilities.outputTrim * CATEGORY_GAIN.synth;
+
 const rms = (b: number[]) => Math.sqrt(b.reduce((s, v) => s + v * v, 0) / b.length);
 const note = (o: Partial<NoteSpec> = {}): NoteSpec =>
   ({ midi: 45, beginSec: 0, durationSec: 0.3, velocity: 0.85, accent: false, slide: false, ...o });
@@ -40,8 +56,8 @@ describe('the three sync presets use the hard-sync oscillator', () => {
       const v = new SubtractiveVoiceRenderer(note(), { ...DEFAULTS, ...p!.params }, SR);
       const b: number[] = [];
       for (let i = 0; i < SR * 0.15; i++) b.push(v.renderSample(i / SR));
-      expect(rms(b), `${needle} is silent`).toBeGreaterThan(0.01);
-      expect(Math.max(...b.map(Math.abs)), `${needle} blew up`).toBeLessThan(4);
+      expect(rms(b) * HOST_TRIM, `${needle} is silent`).toBeGreaterThan(0.01);
+      expect(Math.max(...b.map(Math.abs)) * HOST_TRIM, `${needle} blew up`).toBeLessThan(4);
     });
   }
 

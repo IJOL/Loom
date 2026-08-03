@@ -307,7 +307,6 @@ const knobs = createKnobMounter({
   registerKnob,
   registry: automationRegistry,
   laneResources,
-  // Phase G: synth removed — refreshKnobsFromSynth resolves lazily from laneResources.
   fmtPct, fmtDb,
   getSessionState: () => sessionHost?.state,
   getLaneDisplayName: (id) => sessionHost?.state.lanes.find((l) => l.id === id)?.name,
@@ -316,7 +315,6 @@ const knobs = createKnobMounter({
 });
 const mountDrumMasterLaneKnobs = knobs.mountDrumMasterLaneKnobs;
 const mountLaneFxPanel = knobs.mountLaneFxPanel;
-const refreshKnobsFromSynth = knobs.refreshKnobsFromSynth;
 const refreshLaneKnobs = knobs.refreshLaneKnobs;
 
 // TB-303 engine knobs are rendered per-lane by TB303Engine.buildParamUI
@@ -760,7 +758,6 @@ const { autoHistory, historyDeps, saveWiringDeps } = createSaveAndHistory({
   ctx, seq, lanes, master,
   volInput, bpmInput, swingInput, meterSel,
   sessionHost,
-  refreshKnobsFromSynth,
   // A thunk, not the value: `renderLanes` is a `let` whose comment above promises
   // it is assigned during boot. Snapshotting it here would freeze whatever it held
   // at this line, while transport-controls (which takes the same binding) reads it

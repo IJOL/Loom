@@ -1,0 +1,33 @@
+{
+  "engineId": "tb303",
+  "presets": [
+    {"name":"BASS Acid Classic","gm":[32,33,38],"params":{"filter.cutoff":0.28,"filter.resonance":0.55,"env.amount":0.35,"env.decay":0.18,"env.accent":0.55,"osc.wave":0}},
+    {"name":"BASS Acid Dark","gm":[33,35],"params":{"filter.cutoff":0.18,"filter.resonance":0.6,"env.amount":0.3,"env.decay":0.14,"env.accent":0.55,"osc.wave":0}},
+    {"name":"BASS Squelch","gm":[36,37],"params":{"filter.cutoff":0.3,"filter.resonance":0.8,"env.amount":0.42,"env.decay":0.1,"env.accent":0.65,"osc.wave":0}},
+    {"name":"BASS Dub Sub","gm":[35,39],"params":{"filter.cutoff":0.06,"filter.resonance":0.08,"env.amount":0.05,"env.decay":0.1,"env.accent":0.25,"osc.wave":1}},
+    {"name":"BASS Round","gm":[38,39],"params":{"filter.cutoff":0.14,"filter.resonance":0.18,"env.amount":0.12,"env.decay":0.12,"env.accent":0.35,"osc.wave":1}},
+    {"name":"BASS Mute","gm":[32,34],"params":{"filter.cutoff":0.1,"filter.resonance":0.15,"env.amount":0.08,"env.decay":0.05,"env.accent":0.35,"osc.wave":1}},
+    {"name":"BASS Open","gm":[34,37],"params":{"filter.cutoff":0.34,"filter.resonance":0.25,"env.amount":0.25,"env.decay":0.16,"env.accent":0.45,"osc.wave":0}},
+    {"name":"BASS Pluck","gm":[32,36],"params":{"filter.cutoff":0.16,"filter.resonance":0.35,"env.amount":0.4,"env.decay":0.04,"env.accent":0.5,"osc.wave":1}},
+    {"name":"BASS Slap Saw","gm":[36,37],"params":{"filter.cutoff":0.22,"filter.resonance":0.45,"env.amount":0.45,"env.decay":0.05,"env.accent":0.7,"osc.wave":0}},
+    {"name":"BASS Slap Sqr","gm":[34,38],"params":{"filter.cutoff":0.2,"filter.resonance":0.3,"env.amount":0.38,"env.decay":0.05,"env.accent":0.7,"osc.wave":1}},
+    {"name":"BASS Resonant","gm":[33,39],"params":{"filter.cutoff":0.24,"filter.resonance":0.85,"env.amount":0.35,"env.decay":0.12,"env.accent":0.55,"osc.wave":0}},
+    {"name":"BASS Closed Filter","gm":[35,36],"params":{"filter.cutoff":0.04,"filter.resonance":0.12,"env.amount":0.04,"env.decay":0.2,"env.accent":0.3,"osc.wave":1}},
+    {"name":"BASS Driver","gm":[34,38],"params":{"filter.cutoff":0.26,"filter.resonance":0.5,"env.amount":0.3,"env.decay":0.14,"env.accent":0.6,"osc.wave":0}},
+    {"name":"BASS Saw Pluck","gm":[32,39],"params":{"filter.cutoff":0.2,"filter.resonance":0.3,"env.amount":0.35,"env.decay":0.04,"env.accent":0.5,"osc.wave":0}},
+    {"name":"BASS Wobble","gm":[37,38],"params":{"filter.cutoff":0.2,"filter.resonance":0.65,"env.amount":0.15,"env.decay":0.25,"env.accent":0.45,"osc.wave":0}},
+    {"name":"BASS Sub Round","gm":[33,35],"params":{"filter.cutoff":0.08,"filter.resonance":0.1,"env.amount":0.06,"env.decay":0.14,"env.accent":0.3,"osc.wave":1}},
+    {"name":"LEAD 303 Bright","gm":[80,81],"params":{"filter.cutoff":0.5,"filter.resonance":0.5,"env.amount":0.35,"env.decay":0.16,"env.accent":0.6,"osc.wave":0}},
+    {"name":"LEAD 303 Dark","gm":[82,83],"params":{"filter.cutoff":0.28,"filter.resonance":0.55,"env.amount":0.35,"env.decay":0.2,"env.accent":0.55,"osc.wave":0}},
+    {"name":"LEAD Acid Fast","gm":[81,84],"params":{"filter.cutoff":0.36,"filter.resonance":0.72,"env.amount":0.45,"env.decay":0.06,"env.accent":0.7,"osc.wave":0}},
+    {"name":"LEAD Acid Slow","gm":[85,86],"params":{"filter.cutoff":0.3,"filter.resonance":0.68,"env.amount":0.4,"env.decay":0.3,"env.accent":0.55,"osc.wave":0}},
+    {"name":"LEAD Square Lead","gm":[80,87],"params":{"filter.cutoff":0.46,"filter.resonance":0.22,"env.amount":0.25,"env.decay":0.18,"env.accent":0.5,"osc.wave":1}},
+    {"name":"LEAD Saw Lead","gm":[81,84],"params":{"filter.cutoff":0.48,"filter.resonance":0.28,"env.amount":0.28,"env.decay":0.18,"env.accent":0.55,"osc.wave":0}},
+    {"name":"LEAD Closed Filter","gm":[82,85],"params":{"filter.cutoff":0.14,"filter.resonance":0.35,"env.amount":0.2,"env.decay":0.22,"env.accent":0.45,"osc.wave":0}},
+    {"name":"LEAD Open Filter","gm":[83,86,87],"params":{"filter.cutoff":0.58,"filter.resonance":0.2,"env.amount":0.15,"env.decay":0.2,"env.accent":0.45,"osc.wave":0}},
+    {"name":"LEAD Squelch","gm":[84,86],"params":{"filter.cutoff":0.34,"filter.resonance":0.88,"env.amount":0.45,"env.decay":0.08,"env.accent":0.68,"osc.wave":0}},
+    {"name":"LEAD Hollow","gm":[85,87],"params":{"filter.cutoff":0.3,"filter.resonance":0.15,"env.amount":0.18,"env.decay":0.24,"env.accent":0.4,"osc.wave":1}},
+    {"name":"LEAD Buzz","gm":[80,81,82],"params":{"filter.cutoff":0.4,"filter.resonance":0.6,"env.amount":0.38,"env.decay":0.2,"env.accent":0.62,"osc.wave":0}},
+    {"name":"LEAD Sub Lead","gm":[83,87],"params":{"filter.cutoff":0.16,"filter.resonance":0.12,"env.amount":0.1,"env.decay":0.26,"env.accent":0.35,"osc.wave":1}}
+  ]
+}

@@ -1,8 +1,14 @@
 /** @vitest-environment jsdom */
+// The host's row/section resolver, fed by Subtractive's own declared layout. The
+// engine ships as a plugin now, so that layout IS plugins/subtractive/plugin.json.
 import { describe, it, expect } from 'vitest';
 import { resolveParamRows } from './engine-param-groups';
-import { SUB_PARAM_SPECS } from './subtractive-params';
-import { SUB_PARAM_GROUPS } from './subtractive';
+import type { EngineParamSpec } from './engine-params';
+import type { EngineParamGroup } from './engine-param-groups';
+import manifest from '../../plugins/subtractive/plugin.json';
+
+const SUB_PARAM_SPECS = manifest.components[0].params as unknown as EngineParamSpec[];
+const SUB_PARAM_GROUPS = manifest.components[0].groups as unknown as EngineParamGroup[];
 
 describe('the subtractive page, from data', () => {
   // The two oscillators share a line; the three MIXER SOURCES they feed — ring

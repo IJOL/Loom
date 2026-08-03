@@ -23,26 +23,17 @@ import '../../test/plugin-dsp';
 import type { NoteSpec, ParamIndex } from './types';
 import { buildParamIndex } from './param-index';
 import { createRenderer } from './renderer-registry';
-import { getEngineDescriptor } from '../engines/registry';
-import { isStripParamId } from '../core/channel-strip-params';
-// Side-effect imports: the LFO and ADSR plugin modulators. Asking an engine for
-// its descriptor serialises its modulator host, which resolves every modulator
-// kind — without these, getEngineDescriptor throws "unknown modulator kind: lfo"
-// before a single param id is read.
-import '../plugins/modulators/lfo';
-import '../plugins/modulators/adsr';
-// Side-effect imports: the two built-in descriptors (for their declared params)
-// and their renderers (for what those actually read).
-import '../engines/tb303';
-import '../engines/subtractive';
-import './tb303-renderer';
-import './subtractive-renderer';
-// The plugin half of the same pair: the dsp registers the renderer, the manifest
-// declares the params. Four engines, one contract, two doors.
+// Every engine is a plugin now, and each brings the pair this test needs: the
+// dsp registers the renderer, the manifest declares the params. Six engines,
+// one contract, two doors.
+import '../../plugins/tb303/dsp';
+import '../../plugins/subtractive/dsp';
 import '../../plugins/fm/dsp';
 import '../../plugins/wavetable/dsp';
 import '../../plugins/westcoast/dsp';
 import '../../plugins/karplus/dsp';
+import tb303Manifest from '../../plugins/tb303/plugin.json';
+import subtractiveManifest from '../../plugins/subtractive/plugin.json';
 import fmManifest from '../../plugins/fm/plugin.json';
 import wavetableManifest from '../../plugins/wavetable/plugin.json';
 import westcoastManifest from '../../plugins/westcoast/plugin.json';
@@ -58,16 +49,11 @@ const note: NoteSpec =
  *  it. Keep this list and the seed in step. */
 const LANE_EXTRAS = ['poly.voices', 'output.trim'];
 
-/** Built-in engines: the descriptor registry is the source. */
-function builtinIds(engineId: string): string[] {
-  const d = getEngineDescriptor(engineId);
-  if (!d) throw new Error(`no descriptor for '${engineId}' — its module did not register`);
-  // Mixer params are excluded on purpose: they live on the lane's ChannelStrip,
-  // not in the renderer's bag, so they are not addressable and must not be.
-  return [...d.params.filter((s) => !isStripParamId(s.id)).map((s) => s.id), ...LANE_EXTRAS];
-}
-
-/** Plugin engines: the manifest is the source — same contract, different door. */
+/** Every engine is a plugin, so the manifest is the ONE source for what an
+ *  engine declares. Mixer params never appear in it: they live on the lane's
+ *  ChannelStrip, not in the renderer's bag, so they are not addressable and must
+ *  not be. (This used to have a second, descriptor-reading half for the built-in
+ *  engines — two doors onto one contract, until the last built-in left.) */
 function manifestIds(m: { components: { params?: { id: string }[] }[] }): string[] {
   return [...(m.components[0].params ?? []).map((p) => p.id), ...LANE_EXTRAS];
 }
@@ -88,8 +74,8 @@ function probeIndex(real: ParamIndex): { index: ParamIndex; asked: string[] } {
 }
 
 const CASES: [string, () => string[]][] = [
-  ['tb303', () => builtinIds('tb303')],
-  ['subtractive', () => builtinIds('subtractive')],
+  ['tb303', () => manifestIds(tb303Manifest as never)],
+  ['subtractive', () => manifestIds(subtractiveManifest as never)],
   ['fm', () => manifestIds(fmManifest as never)],
   ['wavetable', () => manifestIds(wavetableManifest as never)],
   ['westcoast', () => manifestIds(westcoastManifest as never)],

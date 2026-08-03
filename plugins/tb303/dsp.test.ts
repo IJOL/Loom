@@ -1,15 +1,22 @@
-// src/audio-dsp/tb303-renderer.test.ts
-// Tests for the TB-303 per-sample renderer. Uses REAL engine param dot-ids from
-// src/engines/tb303.ts: 'filter.cutoff', 'filter.resonance', 'env.amount',
-// 'env.decay', 'env.accent', 'osc.wave'. Engine id = 'tb303'.
-import { describe, it, expect } from 'vitest';
-import { TB303Renderer } from './tb303-renderer';
-import { createRenderer } from './renderer-registry';
-import type { NoteSpec, ParamBag } from './types';
+// plugins/tb303/dsp.test.ts
+// Behaviour of the TB-303 plugin's renderer. These assertions used to live in
+// src/audio-dsp/tb303-renderer.test.ts, against the in-tree engine; the shipped
+// plugin is the only 303 there is, so the coverage moved with it. The param
+// dot-ids are the ones plugin.json declares: 'filter.cutoff',
+// 'filter.resonance', 'env.amount', 'env.decay', 'env.accent', 'osc.wave'.
+import { describe, it, expect, vi } from 'vitest';
+
+// `test/plugin-dsp` installs the Loom global `dsp.ts` registers through AND
+// forwards into the host's renderer registry — which the createRenderer case at
+// the bottom needs, so the two-line stub the parity test uses is not enough here.
+import '../../test/plugin-dsp';
+import { TB303Renderer } from './dsp';
+import { createRenderer } from '../../src/audio-dsp/renderer-registry';
+import type { NoteSpec, ParamBag } from '@loom/plugin-sdk';
 
 const SR = 48000;
 
-// Default params using the REAL dot-ids from TB303Engine.PARAMS
+// Default params using the REAL dot-ids from the manifest
 const P: ParamBag = {
   'filter.cutoff':    0.3,
   'filter.resonance': 0.8,

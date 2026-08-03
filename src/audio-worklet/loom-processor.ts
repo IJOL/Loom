@@ -4,7 +4,7 @@
 //
 // CRITICAL: do NOT import loom-node.ts here — loom-node imports this file's
 // bundled URL; a reverse import would create a circular bundle dependency.
-// Shared constants (defaultSubParams) live in ../audio-dsp/default-params instead.
+// Anything both halves need lives in a third module under ../audio-dsp.
 /// <reference path="./worklet-globals.d.ts" />
 import { VoiceManager } from '../audio-dsp/voice-manager';
 import { SchedulerQueue } from '../audio-dsp/scheduler-queue';
@@ -12,11 +12,12 @@ import { ModulationRuntime } from '../audio-dsp/modulation-runtime';
 import type { MainToWorklet, WorkletToMain } from '../audio-dsp/messages';
 import type { NoteSpec } from '../audio-dsp/types';
 import { LOOM_PROCESSOR_NAME } from './processor-name';
-// Side-effect imports: each renderer self-registers into the renderer-registry
-// so VoiceManager.createRenderer(engineId, …) can build any engine's voice.
-import '../audio-dsp/subtractive-renderer';
-import '../audio-dsp/tb303-renderer';
-// Same pattern for modulator kernels: registered by side-effect import so
+// No melodic renderer is imported here any more: every one of them is a plugin,
+// whose dsp.js is addModule'd separately and registers itself through the Loom
+// global installed below. This block used to hold one side-effect import per
+// built-in engine.
+//
+// Modulator kernels are still registered by side-effect import, so
 // ModulationRuntime's registry lookup finds them inside the worklet bundle.
 import '../audio-dsp/modulators/lfo-kernel';
 import { registerRenderer } from '../audio-dsp/renderer-registry';

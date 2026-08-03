@@ -31,7 +31,6 @@ export interface SaveWiringDeps {
   swingInput: HTMLInputElement;
   meterSel: HTMLSelectElement;
   sessionHost: SessionHost;
-  refreshKnobsFromSynth: () => void;
   renderLanes: () => void;
   fx: FxBus;
   masterInsertChain: InsertChain;

@@ -1,4 +1,4 @@
-// src/presets/subtractive-filter-presets.test.ts
+// plugins/subtractive/filter-presets.test.ts
 //
 // The Subtractive filter grew into a stack six commits ago — two circuits'
 // worth of taps, four routing modes, a Track control, plus a ring modulator
@@ -12,22 +12,29 @@
 // SR, same note) so a failure here means the preset itself, not a different
 // measurement.
 
-import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { SUB_PARAM_SPECS } from '../engines/subtractive-params';
-import { FILTER_MODES } from '../audio-dsp/filter-kinds';
-import { SubtractiveVoiceRenderer } from '../audio-dsp/subtractive-renderer';
-import type { ParamBag } from '../audio-dsp/types';
+import { describe, it, expect, vi } from 'vitest';
+
+// `dsp.ts` calls Loom.registerRenderer at module scope — that is the ABI — so
+// the global must exist before the import graph is evaluated.
+vi.hoisted(() => {
+  (globalThis as unknown as { Loom: unknown }).Loom = {
+    apiVersion: 1, registerRenderer: () => {},
+  };
+});
+
+import { FILTER_MODES } from '@loom/plugin-sdk';
+import { SubtractiveVoiceRenderer } from './dsp';
+import manifest from './plugin.json';
+import presetFile from './presets.json';
+import type { ParamBag, EngineParamSpec } from '@loom/plugin-sdk';
 
 interface ModConnection { id: string; paramId: string; depth: number }
 interface Modulator { id: string; kind: string; enabled: boolean; connections: ModConnection[] }
 interface Preset { name: string; gm?: number[]; params: Record<string, number>; modulators?: Modulator[] }
 
-const PRESETS: Preset[] = JSON.parse(
-  readFileSync(resolve('public/presets/subtractive.json'), 'utf8'),
-).presets;
+const PRESETS = presetFile.presets as unknown as Preset[];
 
+const SUB_PARAM_SPECS = manifest.components[0].params as unknown as EngineParamSpec[];
 const SPEC_BY_ID = new Map(SUB_PARAM_SPECS.map((s) => [s.id, s]));
 const DEFAULT_BAG: ParamBag = Object.fromEntries(SUB_PARAM_SPECS.map((s) => [s.id, s.default]));
 

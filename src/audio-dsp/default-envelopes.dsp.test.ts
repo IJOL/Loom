@@ -15,32 +15,33 @@
 // importing it here does not drag in worklet-lane-engine.ts's Web-Audio/
 // lit-html dependency chain (LoomWorkletNode, lit-html…).
 import { describe, it, expect } from 'vitest';
-// Westcoast ships as a plugin, and its dsp.ts registers itself through the Loom
-// global at module scope — `test/plugin-dsp` installs that global, so it stays
-// above the plugin import below.
+// Both engines ship as plugins, and a plugin's dsp.ts registers itself through
+// the Loom global at module scope — `test/plugin-dsp` installs that global, so
+// it stays above the plugin imports below.
 import '../../test/plugin-dsp';
 import { ModulationRuntime } from './modulation-runtime';
 import { VoiceManager } from './voice-manager';
 import type { NoteSpec, ParamBag } from './types';
 import type { ModulatorState } from '../modulation/types';
-import './subtractive-renderer';
+import '../../plugins/subtractive/dsp';
 import '../../plugins/westcoast/dsp';
-// Side-effect only: registers the 'lfo'/'adsr' components so
-// SUBTRACTIVE_DEFAULT_MODULATORS() below (lazy — it reads the registry, not a
-// module-scope constant) resolves. Vitest isolates modules per file, so nothing
-// else in this file's import graph registers them.
+// Side-effect only: registers the 'lfo'/'adsr' components. Nothing below reads
+// the modulator registry directly any more, but toModLite still resolves the
+// kinds it is handed, and vitest isolates modules per file.
 import '../plugins/modulators/lfo';
 import '../plugins/modulators/adsr';
-import { SUBTRACTIVE_DEFAULT_MODULATORS } from '../engines/subtractive';
+import subtractiveManifest from '../../plugins/subtractive/plugin.json';
 import westcoastManifest from '../../plugins/westcoast/plugin.json';
 import { toModLite } from '../engines/mod-lite';
 
-// Westcoast's defaults used to be a function in src/engines/westcoast.ts. They
-// are now DATA in the plugin's manifest, which is the whole point of the move —
-// so read them from there rather than re-typing them here. Each call returns a
-// fresh deep copy because two tests below edit the states they are handed.
+// Both engines' defaults used to be functions in src/engines/. They are now
+// DATA in each plugin's manifest, which is the whole point of the move — so read
+// them from there rather than re-typing them here. Each call returns a fresh
+// deep copy because two tests below edit the states they are handed.
 const WESTCOAST_DEFAULT_MODULATORS = (): ModulatorState[] =>
   JSON.parse(JSON.stringify(westcoastManifest.components[0].modulators)) as ModulatorState[];
+const SUBTRACTIVE_DEFAULT_MODULATORS = (): ModulatorState[] =>
+  JSON.parse(JSON.stringify(subtractiveManifest.components[0].modulators)) as ModulatorState[];
 
 const SR = 44100;
 

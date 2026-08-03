@@ -1,7 +1,14 @@
 /** @vitest-environment jsdom */
+// The host's row/section resolver, fed by the 303's own declared layout. The
+// engine ships as a plugin now, so that layout IS plugins/tb303/plugin.json.
 import { describe, it, expect } from 'vitest';
 import { resolveParamRows } from './engine-param-groups';
-import { TB303_PARAMS, TB303_GROUPS } from './tb303';
+import type { EngineParamSpec } from './engine-params';
+import type { EngineParamGroup } from './engine-param-groups';
+import manifest from '../../plugins/tb303/plugin.json';
+
+const TB303_PARAMS = manifest.components[0].params as unknown as EngineParamSpec[];
+const TB303_GROUPS = manifest.components[0].groups as unknown as EngineParamGroup[];
 
 describe('the tb303 page, from data', () => {
   it('puts OSC, FILTER and ENV on one row, in that order', () => {

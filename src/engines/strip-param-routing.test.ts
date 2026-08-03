@@ -15,7 +15,11 @@ import { describe, it, expect } from 'vitest';
 import '../../test/setup';
 import { ChannelStrip, FxBus } from '../core/fx';
 import { WorkletLaneEngine, type WorkletEngineConfig } from './worklet-lane-engine';
-import { SUB_PARAM_SPECS } from './subtractive-params';
+import type { EngineParamSpec } from './engine-params';
+import subtractiveManifest from '../../plugins/subtractive/plugin.json';
+
+// Subtractive ships as a plugin, so its declared params ARE its manifest.
+const SUB_PARAM_SPECS = subtractiveManifest.components[0].params as unknown as EngineParamSpec[];
 import { STRIP_PARAM_SPECS } from '../core/channel-strip-params';
 
 function fixture() {

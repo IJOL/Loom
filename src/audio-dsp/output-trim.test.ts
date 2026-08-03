@@ -4,11 +4,16 @@
 // preset reads exactly `trim`× louder. Used to balance preset loudness so every
 // lane's VU meter reaches a similar height.
 
-// Plugin engines cover the same lever next to their own source — see
-// plugins/karplus/dsp.test.ts, which is where the Karplus half of this file went
-// when that engine left the tree.
+// Every engine is a plugin now; the other engines cover the same lever next to
+// their own source (e.g. plugins/karplus/dsp.test.ts, where the Karplus half of
+// this file went). Subtractive stays here because this is a claim about the
+// LEVER, which the host seeds and every renderer must honour — not about that
+// engine's voicing.
 import { describe, it, expect } from 'vitest';
-import { SubtractiveVoiceRenderer } from './subtractive-renderer';
+// `test/plugin-dsp` installs the Loom global the plugin's dsp.ts registers
+// through, so it MUST stay above the plugin import below.
+import '../../test/plugin-dsp';
+import { SubtractiveVoiceRenderer } from '../../plugins/subtractive/dsp';
 import type { NoteSpec, ParamBag } from './types';
 
 const SR = 48000;

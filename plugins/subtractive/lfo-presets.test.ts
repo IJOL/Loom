@@ -4,23 +4,35 @@
 // that it works end to end: the preset ships an LFO, and the LFO reaches the
 // live modulation host with a real connection to a real destination.
 
-import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { validatePresetEntry } from './preset-loader';
+import { describe, it, expect, vi } from 'vitest';
+// `dsp.ts` calls Loom.registerRenderer at module scope — that is the ABI — so
+// the global must exist before the import graph is evaluated.
+vi.hoisted(() => {
+  (globalThis as unknown as { Loom: unknown }).Loom = {
+    apiVersion: 1, registerRenderer: () => {},
+  };
+});
 
-const presets: Array<{ name: string; params: Record<string, number>; modulators?: unknown[] }> =
-  JSON.parse(readFileSync(join(process.cwd(), 'public/presets/subtractive.json'), 'utf8')).presets;
+import { validatePresetEntry } from '../../src/presets/preset-loader';
+import presetFile from './presets.json';
+
+interface Mod { kind: string; enabled: boolean; connections: Array<{ paramId: string }> }
+const presets = presetFile.presets as unknown as
+  Array<{ name: string; params: Record<string, number>; modulators?: unknown[] }>;
 
 const LFO_PORTS = ['Wobble', 'Neuro', 'Shimmer', 'Cosmic'].map((n) => `BASS ${n}`).concat(
   ['PAD Shimmer', 'PAD Cosmic'],
 );
 
-// Resolve the LFO-carrying preset by name AND by having modulators — a plain
-// "BASS Wobble" (no LFO) already ships, so match the one that actually carries
-// the modulator, not just the name.
+// Resolve the LFO-carrying preset by name AND by carrying a ROUTED LFO. "has
+// modulators" no longer discriminates: every preset in the bank now ships the
+// two envelope ADSRs (they used to be derived by the host at load time and were
+// baked into the file when this engine became a plugin), and the idle LFO that
+// comes with them has no connections. A plain "BASS Wobble" without the LFO also
+// ships, so what tells them apart is where the LFO actually goes.
 const find = (needle: string) =>
-  presets.find((p) => p.name.includes(needle) && p.modulators && p.modulators.length > 0);
+  presets.find((p) => p.name.includes(needle) && (p.modulators as Mod[] | undefined)
+    ?.some((m) => m.kind === 'lfo' && m.enabled && m.connections.length > 0));
 
 describe('the four LFO presets carry their modulator', () => {
   for (const needle of ['Wobble', 'Neuro', 'Shimmer', 'Cosmic']) {

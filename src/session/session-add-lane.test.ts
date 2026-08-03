@@ -1,7 +1,5 @@
 import { describe, it, expect } from 'vitest';
-// Import side-effects to register the in-tree engines.
-import '../engines/subtractive';
-import '../engines/tb303';
+// Import side-effect to register the one engine still in the tree.
 import '../engines/drums-engine';
 // Reading a descriptor builds the engine's modulator host, and subtractive ships
 // an LFO with the sound — so these two have to be registered or the read throws
@@ -14,9 +12,9 @@ import { nextLaneSlug } from './session-host';
 import { installMainThreadLoomApi, __resetPluginEngines } from '../plugin-host/loom-api';
 import { registerPluginEngine } from '../../test/plugin-fixtures';
 
-// wavetable and fm ship as plugins; the FM case below reads the lane prefix out
-// of fm's own manifest, which is the point.
-for (const id of ['wavetable', 'fm']) registerPluginEngine(id);
+// Every melodic engine ships as a plugin; the FM case below reads the lane
+// prefix out of fm's own manifest, which is the point.
+for (const id of ['tb303', 'subtractive', 'wavetable', 'fm']) registerPluginEngine(id);
 
 describe('nextLaneSlug — slug id generation', () => {
   it('returns subtractive-2 for first added subtractive (subtractive-1 already exists)', () => {

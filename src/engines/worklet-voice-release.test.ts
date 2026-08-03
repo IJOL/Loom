@@ -32,7 +32,11 @@ vi.mock('../audio-worklet/loom-node', () => ({
 }));
 
 import { WorkletLaneEngine, type WorkletEngineConfig } from './worklet-lane-engine';
-import { SUB_PARAM_SPECS } from './subtractive-params';
+import type { EngineParamSpec } from './engine-params';
+import subtractiveManifest from '../../plugins/subtractive/plugin.json';
+
+// Subtractive ships as a plugin, so its declared params ARE its manifest.
+const SUB_PARAM_SPECS = subtractiveManifest.components[0].params as unknown as EngineParamSpec[];
 
 const out = () => ({ connect() {} }) as unknown as AudioNode;
 const cfg = (): WorkletEngineConfig => ({

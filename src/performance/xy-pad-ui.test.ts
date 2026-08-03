@@ -13,6 +13,12 @@ import { registerPlugin, _resetRegistry } from '../plugins/registry';
 import { multifilterPlugin } from '../plugins/fx/multifilter';
 import type { SessionState } from '../session/session';
 import type { KnobHandle } from '../core/knob';
+import { registerPluginEngine } from '../../test/plugin-fixtures';
+
+// subtractive ships as a plugin: the equivalent of the old
+// side-effect import is that manifest going through the same registerComponent
+// door the plugin loader uses.
+registerPluginEngine('subtractive');
 // Side-effect import: registers the 'subtractive' engine descriptor so
 // listAutomationTargets() can find its continuous engine params. Without
 // this, getEngine('subtractive') returns undefined and the catalogue would
@@ -20,7 +26,6 @@ import type { KnobHandle } from '../core/knob';
 // modulation-ui-dest-refresh.test.ts (an unregistered id fails silently, not
 // loudly), which would let the 'poly1.' assertion below pass or fail for the
 // wrong reason.
-import '../engines/subtractive';
 
 // A real registered fx plugin, not a bare pluginId string — listAutomationTargets
 // silently returns [] for an unregistered plugin id (see fxParams() in

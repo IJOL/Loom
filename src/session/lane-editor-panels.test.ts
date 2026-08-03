@@ -8,8 +8,13 @@ import { createDescriptorEngine } from '../engines/descriptor-engine';
 import '../engines/audio';
 import '../engines/drums-engine';
 import '../engines/sampler';
-import '../engines/subtractive';
-import '../engines/tb303';
+import { registerPluginEngine } from '../../test/plugin-fixtures';
+
+// subtractive and tb303 ship as plugins: the equivalent of the old
+// side-effect import is that manifest going through the same registerComponent
+// door the plugin loader uses.
+registerPluginEngine('subtractive');
+registerPluginEngine('tb303');
 
 /** A probe engine that is INSTALLED: capabilities AND a descriptor.
  *  laneEditorPanels discriminates on the descriptor, so capabilities on their

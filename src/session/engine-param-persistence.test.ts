@@ -8,8 +8,6 @@
 import { describe, it, expect } from 'vitest';
 
 // Side-effect imports so getEngine() answers with the real param specs.
-import '../engines/subtractive';
-import '../engines/tb303';
 // wavetable, fm and westcoast are plugins now: same param specs, read from the
 // manifest the plugin actually ships.
 import { registerPluginEngine } from '../../test/plugin-fixtures';
@@ -23,6 +21,12 @@ import { fakeDestinations } from './fake-destinations';
 import type { EngineParamSpec } from '../engines/engine-params';
 import type { EngineUIContext } from '../engines/engine-types';
 import type { KnobHandle } from '../core/knob';
+
+// subtractive and tb303 ship as plugins: the equivalent of the old
+// side-effect import is that manifest going through the same registerComponent
+// door the plugin loader uses.
+registerPluginEngine('subtractive');
+registerPluginEngine('tb303');
 
 function makeHost(): SessionHost {
   const laneResources = { get: () => undefined, ids: () => [], dispose: () => {} };

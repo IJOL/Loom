@@ -14,11 +14,16 @@ import { drawLane } from '../automation/automation-painter';
 import { createDestinationRegistry } from '../automation/destination-registry';
 import { DEFAULT_METER, type TimeSignature } from '../core/meter';
 import type { SessionState } from '../session/session';
+import { registerPluginEngine } from '../../test/plugin-fixtures';
+
+// subtractive ships as a plugin: the equivalent of the old
+// side-effect import is that manifest going through the same registerComponent
+// door the plugin loader uses.
+registerPluginEngine('subtractive');
 // Side-effect import: registers the 'subtractive' engine descriptor so
 // listAutomationTargets() can find its continuous engine params. Without
 // this, getEngine('subtractive') returns undefined and the picker would
 // silently offer zero engine params — a false negative for this test.
-import '../engines/subtractive';
 
 describe('performance automation header', () => {
   it('lists destinations from the registry', () => {

@@ -8,19 +8,20 @@
 // used to be, by more the softer it gets. These cases pin that shape so the
 // comment on those two constants stays checkable.
 import { describe, it, expect } from 'vitest';
-import { ENGINE_TRIM } from './gain-staging';
 import { velGain01, velNorm, DEFAULT_VELOCITY } from '../core/velocity-gain';
 import karplusPlugin from '../../plugins/karplus/plugin.json';
+import fmPlugin from '../../plugins/fm/plugin.json';
 
 /** The trims as they stood while the curve was missing, straight off the
  *  comments in gain-staging.ts: they multiplied v01 with nothing in front. */
 const PRE_FIX_TRIM: Record<string, number> = { fm: 0.25, karplus: 1.2 };
 
-/** The per-engine trims this test compares against history. Karplus's now lives
- *  in its plugin manifest, so reading it HERE is also what keeps the ported
- *  plugin honest about the value that was tuned by ear. */
+/** The per-engine trims this test compares against history. BOTH now live in
+ *  their plugin manifests — the host's ENGINE_TRIM table is gone with the last
+ *  built-in melodic engine — so reading them HERE is what keeps the ported
+ *  plugins honest about values that were tuned by ear. */
 const TRIM: Record<string, number> = {
-  fm: ENGINE_TRIM.fm,
+  fm: fmPlugin.components[0].capabilities.outputTrim,
   karplus: karplusPlugin.components[0].capabilities.outputTrim,
 };
 

@@ -8,7 +8,10 @@ import { describe, it, expect } from 'vitest';
 import { VoiceManager } from './voice-manager';
 import { ModulationRuntime, type ModLite } from './modulation-runtime';
 import type { NoteSpec } from './types';
-import './subtractive-renderer';
+// `test/plugin-dsp` installs the Loom global a plugin's dsp.ts registers
+// through, so it MUST stay above the plugin import below.
+import '../../test/plugin-dsp';
+import '../../plugins/subtractive/dsp';
 // Side-effect import: registers the 'lfo' kernel ModulationRuntime looks up.
 import './modulators/lfo-kernel';
 

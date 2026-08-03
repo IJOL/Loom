@@ -18,10 +18,15 @@ import {
 } from './session-runtime';
 import type { SessionState, SessionClip, SessionScene, ClipSample } from './session';
 import { TICKS_PER_STEP, TICKS_PER_QUARTER } from '../core/notes';
+import { registerPluginEngine } from '../../test/plugin-fixtures';
+
+// tb303 ships as a plugin: the equivalent of the old
+// side-effect import is that manifest going through the same registerComponent
+// door the plugin loader uses.
+registerPluginEngine('tb303');
 // Registers the 303's capabilities as a module side effect — including
 // slide: 'overlap', which the slide cases below assert on. Sliding is a declared
 // capability now, so an engine nothing registered never slides.
-import '../engines/tb303';
 
 // ── Constants ─────────────────────────────────────────────────────────────
 

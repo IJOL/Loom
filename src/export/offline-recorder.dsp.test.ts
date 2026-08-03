@@ -1,5 +1,14 @@
 // src/export/offline-recorder.dsp.test.ts
 import { describe, it, expect, beforeAll } from 'vitest';
+// The melodic engines these scenes use ship as PLUGINS, so no renderer arrives
+// by side-effect import any more. In production the offline exporter calls
+// importPluginDspOnMainThread (plugin-host/plugin-dsp.ts); here `test/plugin-dsp`
+// installs the same Loom global and the plugin dsp registers through it.
+import '../../test/plugin-dsp';
+// …and the manifest half, which is what puts the engine in the registry the
+// recorder resolves lanes through. In production loadPlugins does both.
+import { registerPluginEngine } from '../../test/plugin-fixtures';
+import '../../plugins/tb303/dsp';
 import { OfflineSceneRecorder } from './offline-recorder';
 import { bootstrapPlugins } from '../app/plugin-bootstrap';
 import { emptyLanePlayState, type LanePlayState } from '../session/session-runtime';
@@ -13,7 +22,7 @@ function rms(ch: Float32Array): number {
 }
 
 describe('OfflineSceneRecorder (DSP)', () => {
-  beforeAll(() => { bootstrapPlugins(); });
+  beforeAll(() => { bootstrapPlugins(); registerPluginEngine('tb303'); });
 
   it('renders a non-silent stereo buffer of the requested length for a tb303 scene', async () => {
     const clip: SessionClip = { color: '#f4c8a8', gridResolution: '1/16',

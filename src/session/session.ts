@@ -156,7 +156,16 @@ export function emptySessionState(): SessionState {
 
 /** A populated fixture (one each of three engines, no clips/scenes) for tests
  *  that need lanes to operate on. NOT the New-session state — that is the empty
- *  {@link emptySessionState}. */
+ *  {@link emptySessionState}.
+ *
+ *  `tb303` and `subtractive` are plugins now, and this fixture does NOT require
+ *  them to be installed: it returns PLAIN DATA and every consumer
+ *  (scene-ensure, session-clip-ops, session-engine-state, session-migration,
+ *  arrangement-runtime, session-runtime-rec) works on that object without ever
+ *  resolving an engine — no registry lookup, no allocation. The ids are labels
+ *  here, kept because the lane ids beside them (`tb-303-1`, `subtractive-1`) are
+ *  what those tests address lanes by. A test that wants a LIVE engine registers
+ *  it explicitly through `test/plugin-fixtures.ts`. */
 export function testSessionState(): SessionState {
   return {
     name: 'Untitled',

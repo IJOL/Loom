@@ -20,11 +20,16 @@ import { multifilterPlugin } from '../plugins/fx/multifilter';
 import { emptyArrangementState } from '../performance/performance';
 import { DEFAULT_METER } from '../core/meter';
 import type { SessionState, SessionClip } from '../session/session';
+import { registerPluginEngine } from '../../test/plugin-fixtures';
+
+// subtractive ships as a plugin: the equivalent of the old
+// side-effect import is that manifest going through the same registerComponent
+// door the plugin loader uses.
+registerPluginEngine('subtractive');
 // Side-effect import: registers the 'subtractive' engine descriptor so
 // listAutomationTargets() can find its continuous engine params. Without this,
 // getEngine('subtractive') returns undefined and the catalogue would silently
 // offer zero engine params.
-import '../engines/subtractive';
 
 function rightClick(el: Element): void {
   el.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));

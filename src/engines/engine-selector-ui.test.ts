@@ -74,11 +74,12 @@ describe('engine-selector-ui — melodic engine filter', () => {
   it('lists the built-in piano-roll engines and excludes drums-machine', () => {
     bootstrapPlugins(); // registers all builtin synth plugins + engines
     const ids = melodicSynthEngineIds();
-    // Two built-ins are left in the tree; fm, wavetable and westcoast arrive
-    // through the plugin loader instead, which the case below covers with
-    // karplus. bootstrapPlugins' glob only sees src/engines/*, so naming them
-    // here would assert the loader from the wrong side.
-    expect(ids).toEqual(expect.arrayContaining(['tb303', 'subtractive']));
+    // NO melodic engine is left in the tree: all five arrive through the plugin
+    // loader instead, which the case below covers with karplus. bootstrapPlugins'
+    // glob only sees src/engines/*, so naming them here would assert the loader
+    // from the wrong side. The sampler is what the glob still contributes to this
+    // list, and drums — a pad grid, not a piano roll — is what it must leave out.
+    expect(ids).toEqual(expect.arrayContaining(['sampler']));
     expect(ids).not.toContain('drums-machine');
   });
 

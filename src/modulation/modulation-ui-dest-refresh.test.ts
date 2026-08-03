@@ -14,13 +14,18 @@ import { registerPlugin, _resetRegistry } from '../plugins/registry';
 import { multifilterPlugin } from '../plugins/fx/multifilter';
 import type { SessionState } from '../session/session';
 import type { ModulationHost, ModulatorState } from './types';
+import { registerPluginEngine } from '../../test/plugin-fixtures';
+
+// subtractive ships as a plugin: the equivalent of the old
+// side-effect import is that manifest going through the same registerComponent
+// door the plugin loader uses.
+registerPluginEngine('subtractive');
 // Side-effect import: registers the 'subtractive' engine descriptor so
 // listAutomationTargets() can find its continuous engine params. Without
 // this, getEngine('subtractive') returns undefined and the picker would
 // silently offer zero engine params — a false negative for the "own lane's
 // engine params ARE offered" assertion below (same trap the plugin registry
 // has: silence, not an error, for an unregistered id).
-import '../engines/subtractive';
 
 function stateWith(inserts: { id: string; pluginId: string }[]): SessionState {
   return {

@@ -2,11 +2,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Side-effect imports register real engines so the "+" menu has engine entries
 // (same pattern as session-add-lane.test.ts).
-import '../engines/subtractive';
-import '../engines/tb303';
 import { renderSessionGrid, _resetSceneClickStateForTesting } from './session-ui';
 import { makeState, noopCallbacks } from './session-ui-rename.test';
 import type { LanePlayState } from './session-runtime';
+import { registerPluginEngine } from '../../test/plugin-fixtures';
+
+// subtractive and tb303 ship as plugins: the equivalent of the old
+// side-effect import is that manifest going through the same registerComponent
+// door the plugin loader uses.
+registerPluginEngine('subtractive');
+registerPluginEngine('tb303');
 
 beforeEach(() => _resetSceneClickStateForTesting());
 

@@ -7,8 +7,6 @@
 import { describe, it, expect, vi } from 'vitest';
 
 // Side-effect imports register engines + descriptors (mirror main.ts).
-import '../engines/subtractive';
-import '../engines/tb303';
 
 // Deliberately AFTER the five engine imports above, not before. Each engine
 // file's own registerEngine(makeXDescriptor()) call runs at module scope —
@@ -30,6 +28,12 @@ import '../plugins/modulators/adsr';
 import * as registry from './registry';
 import { getEngineDescriptor } from './registry';
 import { registerPluginEngine } from '../../test/plugin-fixtures';
+
+// subtractive and tb303 ship as plugins: the equivalent of the old
+// side-effect import is that manifest going through the same registerComponent
+// door the plugin loader uses.
+registerPluginEngine('subtractive');
+registerPluginEngine('tb303');
 
 // wavetable, fm and westcoast ship as PLUGINS and arrive through their real
 // manifests. Note what this does NOT reproduce: an import is hoisted and a call

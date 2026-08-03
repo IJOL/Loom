@@ -50,7 +50,6 @@ export interface SaveAndHistoryDeps {
   swingInput: HTMLInputElement;
   meterSel: HTMLSelectElement;
   sessionHost: SessionHost;
-  refreshKnobsFromSynth: () => void;
   renderLanes: () => void;
   fx: FxBus;
   masterInsertChain: InsertChain;
@@ -83,7 +82,6 @@ export function createSaveAndHistory(deps: SaveAndHistoryDeps): SaveAndHistory {
     ctx, seq, lanes, master,
     volInput, bpmInput, swingInput, meterSel,
     sessionHost,
-    refreshKnobsFromSynth,
     renderLanes,
     fx,
     masterInsertChain,
@@ -102,7 +100,6 @@ export function createSaveAndHistory(deps: SaveAndHistoryDeps): SaveAndHistory {
     ctx, seq, lanes, master,
     volInput, bpmInput, swingInput, meterSel,
     sessionHost,
-    refreshKnobsFromSynth,
     renderLanes,
     fx,
     masterInsertChain,

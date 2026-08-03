@@ -38,7 +38,6 @@ export interface SavedStateV3Deps {
   swingInput: HTMLInputElement;
   meterSel: HTMLSelectElement;
   sessionHost: SessionHost;
-  refreshKnobsFromSynth: () => void;
   renderLanes: () => void;
   fx: import('../core/fx').FxBus;
   masterInsertChain: import('../plugins/fx/insert-chain').InsertChain;
@@ -81,7 +80,7 @@ export function buildSavedStateV3(deps: SavedStateV3Deps): SavedStateV3 {
 export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): void {
   const {
     seq, volInput, bpmInput, swingInput, meterSel,
-    sessionHost, refreshKnobsFromSynth, renderLanes, master,
+    sessionHost, renderLanes, master,
   } = deps;
 
   if (typeof s.bpm === 'number') { seq.bpm = s.bpm; bpmInput.value = String(s.bpm); }
@@ -101,7 +100,6 @@ export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): voi
   if (s.masterComp) deps.masterComp?.setState(s.masterComp);
   if (s.masterShaper) deps.masterShaper?.setState(s.masterShaper);
 
-  refreshKnobsFromSynth();
   renderLanes();
 
   // Performance view (optional — older saves omit these). Restore the take

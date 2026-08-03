@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Side-effect imports register engines in the global registry.
-import '../engines/tb303';
 import '../engines/drums-engine';
-import '../engines/subtractive';
 import '../engines/audio';
 // Side-effect only: registers 'lfo'/'adsr' with the modulator-registry. Every
 // engine descriptor above builds its default modulator set LAZILY from that
@@ -29,13 +27,13 @@ import { createDescriptorEngine } from '../engines/descriptor-engine';
 import type { EngineParamGroup } from '../engines/engine-param-groups';
 import { registerPluginEngine } from '../../test/plugin-fixtures';
 
-/** fm, wavetable and westcoast ship as PLUGINS: there is no module in src/ to
+/** EVERY melodic engine ships as a PLUGIN: there is no module in src/ to
  *  side-effect import any more, so they arrive through their real manifests.
- *  A function rather than three top-level calls because __resetPluginEngines()
- *  wipes the capabilities map, so every describe that resets has to re-register
- *  them — the same reason the karplus line below is repeated per beforeEach. */
+ *  A function rather than top-level calls because __resetPluginEngines() wipes
+ *  the capabilities map, so every describe that resets has to re-register them —
+ *  the same reason the karplus line below is repeated per beforeEach. */
 function registerPluginEngines(): void {
-  for (const id of ['fm', 'wavetable', 'westcoast']) registerPluginEngine(id);
+  for (const id of ['tb303', 'subtractive', 'fm', 'wavetable', 'westcoast']) registerPluginEngine(id);
 }
 registerPluginEngines();
 

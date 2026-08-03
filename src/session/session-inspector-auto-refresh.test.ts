@@ -36,10 +36,15 @@ import { InsertChain } from '../plugins/fx/insert-chain';
 import type { LaneResourceMap } from '../core/lane-resources';
 import { emptySessionState, type SessionState, type SessionClip, type SessionLane } from './session';
 import type { FxInstance } from '../plugins/types';
+import { registerPluginEngine } from '../../test/plugin-fixtures';
+
+// subtractive ships as a plugin: the equivalent of the old
+// side-effect import is that manifest going through the same registerComponent
+// door the plugin loader uses.
+registerPluginEngine('subtractive');
 // Side-effect import: registers the 'subtractive' engine descriptor so
 // listAutomationTargets() can find its continuous engine params (same trap
 // noted in modulation-ui-dest-refresh.test.ts).
-import '../engines/subtractive';
 
 // ── Minimal fake AudioContext / fx plugin (mirrors lane-insert-ui.test.ts) ──
 

@@ -7,7 +7,8 @@
 //
 //   npx tsx tools/bench-unison.mjs
 import { VoiceManager } from '../src/audio-dsp/voice-manager.ts';
-import '../src/audio-dsp/subtractive-renderer.ts';   // self-registers with the renderer registry
+import '../test/plugin-dsp.ts';                      // installs the Loom global a plugin dsp registers through
+import '../plugins/subtractive/dsp.ts';              // self-registers with the renderer registry
 
 const SR = 48000;
 const SECS = 2;

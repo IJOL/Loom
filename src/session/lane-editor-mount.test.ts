@@ -12,8 +12,12 @@ import { commitParamForLane } from '../engines/engine-param-commit';
 // draws no instrument for an engine nobody registered — it says so instead —
 // so without these the fake engines' buildParamUI is never called. fm is a
 // plugin, so it comes in through its manifest.
-import '../engines/subtractive';
 import { registerPluginEngine } from '../../test/plugin-fixtures';
+
+// subtractive ships as a plugin: the equivalent of the old
+// side-effect import is that manifest going through the same registerComponent
+// door the plugin loader uses.
+registerPluginEngine('subtractive');
 
 registerPluginEngine('fm');
 

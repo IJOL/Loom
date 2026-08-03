@@ -1,19 +1,45 @@
-// src/audio-dsp/tb303-renderer.ts
+// plugins/tb303/dsp.ts
 // Per-sample TB-303 voice renderer: saw/square osc → resonant lowpass with a
 // fast cutoff-decay envelope → amp env. Accent = brighter + louder + more Q.
 // Slide = pitch glide (approximated as instant for per-note rendering; cross-
 // note glide is a VoiceManager concern at integration time) + no amp re-attack.
 // Pure: no Web Audio globals. Sample rate injected via constructor.
-import type { NoteSpec, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets } from './types';
-import { param, slotOf } from './types';
-import { SawOsc, SquareOsc } from './osc';
-import { LadderFilter } from './ladder';
-import type { ModLite } from './modulation-runtime';
-import { ModEnvHost } from './mod-env-host';
-import { registerRenderer } from './renderer-registry';
-import { synthTrim } from './gain-staging';
-import { velGain01, ACCENT_VCA_LADDER } from '../core/velocity-gain';
-import { midiToFreq, clamp01 } from './dsp-util';
+import {
+  param, slotOf, SawOsc, SquareOsc, LadderFilter, ModEnvHost, velGain01,
+  ACCENT_VCA_LADDER, midiToFreq, clamp01,
+} from '@loom/plugin-sdk';
+import type {
+  NoteSpec, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets, ModEnvSpec,
+} from '@loom/plugin-sdk';
+
+/** The amp tail's floor, in the units this renderer outputs in.
+ *
+ *  The 303's release is an exponentialRamp to an ABSOLUTE floor, and the voice
+ *  is reaped when it reaches it. That makes it the ONE place where handing the
+ *  engine trim to the host changes the SHAPE of the sound and not merely its
+ *  level — a peak of 1.18 falling to the same floor is a steeper ramp and a
+ *  later reap than 0.531 falling to it. Every other engine that moved out of
+ *  the tree multiplied its trim in at the very end, where dropping it is a pure
+ *  scale; this one does not.
+ *
+ *  0.54 is what the in-tree renderer's `synthTrim('tb303')` returned: the
+ *  engine trim (0.45, now this manifest's `outputTrim`) times the host's synth
+ *  category gain (1.2). Dividing the historical 0.001 by it puts the floor back
+ *  where it was in output terms, and reproduces the tail sample for sample —
+ *  which the parity test pins, and which caught this when the constant was
+ *  simply carried over.
+ *
+ *  A FIXED number, deliberately not derived from `outputTrim`: this ramp is
+ *  part of the instrument's voice, and rebalancing the 303 against the other
+ *  engines must move its level, not the shape of its release. (The plugin could
+ *  not derive it anyway — the category gain is the host's and no manifest
+ *  carries it.) */
+const AMP_FLOOR = 0.001 / 0.54;
+
+// The 303's own amp punch (ACCENT_VCA_LADDER) is imported from the SDK, not
+// redeclared: it is one number with one owner, and a local copy is how the same
+// constant drifts into two values. The SDK owns the shared velocity curve
+// (velGain01) and every accent multiplier an engine may opt into.
 
 // Map the TB-303's biquad-Q (1 + resonance*25 + accent*6, so 1..31) onto the
 // ladder's 0..1 resonance.
@@ -33,7 +59,7 @@ function qToLadderRes(q: number): number {
 export class TB303Renderer implements VoiceRenderer {
   private osc: SawOsc | SquareOsc;
   // The 303 filters through a diode ladder — its asymmetric clipping is the
-  // instrument's voice, not a detail. See ladder.ts.
+  // instrument's voice, not a detail. See the SDK's ladder.ts.
   private filter: LadderFilter;
   private begin: number;
   private holdEnd: number;
@@ -95,17 +121,16 @@ export class TB303Renderer implements VoiceRenderer {
     this.accent = note.accent;
     this.accentBoost = accentBoost;
 
-    // The 303 declares its own amp punch: its accent raises Q, and this ladder
-    // LOSES level as Q climbs, so the shared punch left accents quieter than the
-    // notes they punch. See ACCENT_VCA_LADDER.
-    this.peakAmp = synthTrim('tb303') * velGain01(note.velocity, note.accent, ACCENT_VCA_LADDER);
+    // No engine trim here: the host applies capabilities.outputTrim from the
+    // manifest. What stays is the 303's OWN amp punch — see ACCENT_VCA_LADDER.
+    this.peakAmp = velGain01(note.velocity, note.accent, ACCENT_VCA_LADDER);
   }
 
   noteOff(t: number): void {
     if (t < this.holdEnd) this.holdEnd = t;
   }
 
-  setModEnvelopes(mods: ModLite[], index: ParamIndex): void { this.modEnv.setModEnvelopes(mods, index); }
+  setModEnvelopes(mods: ModEnvSpec[], index: ParamIndex): void { this.modEnv.setModEnvelopes(mods, index); }
   getAdsrOffsets(): VoiceModOffsets { return this.modEnv.getAdsrOffsets(); }
   setLiveValues(values: Float64Array, index: ParamIndex): void {
     this.live = values;
@@ -132,7 +157,7 @@ export class TB303Renderer implements VoiceRenderer {
     //   - Slide: no re-attack (hold peakAmp from t=begin, gate already open)
     //   - Non-slide: 3 ms linear attack
     //   - Hold at peak until 20 ms before gate end (or after attack end)
-    //   - Then ramp toward 0.001 by gate end (exp tail), then silence
+    //   - Then ramp toward AMP_FLOOR by gate end (exp tail), then silence
     const attackDur = this.slide ? 0 : 0.003;
     const attackEnd = attackDur;
     const releaseStart = Math.max(attackEnd, gateLen - 0.02);
@@ -144,14 +169,14 @@ export class TB303Renderer implements VoiceRenderer {
     } else if (dt < releaseStart) {
       amp = this.peakAmp;
     } else {
-      // Exponential release tail (20ms) to ~0.001
+      // Exponential release tail (20ms) to ~AMP_FLOOR
       const relDt = dt - releaseStart;
       const relDur = Math.max(gateLen - releaseStart, 0.001);
-      // Mimic exponentialRamp from peakAmp → 0.001 over relDur
+      // Mimic exponentialRamp from peakAmp → AMP_FLOOR over relDur
       const ratio = Math.min(relDt / relDur, 1);
-      amp = this.peakAmp * Math.pow(0.001 / Math.max(this.peakAmp, 0.001), ratio);
+      amp = this.peakAmp * Math.pow(AMP_FLOOR / Math.max(this.peakAmp, AMP_FLOOR), ratio);
       // After the gate has ended and the tail has decayed, mark voice done
-      if (t > this.holdEnd && amp <= 0.001) {
+      if (t > this.holdEnd && amp <= AMP_FLOOR) {
         this.done = true;
         return 0;
       }
@@ -193,5 +218,4 @@ export class TB303Renderer implements VoiceRenderer {
   }
 }
 
-// Register under the REAL engine id from TB303Engine.id = 'tb303'
-registerRenderer('tb303', (n, p, sr) => new TB303Renderer(n, p, sr));
+Loom.registerRenderer('tb303', (n, p, sr) => new TB303Renderer(n, p, sr));
