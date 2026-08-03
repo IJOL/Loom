@@ -79,7 +79,7 @@ function rackTemplate(h: Rack, isPickerOpen: () => boolean, setPicker: (open: bo
     <div class="insert-bar">
       ${repeat(
         chain.list(),
-        (_cs, idx) => slots[idx]?.id ?? `idx-${idx}`,
+        (cs) => cs.id,
         (cs, idx) => unitTemplate(h, cs, idx),
       )}
     </div>
@@ -94,7 +94,10 @@ function rackTemplate(h: Rack, isPickerOpen: () => boolean, setPicker: (open: bo
 
 function unitTemplate(h: Rack, cs: ChainSlot, idx: number): TemplateResult | typeof nothing {
   const { chain, slots, onChange } = h.deps;
-  const slot = slots[idx];
+  // By ID, never by position. Removing a slot renumbers every later one, and a
+  // slot whose plugin is missing never reaches the chain at all — either way the
+  // two lists stop lining up and every later unit renders its neighbour's data.
+  const slot = slots.find((s) => s.id === cs.id);
   if (!slot) return nothing;
   const factory = listPlugins('fx').find((p) => p.manifest.id === slot.pluginId);
   if (!factory) return nothing;
@@ -116,7 +119,8 @@ function unitTemplate(h: Rack, cs: ChainSlot, idx: number): TemplateResult | typ
         }}>${slot.bypass ? 'BYP' : 'ON'}</button>
         <button class="insert-btn insert-rm" title="Remove insert" @click=${() => {
           chain.remove(idx);
-          slots.splice(idx, 1);
+          const at = slots.findIndex((s) => s.id === cs.id);
+          if (at >= 0) slots.splice(at, 1);
           onChange();
           h.deps.onDestinationsChanged?.();
           h.rerender();

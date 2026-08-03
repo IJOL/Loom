@@ -381,3 +381,57 @@ describe('buildLaneInsertUI — the FX rack obeys the one select-control rule', 
     expect(flat.querySelector('.radio-strip')).not.toBeNull();
   });
 });
+
+describe('insert rack pairing — a unit takes its data from its own slot, not from the slot at its index', () => {
+  // Two extra fx plugins, distinct from TEST_PLUGIN_ID and from each other, so
+  // the rendered .insert-name for each chain entry is unambiguous evidence of
+  // WHICH slot it was paired with.
+  const SLOT_A_PLUGIN = 'pairing-test-a';
+  const SLOT_C_PLUGIN = 'pairing-test-c';
+
+  beforeEach(() => {
+    registerPlugin({
+      kind: 'fx',
+      manifest: { id: SLOT_A_PLUGIN, name: 'Pairing A', kind: 'fx', version: '1.0.0', params: [], presets: [] },
+      create: () => makeFakeFx(),
+    });
+    registerPlugin({
+      kind: 'fx',
+      manifest: { id: SLOT_C_PLUGIN, name: 'Pairing C', kind: 'fx', version: '1.0.0', params: [], presets: [] },
+      create: () => makeFakeFx(),
+    });
+  });
+
+  it('renders the chain\'s 2nd entry with its own slot, even though a missing-plugin slot sits between them in the persisted list', () => {
+    const ctx = makeCtx();
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const inputNode  = new FakeAudioNode() as unknown as AudioNode;
+    const outputNode = new FakeAudioNode() as unknown as AudioNode;
+    const chain = new InsertChain(inputNode, outputNode);
+
+    // Three slots persisted, but the MIDDLE one references a plugin id that is
+    // never registered — exactly what rehydrateInsertChain would skip, so only
+    // two entries ever reach the live chain. That gap is what makes pairing by
+    // array index wrong: the chain's 2nd entry (index 1) is really slot 'sC',
+    // not slot 'sB'.
+    chain.insert(makeFakeFx(), 'sA');
+    chain.insert(makeFakeFx(), 'sC');
+    const slots: InsertSlot[] = [
+      { id: 'sA', pluginId: SLOT_A_PLUGIN, params: {}, bypass: false },
+      { id: 'sB', pluginId: 'ghost-fx',    params: {}, bypass: false }, // never reaches the chain
+      { id: 'sC', pluginId: SLOT_C_PLUGIN, params: {}, bypass: false },
+    ];
+
+    buildLaneInsertUI({ ctx, container, chain, slots, onChange: () => {} });
+
+    const units = container.querySelectorAll('.insert-unit');
+    const names = Array.from(units).map((u) => u.querySelector('.insert-name')!.textContent);
+
+    // Pairing by index would look up slots[1] for the chain's 2nd entry — the
+    // ghost slot, whose plugin isn't registered, so that unit renders nothing
+    // at all and 'Pairing C' never appears; only 'Pairing A' would be there.
+    expect(names).toContain('Pairing C');
+    expect(units.length).toBe(2);
+  });
+});
