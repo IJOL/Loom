@@ -3,7 +3,7 @@ import { repeat } from 'lit-html/directives/repeat.js';
 import {
   saveNamedEntry, readIndex, loadEntry, loadAutosave,
   deleteEntry, renameEntry, clearAll, totalStorageKB,
-  downloadAsJson, loadFromFile,
+  downloadAsJson, loadFromFile, migrateLegacySaves,
   type SaveIndexEntry,
 } from './save-manager';
 import { alertDialog, confirmDialog, promptDialog } from '../core/dialog';
@@ -70,13 +70,13 @@ function entryRowTemplate(
       <span>${entry.name}</span>
       <span>${new Date(entry.timestamp).toLocaleString()}</span>
       <span>${entry.sizeKB} KB</span>
-      <button data-act="load" @click=${() => {
-        const data = loadEntry(entry.id);
+      <button data-act="load" @click=${async () => {
+        const data = await loadEntry(entry.id);
         if (data) applyLoaded(data);
         closeSaveManager();
       }}>Load</button>
-      <button data-act="dl" @click=${() => {
-        const data = loadEntry(entry.id);
+      <button data-act="dl" @click=${async () => {
+        const data = await loadEntry(entry.id);
         if (data) downloadAsJson(`tb303-${entry.name.replace(/[^\w-]+/g, '_')}.json`, data);
       }}>⤓</button>
       <button data-act="ren" @click=${async () => {
@@ -84,7 +84,10 @@ function entryRowTemplate(
         if (next) { renameEntry(entry.id, next); openSaveManager(deps, applyLoaded); }
       }}>✎</button>
       <button data-act="del" @click=${async () => {
-        if (await confirmDialog(`Delete "${entry.name}"?`)) { deleteEntry(entry.id); openSaveManager(deps, applyLoaded); }
+        if (await confirmDialog(`Delete "${entry.name}"?`)) {
+          await deleteEntry(entry.id);
+          openSaveManager(deps, applyLoaded);
+        }
       }}>🗑</button>
     </div>`;
 }
@@ -100,8 +103,8 @@ function openSaveManager(deps: SaveWiringDeps, applyLoaded: (data: unknown) => v
       <span>Auto-save (latest)</span>
       <span>—</span>
       <span>—</span>
-      <button data-act="load" @click=${() => {
-        const data = loadAutosave();
+      <button data-act="load" @click=${async () => {
+        const data = await loadAutosave();
         if (data) applyLoaded(data);
         closeSaveManager();
       }}>Load</button>
@@ -143,7 +146,7 @@ export function wireSaveManager(
   });
   document.getElementById('save-manager-clear-all')!.addEventListener('click', async () => {
     if (await confirmDialog('Clear ALL saves? Autosave is preserved.')) {
-      clearAll();
+      await clearAll();
       openManager();
     }
   });
@@ -157,18 +160,25 @@ export function wireSaveManager(
   const nameInput = document.getElementById('save-manager-name') as HTMLInputElement | null;
   const saveBtn = document.getElementById('save-manager-save') as HTMLButtonElement | null;
   const defaultName = () => `Session ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
-  const commitSave = () => {
+  const commitSave = async () => {
     const name = nameInput?.value.trim() || defaultName();
     const state = buildSavedStateV3(deps);
-    saveNamedEntry(name, state);
+    try {
+      await saveNamedEntry(name, state);
+    } catch (err) {
+      // A save that did not land must say so. This used to die as an uncaught
+      // QuotaExceededError in the console while the button flashed "Saved!".
+      void alertDialog('Could not save: ' + (err as Error).message);
+      return;
+    }
     // Re-render the list so the new entry shows immediately; keeps modal open.
     openSaveManager(deps, applyLoaded);
     if (nameInput) nameInput.value = '';
     if (saveBtn) deps.flashButton(saveBtn, 'Saved!');
   };
-  saveBtn?.addEventListener('click', commitSave);
+  saveBtn?.addEventListener('click', () => void commitSave());
   nameInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); commitSave(); }
+    if (e.key === 'Enter') { e.preventDefault(); void commitSave(); }
   });
   const openManagerForSave = () => {
     openManager();
@@ -203,7 +213,11 @@ export function wireSaveManager(
   };
 }
 
-export function bootRecoveryLoad(deps: SaveWiringDeps): void {
-  const recovered = loadAutosave();
+export async function bootRecoveryLoad(deps: SaveWiringDeps): Promise<void> {
+  // Boot is the one place that runs the localStorage → IndexedDB move, and it
+  // has to finish before the autosave is read: pre-migration it still lives in
+  // the old localStorage key.
+  await migrateLegacySaves();
+  const recovered = await loadAutosave();
   if (recovered) applyLoadedState(recovered, deps);
 }
