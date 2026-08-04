@@ -2,7 +2,8 @@
 // src/session/lane-insert-ui.test.ts
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { buildLaneInsertUI } from './lane-insert-ui';
-import { registerPlugin, _resetRegistry } from '../plugins/registry';
+import { registerPlugin, listPlugins, _resetRegistry } from '../plugins/registry';
+import { bootstrapPlugins } from '../app/plugin-bootstrap';
 import { InsertChain } from '../plugins/fx/insert-chain';
 import { buildEngineParamGrid } from '../engines/engine-param-grid';
 import { rehydrateInsertChain, type InsertSlot } from './insert-slot';
@@ -479,5 +480,20 @@ describe('buildLaneInsertUI — a slot whose plugin is missing renders a marked 
     expect(units.length).toBe(2);
     const names = Array.from(units).map((u) => u.querySelector('.insert-name')!.textContent);
     expect(names.some((n) => n?.includes('Test FX'))).toBe(true);
+  });
+});
+
+describe('every registered fx plugin declares its own colour', () => {
+  it('every insert declares its own colour — no effect falls back to a default', () => {
+    // The file-level beforeEach above registers TEST_PLUGIN_ID, a fixture that
+    // never sets `color` on purpose (it exists to test automation wiring, not
+    // colour). Reset here so this test walks the REAL built-in registry —
+    // bootstrapPlugins() re-populates it from the current source, so a colour
+    // missing from any of the eleven fx modules shows up here, not a local
+    // test fixture standing in for one.
+    _resetRegistry();
+    bootstrapPlugins();
+    const uncoloured = listPlugins('fx').filter((p) => !p.manifest.color);
+    expect(uncoloured.map((p) => p.manifest.id)).toEqual([]);
   });
 });

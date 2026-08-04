@@ -34,18 +34,6 @@ export interface LaneInsertUIDeps {
   onDestinationsChanged?: () => void;
 }
 
-// Per-effect accent colour (keyed by plugin id). Each insert is tinted with it —
-// a coloured dot in the header + the knob rings — so a chain reads at a glance.
-const FX_COLORS: Record<string, string> = {
-  multifilter: '#ffa726', // amber
-  delay:       '#5aa9e6', // blue
-  distortion:  '#e6794a', // orange
-  reverb:      '#9b6dff', // violet
-  compressor:  '#1abc9c', // teal
-  limiter:     '#e05a8a', // pink
-};
-const FX_FALLBACK = '#ffa726';
-
 /** Render the lane's insert chain as a horizontal bar of compact units — one
  *  unit per effect (header: colour dot + name + any discrete selectors; a knob
  *  row; a control cluster with bypass + remove), reusing the synths' compact knob
@@ -101,7 +89,12 @@ function unitTemplate(h: Rack, cs: ChainSlot, idx: number): TemplateResult | typ
   const factory = listPlugins('fx').find((p) => p.manifest.id === slot.pluginId);
   if (!factory) return missingUnitTemplate(h, cs, idx, slot);
 
-  const color = FX_COLORS[slot.pluginId] ?? FX_FALLBACK;
+  // Every insert declares its own colour on its manifest (Task 7); the rack
+  // knows nothing about any particular id. `?? 'currentColor'` covers the
+  // TYPE only — a `factory` here is always fx-kind and every fx module sets
+  // `color` — the registry test (lane-insert-ui.test.ts) is what guarantees
+  // an insert never actually falls through to this fallback.
+  const color = factory.manifest.color ?? 'currentColor';
   const w = h.cache.get<UnitWidgets>(`unit:${slot.id}`, () => buildUnitWidgets(h.deps, cs, slot, factory, color));
 
   return html`

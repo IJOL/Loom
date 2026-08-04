@@ -10,4 +10,5 @@ export const flangerPlugin = makeModulatedDelayPlugin({
   baseDelaySec: 0.002,   // ~2 ms — the jet region
   sweepSec: 0.0018,      // sweep close to the base, staying short
   maxFeedback: 0.9,      // feedback: sharpens the comb, kept under 1 to stay stable
+  color: '#7fb2ff',
 });

@@ -10,4 +10,5 @@ export const chorusPlugin = makeModulatedDelayPlugin({
   baseDelaySec: 0.018,   // ~18 ms — the ensemble region
   sweepSec: 0.006,       // ±a few ms of detune
   maxFeedback: 0,        // no feedback: thickening, not resonance
+  color: '#4dd0a7',
 });

@@ -7,6 +7,7 @@ export const limiterPlugin: PluginFactory = {
     name: 'Limiter',
     kind: 'fx',
     version: '1.0.0',
+    color: '#e05a8a',
     params: [
       { id: 'ceiling', label: 'Ceil', kind: 'continuous', min: -30,   max: 0,   default: -1,   unit: 'dB' },
       { id: 'release', label: 'Rel',  kind: 'continuous', min: 0.001, max: 0.5, default: 0.05, unit: 's' },

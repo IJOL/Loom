@@ -15,6 +15,7 @@ export interface ModDelaySpec {
   baseDelaySec: number;   // centre of the LFO sweep
   sweepSec: number;       // how far depth 1 moves the delay time
   maxFeedback: number;    // 0 for chorus; the flanger's resonance ceiling
+  color: string;          // rack accent colour — each caller declares its own
 }
 
 export function makeModulatedDelayPlugin(spec: ModDelaySpec): PluginFactory {
@@ -25,6 +26,7 @@ export function makeModulatedDelayPlugin(spec: ModDelaySpec): PluginFactory {
       name: spec.name,
       kind: 'fx',
       version: '1.0.0',
+      color: spec.color,
       params: [
         { id: 'rate',  label: 'Rate',  kind: 'continuous', min: 0.05, max: 8, default: 0.8, unit: 'Hz' },
         { id: 'depth', label: 'Depth', kind: 'continuous', min: 0,    max: 1, default: 0.6 },

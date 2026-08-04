@@ -25,6 +25,7 @@ export const tremoloPlugin: PluginFactory = {
     name: 'Trem/Gate',
     kind: 'fx',
     version: '1.1.0',
+    color: '#f6c445',
     params: [
       { id: 'rate',  label: 'Rate',  kind: 'continuous', min: 0.1, max: 12, default: 5, unit: 'Hz' },
       { id: 'depth', label: 'Depth', kind: 'continuous', min: 0,   max: 1,  default: 0.6 },

@@ -19,6 +19,7 @@ export const distortionPlugin: PluginFactory = {
     name: 'Dist',
     kind: 'fx',
     version: '1.0.0',
+    color: '#e6794a',
     params: [
       { id: 'drive', label: 'Drive', kind: 'continuous', min: 0, max: 1, default: 0.3 },
       { id: 'mix',   label: 'Mix',   kind: 'continuous', min: 0, max: 1, default: 1.0 },

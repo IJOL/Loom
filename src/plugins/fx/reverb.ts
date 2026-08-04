@@ -19,6 +19,7 @@ export const reverbPlugin: PluginFactory = {
     name: 'Reverb',
     kind: 'fx',
     version: '1.0.0',
+    color: '#9b6dff',
     params: [
       { id: 'wet',      label: 'Wet',      kind: 'continuous', min: 0,    max: 1.5, default: 0.9 },
       { id: 'predelay', label: 'PreD',     kind: 'continuous', min: 0,    max: 0.5, default: 0,   unit: 's' },

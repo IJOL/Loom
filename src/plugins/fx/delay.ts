@@ -17,6 +17,7 @@ export const delayPlugin: PluginFactory = {
     name: 'Delay',
     kind: 'fx',
     version: '1.0.0',
+    color: '#5aa9e6',
     params: [
       { id: 'time',     label: 'Time',     kind: 'continuous', min: 0.01, max: 2,     default: 0.375, unit: 's' },
       { id: 'feedback', label: 'Fbk',      kind: 'continuous', min: 0,    max: 0.95,  default: 0.45 },

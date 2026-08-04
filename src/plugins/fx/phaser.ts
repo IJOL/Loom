@@ -18,6 +18,7 @@ export const phaserPlugin: PluginFactory = {
     name: 'Phaser',
     kind: 'fx',
     version: '1.0.0',
+    color: '#b98cff',
     params: [
       { id: 'rate',     label: 'Rate', kind: 'continuous', min: 0.05, max: 8, default: 0.5, unit: 'Hz' },
       { id: 'depth',    label: 'Depth', kind: 'continuous', min: 0, max: 1, default: 0.7 },

@@ -7,6 +7,7 @@ export const compressorPlugin: PluginFactory = {
     name: 'Compressor',
     kind: 'fx',
     version: '1.0.0',
+    color: '#1abc9c',
     params: [
       { id: 'threshold', label: 'Thr',   kind: 'continuous', min: -60,    max: 0,  default: -24, unit: 'dB' },
       { id: 'ratio',     label: 'Ratio', kind: 'continuous', min: 1,      max: 20, default: 4 },

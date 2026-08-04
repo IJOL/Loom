@@ -14,6 +14,7 @@ export const multifilterPlugin: PluginFactory = {
     name: 'Filter',
     kind: 'fx',
     version: '1.0.0',
+    color: '#ffa726',
     params: [
       { id: 'freq', label: 'Freq', kind: 'continuous', min: 20,  max: 20000, default: 1000, curve: 'exponential', unit: 'Hz' },
       { id: 'q',    label: 'Q',    kind: 'continuous', min: 0.1, max: 24,    default: 1,    curve: 'exponential' },

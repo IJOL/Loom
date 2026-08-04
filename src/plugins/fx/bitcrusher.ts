@@ -54,6 +54,7 @@ export const bitcrusherPlugin: PluginFactory = {
     name: 'Crush',
     kind: 'fx',
     version: '1.0.0',
+    color: '#ff7a5c',
     params: [
       { id: 'bits', label: 'Bits', kind: 'continuous', min: 1,   max: 16,    default: 8 },
       { id: 'tone', label: 'Tone', kind: 'continuous', min: 200, max: 20000, default: 8000, unit: 'Hz' },
