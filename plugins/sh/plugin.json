@@ -4,7 +4,6 @@
   "version": "1.0.0",
   "loomApi": 1,
   "author": "Loom",
-  "main": "main.js",
   "dsp": "dsp.js",
   "components": [
     {

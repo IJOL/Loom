@@ -186,10 +186,11 @@ export interface PluginManifestFile {
 }
 
 /** The runtime handshake. Installed by the host on globalThis in BOTH realms
- *  before any plugin code runs; a plugin never imports anything from the host. */
+ *  before any plugin code runs; a plugin never imports anything from the host.
+ *  It carries CODE ONLY. A component's description is data, and data travels in
+ *  plugin.json — the file the host reads, validates and obeys. */
 export interface LoomApi {
   readonly apiVersion: number;
-  registerComponent(manifest: ComponentManifest): void;
   registerRenderer(engineId: string, make: RendererFactory): void;
   /** A copy of registerRenderer for a driver:'time' modulator's per-sample
    *  kernel. `id` matches the modulator component's `id`. */

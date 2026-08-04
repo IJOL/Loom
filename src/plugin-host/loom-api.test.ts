@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { installMainThreadLoomApi, __resetPluginEngines } from './loom-api';
+import { installMainThreadLoomApi, __resetPluginEngines, adoptComponents } from './loom-api';
 import { getEngineDescriptor, listEngines } from '../engines/registry';
 import { engineCapabilities } from '../plugins/capabilities';
 import { getModulator, __resetModulators } from '../modulation/modulator-registry';
@@ -31,7 +31,7 @@ describe('the main-thread Loom API', () => {
   });
 
   it('turns a registered component manifest into a real engine descriptor', () => {
-    (globalThis as unknown as { Loom: { registerComponent(m: ComponentManifest): void } }).Loom.registerComponent(manifest);
+    adoptComponents([manifest]);
     const d = getEngineDescriptor('probe');
     expect(d?.name).toBe('Probe');
     expect(d?.polyphony).toBe('poly');
@@ -42,7 +42,7 @@ describe('the main-thread Loom API', () => {
   });
 
   it('feeds the capability door so readers can answer without the engine id', () => {
-    (globalThis as unknown as { Loom: { registerComponent(m: ComponentManifest): void } }).Loom.registerComponent(manifest);
+    adoptComponents([manifest]);
     expect(engineCapabilities('probe')?.outputTrim).toBe(0.5);
   });
 
@@ -53,7 +53,7 @@ describe('the main-thread Loom API', () => {
       params: [{ id: 'amp.level', label: 'Level', kind: 'continuous', min: 0, max: 1, default: 0.8, group: 'amp' }],
       groups: [{ id: 'amp', title: 'AMP', row: 0, color: 'var(--knob-purple)' }],
     };
-    (globalThis as unknown as { Loom: { registerComponent(m: ComponentManifest): void } }).Loom.registerComponent(withGroups);
+    adoptComponents([withGroups]);
     const d = getEngineDescriptor('probe-grouped');
     expect(d?.groups?.map((g) => g.title)).toEqual(['AMP']);
     expect(d?.groups?.[0].color).toBe('var(--knob-purple)');
@@ -66,8 +66,7 @@ describe('the main-thread Loom API', () => {
   });
 
   it('registers a modulator component as a modulator, not as an engine', () => {
-    (globalThis as unknown as { Loom: { registerComponent(m: ComponentManifest): void } })
-      .Loom.registerComponent(modulatorManifest);
+    adoptComponents([modulatorManifest]);
     expect(getModulator('sh')?.name).toBe('S&H');
     // The bug this fixes: adoptComponent never read m.kind, so ANY component
     // was registered as an engine and would show up in the engine selector.
@@ -75,16 +74,14 @@ describe('the main-thread Loom API', () => {
   });
 
   it("a plugin modulator's defaultState seeds params from the declared defaults and takes scopes[0]", () => {
-    (globalThis as unknown as { Loom: { registerComponent(m: ComponentManifest): void } })
-      .Loom.registerComponent(modulatorManifest);
+    adoptComponents([modulatorManifest]);
     const state = getModulator('sh')!.defaultState('sh1');
     expect(state.scope).toBe('shared');
     expect(state.params).toEqual({ rate: 6 });
   });
 
   it("a plugin modulator's createVoice is a silent placeholder, not a throw", () => {
-    (globalThis as unknown as { Loom: { registerComponent(m: ComponentManifest): void } })
-      .Loom.registerComponent(modulatorManifest);
+    adoptComponents([modulatorManifest]);
     const ctx = new AudioContext();
     const state = getModulator('sh')!.defaultState('sh1');
     const voice = getModulator('sh')!.createVoice(ctx, { state, bpm: () => 120 });
@@ -98,5 +95,29 @@ describe('the main-thread Loom API', () => {
     (globalThis as unknown as { Loom: { registerModulatorKernel(k: unknown): void } })
       .Loom.registerModulatorKernel({ id: 'sh', valueAt: () => 0.5 });
     expect(getModulatorKernel('sh')?.valueAt({} as never, 0, 0)).toBe(0.5);
+  });
+
+  // adoptComponents must never half-install: a component that fails midway
+  // through its own registration, or a manifest where a LATER component
+  // fails after an EARLIER one already succeeded, must leave nothing behind.
+  // No real manifest reaches these — validatePluginManifest requires `params`
+  // — so `params: undefined` here simulates the one call adoptEngine cannot
+  // itself guard against (a bug elsewhere in the pipeline, or a future
+  // component kind), the same way the two "malformed" cases below assert the
+  // mechanism directly rather than waiting for a live plugin to trip it.
+  it('rolls back everything a malformed engine component partially registered before it threw', () => {
+    const malformed = { ...manifest, id: 'malformed', params: undefined } as unknown as ComponentManifest;
+    expect(() => adoptComponents([malformed])).toThrow();
+    expect(getEngineDescriptor('malformed')).toBeUndefined();
+    expect(engineCapabilities('malformed')).toBeUndefined();
+  });
+
+  it('rolls back an EARLIER component in the same manifest when a LATER one throws', () => {
+    const good: ComponentManifest = { ...manifest, id: 'rollback-good' };
+    const malformed = { ...manifest, id: 'rollback-bad', params: undefined } as unknown as ComponentManifest;
+    expect(() => adoptComponents([good, malformed])).toThrow();
+    // The whole point: whatever ran before the throw must not survive it.
+    expect(getEngineDescriptor('rollback-good')).toBeUndefined();
+    expect(getEngineDescriptor('rollback-bad')).toBeUndefined();
   });
 });

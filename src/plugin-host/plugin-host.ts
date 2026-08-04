@@ -2,10 +2,13 @@
 //
 // The browser cannot list a directory, so `plugins/index.json` IS the discovery
 // mechanism. Each plugin is validated as DATA before a single line of it runs,
-// and a plugin that throws is recorded and skipped — one bad plugin must never
-// take the app down with it.
+// and a plugin that throws — even one whose components were already adopted
+// before its own main.js blew up — is fully rolled back, recorded and skipped:
+// nothing it registered may outlive the failure. One bad plugin must never
+// take the app down with it, and must never leave a half-registered engine
+// (visible in the selector, silent at note time) behind either.
 import { validatePluginManifest } from './manifest-validate';
-import { installMainThreadLoomApi } from './loom-api';
+import { installMainThreadLoomApi, adoptComponents } from './loom-api';
 import { importPluginModule } from './module-loader';
 import { seedEnginePresets, validatePresetEntry } from '../presets/preset-loader';
 import type { EnginePreset } from '../engines/engine-types';
@@ -53,6 +56,12 @@ export async function loadPlugins(opts: LoadPluginsOptions = {}): Promise<Plugin
 
   for (const id of ids) {
     const dir = `${base}plugins/${id}/`;
+    // Set only once adoptComponents (below) has actually registered
+    // something for this plugin. undoAdoption?.() in the catch is then a
+    // real rollback if a later step fails, or a safe no-op if adoption
+    // itself never ran (an earlier fetch/validate/presets step threw first,
+    // so there is nothing to undo).
+    let undoAdoption: (() => void) | undefined;
     try {
       const res = await doFetch(`${dir}plugin.json`);
       if (!res.ok) throw new Error(`plugin.json returned ${res.status}`);
@@ -73,10 +82,23 @@ export async function loadPlugins(opts: LoadPluginsOptions = {}): Promise<Plugin
         } catch { /* a plugin with no usable presets still loads */ }
       }
 
+      // Components come from the file we just validated, and MUST be adopted
+      // before the import below: from Task 5 on, an FX plugin's main.js
+      // registers its factory by calling Loom.registerFx(id, create) DURING
+      // the import, and that call looks up the description parked here by
+      // id. Adoption cannot move after the import without breaking that.
+      // What CAN move is the consequence of a later failure: if the import
+      // throws, undoAdoption() reverses exactly what was just registered, so
+      // a plugin that fails never half-installs — an engine that shows up in
+      // the lane selector with no DSP behind it, because the throw happened
+      // after the descriptor was adopted but the worklet never got wired.
+      undoAdoption = adoptComponents(manifest.components);
+
       if (manifest.main) await doImport(`${dir}${manifest.main}`);
       if (manifest.dsp) report.dspUrls.push(`${dir}${manifest.dsp}`);
       report.loaded.push(id);
     } catch (e) {
+      undoAdoption?.();
       report.failed.push({ id, error: errText(e) });
       console.warn(`[plugin-host] "${id}" failed to load:`, e);
     }

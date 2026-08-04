@@ -23,7 +23,7 @@ import type { EngineUIContext } from '../engines/engine-types';
 import type { KnobHandle } from '../core/knob';
 
 // subtractive and tb303 ship as plugins: the equivalent of the old
-// side-effect import is that manifest going through the same registerComponent
+// side-effect import is that manifest going through the same adoptComponents
 // door the plugin loader uses.
 registerPluginEngine('subtractive');
 registerPluginEngine('tb303');

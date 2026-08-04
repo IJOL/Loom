@@ -3,7 +3,7 @@ import { nextLaneSlug } from './session-host-util';
 import { registerPluginEngine } from '../../test/plugin-fixtures';
 
 // tb303 and subtractive ship as plugins: the equivalent of the old
-// side-effect import is that manifest going through the same registerComponent
+// side-effect import is that manifest going through the same adoptComponents
 // door the plugin loader uses.
 registerPluginEngine('tb303');
 registerPluginEngine('subtractive');

@@ -22,7 +22,7 @@ import './modulators/lfo-kernel';
 import { WORKLET_ENGINE_IDS } from '../app/lane-allocator';
 // WORKLET_ENGINE_IDS is now backed purely by which plugin engines are installed
 // (there is no built-in melodic engine left to hard-code), so the ids only exist
-// here once their manifests have gone through registerComponent.
+// here once their manifests have gone through adoptComponents.
 import { registerPluginEngine } from '../../test/plugin-fixtures';
 // The plugin rows below drive the SHIPPED plugin renderers through the same
 // VoiceManager path the worklet uses — the coverage did not move out of this

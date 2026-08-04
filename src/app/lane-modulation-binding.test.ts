@@ -28,7 +28,7 @@ import type { ModulatorState } from '../modulation/types';
 import { registerPluginEngine } from '../../test/plugin-fixtures';
 
 // subtractive ships as a plugin: the equivalent of the old
-// side-effect import is that manifest going through the same registerComponent
+// side-effect import is that manifest going through the same adoptComponents
 // door the plugin loader uses.
 registerPluginEngine('subtractive');
 

@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest';
 import '../engines/drums-engine';
 // Every melodic engine ships as a PLUGIN: main.ts gets them from the plugin
 // loader, not from a module in src/, so the equivalent here is the same
-// manifest going through the same registerComponent door.
+// manifest going through the same adoptComponents door.
 import { registerPluginEngine } from '../../test/plugin-fixtures';
 
 import { getEngine, createEngineInstance } from './registry';

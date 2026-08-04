@@ -10,17 +10,17 @@ beforeEach(() => { root = mkdtempSync(join(tmpdir(), 'loom-scaffold-')); });
 afterEach(() => { rmSync(root, { recursive: true, force: true }); });
 
 describe('loom-plugin new', () => {
-  it('emits TypeScript sources by default and JavaScript on request', () => {
+  it('emits a dsp source (TypeScript by default, JavaScript on request) and no main-thread file', () => {
     const ts = join(root, 'ts-probe');
     scaffoldPlugin({ dir: ts, id: 'ts-probe', lang: 'ts' });
-    expect(existsSync(join(ts, 'main.ts'))).toBe(true);
     expect(existsSync(join(ts, 'dsp.ts'))).toBe(true);
+    expect(existsSync(join(ts, 'main.ts'))).toBe(false);
     expect(existsSync(join(ts, 'main.js'))).toBe(false);
 
     const js = join(root, 'js-probe');
     scaffoldPlugin({ dir: js, id: 'js-probe', lang: 'js' });
-    expect(existsSync(join(js, 'main.js'))).toBe(true);
     expect(existsSync(join(js, 'dsp.js'))).toBe(true);
+    expect(existsSync(join(js, 'main.js'))).toBe(false);
     expect(existsSync(join(js, 'main.ts'))).toBe(false);
   });
 

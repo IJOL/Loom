@@ -17,6 +17,14 @@ export function registerEngineCapabilities(id: string, c: EngineCapabilities, is
   if (isPlugin) fromPlugin.add(id);
 }
 
+/** Reverses registerEngineCapabilities for one id — the rollback half of a
+ *  plugin engine's registration. See registry.ts's unregisterEngine and
+ *  plugin-host.ts. */
+export function unregisterEngineCapabilities(id: string): void {
+  caps.delete(id);
+  fromPlugin.delete(id);
+}
+
 export function engineCapabilities(id: string): EngineCapabilities | undefined {
   return caps.get(id);
 }

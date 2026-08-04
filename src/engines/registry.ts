@@ -58,6 +58,16 @@ export function registerEngineFactory(id: string, factory: () => SynthEngine): v
   factories.set(id, factory);
 }
 
+/** Reverses registerEngine + registerEngineFactory for one id. The rollback
+ *  half of a plugin component's registration — used when a plugin's own
+ *  main.js throws AFTER its engine was already adopted, so the failure does
+ *  not leave a half-registered engine (visible in the selector, silent at
+ *  note time) behind. See plugin-host.ts. */
+export function unregisterEngine(id: string): void {
+  engines.delete(id);
+  factories.delete(id);
+}
+
 export function getEngine(id: string): SynthEngine | undefined {
   return engines.get(id);
 }

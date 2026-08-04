@@ -34,7 +34,7 @@ export interface EngineSelectorUIDeps {
  *  The source list is the ENGINE registry, not listPlugins('engine'). Those are
  *  two different registries: listPlugins holds what the build-time
  *  `import.meta.glob` over src/ found, so a RUNTIME plugin — which registers its
- *  engine through Loom.registerComponent and never appears in that glob — could
+ *  engine through the host's adoptComponents and never appears in that glob — could
  *  never show up in the selector while this read from there. That is not a
  *  cosmetic difference: it is the whole "a plugin is a first-class engine"
  *  claim, and it was broken for every plugin engine. */

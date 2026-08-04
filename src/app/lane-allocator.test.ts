@@ -18,7 +18,7 @@ import { SidechainBus } from '../core/sidechain-bus';
 import { OfflineAudioContext } from 'node-web-audio-api';
 import type { FxInstance } from '../plugins/types';
 import * as registry from '../engines/registry';
-import { installMainThreadLoomApi, __resetPluginEngines } from '../plugin-host/loom-api';
+import { installMainThreadLoomApi, __resetPluginEngines, adoptComponents } from '../plugin-host/loom-api';
 import karplusPlugin from '../../plugins/karplus/plugin.json';
 import audioProbePlugin from '../../plugins/audio-probe/plugin.json';
 import type { ComponentManifest } from '@loom/plugin-sdk';
@@ -176,8 +176,7 @@ describe('Phase 4 Task 1: live worklet backend constructs only worklet engines',
     vi.restoreAllMocks();
     __resetPluginEngines();
     installMainThreadLoomApi();
-    (globalThis as unknown as { Loom: { registerComponent(m: ComponentManifest): void } })
-      .Loom.registerComponent(karplusPlugin.components[0] as unknown as ComponentManifest);
+    adoptComponents([karplusPlugin.components[0] as unknown as ComponentManifest]);
     registerPluginEngines();
   });
 
@@ -237,8 +236,7 @@ describe('backend routing by capability, not by hard-coded id (audio slice)', ()
   // with the bug still in place (the allocator's literal 'audio' branch would
   // catch it), so the fixture MUST use a different id — audio-probe does.
   it('routes a plugin engine with clipContent: audio to AudioWorkletEngine, not WorkletLaneEngine', () => {
-    (globalThis as unknown as { Loom: { registerComponent(m: ComponentManifest): void } })
-      .Loom.registerComponent(audioProbePlugin.components[0] as unknown as ComponentManifest);
+    adoptComponents([audioProbePlugin.components[0] as unknown as ComponentManifest]);
     const ctx = makeCtx();
     const { master, fx, sidechainBus } = makeDeps(ctx);
     const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [] });
@@ -258,8 +256,7 @@ describe('backend routing by capability, not by hard-coded id (audio slice)', ()
   // trigger-dispatch resolved note-FX capability against the built-in
   // 'audio' registration instead of audio-probe's own.
   it('a plugin audio-channel engine reports its OWN id, not the built-in "audio"', () => {
-    (globalThis as unknown as { Loom: { registerComponent(m: ComponentManifest): void } })
-      .Loom.registerComponent(audioProbePlugin.components[0] as unknown as ComponentManifest);
+    adoptComponents([audioProbePlugin.components[0] as unknown as ComponentManifest]);
     const ctx = makeCtx();
     const { master, fx, sidechainBus } = makeDeps(ctx);
     const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [] });
@@ -271,8 +268,7 @@ describe('backend routing by capability, not by hard-coded id (audio slice)', ()
   });
 
   it('non-regression: the built-in audio channel still gets AudioWorkletEngine, and the six melodic engines still get WorkletLaneEngine', () => {
-    (globalThis as unknown as { Loom: { registerComponent(m: ComponentManifest): void } })
-      .Loom.registerComponent(karplusPlugin.components[0] as unknown as ComponentManifest);
+    adoptComponents([karplusPlugin.components[0] as unknown as ComponentManifest]);
     const ctx = makeCtx();
     const { master, fx, sidechainBus } = makeDeps(ctx);
     const lanes = createLaneAllocator({ ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [] });

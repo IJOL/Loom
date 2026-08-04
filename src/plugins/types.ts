@@ -58,8 +58,8 @@ export interface FxInstance {
 
 // A modulator is NOT a plugin-registry kind. It lives in its own registry,
 // src/modulation/modulator-registry.ts, which is the one door for "what is this
-// modulator and what can it do" — for built-ins and, from the plugin ABI's
-// registerComponent, for plugins too. This registry briefly held a 'modulator'
+// modulator and what can it do" — for built-ins and, from the plugin host's
+// adoptComponents, for plugins too. This registry briefly held a 'modulator'
 // kind whose two entries owned nothing and whose createInstance overload ended
 // up with no caller at all; keeping it would have left TWO plausible homes for
 // the same thing, which is how a plugin gets wired into the wrong one.

@@ -40,6 +40,13 @@ export function registerModulator(c: ModulatorComponent): void {
   components.set(c.id, c);
 }
 
+/** Reverses registerModulator for one id — the rollback half of a plugin
+ *  modulator's registration, used when the plugin's own main.js throws after
+ *  the modulator was already adopted. See plugin-host.ts. */
+export function unregisterModulator(id: string): void {
+  components.delete(id);
+}
+
 export function getModulator(id: string): ModulatorComponent | undefined {
   return components.get(id);
 }

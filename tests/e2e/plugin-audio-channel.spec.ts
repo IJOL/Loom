@@ -34,13 +34,16 @@ import { buildPlugin } from '../../tools/loom-plugin/build.mjs';
 // scratch dir) from `plugins/audio-probe/` — never touching the checked-in
 // `public/plugins/`.
 //
-// Why this works: `plugin-host.ts` fetches `plugin.json` and `main.js` with a
-// plain `fetch()` on the main thread (see `module-loader.ts`'s
-// `moduleBlobUrl`), which `page.route` intercepts like any other network
-// request. audio-probe ships no `dsp` field, so it never reaches
+// Why this works: `plugin-host.ts` fetches `plugin.json` with a plain
+// `fetch()` on the main thread, which `page.route` intercepts like any other
+// network request — the drop-in proof rests on that interception ALONE.
+// audio-probe ships no `main` field (its component is adopted straight from
+// the manifest — see loom-api.ts's adoptComponents, the one path a component
+// enters by) and no `dsp` field either, so it never reaches
 // `addPluginWorkletModule` (`ctx.audioWorklet.addModule`) — the one loading
 // path verified elsewhere NOT to be interceptable by `page.route`. Had this
-// probe carried DSP, that path would need a different proof.
+// probe carried a `main` or `dsp`, that path (or `module-loader.ts`'s
+// `moduleBlobUrl`, for `main`) would need its own proof.
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 let builtDir: string;

@@ -23,8 +23,9 @@ import {
 } from './engine-selector-ui';
 import type { KnobHandle } from '../core/knob';
 import { bootstrapPlugins } from '../app/plugin-bootstrap';
-import { installMainThreadLoomApi, __resetPluginEngines } from '../plugin-host/loom-api';
+import { installMainThreadLoomApi, __resetPluginEngines, adoptComponents } from '../plugin-host/loom-api';
 import karplusPlugin from '../../plugins/karplus/plugin.json';
+import type { ComponentManifest } from '@loom/plugin-sdk';
 
 function makeKnobHandle(id: string): KnobHandle {
   return {
@@ -85,15 +86,14 @@ describe('engine-selector-ui — melodic engine filter', () => {
 
   // Acceptance criterion: a PLUGIN engine is a first-class citizen of the lane
   // selector with no extra wiring — melodicSynthEngineIds filters the engine
-  // registry by `editor === 'piano-roll'`, and registerComponent puts a
+  // registry by `editor === 'piano-roll'`, and adoptComponents puts a
   // manifest there like any built-in. This is the unit-level half of the e2e check.
   it('includes a plugin engine as soon as its manifest is registered', () => {
     bootstrapPlugins();
     __resetPluginEngines();
     installMainThreadLoomApi();
     expect(melodicSynthEngineIds()).not.toContain('karplus');
-    (globalThis as unknown as { Loom: { registerComponent(m: unknown): void } })
-      .Loom.registerComponent(karplusPlugin.components[0]);
+    adoptComponents([karplusPlugin.components[0] as unknown as ComponentManifest]);
     expect(melodicSynthEngineIds()).toContain('karplus');
   });
 });

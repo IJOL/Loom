@@ -158,9 +158,10 @@ restriction — both remain ordinary inserts you can add anywhere.
 A modulator is **not** a `PluginKind` in `src/plugins/types.ts` any more. It has
 its own registry, [`src/modulation/modulator-registry.ts`](../src/modulation/modulator-registry.ts) —
 the one door for "what is this modulator and what can it do," for a **built-in**
-component registering from code and for a **plugin** component registering
-through the external ABI's `Loom.registerComponent`, and the caller can't tell
-which is which:
+component registering from code and for a **plugin** component adopted straight
+from its validated `plugin.json` (`adoptComponents`,
+[`src/plugin-host/loom-api.ts`](../src/plugin-host/loom-api.ts) — see "How a
+component is adopted" below), and the caller can't tell which is which:
 
 ```ts
 export interface ModulatorComponent {
@@ -266,10 +267,11 @@ part the old page got backwards. `melodicSynthEngineIds()`
 `listEngines('polyhost')` — the **engine** registry
 ([`src/engines/registry.ts`](../src/engines/registry.ts)), a different map from
 the plugin registry entirely. Its own comment explains why this matters: a
-runtime plugin registers its engine through `Loom.registerComponent`, never
-through the build-time glob, so it can never appear in `listPlugins('engine')` —
-reading from the engine registry instead is "the whole 'a plugin is a
-first-class engine' claim."
+runtime plugin registers its engine through the host's `adoptComponents`,
+reading straight from its validated manifest, never through the build-time
+glob, so it can never appear in `listPlugins('engine')` — reading from the
+engine registry instead is "the whole 'a plugin is a first-class engine'
+claim."
 
 `adoptEngine` (the external ABI's handler,
 [`src/plugin-host/loom-api.ts`](../src/plugin-host/loom-api.ts)) builds a
@@ -327,8 +329,9 @@ engine is registered and the JSON exists, the preset loader reads it at boot.
 `presets` field (Karplus: `"presets": "presets.json"`) and read from the
 plugin's own directory. `loadPlugins()` fetches it and calls
 `seedEnginePresets(manifest.id, …)` into the **same** preset cache
-`public/presets/*.json` fills — *before* importing `main.js`, because the
-engine descriptor reads `getCachedPresets(id)` the moment it's built. You never
+`public/presets/*.json` fills — *before* the component is adopted (and
+therefore before any `main.js` import too), because the engine descriptor
+reads `getCachedPresets(id)` the moment `adoptComponents` builds it. You never
 touch `public/presets/`.
 
 `gm` maps presets to GM program numbers for MIDI import (both cases). The keys
@@ -480,11 +483,15 @@ Loom's own source.
 
 ```text
 plugins/karplus/
-  plugin.json     # the manifest — data only
-  main.ts         # main-thread half: metadata registration
+  plugin.json     # the manifest — data only, and the ONLY file every plugin
+                   # needs. A component is adopted straight from this, by the
+                   # host — see "How a component is adopted" below.
   dsp.ts          # per-sample DSP half — runs in the AudioWorklet + on the
                    # main thread for offline export (optional: omit for a
                    # component with no per-sample signal of its own)
+  main.ts         # main-thread CODE (optional: omit unless you have some —
+                   # a component's metadata needs none, so most plugins skip
+                   # this file entirely; see below)
   presets.json    # optional — this engine's preset bank
 ```
 
@@ -498,6 +505,27 @@ makes "drop-in" true rather than aspirational. `npm run build` always runs
 `build:plugins` first, so a plugin's build artefacts are never stale in a
 production build.
 
+### How a component is adopted
+
+`loadPlugins()` ([`src/plugin-host/plugin-host.ts`](../src/plugin-host/plugin-host.ts))
+fetches `plugin.json`, validates it, and then calls
+`adoptComponents(manifest.components)`
+([`src/plugin-host/loom-api.ts`](../src/plugin-host/loom-api.ts)) — **before**
+importing `main`, if the manifest declares one. This is the ONE path a
+component enters by: the host builds the engine descriptor or modulator
+registration directly from the file it just validated. `globalThis.Loom` has
+no `registerComponent` — a component's whole description (id, params,
+capabilities or modulator declaration, groups, default modulator set) is DATA,
+and data travels in `plugin.json`, not through a function call on a global.
+`main.js` exists only for a plugin author's own main-thread CODE; most
+plugins — Karplus and S&H both — need none and ship no `main` field at all.
+
+If a plugin fails after its components were adopted (its `main.js` throws, for
+instance), the rollback is automatic: whatever `adoptComponents` just
+registered for that plugin is undone, so a broken plugin ends up fully absent,
+never half-installed with an engine sitting in the selector and no DSP behind
+it.
+
 ### `plugin.json` — every field
 
 ```jsonc
@@ -508,7 +536,14 @@ production build.
   "loomApi": 1,               // required — MUST equal LOOM_API_VERSION (currently 1);
                                // the host refuses to load anything else
   "author": "Loom",           // optional
-  "main": "main.js",          // required — entry point loaded on the MAIN thread
+  "main": "main.js",          // optional — entry point for MAIN-THREAD CODE.
+                               // Most plugins omit it entirely: a component's
+                               // metadata is adopted straight from THIS file
+                               // (see "How a component is adopted" above), so
+                               // main.js has nothing left to do unless you need
+                               // to register something the manifest can't
+                               // carry as JSON — a function. Karplus and S&H
+                               // both ship none.
   "dsp": "dsp.js",             // optional — entry added to the AudioWorklet (and
                                // imported on the main thread for offline render);
                                // absent means this plugin has no per-sample DSP
@@ -584,10 +619,12 @@ exception, and one bad plugin never takes the app down with it (`loadPlugins()`
 records the failure per plugin id and keeps going). Every rejection message it
 can produce, so you know what a mistake looks like from the outside:
 
-- Top level: `id`/`name`/`version`/`main` must each be a non-empty string;
-  `loomApi` must equal the host's `LOOM_API_VERSION` exactly (`"loomApi ... is
-  not supported (host speaks 1)"`); `dsp`/`presets` must be strings if present;
-  `private` must be a boolean if present; `components` must be an array.
+- Top level: `id`/`name`/`version` must each be a non-empty string; `loomApi`
+  must equal the host's `LOOM_API_VERSION` exactly (`"loomApi ... is not
+  supported (host speaks 1)"`); `main`/`dsp`/`presets` must each be a
+  non-empty string IF PRESENT — none of the three is required, and a manifest
+  with none of them is a valid, data-only plugin; `private` must be a boolean
+  if present; `components` must be an array.
 - Every component: `kind` must be `engine` or `modulator`; `id`/`name` required
   strings; `params` an array, each entry checked like the host's own
   `validateSpec` (id, label, `kind: continuous|discrete`, numeric `min`/`max`/
@@ -611,20 +648,21 @@ before it's even copied into `public/`, not to replace the runtime check above.
 A plugin's compiled JS cannot `import` anything of the host's — esbuild bundles
 and hashes every host module, so there is no stable name to import, and a
 separately `addModule`'d worklet module does not even share module *instances*
-with the main thread or with another worklet module. The meeting point is
-therefore a **global**, `globalThis.Loom`, installed **fresh in every realm**
-before any plugin code runs there:
+with the main thread or with another worklet module. The meeting point for
+CODE is therefore a **global**, `globalThis.Loom`, installed **fresh in every
+realm** before any plugin code runs there — and it carries CODE ONLY. A
+component's own description is DATA and travels in `plugin.json` instead (see
+"How a component is adopted" above), so both realms install the exact same
+shape:
 
 - **Main thread**: `installMainThreadLoomApi()`
   ([`src/plugin-host/loom-api.ts`](../src/plugin-host/loom-api.ts)) installs
-  `{ apiVersion, registerComponent, registerRenderer, registerModulatorKernel }`.
-  `registerComponent` is what your `main.js` calls; the offline exporter runs
-  the same pure renderer kernel on this same thread, which is why
-  `registerRenderer` is exposed here too.
+  `{ apiVersion, registerRenderer, registerModulatorKernel }`. The offline
+  exporter runs the same pure renderer kernel on this same thread, which is
+  why `registerRenderer` is exposed here too, not only in the worklet.
 - **AudioWorklet**: [`loom-processor.ts`](../src/audio-worklet/loom-processor.ts)
-  installs `{ apiVersion, registerRenderer, registerModulatorKernel }` (no
-  `registerComponent` — there's no UI inside the worklet) at module top level,
-  **before** any plugin `dsp.js` is added, because the host `await`s this
+  installs the identical `{ apiVersion, registerRenderer, registerModulatorKernel }`
+  at module top level, **before** any plugin `dsp.js` is added, because the host `await`s this
   module's own `addModule` first
   ([`main.ts:135-142`](../src/main.ts)).
 
@@ -693,14 +731,16 @@ i.e. never reachable to a real user. [`plugins/audio-probe/`](../plugins/audio-p
 is the shipped example: an `engine` component with `clipContent: 'audio'` and
 no params, built on demand by tests, absent from
 [`public/plugins/index.json`](../public/plugins/index.json) (which currently
-lists only `karplus` and `sh`).
+lists the seven non-private plugins: `fm`, `karplus`, `sh`, `subtractive`,
+`tb303`, `wavetable`, `westcoast`).
 
 ---
 
 ### Worked example: Karplus
 
 [`plugins/karplus/`](../plugins/karplus/) is a complete, currently-shipping
-engine plugin.
+engine plugin — and it ships **no `main.ts`/`main.js` at all**: its directory
+is only `plugin.json` + `dsp.ts` + `presets.json`.
 
 **`plugin.json`** declares one `engine` component: 9 params across four groups
 (`string`/`excite`/`amp`/`poly`, laid out STRING+EXCITE on row 0 and AMP+POLY
@@ -708,16 +748,10 @@ on row 1 — the exact example under ["Editor layout"](#editor-layout-groups)
 above), a default modulator set (a shared LFO plus a per-voice ADSR, both
 disconnected until the user patches them), and
 `capabilities: { clipContent: 'notes', shortLabel: 'karplus', outputTrim: 0.857,
-gm: { keywords: [...], priority: 10 } }`.
-
-**`main.ts`** is three lines:
-
-```ts
-import manifest from './plugin.json';
-Loom.registerComponent(manifest.components[0] as never);
-```
-
-That's the entire main-thread half — pure metadata, no synthesis code at all.
+gm: { keywords: [...], priority: 10 } }`. That is the entire main-thread
+description — the host adopts it straight from this file (see "How a
+component is adopted" above), so there is no metadata-registration code to
+write at all.
 
 **`dsp.ts`** is the real work: a per-sample Karplus-Strong string model
 (`KarplusRenderer implements VoiceRenderer`), ending in
@@ -735,8 +769,9 @@ already sounding"). It imports only `@loom/plugin-sdk` (`param`, `midiToFreq`,
 what the build's drop-in guard enforces.
 
 **`presets.json`** is the engine's preset bank, seeded into the shared preset
-cache before `main.js` runs (see ["Presets for an engine"](#presets-for-an-engine)
-above).
+cache before the component is adopted (see ["Presets for an engine"](#presets-for-an-engine)
+above) — `adoptComponents` reads `getCachedPresets(id)` the moment it builds
+the engine descriptor, so the presets have to already be in the cache by then.
 
 `plugins/karplus/dsp.test.ts` and `karplus-parity.dsp.test.ts` test the pure
 renderer directly (no `AudioContext`, no `Loom` global beyond a two-line stub
@@ -857,8 +892,10 @@ see [`modulator-registry.ts`](../src/modulation/modulator-registry.ts) instead.
 - [ ] `plugin.json` validates — `node tools/loom-plugin/cli.mjs build
       plugins/<id>` fails loudly if it doesn't pass `assertValidManifest`, and
       the runtime `manifest-validate.ts` check is stricter still
-- [ ] `main.ts`/`main.js` calls `Loom.registerComponent(...)` and nothing else
-      at module scope
+- [ ] No `main.ts`/`main.js` unless you have real main-thread CODE to
+      register — a component's own metadata needs none; the host adopts it
+      straight from `plugin.json` (see "How a component is adopted"). Karplus
+      and S&H both ship none.
 - [ ] `dsp.ts`/`dsp.js` (if you have per-sample DSP) calls
       `Loom.registerRenderer(id, make)` (engine) or a `driver: 'time'`
       modulator's kernel calls `Loom.registerModulatorKernel({...})`

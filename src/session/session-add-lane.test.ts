@@ -9,7 +9,7 @@ import '../plugins/modulators/lfo';
 import '../plugins/modulators/adsr';
 import { listEngines, getEngineDescriptor } from '../engines/registry';
 import { nextLaneSlug } from './session-host';
-import { installMainThreadLoomApi, __resetPluginEngines } from '../plugin-host/loom-api';
+import { installMainThreadLoomApi, __resetPluginEngines, adoptComponents } from '../plugin-host/loom-api';
 import { registerPluginEngine } from '../../test/plugin-fixtures';
 
 // Every melodic engine ships as a plugin; the FM case below reads the lane
@@ -58,10 +58,10 @@ describe('nextLaneSlug — slug id generation', () => {
   it('a plugin engine takes its lane prefix from the manifest shortLabel', () => {
     __resetPluginEngines();
     installMainThreadLoomApi();
-    (globalThis as unknown as { Loom: { registerComponent(m: unknown): void } }).Loom.registerComponent({
+    adoptComponents([{
       kind: 'engine', id: 'probe-engine', name: 'Probe', polyphony: 'poly', params: [],
       capabilities: { clipContent: 'notes', outputTrim: 0.5, shortLabel: 'prb' },
-    });
+    }]);
     expect(nextLaneSlug(new Set([]), 'probe-engine')).toBe('prb-1');
     expect(nextLaneSlug(new Set(['prb-1']), 'probe-engine')).toBe('prb-2');
   });
