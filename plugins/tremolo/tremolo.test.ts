@@ -1,9 +1,21 @@
 // Tremolo: an LFO chopping the output gain. Rendered through OfflineAudioContext
 // so we measure the real effect, not just the node graph. Assertions relative.
-import { describe, it, expect } from 'vitest';
-import { tremoloPlugin } from './tremolo';
+import { describe, it, expect, beforeAll } from 'vitest';
+import type { FxInstance } from '@loom/plugin-sdk';
+import manifest from './plugin.json';
 
-const inst = (ctx: BaseAudioContext) => tremoloPlugin.kind === 'fx' ? tremoloPlugin.create(ctx as unknown as AudioContext) : null!;
+// The plugin's own test, run against the plugin the way the host runs it: a
+// two-line Loom double captures the factory, which is all main.ts asks of the
+// ABI. That is the point — it proves this effect needs nothing from src/.
+let create: (ctx: AudioContext) => FxInstance;
+beforeAll(async () => {
+  (globalThis as unknown as { Loom: unknown }).Loom = {
+    registerFx: (_id: string, c: (ctx: AudioContext) => FxInstance) => { create = c; },
+  };
+  await import('./main');
+});
+
+const inst = (ctx: BaseAudioContext) => create(ctx as unknown as AudioContext);
 
 /** Push a steady tone through the effect and return the rendered samples. */
 async function render(setup: (fx: ReturnType<typeof inst>) => void, secs = 1): Promise<Float32Array> {
@@ -128,5 +140,24 @@ describe('tremolo as a trance gate', () => {
     expect(fx.getBaseValue('shape')).toBe(1);
     expect(fx.getBaseValue('smooth')).toBeCloseTo(12, 3);
     expect(fx.getBaseValue('sync')).toBe(3);
+  });
+});
+
+// The tempo cases above already cover setBpm — the one surface no other insert
+// has, and therefore the one thing that could have broken silently in the move.
+// What the manifest adds is the other direction: that nothing it promises is
+// left unanswered by the graph.
+describe('tremolo — the manifest and the graph agree', () => {
+  it('answers to every param its manifest declares', () => {
+    expect(manifest.components[0].id).toBe('tremolo');
+    const fx = inst(new OfflineAudioContext(1, 128, 44100));
+    for (const p of manifest.components[0].params) {
+      // 'rate' is excluded on purpose: its getter reports the EFFECTIVE rate,
+      // so a synced instance would not echo back what was written — which the
+      // two cases above check properly instead.
+      if (p.id === 'rate') continue;
+      fx.setBaseValue(p.id, p.default);
+      expect(fx.getBaseValue(p.id)).toBeCloseTo(p.default, 5);
+    }
   });
 });

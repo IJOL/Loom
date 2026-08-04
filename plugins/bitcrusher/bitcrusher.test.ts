@@ -2,10 +2,22 @@
 // lo-fi tone lowpass, mixed with the dry signal. All native Web Audio — the
 // quantization IS the crush, and a WaveShaperNode does it statelessly, so unlike
 // a worklet decimator this renders and is measurable under OfflineAudioContext.
-import { describe, it, expect } from 'vitest';
-import { bitcrusherPlugin } from './bitcrusher';
+import { describe, it, expect, beforeAll } from 'vitest';
+import type { FxInstance } from '@loom/plugin-sdk';
+import manifest from './plugin.json';
 
-const mk = (ctx: BaseAudioContext) => bitcrusherPlugin.kind === 'fx' ? bitcrusherPlugin.create(ctx as unknown as AudioContext) : null!;
+// The plugin's own test, run against the plugin the way the host runs it: a
+// two-line Loom double captures the factory, which is all main.ts asks of the
+// ABI. That is the point — it proves this effect needs nothing from src/.
+let create: (ctx: AudioContext) => FxInstance;
+beforeAll(async () => {
+  (globalThis as unknown as { Loom: unknown }).Loom = {
+    registerFx: (_id: string, c: (ctx: AudioContext) => FxInstance) => { create = c; },
+  };
+  await import('./main');
+});
+
+const mk = (ctx: BaseAudioContext) => create(ctx as unknown as AudioContext);
 
 async function render(setup: (fx: ReturnType<typeof mk>) => void, secs = 0.3): Promise<Float32Array> {
   const ctx = new OfflineAudioContext(1, Math.floor(44100 * secs), 44100);
@@ -60,6 +72,17 @@ describe('bitcrusher', () => {
     expect(fx.getBaseValue('bits')).toBeCloseTo(5, 3);
     expect(fx.getBaseValue('tone')).toBeCloseTo(4000, 3);
     expect(fx.getBaseValue('mix')).toBeCloseTo(0.7, 3);
+  });
+
+  it('answers to every param its manifest declares', () => {
+    // A knob the graph never reads is a control that does nothing, and the
+    // manifest alone cannot catch that.
+    expect(manifest.components[0].id).toBe('bitcrusher');
+    const fx = mk(new OfflineAudioContext(1, 4410, 44100));
+    for (const p of manifest.components[0].params) {
+      fx.setBaseValue(p.id, p.default);
+      expect(fx.getBaseValue(p.id)).toBeCloseTo(p.default, 5);
+    }
   });
 });
 
