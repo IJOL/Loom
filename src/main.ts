@@ -123,6 +123,11 @@ const audio = createAudioGraph();
 // lanes.ensureLaneResource() when applyLoadedSessionState runs.
 const { ctx, master, analyser, masterMeterAnalyser, masterStrip, masterInsertChain, fx, masterComp, masterShaper, sidechainBus } = audio;
 
+// The send buses are built with the audio graph, synchronously; delay and reverb
+// arrive with the plugins, asynchronously. Seed once they exist. A session load
+// rehydrates the sends itself and seedDefaultInserts steps aside for it.
+void pluginsReady.then(() => { fx.seedDefaultInserts(ctx); });
+
 // Register all three AudioWorklet processors ASAP (idempotent, cached per ctx).
 // EVERY lane allocation that builds a worklet engine constructs `new
 // AudioWorkletNode`: the melodic WorkletLaneEngine builds 'loom-processor', the

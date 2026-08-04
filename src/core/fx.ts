@@ -13,28 +13,39 @@ import { SendBus } from './send-bus';
 import { createInstance } from '../plugins/registry';
 import { newInsertId } from '../session/insert-slot';
 
-// FxBus is the FX send bank: two generic send buses, A (seeded Delay) and B
-// (seeded Reverb). Kept under the name `FxBus` to bound blast radius; it is no
-// longer a privileged reverb+delay pair — reverb/delay are ordinary inserts
-// living in the bus insert chains. `reverbInput`/`delayInput` alias the bus
-// inputs so ChannelStrip and DrumMachine per-voice sends route unchanged.
+// FxBus is the FX send bank: two generic send buses, A (defaults to Delay) and
+// B (defaults to Reverb) once seedDefaultInserts runs. Kept under the name
+// `FxBus` to bound blast radius; it is no longer a privileged reverb+delay
+// pair — reverb/delay are ordinary inserts living in the bus insert chains.
+// `reverbInput`/`delayInput` alias the bus inputs so ChannelStrip and
+// DrumMachine per-voice sends route unchanged.
 export class FxBus {
   readonly sends: SendBus[];
 
   constructor(ctx: AudioContext, output: AudioNode) {
-    const a = new SendBus(ctx, 'A', 'Send A (Delay)', output);
-    const b = new SendBus(ctx, 'B', 'Send B (Reverb)', output);
-    // Seed each bus with its default insert. createInstance returns undefined
-    // when the registry isn't bootstrapped (e.g. pure unit tests) — the chain
-    // stays empty (pass-through).
-    const delay  = createInstance('fx', 'delay',  ctx);
-    const reverb = createInstance('fx', 'reverb', ctx);
-    // These ids are placeholders; rehydrateSends overwrites them from the
-    // persisted session state on load. Nothing should address a send slot by an
-    // id minted here.
-    if (delay)  a.inserts.insert(delay, newInsertId());
-    if (reverb) b.inserts.insert(reverb, newInsertId());
-    this.sends = [a, b];
+    this.sends = [
+      new SendBus(ctx, 'A', 'Send A (Delay)', output),
+      new SendBus(ctx, 'B', 'Send B (Reverb)', output),
+    ];
+  }
+
+  /** Put the default delay on A and reverb on B. Called AFTER loadPlugins
+   *  resolves: both are ordinary plugins now, and the graph is built
+   *  synchronously long before they arrive. Idempotent, and a no-op for a bus
+   *  the session already filled — rehydrateSends runs on load and must win.
+   *
+   *  If either plugin is not installed, its bus simply stays empty and passes
+   *  dry. That is the honest consequence of having made them uninstallable, and
+   *  it is not papered over with a substitute. */
+  seedDefaultInserts(ctx: AudioContext): void {
+    const seed = (id: 'A' | 'B', pluginId: string) => {
+      const bus = this.getSendBus(id);
+      if (bus.inserts.size() > 0) return;
+      const inst = createInstance('fx', pluginId, ctx);
+      if (inst) bus.inserts.insert(inst, newInsertId());
+    };
+    seed('A', 'delay');
+    seed('B', 'reverb');
   }
 
   getSendBus(id: 'A' | 'B'): SendBus {
