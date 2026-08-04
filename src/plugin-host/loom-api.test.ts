@@ -4,7 +4,8 @@ import { getEngineDescriptor, listEngines } from '../engines/registry';
 import { engineCapabilities } from '../plugins/capabilities';
 import { getModulator, __resetModulators } from '../modulation/modulator-registry';
 import { __resetModulatorKernels, getModulatorKernel } from '../audio-dsp/modulator-kernels';
-import { LOOM_API_VERSION, type ComponentManifest } from '@loom/plugin-sdk';
+import { getPlugin } from '../plugins/registry';
+import { LOOM_API_VERSION, type ComponentManifest, type FxInstance } from '@loom/plugin-sdk';
 
 const manifest: ComponentManifest = {
   kind: 'engine', id: 'probe', name: 'Probe', polyphony: 'poly',
@@ -126,18 +127,77 @@ describe('the main-thread Loom API', () => {
     expect(getEngineDescriptor('rollback-bad')).toBeUndefined();
   });
 
-  // An fx component's factory arrives later, through Loom.registerFx (a later
-  // task) — this build has no way to adopt one from the manifest alone. A
-  // silent no-op here would be exactly the half-installed failure this whole
-  // file exists to prevent: the manifest validates, the plugin "loads", and
-  // nothing says the insert is not actually there. It must throw instead.
-  it('refuses to adopt an fx component — Loom.registerFx (a later task) is the only real door', () => {
-    expect(() => adoptComponents([fxManifest])).toThrow(/cannot adopt/);
+  // An fx component's factory is a function, which cannot travel inside the
+  // manifest — adopting one only PARKS its description; it must not appear as
+  // a real plugin until Loom.registerFx marries the two. A silent full
+  // registration here would be exactly the half-installed failure this whole
+  // file exists to prevent, just inverted: the picker would show an insert
+  // whose factory nobody supplied yet.
+  it('parks an fx component without registering it — Loom.registerFx is the only door that actually adds it', () => {
+    expect(() => adoptComponents([fxManifest])).not.toThrow();
+    expect(getPlugin('fx', 'wah')).toBeUndefined();
   });
 
-  it('rolls back an engine adopted before a LATER fx component throws', () => {
-    const good: ComponentManifest = { ...manifest, id: 'rollback-fx-good' };
-    expect(() => adoptComponents([good, fxManifest])).toThrow();
-    expect(getEngineDescriptor('rollback-fx-good')).toBeUndefined();
+  it('rolls back an fx parked earlier in the manifest when a LATER component throws', () => {
+    const malformed = { ...manifest, id: 'rollback-bad', params: undefined } as unknown as ComponentManifest;
+    expect(() => adoptComponents([fxManifest, malformed])).toThrow();
+    // The parked description must not survive the rollback either: if it
+    // did, a later, unrelated registerFx('wah', …) could still claim it and
+    // marry it to a factory from a plugin that has nothing to do with it.
+    expect(() => (globalThis as unknown as { Loom: { registerFx(id: string, c: unknown): void } }).Loom
+      .registerFx('wah', () => ({} as FxInstance))).toThrow(/never declared/);
+  });
+
+  it('a registered fx factory lands in the plugin registry with its manifest', () => {
+    installMainThreadLoomApi();
+    // '2.3.1', not the '1.0.0' default: a version equal to the default would
+    // pass just as well if registerFxFactory ignored the parked version
+    // entirely and fell back to adoptComponents's own default — this is the
+    // test that defends the judgement call to thread the version alongside
+    // the parked description instead of through a separate module variable.
+    adoptComponents([{ kind: 'fx', id: 'wah', name: 'Auto-Wah', params: [], fx: { color: '#abc' } }], '2.3.1');
+    const gain = {} as GainNode;
+    (globalThis as unknown as { Loom: { registerFx(id: string, c: unknown): void } }).Loom
+      .registerFx('wah', () => ({ input: gain, output: gain } as unknown as FxInstance));
+    const p = getPlugin('fx', 'wah');
+    expect(p?.manifest.name).toBe('Auto-Wah');
+    expect(p?.manifest.color).toBe('#abc');
+    expect(p?.manifest.version).toBe('2.3.1');
+  });
+
+  it('registerFx for an id the manifest never declared is refused, not registered silently', () => {
+    installMainThreadLoomApi();
+    expect(() => (globalThis as unknown as { Loom: { registerFx(id: string, c: unknown): void } }).Loom
+      .registerFx('ghost', () => ({} as FxInstance))).toThrow(/never declared/);
+  });
+
+  it('a second registerFx for the same id is refused as a double registration, not blamed on a missing declaration', () => {
+    installMainThreadLoomApi();
+    adoptComponents([fxManifest]);
+    const gain = {} as GainNode;
+    const Loom = (globalThis as unknown as { Loom: { registerFx(id: string, c: unknown): void } }).Loom;
+    Loom.registerFx('wah', () => ({ input: gain, output: gain } as unknown as FxInstance));
+    // The manifest DID declare 'wah' — the mistake is calling registerFx
+    // twice, not a manifest gap, and the message must say so or an author
+    // goes hunting a bug in plugin.json that does not exist.
+    expect(() => Loom.registerFx('wah', () => ({ input: gain, output: gain } as unknown as FxInstance)))
+      .toThrow(/already registered/);
+  });
+
+  // Not an ordering accident: this asserts __resetPluginEngines's own
+  // behaviour directly, rather than relying on this file never reordering
+  // the tests above that reuse id 'wah'. Before this fix, an fx that
+  // registerFx landed had no way to be undone by the test-only reset at all
+  // — the two 'wah'-reusing tests above only happened to pass because of
+  // which one vitest ran first.
+  it('__resetPluginEngines undoes whatever registerFx registered, not just its own bookkeeping', () => {
+    installMainThreadLoomApi();
+    adoptComponents([fxManifest]);
+    const gain = {} as GainNode;
+    (globalThis as unknown as { Loom: { registerFx(id: string, c: unknown): void } }).Loom
+      .registerFx('wah', () => ({ input: gain, output: gain } as unknown as FxInstance));
+    expect(getPlugin('fx', 'wah')).toBeDefined();
+    __resetPluginEngines();
+    expect(getPlugin('fx', 'wah')).toBeUndefined();
   });
 });

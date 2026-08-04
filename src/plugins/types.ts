@@ -25,6 +25,8 @@ export interface PluginManifest {
   /** Static presets bundled with the plugin. May be empty when an external
    *  loader (e.g. `preset-loader.ts`) owns presets for this id. */
   readonly presets: PluginPreset[];
+  /** Rack colour, for an fx manifest. Absent on engines. */
+  readonly color?: string;
 }
 
 export interface SynthInstance {

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
-  registerPlugin, getPlugin, listPlugins, createInstance, _resetRegistry,
+  registerPlugin, getPlugin, listPlugins, createInstance, unregisterPlugin, _resetRegistry,
 } from './registry';
 import type { PluginFactory } from './types';
 
@@ -56,5 +56,19 @@ describe('plugin registry', () => {
 
   it('createInstance returns undefined for unknown id', () => {
     expect(createInstance('engine', 'nope', {} as any, {} as any)).toBeUndefined();
+  });
+
+  it('unregisterPlugin removes exactly the (kind, id) pair, leaving siblings untouched', () => {
+    registerPlugin(fx('reverb'));
+    registerPlugin(fx('delay'));
+    registerPlugin(engine('reverb')); // same id, different kind — must survive
+    unregisterPlugin('fx', 'reverb');
+    expect(getPlugin('fx', 'reverb')).toBeUndefined();
+    expect(getPlugin('fx', 'delay')).toBeDefined();
+    expect(getPlugin('engine', 'reverb')).toBeDefined();
+  });
+
+  it('unregisterPlugin on an id nothing registered is a harmless no-op', () => {
+    expect(() => unregisterPlugin('fx', 'ghost')).not.toThrow();
   });
 });

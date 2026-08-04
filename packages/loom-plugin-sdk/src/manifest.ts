@@ -199,6 +199,11 @@ export interface LoomApi {
     id: string;
     valueAt(m: import('./types').ModLiteLike, t: number, origin: number): number;
   }): void;
+  /** Hand the host the function that builds an insert's Web Audio nodes. The id
+   *  must match a `kind: 'fx'` component in this plugin's manifest — a factory
+   *  for anything else is refused rather than registered under a name nothing
+   *  declared. */
+  registerFx(id: string, create: import('./fx').FxFactory): void;
 }
 
 export type RendererFactory = (

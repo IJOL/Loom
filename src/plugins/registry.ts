@@ -11,8 +11,19 @@ export function registerPlugin(factory: PluginFactory): void {
   plugins.set(k, factory);
 }
 
+export function getPlugin<K extends PluginKind>(kind: K, id: string): Extract<PluginFactory, { kind: K }> | undefined;
+export function getPlugin(kind: PluginKind, id: string): PluginFactory | undefined;
 export function getPlugin(kind: PluginKind, id: string): PluginFactory | undefined {
   return plugins.get(key(kind, id));
+}
+
+/** Reverses registerPlugin for one (kind, id). The rollback half of a
+ *  drop-in fx's registration — an fx that main.js already delivered must not
+ *  survive its OWN plugin failing on a later component (see adoptFx in
+ *  loom-api.ts), the same way unregisterEngine exists for the in-tree
+ *  descriptor path. A no-op if nothing is registered under that pair. */
+export function unregisterPlugin(kind: PluginKind, id: string): void {
+  plugins.delete(key(kind, id));
 }
 
 export function listPlugins<K extends PluginKind>(kind: K): Extract<PluginFactory, { kind: K }>[];

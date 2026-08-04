@@ -8,7 +8,7 @@
 // take the app down with it, and must never leave a half-registered engine
 // (visible in the selector, silent at note time) behind either.
 import { validatePluginManifest } from './manifest-validate';
-import { installMainThreadLoomApi, adoptComponents } from './loom-api';
+import { installMainThreadLoomApi, adoptComponents, assertFxFactories } from './loom-api';
 import { importPluginModule } from './module-loader';
 import { seedEnginePresets, validatePresetEntry } from '../presets/preset-loader';
 import type { EnginePreset } from '../engines/engine-types';
@@ -83,18 +83,23 @@ export async function loadPlugins(opts: LoadPluginsOptions = {}): Promise<Plugin
       }
 
       // Components come from the file we just validated, and MUST be adopted
-      // before the import below: from Task 5 on, an FX plugin's main.js
-      // registers its factory by calling Loom.registerFx(id, create) DURING
-      // the import, and that call looks up the description parked here by
-      // id. Adoption cannot move after the import without breaking that.
+      // before the import below: an FX plugin's main.js registers its
+      // factory by calling Loom.registerFx(id, create) DURING the import, and
+      // that call looks up the description parked here by id. Adoption
+      // cannot move after the import without breaking that.
       // What CAN move is the consequence of a later failure: if the import
       // throws, undoAdoption() reverses exactly what was just registered, so
       // a plugin that fails never half-installs — an engine that shows up in
       // the lane selector with no DSP behind it, because the throw happened
       // after the descriptor was adopted but the worklet never got wired.
-      undoAdoption = adoptComponents(manifest.components);
+      undoAdoption = adoptComponents(manifest.components, manifest.version);
 
       if (manifest.main) await doImport(`${dir}${manifest.main}`);
+      // Every fx this manifest declared must have registered a factory by
+      // now — Loom.registerFx runs synchronously during the import above. A
+      // plugin that promised an insert and delivered nothing fails here,
+      // instead of loading as a picker entry that does nothing when inserted.
+      assertFxFactories(manifest);
       if (manifest.dsp) report.dspUrls.push(`${dir}${manifest.dsp}`);
       report.loaded.push(id);
     } catch (e) {
