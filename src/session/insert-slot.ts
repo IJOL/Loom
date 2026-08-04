@@ -2,6 +2,7 @@
 import type { FxInstance } from '../plugins/types';
 import type { ModulatorState } from '../modulation/types';
 import { createInstance } from '../plugins/registry';
+import { createMissingFx } from '../core/missing-fx';
 import type { InsertChain } from '../plugins/fx/insert-chain';
 
 export interface InsertSlot {
@@ -37,14 +38,30 @@ export function snapshotInsertSlot(slot: InsertSlot, inst: FxInstance, paramIds:
 }
 
 /** Rehydrate a list of InsertSlots into an InsertChain.
- *  Slots that reference an unknown plugin id are silently skipped. */
+ *  A slot whose plugin id is not registered becomes a marked pass-through
+ *  (missing-fx.ts) rather than being skipped — the chain stays 1:1 with the
+ *  slot list and the reference the session carries is never dropped. */
 export function rehydrateInsertChain(
   ctx: AudioContext, chain: InsertChain, slots: InsertSlot[],
 ): void {
   for (const slot of slots) {
-    const inst = createInstance('fx', slot.pluginId, ctx);
-    if (!inst) continue;
-    applyInsertSlot(slot, inst);
+    // A slot whose plugin is not installed becomes a marked pass-through rather
+    // than nothing. Skipping it desynchronised the chain from the slot list and
+    // every later unit rendered its neighbour's data; and it silently dropped a
+    // reference the session still carries.
+    let inst = createInstance('fx', slot.pluginId, ctx);
+    if (inst) {
+      // A freshly created real instance starts at ITS OWN defaults (whatever
+      // create(ctx) set), not the slot's saved values — apply the persisted
+      // params onto it. This is the single source of truth for a real instance.
+      applyInsertSlot(slot, inst);
+    } else {
+      // createMissingFx already seeds itself from slot.params — that is ITS
+      // contract, tested directly in missing-fx.test.ts — so it is the single
+      // source of truth for the placeholder. Calling applyInsertSlot here too
+      // would just rewrite the same keys through setBaseValue a second time.
+      inst = createMissingFx(ctx, slot.pluginId, slot.params);
+    }
     chain.insert(inst, slot.id);
     if (slot.bypass) chain.setBypass(chain.size() - 1, true);
   }

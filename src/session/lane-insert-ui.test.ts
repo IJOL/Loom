@@ -5,7 +5,7 @@ import { buildLaneInsertUI } from './lane-insert-ui';
 import { registerPlugin, _resetRegistry } from '../plugins/registry';
 import { InsertChain } from '../plugins/fx/insert-chain';
 import { buildEngineParamGrid } from '../engines/engine-param-grid';
-import type { InsertSlot } from './insert-slot';
+import { rehydrateInsertChain, type InsertSlot } from './insert-slot';
 import type { KnobHandle } from '../core/knob';
 import type { FxInstance } from '../plugins/types';
 import type { EngineParamSpec } from '../engines/engine-params';
@@ -411,10 +411,12 @@ describe('insert rack pairing — a unit takes its data from its own slot, not f
     const chain = new InsertChain(inputNode, outputNode);
 
     // Three slots persisted, but the MIDDLE one references a plugin id that is
-    // never registered — exactly what rehydrateInsertChain would skip, so only
-    // two entries ever reach the live chain. That gap is what makes pairing by
-    // array index wrong: the chain's 2nd entry (index 1) is really slot 'sC',
-    // not slot 'sB'.
+    // never registered. The chain is built BY HAND here (not via
+    // rehydrateInsertChain, which keeps a missing-plugin slot as a marked
+    // placeholder rather than a gap) so only two entries reach the live chain —
+    // exercising the general case where a gap exists for any reason. That gap
+    // is what makes pairing by array index wrong: the chain's 2nd entry
+    // (index 1) is really slot 'sC', not slot 'sB'.
     chain.insert(makeFakeFx(), 'sA');
     chain.insert(makeFakeFx(), 'sC');
     const slots: InsertSlot[] = [
@@ -429,9 +431,53 @@ describe('insert rack pairing — a unit takes its data from its own slot, not f
     const names = Array.from(units).map((u) => u.querySelector('.insert-name')!.textContent);
 
     // Pairing by index would look up slots[1] for the chain's 2nd entry — the
-    // ghost slot, whose plugin isn't registered, so that unit renders nothing
-    // at all and 'Pairing C' never appears; only 'Pairing A' would be there.
+    // ghost slot, whose plugin isn't registered, so that unit would render as
+    // the missing-plugin placeholder (not 'Pairing C') and 'Pairing C' would
+    // never appear; only 'Pairing A' would be there.
     expect(names).toContain('Pairing C');
     expect(units.length).toBe(2);
+  });
+});
+
+describe('buildLaneInsertUI — a slot whose plugin is missing renders a marked unit', () => {
+  it('shows the placeholder for its own slot; a neighbour with a resolvable plugin still shows its own name', () => {
+    const ctx = makeCtx();
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const inputNode  = new FakeAudioNode() as unknown as AudioNode;
+    const outputNode = new FakeAudioNode() as unknown as AudioNode;
+    const chain = new InsertChain(inputNode, outputNode);
+
+    const slots: InsertSlot[] = [
+      { id: 'sA', pluginId: TEST_PLUGIN_ID, params: { drive: 0.5, mix: 1.0, mode: 0 }, bypass: false },
+      { id: 'sB', pluginId: 'ghost-fx', params: { x: 3 }, bypass: false },
+    ];
+    // rehydrateInsertChain is the REAL production path — the same call session
+    // load, lane duplication and offline export all make to turn persisted slots
+    // into a live chain, including the missing-plugin placeholder. Building the
+    // chain this way (instead of hand-rolling it, like the pairing test above
+    // does on purpose for a different reason) is what makes this test exercise
+    // unitTemplate's `!factory` branch for real, not merely by construction.
+    rehydrateInsertChain(ctx, chain, slots);
+
+    buildLaneInsertUI({ ctx, container, chain, slots, onChange: () => {} });
+
+    // Assert PRESENCE, never absence: an earlier round of this plan shipped an
+    // acceptance check that certified something was missing and passed
+    // identically for a broken plugin. The marked unit must actually be there.
+    const missing = container.querySelector('.insert-unit-missing');
+    expect(missing).not.toBeNull();
+    expect(missing!.querySelector('.insert-name')!.textContent).toContain('⚠');
+    expect(missing!.querySelector('.insert-name')!.textContent).toContain('ghost-fx');
+    expect(missing!.getAttribute('title')).toContain('ghost-fx');
+    expect(missing!.getAttribute('title')).toContain('This slot keeps its settings');
+
+    // The other half of the contract the original bug broke: the neighbour
+    // (a real, resolvable plugin) still renders its OWN name, unaffected by the
+    // gap next to it.
+    const units = container.querySelectorAll('.insert-unit');
+    expect(units.length).toBe(2);
+    const names = Array.from(units).map((u) => u.querySelector('.insert-name')!.textContent);
+    expect(names.some((n) => n?.includes('Test FX'))).toBe(true);
   });
 });

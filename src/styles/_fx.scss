@@ -96,6 +96,20 @@
 .insert-bar .insert-unit:last-child { border-right: none; }
 .insert-unit .knob-row { gap: 10px; }
 
+// A slot whose plugin is not installed: it still holds its place and its
+// settings (see missing-fx.ts), so it draws as a dimmed, dashed-border unit
+// rather than vanishing — the same idea as the lane header's ⚠, not a second one.
+.insert-unit-missing {
+  opacity: 0.55;
+  border: 1px dashed var(--border);
+}
+.insert-missing-note {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  font-style: italic;
+}
+
 // Thumbnail of what the effect's current settings add up to. Drawn in the
 // effect's own colour so a glance ties the picture to the unit it belongs to.
 .insert-vis {

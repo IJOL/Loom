@@ -3,6 +3,7 @@ import { applyInsertSlot, snapshotInsertSlot, rehydrateInsertChain, type InsertS
 import { InsertChain } from '../plugins/fx/insert-chain';
 import { createInstance, registerPlugin, _resetRegistry } from '../plugins/registry';
 import { multifilterPlugin } from '../plugins/fx/multifilter';
+import { limiterPlugin } from '../plugins/fx/limiter';
 import type { FxInstance } from '../plugins/types';
 
 function fakeInst(init: Record<string, number>): FxInstance {
@@ -86,5 +87,23 @@ describe('stable insert ids', () => {
     ];
     rehydrateInsertChain(ctx, chain, slots);
     expect(chain.list().map((s) => s.id)).toEqual(['slot-a']);
+  });
+});
+
+describe('a slot whose plugin is missing', () => {
+  beforeEach(() => {
+    _resetRegistry();
+    registerPlugin(limiterPlugin);
+  });
+
+  it('keeps its place, so the chain and the slots stay 1:1', () => {
+    const ctx = new AudioContext();
+    const chain = new InsertChain(ctx.createGain(), ctx.createGain());
+    rehydrateInsertChain(ctx, chain, [
+      { id: 'sA', pluginId: 'limiter',  params: {}, bypass: false },
+      { id: 'sB', pluginId: 'ghost-fx', params: { x: 3 }, bypass: false },
+    ]);
+    expect(chain.size()).toBe(2);
+    expect(chain.list()[1].id).toBe('sB');
   });
 });

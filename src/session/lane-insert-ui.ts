@@ -94,13 +94,12 @@ function rackTemplate(h: Rack, isPickerOpen: () => boolean, setPicker: (open: bo
 
 function unitTemplate(h: Rack, cs: ChainSlot, idx: number): TemplateResult | typeof nothing {
   const { chain, slots, onChange } = h.deps;
-  // By ID, never by position. Removing a slot renumbers every later one, and a
-  // slot whose plugin is missing never reaches the chain at all — either way the
-  // two lists stop lining up and every later unit renders its neighbour's data.
+  // By ID, never by position. Removing a slot renumbers every later one, so
+  // position must not be trusted regardless of what the slot holds.
   const slot = slots.find((s) => s.id === cs.id);
   if (!slot) return nothing;
   const factory = listPlugins('fx').find((p) => p.manifest.id === slot.pluginId);
-  if (!factory) return nothing;
+  if (!factory) return missingUnitTemplate(h, cs, idx, slot);
 
   const color = FX_COLORS[slot.pluginId] ?? FX_FALLBACK;
   const w = h.cache.get<UnitWidgets>(`unit:${slot.id}`, () => buildUnitWidgets(h.deps, cs, slot, factory, color));
@@ -117,6 +116,33 @@ function unitTemplate(h: Rack, cs: ChainSlot, idx: number): TemplateResult | typ
           onChange();
           h.rerender();
         }}>${slot.bypass ? 'BYP' : 'ON'}</button>
+        <button class="insert-btn insert-rm" title="Remove insert" @click=${() => {
+          chain.remove(idx);
+          const at = slots.findIndex((s) => s.id === cs.id);
+          if (at >= 0) slots.splice(at, 1);
+          onChange();
+          h.deps.onDestinationsChanged?.();
+          h.rerender();
+        }}>×</button>
+      </div>
+    </div>
+  `;
+}
+
+/** The unit for a slot whose plugin is not installed. Mirrors the lane header's
+ *  ⚠ for a missing engine — same contract, same words, so a user meets one idea
+ *  and not two. No knobs to draw and nothing to bypass; the × is there because
+ *  removing it must stay the user's decision, not ours. */
+function missingUnitTemplate(
+  h: Rack, cs: ChainSlot, idx: number, slot: InsertSlot,
+): TemplateResult {
+  const { chain, slots, onChange } = h.deps;
+  return html`
+    <div class="insert-unit insert-unit-missing"
+         title=${`Insert not installed: ${slot.pluginId}. This slot keeps its settings — install the plugin and reload.`}>
+      <div class="insert-unit-head"><span class="insert-dot"></span><b class="insert-name">⚠ ${slot.pluginId}</b></div>
+      <div class="insert-unit-ctl">
+        <span class="insert-missing-note">not installed</span>
         <button class="insert-btn insert-rm" title="Remove insert" @click=${() => {
           chain.remove(idx);
           const at = slots.findIndex((s) => s.id === cs.id);
