@@ -164,8 +164,12 @@ export interface PluginManifestFile {
   version: string;
   loomApi: number;
   author?: string;
-  /** Entry point loaded on the MAIN thread. */
-  main: string;
+  /** Entry point loaded on the MAIN thread. Absent ⇒ this plugin contributes no
+   *  main-thread code. Its components come from THIS file, which the host reads
+   *  and validates; a manifest is data, and data needs no entry point to be
+   *  believed. Present for anything that must register a function the ABI cannot
+   *  carry as JSON — an insert's `create`, for one. */
+  main?: string;
   /** Entry point added to the AudioWorklet (and imported on the main thread for
    *  offline render). Absent ⇒ this plugin has no per-sample DSP. */
   dsp?: string;

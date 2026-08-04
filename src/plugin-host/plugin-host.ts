@@ -73,7 +73,7 @@ export async function loadPlugins(opts: LoadPluginsOptions = {}): Promise<Plugin
         } catch { /* a plugin with no usable presets still loads */ }
       }
 
-      await doImport(`${dir}${manifest.main}`);
+      if (manifest.main) await doImport(`${dir}${manifest.main}`);
       if (manifest.dsp) report.dspUrls.push(`${dir}${manifest.dsp}`);
       report.loaded.push(id);
     } catch (e) {

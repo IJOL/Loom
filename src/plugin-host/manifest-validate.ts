@@ -113,13 +113,13 @@ function componentError(c: unknown, i: number): string | null {
 
 export function validatePluginManifest(raw: unknown): ValidationResult {
   if (!isObj(raw)) return { ok: false, error: 'manifest is not an object' };
-  for (const k of ['id', 'name', 'version', 'main'] as const) {
+  for (const k of ['id', 'name', 'version'] as const) {
     if (!isStr(raw[k])) return { ok: false, error: `${k} must be a non-empty string` };
   }
   if (raw.loomApi !== LOOM_API_VERSION) {
     return { ok: false, error: `loomApi ${String(raw.loomApi)} is not supported (host speaks ${LOOM_API_VERSION})` };
   }
-  for (const k of ['dsp', 'presets'] as const) {
+  for (const k of ['main', 'dsp', 'presets'] as const) {
     if (raw[k] !== undefined && !isStr(raw[k])) return { ok: false, error: `${k} must be a string when present` };
   }
   if (raw.private !== undefined && typeof raw.private !== 'boolean') {

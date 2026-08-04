@@ -161,4 +161,23 @@ describe('validatePluginManifest', () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toContain('modulator');
   });
+
+  it('accepts a manifest with no main: a plugin may be pure data', () => {
+    const res = validatePluginManifest({
+      id: 'nomain', name: 'No Main', version: '1.0.0', loomApi: 1,
+      components: [{
+        kind: 'modulator', id: 'nomain', name: 'No Main', params: [],
+        modulator: { driver: 'time', scopes: ['shared'], idPrefix: 'nm' },
+      }],
+    });
+    expect(res.ok).toBe(true);
+  });
+
+  it('still rejects a main that is present but not a string', () => {
+    const res = validatePluginManifest({
+      id: 'badmain', name: 'Bad', version: '1.0.0', loomApi: 1, main: 42,
+      components: [],
+    });
+    expect(res.ok).toBe(false);
+  });
 });

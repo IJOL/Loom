@@ -45,6 +45,22 @@ describe('loom-plugin build', () => {
     await expect(buildPlugin({ srcDir: src, outDir: join(root, 'out') })).rejects.toThrow(/loomApi/);
   });
 
+  it('builds a plugin manifest with no main — pure data, no main-thread entry point', async () => {
+    const src = join(root, 'src', 'probe');
+    writePlugin(src, { main: undefined });
+    const out = join(root, 'out');
+    const res = await buildPlugin({ srcDir: src, outDir: out });
+    expect(res.id).toBe('probe');
+    expect(existsSync(join(out, 'probe', 'main.js'))).toBe(false);
+    expect(existsSync(join(out, 'probe', 'dsp.js'))).toBe(true);
+  });
+
+  it('rejects a manifest with a main that is present but not a string', async () => {
+    const src = join(root, 'src', 'probe');
+    writePlugin(src, { main: 42 });
+    await expect(buildPlugin({ srcDir: src, outDir: join(root, 'out') })).rejects.toThrow(/main/);
+  });
+
   it('rejects a manifest with no components — the dead v1 `engines` shape included', async () => {
     const src = join(root, 'src', 'probe');
     // Simulates a plugin author still on the old v1 shape: `engines` instead of

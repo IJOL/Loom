@@ -15,8 +15,11 @@ const LOOM_API_VERSION = 1;
 
 function assertValidManifest(m) {
   if (!m || typeof m !== 'object') throw new Error('plugin.json is not an object');
-  for (const k of ['id', 'name', 'version', 'main']) {
+  for (const k of ['id', 'name', 'version']) {
     if (typeof m[k] !== 'string' || !m[k]) throw new Error(`plugin.json: ${k} must be a non-empty string`);
+  }
+  if (m.main !== undefined && (typeof m.main !== 'string' || !m.main)) {
+    throw new Error('plugin.json: main must be a non-empty string when present');
   }
   if (m.loomApi !== LOOM_API_VERSION) {
     throw new Error(`plugin.json: loomApi ${m.loomApi} is not supported (tooling speaks ${LOOM_API_VERSION})`);
@@ -101,8 +104,10 @@ export async function buildPlugin({ srcDir, outDir }) {
     throw new Error(`plugin.json points at ${name} but no matching source file exists in ${srcDir}`);
   };
 
-  await bundleEntry(entryFor(manifest.main), join(dest, manifest.main));
-  files.push(manifest.main);
+  if (manifest.main) {
+    await bundleEntry(entryFor(manifest.main), join(dest, manifest.main));
+    files.push(manifest.main);
+  }
   if (manifest.dsp) {
     await bundleEntry(entryFor(manifest.dsp), join(dest, manifest.dsp));
     files.push(manifest.dsp);
