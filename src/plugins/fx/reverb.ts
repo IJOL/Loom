@@ -1,6 +1,6 @@
 // src/plugins/fx/reverb.ts
 import type { FxInstance, PluginFactory } from '../types';
-import { generateReverbIR, REVERB_TYPES, type ReverbType } from './reverb-ir';
+import { generateReverbIR, REVERB_TYPES, type ReverbType } from '@loom/plugin-sdk';
 
 function makeImpulse(ctx: AudioContext, sec: number, decay: number, type: ReverbType): AudioBuffer {
   const { left, right } = generateReverbIR({

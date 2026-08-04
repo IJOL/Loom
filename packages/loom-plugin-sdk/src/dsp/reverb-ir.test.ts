@@ -4,7 +4,7 @@
 // THAN hall, not that either hits some number.
 import { describe, it, expect } from 'vitest';
 import { generateReverbIR, REVERB_TYPES, type ReverbType } from './reverb-ir';
-import { spectralCentroid, rms } from '../../../test/dsp-asserts';
+import { spectralCentroid, rms } from '../../../../test/dsp-asserts';
 
 const SR = 44100;
 

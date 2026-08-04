@@ -22,3 +22,13 @@ export * from './dsp/unison';
 export * from './dsp/fold';
 export * from './dsp/comb';
 export * from './dsp/filter-stack';   // re-exports ./filter-kinds
+// Pure maths too, despite the name: a synthetic impulse response is Float32Array
+// arithmetic with no AudioContext. It is the reverb INSERT that feeds the result
+// to a ConvolverNode.
+export * from './dsp/reverb-ir';
+// ── Main-thread graph builders ─────────────────────────────────────────────
+// Everything above this line runs inside the AudioWorklet, per sample, with no
+// AudioContext. What follows BUILDS NATIVE WEB AUDIO NODES and can only run on
+// the main thread — because that is what an insert is in Loom. Same folder, two
+// species; importing one of these into a renderer will not work.
+export * from './dsp/modulated-delay';
