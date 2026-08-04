@@ -4,6 +4,9 @@
   "type": "module",
   "private": true,
   "license": "AGPL-3.0-or-later",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "bump": "node tools/bump-version.mjs",
     "dev": "vite",
