@@ -17,6 +17,10 @@ const ok = (over: Record<string, unknown> = {}) => ({
   id: 'p', name: 'P', version: '1.0.0', loomApi: 1, main: 'main.js',
   components: [engineComponent], ...over,
 });
+const fxManifest = (fx: unknown) => ({
+  id: 'wah', name: 'Wah', version: '1.0.0', loomApi: 1, main: 'main.js',
+  components: [{ kind: 'fx', id: 'wah', name: 'Auto-Wah', params: [], fx }],
+});
 
 describe('validatePluginManifest', () => {
   it('accepts a well-formed manifest', () => {
@@ -160,6 +164,22 @@ describe('validatePluginManifest', () => {
     const r = validatePluginManifest(ok({ components: [bad] }));
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toContain('modulator');
+  });
+
+  it('accepts an fx component that declares its colour', () => {
+    expect(validatePluginManifest(fxManifest({ color: '#ffa726' })).ok).toBe(true);
+  });
+
+  it('rejects an fx component with no fx block', () => {
+    const res = validatePluginManifest(fxManifest(undefined));
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error).toMatch(/needs an fx object/);
+  });
+
+  it('rejects an fx component whose colour is missing', () => {
+    const res = validatePluginManifest(fxManifest({}));
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error).toMatch(/fx\.color/);
   });
 
   it('accepts a manifest with no main: a plugin may be pure data', () => {

@@ -4,6 +4,7 @@
 // stable across versions.
 export * from './types';
 export * from './manifest';
+export * from './fx';
 export * from './dsp/util';
 export * from './dsp/velocity';
 export { Adsr } from './dsp/adsr';

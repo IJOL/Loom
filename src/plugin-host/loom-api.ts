@@ -93,6 +93,17 @@ function adoptModulator(m: ComponentManifest & { kind: 'modulator' }): Undo {
 
 function adoptComponent(m: ComponentManifest): Undo {
   if (m.kind === 'modulator') return adoptModulator(m);
+  // An fx component's factory is a function, which cannot travel inside the
+  // manifest — it arrives later, through Loom.registerFx, matched to this
+  // description by id (a later task). This build already knows kind: 'fx' as
+  // DATA (the manifest validates and the packer builds it), but has no way to
+  // REGISTER one yet — staying quiet here would be exactly the half-installed
+  // silent failure adoptComponents exists to prevent, so it throws instead,
+  // the same way the packer's own fx branch (tools/loom-plugin/build.mjs)
+  // already does for this same interim condition.
+  if (m.kind === 'fx') {
+    throw new Error(`component "${m.id}" declares kind: 'fx', which this build cannot adopt yet — Loom.registerFx lands in a later task`);
+  }
   return adoptEngine(m);
 }
 

@@ -1,6 +1,7 @@
 import type { EngineParamSpec } from '../engines/engine-params';
 import type { VoiceTriggerOptions } from '../engines/engine-types';
 import type { ModulatorState } from '../modulation/types';
+import type { FxInstance } from '@loom/plugin-sdk';
 
 export type PluginKind = 'engine' | 'fx' | 'notefx';
 
@@ -39,22 +40,10 @@ export interface SynthInstance {
   dispose(): void;
 }
 
-export interface FxInstance {
-  readonly input: AudioNode;
-  readonly output: AudioNode;
-  getAudioParams(): Map<string, AudioParam>;
-  /** Native modulation range for a param (the binder uses max−min as the
-   *  depth=1 peak gain). Omit → the binder falls back to 0..1. Frequency-type
-   *  params should expose their modulation AudioParam as a .detune (cents) here
-   *  via getAudioParams + return a cents span, so a bipolar LFO sweeps the
-   *  filter exponentially instead of summing ±1 Hz (inaudible). */
-  getAudioParamRange?(shortId: string): { min: number; max: number } | undefined;
-  getBaseValue(id: string): number;
-  setBaseValue(id: string, v: number): void;
-  applyPreset(name: string): void;
-  setBpm?(bpm: number): void;
-  dispose(): void;
-}
+// FxInstance lives in the SDK: it is the shape a third-party insert compiles
+// against, and two declarations of one shape guarantee an author picks the
+// wrong one — the ModLite lesson, paid once already.
+export type { FxInstance, FxFactory, FxDeclaration } from '@loom/plugin-sdk';
 
 // A modulator is NOT a plugin-registry kind. It lives in its own registry,
 // src/modulation/modulator-registry.ts, which is the one door for "what is this

@@ -18,6 +18,11 @@ const modulatorManifest: ComponentManifest = {
   modulator: { driver: 'time', scopes: ['shared', 'per-voice'], idPrefix: 'sh' },
 };
 
+const fxManifest: ComponentManifest = {
+  kind: 'fx', id: 'wah', name: 'Auto-Wah', params: [],
+  fx: { color: '#ffa726' },
+};
+
 describe('the main-thread Loom API', () => {
   beforeEach(() => {
     __resetPluginEngines();
@@ -119,5 +124,20 @@ describe('the main-thread Loom API', () => {
     // The whole point: whatever ran before the throw must not survive it.
     expect(getEngineDescriptor('rollback-good')).toBeUndefined();
     expect(getEngineDescriptor('rollback-bad')).toBeUndefined();
+  });
+
+  // An fx component's factory arrives later, through Loom.registerFx (a later
+  // task) — this build has no way to adopt one from the manifest alone. A
+  // silent no-op here would be exactly the half-installed failure this whole
+  // file exists to prevent: the manifest validates, the plugin "loads", and
+  // nothing says the insert is not actually there. It must throw instead.
+  it('refuses to adopt an fx component — Loom.registerFx (a later task) is the only real door', () => {
+    expect(() => adoptComponents([fxManifest])).toThrow(/cannot adopt/);
+  });
+
+  it('rolls back an engine adopted before a LATER fx component throws', () => {
+    const good: ComponentManifest = { ...manifest, id: 'rollback-fx-good' };
+    expect(() => adoptComponents([good, fxManifest])).toThrow();
+    expect(getEngineDescriptor('rollback-fx-good')).toBeUndefined();
   });
 });

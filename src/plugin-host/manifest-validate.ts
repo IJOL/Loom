@@ -92,9 +92,17 @@ function modulatorDeclarationError(m: unknown, i: number): string | null {
   return null;
 }
 
+function fxDeclarationError(f: unknown, i: number): string | null {
+  if (!isObj(f)) return `components[${i}] needs an fx object`;
+  if (!isStr(f.color)) return `components[${i}].fx.color must be a non-empty string`;
+  return null;
+}
+
 function componentError(c: unknown, i: number): string | null {
   if (!isObj(c)) return `components[${i}] is not an object`;
-  if (c.kind !== 'engine' && c.kind !== 'modulator') return `components[${i}].kind must be engine|modulator`;
+  if (c.kind !== 'engine' && c.kind !== 'modulator' && c.kind !== 'fx') {
+    return `components[${i}].kind must be engine|modulator|fx`;
+  }
   if (!isStr(c.id)) return `components[${i}].id must be a non-empty string`;
   if (!isStr(c.name)) return `components[${i}].name must be a non-empty string`;
   if (!Array.isArray(c.params)) return `components[${i}].params must be an array`;
@@ -105,6 +113,9 @@ function componentError(c: unknown, i: number): string | null {
   // A modulator component declares neither polyphony nor an editor layout, so
   // it returns before either is checked.
   if (c.kind === 'modulator') return modulatorDeclarationError(c.modulator, i);
+  // An fx declares no polyphony, no capabilities and no editor layout: it has no
+  // lane of its own. Its params render in the rack, which has no sections.
+  if (c.kind === 'fx') return fxDeclarationError(c.fx, i);
   if (c.polyphony !== 'mono' && c.polyphony !== 'poly') return `components[${i}].polyphony must be mono|poly`;
   const gErr = groupsError(c, i);
   if (gErr) return gErr;

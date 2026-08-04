@@ -59,6 +59,13 @@ function assertValidManifest(m) {
       if (typeof c.modulator.idPrefix !== 'string' || !c.modulator.idPrefix) {
         throw new Error(`plugin.json: component ${c.id} modulator.idPrefix must be a non-empty string`);
       }
+    } else if (c.kind === 'fx') {
+      if (!c.fx || typeof c.fx !== 'object') {
+        throw new Error(`plugin.json: component ${c.id} needs an fx object`);
+      }
+      if (typeof c.fx.color !== 'string' || !c.fx.color) {
+        throw new Error(`plugin.json: component ${c.id} needs fx.color`);
+      }
     } else {
       throw new Error(`plugin.json: component ${c.id} has unknown kind ${c.kind}`);
     }

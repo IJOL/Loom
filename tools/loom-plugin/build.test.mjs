@@ -108,6 +108,22 @@ describe('loom-plugin build', () => {
     await expect(buildPlugin({ srcDir: src, outDir: join(root, 'out') })).rejects.toThrow(/modulator object/);
   });
 
+  it('rejects an fx component with no fx object', async () => {
+    const src = join(root, 'src', 'probe');
+    writePlugin(src, {
+      components: [{ kind: 'fx', id: 'probe', name: 'Probe', params: [] }],
+    });
+    await expect(buildPlugin({ srcDir: src, outDir: join(root, 'out') })).rejects.toThrow(/fx object/);
+  });
+
+  it('rejects an fx component whose fx.color is missing', async () => {
+    const src = join(root, 'src', 'probe');
+    writePlugin(src, {
+      components: [{ kind: 'fx', id: 'probe', name: 'Probe', params: [], fx: {} }],
+    });
+    await expect(buildPlugin({ srcDir: src, outDir: join(root, 'out') })).rejects.toThrow(/fx\.color/);
+  });
+
   it('refuses a bundle that reaches into the host source tree', async () => {
     const src = join(root, 'src', 'probe');
     writePlugin(src);

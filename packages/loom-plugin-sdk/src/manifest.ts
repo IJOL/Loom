@@ -156,7 +156,8 @@ export type ComponentManifest =
        *  groups. Engine-only: a modulator's params render through the host's
        *  generic panel, which has no section layout to declare one for. */
       groups?: EngineParamGroup[] })
-  | (ComponentManifestBase & { kind: 'modulator'; modulator: ModulatorDeclaration });
+  | (ComponentManifestBase & { kind: 'modulator'; modulator: ModulatorDeclaration })
+  | (ComponentManifestBase & { kind: 'fx'; fx: import('./fx').FxDeclaration });
 
 export interface PluginManifestFile {
   id: string;
