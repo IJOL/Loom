@@ -507,3 +507,49 @@ daba el mismo verde que uno correcto.
   inverso — que otro frente vuelva a abrir la misma puerta mientras ésta corre.
   Antes de cada tarea del andamiaje se comprueba que `main` no ha movido
   `manifest.ts`, `capabilities.ts`, `plugin-host/` ni `tools/loom-plugin/`.
+
+## Trabajo siguiente, anotado durante la ejecución: el compresor tiene DOS implementaciones
+
+**Encuadre de Nacho, 2026-08-04: "como LFO y ADSR".** Es el correcto, y es mejor
+que el mío — yo había puesto por delante la objeción equivocada.
+
+**Lo que hay hoy**, verificado:
+
+- `CompBlock` ([src/core/comp-block.ts](../../../src/core/comp-block.ts)) — una
+  ganancia → `DynamicsCompressor` → compensación → salida, con `CompState`
+  (bypass, umbral, ratio, ataque, caída, rodilla, compensación). Se instancia en
+  **dos** sitios: dentro de cada `ChannelStrip` (`fx.ts:142`) y dentro del
+  `MasterCompressor` (`fx.ts:311`). Está SIEMPRE, es parte fija del mezclador:
+  EQ → comp → nivel → paneo → mute → envíos.
+- El **insert `compressor`** — otra implementación, los mismos dos nodos y los
+  mismos seis params con los mismos rangos. Opcional, va donde quieras en un
+  rack, tantas veces como quieras.
+- `DuckerSubgraph` — **no es un compresor**. Una ganancia gobernada por un
+  detector que corre en el worklet, alimentado del tap post-mute de OTRA pista a
+  través del bus de sidechain.
+
+**Por qué el paralelo con LFO/ADSR es el que manda.** Aquéllos no salieron del
+árbol porque los presets y las sesiones están escritos en un vocabulario que los
+incluye: quitarlos no rompe una función, rompe **datos guardados**. Lo que sí se
+les hizo fue darles **un solo dueño** de su DSP, sus params y su estado, y una
+sola puerta de declaración. `CompState` vive en `lane.mixer` de toda sesión
+guardada, así que el compresor está en la misma categoría: *lo que se REFERENCIA
+desde datos guardados no se puede desinstalar* — pero sí unificar.
+
+**La forma que tendría:** un componente "compresor" con un solo dueño de sus seis
+params y de su DSP, marcado como no desinstalable. El canal lo monta **en su sitio
+de siempre** y el rack monta **el mismo componente** cuando lo pides como insert.
+Nada se mueve de sitio en la cadena, así que ninguna sesión existente cambia de
+sonido — que era mi objeción, y cae.
+
+**Lo que queda abierto son dos servicios del host que la ABI no expone:**
+
+1. **Telemetría**: el panel de FX lee `getCompReduction()` cada frame; un
+   `FxInstance` no tiene por dónde publicarla.
+2. **Fuente de sidechain**: "dame la señal post-mute de la pista 3" es un
+   servicio del host, no algo que un componente pueda pedirse solo. Es el
+   equivalente exacto a abrir `driver: 'time'` y dejar `'gate'` cerrado en la
+   rebanada de moduladores: se abre una puerta, no todas.
+
+**No entra en esta rebanada** — aquí los efectos salen del árbol sin que cambie
+el sonido de nada, y esto toca el mezclador, el bus de sidechain y la ABI.
