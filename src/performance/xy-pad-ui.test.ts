@@ -10,7 +10,7 @@ import { createDestinationRegistry } from '../automation/destination-registry';
 import { applyAutomationToSession } from '../automation/automation-apply';
 import { applyLiveControlWrite } from '../automation/live-control-apply';
 import { registerPlugin, _resetRegistry } from '../plugins/registry';
-import { multifilterPlugin } from '../plugins/fx/multifilter';
+import { testFilterPlugin as multifilterPlugin } from '../../test/fx-fixtures';
 import type { SessionState } from '../session/session';
 import type { KnobHandle } from '../core/knob';
 import { registerPluginEngine } from '../../test/plugin-fixtures';

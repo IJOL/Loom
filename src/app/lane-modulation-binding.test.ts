@@ -22,7 +22,7 @@ import { FxBus } from '../core/fx';
 import { SidechainBus } from '../core/sidechain-bus';
 import { OfflineAudioContext } from 'node-web-audio-api';
 import { createInstance, registerPlugin } from '../plugins/registry';
-import { multifilterPlugin } from '../plugins/fx/multifilter';
+import { testFilterPlugin as multifilterPlugin } from '../../test/fx-fixtures';
 import { insertParamId } from '../automation/automation-targets';
 import type { ModulatorState } from '../modulation/types';
 import { registerPluginEngine } from '../../test/plugin-fixtures';

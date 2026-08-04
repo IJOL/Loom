@@ -11,7 +11,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderModulatorsPanel, type ModulationUIDeps } from './modulation-ui';
 import { createDestinationRegistry } from '../automation/destination-registry';
 import { registerPlugin, _resetRegistry } from '../plugins/registry';
-import { multifilterPlugin } from '../plugins/fx/multifilter';
+import { testFilterPlugin as multifilterPlugin } from '../../test/fx-fixtures';
 import type { SessionState } from '../session/session';
 import type { ModulationHost, ModulatorState } from './types';
 import { registerPluginEngine } from '../../test/plugin-fixtures';

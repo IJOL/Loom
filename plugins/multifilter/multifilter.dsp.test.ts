@@ -1,21 +1,32 @@
-// src/plugins/fx/multifilter.dsp.test.ts
 // The Filter insert's freq modulation must route into BiquadFilterNode.detune
 // (cents, exponential) so an LFO on an insert filter (e.g. on an audio lane)
 // sweeps the cutoff audibly — instead of the old default insert-param range of
 // 0..1 that added ±1 Hz (inaudible).
+//
+// Keeps the .dsp suffix: it renders through OfflineAudioContext, and that is
+// what the suffix separates (npm run test:dsp). Renaming it would drop it out
+// of that group with nothing to say so.
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import '../../../test/setup';
-import { multifilterPlugin } from './multifilter';
+import type { FxInstance } from '@loom/plugin-sdk';
+import manifest from './plugin.json';
 import { spectralCentroid } from '../../../test/dsp-asserts';
+
+// The plugin's own test, run against the plugin the way the host runs it.
+let create: (ctx: AudioContext) => FxInstance;
+beforeAll(async () => {
+  (globalThis as unknown as { Loom: unknown }).Loom = {
+    registerFx: (_id: string, c: (ctx: AudioContext) => FxInstance) => { create = c; },
+  };
+  await import('./main');
+});
 
 const SR = 44100;
 
 async function renderWithFreqMod(detuneCents: number): Promise<Float32Array> {
   const ctx = new OfflineAudioContext(1, SR, SR);
-  const fx = multifilterPlugin.kind === 'fx'
-    ? multifilterPlugin.create(ctx as unknown as AudioContext)
-    : (null as never);
+  const fx = create(ctx as unknown as AudioContext);
   fx.setBaseValue('type', 0);       // lowpass
   fx.setBaseValue('freq', 250);     // base cutoff 250 Hz
   fx.setBaseValue('q', 1);
@@ -38,9 +49,7 @@ async function renderWithFreqMod(detuneCents: number): Promise<Float32Array> {
 describe('Filter insert — freq modulation routes to detune (cents)', () => {
   it('declares a full-knob exponential cents span for freq (not the 0..1 default)', () => {
     const ctx = new OfflineAudioContext(1, SR, SR);
-    const fx = multifilterPlugin.kind === 'fx'
-    ? multifilterPlugin.create(ctx as unknown as AudioContext)
-    : (null as never);
+    const fx = create(ctx as unknown as AudioContext);
     const range = fx.getAudioParamRange!('freq')!;
     // 20 Hz..20 kHz = log2(1000) octaves ≈ 11959 cents.
     expect(range.max - range.min).toBeCloseTo(1200 * Math.log2(1000), 0);

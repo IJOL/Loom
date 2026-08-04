@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createDestinationRegistry } from './destination-registry';
 import { registerPlugin, _resetRegistry } from '../plugins/registry';
-import { multifilterPlugin } from '../plugins/fx/multifilter';
+import { testFilterPlugin as multifilterPlugin } from '../../test/fx-fixtures';
 import type { SessionState } from '../session/session';
 
 function stateWith(inserts: { id: string; pluginId: string }[]): SessionState {

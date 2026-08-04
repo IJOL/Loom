@@ -17,7 +17,7 @@ import type { ParamRange } from './modulation-host';
 import { InsertChain } from '../plugins/fx/insert-chain';
 import { rehydrateInsertChain } from '../session/insert-slot';
 import { registerPlugin } from '../plugins/registry';
-import { multifilterPlugin } from '../plugins/fx/multifilter';
+import { testFilterPlugin as multifilterPlugin } from '../../test/fx-fixtures';
 import { delayPlugin } from '../plugins/fx/delay';
 
 // ── Minimal Web Audio mock ────────────────────────────────────────────────

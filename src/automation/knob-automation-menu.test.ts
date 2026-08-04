@@ -16,7 +16,7 @@ import { attachKnobAutomationMenu } from './knob-automation-menu';
 import { createKnob } from '../core/knob';
 import { createDestinationRegistry } from './destination-registry';
 import { registerPlugin, _resetRegistry } from '../plugins/registry';
-import { multifilterPlugin } from '../plugins/fx/multifilter';
+import { testFilterPlugin as multifilterPlugin } from '../../test/fx-fixtures';
 import { emptyArrangementState } from '../performance/performance';
 import { DEFAULT_METER } from '../core/meter';
 import type { SessionState, SessionClip } from '../session/session';

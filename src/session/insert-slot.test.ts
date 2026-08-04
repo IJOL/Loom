@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { applyInsertSlot, snapshotInsertSlot, rehydrateInsertChain, type InsertSlot } from './insert-slot';
 import { InsertChain } from '../plugins/fx/insert-chain';
 import { createInstance, registerPlugin, _resetRegistry } from '../plugins/registry';
-import { multifilterPlugin } from '../plugins/fx/multifilter';
+import { testFilterPlugin as multifilterPlugin } from '../../test/fx-fixtures';
 import type { FxInstance } from '../plugins/types';
 
 function fakeInst(init: Record<string, number>): FxInstance {

@@ -14,7 +14,7 @@ import { createLoomFacade, type LoomFacadeDeps } from './loom-facade';
 import { createActiveLaneStore } from './active-lane';
 import { createDestinationRegistry } from '../automation/destination-registry';
 import { registerPlugin, _resetRegistry } from '../plugins/registry';
-import { multifilterPlugin } from '../plugins/fx/multifilter';
+import { testFilterPlugin as multifilterPlugin } from '../../test/fx-fixtures';
 import { getEngine } from '../engines/registry';
 import type { SessionState, SessionLane } from '../session/session';
 import type { SessionHost } from '../session/session-host';

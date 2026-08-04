@@ -1,11 +1,22 @@
 // Phaser: a chain of all-pass filters whose corner frequencies an LFO sweeps,
 // mixed with the dry signal so the moving notches whoosh. Native Web Audio
 // (BiquadFilter allpass stages + an LFO), rendered through OfflineAudioContext.
-import { describe, it, expect } from 'vitest';
-import { phaserPlugin } from './phaser';
-import type { PluginFactory } from '../types';
+import { describe, it, expect, beforeAll } from 'vitest';
+import type { FxInstance } from '@loom/plugin-sdk';
+import manifest from './plugin.json';
 
-const mk = (ctx: BaseAudioContext) => phaserPlugin.kind === 'fx' ? phaserPlugin.create(ctx as unknown as AudioContext) : null!;
+// The plugin's own test, run against the plugin the way the host runs it: a
+// two-line Loom double captures the factory, which is all main.ts asks of the
+// ABI. That is the point — it proves this effect needs nothing from src/.
+let create: (ctx: AudioContext) => FxInstance;
+beforeAll(async () => {
+  (globalThis as unknown as { Loom: unknown }).Loom = {
+    registerFx: (_id: string, c: (ctx: AudioContext) => FxInstance) => { create = c; },
+  };
+  await import('./main');
+});
+
+const mk = (ctx: BaseAudioContext) => create(ctx as unknown as AudioContext);
 
 async function render(setup: (fx: ReturnType<typeof mk>) => void, secs = 0.5): Promise<Float32Array> {
   const ctx = new OfflineAudioContext(1, Math.floor(44100 * secs), 44100);
