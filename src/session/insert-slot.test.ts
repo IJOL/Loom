@@ -3,7 +3,6 @@ import { applyInsertSlot, snapshotInsertSlot, rehydrateInsertChain, type InsertS
 import { InsertChain } from '../plugins/fx/insert-chain';
 import { createInstance, registerPlugin, _resetRegistry } from '../plugins/registry';
 import { multifilterPlugin } from '../plugins/fx/multifilter';
-import { limiterPlugin } from '../plugins/fx/limiter';
 import type { FxInstance } from '../plugins/types';
 
 function fakeInst(init: Record<string, number>): FxInstance {
@@ -78,10 +77,11 @@ describe('stable insert ids', () => {
   it('carries the slot id onto the live chain slot', () => {
     const ctx = new AudioContext();
     const chain = new InsertChain(ctx.createGain(), ctx.createGain());
-    // pluginId must be one registered in this file (multifilter, via
-    // beforeEach) — 'delay' isn't, and rehydrateInsertChain silently skips
-    // slots with an unregistered plugin id (see the doc comment on it),
-    // which would make this assertion fail for a reason unrelated to ids.
+    // pluginId is one registered in this file (multifilter, via beforeEach) so
+    // the chain slot comes from a real effect. An unregistered id would not
+    // fail the assertion — since the missing-plugin placeholder landed, such a
+    // slot keeps its place and its id — but it would test the placeholder
+    // rather than the id plumbing this case is about.
     const slots: InsertSlot[] = [
       { id: 'slot-a', pluginId: 'multifilter', params: {}, bypass: false },
     ];
@@ -91,17 +91,38 @@ describe('stable insert ids', () => {
 });
 
 describe('a slot whose plugin is missing', () => {
+  // A locally-built effect, not a real one imported from src/plugins/fx: the
+  // eleven built-ins are leaving the tree one task at a time, and this test is
+  // about the CHAIN, not about any particular effect. Importing a real one
+  // would make it break on the day that effect migrates, for a reason that has
+  // nothing to do with what it checks.
+  const fakeFx = (id: string) => ({
+    kind: 'fx' as const,
+    manifest: { id, name: id, kind: 'fx' as const, version: '1.0.0', params: [], presets: [], color: '#888' },
+    create: (ctx: AudioContext) => {
+      const node = ctx.createGain();
+      return {
+        input: node, output: node,
+        getAudioParams: () => new Map<string, AudioParam>(),
+        getBaseValue: () => 0,
+        setBaseValue: () => {},
+        applyPreset: () => {},
+        dispose: () => { try { node.disconnect(); } catch { /* ok */ } },
+      };
+    },
+  });
+
   beforeEach(() => {
     _resetRegistry();
-    registerPlugin(limiterPlugin);
+    registerPlugin(fakeFx('present-fx'));
   });
 
   it('keeps its place, so the chain and the slots stay 1:1', () => {
     const ctx = new AudioContext();
     const chain = new InsertChain(ctx.createGain(), ctx.createGain());
     rehydrateInsertChain(ctx, chain, [
-      { id: 'sA', pluginId: 'limiter',  params: {}, bypass: false },
-      { id: 'sB', pluginId: 'ghost-fx', params: { x: 3 }, bypass: false },
+      { id: 'sA', pluginId: 'present-fx', params: {}, bypass: false },
+      { id: 'sB', pluginId: 'ghost-fx',   params: { x: 3 }, bypass: false },
     ]);
     expect(chain.size()).toBe(2);
     expect(chain.list()[1].id).toBe('sB');
