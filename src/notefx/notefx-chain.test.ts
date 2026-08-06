@@ -15,8 +15,9 @@ describe('NoteFxChain', () => {
     const chain = new NoteFxChain([]);
     const a = chain.addNoteFx('arp');
     const b = chain.addNoteFx('chord');
-    const c = chain.addNoteFx('arp');
-    expect([a.id, b.id, c.id]).toEqual(['arp1', 'chord1', 'arp2']);
+    const c = chain.addNoteFx('random');
+    const d = chain.addNoteFx('arp');
+    expect([a.id, b.id, c.id, d.id]).toEqual(['arp1', 'chord1', 'random1', 'arp2']);
   });
 
   it('applies in order of addition: chord then arp arpeggiates the chord', () => {

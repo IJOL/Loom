@@ -361,6 +361,7 @@ const perfVoiceTap: PerfVoiceTap = { fn: null };
 // Phase G: drums removed from deps (drums-machine triggers via res.engine.createVoice).
 const triggerForLane = createTriggerForLane({
   ctx, laneResources, seq, liveVoices,
+  getMusicality: () => sessionHost.state.musicality ?? DEFAULT_MUSICALITY,
   onVoiceFired: (laneId, gateSec) => perfVoiceTap.fn?.(laneId, gateSec),
 });
 

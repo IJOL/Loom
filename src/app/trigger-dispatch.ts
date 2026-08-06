@@ -1,6 +1,7 @@
 import { setCurrentLaneForVoice } from '../modulation/active-mods';
 import { getNoteFxChain } from '../notefx/notefx-registry';
 import { resolveVelocity } from '../core/velocity-gain';
+import { DEFAULT_MUSICALITY } from '../session/session';
 import type { LaneResourceMap } from '../core/lane-resources';
 import type { Sequencer } from '../core/sequencer';
 import type { LiveVoiceRegistry } from './live-voice-registry';
@@ -18,6 +19,9 @@ export interface TriggerDispatchDeps {
   ctx: AudioContext;
   laneResources: LaneResourceMap;
   seq: Sequencer;
+  /** Effective tonality for scale-aware note-FX. Falls back to A minor when
+   *  omitted (e.g. tests or old callers). */
+  getMusicality?: () => { key: number; scale: import('../core/musicality').ScaleId };
   /** Optional per-lane live-voice registry. When present, every voice the
    *  dispatch creates is recorded so the stop seams can release it immediately
    *  (the 'audio' channel clip otherwise plays to the end after any Stop). */
@@ -53,7 +57,13 @@ export function createTriggerForLane(deps: TriggerDispatchDeps): TriggerForLane 
     const chain = sample == null && acceptsNoteFx(engineId) ? getNoteFxChain(laneId) : null;
 
     if (chain && chain.noteFx.some((s) => s.enabled)) {
-      const events = chain.process([{ note, time, gate, accent }], { bpm: deps.seq.bpm });
+      const musicality = deps.getMusicality?.() ?? DEFAULT_MUSICALITY;
+      const events = chain.process([{ note, time, gate, accent, velocity }], {
+        bpm: deps.seq.bpm,
+        seed: deps.seq.playbackSeed,
+        key: musicality.key,
+        scale: musicality.scale,
+      });
       for (const e of events) fire(e.note, e.time, e.gate, e.accent, false);
       return;
     }

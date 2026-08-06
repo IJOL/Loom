@@ -13,7 +13,7 @@ export function expandChordForLane(
   if (chords.length === 0) return [midi];
   let events: NoteFxEvent[] = [{ note: midi, time: 0, gate: 1, accent: velocity >= 100 }];
   for (const s of chords) {
-    events = new ChordProcessor(s.params as unknown as ChordProcessorParams).process(events, { bpm });
+    events = new ChordProcessor(s.params as unknown as ChordProcessorParams).process(events, { bpm, seed: 0, key: 9, scale: 'minor' });
   }
   return events.map((e) => e.note);
 }

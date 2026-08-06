@@ -20,12 +20,12 @@ const headerButtons = (c: HTMLElement) =>
   [...c.querySelectorAll<HTMLButtonElement>('.mod-panel-header button')];
 
 describe('renderNoteFxPanel', () => {
-  it('renders the panel box, title and both adders', () => {
+  it('renders the panel box, title and all adders', () => {
     const { container } = mount();
     const panel = container.querySelector('.notefx-panel')!;
     expect(panel).toBeTruthy();
     expect(panel.querySelector('.mod-panel-title')!.textContent).toBe('NOTE FX');
-    expect(headerButtons(container).map((b) => b.textContent)).toEqual(['+ Arp', '+ Chord']);
+    expect(headerButtons(container).map((b) => b.textContent)).toEqual(['+ Arp', '+ Chord', '+ Random']);
   });
 
   it('+ Arp adds a card, syncs the chain into onChange, and repaints in place', () => {

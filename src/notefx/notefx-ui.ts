@@ -1,13 +1,14 @@
 // src/notefx/notefx-ui.ts
-// The per-lane NOTE FX panel (arp + chord cards), a lit-html panel mounted via
-// mountPanel: add/remove/enable-toggle repaint in place instead of the old
-// innerHTML-wipe rebuild. Param edits (selects/sliders) mutate chain state and
-// sync WITHOUT a repaint — the control the user is holding already shows the
-// value they just picked.
+// The per-lane NOTE FX panel (arp + chord + random cards), a lit-html panel
+// mounted via mountPanel: add/remove/enable-toggle repaint in place instead of
+// the old innerHTML-wipe rebuild. Param edits (selects/sliders) mutate chain
+// state and sync WITHOUT a repaint — the control the user is holding already
+// shows the value they just picked.
 
 import { html, type TemplateResult } from 'lit-html';
 import { repeat } from 'lit-html/directives/repeat.js';
 import { mountPanel, type PanelHandle } from '../core/lit-panel';
+import { SCALE_CATALOG, type ScaleId } from '../core/musicality';
 import type { NoteFxChain } from './notefx-chain';
 import type { NoteFxState } from './notefx-types';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
@@ -33,6 +34,10 @@ const ARP_PATTERNS = ['up', 'down', 'updown', 'random', 'cosmic'];
 const ARP_SCALES = ['major', 'minor', 'pentMinor', 'phrygian', 'chromatic'];
 const ARP_RATES = ['free', '1/4', '1/8', '1/8t', '1/16', '1/16t', '1/32'];
 const CHORD_TYPES = ['maj', 'min', 'maj7', 'min7', 'sus2', 'sus4', 'dim'];
+const RANDOM_MODES = ['random', 'alt'];
+const RANDOM_SIGNS = ['add', 'sub', 'bi'];
+const SCALE_IDS: ScaleId[] = SCALE_CATALOG.map((s) => s.id);
+const ROOT_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 type Ctx = PanelHandle<NoteFxUIDeps>;
 
@@ -44,7 +49,7 @@ export function renderNoteFxPanel(container: HTMLElement, deps: NoteFxUIDeps): v
 
 function panelTemplate(ctx: Ctx): TemplateResult {
   const { deps } = ctx;
-  const add = (kind: 'arp' | 'chord') => () => {
+  const add = (kind: 'arp' | 'chord' | 'random') => () => {
     withMaybeUndo(deps, () => { deps.chain.addNoteFx(kind); deps.onChange(deps.chain.serialize()); });
     ctx.rerender();
   };
@@ -53,6 +58,7 @@ function panelTemplate(ctx: Ctx): TemplateResult {
     <div class="mod-panel-header">
       <button class="rnd" @click=${add('arp')}>+ Arp</button>
       <button class="rnd" @click=${add('chord')}>+ Chord</button>
+      <button class="rnd" @click=${add('random')}>+ Random</button>
     </div>
     ${repeat(deps.chain.noteFx, (fx) => fx.id, (fx) => cardTemplate(fx, ctx))}
   `;
@@ -65,6 +71,7 @@ function cardTemplate(fx: NoteFxState, ctx: Ctx): TemplateResult {
     withMaybeUndo(deps, () => { fx.params[k] = v; sync(); });
   };
   const octaveOn = fx.params.octaveOn === true;
+  const scaleAware = fx.params.scaleAware !== false;
   return html`
     <div class="notefx-card notefx-${fx.kind}">
       <div class="notefx-card-row">
@@ -85,6 +92,28 @@ function cardTemplate(fx: NoteFxState, ctx: Ctx): TemplateResult {
         ${numberField('OCT', 1, 4, 1, Number(fx.params.octaves ?? 2), (v) => set('octaves', v))}
         ${numberField('GATE', 0.05, 1, 0.01, Number(fx.params.gate ?? 0.7), (v) => set('gate', v))}
         ${numberField('FREE Hz', 0.5, 32, 0.1, Number(fx.params.rateFreeHz ?? 8), (v) => set('rateFreeHz', v))}
+      ` : fx.kind === 'random' ? html`
+        ${numberField('CHANCE', 0, 1, 0.01, Number(fx.params.chance ?? 0), (v) => set('chance', v))}
+        ${numberField('CHOICES', 1, 24, 1, Number(fx.params.choices ?? 6), (v) => set('choices', v))}
+        ${numberField('INTERVAL', 1, 12, 1, Number(fx.params.interval ?? 1), (v) => set('interval', v))}
+        ${selectField('MODE', RANDOM_MODES, String(fx.params.mode ?? 'random'), (v) => set('mode', v))}
+        ${selectField('SIGN', RANDOM_SIGNS, String(fx.params.sign ?? 'bi'), (v) => set('sign', v))}
+        <div class="notefx-field notefx-oct-toggle">
+          <span>SCALE</span>
+          <button class=${scaleAware ? 'rnd primary' : 'rnd'} @click=${() => {
+            set('scaleAware', !scaleAware);
+            ctx.rerender();
+          }}>${scaleAware ? 'ON' : 'OFF'}</button>
+        </div>
+        ${scaleAware ? html`
+          ${selectField('ROOT', ROOT_NAMES, ROOT_NAMES[Number(fx.params.key ?? -1) < 0 ? 9 : Number(fx.params.key)], (v) => set('key', ROOT_NAMES.indexOf(v)))}
+          ${selectField('SCALE', SCALE_IDS, String(fx.params.scale ?? ''), (v) => set('scale', v))}
+        ` : ''}
+        ${numberField('VEL CHANCE', 0, 1, 0.01, Number(fx.params.velChance ?? 0), (v) => set('velChance', v))}
+        ${numberField('VEL RND', 0, 1, 0.01, Number(fx.params.velRandom ?? 0.3), (v) => set('velRandom', v))}
+        ${numberField('DUR CHANCE', 0, 1, 0.01, Number(fx.params.durChance ?? 0), (v) => set('durChance', v))}
+        ${numberField('DUR RND', 0, 1, 0.01, Number(fx.params.durRandom ?? 0.3), (v) => set('durRandom', v))}
+        ${numberField('DROP', 0, 1, 0.01, Number(fx.params.dropChance ?? 0), (v) => set('dropChance', v))}
       ` : html`
         ${selectField('CHORD', CHORD_TYPES, String(fx.params.chordType ?? 'maj'), (v) => set('chordType', v))}
         <div class="notefx-field notefx-oct-toggle">

@@ -69,7 +69,7 @@ export interface NoteFxFactory {
   kind: 'notefx';
   manifest: NoteFxManifest;
   /** Returns default params for a fresh instance of this note-FX. */
-  defaultParams(): Record<string, number | string>;
+  defaultParams(): Record<string, number | string | boolean>;
 }
 
 export type PluginFactory =

@@ -4,15 +4,17 @@ import type {
 } from './notefx-types';
 import { ArpProcessor, ARP_PROCESSOR_DEFAULTS, type ArpProcessorParams } from './arp-processor';
 import { ChordProcessor, CHORD_PROCESSOR_DEFAULTS, type ChordProcessorParams } from './chord-processor';
+import { RandomProcessor, RANDOM_PROCESSOR_DEFAULTS, type RandomProcessorParams } from './random-processor';
 
-function defaultParams(kind: NoteFxKind): Record<string, number | string> {
-  return kind === 'arp'
-    ? { ...ARP_PROCESSOR_DEFAULTS } as unknown as Record<string, number | string>
-    : { ...CHORD_PROCESSOR_DEFAULTS } as unknown as Record<string, number | string>;
+function defaultParams(kind: NoteFxKind): Record<string, number | string | boolean> {
+  if (kind === 'arp') return { ...ARP_PROCESSOR_DEFAULTS } as unknown as Record<string, number | string | boolean>;
+  if (kind === 'random') return { ...RANDOM_PROCESSOR_DEFAULTS } as unknown as Record<string, number | string | boolean>;
+  return { ...CHORD_PROCESSOR_DEFAULTS } as unknown as Record<string, number | string | boolean>;
 }
 
 function makeProcessor(s: NoteFxState): NoteFxProcessor {
-  if (s.kind === 'arp')   return new ArpProcessor(s.params as unknown as ArpProcessorParams);
+  if (s.kind === 'arp') return new ArpProcessor(s.params as unknown as ArpProcessorParams);
+  if (s.kind === 'random') return new RandomProcessor(s.params as unknown as RandomProcessorParams);
   return new ChordProcessor(s.params as unknown as ChordProcessorParams);
 }
 

@@ -50,6 +50,10 @@ export class Sequencer {
    *  started — wiring it only to the ▶ button missed scene/clip launches. */
   onStart?: () => void;
 
+  /** Seed regenerated each time the transport starts. Passed to note-FX so
+   *  random processors are consistent within a run but differ between runs. */
+  playbackSeed = 0;
+
   private playing = false;
   private timerId: number | null = null;   // main-thread fallback timer (when no Worker)
   private clock: Worker | null = null;     // background-safe tick source (lazy, reused)
@@ -68,6 +72,7 @@ export class Sequencer {
     if (this.ctx.state === 'suspended') void this.ctx.resume();
     this.playing = true;
     this.lastTickPerf = 0;
+    this.playbackSeed = Math.floor(Math.random() * 0x7fffffff);
     // Notify BEFORE the first tick so a live-take captures from the true downbeat.
     this.onStart?.();
     this.runTick();      // downbeat now; the clock drives every subsequent tick
