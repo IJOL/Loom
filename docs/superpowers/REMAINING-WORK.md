@@ -1,60 +1,14 @@
 # Remaining work
 
-Audit refreshed 2026-07-26.
+Audit refreshed 2026-08-06.
 
-The 2026-07-18 pass emptied this directory and recorded "no outstanding design
-work". That is no longer true: **nine spec and plan documents live here again**,
-all committed after that date. One of them is genuine outstanding design work;
-the rest describe work that has shipped but was never marked as such.
+The `specs/` and `plans/` directories were pruned today. Every document that
+remained described work already shipped and merged; none were genuine backlogs.
+The one draft that is still live — `specs/2026-07-26-architecture-symmetry-master-plan.md`
+— is pending review, not obsolete, and stays where it is.
 
-## What is in this directory
-
-**Approved, planned, and shipped — but every task checkbox is still unticked.**
-Three spec/plan pairs whose features are demonstrably in the tree, while their
-plans read as untouched backlogs (0 of 25, 0 of 85 and 0 of 53 tasks ticked
-respectively). Tick them or prune them; leaving an all-unchecked list of finished
-work is the most misleading state they can be in.
-
-- `specs/2026-07-19-menu-contextual-automatizacion-design.md` +
-  `plans/2026-07-19-menu-contextual-automatizacion.md` — shipped as
-  `src/automation/knob-automation-menu.ts` and `src/app/knob-menu-wiring.ts`.
-- `specs/2026-07-19-registro-destinos-automatizacion-design.md` +
-  `plans/2026-07-19-registro-destinos-automatizacion.md` — shipped as
-  `src/automation/destination-registry.ts`; the rule it established is written up
-  in [docs/automation-destinations.md](../automation-destinations.md).
-- `specs/2026-07-21-destinos-multi-strip-labels-design.md` +
-  `plans/2026-07-21-multi-strip-destination-labels.md` — shipped as
-  `subGroupFor` / `dynamicParamsFor` on `SynthEngine`, covered by
-  `src/automation/automation-targets-multistrip.test.ts`.
-
-**Shipped, but the header never caught up.**
-
-- `specs/2026-07-25-clip-axis-automation-lanefx.md` still reads "PENDIENTE DE
-  APROBACIÓN". Its requirements are in the tree: `src/core/clip-axis.ts` owns the
-  shared zoom/scroll, `src/automation/automation-lfo.ts` is the LFO curve
-  generator, and the per-lane COMP/SC section and the px-level alignment landed
-  in the commits leading up to this audit.
-- `specs/2026-07-25-duplicated-solutions-audit.md` records five "N solutions to
-  one problem" concerns. All five collapses have landed, so this one is prunable
-  on the owner's word.
-- `specs/2026-07-19-mixer-automatizable-design.md` shipped on 2026-07-26 — the
-  lane mixer's seven controls are destinations, the fader included. Its **decision
-  2 was overridden in the process**: the ids are `<lane>.bus.<param>`, reusing the
-  vocabulary `drums-machine` already had for exactly these seven params, not the
-  new `<lane>.mix.<param>` the spec prescribed. The spec predates drums having
-  them, and a second id family for one set of nodes is the duplication the audit
-  above exists to stop. The rationale now lives where the code is,
-  `src/core/channel-strip-params.ts`.
-
-Everything else that once lived here was implemented and pruned per convention —
-recover the rationale from git history
-(`git log --diff-filter=D --name-only -- docs/superpowers/`). That pass covered
-the AudioWorklet engine rewrite (spec + 5 phase plans), GM Percussion kit,
-drums/sampler channel filter, FM layout + musicality, MIDI live-record,
-computer-keyboard-as-MIDI, transport hotkeys, REC count-in, desktop menu chrome,
-session-view reorder, breakbeat/big-beat examples, the audio channel, and the
-sampler per-pad modulation spec — along with the sampler and compact-insert-FX
-mockups.
+Recover the rationale for any shipped round from git history:
+`git log --diff-filter=D --name-only -- docs/superpowers/`.
 
 ## Known code debts (not feature work, tracked nowhere else)
 
