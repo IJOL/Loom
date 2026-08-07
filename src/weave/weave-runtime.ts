@@ -8,6 +8,7 @@
 import type { NoteEvent } from '../core/notes';
 import { blendLoops, type BlendOptions } from './blend-clip';
 import { laneWeights, type LaneWeaveConfig } from './weave-state';
+import { avoidClash } from './harmony-guard';
 
 const hitKey = (tick: number, midi: number) => `${tick}:${midi}`;
 
@@ -42,4 +43,43 @@ export function createWeaveGate(cfg: LaneWeaveConfig, o: BlendOptions): WeaveGat
     const inBar = ((clipTick % o.barTicks) + o.barTicks) % o.barTicks;
     return allowed.has(hitKey(inBar, note.midi));
   };
+}
+
+export interface LaneWeaveEntry {
+  laneId: string;
+  cfg: LaneWeaveConfig;
+  /** Percussion is skipped by the harmony rule: a drum note picks a voice, not
+   *  a pitch, so there is no interval to forbid. */
+  melodic: boolean;
+}
+
+/** Blends every lane, then lets the leading lane's lowest note veto the
+ *  intervals that clash with it.
+ *
+ *  The leader is NEVER altered. It is the reference, and moving it would make
+ *  the rule chase its own tail: a lane adjusting to a root that adjusts to the
+ *  lane. */
+export function createWeaveNotes(
+  entries: LaneWeaveEntry[], o: BlendOptions,
+): Map<string, NoteEvent[]> {
+  const blended = new Map<string, NoteEvent[]>();
+  for (const e of entries) {
+    blended.set(e.laneId, blendLoops(laneWeights(e.cfg), { ...o, melodic: e.melodic }));
+  }
+
+  const leader = entries.find((e) => e.cfg.harmonyLeader);
+  if (!leader) return blended;
+
+  const leaderNotes = blended.get(leader.laneId) ?? [];
+  if (leaderNotes.length === 0) return blended;
+  // The LOWEST note, because that is what tells the ear which chord this is:
+  // the same melody over two different bass notes reads as two different
+  // harmonies.
+  const root = leaderNotes.reduce((lo, n) => Math.min(lo, n.midi), Infinity);
+
+  for (const e of entries) {
+    if (e.laneId === leader.laneId || !e.melodic) continue;
+    blended.set(e.laneId, avoidClash(blended.get(e.laneId) ?? [], root, o.key, o.scale));
+  }
+  return blended;
 }

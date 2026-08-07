@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { TICKS_PER_STEP, type NoteEvent } from '../core/notes';
-import { createWeaveGate } from './weave-runtime';
+import { createWeaveGate, createWeaveNotes } from './weave-runtime';
 import type { LaneWeaveConfig } from './weave-state';
 import type { BlendOptions } from './blend-clip';
 
@@ -79,5 +79,74 @@ describe('weave gate', () => {
     const gate = createWeaveGate(cfg(0.5), opts);
     const first = gate({ midi: 42 }, 0, tick(3));
     expect(gate({ midi: 42 }, 0, tick(3))).toBe(first);
+  });
+});
+
+describe('the harmony leader, inside the runtime', () => {
+  const melodicOpts: BlendOptions = { ...opts, melodic: true };
+  const still = (notes: NoteEvent[], leader: boolean): LaneWeaveConfig => ({
+    weave: { kind: 'ab', state: { a: { id: 'a', notes }, b: { id: 'b', notes }, x: 0 } },
+    locked: false, harmonyLeader: leader,
+  });
+  const note = (midi: number): NoteEvent =>
+    ({ start: 0, duration: TICKS_PER_STEP, midi, velocity: 90 });
+
+  it('leaves every lane alone when no lane leads', () => {
+    const out = createWeaveNotes([
+      { laneId: 'bass', cfg: still([note(45)], false), melodic: true },
+      { laneId: 'lead', cfg: still([note(46)], false), melodic: true },
+    ], melodicOpts);
+    expect(out.get('lead')?.[0].midi).toBe(46);
+  });
+
+  it('moves a clashing note once a lane leads', () => {
+    const out = createWeaveNotes([
+      { laneId: 'bass', cfg: still([note(45)], true), melodic: true },
+      { laneId: 'lead', cfg: still([note(46)], false), melodic: true },
+    ], melodicOpts);
+    expect(out.get('lead')?.[0].midi).not.toBe(46);
+  });
+
+  it('never alters the leader itself', () => {
+    // Moving it would make the rule chase its own tail.
+    const out = createWeaveNotes([
+      { laneId: 'bass', cfg: still([note(45), note(46)], true), melodic: true },
+      { laneId: 'lead', cfg: still([note(52)], false), melodic: true },
+    ], melodicOpts);
+    expect(out.get('bass')?.map((n) => n.midi)).toEqual([45, 46]);
+  });
+
+  it('takes the leader’s LOWEST note as the root', () => {
+    // The same melody over two different bass notes is two different
+    // harmonies, and it is the bottom one that says which.
+    const out = createWeaveNotes([
+      { laneId: 'bass', cfg: still([note(57), note(45)], true), melodic: true },
+      { laneId: 'lead', cfg: still([note(46)], false), melodic: true },
+    ], melodicOpts);
+    expect(out.get('lead')?.[0].midi).not.toBe(46);
+  });
+
+  it('leaves percussion alone, because a drum note picks a voice', () => {
+    const out = createWeaveNotes([
+      { laneId: 'bass', cfg: still([note(45)], true), melodic: true },
+      { laneId: 'drums', cfg: still([note(46)], false), melodic: false },
+    ], melodicOpts);
+    expect(out.get('drums')?.[0].midi).toBe(46);
+  });
+
+  it('does nothing when the leading lane happens to be silent', () => {
+    const out = createWeaveNotes([
+      { laneId: 'bass', cfg: still([], true), melodic: true },
+      { laneId: 'lead', cfg: still([note(46)], false), melodic: true },
+    ], melodicOpts);
+    expect(out.get('lead')?.[0].midi).toBe(46);
+  });
+
+  it('returns one entry per lane', () => {
+    const out = createWeaveNotes([
+      { laneId: 'bass', cfg: still([note(45)], true), melodic: true },
+      { laneId: 'lead', cfg: still([note(52)], false), melodic: true },
+    ], melodicOpts);
+    expect([...out.keys()].sort()).toEqual(['bass', 'lead']);
   });
 });
