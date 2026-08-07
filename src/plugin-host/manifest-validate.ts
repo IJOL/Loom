@@ -98,10 +98,19 @@ function fxDeclarationError(f: unknown, i: number): string | null {
   return null;
 }
 
+/** A panel declares neither polyphony nor capabilities — it owns no lane and
+ *  makes no audio — so the only thing to check is that it names a place the
+ *  host actually has. */
+function panelDeclarationError(p: unknown, i: number): string | null {
+  if (!isObj(p)) return `components[${i}] needs a panel object`;
+  if (p.placement !== 'main-view') return `components[${i}].panel.placement must be main-view`;
+  return null;
+}
+
 function componentError(c: unknown, i: number): string | null {
   if (!isObj(c)) return `components[${i}] is not an object`;
-  if (c.kind !== 'engine' && c.kind !== 'modulator' && c.kind !== 'fx') {
-    return `components[${i}].kind must be engine|modulator|fx`;
+  if (c.kind !== 'engine' && c.kind !== 'modulator' && c.kind !== 'fx' && c.kind !== 'panel') {
+    return `components[${i}].kind must be engine|modulator|fx|panel`;
   }
   if (!isStr(c.id)) return `components[${i}].id must be a non-empty string`;
   if (!isStr(c.name)) return `components[${i}].name must be a non-empty string`;
@@ -116,6 +125,9 @@ function componentError(c: unknown, i: number): string | null {
   // An fx declares no polyphony, no capabilities and no editor layout: it has no
   // lane of its own. Its params render in the rack, which has no sections.
   if (c.kind === 'fx') return fxDeclarationError(c.fx, i);
+  // Same reason as the two above: a panel owns no lane, so polyphony and
+  // capabilities have no answer for it and it returns before they are asked.
+  if (c.kind === 'panel') return panelDeclarationError(c.panel, i);
   if (c.polyphony !== 'mono' && c.polyphony !== 'poly') return `components[${i}].polyphony must be mono|poly`;
   const gErr = groupsError(c, i);
   if (gErr) return gErr;

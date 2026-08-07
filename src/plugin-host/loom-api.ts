@@ -10,6 +10,7 @@ import {
   type FxFactory, type PluginManifestFile,
 } from '@loom/plugin-sdk';
 import { registerEngine, registerEngineFactory, unregisterEngine } from '../engines/registry';
+import { registerPanel, unregisterPanel } from './panel-registry';
 import { createDescriptorEngine } from '../engines/descriptor-engine';
 import { registerRenderer } from '../audio-dsp/renderer-registry';
 import { registerModulatorKernel } from '../audio-dsp/modulator-kernels';
@@ -188,10 +189,20 @@ export function assertFxFactories(manifest: PluginManifestFile): void {
   }
 }
 
+function adoptPanel(m: ComponentManifest & { kind: 'panel' }): Undo {
+  registerPanel({ id: m.id, name: m.name, placement: m.panel.placement, params: m.params });
+  return () => unregisterPanel(m.id);
+}
+
 function adoptComponent(m: ComponentManifest, version: string): Undo {
   if (m.kind === 'modulator') return adoptModulator(m);
   if (m.kind === 'fx') return adoptFx(m, version);
-  return adoptEngine(m);
+  // Narrowed positively rather than by elimination. The previous `return
+  // adoptEngine(m)` meant "anything that is not the other two", which stopped
+  // being true the moment a fourth kind existed — and would have handed a
+  // panel to the engine path with no polyphony and no capabilities.
+  if (m.kind === 'engine') return adoptEngine(m);
+  return adoptPanel(m);
 }
 
 /** Adopt every component a validated manifest declares. This is the ONE path a

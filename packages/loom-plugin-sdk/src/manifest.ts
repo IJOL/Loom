@@ -147,7 +147,20 @@ export interface ModulatorDeclaration {
   idPrefix: string;
 }
 
+/** Where the host hangs a panel component. `main-view` = a top-level view of
+ *  its own, alongside Session and Performance.
+ *
+ *  A panel is the fourth kind of component and the only one with no audio job:
+ *  it makes no sound, modulates nothing and processes nothing. That is why it
+ *  declares neither polyphony nor capabilities — it owns no lane, so those
+ *  questions have no answer for it. What it does need is somewhere to live,
+ *  because unlike the other three it has no fixed place on screen. */
+export interface PanelDeclaration {
+  placement: 'main-view';
+}
+
 export type ComponentManifest =
+  | (ComponentManifestBase & { kind: 'panel'; panel: PanelDeclaration })
   | (ComponentManifestBase & { kind: 'engine'; polyphony: 'mono' | 'poly';
       modulators?: unknown[]; capabilities: EngineCapabilities;
       /** Declared editor layout for `params`. Optional: a manifest that omits

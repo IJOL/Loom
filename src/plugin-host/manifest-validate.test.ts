@@ -201,3 +201,68 @@ describe('validatePluginManifest', () => {
     expect(res.ok).toBe(false);
   });
 });
+
+// WEAVE is a panel: it makes no sound, modulates nothing and processes no
+// audio, and its controls are a two-axis pad, a cursor over a queue and a row
+// of bars — none of which is a single number. Both shapes are refused today.
+// Pinning the refusals here means the phases that widen them change a
+// documented answer rather than an assumed one.
+describe('what the manifest refuses today (pinned before WEAVE widens it)', () => {
+  const base = { id: 'x', name: 'X', version: '1.0.0', loomApi: 1, components: [] as unknown[] };
+
+  // `panel` used to sit here. Phase 1 opened it, so the pin moves to a kind
+  // that is still closed — the guard has to keep refusing what it never knew,
+  // not merely stop refusing the one thing we wanted.
+  it('rejects a component kind the host does not have', () => {
+    const res = validatePluginManifest({
+      ...base,
+      components: [{ kind: 'sampler', id: 'p', name: 'P', params: [] }],
+    });
+    expect(res.ok).toBe(false);
+    expect(res.ok === false && res.error).toMatch(/kind must be engine\|modulator\|fx\|panel/);
+  });
+
+  it('accepts a panel component', () => {
+    const res = validatePluginManifest({
+      ...base,
+      components: [{
+        kind: 'panel', id: 'weave', name: 'Weave',
+        params: [], panel: { placement: 'main-view' },
+      }],
+    });
+    expect(res.ok).toBe(true);
+  });
+
+  it('rejects a panel with a placement the host has nowhere to put', () => {
+    const res = validatePluginManifest({
+      ...base,
+      components: [{
+        kind: 'panel', id: 'weave', name: 'Weave',
+        params: [], panel: { placement: 'floating' },
+      }],
+    });
+    expect(res.ok).toBe(false);
+    expect(res.ok === false && res.error).toMatch(/placement must be main-view/);
+  });
+
+  it('rejects a panel that declares no panel object at all', () => {
+    const res = validatePluginManifest({
+      ...base,
+      components: [{ kind: 'panel', id: 'weave', name: 'Weave', params: [] }],
+    });
+    expect(res.ok).toBe(false);
+    expect(res.ok === false && res.error).toMatch(/needs a panel object/);
+  });
+
+  it('rejects a param kind that is not continuous|discrete', () => {
+    const res = validatePluginManifest({
+      ...base,
+      components: [{
+        kind: 'fx', id: 'f', name: 'F', fx: { color: '#fff' },
+        params: [{ id: 'p', label: 'P', kind: 'pad2d', min: 0, max: 1, default: 0 }],
+      }],
+    });
+    expect(res.ok).toBe(false);
+    expect(res.ok === false && res.error).toMatch(/kind must be continuous\|discrete/);
+  });
+});
