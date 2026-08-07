@@ -452,7 +452,7 @@ const sessionHost = new SessionHost({
   // Asked once per note at schedule time. Returns undefined while every macro
   // sits at its neutral, so a session nobody has woven schedules exactly as it
   // did before this feature existed.
-  weaveGateFor: (laneId) => weaveWiring.gateFor(laneId),
+  weaveNotesFor: (laneId) => weaveWiring.notesFor(laneId),
   applyPresetForLane: (laneId, presetName) => {
     // presetName is a prefixed value in the unified dropdown vocabulary
     // (engine: / user: / sampler:). See src/presets/preset-apply.ts.

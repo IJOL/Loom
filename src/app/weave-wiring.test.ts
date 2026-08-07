@@ -42,50 +42,49 @@ function wiring(state: SessionState) {
   });
 }
 
-const tick = (step: number) => step * TICKS_PER_STEP;
 
-describe('createWeaveWiring — the gate actually reaches the scheduler', () => {
+
+describe('createWeaveWiring — the weave actually reaches the scheduler', () => {
   it('has nothing to say about an untouched lane', () => {
     // The whole feature is additive: a session nobody has woven schedules
     // exactly as it did before the panel existed.
-    expect(wiring(session()).gateFor('lane1')).toBeUndefined();
+    expect(wiring(session()).notesFor('lane1')).toBeUndefined();
   });
 
-  it('builds a gate once a lane names its loops', () => {
+  it('builds a source once a lane names its loops', () => {
     const w = wiring(session());
     w.state.lanes.lane1 = {
       weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0 },
       locked: false, harmonyLeader: false,
     };
-    expect(typeof w.gateFor('lane1')).toBe('function');
+    expect(typeof w.notesFor('lane1')).toBe('function');
   });
 
-  it('lets A through at one end and refuses it at the other', () => {
-    // This is the assertion the browser could not make: if the gate is not
-    // wired, both ends answer the same and the crossfade does nothing.
+  it('hands over from A to B across the fade', () => {
+    // The assertion the browser could not make. A source that never reached the
+    // scheduler would answer the same at both ends and the crossfade would do
+    // nothing at all.
     const w = wiring(session());
     w.state.lanes.lane1 = {
       weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0 },
       locked: false, harmonyLeader: false,
     };
-    const atA = w.gateFor('lane1')!;
-    expect(atA({ midi: 36 }, 0, tick(0))).not.toBe(false);
-    expect(atA({ midi: 40 }, 0, tick(8))).toBe(false);
+    expect(w.notesFor('lane1')!()!.map((n) => n.midi)).toEqual([36]);
 
     w.state.lanes.lane1.weave = { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 1 };
     w.invalidate();
-    const atB = w.gateFor('lane1')!;
-    expect(atB({ midi: 40 }, 0, tick(8))).not.toBe(false);
-    expect(atB({ midi: 36 }, 0, tick(0))).toBe(false);
+    // B's hit is PRODUCED, not merely allowed — it is not in the lane's playing
+    // clip at all, which is exactly what a predicate could never do.
+    expect(w.notesFor('lane1')!()!.map((n) => n.midi)).toEqual([40]);
   });
 
-  it('answers plainly on a lane whose instrument has no layers', () => {
+  it('carries no layer on a lane whose instrument has none', () => {
     const w = wiring(session('subtractive'));
     w.state.lanes.lane1 = {
       weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0 },
       locked: false, harmonyLeader: false,
     };
-    expect(w.gateFor('lane1')!({ midi: 36 }, 0, tick(0))).toBe(true);
+    expect(w.notesFor('lane1')!()![0].layerIndex).toBeUndefined();
   });
 
   it('names the loop on a LAYERS lane, so each note reaches its own instrument', () => {
@@ -94,19 +93,19 @@ describe('createWeaveWiring — the gate actually reaches the scheduler', () => 
       weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0 },
       locked: false, harmonyLeader: false,
     };
-    expect(w.gateFor('lane1')!({ midi: 36 }, 0, tick(0))).toBe(0);
+    expect(w.notesFor('lane1')!()![0].layerIndex).toBe(0);
   });
 
-  it('drops the cached gate when the weave moves', () => {
+  it('drops the cached source when the weave moves', () => {
     const w = wiring(session());
     w.state.lanes.lane1 = {
       weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0 },
       locked: false, harmonyLeader: false,
     };
-    const first = w.gateFor('lane1');
-    expect(w.gateFor('lane1')).toBe(first);   // cached while nothing changed
+    const first = w.notesFor('lane1');
+    expect(w.notesFor('lane1')).toBe(first);   // cached while nothing changed
     w.invalidate();
-    expect(w.gateFor('lane1')).not.toBe(first);
+    expect(w.notesFor('lane1')).not.toBe(first);
   });
 
   it('leaves the lane untouched when its loops no longer exist', () => {
@@ -117,6 +116,6 @@ describe('createWeaveWiring — the gate actually reaches the scheduler', () => 
       weave: { kind: 'ab', a: 'clip:gone', b: 'clip:alsoGone', x: 0 },
       locked: false, harmonyLeader: false,
     };
-    expect(w.gateFor('lane1')).toBeUndefined();
+    expect(w.notesFor('lane1')).toBeUndefined();
   });
 });

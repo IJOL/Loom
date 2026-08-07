@@ -1,9 +1,14 @@
-// Turns a lane's weave into the predicate the scheduler asks, once per note.
+// Turns a lane's weave into the notes the scheduler plays for one iteration.
 //
-// The blend is computed once per distinct weight set and cached, because
-// tickLane asks this for EVERY note in the look-ahead window. Refolding four
-// patterns per note would put the crossfade inside the audio budget, which is
-// the one place in Loom where being clever costs dropouts.
+// It was a PREDICATE first — "does this clip note fire?" — and that shape could
+// not work: a predicate over the clip's own notes can only take hits away, so at
+// the far end of a crossfade the lane fell silent instead of handing over to the
+// other loop. A crossfade has to be able to let hits IN, which means producing
+// notes, not judging them. Found by counting triggers through the real
+// transport (app/weave-scheduling.test.ts); the isolated tests all passed.
+//
+// The blend is computed once per distinct weight set and cached, because this
+// runs on the scheduler's tick.
 
 import type { NoteEvent } from '../core/notes';
 import { blendLoops, blendLoopsBySource, type BlendOptions } from './blend-clip';
@@ -11,86 +16,73 @@ import { laneWeights, type LaneWeaveConfig } from './weave-state';
 import { avoidClash } from './harmony-guard';
 import { applyNoteMacros } from './macro-notes';
 
-const hitKey = (tick: number, midi: number) => `${tick}:${midi}`;
 
-/** `false` = the note does not belong to the crossfade at this position.
- *  `true` = it fires, plainly. A NUMBER = it fires, and it came from that loop —
- *  which a layered instrument reads as which of its instruments should play it.
+/** A note the weave produced. `layerIndex` names the loop it survived from,
+ *  which a layered instrument reads as which of its slots should play it. */
+export type WovenNote = NoteEvent & { layerIndex?: number };
+
+/** What the lane should PLAY this bar, or undefined for "play your own clip".
  *
- *  A union rather than a returned object because this is asked once per note
- *  inside the look-ahead: an object per note would put an allocation in the
- *  audio budget, the one place in Loom where being tidy costs dropouts. */
-export type WeaveGate = (
-  note: { midi: number },
-  scheduleTime: number,
-  clipTick: number,
-) => boolean | number;
+ *  A source, not a predicate. The first shape of this hook asked "does this
+ *  clip note fire?", which can only ever take notes AWAY — so at the far end of
+ *  a crossfade the lane fell silent instead of handing over to the other loop.
+ *  A crossfade has to be able to let hits in. */
+export type WeaveSource = () => WovenNote[] | undefined;
 
-export function createWeaveGate(
+export function createWeaveSource(
   cfg: LaneWeaveConfig,
   o: BlendOptions,
-  /** True when the lane's instrument has layers, so each surviving hit can be
-   *  sent to the one belonging to its loop. False — the ordinary case — and the
-   *  gate answers plainly, because naming a layer on an engine that has none
-   *  would be a number nobody reads. */
+  /** True when the lane's instrument has layers, so each hit can name the loop
+   *  it came from. False — the ordinary case — and the notes carry nothing,
+   *  because a layer index on an engine with no layers is a number nobody
+   *  reads. */
   routeByOrigin = false,
-): WeaveGate {
+): WeaveSource {
   let cacheKey = '';
-  let allowed = new Map<string, number>();
+  let woven: WovenNote[] = [];
 
-  const refresh = () => {
+  return () => {
     const weights = laneWeights(cfg);
-    // Rounding keeps a continuously moving fader from busting the cache on
-    // every animation frame. 1e-3 of a crossfade is finer than any audible
-    // step, and coarse enough that a slow sweep refolds tens of times rather
-    // than thousands.
+    // Rounding keeps a continuously moving fader from refolding on every
+    // animation frame. 1e-3 of a crossfade is finer than any audible step, and
+    // coarse enough that a slow sweep refolds tens of times rather than
+    // thousands. Worth caring about: this runs on the scheduler's tick.
     const key = weights.map((w) => w.weight.toFixed(3)).join(',') + `|${o.barTicks}`;
-    if (key === cacheKey) return;
-    cacheKey = key;
-    allowed = new Map(
+    if (key !== cacheKey) {
+      cacheKey = key;
       // The sourced fold when the origin is wanted, the plain one when it is
-      // not — same notes either way; the sourced one only also says where each
-      // came from. A loop at weight 0 was already filtered out, so an origin
-      // here always names a loop that is genuinely sounding.
-      routeByOrigin
-        ? blendLoopsBySource(weights, o).map((n) => [hitKey(n.start % o.barTicks, n.midi), n.from] as const)
-        : blendLoops(weights, o).map((n: NoteEvent) => [hitKey(n.start % o.barTicks, n.midi), -1] as const),
-    );
-  };
-
-  return (note, _scheduleTime, clipTick) => {
-    refresh();
-    // The scheduler counts ticks from the clip start and keeps counting across
-    // iterations; the blend only ever describes one bar.
-    const inBar = ((clipTick % o.barTicks) + o.barTicks) % o.barTicks;
-    const from = allowed.get(hitKey(inBar, note.midi));
-    if (from === undefined) return false;
-    return from < 0 ? true : from;
+      // not — the same notes either way; the sourced one only also says where
+      // each came from. A loop at weight 0 is filtered out before folding, so
+      // an origin always names a loop that is genuinely sounding.
+      woven = routeByOrigin
+        ? blendLoopsBySource(weights, o).map((n) => ({ ...n, layerIndex: n.from }))
+        : blendLoops(weights, o);
+    }
+    return woven;
   };
 }
 
-/** A gate driven by the MACROS alone, over a clip's own notes.
+/** The MACROS alone, over the clip's own notes.
  *
  *  This is what makes the panel audible before any A/B loops are chosen: with
  *  no weave configured there is nothing to crossfade, but Density still has
- *  something to say about the clip that is playing. It thins and thickens what
- *  is already there.
+ *  something to say about the clip that is playing.
  *
- *  Only Density reaches the sound through a gate: a gate answers "does this note
- *  fire", so it can add and remove notes but cannot change one. Energy moves
- *  velocity and needs a transform rather than a predicate — see REMAINING-WORK.
+ *  Only Density reaches the sound so far. Now that this is a note SOURCE rather
+ *  than a predicate, Energy could too — it moves velocity, which a source can
+ *  rewrite and a predicate never could. See REMAINING-WORK.
  *
  *  `readMacros` is called per refresh rather than captured, so a knob moved
  *  while the transport runs is heard on the next note, not the next launch. */
-export function createMacroGate(
+export function createMacroSource(
   getNotes: () => NoteEvent[],
   readMacros: () => { density: number },
   barTicks: number,
-): WeaveGate {
+): WeaveSource {
   let cacheKey = '';
-  let allowed = new Set<string>();
+  let out: NoteEvent[] = [];
 
-  return (note, _at, clipTick) => {
+  return () => {
     const density = readMacros().density;
     const notes = getNotes();
     // Keyed on the density AND the note count, so a clip swap under the same
@@ -99,13 +91,9 @@ export function createMacroGate(
     const key = `${density.toFixed(3)}|${notes.length}|${barTicks}`;
     if (key !== cacheKey) {
       cacheKey = key;
-      allowed = new Set(
-        applyNoteMacros(notes, { density, energy: 0.5 }, barTicks)
-          .map((n) => hitKey(n.start % barTicks, n.midi)),
-      );
+      out = applyNoteMacros(notes, { density, energy: 0.5 }, barTicks);
     }
-    const inBar = ((clipTick % barTicks) + barTicks) % barTicks;
-    return allowed.has(hitKey(inBar, note.midi));
+    return out;
   };
 }
 

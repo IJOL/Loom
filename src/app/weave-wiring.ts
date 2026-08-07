@@ -10,7 +10,7 @@
 // ask time, because the clips are the session's and they move underneath.
 
 import { defaultWeaveState, type WeaveState, type LaneWeaveConfig } from '../weave/weave-state';
-import { createWeaveGate, createMacroGate, type WeaveGate } from '../weave/weave-runtime';
+import { createWeaveSource, createMacroSource, type WeaveSource } from '../weave/weave-runtime';
 import { resolveSelection } from '../weave/weave-selection';
 import { weaveLoopNotes, weaveLoopContext } from './weave-loops';
 import { macroNeutral } from '../weave/weave-catalog';
@@ -27,10 +27,10 @@ export interface WeaveWiring {
   /** Handed to the session host. Returns undefined for a lane WEAVE has nothing
    *  to say about, which is what keeps the whole feature additive: an untouched
    *  session schedules exactly as it did before. */
-  gateFor: (laneId: string) => WeaveGate | undefined;
-  /** Drop every cached gate. Called when a macro moves, a loop is chosen or the
-   *  topology changes, so the next tick rebuilds against the new value rather
-   *  than answering from the old fold. */
+  notesFor: (laneId: string) => WeaveSource | undefined;
+  /** Drop every cached source. Called when a macro moves, a loop is chosen or
+   *  the topology changes, so the next tick rebuilds against the new value
+   *  rather than answering from the old fold. */
   invalidate: () => void;
 }
 
@@ -44,7 +44,7 @@ export interface WeaveWiringDeps {
 
 export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
   const state = defaultWeaveState();
-  const gates = new Map<string, WeaveGate>();
+  const sources = new Map<string, WeaveSource>();
 
   const macro = (id: string) => {
     const v = state.macros[id];
@@ -82,7 +82,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
    *  weave would end up in a different key from everything else on screen. */
   const musicality = () => deps.getState?.().musicality ?? DEFAULT_MUSICALITY;
 
-  const build = (laneId: string): WeaveGate | undefined => {
+  const build = (laneId: string): WeaveSource | undefined => {
     const barTicks = ticksPerBar(deps.getMeter());
     const sel = state.lanes[laneId]?.weave;
 
@@ -91,7 +91,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       if (weave) {
         // The crossfade proper. `cfg` is handed by reference and read on every
         // refresh, so dragging the fader moves the blend without rebuilding the
-        // gate — which is what keeps the cache in createWeaveGate worth having.
+        // source — which is what keeps its cache worth having.
         const cfg: LaneWeaveConfig = {
           weave,
           locked: state.lanes[laneId]?.locked ?? false,
@@ -103,7 +103,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
         // rather than played by one. Asked of the lane's engine, so it costs
         // nothing on every other lane.
         const layered = lanesEngineId(laneId) === LAYERS_ENGINE_ID;
-        return createWeaveGate(cfg, {
+        return createWeaveSource(cfg, {
           barTicks,
           melodic: melodicLane(laneId),
           key: m.key,
@@ -120,7 +120,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     // that is playing. At the neutral density they say nothing, and the lane
     // keeps the untouched scheduling path.
     if (macro('density') === macroNeutral('density')) return undefined;
-    return createMacroGate(
+    return createMacroSource(
       // Read the clip at ask time, not at build time: the lane's playing clip
       // changes on every scene launch, and a gate holding the old one would
       // silence the new clip entirely.
@@ -133,19 +133,19 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
   return {
     state,
 
-    gateFor(laneId) {
-      if (gates.has(laneId)) return gates.get(laneId);
-      const gate = build(laneId);
-      // Only real gates are cached. "No gate" costs one map read and one number
-      // compare to re-derive, which is cheaper than the sentinel a Map needs to
-      // remember an absence — and it means a lane starts weaving on the tick
+    notesFor(laneId) {
+      if (sources.has(laneId)) return sources.get(laneId);
+      const source = build(laneId);
+      // Only real sources are cached. "Nothing to say" costs one map read and
+      // one number compare to re-derive, cheaper than the sentinel a Map needs
+      // to remember an absence — and it means a lane starts weaving on the tick
       // after a loop is chosen even if someone forgets to invalidate.
-      if (gate) gates.set(laneId, gate);
-      return gate;
+      if (source) sources.set(laneId, source);
+      return source;
     },
 
     invalidate() {
-      gates.clear();
+      sources.clear();
     },
   };
 }

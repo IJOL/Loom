@@ -58,11 +58,20 @@ export interface SchedulerContext {
    *
    *  Audio clips are NOT gated: one of those is a single long note per
    *  iteration, so a gate could only silence the whole lane. */
-  shouldFire?: (
-    note: { midi: number; duration: number; velocity: number; gridTick?: number },
-    scheduleTime: number,
-    clipTick: number,
-  ) => boolean | number;
+  /** Play THESE notes instead of the clip's own, for one iteration.
+   *
+   *  This is where WEAVE lands. It replaces rather than filters because the
+   *  crossfade exists to let the other loop's hits IN, and nothing that only
+   *  answers yes-or-no about an existing note can do that.
+   *
+   *  A note may carry `layerIndex` — which of a layered instrument's slots
+   *  should play it, i.e. which loop it survived from. Absent on every ordinary
+   *  note, and ignored by every engine but LAYERS.
+   *
+   *  "A note that has started always finishes" still costs nothing: this is read
+   *  once per iteration at schedule time, and nothing already sounding is
+   *  touched. Absent ⇒ the clip plays itself, exactly as before this existed. */
+  notes?: readonly { start: number; duration: number; midi: number; velocity: number; layerIndex?: number }[];
   /** Called for each clip envelope sample falling in the window. The
    *  `clipTimeNorm` is 0..1 within the clip iteration. */
   onAutomation: (env: ClipEnvelope, clipTimeNorm: number, scheduleTime: number) => void;
@@ -182,7 +191,17 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
       }
     } else {
       // Note clip: each note fires at its grid time.
-      for (const n of clip.notes) {
+      //
+      // `ctx.notes` REPLACES the clip's own when the lane is weaving. It has to
+      // be a replacement rather than a filter: the crossfade's whole job is to
+      // let the OTHER loop's hits in, and a predicate over `clip.notes` can only
+      // ever take away what is already there. That was the shape this hook had
+      // first, and it silenced a lane at the far end of a fade instead of
+      // handing it over.
+      //
+      // The clip still owns everything else — its length, its loop region, its
+      // sample, its envelopes. Only which notes fall inside it changes.
+      for (const n of ctx.notes ?? clip.notes) {
         if (n.start < startTick || n.start >= endTick) continue;
         const noteStart = swungTick(n.start, swing);
         // Same owner, narrower region: the note's offset inside the iteration.
@@ -198,20 +217,12 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
             // clip the derived value disagrees with the true tick, and swing 0
             // must stay byte-for-byte what it is today.
             gridTick: swing > 0 ? k * loopTicks + (n.start - startTick) : undefined,
-            // Filled by the gate below when it names a layer. Declared here so
-            // the literal has one shape rather than growing a property.
-            layerIndex: undefined as number | undefined,
+            // Carried through from the note, so a woven hit reaches the
+            // instrument of the loop it came from. Undefined on every ordinary
+            // note.
+            layerIndex: (n as { layerIndex?: number }).layerIndex,
           };
-          // Absent ⇒ every note fires, exactly as before this hook existed.
-          const gate = ctx.shouldFire ? ctx.shouldFire(fired, scheduleAt, n.start) : true;
-          if (gate !== false) {
-            // A NUMBER is the gate naming which layer this note belongs to —
-            // the loop it survived from, when the lane is weaving several into a
-            // layered instrument. `true` is the ordinary answer and carries none,
-            // so a lane whose engine has no layers is untouched.
-            if (typeof gate === 'number') fired.layerIndex = gate;
-            ctx.onTrigger(fired, scheduleAt);
-          }
+          ctx.onTrigger(fired, scheduleAt);
         }
       }
     }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { TICKS_PER_STEP, type NoteEvent } from '../core/notes';
-import { createWeaveGate, createWeaveNotes } from './weave-runtime';
+import { createWeaveSource, createWeaveNotes } from './weave-runtime';
 import type { LaneWeaveConfig } from './weave-state';
 import type { BlendOptions } from './blend-clip';
 
@@ -20,65 +20,65 @@ const cfg = (x: number): LaneWeaveConfig => ({
   locked: false, harmonyLeader: false,
 });
 
-describe('weave gate', () => {
-  it('lets a shared hit through at every position', () => {
+/** The hits a source produces, as `step:midi`, so a set comparison reads. */
+const hitsOf = (src: ReturnType<typeof createWeaveSource>) =>
+  new Set((src() ?? []).map((n) => `${n.start / TICKS_PER_STEP}:${n.midi}`));
+
+describe('weave source', () => {
+  it('keeps a shared hit at every position', () => {
+    // The shared skeleton is what holds the bar up while the differences hand
+    // over. It must never be the thing that disappears.
     for (let i = 0; i <= 10; i++) {
-      const gate = createWeaveGate(cfg(i / 10), opts);
-      expect(gate({ midi: 36 }, 0, tick(0))).toBe(true);
+      expect(hitsOf(createWeaveSource(cfg(i / 10), opts))).toContain('0:36');
     }
   });
 
-  it('lets an A-only hit through at x=0', () => {
-    expect(createWeaveGate(cfg(0), opts)({ midi: 42 }, 0, tick(3))).toBe(true);
+  it('plays A at x=0 and B at x=1', () => {
+    expect(hitsOf(createWeaveSource(cfg(0), opts))).toContain('3:42');
+    expect(hitsOf(createWeaveSource(cfg(0), opts))).not.toContain('11:42');
+
+    expect(hitsOf(createWeaveSource(cfg(1), opts))).toContain('11:42');
+    expect(hitsOf(createWeaveSource(cfg(1), opts))).not.toContain('3:42');
   });
 
-  it('refuses that same A-only hit at x=1', () => {
-    expect(createWeaveGate(cfg(1), opts)({ midi: 42 }, 0, tick(3))).toBe(false);
+  it('produces B\'s hit, rather than merely permitting it', () => {
+    // The distinction the first shape of this got wrong. B's hat is not in A at
+    // all, so a predicate over A's notes could never have let it sound.
+    const out = createWeaveSource(cfg(1), opts)() ?? [];
+    expect(out.some((n) => n.start === tick(11) && n.midi === 42)).toBe(true);
   });
 
-  it('refuses a B-only hit at x=0', () => {
-    expect(createWeaveGate(cfg(0), opts)({ midi: 42 }, 0, tick(11))).toBe(false);
-  });
-
-  it('lets that same B-only hit through at x=1', () => {
-    expect(createWeaveGate(cfg(1), opts)({ midi: 42 }, 0, tick(11))).toBe(true);
-  });
-
-  it('refuses a note the blend never contained', () => {
-    expect(createWeaveGate(cfg(0.5), opts)({ midi: 99 }, 0, tick(0))).toBe(false);
-  });
-
-  it('answers on the voice as well as the step', () => {
-    // A hit on step 0 exists, but as a kick. Asking for a snare there must not
-    // ride on the kick's answer.
-    const gate = createWeaveGate(cfg(0), opts);
-    expect(gate({ midi: 36 }, 0, tick(0))).toBe(true);
-    expect(gate({ midi: 38 }, 0, tick(0))).toBe(false);
-  });
-
-  it('folds a tick from a later bar back into the bar', () => {
-    // The scheduler counts ticks from the clip start across iterations; the
-    // blend only ever describes one bar.
-    const gate = createWeaveGate(cfg(0), opts);
-    expect(gate({ midi: 36 }, 0, tick(0) + BAR)).toBe(true);
-    expect(gate({ midi: 36 }, 0, tick(0) + BAR * 3)).toBe(true);
+  it('describes ONE bar, whatever the clip does with it', () => {
+    for (const n of createWeaveSource(cfg(0.5), opts)() ?? []) {
+      expect(n.start).toBeLessThan(BAR);
+    }
   });
 
   it('follows the position as it moves, rather than answering from a stale cache', () => {
-    // The cache keys on the weights, so a moving fader must re-fold. Sharing
-    // one config object is exactly how the live panel drives this.
+    // The cache keys on the weights, so a moving fader must re-fold. Sharing one
+    // config object is exactly how the live panel drives this.
     const shared = cfg(0);
-    const gate = createWeaveGate(shared, opts);
-    expect(gate({ midi: 42 }, 0, tick(3))).toBe(true);
+    const src = createWeaveSource(shared, opts);
+    expect(hitsOf(src)).toContain('3:42');
     if (shared.weave.kind === 'ab') shared.weave.state.x = 1;
-    expect(gate({ midi: 42 }, 0, tick(3))).toBe(false);
-    expect(gate({ midi: 42 }, 0, tick(11))).toBe(true);
+    expect(hitsOf(src)).toContain('11:42');
+    expect(hitsOf(src)).not.toContain('3:42');
   });
 
-  it('is stable when asked the same thing twice', () => {
-    const gate = createWeaveGate(cfg(0.5), opts);
-    const first = gate({ midi: 42 }, 0, tick(3));
-    expect(gate({ midi: 42 }, 0, tick(3))).toBe(first);
+  it('is stable when asked twice at the same position', () => {
+    const src = createWeaveSource(cfg(0.5), opts);
+    expect(src()).toBe(src());
+  });
+
+  it('names no layer unless asked to', () => {
+    const out = createWeaveSource(cfg(0), opts)() ?? [];
+    expect(out.every((n) => n.layerIndex === undefined)).toBe(true);
+  });
+
+  it('names the loop each hit came from when asked', () => {
+    const out = createWeaveSource(cfg(0), opts, true)() ?? [];
+    expect(out.length).toBeGreaterThan(0);
+    expect(out.every((n) => n.layerIndex !== undefined)).toBe(true);
   });
 });
 
@@ -152,38 +152,32 @@ describe('the harmony leader, inside the runtime', () => {
 });
 
 describe('routing a woven bar to each loop\'s own instrument', () => {
-  it('answers plainly when the lane has no layers', () => {
-    // A number on an engine with no layers would be one nobody reads, and it
-    // has to stay `true` so the scheduler's cheap path is untouched.
-    const gate = createWeaveGate(cfg(0), opts);
-    expect(gate({ midi: 36 }, 0, tick(0))).toBe(true);
-  });
+  /** The layer a particular hit was sent to, or undefined if it did not sound. */
+  const layerOf = (x: number, step: number, midi: number) =>
+    (createWeaveSource(cfg(x), opts, true)() ?? [])
+      .find((n) => n.start === tick(step) && n.midi === midi)?.layerIndex;
 
-  it('names the loop a hit came from', () => {
-    const gate = createWeaveGate(cfg(0), opts, true);
-    // A-only hat at step 3, with the fader still at A.
-    expect(gate({ midi: 42 }, 0, tick(3))).toBe(0);
+  it('sends an A-only hit to A\'s instrument', () => {
+    expect(layerOf(0, 3, 42)).toBe(0);
   });
 
   it('sends B\'s own hits to B\'s instrument once they have entered', () => {
-    const gate = createWeaveGate(cfg(1), opts, true);
-    expect(gate({ midi: 42 }, 0, tick(11))).toBe(1);
+    expect(layerOf(1, 11, 42)).toBe(1);
     // And A's hat is gone at the far end, routed or not.
-    expect(gate({ midi: 42 }, 0, tick(3))).toBe(false);
+    expect(layerOf(1, 3, 42)).toBeUndefined();
   });
 
-  it('still refuses a hit that belongs to neither side right now', () => {
-    const gate = createWeaveGate(cfg(0), opts, true);
-    expect(gate({ midi: 42 }, 0, tick(11))).toBe(false);
+  it('does not produce a hit that belongs to neither side right now', () => {
+    expect(layerOf(0, 11, 42)).toBeUndefined();
   });
 
   it('gives the shared skeleton ONE owner, not both', () => {
     // The kick is in both loops. It must fire once, from one instrument —
     // emitting it from each would double every hit the two patterns agree on,
     // which is the loudest possible bug.
-    const gate = createWeaveGate(cfg(0.5), opts, true);
-    const from = gate({ midi: 36 }, 0, tick(0));
-    expect(typeof from).toBe('number');
-    expect([0, 1]).toContain(from as number);
+    const kicks = (createWeaveSource(cfg(0.5), opts, true)() ?? [])
+      .filter((n) => n.start === tick(0) && n.midi === 36);
+    expect(kicks).toHaveLength(1);
+    expect([0, 1]).toContain(kicks[0].layerIndex);
   });
 });
