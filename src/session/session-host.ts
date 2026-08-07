@@ -51,6 +51,8 @@ import { html } from 'lit-html';
 import { renderElement } from '../core/lit-fragment';
 import { buildMixerColumn } from '../core/mixer';
 import { buildMasterStrip } from '../core/master-strip';
+import { createSceneRing } from '../core/scene-ring';
+import { queuedLabelFor, type QueuedLabel } from './session-host-queued-label';
 // session-step-scheduler is superseded by the note-based tickLane path (Phase D.3).
 import { SessionInspector } from './session-inspector';
 import { withUndo } from '../save/history-wiring';
@@ -67,6 +69,9 @@ export class SessionHost {
    *  Starts at -1 (no scene launched) so a loaded save whose scene 0 has
    *  globalLoopEnabled doesn't wrap the playhead before any scene is launched. */
   activeSceneIdx = -1;
+  /** Caption target for the countdown ring, recorded at the launch site and
+   *  self-expiring: see session-host-queued-label.ts. */
+  private queuedLabel: QueuedLabel | null = null;
   /** Space-bar pause: the saved playhead (fractional bar) + scene, so resume
    *  seeks exactly back to it. Cleared by any other launch/stop. */
   private paused: { posBar: number; sceneIdx: number } | null = null;
@@ -165,6 +170,7 @@ export class SessionHost {
     } else {
       launchClip(this.laneStates, this.state, lane, clip,
         this.deps.ctx.currentTime, this.deps.seq.bpm, this.deps.seq.meter, this.deps.recHooks);
+      this.markQueued(clip.name ?? lane.name ?? lane.id);
     }
     this.renderWithMixer();
   }
@@ -178,6 +184,7 @@ export class SessionHost {
     this.activeSceneIdx = sceneIdx;
     this.glState = { anchorSec: this.deps.ctx.currentTime, lastIter: 0 };
     launchScene(this.laneStates, this.state, scene, sceneIdx, this.deps.ctx.currentTime, this.deps.seq.bpm, this.deps.seq.meter);
+    this.markQueued(scene.name ?? `Scene ${sceneIdx + 1}`);
     if (!this.deps.seq.isPlaying()) { this.deps.resetAutomationPosition?.(); this.deps.seq.start(); }
     this.renderWithMixer();
   }
@@ -191,6 +198,24 @@ export class SessionHost {
    *  Returns null when no scene has been launched yet (activeSceneIdx === -1). */
   activeScene(): import('./session').SessionScene | null {
     return this.activeSceneIdx >= 0 ? (this.state.scenes[this.activeSceneIdx] ?? null) : null;
+  }
+
+  /** Record what the pending switch is heading to, for the countdown ring's
+   *  caption. Called right AFTER a launch, so the boundary is already written. */
+  markQueued(label: string): void {
+    let nearest = Infinity;
+    for (const lp of this.laneStates.values()) {
+      if (lp.queued && lp.queuedBoundary < nearest) nearest = lp.queuedBoundary;
+    }
+    this.queuedLabel = nearest === Infinity ? null : { label, boundary: nearest };
+  }
+
+  /** One line under the ring: the pending target while a switch is queued,
+   *  else the scene that is playing. */
+  ringCaption(): string {
+    const target = queuedLabelFor(this.queuedLabel, this.laneStates);
+    if (target) return `→ ${target}`;
+    return this.activeScene()?.name ?? '';
   }
 
   /** The scene of the clip currently open in the inspector.
@@ -681,6 +706,14 @@ export class SessionHost {
     // Last (scenes) column: the master strip when an audio graph is wired,
     // else the old spacer (test fixtures without audio omit volInput/analyser).
     if (this.deps.volInput && this.deps.masterMeterAnalyser && this.deps.masterStrip) {
+      const sceneRing = createSceneRing({
+        laneStates: () => this.laneStates,
+        now: () => this.deps.ctx.currentTime,
+        bpm: () => this.deps.seq.bpm,
+        meter: () => this.deps.seq.meter,
+        caption: () => this.ringCaption(),
+      });
+      this.registerMixerDisposable(sceneRing);
       row.appendChild(buildMasterStrip({
         volInput: this.deps.volInput,
         masterMeterAnalyser: this.deps.masterMeterAnalyser,
@@ -689,6 +722,7 @@ export class SessionHost {
         onToggleFx: () => this.toggleMasterFx(),
         historyDeps: this.deps.historyDeps,
         registerDisposable: (d) => this.registerMixerDisposable(d),
+        sceneRing,
       }));
     } else {
       row.appendChild(renderElement(html`<div class="session-spacer"></div>`));

@@ -85,6 +85,7 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
       } else {
         launchClip(self.laneStates, self.state, lane, clip, ctx.currentTime, seq.bpm,
           seq.meter, self.deps.recHooks);
+        self.markQueued(clip.name ?? lane.name ?? lane.id);
       }
       self.renderWithMixer();
     },
