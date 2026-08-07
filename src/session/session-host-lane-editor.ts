@@ -24,8 +24,12 @@ export function showLaneEditor(self: SessionHost, laneId: string): void {
   const lane = self.state.lanes.find((l) => l.id === laneId);
   // The clip editor is NOT touched here. focusLaneImpl (session-host.ts) owns
   // that decision for every entry point, so this function is pure painting.
-  // Selecting a lane always OPENS its editor — clear any collapse the chevron set.
-  self.synthCollapsed = false;
+  //
+  // Selecting a lane does NOT unfold the synth. Whether the editor is folded is
+  // the user's standing choice about screen space, not a statement about which
+  // lane they are on — this used to clear it on every selection, so a folded
+  // editor sprang open the moment you touched another lane. The re-point below
+  // still happens underneath, so unfolding shows the lane you are now on.
 
   // TWO pages, not three. The TB-303 used to route to a page of its own — a
   // leftover from when Loom WAS a 303 + a drum machine. By the time it died that
@@ -45,7 +49,10 @@ export function showLaneEditor(self: SessionHost, laneId: string): void {
   });
   const displayName = lane?.name ?? laneId.toUpperCase();
   document.querySelectorAll<HTMLElement>('.page').forEach((p) => {
-    p.hidden = p.dataset.page !== targetTab;
+    // A folded editor stays folded: every page hidden, including the one this
+    // lane routes to. Everything below still re-points it, so the chevron
+    // unfolds onto the right lane.
+    p.hidden = self.synthCollapsed || p.dataset.page !== targetTab;
   });
   // Every poly lane retargets the preset dropdown, the engine selector and the
   // engine-mod-host to itself: setActiveEngineLane updates the active lane id

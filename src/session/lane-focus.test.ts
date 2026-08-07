@@ -223,6 +223,35 @@ describe('focusLane — the one door', () => {
     expect(renders.at(-1), 'the last repaint sees no open clip at all').toBeNull();
   });
 
+  it('keeps the synth folded when it was folded, and re-points it underneath', () => {
+    // The chevron's collapse is the user's choice about screen space, not about
+    // which lane they are on. Changing lane used to unfold it every time.
+    const state = makeState();
+    const insp = makeInspector(state);
+    const self = makeSelf(state, insp, 'drums-1');
+    self.synthCollapsed = true;
+
+    focusLaneImpl(self, 'tb-303-1', 'lane');
+
+    expect(self.synthCollapsed, 'still folded').toBe(true);
+    const pages = [...document.querySelectorAll<HTMLElement>('.page')];
+    expect(pages.every((p) => p.hidden), 'no page is showing').toBe(true);
+    expect(self.activeEditLane, 'but the selection did move underneath').toBe('tb-303-1');
+  });
+
+  it('shows the new lane\'s page when the synth was open', () => {
+    const state = makeState();
+    const insp = makeInspector(state);
+    const self = makeSelf(state, insp, 'drums-1');
+    self.synthCollapsed = false;
+
+    focusLaneImpl(self, 'tb-303-1', 'lane');
+
+    const shown = [...document.querySelectorAll<HTMLElement>('.page')]
+      .filter((p) => !p.hidden).map((p) => p.dataset.page);
+    expect(shown, 'the instrument page is the one showing').toEqual(['instrument']);
+  });
+
   it('re-selecting the open clip\'s own lane leaves the editor alone', () => {
     // The chevron, an engine swap and an undo repaint all land here.
     const state = makeState();
