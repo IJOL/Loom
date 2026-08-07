@@ -726,7 +726,12 @@ export class SessionHost {
     row.innerHTML = '';
     row.appendChild(renderElement(html`<div class="session-spacer"></div>`));
     for (const lane of this.state.lanes) {
-      const col = buildMixerColumn(lane.id, this.deps.mixerDeps);
+      // The column's dead zones are a lane-selection surface: the one strip that
+      // shows a lane's whole signal path should also be a way to pick it.
+      const col = buildMixerColumn(lane.id, {
+        ...this.deps.mixerDeps,
+        onSelect: (id) => this.focusLane(id),
+      });
       if (lane.id === this.activeEditLane) col.classList.add('session-mixer-col-active');
       row.appendChild(col);
     }

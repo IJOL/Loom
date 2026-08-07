@@ -31,6 +31,16 @@
   min-width: 0;
   width: 100%;
 }
+// The column's dead zones select their lane (see buildMixerColumn's onSelect).
+// Without a cursor there is nothing telling the user the background is live —
+// and the live controls have to say the opposite, since clicking them does only
+// their own job.
+.mix-col { cursor: pointer; }
+.mix-col button,
+.mix-col input,
+.mix-col select,
+.mix-col .knob { cursor: default; }
+
 .mix-col .mix-name {
   font-size: 9px;
   letter-spacing: 0.05em;

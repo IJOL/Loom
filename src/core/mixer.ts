@@ -32,6 +32,13 @@ export interface MixerColumnDeps {
   muteState:     Record<string, boolean>;
   soloState:     Record<string, boolean>;
   applyMuteSolo: () => void;
+  /** Selects this column's lane. Fires only for clicks on the column's DEAD
+   *  ZONES — the name, the section labels, the padding. A click that lands on a
+   *  live control (fader, knob, mute/solo, an insert slot, a dropdown) does that
+   *  control's job and nothing else, so moving a fader never pulls the user out
+   *  of the clip they are editing. Optional: the Classic mixer panel does not
+   *  own a lane selection. */
+  onSelect?:     (trackId: string) => void;
   registerKnob:  (k: KnobHandle) => void;
   /** Optional undo history deps. When present, knob drags/wheel/dblclick
    *  are bracketed as single undo entries. */
@@ -230,6 +237,18 @@ export function buildMixerColumn(trackId: string, deps: MixerColumnDeps): HTMLEl
     String(parseFloat(fader.value) / 1.5),
   );
   deps.registerKnob(faderKnob);
+
+  // One listener on the root, not one per dead zone: the column is rebuilt whole
+  // on every render, and enumerating the dead zones would need updating each time
+  // a control is added. Ask what was hit instead.
+  if (deps.onSelect) {
+    const onSelect = deps.onSelect;
+    col.addEventListener('click', (e) => {
+      const hit = e.target as Element | null;
+      if (hit?.closest('button, input, select, .knob, [role="slider"]')) return;
+      onSelect(trackId);
+    });
+  }
 
   return col;
 }
