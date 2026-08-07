@@ -1,0 +1,29 @@
+{
+  "id": "reverb",
+  "name": "Reverb",
+  "version": "1.0.0",
+  "loomApi": 1,
+  "author": "Loom",
+  "main": "main.js",
+  "components": [
+    {
+      "kind": "fx",
+      "id": "reverb",
+      "name": "Reverb",
+      "params": [
+        { "id": "wet", "label": "Wet", "kind": "continuous", "min": 0, "max": 1.5, "default": 0.9 },
+        { "id": "predelay", "label": "PreD", "kind": "continuous", "min": 0, "max": 0.5, "default": 0, "unit": "s" },
+        { "id": "size", "label": "Size", "kind": "continuous", "min": 0.05, "max": 8, "default": 2.5, "unit": "s" },
+        { "id": "decay", "label": "Decay", "kind": "continuous", "min": 0.1, "max": 10, "default": 3 },
+        { "id": "type", "label": "Type", "kind": "discrete", "min": 0, "max": 3, "default": 0,
+          "options": [
+            { "value": "room", "label": "ROOM" },
+            { "value": "hall", "label": "HALL" },
+            { "value": "plate", "label": "PLATE" },
+            { "value": "spring", "label": "SPRING" }
+          ] }
+      ],
+      "fx": { "color": "#9b6dff" }
+    }
+  ]
+}

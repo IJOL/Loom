@@ -3,8 +3,11 @@ import '../../test/setup';
 import { ChannelStrip, FxBus } from './fx';
 import { SidechainBus } from './sidechain-bus';
 import { registerPlugin, _resetRegistry } from '../plugins/registry';
-import { reverbPlugin } from '../plugins/fx/reverb';
-import { delayPlugin } from '../plugins/fx/delay';
+// Both real effects now live in `plugins/`. These are the host's own tests —
+// what they check is that the send buses seed BY ID, not what either effect
+// sounds like, so they use stand-ins and stop depending on which effects
+// happen to be in the tree.
+import { testReverbPlugin as reverbPlugin, testDelayPlugin as delayPlugin } from '../../test/fx-fixtures';
 import { loadPlugins } from '../plugin-host/plugin-host';
 
 describe('FxBus as a 2-send bank', () => {

@@ -1,10 +1,21 @@
 {
   "plugins": [
+    "bitcrusher",
+    "chorus",
+    "compressor",
+    "delay",
+    "distortion",
+    "flanger",
     "fm",
     "karplus",
+    "limiter",
+    "multifilter",
+    "phaser",
+    "reverb",
     "sh",
     "subtractive",
     "tb303",
+    "tremolo",
     "wavetable",
     "westcoast"
   ]

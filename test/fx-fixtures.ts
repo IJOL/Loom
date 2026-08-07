@@ -15,6 +15,43 @@
 // assertions that name 'freq' or 'multifilter'.
 import type { PluginFactory } from '../src/plugins/types';
 
+/** A minimal insert under a given id. For host tests that need SOMETHING
+ *  registered under 'delay' or 'reverb' — the send buses seed by id — without
+ *  caring what it sounds like. */
+function minimalFx(id: string, name: string, color: string): PluginFactory {
+  return {
+    kind: 'fx',
+    manifest: {
+      id, name, kind: 'fx', version: '1.0.0', color,
+      params: [
+        { id: 'wet', label: 'Wet', kind: 'continuous', min: 0, max: 1, default: 0.5 },
+      ],
+      presets: [],
+    },
+    create(ctx) {
+      const input  = ctx.createGain();
+      const wet    = ctx.createGain();
+      const output = ctx.createGain();
+      wet.gain.value = 0.5;
+      input.connect(wet).connect(output);
+      return {
+        input, output,
+        getAudioParams: () => new Map<string, AudioParam>([['wet', wet.gain]]),
+        getBaseValue: (pid) => (pid === 'wet' ? wet.gain.value : 0),
+        setBaseValue: (pid, v) => { if (pid === 'wet') wet.gain.value = v; },
+        applyPreset: () => {},
+        dispose: () => { try { input.disconnect(); wet.disconnect(); output.disconnect(); } catch { /* ok */ } },
+      };
+    },
+  };
+}
+
+/** The two the send buses seed by id (A gets delay, B gets reverb). Both real
+ *  effects now live in `plugins/`, and these stand in so the host's own tests
+ *  do not depend on which effects happen to be in the tree. */
+export const testDelayPlugin  = minimalFx('delay',  'Delay',  '#5aa9e6');
+export const testReverbPlugin = minimalFx('reverb', 'Reverb', '#9b6dff');
+
 export const testFilterPlugin: PluginFactory = {
   kind: 'fx',
   manifest: {

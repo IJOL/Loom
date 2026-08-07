@@ -18,7 +18,7 @@ import { InsertChain } from '../plugins/fx/insert-chain';
 import { rehydrateInsertChain } from '../session/insert-slot';
 import { registerPlugin } from '../plugins/registry';
 import { testFilterPlugin as multifilterPlugin } from '../../test/fx-fixtures';
-import { delayPlugin } from '../plugins/fx/delay';
+import { testDelayPlugin as delayPlugin } from '../../test/fx-fixtures';
 
 // ── Minimal Web Audio mock ────────────────────────────────────────────────
 

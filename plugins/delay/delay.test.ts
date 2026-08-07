@@ -1,6 +1,24 @@
-// src/plugins/fx/delay.test.ts
-import { describe, it, expect } from 'vitest';
-import { delayPlugin } from './delay';
+// The plugin's own test, run against the plugin the way the host runs it: a
+// two-line Loom double captures the factory, which is all main.ts asks of the
+// ABI. That is the point — it proves this effect needs nothing from src/.
+import { describe, it, expect, beforeAll } from 'vitest';
+import type { FxInstance } from '@loom/plugin-sdk';
+import manifest from './plugin.json';
+
+let create: (ctx: AudioContext) => FxInstance;
+beforeAll(async () => {
+  (globalThis as unknown as { Loom: unknown }).Loom = {
+    registerFx: (_id: string, c: (ctx: AudioContext) => FxInstance) => { create = c; },
+  };
+  await import('./main');
+});
+
+/** Stands in for the old `delayPlugin.create(ctx)`, so the cases below read
+ *  exactly as they did before the migration. */
+const delayPlugin = {
+  kind: 'fx' as const,
+  create: (ctx: AudioContext | BaseAudioContext) => create(ctx as AudioContext),
+};
 
 describe('delay sync', () => {
   it('Free mode leaves time under manual control', () => {
@@ -76,5 +94,20 @@ describe('delay ping-pong', () => {
     let eL = 0, eR = 0;
     for (let i = from; i < to; i++) { eL += Math.abs(L[i]); eR += Math.abs(R[i]); }
     expect(eL).toBeGreaterThan(eR * 2);
+  });
+});
+
+describe("delay — the manifest and the graph agree", () => {
+  it("answers to every param its manifest declares", () => {
+    expect(manifest.components[0].id).toBe("delay");
+    const fx = create(new AudioContext());
+    for (const p of manifest.components[0].params) {
+      // "time" is excluded: it is driven through setTargetAtTime, so the node
+      // lags and the shadow is the honest reading — the sync cases above check
+      // it properly instead.
+      if (p.id === "time") continue;
+      fx.setBaseValue(p.id, p.default);
+      expect(fx.getBaseValue(p.id)).toBeCloseTo(p.default, 3);
+    }
   });
 });
