@@ -192,8 +192,12 @@ export const SHOTS = [
   // lane tab to reveal its editor, then frames the page panel.
 
   {
+    // The 303 is framed on the INSTRUMENT page like every other melodic engine.
+    // It used to have a page of its own, `data-page="303"`, and that selector
+    // outlived it — matching nothing, which throws and takes the whole shot
+    // build down with it. That is why every image here was months old.
     name: 'engine-tb303',
-    selector: '.page[data-page="303"]',
+    selector: '.page[data-page="instrument"]',
     setup: async (page) => {
       await loadDemo(page, 'Minimal Techno');
       await clickLaneTab(page, '303 1');
@@ -298,8 +302,13 @@ export const SHOTS = [
     // Adding a lane. The old '.session-tabs' bar is gone (session-view reorder);
     // lanes are now added from the grid's '+' header, which opens a menu listing
     // every engine plus "Audio channel". Frame that menu open.
+    // Frame the MENU, not the '+' button's wrapper. The wrapper is the button's
+    // own box — a few pixels wide — and the menu is positioned absolutely, so it
+    // falls outside: the shot came out an 890-byte sliver of nothing. Same trap
+    // the menu-bar shot hit, and it never failed loudly because a tiny box is a
+    // valid screenshot.
     name: 'audio-channel-add',
-    selector: '.session-lane-add-wrap',
+    selector: '.session-lane-add-menu',
     setup: async (page) => {
       await page.locator('.session-lane-add').first().click();
       await page.locator('.session-lane-add-menu').first().waitFor({ state: 'visible' });

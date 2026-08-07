@@ -9,7 +9,7 @@ Every lane has two signal-processing layers that sit *before* its engine's audio
 
 ## Modulators
 
-Open any lane's engine editor and scroll to the **MODULATORS** section. Press **+ LFO**, **+ ADSR** or **+ S&H** to add a modulator; you can add as many as you need. Each modulator appears as a card with its own controls, an **ON / OFF** toggle, and a **×** remove button.
+Open any lane's engine editor and scroll to the **MODULATORS** section. Press **+ ADSR**, **+ LFO** or **+ S&H** to add a modulator; you can add as many as you need. Each modulator appears as a card with its own controls, an **ON / OFF** toggle, and a **×** remove button.
 
 That row of buttons is not a fixed list — it is built from whatever modulators are registered, so a plugin that ships one adds its own button. **S&H is exactly that**: a modulator that arrives as an external plugin rather than from Loom's own source, and behaves like any other.
 
