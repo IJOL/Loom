@@ -553,3 +553,24 @@ sonido — que era mi objeción, y cae.
 
 **No entra en esta rebanada** — aquí los efectos salen del árbol sin que cambie
 el sonido de nada, y esto toca el mezclador, el bus de sidechain y la ABI.
+
+## Hallazgo de la migración: el flanger a realimentación máxima multiplica por ~5,5
+
+Encontrado al escribirle su primer test propio (2026-08-04). El flanger nunca
+había tenido uno: viajaba dentro del test del coro, que **nunca movía el mando
+de realimentación**, así que su extremo no lo había medido nadie.
+
+Con `feedback` a 1 —techo efectivo 0,9—, `depth` 1 y `mix` 0,7, el pico de salida
+es **5,48 veces** la entrada. **No es inestabilidad**: el nivel se asienta y no
+crece, y su test lo comprueba comparando la segunda mitad del render con la
+primera en vez de contra un umbral inventado. Es la física de un peine
+realimentado, cuya resonancia vale 1/(1−g) = 10 para g = 0,9.
+
+Pero es **suficiente para saturar el master él solo**, y nada en el rack lo
+advierte. Conducta preexistente, no introducida por la migración: el DSP no se
+tocó. Queda anotado porque el único motivo de que no se supiera es que ningún
+test llegaba hasta ahí.
+
+Decidir aparte, y es decisión de Nacho: bajar el techo, compensar el nivel al
+subir la realimentación, o dejarlo y aceptar que el mando quema si se sube del
+todo. Lo que no debe pasar es que se quede sin decidir por no estar escrito.

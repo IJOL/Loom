@@ -92,6 +92,20 @@ describe('modulated delay — feedback belongs to the flanger alone', () => {
     expect(await tail(0.9)).toBeGreaterThan(await tail(0) * 2);
   });
 
+  it('the two shipped configurations do not sound the same', () => {
+    // Inherited from the chorus/flanger test when those two became separate
+    // plugins. The claim is not about either of them — it is about this graph:
+    // that its spec really steers the sound, so a chorus and a flanger built
+    // from it are two effects and not one with two names.
+    return (async () => {
+      const c = await render(CHORUS,  { mix: 0.6, rate: 1, depth: 0.7 });
+      const f = await render(FLANGER, { mix: 0.6, rate: 1, depth: 0.7 });
+      let d = 0;
+      for (let i = 0; i < c.length; i++) d += Math.abs(c[i] - f[i]);
+      expect(d / c.length / Math.max(1e-9, rms(c))).toBeGreaterThan(0.05);
+    })();
+  });
+
   it('a spec with no feedback ceiling refuses a feedback write', () => {
     const fx = createModulatedDelay(
       new OfflineAudioContext(1, 128, SR) as unknown as AudioContext, CHORUS,
