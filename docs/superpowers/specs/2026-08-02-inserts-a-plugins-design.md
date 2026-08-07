@@ -599,3 +599,33 @@ test llegaba hasta ahí.
 Decidir aparte, y es decisión de Nacho: bajar el techo, compensar el nivel al
 subir la realimentación, o dejarlo y aceptar que el mando quema si se sube del
 todo. Lo que no debe pasar es que se quede sin decidir por no estar escrito.
+
+## Dos hallazgos menores de la revisión de los cuatro nuevos, anotados sin arreglar
+
+Ambos medidos, ninguno introducido por esta rebanada, ninguno arreglable dentro
+de ella sin tocar algo que es de otra.
+
+**1. Los mandos del `gate` salen en el catálogo de destinos pero no se pueden
+modular.** `automation-targets.ts` lista los cuatro params continuos, y el panel
+de modulación lee ese catálogo — pero `getAudioParams()` del gate devuelve un
+mapa vacío a propósito: sus cuatro mandos reconstruyen una curva o fijan una
+constante de tiempo, no son `AudioParam`. La automatización SÍ funciona (va por
+`setBaseValue`); asignarle un LFO no hace nada y no lo dice.
+
+No es nuevo ni exclusivo del gate — el trémolo tiene lo mismo en `depth` y
+`smooth`. El arreglo de verdad es que el catálogo distinga **automatizable** de
+**modulable**, que es un cambio transversal a `destination-registry` y a todos
+los paneles que lo leen. Media solución aquí sería una cuarta lista paralela, que
+es exactamente lo que ese registro existe para impedir.
+
+**2. El `auto-wah` cuesta 13 dB con sus valores de fábrica.** Medido: una sierra
+de 110 Hz a 0,9 sale a 0,22× de lo que entró, y con `base 2000 / range 4800 /
+sens 1` —todo dentro de los máximos que declara su propia ficha— baja a 0,022×
+(−33 dB), porque el centro del pasa-banda se topa con Nyquist mientras el
+seguidor, que lee ANTES del filtro, lo mantiene abierto.
+
+Es lo que hace un pasa-banda: un wah real también resta energía. Pero con `mix`
+a 1 por defecto y sin ganancia de compensación, quien lo meta en una pista va a
+leerlo como «el wah me ha roto el tema» antes que como «un wah suena así».
+Decidir: compensar la salida, bajar el `mix` de fábrica, o dejarlo y que el
+manual lo diga.
