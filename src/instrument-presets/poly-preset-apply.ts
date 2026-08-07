@@ -62,17 +62,33 @@ export function applyEnginePresetToLane(
   settle(deps, laneId, engine);
 }
 
-/** Apply a USER subtractive preset (stored as nested PolySynthParams) to a
- *  lane's worklet engine: flatten to dot-ids and setBaseValue each. The Phase 4
- *  cutover removed the PolySynth target these used to write to. */
+/** Apply a USER preset to a lane's engine: setBaseValue each id, then settle.
+ *
+ *  Unlike a factory preset this does NOT go through `engine.applyPreset`, and
+ *  the difference is deliberate: a factory preset's JSON keys are the engine's
+ *  own preset vocabulary, which is not always its setBaseValue vocabulary. A
+ *  user preset is a snapshot of setBaseValue ids by construction
+ *  (`snapshotEngineParams`), so setting them back is exact. Ids the engine no
+ *  longer declares are simply values it will not read. */
+export function applyUserPresetToLane(
+  deps: PolyPresetApplyDeps,
+  laneId: string,
+  params: Record<string, number>,
+): void {
+  const engine = deps.getLaneEngineInstance(laneId);
+  if (!engine) return;
+  for (const [id, v] of Object.entries(params)) engine.setBaseValue(id, v);
+  settle(deps, laneId, engine);
+}
+
+/** Apply a USER subtractive preset in the pre-`user-preset-store` nested shape.
+ *  Kept for callers that still hold a `PolySynthParams`; the store hands out
+ *  flat bags, so new code wants `applyUserPresetToLane`. */
 export function applyUserPolyPresetToLane(
   deps: PolyPresetApplyDeps,
   laneId: string,
   params: PolySynthParams,
 ): void {
-  const engine = deps.getLaneEngineInstance(laneId);
-  if (!engine) return;
-  for (const [id, v] of Object.entries(polyParamsToFlat(params))) engine.setBaseValue(id, v);
-  settle(deps, laneId, engine);
+  applyUserPresetToLane(deps, laneId, polyParamsToFlat(params));
 }
 

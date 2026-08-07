@@ -1,11 +1,13 @@
 import { html } from 'lit-html';
 import { renderInto } from '../core/lit-fill';
 import { customOption, presetGroup } from './poly-preset-templates';
-import { POLY_DEFAULTS, type PolySynthParams } from './poly-params';
 import { alertDialog, confirmDialog, promptDialog } from '../core/dialog';
 import {
-  applyEnginePresetToLane, applyUserPolyPresetToLane,
+  applyEnginePresetToLane, applyUserPresetToLane,
 } from './poly-preset-apply';
+import {
+  snapshotEngineParams, loadUserPresets, saveUserPreset, deleteUserPreset,
+} from './user-preset-store';
 import type { SynthEngine } from '../engines/engine-types';
 import type { SessionState } from '../session/session';
 import { getCachedPresets } from '../presets/preset-loader';
@@ -13,10 +15,7 @@ import { withUndo, type HistoryDeps } from '../save/history-wiring';
 import { getDrumKits, loadDrumKits, type DrumKitPreset } from '../presets/drum-kits-loader';
 import { listDrumkits } from '../samples/drumkit-loader';
 import { listInstruments } from '../samples/instrument-loader';
-import {
-  flatToPolyParams, polyParamsToFlat, getFactoryPolyPresets,
-  loadUserPolyPresets, saveUserPolyPresets,
-} from './poly-preset-store';
+import { getFactoryPolyPresets } from './poly-preset-store';
 // Re-export the store surface so existing importers of './polysynth-presets' keep working.
 export { polyParamsToFlat, loadUserPolyPresets, saveUserPolyPresets } from './poly-preset-store';
 
@@ -104,23 +103,21 @@ export function populatePolyPresetSelectForLane(laneId: string): void {
     return;
   }
 
-  if (engineId === 'subtractive') {
-    // Unified vocabulary: subtractive factory presets are `engine:<name>` like
-    // every other engine's (they're applied the same way, engine.applyPreset).
-    const factory: [string, string][] =
-      getFactoryPolyPresets().map((p) => [`engine:${p.name}`, p.name]);
-    const userNames = Object.keys(loadUserPolyPresets()).sort();
-    const user: [string, string][] = userNames.map((name) => [`user:${name}`, name]);
-    renderInto(sel, html`${customOption()}${presetGroup('Factory', factory)}${presetGroup('User', user)}`);
-    return;
-  }
+  // Every melodic engine gets the same two groups. Subtractive is the only one
+  // whose factory list does not come off the engine instance: its presets are
+  // stored flat and expanded through the nested PolySynthParams shape the old
+  // user presets share, so they arrive via getFactoryPolyPresets. Both are
+  // `engine:<name>` and both apply the same way (engine.applyPreset).
+  const factory: [string, string][] = engineId === 'subtractive'
+    ? getFactoryPolyPresets().map((p) => [`engine:${p.name}`, p.name])
+    : (deps.getLaneEngineInstance(laneId)?.presets ?? []).map((p) => [`engine:${p.name}`, p.name]);
 
-  // Non-subtractive poly engine (FM, Wavetable): pull presets
-  // directly from the lane's SynthEngine instance.
-  const presets = deps.getLaneEngineInstance(laneId)?.presets ?? [];
-  renderInto(sel, html`${customOption()}${presetGroup(
-    'Factory', presets.map((p) => [`engine:${p.name}`, p.name] as [string, string]),
-  )}`);
+  // The User group is per ENGINE, not global: a preset saved on an FM lane is
+  // FM's vocabulary and means nothing to subtractive.
+  const user: [string, string][] = Object.keys(loadUserPresets(engineId)).sort()
+    .map((name) => [`user:${name}`, name]);
+
+  renderInto(sel, html`${customOption()}${presetGroup('Factory', factory)}${presetGroup('User', user)}`);
 }
 
 export function populatePolyPresetSelect(): void {
@@ -326,16 +323,14 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
       return;
     }
 
-    // user: presets target the active subtractive lane's WORKLET engine (the
-    // legacy PolySynth target is gone after the Phase 4 cutover). They're
-    // stored as PolySynthParams → flattened to dot-ids and pushed through
-    // setBaseValue, then the lane knobs refresh.
+    // user: presets are a bag of the lane engine's own setBaseValue ids, looked
+    // up under that engine — so the same name on two engines is two sounds.
     const laneId = deps.getActiveEngineLaneId();
     if (val.startsWith('user:')) {
       const name = val.slice('user:'.length);
-      const presets = loadUserPolyPresets();
+      const presets = loadUserPresets(deps.getLaneEngineId(laneId));
       if (presets[name]) {
-        applyUserPolyPresetToLane(deps, laneId, presets[name]);
+        applyUserPresetToLane(deps, laneId, presets[name]);
         pagePresetName.set(laneId, val);
       }
     }
@@ -360,17 +355,14 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
     if (!name) return;
     const trimmed = name.trim();
     if (!trimmed) return;
-    // Snapshot the active subtractive lane's worklet engine params (the legacy
-    // PolySynth target is gone). Read each subtractive dot-id base value, then
-    // expand to the nested PolySynthParams shape user presets are stored in.
+    // Snapshot the params the lane's engine DECLARES, and file them under that
+    // engine. This used to read a hardcoded list of subtractive dot-ids off
+    // whatever engine was active, which on an FM lane saved defaults for ids FM
+    // does not have — and put them in subtractive's list.
     const laneId = deps.getActiveEngineLaneId();
     const engine = deps.getLaneEngineInstance(laneId);
     if (!engine) return;
-    const flat: Record<string, number> = {};
-    for (const id of Object.keys(polyParamsToFlat(POLY_DEFAULTS))) flat[id] = engine.getBaseValue(id);
-    const presets = loadUserPolyPresets();
-    presets[trimmed] = flatToPolyParams(flat);
-    saveUserPolyPresets(presets);
+    saveUserPreset(deps.getLaneEngineId(laneId), trimmed, snapshotEngineParams(engine));
     populatePolyPresetSelect();
     pagePresetName.set(laneId, `user:${trimmed}`);
     refreshPolyPresetSelect();
@@ -385,9 +377,14 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
     }
     const name = val.slice('user:'.length);
     if (!await confirmDialog(`Delete preset "${name}"?`)) return;
-    const presets = loadUserPolyPresets();
-    delete presets[name];
-    saveUserPolyPresets(presets);
+    const laneId = deps.getActiveEngineLaneId();
+    if (!deleteUserPreset(deps.getLaneEngineId(laneId), name)) {
+      // The only presets this store cannot delete are the subtractive ones
+      // saved before it existed: they live in a key it never writes, and
+      // rewriting that key to drop one would risk the rest.
+      void alertDialog(`"${name}" was saved by an older version and cannot be deleted here.`);
+      return;
+    }
     populatePolyPresetSelect();
   });
 }
