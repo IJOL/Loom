@@ -23,6 +23,10 @@ Each lane owns a `ChannelStrip`. Its controls are visible below the session grid
 
 ![Loom session view — channel strips appear below the clip grid, one row per lane](images/session-view.png)
 
+**Clicking a column selects its lane.** The selected column is highlighted, and selecting it brings the clip editor and the instrument controls with it — see [One lane is selected, everywhere](03-sessions-lanes-clips-scenes.md#one-lane-is-selected-everywhere).
+
+Only the column's *background* does that: the track name and the empty space between controls. A click that lands on a fader, a knob, M, S, an insert slot or the preset dropdown does that control's job and nothing else, so moving a fader never yanks you out of the clip you were editing.
+
 ### Level (fader)
 
 The vertical slider sets the lane's output gain as a linear multiplier (0–1 = silence to unity; the percentage label reflects the current value). This is the last gain stage before output, applied after EQ and the per-lane compressor.
@@ -34,6 +38,8 @@ The **PAN** knob positions the lane in the stereo field. Centre (0) is the defau
 ### Mute and Solo
 
 **M** silences the lane by zeroing its mute gain node. **S** solos the lane: all other lanes are muted in the UI while solo is active. Both controls affect what the sidechain tap feeds downstream — a muted lane's tap still carries pre-mute signal so sidechain routing remains stable.
+
+The same two buttons also sit in the **clip editor's header**, next to ▶ and ●, acting on the lane whose clip is open — so you can drop a part out while editing it without going back to the mixer. They are the same two switches, not a second pair: muting from either place lights both, and with no clip open the header pair is disabled.
 
 ### 3-band EQ
 

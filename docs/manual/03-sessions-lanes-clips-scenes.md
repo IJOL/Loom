@@ -18,6 +18,14 @@ The session view is the main workspace in Loom. It organises everything you hear
 
 Lane names run along the top header row; row numbers (1, 2, 3 …) label the scenes down the left edge. Scenes launch buttons sit in the rightmost column. Each filled cell shows the clip's name (or its row number as a fallback) against the clip's pastel colour. **Click a lane header** to open that lane's instrument editor; once it is open, the **▸/▾ chevron** that appears on that header collapses and reopens the editor.
 
+### One lane is selected, everywhere
+
+The clip editor and the instrument controls below it always show the **same** lane. There are several ways to change which one that is — clicking a lane header, opening a clip, clicking a mixer column, or selecting the track from a MIDI controller — and all of them move both halves together.
+
+When you switch lanes, the clip editor follows to the **same row** on the new lane: if lane A's clip in row 2 is open and you select lane B, you get lane B's row-2 clip. If that slot is empty the editor closes, and **nothing is created** — an empty cell stays empty until you fill it deliberately. The instrument controls always follow, clip or no clip.
+
+There is one exception, and it is the one you want: opening a clip on another lane does not close the editor it just opened.
+
 A newly created instrument lane starts out empty — no placeholder clips are added to its column; you fill cells yourself. Audio and Sampler lanes created from a dropped WAV or loop place their clip in row 1 only. The grid always keeps at least one launchable scene available even when every lane is empty.
 
 Right-clicking grid elements opens a context menu. On a **lane header**: *Rename track*, *Edit instrument*, *Duplicate track*, *Stop track*, and *Delete track* (red). On a **scene cell**: *Rename scene*, *Launch scene*, *Duplicate scene*, *Capture playing -> scene*, *Add scene*, and *Delete scene* (red). On a **filled clip**: *Open editor*, *Play / Stop*, *Color* (a row of swatches), and *Delete clip* (red). On an **empty cell**: *Create clip* — on audio lanes this entry reads *Import audio (WAV)...*.

@@ -1,6 +1,8 @@
 # Editing Clips
 
-Every clip in Loom holds a sequence of notes. To edit those notes, click the **body** of any filled cell in the session grid — anywhere except the ▶ play icon or the ✕ delete cross in its corner (clicking ✕ deletes the clip outright, with no confirmation). You can also **right-click** a filled cell and choose **Open editor**. The inspector panel opens below the grid and the editor renders inside it. Closing the inspector does not stop playback — launching and editing are independent.
+Every clip in Loom holds a sequence of notes. The editor always belongs to the **selected lane** — the same one the instrument controls below it are showing, however you got there ([One lane is selected, everywhere](03-sessions-lanes-clips-scenes.md#one-lane-is-selected-everywhere)). Its header carries the clip's **▶** and **● Rec**, and the lane's **M** and **S**, so you can mute or solo the part you are editing without going back to the mixer.
+
+To edit those notes, click the **body** of any filled cell in the session grid — anywhere except the ▶ play icon or the ✕ delete cross in its corner (clicking ✕ deletes the clip outright, with no confirmation). You can also **right-click** a filled cell and choose **Open editor**. The inspector panel opens below the grid and the editor renders inside it. Closing the inspector does not stop playback — launching and editing are independent.
 
 Melodic lanes (TB-303, Subtractive, FM, Wavetable, Karplus, West Coast, Sampler) open the **piano-roll**. Drum-machine lanes and sampler lanes that have a drum kit loaded open the **drum-grid**. If you want to switch between the two views for a given clip, click the button in the inspector toolbar that names the *other* view — it reads **View as grid** while you are in the piano roll and **View as piano roll** while you are in the grid. Its tooltip states the important part: "Change how this clip is EDITED; it does not change the sound."
 
