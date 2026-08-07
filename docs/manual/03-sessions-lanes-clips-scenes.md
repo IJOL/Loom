@@ -18,6 +18,8 @@ The session view is the main workspace in Loom. It organises everything you hear
 
 Lane names run along the top header row; row numbers (1, 2, 3 …) label the scenes down the left edge. Scenes launch buttons sit in the rightmost column. Each filled cell shows the clip's name (or its row number as a fallback) against the clip's pastel colour. **Click a lane header** to open that lane's instrument editor; once it is open, the **▸/▾ chevron** that appears on that header collapses and reopens the editor.
 
+Folding it away is a standing choice about screen space, not a statement about which lane you are on: once collapsed it **stays** collapsed as you move between lanes, and unfolding shows whichever lane you are now on. (It used to spring open the moment you touched another lane.)
+
 ### One lane is selected, everywhere
 
 The clip editor and the instrument controls below it always show the **same** lane. There are several ways to change which one that is — clicking a lane header, opening a clip, clicking a mixer column, or selecting the track from a MIDI controller — and all of them move both halves together.

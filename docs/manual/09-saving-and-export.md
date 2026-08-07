@@ -127,4 +127,4 @@ Cancelling the dialog discards the take and writes nothing.
 
 ## Live build and GitHub Pages
 
-The public instance of Loom is deployed automatically to [https://ijol.github.io/Loom/](https://ijol.github.io/Loom/) — every push to `main` triggers a GitHub Actions workflow that runs `vite build --base=/Loom/` and deploys the result to GitHub Pages. The standard `npm run build` (base `/`) is for local development or self-hosting on any other path.
+The public instance of Loom is deployed automatically to [https://ijol.github.io/Loom/](https://ijol.github.io/Loom/) — every push to `main` triggers a GitHub Actions workflow that runs `npm run build:pages` and deploys the result to GitHub Pages. That script builds the plugins into `public/plugins/` before bundling, which matters more than it sounds: the engines and the insert effects are plugins loaded at runtime, so a build that skipped that step would deploy an app with no instruments in it. The standard `npm run build` does the same at base `/`, for local development or self-hosting on another path.

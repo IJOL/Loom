@@ -123,6 +123,8 @@ Each lane header — visible in both the session lane strip and the mixer — ca
 - **S (Solo)** — solos this lane, temporarily muting all other lanes. Multiple lanes can be soloed simultaneously; un-soloing the last one restores normal playback.
 - **VU meter** — a vertical level meter in the lane header shows the lane's live output RMS. It gives an at-a-glance read of which lanes are active and how loud each one is during a take or a performance.
 
+The same two buttons also sit in the clip editor's header, acting on the lane whose clip is open — the same switches, not a second pair, so muting from either place lights both. See [Mixing & FX](07-mixing-and-fx.md#mute-and-solo).
+
 Mute and solo states are saved with the session.
 
 ---
