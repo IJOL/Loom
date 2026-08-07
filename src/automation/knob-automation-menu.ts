@@ -18,7 +18,9 @@ import { addClipEnvelope } from '../session/clip-envelope-ops';
 
 export interface KnobMenuDeps {
   destinations: DestinationRegistry;
-  getMode: () => 'session' | 'performance';
+  /** 'session', 'performance', or a panel plugin's id. Only 'performance' is
+   *  treated specially here; anything else means "not the timeline". */
+  getMode: () => string;
   getState: () => SessionState;
   /** The session meter, for sizing a freshly created clip envelope. Required,
    *  not defaulted: a menu-created envelope sized 4/4 next to a panel-created

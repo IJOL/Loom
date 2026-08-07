@@ -651,6 +651,10 @@ const instrumentPresetDeps = engineSelectors.instrumentPresetDeps;
 // promise failing at the last inch. Preserves each select's current value.
 void pluginsReady.then(() => {
   refreshMelodicEngineOptions(engineSel, engineSel.value);
+  // Same reason, same moment: a PANEL plugin's tab and root are built from the
+  // panel registry, which is likewise empty until now. Wired here rather than
+  // inside createPerformanceFeature, which runs long before this resolves.
+  performanceFeature.mountPanels();
 });
 
 const fxUIDeps: FxUIDeps = {

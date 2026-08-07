@@ -10,6 +10,31 @@ The one draft that is still live — `specs/2026-07-26-architecture-symmetry-mas
 Recover the rationale for any shipped round from git history:
 `git log --diff-filter=D --name-only -- docs/superpowers/`.
 
+## WEAVE — what shipped and what did not
+
+The dynamic panel is in: the pure crossfade core, the three topologies, the six
+macros, the minimal harmony rule, the clip-length tools, the step painter, the
+`panel` plugin kind and the panel itself as a third view. Spec and plan are in
+`specs/2026-08-07-weave-panel-dinamico-design.md` and
+`plans/2026-08-07-weave-panel-dinamico.md`; read the plan's **amendment at the
+top** before its tasks 5–8, which describe an approach that was built and then
+reverted.
+
+Three slices are deliberately unfinished rather than faked:
+
+- **The weave state does not persist.** It lives in `performance-feature.ts`
+  rather than in `SessionState`, so it neither saves nor undoes. Its real home
+  is the session, and putting it there is the next slice — a module variable
+  somewhere less visible would have hidden the gap.
+- **The lane pads are drawn but not bound.** Each lane row shows a weaving
+  control; moving it does not yet drive that lane's `LaneWeaveConfig`, and the
+  gate is not yet handed to the scheduler per lane. Everything underneath is
+  written and tested (`createWeaveGate`, `laneWeights`, `blendLoops`) — what is
+  missing is the wiring, not the machinery.
+- **`Print to scene` is a button with no handler.** `printWeaveScene` from the
+  plan was not written; the spec's §6 still describes what it must do, including
+  the test that the printed scene plays back what was heard.
+
 ## Known code debts (not feature work, tracked nowhere else)
 
 Small, isolated, and kept here only so they are not silently forgotten. All

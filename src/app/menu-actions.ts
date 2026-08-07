@@ -17,8 +17,8 @@ export interface MenuActions {
   canUndo(): boolean;
   canRedo(): boolean;
 
-  setMode(mode: 'session' | 'performance'): void;
-  getMode(): 'session' | 'performance';
+  setMode(mode: string): void;
+  getMode(): string;
   togglePerfDiagnostics(): void;
   isPerfOpen(): boolean;
 

@@ -16,7 +16,10 @@ export type AutomationTarget =
 
 export interface ResolveTargetInput {
   paramId: string;
-  mode: 'session' | 'performance';
+  /** The active view. Only 'performance' is treated specially — it is the one
+   *  that owns a timeline — so a panel plugin's id behaves like 'session', which
+   *  is what a user editing a clip from anywhere else expects. */
+  mode: string;
   state: SessionState;
   laneStates: ReadonlyMap<string, LanePlayState>;
   /** Curve param ids already present in the arrangement (lane + global). */

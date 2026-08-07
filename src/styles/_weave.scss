@@ -1,0 +1,200 @@
+// WEAVE — the panel that weaves the scene.
+//
+// The plugin arranges the host's controls inside its own zone; this is what
+// those arrangements look like. Everything animated reads one custom property,
+// --weave-pulse, which the panel's single rAF loop drives from the AUDIO clock.
+// One source means the pulse bar, the lane LEDs and the rack glow can never
+// disagree about where the beat is.
+
+.weave-rack {
+  --weave-pulse: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.weave-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.weave-logo {
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.2em;
+  color: var(--amber);
+  // The logo breathes with the bar. Interpolating the glow radius rather than
+  // the colour keeps it readable at every point of the pulse.
+  text-shadow: 0 0 calc(6px + 10px * var(--weave-pulse)) var(--amber-glow);
+}
+
+// A HELD button, and it has to LOOK held — a momentary gesture with no visible
+// state is indistinguishable from a broken one.
+.weave-surge {
+  margin-left: auto;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  transition: background-color 60ms linear, color 60ms linear, box-shadow 60ms linear;
+
+  &.held {
+    background: var(--red);
+    border-color: var(--red);
+    color: var(--bg);
+    box-shadow: 0 0 14px var(--red-soft);
+  }
+}
+
+.weave-print {
+  margin-left: 0;
+}
+
+// ── the pulse bar ──────────────────────────────────────────────────────────
+// Sixteen cells, one lit at a time. It is the one thing on screen that says at
+// a glance whether the weave is moving or the transport is simply stopped.
+.weave-pulse {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  gap: 3px;
+
+  i {
+    height: 10px;
+    border-radius: 1px;
+    background: var(--surface-3);
+    box-shadow: inset 0 0 0 1px var(--border);
+    transition: background-color 90ms linear, box-shadow 90ms linear;
+  }
+
+  // Every fourth cell sits slightly brighter even when unlit, so the bar can be
+  // counted without waiting for the beat to arrive.
+  i.accent { background: var(--surface-2); }
+
+  i.on {
+    background: var(--amber);
+    box-shadow: 0 0 10px var(--amber-soft);
+  }
+}
+
+// ── master flow ────────────────────────────────────────────────────────────
+.weave-flow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.weave-label {
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.weave-flow input[type='range'] { flex: 1 1 0; min-width: 0; }
+
+.weave-readout {
+  font-variant-numeric: tabular-nums;
+  color: var(--amber);
+  font-weight: 700;
+  min-width: 3.4em;
+  text-align: right;
+}
+
+// ── lanes ──────────────────────────────────────────────────────────────────
+.weave-lanes { display: flex; flex-direction: column; gap: 5px; }
+
+.weave-lane {
+  display: grid;
+  // The weaving control is a CONTROL, not a canvas: given 1fr it swallowed the
+  // row and turned a five-lane list into a page of boxes. A fixed, modest width
+  // keeps the row readable and leaves room for what comes next in it.
+  grid-template-columns: 14px 90px 110px 220px 1fr;
+  gap: 10px;
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 2px;
+  padding: 6px 8px;
+}
+
+// Shorter here than the control's own default: a lane row is a strip, and 54px
+// of pad per lane stacks into something you have to scroll.
+.weave-lane .pad2d {
+  height: 34px;
+  border-color: var(--border);
+}
+
+.weave-lane-name { font-weight: 700; letter-spacing: 0.08em; font-size: 11px; }
+.weave-lane-engine { font-size: 10.5px; color: var(--text-dim); }
+
+.weave-led {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  box-shadow: inset 0 0 0 1px var(--border);
+  // Fast in, slow out: a lamp that fades looks like a hit, one that fades in
+  // looks like a bug.
+  transition: background-color 40ms linear, box-shadow 260ms ease-out;
+}
+
+.weave-led.hit {
+  background: var(--green);
+  box-shadow: 0 0 9px rgba(124, 179, 66, 0.75);
+}
+
+.weave-empty {
+  color: var(--text-faint);
+  font-size: 11.5px;
+  margin: 0;
+  padding: 8px;
+}
+
+// ── macros ─────────────────────────────────────────────────────────────────
+.weave-macros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.weave-macro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+
+  svg { width: 58px; height: 58px; cursor: ns-resize; touch-action: none; }
+  svg:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; border-radius: 50%; }
+
+  .mname {
+    font-size: 9px;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: center;
+  }
+
+  .mval { font-size: 10px; font-variant-numeric: tabular-nums; color: var(--amber); }
+}
+
+.knob-track { fill: none; stroke: var(--surface-3); stroke-width: 5; stroke-linecap: round; }
+.knob-arc { fill: none; stroke-width: 5; stroke-linecap: round; }
+.knob-hub { fill: var(--surface-2); stroke: var(--border); }
+.knob-tick { stroke: var(--text); stroke-width: 2; stroke-linecap: round; }
+
+// A panel that declared itself but shipped no interface says so here rather
+// than leaving an empty tab.
+#panel-view-roots > div { padding: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .weave-pulse i,
+  .weave-led { transition: none; }
+  .weave-logo { text-shadow: 0 0 8px var(--amber-glow); }
+}

@@ -23,7 +23,10 @@ export interface SavedStateV3 {
   masterShaper?: import('../core/master-shaper').MasterShaperState;
   sessionState: SessionState;
   /** Performance view — optional, absent in older saves. */
-  mode?: 'session' | 'performance';
+  /** 'session', 'performance', or the id of a panel plugin. A save made with a
+   *  panel installed can name a mode this build has never heard of, so the
+   *  restore side falls back rather than trusting it. */
+  mode?: string;
   arrangement?: ArrangementState;
 }
 
@@ -53,9 +56,9 @@ export interface SavedStateV3Deps {
   masterShaper?: import('../core/master-shaper').MasterShaper;
   /** Performance view persistence — optional; when absent the take is not
    *  saved/restored (older callers keep working unchanged). */
-  getMode?: () => 'session' | 'performance';
+  getMode?: () => string;
   getArrangement?: () => ArrangementState;
-  setMode?: (m: 'session' | 'performance') => void;
+  setMode?: (m: string) => void;
   setArrangement?: (a: ArrangementState) => void;
 }
 

@@ -1,0 +1,25 @@
+{
+  "id": "weave",
+  "name": "Weave",
+  "version": "1.0.0",
+  "loomApi": 1,
+  "author": "Loom",
+  "main": "main.js",
+  "components": [
+    {
+      "kind": "panel",
+      "id": "weave",
+      "name": "Weave",
+      "panel": { "placement": "main-view" },
+      "params": [
+        { "id": "flow", "label": "Flow", "kind": "continuous", "min": 0, "max": 1, "default": 0 },
+        { "id": "density", "label": "Density", "kind": "continuous", "min": 0, "max": 1, "default": 0.5 },
+        { "id": "energy", "label": "Energy", "kind": "continuous", "min": 0, "max": 1, "default": 0.5 },
+        { "id": "darkness", "label": "Darkness", "kind": "continuous", "min": 0, "max": 1, "default": 0.5 },
+        { "id": "space", "label": "Space", "kind": "continuous", "min": 0, "max": 1, "default": 0 },
+        { "id": "motion", "label": "Motion", "kind": "continuous", "min": 0, "max": 1, "default": 0 },
+        { "id": "styleMix", "label": "Style mix", "kind": "continuous", "min": 0, "max": 1, "default": 0 }
+      ]
+    }
+  ]
+}

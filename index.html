@@ -324,6 +324,9 @@
       </div>
       </div><!-- #session-view-root -->
       <div id="performance-view-root" hidden></div>
+      <!-- One root per registered panel plugin is created here at boot by
+           panel-views.ts; this is only the anchor it appends to. -->
+      <div id="panel-view-roots"></div>
     </div>
 
     <div id="save-manager-modal" class="save-manager-modal" hidden>

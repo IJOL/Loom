@@ -66,6 +66,16 @@ function assertValidManifest(m) {
       if (typeof c.fx.color !== 'string' || !c.fx.color) {
         throw new Error(`plugin.json: component ${c.id} needs fx.color`);
       }
+    } else if (c.kind === 'panel') {
+      // A panel owns a top-level view instead of a lane, so it declares neither
+      // polyphony nor capabilities — only where it hangs. Checked here as well
+      // as at load time so an author finds out at build, not at boot.
+      if (!c.panel || typeof c.panel !== 'object') {
+        throw new Error(`plugin.json: component ${c.id} needs a panel object`);
+      }
+      if (c.panel.placement !== 'main-view') {
+        throw new Error(`plugin.json: component ${c.id} panel.placement must be main-view`);
+      }
     } else {
       throw new Error(`plugin.json: component ${c.id} has unknown kind ${c.kind}`);
     }

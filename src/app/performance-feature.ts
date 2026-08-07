@@ -31,6 +31,9 @@ import { stopAll, type RecHooks } from '../session/session-runtime';
 import { html } from 'lit-html';
 import { renderElement } from '../core/lit-fragment';
 import { renderPerformanceView } from '../performance/performance-ui';
+import { wirePanelViews, type PanelViewHandle } from './panel-views';
+import { createPanelContext } from './panel-context';
+import { defaultWeaveState } from '../weave/weave-state';
 import { buildMiniMaster } from '../core/master-strip';
 import { createLevelMeter } from '../core/level-meter';
 import { arrangementFromSession } from '../performance/arrangement-from-session';
@@ -79,8 +82,11 @@ export interface PerformanceFeature {
   arrangement: ArrangementState;
   arrangementPlayState: ArrangementPlayState;
   recHooks: RecHooks;
-  getMode: () => 'session' | 'performance';
-  setMode: (m: 'session' | 'performance') => void;
+  /** 'session', 'performance', or the id of a registered panel plugin. It is a
+   *  string rather than a union because the host cannot know which panels
+   *  exist until the plugins have loaded. */
+  getMode: () => string;
+  setMode: (m: string) => void;
   setArrangement: (a: ArrangementState) => void;
   refreshPerformanceView: () => void;
   /** Called from inside the sequencer's session tick — also fires
@@ -103,6 +109,10 @@ export interface PerformanceFeature {
    *  Exposed whole (not beforeEdit/commitArrUndo) so callers outside this file
    *  (the knob context menu) can't get the undo-snapshot sequencing wrong. */
   addCurve: (paramId: string) => void;
+  /** Build a tab and a root for every registered panel plugin. Call AFTER
+   *  loadPlugins() resolves — before that the registry is empty and the tabs
+   *  would be built from nothing. */
+  mountPanels: () => void;
 }
 
 export function createPerformanceFeature(deps: PerformanceFeatureDeps): PerformanceFeature {
@@ -112,7 +122,8 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   const arrangement = emptyArrangementState(seq.bpm);
   const arrangementPlayState = createArrangementPlayState();
   const recHooks: RecHooks = { rec, arrangement };
-  let mode: 'session' | 'performance' = 'session';
+  // A mode is 'session', 'performance', or the id of a registered panel plugin.
+  let mode: string = 'session';
 
   // The session history deliberately excludes the arrangement; give the arrangement
   // its OWN undo stack so timeline edits (and length/brace) are undoable without
@@ -304,7 +315,13 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     });
   }
 
-  function setMode(next: 'session' | 'performance') {
+  function setMode(requested: string) {
+    // A save made with a panel plugin installed names a mode this build may
+    // never have heard of. Honouring it blindly would hide every view and leave
+    // a blank screen, so an unknown mode falls back to Session.
+    const known = requested === 'session' || requested === 'performance'
+      || panelViews.ids.includes(requested);
+    const next = known ? requested : 'session';
     if (mode === next) return;
     // Global transport: carry the shared song anchor across the view switch so
     // neither view resets to 0. Done BEFORE the stop/silence below (which only
@@ -349,12 +366,40 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     const perfRoot = document.getElementById('performance-view-root');
     if (sessionRoot) sessionRoot.hidden = next !== 'session';
     if (perfRoot) perfRoot.hidden = next !== 'performance';
+    // A panel plugin is a third kind of view. It hides and shows like the other
+    // two rather than being rebuilt, because it holds live state.
+    panelViews.show(next);
     if (next === 'performance') refreshPerformanceView();
   }
+
+  // Built AFTER the plugins have loaded, so their buttons exist before this
+  // listener sweep picks them up.
+  // The weave lives here for now. Its real home is the SessionState, so it
+  // saves and undoes like everything else — that is the one slice of this
+  // feature still outstanding, and it is deliberately not faked with a module
+  // variable somewhere less visible.
+  const weave = defaultWeaveState();
+
+  // Deliberately NOT wired here. loadPlugins() resolves long after this
+  // function runs, so a registry read now would find nothing and the tabs would
+  // be built from an empty list. main.ts calls mountPanels() once the plugins
+  // are in — the same two-step every other plugin-fed surface uses.
+  let panelViews: PanelViewHandle = { ids: [], show: () => {}, dispose: () => {} };
+
+  function mountPanels(): void {
+    panelViews.dispose();
+    panelViews = wirePanelViews(
+      (id) => setMode(id),
+      (refresh) => createPanelContext({ sessionHost, seq, ctx, weave, refresh }),
+    );
+  }
+
   document.querySelectorAll('#mode-toggle .mode-btn').forEach((b) => {
-    b.addEventListener('click', () => {
-      setMode((b as HTMLElement).dataset.mode as 'session' | 'performance');
-    });
+    const m = (b as HTMLElement).dataset.mode;
+    // A panel's own button already got its listener from wirePanelViews;
+    // adding a second here would switch twice per click.
+    if (!m || panelViews.ids.includes(m)) return;
+    b.addEventListener('click', () => setMode(m));
   });
 
   document.addEventListener('keydown', (e) => {
@@ -475,6 +520,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     setMode,
     setArrangement,
     refreshPerformanceView,
+    mountPanels,
     onLookahead,
     onPlay,
     onStop,

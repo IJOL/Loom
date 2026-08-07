@@ -166,6 +166,41 @@ export interface PanelDeclaration {
   placement: 'main-view';
 }
 
+/** One lane, as a panel sees it. Deliberately a flat, serialisable summary:
+ *  a panel's code is compiled separately and cannot hold our session objects. */
+export interface PanelLane {
+  id: string;
+  name: string;
+  engineId: string;
+  presetId?: string;
+}
+
+/** What the host hands a panel when it mounts.
+ *
+ *  A panel's main.js cannot import anything of ours — our modules are bundled
+ *  and hashed — so everything it needs to read or change arrives through this
+ *  one object. Keeping it small is deliberate: each addition is a promise the
+ *  host has to keep across versions. */
+export interface PanelContext {
+  /** The lanes currently in the session, in order. */
+  lanes(): PanelLane[];
+  /** A macro's current value, 0..1. Unknown ids read 0. */
+  macro(id: string): number;
+  /** Move a macro. Goes through the same door automation uses, so a panel
+   *  cannot write somewhere automation could not. */
+  setMacro(id: string, value: number): void;
+  /** Re-render the panel: the host calls the mount's template again. */
+  refresh(): void;
+  /** Where the transport is inside the current bar, 0..1, or -1 when stopped.
+   *
+   *  Exposed so a panel can animate to the music without the host prescribing
+   *  how it should look. Read it from requestAnimationFrame — it is a getter,
+   *  not an event, so a panel that never animates costs nothing. */
+  barPhase(): number;
+  /** Whether the transport is running. */
+  isPlaying(): boolean;
+}
+
 export type ComponentManifest =
   | (ComponentManifestBase & { kind: 'panel'; panel: PanelDeclaration })
   | (ComponentManifestBase & { kind: 'engine'; polyphony: 'mono' | 'poly';
@@ -224,6 +259,35 @@ export interface LoomApi {
    *  for anything else is refused rather than registered under a name nothing
    *  declared. */
   registerFx(id: string, create: import('./fx').FxFactory): void;
+  /** Hand the host the function that fills a panel's DOM zone. Same two-halves
+   *  arrival an fx has, for the same reason: a function cannot be JSON. The id
+   *  must match a `kind: 'panel'` component in this plugin's manifest. */
+  registerPanel(
+    id: string,
+    mount: (host: HTMLElement, ctx: PanelContext) => () => void,
+  ): void;
+  /** The host's control catalogue.
+   *
+   *  A param is one number; a two-axis pad, a cursor over a list and a row of
+   *  bars are not. Rather than teaching the manifest to declare those shapes —
+   *  which was tried and reverted, because a manifest can describe params but
+   *  not an ARRANGEMENT — the host hands over the factories and the plugin
+   *  places them in its own zone. The host still owns the drawing, so a plugin
+   *  can arrange these but cannot paint their internals. */
+  readonly controls: {
+    pad2d(opts: {
+      x: number; y: number; label?: string;
+      onChange(x: number, y: number): void;
+    }): { el: HTMLElement; set(x: number, y: number): void };
+    queue(opts: {
+      length: number; value: number; label?: string;
+      onChange(v: number): void;
+    }): { el: HTMLElement; set(v: number): void };
+    steps(opts: {
+      values: number[]; label?: string;
+      onChange(index: number, value: number): void;
+    }): { el: HTMLElement; set(values: number[]): void };
+  };
 }
 
 export type RendererFactory = (

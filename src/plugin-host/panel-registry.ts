@@ -6,11 +6,14 @@
 // registry is the one place that knows which panels exist, so the view tabs can
 // be built from data rather than from a hand-written list.
 
-import type { EngineParamSpec } from '@loom/plugin-sdk';
+import type { EngineParamSpec, PanelContext } from '@loom/plugin-sdk';
 
 /** What a panel does with the zone it is given: fill it, and hand back its own
- *  teardown. The host never inspects what went inside. */
-export type PanelMount = (host: HTMLElement) => () => void;
+ *  teardown. The host never inspects what went inside.
+ *
+ *  Everything the panel needs to read or change arrives in `ctx`, because its
+ *  code is compiled separately and cannot import ours. */
+export type PanelMount = (host: HTMLElement, ctx: PanelContext) => () => void;
 
 export interface PanelEntry {
   id: string;

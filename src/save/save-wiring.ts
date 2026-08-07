@@ -40,9 +40,9 @@ export interface SaveWiringDeps {
   history: HistoryController<SavedStateV3>;
   /** Performance view persistence (optional). Wired for save/load only — NOT
    *  for undo/redo snapshots (recording a take is not an undoable session edit). */
-  getMode?: () => 'session' | 'performance';
+  getMode?: () => string;
   getArrangement?: () => ArrangementState;
-  setMode?: (m: 'session' | 'performance') => void;
+  setMode?: (m: string) => void;
   setArrangement?: (a: ArrangementState) => void;
   /** Called after a save file is applied (load/autosave). Used to resync the
    *  AutoHistory baseline so the loaded state is the new clean baseline. */
