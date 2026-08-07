@@ -9,7 +9,9 @@ Every lane has two signal-processing layers that sit *before* its engine's audio
 
 ## Modulators
 
-Open any lane's engine editor and scroll to the **MODULATORS** section. Press **+ LFO** or **+ ADSR** to add a modulator; you can add as many as you need. Each modulator appears as a card with its own controls, an **ON / OFF** toggle, and a **×** remove button.
+Open any lane's engine editor and scroll to the **MODULATORS** section. Press **+ LFO**, **+ ADSR** or **+ S&H** to add a modulator; you can add as many as you need. Each modulator appears as a card with its own controls, an **ON / OFF** toggle, and a **×** remove button.
+
+That row of buttons is not a fixed list — it is built from whatever modulators are registered, so a plugin that ships one adds its own button. **S&H is exactly that**: a modulator that arrives as an external plugin rather than from Loom's own source, and behaves like any other.
 
 **The section is not empty to begin with.** Every engine arrives with its own modulators already wired, and on some engines they are load-bearing rather than decorative:
 
@@ -53,6 +55,19 @@ An ADSR produces a classic Attack–Decay–Sustain–Release envelope that fire
 | S (Sustain) | 0 – 100 % | 70 % |
 | R (Release) | 1 ms – 8 s | 300 ms |
 
+### S&H (sample & hold)
+
+S&H latches a new random value at a steady rate and **holds** it until the next one. Where the LFO glides, this jumps: it is the stepped, jittery movement of a classic modular random source. Aim it at a filter cutoff for burbling per-step colour, at pitch for a small amount of analogue drift, or at a send for a randomly appearing effect.
+
+| Control | Range | Default |
+|---------|-------|---------|
+| Rate | 0.1 – 20 Hz | 6 Hz |
+| Bipolar | Unipolar / Bipolar | Bipolar |
+
+**Bipolar** swings both ways around the destination's current value; **Unipolar** only adds. Like the LFO it can run shared across the lane or per voice.
+
+The steps are random but not *unrepeatable*: the value of a given step is derived from its index, so the same passage lands identically every time — the offline render and what you heard live agree exactly.
+
 ### Destinations and depth
 
 Below each modulator card's controls is a destination list. To route the modulator:
@@ -68,7 +83,7 @@ Remove a destination with its **×** button. Remove the whole modulator with the
 
 ## Note FX
 
-The **NOTE FX** section sits directly below MODULATORS. Note FX processors intercept the lane's note stream before it reaches the engine, transforming which notes are played and when. Add a processor with **+ Arp** or **+ Chord**. Each processor shows an **ON / OFF** button and a **×** remove button.
+The **NOTE FX** section sits directly below MODULATORS. Note FX processors intercept the lane's note stream before it reaches the engine, transforming which notes are played and when. Add a processor with **+ Arp**, **+ Chord** or **+ Random**. Each processor shows an **ON / OFF** button and a **×** remove button.
 
 Note FX are per-lane and persist with the lane's engine state. Loading a demo resets them to the demo's configuration.
 
@@ -98,6 +113,24 @@ The Chord processor expands each incoming note into a chord built on that note a
 | OCT | –2 to +2 | Only with OCT SHIFT on: transposes the whole chord, root included, that many octaves. |
 
 All notes in the chord share the original note's timing and gate length.
+
+### Random
+
+The Random processor introduces controlled uncertainty into a part — the humanising pass that keeps a loop from sounding like a loop. It is built around **chance sliders**: each of the four things it can vary has its own 0–1 probability, and **every one of them starts at 0**, so adding the processor changes nothing until you ask it to. Turn one up and it intervenes on that fraction of notes.
+
+| Control | Range / Options | Description |
+|---------|-----------------|-------------|
+| CHANCE | 0–1 (default 0) | How often the **pitch** is moved |
+| CHOICES | 1–24 (default 6) | How many alternative pitches are in the pool |
+| INTERVAL | 1–12 semitones (default 1) | The spacing between those choices |
+| MODE | random / alt | *random* picks freely; *alt* walks round-robin through the pool, which is more even and less clumpy |
+| SIGN | add / sub / bi (default bi) | Whether it may move up only, down only, or both ways |
+| SCALE | ON / OFF (**on** by default) | Snaps every generated pitch to a key and scale, so the randomness stays in the song. Switching it on reveals **ROOT** and **SCALE** selects to override the ones the song is using |
+| VEL CHANCE / VEL RND | 0–1 (0 / 0.3) | How often, and how far, the **velocity** varies. This is the one to reach for first: a little velocity variation is most of what "played by a human" means |
+| DUR CHANCE / DUR RND | 0–1 (0 / 0.3) | How often, and how far, the **gate length** varies (at 1, between half and double) |
+| DROP | 0–1 (default 0) | How often a note is **silenced** outright — the fastest way to thin a dense pattern into something with space in it |
+
+The randomness is reseeded each time the transport starts, and stable within one run: a pass you liked stays the way it was until you stop and start again.
 
 ---
 

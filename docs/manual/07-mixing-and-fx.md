@@ -138,7 +138,7 @@ The master compressor is bypassed by default. Enable it for glue and loudness co
 
 ### INSERTS — the master rack
 
-Below MASTER COMP, the INSERTS section holds the master insert chain. Add a slot from the picker and pick its type. The **same eleven plugin types** are available in every rack — per lane, per send, and here on the master:
+Below MASTER COMP, the INSERTS section holds the master insert chain. Add a slot from the picker and pick its type. The **same fifteen plugin types** are available in every rack — per lane, per send, and here on the master:
 
 **Filter (multifilter)**
 - Type: LP / HP / BP / Notch
@@ -169,7 +169,7 @@ There is no Bypass among them — to A/B an insert, use the slot's own bypass to
 - Ceil: −30 to 0 dB — the level it will not exceed
 - Rel: 0.001–0.5 s — how quickly it lets go
 
-**Tremolo (Trem/Gate)** — an LFO opening and closing the volume. The oldest modulation effect there is: slow and shallow it breathes, fast and deep it chops the sound into a rhythm of its own. Lovely on pads, electric-piano parts and sustained chords. It is also the trance gate: **Square shape + a 1/16 Sync + a little Smth** is that sound, which is why there is no separate gate effect.
+**Tremolo (Trem/Gate)** — an LFO opening and closing the volume. The oldest modulation effect there is: slow and shallow it breathes, fast and deep it chops the sound into a rhythm of its own. Lovely on pads, electric-piano parts and sustained chords. It is also the trance gate: **Square shape + a 1/16 Sync + a little Smth** is that sound. (That is a *rhythmic* gate, driven by the clock. The **Gate** insert below is the other kind — driven by the signal's own level.)
 
 - Rate: 0.1–12 Hz — how fast it pulses, used when Sync is Free
 - Depth: 0–1 — how far it closes between pulses (at 1 it cuts to silence)
@@ -199,6 +199,31 @@ There is no Bypass among them — to A/B an insert, use the slot's own bypass to
 - Tone: 200–20 000 Hz — a lowpass for the lo-fi dullness
 - Mix: 0–1 — dry/wet blend
 - Dith: 0–2 — noise summed in *before* the bit reduction, scaled to the step size. It trades the gritty, signal-locked distortion of low bit depths for an even hiss, which usually sounds better on quiet material
+
+**Auto-Wah** — a bandpass filter whose frequency follows how loud the signal is, so the sound opens up on every transient and closes as it decays. It is the funk-guitar wah pedal with your playing on the treadle instead of your foot; on a bassline or a clav it produces the "talking" quality no static filter gets.
+- Sens: 0–1 — how strongly the level moves the filter (default 0.6)
+- Range: 0–4800 ¢ — how far it travels, in cents above Base (default 2400, two octaves)
+- Base: 80–2000 Hz — the resting frequency it sits at when nothing is playing (default 300)
+- Atk: 1–200 ms / Rel: 10–500 ms — how quickly the follower opens and lets go. Short attack for percussive quack, long release for a slow sag
+- Q: 0.5–12 — how narrow the peak is; high Q is where the vowel sound lives
+- Mix: 0–1 — dry/wet blend
+
+**Gate** — the opposite of the compressor: below the threshold it turns the signal *down*. Use it to clean the silence between hits — kill the bleed on a sampled drum loop, cut the tail of a reverb-soaked lane, or chop a sustained pad into stabs.
+- Thr: −60 to 0 dB — the level below which it closes (default −30)
+- Range: −60 to 0 dB — how far down it closes. At −60 it silences; at −12 it just ducks, which sounds far more natural
+- Atk: 0.5–100 ms — how fast it opens. Too slow and it eats the transient
+- Hold: 0–500 ms — how long it stays open after the level drops back, which stops it chattering on a wobbling signal
+- Rel: 10–1000 ms — how gradually it closes
+
+**Ring (ring modulator)** — multiplies the signal by a sine wave, which replaces every partial with a pair at the sum and difference frequencies. The result is inharmonic by construction: bell-like and metallic at high Freq, a tremolo-ish shudder at low Freq, and unrecognisably alien in between. A blunt instrument, and the fastest route out of anything that sounds too clean.
+- Freq: 20–4000 Hz (exponential) — the carrier. Below ~30 Hz it reads as amplitude wobble rather than pitch
+- Mix: 0–1 — dry/wet blend. Keep the dry signal in to stay musical
+
+**Width** — a stereo widener: it scales the side channel against the mid, and can wobble that scale with an LFO. Below 1 it collapses toward mono, above 1 it exaggerates the sides.
+- Width: 0–2 — 0 is mono, 1 is untouched, 2 is double the side signal (default 1)
+- Rate: 0.05–8 Hz and Depth: 0–1 — an optional LFO on the width. Depth defaults to 0, so it is a static widener until you ask for movement
+- Sync: Free, 1/1, 1/2, 1/2., 1/2t, 1/4, 1/4t — lock that LFO to the project tempo
+- **Check it in mono.** Pushing Width above 1 works by exaggerating what the two channels do *not* share, and everything you add that way cancels when the mix is summed.
 
 Slots in the chain are ordered in series: the output of each slot feeds the input of the next. Each slot has a bypass toggle so you can A/B it without removing it. Individual slots can be removed; adding the same type multiple times is allowed.
 
