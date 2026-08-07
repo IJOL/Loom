@@ -352,7 +352,7 @@ worklet"** — eso sería otra rebanada, con su propia clase de processor.
 | insert | qué hace | mandos |
 | --- | --- | --- |
 | `autowah` | un seguidor de nivel gobierna la frecuencia de un pasa-banda | sens, range, attack, release, Q, mix |
-| `gate` | el mismo seguidor abre o cierra una ganancia | threshold, attack, hold, release, range |
+| `gate` | el mismo seguidor abre o cierra una ganancia | threshold, attack, ~~hold~~, release, range |
 | `width` | medio/lados para ensanchar + paseo izquierda-derecha con oscilador | width, rate, depth, sync |
 | `ringmod` | un oscilador multiplicando la señal | freq, mix |
 
@@ -376,6 +376,31 @@ Dos reglas concretas, ambas por escarmiento de este repo:
 
 El `ringmod` es el más pequeño de los cuatro (dos nodos) y hace de **plugin de
 ejemplo mínimo** en la documentación del SDK.
+
+#### ⛔ CONFIRMAR: el `gate` se ha entregado SIN `hold`
+
+Esta tabla pedía cinco mandos para el gate y se han entregado cuatro. Falta
+`hold`, y no por descuido: **no es expresable con nodos nativos**.
+
+`hold` es «una vez que la señal baja del umbral, mantén la puerta abierta N
+milisegundos ANTES de empezar a cerrar». Eso es un temporizador con estado por
+muestra. El `attack` y el `release` sí se pueden hacer nativos —dos cadenas de
+suavizado y un máximo, ver el seguidor— porque son filtros; un retardo de
+disparo no lo es. Las salidas posibles son tres:
+
+1. **Dejarlo fuera** (lo entregado). El gate tiene ataque y caída reales; el
+   `release` largo cubre buena parte de lo que se pide a un `hold`.
+2. **Meter el gate en el worklet.** Resuelve `hold` y abre la puerta a inserts
+   con DSP por muestra — que es explícitamente otra rebanada.
+3. **Falsearlo** con un `ConstantSource` y rampas programadas por evento. Sería
+   un `hold` que sólo funciona si algo del host observa el cruce del umbral, y
+   nada lo observa: el detector vive en el grafo, no en JavaScript.
+
+Elegida la 1 y escrita aquí en vez de callada, porque recortar el alcance de un
+diseño aprobado es decisión de Nacho, no mía.
+
+*(Aparte, `range: 0` significa **sin atenuación** y `-60` cierre total — el
+convenio de hardware. El plan lo había escrito al revés.)*
 
 *(Nota: `cb4c1df`, ya en `main`, añadió un modulador en anillo como fuente del
 mezclador **dentro** del motor Subtractive. No es el mismo trabajo:

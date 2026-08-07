@@ -48,21 +48,54 @@ function createEnvelopeFollower(ctx, opts) {
   const rectify = ctx.createWaveShaper();
   rectify.curve = absCurve();
   rectify.oversample = "none";
-  const smooth1 = ctx.createBiquadFilter();
-  const smooth2 = ctx.createBiquadFilter();
-  for (const f of [smooth1, smooth2]) {
-    f.type = "lowpass";
-    f.Q.value = 0.5;
-  }
+  const mkChain = () => {
+    const a = ctx.createBiquadFilter();
+    const b = ctx.createBiquadFilter();
+    for (const f of [a, b]) {
+      f.type = "lowpass";
+      f.Q.value = 0.5;
+    }
+    a.connect(b);
+    return { head: a, tail: b };
+  };
+  const fast = mkChain();
+  const slow = mkChain();
+  rectify.connect(fast.head);
+  rectify.connect(slow.head);
+  const sum = ctx.createGain();
+  const diff = ctx.createGain();
+  const negate = ctx.createGain();
+  negate.gain.value = -1;
+  fast.tail.connect(sum);
+  slow.tail.connect(sum);
+  fast.tail.connect(diff);
+  slow.tail.connect(negate).connect(diff);
+  const ABS_HEADROOM = 4;
+  const preAbs = ctx.createGain();
+  preAbs.gain.value = 1 / ABS_HEADROOM;
+  const absShape = ctx.createWaveShaper();
+  absShape.curve = absCurve();
+  absShape.oversample = "none";
+  const postAbs = ctx.createGain();
+  postAbs.gain.value = ABS_HEADROOM;
+  diff.connect(preAbs).connect(absShape).connect(postAbs);
+  const max = ctx.createGain();
+  max.gain.value = 0.5;
+  sum.connect(max);
+  postAbs.connect(max);
   const scale = ctx.createGain();
   scale.gain.value = Math.PI / 2;
-  input.connect(rectify).connect(smooth1).connect(smooth2).connect(scale);
+  input.connect(rectify);
+  max.connect(scale);
   let attackMs = opts.attackMs;
   let releaseMs = opts.releaseMs;
   const apply = () => {
-    const hz = Math.max(cutoffFor(attackMs), cutoffFor(releaseMs));
-    smooth1.frequency.value = hz;
-    smooth2.frequency.value = hz;
+    const aHz = cutoffFor(attackMs);
+    const rHz = cutoffFor(releaseMs);
+    fast.head.frequency.value = aHz;
+    fast.tail.frequency.value = aHz;
+    slow.head.frequency.value = rHz;
+    slow.tail.frequency.value = rHz;
   };
   apply();
   return {
@@ -76,9 +109,24 @@ function createEnvelopeFollower(ctx, opts) {
       releaseMs = ms;
       apply();
     },
-    smoothingHz: () => smooth1.frequency.value,
+    smoothingHz: () => ({ attack: fast.head.frequency.value, release: slow.head.frequency.value }),
     dispose: () => {
-      for (const n of [input, rectify, smooth1, smooth2, scale]) {
+      for (const n of [
+        input,
+        rectify,
+        fast.head,
+        fast.tail,
+        slow.head,
+        slow.tail,
+        sum,
+        diff,
+        negate,
+        preAbs,
+        absShape,
+        postAbs,
+        max,
+        scale
+      ]) {
         try {
           n.disconnect();
         } catch {
@@ -89,10 +137,11 @@ function createEnvelopeFollower(ctx, opts) {
 }
 
 // plugins/gate/main.ts
-var CURVE_POINTS = 1025;
+var CURVE_POINTS = 4097;
+var CURVE_STEP = 2 / (CURVE_POINTS - 1);
 function gateCurve(thrLin, floor) {
   const c = new Float32Array(CURVE_POINTS);
-  const knee = Math.max(1e-4, thrLin * 0.1);
+  const knee = Math.max(2 * CURVE_STEP, thrLin * 0.1);
   for (let i = 0; i < CURVE_POINTS; i++) {
     const x = Math.abs(i * 2 / (CURVE_POINTS - 1) - 1);
     const t = Math.min(1, Math.max(0, (x - (thrLin - knee)) / (2 * knee)));

@@ -37,6 +37,9 @@ Loom.registerFx("width", (ctx) => {
   widthGain.connect(merge, 0, 0);
   mid.connect(merge, 0, 1);
   sideInv.connect(merge, 0, 1);
+  let width = 1, rate = 0.5, depth = 0, syncIdx = 0;
+  let currentBpm = 120;
+  let shadowRate = 0.5;
   const panner = ctx.createStereoPanner();
   panner.pan.value = 0;
   const lfo = ctx.createOscillator();
@@ -46,16 +49,18 @@ Loom.registerFx("width", (ctx) => {
   panDepth.gain.value = 0;
   lfo.connect(panDepth).connect(panner.pan);
   lfo.start();
-  merge.connect(panner).connect(output);
-  let width = 1, rate = 0.5, depth = 0, syncIdx = 0;
-  let currentBpm = 120;
-  let shadowRate = 0.5;
+  const panTrim = ctx.createGain();
+  const applyPanTrim = () => {
+    panTrim.gain.value = 1 / (1 + depth * 0.5);
+  };
+  merge.connect(panner).connect(panTrim).connect(output);
   const applyRate = () => {
     const beats = SYNC_BEATS[syncIdx];
     shadowRate = beats > 0 ? currentBpm / 60 / beats : rate;
     lfo.frequency.value = shadowRate;
   };
   applyRate();
+  applyPanTrim();
   return {
     input,
     output,
@@ -64,6 +69,11 @@ Loom.registerFx("width", (ctx) => {
       ["rate", lfo.frequency],
       ["depth", panDepth.gain]
     ]),
+    getAudioParamRange: (id) => (
+      // Declared, because an undeclared range falls back to 0..1 and a modulator
+      // could then only reach half of a knob that travels 0..2.
+      id === "width" ? { min: 0, max: 2 } : id === "rate" ? { min: 0.05, max: 8 } : id === "depth" ? { min: 0, max: 1 } : void 0
+    ),
     getBaseValue: (id) => id === "width" ? width : id === "rate" ? shadowRate : id === "depth" ? depth : id === "sync" ? syncIdx : 0,
     setBaseValue: (id, v) => {
       if (id === "width") {
@@ -77,6 +87,7 @@ Loom.registerFx("width", (ctx) => {
       if (id === "depth") {
         depth = v;
         panDepth.gain.value = v;
+        applyPanTrim();
       }
       if (id === "sync") {
         syncIdx = v | 0;
@@ -108,6 +119,7 @@ Loom.registerFx("width", (ctx) => {
         sideInv,
         merge,
         panner,
+        panTrim,
         lfo,
         panDepth
       ]) {

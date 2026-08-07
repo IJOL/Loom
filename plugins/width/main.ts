@@ -58,6 +58,11 @@ Loom.registerFx('width', (ctx): FxInstance => {
   mid.connect(merge, 0, 0);       widthGain.connect(merge, 0, 0);
   mid.connect(merge, 0, 1);       sideInv.connect(merge, 0, 1);
 
+  let width = 1, rate = 0.5, depth = 0, syncIdx = 0;
+  let currentBpm = 120;
+  /** Shadow of the EFFECTIVE rate — a synced value does not live on the knob. */
+  let shadowRate = 0.5;
+
   // ── Auto-pan ──────────────────────────────────────────────────────────────
   const panner = ctx.createStereoPanner();
   panner.pan.value = 0;
@@ -69,12 +74,28 @@ Loom.registerFx('width', (ctx): FxInstance => {
   lfo.connect(panDepth).connect(panner.pan);
   lfo.start();
 
-  merge.connect(panner).connect(output);
+  // ⚠️ A StereoPanner fed TWO channels does not attenuate one side, it FOLDS one
+  // into the other: at pan = -1 the left carries L + R. For a correlated source —
+  // which is exactly what the up-mix above manufactures out of a mono track —
+  // that is +6 dB at the extremes. Measured: depth 0 → peak 1.00, depth 1 →
+  // peak 2.00. So a user who adds Width to a mono lane purely for movement gets
+  // a lane 6 dB louder into the master soft-clip, and hears pumping distortion
+  // rather than movement.
+  //
+  // The trim takes most of it back out, scaled by how far the pan travels: from
+  // +6 dB (peak 2.00) to +2.5 dB (1.33), measured.
+  //
+  // Not all of it, and that is not slack. Panning a correlated signal towards
+  // one side CONCENTRATES it into that channel, so that channel's peak has to
+  // rise — no trim holds the centre and the extreme at unity at once. 1/(1 +
+  // depth) would put the extreme exactly at unity and drop the CENTRE by the
+  // same 6 dB, so depth would read as a volume knob, which is the complaint in
+  // the other direction. Half of it is where those two land closest together.
+  // Anything better means a different pan law, not a different constant.
+  const panTrim = ctx.createGain();
+  const applyPanTrim = () => { panTrim.gain.value = 1 / (1 + depth * 0.5); };
 
-  let width = 1, rate = 0.5, depth = 0, syncIdx = 0;
-  let currentBpm = 120;
-  /** Shadow of the EFFECTIVE rate — a synced value does not live on the knob. */
-  let shadowRate = 0.5;
+  merge.connect(panner).connect(panTrim).connect(output);
 
   const applyRate = () => {
     const beats = SYNC_BEATS[syncIdx];
@@ -82,6 +103,7 @@ Loom.registerFx('width', (ctx): FxInstance => {
     lfo.frequency.value = shadowRate;
   };
   applyRate();
+  applyPanTrim();
 
   return {
     input, output,
@@ -90,13 +112,19 @@ Loom.registerFx('width', (ctx): FxInstance => {
       ['rate', lfo.frequency],
       ['depth', panDepth.gain],
     ]),
+    getAudioParamRange: (id) =>
+      // Declared, because an undeclared range falls back to 0..1 and a modulator
+      // could then only reach half of a knob that travels 0..2.
+      id === 'width' ? { min: 0, max: 2 }
+      : id === 'rate' ? { min: 0.05, max: 8 }
+      : id === 'depth' ? { min: 0, max: 1 } : undefined,
     getBaseValue: (id) =>
       id === 'width' ? width : id === 'rate' ? shadowRate
       : id === 'depth' ? depth : id === 'sync' ? syncIdx : 0,
     setBaseValue: (id, v) => {
       if (id === 'width') { width = v; widthGain.gain.value = v; }
       if (id === 'rate')  { rate = v; applyRate(); }
-      if (id === 'depth') { depth = v; panDepth.gain.value = v; }
+      if (id === 'depth') { depth = v; panDepth.gain.value = v; applyPanTrim(); }
       if (id === 'sync')  { syncIdx = v | 0; applyRate(); }
     },
     setBpm: (b) => { currentBpm = b; applyRate(); },
@@ -104,7 +132,7 @@ Loom.registerFx('width', (ctx): FxInstance => {
     dispose: () => {
       try { lfo.stop(); } catch { /* already stopped */ }
       for (const n of [input, output, split, mid, side, midL, midR, sideL, sideR,
-                       widthGain, sideInv, merge, panner, lfo, panDepth]) {
+                       widthGain, sideInv, merge, panner, panTrim, lfo, panDepth]) {
         try { n.disconnect(); } catch { /* ok */ }
       }
     },

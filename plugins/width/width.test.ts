@@ -87,25 +87,69 @@ describe('width — the auto-pan, which DOES move a mono source', () => {
     expect(sideRatio(mL, mR)).toBeGreaterThan(sideRatio(sL, sR));
   });
 
-  it('a synced rate follows the tempo', () => {
+  it('a synced rate follows the tempo — on the OSCILLATOR, not just the shadow', () => {
     const fx = create(new OfflineAudioContext(2, 128, SR) as unknown as AudioContext);
+    // Read through getAudioParams, which hands back the LFO's own frequency
+    // param. An earlier version asserted only on getBaseValue('rate'), which
+    // returns a field: a review deleted the write to the oscillator entirely and
+    // every test here stayed green, so the auto-pan could have stopped following
+    // the tempo forever with nothing to say so.
+    const lfoFreq = () => fx.getAudioParams().get('rate')!.value;
     fx.setBaseValue('sync', 5);        // one cycle per beat
     fx.setBpm!(120);
-    const at120 = fx.getBaseValue('rate');
+    const at120 = lfoFreq();
     fx.setBpm!(240);
-    // Relative: twice the tempo, twice the effective rate. getBaseValue reports
-    // the EFFECTIVE rate, which is why a synced value cannot live on the knob.
-    expect(fx.getBaseValue('rate')).toBeGreaterThan(at120 * 1.9);
+    // Relative: twice the tempo, twice the effective rate.
+    expect(lfoFreq()).toBeGreaterThan(at120 * 1.9);
+    // And the reported value agrees with the node, so the knob is not lying
+    // either — a synced value cannot live on the knob, which is why it is
+    // shadowed at all.
+    expect(fx.getBaseValue('rate')).toBeCloseTo(lfoFreq(), 5);
+  });
+});
+
+describe('width — the auto-pan must not double as a volume knob', () => {
+  it('raising depth does not make a mono lane louder', async () => {
+    // A StereoPanner fed two channels FOLDS one side into the other rather than
+    // attenuating it, and the up-mix this effect performs turns a mono track
+    // into a perfectly correlated pair — the worst case. Untrimmed, depth 1
+    // measured a peak of 2.00 against depth 0's 1.00: a user reaching for
+    // movement got +6 dB into the master soft-clip and heard pumping.
+    const peak = (b: Float32Array) => { let p = 0; for (const v of b) if (Math.abs(v) > p) p = Math.abs(v); return p; };
+    const at = async (depth: number) => {
+      const [L, R] = await render(false, { depth, rate: 2 });
+      return Math.max(peak(L), peak(R));
+    };
+    const still = await at(0);
+    // Relative to the SAME effect standing still, so this pins the claim against
+    // the effect's own quiet state rather than any particular level.
+    //
+    // 1.4, not 1.0, and the gap is physics rather than slack: panning a
+    // correlated signal towards one side CONCENTRATES it into that channel, so
+    // that channel's peak necessarily rises. No trim can hold the centre and the
+    // extreme at unity at once — one of them has to give. What is achievable is
+    // bounding it, and this bounds it from the +6 dB it shipped at (2.00) to
+    // +2.5 dB (1.33). Tightening this number means changing the pan law, not
+    // adjusting the threshold.
+    expect(await at(1)).toBeLessThan(still * 1.4);
   });
 });
 
 describe('width — manifest', () => {
-  it('answers to every param it declares', () => {
+  it('answers to every param it declares, at a value it did NOT start on', () => {
     expect(manifest.components[0].id).toBe('width');
     const fx = create(new OfflineAudioContext(2, 128, SR) as unknown as AudioContext);
     for (const p of manifest.components[0].params) {
       // 'rate' reports the EFFECTIVE value, covered by the sync case above.
       if (p.id === 'rate') continue;
+      // Writing the manifest's own default proves nothing: every shadow variable
+      // already holds it, so a setBaseValue that ignored the id entirely would
+      // still read back correctly. A review proved that by deleting the `depth`
+      // and `sync` branches from a copy of this plugin and watching the suite
+      // stay green.
+      const off = p.default === p.min ? p.max : p.min;
+      fx.setBaseValue(p.id, off);
+      expect(fx.getBaseValue(p.id), `${p.id} did not take the written value`).toBeCloseTo(off, 5);
       fx.setBaseValue(p.id, p.default);
       expect(fx.getBaseValue(p.id)).toBeCloseTo(p.default, 5);
     }

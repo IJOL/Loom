@@ -80,9 +80,17 @@ describe('auto-wah', () => {
     expect(centroid(dry)).toBe(centroid(bare));
   });
 
-  it('answers to every param its manifest declares', () => {
+  it('answers to every param its manifest declares, at a value it did NOT start on', () => {
+    // Writing the manifest's own default proves nothing: every shadow variable
+    // already holds it, so a setBaseValue that ignored the id entirely would
+    // still read back correctly. A review proved that on THIS plugin — it
+    // deleted the `range` branch and the whole suite stayed green, while writing
+    // 1234 read back 2400.
     const fx = create(new OfflineAudioContext(1, 128, SR) as unknown as AudioContext);
     for (const p of manifest.components[0].params) {
+      const off = p.default === p.min ? p.max : p.min;
+      fx.setBaseValue(p.id, off);
+      expect(fx.getBaseValue(p.id), `${p.id} did not take the written value`).toBeCloseTo(off, 5);
       fx.setBaseValue(p.id, p.default);
       expect(fx.getBaseValue(p.id)).toBeCloseTo(p.default, 5);
     }

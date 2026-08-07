@@ -84,11 +84,28 @@ describe('ring modulator', () => {
     expect(shareOf(dry, 440)).toBeCloseTo(shareOf(bare, 440), 2);
   });
 
-  it('answers to every param its manifest declares', () => {
+  it('answers to every param its manifest declares, at a value it did NOT start on', () => {
+    // Writing the manifest's own default proves nothing: every shadow variable
+    // already holds it, so a setBaseValue that ignored the id entirely would
+    // still read back correctly. A review proved that by deleting a knob's
+    // branch from a copy of a sibling plugin and watching its suite stay green.
     const fx = create(new OfflineAudioContext(1, 128, SR) as unknown as AudioContext);
     for (const p of manifest.components[0].params) {
+      const off = p.default === p.min ? p.max : p.min;
+      fx.setBaseValue(p.id, off);
+      expect(fx.getBaseValue(p.id), `${p.id} did not take the written value`).toBeCloseTo(off, 5);
       fx.setBaseValue(p.id, p.default);
       expect(fx.getBaseValue(p.id)).toBeCloseTo(p.default, 5);
     }
+  });
+
+  it('exposes freq as a CENTS destination, not a hertz one', () => {
+    // A modulator's depth is scaled by the declared range, and an undeclared one
+    // falls back to 0..1 — so publishing carrier.frequency over a 20-4000 Hz
+    // knob gave a full-depth LFO ±1 Hz out of 3980. If this ever comes back as
+    // hertz, someone has "simplified" it and the destination is dead again.
+    const fx = create(new OfflineAudioContext(1, 128, SR) as unknown as AudioContext);
+    expect(fx.getAudioParamRange?.('freq')).toEqual({ min: 0, max: 4800 });
+    expect(fx.getAudioParams().has('freq')).toBe(true);
   });
 });
