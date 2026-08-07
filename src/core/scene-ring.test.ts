@@ -49,8 +49,8 @@ describe('wedgePath', () => {
   });
 
   it('flips the large-arc flag past the halfway point', () => {
-    expect(wedgePath(0.25)).toMatch(/A 15 15 0 0 1/);
-    expect(wedgePath(0.75)).toMatch(/A 15 15 0 1 1/);
+    expect(wedgePath(0.25)).toMatch(/A 12 12 0 0 1/);
+    expect(wedgePath(0.75)).toMatch(/A 12 12 0 1 1/);
   });
 });
 

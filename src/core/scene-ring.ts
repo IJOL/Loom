@@ -17,7 +17,8 @@ import { sceneCountdown } from './scene-countdown';
 import type { LanePlayState } from '../session/session-runtime';
 import type { TimeSignature } from './meter';
 
-const CX = 20, CY = 20, R = 15;
+const SIZE = 32;
+const CX = SIZE / 2, CY = SIZE / 2, R = 12;
 
 export interface SceneRingDeps {
   /** Getters, never values: the ring outlives many play-state changes and must
@@ -63,7 +64,7 @@ function tick(): void {
 export function createSceneRing(deps: SceneRingDeps): SceneRingHandle {
   const el = renderElement(html`
     <div class="scene-ring" role="img" aria-label="Time left in the scene">
-      <svg viewBox="0 0 40 40" width="40" height="40" aria-hidden="true">
+      <svg viewBox="0 0 ${SIZE} ${SIZE}" width=${SIZE} height=${SIZE} aria-hidden="true">
         <circle class="ring-track" cx=${CX} cy=${CY} r=${R}></circle>
         <path class="ring-wedge" d=""></path>
         <circle class="ring-hairline" cx=${CX} cy=${CY} r=${R}></circle>
