@@ -1,0 +1,412 @@
+<title>Loom — Scene countdown ring</title>
+<style>
+  :root {
+    --bg:           #0e0c0a;
+    --surface:      #161310;
+    --surface-2:    #1c1814;
+    --surface-3:    #221d18;
+    --border:       #2a221c;
+    --border-soft:  #1f1a15;
+    --text:         #d8d2c8;
+    --text-dim:     #8a8278;
+    --text-faint:   #5a5550;
+    --amber:        #ffa726;
+    --amber-soft:   rgba(255, 167, 38, 0.4);
+    --amber-glow:   rgba(255, 167, 38, 0.18);
+    --red:          #e53935;
+    --green:        #7cb342;
+    --z-synths:     #5bb8c4;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 28px 22px 64px;
+  }
+
+  .wrap { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 34px; }
+
+  h1 {
+    font-size: 15px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--amber); margin: 0 0 4px;
+  }
+  h2 {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--text-faint); margin: 0 0 12px;
+    border-bottom: 1px solid var(--border-soft); padding-bottom: 7px;
+  }
+  p { margin: 0 0 10px; max-width: 68ch; color: var(--text-dim); }
+  p strong { color: var(--text); font-weight: 600; }
+  code {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 2px;
+    padding: 1px 5px; font-size: 11px; color: var(--z-synths);
+  }
+  .sub { color: var(--text-faint); font-size: 11px; letter-spacing: 0.05em; }
+
+  /* ── The mixer row, as it really is: spacer + lane columns + master ─────── */
+  .board {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 3px;
+    padding: 16px; overflow-x: auto;
+  }
+  .session-row-mixer {
+    display: grid; grid-template-columns: 24px repeat(4, 120px) 140px; gap: 4px;
+    min-width: 700px;
+  }
+  .session-spacer { }
+  .mix-col {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 2px;
+    padding: 7px 6px; display: flex; flex-direction: column; gap: 6px; align-items: center;
+  }
+  .mix-name {
+    font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim);
+    width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mix-col.master-strip {
+    border-color: var(--amber-soft); box-shadow: inset 0 0 0 1px var(--amber-glow);
+  }
+  .master-strip .mix-name { color: var(--amber); letter-spacing: 0.16em; }
+  .knob-row { display: flex; gap: 5px; }
+  .knob-stub {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--surface-3); border: 1px solid var(--border);
+    position: relative;
+  }
+  .knob-stub::after {
+    content: ''; position: absolute; left: 50%; top: 2px; width: 1px; height: 6px;
+    background: var(--text-faint); transform-origin: 50% 8px;
+  }
+  .fader-stub {
+    width: 100%; height: 46px; display: flex; gap: 5px; align-items: stretch; justify-content: center;
+  }
+  .fader-stub .track {
+    width: 5px; background: var(--surface-3); border: 1px solid var(--border); border-radius: 2px;
+    position: relative;
+  }
+  .fader-stub .track::after {
+    content: ''; position: absolute; left: -3px; right: -3px; height: 5px; top: 32%;
+    background: var(--text-faint); border-radius: 1px;
+  }
+  .vu-stub {
+    width: 7px; background: linear-gradient(to top, var(--green) 0 45%, var(--surface-3) 45% 100%);
+    border: 1px solid var(--border); border-radius: 2px;
+  }
+
+  /* ── The ring itself ───────────────────────────────────────────────────── */
+  .scene-ring {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    width: 100%; padding: 2px 0 1px;
+  }
+  .scene-ring svg { display: block; overflow: visible; }
+  .ring-track  { fill: none; stroke: var(--border); stroke-width: 4; }
+  .ring-sweep  { fill: none; stroke-width: 4; stroke-linecap: butt;
+                 transform: rotate(-90deg); transform-origin: 50% 50%;
+                 transition: stroke 140ms ease; }
+  .ring-num {
+    font-family: var(--mono); font-size: 13px; font-weight: 600;
+    text-anchor: middle; dominant-baseline: central;
+    fill: var(--text-dim); transition: fill 140ms ease;
+    font-variant-numeric: tabular-nums;
+  }
+  .ring-caption {
+    font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-faint); white-space: nowrap; max-width: 100%;
+    overflow: hidden; text-overflow: ellipsis; text-align: center;
+    transition: color 140ms ease;
+  }
+  /* armed = a scene is queued; the ring is counting down to the switch */
+  .scene-ring.armed .ring-sweep { stroke: var(--amber); }
+  .scene-ring.armed .ring-num   { fill: var(--amber); }
+  .scene-ring.armed .ring-caption { color: var(--amber); }
+  .scene-ring.armed.imminent .ring-sweep { stroke: var(--red); }
+  .scene-ring.armed.imminent .ring-num   { fill: var(--red); }
+  .scene-ring.armed.imminent .ring-caption { color: var(--red); }
+  .scene-ring.idle .ring-sweep  { stroke: var(--text-faint); }
+
+  /* ── Variant gallery ───────────────────────────────────────────────────── */
+  .variants { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+  .variant {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 3px;
+    padding: 16px 12px 13px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+    text-align: center;
+  }
+  .variant.pick { border-color: var(--amber-soft); }
+  .variant .vlabel {
+    font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-dim);
+  }
+  .variant.pick .vlabel { color: var(--amber); }
+  .variant .vdesc { font-size: 10px; line-height: 1.5; color: var(--text-faint); max-width: 24ch; }
+  .variant .holder {
+    width: 140px; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 2px; padding: 8px 6px;
+  }
+  .variant.pick .holder { border-color: var(--amber-soft); box-shadow: inset 0 0 0 1px var(--amber-glow); }
+
+  /* ── Controls ──────────────────────────────────────────────────────────── */
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  button {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    background: var(--surface-2); color: var(--text-dim);
+    border: 1px solid var(--border); border-radius: 2px; padding: 7px 12px; cursor: pointer;
+    transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+  }
+  button:hover { color: var(--amber); border-color: var(--amber); }
+  button:focus-visible { outline: 2px solid var(--z-synths); outline-offset: 2px; }
+  button.active { background: var(--amber); color: var(--bg); border-color: var(--amber); }
+  .readout {
+    font-size: 10px; color: var(--text-faint); letter-spacing: 0.06em;
+    border-left: 1px solid var(--border); padding-left: 12px; margin-left: 4px;
+  }
+  .readout b { color: var(--text-dim); font-weight: 600; }
+
+  table { border-collapse: collapse; font-size: 11px; width: 100%; }
+  th, td { text-align: left; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
+  th { color: var(--text-faint); font-weight: 600; font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; }
+  td { color: var(--text-dim); }
+  td:first-child { color: var(--text); white-space: nowrap; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition-duration: 0ms !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <h1>Scene countdown ring</h1>
+    <p class="sub">Mockup · one ring, in the master strip of the mixer row · Loom</p>
+  </header>
+
+  <section>
+    <h2>What it does</h2>
+    <p>One circle. It shows <strong>how much of the current scene is left before the switch instant</strong> —
+    the moment Loom already computes in <code>sceneSwitchBoundary()</code>. Idle, it just breathes with the
+    scene's loop. Queue another scene and it turns amber and counts that same loop down to zero, naming
+    where you're going.</p>
+  </section>
+
+  <section>
+    <h2>In place — the mixer row, master column</h2>
+    <div class="board">
+      <div class="session-row-mixer">
+        <div class="session-spacer"></div>
+        <div class="mix-col"><div class="mix-name">303 Bass</div><div class="knob-row"><span class="knob-stub"></span><span class="knob-stub"></span></div><div class="fader-stub"><span class="track"></span><span class="vu-stub"></span></div></div>
+        <div class="mix-col"><div class="mix-name">Drums</div><div class="knob-row"><span class="knob-stub"></span><span class="knob-stub"></span></div><div class="fader-stub"><span class="track"></span><span class="vu-stub"></span></div></div>
+        <div class="mix-col"><div class="mix-name">Pad</div><div class="knob-row"><span class="knob-stub"></span><span class="knob-stub"></span></div><div class="fader-stub"><span class="track"></span><span class="vu-stub"></span></div></div>
+        <div class="mix-col"><div class="mix-name">Stab</div><div class="knob-row"><span class="knob-stub"></span><span class="knob-stub"></span></div><div class="fader-stub"><span class="track"></span><span class="vu-stub"></span></div></div>
+        <div class="mix-col master-strip">
+          <div class="mix-name">Master</div>
+          <div id="slot-inplace"></div>
+          <div class="fader-stub"><span class="track"></span><span class="vu-stub"></span></div>
+        </div>
+      </div>
+    </div>
+    <p class="sub" style="margin-top:10px">The ring sits above the master fader, in the same 140&nbsp;px column
+    that already holds the scene launch buttons — the scene column.</p>
+  </section>
+
+  <section>
+    <h2>Three readings of the same number</h2>
+    <div class="variants">
+      <div class="variant pick">
+        <div class="vlabel">A · Swept sector</div>
+        <div class="holder"><div id="slot-a"></div></div>
+        <div class="vdesc">Ableton's pie. Filled wedge grows over the loop; empties over the countdown.</div>
+      </div>
+      <div class="variant">
+        <div class="vlabel">B · Depleting arc</div>
+        <div class="holder"><div id="slot-b"></div></div>
+        <div class="vdesc">Thin ring drains anticlockwise. Quieter, reads as "remaining", not "elapsed".</div>
+      </div>
+      <div class="variant">
+        <div class="vlabel">C · Bar segments</div>
+        <div class="holder"><div id="slot-c"></div></div>
+        <div class="vdesc">One tick per bar of the governing loop. Countable at a glance, no number needed.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Drive it</h2>
+    <div class="controls">
+      <button id="btn-queue">▶ Queue "Break"</button>
+      <button id="btn-cancel">Cancel queue</button>
+      <button id="btn-len" data-bars="4">Loop: 4 bars</button>
+      <span class="readout">state <b id="ro-state">idle</b> · bar <b id="ro-bar">1.0</b> · to switch <b id="ro-left">—</b></span>
+    </div>
+  </section>
+
+  <section>
+    <h2>States</h2>
+    <table>
+      <thead><tr><th>State</th><th>Ring</th><th>Centre</th><th>Caption</th></tr></thead>
+      <tbody>
+        <tr><td>Nothing playing</td><td>empty track, no sweep</td><td>—</td><td>hidden</td></tr>
+        <tr><td>Playing, idle</td><td>grey sweep fills over the loop</td><td>bar of the loop (1…4)</td><td>scene name, dim</td></tr>
+        <tr><td>Scene queued</td><td>amber, drains to zero</td><td>bars left, then beats under 1 bar</td><td>→ target scene, amber</td></tr>
+        <tr><td>Last bar before switch</td><td>red</td><td>beats left</td><td>→ target scene, red</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</div>
+
+<script>
+(() => {
+  const R = 15, C = 2 * Math.PI * R;
+
+  function makeRing(variant) {
+    const root = document.createElement('div');
+    root.className = 'scene-ring idle';
+    const wedge = variant === 'a';
+    const segs  = variant === 'c';
+    root.innerHTML = `
+      <svg viewBox="0 0 40 40" width="40" height="40" aria-hidden="true">
+        <circle class="ring-track" cx="20" cy="20" r="${R}"></circle>
+        ${wedge
+          ? `<path class="ring-sweep" data-role="wedge" fill="currentColor" stroke="none" d=""></path>
+             <circle class="ring-track" cx="20" cy="20" r="${R}" style="stroke-width:1"></circle>`
+          : segs
+            ? `<g data-role="segs"></g>`
+            : `<circle class="ring-sweep" data-role="arc" cx="20" cy="20" r="${R}"
+                 stroke-dasharray="${C}" stroke-dashoffset="${C}"></circle>`}
+        ${segs ? '' : `<text class="ring-num" x="20" y="20.5" data-role="num">4</text>`}
+      </svg>
+      <div class="ring-caption" data-role="cap">Main Groove</div>`;
+    return root;
+  }
+
+  // Variant A paints a filled wedge; it needs the sweep to carry a fill colour,
+  // so the class-driven `stroke` is mirrored onto `color` via currentColor.
+  function paint(root, variant, frac, bars, state, target, sceneName) {
+    root.classList.toggle('armed', state !== 'idle');
+    root.classList.toggle('idle', state === 'idle');
+    root.classList.toggle('imminent', state === 'imminent');
+
+    const svg = root.querySelector('svg');
+    const num = root.querySelector('[data-role="num"]');
+    const cap = root.querySelector('[data-role="cap"]');
+
+    if (variant === 'a') {
+      const w = root.querySelector('[data-role="wedge"]');
+      const col = getComputedStyle(w).stroke;
+      w.style.color = col;
+      const a = Math.min(frac, 0.9999) * Math.PI * 2 - Math.PI / 2;
+      const x = 20 + R * Math.cos(a), y = 20 + R * Math.sin(a);
+      const large = frac > 0.5 ? 1 : 0;
+      w.setAttribute('d', frac <= 0 ? '' : `M20 20 L20 ${20 - R} A ${R} ${R} 0 ${large} 1 ${x} ${y} Z`);
+      w.style.opacity = '0.45';
+    } else if (variant === 'b') {
+      const arc = root.querySelector('[data-role="arc"]');
+      arc.setAttribute('stroke-dashoffset', String(C * (1 - frac)));
+    } else {
+      const g = root.querySelector('[data-role="segs"]');
+      const n = bars;
+      const lit = Math.max(0, Math.ceil(frac * n - 1e-9));
+      const col = getComputedStyle(root.querySelector('.ring-track')).stroke;
+      g.innerHTML = '';
+      for (let i = 0; i < n; i++) {
+        const a0 = (i / n) * Math.PI * 2 - Math.PI / 2 + 0.07;
+        const a1 = ((i + 1) / n) * Math.PI * 2 - Math.PI / 2 - 0.07;
+        const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        p.setAttribute('class', 'ring-sweep');
+        p.setAttribute('transform', 'none');
+        p.setAttribute('d', `M ${20 + R * Math.cos(a0)} ${20 + R * Math.sin(a0)} A ${R} ${R} 0 0 1 ${20 + R * Math.cos(a1)} ${20 + R * Math.sin(a1)}`);
+        if (i >= lit) { p.style.stroke = col; }
+        g.appendChild(p);
+      }
+    }
+
+    if (num) {
+      if (state === 'idle') num.textContent = String(Math.floor(frac * bars) + 1);
+      else {
+        const barsLeft = frac * bars;
+        num.textContent = barsLeft >= 1 ? String(Math.ceil(barsLeft)) : String(Math.ceil(barsLeft * 4));
+      }
+    }
+    cap.textContent = state === 'idle' ? sceneName : `→ ${target}`;
+    svg.setAttribute('aria-hidden', 'true');
+  }
+
+  const slots = {
+    inplace: [document.getElementById('slot-inplace'), 'a'],
+    a: [document.getElementById('slot-a'), 'a'],
+    b: [document.getElementById('slot-b'), 'b'],
+    c: [document.getElementById('slot-c'), 'c'],
+  };
+  const rings = {};
+  for (const [k, [host, v]] of Object.entries(slots)) {
+    const r = makeRing(v); host.appendChild(r); rings[k] = [r, v];
+  }
+
+  const BPM = 128, SEC_PER_BAR = (60 / BPM) * 4;
+  let bars = 4;
+  let loopStartedAt = performance.now() / 1000;
+  let queuedAt = null;              // switch instant, seconds
+  const SCENES = ['Main Groove', 'Break', 'Drop'];
+  let sceneIdx = 0;
+
+  const roState = document.getElementById('ro-state');
+  const roBar = document.getElementById('ro-bar');
+  const roLeft = document.getElementById('ro-left');
+  const btnQueue = document.getElementById('btn-queue');
+  const btnLen = document.getElementById('btn-len');
+
+  function nextLoopEnd(now) {
+    const loopSec = bars * SEC_PER_BAR;
+    const k = Math.max(1, Math.ceil((now - loopStartedAt) / loopSec));
+    return loopStartedAt + k * loopSec;
+  }
+
+  btnQueue.addEventListener('click', () => {
+    const now = performance.now() / 1000;
+    queuedAt = nextLoopEnd(now);
+    btnQueue.classList.add('active');
+  });
+  document.getElementById('btn-cancel').addEventListener('click', () => {
+    queuedAt = null; btnQueue.classList.remove('active');
+  });
+  btnLen.addEventListener('click', () => {
+    bars = bars === 4 ? 8 : bars === 8 ? 2 : 4;
+    btnLen.textContent = `Loop: ${bars} bars`;
+    loopStartedAt = performance.now() / 1000;
+    queuedAt = null; btnQueue.classList.remove('active');
+  });
+
+  function frame() {
+    const now = performance.now() / 1000;
+    const loopSec = bars * SEC_PER_BAR;
+    if (now >= loopStartedAt + loopSec) {
+      loopStartedAt += Math.floor((now - loopStartedAt) / loopSec) * loopSec;
+    }
+    if (queuedAt != null && now >= queuedAt) {
+      sceneIdx = (sceneIdx + 1) % SCENES.length;
+      queuedAt = null; btnQueue.classList.remove('active');
+      loopStartedAt = now;
+    }
+
+    const phase = (now - loopStartedAt) / loopSec;      // 0..1 elapsed
+    let frac, state;
+    if (queuedAt != null) {
+      const left = (queuedAt - now) / loopSec;
+      frac = Math.max(0, Math.min(1, left));
+      state = (queuedAt - now) <= SEC_PER_BAR ? 'imminent' : 'armed';
+    } else {
+      frac = phase; state = 'idle';
+    }
+
+    const target = SCENES[(sceneIdx + 1) % SCENES.length];
+    for (const [r, v] of Object.values(rings)) paint(r, v, frac, bars, state, target, SCENES[sceneIdx]);
+
+    roState.textContent = state;
+    roBar.textContent = (Math.floor(phase * bars) + 1) + '.' + (Math.floor(phase * bars * 4) % 4 + 1);
+    roLeft.textContent = queuedAt == null ? '—' : (queuedAt - now).toFixed(1) + ' s';
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
