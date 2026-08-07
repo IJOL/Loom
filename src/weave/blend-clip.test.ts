@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { TICKS_PER_STEP, type NoteEvent } from '../core/notes';
 import { inScale } from '../core/musicality';
-import { blendLoops, type BlendOptions } from './blend-clip';
+import { blendLoops, blendLoopsBySource, type BlendOptions } from './blend-clip';
 
 const BAR = TICKS_PER_STEP * 16;
 const hit = (step: number, midi: number): NoteEvent =>
@@ -99,5 +99,55 @@ describe('blendLoops', () => {
     const out = blendLoops([{ notes: a, weight: 0.5 }, { notes: b, weight: 0.5 }], drums);
     // Both survive as themselves; neither becomes some note in between.
     for (const n of out) expect([36, 38]).toContain(n.midi);
+  });
+});
+
+describe('blendLoopsBySource', () => {
+  it('a hit that belongs to one loop names that loop as its origin', () => {
+    // The point of the exercise: this hit can then be played by that loop's own
+    // instrument, instead of one timbre covering the lot.
+    const out = blendLoopsBySource([
+      { notes: [hit(0, 36)], weight: 1 },
+      { notes: [hit(4, 38)], weight: 0 },
+    ], drums);
+    expect(out.map((n) => [n.midi, n.from])).toEqual([[36, 0]]);
+  });
+
+  it('carries the origin across a three-loop fold', () => {
+    const out = blendLoopsBySource([
+      { notes: [hit(0, 36)], weight: 0.5 },
+      { notes: [hit(8, 38)], weight: 0.3 },
+      { notes: [hit(4, 42)], weight: 0.2 },
+    ], drums);
+    expect(out.length).toBeGreaterThan(0);
+    // The fold sorts by weight, so an index carried in a parallel array would
+    // have come out re-aligned to the wrong notes.
+    for (const n of out) expect([36, 38, 42][n.from]).toBe(n.midi);
+  });
+
+  it('emits a shared hit once, from one side', () => {
+    const out = blendLoopsBySource([
+      { notes: [hit(0, 36)], weight: 0.5 },
+      { notes: [hit(0, 36)], weight: 0.5 },
+    ], drums);
+    expect(out).toHaveLength(1);
+    expect(out[0].from).toBe(0);
+  });
+
+  it('every melodic note still names an origin, even at the pitch in between', () => {
+    // A paired melodic note comes out at a pitch that is in NEITHER loop. There
+    // is no honest owner, so it takes one by convention — but it must never come
+    // back without one, or the router would have nowhere to send it.
+    const a = [hit(0, 45), hit(4, 48)];
+    const b = [hit(0, 52), hit(8, 55)];
+    const out = blendLoopsBySource([{ notes: a, weight: 0.5 }, { notes: b, weight: 0.5 }], melodic);
+    expect(out.length).toBeGreaterThan(0);
+    for (const n of out) expect([0, 1]).toContain(n.from);
+  });
+
+  it('leaves the untagged fold exactly as it was', () => {
+    // blendLoops is what the runtime already calls; an origin must not change it.
+    const loops = [{ notes: [hit(0, 36)], weight: 1 }, { notes: [hit(4, 38)], weight: 0 }];
+    expect(blendLoops(loops, drums)).toEqual([hit(0, 36)]);
   });
 });
