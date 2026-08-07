@@ -308,6 +308,10 @@ blockquote { border-left: 3px solid var(--accent); margin: .8em 0; padding: .2em
 <h2 id="03-sessions-lanes-clips-scenes--the-grid">The grid</h2>
 <p><img src="images/session-grid.png" alt="Session grid"></p>
 <p>Lane names run along the top header row; row numbers (1, 2, 3 …) label the scenes down the left edge. Scenes launch buttons sit in the rightmost column. Each filled cell shows the clip&#39;s name (or its row number as a fallback) against the clip&#39;s pastel colour. <strong>Click a lane header</strong> to open that lane&#39;s instrument editor; once it is open, the <strong>▸/▾ chevron</strong> that appears on that header collapses and reopens the editor.</p>
+<h3 id="03-sessions-lanes-clips-scenes--one-lane-is-selected-everywhere">One lane is selected, everywhere</h3>
+<p>The clip editor and the instrument controls below it always show the <strong>same</strong> lane. There are several ways to change which one that is — clicking a lane header, opening a clip, clicking a mixer column, or selecting the track from a MIDI controller — and all of them move both halves together.</p>
+<p>When you switch lanes, the clip editor follows to the <strong>same row</strong> on the new lane: if lane A&#39;s clip in row 2 is open and you select lane B, you get lane B&#39;s row-2 clip. If that slot is empty the editor closes, and <strong>nothing is created</strong> — an empty cell stays empty until you fill it deliberately. The instrument controls always follow, clip or no clip.</p>
+<p>There is one exception, and it is the one you want: opening a clip on another lane does not close the editor it just opened.</p>
 <p>A newly created instrument lane starts out empty — no placeholder clips are added to its column; you fill cells yourself. Audio and Sampler lanes created from a dropped WAV or loop place their clip in row 1 only. The grid always keeps at least one launchable scene available even when every lane is empty.</p>
 <p>Right-clicking grid elements opens a context menu. On a <strong>lane header</strong>: <em>Rename track</em>, <em>Edit instrument</em>, <em>Duplicate track</em>, <em>Stop track</em>, and <em>Delete track</em> (red). On a <strong>scene cell</strong>: <em>Rename scene</em>, <em>Launch scene</em>, <em>Duplicate scene</em>, <em>Capture playing -&gt; scene</em>, <em>Add scene</em>, and <em>Delete scene</em> (red). On a <strong>filled clip</strong>: <em>Open editor</em>, <em>Play / Stop</em>, <em>Color</em> (a row of swatches), and <em>Delete clip</em> (red). On an <strong>empty cell</strong>: <em>Create clip</em> — on audio lanes this entry reads <em>Import audio (WAV)...</em>.</p>
 <p>Below the scene rows there is a stop row: each lane has its own ⏹ stop button, and a global <strong>⏹ all</strong> button at the far right stops every lane at once.</p>
@@ -522,11 +526,18 @@ the largest library of any engine here.</p>
 <li><strong>OSC 1 / OSC 2</strong> — waveform, level, detune in cents, <strong>PW</strong>, and <strong>Sync</strong>.
 Detuning the two oscillators creates the classic &quot;supersaw&quot; chorus effect.
 See <a href="#04-engines--oscillator-extras-pw-and-sync">Oscillator extras</a> below for PW and Sync.</li>
+<li><strong>RING</strong> — level of the ring modulator, OSC 1 × OSC 2. See
+<a href="#04-engines--ring-modulation">Ring modulation</a> below.</li>
 <li><strong>SUB / NOISE</strong> — sub oscillator level (one octave below OSC 1) and a
 noise generator for breath and texture.</li>
-<li><strong>FILTER</strong> — <strong>Model</strong>, <strong>Type</strong>, Cutoff, Resonance, Env Amount, Drive, Key
+<li><strong>FILTER A</strong> — <strong>Mode</strong>, <strong>Type</strong>, Cutoff, Resonance, Env Amount, Drive, Key
 Track, and a full ADSR filter envelope (toggle with Built-in Env). See
-<a href="#04-engines--filter-model-and-type">Filter model and type</a>.</li>
+<a href="#04-engines--mode-and-type">Mode and Type</a> and
+<a href="#04-engines--the-comb-and-its-two-borrowed-knobs">The comb, and its two borrowed knobs</a>.</li>
+<li><strong>FILTER B</strong> — a second filter with its own Mode, Type, Cutoff and Res, plus
+<strong>Routing</strong>, <strong>Blend</strong> and <strong>Track</strong>, which decide how it combines with
+Filter A. See
+<a href="#04-engines--two-filters-and-how-they-are-wired">Two filters, and how they are wired</a>.</li>
 <li><strong>AMP</strong> — Attack/Decay/Sustain/Release amplitude envelope (toggle with
 Built-in Env).</li>
 <li><strong>MASTER</strong> — global Tune in semitones, plus <strong>Unison</strong>, <strong>Detune</strong> and
@@ -534,40 +545,146 @@ Built-in Env).</li>
 <li><strong>POLY</strong> — voice count (1–16), poly/mono mode, and legato/retrig behaviour
 in mono mode.</li>
 </ul>
-<h3 id="04-engines--filter-model-and-type">Filter model and type</h3>
-<p>Two dropdowns sit above the filter knobs and change its character completely.</p>
-<p><strong>Model</strong> picks the circuit being emulated:</p>
+<h3 id="04-engines--mode-and-type">Mode and Type</h3>
+<p>Two controls. <strong>Mode</strong> picks the circuit; <strong>Type</strong> picks the response you take
+out of it — and Type only ever offers the responses that circuit can honestly
+produce.</p>
 <table>
 <thead>
 <tr>
-<th>Model</th>
+<th>Mode</th>
+<th>Slope</th>
 <th>Character</th>
+<th>Types it offers</th>
 </tr>
 </thead>
 <tbody><tr>
 <td><strong>DIG</strong> (default)</td>
-<td>A clean state-variable filter. Precise and neutral.</td>
+<td>12 dB/oct</td>
+<td>A clean state-variable filter. Precise and neutral, and what most presets are voiced against.</td>
+<td>LP, HP, BP, NOTCH</td>
 </tr>
 <tr>
 <td><strong>MOG</strong></td>
-<td>A four-pole Moog-style ladder. Warmer, and it saturates as you drive it.</td>
+<td>24 dB/oct</td>
+<td>A four-pole Moog-style ladder. Warmer, and it thins as it resonates.</td>
+<td>LP, HP, BP</td>
 </tr>
 <tr>
 <td><strong>303</strong></td>
+<td>24 dB/oct</td>
 <td>The diode ladder from the TB-303. Asymmetric clipping adds even harmonics — the acid voice.</td>
+<td>LP, HP, BP</td>
+</tr>
+<tr>
+<td><strong>COMB</strong></td>
+<td>—</td>
+<td>A delay summed back on itself: a whole series of peaks instead of one corner. Metallic and hollow.</td>
+<td>POS, NEG, FF</td>
 </tr>
 </tbody></table>
-<p><strong>Type</strong> picks the response: <strong>LP</strong>, <strong>HP</strong>, <strong>BP</strong> or <strong>Notch</strong>.</p>
-<blockquote>
-<p><strong>Important:</strong> only <strong>DIG</strong> is a true multimode filter. The two ladders (MOG
-and 303) are four-pole lowpass topologies and are <strong>lowpass only</strong> — with
-Model set to MOG or 303, the Type dropdown has no effect. If you want a
-high-pass or a notch, you need DIG.</p>
-</blockquote>
+<p><strong>Why the ladders have no NOTCH.</strong> A ladder&#39;s resonance feedback fills a notch&#39;s
+null in, and on the diode model at high resonance the null inverts into a <em>peak</em>.
+A notch that becomes a bump is not a notch, so under MOG or 303 the button is
+not there — rather than being there and quietly handing you the lowpass, which
+is what this used to do.</p>
+<p>The ladders&#39; HP and BP are the real thing, not the lowpass relabelled: a ladder
+is four one-pole filters in a feedback loop, and the other responses come out of
+its stage taps the same way the Oberheim Xpander derives its modes.</p>
 <p>A second thing worth knowing about the ladders: they <em>lose</em> level as resonance
 climbs, rather than growing a resonant peak on top. Turning Q up on MOG or 303
 thins and quietens the sound. That is faithful to the hardware, and it is why
 the TB-303 engine compensates with a dedicated accent gain.</p>
+<h3 id="04-engines--the-comb-and-its-two-borrowed-knobs">The comb, and its two borrowed knobs</h3>
+<p>Under <strong>COMB</strong> the filter delays the signal and adds it back to itself. The
+delayed copy reinforces every frequency whose period fits the delay and cancels
+the ones that fall between, so instead of one corner you get a series of evenly
+spaced peaks — which is why it sounds like a plucked string or a hollow tube
+rather than a filter.</p>
+<p>Its three types are three different instruments:</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>What it does</th>
+<th>Sounds like</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>POS</strong></td>
+<td>Peaks on every harmonic of the tuning</td>
+<td>a plucked string</td>
+</tr>
+<tr>
+<td><strong>NEG</strong></td>
+<td>Peaks on the ODD harmonics only</td>
+<td>a stopped pipe, a clarinet</td>
+</tr>
+<tr>
+<td><strong>FF</strong></td>
+<td>No feedback: notches instead of peaks</td>
+<td>a flanger frozen mid-sweep</td>
+</tr>
+</tbody></table>
+<p>POS and NEG differ by a single sign and sound nothing alike — cancelling the
+even harmonics is what makes a clarinet a clarinet.</p>
+<p>Two knobs mean something else while COMB is selected, and it is worth knowing
+before you reach for them:</p>
+<ul>
+<li><strong>Cutoff is the comb&#39;s TUNING</strong> — the frequency its peaks are spaced by, not a
+corner frequency. Sweeping it slides the whole series.</li>
+<li><strong>Resonance is the feedback</strong> — how much comes back round, so how long it
+rings and how sharp the peaks are. Under <strong>FF</strong> there is no feedback path at
+all, so it sets how deep the notches cut and cannot ring however far you push
+it.</li>
+</ul>
+<h3 id="04-engines--two-filters-and-how-they-are-wired">Two filters, and how they are wired</h3>
+<p><strong>FILTER B</strong> is a second filter with its own Mode, Type, Cutoff and Res. It is
+off until <strong>Routing</strong> says otherwise:</p>
+<table>
+<thead>
+<tr>
+<th>Routing</th>
+<th>What comes out</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Off</strong> (default)</td>
+<td>Filter A alone. Filter B is not even built.</td>
+</tr>
+<tr>
+<td><strong>Series</strong></td>
+<td>A feeds B — two filters in a row, steeper and darker.</td>
+</tr>
+<tr>
+<td><strong>Parallel</strong></td>
+<td>Both filters see the same signal and the results are summed.</td>
+</tr>
+<tr>
+<td><strong>Difference</strong></td>
+<td>A minus B.</td>
+</tr>
+</tbody></table>
+<p><strong>Blend</strong> always means the same thing: how much of B is in the result. At 0 all
+three modes sound exactly like Off, so you can bring the second filter in by
+hand — or put an LFO on Blend and have the routing itself breathe.</p>
+<p><strong>Difference is the one worth explaining.</strong> Subtracting one lowpass from another
+leaves only what sits between their two cutoffs: a band-pass whose two edges you
+set separately, with its own resonance on each. No single circuit here produces
+that, and it is why having the same filter in both slots is useful rather than
+redundant.</p>
+<p><strong>A comb added to a filter needs no special setting</strong> — that is Filter A = DIG,
+Filter B = COMB, Routing = Parallel, which IS a sum. Series combs what the
+filter left, and Difference removes exactly what the comb reinforces.</p>
+<p><strong>Track</strong> (0–1) decides how filter B moves. Everything that sweeps filter A —
+its envelope and its key tracking — is expressed as a ratio, and Track is how
+much of that ratio B follows:</p>
+<ul>
+<li><strong>0</strong> — B stays exactly where its knob puts it. The classic fixed high-pass
+sitting under a low-pass that sweeps.</li>
+<li><strong>1</strong> — B moves by the same ratio as A, so the interval between the two stays
+constant in octaves. Two formants sweeping as a block.</li>
+</ul>
 <h3 id="04-engines--oscillator-extras-pw-and-sync">Oscillator extras: PW and Sync</h3>
 <p><strong>PW (Pulse Width)</strong> — 0.05 to 0.95, centred at 0.5. On its own it reshapes a
 square wave from a hollow, nasal thin pulse through the full-bodied square at
@@ -582,6 +699,26 @@ timbre of a synced lead. Here the <strong>Sync knob (1–8)</strong> sets the ra
 two, and <em>that ratio is the timbre</em> — the pitch you hear still follows the note.
 Sweeping the Sync knob (or modulating it) gives the classic sync-sweep lead.
 Presets <strong>LEAD Sync</strong>, <strong>LEAD Sync Sweep</strong> and <strong>BASS Sync</strong> are built on it.</p>
+<h3 id="04-engines--ring-modulation">Ring modulation</h3>
+<p><strong>Ring</strong> (0–1, default 0) multiplies OSC 1 by OSC 2 and mixes the result in as
+a source of its own, alongside Sub and Noise — it does not replace either
+oscillator. Multiplying two tones produces their <strong>sum and difference</strong>
+frequencies instead of their harmonics, so the result is inharmonic: bells,
+gongs, metallic clangs and robot voices.</p>
+<p>Two things drive the sound:</p>
+<ul>
+<li><strong>The interval between the oscillators.</strong> A few cents of Osc2 Det gives a
+slow beat and a tone an octave up; wide detunes turn it clangorous. The
+interval <em>is</em> the timbre, so a note played higher changes the character as
+well as the pitch — which is exactly why ring mod sounds inharmonic.</li>
+<li><strong>The oscillator levels, which Ring ignores.</strong> The product is taken before
+the level knobs, so you can pull OSC 1 and OSC 2 down to zero and hear the
+ring modulator alone — the classic bell — or leave them up and let the metal
+sit on top of the raw oscillators.</li>
+</ul>
+<p>Ring is continuous, so it is a modulation target like any other: an ADSR on
+<code>ring.level</code> gives a metallic attack that decays into a clean tone, and a slow
+LFO breathes the clang in and out.</p>
 <h3 id="04-engines--unison-detune-and-drift">Unison, Detune and Drift</h3>
 <p>In the MASTER section:</p>
 <table>
@@ -1156,7 +1293,8 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 </tbody></table>
 </section>
 <section class="chapter" id="05-editing-clips"><h1 id="05-editing-clips--editing-clips">Editing Clips</h1>
-<p>Every clip in Loom holds a sequence of notes. To edit those notes, click the <strong>body</strong> of any filled cell in the session grid — anywhere except the ▶ play icon or the ✕ delete cross in its corner (clicking ✕ deletes the clip outright, with no confirmation). You can also <strong>right-click</strong> a filled cell and choose <strong>Open editor</strong>. The inspector panel opens below the grid and the editor renders inside it. Closing the inspector does not stop playback — launching and editing are independent.</p>
+<p>Every clip in Loom holds a sequence of notes. The editor always belongs to the <strong>selected lane</strong> — the same one the instrument controls below it are showing, however you got there (<a href="#03-sessions-lanes-clips-scenes--one-lane-is-selected-everywhere">One lane is selected, everywhere</a>). Its header carries the clip&#39;s <strong>▶</strong> and <strong>● Rec</strong>, and the lane&#39;s <strong>M</strong> and <strong>S</strong>, so you can mute or solo the part you are editing without going back to the mixer.</p>
+<p>To edit those notes, click the <strong>body</strong> of any filled cell in the session grid — anywhere except the ▶ play icon or the ✕ delete cross in its corner (clicking ✕ deletes the clip outright, with no confirmation). You can also <strong>right-click</strong> a filled cell and choose <strong>Open editor</strong>. The inspector panel opens below the grid and the editor renders inside it. Closing the inspector does not stop playback — launching and editing are independent.</p>
 <p>Melodic lanes (TB-303, Subtractive, FM, Wavetable, Karplus, West Coast, Sampler) open the <strong>piano-roll</strong>. Drum-machine lanes and sampler lanes that have a drum kit loaded open the <strong>drum-grid</strong>. If you want to switch between the two views for a given clip, click the button in the inspector toolbar that names the <em>other</em> view — it reads <strong>View as grid</strong> while you are in the piano roll and <strong>View as piano roll</strong> while you are in the grid. Its tooltip states the important part: &quot;Change how this clip is EDITED; it does not change the sound.&quot;</p>
 <p>See <a href="#03-sessions-lanes-clips-scenes">Sessions, Lanes, Clips &amp; Scenes</a> for how clips are organised, and <a href="#04-engines">Engines</a> for the controls each engine exposes.</p>
 <hr>
@@ -1468,7 +1606,8 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <em>The FM engine editor. The MODULATORS section (LFO1 + ADSR1) and the NOTE FX row are visible at the bottom of the panel.</em></p>
 <hr>
 <h2 id="06-modulation-and-note-fx--modulators">Modulators</h2>
-<p>Open any lane&#39;s engine editor and scroll to the <strong>MODULATORS</strong> section. Press <strong>+ LFO</strong> or <strong>+ ADSR</strong> to add a modulator; you can add as many as you need. Each modulator appears as a card with its own controls, an <strong>ON / OFF</strong> toggle, and a <strong>×</strong> remove button.</p>
+<p>Open any lane&#39;s engine editor and scroll to the <strong>MODULATORS</strong> section. Press <strong>+ LFO</strong>, <strong>+ ADSR</strong> or <strong>+ S&amp;H</strong> to add a modulator; you can add as many as you need. Each modulator appears as a card with its own controls, an <strong>ON / OFF</strong> toggle, and a <strong>×</strong> remove button.</p>
+<p>That row of buttons is not a fixed list — it is built from whatever modulators are registered, so a plugin that ships one adds its own button. <strong>S&amp;H is exactly that</strong>: a modulator that arrives as an external plugin rather than from Loom&#39;s own source, and behaves like any other.</p>
 <p><strong>The section is not empty to begin with.</strong> Every engine arrives with its own modulators already wired, and on some engines they are load-bearing rather than decorative:</p>
 <table>
 <thead>
@@ -1567,6 +1706,29 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <td>300 ms</td>
 </tr>
 </tbody></table>
+<h3 id="06-modulation-and-note-fx--sh-sample--hold">S&amp;H (sample &amp; hold)</h3>
+<p>S&amp;H latches a new random value at a steady rate and <strong>holds</strong> it until the next one. Where the LFO glides, this jumps: it is the stepped, jittery movement of a classic modular random source. Aim it at a filter cutoff for burbling per-step colour, at pitch for a small amount of analogue drift, or at a send for a randomly appearing effect.</p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Range</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Rate</td>
+<td>0.1 – 20 Hz</td>
+<td>6 Hz</td>
+</tr>
+<tr>
+<td>Bipolar</td>
+<td>Unipolar / Bipolar</td>
+<td>Bipolar</td>
+</tr>
+</tbody></table>
+<p><strong>Bipolar</strong> swings both ways around the destination&#39;s current value; <strong>Unipolar</strong> only adds. Like the LFO it can run shared across the lane or per voice.</p>
+<p>The steps are random but not <em>unrepeatable</em>: the value of a given step is derived from its index, so the same passage lands identically every time — the offline render and what you heard live agree exactly.</p>
 <h3 id="06-modulation-and-note-fx--destinations-and-depth">Destinations and depth</h3>
 <p>Below each modulator card&#39;s controls is a destination list. To route the modulator:</p>
 <ol>
@@ -1577,7 +1739,7 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <p>Remove a destination with its <strong>×</strong> button. Remove the whole modulator with the <strong>×</strong> on the card header.</p>
 <hr>
 <h2 id="06-modulation-and-note-fx--note-fx">Note FX</h2>
-<p>The <strong>NOTE FX</strong> section sits directly below MODULATORS. Note FX processors intercept the lane&#39;s note stream before it reaches the engine, transforming which notes are played and when. Add a processor with <strong>+ Arp</strong> or <strong>+ Chord</strong>. Each processor shows an <strong>ON / OFF</strong> button and a <strong>×</strong> remove button.</p>
+<p>The <strong>NOTE FX</strong> section sits directly below MODULATORS. Note FX processors intercept the lane&#39;s note stream before it reaches the engine, transforming which notes are played and when. Add a processor with <strong>+ Arp</strong>, <strong>+ Chord</strong> or <strong>+ Random</strong>. Each processor shows an <strong>ON / OFF</strong> button and a <strong>×</strong> remove button.</p>
 <p>Note FX are per-lane and persist with the lane&#39;s engine state. Loading a demo resets them to the demo&#39;s configuration.</p>
 <h3 id="06-modulation-and-note-fx--arpeggiator">Arpeggiator</h3>
 <p>The Arp takes each held note and generates a rapid sequence of notes from it according to a scale and direction pattern.</p>
@@ -1607,7 +1769,7 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <tr>
 <td>OCT</td>
 <td>1–4</td>
-<td>Number of octaves the arp spans. Higher values cycle the scale across more octaves before repeating.</td>
+<td>Number of octaves the arp spans, <strong>1 by default</strong>: the run stays in the octave you played. Higher values are opt-in and cycle the scale across more octaves before repeating.</td>
 </tr>
 <tr>
 <td>GATE</td>
@@ -1622,7 +1784,7 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 </tbody></table>
 <p>The Arp fires as many notes as fit inside the original note&#39;s gate duration, so longer notes produce longer runs.</p>
 <h3 id="06-modulation-and-note-fx--chord">Chord</h3>
-<p>The Chord processor replaces each incoming note with a chord built on that note as the root.</p>
+<p>The Chord processor expands each incoming note into a chord built on that note as the root. Out of the box the note you played is part of what you hear — the octave shift is a switch you throw deliberately, never something the processor does behind your back.</p>
 <table>
 <thead>
 <tr>
@@ -1637,12 +1799,74 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <td>Chord voicing to generate</td>
 </tr>
 <tr>
+<td>OCT SHIFT</td>
+<td>ON / OFF (off by default)</td>
+<td>Enables the octave shift. While off the OCT slider is hidden and completely bypassed, so the chord stays rooted on the note you played.</td>
+</tr>
+<tr>
 <td>OCT</td>
 <td>–2 to +2</td>
-<td>Octave offset applied to all notes in the chord</td>
+<td>Only with OCT SHIFT on: transposes the whole chord, root included, that many octaves.</td>
 </tr>
 </tbody></table>
 <p>All notes in the chord share the original note&#39;s timing and gate length.</p>
+<h3 id="06-modulation-and-note-fx--random">Random</h3>
+<p>The Random processor introduces controlled uncertainty into a part — the humanising pass that keeps a loop from sounding like a loop. It is built around <strong>chance sliders</strong>: each of the four things it can vary has its own 0–1 probability, and <strong>every one of them starts at 0</strong>, so adding the processor changes nothing until you ask it to. Turn one up and it intervenes on that fraction of notes.</p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Range / Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CHANCE</td>
+<td>0–1 (default 0)</td>
+<td>How often the <strong>pitch</strong> is moved</td>
+</tr>
+<tr>
+<td>CHOICES</td>
+<td>1–24 (default 6)</td>
+<td>How many alternative pitches are in the pool</td>
+</tr>
+<tr>
+<td>INTERVAL</td>
+<td>1–12 semitones (default 1)</td>
+<td>The spacing between those choices</td>
+</tr>
+<tr>
+<td>MODE</td>
+<td>random / alt</td>
+<td><em>random</em> picks freely; <em>alt</em> walks round-robin through the pool, which is more even and less clumpy</td>
+</tr>
+<tr>
+<td>SIGN</td>
+<td>add / sub / bi (default bi)</td>
+<td>Whether it may move up only, down only, or both ways</td>
+</tr>
+<tr>
+<td>SCALE</td>
+<td>ON / OFF (<strong>on</strong> by default)</td>
+<td>Snaps every generated pitch to a key and scale, so the randomness stays in the song. Switching it on reveals <strong>ROOT</strong> and <strong>SCALE</strong> selects to override the ones the song is using</td>
+</tr>
+<tr>
+<td>VEL CHANCE / VEL RND</td>
+<td>0–1 (0 / 0.3)</td>
+<td>How often, and how far, the <strong>velocity</strong> varies. This is the one to reach for first: a little velocity variation is most of what &quot;played by a human&quot; means</td>
+</tr>
+<tr>
+<td>DUR CHANCE / DUR RND</td>
+<td>0–1 (0 / 0.3)</td>
+<td>How often, and how far, the <strong>gate length</strong> varies (at 1, between half and double)</td>
+</tr>
+<tr>
+<td>DROP</td>
+<td>0–1 (default 0)</td>
+<td>How often a note is <strong>silenced</strong> outright — the fastest way to thin a dense pattern into something with space in it</td>
+</tr>
+</tbody></table>
+<p>The randomness is reseeded each time the transport starts, and stable within one run: a pass you liked stays the way it was until you stop and start again.</p>
 <hr>
 <h2 id="06-modulation-and-note-fx--automation">Automation</h2>
 <p>Loom records parameter automation in two ways:</p>
@@ -1687,12 +1911,15 @@ master bus → master insert chain → master compressor → output      Send A 
 <h2 id="07-mixing-and-fx--per-lane-channel-strip">Per-lane channel strip</h2>
 <p>Each lane owns a <code>ChannelStrip</code>. Its controls are visible below the session grid in the lane&#39;s row.</p>
 <p><img src="images/session-view.png" alt="Loom session view — channel strips appear below the clip grid, one row per lane"></p>
+<p><strong>Clicking a column selects its lane.</strong> The selected column is highlighted, and selecting it brings the clip editor and the instrument controls with it — see <a href="#03-sessions-lanes-clips-scenes--one-lane-is-selected-everywhere">One lane is selected, everywhere</a>.</p>
+<p>Only the column&#39;s <em>background</em> does that: the track name and the empty space between controls. A click that lands on a fader, a knob, M, S, an insert slot or the preset dropdown does that control&#39;s job and nothing else, so moving a fader never yanks you out of the clip you were editing.</p>
 <h3 id="07-mixing-and-fx--level-fader">Level (fader)</h3>
 <p>The vertical slider sets the lane&#39;s output gain as a linear multiplier (0–1 = silence to unity; the percentage label reflects the current value). This is the last gain stage before output, applied after EQ and the per-lane compressor.</p>
 <h3 id="07-mixing-and-fx--pan">Pan</h3>
 <p>The <strong>PAN</strong> knob positions the lane in the stereo field. Centre (0) is the default; turning it left or right continuously shifts the image. The pan value is automatable and can be modulated — see <a href="#06-modulation-and-note-fx">Modulation &amp; Note FX</a>.</p>
 <h3 id="07-mixing-and-fx--mute-and-solo">Mute and Solo</h3>
 <p><strong>M</strong> silences the lane by zeroing its mute gain node. <strong>S</strong> solos the lane: all other lanes are muted in the UI while solo is active. Both controls affect what the sidechain tap feeds downstream — a muted lane&#39;s tap still carries pre-mute signal so sidechain routing remains stable.</p>
+<p>The same two buttons also sit in the <strong>clip editor&#39;s header</strong>, next to ▶ and ●, acting on the lane whose clip is open — so you can drop a part out while editing it without going back to the mixer. They are the same two switches, not a second pair: muting from either place lights both, and with no clip open the header pair is disabled.</p>
 <h3 id="07-mixing-and-fx--3-band-eq">3-band EQ</h3>
 <p>The three EQ knobs apply before the per-lane compressor:</p>
 <table>
@@ -1889,7 +2116,7 @@ and the modulation stays relative to wherever you left the fader.</p>
 </tbody></table>
 <p>The master compressor is bypassed by default. Enable it for glue and loudness control on the final mix, or to tame transient peaks before export. See <a href="#09-saving-and-export">Saving &amp; Export</a> for how the master bus feeds the offline render.</p>
 <h3 id="07-mixing-and-fx--inserts--the-master-rack">INSERTS — the master rack</h3>
-<p>Below MASTER COMP, the INSERTS section holds the master insert chain. Add a slot from the picker and pick its type. The <strong>same eleven plugin types</strong> are available in every rack — per lane, per send, and here on the master:</p>
+<p>Below MASTER COMP, the INSERTS section holds the master insert chain. Add a slot from the picker and pick its type. The <strong>same fifteen plugin types</strong> are available in every rack — per lane, per send, and here on the master:</p>
 <p><strong>Filter (multifilter)</strong></p>
 <ul>
 <li>Type: LP / HP / BP / Notch</li>
@@ -1918,7 +2145,7 @@ and the modulation stays relative to wherever you left the fader.</p>
 <li>Ceil: −30 to 0 dB — the level it will not exceed</li>
 <li>Rel: 0.001–0.5 s — how quickly it lets go</li>
 </ul>
-<p><strong>Tremolo (Trem/Gate)</strong> — an LFO opening and closing the volume. The oldest modulation effect there is: slow and shallow it breathes, fast and deep it chops the sound into a rhythm of its own. Lovely on pads, electric-piano parts and sustained chords. It is also the trance gate: <strong>Square shape + a 1/16 Sync + a little Smth</strong> is that sound, which is why there is no separate gate effect.</p>
+<p><strong>Tremolo (Trem/Gate)</strong> — an LFO opening and closing the volume. The oldest modulation effect there is: slow and shallow it breathes, fast and deep it chops the sound into a rhythm of its own. Lovely on pads, electric-piano parts and sustained chords. It is also the trance gate: <strong>Square shape + a 1/16 Sync + a little Smth</strong> is that sound. (That is a <em>rhythmic</em> gate, driven by the clock. The <strong>Gate</strong> insert below is the other kind — driven by the signal&#39;s own level.)</p>
 <ul>
 <li>Rate: 0.1–12 Hz — how fast it pulses, used when Sync is Free</li>
 <li>Depth: 0–1 — how far it closes between pulses (at 1 it cuts to silence)</li>
@@ -1952,6 +2179,35 @@ and the modulation stays relative to wherever you left the fader.</p>
 <li>Tone: 200–20 000 Hz — a lowpass for the lo-fi dullness</li>
 <li>Mix: 0–1 — dry/wet blend</li>
 <li>Dith: 0–2 — noise summed in <em>before</em> the bit reduction, scaled to the step size. It trades the gritty, signal-locked distortion of low bit depths for an even hiss, which usually sounds better on quiet material</li>
+</ul>
+<p><strong>Auto-Wah</strong> — a bandpass filter whose frequency follows how loud the signal is, so the sound opens up on every transient and closes as it decays. It is the funk-guitar wah pedal with your playing on the treadle instead of your foot; on a bassline or a clav it produces the &quot;talking&quot; quality no static filter gets.</p>
+<ul>
+<li>Sens: 0–1 — how strongly the level moves the filter (default 0.6)</li>
+<li>Range: 0–4800 ¢ — how far it travels, in cents above Base (default 2400, two octaves)</li>
+<li>Base: 80–2000 Hz — the resting frequency it sits at when nothing is playing (default 300)</li>
+<li>Atk: 1–200 ms / Rel: 10–500 ms — how quickly the follower opens and lets go. Short attack for percussive quack, long release for a slow sag</li>
+<li>Q: 0.5–12 — how narrow the peak is; high Q is where the vowel sound lives</li>
+<li>Mix: 0–1 — dry/wet blend</li>
+</ul>
+<p><strong>Gate</strong> — the opposite of the compressor: below the threshold it turns the signal <em>down</em>. Use it to clean the silence between hits — kill the bleed on a sampled drum loop, cut the tail of a reverb-soaked lane, or chop a sustained pad into stabs.</p>
+<ul>
+<li>Thr: −60 to 0 dB — the level below which it closes (default −30)</li>
+<li>Range: −60 to 0 dB — how far down it closes. At −60 it silences; at −12 it just ducks, which sounds far more natural</li>
+<li>Atk: 0.5–100 ms — how fast it opens. Too slow and it eats the transient</li>
+<li>Hold: 0–500 ms — how long it stays open after the level drops back, which stops it chattering on a wobbling signal</li>
+<li>Rel: 10–1000 ms — how gradually it closes</li>
+</ul>
+<p><strong>Ring (ring modulator)</strong> — multiplies the signal by a sine wave, which replaces every partial with a pair at the sum and difference frequencies. The result is inharmonic by construction: bell-like and metallic at high Freq, a tremolo-ish shudder at low Freq, and unrecognisably alien in between. A blunt instrument, and the fastest route out of anything that sounds too clean.</p>
+<ul>
+<li>Freq: 20–4000 Hz (exponential) — the carrier. Below ~30 Hz it reads as amplitude wobble rather than pitch</li>
+<li>Mix: 0–1 — dry/wet blend. Keep the dry signal in to stay musical</li>
+</ul>
+<p><strong>Width</strong> — a stereo widener: it scales the side channel against the mid, and can wobble that scale with an LFO. Below 1 it collapses toward mono, above 1 it exaggerates the sides.</p>
+<ul>
+<li>Width: 0–2 — 0 is mono, 1 is untouched, 2 is double the side signal (default 1)</li>
+<li>Rate: 0.05–8 Hz and Depth: 0–1 — an optional LFO on the width. Depth defaults to 0, so it is a static widener until you ask for movement</li>
+<li>Sync: Free, 1/1, 1/2, 1/2., 1/2t, 1/4, 1/4t — lock that LFO to the project tempo</li>
+<li><strong>Check it in mono.</strong> Pushing Width above 1 works by exaggerating what the two channels do <em>not</em> share, and everything you add that way cancels when the mix is summed.</li>
 </ul>
 <p>Slots in the chain are ordered in series: the output of each slot feeds the input of the next. Each slot has a bypass toggle so you can A/B it without removing it. Individual slots can be removed; adding the same type multiple times is allowed.</p>
 <p>The master insert chain processes the full mixed signal, after the EQ/pan of the master strip and before the master compressor — distinct from the Send A/B returns, which receive per-lane amounts and sum back into the master independently.</p>
@@ -2492,7 +2748,7 @@ uvicorn app:app --port 8765
 <h2 id="11-developer-guide--the-spine">The spine</h2>
 <p>Three structures hold everything together:</p>
 <ol>
-<li><p><strong>A plugin registry</strong> — engines, FX, and modulators are all plugins. They are discovered at build time via a Vite <code>import.meta.glob</code> scan, so adding a new one means dropping a file in the right directory, not editing core wiring.</p>
+<li><p><strong>A plugin registry</strong> — engines, FX and modulators are all plugins, and most of them are no longer in this repository&#39;s source at all. A plugin is a directory under <code>plugins/</code>, compiled into <code>public/plugins/&lt;id&gt;/</code>, and loaded by the browser <strong>at runtime</strong> off a JSON manifest; it compiles against <code>@loom/plugin-sdk</code> and talks to the host through one small runtime ABI, <code>globalThis.Loom</code>. Six engines, fifteen inserts and one modulator ship that way today. A shrinking in-tree SPI, discovered by a Vite <code>import.meta.glob</code> scan, still carries the LFO/ADSR modulators and the note-FX.</p>
 </li>
 <li><p><strong><code>SessionState</code></strong> — the pure data model: lanes contain clips, scenes reference which clip each lane plays. No audio side-effects live here.</p>
 </li>
@@ -2502,21 +2758,32 @@ uvicorn app:app --port 8765
 <h2 id="11-developer-guide--boot">Boot</h2>
 <p><code>src/main.ts</code> is a boot script, not a feature file. It builds the handful of objects everything else needs, then hands them to one wiring module per concern in <code>src/app/</code>:</p>
 <ul>
-<li><code>bootstrapPlugins()</code> first, before anything reads the registry (<code>main.ts:95</code>), then the preset cache derived from it (<code>main.ts:103</code>).</li>
-<li><code>createAudioGraph()</code> (<code>main.ts:114</code>) and the three worklet <code>addModule</code> calls, which every lane allocation waits on (<code>main.ts:129</code>).</li>
-<li>The <code>Sequencer</code> (<code>main.ts:142</code>), the automation recorder and its knob registry (<code>main.ts:143</code>), the <code>DestinationRegistry</code> (<code>main.ts:150</code>), the lane allocator (<code>main.ts:172</code>), and the <code>SessionHost</code> (<code>main.ts:379</code>).</li>
+<li><code>bootstrapPlugins()</code> first, before anything reads the registry (<code>main.ts:92</code>), then <code>loadPlugins()</code> — the external plugins, fetched and validated (<code>main.ts:98</code>). That second one is a <strong>promise</strong>, and the difference matters: everything the in-tree registry knows is available synchronously, while every engine and insert that arrives from <code>public/plugins/</code> lands later. Code that enumerates components at boot sees only the built-ins unless it awaits it, which is written down at <code>main.ts:647</code>.</li>
+<li><code>createAudioGraph()</code> (<code>main.ts:120</code>) and the worklet <code>addModule</code> calls, which every lane allocation waits on (<code>main.ts:136</code>–<code>154</code>). The order inside that block is load-bearing too: <code>loom-processor</code> installs <code>globalThis.Loom</code> and must be registered <strong>before</strong> any plugin&#39;s <code>dsp.js</code> is added, or the plugin has nothing to register its renderer with.</li>
+<li>The <code>Sequencer</code> (<code>main.ts:162</code>), the <code>DestinationRegistry</code> (<code>main.ts:170</code>), the lane allocator (<code>main.ts:192</code>), and the <code>SessionHost</code> (<code>main.ts:377</code>).</li>
 <li>Then roughly a dozen <code>wireX(...)</code> / <code>createXFeature(...)</code> calls, each of which owns one concern end to end and lives in its own file under <code>src/app/</code>.</li>
 </ul>
-<p><strong>The order is load-bearing</strong>, and the comments in <code>main.ts</code> say why at each step. <code>wireMenuBar</code> is deliberately the last statement of boot (<code>main.ts:813</code>): its action table names a handle from nearly every feature above, so the bar appearing is the proof that boot ran start to finish.</p>
+<p><strong>The order is load-bearing</strong>, and the comments in <code>main.ts</code> say why at each step. <code>wireMenuBar</code> is deliberately the last statement of boot (<code>main.ts:810</code>): its action table names a handle from nearly every feature above, so the bar appearing is the proof that boot ran start to finish.</p>
 <p>If you are looking for the code behind a control, it is almost never in <code>main.ts</code> — find the <code>wireX</code> call that mentions it and open that module.</p>
-<h2 id="11-developer-guide--the-plugin-registry">The plugin registry</h2>
-<p><code>src/app/plugin-bootstrap.ts</code> calls <code>import.meta.glob</code> at build time over two trees:</p>
-<pre><code class="language-text">src/engines/*.ts       — synth engines
-src/plugins/**/*.ts    — the WHOLE plugin tree: fx/, modulators/, notefx/
-</code></pre>
-<p>(<code>*.test.ts</code> is excluded from both.) Every module in those trees is eagerly imported. Any exported value that satisfies the <code>PluginFactory</code> shape (<code>{ kind, manifest, create }</code>, with <code>kind</code> one of <code>synth</code> / <code>fx</code> / <code>modulator</code>) is collected and registered via <code>registerPlugin</code>.</p>
-<p><strong>Note-FX are the exception.</strong> A <code>NoteFxFactory</code> declares <code>defaultParams()</code> instead of <code>create()</code>, so the shape check skips it (<code>plugin-bootstrap.ts:36</code>). Those files call <code>registerPlugin</code> themselves at module scope — the glob&#39;s only job for that category is to evaluate the module. That is why the second glob has to cover the whole plugin tree, not just <code>fx/</code> and <code>modulators/</code>.</p>
+<h2 id="11-developer-guide--how-a-plugin-gets-in">How a plugin gets in</h2>
+<h3 id="11-developer-guide--the-external-abi--the-normal-case">The external ABI — the normal case</h3>
+<p>The browser cannot list a directory, so <strong><code>public/plugins/index.json</code> is the discovery mechanism</strong>: a flat array of plugin ids, rewritten by <code>npm run build:plugins</code>. For each id, <code>loadPlugins</code> (<code>src/plugin-host/plugin-host.ts</code>) fetches <code>plugin.json</code>, validates it as <strong>data</strong> before a single line of the plugin runs (<code>manifest-validate.ts</code>), adopts its declared components into the engine / modulator / fx registries, seeds any <code>presets.json</code>, and collects its <code>dsp.js</code> URL for the worklet.</p>
+<p>Two properties of that loop are worth relying on:</p>
+<ul>
+<li><strong>Failure is contained and complete.</strong> A plugin that throws — even one whose components were already adopted before its own module blew up — is rolled back in full and recorded in the load report. One bad plugin never takes the app down, and never leaves a half-registered engine behind: visible in the selector, silent at note time, is exactly the failure this design refuses to allow.</li>
+<li><strong>A plugin&#39;s JS is loaded through a <code>blob:</code> URL</strong>, not a bare <code>import(url)</code> (<code>module-loader.ts</code>). A plugin is a static asset in <code>public/</code>, and Vite&#39;s dev middleware refuses to serve one as a module — so the obvious import works in the production build and breaks under <code>npm run dev</code>. Fetching the source and evaluating it from a blob behaves identically in both, and is the same mechanism a user-installed plugin will need when its bytes live in IndexedDB instead of at a URL.</li>
+</ul>
+<p>The worklet half is symmetrical: <code>loom-processor.ts</code> installs <code>globalThis.Loom</code> (<code>registerRenderer</code>, <code>registerModulatorKernel</code>) and the host guarantees that module is <code>addModule</code>&#39;d <strong>first</strong>, so every plugin <code>dsp.js</code> added afterwards shares the realm and can reach the registry. The ABI deliberately carries no DSP — everything a plugin uses from <code>@loom/plugin-sdk</code> is compiled into the plugin&#39;s own bundle, which is what lets the ABI stay stable across versions.</p>
+<h3 id="11-developer-guide--what-is-left-of-the-in-tree-spi">What is left of the in-tree SPI</h3>
+<p><code>src/app/plugin-bootstrap.ts</code> still calls <code>import.meta.glob</code> at build time over <code>src/engines/*.ts</code> and <code>src/plugins/**/*.ts</code> (<code>*.test.ts</code> excluded), and any exported value matching the <code>PluginFactory</code> shape (<code>{ kind, manifest, create }</code>) is registered. <strong>No insert is found this way any more</strong> — all fifteen are external. What the glob does today is mostly to <em>evaluate</em> modules so their module-scope registrations run:</p>
+<ul>
+<li><strong>Modulators</strong> call <code>registerModulator</code> at module scope into <code>src/modulation/modulator-registry.ts</code> — their own door, the same one a plugin modulator arrives through. The shape check does not match them.</li>
+<li><strong>Note-FX</strong> declare <code>defaultParams()</code> instead of <code>create()</code>, so the shape check skips them too; those files call <code>registerPlugin</code> themselves (<code>src/plugins/notefx/arp.ts:11</code>).</li>
+</ul>
+<p><code>bootstrapPlugins</code> then bridges every registered engine descriptor into the plugin registry, so <code>listPlugins(&#39;engine&#39;)</code> keeps seeing all nine.</p>
 <p>The engine registry (<code>src/engines/registry.ts</code>) supports both a <strong>singleton</strong> pattern (<code>registerEngine</code>) for shared instances and a <strong>factory</strong> pattern (<code>registerEngineFactory</code> / <code>createEngineInstance</code>) for per-lane instances that need independent state.</p>
+<h3 id="11-developer-guide--never-ask-an-engine-its-name">Never ask an engine its name</h3>
+<p>Anything the core needs to know about a component goes through <strong>one door</strong>, <code>src/plugins/capabilities.ts</code> — <code>clipContent</code>, <code>slide</code>, <code>outputTrim</code>, <code>acceptsNoteFx</code>, <code>defaultNoteView</code>, and so on. A built-in answers from code, a plugin from its manifest, and the caller cannot tell which; that is the whole point, because it is what let six engines move out of <code>src/</code> without the core noticing. Every accessor there returns a safe default for an unknown id and never <code>undefined</code> — an unregistered engine that blanked its lane&#39;s UI would fail silently. <strong>An <code>engineId === &#39;…&#39;</code> comparison anywhere outside that file is a bug.</strong></p>
 <p><code>listEngines()</code> reads from the singleton map and is the source of metadata (name, type, polyphony, parameter specs) used to populate the lane engine selector.</p>
 <h3 id="11-developer-guide--what-declaring-a-param-actually-buys-you">What &quot;declaring a param&quot; actually buys you</h3>
 <p>Engines declare their parameters as <code>EngineParamSpec[]</code>, and for the catalogue that is the whole story: <code>listAutomationTargets</code> walks <code>engine.params</code> and pushes <code>`${lane.id}.${spec.id}`</code> for every continuous one (<code>src/automation/automation-targets.ts:120</code>). Automation and the modulation dropdown both read that catalogue through <code>DestinationRegistry.list()</code>. Neither of them calls <code>getAudioParams()</code>.</p>
@@ -2561,45 +2828,42 @@ src/plugins/**/*.ts    — the WHOLE plugin tree: fx/, modulators/, notefx/
 <p>That precedence has a consequence worth knowing before you touch clip automation: a clip&#39;s envelope array spans the clip&#39;s <code>lengthBars</code> and is blind to <strong>both</strong> shortenings, so inside a shorter loop the curve slides against the notes. It is written down as known debt at the top of <code>src/core/clip-envelope-length.ts</code> and pinned by tests — meet it as a decision, not a mystery.</p>
 <h2 id="11-developer-guide--how-to-recipes">How-to recipes</h2>
 <h3 id="11-developer-guide--add-a-synth-engine">Add a synth engine</h3>
-<p>Since synthesis moved into the AudioWorklet, an engine is <strong>two halves in two
-places</strong>: a metadata descriptor on the main thread and a per-sample renderer
-inside the worklet bundle. There are <strong>five</strong> steps, and skipping either of the
-last two gives you an engine that appears in the lane selector and then plays
-<strong>silence</strong> — the failure is quiet, so do all five.</p>
+<p><strong>Write a plugin. Do not add a file to <code>src/</code>.</strong> All six melodic engines are
+external plugins, and yours should be too — it needs no access to this repo&#39;s
+source, and it is a directory no future PR review has to carry. Full walkthrough
+in <a href="../plugin-development.md"><code>docs/plugin-development.md</code></a>; the shape:</p>
 <ol>
-<li><strong>Metadata descriptor</strong> — <code>src/engines/&lt;id&gt;.ts</code>. Build it with
-<code>createDescriptorEngine(...)</code> and register it with <code>registerEngineFactory(id, …)</code><ul>
-<li><code>registerEngine(...)</code> at module scope. Declare params as <code>EngineParamSpec[]</code>.
-This half carries no DSP: it describes the parameters and the UI.</li>
-</ul>
-</li>
-<li><strong>Renderer</strong> — <code>src/audio-dsp/&lt;id&gt;-renderer.ts</code>, a pure per-sample voice
-renderer that calls <code>registerRenderer(id, ctor)</code> at module scope. This is the
-half that makes sound, and it is plain TypeScript — unit-test it directly, no
-<code>AudioContext</code> required.</li>
-<li><strong>Implement the live-params hook</strong> — <code>setLiveParams</code> (and <code>setLiveSubParams</code>
-where the engine has per-slot params) on <code>VoiceRenderer</code>
-(<code>src/audio-dsp/types.ts</code>). Read your <strong>continuous</strong> params out of the live bag
-every sample so a knob moves the note already sounding; copy the
+<li><strong>Scaffold</strong> — <code>npm run plugin -- new plugins/&lt;id&gt;</code>.</li>
+<li><strong>Declare it in <code>plugin.json</code>.</strong> The manifest is the whole declaration: <code>id</code>,
+<code>loomApi: 1</code>, and a <code>components</code> array. An engine component carries <code>kind: &quot;engine&quot;</code>, <code>polyphony</code>, its <code>params</code>, a <code>groups</code> table (which sections exist,
+their title, order, colour, and which share a row — omit it and the grid falls
+back to first-appearance order, one row per group, no colour), an optional
+<code>modulators</code> array shipped with the sound, and a <code>capabilities</code> block. Add
+<code>&quot;dsp&quot;: &quot;dsp.js&quot;</code> and <code>&quot;presets&quot;: &quot;presets.json&quot;</code> alongside.</li>
+<li><strong>Write <code>dsp.ts</code></strong> — the pure per-sample voice renderer, registered with
+<code>Loom.registerRenderer(id, ctor)</code> at module scope. It is plain TypeScript with
+no <code>AudioContext</code>: unit-test it directly, next to the code, in
+<code>plugins/&lt;id&gt;/dsp.test.ts</code>.</li>
+<li><strong>Implement the live-params hook</strong> — read your <strong>continuous</strong> params out of
+the live bag every sample so a knob moves the note already sounding; copy the
 <strong>structural</strong> ones — waveform, filter model, unison size, envelope times —
 into your own fields once, at construction, from the trigger-time snapshot.
-Both hooks are optional on the interface, so a renderer that skips this
-compiles clean and passes the whole suite; it is just the one engine whose
-knobs go dead mid-note. The registry-driven test in
-<code>src/audio-dsp/live-params.dsp.test.ts</code> walks <code>WORKLET_ENGINE_IDS</code> and catches
-the omission — but only once step 5 is done.</li>
-<li><strong>Side-effect import in the worklet</strong> — add <code>import &#39;../audio-dsp/&lt;id&gt;-renderer&#39;;</code>
-to <a href="https://github.com/IJOL/Loom/blob/main/src/audio-worklet/loom-processor.ts"><code>src/audio-worklet/loom-processor.ts</code></a>.
-The worklet is a separate bundle; without this import the renderer never
-registers <em>inside it</em> and <code>createRenderer</code> throws
-<code>no renderer registered for engine &#39;&lt;id&gt;&#39;</code>.</li>
-<li><strong>Route the lane</strong> — add the id to <code>WORKLET_ENGINE_IDS</code> in
-<a href="https://github.com/IJOL/Loom/blob/main/src/app/lane-allocator.ts"><code>src/app/lane-allocator.ts</code></a>. The allocator
-only sends listed ids down the worklet path; an unlisted id falls through,
-the lane gets no engine, and nothing sounds.</li>
+The hook is optional, so a renderer that skips it compiles clean and passes
+the whole suite; it is just the one engine whose knobs go dead mid-note. The
+registry-driven test in <code>src/audio-dsp/live-params.dsp.test.ts</code> catches it.</li>
+<li><strong>Build it</strong> — <code>npm run build:plugins</code>. <strong>Nothing you did is visible until
+this runs</strong>: the app loads <code>public/plugins/</code>, and the dev server does not
+compile <code>plugins/</code> for you. A stale build looks exactly like a broken engine.</li>
 </ol>
-<p>Two things about the registered descriptor are worth knowing, because they look
-like bugs otherwise:</p>
+<p>There is no <code>WORKLET_ENGINE_IDS</code> list to add yourself to any more — it is a live
+view over &quot;is this id worklet-hosted&quot;, and any plugin id answers yes.</p>
+<p><strong>Adding an engine in-tree is the exception and needs a reason.</strong> The three that
+still live in <code>src/engines/</code> — <code>sampler</code>, <code>audio</code>, <code>drums-machine</code> — are there
+because each owns browser resources an external plugin has no way to hold:
+decoded buffers, IndexedDB, per-voice <code>AudioParam</code>s. &quot;I have a checkout, so it is
+easier&quot; is not that reason.</p>
+<p>If you do write one, two things about the registered descriptor look like bugs
+and are not:</p>
 <ul>
 <li><strong>Its synthesis surface is inert, not throwing.</strong> <code>createDescriptorEngine</code>
 gives you a <code>createVoice()</code> that returns a no-op <code>Voice</code> with an empty
@@ -2608,10 +2872,10 @@ the live or offline path calls it — the registered singleton is purely
 metadata, and modulation for these engines runs sample-accurately inside the
 worklet (<code>src/audio-dsp/modulation-runtime.ts</code>).</li>
 <li><strong>The bridged <em>plugin</em> does throw.</strong> <code>bootstrapPlugins</code> wraps each engine
-descriptor in a synth <code>PluginFactory</code> so <code>listPlugins(&#39;synth&#39;)</code> keeps seeing
+descriptor in an engine <code>PluginFactory</code> so <code>listPlugins(&#39;engine&#39;)</code> keeps seeing
 every engine, and that wrapper&#39;s <code>create()</code> throws on purpose
-(<code>src/app/plugin-bootstrap.ts:81</code>). It is a tripwire: if you see it, something
-called <code>createInstance(&#39;synth&#39;, …)</code> instead of going through the lane
+(<code>src/app/plugin-bootstrap.ts:90</code>). It is a tripwire: if you see it, something
+called <code>createInstance(&#39;engine&#39;, …)</code> instead of going through the lane
 allocator.</li>
 </ul>
 <p>See <a href="#04-engines">Engines</a> for the full engine catalogue.</p>
@@ -2640,20 +2904,42 @@ no <code>onChange</code> fires and <code>commitParam</code> never runs.</li>
 a lane&#39;s preset without clobbering the saved params it is about to replay — a
 saved tweak beats its lane preset.</p>
 <h3 id="11-developer-guide--add-an-fx-insert">Add an FX insert</h3>
+<p>An insert is a plugin like an engine, with one structural difference: <strong>it is not
+a worklet</strong>. Only synthesis runs in the worklet; an insert builds ordinary Web
+Audio nodes on the main thread.</p>
 <ol>
-<li>Create <code>src/plugins/fx/&lt;name&gt;.ts</code>.</li>
-<li>Export a <code>PluginFactory</code> with <code>kind: &#39;fx&#39;</code>. Do <strong>not</strong> call <code>registerPlugin</code> — the glob&#39;s shape check collects it for you; none of the eleven shipped inserts registers itself.</li>
-<li>That is all. The &quot;+ Add insert&quot; picker is an unfiltered <code>listPlugins(&#39;fx&#39;)</code> (<code>src/session/lane-insert-ui.ts:218</code>), and the same builder serves lanes, the master rack and both send racks, so a new insert appears in all four at once.</li>
+<li><code>npm run plugin -- new plugins/&lt;name&gt;</code>.</li>
+<li>In <code>plugin.json</code>, declare a component with <code>kind: &quot;fx&quot;</code> and its <code>params</code>.</li>
+<li>Write <code>main.ts</code> — the factory that builds the node graph. The SDK&#39;s
+main-thread builders are there for you (<code>modulated-delay</code>, <code>signal-max</code>,
+<code>envelope-follower</code>); they sit <strong>below the dividing line</strong> in
+<code>packages/loom-plugin-sdk/src/index.ts</code>, and importing one into a <code>dsp.ts</code>
+renderer will not work, because that half runs inside the worklet with no
+<code>AudioContext</code>.</li>
+<li><code>npm run build:plugins</code>.</li>
 </ol>
-<p>Separately from the picker, the <code>FxBus</code> seeds send A with <code>delay</code> and send B with <code>reverb</code> when it is constructed (<code>src/core/fx.ts:30</code>). That is a default, not a restriction — both are offered as ordinary inserts too.</p>
+<p>The &quot;+ Add insert&quot; picker is an unfiltered <code>listPlugins(&#39;fx&#39;)</code>
+(<code>src/session/lane-insert-ui.ts</code>), and the same builder serves lanes, the master
+rack and both send racks, so a new insert appears in all four at once.</p>
+<p>Separately from the picker, the <code>FxBus</code> seeds send A with <code>delay</code> and send B with <code>reverb</code> when it is constructed (<code>src/core/fx.ts:30</code>). That is a default, not a restriction — both are offered as ordinary inserts too. <strong>Seeding needs the plugin registry to be up</strong>: the FxBus cannot seed a send with an insert that has not loaded yet.</p>
 <h3 id="11-developer-guide--add-a-modulator">Add a modulator</h3>
-<p><code>kind: &#39;modulator&#39;</code> plugins are collected the same way and bound the same way: <code>ConnectionBinder.apply</code> builds <code>modulator.output → GainNode(depth × (max − min)) → targetAudioParam</code> (<code>src/modulation/connection-binder.ts:44</code>).</p>
-<p>Be aware of the ceiling before you invest in one. The MODULATORS panel offers exactly two buttons, <strong>+ LFO</strong> and <strong>+ ADSR</strong> (<code>src/modulation/modulation-ui.ts:63</code>), so there is no UI path that adds a third kind. <code>ModulationHost</code> hardcodes <code>LFOVoice</code> / <code>ADSRVoice</code> and routes any other kind through <code>createInstance</code>, which its own comment describes as a stateless stub whose <code>currentValue()</code> returns 0 (<code>src/modulation/modulation-host.ts:85</code>). Inside the worklet, <code>ModLite.kind</code> is typed <code>&#39;lfo&#39; | &#39;adsr&#39;</code> (<code>src/audio-dsp/modulation-runtime.ts:24</code>), so a custom modulator cannot reach a melodic engine&#39;s params at all. Adding a genuinely new modulator kind is a change to those three places, not a drop-in.</p>
+<p>A modulator can be a plugin too — <code>plugins/sh/</code> (sample &amp; hold) is the shipped
+proof. Declare <code>kind: &quot;modulator&quot;</code> with a <code>modulator</code> block naming its <code>driver</code>
+(<code>time</code> or <code>gate</code>), the <code>scopes</code> it supports (<code>shared</code>, <code>per-voice</code>) and an
+<code>idPrefix</code>; a <code>time</code>-driven one also ships a per-sample kernel registered with
+<code>Loom.registerModulatorKernel</code> inside the worklet. In-tree modulators come
+through the same door, <code>registerModulator</code> in
+<code>src/modulation/modulator-registry.ts</code> — the LFO and the ADSR just call it
+directly.</p>
+<p>Binding is unchanged: <code>ConnectionBinder.apply</code> builds <code>modulator.output → GainNode(depth × (max − min)) → targetAudioParam</code>
+(<code>src/modulation/connection-binder.ts:44</code>) for the native-node targets, while a
+worklet engine&#39;s params are modulated per sample by <code>ModulationRuntime</code>.</p>
 <p>See <a href="#06-modulation-and-note-fx">Modulation and Note FX</a> for the user-facing side.</p>
 <h3 id="11-developer-guide--add-a-note-fx">Add a note-FX</h3>
 <p><code>kind: &#39;notefx&#39;</code> is the fourth plugin kind — a transform applied to notes before they reach the engine, per lane, persisted in <code>lane.engineState.noteFx</code>. A <code>NoteFxFactory</code> declares <code>defaultParams()</code> and has no <code>create()</code>, so the bootstrap&#39;s shape check ignores it: the file <strong>must</strong> call <code>registerPlugin</code> itself at module scope (<code>src/plugins/notefx/arp.ts:11</code>). The processor that does the work lives beside it in <code>src/notefx/</code>.</p>
 <h3 id="11-developer-guide--add-a-preset">Add a preset</h3>
-<p>Open <code>public/presets/&lt;engine&gt;.json</code> and append an entry. The <code>gm</code> field is optional (an integer GM program number for MIDI-import matching). JSON is the source of truth; <code>preset-loader.ts</code> validates and <code>preset-apply.ts</code> applies it at runtime by calling <code>engine.applyPreset</code>. Each engine&#39;s JSON keys are its own vocabulary — do not use a generic <code>setBaseValue</code> loop.</p>
+<p>For one of the six melodic engines, the presets ship <strong>with the plugin</strong>: append an entry to <code>plugins/&lt;id&gt;/presets.json</code> and run <code>npm run build:plugins</code>. <code>plugin-host</code> seeds them at load. For Sampler or Drums, the file is still <code>public/presets/&lt;engine&gt;.json</code>.</p>
+<p>Either way the <code>gm</code> field is optional (an integer GM program number for MIDI-import matching), JSON is the source of truth, <code>preset-loader.ts</code> validates and <code>preset-apply.ts</code> applies it at runtime by calling <code>engine.applyPreset</code>. Each engine&#39;s JSON keys are its own vocabulary — do not use a generic <code>setBaseValue</code> loop.</p>
 <h3 id="11-developer-guide--add-a-synth-drum-kit">Add a synth drum kit</h3>
 <p>Append an object to the <code>KITS</code> array in <code>src/core/drums.ts</code>. Kits are parameter bags over shared DSP primitives. To add a new drum <em>voice</em> (not just a new kit): extend the <code>DrumVoice</code> union, add it to <code>DRUM_LANES</code>, add an entry to every kit, implement a <code>play&lt;Voice&gt;()</code> method, and add a <code>trigger()</code> case.</p>
 <h3 id="11-developer-guide--add-a-sampled-drum-kit">Add a sampled drum kit</h3>
@@ -2664,7 +2950,7 @@ saved tweak beats its lane preset.</p>
 </ol>
 <p>68 sampled kits ship under <code>public/drumkits/</code>; <code>tr808</code>, <code>acoustic</code> and <code>dirt</code> are the hand-curated three and the clearest reference for this layout.</p>
 <h2 id="11-developer-guide--conventions">Conventions</h2>
-<p><strong>File size: 300 lines of code as a target, 500 as a hard cap.</strong> Lines of <em>code</em> — comment lines and blank lines do not count towards either number. The distinction is not pedantry: <code>src/main.ts</code> is 820 raw lines and 488 lines of code, which is inside the cap by the rule that applies and over it by the one that does not. A file that is long because it explains itself is fine; a file that is long because it does too much is the thing the cap exists to catch. When one crosses the line, split it by concern — <code>src/app/</code> is what that looks like in practice.</p>
+<p><strong>File size: 300 lines of code as a target, 500 as a hard cap.</strong> Lines of <em>code</em> — comment lines and blank lines do not count towards either number. The distinction is not pedantry: <code>src/main.ts</code> is 816 raw lines and 473 lines of code, which is inside the cap by the rule that applies and over it by the one that does not. A file that is long because it explains itself is fine; a file that is long because it does too much is the thing the cap exists to catch. When one crosses the line, split it by concern — <code>src/app/</code> is what that looks like in practice.</p>
 <p><strong>Assertions are relative.</strong> See Testing, below.</p>
 <h2 id="11-developer-guide--source-layout-tour">Source layout tour</h2>
 <pre><code class="language-text">src/
@@ -2681,13 +2967,22 @@ saved tweak beats its lane preset.</p>
                     — the seven strip params (level, pan, sends A/B, EQ x3)
                       declared ONCE: engine params, automation targets,
                       modulation targets and mixer knob ids all read this
-  engines/        SynthEngine abstraction, registry, one file per engine —
-                  nine register today: tb303, subtractive, fm, wavetable,
-                  karplus, westcoast, sampler, audio (the dedicated audio
-                  channel), drums-engine — plus engine-selector UI,
+  engines/        SynthEngine abstraction, registry, and the HOST side of an
+                  instrument. Only THREE engines still have a file here —
+                  sampler, audio (the dedicated audio channel) and drums-engine
+                  — because each owns browser resources a plugin cannot hold.
+                  The other six arrive from plugins/ and register the same
+                  descriptor shape from their manifest. Nine in total.
+                  Also: the lane engine wrappers (worklet-lane-engine,
+                  sampler-/drums-/audio-worklet-engine), engine-selector UI,
                   engine-param-commit (the one write path for a param edit) and
                   engine-randomize (the 🎲 dice, derived from each engine&#39;s
                   declared EngineParamSpec rather than per-engine knowledge)
+  plugin-host/    How an external plugin gets in: plugin-host (index.json is
+                  the discovery mechanism; validate-as-data, then roll back in
+                  full if it throws), manifest-validate, module-loader (blob:
+                  URLs, because Vite dev refuses to serve public/ as a module)
+                  and loom-api (the main-thread half of globalThis.Loom)
   session/        SessionState model + all session UI
                   (session-host, session-ui, session-inspector,
                   clip-editors/, session-migration)
@@ -2696,17 +2991,19 @@ saved tweak beats its lane preset.</p>
                     starts from a released desk
   modulation/     LFO/ADSR voices, ModulationHost, ModulatorScope,
                   connection binder
-  plugins/        Plugin SPI + registry
-                  fx/       — eleven inserts: bitcrusher, chorus, compressor,
-                              delay, distortion, flanger, limiter, multifilter,
-                              phaser, reverb, tremolo. chorus and flanger share
-                              modulated-delay.ts; reverb reads reverb-ir.ts.
-                              insert-chain.ts is the generic host, not a plugin
-                  modulators/ — lfo, adsr
-                  notefx/   — arp, chord (the fourth plugin kind; the
-                              processors themselves live in src/notefx/)
-  presets/        Preset loader + apply logic
-                  (JSON assets live in public/presets/)
+  plugins/        What is left of the in-tree SPI. There is NO fx/ directory
+                  any more — all fifteen inserts are external plugins
+                  capabilities.ts — the ONE door through which the core asks
+                    what a component can do. An engineId === &#39;…&#39; anywhere else
+                    is a bug
+                  modulators/ — lfo, adsr (they call registerModulator at
+                              module scope, the same door a plugin modulator
+                              arrives through)
+                  notefx/   — arp, chord, random (the processors themselves
+                              live in src/notefx/)
+  presets/        Preset loader + apply logic. A melodic engine&#39;s presets ship
+                  with its plugin; public/presets/ now holds only what the
+                  in-tree engines need
   midi/           SMF parser, MIDI-to-session transform, GM lookup, import UI
   samples/        Sample types, IndexedDB store, buffer cache, keymap,
                   import metadata
@@ -2716,11 +3013,17 @@ saved tweak beats its lane preset.</p>
                   arrangement-from-session, arrangement-ops,
                   arrangement-runtime (records clip-launches + knob automation;
                   surfaced via the REC group&#39;s take mode — see performance-feature)
-  audio-dsp/      THE SYNTHESIS KERNEL. Pure per-sample DSP that the worklet
-                  runs: one &lt;id&gt;-renderer.ts per engine (self-registering into
-                  renderer-registry.ts), voice-manager, scheduler-queue,
-                  modulation-runtime, plus primitives (osc, filter, ladder,
-                  sync-osc, unison, adsr). No AudioContext — unit-test directly
+  audio-dsp/      THE SYNTHESIS KERNEL, minus the engines. voice-manager,
+                  scheduler-queue, modulation-runtime + modulator-kernels, and
+                  renderer-registry — which is now filled AT RUNTIME by plugin
+                  dsp.js modules, not by in-tree imports; there is no
+                  &lt;id&gt;-renderer.ts per melodic engine any more. The DSP that
+                  stayed in-house is drums/ and sample/. The shared primitives
+                  (osc, filter, ladder, sync-osc, unison, fold, adsr) moved to
+                  packages/loom-plugin-sdk, where a plugin can reach them.
+                  No AudioContext — unit-test directly
+                  param-index.ts — params are addressed BY INDEX in the audio
+                    loop, so a per-sample render does zero name lookups
                   param-smoother.ts — the lane&#39;s live param bag: slews only the
                     params still in flight, and is what makes a knob move the
                     note already sounding
@@ -2734,11 +3037,15 @@ saved tweak beats its lane preset.</p>
   export/         Offline scene/WAV render + the live take recorder
   patterns/       The pattern library (styles x patterns) + its picker UI
   perf/           Performance diagnostics (the PERF HUD)
-  polysynth/      The Subtractive lane&#39;s PRESET SURFACE, and nothing else: the
-                  preset dropdown + Randomize (polysynth-presets), apply, store,
-                  templates and the param id list (poly-params). The PolySynth
-                  class that once hosted the voices is gone — Subtractive is a
-                  descriptor engine rendered in the worklet like the other five
+  instrument-presets/
+                  The instrument page&#39;s USER-PRESET SURFACE, and nothing else:
+                  the preset dropdown + Randomize, apply, store, templates and
+                  the param id list (poly-params). Was src/polysynth/ before the
+                  poly → instrument rename; the PolySynth class it was named
+                  after went with the worklet cutover. The `poly` names INSIDE
+                  it are load-bearing and must not be renamed: the localStorage
+                  key &#39;tb303-poly-presets-v1&#39; and the JSON shape stored under
+                  it. There are no migrations in this project
   app/            Boot wiring, one module per concern (37 files). main.ts calls
                   into these; it does not contain them — see &quot;Boot&quot; above
                   audio spine  — audio-graph, lane-allocator, engine-swap,
@@ -2758,13 +3065,15 @@ saved tweak beats its lane preset.</p>
                   features     — performance-feature, arrangement-playback,
                                  automation-recording, stretch-resync,
                                  warp-resync
-                  plugin-bootstrap — the build-time glob scan (see above)
+                  plugin-bootstrap — the build-time glob scan, now mostly a way
+                                 to RUN module-scope registrations (see above)
   save/           SaveManager (schemaVersion: 3), auto-history (AutoHistory:
                   snapshot-diff undo/redo + gesture coalescing, wired to the
                   transport-bar ↺/↻ buttons), history-wiring (withUndo /
                   attachKnobUndo + the undo keyboard — LIVE and load-bearing:
                   withUndo wraps mutation sites across the app)
-  notefx/         Note-FX plugin category (arpeggiator, chord spread) — per-lane
+  notefx/         Note-FX processors (arpeggiator, chord spread, random) —
+                  per-lane, applied to notes before they reach the engine
   automation/     Clip envelope recording + read-back, the automation painter
                   and its LFO, the knob right-click menu — and the
                   DestinationRegistry, the ONE catalogue every parameter
@@ -2774,11 +3083,36 @@ saved tweak beats its lane preset.</p>
   demo/           Baked MIDI demos + demo picker
   styles/         SCSS
 
+plugins/          PLUGIN SOURCE — 22 shipped directories, each a plugin.json
+                  plus its code: six engines (tb303, subtractive, fm, wavetable,
+                  karplus, westcoast), fifteen inserts (autowah, bitcrusher,
+                  chorus, compressor, delay, distortion, flanger, gate, limiter,
+                  multifilter, phaser, reverb, ringmod, tremolo, width) and one
+                  modulator (sh). A component that synthesises ships dsp.ts; an
+                  insert ships main.ts and builds native nodes on the main
+                  thread. Its tests live beside it. audio-probe is private:true
+                  — a fixture for the host&#39;s own tests, never shipped
+
+packages/
+  loom-plugin-sdk/  @loom/plugin-sdk — the surface a plugin author compiles
+                  against: manifest + param types, and the shared DSP
+                  primitives. One line in src/index.ts divides two species:
+                  above it runs per-sample in the worklet, below it builds
+                  native Web Audio nodes on the main thread
+
 public/
-  presets/        Engine preset JSONs (20+ per engine, GM-tagged)
+  plugins/        PLUGIN BUILD OUTPUT — written by `npm run build:plugins`,
+                  discovered by the browser through index.json. Versioned,
+                  because the deploy publishes it. Editing plugins/ and not
+                  rebuilding ships the OLD plugin, silently
+  presets/        What the in-tree engines need: sampler, drums-machine and
+                  drum-kits.json. A melodic engine&#39;s presets ship with its
+                  plugin instead
   drumkits/       Sampled drum kits: index.json + &lt;id&gt;.json manifests + WAVs
 
 tools/
+  loom-plugin/    The plugin CLI: `new` scaffolds a directory, `build` compiles
+                  one (or plugins/*) into public/plugins/ and rewrites the index
   stem-service/   Local Python service (FastAPI + audio-separator / Demucs)
                   exposing an HTTP job queue for stem separation.
                   Run: uvicorn app:app --port 8765
@@ -2817,7 +3151,8 @@ tools/
 <p><strong>Pure logic</strong> (<code>src/**/*.test.ts</code>, excluding <code>.dsp</code> and <code>.wiring</code> suffixes) — schemas, scales, migrations, session/arrangement logic, modulation math. These run fast and have no audio dependencies.</p>
 <p><strong>Scheduling with a fake clock</strong> — <code>src/core/lane-scheduler.test.ts</code> and <code>src/session/session-runtime.test.ts</code> drive the look-ahead scheduler through a mock <code>AudioContext</code> clock. The fake clock advances in controlled steps so timing edge-cases are deterministic.</p>
 <p><strong>Real DSP</strong> (<code>*.dsp.test.ts</code>) — audio actually rendered and measured, in two techniques. The <strong>pure kernel</strong> is driven sample by sample with no <code>AudioContext</code> at all: <code>src/audio-dsp/drums/new-voices.dsp.test.ts</code> calls <code>renderSample()</code> in a loop and asserts each voice sounds like what it claims to be. <code>src/audio-dsp/modulation-scope.dsp.test.ts</code> is the same technique, and so is <code>src/audio-dsp/live-params.dsp.test.ts</code> — the registry-driven one that renders every engine in <code>WORKLET_ENGINE_IDS</code> twice, moving a knob mid-note in the second render, and fails the engine whose sound does not change. The <strong>Web Audio nodes that stayed native</strong> render through <code>OfflineAudioContext</code> via <a href="https://github.com/ircam-ismm/node-web-audio-api"><code>node-web-audio-api</code></a>, globalised in <code>test/setup.ts</code>: <code>comp-block</code>, <code>master-comp</code>, <code>master-shaper</code>, <code>strip-ducker</code>, <code>multifilter</code>, the sample/warp helpers and the offline export. (<code>src/performance/arrangement.dsp.test.ts</code> carries the suffix but does neither — it is arrangement maths. Glob for <code>*.dsp.test.ts</code> rather than trusting this list to stay complete.)</p>
-<p>There is no per-engine battery any more. <code>test/setup.ts</code> states the design plainly: the pure DSP kernel is tested directly and the real worklet&#39;s audio is verified in the browser via Playwright, because <code>node-web-audio-api</code> cannot run our TypeScript processor. <code>runStandardEngineBattery</code> in <code>test/dsp-battery.ts</code> survives with <strong>no callers</strong>, so nothing writes to <code>test/output/</code>, and <code>npm run test:wav-diff</code> / <code>test:wav-bless</code> do nothing but print &quot;<code>test/output/ does not exist</code>&quot;. The 90 WAVs in <code>test/golden/</code> are orphans of the batteries the worklet cutover removed. Do not reach for that loop expecting it to work; reviving it is a decision, not a step.</p>
+<p><strong>A plugin&#39;s DSP is tested inside the plugin</strong>, beside the code: <code>plugins/&lt;id&gt;/dsp.test.ts</code>, plus <code>plugins/tb303/tb303-parity.dsp.test.ts</code>, which pins the 303 against a committed <code>reference-render.json</code> so a refactor that changes the sound has to say so out loud. <code>packages/loom-plugin-sdk/src/sdk-parity.test.ts</code> guards the primitives those plugins share. They run in the same <code>npm run test:unit</code> sweep as everything else.</p>
+<p>There is no per-engine WAV battery any more. <code>test/setup.ts</code> states the design plainly: the pure DSP kernel is tested directly and the real worklet&#39;s audio is verified in the browser via Playwright, because <code>node-web-audio-api</code> cannot run our TypeScript processor. <code>runStandardEngineBattery</code> in <code>test/dsp-battery.ts</code> survives with <strong>no callers</strong>, so nothing writes to <code>test/output/</code>, and <code>npm run test:wav-diff</code> / <code>test:wav-bless</code> do nothing but print &quot;<code>test/output/ does not exist</code>&quot;. The 90 WAVs in <code>test/golden/</code> are orphans of the batteries the worklet cutover removed. Do not reach for that loop expecting it to work; reviving it is a decision, not a step.</p>
 <p><strong>Modulation, objective and end-to-end</strong> — <code>src/audio-dsp/modulation-pipeline.test.ts</code> drives the real in-engine path (<code>ModulationRuntime</code> → <code>VoiceManager</code> → renderer) for each of the six melodic engines, with an LFO at full depth on a continuous param, and asserts the rendered RMS envelope differs measurably from the unmodulated render, plus a negative control. It exists because the worklet rewrite dropped the per-engine coverage the old <code>.wiring.test.ts</code> files had. One <code>.wiring.test.ts</code> remains — <code>src/core/ducker-subgraph.wiring.test.ts</code> — and it covers Web Audio subgraph wiring like the sidechain, which is the only place that pattern still applies.</p>
 <p><strong>Assertion rule:</strong> always write relative assertions (<code>a &gt; b</code>, <code>a &gt; b * 2</code>). Never hard-code absolute magnitudes — they are a brittleness smell. If you must write one, justify it in a comment.</p>
 <p><strong>Colour-free output:</strong> every <code>npm test</code> script runs under <code>cross-env NO_COLOR=1</code>. When invoking Vitest directly, prefix with <code>NO_COLOR=1</code>. Do not add <code>--reporter=...</code> — the scripts already configure the right reporter.</p>
@@ -2835,7 +3170,15 @@ tools/
 </tr>
 <tr>
 <td><code>npm run build</code></td>
-<td><code>tsc</code> typecheck + Vite bundle to <code>dist/</code></td>
+<td>Every plugin, then <code>tsc</code> typecheck + Vite bundle to <code>dist/</code></td>
+</tr>
+<tr>
+<td><code>npm run build:plugins</code></td>
+<td><code>plugins/*</code> → <code>public/plugins/</code> + its <code>index.json</code></td>
+</tr>
+<tr>
+<td><code>npm run plugin -- new plugins/&lt;id&gt;</code></td>
+<td>Scaffold a new plugin directory</td>
 </tr>
 <tr>
 <td><code>npm test</code></td>
@@ -2859,6 +3202,7 @@ tools/
 </tr>
 </tbody></table>
 <p><strong>e2e gotcha:</strong> <code>test:e2e</code> and <code>npm test</code> serve <code>dist/</code> with no build step. Playwright boots <code>vite preview</code> over the last production bundle. If you changed <code>src/</code> without rebuilding, the newest features are absent from the bundle and tests fail with &quot;element not found&quot; — which looks like a regression. Always run <code>npm run build</code> before <code>npm run test:e2e</code>.</p>
+<p><strong>The same trap has a plugin-shaped twin.</strong> <code>public/plugins/</code> is build output, and nothing recompiles it for you — not the dev server, not <code>vite build</code> on its own. Change a plugin, reload, and you hear the previous version with no warning; add a new one and its engine is simply missing from the selector. <code>npm run build:plugins</code> after every plugin edit, or <code>npm run build</code>, which does it first.</p>
 <p>Vitest runs test files serially (<code>fileParallelism: false</code>) because <code>node-web-audio-api</code>&#39;s <code>OfflineAudioContext</code> is not safe under parallel forks. The teardown occasionally exits non-zero with <code>ERR_IPC_CHANNEL_CLOSED</code> after all tests pass — that is a tinypool shutdown race, not a test failure; re-run to confirm green.</p>
 <hr>
 <p><code>CLAUDE.md</code> at the repo root is the short-form architecture summary; this chapter is the long form. The convention is that a design doc is pruned from the tree once its work ships (specs drift faster than anything else), so recover rationale from git history when you need it: <code>git log --diff-filter=D --name-only -- docs/superpowers/</code>.</p>
