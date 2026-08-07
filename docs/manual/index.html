@@ -308,6 +308,7 @@ blockquote { border-left: 3px solid var(--accent); margin: .8em 0; padding: .2em
 <h2 id="03-sessions-lanes-clips-scenes--the-grid">The grid</h2>
 <p><img src="images/session-grid.png" alt="Session grid"></p>
 <p>Lane names run along the top header row; row numbers (1, 2, 3 …) label the scenes down the left edge. Scenes launch buttons sit in the rightmost column. Each filled cell shows the clip&#39;s name (or its row number as a fallback) against the clip&#39;s pastel colour. <strong>Click a lane header</strong> to open that lane&#39;s instrument editor; once it is open, the <strong>▸/▾ chevron</strong> that appears on that header collapses and reopens the editor.</p>
+<p>Folding it away is a standing choice about screen space, not a statement about which lane you are on: once collapsed it <strong>stays</strong> collapsed as you move between lanes, and unfolding shows whichever lane you are now on. (It used to spring open the moment you touched another lane.)</p>
 <h3 id="03-sessions-lanes-clips-scenes--one-lane-is-selected-everywhere">One lane is selected, everywhere</h3>
 <p>The clip editor and the instrument controls below it always show the <strong>same</strong> lane. There are several ways to change which one that is — clicking a lane header, opening a clip, clicking a mixer column, or selecting the track from a MIDI controller — and all of them move both halves together.</p>
 <p>When you switch lanes, the clip editor follows to the <strong>same row</strong> on the new lane: if lane A&#39;s clip in row 2 is open and you select lane B, you get lane B&#39;s row-2 clip. If that slot is empty the editor closes, and <strong>nothing is created</strong> — an empty cell stays empty until you fill it deliberately. The instrument controls always follow, clip or no clip.</p>
@@ -410,12 +411,37 @@ Subtractive, FM, Wavetable, Karplus-Strong, West Coast), a Sampler, and a Drum
 Machine. A ninth choice, the <strong>Audio channel</strong>, plays a recording rather than
 synthesising one and is covered in
 <a href="#08-midi-and-samples--audio-channel">MIDI &amp; Samples</a>.</p>
-<p>Each engine exposes a PRESET dropdown (Load / Save As / Delete) and a
-<strong>🎲 Sound</strong> button that randomises the patch and sets the preset name to
-&quot;Custom&quot;. Presets are JSON assets stored per-engine; they include GM programme
-tags so that MIDI import can auto-assign the best engine and preset for each
-track. See <a href="#03-sessions-lanes-clips-scenes">Sessions, Lanes, Clips &amp; Scenes</a>
-for how to add and configure lanes.</p>
+<p>Each engine exposes a PRESET dropdown with <strong>Load</strong>, <strong>Save As…</strong> and <strong>Delete</strong>
+beside it, and a <strong>🎲 Sound</strong> button that randomises the patch and sets the
+preset name to &quot;Custom&quot;. See
+<a href="#03-sessions-lanes-clips-scenes">Sessions, Lanes, Clips &amp; Scenes</a> for how to
+add and configure lanes.</p>
+<h2 id="04-engines--factory-presets-and-your-own">Factory presets and your own</h2>
+<p>The dropdown has two groups.</p>
+<p><strong>Factory</strong> are the presets the engine ships with, carried inside the engine
+itself and tagged with GM programme numbers so MIDI import can pick a sensible
+engine and preset for each imported track. There are 23 to 28 of them on each of
+the melodic engines — and 102 on Subtractive, which is the one with the widest
+range to cover. Selecting one
+applies it immediately; there is no need to press Load, which only re-applies
+whatever is already selected.</p>
+<p><strong>User</strong> is whatever you have saved. <strong>Save As…</strong> asks for a name and stores the
+sound exactly as it stands on that lane. Two things about it are worth knowing:</p>
+<ul>
+<li><strong>A user preset belongs to its engine.</strong> Saving &quot;Bells&quot; on an FM lane files it
+under FM, and it is offered on FM lanes only — a Wavetable lane can hold its
+own, different &quot;Bells&quot; without the two ever meeting.</li>
+<li><strong>It saves the instrument, not the desk.</strong> The lane&#39;s volume, pan, sends and EQ
+are left out on purpose, so recalling a preset changes how the sound is made
+without moving where it sits in the mix.</li>
+</ul>
+<p><strong>Delete</strong> removes a user preset; factory presets cannot be deleted, and the
+button says so if you try.</p>
+<p>Your saved presets live in the browser, not in the session file. That cuts both
+ways: they follow you from one song to the next, and they are <strong>not</strong> included
+when you share a save — someone opening your session gets the sound, because the
+parameter values travel with the lane, but not the entry in their own preset
+list. It also means clearing your browser&#39;s site data takes them with it.</p>
 <p>The dice rolls the <em>instrument</em>, not the desk: it leaves the lane&#39;s mixer column
 (volume, pan, sends, EQ), the polyphony setting and the master tune exactly where
 you put them, so a randomised sound stays at the level and in the tuning the rest
@@ -1606,7 +1632,7 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <em>The FM engine editor. The MODULATORS section (LFO1 + ADSR1) and the NOTE FX row are visible at the bottom of the panel.</em></p>
 <hr>
 <h2 id="06-modulation-and-note-fx--modulators">Modulators</h2>
-<p>Open any lane&#39;s engine editor and scroll to the <strong>MODULATORS</strong> section. Press <strong>+ LFO</strong>, <strong>+ ADSR</strong> or <strong>+ S&amp;H</strong> to add a modulator; you can add as many as you need. Each modulator appears as a card with its own controls, an <strong>ON / OFF</strong> toggle, and a <strong>×</strong> remove button.</p>
+<p>Open any lane&#39;s engine editor and scroll to the <strong>MODULATORS</strong> section. Press <strong>+ ADSR</strong>, <strong>+ LFO</strong> or <strong>+ S&amp;H</strong> to add a modulator; you can add as many as you need. Each modulator appears as a card with its own controls, an <strong>ON / OFF</strong> toggle, and a <strong>×</strong> remove button.</p>
 <p>That row of buttons is not a fixed list — it is built from whatever modulators are registered, so a plugin that ships one adds its own button. <strong>S&amp;H is exactly that</strong>: a modulator that arrives as an external plugin rather than from Loom&#39;s own source, and behaves like any other.</p>
 <p><strong>The section is not empty to begin with.</strong> Every engine arrives with its own modulators already wired, and on some engines they are load-bearing rather than decorative:</p>
 <table>
@@ -1976,7 +2002,8 @@ and the modulation stays relative to wherever you left the fader.</p>
 <h2 id="07-mixing-and-fx--per-lane-inserts">Per-lane inserts</h2>
 <p>Every lane also has a private insert chain that sits <em>before</em> the channel strip — the engine&#39;s audio passes through it first. If you open the lane&#39;s inspector and add FX to its insert list, those effects process the lane signal exclusively and do not affect any other lane.</p>
 <p><strong>Inserts vs sends:</strong> an insert is a serial in-line processor that the signal passes <em>through</em>; a send is a parallel path that taps a copy of the signal into a shared return. Use inserts for tone-shaping a single lane; use sends when several lanes should share one effect (a common reverb space, a tempo-synced delay). Loom no longer privileges any effect — reverb and delay are ordinary inserts too, and they just happen to be the default residents of the Send A / Send B return chains.</p>
-<p><strong>The same picker everywhere.</strong> Every insert rack — per lane (including audio lanes), on each send return, and on the master — draws from one unified effect picker, whose eleven entries read: <strong>Filter</strong>, <strong>Dist</strong>, <strong>Reverb</strong>, <strong>Delay</strong>, <strong>Compressor</strong>, <strong>Limiter</strong>, <strong>Trem/Gate</strong>, <strong>Chorus</strong>, <strong>Flanger</strong>, <strong>Phaser</strong>, and <strong>Crush</strong>. See <a href="#07-mixing-and-fx--master-fx-panel">Master FX panel</a> below for each effect&#39;s parameters. Any insert&#39;s parameters are modulation and Performance-automation destinations, wherever the insert sits.</p>
+<p><strong>The same picker everywhere.</strong> Every insert rack — per lane (including audio lanes), on each send return, and on the master — draws from one unified effect picker, whose fifteen entries read: <strong>Filter</strong>, <strong>Dist</strong>, <strong>Reverb</strong>, <strong>Delay</strong>, <strong>Compressor</strong>, <strong>Limiter</strong>, <strong>Trem/Gate</strong>, <strong>Gate</strong>, <strong>Chorus</strong>, <strong>Flanger</strong>, <strong>Phaser</strong>, <strong>Crush</strong>, <strong>Auto-Wah</strong>, <strong>Ring</strong> and <strong>Width</strong>. See <a href="#07-mixing-and-fx--master-fx-panel">Master FX panel</a> below for each effect&#39;s parameters. Any insert&#39;s parameters are modulation and Performance-automation destinations, wherever the insert sits.</p>
+<p>The list is not fixed in the app: each of those effects is a plugin loaded at start-up, and the picker simply shows whatever loaded. That is why a broken or missing one shows up as an entry that is absent rather than as an app that fails.</p>
 <hr>
 <h2 id="07-mixing-and-fx--master-fx-panel">Master FX panel</h2>
 <p>The master bus has its own strip at the foot of the <strong>scenes column</strong> of the mixer row — a full column laid out like a lane strip, so it lines up with them: a <strong>MASTER</strong> label, an <strong>EQ</strong> section (HI / MID / LO), an <strong>FX</strong> button (in the lane&#39;s SEND slot — the master has no sends), a <strong>PAN</strong> knob, a <strong>Mute</strong> button (no Solo — meaningless on the master), and a fader that mirrors the master <strong>Volume</strong> plus a VU meter. The master EQ, pan and mute shape the whole mix; they are saved with the session and the EQ/pan are undoable like any knob. Click the <strong>FX</strong> button to open the <strong>Master FX panel</strong> below the grid (click again to close it). <em>(The panel&#39;s content — SENDS, MASTER COMP, INSERTS — was previously a separate &quot;Master FX&quot; tab; the controls are identical, only the way you open them changed.)</em></p>
@@ -2647,7 +2674,7 @@ uvicorn app:app --port 8765
 <p>Cancelling the dialog discards the take and writes nothing.</p>
 <hr>
 <h2 id="09-saving-and-export--live-build-and-github-pages">Live build and GitHub Pages</h2>
-<p>The public instance of Loom is deployed automatically to <a href="https://ijol.github.io/Loom/">https://ijol.github.io/Loom/</a> — every push to <code>main</code> triggers a GitHub Actions workflow that runs <code>vite build --base=/Loom/</code> and deploys the result to GitHub Pages. The standard <code>npm run build</code> (base <code>/</code>) is for local development or self-hosting on any other path.</p>
+<p>The public instance of Loom is deployed automatically to <a href="https://ijol.github.io/Loom/">https://ijol.github.io/Loom/</a> — every push to <code>main</code> triggers a GitHub Actions workflow that runs <code>npm run build:pages</code> and deploys the result to GitHub Pages. That script builds the plugins into <code>public/plugins/</code> before bundling, which matters more than it sounds: the engines and the insert effects are plugins loaded at runtime, so a build that skipped that step would deploy an app with no instruments in it. The standard <code>npm run build</code> does the same at base <code>/</code>, for local development or self-hosting on another path.</p>
 </section>
 <section class="chapter" id="10-performance-and-arrangement"><h1 id="10-performance-and-arrangement--performance--arrangement">Performance &amp; Arrangement</h1>
 <p>Loom has two main views: <strong>Session</strong> and <strong>Performance</strong>. The Session view is the clip grid you work in most of the time — lanes, clips, and scenes launched on demand. The Performance view is a linear <strong>arrangement timeline</strong>: a fixed song laid out from left to right with a playhead that moves forward through it, starts at the beginning, and stops at the end.</p>
@@ -2734,6 +2761,7 @@ uvicorn app:app --port 8765
 <li><strong>S (Solo)</strong> — solos this lane, temporarily muting all other lanes. Multiple lanes can be soloed simultaneously; un-soloing the last one restores normal playback.</li>
 <li><strong>VU meter</strong> — a vertical level meter in the lane header shows the lane&#39;s live output RMS. It gives an at-a-glance read of which lanes are active and how loud each one is during a take or a performance.</li>
 </ul>
+<p>The same two buttons also sit in the clip editor&#39;s header, acting on the lane whose clip is open — the same switches, not a second pair, so muting from either place lights both. See <a href="#07-mixing-and-fx--mute-and-solo">Mixing &amp; FX</a>.</p>
 <p>Mute and solo states are saved with the session.</p>
 <hr>
 <h2 id="10-performance-and-arrangement--persistence">Persistence</h2>
