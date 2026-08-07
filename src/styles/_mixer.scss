@@ -37,8 +37,11 @@
   color: var(--amber);
   font-weight: 700;
   text-align: center;
-  height: 22px;
-  display: flex; align-items: center; justify-content: center;
+  // 40px so the master column's countdown ring fits INSIDE the name row; the
+  // lane columns centre their label in the same height and the mixer row stays
+  // aligned pixel-for-pixel across every column.
+  height: 40px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
   grid-column: 1 / -1;
   width: 100%;
   background: var(--bg);
@@ -249,3 +252,52 @@
   border-radius: 2px;
 }
 #master-fx-panel[hidden] { display: none; }
+
+/* ── Scene countdown ring ──────────────────────────────────────────────────
+   Sits in the master strip's name row. Shows how much of the scene is left
+   before a queued switch lands: grey sweeping the loop when nothing is
+   queued, amber draining once something is, red inside the last bar. Every
+   colour is a token, driven by the state class the widget sets on the root. */
+.scene-ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  flex: 0 0 auto;
+}
+.scene-ring svg { display: block; overflow: visible; }
+.ring-track    { fill: none; stroke: var(--border); stroke-width: 4; }
+.ring-hairline { fill: none; stroke: var(--border); stroke-width: 1; }
+.ring-wedge    { stroke: none; fill: var(--text-faint); fill-opacity: 0.45;
+                 transition: fill 140ms ease; }
+.ring-num {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: central;
+  font-variant-numeric: tabular-nums;
+  fill: var(--text-dim);
+  transition: fill 140ms ease;
+}
+.ring-caption {
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 140ms ease;
+}
+.scene-ring.armed .ring-wedge   { fill: var(--amber); }
+.scene-ring.armed .ring-num     { fill: var(--amber); }
+.scene-ring.armed .ring-caption { color: var(--amber); }
+.scene-ring.imminent .ring-wedge   { fill: var(--red); }
+.scene-ring.imminent .ring-num     { fill: var(--red); }
+.scene-ring.imminent .ring-caption { color: var(--red); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ring-wedge, .ring-num, .ring-caption { transition-duration: 0ms; }
+}

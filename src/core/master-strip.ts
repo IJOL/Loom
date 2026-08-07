@@ -27,6 +27,7 @@ import { createLevelMeter } from './level-meter';
 import { createKnob, type KnobHandle } from './knob';
 import { attachKnobUndo, type HistoryDeps } from '../save/history-wiring';
 import type { MasterBusStrip } from './master-bus-strip';
+import type { SceneRingHandle } from './scene-ring';
 
 const fmtPct = (v: number) => `${Math.round(v * 100)}%`;
 const fmtDb  = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
@@ -48,6 +49,10 @@ export interface MasterStripDeps {
   historyDeps?: HistoryDeps;
   /** Optional teardown registration for the VU meter handle (RAF + analyser). */
   registerDisposable?(d: { dispose(): void }): void;
+  /** Optional pre-built scene countdown ring, rendered inline with the MASTER
+   *  label. Pre-built rather than constructed here so the CALLER owns its
+   *  lifetime and can register it for teardown next to the VU meter. */
+  sceneRing?: SceneRingHandle;
 }
 
 interface KnobOpts {
@@ -86,7 +91,7 @@ export function buildMasterStrip(deps: MasterStripDeps): HTMLElement {
 
   const col = renderElement(html`
     <div class="mix-col master-strip">
-      <div class="mix-name">MASTER</div>
+      <div class="mix-name">${deps.sceneRing ? deps.sceneRing.el : ''}<span>MASTER</span></div>
       <div class="mix-section">
         <div class="mix-sec-label">EQ</div>
         ${knobEl(deps, { label: 'HI',  min: -18, max: 18, step: 0.5, value: strip.getEqHigh(), defaultValue: 0, color: '#2ee0c0', format: fmtDb, onChange: (v) => strip.setEqHigh(v) })}

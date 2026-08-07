@@ -136,6 +136,23 @@ describe('buildMasterStrip', () => {
     expect(registerDisposable).toHaveBeenCalled();
     expect(typeof registerDisposable.mock.calls[0][0].dispose).toBe('function');
   });
+
+  it('renders the scene ring inside the name row when one is supplied', () => {
+    const ringEl = document.createElement('div');
+    ringEl.className = 'scene-ring';
+    const el = buildMasterStrip(makeDeps({
+      sceneRing: { el: ringEl, dispose() {}, refresh() {} },
+    }));
+    const name = el.querySelector('.mix-name')!;
+    expect(name.querySelector('.scene-ring')).toBe(ringEl);
+    expect(name.textContent).toContain('MASTER');
+  });
+
+  it('renders without a ring when none is supplied', () => {
+    const el = buildMasterStrip(makeDeps());
+    expect(el.querySelector('.scene-ring')).toBeNull();
+    expect(el.querySelector('.mix-name')!.textContent).toContain('MASTER');
+  });
 });
 
 function makeMiniDeps(over: Partial<MiniMasterDeps> = {}): MiniMasterDeps {
