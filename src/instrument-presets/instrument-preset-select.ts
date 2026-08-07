@@ -199,13 +199,7 @@ export function wireInstrumentPresetControls(deps: PresetControlsDeps): void {
     const name = val.slice('user:'.length);
     if (!await confirmDialog(`Delete preset "${name}"?`)) return;
     const laneId = deps.getActiveEngineLaneId();
-    if (!deleteUserPreset(deps.getLaneEngineId(laneId), name)) {
-      // The only presets this store cannot delete are the subtractive ones saved
-      // before it existed: they live in a key it never writes, and rewriting
-      // that key to drop one entry would put the rest at risk.
-      void alertDialog(`"${name}" was saved by an older version and cannot be deleted here.`);
-      return;
-    }
+    deleteUserPreset(deps.getLaneEngineId(laneId), name);
     populateInstrumentPresetSelect();
   });
 }

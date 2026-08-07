@@ -73,14 +73,8 @@ export function getFactoryPolyPresets(): { name: string; params: PolySynthParams
   }));
 }
 
-const POLY_PRESETS_KEY = 'tb303-poly-presets-v1';
-
-export function loadUserPolyPresets(): Record<string, PolySynthParams> {
-  const raw = localStorage.getItem(POLY_PRESETS_KEY);
-  if (!raw) return {};
-  try { return JSON.parse(raw) as Record<string, PolySynthParams>; } catch { return {}; }
-}
-
-export function saveUserPolyPresets(presets: Record<string, PolySynthParams>): void {
-  localStorage.setItem(POLY_PRESETS_KEY, JSON.stringify(presets));
-}
+// `loadUserPolyPresets` / `saveUserPolyPresets` and their `tb303-poly-presets-v1`
+// key lived here: user presets, subtractive-shaped, for every engine. They are
+// gone with the store that replaced them (user-preset-store.ts), which files a
+// preset under the engine it belongs to. Nothing was migrated because there was
+// nothing to migrate — no build that wrote that key was ever released.

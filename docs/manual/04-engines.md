@@ -14,12 +14,42 @@ Machine. A ninth choice, the **Audio channel**, plays a recording rather than
 synthesising one and is covered in
 [MIDI & Samples](08-midi-and-samples.md#audio-channel).
 
-Each engine exposes a PRESET dropdown (Load / Save As / Delete) and a
-**🎲 Sound** button that randomises the patch and sets the preset name to
-"Custom". Presets are JSON assets stored per-engine; they include GM programme
-tags so that MIDI import can auto-assign the best engine and preset for each
-track. See [Sessions, Lanes, Clips & Scenes](03-sessions-lanes-clips-scenes.md)
-for how to add and configure lanes.
+Each engine exposes a PRESET dropdown with **Load**, **Save As…** and **Delete**
+beside it, and a **🎲 Sound** button that randomises the patch and sets the
+preset name to "Custom". See
+[Sessions, Lanes, Clips & Scenes](03-sessions-lanes-clips-scenes.md) for how to
+add and configure lanes.
+
+## Factory presets and your own
+
+The dropdown has two groups.
+
+**Factory** are the presets the engine ships with, carried inside the engine
+itself and tagged with GM programme numbers so MIDI import can pick a sensible
+engine and preset for each imported track. There are 23 to 28 of them on each of
+the melodic engines — and 102 on Subtractive, which is the one with the widest
+range to cover. Selecting one
+applies it immediately; there is no need to press Load, which only re-applies
+whatever is already selected.
+
+**User** is whatever you have saved. **Save As…** asks for a name and stores the
+sound exactly as it stands on that lane. Two things about it are worth knowing:
+
+- **A user preset belongs to its engine.** Saving "Bells" on an FM lane files it
+  under FM, and it is offered on FM lanes only — a Wavetable lane can hold its
+  own, different "Bells" without the two ever meeting.
+- **It saves the instrument, not the desk.** The lane's volume, pan, sends and EQ
+  are left out on purpose, so recalling a preset changes how the sound is made
+  without moving where it sits in the mix.
+
+**Delete** removes a user preset; factory presets cannot be deleted, and the
+button says so if you try.
+
+Your saved presets live in the browser, not in the session file. That cuts both
+ways: they follow you from one song to the next, and they are **not** included
+when you share a save — someone opening your session gets the sound, because the
+parameter values travel with the lane, but not the entry in their own preset
+list. It also means clearing your browser's site data takes them with it.
 
 The dice rolls the *instrument*, not the desk: it leaves the lane's mixer column
 (volume, pan, sends, EQ), the polyphony setting and the master tune exactly where

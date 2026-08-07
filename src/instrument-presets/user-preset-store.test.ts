@@ -10,8 +10,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import type { EngineParamSpec } from '../engines/engine-params';
 import { STRIP_PARAM_SPECS } from '../core/channel-strip-params';
 import {
-  snapshotEngineParams, loadUserPresets, saveUserPreset, deleteUserPreset,
-  LEGACY_POLY_PRESETS_KEY, USER_PRESETS_KEY,
+  snapshotEngineParams, loadUserPresets, saveUserPreset, deleteUserPreset, USER_PRESETS_KEY,
 } from './user-preset-store';
 
 /** The minimum of a SynthEngine that a snapshot reads. */
@@ -81,62 +80,22 @@ describe('user presets are filed under their engine', () => {
   });
 });
 
-describe('presets saved before this store still load', () => {
-  // There are no migrations in this project: the old key is read where it
-  // stands, flattened on the way out, and never rewritten.
-  const legacy = {
-    'My Bass': {
-      master: { tune: 0 },
-      osc1: { wave: 'square', level: 0.9, octave: 0, semi: 0, detune: 0 },
-      osc2: { wave: 'sawtooth', level: 0.2, octave: 0, semi: 0, detune: 7 },
-      sub: { level: 0.4, octave: -1 },
-      noise: { level: 0, color: 0.6 },
-      filter: {
-        type: 'lowpass', cutoff: 0.33, resonance: 0.8, envAmount: 0.5,
-        keyTrack: 0, drive: 0, attack: 0.01, decay: 0.2, sustain: 0.3, release: 0.2,
-      },
-      amp: { attack: 0.01, decay: 0.1, sustain: 0.8, release: 0.2 },
-    },
-  };
-
-  it('reads the old subtractive presets, flattened to dot-ids', () => {
-    localStorage.setItem(LEGACY_POLY_PRESETS_KEY, JSON.stringify(legacy));
-
-    const presets = loadUserPresets('subtractive');
-
-    expect(Object.keys(presets)).toEqual(['My Bass']);
-    expect(presets['My Bass']['filter.cutoff']).toBe(0.33);
-    expect(presets['My Bass']['osc1.wave']).toBe(1);   // 'square' → index
-  });
-
-  it('offers them only to subtractive', () => {
-    localStorage.setItem(LEGACY_POLY_PRESETS_KEY, JSON.stringify(legacy));
-
-    expect(loadUserPresets('fm')).toEqual({});
-  });
-
-  it('does not rewrite the old key when a new preset is saved', () => {
-    localStorage.setItem(LEGACY_POLY_PRESETS_KEY, JSON.stringify(legacy));
-
-    saveUserPreset('subtractive', 'Newer', { 'filter.cutoff': 0.9 });
-
-    expect(JSON.parse(localStorage.getItem(LEGACY_POLY_PRESETS_KEY)!)).toEqual(legacy);
-    expect(Object.keys(loadUserPresets('subtractive')).sort()).toEqual(['My Bass', 'Newer']);
-  });
-
-  it('a new preset of the same name wins over the legacy one', () => {
-    localStorage.setItem(LEGACY_POLY_PRESETS_KEY, JSON.stringify(legacy));
-
-    saveUserPreset('subtractive', 'My Bass', { 'filter.cutoff': 0.9 });
-
-    expect(loadUserPresets('subtractive')['My Bass']['filter.cutoff']).toBe(0.9);
-  });
-
-  it('writes new presets under its own key', () => {
+describe('storage', () => {
+  it('writes under one key, keyed by engine', () => {
     saveUserPreset('fm', 'Bells', { 'op1.ratio': 3 });
 
     expect(JSON.parse(localStorage.getItem(USER_PRESETS_KEY)!)).toEqual({
       fm: { Bells: { 'op1.ratio': 3 } },
     });
+  });
+
+  it('survives a key holding something that is not JSON', () => {
+    localStorage.setItem(USER_PRESETS_KEY, 'not json {');
+
+    expect(loadUserPresets('fm')).toEqual({});
+  });
+
+  it('deleting a name that was never saved reports so', () => {
+    expect(deleteUserPreset('fm', 'nothing here')).toBe(false);
   });
 });
