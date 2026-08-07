@@ -1,5 +1,5 @@
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
-import { markPresetCustomForLane } from '../instrument-presets/polysynth-presets';
+import { markPresetCustomForLane } from '../instrument-presets/preset-select-state';
 import { commitEngineBaseValues } from '../engines/engine-param-commit';
 import type { SynthEngine } from '../engines/engine-types';
 import type { SessionState } from '../session/session';

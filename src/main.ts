@@ -39,8 +39,9 @@ import {
   withUndo, isTextEditTarget, type HistoryDeps,
 } from './save/history-wiring';
 import {
-  wirePolyControls, refreshPolyPresetSelect, recordPagePresetForLane,
-} from './instrument-presets/polysynth-presets';
+  wireInstrumentPresetControls, refreshInstrumentPresetSelect,
+} from './instrument-presets/instrument-preset-select';
+import { recordPagePresetForLane } from './instrument-presets/preset-select-state';
 import { initRandomize } from './core/randomize-ui';
 import { wireFxUI, type FxUIDeps } from './core/fx-ui';
 import { wireTransport, setPlaying, type TransportDeps } from './core/transport';
@@ -443,9 +444,9 @@ const sessionHost = new SessionHost({
     commitEngineBaseValues(inst, sessionHost.state, laneId);
     // Mark the per-page (303/drums) preset dropdown so it reflects the
     // recalled preset on load (subtractive/poly are handled by
-    // refreshPolyPresetSelect via polyPresetName).
+    // refreshInstrumentPresetSelect via polyPresetName).
     recordPagePresetForLane(laneId, presetName);
-    refreshPolyPresetSelect();
+    refreshInstrumentPresetSelect();
     refreshLaneKnobs(laneId, inst);
   },
 });
@@ -640,8 +641,8 @@ const engineSelectors = wireEngineSelectors({
   laneResources,
   setActiveEngineLane,
 });
-// wirePolyControls(polySynthPresetsDeps) stays where it is, ~230 lines down.
-const polySynthPresetsDeps = engineSelectors.polySynthPresetsDeps;
+// wireInstrumentPresetControls(instrumentPresetDeps) stays where it is, ~230 lines down.
+const instrumentPresetDeps = engineSelectors.instrumentPresetDeps;
 
 // The two engine selectors were just painted from the registry as it stands
 // RIGHT NOW — which is before loadPlugins() has resolved, so it holds only the
@@ -714,7 +715,7 @@ document.getElementById('perf-toggle')?.addEventListener('click', (e) => {
     });
   }
 }
-wirePolyControls(polySynthPresetsDeps);
+wireInstrumentPresetControls(instrumentPresetDeps);
 
 // ── MIDI import wiring (see src/app/midi-import-wiring.ts) ────────────────
 // Everything an import needs, including the two seams that exist only because

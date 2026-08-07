@@ -1,6 +1,8 @@
-// src/polysynth/polysynth-presets.test.ts
+// Was polysynth-presets.test.ts, which reached polyParamsToFlat through a
+// re-export from the preset-select module. The select and the store are two
+// files now, so it tests the store where the store lives.
 import { describe, it, expect } from 'vitest';
-import { polyParamsToFlat } from './polysynth-presets';
+import { polyParamsToFlat } from './poly-preset-store';
 import { POLY_DEFAULTS, type PolySynthParams } from './poly-params';
 
 describe('polyParamsToFlat', () => {

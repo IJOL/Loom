@@ -1,6 +1,6 @@
 import { html, render } from 'lit-html';
 import { getEngineDescriptor, listEngines } from './registry';
-import { populatePolyPresetSelect, refreshPolyPresetSelect } from '../instrument-presets/polysynth-presets';
+import { populateInstrumentPresetSelect, refreshInstrumentPresetSelect } from '../instrument-presets/instrument-preset-select';
 import type { KnobHandle } from '../core/knob';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
 import { isAudioEngine } from '../plugins/capabilities';
@@ -73,8 +73,8 @@ export function rebuildEngineParamUI(): void {
   // Refresh the preset dropdown so it reflects the active lane's engine —
   // subtractive lanes show PolySynth factory + user presets; other engines
   // show their own SynthEngine.presets array (filtered by engine).
-  populatePolyPresetSelect();
-  refreshPolyPresetSelect();
+  populateInstrumentPresetSelect();
+  refreshInstrumentPresetSelect();
   deps.populateAutoParamSelect();
 }
 

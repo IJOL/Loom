@@ -17,7 +17,7 @@
 //
 // ORDER, and what deliberately stayed in main.ts:
 //
-//  * `wirePolyControls(polySynthPresetsDeps)` is NOT called here. It runs ~230
+//  * `wireInstrumentPresetControls(instrumentPresetDeps)` is NOT called here. It runs ~230
 //    lines later in boot, and moving the preset-dropdown binding that far
 //    earlier is a real reordering. This factory only BUILDS the deps and hands
 //    them back; main keeps the call exactly where it was.
@@ -45,7 +45,8 @@ import {
   type EngineSelectorUIDeps,
 } from '../engines/engine-selector-ui';
 import { swapLaneEngineFlow, type EngineSwapDeps } from './engine-swap';
-import { refreshPolyPresetSelect, type PolySynthPresetsDeps } from '../instrument-presets/polysynth-presets';
+import { refreshInstrumentPresetSelect } from '../instrument-presets/instrument-preset-select';
+import type { PresetControlsDeps } from '../instrument-presets/preset-select-state';
 
 export interface EngineSelectorWiringDeps {
   engineSel: HTMLSelectElement;
@@ -82,9 +83,9 @@ export interface EngineSelectorWiringDeps {
 }
 
 export interface EngineSelectorWiring {
-  /** Built here, CALLED by main (`wirePolyControls`) ~230 lines later in boot —
+  /** Built here, CALLED by main (`wireInstrumentPresetControls`) ~230 lines later in boot —
    *  see the ORDER note in the header. */
-  polySynthPresetsDeps: PolySynthPresetsDeps;
+  instrumentPresetDeps: PresetControlsDeps;
 }
 
 export function wireEngineSelectors(deps: EngineSelectorWiringDeps): EngineSelectorWiring {
@@ -115,7 +116,7 @@ export function wireEngineSelectors(deps: EngineSelectorWiringDeps): EngineSelec
   };
   wireEngineSelector(engineSelectorDeps, initialEngineId);
 
-  const polySynthPresetsDeps: PolySynthPresetsDeps = {
+  const instrumentPresetDeps: PresetControlsDeps = {
     getActiveEngineLaneId: () => getActiveEngineLaneId(),
     getLaneEngineId,
     getLaneEngineInstance,
@@ -134,5 +135,5 @@ export function wireEngineSelectors(deps: EngineSelectorWiringDeps): EngineSelec
   // through a `getPolySynth()` branch no engine could satisfy. Every engine's
   // knobs, Subtractive included, are drawn by buildParamUI from the engine's
   // declared params — there is no separate remount path for it any more.
-  return { polySynthPresetsDeps };
+  return { instrumentPresetDeps };
 }

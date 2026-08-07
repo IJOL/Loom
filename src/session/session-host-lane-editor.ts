@@ -11,11 +11,11 @@ import { getNoteFxChain } from '../notefx/notefx-registry';
 import { syncNoteFx } from './session-engine-state';
 import { laneEditorPanels } from './lane-editor-panels';
 import { mountRandomizeButton } from '../core/randomize-ui';
+import { mountDrumsPresetSelect } from '../instrument-presets/drums-preset-select';
 import {
-  mountDrumsPresetSelect,
-  populatePolyPresetSelectForLane,
-  refreshPolyPresetSelect,
-} from '../instrument-presets/polysynth-presets';
+  populateInstrumentPresetSelectForLane,
+  refreshInstrumentPresetSelect,
+} from '../instrument-presets/instrument-preset-select';
 
 /** Show a lane's editor: route to its engine's page (poly / 303 / drums),
  *  rebuild the engine param UI + modulator panel + labels. Does NOT toggle.
@@ -211,7 +211,7 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
   const diceSlot = page.querySelector<HTMLElement>('[data-dice-slot]');
   if (diceSlot) mountRandomizeButton(diceSlot, laneId, panels.dice);
   if (panels.preset) {
-    if (targetTab === 'instrument') { populatePolyPresetSelectForLane(laneId); refreshPolyPresetSelect(); }
+    if (targetTab === 'instrument') { populateInstrumentPresetSelectForLane(laneId); refreshInstrumentPresetSelect(); }
     if (targetTab === 'drums') mountDrumsPresetSelect(laneId);
   }
 }

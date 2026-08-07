@@ -7,7 +7,7 @@
 // CRITICAL: a synth/melodic lane applies its preset through `applyPresetForLane`
 // — the SAME path the live host uses — which not only sets the engine params but
 // ALSO records the preset-dropdown selection (recordPagePresetForLane +
-// refreshPolyPresetSelect). The previous code applied the preset to the engine
+// refreshInstrumentPresetSelect). The previous code applied the preset to the engine
 // directly (applyPresetToEngine), so the sound was right but every imported synth
 // lane's dropdown showed "(custom — no preset)".
 
