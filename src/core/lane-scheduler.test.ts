@@ -571,3 +571,76 @@ describe('slide is a declared capability, not an engine id', () => {
     expect(t.slidingIn).toBe(false);
   });
 });
+
+describe('shouldFire — the note-by-note gate WEAVE hangs off', () => {
+  const gateClip = (): SessionClip => ({
+    color: '#f4b8b8', gridResolution: '1/16', id: 'gate', lengthBars: 1,
+    notes: [
+      { start: 0, duration: TICKS_PER_STEP, midi: 60, velocity: 100 },
+      { start: TICKS_PER_STEP, duration: TICKS_PER_STEP, midi: 62, velocity: 100 },
+      { start: TICKS_PER_STEP * 2, duration: TICKS_PER_STEP, midi: 64, velocity: 100 },
+    ],
+  });
+
+  const run = (extra: Partial<SchedulerContext>) => {
+    const fired: number[] = [];
+    tickLane(gateClip(), {
+      // 1 bar at 120 bpm is 2 s, so a 1 s window covers exactly ONE iteration.
+      // A larger one reaches into the next and every note fires twice.
+      bpm: 120, lookaheadSec: 1, now: 0, loopStartedAt: 0,
+      onTrigger: (n) => fired.push(n.midi),
+      onAutomation: () => {},
+      ...extra,
+    });
+    return fired;
+  };
+
+  it('fires every note when the gate is absent, exactly as before', () => {
+    expect(run({})).toEqual([60, 62, 64]);
+  });
+
+  it('drops the notes the gate refuses', () => {
+    expect(run({ shouldFire: (n) => n.midi !== 62 })).toEqual([60, 64]);
+  });
+
+  it('is handed the note position in the clip, not the swing-only gridTick', () => {
+    // gridTick is undefined on an unswung clip, which is most of them. A gate
+    // reading it instead of clipTick would see undefined every time.
+    const ticks: number[] = [];
+    run({ shouldFire: (_n, _at, clipTick) => { ticks.push(clipTick); return true; } });
+    expect(ticks).toEqual([0, TICKS_PER_STEP, TICKS_PER_STEP * 2]);
+  });
+
+  it('still advances the loop bookkeeping when every note is refused', () => {
+    const after = tickLane(gateClip(), {
+      // 1 bar at 120 bpm is 2 s, so a 1 s window covers exactly ONE iteration.
+      // A larger one reaches into the next and every note fires twice.
+      bpm: 120, lookaheadSec: 1, now: 0, loopStartedAt: 0,
+      onTrigger: () => {}, onAutomation: () => {},
+      shouldFire: () => false,
+    });
+    expect(Number.isFinite(after)).toBe(true);
+    expect(after).toBeGreaterThanOrEqual(0);
+  });
+
+  it('never fires a refused note twice on the next overlapping window', () => {
+    // The dedupe must not depend on the gate: a refused note has to leave the
+    // bookkeeping exactly where an accepted one would.
+    const fired: number[] = [];
+    let loopStart = 0;
+    let lastScheduledAt = -Infinity;
+    for (let now = 0; now < 2.0; now += 0.025) {
+      loopStart = tickLane(gateClip(), {
+        bpm: 120, lookaheadSec: 0.12, now, loopStartedAt: loopStart, lastScheduledAt,
+        shouldFire: (n) => n.midi !== 62,
+        onTrigger: (n, t) => {
+          fired.push(n.midi);
+          if (t > lastScheduledAt) lastScheduledAt = t;
+        },
+        onAutomation: () => {},
+      });
+    }
+    expect(fired).not.toContain(62);
+    for (let i = 1; i < fired.length; i++) expect(fired[i]).not.toBe(fired[i - 1]);
+  });
+});

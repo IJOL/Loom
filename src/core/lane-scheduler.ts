@@ -41,6 +41,28 @@ export interface SchedulerContext {
   /** Called with the original note + the absolute audio time at which it
    *  should be scheduled. */
   onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample; gridTick?: number }, scheduleTime: number) => void;
+  /** Asked once per NOTE, at the moment that note is about to be scheduled.
+   *  Returning false skips the trigger and nothing else — loop bookkeeping and
+   *  `lastScheduledAt` advance either way, so refusing a note never desyncs
+   *  the lane or makes the next one fire twice.
+   *
+   *  This is where WEAVE decides whether a hit belongs to the crossfade it is
+   *  currently at. Deciding HERE, rather than rewriting the clip, is what makes
+   *  "a note that has started always finishes" cost nothing: a note either
+   *  fires or it does not, and nothing already sounding is ever touched.
+   *
+   *  `clipTick` is the note's own position in the clip, passed explicitly
+   *  because `gridTick` above is only populated on the swung path — reading it
+   *  instead would hand the gate `undefined` on every unswung clip, which is
+   *  most of them.
+   *
+   *  Audio clips are NOT gated: one of those is a single long note per
+   *  iteration, so a gate could only silence the whole lane. */
+  shouldFire?: (
+    note: { midi: number; duration: number; velocity: number; gridTick?: number },
+    scheduleTime: number,
+    clipTick: number,
+  ) => boolean;
   /** Called for each clip envelope sample falling in the window. The
    *  `clipTimeNorm` is 0..1 within the clip iteration. */
   onAutomation: (env: ClipEnvelope, clipTimeNorm: number, scheduleTime: number) => void;
@@ -167,7 +189,7 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
         const clipTimeSec = clipRegionSec(clip, startTick, noteStart, ctx.bpm);
         const scheduleAt  = iterStart + clipTimeSec;
         if (scheduleAt >= windowStart && scheduleAt < windowEnd) {
-          ctx.onTrigger({
+          const fired = {
             midi: n.midi,
             duration: swungSpan(n.start, n.duration, swing),
             velocity: n.velocity,
@@ -176,7 +198,11 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
             // clip the derived value disagrees with the true tick, and swing 0
             // must stay byte-for-byte what it is today.
             gridTick: swing > 0 ? k * loopTicks + (n.start - startTick) : undefined,
-          }, scheduleAt);
+          };
+          // Absent ⇒ every note fires, exactly as before this hook existed.
+          if (!ctx.shouldFire || ctx.shouldFire(fired, scheduleAt, n.start)) {
+            ctx.onTrigger(fired, scheduleAt);
+          }
         }
       }
     }
