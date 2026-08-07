@@ -28,6 +28,8 @@ import { addClipEnvelope } from './clip-envelope-ops';
 import { mountPanel, type PanelHandle } from '../core/lit-panel';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
 import { createAutoStrip, type AutoStrip } from './clip-auto-strip';
+import { paintRegion } from './clip-auto-region';
+import { stepRowTemplate } from './clip-automation-step-row';
 import { formatNum, snapLaneToSteps, type AutoBrush } from '../automation/automation-painter';
 import {
   fillLfo, LFO_SHAPES, DEFAULT_LFO_FILL, LFO_MIN_CYCLES,
@@ -209,29 +211,53 @@ function laneTemplate(
             if (!lfoOpen.delete(env.paramId)) lfoOpen.add(env.paramId);
             h.rerender();
           }}
-        >${lfoOpen.has(env.paramId) ? '▴' : '▾'} LFO</button>
+        >${lfoOpen.has(env.paramId) ? '▴' : '▾'} Draw</button>
         <button class="rnd" title="Remove this lane" @click=${() => {
           clip.envelopes!.splice(idx, 1);
           lfoOpen.delete(env.paramId);
           h.rerender();
         }}>×</button>
       </div>
-      ${lfoOpen.has(env.paramId) ? lfoRowTemplate(h, clip, env, s) : ''}
+      ${lfoOpen.has(env.paramId) ? modeRowTemplate(h, clip, env, s) : ''}
       ${s.root}
     </div>
   `;
 }
 
-/** The stretch the LFO paints into: the loop region when the clip loops and
- *  "Loop only" is on, else the whole lane. Clamped to the array, so the cycle
- *  count is measured against the sub-steps that really get written. */
+// Which of the two painters the foldable row shows. Shared across lanes, like
+// the wave settings themselves: you pick a way of drawing and then apply it
+// lane by lane.
+let rowMode: 'lfo' | 'steps' = 'lfo';
+
+/** The foldable row: a mode picker, then whichever painter it names.
+ *
+ *  Describing a shape (LFO) and drawing one by hand (steps) are opposite
+ *  directions of authorship onto the same lane, so they share a row rather
+ *  than each growing a button of their own in a header that is already full. */
+function modeRowTemplate(
+  h: Panel, clip: SessionClip, env: ClipEnvelope, strip: AutoStrip,
+): TemplateResult {
+  return html`
+    <div class="clip-auto-mode-row">
+      <select class="clip-auto-mode" title="How this row draws"
+              @change=${(e: Event) => {
+                rowMode = (e.currentTarget as HTMLSelectElement).value as 'lfo' | 'steps';
+                h.rerender();
+              }}>
+        <option value="lfo" ?selected=${rowMode === 'lfo'}>LFO</option>
+        <option value="steps" ?selected=${rowMode === 'steps'}>Steps</option>
+      </select>
+      ${rowMode === 'lfo'
+        ? lfoRowTemplate(h, clip, env, strip)
+        : stepRowTemplate(h, clip, env, strip)}
+    </div>
+  `;
+}
+
+/** The stretch the LFO paints into. The shared rule lives in clip-auto-region;
+ *  this only supplies the LFO's own "Loop only" toggle. */
 function lfoRegion(clip: SessionClip, meter: TimeSignature, env: ClipEnvelope): { from: number; to: number } {
-  const len = env.values.length;
-  if (!(lfoState.loopOnly && clip.loopEnabled)) return { from: 0, to: len };
-  const { startTick, endTick } = effectiveClipLoop(clip, meter);
-  const from = Math.max(0, Math.min(len, Math.round((startTick / TICKS_PER_STEP) * AUTOMATION_SUB_RES)));
-  const to = Math.max(from, Math.min(len, Math.round((endTick / TICKS_PER_STEP) * AUTOMATION_SUB_RES)));
-  return from < to ? { from, to } : { from: 0, to: len };
+  return paintRegion(clip, meter, env, lfoState.loopOnly);
 }
 
 /** "An LFO, but drawn as automation": shape, how many cycles fit in the region,

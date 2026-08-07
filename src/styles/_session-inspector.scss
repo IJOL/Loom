@@ -806,3 +806,42 @@
   text-align: center;
   padding: 2px 3px;
 }
+
+// The painter's foldable row: a mode picker, then whichever painter it names.
+// Describing a shape (LFO) and drawing one by hand (steps) are opposite
+// directions of authorship onto the same lane, so they share a row rather than
+// each growing a button of its own in a header that is already full.
+.clip-auto-mode-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.clip-auto-steps {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.clip-auto-steps-label {
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.clip-auto-steps-count {
+  width: 48px;
+  text-align: right;
+}
+
+// The grid takes the whole width below the controls: bars need horizontal room
+// to be grabbable, and squeezing them onto the same line makes them unusable.
+.clip-auto-steps .steps-control {
+  flex: 1 1 100%;
+  height: 64px;
+}
