@@ -17,8 +17,8 @@ before the switch**.
 
 ## What it shows
 
-A 40 px swept sector — a filled wedge growing clockwise from 12 o'clock — plus a numeric
-centre and a one-line caption underneath. Four states:
+A swept sector — a filled wedge growing clockwise from 12 o'clock — plus a numeric centre
+and a one-line caption underneath. Four states:
 
 | State | Wedge | Centre | Caption |
 | --- | --- | --- | --- |
@@ -125,9 +125,15 @@ nothing leaks across the re-renders that every play-state change triggers.
 
 The master strip is deliberately aligned pixel-for-pixel with the lane columns, so the
 ring must not make that column taller on its own. `.mix-col .mix-name` therefore goes from
-`height: 22px` to `40px` in **every** mixer column; lane columns centre their label in that
-space. Cost: the mixer row grows 18 px. No grid-template change, no column steals width
+`height: 22px` to `34px` in **every** mixer column; lane columns centre their label in that
+space. Cost: the mixer row grows 12 px. No grid-template change, no column steals width
 from a lane.
+
+**Final size (set after looking at it on screen, 2026-08-07):** the ring is **32 px** with a
+**10 px** centre number. The mockup was drawn at 40/13, which read as a second widget
+competing with the VU meters rather than as part of the master label. The mockup is left at
+its approved size on purpose — it records what was approved — so when comparing for visual
+parity, compare the *form* (wedge direction, colours, states, caption), not the pixel size.
 
 `buildMasterStrip` gains the ring deps as optional fields: test fixtures without audio
 already skip the master strip entirely, and a caller that omits them gets the strip with
