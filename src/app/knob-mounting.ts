@@ -30,10 +30,15 @@ export interface KnobMounter {
 
 function pageForLane(laneId: string): string {
   // Map canonical lane ids to the corresponding `data-page` attribute.
-  // Drums (LANE_ID_DRUMS='drums-1') -> 'drums'; everything else -> 'poly',
+  // Drums (LANE_ID_DRUMS='drums-1') -> 'drums'; everything else -> 'instrument',
   // INCLUDING the bass: the TB-303 no longer has a page of its own.
+  //
+  // SECOND COPY of the routing showLaneEditor does with its `targetTab`. They
+  // must agree: this one picks the page whose `.lane-fx-knobs` slot the per-lane
+  // FX panel mounts into, and if it names a page that does not exist the panel
+  // silently never mounts — the sidechain select simply is not there.
   if (laneId === 'drums-1')  return 'drums';
-  return 'poly';
+  return 'instrument';
 }
 
 export function createKnobMounter(deps: KnobMounterDeps): KnobMounter {
